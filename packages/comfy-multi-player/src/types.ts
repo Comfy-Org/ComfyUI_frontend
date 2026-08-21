@@ -52,6 +52,18 @@ export const DEFERRED_OPS = ["reset_doc"] as const;
  */
 export const BATCHABLE_OPS = ["add_node", "connect", "set_widget", "delete_node"] as const;
 
+/** Every kind the {@link Op} union defines — the single source of truth for op kinds. */
+export type OpKind = Op["op"];
+
+/** A kind `applyOps` implements. */
+export type FrozenOpKind = (typeof FROZEN_OPS)[number];
+
+/** A kind the vocabulary defines but this package rejects (§1.6). */
+export type DeferredOpKind = (typeof DEFERRED_OPS)[number];
+
+/** A kind legal inside a multi-op batch. */
+export type BatchableOpKind = (typeof BATCHABLE_OPS)[number];
+
 // ---------------------------------------------------------------------------
 // Identity & stamps (mirrors comfy_cli/workflow_ops.py `_new_op`)
 // ---------------------------------------------------------------------------
@@ -182,6 +194,36 @@ export type Op =
   | DeleteNodeOp
   | ClearOp
   | ResetDocOp;
+
+// ---------------------------------------------------------------------------
+// Op-kind partition guard (issue #21)
+//
+// `FROZEN_OPS` / `DEFERRED_OPS` / `BATCHABLE_OPS` are hand-written arrays and
+// `Op` is a hand-written union; nothing structurally tied them together, so a
+// seventh op kind could be added to `Op` (or to one array) and every other
+// site would keep compiling while silently disagreeing about the vocabulary.
+// The assertions below make that a `tsc` failure at THIS line:
+//
+//   - FROZEN ∪ DEFERRED must be exactly `Op["op"]` — every declared kind is
+//     either implemented or explicitly deferred, and neither list may name a
+//     kind the union does not declare;
+//   - BATCHABLE must be a subset of FROZEN — a batchable kind that `applyOps`
+//     does not implement is a contradiction.
+//
+// `[A] extends [B]` (tuple-wrapped) is deliberate: it suppresses union
+// distribution, so `Equals` compares the unions as wholes rather than
+// member-by-member, which would make the check vacuously true.
+// ---------------------------------------------------------------------------
+
+type Equals<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
+type Assert<T extends true> = T;
+
+/** Every `Op` member is exactly once in FROZEN_OPS or DEFERRED_OPS. */
+type _OpKindsArePartitioned = Assert<Equals<FrozenOpKind | DeferredOpKind, OpKind>>;
+/** No kind is both implemented and deferred. */
+type _FrozenAndDeferredAreDisjoint = Assert<Equals<FrozenOpKind & DeferredOpKind, never>>;
+/** Batchable kinds are a subset of the implemented kinds. */
+type _BatchableIsSubsetOfFrozen = Assert<Equals<Exclude<BatchableOpKind, FrozenOpKind>, never>>;
 
 // ---------------------------------------------------------------------------
 // Widget catalog (pinned object_info projection)

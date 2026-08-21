@@ -5,7 +5,15 @@ import { fileURLToPath } from "node:url";
 import * as fc from "fast-check";
 import * as Y from "yjs";
 import { describe, expect, it } from "vitest";
-import { applyOps, mint, project, type Op, type WorkflowJSON } from "../src/index.js";
+import {
+  DEFERRED_OPS,
+  FROZEN_OPS,
+  applyOps,
+  mint,
+  project,
+  type Op,
+  type WorkflowJSON,
+} from "../src/index.js";
 import { loadCatalog } from "./helpers.js";
 
 const catalog = loadCatalog();
@@ -22,7 +30,9 @@ const malformedEnvelopeArb: fc.Arbitrary<unknown> = fc.oneof(
   fc.string(),
   fc.record({ op: fc.oneof(fc.integer(), fc.constant(null), fc.boolean()), op_id: fc.anything() }),
   fc.record({
-    op: fc.constantFrom("add_node", "set_widget", "connect", "delete_node", "clear", "reset_doc", "garbage"),
+    // Derived from the vocabulary constants, not re-typed: a new op kind is
+    // fuzzed automatically instead of silently escaping this arbitrary (#21).
+    op: fc.constantFrom<string>(...FROZEN_OPS, ...DEFERRED_OPS, "garbage"),
     op_id: fc.oneof(fc.constant(""), fc.integer(), fc.constant(null), fc.boolean()),
     actor: fc.oneof(fc.string(), fc.constant(null), fc.integer()),
     base_version: fc.oneof(fc.integer(), fc.double({ noNaN: false, noDefaultInfinity: false }), fc.string()),

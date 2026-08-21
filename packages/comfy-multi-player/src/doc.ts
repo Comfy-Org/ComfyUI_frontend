@@ -19,6 +19,7 @@
  */
 
 import * as Y from "yjs";
+import { assertNever } from "./exhaustive.js";
 import { SCHEMA_VERSION, type WorkflowNode } from "./types.js";
 
 // ---------------------------------------------------------------------------
@@ -61,6 +62,67 @@ export const OPAQUE_WIDGETS_KEY = "__widgets_opaque";
  */
 export function isOpaqueWidgets(wv: unknown, widgetOrder: readonly string[] | undefined): boolean {
   return widgetOrder === undefined && Array.isArray(wv) && wv.length > 0;
+}
+
+// ---------------------------------------------------------------------------
+// Widget-storage strategy adapter (issue #21)
+//
+// A node's widget values are stored one of two ways, and the choice was
+// previously re-derived independently in four modules — `doc.ts` decided it
+// from `isOpaqueWidgets`, `applier.ts` re-read it as `node.has(
+// OPAQUE_WIDGETS_KEY)`, `project.ts` re-read it as a key name in a `forEach`,
+// and `mint.ts` inherited it through `createNodeMap`. Nothing named the set of
+// strategies, so a third strategy could be added and every site that missed it
+// would keep compiling.
+//
+// The strategy is now a named union with one classifier per direction. Every
+// consumer switches on it and ends in an exhaustiveness guard, so a third
+// member fails `tsc` at each site that does not handle it.
+// ---------------------------------------------------------------------------
+
+/** The widget-storage strategies a node may use (schema §1.2). */
+export const WIDGET_STORAGE_STRATEGIES = ["named", "opaque"] as const;
+
+/**
+ * How a node's widget values are stored:
+ *
+ * - `named` — the name-keyed `widgets` Y.Map, decomposed from positional
+ *   `widgets_values` through the pinned catalog's `widget_order`. The normal
+ *   case; the only one that is name-addressable and therefore the only one
+ *   `set_widget` can write.
+ * - `opaque` — the whole `widgets_values` array verbatim under
+ *   {@link OPAQUE_WIDGETS_KEY}, for a class the pinned catalog cannot
+ *   describe (frontend-only `Note`/`MarkdownNote`). Whole-value LWW, never
+ *   element-wise merge.
+ */
+export type WidgetStorage = (typeof WIDGET_STORAGE_STRATEGIES)[number];
+
+/**
+ * WRITE side: which strategy a `widgets_values` payload must use, given the
+ * pinned catalog's `widget_order` for the node's class. Used by
+ * `createNodeMap` (and therefore by `mint` and `add_node`).
+ */
+export function widgetStorageFor(
+  wv: unknown,
+  widgetOrder: readonly string[] | undefined,
+): WidgetStorage {
+  return isOpaqueWidgets(wv, widgetOrder) ? "opaque" : "named";
+}
+
+/**
+ * READ side: which strategy a node already stored in the doc is using. A node
+ * with no widget values at all reads as `named` — the name-keyed map is the
+ * shape a first write would create, which is exactly what the applier needs to
+ * know.
+ *
+ * `node` must be INTEGRATED (already inserted into a doc): `Y.Map#has` reads
+ * the integrated map, so a preliminary Y.Map — e.g. a fresh `createNodeMap`
+ * result before it is `set` into `nodes` — answers `false` for every key. The
+ * applier and `project` only ever see integrated nodes; the write side uses
+ * {@link widgetStorageFor} instead.
+ */
+export function widgetStorageOf(node: Y.Map<unknown>): WidgetStorage {
+  return node.has(OPAQUE_WIDGETS_KEY) ? "opaque" : "named";
 }
 
 // ---------------------------------------------------------------------------
@@ -270,12 +332,18 @@ export function createNodeMap(node: WorkflowNode, widgetOrder?: readonly string[
         `createNodeMap(${node.type}): node carries the reserved key '${OPAQUE_WIDGETS_KEY}'`,
       );
     } else if (k === "widgets_values") {
-      if (isOpaqueWidgets(v, widgetOrder)) {
-        // Whole-value storage: never merged element-wise, so §1.2's
-        // positional-array corruption cannot arise. See OPAQUE_WIDGETS_KEY.
-        m.set(OPAQUE_WIDGETS_KEY, structuredClone(v));
-      } else {
-        m.set("widgets", widgetsToYMap(node, v, widgetOrder));
+      const storage = widgetStorageFor(v, widgetOrder);
+      switch (storage) {
+        case "opaque":
+          // Whole-value storage: never merged element-wise, so §1.2's
+          // positional-array corruption cannot arise. See OPAQUE_WIDGETS_KEY.
+          m.set(OPAQUE_WIDGETS_KEY, structuredClone(v));
+          break;
+        case "named":
+          m.set("widgets", widgetsToYMap(node, v, widgetOrder));
+          break;
+        default:
+          assertNever(storage, "createNodeMap: widget-storage strategy");
       }
     } else if (k === "flags" && isPlainObject(v)) {
       m.set("flags", plainToYMap(v));

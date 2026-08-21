@@ -4,6 +4,7 @@
  * op-vocabulary-v1.md §8.1/§8.2 (code-point string order, op_id tiebreak).
  */
 
+import { checkExhaustive } from "./exhaustive.js";
 import type { Op, StampKey } from "./types.js";
 
 /**
@@ -90,8 +91,28 @@ export function writeTarget(op: Op): unknown[] {
         return ["input", String(op.to_node), "grow", String(op.grow.name).split(".", 1)[0]];
       }
       return ["input", String(op.to_node), op.to_slot];
-    default:
+    case "clear":
+    case "reset_doc":
+      // Whole-document ops: no scalar register to contest, so the target is
+      // the kind itself. Previously these two reached the `default` arm, which
+      // made the arm look like a catch-all for future kinds as well; they are
+      // now named, and the arm below is a guard rather than a fallback.
       return [op.op];
+    default:
+      // Exhaustiveness guard (issue #21): with every `Op` member cased above,
+      // `op` is `never` here, so adding a seventh kind to `Op` fails `tsc` at
+      // this line until it is given a write target.
+      //
+      // `checkExhaustive` deliberately does not throw. `writeTarget` is public
+      // and ops arrive over the wire from other implementations, so a kind
+      // this build does not know must keep degrading to `[op.op]` exactly as
+      // it does today rather than starting to throw — turning that into a
+      // throw is a behavioural change, not a type-safety one. The narrowing
+      // below is only to read `.op` off a value the compiler has proved
+      // unreachable; it cannot mask a missing `case`, because the
+      // `checkExhaustive(op)` call above is what fails first.
+      checkExhaustive(op);
+      return [(op as Op).op];
   }
 }
 

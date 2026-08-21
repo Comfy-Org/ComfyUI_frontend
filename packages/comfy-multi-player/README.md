@@ -127,8 +127,17 @@ building conflict UI or your own bookkeeping — `applyOps` uses them internally
 
 `initDoc`, `nodesMap`, `linksMap`, `definitionsMap`, `metaMap`, `appliedMap`,
 `stampsMap`, `createNodeMap`, `resolveDefinition`, `countDefinitionInstances`,
-`OPAQUE_WIDGETS_KEY`, `isOpaqueWidgets`. Reading the document directly is
+`OPAQUE_WIDGETS_KEY`, `isOpaqueWidgets`, `WIDGET_STORAGE_STRATEGIES`,
+`widgetStorageFor`, `widgetStorageOf`. Reading the document directly is
 supported; writing to it outside `applyOps` is not.
+
+A node's widget values are stored one of two ways — `named` (the name-keyed
+`widgets` map) or `opaque` (the whole `widgets_values` array verbatim, for a
+class the pinned catalog cannot describe). `widgetStorageFor(widgets_values,
+widget_order)` answers which one a payload needs before it is written;
+`widgetStorageOf(node)` answers which one a node already in the doc is using.
+Switch on the returned `WidgetStorage` rather than sniffing keys, so adding a
+third strategy is a compile error in your code too.
 
 ## Ops
 
@@ -156,7 +165,16 @@ Six kinds, frozen:
 | `reset_doc` | see [open questions](docs/api-contract-proposal.md) — currently rejected `op_deferred` by this package | no |
 
 `FROZEN_OPS`, `DEFERRED_OPS`, and `BATCHABLE_OPS` are exported so you can check
-programmatically rather than hard-coding the lists.
+programmatically rather than hard-coding the lists, along with the matching
+`OpKind` / `FrozenOpKind` / `DeferredOpKind` / `BatchableOpKind` types. A
+compile-time assertion in `src/types.ts` pins that `FROZEN_OPS ∪ DEFERRED_OPS`
+is exactly `Op["op"]` and that `BATCHABLE_OPS ⊆ FROZEN_OPS`, so the lists and
+the union cannot drift apart silently.
+
+An op kind this build does not know — one minted by a peer built against a
+newer vocabulary — is **rejected loudly**, never silently dropped: `applyOps`
+returns `failed.code === "unknown_op"`, applies nothing, and aborts the
+remainder of the batch (the doc is byte-identical afterwards).
 
 **"Batchable" is an authoring-surface rule, and `applyOps` does not enforce
 it.** The column above is comfy-cli's: `clear` and `reset_doc` rewrite the whole

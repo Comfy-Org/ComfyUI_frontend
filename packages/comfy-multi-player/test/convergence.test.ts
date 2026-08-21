@@ -18,6 +18,7 @@
 import * as Y from "yjs";
 import { describe, expect, it } from "vitest";
 import { applyOps, mint, project, writeTarget, type Op } from "../src/index.js";
+import { assertNever } from "../src/exhaustive.js";
 import { canonicalize, loadCatalog, loadSession, sessionFiles } from "./helpers.js";
 
 const catalog = loadCatalog();
@@ -31,8 +32,15 @@ function touchedNodes(op: Op): string[] {
       return [String(op.path && op.path.length > 0 ? op.path[0] : op.node_id)];
     case "connect":
       return [String(op.from_node), String(op.to_node)];
-    default:
+    case "clear":
+    case "delete_node":
+    case "reset_doc":
+      // Graph-wide / unbounded ops. `reorderableWindows` treats them as window
+      // breakers and never calls this helper for them; listed explicitly so
+      // the guard below is a guard and not a catch-all (#21).
       return [];
+    default:
+      return assertNever(op, "convergence.touchedNodes");
   }
 }
 

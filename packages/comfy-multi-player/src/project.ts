@@ -24,7 +24,15 @@
  */
 
 import * as Y from "yjs";
-import { OPAQUE_WIDGETS_KEY, definitionsMap, linksMap, metaMap, nodesMap } from "./doc.js";
+import {
+  OPAQUE_WIDGETS_KEY,
+  definitionsMap,
+  linksMap,
+  metaMap,
+  nodesMap,
+  widgetStorageOf,
+} from "./doc.js";
+import { assertNever } from "./exhaustive.js";
 import type { WidgetCatalog, WorkflowJSON, WorkflowNode } from "./types.js";
 
 /** Sorted-by-id comparator: numeric when both ids are numbers, else string order. */
@@ -79,17 +87,40 @@ function widgetsToPositional(
   return out;
 }
 
+/**
+ * Project a node's widget values back to positional `widgets_values`,
+ * dispatching on the node's storage strategy (schema §1.2) rather than on
+ * whichever of the two storage keys the projection loop happened to reach
+ * first. Issue #21: the strategy is the thing being decided, so it is the
+ * thing switched on, and the guard below is what a third strategy trips.
+ */
+function projectWidgets(
+  nodeType: string,
+  ym: Y.Map<unknown>,
+  catalog: WidgetCatalog,
+): unknown {
+  const storage = widgetStorageOf(ym);
+  switch (storage) {
+    case "opaque":
+      // Opaque whole-array storage for a class the catalog cannot describe
+      // (schema §1.2): emitted VERBATIM, no catalog lookup, no re-keying.
+      return structuredClone(ym.get(OPAQUE_WIDGETS_KEY));
+    case "named":
+      return widgetsToPositional(nodeType, ym.get("widgets") as Y.Map<unknown>, catalog);
+    default:
+      return assertNever(storage, "project: widget-storage strategy");
+  }
+}
+
 /** Per-node Y.Map → workflow node JSON. Emits exactly the keys stored at mint/apply time. */
 function projectNode(ym: Y.Map<unknown>, catalog: WidgetCatalog): WorkflowNode {
   const out: Record<string, unknown> = {};
   const nodeType = String(ym.get("type") ?? "");
   ym.forEach((v, k) => {
-    if (k === OPAQUE_WIDGETS_KEY) {
-      // Opaque whole-array storage for a class the catalog cannot describe
-      // (schema §1.2): emitted VERBATIM, no catalog lookup, no re-keying.
-      out["widgets_values"] = structuredClone(v);
-    } else if (k === "widgets") {
-      out["widgets_values"] = widgetsToPositional(nodeType, v as Y.Map<unknown>, catalog);
+    if (k === OPAQUE_WIDGETS_KEY || k === "widgets") {
+      // Both storage keys project to the same workflow key; which one is
+      // authoritative is `widgetStorageOf`'s decision, not iteration order's.
+      out["widgets_values"] = projectWidgets(nodeType, ym, catalog);
     } else if (v instanceof Y.Array) {
       out[k] = v.toArray().map((slot) => projectSlot(slot));
     } else if (v instanceof Y.Map) {

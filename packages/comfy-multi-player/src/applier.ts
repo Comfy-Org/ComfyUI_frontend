@@ -19,8 +19,8 @@
  */
 
 import * as Y from "yjs";
+import { assertNever } from "./exhaustive.js";
 import {
-  OPAQUE_WIDGETS_KEY,
   adel,
   appliedMap,
   apush,
@@ -33,6 +33,7 @@ import {
   nodesMap,
   resolveDefinition,
   stampsMap,
+  widgetStorageOf,
 } from "./doc.js";
 import { compareStampKeys, stampKey, stampTargetKey } from "./stamps.js";
 import {
@@ -136,9 +137,21 @@ function dispatch(doc: Y.Doc, op: Op, catalog?: WidgetCatalog): void {
     case "clear":
       applyClear(doc);
       return;
+    case "reset_doc":
+      // Unreachable in practice — `validateEnvelope` rejects every
+      // DEFERRED_OPS kind before dispatch. Spelled out anyway so this switch
+      // covers `Op` exhaustively (the `default` below is the guard) and so
+      // un-deferring `reset_doc` surfaces here as "implement me", not as a
+      // kind that quietly falls into a catch-all.
+      throw new OpRejectedError(
+        "op_deferred",
+        `unknown op '${op.op}' — defined by the vocabulary but deferred (op-vocabulary-v1.md §1.6); rejected until un-deferred by amendment`,
+      );
     default:
-      // unreachable — validateEnvelope already rejected unknown/deferred kinds
-      throw new OpRejectedError("unknown_op", `unknown op '${(op as Op).op}'`);
+      // Exhaustiveness guard (issue #21): with every `Op` member cased above,
+      // `op` is `never` here. Add a seventh kind to `Op` and this line stops
+      // compiling until it gets a `case`.
+      return assertNever(op, "applier.dispatch");
   }
 }
 
@@ -229,14 +242,32 @@ function validateWidgetName(
  * document.
  */
 function rejectIfOpaqueWidgets(node: Y.Map<unknown>, widget: string): void {
-  if (!node.has(OPAQUE_WIDGETS_KEY)) return;
-  const type = String(node.get("type") ?? "");
-  throw new OpRejectedError(
-    "opaque_widgets",
-    `widget write '${widget}' on node ${String(node.get("id"))} (${type}): ${type} is absent from the pinned catalog, so its widgets_values is stored opaquely (schema §1.2) and is not name-addressable`,
-  );
+  const storage = widgetStorageOf(node);
+  switch (storage) {
+    case "named":
+      // Name-addressable: the write proceeds against the `widgets` Y.Map.
+      return;
+    case "opaque": {
+      const type = String(node.get("type") ?? "");
+      throw new OpRejectedError(
+        "opaque_widgets",
+        `widget write '${widget}' on node ${String(node.get("id"))} (${type}): ${type} is absent from the pinned catalog, so its widgets_values is stored opaquely (schema §1.2) and is not name-addressable`,
+      );
+    }
+    default:
+      // Issue #21: a third storage strategy must decide explicitly whether a
+      // name-addressed write is expressible against it. Falling through to
+      // "allowed" is the silent-mishandling failure this guard exists to stop.
+      return assertNever(storage, "applier.rejectIfOpaqueWidgets");
+  }
 }
 
+/**
+ * The node's name-keyed `widgets` Y.Map, created on first write.
+ *
+ * `named`-storage path only — every caller runs `rejectIfOpaqueWidgets` first,
+ * which is where the storage-strategy decision is made and guarded.
+ */
 function widgetsOf(node: Y.Map<unknown>): Y.Map<unknown> {
   let widgets = node.get("widgets");
   if (!(widgets instanceof Y.Map)) {
@@ -302,7 +333,7 @@ function applySetWidget(doc: Y.Doc, op: SetWidgetOp, catalog?: WidgetCatalog): v
   mset(stamps, targetKey, key);
 }
 
-/** The node's current projected widgets_values length: 1 + highest widget_order index present in the name-keyed map. */
+/** The node's current projected widgets_values length: 1 + highest widget_order index present in the name-keyed map. `named`-storage path only (see `widgetsOf`). */
 function projectedWidgetsLength(node: Y.Map<unknown>, order: readonly string[]): number {
   const widgets = node.get("widgets");
   if (!(widgets instanceof Y.Map)) return 0;
