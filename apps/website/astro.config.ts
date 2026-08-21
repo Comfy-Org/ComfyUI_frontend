@@ -7,10 +7,9 @@ import { isExcludedFromSitemap } from './src/config/indexing'
 import { readdirSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
 import {
+  clusterAlternates,
   mirroredRoutes,
-  unprefixed,
-  ZH_HREFLANG,
-  ZH_PREFIX
+  unprefixed
 } from './src/utils/hreflangRoutes'
 
 const LOCALES = ['en', 'zh-CN'] as const
@@ -73,11 +72,12 @@ export default defineConfig({
         const path = unprefixed(pathname)
         if (!MIRRORED_ROUTES.has(path)) return item
 
-        item.links = [
-          { lang: 'en', url: `${origin}${path}` },
-          { lang: ZH_HREFLANG, url: `${origin}${ZH_PREFIX}${path}` },
-          { lang: 'x-default', url: `${origin}${path}` }
-        ]
+        // Rendered from the same builder the page tags use, so the sitemap
+        // cannot describe a different cluster than the markup.
+        item.links = clusterAlternates(path, origin).map((alternate) => ({
+          lang: alternate.hreflang,
+          url: alternate.href
+        }))
         return item
       }
     })

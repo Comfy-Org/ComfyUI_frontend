@@ -64,6 +64,35 @@ export function mirroredRoutes(files: string[]): Set<string> {
   )
 }
 
+export interface Alternate {
+  hreflang: string
+  href: string
+}
+
+/**
+ * The alternates a clustered route advertises, in the order they are emitted.
+ *
+ * The ONE definition of what a cluster looks like in production. The page tags
+ * and the sitemap both render this, so they cannot disagree about the shape the
+ * way they could while each assembled the triple itself. The audit deliberately
+ * keeps its own expectation (`hreflangAudit.ts`), so a defect here is still
+ * caught rather than mirrored by its own checker.
+ *
+ * @param path An un-prefixed route, i.e. the output of `unprefixed`.
+ */
+export function clusterAlternates(path: string, origin: string): Alternate[] {
+  const english = `${origin}${path}`
+  const chinese = `${origin}${ZH_PREFIX}${path === '/' ? '/' : path}`
+
+  return [
+    { hreflang: 'en', href: english },
+    { hreflang: ZH_HREFLANG, href: chinese },
+    // x-default points at English: it is what a reader with no matching
+    // language preference should get.
+    { hreflang: 'x-default', href: english }
+  ]
+}
+
 /**
  * The path with any locale prefix removed, always with a trailing slash.
  *

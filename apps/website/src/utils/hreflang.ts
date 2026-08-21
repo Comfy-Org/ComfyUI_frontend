@@ -11,17 +11,11 @@
  * lists are exactly what drifts when someone adds a page. `hreflangRoutes.ts`
  * holds that rule so the sitemap can apply the identical one.
  */
-import {
-  mirroredRoutes,
-  unprefixed,
-  ZH_HREFLANG,
-  ZH_PREFIX
-} from './hreflangRoutes'
+import type { Alternate } from './hreflangRoutes'
 
-export interface Alternate {
-  hreflang: string
-  href: string
-}
+import { clusterAlternates, mirroredRoutes, unprefixed } from './hreflangRoutes'
+
+export type { Alternate }
 
 /** Page files, from both trees, as Vite sees them at build time. */
 const PAGE_FILES = import.meta.glob('/src/pages/**/*.astro', { eager: false })
@@ -31,30 +25,19 @@ const MIRRORED = mirroredRoutes(Object.keys(PAGE_FILES))
 /**
  * The alternates for a page, or an empty list when it has no twin.
  *
- * `hasTwin` lets a dynamic route answer for itself, since only it knows whether
- * its slug exists in the other locale. Left undefined, the page tree decides.
+ * Whether a twin exists is decided by the page tree alone. A page cannot assert
+ * it: a claim with nothing behind it is how a cluster ends up advertising a 404.
  */
 export function alternatesFor(
   pathname: string,
   siteUrl: string,
-  options: { hasTwin?: boolean; mirrored?: Set<string> } = {}
+  options: { mirrored?: Set<string> } = {}
 ): Alternate[] {
-  const { hasTwin, mirrored = MIRRORED } = options
+  const { mirrored = MIRRORED } = options
   const path = unprefixed(pathname)
-  const twinExists = hasTwin ?? mirrored.has(path)
-  if (!twinExists) return []
+  if (!mirrored.has(path)) return []
 
-  const origin = siteUrl.replace(/\/$/, '')
-  const englishHref = `${origin}${path}`
-  const chineseHref = `${origin}${ZH_PREFIX}${path === '/' ? '/' : path}`
-
-  return [
-    { hreflang: 'en', href: englishHref },
-    { hreflang: ZH_HREFLANG, href: chineseHref },
-    // x-default points at English: it is what a reader with no matching
-    // language preference should get.
-    { hreflang: 'x-default', href: englishHref }
-  ]
+  return clusterAlternates(path, siteUrl.replace(/\/$/, ''))
 }
 
 /** OG wants underscored locale identifiers, not the BCP 47 tags used elsewhere. */

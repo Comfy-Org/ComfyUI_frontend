@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
 import { alternatesFor, ogLocale, ogLocaleAlternate } from './hreflang'
-import { mirroredRoutes, unprefixed, ZH_HREFLANG } from './hreflangRoutes'
+import {
+  clusterAlternates,
+  mirroredRoutes,
+  unprefixed,
+  ZH_HREFLANG
+} from './hreflangRoutes'
 
 const SITE = 'https://comfy.org'
 
@@ -108,14 +113,11 @@ describe('alternatesFor', () => {
     ).toEqual([])
   })
 
-  it('lets a dynamic route answer for itself', () => {
-    // Only the page knows whether its slug built in the other locale.
-    expect(
-      alternatesFor('/customers/ubisoft/', SITE, { mirrored, hasTwin: true })
-    ).toHaveLength(3)
-    expect(
-      alternatesFor('/customers/ubisoft/', SITE, { mirrored, hasTwin: false })
-    ).toEqual([])
+  it('gives a dynamic route nothing, since the page tree cannot prove a twin', () => {
+    // customers/[slug].astro exists in both trees, but each getStaticPaths reads
+    // its own locale's content, so a built English slug proves nothing about
+    // Chinese. A page cannot override this: the claim would have nothing behind it.
+    expect(alternatesFor('/customers/ubisoft/', SITE, { mirrored })).toEqual([])
   })
 })
 
@@ -130,5 +132,24 @@ describe('Open Graph locale', () => {
     expect(ogLocaleAlternate('en', withTwin)).toBe('zh_CN')
     expect(ogLocaleAlternate('zh-CN', withTwin)).toBe('en_US')
     expect(ogLocaleAlternate('en', [])).toBeNull()
+  })
+})
+
+describe('clusterAlternates', () => {
+  // The page tags and the sitemap render this same function. Previously each
+  // assembled the triple itself, so adding a locale to one silently left the
+  // other describing a different cluster.
+  it('is what a clustered page emits', () => {
+    expect(clusterAlternates('/about/', SITE)).toEqual(
+      alternatesFor('/about/', SITE, { mirrored: new Set(['/about/']) })
+    )
+  })
+
+  it('keeps the homepage from doubling its slash', () => {
+    expect(clusterAlternates('/', SITE).map((a) => a.href)).toEqual([
+      'https://comfy.org/',
+      'https://comfy.org/zh-CN/',
+      'https://comfy.org/'
+    ])
   })
 })
