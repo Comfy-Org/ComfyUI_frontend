@@ -9,6 +9,8 @@ test.describe('Renderer toggle geometry', { tag: ['@vue-nodes'] }, () => {
   test('slot geometry survives a Vue to legacy round trip', async ({
     comfyPage
   }) => {
+    await comfyPage.workflow.loadWorkflow('default')
+
     const nodeId = toNodeId(
       await comfyPage.vueNodes.getNodeIdByTitle('KSampler')
     )
