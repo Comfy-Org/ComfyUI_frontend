@@ -46,8 +46,9 @@ export const HUGGINGFACE_MIRROR_SETTING_ID =
  * users behind networks blocking `huggingface.co` can still use the
  * "Download All missing models" button. Empty/missing setting returns
  * the URL unchanged. Non-HuggingFace URLs are returned unchanged.
- * Mirrors that are not absolute http(s) URLs are ignored and warned
- * about, to avoid producing broken download URLs.
+ * Mirrors that are not absolute http(s) URLs, or that carry a query
+ * or fragment component, are ignored and warned about, to avoid
+ * producing broken download URLs.
  */
 export function resolveHuggingFaceUrl(url: string): string {
   const mirror = useSettingStore()
@@ -61,6 +62,12 @@ export function resolveHuggingFaceUrl(url: string): string {
     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
       console.warn(
         `[missingModelDownload] Ignoring ${HUGGINGFACE_MIRROR_SETTING_ID}: mirror must use http or https, got ${parsed.protocol}`
+      )
+      return url
+    }
+    if (parsed.search || parsed.hash) {
+      console.warn(
+        `[missingModelDownload] Ignoring ${HUGGINGFACE_MIRROR_SETTING_ID}: mirror must not include a query or fragment`
       )
       return url
     }

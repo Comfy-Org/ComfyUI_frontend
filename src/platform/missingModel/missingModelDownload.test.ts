@@ -788,6 +788,24 @@ describe('resolveHuggingFaceUrl', () => {
     expect(consoleWarn).toHaveBeenCalled()
   })
 
+  it('ignores a mirror with a query component', () => {
+    mockHuggingFaceMirror.value = 'https://hf-mirror.com?token=abc'
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    expect(
+      resolveHuggingFaceUrl('https://huggingface.co/org/model/resolve/main/x')
+    ).toBe('https://huggingface.co/org/model/resolve/main/x')
+    expect(consoleWarn).toHaveBeenCalled()
+  })
+
+  it('ignores a mirror with a fragment component', () => {
+    mockHuggingFaceMirror.value = 'https://hf-mirror.com#section'
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    expect(
+      resolveHuggingFaceUrl('https://huggingface.co/org/model/resolve/main/x')
+    ).toBe('https://huggingface.co/org/model/resolve/main/x')
+    expect(consoleWarn).toHaveBeenCalled()
+  })
+
   it('leaves non-HuggingFace URLs untouched', () => {
     mockHuggingFaceMirror.value = 'https://hf-mirror.com'
     expect(
