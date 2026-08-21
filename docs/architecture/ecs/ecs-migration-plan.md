@@ -178,48 +178,63 @@ unless they cover a new invariant.
 
 ### 2. Centralize remaining Component and Entity data
 
+The current authority and lifecycle inventory is in the
+[Component and Entity data audit](ecs-component-entity-data-audit.md). No item
+below is complete. Several have store-backed foundations but retain class-owned
+serialization, compatibility projections, or cleanup.
+
 - Add plain store-owned graph and subgraph definition records for membership,
   metadata, ordered entity IDs, and subgraph interfaces. Keep live object
   registries as runtime adapters rather than serialization authorities.
 - Move remaining durable node visuals, including `boxcolor`, into the
   store-owned shell or a focused visual component.
-- Make `nodeOutputStore` authoritative for output and preview maps; expose
-  legacy `app` and node-image fields as compatibility projections.
-- Make one layout ordering action update both Vue z-index and the legacy draw
-  projection; remove the asymmetric `sendToBack` mutation.
-- Extract serialization only after stores contain sufficient authoritative
-  data and parity can be checked against the existing wire format.
-- Move legacy geometry projection ownership out of `LGraphNode` without
-  changing `pos` and `size` extension behavior.
-- Separate remaining link visual/runtime state when a renderer or interaction
-  system can consume plain records directly.
-- Extract plain slot state only when it removes a real class dependency; retain
-  array order semantics and keep connectivity in `linkStore`.
-- Move node properties, group presentation, preview-exposure persistence, and
-  extension-owned durable fields behind scoped store actions while retaining
-  compatibility property facades.
+- Make `nodeOutputStore` the canonical owner of outputs and transient preview
+  URLs. Turn legacy `app` maps and node image fields into outward-only
+  compatibility projections rather than reverse synchronization inputs.
+- Route front/back ordering through one scoped action that updates canonical
+  layout z-index and projects the resulting order into legacy `_nodes`.
+- Keep the current class serializers as the wire-format oracle until the
+  required records are store-owned. Then add a store-record serializer and
+  prove normalized differential parity before switching production reads.
+- Move stable `pos` and `size` compatibility buffers, version tracking, and
+  write-through behavior from `LGraphNode` into a scoped legacy geometry
+  adapter without changing indexed mutation behavior.
+- Split remaining non-topological link fields by lifecycle: execution payload,
+  interaction state, render/hit-test cache, and any persistent visual override.
+  Add plain records only for current consumers and define cleanup and
+  serialization per category.
+- Extract plain ordered slot descriptors only for a concrete class-free
+  consumer. Keep connectivity in `linkStore` and retain class adapters for
+  drawing, callbacks, geometry, and measured extension compatibility.
+- Move node properties and group presentation behind scoped store actions while
+  retaining compatibility property facades.
+- Keep `previewExposureStore` as the preview-routing authority. Replace raw host
+  keys with scoped identity, add host/source cleanup, and retain the node
+  property only as a wire hydration/projection boundary.
 - Preserve serialization compatibility through a controlled adapter: isolate
   namespaced extension payloads as validated plain data and prevent persistence
   hooks from mutating canonical workflow and store-backed fields.
 - Move graph `config`, `extra`, and `revision` into a focused store-owned plain
   data record while preserving serialization compatibility.
-- Derive graph invalidation from authoritative store revisions or one
-  centralized compatibility projection; remove scattered caller-owned
-  `_version` increments.
+- Replace caller-selected `incrementVersion()` calls with one invalidation owner
+  driven by authoritative revisions or committed graph mutations. Retain
+  `_version` as a reactive compatibility projection.
 - Store opaque unknown-node fallback records by scoped node identity, define
   their remapping and replacement lifecycle, and retain `last_serialization`
   only as a compatibility facade.
-- Treat execution order as a derived topology projection. Define whether
-  serialized `order` is ignored and recomputed or retained only as explicit
-  wire compatibility, not as an independent mutation channel.
-- Move allocation counters behind the workflow identity owner. Creation/import
-  must no longer derive IDs from mutable state distributed across class and
-  import paths.
-- Route delayed widget restoration through scoped store state and isolate
-  serialized widget arrays/maps as wire compatibility projections rather than
-  production mutation channels.
-- Add owner/node cleanup for widget and preview records before treating failed
-  configure, replacement, and subgraph release as contained operations.
+- Formalize execution `order` as topology-derived runtime state. Recompute after
+  load and retain serialized `order` only as a compatibility field emitted from
+  the derived value.
+- Move root-shared entity allocators behind the workflow identity owner. Route
+  creation, configure normalization, unpack, and clipboard import through one
+  API while preserving serialized counters.
+- Parse `widgets_values` and `widgets_values_named` once at the workflow
+  boundary into scoped restoration records. Make delayed widget creation
+  consume those records, remove first-party shadow writes, and emit wire forms
+  from store state plus authoritative widget order.
+- Add node/owner cleanup to `widgetValueStore` and host/source cleanup to
+  `previewExposureStore`, then wire both through removal, replacement, failed
+  configure, and released-subgraph teardown.
 
 ### 3. Retire duplicate state and synchronization bridges
 
@@ -289,6 +304,7 @@ CRDT compatibility are explicitly not completion criteria for this phase.
 - [Executive summary](ecs-migration-summary.md)
 - [Decision traceability](ecs-decision-traceability.md)
 - [State authority audit](ecs-state-authority-audit.md)
+- [Component and Entity data audit](ecs-component-entity-data-audit.md)
 - [Lifecycle audit](ecs-lifecycle-audit.md)
 - [Mutation audit](ecs-mutation-audit.md)
 - [Identity and scope audit](ecs-identity-scope-audit.md)
