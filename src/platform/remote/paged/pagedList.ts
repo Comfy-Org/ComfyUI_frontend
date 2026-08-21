@@ -1,7 +1,7 @@
 import { computed, onScopeDispose, toValue } from 'vue'
 import type { MaybeRef } from 'vue'
 
-export type PagedList<T> = {
+export interface PagedList<T> {
   hasMore: Readonly<MaybeRef<boolean>>
   invalidate: (items?: string[]) => Promise<void>
   isLoading: Readonly<MaybeRef<boolean>>
@@ -20,18 +20,6 @@ export function wrapPagedList<T>(
 interface CacheEntry<T> {
   list: PagedList<T>
   refCount: number
-}
-
-export function stableKey(params: Record<string, unknown> = {}): string {
-  const keys = Object.keys(params)
-    .filter((k) => params[k] !== undefined)
-    .sort()
-  const obj: Record<string, unknown> = {}
-  for (const k of keys) {
-    const v = params[k]
-    obj[k] = Array.isArray(v) ? [...v].sort() : v
-  }
-  return JSON.stringify(obj)
 }
 
 export function createSharedPagedList<TParams, TItem>(

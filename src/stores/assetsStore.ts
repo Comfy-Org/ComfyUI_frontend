@@ -6,7 +6,8 @@ import { computed, reactive, ref, shallowReactive, toValue } from 'vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   mapInputFileToAssetItem,
-  mapTaskOutputToAssetItem
+  mapTaskOutputToAssetItem,
+  unflattenOutputAssets
 } from '@/platform/assets/composables/media/assetMappers'
 import type {
   AssetItem,
@@ -17,6 +18,7 @@ import { assetService } from '@/platform/assets/services/assetService'
 import type { AssetPaginationOptions } from '@/platform/assets/services/assetService'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { useAssetsQuery } from '@/platform/remote/paged/assets'
+import { wrapPagedList } from '@/platform/remote/paged/pagedList'
 import type { PagedList } from '@/platform/remote/paged/pagedList'
 import { api } from '@/scripts/api'
 
@@ -274,11 +276,12 @@ export const useAssetsStore = defineStore('assets', () => {
       : historyInputs
   )
   const outputDirs = ref(['output', 'temp'])
-  const outputAssets = computed(() =>
-    flags.assetsEnabled
-      ? useAssetsQuery({ tags_any: outputDirs.value })
-      : useHistoryAssets()
-  )
+  const outputAssets = computed(() => {
+    if (!flags.assetsEnabled) return useHistoryAssets()
+
+    const flatAssets = useAssetsQuery({ tags_any: outputDirs.value })
+    return wrapPagedList(flatAssets, unflattenOutputAssets)
+  })
 
   /**
    * Map of asset hash filename to asset item for O(1) lookup

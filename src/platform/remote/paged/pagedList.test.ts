@@ -32,7 +32,7 @@ describe('createSharedPagedList', () => {
       const derived = computed(() => toValue(b.items).length)
       expect(derived.value).toBe(0)
       await a.loadMore()
-      expect(toValue(a.items).length).toBe(1)
+      expect(toValue(a.items)).toHaveLength(1)
       expect(derived.value).toBe(1)
     })
     scope.stop()

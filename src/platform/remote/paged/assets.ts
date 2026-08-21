@@ -1,21 +1,19 @@
 import { computed, ref } from 'vue'
 import { fromZodError } from 'zod-validation-error'
 import type { ListAssetsData } from '@comfyorg/ingest-types'
-import { whenever } from '@vueuse/core'
 
-import { unflattenOutputAssets } from '@/platform/assets/composables/media/assetMappers'
 import { assetResponseSchema } from '@/platform/assets/schemas/assetSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import {
-  createSharedPagedList,
-  stableKey,
-  wrapPagedList
-} from '@/platform/remote/paged/pagedList'
+import { createSharedPagedList } from '@/platform/remote/paged/pagedList'
 import type { PagedList } from '@/platform/remote/paged/pagedList'
 import { api } from '@/scripts/api'
-import { encodeParams, singletonInvocation } from '@/utils/requestUtil'
+import {
+  encodeParams,
+  singletonInvocation,
+  sortedParams
+} from '@/utils/requestUtil'
 
-type QueryOptions = {
+interface QueryOptions {
   requestOptions?: RequestInit
   onError?: (reason: string, error?: unknown) => void
 }
@@ -103,13 +101,8 @@ function assetsQueryInternal(
     hasMore.value = true
     next_cursor = undefined
     items.value = []
-    const { promise, resolve, reject } = Promise.withResolvers<void>()
-    whenever(
-      () => !loadingMorePromise.value,
-      () => loadMore().then(resolve, reject),
-      { once: true, immediate: true }
-    )
-    await promise
+    await Promise.allSettled([loadingMorePromise, loadingNewPromise])
+    await loadMore()
   }
 
   void loadMore()
@@ -118,10 +111,7 @@ function assetsQueryInternal(
 }
 
 export const useAssetsQuery = createSharedPagedList(
-  (p) =>
-    wrapPagedList(assetsQueryInternal(p), (items) =>
-      unflattenOutputAssets(items)
-    ),
-  stableKey,
+  assetsQueryInternal,
+  (p) => JSON.stringify(sortedParams(p)),
   (item) => item.id
 )
