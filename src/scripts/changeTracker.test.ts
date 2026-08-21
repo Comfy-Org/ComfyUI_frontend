@@ -227,6 +227,10 @@ describe('ChangeTracker', () => {
     app.ui.autoQueueMode = 'instant'
   })
 
+  afterEach(() => {
+    vi.clearAllTimers()
+  })
+
   describe('captureCanvasState', () => {
     describe('guards', () => {
       it('is a no-op when app.graph is falsy', () => {

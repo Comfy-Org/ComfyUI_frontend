@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getClientCountry, isInChina } from './networkUtil'
 
@@ -21,6 +21,10 @@ beforeEach(() => {
   vi.stubGlobal('fetch', fetchMock)
   vi.stubGlobal('navigator', { language: 'en-US' })
   fetchMock.mockReset()
+})
+
+afterEach(() => {
+  vi.useRealTimers()
 })
 
 describe('getClientCountry', () => {
