@@ -1,14 +1,19 @@
 import { execSync } from 'node:child_process'
+import { existsSync } from 'node:fs'
 import { pass, fail, warn, info } from '../ui/logger'
 import type { CheckResult } from './types'
 
 export async function checkPlaywright(): Promise<CheckResult> {
   try {
-    // Check if chromium browser is installed
-    execSync('pnpm exec playwright install --dry-run chromium', {
-      encoding: 'utf-8',
-      stdio: 'pipe'
-    })
+    // --dry-run only prints the intended path and always exits 0, so the
+    // executable itself has to be resolved.
+    const executablePath = execSync(
+      'pnpm exec node -e "process.stdout.write(require(\'playwright-core\').chromium.executablePath())"',
+      { encoding: 'utf-8', stdio: 'pipe' }
+    ).trim()
+    if (!executablePath || !existsSync(executablePath)) {
+      throw new Error('chromium executable missing')
+    }
     pass('Playwright browsers', 'chromium installed')
     return { name: 'Playwright browsers', ok: true, version: 'chromium' }
   } catch {

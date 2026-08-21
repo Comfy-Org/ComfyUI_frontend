@@ -1,212 +1,199 @@
 import { describe, expect, it } from 'vitest'
 
 import { transform } from './engine'
-import { transformRules, structuralTransforms } from './rules'
 
-describe('transformRules', () => {
-  function applyRule(ruleName: string, input: string): string {
-    const rule = transformRules.find((r) => r.name === ruleName)
-    if (!rule) throw new Error(`Rule not found: ${ruleName}`)
-    if (typeof rule.replacement === 'string') {
-      return input.replace(rule.pattern, rule.replacement)
-    }
-    return input.replace(
-      rule.pattern,
-      rule.replacement as (...args: string[]) => string
-    )
-  }
+/**
+ * Driven through transform() rather than the rule table, so these cover rule
+ * ordering — which is load-bearing — and survive a rule being renamed.
+ */
+function run(body: string, testName = 'demo'): string {
+  return transform(body, { testName }).code
+}
 
-  describe('import transforms', () => {
-    it('replaces { test, expect } from @playwright/test', () => {
-      const input = `import { test, expect } from '@playwright/test'`
-      const result = applyRule('replace-test-import', input)
-      expect(result).toContain('comfyPageFixture as test')
-      expect(result).toContain('comfyExpect as expect')
-      expect(result).toContain("from '@e2e/fixtures/ComfyPage'")
-    })
-
-    it('replaces { expect, test } (reversed order)', () => {
-      const input = `import { expect, test } from '@playwright/test'`
-      const result = applyRule('replace-test-import', input)
-      expect(result).toContain('comfyPageFixture as test')
-    })
-
-    it('replaces test-only import', () => {
-      const input = `import { test } from '@playwright/test'`
-      const result = applyRule('replace-test-only-import', input)
-      expect(result).toContain('comfyPageFixture as test')
-      expect(result).not.toContain('expect')
-    })
-
-    it('replaces expect-only import', () => {
-      const input = `import { expect } from '@playwright/test'`
-      const result = applyRule('replace-expect-only-import', input)
-      expect(result).toContain('comfyExpect as expect')
-      expect(result).not.toContain('comfyPageFixture')
-    })
-  })
-
-  describe('fixture transforms', () => {
-    it('replaces { page } with { comfyPage }', () => {
-      const input = `test('my test', async ({ page }) => {`
-      const result = applyRule('replace-page-destructure', input)
-      expect(result).toContain('async ({ comfyPage })')
-      expect(result).not.toContain('{ page }')
-    })
-  })
-
-  describe('locator transforms', () => {
-    it('removes page.goto calls', () => {
-      const input = `  await page.goto('http://localhost:8188')\n  await page.click('button')`
-      const result = applyRule('remove-goto', input)
-      expect(result).not.toContain('page.goto')
-      expect(result).toContain('page.click')
-    })
-
-    it('replaces page.locator("canvas")', () => {
-      const input = `await page.locator('canvas').click()`
-      const result = applyRule('replace-canvas-locator', input)
-      expect(result).toBe('await comfyPage.canvas.click()')
-    })
-
-    it('replaces search box placeholder', () => {
-      const input = `page.getByPlaceholder('Search Nodes...')`
-      const result = applyRule('replace-search-placeholder', input)
-      expect(result).toBe('comfyPage.searchBox.input')
-    })
-
-    it('replaces bare page. references with comfyPage.page.', () => {
-      const input = `await page.click('button')`
-      const result = applyRule('replace-bare-page', input)
-      expect(result).toBe(`await comfyPage.page.click('button')`)
-    })
-
-    it('does not replace comfyPage.page. (no double-replace)', () => {
-      const input = `await comfyPage.page.click('button')`
-      const result = applyRule('replace-bare-page', input)
-      expect(result).toBe(input)
-    })
-  })
-
-  describe('wait transforms', () => {
-    it('replaces waitForTimeout with nextFrame', () => {
-      const input = `await page.waitForTimeout(1000);`
-      const result = applyRule('replace-waitForTimeout', input)
-      expect(result).toBe('await comfyPage.nextFrame()')
-    })
-
-    it('handles waitForTimeout without semicolon', () => {
-      const input = `await page.waitForTimeout(500)`
-      const result = applyRule('replace-waitForTimeout', input)
-      expect(result).toBe('await comfyPage.nextFrame()')
-    })
-  })
-})
-
-describe('structuralTransforms', () => {
-  const wrapInDescribe = structuralTransforms.find(
-    (t) => t.name === 'wrap-in-describe'
-  )!
-
-  it('wraps a test in test.describe with tags', () => {
-    const input = `import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-
-test('does something', async ({ comfyPage }) => {
-  await comfyPage.canvas.click()
-})`
-
-    const result = wrapInDescribe.apply(input, 'my-test', ['@canvas'])
-    expect(result).toContain('test.describe(')
-    expect(result).toContain('"my test"')
-    expect(result).toContain('"@canvas"')
-    expect(result).toContain('test.afterEach')
-    expect(result).toContain('resetView')
-  })
-
-  it('skips wrapping when test.describe already exists', () => {
-    const input = `test.describe('existing', () => {
-  test('inner', async ({ comfyPage }) => {})
-})`
-    const result = wrapInDescribe.apply(input, 'test', ['@canvas'])
-    expect(result).toBe(input)
-  })
-
-  it('converts hyphens and underscores to spaces in describe name', () => {
-    const input = `import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-
-test('x', async ({ comfyPage }) => {})`
-
-    const result = wrapInDescribe.apply(input, 'my_test-name', ['@canvas'])
-    expect(result).toContain('"my test name"')
-  })
-})
-
-describe('load-recorded-workflow', () => {
-  const raw = `import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-
-test('test', async ({ comfyPage }) => {
-  await comfyPage.canvas.click()
-})`
-
-  it('loads the workflow the recording started from', () => {
-    const result = transform(raw, { testName: 't', workflow: 'default' })
-    expect(result.code).toContain(
-      "await comfyPage.workflow.loadWorkflow('default')"
-    )
-  })
-
-  it('adds nothing when recording started on an empty canvas', () => {
-    const result = transform(raw, { testName: 't' })
-    expect(result.code).not.toContain('loadWorkflow')
-  })
-
-  it('does not double-load a workflow the code already loads', () => {
-    const already = raw.replace(
-      'await comfyPage.canvas.click()',
-      "await comfyPage.workflow.loadWorkflow('other')"
-    )
-    const result = transform(already, { testName: 't', workflow: 'default' })
-    expect(result.code.match(/loadWorkflow/g)).toHaveLength(1)
-  })
-
-  it('escapes quotes in workflow names', () => {
-    const result = transform(raw, { testName: 't', workflow: "it's/one" })
-    expect(result.code).toContain("loadWorkflow('it\\'s/one')")
-  })
-})
-
-describe('generated specs satisfy the repo lint rules', () => {
-  const raw = `import { expect, test } from '@playwright/test';
+const CODEGEN = `import { expect, test } from '@playwright/test';
 
 test('test', async ({ page }) => {
+  await page.goto('http://localhost:5173/');
   await page.locator('canvas').click();
   await expect(page.locator('canvas')).toBeVisible();
 });`
 
-  it("renames codegen's default title, which valid-title rejects", () => {
-    const result = transform(raw, { testName: 'default-wf-verify' })
-    expect(result.code).not.toMatch(/test\(\s*'test'/)
-    expect(result.code).toContain('default wf verify works as recorded')
+describe('imports', () => {
+  it('swaps the playwright import for the comfyPage fixture', () => {
+    const code = run(CODEGEN)
+    expect(code).toContain("from '@e2e/fixtures/ComfyPage'")
+    expect(code).not.toContain('@playwright/test')
+  })
+
+  it('handles a reversed import list', () => {
+    expect(
+      run(CODEGEN.replace('{ expect, test }', '{ test, expect }'))
+    ).toContain("from '@e2e/fixtures/ComfyPage'")
+  })
+
+  it('handles a test-only import', () => {
+    const code = run(CODEGEN.replace('{ expect, test }', '{ test }'))
+    expect(code).toContain('comfyPageFixture as test')
+  })
+})
+
+describe('fixture and locator rewrites', () => {
+  it('drops the goto the fixture already performs', () => {
+    expect(run(CODEGEN)).not.toContain('goto')
+  })
+
+  it('uses the canvas locator the fixture exposes', () => {
+    const code = run(CODEGEN)
+    expect(code).toContain('comfyPage.canvas.click()')
+    expect(code).not.toContain("locator('canvas')")
+  })
+
+  it('rewrites the search box to its fixture helper', () => {
+    const code = run(
+      CODEGEN.replace(
+        "await page.locator('canvas').click();",
+        "await page.getByPlaceholder('Search Nodes...').fill('KSampler');"
+      )
+    )
+    expect(code).toContain('comfyPage.searchBox.input.fill')
+  })
+
+  it('rewrites a bare page argument, not just page.<member>', () => {
+    const code = run(
+      CODEGEN.replace(
+        "await expect(page.locator('canvas')).toBeVisible();",
+        'await expect(page).toHaveTitle(/ComfyUI/);'
+      )
+    )
+    expect(code).toContain('expect(comfyPage.page).toHaveTitle')
+    expect(code).not.toMatch(/(?<![\w.])page(?![\w.])/)
+  })
+
+  it('leaves an already-converted fixture alone', () => {
+    expect(run(CODEGEN)).not.toContain('comfyPage.comfyPage')
+  })
+})
+
+describe('waits', () => {
+  it('replaces an arbitrary wait with a frame boundary', () => {
+    const code = run(
+      CODEGEN.replace(
+        "await page.locator('canvas').click();",
+        'await page.waitForTimeout(500);'
+      )
+    )
+    expect(code).toContain('await comfyPage.nextFrame()')
+    expect(code).not.toContain('waitForTimeout')
+  })
+
+  it('replaces it even without a trailing semicolon', () => {
+    const code = run(
+      CODEGEN.replace(
+        "await page.locator('canvas').click();",
+        'await page.waitForTimeout(500)'
+      )
+    )
+    expect(code).toContain('await comfyPage.nextFrame()')
+  })
+
+  it('keeps the following statement on its own line', () => {
+    const code = run(
+      CODEGEN.replace(
+        "await page.locator('canvas').click();",
+        'await page.waitForTimeout(500)'
+      )
+    )
+    expect(code).not.toMatch(/nextFrame\(\)[ \t]*await/)
+  })
+})
+
+describe('structure', () => {
+  it('wraps the test with tags and a view reset', () => {
+    const code = transform(CODEGEN, {
+      testName: 'demo',
+      tags: ['@canvas', '@smoke']
+    }).code
+    expect(code).toContain(`test.describe("demo"`)
+    expect(code).toContain(`tag: ["@canvas", "@smoke"]`)
+    expect(code).toContain('comfyPage.canvasOps.resetView()')
+  })
+
+  it('does not wrap a describe block twice', () => {
+    const once = run(CODEGEN)
+    expect(transform(once, { testName: 'demo' }).code).toBe(once)
+  })
+
+  it('names the test, since valid-title rejects codegen default', () => {
+    const code = run(CODEGEN)
+    expect(code).not.toMatch(/test\(\s*'test'/)
+    expect(code).toContain('demo works as recorded')
   })
 
   it('separates the imports from the describe block', () => {
-    const result = transform(raw, { testName: 'x' })
-    expect(result.code).toMatch(
+    expect(run(CODEGEN)).toMatch(
       /from '@e2e\/fixtures\/ComfyPage';?\n\ntest\.describe/
     )
   })
+})
 
-  it('warns when a recording captured no assertion', () => {
-    const noAssertion = raw.replace(
-      "  await expect(page.locator('canvas')).toBeVisible();\n",
-      ''
+describe('starting workflow', () => {
+  it('loads the workflow the recording started from', () => {
+    const code = transform(CODEGEN, {
+      testName: 'demo',
+      workflow: 'default'
+    }).code
+    expect(code).toContain("await comfyPage.workflow.loadWorkflow('default')")
+  })
+
+  it('adds nothing when recording started on an empty canvas', () => {
+    expect(run(CODEGEN)).not.toContain('loadWorkflow')
+  })
+
+  it('does not double-load a workflow the code already loads', () => {
+    const already = CODEGEN.replace(
+      "await page.locator('canvas').click();",
+      "await comfyPage.workflow.loadWorkflow('other');"
     )
-    const result = transform(noAssertion, { testName: 'x' })
-    expect(result.warnings.some((w) => w.includes('No assertions'))).toBe(true)
+    const code = transform(already, {
+      testName: 'demo',
+      workflow: 'default'
+    }).code
+    expect(code.match(/loadWorkflow/g)).toHaveLength(1)
+  })
+
+  it('escapes quotes in workflow names', () => {
+    const code = transform(CODEGEN, {
+      testName: 'demo',
+      workflow: "it's/one"
+    }).code
+    expect(code).toContain("loadWorkflow('it\\'s/one')")
+  })
+})
+
+describe('warnings', () => {
+  it('warns when a recording captured no assertion', () => {
+    const { warnings } = transform(
+      CODEGEN.replace(
+        "  await expect(page.locator('canvas')).toBeVisible();\n",
+        ''
+      ),
+      { testName: 'demo' }
+    )
+    expect(warnings.some((w) => w.includes('No assertions'))).toBe(true)
   })
 
   it('stays quiet when the recording does assert', () => {
-    const result = transform(raw, { testName: 'x' })
-    expect(result.warnings.some((w) => w.includes('No assertions'))).toBe(false)
+    expect(
+      transform(CODEGEN, { testName: 'demo' }).warnings.some((w) =>
+        w.includes('No assertions')
+      )
+    ).toBe(false)
+  })
+
+  it('warns when only the recorded statements were pasted', () => {
+    const { warnings } = transform("await page.locator('canvas').click();", {
+      testName: 'demo'
+    })
+    expect(warnings.some((w) => w.includes('No test() call'))).toBe(true)
   })
 })

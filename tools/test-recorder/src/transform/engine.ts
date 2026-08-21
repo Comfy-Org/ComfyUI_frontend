@@ -23,14 +23,7 @@ export function transform(
 
   for (const rule of transformRules) {
     const before = code
-    if (typeof rule.replacement === 'string') {
-      code = code.replace(rule.pattern, rule.replacement)
-    } else {
-      code = code.replace(
-        rule.pattern,
-        rule.replacement as (...args: string[]) => string
-      )
-    }
+    code = code.replace(rule.pattern, rule.replacement)
     if (code !== before) {
       appliedRules.push({ name: rule.name, description: rule.description })
     }
@@ -38,13 +31,13 @@ export function transform(
 
   code = code.replace(/\n{3,}/g, '\n\n')
 
-  for (const transform of structuralTransforms) {
+  for (const structural of structuralTransforms) {
     const before = code
-    code = transform.apply(code, testName, tags, options.workflow)
+    code = structural.apply(code, testName, tags, options.workflow)
     if (code !== before) {
       appliedRules.push({
-        name: transform.name,
-        description: transform.description
+        name: structural.name,
+        description: structural.description
       })
     }
   }
@@ -60,6 +53,21 @@ export function transform(
   ) {
     warnings.push(
       'Still imports from @playwright/test — should use @e2e/fixtures/ComfyPage'
+    )
+  }
+  if (!/\btest(?:\.\w+)?\s*\(/.test(code)) {
+    warnings.push(
+      'No test() call found — paste the whole generated file, not just the recorded statements'
+    )
+  }
+  if (!code.includes('@e2e/fixtures/ComfyPage')) {
+    warnings.push(
+      'Missing the comfyPage fixture import — paste the whole generated file, including its import line'
+    )
+  }
+  if (/(?<![\w.])page(?![\w.])/.test(code)) {
+    warnings.push(
+      'A bare `page` reference survived the transform — it is undefined in the generated spec'
     )
   }
   if (!/\bexpect\s*\(/.test(code)) {

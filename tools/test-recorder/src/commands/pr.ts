@@ -1,11 +1,9 @@
-import { existsSync, readFileSync } from 'node:fs'
-import { basename, isAbsolute, join, relative } from 'node:path'
+import { existsSync } from 'node:fs'
+import { basename, isAbsolute, join } from 'node:path'
 import pc from 'picocolors'
 import { findProjectRoot } from '../recorder/runner'
-import { checkGhAvailable, createPr } from '../pr/gh'
-import { printManualInstructions } from '../pr/manual'
-import { copyToClipboard } from '../pr/clipboard'
-import { header, info } from '../ui/logger'
+import { openPr } from '../pr/openPr'
+import { header } from '../ui/logger'
 
 /** Opens a PR for an already-generated spec. */
 export async function runPr(
@@ -20,33 +18,15 @@ export async function runPr(
     : join(process.cwd(), filePath)
 
   if (!existsSync(absolute)) {
-    console.log(pc.red(`  No such file: ${absolute}`))
+    console.log(pc.red(`No such file: ${absolute}`))
     process.exit(1)
   }
 
   const testName = basename(absolute).replace(/\.spec\.ts$/, '')
-
-  const gh = await checkGhAvailable()
-  if (gh.available && gh.authenticated) {
-    await createPr({
-      testFilePath: absolute,
-      testName,
-      description: description ?? `Adds the ${testName} browser test.`,
-      cwd: projectRoot
-    })
-    return
-  }
-
-  const copied = await copyToClipboard(readFileSync(absolute, 'utf-8'))
-  if (!copied.ok) {
-    info([
-      'Could not copy to clipboard. File contents are at:',
-      pc.cyan(absolute)
-    ])
-  }
-  printManualInstructions({
+  await openPr({
     testFilePath: absolute,
     testName,
-    relativePath: relative(projectRoot, absolute).split('\\').join('/')
+    description: description ?? `Adds the ${testName} browser test.`,
+    projectRoot
   })
 }

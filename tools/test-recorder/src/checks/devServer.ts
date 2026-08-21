@@ -1,4 +1,4 @@
-import { devServerPort } from './devServerUrl'
+import { devServerPort, devServerUrl } from './devServerUrl'
 import { fail, info, pass, warn } from '../ui/logger'
 import type { CheckResult } from './types'
 
@@ -33,10 +33,10 @@ async function servesThisCheckout(
 }
 
 export async function checkDevServer(
-  port = devServerPort(),
+  url = devServerUrl(),
   projectRoot?: string
 ): Promise<CheckResult> {
-  const url = `http://localhost:${port}`
+  const port = devServerPort()
 
   let body: string
   try {

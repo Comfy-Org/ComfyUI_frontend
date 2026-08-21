@@ -2,10 +2,12 @@ interface TransformRule {
   name: string
   description: string
   pattern: RegExp
-  replacement: string | ((match: string, ...groups: string[]) => string)
+  replacement: string
   category: 'import' | 'fixture' | 'locator' | 'wait' | 'structure' | 'cleanup'
 }
 
+// Applied top to bottom. The specific page.* rules must precede
+// replace-bare-page, which would otherwise claim their matches first.
 export const transformRules: TransformRule[] = [
   {
     name: 'replace-test-import',
@@ -60,8 +62,8 @@ export const transformRules: TransformRule[] = [
   {
     name: 'replace-bare-page',
     description: 'Replace bare page references with comfyPage.page',
-    pattern: /(?<![\w.])page\./g,
-    replacement: 'comfyPage.page.',
+    pattern: /(?<![\w.])page\b/g,
+    replacement: 'comfyPage.page',
     category: 'locator'
   },
   {

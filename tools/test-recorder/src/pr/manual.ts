@@ -4,6 +4,7 @@ interface ManualPrOptions {
   testFilePath: string
   testName: string
   relativePath: string
+  copiedToClipboard?: boolean
   repoUrl?: string
 }
 
@@ -18,7 +19,9 @@ export function printManualInstructions(options: ManualPrOptions): void {
     `  1. Go to: ${repo}`,
     '  2. Click "Add file" → "Create new file"',
     `  3. Set path to: ${options.relativePath}`,
-    '  4. Paste the contents (copied to your clipboard ✅)',
+    options.copiedToClipboard === false
+      ? `  4. Paste the contents of ${options.testFilePath}`
+      : '  4. Paste the contents (copied to your clipboard ✅)',
     `  5. Write commit message: "test: add ${options.testName} e2e test"`,
     '  6. Select "Create a new branch" → click "Propose new file"',
     '  7. Click "Create pull request"',

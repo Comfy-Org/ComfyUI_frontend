@@ -48,6 +48,14 @@ export function readNvmrc(): string | undefined {
   }
 }
 
+const COMPARATORS: Record<string, (result: number) => boolean> = {
+  '>=': (result) => result >= 0,
+  '<=': (result) => result <= 0,
+  '>': (result) => result > 0,
+  '<': (result) => result < 0,
+  '=': (result) => result === 0
+}
+
 function parseVersion(version: string): number[] {
   return version
     .replace(/^v/, '')
@@ -79,17 +87,7 @@ export function satisfies(version: string, range: string): boolean {
 
     const [, operator = '=', target] = match
     const result = compare(actual, parseVersion(target))
-    const ok =
-      operator === '>='
-        ? result >= 0
-        : operator === '<='
-          ? result <= 0
-          : operator === '>'
-            ? result > 0
-            : operator === '<'
-              ? result < 0
-              : result === 0
-    if (!ok) return false
+    if (!COMPARATORS[operator](result)) return false
   }
   return true
 }

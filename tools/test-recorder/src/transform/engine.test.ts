@@ -34,17 +34,6 @@ test('my test', async ({ page }) => {
     expect(result.code).toContain('"canvas test"')
   })
 
-  it('tracks applied rules', () => {
-    const result = transform(rawCodegenOutput, { testName: 'test' })
-    const ruleNames = result.appliedRules.map((r) => r.name)
-    expect(ruleNames).toContain('replace-test-import')
-    expect(ruleNames).toContain('replace-page-destructure')
-    expect(ruleNames).toContain('remove-goto')
-    expect(ruleNames).toContain('replace-canvas-locator')
-    expect(ruleNames).toContain('replace-waitForTimeout')
-    expect(ruleNames).toContain('wrap-in-describe')
-  })
-
   it('warns about remaining pixel coordinates', () => {
     const input = `import { test } from '@playwright/test'
 

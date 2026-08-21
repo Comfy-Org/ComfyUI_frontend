@@ -1,7 +1,11 @@
 import { existsSync, readdirSync, statSync } from 'node:fs'
 import { dirname, join, parse } from 'node:path'
 import pc from 'picocolors'
-import { generateRecordingTemplate, cleanupRecordingTemplate } from './template'
+import {
+  RECORDING_SPEC_BASENAME,
+  cleanupRecordingTemplate,
+  generateRecordingTemplate
+} from './template'
 import { runCommand } from '../cli/run'
 import { devServerUrl } from '../checks/devServerUrl'
 import { box } from '../ui/logger'
@@ -14,7 +18,6 @@ interface RunnerOptions {
 
 interface RecordingResult {
   success: boolean
-  rawOutputPath?: string
   error?: string
 }
 
@@ -98,7 +101,7 @@ export async function runRecording(
         'exec',
         'playwright',
         'test',
-        '_recording-session',
+        RECORDING_SPEC_BASENAME,
         '--headed',
         '--project=chromium',
         '--timeout=0'
@@ -135,13 +138,7 @@ export async function runRecording(
     console.log(pc.green('  ✅ Recording session complete.'))
     console.log()
 
-    const rawOutputPath = join(
-      browserTestsDir,
-      'tests',
-      `${options.testName}.raw.spec.ts`
-    )
-
-    return { success: true, rawOutputPath }
+    return { success: true }
   } catch (err) {
     return {
       success: false,

@@ -6,26 +6,25 @@ interface TemplateOptions {
   testName: string
 }
 
-/**
- * Generates a temporary test file that uses page.pause() to open
- * the Playwright Inspector with codegen controls.
- *
- * The test file:
- * 1. Uses comfyPageFixture to get full fixture context
- * 2. Optionally loads a workflow
- * 3. Calls page.pause() to open the Inspector
- */
+export const RECORDING_SPEC_BASENAME = '_recording-session'
+const RECORDING_SPEC_FILENAME = `${RECORDING_SPEC_BASENAME}.spec.ts`
+
+function recordingSpecPath(browserTestsDir: string): string {
+  return join(browserTestsDir, 'tests', RECORDING_SPEC_FILENAME)
+}
+
 export function generateRecordingTemplate(
   options: TemplateOptions,
   browserTestsDir: string
 ): string {
-  const filePath = join(browserTestsDir, 'tests', `_recording-session.spec.ts`)
+  const filePath = recordingSpecPath(browserTestsDir)
 
+  // Asset names come off disk, so they are quoted rather than hand-escaped.
   const workflowLine = options.workflow
-    ? `  // Load the selected workflow\n  await comfyPage.workflow.loadWorkflow('${options.workflow.replace(/'/g, "\\'")}')\n  await comfyPage.nextFrame()\n`
+    ? `  await comfyPage.workflow.loadWorkflow(${JSON.stringify(options.workflow)})\n  await comfyPage.nextFrame()\n`
     : ''
 
-  const safeName = options.testName.replace(/[`$\\]/g, '')
+  const safeName = JSON.stringify(`recording: ${options.testName}`)
 
   const code = `/**
  * Auto-generated recording session.
@@ -38,7 +37,7 @@ import {
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
 
-test('recording: ${safeName}', async ({ comfyPage }) => {
+test(${safeName}, async ({ comfyPage }) => {
 ${workflowLine}
   // ┌────────────────────────────────────────────────────────┐
   // │ The Playwright Inspector will open.                     │
@@ -59,11 +58,8 @@ ${workflowLine}
   return filePath
 }
 
-/**
- * Clean up the temporary recording file.
- */
 export function cleanupRecordingTemplate(browserTestsDir: string): void {
-  const filePath = join(browserTestsDir, 'tests', '_recording-session.spec.ts')
+  const filePath = recordingSpecPath(browserTestsDir)
   try {
     unlinkSync(filePath)
   } catch {

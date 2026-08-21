@@ -1,5 +1,5 @@
 import { createInterface } from 'node:readline'
-import { writeFileSync, mkdirSync, readFileSync } from 'node:fs'
+import { writeFileSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import {
   text,
@@ -19,12 +19,10 @@ import {
 } from '../recorder/runner'
 import { transform, formatTransformSummary } from '../transform/engine'
 import { formatFile } from '../transform/format'
+import { openPr } from '../pr/openPr'
 import { runCommand } from '../cli/run'
 import { stepHeader } from '../ui/steps'
 import { pass, fail, info, blank, box } from '../ui/logger'
-import { checkGhAvailable, createPr } from '../pr/gh'
-import { printManualInstructions } from '../pr/manual'
-import { copyToClipboard } from '../pr/clipboard'
 
 function toSlug(description: string): string {
   return description
@@ -82,11 +80,15 @@ export async function runRecord(): Promise<void> {
   s.start('Installing dependencies...')
   const install = runCommand('pnpm', ['install'], {
     cwd: projectRoot,
-    stdio: 'pipe'
+    stdio: 'pipe',
+    maxBuffer: Infinity
   })
-  if (install.status !== 0) {
+  if (install.error || install.status !== 0) {
     s.stop('Dependency installation failed')
-    fail('pnpm install failed', install.stderr?.toString() ?? '')
+    fail(
+      'pnpm install failed',
+      install.error?.message ?? install.stderr?.toString() ?? ''
+    )
     process.exit(1)
   }
   s.stop('Dependencies installed')
@@ -96,7 +98,8 @@ export async function runRecord(): Promise<void> {
 
   const description = await text({
     message: 'What are you testing?',
-    placeholder: 'e.g., adding a KSampler node and queuing'
+    placeholder: 'e.g., adding a KSampler node and queuing',
+    validate: (value) => (value.trim() ? undefined : 'Describe the test.')
   })
   if (isCancel(description)) {
     cancel('Operation cancelled')
@@ -115,7 +118,9 @@ export async function runRecord(): Promise<void> {
   if (!filenameOk) {
     const customName = await text({
       message: 'Enter a custom filename (without .spec.ts):',
-      placeholder: slug
+      placeholder: slug,
+      validate: (value) =>
+        toSlug(value) ? undefined : 'Use letters or numbers.'
     })
     if (isCancel(customName)) {
       cancel('Operation cancelled')
@@ -256,37 +261,12 @@ export async function runRecord(): Promise<void> {
   }
 
   if (wantPr) {
-    const gh = await checkGhAvailable()
-    if (gh.available && gh.authenticated) {
-      const created = await createPr({
-        testFilePath: outputPath,
-        testName: slug,
-        description: description as string,
-        cwd: projectRoot
-      })
-      if (!created.success && created.needsManualSteps) {
-        printManualInstructions({
-          testFilePath: outputPath,
-          testName: slug,
-          relativePath: `browser_tests/tests/${slug}.spec.ts`
-        })
-      }
-    } else {
-      const fileContents = readFileSync(outputPath, 'utf-8')
-      const copied = await copyToClipboard(fileContents)
-      if (!copied.ok) {
-        info([
-          'Could not copy to clipboard. File contents are at:',
-          pc.cyan(outputPath)
-        ])
-      }
-      const relativePath = `browser_tests/tests/${slug}.spec.ts`
-      printManualInstructions({
-        testFilePath: outputPath,
-        testName: slug,
-        relativePath
-      })
-    }
+    await openPr({
+      testFilePath: outputPath,
+      testName: slug,
+      description: description,
+      projectRoot
+    })
   } else {
     blank()
     info(['You can create a PR later.', pc.dim(`Test file: ${outputPath}`)])

@@ -23,9 +23,14 @@ interface PrResult {
 export async function checkGhAvailable(): Promise<{
   available: boolean
   authenticated: boolean
+  version?: string
 }> {
+  let version: string
   try {
-    execSync('gh --version', { stdio: 'pipe' })
+    version = execSync('gh --version', { stdio: 'pipe', encoding: 'utf-8' })
+      .split('\n')[0]
+      .replace('gh version ', '')
+      .trim()
   } catch {
     return { available: false, authenticated: false }
   }
@@ -35,9 +40,9 @@ export async function checkGhAvailable(): Promise<{
       stdio: 'pipe',
       encoding: 'utf-8'
     })
-    return { available: true, authenticated: true }
+    return { available: true, authenticated: true, version }
   } catch {
-    return { available: true, authenticated: false }
+    return { available: true, authenticated: false, version }
   }
 }
 
@@ -49,16 +54,22 @@ export async function createPr(options: PrOptions): Promise<PrResult> {
     `${options.description}\n\n---\n\n` + 'Recorded with `comfy-test record`'
 
   // Pinned to the repo, not to wherever the shell is sitting.
-  const run = (command: string, args: string[]) =>
-    spawnSync(command, args, {
+  const run = (command: string, args: string[]) => {
+    const result = spawnSync(command, args, {
       cwd: options.cwd,
       encoding: 'utf-8',
       stdio: 'pipe'
     })
+    return {
+      status: result.error ? null : result.status,
+      stdout: result.stdout ?? '',
+      stderr: result.error?.message ?? result.stderr ?? ''
+    }
+  }
 
   // The branch is cut from HEAD, so anything already there rides along.
   const ahead = run('git', ['rev-list', '--count', `${DEFAULT_BASE_REF}..HEAD`])
-  const aheadCount = Number(ahead.stdout?.trim())
+  const aheadCount = Number(ahead.stdout.trim())
   if (ahead.status === 0 && Number.isFinite(aheadCount) && aheadCount > 0) {
     warn(
       'Unrelated commits',
