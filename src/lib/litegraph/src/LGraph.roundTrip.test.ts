@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeAll, describe, expect, test } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -79,11 +80,17 @@ interface RoundTripFixture {
 }
 
 const fixtures: RoundTripFixture[] = [
-  { name: 'linked nodes', graph: linkedNodes as unknown as ISerialisedGraph },
-  { name: 'floating link', graph: floatingLink as unknown as ISerialisedGraph },
+  {
+    name: 'linked nodes',
+    graph: fromAny<ISerialisedGraph, unknown>(linkedNodes)
+  },
+  {
+    name: 'floating link',
+    graph: fromAny<ISerialisedGraph, unknown>(floatingLink)
+  },
   {
     name: 'complex reroutes',
-    graph: reroutesComplex as unknown as ISerialisedGraph
+    graph: fromAny<ISerialisedGraph, unknown>(reroutesComplex)
   }
 ]
 
@@ -123,20 +130,12 @@ function ascending(a: number | string, b: number | string) {
   return String(a).localeCompare(String(b), undefined, { numeric: true })
 }
 
-interface SerialisedReroute {
-  id: number
-  parentId?: number
-  pos?: [number, number]
-  linkIds?: number[]
-  floating?: unknown
-}
-
 /**
  * Compared whole. Ids alone survive a regression that flattens every
  * `parentId`, empties every `linkIds`, or resets every `pos` — which is most of
  * what the reroute fixture is for.
  */
-function rerouteKeys(graph: { extra?: { reroutes?: SerialisedReroute[] } }) {
+function rerouteKeys(graph: Pick<ISerialisedGraph, 'extra'>) {
   return (graph.extra?.reroutes ?? [])
     .map((reroute) =>
       JSON.stringify({
@@ -154,9 +153,7 @@ function rerouteKeys(graph: { extra?: { reroutes?: SerialisedReroute[] } }) {
  * Reroute-to-link association is not on the link in schema 0.4 — `serialize()`
  * rebuilds it into `extra.linkExtensions`, so it needs its own assertion.
  */
-function linkExtensionKeys(graph: {
-  extra?: { linkExtensions?: { id: number; parentId?: number }[] }
-}) {
+function linkExtensionKeys(graph: Pick<ISerialisedGraph, 'extra'>) {
   return (graph.extra?.linkExtensions ?? [])
     .map((ext) =>
       JSON.stringify({ id: ext.id, parentId: ext.parentId ?? null })
