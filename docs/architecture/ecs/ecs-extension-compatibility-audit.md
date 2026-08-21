@@ -44,14 +44,14 @@ replacement rather than a transient empty input.
 
 ## Deprecated compatibility behavior
 
-| Surface                                 | Read behavior                                                                   | Write / migration behavior                                                                                                     |
-| --------------------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `graph.links[id]`                       | Proxy-backed indexed access remains temporarily.                                | Use `graph.links.get(id)` and normal `Map` iteration.                                                                          |
-| `input.link`                            | Returns the current store-derived ID or `null` and emits deprecation telemetry. | Assignment is ignored. Use `isInputConnected()`, `getInputLink()`, `connect()`, or `disconnectInput()`.                        |
-| `output.links`                          | Returns a fresh frozen ID array or `null` and emits telemetry.                  | Assignment and array mutation cannot change topology. Use node queries, `outputLinks()`, `connect()`, or `disconnectOutput()`. |
-| `node.badgePosition`                    | Returns the fixed top-right position.                                           | Assignment is ignored; badges always render top-right.                                                                         |
-| `LGraphCanvas.repositionNodesVueMode()` | Alias remains callable.                                                         | Use `applyNodePositions()`.                                                                                                    |
-| Graph `onBeforeChange`                  | Hook remains declared.                                                          | Prefer `LGraphCanvas.onBeforeChange`; graph hook is scheduled for removal.                                                     |
+| Surface                                 | Read behavior                                                                   | Write / migration behavior                                                                         |
+| --------------------------------------- | ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `graph.links[id]`                       | Proxy-backed indexed access remains temporarily.                                | Use `graph.links.get(id)` and normal `Map` iteration.                                              |
+| `input.link`                            | Returns the current store-derived ID or `null` and emits deprecation telemetry. | Assigning `null` disconnects; ID assignment is ignored. Prefer `connect()` or `disconnectInput()`. |
+| `output.links`                          | Returns a stable store-derived ID view or `null` and emits telemetry.           | Removing IDs disconnects; additions are discarded. Prefer `connect()` or `disconnectOutput()`.     |
+| `node.badgePosition`                    | Returns the fixed top-right position.                                           | Assignment is ignored; badges always render top-right.                                             |
+| `LGraphCanvas.repositionNodesVueMode()` | Alias remains callable.                                                         | Use `applyNodePositions()`.                                                                        |
+| Graph `onBeforeChange`                  | Hook remains declared.                                                          | Prefer `LGraphCanvas.onBeforeChange`; graph hook is scheduled for removal.                         |
 
 Serialized slot `link`/`links` fields are still emitted for workflow
 compatibility, but constructors strip those mirrors before rebuilding topology.
@@ -91,8 +91,9 @@ import-boundary rules are in
 
 Topology is authoritative in `linkStore`; slot mirrors no longer drive links.
 Callback code reading the deprecated accessors sees current store state. Code
-that used `input.link = ...`, `output.links.push(...)`, or replacement of either
-property is now a no-op and must move to graph/node mutation APIs.
+that clears `input.link` or removes IDs from `output.links` is routed through
+topology operations for compatibility. Adding a link ID remains a no-op and
+must move to `connect()`, which has the endpoint context needed to create it.
 
 ### Node shell properties and enumeration
 
@@ -118,7 +119,7 @@ Derived first-party rows are recomputed on read; extension entries remain on
 
 - `widgets_up` is detected and warned about but is not supported by the Vue
   renderer. Use normal widget ordering/layout.
-- Direct mutation of `input.link` or `output.links` is unsupported.
+- ID-only additions through `input.link` or `output.links` are unsupported.
 - Treating `LinkMap` as a native Map with internal slots, retaining iterators
   across topology revisions, or assuming `set()` cannot reject is unsupported.
 - Constructing a root graph without active Pinia is unsupported.

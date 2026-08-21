@@ -370,7 +370,7 @@ export interface INodeInputSlot extends INodeSlot {
    * `node.getInputLink(slot)`; mutate via `node.connect()` /
    * `node.disconnectInput()`.
    */
-  readonly link?: LinkId | null
+  link?: LinkId | null
   widget?: IWidgetLocator
   widgetId?: WidgetId
   alwaysVisible?: boolean
@@ -392,7 +392,7 @@ export interface INodeOutputSlot extends INodeSlot {
    * `node.getOutputNodes(slot)`; mutate via `node.connect()` /
    * `node.disconnectOutput()`.
    */
-  readonly links?: readonly LinkId[] | null
+  links?: LinkId[] | null
   _data?: unknown
   slot_index?: SlotIndex
 }

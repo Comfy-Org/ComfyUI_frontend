@@ -21,9 +21,9 @@ export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
   alwaysVisible?: boolean
 
   /**
-   * @deprecated Reads return the store-derived link id; writes fire telemetry
-   * and are ignored, since the store cannot be mutated through the mirror.
-   * First-party code uses the slotLinks helpers.
+   * @deprecated Reads return the store-derived link id. Assigning null
+   * disconnects through the store; assigning an id is ignored. First-party
+   * code uses the slotLinks helpers and node topology methods.
    */
   get link(): LinkId | null {
     warnDeprecated(
@@ -32,10 +32,12 @@ export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
     return linkIdOf(this)
   }
 
-  set link(_value: LinkId | null) {
+  set link(value: LinkId | null) {
     warnDeprecated(
-      'Assignment to input.link is deprecated and has no effect; connectivity is derived from the link store. Mutate via node.connect() / node.disconnectInput().'
+      'Assignment to input.link is deprecated; null disconnects through the link store. Mutate via node.connect() / node.disconnectInput().'
     )
+    const slot = indexOf(this)
+    if (value === null && slot !== -1) this._node.disconnectInput(slot)
   }
 
   get isWidgetInputSlot(): boolean {
