@@ -50,10 +50,14 @@ describe('LGraphNode node-data adoption', () => {
     const { subgraph, node } = addNodeToSubgraph()
 
     const title = computed(() => statesIn(subgraph)[0]?.title)
+    const boxcolor = computed(() => statesIn(subgraph)[0]?.boxcolor)
 
     node.title = 'Renamed'
+    node.boxcolor = '#778899'
     expect(title.value).toBe('Renamed')
+    expect(boxcolor.value).toBe('#778899')
     expect(node.title).toBe('Renamed')
+    expect(node.boxcolor).toBe('#778899')
 
     node.flags.collapsed = true
     expect(statesIn(subgraph)[0]?.flags.collapsed).toBe(true)
@@ -73,8 +77,9 @@ describe('LGraphNode node-data adoption', () => {
     expect(Object.hasOwn(node, 'inputs')).toBe(true)
     expect(Object.hasOwn(node, 'outputs')).toBe(true)
     expect(Object.hasOwn(node, 'widgets')).toBe(true)
+    expect(Object.hasOwn(node, 'boxcolor')).toBe(true)
     expect(Object.keys(node)).toEqual(
-      expect.arrayContaining(['inputs', 'outputs', 'widgets'])
+      expect.arrayContaining(['inputs', 'outputs', 'widgets', 'boxcolor'])
     )
     expect(node.inputs).toBe(inputs)
     expect(node.outputs).toBe(outputs)

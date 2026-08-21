@@ -221,3 +221,30 @@ The smallest safe sequence follows the serialization dependencies:
 
 This ordering does not require a universal ECS world, command replay, or a new
 undo model.
+
+## Progress record
+
+Each concern is completed in its own commit. The order follows the dependency
+sequence above rather than the summary-table order.
+
+| Sequence | Concern                             | Status      | Commit      | Result                                                                               |
+| -------- | ----------------------------------- | ----------- | ----------- | ------------------------------------------------------------------------------------ |
+| 1        | Remaining node visuals              | Complete    | This commit | `boxcolor` moved into `NodeState` with an enumerable tracked compatibility accessor. |
+| 2        | Node ordering                       | Not started |             |                                                                                      |
+| 3        | Outputs and transient previews      | Not started |             |                                                                                      |
+| 4        | Preview-exposure persistence        | Not started |             |                                                                                      |
+| 5        | Widget and preview-exposure cleanup | Not started |             |                                                                                      |
+| 6        | Graph metadata                      | Not started |             |                                                                                      |
+| 7        | Entity ID allocation                | Not started |             |                                                                                      |
+| 8        | Graph and subgraph definitions      | Not started |             |                                                                                      |
+| 9        | Legacy node geometry projection     | Not started |             |                                                                                      |
+| 10       | Plain slot descriptors              | Not started |             |                                                                                      |
+| 11       | Group presentation                  | Not started |             |                                                                                      |
+| 12       | Link non-topological state          | Not started |             |                                                                                      |
+| 13       | Node properties                     | Not started |             |                                                                                      |
+| 14       | Unknown-node fallback               | Not started |             |                                                                                      |
+| 15       | Delayed widget restoration          | Not started |             |                                                                                      |
+| 16       | Extension persistence adapter       | Not started |             |                                                                                      |
+| 17       | Execution order                     | Not started |             |                                                                                      |
+| 18       | Graph invalidation                  | Not started |             |                                                                                      |
+| 19       | Store-driven serialization          | Not started |             |                                                                                      |
