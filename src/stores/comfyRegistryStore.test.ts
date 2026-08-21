@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import type { ComputedRef } from 'vue'
+import { computed, ref } from 'vue'
 
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
@@ -67,7 +68,7 @@ const mockListResult: operations['listAllNodes']['responses'][200]['content']['a
 
 describe('useComfyRegistryStore', () => {
   let mockRegistryService: {
-    isLoading: ReturnType<typeof ref<boolean>>
+    isLoading: ComputedRef<boolean>
     error: ReturnType<typeof ref<string | null>>
     listAllPacks: ReturnType<typeof vi.fn>
     getPackById: ReturnType<typeof vi.fn>
@@ -83,7 +84,7 @@ describe('useComfyRegistryStore', () => {
 
   beforeEach(() => {
     mockRegistryService = {
-      isLoading: ref(false),
+      isLoading: computed(() => false),
       error: ref(null),
       listAllPacks: vi.fn().mockImplementation((params) => {
         // If node_id is provided, return specific nodes
