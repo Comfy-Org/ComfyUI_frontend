@@ -186,6 +186,51 @@ describe('FeaturedCarousel02', () => {
     expect(activeDotTitle()).toBe('Slide B')
   })
 
+  it('adopts the nearest snapped slide after a user scroll settles', async () => {
+    const { container } = render(FeaturedCarousel02, {
+      props: { slides: makeSlides() }
+    })
+    await nextTick()
+
+    // The scroll-snap track has no ARIA role, so reach it by class.
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    const track = container.querySelector('.snap-x') as HTMLElement
+    expect(track).toBeTruthy()
+
+    // happy-dom has no layout, so give the slides deterministic offsets and
+    // report a scroll position that lands nearest the third slide.
+    // eslint-disable-next-line testing-library/no-node-access
+    Array.from(track.children).forEach((child, index) => {
+      Object.defineProperty(child, 'offsetLeft', {
+        value: index * 300,
+        configurable: true
+      })
+    })
+    track.scrollLeft = 600
+    track.dispatchEvent(new Event('scroll'))
+
+    // The sync is debounced (150ms) so intermediate smooth-scrolls don't
+    // flick the active index.
+    await advance(150)
+    expect(activeDotTitle()).toBe('Slide C')
+  })
+
+  it('resumes autoplay when keyboard focus leaves the carousel', async () => {
+    const user = setupUser()
+    render(FeaturedCarousel02, { props: { slides: makeSlides() } })
+    await nextTick()
+
+    // Keyboard focus on the first dot holds the carousel...
+    await user.tab()
+    await advance(20000)
+    expect(activeDotTitle()).toBe('Slide A')
+
+    // ...and once focus leaves the carousel entirely, autoplay resumes.
+    dot('Slide A').blur()
+    await advance(5000)
+    expect(activeDotTitle()).toBe('Slide B')
+  })
+
   it('renders nothing to navigate for an empty slides array', () => {
     render(FeaturedCarousel02, { props: { slides: [] } })
     expect(screen.queryByRole('heading')).toBeNull()
@@ -233,6 +278,38 @@ describe('FeaturedCarousel02', () => {
 
     expect(screen.getByText('Tag One')).toBeTruthy()
     expect(screen.getByText('Tag Two')).toBeTruthy()
+  })
+
+  it('opens a new-tab primary CTA and a same-tab secondary CTA', () => {
+    render(FeaturedCarousel02, {
+      props: {
+        slides: [
+          {
+            id: 'ctas',
+            media: {
+              type: 'image',
+              src: 'https://example.com/ctas.png',
+              alt: 'CTAs'
+            },
+            title: 'CTA slide',
+            primaryCta: {
+              label: 'Open externally',
+              href: 'https://example.com/',
+              newTab: true
+            },
+            secondaryCta: { label: 'Stay here', href: '/internal' }
+          }
+        ]
+      }
+    })
+
+    const primary = screen.getByRole('link', { name: 'Open externally' })
+    expect(primary.getAttribute('target')).toBe('_blank')
+    expect(primary.getAttribute('rel')).toBe('noopener noreferrer')
+
+    const secondary = screen.getByRole('link', { name: 'Stay here' })
+    expect(secondary.getAttribute('target')).toBeNull()
+    expect(secondary.getAttribute('rel')).toBeNull()
   })
 
   it('mounts the video only on the active slide and shows posters elsewhere', async () => {
