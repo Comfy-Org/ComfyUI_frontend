@@ -1996,9 +1996,14 @@ export class ComfyApp {
             ? parseJsonWithNonFinite<ComfyApiWorkflow>(prompt)
             : prompt
         if (this.isApiJson(promptObj)) {
-          await this.loadApiJson(promptObj, fileName, {
-            deferWarnings: options?.deferWarnings
-          })
+          try {
+            await this.loadApiJson(promptObj, fileName, {
+              deferWarnings: options?.deferWarnings
+            })
+          } catch (err) {
+            console.error('Failed to load API prompt:', err)
+            this.showErrorOnFileLoad(file)
+          }
           return
         }
       } catch (err) {
