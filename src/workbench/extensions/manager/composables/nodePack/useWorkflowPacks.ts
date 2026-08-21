@@ -116,7 +116,7 @@ const _useWorkflowPacks = () => {
    * as unresolved so downstream consumers can surface them to the user.
    */
   const getWorkflowPacks = async () => {
-    if (!app.rootGraph) {
+    if (!app.isGraphReady) {
       workflowPacks.value = []
       unresolvedNodeNames.value = []
       return

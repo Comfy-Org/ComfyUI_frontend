@@ -42,6 +42,7 @@ const mockEmptyWorkflowDialog = vi.hoisted(() => {
 
 vi.mock('@/scripts/app', () => ({
   app: {
+    isGraphReady: true,
     rootGraph: { extra: {}, nodes: [{ id: 1 }], events: new EventTarget() }
   }
 }))
@@ -786,6 +787,10 @@ describe('appModeStore', () => {
         JSON.stringify(originalRootGraph.extra.linearData)
       )
       Object.defineProperty(app, 'rootGraph', { value: null, writable: true })
+      Object.defineProperty(app, 'isGraphReady', {
+        value: false,
+        writable: true
+      })
 
       try {
         store.selectedOutputs.push(toNodeId(1))
@@ -793,6 +798,10 @@ describe('appModeStore', () => {
       } finally {
         Object.defineProperty(app, 'rootGraph', {
           value: originalRootGraph,
+          writable: true
+        })
+        Object.defineProperty(app, 'isGraphReady', {
+          value: true,
           writable: true
         })
       }

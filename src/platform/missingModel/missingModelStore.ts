@@ -70,7 +70,7 @@ export const useMissingModelStore = defineStore('missingModel', () => {
   )
 
   const activeMissingModelGraphIds = computed<Set<string>>(() => {
-    if (!app.rootGraph) return new Set()
+    if (!app.isGraphReady) return new Set()
     return getActiveGraphNodeIds(
       app.rootGraph,
       canvasStore.currentGraph ?? app.rootGraph,

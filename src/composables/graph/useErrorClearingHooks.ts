@@ -60,7 +60,7 @@ type OriginalCallbacks = {
 const originalCallbacks = new WeakMap<LGraphNode, OriginalCallbacks>()
 
 function getRemovedNodeExecutionId(graph: LGraph, nodeId: NodeId): string {
-  if (!app.rootGraph) return String(nodeId)
+  if (!app.isGraphReady) return String(nodeId)
 
   return (
     getExecutionIdForNodeInGraph(app.rootGraph, graph, nodeId) ?? String(nodeId)
@@ -80,7 +80,7 @@ function installNodeHooks(node: LGraphNode): void {
     node.onConnectionsChange,
     function (type, slotIndex, isConnected) {
       if (type !== NodeSlotType.INPUT) return
-      if (!app.rootGraph) return
+      if (!app.isGraphReady) return
       const slotName = node.inputs?.[slotIndex]?.name
       if (!slotName) return
       const execId = getExecutionIdByNode(app.rootGraph, node)
@@ -89,7 +89,7 @@ function installNodeHooks(node: LGraphNode): void {
         useExecutionErrorStore().clearSimpleNodeErrors(execId, slotName)
       }
       queueMicrotask(() => {
-        if (!app.rootGraph || ChangeTracker.isLoadingGraph) return
+        if (!app.isGraphReady || ChangeTracker.isLoadingGraph) return
         dropOutOfScopeMissingMedia()
         if (!isConnected) scanSingleNodeMedia(node)
       })
@@ -99,7 +99,7 @@ function installNodeHooks(node: LGraphNode): void {
   node.onWidgetChanged = useChainCallback(
     node.onWidgetChanged,
     function (name, newValue, _oldValue, widget) {
-      if (!app.rootGraph) return
+      if (!app.isGraphReady) return
       const hostExecId = getExecutionIdByNode(app.rootGraph, node)
       if (!hostExecId) return
 
@@ -161,7 +161,7 @@ function scanNodeErrorTargets(
   node: LGraphNode,
   scanNode: (node: LGraphNode) => void
 ): void {
-  if (!app.rootGraph) return
+  if (!app.isGraphReady) return
 
   if (node.isSubgraphNode?.() && node.subgraph) {
     scanNode(node)
@@ -176,7 +176,7 @@ function scanNodeErrorTargets(
 }
 
 function getActiveExecutionId(node: LGraphNode): string | null {
-  if (!app.rootGraph) return null
+  if (!app.isGraphReady) return null
   // Skip when any enclosing subgraph is muted/bypassed. Callers only
   // verify each node's own mode; entering a bypassed subgraph (via
   // useGraphNodeManager replaying onNodeAdded for existing interior
@@ -204,7 +204,7 @@ function scanSingleNodeModelsAndTypes(
   pendingVerifications?: Promise<void>[],
   signal?: AbortSignal
 ): void {
-  if (!app.rootGraph) return
+  if (!app.isGraphReady) return
   const execId = getActiveExecutionId(node)
   if (!execId) return
 
@@ -257,7 +257,7 @@ function scanSingleNodeMedia(
   pendingVerifications?: Promise<void>[],
   signal?: AbortSignal
 ): void {
-  if (!app.rootGraph) return
+  if (!app.isGraphReady) return
   if (!getActiveExecutionId(node)) return
 
   const mediaCandidates = scanNodeMediaCandidates(app.rootGraph, node, isCloud)
@@ -381,7 +381,12 @@ function scanAddedNode(
   node: LGraphNode,
   scanNode: (node: LGraphNode) => void
 ): void {
-  if (app.rootGraph !== rootGraph || ChangeTracker.isLoadingGraph) return
+  if (
+    !app.isGraphReady ||
+    app.rootGraph !== rootGraph ||
+    ChangeTracker.isLoadingGraph
+  )
+    return
   if (isNodeInactive(node.mode)) return
   scanNodeErrorTargets(node, scanNode)
 }
@@ -465,7 +470,7 @@ function handleNodeModeChange(
   oldMode: number,
   newMode: number
 ): void {
-  if (!app.rootGraph) return
+  if (!app.isGraphReady) return
 
   const wasInactive = isNodeInactive(oldMode)
   const isNowInactive = isNodeInactive(newMode)
@@ -494,7 +499,7 @@ function handleNodeModeChange(
 }
 
 function scanAncestorSubgraphHosts(execId: string): void {
-  if (!app.rootGraph) return
+  if (!app.isGraphReady) return
   for (const ancestorId of getParentExecutionIds(execId)) {
     if (!isExecutionPathActive(app.rootGraph, ancestorId)) continue
     const ancestor = getNodeByExecutionId(app.rootGraph, ancestorId)
@@ -527,7 +532,7 @@ function removeNodeErrors(node: LGraphNode, execId: string): void {
 
 /** Removes candidates whose widget is no longer the editable value owner. */
 function dropOutOfScopeMissingMedia(): void {
-  if (!app.rootGraph || ChangeTracker.isLoadingGraph) return
+  if (!app.isGraphReady || ChangeTracker.isLoadingGraph) return
 
   const mediaStore = useMissingMediaStore()
   const candidates = mediaStore.missingMediaCandidates
@@ -563,7 +568,7 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
     rescanHost: (subgraphNode) =>
       scanNodeErrorTargets(subgraphNode, scanSingleNodeMedia),
     removeHostWidgetCandidate: (subgraphNode, widgetName) => {
-      if (!app.rootGraph) return
+      if (!app.isGraphReady) return
       const executionId = getExecutionIdByNode(app.rootGraph, subgraphNode)
       if (!executionId) return
       useMissingMediaStore().removeMissingMediaByWidget(executionId, widgetName)
