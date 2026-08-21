@@ -70,7 +70,37 @@ describe("runtime: an op kind this build does not know", () => {
     ] as unknown as Op[];
     const result = applyOps(doc, ops, catalog);
     expect(result.failed?.index).toBe(0);
+    // Pin the CODE, not just the index: without this, removing the
+    // `unknown_op` reject from `validateEnvelope` leaves this test green
+    // (the op then falls through to `dispatch`'s `assertNever`, which also
+    // fails at index 0).
+    expect(result.failed?.code).toBe("unknown_op");
     expect(result.applied).toEqual([]);
+  });
+
+  it("keeps the VALID PREFIX applied — the doc is byte-identical only when the unknown op is first", () => {
+    // README's "an op kind this build does not know" paragraph used to say the
+    // batch "applies nothing" and leaves the doc "byte-identical", full stop.
+    // That is true only at index 0. Vocabulary §4 is abort-remainder, not
+    // all-or-nothing: ops before the failure stay applied. Pinned so the prose
+    // and the behaviour cannot drift apart again.
+    const doc = mint(emptyWorkflow, catalog, "sha");
+    const node = { id: 1, type: "KSampler", pos: [0, 0], size: [1, 1], widgets_values: [] };
+    const ops = [
+      { op: "add_node", ...env("p"), node_id: 1, node },
+      { op: "future_op", ...env("q") },
+      { op: "add_node", ...env("r"), node_id: 2, node: { ...node, id: 2 } },
+    ] as unknown as Op[];
+
+    const before = bytes(doc);
+    const result = applyOps(doc, ops, catalog);
+
+    expect(result.failed?.index).toBe(1);
+    expect(result.failed?.code).toBe("unknown_op");
+    expect(result.applied).toEqual(["p"]); // the prefix DID apply
+    expect(bytes(doc)).not.toBe(before); // so the doc is NOT byte-identical
+    expect([...doc.getMap("nodes").keys()]).toEqual(["1"]); // op 2 never ran
+    expect(result.version).toBe(1);
   });
 
   it("still degrades to [op.op] in writeTarget — the documented tolerant fallback", () => {

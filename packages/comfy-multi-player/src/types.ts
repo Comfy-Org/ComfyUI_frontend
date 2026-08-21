@@ -65,7 +65,13 @@ export type FrozenOpKind = (typeof FROZEN_OPS)[number];
 /** A kind the vocabulary defines but this package rejects (§1.6). */
 export type DeferredOpKind = (typeof DEFERRED_OPS)[number];
 
-/** A kind legal inside a multi-op batch. */
+/**
+ * A kind comfy-cli's `apply_specs` **authoring** surface accepts in a spec
+ * batch (§1). NOT a statement about `applyOps`, which is the replay surface
+ * and imposes no kind restriction — see {@link BATCHABLE_OPS} above, and
+ * `test/batch-policy.test.ts`, which pins that `applyOps` applies a
+ * non-batchable `clear` inside a multi-op batch.
+ */
 export type BatchableOpKind = (typeof BATCHABLE_OPS)[number];
 
 // ---------------------------------------------------------------------------

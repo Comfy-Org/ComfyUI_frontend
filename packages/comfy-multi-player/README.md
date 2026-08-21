@@ -128,16 +128,24 @@ building conflict UI or your own bookkeeping — `applyOps` uses them internally
 `initDoc`, `nodesMap`, `linksMap`, `definitionsMap`, `metaMap`, `appliedMap`,
 `stampsMap`, `createNodeMap`, `resolveDefinition`, `countDefinitionInstances`,
 `OPAQUE_WIDGETS_KEY`, `isOpaqueWidgets`, `WIDGET_STORAGE_STRATEGIES`,
-`widgetStorageFor`, `widgetStorageOf`. Reading the document directly is
-supported; writing to it outside `applyOps` is not.
+`WidgetStorage`, `widgetStorageFor`, `widgetStorageOf`. Reading the document
+directly is supported; writing to it outside `applyOps` is not.
 
 A node's widget values are stored one of two ways — `named` (the name-keyed
 `widgets` map) or `opaque` (the whole `widgets_values` array verbatim, for a
 class the pinned catalog cannot describe). `widgetStorageFor(widgets_values,
 widget_order)` answers which one a payload needs before it is written;
 `widgetStorageOf(node)` answers which one a node already in the doc is using.
-Switch on the returned `WidgetStorage` rather than sniffing keys, so adding a
-third strategy is a compile error in your code too.
+Switch on the returned `WidgetStorage` rather than sniffing keys, so a third
+strategy is a change you can find rather than a key nobody checked. Note that a
+bare exhaustive `switch` does **not** become a compile error when the union
+widens — TypeScript only reports that if you end the `switch` in a `never`
+assertion, and this package does not export one (`src/exhaustive.ts` is
+internal). Supply your own one-liner if you want the guard:
+
+```ts
+const _exhaustive: never = storage; // fails to compile on a new strategy
+```
 
 ## Ops
 
@@ -173,8 +181,10 @@ the union cannot drift apart silently.
 
 An op kind this build does not know — one minted by a peer built against a
 newer vocabulary — is **rejected loudly**, never silently dropped: `applyOps`
-returns `failed.code === "unknown_op"`, applies nothing, and aborts the
-remainder of the batch (the doc is byte-identical afterwards).
+returns `failed.code === "unknown_op"`, that op applies nothing and consumes no
+`op_id`, and the remainder of the batch is abandoned. Ops **before** it in the
+batch stay applied, per "Batches abort the remainder" below; the document is
+byte-identical only when the unknown op is the first in the batch.
 
 **"Batchable" is an authoring-surface rule, and `applyOps` does not enforce
 it.** The column above is comfy-cli's: `clear` and `reset_doc` rewrite the whole
