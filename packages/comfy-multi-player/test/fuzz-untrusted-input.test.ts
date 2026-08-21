@@ -226,7 +226,7 @@ describe("saved untrusted-input regression corpus", () => {
   // amendment A8) now covers it: a cycle exceeds MAX_PAYLOAD_DEPTH before it
   // can exhaust the stack. The size/cost half of #14 is still open, so the
   // corpus cases above stay pinned with `it.fails`.
-  it("#14: cyclic-ish node payload is rejected before cloning/storage", () => {
+  it("#14: cyclic node payload is rejected before cloning/storage", () => {
     const cycle: Record<string, unknown> = {};
     cycle["self"] = cycle;
     const doc = mint(emptyWorkflow, catalog);

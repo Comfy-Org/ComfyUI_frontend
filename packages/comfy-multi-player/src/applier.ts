@@ -36,20 +36,22 @@
  *
  * The digest canonicalizer first bounds the depth and shape of the WHOLE op
  * envelope before the idempotency gate. Separately, a value that reaches a
- * write must be storable by its destination Yjs type, not merely
- * structured-cloneable ({@link isStorableMapValue} /
- * {@link isStorableArrayItem}), and `delete_node`'s `removed_links` must be
+ * write must be encodable by its destination Yjs type, not merely
+ * structured-cloneable ({@link mapValueRefusal} /
+ * {@link arrayItemRefusal}), and `delete_node`'s `removed_links` must be
  * iterable before the node is deleted. The first gate protects canonical op
  * identity; the latter gates define what may enter Yjs maps and arrays.
  *
- * One related hole remains: a REFERENCE CYCLE passes `structuredClone` (which preserves cycles by
- *    design) and `Y.Map.set` alike, then makes `encodeStateAsUpdate` throw
- *    permanently — the document is unrecoverable (#68). Entry points MEASURED
- *    so far: `set_widget.value`, `grow.inputcount.value`, `add_node`'s
- *    `widgets_values`, `connect.link_type`, `connect.link_id`, and
- *    `connect.grow.widget` (the one `grow` field nothing type-checks);
- * The cycle gate in #68 must be written against the WRITE sites rather than
- * against this list.
+ * The value gates also reject reference cycles at the WRITE sites. This is
+ * independently necessary for `mint`; in `applyOps`, A8's whole-op depth gate
+ * encounters a cycle first and reports `payload_too_deep`. A cycle passes
+ * `structuredClone` and Yjs storage but would make every later
+ * `encodeStateAsUpdate` throw permanently (#14).
+ *
+ * The write predicate is encodability rather than storability: `Date` and
+ * oversized `BigInt` values are storable but do not survive the wire. The
+ * predicate deliberately remains shallow apart from the cycle walk; broader
+ * nested-loss policy remains decision D4.
  *
  * Separately, "validated before the first write" is about WRITE ORDER, not
  * about arrival order. A precondition that must READ the document resolves
@@ -75,11 +77,11 @@ import {
   adel,
   appliedMap,
   apush,
+  arrayItemRefusal,
   countDefinitionInstances,
   createNodeMap,
-  isStorableArrayItem,
-  isStorableMapValue,
   linksMap,
+  mapValueRefusal,
   mdel,
   metaMap,
   mset,
@@ -530,16 +532,20 @@ function isInteriorWrite(op: SetWidgetOp): op is InteriorSetWidgetOp {
  * created the widgets map, and after an autogrow may have appended its slot.
  *
  *  1. `structuredClone` throws `DataCloneError` on values JSON never carries
- *     (functions, symbols).
- *  2. Yjs stores only a fixed set of shapes ({@link isStorableMapValue}) and
- *     throws `Unexpected content type` on the rest — and `Map`, `Set`,
- *     `RegExp`, `Error` and `ArrayBuffer` clone happily on their way to that
- *     throw, so gate 1 alone let them reach the document.
+ *     (functions, symbols). It does NOT throw on a reference cycle — it
+ *     faithfully reproduces one — which is why gate 2 has to look for it.
+ *  2. {@link mapValueRefusal}: yjs stores only a fixed set of shapes and
+ *     throws `Unexpected content type` on the rest (`Map`, `Set`, `RegExp`,
+ *     `Error` and `ArrayBuffer` clone happily on their way to that throw, so
+ *     gate 1 alone let them reach the document); a reference cycle is accepted
+ *     by yjs and bricks every later `encodeStateAsUpdate` (#14); and a `Date`
+ *     or an oversized `BigInt` is accepted and then does not come back off the
+ *     wire.
  *
  * Checking both up front keeps a rejected op byte-identical (D4) for
- * in-process callers as well as for ops that arrived as JSON. The storability
- * gate runs on the CLONE, because `structuredClone` is what normalizes a class
- * instance or a prototype-less object into a storable plain object.
+ * in-process callers as well as for ops that arrived as JSON. The gate runs on
+ * the CLONE, because `structuredClone` is what normalizes a class instance or a
+ * prototype-less object into a storable, faithfully encodable plain object.
  */
 function assertWritableValue(value: unknown, what: string): void {
   let cloned: unknown;
@@ -548,11 +554,9 @@ function assertWritableValue(value: unknown, what: string): void {
   } catch {
     throw new OpRejectedError("malformed_op", `${what}: value is not structured-cloneable`);
   }
-  if (!isStorableMapValue(cloned)) {
-    throw new OpRejectedError(
-      "malformed_op",
-      `${what}: value of type ${String((cloned as object)?.constructor?.name ?? typeof cloned)} cannot be stored in a Y.Doc`,
-    );
+  const refusal = mapValueRefusal(cloned);
+  if (refusal !== null) {
+    throw new OpRejectedError("malformed_op", `${what}: ${refusal}`);
   }
 }
 
@@ -843,11 +847,9 @@ function applyConnect(doc: Y.Doc, op: ConnectOp, catalog?: WidgetCatalog): void 
   // `ArrayBuffer` that an array accepts. The last of those writes is also the
   // last write of the handler, so an id Yjs cannot hold threw with the
   // register claimed, the incumbent severed and the link tuple written.
-  if (!isStorableArrayItem(op.link_id) || !isStorableMapValue(op.link_id)) {
-    throw new OpRejectedError(
-      "malformed_op",
-      `connect: link_id of type ${String((op.link_id as unknown as object)?.constructor?.name ?? typeof op.link_id)} cannot be stored in the document`,
-    );
+  const linkRefusal = arrayItemRefusal(op.link_id) ?? mapValueRefusal(op.link_id);
+  if (linkRefusal !== null) {
+    throw new OpRejectedError("malformed_op", `connect: link_id: ${linkRefusal}`);
   }
 
   // A present source must be fully valid before a concrete-input register is

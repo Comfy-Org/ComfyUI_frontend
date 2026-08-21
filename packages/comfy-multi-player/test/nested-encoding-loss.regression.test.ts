@@ -20,6 +20,14 @@
  * passing. What is pinned here is the SHAPE of the gap plus the detector that
  * measures it, so whoever takes the decision inherits evidence rather than a
  * repro.
+ *
+ * TWO ROWS HAVE SINCE FLIPPED, on the merits and not by that decision, and the
+ * flips are deliberate: a reference CYCLE is now refused (it bricked the
+ * document rather than merely diverging it, and no JSON producer can express
+ * one), and a `Date` at depth 0 is now refused (the gate's predicate was
+ * corrected from "will yjs accept it" to "will it survive encoding"). See
+ * `encoding-survival.regression.test.ts`. Everything else here still
+ * characterizes the accepted-and-lossy set that decision D4 owns.
  */
 
 import * as Y from "yjs";
@@ -303,15 +311,23 @@ describe("KA-1: two replicas disagree about document contents, end to end", () =
     expect(read(b).a).toEqual({});
   });
 
-  it("a Date makes the disagreement visible in the PROJECTION, not only in memory", () => {
-    // Storability accepts a Date at depth 0 — it is a legal widget value today —
-    // and the two replicas then project different workflow JSON.
+  it("a NESTED Date makes the disagreement visible in the PROJECTION, not only in memory", () => {
+    // A `Date` at depth 0 is no longer accepted — that was the storable-vs-
+    // encodable correction, and `encoding-survival.regression.test.ts` pins it.
+    // Nested, it still is, and it is the member of the remaining set that a
+    // JSON-based oracle can actually see: the two replicas project DIFFERENT
+    // workflow JSON with nothing anywhere reporting a failure. This is the
+    // sharpest evidence for decision D4 and must keep working until D4 is taken.
     const [a, b] = forkedPair();
-    expect(applyOps(a, [setWidget(new Date(0), "date")], catalog).failed).toBeNull();
+    expect(applyOps(a, [setWidget({ at: new Date(0) }, "date")], catalog).failed).toBeNull();
     Y.applyUpdate(b, Y.encodeStateAsUpdate(a));
     const wv = (doc: Y.Doc) => JSON.stringify(project(doc, catalog).nodes[0]!["widgets_values"]);
-    expect(wv(a)).toBe(`["1970-01-01T00:00:00.000Z"]`);
-    expect(wv(b)).toBe(`[{}]`);
+    expect(wv(a)).toBe(`[{"at":"1970-01-01T00:00:00.000Z"}]`);
+    expect(wv(b)).toBe(`[{"at":{}}]`);
+    // Both oracles this repo owns still say "converged".
+    expect(
+      Buffer.from(Y.encodeStateAsUpdate(a)).equals(Buffer.from(Y.encodeStateAsUpdate(b))),
+    ).toBe(true);
   });
 
   it("a live replica also disagrees with its own snapshot", () => {
@@ -365,14 +381,25 @@ describe("mint and the applier gate the same values, and now say so the same way
     ).toThrow(/definition\.custom: a RegExp cannot be stored/);
   });
 
-  it("nothing that minted before stops minting: the gate is the same predicate, not a new one", () => {
-    // Every value the node builders already accept still mints through the
-    // passthrough path, including the two the map slot takes and the array
-    // slot refuses.
-    for (const value of [new Date(0), 10n, undefined, new Uint8Array([1]), { a: 1 }, [1, 2], null]) {
+  it("exactly three shapes that minted before stop minting, and they are named", () => {
+    // The passthrough gate and the node builders still share one predicate.
+    // What changed is the predicate: it now asks whether the value SURVIVES
+    // encoding, not merely whether yjs accepts the write. Three shapes are
+    // refused that were not — a reference cycle, a `Date`, and a `BigInt`
+    // outside int64 — and no JSON producer can send any of them, which is why
+    // this is a correction rather than a vocabulary amendment.
+    const cyclic: Record<string, unknown> = {};
+    cyclic["self"] = cyclic;
+    for (const value of [new Date(0), 2n ** 70n, cyclic]) {
+      expect(() => mint({ ...workflow, extra: value as object }, catalog)).toThrow(TypeError);
+    }
+    // Everything else the node builders accept still mints unchanged.
+    for (const value of [10n, undefined, new Uint8Array([1]), { a: 1 }, [1, 2], null]) {
       expect(() => mint({ ...workflow, extra: value as object }, catalog)).not.toThrow();
     }
-    // …and a nested unstorable still mints, which is exactly the open gap.
+    // …and a nested unstorable or lossy value still mints, which is exactly
+    // the gap decision D4 owns and this change deliberately does not close.
     expect(() => mint({ ...workflow, extra: { a: new Map() } }, catalog)).not.toThrow();
+    expect(() => mint({ ...workflow, extra: { a: new Date(0) } }, catalog)).not.toThrow();
   });
 });

@@ -317,6 +317,13 @@ here:
    arrival order, so the abort-remainder outcome now converges. The former
    still-diverges pin is now a positive convergence assertion.
 
+   A reference cycle is not a convergence carve-out either. **CLOSED by
+   Amendments A8/A10:** `applyOps` rejects it at the whole-op depth gate before
+   any write, and A10 additionally guards every write site so `mint()` cannot
+   create a permanently unencodable document. The former `it.fails` cycle pin
+   is a positive rejection-and-recoverability assertion. Unvalidated
+   `connect.link_type` remains open.
+
 8. `resolveInteriorNode`'s own rejections — `not_a_subgraph`,
    `shared_definition_unforked`, `interior_node_not_found` — all read the
    document and all sit below the interior delete-wins return, so an interior
@@ -1555,6 +1562,20 @@ The digest canonicalizer bounds the depth and shape of the whole op envelope
 before the idempotency gate; these predicates separately govern which values
 may enter Yjs maps and arrays after that gate. They are pinned against real Yjs
 writes, and rejected ops are tested for byte identity, unconsumed `op_id`, and
-retry safety. Reference cycles and `connect.link_type` remain outside this
-amendment (#68). No schema-version bump: the document layout and accepted JSON
+retry safety. Reference cycles are closed by Amendment A10; unvalidated
+`connect.link_type` remains outside this amendment. No schema-version bump: the document layout and accepted JSON
 wire vocabulary are unchanged.
+
+---
+
+## Amendment A10 — 2026-08-21 — cycle-safe, encodable writes (issue #14)
+
+The write-site predicate now asks whether a value survives Yjs encoding, not
+only whether Yjs accepts it. Reference cycles are refused at every write site;
+for `applyOps`, A8's whole-op canonicalization encounters the cycle first and
+returns `payload_too_deep`, while the same write-site guard independently
+protects `mint()`. Top-level `Date` values are refused at the write gate, and
+`mint()` refuses `BigInt` values outside signed int64 because they decode as a
+different value; A8's JSON canonicalizer already rejects every BigInt op as
+`apply_failed` before the write gate. Validation remains
+shallow apart from cycle detection; deeper encoding-loss policy remains D4.

@@ -96,9 +96,9 @@ incumbent link. **All four now hold**, and #34 additionally makes every op-only
 rejections are order-independent too (schema Amendment A6).
 
 Amendment A9 closes the cloneable-but-unstorable, `connect.link_id`, and
-`delete_node.removed_links` write-order paths. Reference cycles and unvalidated
-`connect.link_type` remain tracked by #68; those still prevent an unconditional
-"resending the whole batch is always safe" claim.
+`delete_node.removed_links` write-order paths. Amendment A10 closes reference
+cycles. Unvalidated `connect.link_type` remains open and still prevents an
+unconditional "resending the whole batch is always safe" claim.
 
 **Why.** The alternative, rejecting the whole batch, throws away work the
 writer already considers accepted. The alternative to *that*, skipping the

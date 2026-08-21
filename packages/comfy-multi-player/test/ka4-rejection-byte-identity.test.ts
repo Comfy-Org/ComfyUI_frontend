@@ -33,8 +33,8 @@
  * somewhere to be recorded rather than being bolted on again.
  *
  * Amendment A9 closes the cloneable-but-unstorable, `connect.link_id`, and
- * `delete_node.removed_links` write-order holes. Reference cycles and
- * unvalidated `connect.link_type` remain tracked by #68.
+ * `delete_node.removed_links` write-order holes. Amendment A10 closes reference
+ * cycles; unvalidated `connect.link_type` remains open.
  */
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";

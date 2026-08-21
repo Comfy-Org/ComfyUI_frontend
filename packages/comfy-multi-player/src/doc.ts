@@ -416,6 +416,17 @@ function walkForEncodingLoss(
         path,
         detail: `${describeUnstorable(obj)} decodes as {${keys.join(", ")}} — its own enumerable keys and nothing else`,
       });
+      // Reporting the coercion is not enough to stop here: `writeAny` still
+      // walks those own keys, so a cycle underneath is still a
+      // NON-TERMINATING encode — a strictly worse outcome than the coercion
+      // above, and the one a host gating on this function must not miss.
+      const cycle = referenceCyclePath(obj);
+      if (cycle !== null) {
+        out.push({
+          path: `${path}${cycle}`,
+          detail: "a reference cycle; encodeStateAsUpdate never terminates",
+        });
+      }
       return;
     }
     for (const [k, item] of Object.entries(obj)) {
@@ -427,25 +438,199 @@ function walkForEncodingLoss(
 }
 
 /**
+ * Where a value contains a reference CYCLE that `writeAny` would follow, as a
+ * path from the value's root (`.a.self`, `[0].back`), or `null`.
+ *
+ * A cycle is the one member of the encoding-loss family that is not a
+ * divergence but a BRICK: yjs accepts a cyclic value like any other
+ * `ContentAny`, the applier reports success, and `encodeStateAsUpdate` then
+ * throws `RangeError: Maximum call stack size exceeded` for the rest of the
+ * document's life — it can never again be snapshotted, persisted, synced, or
+ * compared for the KA-4 byte-identity assertions, and `project()` throws
+ * `Converting circular structure to JSON` (issue #14).
+ *
+ * The traversal mirrors lib0 `writeAny` EXACTLY, because only what the encoder
+ * follows can make the encoder diverge:
+ *  - an `Array` by index, any other object by its own ENUMERABLE keys — so a
+ *    cycle through a `Map`'s entries is invisible to `writeAny` and is not
+ *    reported here, while a cycle through an own key of an `Error` is;
+ *  - a `Uint8Array` is a leaf (`ContentBinary`);
+ *  - a Y type AS THE VALUE ITSELF is `ContentType`, never walked.
+ * A shared reference that is not a back-edge (a DAG) is NOT a cycle: `writeAny`
+ * duplicates it and terminates, so `seen`-style detection would refuse legal
+ * payloads. The walk is iterative so an adversarially deep payload fails the
+ * same way it fails today (inside `structuredClone`) rather than by overflowing
+ * this stack.
+ */
+export function referenceCyclePath(value: unknown): string | null {
+  if (typeof value !== "object" || value === null) return null;
+  if (value instanceof Y.AbstractType || value instanceof Y.Doc) return null;
+  if (value instanceof Uint8Array) return null;
+
+  interface Frame {
+    obj: object;
+    path: string;
+    keys: string[];
+    next: number;
+    isArray: boolean;
+  }
+  const frameFor = (obj: object, path: string): Frame =>
+    Array.isArray(obj)
+      ? { obj, path, keys: [], next: 0, isArray: true }
+      : { obj, path, keys: Object.keys(obj), next: 0, isArray: false };
+
+  const onPath = new Set<object>([value]);
+  const stack: Frame[] = [frameFor(value, "")];
+  while (stack.length > 0) {
+    const frame = stack[stack.length - 1]!;
+    const size = frame.isArray ? (frame.obj as unknown[]).length : frame.keys.length;
+    if (frame.next >= size) {
+      onPath.delete(frame.obj);
+      stack.pop();
+      continue;
+    }
+    const index = frame.next++;
+    let child: unknown;
+    let childPath: string;
+    if (frame.isArray) {
+      child = (frame.obj as unknown[])[index];
+      childPath = `${frame.path}[${String(index)}]`;
+    } else {
+      const key = frame.keys[index]!;
+      child = (frame.obj as Record<string, unknown>)[key];
+      childPath = `${frame.path}.${key}`;
+    }
+    if (typeof child !== "object" || child === null) continue;
+    if (child instanceof Uint8Array) continue;
+    if (onPath.has(child)) return childPath;
+    onPath.add(child);
+    stack.push(frameFor(child, childPath));
+  }
+  return null;
+}
+
+/**
+ * Whether a value's OWN encoding is the identity — "will this survive the
+ * wire", which is a DIFFERENT question from {@link isStorableMapValue}'s "will
+ * yjs accept the write", and the right one for a gate to ask.
+ *
+ * Being accepted is not being transmitted. yjs holds a non-Y value as
+ * `ContentAny` BY REFERENCE and never inspects it; only lib0 `writeAny` walks
+ * it, at encode time. Two values yjs accepts at a Y.Map slot do not come back:
+ *
+ *  - a `Date` — `writeAny` has no date type, so it takes the generic object
+ *    branch and writes `{}` plus the value's own enumerable keys, of which a
+ *    `Date` has none. One replica holds the `Date` and projects an ISO string;
+ *    every replica that decodes the update holds `{}`. `Date` is documented as
+ *    a legal widget value, so this is not exotic — it is what any JS producer
+ *    writes for a timestamp;
+ *  - a `BigInt` outside int64 — wire type 122 is `writeBigInt64`, which
+ *    TRUNCATES rather than refusing: `2n**70n` decodes as `0n`. Silent numeric
+ *    corruption. The boundary is exact and is pinned as such: `2n**63n - 1n`
+ *    and `-(2n**63n)` survive, the next value either way does not.
+ *
+ * SHALLOW, deliberately: a container's interior is not walked, because
+ * refusing a payload whose INTERIOR does not survive encoding narrows the
+ * accepted payload domain and is a vocabulary amendment owed a comfy-cli
+ * counterpart (decision D4). {@link encodingLosses} is the deep form, and is
+ * still wired into no gate.
+ */
+export function survivesMapEncoding(value: unknown): boolean {
+  if (typeof value === "bigint") return BigInt.asIntN(64, value) === value;
+  if (typeof value !== "object" || value === null) return true;
+  if (value instanceof Uint8Array) return true; // ContentBinary, round-trips verbatim
+  if (value instanceof Y.AbstractType || value instanceof Y.Doc) return true; // ContentType/ContentDoc
+  if (Array.isArray(value)) return true; // interior is D4's question, not this one
+  const proto = Object.getPrototypeOf(value) as object | null;
+  // `writeAny` rewrites any other object as a bag of its own enumerable keys,
+  // so only a value that ALREADY is such a bag survives.
+  return proto === Object.prototype || proto === null;
+}
+
+/**
+ * Why a value must be refused before it is written to a Y.Map value slot, or
+ * `null` to accept it. The single decision point for both gate sites (the
+ * applier's `assertWritableValue` and `cloneForMap`), so the two cannot drift
+ * again.
+ *
+ * THE BOUNDARY, stated once and enforced here. Three refusals:
+ * unstorable-by-yjs (unchanged), a reference cycle (issue #14 — a bricked
+ * document, and neither `JSON.stringify` nor Python's `json.dumps` can express
+ * one, so no producer loses anything), and the two shallow encoding losses
+ * above. What is deliberately NOT refused, pending decision D4:
+ *
+ *  - anything nested inside an accepted container — the whole of D4;
+ *  - a boxed `Number`/`String`/`Boolean` object. These are accepted at depth 0
+ *    today and are just as lossy as a `Date` (`new String("ab")` decodes as
+ *    `{"0":"a","1":"b"}`, the other two as `{}`), but they are outside the
+ *    `Date`/`BigInt` set D4's brief names, and refusing them is the same
+ *    payload-domain narrowing that decision owns. `survivesMapEncoding` reports
+ *    them truthfully; this gate lets them through on purpose.
+ */
+export function mapValueRefusal(value: unknown): string | null {
+  if (!isStorableMapValue(value)) {
+    return `${describeUnstorable(value)} cannot be stored in a Y.Doc`;
+  }
+  const cycle = referenceCyclePath(value);
+  if (cycle !== null) return describeCycle(cycle);
+  if (!survivesMapEncoding(value)) {
+    if (isBoxedPrimitive(value)) return null; // D4-pending, see above
+    if (typeof value === "bigint") {
+      return `BigInt ${String(value)} does not fit int64 and would decode as ${String(BigInt.asIntN(64, value))}`;
+    }
+    return `${describeUnstorable(value)} does not survive encoding and would decode as {${Object.keys(value as object).join(", ")}}`;
+  }
+  return null;
+}
+
+/**
+ * Why a value must be refused before it is written as a Y.Array ITEM, or
+ * `null`. The array domain is not the map domain (see
+ * {@link isStorableArrayItem}), and its storability gate ALREADY refuses
+ * `Date`, `BigInt` and `undefined`, so the only correction it needs is the
+ * cycle walk.
+ *
+ * Not refused, pending D4: an `ArrayBuffer`, which yjs stores as
+ * `ContentBinary` and which therefore decodes as a `Uint8Array` — lossy in
+ * type, and outside the cycle/`Date`/`BigInt` set this gate is scoped to.
+ */
+export function arrayItemRefusal(value: unknown): string | null {
+  if (!isStorableArrayItem(value)) {
+    return `${describeUnstorable(value)} cannot be stored in a Y.Array`;
+  }
+  const cycle = referenceCyclePath(value);
+  if (cycle !== null) return describeCycle(cycle);
+  return null;
+}
+
+function describeCycle(path: string): string {
+  return `a reference cycle at ${path === "" ? "the value itself" : path}; the document could never be encoded again (#14)`;
+}
+
+function isBoxedPrimitive(value: unknown): boolean {
+  const ctor = (value as object).constructor;
+  return ctor === Number || ctor === String || ctor === Boolean;
+}
+
+/**
  * Defensive copy of a value destined for a Y.Map value slot, refused up front
- * if the doc cannot hold it. Exported so `mint` gates its passthrough writes
- * through the same predicate the node builders use — the two sites had drifted,
- * and mint's ungated ones surfaced yjs's raw `Unexpected content type` instead.
+ * if the doc cannot hold it or could not transmit it. Exported so `mint` gates
+ * its passthrough writes through the same predicate the node builders use — the
+ * two sites had drifted, and mint's ungated ones surfaced yjs's raw
+ * `Unexpected content type` instead.
  */
 export function cloneForMap(value: unknown, what: string): unknown {
   const cloned = structuredClone(value);
-  if (!isStorableMapValue(cloned)) {
-    throw new TypeError(`${what}: ${describeUnstorable(cloned)} cannot be stored in a Y.Doc`);
-  }
+  const refusal = mapValueRefusal(cloned);
+  if (refusal !== null) throw new TypeError(`${what}: ${refusal}`);
   return cloned;
 }
 
 /** Defensive copy of a value destined for a Y.Array item, refused up front if the doc cannot hold it. */
 function cloneForArray(value: unknown, what: string): unknown {
   const cloned = structuredClone(value);
-  if (!isStorableArrayItem(cloned)) {
-    throw new TypeError(`${what}: ${describeUnstorable(cloned)} cannot be stored in a Y.Array`);
-  }
+  const refusal = arrayItemRefusal(cloned);
+  if (refusal !== null) throw new TypeError(`${what}: ${refusal}`);
   return cloned;
 }
 

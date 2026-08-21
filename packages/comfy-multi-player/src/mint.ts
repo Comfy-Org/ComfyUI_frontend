@@ -57,14 +57,18 @@ interface SubgraphDef {
  * `project(mint(w, catalog), catalog)` deep-equals `w` modulo the schema §7
  * canonicalization (sorted-by-id node/link order).
  *
- * Passthrough writes go through the SAME storability gate as the node builders
- * ({@link cloneForMap}). They already failed on a value yjs cannot hold — the
- * throw came from yjs itself, mid-build, as a bare `Unexpected content type`
- * naming neither the workflow key nor the value. Nothing that mints today stops
- * minting; only the diagnosis changes, and the two sites stop disagreeing about
- * which error a caller sees. Both gates are SHALLOW: an unstorable value nested
- * inside an accepted container still passes, and is silently coerced at encode
- * time rather than rejected — see {@link encodingLosses}.
+ * Passthrough writes go through the SAME gate as the node builders
+ * ({@link cloneForMap}), which asks whether the doc can hold the value AND
+ * whether the value survives its own encoding. Three shapes that minted before
+ * now do not: a reference cycle (which produced a doc that could never be
+ * encoded — #14), a `Date`, and a `BigInt` outside int64. None of the three can
+ * reach `mint` from a JSON producer, since a base workflow always arrives as
+ * JSON and none of them survives `JSON.stringify`/`json.dumps`.
+ *
+ * The gates stay SHALLOW apart from the cycle walk: an unstorable or lossy
+ * value nested inside an accepted container still passes, and is silently
+ * coerced at encode time rather than rejected — see {@link encodingLosses} and
+ * decision D4.
  */
 export function mint(workflow: WorkflowJSON, catalog: WidgetCatalog, catalogVersion = ""): Y.Doc {
   const doc = new Y.Doc();
@@ -102,7 +106,11 @@ export function mint(workflow: WorkflowJSON, catalog: WidgetCatalog, catalogVers
         throw new TypeError("mint: workflow.definitions must be an object");
       }
       const { subgraphs, ...rest } = defsIn as { subgraphs?: unknown; [key: string]: unknown };
-      const extra: Record<string, unknown> = structuredClone(rest);
+      // The fifth ungated passthrough write: `__definitions_extra` reached a
+      // Y.Map through a bare `structuredClone`. Shallow verdicts are unchanged
+      // (`rest` is always a plain object), but a cycle inside it would have
+      // bricked the document exactly as any other passthrough would.
+      const extra = cloneForMap(rest, "mint: workflow.definitions") as Record<string, unknown>;
       // Preserve an explicitly-empty subgraphs array through the round trip.
       if (Array.isArray(subgraphs) && subgraphs.length === 0) extra["subgraphs"] = [];
       meta.set("__definitions_extra", extra);

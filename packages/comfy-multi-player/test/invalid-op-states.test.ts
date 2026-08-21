@@ -102,8 +102,8 @@ const wireOp = (shape: Record<string, unknown>): Op => shape as unknown as Op;
 // `test/reject-no-mutation.regression.test.ts`.
 //
 // Amendment A9 closes the cloneable-but-unstorable, `connect.link_id`, and
-// `delete_node.removed_links` write-order holes. A reference cycle and
-// unvalidated `connect.link_type` remain tracked by #68.
+// `delete_node.removed_links` write-order holes. Amendment A10 closes reference
+// cycles; unvalidated `connect.link_type` remains open.
 //
 // A `Symbol` or throwing-`valueOf` `base_version` used to be a third trigger
 // here. Hoisting `stampKey` into `requireOpOnlyValid` closed it on every
