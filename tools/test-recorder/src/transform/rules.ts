@@ -77,7 +77,7 @@ export const transformRules: TransformRule[] = [
     name: 'replace-waitForTimeout',
     description: 'Use comfyPage.nextFrame() instead of arbitrary waits',
     pattern:
-      /await\s+(?:comfyPage\.)?page\.waitForTimeout\s*\(\s*\d+\s*\)\s*;?/g,
+      /await\s+(?:comfyPage\.)?page\.waitForTimeout\s*\(\s*\d+\s*\)[ \t]*;?/g,
     replacement: 'await comfyPage.nextFrame()',
     category: 'wait'
   }

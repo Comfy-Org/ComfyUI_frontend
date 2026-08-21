@@ -28,6 +28,8 @@ const maybeLocalOptions: PlaywrightTestConfig = process.env.PLAYWRIGHT_LOCAL
 
 export default defineConfig({
   testDir: './browser_tests',
+  // Untransformed recorder output — still bare codegen, not a runnable spec
+  testIgnore: '**/*.raw.spec.ts',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   reporter: process.env.PLAYWRIGHT_BLOB_OUTPUT_DIR ? 'blob' : 'html',
