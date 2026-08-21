@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 
 import ImageLightbox from '@/components/common/ImageLightbox.vue'
 import { useClickDragGuard } from '@/composables/useClickDragGuard'
+import AudioPreviewPlayer from '@/renderer/extensions/vueNodes/widgets/components/audio/AudioPreviewPlayer.vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 defineOptions({ inheritAttrs: false })
@@ -21,13 +22,21 @@ const {
   onDragDrop?: (e: DragEvent) => Promise<boolean> | boolean
   dropIndicator?: {
     iconClass?: string
-    imageUrl?: string
+    mediaUrl?: string
+    mediaType?: 'image' | 'video' | 'audio'
     label?: string
     onClick?: (e: MouseEvent) => void
     onMaskEdit?: () => void
   }
   forceHovered?: boolean
 }>()
+
+const mediaType = computed(() => dropIndicator?.mediaType ?? 'image')
+// Video's native controls and AudioPreviewPlayer's buttons are invalid
+// markup nested inside a <button> — render a <div> instead once one is shown.
+const hasPlayableMedia = computed(
+  () => mediaType.value !== 'image' && !!dropIndicator?.mediaUrl
+)
 
 const dropZoneRef = ref<HTMLElement | null>(null)
 const canAcceptDrop = ref(false)
@@ -68,7 +77,9 @@ const { isOverDropZone } = useDropZone(dropZoneRef, {
 const isHovered = computed(
   () => forceHovered || (canAcceptDrop.value && isOverDropZone.value)
 )
-const indicatorTag = computed(() => (dropIndicator?.onClick ? 'button' : 'div'))
+const indicatorTag = computed(() =>
+  dropIndicator?.onClick && !hasPlayableMedia.value ? 'button' : 'div'
+)
 </script>
 <template>
   <div
@@ -87,13 +98,16 @@ const indicatorTag = computed(() => (dropIndicator?.onClick ? 'button' : 'div'))
     <div v-if="dropIndicator" class="group/dropzone relative">
       <component
         :is="indicatorTag"
-        :type="dropIndicator.onClick ? 'button' : undefined"
-        :aria-label="dropIndicator.onClick ? dropIndicator.label : undefined"
+        :type="indicatorTag === 'button' ? 'button' : undefined"
+        :aria-label="
+          indicatorTag === 'button' ? dropIndicator.label : undefined
+        "
         data-slot="drop-zone-indicator"
+        data-testid="drop-zone-indicator"
         :class="
           cn(
             'm-3 block h-25 w-[calc(100%-1.5rem)] resize-y appearance-none overflow-hidden rounded-lg border border-node-component-border bg-transparent p-1 text-left text-component-node-foreground-secondary transition-colors',
-            dropIndicator.onClick && 'cursor-pointer'
+            indicatorTag === 'button' && 'cursor-pointer'
           )
         "
         @pointerdown="onPointerDown"
@@ -104,16 +118,36 @@ const indicatorTag = computed(() => (dropIndicator?.onClick ? 'button' : 'div'))
             cn(
               'flex h-full max-w-full flex-col items-center justify-center gap-2 overflow-hidden rounded-[7px] p-3 text-center text-sm/tight transition-colors',
               isHovered &&
-                !dropIndicator.imageUrl &&
+                !dropIndicator.mediaUrl &&
                 'border border-dashed border-component-node-foreground-secondary bg-component-node-widget-background-hovered'
             )
           "
         >
-          <div v-if="dropIndicator.imageUrl" class="max-h-full max-w-full">
+          <div v-if="dropIndicator.mediaUrl" class="max-h-full max-w-full">
             <img
+              v-if="mediaType === 'image'"
               class="max-h-full max-w-full rounded-md object-contain"
+              data-testid="drop-zone-media"
               :alt="dropIndicator.label ?? ''"
-              :src="dropIndicator.imageUrl"
+              :src="dropIndicator.mediaUrl"
+            />
+            <video
+              v-else-if="mediaType === 'video'"
+              class="max-h-full max-w-full rounded-md object-contain"
+              data-testid="drop-zone-media"
+              :aria-label="dropIndicator.label ?? ''"
+              :src="dropIndicator.mediaUrl"
+              controls
+              playsinline
+              preload="metadata"
+              @click.stop
+            />
+            <AudioPreviewPlayer
+              v-else
+              data-testid="drop-zone-media"
+              :model-value="dropIndicator.mediaUrl"
+              :hide-when-empty="false"
+              @click.stop
             />
           </div>
           <template v-else>
@@ -130,7 +164,7 @@ const indicatorTag = computed(() => (dropIndicator?.onClick ? 'button' : 'div'))
           </template>
         </div>
       </component>
-      <template v-if="dropIndicator.imageUrl">
+      <template v-if="mediaType === 'image' && dropIndicator.mediaUrl">
         <div
           class="absolute top-2 right-5 z-10 flex gap-1 opacity-0 transition-opacity duration-200 group-focus-within/dropzone:opacity-100 group-hover/dropzone:opacity-100"
         >
@@ -156,7 +190,7 @@ const indicatorTag = computed(() => (dropIndicator?.onClick ? 'button' : 'div'))
         </div>
         <ImageLightbox
           v-model="lightboxOpen"
-          :src="dropIndicator.imageUrl"
+          :src="dropIndicator.mediaUrl"
           :alt="dropIndicator.label ?? ''"
         />
       </template>
