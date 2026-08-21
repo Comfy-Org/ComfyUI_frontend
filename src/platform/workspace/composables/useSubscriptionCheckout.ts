@@ -826,7 +826,8 @@ export function useSubscriptionCheckout(
 
     if (
       response?.allowed &&
-      (!isSubscriptionCancelled() || isReactivationCapablePreview(response))
+      (response.requires_reactivation_confirmation === false ||
+        isReactivationCapablePreview(response))
     ) {
       installPreview(response)
       checkoutStep.value = 'preview'

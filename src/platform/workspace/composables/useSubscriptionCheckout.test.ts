@@ -1589,6 +1589,33 @@ describe('useSubscriptionCheckout', () => {
       )
     })
 
+    it('uses the backend reactivation decision when cached team status is cancelled', async () => {
+      mockSubscription.value = { isCancelled: true }
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'new_subscription',
+        is_immediate: true,
+        requires_reactivation_confirmation: false
+      })
+      const checkout = await setup()
+
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_700',
+          usd: 700,
+          credits: 147_700,
+          discountedUsd: 665
+        },
+        billingCycle: 'monthly',
+        isChange: false
+      })
+
+      expect(checkout.checkoutStep.value).toBe('preview')
+      expect(checkout.previewVariant.value).toBe('team-new')
+      expect(checkout.reactivationRequired.value).toBe(false)
+      expect(mockToastAdd).not.toHaveBeenCalled()
+    })
+
     it('bounces a cancelled subscriber back to pricing when the preview request fails', async () => {
       mockSubscription.value = { isCancelled: true }
       mockPreviewSubscribe.mockRejectedValueOnce(new Error('not supported'))
@@ -2004,14 +2031,15 @@ describe('useSubscriptionCheckout', () => {
       expect(checkout.checkoutStep.value).toBe('success')
     })
 
-    // Regression guard: confirmReactivation must come from the disclosure
-    // banner's own confirm action, never be re-derived from
-    // subscription.isCancelled. A path with no banner (team-new fallback)
-    // always calls in with confirmReactivation=false, so a cancelled
-    // subscription must block the request rather than silently send it and
-    // let the BE reject it with no way for the user to consent.
     it('blocks the team subscribe and shows an error for a cancelled subscription with no confirmation', async () => {
       mockSubscription.value = { isCancelled: true }
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'upgrade',
+        is_immediate: true,
+        requires_reactivation_confirmation: true,
+        current_plan: { period_end: '2026-08-29T00:00:00Z' }
+      })
       const checkout = await setup()
       await checkout.handleSubscribeTeamClick({
         stop: {
@@ -2141,7 +2169,8 @@ describe('useSubscriptionCheckout', () => {
         transition_type: 'upgrade',
         is_immediate: true,
         cost_today_cents: 105_000,
-        requires_reactivation_confirmation: true
+        requires_reactivation_confirmation: true,
+        current_plan: { period_end: '2026-08-29T00:00:00Z' }
       })
       await checkout.handleSubscribeTeamClick({
         stop: {
@@ -2399,7 +2428,8 @@ describe('useSubscriptionCheckout', () => {
         transition_type: 'upgrade',
         is_immediate: true,
         cost_today_cents: 105_000,
-        requires_reactivation_confirmation: true
+        requires_reactivation_confirmation: true,
+        current_plan: { period_end: '2026-08-29T00:00:00Z' }
       })
       await checkout.handleSubscribeTeamClick({
         stop: {
