@@ -2529,7 +2529,7 @@
       "freeTierBadge": "Eligible for Free Tier",
       "freeTierDescription": "Sign up with Google to get {credits} free credits every month. No card needed.",
       "freeTierDescriptionGeneric": "Sign up with Google to get free credits every month. No card needed.",
-      "backToSocialLogin": "Sign up with Google or Github instead",
+      "backToSocialLogin": "Sign in with Google or Github instead",
       "backToGithubLogin": "Sign up with Github instead"
     },
     "signup": {
@@ -2543,6 +2543,7 @@
       "signIn": "Sign in",
       "signUpWithGoogle": "Sign up with Google",
       "signUpWithGithub": "Sign up with Github",
+      "backToSocialSignUp": "Sign up with Google or Github instead",
       "regionRestrictionChina": "In accordance with local regulatory requirements, our services are temporarily unavailable to users located in China.",
       "personalDataConsentLabel": "I agree to the processing of my personal data.",
       "emailNotEligibleForFreeTier": "Email sign-up is not eligible for Free Tier."

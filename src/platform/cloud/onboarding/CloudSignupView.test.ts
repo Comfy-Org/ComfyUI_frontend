@@ -60,6 +60,7 @@ const MESSAGES = {
       signIn: 'Sign in',
       signUpWithGoogle: 'Sign up with Google',
       signUpWithGithub: 'Sign up with GitHub',
+      backToSocialSignUp: 'Sign up with Google or GitHub instead',
       regionRestrictionChina: 'Email sign-up is unavailable in your region.'
     }
   }
@@ -221,6 +222,19 @@ describe('CloudSignupView', () => {
       ).toBeInTheDocument()
     })
     expect(screen.queryByTestId('signup-form')).not.toBeInTheDocument()
+  })
+
+  it('returns to the social buttons with sign-up wording', async () => {
+    const user = (await import('@testing-library/user-event')).default.setup()
+    await renderSignupView()
+
+    await user.click(screen.getByRole('button', { name: 'Use email instead' }))
+
+    expect(
+      screen.getByRole('button', {
+        name: 'Sign up with Google or GitHub instead'
+      })
+    ).toBeInTheDocument()
   })
 
   it.for([
