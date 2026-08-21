@@ -32,6 +32,7 @@ import { useRerouteStore } from '@/stores/rerouteStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { slotFloatingLinks } from '@/lib/litegraph/src/LLink'
 import { toLinkId } from '@/types/linkId'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toRerouteId } from '@/types/rerouteId'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
@@ -76,6 +77,27 @@ class DummyNode extends LGraphNode {
   }
 }
 
+class ThrowingConfigureNode extends LGraphNode {
+  constructor() {
+    super('throwing configure')
+  }
+
+  override configure(info: Parameters<LGraphNode['configure']>[0]): void {
+    super.configure(info)
+    const graphId = this.graph!.id
+    useWidgetValueStore().registerWidget(widgetId(graphId, this.id, 'value'), {
+      type: 'number',
+      value: 1,
+      options: {}
+    })
+    usePreviewExposureStore().addExposure(graphId, String(this.id), {
+      sourceNodeId: this.id,
+      sourcePreviewName: 'preview'
+    })
+    throw new Error('configure failed')
+  }
+}
+
 describe('LGraph', () => {
   it('should serialize deterministic node order', async () => {
     LiteGraph.registerNodeType('dummy', DummyNode)
@@ -89,6 +111,25 @@ describe('LGraph', () => {
     const result2 = graph.serialize({ sortNodes: true })
 
     expect(result1).toEqual(result2)
+  })
+
+  it('cleans partially configured node-owned records before rethrowing', () => {
+    LiteGraph.registerNodeType('throwing-configure', ThrowingConfigureNode)
+    const source = new LGraph()
+    const sourceNode = new ThrowingConfigureNode()
+    source.add(sourceNode)
+    const data = source.asSerialisable()
+    const graphId = data.id
+    const id = widgetId(graphId, sourceNode.id, 'value')
+    const target = new LGraph()
+
+    expect(() => target.configure(data)).toThrow('configure failed')
+
+    expect(target.nodes).toEqual([])
+    expect(useWidgetValueStore().getWidget(id)).toBeUndefined()
+    expect(
+      usePreviewExposureStore().getExposures(graphId, String(sourceNode.id))
+    ).toEqual([])
   })
 
   it('should handle adding null node gracefully', () => {
@@ -910,6 +951,55 @@ describe('Subgraph Definition Garbage Collection', () => {
     rootGraph.remove(subgraphNode)
 
     expect(removedNodeIds.size).toBe(2)
+  })
+
+  it('removing a node clears its widget and preview exposure records', () => {
+    const rootGraph = new LGraph()
+    const node = new LGraphNode('owned state')
+    rootGraph.add(node)
+    const id = widgetId(rootGraph.id, node.id, 'value')
+    useWidgetValueStore().registerWidget(id, {
+      type: 'number',
+      value: 1,
+      options: {}
+    })
+    usePreviewExposureStore().addExposure(rootGraph.id, String(node.id), {
+      sourceNodeId: node.id,
+      sourcePreviewName: 'preview'
+    })
+
+    rootGraph.remove(node)
+
+    expect(useWidgetValueStore().getWidget(id)).toBeUndefined()
+    expect(
+      usePreviewExposureStore().getExposures(rootGraph.id, String(node.id))
+    ).toEqual([])
+  })
+
+  it('released subgraphs clear inner node-owned records', () => {
+    const rootGraph = new LGraph()
+    const { subgraph, innerNodes } = createSubgraphWithNodes(rootGraph, 1)
+    const innerNode = innerNodes[0]
+    const id = widgetId(rootGraph.id, innerNode.id, 'value')
+    const locator = createNodeLocatorId(subgraph.id, innerNode.id)
+    useWidgetValueStore().registerWidget(id, {
+      type: 'number',
+      value: 1,
+      options: {}
+    })
+    usePreviewExposureStore().addExposure(rootGraph.id, locator, {
+      sourceNodeId: innerNode.id,
+      sourcePreviewName: 'preview'
+    })
+    const host = createTestSubgraphNode(subgraph)
+    rootGraph.add(host)
+
+    rootGraph.remove(host)
+
+    expect(useWidgetValueStore().getWidget(id)).toBeUndefined()
+    expect(
+      usePreviewExposureStore().getExposures(rootGraph.id, locator)
+    ).toEqual([])
   })
 
   it('removing SubgraphNode fires onNodeRemoved callback', () => {

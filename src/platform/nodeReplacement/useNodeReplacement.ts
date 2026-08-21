@@ -1,5 +1,6 @@
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { clearNodeOwnedStoreState } from '@/stores/clearNodeOwnedStoreState'
 import {
   canTransferReplacementOwnership,
   transferReplacementOwnership
@@ -174,6 +175,7 @@ function replaceWithMapping(
     throw new Error(`Cannot replace node ${node.id}: ownership is invalid`)
 
   node.onRemoved?.()
+  clearNodeOwnedStoreState(node)
   if (
     nodeGraph._nodes[idx] !== node ||
     nodeGraph._nodes_by_id[node.id] !== node ||

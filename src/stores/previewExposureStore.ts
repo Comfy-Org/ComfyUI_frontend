@@ -114,6 +114,13 @@ export const usePreviewExposureStore = defineStore('previewExposure', () => {
     setExposures(rootGraphId, hostNodeLocator, next)
   }
 
+  function clearHost(rootGraphId: UUID, hostNodeLocator: string): void {
+    const hosts = exposures.value.get(rootGraphId)
+    if (!hosts) return
+    hosts.delete(hostNodeLocator)
+    if (hosts.size === 0) exposures.value.delete(rootGraphId)
+  }
+
   function clearGraph(rootGraphId: UUID): void {
     exposures.value.delete(rootGraphId)
   }
@@ -151,6 +158,7 @@ export const usePreviewExposureStore = defineStore('previewExposure', () => {
     setExposures,
     addExposure,
     removeExposure,
+    clearHost,
     clearGraph,
     resolveChain
   }
