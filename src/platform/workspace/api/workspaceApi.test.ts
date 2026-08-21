@@ -439,15 +439,23 @@ describe('workspaceApi', () => {
   })
 
   describe('subscription', () => {
-    it('previewSubscribe() sends POST with plan_slug', async () => {
+    it('previewSubscribe() sends only fields defined by the ingest contract', async () => {
       const data = { allowed: true, transition_type: 'new_subscription' }
       mockAxiosInstance.post.mockResolvedValue({ data })
 
-      const result = await workspaceApi.previewSubscribe('pro-monthly')
+      const result = await workspaceApi.previewSubscribe(
+        'team_per_credit_annual',
+        {
+          teamCreditStopId: 'team_700'
+        }
+      )
 
       expect(mockAxiosInstance.post).toHaveBeenCalledWith(
         '/api/billing/preview-subscribe',
-        { plan_slug: 'pro-monthly' },
+        {
+          plan_slug: 'team_per_credit_annual',
+          team_credit_stop_id: 'team_700'
+        },
         { headers: AUTH_HEADER }
       )
       expect(result).toEqual(data)
