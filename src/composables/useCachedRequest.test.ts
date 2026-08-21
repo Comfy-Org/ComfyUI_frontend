@@ -1,3 +1,4 @@
+import { CanceledError } from 'axios'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCachedRequest } from '@/composables/useCachedRequest'
@@ -7,27 +8,22 @@ describe('useCachedRequest', () => {
     params: unknown,
     signal?: AbortSignal
   ) => Promise<unknown | null>
-  let abortSpy: () => void
+  let issuedSignals: (AbortSignal | undefined)[]
 
   beforeEach(() => {
-    // Create a spy for the AbortController.abort method
-    abortSpy = vi.fn()
-
-    // Mock AbortController
-    vi.stubGlobal(
-      'AbortController',
-      class MockAbortController {
-        signal = { aborted: false }
-        abort = abortSpy
-      }
-    )
+    issuedSignals = []
 
     // Create a mock request function that returns different results based on params
-    mockRequestFn = vi.fn(async (params: unknown) => {
+    mockRequestFn = vi.fn(async (params: unknown, signal?: AbortSignal) => {
+      issuedSignals.push(signal)
+
       // Simulate a request that takes some time
       await new Promise((resolve) => setTimeout(resolve, 8))
 
       if (params === null) return null
+
+      // Registry requests swallow cancellations and resolve to null
+      if (signal?.aborted) return null
 
       // Return a result based on the params
       return { data: `Result for ${JSON.stringify(params)}` }
@@ -160,7 +156,7 @@ describe('useCachedRequest', () => {
     expect(mockRequestFn).toHaveBeenCalledTimes(1) // Still only called once
   })
 
-  it('should abort requests when cancel is called', async () => {
+  it('should abort every pending request when cancel is called without params', async () => {
     const cachedRequest = useCachedRequest(mockRequestFn)
 
     // Start a request but don't await it
@@ -169,12 +165,88 @@ describe('useCachedRequest', () => {
     // Cancel all requests
     cachedRequest.cancel()
 
-    // The abort method should have been called
-    expect(abortSpy).toHaveBeenCalled()
+    expect(issuedSignals[0]?.aborted).toBe(true)
+    await expect(promise).resolves.toBeNull()
+  })
 
-    // The promise should still resolve (our mock doesn't actually abort)
-    const result = await promise
-    expect(result).toEqual({ data: 'Result for {"id":1}' })
+  it('should only abort the request matching the params passed to cancel', async () => {
+    const cachedRequest = useCachedRequest(mockRequestFn)
+
+    const survivor = cachedRequest.call({ id: 1 })
+    const cancelled = cachedRequest.call({ id: 2 })
+
+    cachedRequest.cancel({ id: 2 })
+
+    await expect(survivor).resolves.toEqual({ data: 'Result for {"id":1}' })
+    await expect(cancelled).resolves.toBeNull()
+  })
+
+  it('should not cache an aborted request, so the next call refetches', async () => {
+    const cachedRequest = useCachedRequest(mockRequestFn)
+
+    const cancelled = cachedRequest.call({ id: 1 })
+    cachedRequest.cancel({ id: 1 })
+    await expect(cancelled).resolves.toBeNull()
+
+    await expect(cachedRequest.call({ id: 1 })).resolves.toEqual({
+      data: 'Result for {"id":1}'
+    })
+    expect(mockRequestFn).toHaveBeenCalledTimes(2)
+  })
+
+  it('should not cache a request that rejects after being aborted', async () => {
+    const rejectingFn = vi.fn(
+      async (params: unknown, signal?: AbortSignal): Promise<unknown> => {
+        issuedSignals.push(signal)
+        await new Promise((resolve) => setTimeout(resolve, 8))
+        if (signal?.aborted) throw new Error('canceled')
+        return { data: `Result for ${JSON.stringify(params)}` }
+      }
+    )
+    const cachedRequest = useCachedRequest(rejectingFn)
+
+    const cancelled = cachedRequest.call({ id: 1 })
+    cachedRequest.cancel({ id: 1 })
+    await expect(cancelled).resolves.toBeNull()
+
+    await expect(cachedRequest.call({ id: 1 })).resolves.toEqual({
+      data: 'Result for {"id":1}'
+    })
+    expect(rejectingFn).toHaveBeenCalledTimes(2)
+  })
+
+  it('should resolve to null when the request function throws synchronously', async () => {
+    const throwingFn = vi.fn((): Promise<unknown | null> => {
+      throw new Error('sync boom')
+    })
+    const cachedRequest = useCachedRequest(throwingFn)
+
+    await expect(cachedRequest.call({ id: 1 })).resolves.toBeNull()
+
+    await expect(cachedRequest.call({ id: 1 })).resolves.toBeNull()
+    expect(throwingFn).toHaveBeenCalledTimes(1)
+  })
+
+  it('should not log a cancellation observed by a de-duplicated caller', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const rejectingFn = vi.fn(
+      async (_params: unknown, signal?: AbortSignal): Promise<unknown> => {
+        await new Promise((resolve) => setTimeout(resolve, 8))
+        if (signal?.aborted) throw new CanceledError()
+        return { data: 'ok' }
+      }
+    )
+    const cachedRequest = useCachedRequest(rejectingFn)
+
+    const initiator = cachedRequest.call({ id: 1 })
+    const deduplicated = cachedRequest.call({ id: 1 })
+    cachedRequest.cancel({ id: 1 })
+
+    await expect(Promise.all([initiator, deduplicated])).resolves.toEqual([
+      null,
+      null
+    ])
+    expect(consoleError).not.toHaveBeenCalled()
   })
 
   it('should clear the cache when clear is called', async () => {
@@ -192,6 +264,22 @@ describe('useCachedRequest', () => {
 
     // The request function should be called again
     expect(mockRequestFn).toHaveBeenCalledTimes(2)
+  })
+
+  it('should clear only the matching entry when clear is given params', async () => {
+    const cachedRequest = useCachedRequest(mockRequestFn)
+
+    await cachedRequest.call({ id: 1 })
+    await cachedRequest.call({ id: 2 })
+    expect(mockRequestFn).toHaveBeenCalledTimes(2)
+
+    cachedRequest.clear({ id: 1 })
+
+    await cachedRequest.call({ id: 2 })
+    expect(mockRequestFn).toHaveBeenCalledTimes(2)
+
+    await cachedRequest.call({ id: 1 })
+    expect(mockRequestFn).toHaveBeenCalledTimes(3)
   })
 
   it('should handle null results correctly', async () => {

@@ -1,6 +1,7 @@
 import QuickLRU from '@alloc/quick-lru'
 
 import { paramsToCacheKey } from '@/utils/formatUtil'
+import { isAbortError } from '@/utils/typeGuardUtil'
 
 const DEFAULT_MAX_SIZE = 50
 
@@ -36,24 +37,30 @@ export function useCachedRequest<TParams, TResult>(
     params: TParams,
     cacheKey: string
   ): Promise<TResult | null> => {
-    try {
-      const controller = new AbortController()
-      abortControllers.set(cacheKey, controller)
+    const controller = new AbortController()
+    abortControllers.set(cacheKey, controller)
 
-      const responsePromise = requestFunction(params, controller.signal)
+    let responsePromise: Promise<TResult | null> | undefined
+
+    try {
+      responsePromise = requestFunction(params, controller.signal)
       pendingRequests.set(cacheKey, responsePromise)
 
       const result = await responsePromise
-      cache.set(cacheKey, result)
+      // A cancellation is not a verdict about the resource, so caching it would
+      // make the cancellation permanent for the rest of the session.
+      if (!controller.signal.aborted) cache.set(cacheKey, result)
 
       return result
-    } catch (err) {
+    } catch {
       // Set cache on error to prevent retrying bad requests
-      cache.set(cacheKey, null)
+      if (!controller.signal.aborted) cache.set(cacheKey, null)
       return null
     } finally {
-      pendingRequests.delete(cacheKey)
-      abortControllers.delete(cacheKey)
+      if (pendingRequests.get(cacheKey) === responsePromise)
+        pendingRequests.delete(cacheKey)
+      if (abortControllers.get(cacheKey) === controller)
+        abortControllers.delete(cacheKey)
     }
   }
 
@@ -63,24 +70,46 @@ export function useCachedRequest<TParams, TResult>(
     try {
       return await pendingRequest
     } catch (err) {
-      console.error('Error in pending request:', err)
+      if (!isAbortError(err)) console.error('Error in pending request:', err)
       return null
     }
   }
 
-  const abortAllRequests = () => {
-    for (const controller of abortControllers.values()) {
-      controller.abort()
-    }
+  const abortRequest = (cacheKey: string) => {
+    abortControllers.get(cacheKey)?.abort()
+    abortControllers.delete(cacheKey)
+    pendingRequests.delete(cacheKey)
   }
 
   /**
-   * Cancel and clear any pending requests
+   * Cancel pending requests: only the one matching `params` when given, every
+   * pending request otherwise. Requests are keyed by params, so cancelling a
+   * key that another caller de-duplicated onto resolves that caller to `null`
+   * as well.
    */
-  const cancel = () => {
-    abortAllRequests()
-    abortControllers.clear()
-    pendingRequests.clear()
+  const cancel = (...params: [] | [TParams]) => {
+    if (params.length === 0) {
+      for (const cacheKey of [...abortControllers.keys()])
+        abortRequest(cacheKey)
+      pendingRequests.clear()
+      return
+    }
+
+    abortRequest(cacheKeyFn(params[0]))
+  }
+
+  /**
+   * Drop cached results: only the entry matching `params` when given, every
+   * cached entry otherwise. In-flight requests are left alone and will still
+   * cache their result, so `cancel` first to fully invalidate a key.
+   */
+  const clear = (...params: [] | [TParams]) => {
+    if (params.length === 0) {
+      cache.clear()
+      return
+    }
+
+    cache.delete(cacheKeyFn(params[0]))
   }
 
   /**
@@ -101,6 +130,6 @@ export function useCachedRequest<TParams, TResult>(
   return {
     call,
     cancel,
-    clear: () => cache.clear()
+    clear
   }
 }
