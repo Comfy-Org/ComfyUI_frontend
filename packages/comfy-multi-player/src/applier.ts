@@ -34,32 +34,22 @@
  * merely `< length`), the inputcount widget name and its cloneability, the
  * grow payload shape, and opaque destinations.
  *
- * NOT "every precondition that can throw" — that claim was false when this
- * file first made it, and stating it accurately is the point. FOUR holes are
- * known and open:
- *  - a value `structuredClone` ACCEPTS but Yjs cannot store (`Map`, `Set`,
- *    `RegExp`, `ArrayBuffer`, `Error`) still mutates and then throws
- *    `Unexpected content type` mid-handler (#59, #61);
- *  - and a REFERENCE CYCLE passes `structuredClone` (which preserves cycles by
+ * The digest canonicalizer first bounds the depth and shape of the WHOLE op
+ * envelope before the idempotency gate. Separately, a value that reaches a
+ * write must be storable by its destination Yjs type, not merely
+ * structured-cloneable ({@link isStorableMapValue} /
+ * {@link isStorableArrayItem}), and `delete_node`'s `removed_links` must be
+ * iterable before the node is deleted. The first gate protects canonical op
+ * identity; the latter gates define what may enter Yjs maps and arrays.
+ *
+ * One related hole remains: a REFERENCE CYCLE passes `structuredClone` (which preserves cycles by
  *    design) and `Y.Map.set` alike, then makes `encodeStateAsUpdate` throw
  *    permanently — the document is unrecoverable (#68). Entry points MEASURED
  *    so far: `set_widget.value`, `grow.inputcount.value`, `add_node`'s
  *    `widgets_values`, `connect.link_type`, `connect.link_id`, and
  *    `connect.grow.widget` (the one `grow` field nothing type-checks);
- *  - `applyDeleteNode` reads `op.removed_links` — an OP-ONLY value — only
- *    AFTER `mdel(nodes, key)`, so a non-array (`5`, `{}`, `true`) deletes the
- *    node and then throws, and a string is accepted and iterated character by
- *    character;
- *  - and `connect.link_id`/`link_type` are copied in with NO validation at all,
- *    so an `undefined` `link_id` mutates and then throws a raw `TypeError` —
- *    structurally identical to `removed_links` — while a `Symbol` `link_id`
- *    leaves the document permanently UNPROJECTABLE. An earlier revision of this
- *    file excluded it as "not a rejection path"; that criterion does not
- *    separate it from `removed_links`, which is counted, so it is counted too.
- *    All four are identical on `main`. Treat
- *    this as a lower bound, not a closed set: every op field copied into the
- *    doc without a storability check is a candidate, and #68's gate must be
- *    written against the WRITE sites rather than against this list.
+ * The cycle gate in #68 must be written against the WRITE sites rather than
+ * against this list.
  *
  * Separately, "validated before the first write" is about WRITE ORDER, not
  * about arrival order. A precondition that must READ the document resolves
@@ -67,9 +57,6 @@
  * `delete_node`; only the OP-ONLY preconditions are hoisted above the
  * delete-wins returns for that reason. Schema §2.5 items 4-8 carve out
  * what remains.
- *
- * `assertCloneableValue` is a `structuredClone` predicate, not a Yjs-storable
- * one; closing the class needs the latter.
  *
  * A further hole USED to be listed here: `stampKey`'s `Number(stamp[0])` was
  * evaluated after the autogrow slot append, so a `Symbol` or throwing-`valueOf`
@@ -90,6 +77,8 @@ import {
   apush,
   countDefinitionInstances,
   createNodeMap,
+  isStorableArrayItem,
+  isStorableMapValue,
   linksMap,
   mdel,
   metaMap,
@@ -536,18 +525,34 @@ function isInteriorWrite(op: SetWidgetOp): op is InteriorSetWidgetOp {
 }
 
 /**
- * `structuredClone` throws `DataCloneError` on values JSON never carries
- * (functions, symbols, most class instances). Every widget write clones, and
- * the clone is evaluated as an argument to `mset` — after `widgetsOf` may have
+ * A widget value has to survive TWO gates before it may be written, and both
+ * used to be evaluated as arguments to `mset` — after `widgetsOf` may have
  * created the widgets map, and after an autogrow may have appended its slot.
- * Checking up front keeps a rejected op byte-identical (D4) for in-process
- * callers as well as for ops that arrived as JSON.
+ *
+ *  1. `structuredClone` throws `DataCloneError` on values JSON never carries
+ *     (functions, symbols).
+ *  2. Yjs stores only a fixed set of shapes ({@link isStorableMapValue}) and
+ *     throws `Unexpected content type` on the rest — and `Map`, `Set`,
+ *     `RegExp`, `Error` and `ArrayBuffer` clone happily on their way to that
+ *     throw, so gate 1 alone let them reach the document.
+ *
+ * Checking both up front keeps a rejected op byte-identical (D4) for
+ * in-process callers as well as for ops that arrived as JSON. The storability
+ * gate runs on the CLONE, because `structuredClone` is what normalizes a class
+ * instance or a prototype-less object into a storable plain object.
  */
-function assertCloneableValue(value: unknown, what: string): void {
+function assertWritableValue(value: unknown, what: string): void {
+  let cloned: unknown;
   try {
-    structuredClone(value);
+    cloned = structuredClone(value);
   } catch {
     throw new OpRejectedError("malformed_op", `${what}: value is not structured-cloneable`);
+  }
+  if (!isStorableMapValue(cloned)) {
+    throw new OpRejectedError(
+      "malformed_op",
+      `${what}: value of type ${String((cloned as object)?.constructor?.name ?? typeof cloned)} cannot be stored in a Y.Doc`,
+    );
   }
 }
 
@@ -559,7 +564,7 @@ function applySetWidget(doc: Y.Doc, op: SetWidgetOp, catalog?: WidgetCatalog): v
   if (interior === null && typeof op.widget !== "string") {
     throw new OpRejectedError("malformed_op", "set_widget: missing widget name");
   }
-  assertCloneableValue(op.value, "set_widget");
+  assertWritableValue(op.value, "set_widget");
 
   // LWW gate first (comfy-cli `_apply_set_widget`): a lower-or-equal stamp is
   // dropped — a protocol-level apply that still consumes its op_id.
@@ -772,7 +777,7 @@ function requireOpOnlyValid(op: ConnectOp): void {
     if (typeof op.grow.inputcount.widget !== "string") {
       throw new OpRejectedError("malformed_op", "connect: grow.inputcount needs a widget name");
     }
-    assertCloneableValue(op.grow.inputcount.value, "connect: grow.inputcount");
+    assertWritableValue(op.grow.inputcount.value, "connect: grow.inputcount");
   }
   if (op.grow != null && (typeof op.grow.name !== "string" || typeof op.grow.type !== "string")) {
     throw new OpRejectedError("malformed_op", "connect: grow payload needs name and type");
@@ -826,6 +831,22 @@ function applyConnect(doc: Y.Doc, op: ConnectOp, catalog?: WidgetCatalog): void 
       catalog,
       String(dst.get("type") ?? ""),
       String(op.grow.inputcount.widget),
+    );
+    assertWritableValue(op.grow.inputcount.value, "connect: grow.inputcount");
+  }
+
+  // `link_id` is written THREE ways — the links-map key (via String()), the
+  // destination slot's `link` (a Y.Map value) and an item of the source port's
+  // `links` (a Y.Array insert) — so it must satisfy the INTERSECTION of the
+  // two domains, neither of which contains the other: the array insert refuses
+  // `undefined`/`Date`/`BigInt` that a map accepts, and the map refuses an
+  // `ArrayBuffer` that an array accepts. The last of those writes is also the
+  // last write of the handler, so an id Yjs cannot hold threw with the
+  // register claimed, the incumbent severed and the link tuple written.
+  if (!isStorableArrayItem(op.link_id) || !isStorableMapValue(op.link_id)) {
+    throw new OpRejectedError(
+      "malformed_op",
+      `connect: link_id of type ${String((op.link_id as unknown as object)?.constructor?.name ?? typeof op.link_id)} cannot be stored in the document`,
     );
   }
 
@@ -1231,6 +1252,19 @@ function applyDeleteNode(doc: Y.Doc, op: DeleteNodeOp): void {
   if (op.node_id === undefined) {
     throw new OpRejectedError("malformed_op", "delete_node: missing node_id");
   }
+  // `new Set(op.removed_links ?? [])` throws on anything non-iterable, and it
+  // used to be evaluated AFTER the node had been deleted: the op reported
+  // `apply_failed` with `applied_count: 0` while the node was gone, and left
+  // its op_id unrecorded so the retry deleted again (KA-4 / D4). Iterability,
+  // not array-ness, is the precondition being hoisted — a caller passing a Set
+  // works today and must keep working.
+  const removedLinks = op.removed_links ?? [];
+  if (typeof (removedLinks as { [Symbol.iterator]?: unknown })[Symbol.iterator] !== "function") {
+    throw new OpRejectedError(
+      "malformed_op",
+      `delete_node: removed_links must be iterable, got ${typeof removedLinks}`,
+    );
+  }
   const nodes = nodesMap(doc);
   const key = String(op.node_id);
   const stamps = stampsMap(doc);
@@ -1244,7 +1278,7 @@ function applyDeleteNode(doc: Y.Doc, op: DeleteNodeOp): void {
   }
 
   const links = linksMap(doc);
-  const removed = new Set<unknown>(op.removed_links ?? []);
+  const removed = new Set<unknown>(removedLinks);
   const toDelete: string[] = [];
   links.forEach((ln: unknown, k: string) => {
     const tuple = ln as unknown[];

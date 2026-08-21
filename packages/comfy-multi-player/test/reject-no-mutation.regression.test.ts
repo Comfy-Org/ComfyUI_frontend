@@ -489,44 +489,6 @@ describe("regression: rejected connect ops leave document bytes unchanged (#10)"
     },
   );
 
-  it.each([
-    ["a number", 5],
-    ["an object", {}],
-    ["a boolean", true],
-  ])(
-    "KNOWN HOLE: delete_node with %s removed_links deletes the node, THEN throws",
-    (_label, removedLinks) => {
-      // Asserting the BUG, in the discipline #58 established: a prose list stays
-      // true-looking after a fix, an assertion goes red. `op.removed_links` is
-      // read from the OP ALONE but evaluated after `mdel(nodes, key)`, so the
-      // node is gone before the throw and `__applied` is unwritten, which makes
-      // the "rejection" both destructive and non-idempotent on retry.
-      //
-      // NOT fixed here: hoisting it is a one-liner, but it would newly reject
-      // payloads `main` accepts on a handler this PR does not otherwise touch,
-      // which needs its own G8 vocabulary analysis. Identical on `main`.
-      // Enumerated as the third open hole in `src/applier.ts`,
-      // `docs/INVARIANTS.md` KA-4, `README.md`, contract D4 and
-      // `test/invalid-op-states.test.ts`. When it is fixed, this goes red —
-      // move it to an assertion of byte-identity and drop it from every carrier
-      // that enumerates the open holes (`src/applier.ts`, KA-4, `README.md`,
-      // contract D4, `docs/ROADMAP.md`, this file's siblings in
-      // `test/invalid-op-states.test.ts` and
-      // `test/ka4-rejection-byte-identity.test.ts`).
-      const doc = mint(workflow, catalog);
-      const before = Buffer.from(Y.encodeStateAsUpdate(doc));
-      const result = applyOps(doc, [{
-        op: "delete_node", op_id: opId("delrl"), actor: "human:z", base_version: 9,
-        stamp: [9, "human:z"], node_id: 700, removed_links: removedLinks,
-      } as unknown as Op], catalog);
-      expect(result.failed?.code).toBe("apply_failed");
-      expect(
-        Buffer.from(Y.encodeStateAsUpdate(doc)).equals(before),
-        "delete_node/removed_links is fixed: move this into the byte-identity set and drop it from the open-hole enumerations",
-      ).toBe(false);
-    },
-  );
-
   /**
    * §2.5 items 4-8 promise "each is pinned by a test that will start
    * failing the day it is closed". These are those tests. They assert the

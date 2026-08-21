@@ -101,20 +101,9 @@ const wireOp = (shape: Record<string, unknown>): Op => shape as unknown as Op;
 // for one the catalogue cannot describe both reject byte-identically, pinned by
 // `test/reject-no-mutation.regression.test.ts`.
 //
-// The PATH ITSELF IS STILL NOT SAFE, so the warning stands as written.
-// `growInputSlot` still `apush`es the grown slot and only then calls
-// `applyInputcountBump`, which can still throw AFTER that append:
-//   - `mset(widgetsOf(dst), …)` on a value `structuredClone` accepts but Yjs
-//     cannot store (`Map`, `Set`, `RegExp`, `ArrayBuffer`, `Error`);
-//   - and a reference cycle is accepted outright, then makes
-//     `encodeStateAsUpdate` throw permanently.
-// Two more, outside this handler: `applyDeleteNode` reads `op.removed_links` —
-// an op-only value — only after `mdel(nodes, key)`, so a non-array deletes the
-// node and then throws; and `connect.link_id`/`link_type` are copied in with no
-// validation at all.
-// Tracked by #59, #61 and #68. `src/applier.ts`'s module JSDoc,
-// `docs/INVARIANTS.md` KA-4, `README.md` and contract D4 list the same four
-// holes; if you change one, change them all.
+// Amendment A9 closes the cloneable-but-unstorable, `connect.link_id`, and
+// `delete_node.removed_links` write-order holes. A reference cycle and
+// unvalidated `connect.link_type` remain tracked by #68.
 //
 // A `Symbol` or throwing-`valueOf` `base_version` used to be a third trigger
 // here. Hoisting `stampKey` into `requireOpOnlyValid` closed it on every

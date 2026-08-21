@@ -1537,3 +1537,24 @@ place. Recorded here for the amendment log:
   (KA-1, FC-10). The applier degrades safely in the meantime — a pre-A8 `1` is
   always accepted — but two A8-aware implementations that disagree on
   canonicalization do NOT degrade safely.
+
+---
+
+## Amendment A9 — 2026-08-21 — Yjs storability is an op precondition (issue #10)
+
+`structuredClone` is necessary but insufficient before a write: Yjs accepts
+different value domains for a `Y.Map` value and a `Y.Array` item. Values that
+clone but are outside the destination domain are now rejected before mutation.
+`connect.link_id`, which is written in both forms, must satisfy their
+intersection. `delete_node.removed_links` is likewise checked for iterability
+before the A7 node-presence stamp gate and deletion. These checks preserve the
+A6 rule: every op-only precondition runs before document-dependent early
+returns. They do not change §2.5's remaining convergence carve-outs.
+
+The digest canonicalizer bounds the depth and shape of the whole op envelope
+before the idempotency gate; these predicates separately govern which values
+may enter Yjs maps and arrays after that gate. They are pinned against real Yjs
+writes, and rejected ops are tested for byte identity, unconsumed `op_id`, and
+retry safety. Reference cycles and `connect.link_type` remain outside this
+amendment (#68). No schema-version bump: the document layout and accepted JSON
+wire vocabulary are unchanged.

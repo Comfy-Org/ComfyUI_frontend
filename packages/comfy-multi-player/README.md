@@ -364,23 +364,12 @@ wrong:
 | **Delete-wins no-op** — the target node is gone | `applied` | no | yes |
 | **Malformed on its face, whatever the document state** — `connect` with a `from_slot` or `to_slot` outside the non-negative integers, a non-numeric `to_slot` without `grow`, a non-string `grow.name`/`grow.type`/`grow.inputcount.widget`, a non-cloneable widget value, or a `base_version` that throws on conversion | `failed` | no (byte-identical for this op; a valid prefix earlier in the batch is still applied — §4) | **no** |
 | Duplicate — already applied to this document | `skipped` | no | already was |
-| Rejected | `failed` | no (byte-identical) — **with four known exceptions, below** | **no** |
+| Rejected | `failed` | no (byte-identical), subject to the cycle/`link_type` caveat below | **no** |
 
-**The four exceptions, stated because the row above would otherwise overclaim
-(`docs/INVARIANTS.md` KA-4 and contract D4 record the same four).** Issue #10's
-class is not fully closed. A rejection still mutates before it throws when the
-op carries a value `structuredClone` accepts but Yjs cannot store (`Map`, `Set`,
-`RegExp`, `ArrayBuffer`, `Error`). A REFERENCE CYCLE is not rejected at all
-— it is accepted, after which `encodeStateAsUpdate` throws permanently and the
-document cannot be encoded or projected again. And `delete_node` with a
-non-array `removed_links` (`5`, `{}`, `true`) DELETES THE NODE and only then
-throws, leaving the document changed by a "rejected" op; a string is accepted
-outright and iterated character by character. Tracked by #59, #61 and #68;
-And `connect.link_id`/`link_type` are copied in with no validation at all, so an
-`undefined` `link_id` mutates and then throws a raw `TypeError` — the same shape
-as `removed_links` — while a `Symbol` `link_id` leaves the document permanently
-UNPROJECTABLE (`project()` throws), the same end state as a cycle. Until those land, "byte-identical on rejection" holds for every rejection code
-the applier raises deliberately, and not for these.
+**Remaining caveat.** Amendment A8 refuses cloneable-but-unstorable values,
+invalid `connect.link_id`, and non-iterable `delete_node.removed_links` before
+mutation. A reference cycle and unvalidated `connect.link_type` remain tracked
+by #68 and can still leave the document unencodable.
 
 The four `connect` paths this row used to except — the two `output_slot_missing`
 cases and the two `connect`+`inputcount` grow rejections, swept by
@@ -406,11 +395,8 @@ back on throw, so this is a property of write order inside each handler, not
 something the transaction provides — which is why it had to be fixed by moving
 checks rather than by wrapping them.
 
-**The exceptions listed under the outcome table above still apply** — a value
-Yjs cannot store, a reference cycle, `delete_node` with a non-array
-`removed_links`, and `connect.link_id`/`link_type`. For those a retry is not
-safe on its own. The count lives in one place, above; repeating it here is how
-this paragraph came to contradict that table.
+**The caveat listed under the outcome table above still applies** to reference
+cycles and unvalidated `connect.link_type`; a retry is not safe on its own.
 
 Rejection codes: `malformed_op`, `unknown_op`, `op_deferred`,
 `catalog_required`, `invalid_node_payload`, `unknown_widget`,

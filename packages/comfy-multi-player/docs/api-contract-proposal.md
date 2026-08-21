@@ -95,17 +95,10 @@ incumbent link. **All four now hold**, and #34 additionally makes every op-only
 `connect`/`set_widget` precondition run before the delete-wins returns, so those
 rejections are order-independent too (schema Amendment A6).
 
-Four residual paths remain: a value `structuredClone` accepts but Yjs cannot
-store (`Map`, `Set`, `RegExp`, `ArrayBuffer`, `Error`) still mutates before
-throwing; a REFERENCE CYCLE is accepted outright and then makes
-`encodeStateAsUpdate` throw permanently; `delete_node` with a non-array
-`removed_links` deletes the node before it throws, because that value is read
-from the op but evaluated after the deletion; and `connect.link_id`/`link_type`
-are copied in unvalidated, so an `undefined` `link_id` mutates then throws and a
-`Symbol` one leaves the document unprojectable. Tracked by #59, #61 and #68;
-`docs/INVARIANTS.md` KA-4 and `README.md` carry the same four. Until they land,
-"resending the whole batch is always safe" is true for every rejection code the
-applier raises deliberately, and not for those four.
+Amendment A9 closes the cloneable-but-unstorable, `connect.link_id`, and
+`delete_node.removed_links` write-order paths. Reference cycles and unvalidated
+`connect.link_type` remain tracked by #68; those still prevent an unconditional
+"resending the whole batch is always safe" claim.
 
 **Why.** The alternative, rejecting the whole batch, throws away work the
 writer already considers accepted. The alternative to *that*, skipping the

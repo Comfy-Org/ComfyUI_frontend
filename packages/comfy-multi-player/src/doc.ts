@@ -250,23 +250,113 @@ function isPlainObject(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
 }
 
-function plainToYMap(obj: Record<string, unknown>): Y.Map<unknown> {
+// ---------------------------------------------------------------------------
+// What a Y.Doc can actually hold (KA-4 / D4)
+// ---------------------------------------------------------------------------
+
+/**
+ * Whether Yjs can store `value` as a Y.Map VALUE — a faithful mirror of yjs
+ * `typeMapSet`'s content switch.
+ *
+ * `structuredClone` is a necessary but NOT sufficient gate for a value on its
+ * way into the document: `Map`, `Set`, `RegExp`, `Error` and `ArrayBuffer` all
+ * clone happily and then throw `Unexpected content type` at the write. That
+ * throw lands mid-handler — after `widgetsOf` created the widgets map, after
+ * an autogrow appended its slot, after a node map was half integrated — which
+ * is the KA-4 / D4 violation of issue #10 with a different trigger. Checking
+ * up front is what keeps a rejected op byte-identical.
+ *
+ * A prototype-stripped or class instance is NOT rejected: `structuredClone`
+ * turns both into plain objects, so the value that reaches the write is
+ * storable. Check the CLONE, never the original.
+ *
+ * Pinned against a real `Y.Doc` write in `test/reject-no-mutation.regression.test.ts`
+ * so this cannot drift from the yjs it mirrors.
+ */
+export function isStorableMapValue(value: unknown): boolean {
+  if (value === null || value === undefined) return true;
+  switch ((value as object).constructor) {
+    case Number:
+    case Object:
+    case Boolean:
+    case Array:
+    case String:
+    case Date:
+    case BigInt:
+    case Uint8Array:
+      return true;
+    default:
+      return value instanceof Y.AbstractType || value instanceof Y.Doc;
+  }
+}
+
+/**
+ * Whether Yjs can store `value` as a Y.Array ITEM — yjs
+ * `typeListInsertGenerics`. NEITHER domain contains the other: an array insert
+ * refuses `undefined` (it throws on a property read), `Date` and `BigInt`,
+ * which a map accepts; a map refuses an `ArrayBuffer`, which an array accepts.
+ * A value written both ways — a `connect`'s `link_id` is a destination slot's
+ * `link` AND an item of the source port's `links` — must satisfy both.
+ */
+export function isStorableArrayItem(value: unknown): boolean {
+  if (value === undefined) return false;
+  if (value === null) return true;
+  switch ((value as object).constructor) {
+    case Number:
+    case Object:
+    case Boolean:
+    case Array:
+    case String:
+    case Uint8Array:
+    case ArrayBuffer:
+      return true;
+    default:
+      return value instanceof Y.AbstractType || value instanceof Y.Doc;
+  }
+}
+
+/** Defensive copy of a value destined for a Y.Map value slot, refused up front if the doc cannot hold it. */
+function cloneForMap(value: unknown, what: string): unknown {
+  const cloned = structuredClone(value);
+  if (!isStorableMapValue(cloned)) {
+    throw new TypeError(`${what}: ${describeUnstorable(cloned)} cannot be stored in a Y.Doc`);
+  }
+  return cloned;
+}
+
+/** Defensive copy of a value destined for a Y.Array item, refused up front if the doc cannot hold it. */
+function cloneForArray(value: unknown, what: string): unknown {
+  const cloned = structuredClone(value);
+  if (!isStorableArrayItem(cloned)) {
+    throw new TypeError(`${what}: ${describeUnstorable(cloned)} cannot be stored in a Y.Array`);
+  }
+  return cloned;
+}
+
+function describeUnstorable(value: unknown): string {
+  if (value === undefined) return "undefined";
+  const name = (value as object)?.constructor?.name;
+  return typeof name === "string" && name.length > 0 ? `a ${name}` : "a prototype-less value";
+}
+
+function plainToYMap(obj: Record<string, unknown>, what: string): Y.Map<unknown> {
   const m = new Y.Map<unknown>();
-  for (const [k, v] of Object.entries(obj)) m.set(k, structuredClone(v));
+  for (const [k, v] of Object.entries(obj)) m.set(k, cloneForMap(v, `${what}.${k}`));
   return m;
 }
 
 /** Input/output slot record → Y.Map. `links` arrays become Y.Arrays; `links: null` is preserved verbatim (schema §7). */
-function slotToYMap(slot: unknown): Y.Map<unknown> | unknown {
-  if (!isPlainObject(slot)) return structuredClone(slot);
+function slotToYMap(slot: unknown, what: string): Y.Map<unknown> | unknown {
+  // A non-record slot is stored as an ITEM of the inputs/outputs Y.Array.
+  if (!isPlainObject(slot)) return cloneForArray(slot, what);
   const m = new Y.Map<unknown>();
   for (const [k, v] of Object.entries(slot)) {
     if (k === "links" && Array.isArray(v)) {
       const arr = new Y.Array<unknown>();
-      arr.push(v.map((x) => structuredClone(x)));
+      arr.push(v.map((x, i) => cloneForArray(x, `${what}.links[${String(i)}]`)));
       m.set(k, arr);
     } else {
-      m.set(k, structuredClone(v));
+      m.set(k, cloneForMap(v, `${what}.${k}`));
     }
   }
   return m;
@@ -298,9 +388,9 @@ function widgetsToYMap(
         `createNodeMap(${node.type}): widgets_values has ${wv.length} entries but widget_order names only ${order.length}`,
       );
     }
-    wv.forEach((v, i) => widgets.set(order[i]!, structuredClone(v)));
+    wv.forEach((v, i) => widgets.set(order[i]!, cloneForMap(v, `widgets_values[${String(i)}]`)));
   } else if (isPlainObject(wv)) {
-    for (const [k, v] of Object.entries(wv)) widgets.set(k, structuredClone(v));
+    for (const [k, v] of Object.entries(wv)) widgets.set(k, cloneForMap(v, `widgets_values.${k}`));
   }
   return widgets;
 }
@@ -344,7 +434,7 @@ export function createNodeMap(node: WorkflowNode, widgetOrder?: readonly string[
         case "opaque":
           // Whole-value storage: never merged element-wise, so §1.2's
           // positional-array corruption cannot arise. See OPAQUE_WIDGETS_KEY.
-          m.set(OPAQUE_WIDGETS_KEY, structuredClone(v));
+          m.set(OPAQUE_WIDGETS_KEY, cloneForMap(v, "widgets_values"));
           break;
         case "named":
           m.set("widgets", widgetsToYMap(node, v, widgetOrder));
@@ -353,13 +443,13 @@ export function createNodeMap(node: WorkflowNode, widgetOrder?: readonly string[
           assertNever(storage, "createNodeMap: widget-storage strategy");
       }
     } else if (k === "flags" && isPlainObject(v)) {
-      m.set("flags", plainToYMap(v));
+      m.set("flags", plainToYMap(v, "flags"));
     } else if ((k === "inputs" || k === "outputs") && Array.isArray(v)) {
       const arr = new Y.Array<unknown>();
-      arr.push(v.map((slot) => slotToYMap(slot)));
+      arr.push(v.map((slot, i) => slotToYMap(slot, `${k}[${String(i)}]`)));
       m.set(k, arr);
     } else {
-      m.set(k, structuredClone(v));
+      m.set(k, cloneForMap(v, k));
     }
   }
   return m;
