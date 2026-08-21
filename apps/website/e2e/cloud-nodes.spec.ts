@@ -43,7 +43,7 @@ test.describe('Cloud nodes page @smoke', () => {
 
     await firstCard.locator('a').first().click()
 
-    await expect(page).toHaveURL(/\/cloud\/supported-nodes\/[a-z0-9-]+$/)
+    await expect(page).toHaveURL(/\/cloud\/supported-nodes\/[a-z0-9-]+\/$/)
     await expect(page.getByTestId('cloud-node-pack-detail')).toBeVisible()
   })
 
@@ -163,7 +163,9 @@ test.describe('Cloud nodes page (zh-CN) @smoke', () => {
 
     await firstCard.locator('a').first().click()
 
-    await expect(page).toHaveURL(/\/zh-CN\/cloud\/supported-nodes\/[a-z0-9-]+$/)
+    await expect(page).toHaveURL(
+      /\/zh-CN\/cloud\/supported-nodes\/[a-z0-9-]+\/$/
+    )
     await expect(page.getByTestId('cloud-node-pack-detail')).toBeVisible()
   })
 })
