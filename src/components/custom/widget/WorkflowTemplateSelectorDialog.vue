@@ -203,76 +203,26 @@
               <CardTop ratio="square">
                 <template #default>
                   <!-- Template Thumbnail -->
-                  <div class="relative size-full overflow-hidden rounded-lg">
-                    <template v-if="template.mediaType === 'audio'">
-                      <AudioThumbnail :src="getBaseThumbnailSrc(template)" />
-                    </template>
-                    <template
-                      v-else-if="template.thumbnailVariant === 'compareSlider'"
-                    >
-                      <CompareSliderThumbnail
-                        :base-image-src="getBaseThumbnailSrc(template)"
-                        :overlay-image-src="getOverlayThumbnailSrc(template)"
-                        :alt="
-                          getTemplateTitle(
-                            template,
-                            getEffectiveSourceModule(template)
-                          )
-                        "
-                        :is-hovered="hoveredTemplate === template.name"
-                        :is-video="
-                          template.mediaType === 'video' ||
-                          template.mediaSubtype === 'webp'
-                        "
+                  <TemplatePreview
+                    :template="template"
+                    :base-image-src="getBaseThumbnailSrc(template)"
+                    :overlay-image-src="getOverlayThumbnailSrc(template)"
+                    :alt="
+                      getTemplateTitle(
+                        template,
+                        getEffectiveSourceModule(template)
+                      )
+                    "
+                    :get-logo-url="workflowTemplatesStore.getLogoUrl"
+                    :is-hovered="hoveredTemplate === template.name"
+                  >
+                    <template #overlay>
+                      <ProgressSpinner
+                        v-if="loadingTemplate === template.name"
+                        class="absolute inset-0 z-10 m-auto size-12"
                       />
                     </template>
-                    <template
-                      v-else-if="template.thumbnailVariant === 'hoverDissolve'"
-                    >
-                      <HoverDissolveThumbnail
-                        :base-image-src="getBaseThumbnailSrc(template)"
-                        :overlay-image-src="getOverlayThumbnailSrc(template)"
-                        :alt="
-                          getTemplateTitle(
-                            template,
-                            getEffectiveSourceModule(template)
-                          )
-                        "
-                        :is-hovered="hoveredTemplate === template.name"
-                        :is-video="
-                          template.mediaType === 'video' ||
-                          template.mediaSubtype === 'webp'
-                        "
-                      />
-                    </template>
-                    <template v-else>
-                      <DefaultThumbnail
-                        :src="getBaseThumbnailSrc(template)"
-                        :alt="
-                          getTemplateTitle(
-                            template,
-                            getEffectiveSourceModule(template)
-                          )
-                        "
-                        :is-hovered="hoveredTemplate === template.name"
-                        :is-video="
-                          template.mediaType === 'video' ||
-                          template.mediaSubtype === 'webp'
-                        "
-                        :hover-zoom="0"
-                      />
-                    </template>
-                    <LogoOverlay
-                      v-if="template.logos?.length"
-                      :logos="template.logos"
-                      :get-logo-url="workflowTemplatesStore.getLogoUrl"
-                      default-position="right-2 bottom-2"
-                    />
-                    <ProgressSpinner
-                      v-if="loadingTemplate === template.name"
-                      class="absolute inset-0 z-10 m-auto size-12"
-                    />
-                  </div>
+                  </TemplatePreview>
                 </template>
                 <template #top-left>
                   <div
@@ -432,11 +382,7 @@ import Tag from '@/components/chip/Tag.vue'
 import PaidTemplateBadge from '@/components/custom/widget/PaidTemplateBadge.vue'
 import TemplateFilterControls from '@/components/custom/widget/TemplateFilterControls.vue'
 import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
-import AudioThumbnail from '@/components/templates/thumbnails/AudioThumbnail.vue'
-import CompareSliderThumbnail from '@/components/templates/thumbnails/CompareSliderThumbnail.vue'
-import DefaultThumbnail from '@/components/templates/thumbnails/DefaultThumbnail.vue'
-import HoverDissolveThumbnail from '@/components/templates/thumbnails/HoverDissolveThumbnail.vue'
-import LogoOverlay from '@/components/templates/thumbnails/LogoOverlay.vue'
+import TemplatePreview from '@/components/templates/thumbnails/TemplatePreview.vue'
 import Button from '@/components/ui/button/Button.vue'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import { selectCountBadgeClass } from '@/components/ui/select/select.variants'
