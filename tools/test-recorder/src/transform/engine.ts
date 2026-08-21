@@ -65,7 +65,7 @@ export function transform(
     code.includes('from "@playwright/test"')
   ) {
     warnings.push(
-      'Still imports from @playwright/test — should use ../fixtures/ComfyPage'
+      'Still imports from @playwright/test — should use @e2e/fixtures/ComfyPage'
     )
   }
   if (/position:\s*\{\s*x:\s*\d+,\s*y:\s*\d+/.test(code)) {

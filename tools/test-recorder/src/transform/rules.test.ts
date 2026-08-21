@@ -21,7 +21,7 @@ describe('transformRules', () => {
       const result = applyRule('replace-test-import', input)
       expect(result).toContain('comfyPageFixture as test')
       expect(result).toContain('comfyExpect as expect')
-      expect(result).toContain("from '../fixtures/ComfyPage'")
+      expect(result).toContain("from '@e2e/fixtures/ComfyPage'")
     })
 
     it('replaces { expect, test } (reversed order)', () => {
@@ -108,7 +108,7 @@ describe('structuralTransforms', () => {
   )!
 
   it('wraps a test in test.describe with tags', () => {
-    const input = `import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+    const input = `import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test('does something', async ({ comfyPage }) => {
   await comfyPage.canvas.click()
@@ -131,7 +131,7 @@ test('does something', async ({ comfyPage }) => {
   })
 
   it('converts hyphens and underscores to spaces in describe name', () => {
-    const input = `import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+    const input = `import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test('x', async ({ comfyPage }) => {})`
 

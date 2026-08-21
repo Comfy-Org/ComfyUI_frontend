@@ -31,7 +31,7 @@ The programmatic transform engine lives in `tools/test-recorder/src/transform/ru
 
 | Raw codegen                                       | Convention replacement                                                                    | Why                                      |
 | ------------------------------------------------- | ----------------------------------------------------------------------------------------- | ---------------------------------------- |
-| `import { test, expect } from '@playwright/test'` | `import { comfyPageFixture as test, comfyExpect as expect } from '../fixtures/ComfyPage'` | Use custom fixtures with ComfyUI helpers |
+| `import { test, expect } from '@playwright/test'` | `import { comfyPageFixture as test, comfyExpect as expect } from '@e2e/fixtures/ComfyPage'` | Use custom fixtures with ComfyUI helpers |
 | `test('test', async ({ page }) =>`                | `test('descriptive-name', async ({ comfyPage }) =>`                                       | Use comfyPage fixture, descriptive names |
 | `await page.goto('http://...')`                   | **Remove entirely**                                                                       | Fixture handles navigation automatically |
 | `page.locator('canvas')`                          | `comfyPage.canvas`                                                                        | Pre-configured canvas locator            |
@@ -75,7 +75,7 @@ await comfyPage.searchBox.fillAndSelectFirstNode('KSampler')
 
 1. **Never use `waitForTimeout`** → use `nextFrame()` or retrying assertions
 2. **Never use `page.goto`** → fixture handles navigation
-3. **Never import from `@playwright/test`** → use `../fixtures/ComfyPage`
+3. **Never import from `@playwright/test`** → use `@e2e/fixtures/ComfyPage`
 4. **Never use bare CSS selectors** → use test IDs or semantic locators
 5. **Never share state between tests** → each test is independent
 6. **Never commit local screenshots** → Linux CI generates baselines

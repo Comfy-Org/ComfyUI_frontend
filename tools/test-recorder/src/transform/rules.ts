@@ -13,21 +13,21 @@ export const transformRules: TransformRule[] = [
     description: 'Use comfyPageFixture instead of @playwright/test',
     pattern:
       /import\s*\{\s*(?:test\s*,?\s*expect|expect\s*,?\s*test)\s*\}\s*from\s*['"]@playwright\/test['"]/,
-    replacement: `import {\n  comfyPageFixture as test,\n  comfyExpect as expect\n} from '../fixtures/ComfyPage'`,
+    replacement: `import {\n  comfyPageFixture as test,\n  comfyExpect as expect\n} from '@e2e/fixtures/ComfyPage'`,
     category: 'import'
   },
   {
     name: 'replace-test-only-import',
     description: 'Use comfyPageFixture when only test is imported',
     pattern: /import\s*\{\s*test\s*\}\s*from\s*['"]@playwright\/test['"]/,
-    replacement: `import { comfyPageFixture as test } from '../fixtures/ComfyPage'`,
+    replacement: `import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'`,
     category: 'import'
   },
   {
     name: 'replace-expect-only-import',
     description: 'Use comfyExpect when only expect is imported',
     pattern: /import\s*\{\s*expect\s*\}\s*from\s*['"]@playwright\/test['"]/,
-    replacement: `import { comfyExpect as expect } from '../fixtures/ComfyPage'`,
+    replacement: `import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'`,
     category: 'import'
   },
 

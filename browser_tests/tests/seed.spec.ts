@@ -14,7 +14,7 @@
 import {
   comfyPageFixture as test,
   comfyExpect as expect
-} from '../fixtures/ComfyPage'
+} from '@e2e/fixtures/ComfyPage'
 
 test('seed', async ({ comfyPage }) => {
   // Load the default workflow — gives agents a realistic starting state
