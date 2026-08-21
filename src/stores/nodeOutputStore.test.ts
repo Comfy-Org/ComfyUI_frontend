@@ -786,6 +786,17 @@ describe('nodeOutputStore setNodeOutputs (widget path)', () => {
     expect(store.nodeOutputs['5']?.images?.[0]?.type).toBe('input')
   })
 
+  it('leaves node images unchanged for preview change detection', () => {
+    const store = useNodeOutputStore()
+    const images = [{ filename: 'previous.png' }]
+    const node = createMockNode({ id: 5, images })
+
+    store.setNodeOutputs(node, 'test.png')
+
+    expect(node.images).toBe(images)
+    expect(node.images).not.toBe(store.nodeOutputs['5']?.images)
+  })
+
   it('should skip empty array of filenames after createOutputs', () => {
     const store = useNodeOutputStore()
     const node = createMockNode({ id: 5 })
