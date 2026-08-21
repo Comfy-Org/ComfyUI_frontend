@@ -56,6 +56,17 @@ export async function openPr(options: OpenPrOptions): Promise<void> {
   }
 
   if (created.originalBranch && created.currentBranch) {
+    // A non-TTY caller can't answer this, and the PR is already open by
+    // this point — hanging here would bury a real success behind a stuck
+    // process. Default to staying put rather than silently switching.
+    if (!process.stdin.isTTY) {
+      info([
+        `Staying on ${created.currentBranch} (no terminal attached to ask).`,
+        `Switch back with: git checkout ${created.originalBranch}`
+      ])
+      return
+    }
+
     const goBack = await confirm({
       message: `Switch back to ${created.originalBranch}?`,
       initialValue: true

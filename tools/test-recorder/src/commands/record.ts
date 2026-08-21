@@ -104,6 +104,26 @@ async function offerAgentRefactor(
 }
 
 export async function runRecord(): Promise<void> {
+  if (!process.stdin.isTTY) {
+    fail(
+      'comfy-test record needs an interactive terminal',
+      'stdin is not a TTY, so the guided prompts below cannot be answered.'
+    )
+    info([
+      'This command walks through several yes/no and text prompts, then',
+      'opens a real browser window for you to click through — none of',
+      'that is scriptable today.',
+      '',
+      'If you already have generated code, use:',
+      '',
+      '  comfy-test transform <file> [--name <n>] [--tags <a,b>] [--output <f>]',
+      '  comfy-test pr <file.spec.ts>',
+      '',
+      'Both of those work without a terminal attached.'
+    ])
+    process.exit(1)
+  }
+
   box([
     'This walks you through recording a real browser test — no coding',
     'required. You will:',
