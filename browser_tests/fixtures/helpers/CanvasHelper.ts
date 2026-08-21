@@ -121,7 +121,7 @@ export class CanvasHelper {
    */
   async mouseDblclickAt(position: Position): Promise<void> {
     const abs = await this.toAbsolute(position)
-    await this.page.mouse.dblclick(abs.x, abs.y)
+    await this.page.mouse.dblclick(abs.x, abs.y, { delay: 5 })
     await nextFrame(this.page)
   }
 

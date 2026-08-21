@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   createNestedSubgraphs,
@@ -225,11 +225,6 @@ describe('ChangeTracker', () => {
     useQueueSettingsStore().mode = 'change'
     app.ui.autoQueueEnabled = false
     app.ui.autoQueueMode = 'instant'
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
-    vi.clearAllTimers()
   })
 
   describe('captureCanvasState', () => {

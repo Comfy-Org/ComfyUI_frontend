@@ -5,7 +5,7 @@ import type {
   BillingOpStatusResponse,
   BillingPlansResponse,
   BillingStatus,
-  BillingStatusResponse as GeneratedBillingStatusResponse,
+  BillingStatusResponse,
   CancelSubscriptionRequest,
   CancelSubscriptionResponse,
   ChurnkeyAuthResponse,
@@ -21,7 +21,7 @@ import type {
   PaymentPortalResponse,
   PendingInvite,
   Plan,
-  PreviewSubscribeRequest as GeneratedPreviewSubscribeRequest,
+  PreviewSubscribeRequest,
   PreviewSubscribeResponse,
   ResubscribeRequest,
   ResubscribeResponse,
@@ -53,13 +53,7 @@ import { workspaceApiUrl } from './workspaceApiUrl'
 
 export type WorkspaceType = 'personal' | 'team'
 export type WorkspaceRole = 'owner' | 'member'
-export type BillingRail = NonNullable<
-  GeneratedBillingStatusResponse['billing_rail']
->
-
-export type { WorkspaceWithRole }
-
-export type { ListWorkspacesResponse }
+export type BillingRail = NonNullable<BillingStatusResponse['billing_rail']>
 
 export type Member = GeneratedMember & {
   // Per-member monthly credit limit UI (FE-1277). The cloud OpenAPI carries
@@ -77,17 +71,14 @@ export type { PendingInvite }
 
 export type { SubscriptionTier }
 export type { SubscriptionDuration }
-
+export type { WorkspaceWithRole }
+export type { ListWorkspacesResponse }
 export type { Plan }
 export type { BillingPlansResponse }
 export type { TeamCreditStops }
 export type { TeamCreditStopSummary }
 
 type SubscribeBillingCycle = 'monthly' | 'yearly'
-
-interface PreviewSubscribeRequest extends GeneratedPreviewSubscribeRequest {
-  billing_cycle?: SubscribeBillingCycle
-}
 
 export interface SubscribeOptions {
   returnUrl?: string
@@ -100,7 +91,6 @@ export interface SubscribeOptions {
 
 export interface PreviewSubscribeOptions {
   teamCreditStopId?: string
-  billingCycle?: SubscribeBillingCycle
 }
 
 export type { SubscribeResponse }
@@ -108,31 +98,11 @@ export type { SubscribeResponse }
 export type { PreviewSubscribeResponse }
 
 export type BillingSubscriptionStatus = NonNullable<
-  GeneratedBillingStatusResponse['subscription_status']
+  BillingStatusResponse['subscription_status']
 >
 
 export type { BillingStatus }
-
-type SpecRequiredButOmittedByOlderDeployments =
-  | 'max_seats'
-  | 'occupied_seats'
-  | 'team_credit_stop'
-
-export type BillingStatusResponse = Omit<
-  GeneratedBillingStatusResponse,
-  SpecRequiredButOmittedByOlderDeployments
-> &
-  Partial<
-    Pick<
-      GeneratedBillingStatusResponse,
-      SpecRequiredButOmittedByOlderDeployments
-    >
-  > & {
-    // Not yet part of the ingest OpenAPI spec; scheduled-plan-change display
-    // ships ahead of the backend documenting these fields.
-    scheduled_plan_slug?: string
-    change_at?: string
-  }
+export type { BillingStatusResponse }
 
 export type { BillingBalanceResponse }
 export type { CreateTopupResponse }
@@ -477,8 +447,7 @@ export const workspaceApi = {
         workspaceApiUrl('/billing/preview-subscribe'),
         {
           plan_slug: planSlug,
-          team_credit_stop_id: options.teamCreditStopId,
-          billing_cycle: options.billingCycle
+          team_credit_stop_id: options.teamCreditStopId
         } satisfies PreviewSubscribeRequest,
         { headers }
       )

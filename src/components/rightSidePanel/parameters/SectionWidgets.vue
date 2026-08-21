@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { useMounted, watchDebounced } from '@vueuse/core'
+import { watchDebounced } from '@vueuse/core'
 import {
   computed,
   inject,
   onBeforeUnmount,
+  onMounted,
   provide,
   ref,
   shallowRef,
@@ -76,13 +77,12 @@ const widgets = shallowRef(widgetsProp)
 watchEffect(() => (widgets.value = widgetsProp))
 
 const draggableList = ref<DraggableList | undefined>()
-const isMounted = useMounted()
 
 function setDraggableState() {
   draggableList.value?.dispose()
   draggableList.value = undefined
 
-  if (!isMounted.value || !isDraggable || collapse.value) return
+  if (!isDraggable || collapse.value) return
   const container = widgetsContainer.value
   if (!container?.children?.length) return
 
@@ -129,8 +129,9 @@ function setDraggableState() {
 watchDebounced(
   [widgets, () => isDraggable, collapse],
   () => setDraggableState(),
-  { debounce: 100, immediate: true }
+  { debounce: 100 }
 )
+onMounted(setDraggableState)
 onBeforeUnmount(() => draggableList.value?.dispose())
 
 provide(HideLayoutFieldKey, true)
@@ -378,6 +379,7 @@ defineExpose({
       <div
         ref="widgetsContainer"
         data-testid="section-widgets-list"
+        :data-draggable-ready="draggableList ? 'true' : undefined"
         class="relative space-y-2 rounded-lg px-4 pt-1"
       >
         <WidgetItem

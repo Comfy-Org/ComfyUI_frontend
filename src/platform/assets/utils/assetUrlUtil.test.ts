@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
@@ -24,8 +24,6 @@ function createAsset(overrides: Partial<AssetItem> = {}): AssetItem {
 }
 
 describe('getAssetSubfolder', () => {
-  beforeEach(() => vi.clearAllMocks())
-
   it('reads the subfolder from preview_url', () => {
     const asset = createAsset({
       preview_url: '/api/view?filename=clip.webm&type=output&subfolder=vid/2026'
@@ -54,8 +52,6 @@ describe('getAssetSubfolder', () => {
 })
 
 describe('getAssetUrl', () => {
-  beforeEach(() => vi.clearAllMocks())
-
   it('includes the subfolder carried by preview_url', () => {
     const asset = createAsset({
       preview_url: '/api/view?filename=clip.webm&type=output&subfolder=vid/2026'
