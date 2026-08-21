@@ -14,7 +14,7 @@ import {
 
 const VALID_REQUEST_ID = '550e8400-e29b-41d4-a716-446655440000'
 
-const createSessionOrThrow = vi.fn().mockResolvedValue(undefined)
+const createSessionOrThrow = vi.fn<AnyMockProcedure>(async () => undefined)
 
 vi.mock('@/platform/auth/session/useSessionCookie', () => ({
   useSessionCookie: () => ({ createSessionOrThrow })

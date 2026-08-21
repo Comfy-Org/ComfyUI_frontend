@@ -50,7 +50,7 @@ const mockNodePack = {
 
 // Create mock functions
 const mockGetPackVersions = vi.fn()
-const mockInstallPack = vi.fn().mockResolvedValue(undefined)
+const mockInstallPack = vi.fn<AnyMockProcedure>(async () => undefined)
 const mockCheckNodeCompatibility = vi.fn()
 const mockIsPackInstalled = vi.fn(() => false)
 const mockGetInstalledPackVersion = vi.fn(() => undefined)

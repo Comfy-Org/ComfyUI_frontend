@@ -9,9 +9,9 @@ import SecretsPanel from '@/platform/secrets/components/SecretsPanel.vue'
 import type { SecretMetadata } from '@/platform/secrets/types'
 
 const DIALOG_HANDLE = { key: 'confirm-delete-secret' }
-const mockDeleteSecret = vi.fn().mockResolvedValue(undefined)
-const mockFetchSecrets = vi.fn().mockResolvedValue(undefined)
-const mockFetchProviders = vi.fn().mockResolvedValue(undefined)
+const mockDeleteSecret = vi.fn<AnyMockProcedure>(async () => undefined)
+const mockFetchSecrets = vi.fn<AnyMockProcedure>(async () => undefined)
+const mockFetchProviders = vi.fn<AnyMockProcedure>(async () => undefined)
 const mockCloseDialog = vi.fn()
 
 const mockSecret: SecretMetadata = {

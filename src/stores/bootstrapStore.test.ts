@@ -11,10 +11,12 @@ import { useBootstrapStore } from './bootstrapStore'
 
 vi.mock('@/scripts/api', () => ({
   api: {
-    init: vi.fn().mockResolvedValue(undefined),
-    getNodeDefs: vi.fn().mockResolvedValue({ TestNode: { name: 'TestNode' } }),
-    getCustomNodesI18n: vi.fn().mockResolvedValue({}),
-    getUserConfig: vi.fn().mockResolvedValue({})
+    init: vi.fn<AnyMockProcedure>(async () => undefined),
+    getNodeDefs: vi.fn<AnyMockProcedure>(async () => ({
+      TestNode: { name: 'TestNode' }
+    })),
+    getCustomNodesI18n: vi.fn<AnyMockProcedure>(async () => ({})),
+    getUserConfig: vi.fn<AnyMockProcedure>(async () => ({}))
   }
 }))
 
@@ -40,14 +42,14 @@ vi.mock('@/platform/settings/settingStore', () => ({
 vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   useWorkflowStore: vi.fn(() => ({
     loadWorkflows: vi.fn(),
-    syncWorkflows: vi.fn().mockResolvedValue(undefined)
+    syncWorkflows: vi.fn<AnyMockProcedure>(async () => undefined)
   }))
 }))
 
 const mockNeedsLogin = ref(false)
 vi.mock('@/stores/userStore', () => ({
   useUserStore: vi.fn(() => ({
-    initialize: vi.fn().mockResolvedValue(undefined),
+    initialize: vi.fn<AnyMockProcedure>(async () => undefined),
     needsLogin: mockNeedsLogin
   }))
 }))

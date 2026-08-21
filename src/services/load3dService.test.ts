@@ -44,7 +44,7 @@ function makeLoad3d(): Load3d {
 function makeViewer(overrides: Record<string, unknown> = {}) {
   return {
     needApplyChanges: { value: false },
-    applyChanges: vi.fn().mockResolvedValue(true),
+    applyChanges: vi.fn<AnyMockProcedure>(async () => true),
     cleanup: vi.fn(),
     ...overrides
   }
@@ -448,7 +448,7 @@ describe('load3dService', () => {
             remove: sceneRemove
           } as unknown as THREE.Scene
         }),
-        loadModel: vi.fn().mockResolvedValue(undefined),
+        loadModel: vi.fn<AnyMockProcedure>(async () => undefined),
         setMaterialMode: vi.fn(),
         setUpDirection: vi.fn(),
         applyGizmoTransform: vi.fn(),
@@ -458,7 +458,7 @@ describe('load3dService', () => {
         setCameraState: vi.fn(),
         setBackgroundColor: vi.fn(),
         toggleGrid: vi.fn(),
-        setBackgroundImage: vi.fn().mockResolvedValue(undefined),
+        setBackgroundImage: vi.fn<AnyMockProcedure>(async () => undefined),
         setLightIntensity: vi.fn(),
         setFOV: vi.fn()
       } as unknown as Load3d

@@ -41,7 +41,7 @@ const loadResult = (object: THREE.Object3D) => ({
 function makeModelManagerStub(): ModelManagerStub {
   return {
     clearModel: vi.fn(),
-    setupModel: vi.fn().mockResolvedValue(undefined),
+    setupModel: vi.fn<AnyMockProcedure>(async () => undefined),
     setOriginalModel: vi.fn(),
     originalMaterials: new WeakMap(),
     standardMaterial: new THREE.MeshStandardMaterial(),

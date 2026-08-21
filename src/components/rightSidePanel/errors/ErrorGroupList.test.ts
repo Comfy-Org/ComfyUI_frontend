@@ -50,10 +50,10 @@ vi.mock('@/composables/canvas/useFocusNode', () => ({
 
 vi.mock('@/platform/missingModel/missingModelDownload', () => ({
   downloadModel: vi.fn(),
-  fetchModelMetadata: vi.fn().mockResolvedValue({
+  fetchModelMetadata: vi.fn<AnyMockProcedure>(async () => ({
     fileSize: null,
     gatedRepoUrl: null
-  }),
+  })),
   isModelDownloadable: vi.fn(() => true),
   toBrowsableUrl: vi.fn((url: string) => url)
 }))

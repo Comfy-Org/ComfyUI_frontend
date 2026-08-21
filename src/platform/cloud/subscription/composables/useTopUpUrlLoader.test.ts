@@ -47,7 +47,7 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
 }))
 
 const mockBilling = vi.hoisted(() => ({
-  fetchStatus: vi.fn().mockResolvedValue(undefined),
+  fetchStatus: vi.fn<AnyMockProcedure>(async () => undefined),
   subscription: { value: { isActive: true } as { isActive: boolean } | null },
   isActiveSubscription: { value: true },
   isFreeTier: { value: false }

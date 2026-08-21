@@ -18,15 +18,15 @@ const { mockDistributionTypes } = vi.hoisted(() => ({
   }
 }))
 
-const mockWorkspaceAuthHeader = vi.fn().mockReturnValue(null)
-const mockGetWorkspaceToken = vi.fn().mockReturnValue(undefined)
+const mockWorkspaceAuthHeader = vi.fn<AnyMockProcedure>(() => null)
+const mockGetWorkspaceToken = vi.fn<AnyMockProcedure>(() => undefined)
 const mockEnsureWorkspaceAuthHeader = vi.fn()
 const mockEnsureWorkspaceToken = vi.fn()
 const mockClearWorkspaceContext = vi.fn()
-const mockMintAtLogin = vi.fn().mockResolvedValue(false)
+const mockMintAtLogin = vi.fn<AnyMockProcedure>(async () => false)
 let mockUnifiedToken: string | null = null
 const mockResetForIdentityChange = vi.fn()
-const mockInitializeWorkspaces = vi.fn().mockResolvedValue(undefined)
+const mockInitializeWorkspaces = vi.fn<AnyMockProcedure>(async () => undefined)
 let mockActiveWorkspaceId: string | null = null
 let mockTeamWorkspaceInitState = 'ready'
 
@@ -92,7 +92,7 @@ vi.mock('firebase/auth', async (importOriginal) => {
       setCustomParameters = vi.fn()
     },
     getAdditionalUserInfo: vi.fn(),
-    setPersistence: vi.fn().mockResolvedValue(undefined)
+    setPersistence: vi.fn<AnyMockProcedure>(async () => undefined)
   }
 })
 
@@ -107,7 +107,7 @@ vi.mock('@/platform/updates/common/toastStore', () => ({
 vi.mock('@/services/dialogService')
 vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
 
-const mockApiKeyGetAuthHeader = vi.fn().mockReturnValue(null)
+const mockApiKeyGetAuthHeader = vi.fn<AnyMockProcedure>(() => null)
 vi.mock('@/stores/apiKeyAuthStore', () => ({
   useApiKeyAuthStore: () => ({
     getAuthHeader: mockApiKeyGetAuthHeader,
@@ -130,7 +130,7 @@ describe('auth token priority chain', () => {
   const mockUser: MockUser = {
     uid: 'test-user-id',
     email: 'test@example.com',
-    getIdToken: vi.fn().mockResolvedValue('firebase-token')
+    getIdToken: vi.fn<AnyMockProcedure>(async () => 'firebase-token')
   } as Partial<User> as MockUser
 
   beforeEach(() => {

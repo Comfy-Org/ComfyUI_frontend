@@ -18,8 +18,8 @@ vi.mock('@/renderer/core/layout/slots/slotIdentifier', () => ({
 
 vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   layoutStore: {
-    getSlotLayout: vi.fn().mockReturnValue(null),
-    getNodeLayoutRef: vi.fn().mockReturnValue({ value: null })
+    getSlotLayout: vi.fn<AnyMockProcedure>(() => null),
+    getNodeLayoutRef: vi.fn<AnyMockProcedure>(() => ({ value: null }))
   }
 }))
 

@@ -20,17 +20,17 @@ const initialMock = () =>
 let mockStore: ReturnType<typeof initialMock>
 
 const mockToolManager = vi.hoisted(() => ({
-  handlePointerDown: vi.fn().mockResolvedValue(undefined),
-  handlePointerMove: vi.fn().mockResolvedValue(undefined),
-  handlePointerUp: vi.fn().mockResolvedValue(undefined),
+  handlePointerDown: vi.fn<AnyMockProcedure>(async () => undefined),
+  handlePointerMove: vi.fn<AnyMockProcedure>(async () => undefined),
+  handlePointerUp: vi.fn<AnyMockProcedure>(async () => undefined),
   updateCursor: vi.fn()
 }))
 
 const mockPanZoom = vi.hoisted(() => ({
   handleTouchStart: vi.fn(),
-  handleTouchMove: vi.fn().mockResolvedValue(undefined),
+  handleTouchMove: vi.fn<AnyMockProcedure>(async () => undefined),
   handleTouchEnd: vi.fn(),
-  zoom: vi.fn().mockResolvedValue(undefined),
+  zoom: vi.fn<AnyMockProcedure>(async () => undefined),
   updateCursorPosition: vi.fn()
 }))
 

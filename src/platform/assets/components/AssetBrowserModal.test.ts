@@ -55,7 +55,7 @@ vi.mock('@/stores/modelToNodeStore', () => ({
 
 vi.mock('@/platform/assets/composables/useModelTypes', () => ({
   useModelTypes: () => ({
-    fetchModelTypes: vi.fn().mockResolvedValue(undefined)
+    fetchModelTypes: vi.fn<AnyMockProcedure>(async () => undefined)
   })
 }))
 

@@ -45,8 +45,8 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: vi.fn(() => ({
-    get: vi.fn().mockReturnValue(true),
-    set: vi.fn().mockResolvedValue(undefined)
+    get: vi.fn<AnyMockProcedure>(() => true),
+    set: vi.fn<AnyMockProcedure>(async () => undefined)
   }))
 }))
 
@@ -60,7 +60,7 @@ vi.mock('@/scripts/api', () => ({
   api: {
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
-    apiURL: vi.fn().mockReturnValue('http://localhost:8188')
+    apiURL: vi.fn<AnyMockProcedure>(() => 'http://localhost:8188')
   }
 }))
 
@@ -86,11 +86,9 @@ describe('useMinimap change-detection interval', () => {
 
   async function initMinimap() {
     const canvasElement = createMockMinimapCanvas({
-      getContext: vi
-        .fn()
-        .mockImplementation((id) =>
-          id === '2d' ? context : null
-        ) as HTMLCanvasElement['getContext']
+      getContext: vi.fn<AnyMockProcedure>((id) =>
+        id === '2d' ? context : null
+      ) as HTMLCanvasElement['getContext']
     })
     const container = {
       getBoundingClientRect: vi.fn(() => new DOMRect(0, 0, 250, 200) as DOMRect)

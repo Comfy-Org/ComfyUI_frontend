@@ -32,21 +32,26 @@ function createMockCtx(): CanvasRenderingContext2D {
     translate: vi.fn(),
     scale: vi.fn(),
     fillText: vi.fn(),
-    measureText: vi.fn().mockReturnValue({ width: 50 }),
+    measureText: vi.fn<AnyMockProcedure>(() => ({ width: 50 })),
     closePath: vi.fn(),
     rect: vi.fn(),
     clip: vi.fn(),
     setTransform: vi.fn(),
     roundRect: vi.fn(),
-    getTransform: vi
-      .fn()
-      .mockReturnValue({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }),
-    createLinearGradient: vi.fn().mockReturnValue({
+    getTransform: vi.fn<AnyMockProcedure>(() => ({
+      a: 1,
+      b: 0,
+      c: 0,
+      d: 1,
+      e: 0,
+      f: 0
+    })),
+    createLinearGradient: vi.fn<AnyMockProcedure>(() => ({
       addColorStop: vi.fn()
-    }),
+    })),
     bezierCurveTo: vi.fn(),
     quadraticCurveTo: vi.fn(),
-    isPointInStroke: vi.fn().mockReturnValue(false),
+    isPointInStroke: vi.fn<AnyMockProcedure>(() => false),
     globalAlpha: 1,
     textAlign: 'left' as CanvasTextAlign,
     textBaseline: 'alphabetic' as CanvasTextBaseline,

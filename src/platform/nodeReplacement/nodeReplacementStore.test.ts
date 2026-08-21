@@ -25,13 +25,13 @@ vi.mock('@/scripts/api', () => ({
 
 function mockSettingStore(enabled: boolean) {
   vi.mocked(useSettingStore, { partial: true }).mockReturnValue({
-    get: vi.fn().mockImplementation((key: string) => {
+    get: vi.fn<AnyMockProcedure>((key: string) => {
       if (key === 'Comfy.NodeReplacement.Enabled') {
         return enabled
       }
       return false
     }),
-    load: vi.fn().mockResolvedValue(undefined)
+    load: vi.fn<AnyMockProcedure>(async () => undefined)
   })
 }
 

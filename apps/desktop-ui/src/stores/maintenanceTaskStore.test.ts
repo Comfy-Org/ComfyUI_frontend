@@ -2,8 +2,8 @@ import type { InstallValidation } from '@comfyorg/comfyui-electron-types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { mockElectron, testTasks } = vi.hoisted(() => {
-  const terminalTaskExecute = vi.fn().mockResolvedValue(true)
-  const basicTaskExecute = vi.fn().mockResolvedValue(true)
+  const terminalTaskExecute = vi.fn<AnyMockProcedure>(async () => true)
+  const basicTaskExecute = vi.fn<AnyMockProcedure>(async () => true)
 
   return {
     mockElectron: {

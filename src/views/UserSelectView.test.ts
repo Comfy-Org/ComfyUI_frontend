@@ -19,9 +19,9 @@ vi.mock('vue-router', () => ({
 
 const userStoreMock = vi.hoisted(() => ({
   users: [] as Array<{ userId: string; username: string }>,
-  initialize: vi.fn().mockResolvedValue(undefined),
+  initialize: vi.fn<AnyMockProcedure>(async () => undefined),
   createUser: vi.fn(),
-  login: vi.fn().mockResolvedValue(undefined)
+  login: vi.fn<AnyMockProcedure>(async () => undefined)
 }))
 vi.mock('@/stores/userStore', () => ({
   useUserStore: () => userStoreMock

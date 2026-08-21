@@ -62,8 +62,8 @@ const { mockMediaAssets } = vi.hoisted(() => {
       media: ref([]),
       loading: ref(false),
       error: ref(null),
-      fetchMediaList: vi.fn().mockResolvedValue([]),
-      refresh: vi.fn().mockResolvedValue([]),
+      fetchMediaList: vi.fn<AnyMockProcedure>(async () => []),
+      refresh: vi.fn<AnyMockProcedure>(async () => []),
       loadMore: vi.fn(),
       hasMore: ref(false),
       isLoadingMore: ref(false)
@@ -76,7 +76,7 @@ vi.mock('@/platform/assets/composables/media/useAssetsApi', () => ({
 }))
 
 vi.mock('@/platform/assets/utils/outputAssetUtil', () => ({
-  resolveOutputAssetItems: vi.fn().mockResolvedValue([])
+  resolveOutputAssetItems: vi.fn<AnyMockProcedure>(async () => [])
 }))
 
 const mockUpdateSelectedItems = vi.hoisted(() => vi.fn())

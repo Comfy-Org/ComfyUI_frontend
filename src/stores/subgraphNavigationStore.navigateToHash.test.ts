@@ -21,8 +21,8 @@ const workflowStoreState = vi.hoisted(() => ({
 }))
 
 const routerMocks = vi.hoisted(() => ({
-  push: vi.fn().mockResolvedValue(undefined),
-  replace: vi.fn().mockResolvedValue(undefined)
+  push: vi.fn<AnyMockProcedure>(async () => undefined),
+  replace: vi.fn<AnyMockProcedure>(async () => undefined)
 }))
 
 const routeHashRef = ref('')
@@ -86,7 +86,7 @@ vi.mock(
 )
 
 const workflowServiceMocks = vi.hoisted(() => ({
-  openWorkflow: vi.fn().mockResolvedValue(undefined)
+  openWorkflow: vi.fn<AnyMockProcedure>(async () => undefined)
 }))
 
 vi.mock('@/platform/workflow/core/services/workflowService', () => ({

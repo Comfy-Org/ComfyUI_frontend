@@ -82,8 +82,8 @@ function buildResponse(
   return {
     ok: init.ok ?? true,
     status: init.status ?? 200,
-    json: vi.fn().mockResolvedValue(body),
-    text: vi.fn().mockResolvedValue(JSON.stringify(body))
+    json: vi.fn<AnyMockProcedure>(async () => body),
+    text: vi.fn<AnyMockProcedure>(async () => JSON.stringify(body))
   } as unknown as Response
 }
 

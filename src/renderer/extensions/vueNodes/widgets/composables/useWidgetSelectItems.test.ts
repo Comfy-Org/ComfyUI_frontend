@@ -26,8 +26,8 @@ function createMockMediaAssets() {
     media: ref<AssetItem[]>([]),
     loading: ref(false),
     error: ref(null),
-    fetchMediaList: vi.fn().mockResolvedValue([]),
-    refresh: vi.fn().mockResolvedValue([]),
+    fetchMediaList: vi.fn<AnyMockProcedure>(async () => []),
+    refresh: vi.fn<AnyMockProcedure>(async () => []),
     loadMore: vi.fn(),
     hasMore: ref(false),
     isLoadingMore: ref(false)

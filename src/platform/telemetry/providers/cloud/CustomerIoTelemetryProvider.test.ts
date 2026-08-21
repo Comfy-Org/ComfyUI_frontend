@@ -2,11 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const hoisted = vi.hoisted(() => {
   const analytics = {
-    identify: vi.fn().mockResolvedValue(undefined),
+    identify: vi.fn<AnyMockProcedure>(async () => undefined),
     page: vi.fn(),
-    track: vi.fn().mockResolvedValue(undefined),
+    track: vi.fn<AnyMockProcedure>(async () => undefined),
     reset: vi.fn(),
-    register: vi.fn().mockResolvedValue(undefined)
+    register: vi.fn<AnyMockProcedure>(async () => undefined)
   }
   let resolvedCb: ((user: { id: string }) => void) | undefined
   let logoutCb: (() => void) | undefined

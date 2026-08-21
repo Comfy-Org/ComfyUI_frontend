@@ -17,7 +17,7 @@ const {
   mockTrackWidgetFavoriteToggled
 } = vi.hoisted(() => ({
   mockGetInputSpecForWidget: vi.fn(),
-  mockIsFavorited: vi.fn().mockReturnValue(false),
+  mockIsFavorited: vi.fn<AnyMockProcedure>(() => false),
   mockToggleFavorite: vi.fn(),
   mockTrackWidgetFavoriteToggled: vi.fn()
 }))

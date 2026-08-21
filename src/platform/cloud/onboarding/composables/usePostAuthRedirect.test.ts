@@ -13,7 +13,7 @@ vi.mock('vue-router', () => ({
 }))
 
 const resumeOAuthIfNeeded = vi.hoisted(() =>
-  vi.fn().mockResolvedValue({ kind: 'no-oauth' })
+  vi.fn<AnyMockProcedure>(async () => ({ kind: 'no-oauth' }))
 )
 vi.mock('@/platform/cloud/oauth/useOAuthPostLoginRedirect', () => ({
   useOAuthPostLoginRedirect: () => ({ resumeOAuthIfNeeded })

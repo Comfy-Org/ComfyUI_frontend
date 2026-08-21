@@ -59,7 +59,10 @@ vi.mock('@/composables/useProgressFavicon', () => ({
 }))
 vi.mock('@/i18n', async (importOriginal) => {
   const actual = await importOriginal<typeof I18nModule>()
-  return { ...actual, loadLocale: vi.fn().mockResolvedValue(undefined) }
+  return {
+    ...actual,
+    loadLocale: vi.fn<AnyMockProcedure>(async () => undefined)
+  }
 })
 vi.mock('@/platform/distribution/types', async (importOriginal) => {
   const actual = await importOriginal<typeof DistTypes>()
@@ -74,7 +77,7 @@ vi.mock('@/platform/updates/common/useFrontendVersionMismatchWarning', () => ({
 }))
 vi.mock('@/platform/updates/common/versionCompatibilityStore', () => ({
   useVersionCompatibilityStore: () => ({
-    initialize: vi.fn().mockResolvedValue(undefined)
+    initialize: vi.fn<AnyMockProcedure>(async () => undefined)
   })
 }))
 vi.mock('@/renderer/core/canvas/canvasStore', async () => {
@@ -137,7 +140,7 @@ vi.mock('@/stores/serverConfigStore', () => ({
 }))
 vi.mock('@/stores/workspace/bottomPanelStore', () => ({
   useBottomPanelStore: () => ({
-    registerCoreBottomPanelTabs: vi.fn().mockResolvedValue(undefined)
+    registerCoreBottomPanelTabs: vi.fn<AnyMockProcedure>(async () => undefined)
   })
 }))
 vi.mock('@/stores/workspace/colorPaletteStore', () => ({

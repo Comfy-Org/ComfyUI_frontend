@@ -41,7 +41,10 @@ const jobMetadata = { jobId: 'job-42', nodeId: 0, subfolder: '' }
 function mockFetchOk(blob: Blob): void {
   vi.stubGlobal(
     'fetch',
-    vi.fn().mockResolvedValue({ ok: true, blob: () => Promise.resolve(blob) })
+    vi.fn<AnyMockProcedure>(async () => ({
+      ok: true,
+      blob: () => Promise.resolve(blob)
+    }))
   )
 }
 

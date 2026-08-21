@@ -63,7 +63,7 @@ function makeSubscription(
   }
 }
 
-const mockFetchBalance = vi.fn().mockResolvedValue(undefined)
+const mockFetchBalance = vi.fn<AnyMockProcedure>(async () => undefined)
 const mockCanAccessSubscriptionFeatures = ref(true)
 const mockTier = ref<SubscriptionInfo['tier']>('CREATOR')
 const mockSubscription = ref<SubscriptionInfo | null>(makeSubscription())

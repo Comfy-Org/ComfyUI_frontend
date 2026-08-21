@@ -67,8 +67,8 @@ function buildViewerStub() {
     selectedAnimation: ref(0),
     animationProgress: ref(0),
     animationDuration: ref(0),
-    initializeViewer: vi.fn().mockResolvedValue(undefined),
-    initializeStandaloneViewer: vi.fn().mockResolvedValue(undefined),
+    initializeViewer: vi.fn<AnyMockProcedure>(async () => undefined),
+    initializeStandaloneViewer: vi.fn<AnyMockProcedure>(async () => undefined),
     exportModel: vi.fn(),
     handleResize: vi.fn(),
     handleMouseEnter: vi.fn(),
@@ -76,7 +76,7 @@ function buildViewerStub() {
     restoreInitialState: vi.fn(),
     refreshViewport: vi.fn(),
     handleBackgroundImageUpdate: vi.fn(),
-    handleModelDrop: vi.fn().mockResolvedValue(undefined),
+    handleModelDrop: vi.fn<AnyMockProcedure>(async () => undefined),
     handleSeek: vi.fn(),
     resetGizmoTransform: vi.fn()
   }

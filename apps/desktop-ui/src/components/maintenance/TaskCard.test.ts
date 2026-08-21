@@ -30,7 +30,7 @@ const baseTask: MaintenanceTask = {
   name: 'Test Task',
   shortDescription: 'Short description',
   errorDescription: 'Error occurred',
-  execute: vi.fn().mockResolvedValue(true)
+  execute: vi.fn<AnyMockProcedure>(async () => true)
 }
 
 const cardStubs = {

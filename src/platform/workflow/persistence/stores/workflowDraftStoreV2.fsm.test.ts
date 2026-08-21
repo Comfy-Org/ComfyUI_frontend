@@ -17,7 +17,7 @@ vi.mock('@/scripts/api', () => ({
 
 vi.mock('@/scripts/app', () => ({
   app: {
-    loadGraphData: vi.fn().mockResolvedValue(undefined)
+    loadGraphData: vi.fn<AnyMockProcedure>(async () => undefined)
   }
 }))
 

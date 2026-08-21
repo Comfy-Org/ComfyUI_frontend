@@ -33,7 +33,7 @@ function createCanvas(graph: LGraph): LGraphCanvas {
     fillRect: vi.fn(),
     strokeRect: vi.fn(),
     fillText: vi.fn(),
-    measureText: vi.fn().mockReturnValue({ width: 50 }),
+    measureText: vi.fn<AnyMockProcedure>(() => ({ width: 50 })),
     beginPath: vi.fn(),
     moveTo: vi.fn(),
     lineTo: vi.fn(),
@@ -46,9 +46,14 @@ function createCanvas(graph: LGraph): LGraphCanvas {
     clearRect: vi.fn(),
     setTransform: vi.fn(),
     roundRect: vi.fn(),
-    getTransform: vi
-      .fn()
-      .mockReturnValue({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }),
+    getTransform: vi.fn<AnyMockProcedure>(() => ({
+      a: 1,
+      b: 0,
+      c: 0,
+      d: 1,
+      e: 0,
+      f: 0
+    })),
     font: '',
     fillStyle: '',
     strokeStyle: '',
@@ -58,15 +63,15 @@ function createCanvas(graph: LGraph): LGraphCanvas {
     textBaseline: 'alphabetic' as CanvasTextBaseline
   } satisfies Partial<CanvasRenderingContext2D>
 
-  el.getContext = vi
-    .fn()
-    .mockReturnValue(fromAny<CanvasRenderingContext2D, unknown>(ctx))
-  el.getBoundingClientRect = vi.fn().mockReturnValue({
+  el.getContext = vi.fn<AnyMockProcedure>(() =>
+    fromAny<CanvasRenderingContext2D, unknown>(ctx)
+  )
+  el.getBoundingClientRect = vi.fn<AnyMockProcedure>(() => ({
     left: 0,
     top: 0,
     width: 800,
     height: 600
-  })
+  }))
 
   return new LGraphCanvas(el, graph, { skip_render: true })
 }

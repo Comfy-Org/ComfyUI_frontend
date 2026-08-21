@@ -40,9 +40,9 @@ function createSelectedCanvas() {
   const canvasElement = document.createElement('canvas')
   canvasElement.width = 800
   canvasElement.height = 600
-  canvasElement.getContext = vi
-    .fn()
-    .mockReturnValue(createMockCanvasRenderingContext2D())
+  canvasElement.getContext = vi.fn<AnyMockProcedure>(() =>
+    createMockCanvasRenderingContext2D()
+  )
 
   const canvas = new LGraphCanvas(canvasElement, graph, {
     skip_events: true,

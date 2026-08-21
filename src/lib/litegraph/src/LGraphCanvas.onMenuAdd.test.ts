@@ -33,19 +33,24 @@ function createCanvas(graph: LGraph): LGraphCanvas {
   el.width = 800
   el.height = 600
   const ctx = fromPartial<CanvasRenderingContext2D>({
-    measureText: vi.fn().mockReturnValue({ width: 50 }),
-    getTransform: vi
-      .fn()
-      .mockReturnValue({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 })
+    measureText: vi.fn<AnyMockProcedure>(() => ({ width: 50 })),
+    getTransform: vi.fn<AnyMockProcedure>(() => ({
+      a: 1,
+      b: 0,
+      c: 0,
+      d: 1,
+      e: 0,
+      f: 0
+    }))
   })
 
-  el.getContext = vi.fn().mockReturnValue(ctx)
-  el.getBoundingClientRect = vi.fn().mockReturnValue({
+  el.getContext = vi.fn<AnyMockProcedure>(() => ctx)
+  el.getBoundingClientRect = vi.fn<AnyMockProcedure>(() => ({
     left: 0,
     top: 0,
     width: 800,
     height: 600
-  })
+  }))
 
   return new LGraphCanvas(el, graph, { skip_render: true })
 }

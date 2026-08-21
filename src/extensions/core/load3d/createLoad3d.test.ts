@@ -155,7 +155,7 @@ type FakeLoad3d = {
 function createContainer(): HTMLElement {
   const container = document.createElement('div')
   // Stub appendChild — we only care that one was called, not what was attached.
-  container.appendChild = vi.fn().mockReturnValue(container)
+  container.appendChild = vi.fn<AnyMockProcedure>(() => container)
   return container
 }
 
@@ -164,7 +164,7 @@ function makeAdapter(overrides: Partial<ModelAdapter> = {}): ModelAdapter {
     kind: 'mesh',
     extensions: [],
     capabilities: DEFAULT_MODEL_CAPABILITIES,
-    load: vi.fn().mockResolvedValue(null),
+    load: vi.fn<AnyMockProcedure>(async () => null),
     ...overrides
   } satisfies ModelAdapter
 }

@@ -151,6 +151,16 @@ afterAll(() => vi.unstubAllGlobals())
 suiteSetup(() => vitest.stubGlobal('suite', true))
 beforeAll(() => vi.spyOn(console, 'log'))
 Vitest.beforeAll(() => Vitest.vi.stubGlobal('suite', true))
+const moduleDefaultValue = vi.fn().mockReturnValue('default')
+const moduleDefaultPromise = vi.fn().mockResolvedValue('default')
+const moduleDefaultRejection = vi.fn().mockRejectedValue(new Error('default'))
+const moduleDefaultImplementation = vi.fn().mockImplementation(() => true)
+const moduleDefaultOnce = vi.fn().mockReturnValueOnce('once')
+beforeAll(() => {
+  const beforeAllDefault = vi.fn().mockReturnValue('before-all')
+  void beforeAllDefault
+})
+void [moduleDefaultValue, moduleDefaultPromise, moduleDefaultRejection, moduleDefaultImplementation, moduleDefaultOnce]
 `
 
 const unrelatedFixture = `const vi = {
@@ -250,6 +260,13 @@ describe('Vitest cleanup rules', () => {
 
   it('reports stubs and spies installed at module scope or in beforeAll', () => {
     expectReportsAt(output, [73, 74, 75, 76, 77, 80, 131, 136, 137, 138])
+  })
+
+  it('reports chained defaults on new module-scope mock functions', () => {
+    const reports = output.match(
+      /automatic mockReset discards chained module-scope state/g
+    )
+    expect(reports?.length).toBe(6)
   })
 
   it('ignores unrelated names, nested helpers, test bodies, and Playwright specs', () => {

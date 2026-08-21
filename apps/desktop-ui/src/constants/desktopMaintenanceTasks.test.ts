@@ -3,11 +3,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const { mockElectron } = vi.hoisted(() => ({
   mockElectron: {
     setBasePath: vi.fn(),
-    reinstall: vi.fn<[], Promise<void>>().mockResolvedValue(undefined),
+    reinstall: vi.fn<AnyMockProcedure>(async () => undefined),
     uv: {
       installRequirements: vi.fn<[], Promise<void>>(),
-      clearCache: vi.fn<[], Promise<void>>().mockResolvedValue(undefined),
-      resetVenv: vi.fn<[], Promise<void>>().mockResolvedValue(undefined)
+      clearCache: vi.fn<AnyMockProcedure>(async () => undefined),
+      resetVenv: vi.fn<AnyMockProcedure>(async () => undefined)
     }
   }
 }))

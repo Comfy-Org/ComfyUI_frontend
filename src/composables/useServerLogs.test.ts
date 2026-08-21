@@ -16,7 +16,7 @@ vi.mock('@/scripts/api', () => ({
 }))
 
 vi.mock('@vueuse/core', () => ({
-  useEventListener: vi.fn().mockReturnValue(vi.fn())
+  useEventListener: vi.fn<AnyMockProcedure>(() => vi.fn())
 }))
 
 describe('useServerLogs', () => {

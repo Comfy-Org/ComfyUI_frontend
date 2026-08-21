@@ -58,7 +58,7 @@ vi.mock('@/platform/updates/common/releaseStore', () => ({
     releases: [],
     recentReleases: [],
     isLoading: false,
-    fetchReleases: vi.fn().mockResolvedValue(undefined)
+    fetchReleases: vi.fn<AnyMockProcedure>(async () => undefined)
   })
 }))
 

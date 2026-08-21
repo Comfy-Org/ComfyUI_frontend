@@ -12,7 +12,7 @@ vi.mock('@/platform/settings/settingStore', () => ({
 }))
 
 vi.mock('@/scripts/metadata/ply', () => ({
-  isPLYAsciiFormat: vi.fn().mockReturnValue(false)
+  isPLYAsciiFormat: vi.fn<AnyMockProcedure>(() => false)
 }))
 
 const plyLoaderParse = vi.fn(() => makePLYGeometry({ withFaces: true }))

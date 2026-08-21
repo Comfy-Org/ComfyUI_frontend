@@ -55,7 +55,7 @@ vi.mock('@/scripts/app', () => {
         }
       }),
       openClipspace: vi.fn(),
-      refreshComboInNodes: vi.fn().mockResolvedValue(undefined),
+      refreshComboInNodes: vi.fn<AnyMockProcedure>(async () => undefined),
       canvas: mockCanvas,
       rootGraph: {
         clear: mockGraphClear
@@ -71,7 +71,7 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-const mockModelStoreRefresh = vi.fn().mockResolvedValue(undefined)
+const mockModelStoreRefresh = vi.fn<AnyMockProcedure>(async () => undefined)
 vi.mock('@/stores/modelStore', async (importOriginal) => {
   const actual = await importOriginal<typeof ModelStoreModule>()
   return {
@@ -89,7 +89,7 @@ vi.mock('@/platform/distribution/types', async (importOriginal) => ({
 }))
 
 const mockMissingModelStoreRefresh = vi.hoisted(() =>
-  vi.fn().mockResolvedValue(undefined)
+  vi.fn<AnyMockProcedure>(async () => undefined)
 )
 vi.mock('@/platform/missingModel/missingModelStore', () => ({
   useMissingModelStore: () => ({
@@ -200,7 +200,7 @@ vi.mock('@/composables/auth/useAuthActions', () => ({
 
 vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   useSubscription: vi.fn(() => ({
-    canAccessSubscriptionFeatures: vi.fn().mockReturnValue(true),
+    canAccessSubscriptionFeatures: vi.fn<AnyMockProcedure>(() => true),
     showSubscriptionDialog: vi.fn()
   }))
 }))
@@ -271,7 +271,7 @@ describe('useCoreCommands', () => {
     getReturnValue: boolean
   ): ReturnType<typeof useSettingStore> {
     return fromPartial<ReturnType<typeof useSettingStore>>({
-      get: vi.fn().mockReturnValue(getReturnValue),
+      get: vi.fn<AnyMockProcedure>(() => getReturnValue),
       addSetting: vi.fn(),
       load: vi.fn(),
       set: vi.fn(),

@@ -7,6 +7,16 @@ const REDUNDANT_CLEANUP_METHODS = new Set([
 ])
 
 const MODULE_SCOPE_MOCK_METHODS = new Set(['spyOn', 'stubGlobal'])
+const MODULE_SCOPE_MOCK_STATE_METHODS = new Set([
+  'mockImplementation',
+  'mockImplementationOnce',
+  'mockRejectedValue',
+  'mockRejectedValueOnce',
+  'mockReturnValue',
+  'mockReturnValueOnce',
+  'mockResolvedValue',
+  'mockResolvedValueOnce'
+])
 const BEFORE_ALL_IMPORTS = new Set(['beforeAll'])
 const HOOK_IMPORTS = new Set([
   'afterAll',
@@ -192,6 +202,12 @@ function vitestMethodName(
   }
 }
 
+function isNewVitestFn(context: RuleContext, expression: Expression): boolean {
+  if (expression.type !== 'CallExpression') return false
+  const call = expression as CallExpression
+  return vitestMethodName(context, call) === 'fn' && call.arguments.length === 0
+}
+
 function isFunction(node: Node): boolean {
   return (
     node.type === 'ArrowFunctionExpression' ||
@@ -284,16 +300,30 @@ export const noModuleScopeVitestMocks = {
     return {
       CallExpression(node: CallExpression) {
         const methodName = vitestMethodName(context, node)
-        if (
-          !methodName ||
-          !MODULE_SCOPE_MOCK_METHODS.has(methodName) ||
-          !runsBeforeTests(context, node)
-        ) {
-          return
+        if (methodName && MODULE_SCOPE_MOCK_METHODS.has(methodName)) {
+          if (!runsBeforeTests(context, node)) return
+
+          context.report({
+            node,
+            message: `Install vi.${methodName}() in beforeEach or a test because automatic Vitest cleanup removes earlier mock installations before assertions run.`
+          })
         }
+
+        const member = asMemberExpression(node.callee)
+        const mockStateMethod =
+          member !== undefined &&
+          staticMemberName(member) !== undefined &&
+          MODULE_SCOPE_MOCK_STATE_METHODS.has(staticMemberName(member)!) &&
+          isNewVitestFn(context, member.object)
+            ? staticMemberName(member)
+            : undefined
+        if (!mockStateMethod || !runsBeforeTests(context, node)) return
+
         context.report({
           node,
-          message: `Install vi.${methodName}() in beforeEach or a test because automatic Vitest cleanup removes earlier mock installations before assertions run.`
+          message:
+            `Pass an implementation to vi.fn() or install vi.fn().${mockStateMethod}() in a test lifecycle; ` +
+            'automatic mockReset discards chained module-scope state before every test.'
         })
       }
     }

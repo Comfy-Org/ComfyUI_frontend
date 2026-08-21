@@ -48,7 +48,7 @@ const i18n = createI18n({
 
 function mountComponent(props: Record<string, unknown> = {}) {
   const user = userEvent.setup()
-  const onConfirm = vi.fn().mockResolvedValue(undefined)
+  const onConfirm = vi.fn<AnyMockProcedure>(async () => undefined)
   const { rerender } = render(DowngradeRemoveMembersDialogContent, {
     props: {
       planName: 'Founder',

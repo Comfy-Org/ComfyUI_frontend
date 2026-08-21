@@ -25,7 +25,7 @@ vi.mock('extendable-media-recorder', () => ({
 
 vi.mock('@/services/audioService', () => ({
   useAudioService: () => ({
-    registerWavEncoder: vi.fn().mockResolvedValue(undefined)
+    registerWavEncoder: vi.fn<AnyMockProcedure>(async () => undefined)
   })
 }))
 

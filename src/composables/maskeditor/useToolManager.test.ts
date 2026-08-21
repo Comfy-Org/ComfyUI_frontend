@@ -27,16 +27,16 @@ const mockStore = reactive<MockStore>({
 })
 
 const mockBrushDrawing = {
-  startDrawing: vi.fn().mockResolvedValue(undefined),
-  handleDrawing: vi.fn().mockResolvedValue(undefined),
-  drawEnd: vi.fn().mockResolvedValue(undefined),
-  startBrushAdjustment: vi.fn().mockResolvedValue(undefined),
-  handleBrushAdjustment: vi.fn().mockResolvedValue(undefined)
+  startDrawing: vi.fn<AnyMockProcedure>(async () => undefined),
+  handleDrawing: vi.fn<AnyMockProcedure>(async () => undefined),
+  drawEnd: vi.fn<AnyMockProcedure>(async () => undefined),
+  startBrushAdjustment: vi.fn<AnyMockProcedure>(async () => undefined),
+  handleBrushAdjustment: vi.fn<AnyMockProcedure>(async () => undefined)
 }
 
 const mockCanvasTools = {
   paintBucketFill: vi.fn(),
-  colorSelectFill: vi.fn().mockResolvedValue(undefined),
+  colorSelectFill: vi.fn<AnyMockProcedure>(async () => undefined),
   clearLastColorSelectPoint: vi.fn()
 }
 
@@ -79,7 +79,7 @@ vi.mock('@/scripts/app', () => ({
 }))
 
 const mockKeyboard = {
-  isKeyDown: vi.fn().mockReturnValue(false),
+  isKeyDown: vi.fn<AnyMockProcedure>(() => false),
   addListeners: vi.fn(),
   removeListeners: vi.fn()
 } satisfies Parameters<typeof useToolManager>[0]
@@ -87,7 +87,7 @@ const mockKeyboard = {
 const mockPanZoom = {
   initializeCanvasPanZoom: vi.fn(),
   handlePanStart: vi.fn(),
-  handlePanMove: vi.fn().mockResolvedValue(undefined),
+  handlePanMove: vi.fn<AnyMockProcedure>(async () => undefined),
   handleTouchStart: vi.fn(),
   handleTouchMove: vi.fn(),
   handleTouchEnd: vi.fn(),

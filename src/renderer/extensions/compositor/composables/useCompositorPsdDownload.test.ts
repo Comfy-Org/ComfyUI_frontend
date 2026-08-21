@@ -11,7 +11,7 @@ const { buildSessionPsdBlob, downloadBlob, loadCompositorSession, toastAdd } =
   vi.hoisted(() => ({
     buildSessionPsdBlob: vi.fn(async () => new Blob(['psd'])),
     downloadBlob: vi.fn(),
-    loadCompositorSession: vi.fn().mockResolvedValue(0),
+    loadCompositorSession: vi.fn<AnyMockProcedure>(async () => 0),
     toastAdd: vi.fn()
   }))
 

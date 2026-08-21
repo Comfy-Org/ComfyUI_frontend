@@ -130,7 +130,7 @@ vi.mock('firebase/auth', async (importOriginal) => {
       setCustomParameters = vi.fn()
     },
     getAdditionalUserInfo: vi.fn(),
-    setPersistence: vi.fn().mockResolvedValue(undefined)
+    setPersistence: vi.fn<AnyMockProcedure>(async () => undefined)
   }
 })
 
@@ -161,7 +161,7 @@ vi.mock('@/composables/useFeatureFlags', () => ({
 }))
 
 // Mock apiKeyAuthStore
-const mockApiKeyGetAuthHeader = vi.fn().mockReturnValue(null)
+const mockApiKeyGetAuthHeader = vi.fn<AnyMockProcedure>(() => null)
 vi.mock('@/stores/apiKeyAuthStore', () => ({
   useApiKeyAuthStore: () => ({
     getAuthHeader: mockApiKeyGetAuthHeader,
@@ -183,8 +183,8 @@ describe('useAuthStore', () => {
   const mockUser: MockUser = {
     uid: 'test-user-id',
     email: 'test@example.com',
-    getIdToken: vi.fn().mockResolvedValue('mock-id-token'),
-    delete: vi.fn().mockResolvedValue(undefined)
+    getIdToken: vi.fn<AnyMockProcedure>(async () => 'mock-id-token'),
+    delete: vi.fn<AnyMockProcedure>(async () => undefined)
   } as Partial<User> as MockUser
 
   beforeEach(() => {

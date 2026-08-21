@@ -25,7 +25,7 @@ const initialMock = () =>
   })
 
 let mockStore: ReturnType<typeof initialMock>
-const mockUpdateMaskColor = vi.fn().mockResolvedValue(undefined)
+const mockUpdateMaskColor = vi.fn<AnyMockProcedure>(async () => undefined)
 const mockSetActiveLayer = vi.fn()
 
 vi.mock('@/stores/maskEditorStore', () => ({

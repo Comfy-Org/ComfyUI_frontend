@@ -17,7 +17,7 @@ vi.mock('@/composables/node/useNodeDragToCanvas', () => ({
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
-    get: vi.fn().mockReturnValue('left')
+    get: vi.fn<AnyMockProcedure>(() => 'left')
   })
 }))
 

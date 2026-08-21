@@ -16,7 +16,7 @@ const { mockWorkflowStatus, mockCloseWorkflow } = await vi.hoisted(async () => {
     mockWorkflowStatus: shallowRef<Map<object, WorkflowExecutionStatus>>(
       new Map()
     ),
-    mockCloseWorkflow: vi.fn().mockResolvedValue(true)
+    mockCloseWorkflow: vi.fn<AnyMockProcedure>(async () => true)
   }
 })
 
