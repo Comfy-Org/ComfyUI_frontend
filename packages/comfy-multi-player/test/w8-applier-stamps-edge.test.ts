@@ -8,10 +8,12 @@ import {
   project,
   stampKey,
   writeTarget,
-  type ConnectOp,
+  type ConcreteConnectOp,
   type DeleteNodeOp,
-  type Op,
+  type GrowConnectOp,
+  type GrowSpec,
   type WidgetCatalog,
+  type WireOp,
   type WorkflowJSON,
 } from "../src/index.js";
 
@@ -42,7 +44,11 @@ const base = (): WorkflowJSON => ({
   links: [],
 });
 
-const connect = (link_id: number, from_node: number, extra: Partial<ConnectOp> = {}): ConnectOp => ({
+const connect = (
+  link_id: number,
+  from_node: number,
+  extra: Partial<ConcreteConnectOp> = {},
+): ConcreteConnectOp => ({
   op: "connect",
   ...envelope(),
   link_id,
@@ -54,14 +60,28 @@ const connect = (link_id: number, from_node: number, extra: Partial<ConnectOp> =
   ...extra,
 });
 
+/**
+ * An autogrow `connect`. Separate from {@link connect} since #17 split
+ * `ConnectOp` into concrete and grow variants: a grow op has no numeric
+ * `to_slot` to override, so the two cannot share one `Partial<>` override bag.
+ */
+const growConnect = (link_id: number, from_node: number, grow: GrowSpec): GrowConnectOp => ({
+  op: "connect",
+  ...envelope(),
+  link_id,
+  from_node,
+  from_slot: 0,
+  to_node: 3,
+  to_slot: null,
+  link_type: "X",
+  grow,
+});
+
 describe("W8 applier edge goldens (KA-4)", () => {
   it("assigns deterministic unique names across repeated autogrow collisions", () => {
     const doc = mint(base(), catalog);
     const grows = [10, 11, 12].map((id) =>
-      connect(id, 1, {
-        to_slot: null,
-        grow: { name: "images.hero", type: "X" },
-      }),
+      growConnect(id, 1, { name: "images.hero", type: "X" }),
     );
     expect(applyOps(doc, grows, catalog).failed).toBeNull();
 
@@ -160,18 +180,23 @@ describe("W8 stamp edge goldens (KA-2, KA-4, FC-7)", () => {
       node_id: 4,
       widget: "value",
       value: 1,
-    } as Op;
+    } as unknown as WireOp;
     expect(stampKey(unstamped)).toEqual([7, "fallback", "a".repeat(32)]);
     expect(writeTarget(unstamped)).toEqual(["widget", "4", "value"]);
-    expect(writeTarget({ ...unstamped, path: [], inner_widget: "inner" } as Op)).toEqual([
+    // Both shapes below are ones the `SetWidgetOp` union no longer permits
+    // (#17): an EMPTY path with an `inner_widget`, and a path whose segments
+    // are not all strings. `writeTarget` is public and hosts feed it wire
+    // data, so its tolerant handling of them is pinned unchanged — the cast is
+    // what marks them as arriving from outside this repo's types.
+    expect(writeTarget({ ...unstamped, path: [], inner_widget: "inner" } as unknown as WireOp)).toEqual([
       "widget", "4", "value",
     ]);
-    expect(writeTarget({ ...unstamped, path: [4, "5"], inner_widget: "inner" } as Op)).toEqual([
-      "widget", ["4", "5"], "inner",
-    ]);
+    expect(
+      writeTarget({ ...unstamped, path: [4, "5"], inner_widget: "inner" } as unknown as WireOp),
+    ).toEqual(["widget", ["4", "5"], "inner"]);
     expect(writeTarget(connect(40, 1))).toEqual(["input", "3", 0]);
     expect(
-      writeTarget(connect(41, 1, { to_slot: null, grow: { name: "images.hero", type: "X" } })),
+      writeTarget(growConnect(41, 1, { name: "images.hero", type: "X" })),
     ).toEqual(["input", "3", "grow", "images"]);
   });
 });

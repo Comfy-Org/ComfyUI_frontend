@@ -56,8 +56,8 @@ export const DEFERRED_OPS = ["reset_doc"] as const;
  */
 export const BATCHABLE_OPS = ["add_node", "connect", "set_widget", "delete_node"] as const;
 
-/** Every kind the {@link Op} union defines — the single source of truth for op kinds. */
-export type OpKind = Op["op"];
+/** Every kind the vocabulary defines — implemented ({@link Op}) plus deferred ({@link DeferredOp}). */
+export type OpKind = WireOp["op"];
 
 /** A kind `applyOps` implements. */
 export type FrozenOpKind = (typeof FROZEN_OPS)[number];
@@ -124,7 +124,9 @@ export interface OpBase {
 }
 
 // ---------------------------------------------------------------------------
-// The six frozen op kinds
+// The six declared op kinds: five implemented (`Op`) plus the deferred
+// `reset_doc` (`DeferredOp`); together `WireOp`. "Frozen" now means
+// implemented — `FROZEN_OPS` is pinned to `Op["op"]` exactly (issue #17).
 // ---------------------------------------------------------------------------
 
 export interface AddNodeOp extends OpBase {
@@ -149,35 +151,131 @@ export interface GrowSpec {
   [key: string]: unknown;
 }
 
-export interface ConnectOp extends OpBase {
+/** Fields every `connect` carries, whichever way its destination slot is addressed. */
+interface ConnectOpBase extends OpBase {
   op: "connect";
   /** Link identity, minted at op-mint time (int in comfy-cli). */
   link_id: NodeId;
   from_node: NodeId;
   from_slot: number;
   to_node: NodeId;
-  /** Concrete input index, or null when the slot is grown at apply time (autogrow). */
-  to_slot: number | null;
   link_type: string;
-  /** Autogrow payload: apply appends this input slot, then wires it. Non-clobbering. */
-  grow?: GrowSpec;
 }
 
-export interface SetWidgetOp extends OpBase {
+/**
+ * A `connect` into an input slot that ALREADY EXISTS on the destination:
+ * `to_slot` is the concrete index and there is no `grow` payload.
+ *
+ * This is the variant that claims the `("input", to_node, to_slot)` LWW
+ * register (schema §3 / amendment A1).
+ */
+export interface ConcreteConnectOp extends ConnectOpBase {
+  /** Concrete input index. */
+  to_slot: number;
+  /**
+   * Absent, or explicitly `null` — the mirror of {@link TopLevelSetWidgetOp}'s
+   * `path`/`inner_widget`, for a peer that emits every field. `null` is what
+   * the applier's discriminant (`op.grow != null`) treats as "no grow", so the
+   * type admits exactly what the runtime treats as concrete.
+   *
+   * Issue #17: a grow PAYLOAD and a numeric `to_slot` are mutually exclusive
+   * by construction — the applier grows and wires its OWN slot whenever `grow`
+   * is set and never reads `to_slot`, so an op carrying both names a
+   * destination it does not use.
+   */
+  grow?: null;
+}
+
+/**
+ * A `connect` whose destination slot is GROWN at apply time (autogrow —
+ * vocabulary §1.2 / §8.4). The index is decided by the applier from
+ * `grow_id`, so there is no concrete `to_slot` to name.
+ *
+ * The GROWN SLOT is deliberately not gated on a shared register: every grow
+ * mints its own slot keyed by `grow_id`, so two concurrent grows onto one base
+ * both survive and there is nothing to contest.
+ *
+ * That is a statement about the slot, NOT about the op. A grow carrying
+ * `grow.inputcount` also performs a stamped widget write sharing this op's
+ * `op_id` and stamp, on the ordinary `("widget", to_node, inputcount)`
+ * register (schema §3 / §8.3, vocabulary §8.4) — see `applyInputcountBump`.
+ * One op, two registers.
+ */
+export interface GrowConnectOp extends ConnectOpBase {
+  /**
+   * Absent, or explicitly `null` as comfy-cli mints it. Issue #17: a number
+   * here would name a slot the applier does not wire.
+   */
+  to_slot?: null;
+  /** Autogrow payload: apply appends this input slot, then wires it. Non-clobbering. */
+  grow: GrowSpec;
+}
+
+/**
+ * A `connect` op — a union discriminated by the presence of `grow`
+ * (issue #17). `op.grow != null` narrows to {@link GrowConnectOp}; the `else`
+ * branch is a {@link ConcreteConnectOp} whose `to_slot` is a number.
+ */
+export type ConnectOp = ConcreteConnectOp | GrowConnectOp;
+
+/** Fields every `set_widget` carries, whichever node the write is addressed to. */
+interface SetWidgetOpBase extends OpBase {
   op: "set_widget";
   node_id: NodeId;
-  /** Widget NAME — widgets are name-addressed, never index-addressed. */
+  /**
+   * Widget NAME — widgets are name-addressed, never index-addressed.
+   *
+   * On an INTERIOR write the applier does not read this field at all: the
+   * write and its LWW target both come from `path` + `inner_widget`. Every
+   * interior op in the corpus carries `widget === inner_widget` (promotion
+   * through `proxyWidgets` keeps the interior widget's own name), so the two
+   * agreeing is the norm and a disagreement is not detected — the same "dead
+   * weight on the interior path" hazard `node_id` has, recorded in
+   * `test/invalid-op-states.test.ts`.
+   */
   widget: string;
   value: unknown;
   /** Previous value at mint time (informational; not used for convergence). */
   old?: unknown;
-  /** Subgraph interior addressing: RESOLVED node path segments (e.g. ["57","27"]) — all three address forms normalize here (vocabulary §8.7). */
-  path?: string[] | null;
-  /** Interior widget name when `path` is present. */
-  inner_widget?: string | null;
   /** Non-fatal validation notes attached at mint time. */
   warnings?: unknown[];
 }
+
+/**
+ * A `set_widget` addressed at a TOP-LEVEL node: `node_id` + `widget`, with no
+ * interior path.
+ *
+ * Issue #17: `path` and `inner_widget` are pinned to `null`/absent rather than
+ * left as free optionals. An `inner_widget` without a `path` is not an
+ * interior write — the applier ignores it and writes `widget` at the top
+ * level, i.e. a DIFFERENT widget than the one the op names.
+ */
+export interface TopLevelSetWidgetOp extends SetWidgetOpBase {
+  path?: null;
+  inner_widget?: null;
+}
+
+/**
+ * A `set_widget` addressed INSIDE a subgraph definition (vocabulary §8.7).
+ *
+ * `path` is the RESOLVED node path (e.g. `["57","27"]`) — all three address
+ * forms normalize here — and `inner_widget` is the widget name inside the
+ * definition. Issue #17: the two are required TOGETHER and the path is
+ * non-empty by type, because the applier's interior branch is entered on
+ * `path.length > 0` and needs `inner_widget` to know what to write. An empty
+ * path with an `inner_widget` is silently treated as a top-level write.
+ */
+export interface InteriorSetWidgetOp extends SetWidgetOpBase {
+  path: [string, ...string[]];
+  inner_widget: string;
+}
+
+/**
+ * A `set_widget` op — a union discriminated by `path` (issue #17). A truthy,
+ * non-empty `path` narrows to {@link InteriorSetWidgetOp}, where
+ * `inner_widget` is a `string` rather than a maybe-absent optional.
+ */
+export type SetWidgetOp = TopLevelSetWidgetOp | InteriorSetWidgetOp;
 
 export interface DeleteNodeOp extends OpBase {
   op: "delete_node";
@@ -199,23 +297,58 @@ export interface ClearOp extends OpBase {
  * the contract tests pin that it stays rejected until un-deferred by
  * amendment. `applyOps` here rejects it with code `op_deferred`. The payload
  * below is this package's draft shape for when it lands.
+ *
+ * Issue #17: this is NOT a member of {@link Op}. `Op` is what `applyOps`
+ * implements, and a type whose every value is guaranteed to be rejected does
+ * not belong in it — it let a caller construct an op, hand it to the applier,
+ * type-check, and be refused at runtime every single time. It lives in
+ * {@link WireOp} instead: the vocabulary a peer may legally put on the wire,
+ * which is what the runtime validator (not the type system) polices. Nothing
+ * about the runtime rejection changed; see `applier.validateEnvelope`.
  */
 export interface ResetDocOp extends OpBase {
   op: "reset_doc";
   workflow: WorkflowJSON;
 }
 
-/** The six frozen op kinds — a discriminated union on `op`. */
+/**
+ * The five op kinds `applyOps` IMPLEMENTS — a discriminated union on `op`.
+ *
+ * Every member is a kind that can actually be applied. Deferred kinds are in
+ * {@link DeferredOp}; the full declared vocabulary is {@link WireOp}.
+ */
 export type Op =
   | AddNodeOp
   | ConnectOp
   | SetWidgetOp
   | DeleteNodeOp
-  | ClearOp
-  | ResetDocOp;
+  | ClearOp;
+
+/**
+ * A kind the vocabulary declares but this package refuses to apply
+ * (§1.6) — currently only {@link ResetDocOp}.
+ */
+export type DeferredOp = ResetDocOp;
+
+/**
+ * Everything the frozen vocabulary declares, implemented or not: what a
+ * conforming peer may put on the wire and therefore what a host may hold
+ * before the applier's validator has ruled on it.
+ *
+ * Use this for values that CROSS the boundary — `ApplyFailure.op` (a
+ * rejected `reset_doc` genuinely lands there) and the public stamp helpers,
+ * which hosts feed straight off the wire. Use {@link Op} for values you are
+ * asking the applier to apply.
+ *
+ * NOTE, stated so it is not mistaken for a guarantee: a peer built against a
+ * NEWER vocabulary can put a kind on the wire that is in neither union. No
+ * static type can describe that value; `validateEnvelope` rejecting it with
+ * `unknown_op` is what protects the document.
+ */
+export type WireOp = Op | DeferredOp;
 
 // ---------------------------------------------------------------------------
-// Op-kind partition guard (issue #21)
+// Op-kind partition guard (issue #21, strengthened by issue #17)
 //
 // `FROZEN_OPS` / `DEFERRED_OPS` / `BATCHABLE_OPS` are hand-written arrays and
 // `Op` is a hand-written union; nothing structurally tied them together, so a
@@ -223,9 +356,14 @@ export type Op =
 // site would keep compiling while silently disagreeing about the vocabulary.
 // The assertions below make that a `tsc` failure at THIS line:
 //
-//   - FROZEN ∪ DEFERRED must be exactly `Op["op"]` — every declared kind is
-//     either implemented or explicitly deferred, and neither list may name a
-//     kind the union does not declare;
+//   - FROZEN must be exactly `Op["op"]` and DEFERRED exactly
+//     `DeferredOp["op"]` — since issue #17 split the implemented union from
+//     the deferred one, each list is pinned to its own union rather than the
+//     pair being pinned only to their sum. A kind moved between `Op` and
+//     `DeferredOp` (un-deferring `reset_doc`, say) must move between the
+//     arrays in the same commit;
+//   - FROZEN ∪ DEFERRED must be exactly `WireOp["op"]` — neither list may
+//     name a kind the vocabulary does not declare;
 //   - BATCHABLE must be a subset of FROZEN — a batchable kind that `applyOps`
 //     does not implement is a contradiction.
 //
@@ -237,7 +375,11 @@ export type Op =
 type Equals<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
 type Assert<T extends true> = T;
 
-/** Every `Op` member is exactly once in FROZEN_OPS or DEFERRED_OPS. */
+/** `FROZEN_OPS` names exactly the kinds `applyOps` implements. */
+type _FrozenIsExactlyTheImplementedUnion = Assert<Equals<FrozenOpKind, Op["op"]>>;
+/** `DEFERRED_OPS` names exactly the kinds declared-but-not-implemented. */
+type _DeferredIsExactlyTheDeferredUnion = Assert<Equals<DeferredOpKind, DeferredOp["op"]>>;
+/** Every declared kind is exactly once in FROZEN_OPS or DEFERRED_OPS. */
 type _OpKindsArePartitioned = Assert<Equals<FrozenOpKind | DeferredOpKind, OpKind>>;
 /** No kind is both implemented and deferred. */
 type _FrozenAndDeferredAreDisjoint = Assert<Equals<FrozenOpKind & DeferredOpKind, never>>;
@@ -309,8 +451,20 @@ export interface WorkflowJSON {
 export interface ApplyFailure {
   /** Index (into the `ops` argument) of the op that failed. */
   index: number;
-  /** The failing op, verbatim. */
-  op: Op;
+  /**
+   * The failing op, verbatim.
+   *
+   * Typed {@link WireOp}, not {@link Op}: the ops that reach this field are by
+   * definition the ones the applier refused, which includes a deferred
+   * `reset_doc`. Typing it `Op` said a value could not appear here that
+   * demonstrably does (issue #17).
+   *
+   * Still not the whole truth, and deliberately not papered over: an op whose
+   * kind this build has never heard of is rejected `unknown_op` and lands here
+   * too, and it is in no union. Consumers that switch on `failed.op.op` must
+   * keep a default arm.
+   */
+  op: WireOp;
   /** Stable machine-readable rejection code (e.g. `unknown_op`, `op_deferred`, `unknown_widget`). */
   code: string;
   /** Human-readable explanation. */

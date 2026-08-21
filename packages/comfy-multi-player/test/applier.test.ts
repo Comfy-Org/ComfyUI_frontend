@@ -132,7 +132,11 @@ describe("reset_doc stays deferred (vocabulary §1.6)", () => {
       ...envelope("alice", 5),
       workflow: { nodes: [], links: [] },
     };
-    const res = applyOps(doc, [reset], catalog);
+    // Since #17 `ResetDocOp` is NOT an `Op` — `Op` is what `applyOps`
+    // implements, and a `reset_doc` is always refused. It reaches the applier
+    // only as wire data from a peer, which is what this cast models; the
+    // runtime rejection below is unchanged.
+    const res = applyOps(doc, [reset] as unknown as Op[], catalog);
     expect(res.failed).toMatchObject({ index: 0, code: "op_deferred" });
     expect(res.failed!.message).toMatch(/reset_doc/);
     expect(res.applied).toEqual([]);

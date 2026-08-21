@@ -5,7 +5,7 @@
  */
 
 import { checkExhaustive } from "./exhaustive.js";
-import type { Op, StampKey } from "./types.js";
+import type { StampKey, WireOp } from "./types.js";
 
 /**
  * Unicode CODE POINT comparison (vocabulary §8.1: Python `str <` semantics).
@@ -51,7 +51,7 @@ export function compareStampKeys(a: StampKey, b: StampKey): -1 | 0 | 1 {
  * `op.stamp` when present (and non-empty), else `[base_version, actor]`,
  * always extended with the unique `op_id` tiebreak.
  */
-export function stampKey(op: Op): StampKey {
+export function stampKey(op: WireOp): StampKey {
   const stamp =
     Array.isArray(op.stamp) && op.stamp.length >= 2
       ? op.stamp
@@ -75,8 +75,13 @@ export function stampKey(op: Op): StampKey {
  * never compared them and the pair converged by arrival order (adversarial
  * finding, PR #6725). Interior writes already normalized (`path.map(String)`);
  * every case now matches them.
+ *
+ * Takes {@link WireOp}, not {@link Op}: hosts feed this straight off the wire
+ * for conflict identity and watermark bookkeeping, so a deferred `reset_doc`
+ * must keep resolving to its documented `["reset_doc"]` target rather than
+ * failing to type-check (issue #17). Output is byte-for-byte what it was.
  */
-export function writeTarget(op: Op): unknown[] {
+export function writeTarget(op: WireOp): unknown[] {
   switch (op.op) {
     case "set_widget":
       if (op.path && op.path.length > 0) {
@@ -99,9 +104,10 @@ export function writeTarget(op: Op): unknown[] {
       // now named, and the arm below is a guard rather than a fallback.
       return [op.op];
     default:
-      // Exhaustiveness guard (issue #21): with every `Op` member cased above,
-      // `op` is `never` here, so adding a seventh kind to `Op` fails `tsc` at
-      // this line until it is given a write target.
+      // Exhaustiveness guard (issue #21): with every `WireOp` member cased
+      // above — the five `Op` kinds plus the deferred `reset_doc` — `op` is
+      // `never` here, so adding a kind to EITHER union fails `tsc` at this
+      // line until it is given a write target.
       //
       // `checkExhaustive` deliberately does not throw. `writeTarget` is public
       // and ops arrive over the wire from other implementations, so a kind
@@ -112,11 +118,11 @@ export function writeTarget(op: Op): unknown[] {
       // unreachable; it cannot mask a missing `case`, because the
       // `checkExhaustive(op)` call above is what fails first.
       checkExhaustive(op);
-      return [(op as Op).op];
+      return [(op as WireOp).op];
   }
 }
 
 /** The `__stamps` map key for an op's write target (stable JSON serialization). */
-export function stampTargetKey(op: Op): string {
+export function stampTargetKey(op: WireOp): string {
   return JSON.stringify(writeTarget(op));
 }

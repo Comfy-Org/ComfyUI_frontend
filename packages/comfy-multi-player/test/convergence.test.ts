@@ -17,14 +17,32 @@
  */
 import * as Y from "yjs";
 import { describe, expect, it } from "vitest";
-import { applyOps, mint, project, writeTarget, type Op } from "../src/index.js";
+import { applyOps, mint, project, writeTarget, type Op, type WireOp } from "../src/index.js";
 import { assertNever } from "../src/exhaustive.js";
 import { canonicalize, loadCatalog, loadSession, sessionFiles } from "./helpers.js";
 
 const catalog = loadCatalog();
 
-/** Node ids an op reads or writes structurally (conservative). */
-function touchedNodes(op: Op): string[] {
+/**
+ * Op kinds that touch unbounded/graph-wide state and therefore break a
+ * reorderable window. A runtime set, not a type-narrowed `if`: the stream is
+ * wire data, so a kind this build does not implement (`reset_doc`) must still
+ * break the window rather than be silently reordered (#21 site 6, #17).
+ */
+const WINDOW_BREAKERS = new Set<string>(["clear", "delete_node", "reset_doc"]);
+
+/**
+ * Node ids an op reads or writes structurally (conservative).
+ *
+ * Takes `WireOp`, not `Op`: session streams are recorded wire data and may
+ * legally contain a deferred kind, which since #17 is not an `Op`.
+ *
+ * The `assertNever` arm below is documentation, NOT a gate: nothing
+ * type-checks `test/**` — `tsconfig.json` includes only `src`, and
+ * `test/types/tsconfig.json` includes only the negative-type file. A kind
+ * added to either union fails `tsc` at the `src/` sites, not here.
+ */
+function touchedNodes(op: WireOp): string[] {
   switch (op.op) {
     case "add_node":
       return [String(op.node_id)];
@@ -58,7 +76,7 @@ function reorderableWindows(ops: Op[]): Op[][] {
   };
   for (const op of ops) {
     // clear/delete_node touch unbounded/graph-wide state: window breakers.
-    if (op.op === "clear" || op.op === "delete_node" || op.op === "reset_doc") {
+    if (WINDOW_BREAKERS.has(op.op)) {
       flush();
       windows.push([op]);
       continue;

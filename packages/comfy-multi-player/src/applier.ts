@@ -45,10 +45,14 @@ import {
   type ApplyResult,
   type ConnectOp,
   type DeleteNodeOp,
+  type GrowConnectOp,
+  type GrowSpec,
+  type InteriorSetWidgetOp,
   type Op,
   type SetWidgetOp,
   type StampKey,
   type WidgetCatalog,
+  type WireOp,
 } from "./types.js";
 
 /**
@@ -102,7 +106,24 @@ export function applyOps(doc: Y.Doc, ops: Op[], catalog?: WidgetCatalog): ApplyR
 const FROZEN = new Set<string>(FROZEN_OPS);
 const DEFERRED = new Set<string>(DEFERRED_OPS);
 
-function validateEnvelope(op: Op): void {
+/**
+ * The wire boundary (issue #17). THIS, not the type system, is what protects
+ * the document: the `op` argument is typed for this repo's own call sites, but
+ * every real caller decoded it from JSON a peer implementation produced, so
+ * every branch below must assume the value is arbitrary.
+ *
+ * It is also the ONLY owner of the deferred-kind rejection. `dispatch` handles
+ * exactly {@link Op}; `reset_doc` never reaches it because this runs first,
+ * before the idempotency gate and before any transaction, so the rejected op
+ * itself mutates nothing and consumes no `op_id`.
+ *
+ * Scoped deliberately to THAT OP: `applyOps` is abort-remainder, not
+ * all-or-nothing (vocabulary §4), so ops earlier in the batch stay applied and
+ * the DOCUMENT is byte-identical only when the rejected op is the first one.
+ * See the README's "an op kind this build does not know" paragraph and
+ * `test/exhaustiveness.test.ts`.
+ */
+function validateEnvelope(op: WireOp): void {
   if (typeof op !== "object" || op === null || typeof op.op !== "string") {
     throw new OpRejectedError("malformed_op", "op is not an object with a string 'op' kind");
   }
@@ -137,20 +158,20 @@ function dispatch(doc: Y.Doc, op: Op, catalog?: WidgetCatalog): void {
     case "clear":
       applyClear(doc);
       return;
-    case "reset_doc":
-      // Unreachable in practice — `validateEnvelope` rejects every
-      // DEFERRED_OPS kind before dispatch. Spelled out anyway so this switch
-      // covers `Op` exhaustively (the `default` below is the guard) and so
-      // un-deferring `reset_doc` surfaces here as "implement me", not as a
-      // kind that quietly falls into a catch-all.
-      throw new OpRejectedError(
-        "op_deferred",
-        `unknown op '${op.op}' — defined by the vocabulary but deferred (op-vocabulary-v1.md §1.6); rejected until un-deferred by amendment`,
-      );
     default:
       // Exhaustiveness guard (issue #21): with every `Op` member cased above,
-      // `op` is `never` here. Add a seventh kind to `Op` and this line stops
-      // compiling until it gets a `case`.
+      // `op` is `never` here. Add a sixth IMPLEMENTED kind to `Op` and this
+      // line stops compiling until it gets a `case`.
+      //
+      // Issue #17 removed the `case "reset_doc"` that used to sit here. It was
+      // unreachable — `validateEnvelope` rejects every DEFERRED_OPS kind
+      // before dispatch — and `reset_doc` is no longer an `Op` member, so
+      // there is nothing to case. The "un-deferring surfaces as implement me"
+      // property is preserved and sharpened: un-deferring means moving
+      // `ResetDocOp` from `DeferredOp` into `Op`, which breaks this guard AND
+      // the `FROZEN_OPS`/`DEFERRED_OPS` partition assertions in `types.ts`.
+      // The deferred rejection itself keeps exactly one owner
+      // (`validateEnvelope`), pinned by `test/exhaustiveness.test.ts`.
       return assertNever(op, "applier.dispatch");
   }
 }
@@ -278,12 +299,27 @@ function widgetsOf(node: Y.Map<unknown>): Y.Map<unknown> {
   return widgets as Y.Map<unknown>;
 }
 
+/**
+ * Is this an INTERIOR (subgraph-scoped) write? The predicate is the runtime
+ * half of the {@link SetWidgetOp} union split (issue #17): the type says a
+ * non-empty `path` comes with an `inner_widget`, and this says what the
+ * applier does when a wire op disagrees.
+ *
+ * A non-empty `path` alone selects the interior branch — `inner_widget` is
+ * then validated separately and its absence is `malformed_op`, exactly as
+ * before. The narrowing is a convenience for this repo; the check that
+ * follows it is the guarantee.
+ */
+function isInteriorWrite(op: SetWidgetOp): op is InteriorSetWidgetOp {
+  return Array.isArray(op.path) && op.path.length > 0;
+}
+
 function applySetWidget(doc: Y.Doc, op: SetWidgetOp, catalog?: WidgetCatalog): void {
-  const interior = Array.isArray(op.path) && op.path.length > 0;
-  if (interior && typeof op.inner_widget !== "string") {
+  const interior: InteriorSetWidgetOp | null = isInteriorWrite(op) ? op : null;
+  if (interior !== null && typeof interior.inner_widget !== "string") {
     throw new OpRejectedError("malformed_op", "set_widget: interior write without inner_widget");
   }
-  if (!interior && typeof op.widget !== "string") {
+  if (interior === null && typeof op.widget !== "string") {
     throw new OpRejectedError("malformed_op", "set_widget: missing widget name");
   }
 
@@ -295,11 +331,11 @@ function applySetWidget(doc: Y.Doc, op: SetWidgetOp, catalog?: WidgetCatalog): v
   const key = stampKey(op);
   if (prior != null && compareStampKeys(key, prior) <= 0) return; // lww-dropped
 
-  if (interior) {
-    const target = resolveInteriorNode(doc, op.path!.map(String));
+  if (interior !== null) {
+    const target = resolveInteriorNode(doc, interior.path.map(String));
     if (target === null) return; // head instance concurrently deleted → no-op (delete wins)
     const nodeType = String(target.get("type") ?? "");
-    const widget = op.inner_widget!;
+    const widget = interior.inner_widget;
     rejectIfOpaqueWidgets(target, widget);
     const entry = catalog?.types[nodeType];
     if (entry) {
@@ -418,6 +454,10 @@ function applyConnect(doc: Y.Doc, op: ConnectOp, catalog?: WidgetCatalog): void 
   }
 
   let toIdx: number;
+  // Issue #17: this is the discriminant of the `ConnectOp` union. The type now
+  // says a `grow` op has no numeric `to_slot` and a concrete op has no `grow`;
+  // this branch is where a wire op that says otherwise is disposed of — and it
+  // is disposed of exactly as before, `grow` winning and `to_slot` unread.
   if (op.grow != null) {
     // Autogrow is NOT a shared register: every grow mints its own slot keyed by
     // `grow_id`, so two concurrent grows onto one base both survive and there
@@ -504,10 +544,10 @@ function applyConnect(doc: Y.Doc, op: ConnectOp, catalog?: WidgetCatalog): void 
 function growInputSlot(
   doc: Y.Doc,
   dst: Y.Map<unknown>,
-  op: ConnectOp,
+  op: GrowConnectOp,
   catalog?: WidgetCatalog,
 ): number {
-  const grow = op.grow!;
+  const grow = op.grow;
   if (typeof grow.name !== "string" || typeof grow.type !== "string") {
     throw new OpRejectedError("malformed_op", "connect: grow payload needs name and type");
   }
@@ -545,7 +585,7 @@ function growInputSlot(
   const toIdx = insArr.length - 1;
 
   if (grow.inputcount != null) {
-    applyInputcountBump(doc, dst, op, catalog);
+    applyInputcountBump(doc, dst, op, grow.inputcount, catalog);
   }
   return toIdx;
 }
@@ -563,10 +603,10 @@ function growInputSlot(
 function applyInputcountBump(
   doc: Y.Doc,
   dst: Y.Map<unknown>,
-  op: ConnectOp,
+  op: GrowConnectOp,
+  ic: NonNullable<GrowSpec["inputcount"]>,
   catalog?: WidgetCatalog,
 ): void {
-  const ic = op.grow!.inputcount!;
   if (typeof ic.widget !== "string") {
     throw new OpRejectedError("malformed_op", "connect: grow.inputcount needs a widget name");
   }

@@ -11,7 +11,7 @@ import * as Y from "yjs";
 import {
   OPAQUE_WIDGETS_KEY,
   type AddNodeOp,
-  type ConnectOp,
+  type ConcreteConnectOp,
   type Op,
   type SetWidgetOp,
   type WidgetCatalog,
@@ -145,7 +145,7 @@ describe("applier rejections — set_widget", () => {
 });
 
 describe("applier rejections — connect", () => {
-  const connect = (over: Partial<ConnectOp>): ConnectOp => ({
+  const connect = (over: Partial<ConcreteConnectOp> = {}): ConcreteConnectOp => ({
     op: "connect",
     ...env("a", 1),
     link_id: 1000 + seq,
@@ -156,6 +156,16 @@ describe("applier rejections — connect", () => {
     link_type: "MODEL",
     ...over,
   });
+
+  /**
+   * A `connect` shape the {@link ConnectOp} union no longer permits (#17):
+   * only a peer implementation can put it on the wire, so it is built as wire
+   * data and cast at the boundary. The cast is the point — it marks the ops
+   * this repo can no longer construct by accident but the applier must still
+   * refuse.
+   */
+  const wireConnect = (over: Record<string, unknown>): Op =>
+    ({ ...connect(), ...over }) as unknown as Op;
 
   it("output_slot_missing when from_slot is out of range, leaving nodes and links unchanged", () => {
     const doc = baseDoc();
@@ -178,7 +188,7 @@ describe("applier rejections — connect", () => {
   it("malformed_op when to_slot is null and there is no grow, leaving nodes and links unchanged", () => {
     const doc = baseDoc();
     const before = snap(doc);
-    expect(codeOf(applyOps(doc, [connect({ to_slot: null })], catalog))).toBe("malformed_op");
+    expect(codeOf(applyOps(doc, [wireConnect({ to_slot: null })], catalog))).toBe("malformed_op");
     const after = snap(doc);
     expect(after.nodes).toEqual(before.nodes);
     expect(after.links).toEqual(before.links);

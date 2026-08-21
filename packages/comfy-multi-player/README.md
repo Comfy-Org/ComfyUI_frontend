@@ -186,18 +186,54 @@ Six kinds, frozen:
 | Kind | Payload beyond the envelope | Batchable (authoring) |
 |---|---|---|
 | `add_node` | `node_id`, `class_type`, `pos`, `node` (the complete node object, inserted verbatim) | yes |
-| `connect` | `link_id`, `from_node`, `from_slot`, `to_node`, `to_slot` (`null` for autogrow), `link_type`, optional `grow` | yes |
-| `set_widget` | `node_id`, `widget` (name, never index), `value`, optional `old`; interior writes add `path` + `inner_widget` | yes |
+| `connect` | `link_id`, `from_node`, `from_slot`, `to_node`, `link_type`, then EITHER a numeric `to_slot` (`ConcreteConnectOp`) OR a `grow` payload with `to_slot` null/absent (`GrowConnectOp`) | yes |
+| `set_widget` | `node_id`, `widget` (name, never index), `value`, optional `old`; an interior write adds `path` AND `inner_widget` together (`InteriorSetWidgetOp`) | yes |
 | `delete_node` | `node_id`, `removed_links` | yes |
 | `clear` | `removed_nodes` | no |
 | `reset_doc` | see [open questions](docs/api-contract-proposal.md) — currently rejected `op_deferred` by this package | no |
 
 `FROZEN_OPS`, `DEFERRED_OPS`, and `BATCHABLE_OPS` are exported so you can check
 programmatically rather than hard-coding the lists, along with the matching
-`OpKind` / `FrozenOpKind` / `DeferredOpKind` / `BatchableOpKind` types. A
-compile-time assertion in `src/types.ts` pins that `FROZEN_OPS ∪ DEFERRED_OPS`
-is exactly `Op["op"]` and that `BATCHABLE_OPS ⊆ FROZEN_OPS`, so the lists and
-the union cannot drift apart silently.
+`OpKind` / `FrozenOpKind` / `DeferredOpKind` / `BatchableOpKind` types.
+Compile-time assertions in `src/types.ts` pin that `FROZEN_OPS` is exactly
+`Op["op"]`, that `DEFERRED_OPS` is exactly `DeferredOp["op"]`, that their union
+is exactly `WireOp["op"]`, and that `BATCHABLE_OPS ⊆ FROZEN_OPS`, so the lists
+and the unions cannot drift apart silently.
+
+**`Op` vs `WireOp`.** `Op` is what `applyOps` implements — the five kinds it
+can actually apply. `WireOp` is `Op` plus the deferred kinds a conforming peer
+may legally put on the wire, and it is what `ApplyFailure.op` and the stamp
+helpers take: a rejected `reset_doc` really does land in `failed.op`, so typing
+that field `Op` claimed something false. Ask the applier for an `Op`; model
+what arrives as a `WireOp`; and keep a `default` arm either way, because a peer
+built against a newer vocabulary can send a kind that is in neither. A host
+holding received ops as `WireOp[]` casts at the call to `applyOps` — that cast
+is the wire boundary, and `validateEnvelope` is what stands behind it.
+
+Migrating a call site: if you hold `to_slot: number | null` and `grow` in one
+variable, narrow on `grow` before constructing; if you hold `path: string[]`,
+an interior write needs a non-empty tuple. The compiler's message points at
+whichever variant it tried last, so read it as "this matches neither variant"
+rather than as a complaint about the single field it names.
+
+Several field combinations that no conforming producer mints are also
+unrepresentable rather than merely discouraged: `grow` with a numeric
+`to_slot`, a `to_slot` of `null` with no `grow`, `path`/`inner_widget` without
+each other, and an empty `path`. The four sub-union members are
+`ConcreteConnectOp` / `GrowConnectOp` and `TopLevelSetWidgetOp` /
+`InteriorSetWidgetOp`. `test/types/invalid-states.negative.ts` is the checked
+list and `test/type-negatives.test.ts` is the gate.
+
+**This binds TypeScript callers only, and it is not a wire guarantee.** JSON
+does not type-check, so what protects the document is the applier, and it does
+not reject all four: `to_slot: null` with no `grow` and a non-empty `path` with
+no `inner_widget` are `malformed_op`, while `grow` with a numeric `to_slot` and
+an `inner_widget` with no `path` are **accepted and silently mishandled** —
+the first grows its own slot and never reads `to_slot`, the second writes the
+top-level `widget`. Tightening either would change what is legal on the wire
+and needs a comfy-cli counterpart, so it is deliberately not done here.
+`test/invalid-op-states.test.ts` pins the exact behaviour of every case,
+rejected and accepted alike.
 
 An op kind this build does not know — one minted by a peer built against a
 newer vocabulary — is **rejected loudly**, never silently dropped: `applyOps`

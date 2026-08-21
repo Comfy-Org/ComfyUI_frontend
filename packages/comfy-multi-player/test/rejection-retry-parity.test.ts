@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import * as Y from "yjs";
-import { applyOps, mint, project, type Op, type WorkflowJSON } from "../src/index.js";
+import { applyOps, mint, project, type Op, type WireOp, type WorkflowJSON } from "../src/index.js";
 import { fixturesDir, loadCatalog } from "./helpers.js";
 
 interface ExpectedResult {
@@ -16,7 +16,12 @@ interface ExpectedResult {
 
 interface RejectionRetryCase {
   name: string;
-  batches: Op[][];
+  /**
+   * `WireOp`, not `Op`: `rejection-retry.json` legally contains a deferred
+   * `reset_doc`, which since #17 is a `WireOp` and not an `Op`. Typing this
+   * `Op[][]` asserted something the manifest one directory away disproves.
+   */
+  batches: WireOp[][];
   expected: ExpectedResult[];
   final_node_ids: Array<string | number>;
   final_widget_values?: unknown[];
@@ -62,7 +67,9 @@ describe("rejection/retry golden-vector parity (KA-3, KA-4, FC-7)", () => {
       expect(vector.batches).toHaveLength(vector.expected.length);
       for (const [index, batch] of vector.batches.entries()) {
         const before = bytes(doc);
-        const result = applyOps(doc, batch, catalog);
+        // The wire boundary: a host holds received ops before the validator has
+        // ruled on them, so the cast is where `WireOp` becomes an apply request.
+        const result = applyOps(doc, batch as Op[], catalog);
         const expected = vector.expected[index]!;
 
         expect(observableResult(result)).toEqual({
