@@ -14,11 +14,11 @@ export type LinkExecutionData =
   | boolean
   | { toToolTip?(): string }
 
-export interface LinkPersistentState {
+interface LinkPersistentState {
   color?: CanvasColour | null
 }
 
-export interface LinkRuntimeState {
+interface LinkRuntimeState {
   data?: LinkExecutionData
   outputData?: unknown
   position: Point

@@ -366,7 +366,7 @@ export function detachRerouteLayout(reroute: Reroute): void {
   })
 }
 
-export function moveNodeLayout(node: LGraphNode, position: Point): void {
+function moveNodeLayout(node: LGraphNode, position: Point): void {
   const attachment = nodeAttachments.get(node)
   if (!attachment) return
   layoutStore.applyOperation({

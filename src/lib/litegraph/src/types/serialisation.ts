@@ -68,7 +68,7 @@ export interface SerialisableGraph extends BaseExportedGraph {
   extra?: LGraphExtra
 }
 
-export type ExtensionPayload = Record<string, unknown>
+type ExtensionPayload = Record<string, unknown>
 
 export type ISerialisableNodeInput = Omit<
   INodeInputSlot,
