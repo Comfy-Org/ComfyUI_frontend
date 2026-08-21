@@ -19,6 +19,7 @@ import {
   listWorkflows
 } from '../recorder/runner'
 import { transform, formatTransformSummary } from '../transform/engine'
+import { formatFile } from '../transform/format'
 import { stepHeader } from '../ui/steps'
 import { pass, fail, info, blank, box } from '../ui/logger'
 import { checkGhAvailable, createPr } from '../pr/gh'
@@ -202,6 +203,11 @@ export async function runRecord(): Promise<void> {
   mkdirSync(testsDir, { recursive: true })
   const outputPath = join(testsDir, `${slug}.spec.ts`)
   writeFileSync(outputPath, transformResult.code)
+  if (!formatFile(outputPath)) {
+    info([
+      `Could not format ${outputPath} — run pnpm format before committing.`
+    ])
+  }
 
   blank()
   pass('Test saved', outputPath)

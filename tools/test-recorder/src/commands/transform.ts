@@ -2,6 +2,7 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { basename } from 'node:path'
 import pc from 'picocolors'
 import { transform, formatTransformSummary } from '../transform/engine'
+import { formatFile } from '../transform/format'
 import { header } from '../ui/logger'
 
 export async function runTransform(
@@ -51,5 +52,12 @@ export async function runTransform(
     process.exit(1)
   }
   writeFileSync(outputPath, result.code)
+
+  if (!formatFile(outputPath)) {
+    console.log(
+      pc.yellow(`  ⚠️  Could not format ${outputPath} — run pnpm format`)
+    )
+  }
+
   console.log(pc.green(`  ✅ Saved: ${outputPath}`))
 }

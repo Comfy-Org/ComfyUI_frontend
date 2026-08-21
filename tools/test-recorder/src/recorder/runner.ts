@@ -115,7 +115,12 @@ export async function runRecording(
         env: {
           ...process.env,
           PWDEBUG: '1',
-          PLAYWRIGHT_LOCAL: '1'
+          PLAYWRIGHT_LOCAL: '1',
+          // Record against the dev server the environment check requires.
+          // Without this the fixture falls back to the backend's own bundled
+          // frontend on :8188, so recordings miss local changes entirely.
+          PLAYWRIGHT_TEST_URL:
+            process.env.PLAYWRIGHT_TEST_URL ?? 'http://localhost:5173'
         }
       }
     )

@@ -21,9 +21,10 @@ switch (command) {
       process.exit(1)
     }
     const { runTransform } = await import('./commands/transform')
+    const tags = args.slice(3)
     await runTransform(filePath, {
       testName: args[2],
-      tags: args.slice(3)
+      tags: tags.length > 0 ? tags : undefined
     })
     break
   }
