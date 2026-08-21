@@ -74,4 +74,57 @@ describe('LGraph Serialisation', () => {
 
     expect(copiedLink).toMatchObject(expectedLink)
   })
+
+  test('round trips namespaced node and graph extension payloads', ({
+    expect,
+    minimalGraph
+  }) => {
+    const node = new LGraphNode('Extended')
+    minimalGraph.add(node)
+    node.onSerialize = (data) => {
+      data.extensions = { 'example.node': { enabled: true } }
+    }
+    minimalGraph.onSerialize = (data) => {
+      data.revision = 999
+      data.extensions = { 'example.graph': { version: 1 } }
+    }
+
+    const saved = minimalGraph.asSerialisable()
+    expect(saved.revision).toBe(0)
+    const copied = new LGraph()
+    copied.configure(structuredClone(saved))
+
+    expect(copied.asSerialisable().extensions).toEqual({
+      'example.graph': { version: 1 }
+    })
+    expect(copied.nodes[0].serialize().extensions).toEqual({
+      'example.node': { enabled: true }
+    })
+  })
+
+  test('isolates legacy hooks from canonical fields while retaining payload views', ({
+    expect,
+    minimalGraph
+  }) => {
+    const node = new LGraphNode('Canonical')
+    minimalGraph.add(node)
+    const originalPosition = [...node.pos]
+    node.onSerialize = (data) => {
+      data.pos = [999, 999]
+      Object.assign(data, { legacyData: { retained: true } })
+    }
+
+    const saved = node.serialize()
+    expect(saved.pos).toEqual(originalPosition)
+    expect(saved.extensions).toEqual({ legacyData: { retained: true } })
+
+    let configuredLegacyData: unknown
+    node.onConfigure = (data) => {
+      configuredLegacyData = Object.hasOwn(data, 'legacyData')
+    }
+    node.configure(Object.assign(saved, { legacyData: { retained: true } }))
+
+    expect(configuredLegacyData).toBe(true)
+    expect(Object.hasOwn(node, 'legacyData')).toBe(false)
+  })
 })

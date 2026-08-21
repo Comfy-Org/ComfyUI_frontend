@@ -60,6 +60,12 @@ import {
   outputLinks
 } from './node/slotLinks'
 import { initializeWidgetsView } from './node/widgetsView'
+import {
+  extensionConfigureView,
+  hydrateExtensionPayload,
+  NODE_CANONICAL_FIELDS,
+  runExtensionSerializeHook
+} from './extensionPersistence'
 import { inputSlotView, outputSlotView } from './node/slotDescriptorView'
 import type {
   InputSlotDescriptor,
@@ -1024,10 +1030,12 @@ export class LGraphNode
    * configure a node from an object containing the serialized info
    */
   configure(info: ISerialisedNode): void {
+    hydrateExtensionPayload(this, info, NODE_CANONICAL_FIELDS)
     if (this.graph) {
       this.graph.incrementVersion()
     }
     for (const j in info) {
+      if (!NODE_CANONICAL_FIELDS.has(j)) continue
       if (j == 'properties') {
         // i don't want to clone properties, I want to reuse the old container
         for (const k in info.properties) {
@@ -1173,7 +1181,7 @@ export class LGraphNode
       )
     }
 
-    this.onConfigure?.(info)
+    this.onConfigure?.(extensionConfigureView(this, info))
   }
 
   /**
@@ -1234,12 +1242,21 @@ export class LGraphNode
     if (this.boxcolor) o.boxcolor = this.boxcolor
     if (this.shape) o.shape = this.shape
 
-    if (this.onSerialize?.(o))
+    let hookResult: unknown
+    const serialised = runExtensionSerializeHook(
+      this,
+      o,
+      NODE_CANONICAL_FIELDS,
+      (data) => {
+        hookResult = this.onSerialize?.(data)
+      }
+    )
+    if (hookResult)
       console.warn(
         "node onSerialize shouldn't return anything, data should be stored in the object pass in the first parameter"
       )
 
-    return o
+    return serialised
   }
 
   clone(): LGraphNode | null {

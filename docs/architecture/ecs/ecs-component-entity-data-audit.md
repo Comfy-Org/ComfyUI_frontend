@@ -33,7 +33,7 @@ extension-visible behavior.
 | Node properties                     | Complete | `NodeState` owns the stable mutable dictionary while `LGraphNode.properties` preserves direct mutation, assignment, callback, configure, and serialization behavior.     |
 | Group presentation                  | Complete | Graph-definition records own group title, color, font, font size, and flags behind mutable compatibility accessors; layout continues to own geometry.                    |
 | Preview-exposure persistence        | Partial  | `previewExposureStore` is authoritative for runtime lookup and serialization; raw host keys and root-only cleanup remain.                                                |
-| Extension persistence adapter       | Open     | Graph and node `onSerialize` hooks receive the complete mutable canonical DTO; no validated extension namespace protects store-backed fields.                            |
+| Extension persistence adapter       | Complete | Validated extension payloads hydrate and project through a namespace; legacy hooks receive isolated compatibility views that cannot rewrite canonical fields.            |
 | Graph metadata                      | Open     | `revision`, `config`, and `extra` are public class fields configured and serialized directly.                                                                            |
 | Graph invalidation                  | Partial  | `incrementVersion()` centralizes the primitive, but graph, node, canvas, widget, slot, and subgraph callers still choose when `_version` changes.                        |
 | Unknown-node fallback               | Complete | `NodeState` owns the opaque fallback DTO while compatibility access, replacement discovery, and selected live-field serialization overrides remain intact.               |
@@ -244,8 +244,8 @@ sequence above rather than the summary-table order.
 | 12       | Link non-topological state          | Complete    | `38b40988a`  | Separate persistent and runtime records now back compatible link fields with topology lifecycle. |
 | 13       | Node properties                     | Complete    | `f75b30dbd`  | Node state now owns stable mutable properties across lifecycle, callbacks, and serialization.    |
 | 14       | Unknown-node fallback               | Complete    | `ba4757f4c`  | Node state now owns unknown-node fallback records behind the compatibility accessor.             |
-| 15       | Delayed widget restoration          | Complete    | This commit  | Store-owned restoration state now hydrates configured and delayed widgets from wire shadows.     |
-| 16       | Extension persistence adapter       | Not started |              |                                                                                                  |
+| 15       | Delayed widget restoration          | Complete    | `972947d939` | Store-owned restoration state now hydrates configured and delayed widgets from wire shadows.     |
+| 16       | Extension persistence adapter       | Complete    | This commit  | Validated payloads round trip through a namespace while legacy hooks mutate isolated DTO views.  |
 | 17       | Execution order                     | Not started |              |                                                                                                  |
 | 18       | Graph invalidation                  | Not started |              |                                                                                                  |
 | 19       | Store-driven serialization          | Not started |              |                                                                                                  |
