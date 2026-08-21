@@ -61,6 +61,7 @@ This project uses **pnpm**. Always prefer scripts defined in `package.json` (e.g
 - `pnpm test:browser:local`: Run Playwright E2E tests (`browser_tests/`)
 - `pnpm comfy-test record`: Interactive test recorder (guided setup for non-devs)
 - `pnpm comfy-test transform <file>`: Transform raw codegen to conventions
+- `pnpm comfy-test pr <file>`: Open a pull request for a generated test
 - `pnpm comfy-test check`: Check environment prerequisites
 - `pnpm comfy-test list`: List available test workflows
 

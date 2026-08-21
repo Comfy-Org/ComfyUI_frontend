@@ -134,8 +134,15 @@ export async function createPr(options: PrOptions): Promise<PrResult> {
   // No --fill: newer gh rejects it alongside --title/--body.
   const pr = run('gh', ['pr', 'create', '--title', prTitle, '--body', prBody])
   if (pr.status !== 0) {
-    fail('PR creation failed', pr.stderr.trim())
-    return { success: false, error: pr.stderr.trim() }
+    const stderr = pr.stderr.trim()
+    fail('PR creation failed', stderr)
+    info([
+      `The branch ${branchName} is pushed, so nothing is lost.`,
+      'Open the pull request from it directly, or retry with:',
+      '',
+      `  gh pr create --head ${branchName}`
+    ])
+    return { success: false, error: stderr, needsManualSteps: true }
   }
 
   const url = pr.stdout.trim()

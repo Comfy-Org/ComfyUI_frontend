@@ -3,8 +3,15 @@ export interface ParsedArgs {
   flags: Record<string, string | undefined>
 }
 
-/** Parses `--key value` and `--key=value`; everything else is positional. */
-export function parseFlags(args: string[]): ParsedArgs {
+/**
+ * Only the named flags take a value, so a positional argument following a
+ * flag that takes none is never swallowed.
+ */
+export function parseFlags(
+  args: string[],
+  flagsTakingValue: readonly string[] = []
+): ParsedArgs {
+  const takesValue = new Set(flagsTakingValue)
   const positional: string[] = []
   const flags: Record<string, string | undefined> = {}
 
@@ -14,14 +21,16 @@ export function parseFlags(args: string[]): ParsedArgs {
       positional.push(arg)
       continue
     }
+
     const body = arg.slice(2)
     const eq = body.indexOf('=')
     if (eq !== -1) {
       flags[body.slice(0, eq)] = body.slice(eq + 1)
       continue
     }
+
     const next = args[i + 1]
-    if (next !== undefined && !next.startsWith('--')) {
+    if (takesValue.has(body) && next !== undefined && !next.startsWith('--')) {
       flags[body] = next
       i++
     } else {

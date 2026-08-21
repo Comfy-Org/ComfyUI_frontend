@@ -9,13 +9,26 @@ export function needsShell(platform: string = process.platform): boolean {
   return platform === 'win32'
 }
 
+/**
+ * Node does not quote for you when a shell is involved, so an argument
+ * carrying a space or a cmd.exe metacharacter — a checkout under
+ * `C:\\dev\\R&D\\`, say — would word-split or run as a separate command.
+ */
+export function quoteForCmd(argument: string): string {
+  if (argument === '') return '""'
+  if (!/[\s"&|<>^()]/.test(argument)) return argument
+  return `"${argument.replace(/(\\*)"/g, '$1$1\\"').replace(/(\\+)$/, '$1$1')}"`
+}
+
 export function runCommand(
   command: string,
   args: string[],
   options: SpawnSyncOptions = {}
 ): SpawnSyncReturns<Buffer> {
-  return spawnSync(command, args, {
+  const shell = options.shell ?? needsShell()
+  const finalArgs = shell === true ? args.map(quoteForCmd) : args
+  return spawnSync(command, finalArgs, {
     ...options,
-    shell: options.shell ?? needsShell()
+    shell
   }) as SpawnSyncReturns<Buffer>
 }

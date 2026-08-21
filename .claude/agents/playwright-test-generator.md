@@ -104,7 +104,7 @@ test('my test', async ({ comfyPage }) => {
 
 Every generated test must:
 
-1. Be wrapped in `test.describe('Name', { tag: ['@canvas'] }, () => { ... })`
+1. Be wrapped in `test.describe('Name', { tag: ['<scenario tag>'] }, () => { ... })`, using the tag the plan selected (`@canvas`, `@widget`, `@sidebar`, `@smoke`, `@screenshot`)
 2. Include `test.afterEach(async ({ comfyPage }) => { await comfyPage.canvasOps.resetView() })`
 3. Use descriptive test names (not "test" or "test1")
 

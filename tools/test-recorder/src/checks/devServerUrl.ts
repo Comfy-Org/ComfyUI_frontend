@@ -1,7 +1,10 @@
 const DEFAULT_DEV_PORT = 5173
 
 export function devServerPort(): number {
-  return Number(process.env.COMFY_TEST_DEV_PORT) || DEFAULT_DEV_PORT
+  const configured = Number(process.env.COMFY_TEST_DEV_PORT)
+  const usable =
+    Number.isInteger(configured) && configured > 0 && configured <= 65535
+  return usable ? configured : DEFAULT_DEV_PORT
 }
 
 /**

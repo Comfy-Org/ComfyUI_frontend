@@ -142,7 +142,7 @@ describe('starting workflow', () => {
       testName: 'demo',
       workflow: 'default'
     }).code
-    expect(code).toContain("await comfyPage.workflow.loadWorkflow('default')")
+    expect(code).toContain('await comfyPage.workflow.loadWorkflow("default")')
   })
 
   it('adds nothing when recording started on an empty canvas', () => {
@@ -161,12 +161,15 @@ describe('starting workflow', () => {
     expect(code.match(/loadWorkflow/g)).toHaveLength(1)
   })
 
-  it('escapes quotes in workflow names', () => {
-    const code = transform(CODEGEN, {
-      testName: 'demo',
-      workflow: "it's/one"
-    }).code
-    expect(code).toContain("loadWorkflow('it\\'s/one')")
+  it.for([
+    "it's/one",
+    String.raw`evil'); process.exit(1); //`,
+    String.raw`back\slash`
+  ])('emits %j as data, not code', (workflow) => {
+    const code = transform(CODEGEN, { testName: 'demo', workflow }).code
+    const emitted = code.match(/loadWorkflow\((.*)\)$/m)
+    expect(emitted).not.toBeNull()
+    expect(JSON.parse(emitted![1])).toBe(workflow)
   })
 })
 

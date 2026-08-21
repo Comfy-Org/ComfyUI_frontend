@@ -3,6 +3,20 @@ import type { CheckResult } from './types'
 
 const NAME = 'Checkpoints'
 
+function readCheckpointNames(body: unknown): string[] {
+  if (typeof body !== 'object' || body === null) return []
+  const node = (body as Record<string, unknown>).CheckpointLoaderSimple
+  if (typeof node !== 'object' || node === null) return []
+  const input = (node as Record<string, unknown>).input
+  if (typeof input !== 'object' || input === null) return []
+  const required = (input as Record<string, unknown>).required
+  if (typeof required !== 'object' || required === null) return []
+  const spec = (required as Record<string, unknown>).ckpt_name
+  if (!Array.isArray(spec)) return []
+  const names = spec[0]
+  return Array.isArray(names) ? names.filter((n) => typeof n === 'string') : []
+}
+
 /**
  * With no checkpoints the Missing Models dialog covers the canvas, and every
  * recorded click then fails with "intercepts pointer events".
@@ -15,11 +29,10 @@ export async function checkModels(port = 8188): Promise<CheckResult> {
     )
     if (!res.ok) throw new Error(`Status ${res.status}`)
 
-    const body = await res.json()
-    const names =
-      body?.CheckpointLoaderSimple?.input?.required?.ckpt_name?.[0] ?? []
+    const body: unknown = await res.json()
+    const names = readCheckpointNames(body)
 
-    if (Array.isArray(names) && names.length > 0) {
+    if (names.length > 0) {
       pass(NAME, `${names.length} available`)
       return { name: NAME, ok: true, optional: true }
     }

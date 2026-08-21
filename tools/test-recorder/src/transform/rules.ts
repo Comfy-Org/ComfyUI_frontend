@@ -34,8 +34,8 @@ export const transformRules: TransformRule[] = [
   {
     name: 'replace-page-destructure',
     description: 'Use comfyPage fixture instead of page',
-    pattern: /async\s*\(\s*\{\s*page\s*(?:,\s*\w+\s*)*\}\s*\)/g,
-    replacement: 'async ({ comfyPage })',
+    pattern: /async\s*\(\s*\{\s*page\s*((?:,\s*\w+\s*)*)\}\s*\)/g,
+    replacement: 'async ({ comfyPage$1})',
     category: 'fixture'
   },
   {
@@ -62,7 +62,9 @@ export const transformRules: TransformRule[] = [
   {
     name: 'replace-bare-page',
     description: 'Replace bare page references with comfyPage.page',
-    pattern: /(?<![\w.])page\b/g,
+    // Usage positions only: `page.x`, `expect(page)`, `f(page, ...)`. Anything
+    // else — a property key, a word inside a string — is left alone.
+    pattern: /(?<!['"`\w.])page(?=\s*[.),])/g,
     replacement: 'comfyPage.page',
     category: 'locator'
   },
@@ -101,10 +103,9 @@ export const structuralTransforms: StructuralTransform[] = [
       if (code.includes('loadWorkflow(')) return code
 
       // Codegen starts at the Record button, so the starting workflow is lost.
-      const escaped = workflow.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
       return code.replace(
-        /(test\s*\([^)]*async\s*\(\s*\{\s*comfyPage\s*\}\s*\)\s*=>\s*\{\n)/,
-        `$1  await comfyPage.workflow.loadWorkflow('${escaped}')\n  await comfyPage.nextFrame()\n`
+        /(test\s*\([^)]*async\s*\(\s*\{\s*comfyPage[^}]*\}\s*\)\s*=>\s*\{\n)/,
+        `$1  await comfyPage.workflow.loadWorkflow(${JSON.stringify(workflow)})\n  await comfyPage.nextFrame()\n`
       )
     }
   },

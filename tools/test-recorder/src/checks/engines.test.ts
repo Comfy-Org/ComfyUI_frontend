@@ -36,8 +36,14 @@ describe('describeRange', () => {
     expect(describeRange('>=25 <26')).toBe('v25.x')
   })
 
-  it('renders an open-ended minimum', () => {
-    expect(describeRange('>=11.3')).toBe('v11 or newer')
+  it('keeps the minor version in an open-ended minimum', () => {
+    expect(describeRange('>=11.3')).toBe('v11.3 or newer')
+  })
+
+  it('does not claim a whole major when the bound is narrower', () => {
+    expect(describeRange('>=25.1 <26')).toBe(
+      'v25.1 up to but not including v26'
+    )
   })
 })
 

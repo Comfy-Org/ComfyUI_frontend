@@ -99,7 +99,8 @@ export async function runRecord(): Promise<void> {
   const description = await text({
     message: 'What are you testing?',
     placeholder: 'e.g., adding a KSampler node and queuing',
-    validate: (value) => (value.trim() ? undefined : 'Describe the test.')
+    validate: (value) =>
+      toSlug(value) ? undefined : 'Use some letters or numbers.'
   })
   if (isCancel(description)) {
     cancel('Operation cancelled')

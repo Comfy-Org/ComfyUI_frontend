@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs'
-import { basename, isAbsolute, join } from 'node:path'
+import { basename, isAbsolute, join, relative } from 'node:path'
 import pc from 'picocolors'
 import { findProjectRoot } from '../recorder/runner'
 import { openPr } from '../pr/openPr'
@@ -19,6 +19,19 @@ export async function runPr(
 
   if (!existsSync(absolute)) {
     console.log(pc.red(`No such file: ${absolute}`))
+    process.exit(1)
+  }
+
+  const relativePath = relative(projectRoot, absolute).split('\\').join('/')
+  if (
+    !relativePath.startsWith('browser_tests/') ||
+    !relativePath.endsWith('.spec.ts')
+  ) {
+    console.log(
+      pc.red(
+        `Refusing to open a PR for ${relativePath}: expected a spec under browser_tests/.`
+      )
+    )
     process.exit(1)
   }
 

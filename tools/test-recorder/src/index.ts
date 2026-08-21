@@ -17,7 +17,12 @@ try {
     }
     case 'transform': {
       const { parseFlags } = await import('./cli/flags')
-      const { positional, flags } = parseFlags(args.slice(1))
+      const { positional, flags } = parseFlags(args.slice(1), [
+        'name',
+        'tags',
+        'workflow',
+        'output'
+      ])
       const filePath = positional[0]
       if (!filePath) {
         console.log(

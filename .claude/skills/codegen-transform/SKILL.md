@@ -38,7 +38,7 @@ The programmatic transform engine lives in `tools/test-recorder/src/transform/ru
 | `page.waitForTimeout(N)`                          | `comfyPage.nextFrame()`                                                                     | Never use arbitrary waits                |
 | `page.getByPlaceholder('Search Nodes...')`        | `comfyPage.searchBox.input`                                                                 | Use search box page object               |
 | `page` (bare reference)                           | `comfyPage.page`                                                                            | Access raw page through fixture          |
-| Bare `test(...)`                                  | `test.describe('Feature', { tag: ['@canvas'] }, () => { test(...) })`                       | All tests need describe + tags           |
+| Bare `test(...)`                                  | `test.describe('Feature', { tag: ['<scenario tag>'] }, () => { test(...) })`                | All tests need describe + tags           |
 | No cleanup                                        | Add `test.afterEach(async ({ comfyPage }) => { await comfyPage.canvasOps.resetView() })`    | Canvas tests need cleanup                |
 
 ## Canvas Coordinates → Node References

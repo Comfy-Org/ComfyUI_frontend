@@ -93,9 +93,18 @@ export function satisfies(version: string, range: string): boolean {
 }
 
 export function describeRange(range: string): string {
-  const major = /^>=\s*v?(\d+)/.exec(range.trim())
-  const upper = /<\s*v?(\d+)(?:\s|$)/.exec(range)
-  if (major && upper) return `v${major[1]}.x`
-  if (major) return `v${major[1]} or newer`
-  return range
+  const lower = /^>=\s*v?(\d+(?:\.\d+)*)/.exec(range.trim())
+  if (!lower) return range
+
+  const upperMajor = /<\s*v?(\d+)(?:\.\d+)*(?:\s|$)/.exec(range)
+  const [lowerMajor] = lower[1].split('.')
+  const pinsWholeMajor =
+    upperMajor !== null &&
+    lower[1] === lowerMajor &&
+    Number(upperMajor[1]) === Number(lowerMajor) + 1
+
+  if (pinsWholeMajor) return `v${lowerMajor}.x`
+  if (upperMajor)
+    return `v${lower[1]} up to but not including v${upperMajor[1]}`
+  return `v${lower[1]} or newer`
 }

@@ -80,7 +80,7 @@ Tests in this project use `comfyPage` fixture, not bare `page`. When healing:
 - ❌ NEVER add `waitForTimeout()` — always use retrying assertions or `nextFrame()`
 - ❌ NEVER "fix" a test by weakening assertions (e.g., removing an assertion that fails)
 - ❌ NEVER modify the application code — only modify test code
-- ⚠️ If a test fails because expected UI elements are missing, the app may have a regression — mark as `test.fixme()` with explanation, don't "heal" the assertion away
+- ⚠️ If a test fails because expected UI elements are missing, the app may have a regression — report it, don't "heal" the assertion away. `test.fixme()` reports the test as skipped, which hides the regression from CI, so only reach for it once the regression is filed and link the issue in the annotation
 - ⚠️ If a test fails only in CI but passes locally, likely missing `nextFrame()` — don't mask with timeouts
 
 ### Reference
