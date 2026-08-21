@@ -2,8 +2,10 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
+import { defineComponent } from 'vue'
 
 import { i18n } from '@/i18n'
+import type { TurnId } from '../../schemas/agentApiSchema'
 
 import AgentPanel from './AgentPanel.vue'
 
@@ -87,5 +89,41 @@ describe('AgentPanel', () => {
     await user.click(screen.getByRole('button', { name: 'New chat' }))
 
     expect(textarea).not.toHaveFocus()
+  })
+
+  it('replaces and focuses the composer draft when editing the eligible prompt', async () => {
+    const user = userEvent.setup()
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const prompt = 'Generate a yellow duck with a hockey mask'
+    const Harness = defineComponent({
+      components: { AgentPanel },
+      setup() {
+        return {
+          editableTurnId: 'msg-1' as TurnId,
+          entries: [{ id: 'msg-1' as TurnId, role: 'user', text: prompt }],
+          historyGroups
+        }
+      },
+      template: `<AgentPanel
+        :entries="entries"
+        :editable-turn-id="editableTurnId"
+        :history-groups="historyGroups"
+      />`
+    })
+    render(Harness, {
+      global: {
+        plugins: [pinia, i18n],
+        directives: { tooltip: {} },
+        stubs: { WorkflowSelectorChip: true }
+      }
+    })
+    const textarea = screen.getByRole('textbox')
+    await user.type(textarea, 'unfinished draft')
+
+    await user.click(screen.getByRole('button', { name: 'Edit' }))
+
+    expect(textarea).toHaveValue(prompt)
+    expect(textarea).toHaveFocus()
   })
 })
