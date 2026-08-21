@@ -1,6 +1,6 @@
 # Op-layer portability contract
 
-The TypeScript package is the reference implementation of semantic-op-to-Yjs-document behavior. `yjs` must remain its only production dependency root, and the built package must import in bare Node without reading or creating DOM globals. `npm run check:purity` enforces those KA-3 and FC-3 boundaries.
+The TypeScript package is the reference implementation of semantic-op-to-Yjs-document behavior. `yjs` must remain its only production dependency root, and the built package must import in bare Node without reading or creating DOM globals. `npm run check:purity` enforces those KA-3 and FC-3 boundaries at the package level, and `npm run check:imports` enforces them per source module at the module-graph level.
 
 ## Golden-vector parity
 

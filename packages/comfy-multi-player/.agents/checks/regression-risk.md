@@ -21,6 +21,7 @@ Detect regressions by checking whether changed lines were previously touched by 
 
 | Situation                | Action                              |
 | ------------------------ | ----------------------------------- |
-| Shallow clone (no blame) | Report what succeeds, note the limit |
+| Shallow clone (no blame) | Report INCONCLUSIVE for the files blame could not cover; never report "no regression risk" from a blame that produced no history |
+| `git merge-base origin/main HEAD` fails | Fetch `origin/main` and retry; if it still fails, report INCONCLUSIVE. An empty diff from a bad base looks identical to a clean one |
 | Blame shows PR's own SHA | Skip (false positive)               |
 | File renamed             | Retry blame with `--follow`         |

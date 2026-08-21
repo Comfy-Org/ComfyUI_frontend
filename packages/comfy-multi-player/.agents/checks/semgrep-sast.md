@@ -19,4 +19,7 @@ Run Semgrep static analysis on changed TypeScript/JavaScript files to catch dang
 
 ## Error handling
 
-- If the config download fails, skip and report. Skip un-parseable files and continue. If no findings, report "No issues found."
+- If the config download fails, skip and report. Skip un-parseable files and continue.
+- Non-vacuousness: `--config=auto` fetches its rules over the network, so an empty `.results[]` may mean "no rules ran" rather than "nothing found". Before reporting anything, check `.paths.scanned` is non-empty and `.errors[]` is empty. **Zero files scanned is INCONCLUSIVE, not clean.** Report "No issues found (<n> files scanned)" — always with the count — and only after a run that actually scanned files.
+  - `.paths.scanned` is the reliable signal because it collapses both failure modes (verified on semgrep 1.174.0): a config that loads but contributes zero rules exits `0` with `results = 0` **and `paths.scanned = 0`**, even though real files were passed on the command line — semgrep does not scan a file no rule targets. A *total* rule-fetch failure is loud on this version (exit `2`, no JSON at all), but do not rely on that: a stale cache or a partial fetch is not guaranteed to be, and the `paths.scanned` check costs nothing.
+  - Findings do not change the exit code: a run with results still exits `0`. Read `.results[]`, never the exit status, for the verdict.

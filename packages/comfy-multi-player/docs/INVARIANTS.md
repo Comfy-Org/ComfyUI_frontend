@@ -23,7 +23,7 @@ This is the machine-addressable review log for the package. IDs are stable; do n
 ### KA-3 — The op layer stays pure & portable
 **Rule:** Applier, projection, and mint have zero DOM/framework/LiteGraph/server-only dependencies and run identically in browser and host; assert `yjs`-only directly, not merely by denylist.  
 **Why:** A peer, edge, browser, and Node host must execute one implementation identically.  
-**Enforced by:** `scripts/check-purity.mjs`, `test/purity.test.ts`, `test/parity.test.ts`, and [`purity`](../.agents/checks/purity.md). Cross-language implementations must pass the canonical golden vectors in `fixtures/golden-vectors/`.
+**Enforced by:** `scripts/check-purity.mjs` (package level), `scripts/check-import-graph.mjs` + `.dependency-cruiser.cjs` rule `src-runtime-dep-is-yjs-only` (module-graph level, per source module), `test/purity.test.ts`, `test/parity.test.ts`, and [`purity`](../.agents/checks/purity.md). Cross-language implementations must pass the canonical golden vectors in `fixtures/golden-vectors/`.
 
 ### KA-4 — The applier is deterministic and idempotent
 **Rule:** Same op-set + causal order gives the same projection; duplicate `op_id` is a true no-op with byte-identical `encodeStateAsUpdate`.  
@@ -83,7 +83,7 @@ This is the machine-addressable review log for the package. IDs are stable; do n
 
 ### FC-3 — Never couple the applier/op layer to server-only or DOM/framework-only dependencies
 **Why:** Such coupling prevents execution at a peer, edge, or browser and invites a second implementation.  
-**Enforced by:** `scripts/check-purity.mjs`, `test/purity.test.ts`, [`purity`](../.agents/checks/purity.md), and [ADR-001](decisions/ADR-001-single-shared-applier.md).
+**Enforced by:** `scripts/check-purity.mjs`, `scripts/check-import-graph.mjs` + `.dependency-cruiser.cjs` rule `src-no-node-builtins`, `test/purity.test.ts`, [`purity`](../.agents/checks/purity.md), and [ADR-001](decisions/ADR-001-single-shared-applier.md).
 
 ### FC-4 — Never use full-document replace as the mutation primitive
 **Why:** It increases ingress/egress, clobbers concurrent edits, and kills op-log replay and observability.  

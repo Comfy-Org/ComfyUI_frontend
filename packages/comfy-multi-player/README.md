@@ -317,10 +317,14 @@ one is **rejected** with `opaque_widgets` rather than silently doing nothing.
 
 This package runs in the browser bundle and in the server process, so it must
 stay free of UI frameworks, DOM implementations, and litegraph.
-`npm run check:purity` (CI-gated) walks the fully resolved dependency tree and
-fails on any banned package, then imports the built entrypoint in a bare Node
-subprocess and asserts no DOM globals exist before or after. `yjs` is the only
-runtime dependency; keep it that way.
+`npm run check:purity` (CI-gated) asserts the declared and resolved production
+dependency roots are exactly `{yjs}`, walks the fully resolved dependency tree
+and fails on any banned package, then imports the built entrypoint in a bare
+Node subprocess and asserts no DOM globals exist before or after.
+`npm run check:imports` (CI-gated) covers the same contract one layer down,
+per source module, and exits `2` rather than green if it cruised too few
+modules to mean anything. `yjs` is the only runtime dependency; keep it that
+way.
 
 ## Install
 
@@ -349,6 +353,7 @@ npm install
 npm run build         # tsc → dist/
 npm test              # vitest: schema, purity, replay, lww, convergence, roundtrip, applier
 npm run check:purity  # dependency-tree + bare-Node import gate
+npm run check:imports # module-graph gate: no cycles, src imports yjs only, no Node builtins
 ```
 
 `fixtures/` holds the replay corpus: recorded op sessions with their starting

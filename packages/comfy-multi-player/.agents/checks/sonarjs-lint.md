@@ -11,10 +11,10 @@ Run `eslint-plugin-sonarjs` on changed files for SonarQube-grade bug and code-sm
    npm i --no-save eslint eslint-plugin-sonarjs @typescript-eslint/parser
    ```
    If install fails, skip and report: "Skipped: could not install eslint/sonarjs." Restore `package-lock.json` afterward if the install touched it (`git checkout -- package-lock.json`).
-4. Run (do not suppress stderr or discard the exit status — a failed lint run must not look like a clean pass):
+4. Run (do not suppress stderr or discard the exit status — a failed lint run must not look like a clean pass). `--no-warn-ignored` is load-bearing, not cosmetic: see the non-vacuousness note below.
    ```bash
    npx eslint --no-config-lookup --config .agents/checks/eslint.strict.config.js \
-     --format json <changed_files>; echo "eslint exit: $?"
+     --no-warn-ignored --format json <changed_files>; echo "eslint exit: $?"
    ```
    ESLint exits `1` when it reports problems and `2` on a config/execution error. Treat exit `2`, a parse error, or empty/no output as **indeterminate** (report the failure), never as "no issues found".
 5. Parse the JSON. Map eslint `severity 2`→major, `severity 1`→minor. Categorize `sonarjs/no-*`→logic, `*cognitive-complexity*`→dx, others→style.
@@ -34,3 +34,9 @@ The exact rule set is the plugin's `recommended` config (currently eslint-plugin
 ## Error handling
 
 - Skip un-parseable files and continue. If the plugin/parser fails to install or ESLint exits `2`, report an indeterminate/failed run — do not report "No issues found". Report "No issues found" only when ESLint ran successfully (exit `0`) and produced an empty findings array.
+- Non-vacuousness: an empty findings array also results from linting nothing. Compare the array's length against the number of files you passed; if it is shorter, the missing files were never linted and the run is INCONCLUSIVE for them. Report "No issues found (<n> files linted)" with the count.
+  - That comparison only works with `--no-warn-ignored`. **Without the flag ESLint emits an entry for a file it did NOT lint** — `messages: [{ ruleId: null, severity: 1, message: "File ignored because of a matching ignore pattern" }]`, or `"File ignored because no matching configuration was supplied."` for an extension the config does not match — so the lengths agree and the check passes on exactly the case it exists to catch. Verified on ESLint v10.8.1: passing `src/applier.ts src/doc.ts dist/index.js` returns 3 entries without the flag and 1 with it. If you must run without it, count an entry as linted only when it carries no `ruleId: null` "File ignored" message.
+  - A run whose linted count is zero is INCONCLUSIVE even at exit `0`.
+
+<!-- Staleness anchor: the run command this profile documents must stay the one the config expects. -->
+<!-- claim: npx eslint --no-config-lookup --config .agents/checks/eslint.strict.config.js :: .agents/checks/eslint.strict.config.js -->

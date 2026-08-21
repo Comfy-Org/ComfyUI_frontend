@@ -41,5 +41,10 @@ jobs:
       - name: Profile-claim staleness gate
         run: npm run check:profile-claims
 
+      # Module-graph gate. Exits 2 (INCONCLUSIVE) rather than green when it
+      # cruises too few modules to mean anything — see .agents/checks/import-graph.md.
+      - name: Import-graph gate
+        run: npm run check:imports
+
       - name: Tests
         run: npm test

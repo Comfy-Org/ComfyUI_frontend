@@ -18,9 +18,11 @@ Detect known CVEs in dependencies and leaked secrets. Applies to any change; esp
 
 ## Repo-specific emphasis
 
-- The production dependency set must remain **`yjs` only** (KA-3/FC-3). Any audit finding that arrives via a *new* production dependency is also a purity violation, not just a CVE — flag both. Dev-only advisories (Stryker, Vitest, TypeScript, fast-check) are lower priority but still reported.
+- The production dependency set must remain **`yjs` only** (KA-3/FC-3). Any audit finding that arrives via a *new* production dependency is also a purity violation, not just a CVE — flag both. Dev-only advisories (Stryker, Vitest, TypeScript, fast-check, dependency-cruiser) are lower priority but still reported.
 - This is a pure library with no server, no credentials, and no network; any secret, token, connection string, or key in the tree is unexpected by construction and is critical.
 
 ## Error handling
 
 - If one tool fails, continue with the other. If JSON parsing fails, include raw output with a warning. If both are clean, report "No issues found."
+- Non-vacuousness: a clean `npm audit --json` can mean "audited nothing". Before believing it, check `.metadata.dependencies.total` is present and non-zero; if it is absent or `0`, the run is INCONCLUSIVE, not clean. Quote the audited dependency count in the report, and quote gitleaks' scanned-commit count, so a future empty scan is visible in the review itself.
+  - The two shapes to expect (verified on npm 11.12.1): with no lockfile, npm exits `1` with `{"error":{"code":"ENOLOCK"}}` and no `.metadata` at all — loud, but an agent that only reads `.vulnerabilities` sees an empty object and calls it clean. With a manifest that resolves to zero dependencies, npm exits `0` with `.metadata.dependencies.total = 0` and an empty `.vulnerabilities` — indistinguishable from a real pass except by the count. Note that `node_modules` being absent is **not** by itself vacuous: with `package-lock.json` present npm audits the locked tree correctly (this repo: `total = 311`, 2 moderate advisories).

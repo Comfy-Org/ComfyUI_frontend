@@ -29,6 +29,7 @@
     "test:mutation": "stryker run",
     "check:purity": "node scripts/check-purity.mjs",
     "check:profile-claims": "node scripts/check-profile-claims.mjs",
+    "check:imports": "node scripts/check-import-graph.mjs",
     "verify:corpus": "node scripts/verify-corpus.mjs"
   },
   "dependencies": {
@@ -38,6 +39,7 @@
     "@stryker-mutator/core": "^10.0.0",
     "@stryker-mutator/vitest-runner": "^10.0.0",
     "@types/node": "^24.0.0",
+    "dependency-cruiser": "^17.4.3",
     "fast-check": "^4.9.0",
     "typescript": "^5.9.0",
     "vitest": "^3.2.0"
