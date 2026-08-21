@@ -143,7 +143,7 @@ import VideoPlayOverlay from './VideoPlayOverlay.vue'
 
 const emit = defineEmits<{
   'stack-toggle': []
-  'preview-click': []
+  'preview-click': [event: MouseEvent]
 }>()
 
 const {
@@ -179,10 +179,7 @@ const {
 }>()
 
 function onPreviewClick(event: MouseEvent) {
-  const hasSelectionModifier = event.shiftKey || event.metaKey || event.ctrlKey
-  if (hasSelectionModifier) return
-
-  emit('preview-click')
+  emit('preview-click', event)
 }
 
 const {

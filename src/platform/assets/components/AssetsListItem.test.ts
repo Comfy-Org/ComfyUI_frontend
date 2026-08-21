@@ -83,8 +83,8 @@ describe('AssetsListItem', () => {
   })
 
   it.for(SELECTION_MODIFIERS)(
-    'does not emit preview-click when %s is held over the preview',
-    async ([, heldModifier]) => {
+    'still emits preview-click with the event when %s is held over the preview',
+    async ([modifierKey, heldModifier]) => {
       const user = userEvent.setup()
       const { emitted } = render(AssetsListItem, {
         props: {
@@ -96,25 +96,10 @@ describe('AssetsListItem', () => {
       await user.keyboard(heldModifier)
       await user.click(screen.getByRole('img'))
 
-      expect(emitted()['preview-click']).toBeUndefined()
-    }
-  )
-
-  it.for(SELECTION_MODIFIERS)(
-    'does not emit preview-click when %s is held over the fallback icon',
-    async ([, heldModifier]) => {
-      const user = userEvent.setup()
-      const { container, emitted } = render(AssetsListItem, {
-        props: {
-          iconName: 'icon-[lucide--box]'
-        }
-      })
-
-      await user.keyboard(heldModifier)
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- aria-hidden icon, no semantic query available
-      await user.click(container.querySelector('i')!)
-
-      expect(emitted()['preview-click']).toBeUndefined()
+      const events = emitted()['preview-click']
+      expect(events).toHaveLength(1)
+      const [event] = events![0] as [MouseEvent]
+      expect(event[`${modifierKey}Key`]).toBe(true)
     }
   )
 })
