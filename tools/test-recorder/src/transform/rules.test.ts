@@ -174,3 +174,39 @@ test('test', async ({ comfyPage }) => {
     expect(result.code).toContain("loadWorkflow('it\\'s/one')")
   })
 })
+
+describe('generated specs satisfy the repo lint rules', () => {
+  const raw = `import { expect, test } from '@playwright/test';
+
+test('test', async ({ page }) => {
+  await page.locator('canvas').click();
+  await expect(page.locator('canvas')).toBeVisible();
+});`
+
+  it("renames codegen's default title, which valid-title rejects", () => {
+    const result = transform(raw, { testName: 'default-wf-verify' })
+    expect(result.code).not.toMatch(/test\(\s*'test'/)
+    expect(result.code).toContain('default wf verify works as recorded')
+  })
+
+  it('separates the imports from the describe block', () => {
+    const result = transform(raw, { testName: 'x' })
+    expect(result.code).toMatch(
+      /from '@e2e\/fixtures\/ComfyPage';?\n\ntest\.describe/
+    )
+  })
+
+  it('warns when a recording captured no assertion', () => {
+    const noAssertion = raw.replace(
+      "  await expect(page.locator('canvas')).toBeVisible();\n",
+      ''
+    )
+    const result = transform(noAssertion, { testName: 'x' })
+    expect(result.warnings.some((w) => w.includes('No assertions'))).toBe(true)
+  })
+
+  it('stays quiet when the recording does assert', () => {
+    const result = transform(raw, { testName: 'x' })
+    expect(result.warnings.some((w) => w.includes('No assertions'))).toBe(false)
+  })
+})

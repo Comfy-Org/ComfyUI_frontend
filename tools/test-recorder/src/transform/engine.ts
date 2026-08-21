@@ -69,6 +69,11 @@ export function transform(
       'Still imports from @playwright/test — should use @e2e/fixtures/ComfyPage'
     )
   }
+  if (!/\bexpect\s*\(/.test(code)) {
+    warnings.push(
+      'No assertions — the playwright/expect-expect lint rule rejects this, so the commit hook will refuse it. Add an assertion in the Inspector before stopping.'
+    )
+  }
   if (/position:\s*\{\s*x:\s*\d+,\s*y:\s*\d+/.test(code)) {
     warnings.push(
       'Contains pixel coordinates — consider replacing with node references (comfyPage.nodeOps.*) where possible'
