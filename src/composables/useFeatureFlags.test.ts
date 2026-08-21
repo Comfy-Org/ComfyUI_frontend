@@ -562,6 +562,7 @@ describe('useFeatureFlags', () => {
 
   describe('unifiedCloudAuthEnabled', () => {
     it('reads the unified_cloud_auth server feature when set', () => {
+      vi.mocked(distributionTypes).isCloud = true
       vi.mocked(api.getServerFeature).mockImplementation(
         (path, defaultValue) => {
           if (path === ServerFeatureFlag.UNIFIED_CLOUD_AUTH) return true
@@ -574,11 +575,19 @@ describe('useFeatureFlags', () => {
     })
 
     it('lets a dev override beat the server value', () => {
+      vi.mocked(distributionTypes).isCloud = true
       vi.mocked(api.getServerFeature).mockReturnValue(false)
       localStorage.setItem('ff:unified_cloud_auth', 'true')
 
       const { flags } = useFeatureFlags()
       expect(flags.unifiedCloudAuthEnabled).toBe(true)
+    })
+
+    it('is disabled outside the cloud distribution', () => {
+      vi.mocked(distributionTypes).isCloud = false
+      remoteConfig.value = { unified_cloud_auth: true }
+
+      expect(useFeatureFlags().flags.unifiedCloudAuthEnabled).toBe(false)
     })
   })
 
