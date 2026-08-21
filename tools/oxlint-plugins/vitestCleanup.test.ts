@@ -151,6 +151,15 @@ afterAll(() => vi.unstubAllGlobals())
 suiteSetup(() => vitest.stubGlobal('suite', true))
 beforeAll(() => vi.spyOn(console, 'log'))
 Vitest.beforeAll(() => Vitest.vi.stubGlobal('suite', true))
+
+beforeEach(() => {
+  vi.useRealTimers()
+  vi.clearAllTimers()
+})
+afterEach(() => {
+  vi.useRealTimers()
+  vi.clearAllTimers()
+})
 `
 
 const unrelatedFixture = `const vi = {
@@ -236,6 +245,13 @@ describe('Vitest cleanup rules', () => {
       )
       expect(reports?.length).toBeGreaterThanOrEqual(2)
     }
+  })
+
+  it('reports timer cleanup in after hooks but allows timer setup in before hooks', () => {
+    expectReportsAt(output, [145, 146])
+    const plainOutput = stripVTControlCharacters(output)
+    expect(plainOutput).not.toContain('invalid.test.ts:141:')
+    expect(plainOutput).not.toContain('invalid.test.ts:142:')
   })
 
   it('handles aliases, namespaces, concise callbacks, and nested control flow', () => {
