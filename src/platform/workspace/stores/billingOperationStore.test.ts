@@ -6,6 +6,9 @@ import type { BillingOpStatusResponse } from '@/platform/workspace/api/workspace
 const mockFetchStatus = vi.fn()
 const mockFetchBalance = vi.fn()
 const mockReconcileSubscriptionSuccess = vi.fn()
+const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
+
+vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
@@ -81,6 +84,7 @@ import { useBillingOperationStore } from './billingOperationStore'
 
 describe('billingOperationStore', () => {
   beforeEach(() => {
+    mockDistributionTypes.isCloud = true
     mockActiveWorkspaceId.value = 'workspace-1'
   })
 
@@ -362,6 +366,22 @@ describe('billingOperationStore', () => {
 
       expect(mockCloseDialog).toHaveBeenCalledWith({ key: 'top-up-credits' })
       expect(mockSettingsDialogShow).toHaveBeenCalledWith('workspace')
+    })
+
+    it('opens Credits settings after a polled local topup succeeds', async () => {
+      mockDistributionTypes.isCloud = false
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'topup')
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockSettingsDialogShow).toHaveBeenCalledWith('credits')
     })
 
     it('fires purchase telemetry on subscription success', async () => {
