@@ -16,7 +16,7 @@
       ],
       "rules": {
         "comfy/no-module-scope-vitest-mocks": "warn",
-        "comfy/no-redundant-vitest-cleanup": "warn"
+        "comfy/no-redundant-vitest-cleanup": "error"
       }
     }
   ]

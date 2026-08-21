@@ -229,7 +229,6 @@ describe('ChangeTracker', () => {
   })
 
   afterEach(() => {
-    vi.restoreAllMocks()
     vi.clearAllTimers()
   })
 
