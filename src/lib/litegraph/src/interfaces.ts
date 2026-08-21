@@ -20,6 +20,36 @@ import type {
 } from './types/globalEnums'
 import type { IBaseWidget } from './types/widgets'
 
+/** An object containing a set of child objects */
+interface Parent<TChild> {
+  /** All objects owned by the parent object. */
+  readonly children?: ReadonlySet<TChild>
+}
+
+interface IInputOrOutput {
+  // If an input, this will be defined
+  input?: INodeInputSlot | null
+  // If an output, this will be defined
+  output?: INodeOutputSlot | null
+}
+
+/** Union of property names that are of type Match */
+type KeysOfType<T, Match> = Exclude<
+  { [P in keyof T]: T[P] extends Match ? P : never }[keyof T],
+  undefined
+>
+
+interface IContextMenuBase {
+  title?: string
+  className?: string
+}
+
+interface IContextMenuSubmenu<
+  TValue = unknown
+> extends IContextMenuOptions<TValue> {
+  options: ConstructorParameters<typeof ContextMenu<TValue>>[0]
+}
+
 export type Dictionary<T> = { [key: string]: T }
 
 /** Allows all properties to be null.  The same as `Partial<T>`, but adds null instead of undefined. */
@@ -75,12 +105,6 @@ export interface HasBoundingRect {
    * @see {@link move}
    */
   readonly boundingRect: ReadOnlyRect
-}
-
-/** An object containing a set of child objects */
-interface Parent<TChild> {
-  /** All objects owned by the parent object. */
-  readonly children?: ReadonlySet<TChild>
 }
 
 /**
@@ -186,6 +210,8 @@ export interface LinkNetwork extends ReadonlyLinkNetwork {
   removeFloatingLink(link: LLink): void
 }
 
+export type { SlotIndex } from '@/types/slotId'
+
 /**
  * Locates graph items.
  */
@@ -225,21 +251,12 @@ export interface LinkSegment {
   readonly origin_slot: SlotIndex | undefined
 }
 
-interface IInputOrOutput {
-  // If an input, this will be defined
-  input?: INodeInputSlot | null
-  // If an output, this will be defined
-  output?: INodeOutputSlot | null
-}
-
 export interface IFoundSlot extends IInputOrOutput {
   // Slot index
   slot: SlotIndex
   // Centre point of the rendered slot connection
   link_pos: Point
 }
-
-export type { SlotIndex } from '@/types/slotId'
 
 /** A point represented as `[x, y]` co-ordinates */
 export type Point = [x: number, y: number]
@@ -256,23 +273,16 @@ export type Rect =
 export type ReadOnlyRect =
   | readonly [x: number, y: number, width: number, height: number]
   | ReadOnlyTypedArray<Float64Array>
-
 export type ReadOnlyTypedArray<T extends Float64Array> = Omit<
   Readonly<T>,
   'fill' | 'copyWithin' | 'reverse' | 'set' | 'sort' | 'subarray'
 >
-
-/** Union of property names that are of type Match */
-type KeysOfType<T, Match> = Exclude<
-  { [P in keyof T]: T[P] extends Match ? P : never }[keyof T],
-  undefined
->
-
 /** The names of all (optional) methods and functions in T */
 export type MethodNames<T> = KeysOfType<
   T,
   ((...args: unknown[]) => unknown) | undefined
 >
+
 export interface NewNodePosition {
   node: LGraphNode
   newPos: {
@@ -280,6 +290,7 @@ export interface NewNodePosition {
     y: number
   }
 }
+
 export interface IBoundaryNodes {
   top: LGraphNode
   right: LGraphNode
@@ -413,11 +424,6 @@ export interface ConnectingLink extends IInputOrOutput {
   link?: LLink
 }
 
-interface IContextMenuBase {
-  title?: string
-  className?: string
-}
-
 /** ContextMenu */
 export interface IContextMenuOptions<
   TValue = unknown,
@@ -465,12 +471,6 @@ export interface IContextMenuValue<
     previous_menu?: ContextMenu<TValue>,
     extra?: TExtra
   ): void | boolean | Promise<void | boolean>
-}
-
-interface IContextMenuSubmenu<
-  TValue = unknown
-> extends IContextMenuOptions<TValue> {
-  options: ConstructorParameters<typeof ContextMenu<TValue>>[0]
 }
 
 export interface ContextMenuDivElement<

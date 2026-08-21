@@ -6,21 +6,21 @@ interface HSB {
   s: number
   b: number
 }
+type HSL = { h: number; s: number; l: number }
+type HSLA = { h: number; s: number; l: number; a: number }
+type ColorFormatInternal = 'hex' | 'rgb' | 'rgba' | 'hsl' | 'hsla'
+interface HSV {
+  h: number
+  s: number
+  v: number
+}
 export interface HSVA {
   h: number
   s: number
   v: number
   a: number
 }
-type HSL = { h: number; s: number; l: number }
-type HSLA = { h: number; s: number; l: number; a: number }
-type ColorFormatInternal = 'hex' | 'rgb' | 'rgba' | 'hsl' | 'hsla'
 export type ColorFormat = 'hex' | 'rgb' | 'hsb'
-interface HSV {
-  h: number
-  s: number
-  v: number
-}
 
 export interface ColorAdjustOptions {
   lightness?: number
@@ -244,10 +244,6 @@ const isHSLA = (color: unknown): color is HSLA => {
   )
 }
 
-export function isColorFormat(v: unknown): v is ColorFormat {
-  return v === 'hex' || v === 'rgb' || v === 'hsb'
-}
-
 function isHSBObject(v: unknown): v is HSB {
   if (!v || typeof v !== 'object') return false
   const rec = v as Record<string, unknown>
@@ -272,44 +268,6 @@ function isHSVObject(v: unknown): v is HSV {
     typeof (rec as Record<string, unknown>).v === 'number' &&
     Number.isFinite((rec as Record<string, number>).v!)
   )
-}
-
-export function toHexFromFormat(val: unknown, format: ColorFormat): string {
-  if (format === 'hex' && typeof val === 'string') {
-    const raw = val.trim().toLowerCase()
-    if (!raw) return '#000000'
-    if (/^[0-9a-f]{3,4}$/.test(raw)) return `#${raw}`
-    if (/^#[0-9a-f]{3,4}$/.test(raw)) return raw
-    if (/^[0-9a-f]{6}$/.test(raw)) return `#${raw}`
-    if (/^#[0-9a-f]{6}$/.test(raw)) return raw
-    if (/^[0-9a-f]{8}$/.test(raw)) return `#${raw}`
-    if (/^#[0-9a-f]{8}$/.test(raw)) return raw
-    return '#000000'
-  }
-
-  if (format === 'rgb' && typeof val === 'string') {
-    const rgb = parseToRgb(val)
-    return rgbToHex(rgb).toLowerCase()
-  }
-
-  if (format === 'hsb') {
-    if (isHSBObject(val)) {
-      return rgbToHex(hsbToRgb(val)).toLowerCase()
-    }
-    if (isHSVObject(val)) {
-      const { h, s, v } = val
-      return rgbToHex(hsbToRgb({ h, s, b: v })).toLowerCase()
-    }
-    if (typeof val === 'string') {
-      const nums = val.match(/\d+(?:\.\d+)?/g)?.map(Number) || []
-      if (nums.length >= 3) {
-        return rgbToHex(
-          hsbToRgb({ h: nums[0], s: nums[1], b: nums[2] })
-        ).toLowerCase()
-      }
-    }
-  }
-  return '#000000'
 }
 
 function parseToHSLA(color: string, format: ColorFormatInternal): HSLA | null {
@@ -364,6 +322,48 @@ function parseToHSLA(color: string, format: ColorFormatInternal): HSLA | null {
     default:
       return null
   }
+}
+
+export function isColorFormat(v: unknown): v is ColorFormat {
+  return v === 'hex' || v === 'rgb' || v === 'hsb'
+}
+
+export function toHexFromFormat(val: unknown, format: ColorFormat): string {
+  if (format === 'hex' && typeof val === 'string') {
+    const raw = val.trim().toLowerCase()
+    if (!raw) return '#000000'
+    if (/^[0-9a-f]{3,4}$/.test(raw)) return `#${raw}`
+    if (/^#[0-9a-f]{3,4}$/.test(raw)) return raw
+    if (/^[0-9a-f]{6}$/.test(raw)) return `#${raw}`
+    if (/^#[0-9a-f]{6}$/.test(raw)) return raw
+    if (/^[0-9a-f]{8}$/.test(raw)) return `#${raw}`
+    if (/^#[0-9a-f]{8}$/.test(raw)) return raw
+    return '#000000'
+  }
+
+  if (format === 'rgb' && typeof val === 'string') {
+    const rgb = parseToRgb(val)
+    return rgbToHex(rgb).toLowerCase()
+  }
+
+  if (format === 'hsb') {
+    if (isHSBObject(val)) {
+      return rgbToHex(hsbToRgb(val)).toLowerCase()
+    }
+    if (isHSVObject(val)) {
+      const { h, s, v } = val
+      return rgbToHex(hsbToRgb({ h, s, b: v })).toLowerCase()
+    }
+    if (typeof val === 'string') {
+      const nums = val.match(/\d+(?:\.\d+)?/g)?.map(Number) || []
+      if (nums.length >= 3) {
+        return rgbToHex(
+          hsbToRgb({ h: nums[0], s: nums[1], b: nums[2] })
+        ).toLowerCase()
+      }
+    }
+  }
+  return '#000000'
 }
 
 export function rgbToHsv({ r, g, b }: RGB): {

@@ -8,22 +8,6 @@ interface Rect {
   height: number
 }
 
-/**
- * Finds the intersection between two rectangles
- */
-function intersect(a: Rect, b: Rect): [number, number, number, number] | null {
-  const x1 = Math.max(a.x, b.x)
-  const y1 = Math.max(a.y, b.y)
-  const x2 = Math.min(a.x + a.width, b.x + b.width)
-  const y2 = Math.min(a.y + a.height, b.y + b.height)
-
-  if (x1 >= x2 || y1 >= y2) {
-    return null
-  }
-
-  return [x1, y1, x2 - x1, y2 - y1]
-}
-
 interface ClippingOptions {
   margin?: number
 }
@@ -43,6 +27,22 @@ interface UseDomClippingReturn {
       offset: [number, number]
     }
   ) => void
+}
+
+/**
+ * Finds the intersection between two rectangles
+ */
+function intersect(a: Rect, b: Rect): [number, number, number, number] | null {
+  const x1 = Math.max(a.x, b.x)
+  const y1 = Math.max(a.y, b.y)
+  const x2 = Math.min(a.x + a.width, b.x + b.width)
+  const y2 = Math.min(a.y + a.height, b.y + b.height)
+
+  if (x1 >= x2 || y1 >= y2) {
+    return null
+  }
+
+  return [x1, y1, x2 - x1, y2 - y1]
 }
 
 export function useDomClipping(

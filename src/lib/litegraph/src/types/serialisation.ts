@@ -20,18 +20,6 @@ import type { LiteGraph } from '../litegraph'
 import type { RenderShape } from './globalEnums'
 import type { TWidgetValue } from './widgets'
 
-/**
- * An object that implements custom pre-serialization logic via {@link Serialisable.asSerialisable}.
- */
-export interface Serialisable<SerialisableObject> {
-  /**
-   * Prepares this object for serialization.
-   * Creates a partial shallow copy of itself, with only the properties that should be serialised.
-   * @returns An object that can immediately be serialized to JSON.
-   */
-  asSerialisable(): SerialisableObject
-}
-
 interface BaseExportedGraph {
   /** Unique graph ID.  Automatically generated if not provided. */
   id: UUID
@@ -54,6 +42,29 @@ interface SerialisableGraphState {
   lastRerouteId: number
 }
 
+/** Properties of nodes that are used by subgraph instances. */
+type NodeSubgraphSharedProps = Omit<
+  ISerialisedNode,
+  'properties' | 'showAdvanced'
+>
+
+/** Properties shared by subgraph and node I/O slots. */
+type SubgraphIOShared = Omit<
+  INodeSlot,
+  'boundingRect' | 'nameLocked' | 'locked' | 'removable' | '_floatingLinks'
+>
+
+/**
+ * An object that implements custom pre-serialization logic via {@link Serialisable.asSerialisable}.
+ */
+export interface Serialisable<SerialisableObject> {
+  /**
+   * Prepares this object for serialization.
+   * Creates a partial shallow copy of itself, with only the properties that should be serialised.
+   * @returns An object that can immediately be serialized to JSON.
+   */
+  asSerialisable(): SerialisableObject
+}
 export interface SerialisableGraph extends BaseExportedGraph {
   /** Schema version.  @remarks Version bump should add to const union, which is used to narrow type during deserialise. */
   version: 0 | 1
@@ -73,6 +84,7 @@ export type ISerialisableNodeInput = Omit<
   link?: number | null
   widget?: { name: string }
 }
+
 export type ISerialisableNodeOutput = Omit<
   INodeOutputSlot,
   'boundingRect' | '_data' | 'links' | '_floatingLinks'
@@ -108,12 +120,6 @@ export interface ISerialisedNode {
   widgets_values?: TWidgetValue[]
   widgets_values_named?: Record<string, TWidgetValue>
 }
-
-/** Properties of nodes that are used by subgraph instances. */
-type NodeSubgraphSharedProps = Omit<
-  ISerialisedNode,
-  'properties' | 'showAdvanced'
->
 
 /** A single instance of a subgraph; where it is used on a graph, any customisation to shape / colour etc. */
 export interface ExportedSubgraphInstance extends NodeSubgraphSharedProps {
@@ -161,12 +167,6 @@ export interface ExportedSubgraph extends SerialisableGraph {
   /** A list of node widgets displayed in the parent graph, on the subgraph object. */
   widgets?: ExposedWidget[]
 }
-
-/** Properties shared by subgraph and node I/O slots. */
-type SubgraphIOShared = Omit<
-  INodeSlot,
-  'boundingRect' | 'nameLocked' | 'locked' | 'removable' | '_floatingLinks'
->
 
 /** Subgraph I/O slots */
 export interface SubgraphIO extends SubgraphIOShared {

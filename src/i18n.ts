@@ -39,6 +39,8 @@ const loadingLocales = new Map<string, Promise<void>>()
 // Store custom nodes i18n data for merging when locales are lazily loaded
 const customNodesI18nData: Record<string, unknown> = {}
 
+export type NodeDefTextField = 'display_name' | 'description'
+
 /**
  * Dynamically load a shipped locale's bundles (nodeDefs, commands, settings).
  * Callers must pre-resolve untrusted input via `resolveSupportedLocale` or
@@ -133,8 +135,6 @@ export function mergeCustomNodesI18n(i18nData: Record<string, unknown>): void {
   }
 }
 
-export type NodeDefTextField = 'display_name' | 'description'
-
 /**
  * Raw `/object_info` text, kept out of the vue-i18n message tree so English
  * never reaches the message compiler. Rebuilt on every fetch, so a def that
@@ -145,27 +145,10 @@ const backendNodeText = new Map<
   Partial<Record<NodeDefTextField, string>>
 >()
 
-export function setBackendNodeText(
-  defs: Iterable<{
-    name?: unknown
-    display_name?: unknown
-    description?: unknown
-  }>
-): void {
-  backendNodeText.clear()
-  for (const def of defs) {
-    if (typeof def?.name !== 'string') continue
-    const entry: Partial<Record<NodeDefTextField, string>> = {}
-    if (typeof def.display_name === 'string' && def.display_name) {
-      entry.display_name = def.display_name
-    }
-    if (typeof def.description === 'string' && def.description) {
-      entry.description = def.description
-    }
-    if (entry.display_name ?? entry.description)
-      backendNodeText.set(def.name, entry)
-  }
-}
+/**
+ * Reads a resolved locale message. `st` compiles it; `stRaw` does not.
+ */
+type MessageReader = (key: string, fallbackMessage: string) => string
 
 function customNodesProvide(nodeName: string, path: string): boolean {
   const data = customNodesI18nData[i18n.global.locale.value]
@@ -196,11 +179,6 @@ function nodeDefKeyCandidates(nodeName: string): string[] {
   const normalized = normalizeI18nKey(nodeName)
   return normalized === nodeName ? [normalized] : [normalized, nodeName]
 }
-
-/**
- * Reads a resolved locale message. `st` compiles it; `stRaw` does not.
- */
-type MessageReader = (key: string, fallbackMessage: string) => string
 
 function translateNodeDefText(
   nodeName: string,
@@ -240,6 +218,40 @@ function resolveNodeDefPath(
   return translateNodeDefText(nodeName, path, fallback, read)
 }
 
+/**
+ * `name` is escaped by `scripts/nodeDefLocaleSerializer.ts` and has to be
+ * compiled back; `tooltip` is stored verbatim and must never reach the message
+ * compiler, or a literal `{'@'}` would render to the user.
+ */
+function slotMessageReader(field: NodeDefSlotTextField): MessageReader {
+  return field === 'tooltip' ? stRaw : st
+}
+
+/** Slot fields the generated locales carry text for. */
+export type NodeDefSlotTextField = 'name' | 'tooltip'
+
+export function setBackendNodeText(
+  defs: Iterable<{
+    name?: unknown
+    display_name?: unknown
+    description?: unknown
+  }>
+): void {
+  backendNodeText.clear()
+  for (const def of defs) {
+    if (typeof def?.name !== 'string') continue
+    const entry: Partial<Record<NodeDefTextField, string>> = {}
+    if (typeof def.display_name === 'string' && def.display_name) {
+      entry.display_name = def.display_name
+    }
+    if (typeof def.description === 'string' && def.description) {
+      entry.description = def.description
+    }
+    if (entry.display_name ?? entry.description)
+      backendNodeText.set(def.name, entry)
+  }
+}
+
 export function resolveNodeDefText(
   field: NodeDefTextField,
   nodeName: string,
@@ -249,18 +261,6 @@ export function resolveNodeDefText(
   const fallback = backend ?? (field === 'display_name' ? nodeName : '')
 
   return resolveNodeDefPath(nodeName, field, backend, fallback, st)
-}
-
-/** Slot fields the generated locales carry text for. */
-export type NodeDefSlotTextField = 'name' | 'tooltip'
-
-/**
- * `name` is escaped by `scripts/nodeDefLocaleSerializer.ts` and has to be
- * compiled back; `tooltip` is stored verbatim and must never reach the message
- * compiler, or a literal `{'@'}` would render to the user.
- */
-function slotMessageReader(field: NodeDefSlotTextField): MessageReader {
-  return field === 'tooltip' ? stRaw : st
 }
 
 export function resolveNodeDefSlotText(

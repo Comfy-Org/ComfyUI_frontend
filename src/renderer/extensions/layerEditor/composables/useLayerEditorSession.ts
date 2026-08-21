@@ -63,18 +63,6 @@ export const DEFAULT_BACKGROUND_COLOR = '#ffffff'
 
 const HEX_COLOR_RE = /^#[0-9a-fA-F]{6}$/
 
-export interface LayerEditorSessionOptions {
-  createCompositor?: () => Compositor
-  loadImage?: (url: string) => Promise<HTMLCanvasElement>
-}
-
-export interface LayerEditorElements {
-  viewport: HTMLElement
-  container: HTMLElement
-  main: HTMLCanvasElement
-  overlay: HTMLCanvasElement
-}
-
 function loadImageElement(url: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image()
@@ -92,12 +80,6 @@ async function defaultLoadImage(url: string): Promise<HTMLCanvasElement> {
   canvas.height = img.naturalHeight || img.height
   canvas.getContext('2d')?.drawImage(img, 0, 0)
   return canvas
-}
-
-export function isTextEditingTarget(target: EventTarget | null): boolean {
-  const el = target as HTMLElement | null
-  const tag = el?.tagName
-  return tag === 'INPUT' || tag === 'TEXTAREA' || Boolean(el?.isContentEditable)
 }
 
 function sameTransform(a: Transform, b: Transform): boolean {
@@ -134,7 +116,25 @@ function flipCanvasAxis(
   return canvas
 }
 
+export interface LayerEditorSessionOptions {
+  createCompositor?: () => Compositor
+  loadImage?: (url: string) => Promise<HTMLCanvasElement>
+}
+
+export interface LayerEditorElements {
+  viewport: HTMLElement
+  container: HTMLElement
+  main: HTMLCanvasElement
+  overlay: HTMLCanvasElement
+}
+
 export type LayerEditorSession = ReturnType<typeof useLayerEditorSession>
+
+export function isTextEditingTarget(target: EventTarget | null): boolean {
+  const el = target as HTMLElement | null
+  const tag = el?.tagName
+  return tag === 'INPUT' || tag === 'TEXTAREA' || Boolean(el?.isContentEditable)
+}
 
 export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
   registerBuiltinKinds()

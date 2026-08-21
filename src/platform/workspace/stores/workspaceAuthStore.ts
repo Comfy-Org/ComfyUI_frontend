@@ -49,6 +49,13 @@ const RECOVERY_COOLDOWN_MS = 5000
 // long-lived session cannot grow the context Map unbounded.
 const ISSUED_TOKEN_CONTEXT_GRACE_MS = 5 * 60 * 1000
 
+interface MintedToken {
+  token: string
+  expiresAt: number
+  workspace: WorkspaceIdentity
+  ownerUid: string
+}
+
 export class WorkspaceAuthError extends Error {
   constructor(
     message: string,
@@ -57,13 +64,6 @@ export class WorkspaceAuthError extends Error {
     super(message)
     this.name = 'WorkspaceAuthError'
   }
-}
-
-interface MintedToken {
-  token: string
-  expiresAt: number
-  workspace: WorkspaceIdentity
-  ownerUid: string
 }
 
 const PERMANENT_AUTH_ERROR_CODES = new Set([

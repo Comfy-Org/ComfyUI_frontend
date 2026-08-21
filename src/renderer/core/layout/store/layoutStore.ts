@@ -72,15 +72,6 @@ const logger = log.getLogger('LayoutStore')
 /** Fields whose value changes move a node on screen. */
 const NODE_GEOMETRY_KEYS = new Set(['position', 'size', 'bounds'])
 
-// Utility functions
-function asRerouteId(id: string | number): RerouteId {
-  return toRerouteId(Number(id))
-}
-
-function asLinkId(id: string | number): LinkId {
-  return toLinkId(Number(id))
-}
-
 interface LinkData {
   id: LinkId
   sourceNodeId: NodeId
@@ -100,6 +91,15 @@ interface RerouteData {
 interface TypedYMap<T> {
   get<K extends keyof T>(key: K): T[K] | undefined
   get<K extends keyof T>(key: K, defaultValue: T[K]): T[K]
+}
+
+// Utility functions
+function asRerouteId(id: string | number): RerouteId {
+  return toRerouteId(Number(id))
+}
+
+function asLinkId(id: string | number): LinkId {
+  return toLinkId(Number(id))
 }
 
 class LayoutStoreImpl implements LayoutStore {

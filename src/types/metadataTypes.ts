@@ -3,12 +3,23 @@ import type {
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 
-/**
- * Tag names used in ComfyUI metadata
- */
-export enum ComfyMetadataTags {
-  PROMPT = 'PROMPT',
-  WORKFLOW = 'WORKFLOW'
+type GltfExtras = {
+  workflow?: string | object
+  prompt?: string | object
+  [key: string]: unknown
+}
+
+type AvifIlocItemExtent = {
+  extent_offset: number
+  extent_length: number
+}
+
+type AvifIlocItem = {
+  item_ID: number
+  data_reference_index: number
+  base_offset: number
+  extent_count: number
+  extents: AvifIlocItemExtent[]
 }
 
 /**
@@ -44,17 +55,6 @@ export type TextRange = {
   end: number
 }
 
-export enum ASCII {
-  GLTF = 0x46546c67,
-  JSON = 0x4e4f534a,
-  OPEN_BRACE = 0x7b
-}
-
-export enum GltfSizeBytes {
-  HEADER = 12,
-  CHUNK_HEADER = 8
-}
-
 export type GltfHeader = {
   magicNumber: number
   gltfFormatVersion: number
@@ -64,12 +64,6 @@ export type GltfHeader = {
 export type GltfChunkHeader = {
   chunkLengthBytes: number
   chunkTypeIdentifier: number
-}
-
-type GltfExtras = {
-  workflow?: string | object
-  prompt?: string | object
-  [key: string]: unknown
 }
 
 export type GltfJsonData = {
@@ -112,19 +106,6 @@ export type AvifIinfBox = {
   entries: AvifInfeBox[]
 }
 
-type AvifIlocItemExtent = {
-  extent_offset: number
-  extent_length: number
-}
-
-type AvifIlocItem = {
-  item_ID: number
-  data_reference_index: number
-  base_offset: number
-  extent_count: number
-  extents: AvifIlocItemExtent[]
-}
-
 export type AvifIlocBox = {
   box_header: {
     size: number
@@ -138,4 +119,23 @@ export type AvifIlocBox = {
   index_size: number
   item_count: number
   items: AvifIlocItem[]
+}
+
+/**
+ * Tag names used in ComfyUI metadata
+ */
+export enum ComfyMetadataTags {
+  PROMPT = 'PROMPT',
+  WORKFLOW = 'WORKFLOW'
+}
+
+export enum ASCII {
+  GLTF = 0x46546c67,
+  JSON = 0x4e4f534a,
+  OPEN_BRACE = 0x7b
+}
+
+export enum GltfSizeBytes {
+  HEADER = 12,
+  CHUNK_HEADER = 8
 }

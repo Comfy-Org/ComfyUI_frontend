@@ -36,6 +36,12 @@ vi.mock('@/stores/nodeOutputStore', () => {
   return { useNodeOutputStore: () => store }
 })
 
+interface ArrangeOptions {
+  id?: number
+  previewMediaType?: 'image' | 'video' | 'audio' | 'model'
+  urls?: string[]
+}
+
 function clearMockNodeOutputStore() {
   const { nodeOutputs, nodePreviewImages } = useNodeOutputStore()
   for (const key of Object.keys(nodeOutputs)) delete nodeOutputs[key]
@@ -96,12 +102,6 @@ function exposePreview(
     String(setup.subgraphNode.id),
     { sourceNodeId, sourcePreviewName }
   )
-}
-
-interface ArrangeOptions {
-  id?: number
-  previewMediaType?: 'image' | 'video' | 'audio' | 'model'
-  urls?: string[]
 }
 
 function arrangePromotedPreview(options: ArrangeOptions = {}) {

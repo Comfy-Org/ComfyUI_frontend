@@ -18,13 +18,6 @@ import type { BottomPanelExtension } from '@/types/extensionTypes'
 
 type Widgets = Record<string, ComfyWidgetConstructor>
 
-export interface AboutPageBadge {
-  label: string
-  url: string
-  icon: string
-  severity?: 'danger' | 'warn'
-}
-
 type MenuCommandGroup = {
   /**
    * The path to the menu group.
@@ -35,6 +28,13 @@ type MenuCommandGroup = {
    * Note: Commands must be defined in `commands` array in the extension.
    */
   commands: string[]
+}
+
+export interface AboutPageBadge {
+  label: string
+  url: string
+  icon: string
+  severity?: 'danger' | 'warn'
 }
 
 export interface TopbarBadge {

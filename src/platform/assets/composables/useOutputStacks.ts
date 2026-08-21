@@ -8,14 +8,14 @@ import {
   resolveOutputAssetItems
 } from '@/platform/assets/utils/outputAssetUtil'
 
+type UseOutputStacksOptions = {
+  assets: Ref<AssetItem[]>
+}
+
 export type OutputStackListItem = {
   key: string
   asset: AssetItem
   isChild?: boolean
-}
-
-type UseOutputStacksOptions = {
-  assets: Ref<AssetItem[]>
 }
 
 export function useOutputStacks({ assets }: UseOutputStacksOptions) {

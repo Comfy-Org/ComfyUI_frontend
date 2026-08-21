@@ -32,29 +32,6 @@ const DEFAULT_BACKGROUND_ENTRY: CompositorBackgroundEntry = {
 
 const LAYER_STATE_VERSION = 1
 
-export interface CompositorLayerState {
-  version?: typeof LAYER_STATE_VERSION
-  canvas?: { w: number; h: number }
-  inputs?: string[]
-  background?: CompositorBackgroundEntry
-  order?: number[]
-  layers: Array<CompositorLayerEntry | null>
-}
-
-export interface CompositorBBox {
-  x: number
-  y: number
-  width: number
-  height: number
-  name?: string | null
-  rotation?: number
-  visible?: boolean
-  opacity?: number
-  blend?: string
-  flipH?: boolean
-  flipV?: boolean
-}
-
 interface CompositorLayerStateInit {
   canvas?: { w: number; h: number }
   background?: CompositorBackgroundEntry
@@ -144,49 +121,6 @@ function backgroundEntry(node: FillData): CompositorBackgroundEntry {
   }
 }
 
-export function extractLayerState(
-  canvas: { w: number; h: number },
-  layers: readonly SceneNode[],
-  layerFlips: (id: string) => { h: boolean; v: boolean },
-  inputs?: string[],
-  inputOrder?: readonly string[]
-): CompositorLayerState {
-  const background = layers.find(
-    (node): node is FillData => node.kind === 'fill'
-  )
-  const imageNodes = layers.filter((node) => node.kind !== 'fill')
-  const orderIds = inputOrder ?? imageNodes.map((node) => node.id)
-  const inputIndex = new Map(orderIds.map((id, index) => [id, index]))
-  const entries: Array<CompositorLayerEntry | null> = orderIds.map(() => null)
-  const order: number[] = []
-  for (const node of imageNodes) {
-    const index = inputIndex.get(node.id)
-    if (index === undefined) continue
-    const flips = layerFlips(node.id)
-    entries[index] = {
-      name: node.name,
-      visible: node.visible,
-      opacity: node.opacity,
-      blend: node.mode.blend,
-      transform: { ...node.transform },
-      flipH: flips.h,
-      flipV: flips.v
-    }
-    order.push(index)
-  }
-  const identityOrder =
-    order.length === entries.length &&
-    order.every((value, index) => value === index)
-  return {
-    version: LAYER_STATE_VERSION,
-    canvas: { w: canvas.w, h: canvas.h },
-    ...(inputs ? { inputs } : {}),
-    ...(background ? { background: backgroundEntry(background) } : {}),
-    ...(identityOrder ? {} : { order }),
-    layers: entries
-  }
-}
-
 function parseCanvasSize(value: unknown): { w: number; h: number } | undefined {
   if (typeof value !== 'object' || value === null) return undefined
   const { w, h } = value as Record<string, unknown>
@@ -244,6 +178,103 @@ function parseJson(json: string): unknown {
   }
 }
 
+function bboxLayerState(
+  bboxes: ReadonlyArray<CompositorBBox | null> | undefined
+): CompositorLayerStateInit | null {
+  if (!bboxes?.some((bbox) => bbox !== null)) return null
+  return {
+    layers: bboxes.map((bbox) =>
+      bbox
+        ? {
+            ...(typeof bbox.name === 'string' && bbox.name
+              ? { name: bbox.name }
+              : {}),
+            ...(typeof bbox.visible === 'boolean'
+              ? { visible: bbox.visible }
+              : {}),
+            ...(isFiniteNumber(bbox.opacity) ? { opacity: bbox.opacity } : {}),
+            ...(isBlendFn(bbox.blend) ? { blend: bbox.blend } : {}),
+            ...(bbox.flipH === true ? { flipH: true } : {}),
+            ...(bbox.flipV === true ? { flipV: true } : {}),
+            transform: {
+              x: bbox.x,
+              y: bbox.y,
+              w: bbox.width,
+              h: bbox.height,
+              rotation: isFiniteNumber(bbox.rotation) ? bbox.rotation : 0
+            }
+          }
+        : null
+    )
+  }
+}
+
+export interface CompositorLayerState {
+  version?: typeof LAYER_STATE_VERSION
+  canvas?: { w: number; h: number }
+  inputs?: string[]
+  background?: CompositorBackgroundEntry
+  order?: number[]
+  layers: Array<CompositorLayerEntry | null>
+}
+
+export interface CompositorBBox {
+  x: number
+  y: number
+  width: number
+  height: number
+  name?: string | null
+  rotation?: number
+  visible?: boolean
+  opacity?: number
+  blend?: string
+  flipH?: boolean
+  flipV?: boolean
+}
+
+export function extractLayerState(
+  canvas: { w: number; h: number },
+  layers: readonly SceneNode[],
+  layerFlips: (id: string) => { h: boolean; v: boolean },
+  inputs?: string[],
+  inputOrder?: readonly string[]
+): CompositorLayerState {
+  const background = layers.find(
+    (node): node is FillData => node.kind === 'fill'
+  )
+  const imageNodes = layers.filter((node) => node.kind !== 'fill')
+  const orderIds = inputOrder ?? imageNodes.map((node) => node.id)
+  const inputIndex = new Map(orderIds.map((id, index) => [id, index]))
+  const entries: Array<CompositorLayerEntry | null> = orderIds.map(() => null)
+  const order: number[] = []
+  for (const node of imageNodes) {
+    const index = inputIndex.get(node.id)
+    if (index === undefined) continue
+    const flips = layerFlips(node.id)
+    entries[index] = {
+      name: node.name,
+      visible: node.visible,
+      opacity: node.opacity,
+      blend: node.mode.blend,
+      transform: { ...node.transform },
+      flipH: flips.h,
+      flipV: flips.v
+    }
+    order.push(index)
+  }
+  const identityOrder =
+    order.length === entries.length &&
+    order.every((value, index) => value === index)
+  return {
+    version: LAYER_STATE_VERSION,
+    canvas: { w: canvas.w, h: canvas.h },
+    ...(inputs ? { inputs } : {}),
+    ...(background ? { background: backgroundEntry(background) } : {}),
+    ...(identityOrder ? {} : { order }),
+    layers: entries
+  }
+}
+
 export function parseLayerState(value: unknown): CompositorLayerState | null {
   const raw = typeof value === 'string' ? parseJson(value) : value
   if (typeof raw !== 'object' || raw === null) return null
@@ -279,37 +310,6 @@ export function layerStateInputsMatch(
     saved.length === current.length &&
     saved.every((value, index) => value === current[index])
   )
-}
-
-function bboxLayerState(
-  bboxes: ReadonlyArray<CompositorBBox | null> | undefined
-): CompositorLayerStateInit | null {
-  if (!bboxes?.some((bbox) => bbox !== null)) return null
-  return {
-    layers: bboxes.map((bbox) =>
-      bbox
-        ? {
-            ...(typeof bbox.name === 'string' && bbox.name
-              ? { name: bbox.name }
-              : {}),
-            ...(typeof bbox.visible === 'boolean'
-              ? { visible: bbox.visible }
-              : {}),
-            ...(isFiniteNumber(bbox.opacity) ? { opacity: bbox.opacity } : {}),
-            ...(isBlendFn(bbox.blend) ? { blend: bbox.blend } : {}),
-            ...(bbox.flipH === true ? { flipH: true } : {}),
-            ...(bbox.flipV === true ? { flipV: true } : {}),
-            transform: {
-              x: bbox.x,
-              y: bbox.y,
-              w: bbox.width,
-              h: bbox.height,
-              rotation: isFiniteNumber(bbox.rotation) ? bbox.rotation : 0
-            }
-          }
-        : null
-    )
-  }
 }
 
 export function resolveInitialLayerState(

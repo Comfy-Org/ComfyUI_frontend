@@ -15,15 +15,6 @@ import {
 
 const TEST_NODE_TYPE = 'test/CloneZIndex' as const
 
-class TestNode extends LGraphNode {
-  static override type = TEST_NODE_TYPE
-
-  constructor(title?: string) {
-    super(title ?? TEST_NODE_TYPE)
-    this.type = TEST_NODE_TYPE
-  }
-}
-
 function createCanvas(graph: LGraph): LGraphCanvas {
   const el = document.createElement('canvas')
   el.width = 800
@@ -112,6 +103,15 @@ function setZIndex(nodeId: NodeId, zIndex: number, previousZIndex: number) {
     source: LayoutSource.Canvas,
     actor: 'test'
   })
+}
+
+class TestNode extends LGraphNode {
+  static override type = TEST_NODE_TYPE
+
+  constructor(title?: string) {
+    super(title ?? TEST_NODE_TYPE)
+    this.type = TEST_NODE_TYPE
+  }
 }
 
 describe('cloned node z-index in Vue renderer', () => {

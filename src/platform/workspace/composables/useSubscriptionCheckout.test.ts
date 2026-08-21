@@ -10,6 +10,25 @@ import type {
 
 import { findPlanSlug } from './useSubscriptionCheckout'
 
+interface ReactivationPreviewPlanInput {
+  slug: string
+  tier: PreviewSubscribeResponse['new_plan']['tier']
+  duration: PreviewSubscribeResponse['new_plan']['duration']
+  priceCents: number
+  creditsCents: number
+  periodEnd: string
+}
+
+interface ReactivationPreviewInput {
+  effectiveAt: string
+  costTodayCents: number
+  costNextPeriodCents: number
+  creditsTodayCents: number
+  creditsNextPeriodCents: number
+  currentPlan: ReactivationPreviewPlanInput
+  newPlan: ReactivationPreviewPlanInput
+}
+
 function makeStandardYearly(): Plan {
   return {
     slug: 'standard-yearly',
@@ -50,25 +69,6 @@ function allPlans(): Plan[] {
 
 function errorWithCode(code: string, message = 'error') {
   return Object.assign(new Error(message), { code })
-}
-
-interface ReactivationPreviewPlanInput {
-  slug: string
-  tier: PreviewSubscribeResponse['new_plan']['tier']
-  duration: PreviewSubscribeResponse['new_plan']['duration']
-  priceCents: number
-  creditsCents: number
-  periodEnd: string
-}
-
-interface ReactivationPreviewInput {
-  effectiveAt: string
-  costTodayCents: number
-  costNextPeriodCents: number
-  creditsTodayCents: number
-  creditsNextPeriodCents: number
-  currentPlan: ReactivationPreviewPlanInput
-  newPlan: ReactivationPreviewPlanInput
 }
 
 function makeReactivationAuthorityPreview({

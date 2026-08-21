@@ -54,15 +54,6 @@ const HUG_CONTENT_CLASS =
  */
 const SELF_STYLED_PANEL_CONTENT_CLASS = `${HUG_CONTENT_CLASS} border-none bg-transparent shadow-none`
 
-export type ConfirmationDialogType =
-  | 'default'
-  | 'overwrite'
-  | 'overwriteBlueprint'
-  | 'delete'
-  | 'dirtyClose'
-  | 'reinstall'
-  | 'info'
-
 interface BaseConfirmOptions {
   /** Dialog heading */
   title: string
@@ -87,6 +78,15 @@ type ConfirmOptions = BaseConfirmOptions &
         denyLabel?: never
       }
   )
+
+export type ConfirmationDialogType =
+  | 'default'
+  | 'overwrite'
+  | 'overwriteBlueprint'
+  | 'delete'
+  | 'dirtyClose'
+  | 'reinstall'
+  | 'info'
 
 /**
  * Minimal interface for execution error dialogs.

@@ -34,6 +34,26 @@ const CHECKOUT_SUPERSEDED_REASON = 'checkout_superseded'
 type OperationType = 'subscription' | 'topup' | 'cancel'
 type OperationStatus = 'pending' | 'succeeded' | 'failed' | 'timeout'
 
+interface BillingOperation {
+  opId: string
+  type: OperationType
+  status: OperationStatus
+  errorMessage: string | null
+  startedAt: number
+  operationStartedAt: number
+  businessAttemptStartedAt?: number
+  actionUrl: string | null
+  authenticationRequiredSeen: boolean
+  workspaceId: string | null
+  tier?: SubscriptionCheckoutTier
+  cycle?: BillingCycle
+  checkoutType?: SubscriptionCheckoutType
+  paymentIntentSource?: PaymentIntentSource
+  downgradeToPersonal?: StartOperationMetadata['downgradeToPersonal']
+}
+
+type TerminalResolver = (operation: BillingOperation) => void
+
 export interface StartOperationMetadata {
   tier?: SubscriptionCheckoutTier
   cycle?: BillingCycle
@@ -55,26 +75,6 @@ export interface StartOperationMetadata {
    */
   attemptStartedAt?: number
 }
-
-interface BillingOperation {
-  opId: string
-  type: OperationType
-  status: OperationStatus
-  errorMessage: string | null
-  startedAt: number
-  operationStartedAt: number
-  businessAttemptStartedAt?: number
-  actionUrl: string | null
-  authenticationRequiredSeen: boolean
-  workspaceId: string | null
-  tier?: SubscriptionCheckoutTier
-  cycle?: BillingCycle
-  checkoutType?: SubscriptionCheckoutType
-  paymentIntentSource?: PaymentIntentSource
-  downgradeToPersonal?: StartOperationMetadata['downgradeToPersonal']
-}
-
-type TerminalResolver = (operation: BillingOperation) => void
 
 export const useBillingOperationStore = defineStore('billingOperation', () => {
   const workspaceStore = useTeamWorkspaceStore()

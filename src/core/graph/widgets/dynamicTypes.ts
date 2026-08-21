@@ -14,12 +14,6 @@ const dynamicTypeResolvers: Record<
       .data?.template?.allowed_types?.split(',') ?? []
 }
 
-export function resolveInputType(input: InputSpecV2): string[] {
-  return input.type in dynamicTypeResolvers
-    ? dynamicTypeResolvers[input.type](input)
-    : input.type.split(',')
-}
-
 function resolveAutogrowType(rawSpec: InputSpecV2): string[] {
   const { input } = zAutogrowOptions.safeParse(rawSpec).data?.template ?? {}
 
@@ -32,4 +26,10 @@ function resolveAutogrowType(rawSpec: InputSpecV2): string[] {
       resolveInputType(transformInputSpecV1ToV2(v, { name }))
     )
   )
+}
+
+export function resolveInputType(input: InputSpecV2): string[] {
+  return input.type in dynamicTypeResolvers
+    ? dynamicTypeResolvers[input.type](input)
+    : input.type.split(',')
 }

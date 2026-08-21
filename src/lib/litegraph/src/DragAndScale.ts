@@ -1,6 +1,17 @@
 import type { Point, ReadOnlyRect, Rect } from './interfaces'
 import { EaseFunction, Rectangle } from './litegraph'
 
+/**
+ * Copies the values of one state into another, preserving references.
+ * @param from The state to copy values from.
+ * @param to The state to copy values into.
+ */
+function copyState(from: DragAndScaleState, to: DragAndScaleState): void {
+  to.scale = from.scale
+  to.offset[0] = from.offset[0]
+  to.offset[1] = from.offset[1]
+}
+
 export interface DragAndScaleState {
   /**
    * The offset from the top-left of the current canvas viewport to `[0, 0]` in graph space.
@@ -308,15 +319,4 @@ export class DragAndScale {
     this.offset[0] = 0
     this.offset[1] = 0
   }
-}
-
-/**
- * Copies the values of one state into another, preserving references.
- * @param from The state to copy values from.
- * @param to The state to copy values into.
- */
-function copyState(from: DragAndScaleState, to: DragAndScaleState): void {
-  to.scale = from.scale
-  to.offset[0] = from.offset[0]
-  to.offset[1] = from.offset[1]
 }

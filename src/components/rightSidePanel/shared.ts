@@ -15,12 +15,6 @@ export const GetNodeParentGroupKey: InjectionKey<
   (node: LGraphNode) => LGraphGroup | null
 > = Symbol('getNodeParentGroup')
 
-export type NodeWidgetsList = Array<{ node: LGraphNode; widget: IBaseWidget }>
-export type NodeWidgetsListList = Array<{
-  node: LGraphNode
-  widgets: NodeWidgetsList
-}>
-
 interface WidgetSearchItem {
   index: number
   searchableLabel: string
@@ -28,97 +22,13 @@ interface WidgetSearchItem {
   searchableType: string
   searchableValue: string
 }
-
-/**
- * Searches widgets in a list using fuzzy search and returns search results.
- * Uses Fuse.js for better matching with typo tolerance and relevance ranking.
- * Filters by name, localized label, type, and user-input value.
- */
-export function searchWidgets<T extends { widget: IBaseWidget }[]>(
-  list: T,
-  query: string
-): T {
-  if (query.trim() === '') {
-    return list
-  }
-
-  const searchableList: WidgetSearchItem[] = list.map((item, index) => {
-    const searchableItem = {
-      index,
-      searchableLabel: item.widget.label?.toLowerCase() || '',
-      searchableName: item.widget.name.toLowerCase(),
-      searchableType: item.widget.type.toLowerCase(),
-      searchableValue: item.widget.value?.toString().toLowerCase() || ''
-    }
-    return searchableItem
-  })
-
-  const fuseOptions: IFuseOptions<WidgetSearchItem> = {
-    keys: [
-      { name: 'searchableName', weight: 0.4 },
-      { name: 'searchableLabel', weight: 0.3 },
-      { name: 'searchableValue', weight: 0.3 },
-      { name: 'searchableType', weight: 0.2 }
-    ],
-    threshold: 0.3
-  }
-
-  const fuse = new Fuse(searchableList, fuseOptions)
-  const results = fuse.search(query.trim())
-
-  const matchedItems = new Set(
-    results.map((result) => list[result.item.index]!)
-  )
-
-  return list.filter((item) => matchedItems.has(item)) as T
-}
-
 type NodeSearchItem = {
   nodeId: NodeId
   searchableTitle: string
 }
 
-/**
- * Searches widgets and nodes in a list using fuzzy search and returns search results.
- * Uses Fuse.js for node title matching with typo tolerance and relevance ranking.
- * First checks if the node title matches the query (if so, keeps entire node).
- * Otherwise, filters widgets using searchWidgets.
- */
-export function searchWidgetsAndNodes(
-  list: NodeWidgetsListList,
-  query: string
-): NodeWidgetsListList {
-  if (query.trim() === '') {
-    return list
-  }
-
-  const searchableList: NodeSearchItem[] = list.map((item) => ({
-    nodeId: item.node.id,
-    searchableTitle: (item.node.getTitle() ?? '').toLowerCase()
-  }))
-
-  const fuseOptions: IFuseOptions<NodeSearchItem> = {
-    keys: [{ name: 'searchableTitle', weight: 1.0 }],
-    threshold: 0.3
-  }
-
-  const fuse = new Fuse(searchableList, fuseOptions)
-  const nodeMatches = fuse.search(query.trim())
-  const matchedNodeIds = new Set(
-    nodeMatches.map((result) => result.item.nodeId)
-  )
-
-  return list.flatMap((item) => {
-    if (matchedNodeIds.has(item.node.id)) {
-      return [item]
-    }
-
-    const widgets = searchWidgets(item.widgets, query)
-    return widgets.length > 0 ? [{ ...item, widgets }] : []
-  })
-}
-
 type MixedSelectionItem = LGraphGroup | LGraphNode
+
 type FlatAndCategorizeSelectedItemsResult = {
   all: MixedSelectionItem[]
   nodes: LGraphNode[]
@@ -131,48 +41,6 @@ type FlatItemsContext = {
   nodeToParentGroup: Map<LGraphNode, LGraphGroup>
   depth: number
   parentGroup?: LGraphGroup
-}
-
-/**
- * The selected items may contain "Group" nodes, which can include child nodes.
- * This function flattens such structures and categorizes items into:
- * - all: all categorizable nodes (does not include nodes in "others")
- * - nodes: node items
- * - groups: group items
- * - others: items not currently supported
- * - nodeToParentGroup: a map from each node to its direct parent group (if any)
- * @param items The selected items to flatten and categorize
- * @returns An object containing arrays: all, nodes, groups, others, and nodeToParentGroup map
- */
-export function flatAndCategorizeSelectedItems(
-  items: Positionable[]
-): FlatAndCategorizeSelectedItemsResult {
-  const ctx: FlatItemsContext = {
-    nodeToParentGroup: new Map<LGraphNode, LGraphGroup>(),
-    depth: 0
-  }
-  const { all, nodes, groups, others } = flatItems(items, ctx)
-  return {
-    all: repeatItems(all),
-    nodes: repeatItems(nodes),
-    groups: repeatItems(groups),
-    others: repeatItems(others),
-    nodeToParentGroup: ctx.nodeToParentGroup
-  }
-}
-
-export function useFlatAndCategorizeSelectedItems(
-  items: MaybeRefOrGetter<Positionable[]>
-) {
-  const result = computed(() => flatAndCategorizeSelectedItems(toValue(items)))
-
-  return {
-    flattedItems: computed(() => result.value.all),
-    selectedNodes: computed(() => result.value.nodes),
-    selectedGroups: computed(() => result.value.groups),
-    selectedOthers: computed(() => result.value.others),
-    nodeToParentGroup: computed(() => result.value.nodeToParentGroup)
-  }
 }
 
 function flatItems(
@@ -245,6 +113,138 @@ function repeatItems<T>(items: T[]): T[] {
     result.push(item)
   }
   return result
+}
+export type NodeWidgetsList = Array<{ node: LGraphNode; widget: IBaseWidget }>
+
+export type NodeWidgetsListList = Array<{
+  node: LGraphNode
+  widgets: NodeWidgetsList
+}>
+
+/**
+ * Searches widgets in a list using fuzzy search and returns search results.
+ * Uses Fuse.js for better matching with typo tolerance and relevance ranking.
+ * Filters by name, localized label, type, and user-input value.
+ */
+export function searchWidgets<T extends { widget: IBaseWidget }[]>(
+  list: T,
+  query: string
+): T {
+  if (query.trim() === '') {
+    return list
+  }
+
+  const searchableList: WidgetSearchItem[] = list.map((item, index) => {
+    const searchableItem = {
+      index,
+      searchableLabel: item.widget.label?.toLowerCase() || '',
+      searchableName: item.widget.name.toLowerCase(),
+      searchableType: item.widget.type.toLowerCase(),
+      searchableValue: item.widget.value?.toString().toLowerCase() || ''
+    }
+    return searchableItem
+  })
+
+  const fuseOptions: IFuseOptions<WidgetSearchItem> = {
+    keys: [
+      { name: 'searchableName', weight: 0.4 },
+      { name: 'searchableLabel', weight: 0.3 },
+      { name: 'searchableValue', weight: 0.3 },
+      { name: 'searchableType', weight: 0.2 }
+    ],
+    threshold: 0.3
+  }
+
+  const fuse = new Fuse(searchableList, fuseOptions)
+  const results = fuse.search(query.trim())
+
+  const matchedItems = new Set(
+    results.map((result) => list[result.item.index]!)
+  )
+
+  return list.filter((item) => matchedItems.has(item)) as T
+}
+
+/**
+ * Searches widgets and nodes in a list using fuzzy search and returns search results.
+ * Uses Fuse.js for node title matching with typo tolerance and relevance ranking.
+ * First checks if the node title matches the query (if so, keeps entire node).
+ * Otherwise, filters widgets using searchWidgets.
+ */
+export function searchWidgetsAndNodes(
+  list: NodeWidgetsListList,
+  query: string
+): NodeWidgetsListList {
+  if (query.trim() === '') {
+    return list
+  }
+
+  const searchableList: NodeSearchItem[] = list.map((item) => ({
+    nodeId: item.node.id,
+    searchableTitle: (item.node.getTitle() ?? '').toLowerCase()
+  }))
+
+  const fuseOptions: IFuseOptions<NodeSearchItem> = {
+    keys: [{ name: 'searchableTitle', weight: 1.0 }],
+    threshold: 0.3
+  }
+
+  const fuse = new Fuse(searchableList, fuseOptions)
+  const nodeMatches = fuse.search(query.trim())
+  const matchedNodeIds = new Set(
+    nodeMatches.map((result) => result.item.nodeId)
+  )
+
+  return list.flatMap((item) => {
+    if (matchedNodeIds.has(item.node.id)) {
+      return [item]
+    }
+
+    const widgets = searchWidgets(item.widgets, query)
+    return widgets.length > 0 ? [{ ...item, widgets }] : []
+  })
+}
+
+/**
+ * The selected items may contain "Group" nodes, which can include child nodes.
+ * This function flattens such structures and categorizes items into:
+ * - all: all categorizable nodes (does not include nodes in "others")
+ * - nodes: node items
+ * - groups: group items
+ * - others: items not currently supported
+ * - nodeToParentGroup: a map from each node to its direct parent group (if any)
+ * @param items The selected items to flatten and categorize
+ * @returns An object containing arrays: all, nodes, groups, others, and nodeToParentGroup map
+ */
+export function flatAndCategorizeSelectedItems(
+  items: Positionable[]
+): FlatAndCategorizeSelectedItemsResult {
+  const ctx: FlatItemsContext = {
+    nodeToParentGroup: new Map<LGraphNode, LGraphGroup>(),
+    depth: 0
+  }
+  const { all, nodes, groups, others } = flatItems(items, ctx)
+  return {
+    all: repeatItems(all),
+    nodes: repeatItems(nodes),
+    groups: repeatItems(groups),
+    others: repeatItems(others),
+    nodeToParentGroup: ctx.nodeToParentGroup
+  }
+}
+
+export function useFlatAndCategorizeSelectedItems(
+  items: MaybeRefOrGetter<Positionable[]>
+) {
+  const result = computed(() => flatAndCategorizeSelectedItems(toValue(items)))
+
+  return {
+    flattedItems: computed(() => result.value.all),
+    selectedNodes: computed(() => result.value.nodes),
+    selectedGroups: computed(() => result.value.groups),
+    selectedOthers: computed(() => result.value.others),
+    nodeToParentGroup: computed(() => result.value.nodeToParentGroup)
+  }
 }
 
 export function computedSectionDataList(nodes: MaybeRefOrGetter<LGraphNode[]>) {

@@ -1,9 +1,9 @@
-export type MediaAssetDateFilter = '' | 'today' | 'week' | 'month' | 'year'
-
 interface FilterOption<T extends string> {
   value: T
   label: string
 }
+
+export type MediaAssetDateFilter = '' | 'today' | 'week' | 'month' | 'year'
 
 export const mediaTypeFilterOptions: FilterOption<string>[] = [
   { value: 'image', label: 'sideToolbar.mediaAssets.filterImage' },

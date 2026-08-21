@@ -30,23 +30,6 @@ import type { Serialisable, SerialisableLLink } from './types/serialisation'
 const layoutMutations = useLayoutMutations()
 
 export type { LinkId } from '@/types/linkId'
-export type SerialisedLLinkArray = [
-  id: number,
-  origin_id: SerializedNodeId,
-  origin_slot: number,
-  target_id: SerializedNodeId,
-  target_slot: number,
-  type: ISlotType
-]
-
-// Resolved connection union; eliminates subgraph in/out as a possibility
-export type ResolvedConnection = BaseResolvedConnection &
-  (
-    | (ResolvedSubgraphInput & ResolvedNormalOutput)
-    | (ResolvedNormalInput & ResolvedSubgraphOutput)
-    | (ResolvedNormalInput & ResolvedNormalOutput)
-  )
-
 interface BaseResolvedConnection {
   link: LLink
   /** The node on the input side of the link (owns {@link input}) */
@@ -92,6 +75,23 @@ type BasicReadonlyNetwork = Pick<
   ReadonlyLinkNetwork,
   'getNodeById' | 'links' | 'getLink' | 'inputNode' | 'outputNode'
 >
+
+export type SerialisedLLinkArray = [
+  id: number,
+  origin_id: SerializedNodeId,
+  origin_slot: number,
+  target_id: SerializedNodeId,
+  target_slot: number,
+  type: ISlotType
+]
+
+// Resolved connection union; eliminates subgraph in/out as a possibility
+export type ResolvedConnection = BaseResolvedConnection &
+  (
+    | (ResolvedSubgraphInput & ResolvedNormalOutput)
+    | (ResolvedNormalInput & ResolvedSubgraphOutput)
+    | (ResolvedNormalInput & ResolvedNormalOutput)
+  )
 
 // this is the class in charge of storing link information
 export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {

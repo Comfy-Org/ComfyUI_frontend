@@ -21,11 +21,6 @@ type SettingCustomRenderer = (
   attrs?: Record<string, unknown>
 ) => HTMLElement
 
-export interface SettingOption {
-  text: string
-  value?: string | number
-}
-
 type SettingTelemetryOptions =
   | {
       trackChanges: false
@@ -35,6 +30,11 @@ type SettingTelemetryOptions =
       trackChanges?: true
       includeValues?: boolean
     }
+
+export interface SettingOption {
+  text: string
+  value?: string | number
+}
 
 export interface SettingParams<TValue = unknown> extends FormItem {
   id: keyof Settings

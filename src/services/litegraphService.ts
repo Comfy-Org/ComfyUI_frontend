@@ -124,6 +124,11 @@ async function reencodeAsPngBlob(
 export const CONFIG = Symbol()
 export const GET_CONFIG = Symbol()
 
+function getMinSize(node: LGraphNode) {
+  node._initialMinSize ??= { width: 1, height: 1 }
+  return node._initialMinSize
+}
+
 export function getExtraOptionsForWidget(
   node: LGraphNode,
   widget: IBaseWidget
@@ -165,11 +170,6 @@ export function getExtraOptionsForWidget(
     addWidgetPromotionOptions(options, widget, node)
   }
   return options
-}
-
-function getMinSize(node: LGraphNode) {
-  node._initialMinSize ??= { width: 1, height: 1 }
-  return node._initialMinSize
 }
 
 /**

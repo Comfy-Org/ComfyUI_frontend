@@ -22,17 +22,6 @@ export const isMergedNodePack = (
 export const IsInstallingKey: InjectionKey<Ref<boolean>> =
   Symbol('isInstalling')
 
-export enum ManagerTab {
-  All = 'all',
-  NotInstalled = 'notInstalled',
-  AllInstalled = 'allInstalled',
-  UpdateAvailable = 'updateAvailable',
-  Conflicting = 'conflicting',
-  Workflow = 'workflow',
-  Missing = 'missing',
-  Unresolved = 'unresolved'
-}
-
 export type TaskLog = {
   taskName: string
   taskId: string
@@ -44,17 +33,28 @@ export interface UseNodePacksOptions {
   maxConcurrent?: number
 }
 
+export interface ManagerState {
+  selectedTabId: ManagerTab
+  searchQuery: string
+  searchMode: 'nodes' | 'packs'
+  sortField: string
+}
+
+export enum ManagerTab {
+  All = 'all',
+  NotInstalled = 'notInstalled',
+  AllInstalled = 'allInstalled',
+  UpdateAvailable = 'updateAvailable',
+  Conflicting = 'conflicting',
+  Workflow = 'workflow',
+  Missing = 'missing',
+  Unresolved = 'unresolved'
+}
+
 export enum SortableAlgoliaField {
   Downloads = 'total_install',
   Created = 'create_time',
   Updated = 'update_time',
   Publisher = 'publisher_id',
   Name = 'name'
-}
-
-export interface ManagerState {
-  selectedTabId: ManagerTab
-  searchQuery: string
-  searchMode: 'nodes' | 'packs'
-  sortField: string
 }

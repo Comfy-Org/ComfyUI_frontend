@@ -16,17 +16,49 @@ import type { SerializedNodeId } from '@/types/nodeId'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { widgetId } from '@/types/widgetId'
 
-function splitAroundFirstSpace(text: string): [string, string | undefined] {
-  const index = text.indexOf(' ')
-  if (index === -1) return [text, undefined]
-  return [text.slice(0, index), text.slice(index + 1)]
-}
-
 type TrackableNode = {
   id: SerializedNodeId
   type: string
   inputs?: INodeInputSlot[]
 }
+
+function splitAroundFirstSpace(text: string): [string, string | undefined] {
+  const index = text.indexOf(' ')
+  if (index === -1) return [text, undefined]
+  return [text.slice(0, index), text.slice(index + 1)]
+}
+/**
+ * Register reactive deps on every contained api node's pricing inputs so the
+ * SubgraphNode wrapper's badge computed re-runs when an inner (e.g. promoted)
+ * widget value changes. Also tracks the wrapper's own promoted widget host
+ * values so user edits on the wrapper trigger re-evaluation.
+ */
+function trackSubgraphInnerNodePrices(wrapper: LGraphNode) {
+  if (!wrapper.isSubgraphNode()) return
+  // Touch each promoted widget's host value to register reactive deps.
+  for (const w of wrapper.widgets ?? []) void w.value
+
+  const visited = new Set<string>()
+  function walk(nodes: LGraphNode[]) {
+    for (const inner of nodes) {
+      if (inner.isSubgraphNode()) {
+        const id = String(inner.subgraph.id)
+        if (visited.has(id)) continue
+        visited.add(id)
+        walk(inner.subgraph.nodes)
+        continue
+      }
+      if (!inner.constructor?.nodeData?.api_node) continue
+      trackNodePrice({
+        id: inner.id,
+        type: inner.type ?? '',
+        inputs: inner.inputs
+      })
+    }
+  }
+  walk(wrapper.subgraph.nodes)
+}
+
 //TODO deduplicate reactivity tracking once more thoroughly tested
 export function trackNodePrice(node: TrackableNode) {
   const {
@@ -71,38 +103,6 @@ export function trackNodePrice(node: TrackableNode) {
       }
     })
   }
-}
-
-/**
- * Register reactive deps on every contained api node's pricing inputs so the
- * SubgraphNode wrapper's badge computed re-runs when an inner (e.g. promoted)
- * widget value changes. Also tracks the wrapper's own promoted widget host
- * values so user edits on the wrapper trigger re-evaluation.
- */
-function trackSubgraphInnerNodePrices(wrapper: LGraphNode) {
-  if (!wrapper.isSubgraphNode()) return
-  // Touch each promoted widget's host value to register reactive deps.
-  for (const w of wrapper.widgets ?? []) void w.value
-
-  const visited = new Set<string>()
-  function walk(nodes: LGraphNode[]) {
-    for (const inner of nodes) {
-      if (inner.isSubgraphNode()) {
-        const id = String(inner.subgraph.id)
-        if (visited.has(id)) continue
-        visited.add(id)
-        walk(inner.subgraph.nodes)
-        continue
-      }
-      if (!inner.constructor?.nodeData?.api_node) continue
-      trackNodePrice({
-        id: inner.id,
-        type: inner.type ?? '',
-        inputs: inner.inputs
-      })
-    }
-  }
-  walk(wrapper.subgraph.nodes)
 }
 
 export function usePartitionedBadges(nodeData: VueNodeData) {

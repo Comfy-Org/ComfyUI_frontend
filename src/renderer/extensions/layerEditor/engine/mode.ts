@@ -1,3 +1,18 @@
+type SpaceOrAuto = ColorSpace | 'auto'
+
+function def(
+  blend: BlendFn,
+  blendSpace: ColorSpace,
+  composite: CompositeMode
+): LayerModeDef {
+  return {
+    blend,
+    defaultBlendSpace: blendSpace,
+    defaultCompositeSpace: 'linear',
+    defaultComposite: composite
+  }
+}
+
 export type BlendFn =
   | 'normal'
   | 'multiply'
@@ -34,8 +49,6 @@ export type CompositeMode =
   | 'clip-to-layer'
   | 'intersection'
 
-type SpaceOrAuto = ColorSpace | 'auto'
-
 export interface LayerMode {
   blend: BlendFn
   blendSpace: SpaceOrAuto
@@ -57,19 +70,6 @@ export interface LayerModeDef {
   defaultBlendSpace: ColorSpace
   defaultCompositeSpace: ColorSpace
   defaultComposite: CompositeMode
-}
-
-function def(
-  blend: BlendFn,
-  blendSpace: ColorSpace,
-  composite: CompositeMode
-): LayerModeDef {
-  return {
-    blend,
-    defaultBlendSpace: blendSpace,
-    defaultCompositeSpace: 'linear',
-    defaultComposite: composite
-  }
 }
 
 export const LAYER_MODES: Record<BlendFn, LayerModeDef> = {

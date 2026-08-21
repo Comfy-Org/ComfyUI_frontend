@@ -21,6 +21,11 @@ interface PromotionErrorReconcilerHandlers {
   ) => void
 }
 
+interface Subscription {
+  unsubscribe: () => void
+  hostCount: number
+}
+
 export interface PromotionErrorReconciler {
   /** Subscribes a subgraph host and every definition nested inside it. */
   attachNode: (node: LGraphNode) => void
@@ -30,11 +35,6 @@ export interface PromotionErrorReconciler {
   attach: (subgraph: Subgraph) => void
   /** Releases everything still subscribed. */
   dispose: () => void
-}
-
-interface Subscription {
-  unsubscribe: () => void
-  hostCount: number
 }
 
 export function createPromotionErrorReconciler({

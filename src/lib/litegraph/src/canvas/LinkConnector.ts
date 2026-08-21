@@ -78,6 +78,42 @@ interface LinkConnectorExport {
   network: LinkNetwork
 }
 
+/** Validates that a single {@link RenderLink} can be dropped on the specified reroute. */
+function canConnectInputLinkToReroute(
+  link:
+    | ToInputRenderLink
+    | MovingInputLink
+    | FloatingRenderLink
+    | ToInputFromIoNodeLink,
+  inputNode: LGraphNode,
+  input: INodeInputSlot,
+  reroute: Reroute
+): boolean {
+  const { fromReroute } = link
+
+  if (
+    !link.canConnectToInput(inputNode, input) ||
+    // Would result in no change
+    fromReroute?.id === reroute.id ||
+    // Cannot connect from child to parent reroute
+    fromReroute?.getReroutes()?.includes(reroute)
+  ) {
+    return false
+  }
+
+  // Would result in no change
+  if (link instanceof ToInputRenderLink) {
+    if (reroute.parentId == null) {
+      // Link would make no change - output to reroute
+      if (reroute.firstLink?.hasOrigin(link.node.id, link.fromSlotIndex))
+        return false
+    } else if (link.fromReroute?.id === reroute.parentId) {
+      return false
+    }
+  }
+  return true
+}
+
 /**
  * Component of {@link LGraphCanvas} that handles connecting and moving links.
  * @see {@link LLink}
@@ -1124,40 +1160,4 @@ export class LinkConnector {
     state.draggingExistingLinks = false
     state.snapLinksPos = undefined
   }
-}
-
-/** Validates that a single {@link RenderLink} can be dropped on the specified reroute. */
-function canConnectInputLinkToReroute(
-  link:
-    | ToInputRenderLink
-    | MovingInputLink
-    | FloatingRenderLink
-    | ToInputFromIoNodeLink,
-  inputNode: LGraphNode,
-  input: INodeInputSlot,
-  reroute: Reroute
-): boolean {
-  const { fromReroute } = link
-
-  if (
-    !link.canConnectToInput(inputNode, input) ||
-    // Would result in no change
-    fromReroute?.id === reroute.id ||
-    // Cannot connect from child to parent reroute
-    fromReroute?.getReroutes()?.includes(reroute)
-  ) {
-    return false
-  }
-
-  // Would result in no change
-  if (link instanceof ToInputRenderLink) {
-    if (reroute.parentId == null) {
-      // Link would make no change - output to reroute
-      if (reroute.firstLink?.hasOrigin(link.node.id, link.fromSlotIndex))
-        return false
-    } else if (link.fromReroute?.id === reroute.parentId) {
-      return false
-    }
-  }
-  return true
 }

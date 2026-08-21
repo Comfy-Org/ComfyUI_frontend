@@ -23,11 +23,6 @@ import {
   isMissingCandidateActive
 } from '@/utils/graphTraversalUtil'
 
-export interface MissingModelPipelineResult {
-  missingModels: ModelFile[]
-  confirmedCandidates: MissingModelCandidate[]
-}
-
 interface MissingModelPipelineStore {
   missingModelCandidates: MissingModelCandidate[] | null
   createVerificationAbortController: () => AbortController
@@ -98,6 +93,11 @@ function getCurrentMissingModelMetadata(
       ?.filter(hasDownloadMetadata)
       .map(toModelFile) ?? []
   )
+}
+
+export interface MissingModelPipelineResult {
+  missingModels: ModelFile[]
+  confirmedCandidates: MissingModelCandidate[]
 }
 
 export async function runMissingModelPipeline({

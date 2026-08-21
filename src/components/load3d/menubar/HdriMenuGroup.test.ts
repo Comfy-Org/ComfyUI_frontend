@@ -16,6 +16,12 @@ const i18n = createI18n({
   messages: { en: enMessages }
 })
 
+type Props = {
+  config?: LightConfig
+  sceneHasImage?: boolean
+  onUpdateHdriFile?: (file: File | null) => void
+}
+
 function makeConfig(hdri?: Partial<HDRIConfig>): LightConfig {
   return {
     intensity: 5,
@@ -29,12 +35,6 @@ function makeConfig(hdri?: Partial<HDRIConfig>): LightConfig {
         }
       : undefined
   }
-}
-
-type Props = {
-  config?: LightConfig
-  sceneHasImage?: boolean
-  onUpdateHdriFile?: (file: File | null) => void
 }
 
 function renderGroup(props: Props = {}) {

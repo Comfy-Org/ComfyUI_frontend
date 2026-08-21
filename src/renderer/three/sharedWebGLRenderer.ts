@@ -8,6 +8,11 @@ export type RendererViewState = {
   clearAlpha: number
 }
 
+export type SharedRendererHandle = {
+  renderer: THREE.WebGLRenderer
+  release: () => void
+}
+
 export function createRendererViewState(): RendererViewState {
   return {
     toneMapping: THREE.NoToneMapping,
@@ -26,11 +31,6 @@ export function applyRendererViewState(
   renderer.toneMappingExposure = state.toneMappingExposure
   renderer.outputColorSpace = state.outputColorSpace
   renderer.setClearColor(state.clearColor, state.clearAlpha)
-}
-
-export type SharedRendererHandle = {
-  renderer: THREE.WebGLRenderer
-  release: () => void
 }
 
 let sharedRenderer: THREE.WebGLRenderer | null = null

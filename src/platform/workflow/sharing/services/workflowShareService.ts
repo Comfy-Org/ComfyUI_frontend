@@ -21,21 +21,6 @@ import {
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 
-class SharedWorkflowLoadError extends Error {
-  readonly status: number | null
-
-  constructor(status: number | null, message?: string) {
-    super(message ?? `Failed to load shared workflow: ${status ?? 'unknown'}`)
-    this.name = 'SharedWorkflowLoadError'
-    this.status = status
-  }
-
-  get isRetryable(): boolean {
-    if (this.status === null) return true
-    return this.status >= 500 || this.status === 408 || this.status === 429
-  }
-}
-
 function mapApiThumbnailType(
   value: 'image' | 'video' | 'image_comparison' | null | undefined
 ): ThumbnailType | undefined {
@@ -129,6 +114,21 @@ function decodeSharedWorkflowPayload(
     publishedAt: r.publish_time ? parsePublishedAt(r.publish_time) : null,
     workflowJson: r.workflow_json as ComfyWorkflowJSON,
     assets: r.assets
+  }
+}
+
+class SharedWorkflowLoadError extends Error {
+  readonly status: number | null
+
+  constructor(status: number | null, message?: string) {
+    super(message ?? `Failed to load shared workflow: ${status ?? 'unknown'}`)
+    this.name = 'SharedWorkflowLoadError'
+    this.status = status
+  }
+
+  get isRetryable(): boolean {
+    if (this.status === null) return true
+    return this.status >= 500 || this.status === 408 || this.status === 429
   }
 }
 

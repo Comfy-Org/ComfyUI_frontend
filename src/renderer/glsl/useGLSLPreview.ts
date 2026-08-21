@@ -33,86 +33,6 @@ import {
 } from '@/renderer/glsl/glslPreviewUtils'
 
 /**
- * Two-tier composable for GLSL live preview.
- *
- * Outer tier (always created): only 2 cheap computed refs to detect
- * whether the node is GLSL-related. For non-GLSL nodes this is the
- * only cost — no watchers, store subscriptions, or renderer.
- *
- * Inner tier (lazy): created via effectScope when the node is detected
- * as a GLSLShader or a subgraph containing one. Contains all the
- * expensive logic: store reads, watchers, debounce, WebGL renderer.
- */
-export function useGLSLPreview(
-  nodeMaybe: MaybeRefOrGetter<LGraphNode | null | undefined>
-) {
-  const lastError = ref<string | null>(null)
-  const hideExecutedOutput = ref(false)
-
-  const nodeRef = computed(() => toValue(nodeMaybe) ?? null)
-
-  const isGLSLNode = computed(() => nodeRef.value?.type === GLSL_NODE_TYPE)
-
-  const isGLSLSubgraphNode = computed(() => {
-    const node = nodeRef.value
-    if (!node?.isSubgraphNode()) return false
-    const subgraph = node.subgraph as Subgraph | undefined
-    return subgraph?.nodes.some((n) => n.type === GLSL_NODE_TYPE) ?? false
-  })
-
-  const isGLSLRelated = computed(
-    () => isGLSLNode.value || isGLSLSubgraphNode.value
-  )
-
-  let innerScope: EffectScope | null = null
-  let innerDispose: (() => void) | null = null
-  const isActive = ref(false)
-
-  watch(
-    isGLSLRelated,
-    (related) => {
-      if (related && !innerScope) {
-        innerScope = effectScope()
-        innerDispose = innerScope.run(() =>
-          createInnerPreview(
-            nodeRef,
-            isGLSLNode,
-            isGLSLSubgraphNode,
-            lastError,
-            isActive,
-            hideExecutedOutput
-          )
-        )!
-      } else if (!related && innerScope) {
-        innerDispose?.()
-        innerScope.stop()
-        innerScope = null
-        innerDispose = null
-        isActive.value = false
-      }
-    },
-    { immediate: true }
-  )
-
-  onScopeDispose(() => {
-    innerDispose?.()
-    innerScope?.stop()
-  })
-
-  return {
-    isActive: computed(() => isActive.value),
-    hideExecutedOutput: computed(() => hideExecutedOutput.value),
-    lastError,
-    dispose() {
-      innerDispose?.()
-      innerScope?.stop()
-      innerScope = null
-      innerDispose = null
-    }
-  }
-}
-
-/**
  * Inner tier: all expensive GLSL preview logic.
  * Runs inside its own effectScope so it can be created/destroyed
  * independently of the component lifecycle.
@@ -507,5 +427,85 @@ function createInnerPreview(
     renderer = null
 
     revokePreview()
+  }
+}
+
+/**
+ * Two-tier composable for GLSL live preview.
+ *
+ * Outer tier (always created): only 2 cheap computed refs to detect
+ * whether the node is GLSL-related. For non-GLSL nodes this is the
+ * only cost — no watchers, store subscriptions, or renderer.
+ *
+ * Inner tier (lazy): created via effectScope when the node is detected
+ * as a GLSLShader or a subgraph containing one. Contains all the
+ * expensive logic: store reads, watchers, debounce, WebGL renderer.
+ */
+export function useGLSLPreview(
+  nodeMaybe: MaybeRefOrGetter<LGraphNode | null | undefined>
+) {
+  const lastError = ref<string | null>(null)
+  const hideExecutedOutput = ref(false)
+
+  const nodeRef = computed(() => toValue(nodeMaybe) ?? null)
+
+  const isGLSLNode = computed(() => nodeRef.value?.type === GLSL_NODE_TYPE)
+
+  const isGLSLSubgraphNode = computed(() => {
+    const node = nodeRef.value
+    if (!node?.isSubgraphNode()) return false
+    const subgraph = node.subgraph as Subgraph | undefined
+    return subgraph?.nodes.some((n) => n.type === GLSL_NODE_TYPE) ?? false
+  })
+
+  const isGLSLRelated = computed(
+    () => isGLSLNode.value || isGLSLSubgraphNode.value
+  )
+
+  let innerScope: EffectScope | null = null
+  let innerDispose: (() => void) | null = null
+  const isActive = ref(false)
+
+  watch(
+    isGLSLRelated,
+    (related) => {
+      if (related && !innerScope) {
+        innerScope = effectScope()
+        innerDispose = innerScope.run(() =>
+          createInnerPreview(
+            nodeRef,
+            isGLSLNode,
+            isGLSLSubgraphNode,
+            lastError,
+            isActive,
+            hideExecutedOutput
+          )
+        )!
+      } else if (!related && innerScope) {
+        innerDispose?.()
+        innerScope.stop()
+        innerScope = null
+        innerDispose = null
+        isActive.value = false
+      }
+    },
+    { immediate: true }
+  )
+
+  onScopeDispose(() => {
+    innerDispose?.()
+    innerScope?.stop()
+  })
+
+  return {
+    isActive: computed(() => isActive.value),
+    hideExecutedOutput: computed(() => hideExecutedOutput.value),
+    lastError,
+    dispose() {
+      innerDispose?.()
+      innerScope?.stop()
+      innerScope = null
+      innerDispose = null
+    }
   }
 }

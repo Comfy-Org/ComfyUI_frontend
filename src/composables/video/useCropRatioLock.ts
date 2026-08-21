@@ -12,6 +12,10 @@ interface UseCropRatioLockOptions {
   sourceHeight: Ref<number>
 }
 
+function isPositiveFinite(value: number) {
+  return Number.isFinite(value) && value > 0
+}
+
 export function useCropRatioLock(
   bounds: Ref<Bounds>,
   options: UseCropRatioLockOptions
@@ -92,8 +96,4 @@ export function useCropRatioLock(
   })
 
   return { lockedRatio, ratioKeys, selectedRatio, isLockEnabled, canLockRatio }
-}
-
-function isPositiveFinite(value: number) {
-  return Number.isFinite(value) && value > 0
 }

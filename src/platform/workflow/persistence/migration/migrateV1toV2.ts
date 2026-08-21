@@ -38,14 +38,6 @@ const V1_KEYS = {
 }
 
 /**
- * Checks if V2 migration has been completed for the current workspace.
- */
-export function isV2MigrationComplete(workspaceId: string): boolean {
-  const v2Index = readIndex(workspaceId)
-  return v2Index !== null
-}
-
-/**
  * Reads V1 drafts from localStorage.
  */
 function readV1Drafts(
@@ -64,6 +56,44 @@ function readV1Drafts(
   } catch {
     return null
   }
+}
+
+/**
+ * Migrates V1 tab state (open paths + active index) to V2 format.
+ * V1 stored these in localStorage via setStorageValue fallback.
+ * V2 uses sessionStorage keyed by clientId.
+ */
+function migrateV1TabState(workspaceId: string, clientId?: string): void {
+  if (!clientId) return
+
+  try {
+    const pathsJson = localStorage.getItem(V1_KEYS.openPaths)
+    if (!pathsJson) return
+
+    const paths = JSON.parse(pathsJson)
+    if (!Array.isArray(paths) || paths.length === 0) return
+
+    const indexJson = localStorage.getItem(V1_KEYS.activeIndex)
+    let activeIndex = 0
+    if (indexJson !== null) {
+      const parsed = JSON.parse(indexJson)
+      if (typeof parsed === 'number' && Number.isFinite(parsed)) {
+        activeIndex = Math.min(Math.max(0, parsed), paths.length - 1)
+      }
+    }
+
+    writeOpenPaths(clientId, { workspaceId, paths, activeIndex })
+  } catch {
+    // Best effort - don't block draft migration on tab state errors
+  }
+}
+
+/**
+ * Checks if V2 migration has been completed for the current workspace.
+ */
+export function isV2MigrationComplete(workspaceId: string): boolean {
+  const v2Index = readIndex(workspaceId)
+  return v2Index !== null
 }
 
 /**
@@ -136,36 +166,6 @@ export function migrateV1toV2(
     console.warn(`[V2 Migration] Migrated ${migrated} drafts from V1 to V2`)
   }
   return migrated
-}
-
-/**
- * Migrates V1 tab state (open paths + active index) to V2 format.
- * V1 stored these in localStorage via setStorageValue fallback.
- * V2 uses sessionStorage keyed by clientId.
- */
-function migrateV1TabState(workspaceId: string, clientId?: string): void {
-  if (!clientId) return
-
-  try {
-    const pathsJson = localStorage.getItem(V1_KEYS.openPaths)
-    if (!pathsJson) return
-
-    const paths = JSON.parse(pathsJson)
-    if (!Array.isArray(paths) || paths.length === 0) return
-
-    const indexJson = localStorage.getItem(V1_KEYS.activeIndex)
-    let activeIndex = 0
-    if (indexJson !== null) {
-      const parsed = JSON.parse(indexJson)
-      if (typeof parsed === 'number' && Number.isFinite(parsed)) {
-        activeIndex = Math.min(Math.max(0, parsed), paths.length - 1)
-      }
-    }
-
-    writeOpenPaths(clientId, { workspaceId, paths, activeIndex })
-  } catch {
-    // Best effort - don't block draft migration on tab state errors
-  }
 }
 
 /**

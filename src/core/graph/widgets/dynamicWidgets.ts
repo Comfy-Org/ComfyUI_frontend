@@ -223,16 +223,6 @@ const dynamicInputs: Record<
   COMFY_MATCHTYPE_V3: applyMatchType
 }
 
-export function applyDynamicInputs(
-  node: LGraphNode,
-  inputSpec: InputSpecV2
-): boolean {
-  if (!(inputSpec.type in dynamicInputs)) return false
-  //TODO: move parsing/validation of inputSpec here?
-  dynamicInputs[inputSpec.type](node, inputSpec)
-  return true
-}
-
 function spliceInputs(
   node: LGraphNode,
   startIndex: number,
@@ -445,6 +435,16 @@ function addAutogrowGroup(
   const insertionIndex = lastIndex === -1 ? node.inputs.length : lastIndex + 1
   spliceInputs(node, insertionIndex, 0, ...newInputs)
   app.canvas?.setDirty(true, true)
+}
+
+export function applyDynamicInputs(
+  node: LGraphNode,
+  inputSpec: InputSpecV2
+): boolean {
+  if (!(inputSpec.type in dynamicInputs)) return false
+  //TODO: move parsing/validation of inputSpec here?
+  dynamicInputs[inputSpec.type](node, inputSpec)
+  return true
 }
 
 const ORDINAL_REGEX = /\d+$/

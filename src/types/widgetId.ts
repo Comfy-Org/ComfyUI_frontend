@@ -7,6 +7,15 @@ export type WidgetId = string & { readonly __brand: 'WidgetId' }
 const SEPARATOR = ':'
 const WIDGET_ID_PATTERN = /^(?<graphId>[^:]+):(?<nodeId>[^:]+):(?<name>[^:]+)$/u
 
+function decodeWidgetIdSegment(segment: string): string {
+  try {
+    return decodeURIComponent(segment)
+  } catch (error) {
+    if (error instanceof URIError) return segment
+    throw error
+  }
+}
+
 export function widgetId(
   graphId: UUID,
   localNodeId: NodeId,
@@ -17,15 +26,6 @@ export function widgetId(
     encodeURIComponent(String(localNodeId)),
     encodeURIComponent(name)
   ].join(SEPARATOR) as WidgetId
-}
-
-function decodeWidgetIdSegment(segment: string): string {
-  try {
-    return decodeURIComponent(segment)
-  } catch (error) {
-    if (error instanceof URIError) return segment
-    throw error
-  }
 }
 
 export function parseWidgetId(id: WidgetId): {

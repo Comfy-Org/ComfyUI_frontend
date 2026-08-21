@@ -17,13 +17,6 @@ let storageAvailable = true
 let workflowWritesBlocked = false
 const pendingPersistenceFlushes = new Set<() => void>()
 
-export function registerWorkflowPersistenceFlush(
-  flush: () => void
-): () => void {
-  pendingPersistenceFlushes.add(flush)
-  return () => pendingPersistenceFlushes.delete(flush)
-}
-
 function flushPendingWorkflowPersistence(): void {
   for (const flush of pendingPersistenceFlushes) {
     try {
@@ -32,14 +25,6 @@ function flushPendingWorkflowPersistence(): void {
       console.warn('Failed to flush pending workflow persistence', error)
     }
   }
-}
-
-export function isStorageAvailable(): boolean {
-  return storageAvailable && !workflowWritesBlocked
-}
-
-export function markStorageUnavailable(): void {
-  storageAvailable = false
 }
 
 function isQuotaExceeded(error: unknown): boolean {
@@ -62,6 +47,128 @@ function isValidIndex(value: unknown): value is DraftIndexV2 {
     typeof obj.entries === 'object' &&
     obj.entries !== null
   )
+}
+
+/**
+ * Searches sessionStorage for a pointer matching the target workspaceId
+ * when the exact clientId key has no entry (e.g. clientId changed after reload).
+ * Migrates the found pointer to the new clientId key.
+ */
+function findAndMigratePointer<T extends { workspaceId: string }>(
+  newKey: string,
+  prefix: string,
+  targetWorkspaceId: string
+): T | null {
+  for (let i = 0; i < sessionStorage.length; i++) {
+    const storageKey = sessionStorage.key(i)
+    if (!storageKey?.startsWith(prefix) || storageKey === newKey) continue
+
+    const json = sessionStorage.getItem(storageKey)
+    if (!json) continue
+
+    try {
+      const pointer = JSON.parse(json) as T
+      if (pointer.workspaceId === targetWorkspaceId) {
+        sessionStorage.setItem(newKey, json)
+        sessionStorage.removeItem(storageKey)
+        return pointer
+      }
+    } catch {
+      continue
+    }
+  }
+  return null
+}
+
+/**
+ * Reads a session pointer by clientId with workspace-based fallback.
+ * Validates workspace on exact match and removes stale cross-workspace pointers.
+ * If no valid entry exists, searches for any pointer matching the target
+ * workspaceId and migrates it to the new key.
+ */
+function readSessionPointer<T extends { workspaceId: string }>(
+  key: string,
+  prefix: string,
+  targetWorkspaceId?: string
+): T | null {
+  try {
+    const json = sessionStorage.getItem(key)
+    if (json) {
+      const pointer = JSON.parse(json) as T
+      if (targetWorkspaceId && pointer.workspaceId !== targetWorkspaceId) {
+        sessionStorage.removeItem(key)
+      } else {
+        return pointer
+      }
+    }
+
+    if (targetWorkspaceId) {
+      return findAndMigratePointer<T>(key, prefix, targetWorkspaceId)
+    }
+
+    return null
+  } catch {
+    return null
+  }
+}
+
+function hasWorkspaceId(obj: Record<string, unknown>): boolean {
+  return typeof obj.workspaceId === 'string'
+}
+
+function isValidActivePathPointer(value: unknown): value is ActivePathPointer {
+  if (typeof value !== 'object' || value === null) return false
+  const obj = value as Record<string, unknown>
+  return hasWorkspaceId(obj) && typeof obj.path === 'string'
+}
+
+function isValidOpenPathsPointer(value: unknown): value is OpenPathsPointer {
+  if (typeof value !== 'object' || value === null) return false
+  const obj = value as Record<string, unknown>
+  return (
+    hasWorkspaceId(obj) &&
+    Array.isArray(obj.paths) &&
+    typeof obj.activeIndex === 'number'
+  )
+}
+
+function readLocalPointer<T>(
+  key: string,
+  validate: (value: unknown) => value is T
+): T | null {
+  try {
+    const json = localStorage.getItem(key)
+    if (!json) return null
+    const parsed = JSON.parse(json)
+    return validate(parsed) ? parsed : null
+  } catch {
+    return null
+  }
+}
+
+function writeStorage(storage: Storage, key: string, value: string): void {
+  if (!storageAvailable || workflowWritesBlocked) return
+
+  try {
+    storage.setItem(key, value)
+  } catch {
+    // Best effort — silently degrade when storage is full or unavailable
+  }
+}
+
+export function registerWorkflowPersistenceFlush(
+  flush: () => void
+): () => void {
+  pendingPersistenceFlushes.add(flush)
+  return () => pendingPersistenceFlushes.delete(flush)
+}
+
+export function isStorageAvailable(): boolean {
+  return storageAvailable && !workflowWritesBlocked
+}
+
+export function markStorageUnavailable(): void {
+  storageAvailable = false
 }
 
 /**
@@ -205,69 +312,6 @@ export function deleteOrphanPayloads(
 }
 
 /**
- * Searches sessionStorage for a pointer matching the target workspaceId
- * when the exact clientId key has no entry (e.g. clientId changed after reload).
- * Migrates the found pointer to the new clientId key.
- */
-function findAndMigratePointer<T extends { workspaceId: string }>(
-  newKey: string,
-  prefix: string,
-  targetWorkspaceId: string
-): T | null {
-  for (let i = 0; i < sessionStorage.length; i++) {
-    const storageKey = sessionStorage.key(i)
-    if (!storageKey?.startsWith(prefix) || storageKey === newKey) continue
-
-    const json = sessionStorage.getItem(storageKey)
-    if (!json) continue
-
-    try {
-      const pointer = JSON.parse(json) as T
-      if (pointer.workspaceId === targetWorkspaceId) {
-        sessionStorage.setItem(newKey, json)
-        sessionStorage.removeItem(storageKey)
-        return pointer
-      }
-    } catch {
-      continue
-    }
-  }
-  return null
-}
-
-/**
- * Reads a session pointer by clientId with workspace-based fallback.
- * Validates workspace on exact match and removes stale cross-workspace pointers.
- * If no valid entry exists, searches for any pointer matching the target
- * workspaceId and migrates it to the new key.
- */
-function readSessionPointer<T extends { workspaceId: string }>(
-  key: string,
-  prefix: string,
-  targetWorkspaceId?: string
-): T | null {
-  try {
-    const json = sessionStorage.getItem(key)
-    if (json) {
-      const pointer = JSON.parse(json) as T
-      if (targetWorkspaceId && pointer.workspaceId !== targetWorkspaceId) {
-        sessionStorage.removeItem(key)
-      } else {
-        return pointer
-      }
-    }
-
-    if (targetWorkspaceId) {
-      return findAndMigratePointer<T>(key, prefix, targetWorkspaceId)
-    }
-
-    return null
-  } catch {
-    return null
-  }
-}
-
-/**
  * Reads the active path pointer from sessionStorage.
  * Falls back to workspace-based search when clientId changes after reload,
  * then to localStorage when sessionStorage is empty (browser restart).
@@ -357,50 +401,6 @@ export function writeOpenPaths(
     StorageKeys.lastOpenPaths(pointer.workspaceId),
     json
   )
-}
-
-function hasWorkspaceId(obj: Record<string, unknown>): boolean {
-  return typeof obj.workspaceId === 'string'
-}
-
-function isValidActivePathPointer(value: unknown): value is ActivePathPointer {
-  if (typeof value !== 'object' || value === null) return false
-  const obj = value as Record<string, unknown>
-  return hasWorkspaceId(obj) && typeof obj.path === 'string'
-}
-
-function isValidOpenPathsPointer(value: unknown): value is OpenPathsPointer {
-  if (typeof value !== 'object' || value === null) return false
-  const obj = value as Record<string, unknown>
-  return (
-    hasWorkspaceId(obj) &&
-    Array.isArray(obj.paths) &&
-    typeof obj.activeIndex === 'number'
-  )
-}
-
-function readLocalPointer<T>(
-  key: string,
-  validate: (value: unknown) => value is T
-): T | null {
-  try {
-    const json = localStorage.getItem(key)
-    if (!json) return null
-    const parsed = JSON.parse(json)
-    return validate(parsed) ? parsed : null
-  } catch {
-    return null
-  }
-}
-
-function writeStorage(storage: Storage, key: string, value: string): void {
-  if (!storageAvailable || workflowWritesBlocked) return
-
-  try {
-    storage.setItem(key, value)
-  } catch {
-    // Best effort — silently degrade when storage is full or unavailable
-  }
 }
 
 const legacyLocalRestoreKeys = [

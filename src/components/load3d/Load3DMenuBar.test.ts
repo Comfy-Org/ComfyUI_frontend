@@ -35,6 +35,8 @@ const i18n = createI18n({
   messages: { en: enMessages }
 })
 
+type RenderProps = Partial<ComponentProps<typeof Load3DMenuBar>>
+
 function makeSceneConfig(): SceneConfig {
   return {
     showGrid: true,
@@ -74,8 +76,6 @@ function makeLightConfig(): LightConfig {
     }
   }
 }
-
-type RenderProps = Partial<ComponentProps<typeof Load3DMenuBar>>
 
 function renderMenuBar(overrides: RenderProps = {}) {
   const result = render(Load3DMenuBar, {

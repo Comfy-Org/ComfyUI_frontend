@@ -7,18 +7,6 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { parseImageWidgetValue } from '@/utils/imageUtil'
 
-export function extractWidgetStringValue(value: unknown): string | undefined {
-  if (typeof value === 'string') return value
-  if (
-    value &&
-    typeof value === 'object' &&
-    'filename' in value &&
-    typeof value.filename === 'string'
-  )
-    return value.filename
-  return undefined
-}
-
 // Private image utility functions
 interface ImageLayerFilenames {
   maskedImage: string
@@ -32,6 +20,18 @@ interface MaskLayersResponse {
   painted?: string
   paint?: string
   mask?: string
+}
+
+export function extractWidgetStringValue(value: unknown): string | undefined {
+  if (typeof value === 'string') return value
+  if (
+    value &&
+    typeof value === 'object' &&
+    'filename' in value &&
+    typeof value.filename === 'string'
+  )
+    return value.filename
+  return undefined
 }
 
 const paintedMaskedImagePrefix = 'clipspace-painted-masked-'

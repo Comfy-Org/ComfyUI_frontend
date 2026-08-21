@@ -41,31 +41,6 @@ function shouldLoadFullOutputs(
   )
 }
 
-export function getAssetOutputCount(
-  asset: Pick<AssetItem, 'user_metadata'>
-): number {
-  const count = asset.user_metadata?.outputCount
-  return typeof count === 'number' && count > 0 ? count : 1
-}
-
-export function getTotalAssetOutputCount(
-  assets: Pick<AssetItem, 'user_metadata'>[]
-): number {
-  return assets.reduce((sum, asset) => sum + getAssetOutputCount(asset), 0)
-}
-
-export function getOutputKey({
-  nodeId,
-  subfolder,
-  filename
-}: OutputKeyParts): string | null {
-  if (nodeId == null || subfolder == null || !filename) {
-    return null
-  }
-
-  return `${nodeId}-${subfolder}-${filename}`
-}
-
 /**
  * Maps a job's outputs to AssetItems with ids derived from the composite
  * `<nodeId>-<subfolder>-<filename>` key. Records sharing a composite key are
@@ -253,6 +228,31 @@ async function enrichWithJobAssets(
       )
     return match ? overlayJobAsset(item, match) : item
   })
+}
+
+export function getAssetOutputCount(
+  asset: Pick<AssetItem, 'user_metadata'>
+): number {
+  const count = asset.user_metadata?.outputCount
+  return typeof count === 'number' && count > 0 ? count : 1
+}
+
+export function getTotalAssetOutputCount(
+  assets: Pick<AssetItem, 'user_metadata'>[]
+): number {
+  return assets.reduce((sum, asset) => sum + getAssetOutputCount(asset), 0)
+}
+
+export function getOutputKey({
+  nodeId,
+  subfolder,
+  filename
+}: OutputKeyParts): string | null {
+  if (nodeId == null || subfolder == null || !filename) {
+    return null
+  }
+
+  return `${nodeId}-${subfolder}-${filename}`
 }
 
 export async function resolveOutputAssetItems(

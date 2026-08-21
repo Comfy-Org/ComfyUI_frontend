@@ -7,6 +7,18 @@ import type {
 } from '@/lib/litegraph/src/interfaces'
 import { isInRectangle } from '@/lib/litegraph/src/measure'
 
+export type ReadOnlyRectangle = Omit<
+  ReadOnlyTypedArray<Rectangle>,
+  | 'setHeightBottomAnchored'
+  | 'setWidthRightAnchored'
+  | 'resizeTopLeft'
+  | 'resizeBottomLeft'
+  | 'resizeTopRight'
+  | 'resizeBottomRight'
+  | 'resizeBottomRight'
+  | 'updateTo'
+>
+
 /**
  * A rectangle, represented as a float64 array of 4 numbers: [x, y, width, height].
  *
@@ -467,15 +479,3 @@ export class Rectangle extends Float64Array {
     }
   }
 }
-
-export type ReadOnlyRectangle = Omit<
-  ReadOnlyTypedArray<Rectangle>,
-  | 'setHeightBottomAnchored'
-  | 'setWidthRightAnchored'
-  | 'resizeTopLeft'
-  | 'resizeBottomLeft'
-  | 'resizeTopRight'
-  | 'resizeBottomRight'
-  | 'resizeBottomRight'
-  | 'updateTo'
->

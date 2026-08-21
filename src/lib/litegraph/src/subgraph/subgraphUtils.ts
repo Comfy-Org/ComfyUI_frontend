@@ -41,6 +41,52 @@ interface FilteredItems {
   unknown: Set<Positionable>
 }
 
+interface BoundaryLinks {
+  boundaryLinks: LLink[]
+  boundaryFloatingLinks: LLink[]
+  internalLinks: LLink[]
+  boundaryInputLinks: LLink[]
+  boundaryOutputLinks: LLink[]
+}
+
+function mapReroutes(
+  link: SerialisableLLink,
+  reroutes: Map<RerouteId, Reroute>
+) {
+  let child: SerialisableLLink | Reroute = link
+  let nextReroute =
+    child.parentId === undefined
+      ? undefined
+      : reroutes.get(toRerouteId(child.parentId))
+
+  while (child.parentId !== undefined && nextReroute) {
+    child = nextReroute
+    nextReroute =
+      child.parentId === undefined
+        ? undefined
+        : reroutes.get(toRerouteId(child.parentId))
+  }
+
+  const lastId = child.parentId
+  child.parentId = undefined
+  return lastId
+}
+
+function reorderInPlace<T>(arr: T[], indices: readonly number[]): void {
+  arr.splice(0, arr.length, ...indices.flatMap((i) => arr[i] ?? []))
+}
+
+function* indexedLinks<S>(
+  slots: readonly S[],
+  resolve: (slot: S) => Iterable<LLink | undefined>
+): Generator<readonly [number, LLink]> {
+  for (const [index, slot] of slots.entries()) {
+    for (const link of resolve(slot)) {
+      if (link) yield [index, link] as const
+    }
+  }
+}
+
 export function splitPositionables(
   items: Iterable<Positionable>
 ): FilteredItems {
@@ -84,15 +130,6 @@ export function splitPositionables(
     unknown
   }
 }
-
-interface BoundaryLinks {
-  boundaryLinks: LLink[]
-  boundaryFloatingLinks: LLink[]
-  internalLinks: LLink[]
-  boundaryInputLinks: LLink[]
-  boundaryOutputLinks: LLink[]
-}
-
 export function getBoundaryLinks(
   graph: LGraph,
   items: Set<Positionable>
@@ -262,28 +299,6 @@ export function groupResolvedByOutput(
   }
 
   return groupedByOutput
-}
-function mapReroutes(
-  link: SerialisableLLink,
-  reroutes: Map<RerouteId, Reroute>
-) {
-  let child: SerialisableLLink | Reroute = link
-  let nextReroute =
-    child.parentId === undefined
-      ? undefined
-      : reroutes.get(toRerouteId(child.parentId))
-
-  while (child.parentId !== undefined && nextReroute) {
-    child = nextReroute
-    nextReroute =
-      child.parentId === undefined
-        ? undefined
-        : reroutes.get(toRerouteId(child.parentId))
-  }
-
-  const lastId = child.parentId
-  child.parentId = undefined
-  return lastId
 }
 
 export function mapSubgraphInputsAndLinks(
@@ -487,21 +502,6 @@ export function findUsedSubgraphIds(
   }
 
   return usedSubgraphIds
-}
-
-function reorderInPlace<T>(arr: T[], indices: readonly number[]): void {
-  arr.splice(0, arr.length, ...indices.flatMap((i) => arr[i] ?? []))
-}
-
-function* indexedLinks<S>(
-  slots: readonly S[],
-  resolve: (slot: S) => Iterable<LLink | undefined>
-): Generator<readonly [number, LLink]> {
-  for (const [index, slot] of slots.entries()) {
-    for (const link of resolve(slot)) {
-      if (link) yield [index, link] as const
-    }
-  }
 }
 
 export function reorderSubgraphInputs(

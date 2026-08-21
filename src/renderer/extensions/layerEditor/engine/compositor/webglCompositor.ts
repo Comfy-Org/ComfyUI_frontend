@@ -223,6 +223,18 @@ function link(
   return p
 }
 
+function flipRows(px: Uint8ClampedArray, w: number, h: number): void {
+  const row = w * 4
+  const tmp = new Uint8ClampedArray(row)
+  for (let y = 0; y < h >> 1; y++) {
+    const top = y * row
+    const bot = (h - 1 - y) * row
+    tmp.set(px.subarray(top, top + row))
+    px.copyWithin(top, bot, bot + row)
+    px.set(tmp, bot)
+  }
+}
+
 export function createWebGLCompositor(): Compositor {
   let canvas: OffscreenCanvas | HTMLCanvasElement | null = null
   let gl: WebGL2RenderingContext | null = null
@@ -871,17 +883,5 @@ export function createWebGLCompositor(): Compositor {
     g.bindTexture(g.TEXTURE_2D, src.tex)
     g.uniform1i(loc(copyProg!, 'u_tex'), 0)
     drawFullscreen()
-  }
-}
-
-function flipRows(px: Uint8ClampedArray, w: number, h: number): void {
-  const row = w * 4
-  const tmp = new Uint8ClampedArray(row)
-  for (let y = 0; y < h >> 1; y++) {
-    const top = y * row
-    const bot = (h - 1 - y) * row
-    tmp.set(px.subarray(top, top + row))
-    px.copyWithin(top, bot, bot + row)
-    px.set(tmp, bot)
   }
 }

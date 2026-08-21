@@ -22,10 +22,6 @@ export const getSettingInfo = (setting: SettingParams) => {
   }
 }
 
-export interface SettingTreeNode extends TreeNode {
-  data?: SettingParams
-}
-
 interface AppliedSetting<TValue> {
   previousValue: TValue
   newValue: TValue
@@ -116,6 +112,10 @@ function settingChangedEvent<K extends keyof Settings>(
         new_value: applied.newValue
       }
     : { setting_id: key }
+}
+
+export interface SettingTreeNode extends TreeNode {
+  data?: SettingParams
 }
 
 export const useSettingStore = defineStore('setting', () => {

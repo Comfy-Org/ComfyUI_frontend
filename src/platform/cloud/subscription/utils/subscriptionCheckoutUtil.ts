@@ -44,44 +44,6 @@ interface PerformSubscriptionCheckoutOptions {
   paymentIntentSource?: PaymentIntentSource
 }
 
-/**
- * Core subscription checkout logic shared between PricingTable and
- * SubscriptionRedirectView. Handles:
- * - Ensuring the user is authenticated
- * - Calling the backend checkout endpoint
- * - Normalizing error responses
- * - Opening the checkout URL in a new tab when available
- * - Reporting checkout-initiation failures via `trackBillingEvent`
- *
- * Callers are responsible for:
- * - Guarding on cloud-only behavior (isCloud)
- * - Managing loading state
- * - Wrapping with error handling (e.g. useErrorHandling)
- */
-export async function performSubscriptionCheckout(
-  tierKey: TierKey,
-  currentBillingCycle: BillingCycle,
-  options: PerformSubscriptionCheckoutOptions = {}
-): Promise<void> {
-  if (!isCloud) return
-
-  try {
-    await initiateSubscriptionCheckout(tierKey, currentBillingCycle, options)
-  } catch (error) {
-    useTelemetry()?.trackBillingEvent({
-      operation: 'subscription_checkout',
-      stage: 'failed',
-      outcome: 'failure',
-      tier: tierKey,
-      cycle: currentBillingCycle,
-      checkout_type: 'new',
-      payment_intent_source: options.paymentIntentSource,
-      failure_category: categorizeBillingApiError(error)
-    })
-    throw error
-  }
-}
-
 async function initiateSubscriptionCheckout(
   tierKey: TierKey,
   currentBillingCycle: BillingCycle,
@@ -168,5 +130,43 @@ async function initiateSubscriptionCheckout(
       persistPendingSubscriptionCheckoutAttempt(pendingAttempt)
       globalThis.location.href = data.checkout_url
     }
+  }
+}
+
+/**
+ * Core subscription checkout logic shared between PricingTable and
+ * SubscriptionRedirectView. Handles:
+ * - Ensuring the user is authenticated
+ * - Calling the backend checkout endpoint
+ * - Normalizing error responses
+ * - Opening the checkout URL in a new tab when available
+ * - Reporting checkout-initiation failures via `trackBillingEvent`
+ *
+ * Callers are responsible for:
+ * - Guarding on cloud-only behavior (isCloud)
+ * - Managing loading state
+ * - Wrapping with error handling (e.g. useErrorHandling)
+ */
+export async function performSubscriptionCheckout(
+  tierKey: TierKey,
+  currentBillingCycle: BillingCycle,
+  options: PerformSubscriptionCheckoutOptions = {}
+): Promise<void> {
+  if (!isCloud) return
+
+  try {
+    await initiateSubscriptionCheckout(tierKey, currentBillingCycle, options)
+  } catch (error) {
+    useTelemetry()?.trackBillingEvent({
+      operation: 'subscription_checkout',
+      stage: 'failed',
+      outcome: 'failure',
+      tier: tierKey,
+      cycle: currentBillingCycle,
+      checkout_type: 'new',
+      payment_intent_source: options.paymentIntentSource,
+      failure_category: categorizeBillingApiError(error)
+    })
+    throw error
   }
 }

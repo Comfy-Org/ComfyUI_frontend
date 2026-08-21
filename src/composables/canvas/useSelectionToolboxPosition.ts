@@ -84,6 +84,14 @@ function getSelectionBounds(
   return getFullNodeBounds(item)
 }
 
+// External cleanup utility to be called when SelectionToolbox component unmounts
+function resetMoreOptionsState() {
+  moreOptionsOpen.value = false
+  moreOptionsRestorePending.value = false
+  moreOptionsWasOpenBeforeDrag = false
+  moreOptionsSelectionSignature = null
+}
+
 export function useSelectionToolboxPosition(
   toolboxRef: Ref<HTMLElement | undefined>
 ) {
@@ -284,12 +292,4 @@ export function useSelectionToolboxPosition(
   return {
     visible
   }
-}
-
-// External cleanup utility to be called when SelectionToolbox component unmounts
-function resetMoreOptionsState() {
-  moreOptionsOpen.value = false
-  moreOptionsRestorePending.value = false
-  moreOptionsWasOpenBeforeDrag = false
-  moreOptionsSelectionSignature = null
 }

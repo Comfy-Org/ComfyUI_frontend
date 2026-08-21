@@ -9,83 +9,16 @@ import type { NodeValidationError } from '@/utils/executionErrorUtil'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 import { isSubgraph } from '@/utils/typeGuardUtil'
 
-export interface LiftedErrorExtraInfo {
-  input_name: string
-  source_execution_id: string
-  source_input_name: string
-}
-
-export interface LiftedSurface {
-  hostExecId: NodeExecutionId
-  hostInputName: string
-}
-
 interface ErrorPlacement {
   kind: 'own' | 'lifted'
   targetExecId: string
   error: NodeValidationError
 }
 
-export function getLiftedErrorSource(
-  error: NodeValidationError
-): LiftedErrorExtraInfo | null {
-  const extraInfo = error.extra_info
-  if (!extraInfo) return null
-
-  const { input_name, source_execution_id, source_input_name } = extraInfo
-  if (
-    typeof input_name !== 'string' ||
-    typeof source_execution_id !== 'string' ||
-    typeof source_input_name !== 'string'
-  ) {
-    return null
-  }
-
-  return { input_name, source_execution_id, source_input_name }
-}
-
 function getHostExecutionId(executionId: string): NodeExecutionId | null {
   const separatorIndex = executionId.lastIndexOf(':')
   if (separatorIndex <= 0) return null
   return tryNormalizeNodeExecutionId(executionId.slice(0, separatorIndex))
-}
-
-/**
- * Boundary surfaces that expose `(executionId, inputName)`, innermost first.
- * Walks one host per level and stops at the last resolvable surface, so an
- * unresolvable deeper host falls back to the shallower one (fail-open).
- */
-export function resolveLiftChain(
-  rootGraph: LGraph,
-  executionId: string,
-  inputName: string
-): LiftedSurface[] {
-  const chain: LiftedSurface[] = []
-  let currentExecId = executionId
-  let currentInputName = inputName
-
-  for (;;) {
-    const node = getNodeByExecutionId(rootGraph, currentExecId)
-    const graph = node?.graph
-    if (!node || !graph || !isSubgraph(graph)) break
-
-    const slot = node.inputs?.find((input) => input.name === currentInputName)
-    if (slot?.link == null) break
-
-    const subgraphInput = graph
-      .getLink(slot.link)
-      ?.resolve(graph)?.subgraphInput
-    if (!subgraphInput) break
-
-    const hostExecId = getHostExecutionId(currentExecId)
-    if (!hostExecId || !getNodeByExecutionId(rootGraph, hostExecId)) break
-
-    chain.push({ hostExecId, hostInputName: subgraphInput.name })
-    currentExecId = hostExecId
-    currentInputName = subgraphInput.name
-  }
-
-  return chain
 }
 
 function createEmptyNodeError(nodeError: NodeError): NodeError {
@@ -144,6 +77,73 @@ function toErrorPlacement(
       }
     }
   }
+}
+
+export interface LiftedErrorExtraInfo {
+  input_name: string
+  source_execution_id: string
+  source_input_name: string
+}
+
+export interface LiftedSurface {
+  hostExecId: NodeExecutionId
+  hostInputName: string
+}
+
+export function getLiftedErrorSource(
+  error: NodeValidationError
+): LiftedErrorExtraInfo | null {
+  const extraInfo = error.extra_info
+  if (!extraInfo) return null
+
+  const { input_name, source_execution_id, source_input_name } = extraInfo
+  if (
+    typeof input_name !== 'string' ||
+    typeof source_execution_id !== 'string' ||
+    typeof source_input_name !== 'string'
+  ) {
+    return null
+  }
+
+  return { input_name, source_execution_id, source_input_name }
+}
+
+/**
+ * Boundary surfaces that expose `(executionId, inputName)`, innermost first.
+ * Walks one host per level and stops at the last resolvable surface, so an
+ * unresolvable deeper host falls back to the shallower one (fail-open).
+ */
+export function resolveLiftChain(
+  rootGraph: LGraph,
+  executionId: string,
+  inputName: string
+): LiftedSurface[] {
+  const chain: LiftedSurface[] = []
+  let currentExecId = executionId
+  let currentInputName = inputName
+
+  for (;;) {
+    const node = getNodeByExecutionId(rootGraph, currentExecId)
+    const graph = node?.graph
+    if (!node || !graph || !isSubgraph(graph)) break
+
+    const slot = node.inputs?.find((input) => input.name === currentInputName)
+    if (slot?.link == null) break
+
+    const subgraphInput = graph
+      .getLink(slot.link)
+      ?.resolve(graph)?.subgraphInput
+    if (!subgraphInput) break
+
+    const hostExecId = getHostExecutionId(currentExecId)
+    if (!hostExecId || !getNodeByExecutionId(rootGraph, hostExecId)) break
+
+    chain.push({ hostExecId, hostInputName: subgraphInput.name })
+    currentExecId = hostExecId
+    currentInputName = subgraphInput.name
+  }
+
+  return chain
 }
 
 export function liftNodeErrorsToBoundary(

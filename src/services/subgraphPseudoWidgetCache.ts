@@ -1,17 +1,6 @@
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { NodeId } from '@/types/nodeId'
 
-export interface SubgraphPseudoWidget {
-  name: string
-}
-
-export interface SubgraphPseudoWidgetNode<
-  TWidget extends SubgraphPseudoWidget
-> {
-  id: string | number
-  widgets?: TWidget[]
-}
-
 interface SubgraphPseudoWidgetCacheEntry<
   TNode extends SubgraphPseudoWidgetNode<TWidget>,
   TWidget extends SubgraphPseudoWidget
@@ -19,15 +8,6 @@ interface SubgraphPseudoWidgetCacheEntry<
   sourceNodeId: NodeId
   sourceWidgetName: string
   node: TNode
-}
-
-export interface SubgraphPseudoWidgetCache<
-  TNode extends SubgraphPseudoWidgetNode<TWidget>,
-  TWidget extends SubgraphPseudoWidget
-> {
-  promotions: readonly PromotedWidgetSource[]
-  entries: SubgraphPseudoWidgetCacheEntry<TNode, TWidget>[]
-  nodes: TNode[]
 }
 
 interface ResolveSubgraphPseudoWidgetCacheArgs<
@@ -75,6 +55,26 @@ function isCacheStillValid<
       isPreviewPseudoWidget
     )
   })
+}
+
+export interface SubgraphPseudoWidget {
+  name: string
+}
+
+export interface SubgraphPseudoWidgetNode<
+  TWidget extends SubgraphPseudoWidget
+> {
+  id: string | number
+  widgets?: TWidget[]
+}
+
+export interface SubgraphPseudoWidgetCache<
+  TNode extends SubgraphPseudoWidgetNode<TWidget>,
+  TWidget extends SubgraphPseudoWidget
+> {
+  promotions: readonly PromotedWidgetSource[]
+  entries: SubgraphPseudoWidgetCacheEntry<TNode, TWidget>[]
+  nodes: TNode[]
 }
 
 export function resolveSubgraphPseudoWidgetCache<

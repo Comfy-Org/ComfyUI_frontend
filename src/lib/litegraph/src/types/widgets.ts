@@ -15,6 +15,40 @@ import type {
 import type { CanvasPointer, LGraphCanvas, LGraphNode } from '../litegraph'
 import type { CanvasPointerEvent } from './events'
 
+interface IWidgetSliderOptions extends IWidgetOptions<number[]> {
+  min: number
+  max: number
+  step2: number
+  slider_color?: CanvasColour
+  marker_color?: CanvasColour
+}
+
+interface IWidgetKnobOptions extends IWidgetOptions<number[]> {
+  min: number
+  max: number
+  step2: number
+  slider_color?: CanvasColour // TODO: Replace with knob color
+  marker_color?: CanvasColour
+  gradient_stops?: string
+}
+
+type ComboWidgetValues =
+  | string[]
+  | Record<string, string>
+  | ((widget?: IComboWidget, node?: LGraphNode) => string[])
+
+/** A custom widget - accepts any value and has no built-in special handling */
+interface ICustomWidget extends IBaseWidget<string | object, 'custom'> {
+  type: 'custom'
+  value: string | object
+}
+
+/** Image display widget */
+interface IImageWidget extends IBaseWidget<string, 'image'> {
+  type: 'image'
+  value: string
+}
+
 export interface NodeBindable {
   setNodeId(nodeId: NodeId): void
 }
@@ -83,28 +117,11 @@ export interface IWidgetOptions<TValues = unknown> {
   hidden?: boolean
 }
 
-interface IWidgetSliderOptions extends IWidgetOptions<number[]> {
-  min: number
-  max: number
-  step2: number
-  slider_color?: CanvasColour
-  marker_color?: CanvasColour
-}
-
 export interface IWidgetGradientSliderOptions extends IWidgetOptions<number[]> {
   min: number
   max: number
   step2: number
   gradient_stops?: ColorStop[]
-}
-
-interface IWidgetKnobOptions extends IWidgetOptions<number[]> {
-  min: number
-  max: number
-  step2: number
-  slider_color?: CanvasColour // TODO: Replace with knob color
-  marker_color?: CanvasColour
-  gradient_stops?: string
 }
 
 export interface IWidgetAssetOptions extends IWidgetOptions {
@@ -202,11 +219,6 @@ export interface IStringComboWidget extends IBaseWidget<
   value: string
 }
 
-type ComboWidgetValues =
-  | string[]
-  | Record<string, string>
-  | ((widget?: IComboWidget, node?: LGraphNode) => string[])
-
 /** A combo-box widget (dropdown, select, etc) */
 export interface IComboWidget extends IBaseWidget<
   string | number,
@@ -236,12 +248,6 @@ export interface IButtonWidget extends IBaseWidget<
   clicked: boolean
 }
 
-/** A custom widget - accepts any value and has no built-in special handling */
-interface ICustomWidget extends IBaseWidget<string | object, 'custom'> {
-  type: 'custom'
-  value: string | object
-}
-
 /** File upload widget for selecting and uploading files */
 export interface IFileUploadWidget extends IBaseWidget<string, 'fileupload'> {
   type: 'fileupload'
@@ -258,12 +264,6 @@ export interface IColorWidget extends IBaseWidget<string, 'color'> {
 /** Markdown widget for displaying formatted text */
 export interface IMarkdownWidget extends IBaseWidget<string, 'markdown'> {
   type: 'markdown'
-  value: string
-}
-
-/** Image display widget */
-interface IImageWidget extends IBaseWidget<string, 'image'> {
-  type: 'image'
   value: string
 }
 
@@ -431,14 +431,6 @@ export interface IVideoEditWidget extends IBaseWidget<
 export type TWidgetType = IWidget['type']
 export type TWidgetValue = IWidget['value']
 
-export function isWidgetValue(value: unknown): value is TWidgetValue {
-  if (value === undefined) return true
-  if (typeof value === 'string') return true
-  if (typeof value === 'number') return true
-  if (typeof value === 'boolean') return true
-  return value !== null && typeof value === 'object'
-}
-
 /**
  * The base type for all widgets.  Should not be implemented directly.
  * @template TValue The type of value this widget holds.
@@ -605,4 +597,12 @@ export interface IBaseWidget<
     node: LGraphNode,
     canvas: LGraphCanvas
   ): boolean
+}
+
+export function isWidgetValue(value: unknown): value is TWidgetValue {
+  if (value === undefined) return true
+  if (typeof value === 'string') return true
+  if (typeof value === 'number') return true
+  if (typeof value === 'boolean') return true
+  return value !== null && typeof value === 'object'
 }

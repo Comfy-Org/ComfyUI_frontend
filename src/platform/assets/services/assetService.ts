@@ -32,20 +32,6 @@ import { api } from '@/scripts/api'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 
-export interface PaginationOptions {
-  limit?: number
-  offset?: number
-}
-
-export interface AssetPaginationOptions extends PaginationOptions {
-  /**
-   * Opaque keyset cursor from a prior response's `next_cursor`. When set, the
-   * server resumes after that cursor and `offset` is ignored.
-   */
-  after?: string
-  signal?: AbortSignal
-}
-
 interface AssetRequestOptions extends PaginationOptions {
   includeTags: string[]
   excludeTags?: string[]
@@ -184,6 +170,20 @@ function getLocalizedErrorMessage(errorCode: string): string {
     st('assetBrowser.errorUnknown', 'Unknown error') ||
     'Unknown error'
   )
+}
+
+export interface PaginationOptions {
+  limit?: number
+  offset?: number
+}
+
+export interface AssetPaginationOptions extends PaginationOptions {
+  /**
+   * Opaque keyset cursor from a prior response's `next_cursor`. When set, the
+   * server resumes after that cursor and `offset` is ignored.
+   */
+  after?: string
+  signal?: AbortSignal
 }
 
 const ASSETS_ENDPOINT = '/assets'

@@ -35,17 +35,17 @@ import type {
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
 
+enum IoDirection {
+  INPUT,
+  OUTPUT
+}
+
 interface BadLinksData<T = ISerialisedGraph | LGraph> {
   hasBadLinks: boolean
   fixed: boolean
   graph: T
   patched: number
   deleted: number
-}
-
-enum IoDirection {
-  INPUT,
-  OUTPUT
 }
 
 function getNodeById(graph: ISerialisedGraph | LGraph, id: SerializedNodeId) {
