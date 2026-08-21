@@ -8,19 +8,6 @@ import type {
 } from '@/lib/litegraph/src/interfaces'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 
-/**
- * Regression cover for #15485's sibling, #15501.
- *
- * ECS moved link ownership into the link store, so `input.link = null` and
- * removals from `output.links` became writes to a derived mirror and stopped
- * changing topology — legacy disconnects broke ecosystem-wide. The shim routes
- * those removals back through the store's topology commands.
- *
- * Only the removal direction is shimmed. The creation direction and
- * plain-object slots remain open; they are recorded below as `it.fails` on the
- * behaviour we want, so closing the gap turns them red rather than pinning
- * today's wrong answer.
- */
 
 function connectedPair() {
   const graph = new LGraph()
