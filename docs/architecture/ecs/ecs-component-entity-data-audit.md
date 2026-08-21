@@ -236,8 +236,8 @@ sequence above rather than the summary-table order.
 | 5        | Widget and preview-exposure cleanup | Complete    | `ecd148fa0` | Node removal, replacement, teardown, and failed configure clear node-owned store records.        |
 | 6        | Graph metadata                      | Complete    | `298bf3da0` | Revision, config, and extra now use graph-keyed store records behind compatibility accessors.    |
 | 7        | Entity ID allocation                | Complete    | `7fbd10624` | Root-keyed allocation state now backs graph accessors; clipboard allocation uses shared helpers. |
-| 8        | Graph and subgraph definitions      | Complete    | This commit | Root-scoped records now own ordered membership, the registry, and subgraph definition metadata.  |
-| 9        | Legacy node geometry projection     | Not started |             |                                                                                                  |
+| 8        | Graph and subgraph definitions      | Complete    | `8923225fb` | Root-scoped records now own ordered membership, the registry, and subgraph definition metadata.  |
+| 9        | Legacy node geometry projection     | Complete    | This commit | The layout adapter now owns stable legacy views, synchronization, and geometry write-through.    |
 | 10       | Plain slot descriptors              | Not started |             |                                                                                                  |
 | 11       | Group presentation                  | Not started |             |                                                                                                  |
 | 12       | Link non-topological state          | Not started |             |                                                                                                  |
