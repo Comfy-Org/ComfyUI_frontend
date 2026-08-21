@@ -26,12 +26,17 @@
 
     <!-- Workspace Selector -->
     <div v-if="!accountActionsOnly" class="relative">
-      <div
+      <button
         ref="workspaceSwitcherTrigger"
         v-tooltip="{ value: workspaceName, showDelay: 300 }"
-        class="flex cursor-pointer items-center justify-between rounded-lg px-4 py-2 hover:bg-secondary-background-hover"
+        type="button"
+        class="flex w-full cursor-pointer items-center justify-between rounded-lg px-4 py-2 hover:bg-secondary-background-hover"
+        :aria-expanded="isWorkspaceSwitcherOpen"
+        aria-haspopup="menu"
+        aria-controls="workspace-switcher-panel"
         data-testid="workspace-switcher-trigger"
         @click="toggleWorkspaceSwitcher"
+        @keydown.escape.stop="isWorkspaceSwitcherOpen = false"
       >
         <div class="flex w-0 flex-1 items-center gap-2">
           <WorkspaceProfilePic
@@ -43,11 +48,13 @@
           </span>
         </div>
         <i class="pi pi-chevron-down shrink-0 text-sm text-muted-foreground" />
-      </div>
+      </button>
 
       <div
         v-if="isWorkspaceSwitcherOpen"
+        id="workspace-switcher-panel"
         ref="workspaceSwitcherPanel"
+        role="menu"
         class="absolute top-0 right-full z-10 mr-4 rounded-lg border border-border-default bg-base-background shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
         data-testid="workspace-switcher-panel"
       >
