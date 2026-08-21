@@ -375,12 +375,18 @@ describe('useAgentSession (v1 composition root)', () => {
   })
 
   it('(d) stopTurn cancels the active turn; a 409 is swallowed and the socket settles it', async () => {
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
+      .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-2' })
     const cancelMessage = vi
       .fn<
         (threadId: string, messageId: string) => Promise<AgentCancelAccepted>
       >()
       .mockRejectedValue(new AgentApiError('already done', 409, undefined))
-    const rest = fakeRest({ cancelMessage })
+    const rest = fakeRest({ cancelMessage, postMessage })
     const { source, emit } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
     session.start()
@@ -400,6 +406,14 @@ describe('useAgentSession (v1 composition root)', () => {
     emit(done('msg-1'))
     expect(session.isStreaming.value).toBe(false)
     expect(session.editableTurnId.value).toBe('msg-1')
+
+    await session.sendMessage('go revised')
+    expect(session.editableTurnId.value).toBeNull()
+    expect(
+      session.entries.value
+        .filter((entry) => entry.role === 'user')
+        .map((entry) => entry.text)
+    ).toEqual(['go', 'go revised'])
 
     session.newChat()
     expect(session.editableTurnId.value).toBeNull()
