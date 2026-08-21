@@ -1,4 +1,5 @@
 import { execSync, spawnSync } from 'node:child_process'
+import { isAbsolute, relative } from 'node:path'
 import { pass, fail, warn, info } from '../ui/logger'
 
 const DEFAULT_BASE_BRANCH = 'main'
@@ -55,12 +56,11 @@ function extractLintStagedSummary(stderr: string): string | undefined {
   return stderr.slice(start, end === -1 ? undefined : end).trim()
 }
 
-function explainCommitFailure(stderr: string): string {
+function explainCommitFailure(stderr: string, testFilePath: string): string {
   const lintSummary = extractLintStagedSummary(stderr)
   if (!lintSummary) return stderr
 
-  const missingAssertion = /expect-expect/.test(lintSummary)
-  if (missingAssertion) {
+  if (/expect-expect/.test(lintSummary)) {
     return [
       'The pre-commit checks caught a test with no assertions.',
       '',
@@ -71,6 +71,44 @@ function explainCommitFailure(stderr: string): string {
       'committing. For example:',
       '',
       "  await expect(comfyPage.page.getByText('Queue')).toBeVisible()",
+      '',
+      lintSummary
+    ].join('\n')
+  }
+
+  // vue-tsc type-checks the whole browser_tests/ project, not just the
+  // staged file, so a TS error can point at a completely different file —
+  // most often a leftover from an earlier recording session.
+  const tsErrorMatch = lintSummary.match(
+    /(browser_tests\/[^\s(]+)\((\d+),\d+\): error TS\d+: (.+)/
+  )
+  if (tsErrorMatch) {
+    const [, brokenFile, line, message] = tsErrorMatch
+    const isOtherFile = !testFilePath.endsWith(brokenFile.split('/').pop()!)
+    const heading = isOtherFile
+      ? [
+          'A DIFFERENT file has a type error and is blocking this commit —',
+          'not the test you just recorded:'
+        ]
+      : ['Your recorded test has a type error:']
+    const fix = isOtherFile
+      ? [
+          'This looks like a leftover file from an earlier recording',
+          "session. If it's not something you meant to keep:",
+          '',
+          `  rm ${brokenFile}`,
+          '',
+          'Then re-run `comfy-test pr` to try again.'
+        ]
+      : ['Fix the error above, then re-run `comfy-test pr`.']
+
+    return [
+      ...heading,
+      '',
+      `  ${brokenFile}:${line}`,
+      `  ${message}`,
+      '',
+      ...fix,
       '',
       lintSummary
     ].join('\n')
@@ -118,6 +156,13 @@ export async function createPr(options: PrOptions): Promise<PrResult> {
 
   // Pinned to the repo, not to wherever the shell is sitting.
   const run = options.run ?? spawnSyncRunner(options.cwd)
+
+  // Pathspec negation only matches reliably against a repo-relative path —
+  // an absolute path sails past ':!<path>' and gets swept in regardless.
+  const relativeTestFilePath =
+    isAbsolute(options.testFilePath) && options.cwd
+      ? relative(options.cwd, options.testFilePath).split('\\').join('/')
+      : options.testFilePath
 
   // The branch is cut from HEAD, so anything already there rides along.
   const ahead = run('git', ['rev-list', '--count', `${DEFAULT_BASE_REF}..HEAD`])
@@ -171,6 +216,31 @@ export async function createPr(options: PrOptions): Promise<PrResult> {
     return { success: false, error: add.stderr.trim() }
   }
 
+  // vue-tsc's pre-commit typecheck covers the whole browser_tests/ project,
+  // not just what's staged — a stray broken file left over from an earlier
+  // recording session fails everyone's commit, not just theirs. Stashing
+  // every other change out of the way means the typecheck only ever sees
+  // the file actually being committed.
+  const stash = run('git', [
+    'stash',
+    'push',
+    '--include-untracked',
+    '--',
+    '.',
+    `:!${relativeTestFilePath}`
+  ])
+  const stashed = stash.status === 0 && !/No local changes/.test(stash.stdout)
+  const restoreStashed = () => {
+    if (!stashed) return
+    const pop = run('git', ['stash', 'pop'])
+    if (pop.status !== 0) {
+      fail(
+        'Could not restore your other unstaged changes automatically',
+        'Run `git stash pop` manually to get them back.'
+      )
+    }
+  }
+
   // Pathspec-scoped so already-staged changes are not swept in.
   const commit = run('git', [
     'commit',
@@ -181,7 +251,11 @@ export async function createPr(options: PrOptions): Promise<PrResult> {
   ])
   if (commit.status !== 0) {
     const stderr = commit.stderr.trim()
-    fail('Git commit failed', explainCommitFailure(stderr))
+    fail(
+      'Git commit failed',
+      explainCommitFailure(stderr, options.testFilePath)
+    )
+    restoreStashed()
     abandonBranch()
     info([
       `You're back on ${originalBranch || 'your original branch'}; the`,
@@ -190,6 +264,7 @@ export async function createPr(options: PrOptions): Promise<PrResult> {
     ])
     return { success: false, error: stderr }
   }
+  restoreStashed()
   pass('Committed test file')
 
   const push = run('git', ['push', '-u', 'origin', branchName])

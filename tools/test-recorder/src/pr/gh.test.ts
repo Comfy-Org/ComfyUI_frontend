@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { MockInstance } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createPr } from './gh'
 
@@ -6,6 +7,7 @@ const runMock = vi.fn()
 
 const ok = (stdout = '') => ({ status: 0, stdout, stderr: '' })
 const failure = (stderr: string, status = 1) => ({ status, stdout: '', stderr })
+const noStashNeeded = () => ok('No local changes to save')
 
 const LINT_STAGED_MISSING_ASSERTION = [
   '✖ pnpm exec oxlint --type-aware --fix "browser_tests/tests/foo.spec.ts":',
@@ -17,9 +19,28 @@ const LINT_STAGED_MISSING_ASSERTION = [
   'husky - pre-commit script failed (code 1)'
 ].join('\n')
 
+const LINT_STAGED_TS_ERROR_OTHER_FILE = [
+  '✖ pnpm typecheck:browser:',
+  '$ vue-tsc --project browser_tests/tsconfig.json',
+  "browser_tests/tests/stray.spec.ts(3,18): error TS6133: 'expect' is declared but its value is never read.",
+  '[ELIFECYCLE] Command failed with exit code 2.',
+  'husky - pre-commit script failed (code 1)'
+].join('\n')
+
 describe('createPr', () => {
+  let consoleLines: string[]
+  let log: MockInstance
+
   beforeEach(() => {
     runMock.mockReset()
+    consoleLines = []
+    log = vi.spyOn(console, 'log').mockImplementation((value?: unknown) => {
+      consoleLines.push(String(value ?? ''))
+    })
+  })
+
+  afterEach(() => {
+    log.mockRestore()
   })
 
   it('checks out the original branch and deletes the new one when commit fails', async () => {
@@ -29,6 +50,7 @@ describe('createPr', () => {
       if (sub === 'rev-parse') return ok('main')
       if (sub === 'checkout' && args[1] === '-b') return ok()
       if (sub === 'add') return ok()
+      if (sub === 'stash') return noStashNeeded()
       if (sub === 'commit') return failure(LINT_STAGED_MISSING_ASSERTION)
       if (sub === 'checkout') return ok() // back to original branch
       if (sub === 'branch') return ok() // -D new branch
@@ -55,6 +77,7 @@ describe('createPr', () => {
       if (sub === 'rev-parse') return ok('main')
       if (sub === 'checkout') return ok()
       if (sub === 'add') return ok()
+      if (sub === 'stash') return noStashNeeded()
       if (sub === 'commit') return failure(LINT_STAGED_MISSING_ASSERTION)
       if (sub === 'branch') return ok()
       throw new Error(`unexpected git ${args.join(' ')}`)
@@ -69,6 +92,122 @@ describe('createPr', () => {
 
     expect(result.success).toBe(false)
     expect(result.error).toContain('expect-expect')
+  })
+
+  it('names the actual broken file when vue-tsc fails on something else entirely', async () => {
+    runMock.mockImplementation((_cmd: string, args: string[]) => {
+      const [sub] = args
+      if (sub === 'rev-list') return ok('0')
+      if (sub === 'rev-parse') return ok('main')
+      if (sub === 'checkout') return ok()
+      if (sub === 'add') return ok()
+      if (sub === 'stash') return noStashNeeded()
+      if (sub === 'commit') return failure(LINT_STAGED_TS_ERROR_OTHER_FILE)
+      if (sub === 'branch') return ok()
+      throw new Error(`unexpected git ${args.join(' ')}`)
+    })
+
+    const result = await createPr({
+      testFilePath: 'browser_tests/tests/foo.spec.ts',
+      testName: 'foo',
+      description: 'desc',
+      run: runMock
+    })
+
+    expect(result.success).toBe(false)
+    const explained = consoleLines.join('\n')
+    expect(explained).toContain('A DIFFERENT file has a type error')
+    expect(explained).toContain('browser_tests/tests/stray.spec.ts')
+    expect(explained).toContain('rm browser_tests/tests/stray.spec.ts')
+  })
+
+  it('stashes other changes before committing and restores them after', async () => {
+    const calls: string[] = []
+    runMock.mockImplementation((cmd: string, args: string[]) => {
+      calls.push(args.join(' '))
+      if (cmd === 'gh') return ok('https://github.com/org/repo/pull/1')
+      const [sub] = args
+      if (sub === 'rev-list') return ok('0')
+      if (sub === 'rev-parse') return ok('main')
+      if (sub === 'checkout') return ok()
+      if (sub === 'add') return ok()
+      if (sub === 'stash' && args[1] === 'push')
+        return ok('Saved working directory')
+      if (sub === 'stash' && args[1] === 'pop') return ok()
+      if (sub === 'commit') return ok()
+      if (sub === 'push') return ok()
+      throw new Error(`unexpected git ${args.join(' ')}`)
+    })
+
+    await createPr({
+      testFilePath: 'browser_tests/tests/foo.spec.ts',
+      testName: 'foo',
+      description: 'desc',
+      cwd: '/repo',
+      run: runMock
+    })
+
+    const stashPushIndex = calls.findIndex((c) => c.startsWith('stash push'))
+    const commitIndex = calls.findIndex((c) => c.startsWith('commit'))
+    const stashPopIndex = calls.findIndex((c) => c.startsWith('stash pop'))
+    expect(stashPushIndex).toBeGreaterThan(-1)
+    expect(stashPushIndex).toBeLessThan(commitIndex)
+    expect(stashPopIndex).toBeGreaterThan(commitIndex)
+  })
+
+  it('does not attempt a stash pop when nothing was stashed', async () => {
+    const calls: string[] = []
+    runMock.mockImplementation((cmd: string, args: string[]) => {
+      calls.push(args.join(' '))
+      if (cmd === 'gh') return ok('https://github.com/org/repo/pull/1')
+      const [sub] = args
+      if (sub === 'rev-list') return ok('0')
+      if (sub === 'rev-parse') return ok('main')
+      if (sub === 'checkout') return ok()
+      if (sub === 'add') return ok()
+      if (sub === 'stash') return noStashNeeded()
+      if (sub === 'commit') return ok()
+      if (sub === 'push') return ok()
+      throw new Error(`unexpected git ${args.join(' ')}`)
+    })
+
+    await createPr({
+      testFilePath: 'browser_tests/tests/foo.spec.ts',
+      testName: 'foo',
+      description: 'desc',
+      run: runMock
+    })
+
+    expect(calls.some((c) => c.startsWith('stash pop'))).toBe(false)
+  })
+
+  it('excludes only the recorded file from the stash, by relative path', async () => {
+    const calls: string[] = []
+    runMock.mockImplementation((cmd: string, args: string[]) => {
+      calls.push(args.join(' '))
+      if (cmd === 'gh') return ok('https://github.com/org/repo/pull/1')
+      const [sub] = args
+      if (sub === 'rev-list') return ok('0')
+      if (sub === 'rev-parse') return ok('main')
+      if (sub === 'checkout') return ok()
+      if (sub === 'add') return ok()
+      if (sub === 'stash') return noStashNeeded()
+      if (sub === 'commit') return ok()
+      if (sub === 'push') return ok()
+      throw new Error(`unexpected git ${args.join(' ')}`)
+    })
+
+    await createPr({
+      testFilePath: '/repo/browser_tests/tests/foo.spec.ts',
+      testName: 'foo',
+      description: 'desc',
+      cwd: '/repo',
+      run: runMock
+    })
+
+    const stashPush = calls.find((c) => c.startsWith('stash push'))
+    expect(stashPush).toContain(':!browser_tests/tests/foo.spec.ts')
+    expect(stashPush).not.toContain('/repo/browser_tests')
   })
 
   it('does not touch branches when checkout itself fails', async () => {
@@ -100,6 +239,7 @@ describe('createPr', () => {
       if (sub === 'rev-parse') return ok('main')
       if (sub === 'checkout') return ok()
       if (sub === 'add') return ok()
+      if (sub === 'stash') return noStashNeeded()
       if (sub === 'commit') return ok()
       if (sub === 'push') return ok()
       throw new Error(`unexpected git ${args.join(' ')}`)

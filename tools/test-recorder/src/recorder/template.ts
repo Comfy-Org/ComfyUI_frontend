@@ -39,16 +39,24 @@ import {
 
 test(${safeName}, async ({ comfyPage }) => {
 ${workflowLine}
-  // ┌────────────────────────────────────────────────────────┐
-  // │ The Playwright Inspector will open.                     │
-  // │                                                         │
-  // │ 1. Click the Record button (red circle) to start        │
-  // │ 2. Perform your test actions in the browser             │
-  // │ 3. Use toolbar buttons to add assertions                │
-  // │ 4. Click Stop when done                                 │
-  // │ 5. Copy the generated code from the Inspector           │
-  // │ 6. Close the browser window                             │
-  // └────────────────────────────────────────────────────────┘
+  // The Playwright Inspector will open.
+  //
+  // 1. Click the Record button (red circle) to start
+  // 2. Perform your test actions in the browser
+  //
+  // 3. Add an assertion — this is required, not optional. An assertion
+  //    checks that something actually happened (a value changed, text
+  //    appeared, an element is visible); without one, the test can
+  //    "pass" even if the feature is broken. Click an element, then use
+  //    the Inspector's toolbar buttons:
+  //      "Assert visibility" — element is on screen
+  //      "Assert value"      — an input/widget holds a value
+  //      "Assert text"       — element contains specific text
+  //    Add at least one before stopping.
+  //
+  // 4. Click Stop when done
+  // 5. Copy the generated code from the Inspector
+  // 6. Close the browser window
   await comfyPage.page.pause()
 })
 `
