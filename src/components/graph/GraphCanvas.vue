@@ -65,6 +65,7 @@
   <!-- TransformPane for Vue node rendering -->
   <TransformPane
     v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
+    ref="transformPaneRef"
     :canvas="comfyApp.canvas"
     @wheel.capture="canvasInteractions.forwardEventToCanvas"
     @pointerdown.capture="forwardPointerDownPanEvent"
@@ -72,18 +73,33 @@
     @pointermove.capture="forwardPointerMovePanEvent"
     @keydown.space="forwardSpaceKeyEvent"
   >
-    <!-- Vue nodes rendered based on graph nodes -->
-    <LGraphNode
-      v-for="nodeData in allNodes"
-      :key="nodeData.id"
-      :node-data="nodeData"
-      :error="
-        executionErrorStore.lastExecutionErrorNodeId === nodeData.id
-          ? 'Execution error'
-          : null
-      "
-      :data-node-id="nodeData.id"
-    />
+    <template v-if="keepCulledNodesAlive">
+      <KeepAlive v-for="nodeData in rawNodes" :key="nodeData.id">
+        <LGraphNode
+          v-if="mountedNodeIds.has(nodeData.id)"
+          :node-data="nodeData"
+          :error="
+            executionErrorStore.lastExecutionErrorNodeId === nodeData.id
+              ? 'Execution error'
+              : null
+          "
+          :data-node-id="nodeData.id"
+        />
+      </KeepAlive>
+    </template>
+    <template v-else>
+      <LGraphNode
+        v-for="nodeData in visibleNodes"
+        :key="nodeData.id"
+        :node-data="nodeData"
+        :error="
+          executionErrorStore.lastExecutionErrorNodeId === nodeData.id
+            ? 'Execution error'
+            : null
+        "
+        :data-node-id="nodeData.id"
+      />
+    </template>
   </TransformPane>
 
   <LinkOverlayCanvas
@@ -116,7 +132,7 @@
 </template>
 
 <script setup lang="ts">
-import { until, useEventListener } from '@vueuse/core'
+import { until, useElementSize, useEventListener } from '@vueuse/core'
 import {
   computed,
   nextTick,
@@ -159,6 +175,9 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useGroupContextMenu } from '@/composables/graph/useGroupContextMenu'
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import { findNodesOptedOutOfCulling } from '@/renderer/extensions/vueNodes/composables/liveNodeState'
+import { useViewportCulling } from '@/renderer/extensions/vueNodes/composables/useViewportCulling'
+import { useViewportCullingPins } from '@/renderer/extensions/vueNodes/composables/useViewportCullingPins'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
@@ -184,7 +203,11 @@ import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftT
 import { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
-import { requestSlotLayoutSyncForAllNodes } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
+import {
+  beginVueNodeSlotSync,
+  requestSlotLayoutSyncForAllNodes,
+  setExpectedRenderedNodeIds
+} from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { UnauthorizedError } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
@@ -213,6 +236,9 @@ const emit = defineEmits<{
   ready: []
 }>()
 const canvasRef = ref<HTMLCanvasElement | null>(null)
+const { width: canvasWidth, height: canvasHeight } = useElementSize(canvasRef)
+const transformPaneRef =
+  useTemplateRef<InstanceType<typeof TransformPane>>('transformPaneRef')
 const canvasPanelBoundsRef = useTemplateRef('canvasPanelBoundsRef')
 const nodeSearchboxPopoverRef = shallowRef<InstanceType<
   typeof NodeSearchboxPopover
@@ -293,8 +319,77 @@ watch(
   }
 )
 
-const allNodes = computed((): VueNodeData[] =>
+const rawNodes = computed((): VueNodeData[] =>
   Array.from(vueNodeLifecycle.nodeManager.value?.vueNodeData?.values() ?? [])
+)
+
+const keepCulledNodesAlive = computed(
+  () => !settingStore.get('Comfy.VueNodes.ViewportCulling')
+)
+
+const nodeMembership = computed(() =>
+  JSON.stringify(rawNodes.value.map((node) => node.id))
+)
+
+const nodesWithoutLayout = computed(() =>
+  rawNodes.value
+    .filter((node) => !layoutStore.getNodeLayoutRef(node.id).value)
+    .map((node) => node.id)
+)
+
+const nodesOptedOutOfCulling = computed(() =>
+  findNodesOptedOutOfCulling(rawNodes.value)
+)
+
+const { pinnedNodeIds, refreshLiveState } = useViewportCullingPins({
+  selectedNodeIds: computed(() => canvasStore.selectedNodeIds),
+  getRoot: () => transformPaneRef.value?.element ?? null,
+  getLinkConnector: () => comfyApp.canvas?.linkConnector
+})
+
+const { mountedNodeIds } = useViewportCulling({
+  nodes: rawNodes,
+  membership: nodeMembership,
+  queryNodesInBounds: (bounds) => {
+    const nodeIds = new Set(
+      layoutStore.queryNodesInBounds({
+        ...bounds,
+        height: bounds.height + LiteGraph.NODE_TITLE_HEIGHT
+      })
+    )
+    for (const nodeId of nodesWithoutLayout.value) nodeIds.add(nodeId)
+    return nodeIds
+  },
+  getViewportSize: () => {
+    return {
+      width: canvasWidth.value,
+      height: canvasHeight.value
+    }
+  },
+  getAlwaysMountedIds: () => nodesOptedOutOfCulling.value,
+  getPinnedIds: () => pinnedNodeIds.value,
+  onNodeGeometryChange: (callback) => layoutStore.onNodeGeometryChange(callback)
+})
+
+watch(
+  mountedNodeIds,
+  async () => {
+    await nextTick()
+    refreshLiveState()
+  },
+  { flush: 'post' }
+)
+
+watch(
+  [mountedNodeIds, nodeMembership],
+  () => {
+    setExpectedRenderedNodeIds(mountedNodeIds.value)
+  },
+  { immediate: true, flush: 'post' }
+)
+
+const visibleNodes = computed((): VueNodeData[] =>
+  rawNodes.value.filter((node) => mountedNodeIds.value.has(node.id))
 )
 watch(
   () => linearMode.value,
@@ -309,7 +404,10 @@ watch(
       requestSlotLayoutSyncForAllNodes()
     }
 
-    layoutStore.setPendingSlotSync(true)
+    beginVueNodeSlotSync()
+    setExpectedRenderedNodeIds(
+      new Set(visibleNodes.value.map((node) => node.id))
+    )
   }
 )
 

@@ -9,6 +9,9 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import { LLink } from '@/lib/litegraph/src/LLink'
+import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import type { SlotLayout } from '@/renderer/core/layout/types'
 import { toLinkId } from '@/types/linkId'
 import { createMockCanvas2DContext } from '@/utils/__tests__/litegraphTestUtils'
 
@@ -204,5 +207,78 @@ describe('drawConnections widget-input slot positioning', () => {
     expect(input.pos).toBeDefined()
     const offset = LiteGraph.NODE_SLOT_HEIGHT * 0.5
     expect(input.pos![1]).toBe(widget.y + offset)
+  })
+
+  it('draws a legacy link whose custom slot positions reach the viewport', () => {
+    const sourceNode = new LGraphNode('Source')
+    sourceNode.pos = [-5000, 100]
+    sourceNode.size = [150, 60]
+    sourceNode.addOutput('out', '*')
+    sourceNode.getOutputPos = vi.fn((): [number, number] => [100, 100])
+    graph.add(sourceNode)
+
+    const targetNode = new LGraphNode('Target')
+    targetNode.pos = [-4000, 100]
+    targetNode.size = [150, 60]
+    targetNode.addInput('in', '*')
+    targetNode.getInputPos = vi.fn((): [number, number] => [200, 100])
+    graph.add(targetNode)
+
+    createTestLink(graph, sourceNode, 0, targetNode, 0)
+    const renderLink = vi.spyOn(canvas, 'renderLink')
+
+    canvas.drawConnections(createMockCtx())
+
+    expect(renderLink).toHaveBeenCalled()
+  })
+
+  it('draws a Vue link whose measured slots reach outside node bounds', () => {
+    const sourceNode = new LGraphNode('Source')
+    sourceNode.pos = [-5000, 100]
+    sourceNode.size = [150, 60]
+    sourceNode.addOutput('out', '*')
+    graph.add(sourceNode)
+
+    const targetNode = new LGraphNode('Target')
+    targetNode.pos = [-4000, 100]
+    targetNode.size = [150, 60]
+    targetNode.addInput('in', '*')
+    graph.add(targetNode)
+
+    createTestLink(graph, sourceNode, 0, targetNode, 0)
+
+    const sourceKey = getSlotKey(sourceNode.id, 0, false)
+    const targetKey = getSlotKey(targetNode.id, 0, true)
+    const layouts = new Map([
+      [
+        sourceKey,
+        {
+          nodeId: sourceNode.id,
+          index: 0,
+          type: 'output',
+          position: { x: 100, y: 100 },
+          bounds: { x: 95, y: 95, width: 10, height: 10 }
+        } satisfies SlotLayout
+      ],
+      [
+        targetKey,
+        {
+          nodeId: targetNode.id,
+          index: 0,
+          type: 'input',
+          position: { x: 200, y: 100 },
+          bounds: { x: 195, y: 95, width: 10, height: 10 }
+        } satisfies SlotLayout
+      ]
+    ])
+    vi.mocked(layoutStore.getSlotLayout).mockImplementation(
+      (key) => layouts.get(key) ?? null
+    )
+    LiteGraph.vueNodesMode = true
+    const renderLink = vi.spyOn(canvas, 'renderLink')
+
+    canvas.drawConnections(createMockCtx())
+
+    expect(renderLink).toHaveBeenCalled()
   })
 })

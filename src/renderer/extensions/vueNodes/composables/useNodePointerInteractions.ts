@@ -169,7 +169,12 @@ export function useNodePointerInteractions(
   }
 
   function onPointercancel(event: PointerEvent) {
-    if (!layoutStore.isDraggingVueNodes.value) return
+    // Matches onPointerup: ownership is set on pointerdown, the global flag only
+    // once the move threshold is passed. Guarding on the global alone would let
+    // a cancel between the two leave this scope marked as owner with nothing
+    // left to clear it - pointercancel replaces pointerup - and a later dispose
+    // would then end whatever drag another node had since started.
+    if (!hasDraggingStarted && !layoutStore.isDraggingVueNodes.value) return
     safeDragEnd(event)
   }
 
@@ -183,11 +188,19 @@ export function useNodePointerInteractions(
     event.preventDefault()
     // Simply cleanup state without calling endDrag to avoid synthetic event creation
     cleanupDragState()
+    // Ownership ends with the drag. Leaving this set would let a later dispose
+    // of this scope clear a drag that another node has since started.
+    hasDraggingStarted = false
   }
 
-  // Cleanup on unmount to prevent resource leaks
+  // Cleanup on unmount to prevent resource leaks.
+  //
+  // Owner-scoped: isDraggingVueNodes is a module-global flag, and viewport
+  // culling unmounts nodes while a drag is in progress. An unconditional
+  // clear here would let any bystander node's unmount end another node's
+  // drag; hasDraggingStarted is true exactly while this node owns one.
   onScopeDispose(() => {
-    cleanupDragState()
+    if (hasDraggingStarted) cleanupDragState()
   })
 
   const pointerHandlers = {

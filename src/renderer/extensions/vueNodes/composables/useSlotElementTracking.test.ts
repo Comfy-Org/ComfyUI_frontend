@@ -2,6 +2,7 @@ import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import { defineComponent, nextTick, ref } from 'vue'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -12,13 +13,31 @@ import type { SlotLayout } from '@/renderer/core/layout/types'
 import { useNodeSlotRegistryStore } from '@/renderer/extensions/vueNodes/stores/nodeSlotRegistryStore'
 
 import {
+  beginVueNodeSlotSync,
+  isVueNodeSlotSyncPending,
+  setExpectedRenderedNodeIds,
   syncNodeSlotLayoutsFromDOM,
   flushScheduledSlotLayoutSync,
   requestSlotLayoutSyncForAllNodes,
   useSlotElementTracking
 } from './useSlotElementTracking'
+import * as slotTracking from './useSlotElementTracking'
 
-const mockGraph = vi.hoisted(() => ({ _nodes: [] as unknown[] }))
+interface MockGraphNode {
+  inputs?: Array<{
+    name: string
+    type: string
+    boundingRect: [number, number, number, number]
+    widget?: { name: string }
+  }>
+  outputs?: unknown[]
+  flags?: { collapsed?: boolean }
+}
+
+const mockGraph = vi.hoisted(() => ({
+  _nodes: [] as unknown[],
+  getNodeById: vi.fn((_nodeId: NodeId): MockGraphNode | undefined => undefined)
+}))
 const mockCanvasState = vi.hoisted(() => ({
   canvas: {} as object | null
 }))
@@ -179,6 +198,74 @@ describe('useSlotElementTracking', () => {
 
     // Should remain pending — waiting for Vue components to mount
     expect(layoutStore.pendingSlotSync).toBe(true)
+  })
+
+  it('completes only for a resolved empty rendered-node set', () => {
+    type BeginSync = () => void
+    type IsPending = () => boolean
+    type SetExpected = (nodeIds: ReadonlySet<NodeId> | null) => void
+
+    const beginCandidate = Reflect.get(slotTracking, 'beginVueNodeSlotSync')
+    const pendingCandidate = Reflect.get(
+      slotTracking,
+      'isVueNodeSlotSyncPending'
+    )
+    const expectedCandidate = Reflect.get(
+      slotTracking,
+      'setExpectedRenderedNodeIds'
+    )
+
+    expect(beginCandidate).toBeTypeOf('function')
+    expect(pendingCandidate).toBeTypeOf('function')
+    expect(expectedCandidate).toBeTypeOf('function')
+    if (
+      typeof beginCandidate !== 'function' ||
+      typeof pendingCandidate !== 'function' ||
+      typeof expectedCandidate !== 'function'
+    ) {
+      return
+    }
+
+    const beginSync = beginCandidate as BeginSync
+    const isPending = pendingCandidate as IsPending
+    const setExpected = expectedCandidate as SetExpected
+
+    beginSync()
+    setExpected(null)
+    flushScheduledSlotLayoutSync()
+    expect(isPending()).toBe(true)
+
+    setExpected(new Set())
+    flushScheduledSlotLayoutSync()
+    expect(isPending()).toBe(false)
+  })
+
+  it('does not wait for widget-backed inputs that Vue does not render', async () => {
+    mockGraph.getNodeById.mockReturnValue({
+      inputs: [
+        {
+          name: 'images',
+          type: 'IMAGE',
+          boundingRect: [0, 0, 0, 0]
+        },
+        {
+          name: 'filename_prefix',
+          type: 'STRING',
+          boundingRect: [0, 0, 0, 0],
+          widget: { name: 'filename_prefix' }
+        }
+      ],
+      outputs: [],
+      flags: {}
+    })
+    const { unmount } = await mountAndRegisterSlot('input')
+
+    beginVueNodeSlotSync()
+    setExpectedRenderedNodeIds(new Set([NODE_ID]))
+    flushScheduledSlotLayoutSync()
+
+    expect(isVueNodeSlotSyncPending()).toBe(false)
+    unmount()
   })
 
   it('keeps pendingSlotSync when all registered slots are hidden', () => {

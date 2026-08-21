@@ -1,0 +1,612 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, effectScope, nextTick, reactive, ref, watch } from 'vue'
+import type { Ref } from 'vue'
+
+import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import {
+  getCullingBounds,
+  useViewportCulling
+} from '@/renderer/extensions/vueNodes/composables/useViewportCulling'
+import type { Bounds, NodeId } from '@/renderer/core/layout/types'
+import { boundsIntersect } from '@/renderer/core/layout/utils/layoutMath'
+
+const camera = reactive({ x: 0, y: 0, z: 1 })
+
+vi.mock('@/renderer/core/layout/transform/useTransformState', () => ({
+  useTransformState: () => ({ camera })
+}))
+
+function nodeData(id: string): VueNodeData {
+  return {
+    id: id as NodeId,
+    title: id,
+    type: 'test',
+    mode: 0,
+    selected: false,
+    executing: false
+  }
+}
+
+const VIEWPORT = { width: 1000, height: 1000 }
+
+const activeScopes: ReturnType<typeof effectScope>[] = []
+
+/** Runs the culling composable inside a scope and exposes its reactive result. */
+function setup(
+  bounds: Record<string, Bounds | null>,
+  pinned: Ref<ReadonlySet<NodeId>> = ref(new Set())
+) {
+  const nodes = ref(Object.keys(bounds).map(nodeData))
+  const scope = effectScope()
+  activeScopes.push(scope)
+
+  // Plain scan stands in for the spatial index; the index has its own tests.
+  const queryNodesInBounds = (rect: Bounds) =>
+    nodes.value
+      .map((node) => node.id)
+      .filter((id) => {
+        const nodeBounds = bounds[id]
+        return !nodeBounds || boundsIntersect(nodeBounds, rect)
+      })
+
+  const mountedNodeIds = scope.run(
+    () =>
+      useViewportCulling({
+        nodes: computed(() => nodes.value),
+        queryNodesInBounds,
+        getViewportSize: () => VIEWPORT,
+        minNodesForCulling: 0,
+        getPinnedIds: () => pinned.value
+      }).mountedNodeIds
+  )!
+
+  return { nodes, mountedNodeIds, scope }
+}
+
+beforeEach(() => {
+  vi.useFakeTimers()
+  Object.assign(camera, { x: 0, y: 0, z: 1 })
+})
+
+afterEach(() => {
+  // Scopes hold watchers on the module-level shared camera; fake timers have
+  // no automatic restore.
+  for (const scope of activeScopes.splice(0)) scope.stop()
+  vi.useRealTimers()
+})
+
+describe('getCullingBounds', () => {
+  it('expands the viewport by the margin ratio in graph space', () => {
+    expect(getCullingBounds({ x: 0, y: 0, z: 1 }, VIEWPORT, 0.5)).toEqual({
+      x: -500,
+      y: -500,
+      width: 2000,
+      height: 2000
+    })
+  })
+
+  it('caps the margin in graph units when zoomed out', () => {
+    // At z=0.05 the ratio alone would add 10000 units of margin per edge.
+    const bounds = getCullingBounds({ x: 0, y: 0, z: 0.05 }, VIEWPORT, 0.5)
+
+    expect(bounds.x).toBe(-2000)
+    expect(bounds.width).toBe(VIEWPORT.width / 0.05 + 4000)
+  })
+
+  it('accounts for pan offset and zoom', () => {
+    // At z=2 the viewport covers half as much graph space.
+    expect(getCullingBounds({ x: -100, y: -50, z: 2 }, VIEWPORT, 0)).toEqual({
+      x: 100,
+      y: 50,
+      width: 500,
+      height: 500
+    })
+  })
+})
+
+describe('useViewportCulling', () => {
+  it('mounts only nodes intersecting the expanded viewport', () => {
+    const { mountedNodeIds } = setup({
+      onscreen: { x: 0, y: 0, width: 100, height: 100 },
+      // Inside the 0.5 margin band, so still mounted.
+      margin: { x: 1200, y: 0, width: 100, height: 100 },
+      offscreen: { x: 50_000, y: 0, width: 100, height: 100 }
+    })
+
+    expect(mountedNodeIds.value).toEqual(
+      new Set(['onscreen', 'margin'] as NodeId[])
+    )
+  })
+
+  it('retains a mounted pinned node when it leaves the viewport', async () => {
+    const pinned = ref<ReadonlySet<NodeId>>(new Set())
+    const { mountedNodeIds } = setup(
+      { dragged: { x: 100, y: 0, width: 100, height: 100 } },
+      pinned
+    )
+    expect(mountedNodeIds.value.has('dragged' as NodeId)).toBe(true)
+
+    // Pin (select) it, then pan far away: it must survive the prune.
+    pinned.value = new Set(['dragged' as NodeId])
+    camera.x = 50_000
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(600)
+
+    expect(mountedNodeIds.value.has('dragged' as NodeId)).toBe(true)
+  })
+
+  it('does not mount unmounted nodes just because they are pinned', async () => {
+    // Select-all pins every node; admission on pin would mount the graph.
+    const pinned = ref<ReadonlySet<NodeId>>(new Set(['far' as NodeId]))
+    const { mountedNodeIds } = setup(
+      {
+        near: { x: 0, y: 0, width: 100, height: 100 },
+        far: { x: 50_000, y: 0, width: 100, height: 100 }
+      },
+      pinned
+    )
+
+    await vi.advanceTimersByTimeAsync(600)
+    expect(mountedNodeIds.value.has('far' as NodeId)).toBe(false)
+  })
+
+  it('reacts when same-size pinned sets have colliding string hashes', async () => {
+    const pinned = ref<ReadonlySet<NodeId>>(new Set(['Aa' as NodeId]))
+    const { mountedNodeIds } = setup(
+      {
+        Aa: { x: 0, y: 0, width: 100, height: 100 },
+        BB: { x: 100, y: 0, width: 100, height: 100 }
+      },
+      pinned
+    )
+
+    camera.x = 50_000
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(600)
+    expect(mountedNodeIds.value).toEqual(new Set(['Aa' as NodeId]))
+
+    pinned.value = new Set(['BB' as NodeId])
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(600)
+
+    expect(mountedNodeIds.value.size).toBe(0)
+  })
+
+  it('holds the current set while the viewport is unmeasurable', async () => {
+    const nodes = ref([nodeData('a'), nodeData('b')])
+    const viewport = reactive({ width: 1000, height: 1000 })
+    const scope = effectScope()
+    activeScopes.push(scope)
+    const mountedNodeIds = scope.run(
+      () =>
+        useViewportCulling({
+          nodes: computed(() => nodes.value),
+          queryNodesInBounds: () => ['a' as NodeId],
+          getViewportSize: () => viewport,
+          minNodesForCulling: 0
+        }).mountedNodeIds
+    )!
+
+    await vi.advanceTimersByTimeAsync(600)
+    expect(mountedNodeIds.value).toEqual(new Set(['a' as NodeId]))
+
+    Object.assign(viewport, { width: 0, height: 0 })
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(600)
+
+    expect(mountedNodeIds.value).toEqual(new Set(['a' as NodeId]))
+  })
+
+  /** 600 nodes parked outside the initial viewport, brought in by panning. */
+  function offscreenGrid(count = 600) {
+    return Object.fromEntries(
+      Array.from({ length: count }, (_, i) => [
+        `n${i}`,
+        {
+          x: 10_000 + (i % 30) * 40,
+          y: Math.floor(i / 30) * 40,
+          width: 30,
+          height: 30
+        }
+      ])
+    )
+  }
+
+  it('paces a camera-driven fill-in across frames', async () => {
+    // Panning into a dense region is the case staging exists for: the nodes
+    // were always there, and arriving over a few frames is imperceptible.
+    const bounds = offscreenGrid()
+    const { mountedNodeIds } = setup(bounds)
+    expect(mountedNodeIds.value.size).toBe(0)
+
+    camera.x = -10_000
+    await nextTick()
+    // Literal bounds, not MOUNT_BATCH_PER_FRAME: comparing against the constant
+    // that produces the behaviour passes just as readily for a batch of 600,
+    // which is the shape this test exists to rule out.
+    expect(mountedNodeIds.value.size).toBeGreaterThan(0)
+    expect(mountedNodeIds.value.size).toBeLessThanOrEqual(16)
+
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(mountedNodeIds.value.size).toBe(600)
+  })
+
+  it('mounts nodes newly added to the graph without pacing', async () => {
+    // A paste is a direct user action awaiting feedback, and the set is
+    // already bounded by the viewport. Pacing it is what makes a large paste
+    // look like it is rendering one node at a time.
+    const bounds = Object.fromEntries(
+      Array.from({ length: 300 }, (_, i) => [
+        `n${i}`,
+        { x: (i % 20) * 40, y: Math.floor(i / 20) * 40, width: 30, height: 30 }
+      ])
+    )
+    const { mountedNodeIds } = setup(bounds)
+
+    expect(mountedNodeIds.value.size).toBe(300)
+  })
+
+  it('mounts every node when the graph is below the culling threshold', async () => {
+    // Ordinary workflows keep today's behaviour and take none of culling's
+    // interaction risk; culling only engages where it is actually needed.
+    const nodes = ref([nodeData('a'), nodeData('b')])
+    const scope = effectScope()
+    activeScopes.push(scope)
+    const mountedNodeIds = scope.run(
+      () =>
+        useViewportCulling({
+          nodes: computed(() => nodes.value),
+          // Would cull everything if the threshold did not short-circuit it.
+          queryNodesInBounds: () => [],
+          getViewportSize: () => VIEWPORT,
+          minNodesForCulling: 10
+        }).mountedNodeIds
+    )!
+
+    await vi.advanceTimersByTimeAsync(600)
+    expect(mountedNodeIds.value).toEqual(new Set(['a', 'b'] as NodeId[]))
+  })
+
+  it('mounts nodes that have no layout yet so they can measure themselves', () => {
+    const { mountedNodeIds } = setup({ unmeasured: null })
+
+    expect(mountedNodeIds.value.has('unmeasured' as NodeId)).toBe(true)
+  })
+
+  it('holds every node mounted while culling is disabled', async () => {
+    // The mounted set stays authoritative when the switch is off, rather than
+    // converging to empty. A caller filtering rendered nodes against it would
+    // otherwise blank the canvas the moment the switch is turned back on.
+    const enabled = ref(false)
+    const nodes = ref([nodeData('a'), nodeData('b')])
+    const scope = effectScope()
+    activeScopes.push(scope)
+    const mountedNodeIds = scope.run(
+      () =>
+        useViewportCulling({
+          nodes: computed(() => nodes.value),
+          // Culls everything, so an active gate would leave the set empty.
+          queryNodesInBounds: () => [],
+          getViewportSize: () => VIEWPORT,
+          minNodesForCulling: 0,
+          isEnabled: () => enabled.value
+        }).mountedNodeIds
+    )!
+
+    await vi.advanceTimersByTimeAsync(600)
+    expect(mountedNodeIds.value).toEqual(new Set(['a', 'b'] as NodeId[]))
+
+    enabled.value = true
+    await vi.advanceTimersByTimeAsync(600)
+    expect(mountedNodeIds.value.size).toBe(0)
+  })
+
+  it('keeps culling on when a node is deleted at the threshold', async () => {
+    // The gate swaps the whole mounted set rather than its edge, so flipping
+    // off at the boundary mounts everything that was culled in one frame -
+    // and undo/redo across the boundary repeats it.
+    const nodes = ref(Array.from({ length: 10 }, (_, i) => nodeData(`n${i}`)))
+    const scope = effectScope()
+    activeScopes.push(scope)
+    const mountedNodeIds = scope.run(
+      () =>
+        useViewportCulling({
+          nodes: computed(() => nodes.value),
+          // Culls everything, so an active gate leaves the set empty and an
+          // inactive one mounts all of them.
+          queryNodesInBounds: () => [],
+          getViewportSize: () => VIEWPORT,
+          minNodesForCulling: 10
+        }).mountedNodeIds
+    )!
+
+    await vi.advanceTimersByTimeAsync(600)
+    expect(mountedNodeIds.value.size).toBe(0)
+
+    nodes.value = nodes.value.slice(0, 9)
+    await vi.advanceTimersByTimeAsync(600)
+
+    expect(mountedNodeIds.value.size).toBe(0)
+  })
+
+  it('mounts entering nodes immediately but delays unmounting departing ones', async () => {
+    const { mountedNodeIds } = setup({
+      left: { x: -3000, y: 0, width: 100, height: 100 },
+      right: { x: 1000, y: 0, width: 100, height: 100 }
+    })
+
+    expect(mountedNodeIds.value).toEqual(new Set(['right'] as NodeId[]))
+
+    // Pan left so `left` enters and `right` leaves.
+    camera.x = 3000
+    await nextTick()
+
+    // Entering node is mounted right away; departing node lingers.
+    expect(mountedNodeIds.value).toEqual(new Set(['left', 'right'] as NodeId[]))
+
+    await vi.advanceTimersByTimeAsync(300)
+    expect(mountedNodeIds.value).toEqual(new Set(['left'] as NodeId[]))
+  })
+
+  it('does not accumulate nodes during a long continuous pan', async () => {
+    // A row of nodes the viewport sweeps across without ever pausing.
+    const NODE_COUNT = 60
+    const bounds = Object.fromEntries(
+      Array.from({ length: NODE_COUNT }, (_, i) => [
+        `n${i}`,
+        { x: i * 4000, y: 0, width: 100, height: 100 }
+      ])
+    )
+    const { mountedNodeIds } = setup(bounds)
+
+    for (let step = 0; step < NODE_COUNT; step++) {
+      camera.x = -step * 4000
+      await nextTick()
+      // Stay under the unmount delay so the debounced prune never runs.
+      await vi.advanceTimersByTimeAsync(120)
+    }
+
+    // Without eager pruning the mounted set would cover every node the
+    // viewport swept over.
+    expect(mountedNodeIds.value.size).toBeLessThan(NODE_COUNT / 3)
+  })
+
+  it('does not flush the paced fill when a node entry is replaced cosmetically', async () => {
+    // rawNodes gets a new array identity whenever any entry is replaced -
+    // badges, progress and titles do this on every execution tick. Treating
+    // that as membership would cancel the paced fill and mount the whole
+    // entering set in one synchronous write, exactly while the graph is busy.
+    const bounds = offscreenGrid()
+    const { nodes, mountedNodeIds } = setup(bounds)
+
+    camera.x = -10_000
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(48)
+    const midFill = mountedNodeIds.value.size
+    expect(midFill).toBeGreaterThan(0)
+    expect(midFill).toBeLessThan(600)
+
+    // Same ids, new objects - a badge update, not a membership change.
+    nodes.value = nodes.value.map((node) => ({ ...node }))
+    await nextTick()
+
+    // No animation frames have run, so any growth here is the synchronous
+    // unpaced flush this test exists to rule out.
+    expect(mountedNodeIds.value.size).toBe(midFill)
+
+    // And the fill itself is undisturbed: it still completes.
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(mountedNodeIds.value.size).toBe(600)
+  })
+
+  it('raises the batch floor when a fill overruns, without losing the controller', async () => {
+    // The deadline's observable effect needs over-budget frames, which fake
+    // timers cannot produce against the 20ms production budget - frames arrive
+    // at a fixed 16ms. Injecting a 1ms budget makes every frame slow, so
+    // backpressure shrinks the batch to its floor and the deadline is the only
+    // thing that can raise it.
+    const bounds: Record<string, Bounds> = {}
+    for (let i = 0; i < 600; i++) {
+      bounds[`n${i}`] = {
+        x: 10_000 + (i % 30) * 40,
+        y: Math.floor(i / 30) * 40,
+        width: 30,
+        height: 30
+      }
+    }
+    const nodes = ref(Object.keys(bounds).map(nodeData))
+    const scope = effectScope()
+    activeScopes.push(scope)
+    const mountedNodeIds = scope.run(
+      () =>
+        useViewportCulling({
+          nodes: computed(() => nodes.value),
+          queryNodesInBounds: (rect) =>
+            nodes.value
+              .map((node) => node.id)
+              .filter((id) => boundsIntersect(bounds[id], rect)),
+          getViewportSize: () => VIEWPORT,
+          minNodesForCulling: 0,
+          mountFrameBudgetMs: 1
+        }).mountedNodeIds
+    )!
+
+    let biggestWrite = 0
+    let previous = new Set(mountedNodeIds.value)
+    scope.run(() =>
+      watch(
+        mountedNodeIds,
+        (next) => {
+          let added = 0
+          for (const id of next) if (!previous.has(id)) added++
+          biggestWrite = Math.max(biggestWrite, added)
+          previous = new Set(next)
+        },
+        { flush: 'sync' }
+      )
+    )
+
+    // A sustained pan: the camera nudges every 100ms, so the fill re-queues
+    // continuously and never completes - the shape where a per-queue deadline
+    // clock never elapses, and where a deadline that replaces the controller
+    // never hands control back.
+    const advance = async (ms: number) => {
+      for (let t = 0; t < ms; t += 100) {
+        camera.x -= 1
+        await nextTick()
+        await vi.advanceTimersByTimeAsync(100)
+      }
+    }
+
+    camera.x = -10_000
+    await nextTick()
+
+    // Pre-deadline window, including the initial burst.
+    await advance(500)
+    const preDeadline = mountedNodeIds.value.size
+    expect(preDeadline).toBeGreaterThan(0)
+    expect(preDeadline).toBeLessThan(600)
+
+    // Cross the 600ms deadline; the transition window is measured by neither
+    // side.
+    await advance(300)
+    const atTransition = mountedNodeIds.value.size
+    biggestWrite = 0
+
+    // Post-deadline window, 100ms shorter than the pre window.
+    await advance(400)
+    const mountedAfter = mountedNodeIds.value.size - atTransition
+    expect(mountedNodeIds.value.size).toBeLessThan(600)
+
+    // The floor rose, so the shorter window still mounts more than the longer
+    // pre-deadline one did even with its startup burst - the crawl ended...
+    expect(mountedAfter).toBeGreaterThan(preDeadline)
+    // ...and the controller stayed in circuit: every frame is over budget, so
+    // the batch keeps halving back to the raised floor rather than pinning at
+    // the ceiling. Literals on purpose - the overrun floor is 8, the ceiling
+    // 16, and a controller-dead deadline mounts 16 per write here.
+    expect(biggestWrite).toBeGreaterThan(0)
+    expect(biggestWrite).toBeLessThanOrEqual(8)
+  })
+
+  it('never admits more than one batch in a single write', async () => {
+    // The eager prune fires when the mounted set is much larger than what is
+    // visible, which on a fast pan means the set has rotated rather than
+    // shrunk. Committing the visible set wholesale then admits every arrival
+    // in one frame - the flush the paced queue exists to avoid.
+    //
+    // Both clusters are dense on purpose: the prune needs mounted > 2x visible
+    // to fire at all, and the destination needs enough nodes that a wholesale
+    // commit is visibly larger than one batch.
+    const bounds: Record<string, Bounds> = {}
+    for (let i = 0; i < 500; i++) {
+      bounds[`here${i}`] = {
+        x: (i % 25) * 40,
+        y: Math.floor(i / 25) * 40,
+        width: 20,
+        height: 20
+      }
+    }
+    for (let i = 0; i < 200; i++) {
+      bounds[`there${i}`] = {
+        x: 90_000 + (i % 20) * 40,
+        y: Math.floor(i / 20) * 40,
+        width: 20,
+        height: 20
+      }
+    }
+    const { mountedNodeIds, scope } = setup(bounds)
+
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(mountedNodeIds.value.size).toBeGreaterThan(400)
+
+    let biggestAdmission = 0
+    let previous = new Set(mountedNodeIds.value)
+    scope.run(() =>
+      watch(
+        mountedNodeIds,
+        (next) => {
+          let added = 0
+          for (const id of next) if (!previous.has(id)) added++
+          biggestAdmission = Math.max(biggestAdmission, added)
+          previous = new Set(next)
+        },
+        { flush: 'sync' }
+      )
+    )
+
+    camera.x = -90_000
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(3000)
+
+    // The destination did fill in...
+    expect(mountedNodeIds.value.size).toBeGreaterThan(100)
+    // ...but never more than a batch at a time.
+    expect(biggestAdmission).toBeGreaterThan(0)
+    expect(biggestAdmission).toBeLessThanOrEqual(16)
+  })
+
+  it('does not keep mounting nodes the camera has already left behind', async () => {
+    // A pan re-refreshes while the previous fill-in is still draining. The
+    // queued ids were computed for the old position, so they must be replaced
+    // rather than continuing to arrive alongside the new ones.
+    const COUNT = 600
+    const bounds = Object.fromEntries(
+      Array.from({ length: COUNT }, (_, i) => [
+        `n${i}`,
+        { x: (i % 30) * 40, y: Math.floor(i / 30) * 40, width: 30, height: 30 }
+      ])
+    )
+    const { mountedNodeIds } = setup(bounds)
+
+    // Clear the set first: setup mounts the whole graph through the membership
+    // watcher, so without this there is nothing left to enter.
+    camera.x = -60_000
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(600)
+    expect(mountedNodeIds.value.size).toBe(0)
+
+    // Pan back so all 600 are entering, and stop mid-fill. Asserting a partial
+    // baseline is the point: without it the whole test passes on 0 <= 0, which
+    // is what it did while the queue was never populated at all.
+    camera.x = 0
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(32)
+    const midDrain = mountedNodeIds.value.size
+    expect(midDrain).toBeGreaterThan(0)
+    expect(midDrain).toBeLessThan(COUNT)
+
+    // Pan far away, past the margin, and let the throttled refresh land. The
+    // eager prune drops everything, because nothing is in range any more.
+    camera.x = -60_000
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(150)
+    expect(mountedNodeIds.value.size).toBe(0)
+
+    // Then advance a single frame. A queue that survived the refresh drains
+    // back into the set here, and the debounced prune is 250ms away so nothing
+    // would take those ids out again. Comparing end states after 2000ms - as
+    // this test used to - cannot see that, because the prune eventually
+    // removes them either way.
+    await vi.advanceTimersByTimeAsync(32)
+    expect(mountedNodeIds.value.size).toBe(0)
+
+    await vi.advanceTimersByTimeAsync(2000)
+    expect(mountedNodeIds.value.size).toBe(0)
+  })
+
+  it('drops nodes removed from the graph', async () => {
+    const { nodes, mountedNodeIds } = setup({
+      a: { x: 0, y: 0, width: 100, height: 100 },
+      b: { x: 0, y: 0, width: 100, height: 100 }
+    })
+
+    expect(mountedNodeIds.value.size).toBe(2)
+
+    nodes.value = [nodeData('a')]
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(300)
+
+    expect(mountedNodeIds.value).toEqual(new Set(['a'] as NodeId[]))
+  })
+})

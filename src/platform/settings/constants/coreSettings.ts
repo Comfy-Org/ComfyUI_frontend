@@ -1207,6 +1207,18 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.27.1'
   },
   {
+    id: 'Comfy.VueNodes.ViewportCulling',
+    category: ['Comfy', 'Nodes 2.0', 'ViewportCulling'],
+    name: 'Unmount nodes outside the viewport',
+    type: 'boolean',
+    tooltip:
+      'Enabled: offscreen nodes are removed and recreated when they return, minimizing memory use. Disabled: offscreen nodes are still removed from the page, but their component state is preserved. Viewport virtualization remains active in both modes.',
+    defaultValue: false,
+    sortOrder: 101,
+    experimental: true,
+    versionAdded: '1.63.0'
+  },
+  {
     id: 'Comfy.AppBuilder.VueNodeSwitchDismissed',
     name: 'App Builder Vue Node switch dismissed',
     type: 'hidden',

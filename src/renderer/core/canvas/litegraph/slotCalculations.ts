@@ -192,6 +192,31 @@ export function getSlotPosition(
     : calculateOutputSlotPos(context, slotIndex)
 }
 
+export function isSlotPositionNodeContained(
+  node: LGraphNode,
+  slotIndex: number,
+  isInput: boolean
+): boolean {
+  if (!LiteGraph.vueNodesMode) return false
+
+  const slot = isInput ? node.inputs[slotIndex] : node.outputs[slotIndex]
+  if (!slot || slot.pos) return false
+
+  const slotLayout = layoutStore.getSlotLayout(
+    getSlotKey(node.id, slotIndex, isInput)
+  )
+  if (!slotLayout) return false
+
+  const [x, y, width, height] = node.boundingRect
+  const position = slotLayout.position
+  return (
+    position.x >= x &&
+    position.x <= x + width &&
+    position.y >= y &&
+    position.y <= y + height
+  )
+}
+
 /**
  * Get the inputs that are not positioned with absolute coordinates
  */

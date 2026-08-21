@@ -1,8 +1,8 @@
 import { setActivePinia } from 'pinia'
 import { fromAny } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { nextTick, ref } from 'vue'
+import { effectScope, nextTick, ref } from 'vue'
 
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
@@ -139,6 +139,85 @@ describe('useNodePointerInteractions', () => {
   beforeEach(async () => {
     selectedItemsState.items = []
     setActivePinia(createTestingPinia())
+  })
+
+  afterEach(() => {
+    fromAny<{ isDraggingVueNodes: { value: boolean } }, unknown>(
+      layoutStore
+    ).isDraggingVueNodes.value = false
+  })
+
+  it("a bystander unmount does not end another node's drag", () => {
+    // Viewport culling unmounts nodes mid-drag; only the node that started
+    // the drag may clear the global flag on dispose.
+    const store = fromAny<{ isDraggingVueNodes: { value: boolean } }, unknown>(
+      layoutStore
+    )
+
+    const bystander = effectScope()
+    bystander.run(() => useNodePointerInteractions(testNodeId))
+
+    store.isDraggingVueNodes.value = true
+    bystander.stop()
+    expect(store.isDraggingVueNodes.value).toBe(true)
+
+    // The owner disposing mid-drag still releases it.
+    const owner = effectScope()
+    const handlers = owner.run(() => useNodePointerInteractions(testNodeId))!
+    handlers.pointerHandlers.onPointerdown(
+      createPointerEvent('pointerdown', { button: 0 })
+    )
+    store.isDraggingVueNodes.value = true
+    owner.stop()
+    expect(store.isDraggingVueNodes.value).toBe(false)
+  })
+
+  it('cancelling via context menu also releases drag ownership', () => {
+    // Otherwise this scope still looks like the owner and a later dispose
+    // would clear whatever drag is active by then.
+    const store = fromAny<{ isDraggingVueNodes: { value: boolean } }, unknown>(
+      layoutStore
+    )
+
+    const scope = effectScope()
+    const handlers = scope.run(() => useNodePointerInteractions(testNodeId))!
+    handlers.pointerHandlers.onPointerdown(
+      createPointerEvent('pointerdown', { button: 0 })
+    )
+    store.isDraggingVueNodes.value = true
+    handlers.pointerHandlers.onContextmenu(createMouseEvent('contextmenu'))
+
+    // A different node now owns a drag.
+    store.isDraggingVueNodes.value = true
+    scope.stop()
+
+    expect(store.isDraggingVueNodes.value).toBe(true)
+  })
+
+  it('cancelling before the move threshold also releases drag ownership', () => {
+    // Ownership is set on pointerdown, the global flag only once the move
+    // threshold is passed. A cancel in between must still clear ownership,
+    // because pointercancel replaces pointerup so nothing else will.
+    const store = fromAny<{ isDraggingVueNodes: { value: boolean } }, unknown>(
+      layoutStore
+    )
+
+    const scope = effectScope()
+    const handlers = scope.run(() => useNodePointerInteractions(testNodeId))!
+    handlers.pointerHandlers.onPointerdown(
+      createPointerEvent('pointerdown', { button: 0 })
+    )
+    // No pointermove, so the threshold was never crossed.
+    expect(store.isDraggingVueNodes.value).toBe(false)
+    handlers.pointerHandlers.onPointercancel(
+      createPointerEvent('pointercancel', { button: 0 })
+    )
+
+    // A different node now owns a drag.
+    store.isDraggingVueNodes.value = true
+    scope.stop()
+
+    expect(store.isDraggingVueNodes.value).toBe(true)
   })
 
   it('should only start drag on left-click', async () => {
