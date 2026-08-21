@@ -1,8 +1,11 @@
 import { fromPartial } from '@total-typescript/shoehorn'
+import type * as VueUse from '@vueuse/core'
+import type * as Pinia from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import type { Ref } from 'vue'
 
+import { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { NodeLayout } from '@/renderer/core/layout/types'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
@@ -44,7 +47,8 @@ const testState = vi.hoisted(() => {
   }
 })
 
-vi.mock('pinia', () => ({
+vi.mock('pinia', async (importOriginal) => ({
+  ...(await importOriginal<typeof Pinia>()),
   storeToRefs: <T>(store: T) => store
 }))
 
@@ -110,11 +114,8 @@ vi.mock('@/renderer/core/layout/transform/useTransformState', () => ({
   })
 }))
 
-vi.mock('@/utils/litegraphUtil', () => ({
-  isLGraphGroup: () => false
-}))
-
-vi.mock('@vueuse/core', () => ({
+vi.mock('@vueuse/core', async (importOriginal) => ({
+  ...(await importOriginal<typeof VueUse>()),
   createSharedComposable: (fn: () => unknown) => fn,
   whenever: vi.fn()
 }))
@@ -135,17 +136,10 @@ describe('useNodeDrag', () => {
     testState.selectedNodeIds = ref(new Set<NodeId>())
     testState.selectedItems = ref<unknown[]>([])
     testState.nodeLayouts.clear()
-    testState.mutationFns.setSource.mockReset()
-    testState.mutationFns.moveNode.mockReset()
-    testState.mutationFns.batchMoveNodes.mockReset()
-    testState.batchUpdateNodeBounds.mockReset()
-    testState.nodeSnap.shouldSnap.mockReset()
     testState.nodeSnap.shouldSnap.mockReturnValue(false)
-    testState.nodeSnap.applySnapToPosition.mockReset()
     testState.nodeSnap.applySnapToPosition.mockImplementation(
       (pos: { x: number; y: number }) => pos
     )
-    testState.cancelAnimationFrame.mockReset()
     testState.requestAnimationFrameCallback = null
     testState.capturedOnPan.current = null
     testState.capturedAutoPanInstance.current = null
@@ -204,6 +198,28 @@ describe('useNodeDrag', () => {
     expect(testState.mutationFns.moveNode).not.toHaveBeenCalled()
   })
 
+  it('moves selected non-node items without moving selected LiteGraph nodes', () => {
+    const selectedNode = new LGraphNode('selected')
+    selectedNode.pos = [300, 400]
+    const selectedGroup = new LGraphGroup('selected')
+    selectedGroup.pos = [500, 600]
+    testState.selectedNodeIds.value = new Set([node1])
+    testState.selectedItems.value = [selectedNode, selectedGroup]
+    testState.nodeLayouts.set('1', {
+      position: { x: 100, y: 100 },
+      size: { width: 200, height: 120 }
+    })
+
+    const { startDrag, handleDrag } = useNodeDrag()
+
+    startDrag(pointerEvent(10, 20), node1)
+    handleDrag(pointerEvent(30, 50), node1)
+    testState.requestAnimationFrameCallback?.(0)
+
+    expect([...selectedNode.pos]).toEqual([300, 400])
+    expect([...selectedGroup.pos]).toEqual([520, 630])
+  })
+
   it('cancels pending RAF and applies snap updates on endDrag', () => {
     testState.selectedNodeIds.value = new Set([node1])
     testState.nodeLayouts.set('1', {
@@ -252,17 +268,10 @@ describe('useNodeDrag auto-pan', () => {
       position: { x: 300, y: 400 },
       size: { width: 200, height: 100 }
     })
-    testState.mutationFns.setSource.mockReset()
-    testState.mutationFns.moveNode.mockReset()
-    testState.mutationFns.batchMoveNodes.mockReset()
-    testState.batchUpdateNodeBounds.mockReset()
-    testState.nodeSnap.shouldSnap.mockReset()
     testState.nodeSnap.shouldSnap.mockReturnValue(false)
-    testState.nodeSnap.applySnapToPosition.mockReset()
     testState.nodeSnap.applySnapToPosition.mockImplementation(
       (pos: { x: number; y: number }) => pos
     )
-    testState.cancelAnimationFrame.mockReset()
     testState.requestAnimationFrameCallback = null
     testState.capturedOnPan.current = null
     testState.capturedAutoPanInstance.current = null

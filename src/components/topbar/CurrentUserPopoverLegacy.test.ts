@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, ref } from 'vue'
+import { h, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
@@ -62,10 +62,8 @@ function makeSubscription(
   }
 }
 
-const mockFetchStatus = vi.fn().mockResolvedValue(undefined)
 const mockFetchBalance = vi.fn().mockResolvedValue(undefined)
-const mockIsActiveSubscription = ref(true)
-const mockIsFreeTier = ref(false)
+const mockCanAccessSubscriptionFeatures = ref(true)
 const mockTier = ref<SubscriptionInfo['tier']>('CREATOR')
 const mockSubscription = ref<SubscriptionInfo | null>(makeSubscription())
 const mockBalance = ref<BalanceInfo | null>(null)
@@ -73,28 +71,14 @@ const mockIsLoading = ref(false)
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: vi.fn(() => ({
-    isActiveSubscription: mockIsActiveSubscription,
-    isFreeTier: mockIsFreeTier,
+    canAccessSubscriptionFeatures: mockCanAccessSubscriptionFeatures,
     tier: mockTier,
     subscription: mockSubscription,
     balance: mockBalance,
     isLoading: mockIsLoading,
-    fetchStatus: mockFetchStatus,
     fetchBalance: mockFetchBalance
   }))
 }))
-
-const mockShowPricingTable = vi.fn()
-vi.mock(
-  '@/platform/cloud/subscription/composables/useSubscriptionDialog',
-  () => ({
-    useSubscriptionDialog: vi.fn(() => ({
-      show: vi.fn(),
-      showPricingTable: mockShowPricingTable,
-      hide: vi.fn()
-    }))
-  })
-)
 
 vi.mock('@/components/common/UserAvatar.vue', () => ({
   default: {
@@ -124,37 +108,9 @@ vi.mock('@/platform/telemetry', () => ({
   }))
 }))
 
-const mockIsCloud = vi.hoisted(() => ({ value: true }))
-vi.mock('@/platform/distribution/types', () => ({
-  get isCloud() {
-    return mockIsCloud.value
-  }
-}))
-
-vi.mock('@/platform/cloud/subscription/components/SubscribeButton.vue', () => ({
-  default: defineComponent({
-    name: 'SubscribeButtonMock',
-    emits: ['subscribed'],
-    setup(_, { emit }) {
-      return () =>
-        h(
-          'button',
-          {
-            'data-testid': 'subscribe-button-mock',
-            onClick: () => emit('subscribed')
-          },
-          'Subscribe Button'
-        )
-    }
-  })
-}))
-
 describe('CurrentUserPopoverLegacy', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    mockIsCloud.value = true
-    mockIsActiveSubscription.value = true
-    mockIsFreeTier.value = false
+    mockCanAccessSubscriptionFeatures.value = true
     mockTier.value = 'CREATOR'
     mockSubscription.value = makeSubscription()
     mockBalance.value = {
@@ -200,15 +156,6 @@ describe('CurrentUserPopoverLegacy', () => {
     renderComponent()
 
     expect(mockFetchBalance).toHaveBeenCalled()
-  })
-
-  it('refreshes subscription status through the billing facade after subscribing', async () => {
-    mockIsActiveSubscription.value = false
-    const { user } = renderComponent()
-
-    await user.click(screen.getByTestId('subscribe-button-mock'))
-
-    expect(mockFetchStatus).toHaveBeenCalled()
   })
 
   describe('subscription tier badge', () => {
@@ -327,14 +274,15 @@ describe('CurrentUserPopoverLegacy', () => {
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 
-  it('opens subscription dialog and emits close event when plans & pricing item is clicked', async () => {
+  it('opens credits settings from the legacy account menu', async () => {
     const { user, onClose } = renderComponent()
 
-    expect(screen.getByTestId('plans-pricing-menu-item')).toBeInTheDocument()
+    const menuItem = screen.getByTestId('manage-plan-menu-item')
+    expect(menuItem).toHaveTextContent(enMessages.credits.credits)
 
-    await user.click(screen.getByTestId('plans-pricing-menu-item'))
+    await user.click(menuItem)
 
-    expect(mockShowPricingTable).toHaveBeenCalled()
+    expect(mockShowSettingsDialog).toHaveBeenCalledWith('credits')
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 
@@ -432,84 +380,6 @@ describe('CurrentUserPopoverLegacy', () => {
         }
       })
       expect(screen.getByText('0')).toBeInTheDocument()
-    })
-  })
-
-  describe('cloud free tier', () => {
-    beforeEach(() => {
-      mockIsCloud.value = true
-      mockIsFreeTier.value = true
-    })
-
-    it('shows upgrade-to-add-credits button and hides add-credits button', () => {
-      renderComponent()
-      expect(
-        screen.getByTestId('upgrade-to-add-credits-button')
-      ).toBeInTheDocument()
-      expect(screen.queryByTestId('add-credits-button')).not.toBeInTheDocument()
-    })
-  })
-
-  describe('non-cloud distribution', () => {
-    beforeEach(() => {
-      mockIsCloud.value = false
-    })
-
-    it('still shows credits balance', () => {
-      renderComponent()
-      expect(screen.getByText('1000')).toBeInTheDocument()
-    })
-
-    it('shows add-credits button and hides upgrade-to-add-credits button', () => {
-      renderComponent()
-      expect(screen.getByTestId('add-credits-button')).toBeInTheDocument()
-      expect(
-        screen.queryByTestId('upgrade-to-add-credits-button')
-      ).not.toBeInTheDocument()
-    })
-
-    it('hides upgrade-to-add-credits button even when on free tier', () => {
-      mockIsFreeTier.value = true
-      renderComponent()
-      expect(screen.getByTestId('add-credits-button')).toBeInTheDocument()
-      expect(
-        screen.queryByTestId('upgrade-to-add-credits-button')
-      ).not.toBeInTheDocument()
-    })
-
-    it('hides subscribe button', () => {
-      mockIsActiveSubscription.value = false
-      renderComponent()
-      expect(
-        screen.queryByTestId('subscribe-button-mock')
-      ).not.toBeInTheDocument()
-    })
-
-    it('still shows partner nodes menu item', () => {
-      renderComponent()
-      expect(screen.getByTestId('partner-nodes-menu-item')).toBeInTheDocument()
-    })
-
-    it('hides plans & pricing menu item', () => {
-      renderComponent()
-      expect(
-        screen.queryByTestId('plans-pricing-menu-item')
-      ).not.toBeInTheDocument()
-    })
-
-    it('still shows manage plan menu item', () => {
-      renderComponent()
-      expect(screen.getByTestId('manage-plan-menu-item')).toBeInTheDocument()
-    })
-
-    it('still shows user settings menu item', () => {
-      renderComponent()
-      expect(screen.getByTestId('user-settings-menu-item')).toBeInTheDocument()
-    })
-
-    it('still shows logout menu item', () => {
-      renderComponent()
-      expect(screen.getByTestId('logout-menu-item')).toBeInTheDocument()
     })
   })
 })

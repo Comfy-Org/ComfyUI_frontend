@@ -6,10 +6,12 @@
         :key="tool"
         data-testid="tool-button"
         :data-tool="tool"
-        :class="[
-          'maskEditor_toolPanelContainer hover:bg-secondary-background-hover',
-          { maskEditor_toolPanelContainerSelected: currentTool === tool }
-        ]"
+        :class="
+          cn(
+            'maskEditor_toolPanelContainer text-base-foreground hover:bg-secondary-background-hover',
+            currentTool === tool && 'maskEditor_toolPanelContainerSelected'
+          )
+        "
         @click="onToolSelect(tool)"
       >
         <div
@@ -38,6 +40,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import { cn } from '@comfyorg/tailwind-utils'
 
 import type { useToolManager } from '@/composables/maskeditor/useToolManager'
 import { iconsHtml } from '@/extensions/core/maskeditor/constants'

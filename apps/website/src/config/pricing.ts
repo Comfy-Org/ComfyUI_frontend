@@ -1,28 +1,32 @@
 import { t } from '../i18n/translations'
+import { subscribeUrl } from '../data/pricingPlans'
 import type { Locale, TranslationKey } from '../i18n/translations'
-import { externalLinks } from './routes'
 
 interface PricingTier {
   slug: string
   labelKey: TranslationKey
   priceKey: TranslationKey
+  eduPriceKey: TranslationKey
 }
 
 const tiers: PricingTier[] = [
   {
     slug: 'standard',
     labelKey: 'pricing.plan.standard.label',
-    priceKey: 'pricing.plan.standard.price'
+    priceKey: 'pricing.plan.standard.price',
+    eduPriceKey: 'pricing.plan.standard.eduPrice'
   },
   {
     slug: 'creator',
     labelKey: 'pricing.plan.creator.label',
-    priceKey: 'pricing.plan.creator.price'
+    priceKey: 'pricing.plan.creator.price',
+    eduPriceKey: 'pricing.plan.creator.eduPrice'
   },
   {
     slug: 'pro',
     labelKey: 'pricing.plan.pro.label',
-    priceKey: 'pricing.plan.pro.price'
+    priceKey: 'pricing.plan.pro.price',
+    eduPriceKey: 'pricing.plan.pro.eduPrice'
   }
 ]
 
@@ -32,9 +36,12 @@ export interface PricingOffer {
   url: string
 }
 
-export function pricingOffers(locale: Locale): PricingOffer[] {
+function offersFrom(
+  locale: Locale,
+  priceKeyOf: (tier: PricingTier) => TranslationKey
+): PricingOffer[] {
   return tiers.flatMap((tier) => {
-    const display = t(tier.priceKey, locale).trim()
+    const display = t(priceKeyOf(tier), locale).trim()
     const match = /^\$(\d+(?:\.\d+)?)$/.exec(display)
     if (!match) {
       console.warn(
@@ -46,8 +53,16 @@ export function pricingOffers(locale: Locale): PricingOffer[] {
       {
         name: t(tier.labelKey, locale),
         price: match[1],
-        url: `${externalLinks.cloud}/cloud/subscribe?tier=${tier.slug}&cycle=monthly`
+        url: subscribeUrl(tier.slug, 'monthly')
       }
     ]
   })
+}
+
+export function pricingOffers(locale: Locale): PricingOffer[] {
+  return offersFrom(locale, (tier) => tier.priceKey)
+}
+
+export function educationOffers(locale: Locale): PricingOffer[] {
+  return offersFrom(locale, (tier) => tier.eduPriceKey)
 }

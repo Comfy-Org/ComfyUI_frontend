@@ -11,11 +11,11 @@ import { useDialogService } from '@/services/dialogService'
  * Builds the Plan & Credits overflow-menu model for the workspace subscription
  * panel. Visibility and the Delete enable/disable policy are derived from the
  * shared useWorkspaceUI state so this menu can't desync with the sibling
- * WorkspacePanelContent menu.
+ * Plan & Credits panel menu.
  */
 export function useWorkspaceMenuItems() {
   const { t } = useI18n()
-  const { isFreeTier, subscription } = useBillingContext()
+  const { billingStatus, isFreeTier, subscription } = useBillingContext()
   const {
     permissions,
     uiConfig,
@@ -26,7 +26,7 @@ export function useWorkspaceMenuItems() {
     deleteDisabledTooltipKey
   } = useWorkspaceUI()
   const {
-    showCancelSubscriptionDialog,
+    showCancelSubscriptionFlow,
     showEditWorkspaceDialog,
     showDeleteWorkspaceDialog,
     showLeaveWorkspaceDialog
@@ -43,7 +43,7 @@ export function useWorkspaceMenuItems() {
     ) {
       return
     }
-    void showCancelSubscriptionDialog(subscription.value?.endDate ?? undefined)
+    void showCancelSubscriptionFlow(subscription.value?.endDate ?? undefined)
   }
 
   function deleteWorkspace() {
@@ -65,7 +65,10 @@ export function useWorkspaceMenuItems() {
   const canCancelPlan = computed(
     () =>
       permissions.value.canManageSubscriptionLifecycle &&
-      isActiveSubscription.value &&
+      (isActiveSubscription.value ||
+        ((billingStatus.value === 'payment_failed' ||
+          billingStatus.value === 'paused') &&
+          Boolean(subscription.value?.planSlug))) &&
       !isSubscriptionCancelled.value &&
       !isFreeTier.value
   )

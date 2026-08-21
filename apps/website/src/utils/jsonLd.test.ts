@@ -5,11 +5,13 @@ import { escapeJsonLd } from './escapeJsonLd'
 import type { JsonLdGraph } from './jsonLd'
 import {
   absoluteUrl,
+  articleNode,
   buildPageGraph,
   collectGraphIds,
   comfyUiApplicationNode,
   comfyUiSoftwareId,
   comfyUiSourceCodeNode,
+  faqPageNode,
   itemListNode,
   jsonLdId,
   organizationId,
@@ -54,6 +56,63 @@ describe('itemListNode', () => {
     const items = node.itemListElement as Record<string, unknown>[]
     expect('name' in items[0]).toBe(false)
     expect(items[1].name).toBe('Designer')
+  })
+})
+
+describe('faqPageNode', () => {
+  it('wraps each pair in a Question with its accepted answer', () => {
+    const node = faqPageNode('https://comfy.org/minimax/', [
+      { question: 'What is MiniMax H3?', answer: "MiniMax's video model." },
+      { question: 'Does it generate audio?', answer: 'Yes, native stereo.' }
+    ])
+    expect(node['@type']).toBe('FAQPage')
+    expect(node['@id']).toBe('https://comfy.org/minimax/#faq')
+    const questions = node.mainEntity as Record<string, unknown>[]
+    expect(questions).toHaveLength(2)
+    expect(questions[0]['@type']).toBe('Question')
+    expect(questions[0].name).toBe('What is MiniMax H3?')
+    expect(questions[1].acceptedAnswer).toEqual({
+      '@type': 'Answer',
+      text: 'Yes, native stereo.'
+    })
+  })
+})
+
+describe('articleNode', () => {
+  const pageUrl = 'https://comfy.org/customers/acme/'
+
+  it('attributes the article to its page and to Comfy Org', () => {
+    const node = articleNode({
+      siteUrl,
+      pageUrl,
+      title: 'Acme ships faster',
+      description: 'How Acme used Comfy',
+      imageUrl: 'https://media.comfy.org/acme.webp',
+      locale: 'en'
+    })
+    const webPageRef = { '@id': jsonLdId(pageUrl, 'webpage') }
+    const orgRef = { '@id': organizationId(siteUrl) }
+    expect(node['@id']).toBe(jsonLdId(pageUrl, 'article'))
+    expect(node.headline).toBe('Acme ships faster')
+    expect(node.description).toBe('How Acme used Comfy')
+    expect(node.image).toBe('https://media.comfy.org/acme.webp')
+    expect(node.isPartOf).toEqual(webPageRef)
+    expect(node.mainEntityOfPage).toEqual(webPageRef)
+    expect(node.author).toEqual(orgRef)
+    expect(node.publisher).toEqual(orgRef)
+  })
+
+  it('drops image and description from the markup when not supplied', () => {
+    const node = articleNode({
+      siteUrl,
+      pageUrl,
+      title: 'Acme',
+      locale: 'zh-CN'
+    })
+    const emitted = JSON.parse(JSON.stringify(node))
+    expect('image' in emitted).toBe(false)
+    expect('description' in emitted).toBe(false)
+    expect(emitted.inLanguage).toBe('zh-CN')
   })
 })
 

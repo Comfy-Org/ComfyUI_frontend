@@ -1,64 +1,95 @@
 import path from 'node:path'
 
-const isCms = (file: string) => toRelative(file).startsWith('apps/cms/')
+const isCms = (fileName: string) => fileName.startsWith('apps/cms/')
 
-export default {
-  'tests-ui/**': () =>
-    'echo "Files in tests-ui/ are deprecated. Colocate tests with source files." && exit 1',
+export default function lintStaged(stagedFiles: string[]) {
+  const relativePaths = stagedFiles.map(toRelativePath)
 
-  // apps/cms is a Payload app with its own Prettier + ESLint; it is excluded
-  // from the repo-wide oxfmt/stylelint gates, so run its own gates instead.
-  'apps/cms/**': () => ['pnpm --filter @comfyorg/cms exec prettier --check .'],
-  'apps/cms/**/*.{ts,tsx,mjs,js}': () => [
-    'pnpm lint:cms',
-    'pnpm typecheck:cms'
-  ],
-
-  './**/*.{css,vue}': (stagedFiles: string[]) => {
-    const files = stagedFiles.filter((f) => !isCms(f))
-    if (!files.length) return []
-    return [
-      `pnpm exec stylelint --allow-empty-input ${toJoinedRelativePaths(files)}`
-    ]
-  },
-
-  './**/*.js': (stagedFiles: string[]) => {
-    const files = stagedFiles.filter((f) => !isCms(f))
-    return files.length ? formatAndEslint(files) : []
-  },
-
-  './**/*.{ts,tsx,vue,mts,json,yaml,md}': (stagedFiles: string[]) => {
-    const files = stagedFiles.filter((f) => !isCms(f))
-    if (!files.length) return []
-
-    const commands = [...formatAndEslint(files), 'pnpm typecheck']
-    const relativePaths = files.map(toRelative)
-
-    if (relativePaths.some((f) => f.startsWith('browser_tests/'))) {
-      commands.push('pnpm typecheck:browser')
-    }
-
-    if (relativePaths.some((f) => f.startsWith('apps/website/'))) {
-      commands.push('pnpm typecheck:website')
-    }
-
-    return commands
+  if (relativePaths.some((fileName) => fileName.startsWith('tests-ui/'))) {
+    return 'echo "Files in tests-ui/ are deprecated. Colocate tests with source files." && exit 1'
   }
-}
 
-function formatAndEslint(fileNames: string[]) {
-  const joinedPaths = toJoinedRelativePaths(fileNames)
+  // apps/cms is a Payload app with its own Prettier + ESLint + tsconfig; it is
+  // excluded from the repo-wide oxfmt/oxlint/stylelint/typecheck gates and runs
+  // its own instead.
+  const cmsPaths = relativePaths.filter(isCms)
+  const repoPaths = relativePaths.filter((fileName) => !isCms(fileName))
+
+  const formattableFiles = repoPaths.filter(
+    (fileName) =>
+      /\.(js|ts|tsx|vue|mts|json|yaml|md)$/.test(fileName) &&
+      !fileName.endsWith('pnpm-lock.yaml')
+  )
+  const codeFiles = repoPaths.filter((fileName) =>
+    /\.(js|ts|tsx|vue|mts)$/.test(fileName)
+  )
+  const styleFiles = repoPaths.filter((fileName) =>
+    /\.(css|vue)$/.test(fileName)
+  )
+  const typecheckFiles = formattableFiles.filter((fileName) =>
+    /\.(ts|tsx|vue|mts)$/.test(fileName)
+  )
+
   return [
-    `pnpm exec oxfmt --write ${joinedPaths}`,
-    `pnpm exec oxlint --type-aware --no-error-on-unmatched-pattern --fix ${joinedPaths}`,
-    `pnpm exec eslint --cache --fix --no-warn-ignored ${joinedPaths}`
+    ...cmsCommands(cmsPaths),
+    ...commandsWithFiles(formattableFiles, 'pnpm exec oxfmt --write'),
+    ...lintCommands(codeFiles, styleFiles),
+    ...typecheckCommands(typecheckFiles)
   ]
 }
 
-function toRelative(file: string) {
-  return path.relative(process.cwd(), file).replace(/\\/g, '/')
+function cmsCommands(cmsPaths: string[]) {
+  if (cmsPaths.length === 0) {
+    return []
+  }
+
+  const commands = ['pnpm --filter @comfyorg/cms exec prettier --check .']
+  if (cmsPaths.some((fileName) => /\.(ts|tsx|mjs|js)$/.test(fileName))) {
+    commands.push('pnpm lint:cms', 'pnpm typecheck:cms')
+  }
+  return commands
 }
 
-function toJoinedRelativePaths(fileNames: string[]) {
-  return fileNames.map((f) => `"${toRelative(f)}"`).join(' ')
+function lintCommands(codeFiles: string[], styleFiles: string[]) {
+  if (new Set([...codeFiles, ...styleFiles]).size > 10) {
+    return ['pnpm lint']
+  }
+
+  return [
+    ...commandsWithFiles(styleFiles, 'pnpm exec stylelint --allow-empty-input'),
+    ...commandsWithFiles(
+      codeFiles,
+      'pnpm exec oxlint --type-aware --no-error-on-unmatched-pattern --fix',
+      'pnpm exec eslint --cache --fix --no-warn-ignored'
+    )
+  ]
+}
+
+function typecheckCommands(fileNames: string[]) {
+  if (fileNames.length === 0) {
+    return []
+  }
+
+  return [
+    'pnpm typecheck',
+    ...(fileNames.some((fileName) => fileName.startsWith('browser_tests/'))
+      ? ['pnpm typecheck:browser']
+      : []),
+    ...(fileNames.some((fileName) => fileName.startsWith('apps/website/'))
+      ? ['pnpm typecheck:website']
+      : [])
+  ]
+}
+
+function commandsWithFiles(fileNames: string[], ...commands: string[]) {
+  if (fileNames.length === 0) {
+    return []
+  }
+
+  const joinedPaths = fileNames.map((fileName) => `"${fileName}"`).join(' ')
+  return commands.map((command) => `${command} ${joinedPaths}`)
+}
+
+function toRelativePath(fileName: string) {
+  return path.relative(process.cwd(), fileName).replace(/\\/g, '/')
 }

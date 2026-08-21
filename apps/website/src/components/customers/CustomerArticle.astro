@@ -4,16 +4,23 @@ import { render } from 'astro:content'
 import type { Locale } from '../../i18n/translations'
 import type { CustomerStoryEntry } from '../../utils/customers'
 import ArticleNav from './ArticleNav.vue'
+import AtAGlance from './content/AtAGlance.astro'
+import AuthorBio from './content/AuthorBio.astro'
 import BulletList from './content/BulletList.astro'
 import Contributors from './content/Contributors.astro'
+import Download from './content/Download.astro'
+import Embed from './content/Embed.astro'
 import Figure from './content/Figure.astro'
 import Heading from './content/Heading.astro'
+import Heading4 from './content/Heading4.astro'
+import Link from './content/Link.astro'
 import ListItem from './content/ListItem.astro'
 import Paragraph from './content/Paragraph.astro'
 import Quote from './content/Quote.astro'
 import ReadMore from './content/ReadMore.vue'
 import Section from './content/Section.astro'
 import Steps from './content/Steps.astro'
+import Video from './content/Video.astro'
 
 interface Props {
   entry: CustomerStoryEntry
@@ -23,29 +30,32 @@ interface Props {
 const { entry, locale = 'en' } = Astro.props
 const { Content } = await render(entry)
 
-// The sidebar nav mirrors the section outline declared in frontmatter so it is
-// server-rendered, exactly like the previous ContentSection sidebar.
 const categories = entry.data.sections.map((section) => ({
   label: section.label,
   value: section.id
 }))
 
-// Markdown elements are mapped to the ported block styles; the named
-// components (Section, Figure, ...) are used directly inside the MDX body.
 const contentComponents = {
   p: Paragraph,
+  a: Link,
   h3: Heading,
+  h4: Heading4,
   ul: BulletList,
   li: ListItem,
   Section,
   Figure,
   Quote,
   Contributors,
-  Steps
+  Steps,
+  AtAGlance,
+  AuthorBio,
+  Download,
+  Embed,
+  Video
 }
 ---
 
-<section class="px-4 pt-8 pb-24 lg:px-20 lg:pt-24 lg:pb-40">
+<section class="max-w-9xl mx-auto px-4 pt-8 pb-24 lg:px-20 lg:pt-24 lg:pb-40">
   <div class="lg:flex lg:gap-16">
     <aside class="hidden scrollbar-none lg:block lg:w-48 lg:shrink-0">
       <div class="sticky top-32">

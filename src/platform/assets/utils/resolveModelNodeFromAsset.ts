@@ -4,7 +4,11 @@ import {
   MISSING_TAG,
   MODELS_TAG
 } from '@/platform/assets/services/assetService'
-import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
+import {
+  getAssetFilename,
+  getAssetNodeCategoryCandidates
+} from '@/platform/assets/utils/assetMetadataUtils'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import type { ModelNodeProvider } from '@/stores/modelToNodeStore'
 
@@ -81,10 +85,12 @@ export function resolveModelNodeFromAsset(
     }
   }
 
-  const category = validAsset.tags.find(
-    (tag) => tag !== MODELS_TAG && tag !== MISSING_TAG
+  const { flags } = useFeatureFlags()
+  const candidates = getAssetNodeCategoryCandidates(
+    validAsset,
+    flags.supportsModelTypeTags
   )
-  if (!category) {
+  if (candidates.length === 0) {
     console.error(
       `Asset ${validAsset.id} has no valid category tag. Available tags: ${validAsset.tags.join(', ')} (expected tag other than '${MODELS_TAG}' or '${MISSING_TAG}')`
     )
@@ -99,19 +105,31 @@ export function resolveModelNodeFromAsset(
     }
   }
 
-  const provider = useModelToNodeStore().getNodeProvider(category)
-  if (!provider) {
-    console.error(`No node provider registered for category: ${category}`)
+  const modelToNodeStore = useModelToNodeStore()
+  const resolved = candidates
+    .map((category) => ({
+      category,
+      provider: modelToNodeStore.getNodeProvider(category)
+    }))
+    .find((candidate) => candidate.provider !== undefined)
+
+  if (!resolved?.provider) {
+    // Known gap (out of scope for FE-1076): flat `model_type:LLM`-style tags
+    // whose loaders are only registered hierarchically land here until the
+    // backend emits a subtype-carrying tag.
+    console.error(
+      `No node provider registered for category: ${candidates.join(', ')}`
+    )
     return {
       success: false,
       error: {
         code: 'NO_PROVIDER',
-        message: `No node provider registered for category: ${category}`,
+        message: `No node provider registered for category: ${candidates.join(', ')}`,
         assetId: validAsset.id,
-        details: { category }
+        details: { candidates }
       }
     }
   }
 
-  return { success: true, value: { provider, filename } }
+  return { success: true, value: { provider: resolved.provider, filename } }
 }
