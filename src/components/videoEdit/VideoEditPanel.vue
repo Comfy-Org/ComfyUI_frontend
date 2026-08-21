@@ -186,14 +186,11 @@
       />
 
       <div v-if="hasCrop" class="col-span-full flex items-center gap-2">
-        <label class="text-xs text-muted-foreground">
+        <label :for="ratioSelectId" class="text-xs text-muted-foreground">
           {{ t('imageCrop.ratio') }}
         </label>
         <Select v-model="selectedRatio" :disabled="!canLockRatio">
-          <SelectTrigger
-            class="h-7 w-24 text-xs"
-            :aria-label="t('imageCrop.ratio')"
-          >
+          <SelectTrigger :id="ratioSelectId" class="h-7 w-24 text-xs">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -253,7 +250,7 @@
 
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
-import { computed, ref, toRef, useTemplateRef, watch } from 'vue'
+import { computed, ref, toRef, useId, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { clamp } from 'es-toolkit'
@@ -327,6 +324,7 @@ const isMuted = ref(false)
 const isFullscreen = ref(false)
 
 const hasTrim = computed(() => features.includes('trim'))
+const ratioSelectId = useId()
 const hasCrop = computed(() => features.includes('crop'))
 
 const effectiveTotalFrames = computed(() => Math.max(totalFrames, 1))
