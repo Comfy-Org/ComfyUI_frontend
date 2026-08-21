@@ -1,7 +1,8 @@
 import {
   ComfyPage,
   comfyPageFixture as test,
-  comfyExpect as expect
+  comfyExpect as expect,
+  testUsername
 } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 
@@ -54,7 +55,7 @@ test.describe('Linear Mode', { tag: '@ui' }, () => {
   }, testInfo) => {
     const comfyPage = new ComfyPage(page, request)
     const { parallelIndex } = testInfo
-    const username = `playwright-test-${parallelIndex}`
+    const username = testUsername('playwright-test', parallelIndex)
     const userId = await comfyPage.setupUser(username)
     comfyPage.userIds[parallelIndex] = userId
 

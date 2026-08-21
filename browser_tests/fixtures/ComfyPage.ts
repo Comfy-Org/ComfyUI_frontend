@@ -2,6 +2,7 @@ import type { APIRequestContext, Locator, Page } from '@playwright/test'
 import { test as base } from '@playwright/test'
 import { config as dotenvConfig } from 'dotenv'
 import MCR from 'monocart-coverage-reports'
+import { randomUUID } from 'node:crypto'
 
 import { COVERAGE_OUTPUT_DIR } from '@e2e/coverageConfig'
 import {
@@ -36,6 +37,7 @@ import { assetPath } from '@e2e/fixtures/utils/paths'
 import { nextFrame, sleep } from '@e2e/fixtures/utils/timing'
 import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import { createdUserId } from '@e2e/fixtures/userIdentity'
 import { BottomPanel } from '@e2e/fixtures/components/BottomPanel'
 import { ComfyNodeSearchBox } from '@e2e/fixtures/components/ComfyNodeSearchBox'
 import { ComfyNodeSearchBoxV2 } from '@e2e/fixtures/components/ComfyNodeSearchBoxV2'
@@ -74,6 +76,12 @@ import { WorkflowHelper } from '@e2e/fixtures/helpers/WorkflowHelper'
 import type { WorkspaceStore } from '@e2e/types/globals'
 
 dotenvConfig()
+
+const TEST_RUN_ID = randomUUID()
+
+export function testUsername(prefix: string, parallelIndex: number): string {
+  return `${prefix}-${TEST_RUN_ID}-${parallelIndex}`
+}
 
 class ComfyPropertiesPanel {
   readonly root: Locator
@@ -293,23 +301,17 @@ export class ComfyPage {
     return id ? id : await this.createUser(username)
   }
 
-  async createUser(username: string) {
+  async createUser(username: string): Promise<string> {
     const resp = await this.request.post(`${this.apiUrl}/api/users`, {
       data: { username }
     })
 
     if (resp.status() !== 200) {
       const body = await resp.text()
-      // Persistent backends (Comfy Desktop server user storage) keep the user
-      // across runs and do not list it via GET /api/users, so a duplicate means
-      // it already exists. Returns the username since the generated id is not
-      // retrievable here; only reached on single-user / default-resolving backends.
-      if (resp.status() === 400 && body.includes('Duplicate username.'))
-        return username
       throw new Error(`Failed to create user: ${body}`)
     }
 
-    return await resp.json()
+    return createdUserId(await resp.json())
   }
 
   async setupSettings(settings: Record<string, unknown>) {
@@ -595,7 +597,7 @@ export const comfyPageFixture = base.extend<{
     const comfyPage = new ComfyPage(page, request)
 
     const { parallelIndex } = testInfo
-    const username = `playwright-test-${parallelIndex}`
+    const username = testUsername('playwright-test', parallelIndex)
     const isCustomNodes = testInfo.project.name === 'custom-nodes'
     const needsPerf =
       testInfo.tags.includes('@perf') || testInfo.tags.includes('@audit')

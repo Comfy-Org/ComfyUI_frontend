@@ -1,122 +1,28 @@
 import type { Page } from '@playwright/test'
 
-import type { PromptResponse } from '@/schemas/apiSchema'
-
 import type { ObjectInfo } from '@e2e/fixtures/customNode/objectInfoValidator'
-import type {
-  ExecutionError,
-  PromptEvent,
-  RunResult
-} from '@e2e/fixtures/customNode/runResult'
+import type { RawPromptEvent } from '@e2e/fixtures/customNode/promptEventScope'
+import {
+  eventsForPrompt,
+  toPromptEvent
+} from '@e2e/fixtures/customNode/promptEventScope'
+import type { PromptCapture } from '@e2e/fixtures/customNode/promptSubmission'
+import {
+  capturePromptResponse,
+  describePromptRejection,
+  serverSideFault
+} from '@e2e/fixtures/customNode/promptSubmission'
+import type { RunResult } from '@e2e/fixtures/customNode/runResult'
 import { classifyRun } from '@e2e/fixtures/customNode/runResult'
 import { onPromptIdResponse } from '@e2e/fixtures/utils/customNodeSuite'
 
-export interface RawEvent {
-  type: string
-  node?: string | null
-  // execution_cached carries every cache-served node id (apiSchema
-  // zExecutionCachedWsMessage); NodeId is number | string on the wire.
-  nodes?: (string | number)[]
-  prompt_id?: string
-  output?: unknown
-  exception_message?: string
-  exception_type?: string
-  node_id?: string
-  node_type?: string
-  traceback?: string[]
-}
+export { isServerSideFault } from '@e2e/fixtures/customNode/promptSubmission'
 
 const TERMINAL = [
   'execution_success',
   'execution_error',
   'execution_interrupted'
 ]
-
-// The /prompt rejection body is the apiSchema PromptResponse shape
-// ({ error: string | {message}, node_errors: { <nodeId>: { class_type,
-// errors: [{ details, message }] } } }). Flatten it to a single line naming
-// the node class and the failing input so a VALIDATION_FAIL result is
-// actionable instead of an empty object. Exported for a pure unit test: the
-// happy path never runs it, so without a test a regression here would rot the
-// diagnostic back to `{}` silently.
-export function summarizePromptError(body: unknown): string | undefined {
-  const payload = body as Partial<PromptResponse> | null
-  if (!payload || typeof payload !== 'object') return undefined
-  const parts: string[] = []
-  const topError = payload.error
-  if (typeof topError === 'string') {
-    if (topError) parts.push(topError)
-  } else if (topError?.message) parts.push(topError.message)
-  for (const [nodeId, nodeError] of Object.entries(payload.node_errors ?? {})) {
-    const cls = nodeError.class_type || nodeId
-    for (const err of nodeError.errors ?? []) {
-      const detail = err.details || err.message
-      if (detail) parts.push(`${cls}: ${detail}`)
-    }
-  }
-  return parts.length > 0 ? parts.join('; ') : undefined
-}
-
-// A non-2xx /prompt response, with attribution decided by its status: 400 is
-// the backend REJECTING this graph (pack-attributable validation), 5xx is the
-// backend FAILING (an environment fault that is never a per-node verdict).
-// errorType is the body's typed provenance when the backend supplies one
-// (Cloud infra faults carry e.g. DATABASE_ERROR; an OSS validation-time crash
-// or a proxy 5xx arrives untyped, which is itself diagnostic).
-interface PromptRejection {
-  status: number
-  summary?: string
-  errorType?: string
-}
-
-function extractPromptErrorType(body: unknown): string | undefined {
-  const error = (body as Partial<PromptResponse> | null)?.error
-  if (typeof error !== 'object' || error === null) return undefined
-  const type = (error as { type?: unknown }).type
-  return typeof type === 'string' && type ? type : undefined
-}
-
-const describeRejection = (rejection: PromptRejection): string =>
-  rejection.summary ?? `HTTP ${rejection.status} prompt submission failed`
-
-const SERVER_SIDE_FAULT_PREFIX = 'prompt submission failed server-side'
-
-// Callers that accumulate per-node verdicts use this to catch the fault,
-// record it, and still report the failures found before it - a late 5xx must
-// never mask real regressions from earlier batches.
-export function isServerSideFault(error: unknown): error is Error {
-  return (
-    error instanceof Error && error.message.startsWith(SERVER_SIDE_FAULT_PREFIX)
-  )
-}
-
-const serverSideFault = (rejection: PromptRejection): Error =>
-  new Error(
-    `${SERVER_SIDE_FAULT_PREFIX} (HTTP ${rejection.status} POST /prompt)` +
-      (rejection.summary ? ` - ${rejection.summary}` : '') +
-      (rejection.errorType ? ` [type: ${rejection.errorType}]` : '') +
-      ' - backend/environment fault, not a pack validation reject'
-  )
-
-export function toPromptEvent(raw: RawEvent): PromptEvent {
-  if (raw.type === 'executing')
-    return { type: 'executing', node: raw.node ?? null }
-  if (raw.type === 'executed')
-    return { type: 'executed', node: raw.node ?? null, output: raw.output }
-  if (raw.type === 'execution_cached')
-    return { type: 'execution_cached', nodes: (raw.nodes ?? []).map(String) }
-  if (raw.type === 'execution_error' || raw.type === 'execution_interrupted') {
-    const error: ExecutionError = {
-      exceptionMessage: raw.exception_message?.trimEnd(),
-      exceptionType: raw.exception_type,
-      nodeId: raw.node_id,
-      nodeType: raw.node_type,
-      traceback: raw.traceback
-    }
-    return { type: raw.type, error }
-  }
-  return { type: raw.type as 'execution_start' | 'execution_success' }
-}
 
 /**
  * Drives a real ComfyUI backend through the running frontend. The verdict logic
@@ -156,7 +62,7 @@ export class LocalDesktopTarget {
     const seenPromptIds = await page.evaluate(
       (types) => {
         const sink = window as unknown as {
-          __cnEvents: RawEvent[]
+          __cnEvents: RawPromptEvent[]
           __cnSeenPromptIds?: string[]
           __cnTapInstalled?: boolean
         }
@@ -198,28 +104,21 @@ export class LocalDesktopTarget {
     // the primary event filter; the seen-set above and the graph-membership
     // check below stay as defense in depth (capture can lose a race with a
     // transient refusal, and `executing` events carry no prompt id at all).
-    let capturedPromptId: string | undefined
     // A backend rejection answers /prompt with a non-2xx body carrying
     // { error, node_errors }. app.queuePrompt swallows it and just returns
     // false, so without capturing it here the verdict names nothing. The
     // status is kept alongside the summarized body because it decides
     // attribution (see PromptRejection).
-    let capturedRejection: PromptRejection | undefined
-    let capturedResponseSequence = 0
+    let capture: PromptCapture = { sequence: 0 }
     const { detach: stopCapture, settled: captureSettled } = onPromptIdResponse(
       page,
       (promptId, body, status, sequence) => {
-        if (sequence < capturedResponseSequence) return
-        capturedResponseSequence = sequence
-        capturedPromptId = promptId
-        capturedRejection =
-          status >= 400
-            ? {
-                status,
-                summary: summarizePromptError(body),
-                errorType: extractPromptErrorType(body)
-              }
-            : undefined
+        capture = capturePromptResponse(capture, {
+          sequence,
+          status,
+          body,
+          promptId
+        })
       }
     )
 
@@ -253,8 +152,8 @@ export class LocalDesktopTarget {
         stopCapture()
         // A captured 5xx outranks a client-side throw: the backend
         // demonstrably failed this submission server-side.
-        if (capturedRejection !== undefined && capturedRejection.status >= 500)
-          throw serverSideFault(capturedRejection)
+        if (capture.rejection !== undefined && capture.rejection.status >= 500)
+          throw serverSideFault(capture.rejection)
         return {
           outcome: 'VALIDATION_FAIL',
           executedNodes: [],
@@ -263,7 +162,7 @@ export class LocalDesktopTarget {
           // the backend's node_errors captured off the /prompt response.
           clientError:
             (typeof queued === 'object' ? queued.__cnThrew : undefined) ??
-            (capturedRejection && describeRejection(capturedRejection))
+            (capture.rejection && describePromptRejection(capture.rejection))
         }
       }
     }
@@ -273,27 +172,27 @@ export class LocalDesktopTarget {
     await captureSettled()
     const captureDeadline = Date.now() + 2_000
     while (
-      capturedPromptId === undefined &&
-      capturedRejection === undefined &&
+      capture.promptId === undefined &&
+      capture.rejection === undefined &&
       Date.now() < captureDeadline
     ) {
       await new Promise((resolve) => setTimeout(resolve, 50))
       await captureSettled()
     }
-    if (capturedRejection !== undefined) {
+    if (capture.rejection !== undefined) {
       stopCapture()
-      if (capturedRejection.status >= 500)
-        throw serverSideFault(capturedRejection)
+      if (capture.rejection.status >= 500)
+        throw serverSideFault(capture.rejection)
       return {
         outcome: 'VALIDATION_FAIL',
         executedNodes: [],
         outputsByNode: {},
-        clientError: describeRejection(capturedRejection)
+        clientError: describePromptRejection(capture.rejection)
       }
     }
     // A silent permanent miss would degrade every run to the legacy filters
     // with no signal - make the fallback observable in the runner output.
-    if (capturedPromptId === undefined)
+    if (capture.promptId === undefined)
       console.warn(
         '[customNodes] /prompt response id capture missed; falling back to seen-set filtering'
       )
@@ -326,7 +225,7 @@ export class LocalDesktopTarget {
           TERMINAL,
           seenPromptIds ?? [],
           opts.graphNodeIds ?? null,
-          capturedPromptId ?? null
+          capture.promptId ?? null
         ] as const,
         { timeout: opts.timeoutMs }
       )
@@ -339,18 +238,15 @@ export class LocalDesktopTarget {
       })
     stopCapture()
 
-    const raw = (
-      await page.evaluate(
-        () =>
-          (window as unknown as { __cnEvents?: RawEvent[] }).__cnEvents ?? []
-      )
-    ).filter((event) =>
-      // Positive id match when captured (events without a prompt_id - bare
-      // `executing` strings - stay, and graph membership still vets them);
-      // otherwise the legacy seen-set exclusion.
-      capturedPromptId !== undefined
-        ? event.prompt_id === undefined || event.prompt_id === capturedPromptId
-        : !(event.prompt_id && (seenPromptIds ?? []).includes(event.prompt_id))
+    const captured = await page.evaluate(
+      () =>
+        (window as unknown as { __cnEvents?: RawPromptEvent[] }).__cnEvents ??
+        []
+    )
+    const raw = eventsForPrompt(
+      captured,
+      capture.promptId,
+      new Set(seenPromptIds ?? [])
     )
     const timedOut = !raw.some((event) => TERMINAL.includes(event.type))
     return classifyRun({

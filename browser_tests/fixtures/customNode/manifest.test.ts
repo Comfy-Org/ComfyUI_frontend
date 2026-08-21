@@ -1,9 +1,7 @@
-import {
-  comfyExpect as expect,
-  comfyPageFixture as test
-} from '@e2e/fixtures/ComfyPage'
+import { describe, expect, it } from 'vitest'
 import type { CoreManifestEntry } from '@e2e/fixtures/customNode/manifest'
 import {
+  assertCloudManifestShape,
   assertCoreEntry,
   expectedNodeCountFor,
   loadApplicableAutogrowCases,
@@ -30,8 +28,63 @@ function validEntry(): CoreManifestEntry {
   }
 }
 
-test.describe('customNode manifest', () => {
-  test('loads entries with the shape the regression spec depends on', () => {
+describe('customNode manifest', () => {
+  const cloudManifest = {
+    source: {
+      repository: 'https://github.com/Comfy-Org/cloud',
+      ref: 'a'.repeat(40),
+      path: 'comfy-complete/supported_nodes.yaml',
+      importedAt: '2026-08-14'
+    },
+    coreDisabledNodes: {},
+    packs: [
+      {
+        pack: 'example-pack',
+        deployRef: 'example-pack@1.2.3',
+        tiers: ['load', 'connectivity'],
+        workflow: '',
+        expectedNodes: ['ExampleNode'],
+        expectedExtensions: [],
+        expectedNodeCount: 1,
+        timeoutMs: 60_000,
+        disabledNodes: {}
+      }
+    ],
+    unjoinedYamlPacks: []
+  }
+
+  it('constructs a canonical cloud manifest from unknown input', () => {
+    expect(
+      assertCloudManifestShape(
+        {
+          ...cloudManifest,
+          ignored: true,
+          source: { ...cloudManifest.source, ignored: true },
+          packs: [{ ...cloudManifest.packs[0], ignored: true }]
+        },
+        'snapshot.json'
+      )
+    ).toEqual(cloudManifest)
+  })
+
+  it('rejects malformed nested cloud manifest fields', () => {
+    expect(() =>
+      assertCloudManifestShape(
+        {
+          ...cloudManifest,
+          packs: [
+            {
+              ...cloudManifest.packs[0],
+              disabledNodes: { ExampleNode: ['label', 42] }
+            }
+          ]
+        },
+        'snapshot.json'
+      )
+    ).toThrow(/malformed/)
+  })
+
+  it('loads entries with the shape the regression spec depends on', () => {
     const entries = loadFullManifest()
     expect(entries.length).toBeGreaterThan(0)
     for (const entry of entries) {
@@ -41,7 +94,7 @@ test.describe('customNode manifest', () => {
     }
   })
 
-  test('a local node-count baseline applies only to a local cloud-pack run', () => {
+  it('a local node-count baseline applies only to a local cloud-pack run', () => {
     const priorBackend = process.env.CUSTOM_NODES_BACKEND
     const priorManifest = process.env.CUSTOM_NODES_MANIFEST
     const entry = {
@@ -66,7 +119,7 @@ test.describe('customNode manifest', () => {
     }
   })
 
-  test('pin must be a full commit SHA', () => {
+  it('pin must be a full commit SHA', () => {
     expect(() => assertCoreEntry(validEntry(), 0)).not.toThrow()
     expect(() => assertCoreEntry({ ...validEntry(), workflow: '' }, 0)).toThrow(
       /workflow/
@@ -88,7 +141,7 @@ test.describe('customNode manifest', () => {
     ).toThrow(/pin/)
   })
 
-  test('expectedExtensions is required; empty explicitly expects no healthy registration', () => {
+  it('expectedExtensions is required; empty explicitly expects no healthy registration', () => {
     // Omission must fail (a new pack row cannot silently opt out of the
     // extension-loaded assert); an explicit [] is the deliberate opt-out.
     const { expectedExtensions: _omitted, ...withoutField } = validEntry()
@@ -112,7 +165,7 @@ test.describe('customNode manifest', () => {
     ).toThrow(/expectedExtensions/)
   })
 
-  test('expectedNodeCount must be a positive integer', () => {
+  it('expectedNodeCount must be a positive integer', () => {
     const { expectedNodeCount: _omitted, ...withoutField } = validEntry()
     expect(() => assertCoreEntry(withoutField as CoreManifestEntry, 0)).toThrow(
       /expectedNodeCount/
@@ -127,7 +180,7 @@ test.describe('customNode manifest', () => {
     ).not.toThrow()
   })
 
-  test('run tiers require an exact nonzero runnable corpus', () => {
+  it('run tiers require an exact nonzero runnable corpus', () => {
     const { expectedRunnableCount: _omitted, ...withoutField } = validEntry()
     expect(() => assertCoreEntry(withoutField as CoreManifestEntry, 0)).toThrow(
       /expectedRunnableCount/
@@ -158,7 +211,7 @@ test.describe('customNode manifest', () => {
     ).toThrow(/model-free CPU gate/)
   })
 
-  test('pack must be a plain path segment (it becomes the install dirname)', () => {
+  it('pack must be a plain path segment (it becomes the install dirname)', () => {
     for (const bad of ['../escape', 'a/b', '.hidden', 'sp ace', ''])
       expect(
         () => assertCoreEntry({ ...validEntry(), pack: bad }, 0),
@@ -166,7 +219,7 @@ test.describe('customNode manifest', () => {
       ).toThrow(/pack/)
   })
 
-  test('matches Impact frontend applicability to what the target serves', () => {
+  it('matches Impact frontend applicability to what the target serves', () => {
     const priorBackend = process.env.CUSTOM_NODES_BACKEND
     const priorManifest = process.env.CUSTOM_NODES_MANIFEST
     const expectedCase = {
@@ -211,7 +264,7 @@ test.describe('customNode manifest', () => {
     ).toBe(false)
   })
 
-  test('a pack keeps its shard when another pack is excluded', () => {
+  it('a pack keeps its shard when another pack is excluded', () => {
     // All packs in a shard share one Python environment, so a pack's
     // neighbours decide which of its optional imports resolve and how many
     // node classes it registers. Bin-packing the FILTERED list moved 26 of 81
@@ -243,7 +296,7 @@ test.describe('customNode manifest', () => {
     }
   })
 
-  test('cloud local calibration rejects an unreviewed shard count', () => {
+  it('cloud local calibration rejects an unreviewed shard count', () => {
     const priorManifest = process.env.CUSTOM_NODES_MANIFEST
     const priorBackend = process.env.CUSTOM_NODES_BACKEND
     const priorShard = process.env.CUSTOM_NODES_SHARD
@@ -264,7 +317,7 @@ test.describe('customNode manifest', () => {
     }
   })
 
-  test('sharding balances by weight, not by count', () => {
+  it('sharding balances by weight, not by count', () => {
     // The distribution that matters: expectedNodeCount runs 1..285 with a
     // median of 6, so equal pack counts are not equal work. Counting packs
     // per shard would pass on the 4.86x spread this replaced.
@@ -295,7 +348,7 @@ test.describe('customNode manifest', () => {
     }
   })
 
-  test('sharding partitions the manifest - every pack exactly once', () => {
+  it('sharding partitions the manifest - every pack exactly once', () => {
     const packs = Array.from({ length: 87 }, (_, i) => `pack-${i}`)
     const original = process.env.CUSTOM_NODES_SHARD
     try {
@@ -315,7 +368,7 @@ test.describe('customNode manifest', () => {
     }
   })
 
-  test('an unshaped CUSTOM_NODES_SHARD fails rather than running everything', () => {
+  it('an unshaped CUSTOM_NODES_SHARD fails rather than running everything', () => {
     const original = process.env.CUSTOM_NODES_SHARD
     try {
       process.env.CUSTOM_NODES_SHARD = '11/10'

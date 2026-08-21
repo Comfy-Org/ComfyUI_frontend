@@ -870,16 +870,21 @@ test('connectivity drags: one materialized in-pack link per applicable pack conn
         await producer.connectOutput(outIndex, consumer, inIndex)
       }
 
-      const linked = await comfyPage.page.evaluate(
-        ([consumerId, index]) => {
-          const node = window.app!.graph.nodes.find(
-            (candidate) => String(candidate.id) === consumerId
-          )
-          return node?.inputs?.[Number(index)]?.link != null
-        },
-        [String(consumer.id), String(inIndex)] as const
-      )
-      expect(linked, `${key} with VueNodes=${vueNodesEnabled}`).toBe(true)
+      await expect
+        .poll(
+          () =>
+            comfyPage.page.evaluate(
+              ([consumerId, index]) => {
+                const node = window.app!.graph.nodes.find(
+                  (candidate) => String(candidate.id) === consumerId
+                )
+                return node?.inputs?.[Number(index)]?.link != null
+              },
+              [String(consumer.id), String(inIndex)] as const
+            ),
+          { message: `${key} with VueNodes=${vueNodesEnabled}` }
+        )
+        .toBe(true)
     }
 
     consoleErrors.stop()

@@ -178,7 +178,7 @@ interface QueueIds {
   pending: string[]
 }
 
-function ownedQueueEntries(
+export function ownedQueueEntries(
   queue: QueueIds,
   ownedIds: ReadonlySet<string>
 ): QueueIds {

@@ -1,7 +1,4 @@
-import {
-  comfyExpect as expect,
-  comfyPageFixture as test
-} from '@e2e/fixtures/ComfyPage'
+import { expect, it } from 'vitest'
 import {
   connectivityExpectations,
   pairEndpointOwnershipIssues,
@@ -11,7 +8,7 @@ import {
 } from '@e2e/fixtures/customNode/connectivityExpectations'
 import { loadAllManifestPackNames } from '@e2e/fixtures/customNode/manifest'
 
-test('connectivity pair expectations are attributable and disjoint', () => {
+it('connectivity pair expectations are attributable and disjoint', () => {
   const manifestPacks = new Set(
     loadAllManifestPackNames().map((pack) => pack.toLowerCase())
   )
@@ -40,32 +37,42 @@ test('connectivity pair expectations are attributable and disjoint', () => {
     expect(pack === 'core' || manifestPacks.has(pack.toLowerCase())).toBe(true)
 })
 
-test('pair endpoint ownership is checked only on the shard that owns it', () => {
+it('pair endpoint ownership is checked only on the shard that owns it', () => {
+  const endpointPacks = { ExampleNode: 'ExamplePack' }
   expect(
     pairEndpointOwnershipIssues(
-      ['CrossShardNode'],
+      ['UnknownNode'],
       [],
-      new Set(['DifferentPack'])
+      new Set(['DifferentPack']),
+      endpointPacks
     )
-  ).toEqual(['CrossShardNode: no endpoint pack attribution exists'])
+  ).toEqual(['UnknownNode: no endpoint pack attribution exists'])
 
-  const required = ['FL_TimeLine']
-  expect(pairEndpointOwnershipIssues(required, [], new Set())).toEqual([])
   expect(
-    pairEndpointOwnershipIssues(required, [], new Set(['ComfyUI_Fill-Nodes']))
-  ).toEqual(['FL_TimeLine: not registered by ComfyUI_Fill-Nodes'])
+    pairEndpointOwnershipIssues(['ExampleNode'], [], new Set(), endpointPacks)
+  ).toEqual([])
   expect(
     pairEndpointOwnershipIssues(
-      required,
-      [{ type: 'FL_TimeLine', pack: 'OtherPack' }],
-      new Set(['ComfyUI_Fill-Nodes'])
+      ['ExampleNode'],
+      [],
+      new Set(['ExamplePack']),
+      endpointPacks
     )
-  ).toEqual(['FL_TimeLine: expected ComfyUI_Fill-Nodes, observed OtherPack'])
+  ).toEqual(['ExampleNode: not registered by ExamplePack'])
   expect(
     pairEndpointOwnershipIssues(
-      required,
-      [{ type: 'FL_TimeLine', pack: 'ComfyUI_Fill-Nodes' }],
-      new Set(['ComfyUI_Fill-Nodes'])
+      ['ExampleNode'],
+      [{ type: 'ExampleNode', pack: 'OtherPack' }],
+      new Set(['ExamplePack']),
+      endpointPacks
+    )
+  ).toEqual(['ExampleNode: expected ExamplePack, observed OtherPack'])
+  expect(
+    pairEndpointOwnershipIssues(
+      ['ExampleNode'],
+      [{ type: 'ExampleNode', pack: 'ExamplePack' }],
+      new Set(['ExamplePack']),
+      endpointPacks
     )
   ).toEqual([])
 })

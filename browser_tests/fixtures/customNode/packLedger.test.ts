@@ -1,7 +1,4 @@
-import {
-  comfyExpect as expect,
-  comfyPageFixture as test
-} from '@e2e/fixtures/ComfyPage'
+import { describe, expect, it } from 'vitest'
 import {
   assertPackLedgerKeys,
   packLedgerFor
@@ -13,18 +10,18 @@ const ledger = {
   }
 }
 
-test.describe('packLedgerFor', () => {
-  test('matches cloud pack ids case-insensitively', () => {
+describe('packLedgerFor', () => {
+  it('matches cloud pack ids case-insensitively', () => {
     expect(packLedgerFor(ledger, 'comfyui-videohelpersuite')).toEqual(
       ledger['ComfyUI-VideoHelperSuite']
     )
   })
 
-  test('returns an empty ledger for an unknown pack', () => {
+  it('returns an empty ledger for an unknown pack', () => {
     expect(packLedgerFor(ledger, 'Other-Pack')).toEqual({})
   })
 
-  test('rejects ambiguous folded keys', () => {
+  it('rejects ambiguous folded keys', () => {
     expect(() =>
       packLedgerFor(
         {
@@ -37,8 +34,8 @@ test.describe('packLedgerFor', () => {
   })
 })
 
-test.describe('assertPackLedgerKeys', () => {
-  test('accepts a differently-cased manifest key', () => {
+describe('assertPackLedgerKeys', () => {
+  it('accepts a differently-cased manifest key', () => {
     expect(() =>
       assertPackLedgerKeys('ROUNDTRIP_VALUE_ALLOWLIST', ledger, [
         'comfyui-videohelpersuite'
@@ -46,7 +43,7 @@ test.describe('assertPackLedgerKeys', () => {
     ).not.toThrow()
   })
 
-  test('rejects a ledger pack absent from the manifest', () => {
+  it('rejects a ledger pack absent from the manifest', () => {
     expect(() =>
       assertPackLedgerKeys('ROUNDTRIP_VALUE_ALLOWLIST', ledger, ['Other-Pack'])
     ).toThrow(
@@ -54,7 +51,7 @@ test.describe('assertPackLedgerKeys', () => {
     )
   })
 
-  test('rejects duplicate case-insensitive ledger keys', () => {
+  it('rejects duplicate case-insensitive ledger keys', () => {
     expect(() =>
       assertPackLedgerKeys(
         'ROUNDTRIP_VALUE_ALLOWLIST',

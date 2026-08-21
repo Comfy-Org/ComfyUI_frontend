@@ -1,6 +1,6 @@
 import { test as base } from '@playwright/test'
 
-import { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { ComfyPage, testUsername } from '@e2e/fixtures/ComfyPage'
 import {
   createSubscriptionHelper,
   withFreeTier
@@ -24,7 +24,7 @@ export const localAuthFixture = base.extend<{ comfyPage: ComfyPage }>({
 
     const comfyPage = new ComfyPage(page, request)
     const userId = await comfyPage.setupUser(
-      `playwright-local-auth-${testInfo.parallelIndex}`
+      testUsername('playwright-local-auth', testInfo.parallelIndex)
     )
     await comfyPage.setupSettings({
       'Comfy.TutorialCompleted': true,
