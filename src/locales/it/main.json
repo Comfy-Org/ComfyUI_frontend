@@ -8,11 +8,6 @@
     "share": "Condividi",
     "shareTooltip": "Condividi workflow"
   },
-  "apiNodesCostBreakdown": {
-    "costPerRun": "Costo per esecuzione",
-    "title": "Nodo/i API",
-    "totalCost": "Costo totale"
-  },
   "apiNodesSignInDialog": {
     "message": "Questo workflow contiene nodi API, che richiedono l'accesso al tuo account per poter essere eseguiti.",
     "title": "Accesso richiesto per utilizzare i nodi API"

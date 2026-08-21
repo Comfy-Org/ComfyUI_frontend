@@ -8,11 +8,6 @@
     "share": "Partager",
     "shareTooltip": "Partager le workflow"
   },
-  "apiNodesCostBreakdown": {
-    "costPerRun": "Coût par exécution",
-    "title": "Nœud(s) API",
-    "totalCost": "Coût total"
-  },
   "apiNodesSignInDialog": {
     "message": "Ce flux de travail contient des nœuds API, qui nécessitent que vous soyez connecté à votre compte pour pouvoir fonctionner.",
     "title": "Connexion requise pour utiliser les nœuds API"

@@ -8,11 +8,6 @@
     "share": "分享",
     "shareTooltip": "分享工作流程"
   },
-  "apiNodesCostBreakdown": {
-    "costPerRun": "每次執行成本",
-    "title": "API 節點",
-    "totalCost": "總成本"
-  },
   "apiNodesSignInDialog": {
     "message": "此工作流程包含 API 節點，您必須登入帳戶才能執行。",
     "title": "需要登入以使用 API 節點"
