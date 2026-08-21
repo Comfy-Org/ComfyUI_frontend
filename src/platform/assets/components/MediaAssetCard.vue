@@ -43,8 +43,6 @@
         "
         class="absolute inset-0"
         @download="handleDownload"
-        @video-playing-state-changed="isVideoPlaying = $event"
-        @video-controls-changed="showVideoControls = $event"
         @image-loaded="handleImageLoaded"
       />
 
@@ -243,9 +241,6 @@ const emit = defineEmits<{
   'context-menu': [event: MouseEvent, asset: AssetItem]
 }>()
 
-const isVideoPlaying = ref(false)
-const showVideoControls = ref(false)
-
 // Store actual image dimensions
 const imageDimensions = ref<{ width: number; height: number } | undefined>()
 
@@ -299,9 +294,7 @@ const adaptedAsset = computed(() => {
 
 provide(MediaAssetKey, {
   asset: toRef(() => adaptedAsset.value),
-  context: toRef(() => ({ type: assetType.value })),
-  isVideoPlaying,
-  showVideoControls
+  context: toRef(() => ({ type: assetType.value }))
 })
 
 const formattedDuration = computed(() => {
