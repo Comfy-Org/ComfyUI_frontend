@@ -24,12 +24,60 @@ const domWidgetStore = useDomWidgetStore()
 
 const widgetStates = computed(() => [...domWidgetStore.widgetStates.values()])
 
+// Track canvas viewport and selected-node bounds between frames.
+// lgCanvas.ds.offset, ds.scale, and node.pos/size are non-reactive plain
+// props — Vue watchers in DomWidget won't fire unless widgetState.pos gets
+// a new array identity. We force reassignment whenever these change so the
+// downstream watcher re-runs updatePosition / updateDomClipping.
+const lastViewport = {
+  offsetX: Number.NaN,
+  offsetY: Number.NaN,
+  scale: Number.NaN
+}
+const lastSelected = {
+  id: undefined as string | number | undefined,
+  posX: 0,
+  posY: 0,
+  width: 0,
+  height: 0
+}
+
 const updateWidgets = () => {
   const lgCanvas = canvasStore.canvas
   if (!lgCanvas) return
 
   const lowQuality = lgCanvas.low_quality
   const currentGraph = lgCanvas.graph
+
+  const viewportOffsetX = lgCanvas.ds.offset[0]
+  const viewportOffsetY = lgCanvas.ds.offset[1]
+  const viewportScale = lgCanvas.ds.scale
+  const viewportChanged =
+    lastViewport.offsetX !== viewportOffsetX ||
+    lastViewport.offsetY !== viewportOffsetY ||
+    lastViewport.scale !== viewportScale
+  lastViewport.offsetX = viewportOffsetX
+  lastViewport.offsetY = viewportOffsetY
+  lastViewport.scale = viewportScale
+
+  const selectedNode = Object.values(lgCanvas.selected_nodes ?? {})[0]
+  const selectedNodeId = selectedNode?.id
+  const selectedPosX = selectedNode ? selectedNode.pos[0] : 0
+  const selectedPosY = selectedNode ? selectedNode.pos[1] : 0
+  const selectedWidth = selectedNode ? selectedNode.size[0] : 0
+  const selectedHeight = selectedNode ? selectedNode.size[1] : 0
+  const selectionChanged =
+    lastSelected.id !== selectedNodeId ||
+    (!!selectedNode &&
+      (lastSelected.posX !== selectedPosX ||
+        lastSelected.posY !== selectedPosY ||
+        lastSelected.width !== selectedWidth ||
+        lastSelected.height !== selectedHeight))
+  lastSelected.id = selectedNodeId
+  lastSelected.posX = selectedPosX
+  lastSelected.posY = selectedPosY
+  lastSelected.width = selectedWidth
+  lastSelected.height = selectedHeight
 
   for (const widgetState of widgetStates.value) {
     const widget = widgetState.widget
@@ -51,16 +99,40 @@ const updateWidgets = () => {
 
     if (widgetState.visible) {
       const margin = widget.margin
-      widgetState.pos = [
-        posNode.pos[0] + margin,
-        posNode.pos[1] + margin + widget.y
-      ]
-      widgetState.size = [
-        (widget.width ?? posNode.width) - margin * 2,
-        (widget.computedHeight ?? 50) - margin * 2
-      ]
-      widgetState.zIndex = getDomWidgetZIndex(posNode, currentGraph)
-      widgetState.readonly = lgCanvas.read_only
+      const newPosX = posNode.pos[0] + margin
+      const newPosY = posNode.pos[1] + margin + widget.y
+      if (
+        viewportChanged ||
+        selectionChanged ||
+        widgetState.pos[0] !== newPosX ||
+        widgetState.pos[1] !== newPosY
+      ) {
+        widgetState.pos = [newPosX, newPosY]
+      }
+
+      const newWidth = (widget.width ?? posNode.width) - margin * 2
+      const newHeight = (widget.computedHeight ?? 50) - margin * 2
+      if (
+        widgetState.size[0] !== newWidth ||
+        widgetState.size[1] !== newHeight
+      ) {
+        widgetState.size = [newWidth, newHeight]
+      }
+
+      const newZIndex = getDomWidgetZIndex(posNode, currentGraph)
+      if (widgetState.zIndex !== newZIndex) {
+        widgetState.zIndex = newZIndex
+      }
+
+      const newReadonly = lgCanvas.read_only
+      if (widgetState.readonly !== newReadonly) {
+        widgetState.readonly = newReadonly
+      }
+
+      const newComputedDisabled = widget.computedDisabled ?? false
+      if (widgetState.computedDisabled !== newComputedDisabled) {
+        widgetState.computedDisabled = newComputedDisabled
+      }
     }
   }
 }
