@@ -60,6 +60,7 @@ describe('MediaVideoTop', () => {
     expect(container.querySelector('video')).toBeInTheDocument()
     // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <source> has no ARIA role in happy-dom
     expect(container.querySelector('source')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 
   it('emits playback events and hides paused overlay while playing', async () => {
@@ -171,12 +172,11 @@ describe('MediaVideoTop', () => {
     { name: 'Enter', key: '{Enter}' },
     { name: 'Space', key: ' ' }
   ])(
-    'toggles playback from $name when native controls are disabled',
+    'toggles playback from $name while native controls are hidden',
     async ({ key }) => {
       const user = userEvent.setup()
       const { container } = renderVideoTop({
-        asset: createVideoAsset('https://example.com/thumb.jpg'),
-        showNativeControls: false
+        asset: createVideoAsset('https://example.com/thumb.jpg')
       })
 
       // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
@@ -209,11 +209,24 @@ describe('MediaVideoTop', () => {
     }
   )
 
-  it('leaves playback to the native controls when they are enabled', () => {
-    renderVideoTop({
+  it('hides the play button only while native controls are visible', async () => {
+    const user = userEvent.setup()
+    const { container } = renderVideoTop({
       asset: createVideoAsset('https://example.com/thumb.jpg')
     })
 
+    expect(screen.getByRole('button', { name: 'Play' })).toBeInTheDocument()
+
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
+    const video = container.querySelector('video')!
+    await fireEvent.play(video)
+    // eslint-disable-next-line testing-library/no-node-access -- root wrapper has no role
+    await user.hover(container.firstElementChild!)
+    expect(video.controls).toBe(true)
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
+
+    // eslint-disable-next-line testing-library/no-node-access -- root wrapper has no role
+    await user.unhover(container.firstElementChild!)
+    expect(screen.getByRole('button', { name: 'Pause' })).toBeInTheDocument()
   })
 })

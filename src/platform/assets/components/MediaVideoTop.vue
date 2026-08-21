@@ -23,12 +23,13 @@
       />
     </video>
     <VideoPlayOverlay :visible="!isPlaying" size="md" />
-    <!-- Without native controls the <video> never enters the tab order. Clicks must keep bubbling so modified ones still reach the card's selection rules. -->
+    <!-- While native controls are hidden the <video> never enters the tab order. Clicks must keep bubbling so modified ones still reach the card's selection rules. -->
     <button
-      v-if="!showNativeControls"
+      v-if="asset.src && !shouldShowControls"
       type="button"
+      draggable="false"
       :aria-label="isPlaying ? $t('g.pause') : $t('g.play')"
-      class="absolute top-1/2 left-1/2 size-10 -translate-1/2 rounded-full focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
+      class="absolute top-1/2 left-1/2 size-10 -translate-1/2 rounded-full focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black focus-visible:outline-none"
       @click="onVideoClick"
     />
   </div>

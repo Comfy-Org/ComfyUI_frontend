@@ -23,6 +23,7 @@
     <!-- Top Area: Media Preview -->
     <div
       class="relative aspect-square overflow-hidden p-0"
+      :inert="isDeleting"
       @click.stop="handlePreviewClick"
       @dblclick.stop="fileKind === 'image' && handleZoomClick()"
     >
