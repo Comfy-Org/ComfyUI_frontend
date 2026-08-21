@@ -13,19 +13,21 @@
     <div
       v-else
       data-testid="video-preview-container"
-      class="relative w-full"
-      :style="videoAspectRatioStyle"
+      :class="
+        cn(
+          'overflow-hidden rounded-lg bg-node-component-surface',
+          hasCrop && 'p-1.5'
+        )
+      "
     >
-      <div
-        class="relative size-full overflow-hidden rounded-lg bg-node-component-surface"
-      >
+      <div class="relative w-full" :style="videoAspectRatioStyle">
         <video
           ref="videoRef"
           data-testid="video-preview"
           :src="videoUrl"
           :muted="isMuted"
           :controls="isFullscreen"
-          class="size-full object-contain"
+          class="block size-full object-contain"
           preload="metadata"
           crossorigin="anonymous"
           playsinline
@@ -183,48 +185,43 @@
         :widget="endFrameWidget"
       />
 
-      <div
-        v-if="hasCrop"
-        class="col-span-full grid grid-cols-subgrid items-center"
-      >
-        <label class="truncate text-node-component-slot-text">
+      <div v-if="hasCrop" class="col-span-full flex items-center gap-2">
+        <label class="text-xs text-muted-foreground">
           {{ t('imageCrop.ratio') }}
         </label>
-        <div class="flex min-w-0 items-center gap-1">
-          <Select v-model="selectedRatio" :disabled="!canLockRatio">
-            <SelectTrigger
-              class="h-8 min-w-0 flex-1 text-xs"
-              :aria-label="t('imageCrop.ratio')"
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem v-for="key in ratioKeys" :key="key" :value="key">
-                {{ key === 'custom' ? t('imageCrop.custom') : key }}
-              </SelectItem>
-            </SelectContent>
-          </Select>
-          <Button
-            size="icon"
-            :variant="isLockEnabled ? 'primary' : 'secondary'"
-            class="size-8 shrink-0"
-            :disabled="!canLockRatio"
-            :aria-label="
-              isLockEnabled
-                ? t('imageCrop.unlockRatio')
-                : t('imageCrop.lockRatio')
-            "
-            @click="isLockEnabled = !isLockEnabled"
+        <Select v-model="selectedRatio" :disabled="!canLockRatio">
+          <SelectTrigger
+            class="h-7 w-24 text-xs"
+            :aria-label="t('imageCrop.ratio')"
           >
-            <i
-              :class="
-                isLockEnabled
-                  ? 'icon-[lucide--lock] size-3.5'
-                  : 'icon-[lucide--lock-open] size-3.5'
-              "
-            />
-          </Button>
-        </div>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem v-for="key in ratioKeys" :key="key" :value="key">
+              {{ key === 'custom' ? t('imageCrop.custom') : key }}
+            </SelectItem>
+          </SelectContent>
+        </Select>
+        <Button
+          size="icon"
+          :variant="isLockEnabled ? 'primary' : 'secondary'"
+          class="size-7"
+          :disabled="!canLockRatio"
+          :aria-label="
+            isLockEnabled
+              ? t('imageCrop.unlockRatio')
+              : t('imageCrop.lockRatio')
+          "
+          @click="isLockEnabled = !isLockEnabled"
+        >
+          <i
+            :class="
+              isLockEnabled
+                ? 'icon-[lucide--lock] size-3.5'
+                : 'icon-[lucide--lock-open] size-3.5'
+            "
+          />
+        </Button>
       </div>
 
       <WidgetBoundingBox
@@ -495,7 +492,7 @@ const metadataRows = computed(() => [
 watch(
   toRef(() => videoUrl),
   () => {
-    playheadFrame.value = 0
+    playheadFrame.value = hasTrim.value ? startFrame.value : 0
     isPlaying.value = false
     videoIntrinsicSize.value = null
   }
