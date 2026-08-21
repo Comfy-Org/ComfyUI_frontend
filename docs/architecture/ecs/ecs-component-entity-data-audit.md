@@ -35,7 +35,7 @@ extension-visible behavior.
 | Preview-exposure persistence        | Partial  | `previewExposureStore` is authoritative for runtime lookup and serialization; raw host keys and root-only cleanup remain.                                                |
 | Extension persistence adapter       | Complete | Validated extension payloads hydrate and project through a namespace; legacy hooks receive isolated compatibility views that cannot rewrite canonical fields.            |
 | Graph metadata                      | Open     | `revision`, `config`, and `extra` are public class fields configured and serialized directly.                                                                            |
-| Graph invalidation                  | Partial  | `incrementVersion()` centralizes the primitive, but graph, node, canvas, widget, slot, and subgraph callers still choose when `_version` changes.                        |
+| Graph invalidation                  | Complete | `batchVersionUpdates()` provides one graph-scoped invalidation policy while preserving synchronous compatibility updates and coalescing composite mutations.             |
 | Unknown-node fallback               | Complete | `NodeState` owns the opaque fallback DTO while compatibility access, replacement discovery, and selected live-field serialization overrides remain intact.               |
 | Execution order                     | Partial  | Topology recomputation writes `node.order`, but the mutable field is also configured and serialized as wire state.                                                       |
 | Entity ID allocation                | Partial  | Root and subgraphs share `LGraph.state`; helper APIs exist, but configure, clipboard, and compatibility setters can still observe or mutate class-owned counters.        |
@@ -246,6 +246,6 @@ sequence above rather than the summary-table order.
 | 14       | Unknown-node fallback               | Complete    | `ba4757f4c`  | Node state now owns unknown-node fallback records behind the compatibility accessor.             |
 | 15       | Delayed widget restoration          | Complete    | `972947d939` | Store-owned restoration state now hydrates configured and delayed widgets from wire shadows.     |
 | 16       | Extension persistence adapter       | Complete    | `287bf33f38` | Validated payloads round trip through a namespace while legacy hooks mutate isolated DTO views.  |
-| 17       | Execution order                     | Complete    | This commit  | Graph-scoped derived records own execution order behind the compatible node projection.          |
-| 18       | Graph invalidation                  | Not started |              |                                                                                                  |
+| 17       | Execution order                     | Complete    | `7f6c2783dd` | Graph-scoped derived records own execution order behind the compatible node projection.          |
+| 18       | Graph invalidation                  | Complete    | This commit  | Graph-scoped batching coalesces composite invalidations behind the compatible version counter.   |
 | 19       | Store-driven serialization          | Not started |              |                                                                                                  |
