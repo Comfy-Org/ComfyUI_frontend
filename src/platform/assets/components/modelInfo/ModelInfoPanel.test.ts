@@ -179,7 +179,11 @@ describe('ModelInfoPanel', () => {
       mockDistribution.isCloud = true
       renderPanel(createMockAsset({ is_immutable: true }))
       expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
-      expect(screen.getByText('Checkpoint')).toBeInTheDocument()
+      const field = screen.getByText('Checkpoint')
+      expect(field).toHaveAttribute('aria-disabled', 'true')
+      expect(field).toHaveAccessibleDescription(
+        'assetBrowser.modelInfo.modelTypeImmutableReadonly'
+      )
     })
 
     it('blames immutability, not core, for a read-only immutable asset on cloud', () => {
