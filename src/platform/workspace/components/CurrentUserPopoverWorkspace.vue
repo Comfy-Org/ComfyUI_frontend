@@ -30,7 +30,7 @@
         ref="workspaceSwitcherTrigger"
         v-tooltip="{ value: workspaceName, showDelay: 300 }"
         type="button"
-        class="flex w-full cursor-pointer items-center justify-between rounded-lg px-4 py-2 hover:bg-secondary-background-hover"
+        class="flex w-full cursor-pointer appearance-none items-center justify-between rounded-lg border-0 bg-transparent px-4 py-2 text-left hover:bg-secondary-background-hover"
         :aria-expanded="isWorkspaceSwitcherOpen"
         aria-haspopup="menu"
         aria-controls="workspace-switcher-panel"
