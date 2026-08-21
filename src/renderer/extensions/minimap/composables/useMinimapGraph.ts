@@ -17,6 +17,13 @@ interface GraphCallbacks {
   onConnectionChange?: (node: LGraphNode) => void
 }
 
+interface GraphDigests {
+  /** Node placement: drives bounds recomputation as well as repaint. */
+  geometry: number
+  /** Everything else the renderer draws: repaint only, bounds untouched. */
+  visual: number
+}
+
 /**
  * Fixed-point quantisation for digest input, at eighth-pixel precision.
  * Mixing raw values would truncate at each `| 0`, so a drag or resize that
@@ -46,13 +53,6 @@ function hashString(value: string): number {
     hash = (Math.imul(hash, 31) + value.charCodeAt(i)) | 0
   }
   return hash
-}
-
-interface GraphDigests {
-  /** Node placement: drives bounds recomputation as well as repaint. */
-  geometry: number
-  /** Everything else the renderer draws: repaint only, bounds untouched. */
-  visual: number
 }
 
 /**

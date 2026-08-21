@@ -17,18 +17,6 @@ export interface ToolControl {
   motionMode: 'exact' | 'compressed'
 }
 
-export function defaultControl(): ToolControl {
-  return {
-    active: false,
-    pausedDepth: 0,
-    abortMask: 0,
-    cursor: 'default',
-    wantsClick: true,
-    wantsDoubleClick: false,
-    motionMode: 'compressed'
-  }
-}
-
 export type CanvasItem =
   | {
       type: 'handle'
@@ -90,6 +78,18 @@ export interface Tool {
 export interface ToolDef {
   id: string
   create(ctx: ToolContext): Tool
+}
+
+export function defaultControl(): ToolControl {
+  return {
+    active: false,
+    pausedDepth: 0,
+    abortMask: 0,
+    cursor: 'default',
+    wantsClick: true,
+    wantsDoubleClick: false,
+    motionMode: 'compressed'
+  }
 }
 
 const registry = new Map<string, ToolDef>()

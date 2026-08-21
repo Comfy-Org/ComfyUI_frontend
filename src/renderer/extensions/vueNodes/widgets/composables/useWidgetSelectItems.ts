@@ -30,6 +30,18 @@ import type { IAssetsProvider } from '@/platform/assets/composables/media/IAsset
 import type { AssetKind } from '@/types/widgetTypes'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
+interface UseWidgetSelectItemsOptions {
+  values: MaybeRefOrGetter<unknown[] | undefined>
+  getOptionLabel: MaybeRefOrGetter<
+    ((value?: string | null) => string) | undefined
+  >
+  modelValue: Ref<string | undefined>
+  assetKind: MaybeRefOrGetter<AssetKind | undefined>
+  outputMediaAssets: IAssetsProvider
+  assetData: ReturnType<typeof useAssetWidgetData> | null
+  isAssetMode: MaybeRefOrGetter<boolean | undefined>
+}
+
 function getDisplayLabel(
   value: string,
   getOptionLabel?: ((value?: string | null) => string) | undefined
@@ -57,18 +69,6 @@ function getMediaUrl(
   const params = new URLSearchParams({ filename, type })
   appendCloudResParam(params, filename)
   return `/api/view?${params}`
-}
-
-interface UseWidgetSelectItemsOptions {
-  values: MaybeRefOrGetter<unknown[] | undefined>
-  getOptionLabel: MaybeRefOrGetter<
-    ((value?: string | null) => string) | undefined
-  >
-  modelValue: Ref<string | undefined>
-  assetKind: MaybeRefOrGetter<AssetKind | undefined>
-  outputMediaAssets: IAssetsProvider
-  assetData: ReturnType<typeof useAssetWidgetData> | null
-  isAssetMode: MaybeRefOrGetter<boolean | undefined>
 }
 
 export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {

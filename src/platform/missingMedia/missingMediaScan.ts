@@ -37,6 +37,17 @@ import {
 } from './missingMediaAssetResolver'
 import type { MissingMediaAssetResolver } from './missingMediaAssetResolver'
 
+interface MediaVerificationOptions {
+  isCloud: boolean
+  signal?: AbortSignal
+  resolveAssetSources?: MissingMediaAssetResolver
+}
+
+interface GeneratedCandidateMatchNames {
+  names: Set<string>
+  hashRequiredNames: Set<string>
+}
+
 function isComboWidget(widget: IBaseWidget): widget is IComboWidget {
   return widget.type === 'combo'
 }
@@ -57,6 +68,95 @@ function mediaTypeFromSpec(
   if (spec.image_upload || spec.animated_image_upload) return 'image'
   if (spec.audio_upload) return 'audio'
   return undefined
+}
+
+function getGeneratedCandidateMatchNames(
+  candidates: MissingMediaCandidate[],
+  isCloud: boolean,
+  pathOptions: { allowCompactSuffix: boolean }
+): GeneratedCandidateMatchNames {
+  const names = new Set<string>()
+  const hashRequiredNames = new Set<string>()
+
+  for (const candidate of candidates) {
+    if (!isGeneratedCandidate(candidate, pathOptions)) continue
+
+    const normalized = normalizeAnnotatedMediaPathForDetection(
+      candidate.name,
+      pathOptions
+    )
+    const lookupName = isCloud ? getMediaPathBasename(normalized) : normalized
+    names.add(lookupName)
+    if (isCloud && lookupName !== normalized) {
+      hashRequiredNames.add(lookupName)
+    }
+  }
+
+  return { names, hashRequiredNames }
+}
+
+function isGeneratedCandidate(
+  candidate: MissingMediaCandidate,
+  pathOptions: { allowCompactSuffix: boolean }
+): boolean {
+  const type = getAnnotatedMediaPathTypeForDetection(
+    candidate.name,
+    pathOptions
+  )
+  return type === 'output'
+}
+
+function isCandidateResolved(
+  candidate: MissingMediaCandidate,
+  identifiers: ReadonlySet<string>,
+  isOutputCandidate: boolean,
+  isCloud: boolean,
+  outputAssetHashIdentifiers: ReadonlySet<string>,
+  pathOptions: { allowCompactSuffix: boolean }
+): boolean {
+  const detectionNames = getMediaPathDetectionNames(candidate.name, pathOptions)
+  if (detectionNames.some((name) => identifiers.has(name))) return true
+  if (!isOutputCandidate || !isCloud) return false
+
+  const normalized = normalizeAnnotatedMediaPathForDetection(
+    candidate.name,
+    pathOptions
+  )
+  const basename = getMediaPathBasename(normalized)
+  return basename !== normalized && outputAssetHashIdentifiers.has(basename)
+}
+
+function getMediaPathBasename(value: string): string {
+  const separatorIndex = Math.max(
+    value.lastIndexOf('/'),
+    value.lastIndexOf('\\')
+  )
+  return separatorIndex === -1 ? value : value.slice(separatorIndex + 1)
+}
+
+function addAssetIdentifiers(
+  identifiers: Set<string>,
+  assets: AssetItem[],
+  pathOptions: { allowCompactSuffix: boolean }
+) {
+  for (const asset of assets) {
+    for (const name of getAssetDetectionNames(asset, pathOptions)) {
+      identifiers.add(name)
+    }
+  }
+}
+
+function addAssetHashIdentifiers(
+  identifiers: Set<string>,
+  assets: AssetItem[],
+  pathOptions: { allowCompactSuffix: boolean }
+) {
+  for (const asset of assets) {
+    if (!asset.hash) continue
+    for (const name of getMediaPathDetectionNames(asset.hash, pathOptions)) {
+      identifiers.add(name)
+    }
+  }
 }
 
 /**
@@ -180,17 +280,6 @@ export function isMissingMediaCandidateActive(
   )
 }
 
-interface MediaVerificationOptions {
-  isCloud: boolean
-  signal?: AbortSignal
-  resolveAssetSources?: MissingMediaAssetResolver
-}
-
-interface GeneratedCandidateMatchNames {
-  names: Set<string>
-  hashRequiredNames: Set<string>
-}
-
 /**
  * Verify media candidates against assets available to the current runtime.
  *
@@ -273,95 +362,6 @@ export async function verifyMediaCandidates(
       outputAssetHashIdentifiers,
       pathOptions
     )
-  }
-}
-
-function getGeneratedCandidateMatchNames(
-  candidates: MissingMediaCandidate[],
-  isCloud: boolean,
-  pathOptions: { allowCompactSuffix: boolean }
-): GeneratedCandidateMatchNames {
-  const names = new Set<string>()
-  const hashRequiredNames = new Set<string>()
-
-  for (const candidate of candidates) {
-    if (!isGeneratedCandidate(candidate, pathOptions)) continue
-
-    const normalized = normalizeAnnotatedMediaPathForDetection(
-      candidate.name,
-      pathOptions
-    )
-    const lookupName = isCloud ? getMediaPathBasename(normalized) : normalized
-    names.add(lookupName)
-    if (isCloud && lookupName !== normalized) {
-      hashRequiredNames.add(lookupName)
-    }
-  }
-
-  return { names, hashRequiredNames }
-}
-
-function isGeneratedCandidate(
-  candidate: MissingMediaCandidate,
-  pathOptions: { allowCompactSuffix: boolean }
-): boolean {
-  const type = getAnnotatedMediaPathTypeForDetection(
-    candidate.name,
-    pathOptions
-  )
-  return type === 'output'
-}
-
-function isCandidateResolved(
-  candidate: MissingMediaCandidate,
-  identifiers: ReadonlySet<string>,
-  isOutputCandidate: boolean,
-  isCloud: boolean,
-  outputAssetHashIdentifiers: ReadonlySet<string>,
-  pathOptions: { allowCompactSuffix: boolean }
-): boolean {
-  const detectionNames = getMediaPathDetectionNames(candidate.name, pathOptions)
-  if (detectionNames.some((name) => identifiers.has(name))) return true
-  if (!isOutputCandidate || !isCloud) return false
-
-  const normalized = normalizeAnnotatedMediaPathForDetection(
-    candidate.name,
-    pathOptions
-  )
-  const basename = getMediaPathBasename(normalized)
-  return basename !== normalized && outputAssetHashIdentifiers.has(basename)
-}
-
-function getMediaPathBasename(value: string): string {
-  const separatorIndex = Math.max(
-    value.lastIndexOf('/'),
-    value.lastIndexOf('\\')
-  )
-  return separatorIndex === -1 ? value : value.slice(separatorIndex + 1)
-}
-
-function addAssetIdentifiers(
-  identifiers: Set<string>,
-  assets: AssetItem[],
-  pathOptions: { allowCompactSuffix: boolean }
-) {
-  for (const asset of assets) {
-    for (const name of getAssetDetectionNames(asset, pathOptions)) {
-      identifiers.add(name)
-    }
-  }
-}
-
-function addAssetHashIdentifiers(
-  identifiers: Set<string>,
-  assets: AssetItem[],
-  pathOptions: { allowCompactSuffix: boolean }
-) {
-  for (const asset of assets) {
-    if (!asset.hash) continue
-    for (const name of getMediaPathDetectionNames(asset.hash, pathOptions)) {
-      identifiers.add(name)
-    }
   }
 }
 

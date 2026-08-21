@@ -17,6 +17,140 @@ import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscript
 import type { AuditLog } from '@/services/customerEventsService'
 import type { AppMode } from '@/utils/appMode'
 
+interface ExecutionOutcomeBaseMetadata extends WorkflowExecutionIntent {
+  startTime: number
+  submissionAcceptedAt?: number
+  executionStartedAt?: number
+  endTime: number
+  workflowContext?: WorkflowExecutionContext
+}
+
+type ShareFlowStep =
+  | 'dialog_opened'
+  | 'save_prompted'
+  | 'link_created'
+  | 'link_copied'
+
+interface EcommerceItemMetadata {
+  item_name: string
+  item_category: string
+  item_variant?: string
+  price: number
+  quantity: number
+}
+interface EcommerceMetadata {
+  currency: string
+  value: number
+  items: EcommerceItemMetadata[]
+}
+
+type BillingFailureCategory =
+  | 'validation'
+  | 'network'
+  | 'api_rejected'
+  | 'provider_decline'
+  | 'redirect'
+  | 'poll_timeout'
+  | 'stale_operation'
+  | 'rendering'
+  | 'unknown'
+
+type BillingErrorCode =
+  | 'downgrade_not_allowed'
+  | 'member_removal_failed'
+  | 'missing_checkout_response'
+  | 'missing_payment_method_url'
+  | 'payment_popup_blocked'
+  | 'reactivation_not_confirmed'
+  | 'reactivation_amount_changed'
+
+type BillingStarted = {
+  stage: 'started'
+  outcome: 'pending'
+}
+
+type BillingSucceeded = {
+  stage: 'succeeded'
+  outcome: 'success'
+}
+
+type BillingFailed = BillingFailure & {
+  stage: 'failed'
+  outcome: 'failure'
+}
+
+type BillingTimedOut = {
+  stage: 'timeout'
+  outcome: 'failure'
+  failure_category: 'poll_timeout'
+}
+
+type SubscriptionCheckoutBillingEvent = {
+  operation: 'subscription_checkout'
+  billing_op_id?: string
+  tier?: SubscriptionCheckoutTier
+  cycle?: BillingCycle
+  checkout_type?: SubscriptionCheckoutType
+  payment_intent_source?: PaymentIntentSource
+  /**
+   * Client-observed end-to-end wall time from this attempt's canonical
+   * `started` event through to this terminal event.
+   */
+  duration_ms?: number
+} & (BillingStarted | BillingSucceeded | BillingFailed)
+
+type BillingOperationBillingEvent = {
+  operation: 'operation'
+  /** Absent when the initiating call itself failed, before the backend returned one to poll. */
+  billing_op_id?: string
+  operation_type: 'subscription' | 'topup' | 'cancel'
+  tier?: SubscriptionCheckoutTier
+  cycle?: BillingCycle
+  checkout_type?: SubscriptionCheckoutType
+  payment_intent_source?: PaymentIntentSource
+  /**
+   * Client-observed end-to-end wall time from this attempt's canonical
+   * `started` event through to this terminal event, including the
+   * initiating API call's latency (not just the poll-observation window).
+   * On `timeout` this is how long the client watched, not the operation's
+   * true duration.
+   */
+  duration_ms?: number
+} & (BillingStarted | BillingSucceeded | BillingFailed | BillingTimedOut)
+
+type ResubscribeBillingEvent = {
+  operation: 'resubscribe'
+  source: ResubscribeClickMetadata['source']
+  payment_intent_source?: PaymentIntentSource
+} & (BillingStarted | BillingSucceeded | BillingFailed)
+
+type TopupBillingEvent = {
+  operation: 'topup'
+  billing_op_id?: string
+  /**
+   * Client-observed end-to-end wall time from this attempt's canonical
+   * `started` event through to this terminal event.
+   */
+  duration_ms?: number
+} & (BillingStarted | BillingSucceeded | BillingFailed)
+
+type DowngradeToPersonalBillingEvent = {
+  operation: 'downgrade_to_personal'
+  member_removal_count: number
+  member_removal_failures: number
+  target_tier?: TierKey
+  /**
+   * Client-observed end-to-end wall time from this attempt's canonical
+   * `started` event through to this terminal event.
+   */
+  duration_ms?: number
+} & (BillingStarted | BillingSucceeded | BillingFailed)
+
+type BillingTelemetryEventNameFor<T extends BillingTelemetryEvent> =
+  T extends BillingTelemetryEvent
+    ? `billing.${T['operation']}.${T['stage']}`
+    : never
+
 export type AuthMethod = 'email' | 'google' | 'github'
 
 export type PaymentIntentSource =
@@ -36,6 +170,7 @@ export type PaymentIntentSource =
   | 'free_tier_quota'
 
 export type SubscriptionCheckoutType = 'new' | 'change'
+
 export type SubscriptionCheckoutTier = TierKey | 'team'
 
 /**
@@ -258,14 +393,6 @@ export type WorkflowExecutionFailureReason =
   | 'execution_failed'
   | 'execution_interrupted'
 
-interface ExecutionOutcomeBaseMetadata extends WorkflowExecutionIntent {
-  startTime: number
-  submissionAcceptedAt?: number
-  executionStartedAt?: number
-  endTime: number
-  workflowContext?: WorkflowExecutionContext
-}
-
 export type ExecutionOutcomeMetadata = ExecutionOutcomeBaseMetadata &
   (
     | {
@@ -358,12 +485,6 @@ export interface WorkflowSavedMetadata {
 export interface DefaultViewSetMetadata {
   default_view: 'app' | 'graph'
 }
-
-type ShareFlowStep =
-  | 'dialog_opened'
-  | 'save_prompted'
-  | 'link_created'
-  | 'link_copied'
 
 export interface ShareFlowMetadata {
   step: ShareFlowStep
@@ -678,20 +799,6 @@ export interface BeginCheckoutMetadata
   payment_intent_source?: PaymentIntentSource
 }
 
-interface EcommerceItemMetadata {
-  item_name: string
-  item_category: string
-  item_variant?: string
-  price: number
-  quantity: number
-}
-
-interface EcommerceMetadata {
-  currency: string
-  value: number
-  items: EcommerceItemMetadata[]
-}
-
 export interface SubscriptionSuccessMetadata extends Record<string, unknown> {
   user_id?: string
   checkout_attempt_id?: string
@@ -727,112 +834,10 @@ export interface WorkspaceInviteFailedMetadata extends Record<string, unknown> {
   failed_count: number
 }
 
-type BillingFailureCategory =
-  | 'validation'
-  | 'network'
-  | 'api_rejected'
-  | 'provider_decline'
-  | 'redirect'
-  | 'poll_timeout'
-  | 'stale_operation'
-  | 'rendering'
-  | 'unknown'
-
-type BillingErrorCode =
-  | 'downgrade_not_allowed'
-  | 'member_removal_failed'
-  | 'missing_checkout_response'
-  | 'missing_payment_method_url'
-  | 'payment_popup_blocked'
-  | 'reactivation_not_confirmed'
-  | 'reactivation_amount_changed'
-
 export interface BillingFailure {
   failure_category: BillingFailureCategory
   error_code?: BillingErrorCode
 }
-
-type BillingStarted = {
-  stage: 'started'
-  outcome: 'pending'
-}
-
-type BillingSucceeded = {
-  stage: 'succeeded'
-  outcome: 'success'
-}
-
-type BillingFailed = BillingFailure & {
-  stage: 'failed'
-  outcome: 'failure'
-}
-
-type BillingTimedOut = {
-  stage: 'timeout'
-  outcome: 'failure'
-  failure_category: 'poll_timeout'
-}
-
-type SubscriptionCheckoutBillingEvent = {
-  operation: 'subscription_checkout'
-  billing_op_id?: string
-  tier?: SubscriptionCheckoutTier
-  cycle?: BillingCycle
-  checkout_type?: SubscriptionCheckoutType
-  payment_intent_source?: PaymentIntentSource
-  /**
-   * Client-observed end-to-end wall time from this attempt's canonical
-   * `started` event through to this terminal event.
-   */
-  duration_ms?: number
-} & (BillingStarted | BillingSucceeded | BillingFailed)
-
-type BillingOperationBillingEvent = {
-  operation: 'operation'
-  /** Absent when the initiating call itself failed, before the backend returned one to poll. */
-  billing_op_id?: string
-  operation_type: 'subscription' | 'topup' | 'cancel'
-  tier?: SubscriptionCheckoutTier
-  cycle?: BillingCycle
-  checkout_type?: SubscriptionCheckoutType
-  payment_intent_source?: PaymentIntentSource
-  /**
-   * Client-observed end-to-end wall time from this attempt's canonical
-   * `started` event through to this terminal event, including the
-   * initiating API call's latency (not just the poll-observation window).
-   * On `timeout` this is how long the client watched, not the operation's
-   * true duration.
-   */
-  duration_ms?: number
-} & (BillingStarted | BillingSucceeded | BillingFailed | BillingTimedOut)
-
-type ResubscribeBillingEvent = {
-  operation: 'resubscribe'
-  source: ResubscribeClickMetadata['source']
-  payment_intent_source?: PaymentIntentSource
-} & (BillingStarted | BillingSucceeded | BillingFailed)
-
-type TopupBillingEvent = {
-  operation: 'topup'
-  billing_op_id?: string
-  /**
-   * Client-observed end-to-end wall time from this attempt's canonical
-   * `started` event through to this terminal event.
-   */
-  duration_ms?: number
-} & (BillingStarted | BillingSucceeded | BillingFailed)
-
-type DowngradeToPersonalBillingEvent = {
-  operation: 'downgrade_to_personal'
-  member_removal_count: number
-  member_removal_failures: number
-  target_tier?: TierKey
-  /**
-   * Client-observed end-to-end wall time from this attempt's canonical
-   * `started` event through to this terminal event.
-   */
-  duration_ms?: number
-} & (BillingStarted | BillingSucceeded | BillingFailed)
 
 export type BillingTelemetryEvent =
   | SubscriptionCheckoutBillingEvent
@@ -841,59 +846,8 @@ export type BillingTelemetryEvent =
   | TopupBillingEvent
   | DowngradeToPersonalBillingEvent
 
-type BillingTelemetryEventNameFor<T extends BillingTelemetryEvent> =
-  T extends BillingTelemetryEvent
-    ? `billing.${T['operation']}.${T['stage']}`
-    : never
-
 export type BillingTelemetryEventName =
   BillingTelemetryEventNameFor<BillingTelemetryEvent>
-
-export function getBillingTelemetryEventName(
-  event: BillingTelemetryEvent
-): BillingTelemetryEventName {
-  return `billing.${event.operation}.${event.stage}` as BillingTelemetryEventName
-}
-
-export function getBillingTelemetryEventPayload(event: BillingTelemetryEvent) {
-  return {
-    operation: event.operation,
-    stage: event.stage,
-    outcome: event.outcome,
-    ...('billing_op_id' in event &&
-      event.billing_op_id !== undefined && {
-        billing_op_id: event.billing_op_id
-      }),
-    ...('operation_type' in event && {
-      operation_type: event.operation_type
-    }),
-    ...('tier' in event && event.tier !== undefined && { tier: event.tier }),
-    ...('cycle' in event &&
-      event.cycle !== undefined && { cycle: event.cycle }),
-    ...('checkout_type' in event &&
-      event.checkout_type !== undefined && {
-        checkout_type: event.checkout_type
-      }),
-    ...('payment_intent_source' in event &&
-      event.payment_intent_source !== undefined && {
-        payment_intent_source: event.payment_intent_source
-      }),
-    ...('source' in event && { source: event.source }),
-    ...('failure_category' in event && {
-      failure_category: event.failure_category
-    }),
-    ...('error_code' in event &&
-      event.error_code !== undefined && { error_code: event.error_code }),
-    ...('member_removal_count' in event && {
-      member_removal_count: event.member_removal_count,
-      member_removal_failures: event.member_removal_failures
-    }),
-    ...('target_tier' in event &&
-      event.target_tier !== undefined && { target_tier: event.target_tier }),
-    ...('duration_ms' in event &&
-      event.duration_ms !== undefined && { duration_ms: event.duration_ms })
-  }
-}
 
 /**
  * Telemetry provider interface for individual providers.
@@ -1030,6 +984,52 @@ export interface TelemetryProvider {
  * to registered providers using optional chaining.
  */
 export type TelemetryDispatcher = Required<TelemetryProvider>
+
+export function getBillingTelemetryEventName(
+  event: BillingTelemetryEvent
+): BillingTelemetryEventName {
+  return `billing.${event.operation}.${event.stage}` as BillingTelemetryEventName
+}
+
+export function getBillingTelemetryEventPayload(event: BillingTelemetryEvent) {
+  return {
+    operation: event.operation,
+    stage: event.stage,
+    outcome: event.outcome,
+    ...('billing_op_id' in event &&
+      event.billing_op_id !== undefined && {
+        billing_op_id: event.billing_op_id
+      }),
+    ...('operation_type' in event && {
+      operation_type: event.operation_type
+    }),
+    ...('tier' in event && event.tier !== undefined && { tier: event.tier }),
+    ...('cycle' in event &&
+      event.cycle !== undefined && { cycle: event.cycle }),
+    ...('checkout_type' in event &&
+      event.checkout_type !== undefined && {
+        checkout_type: event.checkout_type
+      }),
+    ...('payment_intent_source' in event &&
+      event.payment_intent_source !== undefined && {
+        payment_intent_source: event.payment_intent_source
+      }),
+    ...('source' in event && { source: event.source }),
+    ...('failure_category' in event && {
+      failure_category: event.failure_category
+    }),
+    ...('error_code' in event &&
+      event.error_code !== undefined && { error_code: event.error_code }),
+    ...('member_removal_count' in event && {
+      member_removal_count: event.member_removal_count,
+      member_removal_failures: event.member_removal_failures
+    }),
+    ...('target_tier' in event &&
+      event.target_tier !== undefined && { target_tier: event.target_tier }),
+    ...('duration_ms' in event &&
+      event.duration_ms !== undefined && { duration_ms: event.duration_ms })
+  }
+}
 
 /**
  * Telemetry event constants
@@ -1204,15 +1204,6 @@ const executionTriggerSources = [
 
 export type ExecutionTriggerSource = (typeof executionTriggerSources)[number]
 
-export function normalizeExecutionTriggerSource(
-  value: unknown
-): ExecutionTriggerSource {
-  return (
-    executionTriggerSources.find((triggerSource) => triggerSource === value) ??
-    'unknown'
-  )
-}
-
 /**
  * Union type for all possible telemetry event properties
  */
@@ -1257,3 +1248,12 @@ export type TelemetryEventProperties =
   | SubscriptionSuccessMetadata
   | WorkspaceInviteFailedMetadata
   | BillingTelemetryEvent
+
+export function normalizeExecutionTriggerSource(
+  value: unknown
+): ExecutionTriggerSource {
+  return (
+    executionTriggerSources.find((triggerSource) => triggerSource === value) ??
+    'unknown'
+  )
+}

@@ -16,52 +16,6 @@ interface DeduplicationResult {
 }
 
 /**
- * Dedupes node IDs across serialized subgraph definitions to prevent widget
- * store key collisions, and patches any root-level legacy proxyWidgets that
- * reference the remapped inner IDs. Returns deep clones; inputs are not
- * mutated. `state.lastNodeId` is advanced.
- */
-export function deduplicateSubgraphNodeIds(
-  subgraphs: ExportedSubgraph[],
-  reservedNodeIds: Set<number>,
-  state: LGraphState,
-  rootNodes?: ISerialisedNode[]
-): DeduplicationResult {
-  const clonedSubgraphs = structuredClone(subgraphs)
-  const clonedRootNodes = rootNodes ? structuredClone(rootNodes) : undefined
-
-  const usedNodeIds = new Set(reservedNodeIds)
-  const usedNodeIdKeys = new Set<NodeId>([...reservedNodeIds].map(toNodeId))
-  const subgraphIdSet = new Set(clonedSubgraphs.map((sg) => sg.id))
-  const remapBySubgraph = new Map<string, Map<NodeId, SerializedNodeId>>()
-
-  for (const subgraph of clonedSubgraphs) {
-    const remappedIds = remapNodeIds(
-      subgraph.nodes ?? [],
-      usedNodeIdKeys,
-      usedNodeIds,
-      state
-    )
-
-    if (remappedIds.size === 0) continue
-    remapBySubgraph.set(subgraph.id, remappedIds)
-
-    patchSerialisedLinks(subgraph.links ?? [], remappedIds)
-    patchPromotedWidgets(subgraph.widgets ?? [], remappedIds)
-  }
-
-  for (const subgraph of clonedSubgraphs) {
-    patchProxyWidgets(subgraph.nodes ?? [], subgraphIdSet, remapBySubgraph)
-  }
-
-  if (clonedRootNodes) {
-    patchProxyWidgets(clonedRootNodes, subgraphIdSet, remapBySubgraph)
-  }
-
-  return { subgraphs: clonedSubgraphs, rootNodes: clonedRootNodes }
-}
-
-/**
  * Remaps duplicate node IDs to unique values, updating `usedNodeIds`
  * and `state.lastNodeId` as new IDs are allocated.
  *
@@ -152,6 +106,75 @@ function patchPromotedWidgets(
   }
 }
 
+/** Patches legacy proxyWidgets in root-level SubgraphNode instances. */
+function patchProxyWidgets(
+  rootNodes: ISerialisedNode[],
+  subgraphIdSet: Set<string>,
+  remapBySubgraph: Map<string, Map<NodeId, SerializedNodeId>>
+): void {
+  for (const node of rootNodes) {
+    if (!subgraphIdSet.has(node.type)) continue
+    const remappedIds = remapBySubgraph.get(node.type)
+    if (!remappedIds) continue
+
+    const proxyWidgets = node.properties?.proxyWidgets
+    if (!Array.isArray(proxyWidgets)) continue
+
+    for (const entry of proxyWidgets) {
+      if (!Array.isArray(entry)) continue
+      const oldId = toNodeId(entry[0])
+      const newId = remappedIds.get(oldId)
+      if (newId !== undefined) entry[0] = String(newId)
+    }
+  }
+}
+
+/**
+ * Dedupes node IDs across serialized subgraph definitions to prevent widget
+ * store key collisions, and patches any root-level legacy proxyWidgets that
+ * reference the remapped inner IDs. Returns deep clones; inputs are not
+ * mutated. `state.lastNodeId` is advanced.
+ */
+export function deduplicateSubgraphNodeIds(
+  subgraphs: ExportedSubgraph[],
+  reservedNodeIds: Set<number>,
+  state: LGraphState,
+  rootNodes?: ISerialisedNode[]
+): DeduplicationResult {
+  const clonedSubgraphs = structuredClone(subgraphs)
+  const clonedRootNodes = rootNodes ? structuredClone(rootNodes) : undefined
+
+  const usedNodeIds = new Set(reservedNodeIds)
+  const usedNodeIdKeys = new Set<NodeId>([...reservedNodeIds].map(toNodeId))
+  const subgraphIdSet = new Set(clonedSubgraphs.map((sg) => sg.id))
+  const remapBySubgraph = new Map<string, Map<NodeId, SerializedNodeId>>()
+
+  for (const subgraph of clonedSubgraphs) {
+    const remappedIds = remapNodeIds(
+      subgraph.nodes ?? [],
+      usedNodeIdKeys,
+      usedNodeIds,
+      state
+    )
+
+    if (remappedIds.size === 0) continue
+    remapBySubgraph.set(subgraph.id, remappedIds)
+
+    patchSerialisedLinks(subgraph.links ?? [], remappedIds)
+    patchPromotedWidgets(subgraph.widgets ?? [], remappedIds)
+  }
+
+  for (const subgraph of clonedSubgraphs) {
+    patchProxyWidgets(subgraph.nodes ?? [], subgraphIdSet, remapBySubgraph)
+  }
+
+  if (clonedRootNodes) {
+    patchProxyWidgets(clonedRootNodes, subgraphIdSet, remapBySubgraph)
+  }
+
+  return { subgraphs: clonedSubgraphs, rootNodes: clonedRootNodes }
+}
+
 /**
  * Topologically sorts subgraph definitions so that leaf subgraphs (those
  * that no other subgraph depends on) are configured first. This ensures
@@ -207,27 +230,4 @@ export function topologicalSortSubgraphs(
   if (sorted.length !== subgraphs.length) return subgraphs
 
   return sorted
-}
-
-/** Patches legacy proxyWidgets in root-level SubgraphNode instances. */
-function patchProxyWidgets(
-  rootNodes: ISerialisedNode[],
-  subgraphIdSet: Set<string>,
-  remapBySubgraph: Map<string, Map<NodeId, SerializedNodeId>>
-): void {
-  for (const node of rootNodes) {
-    if (!subgraphIdSet.has(node.type)) continue
-    const remappedIds = remapBySubgraph.get(node.type)
-    if (!remappedIds) continue
-
-    const proxyWidgets = node.properties?.proxyWidgets
-    if (!Array.isArray(proxyWidgets)) continue
-
-    for (const entry of proxyWidgets) {
-      if (!Array.isArray(entry)) continue
-      const oldId = toNodeId(entry[0])
-      const newId = remappedIds.get(oldId)
-      if (newId !== undefined) entry[0] = String(newId)
-    }
-  }
 }

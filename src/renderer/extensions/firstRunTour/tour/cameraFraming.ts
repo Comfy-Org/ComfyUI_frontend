@@ -19,6 +19,19 @@ interface Viewport {
   height: number
 }
 
+function prefersReducedMotion(): boolean {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+}
+
+/** Re-solves the fill each time: it is a fraction of a viewport that can resize. */
+function fitInstantly(bounds: ReadOnlyRect) {
+  const canvas = useCanvasStore().canvas
+  const viewport = canvas?.canvas.getBoundingClientRect()
+  if (!canvas || !viewport?.width || !viewport.height) return
+  canvas.ds.fitToBounds(bounds, { zoom: focusFill(bounds, viewport) })
+  canvas.setDirty(true, true)
+}
+
 /**
  * Fill fraction that frames `bounds` beside the card. The fit centres the node
  * and so splits the free width evenly, hence room for a card column on each
@@ -39,19 +52,6 @@ export function focusFill(bounds: ReadOnlyRect, viewport: Viewport): number {
     (scale * Math.max(width, 300)) / viewport.width,
     (scale * Math.max(height, 300)) / viewport.height
   )
-}
-
-function prefersReducedMotion(): boolean {
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
-}
-
-/** Re-solves the fill each time: it is a fraction of a viewport that can resize. */
-function fitInstantly(bounds: ReadOnlyRect) {
-  const canvas = useCanvasStore().canvas
-  const viewport = canvas?.canvas.getBoundingClientRect()
-  if (!canvas || !viewport?.width || !viewport.height) return
-  canvas.ds.fitToBounds(bounds, { zoom: focusFill(bounds, viewport) })
-  canvas.setDirty(true, true)
 }
 
 const SETTLED_PX = 8

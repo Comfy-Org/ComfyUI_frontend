@@ -1,15 +1,6 @@
 import type { EffectiveMode } from './mode'
 import type { Rect } from './node'
 
-export interface NodeTexture {
-  source: WebGLTexture | HTMLCanvasElement | ImageBitmap | OffscreenCanvas
-  rect: Rect
-  linear: boolean
-  key?: string
-  version?: number
-  dirtyRects?: Rect[]
-}
-
 interface LayerInput {
   texture: NodeTexture
   mode: EffectiveMode
@@ -21,6 +12,15 @@ interface AdjustmentInput {
   adjust: { op: number; params: number[]; lut?: Uint8Array }
   opacity: number
   mask?: NodeTexture
+}
+
+export interface NodeTexture {
+  source: WebGLTexture | HTMLCanvasElement | ImageBitmap | OffscreenCanvas
+  rect: Rect
+  linear: boolean
+  key?: string
+  version?: number
+  dirtyRects?: Rect[]
 }
 
 export type CompositeInput = LayerInput | AdjustmentInput

@@ -12,14 +12,14 @@ import type {
 // initiated from /oauth/authorize). The Vite proxy / production ingress is
 // the single point of routing.
 
-export type OAuthWorkspace = OAuthConsentChallengeWorkspace
-
 /**
  * The spec marks these required, but backends predating them omit both, so the
  * consent screen degrades instead of rejecting the challenge. Presence is all
  * that deviates — the field types still come from the generated contract.
  */
 type SurfacedOnlyByNewerBackends = 'resource_display_name' | 'redirect_uri'
+
+export type OAuthWorkspace = OAuthConsentChallengeWorkspace
 
 export type OAuthConsentChallenge = Omit<
   GeneratedOAuthConsentChallenge,
@@ -62,16 +62,6 @@ const EXECUTABLE_SCHEMES: ReadonlySet<string> = new Set([
   'vbscript:',
   'about:'
 ])
-
-export class OAuthApiError extends Error {
-  constructor(
-    message: string,
-    readonly status: number
-  ) {
-    super(message)
-    this.name = 'OAuthApiError'
-  }
-}
 
 async function readErrorMessage(response: Response): Promise<string> {
   const body: unknown = await response.json().catch(() => null)
@@ -214,4 +204,14 @@ export async function submitOAuthConsentDecision({
   // Navigate the parsed URL, not the raw string, so the value validated
   // above is byte-for-byte the value the browser receives.
   globalThis.location.href = target.href
+}
+
+export class OAuthApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number
+  ) {
+    super(message)
+    this.name = 'OAuthApiError'
+  }
 }

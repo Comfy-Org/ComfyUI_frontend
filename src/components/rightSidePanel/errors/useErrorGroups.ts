@@ -48,18 +48,6 @@ const PROMPT_CARD_ID = '__prompt__'
 /** Sentinel: distinguishes "fetch in-flight" from "fetch done, pack not found (null)". */
 const RESOLVING = '__RESOLVING__'
 
-export interface MissingPackGroup {
-  packId: string | null
-  nodeTypes: MissingNodeType[]
-  isResolving: boolean
-}
-
-export interface SwapNodeGroup {
-  type: string
-  newNodeId: string | undefined
-  nodeTypes: MissingNodeType[]
-}
-
 interface GroupEntry {
   type: 'execution'
   displayTitle: string
@@ -227,6 +215,18 @@ function searchErrorGroups(groups: ErrorGroup[], query: string) {
       }
     })
     .filter((group) => group.type !== 'execution' || group.cards.length > 0)
+}
+
+export interface MissingPackGroup {
+  packId: string | null
+  nodeTypes: MissingNodeType[]
+  isResolving: boolean
+}
+
+export interface SwapNodeGroup {
+  type: string
+  newNodeId: string | undefined
+  nodeTypes: MissingNodeType[]
 }
 
 export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {

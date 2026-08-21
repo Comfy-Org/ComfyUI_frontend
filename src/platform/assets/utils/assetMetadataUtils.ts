@@ -148,6 +148,51 @@ export function getSourceName(url: string): string {
 /** Prefix for the namespaced tag that carries a model's folder category, e.g. `model_type:checkpoints`. */
 export const MODEL_TYPE_TAG_PREFIX = 'model_type:'
 
+/** Strips the `model_type:` prefix off each namespaced tag, dropping non-`model_type:` tags. */
+function getModelTypeTagValues(asset: AssetItem): string[] {
+  return asset.tags
+    .filter((tag) => tag.startsWith(MODEL_TYPE_TAG_PREFIX))
+    .map((tag) => tag.slice(MODEL_TYPE_TAG_PREFIX.length))
+    .filter((tag) => tag.length > 0)
+}
+
+/**
+ * The asset's primary `model_type:` membership: the lexicographically-first of
+ * its stripped `model_type:` values, or `undefined` for an uncovered asset.
+ * Sorting makes the choice deterministic because the backend does not guarantee
+ * the order of an asset's `model_type:` tags. This is the single membership a
+ * re-type replaces and the value the edit dropdown / browser title reflect.
+ */
+function getPrimaryModelType(asset: AssetItem): string | undefined {
+  return getModelTypeTagValues(asset).toSorted()[0]
+}
+
+/** Legacy grouping: each non-`models` tag's top-level path segment. */
+function getBareTagCategories(asset: AssetItem): string[] {
+  return asset.tags
+    .filter((tag) => tag !== MODELS_TAG && tag.length > 0)
+    .map((tag) => tag.split('/')[0])
+}
+
+/** Number of `parent/child` segments in a tag, used to pick the most specific. */
+function pathDepth(tag: string): number {
+  return tag.split('/').length
+}
+
+/**
+ * Type guard: a pixel dimension is a finite positive integer. `metadata` is
+ * typed as `Record<string, unknown>`, so `typeof === 'number'` alone admits
+ * NaN, Infinity, 0, negatives, and fractional values.
+ */
+function isValidDimension(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value > 0
+}
+
+export interface ImageDimensions {
+  width: number
+  height: number
+}
+
 /**
  * Extracts the model type from asset tags as a bare (non-namespaced) value.
  * Never returns a raw `model_type:*` literal: this value feeds edit widgets
@@ -173,25 +218,6 @@ export function getAssetModelType(asset: AssetItem): string | null {
 export function toModelTypeTag(folderName: string): string {
   if (folderName.startsWith(MODEL_TYPE_TAG_PREFIX)) return folderName
   return `${MODEL_TYPE_TAG_PREFIX}${folderName}`
-}
-
-/** Strips the `model_type:` prefix off each namespaced tag, dropping non-`model_type:` tags. */
-function getModelTypeTagValues(asset: AssetItem): string[] {
-  return asset.tags
-    .filter((tag) => tag.startsWith(MODEL_TYPE_TAG_PREFIX))
-    .map((tag) => tag.slice(MODEL_TYPE_TAG_PREFIX.length))
-    .filter((tag) => tag.length > 0)
-}
-
-/**
- * The asset's primary `model_type:` membership: the lexicographically-first of
- * its stripped `model_type:` values, or `undefined` for an uncovered asset.
- * Sorting makes the choice deterministic because the backend does not guarantee
- * the order of an asset's `model_type:` tags. This is the single membership a
- * re-type replaces and the value the edit dropdown / browser title reflect.
- */
-function getPrimaryModelType(asset: AssetItem): string | undefined {
-  return getModelTypeTagValues(asset).toSorted()[0]
 }
 
 /**
@@ -261,13 +287,6 @@ export function resolveModelTypeTagUpdate(
   return buildModelTypeTagUpdate(asset, newFolderName, modelTypeMode)
 }
 
-/** Legacy grouping: each non-`models` tag's top-level path segment. */
-function getBareTagCategories(asset: AssetItem): string[] {
-  return asset.tags
-    .filter((tag) => tag !== MODELS_TAG && tag.length > 0)
-    .map((tag) => tag.split('/')[0])
-}
-
 /**
  * Resolves the category keys a model asset is grouped under.
  *
@@ -313,11 +332,6 @@ export function getPrimaryCategoryTag(
     )
   }
   return asset.tags.find((tag) => tag !== MODELS_TAG)
-}
-
-/** Number of `parent/child` segments in a tag, used to pick the most specific. */
-function pathDepth(tag: string): number {
-  return tag.split('/').length
 }
 
 /** Removes the `model_type:` namespace prefix from a tag when present. */
@@ -469,20 +483,6 @@ export function getAssetCardTitle(asset: AssetItem): string {
   const curatedName = getStringProperty(asset, 'name')
   if (curatedName && curatedName !== asset.name) return curatedName
   return getAssetDisplayFilename(asset)
-}
-
-export interface ImageDimensions {
-  width: number
-  height: number
-}
-
-/**
- * Type guard: a pixel dimension is a finite positive integer. `metadata` is
- * typed as `Record<string, unknown>`, so `typeof === 'number'` alone admits
- * NaN, Infinity, 0, negatives, and fractional values.
- */
-function isValidDimension(value: unknown): value is number {
-  return typeof value === 'number' && Number.isInteger(value) && value > 0
 }
 
 /**

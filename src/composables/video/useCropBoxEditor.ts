@@ -7,9 +7,6 @@ import type { Bounds } from '@/renderer/core/layout/types'
 
 export const MIN_CROP_SIZE = 16
 
-export type CropResizeDir = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw'
-export type CropDragMode = 'move' | CropResizeDir
-
 interface UseCropBoxEditorOptions {
   rootEl: Ref<HTMLElement | null>
   sourceWidth: Ref<number>
@@ -17,6 +14,9 @@ interface UseCropBoxEditorOptions {
   isDisabled: () => boolean
   lockedRatio?: Ref<number | null>
 }
+export type CropResizeDir = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw'
+
+export type CropDragMode = 'move' | CropResizeDir
 
 export function useCropBoxEditor(
   bounds: Ref<Bounds>,

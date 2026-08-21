@@ -27,6 +27,135 @@ const layoutMutations = useLayoutMutations()
 
 export type { RerouteId } from '@/types/rerouteId'
 
+/**
+ * Retrieves the position of the next reroute in the chain, or the destination input slot on this link.
+ * @param network The network of links
+ * @param link The link representing the current reroute chain
+ * @param id The ID of "this" reroute
+ * @returns The position of the next reroute or the input slot target, otherwise `undefined`.
+ */
+function getNextPos(
+  network: ReadonlyLinkNetwork,
+  link: LLink | undefined,
+  id: RerouteId
+) {
+  if (!link) return
+
+  const linkPos = LLink.findNextReroute(network, link, id)?.pos
+  if (linkPos) return linkPos
+
+  // Floating link with no input to find
+  if (link.target_id === UNASSIGNED_NODE_ID || link.target_slot === -1) return
+
+  return network.getNodeById(link.target_id)?.getInputPos(link.target_slot)
+}
+
+/** Returns the direction from one point to another in radians. */
+function getDirection(fromPos: Point, toPos: Point) {
+  return Math.atan2(toPos[1] - fromPos[1], toPos[0] - fromPos[0])
+}
+
+/**
+ * Represents a slot on a reroute.
+ * @private Designed for internal use within this module.
+ */
+class RerouteSlot {
+  /** The reroute that the slot belongs to. */
+  private readonly reroute: Reroute
+
+  private readonly offsetMultiplier: 1 | -1
+  /** Centre point of this slot. */
+  get pos(): Point {
+    const [x, y] = this.reroute.pos
+    return [x + Reroute.slotOffset * this.offsetMultiplier, y]
+  }
+
+  /** Whether any changes require a redraw. */
+  dirty: boolean = false
+
+  private hoveringInternal = false
+  /** Whether the pointer is hovering over the slot itself. */
+  get hovering() {
+    return this.hoveringInternal
+  }
+
+  set hovering(value) {
+    if (!Object.is(this.hoveringInternal, value)) {
+      this.hoveringInternal = value
+      this.dirty = true
+    }
+  }
+
+  private showOutlineInternal = false
+  /** Whether the slot outline / faint background is visible. */
+  get showOutline() {
+    return this.showOutlineInternal
+  }
+
+  set showOutline(value) {
+    if (!Object.is(this.showOutlineInternal, value)) {
+      this.showOutlineInternal = value
+      this.dirty = true
+    }
+  }
+
+  constructor(reroute: Reroute, isInput: boolean) {
+    this.reroute = reroute
+    this.offsetMultiplier = isInput ? -1 : 1
+  }
+
+  /**
+   * Updates the slot's visibility based on the position of the pointer.
+   * @param pos The position of the pointer.
+   * @param outlineOnly If `true`, slot will display with the faded outline only ({@link showOutline}).
+   */
+  update(pos: Point, outlineOnly?: boolean) {
+    if (outlineOnly) {
+      this.hovering = false
+      this.showOutline = true
+    } else {
+      const dist = distance(this.pos, pos)
+      this.hovering = dist <= 2 * Reroute.slotRadius
+      this.showOutline = dist <= 5 * Reroute.slotRadius
+    }
+  }
+
+  /** Hides the slot. */
+  hide() {
+    this.hovering = false
+    this.showOutline = false
+  }
+
+  /**
+   * Draws the slot on the canvas.
+   * @param ctx The canvas context to draw on.
+   */
+  draw(ctx: CanvasRenderingContext2D): void {
+    const { fillStyle, strokeStyle, lineWidth } = ctx
+    const {
+      showOutline,
+      hovering,
+      pos: [x, y]
+    } = this
+    if (!showOutline) return
+
+    try {
+      ctx.fillStyle = hovering ? this.reroute.colour : 'rgba(127,127,127,0.3)'
+      ctx.strokeStyle = 'rgb(0,0,0,0.5)'
+      ctx.lineWidth = 1
+
+      ctx.beginPath()
+      ctx.arc(x, y, Reroute.slotRadius, 0, 2 * Math.PI)
+      ctx.fill()
+      ctx.stroke()
+    } finally {
+      ctx.fillStyle = fillStyle
+      ctx.strokeStyle = strokeStyle
+      ctx.lineWidth = lineWidth
+    }
+  }
+}
+
 /** The input or output slot that an incomplete reroute link is connected to. */
 export interface FloatingRerouteSlot {
   /** Floating connection to an input or output */
@@ -692,133 +821,4 @@ export class Reroute
       floating: this.floating ? { slotType: this.floating.slotType } : undefined
     }
   }
-}
-
-/**
- * Represents a slot on a reroute.
- * @private Designed for internal use within this module.
- */
-class RerouteSlot {
-  /** The reroute that the slot belongs to. */
-  private readonly reroute: Reroute
-
-  private readonly offsetMultiplier: 1 | -1
-  /** Centre point of this slot. */
-  get pos(): Point {
-    const [x, y] = this.reroute.pos
-    return [x + Reroute.slotOffset * this.offsetMultiplier, y]
-  }
-
-  /** Whether any changes require a redraw. */
-  dirty: boolean = false
-
-  private hoveringInternal = false
-  /** Whether the pointer is hovering over the slot itself. */
-  get hovering() {
-    return this.hoveringInternal
-  }
-
-  set hovering(value) {
-    if (!Object.is(this.hoveringInternal, value)) {
-      this.hoveringInternal = value
-      this.dirty = true
-    }
-  }
-
-  private showOutlineInternal = false
-  /** Whether the slot outline / faint background is visible. */
-  get showOutline() {
-    return this.showOutlineInternal
-  }
-
-  set showOutline(value) {
-    if (!Object.is(this.showOutlineInternal, value)) {
-      this.showOutlineInternal = value
-      this.dirty = true
-    }
-  }
-
-  constructor(reroute: Reroute, isInput: boolean) {
-    this.reroute = reroute
-    this.offsetMultiplier = isInput ? -1 : 1
-  }
-
-  /**
-   * Updates the slot's visibility based on the position of the pointer.
-   * @param pos The position of the pointer.
-   * @param outlineOnly If `true`, slot will display with the faded outline only ({@link showOutline}).
-   */
-  update(pos: Point, outlineOnly?: boolean) {
-    if (outlineOnly) {
-      this.hovering = false
-      this.showOutline = true
-    } else {
-      const dist = distance(this.pos, pos)
-      this.hovering = dist <= 2 * Reroute.slotRadius
-      this.showOutline = dist <= 5 * Reroute.slotRadius
-    }
-  }
-
-  /** Hides the slot. */
-  hide() {
-    this.hovering = false
-    this.showOutline = false
-  }
-
-  /**
-   * Draws the slot on the canvas.
-   * @param ctx The canvas context to draw on.
-   */
-  draw(ctx: CanvasRenderingContext2D): void {
-    const { fillStyle, strokeStyle, lineWidth } = ctx
-    const {
-      showOutline,
-      hovering,
-      pos: [x, y]
-    } = this
-    if (!showOutline) return
-
-    try {
-      ctx.fillStyle = hovering ? this.reroute.colour : 'rgba(127,127,127,0.3)'
-      ctx.strokeStyle = 'rgb(0,0,0,0.5)'
-      ctx.lineWidth = 1
-
-      ctx.beginPath()
-      ctx.arc(x, y, Reroute.slotRadius, 0, 2 * Math.PI)
-      ctx.fill()
-      ctx.stroke()
-    } finally {
-      ctx.fillStyle = fillStyle
-      ctx.strokeStyle = strokeStyle
-      ctx.lineWidth = lineWidth
-    }
-  }
-}
-
-/**
- * Retrieves the position of the next reroute in the chain, or the destination input slot on this link.
- * @param network The network of links
- * @param link The link representing the current reroute chain
- * @param id The ID of "this" reroute
- * @returns The position of the next reroute or the input slot target, otherwise `undefined`.
- */
-function getNextPos(
-  network: ReadonlyLinkNetwork,
-  link: LLink | undefined,
-  id: RerouteId
-) {
-  if (!link) return
-
-  const linkPos = LLink.findNextReroute(network, link, id)?.pos
-  if (linkPos) return linkPos
-
-  // Floating link with no input to find
-  if (link.target_id === UNASSIGNED_NODE_ID || link.target_slot === -1) return
-
-  return network.getNodeById(link.target_id)?.getInputPos(link.target_slot)
-}
-
-/** Returns the direction from one point to another in radians. */
-function getDirection(fromPos: Point, toPos: Point) {
-  return Math.atan2(toPos[1] - fromPos[1], toPos[0] - fromPos[0])
 }

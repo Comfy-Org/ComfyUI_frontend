@@ -18,26 +18,6 @@ type LinkExtension = {
 }
 
 /**
- * Identifies all legacy Reroute nodes in a workflow
- */
-export function findLegacyRerouteNodes(
-  workflow: WorkflowJSON04
-): RerouteNode[] {
-  return workflow.nodes.filter(
-    (node) => node.type === 'Reroute'
-  ) as RerouteNode[]
-}
-
-/**
- * Checks if the workflow has no native reroutes
- */
-export function noNativeReroutes(workflow: WorkflowJSON04): boolean {
-  return (
-    !workflow.extra?.reroutes?.length && !workflow.extra?.linkExtensions?.length
-  )
-}
-
-/**
  * Gets the center position of a node
  */
 function getNodeCenter(node: ComfyNode): [number, number] {
@@ -308,6 +288,26 @@ class ConversionContext {
       }
     }
   }
+}
+
+/**
+ * Identifies all legacy Reroute nodes in a workflow
+ */
+export function findLegacyRerouteNodes(
+  workflow: WorkflowJSON04
+): RerouteNode[] {
+  return workflow.nodes.filter(
+    (node) => node.type === 'Reroute'
+  ) as RerouteNode[]
+}
+
+/**
+ * Checks if the workflow has no native reroutes
+ */
+export function noNativeReroutes(workflow: WorkflowJSON04): boolean {
+  return (
+    !workflow.extra?.reroutes?.length && !workflow.extra?.linkExtensions?.length
+  )
 }
 
 /**

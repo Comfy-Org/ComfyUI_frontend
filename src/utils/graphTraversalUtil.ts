@@ -16,6 +16,32 @@ import type { NodeId } from '@/types/nodeId'
 
 import { isSubgraphIoNode } from './typeGuardUtil'
 
+/**
+ * Options for traverseNodesDepthFirst function
+ */
+interface TraverseNodesOptions<T> {
+  /** Function called for each node during traversal */
+  visitor?: (node: LGraphNode, context: T) => T
+  /** Initial context value */
+  initialContext?: T
+  /** Whether to traverse into subgraph nodes (default: true) */
+  expandSubgraphs?: boolean
+}
+
+/**
+ * Options for collectFromNodes function
+ */
+interface CollectFromNodesOptions<T, C> {
+  /** Function that returns data to collect for each node */
+  collector?: (node: LGraphNode, context: C) => T | null
+  /** Function that builds context for child nodes */
+  contextBuilder?: (node: LGraphNode, parentContext: C) => C
+  /** Initial context value */
+  initialContext?: C
+  /** Whether to traverse into subgraph nodes (default: true) */
+  expandSubgraphs?: boolean
+}
+
 function parseNodeIdPath(path: string[]): NodeId[] | null {
   const nodeIds = path.map(parseNodeId)
   return nodeIds.every((nodeId): nodeId is NodeId => nodeId !== null)
@@ -31,6 +57,29 @@ function createExecutionIdFromPath(
   if (!parentNodeIds) return null
 
   return createNodeExecutionId([...parentNodeIds, nodeId])
+}
+
+function getCandidateActivityExecutionId(candidate: {
+  nodeId?: string | number | null | undefined
+  sourceExecutionId?: string | number | null | undefined
+}): string | null {
+  const executionId = candidate.sourceExecutionId ?? candidate.nodeId
+  return executionId == null ? null : String(executionId)
+}
+
+function findPartialExecutionPathToGraph(
+  target: LGraph,
+  root: LGraph
+): string | undefined {
+  for (const node of root.nodes) {
+    if (!node.isSubgraphNode()) continue
+
+    if (node.subgraph === target) return `${node.id}`
+
+    const subpath = findPartialExecutionPathToGraph(target, node.subgraph)
+    if (subpath !== undefined) return node.id + ':' + subpath
+  }
+  return undefined
 }
 
 /**
@@ -445,14 +494,6 @@ export function isExecutionPathActive(
   return isAncestorPathActive(rootGraph, executionId)
 }
 
-function getCandidateActivityExecutionId(candidate: {
-  nodeId?: string | number | null | undefined
-  sourceExecutionId?: string | number | null | undefined
-}): string | null {
-  const executionId = candidate.sourceExecutionId ?? candidate.nodeId
-  return executionId == null ? null : String(executionId)
-}
-
 export function isCandidateScopeActive(
   rootGraph: LGraph | null | undefined,
   candidate: {
@@ -680,18 +721,6 @@ export function getAllNonIoNodesInSubgraph(subgraph: Subgraph): LGraphNode[] {
 }
 
 /**
- * Options for traverseNodesDepthFirst function
- */
-interface TraverseNodesOptions<T> {
-  /** Function called for each node during traversal */
-  visitor?: (node: LGraphNode, context: T) => T
-  /** Initial context value */
-  initialContext?: T
-  /** Whether to traverse into subgraph nodes (default: true) */
-  expandSubgraphs?: boolean
-}
-
-/**
  * Performs depth-first traversal of nodes and their subgraphs.
  * Generic visitor pattern that can be used for various node processing tasks.
  *
@@ -753,20 +782,6 @@ export function reduceAllNodes<T>(
     result = reducer(result, node)
   })
   return result
-}
-
-/**
- * Options for collectFromNodes function
- */
-interface CollectFromNodesOptions<T, C> {
-  /** Function that returns data to collect for each node */
-  collector?: (node: LGraphNode, context: C) => T | null
-  /** Function that builds context for child nodes */
-  contextBuilder?: (node: LGraphNode, parentContext: C) => C
-  /** Initial context value */
-  initialContext?: C
-  /** Whether to traverse into subgraph nodes (default: true) */
-  expandSubgraphs?: boolean
 }
 
 /**
@@ -860,19 +875,4 @@ export function getActiveGraphNodeIds(
     }
   }
   return ids
-}
-
-function findPartialExecutionPathToGraph(
-  target: LGraph,
-  root: LGraph
-): string | undefined {
-  for (const node of root.nodes) {
-    if (!node.isSubgraphNode()) continue
-
-    if (node.subgraph === target) return `${node.id}`
-
-    const subpath = findPartialExecutionPathToGraph(target, node.subgraph)
-    if (subpath !== undefined) return node.id + ':' + subpath
-  }
-  return undefined
 }

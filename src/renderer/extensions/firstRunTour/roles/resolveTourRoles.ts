@@ -15,13 +15,6 @@ import type {
   TourMediaKind
 } from './tourRolePins'
 
-export interface ResolvedRoles {
-  source: NodeId | null
-  promptHost: NodeId | null
-  sink: NodeId | null
-  mediaKind: TourMediaKind
-}
-
 /** The root-graph node a role is spotlit through: itself, or the subgraph node holding it. */
 function rootHost(
   node: LGraphNode | null | undefined,
@@ -51,6 +44,13 @@ function resolveFromGraph(graph: LGraph): ResolvedRoles | null {
     sink: rootHost(roles.sink, graph),
     mediaKind: roles.mediaKind
   }
+}
+
+export interface ResolvedRoles {
+  source: NodeId | null
+  promptHost: NodeId | null
+  sink: NodeId | null
+  mediaKind: TourMediaKind
 }
 
 /**

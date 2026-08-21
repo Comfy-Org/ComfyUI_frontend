@@ -6,6 +6,10 @@ import { useTrimPlayback } from './useTrimPlayback'
 
 type Listener = (event: Event) => void
 
+async function flushSeek() {
+  await new Promise((resolve) => setTimeout(resolve))
+}
+
 class MockVideoElement {
   duration = 10
   paused = true
@@ -44,10 +48,6 @@ class MockVideoElement {
       listener(new Event(type))
     }
   }
-}
-
-async function flushSeek() {
-  await new Promise((resolve) => setTimeout(resolve))
 }
 
 describe('useTrimPlayback', () => {

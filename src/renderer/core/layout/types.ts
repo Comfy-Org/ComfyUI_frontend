@@ -11,12 +11,63 @@ import type { NodeId } from '@/types/nodeId'
 import type { RerouteId } from '@/types/rerouteId'
 import type { SlotDirection, SlotId, SlotIndex } from '@/types/slotId'
 
-// Enum for layout source types
-export enum LayoutSource {
-  Canvas = 'canvas',
-  Vue = 'vue',
-  DOM = 'dom',
-  External = 'external'
+/**
+ * Meta-only base for all operations - contains common fields
+ */
+interface OperationMeta {
+  /** Unique operation ID for deduplication */
+  id?: string
+  /** Timestamp for ordering operations */
+  timestamp: number
+  /** Actor who performed the operation (for CRDT) */
+  actor: string
+  /** Source system that initiated the operation */
+  source: LayoutSource
+  /** Operation type discriminator */
+  type: OperationType
+}
+
+/**
+ * Entity-specific base types for proper type discrimination
+ */
+type NodeOpBase = OperationMeta & { entity: 'node'; nodeId: NodeId }
+
+type LinkOpBase = OperationMeta & { entity: 'link'; linkId: LinkId }
+
+type RerouteOpBase = OperationMeta & {
+  entity: 'reroute'
+  rerouteId: RerouteId
+}
+
+/**
+ * Operation type discriminator for type narrowing
+ */
+type OperationType =
+  | 'moveNode'
+  | 'resizeNode'
+  | 'setNodeZIndex'
+  | 'createNode'
+  | 'deleteNode'
+  | 'setNodeVisibility'
+  | 'batchUpdateBounds'
+  | 'createLink'
+  | 'deleteLink'
+  | 'createReroute'
+  | 'deleteReroute'
+  | 'moveReroute'
+
+export type { LinkId }
+export type { NodeId }
+export type { RerouteId }
+export type { SlotId }
+
+/**
+ * Set node visibility operation
+ */
+interface SetNodeVisibilityOperation extends NodeOpBase {
+  type: 'setNodeVisibility'
+  visible: boolean
+  previousVisible: boolean
 }
 
 // Basic geometric types
@@ -42,11 +93,6 @@ export interface NodeBoundsUpdate {
   bounds: Bounds
 }
 
-export type { LinkId }
-export type { NodeId }
-export type { RerouteId }
-export type { SlotId }
-
 // Layout data structures
 export interface NodeLayout {
   id: NodeId
@@ -65,7 +111,6 @@ export interface SlotLayout {
   position: Point
   bounds: Bounds
 }
-
 export interface LinkLayout {
   id: LinkId
   path: Path2D
@@ -76,7 +121,6 @@ export interface LinkLayout {
   sourceSlot: number
   targetSlot: number
 }
-
 // Layout for individual link segments (for precise hit-testing)
 export interface LinkSegmentLayout {
   linkId: LinkId
@@ -92,49 +136,6 @@ export interface RerouteLayout {
   radius: number
   bounds: Bounds
 }
-
-/**
- * Meta-only base for all operations - contains common fields
- */
-interface OperationMeta {
-  /** Unique operation ID for deduplication */
-  id?: string
-  /** Timestamp for ordering operations */
-  timestamp: number
-  /** Actor who performed the operation (for CRDT) */
-  actor: string
-  /** Source system that initiated the operation */
-  source: LayoutSource
-  /** Operation type discriminator */
-  type: OperationType
-}
-
-/**
- * Entity-specific base types for proper type discrimination
- */
-type NodeOpBase = OperationMeta & { entity: 'node'; nodeId: NodeId }
-type LinkOpBase = OperationMeta & { entity: 'link'; linkId: LinkId }
-type RerouteOpBase = OperationMeta & {
-  entity: 'reroute'
-  rerouteId: RerouteId
-}
-
-/**
- * Operation type discriminator for type narrowing
- */
-type OperationType =
-  | 'moveNode'
-  | 'resizeNode'
-  | 'setNodeZIndex'
-  | 'createNode'
-  | 'deleteNode'
-  | 'setNodeVisibility'
-  | 'batchUpdateBounds'
-  | 'createLink'
-  | 'deleteLink'
-  | 'createReroute'
-  | 'deleteReroute'
-  | 'moveReroute'
 
 /**
  * Move node operation
@@ -177,15 +178,6 @@ export interface CreateNodeOperation extends NodeOpBase {
 export interface DeleteNodeOperation extends NodeOpBase {
   type: 'deleteNode'
   previousLayout: NodeLayout
-}
-
-/**
- * Set node visibility operation
- */
-interface SetNodeVisibilityOperation extends NodeOpBase {
-  type: 'setNodeVisibility'
-  visible: boolean
-  previousVisible: boolean
 }
 
 /**
@@ -376,4 +368,12 @@ export interface LayoutStore {
   batchUpdateSlotLayouts(
     updates: Array<{ key: SlotId; layout: SlotLayout }>
   ): void
+}
+
+// Enum for layout source types
+export enum LayoutSource {
+  Canvas = 'canvas',
+  Vue = 'vue',
+  DOM = 'dom',
+  External = 'external'
 }

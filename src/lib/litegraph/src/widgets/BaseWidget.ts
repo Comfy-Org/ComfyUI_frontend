@@ -22,15 +22,6 @@ import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetState } from '@/types/widgetState'
 
-export interface DrawWidgetOptions {
-  /** The width of the node where this widget will be displayed. */
-  width: number
-  /** Synonym for "low quality". */
-  showText?: boolean
-  /** Transient image source for preview widgets rendered on behalf of another node (e.g. subgraph promotion). */
-  previewImages?: HTMLImageElement[]
-}
-
 interface DrawTruncatingTextOptions extends DrawWidgetOptions {
   /** The canvas context to draw the text on. */
   ctx: CanvasRenderingContext2D
@@ -38,6 +29,15 @@ interface DrawTruncatingTextOptions extends DrawWidgetOptions {
   leftPadding?: number
   /** The amount of padding to add to the right of the text. */
   rightPadding?: number
+}
+
+export interface DrawWidgetOptions {
+  /** The width of the node where this widget will be displayed. */
+  width: number
+  /** Synonym for "low quality". */
+  showText?: boolean
+  /** Transient image source for preview widgets rendered on behalf of another node (e.g. subgraph promotion). */
+  previewImages?: HTMLImageElement[]
 }
 
 export interface WidgetEventOptions {

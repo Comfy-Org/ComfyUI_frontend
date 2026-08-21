@@ -22,32 +22,6 @@ const partnerNodePolicyResponseSchema = z.object({
   providers: z.array(partnerProviderPolicyEntrySchema)
 })
 
-export interface PartnerProvider {
-  id: string
-  displayName: string
-  nodeCategories: readonly string[]
-}
-
-export interface PartnerProviderPolicyEntry {
-  providerId: string
-  enabled: boolean
-}
-
-export interface PartnerNodePolicy {
-  enforcementEnabled: boolean
-  providers: readonly PartnerProviderPolicyEntry[]
-}
-
-export class PartnerNodePolicyApiError extends Error {
-  constructor(
-    public readonly status: number,
-    message: string
-  ) {
-    super(message)
-    this.name = 'PartnerNodePolicyApiError'
-  }
-}
-
 function normalizePolicy(
   data: z.infer<typeof partnerNodePolicyResponseSchema>
 ): PartnerNodePolicy {
@@ -62,6 +36,22 @@ function normalizePolicy(
 
 function throwResponseError(response: Response): never {
   throw new PartnerNodePolicyApiError(response.status, response.statusText)
+}
+
+export interface PartnerProvider {
+  id: string
+  displayName: string
+  nodeCategories: readonly string[]
+}
+
+export interface PartnerProviderPolicyEntry {
+  providerId: string
+  enabled: boolean
+}
+
+export interface PartnerNodePolicy {
+  enforcementEnabled: boolean
+  providers: readonly PartnerProviderPolicyEntry[]
 }
 
 export async function getPartnerProviders(): Promise<PartnerProvider[]> {
@@ -109,4 +99,14 @@ export async function updatePartnerNodePolicy(
   return normalizePolicy(
     partnerNodePolicyResponseSchema.parse(await response.json())
   )
+}
+
+export class PartnerNodePolicyApiError extends Error {
+  constructor(
+    public readonly status: number,
+    message: string
+  ) {
+    super(message)
+    this.name = 'PartnerNodePolicyApiError'
+  }
 }

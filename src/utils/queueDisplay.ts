@@ -3,6 +3,14 @@ import type { JobState } from '@/types/queue'
 import { formatDuration } from '@/utils/formatUtil'
 import { clampPercentInt, formatPercent0 } from '@/utils/numberUtil'
 
+type JobDisplay = {
+  iconName: string
+  iconImageUrl?: string
+  primary: string
+  secondary: string
+  showClear: boolean
+}
+
 export type BuildJobDisplayCtx = {
   t: (k: string, v?: Record<string, unknown>) => string
   locale: string
@@ -14,14 +22,6 @@ export type BuildJobDisplayCtx = {
   showAddedHint?: boolean
   /** Whether the app is running in cloud distribution */
   isCloud?: boolean
-}
-
-type JobDisplay = {
-  iconName: string
-  iconImageUrl?: string
-  primary: string
-  secondary: string
-  showClear: boolean
 }
 
 export const iconForJobState = (state: JobState): string => {

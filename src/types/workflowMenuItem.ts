@@ -1,10 +1,10 @@
 import type { OverlayIconProps } from '@/components/common/OverlayIcon.vue'
 
-export type WorkflowMenuItem = WorkflowMenuSeparator | WorkflowMenuAction
-
 interface WorkflowMenuSeparator {
   separator: true
 }
+
+export type WorkflowMenuItem = WorkflowMenuSeparator | WorkflowMenuAction
 
 export interface WorkflowMenuAction {
   separator?: false

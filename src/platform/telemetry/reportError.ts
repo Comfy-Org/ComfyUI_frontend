@@ -3,6 +3,11 @@ import { captureException, isEnabled as isSentryEnabled } from '@sentry/vue'
 
 import { toError } from '@/utils/errorUtil'
 
+interface PendingReport {
+  error: Error
+  options: ReportErrorOptions
+}
+
 export interface ReportErrorOptions {
   /**
    * Stable machine-readable slug for this failure mode. Lands as the
@@ -13,11 +18,6 @@ export interface ReportErrorOptions {
   tags?: Record<string, string | number | boolean | undefined>
   context?: Record<string, unknown>
   level?: 'warning' | 'error'
-}
-
-interface PendingReport {
-  error: Error
-  options: ReportErrorOptions
 }
 
 /**

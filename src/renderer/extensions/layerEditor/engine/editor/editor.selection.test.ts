@@ -14,6 +14,18 @@ beforeAll(() => {
   registerBuiltinTools()
 })
 
+interface PixelBuf {
+  w: number
+  h: number
+  data: Uint8ClampedArray
+}
+
+interface FakeImg {
+  width: number
+  height: number
+  data: Uint8ClampedArray
+}
+
 class FakeCompositor implements Compositor {
   init() {
     return true
@@ -44,18 +56,6 @@ class FakeCompositor implements Compositor {
     return null
   }
   dispose() {}
-}
-
-interface PixelBuf {
-  w: number
-  h: number
-  data: Uint8ClampedArray
-}
-
-interface FakeImg {
-  width: number
-  height: number
-  data: Uint8ClampedArray
 }
 
 const bufs = new WeakMap<HTMLCanvasElement, PixelBuf>()

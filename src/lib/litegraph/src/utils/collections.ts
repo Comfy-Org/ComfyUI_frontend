@@ -3,6 +3,10 @@ import { parseSlotTypes } from '@/lib/litegraph/src/strings'
 
 import type { ISlotType, Positionable } from '../interfaces'
 
+type FreeSlotResult<T extends { type: ISlotType }> =
+  | { index: number; slot: T }
+  | undefined
+
 /**
  * Creates a flat set of all positionable items by recursively iterating through all child items.
  *
@@ -62,10 +66,6 @@ export function findFirstNode(
     if (item instanceof LGraphNode) return item
   }
 }
-
-type FreeSlotResult<T extends { type: ISlotType }> =
-  | { index: number; slot: T }
-  | undefined
 
 /**
  * Finds the first free in/out slot with any of the comma-delimited types in {@link type}.

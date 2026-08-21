@@ -55,10 +55,6 @@ import type {
 
 const TOOLTIP_VALUE_TYPES = ['asset', 'combo', 'number', 'text'] as const
 type TooltipValueType = (typeof TOOLTIP_VALUE_TYPES)[number]
-function isTooltipValueType(val: unknown): val is TooltipValueType {
-  return TOOLTIP_VALUE_TYPES.includes(val as TooltipValueType)
-}
-
 interface ProcessedWidget {
   advanced: boolean
   handleContextMenu: (e: PointerEvent) => void
@@ -93,6 +89,10 @@ interface ComputeProcessedWidgetsOptions {
   ui: WidgetUiCallbacks
 }
 
+function isTooltipValueType(val: unknown): val is TooltipValueType {
+  return TOOLTIP_VALUE_TYPES.includes(val as TooltipValueType)
+}
+
 function createWidgetUpdateHandler(
   widgetState: WidgetState | undefined,
   widget: SafeWidgetData,
@@ -122,6 +122,37 @@ function createWidgetUpdateHandler(
       options
     )
   }
+}
+
+function getProcessedNodeExecutionId(
+  isGraphReady: boolean,
+  rootGraph: LGraph | null,
+  nodeData: VueNodeData
+): NodeExecutionId | null {
+  if (!isGraphReady || !rootGraph) return createNodeExecutionId([nodeData.id])
+
+  return getExecutionIdFromNodeData(rootGraph, nodeData)
+}
+
+function getWidgetNodeLocatorId(
+  nodeData: VueNodeData,
+  bareWidgetId: NodeId | null,
+  sourceExecutionId: NodeExecutionId | undefined,
+  rootGraph: LGraph | null
+): NodeLocatorId | undefined {
+  if (sourceExecutionId && rootGraph) {
+    const sourceLocator = executionIdToNodeLocatorId(
+      rootGraph,
+      sourceExecutionId
+    )
+    if (sourceLocator) return sourceLocator
+  }
+
+  if (!bareWidgetId) return undefined
+
+  return (
+    createNodeLocatorId(nodeData.subgraphId ?? null, bareWidgetId) ?? undefined
+  )
 }
 
 export function hasWidgetError(
@@ -177,37 +208,6 @@ export function getWidgetIdentity(
     dedupeIdentity ??
     `transient:${String(nodeId ?? '')}:${widget.name}:${widget.type}:${index}`
   return { dedupeIdentity, renderKey }
-}
-
-function getProcessedNodeExecutionId(
-  isGraphReady: boolean,
-  rootGraph: LGraph | null,
-  nodeData: VueNodeData
-): NodeExecutionId | null {
-  if (!isGraphReady || !rootGraph) return createNodeExecutionId([nodeData.id])
-
-  return getExecutionIdFromNodeData(rootGraph, nodeData)
-}
-
-function getWidgetNodeLocatorId(
-  nodeData: VueNodeData,
-  bareWidgetId: NodeId | null,
-  sourceExecutionId: NodeExecutionId | undefined,
-  rootGraph: LGraph | null
-): NodeLocatorId | undefined {
-  if (sourceExecutionId && rootGraph) {
-    const sourceLocator = executionIdToNodeLocatorId(
-      rootGraph,
-      sourceExecutionId
-    )
-    if (sourceLocator) return sourceLocator
-  }
-
-  if (!bareWidgetId) return undefined
-
-  return (
-    createNodeLocatorId(nodeData.subgraphId ?? null, bareWidgetId) ?? undefined
-  )
 }
 
 export function isWidgetVisible(

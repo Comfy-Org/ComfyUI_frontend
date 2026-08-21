@@ -33,17 +33,6 @@ function churnkeyError(error: unknown, type?: string): Error {
   return type ? new Error(`${baseError.message} (${type})`) : baseError
 }
 
-export interface ChurnkeyShowOptions {
-  handleCancel: (
-    surveyResponse?: string | null,
-    freeformFeedback?: string | null
-  ) => Promise<ChurnkeyHandlerResult>
-}
-
-export interface ChurnkeySession {
-  show: (options: ChurnkeyShowOptions) => Promise<ChurnkeySessionResults>
-}
-
 function rejectUnsupportedOffer(): Promise<never> {
   return Promise.reject(
     new Error(t('subscription.cancelDialog.offerUnavailable'))
@@ -116,6 +105,17 @@ function createSession(
         }
       })
   }
+}
+
+export interface ChurnkeyShowOptions {
+  handleCancel: (
+    surveyResponse?: string | null,
+    freeformFeedback?: string | null
+  ) => Promise<ChurnkeyHandlerResult>
+}
+
+export interface ChurnkeySession {
+  show: (options: ChurnkeyShowOptions) => Promise<ChurnkeySessionResults>
 }
 
 export async function prepareChurnkey(): Promise<ChurnkeySession | null> {

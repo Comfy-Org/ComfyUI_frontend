@@ -3,6 +3,8 @@ import { computed, ref, watch } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 
+type RightSidePanelSection = 'advanced-inputs' | string
+
 export type RightSidePanelTab =
   | 'parameters'
   | 'nodes'
@@ -10,8 +12,6 @@ export type RightSidePanelTab =
   | 'info'
   | 'subgraph'
   | 'errors'
-
-type RightSidePanelSection = 'advanced-inputs' | string
 
 /**
  * Store for managing the right side panel state.

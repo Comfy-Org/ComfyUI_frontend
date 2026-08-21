@@ -144,6 +144,11 @@ const arrangeGrid = (
   })
 }
 
+interface ArrangeOptions {
+  gap?: number
+  captureUndo?: boolean
+}
+
 export function computeArrangement(
   nodes: LGraphNode[],
   layout: ArrangeLayout,
@@ -155,11 +160,6 @@ export function computeArrangement(
   if (layout === 'vertical') return arrangeVertical(boxes, anchor, gap)
   if (layout === 'horizontal') return arrangeHorizontal(boxes, anchor, gap)
   return arrangeGrid(boxes, anchor, gap)
-}
-
-interface ArrangeOptions {
-  gap?: number
-  captureUndo?: boolean
 }
 
 export function useArrangeNodes() {

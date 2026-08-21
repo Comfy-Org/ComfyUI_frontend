@@ -68,12 +68,6 @@ type FloatSession =
   | { mode: 'resize'; handle: HandleId; before: Transform }
   | { mode: 'rotate'; before: Transform; grab: number }
 
-export interface EditorOptions {
-  compositor: Compositor
-  content?: ContentStore
-  onChange?: () => void
-}
-
 function emptyDocument(width: number, height: number): Document {
   const root: GroupData = {
     kind: 'group',
@@ -88,6 +82,12 @@ function emptyDocument(width: number, height: number): Document {
     passThrough: false
   }
   return { version: 2, width, height, root, channels: [] }
+}
+
+export interface EditorOptions {
+  compositor: Compositor
+  content?: ContentStore
+  onChange?: () => void
 }
 
 export interface Editor {

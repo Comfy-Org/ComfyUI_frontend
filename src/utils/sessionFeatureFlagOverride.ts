@@ -10,6 +10,13 @@ const EMPLOYEE_EMAIL_DOMAIN = '@comfy.org'
 type OverrideMap = Record<string, unknown>
 
 /**
+ * The captured overrides plus the query string they came from. Remembering the
+ * source makes capture idempotent: re-reading the same URL does not rewrite
+ * storage, so a flag can be read as often as a render needs.
+ */
+type StoredState = { search: string; overrides: OverrideMap }
+
+/**
  * Overrides apply only to a signed-in Comfy employee, so a link handed to a
  * customer stays inert on their machine. With every flag overridable, this is
  * the only thing standing between a `?ff=` link and the app's behaviour, so it
@@ -45,13 +52,6 @@ function parseOverrideValue(rawValue: string | undefined): unknown {
     return rawValue
   }
 }
-
-/**
- * The captured overrides plus the query string they came from. Remembering the
- * source makes capture idempotent: re-reading the same URL does not rewrite
- * storage, so a flag can be read as often as a render needs.
- */
-type StoredState = { search: string; overrides: OverrideMap }
 
 function emptyState(): StoredState {
   return { search: '', overrides: {} }

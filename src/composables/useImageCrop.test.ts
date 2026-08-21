@@ -101,6 +101,11 @@ const ImageCropHarness = defineComponent({
   `
 })
 
+type CropVm = Record<string, unknown> & {
+  $el: HTMLDivElement
+  modelValue: { x: number; y: number; width: number; height: number }
+}
+
 function flushResizeObservers() {
   for (const cb of [...resizeObserverCallbacks]) {
     cb()
@@ -154,11 +159,6 @@ function makePointerEvent(
     value: target
   })
   return ev
-}
-
-type CropVm = Record<string, unknown> & {
-  $el: HTMLDivElement
-  modelValue: { x: number; y: number; width: number; height: number }
 }
 
 function setupImageLayout(vm: CropVm, nw: number, nh: number) {

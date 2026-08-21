@@ -34,40 +34,6 @@ const FIXTURE_UUID_PREFIX = '00000000-0000-4000-8000-'
 
 let fixtureUuidSequence = 1
 
-class FixtureStringConcatenateNode extends LGraphNode {
-  constructor() {
-    super('StringConcatenate')
-    const input = this.addInput('string_a', 'STRING')
-    input.widget = { name: 'string_a' }
-    this.addOutput('STRING', 'STRING')
-    this.addWidget('text', 'string_a', '', () => {})
-    this.addWidget('text', 'string_b', '', () => {})
-    this.addWidget('text', 'delimiter', '', () => {})
-  }
-}
-
-export function cleanupComplexPromotionFixtureNodeType(): void {
-  if (!LiteGraph.registered_node_types[FIXTURE_STRING_CONCAT_TYPE]) return
-  LiteGraph.unregisterNodeType(FIXTURE_STRING_CONCAT_TYPE)
-}
-
-function nextFixtureUuid(): UUID {
-  const suffix = fixtureUuidSequence.toString(16).padStart(12, '0')
-  fixtureUuidSequence += 1
-  return `${FIXTURE_UUID_PREFIX}${suffix}`
-}
-
-export function resetSubgraphFixtureState(): void {
-  fixtureUuidSequence = 1
-  cleanupComplexPromotionFixtureNodeType()
-}
-
-export function createTestRootGraph(id: UUID = nextFixtureUuid()): LGraph {
-  const graph = new LGraph()
-  graph.id = id
-  return graph
-}
-
 interface TestSubgraphOptions {
   rootGraph?: LGraph
   rootGraphId?: UUID
@@ -97,13 +63,6 @@ interface BoundaryLinkedSubgraphOptions {
   interiorType?: string
 }
 
-export interface BoundaryLinkedSubgraphFixture {
-  rootGraph: LGraph
-  subgraph: Subgraph
-  host: SubgraphNode
-  interior: LGraphNode
-}
-
 interface NestedSubgraphOptions {
   depth?: number
   nodesPerLevel?: number
@@ -126,6 +85,31 @@ interface CapturedEvent<T = unknown> {
   timestamp: number
 }
 
+function nextFixtureUuid(): UUID {
+  const suffix = fixtureUuidSequence.toString(16).padStart(12, '0')
+  fixtureUuidSequence += 1
+  return `${FIXTURE_UUID_PREFIX}${suffix}`
+}
+
+class FixtureStringConcatenateNode extends LGraphNode {
+  constructor() {
+    super('StringConcatenate')
+    const input = this.addInput('string_a', 'STRING')
+    input.widget = { name: 'string_a' }
+    this.addOutput('STRING', 'STRING')
+    this.addWidget('text', 'string_a', '', () => {})
+    this.addWidget('text', 'string_b', '', () => {})
+    this.addWidget('text', 'delimiter', '', () => {})
+  }
+}
+
+export interface BoundaryLinkedSubgraphFixture {
+  rootGraph: LGraph
+  subgraph: Subgraph
+  host: SubgraphNode
+  interior: LGraphNode
+}
+
 /** Return type for createEventCapture with typed getEventsByType */
 export interface EventCapture<TEventMap extends object> {
   events: CapturedEvent<TEventMap[keyof TEventMap]>[]
@@ -134,6 +118,22 @@ export interface EventCapture<TEventMap extends object> {
   getEventsByType: <K extends keyof TEventMap & string>(
     type: K
   ) => CapturedEvent<TEventMap[K]>[]
+}
+
+export function cleanupComplexPromotionFixtureNodeType(): void {
+  if (!LiteGraph.registered_node_types[FIXTURE_STRING_CONCAT_TYPE]) return
+  LiteGraph.unregisterNodeType(FIXTURE_STRING_CONCAT_TYPE)
+}
+
+export function resetSubgraphFixtureState(): void {
+  fixtureUuidSequence = 1
+  cleanupComplexPromotionFixtureNodeType()
+}
+
+export function createTestRootGraph(id: UUID = nextFixtureUuid()): LGraph {
+  const graph = new LGraph()
+  graph.id = id
+  return graph
 }
 
 /**

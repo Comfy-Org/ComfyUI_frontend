@@ -31,14 +31,6 @@ const raf = createRafBatch(() => {
   flushScheduledSlotLayoutSync()
 })
 
-export function scheduleSlotLayoutSync(nodeId: NodeId) {
-  // Drop signals for unregistered nodes (e.g. preview nodes with synthetic
-  // ids from LGraphNodePreview) - they'd otherwise pump setDirty per RAF.
-  if (!useNodeSlotRegistryStore().getNode(nodeId)) return
-  pendingNodes.add(nodeId)
-  raf.schedule()
-}
-
 function shouldWaitForSlotLayouts(): boolean {
   const graph = app.canvas?.graph
   const hasNodes = Boolean(graph && graph._nodes && graph._nodes.length > 0)
@@ -56,19 +48,6 @@ function getSlotElementRect(el: HTMLElement): DOMRect | null {
   const rect = el.getBoundingClientRect()
   if (rect.width <= 0 || rect.height <= 0) return null
   return rect
-}
-
-export function requestSlotLayoutSyncForAllNodes(): void {
-  const nodeSlotRegistryStore = useNodeSlotRegistryStore()
-  for (const nodeId of nodeSlotRegistryStore.getNodeIds()) {
-    scheduleSlotLayoutSync(nodeId)
-  }
-
-  // If no slots are currently registered, run the completion check immediately
-  // so pendingSlotSync can be cleared when the graph has no nodes.
-  if (pendingNodes.size === 0) {
-    flushScheduledSlotLayoutSync()
-  }
 }
 
 function createSlotLayout(options: {
@@ -92,6 +71,62 @@ function createSlotLayout(options: {
       width: size,
       height: size
     }
+  }
+}
+
+function updateNodeSlotsFromCache(nodeId: NodeId) {
+  const nodeSlotRegistryStore = useNodeSlotRegistryStore()
+  const node = nodeSlotRegistryStore.getNode(nodeId)
+  if (!node) return
+  const nodeLayout = layoutStore.getNodeLayoutRef(nodeId).value
+  if (!nodeLayout) return
+
+  const batch: Array<{ key: SlotId; layout: SlotLayout }> = []
+
+  for (const [slotKey, entry] of node.slots) {
+    if (!entry.cachedOffset) {
+      // schedule a sync to seed offset
+      scheduleSlotLayoutSync(nodeId)
+      continue
+    }
+
+    const centerCanvas = {
+      x: nodeLayout.position.x + entry.cachedOffset.x,
+      y: nodeLayout.position.y + entry.cachedOffset.y
+    }
+
+    batch.push({
+      key: slotKey,
+      layout: createSlotLayout({
+        nodeId,
+        index: entry.index,
+        type: entry.type,
+        centerCanvas
+      })
+    })
+  }
+
+  if (batch.length) layoutStore.batchUpdateSlotLayouts(batch)
+}
+
+export function scheduleSlotLayoutSync(nodeId: NodeId) {
+  // Drop signals for unregistered nodes (e.g. preview nodes with synthetic
+  // ids from LGraphNodePreview) - they'd otherwise pump setDirty per RAF.
+  if (!useNodeSlotRegistryStore().getNode(nodeId)) return
+  pendingNodes.add(nodeId)
+  raf.schedule()
+}
+
+export function requestSlotLayoutSyncForAllNodes(): void {
+  const nodeSlotRegistryStore = useNodeSlotRegistryStore()
+  for (const nodeId of nodeSlotRegistryStore.getNodeIds()) {
+    scheduleSlotLayoutSync(nodeId)
+  }
+
+  // If no slots are currently registered, run the completion check immediately
+  // so pendingSlotSync can be cleared when the graph has no nodes.
+  if (pendingNodes.size === 0) {
+    flushScheduledSlotLayoutSync()
   }
 }
 
@@ -223,41 +258,6 @@ export function syncNodeSlotLayoutsFromDOM(nodeId: NodeId) {
       layout: nextLayout
     })
   }
-  if (batch.length) layoutStore.batchUpdateSlotLayouts(batch)
-}
-
-function updateNodeSlotsFromCache(nodeId: NodeId) {
-  const nodeSlotRegistryStore = useNodeSlotRegistryStore()
-  const node = nodeSlotRegistryStore.getNode(nodeId)
-  if (!node) return
-  const nodeLayout = layoutStore.getNodeLayoutRef(nodeId).value
-  if (!nodeLayout) return
-
-  const batch: Array<{ key: SlotId; layout: SlotLayout }> = []
-
-  for (const [slotKey, entry] of node.slots) {
-    if (!entry.cachedOffset) {
-      // schedule a sync to seed offset
-      scheduleSlotLayoutSync(nodeId)
-      continue
-    }
-
-    const centerCanvas = {
-      x: nodeLayout.position.x + entry.cachedOffset.x,
-      y: nodeLayout.position.y + entry.cachedOffset.y
-    }
-
-    batch.push({
-      key: slotKey,
-      layout: createSlotLayout({
-        nodeId,
-        index: entry.index,
-        type: entry.type,
-        centerCanvas
-      })
-    })
-  }
-
   if (batch.length) layoutStore.batchUpdateSlotLayouts(batch)
 }
 

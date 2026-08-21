@@ -11,6 +11,8 @@ vi.mock('@/scripts/app', () => ({
 
 import { ensureCorrectLayoutScale } from './ensureCorrectLayoutScale'
 
+type MockNode = ReturnType<typeof createNode>
+
 function createNode(id: string, x: number, y: number, w: number, h: number) {
   return {
     id,
@@ -27,8 +29,6 @@ function createNode(id: string, x: number, y: number, w: number, h: number) {
     }
   }
 }
-
-type MockNode = ReturnType<typeof createNode>
 
 function createMockGraph(
   nodes: MockNode[],

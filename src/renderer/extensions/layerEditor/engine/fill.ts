@@ -19,17 +19,6 @@ const clamp01 = (v: number): number => Math.max(0, Math.min(1, v))
 const num = (v: unknown, d: number): number =>
   typeof v === 'number' && isFinite(v) ? v : d
 
-export function defaultFillSpec(): FillSpec {
-  return { type: 'solid', color: '#808080' }
-}
-
-export function defaultGradientStops(): GradientStop[] {
-  return [
-    { offset: 0, color: '#000000' },
-    { offset: 1, color: '#ffffff' }
-  ]
-}
-
 function normalizeStops(raw: unknown): GradientStop[] {
   const arr = Array.isArray(raw) ? raw : []
   const stops: GradientStop[] = []
@@ -44,6 +33,33 @@ function normalizeStops(raw: unknown): GradientStop[] {
   }
   stops.sort((a, b) => a.offset - b.offset)
   return stops.length >= 2 ? stops : defaultGradientStops()
+}
+
+function stopColor(stop: GradientStop): string {
+  if (stop.alpha === undefined || stop.alpha >= 1) return stop.color
+  const hex = stop.color.replace('#', '')
+  const full =
+    hex.length === 3
+      ? hex
+          .split('')
+          .map((c) => c + c)
+          .join('')
+      : hex
+  const r = parseInt(full.slice(0, 2), 16)
+  const g = parseInt(full.slice(2, 4), 16)
+  const b = parseInt(full.slice(4, 6), 16)
+  return `rgba(${r},${g},${b},${stop.alpha})`
+}
+
+export function defaultFillSpec(): FillSpec {
+  return { type: 'solid', color: '#808080' }
+}
+
+export function defaultGradientStops(): GradientStop[] {
+  return [
+    { offset: 0, color: '#000000' },
+    { offset: 1, color: '#ffffff' }
+  ]
 }
 
 export function normalizeFillSpec(raw: unknown): FillSpec {
@@ -96,22 +112,6 @@ export function linearEndpoints(
     from: { x: cx - dx * half, y: cy - dy * half },
     to: { x: cx + dx * half, y: cy + dy * half }
   }
-}
-
-function stopColor(stop: GradientStop): string {
-  if (stop.alpha === undefined || stop.alpha >= 1) return stop.color
-  const hex = stop.color.replace('#', '')
-  const full =
-    hex.length === 3
-      ? hex
-          .split('')
-          .map((c) => c + c)
-          .join('')
-      : hex
-  const r = parseInt(full.slice(0, 2), 16)
-  const g = parseInt(full.slice(2, 4), 16)
-  const b = parseInt(full.slice(4, 6), 16)
-  return `rgba(${r},${g},${b},${stop.alpha})`
 }
 
 export function paintFillInto(

@@ -24,17 +24,6 @@ interface RefreshRemoteConfigOptions {
 let refreshGeneration = 0
 const activeRefreshControllers = new Set<AbortController>()
 
-export function invalidateRemoteConfig(): void {
-  refreshGeneration++
-  for (const controller of activeRefreshControllers) controller.abort()
-  activeRefreshControllers.clear()
-  window.__CONFIG__ = {}
-  remoteConfig.value = {}
-  remoteConfigErrorStatus.value = null
-  remoteConfigState.value = 'unloaded'
-  cachedLegacyBillingMigrationEnabled.value = undefined
-}
-
 async function fetchRemoteConfig(
   useAuth: boolean,
   signal?: AbortSignal
@@ -44,6 +33,17 @@ async function fetchRemoteConfig(
     return fetch(api.apiURL('/features'), { cache: 'no-store', signal })
   }
   return api.fetchApi('/features', { cache: 'no-store', signal })
+}
+
+export function invalidateRemoteConfig(): void {
+  refreshGeneration++
+  for (const controller of activeRefreshControllers) controller.abort()
+  activeRefreshControllers.clear()
+  window.__CONFIG__ = {}
+  remoteConfig.value = {}
+  remoteConfigErrorStatus.value = null
+  remoteConfigState.value = 'unloaded'
+  cachedLegacyBillingMigrationEnabled.value = undefined
 }
 
 /**

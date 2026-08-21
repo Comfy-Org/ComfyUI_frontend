@@ -71,6 +71,15 @@ let cachedNodeToLoad3dMap: Map<LGraphNode, Load3d> | null = null
 let cachedUseLoad3dViewer: UseLoad3dViewerFn | null = null
 let cachedSkeletonUtils: SkeletonUtilsModule | null = null
 
+// Type definitions for Load3D node
+interface SceneConfig {
+  backgroundImage?: string
+}
+
+interface Load3DNode extends LGraphNode {
+  syncLoad3dConfig?: () => void
+}
+
 // Sync accessor - returns null if module not yet loaded
 function getNodeToLoad3dMapSync(): Map<LGraphNode, Load3d> | null {
   return cachedNodeToLoad3dMap
@@ -98,15 +107,6 @@ async function loadSkeletonUtils() {
     cachedSkeletonUtils = await import('three/examples/jsm/utils/SkeletonUtils')
   }
   return cachedSkeletonUtils
-}
-
-// Type definitions for Load3D node
-interface SceneConfig {
-  backgroundImage?: string
-}
-
-interface Load3DNode extends LGraphNode {
-  syncLoad3dConfig?: () => void
 }
 
 const viewerInstances = new Map<NodeId, ReturnType<UseLoad3dViewerFn>>()

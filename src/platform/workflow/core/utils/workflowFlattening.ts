@@ -1,20 +1,5 @@
 import type { SerializedNodeId } from '@/types/nodeId'
 
-export interface FlattenableWorkflowNode {
-  id: SerializedNodeId
-  type: string
-  mode?: number
-  widgets_values?: readonly unknown[] | Record<string, unknown>
-  properties?: Record<string, unknown>
-}
-
-export interface FlattenableWorkflowGraph {
-  nodes?: readonly FlattenableWorkflowNode[]
-  definitions?: {
-    subgraphs?: readonly unknown[]
-  }
-}
-
 interface FlattenableSubgraphDefinition {
   id: string
   name: string
@@ -56,6 +41,21 @@ function isSubgraphDefinition(
     'inputNode' in candidate &&
     'outputNode' in candidate
   )
+}
+
+export interface FlattenableWorkflowNode {
+  id: SerializedNodeId
+  type: string
+  mode?: number
+  widgets_values?: readonly unknown[] | Record<string, unknown>
+  properties?: Record<string, unknown>
+}
+
+export interface FlattenableWorkflowGraph {
+  nodes?: readonly FlattenableWorkflowNode[]
+  definitions?: {
+    subgraphs?: readonly unknown[]
+  }
 }
 
 /**

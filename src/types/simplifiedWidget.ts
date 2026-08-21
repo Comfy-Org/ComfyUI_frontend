@@ -24,16 +24,11 @@ export const CONTROL_OPTIONS = [
   'decrement',
   'randomize'
 ] as const
-export type ControlOptions = (typeof CONTROL_OPTIONS)[number]
-
 function isControlOption(val: WidgetValue): val is ControlOptions {
   return CONTROL_OPTIONS.includes(val as ControlOptions)
 }
 
-export function normalizeControlOption(val: WidgetValue): ControlOptions {
-  if (isControlOption(val)) return val
-  return 'randomize'
-}
+export type ControlOptions = (typeof CONTROL_OPTIONS)[number]
 
 export type SafeControlWidget = {
   value: ControlOptions
@@ -96,4 +91,9 @@ export interface SimplifiedControlWidget<
   O extends IWidgetOptions = IWidgetOptions
 > extends SimplifiedWidget<T, O> {
   controlWidget: SafeControlWidget
+}
+
+export function normalizeControlOption(val: WidgetValue): ControlOptions {
+  if (isControlOption(val)) return val
+  return 'randomize'
 }

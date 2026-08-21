@@ -3,6 +3,20 @@ import { without } from 'es-toolkit'
 import type { IColorable, ISlotType } from '@/lib/litegraph/src/interfaces'
 import type { NodeBindable } from '@/lib/litegraph/src/types/widgets'
 
+function intersection(...sets: string[][]): string[] {
+  const itemCounts: Record<string, number> = {}
+  for (const set of sets)
+    for (const item of new Set(set))
+      itemCounts[item] = (itemCounts[item] ?? 0) + 1
+  return Object.entries(itemCounts)
+    .filter(([, count]) => count === sets.length)
+    .map(([key]) => key)
+}
+
+function isStrings(types: unknown[]): types is string[] {
+  return types.every((t) => typeof t === 'string')
+}
+
 /**
  * Converts a plain object to a class instance if it is not already an instance of the class.
  *
@@ -51,18 +65,4 @@ export function commonType(...types: ISlotType[]): ISlotType | undefined {
   if (combinedTypes.length === 0) return undefined
 
   return combinedTypes.join(',')
-}
-
-function intersection(...sets: string[][]): string[] {
-  const itemCounts: Record<string, number> = {}
-  for (const set of sets)
-    for (const item of new Set(set))
-      itemCounts[item] = (itemCounts[item] ?? 0) + 1
-  return Object.entries(itemCounts)
-    .filter(([, count]) => count === sets.length)
-    .map(([key]) => key)
-}
-
-function isStrings(types: unknown[]): types is string[] {
-  return types.every((t) => typeof t === 'string')
 }

@@ -13,33 +13,6 @@ import {
 } from '@/utils/litegraphUtil'
 import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
 
-export function cloneDataTransfer(original: DataTransfer): DataTransfer {
-  const persistent = new DataTransfer()
-
-  // Copy string data
-  for (const type of original.types) {
-    const data = original.getData(type)
-    if (data) {
-      persistent.setData(type, data)
-    }
-  }
-
-  for (const item of original.items) {
-    if (item.kind === 'file') {
-      const file = item.getAsFile()
-      if (file) {
-        persistent.items.add(file)
-      }
-    }
-  }
-
-  // Preserve dropEffect and effectAllowed
-  persistent.dropEffect = original.dropEffect
-  persistent.effectAllowed = original.effectAllowed
-
-  return persistent
-}
-
 function pasteClipboardItems(data: DataTransfer): boolean {
   const rawData = data.getData('text/html')
   const match = rawData.match(/data-metadata="([A-Za-z0-9+/=]+)"/)?.[1]
@@ -77,6 +50,33 @@ function pasteItemsOnNode(
       .map((i) => i.getAsFile())
       .filter((f) => f !== null)
   )
+}
+
+export function cloneDataTransfer(original: DataTransfer): DataTransfer {
+  const persistent = new DataTransfer()
+
+  // Copy string data
+  for (const type of original.types) {
+    const data = original.getData(type)
+    if (data) {
+      persistent.setData(type, data)
+    }
+  }
+
+  for (const item of original.items) {
+    if (item.kind === 'file') {
+      const file = item.getAsFile()
+      if (file) {
+        persistent.items.add(file)
+      }
+    }
+  }
+
+  // Preserve dropEffect and effectAllowed
+  persistent.dropEffect = original.dropEffect
+  persistent.effectAllowed = original.effectAllowed
+
+  return persistent
 }
 
 export async function pasteImageNode(

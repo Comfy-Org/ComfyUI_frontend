@@ -7,6 +7,12 @@ import { taskService } from '@/platform/tasks/services/taskService'
 import type { AssetDownloadWsMessage } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 
+interface CompletedDownload {
+  taskId: TaskId
+  modelType: string
+  timestamp: number
+}
+
 export interface AssetDownload {
   taskId: TaskId
   assetName: string
@@ -19,12 +25,6 @@ export interface AssetDownload {
   error?: string
   modelType?: string
   acknowledged?: boolean
-}
-
-interface CompletedDownload {
-  taskId: TaskId
-  modelType: string
-  timestamp: number
 }
 const STALE_THRESHOLD_MS = 10_000
 const POLL_INTERVAL_MS = 10_000

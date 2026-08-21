@@ -25,6 +25,10 @@ function cacheKey(node: CompositorNodeRef): NodeLocatorId {
   )
 }
 
+function revokeIfObjectUrl(url: string | undefined): void {
+  if (url?.startsWith('blob:')) URL.revokeObjectURL(url)
+}
+
 export function setCompositorLayers(
   node: CompositorNodeRef,
   refs: ImageFileRef[],
@@ -59,10 +63,6 @@ export function getCompositorBBoxes(
 export function clearCompositorLayers(node: CompositorNodeRef): void {
   cacheByNode.delete(cacheKey(node))
   clearCompositorPreviewOverride(node)
-}
-
-function revokeIfObjectUrl(url: string | undefined): void {
-  if (url?.startsWith('blob:')) URL.revokeObjectURL(url)
 }
 
 export function setCompositorPreviewOverride(

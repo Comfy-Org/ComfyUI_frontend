@@ -127,11 +127,6 @@ const PREPROCESSING_FAILED_PREFIXES = [
   'Failed to complete preparation:'
 ]
 
-export interface RuntimeErrorInfo {
-  exceptionType: string
-  exceptionMessage: string
-}
-
 interface RuntimeCatalogMatch {
   catalogId: string
   params?: CatalogParams
@@ -211,6 +206,11 @@ function isSubscriptionUpgradeMessage(message: string): boolean {
     message.toLowerCase().startsWith(SUBSCRIPTION_UPGRADE_REQUIRED_PREFIX) &&
     getSubscriptionUpgradeDetails(message).length > 0
   )
+}
+
+export interface RuntimeErrorInfo {
+  exceptionType: string
+  exceptionMessage: string
 }
 
 // Order matters: the first matching rule wins. Keep narrow user-actionable

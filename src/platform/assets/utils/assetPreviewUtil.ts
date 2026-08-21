@@ -10,12 +10,6 @@ interface AssetRecord {
   preview_id?: string | null
 }
 
-export function isAssetPreviewSupported(): boolean {
-  return (
-    assetService.isAssetAPIEnabled() || api.getServerFeature('assets', false)
-  )
-}
-
 async function fetchAssets(
   params: Record<string, string>
 ): Promise<AssetRecord[]> {
@@ -31,6 +25,21 @@ function resolvePreviewUrl(asset: AssetRecord): string {
 
   const contentId = asset.preview_id ?? asset.id
   return api.apiURL(`/assets/${contentId}/content`)
+}
+
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = reject
+    reader.readAsDataURL(blob)
+  })
+}
+
+export function isAssetPreviewSupported(): boolean {
+  return (
+    assetService.isAssetAPIEnabled() || api.getServerFeature('assets', false)
+  )
 }
 
 /**
@@ -87,13 +96,4 @@ export async function persistThumbnail(
   } catch {
     // Non-critical — client still shows the rendered thumbnail
   }
-}
-
-function blobToDataUrl(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(reader.result as string)
-    reader.onerror = reject
-    reader.readAsDataURL(blob)
-  })
 }

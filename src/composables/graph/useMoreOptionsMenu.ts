@@ -49,6 +49,26 @@ let nodeOptionsInstance: null | NodeOptionsInstance = null
 
 const hoveredWidget = ref<[string, SerializedNodeId | undefined]>()
 
+interface NodeOptionsInstance {
+  toggle: (event: Event) => void
+  show: (event: MouseEvent) => void
+  hide: () => void
+  isOpen: Ref<boolean>
+}
+
+/**
+ * Mark menu options as coming from Vue hardcoded menu
+ */
+function markAsVueOptions(options: MenuOption[]): MenuOption[] {
+  return options.map((opt) => {
+    // Don't mark dividers or category labels
+    if (opt.type === 'divider' || opt.type === 'category') {
+      return opt
+    }
+    return { ...opt, source: 'vue' }
+  })
+}
+
 /**
  * Toggle the node options popover
  * @param event - The trigger event
@@ -82,13 +102,6 @@ export function isNodeOptionsOpen(): boolean {
   return nodeOptionsInstance?.isOpen.value ?? false
 }
 
-interface NodeOptionsInstance {
-  toggle: (event: Event) => void
-  show: (event: MouseEvent) => void
-  hide: () => void
-  isOpen: Ref<boolean>
-}
-
 /**
  * Register the NodeOptions component instance
  * @param instance - The NodeOptions component instance
@@ -97,19 +110,6 @@ export function registerNodeOptionsInstance(
   instance: null | NodeOptionsInstance
 ) {
   nodeOptionsInstance = instance
-}
-
-/**
- * Mark menu options as coming from Vue hardcoded menu
- */
-function markAsVueOptions(options: MenuOption[]): MenuOption[] {
-  return options.map((opt) => {
-    // Don't mark dividers or category labels
-    if (opt.type === 'divider' || opt.type === 'category') {
-      return opt
-    }
-    return { ...opt, source: 'vue' }
-  })
 }
 
 /**

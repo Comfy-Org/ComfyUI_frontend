@@ -27,8 +27,168 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 type PartialNode = Pick<LGraphNode, 'title' | 'id' | 'type'>
 
-export type WidgetItem = [LGraphNode, IBaseWidget]
+type CanonicalPromotionResult =
+  | { ok: true }
+  | { ok: false; reason: 'missingSourceSlot' | 'connectFailed' }
 export { CANVAS_IMAGE_PREVIEW_WIDGET }
+
+function resolvePromotionSource(
+  subgraphNode: SubgraphNode,
+  subgraphInput: { linkIds: readonly LinkId[] }
+): PromotedWidgetSource | undefined {
+  for (const linkId of subgraphInput.linkIds) {
+    const link = subgraphNode.subgraph.getLink(linkId)
+    if (!link) continue
+
+    const { inputNode } = link.resolve(subgraphNode.subgraph)
+    if (!inputNode || !Array.isArray(inputNode.inputs)) continue
+
+    const targetInput = inputNode.inputs.find((entry) => entry.link === linkId)
+    if (!targetInput) continue
+
+    if (inputNode.isSubgraphNode()) {
+      return {
+        sourceNodeId: inputNode.id,
+        sourceWidgetName: targetInput.name
+      }
+    }
+
+    const targetWidget = inputNode.getWidgetFromSlot(targetInput)
+    if (!targetWidget) continue
+
+    return {
+      sourceNodeId: inputNode.id,
+      sourceWidgetName: targetWidget.name
+    }
+  }
+}
+
+function applySubgraphInputOrder(
+  subgraphNode: SubgraphNode,
+  orderedIndices: readonly number[]
+): void {
+  const widgetValues = subgraphNode.inputs.map((input) => {
+    const id = input?.widgetId
+    if (!id) return undefined
+    const value = useWidgetValueStore().getWidget(id)?.value
+    return isWidgetValue(value) ? value : undefined
+  })
+
+  reorderSubgraphInputs(subgraphNode, orderedIndices)
+
+  for (const [newIndex, oldIndex] of orderedIndices.entries()) {
+    const value = widgetValues[oldIndex]
+    const id = subgraphNode.inputs[newIndex]?.widgetId
+    if (value === undefined || !id) continue
+    useWidgetValueStore().setValue(id, value)
+  }
+}
+
+function isSamePromotedInput(
+  subgraphNode: SubgraphNode,
+  inputIndex: number,
+  orderedWidget: Pick<IBaseWidget, 'widgetId'>
+): boolean {
+  const input = subgraphNode.inputs[inputIndex]
+  const linkedInput = input?._subgraphSlot
+  if (!input || !linkedInput) return false
+
+  for (const linkId of linkedInput.linkIds) {
+    const link = subgraphNode.subgraph.getLink(linkId)
+    if (!link) continue
+
+    const { inputNode, input: targetInput } = link.resolve(
+      subgraphNode.subgraph
+    )
+    if (!inputNode || !targetInput) continue
+
+    const targetWidget = inputNode.getWidgetFromSlot(targetInput)
+    if (targetWidget === orderedWidget) return true
+
+    if (input.widgetId && input.widgetId === orderedWidget.widgetId) return true
+  }
+
+  return false
+}
+
+function isPreviewExposed(
+  subgraphNode: SubgraphNode,
+  source: PromotedWidgetSource
+): boolean {
+  const hostLocator = String(subgraphNode.id)
+  return usePreviewExposureStore()
+    .getExposures(subgraphNode.rootGraph.id, hostLocator)
+    .some(
+      (exposure) =>
+        exposure.sourceNodeId === source.sourceNodeId &&
+        exposure.sourcePreviewName === source.sourceWidgetName
+    )
+}
+
+function toPromotionSource(
+  node: PartialNode,
+  widget: IBaseWidget
+): PromotedWidgetSource {
+  return {
+    sourceNodeId: node.id,
+    sourceWidgetName: getWidgetName(widget)
+  }
+}
+
+function seedNestedPromotedInputState(
+  subgraphNode: SubgraphNode,
+  inputName: string,
+  sourceSlot: { widgetId?: WidgetId; label?: string }
+): void {
+  if (!sourceSlot.widgetId) return
+
+  const hostInput = subgraphNode.inputs.find(
+    (input) => input._subgraphSlot?.name === inputName
+  )
+  if (!hostInput || hostInput.widgetId) return
+
+  const sourceState = useWidgetValueStore().getWidget(sourceSlot.widgetId)
+  if (!sourceState) return
+
+  const id = widgetId(subgraphNode.rootGraph.id, subgraphNode.id, inputName)
+  hostInput.widget ??= { name: inputName }
+  hostInput.widget.name = inputName
+  hostInput.widgetId = id
+  useWidgetValueStore().registerWidget(id, {
+    type: sourceState.type,
+    value: sourceState.value,
+    options: cloneDeep(sourceState.options ?? {}),
+    label: hostInput.label ?? sourceSlot.label ?? inputName,
+    serialize: sourceState.serialize,
+    disabled: sourceState.disabled,
+    isDOMWidget: sourceState.isDOMWidget
+  })
+}
+
+function promotePreviewViaExposure(
+  subgraphNode: SubgraphNode,
+  sourceNode: LGraphNode,
+  sourcePreviewName: string
+): void {
+  const store = usePreviewExposureStore()
+  const rootGraphId = subgraphNode.rootGraph.id
+  const hostLocator = String(subgraphNode.id)
+  const existing = store
+    .getExposures(rootGraphId, hostLocator)
+    .some(
+      (exposure) =>
+        exposure.sourceNodeId === String(sourceNode.id) &&
+        exposure.sourcePreviewName === sourcePreviewName
+    )
+  if (existing) return
+
+  store.addExposure(rootGraphId, hostLocator, {
+    sourceNodeId: sourceNode.id,
+    sourcePreviewName
+  })
+}
+
+export type WidgetItem = [LGraphNode, IBaseWidget]
 
 export function getWidgetName(w: IBaseWidget): string {
   return w.name
@@ -98,37 +258,6 @@ export function createPromotedHostWidgetIdLookup(
     hostWidgetIdBySource.get(key(sourceNodeId, sourceWidgetName))
 }
 
-function resolvePromotionSource(
-  subgraphNode: SubgraphNode,
-  subgraphInput: { linkIds: readonly LinkId[] }
-): PromotedWidgetSource | undefined {
-  for (const linkId of subgraphInput.linkIds) {
-    const link = subgraphNode.subgraph.getLink(linkId)
-    if (!link) continue
-
-    const { inputNode } = link.resolve(subgraphNode.subgraph)
-    if (!inputNode || !Array.isArray(inputNode.inputs)) continue
-
-    const targetInput = inputNode.inputs.find((entry) => entry.link === linkId)
-    if (!targetInput) continue
-
-    if (inputNode.isSubgraphNode()) {
-      return {
-        sourceNodeId: inputNode.id,
-        sourceWidgetName: targetInput.name
-      }
-    }
-
-    const targetWidget = inputNode.getWidgetFromSlot(targetInput)
-    if (!targetWidget) continue
-
-    return {
-      sourceNodeId: inputNode.id,
-      sourceWidgetName: targetWidget.name
-    }
-  }
-}
-
 export function reorderSubgraphInputsByName(
   subgraphNode: SubgraphNode,
   orderedInputNames: readonly string[]
@@ -169,68 +298,6 @@ export function reorderSubgraphInputsByWidgetOrder(
   applySubgraphInputOrder(subgraphNode, orderedIndices)
 }
 
-function applySubgraphInputOrder(
-  subgraphNode: SubgraphNode,
-  orderedIndices: readonly number[]
-): void {
-  const widgetValues = subgraphNode.inputs.map((input) => {
-    const id = input?.widgetId
-    if (!id) return undefined
-    const value = useWidgetValueStore().getWidget(id)?.value
-    return isWidgetValue(value) ? value : undefined
-  })
-
-  reorderSubgraphInputs(subgraphNode, orderedIndices)
-
-  for (const [newIndex, oldIndex] of orderedIndices.entries()) {
-    const value = widgetValues[oldIndex]
-    const id = subgraphNode.inputs[newIndex]?.widgetId
-    if (value === undefined || !id) continue
-    useWidgetValueStore().setValue(id, value)
-  }
-}
-
-function isSamePromotedInput(
-  subgraphNode: SubgraphNode,
-  inputIndex: number,
-  orderedWidget: Pick<IBaseWidget, 'widgetId'>
-): boolean {
-  const input = subgraphNode.inputs[inputIndex]
-  const linkedInput = input?._subgraphSlot
-  if (!input || !linkedInput) return false
-
-  for (const linkId of linkedInput.linkIds) {
-    const link = subgraphNode.subgraph.getLink(linkId)
-    if (!link) continue
-
-    const { inputNode, input: targetInput } = link.resolve(
-      subgraphNode.subgraph
-    )
-    if (!inputNode || !targetInput) continue
-
-    const targetWidget = inputNode.getWidgetFromSlot(targetInput)
-    if (targetWidget === orderedWidget) return true
-
-    if (input.widgetId && input.widgetId === orderedWidget.widgetId) return true
-  }
-
-  return false
-}
-
-function isPreviewExposed(
-  subgraphNode: SubgraphNode,
-  source: PromotedWidgetSource
-): boolean {
-  const hostLocator = String(subgraphNode.id)
-  return usePreviewExposureStore()
-    .getExposures(subgraphNode.rootGraph.id, hostLocator)
-    .some(
-      (exposure) =>
-        exposure.sourceNodeId === source.sourceNodeId &&
-        exposure.sourcePreviewName === source.sourceWidgetName
-    )
-}
-
 export function isWidgetPromotedOnSubgraphNode(
   subgraphNode: SubgraphNode,
   source: PromotedWidgetSource,
@@ -247,16 +314,6 @@ export function isWidgetPromotedOnSubgraphNode(
   )
 }
 
-function toPromotionSource(
-  node: PartialNode,
-  widget: IBaseWidget
-): PromotedWidgetSource {
-  return {
-    sourceNodeId: node.id,
-    sourceWidgetName: getWidgetName(widget)
-  }
-}
-
 export function refreshPromotedWidgetRendering(parents: SubgraphNode[]): void {
   for (const parent of parents) {
     parent.expandToFitContent()
@@ -264,10 +321,6 @@ export function refreshPromotedWidgetRendering(parents: SubgraphNode[]): void {
   }
   useCanvasStore().canvas?.setDirty(true, true)
 }
-
-type CanonicalPromotionResult =
-  | { ok: true }
-  | { ok: false; reason: 'missingSourceSlot' | 'connectFailed' }
 
 export function promoteValueWidgetViaSubgraphInput(
   subgraphNode: SubgraphNode,
@@ -305,60 +358,25 @@ export function promoteValueWidgetViaSubgraphInput(
   return { ok: true }
 }
 
-function seedNestedPromotedInputState(
-  subgraphNode: SubgraphNode,
-  inputName: string,
-  sourceSlot: { widgetId?: WidgetId; label?: string }
-): void {
-  if (!sourceSlot.widgetId) return
-
-  const hostInput = subgraphNode.inputs.find(
-    (input) => input._subgraphSlot?.name === inputName
-  )
-  if (!hostInput || hostInput.widgetId) return
-
-  const sourceState = useWidgetValueStore().getWidget(sourceSlot.widgetId)
-  if (!sourceState) return
-
-  const id = widgetId(subgraphNode.rootGraph.id, subgraphNode.id, inputName)
-  hostInput.widget ??= { name: inputName }
-  hostInput.widget.name = inputName
-  hostInput.widgetId = id
-  useWidgetValueStore().registerWidget(id, {
-    type: sourceState.type,
-    value: sourceState.value,
-    options: cloneDeep(sourceState.options ?? {}),
-    label: hostInput.label ?? sourceSlot.label ?? inputName,
-    serialize: sourceState.serialize,
-    disabled: sourceState.disabled,
-    isDOMWidget: sourceState.isDOMWidget
-  })
-}
-
-function promotePreviewViaExposure(
-  subgraphNode: SubgraphNode,
-  sourceNode: LGraphNode,
-  sourcePreviewName: string
-): void {
-  const store = usePreviewExposureStore()
-  const rootGraphId = subgraphNode.rootGraph.id
-  const hostLocator = String(subgraphNode.id)
-  const existing = store
-    .getExposures(rootGraphId, hostLocator)
-    .some(
-      (exposure) =>
-        exposure.sourceNodeId === String(sourceNode.id) &&
-        exposure.sourcePreviewName === sourcePreviewName
-    )
-  if (existing) return
-
-  store.addExposure(rootGraphId, hostLocator, {
-    sourceNodeId: sourceNode.id,
-    sourcePreviewName
-  })
-}
-
 const PREVIEW_WIDGET_TYPES = new Set(['preview', 'video', 'audioUI'])
+
+function getParentNodes(): SubgraphNode[] {
+  const { navigationStack } = useSubgraphNavigationStore()
+  const subgraph = navigationStack.at(-1)
+  if (!subgraph) {
+    useToastStore().add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: t('subgraphStore.promoteOutsideSubgraph')
+    })
+    return []
+  }
+  const parentGraph = navigationStack.at(-2) ?? subgraph.rootGraph
+  return parentGraph.nodes.filter(
+    (node): node is SubgraphNode =>
+      node.type === subgraph.id && node.isSubgraphNode()
+  )
+}
 
 export function isPreviewPseudoWidget(widget: IBaseWidget): boolean {
   if (widget.name.startsWith('$$')) return true
@@ -465,24 +483,6 @@ export function demoteWidget(
   })
 }
 
-function getParentNodes(): SubgraphNode[] {
-  const { navigationStack } = useSubgraphNavigationStore()
-  const subgraph = navigationStack.at(-1)
-  if (!subgraph) {
-    useToastStore().add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: t('subgraphStore.promoteOutsideSubgraph')
-    })
-    return []
-  }
-  const parentGraph = navigationStack.at(-2) ?? subgraph.rootGraph
-  return parentGraph.nodes.filter(
-    (node): node is SubgraphNode =>
-      node.type === subgraph.id && node.isSubgraphNode()
-  )
-}
-
 export function addWidgetPromotionOptions(
   options: (IContextMenuValue<unknown> | null)[],
   widget: IBaseWidget,
@@ -540,14 +540,6 @@ const recommendedNodes = [
   'PreviewImage'
 ]
 const recommendedWidgetNames = ['seed']
-export function isRecommendedWidget([node, widget]: WidgetItem) {
-  return (
-    !widget.computedDisabled &&
-    (recommendedNodes.includes(node.type) ||
-      recommendedWidgetNames.includes(widget.name))
-  )
-}
-
 function supportsVirtualPreviewWidget(node: LGraphNode): boolean {
   return supportsVirtualCanvasImagePreview(node)
 }
@@ -563,6 +555,18 @@ function createVirtualCanvasImagePreviewWidget(): IBaseWidget {
   }
 }
 
+function nodeWidgets(n: LGraphNode): WidgetItem[] {
+  return getPromotableWidgets(n).map((w: IBaseWidget) => [n, w])
+}
+
+export function isRecommendedWidget([node, widget]: WidgetItem) {
+  return (
+    !widget.computedDisabled &&
+    (recommendedNodes.includes(node.type) ||
+      recommendedWidgetNames.includes(widget.name))
+  )
+}
+
 export function getPromotableWidgets(node: LGraphNode): IBaseWidget[] {
   const widgets = [...(node.widgets ?? [])]
 
@@ -575,10 +579,6 @@ export function getPromotableWidgets(node: LGraphNode): IBaseWidget[] {
   }
 
   return widgets
-}
-
-function nodeWidgets(n: LGraphNode): WidgetItem[] {
-  return getPromotableWidgets(n).map((w: IBaseWidget) => [n, w])
 }
 
 export function autoExposeKnownPreviewNodes(subgraphNode: SubgraphNode): void {

@@ -1,6 +1,14 @@
 import type { FillSpec } from './fill'
 import type { LayerMode } from './mode'
 
+interface Locks {
+  content: boolean
+  position: boolean
+  visibility: boolean
+}
+
+type ChannelRole = 'mask' | 'selection' | 'saved'
+
 export interface Vec2 {
   x: number
   y: number
@@ -21,12 +29,6 @@ export interface Transform {
   rotation: number
 }
 
-interface Locks {
-  content: boolean
-  position: boolean
-  visibility: boolean
-}
-
 export interface NodeBase {
   id: string
   kind: string
@@ -38,8 +40,6 @@ export interface NodeBase {
   locks: Locks
   colorTag?: string
 }
-
-type ChannelRole = 'mask' | 'selection' | 'saved'
 
 export interface ChannelData {
   id: string

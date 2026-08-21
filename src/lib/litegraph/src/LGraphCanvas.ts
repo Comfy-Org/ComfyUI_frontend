@@ -277,6 +277,149 @@ const temp_vec2: Point = [0, 0]
 const tmp_area = new Rectangle()
 const margin_area = new Rectangle()
 const link_bounding = new Rectangle()
+function patchLinkNodeIds(
+  links:
+    | { origin_id: SerializedNodeId; target_id: SerializedNodeId }[]
+    | undefined,
+  remappedIds: Map<SerializedNodeId, SerializedNodeId>
+) {
+  if (!links?.length) return
+
+  for (const link of links) {
+    const newOriginId = remappedIds.get(link.origin_id)
+    if (newOriginId !== undefined) link.origin_id = newOriginId
+
+    const newTargetId = remappedIds.get(link.target_id)
+    if (newTargetId !== undefined) link.target_id = newTargetId
+  }
+}
+
+function remapNodeId(
+  nodeId: string,
+  remappedIds: Map<SerializedNodeId, SerializedNodeId>
+): SerializedNodeId | undefined {
+  const directMatch = remappedIds.get(nodeId)
+  if (directMatch !== undefined) return directMatch
+  if (!/^-?\d+$/.test(nodeId)) return undefined
+
+  const numericId = Number(nodeId)
+  if (!Number.isSafeInteger(numericId)) return undefined
+
+  return remappedIds.get(numericId)
+}
+
+function remapProxyWidgets(
+  info: ISerialisedNode,
+  remappedIds: Map<SerializedNodeId, SerializedNodeId> | undefined
+) {
+  if (!remappedIds || remappedIds.size === 0) return
+
+  const proxyWidgets = info.properties?.proxyWidgets
+  if (!Array.isArray(proxyWidgets)) return
+
+  for (const entry of proxyWidgets) {
+    if (!Array.isArray(entry)) continue
+
+    const [nodeId] = entry
+    if (typeof nodeId !== 'string' || nodeId === '-1') continue
+
+    const remappedNodeId = remapNodeId(nodeId, remappedIds)
+    if (remappedNodeId !== undefined) entry[0] = String(remappedNodeId)
+  }
+}
+
+function hasStringSourceNodeId(
+  value: unknown
+): value is { sourceNodeId: string } {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'sourceNodeId' in value &&
+    typeof value.sourceNodeId === 'string'
+  )
+}
+
+function remapPreviewExposures(
+  info: ISerialisedNode,
+  remappedIds: Map<SerializedNodeId, SerializedNodeId> | undefined
+) {
+  if (!remappedIds || remappedIds.size === 0) return
+
+  const previewExposures = info.properties?.previewExposures
+  if (!Array.isArray(previewExposures)) return
+
+  for (const entry of previewExposures) {
+    if (!hasStringSourceNodeId(entry) || entry.sourceNodeId === '-1') continue
+
+    const remappedNodeId = remapNodeId(entry.sourceNodeId, remappedIds)
+    if (remappedNodeId !== undefined)
+      entry.sourceNodeId = String(remappedNodeId)
+  }
+}
+
+export function remapClipboardSubgraphNodeIds(
+  parsed: ClipboardItems,
+  rootGraph: LGraph
+): void {
+  const usedNodeIds = new Set<number>()
+  forEachNode(rootGraph, (node) => {
+    const numericId = Number(node.id)
+    if (!Number.isInteger(numericId)) return
+    usedNodeIds.add(numericId)
+    if (rootGraph.state.lastNodeId < numericId)
+      rootGraph.state.lastNodeId = numericId
+  })
+
+  function nextUniqueNodeId() {
+    while (usedNodeIds.has(++rootGraph.state.lastNodeId));
+    const nextId = rootGraph.state.lastNodeId
+    usedNodeIds.add(nextId)
+    return nextId
+  }
+
+  const subgraphNodeIdMap = new Map<
+    SubgraphId,
+    Map<SerializedNodeId, SerializedNodeId>
+  >()
+  for (const subgraphInfo of parsed.subgraphs ?? []) {
+    const remappedIds = new Map<SerializedNodeId, SerializedNodeId>()
+    const interiorNodes = subgraphInfo.nodes ?? []
+
+    for (const nodeInfo of interiorNodes) {
+      if (typeof nodeInfo.id !== 'number') continue
+
+      if (usedNodeIds.has(nodeInfo.id)) {
+        const oldId = nodeInfo.id
+        const newId = nextUniqueNodeId()
+        remappedIds.set(oldId, newId)
+        nodeInfo.id = newId
+        continue
+      }
+
+      usedNodeIds.add(nodeInfo.id)
+      if (rootGraph.state.lastNodeId < nodeInfo.id)
+        rootGraph.state.lastNodeId = nodeInfo.id
+    }
+
+    if (remappedIds.size > 0) {
+      patchLinkNodeIds(subgraphInfo.links, remappedIds)
+      subgraphNodeIdMap.set(subgraphInfo.id, remappedIds)
+    }
+  }
+
+  const allNodeInfo: ISerialisedNode[] = [
+    parsed.nodes ? [parsed.nodes] : [],
+    parsed.subgraphs ? parsed.subgraphs.map((s) => s.nodes ?? []) : []
+  ].flat(2)
+
+  for (const nodeInfo of allNodeInfo) {
+    if (typeof nodeInfo.type !== 'string') continue
+    const remappedIds = subgraphNodeIdMap.get(nodeInfo.type)
+    remapProxyWidgets(nodeInfo, remappedIds)
+    remapPreviewExposures(nodeInfo, remappedIds)
+  }
+}
+
 /**
  * This class is in charge of rendering one graph inside a canvas. And provides all the interaction required.
  * Valid callbacks are: onNodeSelected, onNodeDeselected, onShowNodePanel, onNodeDblClicked
@@ -9009,148 +9152,5 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         offset: [...this.ds.offset] as [number, number]
       }
     }
-  }
-}
-
-function patchLinkNodeIds(
-  links:
-    | { origin_id: SerializedNodeId; target_id: SerializedNodeId }[]
-    | undefined,
-  remappedIds: Map<SerializedNodeId, SerializedNodeId>
-) {
-  if (!links?.length) return
-
-  for (const link of links) {
-    const newOriginId = remappedIds.get(link.origin_id)
-    if (newOriginId !== undefined) link.origin_id = newOriginId
-
-    const newTargetId = remappedIds.get(link.target_id)
-    if (newTargetId !== undefined) link.target_id = newTargetId
-  }
-}
-
-function remapNodeId(
-  nodeId: string,
-  remappedIds: Map<SerializedNodeId, SerializedNodeId>
-): SerializedNodeId | undefined {
-  const directMatch = remappedIds.get(nodeId)
-  if (directMatch !== undefined) return directMatch
-  if (!/^-?\d+$/.test(nodeId)) return undefined
-
-  const numericId = Number(nodeId)
-  if (!Number.isSafeInteger(numericId)) return undefined
-
-  return remappedIds.get(numericId)
-}
-
-function remapProxyWidgets(
-  info: ISerialisedNode,
-  remappedIds: Map<SerializedNodeId, SerializedNodeId> | undefined
-) {
-  if (!remappedIds || remappedIds.size === 0) return
-
-  const proxyWidgets = info.properties?.proxyWidgets
-  if (!Array.isArray(proxyWidgets)) return
-
-  for (const entry of proxyWidgets) {
-    if (!Array.isArray(entry)) continue
-
-    const [nodeId] = entry
-    if (typeof nodeId !== 'string' || nodeId === '-1') continue
-
-    const remappedNodeId = remapNodeId(nodeId, remappedIds)
-    if (remappedNodeId !== undefined) entry[0] = String(remappedNodeId)
-  }
-}
-
-function hasStringSourceNodeId(
-  value: unknown
-): value is { sourceNodeId: string } {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'sourceNodeId' in value &&
-    typeof value.sourceNodeId === 'string'
-  )
-}
-
-function remapPreviewExposures(
-  info: ISerialisedNode,
-  remappedIds: Map<SerializedNodeId, SerializedNodeId> | undefined
-) {
-  if (!remappedIds || remappedIds.size === 0) return
-
-  const previewExposures = info.properties?.previewExposures
-  if (!Array.isArray(previewExposures)) return
-
-  for (const entry of previewExposures) {
-    if (!hasStringSourceNodeId(entry) || entry.sourceNodeId === '-1') continue
-
-    const remappedNodeId = remapNodeId(entry.sourceNodeId, remappedIds)
-    if (remappedNodeId !== undefined)
-      entry.sourceNodeId = String(remappedNodeId)
-  }
-}
-
-export function remapClipboardSubgraphNodeIds(
-  parsed: ClipboardItems,
-  rootGraph: LGraph
-): void {
-  const usedNodeIds = new Set<number>()
-  forEachNode(rootGraph, (node) => {
-    const numericId = Number(node.id)
-    if (!Number.isInteger(numericId)) return
-    usedNodeIds.add(numericId)
-    if (rootGraph.state.lastNodeId < numericId)
-      rootGraph.state.lastNodeId = numericId
-  })
-
-  function nextUniqueNodeId() {
-    while (usedNodeIds.has(++rootGraph.state.lastNodeId));
-    const nextId = rootGraph.state.lastNodeId
-    usedNodeIds.add(nextId)
-    return nextId
-  }
-
-  const subgraphNodeIdMap = new Map<
-    SubgraphId,
-    Map<SerializedNodeId, SerializedNodeId>
-  >()
-  for (const subgraphInfo of parsed.subgraphs ?? []) {
-    const remappedIds = new Map<SerializedNodeId, SerializedNodeId>()
-    const interiorNodes = subgraphInfo.nodes ?? []
-
-    for (const nodeInfo of interiorNodes) {
-      if (typeof nodeInfo.id !== 'number') continue
-
-      if (usedNodeIds.has(nodeInfo.id)) {
-        const oldId = nodeInfo.id
-        const newId = nextUniqueNodeId()
-        remappedIds.set(oldId, newId)
-        nodeInfo.id = newId
-        continue
-      }
-
-      usedNodeIds.add(nodeInfo.id)
-      if (rootGraph.state.lastNodeId < nodeInfo.id)
-        rootGraph.state.lastNodeId = nodeInfo.id
-    }
-
-    if (remappedIds.size > 0) {
-      patchLinkNodeIds(subgraphInfo.links, remappedIds)
-      subgraphNodeIdMap.set(subgraphInfo.id, remappedIds)
-    }
-  }
-
-  const allNodeInfo: ISerialisedNode[] = [
-    parsed.nodes ? [parsed.nodes] : [],
-    parsed.subgraphs ? parsed.subgraphs.map((s) => s.nodes ?? []) : []
-  ].flat(2)
-
-  for (const nodeInfo of allNodeInfo) {
-    if (typeof nodeInfo.type !== 'string') continue
-    const remappedIds = subgraphNodeIdMap.get(nodeInfo.type)
-    remapProxyWidgets(nodeInfo, remappedIds)
-    remapPreviewExposures(nodeInfo, remappedIds)
   }
 }

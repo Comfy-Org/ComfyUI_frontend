@@ -1,13 +1,13 @@
-export interface SharedGLHandle {
-  canvas: OffscreenCanvas
-  gl: WebGL2RenderingContext
-  release: () => void
-}
-
 interface SharedGL {
   canvas: OffscreenCanvas
   gl: WebGL2RenderingContext
   refs: number
+}
+
+export interface SharedGLHandle {
+  canvas: OffscreenCanvas
+  gl: WebGL2RenderingContext
+  release: () => void
 }
 
 let current: SharedGL | null = null

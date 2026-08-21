@@ -295,31 +295,6 @@ interface BuildNodeDefTreeOptions {
   pathExtractor?: (nodeDef: ComfyNodeDefImpl) => string[]
 }
 
-export function buildNodeDefTree(
-  nodeDefs: ComfyNodeDefImpl[],
-  options: BuildNodeDefTreeOptions = {}
-): TreeNode {
-  const { pathExtractor } = options
-  const defaultPathExtractor = (nodeDef: ComfyNodeDefImpl) =>
-    nodeDef.nodePath.split('/')
-  return buildTree(nodeDefs, pathExtractor || defaultPathExtractor)
-}
-
-export function createDummyFolderNodeDef(folderPath: string): ComfyNodeDefImpl {
-  return new ComfyNodeDefImpl({
-    name: '',
-    display_name: '',
-    category: folderPath.endsWith('/') ? folderPath.slice(0, -1) : folderPath,
-    python_module: 'nodes',
-    description: 'Dummy Folder Node (User should never see this string)',
-    input: {},
-    output: [],
-    output_name: [],
-    output_is_list: [],
-    output_node: false
-  } as ComfyNodeDefV1)
-}
-
 /**
  * Defines a filter for node definitions in the node library.
  * Filters are applied in a single pass to determine node visibility.
@@ -347,6 +322,31 @@ export interface NodeDefFilter {
    * @returns true if the node should be visible, false to hide it
    */
   predicate: (nodeDef: ComfyNodeDefImpl) => boolean
+}
+
+export function buildNodeDefTree(
+  nodeDefs: ComfyNodeDefImpl[],
+  options: BuildNodeDefTreeOptions = {}
+): TreeNode {
+  const { pathExtractor } = options
+  const defaultPathExtractor = (nodeDef: ComfyNodeDefImpl) =>
+    nodeDef.nodePath.split('/')
+  return buildTree(nodeDefs, pathExtractor || defaultPathExtractor)
+}
+
+export function createDummyFolderNodeDef(folderPath: string): ComfyNodeDefImpl {
+  return new ComfyNodeDefImpl({
+    name: '',
+    display_name: '',
+    category: folderPath.endsWith('/') ? folderPath.slice(0, -1) : folderPath,
+    python_module: 'nodes',
+    description: 'Dummy Folder Node (User should never see this string)',
+    input: {},
+    output: [],
+    output_name: [],
+    output_is_list: [],
+    output_node: false
+  } as ComfyNodeDefV1)
 }
 
 export const useNodeDefStore = defineStore('nodeDef', () => {
