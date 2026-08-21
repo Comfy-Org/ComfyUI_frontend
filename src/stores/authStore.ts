@@ -23,6 +23,7 @@ import { useFirebaseAuth } from 'vuefire'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { fetchWithUnifiedRemint } from '@/platform/auth/unified/remintRetry'
+import { getOAuthRequestId } from '@/platform/cloud/oauth/oauthState'
 import { DISTRIBUTION, isCloud } from '@/platform/distribution/types'
 import {
   clearPreservedQuery,
@@ -102,6 +103,20 @@ export const useAuthStore = defineStore('auth', () => {
    */
   const lastTokenUserId = ref<string | null>(null)
 
+  /**
+   * The uid present before the latest auth-state change, so a clear can be
+   * distinguished from the initial unauthenticated boot (no prior user).
+   */
+  const previousUid = ref<string | null>(null)
+  /**
+   * Set true immediately before an intentional Firebase auth-state clear —
+   * a user-initiated `signOut`, or the signup-rollback `user.delete()` — and
+   * read in the `onAuthStateChanged` null branch to tell those apart from a
+   * spontaneous Firebase clear. Reset on every auth-state event so a resolved
+   * action that never produces a clear can't leave it stuck true.
+   */
+  let userInitiatedLogout = false
+
   const buildApiUrl = (path: string) => `${getComfyApiBaseUrl()}${path}`
 
   // Providers
@@ -138,8 +153,35 @@ export const useAuthStore = defineStore('auth', () => {
   // Set persistence to localStorage (works in both browser and Electron)
   void setPersistence(auth, browserLocalPersistence)
 
+  /**
+   * Emit a diagnostic telemetry event whenever the Firebase auth state is
+   * cleared (currentUser -> null) for a previously-signed-in user, recording
+   * whether the clear was user-initiated and any in-flight MCP OAuth flow.
+   * Strictly additive: fully guarded so a failure here (e.g. sessionStorage or
+   * document access throwing in a sandboxed context) never aborts the
+   * synchronous auth-state handler and its logout cleanup.
+   */
+  function reportAuthStateCleared(previousUserId: string) {
+    try {
+      const oauthRequestInFlight = getOAuthRequestId() !== null
+      if (!userInitiatedLogout) {
+        console.warn(
+          `[authStore] Firebase auth state cleared without a user-initiated logout (oauth_request_in_flight=${oauthRequestInFlight})`
+        )
+      }
+      useTelemetry()?.trackAuthCleared({
+        user_initiated: userInitiatedLogout,
+        previous_user_id: previousUserId,
+        oauth_request_in_flight: oauthRequestInFlight,
+        visibility_state: document.visibilityState
+      })
+    } catch (error) {
+      console.warn('[authStore] Failed to report auth-state clear', error)
+    }
+  }
+
   onAuthStateChanged(auth, (user) => {
-    const previousUserId = currentUser.value?.uid ?? null
+    const previousUserId = previousUid.value
     const identityChanged =
       previousUserId !== null && previousUserId !== (user?.uid ?? null)
 
@@ -161,12 +203,23 @@ export const useAuthStore = defineStore('auth', () => {
 
     currentUser.value = user
     isInitialized.value = true
+    previousUid.value = user?.uid ?? null
     if (user === null) {
+      if (isCloud && previousUserId !== null) {
+        reportAuthStateCleared(previousUserId)
+      }
+      userInitiatedLogout = false
       lastTokenUserId.value = null
-    } else if (isCloud) {
-      // Mint the single Cloud JWT at login (flag-guarded inside the store; a
-      // no-op when unified_cloud_auth is off).
-      void useWorkspaceAuthStore().mintAtLogin()
+    } else {
+      // Any non-null auth event means the pending logout either never produced a
+      // clear or is now stale; drop the flag so it can't misattribute a later
+      // spontaneous clear as user-initiated.
+      userInitiatedLogout = false
+      if (isCloud) {
+        // Mint the single Cloud JWT at login (flag-guarded inside the store; a
+        // no-op when unified_cloud_auth is off).
+        void useWorkspaceAuthStore().mintAtLogin()
+      }
     }
 
     // Reset balance when auth state changes
@@ -664,10 +717,16 @@ export const useAuthStore = defineStore('auth', () => {
         )
       } catch (error) {
         // Best-effort rollback of the user created in THIS call; never let a
-        // cleanup failure mask the original error.
+        // cleanup failure mask the original error. The delete is an
+        // intentional clear, same as signOut — flag it so it isn't reported
+        // as a spontaneous one.
         try {
+          userInitiatedLogout = true
           await credential.user.delete()
         } catch (deleteError) {
+          // Delete failed, so the auth state was not cleared; drop the flag so
+          // a later spontaneous clear is not misattributed as intentional.
+          userInitiatedLogout = false
           console.warn(
             'Failed to roll back orphaned Firebase user after customer creation failed',
             deleteError
@@ -730,7 +789,17 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const logout = async (): Promise<void> =>
-    executeAuthAction((authInstance) => signOut(authInstance))
+    executeAuthAction(async (authInstance) => {
+      userInitiatedLogout = true
+      try {
+        await signOut(authInstance)
+      } catch (error) {
+        // signOut failed, so the auth state was not cleared; drop the flag so a
+        // later spontaneous clear is not misattributed as user-initiated.
+        userInitiatedLogout = false
+        throw error
+      }
+    })
 
   const sendPasswordReset = async (email: string): Promise<void> =>
     executeAuthAction((authInstance) =>
