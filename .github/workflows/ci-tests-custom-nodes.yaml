@@ -360,7 +360,9 @@ jobs:
                   if ! [[ "$download" =~ ^https://cdn\.comfy\.org/ ]]; then
                     echo "::error::$pack: registry downloadUrl is not on cdn.comfy.org (got '$download')"; exit 1
                   fi
-                  curl --retry 3 --retry-delay 2 --retry-connrefused -sfL "$download" -o /tmp/pack.zip || {
+                  curl --retry 6 --retry-delay 5 --retry-all-errors \
+                    --retry-max-time 60 --remove-on-error -sfL \
+                    "$download" -o /tmp/pack.zip || {
                     echo "::error::$pack: deployRef '$ref' is unfetchable - the registry artifact $download did not download"; exit 1
                   }
                   # Registry zips are the pack root, with no wrapper directory
