@@ -104,13 +104,28 @@ export const runExtensionSerializeHook = <T extends object>(
 ): T => {
   const payload = payloads.get(owner) ?? {}
   const view = cloneSerialisable(canonical)
-  Object.assign(view, structuredClone(payload), {
+  Object.assign(view, {
     extensions: structuredClone(payload)
   })
   hook?.(view)
-  hydrateExtensionPayload(owner, view, canonicalFields)
 
-  const result = payloads.get(owner) ?? {}
+  for (const key of canonicalFields) {
+    if (Object.hasOwn(view, key)) {
+      Reflect.set(canonical, key, Reflect.get(view, key))
+    } else {
+      Reflect.deleteProperty(canonical, key)
+    }
+  }
+
+  const viewRecord = Object.fromEntries(Object.entries(view))
+  const result = readPayload(viewRecord.extensions)
+  for (const [key, value] of Object.entries(viewRecord)) {
+    if (canonicalFields.has(key) || key === 'extensions' || !isJsonValue(value))
+      continue
+    result[key] = structuredClone(value)
+  }
+  payloads.set(owner, result)
+
   return Object.keys(result).length
     ? Object.assign(canonical, { extensions: structuredClone(result) })
     : canonical

@@ -250,6 +250,35 @@ describe('LGraph', () => {
     ).toEqual([])
   })
 
+  it('preserves existing entities when keep-old configuration fails', () => {
+    LiteGraph.registerNodeType('throwing-configure', ThrowingConfigureNode)
+    const source = new LGraph()
+    const sourceNode = new ThrowingConfigureNode()
+    source.add(sourceNode)
+    const data = source.asSerialisable()
+    const graph = new LGraph()
+    data.id = graph.id
+    const existingNode = new DummyNode()
+    const existingGroup = new LGraphGroup('existing')
+    graph.add(existingNode)
+    graph.add(existingGroup)
+
+    expect(() => graph.configure(data, true)).toThrow('configure failed')
+
+    expect(graph.nodes).toEqual([existingNode])
+    expect(graph.groups).toEqual([existingGroup])
+    expect(existingNode.graph).toBe(graph)
+    expect(existingGroup.graph).toBe(graph)
+    expect(
+      useWidgetValueStore().getWidget(
+        widgetId(graph.id, sourceNode.id, 'value')
+      )
+    ).toBeUndefined()
+    expect(
+      usePreviewExposureStore().getExposures(graph.id, String(sourceNode.id))
+    ).toEqual([])
+  })
+
   it('should handle adding null node gracefully', () => {
     const graph = new LGraph()
     const initialNodeCount = graph.nodes.length
@@ -694,10 +723,58 @@ describe('Store-driven serialization parity', () => {
     ]) {
       const stored = graph.asSerialisable({ sortNodes: true })
       const mutable = serialiseMutableGraphParts(graph, true)
-      expect(JSON.parse(JSON.stringify(stored))).toMatchObject(
+      const normalizedStored = {
+        nodes: stored.nodes,
+        groups: stored.groups,
+        links: stored.links,
+        floatingLinks: stored.floatingLinks,
+        reroutes: stored.reroutes
+      }
+      expect(JSON.parse(JSON.stringify(normalizedStored))).toEqual(
         JSON.parse(JSON.stringify(mutable))
       )
     }
+  })
+
+  test('rejects a stored node without a live adapter', ({ expect }) => {
+    const graph = createGraph(new DummyNode())
+    graph._nodes = []
+
+    expect(() => graph.asSerialisable()).toThrow(
+      /Cannot serialize graph .*: node .* has no live adapter/
+    )
+  })
+
+  test('rejects a member group without presentation', ({ expect }) => {
+    const graph = new LGraph()
+    const group = new LGraphGroup()
+    graph.add(group)
+    useGraphDefinitionStore().deleteGroupPresentation(
+      graph.id,
+      graph.id,
+      group.id
+    )
+
+    expect(() => graph.asSerialisable()).toThrow(
+      `Cannot serialize graph ${graph.id}: group ${group.id} has no presentation`
+    )
+  })
+
+  test('rejects a member group without layout', ({ expect }) => {
+    const graph = new LGraph()
+    const group = new LGraphGroup()
+    graph.add(group)
+    layoutStore.applyOperation({
+      type: 'deleteGroup',
+      graphId: graph.id,
+      groupId: group.id,
+      source: LayoutSource.Canvas,
+      timestamp: Date.now()
+    })
+
+    expect(() => graph.asSerialisable()).toThrow(
+      `Cannot serialize graph ${graph.id}: group ${group.id} has no layout`
+    )
   })
 })
 

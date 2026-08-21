@@ -4,7 +4,10 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { addDynamicCombo } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
-import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
+import type {
+  IBaseWidget,
+  TWidgetValue
+} from '@/lib/litegraph/src/types/widgets'
 import { sortWidgetValuesByInputOrder } from '@/workbench/utils/nodeDefOrderingUtil'
 
 describe('LGraphNode widget ordering', () => {
@@ -221,6 +224,46 @@ describe('LGraphNode widget ordering', () => {
       node.configure(mockNode([20, 5]))
 
       expect(node.widgets!.map((w) => w.value)).toStrictEqual([5, 20])
+    })
+
+    it('supports fallback names for non-iterable array-like values', () => {
+      node.addWidget('number', 'steps', 0, null, {})
+      node.addWidget('number', 'seed', 0, null, {})
+      const nodeData = fromPartial({
+        fallbackWidgetsValuesNames: ['seed', 'steps']
+      })
+      node.constructor = Object.assign({}, node.constructor, { nodeData })
+
+      const info = mockNode()
+      info.widgets_values = [20, 5]
+      Object.defineProperties(info.widgets_values, {
+        [Symbol.iterator]: { value: undefined },
+        flatMap: { value: undefined }
+      })
+      node.configure(info)
+
+      expect(node.widgets!.map((widget) => widget.value)).toStrictEqual([5, 20])
+    })
+
+    it('does not restore dynamically added non-serializable widgets', () => {
+      node.onConfigure = function () {
+        this.addCustomWidget(
+          fromPartial<IBaseWidget>({
+            type: 'button',
+            name: 'action',
+            value: 'Click',
+            serialize: false
+          })
+        )
+        this.addWidget('number', 'seed', 0, null, {})
+      }
+
+      node.configure(mockNode([12345], { action: 'Restored', seed: 12345 }))
+
+      expect(node.widgets!.map((widget) => widget.value)).toStrictEqual([
+        'Click',
+        12345
+      ])
     })
   })
 })
