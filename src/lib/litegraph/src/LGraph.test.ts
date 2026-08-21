@@ -155,12 +155,29 @@ describe('LGraph', () => {
     expect(membership.groups).toEqual([group])
 
     const previousId = graph.id
-    graph.id = createUuidv4()
+    expect(() => {
+      graph.id = createUuidv4()
+    }).toThrow("Cannot change a populated graph's ID")
+    expect(graph.id).toBe(previousId)
     expect(store.membership(graph.id, graph.id)).toBe(membership)
 
     graph.clear()
     expect(store.membership(previousId, previousId).nodes).toEqual([])
     expect(store.membership(graph.id, graph.id).nodes).toEqual([])
+  })
+
+  it('allows an empty graph to adopt a new ID', () => {
+    const graph = new LGraph()
+    const store = useGraphDefinitionStore()
+    const membership = store.membership(graph.id, graph.id)
+    const previousId = graph.id
+    const nextId = createUuidv4()
+
+    graph.id = nextId
+
+    expect(graph.id).toBe(nextId)
+    expect(store.membership(nextId, nextId)).toBe(membership)
+    expect(store.membership(previousId, previousId)).not.toBe(membership)
   })
 
   it('should serialize deterministic node order', async () => {
