@@ -161,21 +161,50 @@ describe('MediaVideoTop', () => {
       await user.hover(container.firstElementChild!)
       expect(video.controls).toBe(true)
 
-      return { video, bubbled }
+      return { video, bubbled, user }
     }
 
     it('stops a modifier-click aimed at the native control strip', async () => {
-      const { video, bubbled } = await renderPlayingHoveredVideo()
+      const { video, bubbled, user } = await renderPlayingHoveredVideo()
 
-      await fireEvent.click(video, { clientY: 290, metaKey: true })
+      await user.keyboard('{Meta>}')
+      await user.pointer({
+        keys: '[MouseLeft]',
+        target: video,
+        coords: { clientY: 290 }
+      })
+      await user.keyboard('{/Meta}')
 
       expect(bubbled).not.toHaveBeenCalled()
     })
 
     it('lets a modifier-click on the video body through to the card', async () => {
-      const { video, bubbled } = await renderPlayingHoveredVideo()
+      const { video, bubbled, user } = await renderPlayingHoveredVideo()
 
-      await fireEvent.click(video, { clientY: 200, metaKey: true })
+      await user.keyboard('{Meta>}')
+      await user.pointer({
+        keys: '[MouseLeft]',
+        target: video,
+        coords: { clientY: 200 }
+      })
+      await user.keyboard('{/Meta}')
+
+      expect(bubbled).toHaveBeenCalledTimes(1)
+    })
+
+    it('lets a modifier-click through when the video has zero height', async () => {
+      const { video, bubbled, user } = await renderPlayingHoveredVideo()
+      vi.spyOn(video, 'getBoundingClientRect').mockReturnValue(
+        fromPartial({ top: 100, bottom: 100, height: 0 })
+      )
+
+      await user.keyboard('{Meta>}')
+      await user.pointer({
+        keys: '[MouseLeft]',
+        target: video,
+        coords: { clientY: 100 }
+      })
+      await user.keyboard('{/Meta}')
 
       expect(bubbled).toHaveBeenCalledTimes(1)
     })
