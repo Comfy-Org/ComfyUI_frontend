@@ -144,8 +144,14 @@ describe("W8 applier edge goldens (KA-4)", () => {
       .toBe(31);
   });
 
-  it("leaves projection unchanged and aborts the remainder after a rejection", () => {
+  it("leaves the document byte-identical and aborts the remainder after a rejection", () => {
     const doc = mint(base(), catalog);
+    // Byte identity, not projection equality (KA-4). `project()` renders neither
+    // `__stamps` nor `__applied`, so a rejection that claims the LWW register
+    // before throwing is invisible to a projection snapshot — the whole point of
+    // `.agents/checks/test-quality.md` §2. `input_slot_missing` is validated
+    // ahead of the first write, so the stronger assertion is the true one here.
+    const beforeBytes = Buffer.from(Y.encodeStateAsUpdate(doc));
     const before = project(doc, catalog);
     const malformed = connect(50, 1, { to_slot: 99 });
     const trailing = connect(51, 2);
@@ -153,6 +159,10 @@ describe("W8 applier edge goldens (KA-4)", () => {
     const result = applyOps(doc, [malformed, trailing], catalog);
     expect(result.failed).toMatchObject({ index: 0, code: "input_slot_missing" });
     expect(result.applied).toEqual([]);
+    expect(
+      Buffer.from(Y.encodeStateAsUpdate(doc)).equals(beforeBytes),
+      "encodeStateAsUpdate must be byte-identical",
+    ).toBe(true);
     expect(project(doc, catalog)).toEqual(before);
     expect(project(doc, catalog).links).not.toContainEqual([51, 2, 0, 3, 0, "X"]);
   });

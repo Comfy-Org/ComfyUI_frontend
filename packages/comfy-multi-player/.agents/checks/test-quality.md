@@ -6,7 +6,11 @@ Check for:
 
 1. **Missing tests** — new op behavior, new rejection code, or changed applier/projection logic without coverage. A pure refactor with no behavior change does not need new tests.
 2. **Weak assertions** — asserting only that an op failed (`failed.code`) without asserting the document state it should or should not have produced. For rejections the assertion of record is **`Y.encodeStateAsUpdate` byte identity plus the `op_id`'s absence from `__applied`**, not a `project(doc)` snapshot: `project()` does not render `__stamps` or `__applied`, so a rejected op that has already claimed a register yields `bytesEq=false, projEq=true` and no projection assertion in the repo can see it (KA-4). Also assert that a trailing valid op after a rejected one does not apply (abort-remainder). This is the exact gap that let issue #10 hide, and the projection-only version of the fix is what let the empty-destination member of the class outlive it.
-3. **Change-detector tests** — asserting internal structure to pin an implementation detail, rather than a property. This is *not* a licence to prefer `project()` for invariant tests: see item 2 and [`vacuity.md`](vacuity.md) P10. The genuine exception is the **accepted** delete-wins/LWW-dropped no-op, which deliberately consumes an `op_id`, so raw state is intentionally not byte-identical there; compare projections for those, and bytes for rejections.
+   Three refinements, each of which a reviewer applying the rule literally would otherwise get wrong.
+   **A third observable.** `applyOps` calls `appliedMap(doc)` before it validates anything and `getMap` *creates* an absent root, so on a snapshot-forked replica a rejected op can materialize a root while the bytes stay identical — an empty root encodes to zero bytes (schema A5, KA-11). Assert `[...doc.share.keys()]` too. Since #29 the ledger accessors are module-private; a test imports them from `../src/doc.js`, as `test/ka4-rejection-byte-identity.test.ts` does.
+   **Scope it to ONE document.** The rule is a before/after on a single doc. It is not a claim that bytes are the oracle for anything involving rejections: KA-4's op-only vectors compare two replicas that applied the same ops in different orders, and those hold different Yjs clocks legitimately, so there the oracle is the projection or the disposition. Flag "bytes" offered for a cross-replica comparison exactly as readily as "projection" offered for a single-document one.
+   **State #10's status accurately.** PR #34 narrowed it, it is **not closed**, and byte identity holds today for every rejection the applier raises deliberately as an `OpRejectedError` — not for the four residual paths that mutate and then throw a raw error surfaced as `apply_failed` (#59, #61, #68; `delete_node` with a non-array `removed_links` still deletes the node first). Those are enumerated in `src/applier.ts`'s module comment and in `README.md`. The `bytesEq=false, projEq=true` figure above is the shape of the defect, not a live measurement: reproduce it on demand by planting one stray ledger write ahead of a rejection throw, which is what makes the point independent of whether any particular bug is currently open.
+3. **Change-detector tests** — asserting internal structure to pin an implementation detail, rather than a property. This is *not* a licence to prefer `project()` for invariant tests: see item 2 and [`vacuity.md`](vacuity.md) P10. The genuine exception is the **accepted** no-op that still consumes an `op_id` — delete-wins and LWW-dropped, including `connect`'s `if (!dst) return` — so raw state is intentionally not byte-identical there; compare projections for their **graph effect**, and bytes for rejections. (`applyAddNode`'s structural-idempotency return used to belong on that list; Amendment A7's node-presence stamp gate closed it, so do not re-add it.) Do not use the projection for the `op_id` consumption itself: that is the very thing being carved out and the projection cannot see it, so the observable there is `appliedMap(doc)` or `ApplyResult.applied`.
 4. **Convergence/idempotency gaps** — an op-semantics change without a test applying the op set in both arrival orders (must converge) and a double-apply test (duplicate `op_id` must be a true no-op).
 5. **Missing edge/error cases** — happy path only; no empty/null/malformed/uncatalogued/out-of-range scenarios.
 6. **Fragile or order-dependent tests** — shared mutable state between tests, reliance on execution order, unstable `op_id`/actor generation.
@@ -15,12 +19,69 @@ Check for:
 9. **Degenerate fixture** — the input class is right and the fixture is too small or too empty to distinguish the property from its negation. A two-element fixture cannot tell "exactly one" from "all but one"; `emptyWorkflow` cannot exhibit "leaves the document byte-identical"; a node that already has a widgets map cannot exercise a guard that fires when the map is created. Read the fixture's cardinality and occupancy against the property's quantifier, then apply [`vacuity.md`](vacuity.md) P11. "Equivalent mutant" is a claim, not a default.
 10. **Inadequate observable** — the test runs, can fail, has an independent oracle and no double, and still asserts on a surface too coarse to hold the violation. Ask [`vacuity.md`](vacuity.md) P10's question: *what is the smallest violation of this property that leaves the asserted value unchanged?*
 
+## Ranking the adequate observables: then localizing
+
+Item 10 and [`vacuity.md`](vacuity.md) P10 settle whether an observable is **adequate** — whether it has room to be false. This section is the step after that, and it is the half a reviewer who has just learned P10 tends to overshoot: among the observables that *can* express the violation, prefer the one that tells you **where**. Going finer than the property requires buys detection and pays in diagnosis.
+
+| Property under test | Inadequate | Adequate, poor diagnosis | Adequate and localizing |
+| --- | --- | --- | --- |
+| a rejected op changes nothing | `project(doc)` | — | `Y.encodeStateAsUpdate` bytes (the property *is* "no byte changed", so bytes both detect and name it) |
+| no bookkeeping key leaks into `meta` | `project(doc)` | encoded bytes ("these bytes differ from those") | `[...metaMap(doc).keys()].sort()` — names the leaked key |
+| a read path materializes no root type | encoded bytes (an empty root encodes to zero bytes) | — | `[...doc.share.keys()]` |
+
+So "assert on bytes" is not the lesson of item 2 and must not be applied as one; bytes are right there because the property genuinely is byte identity. Flag a byte assertion offered for a property that is really about one key or one root as readily as a projection assertion offered for a property the projection does not render.
+
 Repo conventions:
 
 - **`*.regression.test.*` files get more scrutiny, not less.** Each one is the sole evidence that a specific bug is closed, so a vacuous regression test retires a bug that is still live. This profile's naming and assertion-style conventions are relaxed there (a regression test may pin a concrete reproduction rather than assert a general property); its correctness conventions are not. Items 2, 4, 8, 9 and 10 above apply in full, and items 8 and 9 apply with priority.
 
 - Tests use **Vitest** (`npm test`) and live under **`test/`** (not colocated). Property tests use **fast-check**; conformance fixtures are SHA-pinned and verified in CI (`npm run verify:corpus`); mutation testing is **Stryker** (`npm run test:mutation`, then `npm run check:mutation-report` — a score quoted without the second command is not a measurement, because Stryker scores a timeout as a kill; see `docs/mutation-testing.md`).
 - Never use `any` in tests; deliberate invalid inputs are cast narrowly (`as unknown as Op`) at the single line under test.
-- "Major" for missing tests on applier/ordering/fail-closed logic; "minor" for a missing peripheral edge case.
+- "Major" for missing tests on applier/ordering/fail-closed logic; "minor" for a missing peripheral edge case. An inadequate observable (see above) is "major" wherever a missing test would be: the coverage it reports is not coverage.
+
+## Claim anchors
+
+Every checkable fact this profile restates, and every phrase it has retired, pinned by `npm run check:profile-claims` (see [`README.md`](README.md)). Grouped, not scattered, because item 2's history is that the anchors are the load-bearing part of the document.
+
+The item-2 oracle, and the deference to the profile that owns it:
+
+<!-- claim: a failed op must leave encoded document bytes unchanged :: .agents/checks/convergence-idempotency.md -->
+<!-- claim: encodeStateAsUpdate must be byte-identical :: test/ka4-rejection-byte-identity.test.ts -->
+<!-- claim: encodeStateAsUpdate must be byte-identical :: test/w8-applier-stamps-edge.test.ts -->
+<!-- claim: MIGRATED from KNOWN_KA4_VIOLATIONS when PR #34 landed :: test/ka4-rejection-byte-identity.test.ts -->
+<!-- claim: import { appliedMap } from "../src/doc.js"; :: test/ka4-rejection-byte-identity.test.ts -->
+<!-- claim: break; // abort-remainder :: src/applier.ts -->
+<!-- claim: a delete-wins no-op that CONSUMES the `op_id` :: src/applier.ts -->
+<!-- claim: CLOSED by Amendment A7 :: docs/multiplayer-schema.md -->
+
+Why the projection is inadequate. `project()` must not reach either ledger, and it has two ways to do so: the raw root names, and the `doc.ts` accessors that are the realistic route (`src/project.ts` reaches doc state only through imported helpers, so a projection that started rendering stamps would add `stampsMap`, never the literal `__stamps`). All four spellings are banned. The two positive markers pin **both** halves of each accessor — the exported identifier and the root string in its body — because a ban is only as good as the name it enumerates: pinning the body alone would let `stampsMap` be renamed with both positive claims still green while `claim-absent: stampsMap` quietly became a ban on a string that exists nowhere.
+
+<!-- claim-absent: __stamps :: src/project.ts -->
+<!-- claim-absent: __applied :: src/project.ts -->
+<!-- claim-absent: stampsMap :: src/project.ts -->
+<!-- claim-absent: appliedMap :: src/project.ts -->
+<!-- claim: export function stampsMap(doc: Y.Doc): Y.Map<unknown> {
+  return doc.getMap<unknown>("__stamps"); :: src/doc.ts -->
+<!-- claim: export function appliedMap(doc: Y.Doc): Y.Map<unknown> {
+  return doc.getMap<unknown>("__applied"); :: src/doc.ts -->
+
+The retired advice, banned in both copies — this file and the machine-consumed restatement in `.coderabbit.yaml`, which is the copy that runs on every PR and the one the earlier fixes never looked at. All `.coderabbit.yaml` needles are deliberately space-free: that block is a YAML folded scalar, so a needle containing a space could be split by a cosmetic rewrap, which would redden a positive claim and, worse, silently disarm a ban.
+
+<!-- claim-absent: the projection must be unchanged :: .agents/checks/test-quality.md -->
+<!-- claim-absent: project(doc) :: .coderabbit.yaml -->
+<!-- claim: Y.encodeStateAsUpdate :: .coderabbit.yaml -->
+
+**The carve-out in item 3 is anchored too, and that is not redundant.** A restatement can drift by *omission* as easily as by contradiction, and omission is invisible to a gate that pins phrases. The first draft of the `.coderabbit.yaml` block carried the byte rule without item 3's accepted-op exception, which would have had the bot flagging seven existing suites that compare projections correctly — the same copy-divergence bug as the original, pointing the other way. These two needles make the exception's *presence* in the bot copy merge-blocking:
+
+<!-- claim: delete-wins :: .coderabbit.yaml -->
+<!-- claim: LWW-dropped :: .coderabbit.yaml -->
+
+The observable table and the conventions block:
+
+<!-- claim: [...metaMap(doc).keys()].sort() :: test/doc-mint-mutation-survivors.test.ts -->
+<!-- claim: [...doc.share.keys()] :: test/roundtrip.test.ts -->
+<!-- claim: "test": "vitest run" :: package.json -->
+<!-- claim: "check:mutation-report": "node scripts/check-mutation-report.mjs" :: package.json -->
+<!-- claim: "verify:corpus": "node scripts/verify-corpus.mjs" :: package.json -->
 
 > Before reporting PASS for any check above, apply [vacuity.md](vacuity.md): P0 to every check, P1 to any guard this change adds, P10 to what that guard's test asserts on, P2 to any tool you ran, and P7 to any run you quote.

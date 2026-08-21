@@ -10,12 +10,33 @@ reviews:
         skipped op_id record) is a blocking KA-4 issue (see issue #10); require
         validate-before-mutate. Any second op-to-document implementation is a
         blocking FC-3 issue.
+    # This block is the machine-consumed copy of .agents/checks/test-quality.md.
+    # Keep the two in step: the rejection-oracle sentence below was wrong here
+    # for as long as it was wrong there, and fixing only the profile fixes
+    # nothing, because this is the copy that runs on every PR. The wording is
+    # pinned from the profile by `npm run check:profile-claims`.
     - path: "test/**"
       instructions: >-
-        Apply .agents/checks/test-quality.md. Rejection tests must assert the
-        document state, not only failed.code: compare a project(doc) snapshot
-        before and after applyOps (unchanged on reject, KA-4) and verify a
-        trailing valid op after a rejected one does not apply (abort-remainder).
+        This block is the complete instruction; .agents/checks/test-quality.md
+        is the human copy of it and is NOT loaded for you, so do not assume
+        context from it. Rejection tests must assert the
+        document state, not only failed.code. For a REJECTED op the oracle is
+        byte identity under Y.encodeStateAsUpdate plus the op_id absent from
+        __applied, NOT the projection: project() renders neither __stamps nor
+        __applied, so a write into either is invisible to it while the document
+        has really diverged. Also verify a trailing valid op after a rejected
+        one does not apply (abort-remainder).
+        This byte rule is scoped to REJECTIONS only and is NOT a general
+        preference for byte assertions. For an ACCEPTED op the default
+        observable is the projection: accepted delete-wins and LWW-dropped
+        no-ops deliberately consume an op_id, so their encoded state is
+        intentionally NOT byte-identical, and convergence tests compare
+        projections across arrival orders because the ledgers differ by
+        construction. Never ask for byte identity on an accepted op or across
+        two independently built docs, and do not ask for it where the property
+        is really about one key or one root. Otherwise check only that the
+        chosen observable can express the violation under test, preferring one
+        that also names where it happened.
         Op-semantics tests need both arrival orders (convergence) and a
         double-apply no-op (idempotency). No `any` in tests; cast invalid inputs
         narrowly at the single line under test. Tests use Vitest under test/.

@@ -575,6 +575,9 @@ npm run build         # tsc → dist/
 npm test              # vitest: schema, purity, replay, lww, convergence, roundtrip, applier
 npm run check:purity  # dependency-tree + bare-Node import gate
 npm run check:imports # module-graph gate: no cycles, src imports yjs only, no Node builtins
+npm run check:pins    # cross-repo citations are pinned by SHA, not a moving ref
+npm run verify:corpus # conformance fixtures match their pinned SHAs
+npm run check:profile-claims # .agents/checks prose still matches the code it restates
 ```
 
 `fixtures/` holds the replay corpus: recorded op sessions with their starting
