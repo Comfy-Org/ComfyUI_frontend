@@ -6,7 +6,10 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
+import {
+  createNodeExecutionId,
+  createNodeLocatorId
+} from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 import * as litegraphUtil from '@/utils/litegraphUtil'
 
@@ -187,6 +190,30 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
 
     expect(refAfter).not.toBe(refBefore)
     expect(refAfter?.images).toHaveLength(2)
+  })
+
+  it('projects outputs without reading legacy map mutations back', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5 })
+
+    store.setNodeOutputs(node, 'canonical.png')
+    const output = store.getNodeOutputs(node)
+    app.nodeOutputs['5'] = createMockOutputs([{ filename: 'legacy.png' }])
+
+    expect(store.getNodeOutputs(node)).toEqual(output)
+    expect(node.images).toEqual(output?.images)
+  })
+
+  it('projects previews without reading legacy map mutations back', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5 })
+
+    store.setNodePreviewsByLocatorId(createNodeLocatorId(null, node.id), [
+      'blob:canonical'
+    ])
+    app.nodePreviewImages['5'] = ['blob:legacy']
+
+    expect(store.getNodePreviews(node)).toEqual(['blob:canonical'])
   })
 })
 
