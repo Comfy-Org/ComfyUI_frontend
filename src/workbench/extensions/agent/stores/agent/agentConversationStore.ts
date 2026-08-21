@@ -15,6 +15,8 @@ export type ConversationStatus = 'idle' | 'thinking' | 'streaming'
 export interface UserAttachment {
   name: string
   previewUrl?: string
+  /** Uploaded input filename; resolves the sent file for grid previews. */
+  ref?: string
 }
 
 interface UserEntry {
