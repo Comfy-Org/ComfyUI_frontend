@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const {
   mockAxiosInstance,
-  mockGetAuthHeaderOrThrow,
+  mockGetWorkspaceAuthHeaderOrThrow,
   mockGetFirebaseAuthHeaderOrThrow
 } = vi.hoisted(() => ({
   mockAxiosInstance: {
@@ -12,7 +12,7 @@ const {
     delete: vi.fn(),
     interceptors: { response: { use: vi.fn() } }
   },
-  mockGetAuthHeaderOrThrow: vi.fn(),
+  mockGetWorkspaceAuthHeaderOrThrow: vi.fn(),
   mockGetFirebaseAuthHeaderOrThrow: vi.fn()
 }))
 
@@ -40,9 +40,13 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
+vi.mock('./workspaceApiUrl', () => ({
+  workspaceApiUrl: (path: string) => `/api${path}`
+}))
+
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: () => ({
-    getAuthHeaderOrThrow: mockGetAuthHeaderOrThrow,
+    getWorkspaceAuthHeaderOrThrow: mockGetWorkspaceAuthHeaderOrThrow,
     getFirebaseAuthHeaderOrThrow: mockGetFirebaseAuthHeaderOrThrow
   })
 }))
@@ -53,14 +57,14 @@ const AUTH_HEADER = { Authorization: 'Bearer test-token' }
 
 describe('workspaceApi', () => {
   beforeEach(() => {
-    mockGetAuthHeaderOrThrow.mockResolvedValue(AUTH_HEADER)
+    mockGetWorkspaceAuthHeaderOrThrow.mockResolvedValue(AUTH_HEADER)
     mockGetFirebaseAuthHeaderOrThrow.mockResolvedValue(AUTH_HEADER)
   })
 
   describe('authentication', () => {
-    it('propagates error when getAuthHeaderOrThrow rejects', async () => {
+    it('propagates error when workspace authentication rejects', async () => {
       const authError = new Error('toastMessages.userNotAuthenticated')
-      mockGetAuthHeaderOrThrow.mockRejectedValue(authError)
+      mockGetWorkspaceAuthHeaderOrThrow.mockRejectedValue(authError)
 
       await expect(workspaceApi.list()).rejects.toBe(authError)
     })
@@ -332,7 +336,7 @@ describe('workspaceApi', () => {
       const result = await workspaceApi.acceptInvite('abc-token')
 
       expect(mockGetFirebaseAuthHeaderOrThrow).toHaveBeenCalled()
-      expect(mockGetAuthHeaderOrThrow).not.toHaveBeenCalled()
+      expect(mockGetWorkspaceAuthHeaderOrThrow).not.toHaveBeenCalled()
       expect(mockAxiosInstance.post).toHaveBeenCalledWith(
         '/api/invites/abc-token/accept',
         null,
