@@ -253,3 +253,39 @@ sequence above rather than the summary-table order.
 Final full-suite verification also tightened slot-projection deletion and
 updated test fixtures to preserve their store scope and projected-array
 contract.
+
+## Structural follow-up plan
+
+The compatibility fixes above should land before further authority moves. The
+remaining structural work should proceed as vertical slices rather than adding
+more projections to `LGraph` and `LGraphNode`.
+
+1. **Replace the slot virtual array.** Keep extension-visible input and output
+   arrays as real slot-class arrays. Derive plain serializable descriptors at
+   the node-state boundary until a complete ID-based slot record can replace
+   both representations. Remove `slotDescriptorView` only after ecosystem
+   tests cover indexed access, mutation methods, reflection, and stable slot
+   identity.
+2. **Introduce one plain graph record.** Replace live node, group, subgraph, and
+   interface instances in `graphDefinitionStore` with ordered IDs and plain
+   component records. Resolve runtime adapters through one instance-scoped
+   registry. The instance scope must allow two loaded graphs with the same
+   persisted UUID without rekeying one graph's state over the other.
+3. **Extract persistence from `LGraph`.** Move store joins, invariant checks,
+   extension payload adaptation, and DTO construction into a focused graph
+   persistence adapter. Keep the mutable serializer as the compatibility
+   oracle until canonicalized DTOs compare with exact equality for root graphs,
+   nested subgraphs, groups, reroutes, widgets, unknown nodes, and extensions.
+4. **Make configure transactional.** Stage graph records and topology before
+   publishing them, then swap atomically. This replaces the current best-effort
+   rollback for additive configuration and gives failed root replacement the
+   same no-partial-state guarantee.
+5. **Decompose subgraph hosting.** Move promoted-widget projection, preview
+   exposure hydration, and host persistence out of `SubgraphNode` into focused
+   adapters, returning the class below the 1,000-line boundary without adding
+   another general-purpose manager.
+
+Each slice needs focused unit tests for its pure boundary plus the existing
+Playwright bridge-history scenarios for delete/undo/redo, renderer switching,
+navigation, and reload. Production authority should switch only after exact
+serializer parity and the browser suite pass together.
