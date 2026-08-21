@@ -6,10 +6,7 @@ interface Engines {
   pnpm?: string
 }
 
-/**
- * Walk up to the repo root. Anchored on package.json rather than
- * playwright.config.ts so this keeps working from inside tools/.
- */
+/** Anchored on package.json so this still works from inside tools/. */
 function findRepoRoot(start = process.cwd()): string | undefined {
   let dir = start
   const { root } = parse(dir)
@@ -39,10 +36,7 @@ export function readEngines(): Engines {
   }
 }
 
-/**
- * The version the repo pins via .nvmrc, used for install instructions so we
- * tell people to install the exact version rather than a guess.
- */
+/** The exact version .nvmrc pins, so install steps do not guess. */
 export function readNvmrc(): string | undefined {
   const root = findRepoRoot()
   if (!root) return undefined
@@ -71,9 +65,8 @@ function compare(a: number[], b: number[]): number {
 }
 
 /**
- * Minimal semver-range check covering the comparator forms this repo actually
- * uses in engines (">=25 <26", ">=11.3"). Anything we cannot parse is treated
- * as satisfied — a checker that guesses wrong is worse than one that defers.
+ * Covers the comparator forms engines actually uses. Unparseable ranges are
+ * treated as satisfied: guessing wrong is worse than deferring.
  */
 export function satisfies(version: string, range: string): boolean {
   const actual = parseVersion(version)
@@ -101,9 +94,6 @@ export function satisfies(version: string, range: string): boolean {
   return true
 }
 
-/**
- * Human-readable form of a range, for messages aimed at non-developers.
- */
 export function describeRange(range: string): string {
   const major = /^>=\s*v?(\d+)/.exec(range.trim())
   const upper = /<\s*v?(\d+)(?:\s|$)/.exec(range)

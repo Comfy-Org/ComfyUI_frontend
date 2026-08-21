@@ -3,10 +3,7 @@ export interface ParsedArgs {
   flags: Record<string, string | undefined>
 }
 
-/**
- * Parses `--key value` and `--key=value`, leaving everything else positional.
- * Deliberately tiny — the CLI has no need for a parser dependency.
- */
+/** Parses `--key value` and `--key=value`; everything else is positional. */
 export function parseFlags(args: string[]): ParsedArgs {
   const positional: string[] = []
   const flags: Record<string, string | undefined> = {}

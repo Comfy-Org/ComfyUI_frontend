@@ -18,9 +18,6 @@ interface RecordingResult {
   error?: string
 }
 
-/**
- * Find the project root by looking for playwright.config.ts
- */
 export function findProjectRoot(): string {
   let dir = process.cwd()
   const { root } = parse(dir)
@@ -37,9 +34,6 @@ export function findProjectRoot(): string {
   )
 }
 
-/**
- * List available workflow assets.
- */
 export function listWorkflows(projectRoot: string): string[] {
   const assetsDir = join(projectRoot, 'browser_tests', 'assets')
   const results: string[] = []
@@ -65,15 +59,6 @@ export function listWorkflows(projectRoot: string): string[] {
   return results.sort()
 }
 
-/**
- * Run the recording session.
- *
- * 1. Generate the temporary test file with page.pause()
- * 2. Run it in headed mode — this opens the Playwright Inspector
- * 3. User records their actions
- * 4. User closes the browser
- * 5. We save the output as *.raw.spec.ts
- */
 export async function runRecording(
   options: RunnerOptions
 ): Promise<RecordingResult> {
@@ -97,8 +82,7 @@ export async function runRecording(
   ])
   console.log()
 
-  // An aborted run must not leave the temp spec behind: it calls page.pause(),
-  // so a later `pnpm test:browser` would hang on it forever.
+  // The temp spec calls page.pause(), so a leaked copy hangs later test runs.
   const cleanUp = () => cleanupRecordingTemplate(browserTestsDir)
   const onSignal = () => {
     cleanUp()
@@ -124,15 +108,10 @@ export async function runRecording(
         stdio: 'inherit',
         env: {
           ...process.env,
-          // Deliberately NOT setting PWDEBUG: it breaks on the first Playwright
-          // action, which happens inside the fixture's own setup — the user
-          // lands in ComfyPage internals looking at about:blank. The template's
-          // page.pause() opens the Inspector at the right moment instead.
+          // No PWDEBUG: it breaks inside fixture setup, before the app loads.
           COMFY_TEST_RECORDING: '1',
           PLAYWRIGHT_LOCAL: '1',
-          // Record against the dev server the environment check verified.
-          // Without this the fixture falls back to the backend's own bundled
-          // frontend on :8188, so recordings miss local changes entirely.
+          // Without this the fixture records against :8188's bundled frontend.
           PLAYWRIGHT_TEST_URL: devServerUrl()
         }
       }
@@ -156,8 +135,6 @@ export async function runRecording(
     console.log(pc.green('  ✅ Recording session complete.'))
     console.log()
 
-    // Save a placeholder raw file — the user pastes codegen output here
-    // or the record command handles prompting for it
     const rawOutputPath = join(
       browserTestsDir,
       'tests',

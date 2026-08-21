@@ -6,9 +6,6 @@ interface TransformResult {
   warnings: string[]
 }
 
-/**
- * Transform raw Playwright codegen output into ComfyUI conventions.
- */
 export function transform(
   rawCode: string,
   options: {
@@ -24,7 +21,6 @@ export function transform(
   const appliedRules: { name: string; description: string }[] = []
   const warnings: string[] = []
 
-  // Phase 1: Apply regex-based rules
   for (const rule of transformRules) {
     const before = code
     if (typeof rule.replacement === 'string') {
@@ -40,10 +36,8 @@ export function transform(
     }
   }
 
-  // Phase 2: Clean up empty lines from removed statements
   code = code.replace(/\n{3,}/g, '\n\n')
 
-  // Phase 3: Apply structural transforms
   for (const transform of structuralTransforms) {
     const before = code
     code = transform.apply(code, testName, tags, options.workflow)
@@ -55,7 +49,6 @@ export function transform(
     }
   }
 
-  // Phase 4: Check for remaining issues and warn
   if (code.includes('waitForTimeout')) {
     warnings.push(
       'Still contains waitForTimeout — replace with comfyPage.nextFrame() or retrying assertions'
@@ -83,9 +76,6 @@ export function transform(
   return { code: code.trim() + '\n', appliedRules, warnings }
 }
 
-/**
- * Get a human-readable summary of what was transformed.
- */
 export function formatTransformSummary(result: TransformResult): string[] {
   const lines: string[] = []
   for (const rule of result.appliedRules) {

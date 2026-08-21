@@ -35,9 +35,7 @@ export function header(text: string) {
 const ANSI = /\[[0-9;]*m/g
 
 /**
- * Colour codes and emoji both lie about how wide a line is: ANSI escapes count
- * toward .length without occupying a cell, and emoji occupy two cells while
- * counting as one. Measuring naively skews the right-hand border.
+ * ANSI escapes occupy no cells and emoji occupy two, so .length skews borders.
  */
 export function displayWidth(text: string): number {
   const plain = text.replace(ANSI, '')
@@ -55,7 +53,7 @@ export function displayWidth(text: string): number {
       (code >= 0x1f300 && code <= 0x1f64f) ||
       (code >= 0x1f900 && code <= 0x1f9ff) ||
       (code >= 0x1f680 && code <= 0x1f6ff)
-    // Variation selectors and combining marks render into the previous cell
+    // These render into the previous cell.
     if (
       code === 0xfe0f ||
       code === 0xfe0e ||

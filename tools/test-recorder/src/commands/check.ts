@@ -27,13 +27,12 @@ export async function runChecks(
     try {
       root = findProjectRoot()
     } catch {
-      // Not inside the repo — the dev-server identity probe is simply skipped
+      // Outside the repo the dev-server identity probe is skipped.
     }
   }
 
   const results: CheckResult[] = []
 
-  // System checks (sequential — each depends on prior)
   results.push(checkPlatform())
   results.push(await checkXcode())
   results.push(await checkGit())

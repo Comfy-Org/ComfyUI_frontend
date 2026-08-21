@@ -5,9 +5,8 @@ export function devServerPort(): number {
 }
 
 /**
- * Single source of truth for the URL both the environment check and the
- * recorder use, so a passing check can never point somewhere the recording
- * does not.
+ * Shared by the check and the recorder so a passing check cannot point
+ * somewhere the recording does not.
  */
 export function devServerUrl(): string {
   return (

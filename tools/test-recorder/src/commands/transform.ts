@@ -16,7 +16,6 @@ export async function runTransform(
 ): Promise<void> {
   header('Transform Codegen → Conventions')
 
-  // Read input
   let rawCode: string
   try {
     rawCode = readFileSync(filePath, 'utf-8')
@@ -28,7 +27,6 @@ export async function runTransform(
   console.log(pc.dim(`  Input: ${filePath}`))
   console.log()
 
-  // Transform
   const inferredName = basename(filePath).replace(/\.raw\.spec\.ts$/, '')
   const testName = options.testName ?? (inferredName || 'test')
   const tags = options.tags ?? ['@canvas']
@@ -38,14 +36,12 @@ export async function runTransform(
     workflow: options.workflow
   })
 
-  // Print summary
   console.log('  Transforms applied:')
   for (const line of formatTransformSummary(result)) {
     console.log(`    ${line}`)
   }
   console.log()
 
-  // Write output
   const outputPath =
     options.output ?? filePath.replace(/\.raw\.spec\.ts$/, '.spec.ts')
   if (!options.output && outputPath === filePath) {

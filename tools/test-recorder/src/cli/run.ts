@@ -2,11 +2,8 @@ import { spawnSync } from 'node:child_process'
 import type { SpawnSyncOptions, SpawnSyncReturns } from 'node:child_process'
 
 /**
- * On Windows, pnpm resolves to pnpm.cmd, and since Node 18.20 / 20.12
- * spawning a .cmd without a shell throws EINVAL. Node quotes the argument
- * vector for us when shell is enabled, so routing through the shell there is
- * both necessary and safe. POSIX keeps the direct exec — no shell parsing of
- * arguments that may contain spaces.
+ * pnpm is pnpm.cmd on Windows, and Node >=18.20 refuses to spawn a .cmd
+ * without a shell. POSIX keeps the direct exec so arguments stay unparsed.
  */
 export function needsShell(platform: string = process.platform): boolean {
   return platform === 'win32'

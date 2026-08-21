@@ -36,11 +36,8 @@ function toSlug(description: string): string {
 const PASTE_SENTINEL = '.'
 
 /**
- * Reads pasted code until a lone "." line, or until EOF.
- *
- * The sentinel matters: Ctrl+D closes stdin for good, and every prompt after
- * this point would then read EOF and hang unsettled. Callers get told whether
- * stdin survived so they can degrade instead of stalling.
+ * Ctrl+D closes stdin for good, leaving every later prompt unanswerable, so
+ * callers are told whether stdin survived the paste.
  */
 function readMultiline(): Promise<{ code: string; stdinOpen: boolean }> {
   return new Promise((resolve) => {
@@ -63,7 +60,6 @@ function readMultiline(): Promise<{ code: string; stdinOpen: boolean }> {
 }
 
 export async function runRecord(): Promise<void> {
-  // ── Step 1: Environment Check ──────────────────────────────
   stepHeader(1, 6, 'Environment Check')
   const { allPassed } = await runChecks(undefined, { showHeader: false })
   if (!allPassed) {
@@ -72,7 +68,6 @@ export async function runRecord(): Promise<void> {
     process.exit(1)
   }
 
-  // ── Step 2: Project Setup ──────────────────────────────────
   stepHeader(2, 6, 'Project Setup')
 
   let projectRoot: string
@@ -97,7 +92,6 @@ export async function runRecord(): Promise<void> {
   s.stop('Dependencies installed')
   pass('Project ready', projectRoot)
 
-  // ── Step 3: Configure Your Test ────────────────────────────
   stepHeader(3, 6, 'Configure Your Test')
 
   const description = await text({
@@ -148,8 +142,7 @@ export async function runRecord(): Promise<void> {
   }
 
   const workflows = listWorkflows(projectRoot)
-  // The two starting points nearly every test uses go first; the remaining
-  // ~150 assets would otherwise bury them off the top of the screen.
+  // Hoisted so the ~150 other assets do not bury them off the top.
   const common = workflows.filter((wf) => wf === 'default')
   const rest = workflows.filter((wf) => wf !== 'default')
   const workflowOptions: {
@@ -172,7 +165,6 @@ export async function runRecord(): Promise<void> {
     process.exit(0)
   }
 
-  // ── Step 4: Record ─────────────────────────────────────────
   stepHeader(4, 6, 'Record')
 
   const result = await runRecording({
@@ -185,7 +177,6 @@ export async function runRecord(): Promise<void> {
     process.exit(1)
   }
 
-  // ── Step 5: Paste & Transform ──────────────────────────────
   stepHeader(5, 6, 'Paste & Transform')
 
   info([
@@ -233,7 +224,6 @@ export async function runRecord(): Promise<void> {
   blank()
   pass('Test saved', outputPath)
 
-  // ── Step 6: Finalize ───────────────────────────────────────
   stepHeader(6, 6, 'Finalize')
 
   box([
@@ -246,8 +236,7 @@ export async function runRecord(): Promise<void> {
   blank()
 
   if (!stdinOpen) {
-    // Ctrl+D ended the paste, so stdin is at EOF and no further prompt can be
-    // answered. Print the follow-up instead of hanging on a dead prompt.
+    // stdin is at EOF, so prompting here would hang.
     blank()
     info([
       'Test saved. To open a PR for it, run:',

@@ -7,10 +7,7 @@ import { printManualInstructions } from '../pr/manual'
 import { copyToClipboard } from '../pr/clipboard'
 import { header, info } from '../ui/logger'
 
-/**
- * Opens a PR for a spec that was already generated — the follow-up path when
- * `record` could not prompt, or when someone comes back to it later.
- */
+/** Opens a PR for an already-generated spec. */
 export async function runPr(
   filePath: string,
   description?: string

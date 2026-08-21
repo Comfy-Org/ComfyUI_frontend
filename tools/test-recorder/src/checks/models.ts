@@ -4,10 +4,8 @@ import type { CheckResult } from './types'
 const NAME = 'Checkpoints'
 
 /**
- * Most bundled workflows reference a checkpoint. If the backend has none,
- * loading one raises the Missing Models dialog, which covers the canvas and
- * makes every recorded click fail with "intercepts pointer events" — a
- * confusing failure to hit after a recording has already been made.
+ * With no checkpoints the Missing Models dialog covers the canvas, and every
+ * recorded click then fails with "intercepts pointer events".
  */
 export async function checkModels(port = 8188): Promise<CheckResult> {
   try {

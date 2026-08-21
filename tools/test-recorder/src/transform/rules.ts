@@ -7,7 +7,6 @@ interface TransformRule {
 }
 
 export const transformRules: TransformRule[] = [
-  // === Import transforms ===
   {
     name: 'replace-test-import',
     description: 'Use comfyPageFixture instead of @playwright/test',
@@ -30,8 +29,6 @@ export const transformRules: TransformRule[] = [
     replacement: `import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'`,
     category: 'import'
   },
-
-  // === Fixture transforms ===
   {
     name: 'replace-page-destructure',
     description: 'Use comfyPage fixture instead of page',
@@ -39,8 +36,6 @@ export const transformRules: TransformRule[] = [
     replacement: 'async ({ comfyPage })',
     category: 'fixture'
   },
-
-  // === Remove page.goto ===
   {
     name: 'remove-goto',
     description: 'Remove page.goto — fixture handles navigation',
@@ -48,8 +43,6 @@ export const transformRules: TransformRule[] = [
     replacement: '',
     category: 'locator'
   },
-
-  // === Locator transforms ===
   {
     name: 'replace-canvas-locator',
     description: 'Use comfyPage.canvas instead of page.locator("canvas")',
@@ -71,8 +64,6 @@ export const transformRules: TransformRule[] = [
     replacement: 'comfyPage.page.',
     category: 'locator'
   },
-
-  // === Wait transforms ===
   {
     name: 'replace-waitForTimeout',
     description: 'Use comfyPage.nextFrame() instead of arbitrary waits',
@@ -83,10 +74,6 @@ export const transformRules: TransformRule[] = [
   }
 ]
 
-/**
- * Rules that need structural changes (not just regex replacement).
- * These are applied by the engine after regex rules.
- */
 interface StructuralTransform {
   name: string
   description: string
@@ -111,9 +98,7 @@ export const structuralTransforms: StructuralTransform[] = [
       if (!workflow) return code
       if (code.includes('loadWorkflow(')) return code
 
-      // Codegen only captures what the user did after pressing Record, so the
-      // starting workflow is lost. Without it the test opens an empty canvas
-      // and every recorded coordinate points at nothing.
+      // Codegen starts at the Record button, so the starting workflow is lost.
       const escaped = workflow.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
       return code.replace(
         /(test\s*\([^)]*async\s*\(\s*\{\s*comfyPage\s*\}\s*\)\s*=>\s*\{\n)/,
@@ -125,9 +110,7 @@ export const structuralTransforms: StructuralTransform[] = [
     name: 'name-the-test',
     description: 'Give the test a descriptive title',
     apply: (code: string, testName: string) => {
-      // Codegen always emits test('test', ...). The repo's playwright
-      // valid-title rule rejects a title that just repeats the block name, so
-      // the pre-commit hook refuses every recording until this is renamed.
+      // playwright/valid-title rejects codegen's default test('test', ...).
       const readable = testName
         .replace(/[-_]/g, ' ')
         .replace(/\.spec\.ts$/, '')
@@ -143,7 +126,6 @@ export const structuralTransforms: StructuralTransform[] = [
     name: 'wrap-in-describe',
     description: 'Wrap test in test.describe with tags and afterEach',
     apply: (code: string, testName: string, tags: string[]) => {
-      // If already has test.describe, skip
       if (code.includes('test.describe')) return code
 
       const tagStr = tags.map((t) => JSON.stringify(t)).join(', ')
@@ -151,7 +133,6 @@ export const structuralTransforms: StructuralTransform[] = [
         testName.replace(/[-_]/g, ' ').replace(/\.spec\.ts$/, '')
       )
 
-      // Find the test() call and wrap it
       const testMatch = code.match(
         /^(import[\s\S]*?\n\n?)(test(?:\.(?:only|skip|fixme))?\s*\([\s\S]*)$/m
       )

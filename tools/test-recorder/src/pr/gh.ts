@@ -48,8 +48,7 @@ export async function createPr(options: PrOptions): Promise<PrResult> {
   const prBody =
     `${options.description}\n\n---\n\n` + 'Recorded with `comfy-test record`'
 
-  // Every git/gh call is pinned to the repo, not to wherever the shell
-  // happens to be sitting.
+  // Pinned to the repo, not to wherever the shell is sitting.
   const run = (command: string, args: string[]) =>
     spawnSync(command, args, {
       cwd: options.cwd,
@@ -57,8 +56,7 @@ export async function createPr(options: PrOptions): Promise<PrResult> {
       stdio: 'pipe'
     })
 
-  // The branch is cut from wherever HEAD is, so anything already sitting
-  // there rides along into the PR. Say so rather than shipping it silently.
+  // The branch is cut from HEAD, so anything already there rides along.
   const ahead = run('git', ['rev-list', '--count', `${DEFAULT_BASE_REF}..HEAD`])
   const aheadCount = Number(ahead.stdout?.trim())
   if (ahead.status === 0 && Number.isFinite(aheadCount) && aheadCount > 0) {
@@ -95,8 +93,7 @@ export async function createPr(options: PrOptions): Promise<PrResult> {
     return { success: false, error: add.stderr.trim() }
   }
 
-  // Pathspec-scoped so unrelated changes the user already staged do not get
-  // swept into a commit labelled as the recorded test.
+  // Pathspec-scoped so already-staged changes are not swept in.
   const commit = run('git', [
     'commit',
     '-m',
@@ -123,8 +120,7 @@ export async function createPr(options: PrOptions): Promise<PrResult> {
   }
   pass('Pushed branch', branchName)
 
-  // No --fill: the title and body are supplied explicitly, and newer gh
-  // releases reject combining them.
+  // No --fill: newer gh rejects it alongside --title/--body.
   const pr = run('gh', ['pr', 'create', '--title', prTitle, '--body', prBody])
   if (pr.status !== 0) {
     fail('PR creation failed', pr.stderr.trim())

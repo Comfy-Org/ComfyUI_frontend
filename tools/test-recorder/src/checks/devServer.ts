@@ -5,10 +5,8 @@ import type { CheckResult } from './types'
 const NAME = 'Dev server'
 
 /**
- * Vite serves files under its own root via /@fs/<absolute path> and answers
- * 403 for anything outside it. Asking for our own index.html therefore tells
- * us whether the server on this port is serving THIS checkout — the failure
- * that otherwise shows up as "my change isn't in the recording".
+ * Vite answers 403 for /@fs paths outside its root, so asking for our own
+ * index.html reveals whether this port serves this checkout.
  */
 function fsProbeUrl(baseUrl: string, projectRoot: string): string {
   const normalised = projectRoot.replace(/\\/g, '/')
