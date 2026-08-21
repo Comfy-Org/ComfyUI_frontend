@@ -245,7 +245,7 @@ const focusAssetInSidebar = async (item: JobListItem) => {
   const assetId = String(jobId)
   openAssetsSidebar()
   await nextTick()
-  await assetsStore.updateHistory()
+  await assetsStore.refreshHistoryHead()
   const asset = assetsStore.historyAssets.find(
     (existingAsset) => existingAsset.id === assetId
   )

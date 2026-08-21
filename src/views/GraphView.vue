@@ -243,7 +243,7 @@ const onStatus = async (e: CustomEvent<StatusWsMessageStatus>) => {
   // Only update assets if the assets sidebar is currently open
   // When sidebar is closed, AssetsSidebarTab.vue will refresh on mount
   if (sidebarTabStore.activeSidebarTabId === 'assets' || linearMode.value) {
-    await assetsStore.updateHistory()
+    await assetsStore.refreshHistoryHead()
   }
 }
 
@@ -252,7 +252,7 @@ const onExecutionSuccess = async () => {
   // Only update assets if the assets sidebar is currently open
   // When sidebar is closed, AssetsSidebarTab.vue will refresh on mount
   if (sidebarTabStore.activeSidebarTabId === 'assets' || linearMode.value) {
-    await assetsStore.updateHistory()
+    await assetsStore.refreshHistoryHead()
   }
 }
 

@@ -7,6 +7,8 @@ import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh
 import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
 import type * as DistTypes from '@/platform/distribution/types'
 import type * as I18nModule from '@/i18n'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useAssetsStore } from '@/stores/assetsStore'
 
 const apiMock = vi.hoisted(() => new EventTarget())
 
@@ -97,9 +99,10 @@ vi.mock('@/platform/keybindings/keybindingService', () => ({
 vi.mock('@/composables/useAppMode', () => ({
   useAppMode: () => ({ isBuilderMode: ref(false) })
 }))
-vi.mock('@/stores/assetsStore', () => ({
-  useAssetsStore: () => ({ updateHistory: vi.fn() })
-}))
+vi.mock('@/stores/assetsStore', () => {
+  const assetsStore = { updateHistory: vi.fn(), refreshHistoryHead: vi.fn() }
+  return { useAssetsStore: () => assetsStore }
+})
 vi.mock('@/stores/commandStore', () => ({
   useCommandStore: () => ({ registerCommands: vi.fn() })
 }))
@@ -211,5 +214,19 @@ describe('GraphView - reconnect wiring', () => {
     const refreshOnReconnect = useReconnectQueueRefresh()
     expect(onReconnected).toHaveBeenCalledTimes(1)
     expect(refreshOnReconnect).toHaveBeenCalledTimes(1)
+  })
+
+  it('refreshes the history head instead of a full reload when a job completes', async () => {
+    const GraphView = (await import('./GraphView.vue')).default
+    useCanvasStore().linearMode = true
+    render(GraphView)
+
+    apiMock.dispatchEvent(new Event('execution_success'))
+
+    const assetsStore = useAssetsStore()
+    await vi.waitFor(() => {
+      expect(assetsStore.refreshHistoryHead).toHaveBeenCalledTimes(1)
+    })
+    expect(assetsStore.updateHistory).not.toHaveBeenCalled()
   })
 })
