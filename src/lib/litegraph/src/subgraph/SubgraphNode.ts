@@ -294,6 +294,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         return isWidgetValue(value) ? value : undefined
       },
       set value(next) {
+        if (next === null) return
         store.setValue(id, next)
       },
       // Canvas edits operate on a transient concrete widget (toConcreteWidget),
@@ -301,6 +302,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       // its own local state and then calls this callback, which is the only
       // bridge back to the store.
       callback(next) {
+        if (next === null) return
         store.setValue(id, next)
       }
     }
@@ -498,7 +500,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       const value =
         quarantineValuesByInputName.get(input.name) ??
         widgetValues?.[valueIndex]
-      if (value !== undefined) {
+      // `null` means "no host override" — keep the interior widget's value.
+      if (value !== undefined && value !== null) {
         useWidgetValueStore().setValue(input.widgetId, value)
       }
       valueIndex += 1
