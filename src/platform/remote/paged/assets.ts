@@ -73,14 +73,21 @@ function assetsQueryInternal(
       : pendingFetchController.signal
     const requestOptions = { ...options.requestOptions, signal }
     const query = encodeParams({ ...BASE_PARAMS, ...params, ...overrideParams })
-    const resp = await api.fetchApi(`/assets?${query}`, requestOptions)
+    const resp = await api
+      .fetchApi(`/assets?${query}`, requestOptions)
+      .catch((e) => onError('asset fetch failed', e))
 
+    if (!resp) return
     if (!resp.ok) {
       onError('asset request failed', resp)
       return
     }
 
-    const jsonresp = await resp.json()
+    const jsonresp = await resp
+      .json()
+      .catch((e) => onError('failed to decode asset json response', e))
+    if (!jsonresp) return
+
     const parseResult = assetResponseSchema.safeParse(jsonresp)
     if (!parseResult.success) {
       onError('Failed to parse asset response', fromZodError(parseResult.error))
