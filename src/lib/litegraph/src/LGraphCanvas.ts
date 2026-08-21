@@ -4992,16 +4992,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const { graph } = this
     if (!graph) throw new NullGraphError()
 
-    const i = graph._nodes.indexOf(node)
-    if (i == -1) return
-
-    useLayoutMutations(LayoutSource.Canvas).bringNodeToFront(
-      graph.rootGraph.id,
-      node.id
+    useLayoutMutations(LayoutSource.Canvas).setNodeOrder(
+      graph,
+      node.id,
+      'front'
     )
-
-    graph._nodes.splice(i, 1)
-    graph._nodes.push(node)
   }
 
   /**
@@ -5011,11 +5006,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const { graph } = this
     if (!graph) throw new NullGraphError()
 
-    const i = graph._nodes.indexOf(node)
-    if (i == -1) return
-
-    graph._nodes.splice(i, 1)
-    graph._nodes.unshift(node)
+    useLayoutMutations(LayoutSource.Canvas).setNodeOrder(graph, node.id, 'back')
   }
 
   /**
