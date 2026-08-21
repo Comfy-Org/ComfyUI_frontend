@@ -38,7 +38,7 @@
         <div
           v-if="previewUrl"
           class="relative size-full"
-          @click="emit('preview-click')"
+          @click="onPreviewClick"
         >
           <template v-if="isVideoPreview">
             <video
@@ -60,7 +60,7 @@
         <div
           v-else
           class="flex size-full items-center justify-center"
-          @click="emit('preview-click')"
+          @click="onPreviewClick"
         >
           <i
             aria-hidden="true"
@@ -177,6 +177,13 @@ const {
   progressTotalPercent?: number
   progressCurrentPercent?: number
 }>()
+
+function onPreviewClick(event: MouseEvent) {
+  const hasSelectionModifier = event.shiftKey || event.metaKey || event.ctrlKey
+  if (hasSelectionModifier) return
+
+  emit('preview-click')
+}
 
 const {
   progressBarContainerClass,

@@ -5,6 +5,12 @@ import userEvent from '@testing-library/user-event'
 
 import AssetsListItem from './AssetsListItem.vue'
 
+const SELECTION_MODIFIERS = [
+  ['shift', '{Shift>}'],
+  ['meta', '{Meta>}'],
+  ['ctrl', '{Control>}']
+] as const
+
 describe('AssetsListItem', () => {
   it('renders video element with play overlay for video previews', () => {
     const { container } = render(AssetsListItem, {
@@ -75,4 +81,40 @@ describe('AssetsListItem', () => {
 
     expect(emitted()['preview-click']).toHaveLength(1)
   })
+
+  it.for(SELECTION_MODIFIERS)(
+    'does not emit preview-click when %s is held over the preview',
+    async ([, heldModifier]) => {
+      const user = userEvent.setup()
+      const { emitted } = render(AssetsListItem, {
+        props: {
+          previewUrl: 'https://example.com/preview.jpg',
+          previewAlt: 'image.png'
+        }
+      })
+
+      await user.keyboard(heldModifier)
+      await user.click(screen.getByRole('img'))
+
+      expect(emitted()['preview-click']).toBeUndefined()
+    }
+  )
+
+  it.for(SELECTION_MODIFIERS)(
+    'does not emit preview-click when %s is held over the fallback icon',
+    async ([, heldModifier]) => {
+      const user = userEvent.setup()
+      const { container, emitted } = render(AssetsListItem, {
+        props: {
+          iconName: 'icon-[lucide--box]'
+        }
+      })
+
+      await user.keyboard(heldModifier)
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- aria-hidden icon, no semantic query available
+      await user.click(container.querySelector('i')!)
+
+      expect(emitted()['preview-click']).toBeUndefined()
+    }
+  )
 })
