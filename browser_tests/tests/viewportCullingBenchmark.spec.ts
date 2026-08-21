@@ -19,13 +19,22 @@ import {
  * lifecycle-cost comparison.
  *
  * Both variants run inside a single test so the comparison can actually be
- * asserted: attached-node counts must differ materially, and retention's
- * main-thread task time must come in meaningfully below the no-retention
- * baseline. CDP metrics vary machine-to-machine, so the task-duration
- * assertion carries generous slack - it exists to catch retention costing
- * as much as it saves, not to chase a tight regression budget. The
- * console lines are still there for a human to read domNodes, layouts and
- * longtask time side by side.
+ * asserted: attached-node counts must differ materially. Those counts are
+ * deterministic, so they're hard `expect`s.
+ *
+ * Task-duration is a measurement, not an invariant, so it is logged rather
+ * than asserted: with PAN_ZOOM_REPEATS = 1 this is a single sample per
+ * variant on shared CI runners, and the `performance` Playwright project
+ * repeats every test (2x on PRs, 3x on main) with each repeat independently
+ * subject to any assertion here, so a hard threshold would be flaky by
+ * construction. Worse, `ci-perf-report.yaml` runs this suite with
+ * `continue-on-error: true` and only writes the perf baseline when the step
+ * outcome is 'success' - `continue-on-error` overrides the job's
+ * *conclusion*, not the recorded *outcome*, so a single flaky assertion in
+ * this file would silently skip the baseline write for every measurement in
+ * the suite, not just this one (see #15409, where exactly this is already
+ * happening from a different test). Read the console line and the
+ * perf-report comparison for the on/off relationship instead.
  */
 
 const KEEP_ALIVE_SETTING = 'Comfy.VueNodes.ViewportKeepAlive'
@@ -39,11 +48,10 @@ const TOTAL_NODE_COUNT = 245
 // bound - far below "all but one node" but with enough headroom over the
 // true attached fraction to survive normal layout variance.
 const MAX_ATTACHED_RATIO_WITH_KEEP_ALIVE = 0.8
-// Retention's main-thread task time must land under this fraction of the
-// no-retention baseline's. 0.9 is deliberately loose - the goal is to catch
-// a regression where retention costs as much as it saves, not to enforce a
-// tight perf budget that would make this flaky on a noisy CI runner.
-const MAX_TASK_DURATION_RATIO_WITH_KEEP_ALIVE = 0.9
+// Reference point for the logged (not asserted - see module doc comment)
+// task-duration ratio: retention is expected to land under this fraction of
+// the no-retention baseline's main-thread task time.
+const TARGET_TASK_DURATION_RATIO_WITH_KEEP_ALIVE = 0.9
 // Kept intentionally small: the "off" baseline re-renders all 245 attached
 // nodes on every frame-synced step, and each step is a round trip to the
 // browser, so cost scales with step count far faster than with retention
@@ -230,7 +238,7 @@ test.describe('Viewport KeepAlive benchmark', { tag: ['@perf'] }, () => {
     await comfyPage.canvasOps.resetView()
   })
 
-  test('viewport KeepAlive on reduces attached nodes and task time vs off', async ({
+  test('viewport KeepAlive on reduces attached nodes vs off', async ({
     comfyPage
   }) => {
     // Both variants run back to back in this one test so the on/off
@@ -252,12 +260,17 @@ test.describe('Viewport KeepAlive benchmark', { tag: ['@perf'] }, () => {
       TOTAL_NODE_COUNT * MAX_ATTACHED_RATIO_WITH_KEEP_ALIVE
     )
 
-    // The comparison this benchmark exists for: retention should cost
-    // meaningfully less main-thread task time than keeping everything
-    // attached, not merely detach nodes without a corresponding time
-    // saving.
-    expect(on.taskDurationMs).toBeLessThan(
-      off.taskDurationMs * MAX_TASK_DURATION_RATIO_WITH_KEEP_ALIVE
+    // Logged, not asserted - see the module doc comment for why a hard
+    // threshold here is unsafe in this repo's CI. perf-report and this
+    // console line are how a regression here gets noticed.
+    const taskDurationRatio =
+      off.taskDurationMs > 0 ? on.taskDurationMs / off.taskDurationMs : 0
+    console.log(
+      `Viewport KeepAlive task-duration ratio (on/off): ` +
+        `${(taskDurationRatio * 100).toFixed(1)}% ` +
+        `(on=${on.taskDurationMs.toFixed(1)}ms, ` +
+        `off=${off.taskDurationMs.toFixed(1)}ms, target <` +
+        `${(TARGET_TASK_DURATION_RATIO_WITH_KEEP_ALIVE * 100).toFixed(0)}%)`
     )
   })
 })
