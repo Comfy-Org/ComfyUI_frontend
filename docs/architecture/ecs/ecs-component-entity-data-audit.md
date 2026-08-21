@@ -28,7 +28,7 @@ extension-visible behavior.
 | Node ordering                       | Partial  | Layout z-index is canonical for Vue and renderer switching; `sendToBack` mutates only legacy `_nodes` order.                                                               |
 | Store-driven serialization          | Open     | `LGraph.asSerialisable`, `LGraphNode.serialize`, group serializers, and subgraph serializers still walk live objects.                                                      |
 | Legacy node geometry projection     | Partial  | Layout is authoritative, but `LGraphNode` owns stable mutable buffers, version tracking, synchronization, and write-through callbacks for `pos` and `size`.                |
-| Link non-topological state          | Partial  | `linkStore` owns topology; `LLink` still owns execution data, interaction flags, render paths, hit-test geometry, and color without one defined lifecycle.                 |
+| Link non-topological state          | Complete | `linkStateStore` owns separate persistent color and runtime execution, interaction, render, and hit-test records on the topology lifecycle.                                |
 | Plain slot descriptors              | Complete | Store-owned node arrays contain plain reactive descriptors; stable class projections retain extension behavior, connectivity, callbacks, drawing, and geometry.            |
 | Node properties                     | Open     | `LGraphNode.properties` is a directly mutable dictionary with optional `setProperty` orchestration.                                                                        |
 | Group presentation                  | Complete | Graph-definition records own group title, color, font, font size, and flags behind mutable compatibility accessors; layout continues to own geometry.                      |
@@ -97,9 +97,9 @@ Representative evidence:
 - `NodeState.inputs` and `outputs` contain slot class instances. Their
   connectivity facades read `linkStore`, while descriptor fields, node
   back-references, drawing, geometry, and callbacks remain class behavior.
-- `LLink` topology is store-backed. Execution payload, drag state, render path,
-  center/angle caches, endpoint hit geometry, and optional color remain on the
-  live link with different persistence and cleanup expectations.
+- `LLink` topology remains in `linkStore`. `linkStateStore` owns separately
+  categorized persistent color and runtime execution, interaction, render, and
+  hit-test state behind compatible `LLink` accessors and the same lifecycle.
 - Group geometry is store-backed, but presentation fields remain on
   `LGraphGroup`.
 
@@ -239,8 +239,8 @@ sequence above rather than the summary-table order.
 | 8        | Graph and subgraph definitions      | Complete    | `8923225fb`  | Root-scoped records now own ordered membership, the registry, and subgraph definition metadata.  |
 | 9        | Legacy node geometry projection     | Complete    | `854f68fb2`  | The layout adapter now owns stable legacy views, synchronization, and geometry write-through.    |
 | 10       | Plain slot descriptors              | Complete    | `cc53dad291` | Plain store descriptors now back stable extension-visible slot class projections.                |
-| 11       | Group presentation                  | Complete    | This commit  | Graph-definition records now back mutable presentation fields and serialization.                 |
-| 12       | Link non-topological state          | Not started |              |                                                                                                  |
+| 11       | Group presentation                  | Complete    | `3ac7b726a`  | Graph-definition records now back mutable presentation fields and serialization.                 |
+| 12       | Link non-topological state          | Complete    | This commit  | Separate persistent and runtime records now back compatible link fields with topology lifecycle. |
 | 13       | Node properties                     | Not started |              |                                                                                                  |
 | 14       | Unknown-node fallback               | Not started |              |                                                                                                  |
 | 15       | Delayed widget restoration          | Not started |              |                                                                                                  |
