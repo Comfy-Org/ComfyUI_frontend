@@ -2,11 +2,15 @@ coverage:
   status:
     project:
       # Keep website coverage from lowering the existing frontend status.
+      # Path-filtered CI skips the unit/e2e jobs on website-only PRs; without
+      # fresh uploads the carried-forward sessions can drift a rounding step
+      # from the base, so only compare when this status's flags were uploaded.
       default:
         target: auto
         flags:
           - unit
           - e2e
+        flag_coverage_not_uploaded_behavior: pass
 
       website:
         target: auto
