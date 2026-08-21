@@ -54,7 +54,7 @@ jobs:
     # lock-step so the grader + risk map schema load from the same commit.
     # This permissions block must stay a superset of the UNION of every job
     # the reusable workflow declares, including jobs whose `if:` skips them.
-    uses: Comfy-Org/github-workflows/.github/workflows/pr-risk.yml@e4a8f7cd4a073da082b03950136530d4df50738f # github-workflows main (e4a8f7c)
+    uses: Comfy-Org/github-workflows/.github/workflows/pr-risk.yml@f8eec04e7923f4719d5b7dbc342e5c15580e22ba # github-workflows main (e4a8f7c)
     with:
       workflows_ref: e4a8f7cd4a073da082b03950136530d4df50738f
       # Required: upstream defaults enabled to FALSE. The repository variable
