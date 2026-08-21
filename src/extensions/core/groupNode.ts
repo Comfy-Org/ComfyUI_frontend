@@ -815,8 +815,6 @@ export class GroupNodeConfig {
  * `configure`. The load-time migration unpacks each instance via
  * {@link convertToNodes} and {@link LGraph.convertToSubgraph} repackages the
  * result as a subgraph.
- *
- * @knipIgnoreUnusedButUsedByCustomNodes
  */
 export class GroupNodeHandler {
   node: LGraphNode
@@ -969,6 +967,24 @@ export class GroupNodeHandler {
     } finally {
       app.canvas.emitAfterChange()
     }
+  }
+
+  /**
+   * @deprecated Restored for custom-node backward compatibility (see #15116).
+   * Prefer {@link GroupNodeHandler.getHandler} and read `.groupData` off the
+   * result instead.
+   */
+  static getGroupData(
+    node: LGraphNodeConstructor<LGraphNode>
+  ): GroupNodeConfig | undefined
+  static getGroupData(node: LGraphNode): GroupNodeConfig | undefined
+  static getGroupData(
+    node: LGraphNode | LGraphNodeConstructor<LGraphNode>
+  ): GroupNodeConfig | undefined {
+    if (typeof node === 'function') {
+      return node.nodeData?.[GROUP] as GroupNodeConfig | undefined
+    }
+    return node.constructor?.nodeData?.[GROUP] as GroupNodeConfig | undefined
   }
 
   static getHandler(node: LGraphNode): GroupNodeHandler | undefined {
