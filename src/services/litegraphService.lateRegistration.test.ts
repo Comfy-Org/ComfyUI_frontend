@@ -2,7 +2,10 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
+import type {
+  ISerialisedNode,
+  SerialisableGraph
+} from '@/lib/litegraph/src/types/serialisation'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { LayoutOperation } from '@/renderer/core/layout/types'
@@ -55,7 +58,7 @@ function nodeDef(name: string): ComfyNodeDefV1 {
   }
 }
 
-function serialisedNode(id: number, type: string) {
+function serialisedNode(id: number, type: string): ISerialisedNode {
   return {
     id,
     type,
@@ -76,20 +79,28 @@ function serialisedNode(id: number, type: string) {
  * that is not registered until afterwards. The third node is what makes this a
  * mid-session install rather than a bare registry mutation.
  */
-const workflow = (): SerialisableGraph =>
-  ({
-    id: GRAPH_ID,
-    version: 1,
-    revision: 0,
-    state: { lastNodeId: 3, lastLinkId: 1, lastGroupId: 0, lastRerouteId: 0 },
-    nodes: [
-      serialisedNode(1, INSTALLED),
-      serialisedNode(2, INSTALLED),
-      serialisedNode(3, LATE)
-    ],
-    links: [[1, 1, 0, 2, 0, 'LATENT']],
-    extra: {}
-  }) as never
+const workflow = (): SerialisableGraph => ({
+  id: GRAPH_ID,
+  version: 1,
+  revision: 0,
+  state: { lastNodeId: 3, lastLinkId: 1, lastGroupId: 0, lastRerouteId: 0 },
+  nodes: [
+    serialisedNode(1, INSTALLED),
+    serialisedNode(2, INSTALLED),
+    serialisedNode(3, LATE)
+  ],
+  links: [
+    {
+      id: 1,
+      origin_id: 1,
+      origin_slot: 0,
+      target_id: 2,
+      target_slot: 0,
+      type: 'LATENT'
+    }
+  ],
+  extra: {}
+})
 
 /**
  * A graph loaded and populated the way the Vue renderer leaves it:

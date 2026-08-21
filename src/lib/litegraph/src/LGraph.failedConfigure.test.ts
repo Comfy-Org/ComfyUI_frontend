@@ -2,7 +2,10 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
+import type {
+  ISerialisedNode,
+  SerialisableGraph
+} from '@/lib/litegraph/src/types/serialisation'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
@@ -58,7 +61,7 @@ beforeEach(() => {
   LiteGraph.registerNodeType('test/throwing', ThrowingNode)
 })
 
-function serialisedNode(id: number, type: string) {
+function serialisedNode(id: number, type: string): ISerialisedNode {
   return {
     id,
     type,
@@ -77,14 +80,13 @@ function serialisedNode(id: number, type: string) {
 /**
  * Three nodes, a link, a reroute and a group. The middle node's type decides
  * whether the load survives, so the same workflow can be loaded both ways and
- * the results compared. `models` is an ordinary top-level workflow key that
- * `configure` does not know about.
+ * the results compared. `extensionData` represents an extension-owned
+ * top-level workflow key that `configure` does not know about.
  *
- * The reroute is deliberately one that a *completed* load discards: its link
- * exists but does not route through it, so the post-load validation pass drops
- * it. That makes it a marker for how far the load got.
+ * The reroute is deliberately one that a *completed* load discards because its
+ * link does not exist. That makes it a marker for how far the load got.
  */
-const workflowWithMiddleNode = (type: string): SerialisableGraph =>
+const workflowWithMiddleNode = (type: string) =>
   ({
     id: BAD_ID,
     version: 1,
@@ -95,54 +97,74 @@ const workflowWithMiddleNode = (type: string): SerialisableGraph =>
       serialisedNode(2, type),
       serialisedNode(3, 'test/good')
     ],
-    links: [[1, 1, 0, 3, 0, '*']],
-    reroutes: [{ id: 1, pos: [50, 50], linkIds: [1] }],
+    links: [
+      {
+        id: 1,
+        origin_id: 1,
+        origin_slot: 0,
+        target_id: 3,
+        target_slot: 0,
+        type: '*'
+      }
+    ],
+    reroutes: [{ id: 1, pos: [50, 50], linkIds: [999] }],
     groups: [{ id: 1, title: 'bad group', bounding: [0, 0, 10, 10] }],
-    models: [{ name: 'from-the-workflow-that-failed' }],
+    extensionData: { source: 'workflow-that-failed' },
     extra: {}
-  }) as never
+  }) satisfies SerialisableGraph & {
+    extensionData: { source: string }
+  }
 
 const failingWorkflow = () => workflowWithMiddleNode('test/throwing')
 const sameWorkflowThatLoads = () => workflowWithMiddleNode('test/good')
 
 /** A failure inside a nested definition, before any root node is created. */
-const failingNestedWorkflow = (): SerialisableGraph =>
-  ({
-    id: BAD_ID,
-    version: 1,
-    revision: 0,
-    state: { lastNodeId: 3, lastLinkId: 0, lastGroupId: 0, lastRerouteId: 0 },
-    nodes: [],
-    links: [],
-    definitions: {
-      subgraphs: [
-        createTestSubgraphData({
-          id: NESTED_DEFINITION_ID,
-          name: 'definition that fails to configure',
-          nodes: [
-            serialisedNode(2, 'test/good'),
-            serialisedNode(3, 'test/throwing')
-          ] as never
-        })
-      ]
-    },
-    extra: {}
-  }) as never
+const failingNestedWorkflow = (): SerialisableGraph => ({
+  id: BAD_ID,
+  version: 1,
+  revision: 0,
+  state: { lastNodeId: 3, lastLinkId: 0, lastGroupId: 0, lastRerouteId: 0 },
+  nodes: [],
+  links: [],
+  definitions: {
+    subgraphs: [
+      createTestSubgraphData({
+        id: NESTED_DEFINITION_ID,
+        name: 'definition that fails to configure',
+        nodes: [
+          serialisedNode(2, 'test/good'),
+          serialisedNode(3, 'test/throwing')
+        ]
+      })
+    ]
+  },
+  extra: {}
+})
 
-const unrelatedWorkflow = (): SerialisableGraph =>
-  ({
-    id: GOOD_ID,
-    version: 1,
-    revision: 0,
-    state: { lastNodeId: 2, lastLinkId: 1, lastGroupId: 1, lastRerouteId: 1 },
-    nodes: [serialisedNode(1, 'test/good'), serialisedNode(2, 'test/good')],
-    links: [[1, 1, 0, 2, 0, '*']],
-    reroutes: [],
-    groups: [{ id: 1, title: 'good group', bounding: [0, 0, 10, 10] }],
-    extra: {}
-  }) as never
+const unrelatedWorkflow = (): SerialisableGraph => ({
+  id: GOOD_ID,
+  version: 1,
+  revision: 0,
+  state: { lastNodeId: 2, lastLinkId: 1, lastGroupId: 1, lastRerouteId: 1 },
+  nodes: [serialisedNode(1, 'test/good'), serialisedNode(2, 'test/good')],
+  links: [
+    {
+      id: 1,
+      origin_id: 1,
+      origin_slot: 0,
+      target_id: 2,
+      target_slot: 0,
+      type: '*'
+    }
+  ],
+  reroutes: [],
+  groups: [{ id: 1, title: 'good group', bounding: [0, 0, 10, 10] }],
+  extra: {}
+})
 
-function graphAfterFailedConfigure(data = failingWorkflow()) {
+function graphAfterFailedConfigure(
+  data: SerialisableGraph = failingWorkflow()
+) {
   const graph = new LGraph()
   expect(() => graph.configure(data)).toThrow('onConfigure exploded')
   return graph
@@ -269,13 +291,13 @@ describe('a workflow loaded after a failed load, on the same graph', () => {
 
     // `configure` copies every key not in LGraph.ConfigureProperties straight
     // onto the instance, and `clear()` only resets the properties it knows
-    // about. The successor workflow has no `models` key, so the failed
+    // about. The successor workflow has no `extensionData` key, so the failed
     // workflow's value is still there — on a graph that otherwise believes it
     // is the good workflow. Not serialised today, which is the only reason
     // this does not reach disk.
-    expect(Reflect.get(graph, 'models')).toEqual([
-      { name: 'from-the-workflow-that-failed' }
-    ])
-    expect(Reflect.get(new LGraph(), 'models')).toBeUndefined()
+    expect(Reflect.get(graph, 'extensionData')).toEqual({
+      source: 'workflow-that-failed'
+    })
+    expect(Reflect.get(new LGraph(), 'extensionData')).toBeUndefined()
   })
 })

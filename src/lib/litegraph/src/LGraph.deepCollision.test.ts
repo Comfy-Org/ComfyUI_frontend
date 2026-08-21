@@ -2,6 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { parseProxyWidgets } from '@/core/schemas/promotionSchema'
 import type {
   ExportedSubgraph,
   ISerialisedGraph,
@@ -328,9 +329,9 @@ describe('LGraph.configure with simultaneous cross-scope ID collisions', () => {
       const subgraph = graph.subgraphs.get(definitionId)
       if (!subgraph) continue
 
-      const proxyWidgets = host.properties?.proxyWidgets
-      expect(Array.isArray(proxyWidgets)).toBe(true)
-      for (const entry of proxyWidgets as unknown[][]) {
+      const proxyWidgets = parseProxyWidgets(host.properties?.proxyWidgets)
+      expect(proxyWidgets).toHaveLength(1)
+      for (const entry of proxyWidgets) {
         expect(subgraph.getNodeById(toNodeId(String(entry[0])))?.title).toBe(
           `${subgraph.name}#7`
         )

@@ -129,8 +129,6 @@ describe('graphToPrompt API prompt stability', () => {
     const { model } = output[String(sampler.id)].inputs
 
     expect(model).toEqual([String(loader.id), 0])
-    expect(typeof (model as [string, number])[0]).toBe('string')
-    expect(typeof (model as [string, number])[1]).toBe('number')
   })
 
   it('drops a muted node and the inputs that pointed at it', async () => {
