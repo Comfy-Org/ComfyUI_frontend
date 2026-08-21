@@ -5,6 +5,7 @@ import { computed } from 'vue'
 
 import { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
+import { useLinkStateStore } from '@/stores/linkStateStore'
 import { graphScopeOf, toOwningGraphId } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
@@ -134,6 +135,63 @@ describe('LLink ↔ linkStore integration', () => {
 
     graph.removeLink(link.id)
     expect(store.isInputSlotConnected(graphScopeOf(graph), b.id, 0)).toBe(false)
+  })
+
+  it('registers non-topological state and removes it with the link', () => {
+    const graph = new LGraph()
+    const a = new LGraphNode('A')
+    const b = new LGraphNode('B')
+    a.addOutput('out', 'INT')
+    b.addInput('in', 'INT')
+    graph.add(a)
+    graph.add(b)
+
+    const link = a.connect(0, b, 0)!
+    const scope = graphScopeOf(graph)
+    const state = useLinkStateStore().get(scope, link.id)
+    expect(state).toBe(link._linkState)
+
+    graph.removeLink(link.id)
+
+    expect(useLinkStateStore().get(scope, link.id)).toBeUndefined()
+    expect(link._linkState).not.toBe(state)
+  })
+
+  it('preserves extension-visible link fields through store-backed state', () => {
+    vi.stubGlobal('Path2D', class {})
+    const graph = new LGraph()
+    const link = new LLink(
+      toLinkId(1),
+      '*',
+      UNASSIGNED_NODE_ID,
+      -1,
+      UNASSIGNED_NODE_ID,
+      -1
+    )
+    graph.addFloatingLink(link)
+    const path = new Path2D()
+
+    link.data = 42
+    link._data = { output: true }
+    link._pos = [10, 20]
+    link._last_time = 30
+    link.path = path
+    link._centreAngle = 0.5
+    link._dragging = true
+    link.color = ''
+
+    const state = useLinkStateStore().get(graphScopeOf(graph), link.id)!
+    expect(state.runtime).toEqual({
+      data: 42,
+      outputData: { output: true },
+      position: [10, 20],
+      lastTime: 30,
+      path,
+      centreAngle: 0.5,
+      dragging: true
+    })
+    expect(state.persistent.color).toBeNull()
+    expect(link.color).toBeNull()
   })
 
   it('commits a replacement before disconnect callbacks run', () => {
