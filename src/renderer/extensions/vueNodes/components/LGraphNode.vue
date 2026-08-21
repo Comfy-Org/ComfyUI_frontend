@@ -162,7 +162,7 @@
               :media="nodeMedia"
             />
             <NodeContent
-              v-for="preview in promotedPreviews"
+              v-for="preview in subgraphPreviews"
               :key="`${preview.sourceNodeId}-${preview.sourceWidgetName}`"
               :node-data="nodeData"
               :media="preview"
@@ -273,6 +273,8 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useGLSLPreview } from '@/renderer/glsl/useGLSLPreview'
+import { useAmbientSubgraphPreviews } from '@/composables/node/useAmbientSubgraphPreviews'
+import { mergeSubgraphPreviews } from '@/composables/node/mergeSubgraphPreviews'
 import { usePromotedPreviews } from '@/composables/node/usePromotedPreviews'
 import NodeBadges from '@/renderer/extensions/vueNodes/components/NodeBadges.vue'
 import { LayoutSource } from '@/renderer/core/layout/types'
@@ -298,6 +300,7 @@ import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { isVideoOutput } from '@/utils/litegraphUtil'
@@ -562,7 +565,7 @@ watch(isCollapsed, (collapsed) => {
 
 // Check if node has custom content (like image/video outputs)
 const hasCustomContent = computed(() => {
-  if (promotedPreviews.value.length > 0) return true
+  if (subgraphPreviews.value.length > 0) return true
   return !!nodeMedia.value && nodeMedia.value.urls.length > 0
 })
 
@@ -703,6 +706,23 @@ const lgraphNode = computed(() => {
 // TODO: Surface subgraph info more cleanly in VueNodeData instead of
 // reaching through lgraphNode for promoted preview resolution.
 const { promotedPreviews } = usePromotedPreviews(lgraphNode)
+const { ambientPreviews } = useAmbientSubgraphPreviews(lgraphNode)
+const previewExposureStore = usePreviewExposureStore()
+
+const subgraphPreviews = computed(() => {
+  const node = lgraphNode.value
+  const exposedSourceNodeIds =
+    node instanceof SubgraphNode
+      ? previewExposureStore
+          .getExposures(node.rootGraph.id, String(node.id))
+          .map((exposure) => exposure.sourceNodeId)
+      : []
+  return mergeSubgraphPreviews(
+    promotedPreviews.value,
+    ambientPreviews.value,
+    exposedSourceNodeIds
+  )
+})
 
 const { hideExecutedOutput } = useGLSLPreview(lgraphNode)
 

@@ -1,0 +1,195 @@
+{
+  "id": "aa111111-2222-4333-8444-000000000001",
+  "revision": 0,
+  "last_node_id": 1,
+  "last_link_id": 0,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "bb222222-3333-4444-8555-000000000002",
+      "pos": [400, 200],
+      "size": [400, 200],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        { "name": "output_a", "type": "LATENT", "links": null },
+        { "name": "output_b", "type": "LATENT", "links": null }
+      ],
+      "title": "Two Sampler Subgraph",
+      "properties": {
+        "previewExposures": [
+          {
+            "name": "$$canvas-image-preview",
+            "sourceNodeId": "2",
+            "sourcePreviewName": "$$canvas-image-preview"
+          }
+        ]
+      },
+      "widgets_values": []
+    }
+  ],
+  "links": [],
+  "groups": [],
+  "definitions": {
+    "subgraphs": [
+      {
+        "id": "bb222222-3333-4444-8555-000000000002",
+        "version": 1,
+        "state": {
+          "lastGroupId": 0,
+          "lastNodeId": 3,
+          "lastLinkId": 2,
+          "lastRerouteId": 0
+        },
+        "revision": 0,
+        "config": {},
+        "name": "Two Sampler Subgraph",
+        "inputNode": {
+          "id": -10,
+          "bounding": [50, 200, 120, 60]
+        },
+        "outputNode": {
+          "id": -20,
+          "bounding": [900, 200, 120, 60]
+        },
+        "inputs": [],
+        "outputs": [
+          {
+            "id": "cc333333-4444-4555-8666-000000000003",
+            "name": "output_a",
+            "type": "LATENT",
+            "linkIds": [1],
+            "pos": { "0": 920, "1": 190 }
+          },
+          {
+            "id": "dd444444-5555-4666-8777-000000000004",
+            "name": "output_b",
+            "type": "LATENT",
+            "linkIds": [2],
+            "pos": { "0": 920, "1": 250 }
+          }
+        ],
+        "widgets": [],
+        "nodes": [
+          {
+            "id": 2,
+            "type": "KSampler",
+            "pos": [250, 120],
+            "size": [280, 260],
+            "flags": {},
+            "order": 0,
+            "mode": 0,
+            "inputs": [
+              {
+                "localized_name": "model",
+                "name": "model",
+                "type": "MODEL",
+                "link": null
+              },
+              {
+                "localized_name": "positive",
+                "name": "positive",
+                "type": "CONDITIONING",
+                "link": null
+              },
+              {
+                "localized_name": "negative",
+                "name": "negative",
+                "type": "CONDITIONING",
+                "link": null
+              },
+              {
+                "localized_name": "latent_image",
+                "name": "latent_image",
+                "type": "LATENT",
+                "link": null
+              }
+            ],
+            "outputs": [
+              {
+                "localized_name": "LATENT",
+                "name": "LATENT",
+                "type": "LATENT",
+                "links": [1]
+              }
+            ],
+            "properties": { "Node name for S&R": "KSampler" },
+            "widgets_values": [1, "increment", 20, 8, "euler", "normal", 1]
+          },
+          {
+            "id": 3,
+            "type": "KSampler",
+            "pos": [250, 420],
+            "size": [280, 260],
+            "flags": {},
+            "order": 1,
+            "mode": 0,
+            "inputs": [
+              {
+                "localized_name": "model",
+                "name": "model",
+                "type": "MODEL",
+                "link": null
+              },
+              {
+                "localized_name": "positive",
+                "name": "positive",
+                "type": "CONDITIONING",
+                "link": null
+              },
+              {
+                "localized_name": "negative",
+                "name": "negative",
+                "type": "CONDITIONING",
+                "link": null
+              },
+              {
+                "localized_name": "latent_image",
+                "name": "latent_image",
+                "type": "LATENT",
+                "link": null
+              }
+            ],
+            "outputs": [
+              {
+                "localized_name": "LATENT",
+                "name": "LATENT",
+                "type": "LATENT",
+                "links": [2]
+              }
+            ],
+            "properties": { "Node name for S&R": "KSampler" },
+            "widgets_values": [2, "increment", 20, 8, "euler", "normal", 1]
+          }
+        ],
+        "groups": [],
+        "links": [
+          {
+            "id": 1,
+            "origin_id": 2,
+            "origin_slot": 0,
+            "target_id": -20,
+            "target_slot": 0,
+            "type": "LATENT"
+          },
+          {
+            "id": 2,
+            "origin_id": 3,
+            "origin_slot": 0,
+            "target_id": -20,
+            "target_slot": 1,
+            "type": "LATENT"
+          }
+        ],
+        "extra": {}
+      }
+    ]
+  },
+  "config": {},
+  "extra": {
+    "ds": { "offset": [0, 0], "scale": 1 }
+  },
+  "version": 0.4
+}

@@ -4,6 +4,7 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { toNodeId } from '@/types/nodeId'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { computed } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
@@ -15,6 +16,7 @@ import {
 } from '@/lib/litegraph/src/types/globalEnums'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
+import { useNodePreviewState } from '@/renderer/extensions/vueNodes/preview/useNodePreviewState'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
@@ -420,6 +422,28 @@ describe('LGraphNode', () => {
 
       expect(parentListener).toHaveBeenCalled()
       expect(app.dragOverNode).toBe(mockData.mockLgraphNode)
+    })
+  })
+
+  describe('Subgraph live preview promotion', () => {
+    // Expected-fail until the `!lgraphNode?.isSubgraphNode()` guard in
+    // LGraphNode.vue is relaxed to allow rendering previews on subgraph
+    // nodes. Keep this test (don't delete) so it flips green automatically
+    // once that guard changes.
+    // incident-94: waiting on LGraphNode.vue:172's `!lgraphNode?.isSubgraphNode()` guard.
+    it.fails('renders the live preview image on a subgraph node with a populated preview', () => {
+      mockData.mockLgraphNode = { isSubgraphNode: () => true }
+      vi.mocked(useNodePreviewState).mockReturnValue({
+        locatorId: computed(() => createNodeLocatorId(null, mockNodeData.id)),
+        previewUrls: computed(() => ['blob:preview-url']),
+        hasPreview: computed(() => true),
+        latestPreviewUrl: computed(() => 'blob:preview-url'),
+        shouldShowPreviewImg: computed(() => true)
+      })
+
+      renderLGraphNode({ nodeData: mockNodeData })
+
+      expect(screen.getByRole('img')).toHaveAttribute('src', 'blob:preview-url')
     })
   })
 })
