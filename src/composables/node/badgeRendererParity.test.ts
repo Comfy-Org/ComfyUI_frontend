@@ -202,10 +202,13 @@ describe('badge renderer parity (I2)', () => {
     expect(vueBadgeFacts(node)).toEqual(legacyBadgeFacts(node))
   })
 
-  it('keeps showing built-in id and lifecycle badges in the Vue renderer under HideBuiltIn (#15567)', () => {
+  // Asserts parity, so it fails today and passes the moment #15567 is fixed.
+  // Pinning the disagreement would make the test go red when the bug is
+  // repaired, and the tempting move then is to edit the test.
+  it.fails('hides built-in id and lifecycle badges in both renderers under HideBuiltIn (#15567)', () => {
     const node = setup(NodeBadgeMode.HideBuiltIn, 'CoreNode', 'nodes')
 
     expect(legacyBadgeFacts(node)).toEqual([])
-    expect(vueBadgeFacts(node)).toEqual(['#1', 'BETA'].sort())
+    expect(vueBadgeFacts(node)).toEqual([])
   })
 })

@@ -184,7 +184,10 @@ describe('duplicated subgraph deleted in both orders (I4)', () => {
     await expectSurvivorUndamaged(buildScenario(), 1)
   })
 
-  it('collides promoted widget ownership between instances added without configure (#15565)', () => {
+  // Asserts independent ownership, so it fails today and passes the moment
+  // #15565 is fixed. Pinning the collision instead would mean the test goes red
+  // when the bug is repaired, and the tempting move then is to edit the test.
+  it.fails('gives each instance added without configure its own promoted widget (#15565)', () => {
     const rootGraph = createTestRootGraph()
     registerTestSubgraphNodeTypes(rootGraph)
     const definition = createSharedDefinition(rootGraph)
@@ -202,12 +205,13 @@ describe('duplicated subgraph deleted in both orders (I4)', () => {
       node.inputs.find((input) => input.name === PROMOTED_INPUT)?.widgetId
 
     expect(first.id).not.toBe(second.id)
-    expect(promotedId(first)).toBe(promotedId(second))
+    expect(promotedId(first)).not.toBe(promotedId(second))
 
     const id = promotedId(first)
     if (!id) throw new Error('expected a promoted widget id')
+    const before = promotedValueOf(second)
     useWidgetValueStore().setValue(id, 999)
-    expect(promotedValueOf(second)).toBe(999)
+    expect(promotedValueOf(second)).toBe(before)
   })
 
   it('keeps the shared definition while an instance nested in another definition still references it', () => {

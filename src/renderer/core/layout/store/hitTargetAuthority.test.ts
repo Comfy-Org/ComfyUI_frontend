@@ -78,6 +78,7 @@ function expectAuthoritiesAgree(graph: LGraph, node: LGraphNode) {
 describe('hit targets across renderer modes and history (I2)', () => {
   afterEach(() => {
     LiteGraph.vueNodesMode = false
+    layoutStore.initializeFromLiteGraph([])
   })
 
   it('drags member node and slot hit targets along with the group in the legacy renderer', () => {
@@ -96,7 +97,11 @@ describe('hit targets across renderer modes and history (I2)', () => {
     ).toBeUndefined()
   })
 
-  it('leaves member node hit targets behind when a group is dragged in Vue nodes mode (#15566)', () => {
+  // Asserts the behaviour we want, so it fails today and passes the moment
+  // #15566 is fixed. Written as `.fails` rather than pinning the current wrong
+  // answer, because a test that encodes a defect goes red when someone repairs
+  // the defect, and the tempting move at that point is to edit the test.
+  it.fails('moves member node hit targets with the group in Vue nodes mode (#15566)', () => {
     LiteGraph.vueNodesMode = true
     const { graph, node, group } = buildGraph()
     seedLayoutStore(graph)
@@ -106,10 +111,10 @@ describe('hit targets across renderer modes and history (I2)', () => {
     node.updateArea()
 
     expect([...group.pos]).toEqual([GROUP_AT.x + DRAG.x, GROUP_AT.y + DRAG.y])
-    expect(graph.getNodeOnPos(NODE_AT.x + 5, NODE_AT.y + 5)).toBe(node)
     expect(
       graph.getNodeOnPos(NODE_AT.x + DRAG.x + 5, NODE_AT.y + DRAG.y + 5)
-    ).toBeNull()
+    ).toBe(node)
+    expect(graph.getNodeOnPos(NODE_AT.x + 5, NODE_AT.y + 5)).toBeNull()
     expectAuthoritiesAgree(graph, node)
   })
 
