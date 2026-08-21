@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -19,6 +20,7 @@ const {
   cloudUrl,
   isPartnerNode = false,
   openPending = false,
+  setupEnabled = false,
   modelSetupEnabled = false,
   setupPending = false,
   requirementsMet = false,
@@ -31,6 +33,7 @@ const {
   cloudUrl?: string
   isPartnerNode?: boolean
   openPending?: boolean
+  setupEnabled?: boolean
   modelSetupEnabled?: boolean
   setupPending?: boolean
   requirementsMet?: boolean
@@ -42,9 +45,11 @@ const emit = defineEmits<{
   'open-template': []
   'download-starter-pack': []
   'download-model': [rowId: string]
+  'install-custom-node': [rowId: string]
 }>()
 
 const { t } = useI18n()
+const setupActionsEnabled = computed(() => setupEnabled || modelSetupEnabled)
 
 const rowIconClasses: Record<TemplateDetailRow['kind'], string> = {
   model: 'icon-[lucide--box]',
@@ -116,6 +121,12 @@ function getDownloadAriaLabel(row: TemplateDetailRow): string {
 function getRetryAriaLabel(row: TemplateDetailRow): string {
   return t('templateWorkflows.detail.retryDownloadNamed', {
     model: row.name
+  })
+}
+
+function getInstallCustomNodeAriaLabel(row: TemplateDetailRow): string {
+  return t('templateWorkflows.detail.installCustomNodeNamed', {
+    node: row.name
   })
 }
 
@@ -278,6 +289,21 @@ function getFailedDownloadLabel(
 
               <Button
                 v-else-if="
+                  row.kind === 'custom-node' &&
+                  row.status?.kind === 'installable'
+                "
+                :aria-label="getInstallCustomNodeAriaLabel(row)"
+                :title="row.status.label"
+                variant="textonly"
+                size="unset"
+                class="size-6 shrink-0 rounded-sm p-1"
+                @click="emit('install-custom-node', row.id)"
+              >
+                <i aria-hidden="true" class="icon-[lucide--download] size-4" />
+              </Button>
+
+              <Button
+                v-else-if="
                   row.status?.kind === 'downloadable' &&
                   (!row.status.downloadState ||
                     row.status.downloadState.status === 'idle')
@@ -397,6 +423,14 @@ function getFailedDownloadLabel(
                 class="flex shrink-0 items-center gap-2"
               >
                 <Badge
+                  :role="
+                    row.status.kind === 'in-progress' ? 'status' : undefined
+                  "
+                  :aria-label="
+                    row.status.kind === 'in-progress'
+                      ? row.status.label
+                      : undefined
+                  "
                   :label="row.status.label"
                   severity="secondary"
                   variant="label"
@@ -426,7 +460,7 @@ function getFailedDownloadLabel(
       class="flex min-h-15 shrink-0 flex-wrap items-center gap-3 border-t border-border-subtle px-6 py-4"
     >
       <p
-        v-if="modelSetupEnabled && !requirementsMet && remainingDownload"
+        v-if="setupActionsEnabled && !requirementsMet && remainingDownload"
         class="m-0 min-w-0 flex-1 text-sm text-muted-foreground"
       >
         {{
@@ -437,7 +471,7 @@ function getFailedDownloadLabel(
       </p>
       <div class="ml-auto flex flex-wrap items-center justify-end gap-3">
         <Button
-          v-if="modelSetupEnabled && !requirementsMet"
+          v-if="setupActionsEnabled && !requirementsMet"
           variant="outline"
           size="sm"
           :disabled="openPending"
@@ -447,7 +481,7 @@ function getFailedDownloadLabel(
         </Button>
         <Button
           v-if="
-            !modelSetupEnabled ||
+            !setupActionsEnabled ||
             requirementsMet ||
             setupPending ||
             starterPackAvailable
@@ -455,16 +489,16 @@ function getFailedDownloadLabel(
           variant="inverted"
           size="sm"
           :loading="openPending"
-          :disabled="modelSetupEnabled && !requirementsMet && setupPending"
+          :disabled="setupActionsEnabled && !requirementsMet && setupPending"
           @click="
-            modelSetupEnabled && !requirementsMet
+            setupActionsEnabled && !requirementsMet
               ? emit('download-starter-pack')
               : emit('open-template')
           "
         >
           {{
             t(
-              modelSetupEnabled && !requirementsMet
+              setupActionsEnabled && !requirementsMet
                 ? 'templateWorkflows.detail.downloadStarterPack'
                 : 'templateWorkflows.detail.openTemplate'
             )

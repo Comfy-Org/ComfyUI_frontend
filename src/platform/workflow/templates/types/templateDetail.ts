@@ -16,12 +16,16 @@ export type TemplateDetailRowStatus =
       downloadState?: TemplateModelDownloadState
     }
   | {
+      kind: 'installable'
+      label: string
+    }
+  | {
       kind: 'manual'
       label: string
       href: string
     }
   | {
-      kind: 'unavailable' | 'unknown'
+      kind: 'disabled' | 'in-progress' | 'unavailable' | 'unknown'
       label: string
       action?: TemplateDetailLink
     }
