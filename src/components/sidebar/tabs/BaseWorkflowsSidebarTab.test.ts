@@ -36,7 +36,7 @@ const {
     openWorkflows: [] as ComfyWorkflow[],
     activeWorkflow: null as ComfyWorkflow | null,
     isSyncLoading: false,
-    syncWorkflows: vi.fn().mockResolvedValue(undefined)
+    syncWorkflows: vi.fn<AnyMockProcedure>(async () => undefined)
   }
 
   return {
@@ -55,14 +55,14 @@ const {
     },
     mockExpandNode: vi.fn(),
     mockToggleNodeOnEvent: vi.fn(),
-    mockLoadBookmarks: vi.fn().mockResolvedValue(undefined),
+    mockLoadBookmarks: vi.fn<AnyMockProcedure>(async () => undefined),
     mockWorkflowService: {
-      openWorkflow: vi.fn().mockResolvedValue(undefined),
-      closeWorkflow: vi.fn().mockResolvedValue(undefined),
-      renameWorkflow: vi.fn().mockResolvedValue(undefined),
-      deleteWorkflow: vi.fn().mockResolvedValue(undefined),
-      insertWorkflow: vi.fn().mockResolvedValue(undefined),
-      duplicateWorkflow: vi.fn().mockResolvedValue(undefined)
+      openWorkflow: vi.fn<AnyMockProcedure>(async () => undefined),
+      closeWorkflow: vi.fn<AnyMockProcedure>(async () => undefined),
+      renameWorkflow: vi.fn<AnyMockProcedure>(async () => undefined),
+      deleteWorkflow: vi.fn<AnyMockProcedure>(async () => undefined),
+      insertWorkflow: vi.fn<AnyMockProcedure>(async () => undefined),
+      duplicateWorkflow: vi.fn<AnyMockProcedure>(async () => undefined)
     },
     mockWorkflowStoreState: workflowStore,
     registerSearchHandlers: (

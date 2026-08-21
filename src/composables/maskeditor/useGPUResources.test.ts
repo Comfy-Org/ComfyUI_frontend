@@ -5,7 +5,7 @@ import type { EffectScope } from 'vue'
 
 vi.mock('typegpu', () => ({
   tgpu: {
-    init: vi.fn().mockRejectedValue(new Error('WebGPU not supported'))
+    init: vi.fn<AnyMockProcedure>(async () => new Error('WebGPU not supported'))
   }
 }))
 

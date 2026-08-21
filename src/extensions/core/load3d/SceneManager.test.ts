@@ -36,7 +36,7 @@ vi.mock('three/examples/jsm/controls/OrbitControls', () => {
 
 function makeMockRenderer(pixelRatio = 1): THREE.WebGLRenderer {
   const domElement = {
-    toDataURL: vi.fn().mockReturnValue('data:image/png;base64,abc'),
+    toDataURL: vi.fn<AnyMockProcedure>(() => 'data:image/png;base64,abc'),
     clientWidth: 400,
     clientHeight: 300
   }
@@ -49,9 +49,9 @@ function makeMockRenderer(pixelRatio = 1): THREE.WebGLRenderer {
       v.set(400, 300)
       return v
     }),
-    getPixelRatio: vi.fn().mockReturnValue(pixelRatio),
+    getPixelRatio: vi.fn<AnyMockProcedure>(() => pixelRatio),
     getClearColor: vi.fn((c: THREE.Color) => c),
-    getClearAlpha: vi.fn().mockReturnValue(0),
+    getClearAlpha: vi.fn<AnyMockProcedure>(() => 0),
     setPixelRatio: vi.fn(),
     setSize: vi.fn(),
     setClearColor: vi.fn(),
@@ -115,12 +115,12 @@ function makeRenderer() {
       v.set(800, 600)
       return v
     }),
-    getPixelRatio: vi.fn().mockReturnValue(1),
+    getPixelRatio: vi.fn<AnyMockProcedure>(() => 1),
     setPixelRatio: vi.fn(),
     render: vi.fn(),
     clear: vi.fn(),
-    getClearColor: vi.fn().mockReturnValue(new THREE.Color(0xffffff)),
-    getClearAlpha: vi.fn().mockReturnValue(1),
+    getClearColor: vi.fn<AnyMockProcedure>(() => new THREE.Color(0xffffff)),
+    getClearAlpha: vi.fn<AnyMockProcedure>(() => 1),
     toneMapping: THREE.NoToneMapping,
     toneMappingExposure: 1,
     outputColorSpace: THREE.SRGBColorSpace

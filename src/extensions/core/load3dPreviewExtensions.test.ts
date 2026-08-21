@@ -113,7 +113,7 @@ interface FakeLoad3d {
 
 function makeLoad3dMock(): FakeLoad3d {
   return {
-    whenLoadIdle: vi.fn().mockResolvedValue(undefined),
+    whenLoadIdle: vi.fn<AnyMockProcedure>(async () => undefined),
     isSplatModel: vi.fn(() => false),
     forceRender: vi.fn(),
     setCameraState: vi.fn(),

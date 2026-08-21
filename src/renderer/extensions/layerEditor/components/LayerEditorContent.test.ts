@@ -22,10 +22,10 @@ const {
   afterChange: vi.fn(),
   autoSaveStop: vi.fn(),
   beforeChange: vi.fn(),
-  loadCompositorSession: vi.fn().mockResolvedValue(0),
+  loadCompositorSession: vi.fn<AnyMockProcedure>(async () => 0),
   toastAdd: vi.fn(),
   saveLayerState: vi.fn(() => true),
-  savePreview: vi.fn().mockResolvedValue(undefined),
+  savePreview: vi.fn<AnyMockProcedure>(async () => undefined),
   session: {
     canUndo: { value: false },
     dispose: vi.fn(),
@@ -40,7 +40,7 @@ const {
       }
     },
     imageLayers: { value: [] },
-    loadImages: vi.fn().mockResolvedValue(undefined),
+    loadImages: vi.fn<AnyMockProcedure>(async () => undefined),
     redo: vi.fn(),
     undo: vi.fn()
   }

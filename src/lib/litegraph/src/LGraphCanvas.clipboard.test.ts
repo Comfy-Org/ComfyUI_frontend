@@ -210,12 +210,15 @@ describe('_deserializeItems paste-time migration & auto-expose', () => {
     const el = document.createElement('canvas')
     el.width = 800
     el.height = 600
-    el.getContext = vi
-      .fn()
-      .mockReturnValue(createMockCanvasRenderingContext2D())
-    el.getBoundingClientRect = vi
-      .fn()
-      .mockReturnValue({ left: 0, top: 0, width: 800, height: 600 })
+    el.getContext = vi.fn<AnyMockProcedure>(() =>
+      createMockCanvasRenderingContext2D()
+    )
+    el.getBoundingClientRect = vi.fn<AnyMockProcedure>(() => ({
+      left: 0,
+      top: 0,
+      width: 800,
+      height: 600
+    }))
     return new LGraphCanvas(el, graph, { skip_render: true })
   }
 

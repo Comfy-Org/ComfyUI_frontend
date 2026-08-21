@@ -58,10 +58,10 @@ function createMockSceneManager(): Load3d['sceneManager'] {
     backgroundCamera: {} as Load3d['sceneManager']['backgroundCamera'],
     currentBackgroundColor: '#282828',
     gridHelper: { visible: true } as Load3d['sceneManager']['gridHelper'],
-    getCurrentBackgroundInfo: vi.fn().mockReturnValue({
+    getCurrentBackgroundInfo: vi.fn<AnyMockProcedure>(() => ({
       type: 'color',
       value: '#282828'
-    })
+    }))
   }
   return mock as Load3d['sceneManager']
 }

@@ -5,6 +5,9 @@ declare const __ALGOLIA_APP_ID__: string
 declare const __ALGOLIA_API_KEY__: string
 declare const __USE_PROD_CONFIG__: boolean
 
+/** Matches the un narrowed callable shape of a fresh `vi.fn()`. */
+type AnyMockProcedure = (...args: any[]) => any
+
 interface ImpactQueueFunction {
   (...args: unknown[]): void
   a?: unknown[][]

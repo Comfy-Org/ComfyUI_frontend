@@ -34,7 +34,7 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
 
 vi.mock('@/stores/workspace/favoritedWidgetsStore', () => ({
   useFavoritedWidgetsStore: () => ({
-    isFavorited: vi.fn().mockReturnValue(false),
+    isFavorited: vi.fn<AnyMockProcedure>(() => false),
     toggleFavorite: vi.fn()
   })
 }))

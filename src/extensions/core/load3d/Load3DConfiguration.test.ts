@@ -188,7 +188,7 @@ describe('Load3DConfiguration.silentOnNotFound propagation', () => {
   let loadModelSpy: ReturnType<typeof vi.fn>
 
   function makeLoad3dMock(): Load3d {
-    loadModelSpy = vi.fn().mockResolvedValue(undefined)
+    loadModelSpy = vi.fn<AnyMockProcedure>(async () => undefined)
     return {
       loadModel: loadModelSpy,
       setUpDirection: vi.fn(),
@@ -197,7 +197,7 @@ describe('Load3DConfiguration.silentOnNotFound propagation', () => {
       setCameraState: vi.fn(),
       toggleGrid: vi.fn(),
       setBackgroundColor: vi.fn(),
-      setBackgroundImage: vi.fn().mockResolvedValue(undefined),
+      setBackgroundImage: vi.fn<AnyMockProcedure>(async () => undefined),
       setBackgroundRenderMode: vi.fn(),
       toggleCamera: vi.fn(),
       setFOV: vi.fn(),
@@ -475,14 +475,14 @@ describe('Load3DConfiguration.configure forwards persisted + settings to load3d'
 
   function makeLoad3dMock(): Load3d {
     return {
-      loadModel: vi.fn().mockResolvedValue(undefined),
+      loadModel: vi.fn<AnyMockProcedure>(async () => undefined),
       setUpDirection: vi.fn(),
       setMaterialMode: vi.fn(),
       setTargetSize: vi.fn(),
       setCameraState: vi.fn(),
       toggleGrid: vi.fn(),
       setBackgroundColor: vi.fn(),
-      setBackgroundImage: vi.fn().mockResolvedValue(undefined),
+      setBackgroundImage: vi.fn<AnyMockProcedure>(async () => undefined),
       setBackgroundRenderMode: vi.fn(),
       toggleCamera: vi.fn(),
       setFOV: vi.fn(),
@@ -564,7 +564,7 @@ describe('Load3DConfiguration "none" model handling', () => {
   let clearModelSpy: ReturnType<typeof vi.fn>
 
   function makeLoad3dMock(): Load3d {
-    loadModelSpy = vi.fn().mockResolvedValue(undefined)
+    loadModelSpy = vi.fn<AnyMockProcedure>(async () => undefined)
     clearModelSpy = vi.fn()
     return {
       loadModel: loadModelSpy,
@@ -575,7 +575,7 @@ describe('Load3DConfiguration "none" model handling', () => {
       setCameraState: vi.fn(),
       toggleGrid: vi.fn(),
       setBackgroundColor: vi.fn(),
-      setBackgroundImage: vi.fn().mockResolvedValue(undefined),
+      setBackgroundImage: vi.fn<AnyMockProcedure>(async () => undefined),
       setBackgroundRenderMode: vi.fn(),
       toggleCamera: vi.fn(),
       setFOV: vi.fn(),
@@ -645,7 +645,7 @@ describe('Load3DConfiguration "none" model handling', () => {
 describe('Load3DConfiguration.onSceneInvalidated', () => {
   function makeLoad3dMock(): Load3d {
     return {
-      loadModel: vi.fn().mockResolvedValue(undefined),
+      loadModel: vi.fn<AnyMockProcedure>(async () => undefined),
       clearModel: vi.fn(),
       setUpDirection: vi.fn(),
       setMaterialMode: vi.fn(),
@@ -653,7 +653,7 @@ describe('Load3DConfiguration.onSceneInvalidated', () => {
       setCameraState: vi.fn(),
       toggleGrid: vi.fn(),
       setBackgroundColor: vi.fn(),
-      setBackgroundImage: vi.fn().mockResolvedValue(undefined),
+      setBackgroundImage: vi.fn<AnyMockProcedure>(async () => undefined),
       setBackgroundRenderMode: vi.fn(),
       toggleCamera: vi.fn(),
       setFOV: vi.fn(),

@@ -9,7 +9,7 @@ const hoisted = vi.hoisted(() => ({
   isEnabled: true,
   isMobileUa: true,
   mockPreload: vi.fn(),
-  mockSubmit: vi.fn().mockResolvedValue(undefined)
+  mockSubmit: vi.fn<AnyMockProcedure>(async () => undefined)
 }))
 
 vi.mock('../../../scripts/customerio', () => ({

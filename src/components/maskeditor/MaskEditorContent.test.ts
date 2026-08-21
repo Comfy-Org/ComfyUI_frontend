@@ -12,12 +12,12 @@ const mockKeyboard = vi.hoisted(() => ({
 }))
 
 const mockPanZoom = vi.hoisted(() => ({
-  initializeCanvasPanZoom: vi.fn().mockResolvedValue(undefined),
-  invalidatePanZoom: vi.fn().mockResolvedValue(undefined)
+  initializeCanvasPanZoom: vi.fn<AnyMockProcedure>(async () => undefined),
+  invalidatePanZoom: vi.fn<AnyMockProcedure>(async () => undefined)
 }))
 
 const mockBrushDrawing = vi.hoisted(() => ({
-  initGPUResources: vi.fn().mockResolvedValue(undefined),
+  initGPUResources: vi.fn<AnyMockProcedure>(async () => undefined),
   initPreviewCanvas: vi.fn(),
   saveBrushSettings: vi.fn()
 }))
@@ -27,11 +27,14 @@ const mockToolManager = vi.hoisted(() => ({
 }))
 
 const mockImageLoader = vi.hoisted(() => ({
-  loadImages: vi.fn().mockResolvedValue({ width: 100, height: 100 })
+  loadImages: vi.fn<AnyMockProcedure>(async () => ({
+    width: 100,
+    height: 100
+  }))
 }))
 
 const mockMaskEditorLoader = vi.hoisted(() => ({
-  loadFromNode: vi.fn().mockResolvedValue(undefined)
+  loadFromNode: vi.fn<AnyMockProcedure>(async () => undefined)
 }))
 
 const mockCanvasHistory = vi.hoisted(() => ({

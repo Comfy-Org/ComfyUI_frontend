@@ -63,7 +63,7 @@ vi.mock('wwobjloader2', () => ({
     loadAsync = objLoaderStub.loadAsync
   },
   MtlObjBridge: {
-    addMaterialsFromMtlLoader: vi.fn().mockReturnValue([])
+    addMaterialsFromMtlLoader: vi.fn<AnyMockProcedure>(() => [])
   }
 }))
 

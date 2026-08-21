@@ -33,9 +33,9 @@ vi.mock(import('@/lib/litegraph/src/litegraph'), async (importOriginal) => {
 })
 
 function makeLoad3d(
-  exportImpl: (format: string) => Promise<void> = vi
-    .fn()
-    .mockResolvedValue(undefined)
+  exportImpl: (format: string) => Promise<void> = vi.fn<
+    (...args: any[]) => any
+  >(async () => undefined)
 ): Load3d {
   return { exportModel: exportImpl } as unknown as Load3d
 }
@@ -98,7 +98,7 @@ describe('createExportMenuItems', () => {
   ])(
     'invokes load3d.exportModel(%s) and shows a success toast when the %s submenu item is clicked',
     async ([label, value]) => {
-      const exportModel = vi.fn().mockResolvedValue(undefined)
+      const exportModel = vi.fn<AnyMockProcedure>(async () => undefined)
       const items = createExportMenuItems(makeLoad3d(exportModel))
       ;(items[1]!.callback as (...args: unknown[]) => void)(
         undefined,

@@ -34,7 +34,7 @@ const baseTask: MaintenanceTask = {
   id: 'testTask',
   name: 'Test Task',
   button: { text: 'Fix', icon: 'pi pi-check' },
-  execute: vi.fn().mockResolvedValue(true)
+  execute: vi.fn<AnyMockProcedure>(async () => true)
 }
 
 const ButtonStub = {

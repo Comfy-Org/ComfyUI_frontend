@@ -73,8 +73,8 @@ const mockNodePack = {
 }
 
 const mockIsPackEnabled = vi.fn()
-const mockEnablePack = vi.fn().mockResolvedValue(undefined)
-const mockDisablePack = vi.fn().mockResolvedValue(undefined)
+const mockEnablePack = vi.fn<AnyMockProcedure>(async () => undefined)
+const mockDisablePack = vi.fn<AnyMockProcedure>(async () => undefined)
 const mockGetConflictsForPackageByID = vi.fn()
 
 vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({

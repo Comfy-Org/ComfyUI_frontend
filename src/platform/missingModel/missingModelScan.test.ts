@@ -1668,8 +1668,8 @@ describe('OSS missing model detection (non-Cloud path)', () => {
 })
 
 const { mockUpdateModelsForNodeType, mockGetAssets } = vi.hoisted(() => ({
-  mockUpdateModelsForNodeType: vi.fn().mockResolvedValue(undefined),
-  mockGetAssets: vi.fn().mockReturnValue([])
+  mockUpdateModelsForNodeType: vi.fn<AnyMockProcedure>(async () => undefined),
+  mockGetAssets: vi.fn<AnyMockProcedure>(() => [])
 }))
 
 vi.mock('@/stores/assetsStore', () => ({

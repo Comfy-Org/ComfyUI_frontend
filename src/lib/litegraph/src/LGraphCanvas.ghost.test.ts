@@ -19,11 +19,11 @@ function createGhostTestHarness() {
   const canvasElement = document.createElement('canvas')
   canvasElement.width = 800
   canvasElement.height = 600
-  canvasElement.getContext = vi
-    .fn()
-    .mockReturnValue(createMockCanvasRenderingContext2D())
+  canvasElement.getContext = vi.fn<AnyMockProcedure>(() =>
+    createMockCanvasRenderingContext2D()
+  )
   document.body.appendChild(canvasElement)
-  canvasElement.getBoundingClientRect = vi.fn().mockReturnValue({
+  canvasElement.getBoundingClientRect = vi.fn<AnyMockProcedure>(() => ({
     left: 0,
     top: 0,
     right: 800,
@@ -33,7 +33,7 @@ function createGhostTestHarness() {
     x: 0,
     y: 0,
     toJSON: () => {}
-  })
+  }))
 
   const graph = new LGraph()
   const canvas = new LGraphCanvas(canvasElement, graph, {

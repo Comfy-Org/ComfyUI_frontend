@@ -952,7 +952,7 @@ describe('Load3d', () => {
       }))
       const setCameraState = vi.fn()
       const getCurrentCameraType = vi.fn(() => 'perspective' as const)
-      const loaderLoadModel = vi.fn().mockResolvedValue(undefined)
+      const loaderLoadModel = vi.fn<AnyMockProcedure>(async () => undefined)
       Object.assign(ctx.load3d, {
         cameraManager: {
           ...ctx.cameraManager,
@@ -1076,24 +1076,24 @@ describe('Load3d', () => {
     function setupForCapture() {
       const cameraStub = {
         toggleCamera: vi.fn(),
-        getCurrentCameraType: vi.fn().mockReturnValue('perspective'),
-        getCameraState: vi.fn().mockReturnValue({
+        getCurrentCameraType: vi.fn<AnyMockProcedure>(() => 'perspective'),
+        getCameraState: vi.fn<AnyMockProcedure>(() => ({
           position: { x: 1, y: 2, z: 3 },
           target: { x: 0, y: 0, z: 0 },
           zoom: 1,
           cameraType: 'perspective'
-        }),
+        })),
         setCameraState: vi.fn(),
         perspectiveCamera: new THREE.PerspectiveCamera()
       }
       const controlsStub = {
         controls: { target: { copy: vi.fn() }, update: vi.fn() }
       }
-      const sceneCaptureMock = vi.fn().mockResolvedValue({
+      const sceneCaptureMock = vi.fn<AnyMockProcedure>(async () => ({
         scene: 'data:image/png;base64,scene',
         mask: 'm',
         normal: 'n'
-      })
+      }))
       const modelGroup = new THREE.Group()
       modelGroup.add(new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1)))
       Object.assign(ctx.load3d, {

@@ -28,7 +28,7 @@ const {
   return {
     mockAddBookmark: vi.fn(),
     mockDeleteBookmarkFolder: vi.fn(),
-    mockIsBookmarked: vi.fn().mockReturnValue(false),
+    mockIsBookmarked: vi.fn<AnyMockProcedure>(() => false),
     mockToggleBookmark: vi.fn(),
     mockAddNodeOnGraph: vi.fn(),
     mockToggleNodeOnEvent: vi.fn(),

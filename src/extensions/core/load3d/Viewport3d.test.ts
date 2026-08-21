@@ -56,7 +56,7 @@ function makeViewportInstance() {
   const sceneManager: SceneStub = {
     captureScene: vi.fn(),
     setBackgroundColor: vi.fn(),
-    setBackgroundImage: vi.fn().mockResolvedValue(undefined),
+    setBackgroundImage: vi.fn<AnyMockProcedure>(async () => undefined),
     removeBackgroundImage: vi.fn(),
     toggleGrid: vi.fn(),
     setBackgroundRenderMode: vi.fn(),

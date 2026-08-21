@@ -43,8 +43,8 @@ const {
     mockStartDrag: vi.fn(),
     mockGetNodeProvider: vi.fn(),
     mockToggleNodeOnEvent: vi.fn(),
-    mockRefreshModelFolder: vi.fn().mockResolvedValue(undefined),
-    mockLoadModels: vi.fn().mockResolvedValue([]),
+    mockRefreshModelFolder: vi.fn<AnyMockProcedure>(async () => undefined),
+    mockLoadModels: vi.fn<AnyMockProcedure>(async () => []),
     downloadStoreState: { setLastCompleted: (_: unknown) => {} },
     settingState: { useAssetAPI: false, autoLoadAll: false },
     modelsState: {
@@ -95,9 +95,9 @@ vi.mock('@/stores/modelStore', async () => {
       visibleModelFolders: [],
       models,
       loadModels: mockLoadModels,
-      getLoadedModelFolder: vi.fn().mockResolvedValue(null),
-      loadModelFolders: vi.fn().mockResolvedValue([]),
-      refresh: vi.fn().mockResolvedValue(undefined),
+      getLoadedModelFolder: vi.fn<AnyMockProcedure>(async () => null),
+      loadModelFolders: vi.fn<AnyMockProcedure>(async () => []),
+      refresh: vi.fn<AnyMockProcedure>(async () => undefined),
       refreshModelFolder: mockRefreshModelFolder
     })
   }

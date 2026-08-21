@@ -5,8 +5,8 @@ import { useTextFileContent } from '@/composables/useTextFileContent'
 function stubFetch(response: Partial<Response> | Error) {
   const mock =
     response instanceof Error
-      ? vi.fn().mockRejectedValue(response)
-      : vi.fn().mockResolvedValue(response)
+      ? vi.fn<AnyMockProcedure>(async () => response)
+      : vi.fn<AnyMockProcedure>(async () => response)
   vi.stubGlobal('fetch', mock)
   return mock
 }

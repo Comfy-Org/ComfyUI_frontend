@@ -41,9 +41,10 @@ vi.mock('./useGPUResources', () => {
   const prepareStroke = vi.fn()
   const clearPreview = vi.fn()
   const compositeStroke = vi.fn()
-  const copyGpuToCanvas = vi
-    .fn()
-    .mockResolvedValue({ maskData: undefined, rgbData: undefined })
+  const copyGpuToCanvas = vi.fn<AnyMockProcedure>(async () => ({
+    maskData: undefined,
+    rgbData: undefined
+  }))
   return {
     useGPUResources: () => ({
       isSavingHistory,
@@ -58,7 +59,7 @@ vi.mock('./useGPUResources', () => {
       gpuDrawPoint: vi.fn(),
       clearGPU: vi.fn(),
       destroy: vi.fn(),
-      initGPUResources: vi.fn().mockResolvedValue(undefined),
+      initGPUResources: vi.fn<AnyMockProcedure>(async () => undefined),
       initPreviewCanvas: vi.fn()
     })
   }

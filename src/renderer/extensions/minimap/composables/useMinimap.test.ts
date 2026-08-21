@@ -191,8 +191,8 @@ const defaultCanvasStore: {
 }
 
 const defaultSettingStore = {
-  get: vi.fn().mockReturnValue(true),
-  set: vi.fn().mockResolvedValue(undefined)
+  get: vi.fn<AnyMockProcedure>(() => true),
+  set: vi.fn<AnyMockProcedure>(async () => undefined)
 }
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
@@ -215,7 +215,7 @@ vi.mock('@/scripts/api', () => ({
   api: {
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
-    apiURL: vi.fn().mockReturnValue('http://localhost:8188')
+    apiURL: vi.fn<AnyMockProcedure>(() => 'http://localhost:8188')
   }
 }))
 

@@ -5,7 +5,7 @@ import { createI18n } from 'vue-i18n'
 
 vi.mock('@/utils/envUtil', () => ({
   electronAPI: vi.fn(() => ({
-    getPlatform: vi.fn().mockReturnValue('win32')
+    getPlatform: vi.fn<AnyMockProcedure>(() => 'win32')
   }))
 }))
 

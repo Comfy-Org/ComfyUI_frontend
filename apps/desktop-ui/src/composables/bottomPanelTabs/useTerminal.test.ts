@@ -18,7 +18,10 @@ const { mockTerminal, MockTerminal, mockFitAddon, MockFitAddon } = vi.hoisted(
     })
 
     const mockFitAddon = {
-      proposeDimensions: vi.fn().mockReturnValue({ cols: 80, rows: 24 })
+      proposeDimensions: vi.fn<AnyMockProcedure>(() => ({
+        cols: 80,
+        rows: 24
+      }))
     }
     const MockFitAddon = vi.fn(function () {
       return mockFitAddon

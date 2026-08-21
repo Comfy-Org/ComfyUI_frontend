@@ -44,7 +44,7 @@ vi.mock('@/scripts/app', () => ({
 
 function makeSession() {
   return {
-    loadImages: vi.fn().mockResolvedValue(0),
+    loadImages: vi.fn<AnyMockProcedure>(async () => 0),
     imageLayers: { value: [{ id: 'a', visible: true }] },
     editor: { history: { clear: vi.fn() } },
     fitView: vi.fn()

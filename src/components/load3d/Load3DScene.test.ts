@@ -53,7 +53,7 @@ type RenderOpts = {
 
 function renderComponent(opts: RenderOpts = {}) {
   const initializeLoad3d =
-    opts.initializeLoad3d ?? vi.fn().mockResolvedValue(undefined)
+    opts.initializeLoad3d ?? vi.fn<AnyMockProcedure>(async () => undefined)
   const cleanup = opts.cleanup ?? vi.fn()
 
   const utils = render(Load3DScene, {

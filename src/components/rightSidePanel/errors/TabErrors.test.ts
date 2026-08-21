@@ -56,7 +56,10 @@ vi.mock('@/stores/comfyRegistryStore', () => ({
   useComfyRegistryStore: () => ({
     inferPackFromNodeName: vi.fn(),
     // TabErrors mounts the node-pack tree, which cancels this on unmount.
-    getPacksByIds: { call: vi.fn().mockResolvedValue([]), cancel: vi.fn() }
+    getPacksByIds: {
+      call: vi.fn<AnyMockProcedure>(async () => []),
+      cancel: vi.fn()
+    }
   })
 }))
 

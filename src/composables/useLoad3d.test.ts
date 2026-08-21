@@ -91,7 +91,7 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
 
 vi.mock('@/platform/assets/utils/assetPreviewUtil', () => ({
   isAssetPreviewSupported: vi.fn(() => false),
-  persistThumbnail: vi.fn().mockResolvedValue(undefined)
+  persistThumbnail: vi.fn<AnyMockProcedure>(async () => undefined)
 }))
 
 describe('useLoad3d', () => {

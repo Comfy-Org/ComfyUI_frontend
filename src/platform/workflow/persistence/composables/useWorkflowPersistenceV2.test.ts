@@ -48,7 +48,9 @@ vi.mock(
   '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader',
   () => ({
     useSharedWorkflowUrlLoader: () => ({
-      loadSharedWorkflowFromUrl: vi.fn().mockResolvedValue('not-present')
+      loadSharedWorkflowFromUrl: vi.fn<AnyMockProcedure>(
+        async () => 'not-present'
+      )
     })
   })
 )

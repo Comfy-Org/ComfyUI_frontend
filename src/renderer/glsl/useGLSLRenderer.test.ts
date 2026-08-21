@@ -11,7 +11,7 @@ vi.mock('vue', async () => {
 })
 
 vi.mock('@/renderer/glsl/glslUtils', () => ({
-  detectPassCount: vi.fn().mockReturnValue(1)
+  detectPassCount: vi.fn<AnyMockProcedure>(() => 1)
 }))
 
 const { detectPassCount } = await import('@/renderer/glsl/glslUtils')
@@ -100,15 +100,15 @@ function createMockGLContext(): MockGL {
     createShader: vi.fn(() => ({})),
     shaderSource: vi.fn(),
     compileShader: vi.fn(),
-    getShaderParameter: vi.fn().mockReturnValue(true),
-    getShaderInfoLog: vi.fn().mockReturnValue(''),
+    getShaderParameter: vi.fn<AnyMockProcedure>(() => true),
+    getShaderInfoLog: vi.fn<AnyMockProcedure>(() => ''),
     deleteShader: vi.fn(),
 
     createProgram: vi.fn(() => ({})),
     attachShader: vi.fn(),
     linkProgram: vi.fn(),
-    getProgramParameter: vi.fn().mockReturnValue(true),
-    getProgramInfoLog: vi.fn().mockReturnValue(''),
+    getProgramParameter: vi.fn<AnyMockProcedure>(() => true),
+    getProgramInfoLog: vi.fn<AnyMockProcedure>(() => ''),
     deleteProgram: vi.fn(),
     useProgram: vi.fn(),
 
@@ -122,7 +122,7 @@ function createMockGLContext(): MockGL {
     createFramebuffer: vi.fn(() => ({})),
     bindFramebuffer: vi.fn(),
     framebufferTexture2D: vi.fn(),
-    checkFramebufferStatus: vi.fn().mockReturnValue(0x8cd5),
+    checkFramebufferStatus: vi.fn<AnyMockProcedure>(() => 0x8cd5),
     deleteFramebuffer: vi.fn(),
 
     getUniformLocation: vi.fn((_prog: unknown, name: string) => name),
@@ -139,8 +139,10 @@ function createMockGLContext(): MockGL {
     clearColor: vi.fn(),
     clear: vi.fn(),
 
-    getExtension: vi.fn().mockReturnValue({ loseContext: vi.fn() }),
-    isContextLost: vi.fn().mockReturnValue(false)
+    getExtension: vi.fn<AnyMockProcedure>(() => ({
+      loseContext: vi.fn()
+    })),
+    isContextLost: vi.fn<AnyMockProcedure>(() => false)
   }
 }
 

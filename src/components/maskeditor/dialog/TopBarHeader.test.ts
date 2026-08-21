@@ -30,14 +30,14 @@ const mockCanvasTools = vi.hoisted(() => ({
 }))
 
 const mockCanvasTransform = vi.hoisted(() => ({
-  rotateCounterclockwise: vi.fn().mockResolvedValue(undefined),
-  rotateClockwise: vi.fn().mockResolvedValue(undefined),
-  mirrorHorizontal: vi.fn().mockResolvedValue(undefined),
-  mirrorVertical: vi.fn().mockResolvedValue(undefined)
+  rotateCounterclockwise: vi.fn<AnyMockProcedure>(async () => undefined),
+  rotateClockwise: vi.fn<AnyMockProcedure>(async () => undefined),
+  mirrorHorizontal: vi.fn<AnyMockProcedure>(async () => undefined),
+  mirrorVertical: vi.fn<AnyMockProcedure>(async () => undefined)
 }))
 
 const mockSaver = vi.hoisted(() => ({
-  save: vi.fn().mockResolvedValue(undefined)
+  save: vi.fn<AnyMockProcedure>(async () => undefined)
 }))
 
 vi.mock('@/stores/maskEditorStore', () => ({

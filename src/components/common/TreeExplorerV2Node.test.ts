@@ -19,19 +19,19 @@ const i18n = createI18n({
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
-    get: vi.fn().mockReturnValue('left')
+    get: vi.fn<AnyMockProcedure>(() => 'left')
   })
 }))
 
 vi.mock('@/stores/nodeBookmarkStore', () => ({
   useNodeBookmarkStore: () => ({
-    isBookmarked: vi.fn().mockReturnValue(false),
+    isBookmarked: vi.fn<AnyMockProcedure>(() => false),
     toggleBookmark: vi.fn()
   })
 }))
 
 const mockDeleteBlueprint = vi.fn()
-const mockIsUserBlueprint = vi.fn().mockReturnValue(false)
+const mockIsUserBlueprint = vi.fn<AnyMockProcedure>(() => false)
 
 vi.mock('@/stores/subgraphStore', () => ({
   useSubgraphStore: () => ({

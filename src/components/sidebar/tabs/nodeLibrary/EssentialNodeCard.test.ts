@@ -11,7 +11,7 @@ import EssentialNodeCard from './EssentialNodeCard.vue'
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
-    get: vi.fn().mockReturnValue('left')
+    get: vi.fn<AnyMockProcedure>(() => 'left')
   })
 }))
 

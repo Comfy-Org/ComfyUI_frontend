@@ -20,8 +20,8 @@ type MockDataStore = {
 }
 
 const mockCanvasManager = {
-  invalidateCanvas: vi.fn().mockResolvedValue(undefined),
-  updateMaskColor: vi.fn().mockResolvedValue(undefined)
+  invalidateCanvas: vi.fn<AnyMockProcedure>(async () => undefined),
+  updateMaskColor: vi.fn<AnyMockProcedure>(async () => undefined)
 }
 
 const mockStore: MockStore = {

@@ -18,7 +18,7 @@ const defaultSettingStore = {
         return undefined
     }
   }),
-  set: vi.fn().mockResolvedValue(undefined)
+  set: vi.fn<AnyMockProcedure>(async () => undefined)
 }
 
 const defaultRankingStore = {

@@ -35,7 +35,7 @@ const mediaAssetActions = {
   openWorkflow: vi.fn(),
   exportWorkflow: vi.fn(),
   copyJobId: vi.fn(),
-  deleteAssets: vi.fn().mockResolvedValue(false)
+  deleteAssets: vi.fn<AnyMockProcedure>(async () => false)
 }
 
 vi.mock('../composables/useMediaAssetActions', () => ({

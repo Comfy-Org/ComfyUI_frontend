@@ -11,7 +11,7 @@ import BaseTerminal from '@/components/bottomPanel/tabs/terminal/BaseTerminal.vu
 
 // Mock xterm and related modules
 vi.mock('@xterm/xterm', () => ({
-  Terminal: vi.fn().mockImplementation(() => ({
+  Terminal: vi.fn<AnyMockProcedure>(() => ({
     open: vi.fn(),
     dispose: vi.fn(),
     onSelectionChange: vi.fn(() => {
@@ -30,7 +30,7 @@ vi.mock('@xterm/xterm', () => ({
 }))
 
 vi.mock('@xterm/addon-fit', () => ({
-  FitAddon: vi.fn().mockImplementation(() => ({
+  FitAddon: vi.fn<AnyMockProcedure>(() => ({
     fit: vi.fn(),
     proposeDimensions: vi.fn(() => ({ rows: 24, cols: 80 }))
   }))
@@ -68,7 +68,7 @@ vi.mock('@/platform/distribution/types', () => ({
 }))
 
 // Mock clipboard API
-const mockWriteText = vi.fn().mockResolvedValue(undefined)
+const mockWriteText = vi.fn<AnyMockProcedure>(async () => undefined)
 Object.defineProperty(navigator, 'clipboard', {
   value: {
     writeText: mockWriteText
