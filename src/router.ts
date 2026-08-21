@@ -141,8 +141,29 @@ router.beforeEach((to, _from, next) => {
   next()
 })
 
-router.afterEach(() => {
+router.afterEach((to) => {
   trackPageView()
+
+  // Update canonical URL to resolve duplicate parameter SEO issues (P1-4)
+  // Ensures Googlebot indexes the clean path without query strings (e.g. ?template=)
+  if (
+    typeof window !== 'undefined' &&
+    typeof document !== 'undefined' &&
+    !isFileProtocol
+  ) {
+    let canonicalLink: HTMLLinkElement | null = document.querySelector(
+      'link[rel="canonical"]'
+    )
+    if (!canonicalLink) {
+      canonicalLink = document.createElement('link')
+      canonicalLink.rel = 'canonical'
+      document.head.appendChild(canonicalLink)
+    }
+    const resolvedUrl = new URL(router.resolve(to).href, window.location.origin)
+    resolvedUrl.search = ''
+    resolvedUrl.hash = ''
+    canonicalLink.href = resolvedUrl.href
+  }
 })
 
 if (isCloud) {
