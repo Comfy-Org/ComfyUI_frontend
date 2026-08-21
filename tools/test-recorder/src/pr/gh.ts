@@ -4,12 +4,36 @@ import { pass, fail, warn, info } from '../ui/logger'
 const DEFAULT_BASE_BRANCH = 'main'
 const DEFAULT_BASE_REF = `origin/${DEFAULT_BASE_BRANCH}`
 
+interface CommandResult {
+  status: number | null
+  stdout: string
+  stderr: string
+}
+type CommandRunner = (command: string, args: string[]) => CommandResult
+
 interface PrOptions {
   testFilePath: string
   testName: string
   description: string
   branchName?: string
   cwd?: string
+  /** Injectable for tests; defaults to a real spawnSync-backed runner. */
+  run?: CommandRunner
+}
+
+function spawnSyncRunner(cwd: string | undefined): CommandRunner {
+  return (command, args) => {
+    const result = spawnSync(command, args, {
+      cwd,
+      encoding: 'utf-8',
+      stdio: 'pipe'
+    })
+    return {
+      status: result.error ? null : result.status,
+      stdout: result.stdout ?? '',
+      stderr: result.error?.message ?? result.stderr ?? ''
+    }
+  }
 }
 
 interface PrResult {
@@ -18,6 +42,45 @@ interface PrResult {
   error?: string
   /** Set when the failure is one the manual PR instructions can still solve. */
   needsManualSteps?: boolean
+}
+
+/**
+ * lint-staged prints a human-readable failure summary between these
+ * markers; everything else in stderr is husky/lint-staged process noise.
+ */
+function extractLintStagedSummary(stderr: string): string | undefined {
+  const start = stderr.indexOf('✖')
+  if (start === -1) return undefined
+  const end = stderr.indexOf('husky - pre-commit script failed')
+  return stderr.slice(start, end === -1 ? undefined : end).trim()
+}
+
+function explainCommitFailure(stderr: string): string {
+  const lintSummary = extractLintStagedSummary(stderr)
+  if (!lintSummary) return stderr
+
+  const missingAssertion = /expect-expect/.test(lintSummary)
+  if (missingAssertion) {
+    return [
+      'The pre-commit checks caught a test with no assertions.',
+      '',
+      "Playwright can't tell your test passed unless it checks something",
+      'concrete on the page — text, a value, whether something is visible.',
+      '',
+      'Add at least one `await expect(...)` call to the test before',
+      'committing. For example:',
+      '',
+      "  await expect(comfyPage.page.getByText('Queue')).toBeVisible()",
+      '',
+      lintSummary
+    ].join('\n')
+  }
+
+  return [
+    'The pre-commit checks (lint) failed on the generated test:',
+    '',
+    lintSummary
+  ].join('\n')
 }
 
 export async function checkGhAvailable(): Promise<{
@@ -54,18 +117,7 @@ export async function createPr(options: PrOptions): Promise<PrResult> {
     `${options.description}\n\n---\n\n` + 'Recorded with `comfy-test record`'
 
   // Pinned to the repo, not to wherever the shell is sitting.
-  const run = (command: string, args: string[]) => {
-    const result = spawnSync(command, args, {
-      cwd: options.cwd,
-      encoding: 'utf-8',
-      stdio: 'pipe'
-    })
-    return {
-      status: result.error ? null : result.status,
-      stdout: result.stdout ?? '',
-      stderr: result.error?.message ?? result.stderr ?? ''
-    }
-  }
+  const run = options.run ?? spawnSyncRunner(options.cwd)
 
   // The branch is cut from HEAD, so anything already there rides along.
   const ahead = run('git', ['rev-list', '--count', `${DEFAULT_BASE_REF}..HEAD`])
@@ -85,6 +137,20 @@ export async function createPr(options: PrOptions): Promise<PrResult> {
     ])
   }
 
+  const originalBranch = run('git', [
+    'rev-parse',
+    '--abbrev-ref',
+    'HEAD'
+  ]).stdout.trim()
+
+  // Leaves the user back where they started, with the new branch gone,
+  // instead of stranded on a half-created branch with nothing committed.
+  const abandonBranch = () => {
+    if (!originalBranch) return
+    run('git', ['checkout', originalBranch])
+    run('git', ['branch', '-D', branchName])
+  }
+
   const checkout = run('git', ['checkout', '-b', branchName])
   if (checkout.status !== 0) {
     const stderr = checkout.stderr.trim()
@@ -101,6 +167,7 @@ export async function createPr(options: PrOptions): Promise<PrResult> {
   const add = run('git', ['add', options.testFilePath])
   if (add.status !== 0) {
     fail('Git add failed', add.stderr.trim())
+    abandonBranch()
     return { success: false, error: add.stderr.trim() }
   }
 
@@ -113,8 +180,15 @@ export async function createPr(options: PrOptions): Promise<PrResult> {
     options.testFilePath
   ])
   if (commit.status !== 0) {
-    fail('Git commit failed', commit.stderr.trim())
-    return { success: false, error: commit.stderr.trim() }
+    const stderr = commit.stderr.trim()
+    fail('Git commit failed', explainCommitFailure(stderr))
+    abandonBranch()
+    info([
+      `You're back on ${originalBranch || 'your original branch'}; the`,
+      `empty ${branchName} branch was removed. Fix the issue above and`,
+      're-run `comfy-test pr` to try again — your test file is untouched.'
+    ])
+    return { success: false, error: stderr }
   }
   pass('Committed test file')
 
