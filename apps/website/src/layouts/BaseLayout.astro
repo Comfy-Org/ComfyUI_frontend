@@ -29,12 +29,6 @@ interface Props {
   breadcrumbs?: Crumb[]
   mainEntityId?: string
   extraJsonLd?: (JsonLdNode | null | undefined)[]
-  /**
-   * Whether this page's twin exists in the other locale. Only a dynamic route
-   * knows that about itself, since each locale's `getStaticPaths` reads its own
-   * content; leave it unset and the page tree decides.
-   */
-  hasLocaleTwin?: boolean
 }
 
 const {
@@ -47,7 +41,6 @@ const {
   breadcrumbs,
   mainEntityId,
   extraJsonLd,
-  hasLocaleTwin,
 } = Astro.props
 
 const keywordsContent = keywords && keywords.length > 0 ? keywords.join(', ') : undefined
@@ -60,9 +53,7 @@ const { siteUrl, locale, url } = pageContext(
 const canonicalURL = new URL(url)
 // en <-> zh-CN alternates, empty when this page has no twin: advertising a URL
 // that 404s is worse for the cluster than advertising nothing.
-const localeAlternates = alternatesFor(canonicalURL.pathname, canonicalURL.origin, {
-  hasTwin: hasLocaleTwin,
-})
+const localeAlternates = alternatesFor(canonicalURL.pathname, canonicalURL.origin)
 const openGraphLocale = ogLocale(locale)
 const openGraphLocaleAlternate = ogLocaleAlternate(locale, localeAlternates)
 const ogImageURL = new URL(ogImage, Astro.site ?? 'https://comfy.org')
