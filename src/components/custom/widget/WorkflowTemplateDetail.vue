@@ -1,9 +1,16 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import Badge from '@/components/common/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
-import type { TemplateDetailGroup } from '@/platform/workflow/templates/types/templateDetail'
+import type {
+  TemplateDetailGroup,
+  TemplateDetailRow
+} from '@/platform/workflow/templates/types/templateDetail'
+import type { TemplateModelDownloadState } from '@/platform/workflow/templates/utils/templateModelDownloadState'
+import { formatSize } from '@/utils/formatUtil'
 
 const {
   title,
@@ -23,9 +30,88 @@ const {
 
 const emit = defineEmits<{
   'open-template': []
+  'download-model': [rowId: string]
 }>()
 
 const { t } = useI18n()
+
+type DownloadingState = Extract<
+  TemplateModelDownloadState,
+  { status: 'downloading' }
+>
+
+function getPassiveDownloadLabel(
+  state: TemplateModelDownloadState | undefined
+): string | undefined {
+  switch (state?.status) {
+    case 'queued':
+      return t('templateWorkflows.detail.downloadQueued')
+    case 'starting':
+      return t('templateWorkflows.detail.downloadStarting')
+    default:
+      return undefined
+  }
+}
+
+function getProgressPercent(state: DownloadingState): number | undefined {
+  if (state.fraction === null) return undefined
+  return Math.round(Math.min(1, Math.max(0, state.fraction)) * 100)
+}
+
+function getKnownProgressText(state: DownloadingState): string | undefined {
+  if (state.receivedBytes !== null && state.totalBytes !== null) {
+    return `${formatSize(state.receivedBytes)} / ${formatSize(state.totalBytes)}`
+  }
+  if (state.receivedBytes !== null) return formatSize(state.receivedBytes)
+  if (state.totalBytes !== null) return formatSize(state.totalBytes)
+  return undefined
+}
+
+function getProgressText(state: DownloadingState): string {
+  const knownProgress = getKnownProgressText(state)
+  if (state.activity === 'paused') {
+    return knownProgress
+      ? t('templateWorkflows.detail.downloadPausedProgress', {
+          progress: knownProgress
+        })
+      : t('templateWorkflows.detail.downloadPaused')
+  }
+  return knownProgress ?? t('templateWorkflows.detail.downloading')
+}
+
+function getProgressAriaLabel(
+  row: TemplateDetailRow,
+  state: DownloadingState
+): string {
+  return t(
+    state.activity === 'paused'
+      ? 'templateWorkflows.detail.downloadPausedModel'
+      : 'templateWorkflows.detail.downloadingModel',
+    { model: row.name }
+  )
+}
+
+function getDownloadAriaLabel(row: TemplateDetailRow): string {
+  return t('templateWorkflows.detail.downloadModelNamed', {
+    model: row.name
+  })
+}
+
+function getRetryAriaLabel(row: TemplateDetailRow): string {
+  return t('templateWorkflows.detail.retryDownloadNamed', {
+    model: row.name
+  })
+}
+
+function getFailedDownloadLabel(
+  state: Extract<TemplateModelDownloadState, { status: 'failed' }>
+): string {
+  return t(
+    state.reason === 'cancelled'
+      ? 'templateWorkflows.detail.downloadCancelled'
+      : 'templateWorkflows.detail.downloadFailed'
+  )
+}
 </script>
 
 <template>
@@ -135,7 +221,12 @@ const { t } = useI18n()
             <li
               v-for="row in group.rows"
               :key="row.id"
-              class="flex min-h-14 items-center gap-3 rounded-md p-2"
+              :class="
+                cn(
+                  'flex min-h-14 items-center gap-3 rounded-md p-2',
+                  row.status?.kind === 'installed' && 'opacity-60'
+                )
+              "
             >
               <span
                 class="flex size-10 shrink-0 items-center justify-center rounded-md bg-secondary-background text-muted-foreground"
@@ -153,6 +244,158 @@ const { t } = useI18n()
                 >
                   {{ row.description }}
                 </span>
+              </span>
+
+              <a
+                v-if="row.status?.kind === 'manual'"
+                :href="row.status.href"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="focus-visible:ring-ring shrink-0 text-xs text-base-foreground no-underline hover:underline focus-visible:rounded-sm focus-visible:ring-1 focus-visible:outline-none"
+              >
+                {{ row.status.label }}
+                <span aria-hidden="true">↗</span>
+              </a>
+
+              <Button
+                v-else-if="
+                  row.status?.kind === 'downloadable' &&
+                  (!row.status.downloadState ||
+                    row.status.downloadState.status === 'idle')
+                "
+                :aria-label="getDownloadAriaLabel(row)"
+                :title="row.status.label"
+                variant="textonly"
+                size="unset"
+                class="size-6 shrink-0 rounded-sm p-1"
+                @click="emit('download-model', row.id)"
+              >
+                <i aria-hidden="true" class="icon-[tabler--download] size-4" />
+              </Button>
+
+              <span
+                v-else-if="
+                  row.status?.kind === 'downloadable' &&
+                  getPassiveDownloadLabel(row.status.downloadState)
+                "
+                role="status"
+                :aria-label="getPassiveDownloadLabel(row.status.downloadState)"
+                class="shrink-0 text-xs text-muted-foreground"
+              >
+                {{ getPassiveDownloadLabel(row.status.downloadState) }}
+              </span>
+
+              <span
+                v-else-if="
+                  row.status?.kind === 'downloadable' &&
+                  row.status.downloadState?.status === 'downloading'
+                "
+                class="flex shrink-0 items-center gap-2"
+              >
+                <span
+                  role="progressbar"
+                  :aria-label="
+                    getProgressAriaLabel(row, row.status.downloadState)
+                  "
+                  aria-valuemin="0"
+                  aria-valuemax="100"
+                  :aria-valuenow="getProgressPercent(row.status.downloadState)"
+                  :aria-valuetext="getProgressText(row.status.downloadState)"
+                  class="block h-1 w-24 overflow-hidden rounded-full bg-secondary-background"
+                >
+                  <span
+                    data-testid="download-progress-fill"
+                    :class="
+                      cn(
+                        'block h-full rounded-full bg-primary-background',
+                        row.status.downloadState.fraction === null &&
+                          row.status.downloadState.activity === 'active' &&
+                          'w-1/3 animate-pulse'
+                      )
+                    "
+                    :style="
+                      getProgressPercent(row.status.downloadState) === undefined
+                        ? undefined
+                        : {
+                            width: `${getProgressPercent(row.status.downloadState)}%`
+                          }
+                    "
+                  />
+                </span>
+                <span class="text-xs text-muted-foreground">
+                  {{ getProgressText(row.status.downloadState) }}
+                </span>
+              </span>
+
+              <Badge
+                v-else-if="
+                  row.status?.kind === 'downloadable' &&
+                  row.status.downloadState?.status === 'done'
+                "
+                role="status"
+                :aria-label="t('templateWorkflows.detail.downloaded')"
+                :label="t('templateWorkflows.detail.downloaded')"
+                variant="label"
+                class="h-5 bg-success-background/20 px-2 py-0.5 text-xs font-medium text-success-background normal-case"
+              />
+
+              <span
+                v-else-if="
+                  row.status?.kind === 'downloadable' &&
+                  row.status.downloadState?.status === 'failed'
+                "
+                class="flex shrink-0 items-center gap-2"
+              >
+                <Badge
+                  role="status"
+                  :aria-label="getFailedDownloadLabel(row.status.downloadState)"
+                  :label="getFailedDownloadLabel(row.status.downloadState)"
+                  severity="danger"
+                  variant="label"
+                  class="h-5 px-2 py-0.5 text-xs font-medium normal-case"
+                />
+                <Button
+                  :aria-label="getRetryAriaLabel(row)"
+                  variant="outline"
+                  size="unset"
+                  class="h-6 rounded-md bg-secondary-background px-2 text-xs"
+                  @click="emit('download-model', row.id)"
+                >
+                  {{ t('templateWorkflows.detail.retryDownload') }}
+                </Button>
+              </span>
+
+              <i
+                v-else-if="row.status?.kind === 'installed'"
+                role="img"
+                :aria-label="row.status.label"
+                :title="row.status.label"
+                class="icon-[lucide--circle-check] size-4 shrink-0 text-success-background"
+              />
+
+              <span
+                v-else-if="row.status"
+                class="flex shrink-0 items-center gap-2"
+              >
+                <Badge
+                  :label="row.status.label"
+                  severity="secondary"
+                  variant="label"
+                  class="h-5 px-2 py-0.5 text-xs font-medium text-muted-foreground normal-case"
+                />
+                <a
+                  v-if="
+                    (row.status.kind === 'unavailable' ||
+                      row.status.kind === 'unknown') &&
+                    row.status.action
+                  "
+                  :href="row.status.action.href"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="focus-visible:ring-ring text-xs text-muted-foreground no-underline hover:text-base-foreground hover:underline focus-visible:rounded-sm focus-visible:ring-1 focus-visible:outline-none"
+                >
+                  {{ row.status.action.label }}
+                </a>
               </span>
             </li>
           </ul>
