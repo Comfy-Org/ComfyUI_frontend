@@ -409,7 +409,12 @@ export default defineConfig({
     {
       name: 'inject-twitter-meta',
       transformIndexHtml(html) {
-        if (DISTRIBUTION !== 'cloud') return html
+        if (DISTRIBUTION !== 'cloud') {
+          return {
+            html,
+            tags: [{ tag: 'title', children: 'ComfyUI', injectTo: 'head' }]
+          }
+        }
 
         return {
           html,
