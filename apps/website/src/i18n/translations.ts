@@ -1,4 +1,4 @@
-type Locale = 'en' | 'zh-CN'
+import type { Locale } from './locales'
 
 const translations = {
   // Tags (global, reusable across sections)

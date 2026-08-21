@@ -5,12 +5,12 @@ import vue from '@astrojs/vue'
 import tailwindcss from '@tailwindcss/vite'
 import vercel from '@astrojs/vercel'
 
+import { DEFAULT_LOCALE, LOCALES } from './src/i18n/locales'
+
 // The preview deployment (PREVIEW_MODE=true) builds always-SSR so it can fetch
 // authenticated CMS drafts; production stays a static build. See build-spec Part B.
 const IS_PREVIEW = process.env.PREVIEW_MODE === 'true'
 
-const LOCALES = ['en', 'zh-CN'] as const
-const DEFAULT_LOCALE = 'en'
 const PAYMENT_STATUSES = ['success', 'failed'] as const
 const LOCALE_PREFIXES = LOCALES.map((locale) =>
   locale === DEFAULT_LOCALE ? '' : `/${locale}`
