@@ -130,7 +130,7 @@
       "files": ["src/**/*.ts"],
       "rules": {
         "perfectionist/sort-modules": [
-          "warn",
+          "error",
           {
             "type": "unsorted",
             "partitionByComment": false,

@@ -28,3 +28,6 @@ e3bb29ceb8174b8bbca9e48ec7d42cd540f40efa
 
 # Migrate Tailwind styles to design-system package
 9f19d8fb4bd22518879343b49c05634dca777df0
+
+# Apply sort-modules ordering across TypeScript sources
+7f700e5638f6b8b09bd1f7ab05f09bac633317e8
