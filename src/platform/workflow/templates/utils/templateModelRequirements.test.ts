@@ -1,63 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
 import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
-
-const modulePath = './templateModelRequirements'
-
-type TemplateModelRequirementDetail = {
-  model: ModelFile
-  usedBy: readonly string[]
-}
-
-type ModelRequirementsModule = {
-  extractTemplateModelRequirements: (workflow: unknown) => readonly ModelFile[]
-  extractTemplateModelRequirementDetails: (
-    workflow: unknown
-  ) => readonly TemplateModelRequirementDetail[]
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === 'object'
-}
-
-function isModelRequirementsModule(
-  value: unknown
-): value is ModelRequirementsModule {
-  return (
-    isRecord(value) &&
-    typeof value.extractTemplateModelRequirements === 'function' &&
-    typeof value.extractTemplateModelRequirementDetails === 'function'
-  )
-}
-
-async function loadModelRequirementsModule(): Promise<ModelRequirementsModule | null> {
-  try {
-    const module: unknown = await import(modulePath)
-    return isModelRequirementsModule(module) ? module : null
-  } catch {
-    return null
-  }
-}
-
-async function extractTemplateModelRequirements(
-  workflow: unknown
-): Promise<readonly ModelFile[]> {
-  return (
-    (await loadModelRequirementsModule())?.extractTemplateModelRequirements(
-      workflow
-    ) ?? []
-  )
-}
-
-async function extractTemplateModelRequirementDetails(
-  workflow: unknown
-): Promise<readonly TemplateModelRequirementDetail[]> {
-  return (
-    (
-      await loadModelRequirementsModule()
-    )?.extractTemplateModelRequirementDetails(workflow) ?? []
-  )
-}
+import {
+  extractTemplateModelRequirementDetails,
+  extractTemplateModelRequirements
+} from './templateModelRequirements'
 
 function model(name: string, directory: string, urlSuffix = name): ModelFile {
   return {
@@ -101,7 +48,7 @@ function subgraphDefinition(
 }
 
 describe('extractTemplateModelRequirements', () => {
-  it('extracts selected node declarations before top-level declarations', async () => {
+  it('extracts selected node declarations before top-level declarations', () => {
     const nodeModel = model('shared.safetensors', 'checkpoints', 'node-version')
     const topLevelDuplicate = model(
       'shared.safetensors',
@@ -111,20 +58,20 @@ describe('extractTemplateModelRequirements', () => {
     const topLevelModel = model('top-level.safetensors', 'loras')
 
     expect(
-      await extractTemplateModelRequirements({
+      extractTemplateModelRequirements({
         nodes: [node(1, [nodeModel], [nodeModel.name])],
         models: [topLevelDuplicate, topLevelModel]
       })
     ).toEqual([nodeModel, topLevelModel])
   })
 
-  it('only extracts node declarations selected by serialized widget values', async () => {
+  it('only extracts node declarations selected by serialized widget values', () => {
     const selected = model('selected.safetensors', 'checkpoints')
     const selectedByName = model('selected-by-name.safetensors', 'loras')
     const stale = model('stale.safetensors', 'checkpoints')
 
     expect(
-      await extractTemplateModelRequirements({
+      extractTemplateModelRequirements({
         nodes: [
           node(1, [selected, stale], [selected.name]),
           node(2, [selectedByName, stale], {
@@ -135,7 +82,7 @@ describe('extractTemplateModelRequirements', () => {
     ).toEqual([selected, selectedByName])
   })
 
-  it('extracts declarations from instantiated nested subgraphs', async () => {
+  it('extracts declarations from instantiated nested subgraphs', () => {
     const nestedModel = model('nested.safetensors', 'diffusion_models')
     const innerDefinition = subgraphDefinition('inner', [
       node(3, [nestedModel], [nestedModel.name])
@@ -147,18 +94,18 @@ describe('extractTemplateModelRequirements', () => {
     )
 
     expect(
-      await extractTemplateModelRequirements({
+      extractTemplateModelRequirements({
         nodes: [{ id: 1, type: 'outer' }],
         definitions: { subgraphs: [outerDefinition] }
       })
     ).toEqual([nestedModel])
   })
 
-  it('does not extract declarations from uninstantiated subgraph definitions', async () => {
+  it('does not extract declarations from uninstantiated subgraph definitions', () => {
     const unusedModel = model('unused.safetensors', 'checkpoints')
 
     expect(
-      await extractTemplateModelRequirements({
+      extractTemplateModelRequirements({
         nodes: [],
         definitions: {
           subgraphs: [
@@ -171,12 +118,12 @@ describe('extractTemplateModelRequirements', () => {
     ).toEqual([])
   })
 
-  it('keeps same-name declarations in different directories', async () => {
+  it('keeps same-name declarations in different directories', () => {
     const checkpoint = model('shared.safetensors', 'checkpoints')
     const lora = model('shared.safetensors', 'loras')
 
     expect(
-      await extractTemplateModelRequirements({ models: [checkpoint, lora] })
+      extractTemplateModelRequirements({ models: [checkpoint, lora] })
     ).toEqual([checkpoint, lora])
   })
 
@@ -195,16 +142,13 @@ describe('extractTemplateModelRequirements', () => {
       ]
     },
     { models: [null, {}, { name: 'incomplete.safetensors' }] }
-  ])(
-    'ignores absent or malformed model declarations in %j',
-    async (workflow) => {
-      expect(await extractTemplateModelRequirements(workflow)).toEqual([])
-    }
-  )
+  ])('ignores absent or malformed model declarations in %j', (workflow) => {
+    expect(extractTemplateModelRequirements(workflow)).toEqual([])
+  })
 })
 
 describe('extractTemplateModelRequirementDetails', () => {
-  it('keeps first model metadata while merging stable flattened-node usage', async () => {
+  it('keeps first model metadata while merging stable flattened-node usage', () => {
     const first = model('shared.safetensors', 'checkpoints', 'first-version')
     const later = model('shared.safetensors', 'checkpoints', 'later-version')
     const topLevel = model(
@@ -234,7 +178,7 @@ describe('extractTemplateModelRequirementDetails', () => {
       models: [topLevel]
     }
 
-    expect(await extractTemplateModelRequirementDetails(workflow)).toEqual([
+    expect(extractTemplateModelRequirementDetails(workflow)).toEqual([
       {
         model: first,
         usedBy: [
@@ -245,15 +189,15 @@ describe('extractTemplateModelRequirementDetails', () => {
         ]
       }
     ])
-    expect(await extractTemplateModelRequirements(workflow)).toEqual([first])
+    expect(extractTemplateModelRequirements(workflow)).toEqual([first])
   })
 
-  it('keeps top-level-only same-name models in separate directories', async () => {
+  it('keeps top-level-only same-name models in separate directories', () => {
     const checkpoint = model('shared.safetensors', 'checkpoints')
     const lora = model('shared.safetensors', 'loras')
 
     expect(
-      await extractTemplateModelRequirementDetails({
+      extractTemplateModelRequirementDetails({
         models: [checkpoint, lora]
       })
     ).toEqual([
