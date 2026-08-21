@@ -1227,6 +1227,9 @@
         "lora": "LoRA"
       },
       "usedBy": "Used by {nodes}",
+      "downloadRemaining": "{total} left",
+      "openWithoutDownloading": "Open without downloading",
+      "downloadStarterPack": "Download starter pack",
       "openTemplate": "Open template",
       "backToTemplates": "Back to {category}",
       "breadcrumbLabel": "Template navigation"
