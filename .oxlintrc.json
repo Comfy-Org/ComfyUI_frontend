@@ -8,6 +8,7 @@
     "dist/*",
     "packages/registry-types/src/comfyRegistryTypes.ts",
     "playwright-report/*",
+    "scripts/patch-playwright-agents.js",
     "src/extensions/core/*",
     "src/scripts/*",
     "src/types/generatedManagerTypes.ts",
@@ -134,6 +135,12 @@
       "rules": {
         "comfy/no-module-scope-vitest-mocks": "warn",
         "comfy/no-redundant-vitest-cleanup": "warn"
+      }
+    },
+    {
+      "files": ["tools/test-recorder/**/*.ts"],
+      "rules": {
+        "no-console": "allow"
       }
     },
     {
