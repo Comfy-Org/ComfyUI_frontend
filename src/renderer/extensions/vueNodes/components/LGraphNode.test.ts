@@ -18,6 +18,7 @@ import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composable
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 
 const mockData = vi.hoisted(() => ({
   mockExecuting: false,
@@ -182,6 +183,7 @@ describe('LGraphNode', () => {
     mockData.mockExecuting = false
 
     setActivePinia(pinia)
+    useAgentNodeSelectionStore().isActive = false
     const canvasStore = useCanvasStore()
     canvasStore.selectedNodeIds.clear()
     const settingStore = useSettingStore(pinia)
@@ -395,6 +397,15 @@ describe('LGraphNode', () => {
         // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
         container.querySelector('[role="button"][aria-label]')
       ).not.toBeNull()
+    })
+
+    it('does not expose resize handles in agent node selection mode', () => {
+      useAgentNodeSelectionStore().isActive = true
+
+      const { container } = renderLGraphNode({ nodeData: mockNodeData })
+
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      expect(container.querySelector('[role="button"][aria-label]')).toBeNull()
     })
   })
 

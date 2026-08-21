@@ -60,6 +60,7 @@ const {
   mockToastStore,
   mockExtensionService,
   mockNodeOutputStore,
+  mockSubgraphNavigationStore,
   mockWorkspaceWorkflow,
   mockRefreshMissingModelPipeline,
   mockImportA1111,
@@ -89,6 +90,10 @@ const {
     stashPreviewsForWorkflow: vi.fn(),
     restorePreviewsForWorkflow: vi.fn(),
     discardPreviewsForWorkflow: vi.fn()
+  },
+  mockSubgraphNavigationStore: {
+    saveCurrentViewport: vi.fn(),
+    updateHash: vi.fn()
   },
   mockWorkspaceWorkflow: {
     activeWorkflow: null as ComfyWorkflow | null,
@@ -174,10 +179,7 @@ vi.mock('@/stores/nodeOutputStore', () => ({
 }))
 
 vi.mock('@/stores/subgraphNavigationStore', () => ({
-  useSubgraphNavigationStore: vi.fn(() => ({
-    saveCurrentViewport: vi.fn(),
-    updateHash: vi.fn()
-  }))
+  useSubgraphNavigationStore: vi.fn(() => mockSubgraphNavigationStore)
 }))
 
 vi.mock('@/stores/workspaceStore', () => ({
@@ -292,6 +294,37 @@ describe('ComfyApp', () => {
     mockSettingStore.get.mockImplementation((key: string) =>
       key === 'Comfy.RightSidePanel.ShowErrorsTab' ? true : undefined
     )
+  })
+
+  describe('loadGraphData', () => {
+    it('forwards clean and navigation intent to workflow navigation', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+
+      await app.loadGraphData(createWorkflowGraphData(), false, true, null, {
+        workflowNavigationId: 42
+      })
+
+      expect(mockWorkflowService.beforeLoadNewGraph).toHaveBeenCalledWith(false)
+      expect(mockSubgraphNavigationStore.updateHash).toHaveBeenCalledWith(
+        'workflow-load',
+        42
+      )
+    })
+
+    it('notifies extensions on both sides of a graph load', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+
+      await app.loadGraphData(createWorkflowGraphData(), false)
+
+      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+        'beforeLoadGraph'
+      )
+      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+        'afterLoadGraph'
+      )
+    })
   })
 
   describe('queuePrompt', () => {

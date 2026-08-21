@@ -49,6 +49,11 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
     getCanvas: () => comfyApp.canvas
   }))
 }))
+vi.mock('@/stores/subgraphNavigationStore', () => ({
+  useSubgraphNavigationStore: () => ({
+    beginWorkflowNavigation: () => 1
+  })
+}))
 
 // Mock comfyApp globally for the store setup
 vi.mock('@/scripts/app', () => ({
