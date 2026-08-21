@@ -3,6 +3,15 @@ import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
+// jsdom lacks ResizeObserver, which the asset-preview import chain references.
+vi.hoisted(() => {
+  globalThis.ResizeObserver = class {
+    observe(): void {}
+    unobserve(): void {}
+    disconnect(): void {}
+  }
+})
+
 import { i18n } from '@/i18n'
 
 import UserMessage from './UserMessage.vue'
@@ -26,10 +35,28 @@ const t = i18n.global.t
 
 function renderMessage(props: {
   text: string
-  attachments?: { name: string; previewUrl?: string }[]
+  attachments?: { name: string; previewUrl?: string; ref?: string }[]
   tags?: string[]
 }) {
-  return render(UserMessage, { props, global: { plugins: [i18n] } })
+  return render(UserMessage, {
+    props,
+    global: {
+      plugins: [i18n],
+      stubs: {
+        ReplyAssetGroup: {
+          props: ['assets'],
+          template:
+            '<div data-testid="reply-asset-group" :data-assets="JSON.stringify(assets)" />'
+        }
+      }
+    }
+  })
+}
+
+function stubbedAssets(): { url: string; filename: string; kind: string }[] {
+  return JSON.parse(
+    screen.getByTestId('reply-asset-group').dataset.assets ?? '[]'
+  )
 }
 
 describe('UserMessage', () => {
@@ -40,18 +67,49 @@ describe('UserMessage', () => {
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
   })
 
-  it('renders thumbnails for previewable attachments above the text pill', () => {
+  // Uy's FE-1323 call: sent uploads reuse the reply asset grid, so media
+  // attachments route through ReplyAssetGroup with the same DES-530 behavior.
+  it('routes media attachments into the reply asset grid', () => {
     renderMessage({
       text: 'use these',
       attachments: [
         { name: 'a.png', previewUrl: 'blob:a' },
-        { name: 'b.png', previewUrl: 'blob:b' }
+        { name: 'clip.mp4', ref: 'upload_clip.mp4' }
       ]
     })
 
-    expect(screen.getByAltText('a.png')).toBeInTheDocument()
-    expect(screen.getByAltText('b.png')).toBeInTheDocument()
+    expect(stubbedAssets()).toEqual([
+      { url: 'blob:a', filename: 'a.png', kind: 'image' },
+      {
+        url: expect.stringContaining(
+          '/view?filename=upload_clip.mp4&type=input'
+        ),
+        filename: 'clip.mp4',
+        kind: 'video'
+      }
+    ])
     expect(screen.getByText('use these')).toBeInTheDocument()
+  })
+
+  it('keeps non-media attachments as compact tiles beside the grid', () => {
+    renderMessage({
+      text: '',
+      attachments: [
+        { name: 'song.mp3', ref: 'upload_song.mp3' },
+        { name: 'notes.md', ref: 'upload_notes.md' }
+      ]
+    })
+
+    expect(stubbedAssets()).toEqual([
+      {
+        url: expect.stringContaining(
+          '/view?filename=upload_song.mp3&type=input'
+        ),
+        filename: 'song.mp3',
+        kind: 'audio'
+      }
+    ])
+    expect(screen.getByText('notes.md')).toBeInTheDocument()
   })
 
   it('reveals the copy action on hover and copies the exact prompt', async () => {
