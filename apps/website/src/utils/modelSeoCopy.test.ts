@@ -38,6 +38,16 @@ describe('modelSeoCopy', () => {
     workflowCount: 42
   }
 
+  const standardCloudApi: Model = {
+    slug: 'standard-api',
+    name: 'standard_api',
+    displayName: 'Standard API',
+    directory: 'diffusion_models',
+    huggingFaceUrl: '',
+    featured: false,
+    workflowCount: 15
+  }
+
   describe('getWhatIsDescription', () => {
     it('returns local inference copy for standard models', () => {
       const desc = getWhatIsDescription(localModel, 'a diffusion model')
@@ -91,6 +101,15 @@ describe('modelSeoCopy', () => {
       expect(ans).toContain('exclusively on Comfy Cloud')
       expect(ans).toContain('Pay-per-compute pricing applies')
       expect(ans).not.toContain('local inference')
+    })
+
+    it('returns cloud API and local inference copy for standard models without HF URLs', () => {
+      const ans = getFaqPricingAnswer(standardCloudApi)
+      expect(ans).toContain('ComfyUI is free and open source')
+      expect(ans).toContain('is available as a cloud API through Comfy Cloud')
+      expect(ans).toContain(
+        'local inference on your own hardware is always free'
+      )
     })
   })
 })
