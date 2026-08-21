@@ -28,11 +28,18 @@
  * silently non-idempotent on retry as well; that combination is a blocking
  * KA-4 defect, not a nit.
  *
- * The preconditions moved ahead of the first `mset`/`apush` here are: source
- * and destination slot resolution over the full numeric domain (a slot index
- * must be a non-negative integer in range addressing a real slot record, not
- * merely `< length`), the inputcount widget name and its cloneability, the
- * grow payload shape, and opaque destinations.
+ * The preconditions this change actually MOVED ahead of the first
+ * `mset`/`apush` are: source and destination slot resolution over the full
+ * numeric domain; the inputcount widget name, its cloneability and its
+ * CATALOGUE check (`validateWidgetName`, the substance of the Amendment A4
+ * repair); the grow payload shape; `set_widget`'s value cloneability; and
+ * `stampKey`'s evaluation.
+ *
+ * NOT in that list, deliberately: opaque destinations. `rejectIfOpaqueWidgets`
+ * already ran above `growInputSlot` beforehand — an earlier version of this
+ * paragraph claimed it as moved AND omitted `validateWidgetName`, i.e. it was
+ * wrong in both directions at once, which is the defect the rule at the end of
+ * this block names.
  *
  * The digest canonicalizer first bounds the depth and shape of the WHOLE op
  * envelope before the idempotency gate. Separately, a value that reaches a
@@ -588,8 +595,10 @@ function applySetWidget(doc: Y.Doc, op: SetWidgetOp, catalog?: WidgetCatalog): v
   }
   assertWritableValue(op.value, "set_widget");
 
-  // LWW gate first (comfy-cli `_apply_set_widget`): a lower-or-equal stamp is
-  // dropped — a protocol-level apply that still consumes its op_id.
+  // LWW gate next (comfy-cli `_apply_set_widget`): a lower-or-equal stamp is
+  // dropped — a protocol-level apply that still consumes its op_id. It is no
+  // longer literally FIRST: the op-only checks above it must precede it so
+  // their verdict cannot depend on which stamp is in the document (A6).
   const stamps = stampsMap(doc);
   const targetKey = stampTargetKey(op);
   const prior = stamps.get(targetKey) as StampKey | undefined;
@@ -771,12 +780,16 @@ function requireOutputSlot(src: Y.Map<unknown>, op: ConnectOp): Y.Array<unknown>
  * case: the same winning payload reaches validation in both arrival orders.
  *
  * It is a statement about WHERE the existing checks run, not a claim that every
- * op-only PROPERTY is checked. `link_id` and
- * `link_type` are copied into the document with no validation at all — an
- * `undefined` `link_id` still reaches `outPort.get("links")` and throws a raw
- * `TypeError` mid-write, and a `null` or object `link_id` is accepted outright.
- * Pre-existing and identical on `main`. Adding a check would be a new rejection
- * needing its own G8 vocabulary analysis, so it is disclosed and ENUMERATED
+ * op-only PROPERTY is checked. `link_type` is still copied into the document
+ * with no validation at all.
+ *
+ * `link_id` WAS in that list until #59 added its write-site check, now expressed
+ * by A10's `arrayItemRefusal`/`mapValueRefusal` encodability predicates. That
+ * check reads nothing but the op, yet a `connect` it rejects STILL resolves
+ * differently by arrival order, because it sits below the destination
+ * delete-wins return — measured. It is the cleanest demonstration that this
+ * function is about POSITION, not about what a check reads: moving that check
+ * into here would close it. Until then it is disclosed and ENUMERATED
  * (hole 4 above) rather than fixed in passing. It belongs with #61/#68/#71.
  *
  * Runs before the applier reads the document at all, so two replicas in

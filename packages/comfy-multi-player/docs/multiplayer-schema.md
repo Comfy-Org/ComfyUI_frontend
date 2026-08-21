@@ -334,11 +334,35 @@ here:
    replica only. Measured. Amendment A6.
 
 **The rule these come from, which is more useful than the list.** A rejection is
-arrival-order-dependent exactly when the check that raises it READS THE DOCUMENT
-and sits below an early return that consumes the `op_id` — a delete-wins return
-or the interior null return. Under §4
-abort-remainder any such rejection also decides whether the REST OF THE BATCH
-applies, which is how a bookkeeping difference becomes a projection difference.
+arrival-order-dependent when **whether it is raised at all depends on document
+state**. That happens two ways, and the first version of this paragraph got both
+of them wrong by saying "exactly when the CHECK reads the document":
+
+- **The throw sits below a document-dependent early return that consumes the
+  `op_id`** — a delete-wins return or the interior null return. A replica in a
+  different state takes the return and never reaches the throw. **What the check
+  itself reads is irrelevant — only WHERE IT SITS.** The sharpest example is
+  `connect.link_id`: #59 added a write-site check that reads NOTHING BUT THE OP
+  (now the A10 `arrayItemRefusal`/`mapValueRefusal` encodability check), and it
+  still resolves differently by arrival order, because it sits below the
+  destination delete-wins return. An op-only check in the wrong position is
+  exactly as order-dependent as a document-reading one — which is why
+  `requireOpOnlyValid` is about POSITION, not about what is read.
+- **The check's own verdict is computed from document state a concurrent op can
+  change.** `shared_definition_unforked` (item 8) needs no deletion and no early
+  return: `countDefinitionInstances` returns 1 or 2 depending on whether a rival
+  `add_node` has been applied yet.
+
+**The direction that IS a guarantee**, and the one Amendment A6 buys: a
+precondition that depends on the OP ALONE and is evaluated before any document
+read cannot be arrival-order-dependent by either mechanism. That is what
+`requireOpOnlyValid` is for, and it is why hoisting is the fix rather than
+wrapping. The converse does not hold — do not read "the check reads only the op"
+off a rejection code and conclude anything about where the check runs.
+
+Under §4 abort-remainder any order-dependent rejection also decides whether the
+REST OF THE BATCH applies, which is how a bookkeeping difference becomes a
+projection difference.
 Every precondition that depends on the OP ALONE is hoisted above those returns
 and does NOT carve out.
 
@@ -348,8 +372,8 @@ probing a handler nobody had probed yet, and treating it as complete is what mad
 each of those omissions look like a contradiction rather than a gap. If you need
 to know whether a specific rejection converges, apply the rule and measure both
 arrival orders; do not conclude "it is not in the list, therefore it converges".
-Everything that does NOT satisfy the rule — including concrete-input contention,
-which used to be an unstated carve-out of its own — converges.
+Everything that satisfies neither mechanism — including concrete-input
+contention, which used to be an unstated carve-out of its own — converges.
 
 ---
 
@@ -1381,14 +1405,15 @@ payloads `main` accepts — a `set_widget` naming a deleted node, a duplicate
 `add_node` with a bad payload — on handlers this amendment does not otherwise
 touch, so each needs its own vocabulary analysis. They are enumerated and
 pinned instead, on the principle that a convergence list claiming completeness
-must either list a divergence or stop claiming completeness. `connect.link_id` and
-`connect.link_type` are copied into the document with no validation whatsoever:
-an `undefined` `link_id` throws a raw `TypeError` mid-write and a `null` or
-object one is accepted. That behaviour is identical on `main`, is not part of
-issue #10's ordering class, and is left to #61/#68/#71 — a new rejection there
-would be a vocabulary change needing its own analysis. It is named here so that
-"every op-only precondition is hoisted" is not read as "every op-only property
-is validated".
+must either list a divergence or stop claiming completeness. `connect.link_type`
+is copied into the document with no validation. `connect.link_id`, by contrast,
+has been checked since A9 (#59), and A10 (#68) now applies the write site's
+encodability predicates (`arrayItemRefusal`/`mapValueRefusal`). That check is
+still below the destination delete-wins return: a batch containing a `Date`
+`link_id` reports `malformed_op` before the delete but is consumed as a no-op
+after the delete. It is named here so that "every op-only precondition is
+hoisted" is not read as "every op-only property is validated before a
+document-dependent return".
 
 **This axis had to be found twice, both times the same way.** The first pass
 hoisted `from_slot` only; the second hoisted `to_slot`'s `typeof` check but left
