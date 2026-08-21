@@ -251,7 +251,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
       conversationStore.recordUser(
         turnId,
         text,
-        attachments?.map(({ name, previewUrl }) => ({ name, previewUrl })),
+        attachments?.map(({ name, previewUrl, ref }) => ({
+          name,
+          previewUrl,
+          ref
+        })),
         tags?.map((tag) => `${tag.title} #${tag.id}`)
       )
       conversationStore.startTurn(turnId)
