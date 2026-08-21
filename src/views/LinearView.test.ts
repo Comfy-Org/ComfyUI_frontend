@@ -87,6 +87,7 @@ const baseStubs = {
   AppModeToolbar: leafStub('app-mode-toolbar'),
   ExtensionSlot: leafStub('extension-slot'),
   SideToolbar: leafStub('side-toolbar'),
+  EmailVerificationNudge: leafStub('email-verification-nudge'),
   TopbarBadges: leafStub('topbar-badges'),
   TopbarSubscribeButton: leafStub('topbar-subscribe-button'),
   WorkflowTabs: leafStub('workflow-tabs'),
