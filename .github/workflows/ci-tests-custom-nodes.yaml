@@ -212,6 +212,7 @@ jobs:
         uses: ./.github/actions/setup-frontend
         with:
           include_build_step: true
+          node_cache: 'false'
 
       - name: Verify Detection Proof witness shard
         if: >-
