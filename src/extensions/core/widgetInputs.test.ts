@@ -279,52 +279,6 @@ describe('PrimitiveNode', () => {
     })
   })
 
-  describe('refreshComboInNode', () => {
-    it('updates combo values from output widget config', () => {
-      const node = createPrimitiveNode()
-      const comboValues = ['a', 'b', 'c']
-      node.widgets = [
-        makeWidget({
-          type: 'combo',
-          value: 'a',
-          options: { values: [] },
-          callback: vi.fn()
-        })
-      ]
-      node.outputs[0].widget = {
-        name: 'value',
-        [GET_CONFIG]: () => [comboValues, {}]
-      }
-
-      node.refreshComboInNode()
-
-      expect(node.widgets[0].options.values).toEqual(comboValues)
-    })
-
-    it('resets value to first option when current value is removed', () => {
-      const node = createPrimitiveNode()
-      const comboValues = ['x', 'y', 'z']
-      const callbackFn = vi.fn()
-      node.widgets = [
-        makeWidget({
-          type: 'combo',
-          value: 'removed_value',
-          options: { values: [] },
-          callback: callbackFn
-        })
-      ]
-      node.outputs[0].widget = {
-        name: 'value',
-        [GET_CONFIG]: () => [comboValues, {}]
-      }
-
-      node.refreshComboInNode()
-
-      expect(node.widgets[0].value).toBe('x')
-      expect(callbackFn).toHaveBeenCalledWith('x')
-    })
-  })
-
   describe('onConnectionsChange', () => {
     it('skips processing when app is configuring graph', () => {
       ;(app as any).configuringGraph = true

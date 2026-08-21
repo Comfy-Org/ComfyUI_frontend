@@ -26,6 +26,9 @@ export type ComfyEvent = {
   endDateTime?: string
   /** External target used when the event has no /events/[slug] page. */
   link?: { href: LocalizedText; newTab?: boolean }
+  /** Overrides the default "Livestream" label on the upcoming-list CTA (e.g.
+   * "Register" for in-person events that link out to a registration page). */
+  ctaLabel?: LocalizedText
   /** Past-gallery card art. */
   media?: EventMedia
   liveVideoId?: string
@@ -189,7 +192,8 @@ export function deriveFeaturedEvents(
     .map(({ event, featured }) => ({
       id: event.id,
       eyebrow:
-        eventStatus(event, now) === 'upcoming'
+        eventStatus(event, now) === 'upcoming' &&
+        event.category === 'livestream'
           ? UPCOMING_LIVESTREAM
           : undefined,
       title: event.title,
@@ -201,13 +205,118 @@ export function deriveFeaturedEvents(
     }))
 }
 
-const showdownStreamHref: LocalizedText = {
-  en: 'https://www.youtube.com/live/VeG1bveKZco',
-  'zh-CN': 'https://www.youtube.com/live/VeG1bveKZco'
-}
-
 // zh-CN copy is a first pass and pending native review.
 const events: readonly ComfyEvent[] = [
+  {
+    id: 'la-august-meetup',
+    category: 'community',
+    title: {
+      en: 'ComfyUI Official LA August Meet-Up',
+      'zh-CN': 'ComfyUI 官方洛杉矶八月见面会'
+    },
+    description: {
+      en: 'Join us for the official ComfyUI meetup in LA, hosted at the new AI on the Lot office in Culver City.',
+      'zh-CN':
+        '欢迎参加在洛杉矶举办的官方 ComfyUI 见面会，地点位于卡尔弗城全新的 AI on the Lot 办公室。'
+    },
+    location: { en: 'Los Angeles, CA', 'zh-CN': '美国加州洛杉矶' },
+    dateLabel: {
+      en: 'August 26, 2026 · 6–9 PM PT',
+      'zh-CN': '2026年8月26日 · 下午6点至9点（PT）'
+    },
+    startDateTime: '2026-08-26T18:00:00-07:00',
+    endDateTime: '2026-08-26T21:00:00-07:00',
+    link: {
+      href: {
+        en: 'https://luma.com/nd0u29u8',
+        'zh-CN': 'https://luma.com/nd0u29u8'
+      },
+      newTab: true
+    },
+    ctaLabel: { en: 'Register', 'zh-CN': '报名' },
+    media: eventImage('08.26_la-meetup.avif', {
+      en: 'ComfyUI Official LA August Meet-Up',
+      'zh-CN': 'ComfyUI 官方洛杉矶八月见面会'
+    })
+  },
+  {
+    id: 'mutek-3d-projection-mapping',
+    category: 'community',
+    title: {
+      en: 'MUTEK: Generative AI for 3D Projection Mapping ft. Purz & Moment Factory',
+      'zh-CN': 'MUTEK：面向 3D 投影映射的生成式 AI，特邀 Purz 与 Moment Factory'
+    },
+    description: {
+      en: 'A hands-on workshop with Moment Factory on bringing generative AI into large-scale spatial design with ComfyUI, ending by projecting AI-generated visuals onto a physical maquette.',
+      'zh-CN':
+        '与 Moment Factory 合作的实操工作坊，探讨如何用 ComfyUI 将生成式 AI 融入大型空间设计，并在最后将 AI 生成的视觉投影到实体模型上。'
+    },
+    location: {
+      en: 'Édifice Wilder, Montréal, QC',
+      'zh-CN': 'Édifice Wilder，加拿大魁北克蒙特利尔'
+    },
+    dateLabel: {
+      en: 'August 27, 2026 · 1:30PM ET',
+      'zh-CN': '2026年8月27日 · 下午1:30（ET）'
+    },
+    startDateTime: '2026-08-27T13:30:00-04:00',
+    endDateTime: '2026-08-27T15:30:00-04:00',
+    link: {
+      href: {
+        en: 'https://forum.mutek.org/en/shows/2026/generative-ai-for-3d-projection-mapping-from-concept-to-canvas',
+        'zh-CN':
+          'https://forum.mutek.org/en/shows/2026/generative-ai-for-3d-projection-mapping-from-concept-to-canvas'
+      },
+      newTab: true
+    },
+    ctaLabel: { en: 'Register', 'zh-CN': '报名' },
+    featured: {
+      order: 0,
+      media: eventVideo(
+        '08.27-MUTEK.mp4',
+        {
+          en: 'MUTEK: Generative AI for 3D Projection Mapping',
+          'zh-CN': 'MUTEK：面向 3D 投影映射的生成式 AI'
+        },
+        '08.27-MUTEK_thumb.jpeg'
+      )
+    }
+  },
+  {
+    id: 'ucan-agentic-commerce',
+    category: 'community',
+    title: {
+      en: 'UCAN: Agentic Commerce — Designing the Next Business Infrastructure ft. Jo Zhang',
+      'zh-CN': 'UCAN：智能体商务——设计下一代商业基础设施（特邀 Jo Zhang）'
+    },
+    description: {
+      en: 'A UCAN by Alibaba Design gathering on agentic commerce — where AI shifts from generating outputs to taking action across real business workflows. Jo Zhang joins speakers from Alibaba, Figma, Stripe, and more to explore designing for trust and AI as operational infrastructure.',
+      'zh-CN':
+        'UCAN（由阿里巴巴设计主办）关于智能体商务的聚会——探讨 AI 如何从生成内容转向在真实业务流程中采取行动。Jo Zhang 将与来自 Alibaba、Figma、Stripe 等机构的讲者一同，探讨如何为信任而设计，以及将 AI 作为运营基础设施。'
+    },
+    location: {
+      en: 'Plug and Play Tech Center, Sunnyvale, CA',
+      'zh-CN': 'Plug and Play 科技中心，加州森尼韦尔'
+    },
+    dateLabel: {
+      en: 'September 13, 2026 · 2:00–6:30 PM PT',
+      'zh-CN': '2026年9月13日 · 下午2:00至6:30（PT）'
+    },
+    startDateTime: '2026-09-13T14:00:00-07:00',
+    endDateTime: '2026-09-13T18:30:00-07:00',
+    link: {
+      href: {
+        en: 'https://luma.com/ucan-2026',
+        'zh-CN': 'https://luma.com/ucan-2026'
+      },
+      newTab: true
+    },
+    ctaLabel: { en: 'Register', 'zh-CN': '报名' },
+    media: eventImage('agentic-commerce.avif', {
+      en: 'UCAN: Agentic Commerce — Designing the Next Business Infrastructure',
+      'zh-CN': 'UCAN：智能体商务——设计下一代商业基础设施'
+    })
+  },
   {
     id: 'beyond-the-models',
     category: 'livestream',
@@ -227,10 +336,26 @@ const events: readonly ComfyEvent[] = [
     },
     startDateTime: '2026-08-19T10:00:00-07:00',
     liveVideoId: 'IzTI8oK_Wg4',
-    media: eventImage('livestream-aug-19.jpg', {
-      en: 'Using Comfy to Go Beyond the Models livestream',
-      'zh-CN': '善用 Comfy，超越模型本身直播'
-    })
+    media: eventVideo(
+      '08.19-Tool_landscape.mp4',
+      {
+        en: 'Using Comfy to Go Beyond the Models livestream',
+        'zh-CN': '善用 Comfy，超越模型本身直播'
+      },
+      'livestream-aug-19.jpg'
+    ),
+    featured: {
+      order: 1,
+      media: eventVideo(
+        '08.19-Tool_landscape.mp4',
+        {
+          en: 'Using Comfy to Go Beyond the Models livestream',
+          'zh-CN': '善用 Comfy，超越模型本身直播'
+        },
+        'livestream-aug-19.jpg'
+      ),
+      showTitle: false
+    }
   },
   {
     id: 'future-ai-post-production',
@@ -253,7 +378,7 @@ const events: readonly ComfyEvent[] = [
     link: { href: launchesHref, newTab: false },
     liveVideoId: '4xS4LOn3CTE',
     featured: {
-      order: 2,
+      order: 3,
       media: eventVideo(
         'future-of-ai-post-production.mp4',
         {
@@ -277,25 +402,12 @@ const events: readonly ComfyEvent[] = [
       'zh-CN': 'Purz 与 Allyson 现场对决开源与付费 AI 视频模型，实测效果对比。'
     },
     location: { en: 'Online', 'zh-CN': '线上' },
-    dateLabel: {
-      en: 'August 12, 2026 · 10AM PT',
-      'zh-CN': '2026年8月12日 · 上午10点（PT）'
-    },
+    media: eventImage('august-12-livestream_v2.png', {
+      en: 'Video Model Showdown livestream recording',
+      'zh-CN': '视频模型对决直播回放'
+    }),
     startDateTime: '2026-08-12T10:00:00-07:00',
-    link: { href: showdownStreamHref, newTab: true },
-    liveVideoId: 'VeG1bveKZco',
-    featured: {
-      order: 3,
-      media: eventVideo(
-        'august-12-livestream.mp4',
-        {
-          en: 'Video Model Showdown livestream',
-          'zh-CN': '视频模型对决直播'
-        },
-        'august-12-livestream.jpg'
-      ),
-      autoplayMs: 5000
-    }
+    recordingVideoId: 'VeG1bveKZco'
   },
   {
     id: 'comfy-creatives-model-jam',
@@ -431,7 +543,7 @@ const events: readonly ComfyEvent[] = [
     startDateTime: '2026-06-23',
     recordingVideoId: '31jiUhCEjJ4',
     featured: {
-      order: 1,
+      order: 2,
       media: eventVideo(
         'founders-live.mp4',
         {

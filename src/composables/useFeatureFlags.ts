@@ -189,6 +189,8 @@ export function useFeatureFlags() {
       )
     },
     get unifiedCloudAuthEnabled() {
+      if (!isCloud) return false
+
       return resolveFlag(
         ServerFeatureFlag.UNIFIED_CLOUD_AUTH,
         remoteConfig.value.unified_cloud_auth,

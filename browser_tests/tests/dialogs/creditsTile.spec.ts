@@ -63,6 +63,7 @@ const mockBillingStatus: BillingStatusResponse = {
   is_active: true,
   max_seats: 1,
   occupied_seats: 1,
+  team_credit_stop: null,
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY',
   renewal_date: '2099-02-20T12:00:00Z',
@@ -71,12 +72,18 @@ const mockBillingStatus: BillingStatusResponse = {
 
 const freeBillingStatus: BillingStatusResponse = {
   is_active: false,
+  max_seats: 1,
+  occupied_seats: 1,
+  team_credit_stop: null,
   subscription_tier: 'FREE',
   has_funds: true
 }
 
 const endedPersonalBillingStatus: BillingStatusResponse = {
   is_active: false,
+  max_seats: 1,
+  occupied_seats: 1,
+  team_credit_stop: null,
   subscription_status: 'ended',
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY',

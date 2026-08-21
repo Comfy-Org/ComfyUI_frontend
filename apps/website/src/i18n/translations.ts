@@ -74,6 +74,22 @@ const translations = {
     en: 'Compositing',
     'zh-CN': '合成'
   },
+  'tags.fundamentals': {
+    en: 'Fundamentals',
+    'zh-CN': '基础入门'
+  },
+  'tags.nodeGraph': {
+    en: 'Node Graph',
+    'zh-CN': '节点图'
+  },
+  'tags.lora': {
+    en: 'LoRA',
+    'zh-CN': 'LoRA'
+  },
+  'tags.controlNet': {
+    en: 'ControlNet',
+    'zh-CN': 'ControlNet'
+  },
 
   // UI (global, reusable across sections)
   'ui.copy': {
@@ -94,7 +110,7 @@ const translations = {
     'zh-CN': '试用工作流'
   },
   'cta.tryForFree': {
-    en: 'Try For Free',
+    en: 'Try for Free',
     'zh-CN': '免费试用'
   },
   'cta.getStarted': {
@@ -1719,6 +1735,11 @@ const translations = {
     en: 'Every tutorial and workflow',
     'zh-CN': '所有教程与工作流'
   },
+  'learning.categories.basics': { en: 'Basics', 'zh-CN': '基础' },
+  'learning.categories.basics.blurb': {
+    en: 'Fundamentals and getting started',
+    'zh-CN': '基础入门与上手指南'
+  },
   'learning.categories.vfx': { en: 'VFX', 'zh-CN': 'VFX' },
   'learning.categories.vfx.blurb': {
     en: 'Compositing, cleanup and shot work',
@@ -1736,6 +1757,15 @@ const translations = {
   },
   // Per-vertical h1 + description/meta copy, swapped when a category filter is
   // active (see learningHeading / learningDescription).
+  'learning.categories.basics.heading': {
+    en: 'ComfyUI Basics',
+    'zh-CN': 'ComfyUI 基础教程'
+  },
+  'learning.categories.basics.description': {
+    en: 'Beginner ComfyUI tutorials — learn the node graph, LoRAs, style transfer, and ControlNets from the ground up.',
+    'zh-CN':
+      '面向初学者的 ComfyUI 教程——从零开始掌握节点图、LoRA、风格迁移与 ControlNet。'
+  },
   'learning.categories.vfx.heading': {
     en: 'VFX Tutorials',
     'zh-CN': 'VFX 教程'
