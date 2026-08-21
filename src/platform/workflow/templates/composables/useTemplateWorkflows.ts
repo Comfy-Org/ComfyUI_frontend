@@ -8,9 +8,17 @@ import type {
   TemplateInfo,
   WorkflowTemplates
 } from '@/platform/workflow/templates/types/template'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useDialogStore } from '@/stores/dialogStore'
+
+export type PreparedWorkflowTemplate = {
+  id: string
+  sourceModule: string
+  workflowName: string
+  workflow: ComfyWorkflowJSON
+}
 
 export function useTemplateWorkflows() {
   const { t } = useI18n()
@@ -94,6 +102,69 @@ export function useTemplateWorkflows() {
     )
   }
 
+  const prepareWorkflowTemplate = async (
+    id: string,
+    sourceModule: string
+  ): Promise<PreparedWorkflowTemplate | null> => {
+    if (!isTemplatesLoaded.value) return null
+
+    if (sourceModule === 'all') {
+      const comfyExamplesGroup = allTemplateGroups.value.find(
+        (group) =>
+          group.label ===
+          t('templateWorkflows.category.ComfyUI Examples', 'ComfyUI Examples')
+      )
+      const allCategory = comfyExamplesGroup?.modules.find(
+        (module) => module.moduleName === 'all'
+      )
+      const template = allCategory?.templates.find(
+        (template) => template.name === id
+      )
+
+      if (!template?.sourceModule) return null
+      sourceModule = template.sourceModule
+    }
+
+    const workflow: ComfyWorkflowJSON = await fetchTemplateJson(
+      id,
+      sourceModule
+    )
+
+    return {
+      id,
+      sourceModule,
+      workflowName:
+        sourceModule === 'default'
+          ? t(`templateWorkflows.template.${id}`, id)
+          : id,
+      workflow
+    }
+  }
+
+  const openPreparedWorkflowTemplate = async (
+    prepared: PreparedWorkflowTemplate,
+    { closeDialog = true }: { closeDialog?: boolean } = {}
+  ) => {
+    try {
+      const { id, sourceModule, workflow, workflowName } = prepared
+
+      useTelemetry()?.trackTemplate({
+        workflow_name: id,
+        template_source: sourceModule
+      })
+
+      if (closeDialog) dialogStore.closeDialog()
+      await app.loadGraphData(workflow, true, true, workflowName, {
+        openSource: 'template'
+      })
+
+      return true
+    } catch (error) {
+      console.error('Error loading workflow template:', error)
+      return false
+    }
+  }
+
   /**
    * Loads a workflow template
    */
@@ -101,47 +172,11 @@ export function useTemplateWorkflows() {
     if (!isTemplatesLoaded.value) return false
 
     loadingTemplateId.value = id
-    let json
 
     try {
-      // Handle "All" category as a special case
-      if (sourceModule === 'all') {
-        // Find "All" category in the ComfyUI Examples group
-        const comfyExamplesGroup = allTemplateGroups.value.find(
-          (g) =>
-            g.label ===
-            t('templateWorkflows.category.ComfyUI Examples', 'ComfyUI Examples')
-        )
-        const allCategory = comfyExamplesGroup?.modules.find(
-          (m) => m.moduleName === 'all'
-        )
-        const template = allCategory?.templates.find((t) => t.name === id)
-
-        if (!template || !template.sourceModule) return false
-
-        // Use the stored source module for loading
-        sourceModule = template.sourceModule
-      }
-
-      // Regular case for normal categories
-      json = await fetchTemplateJson(id, sourceModule)
-
-      const workflowName =
-        sourceModule === 'default'
-          ? t(`templateWorkflows.template.${id}`, id)
-          : id
-
-      useTelemetry()?.trackTemplate({
-        workflow_name: id,
-        template_source: sourceModule
-      })
-
-      dialogStore.closeDialog()
-      await app.loadGraphData(json, true, true, workflowName, {
-        openSource: 'template'
-      })
-
-      return true
+      const prepared = await prepareWorkflowTemplate(id, sourceModule)
+      if (!prepared) return false
+      return await openPreparedWorkflowTemplate(prepared)
     } catch (error) {
       console.error('Error loading workflow template:', error)
       return false
@@ -180,6 +215,8 @@ export function useTemplateWorkflows() {
     getTemplateThumbnailUrl,
     getTemplateTitle,
     getTemplateDescription,
+    prepareWorkflowTemplate,
+    openPreparedWorkflowTemplate,
     loadWorkflowTemplate
   }
 }
