@@ -230,6 +230,10 @@
       "title": "title"
     }
   },
+  "Comfy_ModelLibrary_HuggingFaceMirror": {
+    "name": "HuggingFace mirror URL",
+    "tooltip": "Optional mirror for Hugging Face model downloads. Leave empty to use the official huggingface.co (e.g. https://hf-mirror.com). Applies to the \"Download All missing models\" workflow button and the file-size probe shown in the UI."
+  },
   "Comfy_Node_AllowImageSizeDraw": {
     "name": "Show width × height below the image preview"
   },

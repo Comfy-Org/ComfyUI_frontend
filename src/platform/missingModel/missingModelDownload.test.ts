@@ -770,6 +770,24 @@ describe('resolveHuggingFaceUrl', () => {
     ).toBe('https://hf-mirror.com/org/model/resolve/main/x')
   })
 
+  it('ignores a mirror without a scheme', () => {
+    mockHuggingFaceMirror.value = 'hf-mirror.com'
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    expect(
+      resolveHuggingFaceUrl('https://huggingface.co/org/model/resolve/main/x')
+    ).toBe('https://huggingface.co/org/model/resolve/main/x')
+    expect(consoleWarn).toHaveBeenCalled()
+  })
+
+  it('ignores a mirror with a non-http(s) scheme', () => {
+    mockHuggingFaceMirror.value = 'javascript:alert(1)'
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    expect(
+      resolveHuggingFaceUrl('https://huggingface.co/org/model/resolve/main/x')
+    ).toBe('https://huggingface.co/org/model/resolve/main/x')
+    expect(consoleWarn).toHaveBeenCalled()
+  })
+
   it('leaves non-HuggingFace URLs untouched', () => {
     mockHuggingFaceMirror.value = 'https://hf-mirror.com'
     expect(
