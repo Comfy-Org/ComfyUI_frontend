@@ -3338,6 +3338,8 @@
     "nameValidationError": "Name must be 1–50 characters using letters, numbers, spaces, or common punctuation."
   },
   "workspaceSwitcher": {
+    "scopeCaption": "Workspaces only affect which credits you use.",
+    "scopeTooltip": "Runs that use partner nodes spend credits from this workspace. Unlike on Cloud, every workspace saves to your usual output folder.",
     "switchWorkspace": "Switch workspace",
     "subscribe": "Subscribe",
     "personal": "Personal",

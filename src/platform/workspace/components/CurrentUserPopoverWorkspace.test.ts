@@ -174,15 +174,35 @@ describe('CurrentUserPopoverWorkspace', () => {
   it('toggles the workspace switcher panel from the selector row', async () => {
     const user = userEvent.setup()
     renderComponent()
+    const trigger = screen.getByTestId('workspace-switcher-trigger')
 
     expect(
       screen.queryByTestId('workspace-switcher-panel')
     ).not.toBeInTheDocument()
+    expect(trigger).toHaveAttribute('aria-expanded', 'false')
+    expect(trigger).toHaveAttribute('aria-haspopup', 'menu')
+    expect(trigger).toHaveAttribute('aria-controls', 'workspace-switcher-panel')
 
-    await user.click(screen.getByTestId('workspace-switcher-trigger'))
-    expect(screen.getByTestId('workspace-switcher-panel')).toBeInTheDocument()
+    await user.click(trigger)
+    const panel = screen.getByTestId('workspace-switcher-panel')
+    expect(panel).toHaveAttribute('id', 'workspace-switcher-panel')
+    expect(panel).toHaveAttribute('role', 'menu')
+    expect(trigger).toHaveAttribute('aria-expanded', 'true')
 
-    await user.click(screen.getByTestId('workspace-switcher-trigger'))
+    await user.click(trigger)
+    expect(
+      screen.queryByTestId('workspace-switcher-panel')
+    ).not.toBeInTheDocument()
+  })
+
+  it('closes the workspace switcher panel on Escape', async () => {
+    const user = userEvent.setup()
+    renderComponent()
+    const trigger = screen.getByTestId('workspace-switcher-trigger')
+
+    await user.click(trigger)
+    await user.keyboard('{Escape}')
+
     expect(
       screen.queryByTestId('workspace-switcher-panel')
     ).not.toBeInTheDocument()
