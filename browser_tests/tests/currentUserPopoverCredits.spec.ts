@@ -53,6 +53,7 @@ const mockBillingStatus: BillingStatusResponse = {
   is_active: true,
   max_seats: 1,
   occupied_seats: 1,
+  team_credit_stop: null,
   subscription_status: 'canceled',
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY',

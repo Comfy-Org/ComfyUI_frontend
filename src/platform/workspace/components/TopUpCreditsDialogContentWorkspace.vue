@@ -259,6 +259,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'
+import { isCloud } from '@/platform/distribution/types'
 import { clearTopupTracking } from '@/platform/telemetry/topupTracker'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
@@ -468,7 +469,7 @@ async function handleBuy() {
       })
       await Promise.allSettled([fetchBalance(), fetchStatus()])
       handleClose(false)
-      settingsDialog.show('workspace')
+      settingsDialog.show(isCloud ? 'workspace' : 'credits')
     } else if (response.status === 'pending') {
       void billingOperationStore
         .startOperation(response.billing_op_id, 'topup', { attemptStartedAt })

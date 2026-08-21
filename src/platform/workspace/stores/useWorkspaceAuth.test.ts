@@ -22,6 +22,12 @@ const mockCurrentUser = vi.hoisted((): { value: { uid: string } | null } => ({
 const mockForgetRevokedActiveWorkspace = vi.fn()
 const mockPrepareWorkflowWorkspaceTransition = vi.hoisted(() => vi.fn())
 const mockReload = vi.fn()
+const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
+const mockTeamWorkspaceState = vi.hoisted(() => ({
+  activeWorkspaceId: null as string | null
+}))
+
+vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
 
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: () => ({
@@ -35,7 +41,10 @@ vi.mock('@/stores/authStore', () => ({
 
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   useTeamWorkspaceStore: () => ({
-    forgetRevokedActiveWorkspace: mockForgetRevokedActiveWorkspace
+    forgetRevokedActiveWorkspace: mockForgetRevokedActiveWorkspace,
+    get activeWorkspaceId() {
+      return mockTeamWorkspaceState.activeWorkspaceId
+    }
   })
 }))
 
@@ -59,6 +68,10 @@ vi.mock('@/scripts/api', () => ({
   api: {
     apiURL: (route: string) => `https://api.example.com/api${route}`
   }
+}))
+
+vi.mock('@/platform/workspace/api/workspaceApiUrl', () => ({
+  workspaceApiUrl: (route: string) => `https://api.example.com/api${route}`
 }))
 
 vi.mock('@/i18n', () => ({
@@ -102,6 +115,8 @@ function expectedExpiresAtMs(expiresAt: string): string {
 
 describe('useWorkspaceAuthStore', () => {
   beforeEach(() => {
+    mockDistributionTypes.isCloud = true
+    mockTeamWorkspaceState.activeWorkspaceId = null
     vi.stubGlobal('location', {
       reload: mockReload,
       origin: 'http://localhost'
@@ -1122,6 +1137,37 @@ describe('useWorkspaceAuthStore', () => {
 
       expect(token).toBe('token-workspace-123')
       expect(mockFetch).toHaveBeenCalledTimes(2)
+    })
+
+    it('does not restore a stale local selection after another switch completes', async () => {
+      mockDistributionTypes.isCloud = false
+      mockTeamWorkspaceState.activeWorkspaceId = 'workspace-123'
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      const mockFetch = vi.fn().mockImplementation((_url, options) => {
+        const { workspace_id: workspaceId } = JSON.parse(options.body)
+        if (workspaceId === 'workspace-other') {
+          mockTeamWorkspaceState.activeWorkspaceId = workspaceId
+        }
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              ...mockTokenResponse,
+              token: `token-${workspaceId}`,
+              workspace: { ...mockWorkspace, id: workspaceId }
+            })
+        })
+      })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      const switchPromise = store.switchWorkspace('workspace-other')
+      const token = await store.ensureWorkspaceToken('workspace-123')
+      await switchPromise
+
+      expect(token).toBeNull()
+      expect(store.currentWorkspace?.id).toBe('workspace-other')
+      expect(mockFetch).toHaveBeenCalledOnce()
     })
   })
 
