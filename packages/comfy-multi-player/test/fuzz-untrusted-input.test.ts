@@ -1,4 +1,12 @@
-/** Fuzz taxonomy: untrusted op envelopes and node payloads (#13, #14). */
+/**
+ * Fuzz taxonomy: untrusted op envelopes and node payloads (#13, #14).
+ *
+ * The saved corpus below carries two kinds of case. `#13` cases are live
+ * assertions: the untrusted-node-input guard has landed, so those payloads are
+ * rejected before any mutation. `#14` cases stay pinned with `it.fails` — the
+ * payload size/depth/cost bounds do not exist yet, and the pin is what tells us
+ * the day they do.
+ */
 import { readFileSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -150,27 +158,38 @@ const corpus = readdirSync(corpusDir)
   .map((file) => JSON.parse(readFileSync(join(corpusDir, file), "utf8")) as CorpusCase);
 
 describe("saved untrusted-input regression corpus", () => {
-  for (const entry of corpus) {
-    // pins #13/#14 — remove .fails once the untrusted-input guard lands
-    it.fails(`#${entry.issue}: ${entry.name} is rejected before mutation`, () => {
-      const base: WorkflowJSON = {
-        nodes: [{ id: 1, type: "KSampler", widgets_values: [] }],
-        links: [],
-      };
-      const doc = mint(base, catalog);
-      const before = bytes(doc);
-      const result = applyOps(doc, [entry.op], catalog);
+  function rejectedBeforeMutation(entry: CorpusCase): void {
+    const base: WorkflowJSON = {
+      nodes: [{ id: 1, type: "KSampler", widgets_values: [] }],
+      links: [],
+    };
+    const doc = mint(base, catalog);
+    const before = bytes(doc);
+    const result = applyOps(doc, [entry.op], catalog);
 
-      expect(result.failed).not.toBeNull();
-      expect(result.applied).toEqual([]);
-      expect(bytes(doc).equals(before)).toBe(true);
-      expect(() => project(doc, catalog)).not.toThrow();
+    expect(result.failed).not.toBeNull();
+    expect(result.applied).toEqual([]);
+    expect(bytes(doc).equals(before)).toBe(true);
+    expect(() => project(doc, catalog)).not.toThrow();
+  }
+
+  for (const entry of corpus) {
+    if (entry.issue === 13) {
+      // #13 guard landed: the applier rejects these payloads before any write.
+      it(`#13: ${entry.name} is rejected before mutation`, () => {
+        rejectedBeforeMutation(entry);
+      });
+      continue;
+    }
+    // pins #14 — remove .fails once the payload size/depth/cost bounds land
+    it.fails(`#${entry.issue}: ${entry.name} is rejected before mutation`, () => {
+      rejectedBeforeMutation(entry);
     });
   }
 
   // Cycles cannot be represented in the JSON corpus. Keep this deterministic
   // reproducer beside it until #14 adds depth/shape bounds.
-  // pins #14 — remove .fails once the untrusted-input guard lands
+  // pins #14 — remove .fails once the payload size/depth/cost bounds land
   it.fails("#14: cyclic-ish node payload is rejected before cloning/storage", () => {
     const cycle: Record<string, unknown> = {};
     cycle["self"] = cycle;
@@ -194,7 +213,7 @@ describe("saved untrusted-input regression corpus", () => {
     expect(bytes(doc).equals(before)).toBe(true);
   });
 
-  // pins #14 — remove .fails once the untrusted-input guard lands
+  // pins #14 — remove .fails once the payload size/depth/cost bounds land
   it.fails("#14: deeply nested and huge payloads are rejected before cloning/storage", () => {
     let deep: unknown = "leaf";
     for (let depth = 0; depth < 256; depth++) deep = { child: deep };

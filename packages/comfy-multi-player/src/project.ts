@@ -44,7 +44,7 @@ function idCompare(a: unknown, b: unknown): number {
 }
 
 function yMapToObject(m: Y.Map<unknown>): Record<string, unknown> {
-  const obj: Record<string, unknown> = {};
+  const obj: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
   m.forEach((v, k) => {
     obj[k] = v instanceof Y.Array ? v.toArray().map((x) => structuredClone(x)) : structuredClone(v);
   });
@@ -64,7 +64,7 @@ function widgetsToPositional(
   catalog: WidgetCatalog,
 ): unknown[] {
   if (widgets.size === 0) return [];
-  const entry = catalog.types[nodeType];
+  const entry = Object.hasOwn(catalog.types, nodeType) ? catalog.types[nodeType] : undefined;
   if (!entry) {
     throw new TypeError(
       `project: type '${nodeType}' has widget values but is not in the pinned catalog (schema §1.2 — projection is catalog-dependent by design)`,
@@ -114,7 +114,7 @@ function projectWidgets(
 
 /** Per-node Y.Map → workflow node JSON. Emits exactly the keys stored at mint/apply time. */
 function projectNode(ym: Y.Map<unknown>, catalog: WidgetCatalog): WorkflowNode {
-  const out: Record<string, unknown> = {};
+  const out: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
   const nodeType = String(ym.get("type") ?? "");
   ym.forEach((v, k) => {
     if (k === OPAQUE_WIDGETS_KEY || k === "widgets") {
@@ -132,16 +132,75 @@ function projectNode(ym: Y.Map<unknown>, catalog: WidgetCatalog): WorkflowNode {
   return out as WorkflowNode;
 }
 
+/**
+ * Structural gate for one entry of a nodes map (#13).
+ *
+ * ## The gate is exactly as wide as "projecting this entry would throw"
+ *
+ * Two conditions, and no more. An entry that is not a `Y.Map` cannot be
+ * iterated by {@link projectNode}; an entry whose `widgets` slot is not a
+ * `Y.Map` cannot be walked by {@link widgetsToPositional}. Everything else a
+ * node can carry projects verbatim under schema §1.1's passthrough rule — a
+ * `flags` that is not an object, an `inputs` that is not an array, a blank or
+ * absent `type`, an `id` that disagrees with its map key. Those are odd, but
+ * they are READABLE, and this function must not have an opinion about them.
+ *
+ * That width is the whole design, and an earlier draft of this gate got it
+ * wrong in a way worth recording: it also skipped mistyped `flags`/`inputs`/
+ * `outputs`, a blank `type`, and an id/key disagreement. Every one of those is
+ * reachable through `mint()` and `applyOps` — `createNodeMap` stores a
+ * non-plain-object `flags` as a plain clone (§1.1), and `applyAddNode` keys by
+ * `op.node_id` without requiring `op.node.id` to match. So the read path
+ * silently deleted nodes the write path had accepted and acknowledged. A gate
+ * on the read side must never be wider than the throw it is preventing.
+ *
+ * ## Why these two are safe to skip, and what a skip costs
+ *
+ * Neither remaining condition is reachable through this package's writers:
+ * `mint`/`applyAddNode` always store a `Y.Map` per node (`createNodeMap`), and
+ * `widgets` is only ever set to the `Y.Map` built by `widgetsToYMap` — a
+ * payload carrying its own `widgets` is refused by `createNodeMap`'s
+ * reserved-key guard. So an entry reaching either branch arrived as corrupt or
+ * untrusted doc state, e.g. a raw update folded in by the doc host.
+ *
+ * **A skipped node is gone for good, not merely hidden.** Schema §4 compaction
+ * re-mints the document FROM `project(doc)`, so the next compaction writes a
+ * document in which the skipped entry does not exist. Nothing warns the caller:
+ * this is the deliberate read-path fail-open of #13 (one corrupt entry must not
+ * make the whole document unprojectable), and its price is that recovering the
+ * entry requires the pre-compaction update history. **Any widening of this gate
+ * is therefore a data-deletion change, and belongs in a schema amendment.**
+ * Links are projected independently, so a skipped node can leave a link tuple
+ * referring to an id absent from `nodes`.
+ *
+ * ## Catalog-contract violations are NOT skipped
+ *
+ * A type with named widget values the pinned catalog does not describe, or a
+ * widget name absent from `widget_order`, means the caller passed a catalog
+ * other than the one the doc pins. Per KA-12 / schema §3 pin 4 that fails
+ * loudly rather than silently dropping nodes: `widgetsToPositional` throws and
+ * the throw propagates. As of #13's apply-time guards those states are no
+ * longer reachable through this package's writers either — `applyOps` refuses
+ * the write that would create them — so a throw here means catalog drift, which
+ * is exactly what it should mean.
+ */
+function tryProjectNode(value: unknown, catalog: WidgetCatalog): WorkflowNode | null {
+  if (!(value instanceof Y.Map)) return null;
+  if (value.has("widgets") && !(value.get("widgets") instanceof Y.Map)) return null;
+  return projectNode(value, catalog);
+}
+
 /** Definition Y.Map → subgraph definition JSON, interior nodes/links in mint order. */
 function projectDefinition(dm: Y.Map<unknown>, catalog: WidgetCatalog): Record<string, unknown> {
-  const out: Record<string, unknown> = {};
+  const out: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
   dm.forEach((v, k) => {
     if (k === "node_order" || k === "link_order") return; // internal order registers
     if (k === "nodes" && v instanceof Y.Map) {
       const order = (dm.get("node_order") as string[] | undefined) ?? [...v.keys()].sort();
       out[k] = order
         .filter((id) => v.has(id))
-        .map((id) => projectNode(v.get(id) as Y.Map<unknown>, catalog));
+        .map((id) => tryProjectNode(v.get(id), catalog))
+        .filter((node): node is WorkflowNode => node !== null);
     } else if (k === "links" && v instanceof Y.Map) {
       const order = (dm.get("link_order") as string[] | undefined) ?? [...v.keys()].sort();
       out[k] = order.filter((id) => v.has(id)).map((id) => structuredClone(v.get(id)));
@@ -158,14 +217,17 @@ function projectDefinition(dm: Y.Map<unknown>, catalog: WidgetCatalog): Record<s
  * different catalog resolves different widget positions by design (§1.2).
  */
 export function project(doc: Y.Doc, catalog: WidgetCatalog): WorkflowJSON {
-  const wf: Record<string, unknown> = {};
+  const wf: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
   metaMap(doc).forEach((v, k) => {
     if (k === "schema_version" || k === "catalog_version" || k.startsWith("__")) return;
     wf[k] = structuredClone(v);
   });
 
   const nodes: WorkflowNode[] = [];
-  nodesMap(doc).forEach((ym) => nodes.push(projectNode(ym, catalog)));
+  nodesMap(doc).forEach((ym, id) => {
+    const node = tryProjectNode(ym, catalog);
+    if (node) nodes.push(node);
+  });
   nodes.sort((a, b) => idCompare(a.id, b.id));
   wf["nodes"] = nodes;
 

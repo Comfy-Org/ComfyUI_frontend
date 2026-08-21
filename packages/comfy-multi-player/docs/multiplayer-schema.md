@@ -463,8 +463,8 @@ Pinned semantics:
 `project(doc, catalog)` is a pure read producing ComfyUI workflow JSON;
 `project(mint(w, catalog), catalog)` must deep-equal `canonical(w)`.
 
-Canonicalization rules (all of them — the spike confirmed this list is
-exhaustive for its corpus):
+Canonicalization rules (all of them — the spike confirmed rules 1-5 exhaustive
+for its corpus; rule 6 was added by Amendment A4):
 
 1. **Node and link arrays are sorted by id.** Y.Map is unordered; sorted-by-id
    IS the canonical order. Frontend insertion order (z-order/serialization
@@ -486,6 +486,15 @@ exhaustive for its corpus):
 4. **`outputs[].links: null` is preserved verbatim** (never coerced to `[]`);
    an empty Y.Array projects as `[]`. The distinction round-trips.
 5. **Meta passthrough keys** project unmodified (§6).
+6. **A nodes-map entry that cannot be READ is skipped** (Amendment A4): the
+   entry is not a `Y.Map`, or its `widgets` slot is not a `Y.Map`. Exactly
+   those two — every other shape projects verbatim under §1.1 passthrough,
+   including a mistyped `flags`/`inputs`/`outputs`, a blank or absent `type`,
+   and an `id` disagreeing with its map key. Neither skipped state is reachable
+   through `mint`/`applyOps`. A skipped entry does **not** survive the §4
+   compaction re-mint, so widening this rule deletes data and needs its own
+   amendment. Catalogue-contract violations are NOT skipped and still throw
+   (§3 pin 4).
 
 ---
 
@@ -843,3 +852,106 @@ follower records in source that it must never call it (host-only). The FE
 follower's own read gate already rejects a missing `meta.schema_version` for
 the same stated reason, so this brings `migrate()` into line with a rule the
 sibling reader already enforces rather than introducing a new one.
+
+---
+
+## Amendment A4 — 2026-08-21 — projection skips only what it cannot read; name-keyed widget writes are catalogue-checked at apply
+
+§7 declared its canonicalization list exhaustive ("all of them — the spike
+confirmed this list is exhaustive"). It gains a sixth rule, and §1.2 gains a
+matching write-side refusal. Both come from issue #13.
+
+### The production failure this fixes
+
+A name-keyed (object, not array) `widgets_values` is not an attacker shape. It
+is what 23 shipped workflow templates carry — 49 nodes across `VHS_VideoCombine`
+and `VHS_LoadVideo`. Meanwhile the pinned catalogue is enumerated from
+`object_info`, which cannot see frontend-injected DOM widgets: `VHS_LoadVideo`
+resolves 8 widget names against the template's 9 (`videopreview`),
+`VHS_VideoCombine` 6 against 11. And the bulk template writer forwards the
+template's node JSON **verbatim**, remapping only ids.
+
+So `add_node` accepted a payload naming widgets the catalogue does not
+describe, and `project()` then threw for the WHOLE document on every later
+read. One accepted op permanently poisoned the workflow — unreadable, and
+unwritable too wherever the write path projects as part of its response.
+
+### The rule
+
+- **Write side (§1.2).** A NAME-KEYED widget write naming a class absent from
+  the pinned catalogue, or a name absent from that class's `widget_order`, is
+  **rejected before that op mutates anything** — `uncatalogued_widget_write` and
+  `unknown_widget`. Per-op, not per-batch: under §4 abort-remainder a batch with
+  a valid prefix keeps that prefix, so the DOCUMENT is not byte-identical after
+  such a batch, only after a batch whose first op is the rejected one. The
+  golden vectors pin both shapes. This binds `add_node`, `set_widget`, and `connect`'s
+  `grow.inputcount` bump identically; an asymmetry between them relocates the
+  poisoning to the laxest op rather than closing it. A POSITIONAL array for an
+  uncatalogued class is NOT this case: it is stored opaquely and round-trips
+  verbatim (Amendment A2). With no catalogue at all, the check is skipped —
+  "no catalogue" is not "class unknown".
+- **Read side (§7 rule 6).** One entry of the nodes map is SKIPPED when
+  projecting it would throw: it is not a `Y.Map`, or its `widgets` slot is not
+  a `Y.Map`. Neither is reachable through `mint`/`applyOps`, so such an entry
+  arrived as corrupt or untrusted doc state. Every other shape a node can carry
+  projects verbatim under §1.1 passthrough, **including** a mistyped
+  `flags`/`inputs`/`outputs`, a blank or absent `type`, and an `id` that
+  disagrees with its map key.
+- **Catalogue-contract violations are not skipped** and still throw (§3 pin 4,
+  KA-12). Projecting under a catalogue other than the one the document pins is
+  drift, and hiding it would let replicas project silently different workflows.
+
+### Why the read gate is exactly two conditions wide
+
+A draft of this amendment skipped more: mistyped slots, a blank `type`, an
+id/key disagreement. Every one of those is reachable through this package's own
+writers — `createNodeMap` stores a non-plain-object `flags` as a plain clone per
+§1.1, and `applyAddNode` keys by `op.node_id` without requiring `op.node.id` to
+agree. The result was that `applyOps` returned `failed: null` and `project()`
+silently deleted the node, which also burned the node id, since `add_node`'s
+structural-idempotency early return then made the honest retry a no-op.
+
+**A read-side gate must never be wider than the throw it prevents.** Anything
+else is the read path overruling the write path, and it presents as data loss
+with a success return.
+
+### What a skip costs, and why it is still right
+
+Skipping is a fail-OPEN on the read path, chosen because the alternative is that
+one corrupt entry makes the whole document permanently unprojectable — the
+crash #13 reports. Its price must be stated plainly: **a skipped entry does not
+survive compaction.** §4 re-mints from `project(doc)`, so the next compaction
+writes a document in which the entry does not exist, and recovering it needs the
+pre-compaction update history. Links project independently, so a skipped node
+can also leave a link tuple naming an id absent from `nodes`. **Widening this
+gate is therefore a data-deletion change and requires its own amendment.**
+
+This is deliberately the opposite disposition from A3, and the two do not
+conflict. A structurally unreadable single entry is one bad entry in a document
+the reader otherwise understands completely, so per-entry recovery exists. A
+wrong `schema_version` means the reader cannot interpret the layout at all, so
+there is no readable remainder to salvage and a skip is not even available.
+Salvageability is the axis, not severity.
+
+### Guarded by
+
+`test/project.test.ts` (`project invalid node input`, `set_widget applies the
+same catalog rules as add_node`), `test/fuzz-untrusted-input.test.ts` (the `#13`
+corpus baselines, which assert rejection BEFORE mutation), and
+`fixtures/golden-vectors/rejection-retry.json`
+(`uncatalogued-named-widget-write-*`, including the abort-remainder case with a
+valid prefix, so a cross-language runner learns the new `code`).
+
+### Consumer impact
+
+The doc-host sidecar's `/apply` and `/project` both reach this code, and its
+`/apply` response embeds a projection — which is why an unprojectable document
+was bricked for reads and writes alike. Both shipped consumers pin an immutable
+SHA predating this change, so it lands with a deliberate pin bump.
+
+One behaviour change is user-visible and is not a bug: fetching one of those 23
+templates now fails part-way through the batch with `unknown_widget` (ops after
+the failing index are not applied, §4 abort-remainder) instead of appearing to
+succeed and leaving an unreadable document. The underlying gap — the catalogue
+cannot describe frontend-injected widgets — is not fixed here and is the reason
+the failure is loud rather than absent.

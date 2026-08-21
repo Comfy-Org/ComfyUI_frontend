@@ -70,6 +70,32 @@
       ],
       "final_node_ids": [6],
       "final_widget_values": [1, "fixed", 30, 1, "euler", "normal", 1]
+    },
+    {
+      "name": "uncatalogued-named-widget-write-refused-on-set-widget",
+      "batches": [
+        [{ "op": "add_node", "op_id": "00000000000000000000000000000a01", "actor": "agent:parity:1", "base_version": 0, "stamp": [0, "agent:parity:1"], "node_id": 1, "class_type": "Note", "pos": [0, 0], "node": { "id": 1, "type": "Note" } }],
+        [{ "op": "set_widget", "op_id": "00000000000000000000000000000a02", "actor": "agent:parity:1", "base_version": 0, "stamp": [0, "agent:parity:1"], "node_id": 1, "widget": "text", "value": "hello" }]
+      ],
+      "expected": [
+        { "applied": ["00000000000000000000000000000a01"], "skipped": [], "failed": null, "applied_count": 1, "version": 1, "document_unchanged": false },
+        { "applied": [], "skipped": [], "failed": { "index": 0, "code": "uncatalogued_widget_write", "op_id": "00000000000000000000000000000a02" }, "applied_count": 0, "version": 1, "document_unchanged": true }
+      ],
+      "final_node_ids": [1]
+    },
+    {
+      "name": "uncatalogued-named-widget-write-aborts-remainder-after-valid-prefix",
+      "batches": [
+        [
+          { "op": "add_node", "op_id": "00000000000000000000000000000b01", "actor": "agent:parity:1", "base_version": 0, "stamp": [0, "agent:parity:1"], "node_id": 1, "class_type": "Note", "pos": [0, 0], "node": { "id": 1, "type": "Note" } },
+          { "op": "add_node", "op_id": "00000000000000000000000000000b02", "actor": "agent:parity:1", "base_version": 0, "stamp": [0, "agent:parity:1"], "node_id": 2, "class_type": "TotallyUnknownClass", "pos": [0, 0], "node": { "id": 2, "type": "TotallyUnknownClass", "widgets_values": { "some_widget": 1 } } },
+          { "op": "add_node", "op_id": "00000000000000000000000000000b03", "actor": "agent:parity:1", "base_version": 0, "stamp": [0, "agent:parity:1"], "node_id": 3, "class_type": "Note", "pos": [0, 0], "node": { "id": 3, "type": "Note" } }
+        ]
+      ],
+      "expected": [
+        { "applied": ["00000000000000000000000000000b01"], "skipped": [], "failed": { "index": 1, "code": "uncatalogued_widget_write", "op_id": "00000000000000000000000000000b02" }, "applied_count": 1, "version": 1, "document_unchanged": false }
+      ],
+      "final_node_ids": [1]
     }
   ]
 }

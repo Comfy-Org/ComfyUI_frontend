@@ -107,6 +107,20 @@ const FROZEN = new Set<string>(FROZEN_OPS);
 const DEFERRED = new Set<string>(DEFERRED_OPS);
 
 /**
+ * Resolve a node type to its catalog entry by OWN property only. Bracket
+ * indexing walks the prototype chain, so an untrusted `type` of `__proto__`
+ * (or `constructor`, `toString`, …) resolves to an inherited object and is
+ * mistaken for a catalog entry with a garbage `widget_order` (#13).
+ */
+function catalogEntry(
+  catalog: WidgetCatalog | undefined,
+  nodeType: unknown,
+): WidgetCatalog["types"][string] | undefined {
+  if (!catalog || typeof nodeType !== "string") return undefined;
+  return Object.hasOwn(catalog.types, nodeType) ? catalog.types[nodeType] : undefined;
+}
+
+/**
  * The wire boundary (issue #17). THIS, not the type system, is what protects
  * the document: the `op` argument is typed for this repo's own call sites, but
  * every real caller decoded it from JSON a peer implementation produced, so
@@ -180,6 +194,43 @@ function dispatch(doc: Y.Doc, op: Op, catalog?: WidgetCatalog): void {
 // add_node
 // ---------------------------------------------------------------------------
 
+/**
+ * Refuse an `add_node` payload whose NAME-KEYED `widgets_values` record could
+ * never be projected, before it is stored (#13).
+ *
+ * A name-keyed record bypasses `widget_order` decomposition, so nothing else
+ * checks it. If the class is absent from the pinned catalog, or a name is not
+ * in its `widget_order`, `project()` throws for the WHOLE document on every
+ * later read — one accepted op permanently poisons the doc, exactly the
+ * failure `rejectIfOpaqueWidgets` exists to prevent (schema §1.2, §3 pin 4).
+ * A positional array for an uncatalogued class is NOT this case: it is stored
+ * opaquely and round-trips verbatim.
+ */
+function rejectUnprojectableWidgets(
+  nodeType: unknown,
+  wv: unknown,
+  entry: WidgetCatalog["types"][string] | undefined,
+): void {
+  if (typeof wv !== "object" || wv === null || Array.isArray(wv)) return;
+  const names = Object.keys(wv);
+  if (names.length === 0) return;
+  const type = String(nodeType);
+  if (!entry) {
+    throw new OpRejectedError(
+      "uncatalogued_widget_write",
+      `add_node(${type}): named widgets_values for a class absent from the pinned catalog cannot be projected (schema §1.2 — projection is catalog-dependent by design)`,
+    );
+  }
+  for (const name of names) {
+    if (!entry.widget_order.includes(name)) {
+      throw new OpRejectedError(
+        "unknown_widget",
+        `add_node(${type}): widget '${name}' is not in widget_order for ${type}; available: ${entry.widget_order.join(", ") || "(none — all inputs are links)"}`,
+      );
+    }
+  }
+}
+
 function applyAddNode(doc: Y.Doc, op: AddNodeOp, catalog?: WidgetCatalog): void {
   if (op.node_id === undefined || typeof op.node !== "object" || op.node === null) {
     throw new OpRejectedError("malformed_op", "add_node: missing node_id or node payload");
@@ -193,7 +244,11 @@ function applyAddNode(doc: Y.Doc, op: AddNodeOp, catalog?: WidgetCatalog): void 
   // unlike in Python: decomposing the payload's positional widgets_values
   // into the name-keyed widgets map (schema §1.2) requires widget_order.
   const wv = op.node.widgets_values;
-  const order = catalog?.types[op.node.type]?.widget_order;
+  // OWN-property lookup: `catalog.types['__proto__']` (and any other inherited
+  // key) otherwise resolves to a prototype object and is mistaken for a real
+  // catalog entry (#13).
+  const entry = catalogEntry(catalog, op.node.type);
+  const order = entry?.widget_order;
   // No catalog AT ALL: the host cannot tell an unknown class from a known one,
   // so it cannot decide between name-decomposition and opaque storage — reject
   // rather than guess. A catalog that simply lacks THIS class is a different
@@ -205,13 +260,14 @@ function applyAddNode(doc: Y.Doc, op: AddNodeOp, catalog?: WidgetCatalog): void 
       `add_node(${op.node.type}): positional widgets_values needs the pinned catalog widget_order to decompose into the name-keyed widgets map (schema §1.2)`,
     );
   }
+  rejectUnprojectableWidgets(op.node.type, wv, entry);
   let nodeMap: Y.Map<unknown>;
   try {
     nodeMap = createNodeMap(op.node, order);
   } catch (err) {
     throw new OpRejectedError(
       "invalid_node_payload",
-      `add_node(${op.node.type}): ${err instanceof Error ? err.message : String(err)}`,
+      `add_node(${String(op.node.type)}): ${err instanceof Error ? err.message : String(err)}`,
     );
   }
   mset(nodes, key, nodeMap);
@@ -229,14 +285,38 @@ function applyAddNode(doc: Y.Doc, op: AddNodeOp, catalog?: WidgetCatalog): void 
 // set_widget
 // ---------------------------------------------------------------------------
 
-/** Reject a widget name the pinned catalog does not know for this type (comfy-cli `_widget_index` raises). Skipped when the catalog or the type entry is unavailable — the write is name-keyed either way. */
+/**
+ * Reject a name-keyed widget write the pinned catalog cannot describe
+ * (comfy-cli `_widget_index` raises). Two rejections, and they are the SAME
+ * pair `add_node` applies via `rejectUnprojectableWidgets` — the two op kinds
+ * must agree about what a name-keyed widget write may say, or the stricter one
+ * merely relocates the poisoning to the laxer one (#13).
+ *
+ * - class absent from the pinned catalog → `uncatalogued_widget_write`. A
+ *   name-keyed write creates the `widgets` map that `project()` then cannot
+ *   turn back into positional values, so the write makes the WHOLE document
+ *   unprojectable on every later read. A class stored opaquely never reaches
+ *   here — `rejectIfOpaqueWidgets` runs first and owns that case (§1.2).
+ * - name absent from the class's `widget_order` → `unknown_widget`.
+ *
+ * Skipped entirely when there is NO catalog: the host cannot then tell an
+ * unknown class from a known one, which is the same "reject rather than guess"
+ * boundary `applyAddNode` draws for a positional payload.
+ */
 function validateWidgetName(
   catalog: WidgetCatalog | undefined,
   nodeType: string,
   widget: string,
 ): void {
-  const entry = catalog?.types[nodeType];
-  if (entry && !entry.widget_order.includes(widget)) {
+  if (!catalog) return;
+  const entry = catalogEntry(catalog, nodeType);
+  if (!entry) {
+    throw new OpRejectedError(
+      "uncatalogued_widget_write",
+      `set_widget(${nodeType}): named widget write to a class absent from the pinned catalog cannot be projected (schema §1.2 — projection is catalog-dependent by design)`,
+    );
+  }
+  if (!entry.widget_order.includes(widget)) {
     throw new OpRejectedError(
       "unknown_widget",
       `widget '${widget}' not found on ${nodeType}; available: ${entry.widget_order.join(", ") || "(none — all inputs are links)"}`,
@@ -337,12 +417,18 @@ function applySetWidget(doc: Y.Doc, op: SetWidgetOp, catalog?: WidgetCatalog): v
     const nodeType = String(target.get("type") ?? "");
     const widget = interior.inner_widget;
     rejectIfOpaqueWidgets(target, widget);
-    const entry = catalog?.types[nodeType];
+    // Same catalogue rules as a top-level write, and for the same reason: an
+    // interior node projects through `projectDefinition` -> `projectNode` ->
+    // `widgetsToPositional`, so a named write the catalogue cannot describe
+    // makes the WHOLE document unprojectable exactly as it would at top level.
+    // Runs BEFORE the range check so an uncatalogued class is refused rather
+    // than falling through the `if (entry)` block as an accepted write (#13).
+    validateWidgetName(catalog, nodeType, widget);
+    // OWN-property lookup (#13): an inherited key such as `__proto__` must read
+    // as "absent from the catalog", not resolve to a prototype object.
+    const entry = catalogEntry(catalog, nodeType);
     if (entry) {
       const idx = entry.widget_order.indexOf(widget);
-      if (idx < 0) {
-        validateWidgetName(catalog, nodeType, widget); // throws unknown_widget
-      }
       // Interior writes never pad (comfy-cli `_write_widget` extend=False):
       // the projected positional index must already be inside the node's
       // current widgets_values length.
@@ -572,7 +658,7 @@ function growInputSlot(
     const base = grow.name.split(".", 1)[0]!;
     const template = grow.widget
       ? null
-      : (catalog?.types[String(dst.get("type") ?? "")]?.autogrow_templates?.[base] ?? null);
+      : (catalogEntry(catalog, String(dst.get("type") ?? ""))?.autogrow_templates?.[base] ?? null);
     name = nextAutogrowName(insArr, grow.name, template);
   }
   const slot = new Y.Map<unknown>();

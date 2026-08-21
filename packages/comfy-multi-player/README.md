@@ -310,10 +310,20 @@ remainder applies. Rejected ops consume nothing, so a batch is always
 retryable.
 
 Rejection codes: `malformed_op`, `unknown_op`, `op_deferred`,
-`catalog_required`, `invalid_node_payload`, `unknown_widget`, `opaque_widgets`,
-`widget_out_of_range`, `input_slot_missing`, `output_slot_missing`,
-`not_a_subgraph`, `interior_node_not_found`, `shared_definition_unforked`, and
-`apply_failed` for anything unexpected. Match on `code`, never on `message`.
+`catalog_required`, `invalid_node_payload`, `unknown_widget`,
+`uncatalogued_widget_write`, `opaque_widgets`, `widget_out_of_range`,
+`input_slot_missing`, `output_slot_missing`, `not_a_subgraph`,
+`interior_node_not_found`, `shared_definition_unforked`, and `apply_failed` for
+anything unexpected. Match on `code`, never on `message`.
+
+`uncatalogued_widget_write` means a NAME-KEYED widget write named a class the
+pinned catalog does not describe. `add_node` and `set_widget` (and `connect`'s
+`grow.inputcount` bump, which routes through the same check) apply this rule
+identically — the write would create widget state `project()` cannot turn back
+into positional values, which would make the whole document unprojectable on
+every later read. A POSITIONAL `widgets_values` array for an uncatalogued class
+is a different case and is still accepted: it is stored opaquely and
+round-trips verbatim (see [`opaque_widgets`](#opaque-widgets)).
 
 ## Rules a client must follow
 

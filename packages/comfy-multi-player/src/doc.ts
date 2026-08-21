@@ -327,9 +327,14 @@ function widgetsToYMap(
 export function createNodeMap(node: WorkflowNode, widgetOrder?: readonly string[]): Y.Map<unknown> {
   const m = new Y.Map<unknown>();
   for (const [k, v] of Object.entries(node)) {
-    if (k === OPAQUE_WIDGETS_KEY) {
+    if (k === OPAQUE_WIDGETS_KEY || k === "widgets") {
+      // Both are DOC-INTERNAL storage keys owned by this module (schema §1.2);
+      // a workflow node carries `widgets_values`, never either of these. An
+      // untrusted payload that sets them directly would shadow the name-keyed
+      // map with an arbitrary value and make `project()` throw for the whole
+      // document on every subsequent read (#13).
       throw new TypeError(
-        `createNodeMap(${node.type}): node carries the reserved key '${OPAQUE_WIDGETS_KEY}'`,
+        `createNodeMap(${String(node.type)}): node carries the reserved key '${k}' (doc-internal storage; schema §1.2 — a workflow node carries 'widgets_values')`,
       );
     } else if (k === "widgets_values") {
       const storage = widgetStorageFor(v, widgetOrder);

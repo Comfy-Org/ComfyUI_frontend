@@ -24,7 +24,9 @@ const NON_META_KEYS = new Set(["nodes", "links", "definitions", "_applied_ops", 
 /** Meta keys owned by the doc itself — a workflow must not carry them. */
 const RESERVED_META_KEYS = new Set(["schema_version", "catalog_version"]);
 
+/** OWN-property lookup: an inherited key such as `__proto__` must read as "missing", not as a catalog entry (#13). */
 function widgetOrderFor(catalog: WidgetCatalog, nodeType: string): readonly string[] | undefined {
+  if (typeof nodeType !== "string" || !Object.hasOwn(catalog.types, nodeType)) return undefined;
   return catalog.types[nodeType]?.widget_order;
 }
 
