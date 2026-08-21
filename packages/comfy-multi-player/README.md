@@ -112,10 +112,30 @@ handled instead of throwing.
 
 ### `migrate(doc, fromVersion): void`
 
-Document-layout versioning. `SCHEMA_VERSION` is `1`, so today this validates
-and no-ops at v1 and throws `SchemaVersionError` for anything else — including,
-deliberately, a document newer than the code. A host never best-effort reads a
+Document-layout versioning, and the **fail-closed read gate** a host calls
+before it reads a document it did not mint. `SCHEMA_VERSION` is `1`, so today
+there is nothing to step: the call validates and no-ops at v1, and throws
+`SchemaVersionError` for everything else. A host never best-effort reads a
 layout it does not know.
+
+`fromVersion` is your *claim* about the document, and it is checked against the
+document's own `meta.schema_version`. It throws when:
+
+- `fromVersion` is not an integer ≥ 1, or is greater than `SCHEMA_VERSION`
+  (deliberately: a document newer than the code is refused, never read);
+- `meta.schema_version` disagrees with `fromVersion`;
+- **`meta.schema_version` cannot be read at all** — no `meta` root, or a `meta`
+  root without the key. Such a document is rejected, not assumed current. Every
+  document `mint()` produces carries the key, and so does every replica forked
+  from a minted snapshot, so this is a malformed document rather than a shape a
+  host can produce (schema Amendment A3).
+
+Both outcomes are byte-exact: a no-op and a rejection each leave
+`encodeStateAsUpdate(doc)` unchanged and materialize no root type. It checks the
+schema version and nothing else — it does **not** inspect the `nodes`/`links`/
+`definitions` roots, so a document malformed below `meta` fails at the read that
+touches it (`project`, `applyOps`), not here. It is host-only: a follower
+receives the migrated document over the struct stream and must not call this.
 
 ### Stamp machinery
 

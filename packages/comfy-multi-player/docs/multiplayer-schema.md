@@ -559,6 +559,10 @@ the epoch; cross-epoch struct updates never merge.
   doc via the struct stream / a new epoch); a doc whose `schema_version` is
   **greater** than the code's `SCHEMA_VERSION` is rejected, fail-closed —
   never best-effort read.
+- **Refined by Amendment A3**: the read gate runs on every path (including the
+  current-version one), an unreadable `meta.schema_version` is rejected rather
+  than assumed current, and "exact no-op" is defined at the byte level. Read A3
+  for the normative rule and for what this deliberately stopped checking.
 - Bumping `SCHEMA_VERSION` requires: a migration step, updated fixtures or a
   fixture-format note, an amendment section in this document, and FE
   sign-off (the layout is a cross-repo contract with the FE follower).
@@ -589,6 +593,13 @@ Post-v1 changes append `## Amendment v1.x — <date>` sections here; silent
 edits to decided sections are not valid. The OPEN items eligible for
 amendment: shared-definition forking (§5.3), group ops (§6), multi-writer
 topology (§2.2), watermark implementation status (§4).
+
+**Allocating a letter:** the number is claimed **when the amendment lands on
+`main`**, not when the branch is written — take the next one after the last
+amendment on `main`. Three in-flight branches each grabbed "the next number"
+independently once, and two of them collided. If your branch is not the one
+merging, renumber on rebase; an amendment letter is a citation, and the cost of
+moving one is why it is assigned at the point it becomes real.
 
 ---
 
@@ -751,3 +762,84 @@ the same situation Amendment A1 documented.
 `services/agent/dochost` pins this package by commit SHA. Repinning is a
 deliberate, coordinated step across the branches that carry the pin; it is not
 part of this change.
+
+---
+
+## Amendment A3 — 2026-08-21 — `migrate()` is the fail-closed read gate; "exact no-op" is byte-level
+
+§10 said `migrate()` is an "exact no-op when `fromVersion === SCHEMA_VERSION`"
+and that a doc *newer* than `SCHEMA_VERSION` is rejected. Both were true of the
+intent and neither was true of the code (issue #20). The current-version path
+"validated" the layout by calling the `nodes`/`links`/`definitions`/`meta` root
+helpers, and `Y.Doc#getMap` lazily **creates** an absent root type and
+registers it in `doc.share` — so the inspection was a repair. An incomplete
+document was silently completed instead of rejected. And because `stored` was
+compared only when it was not `undefined`, a document with no readable
+`meta.schema_version` was accepted as current: fail-OPEN, against KA-11.
+
+This also hit well-formed replicas, not just malformed docs. `definitions` is
+empty at mint, an empty root map is not encoded, so a replica forked from the
+one seeded snapshot (§9) does not carry it — and the old read conjured it,
+mutating a snapshot-forked replica (KA-10).
+
+### The rule
+
+- `migrate()` is the fail-closed READ gate. Validation runs on **every** path,
+  including `fromVersion === SCHEMA_VERSION`.
+- `fromVersion` is a caller *claim*, made by a caller that may not have minted
+  the document. It must agree with the document's own `meta.schema_version`.
+- A doc with **no readable `meta.schema_version`** — no `meta` root, or a
+  `meta` root without the key — is **rejected**, not assumed current. Every
+  document a conforming producer emits carries the key: `mint()` writes it
+  unconditionally as the first statement of its transaction, `initDoc()` writes
+  it when absent, and `meta` is non-empty at mint so it is always encoded into
+  the bootstrap snapshot.
+- **"Exact no-op" is byte-level**: `encodeStateAsUpdate(doc)` is unchanged
+  **and** no root type is materialized. The version check reads `meta` only
+  when `doc.share` already holds that root, so it adds no struct and no share
+  key. The same holds for a rejection: fail-closed never half-writes.
+- Rejections are `SchemaVersionError` (`src/types.ts`). **One exception**: a
+  document whose `meta` root was integrated as a different concrete Y type
+  surfaces Yjs's own constructor-clash `Error`, not a `SchemaVersionError`. It
+  is still fail-closed, and it is still a throw, but a consumer matching on the
+  error type must expect it.
+
+### What this deliberately stopped checking
+
+The removed root-helper calls had one incidental side effect worth naming: on a
+document whose `nodes`/`links`/`definitions` root was integrated as the **wrong
+concrete Y type**, `getMap` threw a constructor clash, so `migrate()` rejected
+it. It no longer does — `migrate()` reads only `meta`, so a `nodes` root bound
+to a `Y.Array` now passes the version gate.
+
+That is accepted, and stated rather than left to be discovered:
+
+- the mechanism was the defect, not a design. It "validated" by materializing,
+  which is precisely what §10 forbids, and it detected nothing about a root's
+  *contents* — a `nodes` map full of garbage passed before and passes now;
+- no conforming producer can emit such a document. Roots are created only by
+  `mint()`/`initDoc()` and by integrating a snapshot minted from them;
+- it is not swallowed forever. The clash still throws at the next real read of
+  that root — `project()` or `applyOps` — rather than being converted into a
+  success.
+
+A structural gate that checks root types **without** materializing them is a
+legitimate future addition. It is not this amendment, and it must not be
+implemented by calling `getMap`.
+
+### Guarded by
+
+`test/roundtrip.test.ts` (`migrate (schema §10)`) and
+`test/schema-version-on-read.test.ts`. The no-materialization property is
+asserted on `[...doc.share.keys()]`, not on `encodeStateAsUpdate` — an empty
+materialized root encodes to zero bytes, so the byte assertion alone cannot see
+it. Both assertions are load-bearing and neither is redundant.
+
+### Consumer impact
+
+`migrate()` has no caller outside this package's tests, in any repo: the cloud
+doc-host imports `applyOps`/`mint`/`project` and not `migrate`, and the FE
+follower records in source that it must never call it (host-only). The FE
+follower's own read gate already rejects a missing `meta.schema_version` for
+the same stated reason, so this brings `migrate()` into line with a rule the
+sibling reader already enforces rather than introducing a new one.
