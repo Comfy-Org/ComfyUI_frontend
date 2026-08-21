@@ -77,3 +77,24 @@ export function box(lines: string[]) {
   }
   console.log(`  └${border}┘`)
 }
+
+/**
+ * For a check that passed loosely enough to break something later — not a
+ * skippable style nit. Bordered and red so it reads as "stop and look",
+ * distinct from the single dim `warn()` line that scrolls past unnoticed.
+ */
+export function alert(title: string, lines: string[]) {
+  blank()
+  const heading = pc.bold(pc.red(`🚨 ${title}`))
+  const maxLen = Math.max(displayWidth(heading), ...lines.map(displayWidth))
+  const border = '━'.repeat(maxLen + 4)
+  console.log(`  ${pc.red(`┏${border}┓`)}`)
+  const headingPadding = ' '.repeat(maxLen - displayWidth(heading))
+  console.log(`  ${pc.red('┃')}  ${heading}${headingPadding}  ${pc.red('┃')}`)
+  for (const line of lines) {
+    const padding = ' '.repeat(maxLen - displayWidth(line))
+    console.log(`  ${pc.red('┃')}  ${line}${padding}  ${pc.red('┃')}`)
+  }
+  console.log(`  ${pc.red(`┗${border}┛`)}`)
+  blank()
+}

@@ -10,7 +10,7 @@ import { checkGh } from '../checks/gh'
 import { checkDevServer } from '../checks/devServer'
 import { checkBackend } from '../checks/backend'
 import { checkModels } from '../checks/models'
-import { header } from '../ui/logger'
+import { header, alert } from '../ui/logger'
 import type { CheckResult } from '../checks/types'
 
 export async function runChecks(
@@ -49,5 +49,17 @@ export async function runChecks(
   results.push(await checkDevServer(undefined, root))
 
   const requiredFailed = results.filter((r) => !r.ok && !r.optional)
+
+  // Each failure already printed a one-line `fail()` as it ran, but across
+  // ~10 checks that line scrolls off screen. Re-surface every blocking
+  // failure loudly, right before control returns to the caller.
+  for (const result of requiredFailed) {
+    alert(`${result.name} must be fixed before recording`, [
+      ...(result.installInstructions ?? []),
+      '',
+      'The rest of the flow is blocked until this is resolved.'
+    ])
+  }
+
   return { results, allPassed: requiredFailed.length === 0 }
 }

@@ -24,7 +24,7 @@ import { runCommand } from '../cli/run'
 import { detectAgentClis } from '../checks/agentCli'
 import { runAgentRefactor } from '../agent/refactor'
 import { stepHeader } from '../ui/steps'
-import { pass, fail, warn, info, blank, box } from '../ui/logger'
+import { pass, fail, warn, alert, info, blank, box } from '../ui/logger'
 
 function toSlug(description: string): string {
   return description
@@ -104,6 +104,18 @@ async function offerAgentRefactor(
 }
 
 export async function runRecord(): Promise<void> {
+  box([
+    'This walks you through recording a real browser test — no coding',
+    'required. You will:',
+    '',
+    '  1. Perform the steps you want tested in a real browser window',
+    '  2. Paste what got recorded back here',
+    '  3. Optionally have an AI agent clean it up and open a PR',
+    '',
+    'Full docs, if you want them: browser_tests/README.md'
+  ])
+  blank()
+
   stepHeader(1, 7, 'Environment Check')
   const { allPassed } = await runChecks(undefined, { showHeader: false })
   if (!allPassed) {
@@ -142,9 +154,20 @@ export async function runRecord(): Promise<void> {
 
   stepHeader(3, 7, 'Configure Your Test')
 
+  info([
+    'Naming tip: describe the user-visible behavior, not the steps —',
+    pc.dim('"collapsing a node keeps its connections"') +
+      ' reads better than ' +
+      pc.dim('"click node then press collapse"') +
+      '.',
+    'This becomes both the filename and the test name, so specific beats',
+    'generic: prefer "queuing a workflow with a missing model" over "test 1".'
+  ])
+  blank()
+
   const description = await text({
     message: 'What are you testing?',
-    placeholder: 'e.g., adding a KSampler node and queuing',
+    placeholder: 'e.g., collapsing a KSampler node keeps its connections',
     validate: (value) =>
       toSlug(value) ? undefined : 'Use some letters or numbers.'
   })
@@ -176,17 +199,23 @@ export async function runRecord(): Promise<void> {
     slug = toSlug(customName)
   }
 
+  info([
+    'Tags help others find and filter this test — pick whatever areas it',
+    "touches, or none if you're unsure. Full list: browser_tests/README.md#test-tags"
+  ])
+  blank()
+
   const selectedTags = await multiselect({
-    message: 'Select tags for this test:',
+    message: 'Select tags for this test (space to toggle, enter for none):',
     options: [
-      { value: '@canvas', label: '@canvas' },
-      { value: '@widget', label: '@widget' },
-      { value: '@sidebar', label: '@sidebar' },
-      { value: '@smoke', label: '@smoke' },
-      { value: '@mobile', label: '@mobile' },
-      { value: '@screenshot', label: '@screenshot' }
+      { value: '@canvas', label: '@canvas', hint: 'canvas/graph interactions' },
+      { value: '@widget', label: '@widget', hint: 'node widgets' },
+      { value: '@sidebar', label: '@sidebar', hint: 'sidebar panels' },
+      { value: '@smoke', label: '@smoke', hint: 'critical-path smoke test' },
+      { value: '@screenshot', label: '@screenshot', hint: 'visual regression' }
     ],
-    initialValues: ['@canvas']
+    initialValues: [],
+    required: false
   })
   if (isCancel(selectedTags)) {
     cancel('Operation cancelled')
@@ -261,6 +290,21 @@ export async function runRecord(): Promise<void> {
   const summary = formatTransformSummary(transformResult)
   for (const line of summary) {
     console.log(`    ${line}`)
+  }
+
+  const hasNoAssertions = transformResult.warnings.some((w) =>
+    w.includes('No assertions')
+  )
+  if (hasNoAssertions) {
+    alert('This test has no assertions', [
+      "Playwright can't tell your test passed unless it checks something",
+      'concrete — text, a value, whether something is visible.',
+      '',
+      'FIX: this WILL be rejected when you commit. Open the file below',
+      'and add at least one line like:',
+      '',
+      "  await expect(comfyPage.page.getByText('Queue')).toBeVisible()"
+    ])
   }
 
   const testsDir = join(projectRoot, 'browser_tests', 'tests')

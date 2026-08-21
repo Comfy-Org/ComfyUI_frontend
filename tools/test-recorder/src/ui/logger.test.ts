@@ -1,6 +1,6 @@
 import type { MockInstance } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { box, displayWidth, fail, info, pass, warn } from './logger'
+import { alert, box, displayWidth, fail, info, pass, warn } from './logger'
 
 describe('displayWidth', () => {
   it('counts plain text by character', () => {
@@ -8,7 +8,7 @@ describe('displayWidth', () => {
   })
 
   it('ignores ANSI colour codes', () => {
-    expect(displayWidth('\u001b[36mpnpm dev\u001b[39m')).toBe(8)
+    expect(displayWidth('[36mpnpm dev[39m')).toBe(8)
   })
 
   it('counts emoji as two cells', () => {
@@ -55,7 +55,7 @@ describe('output helpers', () => {
   it('prefixes every instruction line so they read as one block', () => {
     info(['first', 'second'])
     expect(lines).toHaveLength(2)
-    expect(lines.every((l) => l.includes('\u2503'))).toBe(true)
+    expect(lines.every((l) => l.includes('┃'))).toBe(true)
   })
 
   it('draws a box whose borders line up with its widest line', () => {
@@ -70,8 +70,41 @@ describe('output helpers', () => {
   })
 
   it('keeps borders aligned when a line carries colour codes and emoji', () => {
-    box(['plain', '\u001b[36m\ud83d\udc49 coloured\u001b[39m'])
+    box(['plain', '[36m👉 coloured[39m'])
     const widths = lines.map((l) => displayWidth(l))
+    expect(new Set(widths).size).toBe(1)
+  })
+})
+
+describe('alert', () => {
+  let lines: string[]
+  let log: MockInstance
+
+  beforeEach(() => {
+    lines = []
+    log = vi.spyOn(console, 'log').mockImplementation((value?: unknown) => {
+      lines.push(String(value ?? ''))
+    })
+  })
+
+  afterEach(() => {
+    log.mockRestore()
+  })
+
+  it('renders distinctly from a plain warn — bordered, not one line', () => {
+    alert('Backend is not multi-user', ['fix it like this'])
+    const bordered = lines.filter((l) => l.includes('┃'))
+    expect(bordered.length).toBeGreaterThan(1)
+    expect(lines.some((l) => l.includes('Backend is not multi-user'))).toBe(
+      true
+    )
+    expect(lines.some((l) => l.includes('fix it like this'))).toBe(true)
+  })
+
+  it('keeps the border aligned with its longest line', () => {
+    alert('short', ['a much longer instruction line than the title'])
+    const bordered = lines.filter((l) => l.includes('┃'))
+    const widths = bordered.map((l) => displayWidth(l))
     expect(new Set(widths).size).toBe(1)
   })
 })

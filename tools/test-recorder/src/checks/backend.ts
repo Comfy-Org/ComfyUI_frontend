@@ -1,4 +1,4 @@
-import { pass, fail, warn, info } from '../ui/logger'
+import { pass, fail, alert, info } from '../ui/logger'
 import type { CheckResult } from './types'
 
 /**
@@ -31,19 +31,19 @@ export async function checkBackend(port = 8188): Promise<CheckResult> {
         return { name: 'ComfyUI backend', ok: true, version: url }
       }
 
-      warn('ComfyUI backend', `running on :${port} without --multi-user`)
       const instructions = [
-        'The backend is running, but not with --multi-user.',
+        `Backend is running on :${port} WITHOUT --multi-user.`,
         '',
-        'Without it, every test shares one user account, and tests run',
-        "locally can collide with each other over that user's data",
-        '(templates, settings, workflows) in ways CI never sees.',
+        'Every test will share one user account, and tests run locally',
+        "WILL collide with each other over that user's data (templates,",
+        'settings, workflows) — this is not cosmetic, tests will flake or',
+        'fail in ways CI never sees, because CI always uses --multi-user.',
         '',
-        'Stop the backend and restart it with:',
+        'FIX: stop the backend and restart it with:',
         '',
         '  python main.py --multi-user'
       ]
-      info(instructions)
+      alert('Backend is not running in multi-user mode', instructions)
       return {
         name: 'ComfyUI backend',
         ok: true,
