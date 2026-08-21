@@ -47,6 +47,7 @@ import { normalizeWidgetsView } from './node/widgetsView'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { clearNodeOwnedStoreState } from '@/stores/clearNodeOwnedStoreState'
+import { useEntityIdStore } from '@/stores/entityIdStore'
 import { useGraphMetadataStore } from '@/stores/graphMetadataStore'
 import { UNASSIGNED_NODE_ID, parseNodeId, toNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
@@ -380,6 +381,7 @@ export class LGraph
   set id(value: UUID) {
     const raw = toRaw(this)
     useGraphMetadataStore().rekey(raw._id.value, value)
+    useEntityIdStore().rekey(raw._id.value, value)
     raw._id.value = value
   }
 
@@ -413,14 +415,12 @@ export class LGraph
   list_of_graphcanvas: LGraphCanvas[] | null
   status: number = LGraph.STATUS_STOPPED
 
-  private _state: LGraphState = createLGraphState()
-
   get state(): LGraphState {
-    return this._state
+    return useEntityIdStore().get(this.id)
   }
 
   set state(value: LGraphState) {
-    this._state = value
+    useEntityIdStore().set(this.id, value)
   }
 
   readonly events = new CustomEventTarget<LGraphEventMap>()
@@ -595,6 +595,7 @@ export class LGraph
   private resetAfterClear(): void {
     const graphId = this.id
     useGraphMetadataStore().clear(graphId)
+    if (this.isRootGraph) useEntityIdStore().clear(graphId)
     if (this.isRootGraph && graphId !== zeroUuid) {
       usePreviewExposureStore().clearGraph(graphId)
       useWidgetValueStore().clearGraph(graphId)
