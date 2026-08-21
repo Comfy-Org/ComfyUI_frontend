@@ -102,6 +102,41 @@ class ThrowingConfigureNode extends LGraphNode {
 }
 
 describe('LGraph', () => {
+  it('batches version updates while keeping distinct mutations distinct', () => {
+    const graph = new LGraph()
+    const version = graph._version
+
+    graph.batchVersionUpdates(() => {
+      graph.add(new DummyNode())
+      graph.add(new DummyNode())
+    })
+    expect(graph._version).toBe(version + 1)
+
+    graph.add(new DummyNode())
+    graph.add(new DummyNode())
+    expect(graph._version).toBe(version + 3)
+  })
+
+  it('invalidates once when removing a node disconnects multiple links', () => {
+    const graph = new LGraph()
+    const source = new DummyNode()
+    const firstTarget = new DummyNode()
+    const secondTarget = new DummyNode()
+    source.addOutput('value', 'number')
+    firstTarget.addInput('value', 'number')
+    secondTarget.addInput('value', 'number')
+    graph.add(source)
+    graph.add(firstTarget)
+    graph.add(secondTarget)
+    source.connect(0, firstTarget, 0)
+    source.connect(0, secondTarget, 0)
+    const version = graph._version
+
+    graph.remove(source)
+
+    expect(graph._version).toBe(version + 1)
+  })
+
   it('projects ordered membership from root-scoped definition records', () => {
     const graph = new LGraph()
     const first = new DummyNode()

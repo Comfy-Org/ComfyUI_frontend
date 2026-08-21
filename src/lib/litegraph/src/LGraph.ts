@@ -1080,10 +1080,24 @@ export class LGraph
 
   /**
    * Increments the internal version counter.
-   * Centralized so a future VersionSystem can intercept, batch, or replace it.
    */
   incrementVersion(): void {
+    if (this.versionBatchInvalidated) return
     this._version++
+    if (this.versionBatchDepth > 0) this.versionBatchInvalidated = true
+  }
+
+  private versionBatchDepth = 0
+  private versionBatchInvalidated = false
+
+  batchVersionUpdates<T>(mutation: () => T): T {
+    this.versionBatchDepth++
+    try {
+      return mutation()
+    } finally {
+      this.versionBatchDepth--
+      if (this.versionBatchDepth === 0) this.versionBatchInvalidated = false
+    }
   }
 
   /**
@@ -1319,7 +1333,7 @@ export class LGraph
 
     nodesBeingRemoved.add(node)
     try {
-      this.removeNode(node)
+      this.batchVersionUpdates(() => this.removeNode(node))
     } finally {
       nodesBeingRemoved.delete(node)
     }
