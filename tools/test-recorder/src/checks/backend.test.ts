@@ -8,9 +8,31 @@ describe('checkBackend', () => {
     vi.spyOn(console, 'log').mockImplementation(() => {})
   })
 
-  it('passes when the backend answers system_stats', async () => {
-    vi.stubGlobal('fetch', () => Promise.resolve(new Response('{}')))
-    expect((await checkBackend()).ok).toBe(true)
+  it('passes when the backend is running multi-user', async () => {
+    vi.stubGlobal('fetch', (input: string | URL) =>
+      Promise.resolve(
+        String(input).includes('/api/users')
+          ? new Response(JSON.stringify({ users: { abc: 'someone' } }))
+          : new Response('{}')
+      )
+    )
+    const result = await checkBackend()
+    expect(result.ok).toBe(true)
+    expect(result.optional).toBeFalsy()
+  })
+
+  it('warns rather than fails when the backend is up but not multi-user', async () => {
+    vi.stubGlobal('fetch', (input: string | URL) =>
+      Promise.resolve(
+        String(input).includes('/api/users')
+          ? new Response(JSON.stringify({ migrated: true }))
+          : new Response('{}')
+      )
+    )
+    const result = await checkBackend()
+    expect(result.ok).toBe(true)
+    expect(result.optional).toBe(true)
+    expect(result.installInstructions?.join(' ')).toContain('--multi-user')
   })
 
   it('fails with the multi-user flag the tests need', async () => {
