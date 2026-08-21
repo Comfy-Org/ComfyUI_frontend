@@ -8,6 +8,7 @@ import {
 import { useSettingStore } from '@/platform/settings/settingStore'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 
 /**
  * Watch for changes in the setting store and update the LiteGraph settings accordingly.
@@ -15,11 +16,18 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 export const useLitegraphSettings = () => {
   const settingStore = useSettingStore()
   const canvasStore = useCanvasStore()
+  const agentNodeSelectionStore = useAgentNodeSelectionStore()
 
   watchEffect(() => {
     const canvasInfoEnabled = settingStore.get('Comfy.Graph.CanvasInfo')
+    // Node selection mode clears the canvas of everything but the graph and its
+    // own banner. This overlay is drawn onto the canvas rather than composed in
+    // the DOM, so it can't be hidden with CSS like the rest of the chrome. The
+    // user's setting is left untouched and takes effect again on exit.
+    const suppressedForNodeSelection = agentNodeSelectionStore.isActive
     if (canvasStore.canvas) {
-      canvasStore.canvas.show_info = canvasInfoEnabled
+      canvasStore.canvas.show_info =
+        canvasInfoEnabled && !suppressedForNodeSelection
       canvasStore.canvas.draw(false, true)
     }
   })
