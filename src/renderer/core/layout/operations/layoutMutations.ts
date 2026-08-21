@@ -1,5 +1,6 @@
 import type { NodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { LayoutSource, Point } from '@/renderer/core/layout/types'
 
@@ -73,10 +74,36 @@ export function useLayoutMutations(source: LayoutSource) {
     setNodeZIndex(rootGraphId, nodeId, layoutStore.allocateZIndex())
   }
 
+  const setNodeOrder = (
+    graph: LGraph,
+    nodeId: NodeId,
+    order: 'front' | 'back'
+  ): void => {
+    const index = graph._nodes.findIndex((node) => node.id === nodeId)
+    if (index === -1) return
+
+    const rootGraphId = graph.rootGraph.id
+    const zIndex =
+      order === 'front'
+        ? layoutStore.allocateZIndex()
+        : Math.min(
+            ...graph._nodes.map(
+              (node) =>
+                layoutStore.getNodeLayout(rootGraphId, node.id)?.zIndex ?? 0
+            )
+          ) - 1
+    setNodeZIndex(rootGraphId, nodeId, zIndex)
+
+    const [node] = graph._nodes.splice(index, 1)
+    if (order === 'front') graph._nodes.push(node)
+    else graph._nodes.unshift(node)
+  }
+
   return {
     moveNode,
     batchMoveNodes,
     setNodeZIndex,
-    bringNodeToFront
+    bringNodeToFront,
+    setNodeOrder
   }
 }
