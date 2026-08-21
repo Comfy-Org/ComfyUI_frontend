@@ -1192,6 +1192,21 @@
       "title": "Premium template",
       "credits": "Runs with credits"
     },
+    "detail": {
+      "cloudUpsellTitle": "Run this template in Comfy Cloud",
+      "cloudUpsellDescription": "Run faster on Cloud GPUs. No local setup or downloads.",
+      "partnerNodeTitle": "This workflow uses Partner Nodes",
+      "partnerNodeDescription": "Run locally with Comfy Credits, or run in Comfy Cloud with a subscription.",
+      "openInCloud": "Open in Cloud",
+      "requirements": "Template requirements",
+      "models": "Models",
+      "customNodes": "Custom Nodes",
+      "customNodeRequirement": "Required custom node package",
+      "usedBy": "Used by {nodes}",
+      "openTemplate": "Open template",
+      "backToTemplates": "Back to {category}",
+      "breadcrumbLabel": "Template navigation"
+    },
     "sort": {
       "relevance": "Relevance",
       "recommended": "Recommended",
