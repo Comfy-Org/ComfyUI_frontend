@@ -1,44 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { components } from '@/types/comfyRegistryTypes'
 import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
 
-type NodePack = components['schemas']['Node']
 type InstallPackParams = ManagerComponents['schemas']['InstallPackParams']
-type Availability =
-  | { id: string; status: 'installed' | 'disabled' | 'in-progress' | 'unknown' }
-  | { id: string; status: 'unavailable'; reason: string }
-  | { id: string; status: 'missing'; pack: NodePack }
-type Dependencies = {
-  createPayload: (pack: NodePack) => InstallPackParams
-  installPack: (params: InstallPackParams) => Promise<unknown>
-  clearInstallCache: () => void
-  reportUnexpectedError: (error: unknown) => void
-}
-type StartInstalls = (
-  availability: readonly Availability[],
-  dependencies: Dependencies
-) => string[]
-
-function isInstallModule(
-  value: unknown
-): value is { startTemplateCustomNodeInstalls: StartInstalls } {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'startTemplateCustomNodeInstalls' in value &&
-    typeof value.startTemplateCustomNodeInstalls === 'function'
-  )
-}
-
-async function loadStartInstalls(): Promise<StartInstalls> {
-  const modulePath = './startTemplateCustomNodeInstalls'
-  const value: unknown = await import(modulePath)
-  if (!isInstallModule(value)) {
-    throw new Error('Expected the custom-node install handoff')
-  }
-  return value.startTemplateCustomNodeInstalls
-}
+import type { TemplateCustomNodeInstallDependencies as Dependencies } from './startTemplateCustomNodeInstalls'
+import { startTemplateCustomNodeInstalls } from './startTemplateCustomNodeInstalls'
 
 const payload: InstallPackParams = {
   id: 'missing-id',
@@ -62,8 +28,7 @@ function createDependencies(
 }
 
 describe('startTemplateCustomNodeInstalls', () => {
-  it('hands off only unique proven-missing packages', async () => {
-    const startInstalls = await loadStartInstalls()
+  it('hands off only unique proven-missing packages', () => {
     const missing = {
       id: 'missing-id',
       status: 'missing' as const,
@@ -72,7 +37,7 @@ describe('startTemplateCustomNodeInstalls', () => {
     const dependencies = createDependencies()
 
     expect(
-      startInstalls(
+      startTemplateCustomNodeInstalls(
         [
           missing,
           missing,
@@ -89,12 +54,11 @@ describe('startTemplateCustomNodeInstalls', () => {
     expect(dependencies.installPack).toHaveBeenCalledWith(payload)
   })
 
-  it('returns without waiting for admitted Manager work', async () => {
-    const startInstalls = await loadStartInstalls()
+  it('returns without waiting for admitted Manager work', () => {
     const installPack = vi.fn(() => new Promise<unknown>(() => undefined))
 
     expect(
-      startInstalls(
+      startTemplateCustomNodeInstalls(
         [
           {
             id: 'missing-id',
@@ -109,13 +73,12 @@ describe('startTemplateCustomNodeInstalls', () => {
   })
 
   it('clears request cache after rejection so a row can retry', async () => {
-    const startInstalls = await loadStartInstalls()
     const error = new Error('queue unavailable')
     const dependencies = createDependencies({
       installPack: vi.fn().mockRejectedValue(error)
     })
 
-    startInstalls(
+    startTemplateCustomNodeInstalls(
       [
         {
           id: 'missing-id',
@@ -132,8 +95,7 @@ describe('startTemplateCustomNodeInstalls', () => {
     expect(dependencies.reportUnexpectedError).toHaveBeenCalledWith(error)
   })
 
-  it('isolates a malformed package without blocking other handoffs', async () => {
-    const startInstalls = await loadStartInstalls()
+  it('isolates a malformed package without blocking other handoffs', () => {
     const error = new Error('invalid payload')
     const dependencies = createDependencies({
       createPayload: vi.fn((pack) => {
@@ -143,7 +105,7 @@ describe('startTemplateCustomNodeInstalls', () => {
     })
 
     expect(
-      startInstalls(
+      startTemplateCustomNodeInstalls(
         [
           { id: 'bad-id', status: 'missing', pack: { id: 'bad-id' } },
           { id: 'good-id', status: 'missing', pack: { id: 'good-id' } }

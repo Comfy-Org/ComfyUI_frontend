@@ -1,41 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import type { components } from '@/types/comfyRegistryTypes'
-import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
-
-type NodePack = components['schemas']['Node']
-type InstallPackParams = ManagerComponents['schemas']['InstallPackParams']
-type CreatePackInstallPayload = (
-  installItem: NodePack,
-  nodeIdRequiredMessage: string
-) => InstallPackParams
-
-function isPayloadModule(
-  value: unknown
-): value is { createPackInstallPayload: CreatePackInstallPayload } {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'createPackInstallPayload' in value &&
-    typeof value.createPackInstallPayload === 'function'
-  )
-}
-
-async function loadCreatePackInstallPayload() {
-  const modulePath = './packInstallPayload'
-  const value: unknown = await import(modulePath)
-
-  if (!isPayloadModule(value)) {
-    throw new Error('Expected createPackInstallPayload to be exported')
-  }
-
-  return value.createPackInstallPayload
-}
+import { createPackInstallPayload } from './packInstallPayload'
 
 describe('createPackInstallPayload', () => {
-  it('uses the latest published version with current Manager defaults', async () => {
-    const createPackInstallPayload = await loadCreatePackInstallPayload()
-
+  it('uses the latest published version with current Manager defaults', () => {
     expect(
       createPackInstallPayload(
         {
@@ -56,9 +24,7 @@ describe('createPackInstallPayload', () => {
     })
   })
 
-  it('uses nightly for an unclaimed pack', async () => {
-    const createPackInstallPayload = await loadCreatePackInstallPayload()
-
+  it('uses nightly for an unclaimed pack', () => {
     expect(
       createPackInstallPayload(
         {
@@ -77,9 +43,7 @@ describe('createPackInstallPayload', () => {
     })
   })
 
-  it('falls back to latest for a claimed pack without a published version', async () => {
-    const createPackInstallPayload = await loadCreatePackInstallPayload()
-
+  it('falls back to latest for a claimed pack without a published version', () => {
     expect(
       createPackInstallPayload(
         { id: 'comfyui-minimal-pack', publisher: { name: 'Publisher' } },
@@ -93,8 +57,7 @@ describe('createPackInstallPayload', () => {
     })
   })
 
-  it('throws the injected message when the pack ID is missing', async () => {
-    const createPackInstallPayload = await loadCreatePackInstallPayload()
+  it('throws the injected message when the pack ID is missing', () => {
     const nodeIdRequiredMessage = 'Localized node ID requirement'
 
     expect(() => createPackInstallPayload({}, nodeIdRequiredMessage)).toThrow(

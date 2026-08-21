@@ -1,73 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-import type { components } from '@/types/comfyRegistryTypes'
-
-type NodePack = components['schemas']['Node']
-
-type Snapshot = {
-  managerCapability: 'ready' | 'disabled' | 'legacy' | 'incompatible'
-  installedInventory: {
-    isComplete: boolean
-    entries: readonly { id: string; enabled: boolean }[]
-  }
-  inProgressIds: readonly string[]
-  registry: {
-    isComplete: boolean
-    eligibilityById: Readonly<
-      Record<
-        string,
-        | { status: 'eligible'; pack: NodePack }
-        | {
-            status: 'unavailable'
-            reason: 'unsafe' | 'incompatible' | 'invalid-payload'
-          }
-        | { status: 'unknown' }
-      >
-    >
-  }
-}
-
-type Availability =
-  | { id: string; status: 'installed' | 'disabled' | 'in-progress' | 'unknown' }
-  | {
-      id: string
-      status: 'unavailable'
-      reason: string
-    }
-  | { id: string; status: 'missing'; pack: NodePack }
-
-type AvailabilityModule = {
-  resolveTemplateCustomNodeAvailability: (
-    ids: readonly string[],
-    snapshot: Snapshot
-  ) => Availability[]
-  applyTemplateCustomNodeLiveState: (
-    availability: Availability,
-    state: {
-      isInstalling: boolean
-      isInstalled: boolean
-      isEnabled: boolean
-    }
-  ) => Availability
-}
-
-function isAvailabilityModule(value: unknown): value is AvailabilityModule {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'resolveTemplateCustomNodeAvailability' in value &&
-    'applyTemplateCustomNodeLiveState' in value
-  )
-}
-
-async function loadAvailabilityModule(): Promise<AvailabilityModule> {
-  const modulePath = './templateCustomNodeAvailability'
-  const value: unknown = await import(modulePath)
-  if (!isAvailabilityModule(value)) {
-    throw new Error('Expected the custom-node availability module')
-  }
-  return value
-}
+import type {
+  ResolvedTemplateCustomNodeAvailability as Availability,
+  TemplateCustomNodeAvailabilitySnapshot as Snapshot
+} from './templateCustomNodeAvailability'
+import {
+  applyTemplateCustomNodeLiveState,
+  resolveTemplateCustomNodeAvailability
+} from './templateCustomNodeAvailability'
 
 function readySnapshot(
   ids: readonly string[],
@@ -88,9 +28,7 @@ function readySnapshot(
 }
 
 describe('resolveTemplateCustomNodeAvailability', () => {
-  it('preserves exact IDs and gives active local state precedence', async () => {
-    const { resolveTemplateCustomNodeAvailability } =
-      await loadAvailabilityModule()
+  it('preserves exact IDs and gives active local state precedence', () => {
     const ids = ['Installing.ID', 'installed-id', 'disabled_id', 'mixed-id']
 
     expect(
@@ -118,10 +56,7 @@ describe('resolveTemplateCustomNodeAvailability', () => {
     ])
   })
 
-  it('never infers missing from incomplete inventories', async () => {
-    const { resolveTemplateCustomNodeAvailability } =
-      await loadAvailabilityModule()
-
+  it('never infers missing from incomplete inventories', () => {
     expect(
       resolveTemplateCustomNodeAvailability(
         ['package-id'],
@@ -141,9 +76,7 @@ describe('resolveTemplateCustomNodeAvailability', () => {
     ).toEqual([{ id: 'package-id', status: 'unknown' }])
   })
 
-  it('only marks a proven eligible Registry pack missing', async () => {
-    const { resolveTemplateCustomNodeAvailability } =
-      await loadAvailabilityModule()
+  it('only marks a proven eligible Registry pack missing', () => {
     const eligiblePack = { id: 'eligible-id', latest_version: { version: '1' } }
 
     expect(
@@ -193,8 +126,7 @@ describe('resolveTemplateCustomNodeAvailability', () => {
     ])
   })
 
-  it('uses live Manager state without making unavailable rows installable', async () => {
-    const { applyTemplateCustomNodeLiveState } = await loadAvailabilityModule()
+  it('uses live Manager state without making unavailable rows installable', () => {
     const unavailable: Availability = {
       id: 'package-id',
       status: 'unavailable',

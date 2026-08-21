@@ -1,57 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { components } from '@/types/comfyRegistryTypes'
-import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
-import type { SystemEnvironment } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
-
-type NodePack = components['schemas']['Node']
-type InstalledPacksResponse =
-  ManagerComponents['schemas']['InstalledPacksResponse']
-
-type Dependencies = {
-  getManagerCapability: () => 'ready' | 'disabled' | 'legacy' | 'incompatible'
-  listInstalledPacks: (
-    signal?: AbortSignal
-  ) => Promise<InstalledPacksResponse | null>
-  isPackInstalling: (id: string) => boolean
-  listRegistryPacks: (
-    ids: readonly string[],
-    signal?: AbortSignal
-  ) => Promise<{
-    nodes?: NodePack[]
-    total?: number
-    totalPages?: number
-    page?: number
-  } | null>
-  getEnvironment: () => SystemEnvironment
-}
-
-type UseAvailability = (dependencies: Dependencies) => {
-  resolveAvailability: (
-    ids: readonly string[],
-    signal?: AbortSignal
-  ) => Promise<readonly { id: string; status: string }[]>
-}
-
-function isAdapterModule(
-  value: unknown
-): value is { useTemplateCustomNodeAvailability: UseAvailability } {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'useTemplateCustomNodeAvailability' in value &&
-    typeof value.useTemplateCustomNodeAvailability === 'function'
-  )
-}
-
-async function loadAdapter(): Promise<UseAvailability> {
-  const modulePath = './useTemplateCustomNodeAvailability'
-  const value: unknown = await import(modulePath)
-  if (!isAdapterModule(value)) {
-    throw new Error('Expected the custom-node availability adapter')
-  }
-  return value.useTemplateCustomNodeAvailability
-}
+import type { TemplateCustomNodeAvailabilityDependencies as Dependencies } from './useTemplateCustomNodeAvailability'
+import { useTemplateCustomNodeAvailability } from './useTemplateCustomNodeAvailability'
 
 function createDependencies(
   overrides: Partial<Dependencies> = {}
@@ -88,7 +38,6 @@ function createDependencies(
 
 describe('template custom-node availability adapter', () => {
   it('resolves raw Manager inventory before exact Registry eligibility', async () => {
-    const useTemplateCustomNodeAvailability = await loadAdapter()
     const dependencies = createDependencies({
       listInstalledPacks: vi.fn().mockResolvedValue({
         'installed@1_0_0': {
@@ -137,7 +86,6 @@ describe('template custom-node availability adapter', () => {
   it.for(['disabled', 'legacy', 'incompatible'] as const)(
     'does not call Manager v4 or Registry while Manager is $0',
     async (managerCapability) => {
-      const useTemplateCustomNodeAvailability = await loadAdapter()
       const dependencies = createDependencies({
         getManagerCapability: () => managerCapability
       })
@@ -153,7 +101,6 @@ describe('template custom-node availability adapter', () => {
   )
 
   it('keeps absence unknown after inventory, Registry, or abort failure', async () => {
-    const useTemplateCustomNodeAvailability = await loadAdapter()
     const inventoryFailure = createDependencies({
       listInstalledPacks: vi.fn().mockResolvedValue(null)
     })
@@ -186,7 +133,6 @@ describe('template custom-node availability adapter', () => {
   })
 
   it('rejects incomplete or unsafe Registry evidence', async () => {
-    const useTemplateCustomNodeAvailability = await loadAdapter()
     const incomplete = createDependencies({
       listRegistryPacks: vi.fn().mockResolvedValue({
         nodes: [],
@@ -228,7 +174,6 @@ describe('template custom-node availability adapter', () => {
   })
 
   it('keeps compatibility unknown without required environment evidence', async () => {
-    const useTemplateCustomNodeAvailability = await loadAdapter()
     const dependencies = createDependencies({
       listRegistryPacks: vi.fn().mockResolvedValue({
         nodes: [
