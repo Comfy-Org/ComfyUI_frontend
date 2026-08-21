@@ -8,12 +8,13 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
-const { downloadAssets } = vi.hoisted(() => ({
-  downloadAssets: vi.fn()
+const { downloadAssets, isAssetDeleting } = vi.hoisted(() => ({
+  downloadAssets: vi.fn(),
+  isAssetDeleting: vi.fn(() => false)
 }))
 
 vi.mock('@/stores/assetsStore', () => ({
-  useAssetsStore: () => ({ isAssetDeleting: () => false })
+  useAssetsStore: () => ({ isAssetDeleting })
 }))
 
 vi.mock('../composables/useMediaAssetActions', () => ({
@@ -267,6 +268,8 @@ describe('MediaAssetCard', () => {
       name: 'assetBrowser.ariaLabel.assetCard'
     })
     await user.tab()
+    expect(screen.getByRole('button', { name: 'g.play' })).toHaveFocus()
+    await user.tab()
     expect(selectionControl).toHaveFocus()
     await user.tab()
     const downloadButton = screen.getByRole('button', {
@@ -279,6 +282,14 @@ describe('MediaAssetCard', () => {
     await user.unhover(hoverTarget)
 
     expect(downloadButton).toHaveFocus()
+  })
+
+  it('removes the preview area from the tab order while the asset is deleting', () => {
+    isAssetDeleting.mockReturnValue(true)
+    const { container } = renderCard({ loading: false })
+
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- inert is an attribute, not a role
+    expect(container.querySelector('[inert]')).toBeInTheDocument()
   })
 
   it('selects the asset from the info area or selection control', async () => {
