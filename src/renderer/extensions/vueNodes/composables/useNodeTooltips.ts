@@ -6,10 +6,9 @@ import { computed, ref, unref } from 'vue'
 import type { MaybeRef } from 'vue'
 
 import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
-import { st, stRaw } from '@/i18n'
+import { resolveNodeDefSlotText, resolveNodeDefText } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { normalizeI18nKey } from '@/utils/formatUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
 // PrimeVue adds this internal property to elements with tooltips
@@ -107,8 +106,11 @@ export function useNodeTooltips(nodeType: MaybeRef<string>) {
   const getNodeDescription = computed(() => {
     if (!tooltipsEnabled.value || !nodeDef.value) return ''
 
-    const key = `nodeDefs.${normalizeI18nKey(unref(nodeType))}.description`
-    return st(key, nodeDef.value.description || '')
+    return resolveNodeDefText(
+      'description',
+      unref(nodeType),
+      nodeDef.value.description || undefined
+    )
   })
 
   /**
@@ -117,9 +119,12 @@ export function useNodeTooltips(nodeType: MaybeRef<string>) {
   const getInputSlotTooltip = (slotName: string) => {
     if (!tooltipsEnabled.value || !nodeDef.value) return ''
 
-    const key = `nodeDefs.${normalizeI18nKey(unref(nodeType))}.inputs.${normalizeI18nKey(slotName)}.tooltip`
-    const inputTooltip = nodeDef.value.inputs?.[slotName]?.tooltip ?? ''
-    return stRaw(key, inputTooltip)
+    return resolveNodeDefSlotText(
+      'tooltip',
+      unref(nodeType),
+      slotName,
+      nodeDef.value.inputs?.[slotName]?.tooltip
+    )
   }
 
   /**
@@ -128,9 +133,12 @@ export function useNodeTooltips(nodeType: MaybeRef<string>) {
   const getOutputSlotTooltip = (slotIndex: number) => {
     if (!tooltipsEnabled.value || !nodeDef.value) return ''
 
-    const key = `nodeDefs.${normalizeI18nKey(unref(nodeType))}.outputs.${slotIndex}.tooltip`
-    const outputTooltip = nodeDef.value.outputs?.[slotIndex]?.tooltip ?? ''
-    return stRaw(key, outputTooltip)
+    return resolveNodeDefSlotText(
+      'tooltip',
+      unref(nodeType),
+      slotIndex,
+      nodeDef.value.outputs?.[slotIndex]?.tooltip
+    )
   }
 
   /**
@@ -144,9 +152,12 @@ export function useNodeTooltips(nodeType: MaybeRef<string>) {
     if (widgetTooltip) return widgetTooltip
 
     // Then try input-based tooltip lookup
-    const key = `nodeDefs.${normalizeI18nKey(unref(nodeType))}.inputs.${normalizeI18nKey(widget.name)}.tooltip`
-    const inputTooltip = nodeDef.value.inputs?.[widget.name]?.tooltip ?? ''
-    return stRaw(key, inputTooltip)
+    return resolveNodeDefSlotText(
+      'tooltip',
+      unref(nodeType),
+      widget.name,
+      nodeDef.value.inputs?.[widget.name]?.tooltip
+    )
   }
 
   /**

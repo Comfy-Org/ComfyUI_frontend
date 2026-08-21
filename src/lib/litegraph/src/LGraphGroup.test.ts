@@ -1,7 +1,8 @@
-import { describe, expect, vi } from 'vitest'
+import { afterEach, describe, expect, vi } from 'vitest'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { LGraph, LGraphGroup } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphGroup, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { containsRect } from '@/lib/litegraph/src/measure'
 import * as colorUtil from '@/utils/colorUtil'
 
 import { test } from './__fixtures__/testExtensions'
@@ -102,6 +103,49 @@ describe('LGraphGroup', () => {
       expect(outer.children.has(inner)).toBe(true)
       // inner should not have computed its own children (it was never processed)
       expect(inner.children.size).toBe(0)
+    })
+  })
+
+  describe('resizeTo', () => {
+    const alwaysSnapToGrid = LiteGraph.alwaysSnapToGrid
+    const gridSize = LiteGraph.CANVAS_GRID_SIZE
+
+    afterEach(() => {
+      LiteGraph.alwaysSnapToGrid = alwaysSnapToGrid
+      LiteGraph.CANVAS_GRID_SIZE = gridSize
+    })
+
+    function createGroupFittedToContent() {
+      const graph = new LGraph()
+      const group = new LGraphGroup('group')
+      graph.add(group)
+
+      const content = new LGraphGroup('content')
+      content.pos = [103, 207]
+      content.size = [140, 80]
+
+      group.resizeTo([content], 10)
+      return { group, content }
+    }
+
+    test('fits the group around its contents with padding', () => {
+      LiteGraph.alwaysSnapToGrid = false
+      const { group } = createGroupFittedToContent()
+
+      expect([...group.pos]).toEqual([93, 197 - group.titleHeight])
+      expect([...group.size]).toEqual([160, 100 + group.titleHeight])
+    })
+
+    test('expands every border to the grid when always snapping', () => {
+      LiteGraph.alwaysSnapToGrid = true
+      LiteGraph.CANVAS_GRID_SIZE = 10
+      const { group, content } = createGroupFittedToContent()
+
+      const [x, y, width, height] = group.boundingRect
+      expect([x, y, x + width, y + height].map((edge) => edge % 10)).toEqual([
+        0, 0, 0, 0
+      ])
+      expect(containsRect(group.boundingRect, content.boundingRect)).toBe(true)
     })
   })
 
