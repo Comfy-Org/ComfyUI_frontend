@@ -146,7 +146,7 @@ Every op carries the same envelope, minted by its creator before dispatch:
 
 Six kinds, frozen:
 
-| Kind | Payload beyond the envelope | Batchable |
+| Kind | Payload beyond the envelope | Batchable (authoring) |
 |---|---|---|
 | `add_node` | `node_id`, `class_type`, `pos`, `node` (the complete node object, inserted verbatim) | yes |
 | `connect` | `link_id`, `from_node`, `from_slot`, `to_node`, `to_slot` (`null` for autogrow), `link_type`, optional `grow` | yes |
@@ -157,6 +157,19 @@ Six kinds, frozen:
 
 `FROZEN_OPS`, `DEFERRED_OPS`, and `BATCHABLE_OPS` are exported so you can check
 programmatically rather than hard-coding the lists.
+
+**"Batchable" is an authoring-surface rule, and `applyOps` does not enforce
+it.** The column above is comfy-cli's: `clear` and `reset_doc` rewrite the whole
+document, so a batch of edit *specs* containing either is rejected whole by
+`apply_specs` before any op is minted. `applyOps` is the other surface — it
+replays already-minted ops under [abort-remainder](#what-applyops-returns), the
+same as comfy-cli's `apply_op`, which replays `clear` in any position. So a
+`clear` in the middle of an op array is applied here, deliberately: the
+`edit-heavy` conformance session contains exactly that, and
+[`docs/portability.md`](docs/portability.md) requires every language
+implementation to replay it with no failures. If you are building a submission
+surface in front of the applier, that admission layer is where `BATCHABLE_OPS`
+belongs. `test/batch-policy.test.ts` pins all of this.
 
 The normative definition of the op envelope and the six kinds is
 `docs/op-vocabulary-v1.md` in

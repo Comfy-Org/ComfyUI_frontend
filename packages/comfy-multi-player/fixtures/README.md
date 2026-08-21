@@ -73,8 +73,8 @@ The sessions:
 
 | File | Ops | Exercises |
 |---|---|---|
-| `session-large-build.session.jsonl` | 162 | full build-out: add_node/connect (incl. autogrow)/set_widget/delete_node/clear |
-| `session-edit-heavy.session.jsonl` | 61 | set_widget-dominated editing on an existing graph |
+| `session-large-build.session.jsonl` | 162 | full build-out: add_node/connect (incl. autogrow)/set_widget/delete_node |
+| `session-edit-heavy.session.jsonl` | 61 | set_widget-dominated editing on an existing graph, plus the corpus's only `clear` — at index 36 of the stream, so this session is also what pins that the replay surface accepts a whole-document op mid-batch (`test/batch-policy.test.ts`) |
 | `session-subgraph.session.jsonl` | 11 | subgraph-interior set_widget via all three address forms |
 | `session-frontend-only-notes.session.jsonl` | 2 | `Note` + `MarkdownNote` — classes `object_info` never lists, so the pinned catalog cannot describe them (schema Amendment A2) |
 

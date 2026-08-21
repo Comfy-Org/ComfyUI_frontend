@@ -571,7 +571,7 @@ and first-class definitions (§5.1) only shrink these):
 | `connect` (concrete) | 4–5.2 / 7 | yes — bounded by the displaced link's source degree |
 | `connect` (autogrow) | ~4 | yes — `grow_id` identity keeps replays non-clobbering |
 | `delete_node` | 4.7–5 / 6 | yes — writes bounded by the node's degree; the dangling-reference *scan* is O(nodes) read cost, accepted |
-| `clear` | O(doc) | **no — inherent.** Rare, standalone-only (not batchable), SHOULD be host-mediated and never merged casually |
+| `clear` | O(doc) | **no — inherent.** Rare; standalone-only at the *authoring* surface (vocabulary §1.5: `apply_specs` rejects a spec batch containing it, code `workflow_clear_not_batchable`) — the *replay* surface (`apply_op` / `applyOps`, §4 abort-remainder) accepts it in any position and must, per `docs/portability.md`. SHOULD be host-mediated and never merged casually |
 
 ---
 

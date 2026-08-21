@@ -28,7 +28,28 @@ export const FROZEN_OPS = ["add_node", "connect", "set_widget", "delete_node", "
 /** Defined by the vocabulary but deferred (§1.6): rejected until un-deferred by amendment. */
 export const DEFERRED_OPS = ["reset_doc"] as const;
 
-/** Kinds accepted inside a multi-op batch by comfy-cli's `apply_specs`. */
+/**
+ * Kinds accepted inside a multi-op batch by comfy-cli's `apply_specs` — the
+ * **spec-authoring** surface (`comfy workflow apply` / `foreach`), which takes
+ * edit *specs* and MINTS ops. `clear` and `reset_doc` rewrite the whole
+ * document, so a spec batch containing either is rejected whole, before
+ * anything is minted, with its own code (`workflow_clear_not_batchable` /
+ * `workflow_reset_doc_not_batchable`) — vocabulary §1, §1.5, §1.6.
+ *
+ * **This list is deliberately NOT a gate on `applyOps`.** `applyOps` ports
+ * `apply_op` — the *replay* surface — whose batch protocol is vocabulary §4
+ * abort-remainder with no kind restriction; `apply_op` replays `clear` in any
+ * position. Gating dispatch on this list would diverge from `apply_op` (KA-3
+ * one-implementation parity) and would reject `fixtures/golden-vectors/
+ * conformance.json`'s `edit-heavy` case, which carries a `clear` at index 36
+ * of a 61-op stream that `docs/portability.md` requires every conforming
+ * runner to apply "in file order with no failures or skips".
+ *
+ * Exported for a HOST that fronts the applier with its own submission surface:
+ * that admission layer is the `apply_specs` analogue and is where the rule
+ * belongs. `test/batch-policy.test.ts` pins the list, the README table, and
+ * the deliberate non-enforcement together.
+ */
 export const BATCHABLE_OPS = ["add_node", "connect", "set_widget", "delete_node"] as const;
 
 // ---------------------------------------------------------------------------
