@@ -16,7 +16,6 @@ function renderChip(props: {
   })
 }
 
- 
 function iconMarker(container: Element): string {
   return container.querySelector(
     'span[class*="lucide--"], span[class*="icon-"]'
@@ -59,4 +58,3 @@ describe('AttachmentChip', () => {
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
   })
 })
- 
