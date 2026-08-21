@@ -79,6 +79,10 @@ function project<T extends INodeSlot>(
       )
         Reflect.set(descriptor, property, value)
       return Reflect.set(target, property, value, receiver)
+    },
+    deleteProperty(target, property) {
+      Reflect.deleteProperty(descriptor, property)
+      return Reflect.deleteProperty(target, property)
     }
   })
   Object.defineProperty(toRaw(projection), slotDescriptor, {
