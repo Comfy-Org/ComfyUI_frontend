@@ -43,7 +43,13 @@ describe('output helpers', () => {
     expect(lines[0]).toContain('v25.9.0')
     expect(lines[1]).toContain('Dev server')
     expect(lines[2]).toContain('Checkpoints')
-    expect(new Set(lines.map((l) => l.trim()[0])).size).toBe(3)
+
+    // Asserted by marker rather than by leading character: picocolors emits
+    // escapes only when the run has colour, so the first character differs
+    // between a local terminal and CI.
+    expect(lines[0]).toContain('✅')
+    expect(lines[1]).toContain('❌')
+    expect(lines[2]).toContain('⚠️')
   })
 
   it('prefixes every instruction line so they read as one block', () => {
