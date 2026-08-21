@@ -18,6 +18,7 @@ const mockIsLegacyTeamPlan = vi.hoisted(() => ({ value: false }))
 const mockIsTeamPlan = vi.hoisted(() => ({ value: false }))
 const mockCurrentPlanSlug = vi.hoisted(() => ({ value: null as string | null }))
 const mockCanManageSubscription = vi.hoisted(() => ({ value: true }))
+const mockEmbeddedCheckoutEnabled = vi.hoisted(() => ({ value: false }))
 
 vi.mock('vue', async (importOriginal) => {
   const actual = await importOriginal()
@@ -50,6 +51,16 @@ vi.mock('@/composables/billing/useBillingRouting', () => ({
         value:
           mockShouldUseUnifiedPricing.value ??
           mockShouldUseWorkspaceBilling.value
+      }
+    }
+  })
+}))
+
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({
+    flags: {
+      get embeddedCheckoutEnabled() {
+        return mockEmbeddedCheckoutEnabled.value
       }
     }
   })
@@ -117,6 +128,7 @@ describe('useSubscriptionDialog', () => {
     mockIsTeamPlan.value = false
     mockCurrentPlanSlug.value = null
     mockCanManageSubscription.value = true
+    mockEmbeddedCheckoutEnabled.value = false
   })
 
   describe('showPricingTable', () => {
@@ -301,6 +313,19 @@ describe('useSubscriptionDialog', () => {
       const props = mockShowLayoutDialog.mock.calls[0][0].props
       expect(props.initialPlanMode).toBe('personal')
       expect(props).not.toHaveProperty('onChooseTeam')
+      expect(props.embeddedCheckoutEnabled).toBe(false)
+    })
+
+    it('enables embedded checkout only for the exact server flag', () => {
+      mockShouldUseWorkspaceBilling.value = true
+      mockEmbeddedCheckoutEnabled.value = true
+      const { showPricingTable } = useSubscriptionDialog()
+
+      showPricingTable()
+
+      expect(
+        mockShowLayoutDialog.mock.calls[0][0].props.embeddedCheckoutEnabled
+      ).toBe(true)
     })
 
     it('routes an existing per-member (legacy) team subscriber to the old team table', () => {

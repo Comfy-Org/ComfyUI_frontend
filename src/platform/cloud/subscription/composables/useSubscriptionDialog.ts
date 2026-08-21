@@ -3,6 +3,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
@@ -43,6 +44,7 @@ export const useSubscriptionDialog = () => {
   const dialogService = useDialogService()
   const dialogStore = useDialogStore()
   const workspaceStore = useTeamWorkspaceStore()
+  const { flags } = useFeatureFlags()
 
   function hide() {
     dialogStore.closeDialog({ key: DIALOG_KEY })
@@ -148,6 +150,7 @@ export const useSubscriptionDialog = () => {
         props: {
           onClose: hide,
           reason: options?.reason,
+          embeddedCheckoutEnabled: flags.embeddedCheckoutEnabled,
           initialCheckout: options?.initialCheckout,
           initialPlanMode: getInitialPlanMode(
             options?.planMode,
@@ -164,6 +167,8 @@ export const useSubscriptionDialog = () => {
           // steps shrink (the content root sets its own width per checkoutStep).
           renderer: 'reka',
           size: 'full',
+          // A scrim click mid-checkout would silently discard typed card
+          // details and any pending 3DS state; the X is the only close.
           dismissableMask: false,
           contentClass:
             'w-fit max-w-[min(1280px,95vw)] sm:max-w-[min(1280px,95vw)] max-h-[90vh] rounded-2xl border border-border-default bg-secondary-background shadow-[0_25px_80px_rgba(5,6,12,0.45)]'
