@@ -43,11 +43,7 @@ function buildLoad3dDeps(container: HTMLElement): Load3dDeps {
   )
 
   cameraManager = new CameraManager(renderer, eventManager)
-  controlsManager = new ControlsManager(
-    container,
-    cameraManager.activeCamera,
-    eventManager
-  )
+  controlsManager = new ControlsManager(container, cameraManager.activeCamera)
   cameraManager.setControls(controlsManager.controls)
 
   const lightingManager = new LightingManager(sceneManager.scene, eventManager)
@@ -61,6 +57,7 @@ function buildLoad3dDeps(container: HTMLElement): Load3dDeps {
     renderer,
     getActiveCamera,
     getControls,
+    () => cameraManager.getCameraState(),
     eventManager
   )
 
