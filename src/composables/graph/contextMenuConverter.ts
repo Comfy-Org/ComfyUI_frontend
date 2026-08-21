@@ -268,6 +268,172 @@ function getMenuItemOrder(label: string): number {
 }
 
 /**
+ * Capture submenu items from a dynamic submenu callback
+ * Intercepts ContextMenu constructor to extract items without creating HTML menu
+ */
+function captureDynamicSubmenu(
+  item: IContextMenuValue,
+  node?: LGraphNode
+): SubMenuOption[] | undefined {
+  let capturedItems: readonly (IContextMenuValue | string | null)[] | undefined
+  let capturedOptions: IContextMenuOptions | undefined
+
+  // Store original ContextMenu constructor
+  const OriginalContextMenu = LiteGraph.ContextMenu
+
+  try {
+    // Mock ContextMenu constructor to capture submenu items and options
+    LiteGraph.ContextMenu = function (
+      items: readonly (IContextMenuValue | string | null)[],
+      options?: IContextMenuOptions
+    ) {
+      // Capture both items and options
+      capturedItems = items
+      capturedOptions = options
+      // Return a minimal mock object to prevent errors
+      return {
+        close: () => {},
+        root: document.createElement('div')
+      } as unknown as ContextMenu
+    } as unknown as typeof ContextMenu
+
+    // Execute the callback to trigger submenu creation
+    try {
+      // Create a mock MouseEvent for the callback
+      const mockEvent = new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+        clientX: 0,
+        clientY: 0
+      })
+
+      // Create a mock parent menu
+      const mockMenu = {
+        close: () => {},
+        root: document.createElement('div')
+      } as unknown as ContextMenu
+
+      // Call the callback which should trigger ContextMenu constructor
+      // Callback signature varies, but typically: (value, options, event, menu, node)
+      void item.callback?.call(
+        item as unknown as ContextMenuDivElement,
+        item.value,
+        {},
+        mockEvent,
+        mockMenu,
+        node // Pass the node context for callbacks that need it
+      )
+    } catch (error) {
+      console.warn(
+        '[ContextMenuConverter] Error executing callback for:',
+        item.content,
+        error
+      )
+    }
+  } finally {
+    // Always restore original constructor
+    LiteGraph.ContextMenu = OriginalContextMenu
+  }
+
+  // Convert captured items to Vue submenu format
+  if (capturedItems) {
+    const converted = convertSubmenuToOptions(capturedItems, capturedOptions)
+    return converted
+  }
+
+  console.warn('[ContextMenuConverter] No items captured for:', item.content)
+  return undefined
+}
+
+/**
+ * Convert LiteGraph submenu items to Vue SubMenuOption format
+ */
+function convertSubmenuToOptions(
+  items: readonly (IContextMenuValue | string | null)[],
+  options?: IContextMenuOptions
+): SubMenuOption[] {
+  const result: SubMenuOption[] = []
+
+  for (const item of items) {
+    // Skip null separators
+    if (item === null) {
+      continue
+    }
+
+    // Handle string items (simple labels like in Mode/Shapes menus)
+    if (typeof item === 'string') {
+      const subOption: SubMenuOption = {
+        label: item,
+        action: () => {
+          try {
+            // Call the options callback with the string value
+            if (options?.callback) {
+              void options.callback.call(
+                null,
+                item,
+                options,
+                undefined,
+                undefined,
+                options.extra
+              )
+            }
+          } catch (error) {
+            console.error('Error executing string item callback:', error)
+          }
+        }
+      }
+      result.push(subOption)
+      continue
+    }
+
+    // Handle object items
+    if (!item.content) {
+      continue
+    }
+
+    // Extract text content from HTML if present
+    const content = stripHtmlTags(item.content)
+
+    const subOption: SubMenuOption = {
+      label: content,
+      action: () => {
+        try {
+          void item.callback?.call(
+            item as unknown as ContextMenuDivElement,
+            item.value,
+            {},
+            undefined,
+            undefined,
+            item
+          )
+        } catch (error) {
+          console.error('Error executing submenu callback:', error)
+        }
+      }
+    }
+
+    // Pass through disabled state
+    if (item.disabled) {
+      subOption.disabled = true
+    }
+
+    result.push(subOption)
+  }
+  return result
+}
+
+/**
+ * Strip HTML tags from content string safely
+ * LiteGraph menu items often include HTML for styling
+ */
+function stripHtmlTags(html: string): string {
+  // Use DOMPurify to sanitize and strip all HTML tags
+  const sanitized = DOMPurify.sanitize(html, { ALLOWED_TAGS: [] })
+  const result = sanitized.trim()
+  return result || html.replace(/<[^>]*>/g, '').trim() || html
+}
+
+/**
  * Build structured menu with core items first, then extensions under a labeled section
  * Ensures Delete always appears at the bottom
  */
@@ -474,170 +640,4 @@ export function convertContextMenuToOptions(
   }
 
   return result
-}
-
-/**
- * Capture submenu items from a dynamic submenu callback
- * Intercepts ContextMenu constructor to extract items without creating HTML menu
- */
-function captureDynamicSubmenu(
-  item: IContextMenuValue,
-  node?: LGraphNode
-): SubMenuOption[] | undefined {
-  let capturedItems: readonly (IContextMenuValue | string | null)[] | undefined
-  let capturedOptions: IContextMenuOptions | undefined
-
-  // Store original ContextMenu constructor
-  const OriginalContextMenu = LiteGraph.ContextMenu
-
-  try {
-    // Mock ContextMenu constructor to capture submenu items and options
-    LiteGraph.ContextMenu = function (
-      items: readonly (IContextMenuValue | string | null)[],
-      options?: IContextMenuOptions
-    ) {
-      // Capture both items and options
-      capturedItems = items
-      capturedOptions = options
-      // Return a minimal mock object to prevent errors
-      return {
-        close: () => {},
-        root: document.createElement('div')
-      } as unknown as ContextMenu
-    } as unknown as typeof ContextMenu
-
-    // Execute the callback to trigger submenu creation
-    try {
-      // Create a mock MouseEvent for the callback
-      const mockEvent = new MouseEvent('click', {
-        bubbles: true,
-        cancelable: true,
-        clientX: 0,
-        clientY: 0
-      })
-
-      // Create a mock parent menu
-      const mockMenu = {
-        close: () => {},
-        root: document.createElement('div')
-      } as unknown as ContextMenu
-
-      // Call the callback which should trigger ContextMenu constructor
-      // Callback signature varies, but typically: (value, options, event, menu, node)
-      void item.callback?.call(
-        item as unknown as ContextMenuDivElement,
-        item.value,
-        {},
-        mockEvent,
-        mockMenu,
-        node // Pass the node context for callbacks that need it
-      )
-    } catch (error) {
-      console.warn(
-        '[ContextMenuConverter] Error executing callback for:',
-        item.content,
-        error
-      )
-    }
-  } finally {
-    // Always restore original constructor
-    LiteGraph.ContextMenu = OriginalContextMenu
-  }
-
-  // Convert captured items to Vue submenu format
-  if (capturedItems) {
-    const converted = convertSubmenuToOptions(capturedItems, capturedOptions)
-    return converted
-  }
-
-  console.warn('[ContextMenuConverter] No items captured for:', item.content)
-  return undefined
-}
-
-/**
- * Convert LiteGraph submenu items to Vue SubMenuOption format
- */
-function convertSubmenuToOptions(
-  items: readonly (IContextMenuValue | string | null)[],
-  options?: IContextMenuOptions
-): SubMenuOption[] {
-  const result: SubMenuOption[] = []
-
-  for (const item of items) {
-    // Skip null separators
-    if (item === null) {
-      continue
-    }
-
-    // Handle string items (simple labels like in Mode/Shapes menus)
-    if (typeof item === 'string') {
-      const subOption: SubMenuOption = {
-        label: item,
-        action: () => {
-          try {
-            // Call the options callback with the string value
-            if (options?.callback) {
-              void options.callback.call(
-                null,
-                item,
-                options,
-                undefined,
-                undefined,
-                options.extra
-              )
-            }
-          } catch (error) {
-            console.error('Error executing string item callback:', error)
-          }
-        }
-      }
-      result.push(subOption)
-      continue
-    }
-
-    // Handle object items
-    if (!item.content) {
-      continue
-    }
-
-    // Extract text content from HTML if present
-    const content = stripHtmlTags(item.content)
-
-    const subOption: SubMenuOption = {
-      label: content,
-      action: () => {
-        try {
-          void item.callback?.call(
-            item as unknown as ContextMenuDivElement,
-            item.value,
-            {},
-            undefined,
-            undefined,
-            item
-          )
-        } catch (error) {
-          console.error('Error executing submenu callback:', error)
-        }
-      }
-    }
-
-    // Pass through disabled state
-    if (item.disabled) {
-      subOption.disabled = true
-    }
-
-    result.push(subOption)
-  }
-  return result
-}
-
-/**
- * Strip HTML tags from content string safely
- * LiteGraph menu items often include HTML for styling
- */
-function stripHtmlTags(html: string): string {
-  // Use DOMPurify to sanitize and strip all HTML tags
-  const sanitized = DOMPurify.sanitize(html, { ALLOWED_TAGS: [] })
-  const result = sanitized.trim()
-  return result || html.replace(/<[^>]*>/g, '').trim() || html
 }

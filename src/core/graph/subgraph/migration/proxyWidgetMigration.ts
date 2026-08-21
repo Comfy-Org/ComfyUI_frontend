@@ -43,6 +43,36 @@ interface StrippedPrefix {
   deepestPrefixId?: NodeId
 }
 
+interface FlushArgs {
+  hostNode: SubgraphNode
+  hostWidgetValues?: readonly unknown[]
+}
+
+interface PrimitiveBypassTargetRef {
+  targetNodeId: NodeId
+  targetSlot: number
+}
+
+type Plan =
+  | { kind: 'alreadyLinked'; subgraphInputName: string }
+  | { kind: 'createSubgraphInput'; sourceWidgetName: string }
+  | {
+      kind: 'primitiveBypass'
+      primitiveNodeId: NodeId
+      sourceWidgetName: string
+      targets: readonly PrimitiveBypassTargetRef[]
+    }
+  | { kind: 'previewExposure'; sourcePreviewName: string }
+  | { kind: 'quarantine'; reason: ProxyWidgetQuarantineReason }
+
+interface PendingEntry {
+  originalEntry: SerializedProxyWidgetTuple
+  normalized: LegacyProxyEntrySource
+  hostValue: TWidgetValue | undefined
+  isHole: boolean
+  plan: Plan
+}
+
 function stripLegacyPrefixes(sourceWidgetName: string): StrippedPrefix {
   let remaining = sourceWidgetName
   let deepestPrefixId: NodeId | undefined
@@ -62,6 +92,35 @@ function canResolveLegacyProxy(
   return (
     resolveConcretePromotedWidget(hostNode, sourceNodeId, widgetName).status ===
     'resolved'
+  )
+}
+
+function resolveSourceWidget(
+  sourceNode: LGraphNode,
+  sourceWidgetName: string,
+  disambiguatingSourceNodeId?: string
+): IBaseWidget | undefined {
+  if (sourceNode.isSubgraphNode()) {
+    const input = sourceNode.inputs.find((input) => {
+      const target = resolveSubgraphInputTarget(sourceNode, input.name)
+      if (disambiguatingSourceNodeId) {
+        return (
+          target?.widgetName === sourceWidgetName &&
+          target.nodeId === disambiguatingSourceNodeId
+        )
+      }
+      if (input.name === sourceWidgetName) return true
+      return target?.widgetName === sourceWidgetName
+    })
+    // Store-backed projection for a promoted input on a nested subgraph node:
+    // getSlotFromWidget locates the backing slot by widgetId.
+    if (input?.widgetId) return promotedInputWidget(input) ?? undefined
+  }
+
+  const widgets = sourceNode.widgets
+  return (
+    widgets?.find((w) => w.name === sourceWidgetName) ??
+    getPromotableWidgets(sourceNode).find((w) => w.name === sourceWidgetName)
   )
 }
 
@@ -100,153 +159,21 @@ export function normalizeLegacyProxyWidgetEntry(
   }
 }
 
-function resolveSourceWidget(
-  sourceNode: LGraphNode,
-  sourceWidgetName: string,
-  disambiguatingSourceNodeId?: string
-): IBaseWidget | undefined {
-  if (sourceNode.isSubgraphNode()) {
-    const input = sourceNode.inputs.find((input) => {
-      const target = resolveSubgraphInputTarget(sourceNode, input.name)
-      if (disambiguatingSourceNodeId) {
-        return (
-          target?.widgetName === sourceWidgetName &&
-          target.nodeId === disambiguatingSourceNodeId
-        )
-      }
-      if (input.name === sourceWidgetName) return true
-      return target?.widgetName === sourceWidgetName
-    })
-    // Store-backed projection for a promoted input on a nested subgraph node:
-    // getSlotFromWidget locates the backing slot by widgetId.
-    if (input?.widgetId) return promotedInputWidget(input) ?? undefined
-  }
-
-  const widgets = sourceNode.widgets
-  return (
-    widgets?.find((w) => w.name === sourceWidgetName) ??
-    getPromotableWidgets(sourceNode).find((w) => w.name === sourceWidgetName)
-  )
-}
-
-interface FlushArgs {
-  hostNode: SubgraphNode
-  hostWidgetValues?: readonly unknown[]
-}
-
-interface PrimitiveBypassTargetRef {
-  targetNodeId: NodeId
-  targetSlot: number
-}
-
-type Plan =
-  | { kind: 'alreadyLinked'; subgraphInputName: string }
-  | { kind: 'createSubgraphInput'; sourceWidgetName: string }
-  | {
-      kind: 'primitiveBypass'
-      primitiveNodeId: NodeId
-      sourceWidgetName: string
-      targets: readonly PrimitiveBypassTargetRef[]
-    }
-  | { kind: 'previewExposure'; sourcePreviewName: string }
-  | { kind: 'quarantine'; reason: ProxyWidgetQuarantineReason }
-
-interface PendingEntry {
-  originalEntry: SerializedProxyWidgetTuple
-  normalized: LegacyProxyEntrySource
-  hostValue: TWidgetValue | undefined
-  isHole: boolean
-  plan: Plan
-}
-
 const PRIMITIVE_NODE_TYPE = 'PrimitiveNode'
 const QUARANTINE_PROPERTY = 'proxyWidgetErrorQuarantine'
 const QUARANTINE_VERSION = 1
 const PROXY_BYPASS_MARKER_PROPERTY = 'proxyBypassedToSubgraphInput'
 
-export function flushProxyWidgetMigration(args: FlushArgs): void {
-  const { hostNode, hostWidgetValues } = args
+type Outcome<TOk, TReason = ProxyWidgetQuarantineReason> =
+  | ({ ok: true } & TOk)
+  | { ok: false; reason: TReason }
 
-  const tuples = parseProxyWidgets(hostNode.properties.proxyWidgets)
-  if (tuples.length === 0) return
+type RepairValueResult = Outcome<{ subgraphInputName: string }>
 
-  const normalizedEntries = tuples.map((originalEntry) => {
-    const [sourceNodeId, sourceWidgetName, disambiguator] = originalEntry
-    return {
-      originalEntry,
-      normalized: normalizeLegacyProxyWidgetEntry(
-        hostNode,
-        sourceNodeId,
-        sourceWidgetName,
-        disambiguator
-      )
-    }
-  })
-  const cohort = normalizedEntries.map((entry) => entry.normalized)
-
-  const pending: PendingEntry[] = normalizedEntries.map((entry, index) => {
-    const { value, isHole } = pickHostValue(hostWidgetValues, index)
-    return {
-      ...entry,
-      hostValue: value,
-      isHole,
-      plan: classify(hostNode, entry.normalized, cohort)
-    }
-  })
-
-  const previewStore = usePreviewExposureStore()
-  const quarantineToAppend: ProxyWidgetErrorQuarantineEntry[] = []
-  const primitiveCohorts = new Map<NodeId, PendingEntry[]>()
-
-  for (const entry of pending) {
-    switch (entry.plan.kind) {
-      case 'primitiveBypass': {
-        const c = primitiveCohorts.get(entry.plan.primitiveNodeId) ?? []
-        c.push(entry)
-        primitiveCohorts.set(entry.plan.primitiveNodeId, c)
-        break
-      }
-      case 'alreadyLinked': {
-        const r = repairAlreadyLinked(
-          hostNode,
-          entry,
-          entry.plan.subgraphInputName
-        )
-        if (!r.ok) quarantineToAppend.push(quarantineFor(entry, r.reason))
-        break
-      }
-      case 'createSubgraphInput': {
-        const r = repairCreateSubgraphInput(
-          hostNode,
-          entry,
-          entry.plan.sourceWidgetName
-        )
-        if (!r.ok) quarantineToAppend.push(quarantineFor(entry, r.reason))
-        break
-      }
-      case 'previewExposure': {
-        const r = migratePreview(hostNode, entry, previewStore, entry.plan)
-        if (!r.ok) quarantineToAppend.push(quarantineFor(entry, r.reason))
-        break
-      }
-      case 'quarantine':
-        quarantineToAppend.push(quarantineFor(entry, entry.plan.reason))
-        break
-    }
-  }
-
-  for (const c of primitiveCohorts.values()) {
-    const r = repairPrimitive(hostNode, c)
-    if (!r.ok)
-      for (const e of c) quarantineToAppend.push(quarantineFor(e, r.reason))
-  }
-
-  if (quarantineToAppend.length > 0) {
-    appendQuarantine(hostNode, quarantineToAppend)
-  }
-
-  delete hostNode.properties.proxyWidgets
-}
+type RepairPrimitiveResult = Outcome<
+  { subgraphInputName: string; reconnectCount: number },
+  'primitiveBypassFailed'
+>
 
 function pickHostValue(
   hostWidgetValues: readonly unknown[] | undefined,
@@ -413,12 +340,6 @@ function addUniqueSubgraphInput(
   return subgraph.addInput(uniqueName, type)
 }
 
-type Outcome<TOk, TReason = ProxyWidgetQuarantineReason> =
-  | ({ ok: true } & TOk)
-  | { ok: false; reason: TReason }
-
-type RepairValueResult = Outcome<{ subgraphInputName: string }>
-
 function repairAlreadyLinked(
   hostNode: SubgraphNode,
   entry: PendingEntry,
@@ -501,10 +422,89 @@ function repairCreateSubgraphInput(
   return { ok: true, subgraphInputName: newSubgraphInput.name }
 }
 
-type RepairPrimitiveResult = Outcome<
-  { subgraphInputName: string; reconnectCount: number },
-  'primitiveBypassFailed'
->
+export function flushProxyWidgetMigration(args: FlushArgs): void {
+  const { hostNode, hostWidgetValues } = args
+
+  const tuples = parseProxyWidgets(hostNode.properties.proxyWidgets)
+  if (tuples.length === 0) return
+
+  const normalizedEntries = tuples.map((originalEntry) => {
+    const [sourceNodeId, sourceWidgetName, disambiguator] = originalEntry
+    return {
+      originalEntry,
+      normalized: normalizeLegacyProxyWidgetEntry(
+        hostNode,
+        sourceNodeId,
+        sourceWidgetName,
+        disambiguator
+      )
+    }
+  })
+  const cohort = normalizedEntries.map((entry) => entry.normalized)
+
+  const pending: PendingEntry[] = normalizedEntries.map((entry, index) => {
+    const { value, isHole } = pickHostValue(hostWidgetValues, index)
+    return {
+      ...entry,
+      hostValue: value,
+      isHole,
+      plan: classify(hostNode, entry.normalized, cohort)
+    }
+  })
+
+  const previewStore = usePreviewExposureStore()
+  const quarantineToAppend: ProxyWidgetErrorQuarantineEntry[] = []
+  const primitiveCohorts = new Map<NodeId, PendingEntry[]>()
+
+  for (const entry of pending) {
+    switch (entry.plan.kind) {
+      case 'primitiveBypass': {
+        const c = primitiveCohorts.get(entry.plan.primitiveNodeId) ?? []
+        c.push(entry)
+        primitiveCohorts.set(entry.plan.primitiveNodeId, c)
+        break
+      }
+      case 'alreadyLinked': {
+        const r = repairAlreadyLinked(
+          hostNode,
+          entry,
+          entry.plan.subgraphInputName
+        )
+        if (!r.ok) quarantineToAppend.push(quarantineFor(entry, r.reason))
+        break
+      }
+      case 'createSubgraphInput': {
+        const r = repairCreateSubgraphInput(
+          hostNode,
+          entry,
+          entry.plan.sourceWidgetName
+        )
+        if (!r.ok) quarantineToAppend.push(quarantineFor(entry, r.reason))
+        break
+      }
+      case 'previewExposure': {
+        const r = migratePreview(hostNode, entry, previewStore, entry.plan)
+        if (!r.ok) quarantineToAppend.push(quarantineFor(entry, r.reason))
+        break
+      }
+      case 'quarantine':
+        quarantineToAppend.push(quarantineFor(entry, entry.plan.reason))
+        break
+    }
+  }
+
+  for (const c of primitiveCohorts.values()) {
+    const r = repairPrimitive(hostNode, c)
+    if (!r.ok)
+      for (const e of c) quarantineToAppend.push(quarantineFor(e, r.reason))
+  }
+
+  if (quarantineToAppend.length > 0) {
+    appendQuarantine(hostNode, quarantineToAppend)
+  }
+
+  delete hostNode.properties.proxyWidgets
+}
 
 const PRIMITIVE_FAILED: RepairPrimitiveResult = {
   ok: false,
@@ -521,6 +521,11 @@ interface CohortValidationOk {
   sourceWidgetName: string
   uniqueEntries: readonly PendingEntry[]
 }
+
+type MigratePreviewResult = Outcome<
+  { previewName: string },
+  'missingSourceNode' | 'missingSourceWidget'
+>
 
 function failPrimitive(message: string, ctx?: unknown): RepairPrimitiveResult {
   console.warn(`[proxyWidgetMigration] ${message}`, ctx)
@@ -695,11 +700,6 @@ function repairPrimitive(
     reconnectCount: targets.length
   }
 }
-
-type MigratePreviewResult = Outcome<
-  { previewName: string },
-  'missingSourceNode' | 'missingSourceWidget'
->
 
 function migratePreview(
   hostNode: SubgraphNode,

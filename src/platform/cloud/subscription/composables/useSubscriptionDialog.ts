@@ -13,18 +13,6 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 const DIALOG_KEY = 'subscription-required'
 const RESUME_PRICING_KEY = 'comfy:resume-team-pricing'
 
-export interface SubscriptionDialogOptions {
-  reason?: PaymentIntentSource
-  /**
-   * Forces the unified pricing dialog to open on a specific plan tab,
-   * overriding the workspace-derived default (e.g. an "Upgrade to Team" CTA
-   * always lands on the team tab even from a personal workspace).
-   */
-  planMode?: 'personal' | 'team'
-  /** Starts checkout in workspace billing dialogs; legacy billing stays table-only. */
-  initialCheckout?: SubscriptionCheckoutSelection
-}
-
 function getInitialPlanMode(
   explicitMode: SubscriptionDialogOptions['planMode'],
   isTeamPlan: boolean,
@@ -35,6 +23,18 @@ function getInitialPlanMode(
   if (isTeamPlan) return 'team'
   if (hasCurrentPlan) return 'personal'
   return isPersonalWorkspace ? 'personal' : 'team'
+}
+
+export interface SubscriptionDialogOptions {
+  reason?: PaymentIntentSource
+  /**
+   * Forces the unified pricing dialog to open on a specific plan tab,
+   * overriding the workspace-derived default (e.g. an "Upgrade to Team" CTA
+   * always lands on the team tab even from a personal workspace).
+   */
+  planMode?: 'personal' | 'team'
+  /** Starts checkout in workspace billing dialogs; legacy billing stays table-only. */
+  initialCheckout?: SubscriptionCheckoutSelection
 }
 
 export const useSubscriptionDialog = () => {

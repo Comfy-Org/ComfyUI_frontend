@@ -7,6 +7,14 @@ export interface ImageStats {
   infCount: number
 }
 
+export interface ChannelHistograms {
+  r: Uint32Array
+  g: Uint32Array
+  b: Uint32Array
+  a: Uint32Array | null
+  luminance: Uint32Array
+}
+
 export function computeImageStats(
   read: (index: number) => number,
   length: number,
@@ -45,14 +53,6 @@ export function computeImageStats(
   const mean = sum / count
   const variance = Math.max(0, sumSq / count - mean * mean)
   return { min, max, mean, stdDev: Math.sqrt(variance), nanCount, infCount }
-}
-
-export interface ChannelHistograms {
-  r: Uint32Array
-  g: Uint32Array
-  b: Uint32Array
-  a: Uint32Array | null
-  luminance: Uint32Array
 }
 
 export function computeChannelHistograms(

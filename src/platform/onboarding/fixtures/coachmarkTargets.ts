@@ -1,5 +1,10 @@
 import type { RectTarget } from '../coachmarkRegistry'
 
+export interface TestRectTarget extends RectTarget {
+  move: () => void
+  listenerCount: () => number
+}
+
 /** An element with a non-zero measured rect, so it counts as laid out. */
 export function laidOut(rect = new DOMRect(10, 10, 80, 30)): HTMLElement {
   const el = document.createElement('div')
@@ -17,11 +22,6 @@ export function mountNode(nodeId = '7'): HTMLElement {
   node.setAttribute('data-node-id', nodeId)
   document.body.append(node)
   return node
-}
-
-export interface TestRectTarget extends RectTarget {
-  move: () => void
-  listenerCount: () => number
 }
 
 /** Stands in for a canvas node: reports its own rect, moves with the camera. */

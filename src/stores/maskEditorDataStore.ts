@@ -3,6 +3,14 @@ import { ref, computed } from 'vue'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { NodeId } from '@/types/nodeId'
 
+interface EditorInputData {
+  baseLayer: ImageLayer
+  maskLayer: ImageLayer
+  paintLayer?: ImageLayer
+  sourceRef: ImageRef
+  nodeId: NodeId
+}
+
 export interface ImageRef {
   filename: string
   subfolder?: string
@@ -12,14 +20,6 @@ export interface ImageRef {
 export interface ImageLayer {
   image: HTMLImageElement
   url: string
-}
-
-interface EditorInputData {
-  baseLayer: ImageLayer
-  maskLayer: ImageLayer
-  paintLayer?: ImageLayer
-  sourceRef: ImageRef
-  nodeId: NodeId
 }
 
 export interface EditorOutputLayer {

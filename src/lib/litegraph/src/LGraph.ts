@@ -106,6 +106,14 @@ export type {
 
 const validTriggerActions = new Set<LGraphTriggerAction>(LGraphTriggerActions)
 
+type ParamsArray<T, K extends MethodNames<T>> = Parameters<
+  Extract<T[K], (...args: never[]) => unknown>
+>[1] extends undefined
+  ?
+      | Parameters<Extract<T[K], (...args: never[]) => unknown>>
+      | Parameters<Extract<T[K], (...args: never[]) => unknown>>[0]
+  : Parameters<Extract<T[K], (...args: never[]) => unknown>>
+
 function isLGraphTriggerAction(action: string): action is LGraphTriggerAction {
   return validTriggerActions.has(action as LGraphTriggerAction)
 }
@@ -126,6 +134,32 @@ function syncLastNodeId(state: LGraphState, id: NodeId): void {
   }
 }
 
+function fireNodeRemovalLifecycle(node: LGraphNode): void {
+  const graph: LGraph | null = node.graph
+  graph?.events.dispatch('node:before-removed', { node })
+  node.onRemoved?.()
+  graph?.onNodeRemoved?.(node)
+}
+
+function patchLinkNodeIds(
+  links: Map<LinkId, LLink>,
+  remappedIds: Map<NodeId, NodeId>
+): void {
+  for (const link of links.values()) {
+    const newOrigin =
+      link.origin_id === UNASSIGNED_NODE_ID
+        ? undefined
+        : remappedIds.get(link.origin_id)
+    if (newOrigin !== undefined) link.origin_id = newOrigin
+
+    const newTarget =
+      link.target_id === UNASSIGNED_NODE_ID
+        ? undefined
+        : remappedIds.get(link.target_id)
+    if (newTarget !== undefined) link.target_id = newTarget
+  }
+}
+
 export type RendererType = 'LG' | 'Vue' | 'Vue-corrected'
 
 /**
@@ -140,14 +174,6 @@ export interface LGraphState {
   lastLinkId: LinkId
   lastRerouteId: RerouteId
 }
-
-type ParamsArray<T, K extends MethodNames<T>> = Parameters<
-  Extract<T[K], (...args: never[]) => unknown>
->[1] extends undefined
-  ?
-      | Parameters<Extract<T[K], (...args: never[]) => unknown>>
-      | Parameters<Extract<T[K], (...args: never[]) => unknown>>[0]
-  : Parameters<Extract<T[K], (...args: never[]) => unknown>>
 
 /** Configuration used by {@link LGraph} `config`. */
 export interface LGraphConfig {
@@ -178,12 +204,14 @@ export interface BaseLGraph {
   readonly rootGraph: LGraph
 }
 
-function fireNodeRemovalLifecycle(node: LGraphNode): void {
-  const graph: LGraph | null = node.graph
-  graph?.events.dispatch('node:before-removed', { node })
-  node.onRemoved?.()
-  graph?.onNodeRemoved?.(node)
-}
+/** Internal; simplifies type definitions. */
+export type GraphOrSubgraph = LGraph | Subgraph
+
+// ============================================================================
+// TEMPORARY: Subgraph class moved here to resolve circular dependency
+// This is a temporary solution until the architecture can be refactored
+// TODO: Move back to separate file once circular dependencies are resolved
+// ============================================================================
 
 /**
  * LGraph is the class that contain a full graph. We instantiate one and add nodes to it, and then we can run the execution loop.
@@ -2824,15 +2852,6 @@ export class LGraph
   }
 }
 
-/** Internal; simplifies type definitions. */
-export type GraphOrSubgraph = LGraph | Subgraph
-
-// ============================================================================
-// TEMPORARY: Subgraph class moved here to resolve circular dependency
-// This is a temporary solution until the architecture can be refactored
-// TODO: Move back to separate file once circular dependencies are resolved
-// ============================================================================
-
 /** A subgraph definition. */
 export class Subgraph
   extends LGraph
@@ -3173,24 +3192,5 @@ export class Subgraph
         : undefined,
       extra: this.extra
     }
-  }
-}
-
-function patchLinkNodeIds(
-  links: Map<LinkId, LLink>,
-  remappedIds: Map<NodeId, NodeId>
-): void {
-  for (const link of links.values()) {
-    const newOrigin =
-      link.origin_id === UNASSIGNED_NODE_ID
-        ? undefined
-        : remappedIds.get(link.origin_id)
-    if (newOrigin !== undefined) link.origin_id = newOrigin
-
-    const newTarget =
-      link.target_id === UNASSIGNED_NODE_ID
-        ? undefined
-        : remappedIds.get(link.target_id)
-    if (newTarget !== undefined) link.target_id = newTarget
   }
 }

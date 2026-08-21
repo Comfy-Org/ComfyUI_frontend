@@ -43,14 +43,14 @@ function rot(p: Vec2, a: number): Vec2 {
   return { x: p.x * c - p.y * s, y: p.x * s + p.y * c }
 }
 
-export function center(t: Transform): Vec2 {
-  return { x: t.x + t.w / 2, y: t.y + t.h / 2 }
-}
-
 function axes(t: Transform): { ex: Vec2; ey: Vec2 } {
   const c = Math.cos(t.rotation)
   const s = Math.sin(t.rotation)
   return { ex: { x: c, y: s }, ey: { x: -s, y: c } }
+}
+
+export function center(t: Transform): Vec2 {
+  return { x: t.x + t.w / 2, y: t.y + t.h / 2 }
 }
 
 export function handlePos(t: Transform, h: HandleId): Vec2 {

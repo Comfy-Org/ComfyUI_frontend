@@ -16,29 +16,6 @@ import { isWidgetInputSlot } from '@/lib/litegraph/src/node/slotUtils'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
-export interface SlotPositionContext {
-  /** Node's X position in graph coordinates */
-  nodeX: number
-  /** Node's Y position in graph coordinates */
-  nodeY: number
-  /** Node's width */
-  nodeWidth: number
-  /** Node's height */
-  nodeHeight: number
-  /** Whether the node is collapsed */
-  collapsed: boolean
-  /** Collapsed width (if applicable) */
-  collapsedWidth?: number
-  /** Node constructor's slot_start_y offset */
-  slotStartY?: number
-  /** Node's input slots */
-  inputs: INodeInputSlot[]
-  /** Node's output slots */
-  outputs: INodeOutputSlot[]
-  /** Node's widgets (for widget slot detection) */
-  widgets?: Array<{ name?: string }>
-}
-
 /**
  * Calculate the position of an input slot in graph coordinates
  * @param context Node context containing position and slot data
@@ -53,38 +30,6 @@ function calculateInputSlotPos(
   if (!input) return [context.nodeX, context.nodeY]
 
   return calculateInputSlotPosFromSlot(context, input)
-}
-
-/**
- * Calculate the position of an input slot in graph coordinates
- * @param context Node context containing position and slot data
- * @param input The input slot object
- * @returns Position of the input slot center in graph coordinates
- */
-export function calculateInputSlotPosFromSlot(
-  context: SlotPositionContext,
-  input: INodeInputSlot
-): Point {
-  const { nodeX, nodeY, collapsed } = context
-
-  // Handle collapsed nodes
-  if (collapsed) {
-    const halfTitle = LiteGraph.NODE_TITLE_HEIGHT * 0.5
-    return [nodeX, nodeY - halfTitle]
-  }
-
-  // Handle hard-coded positions
-  const { pos } = input
-  if (pos) return [nodeX + pos[0], nodeY + pos[1]]
-
-  // Default vertical slots
-  const offsetX = LiteGraph.NODE_SLOT_HEIGHT * 0.5
-  const nodeOffsetY = context.slotStartY || 0
-  const defaultVerticalInputs = getDefaultVerticalInputs(context)
-  const slotIndex = defaultVerticalInputs.indexOf(input)
-  const slotY = (slotIndex + 0.7) * LiteGraph.NODE_SLOT_HEIGHT
-
-  return [nodeX + offsetX, nodeY + slotY + nodeOffsetY]
 }
 
 /**
@@ -123,6 +68,81 @@ function calculateOutputSlotPos(
 
   // TODO: Why +1?
   return [nodeX + nodeWidth + 1 - offsetX, nodeY + slotY + nodeOffsetY]
+}
+
+/**
+ * Get the inputs that are not positioned with absolute coordinates
+ */
+function getDefaultVerticalInputs(
+  context: SlotPositionContext
+): INodeInputSlot[] {
+  return context.inputs.filter(
+    (slot) => !slot.pos && !(context.widgets?.length && isWidgetInputSlot(slot))
+  )
+}
+
+/**
+ * Get the outputs that are not positioned with absolute coordinates
+ */
+function getDefaultVerticalOutputs(
+  context: SlotPositionContext
+): INodeOutputSlot[] {
+  return context.outputs.filter((slot) => !slot.pos)
+}
+
+export interface SlotPositionContext {
+  /** Node's X position in graph coordinates */
+  nodeX: number
+  /** Node's Y position in graph coordinates */
+  nodeY: number
+  /** Node's width */
+  nodeWidth: number
+  /** Node's height */
+  nodeHeight: number
+  /** Whether the node is collapsed */
+  collapsed: boolean
+  /** Collapsed width (if applicable) */
+  collapsedWidth?: number
+  /** Node constructor's slot_start_y offset */
+  slotStartY?: number
+  /** Node's input slots */
+  inputs: INodeInputSlot[]
+  /** Node's output slots */
+  outputs: INodeOutputSlot[]
+  /** Node's widgets (for widget slot detection) */
+  widgets?: Array<{ name?: string }>
+}
+
+/**
+ * Calculate the position of an input slot in graph coordinates
+ * @param context Node context containing position and slot data
+ * @param input The input slot object
+ * @returns Position of the input slot center in graph coordinates
+ */
+export function calculateInputSlotPosFromSlot(
+  context: SlotPositionContext,
+  input: INodeInputSlot
+): Point {
+  const { nodeX, nodeY, collapsed } = context
+
+  // Handle collapsed nodes
+  if (collapsed) {
+    const halfTitle = LiteGraph.NODE_TITLE_HEIGHT * 0.5
+    return [nodeX, nodeY - halfTitle]
+  }
+
+  // Handle hard-coded positions
+  const { pos } = input
+  if (pos) return [nodeX + pos[0], nodeY + pos[1]]
+
+  // Default vertical slots
+  const offsetX = LiteGraph.NODE_SLOT_HEIGHT * 0.5
+  const nodeOffsetY = context.slotStartY || 0
+  const defaultVerticalInputs = getDefaultVerticalInputs(context)
+  const slotIndex = defaultVerticalInputs.indexOf(input)
+  const slotY = (slotIndex + 0.7) * LiteGraph.NODE_SLOT_HEIGHT
+
+  return [nodeX + offsetX, nodeY + slotY + nodeOffsetY]
 }
 
 /**
@@ -190,24 +210,4 @@ export function getSlotPosition(
   return isInput
     ? calculateInputSlotPos(context, slotIndex)
     : calculateOutputSlotPos(context, slotIndex)
-}
-
-/**
- * Get the inputs that are not positioned with absolute coordinates
- */
-function getDefaultVerticalInputs(
-  context: SlotPositionContext
-): INodeInputSlot[] {
-  return context.inputs.filter(
-    (slot) => !slot.pos && !(context.widgets?.length && isWidgetInputSlot(slot))
-  )
-}
-
-/**
- * Get the outputs that are not positioned with absolute coordinates
- */
-function getDefaultVerticalOutputs(
-  context: SlotPositionContext
-): INodeOutputSlot[] {
-  return context.outputs.filter((slot) => !slot.pos)
 }

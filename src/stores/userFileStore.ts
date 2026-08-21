@@ -8,6 +8,12 @@ import { getPathDetails } from '@/utils/formatUtil'
 import { syncEntities } from '@/utils/syncUtil'
 import { buildTree } from '@/utils/treeUtil'
 
+interface LoadedUserFile extends UserFile {
+  isLoaded: true
+  originalContent: string
+  content: string
+}
+
 /**
  * Normalizes a timestamp value that may be either a number (milliseconds)
  * or an ISO 8601 string (from Go's time.Time JSON serialization) into
@@ -193,12 +199,6 @@ export class UserFile {
     }
     return this
   }
-}
-
-interface LoadedUserFile extends UserFile {
-  isLoaded: true
-  originalContent: string
-  content: string
 }
 
 export const useUserFileStore = defineStore('userFile', () => {

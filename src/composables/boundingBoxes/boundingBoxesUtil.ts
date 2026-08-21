@@ -1,5 +1,18 @@
 import type { BoundingBox, BoundingBoxMetadata } from '@/types/boundingBoxes'
 
+interface BoxCandidate {
+  index: number
+  mode: HitMode
+}
+
+interface TagRect {
+  x: number
+  y: number
+  w: number
+  h: number
+  tag: string
+}
+
 export type HitMode =
   | 'move'
   | 'draw'
@@ -17,19 +30,6 @@ export interface Region extends BoundingBoxMetadata {
   y: number
   w: number
   h: number
-}
-
-interface BoxCandidate {
-  index: number
-  mode: HitMode
-}
-
-interface TagRect {
-  x: number
-  y: number
-  w: number
-  h: number
-  tag: string
 }
 
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v))
@@ -73,6 +73,33 @@ function rectHitTest(
   if (my >= y1 && my <= y2 && Math.abs(mx - x2) < rx) return 'resize-r'
   if (mx >= x1 && mx <= x2 && my >= y1 && my <= y2) return 'move'
   return null
+}
+
+function isBoundingBox(b: unknown): b is BoundingBox {
+  if (!b || typeof b !== 'object') return false
+  const box = b as Record<string, unknown>
+  return (
+    typeof box.x === 'number' &&
+    typeof box.y === 'number' &&
+    typeof box.width === 'number' &&
+    typeof box.height === 'number'
+  )
+}
+
+function normalizeHexColor(color: unknown): string | null {
+  if (typeof color !== 'string') return null
+  const hex = color.trim().toLowerCase()
+  const short = /^#([0-9a-f])([0-9a-f])([0-9a-f])$/.exec(hex)
+  if (short) {
+    return `#${short[1]}${short[1]}${short[2]}${short[2]}${short[3]}${short[3]}`
+  }
+  return /^#([0-9a-f]{6}|[0-9a-f]{8})$/.test(hex) ? hex : null
+}
+
+function normalizePalette(palette: unknown): string[] {
+  return Array.isArray(palette)
+    ? palette.map(normalizeHexColor).filter((c): c is string => c !== null)
+    : []
 }
 
 export function applyDrag(
@@ -189,33 +216,6 @@ export function tagRects(
     rects[i] = r
   }
   return rects
-}
-
-function isBoundingBox(b: unknown): b is BoundingBox {
-  if (!b || typeof b !== 'object') return false
-  const box = b as Record<string, unknown>
-  return (
-    typeof box.x === 'number' &&
-    typeof box.y === 'number' &&
-    typeof box.width === 'number' &&
-    typeof box.height === 'number'
-  )
-}
-
-function normalizeHexColor(color: unknown): string | null {
-  if (typeof color !== 'string') return null
-  const hex = color.trim().toLowerCase()
-  const short = /^#([0-9a-f])([0-9a-f])([0-9a-f])$/.exec(hex)
-  if (short) {
-    return `#${short[1]}${short[1]}${short[2]}${short[2]}${short[3]}${short[3]}`
-  }
-  return /^#([0-9a-f]{6}|[0-9a-f]{8})$/.test(hex) ? hex : null
-}
-
-function normalizePalette(palette: unknown): string[] {
-  return Array.isArray(palette)
-    ? palette.map(normalizeHexColor).filter((c): c is string => c !== null)
-    : []
 }
 
 export function fromBoundingBoxes(

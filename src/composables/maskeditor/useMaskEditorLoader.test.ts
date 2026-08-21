@@ -51,24 +51,6 @@ vi.mock('@/scripts/app', () => ({
 const requestedUrls: string[] = []
 let failUrlPattern: RegExp | null = null
 
-class MockImage {
-  crossOrigin = ''
-  onload: ((ev: Event) => void) | null = null
-  onerror: ((ev: unknown) => void) | null = null
-  private _src = ''
-  get src() {
-    return this._src
-  }
-  set src(value: string) {
-    this._src = value
-    requestedUrls.push(value)
-    queueMicrotask(() => {
-      if (failUrlPattern?.test(value)) this.onerror?.(new Event('error'))
-      else this.onload?.(new Event('load'))
-    })
-  }
-}
-
 function createLoadImageNode(widgetValue: string): LGraphNode {
   return fromAny<LGraphNode, unknown>({
     id: 7,
@@ -85,6 +67,24 @@ function subfolderOf(url: string): string | null {
 
 function requestedLayerUrls(layerFilename: string): string[] {
   return requestedUrls.filter((url) => url.includes(layerFilename))
+}
+
+class MockImage {
+  crossOrigin = ''
+  onload: ((ev: Event) => void) | null = null
+  onerror: ((ev: unknown) => void) | null = null
+  private _src = ''
+  get src() {
+    return this._src
+  }
+  set src(value: string) {
+    this._src = value
+    requestedUrls.push(value)
+    queueMicrotask(() => {
+      if (failUrlPattern?.test(value)) this.onerror?.(new Event('error'))
+      else this.onload?.(new Event('load'))
+    })
+  }
 }
 
 describe('useMaskEditorLoader', () => {

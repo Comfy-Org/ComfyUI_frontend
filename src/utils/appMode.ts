@@ -1,3 +1,8 @@
+type WorkflowModeSource = {
+  activeMode: AppMode | null
+  initialMode: AppMode | null | undefined
+}
+
 export type AppMode =
   | 'graph'
   | 'app'
@@ -6,11 +11,6 @@ export type AppMode =
   | 'builder:arrange'
 
 export type ViewMode = 'graph' | 'app'
-
-type WorkflowModeSource = {
-  activeMode: AppMode | null
-  initialMode: AppMode | null | undefined
-}
 
 export function getWorkflowMode(
   workflow: WorkflowModeSource | null | undefined

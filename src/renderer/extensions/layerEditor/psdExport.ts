@@ -38,31 +38,6 @@ export interface PsdExportDeps {
 
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v))
 
-export function makeGuid(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
-    return crypto.randomUUID()
-  let out = ''
-  for (let i = 0; i < 36; i++) {
-    if (i === 8 || i === 13 || i === 18 || i === 23) out += '-'
-    else out += Math.floor(Math.random() * 16).toString(16)
-  }
-  return out
-}
-
-export function transformCorners(t: Transform): number[] {
-  const cx = t.x + t.w / 2
-  const cy = t.y + t.h / 2
-  const cos = Math.cos(t.rotation)
-  const sin = Math.sin(t.rotation)
-  const pt = (dx: number, dy: number) => [
-    cx + dx * cos - dy * sin,
-    cy + dx * sin + dy * cos
-  ]
-  const hw = t.w / 2
-  const hh = t.h / 2
-  return [...pt(-hw, -hh), ...pt(hw, -hh), ...pt(hw, hh), ...pt(-hw, hh)]
-}
-
 function maskData(
   node: SceneNode,
   deps: PsdExportDeps
@@ -152,6 +127,16 @@ async function buildLayer(
   return layer
 }
 
+async function canvasPngBytes(canvas: HTMLCanvasElement): Promise<Uint8Array> {
+  const blob = await new Promise<Blob>((res, rej) =>
+    canvas.toBlob(
+      (b) => (b ? res(b) : rej(new Error('toBlob null'))),
+      'image/png'
+    )
+  )
+  return new Uint8Array(await blob.arrayBuffer())
+}
+
 export interface PsdRenderHost {
   document(): Document
   render(): void
@@ -160,6 +145,31 @@ export interface PsdRenderHost {
 
 export interface PsdContentSource {
   get(id: string): ContentEntry | undefined
+}
+
+export function makeGuid(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
+    return crypto.randomUUID()
+  let out = ''
+  for (let i = 0; i < 36; i++) {
+    if (i === 8 || i === 13 || i === 18 || i === 23) out += '-'
+    else out += Math.floor(Math.random() * 16).toString(16)
+  }
+  return out
+}
+
+export function transformCorners(t: Transform): number[] {
+  const cx = t.x + t.w / 2
+  const cy = t.y + t.h / 2
+  const cos = Math.cos(t.rotation)
+  const sin = Math.sin(t.rotation)
+  const pt = (dx: number, dy: number) => [
+    cx + dx * cos - dy * sin,
+    cy + dx * sin + dy * cos
+  ]
+  const hw = t.w / 2
+  const hh = t.h / 2
+  return [...pt(-hw, -hh), ...pt(hw, -hh), ...pt(hw, hh), ...pt(-hw, hh)]
 }
 
 export function leafPlacedBounds(t: Transform, doc: Document): Rect {
@@ -235,16 +245,6 @@ export function maskToPlacedCanvas(
   ctx.rotate(tf.rotation)
   ctx.drawImage(entry.canvas, -tf.w / 2, -tf.h / 2, tf.w, tf.h)
   return { canvas: c, left: bounds.x, top: bounds.y }
-}
-
-async function canvasPngBytes(canvas: HTMLCanvasElement): Promise<Uint8Array> {
-  const blob = await new Promise<Blob>((res, rej) =>
-    canvas.toBlob(
-      (b) => (b ? res(b) : rej(new Error('toBlob null'))),
-      'image/png'
-    )
-  )
-  return new Uint8Array(await blob.arrayBuffer())
 }
 
 export async function buildPsdFromEditor(

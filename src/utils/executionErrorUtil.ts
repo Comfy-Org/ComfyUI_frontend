@@ -16,6 +16,10 @@ interface CloudValidationError {
   node_errors?: Record<SerializedNodeId, NodeError>
 }
 
+type CloudValidationResult =
+  | { kind: 'nodeErrors'; nodeErrors: Record<SerializedNodeId, NodeError> }
+  | { kind: 'promptError'; promptError: PromptError }
+
 export function isCloudValidationError(
   value: unknown
 ): value is CloudValidationError {
@@ -50,10 +54,6 @@ export function tryExtractValidationError(
     return null
   }
 }
-
-type CloudValidationResult =
-  | { kind: 'nodeErrors'; nodeErrors: Record<SerializedNodeId, NodeError> }
-  | { kind: 'promptError'; promptError: PromptError }
 
 export function normalizePromptError(
   error: RawPromptError | undefined

@@ -20,14 +20,14 @@ import type { TourStep } from '../roles/tourSequence'
 import { frameNode } from './cameraFraming'
 import { canvasNodeTarget } from './canvasCoachTarget'
 
-/** How far the run has got, which is all the Run step's copy has to report. */
-export type RunState = 'idle' | 'generating' | 'succeeded' | 'failed'
-
 /**
  * What the workflow does. The Upload and Prompt steps mean something different
  * in each, so it selects their copy.
  */
 type TourShape = 't2i' | 'i2v' | 'image-edit' | 'other'
+
+/** How far the run has got, which is all the Run step's copy has to report. */
+export type RunState = 'idle' | 'generating' | 'succeeded' | 'failed'
 
 const COACH_ID: Record<TourStep['kind'], CoachId> = {
   upload: FIRST_RUN_COACH_IDS.source,
@@ -39,10 +39,9 @@ const COACH_ID: Record<TourStep['kind'], CoachId> = {
 /** Undoes the last registration; the tour holds one target set at a time. */
 let releaseRegistered = () => {}
 
-/** Drops the canvas targets a finished tour registered. */
-export function releaseFirstRunTargets() {
-  releaseRegistered()
-  releaseRegistered = () => {}
+interface StepContext {
+  shape: TourShape
+  runState: Readonly<Ref<RunState>>
 }
 
 function registerCanvasTargets(sequence: TourStep[]) {
@@ -71,11 +70,6 @@ function tourShape({
   if (!promptHost || !sink) return 'other'
   if (!source) return 't2i'
   return mediaKind === 'video' ? 'i2v' : 'image-edit'
-}
-
-interface StepContext {
-  shape: TourShape
-  runState: Readonly<Ref<RunState>>
 }
 
 /**
@@ -117,6 +111,12 @@ function toCoachStep(
     }
 
   return { ...framed, name: `${step.kind}.${shape}` }
+}
+
+/** Drops the canvas targets a finished tour registered. */
+export function releaseFirstRunTargets() {
+  releaseRegistered()
+  releaseRegistered = () => {}
 }
 
 /**

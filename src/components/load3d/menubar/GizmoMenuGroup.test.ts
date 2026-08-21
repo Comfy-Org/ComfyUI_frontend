@@ -16,6 +16,14 @@ const i18n = createI18n({
   messages: { en: enMessages }
 })
 
+type Props = {
+  config: ModelConfig
+  compact?: boolean
+  onToggleGizmo?: (enabled: boolean) => void
+  onSetGizmoMode?: (mode: GizmoMode) => void
+  onResetGizmoTransform?: () => void
+}
+
 function makeConfig(enabled: boolean): ModelConfig {
   return {
     upDirection: 'original',
@@ -29,14 +37,6 @@ function makeConfig(enabled: boolean): ModelConfig {
       scale: { x: 1, y: 1, z: 1 }
     }
   }
-}
-
-type Props = {
-  config: ModelConfig
-  compact?: boolean
-  onToggleGizmo?: (enabled: boolean) => void
-  onSetGizmoMode?: (mode: GizmoMode) => void
-  onResetGizmoTransform?: () => void
 }
 
 function renderGroup(props: Props) {

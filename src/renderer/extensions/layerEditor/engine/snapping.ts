@@ -1,72 +1,14 @@
 import type { Rect } from './node'
-export interface SnapTargets {
-  xs: number[]
-  ys: number[]
-}
-export interface Guide {
-  axis: 'x' | 'y'
-  pos: number
-  kind?: 'edge' | 'gap'
-  cross?: number
-  spans?: Array<[number, number]>
-}
-export interface SnapExtras {
-  gridX?: number
-  gridY?: number
-  guideXs?: number[]
-  guideYs?: number[]
-}
-export interface SnapOpts {
-  thrX: number
-  thrY: number
-  minWH: number
-  boundsW?: number
-  boundsH?: number
-  clamp?: boolean
-  eqRects?: Rect[]
-}
-export interface SnapResult {
-  rect: Rect
-  guides: Guide[]
-}
-
-function clampNum(v: number, lo: number, hi: number): number {
-  return Math.max(lo, Math.min(hi, v))
-}
-
-export function buildSnapTargets(
-  otherRects: Rect[],
-  bounds?: { w: number; h: number },
-  extras?: SnapExtras
-): SnapTargets {
-  const bw = bounds?.w ?? 1
-  const bh = bounds?.h ?? 1
-  const xs = [0, bw / 2, bw]
-  const ys = [0, bh / 2, bh]
-  for (const r of otherRects) {
-    xs.push(r.x, r.x + r.w / 2, r.x + r.w)
-    ys.push(r.y, r.y + r.h / 2, r.y + r.h)
-  }
-  if (extras?.gridX && extras.gridX > 0) {
-    for (let v = 0; v <= bw + 1e-9; v += extras.gridX) xs.push(v)
-  }
-  if (extras?.gridY && extras.gridY > 0) {
-    for (let v = 0; v <= bh + 1e-9; v += extras.gridY) ys.push(v)
-  }
-  for (const g of extras?.guideXs ?? []) xs.push(g)
-  for (const g of extras?.guideYs ?? []) ys.push(g)
-  return { xs, ys }
-}
-
 interface EqCandidate {
   pos: number
   guide: Guide
 }
-
+function clampNum(v: number, lo: number, hi: number): number {
+  return Math.max(lo, Math.min(hi, v))
+}
 function overlaps(a0: number, a1: number, b0: number, b1: number): boolean {
   return a0 < b1 && a1 > b0
 }
-
 function eqCandidatesAxis(
   rect: Rect,
   others: Rect[],
@@ -151,6 +93,64 @@ function eqCandidatesAxis(
     }
   }
   return out
+}
+export interface SnapTargets {
+  xs: number[]
+  ys: number[]
+}
+
+export interface Guide {
+  axis: 'x' | 'y'
+  pos: number
+  kind?: 'edge' | 'gap'
+  cross?: number
+  spans?: Array<[number, number]>
+}
+
+export interface SnapExtras {
+  gridX?: number
+  gridY?: number
+  guideXs?: number[]
+  guideYs?: number[]
+}
+
+export interface SnapOpts {
+  thrX: number
+  thrY: number
+  minWH: number
+  boundsW?: number
+  boundsH?: number
+  clamp?: boolean
+  eqRects?: Rect[]
+}
+
+export interface SnapResult {
+  rect: Rect
+  guides: Guide[]
+}
+
+export function buildSnapTargets(
+  otherRects: Rect[],
+  bounds?: { w: number; h: number },
+  extras?: SnapExtras
+): SnapTargets {
+  const bw = bounds?.w ?? 1
+  const bh = bounds?.h ?? 1
+  const xs = [0, bw / 2, bw]
+  const ys = [0, bh / 2, bh]
+  for (const r of otherRects) {
+    xs.push(r.x, r.x + r.w / 2, r.x + r.w)
+    ys.push(r.y, r.y + r.h / 2, r.y + r.h)
+  }
+  if (extras?.gridX && extras.gridX > 0) {
+    for (let v = 0; v <= bw + 1e-9; v += extras.gridX) xs.push(v)
+  }
+  if (extras?.gridY && extras.gridY > 0) {
+    for (let v = 0; v <= bh + 1e-9; v += extras.gridY) ys.push(v)
+  }
+  for (const g of extras?.guideXs ?? []) xs.push(g)
+  for (const g of extras?.guideYs ?? []) ys.push(g)
+  return { xs, ys }
 }
 
 export function nearestTarget(

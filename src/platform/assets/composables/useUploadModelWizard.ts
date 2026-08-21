@@ -37,6 +37,21 @@ interface ModelTypeOption {
 
 const MODEL_ROOT_TAG = 'models'
 
+interface MissingModelUploadContext {
+  kind: 'missing-model-resolution'
+  missingModelName: string
+  requiredModelType: string
+  replacementTargets: Array<{
+    nodeId: string
+    nodeLabel: string
+    widgetName: string
+  }>
+}
+
+interface UploadModelWizardOptions {
+  requiredModelType?: string
+}
+
 export interface UploadModelSuccess {
   filename: string
   modelType?: string
@@ -51,22 +66,7 @@ export interface UploadModelTypeMismatch {
   requiredModelTypeLabel: string
 }
 
-interface MissingModelUploadContext {
-  kind: 'missing-model-resolution'
-  missingModelName: string
-  requiredModelType: string
-  replacementTargets: Array<{
-    nodeId: string
-    nodeLabel: string
-    widgetName: string
-  }>
-}
-
 export type UploadModelDialogContext = MissingModelUploadContext
-
-interface UploadModelWizardOptions {
-  requiredModelType?: string
-}
 
 export function useUploadModelWizard(
   modelTypes: Ref<ModelTypeOption[]>,

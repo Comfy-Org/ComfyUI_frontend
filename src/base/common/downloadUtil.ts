@@ -80,6 +80,33 @@ const extractFilenameFromUrl = (url: string): string | null => {
 }
 
 /**
+ * Fetch a URL and return its body as a Blob.
+ * Shared by download and open-in-new-tab cloud paths.
+ */
+async function fetchAsBlob(url: string): Promise<Response> {
+  const response = await fetch(url)
+  if (!response.ok) {
+    throw new Error(`Failed to fetch ${url}: ${response.status}`)
+  }
+  return response
+}
+
+async function downloadViaBlobFetch(
+  href: string,
+  fallbackFilename: string
+): Promise<void> {
+  const response = await fetchAsBlob(href)
+
+  // Try to get filename from Content-Disposition header (set by backend)
+  const contentDisposition = response.headers.get('Content-Disposition')
+  const headerFilename =
+    extractFilenameFromContentDisposition(contentDisposition)
+
+  const blob = await response.blob()
+  downloadBlob(headerFilename ?? fallbackFilename, blob)
+}
+
+/**
  * Extract filename from Content-Disposition header
  * Handles both simple format: attachment; filename="name.png"
  * And RFC 5987 format: attachment; filename="fallback.png"; filename*=UTF-8''encoded%20name.png
@@ -114,33 +141,6 @@ export function extractFilenameFromContentDisposition(
   }
 
   return null
-}
-
-/**
- * Fetch a URL and return its body as a Blob.
- * Shared by download and open-in-new-tab cloud paths.
- */
-async function fetchAsBlob(url: string): Promise<Response> {
-  const response = await fetch(url)
-  if (!response.ok) {
-    throw new Error(`Failed to fetch ${url}: ${response.status}`)
-  }
-  return response
-}
-
-async function downloadViaBlobFetch(
-  href: string,
-  fallbackFilename: string
-): Promise<void> {
-  const response = await fetchAsBlob(href)
-
-  // Try to get filename from Content-Disposition header (set by backend)
-  const contentDisposition = response.headers.get('Content-Disposition')
-  const headerFilename =
-    extractFilenameFromContentDisposition(contentDisposition)
-
-  const blob = await response.blob()
-  downloadBlob(headerFilename ?? fallbackFilename, blob)
 }
 
 /**

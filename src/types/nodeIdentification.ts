@@ -4,6 +4,25 @@ import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
+function requireNodeIdSegment(value: unknown): NodeId | null {
+  const nodeId = parseNodeId(value)
+  if (!nodeId || nodeId.includes(':')) return null
+  return nodeId
+}
+
+function parseNodeIdSegments(values: readonly unknown[]): NodeId[] | null {
+  const nodeIds = values.map(requireNodeIdSegment)
+  return nodeIds.every((nodeId): nodeId is NodeId => nodeId !== null)
+    ? nodeIds
+    : null
+}
+
+function nodeExecutionIdFromString(value: string): NodeExecutionId | null {
+  return parseNodeIdSegments(value.split(':'))
+    ? (value as NodeExecutionId)
+    : null
+}
+
 /**
  * A globally unique identifier for nodes that maintains consistency across
  * multiple instances of the same subgraph.
@@ -29,25 +48,6 @@ export type NodeLocatorId = string & { readonly __brand: 'NodeLocatorId' }
  * Example: "123:456:789" (node 789 in subgraph 456 in subgraph 123)
  */
 export type NodeExecutionId = string & { readonly __brand: 'NodeExecutionId' }
-
-function requireNodeIdSegment(value: unknown): NodeId | null {
-  const nodeId = parseNodeId(value)
-  if (!nodeId || nodeId.includes(':')) return null
-  return nodeId
-}
-
-function parseNodeIdSegments(values: readonly unknown[]): NodeId[] | null {
-  const nodeIds = values.map(requireNodeIdSegment)
-  return nodeIds.every((nodeId): nodeId is NodeId => nodeId !== null)
-    ? nodeIds
-    : null
-}
-
-function nodeExecutionIdFromString(value: string): NodeExecutionId | null {
-  return parseNodeIdSegments(value.split(':'))
-    ? (value as NodeExecutionId)
-    : null
-}
 
 /**
  * Type guard to check if a value is a NodeLocatorId

@@ -30,13 +30,6 @@ const FRAME_RATE_SNAP_TOLERANCE = 0.01
 
 const PACKET_STATS_SAMPLE_SIZE = 100
 
-export function snapToStandardFrameRate(fps: number): number {
-  const standard = STANDARD_FRAME_RATES.find(
-    (candidate) => Math.abs(fps - candidate) <= FRAME_RATE_SNAP_TOLERANCE
-  )
-  return standard ?? fps
-}
-
 function isTrustedOrigin(url: URL): boolean {
   if (url.origin === window.location.origin) return true
   try {
@@ -59,6 +52,13 @@ function parseProbeableViewUrl(videoUrl: string): URL | undefined {
   if (!url.pathname.endsWith('/view')) return undefined
   if (url.searchParams.get('filename') === null) return undefined
   return url
+}
+
+export function snapToStandardFrameRate(fps: number): number {
+  const standard = STANDARD_FRAME_RATES.find(
+    (candidate) => Math.abs(fps - candidate) <= FRAME_RATE_SNAP_TOLERANCE
+  )
+  return standard ?? fps
 }
 
 let mediabunnyModulePromise: ReturnType<typeof importMediabunny> | undefined
@@ -107,11 +107,6 @@ function raceWithAbort<T>(
   })
 }
 
-export function clearVideoMetadataCache(): void {
-  metadataCache.clear()
-  inflightProbes.clear()
-}
-
 function rememberMetadata(key: string, metadata: VideoMetadata): void {
   metadataCache.delete(key)
   metadataCache.set(key, metadata)
@@ -119,6 +114,23 @@ function rememberMetadata(key: string, metadata: VideoMetadata): void {
     const oldest = metadataCache.keys().next().value
     if (oldest !== undefined) metadataCache.delete(oldest)
   }
+}
+
+async function probeVideoUrl(
+  videoUrl: string
+): Promise<VideoMetadata | undefined> {
+  try {
+    const { UrlSource } = await loadMediabunny()
+    const source = new UrlSource(videoUrl, { getRetryDelay: () => null })
+    return await extractVideoMetadata(source)
+  } catch {
+    return undefined
+  }
+}
+
+export function clearVideoMetadataCache(): void {
+  metadataCache.clear()
+  inflightProbes.clear()
 }
 
 export async function extractVideoMetadata(
@@ -162,18 +174,6 @@ export async function extractVideoMetadata(
       signal?.removeEventListener('abort', disposeOnAbort)
       if (!disposed) input.dispose()
     }
-  } catch {
-    return undefined
-  }
-}
-
-async function probeVideoUrl(
-  videoUrl: string
-): Promise<VideoMetadata | undefined> {
-  try {
-    const { UrlSource } = await loadMediabunny()
-    const source = new UrlSource(videoUrl, { getRetryDelay: () => null })
-    return await extractVideoMetadata(source)
   } catch {
     return undefined
   }

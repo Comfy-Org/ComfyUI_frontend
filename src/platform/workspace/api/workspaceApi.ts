@@ -50,15 +50,41 @@ import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import type { UserId } from '@/types/authTypes'
 
-export type WorkspaceType = 'personal' | 'team'
-export type WorkspaceRole = 'owner' | 'member'
-export type BillingRail = NonNullable<
-  GeneratedBillingStatusResponse['billing_rail']
->
+type SubscribeBillingCycle = 'monthly' | 'yearly'
+interface PreviewSubscribeRequest extends GeneratedPreviewSubscribeRequest {
+  billing_cycle?: SubscribeBillingCycle
+}
+type SpecRequiredButOmittedByOlderDeployments =
+  | 'max_seats'
+  | 'occupied_seats'
+  | 'team_credit_stop'
 
 export type { WorkspaceWithRole }
 
 export type { ListWorkspacesResponse }
+
+interface GetBillingEventsParams {
+  page?: number
+  limit?: number
+}
+
+export type WorkspaceType = 'personal' | 'team'
+
+export type { PendingInvite }
+
+export type { SubscriptionTier }
+export type { SubscriptionDuration }
+
+export type { Plan }
+export type { BillingPlansResponse }
+export type { TeamCreditStops }
+export type { TeamCreditStopSummary }
+
+export type WorkspaceRole = 'owner' | 'member'
+
+export type BillingRail = NonNullable<
+  GeneratedBillingStatusResponse['billing_rail']
+>
 
 export type Member = GeneratedMember & {
   // Per-member monthly credit limit UI (FE-1277). The cloud OpenAPI carries
@@ -72,21 +98,9 @@ export interface ListMembersParams {
   limit?: number
 }
 
-export type { PendingInvite }
+export type { SubscribeResponse }
 
-export type { SubscriptionTier }
-export type { SubscriptionDuration }
-
-export type { Plan }
-export type { BillingPlansResponse }
-export type { TeamCreditStops }
-export type { TeamCreditStopSummary }
-
-type SubscribeBillingCycle = 'monthly' | 'yearly'
-
-interface PreviewSubscribeRequest extends GeneratedPreviewSubscribeRequest {
-  billing_cycle?: SubscribeBillingCycle
-}
+export type { PreviewSubscribeResponse }
 
 export interface SubscribeOptions {
   returnUrl?: string
@@ -97,25 +111,20 @@ export interface SubscribeOptions {
   prorationAt?: string
 }
 
+export type { BillingStatus }
+
 export interface PreviewSubscribeOptions {
   teamCreditStopId?: string
   billingCycle?: SubscribeBillingCycle
 }
 
-export type { SubscribeResponse }
-
-export type { PreviewSubscribeResponse }
-
 export type BillingSubscriptionStatus = NonNullable<
   GeneratedBillingStatusResponse['subscription_status']
 >
 
-export type { BillingStatus }
-
-type SpecRequiredButOmittedByOlderDeployments =
-  | 'max_seats'
-  | 'occupied_seats'
-  | 'team_credit_stop'
+export type { BillingBalanceResponse }
+export type { CreateTopupResponse }
+export type { BillingOpStatusResponse }
 
 export type BillingStatusResponse = Omit<
   GeneratedBillingStatusResponse,
@@ -132,15 +141,6 @@ export type BillingStatusResponse = Omit<
     scheduled_plan_slug?: string
     change_at?: string
   }
-
-export type { BillingBalanceResponse }
-export type { CreateTopupResponse }
-export type { BillingOpStatusResponse }
-
-interface GetBillingEventsParams {
-  page?: number
-  limit?: number
-}
 
 export class WorkspaceApiError extends Error {
   constructor(

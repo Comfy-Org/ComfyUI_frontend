@@ -42,115 +42,18 @@ import type { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import { app } from '@/scripts/app'
 
-export interface WidgetSlotMetadata {
-  index: number
-  linked: boolean
-  originNodeId?: NodeId
-  originOutputName?: string
-  type: string
-}
-
 type Badges = (LGraphBadge | (() => LGraphBadge))[]
-
-/**
- * Minimal render-specific widget data extracted from LiteGraph widgets.
- * Value and metadata (label, hidden, disabled, etc.) are accessed via widgetValueStore.
- */
-export interface SafeWidgetData {
-  widgetId?: WidgetId
-  nodeId?: NodeId
-  name: string
-  type: string
-  /** Callback to invoke when widget value changes (wraps LiteGraph callback + triggerDraw) */
-  callback?: ((value: unknown) => void) | undefined
-  /** Control widget for seed randomization/increment/decrement */
-  controlWidget?: SafeControlWidget
-  /** Whether widget has custom layout size computation */
-  hasLayoutSize?: boolean
-  /** Whether widget is a DOM widget */
-  isDOMWidget?: boolean
-  /**
-   * Widget options needed for render decisions.
-   * Note: Most metadata should be accessed via widgetValueStore.getWidget().
-   */
-  options?: {
-    canvasOnly?: boolean
-    advanced?: boolean
-    hidden?: boolean
-    read_only?: boolean
-    values?: unknown
-  }
-  /** Input specification from node definition */
-  spec?: InputSpec
-  /** Input slot metadata (index and link status) */
-  slotMetadata?: WidgetSlotMetadata
-  /**
-   * Execution ID of the interior node that owns the source widget.
-   * Only set for promoted widgets where the source node differs from the host
-   * subgraph node. Retained for source-scoped validation errors.
-   */
-  sourceExecutionId?: NodeExecutionId
-  /**
-   * Interior source widget name. Only set for promoted widgets, where `name` is
-   * the host input slot name and the source widget name can differ.
-   */
-  sourceWidgetName?: string
-  /** Tooltip text from the resolved widget. */
-  tooltip?: string
-}
-
-export interface VueNodeData {
-  executing: boolean
-  id: NodeId
-  mode: number
-  selected: boolean
-  title: string
-  type: string
-  apiNode?: boolean
-  badges?: Badges
-  bgcolor?: string
-  color?: string
-  flags?: {
-    collapsed?: boolean
-    ghost?: boolean
-    pinned?: boolean
-  }
-  hasErrors?: boolean
-  inputs?: INodeInputSlot[]
-  outputs?: INodeOutputSlot[]
-  resizable?: boolean
-  shape?: number
-  showAdvanced?: boolean
-  subgraphId?: string | null
-  titleMode?: TitleMode
-  widgets?: SafeWidgetData[]
-}
-
-export interface GraphNodeManager {
-  // Reactive state - safe data extracted from LiteGraph nodes
-  vueNodeData: ReadonlyMap<NodeId, VueNodeData>
-
-  // Access to original LiteGraph nodes (non-reactive)
-  getNode(id: NodeId): LGraphNode | undefined
-
-  // Lifecycle methods
-  cleanup(): void
-}
-
-export function getControlWidget(
-  widget: IBaseWidget
-): SafeControlWidget | undefined {
-  const cagWidget = widget.linkedWidgets?.find((w) => w[IS_CONTROL_WIDGET])
-  if (!cagWidget) return
-  return {
-    value: normalizeControlOption(cagWidget.value),
-    update: (value) => (cagWidget.value = normalizeControlOption(value))
-  }
-}
 
 interface SharedWidgetEnhancements {
   controlWidget?: SafeControlWidget
   spec?: InputSpec
+}
+
+interface PromotedWidgetMetadata {
+  controlWidget?: SafeControlWidget
+  isDOMWidget: boolean
+  sourceExecutionId?: NodeExecutionId
+  sourceWidgetName?: string
 }
 
 function getSharedWidgetEnhancements(
@@ -214,13 +117,6 @@ function isDOMBackedWidget(widget: IBaseWidget): boolean {
     ('element' in widget && !!widget.element) ||
     ('component' in widget && !!widget.component)
   )
-}
-
-interface PromotedWidgetMetadata {
-  controlWidget?: SafeControlWidget
-  isDOMWidget: boolean
-  sourceExecutionId?: NodeExecutionId
-  sourceWidgetName?: string
 }
 
 /**
@@ -357,6 +253,110 @@ function buildSlotMetadata(
     if (input.widget?.name) metadata.set(input.widget.name, slotInfo)
   })
   return metadata
+}
+
+export interface WidgetSlotMetadata {
+  index: number
+  linked: boolean
+  originNodeId?: NodeId
+  originOutputName?: string
+  type: string
+}
+
+/**
+ * Minimal render-specific widget data extracted from LiteGraph widgets.
+ * Value and metadata (label, hidden, disabled, etc.) are accessed via widgetValueStore.
+ */
+export interface SafeWidgetData {
+  widgetId?: WidgetId
+  nodeId?: NodeId
+  name: string
+  type: string
+  /** Callback to invoke when widget value changes (wraps LiteGraph callback + triggerDraw) */
+  callback?: ((value: unknown) => void) | undefined
+  /** Control widget for seed randomization/increment/decrement */
+  controlWidget?: SafeControlWidget
+  /** Whether widget has custom layout size computation */
+  hasLayoutSize?: boolean
+  /** Whether widget is a DOM widget */
+  isDOMWidget?: boolean
+  /**
+   * Widget options needed for render decisions.
+   * Note: Most metadata should be accessed via widgetValueStore.getWidget().
+   */
+  options?: {
+    canvasOnly?: boolean
+    advanced?: boolean
+    hidden?: boolean
+    read_only?: boolean
+    values?: unknown
+  }
+  /** Input specification from node definition */
+  spec?: InputSpec
+  /** Input slot metadata (index and link status) */
+  slotMetadata?: WidgetSlotMetadata
+  /**
+   * Execution ID of the interior node that owns the source widget.
+   * Only set for promoted widgets where the source node differs from the host
+   * subgraph node. Retained for source-scoped validation errors.
+   */
+  sourceExecutionId?: NodeExecutionId
+  /**
+   * Interior source widget name. Only set for promoted widgets, where `name` is
+   * the host input slot name and the source widget name can differ.
+   */
+  sourceWidgetName?: string
+  /** Tooltip text from the resolved widget. */
+  tooltip?: string
+}
+
+export interface VueNodeData {
+  executing: boolean
+  id: NodeId
+  mode: number
+  selected: boolean
+  title: string
+  type: string
+  apiNode?: boolean
+  badges?: Badges
+  bgcolor?: string
+  color?: string
+  flags?: {
+    collapsed?: boolean
+    ghost?: boolean
+    pinned?: boolean
+  }
+  hasErrors?: boolean
+  inputs?: INodeInputSlot[]
+  outputs?: INodeOutputSlot[]
+  resizable?: boolean
+  shape?: number
+  showAdvanced?: boolean
+  subgraphId?: string | null
+  titleMode?: TitleMode
+  widgets?: SafeWidgetData[]
+}
+
+export interface GraphNodeManager {
+  // Reactive state - safe data extracted from LiteGraph nodes
+  vueNodeData: ReadonlyMap<NodeId, VueNodeData>
+
+  // Access to original LiteGraph nodes (non-reactive)
+  getNode(id: NodeId): LGraphNode | undefined
+
+  // Lifecycle methods
+  cleanup(): void
+}
+
+export function getControlWidget(
+  widget: IBaseWidget
+): SafeControlWidget | undefined {
+  const cagWidget = widget.linkedWidgets?.find((w) => w[IS_CONTROL_WIDGET])
+  if (!cagWidget) return
+  return {
+    value: normalizeControlOption(cagWidget.value),
+    update: (value) => (cagWidget.value = normalizeControlOption(value))
+  }
 }
 
 // Extract safe data from LiteGraph node for Vue consumption

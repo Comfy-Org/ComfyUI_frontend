@@ -11,6 +11,17 @@ type ValueExtractor<T = unknown> = (
   outputName: string | undefined
 ) => T | undefined
 
+function isBoundsObject(value: unknown): value is Bounds {
+  if (typeof value !== 'object' || value === null) return false
+  const v = value as Record<string, unknown>
+  return (
+    typeof v.x === 'number' &&
+    typeof v.y === 'number' &&
+    typeof v.width === 'number' &&
+    typeof v.height === 'number'
+  )
+}
+
 export function useUpstreamValue<T>(
   getLinkedUpstream: () => LinkedUpstreamInfo | undefined,
   extractValue: ValueExtractor<T>
@@ -39,17 +50,6 @@ export function singleValueExtractor<T>(
     const validValues = widgets.map((w) => w.value).filter(isValid)
     return validValues.length === 1 ? validValues[0] : undefined
   }
-}
-
-function isBoundsObject(value: unknown): value is Bounds {
-  if (typeof value !== 'object' || value === null) return false
-  const v = value as Record<string, unknown>
-  return (
-    typeof v.x === 'number' &&
-    typeof v.y === 'number' &&
-    typeof v.width === 'number' &&
-    typeof v.height === 'number'
-  )
 }
 
 export function boundsExtractor(): ValueExtractor<Bounds> {

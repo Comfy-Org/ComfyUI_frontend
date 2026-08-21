@@ -13,6 +13,42 @@ interface PerformTeamSubscriptionCheckoutOptions {
   paymentIntentSource?: PaymentIntentSource
 }
 
+async function initiateTeamSubscriptionCheckout(
+  teamCreditStopId: string,
+  billingCycle: BillingCycle,
+  options: PerformTeamSubscriptionCheckoutOptions
+): Promise<void> {
+  const planSlug = getTeamPlanSlug(billingCycle)
+  const response = await workspaceApi.subscribe(planSlug, {
+    returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
+    cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`,
+    teamCreditStopId
+  })
+
+  trackWorkspaceCheckoutStarted({
+    tier: 'team',
+    cycle: billingCycle,
+    checkoutType: 'new',
+    billingOpId: response.billing_op_id,
+    paymentIntentSource: options.paymentIntentSource
+  })
+
+  if (response.status === 'needs_payment_method') {
+    // A needs_payment_method response without a URL is unusable: surface it to
+    // the caller's error handling rather than silently dropping the user home
+    // with a subscription stuck mid-payment.
+    if (!response.payment_method_url) {
+      throw new Error(
+        'Team subscription needs a payment method but no payment URL was returned'
+      )
+    }
+    globalThis.location.href = response.payment_method_url
+    return
+  }
+
+  globalThis.location.href = '/'
+}
+
 /**
  * Direct team-plan checkout for the marketing `/cloud/subscribe?tier=team` deep
  * link: subscribes to the per-credit Team plan at the chosen slider stop and
@@ -54,40 +90,4 @@ export async function performTeamSubscriptionCheckout(
     })
     throw error
   }
-}
-
-async function initiateTeamSubscriptionCheckout(
-  teamCreditStopId: string,
-  billingCycle: BillingCycle,
-  options: PerformTeamSubscriptionCheckoutOptions
-): Promise<void> {
-  const planSlug = getTeamPlanSlug(billingCycle)
-  const response = await workspaceApi.subscribe(planSlug, {
-    returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
-    cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`,
-    teamCreditStopId
-  })
-
-  trackWorkspaceCheckoutStarted({
-    tier: 'team',
-    cycle: billingCycle,
-    checkoutType: 'new',
-    billingOpId: response.billing_op_id,
-    paymentIntentSource: options.paymentIntentSource
-  })
-
-  if (response.status === 'needs_payment_method') {
-    // A needs_payment_method response without a URL is unusable: surface it to
-    // the caller's error handling rather than silently dropping the user home
-    // with a subscription stuck mid-payment.
-    if (!response.payment_method_url) {
-      throw new Error(
-        'Team subscription needs a payment method but no payment URL was returned'
-      )
-    }
-    globalThis.location.href = response.payment_method_url
-    return
-  }
-
-  globalThis.location.href = '/'
 }

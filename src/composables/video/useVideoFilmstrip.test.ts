@@ -17,6 +17,45 @@ vi.mock('@/utils/videoMetadataUtil', () => ({
 
 type VideoListener = (event: Event) => void
 
+function createMockCanvas(context: unknown = { drawImage: vi.fn() }) {
+  return {
+    width: 0,
+    height: 0,
+    getContext: () => context,
+    toBlob: (callback: BlobCallback) =>
+      callback(new Blob(['thumb'], { type: 'image/jpeg' }))
+  } as unknown as HTMLCanvasElement
+}
+
+function installVideoMocks({
+  onVideoCreated,
+  onCanvasCreated,
+  canvasContext = { drawImage: vi.fn() } as unknown
+}: {
+  onVideoCreated?: (video: MockVideoElement) => void
+  onCanvasCreated?: (canvas: HTMLCanvasElement) => void
+  canvasContext?: unknown
+} = {}) {
+  const originalCreateElement = document.createElement.bind(document)
+
+  vi.spyOn(document, 'createElement').mockImplementation((tagName) => {
+    if (tagName === 'video') {
+      const video = new MockVideoElement()
+      onVideoCreated?.(video)
+      if (video.autoEmitMetadata) {
+        queueMicrotask(() => video.emit('loadedmetadata'))
+      }
+      return video as unknown as HTMLVideoElement
+    }
+    if (tagName === 'canvas') {
+      const canvas = createMockCanvas(canvasContext)
+      onCanvasCreated?.(canvas)
+      return canvas
+    }
+    return originalCreateElement(tagName)
+  })
+}
+
 class MockVideoElement {
   preload = ''
   muted = false
@@ -97,45 +136,6 @@ class MockOffscreenCanvas {
   async convertToBlob() {
     return new Blob(['thumb'], { type: 'image/jpeg' })
   }
-}
-
-function createMockCanvas(context: unknown = { drawImage: vi.fn() }) {
-  return {
-    width: 0,
-    height: 0,
-    getContext: () => context,
-    toBlob: (callback: BlobCallback) =>
-      callback(new Blob(['thumb'], { type: 'image/jpeg' }))
-  } as unknown as HTMLCanvasElement
-}
-
-function installVideoMocks({
-  onVideoCreated,
-  onCanvasCreated,
-  canvasContext = { drawImage: vi.fn() } as unknown
-}: {
-  onVideoCreated?: (video: MockVideoElement) => void
-  onCanvasCreated?: (canvas: HTMLCanvasElement) => void
-  canvasContext?: unknown
-} = {}) {
-  const originalCreateElement = document.createElement.bind(document)
-
-  vi.spyOn(document, 'createElement').mockImplementation((tagName) => {
-    if (tagName === 'video') {
-      const video = new MockVideoElement()
-      onVideoCreated?.(video)
-      if (video.autoEmitMetadata) {
-        queueMicrotask(() => video.emit('loadedmetadata'))
-      }
-      return video as unknown as HTMLVideoElement
-    }
-    if (tagName === 'canvas') {
-      const canvas = createMockCanvas(canvasContext)
-      onCanvasCreated?.(canvas)
-      return canvas
-    }
-    return originalCreateElement(tagName)
-  })
 }
 
 describe('useVideoFilmstrip', () => {

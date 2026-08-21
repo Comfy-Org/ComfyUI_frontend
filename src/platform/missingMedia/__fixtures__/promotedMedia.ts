@@ -38,6 +38,30 @@ interface PromotedMediaBranch {
   intermediateHost?: SubgraphNode
 }
 
+function addPromotedMediaSource(
+  subgraph: Subgraph,
+  id: number,
+  value: string,
+  options: string[]
+): LGraphNode {
+  const sourceNode = new LGraphNode(promotedMediaNodeType)
+  sourceNode.id = toNodeId(id)
+  sourceNode.type = promotedMediaNodeType
+  const sourceInput = sourceNode.addInput('image', 'COMBO')
+  const sourceWidget = sourceNode.addWidget(
+    'combo',
+    'image',
+    value,
+    () => undefined,
+    { values: [...options] }
+  )
+  sourceInput.widget = { name: sourceWidget.name }
+  subgraph.add(sourceNode)
+  const link = subgraph.inputNode.slots[0].connect(sourceInput, sourceNode)
+  if (!link) throw new Error('Expected promoted image input link')
+  return sourceNode
+}
+
 export interface PromotedMediaRuntime {
   rootGraph: LGraph
   subgraph: Subgraph
@@ -124,30 +148,6 @@ export function createPromotedMissingMediaCandidate(
     name: hostWidget.value,
     isMissing: true
   }
-}
-
-function addPromotedMediaSource(
-  subgraph: Subgraph,
-  id: number,
-  value: string,
-  options: string[]
-): LGraphNode {
-  const sourceNode = new LGraphNode(promotedMediaNodeType)
-  sourceNode.id = toNodeId(id)
-  sourceNode.type = promotedMediaNodeType
-  const sourceInput = sourceNode.addInput('image', 'COMBO')
-  const sourceWidget = sourceNode.addWidget(
-    'combo',
-    'image',
-    value,
-    () => undefined,
-    { values: [...options] }
-  )
-  sourceInput.widget = { name: sourceWidget.name }
-  subgraph.add(sourceNode)
-  const link = subgraph.inputNode.slots[0].connect(sourceInput, sourceNode)
-  if (!link) throw new Error('Expected promoted image input link')
-  return sourceNode
 }
 
 export function createPromotedMediaRuntime({

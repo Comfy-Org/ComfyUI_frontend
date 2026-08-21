@@ -6,6 +6,12 @@ import type { TaskItemImpl } from '@/stores/queueStore'
 
 type CopyHandler = (value: string) => void | Promise<void>
 
+type UseJobErrorReportingOptions = {
+  taskForJob: ComputedRef<TaskItemImpl | null>
+  copyToClipboard: CopyHandler
+  dialog: JobErrorDialogService
+}
+
 export type JobErrorDialogService = {
   showExecutionErrorDialog: (executionError: ExecutionErrorDialogInput) => void
   showErrorDialog: (
@@ -15,12 +21,6 @@ export type JobErrorDialogService = {
       [key: string]: unknown
     }
   ) => void
-}
-
-type UseJobErrorReportingOptions = {
-  taskForJob: ComputedRef<TaskItemImpl | null>
-  copyToClipboard: CopyHandler
-  dialog: JobErrorDialogService
 }
 
 export const useJobErrorReporting = ({

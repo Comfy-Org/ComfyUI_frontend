@@ -4,6 +4,14 @@
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { NodeId } from '@/types/nodeId'
 
+interface MinimapRenderSettings {
+  nodeColors: boolean
+  showLinks: boolean
+  showGroups: boolean
+  renderBypass: boolean
+  renderError: boolean
+}
+
 /**
  * Minimal interface for what the minimap needs from the canvas
  */
@@ -28,14 +36,6 @@ export interface MinimapRenderContext {
   settings: MinimapRenderSettings
   width: number
   height: number
-}
-
-interface MinimapRenderSettings {
-  nodeColors: boolean
-  showLinks: boolean
-  showGroups: boolean
-  renderBypass: boolean
-  renderError: boolean
 }
 
 export interface MinimapBounds {

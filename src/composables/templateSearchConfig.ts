@@ -40,6 +40,18 @@ function cjkGrams(word: string): string[] {
   return grams
 }
 
+function searchOptions(combineWith: 'AND' | 'OR' = 'AND') {
+  // Description demoted below default so an incidental prose mention never
+  // outranks a real title/model match.
+  return {
+    boost: { title: 3, models: 2, tags: 2, description: 0.5 },
+    prefix: true,
+    fuzzy: termFuzziness,
+    combineWith,
+    tokenize
+  }
+}
+
 /**
  * Emits sub-parts so a term matches however it's typed: `-`/`_` splits, a
  * trailing version (`wan2.7` → `wan`, `2.7`), and CJK character grams.
@@ -69,18 +81,6 @@ export function termFuzziness(term: string): number | false {
   return term.length <= 3 || /\d/.test(term) ? false : 0.2
 }
 
-function searchOptions(combineWith: 'AND' | 'OR' = 'AND') {
-  // Description demoted below default so an incidental prose mention never
-  // outranks a real title/model match.
-  return {
-    boost: { title: 3, models: 2, tags: 2, description: 0.5 },
-    prefix: true,
-    fuzzy: termFuzziness,
-    combineWith,
-    tokenize
-  }
-}
-
 // `{X}2{Y}` shorthand expanded by structure (t2i, txt2img, …) rather than one
 // entry per spelling.
 const MODALITY_STEMS: Record<string, string> = {
@@ -106,6 +106,10 @@ const SAME_MODALITY_EDIT: Record<string, string> = {
 
 const ACRONYMS: Record<string, string> = {
   cn: 'controlnet'
+}
+
+function searchRankMultiplier(searchRank: number | undefined): number {
+  return 1 + searchRankBoost(searchRank) * SEARCH_RANK_RELEVANCE_WEIGHT
 }
 
 export function expandAbbreviation(token: string): string | null {
@@ -160,10 +164,6 @@ export function createTemplateSearchIndex(
   })
   index.addAll(templates)
   return index
-}
-
-function searchRankMultiplier(searchRank: number | undefined): number {
-  return 1 + searchRankBoost(searchRank) * SEARCH_RANK_RELEVANCE_WEIGHT
 }
 
 // Rank by curated relevance, with usage breaking ties inside a score band.

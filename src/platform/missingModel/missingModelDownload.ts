@@ -37,10 +37,23 @@ function isModelUrlAllowlisted(url: string): boolean {
 
 const MODEL_LIBRARY_TAB_ID = 'model-library'
 
-export interface ModelWithUrl {
-  name: string
-  url: string
-  directory: string
+interface ModelMetadata {
+  fileSize: number | null
+  gatedRepoUrl: string | null
+}
+
+interface MetadataFetchResult {
+  metadata: ModelMetadata
+  cacheable: boolean
+}
+
+interface CivitaiModelFile {
+  sizeKB: number
+  downloadUrl: string
+}
+
+interface CivitaiModelVersionResponse {
+  files: CivitaiModelFile[]
 }
 
 async function startDesktop2ModelDownload(
@@ -74,17 +87,23 @@ function openUrlInNewTab(url: string, downloadAs?: string): void {
   link.click()
 }
 
-export function openGatedRepoPage(url: string): void {
-  if (!isTrustedHuggingFaceUrl(url)) return
-  openUrlInNewTab(url)
-}
-
 function hasHuggingFaceHost(url: string): boolean {
   try {
     return new URL(url).hostname.toLowerCase() === 'huggingface.co'
   } catch {
     return false
   }
+}
+
+export interface ModelWithUrl {
+  name: string
+  url: string
+  directory: string
+}
+
+export function openGatedRepoPage(url: string): void {
+  if (!isTrustedHuggingFaceUrl(url)) return
+  openUrlInNewTab(url)
 }
 
 export function isTrustedHuggingFaceUrl(url: string): boolean {
@@ -146,32 +165,8 @@ export function downloadModel(
   }
 }
 
-interface ModelMetadata {
-  fileSize: number | null
-  gatedRepoUrl: string | null
-}
-
-interface MetadataFetchResult {
-  metadata: ModelMetadata
-  cacheable: boolean
-}
-
-interface CivitaiModelFile {
-  sizeKB: number
-  downloadUrl: string
-}
-
-interface CivitaiModelVersionResponse {
-  files: CivitaiModelFile[]
-}
-
 const metadataCache = new Map<string, ModelMetadata>()
 const inflight = new Map<string, Promise<ModelMetadata>>()
-
-export function clearMetadataCache(): void {
-  metadataCache.clear()
-  inflight.clear()
-}
 
 async function fetchCivitaiMetadata(url: string): Promise<MetadataFetchResult> {
   try {
@@ -217,6 +212,11 @@ async function fetchCivitaiMetadata(url: string): Promise<MetadataFetchResult> {
       cacheable: false
     }
   }
+}
+
+export function clearMetadataCache(): void {
+  metadataCache.clear()
+  inflight.clear()
 }
 
 const GATED_STATUS_CODES = new Set([401, 403, 451])

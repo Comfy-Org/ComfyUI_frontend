@@ -123,6 +123,33 @@ function getDefaultOptions(type: ChartType): ChartOptions {
   }
 }
 
+function deepMerge<T extends Record<string, unknown>>(
+  target: T,
+  source: Record<string, unknown>
+): T {
+  const result = { ...target } as Record<string, unknown>
+  for (const key of Object.keys(source)) {
+    const srcVal = source[key]
+    const tgtVal = result[key]
+    if (
+      srcVal &&
+      typeof srcVal === 'object' &&
+      !Array.isArray(srcVal) &&
+      tgtVal &&
+      typeof tgtVal === 'object' &&
+      !Array.isArray(tgtVal)
+    ) {
+      result[key] = deepMerge(
+        tgtVal as Record<string, unknown>,
+        srcVal as Record<string, unknown>
+      )
+    } else {
+      result[key] = srcVal
+    }
+  }
+  return result as T
+}
+
 export function useChart(
   canvasRef: Ref<HTMLCanvasElement | null>,
   type: Ref<ChartType>,
@@ -166,31 +193,4 @@ export function useChart(
   })
 
   return { chartInstance }
-}
-
-function deepMerge<T extends Record<string, unknown>>(
-  target: T,
-  source: Record<string, unknown>
-): T {
-  const result = { ...target } as Record<string, unknown>
-  for (const key of Object.keys(source)) {
-    const srcVal = source[key]
-    const tgtVal = result[key]
-    if (
-      srcVal &&
-      typeof srcVal === 'object' &&
-      !Array.isArray(srcVal) &&
-      tgtVal &&
-      typeof tgtVal === 'object' &&
-      !Array.isArray(tgtVal)
-    ) {
-      result[key] = deepMerge(
-        tgtVal as Record<string, unknown>,
-        srcVal as Record<string, unknown>
-      )
-    } else {
-      result[key] = srcVal
-    }
-  }
-  return result as T
 }

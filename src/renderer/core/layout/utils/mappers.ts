@@ -14,6 +14,15 @@ export const NODE_LAYOUT_DEFAULTS: NodeLayout = {
   bounds: { x: 0, y: 0, width: 100, height: 50 }
 }
 
+function getOr<K extends keyof NodeLayout>(
+  map: NodeLayoutMap,
+  key: K,
+  fallback: NodeLayout[K]
+): NodeLayout[K] {
+  const v = map.get(key)
+  return (v ?? fallback) as NodeLayout[K]
+}
+
 export function layoutToYNode(layout: NodeLayout): NodeLayoutMap {
   const ynode = new Y.Map<NodeLayout[keyof NodeLayout]>() as NodeLayoutMap
   ynode.set('id', layout.id)
@@ -23,15 +32,6 @@ export function layoutToYNode(layout: NodeLayout): NodeLayoutMap {
   ynode.set('visible', layout.visible)
   ynode.set('bounds', layout.bounds)
   return ynode
-}
-
-function getOr<K extends keyof NodeLayout>(
-  map: NodeLayoutMap,
-  key: K,
-  fallback: NodeLayout[K]
-): NodeLayout[K] {
-  const v = map.get(key)
-  return (v ?? fallback) as NodeLayout[K]
 }
 
 export function yNodeToLayout(ynode: NodeLayoutMap): NodeLayout {

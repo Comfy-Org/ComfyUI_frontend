@@ -6,12 +6,12 @@ import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import type { components, operations } from '@/types/comfyRegistryTypes'
 import { isAbortError } from '@/utils/typeGuardUtil'
 
-// Use generated types from OpenAPI spec
-export type ReleaseNote = components['schemas']['ReleaseNote']
 type GetReleasesParams = operations['getReleaseNotes']['parameters']['query']
-
 // Use generated error response type
 type ErrorResponse = components['schemas']['ErrorResponse']
+
+// Use generated types from OpenAPI spec
+export type ReleaseNote = components['schemas']['ReleaseNote']
 
 const releaseApiClient = axios.create({
   baseURL: getComfyApiBaseUrl(),

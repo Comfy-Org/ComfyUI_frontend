@@ -37,11 +37,6 @@ interface FavoritedWidget extends FavoritedWidgetId {
   label: string
 }
 
-export interface ValidFavoritedWidget extends FavoritedWidget {
-  node: LGraphNode
-  widget: IBaseWidget
-}
-
 /**
  * Storage format for persisted favorited widgets.
  * Stored in workflow.extra.favoritedWidgets.
@@ -49,6 +44,11 @@ export interface ValidFavoritedWidget extends FavoritedWidget {
 interface FavoritedWidgetStorage {
   /** Array of favorited widget identifiers */
   favorites: FavoritedWidgetId[]
+}
+
+export interface ValidFavoritedWidget extends FavoritedWidget {
+  node: LGraphNode
+  widget: IBaseWidget
 }
 
 /**

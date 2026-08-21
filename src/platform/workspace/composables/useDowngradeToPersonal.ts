@@ -31,24 +31,6 @@ export interface DowngradePreview {
   requiresReactivationConfirmation: boolean
 }
 
-/** Thrown by `downgradeToPersonal` when the billing authority requires
- *  reactivation consent, so the still-open confirmation can collect it and
- *  retry with `confirmReactivation: true`. */
-export class ReactivationConfirmationRequiredError extends Error {
-  constructor(public readonly preview: PreviewSubscribeResponse) {
-    super(t('subscription.downgrade.reactivationConfirmationRequired'))
-  }
-}
-
-/** Thrown by `downgradeToPersonal` when the amount a caller confirmed no
- *  longer matches a fresh preview taken right before billing — refuses to
- *  charge an amount the user never actually saw and consented to. */
-export class ReactivationAmountChangedError extends Error {
-  constructor(public readonly preview: PreviewSubscribeResponse) {
-    super(t('subscription.downgrade.reactivationAmountChanged'))
-  }
-}
-
 /**
  * Team-plan downgrade to personal: validate via `previewSubscribe`, remove
  * every member except the original owner, then initiate the tier change.
@@ -415,5 +397,23 @@ export function useDowngradeToPersonal() {
     refreshMembers,
     previewDowngrade,
     downgradeToPersonal
+  }
+}
+
+/** Thrown by `downgradeToPersonal` when the billing authority requires
+ *  reactivation consent, so the still-open confirmation can collect it and
+ *  retry with `confirmReactivation: true`. */
+export class ReactivationConfirmationRequiredError extends Error {
+  constructor(public readonly preview: PreviewSubscribeResponse) {
+    super(t('subscription.downgrade.reactivationConfirmationRequired'))
+  }
+}
+
+/** Thrown by `downgradeToPersonal` when the amount a caller confirmed no
+ *  longer matches a fresh preview taken right before billing — refuses to
+ *  charge an amount the user never actually saw and consented to. */
+export class ReactivationAmountChangedError extends Error {
+  constructor(public readonly preview: PreviewSubscribeResponse) {
+    super(t('subscription.downgrade.reactivationAmountChanged'))
   }
 }

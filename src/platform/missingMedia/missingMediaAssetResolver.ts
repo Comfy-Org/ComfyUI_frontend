@@ -13,91 +13,11 @@ interface MediaPathDetectionOptions {
   allowCompactSuffix: boolean
 }
 
-export interface MissingMediaAssetSources {
-  inputAssets: AssetItem[]
-  generatedAssets: AssetItem[]
-}
-
-export interface ResolveMissingMediaAssetSourcesOptions {
-  signal?: AbortSignal
-  isCloud: boolean
-  includeGeneratedAssets: boolean
-  generatedMatchNames: ReadonlySet<string>
-  generatedHashRequiredNames?: ReadonlySet<string>
-  allowCompactSuffix: boolean
-}
-
-export type MissingMediaAssetResolver = (
-  options: ResolveMissingMediaAssetSourcesOptions
-) => Promise<MissingMediaAssetSources>
-
-export async function resolveMissingMediaAssetSources({
-  signal,
-  isCloud,
-  includeGeneratedAssets,
-  generatedMatchNames,
-  generatedHashRequiredNames = new Set<string>(),
-  allowCompactSuffix
-}: ResolveMissingMediaAssetSourcesOptions): Promise<MissingMediaAssetSources> {
-  const pathOptions = { allowCompactSuffix }
-
-  const controller = new AbortController()
-  const abortFromCaller = () => controller.abort(signal?.reason)
-  if (signal?.aborted) {
-    abortFromCaller()
-  } else {
-    signal?.addEventListener('abort', abortFromCaller, { once: true })
-  }
-
-  try {
-    const [inputAssets, generatedAssets] = await Promise.all([
-      abortSiblingsOnFailure(
-        isCloud
-          ? assetService.getInputAssetsIncludingPublic(controller.signal)
-          : Promise.resolve<AssetItem[]>([]),
-        controller
-      ),
-      abortSiblingsOnFailure(
-        includeGeneratedAssets
-          ? fetchGeneratedAssets(controller.signal, {
-              isCloud,
-              generatedMatchNames,
-              generatedHashRequiredNames,
-              pathOptions
-            })
-          : Promise.resolve<AssetItem[]>([]),
-        controller
-      )
-    ])
-
-    return { inputAssets, generatedAssets }
-  } finally {
-    signal?.removeEventListener('abort', abortFromCaller)
-  }
-}
-
 interface FetchGeneratedAssetsOptions {
   isCloud: boolean
   generatedMatchNames: ReadonlySet<string>
   generatedHashRequiredNames: ReadonlySet<string>
   pathOptions: MediaPathDetectionOptions
-}
-
-export function getAssetDetectionNames(
-  asset: AssetItem,
-  options: MediaPathDetectionOptions
-): string[] {
-  const names = new Set<string>()
-  // Treat names and hashes as opaque match keys because Cloud may use either in widget values.
-  addPathDetectionNames(names, asset.hash, options)
-  addPathDetectionNames(names, asset.name, options)
-
-  const subfolder = asset.user_metadata?.subfolder
-  if (typeof subfolder === 'string' && subfolder) {
-    addSubfolderPathDetectionNames(names, subfolder, asset.name, options)
-  }
-
-  return Array.from(names)
 }
 
 async function fetchGeneratedAssets(
@@ -320,4 +240,84 @@ function mapHistoryJobToAsset(job: JobListItem): AssetItem | null {
       subfolder: output.subfolder
     }
   }
+}
+
+export interface MissingMediaAssetSources {
+  inputAssets: AssetItem[]
+  generatedAssets: AssetItem[]
+}
+
+export interface ResolveMissingMediaAssetSourcesOptions {
+  signal?: AbortSignal
+  isCloud: boolean
+  includeGeneratedAssets: boolean
+  generatedMatchNames: ReadonlySet<string>
+  generatedHashRequiredNames?: ReadonlySet<string>
+  allowCompactSuffix: boolean
+}
+
+export type MissingMediaAssetResolver = (
+  options: ResolveMissingMediaAssetSourcesOptions
+) => Promise<MissingMediaAssetSources>
+
+export async function resolveMissingMediaAssetSources({
+  signal,
+  isCloud,
+  includeGeneratedAssets,
+  generatedMatchNames,
+  generatedHashRequiredNames = new Set<string>(),
+  allowCompactSuffix
+}: ResolveMissingMediaAssetSourcesOptions): Promise<MissingMediaAssetSources> {
+  const pathOptions = { allowCompactSuffix }
+
+  const controller = new AbortController()
+  const abortFromCaller = () => controller.abort(signal?.reason)
+  if (signal?.aborted) {
+    abortFromCaller()
+  } else {
+    signal?.addEventListener('abort', abortFromCaller, { once: true })
+  }
+
+  try {
+    const [inputAssets, generatedAssets] = await Promise.all([
+      abortSiblingsOnFailure(
+        isCloud
+          ? assetService.getInputAssetsIncludingPublic(controller.signal)
+          : Promise.resolve<AssetItem[]>([]),
+        controller
+      ),
+      abortSiblingsOnFailure(
+        includeGeneratedAssets
+          ? fetchGeneratedAssets(controller.signal, {
+              isCloud,
+              generatedMatchNames,
+              generatedHashRequiredNames,
+              pathOptions
+            })
+          : Promise.resolve<AssetItem[]>([]),
+        controller
+      )
+    ])
+
+    return { inputAssets, generatedAssets }
+  } finally {
+    signal?.removeEventListener('abort', abortFromCaller)
+  }
+}
+
+export function getAssetDetectionNames(
+  asset: AssetItem,
+  options: MediaPathDetectionOptions
+): string[] {
+  const names = new Set<string>()
+  // Treat names and hashes as opaque match keys because Cloud may use either in widget values.
+  addPathDetectionNames(names, asset.hash, options)
+  addPathDetectionNames(names, asset.name, options)
+
+  const subfolder = asset.user_metadata?.subfolder
+  if (typeof subfolder === 'string' && subfolder) {
+    addSubfolderPathDetectionNames(names, subfolder, asset.name, options)
+  }
+
+  return Array.from(names)
 }

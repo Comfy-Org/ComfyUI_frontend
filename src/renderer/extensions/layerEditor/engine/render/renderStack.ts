@@ -8,29 +8,7 @@ import { getNodeKind } from '../nodeKind'
 import type { Bitmap } from './place'
 import { placeBitmap } from './place'
 
-export interface PlacedEntry {
-  stamp: string
-  canvas: HTMLCanvasElement
-}
-
-export interface PreviewOverride {
-  canvas: HTMLCanvasElement
-  version: number
-  rects?: Rect[] | null
-}
-
-export interface RenderDeps {
-  content: ContentStore
-  compositor: Compositor
-  devicePixelRatio?: number
-  overrides?: Map<string, PreviewOverride>
-  placedCache?: Map<string, PlacedEntry>
-}
-
-export interface BuiltInputs {
-  inputs: CompositeInput[]
-  cleanup: () => void
-}
+type PlacedFn = ReturnType<typeof makePlaced>
 
 function transformStamp(t: Transform): string {
   return `${t.x},${t.y},${t.w},${t.h},${t.rotation}`
@@ -69,8 +47,6 @@ function makePlaced(deps: RenderDeps, region: Rect, used: Set<string>) {
     return { source: canvas, rect: region, linear, key: stamp }
   }
 }
-
-type PlacedFn = ReturnType<typeof makePlaced>
 
 function renderMaskTexture(
   node: SceneNode,
@@ -265,6 +241,30 @@ function buildInputs(
   }
 
   return { inputs, cleanup: () => cleanups.forEach((fn) => fn()) }
+}
+
+export interface PlacedEntry {
+  stamp: string
+  canvas: HTMLCanvasElement
+}
+
+export interface PreviewOverride {
+  canvas: HTMLCanvasElement
+  version: number
+  rects?: Rect[] | null
+}
+
+export interface RenderDeps {
+  content: ContentStore
+  compositor: Compositor
+  devicePixelRatio?: number
+  overrides?: Map<string, PreviewOverride>
+  placedCache?: Map<string, PlacedEntry>
+}
+
+export interface BuiltInputs {
+  inputs: CompositeInput[]
+  cleanup: () => void
 }
 
 export function buildDocumentInputs(

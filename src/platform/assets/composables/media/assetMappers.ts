@@ -6,6 +6,17 @@ import { api } from '@/scripts/api'
 import type { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
 
 /**
+ * Strips ComfyUI's trailing directory-type annotation (e.g. ` [input]`,
+ * ` [output]`, `[temp]`) from a filename returned by the OSS internal
+ * `/internal/files/{type}` endpoint. The annotation is part of the wire
+ * format LoadImage-style widgets expect, but for the assets sidebar we
+ * want the canonical on-disk filename so type detection / titles work.
+ */
+function stripDirectoryAnnotation(filename: string): string {
+  return filename.replace(/\s*\[(?:input|output|temp)\]\s*$/i, '')
+}
+
+/**
  * Extract asset type from tags array
  * @param tags The tags array from AssetItem
  * @returns The asset type ('input' or 'output')
@@ -52,17 +63,6 @@ export function mapTaskOutputToAssetItem(
     preview_url: output.url,
     user_metadata: metadata
   }
-}
-
-/**
- * Strips ComfyUI's trailing directory-type annotation (e.g. ` [input]`,
- * ` [output]`, `[temp]`) from a filename returned by the OSS internal
- * `/internal/files/{type}` endpoint. The annotation is part of the wire
- * format LoadImage-style widgets expect, but for the assets sidebar we
- * want the canonical on-disk filename so type detection / titles work.
- */
-function stripDirectoryAnnotation(filename: string): string {
-  return filename.replace(/\s*\[(?:input|output|temp)\]\s*$/i, '')
 }
 
 /**

@@ -2,6 +2,11 @@ import { createSharedComposable, useAsyncState } from '@vueuse/core'
 
 import { api } from '@/scripts/api'
 
+interface ModelTypeOption {
+  name: string // Display name
+  value: string // Actual tag value
+}
+
 /**
  * Format folder name to display name
  * Converts "upscale_models" -> "Upscale Model"
@@ -30,11 +35,6 @@ function formatDisplayName(folderName: string): string {
     .split('_')
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ')
-}
-
-interface ModelTypeOption {
-  name: string // Display name
-  value: string // Actual tag value
 }
 
 const DISALLOWED_MODEL_TYPES = ['nlf'] as const

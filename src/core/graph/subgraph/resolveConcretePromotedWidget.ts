@@ -70,16 +70,6 @@ function hasActiveConsumer(
   return false
 }
 
-export function hasActivePromotedWidgetConsumer(
-  hostNode: LGraphNode,
-  inputName: string
-): boolean {
-  return (
-    hostNode.isSubgraphNode() &&
-    hasActiveConsumer(hostNode, inputName, 0, new WeakMap())
-  )
-}
-
 function traversePromotedWidgetChain(
   hostNode: SubgraphNode,
   nodeId: NodeId,
@@ -131,6 +121,16 @@ function traversePromotedWidgetChain(
   }
 
   return { status: 'failure', failure: 'max-depth-exceeded' }
+}
+
+export function hasActivePromotedWidgetConsumer(
+  hostNode: LGraphNode,
+  inputName: string
+): boolean {
+  return (
+    hostNode.isSubgraphNode() &&
+    hasActiveConsumer(hostNode, inputName, 0, new WeakMap())
+  )
 }
 
 export function resolveConcretePromotedWidget(

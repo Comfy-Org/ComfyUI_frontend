@@ -23,12 +23,6 @@ loadPolyfills()
 
 // Backwards compat
 
-// Type definitions for litegraph.js 0.7.0
-// Project: litegraph.js
-// Definitions by: NateScarlet <https://github.com/NateScarlet>
-/** @deprecated Use {@link Point} instead. */
-export type Vector2 = Point
-
 interface IContextMenuItem {
   content: string
   callback?: ContextMenuEventListener
@@ -49,6 +43,12 @@ type ContextMenuEventListener = (
   parentMenu: ContextMenu<unknown> | undefined,
   node: LGraphNode
 ) => boolean | void
+
+// Type definitions for litegraph.js 0.7.0
+// Project: litegraph.js
+// Definitions by: NateScarlet <https://github.com/NateScarlet>
+/** @deprecated Use {@link Point} instead. */
+export type Vector2 = Point
 
 export interface LinkReleaseContextExtended {
   links: ConnectingLink[]

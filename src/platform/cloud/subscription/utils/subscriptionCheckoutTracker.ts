@@ -36,6 +36,17 @@ interface SubscriptionStatusSnapshot {
   subscription_duration?: SubscriptionDuration | null
 }
 
+interface PendingSubscriptionCheckoutAttemptInput {
+  tier: TierKey
+  cycle: BillingCycle
+  checkout_type: SubscriptionCheckoutType
+  previous_tier?: TierKey
+  previous_cycle?: BillingCycle
+  payment_intent_source?: PaymentIntentSource
+  operation?: 'resubscribe'
+  resubscribe_source?: ResubscribeClickMetadata['source']
+}
+
 export interface PendingSubscriptionCheckoutAttempt {
   attempt_id: string
   started_at_ms: number
@@ -48,17 +59,6 @@ export interface PendingSubscriptionCheckoutAttempt {
   /** Set when this attempt was initiated from the resubscribe flow, not a plain subscribe. */
   operation?: 'resubscribe'
   /** Click-time source for a resubscribe attempt; carried through to the terminal event. */
-  resubscribe_source?: ResubscribeClickMetadata['source']
-}
-
-interface PendingSubscriptionCheckoutAttemptInput {
-  tier: TierKey
-  cycle: BillingCycle
-  checkout_type: SubscriptionCheckoutType
-  previous_tier?: TierKey
-  previous_cycle?: BillingCycle
-  payment_intent_source?: PaymentIntentSource
-  operation?: 'resubscribe'
   resubscribe_source?: ResubscribeClickMetadata['source']
 }
 

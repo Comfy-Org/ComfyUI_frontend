@@ -10,14 +10,9 @@ export const FILMSTRIP_THUMBNAIL_MAX_WIDTH = 384
 const METADATA_EVENT_TIMEOUT_MS = 15000
 const SEEK_EVENT_TIMEOUT_MS = 5000
 
-export type FilmstripError = 'canvas-unavailable' | 'load-failed'
-
 interface UseVideoFilmstripOptions {
   fps?: number
 }
-
-class EventTimeoutError extends Error {}
-class LoadAbortedError extends Error {}
 
 function waitForEvent(
   target: EventTarget,
@@ -67,7 +62,6 @@ function blobToDataUrl(blob: Blob): Promise<string> {
     reader.readAsDataURL(blob)
   })
 }
-
 function canvasToJpegDataUrl(canvas: HTMLCanvasElement): Promise<string> {
   return new Promise((resolve) => {
     canvas.toBlob(
@@ -170,6 +164,12 @@ async function captureRepresentativeFrame(
   }
   return captureFrame(video, canvas, context)
 }
+
+class EventTimeoutError extends Error {}
+
+class LoadAbortedError extends Error {}
+
+export type FilmstripError = 'canvas-unavailable' | 'load-failed'
 
 export function useVideoFilmstrip(
   videoUrl: Ref<string | undefined>,

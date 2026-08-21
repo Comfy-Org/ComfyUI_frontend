@@ -75,6 +75,8 @@ type MenuProps = {
   onSearchEnter?: () => void
 }
 
+type TestUser = ReturnType<typeof userEvent.setup>
+
 function renderMenu(props: MenuProps = {}) {
   const layoutMode = ref<LayoutMode>(props.layoutMode ?? 'list')
   const searchQuery = ref<string>(props.searchQuery ?? '')
@@ -139,8 +141,6 @@ function renderMenu(props: MenuProps = {}) {
     baseModelSelected
   }
 }
-
-type TestUser = ReturnType<typeof userEvent.setup>
 
 async function openPopover(user: TestUser, triggerName: string) {
   await user.click(screen.getByRole('button', { name: triggerName }))

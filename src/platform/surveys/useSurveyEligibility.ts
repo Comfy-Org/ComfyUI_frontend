@@ -6,6 +6,11 @@ import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 
 import { useFeatureUsageTracker } from './useFeatureUsageTracker'
 
+interface SurveyState {
+  optedOut: boolean
+  seenSurveys: Record<string, number>
+}
+
 export interface FeatureSurveyConfig {
   /** Feature identifier. Must remain static after initialization. */
   featureId: string
@@ -20,11 +25,6 @@ export interface FeatureSurveyConfig {
    *   when to open the survey — the global controller ignores it.
    */
   presentation?: 'floating' | 'inline-cta'
-}
-
-interface SurveyState {
-  optedOut: boolean
-  seenSurveys: Record<string, number>
 }
 
 const STORAGE_KEY = 'Comfy.SurveyState'

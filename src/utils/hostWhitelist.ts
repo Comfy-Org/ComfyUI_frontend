@@ -12,6 +12,11 @@
 
 const HOST_WHITELIST: string[] = ['localhost']
 
+function isLocalhostLabel(h: string): boolean {
+  // 'localhost' and any subdomain (e.g., 'app.localhost')
+  return h === 'localhost' || h.endsWith('.localhost')
+}
+
 /** Normalize for comparison: lowercase, strip port/brackets, trim trailing dot. */
 export function normalizeHost(input: string): string {
   let h = (input || '').trim().toLowerCase()
@@ -36,6 +41,8 @@ export function normalizeHost(input: string): string {
   return h
 }
 
+/* -------------------- Helpers -------------------- */
+
 /** Public check used by the UI. */
 export function isHostWhitelisted(rawHost: string): boolean {
   const host = normalizeHost(rawHost)
@@ -45,13 +52,6 @@ export function isHostWhitelisted(rawHost: string): boolean {
   if (isComfyOrgHost(host)) return true
   const normalizedList = HOST_WHITELIST.map(normalizeHost)
   return normalizedList.includes(host)
-}
-
-/* -------------------- Helpers -------------------- */
-
-function isLocalhostLabel(h: string): boolean {
-  // 'localhost' and any subdomain (e.g., 'app.localhost')
-  return h === 'localhost' || h.endsWith('.localhost')
 }
 
 const IPV4_OCTET = '(?:25[0-5]|2[0-4]\\d|1\\d\\d|0?\\d?\\d)'

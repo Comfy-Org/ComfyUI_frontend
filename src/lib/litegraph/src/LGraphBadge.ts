@@ -3,11 +3,6 @@ import { LGraphIcon } from './LGraphIcon'
 import type { LGraphIconOptions } from './LGraphIcon'
 import { cachedMeasureText } from './utils/textMeasureCache'
 
-export enum BadgePosition {
-  TopLeft = 'top-left',
-  TopRight = 'top-right'
-}
-
 export interface LGraphBadgeOptions {
   text: string
   fgColor?: string
@@ -20,6 +15,11 @@ export interface LGraphBadgeOptions {
   onClick?: (e: MouseEvent) => void
   xOffset?: number
   yOffset?: number
+}
+
+export enum BadgePosition {
+  TopLeft = 'top-left',
+  TopRight = 'top-right'
 }
 
 export class LGraphBadge {
