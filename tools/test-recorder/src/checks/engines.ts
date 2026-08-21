@@ -25,8 +25,8 @@ function findRepoRoot(start = process.cwd()): string | undefined {
   }
 }
 
-export function readEngines(): Engines {
-  const root = findRepoRoot()
+export function readEngines(from?: string): Engines {
+  const root = findRepoRoot(from)
   if (!root) return {}
   try {
     const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf-8'))
@@ -37,8 +37,8 @@ export function readEngines(): Engines {
 }
 
 /** The exact version .nvmrc pins, so install steps do not guess. */
-export function readNvmrc(): string | undefined {
-  const root = findRepoRoot()
+export function readNvmrc(from?: string): string | undefined {
+  const root = findRepoRoot(from)
   if (!root) return undefined
   try {
     const raw = readFileSync(join(root, '.nvmrc'), 'utf-8').trim()
