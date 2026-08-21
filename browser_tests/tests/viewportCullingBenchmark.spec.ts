@@ -18,10 +18,14 @@ import {
  * this is purely a detach/reattach-vs-stay-attached comparison, not a
  * lifecycle-cost comparison.
  *
- * This is a comparison, not a regression gate: CDP metrics and
- * PerformanceObserver entries vary too much machine-to-machine for a hard
- * threshold. Read the two console lines side by side - domNodes, layouts
- * and longtask time should all be lower with retention on than off.
+ * Both variants run inside a single test so the comparison can actually be
+ * asserted: attached-node counts must differ materially, and retention's
+ * main-thread task time must come in meaningfully below the no-retention
+ * baseline. CDP metrics vary machine-to-machine, so the task-duration
+ * assertion carries generous slack - it exists to catch retention costing
+ * as much as it saves, not to chase a tight regression budget. The
+ * console lines are still there for a human to read domNodes, layouts and
+ * longtask time side by side.
  */
 
 const KEEP_ALIVE_SETTING = 'Comfy.VueNodes.ViewportKeepAlive'
@@ -29,6 +33,17 @@ const KEEP_ALIVE_SETTING = 'Comfy.VueNodes.ViewportKeepAlive'
 // threshold (MIN_NODES_FOR_KEEP_ALIVE in useViewportKeepAlive.ts), so
 // retention actually engages here.
 const TOTAL_NODE_COUNT = 245
+// The keep-alive rect expands the viewport by VIEWPORT_MARGIN_RATIO (0.5) on
+// each side (useViewportKeepAlive.ts), so at the zoom level this sweep
+// settles on it covers well under the full graph. 0.8 is a coarse upper
+// bound - far below "all but one node" but with enough headroom over the
+// true attached fraction to survive normal layout variance.
+const MAX_ATTACHED_RATIO_WITH_KEEP_ALIVE = 0.8
+// Retention's main-thread task time must land under this fraction of the
+// no-retention baseline's. 0.9 is deliberately loose - the goal is to catch
+// a regression where retention costs as much as it saves, not to enforce a
+// tight perf budget that would make this flaky on a noisy CI runner.
+const MAX_TASK_DURATION_RATIO_WITH_KEEP_ALIVE = 0.9
 // Kept intentionally small: the "off" baseline re-renders all 245 attached
 // nodes on every frame-synced step, and each step is a round trip to the
 // browser, so cost scales with step count far faster than with retention
@@ -134,10 +149,15 @@ async function runPanZoomSequence(
 
 type KeepAliveVariant = 'keep-alive-on' | 'keep-alive-off'
 
+interface BenchmarkResult {
+  attachedNodeCount: number
+  taskDurationMs: number
+}
+
 async function benchmarkViewportKeepAlive(
   comfyPage: ComfyPage,
   variant: KeepAliveVariant
-): Promise<number> {
+): Promise<BenchmarkResult> {
   const keepAliveEnabled = variant === 'keep-alive-on'
 
   await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
@@ -202,7 +222,7 @@ async function benchmarkViewportKeepAlive(
       `${observerSnapshot.layoutShiftScore.toFixed(4)}`
   )
 
-  return attachedNodeCount
+  return { attachedNodeCount, taskDurationMs: cdpMetrics.taskDurationMs }
 }
 
 test.describe('Viewport KeepAlive benchmark', { tag: ['@perf'] }, () => {
@@ -210,31 +230,34 @@ test.describe('Viewport KeepAlive benchmark', { tag: ['@perf'] }, () => {
     await comfyPage.canvasOps.resetView()
   })
 
-  test('pan + zoom with viewport KeepAlive on', async ({ comfyPage }) => {
-    // 245 attached nodes reacting to a pan+zoom sweep measures in the tens
-    // of seconds even with retention reducing the attached set - triple the
-    // default timeout so it isn't a coin flip against it.
-    test.slow()
-    const attachedNodeCount = await benchmarkViewportKeepAlive(
-      comfyPage,
-      'keep-alive-on'
-    )
-    // Confirms retention actually reduced attached DOM nodes, so the "on"
-    // and "off" numbers logged above are a real comparison, not two
-    // identical runs.
-    expect(attachedNodeCount).toBeLessThan(TOTAL_NODE_COUNT)
-  })
+  test('viewport KeepAlive on reduces attached nodes and task time vs off', async ({
+    comfyPage
+  }) => {
+    // Both variants run back to back in this one test so the on/off
+    // comparison can be asserted below - a single-variant run already
+    // measures in the tens of seconds, and running both roughly doubles
+    // that, so use an explicit budget rather than stacking test.slow().
+    test.setTimeout(240_000)
 
-  test('pan + zoom with viewport KeepAlive off', async ({ comfyPage }) => {
+    const on = await benchmarkViewportKeepAlive(comfyPage, 'keep-alive-on')
+    const off = await benchmarkViewportKeepAlive(comfyPage, 'keep-alive-off')
+
     // The "off" baseline keeps every one of the 245 nodes attached for the
-    // whole sequence, so it is reliably slower than the "on" run above -
-    // same triple-timeout headroom applies here.
-    test.slow()
-    const attachedNodeCount = await benchmarkViewportKeepAlive(
-      comfyPage,
-      'keep-alive-off'
+    // whole sequence.
+    expect(off.attachedNodeCount).toBe(TOTAL_NODE_COUNT)
+    // Retention must reduce the attached set by more than a token amount -
+    // bound to a viewport-derived fraction rather than "less than the full
+    // count", which a single detached node would also satisfy.
+    expect(on.attachedNodeCount).toBeLessThan(
+      TOTAL_NODE_COUNT * MAX_ATTACHED_RATIO_WITH_KEEP_ALIVE
     )
-    // Confirms the baseline run really does keep every node attached.
-    expect(attachedNodeCount).toBe(TOTAL_NODE_COUNT)
+
+    // The comparison this benchmark exists for: retention should cost
+    // meaningfully less main-thread task time than keeping everything
+    // attached, not merely detach nodes without a corresponding time
+    // saving.
+    expect(on.taskDurationMs).toBeLessThan(
+      off.taskDurationMs * MAX_TASK_DURATION_RATIO_WITH_KEEP_ALIVE
+    )
   })
 })
