@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { parseProxyWidgets } from '@/core/schemas/promotionSchema'
 import type {
@@ -13,14 +13,12 @@ import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
-import {
-  LGraph,
-  LGraphNode,
-  LiteGraph,
-  SubgraphNode
-} from '@/lib/litegraph/src/litegraph'
-import type { RerouteId, Subgraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { toNodeId } from '@/types/nodeId'
+import { toRerouteId } from '@/types/rerouteId'
+
+import { registerTestSubgraphNodeTypes } from './subgraph/__fixtures__/subgraphHelpers'
 
 /**
  * Characterises a workflow assembled from several copies of the same subgraph
@@ -216,38 +214,9 @@ function collidingWorkflow(): SerialisableGraph {
   }
 }
 
-/**
- * Registers a host node type per definition as it is created, so root and
- * nested SubgraphNode instances resolve. `registerTestSubgraphNodeTypes` in
- * `subgraph/__fixtures__/subgraphHelpers` does the same thing, but unregisters
- * unconditionally on test teardown — this file loads two graphs per test, and
- * the second teardown would throw on the already-unregistered type.
- */
-function registerDefinitionHostTypes(rootGraph: LGraph): void {
-  rootGraph.events.addEventListener('subgraph-created', (event) => {
-    const { subgraph } = event.detail
-    class DefinitionHostNode extends SubgraphNode {
-      constructor() {
-        super(rootGraph, subgraph, {
-          id: -1,
-          type: subgraph.id,
-          pos: [0, 0],
-          size: [100, 100],
-          inputs: [],
-          outputs: [],
-          flags: {},
-          order: 0,
-          mode: 0
-        })
-      }
-    }
-    LiteGraph.registerNodeType(subgraph.id, DefinitionHostNode)
-  })
-}
-
 function load(data: SerialisableGraph | ISerialisedGraph): LGraph {
   const graph = new LGraph()
-  registerDefinitionHostTypes(graph)
+  registerTestSubgraphNodeTypes(graph)
   graph.configure(data)
   return graph
 }
@@ -269,12 +238,6 @@ beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
   LiteGraph.registerNodeType('dummy', DummyNode)
   vi.spyOn(console, 'warn').mockImplementation(() => {})
-})
-
-afterEach(() => {
-  for (const id of [DEF_A, DEF_B, DEF_C]) {
-    if (LiteGraph.registered_node_types[id]) LiteGraph.unregisterNodeType(id)
-  }
 })
 
 describe('LGraph.configure with simultaneous cross-scope ID collisions', () => {
@@ -352,7 +315,7 @@ describe('LGraph.configure with simultaneous cross-scope ID collisions', () => {
 
       // The reroute survives normalisation attached to its own scope's link,
       // rather than being dropped as broken.
-      const reroute = scope.reroutes.get(COLLIDING_ENTITY_ID as RerouteId)!
+      const reroute = scope.reroutes.get(toRerouteId(COLLIDING_ENTITY_ID))!
       expect([...reroute.linkIds]).toEqual([COLLIDING_ENTITY_ID])
     }
   })

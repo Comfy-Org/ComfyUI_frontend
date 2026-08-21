@@ -12,7 +12,6 @@ import {
   SubgraphNode,
   createUuidv4
 } from '@/lib/litegraph/src/litegraph'
-import type { ClipboardItems } from '@/lib/litegraph/src/types/serialisation'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
@@ -155,10 +154,8 @@ function buildFixture(): Fixture {
 
   useWidgetValueStore().setValue(original.inputs[1].widgetId!, ORIGINAL_SEED)
 
-  const parsed = JSON.parse(
-    JSON.stringify(canvas._serializeItems([original]))
-  ) as ClipboardItems
-  const pasted = canvas._deserializeItems(parsed, {
+  canvas.copyToClipboard([original])
+  const pasted = canvas._pasteFromClipboard({
     connectInputs: true,
     position: [700, 700]
   })
