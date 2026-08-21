@@ -240,6 +240,26 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     }
   }
 
+  function clearNode(graphId: UUID, nodeId: NodeId): void {
+    const widgetStates = graphWidgetStates.value.get(graphId)
+    const widgetRenderStates = graphWidgetRenderStates.value.get(graphId)
+    if (widgetStates) {
+      for (const [id, state] of widgetStates) {
+        if (state.nodeId !== nodeId) continue
+        widgetStates.delete(id)
+        widgetRenderStates?.delete(id)
+      }
+      if (widgetStates.size === 0) graphWidgetStates.value.delete(graphId)
+    }
+    if (widgetRenderStates?.size === 0) {
+      graphWidgetRenderStates.value.delete(graphId)
+    }
+
+    const widgetOrders = graphNodeWidgetOrders.value.get(graphId)
+    widgetOrders?.delete(nodeId)
+    if (widgetOrders?.size === 0) graphNodeWidgetOrders.value.delete(graphId)
+  }
+
   function clearGraph(graphId: UUID): void {
     graphWidgetStates.value.delete(graphId)
     graphWidgetRenderStates.value.delete(graphId)
@@ -258,6 +278,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     setNodeWidgetOrder,
     replaceNodeWidgetOrder,
     removeNodeWidgetOrder,
+    clearNode,
     clearGraph
   }
 })

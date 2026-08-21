@@ -46,6 +46,7 @@ import {
 import { normalizeWidgetsView } from './node/widgetsView'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { clearNodeOwnedStoreState } from '@/stores/clearNodeOwnedStoreState'
 import { UNASSIGNED_NODE_ID, parseNodeId, toNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import { forEachNode, visitGraphNodes } from '@/utils/graphTraversalUtil'
@@ -216,6 +217,7 @@ function fireNodeRemovalLifecycle(node: LGraphNode): void {
   const graph: LGraph | null = node.graph
   graph?.events.dispatch('node:before-removed', { node })
   node.onRemoved?.()
+  clearNodeOwnedStoreState(node)
   graph?.onNodeRemoved?.(node)
 }
 
@@ -1308,6 +1310,7 @@ export class LGraph
 
     // callback
     node.onRemoved?.()
+    clearNodeOwnedStoreState(node)
 
     unregisterNodeState(node)
     detachNodeLayout(node)
@@ -2834,6 +2837,9 @@ export class LGraph
 
       this.setDirtyCanvas(true, true)
       return error
+    } catch (error) {
+      this.clear()
+      throw error
     } finally {
       endNamedValuesShadowDiffLoad()
       this.events.dispatch('configured')
