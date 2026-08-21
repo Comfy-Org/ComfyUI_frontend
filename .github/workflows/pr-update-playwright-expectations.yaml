@@ -272,6 +272,8 @@ jobs:
 
       - name: Commit updated expectations
         id: commit
+        env:
+          TARGET_BRANCH: ${{ needs.setup.outputs.branch }}
         run: |
           git config --global user.name 'github-actions'
           git config --global user.email 'github-actions@github.com'
@@ -291,8 +293,8 @@ jobs:
           git add browser_tests/
           git commit -m "[automated] Update test expectations"
 
-          echo "Pushing to ${{ needs.setup.outputs.branch }}..."
-          git push origin ${{ needs.setup.outputs.branch }}
+          echo "Pushing to $TARGET_BRANCH..."
+          git push origin "$TARGET_BRANCH" --
 
           echo "✓ Commit and push successful"
 
