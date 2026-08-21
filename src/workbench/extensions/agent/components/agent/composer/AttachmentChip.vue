@@ -1,4 +1,10 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+
+import { cn } from '@comfyorg/tailwind-utils'
+import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
+import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+
 const {
   name,
   previewUrl,
@@ -9,6 +15,14 @@ const {
   uploading?: boolean
 }>()
 const emit = defineEmits<{ remove: [] }>()
+
+const kind = computed(() => getMediaTypeFromFilename(name))
+
+/* The shared map's 'other' glyph is a checkmark, which reads as a status
+   rather than a file on this surface. */
+const kindIconClass = computed(() =>
+  kind.value === 'other' ? 'icon-[lucide--file]' : iconForMediaType(kind.value)
+)
 </script>
 
 <template>
@@ -20,13 +34,15 @@ const emit = defineEmits<{ remove: [] }>()
       :aria-label="$t('agent.uploading')"
       class="text-agent-fg-subtle icon-[lucide--loader-circle] size-3.5 animate-spin"
     />
+    <!-- Only an image kind renders its preview: a server thumbnail for an
+         audio or 3D asset would repaint the broken-image chip this fixed. -->
     <img
-      v-else-if="previewUrl"
+      v-else-if="previewUrl && kind === 'image'"
       :src="previewUrl"
       :alt="name"
       class="size-3.5 shrink-0 rounded-sm object-cover"
     />
-    <span v-else class="icon-[lucide--image] size-3.5 shrink-0" />
+    <span v-else :class="cn(kindIconClass, 'size-3.5 shrink-0')" />
     <span class="max-w-32 truncate">{{ name }}</span>
     <button
       type="button"
