@@ -269,11 +269,19 @@ export async function runRecord(): Promise<void> {
   if (wantPr) {
     const gh = await checkGhAvailable()
     if (gh.available && gh.authenticated) {
-      await createPr({
+      const created = await createPr({
         testFilePath: outputPath,
         testName: slug,
-        description: description as string
+        description: description as string,
+        cwd: projectRoot
       })
+      if (!created.success && created.needsManualSteps) {
+        printManualInstructions({
+          testFilePath: outputPath,
+          testName: slug,
+          relativePath: `browser_tests/tests/${slug}.spec.ts`
+        })
+      }
     } else {
       const fileContents = readFileSync(outputPath, 'utf-8')
       const copied = await copyToClipboard(fileContents)

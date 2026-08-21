@@ -6,12 +6,15 @@ interface PrOptions {
   testName: string
   description: string
   branchName?: string
+  cwd?: string
 }
 
 interface PrResult {
   success: boolean
   url?: string
   error?: string
+  /** Set when the failure is one the manual PR instructions can still solve. */
+  needsManualSteps?: boolean
 }
 
 export async function checkGhAvailable(): Promise<{
@@ -42,53 +45,65 @@ export async function createPr(options: PrOptions): Promise<PrResult> {
   const prBody =
     `${options.description}\n\n---\n\n` + 'Recorded with `comfy-test record`'
 
-  const checkout = spawnSync('git', ['checkout', '-b', branchName], {
-    encoding: 'utf-8',
-    stdio: 'pipe'
-  })
+  // Every git/gh call is pinned to the repo, not to wherever the shell
+  // happens to be sitting.
+  const run = (command: string, args: string[]) =>
+    spawnSync(command, args, {
+      cwd: options.cwd,
+      encoding: 'utf-8',
+      stdio: 'pipe'
+    })
+
+  const checkout = run('git', ['checkout', '-b', branchName])
   if (checkout.status !== 0) {
-    fail('Branch creation failed', checkout.stderr.trim())
-    return {
-      success: false,
-      error: checkout.stderr.trim()
-    }
+    const stderr = checkout.stderr.trim()
+    fail(
+      'Branch creation failed',
+      stderr.includes('already exists')
+        ? `${branchName} already exists — pass a different test name, or delete that branch`
+        : stderr
+    )
+    return { success: false, error: stderr }
   }
   pass('Created branch', branchName)
 
-  const add = spawnSync('git', ['add', options.testFilePath], {
-    encoding: 'utf-8',
-    stdio: 'pipe'
-  })
+  const add = run('git', ['add', options.testFilePath])
   if (add.status !== 0) {
     fail('Git add failed', add.stderr.trim())
     return { success: false, error: add.stderr.trim() }
   }
 
-  const commit = spawnSync('git', ['commit', '-m', commitMsg], {
-    encoding: 'utf-8',
-    stdio: 'pipe'
-  })
+  // Pathspec-scoped so unrelated changes the user already staged do not get
+  // swept into a commit labelled as the recorded test.
+  const commit = run('git', [
+    'commit',
+    '-m',
+    commitMsg,
+    '--',
+    options.testFilePath
+  ])
   if (commit.status !== 0) {
     fail('Git commit failed', commit.stderr.trim())
     return { success: false, error: commit.stderr.trim() }
   }
   pass('Committed test file')
 
-  const push = spawnSync('git', ['push', '-u', 'origin', branchName], {
-    encoding: 'utf-8',
-    stdio: 'pipe'
-  })
+  const push = run('git', ['push', '-u', 'origin', branchName])
   if (push.status !== 0) {
-    fail('Git push failed', push.stderr.trim())
-    return { success: false, error: push.stderr.trim() }
+    const stderr = push.stderr.trim()
+    fail(
+      'Git push failed',
+      /permission|denied|403/i.test(stderr)
+        ? 'no write access to this repository — fork it and push there instead'
+        : stderr
+    )
+    return { success: false, error: stderr, needsManualSteps: true }
   }
   pass('Pushed branch', branchName)
 
-  const pr = spawnSync(
-    'gh',
-    ['pr', 'create', '--title', prTitle, '--body', prBody, '--fill'],
-    { encoding: 'utf-8', stdio: 'pipe' }
-  )
+  // No --fill: the title and body are supplied explicitly, and newer gh
+  // releases reject combining them.
+  const pr = run('gh', ['pr', 'create', '--title', prTitle, '--body', prBody])
   if (pr.status !== 0) {
     fail('PR creation failed', pr.stderr.trim())
     return { success: false, error: pr.stderr.trim() }
