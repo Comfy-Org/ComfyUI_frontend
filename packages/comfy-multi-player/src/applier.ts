@@ -91,6 +91,7 @@ import {
   widgetStorageOf,
 } from "./doc.js";
 import { sha256Hex } from "./digest.js";
+import { MAX_OPS_PER_BATCH, MAX_PAYLOAD_DEPTH, opBoundsRefusal } from "./limits.js";
 import { codePointCompare, compareStampKeys, stampKey, stampTargetKey } from "./stamps.js";
 import {
   DEFERRED_OPS,
@@ -128,6 +129,21 @@ export function applyOps(doc: Y.Doc, ops: Op[], catalog?: WidgetCatalog): ApplyR
   const applied: string[] = [];
   const skipped: string[] = [];
   let failed: ApplyFailure | null = null;
+
+  if (ops.length > MAX_OPS_PER_BATCH) {
+    return {
+      applied,
+      skipped,
+      failed: {
+        index: 0,
+        op: ops[0]!,
+        code: "malformed_op",
+        message: `batch of ${ops.length} ops exceeds the ${MAX_OPS_PER_BATCH}-op limit; rejected before any op was processed (#14)`,
+      },
+      applied_count: 0,
+      version: bookkeeping.size,
+    };
+  }
 
   for (let index = 0; index < ops.length; index++) {
     const op = ops[index]!;
@@ -171,15 +187,6 @@ export function applyOps(doc: Y.Doc, ops: Op[], catalog?: WidgetCatalog): ApplyR
 }
 
 /**
- * Deepest object/array nesting an op payload may carry. The frozen vocabulary
- * bottoms out around four levels (`op.node.inputs[i].widget.name`); this is a
- * bound on untrusted input, not a modelling limit. Without it a hostile
- * payload turns the canonicalizer into a stack-exhaustion `RangeError` on
- * what used to be the cheapest path in the applier (issue #14).
- */
-const MAX_PAYLOAD_DEPTH = 64;
-
-/**
  * Stable, key-order-independent JSON for an op: object keys sorted by code
  * point at every depth, array order preserved, whole envelope included.
  *
@@ -187,6 +194,17 @@ const MAX_PAYLOAD_DEPTH = 64;
  * what the digest is taken over.
  */
 export function canonicalOp(op: Op): string {
+  // Amendment A11 extends A8's whole-envelope, pre-idempotency gate with a
+  // breadth/size budget. Its iterative depth check keeps A8's
+  // `payload_too_deep` vocabulary while avoiding hostile recursion.
+  const bounds = opBoundsRefusal(op);
+  if (bounds !== null) {
+    throw new OpRejectedError(
+      bounds.includes("nests deeper") ? "payload_too_deep" : "malformed_op",
+      bounds,
+    );
+  }
+
   const normalize = (value: unknown, depth: number): unknown => {
     if (depth > MAX_PAYLOAD_DEPTH) {
       throw new OpRejectedError(

@@ -141,8 +141,10 @@ describe("fuzz: malformed and adversarial op envelopes", () => {
     // silent write loss of issue #12: `op_id` is the final LWW tiebreak, so a
     // reuse changes who wins, not just whether the write dedupes. The retry
     // must be rejected loudly and must still leave the doc byte-identical.
+    // A11's whole-envelope size gate now precedes A8's reuse comparison, so
+    // this deliberately oversized retry is rejected as malformed first.
     const result = applyOps(doc, [retry], catalog);
-    expect(result.failed).toMatchObject({ index: 0, code: "op_id_reuse" });
+    expect(result.failed).toMatchObject({ index: 0, code: "malformed_op" });
     expect(result.skipped).toEqual([]);
     expect(bytes(doc).equals(before)).toBe(true);
     expect(() => project(doc, catalog)).not.toThrow();
@@ -215,8 +217,7 @@ describe("saved untrusted-input regression corpus", () => {
       });
       continue;
     }
-    // pins #14 — remove .fails once the payload size/depth/cost bounds land
-    it.fails(`#${entry.issue}: ${entry.name} is rejected before mutation`, () => {
+    it(`#${entry.issue}: ${entry.name} is rejected before mutation`, () => {
       rejectedBeforeMutation(entry);
     });
   }
@@ -224,8 +225,7 @@ describe("saved untrusted-input regression corpus", () => {
   // Cycles cannot be represented in the JSON corpus, so this deterministic
   // reproducer sits beside it. The canonicalizer's depth bound (schema §4
   // amendment A8) now covers it: a cycle exceeds MAX_PAYLOAD_DEPTH before it
-  // can exhaust the stack. The size/cost half of #14 is still open, so the
-  // corpus cases above stay pinned with `it.fails`.
+  // can exhaust the stack. Amendment A11 adds the size/cost half of #14.
   it("#14: cyclic node payload is rejected before cloning/storage", () => {
     const cycle: Record<string, unknown> = {};
     cycle["self"] = cycle;

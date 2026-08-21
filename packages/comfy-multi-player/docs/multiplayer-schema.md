@@ -1579,3 +1579,19 @@ protects `mint()`. Top-level `Date` values are refused at the write gate, and
 different value; A8's JSON canonicalizer already rejects every BigInt op as
 `apply_failed` before the write gate. Validation remains
 shallow apart from cycle detection; deeper encoding-loss policy remains D4.
+
+---
+
+## Amendment A11 — 2026-08-21 — bounded op breadth, size, and batch cost (issue #14)
+
+A8's whole-envelope canonicalization gate now also rejects an op before the
+idempotency check when any array or object exceeds 4,096 entries, or when an
+approximate processing budget exceeds 262,144 units. The budget counts string
+and key characters, binary bytes, containers, leaves, and every visit; it is
+iterative and cycle-tolerant so the budget check itself is bounded. A8 remains
+authoritative for depth and cycles and retains `payload_too_deep` for both.
+
+`applyOps` also rejects a batch above 1,024 ops before processing its first op.
+Breadth, size, and batch refusals use `malformed_op`; no new rejection code is
+introduced. These are processing limits, not Y.Doc layout changes, so no
+`SCHEMA_VERSION` bump is required.
