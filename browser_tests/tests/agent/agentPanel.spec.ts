@@ -209,6 +209,9 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await panel.getByRole('button', { name: enMessages.agent.send }).click()
     await expect.poll(() => postedMessages.length).toBe(1)
 
+    await expect(
+      panel.getByRole('button', { name: enMessages.g.edit })
+    ).toHaveCount(0)
     await panel.getByRole('button', { name: enMessages.agent.stop }).click()
     await expect(
       panel.getByRole('button', { name: enMessages.g.edit })
