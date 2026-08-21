@@ -37,10 +37,10 @@ catalog:
   '@sentry/vite-plugin': ^4.6.0
   '@sentry/vue': ^10.32.1
   '@sparkjsdev/spark': ^2.1.0
-  '@storybook/addon-docs': ^10.5.6
+  '@storybook/addon-docs': ^10.5.9
   '@storybook/addon-mcp': 0.7.0
-  '@storybook/vue3': ^10.5.6
-  '@storybook/vue3-vite': ^10.5.6
+  '@storybook/vue3': ^10.5.9
+  '@storybook/vue3-vite': ^10.5.9
   '@tailwindcss/vite': ^4.3.2
   '@tanstack/vue-virtual': ^3.13.12
   '@testing-library/jest-dom': ^6.9.1
@@ -120,7 +120,7 @@ catalog:
   reka-ui: 2.6.2
   rollup-plugin-visualizer: ^6.0.4
   start-server-and-test: ^3.0.11
-  storybook: ^10.5.6
+  storybook: ^10.5.9
   stylelint: ^17.14.0
   tailwindcss: ^4.3.2
   tailwindcss-primeui: ^0.6.1
