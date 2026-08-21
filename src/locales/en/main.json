@@ -1438,7 +1438,6 @@
       "download": "Download",
       "exportWorkflow": "Export workflow",
       "delete": "Delete",
-      "deleteAsset": "Delete asset",
       "removeJob": "Remove job",
       "copyErrorMessage": "Copy error message",
       "reportError": "Report error"
@@ -3795,6 +3794,7 @@
     "deleteSelectedDescription": "{count} asset(s) will be permanently removed.",
     "assetDeletedSuccessfully": "Asset deleted successfully",
     "deletingImportedFilesCloudOnly": "Deleting imported files is only supported in cloud version",
+    "deletionUnsupported": "Assets are enabled, but server doesn't support deletion",
     "failedToDeleteAsset": "Failed to delete asset",
     "actions": {
       "inspect": "Inspect asset",

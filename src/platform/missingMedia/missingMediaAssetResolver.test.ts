@@ -1,4 +1,5 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -10,14 +11,20 @@ import {
   resolveMissingMediaAssetSources
 } from './missingMediaAssetResolver'
 
-const { mockGetInputAssetsIncludingPublic, mockGetAssetsPageByTag } =
-  vi.hoisted(() => ({
-    mockGetInputAssetsIncludingPublic: vi.fn(),
-    mockGetAssetsPageByTag: vi.fn()
-  }))
+const mockInputItems = ref<AssetItem[]>([])
+
+const { mockGetAssetsPageByTag } = vi.hoisted(() => ({
+  mockGetAssetsPageByTag: vi.fn()
+}))
 
 const { mockFetchHistoryPage } = vi.hoisted(() => ({
   mockFetchHistoryPage: vi.fn()
+}))
+
+vi.mock('@/stores/assetsStore', () => ({
+  useAssetsStore: () => ({
+    inputAssets: { items: mockInputItems }
+  })
 }))
 
 vi.mock('@/platform/assets/services/assetService', async () => {
@@ -29,7 +36,6 @@ vi.mock('@/platform/assets/services/assetService', async () => {
     ...actual,
     assetService: {
       ...actual.assetService,
-      getInputAssetsIncludingPublic: mockGetInputAssetsIncludingPublic,
       getAssetsPageByTag: mockGetAssetsPageByTag
     }
   }
@@ -100,14 +106,14 @@ function makeAssetPage(
 
 describe('resolveMissingMediaAssetSources', () => {
   beforeEach(() => {
-    mockGetInputAssetsIncludingPublic.mockResolvedValue([])
+    mockInputItems.value = []
     mockGetAssetsPageByTag.mockResolvedValue(makeAssetPage([]))
     mockFetchHistoryPage.mockResolvedValue(makeHistoryPage([]))
   })
 
-  it('loads cloud input assets when requested', async () => {
+  it('loads cloud input assets from the store', async () => {
     const inputAsset = makeAsset('photo.png')
-    mockGetInputAssetsIncludingPublic.mockResolvedValue([inputAsset])
+    mockInputItems.value = [inputAsset]
 
     const result = await resolveMissingMediaAssetSources({
       isCloud: true,
@@ -118,9 +124,6 @@ describe('resolveMissingMediaAssetSources', () => {
 
     expect(result.inputAssets).toEqual([inputAsset])
     expect(result.generatedAssets).toEqual([])
-    expect(mockGetInputAssetsIncludingPublic).toHaveBeenCalledWith(
-      expect.any(AbortSignal)
-    )
     expect(mockFetchHistoryPage).not.toHaveBeenCalled()
   })
 
@@ -213,43 +216,6 @@ describe('resolveMissingMediaAssetSources', () => {
       matchingHashAsset
     ])
     expect(mockGetAssetsPageByTag).toHaveBeenCalledTimes(2)
-  })
-
-  it('aborts cloud output asset loading when input asset loading fails', async () => {
-    const inputError = new Error('input failed')
-    let rejectInputAssets!: (err: Error) => void
-    let resolveOutputAssets!: (page: ReturnType<typeof makeAssetPage>) => void
-    mockGetInputAssetsIncludingPublic.mockReturnValueOnce(
-      new Promise<AssetItem[]>((_, reject) => {
-        rejectInputAssets = reject
-      })
-    )
-    mockGetAssetsPageByTag.mockReturnValueOnce(
-      new Promise((resolve) => {
-        resolveOutputAssets = resolve
-      })
-    )
-
-    const promise = resolveMissingMediaAssetSources({
-      isCloud: true,
-      includeGeneratedAssets: true,
-      generatedMatchNames: new Set(['target.png']),
-      allowCompactSuffix: true
-    })
-
-    await Promise.resolve()
-    expect(mockGetAssetsPageByTag).toHaveBeenCalledOnce()
-
-    rejectInputAssets(inputError)
-    await expect(promise).rejects.toBe(inputError)
-
-    resolveOutputAssets(makeAssetPage([makeAsset('other.png')]))
-    await Promise.resolve()
-
-    const outputSignal = mockGetAssetsPageByTag.mock.calls[0]?.[2]?.signal
-    expect(outputSignal).toBeInstanceOf(AbortSignal)
-    expect(outputSignal.aborted).toBe(true)
-    expect(mockFetchHistoryPage).not.toHaveBeenCalled()
   })
 
   it('stops reading generated history once all requested names are found', async () => {

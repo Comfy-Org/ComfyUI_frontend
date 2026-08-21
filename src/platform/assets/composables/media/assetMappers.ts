@@ -1,9 +1,40 @@
+import { toValue } from 'vue'
+import type { MaybeRef } from 'vue'
+
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
+import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetContext } from '@/platform/assets/schemas/mediaAssetSchema'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { api } from '@/scripts/api'
-import type { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
+import type { TaskItemImpl } from '@/stores/queueStore'
+import { ResultItemImpl } from '@/stores/queueStore'
+import {
+  getMediaTypeFromFilename,
+  isPreviewableMediaType
+} from '@/utils/formatUtil'
+
+class AssetResultItem extends ResultItemImpl {
+  private readonly _url: string
+  private readonly _previewUrl: string
+
+  constructor(
+    asset: AssetItem,
+    init: ConstructorParameters<typeof ResultItemImpl>[0]
+  ) {
+    super(init)
+    this._url = asset.preview_url ?? ''
+    this._previewUrl = asset.thumbnail_url ?? this._url
+  }
+
+  override get url(): string {
+    return this._url
+  }
+
+  override get previewUrl(): string {
+    return this._previewUrl
+  }
+}
 
 /**
  * Extract asset type from tags array
@@ -54,6 +85,74 @@ export function mapTaskOutputToAssetItem(
   }
 }
 
+const byCreatedAtAsc = (a: AssetItem, b: AssetItem): number =>
+  new Date(a.created_at).getTime() - new Date(b.created_at).getTime() ||
+  a.name.localeCompare(b.name)
+
+const byCreatedAtDesc = (a: AssetItem, b: AssetItem): number =>
+  new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+
+function flatAssetToResultItem(asset: AssetItem): ResultItemImpl {
+  const metadata = getOutputAssetMetadata(asset.user_metadata)
+  return new AssetResultItem(asset, {
+    assetId: asset.id,
+    display_name: asset.display_name ?? undefined,
+    filename: asset.name,
+    format: metadata?.format,
+    mediaType: getMediaTypeFromFilename(asset.name),
+    nodeId: metadata?.nodeId ?? '',
+    subfolder: metadata?.subfolder ?? '',
+    type: 'output'
+  })
+}
+
+/**
+ * Group flat per-file output assets into one asset per job, mirroring the
+ * grouped shape produced from the history API: the group id is the job id and
+ * user_metadata carries outputCount/allOutputs. Assets without output job
+ * metadata pass through ungrouped.
+ */
+export function unflattenOutputAssets(
+  flatAssets: MaybeRef<readonly AssetItem[]>
+): AssetItem[] {
+  const assetsByJob = new Map<string, AssetItem[]>()
+  const ungrouped: AssetItem[] = []
+
+  for (const asset of toValue(flatAssets)) {
+    const { job_id } = asset
+    if (!job_id) {
+      ungrouped.push(asset)
+      continue
+    }
+    const group = assetsByJob.get(job_id)
+    if (group) group.push(asset)
+    else assetsByJob.set(job_id, [asset])
+  }
+
+  const grouped = [...assetsByJob.entries()].map(([job_id, assets]) => {
+    const ordered = [...assets].sort(byCreatedAtAsc)
+    const representative =
+      ordered.findLast((asset) =>
+        isPreviewableMediaType(getMediaTypeFromFilename(asset.name))
+      ) ?? ordered.at(-1)!
+    return {
+      ...representative,
+      id: job_id,
+      created_at: ordered.at(-1)!.created_at,
+      user_metadata: {
+        jobId: job_id,
+        // FIXME exploring job entries requires a node id...
+        nodeId: -1,
+        ...representative.user_metadata,
+        outputCount: ordered.length,
+        allOutputs: ordered.map(flatAssetToResultItem)
+      }
+    }
+  })
+
+  return [...grouped, ...ungrouped].sort(byCreatedAtDesc)
+}
+
 /**
  * Strips ComfyUI's trailing directory-type annotation (e.g. ` [input]`,
  * ` [output]`, `[temp]`) from a filename returned by the OSS internal
@@ -83,7 +182,6 @@ export function mapInputFileToAssetItem(
   appendCloudResParam(params, cleanName)
 
   const created_at = new Date().toISOString()
-
   return {
     id: `${directory}-${index}-${cleanName}`,
     name: cleanName,

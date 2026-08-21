@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
 import { downloadFile } from '@/base/common/downloadUtil'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 import { useWorkflowActionsService } from '@/platform/workflow/core/services/workflowActionsService'
@@ -90,34 +91,32 @@ export function useMediaAssetActions() {
   const dialogStore = useDialogStore()
   const mediaContext = inject(MediaAssetKey, null)
   const { copyToClipboard } = useCopyToClipboard()
+  const { flags } = useFeatureFlags()
   const workflowActions = useWorkflowActionsService()
   const litegraphService = useLitegraphService()
   const nodeDefStore = useNodeDefStore()
 
   /**
-   * Internal helper to perform the API deletion for a single asset
-   * Handles both output assets (via history API) and input assets (via asset service)
+   * Internal helper to perform the API deletion for an AssetItem
    * @throws Error if deletion fails or is not allowed
    */
-  const deleteAssetApi = async (
-    asset: AssetItem,
-    assetType: string
-  ): Promise<void> => {
-    // Temp files (e.g. preview-node outputs) are history-backed outputs that
-    // happen to live in the temp dir, so they delete via the history API too.
-    if (assetType === 'output' || assetType === 'temp') {
-      const jobId =
-        getOutputAssetMetadata(asset.user_metadata)?.jobId || asset.id
-      if (!jobId) {
-        throw new Error('Unable to extract job ID from asset')
+  const deleteAssetApi = async (asset: AssetItem): Promise<void> => {
+    const { jobId, outputCount, allOutputs } =
+      getOutputAssetMetadata(asset.user_metadata) ?? {}
+    if (flags.assetsEnabled && flags.assetDeletionEnabled) {
+      if (!jobId || !outputCount) {
+        await assetService.deleteAsset(asset.id)
+        return
       }
+      const allOutputIds = (allOutputs ?? [])?.flatMap((output) =>
+        output.assetId ? [output.assetId] : []
+      )
+      const toDelete = allOutputIds.length > 0 ? allOutputIds : [asset.id]
+      await Promise.all(toDelete.map((id) => assetService.deleteAsset(id)))
+    }
+    if (jobId) {
       await api.deleteItem('history', jobId)
-    } else {
-      // Input assets can only be deleted in cloud environment
-      if (!isCloud) {
-        throw new Error(t('mediaAsset.deletingImportedFilesCloudOnly'))
-      }
-      await assetService.deleteAsset(asset.id)
+      if (!flags.assetsEnabled) await useAssetsStore().outputAssets.invalidate()
     }
   }
 
@@ -668,6 +667,15 @@ export function useMediaAssetActions() {
     const assetArray = Array.isArray(assets) ? assets : [assets]
     if (assetArray.length === 0) return false
 
+    if (flags.assetsEnabled && !flags.assetDeletionEnabled) {
+      toast.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: t('mediaAsset.deletionUnsupported')
+      })
+      return false
+    }
+
     const assetsStore = useAssetsStore()
     const isSingle = assetArray.length === 1
 
@@ -695,9 +703,7 @@ export function useMediaAssetActions() {
             try {
               // Delete all assets using Promise.allSettled to track individual results
               const results = await Promise.allSettled(
-                assetArray.map((asset) =>
-                  deleteAssetApi(asset, getAssetType(asset))
-                )
+                assetArray.map(deleteAssetApi)
               )
 
               // Count successes and failures
@@ -713,22 +719,6 @@ export function useMediaAssetActions() {
                   result.reason
                 )
               })
-
-              // Update stores after deletions
-              const hasOutputAssets = assetArray.some((a) => {
-                const type = getAssetType(a)
-                return type === 'output' || type === 'temp'
-              })
-              const hasInputAssets = assetArray.some(
-                (a) => getAssetType(a) === 'input'
-              )
-
-              if (hasOutputAssets) {
-                await assetsStore.updateHistory()
-              }
-              if (hasInputAssets) {
-                await assetsStore.updateInputs()
-              }
 
               const rootGraph = app.rootGraph
               if (rootGraph) {

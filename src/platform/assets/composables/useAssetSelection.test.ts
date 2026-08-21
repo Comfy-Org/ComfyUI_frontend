@@ -10,6 +10,11 @@ const mockShiftKey = ref(false)
 const mockCtrlKey = ref(false)
 const mockMetaKey = ref(false)
 
+vi.mock('@/platform/assets/composables/media/assetMappers', () => ({
+  mapInputFileToAssetItem: vi.fn(),
+  mapTaskOutputToAssetItem: vi.fn()
+}))
+
 vi.mock('@vueuse/core', async (importOriginal) => {
   const actual = await importOriginal()
   return {

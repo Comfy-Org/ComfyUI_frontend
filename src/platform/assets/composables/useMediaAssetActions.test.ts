@@ -54,14 +54,14 @@ vi.mock('@/stores/dialogStore', () => ({
 
 const mockInvalidateModelsForCategory = vi.hoisted(() => vi.fn())
 const mockSetAssetDeleting = vi.hoisted(() => vi.fn())
-const mockUpdateHistory = vi.hoisted(() => vi.fn())
-const mockUpdateInputs = vi.hoisted(() => vi.fn())
+const mockOutputLoadNew = vi.hoisted(() => vi.fn())
+const mockInputLoadNew = vi.hoisted(() => vi.fn())
 const mockHasCategory = vi.hoisted(() => vi.fn())
 vi.mock('@/stores/assetsStore', () => ({
   useAssetsStore: () => ({
     setAssetDeleting: mockSetAssetDeleting,
-    updateHistory: mockUpdateHistory,
-    updateInputs: mockUpdateInputs,
+    outputAssets: { loadNew: mockOutputLoadNew },
+    inputAssets: { loadNew: mockInputLoadNew },
     invalidateModelsForCategory: mockInvalidateModelsForCategory,
     hasCategory: mockHasCategory
   })
@@ -177,6 +177,9 @@ vi.mock('@/scripts/api', () => ({
     internalURL: vi.fn((path: string) => `http://localhost:8188${path}`),
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
+    getServerFeature: vi.fn(
+      (_path: string, defaultValue?: unknown) => defaultValue
+    ),
     user: 'test-user'
   }
 }))
@@ -298,6 +301,9 @@ function mountMediaActions(asset?: AssetMeta) {
 describe('useMediaAssetActions', () => {
   beforeEach(() => {
     mockIsCloud.value = false
+    vi.mocked(api.getServerFeature).mockImplementation(
+      (_path: string, defaultValue?: unknown) => defaultValue
+    )
     litegraphServiceMock.addNodeOnGraph.mockImplementation(createLoadImageNode)
     litegraphServiceMock.getCanvasCenter.mockReturnValue([100, 100])
     mockGetOutputAssetMetadata.mockReturnValue(null)
@@ -1116,6 +1122,7 @@ describe('useMediaAssetActions', () => {
   describe('deleteAssets - model cache invalidation', () => {
     beforeEach(() => {
       mockIsCloud.value = true
+      vi.mocked(api.getServerFeature).mockReturnValue(true)
       mockGetAssetType.mockReturnValue('input')
       mockDeleteAsset.mockResolvedValue(undefined)
       // By default, hasCategory returns true for model categories
@@ -1221,6 +1228,7 @@ describe('useMediaAssetActions', () => {
   describe('deleteAssets - confirmation dialog item names', () => {
     beforeEach(() => {
       mockIsCloud.value = true
+      vi.mocked(api.getServerFeature).mockReturnValue(true)
       mockGetAssetType.mockReturnValue('output')
     })
 
@@ -1299,13 +1307,13 @@ describe('useMediaAssetActions', () => {
         )
       })
       expect(mockDeleteAsset).not.toHaveBeenCalled()
-      expect(mockUpdateHistory).toHaveBeenCalled()
     })
   })
 
   describe('deleteAssets — FE-230 preview cache clearing', () => {
     beforeEach(() => {
       mockIsCloud.value = true
+      vi.mocked(api.getServerFeature).mockReturnValue(true)
       mockGetAssetType.mockReturnValue('input')
       mockShowDialog.mockImplementation(
         (opts: {

@@ -30,7 +30,8 @@ vi.mock('@/scripts/api', () => ({
     fetchApi: vi.fn(),
     apiURL: vi.fn((url: string) => url),
     addEventListener: vi.fn(),
-    removeEventListener: vi.fn()
+    removeEventListener: vi.fn(),
+    getServerFeature: vi.fn()
   }
 }))
 

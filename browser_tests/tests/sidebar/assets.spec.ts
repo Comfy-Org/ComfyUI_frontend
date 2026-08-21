@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test'
 
+import type { Asset } from '@comfyorg/ingest-types'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import {
   createMockJob,
@@ -12,6 +13,12 @@ import type {
 
 // Legacy coverage backed by AssetsHelper's shadow backend. New assets-sidebar
 // browser coverage should use typed route mocks in assetsSidebarTab.spec.ts.
+
+const JOB_IDS = {
+  alpha: '00000000-0000-4000-a000-00000000000a',
+  beta: '00000000-0000-4000-a000-00000000000b',
+  gamma: '00000000-0000-4000-a000-00000000000c'
+} as const
 
 const SAMPLE_JOBS: RawJobListItem[] = [
   createMockJob({
@@ -64,8 +71,44 @@ const SAMPLE_IMPORTED_FILES = [
   'audio_clip.wav'
 ]
 
+function makeCloudAsset(
+  id: string,
+  name: string,
+  jobId: string,
+  createTime: number
+): Asset {
+  const createdAt = new Date(createTime).toISOString()
+  return {
+    id,
+    name,
+    job_id: jobId,
+    mime_type: 'image/png',
+    tags: ['output'],
+    preview_url: `/api/view?filename=${name}&type=output`,
+    created_at: createdAt,
+    updated_at: createdAt
+  }
+}
+
+// Cloud assets matching SAMPLE_JOBS. job-gamma has 2 outputs so
+// unflattenOutputAssets gives it outputCount=2 and a "See more" button.
+// The second asset per job has an earlier created_at so the primary
+// filename is picked as the representative by findLast.
+const CLOUD_ASSETS: Asset[] = [
+  makeCloudAsset('asset-alpha', 'landscape.png', JOB_IDS.alpha, 1000),
+  makeCloudAsset('asset-beta', 'portrait.png', JOB_IDS.beta, 2000),
+  makeCloudAsset(
+    'asset-gamma-extra',
+    'abstract_art_alt.png',
+    JOB_IDS.gamma,
+    2999
+  ),
+  makeCloudAsset('asset-gamma', 'abstract_art.png', JOB_IDS.gamma, 3000)
+]
+
 const JOB_GAMMA_DETAIL: JobDetail = {
   ...SAMPLE_JOBS[2],
+  id: JOB_IDS.gamma,
   outputs: {
     '3': {
       images: [
@@ -99,8 +142,11 @@ const JOB_GAMMA_DETAIL: JobDetail = {
 
 const cloudTest = test.extend<{ mockCloudAssetSidebarData: void }>({
   mockCloudAssetSidebarData: async ({ comfyPage }, use) => {
-    await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
-    await comfyPage.assets.mockEmptyCloudAssets()
+    await comfyPage.assets.mockCloudAssets({
+      assets: CLOUD_ASSETS,
+      total: CLOUD_ASSETS.length,
+      has_more: false
+    })
 
     await use()
 
@@ -791,7 +837,7 @@ cloudTest.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
       await expect.poll(() => exportRequests).toHaveLength(1)
 
       const payload = exportRequests[0]
-      expect(payload.job_ids).toEqual(['job-gamma'])
+      expect(payload.job_ids).toEqual([JOB_IDS.gamma])
       expect(payload.job_asset_name_filters).toBeUndefined()
       expect(payload.naming_strategy).toBe('preserve')
     }
@@ -802,7 +848,7 @@ cloudTest.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
     async ({ comfyPage, mockCloudAssetSidebarData }) => {
       void mockCloudAssetSidebarData
       const exportRequests = await comfyPage.assets.captureAssetExportRequests()
-      await comfyPage.assets.mockJobDetail('job-gamma', JOB_GAMMA_DETAIL)
+      await comfyPage.assets.mockJobDetail(JOB_IDS.gamma, JOB_GAMMA_DETAIL)
 
       const tab = comfyPage.menu.assetsTab
       await tab.open()
@@ -825,10 +871,10 @@ cloudTest.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
       await expect.poll(() => exportRequests).toHaveLength(1)
 
       const payload = exportRequests[0]
-      expect(payload.job_ids).toEqual(['job-gamma'])
-      expect(payload.job_asset_name_filters?.['job-gamma']?.toSorted()).toEqual(
-        ['abstract_art.png', 'abstract_art_alt.png']
-      )
+      expect(payload.job_ids).toEqual([JOB_IDS.gamma])
+      expect(
+        payload.job_asset_name_filters?.[JOB_IDS.gamma]?.toSorted()
+      ).toEqual(['abstract_art.png', 'abstract_art_alt.png'])
       expect(payload.naming_strategy).toBe('preserve')
     }
   )
@@ -853,7 +899,9 @@ cloudTest.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
       await expect.poll(() => exportRequests).toHaveLength(1)
 
       const payload = exportRequests[0]
-      expect(payload.job_ids?.toSorted()).toEqual(['job-alpha', 'job-beta'])
+      expect(payload.job_ids?.toSorted()).toEqual(
+        [JOB_IDS.alpha, JOB_IDS.beta].toSorted()
+      )
       expect(payload.job_asset_name_filters).toBeUndefined()
       expect(payload.naming_strategy).toBe('group_by_job_time')
     }

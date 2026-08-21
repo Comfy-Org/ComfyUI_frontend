@@ -29,6 +29,7 @@ import {
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
+import { useAssetsStore } from '@/stores/assetsStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 
@@ -192,7 +193,6 @@ const ASSETS_DOWNLOAD_ENDPOINT = '/assets/download'
 const ASSETS_EXPORT_ENDPOINT = '/assets/export'
 const EXPERIMENTAL_WARNING = `EXPERIMENTAL: If you are seeing this please make sure "Comfy.Assets.UseAssetAPI" is set to "false" in your ComfyUI Settings.\n`
 const DEFAULT_LIMIT = 500
-const INPUT_ASSETS_WITH_PUBLIC_LIMIT = 500
 // Defensive backstop against a server that never signals exhaustion (e.g. an
 // unbounded stream of unique cursors); mirrors assetsStore's walk cap. At
 // DEFAULT_LIMIT per page this allows 500k assets per walk, so it only ever
@@ -213,10 +213,6 @@ const uploadedAssetResponseSchema = assetItemSchema.extend({
 
 function createAbortError(): DOMException {
   return new DOMException('Aborted', 'AbortError')
-}
-
-function throwIfAborted(signal?: AbortSignal): void {
-  if (signal?.aborted) throw createAbortError()
 }
 
 function normalizeAssetTags(tags: string[]): string[] {
@@ -243,27 +239,6 @@ function compareLoaderPaths(a: string, b: string): number {
     if (order !== 0) return order
   }
   return 0
-}
-
-async function withCallerAbort<T>(
-  promise: Promise<T>,
-  signal?: AbortSignal
-): Promise<T> {
-  throwIfAborted(signal)
-  if (!signal) return await promise
-
-  let removeAbortListener = () => {}
-  const abortPromise = new Promise<never>((_, reject) => {
-    const onAbort = () => reject(createAbortError())
-    signal.addEventListener('abort', onAbort, { once: true })
-    removeAbortListener = () => signal.removeEventListener('abort', onAbort)
-  })
-
-  try {
-    return await Promise.race([promise, abortPromise])
-  } finally {
-    removeAbortListener()
-  }
 }
 
 /**
@@ -301,10 +276,6 @@ function validateUploadedAssetResponse(
  * Not exposed globally - used internally by ComfyApi
  */
 function createAssetService() {
-  let inputAssetsIncludingPublic: AssetItem[] | null = null
-  let inputAssetsIncludingPublicRequestId = 0
-  let pendingInputAssetsIncludingPublic: Promise<AssetItem[]> | null = null
-
   /**
    * Model assets bucketed by folder category, built from a single walk of the
    * `models` tag rather than a fetch per category. Shared by the folder list
@@ -330,15 +301,8 @@ function createAssetService() {
     pendingModelBuckets = null
   }
 
-  /** Invalidates the cached public-inclusive input assets without aborting in-flight readers. */
-  function invalidateInputAssetsIncludingPublic(): void {
-    inputAssetsIncludingPublicRequestId++
-    pendingInputAssetsIncludingPublic = null
-    inputAssetsIncludingPublic = null
-  }
-
-  function invalidateInputAssetsCacheIfNeeded(tags?: string[]): void {
-    if (tags?.includes('input')) invalidateInputAssetsIncludingPublic()
+  function invalidateInputAssets(items?: AssetId[]): void {
+    void useAssetsStore().inputAssets.invalidate(items)
   }
 
   /**
@@ -789,45 +753,6 @@ function createAssetService() {
     }
   }
 
-  function startInputAssetsIncludingPublicRequest(): Promise<AssetItem[]> {
-    const requestId = ++inputAssetsIncludingPublicRequestId
-
-    pendingInputAssetsIncludingPublic = getAllAssetsByTag('input', true, {
-      limit: INPUT_ASSETS_WITH_PUBLIC_LIMIT
-    })
-      .then((assets) => {
-        if (requestId === inputAssetsIncludingPublicRequestId) {
-          inputAssetsIncludingPublic = assets
-        }
-        return assets
-      })
-      .finally(() => {
-        if (requestId === inputAssetsIncludingPublicRequestId) {
-          pendingInputAssetsIncludingPublic = null
-        }
-      })
-
-    void pendingInputAssetsIncludingPublic.catch(() => {})
-    return pendingInputAssetsIncludingPublic
-  }
-
-  /**
-   * Gets cached input assets including public assets for missing media checks.
-   * Caller aborts cancel only that caller; shared fetches are invalidated
-   * through invalidateInputAssetsIncludingPublic().
-   */
-  async function getInputAssetsIncludingPublic(
-    signal?: AbortSignal
-  ): Promise<AssetItem[]> {
-    throwIfAborted(signal)
-    if (inputAssetsIncludingPublic) return inputAssetsIncludingPublic
-
-    const request =
-      pendingInputAssetsIncludingPublic ??
-      startInputAssetsIncludingPublicRequest()
-    return await withCallerAbort(request, signal)
-  }
-
   /**
    * Deletes an asset by ID
    * Only available in cloud environment
@@ -847,7 +772,7 @@ function createAssetService() {
       )
     }
 
-    invalidateInputAssetsIncludingPublic()
+    invalidateInputAssets()
   }
 
   /**
@@ -954,7 +879,7 @@ function createAssetService() {
     }
 
     const asset = validateUploadedAssetResponse(await res.json())
-    invalidateInputAssetsCacheIfNeeded(params.tags)
+    invalidateInputAssets()
     return asset
   }
 
@@ -1009,7 +934,7 @@ function createAssetService() {
     }
 
     const asset = validateUploadedAssetResponse(await res.json())
-    invalidateInputAssetsCacheIfNeeded(params.tags)
+    invalidateInputAssets([asset.id])
     return asset
   }
 
@@ -1040,7 +965,7 @@ function createAssetService() {
     if (!parseResult.success) {
       throw fromZodError(parseResult.error)
     }
-    invalidateInputAssetsIncludingPublic()
+    invalidateInputAssets()
     return parseResult.data
   }
 
@@ -1071,7 +996,7 @@ function createAssetService() {
     if (!parseResult.success) {
       throw fromZodError(parseResult.error)
     }
-    invalidateInputAssetsIncludingPublic()
+    invalidateInputAssets()
     return parseResult.data
   }
 
@@ -1123,13 +1048,8 @@ function createAssetService() {
           )
         )
       }
-      if (
-        params.tags?.includes('input') &&
-        result.data.type === 'async' &&
-        result.data.task.status === 'completed'
-      ) {
-        invalidateInputAssetsIncludingPublic()
-      }
+      const asset = result.data.type === 'sync' ? result.data.asset : undefined
+      invalidateInputAssets(asset && [asset.id])
       return result.data
     }
 
@@ -1145,7 +1065,8 @@ function createAssetService() {
         )
       )
     }
-    invalidateInputAssetsCacheIfNeeded(params.tags)
+    const asset = result.data.type === 'sync' ? result.data.asset : undefined
+    invalidateInputAssets(asset && [asset.id])
     return result.data
   }
 
@@ -1191,8 +1112,6 @@ function createAssetService() {
     getAssetsByTag,
     getAssetsPageByTag,
     getAllAssetsByTag,
-    getInputAssetsIncludingPublic,
-    invalidateInputAssetsIncludingPublic,
     deleteAsset,
     updateAsset,
     addAssetTags,
