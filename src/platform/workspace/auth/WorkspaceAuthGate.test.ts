@@ -154,6 +154,68 @@ describe('WorkspaceAuthGate', () => {
       expect(screen.getByTestId('slot-content')).toBeInTheDocument()
       expect(mockRefreshRemoteConfig).not.toHaveBeenCalled()
     })
+
+    it('initializes workspace context in the background for a signed-in user', async () => {
+      mockIsCloud.value = false
+      mockIsInitialized.value = true
+      mockCurrentUser.value = { uid: 'user-123' }
+
+      mountComponent()
+      await flushPromises()
+
+      expect(screen.getByTestId('slot-content')).toBeInTheDocument()
+      expect(mockWorkspaceStoreInitialize).toHaveBeenCalledOnce()
+      expect(mockRefreshRemoteConfig).not.toHaveBeenCalled()
+    })
+
+    it('initializes workspace context after a mid-session sign-in', async () => {
+      mockIsCloud.value = false
+      mockIsInitialized.value = true
+
+      mountComponent()
+      await flushPromises()
+      expect(mockWorkspaceStoreInitialize).not.toHaveBeenCalled()
+
+      mockCurrentUser.value = { uid: 'user-123' }
+      await flushPromises()
+
+      expect(mockWorkspaceStoreInitialize).toHaveBeenCalledOnce()
+    })
+
+    it('deduplicates mount and auth-hydration initialization', async () => {
+      mockIsCloud.value = false
+
+      mountComponent()
+      mockCurrentUser.value = { uid: 'user-123' }
+      mockIsInitialized.value = true
+      await flushPromises()
+
+      expect(mockWorkspaceStoreInitialize).toHaveBeenCalledOnce()
+    })
+
+    it('cancels pending initialization when unmounted', async () => {
+      mockIsCloud.value = false
+
+      const { unmount } = mountComponent()
+      unmount()
+      mockCurrentUser.value = { uid: 'user-123' }
+      mockIsInitialized.value = true
+      await flushPromises()
+
+      expect(mockWorkspaceStoreInitialize).not.toHaveBeenCalled()
+    })
+
+    it('cancels pending initialization on logout', async () => {
+      mockIsCloud.value = false
+      mockCurrentUser.value = { uid: 'user-123' }
+
+      mountComponent()
+      mockCurrentUser.value = null
+      mockIsInitialized.value = true
+      await flushPromises()
+
+      expect(mockWorkspaceStoreInitialize).not.toHaveBeenCalled()
+    })
   })
 
   describe('cloud builds - unauthenticated user', () => {

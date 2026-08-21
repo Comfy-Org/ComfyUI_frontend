@@ -1640,7 +1640,7 @@ export class ComfyApp {
     let queueResultOverride: boolean | null = null
 
     // Get auth token for backend nodes - uses workspace token if enabled, otherwise Firebase token
-    const comfyOrgAuthToken = await useAuthStore().getAuthToken()
+    const comfyOrgAuthToken = await useAuthStore().getWorkspaceAuthToken()
     const comfyOrgApiKey = useApiKeyAuthStore().getApiKey()
 
     try {
