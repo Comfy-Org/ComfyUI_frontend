@@ -10,15 +10,13 @@ test.describe(
   () => {
     test.slow()
 
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.workflow.loadWorkflow(
-        'subgraphs/subgraph-with-promoted-text-widget'
-      )
-    })
-
     test('restores promoted subgraph state after delete, undo, and redo', async ({
       comfyPage
     }) => {
+      await comfyPage.workflow.loadWorkflow(
+        'subgraphs/subgraph-with-promoted-text-widget'
+      )
+
       const { baseline, promotedText } =
         await test.step('Capture the initial promoted subgraph state', async () => {
           const baseline = await comfyPage.page.evaluate(() =>
@@ -80,6 +78,10 @@ test.describe(
     test('preserves geometry through navigation, renderer toggle, and history', async ({
       comfyPage
     }) => {
+      await comfyPage.workflow.loadWorkflow(
+        'subgraphs/subgraph-with-promoted-text-widget'
+      )
+
       const nodeId = toNodeId('11')
 
       const { before, moved } =
