@@ -122,8 +122,11 @@
             }}</span>
           </div>
         </div>
-        <span v-if="newIsYearly" class="text-sm text-muted-foreground">
-          {{ $t('subscription.preview.refillReplacesNote') }}
+        <span
+          v-if="isImmediateMonthlyToAnnual"
+          class="text-sm text-muted-foreground"
+        >
+          {{ $t('subscription.preview.currentMonthlyCreditsValidNote') }}
         </span>
       </div>
 
@@ -308,6 +311,12 @@ const isCadenceChange = computed(
   () =>
     !!previewData.current_plan &&
     previewData.current_plan.duration !== previewData.new_plan.duration
+)
+const isImmediateMonthlyToAnnual = computed(
+  () =>
+    isImmediate.value &&
+    previewData.current_plan?.duration === 'MONTHLY' &&
+    newIsYearly.value
 )
 
 const newTierName = computed(() =>

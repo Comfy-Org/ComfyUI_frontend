@@ -3032,7 +3032,7 @@
       "currentMonthly": "monthly plan",
       "commitment": "commitment",
       "creditsYoullGetToday": "Credits you'll get today",
-      "refillReplacesNote": "Replaces your monthly refill. Existing balance is kept.",
+      "currentMonthlyCreditsValidNote": "This month's credits stay valid until your current cycle ends.",
       "afterThat": "After that",
       "creditsRefillMonthlyTo": "Credits refill monthly to",
       "billedEachMonth": "{amount} billed each month. Cancel anytime.",

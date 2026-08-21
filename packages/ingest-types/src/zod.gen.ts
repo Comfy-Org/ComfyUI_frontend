@@ -230,6 +230,7 @@ export const zUserDataResponseFull = z.object({
 export const zUsageBalance = z.object({
   amount_micros: z.number().optional(),
   cloud_credit_balance_micros: z.number().optional(),
+  cloud_credit_total_micros: z.number().optional(),
   currency: z.string().optional(),
   prepaid_balance_micros: z.number().optional()
 })
@@ -2120,6 +2121,7 @@ export const zBillingEventsResponse = z.object({
 export const zBillingBalanceResponse = z.object({
   amount_micros: z.number(),
   cloud_credit_balance_micros: z.number().optional(),
+  cloud_credit_total_micros: z.number().optional(),
   currency: z.string(),
   effective_balance_micros: z.number().optional(),
   pending_charges_micros: z.number().optional(),

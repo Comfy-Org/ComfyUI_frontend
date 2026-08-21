@@ -1,13 +1,17 @@
+import type { UsageBalance } from '@comfyorg/ingest-types'
 import { describe, expect, it, vi } from 'vitest'
 
 import { useLegacyBilling } from './useLegacyBilling'
 
 const mockSubscribe = vi.fn()
 const mockSubscribeDirect = vi.fn()
+const mockBalance = vi.hoisted(() => ({
+  value: null as UsageBalance | null
+}))
 
 vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   useSubscription: () => ({
-    isActiveSubscription: { value: false },
+    canAccessSubscriptionFeatures: { value: false },
     subscriptionTier: { value: null },
     subscriptionDuration: { value: null },
     subscriptionStatus: { value: null },
@@ -27,10 +31,33 @@ vi.mock('@/composables/auth/useAuthActions', () => ({
 }))
 
 vi.mock('@/stores/authStore', () => ({
-  useAuthStore: () => ({ balance: null })
+  useAuthStore: () => ({
+    get balance() {
+      return mockBalance.value
+    }
+  })
 }))
 
 describe('useLegacyBilling', () => {
+  it('maps the server-authoritative cloud credit total', () => {
+    mockBalance.value = {
+      amount_micros: 7_000,
+      currency: 'USD',
+      cloud_credit_balance_micros: 2_000,
+      cloud_credit_total_micros: 5_000,
+      prepaid_balance_micros: 2_000
+    }
+
+    expect(useLegacyBilling().balance.value).toEqual({
+      amountMicros: 7_000,
+      currency: 'USD',
+      effectiveBalanceMicros: 7_000,
+      cloudCreditBalanceMicros: 2_000,
+      cloudCreditTotalMicros: 5_000,
+      prepaidBalanceMicros: 2_000
+    })
+  })
+
   describe('resubscribe', () => {
     it('performs the checkout via the unwrapped subscribeDirect', async () => {
       mockSubscribeDirect.mockResolvedValue(undefined)

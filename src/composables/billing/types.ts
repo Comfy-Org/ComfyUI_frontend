@@ -41,6 +41,7 @@ export interface BalanceInfo {
   effectiveBalanceMicros?: number
   prepaidBalanceMicros?: number
   cloudCreditBalanceMicros?: number
+  cloudCreditTotalMicros?: number
 }
 
 export interface BillingActions {
