@@ -1,8 +1,8 @@
-import { spawnSync } from 'node:child_process'
 import { existsSync, readdirSync, statSync } from 'node:fs'
 import { dirname, join, parse } from 'node:path'
 import pc from 'picocolors'
 import { generateRecordingTemplate, cleanupRecordingTemplate } from './template'
+import { runCommand } from '../cli/run'
 import { devServerUrl } from '../checks/devServerUrl'
 import { box } from '../ui/logger'
 
@@ -108,7 +108,7 @@ export async function runRecording(
   process.once('SIGTERM', onSignal)
 
   try {
-    const result = spawnSync(
+    const result = runCommand(
       'pnpm',
       [
         'exec',

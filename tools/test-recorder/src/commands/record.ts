@@ -1,5 +1,4 @@
 import { createInterface } from 'node:readline'
-import { spawnSync } from 'node:child_process'
 import { writeFileSync, mkdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
@@ -20,6 +19,7 @@ import {
 } from '../recorder/runner'
 import { transform, formatTransformSummary } from '../transform/engine'
 import { formatFile } from '../transform/format'
+import { runCommand } from '../cli/run'
 import { stepHeader } from '../ui/steps'
 import { pass, fail, info, blank, box } from '../ui/logger'
 import { checkGhAvailable, createPr } from '../pr/gh'
@@ -85,7 +85,7 @@ export async function runRecord(): Promise<void> {
 
   const s = spinner()
   s.start('Installing dependencies...')
-  const install = spawnSync('pnpm', ['install'], {
+  const install = runCommand('pnpm', ['install'], {
     cwd: projectRoot,
     stdio: 'pipe'
   })

@@ -18,20 +18,30 @@ export async function copyToClipboard(
     cmd = 'clip.exe'
     args = []
   } else {
-    // Linux: try xclip first, fall back to xsel
-    const xclip = spawnSync('xclip', ['-selection', 'clipboard'], {
-      input: content,
-      stdio: 'pipe'
-    })
-    if (xclip.status === 0) return { ok: true }
+    // Wayland sessions often ship none of the X11 tools, so try wl-copy too.
+    const candidates: [string, string[]][] = process.env.WAYLAND_DISPLAY
+      ? [
+          ['wl-copy', []],
+          ['xclip', ['-selection', 'clipboard']],
+          ['xsel', ['--clipboard', '--input']]
+        ]
+      : [
+          ['xclip', ['-selection', 'clipboard']],
+          ['xsel', ['--clipboard', '--input']],
+          ['wl-copy', []]
+        ]
 
-    const xsel = spawnSync('xsel', ['--clipboard', '--input'], {
-      input: content,
-      stdio: 'pipe'
-    })
-    return xsel.status === 0
-      ? { ok: true }
-      : { ok: false, reason: 'xclip/xsel unavailable or failed' }
+    for (const [candidate, candidateArgs] of candidates) {
+      const attempt = spawnSync(candidate, candidateArgs, {
+        input: content,
+        stdio: 'pipe'
+      })
+      if (attempt.status === 0) return { ok: true }
+    }
+    return {
+      ok: false,
+      reason: 'no clipboard tool found (tried wl-copy, xclip, xsel)'
+    }
   }
 
   const result = spawnSync(cmd, args, {
