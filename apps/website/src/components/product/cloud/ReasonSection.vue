@@ -37,7 +37,6 @@ const reasons: CloudReason[] = [
   <ReasonSection
     :locale="locale"
     heading-key="cloud.reason.heading"
-    heading-highlight-key="cloud.reason.headingHighlight"
     :reasons="reasons"
   >
     <template #reason-extra="{ reason }">
