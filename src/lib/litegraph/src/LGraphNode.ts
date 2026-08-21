@@ -25,7 +25,7 @@ import { mintLinkId } from './idAllocation'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { UNASSIGNED_NODE_ID, toNodeId, serializeNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
-import type { NodeState } from '@/types/nodeState'
+import type { NodeProperty, NodeState } from '@/types/nodeState'
 import { adjustColor } from '@/utils/colorUtil'
 import type { ColorAdjustOptions } from '@/utils/colorUtil'
 import { zeroUuid } from '@/utils/uuid'
@@ -142,7 +142,7 @@ import type { WidgetTypeMap } from './widgets/widgetMap'
 
 // #region Types
 
-export type NodeProperty = string | number | boolean | object | null
+export type { NodeProperty } from '@/types/nodeState'
 
 interface INodePropertyInfo {
   name?: string
@@ -398,7 +398,17 @@ export class LGraphNode
   private _concreteInputs: NodeInputSlot[] = []
   private _concreteOutputs: NodeOutputSlot[] = []
 
-  properties: Dictionary<NodeProperty | undefined> = {}
+  get properties(): Dictionary<NodeProperty | undefined> {
+    return this._state.properties
+  }
+
+  set properties(value: Dictionary<NodeProperty | undefined>) {
+    if (value === this._state.properties) return
+    for (const key of Object.keys(this._state.properties))
+      delete this._state.properties[key]
+    Object.assign(this._state.properties, value)
+  }
+
   properties_info: INodePropertyInfo[] = []
 
   get flags(): INodeFlags {
@@ -973,13 +983,19 @@ export class LGraphNode
       inputs: shallowReactive<InputSlotDescriptor[]>([]),
       mode: LGraphEventMode.ALWAYS,
       outputs: shallowReactive<OutputSlotDescriptor[]>([]),
+      properties: {},
       title: title || 'Unnamed',
       type: type ?? '',
       titleMode: this.title_mode
     }
     this._inputs = inputSlotView(this._state.inputs, this)
     this._outputs = outputSlotView(this._state.outputs, this)
-    for (const property of ['inputs', 'outputs', 'boxcolor'] as const) {
+    for (const property of [
+      'inputs',
+      'outputs',
+      'properties',
+      'boxcolor'
+    ] as const) {
       Object.defineProperty(this, property, {
         ...Object.getOwnPropertyDescriptor(LGraphNode.prototype, property),
         enumerable: true

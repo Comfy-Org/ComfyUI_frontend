@@ -30,7 +30,7 @@ extension-visible behavior.
 | Legacy node geometry projection     | Partial  | Layout is authoritative, but `LGraphNode` owns stable mutable buffers, version tracking, synchronization, and write-through callbacks for `pos` and `size`.                |
 | Link non-topological state          | Complete | `linkStateStore` owns separate persistent color and runtime execution, interaction, render, and hit-test records on the topology lifecycle.                                |
 | Plain slot descriptors              | Complete | Store-owned node arrays contain plain reactive descriptors; stable class projections retain extension behavior, connectivity, callbacks, drawing, and geometry.            |
-| Node properties                     | Open     | `LGraphNode.properties` is a directly mutable dictionary with optional `setProperty` orchestration.                                                                        |
+| Node properties                     | Complete | `NodeState` owns the stable mutable dictionary while `LGraphNode.properties` preserves direct mutation, assignment, callback, configure, and serialization behavior.       |
 | Group presentation                  | Complete | Graph-definition records own group title, color, font, font size, and flags behind mutable compatibility accessors; layout continues to own geometry.                      |
 | Preview-exposure persistence        | Partial  | `previewExposureStore` is authoritative for runtime lookup and serialization; raw host keys and root-only cleanup remain.                                                  |
 | Extension persistence adapter       | Open     | Graph and node `onSerialize` hooks receive the complete mutable canonical DTO; no validated extension namespace protects store-backed fields.                              |
@@ -240,8 +240,8 @@ sequence above rather than the summary-table order.
 | 9        | Legacy node geometry projection     | Complete    | `854f68fb2`  | The layout adapter now owns stable legacy views, synchronization, and geometry write-through.    |
 | 10       | Plain slot descriptors              | Complete    | `cc53dad291` | Plain store descriptors now back stable extension-visible slot class projections.                |
 | 11       | Group presentation                  | Complete    | `3ac7b726a`  | Graph-definition records now back mutable presentation fields and serialization.                 |
-| 12       | Link non-topological state          | Complete    | This commit  | Separate persistent and runtime records now back compatible link fields with topology lifecycle. |
-| 13       | Node properties                     | Not started |              |                                                                                                  |
+| 12       | Link non-topological state          | Complete    | `38b40988a`  | Separate persistent and runtime records now back compatible link fields with topology lifecycle. |
+| 13       | Node properties                     | Complete    | This commit  | Node state now owns stable mutable properties across lifecycle, callbacks, and serialization.    |
 | 14       | Unknown-node fallback               | Not started |              |                                                                                                  |
 | 15       | Delayed widget restoration          | Not started |              |                                                                                                  |
 | 16       | Extension persistence adapter       | Not started |              |                                                                                                  |

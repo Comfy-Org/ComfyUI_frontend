@@ -11,6 +11,8 @@ import type {
 import type { NodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
 
+export type NodeProperty = string | number | boolean | object | null
+
 /**
  * The fields the renderer draws. Selection, execution, errors, geometry, widget
  * values and links live elsewhere — see docs/architecture/node-data-store.md.
@@ -23,6 +25,7 @@ export interface NodeState {
   inputs: InputSlotDescriptor[]
   mode: LGraphEventMode
   outputs: OutputSlotDescriptor[]
+  properties: Record<string, NodeProperty | undefined>
   title: string
   type: string
   bgcolor?: string
