@@ -27,6 +27,7 @@ import type {
 import type { UUID } from '@/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/utils/uuid'
 import { useLinkStore } from '@/stores/linkStore'
+import { useGraphMetadataStore } from '@/stores/graphMetadataStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -140,6 +141,38 @@ describe('LGraph', () => {
 
     expect(result).toBeUndefined()
     expect(graph.nodes.length).toBe(initialNodeCount)
+  })
+
+  it('configures and serializes graph metadata through the store', () => {
+    const graph = new LGraph()
+    const id = createUuidv4()
+    graph.configure({
+      id,
+      version: 1,
+      revision: 4,
+      state: {
+        lastGroupId: 0,
+        lastNodeId: 0,
+        lastLinkId: 0,
+        lastRerouteId: 0
+      },
+      config: { links_ontop: true },
+      extra: { workflowRendererVersion: 'Vue' }
+    })
+
+    const metadata = useGraphMetadataStore().get(id)
+    expect(metadata).toMatchObject({
+      revision: 4,
+      config: { links_ontop: true },
+      extra: { workflowRendererVersion: 'Vue' }
+    })
+
+    graph.config.links_ontop = false
+    expect(graph.asSerialisable()).toMatchObject({
+      revision: 4,
+      config: { links_ontop: false },
+      extra: { workflowRendererVersion: 'Vue' }
+    })
   })
   it('normalizes legacy numeric node ids when adding nodes', () => {
     const graph = new LGraph()
