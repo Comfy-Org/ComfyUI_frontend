@@ -246,7 +246,6 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
       if (!resultItems?.images?.length) return
       setOutputsByLocatorId(locatorId, resultItems)
     }
-    node.images = nodeOutputs.value[locatorId]?.images
   }
 
   function setNodeOutputImages(
