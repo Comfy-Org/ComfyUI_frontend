@@ -18,7 +18,12 @@ const {
   groups,
   cloudUrl,
   isPartnerNode = false,
-  openPending = false
+  openPending = false,
+  modelSetupEnabled = false,
+  setupPending = false,
+  requirementsMet = false,
+  starterPackAvailable = false,
+  remainingDownload
 } = defineProps<{
   title: string
   description: string
@@ -26,10 +31,16 @@ const {
   cloudUrl?: string
   isPartnerNode?: boolean
   openPending?: boolean
+  modelSetupEnabled?: boolean
+  setupPending?: boolean
+  requirementsMet?: boolean
+  starterPackAvailable?: boolean
+  remainingDownload?: string
 }>()
 
 const emit = defineEmits<{
   'open-template': []
+  'download-starter-pack': []
   'download-model': [rowId: string]
 }>()
 
@@ -391,16 +402,54 @@ function getFailedDownloadLabel(
     </div>
 
     <footer
-      class="flex min-h-15 shrink-0 items-center justify-end border-t border-border-subtle px-6 py-4"
+      class="flex min-h-15 shrink-0 flex-wrap items-center gap-3 border-t border-border-subtle px-6 py-4"
     >
-      <Button
-        variant="inverted"
-        size="sm"
-        :loading="openPending"
-        @click="emit('open-template')"
+      <p
+        v-if="modelSetupEnabled && !requirementsMet && remainingDownload"
+        class="m-0 min-w-0 flex-1 text-sm text-muted-foreground"
       >
-        {{ t('templateWorkflows.detail.openTemplate') }}
-      </Button>
+        {{
+          t('templateWorkflows.detail.downloadRemaining', {
+            total: remainingDownload
+          })
+        }}
+      </p>
+      <div class="ml-auto flex flex-wrap items-center justify-end gap-3">
+        <Button
+          v-if="modelSetupEnabled && !requirementsMet"
+          variant="outline"
+          size="sm"
+          :disabled="openPending"
+          @click="emit('open-template')"
+        >
+          {{ t('templateWorkflows.detail.openWithoutDownloading') }}
+        </Button>
+        <Button
+          v-if="
+            !modelSetupEnabled ||
+            requirementsMet ||
+            setupPending ||
+            starterPackAvailable
+          "
+          variant="inverted"
+          size="sm"
+          :loading="openPending"
+          :disabled="modelSetupEnabled && !requirementsMet && setupPending"
+          @click="
+            modelSetupEnabled && !requirementsMet
+              ? emit('download-starter-pack')
+              : emit('open-template')
+          "
+        >
+          {{
+            t(
+              modelSetupEnabled && !requirementsMet
+                ? 'templateWorkflows.detail.downloadStarterPack'
+                : 'templateWorkflows.detail.openTemplate'
+            )
+          }}
+        </Button>
+      </div>
     </footer>
   </article>
 </template>
