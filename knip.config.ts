@@ -43,10 +43,8 @@ const config: KnipConfig = {
     }
   },
   ignoreBinaries: [
-    // Optional host tools the recorder probes for and degrades without
-    'xcode-select',
-    'xclip',
-    'xsel'
+    // Optional host tool the recorder probes for and degrades without
+    'xcode-select'
   ],
   ignoreDependencies: [
     // Weird importmap things
