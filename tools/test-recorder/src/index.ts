@@ -15,17 +15,35 @@ switch (command) {
     break
   }
   case 'transform': {
-    const filePath = args[1]
+    const { parseFlags } = await import('./cli/flags')
+    const { positional, flags } = parseFlags(args.slice(1))
+    const filePath = positional[0]
     if (!filePath) {
-      console.log(pc.red('  Usage: comfy-test transform <file>'))
+      console.log(
+        pc.red(
+          '  Usage: comfy-test transform <file> [--name <n>] [--tags <a,b>] [--workflow <w>] [--output <f>]'
+        )
+      )
       process.exit(1)
     }
+    const tags = flags.tags?.split(',').filter(Boolean)
     const { runTransform } = await import('./commands/transform')
-    const tags = args.slice(3)
     await runTransform(filePath, {
-      testName: args[2],
-      tags: tags.length > 0 ? tags : undefined
+      testName: flags.name,
+      tags: tags && tags.length > 0 ? tags : undefined,
+      workflow: flags.workflow,
+      output: flags.output
     })
+    break
+  }
+  case 'pr': {
+    const filePath = args[1]
+    if (!filePath) {
+      console.log(pc.red('  Usage: comfy-test pr <file.spec.ts>'))
+      process.exit(1)
+    }
+    const { runPr } = await import('./commands/pr')
+    await runPr(filePath, args[2])
     break
   }
   case 'check': {
@@ -54,6 +72,7 @@ Usage: comfy-test <command>
 Commands:
   record      Record a new browser test interactively
   transform   Transform raw codegen output to conventions
+  pr          Open a pull request for a generated test
   check       Check environment prerequisites
   list        List available test workflows
 

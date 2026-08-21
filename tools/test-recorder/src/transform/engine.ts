@@ -14,6 +14,7 @@ export function transform(
   options: {
     testName?: string
     tags?: string[]
+    workflow?: string
   } = {}
 ): TransformResult {
   const testName = options.testName ?? 'unnamed-test'
@@ -45,7 +46,7 @@ export function transform(
   // Phase 3: Apply structural transforms
   for (const transform of structuralTransforms) {
     const before = code
-    code = transform.apply(code, testName, tags)
+    code = transform.apply(code, testName, tags, options.workflow)
     if (code !== before) {
       appliedRules.push({
         name: transform.name,

@@ -90,10 +90,37 @@ export const transformRules: TransformRule[] = [
 interface StructuralTransform {
   name: string
   description: string
-  apply: (code: string, testName: string, tags: string[]) => string
+  apply: (
+    code: string,
+    testName: string,
+    tags: string[],
+    workflow?: string
+  ) => string
 }
 
 export const structuralTransforms: StructuralTransform[] = [
+  {
+    name: 'load-recorded-workflow',
+    description: 'Load the workflow the recording started from',
+    apply: (
+      code: string,
+      _testName: string,
+      _tags: string[],
+      workflow?: string
+    ) => {
+      if (!workflow) return code
+      if (code.includes('loadWorkflow(')) return code
+
+      // Codegen only captures what the user did after pressing Record, so the
+      // starting workflow is lost. Without it the test opens an empty canvas
+      // and every recorded coordinate points at nothing.
+      const escaped = workflow.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
+      return code.replace(
+        /(test\s*\([^)]*async\s*\(\s*\{\s*comfyPage\s*\}\s*\)\s*=>\s*\{\n)/,
+        `$1  await comfyPage.workflow.loadWorkflow('${escaped}')\n  await comfyPage.nextFrame()\n`
+      )
+    }
+  },
   {
     name: 'wrap-in-describe',
     description: 'Wrap test in test.describe with tags and afterEach',
