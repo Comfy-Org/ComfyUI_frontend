@@ -31,7 +31,7 @@ extension-visible behavior.
 | Link non-topological state          | Partial  | `linkStore` owns topology; `LLink` still owns execution data, interaction flags, render paths, hit-test geometry, and color without one defined lifecycle.                 |
 | Plain slot descriptors              | Complete | Store-owned node arrays contain plain reactive descriptors; stable class projections retain extension behavior, connectivity, callbacks, drawing, and geometry.            |
 | Node properties                     | Open     | `LGraphNode.properties` is a directly mutable dictionary with optional `setProperty` orchestration.                                                                        |
-| Group presentation                  | Open     | Layout owns group geometry; `LGraphGroup` owns title, color, font, font size, and flags.                                                                                   |
+| Group presentation                  | Complete | Graph-definition records own group title, color, font, font size, and flags behind mutable compatibility accessors; layout continues to own geometry.                      |
 | Preview-exposure persistence        | Partial  | `previewExposureStore` is authoritative for runtime lookup and serialization; raw host keys and root-only cleanup remain.                                                  |
 | Extension persistence adapter       | Open     | Graph and node `onSerialize` hooks receive the complete mutable canonical DTO; no validated extension namespace protects store-backed fields.                              |
 | Graph metadata                      | Open     | `revision`, `config`, and `extra` are public class fields configured and serialized directly.                                                                              |
@@ -227,24 +227,24 @@ undo model.
 Each concern is completed in its own commit. The order follows the dependency
 sequence above rather than the summary-table order.
 
-| Sequence | Concern                             | Status      | Commit      | Result                                                                                           |
-| -------- | ----------------------------------- | ----------- | ----------- | ------------------------------------------------------------------------------------------------ |
-| 1        | Remaining node visuals              | Complete    | `fa5dcd8ca` | `boxcolor` moved into `NodeState` with an enumerable tracked compatibility accessor.             |
-| 2        | Node ordering                       | Complete    | `06ae14e8b` | One action now updates layout z-index and the legacy node array for front/back order.            |
-| 3        | Outputs and transient previews      | Complete    | `570b38c2a` | Store maps now own output and preview reads; legacy maps and node images are projections.        |
-| 4        | Preview-exposure persistence        | Complete    | `2212ed302` | Host exposures use owner-scoped locators; raw node-ID entries are hydration-only input.          |
-| 5        | Widget and preview-exposure cleanup | Complete    | `ecd148fa0` | Node removal, replacement, teardown, and failed configure clear node-owned store records.        |
-| 6        | Graph metadata                      | Complete    | `298bf3da0` | Revision, config, and extra now use graph-keyed store records behind compatibility accessors.    |
-| 7        | Entity ID allocation                | Complete    | `7fbd10624` | Root-keyed allocation state now backs graph accessors; clipboard allocation uses shared helpers. |
-| 8        | Graph and subgraph definitions      | Complete    | `8923225fb` | Root-scoped records now own ordered membership, the registry, and subgraph definition metadata.  |
-| 9        | Legacy node geometry projection     | Complete    | `854f68fb2` | The layout adapter now owns stable legacy views, synchronization, and geometry write-through.    |
-| 10       | Plain slot descriptors              | Complete    | This commit | Plain store descriptors now back stable extension-visible slot class projections.                |
-| 11       | Group presentation                  | Not started |             |                                                                                                  |
-| 12       | Link non-topological state          | Not started |             |                                                                                                  |
-| 13       | Node properties                     | Not started |             |                                                                                                  |
-| 14       | Unknown-node fallback               | Not started |             |                                                                                                  |
-| 15       | Delayed widget restoration          | Not started |             |                                                                                                  |
-| 16       | Extension persistence adapter       | Not started |             |                                                                                                  |
-| 17       | Execution order                     | Not started |             |                                                                                                  |
-| 18       | Graph invalidation                  | Not started |             |                                                                                                  |
-| 19       | Store-driven serialization          | Not started |             |                                                                                                  |
+| Sequence | Concern                             | Status      | Commit       | Result                                                                                           |
+| -------- | ----------------------------------- | ----------- | ------------ | ------------------------------------------------------------------------------------------------ |
+| 1        | Remaining node visuals              | Complete    | `fa5dcd8ca`  | `boxcolor` moved into `NodeState` with an enumerable tracked compatibility accessor.             |
+| 2        | Node ordering                       | Complete    | `06ae14e8b`  | One action now updates layout z-index and the legacy node array for front/back order.            |
+| 3        | Outputs and transient previews      | Complete    | `570b38c2a`  | Store maps now own output and preview reads; legacy maps and node images are projections.        |
+| 4        | Preview-exposure persistence        | Complete    | `2212ed302`  | Host exposures use owner-scoped locators; raw node-ID entries are hydration-only input.          |
+| 5        | Widget and preview-exposure cleanup | Complete    | `ecd148fa0`  | Node removal, replacement, teardown, and failed configure clear node-owned store records.        |
+| 6        | Graph metadata                      | Complete    | `298bf3da0`  | Revision, config, and extra now use graph-keyed store records behind compatibility accessors.    |
+| 7        | Entity ID allocation                | Complete    | `7fbd10624`  | Root-keyed allocation state now backs graph accessors; clipboard allocation uses shared helpers. |
+| 8        | Graph and subgraph definitions      | Complete    | `8923225fb`  | Root-scoped records now own ordered membership, the registry, and subgraph definition metadata.  |
+| 9        | Legacy node geometry projection     | Complete    | `854f68fb2`  | The layout adapter now owns stable legacy views, synchronization, and geometry write-through.    |
+| 10       | Plain slot descriptors              | Complete    | `cc53dad291` | Plain store descriptors now back stable extension-visible slot class projections.                |
+| 11       | Group presentation                  | Complete    | This commit  | Graph-definition records now back mutable presentation fields and serialization.                 |
+| 12       | Link non-topological state          | Not started |              |                                                                                                  |
+| 13       | Node properties                     | Not started |              |                                                                                                  |
+| 14       | Unknown-node fallback               | Not started |              |                                                                                                  |
+| 15       | Delayed widget restoration          | Not started |              |                                                                                                  |
+| 16       | Extension persistence adapter       | Not started |              |                                                                                                  |
+| 17       | Execution order                     | Not started |              |                                                                                                  |
+| 18       | Graph invalidation                  | Not started |              |                                                                                                  |
+| 19       | Store-driven serialization          | Not started |              |                                                                                                  |
