@@ -5,18 +5,16 @@ import type {
 import {
   LGraphCanvas,
   LGraphEventMode,
-  LGraphGroup,
-  type LGraphNode
+  LGraphGroup
 } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComfyExtension } from '@/types/comfy'
 
 import { app } from '../../scripts/app'
-
-function setNodeMode(node: LGraphNode, mode: LGraphEventMode) {
-  node.mode = mode
-  node.graph?.change()
-}
+import {
+  applyGroupNodeModeCommandBatch,
+  createGroupNodeModeCommandBatch
+} from './groupNodeModeCommands'
 
 const MODE_MENU_ITEMS = [
   { content: 'Set Group Nodes to Always', mode: LGraphEventMode.ALWAYS },
@@ -118,9 +116,16 @@ const ext: ComfyExtension = {
       items.push({
         content,
         callback: () => {
-          for (const node of nodesInGroup) {
-            setNodeMode(node, mode)
+          const graph = nodesInGroup[0]?.graph
+          if (!graph || nodesInGroup.some((node) => node.graph !== graph)) {
+            return
           }
+          const batch = createGroupNodeModeCommandBatch(
+            graph.id,
+            nodesInGroup,
+            mode
+          )
+          if (batch) applyGroupNodeModeCommandBatch(graph, batch)
         }
       })
     }
