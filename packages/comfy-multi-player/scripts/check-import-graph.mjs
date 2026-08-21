@@ -35,9 +35,10 @@ const root = process.env.IMPORT_GRAPH_ROOT || dirname(dirname(fileURLToPath(impo
 
 /**
  * Floor for a run to count as real. The pure op layer is `applier`, `doc`,
- * `exhaustive`, `index`, `migrate`, `mint`, `project`, `stamps`, `types` —
- * nine modules as of #64 (a healthy run also cruises `node_modules/yjs`, so
- * the real count is 10) — so anything below that means the scan missed files
+ * `exhaustive`, `index`, `migrate`, `mint`, `project`, `schema-version`,
+ * `stamps`, `types` — ten modules as of #38 (`schema-version` is the KA-11
+ * read gate; it was nine as of #64) (a healthy run also cruises
+ * `node_modules/yjs`, so the real count is 11) — so anything below that means the scan missed files
  * rather than that the package shrank. Raise it when the layer grows; never
  * lower it to make a run pass. Deliberately NOT derived from a directory
  * listing: a floor computed from the thing it is checking is a self-referential
@@ -58,7 +59,7 @@ const root = process.env.IMPORT_GRAPH_ROOT || dirname(dirname(fileURLToPath(impo
  * not one per change. See `.agents/checks/import-graph.md` and the config's own
  * "NO includeOnly" comment.
  */
-const MIN_MODULES = Number(process.env.IMPORT_GRAPH_MIN_MODULES ?? 9);
+const MIN_MODULES = Number(process.env.IMPORT_GRAPH_MIN_MODULES ?? 10);
 
 const cli = join(root, "node_modules", ".bin", "depcruise");
 const run = spawnSync(cli, ["--output-type", "json", "src"], {

@@ -26,7 +26,7 @@ interface Pin {
   sections_cited: string[];
   established_by: string;
   cited_by: string[];
-  former_branch_citation?: string;
+  former_branch_citation?: string | null;
   branch_status?: string;
 }
 
@@ -60,12 +60,20 @@ const VOCABULARY_PIN = "7e732242d971daf0d2d30f22f997abfacd78986e";
 
 describe("FC-10 — upstream citations are pinned by SHA, not by branch", () => {
   it("registers at least the vocabulary, its v1.2 amendment, and the minting module", () => {
+    // "At least", as the title says. This asserted exact set equality, which
+    // made it a change detector: registering a NEW cross-repo pin — the thing
+    // FC-10 wants to happen — turned it red, with a diff that says nothing
+    // about whether the new pin is any good. The structural rules below apply
+    // to every entry (`it.each(entries)`), so completeness is enforced there,
+    // per entry, rather than by freezing the list.
     expect(registry.schema_version).toBe(1);
-    expect(Object.keys(registry.pins).sort()).toEqual([
-      "comfy-cli/op-vocabulary-v1",
-      "comfy-cli/op-vocabulary-v1@amendment-v1.2",
-      "comfy-cli/workflow_ops",
-    ]);
+    expect(Object.keys(registry.pins).sort()).toEqual(
+      expect.arrayContaining([
+        "comfy-cli/op-vocabulary-v1",
+        "comfy-cli/op-vocabulary-v1@amendment-v1.2",
+        "comfy-cli/workflow_ops",
+      ]),
+    );
   });
 
   it.each(entries)("%s pins an immutable 40-hex commit with recorded content digests", (_id, pin) => {
@@ -118,12 +126,23 @@ describe("FC-10 — upstream citations are pinned by SHA, not by branch", () => 
     expect(readme).toMatch(/comfy-cli commit\s+`?[0-9a-f]{40}/i);
   });
 
-  it("keeps every pin's former branch on record so the pins stay auditable", () => {
+  it("keeps every pin's branch provenance on record so the pins stay auditable", () => {
     // Deleting the provenance would make the pins unreviewable: a future reader
     // could not tell a resolved citation from a guessed one.
-    for (const [, pin] of entries) {
-      expect(pin.former_branch_citation).toBeTruthy();
-      expect(pin.branch_status).toMatch(/DELETED/);
+    //
+    // Two shapes, and the second is not an exemption. A pin RETROFITTED from a
+    // citation that once named a branch must say which branch and what became
+    // of it. A pin registered at a SHA from the start never had one, and must
+    // say THAT explicitly — `former_branch_citation: null` plus a
+    // `branch_status` that states it — so "pinned from the start" stays
+    // distinguishable from "provenance lost", which is the whole point.
+    for (const [id, pin] of entries) {
+      if (pin.former_branch_citation === null) {
+        expect(pin.branch_status, id).toMatch(/NEVER BRANCH-CITED/);
+        continue;
+      }
+      expect(pin.former_branch_citation, id).toBeTruthy();
+      expect(pin.branch_status, id).toMatch(/DELETED/);
     }
   });
 

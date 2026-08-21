@@ -8,9 +8,30 @@
       "commit": "7e732242d971daf0d2d30f22f997abfacd78986e",
       "blob_sha1": "5c604599cc26730dcb53a3a392431b42fd40fa74",
       "content_sha256": "e275b62d28b606219d06c9302575980164ea5ad8937adbea660da658bb21ab3d",
-      "sections_cited": ["1", "1.2", "1.5", "1.6", "2", "3", "4", "7", "8.1", "8.2", "8.3", "8.4", "8.5", "8.6", "8.7"],
+      "sections_cited": [
+        "1",
+        "1.2",
+        "1.5",
+        "1.6",
+        "2",
+        "3",
+        "4",
+        "7",
+        "8.1",
+        "8.2",
+        "8.3",
+        "8.4",
+        "8.5",
+        "8.6",
+        "8.7"
+      ],
       "established_by": "The citing lines were written in comfy-multi-player d81620f601aad620978d612dc34be630b1fbbc06 (2026-08-13T01:39:45-0700). The last commit touching docs/op-vocabulary-v1.md on the cited branch at or before that instant is 7e73224 (2026-08-12T02:01:23-0700), so this is the revision the package was written against. Corroborated independently: fixtures/MANIFEST.json already pins the corpus generator to the same commit, so the op corpus and the op vocabulary resolve to one upstream revision.",
-      "cited_by": ["src/index.ts", "src/types.ts", "docs/multiplayer-schema.md", "README.md"],
+      "cited_by": [
+        "src/index.ts",
+        "src/types.ts",
+        "docs/multiplayer-schema.md",
+        "README.md"
+      ],
       "former_branch_citation": "fix/validate-lowers-ui-to-api",
       "branch_status": "DELETED upstream on 2026-08-21T06:03:03Z when comfy-cli PR #511 squash-merged. The branch pointer this repository cited no longer resolves; the SHA still does.",
       "upstream_head_observed": {
@@ -27,9 +48,15 @@
       "commit": "1201b676275ce7e9b5cdb90f135b6e115ba9df10",
       "blob_sha1": "1a487a04718b2eff4964404e6377fbf15020ee5f",
       "content_sha256": "5473991baa526dc4c2d57758b15ab45f00c985b2b24cced1efa930c98d0a6317",
-      "sections_cited": ["11", "11.1", "11.2"],
+      "sections_cited": [
+        "11",
+        "11.1",
+        "11.2"
+      ],
       "established_by": "Already cited by SHA in docs/multiplayer-schema.md Amendment A1; only its branch label was moving. The amendment was later rebased onto the PR #511 branch as a534630fda3b11acb49481dbc479aaed46fe2b39, whose docs/op-vocabulary-v1.md blob is byte-identical (git blob 1a487a04718b2eff4964404e6377fbf15020ee5f), so the rebase did not change the cited content.",
-      "cited_by": ["docs/multiplayer-schema.md"],
+      "cited_by": [
+        "docs/multiplayer-schema.md"
+      ],
       "former_branch_citation": "kishore/v1-032-connect-lww",
       "branch_status": "DELETED upstream. The commit survives on kishore/archive/v1-032-connect-lww-prerebase and resolves through the GitHub API; the branch label in Amendment A1 is retained as historical context only.",
       "upstream_head_observed": {
@@ -46,9 +73,19 @@
       "commit": "7e732242d971daf0d2d30f22f997abfacd78986e",
       "blob_sha1": "c0fa6f4160b2d28bd1f4be081a7cb596f44a221c",
       "content_sha256": "22dfb8ac0747dc7153a61012340b4ce31158dc68a34997abc584f35fb0325f31",
-      "sections_cited": ["_new_op", "_stamp_key", "_write_target", "apply_op", "canonical"],
+      "sections_cited": [
+        "_new_op",
+        "_stamp_key",
+        "_write_target",
+        "apply_op",
+        "canonical"
+      ],
       "established_by": "src/applier.ts calls itself a faithful port of workflow_ops.apply_op, and src/stamps.ts mirrors _stamp_key/_write_target; both were written in d81620f against the same branch state as the vocabulary above. fixtures/MANIFEST.json pins the identical commit as the corpus generator, and every recorded session in fixtures/ was produced by this exact file.",
-      "cited_by": ["src/index.ts", "src/types.ts", "docs/spike-report-v1-007.md"],
+      "cited_by": [
+        "src/index.ts",
+        "src/types.ts",
+        "docs/spike-report-v1-007.md"
+      ],
       "former_branch_citation": "pr511-reconcile",
       "branch_status": "DELETED upstream. docs/spike-report-v1-007.md cited the generator branch by the name it carried during the V1-007 spike; the branch was later renamed to fix/validate-lowers-ui-to-api (comfy-cli PR #511) and deleted on merge. The commit is established from fixtures/MANIFEST.json, not from the branch name.",
       "upstream_head_observed": {
@@ -58,6 +95,32 @@
         "content_sha256": "0a9ce9da04dd7258263a0d31bd8eacd12d16ecc56f2d43af6b040b297c7e4173",
         "drift": "838 lines changed since the pin. Regenerating the corpus against head would change recorded outputs; fixtures/README.md documents the regeneration procedure and requires the pinned checkout."
       }
+    },
+    "cloud/dochost-server": {
+      "repo": "https://github.com/Comfy-Org/cloud.git",
+      "path": "services/agent/dochost/src/server.ts",
+      "commit": "070dce96b4c475a0d926d570eba411f799329817",
+      "blob_sha1": "547ed2a0bc988153720055389e210b5a01bedabd",
+      "content_sha256": "5d3b971a109e78e5bca4f61577544935d209ce99617bb9056276042e6867f0ff",
+      "sections_cited": [
+        "requirePin",
+        "handleProject",
+        "handleApply",
+        "the apply_error 400 branch"
+      ],
+      "established_by": "Registered by comfy-multi-player #38 (the KA-11 read gate), which cites the sidecar's behaviour to justify exporting readSchemaVersion/assertReadableSchema: the host answers the schema question BEFORE it reads, the way it already answers the catalog question. Resolved at cloud origin/main HEAD on 2026-08-21 and read directly rather than inferred -- requirePin at :168 raises the structured catalog_mismatch at :184; handleProject calls it at :303 and then project(doc, catalog) at :304; handleApply embeds `projection: project(doc, catalog)` in the same response object at :281, after applyOps at :274; the catch at :436 turns a fold/apply throw -- and its comment already names 'a schema_version this package refuses' -- into HTTP 400 apply_error rather than a 500. The Go client types only catalog_mismatch (internal/dochost/client.go:55), so a schema refusal reaches the turn loop as a generic error and the turn fails without committing.",
+      "cited_by": [
+        "src/schema-version.ts"
+      ],
+      "access_note": "Comfy-Org/cloud is PRIVATE. `npm run check:pins -- --verify-remote` resolves this pin only with a token that has access; without one the GitHub API answers 404, which this gate treats as definitive evidence ABOUT THE PIN (exit 1) rather than about the request (exit 2). That classification was deliberately introduced by #66 and is right for a public repo; it mis-fires here. Read a 404 on this pin as 'no access', not 'pin broken', until the gate learns to tell them apart.",
+      "upstream_head_observed": {
+        "date": "2026-08-21",
+        "ref": "main",
+        "commit": "070dce96b4c475a0d926d570eba411f799329817",
+        "drift": "None: the pin IS the observed head. The consumer pin runs the other way too -- services/agent/dochost/package-lock.json pins @comfyorg/comfy-multi-player to 6793d754c84c9bec97fbd2fb4d54ce187a2c83ba, which is 30 commits behind this package's main, so neither #31 nor #38 is live in production. A pin bump lands them together."
+      },
+      "former_branch_citation": null,
+      "branch_status": "NEVER BRANCH-CITED. Registered directly at a SHA by #38, so there is no branch citation to retire — unlike the three comfy-cli pins, which were retrofits of citations that had named a branch and whose branches were later DELETED upstream. Recorded explicitly rather than omitted, so a future reader can tell 'pinned from the start' from 'provenance lost'."
     }
   }
 }

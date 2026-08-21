@@ -7,37 +7,8 @@
  */
 
 import type * as Y from "yjs";
-import { metaMap } from "./doc.js";
+import { readSchemaVersion } from "./schema-version.js";
 import { SCHEMA_VERSION, SchemaVersionError } from "./types.js";
-
-/**
- * The doc's OWN claim about its layout, read without materializing anything.
- *
- * `Y.Doc#getMap` lazily CREATES an absent root type and registers it in
- * `doc.share`, so calling it unconditionally turns an inspection into a
- * repair — the exact defect in #20. `doc.share.has("meta")` asks the safe
- * question instead: has this root been INTEGRATED, either by an incoming
- * update or by a prior `getMap`? Note that a root arrives over the wire only
- * once it carries content — an empty root map is not encoded — which is why a
- * snapshot-forked replica legitimately lacks roots the minting doc had. Both
- * "absent" and "present but empty" yield `undefined` here, and both are
- * fail-closed for the caller, so the distinction never has to be drawn.
- * Typing a root that is
- * ALREADY present (Yjs `AbstractType` → `Y.Map`) creates no struct and no new
- * share key, so the read stays byte-exact under `encodeStateAsUpdate` and
- * leaves the `doc.share` key set unchanged. It is a client-side
- * REINTERPRETATION of structs the doc already holds: the share entry for a
- * root that arrived untyped is replaced by the typed view of the same structs,
- * which is what every reader in this package (and the read-only surface) does.
- *
- * Returns `undefined` when the schema version is unreadable — either the
- * `meta` root is absent, or it carries no `schema_version`. Both are
- * fail-closed cases for the caller (KA-11), not defaults to fill in.
- */
-function storedSchemaVersion(doc: Y.Doc): unknown {
-  if (!doc.share.has("meta")) return undefined;
-  return metaMap(doc).get("schema_version");
-}
 
 /**
  * Migrate a doc from schema `fromVersion` to `SCHEMA_VERSION`, in place.
@@ -70,7 +41,17 @@ export function migrate(doc: Y.Doc, fromVersion: number): void {
   // document it may not have minted; the document's own `meta.schema_version`
   // is the trusted value, so the two must agree before anything reads the
   // layout. An unreadable schema is rejected rather than assumed current.
-  const stored = storedSchemaVersion(doc);
+  //
+  // `readSchemaVersion` is the package's ONE definition of that read, shared
+  // with `project()`'s gate (#38) so the migration path and the normal read
+  // path cannot drift into two conventions. It also normalizes: a
+  // `schema_version` that is present but is not a positive integer (`"1"`,
+  // `null`, `1.5`, `0`) reads as UNREADABLE rather than as a value to compare.
+  // The set of documents this function rejects is unchanged — such a document
+  // could never equal an integer `fromVersion` — only the message it gets
+  // moves, from "does not match fromVersion" to "no readable
+  // meta.schema_version", which is the more accurate of the two.
+  const stored = readSchemaVersion(doc);
   if (stored === undefined) {
     throw new SchemaVersionError(
       `migrate: doc has no readable meta.schema_version — refusing to read (fail-closed, schema §10)`,
@@ -78,7 +59,7 @@ export function migrate(doc: Y.Doc, fromVersion: number): void {
   }
   if (stored !== fromVersion) {
     throw new SchemaVersionError(
-      `migrate: doc meta.schema_version=${String(stored)} does not match fromVersion=${fromVersion}`,
+      `migrate: doc meta.schema_version=${stored} does not match fromVersion=${fromVersion}`,
     );
   }
 

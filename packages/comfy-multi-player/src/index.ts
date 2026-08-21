@@ -18,8 +18,12 @@
  *    snapshot every replica forks from — schema §9);
  *  - `applyOps(doc, ops, catalog?)` — idempotent, LWW-gated, abort-remainder
  *    op application (schema §2–§4);
- *  - `project(doc, catalog)` — canonical workflow JSON projection (schema §7);
+ *  - `project(doc, catalog)` — canonical workflow JSON projection (schema §7),
+ *    fail-closed on a schema this package cannot read (KA-11);
  *  - `migrate(doc, fromVersion)` — layout versioning, fail-closed (schema §10);
+ *  - `readSchemaVersion(doc)` / `assertReadableSchema(doc, context)` — the
+ *    KA-11 read gate, for a host that wants to refuse a mismatched document
+ *    with its own structured error before it reads;
  *  - stamp machinery (`compareStampKeys`, `stampKey`, `writeTarget`) for
  *    hosts that need conflict identity or watermark bookkeeping;
  *  - layout helpers (`initDoc`, `nodesMap`, …) and the types.
@@ -35,3 +39,4 @@ export { applyOps } from "./applier.js";
 export { project } from "./project.js";
 export { mint } from "./mint.js";
 export { migrate } from "./migrate.js";
+export { assertReadableSchema, readSchemaVersion } from "./schema-version.js";

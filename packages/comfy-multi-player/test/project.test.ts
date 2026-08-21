@@ -26,7 +26,7 @@
  */
 import { describe, expect, it } from "vitest";
 import * as Y from "yjs";
-import { applyOps, createNodeMap, mint, nodesMap, project, type Op, type WorkflowJSON } from "../src/index.js";
+import { applyOps, createNodeMap, initDoc, mint, nodesMap, project, type Op, type WorkflowJSON } from "../src/index.js";
 import { loadCatalog } from "./helpers.js";
 
 const catalog = loadCatalog();
@@ -51,7 +51,11 @@ function op(fields: Record<string, unknown>): Op {
 
 describe("project invalid node input", () => {
   it("skips the two entry states that would make projection throw, keeping the rest", () => {
-    const doc = new Y.Doc();
+    // `initDoc` rather than a bare `Y.Doc`: `project()` fails closed on a
+    // document with no readable `meta.schema_version` (KA-11, #38), and a
+    // hand-built document with no meta root is not a document any replica
+    // could hold. The invalid NODE state below is the subject of these tests.
+    const doc = initDoc(new Y.Doc());
     const nodes = nodesMap(doc);
     const valid = createNodeMap({ id: 1, type: "KSampler", widgets_values: [] }, ksamplerOrder);
     const wrongWidgets = createNodeMap({ id: 4, type: "KSampler" }, ksamplerOrder);
@@ -121,8 +125,9 @@ describe("project invalid node input", () => {
     // The read-path fail-open has a price, and it is permanent: compaction
     // re-mints FROM project(doc), so a skipped entry is absent from the
     // compacted document. Pinned so a future reader cannot mistake the skip
-    // for "hidden but recoverable".
-    const doc = new Y.Doc();
+    // for "hidden but recoverable". `initDoc` because `project()` fails closed
+    // on an unreadable `meta.schema_version` (KA-11, #38).
+    const doc = initDoc(new Y.Doc());
     nodesMap(doc).set("1", createNodeMap({ id: 1, type: "KSampler", widgets_values: [] }, ksamplerOrder));
     nodesMap(doc).set("6", "not a node map" as unknown as Y.Map<unknown>);
 
@@ -132,7 +137,11 @@ describe("project invalid node input", () => {
   });
 
   it("gives projected records a null prototype so a __proto__ field cannot change them", () => {
-    const doc = new Y.Doc();
+    // `initDoc` rather than a bare `Y.Doc`: `project()` fails closed on a
+    // document with no readable `meta.schema_version` (KA-11, #38), and a
+    // hand-built document with no meta root is not a document any replica
+    // could hold. The invalid NODE state below is the subject of these tests.
+    const doc = initDoc(new Y.Doc());
     const maliciousFlags = JSON.parse('{"__proto__":{"inherited":true}}') as Record<string, unknown>;
     nodesMap(doc).set(
       "8",
@@ -172,7 +181,11 @@ describe("project invalid node input", () => {
     // hand-built because `applyOps` now refuses to create it (see the
     // set_widget suite below) — that refusal is what makes a throw here mean
     // catalog drift and nothing else.
-    const doc = new Y.Doc();
+    // `initDoc` rather than a bare `Y.Doc`: `project()` fails closed on a
+    // document with no readable `meta.schema_version` (KA-11, #38), and a
+    // hand-built document with no meta root is not a document any replica
+    // could hold. The invalid NODE state below is the subject of these tests.
+    const doc = initDoc(new Y.Doc());
     const inheritedType = createNodeMap({ id: 7, type: "__proto__" });
     const widgets = new Y.Map<unknown>();
     widgets.set("value", "unsafe");

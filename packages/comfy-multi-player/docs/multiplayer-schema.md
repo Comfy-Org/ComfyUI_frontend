@@ -352,7 +352,11 @@ tracking stays mandatory.
    actors idle past snapshot age are dropped at snapshot time.
 2. **Snapshot compaction.** When bookkeeping exceeds **25% of doc bytes or
    10,000 `__applied` entries** (whichever first), the host mints a fresh doc
-   from `project(doc)` — safe exactly because projection is total (§7) —
+   from `project(doc)` — safe because projection is total over the documents
+   a host holds: it refuses a whole document only when the schema version is
+   unreadable (§7 rule 0) or the catalogue pin is violated (§3 pin 4), neither
+   of which is a state a host can be compacting from, and it drops individual
+   entries only per §7 rule 6 —
    carrying forward: `__stamps` entries for still-live targets, the actor
    watermarks, `catalog_version`, and the id high-water marks. The fresh doc
    is a new **doc epoch**: its bootstrap snapshot replaces the old one (§9),
@@ -462,6 +466,14 @@ Pinned semantics:
 
 `project(doc, catalog)` is a pure read producing ComfyUI workflow JSON;
 `project(mint(w, catalog), catalog)` must deep-equal `canonical(w)`.
+
+**Rule 0, which runs before any of the rules below (Amendment A5, §10).** The
+first thing `project()` does is refuse a document whose `meta.schema_version`
+this package cannot read — absent, not a positive integer, or a version other
+than `SCHEMA_VERSION`. That refusal is a WHOLE-DOCUMENT `SchemaVersionError`,
+it precedes the per-entry dispositions in rule 6, and it precedes the
+catalogue check in §3 pin 4. A reader of this section alone would otherwise
+conclude `project()` never refuses a whole document.
 
 Canonicalization rules (all of them — the spike confirmed rules 1-5 exhaustive
 for its corpus; rule 6 was added by Amendment A4):
@@ -575,6 +587,23 @@ the epoch; cross-epoch struct updates never merge.
 - Bumping `SCHEMA_VERSION` requires: a migration step, updated fixtures or a
   fixture-format note, an amendment section in this document, and FE
   sign-off (the layout is a cross-repo contract with the FE follower).
+- **The version check is on the READ path, not only on `migrate()`.**
+  `project(doc, catalog)` refuses — `SchemaVersionError`, before it reads any
+  key — a document whose `meta.schema_version` is absent, unreadable (not a
+  positive integer), or not equal to this package's `SCHEMA_VERSION`. Nothing
+  forces a caller through `migrate()`, so a gate that lived only there was a
+  gate a low-context host could skip, and an old reader would best-effort
+  project a new document (KA-11).
+  A document OLDER than the reader is refused too, not migrated in place:
+  migration is a host-only write, `project()` is a pure read available to every
+  replica, and a follower that writes the shared doc breaks KA-6/FC-5 outright
+  and becomes an independently edited replica, which is the FC-1 raw-struct
+  divergence path. The caller runs `migrate(doc, storedVersion)` first, then
+  reads. The refusal is byte-exact and materializes no root type, the same as
+  `migrate()`'s — asserted on `[...doc.share.keys()]`, since an empty
+  materialized root encodes to zero bytes (A3).
+  Both entrypoints share ONE definition of the read, `readSchemaVersion` in
+  `src/schema-version.ts`; `migrate()` holds no private copy. See Amendment A5.
 
 ---
 
@@ -795,6 +824,10 @@ mutating a snapshot-forked replica (KA-10).
 
 - `migrate()` is the fail-closed READ gate. Validation runs on **every** path,
   including `fromVersion === SCHEMA_VERSION`.
+  **Superseded in part by Amendment A5:** `migrate()` is *a* fail-closed read
+  gate and remains the migration path, but it is no longer the only one, and it
+  was never the load-bearing one — nothing forces a caller through it.
+  `project()` carries the same gate as of #38, and both call one shared read.
 - `fromVersion` is a caller *claim*, made by a caller that may not have minted
   the document. It must agree with the document's own `meta.schema_version`.
 - A doc with **no readable `meta.schema_version`** — no `meta` root, or a
@@ -955,3 +988,129 @@ the failing index are not applied, §4 abort-remainder) instead of appearing to
 succeed and leaving an unreadable document. The underlying gap — the catalogue
 cannot describe frontend-injected widgets — is not fixed here and is the reason
 the failure is loud rather than absent.
+
+---
+
+## Amendment A5 — 2026-08-21 — the schema-version gate moves onto the READ path; one shared definition
+
+A3 made `migrate()` fail closed and called it "the fail-closed READ gate". That was true of
+`migrate()` and false of the system, because **nothing forces a caller through `migrate()`**. The
+function every consumer actually calls is `project()`, and it had no version check at all: a
+document minted by a NEWER package was best-effort projected by an OLDER reader as though it were
+current. That is precisely the silent mis-projection KA-11 exists to prevent, and it was recorded as
+a known gap in a test file rather than fixed (issue #38).
+
+A3 is not wrong; it is incomplete. This amendment supersedes A3's first rule bullet only.
+
+### The rule
+
+- **`project(doc, catalog)` refuses, before it reads any workflow content**, a document whose
+  `meta.schema_version` is absent, is not a positive integer, or is not this package's
+  `SCHEMA_VERSION`. Reading the version claim is itself a key read; "before any content" is the
+  precise statement.
+- **"Unreadable" is one definition, in one place.** `readSchemaVersion` (`src/schema-version.ts`) is
+  the only implementation of "what version does this document claim, and may this package read it".
+  `migrate()` calls it too — it holds no private copy. A3's own text defined unreadable as "no `meta`
+  root, or a `meta` root without the key"; this narrows it by one case, and the narrowing applies to
+  BOTH entrypoints: a `schema_version` that is present but is not a positive integer (`"1"`, `null`,
+  `1.5`, `0`, `-1`) is unreadable, because a value that is not a version cannot be compared to one.
+  The set of documents `migrate()` rejects is unchanged — such a value could never equal an integer
+  `fromVersion` — only its diagnosis moves, to the accurate one.
+- **An OLDER document is refused, not migrated in place.** `project()` is a read ANY replica may
+  call, browser follower included; migrating inside it would make a read WRITE the shared
+  document. (Stated as a rule about the API, not an observation about callers: no follower calls it
+  today — the frontend does not depend on this package at all, exactly as ADR-004 records.
+  `follower-boundary.md` requires treating such an API as a blocking violation "even if current
+  callers behave correctly".) That breaks KA-6/FC-5 outright (followers never write the shared doc), and a follower
+  that self-migrated becomes an independently edited replica, which is the FC-1 raw-struct
+  divergence path. The transition stays where it can be audited: the host runs
+  `migrate(doc, storedVersion)`, then reads. Projecting the old layout as-is is not an option
+  either — that IS the mis-projection KA-11 names.
+- **The refusal is byte-exact AND materializes no root**, matching A3. Both halves are load-bearing
+  and neither is redundant: an empty materialized root encodes to zero bytes, so the
+  `encodeStateAsUpdate` assertion alone cannot see a materializing gate. `[...doc.share.keys()]` is
+  the observable of record.
+- **A3's error-type carve-out carries over unchanged.** A document whose `meta` root was integrated
+  as a different concrete Y type surfaces Yjs's own constructor-clash `Error`, not a
+  `SchemaVersionError`. Still fail-closed, still a throw, but a consumer matching on the error TYPE
+  must expect it on this path too.
+- **Ordering.** The schema gate runs before the §3 pin 4 catalogue check and before §7 rule 6's
+  per-entry skip. A document at an unreadable schema reports THAT, not a catalogue error from a
+  projection that should never have started.
+
+### What this does NOT change, stated rather than left to be discovered
+
+- **No op semantics.** No op kind, field, rejection code, stamp rule or wire shape is touched.
+- **The per-entry skip (§7 rule 6, A4) is untouched and is deliberately the opposite disposition.**
+  Salvageability is the axis, not severity: an unreadable single entry leaves a document the reader
+  otherwise understands completely, so per-entry recovery exists; a wrong schema version means there
+  is no readable remainder at all.
+- **`project()`'s ACCEPT path still materializes the `nodes`/`links`/`definitions` roots**, because
+  it types them unconditionally. On a snapshot-forked replica (§9) that legitimately lacks
+  `definitions`, a successful projection therefore grows `doc.share`. This is the #20 defect one
+  function over; it is **unchanged from before this amendment** and is not closed here. Nothing is
+  encoded, so nothing goes on the wire. It is named because this amendment writes "`project()` is a
+  pure read" into the record, and that sentence is true of the document's CONTENT and of the wire,
+  not of `doc.share` on the accept path. A structural fix belongs to its own change, and — as A3
+  already says — it must not be implemented by calling `getMap`.
+
+### Guarded by
+
+`test/schema-version-on-read.test.ts` (both entrypoints, every case, including the
+registered-but-empty `meta` root, the wrong-Y-type carve-out, and the refuse-vs-accept
+materialization contrast on a snapshot-forked replica) and `test/roundtrip.test.ts` (the `migrate()`
+path). Every fail-closed case runs against a real fixture workflow that projects cleanly one line
+earlier, so a `toThrow()` cannot pass for a reason unrelated to the schema version.
+
+The "document is OLDER than the reader" arm has no production reachability at `SCHEMA_VERSION = 1`
+— no older version exists to construct. It is exercised through
+`assertSchemaVersionAgainst(doc, context, expected)`, exported from the module but deliberately NOT
+from the entrypoint, since a caller free to choose `expected` could pass the document's own version
+and switch the gate off. An arm no test can turn red is dead code; this one can be turned red.
+
+### Consumer impact
+
+**Nothing this change refuses is a document a conforming producer can emit.** Established from the
+consumer repositories at their current revisions, not by analogy to A3:
+
+- **Every document in the CRDT path originates from `mint()`.** All four `docstore.Init` call sites
+  in `Comfy-Org/cloud` are `Mint → base64-decode → Init`
+  (`services/agent/internal/loop/crdt.go` `reseedDoc` and its two siblings, and
+  `shadowdiff/remint.go`), and `mint()` writes `schema_version` unconditionally as the first
+  statement of its transaction. `Advance` only ever stores `/apply`'s fold of such a document.
+- **Workflow JSON cannot clobber the key.** `mint()` throws on any workflow key colliding with a
+  reserved doc-meta key, so `schema_version: "banana"` in a workflow is rejected at mint, on both
+  builds.
+- **No op can write or delete it.** The applier touches `meta` only for `last_node_id` and for
+  `clear`'s `groups`, and `clear` preserves everything else.
+- **The op producer never constructs a document at all.** `comfy-cli` emits ops as plain JSON; it has
+  no Yjs dependency, no `Y.Doc`, no snapshot handling.
+- **The frontend does not consume this package.** `@comfyorg/comfy-multi-player` is absent from its
+  `package.json` on every branch, so there is no follower call site to break, which is what ADR-004
+  already records.
+- **Two endpoints reach `project()`**, both in the doc-host sidecar: `/project` and `/apply` (whose
+  response embeds a projection computed after `applyOps`). `/mint` and `/resync` do not.
+
+**Where the behaviour genuinely changes, it changes for the better.** A doc-host request carrying a
+snapshot that folds to a root-less document previously returned HTTP 200 with `{"nodes":[],"links":[]}`;
+it now returns HTTP 400. On the `/apply` path that converts "commit a prefix of ops onto a document
+we cannot read, and report `ok`" into "commit nothing, fail the turn" — the sidecar's own catch
+already anticipates this case in a comment, and it raises `apply_error` 400, not a 500, so the Go
+turn loop never reaches `Advance`.
+
+**On the partial-apply hazard: unchanged for conforming documents.** #31's in-band rejection made
+`/apply` return 200-with-`failed`, and the Go side commits the prefix whenever `applied_count > 0`
+regardless of `failed`. This change neither fixes nor worsens that. It only removes the *schema-less*
+variant of it. **The `CLOUD-PARTIAL-APPLY-OK` precondition on the pin bump still stands in full.**
+
+**The pin bump is where this becomes live, and it carries both.** The sidecar's lockfile pins
+`@comfyorg/comfy-multi-player` at a commit thirty behind this one, so neither A4 nor this amendment
+is in production; a bump lands them together. Two things to do first: fix the partial-apply
+commit-the-prefix behaviour, and add a cloud-side test for a schema-refused document — every existing
+doc-host test builds its snapshot from `/mint`, so the new 400 path would ship untested there.
+
+**One forward hazard, recorded because it is invisible until it lands.** `reset_doc`'s reference
+semantics in `comfy-cli` clear the workflow down to its `id`, which would wipe `meta.schema_version`
+— and under this amendment no op could restore it, so the document would be permanently unreadable.
+It is not reachable today: `reset_doc` is deferred and rejected `op_deferred`, verified by probe on
+both builds. **This must be resolved before `reset_doc` is un-deferred.**
