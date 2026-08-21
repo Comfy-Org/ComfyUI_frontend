@@ -272,15 +272,20 @@ export const useAssetsStore = defineStore('assets', () => {
   const flatOutputIsLoadingMore = ref(false)
   const flatOutputSeenIds = new Set<string>()
   let flatOutputNextCursor: string | undefined
-  let flatOutputInFlight: Promise<AssetItem[]> | null = null
+  let flatOutputRefreshInFlight: Promise<AssetItem[]> | null = null
+  let flatOutputLoadMoreInFlight: Promise<AssetItem[]> | null = null
+  // Incremented on each refresh; loadMore results captured from a prior epoch
+  // are discarded so a stale page can't append onto a freshly-refreshed list.
+  let flatOutputRefreshEpoch = 0
 
   async function fetchFlatOutputs(loadMore: boolean): Promise<AssetItem[]> {
-    if (flatOutputInFlight) return flatOutputInFlight
-
     if (loadMore) {
       if (!flatOutputHasMore.value) return flatOutputAssets.value
+      if (flatOutputLoadMoreInFlight) return flatOutputLoadMoreInFlight
       flatOutputIsLoadingMore.value = true
     } else {
+      if (flatOutputRefreshInFlight) return flatOutputRefreshInFlight
+      flatOutputRefreshEpoch++
       flatOutputLoading.value = true
       flatOutputOffset.value = 0
       flatOutputNextCursor = undefined
@@ -289,7 +294,9 @@ export const useAssetsStore = defineStore('assets', () => {
     }
     flatOutputError.value = null
 
-    flatOutputInFlight = (async () => {
+    const capturedEpoch = flatOutputRefreshEpoch
+
+    const inFlight = (async () => {
       const requestedAfter = loadMore ? flatOutputNextCursor : undefined
       try {
         const page = await assetService.getAssetsPageByTag(OUTPUT_TAG, true, {
@@ -298,6 +305,9 @@ export const useAssetsStore = defineStore('assets', () => {
             ? { after: requestedAfter }
             : { offset: flatOutputOffset.value })
         })
+        if (loadMore && capturedEpoch !== flatOutputRefreshEpoch) {
+          return flatOutputAssets.value
+        }
         const batch = page.assets
         const fresh = loadMore
           ? batch.filter((asset) => !flatOutputSeenIds.has(asset.id))
@@ -319,13 +329,27 @@ export const useAssetsStore = defineStore('assets', () => {
         console.error('Failed to fetch output assets:', err)
         return loadMore ? flatOutputAssets.value : []
       } finally {
-        if (loadMore) flatOutputIsLoadingMore.value = false
-        else flatOutputLoading.value = false
-        flatOutputInFlight = null
+        if (loadMore) {
+          flatOutputIsLoadingMore.value = false
+          flatOutputLoadMoreInFlight = null
+        } else {
+          flatOutputLoading.value = false
+          flatOutputRefreshInFlight = null
+        }
       }
     })()
 
-    return flatOutputInFlight
+    // The in-flight promise is assigned synchronously here, before any await
+    // in inFlight can settle, so the loading flag set above and the guard below
+    // stay in lockstep. This relies on single-entry via updateFlatOutputs /
+    // loadMoreFlatOutputs; do not call fetchFlatOutputs directly.
+    if (loadMore) {
+      flatOutputLoadMoreInFlight = inFlight
+    } else {
+      flatOutputRefreshInFlight = inFlight
+    }
+
+    return inFlight
   }
 
   const updateFlatOutputs = () => fetchFlatOutputs(false)
