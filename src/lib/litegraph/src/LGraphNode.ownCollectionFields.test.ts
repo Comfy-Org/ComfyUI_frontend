@@ -4,19 +4,6 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
-/**
- * Regression cover for #15485.
- *
- * ECS made `inputs` / `outputs` / `widgets` prototype accessors. Prototype
- * accessors are invisible to `hasOwnProperty`, and much of the ecosystem gates
- * node-shell introspection on exactly that check, so those packs silently did
- * nothing — the cause of both DIFFs measured by the compat battery.
- *
- * Two properties are load-bearing and have to hold together: the fields are own
- * and enumerable, *and* they are still accessors over the ECS store. An own
- * data property would pass the first half while detaching the collection from
- * the store.
- */
 
 const COLLECTIONS = ['inputs', 'outputs', 'widgets'] as const
 
