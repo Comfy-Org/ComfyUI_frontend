@@ -10,10 +10,10 @@
  */
 import { describe, expect, it } from "vitest";
 import * as Y from "yjs";
+import { metaMap } from "../src/doc.js";
 import {
   SCHEMA_VERSION,
   SchemaVersionError,
-  metaMap,
   migrate,
   mint,
   project,

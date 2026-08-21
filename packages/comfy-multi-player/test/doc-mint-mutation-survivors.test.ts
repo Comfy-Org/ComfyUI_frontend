@@ -35,19 +35,26 @@ import * as Y from "yjs";
 import {
   OPAQUE_WIDGETS_KEY,
   applyOps,
-  countDefinitionInstances,
-  definitionsMap,
   linksMap,
-  metaMap,
   mint,
   nodesMap,
   project,
-  resolveDefinition,
   type SetWidgetOp,
   type WidgetCatalog,
   type WorkflowJSON,
 } from "../src/index.js";
-import { _getMutationCount, _resetMutationCount, adel, apush, mdel, mset } from "../src/doc.js";
+import {
+  _getMutationCount,
+  _resetMutationCount,
+  adel,
+  apush,
+  countDefinitionInstances,
+  definitionsMap,
+  mdel,
+  metaMap,
+  mset,
+  resolveDefinition,
+} from "../src/doc.js";
 
 const catalog: WidgetCatalog = {
   types: {

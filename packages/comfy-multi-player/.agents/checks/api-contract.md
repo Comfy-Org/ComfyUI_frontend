@@ -4,7 +4,8 @@ Catch breaking changes to this package's public surface. Applies to `src/index.t
 
 ## What to check
 
-1. **Public exports** — `src/index.ts` re-exports `applyOps`, `project`, `mint`, `migrate`, the KA-11 read gate (`assertReadableSchema`, `readSchemaVersion`), and everything from `types`, `stamps`, and `doc`. A removed or renamed export without a compatibility alias is a breaking change for both consumers (the browser and the Node doc host). New exports are fine.
+1. **Public exports** — `src/index.ts` re-exports `applyOps`, `project`, `mint`, `migrate`, the KA-11 read gate (`assertReadableSchema`, `readSchemaVersion`), and everything from `types` and `stamps`. A removed or renamed export without a compatibility alias is a breaking change for both consumers (the browser and the Node doc host). New exports are fine.
+   `src/doc.ts` is deliberately **not** re-exported: its root-map accessors, constructors, and low-level mutators would let a consumer write the shared `Y.Doc` directly and bypass the op layer (KA-1, KA-2, KA-4, FC-5). Re-adding `export * from "./doc.js"`, or exposing any individual `doc.ts` runtime export from the entrypoint, is a blocking finding, not a compatibility fix; `test/public-api.regression.test.ts` guards this.
 2. **Op vocabulary** — op kind names, required fields, and the frozen/deferred sets are a contract shared with the server. Renaming an op kind, adding a required field to an existing op, or moving an op between frozen and deferred is breaking; cite the vocabulary section.
 3. **Wire envelope** — the `{ type, data }` shape and `data.v` protocol version are cross-repo. Changing an existing message type, its payload shape, or bumping `data.v` without a documented migration is breaking.
 4. **Stamp/order contract** — the total order key `[base_version, actor, op_id]` and `ApplyResult` shape (`applied`, `skipped`, `failed`, `version`) are consumed downstream; narrowing or reshaping them is breaking.
@@ -31,4 +32,3 @@ CI so the prose above cannot silently describe a contract that no longer exists.
 <!-- claim: export { assertReadableSchema, readSchemaVersion } from "./schema-version.js" :: src/index.ts -->
 <!-- claim: export * from "./types.js" :: src/index.ts -->
 <!-- claim: export * from "./stamps.js" :: src/index.ts -->
-<!-- claim: export * from "./doc.js" :: src/index.ts -->

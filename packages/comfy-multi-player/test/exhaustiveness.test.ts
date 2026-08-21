@@ -18,14 +18,12 @@ import {
   FROZEN_OPS,
   OPAQUE_WIDGETS_KEY,
   applyOps,
-  createNodeMap,
   mint,
-  widgetStorageFor,
-  widgetStorageOf,
   writeTarget,
   type Op,
   type WorkflowJSON,
 } from "../src/index.js";
+import { createNodeMap, widgetStorageFor, widgetStorageOf } from "../src/doc.js";
 import { assertNever, checkExhaustive } from "../src/exhaustive.js";
 import { fixturesDir, loadCatalog } from "./helpers.js";
 

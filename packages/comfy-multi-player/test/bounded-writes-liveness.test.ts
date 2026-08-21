@@ -64,14 +64,13 @@ import { describe, expect, it } from "vitest";
 import {
   applyOps,
   mint,
-  stampsMap,
   type ConnectOp,
   type DeleteNodeOp,
   type SetWidgetOp,
   type WidgetCatalog,
   type WorkflowJSON,
 } from "../src/index.js";
-import { _getMutationCount, _resetMutationCount } from "../src/doc.js";
+import { _getMutationCount, _resetMutationCount, stampsMap } from "../src/doc.js";
 
 const catalog: WidgetCatalog = { types: { Hub: { widget_order: ["text"] }, Peer: { widget_order: [] } } };
 

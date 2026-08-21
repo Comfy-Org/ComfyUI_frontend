@@ -3,9 +3,9 @@
  * document and must remain an immutable SHA across apply and projection.
  */
 import { describe, expect, it } from "vitest";
+import { metaMap } from "../src/doc.js";
 import {
   applyOps,
-  metaMap,
   mint,
   project,
   type SetWidgetOp,

@@ -17,14 +17,11 @@
  */
 import * as Y from "yjs";
 import { describe, expect, it } from "vitest";
+import { _getMutationCount, _resetMutationCount, appliedMap, stampsMap } from "../src/doc.js";
 import {
-  _getMutationCount,
-  _resetMutationCount,
   applyOps,
-  appliedMap,
   mint,
   project,
-  stampsMap,
   type ClearOp,
   type ConnectOp,
   type DeleteNodeOp,

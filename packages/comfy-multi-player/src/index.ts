@@ -26,7 +26,13 @@
  *    with its own structured error before it reads;
  *  - stamp machinery (`compareStampKeys`, `stampKey`, `writeTarget`) for
  *    hosts that need conflict identity or watermark bookkeeping;
- *  - layout helpers (`initDoc`, `nodesMap`, …) and the types.
+ *  - the ADR-004 follower read surface (`nodesMap`, `linksMap`,
+ *    `OPAQUE_WIDGETS_KEY`) for consuming the wire layout without applying ops;
+ *  - operation, workflow, catalog, and result types.
+ *
+ * Every other Y.Doc layout and low-level mutation helper is deliberately
+ * module-private. Consumers that own mutation must change shared state through
+ * `applyOps` so stamp, idempotency, and convergence semantics cannot be bypassed.
  *
  * This module is PURE: no DOM, no framework, no litegraph. `yjs` is the only
  * runtime dependency. CI enforces this (scripts/check-purity.mjs).
@@ -34,7 +40,13 @@
 
 export * from "./types.js";
 export * from "./stamps.js";
-export * from "./doc.js";
+/**
+ * ADR-004 follower read-surface. These helpers expose the established wire
+ * layout only so the frontend follower can consume host updates. They are
+ * read-only by contract: followers never write and never call `applyOps`
+ * (KA-1, KA-6, FC-5); the host remains the sole op applier.
+ */
+export { OPAQUE_WIDGETS_KEY, linksMap, nodesMap } from "./doc.js";
 export { applyOps } from "./applier.js";
 export { project } from "./project.js";
 export { mint } from "./mint.js";

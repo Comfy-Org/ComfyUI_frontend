@@ -81,18 +81,21 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import * as Y from "yjs";
-import { SCHEMA_VERSION, applyOps, mint, type SetWidgetOp, type WidgetCatalog, type WorkflowJSON } from "../src/index.js";
-// The root-map helpers come from `src/doc.js`, not the entrypoint: issue #18
-// removes the `export * from "./doc.js"` re-export that would otherwise supply
-// them, and `test/bounded-writes-liveness.test.ts` and
-// `test/doc-mint-mutation-survivors.test.ts` already import them this way.
 import {
   OPAQUE_WIDGETS_KEY,
+  SCHEMA_VERSION,
+  applyOps,
+  linksMap,
+  mint,
+  nodesMap,
+  type SetWidgetOp,
+  type WidgetCatalog,
+  type WorkflowJSON,
+} from "../src/index.js";
+import {
   appliedMap,
   definitionsMap,
-  linksMap,
   metaMap,
-  nodesMap,
   stampsMap,
 } from "../src/doc.js";
 
