@@ -43,6 +43,10 @@ interface PrResult {
   error?: string
   /** Set when the failure is one the manual PR instructions can still solve. */
   needsManualSteps?: boolean
+  /** The branch checked out when createPr returns, e.g. for a caller-side "switch back?" prompt. */
+  currentBranch?: string
+  /** The branch the user was on before createPr ran — where "switch back" would go. */
+  originalBranch?: string
 }
 
 /**
@@ -164,29 +168,64 @@ export async function createPr(options: PrOptions): Promise<PrResult> {
       ? relative(options.cwd, options.testFilePath).split('\\').join('/')
       : options.testFilePath
 
-  // The branch is cut from HEAD, so anything already there rides along.
-  const ahead = run('git', ['rev-list', '--count', `${DEFAULT_BASE_REF}..HEAD`])
-  const aheadCount = Number(ahead.stdout.trim())
-  if (ahead.status === 0 && Number.isFinite(aheadCount) && aheadCount > 0) {
-    warn(
-      'Unrelated commits',
-      `HEAD is ${aheadCount} commit(s) ahead of ${DEFAULT_BASE_REF}`
-    )
-    info([
-      `The pull request will contain those ${aheadCount} commit(s) as well as`,
-      'the recorded test, because the branch is cut from where you are now.',
-      '',
-      'To open a PR with only the test, switch to an up-to-date base first:',
-      '',
-      `  git checkout ${DEFAULT_BASE_BRANCH} && git pull`
-    ])
-  }
-
   const originalBranch = run('git', [
     'rev-parse',
     '--abbrev-ref',
     'HEAD'
   ]).stdout.trim()
+
+  // The PR must stack on wherever the user actually started — targeting
+  // main regardless would sweep every commit already on their branch into
+  // the diff. gh needs the base to exist on the remote, so fall back to
+  // main (still warning) rather than fail outright if it was never pushed.
+  // Skipped entirely when already on main: nothing to stack, and it's
+  // always on the remote, so the check would be a wasted round trip.
+  const onFeatureBranch =
+    originalBranch && originalBranch !== DEFAULT_BASE_BRANCH
+  const baseOnOrigin =
+    onFeatureBranch &&
+    run('git', [
+      'ls-remote',
+      '--exit-code',
+      '--heads',
+      'origin',
+      originalBranch
+    ]).status === 0
+  const baseBranch =
+    onFeatureBranch && baseOnOrigin ? originalBranch : DEFAULT_BASE_BRANCH
+
+  if (onFeatureBranch) {
+    if (baseOnOrigin) {
+      info([
+        `Stacking this PR on ${originalBranch} (where you started), not`,
+        `${DEFAULT_BASE_BRANCH}. It will only show the commit(s) you're`,
+        `adding now — merge or land ${originalBranch} first for those to`,
+        'reach main.'
+      ])
+    } else {
+      warn(
+        `${originalBranch} is not pushed to origin`,
+        `falling back to ${DEFAULT_BASE_BRANCH} as the PR base`
+      )
+      const ahead = run('git', [
+        'rev-list',
+        '--count',
+        `${DEFAULT_BASE_REF}..HEAD`
+      ])
+      const aheadCount = Number(ahead.stdout.trim())
+      if (ahead.status === 0 && Number.isFinite(aheadCount) && aheadCount > 0) {
+        info([
+          `The pull request will contain those ${aheadCount} commit(s) as`,
+          'well as the recorded test, because the branch is cut from where',
+          'you are now. To open a PR with only the test, push',
+          `${originalBranch} first, or switch to an up-to-date`,
+          `${DEFAULT_BASE_BRANCH}:`,
+          '',
+          `  git checkout ${DEFAULT_BASE_BRANCH} && git pull`
+        ])
+      }
+    }
+  }
 
   // Leaves the user back where they started, with the new branch gone,
   // instead of stranded on a half-created branch with nothing committed.
@@ -281,7 +320,16 @@ export async function createPr(options: PrOptions): Promise<PrResult> {
   pass('Pushed branch', branchName)
 
   // No --fill: newer gh rejects it alongside --title/--body.
-  const pr = run('gh', ['pr', 'create', '--title', prTitle, '--body', prBody])
+  const pr = run('gh', [
+    'pr',
+    'create',
+    '--base',
+    baseBranch,
+    '--title',
+    prTitle,
+    '--body',
+    prBody
+  ])
   if (pr.status !== 0) {
     const stderr = pr.stderr.trim()
     fail('PR creation failed', stderr)
@@ -289,12 +337,30 @@ export async function createPr(options: PrOptions): Promise<PrResult> {
       `The branch ${branchName} is pushed, so nothing is lost.`,
       'Open the pull request from it directly, or retry with:',
       '',
-      `  gh pr create --head ${branchName}`
+      `  gh pr create --base ${baseBranch} --head ${branchName}`
     ])
     return { success: false, error: stderr, needsManualSteps: true }
   }
 
   const url = pr.stdout.trim()
   pass('Pull request created', url)
-  return { success: true, url }
+  return {
+    success: true,
+    url,
+    currentBranch: branchName,
+    originalBranch: originalBranch || undefined
+  }
+}
+
+/** Checks out `branch`, for a caller-side "switch back?" prompt after createPr. */
+export function switchBranch(
+  branch: string,
+  options: { cwd?: string; run?: CommandRunner } = {}
+): { success: boolean; error?: string } {
+  const run = options.run ?? spawnSyncRunner(options.cwd)
+  const result = run('git', ['checkout', branch])
+  if (result.status !== 0) {
+    return { success: false, error: result.stderr.trim() }
+  }
+  return { success: true }
 }

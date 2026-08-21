@@ -255,4 +255,114 @@ describe('createPr', () => {
     expect(result.success).toBe(true)
     expect(result.url).toBe('https://github.com/org/repo/pull/1')
   })
+
+  it('stacks the PR on the branch it was cut from, not main', async () => {
+    const calls: string[] = []
+    runMock.mockImplementation((cmd: string, args: string[]) => {
+      calls.push(args.join(' '))
+      if (cmd === 'gh') return ok('https://github.com/org/repo/pull/1')
+      const [sub] = args
+      if (sub === 'rev-list') return ok('0')
+      if (sub === 'rev-parse') return ok('feature/in-progress')
+      if (sub === 'ls-remote') return ok() // branch exists on origin
+      if (sub === 'checkout') return ok()
+      if (sub === 'add') return ok()
+      if (sub === 'stash') return noStashNeeded()
+      if (sub === 'commit') return ok()
+      if (sub === 'push') return ok()
+      throw new Error(`unexpected git ${args.join(' ')}`)
+    })
+
+    const result = await createPr({
+      testFilePath: 'browser_tests/tests/foo.spec.ts',
+      testName: 'foo',
+      description: 'desc',
+      run: runMock
+    })
+
+    expect(result.success).toBe(true)
+    const prCall = calls.find((c) => c.startsWith('pr create'))
+    expect(prCall).toContain('--base feature/in-progress')
+  })
+
+  it('falls back to main when the current branch was never pushed', async () => {
+    const calls: string[] = []
+    runMock.mockImplementation((cmd: string, args: string[]) => {
+      calls.push(args.join(' '))
+      if (cmd === 'gh') return ok('https://github.com/org/repo/pull/1')
+      const [sub] = args
+      if (sub === 'rev-list') return ok('0')
+      if (sub === 'rev-parse') return ok('feature/local-only')
+      if (sub === 'ls-remote') return failure('', 2) // not on origin
+      if (sub === 'checkout') return ok()
+      if (sub === 'add') return ok()
+      if (sub === 'stash') return noStashNeeded()
+      if (sub === 'commit') return ok()
+      if (sub === 'push') return ok()
+      throw new Error(`unexpected git ${args.join(' ')}`)
+    })
+
+    const result = await createPr({
+      testFilePath: 'browser_tests/tests/foo.spec.ts',
+      testName: 'foo',
+      description: 'desc',
+      run: runMock
+    })
+
+    expect(result.success).toBe(true)
+    const prCall = calls.find((c) => c.startsWith('pr create'))
+    expect(prCall).toContain('--base main')
+  })
+
+  it('never checks the remote when already on main', async () => {
+    const calls: string[] = []
+    runMock.mockImplementation((cmd: string, args: string[]) => {
+      calls.push(args.join(' '))
+      if (cmd === 'gh') return ok('https://github.com/org/repo/pull/1')
+      const [sub] = args
+      if (sub === 'rev-list') return ok('0')
+      if (sub === 'rev-parse') return ok('main')
+      if (sub === 'checkout') return ok()
+      if (sub === 'add') return ok()
+      if (sub === 'stash') return noStashNeeded()
+      if (sub === 'commit') return ok()
+      if (sub === 'push') return ok()
+      throw new Error(`unexpected git ${args.join(' ')}`)
+    })
+
+    await createPr({
+      testFilePath: 'browser_tests/tests/foo.spec.ts',
+      testName: 'foo',
+      description: 'desc',
+      run: runMock
+    })
+
+    expect(calls.some((c) => c.startsWith('ls-remote'))).toBe(false)
+  })
+
+  it('returns the original and current branch on success, for a caller-side switch-back prompt', async () => {
+    runMock.mockImplementation((cmd: string, args: string[]) => {
+      if (cmd === 'gh') return ok('https://github.com/org/repo/pull/1')
+      const [sub] = args
+      if (sub === 'rev-list') return ok('0')
+      if (sub === 'rev-parse') return ok('feature/in-progress')
+      if (sub === 'ls-remote') return ok()
+      if (sub === 'checkout') return ok()
+      if (sub === 'add') return ok()
+      if (sub === 'stash') return noStashNeeded()
+      if (sub === 'commit') return ok()
+      if (sub === 'push') return ok()
+      throw new Error(`unexpected git ${args.join(' ')}`)
+    })
+
+    const result = await createPr({
+      testFilePath: 'browser_tests/tests/foo.spec.ts',
+      testName: 'foo',
+      description: 'desc',
+      run: runMock
+    })
+
+    expect(result.originalBranch).toBe('feature/in-progress')
+    expect(result.currentBranch).toBe('test/foo')
+  })
 })
