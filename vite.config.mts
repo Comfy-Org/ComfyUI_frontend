@@ -426,6 +426,11 @@ export default defineConfig({
               attrs: { name: 'keywords', content: VITE_OG_KEYWORDS },
               injectTo: 'head'
             },
+            {
+              tag: 'link',
+              attrs: { rel: 'canonical', href: VITE_OG_URL },
+              injectTo: 'head'
+            },
 
             // Twitter Card tags
             {
