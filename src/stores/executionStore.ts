@@ -686,6 +686,8 @@ export const useExecutionStore = defineStore('execution', () => {
     })
     if (!precondition) return false
 
+    const workflow = jobIdToWorkflow.get(detail.prompt_id)
+    if (workflow) clearWorkflowStatus(workflow)
     clearInitializationByJobId(detail.prompt_id)
     resetExecutionState(detail.prompt_id)
     return true

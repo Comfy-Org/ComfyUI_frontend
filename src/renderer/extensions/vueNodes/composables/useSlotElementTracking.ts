@@ -280,7 +280,8 @@ export function useSlotElementTracking(options: {
         const node = nodeSlotRegistryStore.ensureNode(nodeId)
 
         if (!node.stopWatch) {
-          const layoutRef = layoutStore.getNodeLayoutRef(nodeId)
+          const { layout: layoutRef, release } =
+            layoutStore.retainNodeLayoutRef(nodeId)
 
           const stopPositionWatch = watch(
             () => layoutRef.value?.position,
@@ -305,6 +306,7 @@ export function useSlotElementTracking(options: {
           node.stopWatch = () => {
             stopPositionWatch()
             stopSizeWatch()
+            release()
           }
         }
 

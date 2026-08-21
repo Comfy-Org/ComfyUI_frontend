@@ -40,7 +40,6 @@ function setupAndGetAutoQueueGraphChangedListener() {
 
 describe('setupAutoQueueHandler', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     setActivePinia(
       createTestingPinia({
         createSpy: vi.fn,

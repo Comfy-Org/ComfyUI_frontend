@@ -42,7 +42,6 @@ const renderButton = () =>
 
 describe('MaskEditorButton', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockSelectionState.isSingleImageNode = ref(true)
   })
 

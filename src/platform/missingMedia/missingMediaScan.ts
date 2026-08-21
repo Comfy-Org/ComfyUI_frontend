@@ -41,11 +41,7 @@ function isComboWidget(widget: IBaseWidget): widget is IComboWidget {
   return widget.type === 'combo'
 }
 
-/**
- * The widget a user can actually edit. A linked slot means the value comes
- * from upstream; a promoted host owns the value only while some interior
- * consumer is still live.
- */
+/** The widget a user can actually edit. */
 function isEditableValueOwner(node: LGraphNode, widget: IBaseWidget): boolean {
   const input = node.getSlotFromWidget(widget)
   if (input?.link != null) return false
@@ -111,10 +107,6 @@ export function scanNodeMediaCandidates(
   for (const widget of node.widgets) {
     if (!isComboWidget(widget)) continue
 
-    // getInputSpecForWidget projects a promoted host input to its interior
-    // spec itself, so the scan reads schema through the store rather than
-    // walking the subgraph. Media-ness is the cheaper question, so it runs
-    // before the ownership walk.
     const mediaType = mediaTypeFromSpec(
       nodeDefStore.getInputSpecForWidget(node, widget.name)
     )
@@ -173,10 +165,9 @@ export function isMissingMediaCandidateScopeActive(
   const widget = node.widgets?.find(
     (candidateWidget) => candidateWidget.name === candidate.widgetName
   )
-  // Removed or renamed while verification was pending: nothing owns the value.
   if (!widget) return false
 
-  return isEditableValueOwner(node, widget)
+  return widget.value === candidate.name && isEditableValueOwner(node, widget)
 }
 
 export function isMissingMediaCandidateActive(

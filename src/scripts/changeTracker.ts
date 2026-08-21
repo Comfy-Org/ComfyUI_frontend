@@ -463,6 +463,10 @@ export class ChangeTracker {
 
   private static _checkStateWarned = false
 
+  static resetCheckStateWarningForTest() {
+    ChangeTracker._checkStateWarned = false
+  }
+
   async updateState(source: ComfyWorkflowJSON[], target: ComfyWorkflowJSON[]) {
     const prevState = source.pop()
     if (prevState) {

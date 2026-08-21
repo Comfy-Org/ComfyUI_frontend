@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, effectScope, reactive } from 'vue'
 
@@ -161,6 +159,7 @@ const {
   mockUserId,
   mockIsTeamPlan,
   mockShouldUseWorkspaceBilling,
+  mockSetActiveWorkspaceIdImpl,
   mockSetActiveWorkspaceId,
   mockPermissions,
   mockSubscription
@@ -193,7 +192,14 @@ const {
   mockUserId: { value: 'user-1' as string | null },
   mockIsTeamPlan: { value: false },
   mockShouldUseWorkspaceBilling: { value: true },
-  mockSetActiveWorkspaceId: vi.fn<(workspaceId: string) => void>(),
+  mockSetActiveWorkspaceIdImpl: {
+    value: undefined as ((workspaceId: string) => void) | undefined
+  },
+  mockSetActiveWorkspaceId: vi.fn<(workspaceId: string) => void>(
+    (workspaceId) => {
+      mockSetActiveWorkspaceIdImpl.value?.(workspaceId)
+    }
+  ),
   mockPermissions: {
     value: {
       canManageSubscription: true,
@@ -274,9 +280,9 @@ vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', async () => {
   const { ref } = await import('vue')
   const activeWorkspaceId = ref('workspace-1')
-  mockSetActiveWorkspaceId.mockImplementation((workspaceId) => {
+  mockSetActiveWorkspaceIdImpl.value = (workspaceId) => {
     activeWorkspaceId.value = workspaceId
-  })
+  }
   return {
     useTeamWorkspaceStore: () => ({
       get activeWorkspaceId() {
@@ -358,8 +364,6 @@ describe('useSubscriptionCheckout', () => {
   }
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     mockSubscriptionActionOperation.value = undefined
     mockPlans.value = allPlans()
     mockFetchPlans.mockResolvedValue(undefined)
@@ -446,6 +450,7 @@ describe('useSubscriptionCheckout', () => {
 
     it.for([
       ['SUBSCRIPTION_PAYMENT_REQUIRED', null],
+      ['OUTSTANDING_PAYMENT_REQUIRED', null],
       ['TRANSITION_NOT_ALLOWED', 'payment_failed']
     ] as const)(
       'routes %s previews to the billing portal',
@@ -826,7 +831,7 @@ describe('useSubscriptionCheckout', () => {
 
       expect(mockPreviewSubscribe).toHaveBeenCalledWith(
         'team_per_credit_monthly',
-        { teamCreditStopId: 'team_1400', billingCycle: 'monthly' }
+        { teamCreditStopId: 'team_1400' }
       )
       expect(checkout.previewData.value).toStrictEqual(transition)
     })
@@ -1054,8 +1059,7 @@ describe('useSubscriptionCheckout', () => {
       expect(mockPreviewSubscribe).toHaveBeenCalledWith(
         'team_per_credit_monthly',
         {
-          teamCreditStopId: 'team_700',
-          billingCycle: 'monthly'
+          teamCreditStopId: 'team_700'
         }
       )
       expect(checkout.previewData.value).not.toBeNull()
