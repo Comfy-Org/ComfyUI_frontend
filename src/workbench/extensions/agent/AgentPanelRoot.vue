@@ -340,6 +340,7 @@ const {
   start,
   stop,
   entries,
+  editableTurnId,
   isStreaming,
   status,
   notices,
@@ -1161,6 +1162,7 @@ function onPanelDrop(event: DragEvent): void {
     <AgentPanel
       ref="panelRef"
       :entries
+      :editable-turn-id="editableTurnId"
       :user-name="userName"
       :streaming="isStreaming"
       :submitting="isSending || status === 'thinking'"

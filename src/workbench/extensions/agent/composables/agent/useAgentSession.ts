@@ -38,6 +38,11 @@ export interface WorkflowTurnContext {
   tabPath: string
 }
 
+type PromptEditState =
+  | { phase: 'idle' }
+  | { phase: 'stopping'; turnId: TurnId }
+  | { phase: 'ready'; turnId: TurnId }
+
 export interface AgentSessionDeps {
   rest: AgentRestClient
   events: AgentEventSource
@@ -68,6 +73,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   const draftStore = useAgentDraftStore()
 
   const notices = ref<SessionNotice[]>([])
+  const promptEditState = ref<PromptEditState>({ phase: 'idle' })
   let resyncing = false
   const sending = ref(false)
 
@@ -182,6 +188,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       )
       return false
     }
+    promptEditState.value = { phase: 'idle' }
     sending.value = true
     stopRequestedWhileSending = false
     if (workflow?.prepare)
@@ -288,14 +295,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
       if (sending.value) stopRequestedWhileSending = true
       return
     }
+    promptEditState.value = { phase: 'stopping', turnId }
     try {
       await rest.cancelMessage(threadId, turnId)
     } catch (error) {
       if (error instanceof AgentApiError) {
         if (error.status === 409) return
+        promptEditState.value = { phase: 'idle' }
         pushError(error.message)
         return
       }
+      promptEditState.value = { phase: 'idle' }
       pushError(error instanceof Error ? error.message : String(error))
     }
   }
@@ -304,6 +314,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function newChat(): void {
     loadGeneration++
+    promptEditState.value = { phase: 'idle' }
     conversationStore.stashActiveTurn()
     conversationStore.reset()
     draftStore.reset()
@@ -316,6 +327,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   async function loadThread(threadId: string): Promise<void> {
     const generation = ++loadGeneration
+    promptEditState.value = { phase: 'idle' }
     const isCurrent = () =>
       generation === loadGeneration && ownedGeneration === sessionGeneration
     conversationStore.stashActiveTurn()
@@ -373,6 +385,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
         return
       default:
         conversationStore.ingest(event)
+        if (
+          event.type === 'agent_message_done' &&
+          promptEditState.value.phase === 'stopping' &&
+          event.data.message_id === promptEditState.value.turnId &&
+          (event.data.thread_id === undefined ||
+            event.data.thread_id === conversationStore.threadId)
+        )
+          promptEditState.value = {
+            phase: 'ready',
+            turnId: promptEditState.value.turnId
+          }
     }
   }
 
@@ -386,9 +409,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   const isSending = computed(() => sending.value)
+  const editableTurnId = computed(() =>
+    promptEditState.value.phase === 'ready'
+      ? promptEditState.value.turnId
+      : null
+  )
 
   return {
     isSending,
+    editableTurnId,
     start,
     stop,
     sendMessage,

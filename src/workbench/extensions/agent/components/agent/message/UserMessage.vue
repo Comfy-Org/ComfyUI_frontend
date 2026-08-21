@@ -9,11 +9,16 @@ import AgentTooltip from '../AgentTooltip.vue'
 const {
   text,
   attachments = [],
-  tags = []
+  tags = [],
+  editable = false
 } = defineProps<{
   text: string
   attachments?: UserAttachment[]
   tags?: string[]
+  editable?: boolean
+}>()
+const emit = defineEmits<{
+  edit: [text: string]
 }>()
 
 const { t } = useI18n()
@@ -68,6 +73,16 @@ const { copy, copied } = useClipboard({ copiedDuring: 2000, legacy: true })
       v-if="text"
       class="text-agent-fg-subtle flex opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100"
     >
+      <AgentTooltip v-if="editable" :label="t('g.edit')">
+        <button
+          type="button"
+          :aria-label="t('g.edit')"
+          class="hover:bg-agent-surface-hover hover:text-agent-fg flex size-6 cursor-pointer items-center justify-center rounded-lg p-1 transition-colors"
+          @click="emit('edit', text)"
+        >
+          <span class="icon-[lucide--pencil] size-3" />
+        </button>
+      </AgentTooltip>
       <AgentTooltip :label="copied ? t('agent.copied') : t('agent.copy')">
         <button
           type="button"
