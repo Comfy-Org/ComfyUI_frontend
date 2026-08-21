@@ -21,8 +21,10 @@ import { transform, formatTransformSummary } from '../transform/engine'
 import { formatFile } from '../transform/format'
 import { openPr } from '../pr/openPr'
 import { runCommand } from '../cli/run'
+import { detectAgentClis } from '../checks/agentCli'
+import { runAgentRefactor } from '../agent/refactor'
 import { stepHeader } from '../ui/steps'
-import { pass, fail, info, blank, box } from '../ui/logger'
+import { pass, fail, warn, info, blank, box } from '../ui/logger'
 
 function toSlug(description: string): string {
   return description
@@ -57,8 +59,52 @@ function readMultiline(): Promise<{ code: string; stdinOpen: boolean }> {
   })
 }
 
+/**
+ * Best-effort — offers to hand the spec to a locally installed coding-agent
+ * CLI for a convention pass against docs/guidance and browser_tests' own
+ * docs. Never runs without consent, and any failure here just means the
+ * user keeps the untouched spec from the transform step.
+ */
+async function offerAgentRefactor(
+  specPath: string,
+  projectRoot: string
+): Promise<void> {
+  const adapters = detectAgentClis()
+  if (adapters.length === 0) {
+    info([
+      'No local coding-agent CLI found (claude, codex, gemini, amp, opencode) — skipping.',
+      'You can ask one manually to refactor the spec against docs/guidance/playwright.md',
+      'and browser_tests/README.md.'
+    ])
+    return
+  }
+
+  const adapter = adapters[0]
+  const wantRefactor = await confirm({
+    message: `Ask ${adapter.label} to refactor this test against our Playwright conventions?`
+  })
+  if (isCancel(wantRefactor) || !wantRefactor) return
+
+  const s = spinner()
+  s.start(`${adapter.label} is reviewing the test...`)
+  const result = runAgentRefactor({ adapter, specPath, projectRoot })
+
+  if (!result.ran) {
+    s.stop(`${adapter.label} refactor skipped`)
+    warn('Agent refactor failed', result.timedOut ? 'timed out' : result.error)
+    info(['Your test file is unchanged — continuing without it.'])
+    return
+  }
+
+  s.stop(`${adapter.label} finished`)
+  if (!formatFile(specPath)) {
+    info([`Could not format ${specPath} — run pnpm format before committing.`])
+  }
+  pass('Test refactored', specPath)
+}
+
 export async function runRecord(): Promise<void> {
-  stepHeader(1, 6, 'Environment Check')
+  stepHeader(1, 7, 'Environment Check')
   const { allPassed } = await runChecks(undefined, { showHeader: false })
   if (!allPassed) {
     blank()
@@ -66,7 +112,7 @@ export async function runRecord(): Promise<void> {
     process.exit(1)
   }
 
-  stepHeader(2, 6, 'Project Setup')
+  stepHeader(2, 7, 'Project Setup')
 
   let projectRoot: string
   try {
@@ -94,7 +140,7 @@ export async function runRecord(): Promise<void> {
   s.stop('Dependencies installed')
   pass('Project ready', projectRoot)
 
-  stepHeader(3, 6, 'Configure Your Test')
+  stepHeader(3, 7, 'Configure Your Test')
 
   const description = await text({
     message: 'What are you testing?',
@@ -171,7 +217,7 @@ export async function runRecord(): Promise<void> {
     process.exit(0)
   }
 
-  stepHeader(4, 6, 'Record')
+  stepHeader(4, 7, 'Record')
 
   const result = await runRecording({
     testName: slug,
@@ -183,7 +229,7 @@ export async function runRecord(): Promise<void> {
     process.exit(1)
   }
 
-  stepHeader(5, 6, 'Paste & Transform')
+  stepHeader(5, 7, 'Paste & Transform')
 
   info([
     'Copy the generated code from the Playwright Inspector.',
@@ -230,7 +276,10 @@ export async function runRecord(): Promise<void> {
   blank()
   pass('Test saved', outputPath)
 
-  stepHeader(6, 6, 'Finalize')
+  stepHeader(6, 7, 'Refactor (optional)')
+  await offerAgentRefactor(outputPath, projectRoot)
+
+  stepHeader(7, 7, 'Finalize')
 
   box([
     'Run your test:',
