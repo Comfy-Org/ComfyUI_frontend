@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
@@ -81,10 +81,6 @@ describe('FeaturedCarousel02', () => {
     // The suite asserts exact timer boundaries (4999ms vs 5000ms), so the
     // config's shouldAdvanceTime real-time drift must stay off.
     vi.useFakeTimers({ shouldAdvanceTime: false })
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
   })
 
   it('advances after DEFAULT_AUTOPLAY_MS, honors per-slide delays, and wraps to the first slide', async () => {
