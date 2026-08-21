@@ -53,6 +53,8 @@ const fixtures = vi.hoisted(() => {
   return { prepared, secondPrepared, secondTemplate, template }
 })
 
+const environment = vi.hoisted(() => ({ isDesktop: false }))
+
 const mocks = vi.hoisted(() => ({
   filterTemplatesByCategory: vi.fn(() => [
     fixtures.template,
@@ -65,6 +67,21 @@ const mocks = vi.hoisted(() => ({
   getTemplateTitle: vi.fn((template: { title: string }) => template.title),
   loadTemplates: vi.fn(async () => true),
   loadWorkflowTemplate: vi.fn(async () => true),
+  resolveModelAvailability: vi.fn(async (models: readonly unknown[]) =>
+    models.map((model) => ({ model, status: 'missing' as const }))
+  ),
+  resolveModelMetadata: vi.fn(async (models: readonly unknown[]) => ({
+    status: 'completed' as const,
+    entries: models.map((model) => ({
+      model,
+      resolution: 'resolved' as const,
+      fileSize: 2048,
+      gatedRepoUrl: null
+    }))
+  })),
+  rowDownloadDispose: vi.fn(),
+  rowDownloadRequest: vi.fn(),
+  rowDownloadStateFor: vi.fn(() => ({ status: 'idle' as const, attempt: 0 })),
   onClose: vi.fn(),
   openPreparedWorkflowTemplate: vi.fn(async () => true),
   prepareWorkflowTemplate: vi.fn(
@@ -80,7 +97,44 @@ const mocks = vi.hoisted(() => ({
   trackTemplateLibraryClosed: vi.fn()
 }))
 
-vi.mock('@/platform/distribution/types', () => ({ isCloud: false }))
+vi.mock('@/platform/distribution/types', () => ({
+  isCloud: false,
+  get isDesktop() {
+    return environment.isDesktop
+  }
+}))
+
+vi.mock(
+  '@/platform/workflow/templates/composables/useTemplateModelAvailability',
+  () => ({
+    useTemplateModelAvailability: () => ({
+      resolveAvailability: mocks.resolveModelAvailability
+    })
+  })
+)
+
+vi.mock(
+  '@/platform/workflow/templates/composables/useTemplateModelRowDownloads',
+  () => ({
+    useTemplateModelRowDownloads: () => ({
+      dispose: mocks.rowDownloadDispose,
+      request: mocks.rowDownloadRequest,
+      stateFor: mocks.rowDownloadStateFor
+    })
+  })
+)
+
+vi.mock('@/platform/workflow/templates/utils/templateModelMetadata', () => ({
+  resolveTemplateModelMetadata: mocks.resolveModelMetadata
+}))
+
+vi.mock('@/platform/missingModel/missingModelDownload', () => ({
+  isModelDownloadable: vi.fn(() => true)
+}))
+
+vi.mock('@/scripts/api', () => ({
+  api: { getFolderPaths: vi.fn(async () => ({})) }
+}))
 
 vi.mock(
   '@/platform/workflow/templates/composables/useTemplateWorkflows',
@@ -213,6 +267,23 @@ const i18n = createI18n({
           customNodes: 'Custom Nodes',
           customNodeRequirement: 'Required custom node package',
           usedBy: 'Used by {nodes}',
+          installed: 'Installed',
+          unavailable: 'Unavailable',
+          unknown: 'Unknown',
+          downloadModel: 'Download model',
+          downloadModelNamed: 'Download {model}',
+          getItManually: 'Get it manually',
+          openWithoutDownloading: 'Open without downloading',
+          downloadStarterPack: 'Download starter pack',
+          downloadRemaining: '{total} left',
+          modelTypes: {
+            model: 'Model',
+            checkpoint: 'Checkpoint',
+            diffusionModel: 'Diffusion model',
+            textEncoder: 'Text encoder',
+            vae: 'VAE',
+            lora: 'LoRA'
+          },
           openTemplate: 'Open template',
           backToTemplates: 'Back to {category}',
           breadcrumbLabel: 'Template navigation'
@@ -291,12 +362,80 @@ async function openDetail(templateName = fixtures.template.name) {
 
 describe('WorkflowTemplateSelectorDialog template detail navigation', () => {
   beforeEach(() => {
+    environment.isDesktop = false
     mocks.prepareWorkflowTemplate.mockImplementation(async (id: string) =>
       id === fixtures.secondTemplate.name
         ? fixtures.secondPrepared
         : fixtures.prepared
     )
     mocks.openPreparedWorkflowTemplate.mockResolvedValue(true)
+  })
+
+  it('enriches Desktop model rows and keeps a row download inside the detail', async () => {
+    environment.isDesktop = true
+    const user = await openDetail()
+
+    await waitFor(() => {
+      expect(mocks.resolveModelMetadata).toHaveBeenCalledOnce()
+    })
+    expect(mocks.resolveModelAvailability).toHaveBeenCalledWith([
+      fixtures.prepared.workflow.models[0]
+    ])
+    expect(
+      screen.getByText('Checkpoint · 2 KB · Used by Starter Loader')
+    ).toBeInTheDocument()
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Download wan2.2_i2v_high_noise_14B_fp16.safetensors'
+      })
+    )
+    expect(mocks.rowDownloadRequest).toHaveBeenCalledWith(
+      fixtures.prepared.workflow.models[0]
+    )
+    expect(
+      screen.getByRole('article', { name: fixtures.template.title })
+    ).toBeInTheDocument()
+    expect(mocks.openPreparedWorkflowTemplate).not.toHaveBeenCalled()
+  })
+
+  it('starts eligible Desktop model rows before immediately opening the stored workflow', async () => {
+    environment.isDesktop = true
+    const user = await openDetail()
+    await screen.findByRole('button', { name: 'Download starter pack' })
+
+    await user.click(
+      screen.getByRole('button', { name: 'Download starter pack' })
+    )
+
+    await waitFor(() => {
+      expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledOnce()
+    })
+    expect(mocks.rowDownloadRequest).toHaveBeenCalledWith(
+      fixtures.prepared.workflow.models[0]
+    )
+    expect(mocks.rowDownloadRequest.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.openPreparedWorkflowTemplate.mock.invocationCallOrder[0]
+    )
+    expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledWith(
+      fixtures.prepared,
+      { closeDialog: false }
+    )
+    expect(mocks.onClose).toHaveBeenCalledOnce()
+  })
+
+  it('keeps non-Desktop detail behavior declaration-only', async () => {
+    await openDetail()
+
+    expect(mocks.resolveModelAvailability).not.toHaveBeenCalled()
+    expect(mocks.resolveModelMetadata).not.toHaveBeenCalled()
+    expect(mocks.rowDownloadStateFor).not.toHaveBeenCalled()
+    expect(
+      screen.getByRole('button', { name: 'Open template' })
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Download starter pack' })
+    ).not.toBeInTheDocument()
   })
 
   it('prepares a clicked template and presents its declarations before opening', async () => {
