@@ -26,13 +26,25 @@
 
 <script setup lang="ts">
 import Toast from 'primevue/toast'
+import type { ToastMessageOptions } from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
 import { watch } from 'vue'
 
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 
 const toast = useToast()
 const toastStore = useToastStore()
+const agentNodeSelectionStore = useAgentNodeSelectionStore()
+
+/**
+ * Messages raised while node selection mode is active. The mode hides the whole
+ * toast layer, and adding to a hidden layer would let anything carrying a `life`
+ * expire unseen - so they are held here and replayed on exit. Messages without a
+ * `life` are sticky in PrimeVue, so errors already on screen survive the hide
+ * untouched. Deliberately a plain array: nothing renders it.
+ */
+let deferredMessages: ToastMessageOptions[] = []
 
 watch(
   () => toastStore.messagesToAdd,
@@ -42,11 +54,25 @@ watch(
     }
 
     newMessages.forEach((message) => {
-      toast.add(message)
+      if (agentNodeSelectionStore.isActive) {
+        deferredMessages.push(message)
+      } else {
+        toast.add(message)
+      }
     })
     toastStore.messagesToAdd = []
   },
   { deep: true }
+)
+
+watch(
+  () => agentNodeSelectionStore.isActive,
+  (active) => {
+    if (active) return
+    deferredMessages.splice(0).forEach((message) => {
+      toast.add(message)
+    })
+  }
 )
 
 watch(
@@ -69,6 +95,9 @@ watch(
   (requested) => {
     if (requested) {
       toast.removeAllGroups()
+      // Held messages were cleared too - replaying them on exit would resurrect
+      // exactly what the caller just dismissed.
+      deferredMessages = []
       toastStore.removeAllRequested = false
     }
   }
