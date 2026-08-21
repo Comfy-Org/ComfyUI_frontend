@@ -59,6 +59,11 @@ import {
   outputLinks
 } from './node/slotLinks'
 import { initializeWidgetsView } from './node/widgetsView'
+import { inputSlotView, outputSlotView } from './node/slotDescriptorView'
+import type {
+  InputSlotDescriptor,
+  OutputSlotDescriptor
+} from './node/slotDescriptorView'
 import { anchorRerouteChain } from './Reroute'
 import type { Reroute, RerouteId } from './Reroute'
 import { getNodeInputOnPos, getNodeOutputOnPos } from './canvas/measureSlots'
@@ -371,23 +376,24 @@ export class LGraphNode
 
   /** Assignment splices in place: the `shallowReactive` array identity is what the renderer tracks. */
   get inputs(): INodeInputSlot[] {
-    return this._state.inputs
+    return this._inputs
   }
 
   set inputs(value: INodeInputSlot[] | null | undefined) {
-    const { inputs } = this._state
-    inputs.splice(0, inputs.length, ...(value ?? []))
+    this._inputs.splice(0, this._inputs.length, ...(value ?? []))
   }
 
   /** @see {@link inputs} */
   get outputs(): INodeOutputSlot[] {
-    return this._state.outputs
+    return this._outputs
   }
 
   set outputs(value: INodeOutputSlot[] | null | undefined) {
-    const { outputs } = this._state
-    outputs.splice(0, outputs.length, ...(value ?? []))
+    this._outputs.splice(0, this._outputs.length, ...(value ?? []))
   }
+
+  private readonly _inputs: INodeInputSlot[]
+  private readonly _outputs: INodeOutputSlot[]
 
   private _concreteInputs: NodeInputSlot[] = []
   private _concreteOutputs: NodeOutputSlot[] = []
@@ -964,13 +970,15 @@ export class LGraphNode
       flags: {},
       graphId: zeroUuid,
       id: UNASSIGNED_NODE_ID,
-      inputs: shallowReactive<INodeInputSlot[]>([]),
+      inputs: shallowReactive<InputSlotDescriptor[]>([]),
       mode: LGraphEventMode.ALWAYS,
-      outputs: shallowReactive<INodeOutputSlot[]>([]),
+      outputs: shallowReactive<OutputSlotDescriptor[]>([]),
       title: title || 'Unnamed',
       type: type ?? '',
       titleMode: this.title_mode
     }
+    this._inputs = inputSlotView(this._state.inputs, this)
+    this._outputs = outputSlotView(this._state.outputs, this)
     for (const property of ['inputs', 'outputs', 'boxcolor'] as const) {
       Object.defineProperty(this, property, {
         ...Object.getOwnPropertyDescriptor(LGraphNode.prototype, property),
@@ -1822,14 +1830,15 @@ export class LGraphNode
 
     this.outputs ||= []
     this.outputs.push(output)
-    this.onOutputAdded?.(output)
+    const added = this.outputs.at(-1) as NodeOutputSlot & TProperties
+    this.onOutputAdded?.(added)
 
     if (LiteGraph.auto_load_slot_types)
       LiteGraph.registerNodeAndSlotType(this, type, true)
 
     this.expandToFitContent()
     this.setDirtyCanvas(true, true)
-    return output
+    return added
   }
 
   /**
@@ -1888,13 +1897,14 @@ export class LGraphNode
 
     this.inputs ||= []
     this.inputs.push(input)
+    const added = this.inputs.at(-1) as NodeInputSlot & TProperties
     this.expandToFitContent()
 
-    this.onInputAdded?.(input)
+    this.onInputAdded?.(added)
     LiteGraph.registerNodeAndSlotType(this, type)
 
     this.setDirtyCanvas(true, true)
-    return input
+    return added
   }
 
   /**
@@ -4365,12 +4375,6 @@ export class LGraphNode
     this._concreteOutputs = this.outputs.map((slot) =>
       toClass(NodeOutputSlot, slot, this)
     )
-    for (const [i, slot] of this._concreteInputs.entries()) {
-      this.inputs[i] = slot
-    }
-    for (const [i, slot] of this._concreteOutputs.entries()) {
-      this.outputs[i] = slot
-    }
   }
 
   /**

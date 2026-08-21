@@ -1,8 +1,8 @@
+import type { INodeFlags } from '@/lib/litegraph/src/interfaces'
 import type {
-  INodeFlags,
-  INodeInputSlot,
-  INodeOutputSlot
-} from '@/lib/litegraph/src/interfaces'
+  InputSlotDescriptor,
+  OutputSlotDescriptor
+} from '@/lib/litegraph/src/node/slotDescriptorView'
 import type {
   LGraphEventMode,
   RenderShape,
@@ -20,11 +20,9 @@ export interface NodeState {
   /** Owning (sub)graph id — partitioning + locator ids. */
   graphId: UUID
   readonly id: NodeId
-  /** The node's own `shallowReactive` array; slots are still class instances. */
-  inputs: INodeInputSlot[]
+  inputs: InputSlotDescriptor[]
   mode: LGraphEventMode
-  /** @see {@link inputs} */
-  outputs: INodeOutputSlot[]
+  outputs: OutputSlotDescriptor[]
   title: string
   type: string
   bgcolor?: string

@@ -11,6 +11,8 @@ import type { NodeState } from '@/types/nodeState'
 
 import { LGraphNode } from './litegraph'
 import type { Subgraph } from './litegraph'
+import { NodeInputSlot } from './node/NodeInputSlot'
+import { NodeOutputSlot } from './node/NodeOutputSlot'
 import { createTestSubgraph } from './subgraph/__fixtures__/subgraphHelpers'
 
 describe('LGraphNode node-data adoption', () => {
@@ -61,6 +63,27 @@ describe('LGraphNode node-data adoption', () => {
 
     node.flags.collapsed = true
     expect(statesIn(subgraph)[0]?.flags.collapsed).toBe(true)
+  })
+
+  it('stores plain slot descriptors behind stable class projections', () => {
+    const { subgraph, node } = addNodeToSubgraph()
+    const input = node.addInput('prompt', 'STRING')
+    const output = node.addOutput('result', 'STRING')
+    const [state] = statesIn(subgraph)
+
+    expect(Object.getPrototypeOf(toRaw(state.inputs[0]))).toBe(Object.prototype)
+    expect(Object.getPrototypeOf(toRaw(state.outputs[0]))).toBe(
+      Object.prototype
+    )
+    expect(node.inputs[0]).toBe(input)
+    expect(node.outputs[0]).toBe(output)
+    expect(input).toBeInstanceOf(NodeInputSlot)
+    expect(output).toBeInstanceOf(NodeOutputSlot)
+
+    input.label = 'Prompt'
+    output.label = 'Result'
+    expect(state.inputs[0].label).toBe('Prompt')
+    expect(state.outputs[0].label).toBe('Result')
   })
 
   it('exposes enumerable own collection fields without replacing their views', () => {
