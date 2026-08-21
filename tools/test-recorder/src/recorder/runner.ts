@@ -1,14 +1,16 @@
-import { existsSync, readdirSync, statSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { dirname, join, parse } from 'node:path'
 import pc from 'picocolors'
 import {
   RECORDING_SPEC_BASENAME,
+  cleanupRecordedCode,
   cleanupRecordingTemplate,
-  generateRecordingTemplate
+  generateRecordingTemplate,
+  recordedCodePath
 } from './template'
 import { runCommand } from '../cli/run'
 import { devServerUrl } from '../checks/devServerUrl'
-import { box } from '../ui/logger'
+import { box, info } from '../ui/logger'
 
 interface RunnerOptions {
   testName: string
@@ -19,6 +21,8 @@ interface RunnerOptions {
 interface RecordingResult {
   success: boolean
   error?: string
+  /** Present when the recorder auto-saved the generated code — skips the manual paste step. */
+  recordedCode?: string
 }
 
 export function findProjectRoot(): string {
@@ -74,19 +78,24 @@ export async function runRecording(
 
   console.log()
   box([
-    'A browser window will open.',
+    'Two windows are about to open: the app, and a separate',
+    'Playwright Inspector window next to it.',
     '',
-    '👉 Perform your test actions:',
-    '   • Click, type, drag — everything is recorded',
-    '   • Use toolbar buttons to add assertions',
-    '   • When done, close the browser window',
-    '',
-    'The Playwright Inspector shows generated code.'
+    '1. In the Inspector, click the red ⏺ Record button — nothing is',
+    '   captured until you do.',
+    '2. Perform your test actions in the app window: click, type, drag.',
+    '3. Add at least one assertion (required — see below) using the',
+    '   Inspector toolbar\'s "Assert visibility/value/text" buttons.',
+    '4. When done, just close both windows — your code is saved',
+    '   automatically as you go, no copying needed.'
   ])
   console.log()
 
   // The temp spec calls page.pause(), so a leaked copy hangs later test runs.
-  const cleanUp = () => cleanupRecordingTemplate(browserTestsDir)
+  const cleanUp = () => {
+    cleanupRecordingTemplate(browserTestsDir)
+    cleanupRecordedCode(browserTestsDir)
+  }
   const onSignal = () => {
     cleanUp()
     process.exit(130)
@@ -138,7 +147,23 @@ export async function runRecording(
     console.log(pc.green('  ✅ Recording session complete.'))
     console.log()
 
-    return { success: true }
+    // Read before cleanUp() runs in `finally` — it deletes this file.
+    const savedCodePath = recordedCodePath(browserTestsDir)
+    let recordedCode: string | undefined
+    if (existsSync(savedCodePath)) {
+      try {
+        recordedCode = readFileSync(savedCodePath, 'utf-8')
+      } catch {
+        // Fall through to the manual paste flow below.
+      }
+    }
+    if (!recordedCode) {
+      info([
+        "Couldn't find the auto-saved code — falling back to manual paste."
+      ])
+    }
+
+    return { success: true, recordedCode }
   } catch (err) {
     return {
       success: false,

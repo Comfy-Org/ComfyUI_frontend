@@ -116,7 +116,7 @@ export async function runRecord(): Promise<void> {
   ])
   blank()
 
-  stepHeader(1, 7, 'Environment Check')
+  stepHeader(1, 6, 'Environment Check')
   const { allPassed } = await runChecks(undefined, { showHeader: false })
   if (!allPassed) {
     blank()
@@ -124,7 +124,7 @@ export async function runRecord(): Promise<void> {
     process.exit(1)
   }
 
-  stepHeader(2, 7, 'Project Setup')
+  stepHeader(2, 6, 'Project Setup')
 
   let projectRoot: string
   try {
@@ -152,7 +152,7 @@ export async function runRecord(): Promise<void> {
   s.stop('Dependencies installed')
   pass('Project ready', projectRoot)
 
-  stepHeader(3, 7, 'Configure Your Test')
+  stepHeader(3, 6, 'Configure Your Test')
 
   info([
     'Naming tip: describe the user-visible behavior, not the steps —',
@@ -246,7 +246,7 @@ export async function runRecord(): Promise<void> {
     process.exit(0)
   }
 
-  stepHeader(4, 7, 'Record')
+  stepHeader(4, 6, 'Record')
 
   const result = await runRecording({
     testName: slug,
@@ -258,29 +258,38 @@ export async function runRecord(): Promise<void> {
     process.exit(1)
   }
 
-  stepHeader(5, 7, 'Paste & Transform')
+  stepHeader(5, 6, 'Transform')
 
-  info([
-    'Copy the generated code from the Playwright Inspector.',
-    '',
-    'Paste your code below. When you are done, type a single ' +
-      pc.bold('.') +
-      ' on its own line and press Enter:'
-  ])
-  blank()
-
-  const { code: pastedCode, stdinOpen } = await readMultiline()
-
-  if (!pastedCode.trim()) {
-    blank()
+  let recordedCode: string
+  let stdinOpen = true
+  if (result.recordedCode?.trim()) {
+    pass('Recorded code captured automatically', '(no copy/paste needed)')
+    recordedCode = result.recordedCode
+  } else {
     info([
-      'No code pasted. You can transform later with:',
-      pc.cyan(`  comfy-test transform <file>`)
+      'Copy the generated code from the Playwright Inspector.',
+      '',
+      'Paste your code below. When you are done, type a single ' +
+        pc.bold('.') +
+        ' on its own line and press Enter:'
     ])
-    process.exit(0)
+    blank()
+
+    const pasted = await readMultiline()
+    stdinOpen = pasted.stdinOpen
+
+    if (!pasted.code.trim()) {
+      blank()
+      info([
+        'No code pasted. You can transform later with:',
+        pc.cyan(`  comfy-test transform <file>`)
+      ])
+      process.exit(0)
+    }
+    recordedCode = pasted.code
   }
 
-  const transformResult = transform(pastedCode, {
+  const transformResult = transform(recordedCode, {
     testName: slug,
     tags: selectedTags as string[],
     workflow: (selectedWorkflow as string) || undefined
@@ -320,18 +329,8 @@ export async function runRecord(): Promise<void> {
   blank()
   pass('Test saved', outputPath)
 
-  stepHeader(6, 7, 'Refactor (optional)')
+  stepHeader(6, 6, 'Refactor (optional)')
   await offerAgentRefactor(outputPath, projectRoot)
-
-  stepHeader(7, 7, 'Finalize')
-
-  box([
-    'Run your test:',
-    pc.cyan(`  pnpm exec playwright test ${slug} --headed`),
-    '',
-    'Review in UI mode:',
-    pc.cyan('  pnpm exec playwright test --ui')
-  ])
   blank()
 
   if (!stdinOpen) {

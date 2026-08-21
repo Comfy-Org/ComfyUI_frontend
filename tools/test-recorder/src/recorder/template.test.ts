@@ -1,9 +1,20 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import { cleanupRecordingTemplate, generateRecordingTemplate } from './template'
+import {
+  cleanupRecordedCode,
+  cleanupRecordingTemplate,
+  generateRecordingTemplate,
+  recordedCodePath
+} from './template'
 
 describe('recording template', () => {
   let browserTestsDir: string
@@ -72,5 +83,43 @@ describe('recording template', () => {
 
   it('is a no-op when there is nothing to clean up', () => {
     expect(() => cleanupRecordingTemplate(browserTestsDir)).not.toThrow()
+  })
+
+  it('enables the recorder to auto-save generated code, before pausing', () => {
+    const { code } = generate({ testName: 'demo' })
+    const enableAt = code.indexOf('_enableRecorder')
+    // The fallback pause (inside catch) and the real pause the recording
+    // blocks on are both executable statements, not comment mentions.
+    const pauseCalls = [
+      ...code.matchAll(/^\s*await comfyPage\.page\.pause\(\)/gm)
+    ]
+    expect(enableAt).toBeGreaterThan(-1)
+    expect(pauseCalls.length).toBe(2)
+    expect(enableAt).toBeLessThan(
+      code.lastIndexOf('await comfyPage.page.pause()')
+    )
+  })
+
+  it('points the recorder at recordedCodePath, quoted as a string literal', () => {
+    const { code } = generate({ testName: 'demo' })
+    // Matches the call-site value (a quoted literal), not the type
+    // declaration's `outputFile: string` field of the same name.
+    const outputFileMatch = code.match(/outputFile:\s*("(?:[^"\\]|\\.)*")/)
+    expect(outputFileMatch).not.toBeNull()
+    const path = JSON.parse(outputFileMatch![1])
+    expect(path).toBe(recordedCodePath(browserTestsDir))
+  })
+
+  it('removes the auto-saved code file', () => {
+    generate({ testName: 'demo' })
+    const path = recordedCodePath(browserTestsDir)
+    writeFileSync(path, 'generated code')
+    expect(existsSync(path)).toBe(true)
+    cleanupRecordedCode(browserTestsDir)
+    expect(existsSync(path)).toBe(false)
+  })
+
+  it('is a no-op cleaning up recorded code that was never saved', () => {
+    expect(() => cleanupRecordedCode(browserTestsDir)).not.toThrow()
   })
 })

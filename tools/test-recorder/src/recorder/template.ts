@@ -8,9 +8,14 @@ interface TemplateOptions {
 
 export const RECORDING_SPEC_BASENAME = '_recording-session'
 const RECORDING_SPEC_FILENAME = `${RECORDING_SPEC_BASENAME}.spec.ts`
+const RECORDED_CODE_FILENAME = '_recorded-code.txt'
 
 function recordingSpecPath(browserTestsDir: string): string {
   return join(browserTestsDir, 'tests', RECORDING_SPEC_FILENAME)
+}
+
+export function recordedCodePath(browserTestsDir: string): string {
+  return join(browserTestsDir, 'tests', RECORDED_CODE_FILENAME)
 }
 
 export function generateRecordingTemplate(
@@ -18,6 +23,7 @@ export function generateRecordingTemplate(
   browserTestsDir: string
 ): string {
   const filePath = recordingSpecPath(browserTestsDir)
+  const outputPath = recordedCodePath(browserTestsDir)
 
   // Asset names come off disk, so they are quoted rather than hand-escaped.
   const workflowLine = options.workflow
@@ -25,6 +31,7 @@ export function generateRecordingTemplate(
     : ''
 
   const safeName = JSON.stringify(`recording: ${options.testName}`)
+  const safeOutputPath = JSON.stringify(outputPath)
 
   const code = `/**
  * Auto-generated recording session.
@@ -39,6 +46,35 @@ import {
 
 test(${safeName}, async ({ comfyPage }) => {
 ${workflowLine}
+  // _enableRecorder is a private playwright-core API — same underlying
+  // machinery as \`playwright codegen -o <file>\`, just reached through the
+  // fixture-booted context instead of the standalone codegen CLI. It writes
+  // the generated code to disk continuously (debounced ~250ms) as you
+  // record, so closing the browser before copying no longer loses anything.
+  // If a future Playwright version removes/renames it, the catch below
+  // falls back to an ordinary pause — recording still works, just without
+  // the autosave.
+  interface RecorderEnabledContext {
+    _enableRecorder(params: {
+      language: string
+      mode: string
+      pauseOnNextStatement: boolean
+      outputFile: string
+    }): Promise<void>
+  }
+  try {
+    // eslint-disable-next-line no-underscore-dangle
+    await (
+      comfyPage.page.context() as unknown as RecorderEnabledContext
+    )._enableRecorder({
+      language: 'playwright-test',
+      mode: 'recording',
+      pauseOnNextStatement: true,
+      outputFile: ${safeOutputPath}
+    })
+  } catch {
+    await comfyPage.page.pause()
+  }
   // The Playwright Inspector will open.
   //
   // 1. Click the Record button (red circle) to start
@@ -54,9 +90,8 @@ ${workflowLine}
   //      "Assert text"       — element contains specific text
   //    Add at least one before stopping.
   //
-  // 4. Click Stop when done
-  // 5. Copy the generated code from the Inspector
-  // 6. Close the browser window
+  // 4. Click Stop, then close the browser window — the code is already
+  //    saved, no copy/paste needed.
   await comfyPage.page.pause()
 })
 `
@@ -68,6 +103,15 @@ ${workflowLine}
 
 export function cleanupRecordingTemplate(browserTestsDir: string): void {
   const filePath = recordingSpecPath(browserTestsDir)
+  try {
+    unlinkSync(filePath)
+  } catch {
+    // File might already be deleted
+  }
+}
+
+export function cleanupRecordedCode(browserTestsDir: string): void {
+  const filePath = recordedCodePath(browserTestsDir)
   try {
     unlinkSync(filePath)
   } catch {
