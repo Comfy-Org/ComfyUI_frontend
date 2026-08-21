@@ -32,7 +32,9 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
         Object.values(rawNodeDefs)
           // Ignore DevTools nodes (used for internal testing)
           .filter((def: ComfyNodeDef) => !def.name.startsWith('DevTools'))
-          .map((def: ComfyNodeDef) => new ComfyNodeDefImpl(def))
+          .map((def: ComfyNodeDef) =>
+            new ComfyNodeDefImpl(def).toSerializable()
+          )
       )
     }
   )
