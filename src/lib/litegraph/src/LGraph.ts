@@ -153,6 +153,12 @@ import type {
 } from './types/serialisation'
 import { getAllNestedItems } from './utils/collections'
 import {
+  extensionConfigureView,
+  GRAPH_CANONICAL_FIELDS,
+  hydrateExtensionPayload,
+  runExtensionSerializeHook
+} from './extensionPersistence'
+import {
   collectReservedGroupIds,
   collectReservedLinkIds,
   collectReservedRerouteIds,
@@ -2526,6 +2532,7 @@ export class LGraph
       nodes,
       reroutes,
       extra,
+      extensions,
       floatingLinks,
       definitions
     } = this.asSerialisable(option)
@@ -2552,6 +2559,7 @@ export class LGraph
       definitions,
       config,
       extra,
+      ...(extensions && { extensions }),
       version: LiteGraph.VERSION
     }
   }
@@ -2619,11 +2627,16 @@ export class LGraph
       }
     }
 
-    this.onSerialize?.(data)
-    return data
+    return runExtensionSerializeHook(
+      this,
+      data,
+      GRAPH_CANONICAL_FIELDS,
+      this.onSerialize?.bind(this)
+    )
   }
 
   protected _configureBase(data: ISerialisedGraph | SerialisableGraph): void {
+    hydrateExtensionPayload(this, data, GRAPH_CANONICAL_FIELDS)
     const { id, extra } = data
 
     // Create a new graph ID if none is provided or the zero UUID is used on the root graph
@@ -2881,7 +2894,7 @@ export class LGraph
         LGraph.autoExposePreviewNodes?.(node)
       }
 
-      this.onConfigure?.(data)
+      this.onConfigure?.(extensionConfigureView(this, data))
       this.incrementVersion()
 
       // Ensure the primary canvas is set to the correct graph

@@ -45,6 +45,7 @@ interface BaseExportedGraph {
     /** The base definition of subgraphs used in this workflow. That is, what you see when you open / edit a subgraph. */
     subgraphs?: ExportedSubgraph[]
   }
+  extensions?: ExtensionPayload
 }
 
 interface SerialisableGraphState {
@@ -66,6 +67,8 @@ export interface SerialisableGraph extends BaseExportedGraph {
   reroutes?: SerialisableReroute[]
   extra?: LGraphExtra
 }
+
+export type ExtensionPayload = Record<string, unknown>
 
 export type ISerialisableNodeInput = Omit<
   INodeInputSlot,
@@ -108,6 +111,7 @@ export interface ISerialisedNode {
    */
   widgets_values?: TWidgetValue[]
   widgets_values_named?: Record<string, TWidgetValue>
+  extensions?: ExtensionPayload
 }
 
 /** Properties of nodes that are used by subgraph instances. */
