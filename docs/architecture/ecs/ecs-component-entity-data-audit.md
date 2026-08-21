@@ -231,8 +231,8 @@ sequence above rather than the summary-table order.
 | -------- | ----------------------------------- | ----------- | ----------- | ----------------------------------------------------------------------------------------- |
 | 1        | Remaining node visuals              | Complete    | `fa5dcd8ca` | `boxcolor` moved into `NodeState` with an enumerable tracked compatibility accessor.      |
 | 2        | Node ordering                       | Complete    | `06ae14e8b` | One action now updates layout z-index and the legacy node array for front/back order.     |
-| 3        | Outputs and transient previews      | Complete    | This commit | Store maps now own output and preview reads; legacy maps and node images are projections. |
-| 4        | Preview-exposure persistence        | Not started |             |                                                                                           |
+| 3        | Outputs and transient previews      | Complete    | `570b38c2a` | Store maps now own output and preview reads; legacy maps and node images are projections. |
+| 4        | Preview-exposure persistence        | Complete    | This commit | Host exposures use owner-scoped locators; raw node-ID entries are hydration-only input.   |
 | 5        | Widget and preview-exposure cleanup | Not started |             |                                                                                           |
 | 6        | Graph metadata                      | Not started |             |                                                                                           |
 | 7        | Entity ID allocation                | Not started |             |                                                                                           |
