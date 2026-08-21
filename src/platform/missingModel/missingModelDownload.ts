@@ -148,13 +148,17 @@ export function downloadModel(
   }
 }
 
-interface ModelMetadata {
+export interface ModelMetadata {
   fileSize: number | null
   gatedRepoUrl: string | null
 }
 
-interface MetadataFetchResult {
+export type ModelMetadataFetchOutcome = {
   metadata: ModelMetadata
+  resolution: 'resolved' | 'failed'
+}
+
+interface MetadataFetchResult extends ModelMetadataFetchOutcome {
   cacheable: boolean
 }
 
@@ -167,8 +171,8 @@ interface CivitaiModelVersionResponse {
   files: CivitaiModelFile[]
 }
 
-const metadataCache = new Map<string, ModelMetadata>()
-const inflight = new Map<string, Promise<ModelMetadata>>()
+const metadataCache = new Map<string, ModelMetadataFetchOutcome>()
+const inflight = new Map<string, Promise<ModelMetadataFetchOutcome>>()
 
 export function clearMetadataCache(): void {
   metadataCache.clear()
@@ -185,6 +189,7 @@ async function fetchCivitaiMetadata(url: string): Promise<MetadataFetchResult> {
     if (!versionIdMatch) {
       return {
         metadata: { fileSize: null, gatedRepoUrl: null },
+        resolution: 'failed',
         cacheable: false
       }
     }
@@ -195,6 +200,7 @@ async function fetchCivitaiMetadata(url: string): Promise<MetadataFetchResult> {
     if (!res.ok) {
       return {
         metadata: { fileSize: null, gatedRepoUrl: null },
+        resolution: 'failed',
         cacheable: false
       }
     }
@@ -211,11 +217,13 @@ async function fetchCivitaiMetadata(url: string): Promise<MetadataFetchResult> {
     const fileSize = matchingFile?.sizeKB ? matchingFile.sizeKB * 1024 : null
     return {
       metadata: { fileSize, gatedRepoUrl: null },
+      resolution: 'resolved',
       cacheable: true
     }
   } catch {
     return {
       metadata: { fileSize: null, gatedRepoUrl: null },
+      resolution: 'failed',
       cacheable: false
     }
   }
@@ -239,11 +247,13 @@ async function fetchHeadMetadata(url: string): Promise<MetadataFetchResult> {
             fileSize: null,
             gatedRepoUrl: downloadUrlToHfRepoUrl(url)
           },
+          resolution: 'resolved',
           cacheable: true
         }
       }
       return {
         metadata: { fileSize: null, gatedRepoUrl: null },
+        resolution: 'failed',
         cacheable: false
       }
     }
@@ -255,19 +265,26 @@ async function fetchHeadMetadata(url: string): Promise<MetadataFetchResult> {
           parsedSize !== null && !Number.isNaN(parsedSize) ? parsedSize : null,
         gatedRepoUrl: null
       },
+      resolution: 'resolved',
       cacheable: true
     }
   } catch {
     return {
       metadata: { fileSize: null, gatedRepoUrl: null },
+      resolution: 'failed',
       cacheable: false
     }
   }
 }
 
-export async function fetchModelMetadata(url: string): Promise<ModelMetadata> {
+export async function fetchModelMetadataWithStatus(
+  url: string
+): Promise<ModelMetadataFetchOutcome> {
   if (!isModelUrlAllowlisted(url)) {
-    return { fileSize: null, gatedRepoUrl: null }
+    return {
+      metadata: { fileSize: null, gatedRepoUrl: null },
+      resolution: 'resolved'
+    }
   }
 
   const cached = metadataCache.get(url)
@@ -280,10 +297,14 @@ export async function fetchModelMetadata(url: string): Promise<ModelMetadata> {
     const result = isCivitaiModelUrl(url)
       ? await fetchCivitaiMetadata(url)
       : await fetchHeadMetadata(url)
-    if (result.cacheable) {
-      metadataCache.set(url, result.metadata)
+    const outcome: ModelMetadataFetchOutcome = {
+      metadata: result.metadata,
+      resolution: result.resolution
     }
-    return result.metadata
+    if (result.cacheable) {
+      metadataCache.set(url, outcome)
+    }
+    return outcome
   })()
 
   inflight.set(url, promise)
@@ -292,4 +313,8 @@ export async function fetchModelMetadata(url: string): Promise<ModelMetadata> {
   } finally {
     inflight.delete(url)
   }
+}
+
+export async function fetchModelMetadata(url: string): Promise<ModelMetadata> {
+  return (await fetchModelMetadataWithStatus(url)).metadata
 }
