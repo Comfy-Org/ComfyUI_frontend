@@ -2,6 +2,11 @@ import type { WorkspaceTokenResponse } from '@/platform/workspace/stores/workspa
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import {
+  EMPTY_BILLING_BALANCE,
+  EMPTY_BILLING_PLANS,
+  ENDED_STANDARD_BILLING_STATUS
+} from '@e2e/fixtures/data/cloudWorkspace'
+import {
   WORKSPACE_SWITCHER_REMOTE_CONFIG,
   WORKSPACE_SWITCHER_WORKSPACES
 } from '@e2e/fixtures/data/workspaceSwitcher'
@@ -50,6 +55,15 @@ export const workspaceSwitcherTest = comfyPageFixture.extend({
 
     await page.route('**/api/auth/session', (route) =>
       route.fulfill({ status: 204 })
+    )
+    await page.route('**/api/billing/status', (route) =>
+      route.fulfill(jsonRoute(ENDED_STANDARD_BILLING_STATUS))
+    )
+    await page.route('**/api/billing/balance', (route) =>
+      route.fulfill(jsonRoute(EMPTY_BILLING_BALANCE))
+    )
+    await page.route('**/api/billing/plans', (route) =>
+      route.fulfill(jsonRoute(EMPTY_BILLING_PLANS))
     )
 
     await use(page)
