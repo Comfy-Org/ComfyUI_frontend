@@ -27,7 +27,7 @@
             :aria-label="workflowStatusLabel"
             :class="
               cn(
-                'absolute top-1/2 left-1/2 z-10 size-4 -translate-1/2 group-hover:hidden',
+                'absolute top-1/2 left-1/2 z-10 size-4 -translate-1/2 group-hover:hidden touch:hidden',
                 workflowStatusIconClasses[workflowStatus]
               )
             "
@@ -35,7 +35,7 @@
           <span
             v-else-if="shouldShowUnsavedIndicator"
             data-testid="workflow-dirty-indicator"
-            class="absolute top-1/2 left-1/2 z-10 w-4 -translate-1/2 bg-(--comfy-menu-bg) text-2xl font-bold group-hover:hidden"
+            class="absolute top-1/2 left-1/2 z-10 w-4 -translate-1/2 bg-(--comfy-menu-bg) text-2xl font-bold group-hover:hidden touch:hidden"
             >•</span
           >
           <Button
