@@ -24,7 +24,11 @@ defineEmits<{ click: [] }>()
 </script>
 
 <template>
-  <div class="group block cursor-pointer" @click="$emit('click')">
+  <div
+    class="group block cursor-pointer"
+    data-testid="gallery-card"
+    @click="$emit('click')"
+  >
     <div
       class="rounded-4.5xl relative overflow-hidden"
       :style="{ aspectRatio: aspect }"

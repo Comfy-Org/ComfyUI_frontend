@@ -1,0 +1,42 @@
+---
+import type { Locale } from '../../i18n/locales'
+import { DEFAULT_LOCALE, toLocale } from '../../i18n/locales'
+import { localizeHref } from '../../config/routes'
+import { absoluteUrl } from '../../utils/jsonLd'
+
+interface Props {
+  // The locales this page is actually published in. Only pass locales that
+  // exist for the page — an alternate pointing at a non-existent locale URL is
+  // a dead hreflang link, so English-only pages must not list `zh-CN`.
+  locales: readonly Locale[]
+}
+
+const { locales } = Astro.props
+
+const currentLocale = toLocale(Astro.currentLocale)
+
+// Recover the unprefixed page path by stripping the active locale prefix, then
+// re-prefix per locale with the shared link helper (which also knows the
+// locale-invariant routes). absoluteUrl matches the canonical link's format.
+const basePath =
+  currentLocale === DEFAULT_LOCALE
+    ? Astro.url.pathname
+    : Astro.url.pathname.replace(new RegExp(`^/${currentLocale}(?=/|$)`), '') ||
+      '/'
+
+const alternates = locales.map((locale) => ({
+  hreflang: locale,
+  href: absoluteUrl(Astro.site, localizeHref(basePath, locale)),
+}))
+const xDefaultHref = absoluteUrl(
+  Astro.site,
+  localizeHref(basePath, DEFAULT_LOCALE)
+)
+---
+
+{
+  alternates.map((alt) => (
+    <link rel="alternate" hreflang={alt.hreflang} href={alt.href} />
+  ))
+}
+<link rel="alternate" hreflang="x-default" href={xDefaultHref} />

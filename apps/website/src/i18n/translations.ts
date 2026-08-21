@@ -1546,6 +1546,9 @@ const translations = {
   },
   'learning.events.getNotified': { en: 'Get Notified', 'zh-CN': '获取通知' },
 
+  // Gallery page
+  'gallery.pageTitle': { en: 'Gallery - Comfy', 'zh-CN': '作品集 - Comfy' },
+
   // GalleryHeroSection
   'gallery.label': { en: 'GALLERY', 'zh-CN': '画廊' },
   'gallery.heroTitle.before': {

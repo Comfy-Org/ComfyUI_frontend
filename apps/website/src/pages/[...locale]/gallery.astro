@@ -1,0 +1,32 @@
+---
+import { LOCALES, toLocale } from '../../i18n/locales'
+import { localePaths } from '../../i18n/routing'
+import { t } from '../../i18n/translations'
+import { loadList } from '../../utils/cmsContent'
+import { galleryCollection } from '../../utils/galleryCms'
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import HreflangLinks from '../../components/common/HreflangLinks.astro'
+import HeroSection from '../../components/gallery/HeroSection.vue'
+import GallerySection from '../../components/gallery/GallerySection.vue'
+import ContactSection from '../../components/gallery/ContactSection.vue'
+
+// Route params only — never data — so the single file behaves the same in the
+// static build (paths enumerated here) and the preview server build (locale
+// read from the URL at request time).
+export const getStaticPaths = localePaths
+
+const locale = toLocale(Astro.params.locale)
+
+const galleryItems = await loadList(galleryCollection, {
+  locale,
+  draft: import.meta.env.PREVIEW_MODE === 'true',
+  apiKey: import.meta.env.PAYLOAD_API_KEY,
+})
+---
+
+<BaseLayout title={t('gallery.pageTitle', locale)}>
+  <HreflangLinks slot="head" locales={LOCALES} />
+  <HeroSection locale={locale} />
+  <GallerySection items={galleryItems} locale={locale} client:load />
+  <ContactSection locale={locale} />
+</BaseLayout>
