@@ -11,10 +11,7 @@ import { useManagerState } from '@/workbench/extensions/manager/composables/useM
 import { useComfyManagerService } from '@/workbench/extensions/manager/services/comfyManagerService'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores/conflictDetectionStore'
-import type {
-  RegistryAccelerator,
-  RegistryOS
-} from '@/workbench/extensions/manager/types/compatibility.types'
+import type { RegistryOS } from '@/workbench/extensions/manager/types/compatibility.types'
 import type {
   ConflictDetectionResponse,
   ConflictDetectionResult,
@@ -28,7 +25,10 @@ import {
   deriveStatusFlags,
   evaluateCompatibility
 } from '@/workbench/extensions/manager/utils/conflictUtils'
-import { normalizeOSList } from '@/workbench/extensions/manager/utils/systemCompatibility'
+import {
+  normalizeAcceleratorList,
+  normalizeOSList
+} from '@/workbench/extensions/manager/utils/systemCompatibility'
 import { getFrontendVersion } from '@/workbench/extensions/manager/utils/versionUtil'
 
 /**
@@ -221,7 +221,9 @@ export function useConflictDetection() {
             supported_os: normalizeOSList(
               versionData.supported_os
             ) as Node['supported_os'],
-            supported_accelerators: versionData.supported_accelerators,
+            supported_accelerators: normalizeAcceleratorList(
+              versionData.supported_accelerators
+            ),
 
             // Status information
             version_status: versionData.status,
@@ -273,9 +275,9 @@ export function useConflictDetection() {
     const conflicts = evaluateCompatibility(
       {
         supported_os: packageReq.supported_os as RegistryOS[] | undefined,
-        supported_accelerators: packageReq.supported_accelerators as
-          | RegistryAccelerator[]
-          | undefined,
+        supported_accelerators: normalizeAcceleratorList(
+          packageReq.supported_accelerators
+        ),
         supported_comfyui_version: packageReq.supported_comfyui_version,
         supported_comfyui_frontend_version:
           packageReq.supported_comfyui_frontend_version,
@@ -583,8 +585,9 @@ export function useConflictDetection() {
     const conflicts = evaluateCompatibility(
       {
         supported_os: normalizeOSList(node.supported_os),
-        supported_accelerators:
-          node.supported_accelerators as RegistryAccelerator[],
+        supported_accelerators: normalizeAcceleratorList(
+          node.supported_accelerators
+        ),
         supported_comfyui_version: node.supported_comfyui_version,
         supported_comfyui_frontend_version:
           node.supported_comfyui_frontend_version,

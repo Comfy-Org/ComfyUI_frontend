@@ -7,6 +7,7 @@ import type {
 import {
   checkAcceleratorCompatibility,
   checkOSCompatibility,
+  normalizeAcceleratorList,
   normalizeOSList
 } from '@/workbench/extensions/manager/utils/systemCompatibility'
 
@@ -189,6 +190,35 @@ describe('systemCompatibility', () => {
         current_value: 'Metal',
         required_value: 'CUDA, ROCm'
       })
+    })
+  })
+
+  describe('normalizeAcceleratorList', () => {
+    it('maps Registry GPU classifier names to canonical accelerators', () => {
+      const result = normalizeAcceleratorList([
+        'GPU :: NVIDIA CUDA',
+        'GPU :: AMD ROCm',
+        'GPU :: Apple Metal'
+      ])
+
+      expect(result).toEqual(['CUDA', 'ROCm', 'Metal'])
+      expect(checkAcceleratorCompatibility(result, 'cuda')).toBeNull()
+      expect(checkAcceleratorCompatibility(result, 'mps')).toBeNull()
+      expect(checkAcceleratorCompatibility(result, 'rocm')).toBeNull()
+    })
+
+    it('accepts canonical names case-insensitively and removes duplicates', () => {
+      expect(
+        normalizeAcceleratorList(['cuda', 'CUDA', 'rocm', 'ROCm', 'cpu'])
+      ).toEqual(['CUDA', 'ROCm', 'CPU'])
+    })
+
+    it('drops unknown values and treats a fully unknown list as unrestricted', () => {
+      expect(
+        normalizeAcceleratorList(['TPU', 'GPU :: Google TPU'])
+      ).toBeUndefined()
+      expect(normalizeAcceleratorList(null)).toBeUndefined()
+      expect(normalizeAcceleratorList([])).toBeUndefined()
     })
   })
 
