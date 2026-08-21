@@ -30,6 +30,7 @@ import type { SerializedNodeId } from '@/types/nodeId'
 import { UNASSIGNED_NODE_ID, parseNodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
+import { viewableResultItems } from '@/utils/resultItemUtil'
 
 type ImageNode = LGraphNode & { imgs: HTMLImageElement[] | undefined }
 type VideoNode = LGraphNode & {
@@ -91,7 +92,8 @@ export function isVideoNode(node: LGraphNode | undefined): node is VideoNode {
 export function isAnimatedOutput(
   output: ExecutedWsMessage['output'] | undefined
 ): boolean {
-  return !!output?.animated?.find(Boolean)
+  const animated = output?.animated
+  return Array.isArray(animated) && animated.some(Boolean)
 }
 
 /**
@@ -102,12 +104,11 @@ export function isVideoOutput(
 ): boolean {
   if (!isAnimatedOutput(output)) return false
 
-  const isAnimatedWebp = output?.images?.some((img) =>
-    img.filename?.endsWith('.webp')
+  const filenames = viewableResultItems(output?.images).map(
+    (img) => img.filename
   )
-  const isAnimatedPng = output?.images?.some((img) =>
-    img.filename?.endsWith('.png')
-  )
+  const isAnimatedWebp = filenames.some((name) => name.endsWith('.webp'))
+  const isAnimatedPng = filenames.some((name) => name.endsWith('.png'))
   return !isAnimatedWebp && !isAnimatedPng
 }
 

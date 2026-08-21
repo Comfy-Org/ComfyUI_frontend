@@ -28,6 +28,11 @@ import {
   releaseSharedObjectUrl,
   retainSharedObjectUrl
 } from '@/utils/objectUrlUtil'
+import {
+  isViewableResultItem,
+  toViewRequest,
+  viewableResultItems
+} from '@/utils/resultItemUtil'
 
 const PREVIEW_REVOKE_DELAY_MS = 400
 
@@ -88,16 +93,14 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
   const isImageOutputs = (
     node: LGraphNode,
-    outputs: ExecutedWsMessage['output']
+    outputs: ExecutedWsMessage['output'] | undefined
   ): boolean => {
     if (isAnimatedOutput(outputs) || isVideoNode(node)) return false
 
-    if (!outputs?.images?.length) return false
-
-    const images = outputs.images.filter((image) => image != null)
+    const images = viewableResultItems(outputs?.images)
     if (!images.length) return false
 
-    if (images.some((image) => image.filename?.toLowerCase().endsWith('.svg')))
+    if (images.some((image) => image.filename.toLowerCase().endsWith('.svg')))
       return false
 
     return true
@@ -105,7 +108,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
   function getPreviewParam(
     node: LGraphNode,
-    outputs: ExecutedWsMessage['output']
+    outputs: ExecutedWsMessage['output'] | undefined
   ): string {
     return isImageOutputs(node, outputs) ? app.getPreviewFormatParam() : ''
   }
@@ -114,17 +117,16 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     node: LGraphNode,
     outputs: ExecutedWsMessage['output'] | undefined
   ): string[] | undefined {
-    if (!outputs?.images?.length) return
+    const images = viewableResultItems(outputs?.images)
+    if (!images.length) return
 
     const rand = app.getRandParam()
     const previewParam = getPreviewParam(node, outputs)
 
-    return outputs.images
-      .filter((image) => image != null)
-      .map((image) => {
-        const params = new URLSearchParams(image)
-        return api.apiURL(`/view?${params}${previewParam}${rand}`)
-      })
+    return images.map((image) => {
+      const params = new URLSearchParams(toViewRequest(image))
+      return api.apiURL(`/view?${params}${previewParam}${rand}`)
+    })
   }
 
   function getNodeImageUrls(node: LGraphNode): string[] | undefined {
@@ -180,7 +182,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
     const incomingImages = (outputs as ExecutedWsMessage['output']).images
     const hasIncomingImages =
-      Array.isArray(incomingImages) && incomingImages.length > 0
+      Array.isArray(incomingImages) && incomingImages.some(isViewableResultItem)
     if (
       !hasIncomingImages &&
       isInputPreviewOutput(app.nodeOutputs[nodeLocatorId])

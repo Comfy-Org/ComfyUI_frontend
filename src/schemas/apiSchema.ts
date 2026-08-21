@@ -25,14 +25,20 @@ export const zResultItem = z.object({
   display_name: z.string().optional()
 })
 export type ResultItem = z.infer<typeof zResultItem>
+
+// Backends write a bare `null` where an output file failed to upload, and newer
+// drops use a filename-less `{ status: 'unavailable', reason }` marker. Parsing
+// each element independently keeps one bad entry from discarding the whole array.
+const zResultItemEntry = z.union([zResultItem, z.null()]).catch(null)
+
 // Uses .passthrough() because custom nodes can output arbitrary keys.
 // See docs/adr/0007-node-execution-output-passthrough-schema.md
 const zOutputs = z
   .object({
-    audio: z.array(zResultItem).optional(),
-    images: z.array(zResultItem).optional(),
-    video: z.array(zResultItem).optional(),
-    animated: z.array(z.boolean()).optional(),
+    audio: z.array(zResultItemEntry).optional(),
+    images: z.array(zResultItemEntry).optional(),
+    video: z.array(zResultItemEntry).optional(),
+    animated: z.array(z.boolean().nullable().catch(null)).optional(),
     text: z.union([z.string(), z.array(z.string())]).optional()
   })
   .passthrough()
