@@ -82,6 +82,18 @@ describe('LGraphGroup', () => {
     })
   })
 
+  test('clears a store-backed color option', () => {
+    const graph = new LGraph()
+    const group = new LGraphGroup('group', toGroupId(932))
+    graph.add(group)
+    group.color = '#123456'
+
+    group.setColorOption(null)
+
+    expect(group.color).toBeUndefined()
+    expect(group.serialize().color).toBeUndefined()
+  })
+
   test('detaches presentation state when removed', () => {
     const graph = new LGraph()
     const group = new LGraphGroup('group', toGroupId(931))

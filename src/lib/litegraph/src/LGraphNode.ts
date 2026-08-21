@@ -1125,6 +1125,7 @@ export class LGraphNode
     // SubgraphNode callback.
     this._internalConfigureAfterSlots?.()
 
+    const positionalValues = Array.from(info.widgets_values ?? [])
     const getNamedValues = () => {
       if (info.widgets_values_named) return info.widgets_values_named
 
@@ -1132,13 +1133,13 @@ export class LGraphNode
       if (!info.widgets_values || !map) return
 
       return Object.fromEntries(
-        info.widgets_values.flatMap((v, i) => (map[i] ? [[map[i], v]] : []))
+        positionalValues.flatMap((v, i) => (map[i] ? [[map[i], v]] : []))
       )
     }
     const namedValues = getNamedValues()
     const graphId = this.graph?.rootGraph.id ?? zeroUuid
     useWidgetValueStore().setNodeWidgetRestoration(graphId, this.id, {
-      positional: [...(info.widgets_values ?? [])],
+      positional: positionalValues,
       named: namedValues ? { ...namedValues } : undefined,
       restoreNamed: Boolean(namedValues && LiteGraph.namedValuesRestore)
     })
@@ -2270,6 +2271,8 @@ export class LGraphNode
     if (this.id !== UNASSIGNED_NODE_ID && isNodeBindable(widget)) {
       widget.setNodeId(this.id)
     }
+
+    if (widget.serialize === false) return widget
 
     const positionalIndex =
       this.widgets.filter((candidate) => candidate.serialize !== false).length -

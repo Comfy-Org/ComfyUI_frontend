@@ -387,9 +387,14 @@ function serialiseStoredNodes(owner: LGraph, sortNodes: boolean) {
   const ordered = sortNodes
     ? [...states].sort((a, b) => Number(a.id) - Number(b.id))
     : states
-  return ordered.flatMap((state) => {
+  return ordered.map((state) => {
     const adapter = adapters.get(state.id)
-    return adapter ? [adapter.serializeFromStoreState(state)] : []
+    if (!adapter) {
+      throw new Error(
+        `Cannot serialize graph ${owner.id}: node ${state.id} has no live adapter`
+      )
+    }
+    return adapter.serializeFromStoreState(state)
   })
 }
 
@@ -398,24 +403,27 @@ function serialiseStoredGroups(owner: LGraph) {
     owner.rootGraph.id,
     owner.id
   )
-  return membership.groups.flatMap((group) => {
+  return membership.groups.map((group) => {
     const presentation = membership.groupPresentation.get(group.id)
     const layout = layoutStore.getGroupLayout(owner.rootGraph.id, group.id)
-    if (!presentation || !layout) return []
-    return [
-      {
-        id: group.id,
-        title: presentation.title,
-        bounding: [
-          layout.position.x,
-          layout.position.y,
-          layout.size.width,
-          layout.size.height
-        ],
-        color: presentation.color,
-        flags: presentation.flags
-      }
-    ]
+    if (!presentation || !layout) {
+      const missing = !presentation ? 'presentation' : 'layout'
+      throw new Error(
+        `Cannot serialize graph ${owner.id}: group ${group.id} has no ${missing}`
+      )
+    }
+    return {
+      id: group.id,
+      title: presentation.title,
+      bounding: [
+        layout.position.x,
+        layout.position.y,
+        layout.size.width,
+        layout.size.height
+      ],
+      color: presentation.color,
+      flags: presentation.flags
+    }
   })
 }
 
@@ -2771,6 +2779,11 @@ export class LGraph
     }
     const mayContinue = this.events.dispatch('configuring', options)
     if (!mayContinue) return
+    const existingNodes = !options.clearGraph ? [...this._nodes] : undefined
+    const existingGroups = !options.clearGraph ? [...this._groups] : undefined
+    const existingNodesById = !options.clearGraph
+      ? { ...this._nodes_by_id }
+      : undefined
 
     beginNamedValuesShadowDiffLoad()
     try {
@@ -3014,7 +3027,26 @@ export class LGraph
       this.setDirtyCanvas(true, true)
       return error
     } catch (error) {
-      this.clear()
+      if (existingNodes && existingGroups && existingNodesById) {
+        const existingNodeSet = new Set(existingNodes)
+        const existingGroupSet = new Set(existingGroups)
+        try {
+          for (const node of [...this._nodes]) {
+            if (!existingNodeSet.has(node)) this.remove(node)
+          }
+          for (const group of [...this._groups]) {
+            if (!existingGroupSet.has(group)) this.remove(group)
+          }
+        } finally {
+          this._nodes = existingNodes
+          this._groups = existingGroups
+          this._nodes_by_id = existingNodesById
+          for (const node of existingNodes) attachNodeLayout(this, node)
+          for (const group of existingGroups) attachGroupLayout(this, group)
+        }
+      } else {
+        this.clear()
+      }
       throw error
     } finally {
       endNamedValuesShadowDiffLoad()

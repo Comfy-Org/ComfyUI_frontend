@@ -159,7 +159,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   /** @inheritdoc {@link IColorable.setColorOption} */
   setColorOption(colorOption: ColorOption | null): void {
     if (colorOption == null) {
-      delete this.color
+      this.color = undefined
     } else {
       this.color = colorOption.groupcolor
     }

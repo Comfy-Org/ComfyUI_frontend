@@ -90,7 +90,7 @@ describe('LGraph Serialisation', () => {
     }
 
     const saved = minimalGraph.asSerialisable()
-    expect(saved.revision).toBe(0)
+    expect(saved.revision).toBe(999)
     const copied = new LGraph()
     copied.configure(structuredClone(saved))
 
@@ -102,20 +102,19 @@ describe('LGraph Serialisation', () => {
     })
   })
 
-  test('isolates legacy hooks from canonical fields while retaining payload views', ({
+  test('preserves canonical hook mutations while isolating legacy payloads', ({
     expect,
     minimalGraph
   }) => {
     const node = new LGraphNode('Canonical')
     minimalGraph.add(node)
-    const originalPosition = [...node.pos]
     node.onSerialize = (data) => {
       data.pos = [999, 999]
       Object.assign(data, { legacyData: { retained: true } })
     }
 
     const saved = node.serialize()
-    expect(saved.pos).toEqual(originalPosition)
+    expect(saved.pos).toEqual([999, 999])
     expect(saved.extensions).toEqual({ legacyData: { retained: true } })
 
     let configuredLegacyData: unknown
@@ -126,5 +125,55 @@ describe('LGraph Serialisation', () => {
 
     expect(configuredLegacyData).toBe(true)
     expect(Object.hasOwn(node, 'legacyData')).toBe(false)
+  })
+
+  test('removes namespaced extension payload keys across serializations', ({
+    expect,
+    minimalGraph
+  }) => {
+    const node = new LGraphNode('Extended')
+    minimalGraph.add(node)
+    node.onSerialize = (data) => {
+      data.extensions = { 'example.node': { enabled: true } }
+    }
+    minimalGraph.onSerialize = (data) => {
+      data.extensions = { 'example.graph': { version: 1 } }
+    }
+
+    expect(node.serialize().extensions).toHaveProperty('example.node')
+    expect(minimalGraph.asSerialisable().extensions).toHaveProperty(
+      'example.graph'
+    )
+
+    node.onSerialize = (data) => {
+      delete data.extensions?.['example.node']
+    }
+    minimalGraph.onSerialize = (data) => {
+      delete data.extensions?.['example.graph']
+    }
+
+    expect(node.serialize().extensions).toBeUndefined()
+    expect(minimalGraph.asSerialisable().extensions).toBeUndefined()
+  })
+
+  test('retains legacy flat payload updates across serializations', ({
+    expect,
+    minimalGraph
+  }) => {
+    const node = new LGraphNode('Extended')
+    minimalGraph.add(node)
+    node.onSerialize = (data) => {
+      Object.assign(data, { legacyData: { version: 1 } })
+    }
+    expect(node.serialize().extensions).toEqual({
+      legacyData: { version: 1 }
+    })
+
+    node.onSerialize = (data) => {
+      Object.assign(data, { legacyData: { version: 2 } })
+    }
+    expect(node.serialize().extensions).toEqual({
+      legacyData: { version: 2 }
+    })
   })
 })
