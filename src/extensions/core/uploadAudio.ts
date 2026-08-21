@@ -16,7 +16,7 @@ import {
   splitFilePath
 } from '@/renderer/extensions/vueNodes/widgets/utils/audioUtils'
 import type { NodeExecutionOutput } from '@/schemas/apiSchema'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import type { DOMWidget } from '@/scripts/domWidget'
 import { useAudioService } from '@/services/audioService'
 import { type NodeLocatorId } from '@/types'
@@ -26,6 +26,15 @@ import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { api } from '../../scripts/api'
 import { app } from '../../scripts/app'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+
+function findAudioUploadInputName(
+  requiredInputs: Record<string, InputSpec> | undefined
+): string | undefined {
+  const audioUploadInput = Object.entries(requiredInputs ?? {}).find(
+    ([, [, options]]) => options?.audio_upload === true
+  )
+  return audioUploadInput?.[0]
+}
 
 function updateUIWidget(
   audioUIWidget: DOMWidget<HTMLAudioElement, string>,
@@ -100,18 +109,21 @@ app.registerExtension({
     nodeType: typeof LGraphNode,
     nodeData: ComfyNodeDef
   ) {
+    const isBuiltInAudioNode = [
+      'LoadAudio',
+      'SaveAudio',
+      'PreviewAudio',
+      'SaveAudioMP3',
+      'SaveAudioOpus',
+      'SaveAudioAdvanced'
+    ].includes(
+      // @ts-expect-error fixme ts strict error
+      nodeType.prototype.comfyClass
+    )
+
     if (
-      [
-        'LoadAudio',
-        'SaveAudio',
-        'PreviewAudio',
-        'SaveAudioMP3',
-        'SaveAudioOpus',
-        'SaveAudioAdvanced'
-      ].includes(
-        // @ts-expect-error fixme ts strict error
-        nodeType.prototype.comfyClass
-      )
+      isBuiltInAudioNode ||
+      findAudioUploadInputName(nodeData.input?.required)
     ) {
       // @ts-expect-error fixme ts strict error
       nodeData.input.required.audioUI = ['AUDIO_UI', {}]
@@ -201,17 +213,22 @@ app.registerExtension({
     _nodeType: typeof LGraphNode,
     nodeData: ComfyNodeDef
   ) {
-    if (nodeData?.input?.required?.audio?.[1]?.audio_upload === true) {
-      nodeData.input.required.upload = ['AUDIOUPLOAD', {}]
+    const requiredInputs = nodeData.input?.required
+    const audioInputName = findAudioUploadInputName(requiredInputs)
+    if (requiredInputs && audioInputName) {
+      requiredInputs.upload = ['AUDIOUPLOAD', { audioInputName }]
     }
   },
   getCustomWidgets() {
     return {
-      AUDIOUPLOAD(node, inputName: string) {
+      AUDIOUPLOAD(node, inputName: string, inputData) {
+        const audioInputName = inputData?.[1]?.audioInputName
+        const audioWidgetName =
+          typeof audioInputName === 'string' ? audioInputName : 'audio'
         // The widget that allows user to select file.
         // @ts-expect-error fixme ts strict error
         const audioWidget = node.widgets.find(
-          (w) => w.name === 'audio'
+          (w) => w.name === audioWidgetName
         ) as IStringWidget
         // @ts-expect-error fixme ts strict error
         const audioUIWidget = node.widgets.find(
