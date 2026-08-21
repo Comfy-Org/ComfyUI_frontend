@@ -3,6 +3,7 @@ import mdx from '@astrojs/mdx'
 import sitemap from '@astrojs/sitemap'
 import vue from '@astrojs/vue'
 import tailwindcss from '@tailwindcss/vite'
+import { LOCALE_INVARIANT_PATHS, localizeHref } from './src/config/routes'
 
 const LOCALES = ['en', 'zh-CN'] as const
 const DEFAULT_LOCALE = 'en'
@@ -50,7 +51,60 @@ export default defineConfig({
     vue(),
     mdx(),
     sitemap({
-      filter: (page) => !isExcludedFromSitemap(page)
+      filter: (page) => !isExcludedFromSitemap(page),
+      serialize(item) {
+        const urlObj = new URL(item.url)
+        let basePath = urlObj.pathname
+        const knownPrefixes = ['/zh-CN']
+        for (const prefix of knownPrefixes) {
+          if (basePath === prefix || basePath.startsWith(prefix + '/')) {
+            basePath = basePath.slice(prefix.length) || '/'
+            break
+          }
+        }
+        if (!basePath.startsWith('/')) basePath = '/' + basePath
+        let cleanBasePath = basePath === '/' ? '' : basePath
+        if (cleanBasePath.length > 1 && cleanBasePath.endsWith('/')) {
+          cleanBasePath = cleanBasePath.slice(0, -1)
+        }
+
+        item.links = [
+          {
+            lang: 'x-default',
+            url: new URL(
+              localizeHref(cleanBasePath || '/', 'en'),
+              urlObj.origin
+            ).href
+          },
+          {
+            lang: 'en',
+            url: new URL(
+              localizeHref(cleanBasePath || '/', 'en'),
+              urlObj.origin
+            ).href
+          }
+        ]
+
+        if (!LOCALE_INVARIANT_PATHS.has(cleanBasePath || '/')) {
+          item.links.push(
+            {
+              lang: 'zh-CN',
+              url: new URL(
+                localizeHref(cleanBasePath || '/', 'zh-CN'),
+                urlObj.origin
+              ).href
+            },
+            {
+              lang: 'zh',
+              url: new URL(
+                localizeHref(cleanBasePath || '/', 'zh-CN'),
+                urlObj.origin
+              ).href
+            }
+          )
+        }
+        return item
+      }
     })
   ],
   vite: {

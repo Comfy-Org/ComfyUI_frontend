@@ -13,6 +13,7 @@ import {
   createBannerVersion,
   evaluateBannerVisibility
 } from '../utils/banner'
+import { LOCALE_INVARIANT_PATHS, localizeHref } from '../config/routes'
 import { fetchGitHubStars, formatStarCount } from '../utils/github'
 import { buildPageGraph, pageContext } from '../utils/jsonLd'
 import type { Crumb, JsonLdNode, WebPageType } from '../utils/jsonLd'
@@ -50,6 +51,33 @@ const { siteUrl, locale, url } = pageContext(
   Astro.currentLocale,
 )
 const canonicalURL = new URL(url)
+
+let basePath = canonicalURL.pathname
+const knownPrefixes = ['/zh-CN']
+for (const prefix of knownPrefixes) {
+  if (basePath === prefix || basePath.startsWith(prefix + '/')) {
+    basePath = basePath.slice(prefix.length) || '/'
+    break
+  }
+}
+if (!basePath.startsWith('/')) basePath = '/' + basePath
+let cleanBasePath = basePath === '/' ? '' : basePath
+if (cleanBasePath.length > 1 && cleanBasePath.endsWith('/')) {
+  cleanBasePath = cleanBasePath.slice(0, -1)
+}
+
+const hreflangLinks = [
+  { hreflang: 'x-default', href: new URL(localizeHref(cleanBasePath || '/', 'en'), canonicalURL.origin).href },
+  { hreflang: 'en', href: new URL(localizeHref(cleanBasePath || '/', 'en'), canonicalURL.origin).href }
+]
+
+if (!LOCALE_INVARIANT_PATHS.has(cleanBasePath || '/')) {
+  hreflangLinks.push(
+    { hreflang: 'zh-CN', href: new URL(localizeHref(cleanBasePath || '/', 'zh-CN'), canonicalURL.origin).href },
+    { hreflang: 'zh', href: new URL(localizeHref(cleanBasePath || '/', 'zh-CN'), canonicalURL.origin).href }
+  )
+}
+
 const ogImageURL = new URL(ogImage, Astro.site ?? 'https://comfy.org')
 const rawStars = await fetchGitHubStars('Comfy-Org', 'ComfyUI')
 const githubStars = rawStars ? formatStarCount(rawStars) : ''
@@ -108,6 +136,9 @@ const structuredData = noindex
     <link rel="manifest" href="/site.webmanifest" />
     <meta name="theme-color" content="#211927" />
     <link rel="canonical" href={canonicalURL.href} />
+    {hreflangLinks.map((link) => (
+      <link rel="alternate" hreflang={link.hreflang} href={link.href} />
+    ))}
     <link rel="preconnect" href="https://www.googletagmanager.com" />
     <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
 

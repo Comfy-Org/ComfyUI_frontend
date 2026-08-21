@@ -135,8 +135,7 @@ export function eventJsonLdNode(
   }
 ): JsonLdNode {
   const { siteUrl, site, pageUrl, locale } = input
-  const href =
-    event.link?.href[locale] ?? localizeHref(eventPath(event), locale)
+  const href = event.link?.href[locale] ?? eventPageHref(event.id)[locale]
   const online = event.location?.en === 'Online'
   return eventNode({
     siteUrl,

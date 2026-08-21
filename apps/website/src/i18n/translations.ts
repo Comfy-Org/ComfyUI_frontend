@@ -6108,7 +6108,8 @@ type TranslationKey = keyof typeof translations
 type LocalizedText = Record<Locale, string>
 
 export function t(key: TranslationKey, locale: Locale = 'en'): string {
-  return translations[key][locale] ?? translations[key].en
+  const translation: LocalizedText = translations[key]
+  return translation[locale] ?? translation.en
 }
 
 export const translationKeys = Object.keys(translations) as TranslationKey[]

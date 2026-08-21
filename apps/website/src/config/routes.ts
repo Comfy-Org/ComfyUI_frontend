@@ -61,7 +61,7 @@ const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'models'
 ])
 
-const LOCALE_INVARIANT_PATHS = new Set<string>(
+export const LOCALE_INVARIANT_PATHS = new Set<string>(
   [...LOCALE_INVARIANT_ROUTE_KEYS].map((key) => baseRoutes[key])
 )
 

@@ -239,10 +239,15 @@ test.describe('Events page — desktop @smoke', () => {
       await expect(page).toHaveURL(
         new RegExp(`${localizeHref(eventPath(event!), locale)}/?$`)
       )
-      const dialog = page.getByRole('dialog', { name: event!.title[locale] })
+      const dialog = page.getByRole('dialog', {
+        name: event!.title[locale]
+      })
       await expect(dialog).toBeVisible()
       await expect(
-        dialog.getByRole('heading', { level: 1, name: event!.title[locale] })
+        dialog.getByRole('heading', {
+          level: 1,
+          name: event!.title[locale]
+        })
       ).toBeVisible()
       await expect(dialog.locator('iframe')).toHaveAttribute(
         'src',
