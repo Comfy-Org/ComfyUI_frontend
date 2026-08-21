@@ -1,6 +1,19 @@
 import type { PlaywrightTestConfig } from '@playwright/test'
 import { defineConfig, devices } from '@playwright/test'
 
+const distribution = process.env.DISTRIBUTION
+Object.assign(globalThis, {
+  __DISTRIBUTION__:
+    distribution === 'desktop' ||
+    distribution === 'localhost' ||
+    distribution === 'cloud'
+      ? distribution
+      : process.env.DEV_SERVER_COMFYUI_URL?.includes('.comfy.org')
+        ? 'cloud'
+        : 'localhost',
+  __IS_NIGHTLY__: process.env.IS_NIGHTLY === 'true'
+})
+
 const maybeLocalOptions: PlaywrightTestConfig = process.env.PLAYWRIGHT_LOCAL
   ? {
       timeout: 30_000,
