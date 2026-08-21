@@ -30,14 +30,14 @@
       </Button>
     </div>
 
-    <div
+    <SanitizedHtml
       v-if="showMarkdown"
       class="comfy-markdown-content size-full min-h-[60px] overflow-y-auto rounded-lg text-sm"
       data-capture-wheel="true"
       role="textarea"
       :aria-label="widget.name"
       aria-readonly="true"
-      v-html="renderedMarkdown"
+      :html="renderedMarkdown"
     />
     <Textarea
       v-else
@@ -66,6 +66,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'

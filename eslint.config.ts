@@ -605,7 +605,17 @@ export default defineConfig([
     }
   },
   {
-    files: ['src/components/searchbox/**/*.vue'],
+    name: 'comfy/enforce-sanitized-html-boundary',
+    files: [
+      'src/components/searchbox/**/*.vue',
+      'src/components/graph/widgets/TextPreviewWidget.vue',
+      'src/components/node/NodeHelpContent.vue',
+      'src/components/node/NodePreview.vue',
+      'src/platform/updates/components/ReleaseNotificationToast.vue',
+      'src/platform/updates/components/WhatsNewPopup.vue',
+      'src/renderer/extensions/vueNodes/widgets/components/WidgetMarkdown.vue',
+      'src/renderer/extensions/vueNodes/widgets/components/WidgetTextPreview.vue'
+    ],
     rules: {
       'vue/no-v-html': 'error'
     }
