@@ -7,8 +7,14 @@ import {
 import type { SlotPositionContext } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import {
   canTransferLayoutAttachment,
-  moveNodeLayout,
-  resizeNodeLayout,
+  nodeGeometryBuffer,
+  nodePositionBuffer,
+  nodePositionView,
+  nodeSizeBuffer,
+  nodeSizeView,
+  refreshNodeGeometry,
+  setNodePosition,
+  setNodeSize,
   transferLayoutAttachment
 } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -57,7 +63,6 @@ import { anchorRerouteChain } from './Reroute'
 import type { Reroute, RerouteId } from './Reroute'
 import { getNodeInputOnPos, getNodeOutputOnPos } from './canvas/measureSlots'
 import type { IDrawBoundingOptions } from './draw'
-import { createMutationView } from './infrastructure/createMutationView'
 import { NullGraphError } from './infrastructure/NullGraphError'
 import type { ReadOnlyRectangle } from './infrastructure/Rectangle'
 import { Rectangle } from './infrastructure/Rectangle'
@@ -133,8 +138,6 @@ import type { WidgetTypeMap } from './widgets/widgetMap'
 // #region Types
 
 export type NodeProperty = string | number | boolean | object | null
-
-const storedRectScratch = new Float64Array(4)
 
 interface INodePropertyInfo {
   name?: string
@@ -647,69 +650,27 @@ export class LGraphNode
     return [posX - bX, posY - bY]
   }
 
-  _posSize = new Rectangle()
-  _pos: Point = this._posSize.pos
-  _size: Size = this._posSize.size
-  private readonly _renderedSize: Size = [0, 0]
-  private readonly posView = createMutationView(this._pos, {
-    commit: () => this._positionUpdated(),
-    synchronize: () => this.refreshGeometry()
-  })
-  private readonly sizeView = createMutationView(this._size, {
-    commit: () => this._sizeUpdated(),
-    synchronize: () => this.refreshGeometry()
-  })
-
-  _geometryVersion = -1
-
-  _layoutRegistered = false
-
-  private refreshGeometry(): void {
-    const rootGraphId = this.graph?.rootGraph.id
-    if (this._layoutRegistered && rootGraphId) {
-      const { geometryVersion } = layoutStore
-      if (geometryVersion !== this._geometryVersion) {
-        this._geometryVersion = geometryVersion
-        layoutStore.readNodeRect(rootGraphId, this.id, this._posSize)
-      }
-    }
-
-    const contentSize = rootGraphId
-      ? layoutStore.contentSizeOf(rootGraphId, this.id)
-      : undefined
-    this._renderedSize[0] = Math.max(this._size[0], contentSize?.width ?? 0)
-    this._renderedSize[1] = Math.max(this._size[1], contentSize?.height ?? 0)
+  get _posSize(): Rectangle {
+    return nodeGeometryBuffer(this)
   }
 
-  public get pos() {
-    return this.posView
+  get _pos(): Point {
+    return nodePositionBuffer(this)
+  }
+
+  get _size(): Size {
+    return nodeSizeBuffer(this)
+  }
+
+  public get pos(): Point {
+    return nodePositionView(this)
   }
 
   /** Node position does not necessarily correlate to the top-left corner. */
   public set pos(value) {
     if (!value || value.length < 2) return
 
-    this._pos[0] = value[0]
-    this._pos[1] = value[1]
-    this._positionUpdated()
-  }
-
-  private _positionUpdated(): void {
-    if (this.id === UNASSIGNED_NODE_ID || !this.graph) return
-
-    const rootGraphId = this.graph.rootGraph.id
-    const position = { x: this._pos[0], y: this._pos[1] }
-    if (
-      layoutStore.readNodeRect(rootGraphId, this.id, storedRectScratch) &&
-      storedRectScratch[0] === position.x &&
-      storedRectScratch[1] === position.y
-    ) {
-      return
-    }
-
-    moveNodeLayout(this, position)
-    this._geometryVersion = -1
-    this.refreshGeometry()
+    setNodePosition(this, value)
   }
 
   /**
@@ -720,44 +681,21 @@ export class LGraphNode
   }
 
   public get size(): Size {
-    return this.sizeView
+    return nodeSizeView(this)
   }
 
   public set size(value) {
     if (!value || value.length < 2) return
 
-    this._size[0] = value[0]
-    this._size[1] = value[1]
-    this._sizeUpdated()
-  }
-
-  /** Mirror the current {@link _size} into the layout store for Vue nodes. */
-  private _sizeUpdated(): void {
-    if (this.id === UNASSIGNED_NODE_ID || !this.graph) return
-
-    const rootGraphId = this.graph.rootGraph.id
-    if (
-      layoutStore.readNodeRect(rootGraphId, this.id, storedRectScratch) &&
-      storedRectScratch[2] === this._size[0] &&
-      storedRectScratch[3] === this._size[1]
-    ) {
-      return
-    }
-
-    resizeNodeLayout(this, {
-      width: this._size[0],
-      height: this._size[1]
-    })
-    this._geometryVersion = -1
-    this.refreshGeometry()
+    setNodeSize(this, value)
   }
 
   /**
    * The size of the node used for rendering.
    */
   get renderingSize(): Size {
-    this.refreshGeometry()
-    if (!this.flags.collapsed) return this._renderedSize
+    const renderedSize = refreshNodeGeometry(this)
+    if (!this.flags.collapsed) return renderedSize
 
     const contentSize = this.graph
       ? layoutStore.contentSizeOf(this.graph.rootGraph.id, this.id)
@@ -2313,7 +2251,7 @@ export class LGraphNode
   move(deltaX: number, deltaY: number): void {
     if (this.pinned) return
 
-    this.refreshGeometry()
+    refreshNodeGeometry(this)
     this.pos = [this._pos[0] + deltaX, this._pos[1] + deltaY]
   }
 
@@ -3637,7 +3575,7 @@ export class LGraphNode
   snapToGrid(snapTo: number): boolean {
     if (this.pinned || !snapTo) return false
 
-    this.refreshGeometry()
+    refreshNodeGeometry(this)
     const snapped: Point = [this._pos[0], this._pos[1]]
     snapPoint(snapped, snapTo)
     if (snapped[0] === this._pos[0] && snapped[1] === this._pos[1]) return false
