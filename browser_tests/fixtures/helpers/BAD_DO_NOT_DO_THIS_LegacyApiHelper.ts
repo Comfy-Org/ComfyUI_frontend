@@ -58,6 +58,28 @@ export class BAD_DO_NOT_DO_THIS_LegacyApiHelper {
     )
   }
 
+  addWidgetsForLegacyArrayReordering() {
+    return this.page.evaluate(() => {
+      const node = window.app!.graph.nodes.find(
+        (node) => (node.widgets?.length ?? 0) === 1
+      )
+      if (!node) throw new Error('Node with one widget not found')
+
+      node.addWidget('text', 'saola-workflow', '', () => {})
+      node.addWidget('text', 'okapi-resolution', '', () => {})
+
+      const element = document.createElement('div')
+      element.textContent = 'numbat-stage'
+      node.addDOMWidget('numbat-stage', 'numbat-stage', element, {
+        serialize: false
+      })
+
+      node.addWidget('button', 'quoll-upload', undefined, () => {})
+      node.addWidget('button', 'olm-link', undefined, () => {})
+      return node.id
+    })
+  }
+
   reorderWidgetsWithSplice(
     nodeId: NodeId,
     moves: readonly (readonly [widgetName: string, afterWidgetName: string])[]
@@ -116,13 +138,16 @@ export class BAD_DO_NOT_DO_THIS_LegacyApiHelper {
     )
   }
 
-  moveFirstNodeByMutatingPositionX(offset: number) {
-    return this.page.evaluate((offset) => {
-      const node = window.app!.graph.nodes[0]
-      if (!node) throw new Error('Graph has no nodes')
-      node.pos[0] += offset
-      window.app!.graph.setDirtyCanvas(true, true)
-    }, offset)
+  moveFirstNodeByMutatingPositionX(nodeId: NodeId, offset: number) {
+    return this.page.evaluate(
+      ([nodeId, offset]) => {
+        const node = window.app!.graph.getNodeById(nodeId)
+        if (!node) throw new Error('Graph has no nodes')
+        node.pos[0] += offset
+        window.app!.graph.setDirtyCanvas(true, true)
+      },
+      [nodeId, offset] as const
+    )
   }
 
   setImageCropWidgetValue(
