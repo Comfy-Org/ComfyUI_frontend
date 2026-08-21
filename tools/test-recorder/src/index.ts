@@ -75,18 +75,18 @@ try {
         process.exitCode = 1
       }
       console.log(`
-  Usage: comfy-test <command>
+Usage: comfy-test <command>
 
-  Commands:
-    record      Record a new browser test interactively
-    transform   Transform raw codegen output to conventions
-    pr          Open a pull request for a generated test
-    check       Check environment prerequisites
-    list        List available test workflows
+Commands:
+  record      Record a new browser test interactively
+  transform   Transform raw codegen output to conventions
+  pr          Open a pull request for a generated test
+  check       Check environment prerequisites
+  list        List available test workflows
 
-  Options:
-    --help      Show help
-  `)
+Options:
+  --help      Show help
+`)
       break
     }
   }
