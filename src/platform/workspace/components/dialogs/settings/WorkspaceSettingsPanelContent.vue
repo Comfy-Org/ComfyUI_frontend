@@ -10,8 +10,6 @@
       </h1>
     </header>
 
-    <BillingStatusBanner class="mb-4" />
-
     <PlanCreditsPanelContent v-if="section === 'planCredits'" />
     <WorkspaceMembersPanelContent v-else-if="section === 'members'" />
     <PartnerNodeAccessPanel v-else />
@@ -22,10 +20,10 @@
 import { storeToRefs } from 'pinia'
 
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
-import BillingStatusBanner from '@/platform/workspace/components/dialogs/settings/BillingStatusBanner.vue'
 import PartnerNodeAccessPanel from '@/platform/workspace/components/dialogs/settings/PartnerNodeAccessPanel.vue'
 import PlanCreditsPanelContent from '@/platform/workspace/components/dialogs/settings/PlanCreditsPanelContent.vue'
 import WorkspaceMembersPanelContent from '@/platform/workspace/components/dialogs/settings/WorkspaceMembersPanelContent.vue'
+import { useBillingBanner } from '@/platform/workspace/composables/useBillingBanner'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const { section } = defineProps<{
@@ -33,4 +31,6 @@ const { section } = defineProps<{
 }>()
 
 const { workspaceName } = storeToRefs(useTeamWorkspaceStore())
+// Preserve shared dismissal and payment refresh while switching sections.
+useBillingBanner()
 </script>

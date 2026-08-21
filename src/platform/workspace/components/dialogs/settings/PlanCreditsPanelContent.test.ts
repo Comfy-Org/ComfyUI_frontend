@@ -8,6 +8,9 @@ import enMessages from '@/locales/en/main.json'
 import PlanCreditsPanelContent from './PlanCreditsPanelContent.vue'
 
 const stubs = {
+  BillingStatusBanner: {
+    template: '<div role="status">Billing status</div>'
+  },
   SubscriptionPanelContentWorkspace: {
     template: '<div data-testid="credits-body" />'
   },
@@ -33,6 +36,13 @@ describe('PlanCreditsPanelContent', () => {
     expect(screen.getByRole('button', { name: 'Activity' })).toBeTruthy()
     expect(screen.getByTestId('credits-body')).toBeTruthy()
     expect(screen.queryByTestId('activity-body')).toBeNull()
+
+    const activityTab = screen.getByRole('button', { name: 'Activity' })
+    const banner = screen.getByRole('status')
+    expect(
+      activityTab.compareDocumentPosition(banner) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
   })
 
   it('shows the search box only on the Activity tab', async () => {

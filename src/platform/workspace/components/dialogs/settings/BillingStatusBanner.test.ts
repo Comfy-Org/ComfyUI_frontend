@@ -6,6 +6,9 @@ import { createI18n } from 'vue-i18n'
 
 import type {
   BillingStatus,
+  Plan,
+  TeamCreditStopSummary,
+  TeamCreditStops,
   WorkspaceType
 } from '@/platform/workspace/api/workspaceApi'
 import BillingStatusBanner from '@/platform/workspace/components/dialogs/settings/BillingStatusBanner.vue'
@@ -14,6 +17,41 @@ interface Subscription {
   hasFunds: boolean
   isCancelled: boolean
   endDate: string | null
+  scheduledPlanSlug?: string | null
+  changeAt?: string | null
+}
+
+type RuntimePlan = Omit<Plan, 'seat_summary'> &
+  Partial<Pick<Plan, 'seat_summary'>>
+
+const creatorAnnualPlan: RuntimePlan = {
+  slug: 'creator-annual',
+  tier: 'CREATOR',
+  duration: 'ANNUAL',
+  price_cents: 33600,
+  credits_cents: 12000,
+  max_seats: 1,
+  availability: { available: true },
+  seat_summary: {
+    seat_count: 1,
+    total_cost_cents: 33600,
+    total_credits_cents: 12000
+  }
+}
+
+const teamAnnualPlan: RuntimePlan = {
+  slug: 'team-pro-annual',
+  tier: 'PRO',
+  duration: 'ANNUAL',
+  price_cents: 12000,
+  credits_cents: 4000,
+  max_seats: 10,
+  availability: { available: true },
+  seat_summary: {
+    seat_count: 3,
+    total_cost_cents: 36000,
+    total_credits_cents: 12000
+  }
 }
 
 const state = vi.hoisted(() => ({
@@ -27,6 +65,9 @@ const state = vi.hoisted(() => ({
     isCancelled: false,
     endDate: null
   } as Subscription | null,
+  plans: [] as RuntimePlan[],
+  teamCreditStops: null as TeamCreditStops | null,
+  currentTeamCreditStop: null as TeamCreditStopSummary | null,
   renewalDate: null as string | null,
   workspaceType: 'team' as string,
   canManageSubscription: true,
@@ -58,6 +99,9 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     isTeamPlan: computed(() => state.isTeamPlan),
     billingStatus: computed(() => state.billingStatus as BillingStatus | null),
     subscription: computed(() => state.subscription),
+    plans: computed(() => state.plans),
+    teamCreditStops: computed(() => state.teamCreditStops),
+    currentTeamCreditStop: computed(() => state.currentTeamCreditStop),
     renewalDate: computed(() => state.renewalDate),
     manageSubscription: state.manageSubscription,
     fetchStatus: vi.fn(),
@@ -122,7 +166,18 @@ const i18n = createI18n({
             body: 'Members keep full access until then. Reactivate to keep your shared credits and seats.',
             reactivate: 'Reactivate plan'
           },
+          planChange: {
+            title: 'Your plan changes to {plan} on {date}.',
+            body: "We'll automatically charge {amount} to your card on file."
+          },
           updatePayment: 'Update payment'
+        }
+      },
+      subscription: {
+        teamPlanName: 'Team',
+        tierNameYearly: '{name} Yearly',
+        tiers: {
+          creator: { name: 'Creator' }
         }
       }
     }
@@ -169,6 +224,9 @@ describe('BillingStatusBanner', () => {
     state.isTeamPlan = true
     state.billingStatus = 'paid'
     state.subscription = { hasFunds: true, isCancelled: false, endDate: null }
+    state.plans = [creatorAnnualPlan]
+    state.teamCreditStops = null
+    state.currentTeamCreditStop = null
     state.renewalDate = null
     state.workspaceType = 'team'
     state.canManageSubscription = true
@@ -190,9 +248,13 @@ describe('BillingStatusBanner', () => {
 
   it('shows out-of-credits with an Add credits action for owners', async () => {
     state.subscription = { hasFunds: false, isCancelled: false, endDate: null }
+    state.renewalDate = '2026-08-01T00:00:00Z'
     renderBanner()
 
     expect(screen.getByRole('status')).toHaveTextContent('Out of credits')
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'credits refill on Aug 1'
+    )
     await userEvent.click(screen.getByRole('button', { name: 'Add credits' }))
     expect(state.showTopUpCreditsDialog).toHaveBeenCalledTimes(1)
   })
@@ -311,12 +373,134 @@ describe('BillingStatusBanner', () => {
     renderBanner()
 
     expect(screen.getByRole('status')).toHaveTextContent(
-      'Your team plan ends on'
+      'Your team plan ends on August 1, 2026'
     )
     await userEvent.click(
       screen.getByRole('button', { name: 'Reactivate plan' })
     )
     expect(state.handleResubscribe).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows the scheduled plan, effective date, and automatic charge', () => {
+    state.isTeamPlan = false
+    state.subscription = {
+      hasFunds: true,
+      isCancelled: false,
+      endDate: null,
+      scheduledPlanSlug: 'creator-annual',
+      changeAt: '2026-08-03T00:00:00Z'
+    }
+
+    renderBanner()
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Your plan changes to Creator Yearly on August 3, 2026.'
+    )
+    expect(screen.getByRole('status')).toHaveTextContent(
+      "We'll automatically charge $336.00 to your card on file."
+    )
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  })
+
+  it('shows the Team plan name and whole-subscription charge', () => {
+    state.plans = [teamAnnualPlan]
+    state.subscription = {
+      hasFunds: true,
+      isCancelled: false,
+      endDate: null,
+      scheduledPlanSlug: 'team-pro-annual',
+      changeAt: '2026-08-03T00:00:00Z'
+    }
+
+    renderBanner()
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Your plan changes to Team on August 3, 2026.'
+    )
+    expect(screen.getByRole('status')).toHaveTextContent(
+      "We'll automatically charge $360.00 to your card on file."
+    )
+  })
+
+  it('shows a current per-credit Team cadence change from its credit stop', () => {
+    state.plans = []
+    state.teamCreditStops = {
+      default_stop_index: 0,
+      stops: [
+        {
+          id: 'team_700',
+          credits: 147700,
+          monthly: { list_price_cents: 70000, price_cents: 66500 },
+          yearly: { list_price_cents: 70000, price_cents: 63000 }
+        }
+      ]
+    }
+    state.currentTeamCreditStop = {
+      id: 'team_700',
+      credits_monthly: 147700,
+      stop_usd: 700
+    }
+    state.subscription = {
+      hasFunds: true,
+      isCancelled: false,
+      endDate: null,
+      scheduledPlanSlug: 'team_per_credit_annual',
+      changeAt: '2026-08-03T00:00:00Z'
+    }
+
+    renderBanner()
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Your plan changes to Team on August 3, 2026.'
+    )
+    expect(screen.getByRole('status')).toHaveTextContent(
+      "We'll automatically charge $7,560.00 to your card on file."
+    )
+  })
+
+  it('hides a Team plan change whose seat summary is missing', () => {
+    state.plans = [{ ...teamAnnualPlan, seat_summary: undefined }]
+    state.subscription = {
+      hasFunds: true,
+      isCancelled: false,
+      endDate: null,
+      scheduledPlanSlug: 'team-pro-annual',
+      changeAt: '2026-08-03T00:00:00Z'
+    }
+
+    renderBanner()
+
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
+  it('hides a scheduled change whose destination plan cannot be resolved', () => {
+    state.isTeamPlan = false
+    state.subscription = {
+      hasFunds: true,
+      isCancelled: false,
+      endDate: null,
+      scheduledPlanSlug: 'missing-plan',
+      changeAt: '2026-08-03T00:00:00Z'
+    }
+
+    renderBanner()
+
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
+  it('hides a scheduled change whose effective date is invalid', () => {
+    state.isTeamPlan = false
+    state.subscription = {
+      hasFunds: true,
+      isCancelled: false,
+      endDate: null,
+      scheduledPlanSlug: 'creator-annual',
+      changeAt: 'invalid-date'
+    }
+
+    renderBanner()
+
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 
   it('does not expose reactivation controls to a member', () => {

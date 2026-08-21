@@ -34,12 +34,14 @@ vi.mock('@/platform/distribution/types', () => ({
 
 const RENEWAL_DATE_ISO = '2026-06-20T12:00:00Z'
 const END_DATE_ISO = '2026-01-20T12:00:00Z'
+const CHANGE_DATE_ISO = '2026-09-03T00:00:00Z'
 
 function formatPanelDate(isoDate: string) {
   return new Date(isoDate).toLocaleDateString('en', {
     month: 'short',
     day: 'numeric',
-    year: 'numeric'
+    year: 'numeric',
+    timeZone: 'UTC'
   })
 }
 
@@ -393,11 +395,11 @@ describe('SubscriptionPanelContentWorkspace', () => {
 
   it('shows a scheduled plan change instead of the renewal date', () => {
     mockScheduledPlanSlug.value = 'pro-annual'
-    mockChangeAt.value = END_DATE_ISO
+    mockChangeAt.value = CHANGE_DATE_ISO
     renderComponent()
 
     expect(
-      screen.getByText(`Changes to Pro on ${formatPanelDate(END_DATE_ISO)}`)
+      screen.getByText('Changes to Pro on Sep 3, 2026')
     ).toBeInTheDocument()
     expect(screen.queryByText(/^Renews on/i)).not.toBeInTheDocument()
   })
