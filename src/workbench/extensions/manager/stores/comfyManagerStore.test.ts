@@ -403,6 +403,46 @@ describe('useComfyManagerStore', () => {
       expect(store.isPackInstalling('pack-2')).toBe(true)
       expect(store.isPackInstalling('pack-3')).toBe(false)
     })
+
+    it('clears installing state when Manager rejects task admission', async () => {
+      vi.mocked(mockManagerService.installPack).mockRejectedValueOnce(
+        new Error('queue unavailable')
+      )
+      const store = useComfyManagerStore()
+
+      await store.installPack.call({
+        id: 'rejected-pack',
+        repository: 'https://github.com/test/rejected-pack',
+        channel: 'dev' as ManagerChannel,
+        mode: 'cache' as ManagerDatabaseSource,
+        selected_version: 'latest',
+        version: 'latest'
+      })
+
+      expect(store.isPackInstalling('rejected-pack')).toBe(false)
+      expect(Object.values(store.taskHistory)).toEqual([
+        expect.objectContaining({ result: 'failed' })
+      ])
+    })
+
+    it('clears installing state silently when task admission is aborted', async () => {
+      vi.mocked(mockManagerService.installPack).mockRejectedValueOnce(
+        new DOMException('Aborted', 'AbortError')
+      )
+      const store = useComfyManagerStore()
+
+      await store.installPack.call({
+        id: 'aborted-pack',
+        repository: 'https://github.com/test/aborted-pack',
+        channel: 'dev' as ManagerChannel,
+        mode: 'cache' as ManagerDatabaseSource,
+        selected_version: 'latest',
+        version: 'latest'
+      })
+
+      expect(store.isPackInstalling('aborted-pack')).toBe(false)
+      expect(store.taskHistory).toEqual({})
+    })
   })
 
   describe('refreshInstalledList with pack ID normalization', () => {
