@@ -1,6 +1,6 @@
-import { describe, expect, test } from 'vitest'
+import { beforeAll, describe, expect, test } from 'vitest'
 
-import { LGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedGraph } from '@/lib/litegraph/src/litegraph'
 
 import floatingLink from './__fixtures__/assets/floatingLink.json'
@@ -19,7 +19,59 @@ import reroutesComplex from './__fixtures__/assets/reroutesComplex.json'
  * conflicting ids are reassigned — so this compares entity sets rather than
  * bytes. It compares them whole: a count survives an entity being renumbered,
  * repointed at a different slot, or replaced outright.
+ *
+ * The fixture node types must be registered. Without them `createNode` returns
+ * null, every node takes the error branch, and `serialize()` echoes the input
+ * object straight back — so the output is derived from the input by
+ * construction and no assertion about nodes can fail. `roundTrip` asserts no
+ * node carries `has_errors` so that can never silently return.
  */
+
+const FIXTURE_NODE_TYPES = {
+  VAEDecode: {
+    inputs: [
+      ['samples', 'LATENT'],
+      ['vae', 'VAE']
+    ],
+    outputs: [['IMAGE', 'IMAGE']],
+    widgets: []
+  },
+  SaveImage: {
+    inputs: [['images', 'IMAGE']],
+    outputs: [],
+    widgets: [['filename_prefix', 'ComfyUI']]
+  },
+  InvertMask: {
+    inputs: [['mask', 'MASK']],
+    outputs: [['MASK', 'MASK']],
+    widgets: []
+  }
+} as const satisfies Record<
+  string,
+  {
+    inputs: readonly (readonly [string, string])[]
+    outputs: readonly (readonly [string, string])[]
+    widgets: readonly (readonly [string, string])[]
+  }
+>
+
+beforeAll(() => {
+  for (const [type, shape] of Object.entries(FIXTURE_NODE_TYPES)) {
+    class FixtureNode extends LGraphNode {
+      constructor(title?: string) {
+        super(title ?? type)
+        this.serialize_widgets = true
+        for (const [name, slotType] of shape.inputs)
+          this.addInput(name, slotType)
+        for (const [name, slotType] of shape.outputs)
+          this.addOutput(name, slotType)
+        for (const [name, value] of shape.widgets)
+          this.addWidget('text', name, value, () => {})
+      }
+    }
+    LiteGraph.registerNodeType(type, FixtureNode)
+  }
+})
 
 interface RoundTripFixture {
   name: string
@@ -37,17 +89,89 @@ const fixtures: RoundTripFixture[] = [
 
 function roundTrip(source: ISerialisedGraph) {
   const loaded = new LGraph(structuredClone(source))
+  expect(loaded.nodes.filter((n) => n.has_errors)).toEqual([])
   return loaded.serialize()
+}
+
+/**
+ * Nodes compared whole. By id alone, a regression that drops every input,
+ * output, widget value or title still passes.
+ */
+function nodeKeys(graph: Pick<ISerialisedGraph, 'nodes'>) {
+  return (graph.nodes ?? [])
+    .map((node) =>
+      JSON.stringify({
+        id: node.id,
+        type: node.type,
+        inputs: (node.inputs ?? []).map((i) => [
+          i.name,
+          i.type,
+          i.link ?? null
+        ]),
+        outputs: (node.outputs ?? []).map((o) => [
+          o.name,
+          o.type,
+          [...(o.links ?? [])].sort(ascending)
+        ]),
+        widgets_values: node.widgets_values?.length ? node.widgets_values : null
+      })
+    )
+    .sort()
 }
 
 function ascending(a: number | string, b: number | string) {
   return String(a).localeCompare(String(b), undefined, { numeric: true })
 }
 
-function rerouteIds(graph: { extra?: { reroutes?: { id: number }[] } }) {
+interface SerialisedReroute {
+  id: number
+  parentId?: number
+  pos?: [number, number]
+  linkIds?: number[]
+  floating?: unknown
+}
+
+/**
+ * Compared whole. Ids alone survive a regression that flattens every
+ * `parentId`, empties every `linkIds`, or resets every `pos` — which is most of
+ * what the reroute fixture is for.
+ */
+function rerouteKeys(graph: { extra?: { reroutes?: SerialisedReroute[] } }) {
   return (graph.extra?.reroutes ?? [])
-    .map((reroute) => reroute.id)
-    .sort(ascending)
+    .map((reroute) =>
+      JSON.stringify({
+        id: reroute.id,
+        parentId: reroute.parentId ?? null,
+        pos: reroute.pos ?? null,
+        linkIds: [...(reroute.linkIds ?? [])].sort(ascending),
+        floating: reroute.floating ?? null
+      })
+    )
+    .sort()
+}
+
+/**
+ * Reroute-to-link association is not on the link in schema 0.4 — `serialize()`
+ * rebuilds it into `extra.linkExtensions`, so it needs its own assertion.
+ */
+function linkExtensionKeys(graph: {
+  extra?: { linkExtensions?: { id: number; parentId?: number }[] }
+}) {
+  return (graph.extra?.linkExtensions ?? [])
+    .map((ext) =>
+      JSON.stringify({ id: ext.id, parentId: ext.parentId ?? null })
+    )
+    .sort()
+}
+
+/**
+ * A comparison against an empty collection passes whether or not the code
+ * works. Every assertion below runs through this so a fixture that later loses
+ * its reroutes degrades into a failure rather than a silent no-op.
+ */
+function expectPreserved(before: string[], after: string[]) {
+  expect(before.length).toBeGreaterThan(0)
+  expect(after).toEqual(before)
 }
 
 /**
@@ -85,33 +209,50 @@ function withGroups(graph: ISerialisedGraph): ISerialisedGraph {
 describe('LGraph round trip preserves the input', () => {
   for (const { name, graph } of fixtures) {
     describe(name, () => {
-      test('keeps every node, by id', () => {
-        const before = graph.nodes.map((node) => node.id).sort(ascending)
-        const after = roundTrip(graph)
-          .nodes.map((node) => node.id)
-          .sort(ascending)
+      test('keeps every node, whole', () => {
+        const before = nodeKeys(graph)
+        const after = nodeKeys(roundTrip(graph))
 
-        expect(after).toEqual(before)
+        expectPreserved(before, after)
       })
 
-      test('keeps every link, with its endpoints', () => {
-        expect(linkKeys(roundTrip(graph))).toEqual(linkKeys(graph))
-      })
+      test.skipIf(linkKeys(graph).length === 0)(
+        'keeps every link, with its endpoints',
+        () => {
+          expectPreserved(linkKeys(graph), linkKeys(roundTrip(graph)))
+        }
+      )
 
-      test('keeps every floating link, with its endpoints', () => {
-        expect(floatingLinkKeys(roundTrip(graph))).toEqual(
-          floatingLinkKeys(graph)
+      test.skipIf(floatingLinkKeys(graph).length === 0)(
+        'keeps every floating link, with its endpoints',
+        () => {
+          expectPreserved(
+            floatingLinkKeys(graph),
+            floatingLinkKeys(roundTrip(graph))
+          )
+        }
+      )
+
+      test.skipIf(rerouteKeys(graph).length === 0)(
+        'keeps every reroute, with its parent, position and links',
+        () => {
+          expectPreserved(rerouteKeys(graph), rerouteKeys(roundTrip(graph)))
+        }
+      )
+
+      test.skipIf(
+        linkExtensionKeys(graph).length === 0 || rerouteKeys(graph).length === 0
+      )('keeps the reroute-to-link association in extra.linkExtensions', () => {
+        expectPreserved(
+          linkExtensionKeys(graph),
+          linkExtensionKeys(roundTrip(graph))
         )
-      })
-
-      test('keeps every reroute, by id', () => {
-        expect(rerouteIds(roundTrip(graph))).toEqual(rerouteIds(graph))
       })
 
       test('keeps every group, by identity and bounds', () => {
         const grouped = withGroups(graph)
 
-        expect(groupKeys(roundTrip(grouped))).toEqual(groupKeys(grouped))
+        expectPreserved(groupKeys(grouped), groupKeys(roundTrip(grouped)))
       })
 
       test('does not mutate the workflow it was given', () => {
