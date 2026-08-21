@@ -213,6 +213,7 @@ export function useTemplateModelRowDownloads({
     progress: { url: string; filename: string; directory?: string },
     apply: (model: ModelWithUrl, attempt: number) => void
   ): void {
+    const matches: { model: ModelWithUrl; attempt: number }[] = []
     for (const [identity, model] of models) {
       if (
         model.url !== progress.url ||
@@ -223,9 +224,19 @@ export function useTemplateModelRowDownloads({
         continue
       }
       const state = states.get(identity)
-      if (!state || state.status === 'idle') continue
-      apply(model, state.attempt)
+      if (
+        !state ||
+        state.status === 'idle' ||
+        state.status === 'done' ||
+        state.status === 'failed'
+      ) {
+        continue
+      }
+      matches.push({ model, attempt: state.attempt })
     }
+
+    if (progress.directory === undefined && matches.length !== 1) return
+    for (const { model, attempt } of matches) apply(model, attempt)
   }
 
   const stopDesktopProgress = subscribeDesktopProgress((progress) => {
