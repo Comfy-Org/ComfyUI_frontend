@@ -33,6 +33,7 @@ An Architecture Decision Record captures an important architectural decision mad
 | [0021](0021-classify-and-coalesce-canvas-invalidation.md)                   | Classify and Coalesce Canvas Invalidation                   | Proposed | 2026-08-26 |
 | [0022](0022-performance-measurement-and-ci-policy.md)                       | Performance Measurement and CI Policy                       | Proposed | 2026-08-26 |
 | [0023](0023-widget-entities-and-legacy-behavior-boundary.md)                | Widget Entities and Legacy Behavior Boundary                | Proposed | 2026-08-26 |
+| [0016](0016-in-app-agent-crdt-follower-and-distribution.md)                 | In-App Agent CRDT Follower and Distribution-Resolved Boundaries | Proposed | 2026-08-21 |
 
 ## Creating a New ADR
 
