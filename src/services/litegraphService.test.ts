@@ -172,3 +172,58 @@ describe('useLitegraphService().registerNodeDef slot text (non-en)', () => {
     expect(node?.outputs[0]?.localized_name).toBe('Live Latent Name')
   })
 })
+
+describe('useLitegraphService().registerNodeDef type-named outputs', () => {
+  const nodeName = 'TestTypeNamedOutput'
+
+  const nodeDef: ComfyNodeDefV1 = {
+    name: nodeName,
+    display_name: 'Test Type Named Output',
+    category: 'testing',
+    python_module: 'nodes',
+    description: '',
+    input: { required: {} },
+    output: ['LATENT'],
+    output_name: ['LATENT'],
+    output_node: false
+  }
+
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  afterEach(() => {
+    LiteGraph.unregisterNodeType(nodeName)
+    mergeCustomNodesI18n({})
+    i18n.global.setLocaleMessage('en', cloneDeep(enMessages))
+  })
+
+  it('prefers a slot-level translation over the data-type translation', async () => {
+    mergeCustomNodesI18n({
+      en: {
+        nodeDefs: {
+          [nodeName]: { outputs: { 0: { name: 'Custom Latent Output' } } }
+        }
+      }
+    })
+    i18n.global.mergeLocaleMessage('en', {
+      dataTypes: { LATENT: 'Canonical Latent' }
+    })
+
+    await useLitegraphService().registerNodeDef(nodeName, nodeDef)
+
+    const node = LiteGraph.createNode(nodeName)
+    expect(node?.outputs[0]?.localized_name).toBe('Custom Latent Output')
+  })
+
+  it('falls back to the data-type translation without a slot translation', async () => {
+    i18n.global.mergeLocaleMessage('en', {
+      dataTypes: { LATENT: 'Canonical Latent' }
+    })
+
+    await useLitegraphService().registerNodeDef(nodeName, nodeDef)
+
+    const node = LiteGraph.createNode(nodeName)
+    expect(node?.outputs[0]?.localized_name).toBe('Canonical Latent')
+  })
+})
