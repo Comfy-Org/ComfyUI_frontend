@@ -1,8 +1,9 @@
 # ECS migration verification audit (PR 14246)
 
-Status: Current implementation audit
-Verified: 2026-08-20 against `13a302eadda871b939b148ecb87e3d845ceefff2`
-Scope: Behavioral evidence added or materially changed by PR 14246
+Status: Current implementation audit with follow-up coverage
+Verified: 2026-08-21
+Scope: Behavioral evidence added or materially changed by PR 14246 and its
+follow-up tests
 
 Evidence is grouped by invariant rather than implementation unit. A `Strong`
 grade includes integration or browser evidence. `Good` covers meaningful
@@ -13,23 +14,23 @@ For the accuracy and status audit of the accompanying design records, see
 
 ## PR change coverage
 
-| Production change cluster                                 | Representative implementation                                                                | Behavioral evidence                                                                                                                                                 | Assessment                                              |
-| --------------------------------------------------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| Node shell and Vue lifecycle                              | `nodeDataStore`; `GraphCanvas`; removal of `useGraphNodeManager` and `useVueNodeLifecycle`   | store collision, lifecycle, registration, and renderer-toggle tests below                                                                                           | Strong                                                  |
-| Link/slot topology and dynamic slot reorder               | `linkStore`; `slotLinks`; `dynamicWidgets`; `replaceNodeInputs`                              | store collision, clipboard/insertion, link interaction, and slot realignment tests                                                                                  | Strong                                                  |
-| Reroute chain and floating links                          | `rerouteStore`; `Reroute`; floating-link interaction                                         | store, lifecycle, serialization, subgraph identity, and browser interaction tests                                                                                   | Strong                                                  |
-| Widget order, live adapters, and promotion                | `widgetValueStore`; `useProcessedWidgets`; promotion migration and error resolution          | widget/promotion tests below; explicit divergence and missing-media coverage remains required                                                                       | Good                                                    |
-| Promoted-widget panel behavior                            | `WidgetActions`; `SubgraphEditor` host promotion, interior-node favorites, boundary demotion | `WidgetActions.test.ts`; `SubgraphEditor.test.ts`                                                                                                                   | Good                                                    |
-| Layout and renderer switching                             | `layoutStore`; `graphLayoutAttachment`; `arrangeForLegacyRender`; `notifyLayoutChanges`      | renderer-toggle, subgraph layout, and geometry-view tests                                                                                                           | Good; legacy rearrangement remains a bridge             |
-| Minimap and graph consumers                               | unified `MinimapDataSource`; store-backed traversal, pricing, arrangement, and selection     | topology and renderer tests exercise inputs indirectly; no focused large-workflow minimap budget                                                                    | Partial                                                 |
-| First-run-tour role inference                             | virtual consumers are skipped while collecting producer input-name evidence                  | existing tests exclude virtual prompt/source candidates, but do not directly cover this changed branch                                                              | Partial; add a virtual-consumer evidence regression     |
-| First-run-tour coach target                               | root-scoped read-only layout lookup; no target for absent layout or changed graph            | `canvasCoachTarget.test.ts` covers absent layout, graph changes, movement, and disposal; it does not explicitly assert root ID lookup or absence of layout creation | Partial; add ownership-boundary assertions              |
-| Badges and error projections                              | `badgeSystem`; `nodeErrorState`; `useNodeErrorFlagSync`                                      | badge system, widget-error, promoted-error, and flag-sync tests                                                                                                     | Good                                                    |
-| Lifecycle events                                          | `node:added`, `node:before-removed`, `node:removed`; error and telemetry observers           | callback ordering and removal tests                                                                                                                                 | Good; extension corpus remains required                 |
-| Removed extension graph triggers                          | deletion of `node:slot-links:changed` and `node:slot-errors:changed` emitters/types          | internal consumers use store/error projections; no compatibility event exists                                                                                       | Partial; ecosystem usage requires measurement           |
-| Recursive identity, replacement, clipboard, and insertion | allocation/normalization, `replaceWithMapping`, workflow insertion                           | identity, replacement, clipboard, serialization, and browser tests below                                                                                            | Strong                                                  |
-| Allocation and widget compatibility shadows               | serialized `LGraph.state`; `widgets_values` / `widgets_values_named`                         | allocation, serialization, dynamic-widget, clipboard, and promotion tests                                                                                           | Partial; widget values still have competing authorities |
-| Persistence and undo bridge                               | class serialization, store-backed topology, `ChangeTracker` snapshots                        | serialization tests are strong; mixed multi-store undo/redo remains partial                                                                                         | Partial                                                 |
+| Production change cluster                                 | Representative implementation                                                                | Behavioral evidence                                                                                                                                                    | Assessment                                              |
+| --------------------------------------------------------- | -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| Node shell and Vue lifecycle                              | `nodeDataStore`; `GraphCanvas`; removal of `useGraphNodeManager` and `useVueNodeLifecycle`   | store collision, lifecycle, registration, and renderer-toggle tests below                                                                                              | Strong                                                  |
+| Link/slot topology and dynamic slot reorder               | `linkStore`; `slotLinks`; `dynamicWidgets`; `replaceNodeInputs`                              | store collision, clipboard/insertion, link interaction, and slot realignment tests                                                                                     | Strong                                                  |
+| Reroute chain and floating links                          | `rerouteStore`; `Reroute`; floating-link interaction                                         | store, lifecycle, serialization, subgraph identity, and browser interaction tests                                                                                      | Strong                                                  |
+| Widget order, live adapters, and promotion                | `widgetValueStore`; `useProcessedWidgets`; promotion migration and error resolution          | widget/promotion tests below; explicit divergence and missing-media coverage remains required                                                                          | Good                                                    |
+| Promoted-widget panel behavior                            | `WidgetActions`; `SubgraphEditor` host promotion, interior-node favorites, boundary demotion | `WidgetActions.test.ts`; `SubgraphEditor.test.ts`                                                                                                                      | Good                                                    |
+| Layout and renderer switching                             | `layoutStore`; `graphLayoutAttachment`; `arrangeForLegacyRender`; `notifyLayoutChanges`      | renderer-toggle, subgraph layout, and geometry-view tests                                                                                                              | Good; legacy rearrangement remains a bridge             |
+| Minimap and graph consumers                               | unified `MinimapDataSource`; store-backed traversal, pricing, arrangement, and selection     | topology and renderer tests exercise inputs indirectly; no focused large-workflow minimap budget                                                                       | Partial                                                 |
+| First-run-tour role inference                             | virtual consumers are skipped while collecting producer input-name evidence                  | `heuristicRoles.test.ts` directly proves a virtual consumer cannot resolve an otherwise ambiguous prompt                                                               | Good                                                    |
+| First-run-tour coach target                               | root-scoped read-only layout lookup; no target for absent layout or changed graph            | `canvasCoachTarget.test.ts` covers root ID lookup, absence of layout creation, graph changes, movement, and disposal                                                   | Good                                                    |
+| Badges and error projections                              | `badgeSystem`; `nodeErrorState`; `useNodeErrorFlagSync`                                      | badge system, widget-error, promoted-error, and flag-sync tests                                                                                                        | Good                                                    |
+| Lifecycle events                                          | `node:added`, `node:before-removed`, `node:removed`; error and telemetry observers           | callback ordering and removal tests                                                                                                                                    | Good; extension corpus remains required                 |
+| Removed extension graph triggers                          | deletion of `node:slot-links:changed` and `node:slot-errors:changed` emitters/types          | internal consumers use store/error projections; no compatibility event exists                                                                                          | Partial; ecosystem usage requires measurement           |
+| Recursive identity, replacement, clipboard, and insertion | allocation/normalization, `replaceWithMapping`, workflow insertion                           | identity, replacement, clipboard, serialization, and browser tests below                                                                                               | Strong                                                  |
+| Allocation and widget compatibility shadows               | serialized `LGraph.state`; `widgets_values` / `widgets_values_named`                         | allocation, serialization, dynamic-widget, clipboard, and promotion tests                                                                                              | Partial; widget values still have competing authorities |
+| Persistence and undo bridge                               | class serialization, store-backed topology, `ChangeTracker` snapshots                        | `ecsBridgeHistory.spec.ts` covers promoted subgraph deletion and geometry across undo/redo, renderer switching, navigation, and reload; reroute/group coverage remains | Partial                                                 |
 
 ## Evidence by invariant
 
@@ -258,11 +259,11 @@ Representative evidence:
 
 ## Prioritized missing behavioral scenarios
 
-1. P0, undo/redo across a mixed operation. Replace or remove a node with
-   links, reroutes, promoted widgets, and layout; undo and redo; assert every
-   store, callback-visible state, renderer, and serialization agree. Current
-   tests validate each concern but not restoration of all centralized state
-   across one user-visible operation.
+1. P0, complete undo/redo across a mixed operation. Browser coverage now
+   removes a promoted subgraph with nested links and layout, restores it by
+   undo, removes it by redo, and verifies renderer and serialization parity.
+   Add reroutes and groups plus direct store and callback-visible assertions,
+   or cover an equivalent replacement operation.
 2. P0, failed or interrupted workflow load. Force a configure callback to
    throw after some nested definitions register, then load another workflow.
    Assert no node/link/reroute/layout/widget ownership leaks from the failed
@@ -274,9 +275,10 @@ Representative evidence:
 4. P1, browser copy/paste of a connected subgraph. Paste a shared subgraph
    with promoted widgets and rerouted external links, then delete original and
    pasted instances in both orders. Verify ownership, values, and topology.
-5. P1, renderer toggle plus navigation and history. Edit geometry in Vue,
-   navigate into/out of a subgraph, toggle legacy, undo/redo, and verify node,
-   slot, group, and reroute hit targets before saving.
+5. P1, complete renderer toggle plus navigation and history. Node and slot
+   geometry now has browser coverage through Vue edits, subgraph navigation,
+   legacy undo/redo, and serialization/reload. Add group and reroute hit-target
+   coverage.
 6. P1, real extension compatibility corpus. Run representative extensions
    that enumerate/spread slots, mutate deprecated `link`/`links`, use duck-typed
    slots, and inspect callback state. Assert warnings and graceful behavior,
