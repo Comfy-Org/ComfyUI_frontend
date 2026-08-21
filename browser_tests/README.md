@@ -124,6 +124,40 @@ await comfyPage.setup({ mockReleases: false })
 
 See `tests/releaseNotifications.spec.ts` for release-specific tests.
 
+## Recording Tests (For Non-Developers)
+
+If you're a QA tester or non-developer, use the interactive recorder:
+
+```bash
+pnpm comfy-test record
+```
+
+This guides you through a 6-step flow:
+
+1. **Environment check** — verifies the tools, the backend, and the dev server (with install instructions if anything is missing)
+2. **Project setup** — installs dependencies
+3. **Configure** — set test name, tags, and starting workflow
+4. **Record** — opens the browser with the Playwright Inspector; press Record, act, then close the browser
+5. **Transform** — paste the recorded code, ending with a single `.` on its own line, and it is rewritten to project conventions
+6. **PR creation** — creates a PR via `gh` CLI or gives manual instructions
+
+The dev server must be serving _this_ checkout. Step 1 fails if the port is
+held by a server started from a different folder. To use another port:
+
+```bash
+pnpm dev --port 5174 --strictPort
+COMFY_TEST_DEV_PORT=5174 pnpm comfy-test record
+```
+
+Other commands:
+
+```bash
+pnpm comfy-test check       # Just run environment checks
+pnpm comfy-test transform <file>  # Transform a raw codegen file
+pnpm comfy-test pr <file>   # Open a PR for a generated test
+pnpm comfy-test list        # List available workflow assets
+```
+
 ## Running Tests
 
 ```bash
