@@ -11,6 +11,7 @@ import type {
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useDialogStore } from '@/stores/dialogStore'
+import { usePartnerNodesEducationStore } from '@/platform/workflow/templates/stores/partnerNodesEducationStore'
 
 export function useTemplateWorkflows() {
   const { t } = useI18n()
@@ -140,6 +141,15 @@ export function useTemplateWorkflows() {
       await app.loadGraphData(json, true, true, workflowName, {
         openSource: 'template'
       })
+
+      const template = workflowTemplatesStore.enhancedTemplates.find(
+        (tpl) => tpl.name === id && tpl.sourceModule === sourceModule
+      )
+      const educationStore = usePartnerNodesEducationStore()
+      // A free template can still contain partner nodes, so retire any
+      // earlier request rather than let the card describe this one.
+      if (template?.isPartnerNode) educationStore.requestCard()
+      else educationStore.dismissCard()
 
       return true
     } catch (error) {

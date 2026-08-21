@@ -2317,6 +2317,24 @@
     "addColor": "Add a color",
     "swatchTitle": "Click edit · drag reorder · right-click remove"
   },
+  "partnerNodesEducation": {
+    "openTab": "Open nodes",
+    "partnerTab": "Partner nodes",
+    "pitch": "See the difference? Drag to compare.",
+    "reassurance": "Partner nodes are here when you want more. The rest of Comfy stays free.",
+    "tooltip": "Partner nodes run closed-source models like Kling or Veo on the provider’s hardware, through Comfy. They use credits; the rest of Comfy stays free.",
+    "openHeader": "OPEN",
+    "partnerHeader": "PARTNER",
+    "mute": "Mute",
+    "unmute": "Unmute",
+    "sliderLabel": "Compare open-weights and partner-node output",
+    "benefits": {
+      "noDownload": "No setup required",
+      "noVram": "No VRAM, your GPU stays free",
+      "offline": "Runs offline",
+      "free": "Free to run"
+    }
+  },
   "videoEdit": {
     "startFrame": "Start Frame",
     "endFrame": "End Frame",

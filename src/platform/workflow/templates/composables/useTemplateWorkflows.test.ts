@@ -60,6 +60,29 @@ vi.mock('@/platform/telemetry', () => ({
     mockIsCloud.value ? { trackTemplate: mockTrackTemplate } : null
 }))
 
+const { mockDistributionIsCloud, mockRequestCard, mockDismissCard } =
+  vi.hoisted(() => ({
+    mockDistributionIsCloud: { value: false },
+    mockRequestCard: vi.fn(),
+    mockDismissCard: vi.fn()
+  }))
+
+vi.mock('@/platform/distribution/types', () => ({
+  get isCloud() {
+    return mockDistributionIsCloud.value
+  }
+}))
+
+vi.mock(
+  '@/platform/workflow/templates/stores/partnerNodesEducationStore',
+  () => ({
+    usePartnerNodesEducationStore: () => ({
+      requestCard: mockRequestCard,
+      dismissCard: mockDismissCard
+    })
+  })
+)
+
 // Mock fetch
 global.fetch = vi.fn()
 
@@ -70,10 +93,12 @@ describe('useTemplateWorkflows', () => {
 
   beforeEach(() => {
     mockIsCloud.value = true
+    mockDistributionIsCloud.value = false
 
     mockWorkflowTemplatesStore = {
       isLoaded: false,
       loadWorkflowTemplates: vi.fn().mockResolvedValue(true),
+      enhancedTemplates: [],
       groupedTemplates: [
         {
           label: 'ComfyUI Examples',
@@ -320,6 +345,53 @@ describe('useTemplateWorkflows', () => {
     await flushPromises()
 
     expect(mockTrackTemplate).not.toHaveBeenCalled()
+  })
+
+  const enhancedTemplate = (isPartnerNode: boolean, name = 'template1') => {
+    type EnhancedTemplateLike =
+      MockWorkflowTemplatesStore['enhancedTemplates'][number]
+    return {
+      name,
+      sourceModule: 'default',
+      isPartnerNode
+    } as Partial<EnhancedTemplateLike> as EnhancedTemplateLike
+  }
+
+  it('requests the partner education card when a paid template loads locally', async () => {
+    const { loadWorkflowTemplate } = useTemplateWorkflows()
+    mockWorkflowTemplatesStore.isLoaded = true
+    mockWorkflowTemplatesStore.enhancedTemplates.push(enhancedTemplate(true))
+
+    await loadWorkflowTemplate('template1', 'default')
+
+    expect(mockRequestCard).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not request the education card for open-source templates', async () => {
+    const { loadWorkflowTemplate } = useTemplateWorkflows()
+    mockWorkflowTemplatesStore.isLoaded = true
+    mockWorkflowTemplatesStore.enhancedTemplates.push(enhancedTemplate(false))
+
+    await loadWorkflowTemplate('template1', 'default')
+
+    expect(mockRequestCard).not.toHaveBeenCalled()
+  })
+
+  it('retires an earlier request when an open-source template loads next', async () => {
+    const { loadWorkflowTemplate } = useTemplateWorkflows()
+    mockWorkflowTemplatesStore.isLoaded = true
+    mockWorkflowTemplatesStore.enhancedTemplates.push(
+      enhancedTemplate(true),
+      enhancedTemplate(false, 'template2')
+    )
+
+    await loadWorkflowTemplate('template1', 'default')
+    expect(mockRequestCard).toHaveBeenCalledTimes(1)
+
+    // The open-source template may still contain partner nodes, so the card
+    // would otherwise linger and describe the wrong template.
+    await loadWorkflowTemplate('template2', 'default')
+    expect(mockDismissCard).toHaveBeenCalledTimes(1)
   })
 
   it('should handle errors when loading templates', async () => {
