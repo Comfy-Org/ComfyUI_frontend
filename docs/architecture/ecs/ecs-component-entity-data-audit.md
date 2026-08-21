@@ -245,7 +245,7 @@ sequence above rather than the summary-table order.
 | 13       | Node properties                     | Complete    | `f75b30dbd`  | Node state now owns stable mutable properties across lifecycle, callbacks, and serialization.    |
 | 14       | Unknown-node fallback               | Complete    | `ba4757f4c`  | Node state now owns unknown-node fallback records behind the compatibility accessor.             |
 | 15       | Delayed widget restoration          | Complete    | `972947d939` | Store-owned restoration state now hydrates configured and delayed widgets from wire shadows.     |
-| 16       | Extension persistence adapter       | Complete    | This commit  | Validated payloads round trip through a namespace while legacy hooks mutate isolated DTO views.  |
-| 17       | Execution order                     | Not started |              |                                                                                                  |
+| 16       | Extension persistence adapter       | Complete    | `287bf33f38` | Validated payloads round trip through a namespace while legacy hooks mutate isolated DTO views.  |
+| 17       | Execution order                     | Complete    | This commit  | Graph-scoped derived records own execution order behind the compatible node projection.          |
 | 18       | Graph invalidation                  | Not started |              |                                                                                                  |
 | 19       | Store-driven serialization          | Not started |              |                                                                                                  |

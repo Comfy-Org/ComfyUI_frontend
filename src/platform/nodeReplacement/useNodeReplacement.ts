@@ -160,10 +160,11 @@ function replaceWithMapping(
   nodeGraph: LGraph,
   idx: number
 ): void {
+  const order = node.order
   newNode.id = node.id
   newNode.pos = [...node.pos]
   newNode.size = [...node.size]
-  newNode.order = node.order
+  newNode.order = order
   newNode.mode = node.mode
   if (node.flags) newNode.flags = { ...node.flags }
 
@@ -187,6 +188,7 @@ function replaceWithMapping(
   nodeGraph._nodes[idx] = newNode
   newNode.graph = nodeGraph
   node.graph = null
+  node.order = order
   nodeGraph._nodes_by_id[newNode.id] = newNode
 
   for (const widget of newNode.widgets ?? []) {
