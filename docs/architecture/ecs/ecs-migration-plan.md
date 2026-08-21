@@ -1,7 +1,7 @@
 # ECS migration plan
 
-Status: Partial
-Verified: 2026-08-20 against `13a302eadda871b939b148ecb87e3d845ceefff2`
+Status: Scoped data centralization implemented; structural follow-up remains
+Verified: 2026-08-21 against `73c3c633f`
 
 This plan records completed ECS migration work and the work that remains.
 Detailed evidence and unresolved risks are in the focused audits under
@@ -86,58 +86,23 @@ not separate architecture changes.
 
 ## Current boundaries
 
-The following authority boundaries remain in this phase:
+The scoped authority migration is complete. These structural boundaries remain:
 
-- `NodeState.inputs` and `outputs` contain slot class instances. Slot data is
-  not yet a plain component model.
-- Widget order exists in both the store and `LGraphNode.widgets` during the
-  compatibility period. Vue filters store order through live widget objects and
-  still invokes their callbacks.
-- Live graph object registries and store records coexist and must be attached
-  and detached together.
-- Graph membership, graph metadata, groups, subgraph definitions and ordered
-  interfaces, node properties, group presentation, and extension-owned data
-  remain authoritative on live `LGraph`, `Subgraph`, node, and group objects.
-- `LGraphNode.boxcolor` remains class-owned durable render state outside
-  `NodeState`, despite other shell visual fields being store-backed.
-- Unknown nodes retain `last_serialization`, an opaque full-node record that
-  overrides normal serialization and can shadow migrated node, slot, widget,
-  and render state.
-- Execution `order` is recomputed from topology but also restored and persisted
-  on `LGraphNode`; its derived-versus-wire-compatibility contract is not yet
-  enforced.
-- Serialized `LGraph.state` allocation counters are directly mutable and
-  influence future durable IDs outside a command/store boundary.
-- `node.widgets_values` and `widgets_values_named` form another widget-value
-  representation used for delayed dynamic-widget restoration and direct
-  production writes; property-bound widgets can also mirror values in
-  `node.properties`.
-- `nodeOutputStore` mirrors `app.nodeOutputs` and `app.nodePreviewImages`, and
-  legacy render output also projects into live node image fields. It is not yet
-  the sole output authority.
-- `LGraph._version` is manually incremented across graph, node, canvas, widget,
-  slot, and subgraph mutation callers rather than derived at one committed
-  transaction boundary.
-- Durable graph `config`, `extra`, and `revision` metadata remains class-owned
-  and directly mutable; graph metadata is not yet included in the explicit
-  command schema.
-- Node and graph `onSerialize` hooks can mutate complete persistence DTOs, while
-  generic configure assignment and `onConfigure` expose equivalent load-time
-  mutation channels. These extension hooks can override store-backed fields
-  without schema, ownership, replay, transaction, or undo boundaries.
-- Prompt construction awaits arbitrary widget `serializeValue` hooks. Current
-  hooks can mutate widget/workflow shadows, choose random values, capture media,
-  upload files, and update UI state, so execution input assembly is neither a
-  pure store read nor isolated from unrelated effects.
-- Node z-order exists in layout state and legacy `_nodes` ordering.
-  `sendToBack` currently updates only the legacy ordering path.
-- Node and input-slot error flags are mutable legacy drawing projections of
-  error-store state and require synchronization by app hooks.
-- Widget and preview stores lack the owner-scoped cleanup available in node,
-  link, and reroute stores. Subgraph release and failed operations can retain
-  records until root cleanup.
-- Link paths, slot bounds, and hit-test geometry are transient renderer caches,
-  not persistent layout components.
+- Slot descriptors sit behind a virtual extension-visible slot-class array.
+  Native callback semantics are preserved, but complete reflection compatibility
+  requires restoring real arrays at that boundary.
+- `graphDefinitionStore` still contains live adapter instances, and persisted
+  graph UUIDs remain runtime store keys. Populated graph IDs are immutable until
+  an instance-scoped registry replaces that keying model.
+- Store-driven persistence joins and extension adaptation still live in and
+  around `LGraph`.
+- Replacement configure is destructive on failure; additive configure provides
+  only best-effort rollback rather than an atomic staged transaction.
+- `SubgraphNode` still combines promoted-widget projection, preview hydration,
+  and host persistence responsibilities.
+- Prompt construction still awaits effectful widget `serializeValue` hooks.
+- Link paths, slot bounds, and hit-test geometry remain transient renderer
+  caches rather than persistent components.
 
 The current implementation also has no system-wide command protocol, workflow
 transaction, command replay, or command-based undo. These are factual limits,
@@ -178,63 +143,16 @@ unless they cover a new invariant.
 
 ### 2. Centralize remaining Component and Entity data
 
-The current authority and lifecycle inventory is in the
-[Component and Entity data audit](ecs-component-entity-data-audit.md). No item
-below is complete. Several have store-backed foundations but retain class-owned
-serialization, compatibility projections, or cleanup.
+All 19 scoped concerns are implemented. The authoritative commit-by-commit
+record and current compatibility boundaries are in the
+[Component and Entity data audit](ecs-component-entity-data-audit.md#progress-record).
 
-- Add plain store-owned graph and subgraph definition records for membership,
-  metadata, ordered entity IDs, and subgraph interfaces. Keep live object
-  registries as runtime adapters rather than serialization authorities.
-- Move remaining durable node visuals, including `boxcolor`, into the
-  store-owned shell or a focused visual component.
-- Make `nodeOutputStore` the canonical owner of outputs and transient preview
-  URLs. Turn legacy `app` maps and node image fields into outward-only
-  compatibility projections rather than reverse synchronization inputs.
-- Route front/back ordering through one scoped action that updates canonical
-  layout z-index and projects the resulting order into legacy `_nodes`.
-- Keep the current class serializers as the wire-format oracle until the
-  required records are store-owned. Then add a store-record serializer and
-  prove normalized differential parity before switching production reads.
-- Move stable `pos` and `size` compatibility buffers, version tracking, and
-  write-through behavior from `LGraphNode` into a scoped legacy geometry
-  adapter without changing indexed mutation behavior.
-- Split remaining non-topological link fields by lifecycle: execution payload,
-  interaction state, render/hit-test cache, and any persistent visual override.
-  Add plain records only for current consumers and define cleanup and
-  serialization per category.
-- Extract plain ordered slot descriptors only for a concrete class-free
-  consumer. Keep connectivity in `linkStore` and retain class adapters for
-  drawing, callbacks, geometry, and measured extension compatibility.
-- Move node properties and group presentation behind scoped store actions while
-  retaining compatibility property facades.
-- Keep `previewExposureStore` as the preview-routing authority. Replace raw host
-  keys with scoped identity, add host/source cleanup, and retain the node
-  property only as a wire hydration/projection boundary.
-- Preserve serialization compatibility through a controlled adapter: isolate
-  namespaced extension payloads as validated plain data and prevent persistence
-  hooks from mutating canonical workflow and store-backed fields.
-- Move graph `config`, `extra`, and `revision` into a focused store-owned plain
-  data record while preserving serialization compatibility.
-- Replace caller-selected `incrementVersion()` calls with one invalidation owner
-  driven by authoritative revisions or committed graph mutations. Retain
-  `_version` as a reactive compatibility projection.
-- Store opaque unknown-node fallback records by scoped node identity, define
-  their remapping and replacement lifecycle, and retain `last_serialization`
-  only as a compatibility facade.
-- Formalize execution `order` as topology-derived runtime state. Recompute after
-  load and retain serialized `order` only as a compatibility field emitted from
-  the derived value.
-- Move root-shared entity allocators behind the workflow identity owner. Route
-  creation, configure normalization, unpack, and clipboard import through one
-  API while preserving serialized counters.
-- Parse `widgets_values` and `widgets_values_named` once at the workflow
-  boundary into scoped restoration records. Make delayed widget creation
-  consume those records, remove first-party shadow writes, and emit wire forms
-  from store state plus authoritative widget order.
-- Add node/owner cleanup to `widgetValueStore` and host/source cleanup to
-  `previewExposureStore`, then wire both through removal, replacement, failed
-  configure, and released-subgraph teardown.
+Remaining work is the audit's five-part
+[structural follow-up plan](ecs-component-entity-data-audit.md#structural-follow-up-plan):
+restore real slot arrays, introduce an instance-scoped plain graph record,
+extract persistence from `LGraph`, make configure transactional, and decompose
+subgraph hosting. These improvements do not reopen the completed 19-concern
+authority migration.
 
 ### 3. Retire duplicate state and synchronization bridges
 
