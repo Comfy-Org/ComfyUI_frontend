@@ -26,7 +26,7 @@ extension-visible behavior.
 | Remaining node visuals              | Partial  | `NodeState` owns most shell visuals; `LGraphNode.boxcolor` remains a directly configured and serialized class field.                                                     |
 | Outputs and transient previews      | Open     | `nodeOutputStore` mirrors and sometimes reads `app.nodeOutputs`, `app.nodePreviewImages`, and live node image fields rather than projecting compatibility state outward. |
 | Node ordering                       | Partial  | Layout z-index is canonical for Vue and renderer switching; `sendToBack` mutates only legacy `_nodes` order.                                                             |
-| Store-driven serialization          | Open     | `LGraph.asSerialisable`, `LGraphNode.serialize`, group serializers, and subgraph serializers still walk live objects.                                                    |
+| Store-driven serialization          | Complete | Graph, node, group, topology, reroute, and subgraph DTOs enumerate store authorities; class adapters remain only for extension hooks and compatibility projections.      |
 | Legacy node geometry projection     | Partial  | Layout is authoritative, but `LGraphNode` owns stable mutable buffers, version tracking, synchronization, and write-through callbacks for `pos` and `size`.              |
 | Link non-topological state          | Complete | `linkStateStore` owns separate persistent color and runtime execution, interaction, render, and hit-test records on the topology lifecycle.                              |
 | Plain slot descriptors              | Complete | Store-owned node arrays contain plain reactive descriptors; stable class projections retain extension behavior, connectivity, callbacks, drawing, and geometry.          |
@@ -228,24 +228,24 @@ undo model.
 Each concern is completed in its own commit. The order follows the dependency
 sequence above rather than the summary-table order.
 
-| Sequence | Concern                             | Status      | Commit       | Result                                                                                           |
-| -------- | ----------------------------------- | ----------- | ------------ | ------------------------------------------------------------------------------------------------ |
-| 1        | Remaining node visuals              | Complete    | `fa5dcd8ca`  | `boxcolor` moved into `NodeState` with an enumerable tracked compatibility accessor.             |
-| 2        | Node ordering                       | Complete    | `06ae14e8b`  | One action now updates layout z-index and the legacy node array for front/back order.            |
-| 3        | Outputs and transient previews      | Complete    | `570b38c2a`  | Store maps now own output and preview reads; legacy maps and node images are projections.        |
-| 4        | Preview-exposure persistence        | Complete    | `2212ed302`  | Host exposures use owner-scoped locators; raw node-ID entries are hydration-only input.          |
-| 5        | Widget and preview-exposure cleanup | Complete    | `ecd148fa0`  | Node removal, replacement, teardown, and failed configure clear node-owned store records.        |
-| 6        | Graph metadata                      | Complete    | `298bf3da0`  | Revision, config, and extra now use graph-keyed store records behind compatibility accessors.    |
-| 7        | Entity ID allocation                | Complete    | `7fbd10624`  | Root-keyed allocation state now backs graph accessors; clipboard allocation uses shared helpers. |
-| 8        | Graph and subgraph definitions      | Complete    | `8923225fb`  | Root-scoped records now own ordered membership, the registry, and subgraph definition metadata.  |
-| 9        | Legacy node geometry projection     | Complete    | `854f68fb2`  | The layout adapter now owns stable legacy views, synchronization, and geometry write-through.    |
-| 10       | Plain slot descriptors              | Complete    | `cc53dad291` | Plain store descriptors now back stable extension-visible slot class projections.                |
-| 11       | Group presentation                  | Complete    | `3ac7b726a`  | Graph-definition records now back mutable presentation fields and serialization.                 |
-| 12       | Link non-topological state          | Complete    | `38b40988a`  | Separate persistent and runtime records now back compatible link fields with topology lifecycle. |
-| 13       | Node properties                     | Complete    | `f75b30dbd`  | Node state now owns stable mutable properties across lifecycle, callbacks, and serialization.    |
-| 14       | Unknown-node fallback               | Complete    | `ba4757f4c`  | Node state now owns unknown-node fallback records behind the compatibility accessor.             |
-| 15       | Delayed widget restoration          | Complete    | `972947d939` | Store-owned restoration state now hydrates configured and delayed widgets from wire shadows.     |
-| 16       | Extension persistence adapter       | Complete    | `287bf33f38` | Validated payloads round trip through a namespace while legacy hooks mutate isolated DTO views.  |
-| 17       | Execution order                     | Complete    | `7f6c2783dd` | Graph-scoped derived records own execution order behind the compatible node projection.          |
-| 18       | Graph invalidation                  | Complete    | This commit  | Graph-scoped batching coalesces composite invalidations behind the compatible version counter.   |
-| 19       | Store-driven serialization          | Not started |              |                                                                                                  |
+| Sequence | Concern                             | Status   | Commit       | Result                                                                                           |
+| -------- | ----------------------------------- | -------- | ------------ | ------------------------------------------------------------------------------------------------ |
+| 1        | Remaining node visuals              | Complete | `fa5dcd8ca`  | `boxcolor` moved into `NodeState` with an enumerable tracked compatibility accessor.             |
+| 2        | Node ordering                       | Complete | `06ae14e8b`  | One action now updates layout z-index and the legacy node array for front/back order.            |
+| 3        | Outputs and transient previews      | Complete | `570b38c2a`  | Store maps now own output and preview reads; legacy maps and node images are projections.        |
+| 4        | Preview-exposure persistence        | Complete | `2212ed302`  | Host exposures use owner-scoped locators; raw node-ID entries are hydration-only input.          |
+| 5        | Widget and preview-exposure cleanup | Complete | `ecd148fa0`  | Node removal, replacement, teardown, and failed configure clear node-owned store records.        |
+| 6        | Graph metadata                      | Complete | `298bf3da0`  | Revision, config, and extra now use graph-keyed store records behind compatibility accessors.    |
+| 7        | Entity ID allocation                | Complete | `7fbd10624`  | Root-keyed allocation state now backs graph accessors; clipboard allocation uses shared helpers. |
+| 8        | Graph and subgraph definitions      | Complete | `8923225fb`  | Root-scoped records now own ordered membership, the registry, and subgraph definition metadata.  |
+| 9        | Legacy node geometry projection     | Complete | `854f68fb2`  | The layout adapter now owns stable legacy views, synchronization, and geometry write-through.    |
+| 10       | Plain slot descriptors              | Complete | `cc53dad291` | Plain store descriptors now back stable extension-visible slot class projections.                |
+| 11       | Group presentation                  | Complete | `3ac7b726a`  | Graph-definition records now back mutable presentation fields and serialization.                 |
+| 12       | Link non-topological state          | Complete | `38b40988a`  | Separate persistent and runtime records now back compatible link fields with topology lifecycle. |
+| 13       | Node properties                     | Complete | `f75b30dbd`  | Node state now owns stable mutable properties across lifecycle, callbacks, and serialization.    |
+| 14       | Unknown-node fallback               | Complete | `ba4757f4c`  | Node state now owns unknown-node fallback records behind the compatibility accessor.             |
+| 15       | Delayed widget restoration          | Complete | `972947d939` | Store-owned restoration state now hydrates configured and delayed widgets from wire shadows.     |
+| 16       | Extension persistence adapter       | Complete | `287bf33f38` | Validated payloads round trip through a namespace while legacy hooks mutate isolated DTO views.  |
+| 17       | Execution order                     | Complete | `7f6c2783dd` | Graph-scoped derived records own execution order behind the compatible node projection.          |
+| 18       | Graph invalidation                  | Complete | `335b69420c` | Graph-scoped batching coalesces composite invalidations behind the compatible version counter.   |
+| 19       | Store-driven serialization          | Complete | This commit  | Store authorities now build wire DTOs after normalized parity against mutable serialization.     |

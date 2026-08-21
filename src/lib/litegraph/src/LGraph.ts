@@ -51,7 +51,12 @@ import { useEntityIdStore } from '@/stores/entityIdStore'
 import { useExecutionOrderStore } from '@/stores/executionOrderStore'
 import { useGraphDefinitionStore } from '@/stores/graphDefinitionStore'
 import { useGraphMetadataStore } from '@/stores/graphMetadataStore'
-import { UNASSIGNED_NODE_ID, parseNodeId, toNodeId } from '@/types/nodeId'
+import {
+  UNASSIGNED_NODE_ID,
+  parseNodeId,
+  serializeNodeId,
+  toNodeId
+} from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import { forEachNode, visitGraphNodes } from '@/utils/graphTraversalUtil'
 
@@ -335,7 +340,95 @@ function walkSegment(
  * + onNodeRemoved: when a node inside this graph is removed
  */
 function serialiseOwnedTopology(owner: LGraph) {
+  const scope = graphScopeOf(owner)
+  const topologies = [...useLinkStore().graphTopologies(scope)]
+  const serialiseLink = (link: (typeof topologies)[number]) => ({
+    id: link.id,
+    origin_id: serializeNodeId(link.originNodeId),
+    origin_slot: link.originSlot,
+    target_id: serializeNodeId(link.targetNodeId),
+    target_slot: link.targetSlot,
+    type: link.type,
+    ...(link.parentId !== undefined && { parentId: link.parentId })
+  })
+  const links = topologies.filter((link) => !isFloatingTopology(link))
+  const floatingLinks = topologies.filter(isFloatingTopology)
+  const reroutes = [...useRerouteStore().graphChains(scope)].map((reroute) => {
+    const position = layoutStore.getRerouteLayout(
+      owner.rootGraph.id,
+      reroute.id
+    )?.position ?? { x: 0, y: 0 }
+    const membership = useRerouteStore().getMembership(scope, reroute.id)
+    return {
+      id: reroute.id,
+      parentId: reroute.parentId,
+      pos: [position.x, position.y] as [number, number],
+      linkIds: [...membership.linkIds].sort((a, b) => a - b),
+      floating: reroute.floating
+        ? { slotType: reroute.floating.slotType }
+        : undefined
+    }
+  })
   return {
+    links: links.length ? links.map(serialiseLink) : undefined,
+    floatingLinks: floatingLinks.length
+      ? floatingLinks.map(serialiseLink)
+      : undefined,
+    reroutes: reroutes.length ? reroutes : undefined
+  }
+}
+
+function serialiseStoredNodes(owner: LGraph, sortNodes: boolean) {
+  const adapters = new Map(owner._nodes.map((node) => [node.id, node]))
+  const states = useNodeDataStore().getGraphNodesFor(
+    owner.rootGraph.id,
+    owner.id
+  )
+  const ordered = sortNodes
+    ? [...states].sort((a, b) => Number(a.id) - Number(b.id))
+    : states
+  return ordered.flatMap((state) => {
+    const adapter = adapters.get(state.id)
+    return adapter ? [adapter.serializeFromStoreState(state)] : []
+  })
+}
+
+function serialiseStoredGroups(owner: LGraph) {
+  const membership = useGraphDefinitionStore().membership(
+    owner.rootGraph.id,
+    owner.id
+  )
+  return membership.groups.flatMap((group) => {
+    const presentation = membership.groupPresentation.get(group.id)
+    const layout = layoutStore.getGroupLayout(owner.rootGraph.id, group.id)
+    if (!presentation || !layout) return []
+    return [
+      {
+        id: group.id,
+        title: presentation.title,
+        bounding: [
+          layout.position.x,
+          layout.position.y,
+          layout.size.width,
+          layout.size.height
+        ],
+        color: presentation.color,
+        flags: presentation.flags
+      }
+    ]
+  })
+}
+
+export function serialiseMutableGraphParts(
+  owner: LGraph,
+  sortNodes: boolean = false
+) {
+  const nodes = sortNodes
+    ? [...owner._nodes].sort((a, b) => Number(a.id) - Number(b.id))
+    : owner._nodes
+  return {
+    nodes: nodes.map((node) => node.serialize()),
+    groups: owner._groups.map((group) => group.serialize()),
     links: owner.links.size
       ? [...owner.links.values()].map((link) => link.asSerialisable())
       : undefined,
@@ -2606,12 +2699,8 @@ export class LGraph
     Required<Pick<SerialisableGraph, 'nodes' | 'groups' | 'extra'>> {
     const { id, revision, config, state } = this
 
-    const nodeList = options?.sortNodes
-      ? [...this._nodes].sort((a, b) => Number(a.id) - Number(b.id))
-      : this._nodes
-
-    const nodes = nodeList.map((node) => node.serialize())
-    const groups = this._groups.map((x) => x.serialize())
+    const nodes = serialiseStoredNodes(this, options?.sortNodes ?? false)
+    const groups = serialiseStoredGroups(this)
     const topology = serialiseOwnedTopology(this)
 
     // Save scale and offset
@@ -3297,8 +3386,8 @@ export class Subgraph
       inputs: this.inputs.map((x) => x.asSerialisable()),
       outputs: this.outputs.map((x) => x.asSerialisable()),
       widgets: [...this.widgets],
-      nodes: this.nodes.map((node) => node.serialize()),
-      groups: this.groups.map((group) => group.serialize()),
+      nodes: serialiseStoredNodes(this, false),
+      groups: serialiseStoredGroups(this),
       ...topology,
       links: topology.links ?? [],
       extra: this.extra

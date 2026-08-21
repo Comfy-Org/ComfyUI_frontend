@@ -46,6 +46,7 @@ import {
 } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
+import type { NodeState } from '@/types/nodeState'
 import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
 
@@ -937,7 +938,11 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
 
   override serialize(): ISerialisedNode {
-    const serialized = super.serialize()
+    return this.serializeFromStoreState(this._state)
+  }
+
+  override serializeFromStoreState(state: NodeState): ISerialisedNode {
+    const serialized = super.serializeFromStoreState(state)
     const serializedProperties = { ...(serialized.properties ?? {}) }
     const rootGraphId = this.rootGraph.id
     const hostLocator = getPreviewExposureHostLocator(this)
