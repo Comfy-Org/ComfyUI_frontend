@@ -252,11 +252,18 @@ export function extractApiModels(files: string[]): ApiModelData[] {
     if (!file.startsWith('api_')) continue
     const baseName = file
       .slice(4)
-      .replace(/\.json$/, '')
       .toLowerCase()
+      .replace(/\.json$/, '')
 
     // Ignore known non-providers or upstream typos until fixed
-    if (baseName.startsWith('king') || baseName.startsWith('from')) continue
+    if (
+      baseName === 'king' ||
+      baseName.startsWith('king_') ||
+      baseName === 'from' ||
+      baseName.startsWith('from_')
+    ) {
+      continue
+    }
 
     let matchedKey: string | undefined
     for (const key of sortedKeys) {
