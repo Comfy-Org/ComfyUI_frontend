@@ -17,23 +17,27 @@ export type OutputSlotDescriptor = INodeOutputSlot
 const slotProjection = Symbol('slotProjection')
 const slotDescriptor = Symbol('slotDescriptor')
 const sourceSlot = Symbol('sourceSlot')
-const projectedArrayMethods = new Set([
-  'at',
-  'entries',
+const callbackArrayMethods = new Set([
   'every',
+  'filter',
   'find',
   'findIndex',
   'findLast',
   'findLastIndex',
-  'flat',
   'flatMap',
   'forEach',
-  'includes',
-  'keys',
+  'map',
   'reduce',
   'reduceRight',
+  'some'
+])
+const projectedArrayMethods = new Set([
+  'at',
+  'entries',
+  'flat',
+  'includes',
+  'keys',
   'slice',
-  'some',
   'toReversed',
   'toSorted',
   'toSpliced',
@@ -102,22 +106,14 @@ function slotView<T extends INodeSlot>(
           for (let index = 0; index < target.length; index++)
             yield Reflect.get(receiver, String(index))
         }
+      if (typeof property === 'string' && callbackArrayMethods.has(property))
+        return Reflect.get(Array.prototype, property).bind(receiver)
       if (typeof property === 'string' && projectedArrayMethods.has(property)) {
         const projected = Array.from({ length: target.length }, (_, index) =>
           Reflect.get(receiver, String(index))
         )
         return Reflect.get(projected, property).bind(projected)
       }
-      if (property === 'map')
-        return <U>(callback: (slot: T, index: number, slots: T[]) => U) =>
-          Array.from({ length: target.length }, (_, index) =>
-            callback(Reflect.get(receiver, String(index)), index, receiver)
-          )
-      if (property === 'filter')
-        return (callback: (slot: T, index: number, slots: T[]) => boolean) =>
-          Array.from({ length: target.length }, (_, index) =>
-            Reflect.get(receiver, String(index))
-          ).filter(callback)
       if (property === 'indexOf')
         return (slot: T, fromIndex = 0) => {
           const descriptor = Reflect.get(slot, slotDescriptor)
