@@ -1,25 +1,44 @@
 import { execSync } from 'node:child_process'
-import { pass, fail, info } from '../ui/logger'
+import { readEngines, satisfies } from './engines'
+import { fail, info, pass, warn } from '../ui/logger'
 import type { CheckResult } from './types'
 
+const enableSteps = [
+  'pnpm ships with Node.js via corepack. Enable it with:',
+  '',
+  '  corepack enable',
+  '',
+  'Then re-run this command.'
+]
+
 export async function checkPnpm(): Promise<CheckResult> {
+  const required = readEngines().pnpm
+
+  let version: string
   try {
-    const version = execSync('pnpm --version', { encoding: 'utf-8' }).trim()
-    pass('pnpm', version)
-    return { name: 'pnpm', ok: true, version }
+    version = execSync('pnpm --version', { encoding: 'utf-8' }).trim()
   } catch {
     fail('pnpm', 'not installed')
+    info(enableSteps)
+    return { name: 'pnpm', ok: false, installInstructions: enableSteps }
+  }
+
+  if (required && !satisfies(version, required)) {
+    warn('pnpm', `${version} (this repo needs ${required})`)
     const instructions = [
-      'Install pnpm via corepack (comes with Node.js):',
+      `pnpm ${version} is older than this repo requires (${required}).`,
       '',
-      '  corepack enable',
-      '  corepack prepare pnpm@10.17.1 --activate',
-      '',
-      'Or install directly:',
-      '',
-      '  npm install -g pnpm'
+      ...enableSteps
     ]
     info(instructions)
-    return { name: 'pnpm', ok: false, installInstructions: instructions }
+    return {
+      name: 'pnpm',
+      ok: false,
+      version,
+      installInstructions: instructions
+    }
   }
+
+  pass('pnpm', version)
+  return { name: 'pnpm', ok: true, version }
 }
