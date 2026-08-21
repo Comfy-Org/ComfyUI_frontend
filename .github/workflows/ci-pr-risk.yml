@@ -2,8 +2,9 @@ name: CI - PR Risk Grade
 
 # Thin caller for the shared ADVISORY PR risk grader (shadow check). Grades
 # every PR R0 (safest) .. R3 (riskiest) against .github/risk.json (read from
-# the BASE ref) and syncs exactly one `risk:*` label — nothing gates, routes,
-# or merges on it. Disagree with a grade by adding the human-owned
+# the BASE ref), syncs exactly one `risk:*` label and publishes the per-axis
+# reasoning as a neutral `PR risk (advisory)` Check Run — nothing gates,
+# routes, or merges on it. Disagree with a grade by adding the human-owned
 # `risk-dispute` label plus a comment saying why.
 
 on:
@@ -63,3 +64,34 @@ jobs:
       enabled: true
       pr_number: ${{ inputs.pr_number }}
       pr_numbers: ${{ inputs.pr_numbers }}
+      # The label is mutable and keeps no history; this publishes the tier AND
+      # the per-axis reasoning behind it as a commit-attached record, which is
+      # what makes a disputed grade answerable after the fact. The conclusion
+      # is hardcoded `neutral` upstream, so a published check can never fail a
+      # PR. The `checks: write` it needs is already granted above (every caller
+      # owes that grant whether or not it opts in).
+      #
+      # Three limits, stated so nobody reads more into the artifact than it
+      # carries:
+      #   * ABSENCE, not conclusion, is the failure mode. This job's `if:`
+      #     above skips fork and Dependabot PRs, and upstream's publish-check
+      #     gates on the kill switch even for a manual dispatch while the grade
+      #     job deliberately does not — so a dispatched re-grade with
+      #     `RISK_CONFIG {"enabled": false}` still rewrites the label and
+      #     publishes nothing. Never mark `PR risk (advisory)` required in
+      #     branch protection: those PRs would block forever on a check that is
+      #     never created.
+      #   * NOT ONE PER COMMIT. Upstream only ever POSTs, never updates, so
+      #     each re-grade of the same head sha (reopen, ready_for_review after
+      #     opened, a re-run, a dispatch) APPENDS a check instead of revising
+      #     the last one. A commit can carry several with differing tiers and
+      #     nothing marking which is current; the newest wins, and the run log
+      #     remains the tiebreak. Same reason a check cannot be attributed to a
+      #     PR: it is commit-scoped, so two PRs sharing a head sha get two
+      #     indistinguishable ones.
+      #   * IT PERTURBS THE NEXT GRADE OF THE SAME SHA. An existing check makes
+      #     the rollup non-empty, so the grader's 120s "checks have not
+      #     registered yet" grace window stops applying to a re-grade, which
+      #     can settle a poll early and floor the reversibility axis. Tier
+      #     only, re-grades only, and advisory throughout.
+      check_run: true
