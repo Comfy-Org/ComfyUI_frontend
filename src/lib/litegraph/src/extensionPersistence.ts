@@ -1,7 +1,7 @@
 type JsonValue = null | boolean | number | string | JsonValue[] | JsonObject
 type JsonObject = { [key: string]: JsonValue }
 
-export type ExtensionPayload = Record<string, JsonValue>
+type ExtensionPayload = Record<string, JsonValue>
 
 const payloads = new WeakMap<object, ExtensionPayload>()
 
