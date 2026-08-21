@@ -192,16 +192,15 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
     expect(refAfter?.images).toHaveLength(2)
   })
 
-  it('projects outputs without reading legacy map mutations back', () => {
+  it('replaces outputs written through the legacy map', () => {
     const store = useNodeOutputStore()
     const node = createMockNode({ id: 5 })
 
     store.setNodeOutputs(node, 'canonical.png')
-    const output = store.getNodeOutputs(node)
-    app.nodeOutputs['5'] = createMockOutputs([{ filename: 'legacy.png' }])
+    const legacyOutput = createMockOutputs([{ filename: 'legacy.png' }])
+    store.replaceOutputsFromLegacy({ '5': legacyOutput })
 
-    expect(store.getNodeOutputs(node)).toEqual(output)
-    expect(node.images).toEqual(output?.images)
+    expect(store.getNodeOutputs(node)).toEqual(legacyOutput)
   })
 
   it('projects previews without reading legacy map mutations back', () => {
