@@ -5,6 +5,10 @@ import type { LGraphGroup } from '../LGraphGroup'
 import type { LGraphNode } from '../LGraphNode'
 import type { LinkReleaseContextExtended } from '../litegraph'
 
+export function isTouchLikePointerType(pointerType: string): boolean {
+  return pointerType === 'touch' || pointerType === 'pen'
+}
+
 /** For Canvas*Event - adds graph space co-ordinates (property names are shipped) */
 interface ICanvasPosition {
   /** X co-ordinate of the event, in graph space (NOT canvas space) */
