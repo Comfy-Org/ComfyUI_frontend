@@ -126,9 +126,24 @@ if (existsSync(readmePath)) {
   // "Indented" means a LEADING SPACE, specifically. A tab is indentation to a
   // reader and to Markdown, so a tab-indented marker would look like an example
   // and be skipped — restoring the silent inertness this rule exists to stop.
-  const stray = readFileSync(readmePath, "utf8")
-    .split("\n")
-    .filter((line) => /<!--\s*(claim|claim-absent|known-defect):/.test(line) && !line.startsWith(" "));
+  // Scanned over the whole text rather than line by line, because `\s*` spans a
+  // newline: `<!--\nclaim: x :: p -->` IS a live marker in a real profile, and a
+  // line-by-line filter saw neither line as one and passed it silently — the
+  // exact inertness this rule exists to stop. A marker counts as an example only
+  // if its OPENING `<!--` has a space before it on its own line.
+  const readmeText = readFileSync(readmePath, "utf8");
+  // A marker is an EXAMPLE only if the text between the start of its line and
+  // its opening `<!--` is one or more characters and all of them are spaces.
+  // Everything else — column 0, a tab, a bullet — is a live-looking marker that
+  // this gate would silently skip.
+  const isExample = (index) => {
+    const lineStart = readmeText.lastIndexOf("\n", index - 1) + 1;
+    const prefix = readmeText.slice(lineStart, index);
+    return prefix.length > 0 && /^ +$/.test(prefix);
+  };
+  const stray = [...readmeText.matchAll(/<!--\s*(?:claim|claim-absent|known-defect):[\s\S]*?-->/g)]
+    .filter((m) => !isExample(m.index))
+    .map((m) => m[0].replace(/\s+/g, " "));
   if (stray.length > 0) {
     console.error(
       `profile-claims check FAILED — ${stray.length} unindented claim marker(s) in ` +
@@ -136,7 +151,7 @@ if (existsSync(readmePath)) {
         "examples would otherwise run as claims). A marker there is silently inert.\n" +
         "Move it to the profile that owns the fact, or indent it with SPACES to mark it\n" +
         "as an example (a tab does not count — it reads as indentation and would be skipped):\n" +
-        stray.map((line) => `  ${line.trim()}`).join("\n"),
+        stray.map((marker) => `  ${marker}`).join("\n"),
     );
     process.exit(1);
   }

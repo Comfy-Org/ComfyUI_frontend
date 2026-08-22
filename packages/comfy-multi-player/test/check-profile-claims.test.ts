@@ -365,8 +365,45 @@ describe("check-profile-claims staleness gate", () => {
     writeFileSync(join(checks, "README.md"), "\t<!-- claim: anything :: src/index.ts -->\n");
     expect(runAgainst(root).status).toBe(1);
 
+    // A marker split across two lines is a LIVE marker in a real profile,
+    // because the marker regex's `\s*` spans a newline. A line-by-line scan saw
+    // neither line as a marker and passed it silently — the inertness this rule
+    // exists to stop, wearing the one disguise the rule could not see.
+    writeFileSync(join(checks, "README.md"), "<!--\nclaim: anything :: src/index.ts -->\n");
+    const multiline = runAgainst(root);
+    expect(multiline.status).toBe(1);
+    expect(multiline.stderr).toContain("<!-- claim: anything :: src/index.ts -->");
+
+    // A marker whose BODY spans a newline is the shape the repo's own #16
+    // tombstone has, and it must be caught at column 0 too. Pinned separately
+    // because a scan that stopped at the end of the line still passed the
+    // opening-newline case above.
+    writeFileSync(
+      join(checks, "README.md"),
+      '<!-- known-defect: #1 :: */\n  version: number; :: src/index.ts -->\n',
+    );
+    expect(runAgainst(root).status).toBe(1);
+
+    // The same text indented with spaces is an example, and stays one.
+    writeFileSync(join(checks, "README.md"), "  <!--\n  claim: anything :: src/index.ts -->\n");
+    expect(runAgainst(root).status).toBe(0);
+
     // Indented with a space, it is documentation and the gate is green again.
     writeFileSync(join(checks, "README.md"), "  <!-- claim: anything :: src/index.ts -->\n");
+    expect(runAgainst(root).status).toBe(0);
+  });
+
+  it("trims the needle, so a needle cannot rely on leading whitespace", () => {
+    // Pinned because the degradation is SILENT and unsafe: a needle chosen to be
+    // unique BECAUSE of its indentation is stored without it, and then matches
+    // somewhere the author never meant. `  version: number;` was picked to
+    // exclude `base_version: number;` and, trimmed, matches it — the marker
+    // passes forever against the wrong line. Anchor on a non-space character
+    // instead. This test documents the behaviour so the next author meets it
+    // here rather than in a tombstone that never fires.
+    writeFileSync(join(root, "src", "index.ts"), "  base_version: number;\n  other: number;\n");
+    writeFileSync(join(checks, "a.md"), "<!-- claim:   version: number; :: src/index.ts -->\n");
+    // Passes although `  version: number;` (as written) is nowhere in the file.
     expect(runAgainst(root).status).toBe(0);
   });
 
