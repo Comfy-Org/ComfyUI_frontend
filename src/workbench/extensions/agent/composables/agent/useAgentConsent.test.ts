@@ -5,10 +5,15 @@ import { useDialogStore } from '@/stores/dialogStore'
 
 import { useAgentConsent } from './useAgentConsent'
 
+function setSearch(search: string): void {
+  window.history.replaceState({}, '', `${window.location.pathname}${search}`)
+}
+
 describe('useAgentConsent', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
+    setSearch('')
     useAgentConsent().accepted.value = false
   })
 
@@ -66,5 +71,36 @@ describe('useAgentConsent', () => {
 
     expect(onAccept).not.toHaveBeenCalled()
     expect(consent.accepted.value).toBe(false)
+  })
+
+  describe('with ?agentConsent=always', () => {
+    beforeEach(() => setSearch('?agentConsent=always'))
+
+    it('asks again even when consent is already on record', () => {
+      const dialogStore = useDialogStore()
+      const showDialog = vi.spyOn(dialogStore, 'showDialog')
+      const consent = useAgentConsent()
+      consent.accepted.value = true
+
+      consent.withConsent(vi.fn())
+
+      expect(showDialog).toHaveBeenCalledOnce()
+    })
+
+    it('lets the caller through without recording the answer', () => {
+      const dialogStore = useDialogStore()
+      const showDialog = vi.spyOn(dialogStore, 'showDialog')
+      const onAccept = vi.fn()
+      const consent = useAgentConsent()
+
+      consent.withConsent(onAccept)
+      const props = showDialog.mock.calls[0][0].props as {
+        onAccept: () => void
+      }
+      props.onAccept()
+
+      expect(onAccept).toHaveBeenCalledOnce()
+      expect(consent.accepted.value).toBe(false)
+    })
   })
 })
