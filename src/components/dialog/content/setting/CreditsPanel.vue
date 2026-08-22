@@ -65,11 +65,10 @@ import { ref, watch } from 'vue'
 
 import UsageLogsTable from '@/components/dialog/content/setting/UsageLogsTable.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
 import CreditsTile from '@/platform/cloud/subscription/components/CreditsTile.vue'
 import { useTelemetry } from '@/platform/telemetry'
-import { useAuthStore } from '@/stores/authStore'
 import { useCommandStore } from '@/stores/commandStore'
 
 const { embedded = false } = defineProps<{
@@ -77,24 +76,19 @@ const { embedded = false } = defineProps<{
 }>()
 
 const { buildDocsUrl, docsPaths } = useExternalLink()
-const authStore = useAuthStore()
-const authActions = useAuthActions()
+const { balance, manageSubscription } = useBillingContext()
 const commandStore = useCommandStore()
 const telemetry = useTelemetry()
 
 const usageLogsTableRef = ref<InstanceType<typeof UsageLogsTable> | null>(null)
 
-watch(
-  () => authStore.lastBalanceUpdateTime,
-  (newTime, oldTime) => {
-    if (newTime && newTime !== oldTime && usageLogsTableRef.value) {
-      void usageLogsTableRef.value.refresh()
-    }
-  }
-)
+watch(balance, (next, previous) => {
+  if (!next || !previous) return
+  void usageLogsTableRef.value?.refresh()
+})
 
 const handleCreditsHistoryClick = async () => {
-  await authActions.accessBillingPortal()
+  await manageSubscription()
 }
 
 const handleMessageSupport = async () => {
