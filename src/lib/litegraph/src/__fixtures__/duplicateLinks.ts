@@ -73,17 +73,6 @@ export const duplicateLinksRoot: SerialisableGraph = {
   ]
 }
 
-/**
- * Root graph where two links target the same input from *different* origins.
- * SourceA (id 1) holds link 1, SourceB (id 2) holds link 2, and Target's
- * serialized `inputs[0]` references link **2** — so the first link in array
- * order and the link `input.link` names disagree.
- *
- * Not hypothetical: this is byte-for-byte what `main` serializes after a pack
- * creates a link through the legacy slot mirrors alone (`output.links.push`,
- * `input.link =`) instead of `node.connect()`, which is rgthree `link_fixer`'s
- * repair idiom. Reproduced against `main` at 32d0b6e202.
- */
 export const conflictingOriginLinksRoot: SerialisableGraph = {
   id: 'dd000000-0000-4000-8000-000000000004',
   version: 1,
