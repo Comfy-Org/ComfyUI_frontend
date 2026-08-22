@@ -104,6 +104,28 @@ describe('LGraphNode widget ordering', () => {
       expect(node.widgets![2].value).toBe(12345) // seed
     })
 
+    it('round trips compact positional values around non-serializable widgets', () => {
+      node.serialize_widgets = true
+      node.addWidget('number', 'steps', 30, null, {})
+      node.addWidget('button', 'action', 'Click', null, {}).serialize = false
+      node.addWidget('number', 'seed', 12345, null, {})
+
+      const serialized = node.serialize()
+      const restored = new LGraphNode('Restored')
+      restored.addWidget('number', 'steps', 0, null, {})
+      restored.addWidget('button', 'action', 'Click', null, {}).serialize =
+        false
+      restored.addWidget('number', 'seed', 0, null, {})
+      restored.configure(serialized)
+
+      expect(serialized.widgets_values).toEqual([30, 12345])
+      expect(restored.widgets!.map((widget) => widget.value)).toEqual([
+        30,
+        'Click',
+        12345
+      ])
+    })
+
     it('restores positional values for widgets created after configure', () => {
       node.configure({
         id: 1,

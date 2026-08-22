@@ -105,14 +105,17 @@ describe('MatchType during configure', () => {
       observedTypes.push(switchNode.outputs[0].type)
     })
 
-    expect(app.configuringGraph).toBe(false)
+    try {
+      expect(app.configuringGraph).toBe(false)
 
-    source1.connect(0, switchNode, 0)
+      source1.connect(0, switchNode, 0)
 
-    expect(switchNode.inputs[0].link).not.toBeNull()
-    expect(switchNode.outputs[0].type).toBe('IMAGE')
-    expect(observedTypes).toEqual(['*', 'IMAGE'])
-    stop(runner)
+      expect(switchNode.inputs[0].link).not.toBeNull()
+      expect(switchNode.outputs[0].type).toBe('IMAGE')
+      expect(observedTypes).toEqual(['*', 'IMAGE'])
+    } finally {
+      stop(runner)
+    }
   })
 
   test('connects both inputs with same type', () => {

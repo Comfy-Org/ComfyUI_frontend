@@ -6,7 +6,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { NodeLifecycleEvent } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
-import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import {
@@ -16,9 +15,12 @@ import {
   LiteGraph,
   LLink,
   Reroute,
-  serialiseMutableGraphParts,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
+import {
+  serialiseMutableGraphParts,
+  Subgraph
+} from '@/lib/litegraph/src/LGraph'
 import type {
   ExportedSubgraph,
   SerialisableGraph,
@@ -102,6 +104,18 @@ class ThrowingConfigureNode extends LGraphNode {
   }
 }
 
+const originalThrowingConfigureNode =
+  LiteGraph.registered_node_types['throwing-configure']
+
+afterEach(() => {
+  if (originalThrowingConfigureNode) {
+    LiteGraph.registered_node_types['throwing-configure'] =
+      originalThrowingConfigureNode
+  } else {
+    delete LiteGraph.registered_node_types['throwing-configure']
+  }
+})
+
 describe('LGraph', () => {
   it('batches version updates while keeping distinct mutations distinct', () => {
     const graph = new LGraph()
@@ -178,6 +192,24 @@ describe('LGraph', () => {
     expect(graph.id).toBe(nextId)
     expect(store.membership(nextId, nextId)).toBe(membership)
     expect(store.membership(previousId, previousId)).not.toBe(membership)
+  })
+
+  it('subgraph construction clears only its target definition', () => {
+    const store = useGraphDefinitionStore()
+    const root = new LGraph()
+    const data = createTestSubgraphData()
+    const staleMembership = store.membership(root.id, data.id)
+    const staleDefinition = store.definition(root.id, data.id)
+    const siblingId = createUuidv4()
+    const siblingMembership = store.membership(root.id, siblingId)
+    const siblingDefinition = store.definition(root.id, siblingId)
+
+    new Subgraph(root, data)
+
+    expect(store.membership(root.id, data.id)).not.toBe(staleMembership)
+    expect(store.definition(root.id, data.id)).not.toBe(staleDefinition)
+    expect(store.membership(root.id, siblingId)).toBe(siblingMembership)
+    expect(store.definition(root.id, siblingId)).toBe(siblingDefinition)
   })
 
   it('should serialize deterministic node order', async () => {
@@ -294,6 +326,43 @@ describe('LGraph', () => {
     expect(
       usePreviewExposureStore().getExposures(graph.id, String(sourceNode.id))
     ).toEqual([])
+  })
+
+  it('restores topology and reroutes when keep-old configuration fails', () => {
+    LiteGraph.registerNodeType('throwing-configure', ThrowingConfigureNode)
+    const graph = new LGraph()
+    const source = new DummyNode()
+    const target = new DummyNode()
+    source.addOutput('value', 'number')
+    target.addInput('value', 'number')
+    graph.add(source)
+    graph.add(target)
+    const link = source.connect(0, target, 0)!
+    const reroute = graph.createReroute([10, 20], link)!
+    const before = graph.asSerialisable()
+    const data = structuredClone(before)
+    data.reroutes![0].pos = [90, 100]
+    const configuredRerouteId = toRerouteId(200)
+    data.reroutes!.push({
+      ...data.reroutes![0],
+      id: configuredRerouteId,
+      pos: [110, 120]
+    })
+    const failingNode = new ThrowingConfigureNode()
+    failingNode.type = 'throwing-configure'
+    failingNode.id = toNodeId(100)
+    data.nodes.push(failingNode.serialize())
+
+    expect(() => graph.configure(data, true)).toThrow('configure failed')
+
+    const after = graph.asSerialisable()
+    expect(after.links).toEqual(before.links)
+    expect(after.floatingLinks).toEqual(before.floatingLinks)
+    expect(after.reroutes).toEqual(before.reroutes)
+    expect(graph.reroutes.get(reroute.id)?.pos).toEqual([10, 20])
+    expect(
+      layoutStore.getRerouteLayout(graph.id, configuredRerouteId)
+    ).toBeNull()
   })
 
   it('should handle adding null node gracefully', () => {
@@ -791,6 +860,23 @@ describe('Store-driven serialization parity', () => {
 
     expect(() => graph.asSerialisable()).toThrow(
       `Cannot serialize graph ${graph.id}: group ${group.id} has no layout`
+    )
+  })
+
+  test('rejects a reroute without layout', ({ expect, linkedNodesGraph }) => {
+    const graph = new LGraph(linkedNodesGraph)
+    const link = graph.links.values().next().value!
+    const reroute = graph.createReroute([10, 20], link)!
+    layoutStore.applyOperation({
+      type: 'deleteReroute',
+      graphId: graph.id,
+      rerouteId: reroute.id,
+      source: LayoutSource.Canvas,
+      timestamp: Date.now()
+    })
+
+    expect(() => graph.asSerialisable()).toThrow(
+      `Cannot serialize graph ${graph.id}: reroute ${reroute.id} has no layout`
     )
   })
 })
@@ -1333,6 +1419,9 @@ describe('Subgraph Definition Garbage Collection', () => {
     const rootGraph = new LGraph()
     const { subgraph } = createSubgraphWithNodes(rootGraph, 1)
     const subgraphId = subgraph.id
+    const store = useGraphDefinitionStore()
+    const membership = store.membership(rootGraph.id, subgraphId)
+    const definition = store.definition(rootGraph.id, subgraphId)
 
     const subgraphNode = createTestSubgraphNode(subgraph, { pos: [100, 100] })
     rootGraph.add(subgraphNode)
@@ -1342,6 +1431,8 @@ describe('Subgraph Definition Garbage Collection', () => {
     rootGraph.remove(subgraphNode)
 
     expect(rootGraph.subgraphs.has(subgraphId)).toBe(false)
+    expect(store.membership(rootGraph.id, subgraphId)).not.toBe(membership)
+    expect(store.definition(rootGraph.id, subgraphId)).not.toBe(definition)
   })
 
   function createNestedDefinitionFixture() {

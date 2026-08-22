@@ -14,7 +14,6 @@ type SlotDescriptor<T extends INodeSlot> = T
 export type InputSlotDescriptor = INodeInputSlot
 export type OutputSlotDescriptor = INodeOutputSlot
 
-const slotProjection = Symbol('slotProjection')
 const slotDescriptor = Symbol('slotDescriptor')
 const sourceSlot = Symbol('sourceSlot')
 const callbackArrayMethods = new Set([
@@ -99,6 +98,7 @@ function slotView<T extends INodeSlot>(
   descriptors: SlotDescriptor<T>[],
   create: (slot: T) => T
 ): T[] {
+  const projections = new WeakMap<object, T>()
   return new Proxy(descriptors, {
     get(target, property, receiver) {
       if (property === Symbol.iterator)
@@ -130,11 +130,11 @@ function slotView<T extends INodeSlot>(
       const value = Reflect.get(target, property, receiver)
       if (typeof property === 'symbol' || !/^\d+$/.test(property)) return value
       if (!value) return value
-      const raw = toRaw(value) as T & { [slotProjection]?: T }
-      const existing = raw[slotProjection]
+      const raw = toRaw(value)
+      const existing = projections.get(raw)
       if (existing) return existing
       const created = project(value, create)
-      Object.defineProperty(raw, slotProjection, { value: created })
+      projections.set(raw, created)
       return created
     },
     set(target, property, value, receiver) {

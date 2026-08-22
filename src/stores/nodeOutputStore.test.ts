@@ -140,6 +140,20 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
     ).toEqual(['blob:second'])
   })
 
+  it('owns preview arrays after setting them', () => {
+    const store = useNodeOutputStore()
+    const executionId = createNodeExecutionId([toNodeId(11)])
+    const previews = ['blob:first']
+
+    store.setNodePreviewsByExecutionId(executionId, previews)
+    previews.push('blob:caller-mutation')
+
+    expect(store.getNodePreviewImagesByExecutionId(executionId)).toEqual([
+      'blob:first'
+    ])
+    expect(store.latestPreview).toEqual(['blob:first'])
+  })
+
   it('should update reactive nodeOutputs.value when merging outputs', () => {
     const store = useNodeOutputStore()
     const executionId = createNodeExecutionId([toNodeId(1)])

@@ -349,6 +349,19 @@ describe('ComfyApp', () => {
       )
       expect(app.nodeOutputs['1']).toBe(output)
       expect(output.images).toBe(images)
+
+      mockNodeOutputStore.replaceOutputsFromLegacy.mockClear()
+      const image = images?.[0]
+      if (!image) throw new Error('Expected a legacy output image')
+      image.filename = 'mutated.png'
+      expect(mockNodeOutputStore.replaceOutputsFromLegacy).toHaveBeenCalledWith(
+        {
+          '1': {
+            images: [{ filename: 'mutated.png' }, { filename: 'third.png' }]
+          }
+        }
+      )
+      expect(images?.[0]).toBe(image)
     })
   })
 
