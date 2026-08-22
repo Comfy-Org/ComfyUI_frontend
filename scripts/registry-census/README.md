@@ -82,15 +82,18 @@ Pure stdlib; needs `curl` and `tar` on PATH, plus `git` for `--write-pins`.
 
 ## In CI
 
-`.github/workflows/ci-ecosystem-matrix.yaml`. An exact cache hit restores the
-snapshot and corpus as-is, with no registry crawl or pack refetch. On a miss,
-the workflow rebuilds the corpus and refuses to cache or measure it unless at
-least 95% of pin-resolved, structurally eligible registry targets are
-available. Targets the pin bump could not resolve, unsupported hosts, invalid
-URLs or subdirectories, and packs outside the archive/staging budget are
-recorded but do not consume that outage floor. The minimum count of five
-failed targets keeps a small local `--limit` smoke run from acting like a
-census.
+`CI: Tests E2E` calls `.github/workflows/ci-ecosystem-matrix.yaml` after the
+required E2E gate passes for affected PRs and pushes to the default branch.
+This keeps the advisory census from occupying hosted runners ahead of required
+browser tests. The matrix workflow can also be dispatched directly. An exact
+cache hit restores the snapshot and corpus as-is, with no registry crawl or
+pack refetch. On a miss, the workflow rebuilds the corpus and refuses to cache
+or measure it unless at least 95% of pin-resolved, structurally eligible
+registry targets are available. Targets the pin bump could not resolve,
+unsupported hosts, invalid URLs or subdirectories, and packs outside the
+archive/staging budget are recorded but do not consume that outage floor. The
+minimum count of five failed targets keeps a small local `--limit` smoke run
+from acting like a census.
 
 The cache key covers the pin set plus the fetch and validation code, and
 Actions caches are immutable. Main normally provides the shared entry that
@@ -256,9 +259,9 @@ The advisory is red. In order:
 **Blast radius:** the matrix is an advisory PR check, not a required check.
 `ProtectMain` requires `test`, `lint-and-format`, `e2e-status` and
 `website-e2e`, so a red matrix informs but does not block. Promotion requires
-both adding `matrix-verdict` to required checks and adding a `merge_group`
-trigger; doing only the first leaves merge groups waiting for a check this
-workflow never reports.
+both making the called matrix verdict a required check and admitting
+`merge_group` events in the caller condition; doing only the first leaves merge
+groups waiting for a check the caller never reports.
 
 ## Detection proof (counter-evidence)
 
