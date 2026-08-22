@@ -90,7 +90,6 @@ const i18n = createI18n({
 describe('WidgetActions', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.resetAllMocks()
     mockIsFavorited.mockReturnValue(false)
     mockGetInputSpecForWidget.mockReturnValue({
       type: 'INT',

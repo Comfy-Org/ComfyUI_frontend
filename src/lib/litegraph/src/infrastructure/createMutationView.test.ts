@@ -74,7 +74,7 @@ describe('createMutationView', () => {
     const view = createMutationView(target, { commit })
 
     expect(() => view.mutateThenThrow()).toThrow('failed mutation')
-    delete view[1]
+    Reflect.deleteProperty(view, '1')
     Object.defineProperty(view, '0', { value: 4 })
 
     expect(commit).toHaveBeenCalledTimes(3)

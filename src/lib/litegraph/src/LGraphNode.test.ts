@@ -798,10 +798,6 @@ describe('snapToGrid', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
   function addedNode(graph: LGraph) {
     const node = new LGraphNode('test')
     node.pos = [103, 97]

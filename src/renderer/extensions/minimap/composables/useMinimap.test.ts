@@ -295,7 +295,6 @@ describe('useMinimap', () => {
   }
 
   beforeEach(() => {
-    vi.clearAllMocks()
     setActivePinia(createTestingPinia({ stubActions: false }))
     registerMockLink(1, 'node2')
 

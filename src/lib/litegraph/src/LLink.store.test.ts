@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
 import { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
@@ -19,7 +19,6 @@ import {
 
 describe('LLink ↔ linkStore integration', () => {
   beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
-  afterEach(() => vi.restoreAllMocks())
 
   it('preserves the id and reactive state of a registered link', () => {
     const graph = new LGraph()

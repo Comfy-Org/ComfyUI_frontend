@@ -79,7 +79,6 @@ describe('Vue Node - Subgraph Functionality', () => {
     pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false })
     setActivePinia(pinia)
     rootGraph = new LGraph()
-    vi.clearAllMocks()
   })
 
   const createMockNodeData = (id: string, subgraphId?: string): NodeState => ({

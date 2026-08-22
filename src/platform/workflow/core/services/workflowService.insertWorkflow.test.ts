@@ -134,6 +134,9 @@ function stubWorkflow(initialState: SerialisableGraph): ComfyWorkflow {
 
 beforeAll(() => {
   LiteGraph.registerNodeType(PROBE_NODE_TYPE, InsertWorkflowProbeNode)
+})
+
+beforeEach(() => {
   const canvasPrototype: {
     getContext(
       contextId: '2d',
@@ -147,7 +150,6 @@ beforeAll(() => {
 
 afterAll(() => {
   LiteGraph.unregisterNodeType(PROBE_NODE_TYPE)
-  vi.restoreAllMocks()
 })
 
 describe('insertWorkflow scratch graph isolation', () => {

@@ -71,7 +71,6 @@ function snapshotGeometry(nodes: MockNode[]) {
 
 describe('ensureCorrectLayoutScale (legacy normalizer)', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 

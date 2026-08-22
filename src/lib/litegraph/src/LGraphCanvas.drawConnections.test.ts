@@ -76,7 +76,6 @@ describe('drawConnections', () => {
   let canvasElement: HTMLCanvasElement
 
   beforeEach(() => {
-    vi.clearAllMocks()
     setActivePinia(createTestingPinia({ stubActions: false }))
 
     canvasElement = document.createElement('canvas')

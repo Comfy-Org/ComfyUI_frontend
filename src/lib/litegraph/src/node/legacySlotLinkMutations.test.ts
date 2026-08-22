@@ -8,7 +8,6 @@ import type {
 } from '@/lib/litegraph/src/interfaces'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 
-
 function connectedPair() {
   const graph = new LGraph()
   const source = new LGraphNode('Source')
