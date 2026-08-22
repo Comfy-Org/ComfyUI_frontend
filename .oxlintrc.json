@@ -29,6 +29,7 @@
   ],
   "jsPlugins": ["./tools/oxlint-plugins/comfy.ts"],
   "rules": {
+    "no-throw-literal": "error",
     "comfy/no-duplicate-ingest-type": "error",
     "no-async-promise-executor": "off",
     "no-console": [

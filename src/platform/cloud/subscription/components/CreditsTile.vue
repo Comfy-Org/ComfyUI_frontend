@@ -446,7 +446,10 @@ async function refreshLatestCredits() {
         lastError = error
       }
     }
-    if (lastError) throw lastError
+    if (lastError)
+      throw lastError instanceof Error
+        ? lastError
+        : new Error(String(lastError))
   })()
 
   try {
