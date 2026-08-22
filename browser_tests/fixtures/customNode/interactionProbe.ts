@@ -1,15 +1,12 @@
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
-import { SYNTH_PRODUCERS } from '@e2e/fixtures/customNode/autoRun'
+import type { SYNTH_PRODUCERS } from '@e2e/fixtures/customNode/autoRun'
 import type {
   LogicalShape,
   NodeInteractionProfile
 } from '@e2e/fixtures/customNode/interactionProfiles'
 import type { RawNodeDef } from '@e2e/fixtures/customNode/typePairing'
-import {
-  isTypeCompatible,
-  normalizeNodeDefs
-} from '@e2e/fixtures/customNode/typePairing'
+import { normalizeNodeDefs } from '@e2e/fixtures/customNode/typePairing'
 
 export const INTERACTION_PROBE_CHUNK = 40
 
@@ -28,13 +25,6 @@ export interface InteractionProbeChunkResult {
   threw: Record<string, string>
 }
 
-function producerFor(inputType: string): boolean {
-  if (SYNTH_PRODUCERS[inputType]) return true
-  return Object.keys(SYNTH_PRODUCERS).some(
-    (outType) => outType !== '*' && isTypeCompatible(outType, inputType)
-  )
-}
-
 export function planInteractionProbes(
   defs: Record<string, RawNodeDef>,
   pack: string
@@ -45,9 +35,8 @@ export function planInteractionProbes(
       const plan: InteractionProbePlan = { type: node.type }
       const firstInput = node.inputs[0]
       const lastInput = node.inputs[node.inputs.length - 1]
-      if (firstInput && producerFor(firstInput.type))
-        plan.first = { inputName: firstInput.name }
-      if (lastInput && lastInput !== firstInput && producerFor(lastInput.type))
+      if (firstInput) plan.first = { inputName: firstInput.name }
+      if (lastInput && lastInput !== firstInput)
         plan.last = { inputName: lastInput.name }
       return plan
     })
@@ -143,6 +132,7 @@ export function runInteractionProbeChunk(input: {
         }
       } else {
         const first = plan.first ? probeConnect(node, plan.first) : null
+        if (plan.last && node.graph) graph.remove(node)
         const last = plan.last
           ? (() => {
               const lastNode = window.LiteGraph!.createNode(plan.type)

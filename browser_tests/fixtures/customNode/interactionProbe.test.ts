@@ -34,7 +34,7 @@ describe('planInteractionProbes', () => {
     ])
   })
 
-  it('leaves inputs without model-free producers unplanned', () => {
+  it('plans inputs whose live type may gain a model-free producer', () => {
     expect(
       planInteractionProbes(
         {
@@ -46,6 +46,6 @@ describe('planInteractionProbes', () => {
         },
         'ExamplePack'
       )
-    ).toEqual([{ type: 'ModelNode' }])
+    ).toEqual([{ type: 'ModelNode', first: { inputName: 'model' } }])
   })
 })
