@@ -63,6 +63,15 @@ function buildPromotedHost(withSibling = false) {
   return { subgraph, host, interior, valueWidget }
 }
 
+/**
+ * `SubgraphNode` defers the promoted widget's store cleanup with
+ * `queueMicrotask`, so the assertions below need the queue drained rather than
+ * advanced by one tick.
+ */
+async function flushDeferredCleanup() {
+  await new Promise((resolve) => setTimeout(resolve, 0))
+}
+
 function connectExternalLink(subgraph: Subgraph, host: SubgraphNode) {
   const upstream = new LGraphNode('Upstream')
   upstream.addOutput('out', 'STRING')
@@ -114,7 +123,7 @@ describe('promoted widget survival across host replacement', () => {
 
       const upstream = connectExternalLink(subgraph, host)
       subgraph.rootGraph.remove(host)
-      await Promise.resolve()
+      await flushDeferredCleanup()
 
       expect(store.getWidget(valueId)?.value).toBeNull()
 
@@ -138,7 +147,7 @@ describe('promoted widget survival across host replacement', () => {
       store.setValue(valueId, null)
 
       subgraph.rootGraph.remove(host)
-      await Promise.resolve()
+      await flushDeferredCleanup()
       valueWidget.type = 'number'
 
       const replacement = createTestSubgraphNode(subgraph, { id: HOST_ID })
@@ -198,7 +207,7 @@ describe('promoted widget survival across host replacement', () => {
       store.setValue(valueId, null)
 
       subgraph.removeInput(subgraph.inputs[0])
-      await Promise.resolve()
+      await flushDeferredCleanup()
 
       expect(host.inputs).toHaveLength(0)
       expect(store.getWidget(valueId)).toBeUndefined()
