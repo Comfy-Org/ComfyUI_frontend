@@ -1268,7 +1268,7 @@
     }
   },
   "ByteDanceSeedAudio": {
-    "description": "Générez de la parole, de la musique, des effets sonores et des dialogues multi-interlocuteurs à partir d’un seul prompt avec ByteDance Seed Audio 1.0. Décrivez la/les voix, l’émotion, l’ambiance, la musique de fond et les effets sonores dans le prompt, et incluez les répliques à prononcer. Vous pouvez choisir une voix prédéfinie intégrée, cloner jusqu’à 3 voix à partir de clips de référence (étiquetés @Audio1-3 dans le prompt), ou dériver une voix à partir de l’image d’un personnage. Jusqu’à 2 minutes d’audio par génération.",
+    "description": "Générez de la parole, de la musique, des effets sonores et des dialogues à plusieurs voix à partir d’un seul prompt avec ByteDance Seed Audio 1.0. Décrivez dans le prompt la ou les voix, l’émotion, l’ambiance, la musique de fond et les effets sonores, et incluez le texte à prononcer. Vous pouvez aussi choisir une voix prédéfinie intégrée, cloner des voix à partir de 3 clips de référence maximum (identifiés par {'@'}Audio1-3 dans le prompt) ou générer une voix à partir de l’image d’un personnage. Jusqu’à 2 minutes d’audio par exécution. Le modèle multilingue prend en charge 20 langues et le contrôle temporel par horodatage.",
     "display_name": "ByteDance Seed Audio 1.0",
     "inputs": {
       "control_after_generate": {
