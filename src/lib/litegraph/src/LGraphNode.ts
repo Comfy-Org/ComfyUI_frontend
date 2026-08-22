@@ -435,7 +435,11 @@ export class LGraphNode
   }
 
   set order(value: number) {
-    wireExecutionOrders.set(this, value)
+    if (this.graph) {
+      useExecutionOrderStore().set(graphScopeOf(this.graph), this.id, value)
+    } else {
+      wireExecutionOrders.set(this, value)
+    }
   }
   get mode(): LGraphEventMode {
     return this._state.mode
@@ -1214,7 +1218,7 @@ export class LGraphNode
     if (widgets?.length && this.serialize_widgets) {
       o.widgets_values = []
       o.widgets_values_named = {}
-      for (const [i, widget] of widgets.entries()) {
+      for (const widget of widgets) {
         if (widget.serialize === false) continue
         const val = widget.value
         // Ensure object values are plain (not reactive proxies) for structuredClone compatibility.
@@ -1222,7 +1226,7 @@ export class LGraphNode
           val != null && typeof val === 'object'
             ? JSON.parse(JSON.stringify(val))
             : (val ?? null)
-        o.widgets_values[i] = serialisedVal
+        o.widgets_values.push(serialisedVal)
         o.widgets_values_named[widget.name] = serialisedVal
       }
     }
@@ -1239,9 +1243,11 @@ export class LGraphNode
       this,
       o,
       NODE_CANONICAL_FIELDS,
-      (data) => {
-        hookResult = this.onSerialize?.(data)
-      }
+      this.onSerialize
+        ? (data) => {
+            hookResult = this.onSerialize?.(data)
+          }
+        : undefined
     )
     if (hookResult)
       console.warn(
@@ -4404,15 +4410,8 @@ export class LGraphNode
   }
 
   /**
-   * @internal Sets the internal concrete slot arrays, ensuring they are instances of
-   * {@link NodeInputSlot} or {@link NodeOutputSlot}.
-   *
-   * Upgraded slots are written back into {@link inputs} / {@link outputs}:
-   * the concrete instances resolve their own slot index by identity, so a
-   * wrapper that is not the array entry would always read as disconnected.
-   *
-   * A temporary workaround until duck-typed inputs and outputs
-   * have been removed from the ecosystem.
+   * @internal Projects input and output descriptors into concrete slot
+   * instances without modifying the descriptor arrays.
    */
   _setConcreteSlots(): void {
     this._concreteInputs = this.inputs.map((slot) =>

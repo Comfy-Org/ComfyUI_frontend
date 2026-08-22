@@ -103,6 +103,8 @@ export const runExtensionSerializeHook = <T extends object>(
   hook?: (data: T) => unknown
 ): T => {
   const payload = payloads.get(owner) ?? {}
+  if (!hook && Object.keys(payload).length === 0) return canonical
+
   const view = cloneSerialisable(canonical)
   Object.assign(view, {
     extensions: structuredClone(payload)

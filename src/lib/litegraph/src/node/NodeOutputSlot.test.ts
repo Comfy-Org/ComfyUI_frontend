@@ -122,6 +122,21 @@ describe('NodeOutputSlot deprecated links getter', () => {
     expect(() => links.push(toLinkId(404))).not.toThrow()
     expect(slot.links).toEqual([])
   })
+
+  it('does not resolve a detached slot by matching its name and type', () => {
+    const { source, target } = createConnectedGraph()
+    const attached = source.outputs[0]
+    const detached = new NodeOutputSlot(
+      { name: attached.name, type: attached.type },
+      source
+    )
+    const link = source.connect(0, target, 0)!
+
+    detached.links = []
+
+    expect(target.inputs[0].link).toBe(link.id)
+    expect(attached.links).toEqual([link.id])
+  })
 })
 
 describe('NodeOutputSlot construction', () => {

@@ -119,11 +119,11 @@ describe('LGraph Serialisation', () => {
 
     let configuredLegacyData: unknown
     node.onConfigure = (data) => {
-      configuredLegacyData = Object.hasOwn(data, 'legacyData')
+      configuredLegacyData = Reflect.get(data, 'legacyData')
     }
     node.configure(Object.assign(saved, { legacyData: { retained: true } }))
 
-    expect(configuredLegacyData).toBe(true)
+    expect(configuredLegacyData).toEqual({ retained: true })
     expect(Object.hasOwn(node, 'legacyData')).toBe(false)
   })
 

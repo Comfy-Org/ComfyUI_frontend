@@ -53,6 +53,24 @@ describe('LGraphGroup', () => {
     expect(link.serialize()).toMatchSnapshot('Basic')
   })
 
+  test('preserves subclass presentation accessors on the enumerable facade', () => {
+    class CustomGroup extends LGraphGroup {
+      override get title(): string {
+        return `Custom ${super.title}`
+      }
+
+      override set title(value: string) {
+        super.title = value.replace(/^Custom /, '')
+      }
+    }
+
+    const group = new CustomGroup('Group')
+    group.title = 'Custom Updated'
+
+    expect(group.title).toBe('Custom Updated')
+    expect(Object.keys(group)).toContain('title')
+  })
+
   test('projects mutable presentation fields from graph definition state', () => {
     const graph = new LGraph()
     const group = new LGraphGroup('initial', toGroupId(930))
