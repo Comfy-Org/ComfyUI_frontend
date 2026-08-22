@@ -23,13 +23,15 @@ export async function runPr(
   }
 
   const relativePath = relative(projectRoot, absolute).split('\\').join('/')
-  if (
-    !relativePath.startsWith('browser_tests/') ||
-    !relativePath.endsWith('.spec.ts')
-  ) {
+  const isUnderTestsDir = relativePath.startsWith('browser_tests/tests/')
+  const isRawCodegen = relativePath.endsWith('.raw.spec.ts')
+  const isSpec = relativePath.endsWith('.spec.ts')
+  if (!isUnderTestsDir || !isSpec || isRawCodegen) {
     console.log(
       pc.red(
-        `Refusing to open a PR for ${relativePath}: expected a spec under browser_tests/.`
+        isRawCodegen
+          ? `Refusing to open a PR for ${relativePath}: this is untransformed codegen output. Run \`comfy-test transform\` first.`
+          : `Refusing to open a PR for ${relativePath}: expected a *.spec.ts file under browser_tests/tests/.`
       )
     )
     process.exit(1)
