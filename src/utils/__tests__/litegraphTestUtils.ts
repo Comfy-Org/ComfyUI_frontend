@@ -8,11 +8,13 @@ import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEv
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type {
   CanvasPointerEvent,
+  ISerialisedGraph,
   LGraph,
   LGraphCanvas,
   LGraphGroup,
   LinkNetwork,
-  LLink
+  LLink,
+  SerialisableGraph
 } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { fromPartial } from '@total-typescript/shoehorn'
@@ -27,7 +29,6 @@ import { toNodeId } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { UUID } from '@/utils/uuid'
 import { zeroUuid } from '@/utils/uuid'
 
 /** Creates a node shell state with minimal required fields. */
@@ -419,16 +420,14 @@ export function createMockLinks(links: LLink[]): LGraph['links'] {
  * Verify with a mutation: a save/load test that still passes when the producer
  * stops writing the field under test never read the payload.
  */
-export function reloadSerializedGraph<T extends { id?: string }>(
-  serialized: T,
+export function reloadSerializedGraph(
+  serialized: ISerialisedGraph | SerialisableGraph,
   graphFactory: () => LGraph
 ): LGraph {
-  const payload = JSON.parse(JSON.stringify(serialized)) as T
-  if (payload.id) {
-    useWidgetValueStore().clearGraph(payload.id as UUID)
-    usePreviewExposureStore().clearGraph(payload.id as UUID)
-  }
+  const payload = JSON.parse(JSON.stringify(serialized)) as typeof serialized
+  useWidgetValueStore().clearGraph(payload.id)
+  usePreviewExposureStore().clearGraph(payload.id)
   const reloaded = graphFactory()
-  reloaded.configure(payload as never)
+  reloaded.configure(payload)
   return reloaded
 }
