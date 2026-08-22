@@ -5,8 +5,10 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import type { LLink } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { RerouteId } from '@/types/rerouteId'
+import { toRerouteId } from '@/types/rerouteId'
 
-function connectedPair() {
+function connectedPair(parentId?: RerouteId) {
   const graph = new LGraph()
   const source = new LGraphNode('Source')
   source.addOutput('out', 'INT')
@@ -16,7 +18,7 @@ function connectedPair() {
   target.addInput('in', 'INT')
   graph.add(target)
 
-  const link = source.connect(0, target, 0)!
+  const link = source.connect(0, target, 0, parentId)!
   return { graph, source, target, link }
 }
 
@@ -46,14 +48,14 @@ function insertionScenario(consumerCount: number) {
 describe('plain-object copies of LLink (uncovered)', () => {
   // The LLink counterpart of the plain-object slot cases in
   // `node/legacySlotLinkMutations.test.ts`. `id`, `type`, `origin_id`,
-  // `origin_slot`, `target_id` and `target_slot` are prototype accessors over
-  // `_state`, so a spread copy carries none of them.
+  // `origin_slot`, `target_id`, `target_slot` and `parentId` are prototype
+  // accessors over `_state`, so a spread copy carries none of them.
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
   it.fails('carries topology onto a spread copy of a link', () => {
-    const { graph, link } = connectedPair()
+    const { graph, link } = connectedPair(toRerouteId(7))
     const copy: Partial<LLink> = { ...graph.links[link.id] }
 
     expect(copy.id).toBe(link.id)
@@ -62,6 +64,7 @@ describe('plain-object copies of LLink (uncovered)', () => {
     expect(copy.origin_slot).toBe(link.origin_slot)
     expect(copy.target_id).toBe(link.target_id)
     expect(copy.target_slot).toBe(link.target_slot)
+    expect(copy.parentId).toBe(link.parentId)
   })
 
   it.fails('rewires consumers through a node inserted from copied links', () => {
