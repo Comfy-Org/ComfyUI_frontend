@@ -376,12 +376,12 @@ describe("bounded writes (schema §11)", () => {
       const doc = mint(header.base_workflow, catalog);
       let worst = 0;
       for (const op of ops) {
-        _resetMutationCount();
+        _resetMutationCount(doc);
         const res = applyOps(doc, [op], catalog);
         expect(res.failed).toBeNull();
         if (op.op === "clear") continue; // O(doc) by design, standalone-only
-        worst = Math.max(worst, _getMutationCount());
-        expect(_getMutationCount(), `${op.op} ${op.op_id}`).toBeLessThanOrEqual(LIMIT);
+        worst = Math.max(worst, _getMutationCount(doc));
+        expect(_getMutationCount(doc), `${op.op} ${op.op_id}`).toBeLessThanOrEqual(LIMIT);
       }
       expect(worst).toBeGreaterThan(0);
     });

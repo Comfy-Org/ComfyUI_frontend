@@ -196,7 +196,7 @@ export function stampsMap(doc: Y.Doc): Y.Map<unknown> {
  * NOTE: initializing a doc is not the bootstrap path for replicas — replicas
  * fork from one common mint() snapshot (schema §9), never re-seed.
  */
-export function initDoc(doc: Y.Doc, catalogVersion = ""): Y.Doc {
+export function initDoc(doc: Y.Doc, catalogVersion = ""): void {
   doc.transact(() => {
     nodesMap(doc);
     linksMap(doc);
@@ -214,7 +214,6 @@ export function initDoc(doc: Y.Doc, catalogVersion = ""): Y.Doc {
       meta.set("extra", {});
     }
   });
-  return doc;
 }
 
 // ---------------------------------------------------------------------------
@@ -226,35 +225,40 @@ export function initDoc(doc: Y.Doc, catalogVersion = ""): Y.Doc {
 // node Y.Map is ONE mutation regardless of its field count.
 // ---------------------------------------------------------------------------
 
-let mutations = 0;
+const mutationsByDoc = new WeakMap<Y.Doc, number>();
 
-/** Reset the Y-mutation counter (test instrumentation for the §11 bounded-writes rule). */
-export function _resetMutationCount(): void {
-  mutations = 0;
+/** Reset one doc's Y-mutation counter (test instrumentation for the §11 bounded-writes rule). */
+export function _resetMutationCount(doc: Y.Doc): void {
+  mutationsByDoc.set(doc, 0);
 }
 
-/** Y-mutations performed by the applier since the last reset. */
-export function _getMutationCount(): number {
-  return mutations;
+/** Y-mutations performed on one doc since its last reset. */
+export function _getMutationCount(doc: Y.Doc): number {
+  return mutationsByDoc.get(doc) ?? 0;
+}
+
+function countMutation(type: { readonly doc: Y.Doc | null }): void {
+  const doc = type.doc;
+  if (doc !== null) mutationsByDoc.set(doc, (mutationsByDoc.get(doc) ?? 0) + 1);
 }
 
 export function mset<T>(m: Y.Map<T>, key: string, value: T): void {
-  mutations++;
+  countMutation(m);
   m.set(key, value);
 }
 
 export function mdel<T>(m: Y.Map<T>, key: string): void {
-  mutations++;
+  countMutation(m);
   m.delete(key);
 }
 
 export function apush<T>(a: Y.Array<T>, item: T): void {
-  mutations++;
+  countMutation(a);
   a.push([item]);
 }
 
 export function adel(a: Y.Array<unknown>, index: number, length = 1): void {
-  mutations++;
+  countMutation(a);
   a.delete(index, length);
 }
 

@@ -81,7 +81,8 @@ describe("W8 projection goldens (KA-3, KA-4, KA-12)", () => {
       widgets_values: ["verbatim", null],
     });
 
-    const invalid = initDoc(new Y.Doc());
+    const invalid = new Y.Doc();
+    initDoc(invalid);
     const node = createNodeMap(
       { id: 2, type: "Known", widgets_values: { invalid: "must fail" } } as unknown as Parameters<
         typeof createNodeMap

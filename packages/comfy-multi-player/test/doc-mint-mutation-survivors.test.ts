@@ -600,18 +600,32 @@ describe("schema §11 bounded-writes instrumentation counts up, once per Y opera
     const doc = new Y.Doc();
     const m = doc.getMap<unknown>("m");
     const a = doc.getArray<unknown>("a");
-    _resetMutationCount();
-    expect(_getMutationCount()).toBe(0);
+    _resetMutationCount(doc);
+    expect(_getMutationCount(doc)).toBe(0);
     mset(m, "k", 1);
-    expect(_getMutationCount()).toBe(1);
+    expect(_getMutationCount(doc)).toBe(1);
     apush(a, 1);
-    expect(_getMutationCount()).toBe(2);
+    expect(_getMutationCount(doc)).toBe(2);
     apush(a, 2);
-    expect(_getMutationCount()).toBe(3);
+    expect(_getMutationCount(doc)).toBe(3);
     adel(a, 0);
-    expect(_getMutationCount()).toBe(4);
+    expect(_getMutationCount(doc)).toBe(4);
     mdel(m, "k");
-    expect(_getMutationCount()).toBe(5);
+    expect(_getMutationCount(doc)).toBe(5);
+  });
+
+  it("keeps mutation counts isolated per document", () => {
+    const first = new Y.Doc();
+    const second = new Y.Doc();
+    _resetMutationCount(first);
+    _resetMutationCount(second);
+
+    mset(first.getMap<unknown>("m"), "first", 1);
+    mset(second.getMap<unknown>("m"), "second", 2);
+    mset(second.getMap<unknown>("m"), "third", 3);
+
+    expect(_getMutationCount(first)).toBe(1);
+    expect(_getMutationCount(second)).toBe(2);
   });
 });
 

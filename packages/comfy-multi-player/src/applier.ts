@@ -1213,20 +1213,10 @@ function applyInputcountBump(
   if (typeof ic.widget !== "string") {
     throw new OpRejectedError("malformed_op", "connect: grow.inputcount needs a widget name");
   }
-  const pseudo: SetWidgetOp = {
-    op: "set_widget",
-    op_id: op.op_id,
-    actor: op.actor,
-    base_version: op.base_version,
-    stamp: op.stamp,
-    node_id: op.to_node,
-    widget: ic.widget,
-    value: ic.value,
-  };
   const stamps = stampsMap(doc);
-  const targetKey = stampTargetKey(pseudo);
+  const targetKey = JSON.stringify(["widget", String(op.to_node), ic.widget]);
   const prior = stamps.get(targetKey) as StampKey | undefined;
-  const key = stampKey(pseudo);
+  const key = stampKey(op);
   if (prior != null && compareStampKeys(key, prior) <= 0) return; // lww-dropped
   validateWidgetName(catalog, String(dst.get("type") ?? ""), ic.widget);
   mset(widgetsOf(dst), ic.widget, structuredClone(ic.value));
@@ -1291,11 +1281,16 @@ function removeLink(doc: Y.Doc, linkId: unknown): void {
   const links = linksMap(doc);
   const key = String(linkId);
   if (links.has(key)) mdel(links, key);
+  scrubLinkRefs(doc, (candidate) => candidate === linkId);
+}
+
+/** Scrub input/output references selected by one shared link-id predicate. */
+function scrubLinkRefs(doc: Y.Doc, shouldRemove: (linkId: unknown) => boolean): void {
   nodesMap(doc).forEach((node) => {
     const ins = node.get("inputs");
     if (ins instanceof Y.Array) {
       ins.forEach((slot: unknown) => {
-        if (slot instanceof Y.Map && slot.get("link") === linkId) mset(slot, "link", null);
+        if (slot instanceof Y.Map && shouldRemove(slot.get("link"))) mset(slot, "link", null);
       });
     }
     const outs = node.get("outputs");
@@ -1306,7 +1301,7 @@ function removeLink(doc: Y.Doc, linkId: unknown): void {
         if (outLinks instanceof Y.Array) {
           const arr = outLinks.toArray();
           for (let i = arr.length - 1; i >= 0; i--) {
-            if (arr[i] === linkId) adel(outLinks, i);
+            if (shouldRemove(arr[i])) adel(outLinks, i);
           }
         }
       });
@@ -1434,29 +1429,7 @@ function reconcileNodeLinkRefs(doc: Y.Doc, nodeId: unknown, node: Y.Map<unknown>
 function scrubDanglingLinkRefs(doc: Y.Doc): void {
   const keptIds = new Set<unknown>();
   linksMap(doc).forEach((ln: unknown) => keptIds.add((ln as unknown[])[0]));
-  nodesMap(doc).forEach((node) => {
-    const ins = node.get("inputs");
-    if (ins instanceof Y.Array) {
-      ins.forEach((slot: unknown) => {
-        if (!(slot instanceof Y.Map)) return;
-        const l = slot.get("link");
-        if (l != null && !keptIds.has(l)) mset(slot, "link", null);
-      });
-    }
-    const outs = node.get("outputs");
-    if (outs instanceof Y.Array) {
-      outs.forEach((port: unknown) => {
-        if (!(port instanceof Y.Map)) return;
-        const outLinks = port.get("links");
-        if (outLinks instanceof Y.Array) {
-          const arr = outLinks.toArray();
-          for (let i = arr.length - 1; i >= 0; i--) {
-            if (!keptIds.has(arr[i])) adel(outLinks, i);
-          }
-        }
-      });
-    }
-  });
+  scrubLinkRefs(doc, (linkId) => linkId != null && !keptIds.has(linkId));
 }
 
 // ---------------------------------------------------------------------------

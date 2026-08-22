@@ -133,10 +133,10 @@ function deleteHubCost(degree: number): number {
     node_id: 1,
     removed_links: Array.from({ length: degree }, (_, i) => i + 1),
   };
-  _resetMutationCount();
+  _resetMutationCount(doc);
   const res = applyOps(doc, [op], catalog);
   expect(res.failed, `delete_node at degree ${degree} must succeed`).toBeNull();
-  return _getMutationCount();
+  return _getMutationCount(doc);
 }
 
 describe("schema §11: the bounded-writes count grows with the op's blast radius", () => {
@@ -177,21 +177,21 @@ describe("schema §11: the counter measures the applier's real writes", () => {
     // writes more would rise above it. Both are the gate losing its meaning.
     const doc = mint(hubWorkflow(1), catalog);
     const op = { op: "set_widget", ...env(), node_id: 1, widget: "text", value: "z" } as SetWidgetOp;
-    _resetMutationCount();
+    _resetMutationCount(doc);
     expect(applyOps(doc, [op], catalog).failed).toBeNull();
-    expect(_getMutationCount()).toBe(3);
+    expect(_getMutationCount(doc)).toBe(3);
   });
 
   it("accumulates across ops without a reset, and never runs backwards", () => {
     // The aggregate view of the direction pin: with `mutations--` anywhere on
     // this path the running total falls instead of stepping up by three.
     const doc = mint(hubWorkflow(1), catalog);
-    _resetMutationCount();
+    _resetMutationCount(doc);
     const running: number[] = [];
     for (let i = 0; i < 4; i++) {
       const op = { op: "set_widget", ...env(), node_id: 1, widget: "text", value: "v" + String(i) } as SetWidgetOp;
       expect(applyOps(doc, [op], catalog).failed).toBeNull();
-      running.push(_getMutationCount());
+      running.push(_getMutationCount(doc));
     }
     expect(running).toEqual([3, 6, 9, 12]);
   });
@@ -216,9 +216,9 @@ describe("schema §11: the counter measures the applier's real writes", () => {
       link_type: "X",
       grow: { name: "gin", type: "X" },
     } as unknown as ConnectOp;
-    _resetMutationCount();
+    _resetMutationCount(doc);
     expect(applyOps(doc, [op], catalog).failed).toBeNull();
-    expect(_getMutationCount()).toBe(7);
+    expect(_getMutationCount(doc)).toBe(7);
     expect(stampsMap(doc).size, "autogrow records stamp + request for canonicalization (A7)").toBe(2);
   });
 
@@ -229,9 +229,9 @@ describe("schema §11: the counter measures the applier's real writes", () => {
     // deletes, one array delete, one input-slot scrub, one presence stamp, one applied set.
     const doc = mint(chainWorkflow(), catalog);
     const op: DeleteNodeOp = { op: "delete_node", ...env(), node_id: 2, removed_links: [1, 2] };
-    _resetMutationCount();
+    _resetMutationCount(doc);
     expect(applyOps(doc, [op], catalog).failed).toBeNull();
-    expect(_getMutationCount()).toBe(7);
+    expect(_getMutationCount(doc)).toBe(7);
   });
 
   it("charges a de-duplicated replay nothing, so the ceiling is not padded by idempotent retries (KA-4)", () => {
@@ -243,7 +243,7 @@ describe("schema §11: the counter measures the applier's real writes", () => {
     const first = applyOps(doc, [op], catalog);
     expect(first.failed).toBeNull();
     expect(first.applied).toEqual([op.op_id]);
-    _resetMutationCount();
+    _resetMutationCount(doc);
     const replay = applyOps(doc, [op], catalog);
     expect(replay.failed).toBeNull();
     // `failed === null` plus a zero count is ALSO satisfied by an applier that
@@ -251,6 +251,6 @@ describe("schema §11: the counter measures the applier's real writes", () => {
     // was recognized as a duplicate and skipped, not quietly ignored.
     expect(replay.skipped).toEqual([op.op_id]);
     expect(replay.applied).toEqual([]);
-    expect(_getMutationCount()).toBe(0);
+    expect(_getMutationCount(doc)).toBe(0);
   });
 });

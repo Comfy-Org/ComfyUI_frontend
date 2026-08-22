@@ -14,7 +14,8 @@ describe("schema", () => {
   });
 
   it("initDoc creates the v1 layout: nodes/links/definitions/meta + bookkeeping", () => {
-    const doc = initDoc(new Y.Doc(), "object_info@2026-08-01");
+    const doc = new Y.Doc();
+    initDoc(doc, "object_info@2026-08-01");
     expect(nodesMap(doc)).toBeInstanceOf(Y.Map);
     expect(linksMap(doc)).toBeInstanceOf(Y.Map);
     expect(definitionsMap(doc)).toBeInstanceOf(Y.Map);
@@ -31,7 +32,8 @@ describe("schema", () => {
   });
 
   it("initDoc is idempotent", () => {
-    const doc = initDoc(new Y.Doc());
+    const doc = new Y.Doc();
+    initDoc(doc);
     metaMap(doc).set("last_node_id", 7);
     initDoc(doc);
     expect(metaMap(doc).get("last_node_id")).toBe(7);
@@ -39,7 +41,8 @@ describe("schema", () => {
   });
 
   it("createNodeMap builds a NAME-KEYED widgets Y.Map from positional values + widget order", () => {
-    const doc = initDoc(new Y.Doc());
+    const doc = new Y.Doc();
+    initDoc(doc);
     const node = createNodeMap(
       {
         id: "57:3",
@@ -67,7 +70,8 @@ describe("schema", () => {
   });
 
   it("createNodeMap accepts an already name-keyed widgets record without a catalog", () => {
-    const doc = initDoc(new Y.Doc());
+    const doc = new Y.Doc();
+    initDoc(doc);
     const node = createNodeMap({
       id: 42,
       type: "CLIPTextEncode",
@@ -81,7 +85,8 @@ describe("schema", () => {
   it("createNodeMap stores an UNKNOWN class's positional widgets_values opaquely (schema §1.2)", () => {
     // Frontend-only classes are never in object_info, so no catalog can ever
     // carry a widget_order for them — this is the sticky-note path.
-    const doc = initDoc(new Y.Doc());
+    const doc = new Y.Doc();
+    initDoc(doc);
     const values = ["A sticky note.\n\nWith a second line."];
     nodesMap(doc).set("1", createNodeMap({ id: 1, type: "Note", widgets_values: values }));
     const node = nodesMap(doc).get("1")!;
@@ -112,7 +117,8 @@ describe("schema", () => {
   });
 
   it("createNodeMap keeps an EMPTY positional widgets_values name-keyed (not opaque)", () => {
-    const doc = initDoc(new Y.Doc());
+    const doc = new Y.Doc();
+    initDoc(doc);
     nodesMap(doc).set("1", createNodeMap({ id: 1, type: "Note", widgets_values: [] }));
     const node = nodesMap(doc).get("1")!;
     expect(node.get(OPAQUE_WIDGETS_KEY)).toBeUndefined();

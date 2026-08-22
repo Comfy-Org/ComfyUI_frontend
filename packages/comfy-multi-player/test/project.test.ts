@@ -56,7 +56,8 @@ describe("project invalid node input", () => {
     // document with no readable `meta.schema_version` (KA-11, #38), and a
     // hand-built document with no meta root is not a document any replica
     // could hold. The invalid NODE state below is the subject of these tests.
-    const doc = initDoc(new Y.Doc());
+    const doc = new Y.Doc();
+    initDoc(doc);
     const nodes = nodesMap(doc);
     const valid = createNodeMap({ id: 1, type: "KSampler", widgets_values: [] }, ksamplerOrder);
     const wrongWidgets = createNodeMap({ id: 4, type: "KSampler" }, ksamplerOrder);
@@ -128,7 +129,8 @@ describe("project invalid node input", () => {
     // compacted document. Pinned so a future reader cannot mistake the skip
     // for "hidden but recoverable". `initDoc` because `project()` fails closed
     // on an unreadable `meta.schema_version` (KA-11, #38).
-    const doc = initDoc(new Y.Doc());
+    const doc = new Y.Doc();
+    initDoc(doc);
     nodesMap(doc).set("1", createNodeMap({ id: 1, type: "KSampler", widgets_values: [] }, ksamplerOrder));
     nodesMap(doc).set("6", "not a node map" as unknown as Y.Map<unknown>);
 
@@ -142,7 +144,8 @@ describe("project invalid node input", () => {
     // document with no readable `meta.schema_version` (KA-11, #38), and a
     // hand-built document with no meta root is not a document any replica
     // could hold. The invalid NODE state below is the subject of these tests.
-    const doc = initDoc(new Y.Doc());
+    const doc = new Y.Doc();
+    initDoc(doc);
     const maliciousFlags = JSON.parse('{"__proto__":{"inherited":true}}') as Record<string, unknown>;
     nodesMap(doc).set(
       "8",
@@ -186,7 +189,8 @@ describe("project invalid node input", () => {
     // document with no readable `meta.schema_version` (KA-11, #38), and a
     // hand-built document with no meta root is not a document any replica
     // could hold. The invalid NODE state below is the subject of these tests.
-    const doc = initDoc(new Y.Doc());
+    const doc = new Y.Doc();
+    initDoc(doc);
     const inheritedType = createNodeMap({ id: 7, type: "__proto__" });
     const widgets = new Y.Map<unknown>();
     widgets.set("value", "unsafe");

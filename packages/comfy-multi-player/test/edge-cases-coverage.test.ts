@@ -120,7 +120,8 @@ describe("project — widgetsToPositional catalog-mismatch throws (schema §1.2)
 
 describe("project — string node ids sort lexicographically (idCompare non-numeric arm)", () => {
   it("orders nodes with string ids by string comparison", () => {
-    const doc = initDoc(new Y.Doc(), "cat@test");
+    const doc = new Y.Doc();
+    initDoc(doc, "cat@test");
     const nodes = nodesMap(doc);
     nodes.set("b", createNodeMap({ id: "b", type: "Note" } as never));
     nodes.set("a", createNodeMap({ id: "a", type: "Note" } as never));
