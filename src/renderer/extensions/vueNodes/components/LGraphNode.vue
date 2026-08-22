@@ -153,7 +153,10 @@
         >
           <NodeSlots :node-data="nodeData" />
 
-          <NodeWidgets v-if="nodeData.widgets?.length" :node-data="nodeData" />
+          <NodeWidgets
+            v-if="renderedNodeData.widgets?.length"
+            :node-data="renderedNodeData"
+          />
 
           <div v-if="hasCustomContent" class="flex min-h-0 flex-1 flex-col">
             <NodeContent
@@ -288,6 +291,10 @@ import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 import { useNodePreviewState } from '@/renderer/extensions/vueNodes/preview/useNodePreviewState'
+import {
+  shouldHideLinkedCoreLoadAudioPlayer,
+  shouldHideLinkedCoreMediaInputPreview
+} from '@/renderer/extensions/vueNodes/utils/linkedCoreMediaUtils'
 import { nonWidgetedInputs } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
 import {
   applyLightThemeColor,
@@ -700,6 +707,20 @@ const lgraphNode = computed(() => {
   return getNodeByLocatorId(app.rootGraph, locatorId)
 })
 
+const renderedNodeData = computed(() => {
+  const node = lgraphNode.value
+  const widgets = nodeData.widgets ?? []
+  if (!node || !shouldHideLinkedCoreLoadAudioPlayer(node, widgets))
+    return nodeData
+
+  return {
+    ...nodeData,
+    widgets: widgets.filter(
+      (widget) => widget.name !== 'audioUI' || widget.type !== 'audioUI'
+    )
+  }
+})
+
 // TODO: Surface subgraph info more cleanly in VueNodeData instead of
 // reaching through lgraphNode for promoted preview resolution.
 const { promotedPreviews } = usePromotedPreviews(lgraphNode)
@@ -780,6 +801,8 @@ const nodeMedia = computed(() => {
     return undefined
 
   if (node instanceof SubgraphNode) return undefined
+  if (shouldHideLinkedCoreMediaInputPreview(node, newOutputs, nodeData.widgets))
+    return undefined
 
   const urls = nodeOutputs.getNodeImageUrls(node)
   if (!urls?.length) return undefined

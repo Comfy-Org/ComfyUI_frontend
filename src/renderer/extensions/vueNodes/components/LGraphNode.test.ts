@@ -18,6 +18,7 @@ import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composable
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
 const mockData = vi.hoisted(() => ({
   mockExecuting: false,
@@ -149,8 +150,14 @@ function renderLGraphNode(props: ComponentProps<typeof LGraphNode>) {
       stubs: {
         NodeHeader: true,
         NodeSlots: true,
-        NodeWidgets: true,
-        NodeContent: true,
+        NodeWidgets: {
+          props: ['nodeData'],
+          template:
+            '<div data-testid="node-widgets">{{ nodeData.widgets.map((widget) => `${widget.name}:${widget.type}`).join(",") }}</div>'
+        },
+        NodeContent: {
+          template: '<div data-testid="node-content" />'
+        },
         SlotConnectionDot: true
       }
     }
@@ -180,11 +187,13 @@ const mockRerouteNodeData: VueNodeData = {
 describe('LGraphNode', () => {
   beforeEach(() => {
     mockData.mockExecuting = false
+    mockData.mockLgraphNode = null
 
     setActivePinia(pinia)
     const canvasStore = useCanvasStore()
     canvasStore.selectedNodeIds.clear()
     const settingStore = useSettingStore(pinia)
+    useNodeOutputStore().nodeOutputs = {}
     vi.mocked(settingStore.get).mockImplementation((key) => {
       if (key === 'Comfy.RightSidePanel.ShowErrorsTab') return true
       if (key === 'Comfy.Node.AlwaysShowAdvancedWidgets') return false
@@ -247,6 +256,124 @@ describe('LGraphNode', () => {
 
     const overlay = screen.getByTestId('node-state-outline-overlay')
     expect(overlay).toHaveClass('border-node-stroke-executing')
+  })
+
+  it('hides a linked core LoadImage input preview', () => {
+    mockData.mockLgraphNode = {
+      constructor: {
+        comfyClass: 'LoadImage',
+        nodeData: { isCoreNode: true }
+      },
+      inputs: [{ link: 1, widget: { name: 'image' } }],
+      isSubgraphNode: () => false
+    }
+    const nodeOutputStore = useNodeOutputStore()
+    nodeOutputStore.nodeOutputs['test-node-123'] = {
+      images: [{ filename: 'input.png', type: 'input' }]
+    }
+    vi.mocked(nodeOutputStore.getNodeImageUrls).mockReturnValue(['/input.png'])
+
+    renderLGraphNode({
+      nodeData: {
+        ...mockNodeData,
+        type: 'LoadImage',
+        widgets: [
+          {
+            name: 'image',
+            type: 'combo',
+            slotMetadata: { index: 0, linked: true, type: 'STRING' }
+          }
+        ]
+      }
+    })
+
+    expect(screen.queryByTestId('node-content')).not.toBeInTheDocument()
+  })
+
+  it('keeps an executed output preview when the LoadImage selector is linked', () => {
+    mockData.mockLgraphNode = {
+      constructor: {
+        comfyClass: 'LoadImage',
+        nodeData: { isCoreNode: true }
+      },
+      inputs: [{ link: 1, widget: { name: 'image' } }],
+      isSubgraphNode: () => false
+    }
+    const nodeOutputStore = useNodeOutputStore()
+    nodeOutputStore.nodeOutputs['test-node-123'] = {
+      images: [{ filename: 'output.png', type: 'output' }]
+    }
+    vi.mocked(nodeOutputStore.getNodeImageUrls).mockReturnValue(['/output.png'])
+
+    renderLGraphNode({
+      nodeData: {
+        ...mockNodeData,
+        type: 'LoadImage',
+        widgets: [
+          {
+            name: 'image',
+            type: 'combo',
+            slotMetadata: { index: 0, linked: true, type: 'STRING' }
+          }
+        ]
+      }
+    })
+
+    expect(screen.getByTestId('node-content')).toBeInTheDocument()
+  })
+
+  it('restores only the core LoadAudio input player on disconnect', async () => {
+    const audioInput: {
+      link: number | null
+      widget: { name: string }
+    } = { link: 1, widget: { name: 'audio' } }
+    mockData.mockLgraphNode = {
+      constructor: {
+        comfyClass: 'LoadAudio',
+        nodeData: { isCoreNode: true }
+      },
+      inputs: [audioInput],
+      isSubgraphNode: () => false
+    }
+    const linkedAudioWidget = {
+      name: 'audio',
+      type: 'combo',
+      slotMetadata: { index: 0, linked: true, type: 'STRING' }
+    }
+    const audioPlayerWidget = { name: 'audioUI', type: 'audioUI' }
+    const { rerender } = renderLGraphNode({
+      nodeData: {
+        ...mockNodeData,
+        type: 'LoadAudio',
+        widgets: [linkedAudioWidget, audioPlayerWidget]
+      }
+    })
+
+    expect(screen.getByTestId('node-widgets')).not.toHaveTextContent(
+      'audioUI:audioUI'
+    )
+
+    audioInput.link = null
+    await rerender({
+      nodeData: {
+        ...mockNodeData,
+        type: 'LoadAudio',
+        widgets: [
+          {
+            ...linkedAudioWidget,
+            slotMetadata: {
+              ...linkedAudioWidget.slotMetadata,
+              linked: false
+            }
+          },
+          audioPlayerWidget
+        ]
+      }
+    })
+
+    expect(screen.getByTestId('node-widgets')).toHaveTextContent(
+      'audioUI:audioUI'
+    )
   })
 
   it('should widen the selection outline rounding when the node has an error', () => {
