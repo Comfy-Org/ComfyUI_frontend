@@ -1,8 +1,11 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
-import type { LLink, Reroute } from '@/lib/litegraph/src/litegraph'
+import type { LLink } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
+import type { LinkId } from '@/types/linkId'
+import type { NodeId } from '@/types/nodeId'
+import type { RerouteId } from '@/types/rerouteId'
 import { createUuidv4 } from '@/utils/uuid'
 
 /**
@@ -40,10 +43,6 @@ import { createUuidv4 } from '@/utils/uuid'
  */
 
 const NODE_TYPE = 'test/compound-undo'
-
-type NodeId = LGraphNode['id']
-type LinkId = LLink['id']
-type RerouteId = Reroute['id']
 
 /** A node with an input, an output and two serialised widgets. */
 class CompoundNode extends LGraphNode {

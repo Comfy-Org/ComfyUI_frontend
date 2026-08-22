@@ -65,8 +65,8 @@ function serialisedNode(id: number, type: string): ISerialisedNode {
   return {
     id,
     type,
-    pos: [id * 100, 0] as [number, number],
-    size: [140, 60] as [number, number],
+    pos: [id * 100, 0],
+    size: [140, 60],
     flags: {},
     order: 0,
     mode: 0,

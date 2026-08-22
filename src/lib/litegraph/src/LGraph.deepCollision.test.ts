@@ -5,9 +5,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { parseProxyWidgets } from '@/core/schemas/promotionSchema'
 import type {
   ExportedSubgraph,
+  ISerialisedGroup,
   ISerialisedGraph,
   ISerialisedNode,
-  SerialisableGraph
+  SerialisableGraph,
+  SerialisableLLink,
+  SerialisableReroute
 } from '@/lib/litegraph/src/types/serialisation'
 import {
   SUBGRAPH_INPUT_ID,
@@ -112,7 +115,7 @@ function instanceNode(
   }
 }
 
-function collidingLink() {
+function collidingLink(): SerialisableLLink {
   return {
     id: COLLIDING_ENTITY_ID,
     origin_id: 7,
@@ -124,19 +127,19 @@ function collidingLink() {
   }
 }
 
-function collidingReroute() {
+function collidingReroute(): SerialisableReroute {
   return {
     id: COLLIDING_ENTITY_ID,
-    pos: [200, 30] as [number, number],
+    pos: [200, 30],
     linkIds: [COLLIDING_ENTITY_ID]
   }
 }
 
-function collidingGroup(scope: string) {
+function collidingGroup(scope: string): ISerialisedGroup {
   return {
     id: COLLIDING_ENTITY_ID,
     title: `${scope} group`,
-    bounding: [0, 0, 800, 200] as [number, number, number, number],
+    bounding: [0, 0, 800, 200],
     color: '#3f789e',
     flags: {}
   }
