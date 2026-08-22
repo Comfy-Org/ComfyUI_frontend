@@ -236,6 +236,7 @@ jobs:
             && github.ref_name == github.event.repository.default_branch))
       }}
     permissions:
+      actions: write
       contents: read
     uses: ./.github/workflows/ci-ecosystem-matrix.yaml
 
