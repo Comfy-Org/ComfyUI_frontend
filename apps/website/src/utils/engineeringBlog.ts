@@ -24,6 +24,7 @@ export interface EngineeringPostCard {
   description: string
   author: string
   date: Date
+  heroDiagram: EngineeringBlogPostEntry['data']['heroDiagram']
 }
 
 export function toCardProps(
@@ -34,6 +35,7 @@ export function toCardProps(
     title: entry.data.title,
     description: entry.data.description,
     author: entry.data.author,
-    date: entry.data.date
+    date: entry.data.date,
+    heroDiagram: entry.data.heroDiagram
   }
 }

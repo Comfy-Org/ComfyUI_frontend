@@ -1,6 +1,7 @@
 ---
 import { getCollection } from 'astro:content'
 
+import { diagramRegistry } from '../../components/engineering-blog/diagrams/registry'
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import { t } from '../../i18n/translations'
 import { absoluteUrl, pageContext } from '../../utils/jsonLd'
@@ -22,7 +23,7 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
 
 <BaseLayout
   title="Engineering Blog - Comfy"
-  description="Plain-English explanations of how the Comfy agent platform actually works, from the engineers building it."
+  description="Stories from the team building Comfy's agent platform — the problems that forced a real design decision, and how we got there."
   breadcrumbs={[
     { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
     { name: 'Engineering Blog' }
@@ -32,36 +33,46 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
     <p
       class="text-primary-comfy-yellow text-xs font-bold tracking-widest uppercase"
     >
-      Engineering Blog
+      From the engineering team
     </p>
     <h1
       class="text-primary-warm-white mt-4 text-3xl font-semibold lg:text-4xl"
     >
-      Understand this system
+      Engineering Blog
     </h1>
     <p class="text-primary-comfy-canvas mt-4 max-w-2xl text-base/relaxed">
-      Plain-English write-ups of how the Comfy agent platform works under the
-      hood — no prior background in CRDTs, agents, or distributed systems
-      assumed.
+      Stories from the team building Comfy's agent platform — the problems
+      that forced a real design decision, and how we got there.
     </p>
 
     <ul class="mt-16 space-y-10">
       {
-        cards.map((card) => (
-          <li class="border-t border-white/10 pt-10 first:border-t-0 first:pt-0">
-            <a href={`/engineering-blog/${card.slug}/`} class="group block">
-              <h2 class="text-primary-warm-white group-hover:text-primary-comfy-yellow text-xl font-semibold transition-colors lg:text-2xl">
-                {card.title}
-              </h2>
-              <p class="text-primary-comfy-canvas mt-3 text-base/relaxed">
-                {card.description}
-              </p>
-              <p class="text-primary-warm-gray mt-4 text-sm">
-                {card.author} · {dateFormatter.format(card.date)}
-              </p>
-            </a>
-          </li>
-        ))
+        cards.map((card) => {
+          const Diagram = diagramRegistry[card.heroDiagram]
+          return (
+            <li class="border-t border-white/10 pt-10 first:border-t-0 first:pt-0">
+              <a
+                href={`/engineering-blog/${card.slug}/`}
+                class="group grid gap-5 sm:grid-cols-[9rem_1fr] sm:items-start sm:gap-8"
+              >
+                <div class="bg-site-bg-soft aspect-[8/5] w-full overflow-hidden rounded-xl p-3 sm:w-36">
+                  <Diagram variant="card" />
+                </div>
+                <div>
+                  <h2 class="text-primary-warm-white group-hover:text-primary-comfy-yellow text-xl font-semibold transition-colors lg:text-2xl">
+                    {card.title}
+                  </h2>
+                  <p class="text-primary-comfy-canvas mt-3 text-base/relaxed">
+                    {card.description}
+                  </p>
+                  <p class="text-primary-warm-gray mt-4 text-sm">
+                    {card.author} · {dateFormatter.format(card.date)}
+                  </p>
+                </div>
+              </a>
+            </li>
+          )
+        })
       }
     </ul>
   </section>

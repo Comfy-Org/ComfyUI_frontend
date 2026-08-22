@@ -9,7 +9,8 @@ function entry(id: string, date: string) {
       title: `Title for ${id}`,
       description: `Description for ${id}`,
       author: 'Kishore',
-      date: new Date(date)
+      date: new Date(date),
+      heroDiagram: 'architecture' as const
     }
   }
 }
@@ -58,7 +59,8 @@ describe('toCardProps', () => {
       title: post.data.title,
       description: post.data.description,
       author: post.data.author,
-      date: post.data.date
+      date: post.data.date,
+      heroDiagram: post.data.heroDiagram
     })
   })
 })

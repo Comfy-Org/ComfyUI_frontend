@@ -3,6 +3,7 @@ import { render } from 'astro:content'
 
 import type { EngineeringBlogPostEntry } from '../../utils/engineeringBlog'
 import Callout from './content/Callout.astro'
+import { diagramRegistry } from './diagrams/registry'
 import Code from './content/Code.astro'
 import Divider from './content/Divider.astro'
 import Heading2 from './content/Heading2.astro'
@@ -41,7 +42,11 @@ const contentComponents = {
   thead: TableHead,
   tr: TableRow,
   th: TableHeaderCell,
-  td: TableCell
+  td: TableCell,
+  ArchitectureDiagram: diagramRegistry.architecture,
+  StampDiagram: diagramRegistry.stamp,
+  FeedbackLoopDiagram: diagramRegistry['feedback-loop'],
+  TwoDoorsDiagram: diagramRegistry['two-doors']
 }
 ---
 
