@@ -14,18 +14,20 @@ type OutputSlotParam = INodeOutputSlot & { widget?: IWidget }
 function createConnectedGraph(linkIds: number[]) {
   const graph = new LGraph()
   const source = new LGraphNode('Source')
+  const targets: LGraphNode[] = []
   source.addOutput('out', 'number')
   graph.add(source)
 
   for (const [i, linkId] of linkIds.entries()) {
     const target = new LGraphNode(`Target${i}`)
+    targets.push(target)
     target.addInput('in', 'number')
     graph.add(target)
     graph.state.lastLinkId = toLinkId(linkId - 1)
     source.connect(0, target, 0)
   }
 
-  return { graph, source }
+  return { graph, source, targets }
 }
 
 describe('outputAsSerialisable', () => {
@@ -69,6 +71,19 @@ describe('outputAsSerialisable', () => {
       0
     )
     expect(serialised.links).toBeNull()
+  })
+
+  it('serialises an empty array after a targeted disconnect', () => {
+    const { source, targets } = createConnectedGraph([1])
+    source.disconnectOutput(0, targets[0])
+
+    const serialised = outputAsSerialisable(
+      source.outputs[0] as OutputSlotParam,
+      source,
+      0
+    )
+
+    expect(serialised.links).toEqual([])
   })
 
   it('serialises null for a node with no graph', () => {
