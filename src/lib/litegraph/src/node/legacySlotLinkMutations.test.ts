@@ -137,7 +137,7 @@ describe('legacy slot link creation and plain-object slots (uncovered)', () => {
     expect(target.isInputConnected(0)).toBe(true)
   })
 
-  it.fails('disconnects through a plain-object input slot', () => {
+  it('disconnects through a plain-object input slot', () => {
     // The shape the one confirmed-broken pack uses: replace the slot with a
     // spread copy, then mutate that. `link` is an accessor, so the copy carries
     // neither the shim nor the current id.
@@ -150,7 +150,7 @@ describe('legacy slot link creation and plain-object slots (uncovered)', () => {
     expect(source.isOutputConnected(0)).toBe(false)
   })
 
-  it.fails('disconnects through a plain-object output slot', () => {
+  it('disconnects through a plain-object output slot', () => {
     const { source, target } = connectedPair()
     const copy: INodeOutputSlot = { ...source.outputs[0] }
     source.outputs[0] = copy
