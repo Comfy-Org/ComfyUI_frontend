@@ -388,7 +388,7 @@ describe('storageIO', () => {
     })
   })
 
-  describe('clearWorkflowRestoreState', () => {
+  describe('workflow storage transitions', () => {
     it('blocks writes and clears restore state when a persistence flush fails', async () => {
       const isolatedStorageIO = await import('./storageIO')
       localStorage.setItem('workflow', '{}')
@@ -497,6 +497,23 @@ describe('storageIO', () => {
       expect(isolatedStorageIO.isStorageAvailable()).toBe(true)
     })
 
+    it('keeps reads available while a workspace transition blocks writes', async () => {
+      const isolatedStorageIO = await import('./storageIO')
+
+      isolatedStorageIO.writePayload('ws-1', 'draft', {
+        data: '{}',
+        updatedAt: 1
+      })
+      const cancelTransition =
+        isolatedStorageIO.prepareWorkflowWorkspaceTransition()
+
+      expect(isolatedStorageIO.readPayload('ws-1', 'draft')).not.toBeNull()
+      expect(isolatedStorageIO.getPayloadKeys('ws-1')).toContain('draft')
+      cancelTransition()
+    })
+  })
+
+  describe('clearWorkflowRestoreState', () => {
     it('clears cross-workspace restore state without deleting scoped drafts', () => {
       localStorage.setItem('Comfy.Workflow.DraftIndex.v2:ws-1', '{}')
       localStorage.setItem('Comfy.Workflow.Draft.v2:ws-1:abc', '{}')
