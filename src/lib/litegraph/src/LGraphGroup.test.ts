@@ -12,6 +12,7 @@ import {
 import { containsRect } from '@/lib/litegraph/src/measure'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import { useGraphDefinitionStore } from '@/stores/graphDefinitionStore'
 import type { GroupId } from '@/types/groupId'
 import { toGroupId } from '@/types/groupId'
 import * as colorUtil from '@/utils/colorUtil'
@@ -50,6 +51,83 @@ describe('LGraphGroup', () => {
   test('serializes to the existing format', () => {
     const link = new LGraphGroup('title', toGroupId(929))
     expect(link.serialize()).toMatchSnapshot('Basic')
+  })
+
+  test('preserves subclass presentation accessors on the enumerable facade', () => {
+    class CustomGroup extends LGraphGroup {
+      override get title(): string {
+        return `Custom ${super.title}`
+      }
+
+      override set title(value: string) {
+        super.title = value.replace(/^Custom /, '')
+      }
+    }
+
+    const group = new CustomGroup('Group')
+    group.title = 'Custom Updated'
+
+    expect(group.title).toBe('Custom Updated')
+    expect(Object.keys(group)).toContain('title')
+  })
+
+  test('projects mutable presentation fields from graph definition state', () => {
+    const graph = new LGraph()
+    const group = new LGraphGroup('initial', toGroupId(930))
+    graph.add(group)
+
+    const presentation = useGraphDefinitionStore()
+      .membership(graph.rootGraph.id, graph.id)
+      .groupPresentation.get(group.id)
+
+    expect(presentation).toBe(group._presentation)
+    group.title = 'updated'
+    group.color = '#123456'
+    group.font = 'serif'
+    group.font_size = 42
+    group.flags.pinned = true
+    expect(presentation).toEqual({
+      title: 'updated',
+      color: '#123456',
+      font: 'serif',
+      font_size: 42,
+      flags: { pinned: true }
+    })
+    expect(group.serialize()).toMatchObject({
+      title: 'updated',
+      color: '#123456',
+      flags: { pinned: true }
+    })
+  })
+
+  test('clears a store-backed color option', () => {
+    const graph = new LGraph()
+    const group = new LGraphGroup('group', toGroupId(932))
+    graph.add(group)
+    group.color = '#123456'
+
+    group.setColorOption(null)
+
+    expect(group.color).toBeUndefined()
+    expect(group.serialize().color).toBeUndefined()
+  })
+
+  test('detaches presentation state when removed', () => {
+    const graph = new LGraph()
+    const group = new LGraphGroup('group', toGroupId(931))
+    graph.add(group)
+    const presentation = group._presentation
+
+    graph.remove(group)
+    group.flags.pinned = true
+
+    expect(group._presentation).not.toBe(presentation)
+    expect(group.pinned).toBe(true)
+    expect(
+      useGraphDefinitionStore()
+        .membership(graph.rootGraph.id, graph.id)
+        .groupPresentation.has(group.id)
+    ).toBe(false)
   })
 
   describe('recomputeInsideNodes', () => {

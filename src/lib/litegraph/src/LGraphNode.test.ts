@@ -1028,6 +1028,34 @@ describe('layout geometry projection', () => {
     })
   })
 
+  test('keeps legacy buffers and views stable across store updates', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    const pos = node.pos
+    const size = node.size
+    const posBuffer = node._pos
+    const sizeBuffer = node._size
+
+    layoutStore.batchUpdateNodeBounds(
+      graph.rootGraph.id,
+      [
+        {
+          nodeId: node.id,
+          bounds: { x: 30, y: 40, width: 200, height: 80 }
+        }
+      ],
+      { source: LayoutSource.Canvas }
+    )
+
+    expect([...node.pos]).toEqual([30, 40])
+    expect([...node.size]).toEqual([200, 80])
+    expect(node.pos).toBe(pos)
+    expect(node.size).toBe(size)
+    expect(node._pos).toBe(posBuffer)
+    expect(node._size).toBe(sizeBuffer)
+  })
+
   test('preserves stored size when assigning position', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')
@@ -1125,6 +1153,23 @@ describe('layout geometry projection', () => {
       150 + LiteGraph.NODE_TITLE_HEIGHT
     ])
     expect(node.serialize().size).toEqual([190, 150])
+  })
+})
+
+describe('execution order projection', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  test('writes attached node order to the canonical store', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+
+    node.order = 42
+
+    expect(node.order).toBe(42)
+    expect(node.serialize().order).toBe(42)
   })
 })
 

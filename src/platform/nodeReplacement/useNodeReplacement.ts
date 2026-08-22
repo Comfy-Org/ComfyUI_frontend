@@ -1,5 +1,6 @@
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { clearNodeOwnedStoreState } from '@/stores/clearNodeOwnedStoreState'
 import {
   canTransferReplacementOwnership,
   transferReplacementOwnership
@@ -159,10 +160,11 @@ function replaceWithMapping(
   nodeGraph: LGraph,
   idx: number
 ): void {
+  const order = node.order
   newNode.id = node.id
   newNode.pos = [...node.pos]
   newNode.size = [...node.size]
-  newNode.order = node.order
+  newNode.order = order
   newNode.mode = node.mode
   if (node.flags) newNode.flags = { ...node.flags }
 
@@ -174,6 +176,7 @@ function replaceWithMapping(
     throw new Error(`Cannot replace node ${node.id}: ownership is invalid`)
 
   node.onRemoved?.()
+  clearNodeOwnedStoreState(node)
   if (
     nodeGraph._nodes[idx] !== node ||
     nodeGraph._nodes_by_id[node.id] !== node ||
@@ -185,6 +188,7 @@ function replaceWithMapping(
   nodeGraph._nodes[idx] = newNode
   newNode.graph = nodeGraph
   node.graph = null
+  node.order = order
   nodeGraph._nodes_by_id[newNode.id] = newNode
 
   for (const widget of newNode.widgets ?? []) {

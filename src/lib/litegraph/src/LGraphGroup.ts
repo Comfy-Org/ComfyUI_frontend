@@ -1,6 +1,8 @@
 import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
 import { setGroupBoundsLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import type { GroupPresentation } from '@/stores/graphDefinitionStore'
+import { useGraphDefinitionStore } from '@/stores/graphDefinitionStore'
 import type { GroupId } from '@/types/groupId'
 import { toGroupId } from '@/types/groupId'
 import { hexToRgb, luminance, readableTextColor } from '@/utils/colorUtil'
@@ -37,6 +39,20 @@ export interface IGraphGroupFlags extends Record<string, unknown> {
   pinned?: true
 }
 
+const findPropertyDescriptor = (
+  target: object,
+  property: PropertyKey
+): PropertyDescriptor | undefined => {
+  for (
+    let prototype: object | null = Object.getPrototypeOf(target);
+    prototype;
+    prototype = Object.getPrototypeOf(prototype)
+  ) {
+    const descriptor = Object.getOwnPropertyDescriptor(prototype, property)
+    if (descriptor) return descriptor
+  }
+}
+
 export class LGraphGroup implements Positionable, IPinnable, IColorable {
   static minWidth = 140
   static minHeight = 80
@@ -52,10 +68,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   static darkBgLuminanceThreshold = 80
 
   id: GroupId
-  color?: string
-  title: string
-  font?: string
-  font_size: number = LiteGraph.GROUP_TEXT_SIZE
+  _presentation: GroupPresentation
   private readonly bounds = new Rectangle(
     10,
     10,
@@ -66,7 +79,6 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   _nodes: LGraphNode[] = []
   _children: Set<Positionable> = new Set()
   graph?: LGraph
-  flags: IGraphGroupFlags = {}
   selected?: boolean
 
   /** Background colour last used to compute {@link _titleTextColor} */
@@ -97,16 +109,71 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   constructor(title?: string, id?: GroupId) {
     // TODO: Object instantiation pattern requires too much boilerplate and null checking.  ID should be passed in via constructor.
     this.id = toGroupId(id ?? -1)
-    this.title = title || 'Group'
-
     const { pale_blue } = LGraphCanvas.node_colors
-    this.color = pale_blue ? pale_blue.groupcolor : '#AAA'
+    this._presentation = {
+      title: title || 'Group',
+      color: pale_blue ? pale_blue.groupcolor : '#AAA',
+      font_size: LiteGraph.GROUP_TEXT_SIZE,
+      flags: {}
+    }
+    for (const property of [
+      'title',
+      'color',
+      'font',
+      'font_size',
+      'flags'
+    ] as const) {
+      Object.defineProperty(this, property, {
+        ...findPropertyDescriptor(this, property),
+        enumerable: true
+      })
+    }
+  }
+
+  get title(): string {
+    return this._presentation.title
+  }
+
+  set title(value: string) {
+    this._presentation.title = value
+  }
+
+  get color(): string | undefined {
+    return this._presentation.color
+  }
+
+  set color(value: string | undefined) {
+    this._presentation.color = value
+  }
+
+  get font(): string | undefined {
+    return this._presentation.font
+  }
+
+  set font(value: string | undefined) {
+    this._presentation.font = value
+  }
+
+  get font_size(): number {
+    return this._presentation.font_size
+  }
+
+  set font_size(value: number) {
+    this._presentation.font_size = value
+  }
+
+  get flags(): IGraphGroupFlags {
+    return this._presentation.flags
+  }
+
+  set flags(value: IGraphGroupFlags) {
+    this._presentation.flags = value
   }
 
   /** @inheritdoc {@link IColorable.setColorOption} */
   setColorOption(colorOption: ColorOption | null): void {
     if (colorOption == null) {
-      delete this.color
+      this.color = undefined
     } else {
       this.color = colorOption.groupcolor
     }
@@ -477,4 +544,31 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     return isInRect(x, y, this.boundingRect)
   }
   setDirtyCanvas = LGraphNode.prototype.setDirtyCanvas
+}
+
+export function registerGroupPresentation(
+  graph: Pick<LGraph, 'rootGraph' | 'id'>,
+  group: LGraphGroup
+): void {
+  group._presentation = useGraphDefinitionStore().registerGroupPresentation(
+    graph.rootGraph.id,
+    graph.id,
+    group.id,
+    group._presentation
+  )
+}
+
+export function unregisterGroupPresentation(group: LGraphGroup): void {
+  const graph = group.graph
+  if (!graph) return
+  const detached = {
+    ...group._presentation,
+    flags: { ...group.flags }
+  }
+  useGraphDefinitionStore().deleteGroupPresentation(
+    graph.rootGraph.id,
+    graph.id,
+    group.id
+  )
+  group._presentation = detached
 }

@@ -85,6 +85,7 @@ const {
   },
   mockNodeOutputStore: {
     refreshNodeOutputs: vi.fn(),
+    replaceOutputsFromLegacy: vi.fn(),
     resetAllOutputsAndPreviews: vi.fn(),
     stashPreviewsForWorkflow: vi.fn(),
     restorePreviewsForWorkflow: vi.fn(),
@@ -291,6 +292,63 @@ describe('ComfyApp', () => {
     mockSettingStore.get.mockImplementation((key: string) =>
       key === 'Comfy.RightSidePanel.ShowErrorsTab' ? true : undefined
     )
+  })
+
+  describe('nodeOutputs', () => {
+    it('commits legacy property mutations to the output store', () => {
+      app.vueAppReady = true
+      const output = { images: [{ filename: 'legacy.png' }] }
+
+      app.nodeOutputs['1'] = output
+      expect(
+        mockNodeOutputStore.replaceOutputsFromLegacy
+      ).toHaveBeenNthCalledWith(1, { '1': output })
+
+      delete app.nodeOutputs['1']
+      expect(
+        mockNodeOutputStore.replaceOutputsFromLegacy
+      ).toHaveBeenNthCalledWith(2, {})
+    })
+
+    it('commits nested legacy output mutations to the output store', () => {
+      app.vueAppReady = true
+      app.nodeOutputs['1'] = { images: [{ filename: 'first.png' }] }
+      mockNodeOutputStore.replaceOutputsFromLegacy.mockClear()
+
+      const output = app.nodeOutputs['1']
+      output.images = [{ filename: 'second.png' }]
+      expect(mockNodeOutputStore.replaceOutputsFromLegacy).toHaveBeenCalledWith(
+        {
+          '1': { images: [{ filename: 'second.png' }] }
+        }
+      )
+
+      mockNodeOutputStore.replaceOutputsFromLegacy.mockClear()
+      const images = output.images
+      images?.push({ filename: 'third.png' })
+      expect(mockNodeOutputStore.replaceOutputsFromLegacy).toHaveBeenCalledWith(
+        {
+          '1': {
+            images: [{ filename: 'second.png' }, { filename: 'third.png' }]
+          }
+        }
+      )
+      expect(app.nodeOutputs['1']).toBe(output)
+      expect(output.images).toBe(images)
+
+      mockNodeOutputStore.replaceOutputsFromLegacy.mockClear()
+      const image = images?.[0]
+      if (!image) throw new Error('Expected a legacy output image')
+      image.filename = 'mutated.png'
+      expect(mockNodeOutputStore.replaceOutputsFromLegacy).toHaveBeenCalledWith(
+        {
+          '1': {
+            images: [{ filename: 'mutated.png' }, { filename: 'third.png' }]
+          }
+        }
+      )
+      expect(images?.[0]).toBe(image)
+    })
   })
 
   describe('queuePrompt', () => {

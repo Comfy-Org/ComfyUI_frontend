@@ -19,9 +19,11 @@ import {
   LiteGraph,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
+import { useGraphDefinitionStore } from '@/stores/graphDefinitionStore'
 
 import { toLinkId } from '@/types/linkId'
 import { toNodeId, UNASSIGNED_NODE_ID } from '@/types/nodeId'
+import { createUuidv4 } from '@/utils/uuid'
 import {
   createTestSubgraph,
   createTestSubgraphNode,
@@ -45,6 +47,35 @@ afterEach(() => {
 })
 
 describe('SubgraphSerialization - Basic Serialization', () => {
+  it('projects registry and interface metadata from root-scoped records', () => {
+    const root = new LGraph()
+    const subgraph = createTestSubgraph({ rootGraph: root, name: 'Stored' })
+    root.subgraphs.set(subgraph.id, subgraph)
+
+    const store = useGraphDefinitionStore()
+    expect(root.subgraphs).toBe(store.subgraphs(root.id))
+    expect(root.subgraphs.get(subgraph.id)).toBe(subgraph)
+
+    const previousId = subgraph.id
+    subgraph.id = createUuidv4()
+    const definition = store.definition(root.id, subgraph.id)
+    const input = subgraph.addInput('input', 'number')
+    const output = subgraph.addOutput('output', 'number')
+    expect(subgraph.inputs).toBe(definition.inputs)
+    expect(subgraph.outputs).toBe(definition.outputs)
+    expect(definition).toMatchObject({
+      name: 'Stored',
+      inputs: [input],
+      outputs: [output]
+    })
+
+    expect(() => {
+      subgraph.id = createUuidv4()
+    }).toThrow("Cannot change a populated graph's ID")
+    expect(root.subgraphs.get(subgraph.id)).toBe(subgraph)
+    expect(root.subgraphs.has(previousId)).toBe(false)
+  })
+
   it('should save and load simple subgraphs', () => {
     const original = createTestSubgraph({
       name: 'Simple Test',

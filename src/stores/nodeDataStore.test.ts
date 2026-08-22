@@ -5,6 +5,7 @@ import { computed } from 'vue'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { transferReplacementOwnership } from '@/lib/litegraph/src/LGraphNode'
+import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type { GraphScope } from '@/types/graphScopeId'
 import type { NodeState } from '@/types/nodeState'
@@ -113,6 +114,83 @@ describe('nodeDataStore registration via LGraph', () => {
       .find((state) => state.id === node.id)
   }
 
+  function unknownNodeSerialization(
+    node: LGraphNode,
+    type = 'missing/Node'
+  ): ISerialisedNode {
+    return {
+      ...node.serialize(),
+      type,
+      properties: { preserved: true },
+      widgets_values: [42]
+    }
+  }
+
+  it('owns unknown-node fallback through load, compatibility access, and removal', () => {
+    const graph = new LGraph()
+    const source = new LGraphNode('Missing')
+    const fallback = unknownNodeSerialization(source)
+
+    graph.configure({ ...graph.asSerialisable(), nodes: [fallback] })
+    const loaded = graph.nodes[0]
+    assert(loaded)
+    const state = registeredState(graph, loaded)
+
+    expect(loaded.last_serialization).toBe(state?.lastSerialization)
+    expect(loaded.last_serialization).toMatchObject({
+      type: 'missing/Node',
+      widgets_values: [42]
+    })
+
+    graph.remove(loaded)
+    expect(registeredState(graph, loaded)).toBeUndefined()
+  })
+
+  it('round-trips fallback data while live store fields remain authoritative', () => {
+    const graph = new LGraph()
+    const source = new LGraphNode('Missing')
+    const fallback = unknownNodeSerialization(source)
+    graph.configure({ ...graph.asSerialisable(), nodes: [fallback] })
+    const loaded = graph.nodes[0]
+    assert(loaded)
+
+    loaded.pos = [300, 400]
+    loaded.mode = 2
+    assert(loaded.last_serialization)
+    loaded.last_serialization = {
+      ...loaded.last_serialization,
+      pos: [1, 2],
+      mode: 1
+    }
+
+    expect(loaded.serialize()).toEqual({
+      ...fallback,
+      pos: [300, 400],
+      mode: 2
+    })
+    expect(new LGraph(graph.asSerialisable()).nodes[0]?.serialize()).toEqual({
+      ...fallback,
+      pos: [300, 400],
+      mode: 2
+    })
+  })
+
+  it('leaves fallback discovery on the removed shell during replacement', () => {
+    const graph = new LGraph()
+    const original = new LGraphNode('Missing')
+    graph.add(original)
+    original.last_serialization = unknownNodeSerialization(original)
+    const replacement = new LGraphNode('Replacement')
+    replacement.id = original.id
+
+    expect(transferReplacementOwnership(original, replacement)).toBe(true)
+    expect(original.last_serialization?.type).toBe('missing/Node')
+    expect(replacement.last_serialization).toBeUndefined()
+    expect(
+      registeredState(graph, replacement)?.lastSerialization
+    ).toBeUndefined()
+  })
+
   it('exposes a node’s slots without resolving the node', () => {
     const graph = new LGraph()
     const lgraphNode = new LGraphNode('test')
@@ -151,16 +229,19 @@ describe('nodeDataStore registration via LGraph', () => {
 
     lgraphNode.removeInput(1)
     expect(state?.inputs.map((i) => i.name)).toEqual(['third', 'first'])
-    expect(state?.inputs).toBe(lgraphNode.inputs)
   })
 
   it('moves registered state to a same-id replacement without changing store membership', () => {
     const graph = new LGraph()
     const original = new LGraphNode('original')
     original.color = '#123456'
+    original.boxcolor = '#345678'
+    original.properties.source = 'original'
     graph.add(original)
     const replacement = new LGraphNode('replacement')
     replacement.id = original.id
+    replacement.boxcolor = '#abcdef'
+    replacement.properties.source = 'replacement'
     const registered = registeredState(graph, original)
     assert(registered)
 
@@ -168,10 +249,14 @@ describe('nodeDataStore registration via LGraph', () => {
     expect(replacement._state).toBe(registered)
     expect(replacement.title).toBe('replacement')
     expect(replacement.color).toBeUndefined()
+    expect(replacement.boxcolor).toBe('#abcdef')
+    expect(replacement.properties).toEqual({ source: 'replacement' })
     expect(registeredState(graph, replacement)).toBe(registered)
     expect(registered.graphId).toBe(graph.id)
     expect(original._graphScope).toBeUndefined()
     expect(original._state).not.toBe(registered)
+    expect(original.boxcolor).toBe('#345678')
+    expect(original.properties).toEqual({ source: 'original' })
 
     original.title = 'detached'
     expect(replacement.title).toBe('replacement')

@@ -133,7 +133,8 @@ function processWidgets({
       mode: 0,
       flags: {},
       inputs: [],
-      outputs: []
+      outputs: [],
+      properties: {}
     },
     widgetIds,
     graphId: GRAPH_ID,

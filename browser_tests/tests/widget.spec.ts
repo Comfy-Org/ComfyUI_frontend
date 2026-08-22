@@ -219,8 +219,14 @@ test.describe('Image widget', { tag: ['@screenshot', '@widget'] }, () => {
   })
 
   test('Can change image by changing the filename combo value', async ({
-    comfyPage
+    comfyPage,
+    comfyFiles
   }) => {
+    comfyFiles.deleteAfterTest({ filename: 'image32x32.webp', type: 'input' })
+    await comfyPage.dragDrop.dragAndDropFile('image32x32.webp', {
+      waitForUpload: true
+    })
+
     await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
     const nodes = await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
     const loadImageNode = nodes[0]
