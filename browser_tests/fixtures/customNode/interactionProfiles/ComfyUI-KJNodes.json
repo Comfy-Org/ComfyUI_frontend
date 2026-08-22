@@ -8,5 +8,19 @@
     "count": 244,
     "nodeTypesSha256": "4648dd72edcd4c7a3efe185ed7f10941e79f7a04d1df38057b41b690fa0e6100"
   },
-  "nodes": {}
+  "nodes": {
+    "ImageConcanate": {
+      "connectFirst": ["+output:output:IMAGE", "-output:output:*"]
+    },
+    "ImageSharpenKJ": {
+      "connectFirst": ["+output:output:IMAGE", "-output:output:*"],
+      "disconnect": ["+output:output:*", "-output:output:IMAGE"]
+    },
+    "ImageTransformKJ": {
+      "connectFirst": ["+output:output:IMAGE", "-output:output:*"]
+    },
+    "RandomImageFromBatch": {
+      "connectFirst": ["+output:output:IMAGE", "-output:output:*"]
+    }
+  }
 }

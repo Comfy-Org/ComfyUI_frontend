@@ -43,12 +43,6 @@
         "+output:value:INT",
         "-input:value:*",
         "-output:value:*"
-      ],
-      "connectLast": [
-        "+input:value:INT",
-        "+output:value:INT",
-        "-input:value:*",
-        "-output:value:*"
       ]
     },
     "ImpactInversedSwitch": {
@@ -61,11 +55,9 @@
         "-output:output1:*"
       ],
       "connectLast": [
-        "+input:input:INT",
-        "+input:sel_mode:INT",
-        "+output:output1:INT",
+        "+input:input:BOOLEAN",
+        "+output:output1:BOOLEAN",
         "-input:input:*",
-        "-input:sel_mode:BOOLEAN",
         "-output:output1:*"
       ]
     },
