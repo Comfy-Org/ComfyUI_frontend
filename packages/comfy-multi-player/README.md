@@ -36,7 +36,7 @@ import { mint, applyOps, project } from "@comfyorg/comfy-multi-player";
 const doc = mint(workflowJson, catalog, "object_info@2026-08-01");
 
 const result = applyOps(doc, [op], catalog);
-// { applied: [...], skipped: [], failed: null, applied_count: 1, version: 1 }
+// { outcomes: [{ op_id: "...", outcome: "applied" }], ops_seen: 1 }
 
 const workflow = project(doc, catalog); // ComfyUI workflow JSON, ready to render
 ```
@@ -412,12 +412,15 @@ Those edits are not expressible and do not travel on the op channel.
 
 ```ts
 interface ApplyResult {
-  applied: string[];        // op_ids consumed by this call, in apply order
-  skipped: string[];        // op_ids already applied to this document before the call
-  failed: { index, op, code, message } | null;
-  applied_count: number;    // applied.length
-  version: number;          // total ops this document has ever consumed
+  outcomes: ApplyOutcome[]; // one ordered outcome for every submitted op
+  ops_seen: number;         // total op identities this document has consumed
 }
+
+type ApplyOutcome =
+  | { op_id: string; outcome: "applied" }
+  | { op_id: string; outcome: "no-op" }
+  | { op_id: string; outcome: "lww-dropped" }
+  | { op_id: string; outcome: "rejected"; reason: { code: string; message: string } };
 ```
 
 Six outcomes, and the distinction between them is the part integrators get
@@ -425,12 +428,12 @@ wrong:
 
 | Outcome | Reported in | Document changed | `op_id` consumed |
 |---|---|---|---|
-| Applied | `applied` | yes | yes |
-| **Dropped by last-writer-wins** — a higher stamp already owns that target | `applied` | no | yes |
-| **Delete-wins no-op** — the target node is gone | `applied` | no | yes |
-| **Malformed on its face, whatever the document state** — `connect` with a `from_slot` or `to_slot` outside the non-negative integers, a non-numeric `to_slot` without `grow`, a non-string `link_type`/`grow.name`/`grow.type`/`grow.inputcount.widget`, a non-cloneable widget value, or a `base_version` that throws on conversion | `failed` | no (byte-identical for this op; a valid prefix earlier in the batch is still applied — §4) | **no** |
-| Duplicate — already applied to this document | `skipped` | no | already was |
-| Rejected | `failed` | no (byte-identical) | **no** |
+| Applied | `outcome: "applied"` | yes | yes |
+| **Dropped by last-writer-wins** — a higher stamp already owns that target | `outcome: "lww-dropped"` | no | yes |
+| **Delete-wins no-op** — the target node is gone | `outcome: "no-op"` | no | yes |
+| **Malformed on its face, whatever the document state** — `connect` with a `from_slot` or `to_slot` outside the non-negative integers, a non-numeric `to_slot` without `grow`, a non-string `link_type`/`grow.name`/`grow.type`/`grow.inputcount.widget`, a non-cloneable widget value, or a `base_version` that throws on conversion | `outcome: "rejected"` with a structured `reason` | no (byte-identical for this op; a valid prefix earlier in the batch is still applied — §4) | **no** |
+| Duplicate — already applied to this document | `outcome: "no-op"` | no | already was |
+| Rejected | `outcome: "rejected"` with a structured `reason` | no (byte-identical) | **no** |
 
 Amendment A9 refuses cloneable-but-unstorable values,
 invalid `connect.link_id`, and non-iterable `delete_node.removed_links` before

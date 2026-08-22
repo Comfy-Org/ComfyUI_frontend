@@ -1282,7 +1282,7 @@ already anticipates this case in a comment, and it raises `apply_error` 400, not
 turn loop never reaches `Advance`.
 
 **On the partial-apply hazard: unchanged for conforming documents.** #31's in-band rejection made
-`/apply` return 200-with-`failed`, and the Go side commits the prefix whenever `applied_count > 0`
+`/apply` returns 200 with ordered per-op outcomes, and the Go side commits the prefix whenever an outcome is `applied`, `no-op`, or `lww-dropped`
 regardless of `failed`. This change neither fixes nor worsens that. It only removes the *schema-less*
 variant of it. **The `CLOUD-PARTIAL-APPLY-OK` precondition on the pin bump still stands in full.**
 

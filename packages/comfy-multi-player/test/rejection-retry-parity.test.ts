@@ -111,8 +111,11 @@ describe("rejection and retry arrival-order parity", () => {
     const beforeRetry = bytes(crossBatch);
     const retryResult = applyOps(crossBatch, [valid], catalog);
 
-    expect(sameResult).toMatchObject({ applied: [valid.op_id], skipped: [valid.op_id], failed: null });
-    expect(retryResult).toMatchObject({ applied: [], skipped: [valid.op_id], failed: null });
+    expect(sameResult.outcomes).toEqual([
+      { op_id: valid.op_id, outcome: "applied" },
+      { op_id: valid.op_id, outcome: "no-op" },
+    ]);
+    expect(retryResult.outcomes).toEqual([{ op_id: valid.op_id, outcome: "no-op" }]);
     expect(bytes(crossBatch)).toEqual(beforeRetry);
     expect(project(crossBatch, catalog)).toEqual(project(sameBatch, catalog));
   });
@@ -127,7 +130,12 @@ describe("rejection and retry arrival-order parity", () => {
     const crossBefore = bytes(crossBatch);
     const crossRejected = applyOps(crossBatch, [rejected], catalog);
 
-    expect(observableResult(inOrderResult)).toEqual(observableResult(crossRejected));
+    expect(inOrderResult.outcomes[0]).toEqual(crossRejected.outcomes[0]);
+    expect(inOrderResult.outcomes[1]).toMatchObject({
+      op_id: valid.op_id,
+      outcome: "rejected",
+      reason: { code: "batch_aborted" },
+    });
     expect(bytes(inOrder)).toEqual(inOrderBefore);
     expect(bytes(crossBatch)).toEqual(crossBefore);
 

@@ -486,17 +486,21 @@ export interface ApplyFailure {
  * `failed.index` are NOT applied (abort-remainder), and the applied prefix is
  * retained — a retried batch converges via the op_id gate.
  */
+export type ApplyOutcome =
+  | { op_id: string; outcome: "applied" }
+  | { op_id: string; outcome: "no-op" }
+  | { op_id: string; outcome: "lww-dropped" }
+  | {
+      op_id: string;
+      outcome: "rejected";
+      reason: { code: string; message: string };
+    };
+
 export interface ApplyResult {
-  /** op_ids consumed by this call, in apply order. */
-  applied: string[];
-  /** op_ids skipped as already-applied duplicates (idempotence). */
-  skipped: string[];
-  /** Abort-remainder failure, or null when every op was consumed or skipped. */
-  failed: ApplyFailure | null;
-  /** `applied.length` — the vocabulary §4 ack field. */
-  applied_count: number;
-  /** Doc revision after apply: total ops ever consumed by this doc (`__applied` size). */
-  version: number;
+  /** One ordered, discriminated outcome for every submitted op. */
+  outcomes: ApplyOutcome[];
+  /** Total op identities consumed by this document (`__applied` size), not a CAS token. */
+  ops_seen: number;
 }
 
 // ---------------------------------------------------------------------------

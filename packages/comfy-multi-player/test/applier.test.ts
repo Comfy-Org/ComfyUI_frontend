@@ -183,6 +183,25 @@ describe("delete-wins (silent no-ops that consume the op_id)", () => {
   });
 });
 
+describe("ApplyResult per-op outcomes (#16)", () => {
+  it("distinguishes a landed write, an LWW drop, and a delete-wins no-op", () => {
+    const doc = mint(lww.base_workflow, catalog);
+    const nodeId = 3308598398221244;
+    const landed: SetWidgetOp = { op: "set_widget", ...envelope("bob", 10), node_id: nodeId, widget: "steps", value: 30 };
+    const dropped: SetWidgetOp = { op: "set_widget", ...envelope("alice", 9), node_id: nodeId, widget: "steps", value: 20 };
+    const missing: SetWidgetOp = { op: "set_widget", ...envelope("alice", 11), node_id: 42, widget: "steps", value: 10 };
+
+    expect(applyOps(doc, [landed, dropped, missing], catalog)).toEqual({
+      outcomes: [
+        { op_id: landed.op_id, outcome: "applied" },
+        { op_id: dropped.op_id, outcome: "lww-dropped" },
+        { op_id: missing.op_id, outcome: "no-op" },
+      ],
+      ops_seen: 3,
+    });
+  });
+});
+
 describe("clear semantics (schema §6)", () => {
   it("empties nodes/links, resets groups only when present, preserves everything else", () => {
     const base = lww.base_workflow; // has groups + extra + config

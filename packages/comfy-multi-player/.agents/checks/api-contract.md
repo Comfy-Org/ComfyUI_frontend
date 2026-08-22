@@ -40,7 +40,7 @@ CI so the prose above cannot silently describe a contract that no longer exists.
 
 ## Known defects, left standing on purpose
 
-Two findings about this profile and the contract it describes are **diagnosed, filed and not fixed
+One finding about this profile and the contract it describes is **diagnosed, filed and not fixed
 here**. They are recorded as `known-defect` tombstones rather than as a line in a report, because a
 report is not something the repository can see: the `test-quality.md` rejection oracle was diagnosed
 independently by two merge reviews (#34, #58) and relayed into a third (#60), each of which correctly
@@ -58,29 +58,6 @@ second line is forgotten.
   one-word fix leaves the corrected sentence exactly as free to drift back as the wrong one was, and
   #73's subject is the missing anchors for rules 2-5 rather than this one instance. Rule 4 above now
   warns the reader in place, so nobody is misled while the tombstone stands.
-- **`ApplyResult.version` is an op count, not a version**, and the shape cannot express a per-op
-  outcome — [#16](https://github.com/Comfy-Org/comfy-multi-player/issues/16). The needle is the
-  **field declaration**, and getting it there took two corrections. A needle on the doc-comment alone
-  survives the fix — renaming `version` away leaves the comment in place, so the tombstone would go
-  on advertising a defect that was gone. A needle spanning comment *and* declaration fixes that and
-  introduces the opposite fault: rewrapping the JSDoc, which fixes nothing, breaks it and tells the
-  author to close an open issue. Point a tombstone at the defect itself and at nothing else. Both
-  faults were measured by applying real edits, not reasoned about. Three needles
-  were tried before one held, and the two that failed both LOOKED right:
-  `version: number;` **and the `}` under it** was unique and still wrong in both
-  directions at once — it stayed GREEN on the rename, because
-  `doc_version: number;\n}` contains `version: number;\n}`, and it FIRED on
-  #16's own partial fix, which adds a field and leaves the defect. Narrowing it
-  to `  version: number;` was worse: needles are `.trim()`ed, so the two leading
-  spaces that were the whole point — they exclude `base_version: number;` two
-  hundred lines above — are not stored, and the marker matched that line
-  instead. A tombstone can be vacuous and green for months. The needle that
-  holds is `*/` plus the declaration under it. When uniqueness depends on
-  indentation, anchor on a non-space character;
-  see [`README.md`](README.md#writing-a-good-claim).
-
 <!-- known-defect: #73 :: (`applied`, `skipped`, `failed`, `version`) :: .agents/checks/api-contract.md -->
-<!-- known-defect: #16 :: */
-  version: number; :: src/types.ts -->
 
 > Before reporting PASS for any check above, apply [vacuity.md](vacuity.md): P0 to every check, P1 to any guard this change adds, P10 to what that guard's test asserts on, P2 to any tool you ran, and P7 to any run you quote.

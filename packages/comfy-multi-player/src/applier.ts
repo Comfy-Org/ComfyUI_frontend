@@ -110,7 +110,7 @@ import {
   FROZEN_OPS,
   OpRejectedError,
   type AddNodeOp,
-  type ApplyFailure,
+  type ApplyOutcome,
   type ApplyResult,
   type ConnectOp,
   type DeleteNodeOp,
@@ -138,23 +138,19 @@ import {
  */
 export function applyOps(doc: Y.Doc, ops: Op[], catalog?: WidgetCatalog): ApplyResult {
   const bookkeeping = appliedMap(doc);
-  const applied: string[] = [];
-  const skipped: string[] = [];
-  let failed: ApplyFailure | null = null;
+  const outcomes: ApplyOutcome[] = [];
+  const duplicateIds = new Set<string>();
 
   if (ops.length > MAX_OPS_PER_BATCH) {
-    return {
-      applied,
-      skipped,
-      failed: {
-        index: 0,
-        op: ops[0]!,
-        code: "malformed_op",
-        message: `batch of ${ops.length} ops exceeds the ${MAX_OPS_PER_BATCH}-op limit; rejected before any op was processed (#14)`,
-      },
-      applied_count: 0,
-      version: bookkeeping.size,
-    };
+    const message = `batch of ${ops.length} ops exceeds the ${MAX_OPS_PER_BATCH}-op limit; rejected before any op was processed (#14)`;
+    return makeResult({
+      outcomes: ops.map((op) => ({
+        op_id: opIdentity(op),
+        outcome: "rejected" as const,
+        reason: { code: "malformed_op", message },
+      })),
+      ops_seen: bookkeeping.size,
+    }, ops, duplicateIds);
   }
 
   for (let index = 0; index < ops.length; index++) {
@@ -175,27 +171,64 @@ export function applyOps(doc: Y.Doc, ops: Op[], catalog?: WidgetCatalog): ApplyR
         }
         // Idempotency gate BEFORE any mutation/transaction: a duplicate apply
         // is a true no-op (byte-identical encodeStateAsUpdate).
-        skipped.push(op.op_id);
+        outcomes.push({ op_id: op.op_id, outcome: "no-op" });
+        duplicateIds.add(op.op_id);
         continue;
       }
+      let outcome: Exclude<ApplyOutcome["outcome"], "rejected"> = "applied";
       doc.transact(() => {
-        dispatch(doc, op, catalog);
+        outcome = dispatch(doc, op, catalog);
         // comfy-cli records the op_id even for delete-wins/LWW-dropped no-ops.
         mset(bookkeeping, op.op_id, digest);
       }, op.actor);
-      applied.push(op.op_id);
+      outcomes.push({ op_id: op.op_id, outcome });
     } catch (err) {
-      failed = {
-        index,
-        op,
-        code: err instanceof OpRejectedError ? err.code : "apply_failed",
-        message: err instanceof Error ? err.message : String(err),
-      };
+      outcomes.push({
+        op_id: opIdentity(op),
+        outcome: "rejected",
+        reason: {
+          code: err instanceof OpRejectedError ? err.code : "apply_failed",
+          message: err instanceof Error ? err.message : String(err),
+        },
+      });
+      for (const remainder of ops.slice(index + 1)) {
+        outcomes.push({
+          op_id: opIdentity(remainder),
+          outcome: "rejected",
+          reason: { code: "batch_aborted", message: `not processed because op at index ${index} was rejected` },
+        });
+      }
       break; // abort-remainder (vocabulary §4)
     }
   }
 
-  return { applied, skipped, failed, applied_count: applied.length, version: bookkeeping.size };
+  return makeResult({ outcomes, ops_seen: bookkeeping.size }, ops, duplicateIds);
+}
+
+/** Remove in 0.3: non-enumerable accessors keep the pre-0.2 test corpus readable during migration. */
+function makeResult(result: ApplyResult, ops: Op[], duplicateIds: Set<string>): ApplyResult {
+  const legacy = result as ApplyResult & Record<string, unknown>;
+  Object.defineProperties(legacy, {
+    applied: { get: () => result.outcomes.filter((o) => o.outcome !== "rejected" && !duplicateIds.has(o.op_id)).map((o) => o.op_id) },
+    skipped: { get: () => result.outcomes.filter((o) => duplicateIds.has(o.op_id)).map((o) => o.op_id) },
+    failed: {
+      get: () => {
+        const index = result.outcomes.findIndex((o) => o.outcome === "rejected" && o.reason.code !== "batch_aborted");
+        const outcome = result.outcomes[index];
+        if (index < 0 || outcome?.outcome !== "rejected") return null;
+        return { index, op: ops[index], ...outcome.reason };
+      },
+    },
+    applied_count: { get: () => result.outcomes.filter((o) => o.outcome !== "rejected" && !duplicateIds.has(o.op_id)).length },
+    version: { get: () => result.ops_seen },
+  });
+  return result;
+}
+
+function opIdentity(op: unknown): string {
+  return typeof op === "object" && op !== null && typeof (op as { op_id?: unknown }).op_id === "string"
+    ? (op as { op_id: string }).op_id
+    : "";
 }
 
 /**
@@ -346,23 +379,20 @@ function validateEnvelope(op: WireOp): void {
   }
 }
 
-function dispatch(doc: Y.Doc, op: Op, catalog?: WidgetCatalog): void {
+type SuccessfulOutcome = "applied" | "no-op" | "lww-dropped";
+
+function dispatch(doc: Y.Doc, op: Op, catalog?: WidgetCatalog): SuccessfulOutcome {
   switch (op.op) {
     case "add_node":
-      applyAddNode(doc, op, catalog);
-      return;
+      return applyAddNode(doc, op, catalog);
     case "set_widget":
-      applySetWidget(doc, op, catalog);
-      return;
+      return applySetWidget(doc, op, catalog);
     case "connect":
-      applyConnect(doc, op, catalog);
-      return;
+      return applyConnect(doc, op, catalog);
     case "delete_node":
-      applyDeleteNode(doc, op);
-      return;
+      return applyDeleteNode(doc, op);
     case "clear":
-      applyClear(doc, op);
-      return;
+      return applyClear(doc, op);
     default:
       // Exhaustiveness guard (issue #21): with every `Op` member cased above,
       // `op` is `never` here. Add a sixth IMPLEMENTED kind to `Op` and this
@@ -422,7 +452,7 @@ function rejectUnprojectableWidgets(
   }
 }
 
-function applyAddNode(doc: Y.Doc, op: AddNodeOp, catalog?: WidgetCatalog): void {
+function applyAddNode(doc: Y.Doc, op: AddNodeOp, catalog?: WidgetCatalog): SuccessfulOutcome {
   if (op.node_id === undefined || typeof op.node !== "object" || op.node === null) {
     throw new OpRejectedError("malformed_op", "add_node: missing node_id or node payload");
   }
@@ -432,7 +462,7 @@ function applyAddNode(doc: Y.Doc, op: AddNodeOp, catalog?: WidgetCatalog): void 
   const targetKey = stampTargetKey(op);
   const prior = stamps.get(targetKey) as StampKey | undefined;
   const stamp = stampKey(op);
-  if (prior != null && compareStampKeys(stamp, prior) <= 0) return;
+  if (prior != null && compareStampKeys(stamp, prior) <= 0) return "lww-dropped";
 
   // The op.node payload is authoritative (vocabulary §8.5) — inserted
   // verbatim, never re-derived from the catalog. The catalog IS needed here,
@@ -483,6 +513,7 @@ function applyAddNode(doc: Y.Doc, op: AddNodeOp, catalog?: WidgetCatalog): void 
   if (typeof op.node_id === "number" && op.node_id > curN) {
     mset(meta, "last_node_id", op.node_id);
   }
+  return "applied";
 }
 
 // ---------------------------------------------------------------------------
@@ -632,7 +663,7 @@ function assertWritableValue(value: unknown, what: string): void {
   }
 }
 
-function applySetWidget(doc: Y.Doc, op: SetWidgetOp, catalog?: WidgetCatalog): void {
+function applySetWidget(doc: Y.Doc, op: SetWidgetOp, catalog?: WidgetCatalog): SuccessfulOutcome {
   const interior: InteriorSetWidgetOp | null = isInteriorWrite(op) ? op : null;
   if (interior !== null && typeof interior.inner_widget !== "string") {
     throw new OpRejectedError("malformed_op", "set_widget: interior write without inner_widget");
@@ -650,11 +681,11 @@ function applySetWidget(doc: Y.Doc, op: SetWidgetOp, catalog?: WidgetCatalog): v
   const targetKey = stampTargetKey(op);
   const prior = stamps.get(targetKey) as StampKey | undefined;
   const key = stampKey(op);
-  if (prior != null && compareStampKeys(key, prior) <= 0) return; // lww-dropped
+  if (prior != null && compareStampKeys(key, prior) <= 0) return "lww-dropped";
 
   if (interior !== null) {
     const target = resolveInteriorNode(doc, interior.path.map(String), catalog);
-    if (target === null) return; // head instance concurrently deleted → no-op (delete wins)
+    if (target === null) return "no-op"; // head instance concurrently deleted → no-op (delete wins)
     const nodeType = String(target.get("type") ?? "");
     const widget = interior.inner_widget;
     rejectIfOpaqueWidgets(target, widget);
@@ -683,17 +714,18 @@ function applySetWidget(doc: Y.Doc, op: SetWidgetOp, catalog?: WidgetCatalog): v
     }
     mset(widgetsOf(target), widget, structuredClone(op.value));
     mset(stamps, targetKey, key);
-    return;
+    return "applied";
   }
 
   const node = nodesMap(doc).get(String(op.node_id));
-  if (!node) return; // target concurrently deleted → no-op (delete wins)
+  if (!node) return "no-op"; // target concurrently deleted → no-op (delete wins)
   rejectIfOpaqueWidgets(node, op.widget);
   validateWidgetName(catalog, String(node.get("type") ?? ""), op.widget);
   // Top-level writes may extend past the current positional length — comfy-cli
   // pads with None; here the name-keyed map makes padding a projection concern.
   mset(widgetsOf(node), op.widget, structuredClone(op.value));
   mset(stamps, targetKey, key);
+  return "applied";
 }
 
 /** The node's current projected widgets_values length: 1 + highest widget_order index present in the name-keyed map. `named`-storage path only (see `widgetsOf`). */
@@ -898,7 +930,7 @@ function requireOpOnlyValid(op: ConnectOp): void {
   }
 }
 
-function applyConnect(doc: Y.Doc, op: ConnectOp, catalog?: WidgetCatalog): void {
+function applyConnect(doc: Y.Doc, op: ConnectOp, catalog?: WidgetCatalog): SuccessfulOutcome {
   // OP-ONLY validation first, before ANY document read decides the outcome
   // (KA-4, Amendment A6).
   requireOpOnlyValid(op);
@@ -907,7 +939,7 @@ function applyConnect(doc: Y.Doc, op: ConnectOp, catalog?: WidgetCatalog): void 
   const dst = nodes.get(String(op.to_node));
   // The destination is gone → the target slot does not exist and never will
   // (ids are never reused), so there is no register to claim: delete wins.
-  if (!dst) return;
+  if (!dst) return "no-op";
 
   // The §8.4 inputcount grow carries a widget write; if that write is
   // impossible (opaque destination, or a widget the catalogue cannot describe)
@@ -952,7 +984,7 @@ function applyConnect(doc: Y.Doc, op: ConnectOp, catalog?: WidgetCatalog): void 
     // Autogrow is NOT a shared register: every grow mints its own slot keyed by
     // `grow_id`, so two concurrent grows onto one base both survive and there
     // is nothing to gate (vocabulary §1.2 / amendment v1.2's carve-out).
-    if (!src) return; // source concurrently deleted → no-op (delete wins)
+    if (!src) return "no-op"; // source concurrently deleted → no-op (delete wins)
     toIdx = growInputSlot(doc, dst, op, catalog);
   } else {
     // `to_slot`'s type was settled by `requireOpOnlyValid`.
@@ -984,7 +1016,7 @@ function applyConnect(doc: Y.Doc, op: ConnectOp, catalog?: WidgetCatalog): void 
     const targetKey = stampTargetKey(op);
     const prior = stamps.get(targetKey) as StampKey | undefined;
     const key = stampKey(op);
-    if (prior != null && compareStampKeys(key, prior) <= 0) return; // lww-dropped
+    if (prior != null && compareStampKeys(key, prior) <= 0) return "lww-dropped";
 
     // Claiming the register is UNCONDITIONAL once the gate passes — the prior
     // occupant is retired even if this op then turns out to be a delete-wins
@@ -1007,7 +1039,7 @@ function applyConnect(doc: Y.Doc, op: ConnectOp, catalog?: WidgetCatalog): void 
 
   // Source concurrently deleted → the winning connect leaves the input EMPTY
   // (delete wins over the link, not over the register claim).
-  if (!src || !sourceOutputs) return;
+  if (!src || !sourceOutputs) return "no-op";
   const outs = sourceOutputs;
 
   const links = linksMap(doc);
@@ -1028,6 +1060,7 @@ function applyConnect(doc: Y.Doc, op: ConnectOp, catalog?: WidgetCatalog): void 
   if (!(outLinks as Y.Array<unknown>).toArray().includes(op.link_id)) {
     apush(outLinks as Y.Array<unknown>, op.link_id);
   }
+  return "applied";
 }
 
 /**
@@ -1330,7 +1363,7 @@ function scrubLinkRefs(doc: Y.Doc, shouldRemove: (linkId: unknown) => boolean): 
  * when the node actually goes away, because a node that survives the gate
  * keeps its own wiring.
  */
-function applyDeleteNode(doc: Y.Doc, op: DeleteNodeOp): void {
+function applyDeleteNode(doc: Y.Doc, op: DeleteNodeOp): SuccessfulOutcome {
   if (op.node_id === undefined) {
     throw new OpRejectedError("malformed_op", "delete_node: missing node_id");
   }
@@ -1354,6 +1387,7 @@ function applyDeleteNode(doc: Y.Doc, op: DeleteNodeOp): void {
   const prior = stamps.get(targetKey) as StampKey | undefined;
   const stamp = stampKey(op);
   const presenceWon = prior == null || compareStampKeys(stamp, prior) > 0;
+  const nodeWasPresent = nodes.has(key);
   if (presenceWon) {
     mset(stamps, targetKey, stamp);
     if (nodes.has(key)) mdel(nodes, key); // absent target → no-op-with-cleanup (delete wins)
@@ -1374,6 +1408,8 @@ function applyDeleteNode(doc: Y.Doc, op: DeleteNodeOp): void {
   for (const k of toDelete) mdel(links, k);
 
   scrubDanglingLinkRefs(doc);
+  if (!presenceWon && toDelete.length === 0) return "lww-dropped";
+  return nodeWasPresent || toDelete.length > 0 ? "applied" : "no-op";
 }
 
 /**
@@ -1454,20 +1490,28 @@ function scrubDanglingLinkRefs(doc: Y.Doc): void {
  * wiped wholesale, so link survival is a function of the (now convergent)
  * node set rather than of arrival order.
  */
-function applyClear(doc: Y.Doc, op: Extract<Op, { op: "clear" }>): void {
+function applyClear(doc: Y.Doc, op: Extract<Op, { op: "clear" }>): SuccessfulOutcome {
   if (!Array.isArray(op.removed_nodes)) {
     throw new OpRejectedError("malformed_op", "clear: missing removed_nodes");
   }
   const nodes = nodesMap(doc);
   const stamps = stampsMap(doc);
   const stamp = stampKey(op);
+  let applied = false;
+  let dropped = false;
   for (const nodeId of op.removed_nodes) {
     const k = String(nodeId);
     const targetKey = JSON.stringify(["node", k]);
     const prior = stamps.get(targetKey) as StampKey | undefined;
-    if (prior != null && compareStampKeys(stamp, prior) <= 0) continue;
+    if (prior != null && compareStampKeys(stamp, prior) <= 0) {
+      dropped = true;
+      continue;
+    }
     mset(stamps, targetKey, stamp);
-    if (nodes.has(k)) mdel(nodes, k);
+    if (nodes.has(k)) {
+      mdel(nodes, k);
+      applied = true;
+    }
   }
   const links = linksMap(doc);
   const toDelete: string[] = [];
@@ -1475,8 +1519,15 @@ function applyClear(doc: Y.Doc, op: Extract<Op, { op: "clear" }>): void {
     const tuple = ln as unknown[];
     if (!nodes.has(String(tuple[1])) || !nodes.has(String(tuple[3]))) toDelete.push(k);
   });
-  for (const k of toDelete) mdel(links, k);
+  for (const k of toDelete) {
+    mdel(links, k);
+    applied = true;
+  }
   scrubDanglingLinkRefs(doc);
   const meta = metaMap(doc);
-  if (meta.has("groups")) mset(meta, "groups", []);
+  if (meta.has("groups")) {
+    mset(meta, "groups", []);
+    applied = true;
+  }
+  return applied ? "applied" : dropped ? "lww-dropped" : "no-op";
 }
