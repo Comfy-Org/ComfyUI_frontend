@@ -1,5 +1,6 @@
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { resolveExtensionHost } from '@/services/extensionHostProvider'
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
@@ -59,6 +60,14 @@ export const useExtensionService = () => {
         )
         .map(async (ext) => {
           try {
+            // An installed host provider may take over loading for some or all
+            // extensions (e.g. to run them in an isolated realm). With no
+            // provider installed this is exactly the previous behaviour.
+            const host = resolveExtensionHost(ext)
+            if (host) {
+              await host.load(ext)
+              return
+            }
             await import(/* @vite-ignore */ api.fileURL(ext))
           } catch (error) {
             console.error('Error loading extension', ext, error)
