@@ -10,7 +10,12 @@ import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
-import { createNode, getWidgetIdForNode, resolveNode } from './litegraphUtil'
+import {
+  createNode,
+  getWidgetIdForNode,
+  mapLiveWidgetsById,
+  resolveNode
+} from './litegraphUtil'
 
 beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
 
@@ -179,6 +184,19 @@ describe('getWidgetIdForNode', () => {
     expect(getWidgetIdForNode(node, { name: 'UNKNOWN' }, 1)).toBe(
       widgetId(graphId, toNodeId(42), 'UNKNOWN#1')
     )
+  })
+
+  it('distinguishes duplicate names across widget types', () => {
+    const node = fakeNode(42)
+    node.widgets = [
+      { name: 'shared', type: 'number', value: 1, options: {}, y: 0 },
+      { name: 'shared', type: 'text', value: 'two', options: {}, y: 0 }
+    ]
+
+    expect([...mapLiveWidgetsById(node).keys()]).toEqual([
+      widgetId(graphId, toNodeId(42), 'shared'),
+      widgetId(graphId, toNodeId(42), 'shared#1')
+    ])
   })
 
   it('returns undefined when the node has no graph', () => {
