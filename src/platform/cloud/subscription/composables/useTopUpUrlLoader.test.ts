@@ -38,23 +38,14 @@ vi.mock('@/services/dialogService', () => ({
   })
 }))
 
-const mockPermissions = vi.hoisted(() => ({
-  value: { canTopUp: true }
-}))
+const mockCanTopUp = vi.hoisted(() => ({ value: true }))
+const mockCanSubscribeSelfServe = vi.hoisted(() => ({ value: false }))
 
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
-  useWorkspaceUI: () => ({ permissions: mockPermissions })
-}))
-
-const mockBilling = vi.hoisted(() => ({
-  fetchStatus: vi.fn().mockResolvedValue(undefined),
-  subscription: { value: { isActive: true } as { isActive: boolean } | null },
-  isActiveSubscription: { value: true },
-  isFreeTier: { value: false }
-}))
-
-vi.mock('@/composables/billing/useBillingContext', () => ({
-  useBillingContext: () => mockBilling
+vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
+  useBillingCapabilities: () => ({
+    canTopUp: mockCanTopUp,
+    canSubscribeSelfServe: mockCanSubscribeSelfServe
+  })
 }))
 
 const mockTrackAddApiCreditButtonClicked = vi.hoisted(() => vi.fn())
@@ -68,11 +59,8 @@ vi.mock('@/platform/telemetry', () => ({
 describe('useTopUpUrlLoader', () => {
   beforeEach(() => {
     mockRouteQuery.value = {}
-    mockPermissions.value = { canTopUp: true }
-    mockBilling.fetchStatus.mockResolvedValue(undefined)
-    mockBilling.subscription.value = { isActive: true }
-    mockBilling.isActiveSubscription.value = true
-    mockBilling.isFreeTier.value = false
+    mockCanTopUp.value = true
+    mockCanSubscribeSelfServe.value = false
     mockShowTopUpCreditsDialog.mockResolvedValue(undefined)
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue(null)
   })
@@ -108,74 +96,32 @@ describe('useTopUpUrlLoader', () => {
     })
   })
 
-  it('awaits the status fetch before opening the dialog', async () => {
+  it('is a silent no-op when the server denies top-up', async () => {
     mockRouteQuery.value = { topup: '1' }
-    // The dialog picks top-up vs paywall from isActiveSubscription; holding
-    // the fetch promise open proves the loader truly awaits it (a dropped
-    // await would open the dialog before resolveStatus runs).
-    let resolveStatus!: () => void
-    mockBilling.fetchStatus.mockImplementation(
-      () =>
-        new Promise<void>((resolve) => {
-          resolveStatus = resolve
-        })
-    )
-
-    const { loadTopUpFromUrl } = useTopUpUrlLoader()
-    const load = loadTopUpFromUrl()
-
-    expect(mockBilling.fetchStatus).toHaveBeenCalledOnce()
-    expect(mockShowTopUpCreditsDialog).not.toHaveBeenCalled()
-
-    resolveStatus()
-    await load
-
-    expect(mockShowTopUpCreditsDialog).toHaveBeenCalledOnce()
-  })
-
-  it('bails silently when the status fetch resolves without a subscription state', async () => {
-    mockRouteQuery.value = { topup: '1' }
-    // The legacy billing adapter swallows fetch failures instead of
-    // rejecting, leaving subscription null; a possibly-subscribed user must
-    // not be routed to the paywall on that unknown state.
-    mockBilling.subscription.value = null
+    mockCanTopUp.value = false
 
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
     await loadTopUpFromUrl()
 
     expect(mockShowTopUpCreditsDialog).not.toHaveBeenCalled()
     expect(mockTrackAddApiCreditButtonClicked).not.toHaveBeenCalled()
-    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
   })
 
-  it('opens without deep_link telemetry for a lapsed or free-tier user', async () => {
+  it('opens the subscription path without top-up telemetry', async () => {
     mockRouteQuery.value = { topup: '1' }
-    // showTopUpCreditsDialog routes this user to the paywall internally; the
-    // deep_link source must only count real top-up dialog opens.
-    mockBilling.isActiveSubscription.value = false
+    mockCanTopUp.value = false
+    mockCanSubscribeSelfServe.value = true
 
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
     await loadTopUpFromUrl()
 
     expect(mockShowTopUpCreditsDialog).toHaveBeenCalledOnce()
-    expect(mockTrackAddApiCreditButtonClicked).not.toHaveBeenCalled()
-  })
-
-  it('is a silent no-op for a team member', async () => {
-    mockRouteQuery.value = { topup: '1' }
-    mockPermissions.value = { canTopUp: false }
-
-    const { loadTopUpFromUrl } = useTopUpUrlLoader()
-    await loadTopUpFromUrl()
-
-    expect(mockShowTopUpCreditsDialog).not.toHaveBeenCalled()
-    expect(mockBilling.fetchStatus).not.toHaveBeenCalled()
     expect(mockTrackAddApiCreditButtonClicked).not.toHaveBeenCalled()
   })
 
   it('denies, strips, and clears together when the user is not eligible', async () => {
     mockRouteQuery.value = { topup: '1', other: 'param' }
-    mockPermissions.value = { canTopUp: false }
+    mockCanTopUp.value = false
 
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
     await loadTopUpFromUrl()
@@ -234,20 +180,5 @@ describe('useTopUpUrlLoader', () => {
     await loadTopUpFromUrl()
 
     expect(mockShowTopUpCreditsDialog).toHaveBeenCalledOnce()
-  })
-
-  it('strips and clears, then propagates a status-fetch failure', async () => {
-    mockRouteQuery.value = { topup: '1' }
-    mockBilling.fetchStatus.mockRejectedValue(new Error('status failed'))
-
-    const { loadTopUpFromUrl } = useTopUpUrlLoader()
-    await expect(loadTopUpFromUrl()).rejects.toThrow('status failed')
-
-    expect(mockShowTopUpCreditsDialog).not.toHaveBeenCalled()
-    expect(mockTrackAddApiCreditButtonClicked).not.toHaveBeenCalled()
-    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
-    expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
-      'topup'
-    )
   })
 })

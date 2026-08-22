@@ -88,20 +88,8 @@
       >
         <i class="icon-[lucide--circle-help]" />
       </Button>
-      <!-- Upgrade to add credits (free tier) -->
       <Button
-        v-if="
-          canAccessSubscriptionFeatures && permissions.canTopUp && isFreeTier
-        "
-        variant="subscribe"
-        size="sm"
-        data-testid="upgrade-to-add-credits-button"
-        @click="handleUpgradeToAddCredits"
-      >
-        {{ $t('subscription.upgradeToAddCredits') }}
-      </Button>
-      <Button
-        v-else-if="canAccessSubscriptionFeatures && permissions.canTopUp"
+        v-if="canTopUp"
         variant="secondary"
         size="sm"
         class="text-base-foreground"
@@ -109,6 +97,15 @@
         @click="handleTopUp"
       >
         {{ $t('subscription.addCredits') }}
+      </Button>
+      <Button
+        v-else-if="canSubscribeSelfServe"
+        variant="subscribe"
+        size="sm"
+        data-testid="upgrade-to-add-credits-button"
+        @click="handleUpgradeToAddCredits"
+      >
+        {{ $t('subscription.upgradeToAddCredits') }}
       </Button>
       <!-- Subscribe/Resubscribe (only when not subscribed or cancelled) -->
       <SubscribeButton
@@ -240,6 +237,7 @@ import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeB
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
@@ -252,6 +250,7 @@ const {
   isInPersonalWorkspace: isPersonalWorkspace
 } = storeToRefs(workspaceStore)
 const { permissions } = useWorkspaceUI()
+const { canTopUp, canSubscribeSelfServe } = useBillingCapabilities()
 const isWorkspaceSwitcherOpen = ref(false)
 const workspaceSwitcherTrigger = useTemplateRef('workspaceSwitcherTrigger')
 const workspaceSwitcherPanel = useTemplateRef('workspaceSwitcherPanel')
@@ -281,7 +280,6 @@ const dialogService = useDialogService()
 const {
   billingStatus,
   canAccessSubscriptionFeatures,
-  isFreeTier,
   subscription,
   balance,
   isLoading,

@@ -73,6 +73,7 @@ vi.mock('@/platform/workspace/stores/workspaceAuthStore', () => ({
 }))
 
 const mockWorkspaceStoreInitialize = vi.fn()
+const mockBillingCapabilitiesInitialize = vi.hoisted(() => vi.fn())
 const mockWorkspaceStoreInitState = vi.hoisted(() => ({
   value: 'uninitialized' as string
 }))
@@ -88,6 +89,12 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
       return mockActiveWorkspaceId.value
     },
     initialize: mockWorkspaceStoreInitialize
+  })
+}))
+
+vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
+  useBillingCapabilities: () => ({
+    initialize: mockBillingCapabilitiesInitialize
   })
 }))
 
@@ -165,6 +172,7 @@ describe('WorkspaceAuthGate', () => {
 
       expect(screen.getByTestId('slot-content')).toBeInTheDocument()
       expect(mockWorkspaceStoreInitialize).toHaveBeenCalledOnce()
+      expect(mockBillingCapabilitiesInitialize).not.toHaveBeenCalled()
       expect(mockRefreshRemoteConfig).not.toHaveBeenCalled()
     })
 
@@ -286,6 +294,7 @@ describe('WorkspaceAuthGate', () => {
       await flushPromises()
 
       expect(mockWorkspaceStoreInitialize).toHaveBeenCalled()
+      expect(mockBillingCapabilitiesInitialize).toHaveBeenCalled()
       expect(screen.getByTestId('slot-content')).toBeInTheDocument()
     })
 

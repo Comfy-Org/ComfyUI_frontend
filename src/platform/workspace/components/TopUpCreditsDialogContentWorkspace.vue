@@ -191,7 +191,7 @@
           variant="primary"
           size="lg"
           class="h-10 w-full justify-center"
-          :disabled="!topupActionUrl || !permissions.canTopUp"
+          :disabled="!topupActionUrl || !canTopUp"
           :loading="!topupActionUrl"
           :aria-label="$t('subscription.preview.completeVerification')"
           @click="openTopupVerification"
@@ -201,7 +201,7 @@
       </div>
       <div v-else class="flex flex-col gap-2">
         <Button
-          v-if="step === 'confirm' && topupActionUrl && permissions.canTopUp"
+          v-if="step === 'confirm' && topupActionUrl && canTopUp"
           variant="primary"
           size="lg"
           class="h-10 justify-center"
@@ -210,11 +210,7 @@
           {{ $t('subscription.preview.completeVerification') }}
         </Button>
         <Button
-          :disabled="
-            !isValidAmount ||
-            paymentLocked ||
-            (shouldUseWorkspaceBilling && !permissions.canTopUp)
-          "
+          :disabled="!isValidAmount || paymentLocked || !canTopUp"
           :loading="paymentLocked"
           :variant="
             step === 'confirm' && topupActionUrl ? 'tertiary' : 'primary'
@@ -256,14 +252,13 @@ import { creditsToUsd, usdToCredits } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
 import FormattedNumberStepper from '@/components/ui/stepper/FormattedNumberStepper.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'
 import { isCloud } from '@/platform/distribution/types'
 import { clearTopupTracking } from '@/platform/telemetry/topupTracker'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -279,8 +274,7 @@ const telemetry = useTelemetry()
 const toast = useToast()
 const { buildDocsUrl, docsPaths } = useExternalLink()
 const { fetchBalance, fetchStatus, topup } = useBillingContext()
-const { shouldUseWorkspaceBilling } = useBillingRouting()
-const { permissions } = useWorkspaceUI()
+const { canTopUp } = useBillingCapabilities()
 
 const billingOperationStore = useBillingOperationStore()
 const isPolling = computed(() => billingOperationStore.isAddingCredits)
@@ -301,7 +295,7 @@ const loading = ref(false)
 const paymentSubmitted = ref(false)
 const step = ref<'amount' | 'confirm' | 'verifying'>(
   (billingOperationStore.topupActionOperation?.actionUrl || isPolling.value) &&
-    permissions.value.canTopUp
+    canTopUp.value
     ? 'verifying'
     : 'amount'
 )
@@ -399,11 +393,7 @@ function handleClose(clearTracking = true) {
 }
 
 async function handleBuy() {
-  if (
-    paymentLocked.value ||
-    !isValidAmount.value ||
-    (shouldUseWorkspaceBilling.value && !permissions.value.canTopUp)
-  ) {
+  if (paymentLocked.value || !isValidAmount.value || !canTopUp.value) {
     return
   }
 
