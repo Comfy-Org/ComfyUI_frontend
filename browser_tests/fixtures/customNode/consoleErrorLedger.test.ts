@@ -65,6 +65,37 @@ describe('consoleErrorLedger', () => {
     )
     expect(exclusions.every(({ reason }) => reason.length > 0)).toBe(true)
     expect(exclusions.every(({ restore }) => restore.length > 0)).toBe(true)
+    expect(exclusions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          label: 'WhatDreamsCost-ComfyUI console ltx-director-guide-syntax',
+          mode: 'expected-failure',
+          scope: 'startup and pack operations',
+          tier: 'S8'
+        }),
+        expect.objectContaining({
+          label:
+            'WhatDreamsCost-ComfyUI console whatdreams-set-value-probe-preview',
+          mode: 'conditional-console',
+          scope: 'startup and pack operations',
+          tier: 'S8'
+        }),
+        expect.objectContaining({
+          label:
+            'ComfyUI-LTXVideo connectivity console ltx-sparse-track-null-image-size',
+          mode: 'expected-failure',
+          scope: 'S4 connectivity sweep',
+          tier: 'S8'
+        }),
+        expect.objectContaining({
+          label:
+            'ComfyUI-KJNodes connectivity console kj-points-empty-bbox-json',
+          mode: 'conditional-console',
+          scope: 'S4 connectivity sweep',
+          tier: 'S8'
+        })
+      ])
+    )
   })
 
   it('filters only errors matching the pack own patterns', () => {
