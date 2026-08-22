@@ -2484,6 +2484,7 @@
       "invalidDetail": "Please enter a valid API Key",
       "verificationUnavailable": "Couldn't verify your API Key",
       "verificationUnavailableDetail": "The Comfy API couldn't be reached. Your key has been saved — please try again in a moment.",
+      "verificationFailedDetail": "The Comfy API couldn't check your key right now. Your key has been saved — please try again in a moment.",
       "notPermitted": "API Key not permitted",
       "notPermittedDetail": "Your account isn't allowed to sign in with this API Key. Check your plan, or contact support.",
       "helpText": "Need an API key?",

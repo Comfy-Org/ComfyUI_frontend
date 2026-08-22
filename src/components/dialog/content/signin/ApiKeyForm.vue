@@ -122,8 +122,7 @@ const emit = defineEmits<{
 
 const onSubmit = async (event: FormSubmitEvent) => {
   if (!event.valid) return
-  // storeApiKey resolves falsy when the key was not accepted, in which case it
-  // has already reported why and the dialog must stay open.
+  // A rejected key has already been reported; the dialog stays open for a retry.
   if (await apiKeyStore.storeApiKey(event.values.apiKey)) {
     emit('success')
   }
