@@ -17,16 +17,23 @@ test.describe(
         'subgraphs/subgraph-with-promoted-text-widget'
       )
 
-      const { baseline, promotedText } =
+      const { baseline, interiorLinkCount, promotedText } =
         await test.step('Capture the initial promoted subgraph state', async () => {
           const baseline = await comfyPage.page.evaluate(() =>
             window.app!.graph!.serialize()
           )
+          const interiorLinkCount = await comfyPage.page.evaluate((id) => {
+            const host = window.app!.graph!.getNodeById(id)
+            if (!host?.isSubgraphNode()) {
+              throw new Error(`Host node ${id} is not a SubgraphNode`)
+            }
+            return host.subgraph.links.size
+          }, toNodeId('11'))
           const promotedText = comfyPage.vueNodes
             .getNodeLocator('11')
             .getByRole('textbox', { name: 'text' })
           await expect(promotedText).toBeVisible()
-          return { baseline, promotedText }
+          return { baseline, interiorLinkCount, promotedText }
         })
 
       await test.step('Delete the subgraph', async () => {
@@ -56,7 +63,7 @@ test.describe(
           .poll(() =>
             comfyPage.page.evaluate(() => window.app!.canvas.graph!.links.size)
           )
-          .toBe(6)
+          .toBe(interiorLinkCount)
 
         const interiorGeometry = await comfyPage.canvasOps.getNodeGeometry(
           toNodeId('10')
@@ -87,6 +94,10 @@ test.describe(
       const { before, moved } =
         await test.step('Move the subgraph and capture its geometry', async () => {
           const before = await comfyPage.canvasOps.getNodeGeometry(nodeId)
+          expect(
+            before.inputs.length + before.outputs.length,
+            'fixture node must have slots for this test to mean anything'
+          ).toBeGreaterThan(0)
           const { header } =
             await comfyPage.vueNodes.getFixtureByTitle('New Subgraph')
           const headerBox = await header.boundingBox()
@@ -109,7 +120,7 @@ test.describe(
         })
 
       await test.step('Verify geometry while navigating the subgraph', async () => {
-        await comfyPage.vueNodes.enterSubgraph(nodeId)
+        await comfyPage.subgraph.enterSubgraphWithFallback(String(nodeId))
         const interiorGeometry = await comfyPage.canvasOps.getNodeGeometry(
           toNodeId('10')
         )
@@ -123,26 +134,31 @@ test.describe(
       await test.step('Undo and redo in the legacy renderer', async () => {
         await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
         await expect(comfyPage.vueNodes.nodes).toHaveCount(0)
+        await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(1)
 
         await comfyPage.keyboard.undo()
-        const undone = await comfyPage.canvasOps.getNodeGeometry(nodeId)
-        expect(undone.pos[0]).toBeCloseTo(before.pos[0], 0)
-        expect(undone.pos[1]).toBeCloseTo(before.pos[1], 0)
-        expect(undone.size).toEqual(before.size)
-        comfyPage.canvasOps.expectSlotsOnNode(
-          undone,
-          'after undo in the legacy renderer'
-        )
+        await expect(async () => {
+          const undone = await comfyPage.canvasOps.getNodeGeometry(nodeId)
+          expect(undone.pos[0]).toBeCloseTo(before.pos[0], 0)
+          expect(undone.pos[1]).toBeCloseTo(before.pos[1], 0)
+          expect(undone.size).toEqual(before.size)
+          comfyPage.canvasOps.expectSlotsOnNode(
+            undone,
+            'after undo in the legacy renderer'
+          )
+        }).toPass({ timeout: 5000 })
 
         await comfyPage.keyboard.redo()
-        const redone = await comfyPage.canvasOps.getNodeGeometry(nodeId)
-        expect(redone.pos[0]).toBeCloseTo(moved.pos[0], 0)
-        expect(redone.pos[1]).toBeCloseTo(moved.pos[1], 0)
-        expect(redone.size).toEqual(moved.size)
-        comfyPage.canvasOps.expectSlotsOnNode(
-          redone,
-          'after redo in the legacy renderer'
-        )
+        await expect(async () => {
+          const redone = await comfyPage.canvasOps.getNodeGeometry(nodeId)
+          expect(redone.pos[0]).toBeCloseTo(moved.pos[0], 0)
+          expect(redone.pos[1]).toBeCloseTo(moved.pos[1], 0)
+          expect(redone.size).toEqual(moved.size)
+          comfyPage.canvasOps.expectSlotsOnNode(
+            redone,
+            'after redo in the legacy renderer'
+          )
+        }).toPass({ timeout: 5000 })
       })
 
       await test.step('Restore Vue nodes and reload the workflow', async () => {
