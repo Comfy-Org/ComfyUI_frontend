@@ -147,10 +147,19 @@ but they are not blockers for completing this data-centralization phase.
 
 ### 1. Prove the current bridge
 
+Follow-up coverage in `ecsBridgeHistory.spec.ts` now proves that a promoted
+subgraph with nested links and layout survives delete/undo and can be removed
+again by redo. It also exercises geometry through subgraph navigation,
+Vue-to-legacy switching, undo/redo, and serialization/reload. Focused tests now
+pin virtual-consumer role inference and verify that first-run coach targets read
+the root-scoped layout without creating layout state.
+
 Before broadening or removing compatibility paths:
 
-- Add mixed undo/redo coverage for node replacement or removal involving
-  links, reroutes, promoted widgets, and layout.
+- Extend mixed undo/redo coverage to replacement or removal involving reroutes
+  and groups, with direct store and callback-visible assertions. Promoted
+  widgets, nested links, layout, renderer switching, and serialization now have
+  browser coverage across delete/undo/redo.
 - Prove failed workflow configuration leaves no node, link, reroute, widget,
   or layout ownership behind.
 - Exercise recursive mixed-ID collisions through load, insertion, copy/paste,

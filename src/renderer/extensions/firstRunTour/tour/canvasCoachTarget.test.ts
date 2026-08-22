@@ -16,6 +16,7 @@ const state = vi.hoisted(() => ({
   } | null,
   collapsed: new Set<string>(),
   layout: null as { value: unknown } | null,
+  layoutReads: vi.fn(),
   canvasOffset: { left: 0, top: 0 },
   releaseBounds: vi.fn()
 }))
@@ -51,7 +52,10 @@ vi.mock('@/renderer/core/layout/store/layoutStore', async () => {
   state.layout = shallowRef<unknown>(null)
   return {
     layoutStore: {
-      getNodeLayoutRef: () => state.layout
+      getNodeLayoutRef: (graphId: unknown, nodeId: unknown) => {
+        state.layoutReads(graphId, nodeId)
+        return state.layout
+      }
     }
   }
 })
@@ -81,6 +85,7 @@ describe('canvasNodeTarget', () => {
     state.canvasOffset = { left: 0, top: 0 }
     if (state.camera) Object.assign(state.camera, { x: 0, y: 0, z: 1 })
     if (state.layout) state.layout.value = null
+    state.layoutReads.mockClear()
     state.releaseBounds.mockClear()
   })
 
@@ -128,11 +133,14 @@ describe('canvasNodeTarget', () => {
 
   it('withholds a rect until the node has a layout', () => {
     state.currentGraph = graph('root')
+    const rootGraphId = state.currentGraph.rootGraph.id
+    const nodeId = toNodeId(6)
 
     expect(
-      canvasNodeTarget(toNodeId(6)).getRect(),
+      canvasNodeTarget(nodeId).getRect(),
       'a step must wait for its target rather than spotlight nothing'
     ).toBeNull()
+    expect(state.layoutReads).toHaveBeenCalledWith(rootGraphId, nodeId)
   })
 
   it('withholds a rect once the graph it resolved against is gone', () => {
