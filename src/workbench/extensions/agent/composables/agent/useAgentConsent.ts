@@ -12,6 +12,17 @@ const CONSENT_VIDEO_SRC = 'https://media.comfy.org/website/mcp/launch-film.mp4'
 /** Shared across callers so a second entry point sees the same answer. */
 const accepted = useLocalStorage(CONSENT_STORAGE_KEY, false)
 
+/**
+ * `?agentConsent=always` re-asks on every open and does not record the answer,
+ * so a demo can be replayed without clearing storage by hand. Read per call so
+ * the URL can be changed without a reload.
+ */
+function alwaysAsk(): boolean {
+  return (
+    new URLSearchParams(window.location.search).get('agentConsent') === 'always'
+  )
+}
+
 export function useAgentConsent() {
   const dialogStore = useDialogStore()
   const { t } = i18n.global
@@ -21,7 +32,8 @@ export function useAgentConsent() {
    * consent card up first and runs it only if the reader accepts.
    */
   function withConsent(onAccept: () => void): void {
-    if (accepted.value) {
+    const replaying = alwaysAsk()
+    if (accepted.value && !replaying) {
       onAccept()
       return
     }
@@ -35,7 +47,7 @@ export function useAgentConsent() {
         videoSrc: CONSENT_VIDEO_SRC,
         docsUrl: DOCS_URL,
         onAccept: () => {
-          accepted.value = true
+          if (!replaying) accepted.value = true
           dialogStore.closeDialog({ key: CONSENT_DIALOG_KEY })
           onAccept()
         },
