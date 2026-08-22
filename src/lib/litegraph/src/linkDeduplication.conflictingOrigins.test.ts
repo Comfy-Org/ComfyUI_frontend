@@ -3,10 +3,8 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type {
-  SerialisableLLink,
-  SerialisedLLinkArray
-} from '@/lib/litegraph/src/LLink'
+import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
+import type { SerialisableLLink } from '@/lib/litegraph/src/types/serialisation'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
