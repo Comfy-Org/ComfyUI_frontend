@@ -79,7 +79,7 @@ describe('normalizeConfiguredTopology with conflicting origins (#15577)', () => 
     )
   })
 
-  it.fails('warns when a link is dropped in favour of a different origin', () => {
+  it('warns when a link is dropped in favour of a different origin', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
     configureConflictingOrigins()

@@ -583,6 +583,17 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   rebuildInputWidgetBindings(): void {
     this.invalidatePromotedViews()
 
+    const store = useWidgetValueStore()
+    const previousBindings = new Map(
+      this.inputs.flatMap((input) => {
+        if (!input.widgetId) return []
+        const state = store.getWidget(input.widgetId)
+        return state
+          ? [[input, { id: input.widgetId, value: state.value }]]
+          : []
+      })
+    )
+
     for (const input of this.inputs) {
       delete input.widget
       delete input.pos
@@ -591,6 +602,15 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       const subgraphInput = input._subgraphSlot
       if (!subgraphInput) continue
       this._resolveInputWidget(subgraphInput, input)
+      const previous = previousBindings.get(input)
+      if (previous && input.widgetId) {
+        store.setValue(input.widgetId, previous.value)
+      }
+    }
+
+    const activeIds = new Set(this.inputs.map((input) => input.widgetId))
+    for (const { id } of previousBindings.values()) {
+      if (!activeIds.has(id)) store.deleteWidget(id)
     }
 
     this.invalidatePromotedViews()
@@ -718,7 +738,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
 
   override onAdded(_graph: LGraph): void {
-    this.invalidatePromotedViews()
+    this.rebuildInputWidgetBindings()
   }
 
   /**

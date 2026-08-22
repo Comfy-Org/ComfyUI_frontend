@@ -83,12 +83,15 @@ export function normalizeConfiguredTopology<T extends ConfiguredGraph>(
       toNodeId(survivor.origin_id) === toNodeId(fields.origin_id) &&
       survivor.origin_slot === fields.origin_slot
     if (!isExactDuplicate) {
-      console.warn('Dropping competing link to an occupied input', {
-        droppedLinkId: fields.id,
-        survivorLinkId: survivor.id,
-        targetNodeId: fields.target_id,
-        targetSlot: fields.target_slot
-      })
+      console.warn(
+        `Dropping competing link to occupied input ${fields.target_id}:${fields.target_slot}`,
+        {
+          droppedLinkId: fields.id,
+          survivorLinkId: survivor.id,
+          targetNodeId: fields.target_id,
+          targetSlot: fields.target_slot
+        }
+      )
     }
 
     if (
@@ -159,7 +162,12 @@ export function realignInputLinkSlots(
       referencedNames.set(link, names)
     }
 
-    for (let pass = 0; pass < referencedNames.size; pass++) {
+    const removals = [...referencedNames].flatMap(([link, names]) =>
+      node.inputs.some((input) => names.includes(input.name)) ? [] : [link]
+    )
+    for (const link of removals) referencedNames.delete(link)
+
+    for (let pass = 0; pass < Math.max(1, referencedNames.size); pass++) {
       const moved: { link: LLink; slot: number }[] = []
       for (const [link, names] of referencedNames) {
         const slots = node.inputs.flatMap((input, slot) =>
@@ -171,7 +179,7 @@ export function realignInputLinkSlots(
           : slots[0]
         if (link.target_slot !== slot) moved.push({ link, slot })
       }
-      if (!moved.length) break
+      if (!moved.length && !removals.length) break
 
       const updates: EndpointUpdate[] = moved.map(({ link, slot }) => ({
         topology: link._state,
@@ -179,9 +187,17 @@ export function realignInputLinkSlots(
       }))
       const result = useLinkStore().updateEndpoints(
         graphScopeOf(graph),
-        updates
+        updates,
+        removals.map((link) => link._state)
       )
       if (!result.ok) {
+        if (removals.length) {
+          useLinkStore().updateEndpoints(
+            graphScopeOf(graph),
+            [],
+            removals.map((link) => link._state)
+          )
+        }
         for (const { link, slot } of moved) {
           const fallback = useLinkStore().updateEndpoint(
             graphScopeOf(graph),
@@ -202,6 +218,7 @@ export function realignInputLinkSlots(
         }
         break
       }
+      removals.length = 0
       for (const { link, slot } of moved) {
         node.onConnectionsChange?.(
           NodeSlotType.INPUT,
