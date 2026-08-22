@@ -72,9 +72,9 @@
     @pointermove.capture="forwardPointerMovePanEvent"
     @keydown.space="forwardSpaceKeyEvent"
   >
-    <!-- Vue nodes rendered based on graph nodes -->
+    <!-- Vue nodes rendered progressively to avoid long-task UI freezes -->
     <LGraphNode
-      v-for="nodeData in allNodes"
+      v-for="nodeData in visibleNodes"
       :key="nodeData.id"
       :node-data="nodeData"
       :error="
@@ -159,6 +159,7 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useGroupContextMenu } from '@/composables/graph/useGroupContextMenu'
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import { useProgressiveNodeRendering } from '@/composables/graph/useProgressiveNodeRendering'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
@@ -273,11 +274,23 @@ watch(
   }
 )
 
+const allNodes = computed((): VueNodeData[] =>
+  Array.from(vueNodeLifecycle.nodeManager.value?.vueNodeData?.values() ?? [])
+)
+
+const {
+  visibleNodes,
+  start: startProgressiveRender,
+  reset: resetProgressiveRender
+} = useProgressiveNodeRendering(allNodes)
+
 const handleVueNodeLifecycleReset = async () => {
   if (shouldRenderVueNodes.value) {
+    resetProgressiveRender()
     vueNodeLifecycle.disposeNodeManagerAndSyncs()
     await nextTick()
     vueNodeLifecycle.initializeNodeManager()
+    startProgressiveRender()
   }
 }
 
@@ -291,10 +304,6 @@ watch(
     }
     await handleVueNodeLifecycleReset()
   }
-)
-
-const allNodes = computed((): VueNodeData[] =>
-  Array.from(vueNodeLifecycle.nodeManager.value?.vueNodeData?.values() ?? [])
 )
 watch(
   () => linearMode.value,
