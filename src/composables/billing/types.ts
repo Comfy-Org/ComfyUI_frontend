@@ -124,6 +124,13 @@ export interface BillingContext extends BillingState, BillingActions {
   type: ComputedRef<BillingType>
   reconcileSubscriptionSuccess: () => Promise<void>
   /**
+   * Bumped whenever `balance` genuinely changes (not on its initial
+   * hydration) — the one signal for "credits-derived UI, like the usage
+   * log, should reload," so consumers watch this instead of each
+   * re-deriving the same balance-transition check.
+   */
+  usageLogsRefreshSignal: Ref<number>
+  /**
    * True when the active team workspace is still on a pre-credit-slider
    * (legacy) per-member tier plan, which keeps the old team pricing table.
    */

@@ -76,14 +76,13 @@ const { embedded = false } = defineProps<{
 }>()
 
 const { buildDocsUrl, docsPaths } = useExternalLink()
-const { balance, manageSubscription } = useBillingContext()
+const { usageLogsRefreshSignal, manageSubscription } = useBillingContext()
 const commandStore = useCommandStore()
 const telemetry = useTelemetry()
 
 const usageLogsTableRef = ref<InstanceType<typeof UsageLogsTable> | null>(null)
 
-watch(balance, (next, previous) => {
-  if (!next || !previous) return
+watch(usageLogsRefreshSignal, () => {
   void usageLogsTableRef.value?.refresh()
 })
 
