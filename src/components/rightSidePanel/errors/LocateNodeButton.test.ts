@@ -29,11 +29,12 @@ describe('LocateNodeButton', () => {
   it('stops click propagation so an ancestor handler does not also fire', async () => {
     const user = userEvent.setup()
     const onAncestorClick = vi.fn()
-    const { emitted } = render({
+    const onLocate = vi.fn()
+    render({
       components: { LocateNodeButton },
-      setup: () => ({ onAncestorClick }),
+      setup: () => ({ onAncestorClick, onLocate }),
       template:
-        '<div @click="onAncestorClick"><LocateNodeButton label="Locate node on canvas" /></div>'
+        '<div @click="onAncestorClick"><LocateNodeButton label="Locate node on canvas" @locate="onLocate" /></div>'
     })
 
     await user.click(
@@ -41,7 +42,7 @@ describe('LocateNodeButton', () => {
     )
 
     expect(onAncestorClick).not.toHaveBeenCalled()
-    expect(emitted().locate).toHaveLength(1)
+    expect(onLocate).toHaveBeenCalledTimes(1)
   })
 
   it('emits locate on keyboard activation without relying on implicit tab order', async () => {
