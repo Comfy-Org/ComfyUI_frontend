@@ -28,7 +28,7 @@ function openDocs(): void {
       role="dialog"
       aria-modal="true"
       :aria-label="title"
-      class="bg-agent-surface border-agent-border rounded-agent relative grid max-h-[90dvh] grid-cols-1 overflow-hidden border shadow-[0_20px_24px_-4px_rgba(10,13,18,0.4),0_8px_8px_-4px_rgba(10,13,18,0.25)] @2xl:min-h-[543px] @2xl:grid-cols-[555fr_483fr]"
+      class="bg-agent-surface border-agent-border relative grid max-h-[90dvh] grid-cols-1 overflow-hidden rounded-4xl border shadow-[0_20px_24px_-4px_rgba(10,13,18,0.4),0_8px_8px_-4px_rgba(10,13,18,0.25)] @2xl:min-h-[543px] @2xl:grid-cols-[555fr_483fr]"
     >
       <!-- On the card, not the panel, so it stays top-right once the grid stacks. -->
       <button
@@ -44,7 +44,7 @@ function openDocs(): void {
         <video
           v-if="videoSrc"
           :src="videoSrc"
-          class="rounded-agent aspect-video w-full border border-white/20 object-cover @2xl:aspect-auto @2xl:size-full"
+          class="aspect-video w-full rounded-3xl border border-white/20 object-cover @2xl:aspect-auto @2xl:size-full"
           autoplay
           muted
           loop
@@ -52,7 +52,7 @@ function openDocs(): void {
         />
         <div
           v-else
-          class="text-agent-fg-muted rounded-agent grid aspect-video w-full place-items-center border border-white/20 text-xs @2xl:aspect-auto @2xl:size-full"
+          class="text-agent-fg-muted grid aspect-video w-full place-items-center rounded-3xl border border-white/20 text-xs @2xl:aspect-auto @2xl:size-full"
         >
           {{ $t('agent.consent.videoPlaceholder') }}
         </div>
