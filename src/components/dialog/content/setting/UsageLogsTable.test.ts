@@ -354,20 +354,6 @@ describe('UsageLogsTable', () => {
         limit: 7
       })
     })
-
-    it('refetches page 1 when refetchKey changes', async () => {
-      const { rerender } = await renderLoaded()
-      mockCustomerEventsService.getMyEvents.mockClear()
-
-      await rerender({ refetchKey: 1 })
-
-      await waitFor(() => {
-        expect(mockCustomerEventsService.getMyEvents).toHaveBeenCalledWith({
-          page: 1,
-          limit: 7
-        })
-      })
-    })
   })
 
   describe('billing events source', () => {

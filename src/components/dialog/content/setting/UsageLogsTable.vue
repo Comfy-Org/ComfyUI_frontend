@@ -110,25 +110,11 @@ import {
   useCustomerEventsService
 } from '@/services/customerEventsService'
 
-const { refetchKey = 0 } = defineProps<{
-  /**
-   * Bumped by the parent to signal an out-of-band reason to reload (e.g. a
-   * balance change) without reaching into this component's internals.
-   */
-  refetchKey?: number
-}>()
-
 const { t } = useI18n()
 
 const customerEventService = useCustomerEventsService()
 
 const { shouldUseWorkspaceBilling } = useBillingRouting()
-
-// A billing-rail flip or a parent-signalled refetch are both reasons to
-// reset to page 1 and reload against the (possibly new) backend.
-const queryKey = computed(
-  () => `${shouldUseWorkspaceBilling.value}:${refetchKey}`
-)
 
 const {
   items: events,
@@ -137,9 +123,10 @@ const {
   first,
   loading,
   error,
-  goToPage
-} = usePaginatedQuery<AuditLog, string>({
-  key: queryKey,
+  goToPage,
+  refresh
+} = usePaginatedQuery<AuditLog, boolean>({
+  key: shouldUseWorkspaceBilling,
   initialLimit: 7,
   fetchPage: async ({ page, limit: requestedLimit }) => {
     const params = { page, limit: requestedLimit }
@@ -189,4 +176,8 @@ const tooltipContentMap = computed(() => {
 const onPageChange = (event: { page: number }) => {
   goToPage(event.page + 1)
 }
+
+defineExpose({
+  refresh
+})
 </script>

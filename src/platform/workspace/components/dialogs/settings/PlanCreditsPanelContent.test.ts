@@ -1,5 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
+import { defineComponent, h } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { render, screen } from '@testing-library/vue'
@@ -15,6 +16,22 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
+const billingMocks = vi.hoisted(() => ({
+  usageLogsRefreshSignal: { value: 0 }
+}))
+vi.mock('@/composables/billing/useBillingContext', async () => {
+  const { ref } = await import('vue')
+  const usageLogsRefreshSignal = ref(0)
+  Object.defineProperty(billingMocks, 'usageLogsRefreshSignal', {
+    get: () => usageLogsRefreshSignal
+  })
+  return {
+    useBillingContext: () => ({ usageLogsRefreshSignal })
+  }
+})
+
+const refreshUsageLogs = vi.hoisted(() => vi.fn())
+
 const stubs = {
   SubscriptionPanelContentWorkspace: {
     template: '<section aria-label="Plan and credits overview" />'
@@ -26,9 +43,12 @@ const stubs = {
   SubscriptionFooterLinks: {
     template: '<footer aria-label="Subscription links" />'
   },
-  UsageLogsTable: {
-    template: '<section aria-label="Usage logs" />'
-  }
+  UsageLogsTable: defineComponent({
+    setup(_props, { expose }) {
+      expose({ refresh: refreshUsageLogs })
+      return () => h('section', { 'aria-label': 'Usage logs' })
+    }
+  })
 }
 
 function renderPanel({ cloud = true } = {}) {
@@ -74,5 +94,14 @@ describe('PlanCreditsPanelContent', () => {
     expect(
       screen.queryByRole('region', { name: 'Plan and credits overview' })
     ).toBeNull()
+  })
+
+  it('refreshes the usage log when the shared billing signal changes', async () => {
+    renderPanel()
+    await userEvent.click(screen.getByRole('button', { name: 'Activity' }))
+    refreshUsageLogs.mockClear()
+
+    billingMocks.usageLogsRefreshSignal.value++
+    await vi.waitFor(() => expect(refreshUsageLogs).toHaveBeenCalledOnce())
   })
 })
