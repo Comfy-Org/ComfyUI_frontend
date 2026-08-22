@@ -6,7 +6,10 @@ import { computed, ref, watchEffect } from 'vue'
 import { resolveNodeDefText, t } from '@/i18n'
 import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
-import { resolveInputType } from '@/core/graph/widgets/dynamicTypes'
+import {
+  collectSearchableInputTypes,
+  collectSearchableOutputTypes
+} from '@/schemas/nodeDef/searchableSlotTypes'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { transformNodeDefV1ToV2 } from '@/schemas/nodeDef/migration'
@@ -98,6 +101,7 @@ export class ComfyNodeDefImpl
   // ComfyNodeDefImpl fields
   readonly nodeSource: NodeSource
   readonly inputTypes: string[]
+  readonly outputTypes: string[]
 
   /**
    * Raw `/object_info` text, kept unresolved so `display_name` and
@@ -188,7 +192,16 @@ export class ComfyNodeDefImpl
 
     // Initialize node source
     this.nodeSource = getNodeSource(obj.python_module, this.essentials_category)
-    this.inputTypes = uniq(Object.values(this.inputs).flatMap(resolveInputType))
+    this.inputTypes = uniq(
+      Object.values(this.inputs).flatMap(collectSearchableInputTypes)
+    )
+    this.outputTypes = uniq(
+      collectSearchableOutputTypes(
+        this.outputs,
+        this.inputs,
+        obj.output_matchtypes
+      )
+    )
   }
 
   /**
@@ -386,12 +399,8 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
   const nodeDataTypes = computed(() => {
     const types = new Set<string>()
     for (const nodeDef of nodeDefs.value) {
-      for (const input of Object.values(nodeDef.inputs)) {
-        types.add(input.type)
-      }
-      for (const output of nodeDef.outputs) {
-        types.add(output.type)
-      }
+      for (const type of nodeDef.inputTypes) types.add(type)
+      for (const type of nodeDef.outputTypes) types.add(type)
     }
     return types
   })
