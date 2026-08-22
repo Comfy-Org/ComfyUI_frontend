@@ -220,19 +220,23 @@ describe('comfyui-promptchain indexed slot replacement', () => {
     expect(target.isInputConnected(2)).toBe(false)
   })
 
-  it('never rejects the endpoint batch, though a rejection is detectable', () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
-    const rejected = () =>
-      consoleError.mock.calls.filter(
-        ([message]) => message === 'Failed to replace node inputs'
-      ).length
-
+  it('accepts every endpoint batch in the promptchain sequence', () => {
     const live = autogrowChain(4, [0, 1, 2])
+    const updateEndpoints = vi.spyOn(useLinkStore(), 'updateEndpoints')
+
     replaceSlotsWithLabelledCopies(live.target)
     trimEmptyAutogrowSlots(live.target)
     replaceSlotsWithLabelledCopies(live.target)
     live.target.removeInput(0)
-    expect(rejected()).toBe(0)
+
+    expect(updateEndpoints).toHaveBeenCalledOnce()
+    expect(updateEndpoints).toHaveReturnedWith(
+      expect.objectContaining({ ok: true })
+    )
+  })
+
+  it('keeps the input layout when the endpoint batch is rejected', () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     const forced = autogrowChain(4, [0, 1, 2])
     const layoutBefore = forced.target.inputs.map((input) => input.name)
@@ -242,12 +246,13 @@ describe('comfyui-promptchain indexed slot replacement', () => {
     })
     forced.target.removeInput(0)
 
-    expect(rejected()).toBe(1)
+    expect(consoleError).toHaveBeenCalledWith('Failed to replace node inputs', {
+      code: 'occupied-target',
+      message: 'forced'
+    })
     expect(forced.target.inputs.map((input) => input.name)).toEqual(
       layoutBefore
     )
-
-    consoleError.mockRestore()
   })
 
   it.fails('reads the live link id back through a spread copy', () => {
@@ -261,13 +266,23 @@ describe('comfyui-promptchain indexed slot replacement', () => {
   })
 
   it.fails('keeps connected inputs when the pack re-reads slot.link', () => {
-    const { graph, target } = autogrowChain(4, [0, 1, 2])
+    const { target } = autogrowChain(4, [0, 1, 2])
 
     replaceSlotsWithLabelledCopies(target)
     trimEmptyAutogrowSlots(target)
 
     expect(target.inputs).toHaveLength(4)
-    expect(graph.links.size).toBe(3)
+  })
+
+  it('retains every link in the serialized workflow after trimming slots', () => {
+    const { graph, target } = autogrowChain(4, [0, 1, 2])
+
+    replaceSlotsWithLabelledCopies(target)
+    trimEmptyAutogrowSlots(target)
+
+    expect(
+      graph.serialize().links.map(([, , , , targetSlot]) => targetSlot)
+    ).toEqual([0, 1, 2])
   })
 
   it('keeps every input when the same trim reads live slots', () => {
