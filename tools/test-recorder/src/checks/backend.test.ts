@@ -35,6 +35,32 @@ describe('checkBackend', () => {
     expect(result.installInstructions?.join(' ')).toContain('--multi-user')
   })
 
+  it('treats a malformed users value as not multi-user, not as a crash', async () => {
+    vi.stubGlobal('fetch', (input: string | URL) =>
+      Promise.resolve(
+        String(input).includes('/api/users')
+          ? new Response(JSON.stringify({ users: null }))
+          : new Response('{}')
+      )
+    )
+    const result = await checkBackend()
+    expect(result.ok).toBe(true)
+    expect(result.optional).toBe(true)
+  })
+
+  it('treats invalid JSON from /api/users as not multi-user, not as a crash', async () => {
+    vi.stubGlobal('fetch', (input: string | URL) =>
+      Promise.resolve(
+        String(input).includes('/api/users')
+          ? new Response('not json')
+          : new Response('{}')
+      )
+    )
+    const result = await checkBackend()
+    expect(result.ok).toBe(true)
+    expect(result.optional).toBe(true)
+  })
+
   it('fails with the multi-user flag the tests need', async () => {
     vi.stubGlobal('fetch', () => Promise.reject(new Error('ECONNREFUSED')))
     const result = await checkBackend()

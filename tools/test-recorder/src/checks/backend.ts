@@ -1,6 +1,10 @@
 import { pass, fail, alert, info } from '../ui/logger'
 import type { CheckResult } from './types'
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
 /**
  * `/api/users` shape is the only signal that distinguishes multi-user mode:
  * it returns `{ users: {...} }` when `--multi-user` is on, or
@@ -13,7 +17,7 @@ async function isMultiUser(url: string): Promise<boolean> {
     })
     if (!res.ok) return false
     const body: unknown = await res.json()
-    return typeof body === 'object' && body !== null && 'users' in body
+    return isRecord(body) && isRecord(body.users)
   } catch {
     return false
   }
