@@ -10,6 +10,7 @@ import type {
   CoreManifestEntry
 } from '@e2e/fixtures/customNode/manifest'
 import {
+  loadAllManifestIdentities,
   loadAllManifestPackNames,
   packIdentity
 } from '@e2e/fixtures/customNode/manifest'
@@ -90,12 +91,6 @@ const WIDGET_SET_ALLOWLIST: Record<string, Record<string, string>> = {
       'hidden serialized regions owned by the Ideogram editor',
     'Ideogram4PromptBuilderKJ.bg_brightness':
       'hidden value owned by the Ideogram editor slider',
-    'Ideogram4PromptBuilderKJ.output_format':
-      'hidden value owned by the Ideogram editor output menu',
-    'Ideogram4PromptBuilderKJ.coord_mode':
-      'hidden value owned by the Ideogram editor output menu',
-    'Ideogram4PromptBuilderKJ.bbox_order':
-      'hidden value owned by the Ideogram editor output menu',
     'ImageTransformKJ.bboxes':
       'serialized crop state owned by the image-transform editor',
     'PointsEditor.points_store':
@@ -117,6 +112,20 @@ const WIDGET_SET_ALLOWLIST: Record<string, Record<string, string>> = {
       'serialized track state owned by the sparse-track editor',
     'LTXVSparseTrackEditor.coordinates':
       'derived coordinates owned by the sparse-track editor'
+  }
+}
+
+const WIDGET_SET_ALLOWLIST_BY_IDENTITY: Record<
+  string,
+  Record<string, string>
+> = {
+  e27a505b3ba6ce42687fe00500deda103d9d6071: {
+    'Ideogram4PromptBuilderKJ.output_format':
+      'hidden value owned by the Ideogram editor output menu',
+    'Ideogram4PromptBuilderKJ.coord_mode':
+      'hidden value owned by the Ideogram editor output menu',
+    'Ideogram4PromptBuilderKJ.bbox_order':
+      'hidden value owned by the Ideogram editor output menu'
   }
 }
 
@@ -201,6 +210,11 @@ assertPackLedgerKeys(
   WIDGET_SET_ALLOWLIST,
   manifestPackNames
 )
+assertPackLedgerKeys(
+  'WIDGET_SET_ALLOWLIST_BY_IDENTITY',
+  WIDGET_SET_ALLOWLIST_BY_IDENTITY,
+  loadAllManifestIdentities()
+)
 
 declare global {
   interface Window {
@@ -245,7 +259,10 @@ export async function assertRoundtripTier({
     registeredKeys
   )
   const declaredInputNames = declaredInputNamesForTypes(defs, keys)
-  const allowedWidgets = packLedgerFor(WIDGET_SET_ALLOWLIST, entry.pack)
+  const allowedWidgets = {
+    ...packLedgerFor(WIDGET_SET_ALLOWLIST, entry.pack),
+    ...packLedgerFor(WIDGET_SET_ALLOWLIST_BY_IDENTITY, packIdentity(entry))
+  }
   for (const ledgered of Object.keys(allowedWidgets)) {
     const separator = ledgered.indexOf('.')
     const nodeType = ledgered.slice(0, separator)
@@ -641,21 +658,21 @@ export async function assertRoundtripTier({
                 const nodeType = created.get(String(node.id))?.type
                 if (!nodeType) continue
                 const mutableNames = new Set(declaredInputNames[nodeType] ?? [])
-                for (const widget of node.widgets ?? []) {
-                  if (!SETTABLE.has(String(widget.type))) continue
-                  if (!mutableNames.has(widget.name)) continue
-                  if (`${nodeType}.${widget.name}` in packManaged) continue
-                  const target = ((): unknown => {
-                    const options = (
-                      widget as {
-                        options?: {
-                          values?: unknown
-                          min?: number
-                          max?: number
-                          step2?: number
-                        }
+                const mutations = (node.widgets ?? []).flatMap((widget) => {
+                  if (!SETTABLE.has(String(widget.type))) return []
+                  if (!mutableNames.has(widget.name)) return []
+                  if (`${nodeType}.${widget.name}` in packManaged) return []
+                  const options = (
+                    widget as {
+                      options?: {
+                        values?: unknown
+                        min?: number
+                        max?: number
+                        step2?: number
                       }
-                    ).options
+                    }
+                  ).options
+                  const target = ((): unknown => {
                     if (typeof widget.value === 'boolean') return !widget.value
                     if (typeof widget.value === 'number') {
                       const step = options?.step2 || 1
@@ -678,8 +695,14 @@ export async function assertRoundtripTier({
                     }
                     return undefined
                   })()
-                  if (target === undefined || target === null) continue
+                  return target === undefined || target === null
+                    ? []
+                    : [{ target, widget }]
+                })
+                for (const { target, widget } of mutations) {
+                  if (!node.widgets?.includes(widget)) continue
                   widget.value = target as typeof widget.value
+                  widget.callback?.(widget.value)
                   if (widget.value !== target)
                     problems.push(
                       `${nodeType}.${widget.name}: set ${JSON.stringify(target)} but widget kept ${JSON.stringify(widget.value)}`

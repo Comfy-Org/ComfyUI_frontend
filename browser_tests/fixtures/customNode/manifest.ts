@@ -741,6 +741,13 @@ export function loadAllManifestPackNames(): string[] {
   ]
 }
 
+export function loadAllManifestIdentities(): string[] {
+  return [
+    ...readCoreManifest().map(packIdentity),
+    ...readCloudManifest().packs.map(packIdentity)
+  ]
+}
+
 export function loadUnjoinedYamlPacks(): string[] {
   return customNodesManifest() === 'cloud'
     ? readCloudManifest().unjoinedYamlPacks
