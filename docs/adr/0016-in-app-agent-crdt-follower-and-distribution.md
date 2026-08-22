@@ -70,9 +70,11 @@ snapshot-diff, no `LitegraphMutator` in the end state.
   human-write / merge path and is not replaced by any store command layer's own IDs.
 - The applier is the single shared package `@comfyorg/comfy-multi-player`, pinned by SHA.
   There must be no second applier implementation in the frontend.
-- V1 is follow-only and needs no public graph-mutations API; the "internal API" is the
+- ~~V1 is follow-only and needs no public graph-mutations API; the "internal API" is the
   Yjs binding into the domain stores. The human write-back path (canvas edit to op to
-  host) is a later, separate step.
+  host) is a later, separate step.~~ **Amended 2026-08-22 — see the Amendment section
+  below: the human write path co-ships with the follower.** The "no public
+  graph-mutations API" half stands; the sequencing half does not.
 
 This supersedes the ADR-009-style `LitegraphMutator`/snapshot-diff/semantic-projector
 direction recorded in the workspace; that code remains only as the interim POC behind the
@@ -153,6 +155,36 @@ op-layer package DOM/litegraph-free via the import-graph guard.
   call-carried provenance (`applyRemote(update, { source, actor })`) as an acceptance
   criterion of the seam, and do not ship a human write-back path before a test that drives
   a real `LGraphNode.pos` asserts the recorded source.
+
+## Amendment (2026-08-22) — the human write path co-ships with the follower
+
+The original text scoped V1 as follow-only, with the human write-back path as a later,
+separate step. That sequencing is superseded: concurrent human+agent co-editing of one
+shared doc is the product goal, so the write path ships with the follower, not after it.
+This is a sequencing amendment, not an architecture change — every contract above is
+unchanged, and the server side of the write path (the `doc_ops` ingress, actor
+validation, batch caps, sole applier, and echo broadcast) already exists.
+
+What the frontend adds, all on the V1 critical path:
+
+1. **Mutation-to-op minting** — a canvas edit mints a semantic op stamped
+   `[base_version, actor, op_id]`; `op_id` is minted once and never regenerated on retry.
+2. **`doc_ops` sender** — stamped semantic ops go up on the `doc_ops` frame with
+   `base_version` tracking; retries re-send the same op, never re-mint it.
+3. **Optimistic overlay** — pending local ops render from a presentation-only shadow,
+   cleared on _effect_ (the echoed `doc_update`), not on ack; never encoded as a Yjs
+   update, never merged into the shared doc.
+4. **Echo-attribution guard** — call-carried provenance
+   (`applyRemote(update, { source, actor })`) so the editor's own echo is not re-recorded
+   as a local edit. Already an acceptance criterion above; it is now the gating item on
+   the critical path rather than a precondition for deferred work.
+
+The follower boundary is unchanged: raw Yjs updates still flow host to follower one-way
+only, and the follower still never writes the shared doc. Human edits reach the doc via
+semantic `doc_ops` toward the host's sole applier — never via raw Yjs writes — so the
+write path and the follower invariant coexist by design. Whole-graph replace as the
+mutation primitive (client re-sends the full graph, server diffs and re-mints ops)
+remains rejected: it clobbers concurrent agent edits mid-turn and kills op-log replay.
 
 ## Notes
 
