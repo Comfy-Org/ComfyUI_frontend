@@ -124,7 +124,7 @@ before.
 
 This design covers chain state, derived membership, and the `LLink`
 proxy retrofit from Decision 4 (a small self-contained change, done
-first). Reroute visual state (`_colour`, badge) is out of scope. The
-`Reroute.pos` class field still mirrors the layout store's position;
-that pre-existing duplication is a separate concern, not addressed
-here.
+first). Reroute visual state (`_colour`, badge) is out of scope.
+`Reroute.pos` is a stable compatibility view over LayoutStore geometry rather
+than a second stored position. Position remains outside this chain-state
+record.

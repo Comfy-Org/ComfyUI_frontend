@@ -1,7 +1,7 @@
 # ECS identity and scope audit
 
 Status: Current implementation audit
-Verified: 2026-08-16 against PR 14246
+Verified: 2026-08-20 against `13a302eadda871b939b148ecb87e3d845ceefff2`
 
 This document records the migration's implemented identity contract. It does
 not broaden the accepted ADRs.
@@ -59,14 +59,20 @@ Topology, widgets, layout, and locator-based output data describe definitions.
 Only `NodeExecutionId` includes the nested instance path. Code handling backend
 events must resolve execution identity before reading definition-scoped output.
 
+The allocation counters are serialized mutable class state, not store records
+or commands. Compatibility setters and clipboard/import paths can assign or
+increment them directly. Deterministic replay therefore requires creation and
+import operations to record assigned IDs rather than minting from ambient
+counter state.
+
 ## Collision normalization
 
-`normalizeSubgraphIds()` in
+`normalizeSubgraphDefinitions()` in
 `src/lib/litegraph/src/subgraph/subgraphDeduplication.ts` traverses definitions
 in dependency order. It preserves the first owner of an ID and remaps later
 cross-definition node, link, reroute, and group collisions from the root
-allocator. Node remaps also patch link endpoints, promoted-widget references,
-and proxy-widget metadata.
+allocator. Remaps also patch regular and floating link endpoints, reroute and
+group references, promoted-widget references, and proxy-widget metadata.
 
 `deduplicateLinks()` in `src/lib/litegraph/src/linkDeduplication.ts` separately
 enforces one live link per target slot, removes duplicate topology, remaps

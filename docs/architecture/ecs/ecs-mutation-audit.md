@@ -1,7 +1,7 @@
 # ECS mutation audit
 
 Status: Current implementation audit
-Verified: 2026-08-16 against PR 14246
+Verified: 2026-08-20 against `13a302eadda871b939b148ecb87e3d845ceefff2`
 
 This audit classifies current graph-domain writes and compares them with
 [ADR 0003](../../adr/0003-crdt-based-layout-system.md)
@@ -25,20 +25,28 @@ reactive, but that is not command-driven mutation.
 
 ## Mutation inventory by concern
 
-| Concern                        | Authoritative writes                                                                                    | Classification                         | Notes                                                                                                                                        |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------- | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| Node identity and ownership    | `nodeDataStore.registerNode`, `deleteNode`, `clearOwner`, `clearGraph`                                  | Validated store actions                | Registration and deletion compare raw object identity. Root-wide ID collision makes `LGraph.add` remint and retry.                           |
-| Node shell                     | `LGraphNode` accessors over `_state`; configure assigns fields and mutates flags, slots, and properties | Direct proxy plus legacy orchestration | Registered ID is protected, but title, mode, visual state, slot arrays, and nested flags have no serializable operation.                     |
-| Link identity and endpoints    | `linkStore.replaceLink`, `updateEndpoint(s)`, `deleteLink`                                              | Validated store actions                | `updateEndpoints` validates all participants, vacates old indexes, patches, then reindexes as one synchronous action.                        |
-| Link type and reroute terminus | `LLink.type`, `LLink.parentId`                                                                          | Direct proxy writes                    | `parentId` mutation invalidates derived reroute membership through Vue tracking, but does not validate owner or chain existence.             |
-| Reroute identity               | `rerouteStore.registerReroute`, `deleteReroute`, clear actions                                          | Validated store actions                | Raw identity and owner checks protect registration and deletion.                                                                             |
-| Reroute chain                  | `Reroute.parentId`, `floating`; `LGraph.createReroute/removeReroute` rewiring loops                     | Direct proxy plus legacy orchestration | Setter prevents a local parent cycle. Multi-entity splice/remove is a sequence, not a transaction.                                           |
-| Widget state                   | `widgetValueStore.registerWidget`, `setValue`, order and delete actions; `BaseWidget.value`             | Store actions plus direct proxy writes | Registration can reuse existing state by type. Values and render state are freely mutable and have no owner transaction with node lifecycle. |
-| Entity geometry                | `LayoutOperation` handlers for node, reroute, and group create/move/resize/delete/clear                 | Serializable layout operations         | `applyOperations` makes one Yjs transaction. Root-scoped keys and operation handlers make repeated create/delete no-ops.                     |
-| Link/slot geometry             | renderer tracking and `layoutStore` view maps                                                           | Derived or transient direct state      | Cleared by `clearViewGeometry`; not serialized or part of entity history.                                                                    |
-| Graph membership and callbacks | arrays/maps in `LGraph`, `node.graph`, subgraph registry, execution order                               | Legacy orchestration                   | Store registration is interleaved with legacy publication and callbacks.                                                                     |
-| Properties and extension state | `node.properties`, callback-owned fields, node-specific widgets                                         | Direct class writes                    | Open-ended extension data has no schema, validation, command form, or deterministic reducer.                                                 |
-| Badges and reroute membership  | `badgeSystem` computed projections; `rerouteStore.buildMembershipIndex`                                 | Derived read-only data                 | Correctly omitted from serialization, command, and undo state as independent entities.                                                       |
+| Concern                        | Authoritative writes                                                                                                          | Classification                             | Notes                                                                                                                                        |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Node identity and ownership    | `nodeDataStore.registerNode`, `deleteNode`, `clearOwner`, `clearGraph`                                                        | Validated store actions                    | Registration and deletion compare raw object identity. Root-wide ID collision makes `LGraph.add` remint and retry.                           |
+| Node shell                     | `LGraphNode` accessors over `_state`; configure assigns fields and mutates flags, slots, and properties                       | Direct proxy plus legacy orchestration     | Registered ID is protected, but title, mode, visual state, slot arrays, and nested flags have no serializable operation.                     |
+| Link identity and endpoints    | `linkStore.replaceLink`, `updateEndpoint(s)`, `deleteLink`                                                                    | Validated store actions                    | `updateEndpoints` validates all participants, vacates old indexes, patches, then reindexes as one synchronous action.                        |
+| Link type and reroute terminus | `LLink.type`, `LLink.parentId`                                                                                                | Direct proxy writes                        | `parentId` mutation invalidates derived reroute membership through Vue tracking, but does not validate owner or chain existence.             |
+| Reroute identity               | `rerouteStore.registerReroute`, `deleteReroute`, clear actions                                                                | Validated store actions                    | Raw identity and owner checks protect registration and deletion.                                                                             |
+| Reroute chain                  | `Reroute.parentId`, `floating`; `LGraph.createReroute/removeReroute` rewiring loops                                           | Direct proxy plus legacy orchestration     | Setter prevents a local parent cycle. Multi-entity splice/remove is a sequence, not a transaction.                                           |
+| Widget state                   | `widgetValueStore.registerWidget`, `setValue`, order and delete actions; `BaseWidget.value`                                   | Store actions plus direct proxy writes     | Registration can reuse existing state by type. Values and render state are freely mutable and have no owner transaction with node lifecycle. |
+| Widget value shadows           | `node.widgets_values` / `widgets_values_named` delayed restoration and direct consumer writes                                 | Direct class writes                        | Serialized arrays/maps can diverge from store values and live widgets.                                                                       |
+| ID allocation state            | `mint*`, `observe*`, compatibility setters, configure, clipboard/import counter writes                                        | Direct class writes                        | Ambient mutable counters affect future durable IDs and are not deterministic replay commands.                                                |
+| Entity geometry                | `LayoutOperation` handlers for node, reroute, and group create/move/resize/delete/clear                                       | Serializable layout operations             | `applyOperations` makes one Yjs transaction. Root-scoped keys and operation handlers make repeated create/delete no-ops.                     |
+| Link/slot geometry             | renderer tracking and `layoutStore` view maps                                                                                 | Derived or transient direct state          | Cleared by `clearViewGeometry`; not serialized or part of entity history.                                                                    |
+| Graph membership and callbacks | arrays/maps in `LGraph`, `node.graph`, subgraph registry, execution order                                                     | Legacy orchestration                       | Store registration is interleaved with legacy publication and callbacks.                                                                     |
+| Graph metadata                 | `LGraph.config`, `extra`, and `revision` direct assignments and serialization                                                 | Direct class writes                        | Durable graph metadata has no store owner, validation schema, command form, or transaction/undo contract.                                    |
+| Graph invalidation revision    | `LGraph.incrementVersion()` calls from graph, node, canvas, widget, slot, and subgraph paths                                  | Scattered imperative invalidation          | `_version` can expose intermediate or duplicate increments and is not emitted from a committed mutation boundary.                            |
+| Properties and extension state | `node.properties`, callback-owned fields, node-specific widgets                                                               | Direct class writes                        | Open-ended extension data has no schema, validation, command form, or deterministic reducer.                                                 |
+| Extension persistence hooks    | node/graph `onSerialize` mutate complete DTOs; generic configure assignment and `onConfigure` mutate live objects             | Extension-controlled orchestration         | Hooks bypass canonical ownership, schemas, validation, replay, transactions, and defined undo behavior.                                      |
+| Prompt serialization hooks     | `graphToPrompt` awaits widget `serializeValue`; hooks may mutate shadows/UI, randomize values, capture media, or upload files | Extension-controlled effects               | Prompt assembly is not a pure store read; effects and durable mutations have no command, idempotency, replay, transaction, or undo contract. |
+| Unknown-node fallback          | `node.last_serialization` assigned and patched by load/import paths                                                           | Direct class writes                        | Full opaque node wire state can override store-backed serialization without scoped ownership or a command boundary.                          |
+| Execution order                | `computeExecutionOrder` assigns `node.order`; configure restores and serialization emits it                                   | Derived projection plus direct class state | Derived scheduling data can become an independent persisted mutation channel.                                                                |
+| Badges and reroute membership  | `badgeSystem` computed projections; `rerouteStore.buildMembershipIndex`                                                       | Derived read-only data                     | Correctly omitted from serialization, command, and undo state as independent entities.                                                       |
 
 ## ADR 0003 properties
 
@@ -104,14 +112,16 @@ command values. Replaying a snapshot can also invoke configure and lifecycle
 callbacks whose external effects are absent from the snapshot. Equal
 serialized state does not imply equal callback history.
 
-## What must remain before "command-driven" is accurate system-wide
+## Later command-driven architecture
 
-The migration is not complete until all items below hold for every
-authoritative graph-domain mutation, including extensions:
+The current phase is about data centralization, not implementing this model.
+None of the items below is a completion criterion for PR 14246. If the system
+later adopts command-driven mutation, that work would need to address:
 
-1. Define serializable command schemas for node, link, reroute, widget, slot,
-   group, subgraph-definition, property, and promotion mutations. Commands must
-   carry stable IDs, graph scope, payload, source, and explicit preconditions.
+1. Define serializable command schemas for graph metadata, node, link, reroute,
+   widget, slot, group, subgraph-definition, property, and promotion mutations.
+   Commands must carry stable IDs, graph scope, payload, source, and explicit
+   preconditions.
 2. Route class setters, store actions, connect/disconnect, configure-time edits,
    replacement, dynamic widgets, and subgraph promotion through command
    dispatch. Reactive proxies may remain read models, but must not be public
@@ -136,10 +146,21 @@ authoritative graph-domain mutation, including extensions:
    same transaction through legacy object references.
 9. Close the extension boundary. Deprecate direct mutation of node properties,
    slots, widgets, links, and graph maps, publish command APIs, and provide
-   migration behavior for existing custom nodes.
-10. Prove the model with tests for duplicate delivery, deterministic replay,
+   migration behavior for existing custom nodes. Preserve `onSerialize` and
+   `onConfigure` compatibility only through a controlled adapter with validated,
+   namespaced plain-data payloads; hooks must not rewrite canonical store-backed
+   fields, and payload changes need explicit replay and undo semantics.
+10. Split `widget.serializeValue` into pure execution-value resolution and
+    declared pre-execution effects. Record resolved inputs in an execution
+    snapshot; route graph changes through commands and give uploads/capture
+    explicit retry and idempotency semantics.
+11. Prove the model with tests for duplicate delivery, deterministic replay,
     inverse or snapshot parity, failed-batch rollback, nested subgraph scope,
     and cross-store observer visibility.
+
+Graph invalidation revision should be derived from concern revisions or emitted
+once after successful command-batch commit. It is compatibility notification,
+not an independently mutable durable component.
 
 Until then, dedicated reactive stores hold an increasing share of entity state.
 Layout mutation is operation-driven, topology has validated actions, and graph
