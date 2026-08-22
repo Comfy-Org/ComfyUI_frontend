@@ -2,7 +2,6 @@ import { definePreset } from '@primevue/themes'
 import Aura from '@primevue/themes/aura'
 import {
   browserApiErrorsIntegration,
-  captureMessage,
   init as sentryInit
 } from '@sentry/vue'
 import { initializeApp } from 'firebase/app'
@@ -23,14 +22,12 @@ import {
   configValueOrDefault,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
-import { reportAssertFailure } from '@/platform/telemetry/assertFailureReporter'
+import { createAssertReporter } from '@/platform/telemetry/assertionReporter'
 import { syncHostUserIdWithFirebaseAuth } from '@/platform/telemetry/hostUserIdSync'
 import { flushErrorReports } from '@/platform/telemetry/reportError'
 import '@/lib/litegraph/public/css/litegraph.css'
 import router from '@/router'
-import { isDesktop, isNightly } from '@/platform/distribution/types'
 import { stripPaymentReturnParams } from '@/platform/cloud/subscription/utils/paymentReturnUrl'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 
 import App from './App.vue'
@@ -110,24 +107,7 @@ sentryInit({
 
 flushErrorReports()
 
-// Assertion reporter receives pre-formatted messages (with "[Assertion failed]: " prefix).
-// Strings here are intentionally not i18n'd: they're developer/nightly diagnostics,
-// not user-facing in stable releases.
-setAssertReporter((message) => {
-  if (isDesktop) {
-    captureMessage(message, { level: 'warning' })
-  }
-  if (isCloud) {
-    reportAssertFailure(message)
-  }
-  if (isNightly) {
-    useToastStore(pinia).add({
-      severity: 'warn',
-      summary: 'Assertion failed',
-      detail: message
-    })
-  }
-})
+setAssertReporter(createAssertReporter(pinia))
 
 app.directive('tooltip', Tooltip)
 app

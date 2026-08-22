@@ -1,4 +1,4 @@
-type AssertReporter = (message: string) => void
+export type AssertReporter = (failure: Error) => void
 
 let reporter: AssertReporter | null = null
 
@@ -28,12 +28,14 @@ export function assert(condition: unknown, message: string): asserts condition {
   const formatted = `[Assertion failed]: ${message}`
   console.error(formatted)
 
+  const failure = new Error(formatted)
+
   if (import.meta.env.DEV) {
-    throw new Error(formatted)
+    throw failure
   }
 
   try {
-    reporter?.(formatted)
+    reporter?.(failure)
   } catch (error) {
     console.error('[Assertion reporter failed]', error)
   }

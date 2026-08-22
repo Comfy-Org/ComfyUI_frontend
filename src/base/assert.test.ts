@@ -50,8 +50,25 @@ describe('assert', () => {
     setAssertReporter(reporter)
     assert(false, 'reporter message')
     expect(reporter).toHaveBeenCalledWith(
-      '[Assertion failed]: reporter message'
+      expect.objectContaining({
+        message: '[Assertion failed]: reporter message'
+      })
     )
+  })
+
+  it('reports an Error whose stack starts at the failing assertion', () => {
+    vi.stubEnv('DEV', false)
+    const reporter = vi.fn()
+    setAssertReporter(reporter)
+
+    function violatesAnInvariant() {
+      assert(false, 'stack origin')
+    }
+    violatesAnInvariant()
+
+    const [failure] = reporter.mock.calls[0] as [Error]
+    expect(failure).toBeInstanceOf(Error)
+    expect(failure.stack).toContain('violatesAnInvariant')
   })
 
   it('does not call reporter when condition is true', () => {
