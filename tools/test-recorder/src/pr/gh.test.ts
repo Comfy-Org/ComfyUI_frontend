@@ -1,5 +1,4 @@
-import type { MockInstance } from 'vitest'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createPr } from './gh'
 
@@ -29,18 +28,13 @@ const LINT_STAGED_TS_ERROR_OTHER_FILE = [
 
 describe('createPr', () => {
   let consoleLines: string[]
-  let log: MockInstance
 
   beforeEach(() => {
     runMock.mockReset()
     consoleLines = []
-    log = vi.spyOn(console, 'log').mockImplementation((value?: unknown) => {
+    vi.spyOn(console, 'log').mockImplementation((value?: unknown) => {
       consoleLines.push(String(value ?? ''))
     })
-  })
-
-  afterEach(() => {
-    log.mockRestore()
   })
 
   it('checks out the original branch and deletes the new one when commit fails', async () => {
@@ -91,7 +85,9 @@ describe('createPr', () => {
     })
 
     expect(result.success).toBe(false)
-    expect(result.error).toContain('expect-expect')
+    expect(consoleLines.join('\n')).toContain(
+      'Add at least one `await expect(...)` call'
+    )
   })
 
   it('names the actual broken file when vue-tsc fails on something else entirely', async () => {

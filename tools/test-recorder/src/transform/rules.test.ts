@@ -72,6 +72,21 @@ describe('fixture and locator rewrites', () => {
   it('leaves an already-converted fixture alone', () => {
     expect(run(CODEGEN)).not.toContain('comfyPage.comfyPage')
   })
+
+  it('does not rewrite "page" inside a string literal', () => {
+    const code = run(
+      CODEGEN.replace(
+        "await expect(page.locator('canvas')).toBeVisible();",
+        "await page.getByText('page').click();"
+      )
+    )
+    expect(code).toContain("comfyPage.page.getByText('page')")
+  })
+
+  it('does not rewrite "page" as an object property name', () => {
+    const code = run(CODEGEN.replace('test(', 'const { page } = ctx;\ntest('))
+    expect(code).toContain('const { page } = ctx;')
+  })
 })
 
 describe('waits', () => {

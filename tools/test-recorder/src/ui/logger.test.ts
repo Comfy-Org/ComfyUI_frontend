@@ -1,5 +1,4 @@
-import type { MockInstance } from 'vitest'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { alert, box, displayWidth, fail, info, pass, warn } from './logger'
 
 describe('displayWidth', () => {
@@ -22,17 +21,12 @@ describe('displayWidth', () => {
 
 describe('output helpers', () => {
   let lines: string[]
-  let log: MockInstance
 
   beforeEach(() => {
     lines = []
-    log = vi.spyOn(console, 'log').mockImplementation((value?: unknown) => {
+    vi.spyOn(console, 'log').mockImplementation((value?: unknown) => {
       lines.push(String(value ?? ''))
     })
-  })
-
-  afterEach(() => {
-    log.mockRestore()
   })
 
   it('marks a pass, a failure and a warning distinctly', () => {
@@ -78,17 +72,12 @@ describe('output helpers', () => {
 
 describe('alert', () => {
   let lines: string[]
-  let log: MockInstance
 
   beforeEach(() => {
     lines = []
-    log = vi.spyOn(console, 'log').mockImplementation((value?: unknown) => {
+    vi.spyOn(console, 'log').mockImplementation((value?: unknown) => {
       lines.push(String(value ?? ''))
     })
-  })
-
-  afterEach(() => {
-    log.mockRestore()
   })
 
   it('renders distinctly from a plain warn — bordered, not one line', () => {

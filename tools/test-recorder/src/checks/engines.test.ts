@@ -29,6 +29,11 @@ describe('satisfies', () => {
   it('defers rather than guessing on ranges it cannot parse', () => {
     expect(satisfies('v24.0.0', '^25.0.0 || ~26')).toBe(true)
   })
+
+  it('defers when the range is empty', () => {
+    expect(satisfies('v24.0.0', '')).toBe(true)
+    expect(satisfies('v24.0.0', '   ')).toBe(true)
+  })
 })
 
 describe('describeRange', () => {

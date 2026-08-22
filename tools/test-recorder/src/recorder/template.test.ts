@@ -105,8 +105,11 @@ describe('recording template', () => {
     // Matches the call-site value (a quoted literal), not the type
     // declaration's `outputFile: string` field of the same name.
     const outputFileMatch = code.match(/outputFile:\s*("(?:[^"\\]|\\.)*")/)
-    expect(outputFileMatch).not.toBeNull()
-    const path = JSON.parse(outputFileMatch![1])
+    const outputFileLiteral = outputFileMatch?.[1]
+    if (outputFileLiteral === undefined) {
+      throw new Error('Generated template has no outputFile literal')
+    }
+    const path: unknown = JSON.parse(outputFileLiteral)
     expect(path).toBe(recordedCodePath(browserTestsDir))
   })
 
