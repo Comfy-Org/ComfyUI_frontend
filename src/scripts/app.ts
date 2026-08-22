@@ -83,6 +83,7 @@ import { resolveAccountPrecondition } from '@/platform/errorCatalog/accountPreco
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
+import { installSecureNodesHost } from '@/services/secureNodesBootstrap'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphService } from '@/services/subgraphService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
@@ -1025,6 +1026,7 @@ export class ComfyApp {
       },
       refreshDefinitions: () => this.refreshComboInNodes()
     })
+    await installSecureNodesHost()
     await bootstrapTracer.settle('bootstrap/extensions-load', () =>
       useExtensionService().loadExtensions()
     )
