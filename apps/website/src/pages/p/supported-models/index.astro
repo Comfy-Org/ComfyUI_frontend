@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../../layouts/BaseLayout.astro'
+import type { ModelDirectory } from '../../../config/models'
 import { models } from '../../../config/models'
 import { t } from '../../../i18n/translations'
 import {
@@ -25,7 +26,7 @@ const modelList = itemListNode(
   })),
 )
 
-const dirLabel: Record<string, string> = {
+const dirLabel: Record<ModelDirectory, string> = {
   diffusion_models: 'Diffusion',
   checkpoints: 'Checkpoint',
   loras: 'LoRA',
@@ -38,7 +39,12 @@ const dirLabel: Record<string, string> = {
   latent_upscale_models: 'Latent Upscale',
   upscale_models: 'Upscale',
   style_models: 'Style',
-  partner_nodes: 'Partner Node'
+  partner_nodes: 'Partner Node',
+  background_removal: 'Background Removal',
+  detection: 'Detection',
+  frame_interpolation: 'Frame Interpolation',
+  geometry_estimation: 'Geometry Estimation',
+  optical_flow: 'Optical Flow'
 }
 ---
 
@@ -80,7 +86,7 @@ const dirLabel: Record<string, string> = {
                 {model.displayName}
               </span>
               <span class="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-xs font-medium text-primary-comfy-canvas/70">
-                {dirLabel[model.directory] ?? model.directory}
+                {dirLabel[model.directory]}
               </span>
             </div>
             <p class="mt-auto text-xs text-primary-comfy-canvas/50">
