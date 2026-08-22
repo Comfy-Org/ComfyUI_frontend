@@ -2210,10 +2210,17 @@ export class ComfyApp {
         )
         placeholderEntry = {
           type: data.class_type,
+          cnrId: data._meta?.cnr_id,
           isReplaceable: replacement !== null,
           replacement: replacement ?? undefined
         }
         missingNodeTypes.push(placeholderEntry)
+        if (data._meta?.cnr_id) {
+          node.properties.cnr_id = data._meta.cnr_id
+        }
+        if (data._meta?.ver) {
+          node.properties.ver = data._meta.ver
+        }
       }
       node.id = nodeId
       node.title = data._meta?.title ?? node.title

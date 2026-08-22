@@ -881,6 +881,47 @@ describe('ComfyApp', () => {
       }
     })
 
+    it('picks up _meta pack identity for API JSON placeholders', async () => {
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      const cleanupErrorHooks = installErrorClearingHooks(graph)
+      const missingNodesStore = useMissingNodesErrorStore()
+      const nodeReplacementStore = useNodeReplacementStore()
+      vi.spyOn(nodeReplacementStore, 'load').mockResolvedValue()
+
+      try {
+        await app.loadApiJson(
+          {
+            '1': {
+              class_type: 'UninstalledPackNode',
+              inputs: {},
+              _meta: {
+                title: 'Uninstalled',
+                cnr_id: 'some-pack',
+                ver: '9.9.9'
+              }
+            }
+          },
+          ''
+        )
+
+        const [placeholder] = graph.nodes
+        expect(placeholder?.properties).toMatchObject({
+          cnr_id: 'some-pack',
+          ver: '9.9.9'
+        })
+        expect(missingNodesStore.missingNodesError?.nodeTypes).toEqual([
+          expect.objectContaining({
+            type: 'UninstalledPackNode',
+            cnrId: 'some-pack'
+          })
+        ])
+      } finally {
+        cleanupErrorHooks()
+      }
+    })
+
     it('creates a removable placeholder for an API JSON missing node', async () => {
       const graph = new LGraph()
       Reflect.set(app, 'rootGraphInternal', graph)
