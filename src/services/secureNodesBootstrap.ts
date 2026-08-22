@@ -21,7 +21,21 @@ import { provideExtensionHost } from '@/services/extensionHostProvider'
 const OVERLAY_ENTRY = '/secure-nodes/src/host-entry.mjs'
 const GUEST_BOOTSTRAP = '/secure-nodes/src/guest.mjs'
 
-/** Enabled by ?secureNodes=1, or by a global set before boot (tests). */
+const STICKY_KEY = 'Comfy.SecureNodes.Enabled'
+
+/**
+ * Enabled by `?secureNodes=1`, by a global set before boot (tests), or by a
+ * previous opt-in.
+ *
+ * The query parameter alone is not enough to be usable: the app rewrites
+ * `location` to `/#<workflow-id>` when a workflow is opened, which DISCARDS the
+ * query string. The next reload then silently came up without the overlay —
+ * the packs loaded unsandboxed and their node UI simply never appeared, with
+ * nothing to explain why. So the opt-in is remembered once given.
+ *
+ * `?secureNodes=0` turns it back off, or there would be no way out of a sticky
+ * flag except clearing site data.
+ */
 function isEnabled(): boolean {
   try {
     if (
@@ -29,7 +43,24 @@ function isEnabled(): boolean {
     ) {
       return true
     }
-    return new URLSearchParams(location.search).get('secureNodes') === '1'
+    const param = new URLSearchParams(location.search).get('secureNodes')
+    if (param === '1') {
+      try {
+        localStorage.setItem(STICKY_KEY, '1')
+      } catch {
+        // Private mode / storage disabled: still enabled for this page load.
+      }
+      return true
+    }
+    if (param === '0') {
+      try {
+        localStorage.removeItem(STICKY_KEY)
+      } catch {
+        /* nothing to clear */
+      }
+      return false
+    }
+    return localStorage.getItem(STICKY_KEY) === '1'
   } catch {
     return false
   }
