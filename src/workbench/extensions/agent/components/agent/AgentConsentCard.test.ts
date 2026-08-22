@@ -34,11 +34,15 @@ describe('AgentConsentCard', () => {
 
     await user.click(screen.getByRole('button', { name: 'Accept' }))
     await user.click(screen.getByRole('button', { name: 'Reject' }))
-    await user.click(screen.getByRole('button', { name: 'Close' }))
 
     expect(emitted().accept).toHaveLength(1)
     expect(emitted().reject).toHaveLength(1)
-    expect(emitted().close).toHaveLength(1)
+  })
+
+  it('offers no way out but a decision', () => {
+    renderCard()
+
+    expect(screen.queryByRole('button', { name: 'Close' })).toBeNull()
   })
 
   it('falls back to a placeholder when no video is supplied', () => {
