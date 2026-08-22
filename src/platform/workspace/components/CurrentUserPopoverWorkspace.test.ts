@@ -34,6 +34,8 @@ const workspaceStoreMock = vi.hoisted(() => ({
   }
 }))
 
+const distribution = vi.hoisted(() => ({ isCloud: true }))
+
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', async () => {
   const { reactive, ref } = await import('vue')
   workspaceStoreMock.store = reactive({
@@ -91,7 +93,11 @@ vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
   useSettingsDialog: () => ({ show: state.showSettingsDialog })
 }))
 
-vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
+vi.mock('@/platform/distribution/types', () => ({
+  get isCloud() {
+    return distribution.isCloud
+  }
+}))
 
 vi.mock('@/services/dialogService', () => ({
   useDialogService: () => ({
@@ -161,6 +167,7 @@ function renderComponent(
 
 describe('CurrentUserPopoverWorkspace', () => {
   beforeEach(() => {
+    distribution.isCloud = true
     state.billingStatus = 'paid'
     state.canAccessSubscriptionFeatures = true
     state.isFreeTier = false
@@ -405,4 +412,28 @@ describe('CurrentUserPopoverWorkspace', () => {
       expect(emitted('close')).toHaveLength(1)
     })
   }
+
+  it('opens local Plan and Credits instead of Cloud pricing actions', async () => {
+    distribution.isCloud = false
+    state.canManageSubscription = true
+    const user = userEvent.setup()
+    const { emitted } = renderComponent()
+
+    expect(
+      screen.queryByTestId('plans-pricing-menu-item')
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByTestId('manage-plan-menu-item')
+    ).not.toBeInTheDocument()
+
+    await user.click(
+      screen.getByRole('button', {
+        name: enMessages.subscription.plansAndCredits
+      })
+    )
+
+    expect(state.showSettingsDialog).toHaveBeenCalledWith('credits')
+    expect(state.showPricingTable).not.toHaveBeenCalled()
+    expect(emitted('close')).toHaveLength(1)
+  })
 })
