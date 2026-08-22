@@ -381,7 +381,6 @@ describe('LGraph.configure input slot realignment (#3348)', () => {
 
 const SHRUNK_DEFINITION_ORDER = ['in_a', 'in_b']
 
-/** Drops any serialized input its definition no longer declares. */
 class DroppedInputTargetNode extends LGraphNode {
   constructor(title?: string) {
     super(title ?? 'DroppedInputTarget')
@@ -402,7 +401,6 @@ class DroppedInputTargetNode extends LGraphNode {
 
 const RENAMED_DEFINITION_ORDER = ['in_a', 'in_b', 'in_c_v2']
 
-/** Renames a live input after configure, as a pack migrating a slot does. */
 class RenamedInputTargetNode extends LGraphNode {
   constructor(title?: string) {
     super(title ?? 'RenamedInputTarget')
@@ -422,11 +420,6 @@ class RenamedInputTargetNode extends LGraphNode {
   }
 }
 
-/**
- * Serialized target carrying one input name the live node will not have.
- * `in_c` holds link 3 at slot 0, so the moves `1: 1 -> 0` and `2: 2 -> 1`
- * form a batch whose first member collides with link 3's stale placement.
- */
 function unmatchedInputNameWorkflow(nodeType: string): SerialisableGraph {
   return {
     id: 'ab000000-0000-4000-8000-000000000004',
