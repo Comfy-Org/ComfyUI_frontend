@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   SUBGRAPH_INPUT_ID,
@@ -376,6 +376,221 @@ describe('LGraph.configure input slot realignment (#3348)', () => {
     expect(graph.getNodeById(toNodeId(2))?.getInputLink(2)?.id).toBe(
       toLinkId(1)
     )
+  })
+})
+
+const SHRUNK_DEFINITION_ORDER = ['in_a', 'in_b']
+
+class DroppedInputTargetNode extends LGraphNode {
+  constructor(title?: string) {
+    super(title ?? 'DroppedInputTarget')
+    for (const name of SHRUNK_DEFINITION_ORDER) this.addInput(name, 'number')
+  }
+
+  override configure(data: ISerialisedNode): void {
+    data.inputs = (data.inputs ?? [])
+      .filter((input) => SHRUNK_DEFINITION_ORDER.includes(input.name))
+      .sort(
+        (a, b) =>
+          SHRUNK_DEFINITION_ORDER.indexOf(a.name) -
+          SHRUNK_DEFINITION_ORDER.indexOf(b.name)
+      )
+    super.configure(data)
+  }
+}
+
+const RENAMED_DEFINITION_ORDER = ['in_a', 'in_b', 'in_c_v2']
+
+class RenamedInputTargetNode extends LGraphNode {
+  constructor(title?: string) {
+    super(title ?? 'RenamedInputTarget')
+    for (const name of RENAMED_DEFINITION_ORDER) this.addInput(name, 'number')
+  }
+
+  override configure(data: ISerialisedNode): void {
+    super.configure(data)
+    for (const input of this.inputs) {
+      if (input.name === 'in_c') input.name = 'in_c_v2'
+    }
+    this.inputs.sort(
+      (a, b) =>
+        RENAMED_DEFINITION_ORDER.indexOf(a.name) -
+        RENAMED_DEFINITION_ORDER.indexOf(b.name)
+    )
+  }
+}
+
+function unmatchedInputNameWorkflow(nodeType: string): SerialisableGraph {
+  return {
+    id: 'ab000000-0000-4000-8000-000000000004',
+    version: 1,
+    revision: 0,
+    state: { lastNodeId: 2, lastLinkId: 3, lastGroupId: 0, lastRerouteId: 0 },
+    nodes: [
+      {
+        id: 1,
+        type: 'test/RealignSource',
+        pos: [0, 0],
+        size: [140, 60],
+        flags: {},
+        order: 0,
+        mode: 0,
+        inputs: [],
+        outputs: [{ name: 'out', type: 'number', links: [1, 2, 3] }],
+        properties: {}
+      },
+      {
+        id: 2,
+        type: nodeType,
+        pos: [300, 0],
+        size: [140, 80],
+        flags: {},
+        order: 1,
+        mode: 0,
+        inputs: [
+          { name: 'in_c', type: 'number', link: 3 },
+          { name: 'in_a', type: 'number', link: 1 },
+          { name: 'in_b', type: 'number', link: 2 }
+        ],
+        outputs: [],
+        properties: {}
+      }
+    ],
+    links: [
+      {
+        id: 3,
+        origin_id: 1,
+        origin_slot: 0,
+        target_id: 2,
+        target_slot: 0,
+        type: 'number'
+      },
+      {
+        id: 1,
+        origin_id: 1,
+        origin_slot: 0,
+        target_id: 2,
+        target_slot: 1,
+        type: 'number'
+      },
+      {
+        id: 2,
+        origin_id: 1,
+        origin_slot: 0,
+        target_id: 2,
+        target_slot: 2,
+        type: 'number'
+      }
+    ]
+  }
+}
+
+function unmatchedInputLinkState(graph: LGraph) {
+  const target = graph.getNodeById(toNodeId(2))!
+  const serialized = graph.serialize()
+  const reloaded = new LGraph()
+  reloaded.configure(structuredClone(serialized))
+  const reloadedTarget = reloaded.getNodeById(toNodeId(2))!
+
+  return {
+    graphLinkIds: [...graph.links.keys()],
+    inputLinkIds: target.inputs.map((_, slot) => target.getInputLink(slot)?.id),
+    serializedLinkIds: (serialized.links ?? []).map(([id]) => toLinkId(id)),
+    reloadedGraphLinkIds: [...reloaded.links.keys()],
+    reloadedInputLinkIds: reloadedTarget.inputs.map(
+      (_, slot) => reloadedTarget.getInputLink(slot)?.id
+    )
+  }
+}
+
+describe('LGraph.configure realignment with an unmatched input name (#15581)', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    LiteGraph.registerNodeType('test/RealignSource', SourceNode)
+    LiteGraph.registerNodeType(
+      'test/DroppedInputTarget',
+      DroppedInputTargetNode
+    )
+    LiteGraph.registerNodeType(
+      'test/RenamedInputTarget',
+      RenamedInputTargetNode
+    )
+  })
+
+  it.fails('realigns siblings when configure drops an input', () => {
+    const graph = new LGraph()
+    graph.configure(unmatchedInputNameWorkflow('test/DroppedInputTarget'))
+
+    expect(unmatchedInputLinkState(graph)).toEqual({
+      graphLinkIds: [toLinkId(1), toLinkId(2)],
+      inputLinkIds: [toLinkId(1), toLinkId(2)],
+      serializedLinkIds: [toLinkId(1), toLinkId(2)],
+      reloadedGraphLinkIds: [toLinkId(1), toLinkId(2)],
+      reloadedInputLinkIds: [toLinkId(1), toLinkId(2)]
+    })
+  })
+
+  it.fails('realigns siblings when configure renames an input', () => {
+    const graph = new LGraph()
+    graph.configure(unmatchedInputNameWorkflow('test/RenamedInputTarget'))
+
+    expect(unmatchedInputLinkState(graph)).toEqual({
+      graphLinkIds: [toLinkId(1), toLinkId(2)],
+      inputLinkIds: [toLinkId(1), toLinkId(2), undefined],
+      serializedLinkIds: [toLinkId(1), toLinkId(2)],
+      reloadedGraphLinkIds: [toLinkId(1), toLinkId(2)],
+      reloadedInputLinkIds: [toLinkId(1), toLinkId(2), undefined]
+    })
+  })
+
+  it.fails('reports no error while realigning around an unmatched name', () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const graph = new LGraph()
+    graph.configure(unmatchedInputNameWorkflow('test/DroppedInputTarget'))
+
+    expect(error).not.toHaveBeenCalled()
+  })
+})
+
+describe('realignInputLinkSlots with a rejected batch (#15581)', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  it.fails('lands the non-conflicting moves when one move is blocked', () => {
+    const graph = new LGraph()
+    const source = new LGraphNode('Source')
+    source.addOutput('out', 'number')
+    const target = new LGraphNode('Target')
+    for (const name of ['p', 'q', 'r']) target.addInput(name, 'number')
+    graph.add(source)
+    graph.add(target)
+
+    const squatter = source.connect(0, target, 0)!
+    const blocked = source.connect(0, target, 1)!
+    const free = source.connect(0, target, 2)!
+
+    const nodeData = target.serialize()
+    nodeData.inputs = [
+      { name: 'no_such_input', type: 'number', link: squatter.id },
+      { name: 'p', type: 'number', link: blocked.id },
+      { name: 'q', type: 'number', link: free.id }
+    ]
+
+    realignInputLinkSlots(graph, [nodeData])
+
+    expect({
+      graphLinkIds: [...graph.links.keys()],
+      inputLinkIds: target.inputs.map(
+        (_, slot) =>
+          useLinkStore().getInputSlotLink(graphScopeOf(graph), target.id, slot)
+            ?.id
+      )
+    }).toEqual({
+      graphLinkIds: [blocked.id, free.id],
+      inputLinkIds: [blocked.id, free.id, undefined]
+    })
   })
 })
 

@@ -73,6 +73,74 @@ export const duplicateLinksRoot: SerialisableGraph = {
   ]
 }
 
+export const conflictingOriginLinksRoot: SerialisableGraph = {
+  id: 'dd000000-0000-4000-8000-000000000004',
+  version: 1,
+  revision: 0,
+  state: {
+    lastNodeId: 3,
+    lastLinkId: 2,
+    lastGroupId: 0,
+    lastRerouteId: 0
+  },
+  nodes: [
+    {
+      id: 1,
+      type: 'test/DupTestNode',
+      pos: [0, 0],
+      size: [200, 100],
+      flags: {},
+      order: 0,
+      mode: 0,
+      inputs: [{ name: 'input_0', type: 'number', link: null }],
+      outputs: [{ name: 'output_0', type: 'number', links: [1] }],
+      properties: {}
+    },
+    {
+      id: 2,
+      type: 'test/DupTestNode',
+      pos: [0, 200],
+      size: [200, 100],
+      flags: {},
+      order: 1,
+      mode: 0,
+      inputs: [{ name: 'input_0', type: 'number', link: null }],
+      outputs: [{ name: 'output_0', type: 'number', links: [2] }],
+      properties: {}
+    },
+    {
+      id: 3,
+      type: 'test/DupTestNode',
+      pos: [300, 0],
+      size: [200, 100],
+      flags: {},
+      order: 2,
+      mode: 0,
+      inputs: [{ name: 'input_0', type: 'number', link: 2 }],
+      outputs: [{ name: 'output_0', type: 'number', links: [] }],
+      properties: {}
+    }
+  ],
+  links: [
+    {
+      id: 1,
+      origin_id: 1,
+      origin_slot: 0,
+      target_id: 3,
+      target_slot: 0,
+      type: 'number'
+    },
+    {
+      id: 2,
+      origin_id: 2,
+      origin_slot: 0,
+      target_id: 3,
+      target_slot: 0,
+      type: 'number'
+    }
+  ]
+}
+
 /**
  * Root graph with slot-shifted duplicates. Target node has an extra input
  * (simulating widget-to-input conversion) that shifts the connected input
