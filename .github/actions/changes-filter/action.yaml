@@ -44,6 +44,9 @@ outputs:
   dependency-changes:
     description: 'Root `package.json`, `pnpm-lock.yaml`, or `pnpm-workspace.yaml` changed.'
     value: ${{ github.event_name != 'pull_request' || steps.filter.outputs.deps == 'true' }}
+  ecosystem-matrix-changes:
+    description: 'Frontend runtime or registry census infrastructure changed.'
+    value: ${{ github.event_name != 'pull_request' || steps.filter.outputs.ecosystem_matrix == 'true' }}
 
 runs:
   using: composite
@@ -71,6 +74,13 @@ runs:
             - 'package.json'
             - 'pnpm-lock.yaml'
             - 'pnpm-workspace.yaml'
+          ecosystem_matrix:
+            - 'src/**'
+            - 'scripts/registry-census/**'
+            - 'vitest.matrix.config.mts'
+            - '.github/actions/changes-filter/action.yaml'
+            - '.github/workflows/ci-ecosystem-matrix.yaml'
+            - '.github/workflows/ci-tests-e2e.yaml'
 
     - name: Filter relevant changes
       if: ${{ github.event_name == 'pull_request' }}

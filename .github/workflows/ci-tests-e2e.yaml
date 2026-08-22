@@ -20,6 +20,7 @@ jobs:
       contents: read
     outputs:
       should-run: ${{ steps.changes.outputs.should-run }}
+      ecosystem-matrix-changes: ${{ steps.changes.outputs.ecosystem-matrix-changes }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - id: changes
@@ -222,6 +223,21 @@ jobs:
           [[ "$SHOULD_RUN" != "true" ]] && echo "E2E skipped" && exit 0
           [[ "$SHARDED" != "success" || "$BROWSERS" != "success" || ( "$VIDEO" != "success" && "$VIDEO" != "skipped" ) ]] && echo "E2E failed" && exit 1
           echo "E2E passed"
+
+  ecosystem-matrix:
+    name: Ecosystem matrix (after E2E)
+    needs: [changes, e2e-status]
+    if: >-
+      ${{
+        needs.changes.outputs.ecosystem-matrix-changes == 'true'
+        && needs.e2e-status.result == 'success'
+        && (github.event_name == 'pull_request'
+          || (github.event_name == 'push'
+            && github.ref_name == github.event.repository.default_branch))
+      }}
+    permissions:
+      contents: read
+    uses: ./.github/workflows/ci-ecosystem-matrix.yaml
 
   upload-e2e-coverage:
     needs: [changes, playwright-tests-chromium-sharded]
