@@ -530,6 +530,27 @@ describe('LLink ↔ linkStore integration', () => {
     )
   })
 
+  it('reports a rejected legacy endpoint mutation', () => {
+    const graph = new LGraph()
+    const firstSource = new LGraphNode('First source')
+    const secondSource = new LGraphNode('Second source')
+    const target = new LGraphNode('Target')
+    firstSource.addOutput('out', 'INT')
+    secondSource.addOutput('out', 'INT')
+    target.addInput('first', 'INT')
+    target.addInput('second', 'INT')
+    graph.add(firstSource)
+    graph.add(secondSource)
+    graph.add(target)
+    const first = firstSource.connect(0, target, 0)!
+    secondSource.connect(0, target, 1)
+
+    expect(() => {
+      first.target_slot = 1
+    }).toThrow('Failed to update link endpoints (occupied-target)')
+    expect(first.target_slot).toBe(0)
+  })
+
   it('updates regular and floating views after endpoint changes', () => {
     const graph = new LGraph()
     const a = new LGraphNode('A')
