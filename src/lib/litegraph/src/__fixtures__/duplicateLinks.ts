@@ -74,6 +74,85 @@ export const duplicateLinksRoot: SerialisableGraph = {
 }
 
 /**
+ * Root graph where two links target the same input from *different* origins.
+ * SourceA (id 1) holds link 1, SourceB (id 2) holds link 2, and Target's
+ * serialized `inputs[0]` references link **2** — so the first link in array
+ * order and the link `input.link` names disagree.
+ *
+ * Not hypothetical: this is byte-for-byte what `main` serializes after a pack
+ * creates a link through the legacy slot mirrors alone (`output.links.push`,
+ * `input.link =`) instead of `node.connect()`, which is rgthree `link_fixer`'s
+ * repair idiom. Reproduced against `main` at 32d0b6e202.
+ */
+export const conflictingOriginLinksRoot: SerialisableGraph = {
+  id: 'dd000000-0000-4000-8000-000000000004',
+  version: 1,
+  revision: 0,
+  state: {
+    lastNodeId: 3,
+    lastLinkId: 2,
+    lastGroupId: 0,
+    lastRerouteId: 0
+  },
+  nodes: [
+    {
+      id: 1,
+      type: 'test/DupTestNode',
+      pos: [0, 0],
+      size: [200, 100],
+      flags: {},
+      order: 0,
+      mode: 0,
+      inputs: [{ name: 'input_0', type: 'number', link: null }],
+      outputs: [{ name: 'output_0', type: 'number', links: [1] }],
+      properties: {}
+    },
+    {
+      id: 2,
+      type: 'test/DupTestNode',
+      pos: [0, 200],
+      size: [200, 100],
+      flags: {},
+      order: 1,
+      mode: 0,
+      inputs: [{ name: 'input_0', type: 'number', link: null }],
+      outputs: [{ name: 'output_0', type: 'number', links: [2] }],
+      properties: {}
+    },
+    {
+      id: 3,
+      type: 'test/DupTestNode',
+      pos: [300, 0],
+      size: [200, 100],
+      flags: {},
+      order: 2,
+      mode: 0,
+      inputs: [{ name: 'input_0', type: 'number', link: 2 }],
+      outputs: [{ name: 'output_0', type: 'number', links: [] }],
+      properties: {}
+    }
+  ],
+  links: [
+    {
+      id: 1,
+      origin_id: 1,
+      origin_slot: 0,
+      target_id: 3,
+      target_slot: 0,
+      type: 'number'
+    },
+    {
+      id: 2,
+      origin_id: 2,
+      origin_slot: 0,
+      target_id: 3,
+      target_slot: 0,
+      type: 'number'
+    }
+  ]
+}
+
+/**
  * Root graph with slot-shifted duplicates. Target node has an extra input
  * (simulating widget-to-input conversion) that shifts the connected input
  * from slot 0 to slot 1. Link 1 is valid (referenced by input.link),
