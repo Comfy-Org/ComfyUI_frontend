@@ -511,6 +511,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     discardPreviewsForWorkflow,
     removeNodeOutputs,
     removeNodeOutputsForNode,
+    removeOutputsByLocatorId,
     snapshotOutputs,
     restoreOutputs,
     resetAllOutputsAndPreviews,
