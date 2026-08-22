@@ -40,3 +40,12 @@ export function parseFlags(
 
   return { positional, flags }
 }
+
+/** Splits a `--tags a, b,c` value into trimmed, non-empty tag names. */
+export function parseTags(value: string | undefined): string[] | undefined {
+  const tags = value
+    ?.split(',')
+    .map((tag) => tag.trim())
+    .filter(Boolean)
+  return tags && tags.length > 0 ? tags : undefined
+}

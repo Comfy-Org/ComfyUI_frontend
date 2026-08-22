@@ -16,7 +16,7 @@ try {
       break
     }
     case 'transform': {
-      const { parseFlags } = await import('./cli/flags')
+      const { parseFlags, parseTags } = await import('./cli/flags')
       const { positional, flags } = parseFlags(args.slice(1), [
         'name',
         'tags',
@@ -32,11 +32,10 @@ try {
         )
         process.exit(1)
       }
-      const tags = flags.tags?.split(',').filter(Boolean)
       const { runTransform } = await import('./commands/transform')
       await runTransform(filePath, {
         testName: flags.name,
-        tags: tags && tags.length > 0 ? tags : undefined,
+        tags: parseTags(flags.tags),
         workflow: flags.workflow,
         output: flags.output
       })
@@ -53,7 +52,7 @@ try {
       break
     }
     case 'plan': {
-      const { parseFlags } = await import('./cli/flags')
+      const { parseFlags, parseTags } = await import('./cli/flags')
       const { flags } = parseFlags(args.slice(1), [
         'description',
         'tags',
@@ -68,11 +67,10 @@ try {
         )
         process.exit(1)
       }
-      const tags = flags.tags?.split(',').filter(Boolean)
       const { runPlan } = await import('./commands/plan')
       await runPlan({
         description: flags.description,
-        tags,
+        tags: parseTags(flags.tags),
         workflow: flags.workflow,
         name: flags.name
       })

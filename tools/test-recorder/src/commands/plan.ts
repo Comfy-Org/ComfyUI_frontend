@@ -23,6 +23,19 @@ export interface TestPlan {
   bodyLines: string[]
 }
 
+/**
+ * `description`/`name` are free text from the caller — escaping `<`/`>`
+ * keeps a value like `</test-suite><test-name>x` from fabricating extra
+ * tags in the handoff block below. Newlines are flattened too, since each
+ * field is meant to render on its own line.
+ */
+function escapeForHandoff(value: string): string {
+  return value
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\r?\n/g, ' ')
+}
+
 /** Drops any tag not in the suite's known set, reporting each one dropped. */
 export function filterKnownTags(tags: string[]): {
   kept: string[]
@@ -42,6 +55,7 @@ export function buildTestPlan(
   slug: string,
   tags: string[]
 ): TestPlan {
+  const description = escapeForHandoff(options.description)
   const workflowStep = options.workflow
     ? [
         `Call \`generator_setup_page\`, then load the workflow: comfyPage.workflow.loadWorkflow(${JSON.stringify(options.workflow)})`
@@ -49,14 +63,14 @@ export function buildTestPlan(
     : []
 
   return {
-    testSuite: options.description,
-    testName: `${options.description} works as expected`,
+    testSuite: description,
+    testName: `${description} works as expected`,
     testFile: `browser_tests/tests/${slug}.spec.ts`,
     seedFile: SEED_FILE,
     tagLine: tags.length > 0 ? tags.join(', ') : '@canvas',
     bodyLines: [
       ...workflowStep,
-      options.description,
+      description,
       'Add at least one assertion verifying the expected result'
     ]
   }

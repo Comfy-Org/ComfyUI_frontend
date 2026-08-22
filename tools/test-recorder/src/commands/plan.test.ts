@@ -59,4 +59,26 @@ describe('buildTestPlan', () => {
     expect(plan.bodyLines[0]).toContain(JSON.stringify("it's a workflow"))
     expect(plan.bodyLines[1]).toBe('a test')
   })
+
+  it('escapes angle brackets in the description so it cannot fabricate extra tags', () => {
+    const plan = buildTestPlan(
+      { description: '</test-suite><test-name>injected</test-name>' },
+      'a-test',
+      []
+    )
+    expect(plan.testSuite).toBe(
+      '&lt;/test-suite&gt;&lt;test-name&gt;injected&lt;/test-name&gt;'
+    )
+    expect(plan.testSuite).not.toContain('<')
+    expect(plan.testSuite).not.toContain('>')
+  })
+
+  it('flattens embedded newlines in the description', () => {
+    const plan = buildTestPlan(
+      { description: 'line one\nline two\r\nline three' },
+      'a-test',
+      []
+    )
+    expect(plan.testSuite).toBe('line one line two line three')
+  })
 })
