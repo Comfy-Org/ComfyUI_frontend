@@ -1,13 +1,24 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
+
+import { t } from '@/i18n'
 
 import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
 import type { ComfyNode } from '@/platform/workflow/validation/schemas/workflowSchema'
 
+import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
+
 import type { GroupNodeWorkflowData } from './groupNode'
+
+const extensionHolder = vi.hoisted(() => ({
+  ext: undefined as ComfyExtension | undefined
+}))
 
 vi.mock('@/scripts/app', () => ({
   app: {
-    registerExtension: vi.fn()
+    registerExtension: (ext: ComfyExtension) => {
+      extensionHolder.ext = ext
+    }
   }
 }))
 
@@ -128,5 +139,111 @@ describe('GroupNodeConfig.processInputSlots', () => {
     )
 
     expect(inputMap).toEqual({ model: 0, latent_image: 1 })
+  })
+})
+
+describe('GroupNodeConfig.registerFromWorkflow', () => {
+  function groupWithMissingInnerNode(): Record<string, GroupNodeWorkflowData> {
+    return fromPartial({
+      MyGroup: {
+        nodes: [{ index: 0, type: 'NotInstalledNode' }],
+        links: [],
+        external: []
+      }
+    })
+  }
+
+  it('backs each report with a canvas instance id when the map is provided', async () => {
+    const missing: MissingNodeType[] = []
+
+    await GroupNodeConfig.registerFromWorkflow(
+      groupWithMissingInnerNode(),
+      missing,
+      new Map([['MyGroup', [7, 9]]])
+    )
+
+    expect(missing).toStrictEqual([
+      expect.objectContaining({
+        type: 'workflow>MyGroup',
+        nodeId: '7',
+        hint: t('g.missingNodeTypesInGroup', { types: 'NotInstalledNode' })
+      }),
+      expect.objectContaining({
+        type: 'workflow>MyGroup',
+        nodeId: '9',
+        hint: t('g.missingNodeTypesInGroup', { types: 'NotInstalledNode' })
+      })
+    ])
+  })
+
+  it('emits nothing for a missing group with no canvas instances when the map is provided', async () => {
+    const missing: MissingNodeType[] = []
+
+    await GroupNodeConfig.registerFromWorkflow(
+      groupWithMissingInnerNode(),
+      missing,
+      new Map()
+    )
+
+    expect(missing).toStrictEqual([])
+  })
+
+  it('keeps the legacy unbacked entries when no instance map is given', async () => {
+    const missing: MissingNodeType[] = []
+
+    await GroupNodeConfig.registerFromWorkflow(
+      groupWithMissingInnerNode(),
+      missing
+    )
+
+    expect(missing).toStrictEqual([
+      expect.objectContaining({
+        type: 'NotInstalledNode',
+        hint: " (In group node 'workflow>MyGroup')"
+      }),
+      expect.objectContaining({ type: 'workflow>MyGroup' })
+    ])
+    expect(
+      missing.every((entry) => typeof entry === 'string' || !entry.nodeId)
+    ).toBe(true)
+  })
+})
+
+describe('group node extension beforeConfigureGraph', () => {
+  it('wires canvas instance ids per group into registerFromWorkflow', async () => {
+    const ext = extensionHolder.ext
+    if (!ext?.beforeConfigureGraph) throw new Error('extension not registered')
+    const spy = vi
+      .spyOn(GroupNodeConfig, 'registerFromWorkflow')
+      .mockResolvedValue()
+    const groupNodes = {
+      MyGroup: fromPartial<GroupNodeWorkflowData>({
+        nodes: [{ index: 0, type: 'NotInstalledNode' }],
+        links: [],
+        external: []
+      })
+    }
+    const graphData = fromPartial<
+      Parameters<typeof ext.beforeConfigureGraph>[0]
+    >({
+      nodes: [
+        { id: 7, type: 'workflow>MyGroup' },
+        { id: 9, type: 'workflow>MyGroup' },
+        { id: 3, type: 'KSampler' }
+      ],
+      extra: { groupNodes }
+    })
+
+    try {
+      await ext.beforeConfigureGraph(graphData, [], fromPartial({}))
+
+      expect(spy).toHaveBeenCalledWith(
+        groupNodes,
+        [],
+        new Map([['MyGroup', [7, 9]]])
+      )
+    } finally {
+      spy.mockRestore()
+    }
   })
 })

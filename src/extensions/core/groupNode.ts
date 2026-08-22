@@ -1,4 +1,5 @@
 import { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
+import { t } from '@/i18n'
 import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
 import type { LGraphNodeConstructor } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -765,40 +766,67 @@ export class GroupNodeConfig {
     groupNodes: Record<string, GroupNodeWorkflowData>,
     missingNodeTypes: (
       | string
-      | { type: string; hint?: string; action?: unknown }
-    )[]
+      | {
+          type: string
+          nodeId?: string | number
+          hint?: string
+          action?: unknown
+        }
+    )[],
+    instanceIdsByGroup?: Map<string, (string | number)[]>
   ) {
     for (const g in groupNodes) {
       const groupData = groupNodes[g]
 
-      let hasMissing = false
-      for (const n of groupData.nodes) {
-        // Find missing node types
-        if (!n.type || !(n.type in LiteGraph.registered_node_types)) {
-          missingNodeTypes.push({
-            type: n.type ?? 'unknown',
-            hint: ` (In group node '${PREFIX}${SEPARATOR}${g}')`
-          })
+      const missingInnerTypes = [
+        ...new Set(
+          groupData.nodes
+            .filter(
+              (n) => !n.type || !(n.type in LiteGraph.registered_node_types)
+            )
+            .map((n) => n.type ?? 'unknown')
+        )
+      ]
 
-          missingNodeTypes.push({
-            type: `${PREFIX}${SEPARATOR}` + g,
-            action: {
-              text: 'Remove from workflow',
-              callback: (e: MouseEvent) => {
-                delete groupNodes[g]
-                const target = e.target as HTMLElement
-                target.textContent = 'Removed'
-                target.style.pointerEvents = 'none'
-                target.style.opacity = '0.7'
-              }
-            }
-          })
-
-          hasMissing = true
+      if (missingInnerTypes.length) {
+        const groupType = `${PREFIX}${SEPARATOR}${g}`
+        const removeAction = {
+          text: 'Remove from workflow',
+          callback: (e?: MouseEvent) => {
+            delete groupNodes[g]
+            const target = e?.target as HTMLElement | undefined
+            if (!target) return
+            target.textContent = 'Removed'
+            target.style.pointerEvents = 'none'
+            target.style.opacity = '0.7'
+          }
         }
+        if (instanceIdsByGroup) {
+          // One report per canvas instance so every entry is backed by a
+          // real node and can be retired when that node goes away. A group
+          // definition with no instances gets no report: there is no node
+          // to locate, and nothing that could ever retire the row.
+          for (const id of instanceIdsByGroup.get(g) ?? []) {
+            missingNodeTypes.push({
+              type: groupType,
+              nodeId: String(id),
+              hint: t('g.missingNodeTypesInGroup', {
+                types: missingInnerTypes.join(', ')
+              }),
+              action: removeAction
+            })
+          }
+        } else {
+          for (const missingType of missingInnerTypes) {
+            missingNodeTypes.push({
+              type: missingType,
+              hint: ` (In group node '${groupType}')`
+            })
+          }
+          missingNodeTypes.push({ type: groupType, action: removeAction })
+        }
+        continue
       }
-
-      if (hasMissing) continue
 
       const config = new GroupNodeConfig(g, groupData)
       await config.registerType()
@@ -1056,7 +1084,21 @@ const ext: ComfyExtension = {
       | undefined
     if (nodes) {
       replaceLegacySeparators(graphData.nodes)
-      await GroupNodeConfig.registerFromWorkflow(nodes, missingNodeTypes)
+      const instanceIdsByGroup = new Map<string, (string | number)[]>()
+      const groupTypePrefix = `${PREFIX}${SEPARATOR}`
+      for (const n of graphData.nodes) {
+        const type = String(n.type ?? '')
+        if (!type.startsWith(groupTypePrefix) || n.id == null) continue
+        const groupName = type.slice(groupTypePrefix.length)
+        const ids = instanceIdsByGroup.get(groupName) ?? []
+        ids.push(n.id)
+        instanceIdsByGroup.set(groupName, ids)
+      }
+      await GroupNodeConfig.registerFromWorkflow(
+        nodes,
+        missingNodeTypes,
+        instanceIdsByGroup
+      )
     }
   },
   afterConfigureGraph() {
