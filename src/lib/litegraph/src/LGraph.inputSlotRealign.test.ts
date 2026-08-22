@@ -324,7 +324,7 @@ describe('normalizeConfiguredTopology', () => {
     expect(normalized.links?.map((link) => link.id)).toEqual([2, 3])
     expect(normalized.nodes?.[1].inputs?.[0].link).toBe(2)
     expect(console.warn).toHaveBeenCalledWith(
-      'Dropping competing link to an occupied input',
+      'Dropping competing link to occupied input 2:0',
       expect.objectContaining({ droppedLinkId: 2, survivorLinkId: 1 })
     )
   })
@@ -541,7 +541,7 @@ describe('LGraph.configure realignment with an unmatched input name (#15581)', (
     )
   })
 
-  it.fails('realigns siblings when configure drops an input', () => {
+  it('realigns siblings when configure drops an input', () => {
     const graph = new LGraph()
     graph.configure(unmatchedInputNameWorkflow('test/DroppedInputTarget'))
 
@@ -554,7 +554,7 @@ describe('LGraph.configure realignment with an unmatched input name (#15581)', (
     })
   })
 
-  it.fails('realigns siblings when configure renames an input', () => {
+  it('realigns siblings when configure renames an input', () => {
     const graph = new LGraph()
     graph.configure(unmatchedInputNameWorkflow('test/RenamedInputTarget'))
 
@@ -567,7 +567,7 @@ describe('LGraph.configure realignment with an unmatched input name (#15581)', (
     })
   })
 
-  it.fails('reports no error while realigning around an unmatched name', () => {
+  it('reports no error while realigning around an unmatched name', () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     const graph = new LGraph()
@@ -582,7 +582,7 @@ describe('realignInputLinkSlots with a rejected batch (#15581)', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
-  it.fails('lands the non-conflicting moves when one move is blocked', () => {
+  it('lands the non-conflicting moves when one move is blocked', () => {
     const graph = new LGraph()
     const source = new LGraphNode('Source')
     source.addOutput('out', 'number')

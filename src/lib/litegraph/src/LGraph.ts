@@ -2925,6 +2925,7 @@ export class LGraph
 
       let error = false
       const nodeDataMap = new Map<SerializedNodeId, ISerialisedNode>()
+      const realignmentDataMap = new Map<SerializedNodeId, ISerialisedNode>()
 
       // create nodes
       this._nodes = []
@@ -2949,6 +2950,10 @@ export class LGraph
           // add before configure, otherwise configure cannot create links
           this.add(node, true)
           nodeDataMap.set(node.id, n_info)
+          realignmentDataMap.set(node.id, {
+            ...n_info,
+            inputs: n_info.inputs?.map((input) => ({ ...input }))
+          })
         }
 
         // configure nodes afterwards so they can reach each other
@@ -2988,11 +2993,7 @@ export class LGraph
         }
       }
 
-      // Node configure() overrides may have reordered serialized inputs in
-      // place to match current node definitions; re-key links to the slots
-      // that reference them. Uses nodeDataMap: the effective normalized data
-      // nodes were actually configured from.
-      realignInputLinkSlots(this, nodeDataMap.values())
+      realignInputLinkSlots(this, realignmentDataMap.values())
 
       // groups
       this._groups.length = 0
