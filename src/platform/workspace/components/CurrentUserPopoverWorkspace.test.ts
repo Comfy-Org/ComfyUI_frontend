@@ -315,15 +315,18 @@ describe('CurrentUserPopoverWorkspace', () => {
 
   it('keeps Subscribe hidden on Local after switching to an unsubscribed workspace', async () => {
     state.isCloud = false
-    const { rerender } = renderComponent('personal')
-
     state.canAccessSubscriptionFeatures = false
     state.canManageSubscription = true
+    const { rerender } = renderComponent('personal')
+
     if (!workspaceStoreMock.store) throw new Error('Workspace store not ready')
     workspaceStoreMock.store.workspaceName = 'Team Workspace'
     workspaceStoreMock.store.isInPersonalWorkspace = false
     await rerender({})
 
+    expect(screen.getByTestId('workspace-switcher-trigger')).toHaveTextContent(
+      'Team Workspace'
+    )
     expect(
       screen.queryByRole('button', { name: 'Subscribe' })
     ).not.toBeInTheDocument()
