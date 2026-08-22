@@ -3,6 +3,7 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import type { NodeInteractionProfile } from '@e2e/fixtures/customNode/interactionProfiles'
+import { SYNTH_PRODUCERS } from '@e2e/fixtures/customNode/autoRun'
 import {
   INTERACTION_UNSTABLE_NODES,
   comparePackProfiles,
@@ -61,10 +62,10 @@ for (const entry of interactionProfileEntries) {
       start < plans.length;
       start += INTERACTION_PROBE_CHUNK
     ) {
-      const probed = await comfyPage.page.evaluate(
-        runInteractionProbeChunk,
-        plans.slice(start, start + INTERACTION_PROBE_CHUNK)
-      )
+      const probed = await comfyPage.page.evaluate(runInteractionProbeChunk, {
+        probePlans: plans.slice(start, start + INTERACTION_PROBE_CHUNK),
+        producers: SYNTH_PRODUCERS
+      })
       Object.assign(observed, probed.results)
       Object.assign(probeThrows, probed.threw)
     }

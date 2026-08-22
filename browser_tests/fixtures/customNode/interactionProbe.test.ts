@@ -28,16 +28,8 @@ describe('planInteractionProbes', () => {
     ).toEqual([
       {
         type: 'ProbeNode',
-        first: {
-          inputName: 'image',
-          producer: 'EmptyImage',
-          producerOutput: 0
-        },
-        last: {
-          inputName: 'text',
-          producer: 'PrimitiveString',
-          producerOutput: 0
-        }
+        first: { inputName: 'image' },
+        last: { inputName: 'text' }
       }
     ])
   })

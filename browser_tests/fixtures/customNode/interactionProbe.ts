@@ -13,10 +13,14 @@ import {
 
 export const INTERACTION_PROBE_CHUNK = 40
 
+interface InteractionProbeEndpoint {
+  inputName: string
+}
+
 export interface InteractionProbePlan {
   type: string
-  first?: { inputName: string; producer: string; producerOutput: number }
-  last?: { inputName: string; producer: string; producerOutput: number }
+  first?: InteractionProbeEndpoint
+  last?: InteractionProbeEndpoint
 }
 
 export interface InteractionProbeChunkResult {
@@ -24,16 +28,11 @@ export interface InteractionProbeChunkResult {
   threw: Record<string, string>
 }
 
-function producerFor(
-  inputType: string
-): { producer: string; producerOutput: number } | null {
-  const direct = SYNTH_PRODUCERS[inputType]
-  if (direct)
-    return { producer: direct.nodeType, producerOutput: direct.outputIndex }
-  for (const [outType, synth] of Object.entries(SYNTH_PRODUCERS))
-    if (outType !== '*' && isTypeCompatible(outType, inputType))
-      return { producer: synth.nodeType, producerOutput: synth.outputIndex }
-  return null
+function producerFor(inputType: string): boolean {
+  if (SYNTH_PRODUCERS[inputType]) return true
+  return Object.keys(SYNTH_PRODUCERS).some(
+    (outType) => outType !== '*' && isTypeCompatible(outType, inputType)
+  )
 }
 
 export function planInteractionProbes(
@@ -46,22 +45,20 @@ export function planInteractionProbes(
       const plan: InteractionProbePlan = { type: node.type }
       const firstInput = node.inputs[0]
       const lastInput = node.inputs[node.inputs.length - 1]
-      if (firstInput) {
-        const producer = producerFor(firstInput.type)
-        if (producer) plan.first = { inputName: firstInput.name, ...producer }
-      }
-      if (lastInput && lastInput !== firstInput) {
-        const producer = producerFor(lastInput.type)
-        if (producer) plan.last = { inputName: lastInput.name, ...producer }
-      }
+      if (firstInput && producerFor(firstInput.type))
+        plan.first = { inputName: firstInput.name }
+      if (lastInput && lastInput !== firstInput && producerFor(lastInput.type))
+        plan.last = { inputName: lastInput.name }
       return plan
     })
     .sort((a, b) => a.type.localeCompare(b.type))
 }
 
-export function runInteractionProbeChunk(
+export function runInteractionProbeChunk(input: {
   probePlans: InteractionProbePlan[]
-): InteractionProbeChunkResult {
+  producers: typeof SYNTH_PRODUCERS
+}): InteractionProbeChunkResult {
+  const { probePlans, producers } = input
   const shapeOf = (node: LGraphNode): LogicalShape => ({
     inputs: (node.inputs ?? []).map(
       (slot) => `input:${slot.name}:${String(slot.type)}`
@@ -95,33 +92,45 @@ export function runInteractionProbeChunk(
     try {
       graph.last_node_id = ++window.__cnIdBase!
       graph.add(node)
-      const fresh = shapeOf(node)
-      const probeConnect = (spec: {
-        inputName: string
-        producer: string
-        producerOutput: number
-      }) => {
-        const producerNode = window.LiteGraph!.createNode(spec.producer)
-        if (!producerNode) return null
+      const probeConnect = (
+        targetNode: LGraphNode,
+        spec: InteractionProbeEndpoint
+      ) => {
+        const fresh = shapeOf(targetNode)
+        const inputIndex = (targetNode.inputs ?? []).findIndex(
+          (slot) => slot.name === spec.inputName
+        )
+        if (inputIndex === -1) return null
+        const inputType = String(targetNode.inputs[inputIndex].type)
+        const direct = producers[inputType]
+        const candidates = direct
+          ? [direct]
+          : Object.entries(producers).flatMap(([outputType, producer]) =>
+              outputType !== '*' &&
+              window.LiteGraph!.isValidConnection(outputType, inputType)
+                ? [producer]
+                : []
+            )
+        const producer = candidates[0]
+        if (!producer) return null
+        const producerNode = window.LiteGraph!.createNode(producer.nodeType)
+        if (!producerNode)
+          throw new Error(`${producer.nodeType} did not instantiate`)
         try {
           graph.last_node_id = ++window.__cnIdBase!
           graph.add(producerNode)
-          const inputIndex = (node.inputs ?? []).findIndex(
-            (slot) => slot.name === spec.inputName
-          )
-          if (inputIndex === -1) return null
           const link = producerNode.connect(
-            spec.producerOutput,
-            node,
+            producer.outputIndex,
+            targetNode,
             inputIndex
           )
           if (!link)
             throw new Error(
-              `${spec.producer}[${spec.producerOutput}] could not connect to ${plan.type}.${spec.inputName}`
+              `${producer.nodeType}[${producer.outputIndex}] could not connect to ${plan.type}.${spec.inputName}`
             )
-          const connected = shapeOf(node)
-          node.disconnectInput(inputIndex)
-          return { connected, disconnected: shapeOf(node) }
+          const connected = shapeOf(targetNode)
+          targetNode.disconnectInput(inputIndex)
+          return { fresh, connected, disconnected: shapeOf(targetNode) }
         } finally {
           if (producerNode.graph) graph.remove(producerNode)
         }
@@ -133,14 +142,29 @@ export function runInteractionProbeChunk(
           disconnect: 'NO_INPUTS'
         }
       } else {
-        const first = plan.first ? probeConnect(plan.first) : null
-        const last = plan.last ? probeConnect(plan.last) : null
+        const first = plan.first ? probeConnect(node, plan.first) : null
+        const last = plan.last
+          ? (() => {
+              const lastNode = window.LiteGraph!.createNode(plan.type)
+              if (!lastNode)
+                throw new Error(`${plan.type} did not instantiate for last`)
+              try {
+                graph.last_node_id = ++window.__cnIdBase!
+                graph.add(lastNode)
+                return probeConnect(lastNode, plan.last)
+              } finally {
+                if (lastNode.graph) graph.remove(lastNode)
+              }
+            })()
+          : null
         const anchor = last ?? first
         results[plan.type] = {
-          connectFirst: first ? diff(fresh, first.connected) : 'NO_PRODUCER',
+          connectFirst: first
+            ? diff(first.fresh, first.connected)
+            : 'NO_PRODUCER',
           connectLast: plan.last
             ? last
-              ? diff(fresh, last.connected)
+              ? diff(last.fresh, last.connected)
               : 'NO_PRODUCER'
             : 'SAME_AS_FIRST',
           disconnect: anchor
