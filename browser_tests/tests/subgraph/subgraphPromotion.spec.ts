@@ -94,6 +94,55 @@ test.describe(
       'Promoted Widget Visibility in Vue Mode',
       { tag: ['@vue-nodes'] },
       () => {
+        test(
+          'Promoted advanced widget remains visible when global advanced widgets are disabled',
+          { tag: ['@node'] },
+          async ({ comfyPage }) => {
+            await comfyPage.settings.setSetting(
+              'Comfy.Node.AlwaysShowAdvancedWidgets',
+              false
+            )
+            const modelSamplingNode = await comfyPage.nodeOps.addNode(
+              'ModelSamplingFlux',
+              {},
+              { x: 500, y: 200 }
+            )
+            await comfyPage.nextFrame()
+            await expect(
+              comfyPage.vueNodes.getNodeLocator(String(modelSamplingNode.id))
+            ).toBeVisible()
+
+            await modelSamplingNode.click('title')
+            const subgraphNode = await modelSamplingNode.convertToSubgraph()
+            const subgraphNodeId = String(subgraphNode.id)
+
+            await comfyPage.vueNodes.enterSubgraph(subgraphNodeId)
+            const interiorNode =
+              comfyPage.vueNodes.getNodeByTitle('ModelSamplingFlux')
+            await expect(interiorNode).toBeVisible()
+            await interiorNode
+              .getByText('Show advanced inputs', { exact: true })
+              .click()
+            await expect(
+              interiorNode.getByLabel('max_shift', { exact: true })
+            ).toBeVisible()
+            await comfyPage.subgraph.promoteWidget(interiorNode, 'max_shift')
+            await comfyPage.subgraph.exitViaBreadcrumb()
+
+            await expectPromotedWidgetNamesToContain(
+              comfyPage,
+              subgraphNodeId,
+              'max_shift'
+            )
+
+            await expect(
+              comfyPage.vueNodes
+                .getNodeLocator(subgraphNodeId)
+                .getByLabel('max_shift', { exact: true })
+            ).toBeVisible()
+          }
+        )
+
         test('Promoted text widget renders and enters the subgraph in Vue mode', async ({
           comfyPage
         }) => {

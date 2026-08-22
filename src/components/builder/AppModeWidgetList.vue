@@ -77,8 +77,11 @@ const mappedSelections = computed((): WidgetEntry[] => {
     })
     if (!matchingWidget) return []
 
-    matchingWidget.slotMetadata = undefined
-    matchingWidget.nodeId = node.id
+    const projectedWidget = {
+      ...matchingWidget,
+      slotMetadata: undefined,
+      nodeId: node.id
+    }
 
     return [
       {
@@ -87,7 +90,8 @@ const mappedSelections = computed((): WidgetEntry[] => {
         description: config?.description,
         nodeData: {
           ...fullNodeData,
-          widgets: [matchingWidget]
+          showAdvanced: true,
+          widgets: [projectedWidget]
         },
         action: { widget, node }
       }

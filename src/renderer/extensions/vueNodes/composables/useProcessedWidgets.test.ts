@@ -163,11 +163,11 @@ describe('isWidgetVisible', () => {
     expect(isWidgetVisible({ advanced: true }, true)).toBe(true)
   })
 
-  it('keeps advanced widgets visible when linked and showAdvanced is false', () => {
+  it('keeps advanced widgets visible when advanced filtering is ignored', () => {
     expect(isWidgetVisible({ advanced: true }, false, true)).toBe(true)
   })
 
-  it('keeps hidden widgets hidden when linked', () => {
+  it('keeps hidden widgets hidden when advanced filtering is ignored', () => {
     expect(isWidgetVisible({ hidden: true }, false, true)).toBe(false)
   })
 })
@@ -401,6 +401,30 @@ describe('computeProcessedWidgets missing media', () => {
       }
     ])
     expect(processWidgets([matchingWidget])[0].hasError).toBe(false)
+  })
+})
+
+describe('computeProcessedWidgets visibility', () => {
+  it('keeps a promoted advanced widget visible without source metadata', () => {
+    const widget = createMockWidget({
+      name: 'max_shift',
+      type: 'number',
+      options: { advanced: true },
+      slotMetadata: {
+        index: 0,
+        linked: false,
+        promoted: true,
+        type: 'FLOAT'
+      },
+      sourceExecutionId: undefined,
+      sourceWidgetName: undefined
+    })
+
+    const promotedWidget = processWidgets([widget])[0]
+
+    expect(promotedWidget).toBeDefined()
+    expect(promotedWidget?.visible).toBe(true)
+    expect(promotedWidget?.simplified.borderStyle).toBeDefined()
   })
 })
 
