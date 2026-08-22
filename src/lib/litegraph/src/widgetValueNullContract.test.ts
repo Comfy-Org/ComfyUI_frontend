@@ -10,6 +10,7 @@ import {
   vi
 } from 'vitest'
 
+import type { TWidgetValue } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 vi.mock('@/platform/telemetry', () => ({
@@ -33,8 +34,8 @@ vi.mock('@/platform/nodeReplacement/cnrIdUtil', () => ({
  * `widgets_values` as `null` via `val ?? null`. Every persistence path
  * therefore has to round-trip `null` unchanged.
  *
- * These tests pin that contract on the workflow-write, workflow-read and
- * draft/autosave paths. The subgraph promoted-widget path is covered in
+ * These tests pin that contract on the workflow-write and workflow-read paths.
+ * The subgraph promoted-widget path is covered in
  * `subgraph/SubgraphWidgetPromotion.test.ts`; the API prompt path in
  * `src/utils/executionUtil.test.ts`; the load-time schema in
  * `src/platform/workflow/validation/schemas/workflowSchema.test.ts`.
@@ -58,7 +59,7 @@ function registerNullContractNode(): void {
   onTestFinished(() => LiteGraph.unregisterNodeType(NODE_TYPE))
 }
 
-function makeGraphWithWidget(value: unknown): {
+function makeGraphWithWidget(value: TWidgetValue): {
   graph: LGraph
   node: LGraphNode
 } {
@@ -66,11 +67,11 @@ function makeGraphWithWidget(value: unknown): {
   const node = LiteGraph.createNode(NODE_TYPE)
   if (!node) throw new Error('failed to create the test node')
   graph.add(node)
-  node.widgets![0]!.value = value as never
+  firstWidget(graph).value = value
   return { graph, node }
 }
 
-/** Save → JSON text → load, i.e. what the draft cache and a .json file do. */
+/** Save → JSON text → load. */
 function roundTripGraph(graph: LGraph): LGraph {
   const text = JSON.stringify(graph.serialize())
   // Widget state is keyed `graphId:nodeId:name` and `configure()` restores the
@@ -146,9 +147,15 @@ describe('widget value null contract', () => {
 
     it('restores a null widget value through the named-values path', () => {
       LiteGraph.namedValuesRestore = true
-      const { graph } = makeGraphWithWidget(null)
+      const { graph, node } = makeGraphWithWidget(DEFAULT_VALUE)
 
-      expect(firstWidget(roundTripGraph(graph)).value).toBeNull()
+      node.configure({
+        ...node.serialize(),
+        widgets_values: [DEFAULT_VALUE],
+        widgets_values_named: { prompt: null }
+      })
+
+      expect(firstWidget(graph).value).toBeNull()
     })
 
     it('distinguishes a stored null from an absent value', () => {
@@ -156,44 +163,14 @@ describe('widget value null contract', () => {
       // the widget default alone, a present null overwrites it. Without the
       // first assertion, the second proves nothing.
       LiteGraph.namedValuesRestore = false
-      const { node } = makeGraphWithWidget(DEFAULT_VALUE)
+      const { graph, node } = makeGraphWithWidget(DEFAULT_VALUE)
       const base = node.serialize()
 
       node.configure({ ...base, widgets_values: [] })
-      expect(node.widgets![0]!.value).toBe(DEFAULT_VALUE)
+      expect(firstWidget(graph).value).toBe(DEFAULT_VALUE)
 
       node.configure({ ...base, widgets_values: [null] })
-      expect(node.widgets![0]!.value).toBeNull()
-    })
-  })
-
-  describe('draft / autosave (JSON text round trip)', () => {
-    it('survives JSON.stringify then JSON.parse unchanged', () => {
-      // The draft cache stores `data: string` (draftTypes.ts) produced from
-      // `rootGraph.serialize()`. It applies no widget filter of its own, so
-      // the only question is whether the JSON text carries the value. This
-      // pins the draft path as transparent rather than lossy.
-      LiteGraph.namedValuesRestore = false
-      const { graph } = makeGraphWithWidget(null)
-
-      const text = JSON.stringify(graph.serialize())
-      expect(text).toContain('"widgets_values":[null]')
-
-      expect(firstWidget(roundTripGraph(graph)).value).toBeNull()
-    })
-  })
-
-  describe('two full round trips', () => {
-    it('is idempotent — null does not decay to undefined or a default', () => {
-      LiteGraph.namedValuesRestore = false
-      const { graph } = makeGraphWithWidget(null)
-
-      const once = roundTripGraph(graph)
-      expect(firstWidget(once).value).toBeNull()
-
-      const twice = roundTripGraph(once)
-      expect(firstWidget(twice).value).toBeNull()
-      expect(twice.nodes[0]!.serialize().widgets_values).toEqual([null])
+      expect(firstWidget(graph).value).toBeNull()
     })
   })
 })

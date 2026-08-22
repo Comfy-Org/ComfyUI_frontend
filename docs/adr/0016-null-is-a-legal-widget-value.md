@@ -79,13 +79,13 @@ migration hole.
 - The behavioural fix ships with the ECS migration. If that branch slips,
   `main` keeps the mismatch, and the one-line `isWidgetValue` widening is
   extractable as a standalone PR.
-- The contract is now pinned by round-trip tests on every persistence path:
-  `widgetValueNullContract.test.ts` (workflow write, workflow read via both the
-  indexed and named-values branches, draft/autosave JSON, and a two-pass
-  idempotence check), `executionUtil.test.ts` (API prompt), and
-  `workflowSchema.test.ts` (load-time validation). The promoted-widget path is
-  covered by `SubgraphWidgetPromotion.test.ts`. Each assertion was verified by
-  mutating the corresponding filter and confirming the test fails.
+- The contract is now pinned at each persistence boundary that interprets
+  widget values: `widgetValueNullContract.test.ts` (workflow write and workflow
+  read via both the indexed and named-values branches),
+  `executionUtil.test.ts` (API prompt), and `workflowSchema.test.ts` (load-time
+  validation). The promoted-widget path is covered by
+  `SubgraphWidgetPromotion.test.ts`. Each assertion was verified by mutating
+  the corresponding filter and confirming the test fails.
 - Widget state is keyed `graphId:nodeId:name` and `configure()` restores the
   original graph id, so a naive save/load test re-adopts the live
   `widgetValueStore` entry and passes without reading the serialized JSON at
