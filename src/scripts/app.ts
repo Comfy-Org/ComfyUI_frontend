@@ -82,6 +82,7 @@ import { resolveAccountPrecondition } from '@/platform/errorCatalog/accountPreco
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
+import { installSecureNodesHost } from '@/services/secureNodesBootstrap'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphService } from '@/services/subgraphService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
@@ -955,6 +956,11 @@ export class ComfyApp {
     await useWorkspaceStore().workflow.syncWorkflows()
     //Doesn't need to block. Blueprints will load async
     void useSubgraphStore().fetchSubgraphs()
+
+    // Before loadExtensions: the host decides how extensions load. No-op when
+    // the overlay is absent. See secureNodesBootstrap for the interface debt
+    // note.
+    await installSecureNodesHost()
     await useExtensionService().loadExtensions()
 
     this.addProcessKeyHandler()
