@@ -256,6 +256,45 @@ describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
     expect(node.graph?.setDirtyCanvas).toHaveBeenCalledWith(true)
   })
 
+  it('bounds a stalled upload so the node does not stay latched', async () => {
+    const AUDIOUPLOAD = await loadAudioUploadWidget()
+    const { audioWidget, node } = createAudioNode()
+    AUDIOUPLOAD(node, 'upload')
+
+    const expireDeadlines: (() => void)[] = []
+    const timeoutSpy = vi
+      .spyOn(AbortSignal, 'timeout')
+      .mockImplementation(() => {
+        const controller = new AbortController()
+        expireDeadlines.push(() =>
+          controller.abort(new DOMException('signal timed out', 'TimeoutError'))
+        )
+        return controller.signal
+      })
+
+    mockFetchApi.mockImplementationOnce(
+      (_route: string, options: RequestInit) =>
+        new Promise((_resolve, reject) => {
+          options.signal?.addEventListener('abort', () => {
+            reject((options.signal as AbortSignal).reason)
+          })
+        })
+    )
+
+    const upload = capturedFileSelect!([createFile()])
+
+    expect(node.isUploading).toBe(true)
+    expect(expireDeadlines).toHaveLength(1)
+    expect(timeoutSpy).toHaveBeenCalledWith(120_000)
+
+    expireDeadlines[0]()
+    await upload
+
+    expect(node.isUploading).toBe(false)
+    expect(audioWidget.value).toBe('previous.mp3')
+    expect(mockAddAlert).toHaveBeenCalledWith('g.uploadTimedOut')
+  })
+
   it('returns early when no files are provided', async () => {
     const AUDIOUPLOAD = await loadAudioUploadWidget()
     const { node } = createAudioNode()
