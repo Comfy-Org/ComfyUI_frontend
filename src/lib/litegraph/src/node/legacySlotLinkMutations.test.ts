@@ -1,12 +1,13 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@/lib/litegraph/src/interfaces'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useLinkStore } from '@/stores/linkStore'
 
 function connectedPair() {
   const graph = new LGraph()
@@ -157,5 +158,139 @@ describe('legacy slot link creation and plain-object slots (uncovered)', () => {
     source.outputs[0].links = []
 
     expect(target.isInputConnected(0)).toBe(false)
+  })
+})
+
+function autogrowChain(inputCount: number, connectedSlots: number[]) {
+  const graph = new LGraph()
+  const source = new LGraphNode('Source')
+  source.addOutput('out', 'STRING')
+  graph.add(source)
+
+  const target = new LGraphNode('PromptChain')
+  for (let i = 0; i < inputCount; i++) {
+    target.addInput(`inputs.in_${i}`, 'STRING')
+  }
+  graph.add(target)
+  for (const slot of connectedSlots) source.connect(0, target, slot)
+
+  return { graph, source, target }
+}
+
+/** mobcat40/ComfyUI-PromptChain js/lib/order-chain.js:123 `updateInputLabels`. */
+function replaceSlotsWithLabelledCopies(node: LGraphNode) {
+  for (const [index, slot] of node.inputs.entries()) {
+    if (!slot.name.includes('in_')) continue
+    slot.label = slot.link == null ? 'in' : 'PromptChain'
+    node.inputs[index] = { ...slot }
+  }
+}
+
+/** mobcat40/ComfyUI-PromptChain js/main.js:507 `trimEmptyAutogrowSlots`. */
+function trimEmptyAutogrowSlots(node: LGraphNode) {
+  const { inputs } = node
+  const autogrow = inputs.filter((input) => input.name.startsWith('inputs.in_'))
+  if (autogrow.length <= 1) return
+
+  const lastConnected = autogrow.findLastIndex((input) => input.link != null)
+  const keepCount = Math.max(1, lastConnected + 2)
+  if (keepCount >= autogrow.length) return
+
+  for (const input of autogrow.slice(keepCount)) {
+    const index = inputs.indexOf(input)
+    if (index !== -1) inputs.splice(index, 1)
+  }
+}
+
+describe('comfyui-promptchain indexed slot replacement', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  it('keeps the link store correct when the pack replaces every slot', () => {
+    const { graph, target } = autogrowChain(4, [0, 1, 2])
+
+    replaceSlotsWithLabelledCopies(target)
+    target.removeInput(0)
+
+    expect(target.inputs).toHaveLength(3)
+    expect(graph.links.size).toBe(2)
+    expect(target.isInputConnected(0)).toBe(true)
+    expect(target.isInputConnected(1)).toBe(true)
+    expect(target.isInputConnected(2)).toBe(false)
+  })
+
+  it('accepts every endpoint batch in the promptchain sequence', () => {
+    const live = autogrowChain(4, [0, 1, 2])
+    const updateEndpoints = vi.spyOn(useLinkStore(), 'updateEndpoints')
+
+    replaceSlotsWithLabelledCopies(live.target)
+    trimEmptyAutogrowSlots(live.target)
+    replaceSlotsWithLabelledCopies(live.target)
+    live.target.removeInput(0)
+
+    expect(updateEndpoints).toHaveBeenCalledOnce()
+    expect(updateEndpoints).toHaveReturnedWith(
+      expect.objectContaining({ ok: true })
+    )
+  })
+
+  it('keeps the input layout when the endpoint batch is rejected', () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const forced = autogrowChain(4, [0, 1, 2])
+    const layoutBefore = forced.target.inputs.map((input) => input.name)
+    vi.spyOn(useLinkStore(), 'updateEndpoints').mockReturnValue({
+      ok: false,
+      error: { code: 'occupied-target', message: 'forced' }
+    })
+    forced.target.removeInput(0)
+
+    expect(consoleError).toHaveBeenCalledWith('Failed to replace node inputs', {
+      code: 'occupied-target',
+      message: 'forced'
+    })
+    expect(forced.target.inputs.map((input) => input.name)).toEqual(
+      layoutBefore
+    )
+  })
+
+  it.fails('reads the live link id back through a spread copy', () => {
+    const { target } = autogrowChain(2, [0])
+    const linkId = target.getInputLink(0)!.id
+
+    const copy: INodeInputSlot = { ...target.inputs[0] }
+    target.inputs[0] = copy
+
+    expect(target.inputs[0].link).toBe(linkId)
+  })
+
+  it.fails('keeps connected inputs when the pack re-reads slot.link', () => {
+    const { target } = autogrowChain(4, [0, 1, 2])
+
+    replaceSlotsWithLabelledCopies(target)
+    trimEmptyAutogrowSlots(target)
+
+    expect(target.inputs).toHaveLength(4)
+  })
+
+  it('retains every link in the serialized workflow after trimming slots', () => {
+    const { graph, target } = autogrowChain(4, [0, 1, 2])
+
+    replaceSlotsWithLabelledCopies(target)
+    trimEmptyAutogrowSlots(target)
+
+    expect(
+      graph.serialize().links.map(([, , , , targetSlot]) => targetSlot)
+    ).toEqual([0, 1, 2])
+  })
+
+  it('keeps every input when the same trim reads live slots', () => {
+    const { graph, target } = autogrowChain(4, [0, 1, 2])
+
+    trimEmptyAutogrowSlots(target)
+
+    expect(target.inputs).toHaveLength(4)
+    expect(graph.links.size).toBe(3)
   })
 })
