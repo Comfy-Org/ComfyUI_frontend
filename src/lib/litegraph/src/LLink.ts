@@ -115,7 +115,9 @@ function applyEndpointPatch(link: LLink, patch: EndpointPatch): void {
       patch
     )
     if (!result.ok) {
-      console.error('Failed to update link endpoints', result.error)
+      throw new Error(
+        `Failed to update link endpoints (${result.error.code}): ${result.error.message}`
+      )
     }
   } else {
     Object.assign(link._state, patch)
