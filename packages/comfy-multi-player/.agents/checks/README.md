@@ -173,4 +173,8 @@ Any second op-to-document implementation is a blocking FC-3 issue.
 ```
 <!-- /coderabbit-instructions -->
 
+This `src/**` block was audited against the code for
+[#80](https://github.com/Comfy-Org/comfy-multi-player/issues/80) and verified without a wording
+change.
+
 **What generation does not fix.** It removes the second *editable* copy, not the second *statement*: the block and the profile prose around it can still say different things, and no gate reads either. What changed is that they are now adjacent in one file rather than in two files in two formats, so the edit that fixes one is made by someone looking at the other. The content check remains the claim markers — and those are substring tripwires, so a **paraphrase** of retired advice written into a source block regenerates cleanly and passes everything. That residue is unchanged from #74 and no substring gate closes it.

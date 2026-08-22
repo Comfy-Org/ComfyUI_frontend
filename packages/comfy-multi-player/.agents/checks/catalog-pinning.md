@@ -40,8 +40,8 @@ corpus drift without being regenerated in CI (verify:corpus).
 The block's load-bearing phrase is anchored into the generated file, so a body replaced with
 plausible prose fails CI rather than regenerating cleanly. The needle is space-free because the YAML
 carries it in a folded scalar, where every space is a legal line break. This block's content was
-moved byte-for-byte from a hand-written config and has **not** been audited against the code — see
-[#80](https://github.com/Comfy-Org/comfy-multi-player/issues/80).
+audited against the code for [#80](https://github.com/Comfy-Org/comfy-multi-player/issues/80) and
+verified without a wording change.
 
 <!-- claim: sha256 :: .coderabbit.yaml -->
 

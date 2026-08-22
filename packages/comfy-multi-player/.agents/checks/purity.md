@@ -24,17 +24,18 @@ the `src/**` half of its own subject. The blocks are the **source** of those ent
 disagree. Edit the block, never the generated region. See
 [`README.md`](README.md#the-machine-consumed-copy-coderabbityaml).
 
-Both blocks are moved here byte-for-byte from a hand-written config and their **content has not been
-audited** against the code — two known defects, including a CI-step list that omits four of the nine
-gates, are filed as [#80](https://github.com/Comfy-Org/comfy-multi-player/issues/80).
+Both blocks were audited against the code for
+[#80](https://github.com/Comfy-Org/comfy-multi-player/issues/80). That audit removed an incomplete
+illustrative list of guard scripts and expanded the CI contract to cover every gate run by
+`.github/workflows/ci.yml`.
 
 <!-- coderabbit-instructions: scripts/** -->
 ```text
-These scripts are the machine-enforced guards for the invariants
-(check-purity, verify-corpus). Changes that weaken a guard (turning a
-positive assertion into a denylist, skipping the corpus SHA check, or making
-a gate non-fatal) are correctness issues. Keep the purity gate a positive
-yjs-only assertion, not merely a denylist (issue #22).
+These scripts collectively provide the machine-enforced guards for the
+invariants. Changes that weaken a guard (turning a positive assertion into a
+denylist, skipping the corpus SHA check, or making a gate non-fatal) are
+correctness issues. Keep the purity gate a positive yjs-only assertion, not
+merely a denylist (issue #22).
 ```
 <!-- /coderabbit-instructions -->
 
@@ -43,7 +44,9 @@ yjs-only assertion, not merely a denylist (issue #22).
 Guard the build and CI contract. The production dependency set must stay
 yjs-only (KA-3/FC-3) — flag any new runtime dependency. Cite the frozen
 vocabulary/catalog by SHA, never a moving branch (FC-10). Do not remove or
-make non-fatal the build, purity, corpus-verify, or test CI steps.
+make non-fatal the verify:corpus, build, check:purity,
+check:profile-claims, check:coderabbit, check:imports, check:pins, or test CI
+steps.
 ```
 <!-- /coderabbit-instructions -->
 
@@ -56,6 +59,9 @@ me." and both gates stayed green. Anchoring is only as good as the needle's uniq
 to know is to blank each body in turn and watch which claim goes stale.
 
 <!-- claim: denylist :: .coderabbit.yaml -->
-<!-- claim: corpus-verify :: .coderabbit.yaml -->
+<!-- claim: collectively :: .coderabbit.yaml -->
+<!-- claim-absent: check-purity, :: .coderabbit.yaml -->
+<!-- claim: check:profile-claims :: .coderabbit.yaml -->
+<!-- claim-absent: corpus-verify :: .coderabbit.yaml -->
 
 > Before reporting PASS for any check above, apply [vacuity.md](vacuity.md): P0 to every check, P1 to any guard this change adds, P10 to what that guard's test asserts on, P2 to any tool you ran, and P7 to any run you quote.

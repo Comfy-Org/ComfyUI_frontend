@@ -43,19 +43,20 @@ reviews:
     - path: "scripts/**"
       # source: .agents/checks/purity.md
       instructions: >-
-        These scripts are the machine-enforced guards for the invariants
-        (check-purity, verify-corpus). Changes that weaken a guard (turning a
-        positive assertion into a denylist, skipping the corpus SHA check, or
-        making a gate non-fatal) are correctness issues. Keep the purity gate a
-        positive yjs-only assertion, not merely a denylist (issue #22).
+        These scripts collectively provide the machine-enforced guards for the
+        invariants. Changes that weaken a guard (turning a positive assertion
+        into a denylist, skipping the corpus SHA check, or making a gate
+        non-fatal) are correctness issues. Keep the purity gate a positive
+        yjs-only assertion, not merely a denylist (issue #22).
     - path: "{package.json,package-lock.json,tsconfig.json,.github/**,stryker.conf.*}"
       # source: .agents/checks/purity.md
       instructions: >-
         Guard the build and CI contract. The production dependency set must
         stay yjs-only (KA-3/FC-3) — flag any new runtime dependency. Cite the
         frozen vocabulary/catalog by SHA, never a moving branch (FC-10). Do not
-        remove or make non-fatal the build, purity, corpus-verify, or test CI
-        steps.
+        remove or make non-fatal the verify:corpus, build, check:purity,
+        check:profile-claims, check:coderabbit, check:imports, check:pins, or
+        test CI steps.
     - path: "test/**"
       # source: .agents/checks/test-quality.md
       instructions: >-
