@@ -97,8 +97,8 @@ rejections are order-independent too (schema Amendment A6).
 
 Amendment A9 closes the cloneable-but-unstorable, `connect.link_id`, and
 `delete_node.removed_links` write-order paths. Amendment A10 closes reference
-cycles. Unvalidated `connect.link_type` remains open and still prevents an
-unconditional "resending the whole batch is always safe" claim.
+cycles. Amendment A14 shape-validates `connect.link_type` before any write
+without imposing catalogue membership validation.
 
 **Why.** The alternative, rejecting the whole batch, throws away work the
 writer already considers accepted. The alternative to *that*, skipping the

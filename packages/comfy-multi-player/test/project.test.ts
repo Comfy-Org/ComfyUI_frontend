@@ -251,7 +251,7 @@ describe("set_widget applies the same catalog rules as add_node (#13)", () => {
     const beforeConnect = Buffer.from(Y.encodeStateAsUpdate(doc));
     const result = applyOps(
       doc,
-      [op({ op: "connect", from_node: 1, from_slot: 0, to_node: 5, link_id: 9, grow: { name: "image_1", type: "LATENT", inputcount: { widget: "inputcount", value: 2 } } })],
+      [op({ op: "connect", from_node: 1, from_slot: 0, to_node: 5, link_id: 9, link_type: "LATENT", grow: { name: "image_1", type: "LATENT", inputcount: { widget: "inputcount", value: 2 } } })],
       catalog,
     );
     expect(result.failed?.code).toBe("uncatalogued_widget_write");

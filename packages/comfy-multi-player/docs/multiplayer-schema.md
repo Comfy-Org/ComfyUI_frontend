@@ -321,8 +321,9 @@ here:
    Amendments A8/A10:** `applyOps` rejects it at the whole-op depth gate before
    any write, and A10 additionally guards every write site so `mint()` cannot
    create a permanently unencodable document. The former `it.fails` cycle pin
-   is a positive rejection-and-recoverability assertion. Unvalidated
-   `connect.link_type` remains open.
+   is a positive rejection-and-recoverability assertion. **Amendment A14**
+   closes the `connect.link_type` shape hole before any document write while
+   deliberately accepting arbitrary strings.
 
 8. `resolveInteriorNode`'s own rejections — `not_a_subgraph`,
    `shared_definition_unforked`, `interior_node_not_found` — all read the

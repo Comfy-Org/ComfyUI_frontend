@@ -827,8 +827,8 @@ function requireOutputSlot(src: Y.Map<unknown>, op: ConnectOp): Y.Array<unknown>
  * case: the same winning payload reaches validation in both arrival orders.
  *
  * It is a statement about WHERE the existing checks run, not a claim that every
- * op-only PROPERTY is checked. `link_type` is still copied into the document
- * with no validation at all.
+ * op-only PROPERTY is checked. Amendment A14 adds `link_type`'s shape check
+ * here without imposing catalogue membership validation.
  *
  * `link_id` WAS in that list until #59 added its write-site check, now expressed
  * by A10's `arrayItemRefusal`/`mapValueRefusal` encodability predicates. That
@@ -854,6 +854,13 @@ function requireOutputSlot(src: Y.Map<unknown>, op: ConnectOp): Y.Array<unknown>
  */
 function requireOpOnlyValid(op: ConnectOp): void {
   requireOutputSlotDomain(op);
+
+  // Amendment A14: shape-only validation. Arbitrary string link types remain
+  // legal; rejecting non-strings here keeps both destination-delete arrival
+  // orders fail-closed before any document write (KA-1, KA-3, KA-4, FC-7).
+  if (typeof op.link_type !== "string") {
+    throw new OpRejectedError("malformed_op", "connect: link_type must be a string");
+  }
 
   if (op.grow?.inputcount != null) {
     if (typeof op.grow.inputcount.widget !== "string") {

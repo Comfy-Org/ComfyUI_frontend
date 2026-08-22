@@ -103,7 +103,7 @@ const wireOp = (shape: Record<string, unknown>): Op => shape as unknown as Op;
 //
 // Amendment A9 closes the cloneable-but-unstorable, `connect.link_id`, and
 // `delete_node.removed_links` write-order holes. Amendment A10 closes reference
-// cycles; unvalidated `connect.link_type` remains open.
+// cycles, and Amendment A14 closes the `connect.link_type` shape hole.
 //
 // A `Symbol` or throwing-`valueOf` `base_version` used to be a third trigger
 // here. Hoisting `stampKey` into `requireOpOnlyValid` closed it on every

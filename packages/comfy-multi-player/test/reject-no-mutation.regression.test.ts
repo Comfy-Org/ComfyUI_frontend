@@ -9,6 +9,7 @@ import {
   type WidgetCatalog,
   type WorkflowJSON,
 } from "../src/index.js";
+import { appliedMap } from "../src/doc.js";
 import { loadCatalog } from "./helpers.js";
 
 const catalog = loadCatalog();
@@ -59,6 +60,55 @@ describe("regression: rejected connect ops leave document bytes unchanged (#10)"
     links: [[9000, 300, 0, 700, 0, "IMAGE"]],
     groups: [], extra: {}, last_node_id: 700, last_link_id: 9000,
   };
+
+  it.each([
+    ["number", 7],
+    ["null", null],
+    ["object", { type: "IMAGE" }],
+  ])(
+    "A14 rejects a %s link_type before writes in both destination-delete arrival orders",
+    (_label, linkType) => {
+      const bad = {
+        op: "connect", op_id: opId(`a14-${_label}`), actor: "human:z", base_version: 9,
+        stamp: [9, "human:z"], link_id: 9499, from_node: 300, from_slot: 0,
+        to_node: 700, to_slot: 0, link_type: linkType,
+      } as unknown as Op;
+      const deletion = {
+        op: "delete_node", op_id: opId(`a14-del-${_label}`), actor: "human:d",
+        base_version: 8, stamp: [8, "human:d"], node_id: 700,
+      } as Op;
+
+      for (const order of [[bad, deletion], [deletion, bad]]) {
+        const doc = mint(workflow, catalog);
+        for (const op of order) {
+          const before = Buffer.from(Y.encodeStateAsUpdate(doc));
+          const result = applyOps(doc, [op], catalog);
+          if (op === bad) {
+            expect(result.failed).toMatchObject({ code: "malformed_op", op: bad });
+            expect(result.failed?.message).toContain("link_type must be a string");
+            expect(Buffer.from(Y.encodeStateAsUpdate(doc)).equals(before)).toBe(true);
+            expect(appliedMap(doc).has(bad.op_id)).toBe(false);
+          }
+        }
+      }
+    },
+  );
+
+  it("A14 accepts arbitrary string link_type values without catalogue membership validation", () => {
+    const op = {
+      op: "connect", op_id: opId("a14-arbitrary"), actor: "human:z", base_version: 9,
+      stamp: [9, "human:z"], link_id: 9498, from_node: 300, from_slot: 0,
+      to_node: 700, to_slot: 0, link_type: "UNKNOWN_ARBITRARY_LINK_TYPE",
+    } as ConnectOp;
+    const doc = mint(workflow, catalog);
+    const result = applyOps(doc, [op], catalog);
+
+    expect(result.failed).toBeNull();
+    expect(result.applied).toEqual([op.op_id]);
+    expect(project(doc, catalog).links).toContainEqual([
+      op.link_id, op.from_node, op.from_slot, op.to_node, op.to_slot, op.link_type,
+    ]);
+  });
 
   it("invalid source output does not claim the input or remove its incumbent link", () => {
     assertRejectedWithoutMutation(workflow, {
