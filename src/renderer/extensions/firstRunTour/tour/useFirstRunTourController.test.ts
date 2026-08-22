@@ -14,6 +14,7 @@ const TOUR_WORKFLOW = { path: 'tour.json' }
 const OTHER_WORKFLOW = { path: 'other.json' }
 const INTRO_PREVIEW_MS = 500
 const OFFLINE_GRACE_MS = 20_000
+const ACCEPT_DEADLINE_MS = 15_000
 
 const mocks = vi.hoisted(() => ({
   canRunWorkflows: { value: true },
@@ -21,6 +22,7 @@ const mocks = vi.hoisted(() => ({
   workflowStatus: { value: new Map<unknown, string>() },
   executionErrors: { hasNodeError: false, hasPromptError: false },
   activeWorkflow: { value: null as unknown },
+  queuedJobs: { value: {} as Record<string, { workflow?: unknown }> },
   linearMode: { value: false },
   vueNodesEnabled: true,
   steps: [] as CoachStep[],
@@ -45,29 +47,33 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
+// Each factory runs on the first dynamic import, which lands mid-test for
+// whichever test runs first. Seed the new ref from the holder so that test's
+// setup survives instead of being discarded.
 vi.mock('@/stores/executionStore', async () => {
   const { shallowRef } = await import('vue')
-  mocks.workflowStatus = shallowRef(new Map<unknown, string>())
+  mocks.workflowStatus = shallowRef(new Map(mocks.workflowStatus.value))
+  mocks.queuedJobs = shallowRef(mocks.queuedJobs.value)
   return {
     useExecutionStore: () => ({
       getWorkflowStatus: (workflow: unknown) =>
-        mocks.workflowStatus.value.get(workflow)
+        mocks.workflowStatus.value.get(workflow),
+      get queuedJobs() {
+        return mocks.queuedJobs.value
+      }
     })
   }
 })
 
 vi.mock('@/stores/executionErrorStore', async () => {
   const { reactive } = await import('vue')
-  mocks.executionErrors = reactive({
-    hasNodeError: false,
-    hasPromptError: false
-  })
+  mocks.executionErrors = reactive({ ...mocks.executionErrors })
   return { useExecutionErrorStore: () => mocks.executionErrors }
 })
 
 vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
   const { shallowRef } = await import('vue')
-  mocks.activeWorkflow = shallowRef(null as unknown)
+  mocks.activeWorkflow = shallowRef(mocks.activeWorkflow.value)
   return {
     useWorkflowStore: () => ({
       get activeWorkflow() {
@@ -79,7 +85,7 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
 
 vi.mock('@/renderer/core/canvas/canvasStore', async () => {
   const { shallowRef } = await import('vue')
-  mocks.linearMode = shallowRef(false)
+  mocks.linearMode = shallowRef(mocks.linearMode.value)
   return {
     useCanvasStore: () => ({
       get linearMode() {
@@ -190,6 +196,12 @@ const EVERY_ENDING: { named: string; ending: TourEnding }[] = [
   ...UNFINISHED_ENDINGS
 ]
 
+/** The queue storing a job, which is what acceptance actually looks like. */
+function acceptRun(workflow: unknown) {
+  mocks.queuedJobs.value = { 'job-1': { workflow } }
+  return nextTick()
+}
+
 function finishRun(workflow: unknown, status: string) {
   mocks.workflowStatus.value = new Map(mocks.workflowStatus.value).set(
     workflow,
@@ -230,6 +242,7 @@ describe('useFirstRunTourController', () => {
   beforeEach(() => {
     mocks.canRunWorkflows = ref(true)
     mocks.workflowStatus.value = new Map()
+    mocks.queuedJobs.value = {}
     mocks.executionErrors.hasNodeError = false
     mocks.executionErrors.hasPromptError = false
     mocks.activeWorkflow.value = null
@@ -348,13 +361,83 @@ describe('useFirstRunTourController', () => {
   })
 
   describe('a run behind a dropped socket', () => {
+    /**
+     * A run the queue accepted: the click reports `generating`, then the
+     * backend answers with a status. The acknowledgement matters — an
+     * unacknowledged submission is a refusal, and is covered separately below.
+     */
     async function generatingRun() {
       await tourOnRunStep()
       mountRunButton('queue-button', () => {}).click()
       expect(mocks.runState.value).toBe('generating')
+      await finishRun(TOUR_WORKFLOW, 'running')
       const { api } = await import('@/scripts/api')
       return api
     }
+
+    it('stops promising a result the queue never accepted', async () => {
+      await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      expect(mocks.runState.value).toBe('generating')
+
+      // No status ever arrives. A refused submission gets no prompt_id, and
+      // account preconditions - sign-in, subscription, credits - are kept out
+      // of the error stores on purpose, so nothing else can report this.
+      await vi.advanceTimersByTimeAsync(ACCEPT_DEADLINE_MS)
+
+      expect(
+        mocks.runState.value,
+        'a paid user out of credits is refused silently; the card must not promise a result forever'
+      ).toBe('failed')
+    })
+
+    it('leaves a run accepted but still waiting for a machine alone', async () => {
+      // Cloud accepts the job and reports "Waiting for a machine" — it is in
+      // `initializingJobIds` with NO workflow status until a worker picks it
+      // up, which routinely outlasts the deadline. Keying on status instead of
+      // acceptance would fail this healthy run and tell the user to run again,
+      // prompting a duplicate paid submission.
+      await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      await acceptRun(TOUR_WORKFLOW)
+
+      await vi.advanceTimersByTimeAsync(ACCEPT_DEADLINE_MS * 4)
+
+      expect(
+        mocks.runState.value,
+        'an accepted job with no status yet is queued, not refused'
+      ).toBe('generating')
+    })
+
+    it('lets the offline grace outlive the acceptance deadline', async () => {
+      // The grace is 20s and the acceptance deadline 15s. A drop before the
+      // first status must still get the full grace: acceptance arrives on the
+      // queuePrompt response, not the socket, so it disarms this deadline even
+      // while the connection is down.
+      const { api } = await import('@/scripts/api')
+      await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      await acceptRun(TOUR_WORKFLOW)
+
+      api.dispatchCustomEvent('reconnecting')
+      await vi.advanceTimersByTimeAsync(OFFLINE_GRACE_MS - 1)
+
+      expect(
+        mocks.runState.value,
+        'the 15s acceptance deadline must not cut the 20s grace short'
+      ).toBe('generating')
+    })
+
+    it('leaves an accepted run past the acceptance deadline alone', async () => {
+      await generatingRun()
+
+      await vi.advanceTimersByTimeAsync(ACCEPT_DEADLINE_MS * 4)
+
+      expect(
+        mocks.runState.value,
+        'the deadline is on acceptance, not on the run: a job that answered must never be cut short'
+      ).toBe('generating')
+    })
 
     it('stops promising a result once the socket stays gone', async () => {
       const api = await generatingRun()

@@ -32,6 +32,9 @@ const INTRO_PREVIEW_MS = 500
 
 const OFFLINE_GRACE_MS = 20_000
 
+/** How long a submitted run has to be accepted before the card stops promising. */
+const ACCEPT_DEADLINE_MS = 15_000
+
 function useFirstRunTourControllerInternal() {
   const engine = useOnboardingTourStore()
   const billing = useBillingContext()
@@ -71,6 +74,7 @@ function useFirstRunTourControllerInternal() {
       executionErrorStore.hasNodeError || executionErrorStore.hasPromptError
     ],
     ([status, refused], previous) => {
+      if (status !== undefined) stopAcceptDeadline()
       if (status === 'running') runState.value = 'generating'
       else if (status === 'completed') runState.value = 'succeeded'
       else if (status === 'failed') runState.value = 'failed'
@@ -82,6 +86,56 @@ function useFirstRunTourControllerInternal() {
         runState.value = 'failed'
     }
   )
+
+  /**
+   * The queue stores a job the moment it accepts a submission, so a job
+   * carrying this tour's workflow is proof of acceptance. A refused submission
+   * never gets one.
+   *
+   * Deliberately *not* the workflow status: that is only written by
+   * `handleExecutionStart`, and a cloud job sits accepted in
+   * `initializingJobIds` — "Waiting for a machine" — with no status at all
+   * while a worker is allocated. Allocation routinely outlasts any deadline
+   * short enough to be useful, so keying on status would fail healthy runs.
+   */
+  const tourRunAccepted = computed(() =>
+    Object.values(executionStore.queuedJobs).some(
+      (job) => job.workflow === tourWorkflow.value
+    )
+  )
+
+  /**
+   * A submission the backend refuses never gets a prompt_id, so no status ever
+   * appears and none of the branches above can fire. Account preconditions —
+   * sign-in, subscription, credits — are deliberately kept out of the error
+   * stores by `ComfyApp.queuePrompt`, so the refusal is invisible there too.
+   *
+   * Give *acceptance* a deadline, not the run. Acceptance arrives on the
+   * queuePrompt response rather than the socket, so this cannot pre-empt the
+   * longer offline grace: a run accepted at all disarms this immediately and
+   * leaves the connection question to `OFFLINE_GRACE_MS`.
+   *
+   * Acceptance is not the only disarm. `resetExecutionState` drops a job from
+   * `queuedJobs` without clearing its status, so a run can report a status
+   * while this reads false. A refusal produces neither signal.
+   */
+  watch(tourRunAccepted, (accepted) => {
+    if (accepted) stopAcceptDeadline()
+  })
+
+  let acceptTimer: ReturnType<typeof setTimeout> | undefined
+  function stopAcceptDeadline() {
+    clearTimeout(acceptTimer)
+    acceptTimer = undefined
+  }
+  function startAcceptDeadline() {
+    stopAcceptDeadline()
+    if (tourRunAccepted.value) return
+    acceptTimer = setTimeout(() => {
+      stopAcceptDeadline()
+      if (runState.value === 'generating') runState.value = 'failed'
+    }, ACCEPT_DEADLINE_MS)
+  }
 
   let offlineTimer: ReturnType<typeof setTimeout> | undefined
   function stopOfflineGrace() {
@@ -116,6 +170,7 @@ function useFirstRunTourControllerInternal() {
       }
 
       runState.value = 'generating'
+      startAcceptDeadline()
       engine.next()
     },
     { capture: true }
@@ -132,6 +187,7 @@ function useFirstRunTourControllerInternal() {
         ending?.tour === 'firstRun' && ending.outcome === 'completed'
       nudgeArmed.value = true
       stopOfflineGrace()
+      stopAcceptDeadline()
       releaseFirstRunTargets()
       tourWorkflow.value = null
       runState.value = 'idle'
