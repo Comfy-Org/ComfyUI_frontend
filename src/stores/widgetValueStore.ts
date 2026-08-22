@@ -127,7 +127,8 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
 
   function removeNodeWidgetOrder(widgetId: WidgetId): void {
     const { graphId, nodeId } = parseWidgetId(widgetId)
-    const graphOrders = getGraphNodeWidgetOrders(graphId)
+    const graphOrders = graphNodeWidgetOrders.value.get(graphId)
+    if (!graphOrders) return
     const order = graphOrders.get(nodeId)
     if (!order) return
 
@@ -202,7 +203,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     if (!isWidgetId(widgetId)) return undefined
 
     const { graphId } = parseWidgetId(widgetId)
-    return getGraphWidgetStates(graphId).get(widgetId)
+    return graphWidgetStates.value.get(graphId)?.get(widgetId)
   }
 
   function getWidgetRenderState(
@@ -211,7 +212,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     if (!isWidgetId(widgetId)) return undefined
 
     const { graphId } = parseWidgetId(widgetId)
-    return getGraphWidgetRenderStates(graphId).get(widgetId)
+    return graphWidgetRenderStates.value.get(graphId)?.get(widgetId)
   }
 
   function setValue(widgetId: WidgetId, value: WidgetState['value']): boolean {
@@ -235,9 +236,9 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     if (!isWidgetId(widgetId)) return false
 
     const { graphId } = parseWidgetId(widgetId)
-    getGraphWidgetRenderStates(graphId).delete(widgetId)
+    graphWidgetRenderStates.value.get(graphId)?.delete(widgetId)
     removeNodeWidgetOrder(widgetId)
-    return getGraphWidgetStates(graphId).delete(widgetId)
+    return graphWidgetStates.value.get(graphId)?.delete(widgetId) ?? false
   }
 
   function getNodeWidgets(graphId: UUID, localNodeId: NodeId): WidgetState[] {
@@ -266,7 +267,9 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   }
 
   function getNodeWidgetIds(graphId: UUID, localNodeId: NodeId): WidgetId[] {
-    return [...getNodeWidgetOrder(graphId, localNodeId)]
+    return [
+      ...(graphNodeWidgetOrders.value.get(graphId)?.get(localNodeId) ?? [])
+    ]
   }
 
   function setNodeWidgetOrder(
