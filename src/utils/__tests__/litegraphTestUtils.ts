@@ -25,6 +25,9 @@ import { toLinkId } from '@/types/linkId'
 import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
+import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { UUID } from '@/utils/uuid'
 import { zeroUuid } from '@/utils/uuid'
 
 /** Creates a node shell state with minimal required fields. */
@@ -394,4 +397,38 @@ export function createMockLinks(links: LLink[]): LGraph['links'] {
     record[link.id] = link
   }
   return Object.assign(map, record) as LGraph['links']
+}
+
+/**
+ * Reloads a serialized graph the way a fresh page would, and returns the new
+ * graph.
+ *
+ * Save/load assertions written as `configure(...serialize())` are vacuous by
+ * default. `LGraph.clear()` drops the widget store under the graph's
+ * *pre-configure* id, but `LGraph._configureBase` then re-adopts the *payload's*
+ * graph id — and `widgetValueStore` is keyed `graphId:nodeId:name`. The source
+ * graph's entries are therefore still live under exactly the key the reloaded
+ * node looks up, so `registerWidget` returns the existing state and the
+ * assertion passes without the serialized payload ever being read.
+ *
+ * This helper removes both escape hatches: the payload is forced through
+ * `JSON.parse(JSON.stringify(...))` (so live-object aliasing cannot leak) and
+ * the widget/preview stores are dropped for the payload's graph id before
+ * `configure()` runs.
+ *
+ * Verify with a mutation: a save/load test that still passes when the producer
+ * stops writing the field under test never read the payload.
+ */
+export function reloadSerializedGraph<T extends { id?: string }>(
+  serialized: T,
+  graphFactory: () => LGraph
+): LGraph {
+  const payload = JSON.parse(JSON.stringify(serialized)) as T
+  if (payload.id) {
+    useWidgetValueStore().clearGraph(payload.id as UUID)
+    usePreviewExposureStore().clearGraph(payload.id as UUID)
+  }
+  const reloaded = graphFactory()
+  reloaded.configure(payload as never)
+  return reloaded
 }
