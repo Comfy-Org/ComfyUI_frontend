@@ -115,7 +115,7 @@ describe('custom-node result policy', () => {
 
   it('accepts an attributable S1 failure with a replacement worker', () => {
     const failure =
-      '[comfyui-impact-pack] ImpactInt: instance is missing declared input "value" (litegraph)'
+      '[comfyui-impact-pack] ImpactInt: instance is missing declared input \\"value\\" (litegraph)'
     const result = {
       stats: { expected: 3, unexpected: 1, flaky: 0, skipped: 0 },
       suites: [

@@ -25,7 +25,7 @@ const PROOFS = {
     witness: 'comfyui-impact-pack',
     title: 'S1: every enrolled registered node mounts on the canvas renderer',
     pattern:
-      /ImpactInt: instance is missing declared input "value" \(litegraph\)/,
+      /ImpactInt: instance is missing declared input \\?"value\\?" \(litegraph\)/,
     nextTier: 'S2'
   },
   '2': {
