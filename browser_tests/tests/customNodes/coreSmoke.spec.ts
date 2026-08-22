@@ -78,7 +78,9 @@ test.describe('smoke: core workflow @custom-nodes', () => {
       await comfyPage.nextFrame()
       consoleErrors.stop()
 
-      expect(await comfyPage.nodeOps.getGraphNodesCount()).toBeGreaterThan(0)
+      await expect
+        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+        .toBeGreaterThan(0)
       // Core smoke loads a graph but queues no prompt; a prompt-execution
       // error here is a prior tier's async stray (isForeignExecutionNoise).
       expect(

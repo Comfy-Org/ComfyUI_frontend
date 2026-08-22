@@ -1,25 +1,20 @@
+import type { RawNodeDef } from '@e2e/fixtures/customNode/typePairing'
+
 // Exact serialized indices changed by the artifact-proven pack mechanisms.
 // Unlisted indices and renderers without matching evidence remain strict.
 export const ROUNDTRIP_VALUE_ALLOWED_INDICES_LITEGRAPH: Record<
   string,
   Record<string, string>
 > = {
-  'ComfyUI_Fill-Nodes': {
-    FL_ColorPicker: '3,4,5,6',
-    FL_ReplaceColor: '5,6,7,8,9,10,11,12'
-  },
-  'ComfyUI-KJNodes': {
-    SplineEditor: '1'
-  },
   'ComfyUI-LTXVideo': {
     LTXVSparseTrackEditor: '1'
   },
   'WhatDreamsCost-ComfyUI': {
-    LoadAudioUI: '2,3,5',
+    LoadAudioUI: '5',
     LTXDirector: '3,4,5,7'
   },
-  'comfyui-itools': {
-    iToolsRegexNode: '0'
+  'comfyui-sam3': {
+    SAM3VideoSegmentation: '1,2'
   }
 }
 
@@ -27,22 +22,15 @@ export const ROUNDTRIP_VALUE_ALLOWED_INDICES_VUE: Record<
   string,
   Record<string, string>
 > = {
-  'ComfyUI_Fill-Nodes': {
-    FL_ColorPicker: '3,4,5,6',
-    FL_ReplaceColor: '5,6,7,8,9,10,11,12'
-  },
-  'ComfyUI-KJNodes': {
-    SplineEditor: '1'
-  },
   'ComfyUI-LTXVideo': {
     LTXVSparseTrackEditor: '1'
   },
   'WhatDreamsCost-ComfyUI': {
-    LoadAudioUI: '2,3,5',
+    LoadAudioUI: '5',
     LTXDirector: '3,4,5,7'
   },
-  'comfyui-itools': {
-    iToolsRegexNode: '0'
+  'comfyui-sam3': {
+    SAM3VideoSegmentation: '1,2'
   }
 }
 
@@ -281,4 +269,53 @@ export function staleValueDriftKeys(
       .filter((key) => !observed[node]?.includes(key))
       .map((key) => `${node}.${key}`)
   )
+}
+
+export interface NamedWidgetValueDrift {
+  name: string
+  before: unknown
+  after: unknown
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+export function declaredInputNamesForTypes(
+  defs: Record<string, RawNodeDef>,
+  types: readonly string[]
+): Record<string, string[]> {
+  return Object.fromEntries(
+    types.map((type) => {
+      const def = defs[type]
+      if (!def) throw new Error(`${type} has no backend node definition`)
+      return [
+        type,
+        [
+          ...Object.keys(def.input?.required ?? {}),
+          ...Object.keys(def.input?.optional ?? {})
+        ]
+      ]
+    })
+  )
+}
+
+export function namedWidgetValueDrifts(
+  before: unknown,
+  after: unknown,
+  names?: readonly string[]
+): NamedWidgetValueDrift[] | null {
+  if (!isRecord(before) || !isRecord(after)) return null
+
+  const comparedNames = names
+    ? names.filter((name) => name in before)
+    : Object.keys(before).filter((name) => name in after)
+  if (comparedNames.length === 0) return names ? [] : null
+
+  return comparedNames.flatMap((name) => {
+    return name in after &&
+      JSON.stringify(before[name]) === JSON.stringify(after[name])
+      ? []
+      : [{ name, before: before[name], after: after[name] }]
+  })
 }

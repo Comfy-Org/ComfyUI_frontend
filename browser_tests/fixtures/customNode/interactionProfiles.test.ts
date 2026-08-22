@@ -1,30 +1,38 @@
-import {
-  comfyExpect as expect,
-  comfyPageFixture as test
-} from '@e2e/fixtures/ComfyPage'
-import type { NodeInteractionProfile } from '@e2e/fixtures/customNode/interactionProfiles'
+import { describe, expect, it } from 'vitest'
+import type {
+  NodeInteractionProfile,
+  SparseNodeInteractionProfile
+} from '@e2e/fixtures/customNode/interactionProfiles'
 import {
   comparePackProfiles,
-  diffShapes
+  diffShapes,
+  interactionCorpusIdentity
 } from '@e2e/fixtures/customNode/interactionProfiles'
 
+const CONNECT_FIRST = ['+input:image2:IMAGE']
+const DISCONNECT = ['-input:image2:IMAGE']
+
 const GROWS: NodeInteractionProfile = {
-  connectFirst: ['+input:image2:IMAGE'],
+  connectFirst: CONNECT_FIRST,
   connectLast: 'SAME_AS_FIRST',
-  disconnect: ['-input:image2:IMAGE']
+  disconnect: DISCONNECT
 }
 
-function committedWith(nodes: Record<string, NodeInteractionProfile>) {
+function committedWith(
+  nodeTypes: string[],
+  nodes: Record<string, SparseNodeInteractionProfile>
+) {
   return {
     recordedAt: { core: 'abc123', pin: 'def456' },
-    schema: 1 as const,
+    schema: 2 as const,
+    corpus: interactionCorpusIdentity(nodeTypes),
     nodes
   }
 }
 
-test.describe('S13 interaction profiles', () => {
+describe('S13 interaction profiles', () => {
   // The sort is load-bearing: probesEqual compares deltas element by element.
-  test('diffShapes is a sorted, facet-tagged symmetric difference blind to slot order', () => {
+  it('diffShapes is a sorted, facet-tagged symmetric difference blind to slot order', () => {
     const before = {
       inputs: ['input:a:IMAGE', 'input:c:MASK'],
       outputs: ['output:out:IMAGE'],
@@ -48,21 +56,26 @@ test.describe('S13 interaction profiles', () => {
     expect(diffShapes(before, reordered)).toEqual([])
   })
 
-  test('compare fails closed on every drift class', () => {
-    const committed = committedWith({ NodeA: GROWS })
+  it('compare fails closed on every drift class', () => {
+    const committed = committedWith(['NodeA'], {
+      NodeA: {
+        connectFirst: CONNECT_FIRST,
+        disconnect: DISCONNECT
+      }
+    })
     expect(
       comparePackProfiles({ pack: 'p', observed: {}, committed: null })[0]
     ).toContain('no committed interaction profiles')
     expect(
       comparePackProfiles({ pack: 'p', observed: {}, committed })[0]
-    ).toContain('was not probed')
+    ).toContain('interaction corpus changed')
     expect(
       comparePackProfiles({
         pack: 'p',
         observed: { NodeA: GROWS, NodeB: GROWS },
         committed
       })[0]
-    ).toContain('no baseline entry')
+    ).toContain('interaction corpus changed')
     const drifted = comparePackProfiles({
       pack: 'p',
       observed: { NodeA: { ...GROWS, disconnect: [] } },
@@ -76,23 +89,15 @@ test.describe('S13 interaction profiles', () => {
     ).toEqual([])
   })
 
-  test('marker-vs-delta mismatches drift both directions', () => {
-    const committed = committedWith({ NodeA: GROWS })
+  it('a marker replacing a recorded delta is drift', () => {
+    const committed = committedWith(['NodeA'], {
+      NodeA: { connectFirst: CONNECT_FIRST }
+    })
     expect(
       comparePackProfiles({
         pack: 'p',
         observed: { NodeA: { ...GROWS, connectFirst: 'NO_PRODUCER' } },
         committed
-      })[0]
-    ).toContain('connectFirst')
-    const markerCommitted = committedWith({
-      NodeA: { ...GROWS, connectFirst: 'NO_INPUTS' }
-    })
-    expect(
-      comparePackProfiles({
-        pack: 'p',
-        observed: { NodeA: GROWS },
-        committed: markerCommitted
       })[0]
     ).toContain('connectFirst')
   })
