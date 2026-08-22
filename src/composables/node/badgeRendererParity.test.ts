@@ -4,7 +4,6 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, effectScope, h, ref } from 'vue'
 
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
@@ -13,6 +12,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import { usePartitionedBadges } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import type { NodeState } from '@/types/nodeState'
 import { NodeBadgeMode } from '@/types/nodeSource'
 
 interface CapturedExtension {
@@ -103,14 +103,16 @@ function legacyBadgeText(node: LGraphNode): string {
 }
 
 function vueBadgeText(node: LGraphNode): string {
-  const nodeData: VueNodeData = {
-    executing: false,
+  if (!node.graph) throw new Error('node is not attached to a graph')
+  const nodeData: NodeState = {
+    flags: node.flags,
+    graphId: node.graph.id,
     id: node.id,
+    inputs: node.inputs,
     mode: node.mode,
-    selected: false,
+    outputs: node.outputs,
     title: node.title,
-    type: node.type,
-    badges: node.badges
+    type: node.type
   }
   const scope = effectScope()
   const facts = scope.run(() => {
