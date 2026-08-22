@@ -143,12 +143,6 @@ const ROUNDTRIP_VALUE_ALLOWLIST: Record<string, Record<string, string>> = {
     LTXVSparseTrackEditor:
       'the sparse-track editor regenerates its derived integer coordinates from the preserved source points on configure'
   },
-  'ComfyUI_Fill-Nodes': {
-    FL_ColorPicker:
-      'color widget canonicalizes the probe color and derived RGB channels on configure',
-    FL_ReplaceColor:
-      'color widgets canonicalize the probe colors and derived RGB channels on configure'
-  },
   'WhatDreamsCost-ComfyUI': {
     LoadAudioUI:
       'custom audio UI clamps end and duration to the loaded file duration and normalizes absent player state on configure',
@@ -250,12 +244,21 @@ export async function assertRoundtripTier({
     'S3',
     registeredKeys
   )
+  const declaredInputNames = declaredInputNamesForTypes(defs, keys)
   const allowedWidgets = packLedgerFor(WIDGET_SET_ALLOWLIST, entry.pack)
-  for (const ledgered of Object.keys(allowedWidgets))
+  for (const ledgered of Object.keys(allowedWidgets)) {
+    const separator = ledgered.indexOf('.')
+    const nodeType = ledgered.slice(0, separator)
+    const widgetName = ledgered.slice(separator + 1)
     expect(
       keys,
       `stale WIDGET_SET_ALLOWLIST entry: ${ledgered} names a node not registered by ${entry.pack}`
-    ).toContain(ledgered.slice(0, ledgered.indexOf('.')))
+    ).toContain(nodeType)
+    expect(
+      declaredInputNames[nodeType],
+      `stale WIDGET_SET_ALLOWLIST entry: ${ledgered} is not a backend input`
+    ).toContain(widgetName)
+  }
   const allowedValueDrift = packLedgerFor(ROUNDTRIP_VALUE_ALLOWLIST, entry.pack)
   for (const ledgered of Object.keys(allowedValueDrift))
     expect(
@@ -348,7 +351,9 @@ export async function assertRoundtripTier({
         initializationSignals,
         chunk
       )
-      const declaredInputNames = declaredInputNamesForTypes(defs, chunk)
+      const chunkDeclaredInputNames = Object.fromEntries(
+        chunk.map((type) => [type, declaredInputNames[type]])
+      )
       await comfyPage.page.evaluate(
         ([
           types,
@@ -521,6 +526,9 @@ export async function assertRoundtripTier({
                   })
                 const beforeNames = namesBefore.get(id) ?? []
                 const afterNames = namesAfter.get(id) ?? []
+                const declaredNames = new Set(
+                  declaredInputNames[expected.type] ?? []
+                )
                 if (
                   !strict &&
                   JSON.stringify(beforeNames) !== JSON.stringify(afterNames)
@@ -555,7 +563,16 @@ export async function assertRoundtripTier({
                       observed.add(index)
                       valueDrifts.set(expected.type, observed)
                     }
-                  if (changed.every((index) => allowedIndices.includes(index)))
+                  const relevantChanges = strict
+                    ? changed
+                    : changed.filter((index) =>
+                        declaredNames.has(beforeNames[index] ?? '')
+                      )
+                  if (
+                    relevantChanges.every((index) =>
+                      allowedIndices.includes(index)
+                    )
+                  )
                     continue
                 }
                 const allowedKeys = exactValueDriftKeys[expected.type]
@@ -586,12 +603,27 @@ export async function assertRoundtripTier({
                       observed.add(key)
                       keyDrifts.set(expected.type, observed)
                     }
-                  if (changed.every((key) => allowedKeys.includes(key)))
+                  const relevantChanges = strict
+                    ? changed
+                    : changed.filter((key) => declaredNames.has(key))
+                  if (relevantChanges.every((key) => allowedKeys.includes(key)))
                     continue
                 }
-                if (!preserves(before.widgets_values, after.widgets_values))
+                const comparedBeforeValues =
+                  !strict && Array.isArray(before.widgets_values)
+                    ? before.widgets_values.filter((_, index) =>
+                        declaredNames.has(beforeNames[index] ?? '')
+                      )
+                    : before.widgets_values
+                const comparedAfterValues =
+                  !strict && Array.isArray(after.widgets_values)
+                    ? after.widgets_values.filter((_, index) =>
+                        declaredNames.has(afterNames[index] ?? '')
+                      )
+                    : after.widgets_values
+                if (!preserves(comparedBeforeValues, comparedAfterValues))
                   problems.push(
-                    `${expected.type}: widgets_values ${JSON.stringify(before.widgets_values ?? null)} -> ${JSON.stringify(after.widgets_values ?? null)} on ${label} reload`
+                    `${expected.type}: widgets_values ${JSON.stringify(comparedBeforeValues ?? null)} -> ${JSON.stringify(comparedAfterValues ?? null)} on ${label} reload`
                   )
               }
             },
@@ -681,7 +713,7 @@ export async function assertRoundtripTier({
           allowedWidgets,
           allowedValueIndices,
           allowedValueKeys,
-          declaredInputNames,
+          chunkDeclaredInputNames,
           Object.keys(expectedNodeLosses),
           vueNodesEnabled,
           {
@@ -782,7 +814,8 @@ export async function assertRoundtripTier({
       for (const change of result.dynamicTopologyChanges) {
         const drifts = namedWidgetValueDrifts(
           change.beforeValues,
-          change.afterValues
+          change.afterValues,
+          declaredInputNames[change.node]
         )
         if (drifts === null) {
           mismatches.push(

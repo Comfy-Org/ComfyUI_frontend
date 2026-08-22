@@ -6,10 +6,6 @@ export const ROUNDTRIP_VALUE_ALLOWED_INDICES_LITEGRAPH: Record<
   string,
   Record<string, string>
 > = {
-  'ComfyUI_Fill-Nodes': {
-    FL_ColorPicker: '3,4,5,6',
-    FL_ReplaceColor: '5,6,7,8,9,10,11,12'
-  },
   'ComfyUI-KJNodes': {
     SplineEditor: '1'
   },
@@ -29,10 +25,6 @@ export const ROUNDTRIP_VALUE_ALLOWED_INDICES_VUE: Record<
   string,
   Record<string, string>
 > = {
-  'ComfyUI_Fill-Nodes': {
-    FL_ColorPicker: '3,4,5,6',
-    FL_ReplaceColor: '5,6,7,8,9,10,11,12'
-  },
   'ComfyUI-KJNodes': {
     SplineEditor: '1'
   },
@@ -296,19 +288,24 @@ export function declaredInputNamesForTypes(
   types: readonly string[]
 ): Record<string, string[]> {
   return Object.fromEntries(
-    types.map((type) => [
-      type,
-      [
-        ...Object.keys(defs[type]?.input?.required ?? {}),
-        ...Object.keys(defs[type]?.input?.optional ?? {})
+    types.map((type) => {
+      const def = defs[type]
+      if (!def) throw new Error(`${type} has no backend node definition`)
+      return [
+        type,
+        [
+          ...Object.keys(def.input?.required ?? {}),
+          ...Object.keys(def.input?.optional ?? {})
+        ]
       ]
-    ])
+    })
   )
 }
 
 export function namedWidgetValueDrifts(
   before: unknown,
-  after: unknown
+  after: unknown,
+  names?: readonly string[]
 ): NamedWidgetValueDrift[] | null {
   if (
     typeof before !== 'object' ||
@@ -322,14 +319,14 @@ export function namedWidgetValueDrifts(
 
   const beforeValues = before as Record<string, unknown>
   const afterValues = after as Record<string, unknown>
-  const commonNames = Object.keys(beforeValues).filter(
-    (name) => name in afterValues
-  )
-  if (commonNames.length === 0) return null
+  const comparedNames = names
+    ? names.filter((name) => name in beforeValues)
+    : Object.keys(beforeValues).filter((name) => name in afterValues)
+  if (comparedNames.length === 0) return names ? [] : null
 
-  return commonNames.flatMap((name) => {
-    return JSON.stringify(beforeValues[name]) ===
-      JSON.stringify(afterValues[name])
+  return comparedNames.flatMap((name) => {
+    return name in afterValues &&
+      JSON.stringify(beforeValues[name]) === JSON.stringify(afterValues[name])
       ? []
       : [{ name, before: beforeValues[name], after: afterValues[name] }]
   })

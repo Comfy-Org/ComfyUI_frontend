@@ -23,12 +23,12 @@ describe('declaredInputNamesForTypes', () => {
       }
     }
 
-    expect(
-      declaredInputNamesForTypes(defs, ['DynamicNode', 'MissingNode'])
-    ).toEqual({
-      DynamicNode: ['num_images', 'strength_1'],
-      MissingNode: []
+    expect(declaredInputNamesForTypes(defs, ['DynamicNode'])).toEqual({
+      DynamicNode: ['num_images', 'strength_1']
     })
+    expect(() => declaredInputNamesForTypes(defs, ['MissingNode'])).toThrow(
+      'MissingNode has no backend node definition'
+    )
   })
 })
 
@@ -244,6 +244,19 @@ describe('namedWidgetValueDrifts', () => {
         { mode: 'advanced', strength: 1, detail: 0.5 }
       )
     ).toEqual([{ name: 'mode', before: 'basic', after: 'advanced' }])
+
+    expect(
+      namedWidgetValueDrifts(
+        { mode: 'basic', derived: 'preview' },
+        { derived: 'updated' },
+        ['mode']
+      )
+    ).toEqual([{ name: 'mode', before: 'basic', after: undefined }])
+    expect(
+      namedWidgetValueDrifts({ derived: 'preview' }, { derived: 'updated' }, [
+        'mode'
+      ])
+    ).toEqual([])
   })
 
   it('fails closed when named values cannot be compared', () => {
