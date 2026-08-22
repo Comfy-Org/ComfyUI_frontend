@@ -1,6 +1,40 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { resolvePointerTarget } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
+import { LGraph } from '@/lib/litegraph/src/LGraph'
+import { LLink } from '@/lib/litegraph/src/LLink'
+import { Reroute } from '@/lib/litegraph/src/Reroute'
+import { setRevealedLinks } from '@/renderer/core/canvas/links/linkRevealState'
+import {
+  isRerouteVisibleForLinkDrag,
+  resolvePointerTarget
+} from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
+import { toLinkId } from '@/types/linkId'
+import { toRerouteId } from '@/types/rerouteId'
+
+beforeEach(() => {
+  setRevealedLinks([])
+})
+
+describe('isRerouteVisibleForLinkDrag', () => {
+  it('rejects only reroutes whose links are all hidden and unrevealed', () => {
+    const graph = new LGraph()
+    const link = new LLink(toLinkId(1), 'MODEL', 1, 0, 2, 0)
+    link.hidden = true
+    graph.links.set(link.id, link)
+    const reroute = new Reroute(toRerouteId(1), graph, undefined, undefined, [
+      link.id
+    ])
+
+    expect(isRerouteVisibleForLinkDrag(graph, reroute)).toBe(false)
+
+    setRevealedLinks([link.id])
+    expect(isRerouteVisibleForLinkDrag(graph, reroute)).toBe(true)
+
+    setRevealedLinks([])
+    link.hidden = false
+    expect(isRerouteVisibleForLinkDrag(graph, reroute)).toBe(true)
+  })
+})
 
 describe('resolvePointerTarget', () => {
   it('returns element from elementFromPoint when available', () => {

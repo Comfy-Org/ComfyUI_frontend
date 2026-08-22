@@ -16,6 +16,8 @@
         props.socketless && 'pointer-events-none invisible'
       )
     "
+    @pointerenter="revealLinks"
+    @pointerleave="unrevealLinks"
   >
     <!-- Connection Dot -->
     <SlotConnectionDot
@@ -66,6 +68,7 @@ import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { useSlotElementTracking } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
+import { useSlotLinkReveal } from '@/renderer/extensions/vueNodes/composables/useSlotLinkReveal'
 import { cn } from '@comfyorg/tailwind-utils'
 import type { NodeId } from '@/types/nodeId'
 
@@ -142,6 +145,12 @@ useSlotElementTracking({
 })
 
 const { onClick, onDoubleClick, onPointerDown } = useSlotLinkInteraction({
+  nodeId: props.nodeId,
+  index: props.index,
+  type: 'input'
+})
+
+const { revealLinks, unrevealLinks } = useSlotLinkReveal({
   nodeId: props.nodeId,
   index: props.index,
   type: 'input'

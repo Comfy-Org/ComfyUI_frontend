@@ -91,6 +91,7 @@ import type {
   ISerialisedNode,
   Serialisable,
   SerialisableGraph,
+  SerialisableLLink,
   SerialisableReroute
 } from './types/serialisation'
 import { getAllNestedItems } from './utils/collections'
@@ -169,6 +170,7 @@ export interface GraphAddOptions {
 export interface LGraphExtra extends Dictionary<unknown> {
   reroutes?: SerialisableReroute[]
   linkExtensions?: { id: LinkId; parentId: RerouteId | undefined }[]
+  linkPresentation?: Record<string, Pick<SerialisableLLink, 'hidden' | 'label'>>
   ds?: DragAndScaleState
   workflowRendererVersion?: RendererType
 }
@@ -2347,10 +2349,24 @@ export class LGraph
     const links = linkArray.map((x) => x.serialize())
 
     if (reroutes?.length) {
-      // Link parent IDs cannot go in 0.4 schema arrays
       extra.linkExtensions = linkArray
-        .filter((x) => x.parentId !== undefined)
-        .map((x) => ({ id: x.id, parentId: x.parentId }))
+        .filter((link) => link.parentId !== undefined)
+        .map((link) => ({ id: link.id, parentId: link.parentId }))
+    }
+
+    const linkPresentation = Object.fromEntries(
+      linkArray
+        .filter((link) => link.hidden || link.label !== undefined)
+        .map((link) => [
+          String(link.id),
+          {
+            ...(link.hidden && { hidden: true }),
+            ...(link.label !== undefined && { label: link.label })
+          }
+        ])
+    )
+    if (Object.keys(linkPresentation).length) {
+      extra.linkPresentation = linkPresentation
     }
 
     extra.reroutes = reroutes?.length ? reroutes : undefined
@@ -2463,6 +2479,7 @@ export class LGraph
 
     // Ensure auto-generated serialisation data is removed from extra
     delete this.extra.linkExtensions
+    delete this.extra.linkPresentation
   }
 
   /**
@@ -2511,6 +2528,12 @@ export class LGraph
             const link = this._links.get(linkEx.id)
             if (link) link.parentId = linkEx.parentId
           }
+        }
+
+        for (const link of this._links.values()) {
+          const presentation = extra?.linkPresentation?.[String(link.id)]
+          link.hidden = presentation?.hidden
+          link.label = presentation?.label
         }
 
         // Reroutes
