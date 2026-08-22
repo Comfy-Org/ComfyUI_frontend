@@ -455,6 +455,7 @@ describe('useTeamWorkspaceStore', () => {
       await store.switchWorkspace(currentId!)
 
       expect(mockReload).not.toHaveBeenCalled()
+      expect(store.workspaceTransitionGeneration).toBe(0)
     })
 
     it('clears workflow restore state before switching workspaces', async () => {
@@ -504,6 +505,7 @@ describe('useTeamWorkspaceStore', () => {
       expect(mockReload).not.toHaveBeenCalled()
       expect(store.isSwitching).toBe(false)
       expect(store.activeWorkspaceBillingRail).toBeNull()
+      expect(store.workspaceTransitionGeneration).toBe(1)
 
       store.setWorkspaceBillingRail(mockTeamWorkspace.id, 'metronome')
       expect(store.activeWorkspaceBillingRail).toBe('metronome')
