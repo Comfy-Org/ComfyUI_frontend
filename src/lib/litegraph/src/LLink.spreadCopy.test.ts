@@ -46,10 +46,6 @@ function insertionScenario(consumerCount: number) {
 }
 
 describe('plain-object copies of LLink (uncovered)', () => {
-  // The LLink counterpart of the plain-object slot cases in
-  // `node/legacySlotLinkMutations.test.ts`. `id`, `type`, `origin_id`,
-  // `origin_slot`, `target_id`, `target_slot` and `parentId` are prototype
-  // accessors over `_state`, so a spread copy carries none of them.
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
@@ -67,10 +63,7 @@ describe('plain-object copies of LLink (uncovered)', () => {
     expect(copy.parentId).toBe(link.parentId)
   })
 
-  it.fails('rewires consumers through a node inserted from copied links', () => {
-    // The shape ComfyUI-Custom-Scripts' "Add Clip Skip" and "Add LoRA" use
-    // (web/js/quickNodes.js): snapshot the outgoing links as spread copies,
-    // drop them, then reconnect the far ends from the copies. See #15594.
+  it.fails('rewires Custom-Scripts consumers from copied links (#15594)', () => {
     const { graph, source, consumers, inserted } = insertionScenario(2)
     const saved: Partial<LLink>[] = source.outputs[1].links!.map((id) => ({
       ...graph.links[id]
