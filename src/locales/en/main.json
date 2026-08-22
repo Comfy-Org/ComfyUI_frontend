@@ -5249,6 +5249,13 @@
     "runModeTriggerAutoLimit": "Auto (limited)",
     "runModeTriggerAutoLimitTooltip": "Ask when credit limit is reached",
     "showMore": "Show more",
-    "showLess": "Show less"
+    "showLess": "Show less",
+    "consent": {
+      "readDocs": "Read the docs",
+      "reject": "Reject",
+      "accept": "Accept",
+      "close": "Close",
+      "videoPlaceholder": "Video unavailable"
+    }
   }
 }
