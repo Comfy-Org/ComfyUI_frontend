@@ -1,9 +1,8 @@
 import { join } from 'node:path'
 import pc from 'picocolors'
-import { runChecks } from './check'
 import { findProjectRoot, listWorkflows } from '../recorder/runner'
 import { toSlug } from '../cli/slug'
-import { fail, info, pass, header } from '../ui/logger'
+import { fail, info, header } from '../ui/logger'
 
 const KNOWN_TAGS = ['@canvas', '@widget', '@sidebar', '@smoke', '@screenshot']
 const SEED_FILE = 'browser_tests/tests/interaction.spec.ts'
@@ -85,6 +84,10 @@ function printTestPlan(plan: TestPlan): void {
  * playwright-test-generator agent (already wired to the right MCP tools and
  * ComfyUI fixture conventions in .claude/agents/playwright-test-generator.md)
  * and the exact comfy-test command to run once it has written the spec.
+ *
+ * Deliberately skips runChecks: plan only reads the filesystem and prints
+ * text, so a backend/dev-server/Playwright-browser gate built for `record`
+ * would block it for services it never touches.
  */
 export async function runPlan(options: PlanOptions): Promise<void> {
   header('Test Plan')
@@ -94,13 +97,14 @@ export async function runPlan(options: PlanOptions): Promise<void> {
     process.exit(1)
   }
 
-  const { allPassed } = await runChecks(undefined, { showHeader: false })
-  if (!allPassed) {
-    fail('Some required checks failed. Fix the issues above.')
+  let projectRoot: string
+  try {
+    projectRoot = findProjectRoot()
+  } catch (err) {
+    fail(err instanceof Error ? err.message : 'Could not find project root')
     process.exit(1)
   }
 
-  const projectRoot = findProjectRoot()
   const slug = options.name ? toSlug(options.name) : toSlug(options.description)
   if (!slug) {
     fail('Could not derive a filename', 'Pass --name explicitly.')
@@ -126,14 +130,15 @@ export async function runPlan(options: PlanOptions): Promise<void> {
     }
   }
 
-  pass('Environment ready', projectRoot)
-  console.log()
-
   const plan = buildTestPlan(options, slug, tags)
   printTestPlan(plan)
   console.log()
 
   info([
+    'This step does not need the ComfyUI backend or dev server — only the',
+    'next one (playwright-test-generator, which drives a real browser)',
+    'does. Run `comfy-test check` first if you are not sure they are up.',
+    '',
     'Once the agent has written the spec (via generator_write_test), open',
     'a PR for it with:',
     '',
