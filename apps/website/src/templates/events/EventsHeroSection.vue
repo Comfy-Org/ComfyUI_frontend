@@ -3,16 +3,29 @@ import { computed } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
 
+import type { ComfyEvent } from '../../utils/events'
+
 import FeaturedCarousel01 from '../../components/blocks/FeaturedCarousel01.vue'
 import type { FeaturedSlide } from '../../components/blocks/FeaturedCarousel01.vue'
 import HeroCentered01 from '../../components/blocks/HeroCentered01.vue'
-import { featuredEvents } from '../../data/events'
+import { useClientNow } from '../../composables/useClientNow'
 import { t } from '../../i18n/translations'
+import { deriveFeaturedEvents } from '../../utils/events'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const {
+  events,
+  now,
+  locale = 'en'
+} = defineProps<{
+  events: readonly ComfyEvent[]
+  now: string
+  locale?: Locale
+}>()
+
+const currentTime = useClientNow(now)
 
 const slides = computed<FeaturedSlide[]>(() =>
-  featuredEvents(locale).map((event) => ({
+  deriveFeaturedEvents(events, currentTime.value, locale).map((event) => ({
     id: event.id,
     media: {
       type: event.media.type,

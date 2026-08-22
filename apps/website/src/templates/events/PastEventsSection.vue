@@ -3,17 +3,29 @@ import { computed } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
 
+import type { ComfyEvent } from '../../utils/events'
+
 import CardArticleGallery01 from '../../components/blocks/CardArticleGallery01.vue'
 import type { CardArticleGalleryItem } from '../../components/blocks/CardArticleGallery01.vue'
+import { useClientNow } from '../../composables/useClientNow'
 import { localizeHref } from '../../config/routes'
-import { pastEvents } from '../../data/events'
 import { t } from '../../i18n/translations'
-import { eventPath, eventVideoId } from '../../utils/events'
+import { derivePastEvents, eventPath, eventVideoId } from '../../utils/events'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const {
+  events,
+  now,
+  locale = 'en'
+} = defineProps<{
+  events: readonly ComfyEvent[]
+  now: string
+  locale?: Locale
+}>()
+
+const currentTime = useClientNow(now)
 
 const items = computed<CardArticleGalleryItem[]>(() =>
-  pastEvents(locale).flatMap((event) => {
+  derivePastEvents(events, currentTime.value).flatMap((event) => {
     // Card art falls back to the carousel art for events that became past
     // before dedicated card art was added; a card cannot render without media.
     const media = event.media ?? event.featured?.media

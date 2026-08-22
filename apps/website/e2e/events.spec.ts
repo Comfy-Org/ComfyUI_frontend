@@ -2,16 +2,29 @@ import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { localizeHref } from '../src/config/routes'
-import { featuredEvents, pastEvents, upcomingEvents } from '../src/data/events'
+import { eventsForLocale } from '../src/data/events'
 import type { Locale } from '../src/i18n/translations'
 import { t } from '../src/i18n/translations'
 import { formatEventDateLabel } from '../src/utils/eventDateLabel'
 import {
+  deriveFeaturedEvents,
+  derivePastEvents,
+  deriveUpcomingEvents,
   eventLocationLabel,
   eventPath,
   eventVideoId
 } from '../src/utils/events'
 import { test } from './fixtures/blockExternalMedia'
+
+// The site splits upcoming/past on the client from the browser clock; these
+// expectations mirror that derivation against a single reference time.
+const NOW = new Date()
+const upcomingEvents = (locale: Locale) =>
+  deriveUpcomingEvents(eventsForLocale(locale), NOW)
+const pastEvents = (locale: Locale) =>
+  derivePastEvents(eventsForLocale(locale), NOW)
+const featuredEvents = (locale: Locale) =>
+  deriveFeaturedEvents(eventsForLocale(locale), NOW, locale)
 
 const PATH_EN = '/events'
 const PATH_ZH = '/zh-CN/events'

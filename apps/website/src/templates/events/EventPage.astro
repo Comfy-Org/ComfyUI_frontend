@@ -9,11 +9,12 @@ import EventVideoDialog from './EventVideoDialog.vue'
 import PastEventsSection from './PastEventsSection.vue'
 import UpcomingEventsSection from './UpcomingEventsSection.vue'
 import { localizeHref } from '../../config/routes'
-import { isPastAtBuild } from '../../data/events'
+import { eventsForLocale } from '../../data/events'
 import { t } from '../../i18n/translations'
 import type { ComfyEvent } from '../../utils/events'
 import {
   eventJsonLdNode,
+  eventStatus,
   eventVideoId,
   toCalendarEvent,
   youtubeWatchHref
@@ -40,7 +41,14 @@ const { siteUrl, locale, url } = pageContext(
 
 const title = event.title
 const description = event.description
-const isPast = isPastAtBuild(event)
+
+const events = eventsForLocale(locale)
+// The directory renders behind the dialog; the split reconciles client-side,
+// while this page's JSON-LD stays build-time (search engines classify from the
+// event's own dates, not our UI split).
+const buildNow = new Date()
+const now = buildNow.toISOString()
+const isPast = eventStatus(event, buildNow) === 'past'
 
 const videoJsonLd: JsonLdNode | undefined =
   isPast && event.recordingVideoId && event.media
@@ -87,9 +95,14 @@ const breadcrumbs = [
 >
   {
     isPast ? (
-      <PastEventsSection locale={locale} />
+      <PastEventsSection events={events} now={now} locale={locale} />
     ) : (
-      <UpcomingEventsSection locale={locale} client:visible />
+      <UpcomingEventsSection
+        events={events}
+        now={now}
+        locale={locale}
+        client:visible
+      />
     )
   }
   <EventVideoDialog

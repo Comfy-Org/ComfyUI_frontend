@@ -4,26 +4,39 @@ import { computed } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
 
+import type { ComfyEvent } from '../../utils/events'
+
 import AddToCalendarButton from '../../components/blocks/AddToCalendarButton.vue'
 import Button from '../../components/ui/button/Button.vue'
+import { useClientNow } from '../../composables/useClientNow'
 import { localizeHref } from '../../config/routes'
-import { upcomingEvents } from '../../data/events'
 import { t } from '../../i18n/translations'
 import { resolveRel } from '../../utils/cta'
 import { formatEventDateLabel } from '../../utils/eventDateLabel'
 import {
+  deriveUpcomingEvents,
   eventLocationLabel,
   eventPath,
   eventVideoId,
   toCalendarEvent
 } from '../../utils/events'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const {
+  events: allEvents,
+  now,
+  locale = 'en'
+} = defineProps<{
+  events: readonly ComfyEvent[]
+  now: string
+  locale?: Locale
+}>()
+
+const currentTime = useClientNow(now)
 
 // Events with a stream open their own /events/[slug] page (dialog over the
 // directory); the rest link out to the event's page.
 const events = computed(() =>
-  upcomingEvents(locale).map((event) => ({
+  deriveUpcomingEvents(allEvents, currentTime.value).map((event) => ({
     ...event,
     calendarEvent: toCalendarEvent(event, locale),
     dateLabel: formatEventDateLabel(event, locale),

@@ -3,18 +3,11 @@ import type {
   ComfyEvent,
   EventCategory,
   EventMedia,
-  FeaturedEvent,
   LocationMode
 } from '../utils/events'
 
 import { localizeHref } from '../config/routes'
-import {
-  deriveFeaturedEvents,
-  derivePastEvents,
-  deriveUpcomingEvents,
-  eventStatus,
-  eventVideoId
-} from '../utils/events'
+import { eventVideoId } from '../utils/events'
 
 // The authoring shape: structurally the flat render model, but with every
 // localized text still carried per locale. Flattening to a single locale
@@ -434,29 +427,8 @@ const events: readonly ComfyEventSource[] = [
   }
 ]
 
-// The site is statically built, so classification is fixed at build time: an
-// event moves between the upcoming and past sections on the next deploy.
-const BUILD_NOW = new Date()
-
 export const eventsForLocale = (locale: Locale): readonly ComfyEvent[] =>
   events.map((event) => flattenEvent(event, locale))
-
-// The same build-time clock as the derived lists, so a detail page's body
-// always agrees with the section rendered behind its dialog.
-export const isPastAtBuild = (event: ComfyEvent): boolean =>
-  eventStatus(event, BUILD_NOW) === 'past'
-
-export const upcomingEvents = (locale: Locale): readonly ComfyEvent[] =>
-  deriveUpcomingEvents(eventsForLocale(locale), BUILD_NOW)
-
-export const pastEvents = (locale: Locale): readonly ComfyEvent[] =>
-  derivePastEvents(eventsForLocale(locale), BUILD_NOW)
-
-export const featuredEvents = (locale: Locale): readonly FeaturedEvent[] =>
-  deriveFeaturedEvents(eventsForLocale(locale), BUILD_NOW, locale)
-
-export const watchablePastEvents = (locale: Locale): readonly ComfyEvent[] =>
-  pastEvents(locale).filter((event) => eventVideoId(event))
 
 // Events with a stream or recording get their own /events/[slug] page; the
 // slug is the event id.
