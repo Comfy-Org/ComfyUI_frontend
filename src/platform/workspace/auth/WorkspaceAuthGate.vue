@@ -80,6 +80,7 @@ import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig
 import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useAuthStore } from '@/stores/authStore'
 
 const FIREBASE_INIT_TIMEOUT_MS = 16_000
@@ -91,6 +92,7 @@ const initializationState = ref<
 const initializationRetryable = ref(true)
 const errorPanel = useTemplateRef<HTMLElement>('errorPanel')
 const subscriptionDialog = useSubscriptionDialog()
+const billingCapabilities = useBillingCapabilities()
 let initializationGeneration = 0
 let initializationController: AbortController | null = null
 let backgroundInitialization: Promise<void> | null = null
@@ -166,6 +168,7 @@ async function initialize(): Promise<void> {
 
     await initializeWorkspaceMode()
     if (generation !== initializationGeneration) return
+    billingCapabilities.initialize()
     if (
       flags.unifiedCloudAuthEnabled &&
       !workspaceAuthStore.getUnifiedToken()

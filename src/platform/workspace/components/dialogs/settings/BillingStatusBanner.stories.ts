@@ -4,6 +4,7 @@ import type { SubscriptionInfo } from '@/composables/billing/types'
 import { i18n } from '@/i18n'
 import type { BillingContextMockState } from '@/storybook/mocks/useBillingContext'
 import { setBillingContextMock } from '@/storybook/mocks/useBillingContext'
+import { setCanTopUpMock } from '@/storybook/mocks/useBillingCapabilities'
 import type { WorkspaceUIMockState } from '@/storybook/mocks/useWorkspaceUI'
 import { setWorkspaceUIMock } from '@/storybook/mocks/useWorkspaceUI'
 
@@ -57,13 +58,13 @@ const cancelled: SubscriptionInfo = {
 const owner: Partial<WorkspaceUIMockState> = {}
 const member: Partial<WorkspaceUIMockState> = {
   canManageSubscription: false,
-  canManageSubscriptionLifecycle: false,
-  canTopUp: false
+  canManageSubscriptionLifecycle: false
 }
 
 function story(
   billing: Partial<BillingContextMockState>,
-  workspace: Partial<WorkspaceUIMockState>
+  workspace: Partial<WorkspaceUIMockState>,
+  canTopUp = true
 ): Story {
   return {
     beforeEach() {
@@ -72,6 +73,7 @@ function story(
       i18n.global.locale.value = 'en'
       setBillingContextMock({ isTeamPlan: true, ...billing })
       setWorkspaceUIMock(workspace)
+      setCanTopUpMock(canTopUp)
     }
   }
 }
@@ -99,7 +101,8 @@ export const PausedMember: Story = story(
     billingStatus: 'paused',
     subscriptionStatus: 'active'
   },
-  member
+  member,
+  false
 )
 
 /**
@@ -149,7 +152,8 @@ export const OutOfCreditsMember: Story = story(
     subscriptionStatus: 'active',
     renewalDate: RENEWAL_DATE
   },
-  member
+  member,
+  false
 )
 
 /** Cancelled but still active until the period end. Informational. */

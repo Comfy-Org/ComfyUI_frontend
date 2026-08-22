@@ -1,6 +1,7 @@
 import type {
   AcceptInviteResponse,
   BillingBalanceResponse,
+  BillingCapabilitiesResponse,
   BillingEventsResponse,
   BillingOpStatusResponse,
   BillingPlansResponse,
@@ -105,6 +106,7 @@ export type { BillingStatus }
 export type { BillingStatusResponse }
 
 export type { BillingBalanceResponse }
+export type { BillingCapabilitiesResponse }
 export type { CreateTopupResponse }
 export type { BillingOpStatusResponse }
 
@@ -410,6 +412,24 @@ export const workspaceApi = {
         workspaceApiUrl('/billing/balance'),
         { headers }
       )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  /**
+   * Get billing capabilities for the current workspace
+   * GET /api/billing/capabilities
+   */
+  async getBillingCapabilities(): Promise<BillingCapabilitiesResponse> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response =
+        await workspaceApiClient.get<BillingCapabilitiesResponse>(
+          workspaceApiUrl('/billing/capabilities'),
+          { headers, timeout: 10_000 }
+        )
       return response.data
     } catch (err) {
       handleAxiosError(err)

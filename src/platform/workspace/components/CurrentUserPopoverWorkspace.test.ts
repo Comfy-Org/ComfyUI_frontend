@@ -14,10 +14,10 @@ import CurrentUserPopoverWorkspace from './CurrentUserPopoverWorkspace.vue'
 const state = vi.hoisted(() => ({
   billingStatus: 'paid',
   canAccessSubscriptionFeatures: true,
-  isFreeTier: false,
   isCancelled: false,
   planSlug: 'pro-monthly' as string | null,
   canTopUp: false,
+  canSubscribeSelfServe: false,
   canManageSubscription: false,
   canManageSubscriptionLifecycle: false,
   showCreateWorkspaceDialog: vi.fn(),
@@ -59,7 +59,6 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     canAccessSubscriptionFeatures: computed(
       () => state.canAccessSubscriptionFeatures
     ),
-    isFreeTier: computed(() => state.isFreeTier),
     subscription: computed(() => ({
       isCancelled: state.isCancelled,
       planSlug: state.planSlug
@@ -73,10 +72,16 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
 vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   useWorkspaceUI: () => ({
     permissions: computed(() => ({
-      canTopUp: state.canTopUp,
       canManageSubscription: state.canManageSubscription,
       canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
     }))
+  })
+}))
+
+vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
+  useBillingCapabilities: () => ({
+    canTopUp: computed(() => state.canTopUp),
+    canSubscribeSelfServe: computed(() => state.canSubscribeSelfServe)
   })
 }))
 
@@ -163,10 +168,10 @@ describe('CurrentUserPopoverWorkspace', () => {
   beforeEach(() => {
     state.billingStatus = 'paid'
     state.canAccessSubscriptionFeatures = true
-    state.isFreeTier = false
     state.isCancelled = false
     state.planSlug = 'pro-monthly'
     state.canTopUp = false
+    state.canSubscribeSelfServe = false
     state.canManageSubscription = false
     state.canManageSubscriptionLifecycle = false
   })
@@ -273,6 +278,18 @@ describe('CurrentUserPopoverWorkspace', () => {
     expect(
       screen.queryByTestId('manage-plan-menu-item')
     ).not.toBeInTheDocument()
+  })
+
+  it('offers subscription when top-up is denied but self-serve is allowed', async () => {
+    const user = userEvent.setup()
+    state.canSubscribeSelfServe = true
+    renderComponent('team')
+
+    await user.click(screen.getByTestId('upgrade-to-add-credits-button'))
+
+    expect(state.showPricingTable).toHaveBeenCalledWith({
+      reason: 'upgrade_to_add_credits'
+    })
   })
 
   it.for(['payment_failed', 'paused'])(

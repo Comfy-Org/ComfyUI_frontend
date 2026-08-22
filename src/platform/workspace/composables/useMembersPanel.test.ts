@@ -294,8 +294,7 @@ const {
       canManageMembers: true,
       canLeaveWorkspace: true,
       canAccessWorkspaceMenu: true,
-      canManageSubscription: true,
-      canTopUp: true
+      canManageSubscription: true
     }),
     mockUiConfig: ref({
       showMembersList: true,
@@ -446,8 +445,7 @@ describe('useMembersPanel', () => {
       canManageMembers: true,
       canLeaveWorkspace: true,
       canAccessWorkspaceMenu: true,
-      canManageSubscription: true,
-      canTopUp: true
+      canManageSubscription: true
     }
     mockUiConfig.value = {
       showMembersList: true,

@@ -8,12 +8,11 @@ import PromptDialogContent from '@/components/dialog/content/PromptDialogContent
 import TopUpCreditsDialogContentLegacy from '@/components/dialog/content/TopUpCreditsDialogContentLegacy.vue'
 import InsufficientCreditsMemberDialog from '@/platform/workspace/components/InsufficientCreditsMemberDialog.vue'
 import TopUpCreditsDialogContentWorkspace from '@/platform/workspace/components/TopUpCreditsDialogContentWorkspace.vue'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 import { isCloud } from '@/platform/distribution/types'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useBillingPolicyCapabilities } from '@/platform/cloud/subscription/composables/useBillingPolicyCapabilities'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import type {
@@ -335,10 +334,8 @@ export const useDialogService = () => {
     isInsufficientCredits?: boolean
   }) {
     const { type } = useBillingContext()
-    const { billingPolicyCapabilities } = useBillingPolicyCapabilities()
-    if (
-      billingPolicyCapabilities.value.topUpAccess === 'subscription-required'
-    ) {
+    const { canTopUp, canSubscribeSelfServe } = useBillingCapabilities()
+    if (!canTopUp.value && canSubscribeSelfServe.value) {
       await showSubscriptionRequiredDialog({
         reason: options?.isInsufficientCredits
           ? 'out_of_credits'
@@ -347,12 +344,7 @@ export const useDialogService = () => {
       return
     }
 
-    // Members can't top up a team workspace, so they get a read-only
-    // "ask your workspace admins" notice instead of the purchase dialog.
-    if (
-      type.value === 'workspace' &&
-      !useWorkspaceUI().permissions.value.canTopUp
-    ) {
+    if (!canTopUp.value) {
       return dialogStore.showDialog({
         key: 'insufficient-credits-member',
         component: InsufficientCreditsMemberDialog,
