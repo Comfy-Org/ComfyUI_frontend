@@ -148,6 +148,7 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
+import { useAgentConsent } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { whileMouseDown } from '@/utils/mouseDownUtil'
@@ -170,13 +171,19 @@ const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const commandStore = useCommandStore()
 const agentPanelStore = useAgentPanelStore()
+const { withConsent } = useAgentConsent()
 const tabActivity = useWorkflowTabActivityStore()
 
 function onAgentEntryClick(): void {
   useTelemetry()?.trackAgentEntryButtonClicked({
     resulting_state: agentPanelStore.isOpen ? 'closed' : 'opened'
   })
-  agentPanelStore.toggle()
+  // Closing never needs consent; opening does, the first time.
+  if (agentPanelStore.isOpen) {
+    agentPanelStore.toggle()
+    return
+  }
+  withConsent(() => agentPanelStore.open())
 }
 const { isLoggedIn } = useCurrentUser()
 // Dismiss a tab's terminal status badge once it has been viewed
