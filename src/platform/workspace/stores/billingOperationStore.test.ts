@@ -368,6 +368,37 @@ describe('billingOperationStore', () => {
       expect(mockSettingsDialogShow).toHaveBeenCalledWith('workspace')
     })
 
+    it('does not refresh the new workspace when switching during reconciliation', async () => {
+      let finishStatusRefresh: () => void = () => {}
+      mockFetchStatus.mockImplementationOnce(
+        () =>
+          new Promise<void>((resolve) => {
+            finishStatusRefresh = resolve
+          })
+      )
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-1', 'topup')
+      await vi.advanceTimersByTimeAsync(0)
+      expect(mockFetchStatus).toHaveBeenCalledOnce()
+
+      mockActiveWorkspaceId.value = 'workspace-2'
+      finishStatusRefresh()
+      await terminal
+
+      expect(mockFetchBalance).not.toHaveBeenCalled()
+      expect(mockCloseDialog).not.toHaveBeenCalled()
+      expect(mockSettingsDialogShow).not.toHaveBeenCalled()
+      expect(mockToastAdd).not.toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'success' })
+      )
+    })
+
     it('opens Credits settings after a polled local topup succeeds', async () => {
       mockDistributionTypes.isCloud = false
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
@@ -956,7 +987,7 @@ describe('billingOperationStore', () => {
   })
 
   describe('polling timeout', () => {
-    it('times out a subscription while its workspace is inactive', async () => {
+    it('does not time out a subscription while its workspace is inactive', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-1',
         status: 'pending',
@@ -969,7 +1000,10 @@ describe('billingOperationStore', () => {
 
       await vi.advanceTimersByTimeAsync(5 * 60_000 + 8001)
 
-      expect(store.getOperation('op-1')?.status).toBe('timeout')
+      expect(store.getOperation('op-1')?.status).toBe('pending')
+      expect(mockToastAdd).not.toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
     })
 
     it('restarts a subscription operation after a polling timeout', async () => {
