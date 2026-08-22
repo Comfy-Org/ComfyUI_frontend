@@ -2,11 +2,11 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { components } from '@/types/comfyRegistryTypes'
-import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 import { useNodeConflictDialog } from '@/workbench/extensions/manager/composables/useNodeConflictDialog'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import type { ConflictDetail } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
+import { createPackInstallPayload } from '@/workbench/extensions/manager/utils/packInstallPayload'
 
 type NodePack = components['schemas']['Node']
 
@@ -27,29 +27,10 @@ export function usePackInstall(
     return nodePacks.some((pack) => managerStore.isPackInstalling(pack.id))
   })
 
-  const createPayload = (installItem: NodePack) => {
-    if (!installItem.id) {
-      throw new Error(t('manager.packInstall.nodeIdRequired'))
-    }
-
-    const isUnclaimedPack = installItem.publisher?.name === 'Unclaimed'
-    const versionToInstall = isUnclaimedPack
-      ? ('nightly' as ManagerComponents['schemas']['SelectedVersion'])
-      : (installItem.latest_version?.version ??
-        ('latest' as ManagerComponents['schemas']['SelectedVersion']))
-
-    return {
-      id: installItem.id,
-      repository: installItem.repository ?? '',
-      channel: 'dev' as ManagerComponents['schemas']['ManagerChannel'],
-      mode: 'cache' as ManagerComponents['schemas']['ManagerDatabaseSource'],
-      selected_version: versionToInstall,
-      version: versionToInstall
-    }
-  }
-
   const installPack = (item: NodePack) =>
-    managerStore.installPack.call(createPayload(item))
+    managerStore.installPack.call(
+      createPackInstallPayload(item, t('manager.packInstall.nodeIdRequired'))
+    )
 
   const performInstallation = async (packs: NodePack[]) => {
     try {

@@ -34,6 +34,93 @@ vi.mock('@/stores/workspace/sidebarTabStore', () => ({
   useSidebarTabStore: () => mockSidebarTabStore
 }))
 
+type ModelMetadata = {
+  fileSize: number | null
+  gatedRepoUrl: string | null
+}
+
+type ModelMetadataFetchOutcome = {
+  metadata: ModelMetadata
+  resolution: 'resolved' | 'failed'
+}
+
+type FetchModelMetadataWithStatus = (
+  url: string
+) => Promise<ModelMetadataFetchOutcome>
+
+type ModelDownloadRequest = Parameters<typeof downloadModel>[0]
+type ModelFolderPaths = Parameters<typeof downloadModel>[1]
+type ModelDownloadDispatchOutcome =
+  | {
+      status: 'not-dispatched'
+      reason: 'not-downloadable' | 'missing-directory-path'
+    }
+  | { status: 'browser-requested' }
+  | {
+      status: 'host-requested'
+      host: 'desktop2' | 'electron'
+      hostResult: Promise<boolean>
+    }
+  | {
+      status: 'dispatch-failed'
+      host: 'desktop2' | 'electron'
+      error: unknown
+    }
+type DispatchModelDownload = (
+  model: ModelDownloadRequest,
+  paths: ModelFolderPaths,
+  options?: { revealLegacyDownload?: boolean }
+) => ModelDownloadDispatchOutcome
+
+function isMetadataOutcomeModule(value: unknown): value is {
+  fetchModelMetadataWithStatus: FetchModelMetadataWithStatus
+} {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'fetchModelMetadataWithStatus' in value &&
+    typeof value.fetchModelMetadataWithStatus === 'function'
+  )
+}
+
+function isDispatchModule(value: unknown): value is {
+  dispatchModelDownload: DispatchModelDownload
+} {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'dispatchModelDownload' in value &&
+    typeof value.dispatchModelDownload === 'function'
+  )
+}
+
+const modulePath = './missingModelDownload'
+const missingModelDownloadModule: unknown = await import(modulePath)
+
+function getFetchModelMetadataWithStatus(): FetchModelMetadataWithStatus {
+  if (!isMetadataOutcomeModule(missingModelDownloadModule)) {
+    throw new Error('Expected fetchModelMetadataWithStatus to be exported')
+  }
+
+  return missingModelDownloadModule.fetchModelMetadataWithStatus
+}
+
+function getDispatchModelDownload(): DispatchModelDownload {
+  if (!isDispatchModule(missingModelDownloadModule)) {
+    throw new Error('Expected dispatchModelDownload to be exported')
+  }
+
+  return missingModelDownloadModule.dispatchModelDownload
+}
+
+function downloadableModel(): ModelDownloadRequest {
+  return {
+    name: 'model.safetensors',
+    url: 'https://huggingface.co/org/model/resolve/main/model.safetensors',
+    directory: 'checkpoints'
+  }
+}
+
 beforeEach(() => {
   vi.stubGlobal('fetch', fetchMock)
   clearMetadataCache()
@@ -295,6 +382,120 @@ describe('fetchModelMetadata', () => {
   })
 })
 
+describe('fetchModelMetadataWithStatus', () => {
+  it('reports a non-OK allowed metadata response as failed', async () => {
+    const fetchModelMetadataWithStatus = getFetchModelMetadataWithStatus()
+    const url =
+      'https://huggingface.co/org/model/resolve/main/not-found.safetensors'
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 404,
+      headers: new Headers()
+    })
+
+    await expect(fetchModelMetadataWithStatus(url)).resolves.toEqual({
+      metadata: { fileSize: null, gatedRepoUrl: null },
+      resolution: 'failed'
+    })
+  })
+
+  it('reports an allowed metadata network error as failed', async () => {
+    const fetchModelMetadataWithStatus = getFetchModelMetadataWithStatus()
+    const url =
+      'https://huggingface.co/org/model/resolve/main/network.safetensors'
+    fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+
+    await expect(fetchModelMetadataWithStatus(url)).resolves.toEqual({
+      metadata: { fileSize: null, gatedRepoUrl: null },
+      resolution: 'failed'
+    })
+  })
+
+  it('reports gated HuggingFace proof as resolved manual metadata', async () => {
+    const fetchModelMetadataWithStatus = getFetchModelMetadataWithStatus()
+    const url =
+      'https://huggingface.co/bfl/FLUX.1/resolve/main/gated.safetensors'
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 403,
+      headers: new Headers({ 'x-error-code': 'GatedRepo' })
+    })
+
+    await expect(fetchModelMetadataWithStatus(url)).resolves.toEqual({
+      metadata: {
+        fileSize: null,
+        gatedRepoUrl: 'https://huggingface.co/bfl/FLUX.1'
+      },
+      resolution: 'resolved'
+    })
+  })
+
+  it('reports a successful response without size as resolved', async () => {
+    const fetchModelMetadataWithStatus = getFetchModelMetadataWithStatus()
+    const url =
+      'https://huggingface.co/org/model/resolve/main/no-size-outcome.safetensors'
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      headers: new Headers()
+    })
+
+    await expect(fetchModelMetadataWithStatus(url)).resolves.toEqual({
+      metadata: { fileSize: null, gatedRepoUrl: null },
+      resolution: 'resolved'
+    })
+  })
+
+  it('reports non-allowlisted URLs as resolved unsupported metadata', async () => {
+    const fetchModelMetadataWithStatus = getFetchModelMetadataWithStatus()
+
+    await expect(
+      fetchModelMetadataWithStatus('https://example.com/model.safetensors')
+    ).resolves.toEqual({
+      metadata: { fileSize: null, gatedRepoUrl: null },
+      resolution: 'resolved'
+    })
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('reports an unrecognized allowed Civitai URL as failed', async () => {
+    const fetchModelMetadataWithStatus = getFetchModelMetadataWithStatus()
+
+    await expect(
+      fetchModelMetadataWithStatus('https://civitai.com/api/v1/models/123')
+    ).resolves.toEqual({
+      metadata: { fileSize: null, gatedRepoUrl: null },
+      resolution: 'failed'
+    })
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('shares one inflight request and cache with the legacy metadata API', async () => {
+    const fetchModelMetadataWithStatus = getFetchModelMetadataWithStatus()
+    const url =
+      'https://huggingface.co/org/model/resolve/main/shared-outcome.safetensors'
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      headers: new Headers({ 'content-length': '2048' })
+    })
+
+    const [outcome, legacyMetadata] = await Promise.all([
+      fetchModelMetadataWithStatus(url),
+      fetchModelMetadata(url)
+    ])
+
+    expect(outcome).toEqual({
+      metadata: { fileSize: 2048, gatedRepoUrl: null },
+      resolution: 'resolved'
+    })
+    expect(legacyMetadata).toEqual({
+      fileSize: 2048,
+      gatedRepoUrl: null
+    })
+    await expect(fetchModelMetadataWithStatus(url)).resolves.toEqual(outcome)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+})
+
 describe('isTrustedHuggingFaceUrl', () => {
   it.for([
     { url: 'https://huggingface.co/org/model', expected: true },
@@ -462,6 +663,101 @@ describe('isModelDownloadable', () => {
         directory: 'checkpoints'
       })
     ).toBe(true)
+  })
+})
+
+describe('dispatchModelDownload', () => {
+  beforeEach(() => {
+    mockIsDesktop.value = false
+    mockSidebarTabStore.activeSidebarTabId = null
+  })
+
+  it('classifies a missing legacy Electron directory path without dispatching', () => {
+    mockIsDesktop.value = true
+
+    const outcome = getDispatchModelDownload()(downloadableModel(), {})
+
+    expect(outcome).toEqual({
+      status: 'not-dispatched',
+      reason: 'missing-directory-path'
+    })
+    expect(mockSidebarTabStore.activeSidebarTabId).toBeNull()
+    expect(mockStartDownload).not.toHaveBeenCalled()
+  })
+
+  it('keeps a legacy row download in the current modal when reveal is disabled', () => {
+    mockIsDesktop.value = true
+
+    const outcome = getDispatchModelDownload()(
+      downloadableModel(),
+      { checkpoints: ['/models/checkpoints'] },
+      { revealLegacyDownload: false }
+    )
+
+    expect(outcome).toMatchObject({
+      status: 'host-requested',
+      host: 'electron'
+    })
+    expect(mockSidebarTabStore.activeSidebarTabId).toBeNull()
+    expect(mockStartDownload).toHaveBeenCalledOnce()
+  })
+
+  it('preserves a false Desktop2 host result without interpreting it', async () => {
+    const desktopDownloadModel = vi.fn().mockResolvedValue(false)
+    window.__comfyDesktop2 = {
+      isRemote: () => false,
+      downloadModel: desktopDownloadModel
+    }
+
+    const outcome = getDispatchModelDownload()(downloadableModel(), {})
+
+    expect(outcome).toMatchObject({
+      status: 'host-requested',
+      host: 'desktop2'
+    })
+    if (outcome.status !== 'host-requested') {
+      throw new Error('Expected a Desktop2 host request')
+    }
+    await expect(outcome.hostResult).resolves.toBe(false)
+    expect(mockStartDownload).not.toHaveBeenCalled()
+  })
+
+  it('exposes a Desktop2 rejection through the host result', async () => {
+    const bridgeError = new Error('Desktop2 bridge rejected')
+    window.__comfyDesktop2 = {
+      isRemote: () => false,
+      downloadModel: vi.fn().mockRejectedValue(bridgeError)
+    }
+
+    const outcome = getDispatchModelDownload()(downloadableModel(), {})
+
+    expect(outcome).toMatchObject({
+      status: 'host-requested',
+      host: 'desktop2'
+    })
+    if (outcome.status !== 'host-requested') {
+      throw new Error('Expected a Desktop2 host request')
+    }
+    await expect(outcome.hostResult).rejects.toBe(bridgeError)
+  })
+
+  it('exposes an Electron rejection through the host result', async () => {
+    const electronError = new Error('Electron download rejected')
+    mockIsDesktop.value = true
+    mockStartDownload.mockRejectedValueOnce(electronError)
+
+    const outcome = getDispatchModelDownload()(downloadableModel(), {
+      checkpoints: ['/models/checkpoints']
+    })
+
+    expect(outcome).toMatchObject({
+      status: 'host-requested',
+      host: 'electron'
+    })
+    if (outcome.status !== 'host-requested') {
+      throw new Error('Expected an Electron host request')
+    }
+    await expect(outcome.hostResult).rejects.toBe(electronError)
   })
 })
 
@@ -713,5 +1009,19 @@ describe('downloadModel', () => {
       savePath: '/models/checkpoints',
       filename: 'model.safetensors'
     })
+  })
+
+  it('registers a rejection handler for legacy Electron downloads while returning undefined', () => {
+    mockIsDesktop.value = true
+    const hostResult = Promise.resolve(false)
+    const catchHandler = vi.spyOn(hostResult, 'catch')
+    mockStartDownload.mockReturnValueOnce(hostResult)
+
+    const result = downloadModel(downloadableModel(), {
+      checkpoints: ['/models/checkpoints']
+    })
+
+    expect(result).toBeUndefined()
+    expect(catchHandler).toHaveBeenCalledOnce()
   })
 })
