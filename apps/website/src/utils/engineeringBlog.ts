@@ -27,7 +27,7 @@ export interface EngineeringPostCard {
 }
 
 export function toCardProps(
-  entry: EngineeringBlogPostEntry
+  entry: Pick<EngineeringBlogPostEntry, 'id' | 'data'>
 ): EngineeringPostCard {
   return {
     slug: postSlug(entry.id),
