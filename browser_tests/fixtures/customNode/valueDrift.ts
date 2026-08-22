@@ -13,8 +13,11 @@ export const ROUNDTRIP_VALUE_ALLOWED_INDICES_LITEGRAPH: Record<
     LTXVSparseTrackEditor: '1'
   },
   'WhatDreamsCost-ComfyUI': {
-    LoadAudioUI: '2,3,5',
+    LoadAudioUI: '5',
     LTXDirector: '3,4,5,7'
+  },
+  'comfyui-sam3': {
+    SAM3VideoSegmentation: '1,2'
   },
   'comfyui-itools': {
     iToolsRegexNode: '0'
@@ -32,8 +35,11 @@ export const ROUNDTRIP_VALUE_ALLOWED_INDICES_VUE: Record<
     LTXVSparseTrackEditor: '1'
   },
   'WhatDreamsCost-ComfyUI': {
-    LoadAudioUI: '2,3,5',
+    LoadAudioUI: '5',
     LTXDirector: '3,4,5,7'
+  },
+  'comfyui-sam3': {
+    SAM3VideoSegmentation: '1,2'
   },
   'comfyui-itools': {
     iToolsRegexNode: '0'

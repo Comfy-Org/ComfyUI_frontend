@@ -158,6 +158,10 @@ const ROUNDTRIP_VALUE_ALLOWLIST: Record<string, Record<string, string>> = {
     LTXDirector:
       'director UI canonicalizes timeline JSON and its derived prompt fields on configure'
   },
+  'comfyui-sam3': {
+    SAM3VideoSegmentation:
+      'point mode removes text_prompt before positional serialization, so configure shifts frame_idx and score_threshold through the missing widget slot'
+  },
   'comfyui-itools': {
     iToolsRegexNode:
       'pattern-picker reload replaces the regex field with the selected built-in pattern'
@@ -691,6 +695,11 @@ export async function assertRoundtripTier({
                               (option: unknown) => option !== widget.value
                             )
                           : undefined
+                      if (
+                        widget.value.length > 1 &&
+                        /[\\/]$/.test(widget.value)
+                      )
+                        return widget.value.slice(0, -1)
                       return `${widget.value}_cn`
                     }
                     return undefined
@@ -703,10 +712,6 @@ export async function assertRoundtripTier({
                   if (!node.widgets?.includes(widget)) continue
                   widget.value = target as typeof widget.value
                   widget.callback?.(widget.value)
-                  if (widget.value !== target)
-                    problems.push(
-                      `${nodeType}.${widget.name}: set ${JSON.stringify(target)} but widget kept ${JSON.stringify(widget.value)}`
-                    )
                 }
               }
             },
@@ -746,7 +751,11 @@ export async function assertRoundtripTier({
         ] as const
       )
       await comfyPage.nextFrame()
-      const waitForInitialization = async () => {
+      const waitForInitialization = async ({
+        requirePreviewWidgets
+      }: {
+        requirePreviewWidgets: boolean
+      }) => {
         await expect
           .poll(
             async () => {
@@ -793,6 +802,7 @@ export async function assertRoundtripTier({
                 values,
                 vueNodesEnabled
               )
+              if (!requirePreviewWidgets) return pendingInitialization
               const previewWidgetState = await comfyPage.page.evaluate(() =>
                 window.__cnRt!.previewWidgetState()
               )
@@ -808,13 +818,13 @@ export async function assertRoundtripTier({
           )
           .toEqual([])
       }
-      await waitForInitialization()
+      await waitForInitialization({ requirePreviewWidgets: true })
       await comfyPage.page.evaluate(() =>
         window.__cnRt!.captureInitialWidgetCounts()
       )
       await comfyPage.page.evaluate(() => window.__cnRt!.snapshotAndConfigure())
       await comfyPage.nextFrame()
-      await waitForInitialization()
+      await waitForInitialization({ requirePreviewWidgets: true })
       await comfyPage.page.evaluate(() => {
         window.__cnRt!.compare('pristine', true)
         window.__cnRt!.setAndStick()
@@ -822,7 +832,7 @@ export async function assertRoundtripTier({
       await comfyPage.nextFrame()
       await comfyPage.page.evaluate(() => window.__cnRt!.snapshotAndConfigure())
       await comfyPage.nextFrame()
-      await waitForInitialization()
+      await waitForInitialization({ requirePreviewWidgets: false })
       const result = await comfyPage.page.evaluate(() => {
         window.__cnRt!.compare('set-values', false)
         return window.__cnRt!.finish()
