@@ -12,18 +12,18 @@ import { t } from '../../i18n/translations'
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const slides = computed<FeaturedSlide[]>(() =>
-  featuredEvents.map((event) => ({
+  featuredEvents(locale).map((event) => ({
     id: event.id,
     media: {
       type: event.media.type,
       src: event.media.src,
-      alt: event.media.alt[locale],
+      alt: event.media.alt,
       poster: event.media.type === 'video' ? event.media.poster : undefined
     },
-    eyebrow: event.eyebrow?.[locale],
-    title: event.title[locale],
+    eyebrow: event.eyebrow,
+    title: event.title,
     showTitle: event.showTitle,
-    href: event.href?.[locale],
+    href: event.href,
     newTab: event.newTab,
     autoplayMs: event.autoplayMs
   }))

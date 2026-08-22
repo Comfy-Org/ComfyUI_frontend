@@ -7,31 +7,33 @@ import type { Locale } from '../../i18n/translations'
 import AddToCalendarButton from '../../components/blocks/AddToCalendarButton.vue'
 import Button from '../../components/ui/button/Button.vue'
 import { localizeHref } from '../../config/routes'
-import {
-  eventPath,
-  eventVideoId,
-  toCalendarEvent,
-  upcomingEvents
-} from '../../data/events'
+import { upcomingEvents } from '../../data/events'
 import { t } from '../../i18n/translations'
 import { resolveRel } from '../../utils/cta'
+import { formatEventDateLabel } from '../../utils/eventDateLabel'
+import {
+  eventLocationLabel,
+  eventPath,
+  eventVideoId,
+  toCalendarEvent
+} from '../../utils/events'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 // Events with a stream open their own /events/[slug] page (dialog over the
 // directory); the rest link out to the event's page.
 const events = computed(() =>
-  upcomingEvents.map((event) => ({
+  upcomingEvents(locale).map((event) => ({
     ...event,
     calendarEvent: toCalendarEvent(event, locale),
-    ctaText:
-      event.ctaLabel?.[locale] ?? t('events.upcoming.livestream', locale),
+    dateLabel: formatEventDateLabel(event, locale),
+    locationLabel: eventLocationLabel(event, locale),
+    ctaText: event.ctaLabel ?? t('events.upcoming.livestream', locale),
     learnMore: eventVideoId(event)
       ? { href: localizeHref(eventPath(event), locale) }
-      : event.link && {
-          href: event.link.href[locale],
-          newTab: event.link.newTab
-        }
+      : event.href
+        ? { href: event.href, newTab: event.newTab }
+        : undefined
   }))
 )
 </script>
@@ -60,23 +62,26 @@ const events = computed(() =>
               <h3
                 class="text-lg font-medium text-primary-warm-white md:text-xl"
               >
-                {{ event.title[locale] }}
+                {{ event.title }}
               </h3>
               <p
                 class="mt-2 text-sm font-light text-primary-comfy-canvas/60 md:text-base"
               >
-                {{ event.description[locale] }}
+                {{ event.description }}
               </p>
               <div
                 class="mt-2 flex flex-col gap-2 text-sm font-light text-primary-comfy-canvas/60"
               >
-                <span v-if="event.location" class="flex items-center gap-2">
+                <span
+                  v-if="event.locationLabel"
+                  class="flex items-center gap-2"
+                >
                   <MapPin class="size-4 shrink-0" aria-hidden="true" />
-                  {{ event.location[locale] }}
+                  {{ event.locationLabel }}
                 </span>
-                <span v-if="event.dateLabel" class="flex items-center gap-2">
+                <span class="flex items-center gap-2">
                   <Calendar class="size-4 shrink-0" aria-hidden="true" />
-                  {{ event.dateLabel[locale] }}
+                  {{ event.dateLabel }}
                 </span>
               </div>
               <div v-if="event.calendarEvent" class="mt-4">
@@ -100,7 +105,7 @@ const events = computed(() =>
                 })
               "
               :append-icon="ArrowRight"
-              :aria-label="`${event.title[locale]} — ${event.ctaText}`"
+              :aria-label="`${event.title} — ${event.ctaText}`"
               class="shrink-0 normal-case"
             >
               {{ event.ctaText }}

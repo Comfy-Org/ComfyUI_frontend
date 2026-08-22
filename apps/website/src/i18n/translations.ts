@@ -5142,11 +5142,16 @@ const translations = {
     en: 'Next featured event',
     'zh-CN': '下一个精选活动'
   },
+  'events.hero.upcomingLivestream': {
+    en: 'UPCOMING LIVESTREAM',
+    'zh-CN': '即将直播'
+  },
   'events.upcoming.title': {
     en: 'Upcoming events',
     'zh-CN': '即将举行的活动'
   },
   'events.upcoming.livestream': { en: 'Livestream', 'zh-CN': '直播' },
+  'events.location.online': { en: 'Online', 'zh-CN': '线上' },
   'events.upcoming.addToCalendar': {
     en: 'Add to calendar',
     'zh-CN': '添加到日历'

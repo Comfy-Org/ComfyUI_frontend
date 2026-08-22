@@ -6,13 +6,14 @@ import type { Locale } from '../../i18n/translations'
 import CardArticleGallery01 from '../../components/blocks/CardArticleGallery01.vue'
 import type { CardArticleGalleryItem } from '../../components/blocks/CardArticleGallery01.vue'
 import { localizeHref } from '../../config/routes'
-import { eventPath, eventVideoId, pastEvents } from '../../data/events'
+import { pastEvents } from '../../data/events'
 import { t } from '../../i18n/translations'
+import { eventPath, eventVideoId } from '../../utils/events'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const items = computed<CardArticleGalleryItem[]>(() =>
-  pastEvents.flatMap((event) => {
+  pastEvents(locale).flatMap((event) => {
     // Card art falls back to the carousel art for events that became past
     // before dedicated card art was added; a card cannot render without media.
     const media = event.media ?? event.featured?.media
@@ -25,17 +26,17 @@ const items = computed<CardArticleGalleryItem[]>(() =>
       {
         id: event.id,
         category: t(`events.category.${event.category}`, locale),
-        title: event.title[locale],
+        title: event.title,
         media: {
           type: media.type,
           src: media.src,
-          alt: media.alt[locale],
+          alt: media.alt,
           poster: media.type === 'video' ? media.poster : undefined
         },
         cta: {
           label: t('events.past.watchNow', locale),
-          href: external ? (event.link?.href[locale] ?? pageHref) : pageHref,
-          newTab: external ? event.link?.newTab : undefined
+          href: external ? (event.href ?? pageHref) : pageHref,
+          newTab: external ? event.newTab : undefined
         }
       }
     ]

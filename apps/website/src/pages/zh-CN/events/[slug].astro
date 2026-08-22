@@ -4,9 +4,9 @@ import EventPage from '../../../templates/events/EventPage.astro'
 import { getEventBySlug, watchableEvents } from '../../../data/events'
 
 export const getStaticPaths: GetStaticPaths = () =>
-  watchableEvents.map((event) => ({ params: { slug: event.id } }))
+  watchableEvents('zh-CN').map((event) => ({ params: { slug: event.id } }))
 
-const event = getEventBySlug(Astro.params.slug as string)!
+const event = getEventBySlug(Astro.params.slug as string, 'zh-CN')!
 ---
 
 <EventPage event={event} />

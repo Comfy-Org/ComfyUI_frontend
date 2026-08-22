@@ -1,238 +1,79 @@
 import { describe, expect, it } from 'vitest'
 
-import type { ComfyEvent } from './events'
-import {
-  deriveFeaturedEvents,
-  derivePastEvents,
-  deriveUpcomingEvents,
-  eventJsonLdNode,
-  eventStatus,
-  pastEvents,
-  toCalendarEvent,
-  upcomingEvents
-} from './events'
+import type { ComfyEventSource } from './events'
+import { eventsForLocale, flattenEvent } from './events'
 
-const baseEvent: ComfyEvent = {
-  id: 'test-event',
-  category: 'livestream',
-  title: { en: 'Test Event', 'zh-CN': '测试活动' },
-  description: { en: 'A livestream.', 'zh-CN': '直播。' },
-  location: { en: 'Online', 'zh-CN': '线上' },
-  dateLabel: { en: 'August 5, 2026', 'zh-CN': '2026年8月5日' },
-  startDateTime: '2026-08-05T13:00:00-07:00',
-  link: { href: { en: '/launches', 'zh-CN': '/zh-CN/launches' } }
+const source: ComfyEventSource = {
+  id: 'sample',
+  category: 'community',
+  title: { en: 'Sample Event', 'zh-CN': '样例活动' },
+  description: { en: 'A sample.', 'zh-CN': '一个样例。' },
+  locationMode: 'in-person',
+  locationName: { en: 'Los Angeles, CA', 'zh-CN': '美国加州洛杉矶' },
+  startDateTime: '2026-08-26T18:00:00-07:00',
+  href: '/launches',
+  newTab: true,
+  ctaLabel: { en: 'Register', 'zh-CN': '报名' },
+  media: {
+    type: 'image',
+    src: 'https://media.comfy.org/a.avif',
+    alt: { en: 'Sample art', 'zh-CN': '样例图' }
+  },
+  featured: {
+    order: 1,
+    media: {
+      type: 'video',
+      src: 'https://media.comfy.org/a.mp4',
+      alt: { en: 'Sample video', 'zh-CN': '样例视频' },
+      poster: 'https://media.comfy.org/a.jpg'
+    }
+  }
 }
 
-describe('toCalendarEvent', () => {
-  it('maps localized fields and appends an absolute event link', () => {
-    expect(toCalendarEvent(baseEvent, 'en')).toMatchObject({
-      title: 'Test Event',
-      description: 'A livestream.\n\nhttps://comfy.org/launches',
-      location: 'Online'
+describe('flattenEvent', () => {
+  it('flattens every localized field to the requested locale', () => {
+    expect(flattenEvent(source, 'zh-CN')).toMatchObject({
+      id: 'sample',
+      title: '样例活动',
+      description: '一个样例。',
+      locationMode: 'in-person',
+      locationName: '美国加州洛杉矶',
+      ctaLabel: '报名',
+      media: { alt: '样例图' },
+      featured: { order: 1, media: { alt: '样例视频' } }
     })
   })
 
-  it('uses the requested locale', () => {
-    expect(toCalendarEvent(baseEvent, 'zh-CN')).toMatchObject({
-      title: '测试活动',
-      description: '直播。\n\nhttps://comfy.org/zh-CN/launches',
-      location: '线上'
-    })
-  })
+  it('localizes relative hrefs per locale and keeps absolute ones', () => {
+    expect(flattenEvent(source, 'en').href).toBe('/launches')
+    expect(flattenEvent(source, 'zh-CN').href).toBe('/zh-CN/launches')
 
-  it('links events that have their own page to that page', () => {
-    const event: ComfyEvent = { ...baseEvent, liveVideoId: 'abc123' }
-
-    expect(toCalendarEvent(event, 'en').description).toBe(
-      'A livestream.\n\nhttps://comfy.org/events/test-event'
-    )
-    expect(toCalendarEvent(event, 'zh-CN').description).toBe(
-      '直播。\n\nhttps://comfy.org/zh-CN/events/test-event'
+    const external: ComfyEventSource = {
+      ...source,
+      href: 'https://luma.com/nd0u29u8'
+    }
+    expect(flattenEvent(external, 'zh-CN').href).toBe(
+      'https://luma.com/nd0u29u8'
     )
   })
 
-  it('keeps absolute links untouched', () => {
-    const event: ComfyEvent = {
-      ...baseEvent,
-      link: {
-        href: {
-          en: 'https://www.youtube.com/live/abc',
-          'zh-CN': 'https://www.youtube.com/live/abc'
-        }
-      }
+  it('carries online events without a location name', () => {
+    const online: ComfyEventSource = {
+      ...source,
+      locationMode: 'online',
+      locationName: undefined
     }
 
-    expect(toCalendarEvent(event, 'en').description).toBe(
-      'A livestream.\n\nhttps://www.youtube.com/live/abc'
-    )
-  })
-
-  it('schedules a one-hour slot starting at the event start', () => {
-    const calendarEvent = toCalendarEvent(baseEvent, 'en')
-
-    expect(calendarEvent.start.toISOString()).toBe('2026-08-05T20:00:00.000Z')
-    expect(calendarEvent.end.toISOString()).toBe('2026-08-05T21:00:00.000Z')
-  })
-
-  it('honors an explicit end', () => {
-    const event: ComfyEvent = {
-      ...baseEvent,
-      endDateTime: '2026-08-05T16:00:00-07:00'
-    }
-
-    expect(toCalendarEvent(event, 'en').end.toISOString()).toBe(
-      '2026-08-05T23:00:00.000Z'
-    )
-  })
-})
-
-describe('eventStatus', () => {
-  it('is upcoming while the event is mid-window', () => {
-    expect(eventStatus(baseEvent, new Date('2026-08-05T13:30:00-07:00'))).toBe(
-      'upcoming'
-    )
-  })
-
-  it('is past from one hour after the start by default', () => {
-    expect(eventStatus(baseEvent, new Date('2026-08-05T14:00:00-07:00'))).toBe(
-      'past'
-    )
-  })
-
-  it('honors an explicit end past the one-hour default', () => {
-    const event: ComfyEvent = {
-      ...baseEvent,
-      endDateTime: '2026-08-05T16:00:00-07:00'
-    }
-
-    expect(eventStatus(event, new Date('2026-08-05T15:00:00-07:00'))).toBe(
-      'upcoming'
-    )
-    expect(eventStatus(event, new Date('2026-08-05T16:00:00-07:00'))).toBe(
-      'past'
-    )
-  })
-})
-
-const eventAt = (id: string, overrides: Partial<ComfyEvent>): ComfyEvent => ({
-  ...baseEvent,
-  id,
-  ...overrides
-})
-
-describe('event list derivation', () => {
-  const now = new Date('2026-08-01T00:00:00Z')
-  const list: readonly ComfyEvent[] = [
-    eventAt('later', { startDateTime: '2026-08-12T10:00:00-07:00' }),
-    eventAt('done', { startDateTime: '2026-07-01' }),
-    eventAt('sooner', { startDateTime: '2026-08-05T10:00:00-07:00' }),
-    eventAt('older', { startDateTime: '2026-06-20' })
-  ]
-
-  it('splits and orders upcoming events by start ascending', () => {
-    expect(deriveUpcomingEvents(list, now).map((event) => event.id)).toEqual([
-      'sooner',
-      'later'
-    ])
-  })
-
-  it('orders past events newest first by start', () => {
-    expect(derivePastEvents(list, now).map((event) => event.id)).toEqual([
-      'done',
-      'older'
-    ])
-  })
-})
-
-describe('deriveFeaturedEvents', () => {
-  const now = new Date('2026-08-01T00:00:00Z')
-  const media = {
-    type: 'image' as const,
-    src: 'https://media.comfy.org/a.jpg',
-    alt: { en: 'a', 'zh-CN': 'a' }
-  }
-  const list: readonly ComfyEvent[] = [
-    eventAt('plain', { startDateTime: '2026-08-05T10:00:00-07:00' }),
-    eventAt('second-slide', {
-      startDateTime: '2026-08-05T10:00:00-07:00',
-      liveVideoId: 'live1',
-      featured: { order: 2, media, autoplayMs: 5000 }
-    }),
-    eventAt('first-slide', {
-      startDateTime: '2026-06-24',
-      recordingVideoId: 'rec1',
-      featured: { order: 1, media }
+    expect(flattenEvent(online, 'en')).toMatchObject({
+      locationMode: 'online'
     })
-  ]
-
-  it('includes only featured events, ordered by featured.order', () => {
-    expect(deriveFeaturedEvents(list, now).map((slide) => slide.id)).toEqual([
-      'first-slide',
-      'second-slide'
-    ])
-  })
-
-  it('shows the upcoming eyebrow only on upcoming events', () => {
-    const [past, upcoming] = deriveFeaturedEvents(list, now)
-
-    expect(past.eyebrow).toBeUndefined()
-    expect(upcoming.eyebrow?.en).toBe('UPCOMING LIVESTREAM')
-  })
-
-  it('links slides to the event page when the event has one', () => {
-    const [past, upcoming] = deriveFeaturedEvents(list, now)
-
-    expect(past.href?.en).toBe('/events/first-slide')
-    expect(upcoming.href?.en).toBe('/events/second-slide')
-    expect(upcoming.autoplayMs).toBe(5000)
-    expect(upcoming.showTitle).toBe(false)
-  })
-})
-
-describe('eventJsonLdNode', () => {
-  const input = {
-    siteUrl: 'https://comfy.org',
-    site: undefined,
-    pageUrl: 'https://comfy.org/events/test-event/',
-    locale: 'en' as const
-  }
-
-  it('renders online events as a VirtualLocation with an absolute url', () => {
-    expect(eventJsonLdNode(baseEvent, input)).toMatchObject({
-      '@id': 'https://comfy.org/events/test-event/#event-test-event',
-      eventAttendanceMode: 'https://schema.org/OnlineEventAttendanceMode',
-      location: {
-        '@type': 'VirtualLocation',
-        url: 'https://comfy.org/launches/'
-      }
-    })
-  })
-
-  it('absolutizes the event page url when the event has no explicit link', () => {
-    const event: ComfyEvent = { ...baseEvent, link: undefined }
-
-    expect(eventJsonLdNode(event, input).location).toMatchObject({
-      '@type': 'VirtualLocation',
-      url: 'https://comfy.org/events/test-event/'
-    })
-  })
-
-  it('renders offline events as a Place with the localized venue name', () => {
-    const event: ComfyEvent = {
-      ...baseEvent,
-      location: { en: 'San Francisco', 'zh-CN': '旧金山' }
-    }
-
-    expect(eventJsonLdNode(event, input)).toMatchObject({
-      eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
-      location: { '@type': 'Place', name: 'San Francisco' }
-    })
+    expect(flattenEvent(online, 'en').locationName).toBeUndefined()
   })
 })
 
 describe('site event data', () => {
   it('has unique event ids', () => {
-    const ids = [...upcomingEvents, ...pastEvents].map((event) => event.id)
+    const ids = eventsForLocale('en').map((event) => event.id)
 
     expect(new Set(ids).size).toBe(ids.length)
   })

@@ -9,13 +9,9 @@ import EventsHeroSection from './EventsHeroSection.vue'
 import PastEventsSection from './PastEventsSection.vue'
 import UpcomingEventsSection from './UpcomingEventsSection.vue'
 import { localizeHref } from '../../config/routes'
-import {
-  eventJsonLdNode,
-  eventPath,
-  upcomingEvents,
-  watchablePastEvents
-} from '../../data/events'
+import { upcomingEvents, watchablePastEvents } from '../../data/events'
 import { t } from '../../i18n/translations'
+import { eventJsonLdNode, eventPath } from '../../utils/events'
 import type { JsonLdNode } from '../../utils/jsonLd'
 import { absoluteUrl, itemListNode, jsonLdId, pageContext } from '../../utils/jsonLd'
 
@@ -28,13 +24,13 @@ const { siteUrl, locale, url } = pageContext(
 const eventList = itemListNode(
   url,
   t('events.past.title', locale),
-  watchablePastEvents.map((event) => ({
-    name: event.title[locale],
+  watchablePastEvents(locale).map((event) => ({
+    name: event.title,
     url: absoluteUrl(Astro.site, localizeHref(eventPath(event), locale))
   }))
 )
 
-const upcomingEventNodes: JsonLdNode[] = upcomingEvents.map((event) =>
+const upcomingEventNodes: JsonLdNode[] = upcomingEvents(locale).map((event) =>
   eventJsonLdNode(event, { siteUrl, site: Astro.site, pageUrl: url, locale })
 )
 

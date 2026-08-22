@@ -1,64 +1,91 @@
-import { localizeHref } from '../config/routes'
 import type { Locale, LocalizedText } from '../i18n/translations'
-import type { CalendarEvent } from '../utils/calendar'
-import type { JsonLdNode } from '../utils/jsonLd'
-import { absoluteUrl, eventNode, jsonLdId } from '../utils/jsonLd'
+import type {
+  ComfyEvent,
+  EventCategory,
+  EventMedia,
+  FeaturedEvent,
+  LocationMode
+} from '../utils/events'
 
-type EventCategory = 'livestream' | 'hackathon' | 'community'
+import { localizeHref } from '../config/routes'
+import {
+  deriveFeaturedEvents,
+  derivePastEvents,
+  deriveUpcomingEvents,
+  eventStatus,
+  eventVideoId
+} from '../utils/events'
 
-type EventMedia =
+// The authoring shape: structurally the flat render model, but with every
+// localized text still carried per locale. Flattening to a single locale
+// happens at the accessors below — the render model never sees LocalizedText.
+// This shape survives only until the CMS drives events; it then becomes the
+// seed source.
+type LocalizedMedia =
   | { type: 'image'; src: string; alt: LocalizedText }
   | { type: 'video'; src: string; alt: LocalizedText; poster?: string }
 
-export type ComfyEvent = {
+export type ComfyEventSource = {
   id: string
   category: EventCategory
   title: LocalizedText
   description: LocalizedText
-  location?: LocalizedText
-  /** Hand-written display date shown on upcoming rows. */
-  dateLabel?: LocalizedText
-  /** ISO start; drives upcoming/past classification, past-section sort order,
-   * and VideoObject uploadDate. Approximate (set to the recording's publish
-   * date) for events that predate this field. */
+  locationMode: LocationMode
+  locationName?: LocalizedText
   startDateTime: string
-  /** Defaults to one hour after the start. */
   endDateTime?: string
-  /** External target used when the event has no /events/[slug] page. */
-  link?: { href: LocalizedText; newTab?: boolean }
-  /** Overrides the default "Livestream" label on the upcoming-list CTA (e.g.
-   * "Register" for in-person events that link out to a registration page). */
+  /** IANA zone the display date renders in. Defaults to Pacific. */
+  timeZone?: string
+  /** Absolute URL, or a site-relative path localized during flattening. */
+  href?: string
+  newTab?: boolean
   ctaLabel?: LocalizedText
-  /** Past-gallery card art. */
-  media?: EventMedia
+  media?: LocalizedMedia
   liveVideoId?: string
-  /** Supersedes liveVideoId once the recording is published. */
   recordingVideoId?: string
   featured?: {
     order: number
-    media: EventMedia
+    media: LocalizedMedia
     autoplayMs?: number
     showTitle?: boolean
   }
 }
 
-export type FeaturedEvent = {
-  id: string
-  eyebrow?: LocalizedText
-  title: LocalizedText
-  showTitle: boolean
-  media: EventMedia
-  href?: LocalizedText
-  newTab?: boolean
-  autoplayMs?: number
+function flattenMedia(media: LocalizedMedia, locale: Locale): EventMedia {
+  return { ...media, alt: media.alt[locale] }
 }
 
-const UPCOMING_LIVESTREAM: LocalizedText = {
-  en: 'UPCOMING LIVESTREAM',
-  'zh-CN': '即将直播'
+export function flattenEvent(
+  source: ComfyEventSource,
+  locale: Locale
+): ComfyEvent {
+  const {
+    title,
+    description,
+    locationName,
+    ctaLabel,
+    media,
+    featured,
+    href,
+    ...rest
+  } = source
+  return {
+    ...rest,
+    title: title[locale],
+    description: description[locale],
+    ...(locationName && { locationName: locationName[locale] }),
+    ...(ctaLabel && { ctaLabel: ctaLabel[locale] }),
+    ...(media && { media: flattenMedia(media, locale) }),
+    ...(featured && {
+      featured: { ...featured, media: flattenMedia(featured.media, locale) }
+    }),
+    ...(href && {
+      href: href.startsWith('/') ? localizeHref(href, locale) : href
+    })
+  }
 }
 
-function eventImage(fileName: string, alt: LocalizedText): EventMedia {
+function eventImage(fileName: string, alt: LocalizedText): LocalizedMedia {
   return {
     type: 'image',
     src: `https://media.comfy.org/website/events/${fileName}`,
@@ -70,7 +97,7 @@ function eventVideo(
   fileName: string,
   alt: LocalizedText,
   posterFileName?: string
-): EventMedia {
+): LocalizedMedia {
   return {
     type: 'video',
     src: `https://media.comfy.org/website/events/${fileName}`,
@@ -81,132 +108,8 @@ function eventVideo(
   }
 }
 
-const launchesHref: LocalizedText = {
-  en: localizeHref('/launches', 'en'),
-  'zh-CN': localizeHref('/launches', 'zh-CN')
-}
-
-export function youtubeWatchHref(videoId: string): LocalizedText {
-  const href = `https://www.youtube.com/watch?v=${videoId}`
-  return { en: href, 'zh-CN': href }
-}
-
-export const eventPath = (event: { id: string }): string =>
-  `/events/${event.id}`
-
-function eventPageHref(id: string): LocalizedText {
-  return {
-    en: localizeHref(eventPath({ id }), 'en'),
-    'zh-CN': localizeHref(eventPath({ id }), 'zh-CN')
-  }
-}
-
-export const eventVideoId = (event: ComfyEvent): string | undefined =>
-  event.recordingVideoId ?? event.liveVideoId
-
-const EVENT_DURATION_MS = 60 * 60 * 1000
-const SITE_ORIGIN = 'https://comfy.org'
-
-export function toCalendarEvent(
-  event: ComfyEvent,
-  locale: Locale
-): CalendarEvent {
-  const target = eventVideoId(event)
-    ? eventPageHref(event.id)[locale]
-    : (event.link?.href[locale] ?? eventPageHref(event.id)[locale])
-  const href = new URL(target, SITE_ORIGIN).href
-  const start = new Date(event.startDateTime)
-  return {
-    title: event.title[locale],
-    description: `${event.description[locale]}\n\n${href}`,
-    location: event.location?.[locale] ?? '',
-    start,
-    end: eventEnd(event)
-  }
-}
-
-export function eventJsonLdNode(
-  event: ComfyEvent,
-  input: {
-    siteUrl: string
-    site: URL | undefined
-    pageUrl: string
-    locale: Locale
-  }
-): JsonLdNode {
-  const { siteUrl, site, pageUrl, locale } = input
-  const href =
-    event.link?.href[locale] ?? localizeHref(eventPath(event), locale)
-  const online = event.location?.en === 'Online'
-  return eventNode({
-    siteUrl,
-    id: jsonLdId(pageUrl, `event-${event.id}`),
-    name: event.title[locale],
-    description: event.description[locale],
-    startDate: event.startDateTime,
-    ...(online
-      ? { virtualUrl: href.startsWith('/') ? absoluteUrl(site, href) : href }
-      : { placeName: event.location?.[locale] }),
-    locale
-  })
-}
-
-function eventEnd(event: ComfyEvent): Date {
-  if (event.endDateTime) return new Date(event.endDateTime)
-  return new Date(new Date(event.startDateTime).getTime() + EVENT_DURATION_MS)
-}
-
-export type EventStatus = 'upcoming' | 'past'
-
-export function eventStatus(event: ComfyEvent, now: Date): EventStatus {
-  return now.getTime() >= eventEnd(event).getTime() ? 'past' : 'upcoming'
-}
-
-export function deriveUpcomingEvents(
-  events: readonly ComfyEvent[],
-  now: Date
-): readonly ComfyEvent[] {
-  return events
-    .filter((event) => eventStatus(event, now) === 'upcoming')
-    .sort((a, b) => Date.parse(a.startDateTime) - Date.parse(b.startDateTime))
-}
-
-export function derivePastEvents(
-  events: readonly ComfyEvent[],
-  now: Date
-): readonly ComfyEvent[] {
-  return events
-    .filter((event) => eventStatus(event, now) === 'past')
-    .sort((a, b) => Date.parse(b.startDateTime) - Date.parse(a.startDateTime))
-}
-
-export function deriveFeaturedEvents(
-  events: readonly ComfyEvent[],
-  now: Date
-): readonly FeaturedEvent[] {
-  return events
-    .flatMap((event) =>
-      event.featured ? [{ event, featured: event.featured }] : []
-    )
-    .sort((a, b) => a.featured.order - b.featured.order)
-    .map(({ event, featured }) => ({
-      id: event.id,
-      eyebrow:
-        eventStatus(event, now) === 'upcoming' &&
-        event.category === 'livestream'
-          ? UPCOMING_LIVESTREAM
-          : undefined,
-      title: event.title,
-      showTitle: featured.showTitle ?? false,
-      media: featured.media,
-      href: eventVideoId(event) ? eventPageHref(event.id) : event.link?.href,
-      newTab: eventVideoId(event) ? false : event.link?.newTab,
-      autoplayMs: featured.autoplayMs
-    }))
-}
-
 // zh-CN copy is a first pass and pending native review.
-const events: readonly ComfyEvent[] = [
+const events: readonly ComfyEventSource[] = [
   {
     id: 'la-august-meetup',
     category: 'community',
@@ -219,20 +122,12 @@ const events: readonly ComfyEvent[] = [
       'zh-CN':
         '欢迎参加在洛杉矶举办的官方 ComfyUI 见面会，地点位于卡尔弗城全新的 AI on the Lot 办公室。'
     },
-    location: { en: 'Los Angeles, CA', 'zh-CN': '美国加州洛杉矶' },
-    dateLabel: {
-      en: 'August 26, 2026 · 6–9 PM PT',
-      'zh-CN': '2026年8月26日 · 下午6点至9点（PT）'
-    },
+    locationMode: 'in-person',
+    locationName: { en: 'Los Angeles, CA', 'zh-CN': '美国加州洛杉矶' },
     startDateTime: '2026-08-26T18:00:00-07:00',
     endDateTime: '2026-08-26T21:00:00-07:00',
-    link: {
-      href: {
-        en: 'https://luma.com/nd0u29u8',
-        'zh-CN': 'https://luma.com/nd0u29u8'
-      },
-      newTab: true
-    },
+    href: 'https://luma.com/nd0u29u8',
+    newTab: true,
     ctaLabel: { en: 'Register', 'zh-CN': '报名' },
     media: eventImage('08.26_la-meetup.avif', {
       en: 'ComfyUI Official LA August Meet-Up',
@@ -251,24 +146,16 @@ const events: readonly ComfyEvent[] = [
       'zh-CN':
         '与 Moment Factory 合作的实操工作坊，探讨如何用 ComfyUI 将生成式 AI 融入大型空间设计，并在最后将 AI 生成的视觉投影到实体模型上。'
     },
-    location: {
+    locationMode: 'in-person',
+    locationName: {
       en: 'Édifice Wilder, Montréal, QC',
       'zh-CN': 'Édifice Wilder，加拿大魁北克蒙特利尔'
     },
-    dateLabel: {
-      en: 'August 27, 2026 · 1:30PM ET',
-      'zh-CN': '2026年8月27日 · 下午1:30（ET）'
-    },
     startDateTime: '2026-08-27T13:30:00-04:00',
     endDateTime: '2026-08-27T15:30:00-04:00',
-    link: {
-      href: {
-        en: 'https://forum.mutek.org/en/shows/2026/generative-ai-for-3d-projection-mapping-from-concept-to-canvas',
-        'zh-CN':
-          'https://forum.mutek.org/en/shows/2026/generative-ai-for-3d-projection-mapping-from-concept-to-canvas'
-      },
-      newTab: true
-    },
+    timeZone: 'America/New_York',
+    href: 'https://forum.mutek.org/en/shows/2026/generative-ai-for-3d-projection-mapping-from-concept-to-canvas',
+    newTab: true,
     ctaLabel: { en: 'Register', 'zh-CN': '报名' },
     featured: {
       order: 0,
@@ -294,23 +181,15 @@ const events: readonly ComfyEvent[] = [
       'zh-CN':
         'UCAN（由阿里巴巴设计主办）关于智能体商务的聚会——探讨 AI 如何从生成内容转向在真实业务流程中采取行动。Jo Zhang 将与来自 Alibaba、Figma、Stripe 等机构的讲者一同，探讨如何为信任而设计，以及将 AI 作为运营基础设施。'
     },
-    location: {
+    locationMode: 'in-person',
+    locationName: {
       en: 'Plug and Play Tech Center, Sunnyvale, CA',
       'zh-CN': 'Plug and Play 科技中心，加州森尼韦尔'
     },
-    dateLabel: {
-      en: 'September 13, 2026 · 2:00–6:30 PM PT',
-      'zh-CN': '2026年9月13日 · 下午2:00至6:30（PT）'
-    },
     startDateTime: '2026-09-13T14:00:00-07:00',
     endDateTime: '2026-09-13T18:30:00-07:00',
-    link: {
-      href: {
-        en: 'https://luma.com/ucan-2026',
-        'zh-CN': 'https://luma.com/ucan-2026'
-      },
-      newTab: true
-    },
+    href: 'https://luma.com/ucan-2026',
+    newTab: true,
     ctaLabel: { en: 'Register', 'zh-CN': '报名' },
     media: eventImage('agentic-commerce.avif', {
       en: 'UCAN: Agentic Commerce — Designing the Next Business Infrastructure',
@@ -329,11 +208,7 @@ const events: readonly ComfyEvent[] = [
       'zh-CN':
         '超越开箱即用的模型：现场演示如何为商业与影视制作构建自定义 ComfyUI 工作流。'
     },
-    location: { en: 'Online', 'zh-CN': '线上' },
-    dateLabel: {
-      en: 'August 19, 2026 · 10AM PT',
-      'zh-CN': '2026年8月19日 · 上午10点（PT）'
-    },
+    locationMode: 'online',
     startDateTime: '2026-08-19T10:00:00-07:00',
     liveVideoId: 'IzTI8oK_Wg4',
     media: eventVideo(
@@ -369,13 +244,10 @@ const events: readonly ComfyEvent[] = [
       'zh-CN':
         'Ingi Erlingsson 探讨 AI 后期制作的未来，聚焦自定义 LoRA 与动态图形节点。'
     },
-    location: { en: 'Online', 'zh-CN': '线上' },
-    dateLabel: {
-      en: 'August 5, 2026 · 10AM PT',
-      'zh-CN': '2026年8月5日 · 上午10点（PT）'
-    },
+    locationMode: 'online',
     startDateTime: '2026-08-05T10:00:00-07:00',
-    link: { href: launchesHref, newTab: false },
+    href: '/launches',
+    newTab: false,
     liveVideoId: '4xS4LOn3CTE',
     featured: {
       order: 3,
@@ -401,7 +273,7 @@ const events: readonly ComfyEvent[] = [
       en: 'Purz and Allyson put open-source and paid AI video models head to head in a live comparison.',
       'zh-CN': 'Purz 与 Allyson 现场对决开源与付费 AI 视频模型，实测效果对比。'
     },
-    location: { en: 'Online', 'zh-CN': '线上' },
+    locationMode: 'online',
     media: eventImage('august-12-livestream_v2.png', {
       en: 'Video Model Showdown livestream recording',
       'zh-CN': '视频模型对决直播回放'
@@ -422,7 +294,7 @@ const events: readonly ComfyEvent[] = [
       'zh-CN':
         'Comfy Creatives 社区在这场实战直播中集中体验最新模型——MiniMax H3、Seedance 2.5、Wan Animate 2 等。'
     },
-    location: { en: 'Online', 'zh-CN': '线上' },
+    locationMode: 'online',
     media: eventImage('livestream_aug-10.jpg', {
       en: 'Comfy Creatives Model Jam livestream recording',
       'zh-CN': 'Comfy Creatives 模型大乱斗直播回放'
@@ -441,6 +313,7 @@ const events: readonly ComfyEvent[] = [
       en: 'Our monthly livestream covering the latest ComfyUI launches and updates.',
       'zh-CN': '我们的月度直播，介绍 ComfyUI 最新发布与更新。'
     },
+    locationMode: 'online',
     media: eventImage('july-launches-v2.png', {
       en: 'July Launches livestream recording',
       'zh-CN': '七月发布直播回放'
@@ -460,6 +333,7 @@ const events: readonly ComfyEvent[] = [
       'zh-CN':
         '设计与技术工作室 Black Math 用 ComfyUI 在短短三周内打造了一场完整的黑客松体验。Jeremy Sahlman（Black Math 联合创始人兼首席创意官）分享幕后故事。'
     },
+    locationMode: 'online',
     media: eventImage('black-math_comfy.png', {
       en: 'Black Math X Comfy livestream with Jeremy Sahlman',
       'zh-CN': 'Black Math X Comfy 直播，嘉宾 Jeremy Sahlman'
@@ -479,6 +353,7 @@ const events: readonly ComfyEvent[] = [
       'zh-CN':
         'Comfy MCP 让 Claude、Cursor 以及几乎所有你正在使用的 AI 智能体为你构建、运行并迭代真实的 Comfy Cloud 工作流。欢迎观看 Jo Zhang 的现场演示。'
     },
+    locationMode: 'online',
     media: eventImage('mcp.jpg', {
       en: 'Run ComfyUI From Claude/Cursor with Comfy MCP livestream recording',
       'zh-CN': '通过 Comfy MCP 在 Claude/Cursor 中运行 ComfyUI 的直播回放'
@@ -498,6 +373,7 @@ const events: readonly ComfyEvent[] = [
       'zh-CN':
         'Erin Sarofsky（Sarofsky COO/创始人）与 Ryan Summers（Sarofsky 创意创新负责人）分享他们的团队如何用 ComfyUI 重塑工作室的生产流水线。'
     },
+    locationMode: 'online',
     media: eventImage('reinventing-the.png', {
       en: 'Reinventing the Production Pipeline livestream recording',
       'zh-CN': '重塑生产流水线直播回放'
@@ -517,6 +393,7 @@ const events: readonly ComfyEvent[] = [
       'zh-CN':
         '第一时间了解我们六月发布的所有内容：产品负责人 Jedrzej Kosinski、Alexis Rolland、Jo Zhang 和 Matt Miller 介绍桌面版、MCP 与核心引擎改进。'
     },
+    locationMode: 'online',
     media: eventImage('june-launch.jpg', {
       en: 'June Launches livestream recording',
       'zh-CN': '六月发布直播回放'
@@ -536,6 +413,7 @@ const events: readonly ComfyEvent[] = [
       'zh-CN':
         '与 Victor Perez（Krea CEO）、Miguel Lara（Krea 团队）以及 ComfyAnonymous（Comfy Org 联合创始人）的特别直播对谈，聊聊创意 AI 工具的打造。'
     },
+    locationMode: 'online',
     media: eventImage('krea.jpg', {
       en: 'Krea X Comfy Founders Live recording',
       'zh-CN': 'Krea X Comfy 创始人直播回放'
@@ -560,21 +438,33 @@ const events: readonly ComfyEvent[] = [
 // event moves between the upcoming and past sections on the next deploy.
 const BUILD_NOW = new Date()
 
-export const upcomingEvents = deriveUpcomingEvents(events, BUILD_NOW)
+export const eventsForLocale = (locale: Locale): readonly ComfyEvent[] =>
+  events.map((event) => flattenEvent(event, locale))
 
-export const pastEvents = derivePastEvents(events, BUILD_NOW)
+// The same build-time clock as the derived lists, so a detail page's body
+// always agrees with the section rendered behind its dialog.
+export const isPastAtBuild = (event: ComfyEvent): boolean =>
+  eventStatus(event, BUILD_NOW) === 'past'
 
-export const featuredEvents = deriveFeaturedEvents(events, BUILD_NOW)
+export const upcomingEvents = (locale: Locale): readonly ComfyEvent[] =>
+  deriveUpcomingEvents(eventsForLocale(locale), BUILD_NOW)
 
-export const watchablePastEvents: readonly ComfyEvent[] = pastEvents.filter(
-  (event) => eventVideoId(event)
-)
+export const pastEvents = (locale: Locale): readonly ComfyEvent[] =>
+  derivePastEvents(eventsForLocale(locale), BUILD_NOW)
+
+export const featuredEvents = (locale: Locale): readonly FeaturedEvent[] =>
+  deriveFeaturedEvents(eventsForLocale(locale), BUILD_NOW, locale)
+
+export const watchablePastEvents = (locale: Locale): readonly ComfyEvent[] =>
+  pastEvents(locale).filter((event) => eventVideoId(event))
 
 // Events with a stream or recording get their own /events/[slug] page; the
 // slug is the event id.
-export const watchableEvents: readonly ComfyEvent[] = events.filter((event) =>
-  eventVideoId(event)
-)
+export const watchableEvents = (locale: Locale): readonly ComfyEvent[] =>
+  eventsForLocale(locale).filter((event) => eventVideoId(event))
 
-export const getEventBySlug = (slug: string): ComfyEvent | undefined =>
-  watchableEvents.find((event) => event.id === slug)
+export const getEventBySlug = (
+  slug: string,
+  locale: Locale
+): ComfyEvent | undefined =>
+  watchableEvents(locale).find((event) => event.id === slug)

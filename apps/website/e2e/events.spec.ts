@@ -2,15 +2,15 @@ import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { localizeHref } from '../src/config/routes'
-import {
-  eventPath,
-  eventVideoId,
-  featuredEvents,
-  pastEvents,
-  upcomingEvents
-} from '../src/data/events'
+import { featuredEvents, pastEvents, upcomingEvents } from '../src/data/events'
 import type { Locale } from '../src/i18n/translations'
 import { t } from '../src/i18n/translations'
+import { formatEventDateLabel } from '../src/utils/eventDateLabel'
+import {
+  eventLocationLabel,
+  eventPath,
+  eventVideoId
+} from '../src/utils/events'
 import { test } from './fixtures/blockExternalMedia'
 
 const PATH_EN = '/events'
@@ -83,13 +83,17 @@ test.describe('Events page — desktop @smoke', () => {
   test('hero carousel next/prev cycle through featured slides in both locales', async ({
     page
   }) => {
-    test.skip(featuredEvents.length < 2, 'needs at least two featured events')
+    test.skip(
+      featuredEvents('en').length < 2,
+      'needs at least two featured events'
+    )
 
     // Reduced motion pauses autoplay so the slide only advances on click.
     await page.emulateMedia({ reducedMotion: 'reduce' })
 
     for (const [path, locale] of LOCALES) {
       await page.goto(path)
+      const slides = featuredEvents(locale)
       const hero = heroSection(page, locale)
       // Inactive slides are aria-hidden, so only the active slide's overlay
       // link is exposed; its accessible name is that slide's title.
@@ -100,7 +104,7 @@ test.describe('Events page — desktop @smoke', () => {
       const prevSlide = hero.getByRole('button', {
         name: t('events.hero.prevSlide', locale)
       })
-      const slideTitle = (index: number) => featuredEvents[index].title[locale]
+      const slideTitle = (index: number) => slides[index].title
 
       await expect(activeSlide).toHaveAccessibleName(slideTitle(0))
 
@@ -116,7 +120,7 @@ test.describe('Events page — desktop @smoke', () => {
       // Prev from the first slide wraps to the last.
       await prevSlide.click()
       await expect(activeSlide).toHaveAccessibleName(
-        slideTitle(featuredEvents.length - 1)
+        slideTitle(slides.length - 1)
       )
     }
   })
@@ -124,7 +128,8 @@ test.describe('Events page — desktop @smoke', () => {
   test('a video slide that ends while hovered advances once the pointer leaves', async ({
     page
   }) => {
-    const firstVideoIndex = featuredEvents.findIndex(
+    const slides = featuredEvents('en')
+    const firstVideoIndex = slides.findIndex(
       (event) => event.media.type === 'video'
     )
     test.skip(firstVideoIndex < 0, 'needs a featured video slide')
@@ -144,7 +149,7 @@ test.describe('Events page — desktop @smoke', () => {
     // The first featured slide is an image; advance to the first video slide.
     // Retry to wait out island hydration, but click only while the active slide
     // is not yet the video slide so a slow render never overshoots past it.
-    const videoSlideTitle = featuredEvents[firstVideoIndex].title.en
+    const videoSlideTitle = slides[firstVideoIndex].title
     await expect(async () => {
       const activeLabel = await activeSlide
         .locator('a')
@@ -184,35 +189,35 @@ test.describe('Events page — desktop @smoke', () => {
   }) => {
     for (const [path, locale] of LOCALES) {
       await page.goto(path)
+      const events = upcomingEvents(locale)
       const section = upcomingSection(page, locale)
       const rows = section.locator('li')
-      await expect(rows).toHaveCount(upcomingEvents.length)
+      await expect(rows).toHaveCount(events.length)
 
-      for (const [i, event] of upcomingEvents.entries()) {
+      for (const [i, event] of events.entries()) {
         const row = rows.nth(i)
-        await expect(row).toContainText(event.title[locale])
-        await expect(row).toContainText(event.location![locale])
-        await expect(row).toContainText(event.dateLabel![locale])
+        await expect(row).toContainText(event.title)
+        await expect(row).toContainText(eventLocationLabel(event, locale)!)
+        await expect(row).toContainText(formatEventDateLabel(event, locale))
 
         // In-person events override the CTA label (e.g. "Register"); the rest
         // fall back to the default "Livestream" label.
         const ctaLabel =
-          event.ctaLabel?.[locale] ?? t('events.upcoming.livestream', locale)
+          event.ctaLabel ?? t('events.upcoming.livestream', locale)
         const ctaLink = row.getByRole('link', {
-          name: `${event.title[locale]} — ${ctaLabel}`,
+          name: `${event.title} — ${ctaLabel}`,
           exact: true
         })
         // Events with a stream open their own detail page (dialog over the
         // directory); the rest link to the event's page.
-        const eventLink = event.link
         const expectedHref = eventVideoId(event)
           ? localizeHref(eventPath(event), locale)
-          : eventLink?.href[locale]
+          : event.href
         if (expectedHref) {
           await expect(ctaLink).toHaveAttribute('href', expectedHref)
         }
         // External registration links open in a new tab.
-        if (!eventVideoId(event) && eventLink?.newTab) {
+        if (!eventVideoId(event) && event.newTab) {
           await expect(ctaLink).toHaveAttribute('target', '_blank')
         }
       }
@@ -222,31 +227,34 @@ test.describe('Events page — desktop @smoke', () => {
   test('upcoming Livestream link opens the event page with the video dialog', async ({
     page
   }) => {
-    const event = upcomingEvents.find((entry) => eventVideoId(entry))
-    test.skip(!event, 'needs an upcoming event with a video')
+    test.skip(
+      !upcomingEvents('en').some((entry) => eventVideoId(entry)),
+      'needs an upcoming event with a video'
+    )
 
     for (const [path, locale] of LOCALES) {
       await page.goto(path)
+      const event = upcomingEvents(locale).find((entry) => eventVideoId(entry))!
       const section = upcomingSection(page, locale)
       await section.scrollIntoViewIfNeeded()
 
       await section
         .getByRole('link', {
-          name: `${event!.title[locale]} — ${t('events.upcoming.livestream', locale)}`
+          name: `${event.title} — ${t('events.upcoming.livestream', locale)}`
         })
         .click()
 
       await expect(page).toHaveURL(
-        new RegExp(`${localizeHref(eventPath(event!), locale)}/?$`)
+        new RegExp(`${localizeHref(eventPath(event), locale)}/?$`)
       )
-      const dialog = page.getByRole('dialog', { name: event!.title[locale] })
+      const dialog = page.getByRole('dialog', { name: event.title })
       await expect(dialog).toBeVisible()
       await expect(
-        dialog.getByRole('heading', { level: 1, name: event!.title[locale] })
+        dialog.getByRole('heading', { level: 1, name: event.title })
       ).toBeVisible()
       await expect(dialog.locator('iframe')).toHaveAttribute(
         'src',
-        new RegExp(eventVideoId(event!)!)
+        new RegExp(eventVideoId(event)!)
       )
 
       // Future events offer adding the stream to the visitor's calendar; the
@@ -293,12 +301,13 @@ test.describe('Events page — desktop @smoke', () => {
       const section = pastSection(page, locale)
       await section.scrollIntoViewIfNeeded()
 
+      const events = pastEvents(locale)
       const cards = section.locator('[data-slot="card"]')
-      await expect(cards).toHaveCount(pastEvents.length)
+      await expect(cards).toHaveCount(events.length)
 
-      for (const [i, event] of pastEvents.entries()) {
+      for (const [i, event] of events.entries()) {
         const card = cards.nth(i)
-        await expect(card).toContainText(event.title[locale])
+        await expect(card).toContainText(event.title)
         const watch = card.getByRole('link', {
           name: new RegExp(t('events.past.watchNow', locale))
         })
@@ -306,7 +315,7 @@ test.describe('Events page — desktop @smoke', () => {
         // event's external page.
         const expectedHref = eventVideoId(event)
           ? localizeHref(eventPath(event), locale)
-          : event.link!.href[locale]
+          : event.href!
         await expect(watch).toHaveAttribute('href', expectedHref)
       }
     }
@@ -321,7 +330,7 @@ test.describe('Events page — mobile @mobile', () => {
     const section = pastSection(page, 'en')
     await section.scrollIntoViewIfNeeded()
     const cards = section.locator('[data-slot="card"]')
-    await expect(cards).toHaveCount(pastEvents.length)
+    await expect(cards).toHaveCount(pastEvents('en').length)
 
     const viewport = page.viewportSize()
     expect(viewport, 'viewport size').not.toBeNull()
@@ -341,7 +350,7 @@ test.describe('Events page — mobile @mobile', () => {
   })
 
   test('upcoming event rows stay within viewport width', async ({ page }) => {
-    test.skip(upcomingEvents.length === 0, 'needs an upcoming event')
+    test.skip(upcomingEvents('en').length === 0, 'needs an upcoming event')
     await page.goto(PATH_EN)
     const section = upcomingSection(page, 'en')
     const firstRow = section.locator('li').first()
