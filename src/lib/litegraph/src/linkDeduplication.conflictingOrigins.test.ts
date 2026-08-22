@@ -84,7 +84,6 @@ describe('normalizeConfiguredTopology with conflicting origins (#15577)', () => 
 
     configureConflictingOrigins()
 
-    expect(warn).toHaveBeenCalled()
     expect(warn.mock.calls.flat().join(' ')).toContain('3:0')
   })
 

@@ -492,6 +492,24 @@ function unmatchedInputNameWorkflow(nodeType: string): SerialisableGraph {
   }
 }
 
+function unmatchedInputLinkState(graph: LGraph) {
+  const target = graph.getNodeById(toNodeId(2))!
+  const serialized = graph.serialize()
+  const reloaded = new LGraph()
+  reloaded.configure(structuredClone(serialized))
+  const reloadedTarget = reloaded.getNodeById(toNodeId(2))!
+
+  return {
+    graphLinkIds: [...graph.links.keys()],
+    inputLinkIds: target.inputs.map((_, slot) => target.getInputLink(slot)?.id),
+    serializedLinkIds: (serialized.links ?? []).map(([id]) => toLinkId(id)),
+    reloadedGraphLinkIds: [...reloaded.links.keys()],
+    reloadedInputLinkIds: reloadedTarget.inputs.map(
+      (_, slot) => reloadedTarget.getInputLink(slot)?.id
+    )
+  }
+}
+
 describe('LGraph.configure realignment with an unmatched input name (#15581)', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
@@ -510,18 +528,26 @@ describe('LGraph.configure realignment with an unmatched input name (#15581)', (
     const graph = new LGraph()
     graph.configure(unmatchedInputNameWorkflow('test/DroppedInputTarget'))
 
-    const target = graph.getNodeById(toNodeId(2))!
-    expect(target.getInputLink(0)?.id).toBe(toLinkId(1))
-    expect(target.getInputLink(1)?.id).toBe(toLinkId(2))
+    expect(unmatchedInputLinkState(graph)).toEqual({
+      graphLinkIds: [toLinkId(1), toLinkId(2)],
+      inputLinkIds: [toLinkId(1), toLinkId(2)],
+      serializedLinkIds: [toLinkId(1), toLinkId(2)],
+      reloadedGraphLinkIds: [toLinkId(1), toLinkId(2)],
+      reloadedInputLinkIds: [toLinkId(1), toLinkId(2)]
+    })
   })
 
   it.fails('realigns siblings when configure renames an input', () => {
     const graph = new LGraph()
     graph.configure(unmatchedInputNameWorkflow('test/RenamedInputTarget'))
 
-    const target = graph.getNodeById(toNodeId(2))!
-    expect(target.getInputLink(0)?.id).toBe(toLinkId(1))
-    expect(target.getInputLink(1)?.id).toBe(toLinkId(2))
+    expect(unmatchedInputLinkState(graph)).toEqual({
+      graphLinkIds: [toLinkId(1), toLinkId(2)],
+      inputLinkIds: [toLinkId(1), toLinkId(2), undefined],
+      serializedLinkIds: [toLinkId(1), toLinkId(2)],
+      reloadedGraphLinkIds: [toLinkId(1), toLinkId(2)],
+      reloadedInputLinkIds: [toLinkId(1), toLinkId(2), undefined]
+    })
   })
 
   it.fails('reports no error while realigning around an unmatched name', () => {
@@ -561,9 +587,17 @@ describe('realignInputLinkSlots with a rejected batch (#15581)', () => {
 
     realignInputLinkSlots(graph, [nodeData])
 
-    expect(
-      useLinkStore().getInputSlotLink(graphScopeOf(graph), target.id, 1)?.id
-    ).toBe(free.id)
+    expect({
+      graphLinkIds: [...graph.links.keys()],
+      inputLinkIds: target.inputs.map(
+        (_, slot) =>
+          useLinkStore().getInputSlotLink(graphScopeOf(graph), target.id, slot)
+            ?.id
+      )
+    }).toEqual({
+      graphLinkIds: [blocked.id, free.id],
+      inputLinkIds: [blocked.id, free.id, undefined]
+    })
   })
 })
 
