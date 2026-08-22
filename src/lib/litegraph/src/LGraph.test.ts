@@ -1075,6 +1075,47 @@ describe('Graph Clearing and Callbacks', () => {
       []
     )
   })
+
+  test('configure clears state already stored under the incoming graph id', () => {
+    const incoming = new LGraph()
+    const incomingId = 'graph-configure-cleanup' as UUID
+    incoming.id = incomingId
+    const data = incoming.asSerialisable()
+    const staleNodeId = toNodeId(77)
+    const staleWidgetId = widgetId(incomingId, staleNodeId, 'seed')
+    useWidgetValueStore().registerWidget(staleWidgetId, {
+      type: 'number',
+      value: 1,
+      options: {}
+    })
+    usePreviewExposureStore().addExposure(incomingId, String(staleNodeId), {
+      sourceNodeId: '10',
+      sourcePreviewName: '$$canvas-image-preview'
+    })
+    layoutStore.applyOperation({
+      type: 'createNode',
+      graphId: incomingId,
+      nodeId: staleNodeId,
+      layout: {
+        id: staleNodeId,
+        position: { x: 0, y: 0 },
+        size: { width: 100, height: 100 },
+        zIndex: 1,
+        visible: true,
+        bounds: { x: 0, y: 0, width: 100, height: 100 }
+      },
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas
+    })
+
+    incoming.configure(data)
+
+    expect(useWidgetValueStore().getWidget(staleWidgetId)).toBeUndefined()
+    expect(
+      usePreviewExposureStore().getExposures(incomingId, String(staleNodeId))
+    ).toEqual([])
+    expect(layoutStore.getNodeLayout(incomingId, staleNodeId)).toBeNull()
+  })
 })
 
 describe('node:before-removed event', () => {
