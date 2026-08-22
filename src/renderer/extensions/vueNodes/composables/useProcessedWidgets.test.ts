@@ -431,6 +431,17 @@ describe('computeProcessedWidgets', () => {
     expect(result[0].simplified.value).toBeNull()
   })
 
+  it('uses the live widget type after runtime changes', () => {
+    const id = widgetId(GRAPH_ID, toNodeId(1), 'text')
+    registerWidgetState(id, { type: 'combo' })
+    const widget = createMockWidget({ widgetId: id, name: 'text', type: '' })
+    const { graph } = createGraphWithNode([widget])
+
+    const result = processWidgets({ widgetIds: [id], rootGraph: graph })
+
+    expect(result).toEqual([])
+  })
+
   it('uses widget state nodeId for simplified widget locator', () => {
     const subgraphId = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
     const id = widgetId(GRAPH_ID, toNodeId('inner-node'), 'text')
