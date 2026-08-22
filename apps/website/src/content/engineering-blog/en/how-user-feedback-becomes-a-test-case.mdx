@@ -1,0 +1,70 @@
+---
+title: "How a User Complaint Becomes a Permanent Test Case"
+description: "Quality control for software that doesn't behave the same way twice: what a test, an eval, and a benchmark actually are, and how a real complaint travels from Slack to a shipped fix to a regression check that can never silently return."
+author: Jo Zhang
+date: 2026-08-22
+sourceSection: "Understand This System — 22 · The feedback machine (with 17 · Tests, evals, and benchmarks)"
+---
+
+Here's an uncomfortable question: how do you do quality control on software that doesn't behave the same way twice? Ask an AI agent the same thing twice and you can get two different answers — both maybe fine, one maybe terrible. Traditional testing assumes determinism. An agent doesn't offer you that. So Comfy builds quality control out of two things that have to work together: a precise vocabulary for grading non-deterministic behavior, and a pipeline that turns real user pain into permanent, machine-checked cases.
+
+## Test, eval, benchmark — three words people blur
+
+|  | Test | Eval | Benchmark |
+|---|---|---|---|
+| Asks | "Does the code do exactly X?" | "How well does the agent handle X?" | "How does it compare to others?" |
+| Answer | pass / fail, deterministic | a score, statistical | a ranking |
+| Run it twice | identical result | possibly different results | same, at scale |
+| One failure means | a bug — fix it | maybe nothing — look at the rate | — |
+| Example | "the merge service rejects an edit with a stale version" | "given a request to build a video workflow, does the agent build something sensible?" | published leaderboards like SWE-bench |
+
+Tests you already know, even if you've never written one: deterministic code checked by deterministic code. Anything in the plain plumbing of the system — the merge rules, the wire protocol — is guarded by ordinary tests, because that code is ordinary software. Same input, same output, forever.
+
+Evals exist because the agent itself is not ordinary software. You can't assert "the reply will be exactly this text." So instead of asserting outputs, you grade outcomes, over many runs, and watch the rate. An eval that passes 87% of the time isn't broken — 87% is the datum. The real question is whether next week it's 91% or 60%.
+
+Benchmarks are just evals that someone standardized and published so different models and harnesses can be compared on the same footing. They're useful for choosing a model, and nearly useless for knowing whether your particular agent handles your particular users' tasks — which is exactly why Comfy writes its own evals rather than pointing at a public leaderboard and calling it done.
+
+> A single eval failure is one sample from a distribution, not proof the agent is broken. The signal is the trend — a case that passed 9 times out of 10 last month and 4 times out of 10 today is telling you something real. Which also means "just re-run it until it's green" is cheating yourself: you're sampling until you like the sample.
+
+## Anatomy of one eval
+
+Comfy's eval system has four moving parts. Once you can name them, every conversation about agent quality becomes followable.
+
+**The case** is a file, in a reviewed repository: a prompt — "generate an image of a fox, then upscale it" — plus machine-checkable expectations, plus tags used to select it. Cases go through pull-request review exactly like code and are imported into a database on merge. The files are the source of truth.
+
+**The driver** answers "which agent, with which tools, running where?" — one named combination, tested in a fully pinned, hermetic sandbox that can even inject failures on demand (rate limits, out-of-memory, low credits) so the team can eval how the agent behaves when things go wrong, repeatably. This matters because agent behavior is a property of the *model plus tools plus harness* combination — swap any one of those three and the same model can score differently. So that whole combination, not just the model, is the unit under test.
+
+**The trajectory** is the full recording of one run: every model message, every tool call with its inputs and outputs, every artifact produced. Not just "did it pass" — what actually happened, step by step.
+
+**The graders** score the trajectory, in two families. Deterministic gates check the trajectory the way a test would: did it call the right tools, in a workable order? Did the job ID it polled match the job ID it actually submitted — so it isn't quietly checking on someone else's job and reporting false success? An LLM judge handles what gates structurally can't: is this image actually a fox? Is this explanation actually helpful? A second model grades the outcome against a rubric — yes, an AI grading an AI — and it's treated as untrusted input: the graded output is fenced inside the judge's own prompt so a strange or adversarial result can't inject instructions into its own grader.
+
+> Why "did the job IDs correlate" is a real grader and not paranoia: agents fail in ways human QA rarely anticipates — calling all the right tools, in the right order, while quietly polling a job it never submitted, and then confidently reporting success. Every eval gate like this is a scar with a story: a failure mode that was discovered once and then encoded so it can never come back unnoticed.
+
+## The release gate: evals with a hand on the brake
+
+This is where measurement turns into control. Because tool changes alone can measurably shift agent behavior — even when the underlying model hasn't changed — every new tool-server release is wired directly to the eval suite. The suite runs a fixed set of "floor" cases (a permanent, growing "never again" list built from real past incidents) plus a rotating sample of the broader suite. If scores land above the line, the release is promoted automatically. If not, the check stays red, promotion is blocked, and a report posts straight to the release itself.
+
+It's a required check, not a dashboard someone has to remember to glance at — the release cannot merge while the gate is red. And it's self-reinforcing: any case that fails a gate run becomes a candidate for the permanent floor, so the suite gets sharper with every real incident it catches.
+
+## The intake pipes: how the system finds out it's failing
+
+All of that grading machinery needs raw material, and that's the part most teams still do with vibes and a spreadsheet. Comfy builds it as an actual pipeline. Real users reach the system through a preview program — named users who've agreed to try half-built things and complain in detail — and their signal arrives through several instrumented channels at once: preview-channel chat (automatically turned into tracked tickets, so feedback doesn't depend on someone remembering to file it), transcribed and mined user calls, an in-product feedback nudge plus a survey, and passive usage analytics that answer "what do people actually touch" even when nobody writes anything down at all.
+
+The key design choice in the triage step is that **a ticket is categorized at the moment it's created**, not sorted out later in a weekly grooming meeting. The category *is* the routing address: a bug goes to whichever team already owns that part of the system, a repeatable failure scenario goes straight into the eval pipeline, and a genuine product gap goes to a human product manager. Deferring that categorization just defers delivery.
+
+## The part that compounds: complaints become test cases
+
+Here's where this stops being ordinary product operations and starts compounding. The eval system is wired to consume this feedback automatically:
+
+- Fixes author their own regression guard as a side effect of shipping — the fix and its test case are born together, not added later if someone remembers.
+- A dedicated case-authoring process drafts new release-gate cases directly from raw incident material — one part of the system whose entire job is writing exams for the rest of it.
+- Past release-gate failures get mined for regression candidates, so yesterday's near-miss becomes tomorrow's permanent tripwire.
+- Cases that keep passing for long enough eventually get retired. A gate that only ever grows becomes slow and noisy to run; a long pass-streak means the underlying risk has been retired, so the case protecting against it can be too.
+
+Put the eval anatomy and the feedback pipeline together and the full circuit becomes visible: a real complaint can become a ticket, a fix, a permanent eval case, and a release-gate check — with exactly one human decision at the merge, and machinery handling everything else. When a team says "we're going to spend the next few weeks fighting the eval score," this is why that sentence makes sense: the score is the accumulated, graded voice of actual users.
+
+> The common misconception worth retiring: "user research is a phase that happens before you build." Here, it's a runtime component. The intake pipes run continuously, triage routes continuously, and the eval suite grows continuously. There's no final research report — the report *is* the release gate's pass rate moving over time.
+
+## The takeaway
+
+Grading a system that doesn't behave the same way twice isn't a weaker form of testing — it's a different discipline, with its own vocabulary (test, eval, benchmark), its own anatomy (case, driver, trajectory, graders), and its own supply chain for raw material (intake pipes, triage-at-creation, and a feedback loop that turns complaints into permanent regression guards). Get all three working together, and "the agent feels dumb" stops being a vibe and starts being a number you can actually move.

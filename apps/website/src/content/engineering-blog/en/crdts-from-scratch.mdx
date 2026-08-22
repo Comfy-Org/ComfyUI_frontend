@@ -1,0 +1,123 @@
+---
+title: "CRDTs From Scratch: How Comfy Keeps Two Editors From Wrecking Each Other's Work"
+description: "You need no math beyond counting. Build a CRDT from three small examples, and see exactly why Comfy's agent and a human can safely edit the same workflow at the same time."
+author: Kishore
+date: 2026-08-22
+sourceSection: "Understand This System — 7 · CRDTs from scratch"
+---
+
+When a human and an AI agent can both change the same ComfyUI workflow at the same time, something has to decide what happens when they touch the same thing at once. That something, in Comfy's case, is a CRDT — and the name is much scarier than the idea.
+
+**Conflict-free replicated data type.** Take it apart:
+
+- **Replicated** — several copies exist, in different places (your browser, the server, someone else's laptop).
+- **Data type** — it's a kind of thing, like "a list" or "a counter," not a protocol or a service.
+- **Conflict-free** — not "conflicts never happen." Conflicts absolutely happen. It means conflicts never have to be resolved by asking someone. Every copy resolves them the same way, on its own, and they end up identical.
+
+The whole promise, in one sentence: **if two copies have seen the same set of changes, they show the same thing** — no matter what order the changes arrived in, no matter how many duplicates, and without either copy ever asking anyone what to do.
+
+You need no math beyond counting to build one. Let's build three.
+
+## Build #1 — a counter that survives being disconnected
+
+Two people, Ann and Bob, each with a copy of a counter starting at 0. Both are offline from each other.
+
+The naive version: each stores a single number and sends "my counter is now N." Ann increments twice, so her copy says 2. Bob increments once, so his says 1. When Ann receives "1" from Bob, what's the real total — 1? 2? 3? She has no idea. The message "my total is 2" doesn't say *whose* 2 it is, so there's no way to combine it with anyone else's.
+
+The fix: never merge totals. Merge per-person tallies instead.
+
+|  | Ann's copy | Bob's copy |
+|---|---|---|
+| Start | `{Ann: 0, Bob: 0}` | `{Ann: 0, Bob: 0}` |
+| Ann +1, +1 | `{Ann: 2, Bob: 0}` | `{Ann: 0, Bob: 0}` |
+| Bob +1 | `{Ann: 2, Bob: 0}` | `{Ann: 0, Bob: 1}` |
+| They sync | `{Ann: 2, Bob: 1}` | `{Ann: 2, Bob: 1}` |
+| Total | 3 | 3 |
+
+The merge rule is: for each person, keep the larger number. That's it. And look at what it survives — messages arriving out of order don't matter, since taking the maximum doesn't care about order; a message arriving twice doesn't matter either, since the max of 2 and 2 is still 2; and it doesn't matter how many people are merging or in what sequence they do it.
+
+You just built a real CRDT — engineers call this shape a "G-Counter." The trick was making each change attributable to who made it, and making the merge rule "take the max," an operation that doesn't care about order or repetition.
+
+## Build #2 — a set you can add to and remove from
+
+Adding is easy: a set where you only ever add items. The merge rule is just "union the two sets" — order-independent, duplicate-proof, done. Removing is where it gets interesting.
+
+Say Ann removes item X. Meanwhile, Bob — offline, unaware — adds item X. They sync. What now?
+
+If "remove" means actually deleting the entry, Ann's copy has no record that X was ever removed once it receives Bob's set containing X — X just looks new, and it comes back. Engineers call this **zombie data**, and it's a classic bug in naive sync systems.
+
+The fix: don't delete — mark as dead. The dead marker is called a **tombstone**, and the rule "a tombstone beats a live entry" is called **delete-wins**. It's not the only defensible rule you could pick, but it is *a* rule, applied identically everywhere, which is what actually matters.
+
+Why delete-wins rather than add-wins? Because the alternative is worse in practice: if add always won, anything you deleted could be resurrected later by a slow message from someone who hadn't heard about the deletion yet — and a thing you deliberately removed silently reappearing is far more alarming to a user than a thing you added quietly failing to show up. It also matches how people think: deleting feels final.
+
+Tombstones do have a real cost — the record of deleted things never fully disappears, so the document slowly grows. Every CRDT system pays this tax somewhere and manages it with periodic cleanup once everyone has definitely seen the delete.
+
+## Build #3 — a single value two people set at once
+
+Ann sets an image prompt to "a dog." At the same instant, Bob sets it to "a fox." Both copies must end up showing the same thing. One has to win.
+
+The obvious idea is "whoever did it later wins" — last-write-wins. The naive version of this is quietly broken, for a reason worth internalizing: **clocks on different machines disagree.** Not by a little — by seconds or minutes, and sometimes they jump backwards. If "later" means "the bigger clock reading," a laptop whose clock is five minutes fast wins every argument it will ever have, forever. This is one of the most common sources of real-world data-loss bugs in sync systems.
+
+So instead of a wall-clock timestamp, the winner is decided by a **stamp** — a small bundle of information carried inside the change itself, compared field by field until a difference appears. In Comfy's CRDT, the stamp has three parts:
+
+| Part | What it is | Why it's there |
+|---|---|---|
+| `base_version` | Which version of the document the change was written against | The main ordering signal — a change written against a newer document generally wins |
+| `actor` | Who made it — an agent, a human, or the system | Second tie-breaker, and it makes attribution possible |
+| `op_id` | A random unique ID minted by whoever created the change | Final tie-breaker, and — separately — the duplicate detector |
+
+Compare `base_version`. If tied, compare `actor`. If still tied, compare `op_id`. Since `op_id` is unique, there's always a winner — and every copy computes the *same* winner, because all three values travel inside the change itself. No copy has to ask a server who won. The answer is in the data.
+
+### A worked example
+
+The document has a node with `width: 512`. Ann and the agent both act, simultaneously, with no communication between them:
+
+```json
+// Ann's operation
+{ "op_id": "a1b2c3", "actor": "human:ann", "base_version": 4,
+  "op": { "type": "set_widget", "node": 7, "widget": "width", "value": 1024 } }
+
+// The agent's operation
+{ "op_id": "d4e5f6", "actor": "agent:turn-99", "base_version": 4,
+  "op": { "type": "set_widget", "node": 7, "widget": "width", "value": 768 } }
+```
+
+Same field, same base version — a genuine conflict. Resolving it: `base_version` is tied (4 vs 4). Suppose `actor` is also tied for this example. Compare `op_id`: `d4e5f6` is larger than `a1b2c3`, so the agent's `768` wins.
+
+Now the crucial part: a copy in Sydney that receives Ann's operation first and the agent's second gets `768`. A copy in Berlin that receives them in the opposite order also gets `768`. Neither asked anyone — both applied the same three-step comparison to information carried inside the operations. And if the network happens to deliver Ann's operation twice, the second arrival is recognized by its `op_id`, already in the applied list, and does nothing at all.
+
+That's a CRDT working. Not "no conflict occurred" — there was a real conflict over a real field. What happened is that the conflict resolved *identically everywhere*, without coordination. That's the entire product of this technology.
+
+## The three properties, now that you've built them three times
+
+Every CRDT merge rule rests on the same three properties:
+
+| Property | Plain English | Which build showed it |
+|---|---|---|
+| Commutative | Order doesn't matter: A then B = B then A | Take-the-max; set union |
+| Associative | Grouping doesn't matter: (A+B)+C = A+(B+C) | Merging in any sequence |
+| Idempotent | Doing it twice = doing it once | Max of 2 and 2 is 2; adding X twice |
+
+Get all three, and this follows automatically: any two copies that have seen the same changes are identical. That property is called **convergence**, and it's the guarantee you're buying.
+
+## Two families, and which one Comfy uses
+
+**State-based** CRDTs send your whole state, and the receiver merges it with theirs — simple, hard to get wrong, and expensive, since you ship the entire document on every change.
+
+**Operation-based** CRDTs send just the change — "set widget width on node 7 to 1024" — with its stamp attached. Small messages, and the message says what you meant.
+
+Comfy uses operation-based, with **semantic operations**: the operation describes intent in the vocabulary of workflows (`add_node`, `connect`, `set_widget`, `remove_node`) rather than the vocabulary of the underlying data structure ("insert these bytes at position 400"). That distinction earns its keep in three ways. First, the log is readable — a stored list of semantic operations is a genuine audit trail, showing that the agent added an upscaler at a specific time, where a list of byte-level edits would tell you nothing. Second, rules can be enforced — "reject a widget write to a node type that isn't in the catalog" is expressible against `set_widget`, but not against an opaque binary edit. Third, it keeps the future open — two copies that edited independently for a long time can exchange semantic operations and merge sensibly, where exchanging raw structural updates between independently-edited documents is the kind of thing that actually corrupts data.
+
+## What CRDTs do not give you
+
+This part matters, because over-claiming here causes bad design decisions down the line.
+
+CRDTs don't guarantee the merged result is what anyone *wanted*. In the worked example above, Ann wanted 1024 and got 768. The system is consistent, not correct-in-spirit — CRDTs promise agreement, never intent.
+
+CRDTs also don't preserve rules that span multiple parts of a document. "Every link must point at a node that exists" isn't something a CRDT enforces for free. If Ann deletes a node while Bob simultaneously connects a wire to it, both changes are individually valid, and the merged result has a wire pointing at nothing. Handling that is a job for how you define your operations and what your rendering layer does with orphaned references — not something the merge algorithm buys you automatically.
+
+And they don't make ordering free. A single version number can say "this came after that," but it can't fully express causality — the difference between "I edited after seeing your change" and "I edited at the same time, unaware of yours." For long offline periods on independent branches, two changes made against the same base fall back to an arbitrary tie-break rather than an intent-aware one. Copies still agree — they just might agree on something less thoughtful than a person would pick. That's a known, deliberately accepted limitation, and a more sophisticated approach (logical clocks) is the natural next step for a future version.
+
+## The takeaway
+
+A CRDT is not magic and it's not really about the math — it's a discipline: make every change attributable, make merge rules that don't care about order or duplication, and carry enough information inside each change that any computer can compute the same answer alone. Once you've built a counter, a set, and a single value the hard way, "CRDT" stops being a scary acronym and starts being three small, checkable ideas.

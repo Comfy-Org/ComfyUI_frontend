@@ -1,0 +1,104 @@
+---
+title: "Comfy's Agent Architecture, End to End"
+description: "Every box in the system that lets a human and an AI agent edit the same ComfyUI workflow together — and, more usefully, one sentence per box about what it must never do."
+author: Kishore
+date: 2026-08-22
+sourceSection: "Understand This System — 5 · The architecture, end to end"
+---
+
+The trick to holding an architecture in your head isn't memorizing the boxes. It's memorizing one sentence per box saying what it must never do. That's how you catch a bad idea in a design review before it ships. Here's Comfy's agent architecture, told that way.
+
+## The cast, in one table
+
+| Box | What it is | What it must never do |
+|---|---|---|
+| Browser (frontend) | The canvas and the chat panel you look at | Never owns or directly writes the shared workflow document |
+| Ingest | The cloud's front door: checks who you are, passes traffic through | Never interprets or rewrites what it's passing — it's a relay |
+| Agent service | The backend program running turns; the single writer | Never contains its own copy of the document-merging logic |
+| Doc host | A small, stateless service that does the actual merging | Never remembers anything between requests |
+| Shared merge library | The one library holding all merge rules | Never depends on a browser, a server, or a database |
+| Database | Holds the one true copy of the document | Never acts as a tie-breaker for conflicting edits |
+| Fast fan-out layer | Tells everyone about a change quickly | Never be the thing recovery depends on |
+| Durable turn engine | Keeps long turns alive across crashes (cloud only) | Never required for the system to be correct |
+| Model gateway | Comfy's own API service, which holds the model key | Never bypassed by a client talking to the model provider directly |
+
+## The single most important design decision: one merge library, two homes
+
+The rules for merging workflow edits are genuinely intricate — what happens when a delete races an edit, how two simultaneous changes are ordered, when an operation is a duplicate. Get those rules even slightly different in two places, and the browser and the server will slowly, silently disagree about what the workflow actually is.
+
+So there is exactly one implementation of those rules, in a shared library. The browser imports it. The server runs the identical code inside the doc host. Same code, same version, pinned to an exact revision, with an automated check that fails the build if the two ever drift apart.
+
+> "Let's just reimplement the merge logic on the server, in a different language" is a blocking objection on this project — not a preference, a rule. A second implementation is two implementations that will diverge. There is no second merge engine and there must not be one.
+
+That's also why the doc host exists as its own small process at all: the backend service can't natively import a JavaScript library, so the JavaScript library runs in its own tiny program right next to it, reachable over a loopback connection — a network call that never leaves the machine. The backend asks it "here are some operations, apply them," and gets the merged result back.
+
+## Why the doc host remembers nothing
+
+The doc host is stateless: every request arrives with the document, it builds a fresh working copy in memory, does the work, returns the result, and forgets everything.
+
+That sounds wasteful. It buys a lot:
+
+- You can restart it any time. Nothing is lost; at worst one in-flight request retries.
+- There's no "which doc host has my document?" problem. Any instance can serve any request.
+- It can't drift. A process that holds state for hours can end up subtly out of sync with the database. One that holds nothing for milliseconds cannot.
+
+It exposes a handful of operations, and their names tell you the whole story: mint a fresh document from workflow JSON, apply a batch of operations, project the document back into workflow JSON, resync a client with what it's missing, and report whether it's healthy.
+
+## Why ingest is only a relay
+
+Ingest is the cloud's front door. It checks that you are who you say you are, then passes traffic through to the agent service.
+
+The rule is that it passes document traffic through byte for byte — it doesn't decode it, doesn't re-encode it, doesn't understand it. Why insist on that? Because the moment ingest starts interpreting document messages, it becomes a second implementation of the protocol, and now you have two things that can disagree. Same disease as the second-merge-engine idea, different location.
+
+The general principle, worth stealing for any system: **every place that understands a data format is a place that can be wrong about that data format.** Minimize those places. Here there is exactly one — the shared library — and everything else just moves bytes around.
+
+## The single writer
+
+At any moment, exactly one process is allowed to change a given workflow document: the agent service. Not the browser. Not the doc host. Not another agent instance.
+
+Both humans and agents go through it. When you drag a wire on the canvas, your browser doesn't change the shared document directly — it sends an operation to the agent service, which applies it. When the AI decides to add a node, it's the same path.
+
+Is a single writer required by the underlying CRDT technology? No — and this is important. A properly-built CRDT lets any number of peers edit simultaneously with no central authority at all; that's the entire point of the technology (see our companion post on [CRDTs from scratch](/engineering-blog/crdts-from-scratch/)). Routing everything through one writer is a simplification chosen for this version of the product, not a law of nature.
+
+Why choose it anyway? It removes an entire category of hard work: the browser never has to reconcile its own optimistic changes against a differently-ordered server result, and the team doesn't have to prove the merge logic is correct under every possible interleaving before shipping anything.
+
+What does it cost? Only one thing, and it's carefully guarded: the server's ordering must never become the *only* way conflicts get resolved. As long as the tie-breaking information travels inside each operation — so any computer could work out the same answer on its own — the door stays open to turning on true multi-writer editing later, just by relaxing the routing. If the server's sequence number ever becomes the actual conflict rule instead of just an ordering hint, that door closes permanently.
+
+## Postgres, Redis, and the difference between truth and speed
+
+Two storage-ish boxes, and confusing them causes bad reasoning.
+
+The database is truth. One row per workflow holds the document, a sequence number, and the list of operations already applied. When anything needs to know what the workflow really is, it reads here.
+
+The fast fan-out layer is speed. When the document changes, a notification is broadcast so connected browsers see the change in milliseconds. It's fire-and-forget: no delivery guarantee, no retry, no memory.
+
+> Why losing a fan-out message is harmless: recovery never reads from the fast path. If a browser misses a broadcast, it eventually reconnects, says "here's what I already have," and gets the difference from the database. The fast path makes things fast; the database makes things true. A system where losing the fast path costs you correctness is a badly-built system.
+
+## The durable turn engine, and why it's optional
+
+Long agent turns need to survive process restarts. In the cloud, a durable execution service checkpoints long-running work so it can carry on after a crash.
+
+Locally, there's no such service — the agent runs turns inline, as a lightweight thread of work inside the same process, and that's the default for a local install. The tradeoff is honest: inline turns don't survive a crash today. A future lightweight, locally-persisted engine is planned to close that gap without dragging a heavyweight orchestration service onto users' laptops.
+
+The load-bearing point: **the durable turn engine is about keeping turns alive, not about keeping documents correct.** Document correctness comes from the database write being atomic. You could delete it entirely and never corrupt a workflow — you'd just lose interrupted turns.
+
+## Two flags, and why mixing them up is a serious incident
+
+The system has two independent switches with confusingly similar vibes:
+
+| Switch | Controls | If you flip it wrongly |
+|---|---|---|
+| Storage flag | Whether a given workflow uses the new CRDT-based path or the old whole-document path | Data is written in a shape the reader doesn't expect |
+| Product flag | Whether a given user sees the agent feature at all | Users lose (or unexpectedly gain) the entire feature |
+
+They're set in different systems, for different reasons, at different granularity — one is per workflow, one is per user. Describing one as the other is an incident-grade mistake: "turn on the CRDT flag for this user" is a sentence with no correct meaning, because the CRDT flag isn't per-user and the per-user flag has nothing to do with CRDTs.
+
+## Rollback is a flag flip, and here's the trick that makes it possible
+
+While the new storage path is being rolled out, every change is written to both the new CRDT storage and the old storage. The old storage becomes a derived copy — updated, but not authoritative.
+
+That dual-write means turning the new path off is a configuration change rather than a data migration, because the old world was never allowed to fall behind. It's a small idea that buys a large amount of safety during a risky rollout, and it's a pattern worth stealing for any system doing a storage-format migration under live traffic.
+
+## The takeaway
+
+None of these individual decisions is exotic — a stateless merge service, a dumb relay, one writer, two flags kept strictly separate, a dual-write rollback path. What makes the architecture hold together is discipline about where each rule is allowed to live, and refusing, as a matter of policy, to let a second copy of any rule exist anywhere else.
