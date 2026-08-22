@@ -144,10 +144,6 @@ const ROUNDTRIP_VALUE_ALLOWLIST: Record<string, Record<string, string>> = {
     VHS_VAEEncodeBatched:
       'per_batch serializes null after configure (VHS ANNOTATED widget deserialization gap) - upstream-report candidate'
   },
-  'ComfyUI-KJNodes': {
-    SplineEditor:
-      'the spline editor regenerates its derived sampled coordinates from the preserved source points on configure'
-  },
   'ComfyUI-LTXVideo': {
     LTXVSparseTrackEditor:
       'the sparse-track editor regenerates its derived integer coordinates from the preserved source points on configure'
@@ -161,10 +157,6 @@ const ROUNDTRIP_VALUE_ALLOWLIST: Record<string, Record<string, string>> = {
   'comfyui-sam3': {
     SAM3VideoSegmentation:
       'point mode removes text_prompt before positional serialization, so configure shifts frame_idx and score_threshold through the missing widget slot'
-  },
-  'comfyui-itools': {
-    iToolsRegexNode:
-      'pattern-picker reload replaces the regex field with the selected built-in pattern'
   }
 }
 

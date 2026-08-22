@@ -6,9 +6,6 @@ export const ROUNDTRIP_VALUE_ALLOWED_INDICES_LITEGRAPH: Record<
   string,
   Record<string, string>
 > = {
-  'ComfyUI-KJNodes': {
-    SplineEditor: '1'
-  },
   'ComfyUI-LTXVideo': {
     LTXVSparseTrackEditor: '1'
   },
@@ -18,9 +15,6 @@ export const ROUNDTRIP_VALUE_ALLOWED_INDICES_LITEGRAPH: Record<
   },
   'comfyui-sam3': {
     SAM3VideoSegmentation: '1,2'
-  },
-  'comfyui-itools': {
-    iToolsRegexNode: '0'
   }
 }
 
@@ -28,9 +22,6 @@ export const ROUNDTRIP_VALUE_ALLOWED_INDICES_VUE: Record<
   string,
   Record<string, string>
 > = {
-  'ComfyUI-KJNodes': {
-    SplineEditor: '1'
-  },
   'ComfyUI-LTXVideo': {
     LTXVSparseTrackEditor: '1'
   },
@@ -40,9 +31,6 @@ export const ROUNDTRIP_VALUE_ALLOWED_INDICES_VUE: Record<
   },
   'comfyui-sam3': {
     SAM3VideoSegmentation: '1,2'
-  },
-  'comfyui-itools': {
-    iToolsRegexNode: '0'
   }
 }
 
