@@ -70,6 +70,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     width,
     isMaximized,
     dismissedSelectionSignature,
+    open,
     toggle,
     close,
     setWidth,
