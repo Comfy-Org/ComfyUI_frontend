@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { createdUserId } from './userIdentity'
+import { createdUserId } from '@e2e/fixtures/userIdentity'
 
 describe('created user identity', () => {
   it('returns only the backend-generated user ID', () => {

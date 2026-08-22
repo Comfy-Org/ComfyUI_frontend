@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { planInteractionProbes } from './interactionProbe'
+import { planInteractionProbes } from '@e2e/fixtures/customNode/interactionProbe'
 
 describe('planInteractionProbes', () => {
   it('plans the first and last model-free inputs for one pack', () => {

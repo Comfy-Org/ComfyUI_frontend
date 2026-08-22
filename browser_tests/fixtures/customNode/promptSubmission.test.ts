@@ -5,7 +5,7 @@ import {
   isServerSideFault,
   serverSideFault,
   summarizePromptError
-} from './promptSubmission'
+} from '@e2e/fixtures/customNode/promptSubmission'
 
 describe('summarizePromptError', () => {
   it('names the node class and failing input', () => {

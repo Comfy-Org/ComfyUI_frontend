@@ -1,12 +1,15 @@
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
-import { SYNTH_PRODUCERS } from './autoRun'
+import { SYNTH_PRODUCERS } from '@e2e/fixtures/customNode/autoRun'
 import type {
   LogicalShape,
   NodeInteractionProfile
-} from './interactionProfiles'
-import type { RawNodeDef } from './typePairing'
-import { isTypeCompatible, normalizeNodeDefs } from './typePairing'
+} from '@e2e/fixtures/customNode/interactionProfiles'
+import type { RawNodeDef } from '@e2e/fixtures/customNode/typePairing'
+import {
+  isTypeCompatible,
+  normalizeNodeDefs
+} from '@e2e/fixtures/customNode/typePairing'
 
 export const INTERACTION_PROBE_CHUNK = 40
 

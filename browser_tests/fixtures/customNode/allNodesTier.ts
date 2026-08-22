@@ -2,10 +2,13 @@ import type {
   CloudManifestEntry,
   CoreManifestEntry,
   CustomNodeTier
-} from './manifest'
-import { expectedNodeCountFor, loadManifest } from './manifest'
-import type { RawNodeDef } from './typePairing'
-import { normalizeNodeDefs } from './typePairing'
+} from '@e2e/fixtures/customNode/manifest'
+import {
+  expectedNodeCountFor,
+  loadManifest
+} from '@e2e/fixtures/customNode/manifest'
+import type { RawNodeDef } from '@e2e/fixtures/customNode/typePairing'
+import { normalizeNodeDefs } from '@e2e/fixtures/customNode/typePairing'
 
 export type AllNodesTier = 'S1' | 'S2' | 'S3' | 'S9'
 export type AllNodesManifestEntry = CoreManifestEntry | CloudManifestEntry

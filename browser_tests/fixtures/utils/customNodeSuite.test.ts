@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import { ownedQueueEntries, runWithCollectedCleanup } from './customNodeSuite'
+import {
+  ownedQueueEntries,
+  runWithCollectedCleanup
+} from '@e2e/fixtures/utils/customNodeSuite'
 
 describe('runWithCollectedCleanup', () => {
   it('preserves the test failure while every cleanup runs', async () => {

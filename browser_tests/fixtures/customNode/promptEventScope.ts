@@ -24,15 +24,8 @@ const TERMINAL_EVENT_TYPES = new Set([
 
 export function eventsForPrompt(
   events: readonly RawPromptEvent[],
-  promptId: string | undefined,
-  seenPromptIds: ReadonlySet<string>
+  promptId: string
 ): RawPromptEvent[] {
-  if (promptId === undefined)
-    return events.filter(
-      (event) =>
-        event.prompt_id === undefined || !seenPromptIds.has(event.prompt_id)
-    )
-
   const scoped: RawPromptEvent[] = []
   let active = false
   for (const event of events) {

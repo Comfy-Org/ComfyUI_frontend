@@ -55,23 +55,14 @@ export class LocalDesktopTarget {
       timeoutMs: number
     }
   ): Promise<RunResult> {
-    // A prior run's terminal event can arrive after its sink was read (late
-    // websocket delivery, or a timed-out prompt finishing during this run).
-    // Remember every prompt id already observed and ignore its events here,
-    // so one node's failure is never attributed to the next node tested.
-    const seenPromptIds = await page.evaluate(
+    await page.evaluate(
       (types) => {
         const sink = window as unknown as {
           __cnEvents: RawPromptEvent[]
-          __cnSeenPromptIds?: string[]
           __cnTapInstalled?: boolean
         }
-        const seen = new Set(sink.__cnSeenPromptIds ?? [])
-        for (const event of sink.__cnEvents ?? [])
-          if (event.prompt_id) seen.add(event.prompt_id)
-        sink.__cnSeenPromptIds = [...seen]
         sink.__cnEvents = []
-        if (sink.__cnTapInstalled) return sink.__cnSeenPromptIds
+        if (sink.__cnTapInstalled) return
         sink.__cnTapInstalled = true
         for (const type of types)
           (window.app!.api as EventTarget).addEventListener(
@@ -88,7 +79,6 @@ export class LocalDesktopTarget {
               )
             }
           )
-        return sink.__cnSeenPromptIds
       },
       [
         'execution_start',
@@ -99,11 +89,6 @@ export class LocalDesktopTarget {
       ]
     )
 
-    // Positively identify THIS attempt: the /prompt POST response body
-    // carries the prompt_id the backend assigned. When captured it becomes
-    // the primary event filter; the seen-set above and the graph-membership
-    // check below stay as defense in depth (capture can lose a race with a
-    // transient refusal, and `executing` events carry no prompt id at all).
     // A backend rejection answers /prompt with a non-2xx body carrying
     // { error, node_errors }. app.queuePrompt swallows it and just returns
     // false, so without capturing it here the verdict names nothing. The
@@ -190,16 +175,17 @@ export class LocalDesktopTarget {
         clientError: describePromptRejection(capture.rejection)
       }
     }
-    // A silent permanent miss would degrade every run to the legacy filters
-    // with no signal - make the fallback observable in the runner output.
-    if (capture.promptId === undefined)
-      console.warn(
-        '[customNodes] /prompt response id capture missed; falling back to seen-set filtering'
+    if (capture.promptId === undefined) {
+      stopCapture()
+      throw new Error(
+        'failed to capture the /prompt response id; backend events cannot be attributed safely'
       )
+    }
+    const promptId = capture.promptId
 
     await page
       .waitForFunction(
-        ([terminal, seen, graphIds, promptId]) => {
+        ([terminal, activePromptId]) => {
           const events =
             (
               window as unknown as {
@@ -213,20 +199,10 @@ export class LocalDesktopTarget {
           return events.some(
             (event) =>
               terminal.includes(event.type) &&
-              (promptId !== null
-                ? event.prompt_id === promptId
-                : !(event.prompt_id && seen.includes(event.prompt_id)) &&
-                  (graphIds === null ||
-                    event.node_id === undefined ||
-                    graphIds.includes(event.node_id)))
+              event.prompt_id === activePromptId
           )
         },
-        [
-          TERMINAL,
-          seenPromptIds ?? [],
-          opts.graphNodeIds ?? null,
-          capture.promptId ?? null
-        ] as const,
+        [TERMINAL, promptId] as const,
         { timeout: opts.timeoutMs }
       )
       .catch((error: unknown) => {
@@ -243,11 +219,7 @@ export class LocalDesktopTarget {
         (window as unknown as { __cnEvents?: RawPromptEvent[] }).__cnEvents ??
         []
     )
-    const raw = eventsForPrompt(
-      captured,
-      capture.promptId,
-      new Set(seenPromptIds ?? [])
-    )
+    const raw = eventsForPrompt(captured, promptId)
     const timedOut = !raw.some((event) => TERMINAL.includes(event.type))
     return classifyRun({
       events: raw.map(toPromptEvent),
