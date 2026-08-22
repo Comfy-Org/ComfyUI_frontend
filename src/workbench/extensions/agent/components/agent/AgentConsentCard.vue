@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import Button from '@/components/ui/button/Button.vue'
+
 const {
   title,
   paragraphs,
@@ -12,7 +14,6 @@ const {
 }>()
 
 const emit = defineEmits<{
-  close: []
   reject: []
   accept: []
 }>()
@@ -28,18 +29,8 @@ function openDocs(): void {
       role="dialog"
       aria-modal="true"
       :aria-label="title"
-      class="bg-agent-surface border-agent-border relative grid max-h-[90dvh] grid-cols-1 overflow-hidden rounded-2xl border shadow-[0_20px_24px_-4px_rgba(10,13,18,0.4),0_8px_8px_-4px_rgba(10,13,18,0.25)] @2xl:min-h-[543px] @2xl:grid-cols-[555fr_483fr]"
+      class="bg-agent-surface border-agent-border grid max-h-[90dvh] grid-cols-1 overflow-hidden rounded-2xl border shadow-[0_20px_24px_-4px_rgba(10,13,18,0.4),0_8px_8px_-4px_rgba(10,13,18,0.25)] @2xl:min-h-[543px] @2xl:grid-cols-[555fr_483fr]"
     >
-      <!-- On the card, not the panel, so it stays top-right once the grid stacks. -->
-      <button
-        type="button"
-        :aria-label="$t('agent.consent.close')"
-        class="text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg bg-agent-surface/70 absolute top-[18px] right-[18px] z-10 flex size-8 cursor-pointer items-center justify-center rounded-lg border-0 transition-colors @2xl:bg-transparent"
-        @click="emit('close')"
-      >
-        <span class="icon-[lucide--x] size-4" />
-      </button>
-
       <div class="shrink-0 p-2">
         <video
           v-if="videoSrc"
@@ -77,30 +68,23 @@ function openDocs(): void {
         </div>
 
         <footer class="flex flex-wrap items-center justify-between gap-2.5">
-          <button
-            type="button"
-            class="text-agent-fg hover:bg-agent-surface-hover -ml-2 flex h-8 cursor-pointer items-center gap-1 rounded-lg border-0 bg-transparent px-2 text-xs transition-colors"
+          <Button
+            variant="textonly"
+            size="md"
+            class="-ml-2 gap-1"
             @click="openDocs"
           >
             {{ $t('agent.consent.readDocs') }}
             <span class="icon-[lucide--square-arrow-out-up-right] size-4" />
-          </button>
+          </Button>
 
           <div class="ml-auto flex items-center gap-2.5">
-            <button
-              type="button"
-              class="text-agent-fg bg-agent-surface-raised hover:bg-agent-surface-hover h-8 cursor-pointer rounded-lg border-0 px-3 text-xs transition-colors"
-              @click="emit('reject')"
-            >
+            <Button variant="secondary" size="md" @click="emit('reject')">
               {{ $t('agent.consent.reject') }}
-            </button>
-            <button
-              type="button"
-              class="bg-agent-fg text-agent-surface h-8 cursor-pointer rounded-lg border-0 px-3 text-xs transition-opacity hover:opacity-90"
-              @click="emit('accept')"
-            >
+            </Button>
+            <Button variant="inverted" size="md" @click="emit('accept')">
               {{ $t('agent.consent.accept') }}
-            </button>
+            </Button>
           </div>
         </footer>
       </section>
