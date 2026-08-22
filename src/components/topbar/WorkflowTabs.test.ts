@@ -100,6 +100,7 @@ const agentPanelHolder = vi.hoisted(() => ({
     isOpen: { value: boolean }
     enabled: { value: boolean }
     toggle: ReturnType<typeof vi.fn>
+    open: ReturnType<typeof vi.fn>
   }
 }))
 vi.mock(
@@ -112,10 +113,21 @@ vi.mock(
       toggle: vi.fn(() => {
         agentPanelHolder.store.isOpen.value =
           !agentPanelHolder.store.isOpen.value
+      }),
+      open: vi.fn(() => {
+        agentPanelHolder.store.isOpen.value = true
       })
     }
     return { useAgentPanelStore: () => agentPanelHolder.store }
   }
+)
+
+const withConsent = vi.hoisted(() =>
+  vi.fn((onAccept: () => void) => onAccept())
+)
+vi.mock(
+  '@/workbench/extensions/agent/composables/agent/useAgentConsent',
+  () => ({ useAgentConsent: () => ({ withConsent }) })
 )
 
 const trackAgentEntryButtonClicked = vi.hoisted(() => vi.fn())
@@ -191,6 +203,9 @@ describe('WorkflowTabs agent entry button', () => {
     agentPanelHolder.store.isOpen.value = false
     trackAgentEntryButtonClicked.mockClear()
     agentPanelHolder.store.toggle.mockClear()
+    agentPanelHolder.store.open.mockClear()
+    withConsent.mockClear()
+    withConsent.mockImplementation((onAccept: () => void) => onAccept())
   })
 
   afterEach(() => {
@@ -208,7 +223,7 @@ describe('WorkflowTabs agent entry button', () => {
     expect(trackAgentEntryButtonClicked).toHaveBeenCalledWith({
       resulting_state: 'opened'
     })
-    expect(agentPanelHolder.store.toggle).toHaveBeenCalledTimes(1)
+    expect(agentPanelHolder.store.open).toHaveBeenCalledTimes(1)
 
     agentPanelHolder.store.isOpen.value = true
     await user.click(
@@ -217,6 +232,30 @@ describe('WorkflowTabs agent entry button', () => {
     expect(trackAgentEntryButtonClicked).toHaveBeenLastCalledWith({
       resulting_state: 'closed'
     })
+  })
+
+  it('opens the panel only once consent is given', async () => {
+    withConsent.mockImplementation(() => {})
+    const { user } = renderComponent()
+
+    await user.click(
+      screen.getByRole('button', { name: enMessages.agent.askComfyAgent })
+    )
+
+    expect(withConsent).toHaveBeenCalledTimes(1)
+    expect(agentPanelHolder.store.open).not.toHaveBeenCalled()
+  })
+
+  it('closes without asking for consent again', async () => {
+    agentPanelHolder.store.isOpen.value = true
+    const { user } = renderComponent()
+
+    await user.click(
+      screen.getByRole('button', { name: enMessages.agent.askComfyAgent })
+    )
+
+    expect(withConsent).not.toHaveBeenCalled()
+    expect(agentPanelHolder.store.toggle).toHaveBeenCalledTimes(1)
   })
 })
 
