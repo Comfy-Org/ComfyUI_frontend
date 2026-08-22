@@ -1,7 +1,7 @@
 # ECS extension compatibility audit
 
 Status: Current implementation audit
-Verified: 2026-08-16 against PR 14246
+Verified: 2026-08-20 against `13a302eadda871b939b148ecb87e3d845ceefff2`
 
 This audit describes the implemented extension-facing contract. It does not
 catalog every internal refactor.
@@ -95,6 +95,14 @@ that clears `input.link` or removes IDs from `output.links` is routed through
 topology operations for compatibility. Adding a link ID remains a no-op and
 must move to `connect()`, which has the endpoint context needed to create it.
 
+The graph triggers `node:slot-links:changed` and
+`node:slot-errors:changed` were removed with their emitters and event-map
+types. Connectivity observers should use reactive `linkStore`/`slotLinks`
+queries or `onConnectionsChange` when callback timing is required. Error
+observers should use the missing-model, missing-media, and execution error
+stores or the `nodeErrorState` projection. Extensions that subscribed to the
+removed trigger strings require migration; there is no compatibility event.
+
 ### Node shell properties and enumeration
 
 `id`, `type`, `title`, `flags`, `mode`, `color`, `bgcolor`, `shape`,
@@ -114,6 +122,36 @@ content remain supported. Position customization changed: all badge rows render
 at the top-right, and `badgePosition` is only an ignored compatibility accessor.
 Derived first-party rows are recomputed on read; extension entries remain on
 `node.badges` and render after them.
+
+### Persistence hooks
+
+`node.onSerialize`, `node.onConfigure`, `graph.onSerialize`, and
+`graph.onConfigure` remain compatibility surfaces, but currently expose full
+node/workflow DTOs or live objects. Extensions can therefore mutate canonical
+store-backed persistence fields outside store actions.
+The migration must measure this usage before replacing it with a controlled
+adapter for validated, namespaced plain-data payloads. This phase requires the
+adapter to define serialization and configuration behavior without allowing
+extension payload hooks to rewrite canonical fields. Replay and command-based
+undo contracts are later architecture work.
+
+### Custom-widget constructors
+
+The existing `ComfyWidgetConstructor` contract returns a descriptor containing
+the created widget: `{ widget, minWidth?, minHeight? }`. The devtools legacy
+widget fixture now returns `{ widget }` after adding that same object to the
+node, so normal registration and tracking can observe it. This PR fixes the
+fixture's compliance; it does not introduce a new constructor contract.
+
+### Execution-value hooks
+
+`widget.serializeValue` remains an async prompt-construction hook. Existing
+implementations can resolve random dynamic prompts, mutate workflow value
+shadows, capture media, upload files, and update UI state. Extensions must not
+assume this is a pure serialization callback. The ECS target must retain needed
+pre-queue effects through an explicit effect boundary while recording resolved
+execution inputs. Routing durable graph changes through serializable commands
+is later architecture work outside this data-centralization phase.
 
 ## Unsupported behavior
 
@@ -163,8 +201,14 @@ Before removing compatibility shims, collect ecosystem evidence for:
   including enumeration/property-descriptor assumptions;
 - generic node serializers or inspectors depending on shell fields being own,
   enumerable properties, and extensions changing `node.type` after creation;
+- node and graph `onSerialize` / `onConfigure` hooks that mutate canonical
+  workflow fields rather than an extension-owned namespaced payload;
+- async `widget.serializeValue` hooks with random, graph-mutating, media, upload,
+  or UI effects during prompt construction;
 - geometry consumers mutating `pos`/`size` by index and typed-array methods in
   both canvas renderers.
+- listeners for removed `node:slot-links:changed` and
+  `node:slot-errors:changed` graph triggers.
 
 The identity consequences behind collisions and owner filtering are documented
 in [ECS identity and scope audit](ecs-identity-scope-audit.md). Lifecycle test

@@ -5,7 +5,9 @@ This document describes the target ECS architecture for the litegraph entity sys
 ## 1. Store Overview
 
 The source of truth for runtime entity state in one workflow instance is the set
-of dedicated Pinia stores. Each store is keyed by per-store string IDs.
+of dedicated Pinia stores. Each store chooses the key type for its concern;
+current stores use both branded numeric IDs inside scoped buckets and composite
+string keys. A universal string entity-ID scheme is not required.
 Components are plain data objects. Systems are functions that query the relevant
 store(s).
 
@@ -16,10 +18,10 @@ graph TD
         WidgetValueStore["widgetValueStore
 Map&lt;WidgetId, WidgetValue&gt;"]
         DomWidgetStore["domWidgetStore
-Map&lt;WidgetId, DomWidgetState&gt;"]
+Map&lt;BaseDOMWidget.id, DomWidgetState&gt;"]
         LayoutStore["layoutStore (Y.js CRDT)
-raw nodeId/linkId; rootGraphId:localId
-for group/reroute geometry"]
+ScopedLayoutKey = rootGraphId:localId
+for node/group/reroute geometry"]
         LinkStore["linkStore
 rootGraphId → linkId → LinkTopology
 owner-qualified endpoint indexes"]
@@ -57,36 +59,41 @@ preview exposure state"]
 
 ### Entity Keys
 
-Each store addresses entities by its own string-key convention.
+Each store addresses entities by its own key convention.
 
 ```mermaid
 graph LR
-    subgraph "Per-store string keys"
+    subgraph "Per-store keys"
         WID["WidgetId
 graphId:nodeId:name
 (branded string, src/types/widgetId.ts)"]
         NLID["nodeLocatorId
 subgraphId:nodeId"]
-        NID["nodeId (raw)"]
+        NID["rootGraphId:localId
+(ScopedLayoutKey)"]
         LID["linkId (raw;
 root-scoped in linkStore)"]
-        RID["rootGraphId:rerouteId"]
+        RID["rerouteId in root bucket;
+rootGraphId:rerouteId in layout"]
         EPI["owningGraphId:nodeId:slot
 (target/origin index)"]
     end
 
-    WID -->|widgetValueStore, domWidgetStore| W["keyed lookups"]
+    WID -->|widgetValueStore| W["keyed lookups"]
+    DWID["BaseDOMWidget.id"] -->|domWidgetStore| W
     NLID -->|nodeOutputStore| W
-    NID -->|layoutStore| W
-    LID -->|layoutStore, linkStore identity| W
+    NID -->|layoutStore entity geometry| W
+    LID -->|linkStore identity| W
     RID -->|layoutStore, rerouteStore| W
     EPI -->|linkStore indexes| W
 ```
 
 `WidgetId = graphId:nodeId:name` is itself a branded string (see
 `src/types/widgetId.ts`). `nodeLocatorId = subgraphId:nodeId` addresses node
-outputs. `layoutStore` keys geometry records by raw `nodeId` / `linkId` /
-`rerouteId`. `linkStore` keys `LinkTopology` identity by `linkId` inside
+outputs. `layoutStore` keys persistent node, group, and reroute geometry with
+`makeScopedLayoutKey(rootGraphId, localId)`. Link topology does not live in
+LayoutStore; transient segment geometry uses a separate cache key.
+`linkStore` keys `LinkTopology` identity by `linkId` inside
 root-graph-scoped buckets. Owner-local and endpoint indexes provide graph
 iteration and slot queries; the target index includes only links whose target
 slot is unique (see [link-topology-store.md](link-topology-store.md)).
@@ -353,8 +360,8 @@ graph LR
         LE["LinkTopology
 (linkStore — shipped)"]
         LV["LinkVisual"]
-        SC["SlotConnection
-(output side — future)"]
+        SC["Slot identity, metadata,
+order, and visuals — future"]
         SV["SlotVisual"]
         WVal["WidgetValue"]
         WL["WidgetLayout"]
@@ -390,12 +397,11 @@ graph LR
 ```
 
 ConnectivitySystem's `LinkEndpoints` write target is realized as
-`LinkTopology` in `linkStore`. The input side of `SlotConnection`
-(`input.link`) is subsumed by the linkStore key itself — "which link targets
-this input slot" is the store's primary index
-(`isInputSlotConnected` / `getInputSlotLink`) — though the `input.link` slot
-mirror still exists on the class. The output side (`output.links[]`) remains
-future extraction work.
+`LinkTopology` in `linkStore`. Runtime connectivity for both input and output
+slots is store-owned. `NodeInputSlot.link` and `NodeOutputSlot.links` remain
+deprecated, read-only compatibility accessors derived from owner-qualified
+target and origin indexes; they are not mutable mirrors. Slot identity,
+metadata, order, and visual state remain class-side extraction work.
 
 ## 4. Dependency Flow
 
@@ -487,8 +493,8 @@ Subgraph = node + component."]
         S3["One system per concern.
 Systems don't overlap."]
         S4["Consistent per-store
-string-key conventions
-(WidgetId, nodeLocatorId, raw ids)."]
+key conventions
+(WidgetId, nodeLocatorId, scoped raw ids)."]
         S5["Systems query stores.
 No entity→entity refs."]
         S6["VersionSystem owns
@@ -526,14 +532,14 @@ sequenceDiagram
 
     Legacy->>Class: node.pos = [100, 200]
     Class->>Bridge: pos setter intercepted
-    Bridge->>Store: useLayoutMutations(source).moveNode(nodeId, { pos: [100, 200] })
+    Bridge->>Store: useLayoutMutations(source).moveNode(rootGraphId, nodeId, { x: 100, y: 200 })
 
     New->>Store: layoutStore read for nodeId
     Store-->>New: { pos: [100, 200], size: [...] }
 
     Note over Legacy,New: Phase 2: New features build on ECS directly
 
-    New->>Store: useLayoutMutations(source).moveNode(nodeId, { pos: [150, 250] })
+    New->>Store: useLayoutMutations(source).moveNode(rootGraphId, nodeId, { x: 150, y: 250 })
     Store->>Bridge: change detected
     Bridge->>Class: node._pos = [150, 250]
     Legacy->>Class: node.pos
