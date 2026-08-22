@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { UUID } from '@/utils/uuid'
 import { toNodeId } from '@/types/nodeId'
@@ -26,6 +26,18 @@ describe('useWidgetValueStore', () => {
     it('getWidget returns undefined for unregistered widget', () => {
       const store = useWidgetValueStore()
       expect(store.getWidget(seedA)).toBeUndefined()
+    })
+
+    it('does not create state while reading missing widgets', () => {
+      const store = useWidgetValueStore()
+      const onMutation = vi.fn()
+      store.$subscribe(onMutation, { flush: 'sync' })
+
+      expect(store.getWidget(seedA)).toBeUndefined()
+      expect(store.getWidgetRenderState(seedA)).toBeUndefined()
+      expect(store.getNodeWidgetIds(graphA, toNodeId('node-1'))).toEqual([])
+
+      expect(onMutation).not.toHaveBeenCalled()
     })
 
     it('widgetState.value can be read and written directly', () => {
