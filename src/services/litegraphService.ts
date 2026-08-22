@@ -19,13 +19,16 @@ import {
   LiteGraph,
   RenderShape,
   SubgraphNode,
-  createBounds
+  createBounds,
+  outputAsSerialisable
 } from '@/lib/litegraph/src/litegraph'
 import type {
   CreateNodeOptions,
   GraphAddOptions,
   IContextMenuValue,
   INodeInputSlot,
+  INodeOutputSlot,
+  IWidget,
   Point,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
@@ -468,19 +471,23 @@ export const useLitegraphService = () => {
 
         // Note: output name is not unique, so we cannot lookup output by name.
         // Use index instead.
-        data.outputs = zip(this.outputs, data.outputs).map(
-          ([output, outputData]) => {
+        data.outputs = zip(this.outputs, data.outputs ?? []).map(
+          ([output, outputData], index) => {
             // If there are extra outputs in the serialised node, use them directly.
             // There are currently custom nodes that dynamically add outputs via
             // js logic.
             if (!output) return outputData as ISerialisableNodeOutput
 
             return outputData
-              ? {
+              ? ({
                   ...outputData,
                   ...pick(output, RESERVED_KEYS)
-                }
-              : output
+                } as ISerialisableNodeOutput)
+              : outputAsSerialisable(
+                  output as INodeOutputSlot & { widget?: IWidget },
+                  this,
+                  index
+                )
           }
         )
 
@@ -571,19 +578,23 @@ export const useLitegraphService = () => {
 
         // Note: output name is not unique, so we cannot lookup output by name.
         // Use index instead.
-        data.outputs = zip(this.outputs, data.outputs).map(
-          ([output, outputData]) => {
+        data.outputs = zip(this.outputs, data.outputs ?? []).map(
+          ([output, outputData], index) => {
             // If there are extra outputs in the serialised node, use them directly.
             // There are currently custom nodes that dynamically add outputs via
             // js logic.
             if (!output) return outputData as ISerialisableNodeOutput
 
             return outputData
-              ? {
+              ? ({
                   ...outputData,
                   ...pick(output, RESERVED_KEYS)
-                }
-              : output
+                } as ISerialisableNodeOutput)
+              : outputAsSerialisable(
+                  output as INodeOutputSlot & { widget?: IWidget },
+                  this,
+                  index
+                )
           }
         )
 
