@@ -38,12 +38,17 @@ function isEnabled(): boolean {
 export async function installSecureNodesHost(): Promise<void> {
   if (!isEnabled()) return
   try {
-    const mod = await import(/* @vite-ignore */ OVERLAY_ENTRY)
+    // The overlay is served statically from public/, so it is NOT part of
+    // Vite's module graph. A statically-analysable specifier gets rewritten to
+    // `?import` and 500s in dev, so build the URL at runtime to keep it opaque
+    // to import analysis and let the browser fetch it natively.
+    const entryUrl = new URL(OVERLAY_ENTRY, globalThis.location.origin).href
+    const mod = await import(/* @vite-ignore */ entryUrl)
     if (typeof mod?.install !== 'function') {
       console.warn('[secure-nodes] overlay has no install() export; skipping')
       return
     }
-    await mod.install({
+    const host = await mod.install({
       provideExtensionHost,
       comfy: (globalThis as Record<string, unknown>).comfy,
       bootstrapUrl: GUEST_BOOTSTRAP,
@@ -52,6 +57,9 @@ export async function installSecureNodesHost(): Promise<void> {
       match: () => true
     })
     ;(globalThis as Record<string, unknown>).__COMFY_SECURE_NODES_READY__ = true
+    // Exposed for e2e inspection only (pack count, teardown). Carries no
+    // authority a page script does not already have.
+    ;(globalThis as Record<string, unknown>).__COMFY_SECURE_NODES_HOST__ = host
   } catch (error) {
     // Absent or broken overlay must never break the app.
     console.warn('[secure-nodes] overlay not installed:', error)
