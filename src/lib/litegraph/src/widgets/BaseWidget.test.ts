@@ -215,6 +215,24 @@ describe('BaseWidget store integration', () => {
       ).toBe('number-custom')
     })
 
+    it('registers duplicate widget names under distinct ids', () => {
+      const first = createTestWidget(node, { name: 'duplicate' })
+      const second = createTestWidget(node, { name: 'duplicate' })
+      node.widgets = [first, second]
+
+      first.setNodeId(toNodeId(1))
+      second.setNodeId(toNodeId(1))
+
+      expect(first.widgetId).toBe(widgetId(graph.id, toNodeId(1), 'duplicate'))
+      expect(second.widgetId).toBe(
+        widgetId(graph.id, toNodeId(1), 'duplicate#1')
+      )
+      expect(store.getNodeWidgetIds(graph.id, toNodeId(1))).toEqual([
+        first.widgetId,
+        second.widgetId
+      ])
+    })
+
     it('stores explicit isDOMWidget false over component presence', () => {
       const widget = createTestWidget(node, { name: 'flaggedDomWidget' })
       Object.assign(widget, { component: {}, isDOMWidget: false })
