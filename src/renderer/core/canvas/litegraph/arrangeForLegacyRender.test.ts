@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import {
@@ -8,6 +8,7 @@ import {
   nodesInRenderOrder
 } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { toNodeId } from '@/types/nodeId'
 
@@ -65,5 +66,15 @@ describe('arrangeForLegacyRender', () => {
 
     expect(nodesInRenderOrder(graph)).toEqual([third, second, first])
     expect(graph._nodes).toEqual([first, second, third])
+  })
+
+  it('reads each node layout once while sorting', () => {
+    const graph = new LGraph()
+    const nodes = [addedNode(graph), addedNode(graph), addedNode(graph)]
+    const getNodeLayout = vi.spyOn(layoutStore, 'getNodeLayout')
+
+    nodesInRenderOrder(graph)
+
+    expect(getNodeLayout).toHaveBeenCalledTimes(nodes.length)
   })
 })
