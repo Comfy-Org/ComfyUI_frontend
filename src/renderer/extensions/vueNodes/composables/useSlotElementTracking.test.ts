@@ -1,7 +1,8 @@
-import { render } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import { defineComponent, nextTick, ref } from 'vue'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -12,13 +13,28 @@ import type { SlotLayout } from '@/renderer/core/layout/types'
 import { useNodeSlotRegistryStore } from '@/renderer/extensions/vueNodes/stores/nodeSlotRegistryStore'
 
 import {
+  setExpectedRenderedNodeIds,
   syncNodeSlotLayoutsFromDOM,
   flushScheduledSlotLayoutSync,
   requestSlotLayoutSyncForAllNodes,
   useSlotElementTracking
 } from './useSlotElementTracking'
 
-const mockGraph = vi.hoisted(() => ({ _nodes: [] as unknown[] }))
+interface MockGraphNode {
+  inputs?: Array<{
+    name: string
+    type: string
+    boundingRect: [number, number, number, number]
+    widget?: { name: string }
+  }>
+  outputs?: unknown[]
+  flags: { collapsed?: boolean }
+}
+
+const mockGraph = vi.hoisted(() => ({
+  _nodes: [] as unknown[],
+  getNodeById: vi.fn((_nodeId: NodeId): MockGraphNode | undefined => undefined)
+}))
 const mockCanvasState = vi.hoisted(() => ({
   canvas: {} as object | null
 }))
@@ -96,9 +112,6 @@ function createSlotElement(collapsed = false): HTMLElement {
   return el
 }
 
-/**
- * Mount the wrapper, set the element ref, and wait for slot registration.
- */
 async function mountAndRegisterSlot(type: 'input' | 'output') {
   const { el, TestComponent } = createTestSetup(type)
   const { unmount } = render(TestComponent)
@@ -110,6 +123,8 @@ async function mountAndRegisterSlot(type: 'input' | 'output') {
 
 describe('useSlotElementTracking', () => {
   beforeEach(() => {
+    setExpectedRenderedNodeIds(undefined)
+    mockGraph.getNodeById.mockReset()
     layoutStore.initializeFromLiteGraph([])
     layoutStore.applyOperation({
       type: 'createNode',
@@ -181,6 +196,56 @@ describe('useSlotElementTracking', () => {
     expect(layoutStore.pendingSlotSync).toBe(true)
   })
 
+  it('does not wait for widget-backed inputs that Vue does not render', async () => {
+    mockGraph.getNodeById.mockReturnValue({
+      inputs: [
+        {
+          name: 'images',
+          type: 'IMAGE',
+          boundingRect: [0, 0, 0, 0]
+        },
+        {
+          name: 'filename_prefix',
+          type: 'STRING',
+          boundingRect: [0, 0, 0, 0],
+          widget: { name: 'filename_prefix' }
+        }
+      ],
+      outputs: [],
+      flags: {}
+    })
+    const { unmount } = await mountAndRegisterSlot('input')
+
+    layoutStore.setPendingSlotSync(true)
+    setExpectedRenderedNodeIds(new Set([NODE_ID]))
+    flushScheduledSlotLayoutSync()
+
+    expect(layoutStore.pendingSlotSync).toBe(false)
+    unmount()
+  })
+
+  it('completes after a rendered node reports slot registration settled', () => {
+    mockGraph.getNodeById.mockReturnValue({
+      inputs: [
+        {
+          name: 'input',
+          type: 'IMAGE',
+          boundingRect: [0, 0, 0, 0]
+        }
+      ],
+      outputs: [{}],
+      flags: {}
+    })
+    const node = useNodeSlotRegistryStore().ensureNode(NODE_ID)
+    Object.assign(node, { active: true, registrationComplete: true })
+
+    layoutStore.setPendingSlotSync(true)
+    setExpectedRenderedNodeIds(new Set([NODE_ID]))
+    flushScheduledSlotLayoutSync()
+
+    expect(layoutStore.pendingSlotSync).toBe(false)
+  })
+
   it('keeps pendingSlotSync when all registered slots are hidden', () => {
     const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
     const hiddenSlot = document.createElement('div')
@@ -215,15 +280,42 @@ describe('useSlotElementTracking', () => {
 
     const registryStore = useNodeSlotRegistryStore()
     const node = registryStore.ensureNode(NODE_ID)
+    Object.assign(node, { active: true, registrationComplete: true })
     node.slots.set(slotKey, {
       el: hiddenSlot,
+      index: SLOT_INDEX,
+      type: 'input'
+    })
+    document.body.appendChild(hiddenSlot)
+
+    syncNodeSlotLayoutsFromDOM(NODE_ID)
+
+    expect(layoutStore.getSlotLayout(slotKey)).toBeNull()
+  })
+
+  it('preserves slot layouts while their KeepAlive node is inactive', () => {
+    const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
+    const slotEl = document.createElement('div')
+    const staleLayout: SlotLayout = {
+      nodeId: NODE_ID,
+      index: SLOT_INDEX,
+      type: 'input',
+      position: { x: 10, y: 20 },
+      bounds: { x: 6, y: 16, width: 8, height: 8 }
+    }
+    layoutStore.batchUpdateSlotLayouts([{ key: slotKey, layout: staleLayout }])
+
+    const node = useNodeSlotRegistryStore().ensureNode(NODE_ID)
+    Object.assign(node, { active: false, registrationComplete: true })
+    node.slots.set(slotKey, {
+      el: slotEl,
       index: SLOT_INDEX,
       type: 'input'
     })
 
     syncNodeSlotLayoutsFromDOM(NODE_ID)
 
-    expect(layoutStore.getSlotLayout(slotKey)).toBeNull()
+    expect(layoutStore.getSlotLayout(slotKey)).toEqual(staleLayout)
   })
 
   it('skips slot layout writeback when measured slot geometry is unchanged', () => {
@@ -266,6 +358,62 @@ describe('useSlotElementTracking', () => {
     syncNodeSlotLayoutsFromDOM(NODE_ID)
 
     expect(batchUpdateSpy).not.toHaveBeenCalled()
+  })
+
+  it('remeasures a cached slot after KeepAlive activation', async () => {
+    let slotLeft = 10
+    const active = ref(true)
+    const TrackedSlot = defineComponent({
+      setup() {
+        const element = ref<HTMLElement | null>(null)
+        useSlotElementTracking({
+          nodeId: NODE_ID,
+          index: SLOT_INDEX,
+          type: 'input',
+          element
+        })
+        return { element }
+      },
+      template:
+        '<div data-testid="tracked-node" data-node-id="test-node"><div ref="element" data-testid="tracked-slot" /></div>'
+    })
+    const Parent = defineComponent({
+      components: { TrackedSlot },
+      setup: () => ({ active }),
+      template: '<KeepAlive><TrackedSlot v-if="active" /></KeepAlive>'
+    })
+    const { unmount } = render(Parent)
+    const nodeElement = screen.getByTestId('tracked-node')
+    const slotElement = screen.getByTestId('tracked-slot')
+    nodeElement.getBoundingClientRect = () =>
+      ({
+        left: 0,
+        top: 0,
+        width: 200,
+        height: 100
+      }) as DOMRect
+    slotElement.getBoundingClientRect = () =>
+      ({
+        left: slotLeft,
+        top: 30,
+        width: 10,
+        height: 10
+      }) as DOMRect
+
+    await nextTick()
+    flushScheduledSlotLayoutSync()
+    const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
+    expect(layoutStore.getSlotLayout(slotKey)?.position.x).toBe(15)
+
+    active.value = false
+    await nextTick()
+    slotLeft = 110
+    active.value = true
+    await nextTick()
+    flushScheduledSlotLayoutSync()
+
+    expect(layoutStore.getSlotLayout(slotKey)?.position.x).toBe(115)
+    unmount()
   })
 
   describe('collapsed node slot sync', () => {

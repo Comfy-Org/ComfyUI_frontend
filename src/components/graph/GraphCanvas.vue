@@ -65,6 +65,7 @@
   <!-- TransformPane for Vue node rendering -->
   <TransformPane
     v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
+    ref="transformPaneRef"
     :canvas="comfyApp.canvas"
     @wheel.capture="canvasInteractions.forwardEventToCanvas"
     @pointerdown.capture="forwardPointerDownPanEvent"
@@ -72,18 +73,18 @@
     @pointermove.capture="forwardPointerMovePanEvent"
     @keydown.space="forwardSpaceKeyEvent"
   >
-    <!-- Vue nodes rendered based on graph nodes -->
-    <LGraphNode
-      v-for="nodeData in allNodes"
-      :key="nodeData.id"
-      :node-data="nodeData"
-      :error="
-        executionErrorStore.lastExecutionErrorNodeId === nodeData.id
-          ? 'Execution error'
-          : null
-      "
-      :data-node-id="nodeData.id"
-    />
+    <KeepAlive v-for="nodeData in rawNodes" :key="nodeData.id">
+      <LGraphNode
+        v-if="activeNodeIds.has(nodeData.id)"
+        :node-data="nodeData"
+        :error="
+          executionErrorStore.lastExecutionErrorNodeId === nodeData.id
+            ? 'Execution error'
+            : null
+        "
+        :data-node-id="nodeData.id"
+      />
+    </KeepAlive>
   </TransformPane>
 
   <LinkOverlayCanvas
@@ -116,7 +117,7 @@
 </template>
 
 <script setup lang="ts">
-import { until, useEventListener } from '@vueuse/core'
+import { until, useElementSize, useEventListener } from '@vueuse/core'
 import {
   computed,
   nextTick,
@@ -184,7 +185,12 @@ import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftT
 import { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
-import { requestSlotLayoutSyncForAllNodes } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
+import {
+  requestSlotLayoutSyncForAllNodes,
+  setExpectedRenderedNodeIds
+} from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
+import { useViewportKeepAlive } from '@/renderer/extensions/vueNodes/composables/useViewportKeepAlive'
+import { useViewportKeepAlivePins } from '@/renderer/extensions/vueNodes/composables/useViewportKeepAlivePins'
 import { UnauthorizedError } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
@@ -213,6 +219,9 @@ const emit = defineEmits<{
   ready: []
 }>()
 const canvasRef = ref<HTMLCanvasElement | null>(null)
+const { width: canvasWidth, height: canvasHeight } = useElementSize(canvasRef)
+const transformPaneRef =
+  useTemplateRef<InstanceType<typeof TransformPane>>('transformPaneRef')
 const canvasPanelBoundsRef = useTemplateRef('canvasPanelBoundsRef')
 const nodeSearchboxPopoverRef = shallowRef<InstanceType<
   typeof NodeSearchboxPopover
@@ -293,9 +302,34 @@ watch(
   }
 )
 
-const allNodes = computed((): VueNodeData[] =>
+const rawNodes = computed((): VueNodeData[] =>
   Array.from(vueNodeLifecycle.nodeManager.value?.vueNodeData?.values() ?? [])
 )
+const nodeIds = computed(() =>
+  Array.from(vueNodeLifecycle.nodeManager.value?.vueNodeData?.keys() ?? [])
+)
+const { pinnedNodeIds } = useViewportKeepAlivePins({
+  getRoot: () => transformPaneRef.value?.element ?? null,
+  getLinkConnector: () => canvasStore.canvas?.linkConnector
+})
+const { activeNodeIds } = useViewportKeepAlive({
+  nodeIds,
+  getNodeType: (nodeId) =>
+    vueNodeLifecycle.nodeManager.value?.vueNodeData.get(nodeId)?.type,
+  pinnedNodeIds,
+  isEnabled: () => settingStore.get('Comfy.VueNodes.ViewportKeepAlive'),
+  getNodeBounds: (nodeId) =>
+    layoutStore.getNodeLayoutRef(nodeId).value?.bounds ?? null,
+  getViewportSize: () => ({
+    width: canvasWidth.value,
+    height: canvasHeight.value
+  }),
+  getNodeGeometryVersion: () => layoutStore.nodeGeometryVersion
+})
+watch(activeNodeIds, () => setExpectedRenderedNodeIds(activeNodeIds.value), {
+  immediate: true,
+  flush: 'post'
+})
 watch(
   () => linearMode.value,
   (isLinearMode) => {
@@ -604,6 +638,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  setExpectedRenderedNodeIds(undefined)
   cleanupErrorHooks?.()
   cleanupErrorHooks = null
   vueNodeLifecycle.cleanup()

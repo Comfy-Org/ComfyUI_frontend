@@ -38,6 +38,14 @@ vi.mock('@/composables/useErrorHandling', () => ({
   })
 }))
 
+vi.mock(
+  '@/renderer/extensions/vueNodes/composables/useSlotElementTracking',
+  async (importOriginal) => ({
+    ...(await importOriginal()),
+    useNodeSlotRegistration: vi.fn()
+  })
+)
+
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
     t: vi.fn((key) => key)

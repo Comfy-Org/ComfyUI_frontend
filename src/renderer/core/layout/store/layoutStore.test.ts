@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick, watch } from 'vue'
 
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
@@ -42,6 +43,26 @@ describe('layoutStore CRDT operations', () => {
     zIndex: 0,
     visible: true,
     bounds: { x: 100, y: 100, width: 200, height: 100 }
+  })
+
+  it('exposes node geometry changes as a reactive version', async () => {
+    const listener = vi.fn()
+    const stop = watch(() => layoutStore.nodeGeometryVersion, listener)
+    const nodeId = toNodeId('reactive-geometry')
+
+    layoutStore.applyOperation({
+      type: 'createNode',
+      entity: 'node',
+      nodeId,
+      layout: createTestNode(nodeId),
+      timestamp: Date.now(),
+      source: LayoutSource.External,
+      actor: 'test'
+    })
+    await nextTick()
+
+    expect(listener).toHaveBeenCalledOnce()
+    stop()
   })
 
   it('should create and retrieve nodes', () => {

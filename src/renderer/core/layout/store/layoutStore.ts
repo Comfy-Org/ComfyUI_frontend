@@ -5,7 +5,7 @@
  * CRDT ensures conflict-free operations for both single and multi-user scenarios.
  */
 import log from 'loglevel'
-import { computed, customRef, ref } from 'vue'
+import { computed, customRef, ref, shallowRef } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
 import * as Y from 'yjs'
 
@@ -119,7 +119,7 @@ class LayoutStoreImpl implements LayoutStore {
 
   // Vue reactivity layer
   private version = 0
-  private _nodeGeometryVersion = 0
+  private _nodeGeometryVersion = shallowRef(0)
   private currentSource: LayoutSource =
     ACTOR_CONFIG.DEFAULT_SOURCE as LayoutSource
   private currentActor = `${ACTOR_CONFIG.USER_PREFIX}${Math.random()
@@ -214,7 +214,7 @@ class LayoutStoreImpl implements LayoutStore {
    * operation handler.
    */
   get nodeGeometryVersion(): number {
-    return this._nodeGeometryVersion
+    return this._nodeGeometryVersion.value
   }
 
   setPendingSlotSync(value: boolean): void {
@@ -246,7 +246,7 @@ class LayoutStoreImpl implements LayoutStore {
             : [...event.changes.keys.keys()]
 
         if (changedKeys.some((key) => NODE_GEOMETRY_KEYS.has(key))) {
-          this._nodeGeometryVersion++
+          this._nodeGeometryVersion.value++
           return
         }
       }

@@ -5,7 +5,7 @@
  * positions in a single batched pass, and caches offsets so that node moves
  * update slot positions without DOM reads.
  */
-import { onMounted, onUnmounted, watch } from 'vue'
+import { onActivated, onDeactivated, onMounted, onUnmounted, watch } from 'vue'
 import type { Ref } from 'vue'
 
 import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
@@ -27,6 +27,7 @@ import { createRafBatch } from '@/utils/rafBatch'
 
 // RAF batching
 const pendingNodes = new Set<NodeId>()
+let expectedRenderedNodeIds: ReadonlySet<NodeId> | undefined
 const raf = createRafBatch(() => {
   flushScheduledSlotLayoutSync()
 })
@@ -34,13 +35,28 @@ const raf = createRafBatch(() => {
 export function scheduleSlotLayoutSync(nodeId: NodeId) {
   // Drop signals for unregistered nodes (e.g. preview nodes with synthetic
   // ids from LGraphNodePreview) - they'd otherwise pump setDirty per RAF.
-  if (!useNodeSlotRegistryStore().getNode(nodeId)) return
+  const node = useNodeSlotRegistryStore().getNode(nodeId)
+  if (!node?.active) return
   pendingNodes.add(nodeId)
   raf.schedule()
 }
 
 function shouldWaitForSlotLayouts(): boolean {
   const graph = app.canvas?.graph
+  if (expectedRenderedNodeIds) {
+    const registry = useNodeSlotRegistryStore()
+    for (const nodeId of expectedRenderedNodeIds) {
+      const registeredNode = registry.getNode(nodeId)
+      if (!registeredNode?.active || !registeredNode.registrationComplete) {
+        return true
+      }
+      for (const slotKey of registeredNode.slots.keys()) {
+        if (!layoutStore.getSlotLayout(slotKey)) return true
+      }
+    }
+    return false
+  }
+
   const hasNodes = Boolean(graph && graph._nodes && graph._nodes.length > 0)
   return hasNodes && !layoutStore.hasSlotLayouts
 }
@@ -69,6 +85,13 @@ export function requestSlotLayoutSyncForAllNodes(): void {
   if (pendingNodes.size === 0) {
     flushScheduledSlotLayoutSync()
   }
+}
+
+export function setExpectedRenderedNodeIds(
+  nodeIds: ReadonlySet<NodeId> | undefined
+): void {
+  expectedRenderedNodeIds = nodeIds ? new Set(nodeIds) : undefined
+  if (layoutStore.pendingSlotSync) flushScheduledSlotLayoutSync()
 }
 
 function createSlotLayout(options: {
@@ -123,7 +146,7 @@ export function flushScheduledSlotLayoutSync() {
 export function syncNodeSlotLayoutsFromDOM(nodeId: NodeId) {
   const nodeSlotRegistryStore = useNodeSlotRegistryStore()
   const node = nodeSlotRegistryStore.getNode(nodeId)
-  if (!node) return
+  if (!node?.active) return
   const nodeLayout = layoutStore.getNodeLayoutRef(nodeId).value
   if (!nodeLayout) return
 
@@ -229,7 +252,7 @@ export function syncNodeSlotLayoutsFromDOM(nodeId: NodeId) {
 function updateNodeSlotsFromCache(nodeId: NodeId) {
   const nodeSlotRegistryStore = useNodeSlotRegistryStore()
   const node = nodeSlotRegistryStore.getNode(nodeId)
-  if (!node) return
+  if (!node?.active) return
   const nodeLayout = layoutStore.getNodeLayoutRef(nodeId).value
   if (!nodeLayout) return
 
@@ -272,7 +295,7 @@ export function useSlotElementTracking(options: {
 
   onMounted(() => {
     if (!nodeId) return
-    const stop = watch(
+    watch(
       element,
       (el) => {
         if (!el) return
@@ -326,12 +349,13 @@ export function useSlotElementTracking(options: {
 
         // Seed initial sync from DOM
         scheduleSlotLayoutSync(nodeId)
-
-        // Stop watching once registered
-        stop()
       },
       { immediate: true, flush: 'post' }
     )
+  })
+
+  onActivated(() => {
+    if (nodeId) scheduleSlotLayoutSync(nodeId)
   })
 
   onUnmounted(() => {
@@ -351,7 +375,8 @@ export function useSlotElementTracking(options: {
     // If node has no more slots, clean up
     if (node.slots.size === 0) {
       if (node.stopWatch) node.stopWatch()
-      nodeSlotRegistryStore.deleteNode(nodeId)
+      node.stopWatch = undefined
+      if (!node.hasNodeOwner) nodeSlotRegistryStore.deleteNode(nodeId)
     }
   })
 
@@ -360,4 +385,40 @@ export function useSlotElementTracking(options: {
       if (nodeId) scheduleSlotLayoutSync(nodeId)
     }
   }
+}
+
+export function useNodeSlotRegistration(nodeId: NodeId): void {
+  const registry = useNodeSlotRegistryStore()
+  const node = registry.ensureNode(nodeId)
+  node.active = true
+  node.registrationComplete = false
+  node.hasNodeOwner = true
+
+  onMounted(() => {
+    const mountedNode = registry.getNode(nodeId)
+    if (!mountedNode) return
+    mountedNode.registrationComplete = true
+    flushScheduledSlotLayoutSync()
+  })
+
+  onDeactivated(() => {
+    const deactivatedNode = registry.getNode(nodeId)
+    if (!deactivatedNode) return
+    deactivatedNode.active = false
+    pendingNodes.delete(nodeId)
+  })
+
+  onActivated(() => {
+    const activatedNode = registry.getNode(nodeId)
+    if (!activatedNode) return
+    activatedNode.active = true
+    scheduleSlotLayoutSync(nodeId)
+  })
+
+  onUnmounted(() => {
+    const unmountedNode = registry.getNode(nodeId)
+    unmountedNode?.stopWatch?.()
+    pendingNodes.delete(nodeId)
+    registry.deleteNode(nodeId)
+  })
 }
