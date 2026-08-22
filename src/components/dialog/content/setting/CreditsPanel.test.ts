@@ -24,14 +24,18 @@ vi.mock('@/composables/billing/useBillingContext', async () => {
   }
 })
 
-const refreshActivity = vi.hoisted(() => vi.fn())
 vi.mock('./UsageLogsTable.vue', async () => {
   const { defineComponent, h } = await import('vue')
   return {
     default: defineComponent({
-      setup(_props, { expose }) {
-        expose({ refresh: refreshActivity })
-        return () => h('div', { 'data-testid': 'usage-logs-table' })
+      props: { refetchKey: { type: Number, default: 0 } },
+      setup(props) {
+        return () =>
+          h(
+            'div',
+            { 'data-testid': 'usage-logs-table' },
+            String(props.refetchKey)
+          )
       }
     })
   }
@@ -103,15 +107,16 @@ describe('CreditsPanel', () => {
     expect(billingMocks.manageSubscription).toHaveBeenCalledOnce()
   })
 
-  it('refreshes activity on a balance change but not on first hydration', async () => {
+  it('bumps the activity refetch key on a balance change but not on first hydration', async () => {
     renderComponent()
+    const activityTable = screen.getByTestId('usage-logs-table')
 
     billingMocks.balance.value = makeBalance(5000)
     await nextTick()
-    expect(refreshActivity).not.toHaveBeenCalled()
+    expect(activityTable.textContent).toBe('0')
 
     billingMocks.balance.value = makeBalance(9000)
     await nextTick()
-    expect(refreshActivity).toHaveBeenCalledOnce()
+    expect(activityTable.textContent).toBe('1')
   })
 })

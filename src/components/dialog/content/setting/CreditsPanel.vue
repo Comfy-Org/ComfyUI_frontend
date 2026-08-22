@@ -39,7 +39,7 @@
       </Button>
     </div>
 
-    <UsageLogsTable v-if="!embedded" ref="usageLogsTableRef" />
+    <UsageLogsTable v-if="!embedded" :refetch-key="creditsRevision" />
 
     <div v-if="!embedded" class="flex flex-row gap-2">
       <Button variant="muted-textonly" @click="handleFaqClick">
@@ -80,11 +80,15 @@ const { balance, manageSubscription } = useBillingContext()
 const commandStore = useCommandStore()
 const telemetry = useTelemetry()
 
-const usageLogsTableRef = ref<InstanceType<typeof UsageLogsTable> | null>(null)
+// A genuine balance change (not the first hydration) is a reason for the
+// activity table to reload. This is a plain reactive value passed down as a
+// prop, rather than the parent reaching into the child to call a method it
+// exposes for that purpose.
+const creditsRevision = ref(0)
 
 watch(balance, (next, previous) => {
   if (!next || !previous) return
-  void usageLogsTableRef.value?.refresh()
+  creditsRevision.value++
 })
 
 const handleCreditsHistoryClick = async () => {

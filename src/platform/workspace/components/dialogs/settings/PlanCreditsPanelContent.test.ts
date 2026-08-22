@@ -2,7 +2,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import { render, screen, waitFor } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 
 import enMessages from '@/locales/en/main.json'
 
@@ -14,8 +14,6 @@ vi.mock('@/platform/distribution/types', () => ({
     return mockDistribution.cloud
   }
 }))
-
-const refreshSpy = vi.hoisted(() => vi.fn(() => Promise.resolve()))
 
 const stubs = {
   SubscriptionPanelContentWorkspace: {
@@ -29,10 +27,7 @@ const stubs = {
     template: '<footer aria-label="Subscription links" />'
   },
   UsageLogsTable: {
-    template: '<section aria-label="Usage logs" />',
-    methods: {
-      refresh: refreshSpy
-    }
+    template: '<section aria-label="Usage logs" />'
   }
 }
 
@@ -71,7 +66,7 @@ describe('PlanCreditsPanelContent', () => {
     ).toBeNull()
   })
 
-  it('loads the usage log on the Activity tab', async () => {
+  it('shows the usage log on the Activity tab', async () => {
     renderPanel()
 
     await userEvent.click(screen.getByRole('button', { name: 'Activity' }))
@@ -79,20 +74,5 @@ describe('PlanCreditsPanelContent', () => {
     expect(
       screen.queryByRole('region', { name: 'Plan and credits overview' })
     ).toBeNull()
-    await waitFor(() => expect(refreshSpy).toHaveBeenCalledOnce())
-  })
-
-  it('reports usage-log refresh failures', async () => {
-    refreshSpy.mockRejectedValueOnce(new Error('refresh failed'))
-    const consoleError = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => undefined)
-    renderPanel()
-
-    await userEvent.click(screen.getByRole('button', { name: 'Activity' }))
-
-    await waitFor(() =>
-      expect(consoleError).toHaveBeenCalledWith('Error refreshing usage logs')
-    )
   })
 })

@@ -10,9 +10,9 @@
       v-else
       :value="events"
       :paginator="true"
-      :rows="pagination.limit"
-      :total-records="pagination.total"
-      :first="dataTableFirst"
+      :rows="limit"
+      :total-records="total"
+      :first="first"
       :lazy="true"
       class="p-datatable-sm custom-datatable"
       @page="onPageChange"
@@ -96,11 +96,12 @@ import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
 import Message from 'primevue/message'
 import ProgressSpinner from 'primevue/progressspinner'
-import { computed, ref, watch } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
+import { usePaginatedQuery } from '@/composables/usePaginatedQuery'
 import { useTelemetry } from '@/platform/telemetry'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type { AuditLog } from '@/services/customerEventsService'
@@ -109,26 +110,71 @@ import {
   useCustomerEventsService
 } from '@/services/customerEventsService'
 
-const { t } = useI18n()
+const { refetchKey = 0 } = defineProps<{
+  /**
+   * Bumped by the parent to signal an out-of-band reason to reload (e.g. a
+   * balance change) without reaching into this component's internals.
+   */
+  refetchKey?: number
+}>()
 
-const events = ref<AuditLog[]>([])
-const loading = ref(true)
-const error = ref<string | null>(null)
+const { t } = useI18n()
 
 const customerEventService = useCustomerEventsService()
 
 const { shouldUseWorkspaceBilling } = useBillingRouting()
 
-const pagination = ref({
-  page: 1,
-  limit: 7,
-  total: 0,
-  totalPages: 0
-})
-
-const dataTableFirst = computed(
-  () => (pagination.value.page - 1) * pagination.value.limit
+// A billing-rail flip or a parent-signalled refetch are both reasons to
+// reset to page 1 and reload against the (possibly new) backend.
+const queryKey = computed(
+  () => `${shouldUseWorkspaceBilling.value}:${refetchKey}`
 )
+
+const {
+  items: events,
+  limit,
+  total,
+  first,
+  loading,
+  error,
+  goToPage
+} = usePaginatedQuery<AuditLog, string>({
+  key: queryKey,
+  initialLimit: 7,
+  fetchPage: async ({ page, limit: requestedLimit }) => {
+    const params = { page, limit: requestedLimit }
+
+    let response
+    try {
+      response = shouldUseWorkspaceBilling.value
+        ? await workspaceApi.getBillingEvents(params)
+        : await customerEventService.getMyEvents(params)
+    } catch (err) {
+      console.error('Error loading events:', err)
+      throw new Error(t('credits.loadEventsUnknownError'), { cause: err })
+    }
+
+    // Completion telemetry must run even when a mid-checkout route flip
+    // supersedes this load, since legacy and workspace backends emit
+    // different top-up events and the winning fetch may not carry the
+    // completion yet.
+    useTelemetry()?.checkForCompletedTopup(response?.events)
+
+    if (!response) {
+      const legacyError = shouldUseWorkspaceBilling.value
+        ? null
+        : customerEventService.error.value
+      throw new Error(legacyError || t('credits.loadEventsError'))
+    }
+
+    return {
+      items: response.events ?? [],
+      page: response.page ?? page,
+      limit: response.limit ?? requestedLimit,
+      total: response.total ?? 0
+    }
+  }
+})
 
 const tooltipContentMap = computed(() => {
   const map = new Map<string, string>()
@@ -140,89 +186,7 @@ const tooltipContentMap = computed(() => {
   return map
 })
 
-// A billing-route flip can overlap two loads against different backends; only
-// the latest may mutate state, so a superseded response is discarded.
-let latestLoadToken = 0
-
-const loadEvents = async () => {
-  const loadToken = ++latestLoadToken
-  loading.value = true
-  error.value = null
-
-  try {
-    const params = {
-      page: pagination.value.page,
-      limit: pagination.value.limit
-    }
-    const response = shouldUseWorkspaceBilling.value
-      ? await workspaceApi.getBillingEvents(params)
-      : await customerEventService.getMyEvents(params)
-
-    // Completion telemetry must run even when a mid-checkout route flip
-    // supersedes this load, since legacy and workspace backends emit different
-    // top-up events and the winning fetch may not carry the completion yet.
-    useTelemetry()?.checkForCompletedTopup(response?.events)
-
-    if (loadToken !== latestLoadToken) return
-
-    if (response) {
-      if (response.events) {
-        events.value = response.events
-      }
-
-      if (response.page) {
-        pagination.value.page = response.page
-      }
-
-      if (response.limit) {
-        pagination.value.limit = response.limit
-      }
-
-      if (response.total != null) {
-        pagination.value.total = response.total
-      }
-
-      if (response.totalPages != null) {
-        pagination.value.totalPages = response.totalPages
-      }
-    } else {
-      const legacyError = shouldUseWorkspaceBilling.value
-        ? null
-        : customerEventService.error.value
-      error.value = legacyError || t('credits.loadEventsError')
-    }
-  } catch (err) {
-    if (loadToken !== latestLoadToken) return
-    error.value = t('credits.loadEventsUnknownError')
-    console.error('Error loading events:', err)
-  } finally {
-    if (loadToken === latestLoadToken) loading.value = false
-  }
-}
-
 const onPageChange = (event: { page: number }) => {
-  pagination.value.page = event.page + 1
-  loadEvents().catch((error) => {
-    console.error('Error loading events:', error)
-  })
+  goToPage(event.page + 1)
 }
-
-const refresh = async () => {
-  pagination.value.page = 1
-  await loadEvents()
-}
-
-watch(
-  shouldUseWorkspaceBilling,
-  () => {
-    refresh().catch((error) => {
-      console.error('Error loading events:', error)
-    })
-  },
-  { immediate: true }
-)
-
-defineExpose({
-  refresh
-})
 </script>

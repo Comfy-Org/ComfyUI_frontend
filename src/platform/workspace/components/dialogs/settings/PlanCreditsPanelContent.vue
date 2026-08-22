@@ -27,12 +27,12 @@
         />
       </div>
     </template>
-    <UsageLogsTable v-else ref="usageLogsTable" />
+    <UsageLogsTable v-else />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, useTemplateRef, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import CreditsPanel from '@/components/dialog/content/setting/CreditsPanel.vue'
@@ -52,11 +52,4 @@ const tabs = computed<{ key: View; label: string }[]>(() => [
 ])
 
 const activeView = ref<View>('overview')
-
-const usageLogsTable = useTemplateRef('usageLogsTable')
-watch(usageLogsTable, (table) => {
-  table?.refresh().catch(() => {
-    console.error('Error refreshing usage logs')
-  })
-})
 </script>

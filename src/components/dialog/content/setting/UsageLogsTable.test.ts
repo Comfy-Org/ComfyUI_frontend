@@ -354,15 +354,18 @@ describe('UsageLogsTable', () => {
         limit: 7
       })
     })
-  })
 
-  describe('component methods', () => {
-    it('calls getMyEvents on refresh with page 1', async () => {
-      await renderLoaded()
+    it('refetches page 1 when refetchKey changes', async () => {
+      const { rerender } = await renderLoaded()
+      mockCustomerEventsService.getMyEvents.mockClear()
 
-      expect(mockCustomerEventsService.getMyEvents).toHaveBeenCalledWith({
-        page: 1,
-        limit: 7
+      await rerender({ refetchKey: 1 })
+
+      await waitFor(() => {
+        expect(mockCustomerEventsService.getMyEvents).toHaveBeenCalledWith({
+          page: 1,
+          limit: 7
+        })
       })
     })
   })
