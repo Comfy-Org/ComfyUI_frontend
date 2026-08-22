@@ -63,6 +63,13 @@ describe('layoutStore CRDT operations', () => {
     expect(nodeRef.value).toEqual(layout)
   })
 
+  it('does not create a node when reading a missing layout', () => {
+    const nodeRef = layoutStore.getNodeLayoutRef(GRAPH, toNodeId('missing'))
+
+    expect(nodeRef.value).toBeNull()
+    expect(layoutStore.nodeCount).toBe(0)
+  })
+
   it('should move nodes', () => {
     const nodeId = toNodeId('test-node-2')
     const layout = createTestNode(nodeId)
