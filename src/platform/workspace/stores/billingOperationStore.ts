@@ -225,12 +225,12 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     const operation = operations.value.get(opId)
     if (!operation || operation.status !== 'pending') return
 
-    if (stopIfTimedOut(opId, operation)) return
-
     if (operation.workspaceId !== workspaceStore.activeWorkspaceId) {
       scheduleNextPoll(opId)
       return
     }
+
+    if (stopIfTimedOut(opId, operation)) return
 
     try {
       const response = await workspaceApi.getBillingOpStatus(opId)
@@ -259,6 +259,10 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     } catch {
       const currentOperation = operations.value.get(opId)
       if (currentOperation !== operation) return
+      if (operation.workspaceId !== workspaceStore.activeWorkspaceId) {
+        scheduleNextPoll(opId)
+        return
+      }
       if (stopIfTimedOut(opId, currentOperation)) return
       scheduleNextPoll(opId)
     }
@@ -404,14 +408,26 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       })
     }
 
+    if (operation.workspaceId !== workspaceStore.activeWorkspaceId) {
+      resolveTerminal(opId)
+      return
+    }
+
     const billingContext = useBillingContext()
     if (operation.type === 'subscription') {
       await Promise.allSettled([billingContext.reconcileSubscriptionSuccess()])
     } else {
-      await Promise.allSettled([
-        billingContext.fetchStatus(),
-        billingContext.fetchBalance()
-      ])
+      await Promise.allSettled([billingContext.fetchStatus()])
+      if (operation.workspaceId !== workspaceStore.activeWorkspaceId) {
+        resolveTerminal(opId)
+        return
+      }
+      await Promise.allSettled([billingContext.fetchBalance()])
+    }
+
+    if (operation.workspaceId !== workspaceStore.activeWorkspaceId) {
+      resolveTerminal(opId)
+      return
     }
 
     if (operation.type === 'cancel') {

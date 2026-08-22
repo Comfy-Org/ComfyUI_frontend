@@ -280,13 +280,20 @@ vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', async () => {
   const { ref } = await import('vue')
   const activeWorkspaceId = ref('workspace-1')
+  const workspaceTransitionGeneration = ref(0)
   mockSetActiveWorkspaceIdImpl.value = (workspaceId) => {
+    if (activeWorkspaceId.value !== workspaceId) {
+      workspaceTransitionGeneration.value++
+    }
     activeWorkspaceId.value = workspaceId
   }
   return {
     useTeamWorkspaceStore: () => ({
       get activeWorkspaceId() {
         return activeWorkspaceId.value
+      },
+      get workspaceTransitionGeneration() {
+        return workspaceTransitionGeneration.value
       }
     })
   }
@@ -1337,6 +1344,43 @@ describe('useSubscriptionCheckout', () => {
           checkout_type: 'new',
           billing_op_id: 'op-team-1'
         })
+      )
+    })
+
+    it('does not show synchronous success after switching away and back', async () => {
+      const checkout = await setup()
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_700',
+          usd: 700,
+          credits: 147_700,
+          discountedUsd: 665
+        },
+        billingCycle: 'monthly'
+      })
+      let resolveSubscribe!: (response: {
+        status: 'subscribed'
+        billing_op_id: string
+      }) => void
+      mockSubscribe.mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveSubscribe = resolve
+        })
+      )
+
+      const subscription = checkout.handleTeamSubscribe()
+      await vi.waitFor(() => expect(mockSubscribe).toHaveBeenCalledOnce())
+      mockSetActiveWorkspaceId('workspace-2')
+      mockSetActiveWorkspaceId('workspace-1')
+      resolveSubscribe({
+        status: 'subscribed',
+        billing_op_id: 'op-team-1'
+      })
+      await subscription
+
+      expect(checkout.checkoutStep.value).not.toBe('success')
+      expect(mockTrackBillingEvent).not.toHaveBeenCalledWith(
+        expect.objectContaining({ stage: 'succeeded' })
       )
     })
 

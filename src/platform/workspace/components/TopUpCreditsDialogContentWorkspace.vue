@@ -265,6 +265,7 @@ import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFai
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -281,6 +282,7 @@ const { buildDocsUrl, docsPaths } = useExternalLink()
 const { fetchBalance, fetchStatus, topup } = useBillingContext()
 const { shouldUseWorkspaceBilling } = useBillingRouting()
 const { permissions } = useWorkspaceUI()
+const workspaceStore = useTeamWorkspaceStore()
 
 const billingOperationStore = useBillingOperationStore()
 const isPolling = computed(() => billingOperationStore.isAddingCredits)
@@ -425,7 +427,19 @@ async function handleBuy() {
     })
 
     const amountCents = payAmount.value * 100
+    const workspaceId = workspaceStore.activeWorkspaceId
+    const workspaceTransitionGeneration =
+      workspaceStore.workspaceTransitionGeneration
     const response = await topup(amountCents)
+    if (
+      shouldUseWorkspaceBilling.value &&
+      (workspaceId !== workspaceStore.activeWorkspaceId ||
+        workspaceTransitionGeneration !==
+          workspaceStore.workspaceTransitionGeneration)
+    ) {
+      paymentSubmitted.value = false
+      return
+    }
     if (!response) {
       paymentSubmitted.value = false
       telemetry?.trackBillingEvent({
