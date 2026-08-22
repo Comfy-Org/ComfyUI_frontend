@@ -289,6 +289,10 @@ export interface NamedWidgetValueDrift {
   after: unknown
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
 export function declaredInputNamesForTypes(
   defs: Record<string, RawNodeDef>,
   types: readonly string[]
@@ -313,27 +317,17 @@ export function namedWidgetValueDrifts(
   after: unknown,
   names?: readonly string[]
 ): NamedWidgetValueDrift[] | null {
-  if (
-    typeof before !== 'object' ||
-    before === null ||
-    Array.isArray(before) ||
-    typeof after !== 'object' ||
-    after === null ||
-    Array.isArray(after)
-  )
-    return null
+  if (!isRecord(before) || !isRecord(after)) return null
 
-  const beforeValues = before as Record<string, unknown>
-  const afterValues = after as Record<string, unknown>
   const comparedNames = names
-    ? names.filter((name) => name in beforeValues)
-    : Object.keys(beforeValues).filter((name) => name in afterValues)
+    ? names.filter((name) => name in before)
+    : Object.keys(before).filter((name) => name in after)
   if (comparedNames.length === 0) return names ? [] : null
 
   return comparedNames.flatMap((name) => {
-    return name in afterValues &&
-      JSON.stringify(beforeValues[name]) === JSON.stringify(afterValues[name])
+    return name in after &&
+      JSON.stringify(before[name]) === JSON.stringify(after[name])
       ? []
-      : [{ name, before: beforeValues[name], after: afterValues[name] }]
+      : [{ name, before: before[name], after: after[name] }]
   })
 }
