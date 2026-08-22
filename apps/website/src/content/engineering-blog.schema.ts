@@ -11,7 +11,3 @@ export const engineeringBlogPostSchema = z.strictObject({
   // was adapted from, kept for provenance. Not rendered on the page today.
   sourceSection: z.string().optional()
 })
-
-export type EngineeringBlogPostFrontmatter = z.infer<
-  typeof engineeringBlogPostSchema
->
