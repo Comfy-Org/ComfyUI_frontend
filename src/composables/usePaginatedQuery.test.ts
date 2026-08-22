@@ -54,7 +54,6 @@ describe('usePaginatedQuery', () => {
     expect(fetchPage).toHaveBeenCalledWith({ key: 'a', page: 1, limit: 10 })
     expect(api.items.value).toHaveLength(10)
     expect(api.total.value).toBe(25)
-    expect(api.totalPages.value).toBe(3)
     expect(api.first.value).toBe(0)
     expect(api.loading.value).toBe(false)
   })

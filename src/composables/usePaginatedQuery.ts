@@ -50,9 +50,6 @@ export function usePaginatedQuery<T, K>(
   const page = computed(() => lastResponse.value?.page ?? 1)
   const limit = computed(() => lastResponse.value?.limit ?? initialLimit)
   const total = computed(() => lastResponse.value?.total ?? 0)
-  const totalPages = computed(() =>
-    total.value === 0 ? 0 : Math.ceil(total.value / limit.value)
-  )
   const first = computed(() => (page.value - 1) * limit.value)
 
   let requestToken = 0
@@ -92,7 +89,6 @@ export function usePaginatedQuery<T, K>(
     page,
     limit,
     total,
-    totalPages,
     first,
     loading,
     error,
