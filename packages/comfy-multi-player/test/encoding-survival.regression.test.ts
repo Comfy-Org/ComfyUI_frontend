@@ -421,8 +421,57 @@ describe("the gate asks whether a value survives encoding, not whether yjs accep
     assertRejectedAndRecoverable(setWidget(new Date(0), "date-widget"), "malformed_op");
   });
 
-  it("A8 refuses a BigInt op before the write predicate can inspect its width", () => {
-    assertRejectedAndRecoverable(setWidget(2n ** 70n, "big-widget"), "apply_failed");
+  it("a BigInt payload is malformed_op before any write and names its path", () => {
+    const op = setWidget(2n ** 70n, "big-widget");
+    const doc = mint(workflow, catalog);
+    const before = bytes(doc);
+    const result = applyOps(doc, [op], catalog);
+
+    expect(result.failed).toMatchObject({
+      index: 0,
+      op,
+      code: "malformed_op",
+    });
+    expect(result.failed?.message).toContain("$.value");
+    expect(bytes(doc).equals(before)).toBe(true);
+    expect(appliedMap(doc).has(op.op_id)).toBe(false);
+  });
+
+  it("a BigInt at batch index 0 aborts the remainder without consuming either op", () => {
+    const bad = setWidget({ nested: [10n] }, "bigint-batch-bad");
+    const remainder = setWidget("must-not-apply", "bigint-batch-remainder");
+    const doc = mint(workflow, catalog);
+    const before = bytes(doc);
+    const result = applyOps(doc, [bad, remainder], catalog);
+
+    expect(result.failed).toMatchObject({ index: 0, op: bad, code: "malformed_op" });
+    expect(result.failed?.message).toContain("$.value.nested[0]");
+    expect(result.applied).toEqual([]);
+    expect(bytes(doc).equals(before)).toBe(true);
+    expect(appliedMap(doc).has(bad.op_id)).toBe(false);
+    expect(appliedMap(doc).has(remainder.op_id)).toBe(false);
+  });
+
+  it("BigInt classification wins beyond the depth limit and preserves its exact path", () => {
+    let value: unknown = 10n;
+    for (let depth = 0; depth <= 64; depth++) value = { nested: value };
+    const op = setWidget(value, "deep-bigint");
+    const doc = mint(workflow, catalog);
+    const before = bytes(doc);
+    const result = applyOps(doc, [op], catalog);
+
+    expect(result.failed).toMatchObject({ code: "malformed_op" });
+    expect(result.failed?.message).toContain("$.value.nested.nested");
+    expect(bytes(doc).equals(before)).toBe(true);
+    expect(appliedMap(doc).has(op.op_id)).toBe(false);
+  });
+
+  it("escapes special object keys in a BigInt payload path", () => {
+    const op = setWidget({ 'a.b[0]"quoted': 10n }, "escaped-bigint-path");
+    const result = applyOps(mint(workflow, catalog), [op], catalog);
+
+    expect(result.failed).toMatchObject({ code: "malformed_op" });
+    expect(result.failed?.message).toContain('$.value["a.b[0]\\"quoted"]');
   });
 
   it.each([
@@ -438,7 +487,7 @@ describe("the gate asks whether a value survives encoding, not whether yjs accep
     ["2^63 - 1 (the largest that survives)", 2n ** 63n - 1n],
     ["-2^63 (the smallest that survives)", -(2n ** 63n)],
   ])("the predicate's int64 boundary is exact: %s survives", (_label, value) => {
-    // A8's JSON canonicalizer rejects every BigInt op as `apply_failed`, but
+    // A13's JSON canonicalizer rejects every BigInt op as `malformed_op`, but
     // mint reaches this predicate directly and must preserve fitting values.
     expect(survivesMapEncoding(value)).toBe(true);
     expect(() => mint({ ...workflow, extra: value as unknown as object }, catalog)).not.toThrow();
@@ -560,11 +609,11 @@ describe("the correction stops at the boundary of the pending decision", () => {
     },
   );
 
-  it("A8 rejects a nested BigInt op before D4's shallow boundary is reached", () => {
+  it("A8 rejects a nested BigInt op as malformed before D4's shallow boundary is reached", () => {
     const doc = mint(workflow, catalog);
     const value = { a: 2n ** 70n };
     expect(applyOps(doc, [setWidget(value, "nested-bigint")], catalog).failed).toMatchObject({
-      code: "apply_failed",
+      code: "malformed_op",
     });
     expect(encodingLosses(structuredClone(value)).length).toBeGreaterThan(0);
     expect(() => Y.encodeStateAsUpdate(doc)).not.toThrow();
