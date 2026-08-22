@@ -650,4 +650,37 @@ describe('realignInputLinkSlots', () => {
       link.id
     )
   })
+
+  it('continues after one link cannot be realigned', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const graph = new LGraph()
+    const source = new LGraphNode('Source')
+    source.addOutput('out', 'number')
+    const target = new LGraphNode('Target')
+    target.addInput('first', 'number')
+    target.addInput('occupied', 'number')
+    target.addInput('third', 'number')
+    target.addInput('destination', 'number')
+    graph.add(source)
+    graph.add(target)
+    const blocked = source.connect(0, target, 0)!
+    source.connect(0, target, 1)
+    const movable = source.connect(0, target, 2)!
+    const nodeData = target.serialize()
+    nodeData.inputs = [
+      { ...nodeData.inputs![0], name: 'occupied', link: blocked.id },
+      { ...nodeData.inputs![1], name: 'removed', link: null },
+      { ...nodeData.inputs![2], link: null },
+      { ...nodeData.inputs![3], link: movable.id }
+    ]
+
+    realignInputLinkSlots(graph, [nodeData])
+
+    expect(blocked.target_slot).toBe(0)
+    expect(movable.target_slot).toBe(3)
+    expect(console.error).toHaveBeenCalledWith(
+      'Failed to realign input link slot',
+      expect.objectContaining({ code: 'occupied-target' })
+    )
+  })
 })
