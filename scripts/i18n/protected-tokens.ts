@@ -1,21 +1,34 @@
+import { protectedLiteralPatterns } from './config'
 import type { LocaleChanges, LocaleObject, LocaleValue } from './locale-tree'
-import { collectLeaves, getLeaf, pathKey } from './locale-tree'
+import {
+  collectLeaves,
+  getLeaf,
+  isTranslatableLeaf,
+  pathKey
+} from './locale-tree'
 
-const quoteCharacters = `['"“”‘’«»‹›„‚「」『』]`
-const protectedLiteralPatterns = [
-  /<(?:Picture|Video|Audio) [A-Za-z0-9]+>/g,
-  /\b\d+k\+\d+\b/g,
-  new RegExp(`(?<=${quoteCharacters})(?:match|max)(?=${quoteCharacters})`, 'g')
-]
 // Named ({name}), positional list ({0}), and literal ({'@'}) interpolation
 const interpolationPattern = /\{(?:[A-Za-z][A-Za-z0-9_.-]*|\d+|'[^']*')\}/g
 // vue-i18n message syntax the model must not introduce: | separates plural
 // forms, @:key / @.modifier:key are linked messages
 const pluralSeparatorPattern = /\|/
-const linkedMessagePattern = /@[.:]/
+const linkedMessagePattern =
+  /@(?:\.[A-Za-z][A-Za-z0-9_-]*)?:(?:[^\s@|(){}]+|\{(?:[A-Za-z][A-Za-z0-9_.-]*|'[^']*')\})/g
+// Link syntax left over once well-formed links are removed is malformed, and
+// vue-i18n mis-parses it at runtime rather than rejecting it
+const strayLinkPattern = /@[.:]/
 
 function uniqueMatches(value: string, pattern: RegExp): string[] {
   return [...new Set(value.match(pattern) ?? [])].sort()
+}
+
+function hasStrayLinkSyntax(value: string): boolean {
+  return strayLinkPattern.test(value.replace(linkedMessagePattern, ''))
+}
+
+function hasEmptyPluralForm(value: string): boolean {
+  const forms = value.split('|')
+  return forms.length > 1 && forms.some((form) => form.trim().length === 0)
 }
 
 export function protectedTokens(
@@ -28,6 +41,7 @@ export function protectedTokens(
   if (includeInterpolation) {
     tokens.push(...uniqueMatches(value, interpolationPattern))
   }
+  tokens.push(...uniqueMatches(value, linkedMessagePattern))
   return [...new Set(tokens)].sort()
 }
 
@@ -50,8 +64,11 @@ export function tokenErrors(
     !pluralSeparatorPattern.test(source)
       ? ['added plural separator |']
       : []),
-    ...(linkedMessagePattern.test(target) && !linkedMessagePattern.test(source)
-      ? ['added linked message @']
+    ...(hasEmptyPluralForm(target) && !hasEmptyPluralForm(source)
+      ? ['empty plural form']
+      : []),
+    ...(hasStrayLinkSyntax(target) && !hasStrayLinkSyntax(source)
+      ? ['added malformed linked message @']
       : [])
   ]
 }
@@ -77,13 +94,6 @@ function leafTokenErrors(
   return JSON.stringify(source) === JSON.stringify(target)
     ? []
     : [`${label}: leaf value changed`]
-}
-
-export function leafTokensDiffer(
-  source: LocaleValue,
-  target: LocaleValue | undefined
-): boolean {
-  return leafTokenErrors(source, target, 'leaf').length > 0
 }
 
 export function validateLocale(
@@ -126,14 +136,17 @@ export function validateLocale(
   return errors
 }
 
+// Audits only the leaves rebuildLocale preserves. Regenerated keys and
+// untranslatable leaves are overwritten from the translation or the English
+// source, so drift in them is not a reason to refuse the write.
 export function auditProtectedLiterals(
   source: LocaleObject,
   target: LocaleObject,
-  skipKeys: ReadonlySet<string>
+  regeneratedKeys: ReadonlySet<string>
 ): string[] {
   const targetLeaves = collectLeaves(target)
   return [...collectLeaves(source)].flatMap(([key, leaf]) => {
-    if (skipKeys.has(key)) return []
+    if (regeneratedKeys.has(key) || !isTranslatableLeaf(leaf.value)) return []
     const targetLeaf = targetLeaves.get(key)
     if (targetLeaf === undefined) return []
     return leafTokenErrors(leaf.value, targetLeaf.value, leaf.path.join('.'))

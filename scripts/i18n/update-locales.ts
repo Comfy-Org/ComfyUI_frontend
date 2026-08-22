@@ -18,7 +18,8 @@ import type {
   LocaleLeafEntry,
   LocaleObject,
   LocaleTrackedLeaf,
-  LocaleValue
+  LocaleValue,
+  PendingLocaleLeaf
 } from './locale-tree'
 import {
   collectLeaves,
@@ -32,7 +33,6 @@ import {
 } from './locale-tree'
 import {
   auditProtectedLiterals,
-  leafTokensDiffer,
   protectedTokens,
   validateLocale
 } from './protected-tokens'
@@ -55,7 +55,6 @@ interface SourcePlan {
   changes: LocaleChanges
   invalidated: Set<string>
   previousLeafCount: number
-  degraded: boolean
 }
 
 interface LocaleFileState {
@@ -63,7 +62,8 @@ interface LocaleFileState {
   plan: SourcePlan
   outputFile: string
   existing: LocaleObject
-  pendingLeaves: LocaleLeafEntry[]
+  pendingLeaves: PendingLocaleLeaf[]
+  auditErrors: string[]
   strayPaths: string[][]
 }
 
@@ -187,20 +187,24 @@ function loadManifest(filename: string): SourceManifest {
   return manifest as SourceManifest
 }
 
-function readManifestSource(
+export function readManifestSource(
   repoRoot: string,
   filename: string,
   hash: string
-): LocaleObject | undefined {
+): LocaleObject {
   let content: string
   try {
     content = execFileSync('git', ['cat-file', 'blob', hash], {
       cwd: repoRoot,
       encoding: 'utf8',
-      maxBuffer: 64 * 1024 * 1024
+      maxBuffer: 64 * 1024 * 1024,
+      stdio: ['ignore', 'pipe', 'pipe']
     })
-  } catch {
-    return undefined
+  } catch (error) {
+    throw new Error(
+      `Cannot read the recorded English source for ${filename} (${hash}). Run from a clone with full history (a blobless partial clone works: fetch-depth: 0 with filter: blob:none, which lazily fetches the blob over the network).`,
+      { cause: error }
+    )
   }
   try {
     return parseLocale(content, `${filename}@${hash}`)
@@ -289,16 +293,21 @@ function loadLocaleFileStates(
       const strayPaths = [...collectLeaves(existing).values()]
         .filter((leaf) => !sourceLeafKeys.has(pathKey(leaf.path)))
         .map((leaf) => leaf.path)
+      const pendingLeaves = collectPendingLeaves(
+        plan.source,
+        existing,
+        plan.invalidated
+      )
       return {
         locale,
         plan,
         outputFile,
         existing,
-        pendingLeaves: collectPendingLeaves(
+        pendingLeaves,
+        auditErrors: auditProtectedLiterals(
           plan.source,
           existing,
-          plan.invalidated,
-          leafTokensDiffer
+          new Set(pendingLeaves.map((leaf) => pathKey(leaf.path)))
         ),
         strayPaths
       }
@@ -310,6 +319,23 @@ function print(line: string): void {
   process.stdout.write(`${line}\n`)
 }
 
+const reportExampleLimit = 5
+
+function printCapped(
+  label: string,
+  lines: readonly string[],
+  remainderNoun: string
+): void {
+  for (const line of lines.slice(0, reportExampleLimit)) {
+    print(`${label}: ${line}`)
+  }
+  if (lines.length > reportExampleLimit) {
+    print(
+      `${label}: … and ${lines.length - reportExampleLimit} more ${remainderNoun}`
+    )
+  }
+}
+
 function reportCheck(states: readonly LocaleFileState[]): number {
   let pendingTotal = 0
   let strayTotal = 0
@@ -319,12 +345,13 @@ function reportCheck(states: readonly LocaleFileState[]): number {
     const label = `${state.locale.code}/${state.plan.filename}`
     if (state.pendingLeaves.length > 0) {
       pendingTotal += state.pendingLeaves.length
-      const examples = state.pendingLeaves
-        .slice(0, 5)
-        .map((leaf) => leaf.path.join('.'))
-        .join(', ')
-      print(
-        `${label}: ${state.pendingLeaves.length} strings need translation (${examples}${state.pendingLeaves.length > 5 ? ', …' : ''})`
+      printCapped(
+        label,
+        state.pendingLeaves.map(
+          (leaf) =>
+            `${leaf.path.join('.')}: translation required (${leaf.reason})`
+        ),
+        'strings need translation'
       )
     }
     if (state.strayPaths.length > 0) {
@@ -333,16 +360,7 @@ function reportCheck(states: readonly LocaleFileState[]): number {
         `${label}: ${state.strayPaths.length} keys no longer exist in the English source and will be pruned`
       )
     }
-    // Skip keys queued because the English source changed (comparing an old
-    // translation against new English is meaningless). Degraded plans
-    // (recorded source unavailable) cannot tell staleness from corruption, so
-    // they skip the audit.
-    if (state.plan.degraded) continue
-    for (const error of auditProtectedLiterals(
-      state.plan.source,
-      state.existing,
-      state.plan.invalidated
-    )) {
+    for (const error of state.auditErrors) {
       auditErrors.push(`${label}: ${error}`)
     }
   }
@@ -380,17 +398,7 @@ async function run(argv: readonly string[]): Promise<void> {
     if (!check && raw !== canonical) writeFileSync(entryFile, canonical)
     const hash = manifest.files[filename]
     const recorded = hash ? readManifestSource(repoRoot, filename, hash) : {}
-    if (recorded === undefined && !check) {
-      throw new Error(
-        `Cannot read the recorded English source for ${filename} (${hash}). Run from a clone with full history (a blobless partial clone works: fetch-depth: 0 with filter: blob:none, which lazily fetches the blob over the network).`
-      )
-    }
-    if (recorded === undefined) {
-      print(
-        `WARNING: ${filename}: the recorded English source (${hash}) is unavailable in this clone; changed-string detection is skipped for this check.`
-      )
-    }
-    const previous = recorded ?? source
+    const previous = recorded
     const changes = diffLocaleSources(previous, source)
     return {
       filename,
@@ -399,8 +407,7 @@ async function run(argv: readonly string[]): Promise<void> {
       invalidated: new Set(
         [...changes.added, ...changes.modified].map(pathKey)
       ),
-      previousLeafCount: collectLeaves(previous).size,
-      degraded: recorded === undefined
+      previousLeafCount: collectLeaves(previous).size
     }
   })
 
@@ -435,6 +442,27 @@ async function run(argv: readonly string[]): Promise<void> {
     }
     process.exitCode = reportCheck(states)
     return
+  }
+
+  const auditFailures = states.flatMap((state) =>
+    state.auditErrors.map(
+      (error) => `${state.locale.code}/${state.plan.filename}: ${error}`
+    )
+  )
+  if (auditFailures.length > 0) {
+    throw new Error(
+      `Refusing to overwrite unchanged translations with protected-token violations:\n${auditFailures.join('\n')}`
+    )
+  }
+
+  for (const state of states) {
+    printCapped(
+      `${state.locale.code}/${state.plan.filename}`,
+      state.pendingLeaves.map(
+        (leaf) => `${leaf.path.join('.')}: queued (${leaf.reason})`
+      ),
+      'queued'
+    )
   }
 
   const translationPlans = new Map(
@@ -581,7 +609,8 @@ async function run(argv: readonly string[]): Promise<void> {
 
   // Persist per entry file: locale outputs and the manifest entry advance only
   // for entry files whose every locale translated and validated, so one
-  // failure does not discard the completed work of the other files
+  // failure does not discard the completed work of the other files. A crash
+  // before the manifest write can repeat work, but cannot advance provenance.
   const completedFilenames = new Set(
     filenames.filter((filename) => !failuresByFile.has(filename))
   )
@@ -612,6 +641,15 @@ async function run(argv: readonly string[]): Promise<void> {
       })
     )
   )
+
+  for (const state of states) {
+    if (!completedFilenames.has(state.plan.filename)) continue
+    printCapped(
+      `${state.locale.code}/${state.plan.filename}`,
+      state.strayPaths.map((path) => `pruned ${path.join('.')}`),
+      'pruned'
+    )
+  }
 
   if (usage.requests > 0) {
     print(
