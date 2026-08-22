@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest'
 
+import type { ISerialisedGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { renameWidget } from '@/utils/widgetUtil'
@@ -37,16 +38,20 @@ describe('LGraph.configure clears graph-scoped stores for the incoming id', () =
     return { graph, node }
   }
 
+  function serializeToJson(graph: LGraph): ISerialisedGraph {
+    return JSON.parse(JSON.stringify(graph.serialize())) as ISerialisedGraph
+  }
+
   test('a reloaded widget label is read from the payload, never inherited from the live store', () => {
     const graph = new LGraph()
     const dropped = addLabelledNode(graph, 'Dropped Label')
     const kept = addLabelledNode(graph, 'Kept Label')
 
-    const payload = JSON.parse(JSON.stringify(graph.serialize()))
+    const payload = serializeToJson(graph)
     const droppedData = payload.nodes.find(
-      (n: { id: unknown }) => String(n.id) === String(dropped.id)
-    )
-    delete droppedData.inputs[0].label
+      (n) => String(n.id) === String(dropped.id)
+    )!
+    delete droppedData.inputs![0].label
 
     const restored = new LGraph()
     restored.configure(payload)
@@ -63,7 +68,7 @@ describe('LGraph.configure clears graph-scoped stores for the incoming id', () =
       { sourceNodeId: '1', sourcePreviewName: 'preview', name: 'preview' }
     ])
 
-    const payload = JSON.parse(JSON.stringify(graph.serialize()))
+    const payload = serializeToJson(graph)
 
     const restored = new LGraph()
     restored.configure(payload)
