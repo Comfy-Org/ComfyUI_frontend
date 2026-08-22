@@ -22,7 +22,6 @@ export class SettingDialog extends BaseDialog {
   async open() {
     await this.comfyPage.command.executeCommand('Comfy.ShowSettingsDialog')
     await this.waitForVisible()
-    await this.closeButton.waitFor({ state: 'visible' })
   }
 
   /**

@@ -2,7 +2,6 @@ import type { APIRequestContext, Locator, Page } from '@playwright/test'
 import { test as base } from '@playwright/test'
 import { config as dotenvConfig } from 'dotenv'
 import MCR from 'monocart-coverage-reports'
-import { randomUUID } from 'node:crypto'
 
 import { COVERAGE_OUTPUT_DIR } from '@e2e/coverageConfig'
 import {
@@ -37,7 +36,7 @@ import { assetPath } from '@e2e/fixtures/utils/paths'
 import { nextFrame, sleep } from '@e2e/fixtures/utils/timing'
 import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
-import { createdUserId } from '@e2e/fixtures/userIdentity'
+import { createdUserId, testUsername } from '@e2e/fixtures/userIdentity'
 import { BottomPanel } from '@e2e/fixtures/components/BottomPanel'
 import { ComfyNodeSearchBox } from '@e2e/fixtures/components/ComfyNodeSearchBox'
 import { ComfyNodeSearchBoxV2 } from '@e2e/fixtures/components/ComfyNodeSearchBoxV2'
@@ -76,12 +75,6 @@ import { WorkflowHelper } from '@e2e/fixtures/helpers/WorkflowHelper'
 import type { WorkspaceStore } from '@e2e/types/globals'
 
 dotenvConfig()
-
-const TEST_RUN_ID = randomUUID()
-
-export function testUsername(prefix: string, parallelIndex: number): string {
-  return `${prefix}-${TEST_RUN_ID}-${parallelIndex}`
-}
 
 class ComfyPropertiesPanel {
   readonly root: Locator
@@ -597,7 +590,7 @@ export const comfyPageFixture = base.extend<{
     const comfyPage = new ComfyPage(page, request)
 
     const { parallelIndex } = testInfo
-    const username = testUsername('playwright-test', parallelIndex)
+    const username = testUsername('pw', parallelIndex)
     const isCustomNodes = testInfo.project.name === 'custom-nodes'
     const needsPerf =
       testInfo.tags.includes('@perf') || testInfo.tags.includes('@audit')

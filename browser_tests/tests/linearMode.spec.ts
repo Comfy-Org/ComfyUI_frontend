@@ -1,10 +1,10 @@
 import {
   ComfyPage,
   comfyPageFixture as test,
-  comfyExpect as expect,
-  testUsername
+  comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { testUsername } from '@e2e/fixtures/userIdentity'
 
 test.describe('Linear Mode', { tag: '@ui' }, () => {
   test('Displays linear controls when app mode active', async ({
@@ -55,7 +55,7 @@ test.describe('Linear Mode', { tag: '@ui' }, () => {
   }, testInfo) => {
     const comfyPage = new ComfyPage(page, request)
     const { parallelIndex } = testInfo
-    const username = testUsername('playwright-test', parallelIndex)
+    const username = testUsername('pw', parallelIndex)
     const userId = await comfyPage.setupUser(username)
     comfyPage.userIds[parallelIndex] = userId
 
