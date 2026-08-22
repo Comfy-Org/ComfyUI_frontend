@@ -73,10 +73,11 @@ function createMockCanvas(seed?: Uint8ClampedArray): HTMLCanvasElement {
   return canvas
 }
 
-const mockEditorStore: Record<string, HTMLCanvasElement | null> = {
+const mockEditorStore: Record<string, HTMLCanvasElement | number | null> = {
   maskCanvas: null,
   rgbCanvas: null,
-  imgCanvas: null
+  imgCanvas: null,
+  maskOutputOpacity: 1
 }
 
 vi.mock('@/stores/maskEditorStore', () => ({
@@ -146,6 +147,7 @@ describe('useMaskEditorSaver', () => {
     mockEditorStore.maskCanvas = createMockCanvas()
     mockEditorStore.rgbCanvas = createMockCanvas()
     mockEditorStore.imgCanvas = createMockCanvas()
+    mockEditorStore.maskOutputOpacity = 1
 
     vi.mocked(api.fetchApi).mockResolvedValue({
       ok: true,
@@ -222,7 +224,7 @@ describe('useMaskEditorSaver', () => {
     expect(body.get('subfolder')).toBeNull()
   })
 
-  it('uploads masked layers with inverted mask alpha and preserved RGB', async () => {
+  it('uploads masked layers with inverted, output-scaled alpha and preserved RGB', async () => {
     // Seed a distinct opaque color per pixel, mask the first half of the
     // canvas, then decode the uploaded blobs and verify both the applied
     // alpha and that the RGB survives where the alpha is 0 (the pixels a
@@ -241,6 +243,7 @@ describe('useMaskEditorSaver', () => {
     mockEditorStore.imgCanvas = createMockCanvas(imgPixels)
     mockEditorStore.maskCanvas = createMockCanvas(maskPixels)
     mockEditorStore.rgbCanvas = createMockCanvas()
+    mockEditorStore.maskOutputOpacity = 0.5
 
     const fetchApiMock = vi.mocked(api.fetchApi)
     const { save } = useMaskEditorSaver()
@@ -263,7 +266,7 @@ describe('useMaskEditorSaver', () => {
       expect(width).toBe(CANVAS_SIZE)
       expect(height).toBe(CANVAS_SIZE)
       for (let i = 0; i < pixels.length; i += 4) {
-        expect(pixels[i + 3]).toBe(255 - maskPixels[i + 3])
+        expect(pixels[i + 3]).toBe(255 - Math.round(maskPixels[i + 3] * 0.5))
         expect(pixels[i]).toBe(imgPixels[i])
         expect(pixels[i + 1]).toBe(imgPixels[i + 1])
         expect(pixels[i + 2]).toBe(imgPixels[i + 2])

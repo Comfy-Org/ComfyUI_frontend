@@ -2601,6 +2601,7 @@
     "maskBlendingOptions": "マスク合成オプション",
     "maskLayer": "マスクレイヤー",
     "maskOpacity": "マスク不透明度",
+    "maskOutputOpacity": "出力マスクの不透明度",
     "maskTolerance": "マスク許容値",
     "method": "方法",
     "mirrorHorizontal": "左右反転",

@@ -148,6 +148,14 @@ describe('maskEditorStore', () => {
       expect(store.maskOpacity).toBe(1)
     })
 
+    it('should clamp maskOutputOpacity between 0 and 1', () => {
+      const store = useMaskEditorStore()
+      store.setMaskOutputOpacity(-0.5)
+      expect(store.maskOutputOpacity).toBe(0)
+      store.setMaskOutputOpacity(2)
+      expect(store.maskOutputOpacity).toBe(1)
+    })
+
     it('should clamp zoomRatio between 0.1 and 10', () => {
       const store = useMaskEditorStore()
       store.setZoomRatio(0.001)
@@ -316,6 +324,7 @@ describe('maskEditorStore', () => {
       store.setPanOffset({ x: 10, y: 20 })
       store.setCursorPoint({ x: 5, y: 5 })
       store.setMaskOpacity(0.2)
+      store.setMaskOutputOpacity(0.2)
       store.gpuTexturesNeedRecreation = true
       store.gpuTextureWidth = 100
       store.gpuTextureHeight = 200
@@ -347,6 +356,7 @@ describe('maskEditorStore', () => {
       expect(store.panOffset).toEqual({ x: 0, y: 0 })
       expect(store.cursorPoint).toEqual({ x: 0, y: 0 })
       expect(store.maskOpacity).toBe(0.8)
+      expect(store.maskOutputOpacity).toBe(1)
       expect(store.gpuTexturesNeedRecreation).toBe(false)
       expect(store.gpuTextureWidth).toBe(0)
       expect(store.gpuTextureHeight).toBe(0)
