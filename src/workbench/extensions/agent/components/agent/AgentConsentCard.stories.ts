@@ -51,3 +51,16 @@ export const LongCopy: Story = {
     ]
   }
 }
+
+/**
+ * The card responds to its container, not the viewport, so it stacks inside a
+ * narrow agent panel even on a wide screen.
+ */
+export const InNarrowPanel: Story = {
+  decorators: [
+    () => ({
+      template:
+        '<div class="grid min-h-screen place-items-center bg-base-background p-8"><div class="w-[380px]"><story /></div></div>'
+    })
+  ]
+}
