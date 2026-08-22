@@ -96,14 +96,24 @@ describe('useWidgetValueStore', () => {
       expect(registered.y).toBe(42)
     })
 
-    it('registerWidget is idempotent and does not overwrite existing state', () => {
+    it('refreshes metadata without overwriting the current value', () => {
       const store = useWidgetValueStore()
       const first = store.registerWidget(seedA, state('number', 11))!
       first.value = 99
 
-      const second = store.registerWidget(seedA, state('number', 11))!
+      const second = store.registerWidget(
+        seedA,
+        state('number', 11, {
+          label: 'Updated seed',
+          options: { min: 4 },
+          disabled: true
+        })
+      )!
       expect(second).toBe(first)
       expect(second.value).toBe(99)
+      expect(second.label).toBe('Updated seed')
+      expect(second.options).toEqual({ min: 4 })
+      expect(second.disabled).toBe(true)
     })
 
     it('replaces a stale entry when the widget type changes', () => {
