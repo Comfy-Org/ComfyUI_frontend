@@ -1,4 +1,5 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LinkId } from '@/lib/litegraph/src/LLink'
 import type {
   IWidgetInputSlot,
   SharedIntersection
@@ -18,6 +19,16 @@ type CommonIoSlotProps = SharedIntersection<
   ISerialisableNodeInput,
   ISerialisableNodeOutput
 >
+
+function serialisesLegacyLinkPresence(
+  slot: INodeOutputSlot
+): slot is INodeOutputSlot & {
+  _serialiseLinkIds(ids: LinkId[]): LinkId[] | null
+} {
+  return (
+    '_serialiseLinkIds' in slot && typeof slot._serialiseLinkIds === 'function'
+  )
+}
 
 function shallowCloneCommonProps(slot: CommonIoSlotProps): CommonIoSlotProps {
   const {
@@ -76,13 +87,18 @@ export function outputAsSerialisable(
   // Output widgets do not exist in Litegraph; this is a temporary downstream workaround.
   const outputWidget = widget ? { widget: { name: widget.name } } : null
   const ids = node.graph ? outputLinkIds(node.graph, node.id, slotIndex) : []
+  const links = serialisesLegacyLinkPresence(slot)
+    ? slot._serialiseLinkIds(ids)
+    : ids.length
+      ? ids
+      : (slot.links ?? null)
 
   return {
     ...shallowCloneCommonProps(slot),
     ...outputWidget,
     pos,
     slot_index,
-    links: ids.length ? ids : null
+    links
   }
 }
 

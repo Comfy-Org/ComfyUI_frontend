@@ -3377,6 +3377,9 @@ export class LGraphNode
         ? graph.getNodeById(target_node)
         : target_node
     if (target_node && !onlyTarget) throw 'Target Node not found'
+    if (output instanceof NodeOutputSlot) {
+      output._setLegacyLinksPresent(Boolean(onlyTarget))
+    }
 
     for (const link_info of outputLinks(graph, this.id, slot)) {
       if (onlyTarget && link_info.target_id != onlyTarget.id) continue

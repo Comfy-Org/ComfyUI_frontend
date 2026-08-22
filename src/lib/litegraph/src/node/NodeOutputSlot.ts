@@ -50,12 +50,18 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
     this.commitLegacyLinks()
   }
 
-  private synchronizeLegacyLinks(preservePresence = false): void {
-    const hadIds = this.legacyLinkIds.length > 0
+  private synchronizeLegacyLinks(): void {
     const ids = linkIdsOf(this)
     this.legacyLinkIds.splice(0, this.legacyLinkIds.length, ...ids)
     if (ids.length) this.legacyLinksPresent = true
-    else if (hadIds && !preservePresence) this.legacyLinksPresent = false
+  }
+
+  _setLegacyLinksPresent(present: boolean): void {
+    this.legacyLinksPresent = present
+  }
+
+  _serialiseLinkIds(ids: LinkId[]): LinkId[] | null {
+    return ids.length || this.legacyLinksPresent ? ids : null
   }
 
   private commitLegacyLinks(): void {
@@ -71,7 +77,7 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
       if (desired.has(link.id)) continue
       graph.getNodeById(link.target_id)?.disconnectInput(link.target_slot)
     }
-    this.synchronizeLegacyLinks(true)
+    this.synchronizeLegacyLinks()
   }
 
   get isWidgetInputSlot(): false {
@@ -153,7 +159,7 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
     const ids = linkIdsOf(this)
     return {
       ...super.toJSON(),
-      links: ids.length ? ids : null,
+      links: this._serialiseLinkIds(ids),
       slot_index: this.slot_index
     }
   }

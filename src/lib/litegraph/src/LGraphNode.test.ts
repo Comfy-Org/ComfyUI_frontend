@@ -271,7 +271,7 @@ describe('LGraphNode', () => {
       const disconnected = node2.disconnectInput(0)
       expect(disconnected).toBe(true)
       expect(node2.inputs[0].link).toBeNull()
-      expect(node1.outputs[0].links).toBeNull()
+      expect(node1.outputs[0].links).toEqual([])
       expect(graph.links.has(link!.id)).toBe(false)
 
       // Test disconnecting by slot name
@@ -347,7 +347,7 @@ describe('LGraphNode', () => {
       )
       expect(disconnectedByName).toBe(true)
       expect(targetNode1.inputs[0].link).toBeNull()
-      expect(sourceNode.outputs[1].links).toBeNull()
+      expect(sourceNode.outputs[1].links).toEqual([])
 
       // Test disconnecting all connections from an output
       const link4 = sourceNode.connect(0, targetNode1, 0)
