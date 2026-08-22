@@ -64,18 +64,20 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       - name: Commit updated locales
+        env:
+          HEAD_REF: ${{ github.head_ref }}
         run: |
           git config --global user.name 'github-actions'
           git config --global user.email 'github-actions@github.com'
-          git fetch origin ${{ github.head_ref }}
+          git fetch origin -- "$HEAD_REF"
           # Stash any local changes before checkout
           git stash -u
-          git checkout -B ${{ github.head_ref }} origin/${{ github.head_ref }}
+          git checkout -B "$HEAD_REF" "origin/$HEAD_REF" --
           # Apply the stashed changes if any
           git stash pop || true
           git add src/locales/
           git diff --staged --quiet || git commit -m "Update locales"
-          git push origin HEAD:${{ github.head_ref }}
+          git push origin "HEAD:$HEAD_REF"
       - name: Fail if translation did not complete
         if: steps.translate.outcome == 'failure'
         run: |
