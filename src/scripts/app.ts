@@ -2273,8 +2273,6 @@ export class ComfyApp {
 
     for (const id of ids) processNodeInputs(id)
     app.rootGraph.arrange()
-    for (const id of ids) processNodeInputs(id)
-    app.rootGraph.arrange()
 
     await useWorkflowService().afterLoadNewGraph(
       fileName,
