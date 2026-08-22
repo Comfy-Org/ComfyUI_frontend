@@ -20,14 +20,31 @@ describe('runAgentRefactor', () => {
     expect(result).toEqual({ ran: true })
   })
 
-  it('surfaces a timeout distinctly from an ordinary failure', () => {
+  it('classifies spawnSync timeout (SIGTERM + ETIMEDOUT) as timedOut', () => {
+    const timeoutError = Object.assign(new Error('ETIMEDOUT'), {
+      code: 'ETIMEDOUT'
+    })
+    const result = runAgentRefactor({
+      adapter,
+      specPath: 'browser_tests/tests/foo.spec.ts',
+      projectRoot: '/repo',
+      spawn: () => ({
+        status: null,
+        signal: 'SIGTERM',
+        error: timeoutError
+      })
+    })
+    expect(result).toEqual({ ran: false, timedOut: true })
+  })
+
+  it('treats a bare SIGTERM with no ETIMEDOUT as a process failure, not a timeout', () => {
     const result = runAgentRefactor({
       adapter,
       specPath: 'browser_tests/tests/foo.spec.ts',
       projectRoot: '/repo',
       spawn: () => ({ status: null, signal: 'SIGTERM' })
     })
-    expect(result).toEqual({ ran: false, timedOut: true })
+    expect(result).toEqual({ ran: false, error: undefined })
   })
 
   it('surfaces stderr when the agent exits non-zero', () => {

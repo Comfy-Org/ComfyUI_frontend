@@ -7,7 +7,7 @@ interface SpawnResult {
   status: number | null
   signal: NodeJS.Signals | null
   stderr?: string
-  error?: Error
+  error?: NodeJS.ErrnoException
 }
 type Spawner = (
   command: string,
@@ -77,11 +77,15 @@ export function runAgentRefactor(options: RefactorOptions): RefactorResult {
 
   const result = spawn(adapter.command, args, projectRoot, TIMEOUT_MS)
 
+  // spawnSync's own timeout kills the process with SIGTERM AND sets
+  // error.code to ETIMEDOUT — that pair is the only reliable timeout
+  // signature. A bare SIGTERM (the process killed independently, e.g. by
+  // the user or the OS) is a process failure, not a timeout.
   if (result.error) {
-    return { ran: false, error: result.error.message }
-  }
-  if (result.signal === 'SIGTERM') {
-    return { ran: false, timedOut: true }
+    const timedOut = result.error.code === 'ETIMEDOUT'
+    return timedOut
+      ? { ran: false, timedOut: true }
+      : { ran: false, error: result.error.message }
   }
   if (result.status !== 0) {
     return { ran: false, error: result.stderr?.trim() }
