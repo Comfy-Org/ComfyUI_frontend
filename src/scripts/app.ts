@@ -1641,13 +1641,31 @@ export class ComfyApp {
     let queueResultOverride: boolean | null = null
 
     // Get auth token for backend nodes - uses workspace token if enabled, otherwise Firebase token
-    const workspaceIdBeforeAuthentication =
-      useTeamWorkspaceStore().activeWorkspaceId
+    const teamWorkspaceStore = useTeamWorkspaceStore()
+    const workspaceIdBeforeAuthentication = teamWorkspaceStore.activeWorkspaceId
+    const workspaceGenerationBeforeAuthentication =
+      teamWorkspaceStore.workspaceTransitionGeneration
     const comfyOrgAuthToken = await useAuthStore().getWorkspaceAuthToken()
-    const executionWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
+    const executionWorkspaceId = teamWorkspaceStore.activeWorkspaceId
+    const executionWorkspaceGeneration =
+      teamWorkspaceStore.workspaceTransitionGeneration
     const workspaceChangedWhileAuthenticating =
-      workspaceIdBeforeAuthentication !== executionWorkspaceId &&
+      (workspaceIdBeforeAuthentication !== executionWorkspaceId ||
+        workspaceGenerationBeforeAuthentication !==
+          executionWorkspaceGeneration) &&
       (isCloud || workspaceIdBeforeAuthentication !== null)
+    if (executionWorkspaceId && !comfyOrgAuthToken) {
+      useDialogService().showErrorDialog(
+        new Error(t('toastMessages.userNotAuthenticated')),
+        {
+          title: t('errorDialog.promptExecutionError'),
+          reportType: 'promptExecutionError'
+        }
+      )
+      this.queueItems.length = 0
+      this.processingQueue = false
+      return false
+    }
     const comfyOrgApiKey = useApiKeyAuthStore().getApiKey()
 
     try {
@@ -1722,7 +1740,9 @@ export class ComfyApp {
           }
           if (
             workspaceChangedWhileAuthenticating ||
-            executionWorkspaceId !== useTeamWorkspaceStore().activeWorkspaceId
+            executionWorkspaceId !== teamWorkspaceStore.activeWorkspaceId ||
+            executionWorkspaceGeneration !==
+              teamWorkspaceStore.workspaceTransitionGeneration
           ) {
             useDialogService().showErrorDialog(
               new Error(t('errorDialog.workspaceChangedDuringExecution')),

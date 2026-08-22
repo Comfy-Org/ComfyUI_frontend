@@ -139,6 +139,10 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   const isDeleting = ref(false)
   const isSwitching = ref(false)
   const isFetchingWorkspaces = ref(false)
+  const mutableWorkspaceTransitionGeneration = ref(0)
+  const workspaceTransitionGeneration = computed(
+    () => mutableWorkspaceTransitionGeneration.value
+  )
   let identityGeneration = 0
   let initializationPromise: Promise<void> | null = null
 
@@ -465,6 +469,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     const generation = identityGeneration
     const workspaceAuthStore = useWorkspaceAuthStore()
 
+    mutableWorkspaceTransitionGeneration.value++
     isSwitching.value = true
 
     try {
@@ -901,6 +906,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
 
   function resetForIdentityChange(): void {
     identityGeneration++
+    mutableWorkspaceTransitionGeneration.value++
     initializationPromise = null
     initState.value = 'uninitialized'
     workspaces.value = []
@@ -921,6 +927,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     initState,
     workspaces,
     activeWorkspaceId,
+    workspaceTransitionGeneration,
     error,
     isCreating,
     isDeleting,

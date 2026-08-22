@@ -90,7 +90,8 @@ const {
     resetAllOutputsAndPreviews: vi.fn()
   },
   mockTeamWorkspaceStore: {
-    activeWorkspaceId: 'workspace-a' as string | null
+    activeWorkspaceId: 'workspace-a' as string | null,
+    workspaceTransitionGeneration: 0
   },
   mockWorkspaceWorkflow: {
     activeWorkflow: null as ComfyWorkflow | null,
@@ -289,8 +290,9 @@ describe('ComfyApp', () => {
       return workflow
     })
     mockApiKeyAuthStore.getApiKey.mockReturnValue(undefined)
-    mockAuthStore.getWorkspaceAuthToken.mockResolvedValue(undefined)
+    mockAuthStore.getWorkspaceAuthToken.mockResolvedValue('workspace-token')
     mockTeamWorkspaceStore.activeWorkspaceId = 'workspace-a'
+    mockTeamWorkspaceStore.workspaceTransitionGeneration = 0
     mockExtensionService.invokeExtensions.mockReturnValue([])
     mockExtensionService.invokeExtensionsAsync.mockResolvedValue(undefined)
     vi.mocked(extractFilesFromDragEvent).mockResolvedValue([])
@@ -420,6 +422,50 @@ describe('ComfyApp', () => {
       const submission = app.queuePrompt(0)
       await vi.waitFor(() => expect(app.graphToPrompt).toHaveBeenCalledOnce())
       mockTeamWorkspaceStore.activeWorkspaceId = 'workspace-b'
+      finishPromptBuild()
+
+      await expect(submission).resolves.toBe(false)
+      expect(queuePrompt).not.toHaveBeenCalled()
+      expect(showDialog).toHaveBeenCalledOnce()
+    })
+
+    it('does not fall back to an API key when workspace authentication fails', async () => {
+      prepareEmptyPromptQueue()
+      mockAuthStore.getWorkspaceAuthToken.mockResolvedValueOnce(undefined)
+      mockApiKeyAuthStore.getApiKey.mockReturnValueOnce('api-key')
+      const queuePrompt = vi.spyOn(api, 'queuePrompt')
+      const showDialog = vi.spyOn(useDialogStore(), 'showDialog')
+
+      await expect(app.queuePrompt(0)).resolves.toBe(false)
+      expect(queuePrompt).not.toHaveBeenCalled()
+      expect(showDialog).toHaveBeenCalledOnce()
+    })
+
+    it('does not submit after switching away and back to the same workspace', async () => {
+      prepareEmptyPromptQueue()
+      mockAuthStore.getWorkspaceAuthToken.mockResolvedValueOnce(
+        'workspace-token'
+      )
+      let finishPromptBuild: () => void = () => {}
+      vi.spyOn(app, 'graphToPrompt').mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            finishPromptBuild = () =>
+              resolve({
+                output: {},
+                workflow: createWorkflowGraphData()
+              })
+          })
+      )
+      const queuePrompt = vi.spyOn(api, 'queuePrompt')
+      const showDialog = vi.spyOn(useDialogStore(), 'showDialog')
+
+      const submission = app.queuePrompt(0)
+      await vi.waitFor(() => expect(app.graphToPrompt).toHaveBeenCalledOnce())
+      mockTeamWorkspaceStore.activeWorkspaceId = 'workspace-b'
+      mockTeamWorkspaceStore.workspaceTransitionGeneration++
+      mockTeamWorkspaceStore.activeWorkspaceId = 'workspace-a'
+      mockTeamWorkspaceStore.workspaceTransitionGeneration++
       finishPromptBuild()
 
       await expect(submission).resolves.toBe(false)
