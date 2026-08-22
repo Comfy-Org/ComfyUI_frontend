@@ -3,6 +3,7 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 test.describe('Vue Multiline String Widget', { tag: '@vue-nodes' }, () => {
   test.afterEach(async ({ comfyPage }) => {
@@ -44,6 +45,56 @@ test.describe('Vue Multiline String Widget', { tag: '@vue-nodes' }, () => {
     await getFirstClipNode(comfyPage).click()
 
     await expect(textarea).toHaveValue('Keep me around')
+  })
+
+  test('hides a linked core prompt without changing node geometry', async ({
+    comfyPage
+  }) => {
+    await comfyPage.workflow.loadWorkflow('widgets/linked_multiline_string')
+
+    const clipNode = getFirstClipNode(comfyPage)
+    const placeholder = clipNode.getByTestId(TestIds.widgets.linkedPlaceholder)
+    const linkedContent = clipNode.getByTestId(TestIds.widgets.linkedContent)
+    const hiddenTextarea = clipNode.locator('textarea')
+    const nodeBounds = await clipNode.boundingBox()
+
+    await expect(placeholder).toHaveAttribute(
+      'data-linked-display',
+      'expanding'
+    )
+    await expect(placeholder).toHaveAccessibleName('text: Linked input')
+    await expect(linkedContent).toHaveAttribute('inert', '')
+    await expect(linkedContent).toHaveAttribute('aria-hidden', 'true')
+    await expect(hiddenTextarea).toBeHidden()
+    await expect(hiddenTextarea).toBeDisabled()
+    await expect(clipNode.getByRole('textbox', { name: 'text' })).toHaveCount(0)
+    await expect(hiddenTextarea).toHaveValue('stale local prompt')
+
+    await hiddenTextarea.evaluate((element) => element.focus())
+    await expect
+      .poll(() =>
+        hiddenTextarea.evaluate((element) => document.activeElement === element)
+      )
+      .toBe(false)
+
+    const [clipNodeRef] =
+      await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
+    if (!clipNodeRef || !nodeBounds) {
+      throw new Error('Linked CLIPTextEncode node did not render')
+    }
+    const textInput = await clipNodeRef.getInput(1)
+    await textInput.removeLinks()
+    await comfyPage.nextFrame()
+
+    await expect(placeholder).toHaveCount(0)
+    const restoredTextarea = getFirstMultilineStringWidget(comfyPage)
+    await expect(restoredTextarea).toBeVisible()
+    await expect(restoredTextarea).toHaveValue('stale local prompt')
+    await restoredTextarea.fill('restored local prompt')
+    await expect(restoredTextarea).toHaveValue('restored local prompt')
+    await expect
+      .poll(async () => (await clipNode.boundingBox())?.height)
+      .toBeCloseTo(nodeBounds.height, 0)
   })
 
   test('should use native context menu when focused', async ({ comfyPage }) => {

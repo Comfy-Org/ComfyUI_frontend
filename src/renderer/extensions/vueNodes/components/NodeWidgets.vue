@@ -53,28 +53,33 @@
           />
         </div>
         <!-- Widget Component -->
-        <AppInput
-          :widget-id="widget.widgetId"
-          :name="widget.name"
-          :enable="canSelectInputs && !widget.simplified.options?.disabled"
-        >
-          <component
-            :is="widget.vueComponent"
-            v-model="widget.value"
-            v-tooltip.left="widget.tooltipConfig"
-            :widget="widget.simplified"
-            :node-id="nodeData?.id"
-            :node-type="nodeType"
-            :class="
-              cn(
-                'col-span-2',
-                widget.hasError && 'font-bold text-node-stroke-error'
-              )
+        <div class="contents" @contextmenu="widget.handleContextMenu">
+          <AppInput
+            :widget-id="widget.widgetId"
+            :name="widget.name"
+            :enable="
+              canSelectInputs &&
+              !widget.simplified.options?.disabled &&
+              !widget.linkedDisplay
             "
-            @update:model-value="widget.updateHandler"
-            @contextmenu="widget.handleContextMenu"
-          />
-        </AppInput>
+          >
+            <component
+              :is="widget.vueComponent"
+              v-model="widget.value"
+              v-tooltip.left="widget.tooltipConfig"
+              :widget="widget.simplified"
+              :node-id="nodeData?.id"
+              :node-type="nodeType"
+              :class="
+                cn(
+                  'col-span-2',
+                  widget.hasError && 'font-bold text-node-stroke-error'
+                )
+              "
+              @update:model-value="widget.updateHandler"
+            />
+          </AppInput>
+        </div>
       </div>
     </template>
   </div>

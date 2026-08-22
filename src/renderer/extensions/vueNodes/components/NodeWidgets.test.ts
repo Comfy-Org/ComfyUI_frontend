@@ -1,7 +1,7 @@
 /* eslint-disable testing-library/no-container */
 /* eslint-disable testing-library/no-node-access */
 import { createTestingPinia } from '@pinia/testing'
-import { render } from '@testing-library/vue'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import { setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
@@ -19,6 +19,11 @@ import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { widgetId } from '@/types/widgetId'
 
 const GRAPH_ID = 'graph-test'
+const mockShowNodeOptions = vi.hoisted(() => vi.fn())
+
+vi.mock('@/composables/graph/useMoreOptionsMenu', () => ({
+  showNodeOptions: mockShowNodeOptions
+}))
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({
@@ -36,7 +41,7 @@ const WidgetStub = {
   name: 'WidgetStub',
   props: ['widget', 'nodeId', 'nodeType', 'modelValue'],
   template:
-    '<div class="widget-stub" :data-node-type="nodeType">{{ nodeType }}</div>'
+    '<button class="widget-stub" :data-linked-display="widget.linkedDisplay" :data-node-type="nodeType" :disabled="widget.options?.disabled" :inert="widget.linkedDisplay ? true : undefined">{{ modelValue }}</button>'
 }
 
 vi.mock(
@@ -351,5 +356,76 @@ describe('NodeWidgets', () => {
     )
 
     expect(ids).toStrictEqual([seedAEntityId, seedBEntityId])
+  })
+
+  it('passes linked presentation state to the mounted standard widget', () => {
+    const linkedWidgetId = widgetId(GRAPH_ID, toNodeId('test_node'), 'prompt')
+    const nodeData = createMockNodeData('TestNode', [
+      createMockWidget({
+        widgetId: linkedWidgetId,
+        name: 'prompt',
+        type: 'text',
+        slotMetadata: {
+          index: 0,
+          linked: true,
+          type: 'STRING'
+        }
+      })
+    ])
+
+    const { container } = renderComponent(nodeData, () => {
+      useWidgetValueStore().registerWidget(linkedWidgetId, {
+        type: 'text',
+        value: 'stale local prompt',
+        options: {}
+      })
+    })
+
+    const control = container.querySelector('.widget-stub')
+    expect(control).not.toBeNull()
+    expect(control).toBeDisabled()
+    expect(control).toHaveAttribute('data-linked-display', 'control')
+    expect(screen.queryByTestId('linked-widget-placeholder')).toBeNull()
+  })
+
+  it('dispatches context menu actions around an inert linked widget', async () => {
+    const linkedWidgetId = widgetId(GRAPH_ID, toNodeId('test_node'), 'prompt')
+    const nodeData = createMockNodeData('TestNode', [
+      createMockWidget({
+        widgetId: linkedWidgetId,
+        name: 'prompt',
+        nodeId: toNodeId('test_node'),
+        type: 'text',
+        slotMetadata: {
+          index: 0,
+          linked: true,
+          type: 'STRING'
+        }
+      })
+    ])
+
+    const { container } = renderComponent(nodeData, () => {
+      useWidgetValueStore().registerWidget(linkedWidgetId, {
+        type: 'text',
+        value: 'stale local prompt',
+        options: {}
+      })
+    })
+
+    const control = container.querySelector('.widget-stub')
+    expect(control).not.toBeNull()
+    expect(control).toHaveAttribute('inert')
+
+    const contextMenuSurface = container.querySelector(
+      '.lg-node-widget > .contents'
+    )
+    expect(contextMenuSurface).not.toBeNull()
+    await fireEvent.contextMenu(contextMenuSurface!)
+
+    expect(mockShowNodeOptions).toHaveBeenCalledWith(
+      expect.any(MouseEvent),
+      'prompt',
+      toNodeId('test_node')
+    )
   })
 })

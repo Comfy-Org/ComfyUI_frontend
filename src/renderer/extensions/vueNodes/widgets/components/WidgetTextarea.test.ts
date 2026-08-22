@@ -174,6 +174,49 @@ describe('WidgetTextarea Value Binding', () => {
       expect(textarea.value).toBe('initial content')
     })
 
+    it('keeps an unlinked disabled textarea disabled and readonly', () => {
+      const widget = createTextareaWidget('readable content', {
+        disabled: true
+      })
+      renderComponent(widget, 'readable content')
+
+      const textarea = screen.getByRole('textbox')
+      expect(textarea).toHaveAttribute('readonly')
+      expect(textarea).toBeDisabled()
+    })
+
+    it('restores the textarea after a link is removed', async () => {
+      const widget = createTextareaWidget('stale multiline', {
+        disabled: true
+      })
+      widget.linkedDisplay = 'expanding'
+      const { rerender } = renderComponent(widget, 'stale multiline')
+      const textarea = screen.getByTestId('linked-widget-content')
+
+      expect(textarea).toBeDisabled()
+      expect(textarea).toHaveAttribute('inert')
+      expect(textarea).toHaveAttribute('aria-hidden', 'true')
+      expect(screen.queryByRole('textbox')).toBeNull()
+      textarea.focus()
+      expect(textarea).not.toHaveFocus()
+      expect(
+        screen.getByRole('img', {
+          name: 'test_textarea: Linked input'
+        })
+      ).toBeVisible()
+      expect(screen.queryByRole('button')).toBeNull()
+
+      await rerender({
+        widget: createTextareaWidget('stale multiline'),
+        modelValue: 'stale multiline'
+      })
+
+      expect(screen.queryByRole('img')).toBeNull()
+      expect(screen.getByRole('textbox')).toBeVisible()
+      expect(screen.getByRole('textbox')).toBeEnabled()
+      expect(screen.getByRole('textbox')).toHaveValue('stale multiline')
+    })
+
     it('uses widget name as placeholder when no placeholder provided', () => {
       const widget = createTextareaWidget('test')
       const { container } = renderComponent(widget, 'test')

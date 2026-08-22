@@ -12,6 +12,7 @@ import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { assetService } from '@/platform/assets/services/assetService'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import type { NodeError } from '@/schemas/apiSchema'
@@ -24,6 +25,7 @@ import {
   shouldExpand,
   shouldRenderAsVue
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
+import { resolveLinkedWidgetDisplay } from '@/renderer/extensions/vueNodes/widgets/utils/linkedWidgetDisplay'
 import { nodeTypeValidForApp } from '@/stores/appModeStore'
 import {
   stripGraphPrefix,
@@ -32,6 +34,7 @@ import {
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import {
   createNodeExecutionId,
   createNodeLocatorId
@@ -48,6 +51,7 @@ import {
 } from '@/utils/graphTraversalUtil'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type {
+  LinkedWidgetDisplay,
   LinkedUpstreamInfo,
   SimplifiedWidget,
   WidgetValue
@@ -66,6 +70,7 @@ interface ProcessedWidget {
   hasError: boolean
   hidden: boolean
   id?: string
+  linkedDisplay?: LinkedWidgetDisplay
   widgetId?: WidgetId
   name: string
   renderKey: string
@@ -86,6 +91,7 @@ interface WidgetUiCallbacks {
 
 interface ComputeProcessedWidgetsOptions {
   nodeData: VueNodeData | undefined
+  coreNodeType?: string
   graphId: string | undefined
   showAdvanced: boolean
   isGraphReady: boolean
@@ -222,6 +228,7 @@ export function isWidgetVisible(
 
 export function computeProcessedWidgets({
   nodeData,
+  coreNodeType,
   graphId,
   showAdvanced,
   isGraphReady,
@@ -330,6 +337,15 @@ export function computeProcessedWidgets({
 
     const value = widgetState?.value as WidgetValue
 
+    const linkedDisplay = resolveLinkedWidgetDisplay(widget, mergedOptions, {
+      assetApiEnabled: assetService.isAssetAPIEnabled(),
+      coreNodeType,
+      linked: Boolean(widget.slotMetadata?.linked),
+      useAssetBrowser: assetService.shouldUseAssetBrowser(
+        nodeData.type,
+        widget.name
+      )
+    })
     const isDisabled = slotMetadata?.linked || widgetState?.disabled
     const widgetOptions = isDisabled
       ? { ...mergedOptions, disabled: true }
@@ -362,6 +378,7 @@ export function computeProcessedWidgets({
       callback: widget.callback,
       controlWidget: widget.controlWidget,
       label: widgetState?.label,
+      linkedDisplay,
       linkedUpstream,
       nodeLocatorId,
       options: widgetOptions,
@@ -380,7 +397,9 @@ export function computeProcessedWidgets({
       isTooltipValueType(widget.type) && String(value).length > 10
         ? String(value)
         : undefined
-    const tooltipConfig = ui.getTooltipConfig(widget, valueTooltip)
+    const tooltipConfig = linkedDisplay
+      ? { disabled: true }
+      : ui.getTooltipConfig(widget, valueTooltip)
     const handleContextMenu = (e: PointerEvent) => {
       e.preventDefault()
       e.stopPropagation()
@@ -407,6 +426,7 @@ export function computeProcessedWidgets({
         missingMediaStore
       ),
       hidden: mergedOptions.hidden ?? false,
+      linkedDisplay,
       widgetId: widget.widgetId,
       name: widget.name,
       renderKey,
@@ -430,6 +450,7 @@ export function useProcessedWidgets(
 ) {
   const canvasStore = useCanvasStore()
   const settingStore = useSettingStore()
+  const nodeDefStore = useNodeDefStore()
   const { isSelectInputsMode } = useAppMode()
   const { handleNodeRightClick } = useNodeEventHandlers()
 
@@ -460,16 +481,21 @@ export function useProcessedWidgets(
     )
   })
 
-  const processedWidgets = computed((): ProcessedWidget[] =>
-    computeProcessedWidgets({
-      nodeData: nodeDataGetter(),
+  const processedWidgets = computed((): ProcessedWidget[] => {
+    const nodeData = nodeDataGetter()
+    const nodeDef = nodeData
+      ? nodeDefStore.nodeDefsByName[nodeData.type]
+      : undefined
+    return computeProcessedWidgets({
+      nodeData,
+      coreNodeType: nodeDef?.isCoreNode ? nodeDef.name : undefined,
       graphId: canvasStore.canvas?.graph?.rootGraph.id,
       showAdvanced: showAdvanced.value,
       isGraphReady: app.isGraphReady,
       rootGraph: app.isGraphReady ? app.rootGraph : null,
       ui
     })
-  )
+  })
 
   const visibleWidgets = computed(() =>
     processedWidgets.value.filter((w) => w.visible)

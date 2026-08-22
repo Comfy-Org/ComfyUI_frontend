@@ -1,27 +1,51 @@
-import { render } from '@testing-library/vue'
 import { fromAny } from '@total-typescript/shoehorn'
-import { describe, expect, it, vi } from 'vitest'
+import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
+import PrimeVue from 'primevue/config'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type * as WidgetRegistry from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { widgetId } from '@/types/widgetId'
-import WidgetItem from './WidgetItem.vue'
+import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
 
-const { mockGetInputSpecForWidget, StubWidgetComponent } = vi.hoisted(() => ({
+import WidgetItem from './WidgetItem.vue'
+
+const {
+  mockFromLGraphNode,
+  mockGetInputSpecForWidget,
+  mockIsAssetAPIEnabled,
+  mockShouldUseAssetBrowser,
+  StubWidgetComponent
+} = vi.hoisted(() => ({
+  mockFromLGraphNode: vi.fn<() => { isCoreNode: boolean; name: string } | null>(
+    () => null
+  ),
   mockGetInputSpecForWidget: vi.fn(),
+  mockIsAssetAPIEnabled: vi.fn(() => false),
+  mockShouldUseAssetBrowser: vi.fn(() => false),
   StubWidgetComponent: {
     name: 'StubWidget',
     props: ['widget', 'modelValue', 'nodeId', 'nodeType'],
     template:
-      '<div class="stub-widget" :data-widget-options="JSON.stringify(widget?.options)" :data-widget-type="widget?.type" :data-widget-name="widget?.name" :data-widget-value="String(widget?.value)" />'
+      '<div class="stub-widget" :data-linked-display="widget?.linkedDisplay" :data-widget-options="JSON.stringify(widget?.options)" :data-widget-type="widget?.type" :data-widget-name="widget?.name" :data-widget-value="String(widget?.value)" />'
+  }
+}))
+
+vi.mock('@/platform/assets/services/assetService', () => ({
+  assetService: {
+    isAssetAPIEnabled: mockIsAssetAPIEnabled,
+    shouldUseAssetBrowser: mockShouldUseAssetBrowser
   }
 }))
 
 vi.mock('@/stores/nodeDefStore', () => ({
   useNodeDefStore: () => ({
+    fromLGraphNode: mockFromLGraphNode,
     getInputSpecForWidget: mockGetInputSpecForWidget
   })
 }))
@@ -45,10 +69,17 @@ vi.mock('@/composables/graph/useGraphNodeManager', () => ({
 
 vi.mock(
   '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry',
-  () => ({
-    getComponent: () => StubWidgetComponent,
-    shouldExpand: () => false
-  })
+  async (importOriginal) => {
+    const original = await importOriginal<typeof WidgetRegistry>()
+    const { default: WidgetInputText } =
+      await import('@/renderer/extensions/vueNodes/widgets/components/WidgetInputText.vue')
+    return {
+      ...original,
+      getComponent: (type: string) =>
+        type === 'text' ? WidgetInputText : StubWidgetComponent,
+      shouldExpand: () => false
+    }
+  }
 )
 
 vi.mock(
@@ -70,7 +101,9 @@ const i18n = createI18n({
   }
 })
 
-function createMockNode(overrides: Partial<LGraphNode> = {}): LGraphNode {
+function createMockNode(
+  overrides: Partial<Record<keyof LGraphNode, unknown>> = {}
+): LGraphNode {
   return fromAny<LGraphNode, unknown>({
     id: 1,
     type: 'TestNode',
@@ -100,7 +133,7 @@ function renderWidgetItem(
   return render(WidgetItem, {
     props: { widget, node },
     global: {
-      plugins: [i18n],
+      plugins: [i18n, PrimeVue],
       stubs: {
         EditableText: { template: '<span />' },
         WidgetActions: { template: '<span />' }
@@ -115,6 +148,7 @@ function getStubWidget(container: Element) {
   if (!el) throw new Error('stub-widget not found')
   return {
     options: JSON.parse(el.getAttribute('data-widget-options') ?? 'null'),
+    linkedDisplay: el.getAttribute('data-linked-display'),
     type: el.getAttribute('data-widget-type'),
     name: el.getAttribute('data-widget-name'),
     value: el.getAttribute('data-widget-value')
@@ -122,6 +156,13 @@ function getStubWidget(container: Element) {
 }
 
 describe('WidgetItem', () => {
+  beforeEach(() => {
+    mockIsAssetAPIEnabled.mockReturnValue(false)
+    mockShouldUseAssetBrowser.mockReturnValue(false)
+    mockFromLGraphNode.mockReturnValue(null)
+    mockGetInputSpecForWidget.mockReset()
+  })
+
   describe('widget state rendering', () => {
     it('passes options from a regular widget to the widget component', () => {
       const widget = createMockWidget({
@@ -196,6 +237,144 @@ describe('WidgetItem', () => {
       const stub = getStubWidget(container)
 
       expect(stub.value).toBe('model_a.safetensors')
+    })
+
+    it('restores a linked text control in Parameters after disconnect', async () => {
+      const widget = createMockWidget({
+        name: 'prompt',
+        type: 'text',
+        value: 'STALE PARAMETER TEXT'
+      })
+      const promptInput = {
+        name: 'prompt',
+        type: 'STRING',
+        link: toLinkId(1),
+        boundingRect: [0, 0, 0, 0],
+        widget: { name: 'prompt' }
+      }
+      const node = createMockNode({
+        inputs: [promptInput]
+      })
+
+      const view = renderWidgetItem(widget, node)
+
+      const content = screen.getByTestId('linked-widget-content')
+      const input = screen.getByRole('textbox', { hidden: true })
+      expect(content).toHaveAttribute('inert')
+      expect(content).toHaveAttribute('aria-hidden', 'true')
+      expect(input).toBeDisabled()
+      expect(screen.queryByRole('textbox')).toBeNull()
+      expect(
+        screen.getByRole('img', { name: 'prompt: Linked input' })
+      ).toBeVisible()
+
+      await view.rerender({
+        widget,
+        node: createMockNode({
+          inputs: [{ ...promptInput, link: null }]
+        })
+      })
+
+      expect(screen.queryByRole('img')).toBeNull()
+      const restoredInput = screen.getByRole('textbox', { name: 'prompt' })
+      expect(restoredInput).toBeVisible()
+      expect(restoredInput).toBeEnabled()
+      expect(restoredInput).toHaveValue('STALE PARAMETER TEXT')
+
+      const user = userEvent.setup()
+      await user.clear(restoredInput)
+      await user.type(restoredInput, 'restored parameter text')
+
+      expect(view.emitted()['update:widgetValue']).toContainEqual([
+        'restored parameter text'
+      ])
+    })
+
+    it('uses the bounded linked resolver for ordinary and upload combos', () => {
+      const widget = createMockWidget({ name: 'option', type: 'COMBO' })
+      const node = createMockNode({
+        inputs: [
+          {
+            name: 'option',
+            type: 'COMBO',
+            link: toLinkId(1),
+            boundingRect: [0, 0, 0, 0],
+            widget: { name: 'option' }
+          }
+        ]
+      })
+      const { container, unmount } = renderWidgetItem(widget, node)
+
+      expect(getStubWidget(container).linkedDisplay).toBe('control')
+      unmount()
+
+      mockGetInputSpecForWidget.mockReturnValue({
+        type: 'COMBO',
+        name: 'option',
+        image_upload: true
+      })
+      const upload = renderWidgetItem(widget, node)
+
+      expect(getStubWidget(upload.container).linkedDisplay).toBeNull()
+      expect(getStubWidget(upload.container).options.disabled).toBe(true)
+    })
+
+    it.for(['LoadImage', 'LoadImageMask', 'LoadImageOutput'])(
+      'uses the linked presentation for the exact core %s selector',
+      (nodeType) => {
+        mockGetInputSpecForWidget.mockReturnValue({
+          type: 'COMBO',
+          name: 'image',
+          image_upload: true
+        })
+        mockFromLGraphNode.mockReturnValue({
+          name: nodeType,
+          isCoreNode: true
+        })
+        const widget = createMockWidget({ name: 'image', type: 'asset' })
+        const node = createMockNode({
+          type: nodeType,
+          inputs: [
+            {
+              name: 'image',
+              type: 'COMBO',
+              link: toLinkId(1),
+              boundingRect: [0, 0, 0, 0],
+              widget: { name: 'image' }
+            }
+          ]
+        })
+
+        const { container } = renderWidgetItem(widget, node)
+        const stub = getStubWidget(container)
+
+        expect(stub.linkedDisplay).toBe('control')
+        expect(stub.options.disabled).toBe(true)
+      }
+    )
+
+    it('does not add linked presentation to a special widget', () => {
+      const widget = createMockWidget({
+        name: 'gradient',
+        type: 'gradientslider'
+      })
+      const node = createMockNode({
+        inputs: [
+          {
+            name: 'gradient',
+            type: 'FLOAT',
+            link: toLinkId(1),
+            boundingRect: [0, 0, 0, 0],
+            widget: { name: 'gradient' }
+          }
+        ]
+      })
+      const { container } = renderWidgetItem(widget, node)
+      const stub = getStubWidget(container)
+
+      expect(stub.linkedDisplay).toBeNull()
+      expect(stub.options.disabled).toBe(true)
+      expect(screen.queryByTestId('linked-widget-placeholder')).toBeNull()
     })
   })
 })

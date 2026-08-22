@@ -64,13 +64,21 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
         await comfyExpect(innerNode).toBeVisible()
 
         const innerTextboxes = innerNode.getByRole('textbox')
-        await comfyExpect(innerTextboxes).toHaveCount(2)
-        const innerValues = await innerTextboxes.evaluateAll<
-          string[],
-          HTMLInputElement
-        >((boxes) => boxes.map((b) => b.value))
-        comfyExpect(innerValues).toContain('11111111111')
-        comfyExpect(innerValues).toContain('22222222222')
+        await comfyExpect(innerTextboxes).toHaveCount(1)
+        await comfyExpect(innerTextboxes).toHaveValue('11111111111')
+
+        await comfyExpect(
+          innerNode.getByRole('img', {
+            name: 'text_1: Linked input',
+            exact: true
+          })
+        ).toBeVisible()
+        const linkedTextbox = innerNode.getByTestId(
+          TestIds.widgets.linkedContent
+        )
+        await comfyExpect(linkedTextbox).toHaveCount(1)
+        await comfyExpect(linkedTextbox).toHaveValue('22222222222')
+        await comfyExpect(linkedTextbox).toBeHidden()
       })
     }
   )

@@ -16,6 +16,8 @@ import { widgetId } from '@/types/widgetId'
 import type * as GraphTraversalUtil from '@/utils/graphTraversalUtil'
 
 import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
+import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
+import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 import {
   computeProcessedWidgets,
   getWidgetIdentity,
@@ -27,8 +29,21 @@ import { validationError } from '@/utils/__tests__/nodeErrorHelpers'
 const GRAPH_ID = 'graph-test'
 const NODE_ID = toNodeId(1)
 
-const { executionIdToNodeLocatorId } = vi.hoisted(() => ({
-  executionIdToNodeLocatorId: vi.fn()
+const {
+  executionIdToNodeLocatorId,
+  isAssetAPIEnabled,
+  shouldUseAssetBrowser,
+  showNodeOptions
+} = vi.hoisted(() => ({
+  executionIdToNodeLocatorId: vi.fn(),
+  isAssetAPIEnabled: vi.fn(() => false),
+  shouldUseAssetBrowser: vi.fn(() => false),
+  showNodeOptions: vi.fn()
+}))
+
+vi.mock('@/composables/graph/useMoreOptionsMenu', () => ({ showNodeOptions }))
+vi.mock('@/platform/assets/services/assetService', () => ({
+  assetService: { isAssetAPIEnabled, shouldUseAssetBrowser }
 }))
 
 vi.mock('@/utils/graphTraversalUtil', async (importActual) => {
@@ -70,11 +85,20 @@ const noopUi = {
   handleNodeRightClick: () => {}
 }
 
-function processWidgets(widgets: SafeWidgetData[]) {
+function processWidgets(widgets: SafeWidgetData[], ui: typeof noopUi = noopUi) {
+  return processNodeWidgets(widgets, 'TestNode', false, ui)
+}
+
+function processNodeWidgets(
+  widgets: SafeWidgetData[],
+  nodeType: string,
+  isCoreNode: boolean,
+  ui: typeof noopUi = noopUi
+) {
   return computeProcessedWidgets({
     nodeData: {
       id: NODE_ID,
-      type: 'TestNode',
+      type: nodeType,
       widgets,
       title: 'Test',
       mode: 0,
@@ -83,11 +107,12 @@ function processWidgets(widgets: SafeWidgetData[]) {
       inputs: [],
       outputs: []
     },
+    coreNodeType: isCoreNode ? nodeType : undefined,
     graphId: GRAPH_ID,
     showAdvanced: false,
     isGraphReady: false,
     rootGraph: null,
-    ui: noopUi
+    ui
   })
 }
 
@@ -734,6 +759,234 @@ describe('computeProcessedWidgets borderStyle', () => {
     })
 
     expect(result[0].id).toBeUndefined()
+  })
+})
+
+describe('computeProcessedWidgets linked presentation', () => {
+  const linkedSlot = {
+    index: 0,
+    linked: true,
+    originNodeId: toNodeId(2),
+    originOutputName: 'value',
+    type: 'STRING'
+  }
+
+  beforeEach(() => {
+    isAssetAPIEnabled.mockReturnValue(false)
+    shouldUseAssetBrowser.mockReturnValue(false)
+    showNodeOptions.mockClear()
+  })
+
+  it('hides a linked standard value and disables its mounted control', () => {
+    const id = widgetId(GRAPH_ID, NODE_ID, 'prompt')
+    useWidgetValueStore().registerWidget(id, {
+      type: 'string',
+      value: 'stale local prompt',
+      options: {}
+    })
+    const widget = createMockWidget({
+      widgetId: id,
+      nodeId: NODE_ID,
+      name: 'prompt',
+      type: 'string',
+      slotMetadata: linkedSlot
+    })
+
+    const [linked] = processWidgets([widget])
+
+    expect(linked.linkedDisplay).toBe('control')
+    expect(linked.value).toBe('stale local prompt')
+    expect(linked.simplified.options?.disabled).toBe(true)
+    expect(linked.tooltipConfig.disabled).toBe(true)
+    expect(linked.simplified.linkedUpstream).toEqual({
+      nodeId: toNodeId(2),
+      outputName: 'value'
+    })
+  })
+
+  it('restores the standard widget state after disconnect', () => {
+    const id = widgetId(GRAPH_ID, NODE_ID, 'prompt')
+    useWidgetValueStore().registerWidget(id, {
+      type: 'string',
+      value: 'local prompt',
+      options: {}
+    })
+    const widget = createMockWidget({
+      widgetId: id,
+      nodeId: NODE_ID,
+      name: 'prompt',
+      type: 'string',
+      slotMetadata: linkedSlot
+    })
+
+    expect(processWidgets([widget])[0].linkedDisplay).toBe('control')
+
+    const [unlinked] = processWidgets([
+      {
+        ...widget,
+        slotMetadata: { ...linkedSlot, linked: false }
+      }
+    ])
+
+    expect(unlinked.linkedDisplay).toBeUndefined()
+    expect(unlinked.value).toBe('local prompt')
+    expect(unlinked.simplified.options?.disabled).toBeUndefined()
+    expect(unlinked.simplified.linkedUpstream).toBeUndefined()
+    expect(unlinked.tooltipConfig.disabled).toBeUndefined()
+  })
+
+  it('distinguishes unlabeled switches from labeled toggle groups', () => {
+    const switchWidget = createMockWidget({
+      name: 'enabled',
+      type: 'boolean',
+      slotMetadata: { ...linkedSlot, type: 'BOOLEAN' }
+    })
+    const toggleId = widgetId(GRAPH_ID, NODE_ID, 'mode')
+    useWidgetValueStore().registerWidget(toggleId, {
+      type: 'boolean',
+      value: false,
+      options: { off: 'Disabled', on: 'Enabled' }
+    })
+    const toggleWidget = createMockWidget({
+      widgetId: toggleId,
+      nodeId: NODE_ID,
+      name: 'mode',
+      type: 'toggle',
+      slotMetadata: { ...linkedSlot, type: 'BOOLEAN' }
+    })
+
+    expect(processWidgets([switchWidget])[0].linkedDisplay).toBe('switch')
+    expect(processWidgets([toggleWidget])[0].linkedDisplay).toBe('control')
+  })
+
+  it.for([
+    ['String', false, WidgetLegacy],
+    ['CoMbO', true, WidgetDOM]
+  ] as const)(
+    'keeps the unregistered mixed-case %s fallback visible',
+    ([type, isDOMWidget, component]) => {
+      const widget = createMockWidget({
+        isDOMWidget,
+        type,
+        slotMetadata: linkedSlot
+      })
+
+      const [processed] = processWidgets([widget])
+
+      expect(processed.linkedDisplay).toBeUndefined()
+      expect(processed.simplified.options?.disabled).toBe(true)
+      expect(processed.vueComponent).toBe(component)
+    }
+  )
+
+  it.for([
+    { name: 'asset alias', type: 'asset', spec: undefined },
+    {
+      name: 'upload-media COMBO',
+      type: 'COMBO',
+      spec: {
+        type: 'COMBO',
+        name: 'image',
+        image_upload: true
+      }
+    }
+  ] as const)('keeps the linked $name rendered', ({ type, spec }) => {
+    const widget = createMockWidget({
+      name: 'image',
+      type,
+      spec,
+      slotMetadata: linkedSlot
+    })
+
+    const [processed] = processWidgets([widget])
+
+    expect(processed.linkedDisplay).toBeUndefined()
+    expect(processed.simplified.options?.disabled).toBe(true)
+  })
+
+  it.for(['LoadImage', 'LoadImageMask', 'LoadImageOutput'])(
+    'hides and disables a linked core %s selector',
+    (nodeType) => {
+      const widget = createMockWidget({
+        name: 'image',
+        type: 'asset',
+        spec: { type: 'COMBO', name: 'image', image_upload: true },
+        slotMetadata: linkedSlot
+      })
+
+      const [processed] = processNodeWidgets([widget], nodeType, true)
+
+      expect(processed.linkedDisplay).toBe('control')
+      expect(processed.simplified.options?.disabled).toBe(true)
+    }
+  )
+
+  it('keeps an asset-browser combo rendered while hiding an ordinary combo', () => {
+    shouldUseAssetBrowser.mockReturnValue(true)
+    const widget = createMockWidget({
+      name: 'ckpt_name',
+      type: 'COMBO',
+      slotMetadata: linkedSlot
+    })
+
+    expect(processWidgets([widget])[0].linkedDisplay).toBeUndefined()
+
+    shouldUseAssetBrowser.mockReturnValue(false)
+    expect(processWidgets([widget])[0].linkedDisplay).toBe('control')
+  })
+
+  it('keeps upstream metadata for a linked relay widget', () => {
+    const widget = createMockWidget({
+      type: 'range',
+      slotMetadata: linkedSlot
+    })
+
+    const [processed] = processWidgets([widget])
+
+    expect(processed.linkedDisplay).toBeUndefined()
+    expect(processed.simplified.options?.disabled).toBe(true)
+    expect(processed.simplified.linkedUpstream).toEqual({
+      nodeId: toNodeId(2),
+      outputName: 'value'
+    })
+  })
+
+  it('retains widget actions for a hidden linked widget', () => {
+    const handleNodeRightClick = vi.fn()
+    const event = fromAny<PointerEvent, unknown>({
+      preventDefault: vi.fn(),
+      stopPropagation: vi.fn()
+    })
+    const widget = createMockWidget({
+      name: 'prompt',
+      nodeId: NODE_ID,
+      type: 'text',
+      slotMetadata: linkedSlot
+    })
+
+    processWidgets([widget], {
+      ...noopUi,
+      handleNodeRightClick
+    })[0].handleContextMenu(event)
+
+    expect(handleNodeRightClick).toHaveBeenCalledWith(event, NODE_ID)
+    expect(showNodeOptions).toHaveBeenCalledWith(event, 'prompt', NODE_ID)
+  })
+
+  it('retains widget actions when the widget is unlinked', () => {
+    const event = fromAny<PointerEvent, unknown>({
+      preventDefault: vi.fn(),
+      stopPropagation: vi.fn()
+    })
+    const widget = createMockWidget({
+      name: 'prompt',
+      nodeId: NODE_ID,
+      type: 'text'
+    })
+
+    processWidgets([widget])[0].handleContextMenu(event)
+
+    expect(showNodeOptions).toHaveBeenCalledWith(event, 'prompt', NODE_ID)
   })
 })
 

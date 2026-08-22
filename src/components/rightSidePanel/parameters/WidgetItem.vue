@@ -8,12 +8,14 @@ import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { assetService } from '@/platform/assets/services/assetService'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 import {
   getComponent,
   shouldExpand
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
+import { resolveLinkedWidgetDisplay } from '@/renderer/extensions/vueNodes/widgets/utils/linkedWidgetDisplay'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import {
   stripGraphPrefix,
@@ -88,14 +90,27 @@ const simplifiedWidget = computed((): SimplifiedWidget => {
   const widgetType = widgetState?.type ?? widget.type
 
   const baseOptions = widgetState?.options ?? widget.options
+  const spec = nodeDefStore.getInputSpecForWidget(node, widgetName)
+  const nodeDef = nodeDefStore.fromLGraphNode(node)
+  const linkedDisplay = resolveLinkedWidgetDisplay(
+    { name: widgetName, type: widgetType, spec },
+    baseOptions,
+    {
+      assetApiEnabled: assetService.isAssetAPIEnabled(),
+      coreNodeType: nodeDef?.isCoreNode ? nodeDef.name : undefined,
+      linked: isLinked.value,
+      useAssetBrowser: assetService.shouldUseAssetBrowser(node.type, widgetName)
+    }
+  )
   const disabled = isLinked.value || !!widget.disabled || undefined
   return {
     name: widgetName,
     type: widgetType,
     value: widgetState?.value ?? widget.value,
     label: widgetState?.label ?? widget.label,
+    linkedDisplay,
     options: { ...baseOptions, disabled },
-    spec: nodeDefStore.getInputSpecForWidget(node, widgetName),
+    spec,
     controlWidget: getControlWidget(widget)
   }
 })
