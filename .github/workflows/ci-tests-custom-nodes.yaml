@@ -160,6 +160,12 @@ jobs:
           ref: ${{ inputs.branch || github.ref }}
           persist-credentials: false
 
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          include_build_step: false
+          node_cache: 'false'
+
       - name: Apply Detection Proof source break
         id: source-mutation
         if: >-
@@ -170,11 +176,10 @@ jobs:
           PROOF_ROW: ${{ matrix.proof_row }}
         run: pnpm exec tsx scripts/cicd/custom-node-proof.ts mutate-source
 
-      - name: Setup frontend
-        uses: ./.github/actions/setup-frontend
-        with:
-          include_build_step: true
-          node_cache: 'false'
+      - name: Build frontend
+        env:
+          VITE_USE_LEGACY_DEFAULT_GRAPH: 'true'
+        run: pnpm build
 
       - name: Verify Detection Proof witness shard
         if: >-

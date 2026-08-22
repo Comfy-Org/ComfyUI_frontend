@@ -459,6 +459,14 @@ export function buildCloudManifest(
       `cloudCannotRunAlone pack(s) with no generated row to attach to: ` +
         `${orphanedCalibration.sort().join(', ')} - keys must be snapshot pack dirnames`
     )
+  const orphanedSentinels = Object.keys(sentinels).filter(
+    (pack) => !packs.some((row) => row.pack === pack)
+  )
+  if (orphanedSentinels.length > 0)
+    throw new Error(
+      `cloudExtensionSentinels pack(s) with no generated row to attach to: ` +
+        `${orphanedSentinels.sort().join(', ')} - keys must be snapshot pack dirnames`
+    )
 
   packs.sort((a, b) => (a.pack < b.pack ? -1 : a.pack > b.pack ? 1 : 0))
   packs.forEach(assertCloudEntry)

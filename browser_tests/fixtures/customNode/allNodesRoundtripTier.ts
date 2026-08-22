@@ -190,7 +190,6 @@ assertPackLedgerKeys(
 
 declare global {
   interface Window {
-    __cnIdBase?: number
     __cnRt?: {
       problems: string[]
       captureInitialWidgetCounts: () => void
@@ -325,7 +324,7 @@ export async function assertRoundtripTier({
       'Comfy.VueNodes.Enabled',
       vueNodesEnabled
     )
-    const consoleErrors = collectConsoleErrors(comfyPage.page)
+    using consoleErrors = collectConsoleErrors(comfyPage.page)
     const mismatches: string[] = []
     for (let offset = 0; offset < keys.length; offset += BATCH_SIZE) {
       const chunk = keys.slice(offset, offset + BATCH_SIZE)
@@ -769,7 +768,6 @@ export async function assertRoundtripTier({
         observedKeyDrift.set(node, observed)
       }
     }
-    consoleErrors.stop()
     expect(
       unallowlistedGlobalExtensionErrorsForPacks(
         installedManifestPacks,

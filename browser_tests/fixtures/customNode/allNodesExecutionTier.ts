@@ -315,7 +315,7 @@ async function runBatch(
       const sinkIdByKey: Record<string, string> = {}
       for (const [index, spec] of nodes.entries()) {
         const node = window.LiteGraph!.createNode(spec.key)
-        if (!node) continue
+        if (!node) throw new Error(`${spec.key}: createNode returned null`)
         node.pos = [0, index * (spacingY as number)]
         window.app!.graph.add(node)
         ids.push(String(node.id))

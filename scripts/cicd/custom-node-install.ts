@@ -11,6 +11,7 @@ import {
 } from 'node:fs'
 import { homedir, tmpdir } from 'node:os'
 import { basename, dirname, join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 
 export interface ShardPack {
   pack: string
@@ -111,12 +112,15 @@ function pause(milliseconds: number): Promise<void> {
 async function fetchWithRetries(
   url: string,
   attempts: number,
-  delayMs: number
+  delayMs: number,
+  timeoutMs: number
 ): Promise<Response> {
   let lastError: unknown
   for (let attempt = 1; attempt <= attempts; attempt++) {
     try {
-      const response = await fetch(url)
+      const response = await fetch(url, {
+        signal: AbortSignal.timeout(timeoutMs)
+      })
       if (response.ok) return response
       lastError = new Error(`${url} returned ${response.status}`)
     } catch (error) {
@@ -153,10 +157,11 @@ async function installRegistryPack(
   const metadata = await fetchWithRetries(
     `https://api.comfy.org/nodes/${ref.id}/versions/${ref.version}`,
     3,
-    2_000
+    2_000,
+    30_000
   )
   const url = registryArtifactUrl(await metadata.json())
-  const artifact = await fetchWithRetries(url, 6, 5_000)
+  const artifact = await fetchWithRetries(url, 6, 5_000, 60_000)
   const temp = mkdtempSync(join(tmpdir(), 'custom-node-pack-'))
   const zipPath = join(temp, 'pack.zip')
   try {
@@ -248,7 +253,11 @@ export async function main(): Promise<void> {
     )
 }
 
-if (import.meta.url === `file://${process.argv[1]}`)
+const invokedDirectly =
+  process.argv[1] !== undefined &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+
+if (invokedDirectly)
   void main().catch((error: unknown) => {
     console.error(
       `::error::${error instanceof Error ? error.message : String(error)}`

@@ -112,4 +112,129 @@ describe('custom-node result policy', () => {
       })
     ).toThrow(/did not break/)
   })
+
+  it('accepts an attributable S1 failure with a replacement worker', () => {
+    const failure =
+      '[comfyui-impact-pack] ImpactInt: instance is missing declared input "value" (litegraph)'
+    const result = {
+      stats: { expected: 3, unexpected: 1, flaky: 0, skipped: 0 },
+      suites: [
+        {
+          title:
+            'S1: every enrolled registered node mounts on the canvas renderer',
+          tests: [
+            {
+              status: 'unexpected',
+              results: [
+                {
+                  error: { message: failure },
+                  attachments: [
+                    {
+                      name: 's1-failures.json',
+                      contentType: 'application/json',
+                      body: Buffer.from(JSON.stringify([failure])).toString(
+                        'base64'
+                      )
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          title:
+            'S2: every enrolled registered node mounts on the DOM renderer',
+          tests: [{ status: 'expected' }]
+        },
+        {
+          title:
+            'S3: enrolled registered-node save/reload outcomes match exact contracts',
+          tests: [{ status: 'expected' }]
+        },
+        {
+          title: 'S9: calibrated model-free node corpus executes',
+          tests: [{ status: 'expected' }]
+        }
+      ]
+    }
+    const log = [
+      '[tier-session] pid=10 tier=S1 pageId=a',
+      '[tier-session] pid=11 tier=S2 pageId=b',
+      '[tier-session] pid=10 tier=S3 pageId=c',
+      '[tier-session] pid=10 tier=S9 pageId=d'
+    ].join('\n')
+    expect(
+      validateProofResult({
+        result,
+        row: '1',
+        expectedCollected: 4,
+        suiteOutcome: 'failure',
+        log
+      })
+    ).toContain(failure)
+  })
+
+  it('accepts one attributable S15 output-hash failure', () => {
+    const failure =
+      '[ComfyUI-Impact-Pack] ComfyUI-Impact-Pack/impact_primitives_run.json 2: output hash changed'
+    expect(
+      validateProofResult({
+        result: {
+          stats: { expected: 0, unexpected: 1, flaky: 0, skipped: 0 },
+          suites: [
+            {
+              title: 'Curated workflow execution: completes without error',
+              tests: [
+                {
+                  status: 'unexpected',
+                  results: [{ error: { message: failure } }]
+                }
+              ]
+            }
+          ]
+        },
+        row: '15',
+        expectedCollected: 1,
+        suiteOutcome: 'failure',
+        log: ''
+      })
+    ).toContain(failure)
+  })
+
+  it('rejects malformed JSON evidence attachments', () => {
+    expect(() =>
+      validateProofResult({
+        result: {
+          stats: { expected: 0, unexpected: 1, flaky: 0, skipped: 0 },
+          suites: [
+            {
+              title: 'Curated workflow execution: completes without error',
+              tests: [
+                {
+                  status: 'unexpected',
+                  results: [
+                    {
+                      error: { message: 'output hash changed' },
+                      attachments: [
+                        {
+                          name: 'proof.json',
+                          contentType: 'application/json',
+                          body: Buffer.from('{').toString('base64')
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        row: '15',
+        expectedCollected: 1,
+        suiteOutcome: 'failure',
+        log: ''
+      })
+    ).toThrow(/proof\.json attachment is not valid JSON/)
+  })
 })

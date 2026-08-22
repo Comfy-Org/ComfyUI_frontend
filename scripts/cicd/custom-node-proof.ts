@@ -7,6 +7,7 @@ import {
   writeFileSync
 } from 'node:fs'
 import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 
 const PROOFS = {
   '1': {
@@ -100,8 +101,9 @@ export function proofIdentity(input: {
   mutationDigest: string
 }): string {
   const proof = PROOFS[input.row]
-  if (!input.mutationPath || !/^[0-9a-f]{64}$/.test(input.mutationDigest))
-    throw new Error('mutation identity is incomplete')
+  if (!input.mutationPath) throw new Error('mutation path is missing')
+  if (!/^[0-9a-f]{64}$/.test(input.mutationDigest))
+    throw new Error('mutation digest is not a SHA-256 value')
   return [
     `proof_sha=${input.sha}`,
     `tier=S${input.row}`,
@@ -168,7 +170,11 @@ export function main(): void {
   else throw new Error(`invalid proof command ${command} for S${row}`)
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+const invokedDirectly =
+  process.argv[1] !== undefined &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+
+if (invokedDirectly) {
   try {
     main()
   } catch (error) {

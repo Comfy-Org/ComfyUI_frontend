@@ -126,4 +126,19 @@ describe('cloud manifest boundaries', () => {
       validateCloudExtensionSentinels({ pack: ['Extension', 'Extension'] })
     ).toThrow(/unique/)
   })
+
+  it('rejects extension sentinels without a generated pack row', () => {
+    expect(() =>
+      buildCloudManifest(
+        {
+          labels: [],
+          node_packs: [{ name: 'example-pack', version: '1.2.3' }]
+        },
+        { ExampleNode: node },
+        sourceFromSupportedNodesHeader(sourceHeader),
+        {},
+        { 'missing-pack': ['MissingExtension'] }
+      )
+    ).toThrow(/cloudExtensionSentinels pack\(s\).*missing-pack/)
+  })
 })

@@ -6,7 +6,7 @@ import {
   writeFileSync
 } from 'node:fs'
 import { createHash } from 'node:crypto'
-import { join, resolve } from 'node:path'
+import { join } from 'node:path'
 
 // S13 differential interaction profiles: the def-driven tiers are
 // structurally blind to what pack JS does IN RESPONSE to an interaction,
@@ -18,9 +18,7 @@ import { join, resolve } from 'node:path'
 // it reds against the committed delta. Deltas (not absolute shapes) keep
 // baselines invariant to def changes a pin bump legitimately makes.
 
-const PROFILE_DIR = resolve(
-  'browser_tests/fixtures/customNode/interactionProfiles'
-)
+const PROFILE_DIR = join(import.meta.dirname, 'interactionProfiles')
 
 // One facet entry per slot/widget: `kind:name:type`, model order ignored
 // (entries are sorted) so reordering alone is not drift.

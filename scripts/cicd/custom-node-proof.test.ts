@@ -31,8 +31,16 @@ NODE_CLASS_MAPPINGS = {"VHS_LoadAudioUpload": LoadAudioUpload}
         row: '2',
         sha: 'b'.repeat(40),
         mutationPath: '',
+        mutationDigest: 'a'.repeat(64)
+      })
+    ).toThrow(/path/)
+    expect(() =>
+      proofIdentity({
+        row: '2',
+        sha: 'b'.repeat(40),
+        mutationPath: 'row-02.patch',
         mutationDigest: 'bad'
       })
-    ).toThrow(/incomplete/)
+    ).toThrow(/digest/)
   })
 })

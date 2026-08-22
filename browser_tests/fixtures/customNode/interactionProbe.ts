@@ -110,7 +110,15 @@ export function runInteractionProbeChunk(
             (slot) => slot.name === spec.inputName
           )
           if (inputIndex === -1) return null
-          producerNode.connect(spec.producerOutput, node, inputIndex)
+          const link = producerNode.connect(
+            spec.producerOutput,
+            node,
+            inputIndex
+          )
+          if (!link)
+            throw new Error(
+              `${spec.producer}[${spec.producerOutput}] could not connect to ${plan.type}.${spec.inputName}`
+            )
           const connected = shapeOf(node)
           node.disconnectInput(inputIndex)
           return { connected, disconnected: shapeOf(node) }

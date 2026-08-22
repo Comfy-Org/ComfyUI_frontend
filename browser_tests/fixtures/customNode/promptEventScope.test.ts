@@ -42,7 +42,9 @@ describe('eventsForPrompt', () => {
       { type: 'executing', node: '1' }
     ])
   })
+})
 
+describe('toPromptEvent', () => {
   it('normalizes backend error whitespace without changing content', () => {
     expect(
       toPromptEvent({

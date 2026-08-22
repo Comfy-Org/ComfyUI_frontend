@@ -1,5 +1,6 @@
 import { spawnSync } from 'node:child_process'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { pathToFileURL } from 'node:url'
 
 interface ResultStats {
   expected: number
@@ -24,7 +25,7 @@ const PROOFS = {
     witness: 'comfyui-impact-pack',
     title: 'S1: every enrolled registered node mounts on the canvas renderer',
     pattern:
-      /ImpactInt: instance is missing declared input \\"value\\" \(litegraph\)/,
+      /ImpactInt: instance is missing declared input "value" \(litegraph\)/,
     nextTier: 'S2'
   },
   '2': {
@@ -144,9 +145,14 @@ function failureEvidence(value: unknown): {
           typeof attachment.body !== 'string'
         )
           continue
-        const decoded: unknown = JSON.parse(
-          Buffer.from(attachment.body, 'base64').toString('utf8')
-        )
+        let decoded: unknown
+        try {
+          decoded = JSON.parse(
+            Buffer.from(attachment.body, 'base64').toString('utf8')
+          )
+        } catch {
+          throw new Error(`${attachment.name} attachment is not valid JSON`)
+        }
         const prior = attachments.get(attachment.name) ?? []
         attachments.set(attachment.name, [...prior, decoded])
       }
@@ -305,7 +311,11 @@ export function main(): void {
   writeFileSync('tier-isolation-proof-evidence.txt', `${lines.join('\n')}\n`)
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+const invokedDirectly =
+  process.argv[1] !== undefined &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+
+if (invokedDirectly) {
   try {
     main()
   } catch (error) {

@@ -190,7 +190,7 @@ export async function assertMountTier({
   ).toHaveLength(expectedNodeCountFor(entry))
   const keys = eligibleNodeTypesForTier(
     { identity: packIdentity(entry), pack: entry.pack },
-    tier === 'S1' ? 'S1' : 'S2',
+    tier,
     registeredKeys
   )
   const declaredByKey = new Map(
@@ -206,8 +206,7 @@ export async function assertMountTier({
       `stale MOUNT_WIDGET_DUPLICATE_EXPECTATIONS entry: ${ledgered} is not registered by ${entry.pack}`
     ).toContain(ledgered)
 
-  const rendererPasses =
-    tier === 'S1' ? [false] : tier === 'S2' ? [true] : [false, true]
+  const rendererPasses = [tier === 'S2']
   for (const vueNodesEnabled of rendererPasses) {
     const outputTopologyExpectations = packLedgerFor(
       rendererLedgerFor(
@@ -223,13 +222,13 @@ export async function assertMountTier({
         keys,
         `stale OUTPUT_TOPOLOGY_EXPECTATIONS entry: ${ledgered} is not registered by ${entry.pack}`
       ).toContain(ledgered)
-    const consoleErrors = collectConsoleErrors(comfyPage.page)
+    using consoleErrors = collectConsoleErrors(comfyPage.page)
+    const failures: string[] = []
+    const renderer = vueNodesEnabled ? 'vue' : 'litegraph'
     await comfyPage.settings.setSetting(
       'Comfy.VueNodes.Enabled',
       vueNodesEnabled
     )
-    const failures: string[] = []
-    const renderer = vueNodesEnabled ? 'vue' : 'litegraph'
     for (let offset = 0; offset < keys.length; offset += BATCH_SIZE) {
       const chunk = keys.slice(offset, offset + BATCH_SIZE)
       const shapes = await addChunk(comfyPage.page, chunk)
@@ -372,7 +371,6 @@ export async function assertMountTier({
           ))
         )
     }
-    consoleErrors.stop()
     expect(
       failures,
       `VueNodes=${vueNodesEnabled}: ${JSON.stringify(failures, null, 1)}`
