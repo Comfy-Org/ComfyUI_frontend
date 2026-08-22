@@ -158,6 +158,7 @@ const agentPanelHolder = vi.hoisted(() => ({
     enabled: { value: boolean }
     gateSettled: { value: boolean }
     toggle: ReturnType<typeof vi.fn>
+    open: ReturnType<typeof vi.fn>
   }
 }))
 vi.mock(
@@ -171,6 +172,9 @@ vi.mock(
       toggle: vi.fn(() => {
         agentPanelHolder.store.isOpen.value =
           !agentPanelHolder.store.isOpen.value
+      }),
+      open: vi.fn(() => {
+        agentPanelHolder.store.isOpen.value = true
       })
     }
     // reactive() unwraps the holder refs on read, matching a real pinia
@@ -179,6 +183,18 @@ vi.mock(
   }
 )
 
+const withConsent = vi.hoisted(() =>
+  vi.fn((onAccept: () => void) => onAccept())
+)
+vi.mock(
+  '@/workbench/extensions/agent/composables/agent/useAgentConsent',
+  () => ({ useAgentConsent: () => ({ withConsent }) })
+)
+
+const trackAgentEntryButtonClicked = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () => ({ trackAgentEntryButtonClicked })
+}))
 vi.mock('@/utils/mouseDownUtil', () => ({
   whileMouseDown: vi.fn()
 }))
@@ -290,6 +306,10 @@ describe('WorkflowTabs agent entry button', () => {
     agentPanelHolder.store.enabled.value = true
     agentPanelHolder.store.isOpen.value = false
     agentPanelHolder.store.toggle.mockClear()
+    agentPanelHolder.store.open.mockClear()
+    withConsent.mockClear()
+    withConsent.mockImplementation((onAccept: () => void) => onAccept())
+    trackAgentEntryButtonClicked.mockClear()
   })
 
   afterEach(() => {
@@ -326,7 +346,7 @@ describe('WorkflowTabs agent entry button', () => {
     ).toHaveLength(1)
   })
 
-  it('toggles the panel and reflects the pressed state on the button', async () => {
+  it('gates opening and reflects the pressed state on the button', async () => {
     const { user } = renderComponent()
 
     const button = screen.getByRole('button', {
@@ -336,8 +356,20 @@ describe('WorkflowTabs agent entry button', () => {
 
     await user.click(button)
 
-    expect(agentPanelHolder.store.toggle).toHaveBeenCalledTimes(1)
+    expect(withConsent).toHaveBeenCalledOnce()
+    expect(agentPanelHolder.store.open).toHaveBeenCalledOnce()
+    expect(trackAgentEntryButtonClicked).toHaveBeenCalledWith({
+      resulting_state: 'opened'
+    })
     expect(button).toHaveAttribute('aria-pressed', 'true')
+
+    await user.click(button)
+
+    expect(withConsent).toHaveBeenCalledOnce()
+    expect(agentPanelHolder.store.toggle).toHaveBeenCalledOnce()
+    expect(trackAgentEntryButtonClicked).toHaveBeenLastCalledWith({
+      resulting_state: 'closed'
+    })
   })
 
   it('exposes the gate-settled signal on the actions container once the gate settles', async () => {
