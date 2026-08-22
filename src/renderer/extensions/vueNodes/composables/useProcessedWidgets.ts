@@ -363,17 +363,15 @@ function processWidget(
   const widgetState = ctx.widgetValueStore.getWidget(id)
   if (!widgetState) return null
 
+  const liveWidget = ctx.liveWidgets.get(id)
+  const type = liveWidget?.type ?? widgetState.type
   const renderState = ctx.widgetValueStore.getWidgetRenderState(id)
   const options: IWidgetOptions = { ...(widgetState.options ?? {}) }
   if (options.advanced === undefined) options.advanced = renderState?.advanced
-  if (!shouldRenderAsVue({ type: widgetState.type, options })) return null
+  if (!shouldRenderAsVue({ type, options })) return null
 
   const { live, errorTarget, controlWidget, sourceExecutionId } =
-    resolveLiveWidgetContext(
-      ctx.rootGraph,
-      ctx.hostNode,
-      ctx.liveWidgets.get(id)
-    )
+    resolveLiveWidgetContext(ctx.rootGraph, ctx.hostNode, liveWidget)
 
   const slotInfo = ctx.slotMetadata.get(widgetState.name)
   const visible = isWidgetVisible(
@@ -403,7 +401,7 @@ function processWidget(
 
   const simplified: SimplifiedWidget = {
     name: widgetState.name,
-    type: widgetState.type,
+    type,
     value,
     borderStyle: widgetOptions.advanced
       ? 'ring ring-component-node-widget-advanced'
@@ -420,7 +418,7 @@ function processWidget(
   }
 
   const valueTooltip =
-    isTooltipValueType(widgetState.type) && String(value).length > 10
+    isTooltipValueType(type) && String(value).length > 10
       ? String(value)
       : undefined
   const tooltipConfig = ctx.ui.getTooltipConfig(
@@ -446,9 +444,9 @@ function processWidget(
       ctx.missingMediaStore
     ),
     widgetId: id,
-    renderKey: `${id}:${widgetState.type}`,
+    renderKey: `${id}:${type}`,
     vueComponent:
-      getComponent(widgetState.type) ||
+      getComponent(type) ||
       (renderState?.isDOMWidget ? WidgetDOM : WidgetLegacy),
     simplified,
     visible,
