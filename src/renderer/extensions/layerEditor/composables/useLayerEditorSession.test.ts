@@ -1,6 +1,5 @@
 import {
   afterAll,
-  afterEach,
   beforeAll,
   beforeEach,
   describe,
@@ -147,9 +146,6 @@ beforeEach(() => {
   vi.stubGlobal('cancelAnimationFrame', (id: number) => {
     pending.delete(id)
   })
-})
-afterEach(() => {
-  vi.unstubAllGlobals()
 })
 
 function flushFrames(): Promise<void> {
