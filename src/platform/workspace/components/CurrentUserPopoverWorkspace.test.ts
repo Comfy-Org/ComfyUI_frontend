@@ -12,6 +12,7 @@ import enMessages from '@/locales/en/main.json'
 import CurrentUserPopoverWorkspace from './CurrentUserPopoverWorkspace.vue'
 
 const state = vi.hoisted(() => ({
+  isCloud: true,
   billingStatus: 'paid',
   canAccessSubscriptionFeatures: true,
   isFreeTier: false,
@@ -91,7 +92,11 @@ vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
   useSettingsDialog: () => ({ show: state.showSettingsDialog })
 }))
 
-vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
+vi.mock('@/platform/distribution/types', () => ({
+  get isCloud() {
+    return state.isCloud
+  }
+}))
 
 vi.mock('@/services/dialogService', () => ({
   useDialogService: () => ({
@@ -161,6 +166,7 @@ function renderComponent(
 
 describe('CurrentUserPopoverWorkspace', () => {
   beforeEach(() => {
+    state.isCloud = true
     state.billingStatus = 'paid'
     state.canAccessSubscriptionFeatures = true
     state.isFreeTier = false
@@ -305,6 +311,25 @@ describe('CurrentUserPopoverWorkspace', () => {
     expect(
       screen.getByRole('button', { name: 'Subscribe' })
     ).toBeInTheDocument()
+  })
+
+  it('keeps Subscribe hidden on Local after switching to an unsubscribed workspace', async () => {
+    state.isCloud = false
+    state.canAccessSubscriptionFeatures = false
+    state.canManageSubscription = true
+    const { rerender } = renderComponent('personal')
+
+    if (!workspaceStoreMock.store) throw new Error('Workspace store not ready')
+    workspaceStoreMock.store.workspaceName = 'Team Workspace'
+    workspaceStoreMock.store.isInPersonalWorkspace = false
+    await rerender({})
+
+    expect(screen.getByTestId('workspace-switcher-trigger')).toHaveTextContent(
+      'Team Workspace'
+    )
+    expect(
+      screen.queryByRole('button', { name: 'Subscribe' })
+    ).not.toBeInTheDocument()
   })
 
   it.for([

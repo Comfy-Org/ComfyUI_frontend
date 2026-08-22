@@ -47,7 +47,9 @@ test.describe('Local workspace switcher', { tag: '@auth' }, () => {
       document.body.dataset.workspaceSwitchDocument = 'original'
     })
 
+    await comfyPage.toast.closeToasts()
     await page.getByRole('button', { name: 'Current user' }).click()
+    await expect(page.getByRole('button', { name: 'Subscribe' })).toHaveCount(0)
     await expect(page.getByTestId('workspace-switcher-trigger')).toContainText(
       PERSONAL_WORKSPACE_NAME
     )
@@ -72,6 +74,7 @@ test.describe('Local workspace switcher', { tag: '@auth' }, () => {
     await expect(page.getByTestId('workspace-switcher-trigger')).toContainText(
       TEAM_WORKSPACE_NAME
     )
+    await expect(page.getByRole('button', { name: 'Subscribe' })).toHaveCount(0)
     await expect.poll(() => billingRequestUrls.length).toBeGreaterThan(0)
     expect(tokenRequestBody).toEqual({ workspace_id: 'ws-team' })
     expect(billingRequestUrls).toEqual(
