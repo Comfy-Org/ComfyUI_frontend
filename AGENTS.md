@@ -59,19 +59,22 @@ This project uses **pnpm**. Always prefer scripts defined in `package.json` (e.g
 - `pnpm preview`: Preview the production build locally
 - `pnpm test:unit`: Run Vitest unit tests
 - `pnpm test:browser:local`: Run Playwright E2E tests (`browser_tests/`)
-- `pnpm comfy-test record`: Interactive test recorder (guided setup for non-devs)
-- `pnpm comfy-test transform <file>`: Transform raw codegen to conventions
-- `pnpm comfy-test pr <file>`: Open a pull request for a generated test
+- `pnpm comfy-test record`: Interactive test recorder (guided setup for non-devs; **needs a real terminal** — exits immediately with guidance if stdin isn't a TTY)
+- `pnpm comfy-test plan --description "<what to test>" [--tags a,b] [--workflow w] [--name n]`: **Agent entry point.** Non-interactive, no terminal required. Validates the environment/tags/workflow and prints a `<test-suite>/<test-name>/<test-file>/<seed-file>/<tag>/<body>` block ready to hand to the `playwright-test-generator` agent below — this is how an agent (not a human) produces a test with `comfy-test`.
+- `pnpm comfy-test transform <file> [--name <n>] [--tags <a,b>] [--workflow <w>] [--output <f>]`: Transform raw Playwright codegen to conventions. Non-interactive.
+- `pnpm comfy-test pr <file> [description]`: Open a pull request for a generated test. Non-interactive.
 - `pnpm comfy-test check`: Check environment prerequisites
 - `pnpm comfy-test list`: List available test workflows
 
+**Agent workflow, end to end:** `comfy-test plan` → hand its output to the `playwright-test-generator` agent (writes a convention-compliant spec directly, no `transform` needed) → `comfy-test pr <file>`.
+
 ### Playwright Test Agents (`.claude/agents/`)
 
-| Agent                          | Responsibility                                                                     |
-| ------------------------------ | ---------------------------------------------------------------------------------- |
-| `playwright-test-planner.md`   | Explores the app, identifies testable scenarios, creates structured test plans     |
-| `playwright-test-generator.md` | Generates Playwright test code from plans using ComfyUI fixtures and conventions   |
-| `playwright-test-healer.md`    | Diagnoses and fixes failing tests; escalates regressions rather than auto-skipping |
+| Agent                          | Responsibility                                                                                                                    |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| `playwright-test-planner.md`   | Explores the app, identifies testable scenarios, creates structured test plans                                                    |
+| `playwright-test-generator.md` | Generates Playwright test code from plans using ComfyUI fixtures and conventions — this is what `comfy-test plan`'s output is for |
+| `playwright-test-healer.md`    | Diagnoses and fixes failing tests; escalates regressions rather than auto-skipping                                                |
 
 Guardrails: agents must use `comfyPage` fixture (not bare `page`), never add `waitForTimeout()`, never weaken assertions, and reference `.claude/skills/codegen-transform/SKILL.md` for transform rules.
 

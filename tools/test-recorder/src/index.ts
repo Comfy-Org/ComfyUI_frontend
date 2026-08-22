@@ -118,6 +118,15 @@ Commands:
 
 Options:
   --help      Show help
+
+If you are an agent (not a human at a terminal): 'record' needs a real
+TTY and will refuse to run. Use this instead:
+
+  comfy-test plan --description "<what to test>" [--tags a,b] [--workflow w]
+  → hand the printed block to the playwright-test-generator agent
+  → comfy-test pr <the file it wrote>
+
+'transform', 'pr', 'check', 'plan', and 'list' all work non-interactively.
 `)
       break
     }
