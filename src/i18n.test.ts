@@ -534,7 +534,7 @@ describe('i18n', () => {
 
   describe('setActiveLocale', () => {
     it('clamps unsupported input to en', async () => {
-      expect(await setActiveLocale('de')).toBe('en')
+      expect(await setActiveLocale('it')).toBe('en')
       expect(i18n.global.locale.value).toBe('en')
     })
 
@@ -545,9 +545,21 @@ describe('i18n', () => {
       expect(await setActiveLocale('pt')).toBe('en')
     })
 
+    it('resolves de directly and via BCP-47 fallback', async () => {
+      expect(await setActiveLocale('de')).toBe('de')
+      expect(i18n.global.locale.value).toBe('de')
+
+      // Reset to a different locale first so the next assertion proves
+      // 'de-DE' actually activates 'de', rather than observing state
+      // left over from the previous call.
+      await setActiveLocale('en')
+      expect(await setActiveLocale('de-DE')).toBe('de')
+      expect(i18n.global.locale.value).toBe('de')
+    })
+
     it('honors prioritized navigator.languages', async () => {
-      // First preference unsupported, second shipped — should land on French.
-      expect(await setActiveLocale(['de-DE', 'fr-CA', 'en'])).toBe('fr')
+      // First preference unshipped, second shipped — should land on French.
+      expect(await setActiveLocale(['pl-PL', 'fr-CA', 'en'])).toBe('fr')
     })
   })
 
@@ -567,6 +579,7 @@ describe('i18n', () => {
       expect(resolveSupportedLocale('ja')).toBe('ja')
       expect(resolveSupportedLocale('zh-TW')).toBe('zh-TW')
       expect(resolveSupportedLocale('pt-BR')).toBe('pt-BR')
+      expect(resolveSupportedLocale('de')).toBe('de')
       expect(resolveSupportedLocale('it')).toBe('it')
     })
 
@@ -577,21 +590,25 @@ describe('i18n', () => {
       expect(resolveSupportedLocale('zh-tw')).toBe('zh-TW')
       expect(resolveSupportedLocale('ZH-TW')).toBe('zh-TW')
       expect(resolveSupportedLocale('EN')).toBe('en')
+      expect(resolveSupportedLocale('DE')).toBe('de')
     })
 
     it('falls back to the base tag when the full tag is unshipped', () => {
-      // de-DE → de (unshipped) → en
-      expect(resolveSupportedLocale('de-DE')).toBe('en')
+      // pl-PL → pl (unshipped) → en
+      expect(resolveSupportedLocale('pl-PL')).toBe('en')
       // fr-CA → fr (shipped) → fr
       expect(resolveSupportedLocale('fr-CA')).toBe('fr')
       // ko-KR → ko (shipped) → ko
       expect(resolveSupportedLocale('ko-KR')).toBe('ko')
       // zh-CN → zh (shipped) → zh (Simplified is the base)
       expect(resolveSupportedLocale('zh-CN')).toBe('zh')
+      // de-DE → de (shipped) → de
+      expect(resolveSupportedLocale('de-DE')).toBe('de')
     })
 
     it('falls back to en for unsupported and missing inputs', () => {
-      expect(resolveSupportedLocale('de')).toBe('en')
+      // 'pl' is a genuinely unshipped locale (both 'de' and 'it' are shipped now).
+      expect(resolveSupportedLocale('pl')).toBe('en')
       expect(resolveSupportedLocale('nl')).toBe('en')
       expect(resolveSupportedLocale('xx-YY')).toBe('en')
       expect(resolveSupportedLocale('')).toBe('en')
@@ -600,11 +617,13 @@ describe('i18n', () => {
     })
 
     it('walks a prioritized array per RFC 4647 lookup order', () => {
-      // First shipped match wins (de unshipped → fr shipped → fr).
-      expect(resolveSupportedLocale(['de-DE', 'fr-CA', 'en'])).toBe('fr')
+      // First shipped match wins (pl unshipped → fr shipped → fr).
+      expect(resolveSupportedLocale(['pl-PL', 'fr-CA', 'en'])).toBe('fr')
       // Empty / all-unshipped arrays fall back to en.
       expect(resolveSupportedLocale([])).toBe('en')
-      expect(resolveSupportedLocale(['de', 'nl'])).toBe('en')
+      expect(resolveSupportedLocale(['pl', 'nl'])).toBe('en')
+      // German present in the array resolves immediately.
+      expect(resolveSupportedLocale(['de-DE', 'it'])).toBe('de')
     })
   })
 })
