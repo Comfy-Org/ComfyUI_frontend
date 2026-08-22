@@ -399,27 +399,6 @@ export function createMockLinks(links: LLink[]): LGraph['links'] {
   }
   return Object.assign(map, record) as LGraph['links']
 }
-
-/**
- * Reloads a serialized graph the way a fresh page would, and returns the new
- * graph.
- *
- * Save/load assertions written as `configure(...serialize())` are vacuous by
- * default. `LGraph.clear()` drops the widget store under the graph's
- * *pre-configure* id, but `LGraph._configureBase` then re-adopts the *payload's*
- * graph id — and `widgetValueStore` is keyed `graphId:nodeId:name`. The source
- * graph's entries are therefore still live under exactly the key the reloaded
- * node looks up, so `registerWidget` returns the existing state and the
- * assertion passes without the serialized payload ever being read.
- *
- * This helper removes both escape hatches: the payload is forced through
- * `JSON.parse(JSON.stringify(...))` (so live-object aliasing cannot leak) and
- * the widget/preview stores are dropped for the payload's graph id before
- * `configure()` runs.
- *
- * Verify with a mutation: a save/load test that still passes when the producer
- * stops writing the field under test never read the payload.
- */
 export function reloadSerializedGraph(
   serialized: ISerialisedGraph | SerialisableGraph,
   graphFactory: () => LGraph

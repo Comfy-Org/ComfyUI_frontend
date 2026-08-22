@@ -132,9 +132,6 @@ describe('renameWidget label persistence via input lookup (regression #13861)', 
     renameWidget(cleared.widgets![0], cleared, 'Positive Prompt')
     renameWidget(cleared.widgets![0], cleared, '')
 
-    // Control arm: an un-cleared rename in the same payload. Without it, a
-    // build where renaming never persisted at all would also report
-    // `undefined` here and the test would pass for the wrong reason.
     const kept = addClipNode(graph)
     renameWidget(kept.widgets![0], kept, 'Negative Prompt')
 

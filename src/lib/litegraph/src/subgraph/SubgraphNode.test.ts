@@ -398,12 +398,6 @@ describe('SubgraphNode Synchronization', () => {
     )
   })
 
-  // Not a round trip. `SubgraphNode.configure` rebuilds `this.inputs` from the
-  // live `subgraph.inputNode.slots`, and `widgetValueStore` is keyed
-  // `graphId:nodeId:name` while `configure` re-adopts the payload's graph id —
-  // so reconfiguring the same node in place reads live state, not JSON. This
-  // test survives `serialize()` dropping every input label. The reload
-  // assertion lives in the sibling test below.
   it('keeps the renamed label after an in-place reconfigure', () => {
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'seed', type: 'INT' }]
@@ -483,21 +477,12 @@ describe('SubgraphNode Synchronization', () => {
       newName: 'My Seed'
     })
 
-    // The label must survive as JSON, not as a live object reference: the
-    // subgraph *definition* carries it, and the reloaded host reads it back
-    // through the reloaded definition. `SubgraphNode.configure` rebuilds
-    // `this.inputs` from the live subgraph slots and never reads
-    // `info.inputs`, so a same-object reconfigure proves nothing.
     const definition = JSON.parse(
       JSON.stringify(subgraph.asSerialisable())
     ) as ReturnType<typeof subgraph.asSerialisable>
     const instance = JSON.parse(
       JSON.stringify(subgraphNode.serialize())
     ) as ExportedSubgraphInstance
-
-    // Drop the live widget state so the reloaded host cannot re-adopt it:
-    // `configure` re-adopts the payload's graph id and `widgetValueStore` is
-    // keyed `graphId:nodeId:name`.
     useWidgetValueStore().clearGraph(subgraphNode.rootGraph.id)
 
     const reloadedSubgraph = createTestSubgraph({
