@@ -177,7 +177,8 @@ function gatherSubgraphCredits(wrapper: SubgraphNode): PricingBadgeSources {
       : undefined
   )
   for (const leaf of apiLeaves) {
-    void pricing.getNodeRevisionRef(leaf.id).value
+    const graphId = leaf.graph?.rootGraph.id
+    if (graphId !== undefined) touchPricingSources(graphId, leaf)
   }
 
   if (apiLeaves.length !== 1) {
