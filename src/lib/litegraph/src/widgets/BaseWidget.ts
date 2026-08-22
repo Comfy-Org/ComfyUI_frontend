@@ -133,11 +133,22 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     this._state.value = value
   }
 
+  private get storeName(): string {
+    const index = this.node.widgets?.indexOf(this) ?? -1
+    const duplicateIndex =
+      index > 0
+        ? this.node.widgets
+            ?.slice(0, index)
+            .filter((widget) => widget.name === this.name).length
+        : 0
+    return duplicateIndex ? `${this.name}#${duplicateIndex}` : this.name
+  }
+
   get widgetId(): WidgetId | undefined {
     const graphId = this.node.graph?.rootGraph.id
     const nodeId = this._state.nodeId
     if (!graphId || nodeId === undefined) return undefined
-    return widgetId(graphId, nodeId, this.name)
+    return widgetId(graphId, nodeId, this.storeName)
   }
 
   /**
@@ -149,7 +160,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     if (!graphId) return
 
     const registered = useWidgetValueStore().registerWidget(
-      widgetId(graphId, nodeId, this.name),
+      widgetId(graphId, nodeId, this.storeName),
       {
         ...this._state,
         type: this.type,
