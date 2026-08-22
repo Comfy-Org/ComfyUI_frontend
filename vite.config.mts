@@ -285,7 +285,13 @@ export default defineConfig({
 
           // Return empty array for extensions API as these modules
           // are not on vite's dev server.
-          if (req.url === '/api/extensions') {
+          // DEV_SERVER_LOAD_EXTENSIONS=1 opts back in and proxies them from the
+          // backend instead — required to develop or test an extension host
+          // (e.g. sandboxed loading) against the dev server.
+          if (
+            req.url === '/api/extensions' &&
+            process.env.DEV_SERVER_LOAD_EXTENSIONS !== '1'
+          ) {
             res.end(JSON.stringify([]))
             return false
           }

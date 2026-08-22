@@ -87,6 +87,7 @@ import { resolveAccountPrecondition } from '@/platform/errorCatalog/accountPreco
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
+import { installSecureNodesHost } from '@/services/secureNodesBootstrap'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphService } from '@/services/subgraphService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
@@ -989,6 +990,11 @@ export class ComfyApp {
     installComfyApi(() => useCanvasStore().currentGraph, {
       openWorkflow: (data) => this.loadGraphData(data as ComfyWorkflowJSON)
     })
+    // After installComfyApi — the secure host serves globalThis.comfy to its
+    // guests — and before loadExtensions, which it decides how to load. No-op
+    // when the overlay is absent. See secureNodesBootstrap for the interface
+    // debt note.
+    await installSecureNodesHost()
     await useExtensionService().loadExtensions()
 
     this.addProcessKeyHandler()
