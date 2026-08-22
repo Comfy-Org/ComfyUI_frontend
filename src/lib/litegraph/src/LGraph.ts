@@ -2816,9 +2816,12 @@ export class LGraph
       if (options.clearGraph) {
         const topologyScope = graphScopeOf(this)
         if (this.isRootGraph) {
+          usePreviewExposureStore().clearGraph(this.id)
+          useWidgetValueStore().clearGraph(this.id)
           useLinkStore().clearGraph(topologyScope.rootGraphId)
           useRerouteStore().clearGraph(topologyScope.rootGraphId)
           useNodeDataStore().clearGraph(this.id)
+          layoutStore.clearGraph(this.id)
         } else {
           useLinkStore().clearOwner(topologyScope)
           useRerouteStore().clearOwner(topologyScope)
