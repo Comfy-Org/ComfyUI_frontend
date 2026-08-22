@@ -1,6 +1,19 @@
 import type { PlaywrightTestConfig } from '@playwright/test'
 import { defineConfig, devices } from '@playwright/test'
 
+const distribution = process.env.DISTRIBUTION
+Object.assign(globalThis, {
+  __DISTRIBUTION__:
+    distribution === 'desktop' ||
+    distribution === 'localhost' ||
+    distribution === 'cloud'
+      ? distribution
+      : process.env.DEV_SERVER_COMFYUI_URL?.includes('.comfy.org')
+        ? 'cloud'
+        : 'localhost',
+  __IS_NIGHTLY__: process.env.IS_NIGHTLY === 'true'
+})
+
 const maybeLocalOptions: PlaywrightTestConfig = process.env.PLAYWRIGHT_LOCAL
   ? {
       timeout: 30_000,
@@ -41,7 +54,25 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
       timeout: 15000,
-      grepInvert: /@mobile|@perf|@audit|@cloud/
+      grepInvert: /@mobile|@perf|@audit|@cloud|@custom-nodes/
+    },
+
+    // The custom-node suite needs the manifest packs installed and a quiet
+    // backend queue, so it runs in its own gating job
+    // (ci-tests-custom-nodes.yaml) with --workers=1, not alongside the
+    // parallel main e2e shards: the auto-run tier waits on the WHOLE queue
+    // to go quiet before it measures, which a parallel shard cannot provide.
+    // retain-on-failure trace: ~40 serial tests, negligible overhead, and a
+    // red run needs 6 installed packs + a live backend to reproduce.
+    {
+      name: 'custom-nodes',
+      use: {
+        ...devices['Desktop Chrome'],
+        trace: 'retain-on-failure'
+      },
+      timeout: 15000,
+      grep: /@custom-nodes/,
+      fullyParallel: false
     },
 
     {

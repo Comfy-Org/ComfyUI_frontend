@@ -9,6 +9,8 @@ test.describe('Renderer toggle geometry', { tag: ['@vue-nodes'] }, () => {
   test('slot geometry survives a Vue to legacy round trip', async ({
     comfyPage
   }) => {
+    await comfyPage.workflow.loadWorkflow('default')
+
     const nodeId = toNodeId(
       await comfyPage.vueNodes.getNodeIdByTitle('KSampler')
     )
@@ -31,6 +33,12 @@ test.describe('Renderer toggle geometry', { tag: ['@vue-nodes'] }, () => {
     await comfyPage.page.mouse.up()
     await comfyPage.nextFrame()
 
+    await expect
+      .poll(async () => {
+        const { size } = await comfyPage.canvasOps.getNodeGeometry(nodeId)
+        return size
+      })
+      .toEqual(before.size)
     const moved = await comfyPage.canvasOps.getNodeGeometry(nodeId)
     comfyPage.canvasOps.expectSlotsTrackedNode(moved, before)
 
@@ -38,23 +46,27 @@ test.describe('Renderer toggle geometry', { tag: ['@vue-nodes'] }, () => {
     await comfyPage.nextFrame()
     await expect(comfyPage.vueNodes.nodes).toHaveCount(0)
 
-    const legacyGeometry = await comfyPage.canvasOps.getNodeGeometry(nodeId)
-    expect(legacyGeometry.pos[0], 'legacy x').toBeCloseTo(moved.pos[0], 0)
-    expect(legacyGeometry.pos[1], 'legacy y').toBeCloseTo(moved.pos[1], 0)
-    expect(legacyGeometry.size, 'legacy size').toEqual(moved.size)
-    comfyPage.canvasOps.expectSlotsOnNode(
-      legacyGeometry,
-      'after switching to legacy'
-    )
+    await expect(async () => {
+      const legacyGeometry = await comfyPage.canvasOps.getNodeGeometry(nodeId)
+      expect(legacyGeometry.pos[0], 'legacy x').toBeCloseTo(moved.pos[0], 0)
+      expect(legacyGeometry.pos[1], 'legacy y').toBeCloseTo(moved.pos[1], 0)
+      expect(legacyGeometry.size, 'legacy size').toEqual(moved.size)
+      comfyPage.canvasOps.expectSlotsOnNode(
+        legacyGeometry,
+        'after switching to legacy'
+      )
+    }).toPass({ timeout: 5000 })
 
     await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
     await comfyPage.vueNodes.waitForNodes()
 
-    comfyPage.canvasOps.expectNodeGeometryPreserved(
-      await comfyPage.canvasOps.getNodeGeometry(nodeId),
-      moved,
-      'after switching back to Vue'
-    )
+    await expect(async () => {
+      comfyPage.canvasOps.expectNodeGeometryPreserved(
+        await comfyPage.canvasOps.getNodeGeometry(nodeId),
+        moved,
+        'after switching back to Vue'
+      )
+    }).toPass({ timeout: 5000 })
   })
 
   test(
