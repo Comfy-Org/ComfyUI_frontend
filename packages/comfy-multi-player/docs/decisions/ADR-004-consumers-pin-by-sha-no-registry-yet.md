@@ -1,6 +1,6 @@
 # ADR-004: Consumers pin by git SHA; no registry publish yet
 
-**Status:** Accepted
+**Status:** Superseded by [ADR-006](ADR-006-publish-to-npm-pin-exact-versions.md)
 **Date:** 2026-08-20
 **Invariant:** KA-1, FC-3 (both hosts run the *same* applier bytes)
 
