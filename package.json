@@ -58,6 +58,15 @@
     "test:browser": "pnpm exec playwright test",
     "test:browser:coverage": "cross-env COLLECT_COVERAGE=true pnpm test:browser",
     "test:browser:local": "cross-env PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=http://localhost:5173 pnpm test:browser",
+    "custom-node-quarantine": "tsx scripts/customNodeQuarantine.ts",
+    "custom-node-shard": "tsx scripts/customNodeShard.ts",
+    "gen:cloud-manifest": "tsx scripts/cloud-manifest.ts",
+    "test:custom-nodes": "cross-env PLAYWRIGHT_TEST_URL=http://localhost:5173 pnpm exec playwright test browser_tests/tests/customNodes/ --config playwright.chrome.config.ts --workers=1",
+    "test:custom-nodes:ci": "cross-env PLAYWRIGHT_TEST_URL=http://localhost:8188 pnpm exec playwright test browser_tests/tests/customNodes/ --config playwright.chrome.config.ts --workers=1",
+    "test:custom-nodes:watch": "cross-env PLAYWRIGHT_TEST_URL=http://localhost:5173 PLAYWRIGHT_LOCAL=1 SLOW_MO=300 pnpm exec playwright test browser_tests/tests/customNodes/customNode.regression.spec.ts browser_tests/tests/customNodes/connectivity.spec.ts --config playwright.chrome.config.ts --workers=1 --headed",
+    "test:custom-nodes:debug": "cross-env PLAYWRIGHT_TEST_URL=http://localhost:5173 pnpm exec playwright test browser_tests/tests/customNodes/customNode.regression.spec.ts browser_tests/tests/customNodes/connectivity.spec.ts --config playwright.chrome.config.ts --workers=1 --debug",
+    "test:custom-nodes:connectivity": "pnpm test:custom-nodes:debug -g \"connectivity\"",
+    "test:custom-nodes:self-check": "pnpm test:custom-nodes:watch -g \"self-check\"",
     "test:coverage": "vitest run --coverage",
     "test:unit": "vitest run",
     "typecheck": "vue-tsc --noEmit",
@@ -66,7 +75,10 @@
     "typecheck:scripts": "vue-tsc --project scripts/tsconfig.json",
     "typecheck:tools": "vue-tsc --project tools/tsconfig.json",
     "typecheck:website": "pnpm --filter @comfyorg/website run typecheck",
-    "zipdist": "node scripts/zipdist.js"
+    "zipdist": "node scripts/zipdist.js",
+    "test:custom-nodes:local": "start-server-and-test backend:custom-nodes http-get://127.0.0.1:8288/system_stats dev:custom-nodes http-get://localhost:5173 test:custom-nodes",
+    "backend:custom-nodes": "sh -c 'cd \"${TEST_COMFYUI_DIR:?point at your ComfyUI checkout (README Prerequisites)}\"; cp \"$OLDPWD/browser_tests/assets/plain_video.mp4\" input/ || { echo \"could not stage plain_video.mp4 into $PWD/input - the curated VHS workflow cannot run without it\" >&2; exit 1; }; PY=python3; [ -x venv/bin/python ] && PY=venv/bin/python; [ -x .venv/bin/python ] && PY=.venv/bin/python; \"$PY\" main.py --port 8288 --multi-user --cache-none'",
+    "dev:custom-nodes": "cross-env DEV_SERVER_COMFYUI_URL=http://127.0.0.1:8288 vite --config vite.config.mts --strictPort"
   },
   "dependencies": {
     "@alloc/quick-lru": "catalog:",
@@ -200,6 +212,7 @@
     "postcss-html": "catalog:",
     "pretty-bytes": "catalog:",
     "rollup-plugin-visualizer": "catalog:",
+    "start-server-and-test": "catalog:",
     "storybook": "catalog:",
     "stylelint": "catalog:",
     "tailwindcss": "catalog:",
@@ -218,6 +231,7 @@
     "vue-component-type-helpers": "catalog:",
     "vue-eslint-parser": "catalog:",
     "vue-tsc": "catalog:",
+    "yaml": "catalog:",
     "zip-dir": "^2.0.0",
     "zod-to-json-schema": "catalog:"
   },

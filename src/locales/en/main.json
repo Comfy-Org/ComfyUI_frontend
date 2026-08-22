@@ -2626,6 +2626,7 @@
   },
   "credits": {
     "activity": "Activity",
+    "workspaceCredits": "Workspace credits",
     "insufficient": {
       "memberTitle": "This workspace is out of credits",
       "memberDescription": "Your team has used all its credits. Your workspace admins need to add more credits to run workflows.",
