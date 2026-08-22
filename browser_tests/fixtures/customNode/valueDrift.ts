@@ -282,3 +282,38 @@ export function staleValueDriftKeys(
       .map((key) => `${node}.${key}`)
   )
 }
+
+export interface NamedWidgetValueDrift {
+  name: string
+  before: unknown
+  after: unknown
+}
+
+export function namedWidgetValueDrifts(
+  before: unknown,
+  after: unknown
+): NamedWidgetValueDrift[] | null {
+  if (
+    typeof before !== 'object' ||
+    before === null ||
+    Array.isArray(before) ||
+    typeof after !== 'object' ||
+    after === null ||
+    Array.isArray(after)
+  )
+    return null
+
+  const beforeValues = before as Record<string, unknown>
+  const afterValues = after as Record<string, unknown>
+  const commonNames = Object.keys(beforeValues).filter(
+    (name) => name in afterValues
+  )
+  if (commonNames.length === 0) return null
+
+  return commonNames.flatMap((name) => {
+    return JSON.stringify(beforeValues[name]) ===
+      JSON.stringify(afterValues[name])
+      ? []
+      : [{ name, before: beforeValues[name], after: afterValues[name] }]
+  })
+}

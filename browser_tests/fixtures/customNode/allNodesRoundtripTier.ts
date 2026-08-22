@@ -21,6 +21,7 @@ import { eligibleNodeTypesForTier } from '@e2e/fixtures/customNode/tierNodeExclu
 import {
   CANVAS_PREVIEW_IMAGE_PATH_PATTERN,
   initializationSignalsForTypes,
+  namedWidgetValueDrifts,
   pendingRestoredPreviewWidgets,
   pendingRoundtripInitializations,
   rendererLedgerFor,
@@ -39,6 +40,23 @@ import { expectNoVisibleErrors } from '@e2e/fixtures/utils/errorSurfaces'
 
 const BATCH_SIZE = 24
 const ROUNDTRIP_INITIALIZATION_TIMEOUT_MS = 30_000
+
+interface RoundtripTopologyDrift {
+  node: string
+  before: number
+  after: number
+  beforeNames: string[]
+  afterNames: string[]
+  label: string
+}
+
+interface DynamicTopologyChange {
+  node: string
+  beforeNames: string[]
+  afterNames: string[]
+  beforeValues: unknown
+  afterValues: unknown
+}
 
 const WIDGET_SET_ALLOWLIST: Record<string, Record<string, string>> = {
   'ComfyUI-Impact-Pack': {
@@ -203,14 +221,8 @@ declare global {
       finish: () => {
         problems: string[]
         nodeLosses: string[]
-        topologyDrifts: Array<{
-          node: string
-          before: number
-          after: number
-          beforeNames: string
-          afterNames: string
-          label: string
-        }>
+        topologyDrifts: RoundtripTopologyDrift[]
+        dynamicTopologyChanges: DynamicTopologyChange[]
         valueDrifts: Record<string, number[]>
         keyDrifts: Record<string, string[]>
       }
@@ -381,14 +393,8 @@ export async function assertRoundtripTier({
           }
           window.__cnIdBase = window.app!.graph.last_node_id
           const problems: string[] = []
-          const topologyDrifts: Array<{
-            node: string
-            before: number
-            after: number
-            beforeNames: string
-            afterNames: string
-            label: string
-          }> = []
+          const topologyDrifts: RoundtripTopologyDrift[] = []
+          const dynamicTopologyChanges: DynamicTopologyChange[] = []
           const valueDrifts = new Map<string, Set<number>>()
           const keyDrifts = new Map<string, Set<string>>()
           const nodeLosses = new Set<string>()
@@ -429,10 +435,10 @@ export async function assertRoundtripTier({
             new Map(
               window.app!.graph.nodes.map((node) => [
                 String(node.id),
-                (node.widgets ?? []).map((widget) => widget.name).join(',')
+                (node.widgets ?? []).map((widget) => widget.name)
               ])
             )
-          let namesBefore = new Map<string, string>()
+          let namesBefore = new Map<string, string[]>()
           let firstPass: ReturnType<
             NonNullable<typeof window.app>['graph']['serialize']
           > | null = null
@@ -503,19 +509,25 @@ export async function assertRoundtripTier({
                     node: expected.type,
                     before: expected.widgetCount,
                     after: widgets,
-                    beforeNames: namesBefore.get(id) ?? '',
-                    afterNames: namesAfter.get(id) ?? '',
+                    beforeNames: namesBefore.get(id) ?? [],
+                    afterNames: namesAfter.get(id) ?? [],
                     label
                   })
-                if (!strict && namesBefore.get(id) !== namesAfter.get(id))
-                  topologyDrifts.push({
+                const beforeNames = namesBefore.get(id) ?? []
+                const afterNames = namesAfter.get(id) ?? []
+                if (
+                  !strict &&
+                  JSON.stringify(beforeNames) !== JSON.stringify(afterNames)
+                ) {
+                  dynamicTopologyChanges.push({
                     node: expected.type,
-                    before: expected.widgetCount,
-                    after: widgets,
-                    beforeNames: namesBefore.get(id) ?? '',
-                    afterNames: namesAfter.get(id) ?? '',
-                    label
+                    beforeNames,
+                    afterNames,
+                    beforeValues: before.widgets_values_named,
+                    afterValues: after.widgets_values_named
                   })
+                  continue
+                }
                 const allowedIndices = exactValueDriftIndices[expected.type]
                 if (
                   allowedIndices &&
@@ -640,6 +652,7 @@ export async function assertRoundtripTier({
                 problems: [...problems],
                 nodeLosses: [...nodeLosses],
                 topologyDrifts,
+                dynamicTopologyChanges,
                 valueDrifts: Object.fromEntries(
                   [...valueDrifts].map(([node, indices]) => [
                     node,
@@ -754,8 +767,24 @@ export async function assertRoundtripTier({
       for (const node of result.nodeLosses) observedNodeLosses.add(node)
       for (const drift of result.topologyDrifts) {
         mismatches.push(
-          `${drift.node}: widgets ${drift.before} [${drift.beforeNames}] -> ${drift.after} [${drift.afterNames}] on ${drift.label} reload`
+          `${drift.node}: widgets ${drift.before} [${drift.beforeNames.join(',')}] -> ${drift.after} [${drift.afterNames.join(',')}] on ${drift.label} reload`
         )
+      }
+      for (const change of result.dynamicTopologyChanges) {
+        const drifts = namedWidgetValueDrifts(
+          change.beforeValues,
+          change.afterValues
+        )
+        if (drifts === null) {
+          mismatches.push(
+            `${change.node}: no comparable named widget values across dynamic topology [${change.beforeNames.join(',')}] -> [${change.afterNames.join(',')}]`
+          )
+          continue
+        }
+        for (const drift of drifts)
+          mismatches.push(
+            `${change.node}.${drift.name}: named widget value ${JSON.stringify(drift.before)} -> ${JSON.stringify(drift.after)} across dynamic topology reload`
+          )
       }
       for (const [node, indices] of Object.entries(result.valueDrifts)) {
         const observed = observedValueDrift.get(node) ?? new Set<number>()

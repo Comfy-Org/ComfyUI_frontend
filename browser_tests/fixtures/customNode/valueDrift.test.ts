@@ -3,6 +3,7 @@ import {
   initializationSignalsForTypes,
   isCanvasPreviewImagePath,
   matchesTopologyExpectation,
+  namedWidgetValueDrifts,
   pendingRestoredPreviewWidgets,
   pendingRoundtripInitializations,
   rendererLedgerFor,
@@ -195,5 +196,40 @@ describe('staleValueDriftKeys', () => {
         { ExampleNode: ['button'], OtherNode: ['preview'] }
       )
     ).toEqual([])
+  })
+})
+
+describe('namedWidgetValueDrifts', () => {
+  it('compares surviving widgets by name when dependent widgets change', () => {
+    expect(
+      namedWidgetValueDrifts(
+        {
+          prompt_mode: 'point',
+          text_prompt: '_cn',
+          frame_idx: 1,
+          score_threshold: 0.35
+        },
+        {
+          prompt_mode: 'point',
+          frame_idx: 1,
+          score_threshold: 0.35
+        }
+      )
+    ).toEqual([])
+
+    expect(
+      namedWidgetValueDrifts(
+        { mode: 'basic', strength: 1 },
+        { mode: 'advanced', strength: 1, detail: 0.5 }
+      )
+    ).toEqual([{ name: 'mode', before: 'basic', after: 'advanced' }])
+  })
+
+  it('fails closed when named values cannot be compared', () => {
+    expect(namedWidgetValueDrifts(undefined, { mode: 'basic' })).toBeNull()
+    expect(namedWidgetValueDrifts(['basic'], { mode: 'basic' })).toBeNull()
+    expect(
+      namedWidgetValueDrifts({ mode: 'basic' }, { detail: 0.5 })
+    ).toBeNull()
   })
 })
