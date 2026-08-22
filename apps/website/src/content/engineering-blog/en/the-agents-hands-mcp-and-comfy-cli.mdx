@@ -1,0 +1,70 @@
+---
+title: "The Agent's Hands: MCP, comfy-cli, and the Tool Surface"
+description: "There are two doors into Comfy Cloud for an AI agent — one for agents we don't control, one for the agent we do. Knowing which is which resolves a whole family of recurring confusions."
+author: Matt Miller
+date: 2026-08-22
+heroDiagram: two-doors
+sourceSection: "Understand This System — 19 · The agent's hands: MCP, comfy-cli, and the tool surface"
+---
+
+An agent is a loop with tools. Change the tools and you change the agent's behavior, without touching the model at all. This post is about what those tools physically are in Comfy's system — and the short version is: there are two doors into the same platform, and knowing which is which resolves a whole family of recurring confusions.
+
+## The two doors
+
+**Door 1 — MCP, for agents we don't control.** MCP (Model Context Protocol) is an open standard: a way for any AI assistant to discover and call another product's tools. Comfy's MCP server lives at `cloud.comfy.org/mcp`. A user of Claude Code, Cursor, or any other MCP-aware assistant adds it with one command, and their agent can now generate images, run workflows, and browse models on Comfy Cloud. We don't control that agent's model, prompts, or loop — only the tools we hand it.
+
+**Door 2 — comfy-cli, for the agent we do control.** Comfy's own in-app agent doesn't speak MCP to itself. Its backend service shells out to one command-line program, `comfy-cli`, which does the actual work and reports back in structured JSON. The same binary targets the cloud or a local ComfyUI install with one flag — `--where cloud` or `--where local` — which is precisely how Comfy keeps "the same contract, different homes" true at the tool layer.
+
+> Misconception worth killing early: "the MCP server is the agent's tool layer." It's *a* tool layer — the one for external agents. Comfy's own in-app agent goes through `comfy-cli` instead. Confusing the two makes a lot of internal conversation unreadable, because they really are two different doors, tested separately.
+
+<TwoDoorsDiagram />
+
+## Why one CLI is a design decision, not a convenience
+
+`comfy-cli` shows up in three places that would otherwise drift apart:
+
+| Who runs it | Why |
+|---|---|
+| The agent service (production) | Every tool call and every minted edit operation goes through it, including stamping operations for the CRDT pipeline. |
+| The evals (quality control) | An eval driver points a test agent at the exact same surface production uses, so the release gate is only honest because the thing under test is the thing that ships. |
+| The local surface (Desktop) | Same binary, `--where local`. No second implementation to keep in sync. |
+
+One surface means one place to add a tool, one place to version it, and one behavior for the release gate to guard. There's also a small but telling detail: `comfy-cli` carries a checker that verifies the instruction files agents read haven't silently drifted out of date. The tool layer polices the knowledge layer.
+
+## Inside comfy-cli: three contracts, not just a program
+
+Calling `comfy-cli` "a CLI" undersells it. What makes it a tool surface an agent can actually trust is that its behavior is pinned down by written, CI-enforced contracts.
+
+**Contract 1 — the output is a protocol.** Run any agent-facing command with `--json` and stdout becomes strict NDJSON: one JSON object per line, ending with exactly one envelope carrying `ok`, the result data, or a structured error with a registered error code. `stderr` is explicitly non-contractual — humans only. This is why the backend service can shell out and *parse*, rather than scrape.
+
+**Contract 2 — the edit vocabulary is frozen.** The semantic operations minted for the CRDT pipeline (see our companion post on [the stamp that replaced the clock](/engineering-blog/crdts-from-scratch/)) are minted here, and the vocabulary is formally versioned: exactly six kinds of operation, each with normative idempotency and conflict rules. Downstream consumers cite the frozen spec by commit hash, not by branch, and a contract test fails the build the moment the spec and the actual dispatch code disagree.
+
+**Contract 3 — derived truths have one computer.** The document stores widget values by name; the renderer needs them by index. That mapping is derived from node schemas by exactly one program, and every consumer reads the same versioned output rather than re-deriving it.
+
+## CQL: how the agent knows what plugs into what
+
+The deepest thing inside `comfy-cli` is CQL — Comfy Query Language. A ComfyUI workflow is a typed graph: a `LATENT` output cannot feed an `IMAGE` input, and the type system is the whole game. An agent building a workflow constantly needs answers — what can feed this node, what can consume its outputs, is there a chain from a checkpoint to a finished image. A model's training data half-knows these answers, and hallucinates the other half. CQL actually knows.
+
+A ComfyUI server, cloud or local, describes every installed node in one schema file. CQL parses that into an indexed compatibility graph and answers queries against it:
+
+| Question an agent asks | What answers it |
+|---|---|
+| "What can feed this node's inputs?" | An upstream-compatibility query |
+| "Get me from MODEL to IMAGE" | A routed path search — or a fast, honest failure |
+| "Is this workflow legal?" | A full validation pass that type-checks every link |
+
+The engine handles the genuinely ugly parts of a real node ecosystem — inputs that grow new slots depending on a chosen option, upload-backed inputs whose valid values are just whatever files are installed, wildcard ports that match any type. Path-finding is bounded so an impossible request fails fast instead of hanging.
+
+> Why this matters for the whole system: CQL is the reason the agent's knowledge of the node graph can be *checked* rather than *believed*. When the model wants to wire two nodes together, the tool layer answers "legal or not" from the actual installed schema — not from training data that may be a year stale. Facts that change live in a queryable index, not in the model's weights.
+
+## What the MCP door does that's worth stealing
+
+The MCP server is remote and multi-tenant by nature, which forced some patterns that are genuinely good engineering wherever you'd apply them:
+
+- **Per-session isolation** — every connected agent gets its own session state; two users' agents can't see each other.
+- **Signed URLs instead of file custody** — when an agent produces or needs a file, the server hands out a short-lived signed URL and the agent's side fetches it directly. The server never holds user files on disk.
+- **A feedback nudge and no-PII analytics** — the server asks the connected agent "how did that go?" and records outcome funnels, including *why* a request was rejected, without storing personal data.
+
+## The takeaway
+
+Two doors, one underlying platform. External agents get an open, standardized protocol with none of Comfy's internal assumptions baked in. Comfy's own in-app agent gets a purpose-built CLI with three written, CI-enforced contracts and a query engine that knows the real, currently-installed node graph instead of guessing from training data. Neither door is the "real" one — they're built for genuinely different jobs, tested separately, and that separation is exactly what keeps them both honest.
