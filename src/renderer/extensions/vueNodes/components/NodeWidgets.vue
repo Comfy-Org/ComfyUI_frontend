@@ -26,8 +26,17 @@
       <div
         v-if="widget.visible"
         data-testid="node-widget"
-        class="lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch pr-3"
+        :class="
+          cn(
+            'lg-node-widget group relative col-span-full grid grid-cols-subgrid pr-3',
+            widget.hasGridOverride ? 'items-center' : 'items-stretch'
+          )
+        "
       >
+        <div
+          class="absolute inset-x-0 bottom-0 h-1 cursor-ns-resize opacity-0 transition-opacity hover:bg-node-stroke hover:opacity-50"
+          @pointerdown="handleResizePointerDown($event, widget.name)"
+        />
         <!-- Widget Input Slot Dot -->
         <div
           :class="
@@ -91,6 +100,7 @@ import AppInput from '@/renderer/extensions/linearMode/AppInput.vue'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { useProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
+import { useWidgetRowResize } from '@/renderer/extensions/vueNodes/composables/useWidgetRowResize'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import InputSlot from './InputSlot.vue'
@@ -134,5 +144,19 @@ const { canSelectInputs, gridTemplateRows, nodeType, processedWidgets } =
 // Tracks widget-row growth that the node-level RO can't see
 if (nodeData?.id != null) {
   useVueElementTracking(nodeData.id, 'widgets-grid')
+}
+
+const { startResize } = useWidgetRowResize()
+
+function handleResizePointerDown(
+  event: PointerEvent,
+  widgetOverrideKey: string
+) {
+  const handle = event.currentTarget as HTMLElement
+  const rowElement = handle.closest(
+    "[data-testid='node-widget']"
+  ) as HTMLElement
+  if (!rowElement || nodeData?.id == null) return
+  startResize(event, nodeData.id, widgetOverrideKey, rowElement)
 }
 </script>

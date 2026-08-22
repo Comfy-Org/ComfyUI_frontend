@@ -52,6 +52,7 @@ import type {
   SimplifiedWidget,
   WidgetValue
 } from '@/types/simplifiedWidget'
+import { isValidGridTrack } from '@/utils/widgetGridOverrides'
 
 const TOOLTIP_VALUE_TYPES = ['asset', 'combo', 'number', 'text'] as const
 type TooltipValueType = (typeof TOOLTIP_VALUE_TYPES)[number]
@@ -62,6 +63,7 @@ function isTooltipValueType(val: unknown): val is TooltipValueType {
 interface ProcessedWidget {
   advanced: boolean
   handleContextMenu: (e: PointerEvent) => void
+  hasGridOverride: boolean
   hasLayoutSize: boolean
   hasError: boolean
   hidden: boolean
@@ -394,9 +396,12 @@ export function computeProcessedWidgets({
       )
     }
 
+    const hasGridOverride = !!nodeData.gridOverrides?.[widget.name]
+
     result.push({
       advanced: mergedOptions.advanced ?? false,
       handleContextMenu,
+      hasGridOverride,
       hasLayoutSize: widget.hasLayoutSize ?? false,
       hasError: hasWidgetError(
         widget,
@@ -475,13 +480,16 @@ export function useProcessedWidgets(
     processedWidgets.value.filter((w) => w.visible)
   )
 
-  const gridTemplateRows = computed((): string =>
-    visibleWidgets.value
-      .map((w) =>
-        shouldExpand(w.type) || w.hasLayoutSize ? 'auto' : 'min-content'
-      )
+  const gridTemplateRows = computed((): string => {
+    const overrides = nodeDataGetter()?.gridOverrides
+    return visibleWidgets.value
+      .map((w) => {
+        const override = overrides?.[w.name]
+        if (override && isValidGridTrack(override)) return override
+        return shouldExpand(w.type) || w.hasLayoutSize ? 'auto' : 'min-content'
+      })
       .join(' ')
-  )
+  })
 
   return {
     canSelectInputs,

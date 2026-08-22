@@ -33,6 +33,7 @@ import './slotDefaults'
 import './uploadAudio'
 import './uploadImage'
 import './webcamCapture'
+import './widgetGridOverrides'
 import './widgetInputs'
 
 // Cloud-only extensions - tree-shaken in OSS builds

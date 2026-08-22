@@ -41,6 +41,8 @@ import type {
 import type { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import { app } from '@/scripts/app'
+import type { WidgetGridOverrides } from '@/utils/widgetGridOverrides'
+import { readGridOverrides } from '@/utils/widgetGridOverrides'
 
 export interface WidgetSlotMetadata {
   index: number
@@ -115,6 +117,7 @@ export interface VueNodeData {
     ghost?: boolean
     pinned?: boolean
   }
+  gridOverrides?: WidgetGridOverrides
   hasErrors?: boolean
   inputs?: INodeInputSlot[]
   outputs?: INodeOutputSlot[]
@@ -132,6 +135,9 @@ export interface GraphNodeManager {
 
   // Access to original LiteGraph nodes (non-reactive)
   getNode(id: NodeId): LGraphNode | undefined
+
+  // Re-extract VueNodeData for fields not covered by tracked-property events
+  refreshNode(id: NodeId): void
 
   // Lifecycle methods
   cleanup(): void
@@ -467,6 +473,7 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
     flags: node.flags ? { ...node.flags } : undefined,
     color: node.color || undefined,
     bgcolor: node.bgcolor || undefined,
+    gridOverrides: readGridOverrides(node),
     resizable: node.resizable,
     shape: node.shape,
     showAdvanced: node.showAdvanced
@@ -826,9 +833,15 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     })
   }
 
+  const refreshNode = (id: NodeId) => {
+    const nodeRef = nodeRefs.get(id)
+    if (nodeRef) vueNodeData.set(id, extractVueNodeData(nodeRef))
+  }
+
   return {
     vueNodeData,
     getNode,
+    refreshNode,
     cleanup
   }
 }
