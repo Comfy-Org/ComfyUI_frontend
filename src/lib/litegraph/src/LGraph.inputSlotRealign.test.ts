@@ -7,7 +7,10 @@ import {
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { realignInputLinkSlots } from '@/lib/litegraph/src/linkDeduplication'
+import {
+  normalizeConfiguredTopology,
+  realignInputLinkSlots
+} from '@/lib/litegraph/src/linkDeduplication'
 import type {
   ExportedSubgraph,
   ISerialisedNode,
@@ -305,6 +308,27 @@ function assertLinksRealigned(graph: LGraph, targetNodeId: NodeId) {
     ).toBe(expectedLinkId)
   }
 }
+
+describe('normalizeConfiguredTopology', () => {
+  it('keeps the competing link referenced by the target input', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const data = savedWorkflow()
+    const target = data.nodes?.find((node) => node.id === 2)
+    if (!target?.inputs || !data.links) throw new Error('Invalid fixture')
+    target.inputs[0].link = 2
+    data.links[1].origin_id = 99
+    data.links[1].target_slot = 0
+
+    const normalized = normalizeConfiguredTopology(data)
+
+    expect(normalized.links?.map((link) => link.id)).toEqual([2, 3])
+    expect(normalized.nodes?.[1].inputs?.[0].link).toBe(2)
+    expect(console.warn).toHaveBeenCalledWith(
+      'Dropping competing link to an occupied input',
+      expect.objectContaining({ droppedLinkId: 2, survivorLinkId: 1 })
+    )
+  })
+})
 
 describe('LGraph.configure input slot realignment (#3348)', () => {
   beforeEach(() => {
@@ -624,6 +648,39 @@ describe('realignInputLinkSlots', () => {
     ).toBeUndefined()
     expect(store.getInputSlotLink(graphScopeOf(graph), target.id, 1)?.id).toBe(
       link.id
+    )
+  })
+
+  it('continues after one link cannot be realigned', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const graph = new LGraph()
+    const source = new LGraphNode('Source')
+    source.addOutput('out', 'number')
+    const target = new LGraphNode('Target')
+    target.addInput('first', 'number')
+    target.addInput('occupied', 'number')
+    target.addInput('third', 'number')
+    target.addInput('destination', 'number')
+    graph.add(source)
+    graph.add(target)
+    const blocked = source.connect(0, target, 0)!
+    source.connect(0, target, 1)
+    const movable = source.connect(0, target, 2)!
+    const nodeData = target.serialize()
+    nodeData.inputs = [
+      { ...nodeData.inputs![0], name: 'occupied', link: blocked.id },
+      { ...nodeData.inputs![1], name: 'removed', link: null },
+      { ...nodeData.inputs![2], link: null },
+      { ...nodeData.inputs![3], link: movable.id }
+    ]
+
+    realignInputLinkSlots(graph, [nodeData])
+
+    expect(blocked.target_slot).toBe(0)
+    expect(movable.target_slot).toBe(3)
+    expect(console.error).toHaveBeenCalledWith(
+      'Failed to realign input link slot',
+      expect.objectContaining({ code: 'occupied-target' })
     )
   })
 })

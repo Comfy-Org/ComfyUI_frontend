@@ -14,10 +14,14 @@ const logger = log.getLogger('arrangeForLegacyRender')
  */
 export function arrangeForLegacyRender(graph: LGraph): void {
   const rootGraphId = graph.rootGraph.id
+  const zIndexByNode = new Map(
+    graph._nodes.map((node) => [
+      node,
+      layoutStore.getNodeLayout(rootGraphId, node.id)?.zIndex ?? 0
+    ])
+  )
   graph._nodes.sort(
-    (a, b) =>
-      (layoutStore.getNodeLayout(rootGraphId, a.id)?.zIndex ?? 0) -
-      (layoutStore.getNodeLayout(rootGraphId, b.id)?.zIndex ?? 0)
+    (a, b) => (zIndexByNode.get(a) ?? 0) - (zIndexByNode.get(b) ?? 0)
   )
 
   for (const node of graph._nodes) {

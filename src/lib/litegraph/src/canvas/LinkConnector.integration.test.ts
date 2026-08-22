@@ -448,7 +448,7 @@ describe('LinkConnector Integration', () => {
       expect(connector.outputLinks.length).toBe(0)
 
       expect(disconnectedNode.outputs[0].links).toHaveLength(2)
-      expect(hasOutputNode.outputs[0].links).toBeNull()
+      expect(hasOutputNode.outputs[0].links).toEqual([])
 
       const reroutesAfter = disconnectedNode.outputs[0].links
         ?.map((linkId) => graph.links.get(linkId)!)

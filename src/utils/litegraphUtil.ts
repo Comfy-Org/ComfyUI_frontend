@@ -338,11 +338,10 @@ export function mapLiveWidgetsById(
   node: LGraphNode
 ): Map<WidgetId, IBaseWidget> {
   const byId = new Map<WidgetId, IBaseWidget>()
-  const duplicateIndexByKey = new Map<string, number>()
+  const duplicateIndexByName = new Map<string, number>()
   for (const widget of node.widgets ?? []) {
-    const duplicateKey = `${widget.name}:${widget.type}`
-    const duplicateIndex = duplicateIndexByKey.get(duplicateKey) ?? 0
-    duplicateIndexByKey.set(duplicateKey, duplicateIndex + 1)
+    const duplicateIndex = duplicateIndexByName.get(widget.name) ?? 0
+    duplicateIndexByName.set(widget.name, duplicateIndex + 1)
     const id = getWidgetIdForNode(node, widget, duplicateIndex)
     if (id) byId.set(id, widget)
   }

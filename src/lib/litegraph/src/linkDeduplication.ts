@@ -59,29 +59,55 @@ export function normalizeConfiguredTopology<T extends ConfiguredGraph>(
 ): T {
   if (!data.links?.length) return data
 
-  const survivorByTarget = new Map<string, ReturnType<typeof linkFields>>()
+  const referencedInputLinks = new Set(
+    (data.nodes ?? []).flatMap((node) =>
+      (node.inputs ?? []).flatMap((input) =>
+        input.link == null ? [] : [input.link]
+      )
+    )
+  )
+  const survivorIndexByTarget = new Map<string, number>()
   const survivorByDuplicateId = new Map<number, number>()
-  const links = data.links.filter((link) => {
+  const links: ConfiguredLink[] = []
+  for (const link of data.links) {
     const fields = linkFields(link)
     const key = `${toNodeId(fields.target_id)}:${fields.target_slot}`
-    const survivor = survivorByTarget.get(key)
-    if (!survivor) {
-      survivorByTarget.set(key, fields)
-      return true
+    const survivorIndex = survivorIndexByTarget.get(key)
+    if (survivorIndex === undefined) {
+      survivorIndexByTarget.set(key, links.length)
+      links.push(link)
+      continue
     }
-    if (
+    const survivor = linkFields(links[survivorIndex])
+    const isExactDuplicate =
       toNodeId(survivor.origin_id) === toNodeId(fields.origin_id) &&
       survivor.origin_slot === fields.origin_slot
+    if (!isExactDuplicate) {
+      console.warn('Dropping competing link to an occupied input', {
+        droppedLinkId: fields.id,
+        survivorLinkId: survivor.id,
+        targetNodeId: fields.target_id,
+        targetSlot: fields.target_slot
+      })
+    }
+
+    if (
+      !isExactDuplicate &&
+      referencedInputLinks.has(fields.id) &&
+      !referencedInputLinks.has(survivor.id)
     ) {
+      links[survivorIndex] = link
+      for (const [id, survivorId] of survivorByDuplicateId) {
+        if (survivorId === survivor.id) survivorByDuplicateId.set(id, fields.id)
+      }
+      survivorByDuplicateId.set(survivor.id, fields.id)
+    } else {
       survivorByDuplicateId.set(fields.id, survivor.id)
     }
-    return false
-  })
+  }
   if (links.length === data.links.length) return data
 
   const normalized = Object.assign({}, data, { links })
-  if (!survivorByDuplicateId.size) return normalized
-
   const cloned = cloneDeep(normalized)
   remapLinkReferences(cloned, survivorByDuplicateId)
   return cloned
@@ -156,7 +182,24 @@ export function realignInputLinkSlots(
         updates
       )
       if (!result.ok) {
-        console.error('Failed to realign input link slots', result.error)
+        for (const { link, slot } of moved) {
+          const fallback = useLinkStore().updateEndpoint(
+            graphScopeOf(graph),
+            link._state,
+            { targetSlot: slot }
+          )
+          if (!fallback.ok) {
+            console.error('Failed to realign input link slot', fallback.error)
+            continue
+          }
+          node.onConnectionsChange?.(
+            NodeSlotType.INPUT,
+            slot,
+            true,
+            link,
+            node.inputs[slot]
+          )
+        }
         break
       }
       for (const { link, slot } of moved) {

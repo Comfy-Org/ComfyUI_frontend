@@ -55,6 +55,15 @@ describe('NodeOutputSlot deprecated links getter', () => {
     expect(source.outputs[0].links).toBeNull()
   })
 
+  it('retains an empty array after disconnecting a specific target', () => {
+    const { source, target } = createConnectedGraph()
+    source.connect(0, target, 0)
+
+    source.disconnectOutput(0, target)
+
+    expect(source.outputs[0].links).toEqual([])
+  })
+
   it('returns null for an unconnected slot and for a graphless node', () => {
     const { source } = createConnectedGraph()
     expect(source.outputs[0].links).toBeNull()
