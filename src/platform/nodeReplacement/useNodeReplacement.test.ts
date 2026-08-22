@@ -3,12 +3,12 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
-import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import {
   canTransferReplacementOwnership,
   transferReplacementOwnership
-} from '@/lib/litegraph/src/LGraphNode'
+} from '@/core/graph/nodeShell/nodeShellState'
+import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
 import type { MissingNodeType } from '@/types/comfy'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
@@ -24,7 +24,7 @@ vi.mock('@/lib/litegraph/src/litegraph', () => ({
   }
 }))
 
-vi.mock('@/lib/litegraph/src/LGraphNode', () => ({
+vi.mock('@/core/graph/nodeShell/nodeShellState', () => ({
   canTransferReplacementOwnership: vi.fn(() => true),
   transferReplacementOwnership: vi.fn(() => true)
 }))
