@@ -143,7 +143,7 @@ vi.mock('@/platform/distribution/types', () => ({
 }))
 
 const teamWorkspaceStoreMocks = reactive({
-  initState: 'uninitialized' as 'uninitialized' | 'ready',
+  initState: 'uninitialized' as 'uninitialized' | 'ready' | 'error',
   activeWorkspaceId: null as string | null
 })
 
@@ -876,6 +876,27 @@ describe('useWorkflowPersistenceV2', () => {
 
     teamWorkspaceStoreMocks.activeWorkspaceId = 'workspace-c'
     teamWorkspaceStoreMocks.initState = 'ready'
+    await nextTick()
+
+    expect(completeTransitionSpy).toHaveBeenCalledOnce()
+  })
+
+  it('releases the write fence when workspace initialization fails permanently', async () => {
+    distributionMocks.isCloud = true
+    const completeTransitionSpy = vi.spyOn(
+      storageIO,
+      'completeWorkflowLogoutTransition'
+    )
+    mountWorkflowPersistence()
+
+    const onLogout = currentUserMocks.onUserLogout.mock.calls[0][0]
+    const onUserResolved = currentUserMocks.onUserResolved.mock.calls[0][0]
+    onLogout()
+    onUserResolved({ id: 'user-a' })
+
+    expect(completeTransitionSpy).not.toHaveBeenCalled()
+
+    teamWorkspaceStoreMocks.initState = 'error'
     await nextTick()
 
     expect(completeTransitionSpy).toHaveBeenCalledOnce()

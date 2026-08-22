@@ -158,16 +158,21 @@ export function useWorkflowPersistenceV2() {
     if (!isCloud) return
     stopPendingWorkspaceReadinessWatcher()
 
-    const isWorkspaceReady = () =>
-      teamWorkspaceStore.initState === 'ready' &&
-      teamWorkspaceStore.activeWorkspaceId !== null
-    if (isWorkspaceReady()) {
+    // Release the fence once initialization concludes either way: a resolved
+    // workspace, or a permanent init failure. Waiting on 'ready' alone would
+    // leave writes blocked for the rest of the session if init settles on
+    // 'error' (e.g. no workspaces available, retries exhausted).
+    const isWorkspaceInitConcluded = () =>
+      (teamWorkspaceStore.initState === 'ready' &&
+        teamWorkspaceStore.activeWorkspaceId !== null) ||
+      teamWorkspaceStore.initState === 'error'
+    if (isWorkspaceInitConcluded()) {
       completeWorkflowLogoutTransition()
       return
     }
 
     stopWorkspaceReadinessWatcher = whenever(
-      isWorkspaceReady,
+      isWorkspaceInitConcluded,
       () => {
         stopWorkspaceReadinessWatcher = undefined
         completeWorkflowLogoutTransition()
