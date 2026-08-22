@@ -36,7 +36,9 @@ const {
   mockUpdateActiveWorkspace,
   mockSetWorkspaceBillingRail,
   mockLegacyStatus,
-  mockBillingStatus
+  mockBillingStatus,
+  mockActiveWorkspaceId,
+  mockWorkspaceTransitionGeneration
 } = vi.hoisted(() => ({
   mockIsPersonal: { value: true },
   mockBillingRail: { value: undefined as BillingRail | undefined },
@@ -62,7 +64,9 @@ const {
       subscription_tier: 'PRO',
       subscription_duration: 'MONTHLY'
     } as Partial<BillingStatusResponse>
-  }
+  },
+  mockActiveWorkspaceId: { value: 'personal-123' },
+  mockWorkspaceTransitionGeneration: { value: 0 }
 }))
 
 vi.mock('@vueuse/core', async (importOriginal) => {
@@ -91,8 +95,14 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', async () => {
       },
       get activeWorkspace() {
         return mockIsPersonal.value
-          ? { id: 'personal-123', type: 'personal' }
-          : { id: 'team-456', type: 'team' }
+          ? { id: mockActiveWorkspaceId.value, type: 'personal' }
+          : { id: mockActiveWorkspaceId.value, type: 'team' }
+      },
+      get activeWorkspaceId() {
+        return mockActiveWorkspaceId.value
+      },
+      get workspaceTransitionGeneration() {
+        return mockWorkspaceTransitionGeneration.value
       },
       get activeWorkspaceBillingRail() {
         return mockBillingRail.value
@@ -181,6 +191,8 @@ describe('useBillingContext', () => {
     remoteConfig.value = {}
     remoteConfigState.value = 'unloaded'
     mockIsPersonal.value = true
+    mockActiveWorkspaceId.value = 'personal-123'
+    mockWorkspaceTransitionGeneration.value = 0
     mockBillingRail.value = undefined
     mockSetWorkspaceBillingRail.mockImplementation(
       (_workspaceId: string, billingRail: BillingRail) => {
@@ -410,6 +422,37 @@ describe('useBillingContext', () => {
     await expect(context.reconcileSubscriptionSuccess()).rejects.toThrow(
       'status unavailable'
     )
+
+    expect(workspaceApi.getBillingBalance).not.toHaveBeenCalled()
+    expect(mockLegacyFetchBalance).not.toHaveBeenCalled()
+  })
+
+  it('does not reconcile after switching away and back', async () => {
+    remoteConfig.value = { legacy_billing_migration_enabled: true }
+    remoteConfigState.value = 'authenticated'
+    mockBillingRail.value = 'legacy_stripe'
+
+    const context = useBillingContext()
+    await nextTick()
+    vi.clearAllMocks()
+
+    let finishStatusRefresh!: (status: BillingStatusResponse) => void
+    vi.mocked(workspaceApi.getBillingStatus).mockReturnValueOnce(
+      new Promise((resolve) => {
+        finishStatusRefresh = resolve
+      })
+    )
+
+    const reconciliation = context.reconcileSubscriptionSuccess()
+    await vi.waitFor(() =>
+      expect(workspaceApi.getBillingStatus).toHaveBeenCalledOnce()
+    )
+    mockActiveWorkspaceId.value = 'personal-456'
+    mockWorkspaceTransitionGeneration.value++
+    mockActiveWorkspaceId.value = 'personal-123'
+    mockWorkspaceTransitionGeneration.value++
+    finishStatusRefresh(DEFAULT_BILLING_STATUS)
+    await reconciliation
 
     expect(workspaceApi.getBillingBalance).not.toHaveBeenCalled()
     expect(mockLegacyFetchBalance).not.toHaveBeenCalled()

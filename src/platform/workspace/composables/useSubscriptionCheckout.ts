@@ -983,6 +983,10 @@ export function useSubscriptionCheckout(
           teamCreditStopId: stop.id
         })
       }
+      const workspaceIdentity = {
+        id: workspaceStore.activeWorkspaceId,
+        transitionGeneration: workspaceStore.workspaceTransitionGeneration
+      }
       const response = await subscribe(planSlug, {
         teamCreditStopId: stop.id,
         billingCycle,
@@ -993,6 +997,14 @@ export function useSubscriptionCheckout(
           ? previewData.value.proration_at
           : undefined
       })
+      if (
+        workspaceIdentity.id !== workspaceStore.activeWorkspaceId ||
+        workspaceIdentity.transitionGeneration !==
+          workspaceStore.workspaceTransitionGeneration
+      ) {
+        activeCheckoutAttemptStartedAt = undefined
+        return
+      }
 
       if (response) {
         trackWorkspaceCheckoutStarted({
