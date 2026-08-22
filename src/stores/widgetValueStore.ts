@@ -202,6 +202,8 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   function getWidgetRenderState(
     widgetId: WidgetId
   ): WidgetRenderState | undefined {
+    if (!isWidgetId(widgetId)) return undefined
+
     const { graphId } = parseWidgetId(widgetId)
     return getGraphWidgetRenderStates(graphId).get(widgetId)
   }

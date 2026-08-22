@@ -367,10 +367,11 @@ describe('useWidgetValueStore', () => {
       }
     })
 
-    it('getWidget / setValue / deleteWidget tolerate un-keyable ids', () => {
+    it('read, update, and delete operations tolerate un-keyable ids', () => {
       const store = useWidgetValueStore()
       for (const id of malformedIds) {
         expect(store.getWidget(id)).toBeUndefined()
+        expect(store.getWidgetRenderState(id)).toBeUndefined()
         expect(store.setValue(id, 1)).toBe(false)
         expect(store.deleteWidget(id)).toBe(false)
       }
