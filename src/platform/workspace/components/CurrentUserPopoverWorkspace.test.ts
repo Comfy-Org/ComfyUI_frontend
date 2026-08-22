@@ -17,6 +17,7 @@ const state = vi.hoisted(() => ({
   isFreeTier: false,
   isCancelled: false,
   planSlug: 'pro-monthly' as string | null,
+  tier: null as string | null,
   canTopUp: false,
   canManageSubscription: false,
   canManageSubscriptionLifecycle: false,
@@ -62,7 +63,8 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     isFreeTier: computed(() => state.isFreeTier),
     subscription: computed(() => ({
       isCancelled: state.isCancelled,
-      planSlug: state.planSlug
+      planSlug: state.planSlug,
+      tier: state.tier
     })),
     balance: ref({ amountMicros: 100 }),
     isLoading: ref(false),
@@ -166,6 +168,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.isFreeTier = false
     state.isCancelled = false
     state.planSlug = 'pro-monthly'
+    state.tier = null
     state.canTopUp = false
     state.canManageSubscription = false
     state.canManageSubscriptionLifecycle = false
@@ -385,6 +388,40 @@ describe('CurrentUserPopoverWorkspace', () => {
     await user.click(screen.getByRole('button', { name: 'Resubscribe' }))
 
     expect(state.showPricingTable).toHaveBeenCalledOnce()
+  })
+
+  it('hides Resubscribe for a cancelled enterprise workspace', () => {
+    state.planSlug = 'enterprise_monthly'
+    state.isCancelled = true
+    state.canManageSubscription = true
+    state.canManageSubscriptionLifecycle = true
+    renderComponent('team')
+
+    expect(
+      screen.queryByRole('button', { name: 'Resubscribe' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('hides Plans & pricing for an enterprise workspace but keeps Manage plan', () => {
+    state.planSlug = 'enterprise_monthly'
+    state.canManageSubscription = true
+    renderComponent('team')
+
+    expect(
+      screen.queryByTestId('plans-pricing-menu-item')
+    ).not.toBeInTheDocument()
+    expect(screen.getByTestId('manage-plan-menu-item')).toBeInTheDocument()
+  })
+
+  it('hides Plans & pricing for an unrecognized tier but keeps Manage plan', () => {
+    state.tier = 'GALACTIC'
+    state.canManageSubscription = true
+    renderComponent('team')
+
+    expect(
+      screen.queryByTestId('plans-pricing-menu-item')
+    ).not.toBeInTheDocument()
+    expect(screen.getByTestId('manage-plan-menu-item')).toBeInTheDocument()
   })
 
   for (const workspaceType of ['personal', 'team'] as const) {

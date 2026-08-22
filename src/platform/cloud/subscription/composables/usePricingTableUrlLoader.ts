@@ -1,6 +1,11 @@
 import { useRoute, useRouter } from 'vue-router'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import {
+  isEnterprisePlanSlug,
+  isEnterpriseTier,
+  isUnknownTier
+} from '@/platform/cloud/subscription/constants/tierPricing'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import {
   clearPreservedQuery,
@@ -102,7 +107,8 @@ export function usePricingTableUrlLoader() {
   const route = useRoute()
   const router = useRouter()
   const subscriptionDialog = useSubscriptionDialog()
-  const { teamCreditStops, fetchPlans } = useBillingContext()
+  const { subscription, teamCreditStops, fetchPlans, fetchStatus } =
+    useBillingContext()
   const { permissions } = useWorkspaceUI()
 
   /** Reads `?pricing=`, strips it, and opens the table when the gate allows. */
@@ -139,6 +145,27 @@ export function usePricingTableUrlLoader() {
     if (typeof param !== 'string' || !param) return
 
     if (!permissions.value.canManageSubscription) return
+    // Enterprise is sales-managed: the pricing table never opens for it, even
+    // from a deep link. The loader can run before billing status resolves, so
+    // fetch it rather than deciding on an absent subscription.
+    if (!subscription.value) {
+      try {
+        await fetchStatus()
+      } catch (error) {
+        console.error(
+          '[usePricingTableUrlLoader] Failed to load billing status:',
+          error
+        )
+        return
+      }
+    }
+    if (
+      isEnterpriseTier(subscription.value?.tier) ||
+      isEnterprisePlanSlug(subscription.value?.planSlug) ||
+      isUnknownTier(subscription.value?.tier)
+    ) {
+      return
+    }
 
     const teamCheckoutRequest = getTeamCheckoutRequest(
       param,

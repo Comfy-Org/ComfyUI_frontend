@@ -28,6 +28,7 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     canAccessSubscriptionFeatures: { value: true },
     isTeamPlan: { value: false },
     tier: { value: 'STANDARD' },
+    subscription: { value: null },
     type: { value: 'legacy' }
   })
 }))

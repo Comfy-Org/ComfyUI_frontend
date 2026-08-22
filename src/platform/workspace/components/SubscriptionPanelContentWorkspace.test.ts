@@ -118,6 +118,8 @@ const personalUiConfig: MenuUiConfig = {
 const mockUiConfig = ref<MenuUiConfig>(ownerUiConfig)
 
 const mockSubscriptionTier = ref<SubscriptionInfo['tier']>('PRO')
+const runtimeTier = (tier: string) =>
+  tier as unknown as SubscriptionInfo['tier']
 const mockPlanSlug = ref('team-monthly')
 const mockHasTeamPlan = ref(true)
 const mockPlans = ref<Plan[]>([
@@ -389,6 +391,85 @@ describe('SubscriptionPanelContentWorkspace', () => {
       'data-show-invoice-history',
       'true'
     )
+  })
+
+  it('renders Enterprise without price, benefits, or a plan-change action', () => {
+    mockHasTeamPlan.value = false
+    mockPlanSlug.value = 'enterprise_monthly'
+    mockCurrentTeamCreditStop.value = null
+    renderComponent()
+
+    expect(screen.getByText('Enterprise')).toBeInTheDocument()
+    expect(
+      screen.queryByText('View more details about plans & pricing')
+    ).not.toBeInTheDocument()
+    expect(screen.queryByText('$665')).not.toBeInTheDocument()
+    expect(screen.queryByText('USD / mo')).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /change plan|upgrade plan/i })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByText(`Renews on ${formatPanelDate(RENEWAL_DATE_ISO)}`)
+    ).toBeInTheDocument()
+  })
+
+  it('hides Reactivate for a cancelled enterprise plan', () => {
+    mockHasTeamPlan.value = false
+    mockPlanSlug.value = 'enterprise_monthly'
+    mockCurrentTeamCreditStop.value = null
+    mockSubscriptionStatus.value = 'canceled'
+    renderComponent()
+
+    expect(
+      screen.queryByRole('button', { name: /reactivate/i })
+    ).not.toBeInTheDocument()
+  })
+
+  it('offers no subscribe or reactivate path for an ended enterprise plan', () => {
+    mockHasTeamPlan.value = false
+    mockPlanSlug.value = 'enterprise_monthly'
+    mockCurrentTeamCreditStop.value = null
+    mockSubscriptionStatus.value = 'ended'
+    mockIsActiveSubscription.value = false
+    renderComponent()
+
+    expect(screen.getByText('Enterprise')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /subscribe|reactivate/i })
+    ).not.toBeInTheDocument()
+  })
+
+  it('renders an unrecognized tier as Current plan without catalog content', () => {
+    mockHasTeamPlan.value = false
+    mockSubscriptionTier.value = runtimeTier('GALACTIC')
+    mockPlanSlug.value = 'galactic_monthly'
+    mockCurrentTeamCreditStop.value = null
+    renderComponent()
+
+    expect(screen.getByText('Current plan')).toBeInTheDocument()
+    expect(screen.queryByText('$665')).not.toBeInTheDocument()
+    expect(screen.queryByText('USD / mo')).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('View more details about plans & pricing')
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /change plan|upgrade plan/i })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByText(`Renews on ${formatPanelDate(RENEWAL_DATE_ISO)}`)
+    ).toBeInTheDocument()
+  })
+
+  it('labels a scheduled change to Enterprise outside the self-serve catalog', () => {
+    mockScheduledPlanSlug.value = 'enterprise_monthly'
+    mockChangeAt.value = END_DATE_ISO
+    renderComponent()
+
+    expect(
+      screen.getByText(
+        `Changes to Enterprise on ${formatPanelDate(END_DATE_ISO)}`
+      )
+    ).toBeInTheDocument()
   })
 
   it('shows a scheduled plan change instead of the renewal date', () => {

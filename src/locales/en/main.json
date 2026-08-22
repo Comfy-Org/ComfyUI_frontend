@@ -2829,6 +2829,7 @@
     "planLoadError": "We couldn't load your plan details.",
     "planLoadErrorRetry": "Try again",
     "teamPlanName": "Team",
+    "unknownTierName": "Current plan",
     "teamPlanIncludes": "Your plan includes everything in {plan}, plus:",
     "inactiveTeamTitle": "Inactive team subscription",
     "inactiveTeamDescription": "Reactivate your team plan to add more members and run workflows",
@@ -2865,6 +2866,9 @@
     "tiers": {
       "free": {
         "name": "Free"
+      },
+      "enterprise": {
+        "name": "Enterprise"
       },
       "founder": {
         "name": "Founder's Edition"

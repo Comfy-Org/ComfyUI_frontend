@@ -4,6 +4,11 @@ import { useI18n } from 'vue-i18n'
 import type { MenuItem } from 'primevue/menuitem'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import {
+  isEnterprisePlanSlug,
+  isEnterpriseTier,
+  isUnknownTier
+} from '@/platform/cloud/subscription/constants/tierPricing'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useDialogService } from '@/services/dialogService'
 
@@ -62,6 +67,12 @@ export function useWorkspaceMenuItems() {
     void showLeaveWorkspaceDialog()
   }
 
+  const isEnterprisePlan = computed(
+    () =>
+      isEnterpriseTier(subscription.value?.tier) ||
+      isEnterprisePlanSlug(subscription.value?.planSlug)
+  )
+
   const canCancelPlan = computed(
     () =>
       permissions.value.canManageSubscriptionLifecycle &&
@@ -70,12 +81,16 @@ export function useWorkspaceMenuItems() {
           billingStatus.value === 'paused') &&
           Boolean(subscription.value?.planSlug))) &&
       !isSubscriptionCancelled.value &&
-      !isFreeTier.value
+      !isFreeTier.value &&
+      !isEnterprisePlan.value &&
+      !isUnknownTier(subscription.value?.tier)
   )
 
   const canDeleteWorkspace = computed(
     () =>
-      permissions.value.canManageSubscription && !isInPersonalWorkspace.value
+      permissions.value.canManageSubscription &&
+      !isInPersonalWorkspace.value &&
+      !isEnterprisePlan.value
   )
 
   const deleteTooltip = computed(() => {

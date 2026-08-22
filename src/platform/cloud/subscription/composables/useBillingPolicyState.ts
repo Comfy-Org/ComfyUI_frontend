@@ -2,6 +2,10 @@ import { computed } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import type { IngestSubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
+import {
+  isEnterprisePlanSlug,
+  isEnterpriseTier
+} from '@/platform/cloud/subscription/constants/tierPricing'
 import { isCloud } from '@/platform/distribution/types'
 
 import type { BillingPolicyState } from '../billingPolicyState'
@@ -15,8 +19,22 @@ export function deriveBillingPolicyState(input: {
   canAccessSubscriptionFeatures: boolean
   isTeamPlan: boolean
   tier: IngestSubscriptionTier | null
+  planSlug?: string | null
 }): BillingPolicyState {
   const distribution = input.isCloud ? 'Cloud' : 'Local'
+
+  // ENTERPRISE arrives as a runtime string before the generated enum carries
+  // it. It is a workspace-level plan and never self-serve, so it takes the
+  // team policy states in both the active and lapsed cases — classifying a
+  // lapsed enterprise as plain WithoutActiveSubscription would expose the
+  // personal subscribe upsell.
+  if (isEnterpriseTier(input.tier) || isEnterprisePlanSlug(input.planSlug)) {
+    return {
+      kind: input.canAccessSubscriptionFeatures
+        ? `${distribution}AndTeam`
+        : `${distribution}EnterpriseWithoutActiveSubscription`
+    }
+  }
 
   if (input.isTeamPlan || input.tier === 'TEAM') {
     return {
@@ -43,8 +61,10 @@ export function deriveBillingPolicyState(input: {
       return { kind: `${distribution}AndFounders` }
     case null:
       return { kind: `${distribution}AndUnknown` }
-    default:
-      return input.tier satisfies never
+    default: {
+      input.tier satisfies never
+      return { kind: `${distribution}AndUnknown` }
+    }
   }
 }
 
@@ -54,7 +74,7 @@ export function deriveBillingPolicyState(input: {
  * and the local backend stay exactly as they are today.
  */
 export function useBillingPolicyState() {
-  const { canAccessSubscriptionFeatures, isTeamPlan, tier } =
+  const { canAccessSubscriptionFeatures, isTeamPlan, tier, subscription } =
     useBillingContext()
 
   const billingPolicyState = computed<BillingPolicyState>(() =>
@@ -62,7 +82,8 @@ export function useBillingPolicyState() {
       isCloud,
       canAccessSubscriptionFeatures: canAccessSubscriptionFeatures.value,
       isTeamPlan: isTeamPlan.value,
-      tier: tier.value
+      tier: tier.value,
+      planSlug: subscription.value?.planSlug
     })
   )
 

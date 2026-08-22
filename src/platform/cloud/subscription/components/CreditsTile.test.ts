@@ -6,6 +6,7 @@ import { createI18n } from 'vue-i18n'
 
 import type { BalanceInfo, SubscriptionInfo } from '@/composables/billing/types'
 import CreditsTile from '@/platform/cloud/subscription/components/CreditsTile.vue'
+import type { IngestSubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { TeamCreditStopSummary } from '@/platform/workspace/api/workspaceApi'
 
 type Balance = Pick<
@@ -17,6 +18,8 @@ type Subscription = Pick<SubscriptionInfo, 'duration' | 'renewalDate'> & {
 }
 type TeamStop = TeamCreditStopSummary
 type CustomerEventsResult = { events: { event_type: string }[] } | null
+
+const runtimeTier = (tier: string) => tier as unknown as IngestSubscriptionTier
 
 const state = vi.hoisted(() => ({
   balance: null as Balance | null,
@@ -337,6 +340,8 @@ describe('CreditsTile', () => {
 
   it('shows disabled credit details for an inactive plan', () => {
     activeProSubscription()
+    state.canAccessSubscriptionFeatures = false
+    state.tier = null
     const { container } = renderTile({ inactivePlan: true })
 
     expect(container.textContent).toContain('0remaining')
@@ -345,6 +350,31 @@ describe('CreditsTile', () => {
       'Reactivate your plan to use these credits'
     )
     expect(screen.queryByText('Add credits')).toBeNull()
+  })
+
+  it('allows an inactive Enterprise workspace to add credits', () => {
+    activeProSubscription()
+    state.canAccessSubscriptionFeatures = false
+    state.tier = runtimeTier('ENTERPRISE')
+    const { container } = renderTile({ inactivePlan: true })
+
+    expect(container.textContent).not.toContain(
+      'Reactivate your plan to use these credits'
+    )
+    expect(screen.getByText('Add credits')).toBeInTheDocument()
+  })
+
+  it('does not borrow a catalog monthly pool for an unrecognized tier', () => {
+    activeProSubscription()
+    state.tier = runtimeTier('GALACTIC')
+    state.subscription = {
+      tier: runtimeTier('GALACTIC'),
+      duration: 'MONTHLY',
+      renewalDate: '2026-02-20T12:00:00Z'
+    }
+    const { container } = renderTile()
+
+    expect(container.textContent).not.toContain('left of')
   })
 
   it('shows only the balance with no breakdown when there is no active subscription', () => {
