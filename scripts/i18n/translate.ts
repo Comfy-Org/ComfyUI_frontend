@@ -1,10 +1,6 @@
 import OpenAI from 'openai'
 
-import type {
-  OutputLocale,
-  ReasoningEffort,
-  TranslationPipelineConfig
-} from './config'
+import type { OutputLocale, TranslationPipelineConfig } from './config'
 import { tokenErrors } from './protected-tokens'
 
 export interface TranslationItem {
@@ -22,7 +18,7 @@ export type TranslateBatch = (
 
 const defaultRequestTimeoutMs = 120_000
 const maxNetworkRetries = 3
-const maxMalformedResponseRetries = 3
+const maxMalformedResponseRetries = 1
 
 // Unlike es-toolkit's mapAsync, which dispatches every item up front, this
 // pool stops dispatching once any task fails so a fatal error does not keep
@@ -112,9 +108,10 @@ function parseBatchResponse(content: string): Record<string, string> {
 interface OpenAiTranslatorOptions {
   apiKey: string
   model: string
-  reasoningEffort: ReasoningEffort
+  reasoningEffort: TranslationPipelineConfig['reasoningEffort']
   glossary: string
   fetchFn?: typeof fetch
+  onCompletion?: (completion: OpenAI.ChatCompletion) => void
   requestTimeoutMs?: number
 }
 
@@ -127,7 +124,11 @@ export function createOpenAiTranslator(
     timeout: options.requestTimeoutMs ?? defaultRequestTimeoutMs,
     maxRetries: maxNetworkRetries
   })
-  return async (locale, items) => {
+
+  async function translateBatch(
+    locale: OutputLocale,
+    items: TranslationItem[]
+  ): Promise<Record<string, string>> {
     let lastError = new Error('translation request was not attempted')
     for (let attempt = 0; attempt <= maxMalformedResponseRetries; attempt++) {
       const completion = await client.chat.completions.create({
@@ -142,12 +143,18 @@ export function createOpenAiTranslator(
           { role: 'user', content: JSON.stringify({ items }) }
         ]
       })
+      options.onCompletion?.(completion)
       const choice = completion.choices[0]
       if (choice?.finish_reason === 'length') {
-        lastError = new Error(
-          'OpenAI response was truncated (finish_reason "length"); lower maxItemsPerRequest or maxSourceCharsPerRequest'
-        )
-        continue
+        if (items.length === 1) {
+          throw new Error(
+            'OpenAI response was truncated (finish_reason "length"); lower maxItemsPerRequest or maxSourceCharsPerRequest'
+          )
+        }
+        const splitIndex = Math.ceil(items.length / 2)
+        const first = await translateBatch(locale, items.slice(0, splitIndex))
+        const second = await translateBatch(locale, items.slice(splitIndex))
+        return { ...first, ...second }
       }
       const content = choice?.message.content
       if (typeof content !== 'string') {
@@ -162,6 +169,8 @@ export function createOpenAiTranslator(
     }
     throw lastError
   }
+
+  return translateBatch
 }
 
 export async function translateLocaleItems(
