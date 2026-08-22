@@ -153,6 +153,11 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
 
     const existing = getWidget(widgetId)
     if (existing && existing.type === init.type) {
+      const value = existing.value
+      Object.assign(existing, init, {
+        value,
+        y: init.y ?? existing.y
+      })
       appendNodeWidgetOrder(widgetId)
       return existing as WidgetState<TValue>
     }
