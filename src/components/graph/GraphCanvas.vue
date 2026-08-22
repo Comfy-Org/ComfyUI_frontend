@@ -75,7 +75,7 @@
   >
     <KeepAlive v-for="nodeData in rawNodes" :key="nodeData.id">
       <LGraphNode
-        v-if="activeNodeIds.has(nodeData.id)"
+        v-if="renderedNodeIds.has(nodeData.id)"
         :node-data="nodeData"
         :error="
           executionErrorStore.lastExecutionErrorNodeId === nodeData.id
@@ -86,6 +86,12 @@
       />
     </KeepAlive>
   </TransformPane>
+
+  <NodeBoxOverlay
+    v-if="shouldRenderVueNodes && comfyAppReady && isLowQuality"
+    :get-boxes="getNodeBoxes"
+    :content-version="boxContentVersion"
+  />
 
   <LinkOverlayCanvas
     v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
@@ -178,25 +184,36 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useWorkflowAutoSave } from '@/platform/workflow/persistence/composables/useWorkflowAutoSave'
 import { useWorkflowPersistenceV2 as useWorkflowPersistence } from '@/platform/workflow/persistence/composables/useWorkflowPersistenceV2'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculations'
+import type { NodeBox } from '@/renderer/core/canvas/nodeBoxRenderer'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import type { Bounds, NodeId } from '@/renderer/core/layout/types'
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
 import { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
+import NodeBoxOverlay from '@/renderer/extensions/vueNodes/components/NodeBoxOverlay.vue'
+import { useLowQualityRendering } from '@/renderer/extensions/vueNodes/composables/useLowQualityRendering'
 import {
   requestSlotLayoutSyncForAllNodes,
   setExpectedRenderedNodeIds
 } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { useViewportKeepAlive } from '@/renderer/extensions/vueNodes/composables/useViewportKeepAlive'
 import { useViewportKeepAlivePins } from '@/renderer/extensions/vueNodes/composables/useViewportKeepAlivePins'
+import { createNodeBox } from '@/renderer/extensions/vueNodes/utils/createNodeBox'
+import {
+  applyLightThemeColor,
+  isRenderableColor
+} from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { UnauthorizedError } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { IS_CONTROL_WIDGET, updateControlWidgetLabel } from '@/scripts/widgets'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useNewUserService } from '@/services/useNewUserService'
+import { isNodeExcludedFromCulling } from '@/services/vueNodeCullingService'
 import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
 import { storeToRefs } from 'pinia'
 
@@ -308,6 +325,48 @@ const rawNodes = computed((): VueNodeData[] =>
 const nodeIds = computed(() =>
   Array.from(vueNodeLifecycle.nodeManager.value?.vueNodeData?.keys() ?? [])
 )
+const nodeColors = computed(() => {
+  const colors = new Map<
+    NodeId,
+    { body?: string; title?: string } | undefined
+  >()
+  for (const node of rawNodes.value) {
+    const body = applyLightThemeColor(node.bgcolor)
+    const title = applyLightThemeColor(node.color)
+    colors.set(node.id, {
+      body: isRenderableColor(body) ? body : undefined,
+      title: isRenderableColor(title) ? title : undefined
+    })
+  }
+  return colors
+})
+const boxContentVersion = ref(0)
+watch(nodeColors, () => boxContentVersion.value++)
+
+const nodeBoxCache = new Map<NodeId, NodeBox>()
+let cachedLayoutVersion = -1
+let cachedGeometryVersion = -1
+let cachedContentVersion = -1
+let cachedNodeManager = vueNodeLifecycle.nodeManager.value
+
+function invalidateNodeBoxCache(): void {
+  const nodeManager = vueNodeLifecycle.nodeManager.value
+  if (
+    cachedLayoutVersion === layoutStore.layoutVersion &&
+    cachedGeometryVersion === layoutStore.nodeGeometryVersion &&
+    cachedContentVersion === boxContentVersion.value &&
+    cachedNodeManager === nodeManager
+  ) {
+    return
+  }
+
+  nodeBoxCache.clear()
+  cachedLayoutVersion = layoutStore.layoutVersion
+  cachedGeometryVersion = layoutStore.nodeGeometryVersion
+  cachedContentVersion = boxContentVersion.value
+  cachedNodeManager = nodeManager
+}
+
 const { pinnedNodeIds } = useViewportKeepAlivePins({
   getRoot: () => transformPaneRef.value?.element ?? null,
   getLinkConnector: () => canvasStore.canvas?.linkConnector
@@ -326,10 +385,76 @@ const { activeNodeIds } = useViewportKeepAlive({
   }),
   getNodeGeometryVersion: () => layoutStore.nodeGeometryVersion
 })
-watch(activeNodeIds, () => setExpectedRenderedNodeIds(activeNodeIds.value), {
-  immediate: true,
-  flush: 'post'
+const { isLowQuality } = useLowQualityRendering(
+  computed(() => canvasStore.canvas ?? undefined)
+)
+const lodPinnedNodeIds = shallowRef<ReadonlySet<NodeId>>(new Set())
+watch(isLowQuality, (lowQuality) => {
+  lodPinnedNodeIds.value = lowQuality
+    ? new Set(
+        [...pinnedNodeIds.value].filter((nodeId) =>
+          activeNodeIds.value.has(nodeId)
+        )
+      )
+    : new Set()
 })
+const renderedNodeIds = computed(() => {
+  if (!isLowQuality.value) return activeNodeIds.value
+
+  const nodeIds = new Set(lodPinnedNodeIds.value)
+  for (const nodeId of activeNodeIds.value) {
+    const nodeType =
+      vueNodeLifecycle.nodeManager.value?.vueNodeData.get(nodeId)?.type
+    if (isNodeExcludedFromCulling(nodeId, nodeType)) nodeIds.add(nodeId)
+  }
+  return nodeIds
+})
+watch(
+  renderedNodeIds,
+  () => setExpectedRenderedNodeIds(renderedNodeIds.value),
+  {
+    immediate: true,
+    flush: 'post'
+  }
+)
+
+function* getNodeBoxes(viewport: Bounds): Generator<NodeBox> {
+  invalidateNodeBoxCache()
+
+  const colors = nodeColors.value
+  const titleHeight = LiteGraph.NODE_TITLE_HEIGHT
+  const nodeManager = vueNodeLifecycle.nodeManager.value
+  const colourGetter = canvasStore.canvas?.colourGetter
+  const boxOptions = {
+    colourGetter,
+    getSlotPosition,
+    isSlotColorRenderable: isRenderableColor,
+    widgetHeight: LiteGraph.NODE_WIDGET_HEIGHT
+  }
+
+  const nodeIds = layoutStore.queryNodesInBounds({
+    ...viewport,
+    height: viewport.height + titleHeight
+  })
+
+  for (const nodeId of nodeIds) {
+    if (renderedNodeIds.value.has(nodeId)) continue
+
+    const cached = nodeBoxCache.get(nodeId)
+    if (cached) {
+      yield cached
+      continue
+    }
+
+    const node = nodeManager?.getNode(nodeId)
+    if (!node) continue
+
+    const box = createNodeBox(node, colors.get(nodeId), boxOptions)
+    nodeBoxCache.set(nodeId, box)
+    yield box
+  }
+}
+
 watch(
   () => linearMode.value,
   (isLinearMode) => {
@@ -344,6 +469,7 @@ watch(
     }
 
     layoutStore.setPendingSlotSync(true)
+    setExpectedRenderedNodeIds(renderedNodeIds.value)
   }
 )
 

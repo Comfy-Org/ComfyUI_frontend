@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
 
+import { isNodeExcludedFromCulling } from '@/services/vueNodeCullingService'
 import { toNodeId } from '@/types/nodeId'
 
 import { canvasNodeTarget } from './canvasCoachTarget'
@@ -84,8 +85,10 @@ describe('canvasNodeTarget', () => {
   })
 
   it('releases what it watches when the tour drops it', () => {
-    const target = canvasNodeTarget(toNodeId(1))
+    const nodeId = toNodeId(1)
+    const target = canvasNodeTarget(nodeId)
     expect(state.releaseBounds).not.toHaveBeenCalled()
+    expect(isNodeExcludedFromCulling(nodeId)).toBe(true)
 
     target.dispose?.()
 
@@ -94,6 +97,7 @@ describe('canvasNodeTarget', () => {
       'nothing here runs from a component, so unreleased observers outlive every tour'
     ).toHaveBeenCalledTimes(1)
     expect(state.releaseLayout).toHaveBeenCalledTimes(1)
+    expect(isNodeExcludedFromCulling(nodeId)).toBe(false)
   })
 
   it('places the rect over the node, title bar included', () => {

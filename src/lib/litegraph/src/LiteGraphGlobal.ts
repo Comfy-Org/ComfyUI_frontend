@@ -357,6 +357,17 @@ export class LiteGraphGlobal {
    */
   vueNodesMode: boolean = false
 
+  /**
+   * True while Vue nodes mode is on but no node components are mounted, as
+   * happens below the level-of-detail threshold where nodes are drawn as
+   * plain boxes instead.
+   *
+   * Vue owns node interaction whenever its components exist, so the gates
+   * that defer to it must defer back when they do not - otherwise selecting,
+   * dragging and resizing all fail while the boxes are showing.
+   */
+  vueNodesSuspended: boolean = false
+
   // Special Rendering Values pulled out of app.ts patches
   nodeOpacity = 1
   nodeLightness: number | undefined = undefined

@@ -2197,7 +2197,10 @@ export class LGraphNode
     // In Vue mode, `this.size` is kept in sync with the DOM-measured
     // collapsed dimensions via ResizeObserver → layoutStore → useLayoutSync,
     // so the expanded branch produces correct bounds for collapsed nodes too.
-    if (!this.flags?.collapsed || LiteGraph.vueNodesMode) {
+    if (
+      !this.flags?.collapsed ||
+      (LiteGraph.vueNodesMode && !LiteGraph.vueNodesSuspended)
+    ) {
       out[2] = this.size[0]
       out[3] = this.size[1] + titleHeight
     } else {
