@@ -35,7 +35,7 @@ function openDocs(): void {
         <video
           v-if="videoSrc"
           :src="videoSrc"
-          class="aspect-video w-full rounded-xl border border-white/20 object-cover @2xl:aspect-auto @2xl:size-full"
+          class="aspect-video w-full rounded-xl object-cover @2xl:aspect-auto @2xl:size-full"
           autoplay
           muted
           loop
@@ -43,7 +43,7 @@ function openDocs(): void {
         />
         <div
           v-else
-          class="text-agent-fg-muted grid aspect-video w-full place-items-center rounded-xl border border-white/20 text-xs @2xl:aspect-auto @2xl:size-full"
+          class="text-agent-fg-muted bg-agent-surface-raised grid aspect-video w-full place-items-center rounded-xl text-xs @2xl:aspect-auto @2xl:size-full"
         >
           {{ $t('agent.consent.videoPlaceholder') }}
         </div>
