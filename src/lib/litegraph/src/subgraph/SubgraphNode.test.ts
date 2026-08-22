@@ -442,6 +442,7 @@ describe('SubgraphNode Synchronization', () => {
   })
 
   it('preserves a renamed label across a real definition reload', () => {
+    const interiorNodeType = 'test/interior-label-reload'
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'seed', type: 'INT' }]
     })
@@ -458,12 +459,12 @@ describe('SubgraphNode Synchronization', () => {
         this.addWidget('number', 'value', 0, () => {})
       }
     }
-    LiteGraph.registerNodeType('test/interior-label-reload', InteriorNode)
+    LiteGraph.registerNodeType(interiorNodeType, InteriorNode)
     onTestFinished(() => {
-      delete LiteGraph.registered_node_types['test/interior-label-reload']
+      delete LiteGraph.registered_node_types[interiorNodeType]
     })
 
-    const interiorNode = LiteGraph.createNode('test/interior-label-reload')!
+    const interiorNode = LiteGraph.createNode(interiorNodeType)!
     subgraph.add(interiorNode)
     subgraph.inputNode.slots[0].connect(interiorNode.inputs[0], interiorNode)
 
