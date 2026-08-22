@@ -104,6 +104,35 @@ export function appendComboInputOptions(
   ])
 }
 
+/**
+ * Clones an existing node definition under a new type whose display name is
+ * `displayName`, so a test can put arbitrary text on the node-search result
+ * label without depending on a real node happening to contain it.
+ *
+ * Deep-cloned: a spread would leave the copy sharing `input`/`output` with the
+ * donor, so a later mutator aimed at the clone would silently rewrite the real
+ * node in the same payload.
+ */
+export function addNodeWithDisplayName(
+  objectInfo: ObjectInfoResponse,
+  nodeType: string,
+  displayName: string,
+  donorNodeType = 'KSampler'
+): void {
+  const donor = objectInfo[donorNodeType]
+  if (!donor) {
+    throw new Error(`Missing object_info entry for ${donorNodeType}`)
+  }
+
+  objectInfo[nodeType] = {
+    ...structuredClone(donor),
+    name: nodeType,
+    display_name: displayName,
+    category: 'testing',
+    description: ''
+  }
+}
+
 export async function routeObjectInfoFromSetupApi(
   page: Page,
   customize?: (objectInfo: ObjectInfoResponse) => void | Promise<void>
