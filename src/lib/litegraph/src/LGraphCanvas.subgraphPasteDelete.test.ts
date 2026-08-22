@@ -74,7 +74,7 @@ class PlainNode extends LGraphNode {
   }
 }
 
-const canvasElements: HTMLCanvasElement[] = []
+const canvases: LGraphCanvas[] = []
 
 function createCanvas(graph: LGraph): LGraphCanvas {
   const el = document.createElement('canvas')
@@ -86,8 +86,9 @@ function createCanvas(graph: LGraph): LGraphCanvas {
     .mockReturnValue({ left: 0, top: 0, width: 800, height: 600 })
   // LGraph.remove -> checkPanels dereferences canvas.parentNode.
   document.body.append(el)
-  canvasElements.push(el)
-  return new LGraphCanvas(el, graph, { skip_render: true })
+  const canvas = new LGraphCanvas(el, graph, { skip_render: true })
+  canvases.push(canvas)
+  return canvas
 }
 
 interface Fixture {
@@ -216,7 +217,12 @@ describe('subgraph copy/paste then delete in both orders', () => {
   afterEach(() => {
     LiteGraph.unregisterNodeType(INTERIOR_TYPE)
     LiteGraph.unregisterNodeType(PLAIN_TYPE)
-    for (const el of canvasElements.splice(0)) el.remove()
+    // The constructor binds a `document` keyup listener, which retains the
+    // whole fixture graph until it is removed.
+    for (const canvas of canvases.splice(0)) {
+      canvas.unbindEvents()
+      canvas.canvas.remove()
+    }
   })
 
   it('pastes an independent instance that shares the original reroute', () => {
