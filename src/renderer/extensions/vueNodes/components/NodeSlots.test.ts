@@ -562,8 +562,7 @@ describe('NodeSlots.vue', () => {
       })
       const { container } = renderUnified(nodeData, pinia)
 
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-      expect(container.querySelector('[data-name="w"]')).toBeNull()
+      expect(querySlotElements(container, '[data-name="w"]')).toHaveLength(0)
 
       upstream.connect(0, node, 1)
       await nextTick()
@@ -571,8 +570,7 @@ describe('NodeSlots.vue', () => {
 
       node.disconnectInput(1)
       await nextTick()
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-      expect(container.querySelector('[data-name="w"]')).toBeNull()
+      expect(querySlotElements(container, '[data-name="w"]')).toHaveLength(0)
     })
   })
 

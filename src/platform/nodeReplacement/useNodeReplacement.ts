@@ -241,7 +241,6 @@ function replaceWithMapping(
 
   newNode.has_errors = false
 
-  // Announce the add that graph.add() would have.
   nodeGraph.onNodeAdded?.(newNode)
   nodeGraph.events.dispatch('node:added', { node: newNode })
 }

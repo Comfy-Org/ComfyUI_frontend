@@ -823,7 +823,6 @@ export class LinkConnector {
       return
     }
 
-    // Connecting to output.
     const drop = this._resolveOutputDrop(reroute)
     if (!drop) return
 

@@ -13,7 +13,6 @@
         data-testid="node-widget"
         class="lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch"
       >
-        <!-- Widget Input Slot Dot -->
         <div
           :class="
             cn(
@@ -37,7 +36,6 @@
             dot-only
           />
         </div>
-        <!-- Widget Component -->
         <AppInput
           :widget-id="widget.widgetId"
           :name="widget.simplified.name"

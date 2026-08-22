@@ -1224,7 +1224,6 @@ export class LGraphNode
       )
     if (this.outputs)
       o.outputs = this.outputs.map((output, i) =>
-        // @ts-expect-error - Output serialization type mismatch
         outputAsSerialisable(output, this, i)
       )
 
@@ -3366,11 +3365,9 @@ export class LGraphNode
       const target = graph.getNodeById(link_info.target_id)
       const input = target?.inputs[link_info.target_slot]
 
-      // remove the link from the links pool
       link_info.disconnect(graph, 'input')
       graph.incrementVersion()
 
-      // link_info hasn't been modified so its ok
       if (target && input) {
         target.onConnectionsChange?.(
           NodeSlotType.INPUT,

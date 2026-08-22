@@ -13,7 +13,6 @@ export function useNodeZIndex() {
   const layoutMutations = useLayoutMutations(LayoutSource.Vue)
   const canvasStore = useCanvasStore()
 
-  /** Bring node to front (highest z-index) */
   function bringNodeToFront(nodeId: NodeId) {
     const { rootGraphId } = canvasStore
     if (!rootGraphId) return

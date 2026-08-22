@@ -252,7 +252,6 @@ describe('_deserializeItems paste-time migration & auto-expose', () => {
     const link = source.connect(0, target, 0)!
     rootGraph.createReroute([50, 50], link)
 
-    // Copying only the reroute leaves it with no pasted link through it
     const result = canvas._deserializeItems(
       canvas._serializeItems([...rootGraph.reroutes.values()]),
       { position: [300, 300] }

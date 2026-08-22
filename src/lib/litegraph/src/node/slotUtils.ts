@@ -5,8 +5,7 @@ import type {
 } from '@/lib/litegraph/src/interfaces'
 import type {
   INodeInputSlot,
-  INodeOutputSlot,
-  IWidget
+  INodeOutputSlot
 } from '@/lib/litegraph/src/litegraph'
 import { inputLinkId, outputLinkIds } from '@/lib/litegraph/src/node/slotLinks'
 import type {
@@ -68,7 +67,7 @@ export function inputAsSerialisable(
 }
 
 export function outputAsSerialisable(
-  slot: INodeOutputSlot & { widget?: IWidget },
+  slot: INodeOutputSlot,
   node: LGraphNode,
   slotIndex: number
 ): ISerialisableNodeOutput {

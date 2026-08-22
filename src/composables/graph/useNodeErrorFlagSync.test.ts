@@ -35,7 +35,6 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
     const settingStore = useSettingStore()
     settingStore.settingValues['Comfy.RightSidePanel.ShowErrorsTab'] = true
 
-    // Registers the lastNodeErrors watcher
     const store = useExecutionErrorStore()
     return { graph, nodeA, nodeB, store }
   }
@@ -129,7 +128,6 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
 
     const store = useExecutionErrorStore()
 
-    // Error on interior node: execution ID = "50:<interiorNodeId>"
     const interiorExecId = `${subgraphNode.id}:${interiorNode.id}`
     store.recordNodeErrors({
       [interiorExecId]: {
@@ -147,10 +145,8 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
     })
     await nextTick()
 
-    // Interior node should have the error
     expect(interiorNode.has_errors).toBe(true)
     expect(interiorNode.inputs[0].hasErrors).toBe(true)
-    // Parent subgraph node should also be flagged
     expect(subgraphNode.has_errors).toBe(true)
   })
 

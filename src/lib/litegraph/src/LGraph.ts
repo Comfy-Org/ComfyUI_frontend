@@ -1991,7 +1991,6 @@ export class LGraph
     for (const node of subgraph.nodes) node.onGraphConfigured?.()
     for (const node of subgraph.nodes) node.onAfterGraphConfigured?.()
 
-    // Position the subgraph input nodes
     subgraph.inputNode.arrange()
     subgraph.outputNode.arrange()
     for (const [ioNode, alignment] of [

@@ -34,12 +34,10 @@ describe('Node Reactivity', () => {
     const store = useWidgetValueStore()
     const widget = node.widgets![0]
 
-    // Verify widget is a BaseWidget with correct value and node assignment
     expect(widget).toBeInstanceOf(BaseWidget)
     expect(widget.value).toBe(2)
     expect((widget as BaseWidget).node.id).toBe(node.id)
 
-    // Initial value should be in store after setNodeId was called
     const id = widgetId(graph.id, node.id, 'testnum')
     expect(store.getWidget(id)?.value).toBe(2)
 

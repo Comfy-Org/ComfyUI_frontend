@@ -82,7 +82,6 @@ export class SubgraphInput extends SubgraphSlot {
       return
     }
 
-    // Disconnect target input, if it is already connected.
     const existingLink = inputLink(subgraph, node.id, node.inputs.indexOf(slot))
     if (existingLink) {
       subgraph.beforeChange()
