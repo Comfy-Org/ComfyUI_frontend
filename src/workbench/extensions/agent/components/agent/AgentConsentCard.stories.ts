@@ -19,7 +19,7 @@ const meta: Meta<typeof AgentConsentCard> = {
     title: 'Let the agent work in your workflow',
     paragraphs,
     videoSrc: VIDEO_SRC,
-    docsUrl: 'https://docs.comfy.org'
+    docsUrl: 'https://docs.comfy.org/agent-tools/in-app-agent'
   },
   decorators: [
     () => ({

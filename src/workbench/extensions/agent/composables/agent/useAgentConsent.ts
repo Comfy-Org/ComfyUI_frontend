@@ -6,7 +6,8 @@ import AgentConsentCard from '@/workbench/extensions/agent/components/agent/Agen
 
 const CONSENT_STORAGE_KEY = 'Comfy.AgentPanel.consentAccepted'
 const CONSENT_DIALOG_KEY = 'agent-consent'
-const DOCS_URL = 'https://docs.comfy.org'
+const DOCS_URL = 'https://docs.comfy.org/agent-tools/in-app-agent'
+const CONSENT_VIDEO_SRC = 'https://media.comfy.org/website/mcp/launch-film.mp4'
 
 /** Shared across callers so a second entry point sees the same answer. */
 const accepted = useLocalStorage(CONSENT_STORAGE_KEY, false)
@@ -31,6 +32,7 @@ export function useAgentConsent() {
       props: {
         title: t('agent.consent.title'),
         paragraphs: [t('agent.consent.body1'), t('agent.consent.body2')],
+        videoSrc: CONSENT_VIDEO_SRC,
         docsUrl: DOCS_URL,
         onAccept: () => {
           accepted.value = true
@@ -47,9 +49,12 @@ export function useAgentConsent() {
         dismissableMask: false,
         modal: true,
         headless: true,
-        // The card draws its own panel — neutralize the chrome box.
+        size: 'xl',
+        // The card draws its own panel — neutralize the chrome box. It sizes
+        // itself with w-full, so the content box needs a real width: w-fit
+        // would collapse it to nothing.
         contentClass:
-          'w-fit max-w-[1040px] border-none bg-transparent shadow-none'
+          'w-[min(1040px,calc(100vw-2rem))] border-none bg-transparent shadow-none sm:max-w-[1040px]'
       }
     })
   }
