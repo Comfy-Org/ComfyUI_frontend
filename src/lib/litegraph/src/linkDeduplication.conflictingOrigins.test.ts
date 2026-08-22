@@ -3,9 +3,15 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type {
+  SerialisableLLink,
+  SerialisedLLinkArray
+} from '@/lib/litegraph/src/LLink'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
+import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 
 import { conflictingOriginLinksRoot } from './__fixtures__/duplicateLinks'
 
@@ -23,23 +29,42 @@ function configureConflictingOrigins() {
   return graph
 }
 
+interface SerializedLinkFields {
+  origin_id: NodeId
+  target_id: NodeId
+  target_slot: number
+}
+
+function linkFieldsOf(
+  link: SerialisedLLinkArray | SerialisableLLink
+): SerializedLinkFields {
+  if (Array.isArray(link)) {
+    const [, origin_id, , target_id, target_slot] = link
+    return {
+      origin_id: toNodeId(origin_id),
+      target_id: toNodeId(target_id),
+      target_slot
+    }
+  }
+  return {
+    origin_id: toNodeId(link.origin_id),
+    target_id: toNodeId(link.target_id),
+    target_slot: link.target_slot
+  }
+}
+
 function linksIntoTargetSlot(
   links: ReturnType<LGraph['serialize']>['links'],
-  targetId: number,
+  targetId: NodeId,
   targetSlot: number
-) {
-  return (links ?? []).filter((link) => {
-    const [, , , target_id, target_slot] = Array.isArray(link)
-      ? link
-      : [
-          link.id,
-          link.origin_id,
-          link.origin_slot,
-          link.target_id,
-          link.target_slot
-        ]
-    return target_id === targetId && target_slot === targetSlot
-  })
+): SerializedLinkFields[] {
+  const fields = (links ?? []).map((link) =>
+    linkFieldsOf(link as SerialisedLLinkArray | SerialisableLLink)
+  )
+  return fields.filter(
+    ({ target_id, target_slot }) =>
+      target_id === targetId && target_slot === targetSlot
+  )
 }
 
 describe('normalizeConfiguredTopology with conflicting origins (#15577)', () => {
@@ -78,10 +103,13 @@ describe('normalizeConfiguredTopology with conflicting origins (#15577)', () => 
   it.fails('re-saves the workflow without changing the upstream node', () => {
     const graph = configureConflictingOrigins()
 
-    const [survivor] = linksIntoTargetSlot(graph.serialize().links, 3, 0)
-    const origin = Array.isArray(survivor) ? survivor[1] : survivor.origin_id
+    const [survivor] = linksIntoTargetSlot(
+      graph.serialize().links,
+      toNodeId(3),
+      0
+    )
 
-    expect(origin).toBe(toNodeId(2))
+    expect(survivor?.origin_id).toBe(toNodeId(2))
   })
 })
 
@@ -101,13 +129,13 @@ describe('legacy mirror link creation (#15577 reachability)', () => {
     graph.add(target)
     sourceA.connect(0, target, 0)
 
-    const mirroredId = ++graph.state.lastLinkId
+    const mirroredId = toLinkId(++graph.state.lastLinkId)
     const output = sourceB.outputs[0]
     output.links = [...(output.links ?? []), mirroredId]
     target.inputs[0].link = mirroredId
 
     expect(
-      linksIntoTargetSlot(graph.serialize().links, Number(target.id), 0)
+      linksIntoTargetSlot(graph.serialize().links, target.id, 0)
     ).toHaveLength(1)
     expect(target.getInputLink(0)?.origin_id).toBe(sourceA.id)
   })
