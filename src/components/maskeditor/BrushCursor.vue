@@ -26,7 +26,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUpdated, ref } from 'vue'
+import { useElementBounding } from '@vueuse/core'
+import { computed } from 'vue'
 
 import {
   getEffectiveBrushSize,
@@ -40,17 +41,8 @@ const { containerRef } = defineProps<{
 }>()
 
 const store = useMaskEditorStore()
-const containerOffsetLeft = ref(0)
-const containerOffsetTop = ref(0)
-
-const syncContainerOffset = () => {
-  const dialogRect = containerRef?.getBoundingClientRect()
-  containerOffsetLeft.value = dialogRect?.left ?? 0
-  containerOffsetTop.value = dialogRect?.top ?? 0
-}
-
-onMounted(syncContainerOffset)
-onUpdated(syncContainerOffset)
+const { left: containerOffsetLeft, top: containerOffsetTop } =
+  useElementBounding(() => containerRef)
 
 const brushOpacity = computed(() => {
   return store.brushVisible ? 1 : 0

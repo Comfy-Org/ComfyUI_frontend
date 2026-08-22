@@ -279,7 +279,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     const nodeLocatorId = executionIdToNodeLocatorId(app.rootGraph, executionId)
     if (!nodeLocatorId) return
     setNodePreviewsByLocatorId(nodeLocatorId, previewImages)
-    latestPreview.value = previewImages
+    latestPreview.value = [...previewImages]
   }
 
   function setNodePreviewsByLocatorId(
@@ -299,7 +299,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     for (const url of previewImages) {
       retainSharedObjectUrl(url)
     }
-    nodePreviewImages.value[nodeLocatorId] = previewImages
+    nodePreviewImages.value[nodeLocatorId] = [...previewImages]
     app.nodePreviewImages[nodeLocatorId] = [...previewImages]
   }
 

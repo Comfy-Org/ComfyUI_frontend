@@ -1,8 +1,27 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it } from 'vitest'
 
+import type { SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import { toNodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
 
-import { usePreviewExposureStore } from './previewExposureStore'
+import {
+  getPreviewExposureHostLocator,
+  usePreviewExposureStore
+} from './previewExposureStore'
+
+describe(getPreviewExposureHostLocator, () => {
+  it('rejects a host ID that cannot form a locator', () => {
+    const host = fromAny<SubgraphNode, unknown>({
+      graph: null,
+      id: toNodeId('invalid:id')
+    })
+
+    expect(() => getPreviewExposureHostLocator(host)).toThrow(
+      'Cannot create preview exposure host locator for node invalid:id'
+    )
+  })
+})
 
 describe(usePreviewExposureStore, () => {
   let store: ReturnType<typeof usePreviewExposureStore>

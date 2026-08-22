@@ -222,10 +222,10 @@ test.describe('Image widget', { tag: ['@screenshot', '@widget'] }, () => {
     comfyPage,
     comfyFiles
   }) => {
+    comfyFiles.deleteAfterTest({ filename: 'image32x32.webp', type: 'input' })
     await comfyPage.dragDrop.dragAndDropFile('image32x32.webp', {
       waitForUpload: true
     })
-    comfyFiles.deleteAfterTest({ filename: 'image32x32.webp', type: 'input' })
 
     await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
     const nodes = await comfyPage.nodeOps.getNodeRefsByType('LoadImage')

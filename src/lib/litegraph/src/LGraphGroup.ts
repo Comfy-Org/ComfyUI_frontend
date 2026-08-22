@@ -39,6 +39,20 @@ export interface IGraphGroupFlags extends Record<string, unknown> {
   pinned?: true
 }
 
+const findPropertyDescriptor = (
+  target: object,
+  property: PropertyKey
+): PropertyDescriptor | undefined => {
+  for (
+    let prototype: object | null = Object.getPrototypeOf(target);
+    prototype;
+    prototype = Object.getPrototypeOf(prototype)
+  ) {
+    const descriptor = Object.getOwnPropertyDescriptor(prototype, property)
+    if (descriptor) return descriptor
+  }
+}
+
 export class LGraphGroup implements Positionable, IPinnable, IColorable {
   static minWidth = 140
   static minHeight = 80
@@ -110,7 +124,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
       'flags'
     ] as const) {
       Object.defineProperty(this, property, {
-        ...Object.getOwnPropertyDescriptor(LGraphGroup.prototype, property),
+        ...findPropertyDescriptor(this, property),
         enumerable: true
       })
     }

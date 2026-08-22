@@ -1156,6 +1156,23 @@ describe('layout geometry projection', () => {
   })
 })
 
+describe('execution order projection', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  test('writes attached node order to the canonical store', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+
+    node.order = 42
+
+    expect(node.order).toBe(42)
+    expect(node.serialize().order).toBe(42)
+  })
+})
+
 describe('_setConcreteSlots', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))

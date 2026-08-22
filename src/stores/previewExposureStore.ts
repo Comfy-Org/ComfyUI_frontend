@@ -39,7 +39,13 @@ export function getPreviewExposureHostLocator(
   host: SubgraphNode
 ): NodeLocatorId {
   const graphId = host.graph?.isRootGraph ? null : (host.graph?.id ?? null)
-  return createNodeLocatorId(graphId, host.id)
+  const locator = createNodeLocatorId(graphId, host.id)
+  if (!locator) {
+    throw new Error(
+      `Cannot create preview exposure host locator for node ${String(host.id)}`
+    )
+  }
+  return locator
 }
 
 export const usePreviewExposureStore = defineStore('previewExposure', () => {

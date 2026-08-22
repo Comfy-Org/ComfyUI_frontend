@@ -354,10 +354,13 @@ function serialiseOwnedTopology(owner: LGraph) {
   const links = topologies.filter((link) => !isFloatingTopology(link))
   const floatingLinks = topologies.filter(isFloatingTopology)
   const reroutes = [...useRerouteStore().graphChains(scope)].map((reroute) => {
-    const position = layoutStore.getRerouteLayout(
-      owner.rootGraph.id,
-      reroute.id
-    )?.position ?? { x: 0, y: 0 }
+    const layout = layoutStore.getRerouteLayout(owner.rootGraph.id, reroute.id)
+    if (!layout) {
+      throw new Error(
+        `Cannot serialize graph ${owner.id}: reroute ${reroute.id} has no layout`
+      )
+    }
+    const position = layout.position
     const membership = useRerouteStore().getMembership(scope, reroute.id)
     return {
       id: reroute.id,
@@ -761,7 +764,7 @@ export class LGraph
     useGraphMetadataStore().clear(graphId)
     if (this.isRootGraph) useEntityIdStore().clear(graphId)
     if (this.isRootGraph && graphId !== zeroUuid) {
-      useExecutionOrderStore().clearRoot(graphId)
+      useExecutionOrderStore().clearRoot(toRootGraphId(graphId))
       usePreviewExposureStore().clearGraph(graphId)
       useWidgetValueStore().clearGraph(graphId)
       useLinkStore().clearGraph(toRootGraphId(graphId))
@@ -1503,6 +1506,9 @@ export class LGraph
         this.rootGraph.subgraphs.delete(subgraph.id)
       }
       detachGraphLayouts(releasedSubgraphs)
+      for (const subgraph of releasedSubgraphs) {
+        useGraphDefinitionStore().clearGraph(this.rootGraph.id, subgraph.id)
+      }
     }
 
     // callback
@@ -2802,6 +2808,9 @@ export class LGraph
     const existingNodesById = !options.clearGraph
       ? { ...this._nodes_by_id }
       : undefined
+    const existingTopology = !options.clearGraph
+      ? serialiseOwnedTopology(this)
+      : undefined
 
     beginNamedValuesShadowDiffLoad()
     try {
@@ -3062,6 +3071,19 @@ export class LGraph
           this._nodes_by_id = existingNodesById
           for (const node of existingNodes) attachNodeLayout(this, node)
           for (const group of existingGroups) attachGroupLayout(this, group)
+          unregisterAllLinkTopologies(this)
+          for (const reroute of [...this.reroutes.values()]) {
+            this._removeReroute(reroute.id)
+          }
+          for (const linkData of existingTopology?.links ?? []) {
+            this._addLink(LLink.create(linkData))
+          }
+          for (const linkData of existingTopology?.floatingLinks ?? []) {
+            this.addFloatingLink(LLink.create(linkData))
+          }
+          for (const rerouteData of existingTopology?.reroutes ?? []) {
+            this.setReroute(rerouteData)
+          }
         }
       } else {
         this.clear()
@@ -3192,10 +3214,9 @@ export class Subgraph
 
     super()
 
-    useGraphDefinitionStore().clearRoot(this.id)
     this._rootGraph = rootGraph
-
     const cloned = structuredClone(data)
+    useGraphDefinitionStore().clearGraph(rootGraph.id, cloned.id)
     this._configureBase(cloned)
     this._configureSubgraph(cloned)
   }

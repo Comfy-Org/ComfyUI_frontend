@@ -80,13 +80,21 @@ export function calculateInputSlotPosFromSlot(
   // Default vertical slots
   const offsetX = LiteGraph.NODE_SLOT_HEIGHT * 0.5
   const nodeOffsetY = context.slotStartY || 0
+  let slotIndex = -1
   const inputIndex = context.inputs.indexOf(input)
-  const slotIndex = context.inputs
-    .slice(0, inputIndex)
-    .filter(
-      (slot) =>
-        !slot.pos && !(context.widgets?.length && isWidgetInputSlot(slot))
-    ).length
+  if (
+    inputIndex !== -1 &&
+    !input.pos &&
+    !(context.widgets?.length && isWidgetInputSlot(input))
+  ) {
+    slotIndex = 0
+    for (const [index, slot] of context.inputs.entries()) {
+      if (index >= inputIndex) break
+      if (!slot.pos && !(context.widgets?.length && isWidgetInputSlot(slot))) {
+        slotIndex++
+      }
+    }
+  }
   const slotY = (slotIndex + 0.7) * LiteGraph.NODE_SLOT_HEIGHT
 
   return [nodeX + offsetX, nodeY + slotY + nodeOffsetY]
