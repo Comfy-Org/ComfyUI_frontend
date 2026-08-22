@@ -1,3 +1,5 @@
+import type { RawNodeDef } from '@e2e/fixtures/customNode/typePairing'
+
 // Exact serialized indices changed by the artifact-proven pack mechanisms.
 // Unlisted indices and renderers without matching evidence remain strict.
 export const ROUNDTRIP_VALUE_ALLOWED_INDICES_LITEGRAPH: Record<
@@ -287,6 +289,21 @@ export interface NamedWidgetValueDrift {
   name: string
   before: unknown
   after: unknown
+}
+
+export function declaredInputNamesForTypes(
+  defs: Record<string, RawNodeDef>,
+  types: readonly string[]
+): Record<string, string[]> {
+  return Object.fromEntries(
+    types.map((type) => [
+      type,
+      [
+        ...Object.keys(defs[type]?.input?.required ?? {}),
+        ...Object.keys(defs[type]?.input?.optional ?? {})
+      ]
+    ])
+  )
 }
 
 export function namedWidgetValueDrifts(

@@ -20,6 +20,7 @@ import {
 import { eligibleNodeTypesForTier } from '@e2e/fixtures/customNode/tierNodeExclusions'
 import {
   CANVAS_PREVIEW_IMAGE_PATH_PATTERN,
+  declaredInputNamesForTypes,
   initializationSignalsForTypes,
   namedWidgetValueDrifts,
   pendingRestoredPreviewWidgets,
@@ -35,6 +36,7 @@ import {
   staleValueDriftIndices,
   staleValueDriftKeys
 } from '@e2e/fixtures/customNode/valueDrift'
+import type { RawNodeDef } from '@e2e/fixtures/customNode/typePairing'
 import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
 import { expectNoVisibleErrors } from '@e2e/fixtures/utils/errorSurfaces'
 
@@ -233,11 +235,13 @@ declare global {
 export async function assertRoundtripTier({
   comfyPage,
   entry,
+  defs,
   registeredKeys,
   installedManifestPacks
 }: {
   comfyPage: ComfyPage
   entry: CoreManifestEntry | CloudManifestEntry
+  defs: Record<string, RawNodeDef>
   registeredKeys: string[]
   installedManifestPacks: string[]
 }): Promise<void> {
@@ -344,12 +348,14 @@ export async function assertRoundtripTier({
         initializationSignals,
         chunk
       )
+      const declaredInputNames = declaredInputNamesForTypes(defs, chunk)
       await comfyPage.page.evaluate(
         ([
           types,
           packManaged,
           exactValueDriftIndices,
           exactValueDriftKeys,
+          declaredInputNames,
           allowedNodeLosses,
           vueNodesEnabled,
           canvasPreviewImagePathPattern
@@ -602,8 +608,10 @@ export async function assertRoundtripTier({
               for (const node of window.app!.graph.nodes) {
                 const nodeType = created.get(String(node.id))?.type
                 if (!nodeType) continue
+                const mutableNames = new Set(declaredInputNames[nodeType] ?? [])
                 for (const widget of node.widgets ?? []) {
                   if (!SETTABLE.has(String(widget.type))) continue
+                  if (!mutableNames.has(widget.name)) continue
                   if (`${nodeType}.${widget.name}` in packManaged) continue
                   const target = ((): unknown => {
                     const options = (
@@ -673,6 +681,7 @@ export async function assertRoundtripTier({
           allowedWidgets,
           allowedValueIndices,
           allowedValueKeys,
+          declaredInputNames,
           Object.keys(expectedNodeLosses),
           vueNodesEnabled,
           {

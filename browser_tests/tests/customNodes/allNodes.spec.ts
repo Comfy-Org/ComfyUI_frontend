@@ -102,6 +102,7 @@ test.describe('all nodes by tier @custom-nodes', () => {
               await assertRoundtripTier({
                 comfyPage,
                 entry,
+                defs,
                 registeredKeys,
                 installedManifestPacks: INSTALLED_MANIFEST_PACKS
               })
