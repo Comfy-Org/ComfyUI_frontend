@@ -1,13 +1,16 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { realignInputLinkSlots } from '@/lib/litegraph/src/linkDeduplication'
+import {
+  normalizeConfiguredTopology,
+  realignInputLinkSlots
+} from '@/lib/litegraph/src/linkDeduplication'
 import type {
   ExportedSubgraph,
   ISerialisedNode,
@@ -305,6 +308,27 @@ function assertLinksRealigned(graph: LGraph, targetNodeId: NodeId) {
     ).toBe(expectedLinkId)
   }
 }
+
+describe('normalizeConfiguredTopology', () => {
+  it('keeps the competing link referenced by the target input', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const data = savedWorkflow()
+    const target = data.nodes?.find((node) => node.id === 2)
+    if (!target?.inputs || !data.links) throw new Error('Invalid fixture')
+    target.inputs[0].link = 2
+    data.links[1].origin_id = 99
+    data.links[1].target_slot = 0
+
+    const normalized = normalizeConfiguredTopology(data)
+
+    expect(normalized.links?.map((link) => link.id)).toEqual([2, 3])
+    expect(normalized.nodes?.[1].inputs?.[0].link).toBe(2)
+    expect(console.warn).toHaveBeenCalledWith(
+      'Dropping competing link to an occupied input',
+      expect.objectContaining({ droppedLinkId: 2, survivorLinkId: 1 })
+    )
+  })
+})
 
 describe('LGraph.configure input slot realignment (#3348)', () => {
   beforeEach(() => {
