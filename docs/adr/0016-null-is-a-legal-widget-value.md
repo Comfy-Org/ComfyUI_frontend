@@ -32,7 +32,7 @@ Three pieces of evidence settle the direction.
 
 **The rest of the codebase already treats `null` as legal.** Every other
 persistence path round-trips it. `LGraphNode.serialize()` goes further and
-*mints* it: `const serialisedVal = ... : (val ?? null)` converts an `undefined`
+_mints_ it: `const serialisedVal = ... : (val ?? null)` converts an `undefined`
 widget value into `null` on the way into `widgets_values`. First-party saves
 therefore already write `null` into workflow JSON with no extension involved,
 and `LGraphNode.configure()` reads it straight back onto `widget.value`.
