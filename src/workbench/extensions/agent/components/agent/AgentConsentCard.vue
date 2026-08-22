@@ -51,7 +51,7 @@ function openDocs(): void {
       <button
         type="button"
         :aria-label="$t('agent.consent.close')"
-        class="text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg absolute top-[18px] right-[18px] flex size-8 cursor-pointer items-center justify-center rounded-lg transition-colors"
+        class="text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg absolute top-[18px] right-[18px] flex size-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-transparent transition-colors"
         @click="emit('close')"
       >
         <span class="icon-[lucide--x] size-4" />
@@ -73,7 +73,7 @@ function openDocs(): void {
       <footer class="flex items-center justify-between gap-2.5">
         <button
           type="button"
-          class="text-agent-fg hover:bg-agent-surface-hover -ml-2 flex h-8 cursor-pointer items-center gap-1 rounded-lg px-2 text-xs transition-colors"
+          class="text-agent-fg hover:bg-agent-surface-hover -ml-2 flex h-8 cursor-pointer items-center gap-1 rounded-lg border-0 bg-transparent px-2 text-xs transition-colors"
           @click="openDocs"
         >
           {{ $t('agent.consent.readDocs') }}
@@ -83,14 +83,14 @@ function openDocs(): void {
         <div class="flex items-center gap-2.5">
           <button
             type="button"
-            class="text-agent-fg bg-agent-surface-raised hover:bg-agent-surface-hover h-8 cursor-pointer rounded-lg px-3 text-xs transition-colors"
+            class="text-agent-fg bg-agent-surface-raised hover:bg-agent-surface-hover h-8 cursor-pointer rounded-lg border-0 px-3 text-xs transition-colors"
             @click="emit('reject')"
           >
             {{ $t('agent.consent.reject') }}
           </button>
           <button
             type="button"
-            class="bg-agent-fg text-agent-surface h-8 cursor-pointer rounded-lg px-3 text-xs transition-opacity hover:opacity-90"
+            class="bg-agent-fg text-agent-surface h-8 cursor-pointer rounded-lg border-0 px-3 text-xs transition-opacity hover:opacity-90"
             @click="emit('accept')"
           >
             {{ $t('agent.consent.accept') }}
