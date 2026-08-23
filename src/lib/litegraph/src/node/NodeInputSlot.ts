@@ -1,5 +1,5 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { LLink,LinkId } from '@/lib/litegraph/src/LLink'
+import type { LLink, LinkId } from '@/lib/litegraph/src/LLink'
 import { LabelPosition } from '@/lib/litegraph/src/draw'
 import type {
   INodeInputSlot,
