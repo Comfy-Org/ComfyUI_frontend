@@ -1,3 +1,5 @@
+export const ASSERTION_FAILURE_PREFIX = '[Assertion failed]: '
+
 export type AssertReporter = (failure: Error) => void
 
 let reporter: AssertReporter | null = null
@@ -25,7 +27,7 @@ export function setAssertReporter(fn: AssertReporter | null): void {
 export function assert(condition: unknown, message: string): asserts condition {
   if (condition) return
 
-  const formatted = `[Assertion failed]: ${message}`
+  const formatted = `${ASSERTION_FAILURE_PREFIX}${message}`
   console.error(formatted)
 
   const failure = new Error(formatted)

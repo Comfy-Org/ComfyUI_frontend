@@ -1,11 +1,12 @@
 import { createPinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { assert, setAssertReporter } from '@/base/assert'
 import { createAssertReporter } from '@/platform/telemetry/assertionReporter'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
 const mockIsNightly = { value: false }
-const reportError = vi.fn()
+const captureException = vi.fn()
 
 vi.mock('@/platform/distribution/types', () => ({
   get isNightly() {
@@ -13,24 +14,43 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
-vi.mock('@/platform/telemetry/reportError', () => ({
-  reportError: (...args: unknown[]) => reportError(...args)
+vi.mock('@sentry/vue', () => ({
+  captureException: (...args: unknown[]) => captureException(...args),
+  isEnabled: () => true
+}))
+
+vi.mock('@datadog/browser-rum', () => ({
+  datadogRum: {
+    addError: vi.fn(),
+    getInitConfiguration: () => undefined
+  }
 }))
 
 describe('createAssertReporter', () => {
   beforeEach(() => {
     mockIsNightly.value = false
+    vi.spyOn(console, 'error').mockImplementation(() => {})
   })
 
-  it('reports every assertion failure through the shared error pipeline', () => {
-    const failure = new Error('[Assertion failed]: graph is corrupt')
+  afterEach(() => {
+    setAssertReporter(null)
+  })
 
-    createAssertReporter(createPinia())(failure)
+  it('carries an assertion failure from assert() through to the error sinks', () => {
+    vi.stubEnv('DEV', false)
+    setAssertReporter(createAssertReporter(createPinia()))
 
-    expect(reportError).toHaveBeenCalledWith(failure, {
-      errorType: 'assertion_failure',
-      level: 'warning'
-    })
+    assert(false, 'graph is corrupt')
+
+    expect(captureException).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: '[Assertion failed]: graph is corrupt'
+      }),
+      expect.objectContaining({
+        level: 'warning',
+        tags: expect.objectContaining({ error_type: 'assertion_failure' })
+      })
+    )
   })
 
   it('does not toast outside nightly builds', () => {
@@ -47,7 +67,7 @@ describe('createAssertReporter', () => {
 
     createAssertReporter(pinia)(new Error('[Assertion failed]: loud'))
 
-    expect(reportError).toHaveBeenCalledOnce()
+    expect(captureException).toHaveBeenCalledOnce()
     expect(useToastStore(pinia).messagesToAdd).toEqual([
       expect.objectContaining({
         severity: 'warn',

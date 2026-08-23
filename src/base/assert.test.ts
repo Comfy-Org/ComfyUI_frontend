@@ -56,7 +56,7 @@ describe('assert', () => {
     )
   })
 
-  it('reports an Error whose stack starts at the failing assertion', () => {
+  it('reports an Error whose stack includes the failing call site', () => {
     vi.stubEnv('DEV', false)
     const reporter = vi.fn()
     setAssertReporter(reporter)

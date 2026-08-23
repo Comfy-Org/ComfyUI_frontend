@@ -4,10 +4,14 @@ import { describe, expect, it } from 'vitest'
 
 import { classifyRumErrorOrigin, rumBeforeSend } from './datadogRumBeforeSend'
 
-function createErrorEvent(message: string, stack?: string): RumErrorEvent {
+function createErrorEvent(
+  message: string,
+  stack?: string,
+  source: RumErrorEvent['error']['source'] = 'source'
+): RumErrorEvent {
   return fromPartial<RumErrorEvent>({
     type: 'error',
-    error: { message, source: 'source', stack }
+    error: { message, source, stack }
   })
 }
 
@@ -18,6 +22,26 @@ describe('rumBeforeSend', () => {
     )
 
     expect(rumBeforeSend(event, fromPartial({}))).toBe(false)
+  })
+
+  it('drops the console echo of an assertion already reported with its tags', () => {
+    const event = createErrorEvent(
+      '[Assertion failed]: graph is corrupt',
+      undefined,
+      'console'
+    )
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(false)
+  })
+
+  it('keeps the reported copy of an assertion failure', () => {
+    const event = createErrorEvent(
+      '[Assertion failed]: graph is corrupt',
+      undefined,
+      'custom'
+    )
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
   })
 
   it('keeps application errors and tags their origin', () => {
