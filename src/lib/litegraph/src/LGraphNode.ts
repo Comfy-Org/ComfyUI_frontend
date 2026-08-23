@@ -3695,6 +3695,21 @@ export class LGraphNode
     if (!this.collapsible && !force) return
     if (!this.graph) throw new NullGraphError()
     this.graph.incrementVersion()
+
+    // A collapsed missing-node placeholder serializes the size recorded in its
+    // file rather than its live one, so refresh that record with the size the
+    // node is being collapsed FROM: capturing after the flip would record the
+    // collapsed card Vue nodes mode re-measures into `size`. A recorded
+    // serialization without a size still gets none, matching `serialize()`.
+    const recordedSerialization = this.last_serialization
+    if (
+      this.constructor === LGraphNode &&
+      recordedSerialization?.size != null &&
+      !this.flags.collapsed
+    ) {
+      recordedSerialization.size = [this.size[0], this.size[1]]
+    }
+
     this.flags.collapsed = !this.flags.collapsed
     this.setDirtyCanvas(true, true)
   }
