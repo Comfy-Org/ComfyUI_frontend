@@ -151,6 +151,18 @@ const structuredData = noindex
 
     <ClientRouter />
 
+    <!-- Chrome initializes a video's muted state from the `muted` attribute
+         only during document parsing, not for the DOMParser-built pages the
+         ClientRouter swaps in — re-assert it before paint or autoplaying
+         videos come back with sound. -->
+    <script>
+      document.addEventListener('astro:after-swap', () => {
+        document.querySelectorAll('video').forEach((video) => {
+          if (video.hasAttribute('muted')) video.muted = true
+        })
+      })
+    </script>
+
     <!-- Hide an already-dismissed announcement banner before first paint (no flash/shift). -->
     {bannerVisible && (
       <script

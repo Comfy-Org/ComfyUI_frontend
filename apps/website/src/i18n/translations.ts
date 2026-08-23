@@ -10,6 +10,10 @@ const translations = {
     en: 'Open Weights',
     'zh-CN': '开放权重'
   },
+  'tags.openSource': {
+    en: 'Open Source',
+    'zh-CN': '开源'
+  },
   'tags.imageToVideo': {
     en: 'Image To Video',
     'zh-CN': '图像生成视频'
@@ -70,6 +74,22 @@ const translations = {
     en: 'Compositing',
     'zh-CN': '合成'
   },
+  'tags.fundamentals': {
+    en: 'Fundamentals',
+    'zh-CN': '基础入门'
+  },
+  'tags.nodeGraph': {
+    en: 'Node Graph',
+    'zh-CN': '节点图'
+  },
+  'tags.lora': {
+    en: 'LoRA',
+    'zh-CN': 'LoRA'
+  },
+  'tags.controlNet': {
+    en: 'ControlNet',
+    'zh-CN': 'ControlNet'
+  },
 
   // UI (global, reusable across sections)
   'ui.copy': {
@@ -88,6 +108,10 @@ const translations = {
   'cta.tryWorkflow': {
     en: 'Try Workflow',
     'zh-CN': '试用工作流'
+  },
+  'cta.tryForFree': {
+    en: 'Try for Free',
+    'zh-CN': '免费试用'
   },
   'cta.getStarted': {
     en: 'GET STARTED',
@@ -119,29 +143,76 @@ const translations = {
     'zh-CN': '运行你的第一个工作流'
   },
 
-  // Model release card (home page)
+  // Model release carousel (home page)
   'modelRelease.eyebrow': {
     en: 'New Model Release',
     'zh-CN': '新模型发布'
   },
-  'modelRelease.title': {
+  'modelRelease.seedance.title': {
+    en: 'Seedance 2.5',
+    'zh-CN': 'Seedance 2.5'
+  },
+  'modelRelease.seedance.body': {
+    en: "ByteDance's cinematic video model — multi-shot sequences with native audio, text or image in. You direct on the canvas; Seedance renders the cut.",
+    'zh-CN':
+      '字节跳动的电影级视频模型：多镜头序列，原生音频，支持文本或图像输入。你在画布上执导，Seedance 负责渲染成片。'
+  },
+  'modelRelease.seedance.explore': {
+    en: 'Explore Seedance 2.5',
+    'zh-CN': '探索 Seedance 2.5'
+  },
+  'modelRelease.seedance.videoAriaLabel': {
+    en: 'Seedance 2.5 preview',
+    'zh-CN': 'Seedance 2.5 预览'
+  },
+  'modelRelease.ltx.title': {
+    en: 'LTX 2.5',
+    'zh-CN': 'LTX 2.5'
+  },
+  'modelRelease.ltx.body': {
+    en: 'The fastest video generation model, now with sharper prompt adherence and audio. Cinematic detail on faces and fine textures with Diffusion Fidelity Rendering.',
+    'zh-CN':
+      '最快的视频生成模型，如今提示词遵循度与音频表现全面升级。凭借 Diffusion Fidelity Rendering，人物面部与细腻纹理都能呈现电影级细节。'
+  },
+  'modelRelease.ltx.explore': {
+    en: 'Explore LTX 2.5',
+    'zh-CN': '探索 LTX 2.5'
+  },
+  'modelRelease.ltx.videoAriaLabel': {
+    en: 'LTX 2.5 preview',
+    'zh-CN': 'LTX 2.5 预览'
+  },
+  'modelRelease.wanAnimate2.title': {
+    en: 'Wan Animate 2',
+    'zh-CN': 'Wan Animate 2'
+  },
+  'modelRelease.wanAnimate2.body': {
+    en: 'Upload a reference image of your character and a video of the motion you want. Wan Animate 2 transfers that motion onto your character, end to end.',
+    'zh-CN':
+      '上传一张角色参考图，再加上一段你想要的动作视频，Wan Animate 2 就会把该动作完整迁移到你的角色上。'
+  },
+  'modelRelease.wanAnimate2.explore': {
+    en: 'Explore Wan Animate 2',
+    'zh-CN': '探索 Wan Animate 2'
+  },
+  'modelRelease.wanAnimate2.videoAriaLabel': {
+    en: 'Wan Animate 2 preview',
+    'zh-CN': 'Wan Animate 2 预览'
+  },
+  'modelRelease.minimax.title': {
     en: 'MiniMax H3',
     'zh-CN': 'MiniMax H3'
   },
-  'modelRelease.body': {
+  'modelRelease.minimax.body': {
     en: 'Full multi-modal I/O, native stereo clip. Up to 2K, 5 to 15s per generation. H3 actually conditions on input audio where others overwrite or drop it.',
     'zh-CN':
       '完整的多模态输入输出，原生立体声剪辑。最高 2K，每次生成 5 至 15 秒。H3 真正基于输入音频进行条件生成，而其他模型则会覆盖或丢弃它。'
   },
-  'modelRelease.viewFeatures': {
-    en: 'View Model Features',
-    'zh-CN': '查看模型特性'
+  'modelRelease.minimax.explore': {
+    en: 'Explore MiniMax H3',
+    'zh-CN': '探索 MiniMax H3'
   },
-  'modelRelease.tryWorkflows': {
-    en: 'Try Workflows',
-    'zh-CN': '试用工作流'
-  },
-  'modelRelease.videoAriaLabel': {
+  'modelRelease.minimax.videoAriaLabel': {
     en: 'MiniMax H3 preview',
     'zh-CN': 'MiniMax H3 预览'
   },
@@ -1664,6 +1735,11 @@ const translations = {
     en: 'Every tutorial and workflow',
     'zh-CN': '所有教程与工作流'
   },
+  'learning.categories.basics': { en: 'Basics', 'zh-CN': '基础' },
+  'learning.categories.basics.blurb': {
+    en: 'Fundamentals and getting started',
+    'zh-CN': '基础入门与上手指南'
+  },
   'learning.categories.vfx': { en: 'VFX', 'zh-CN': 'VFX' },
   'learning.categories.vfx.blurb': {
     en: 'Compositing, cleanup and shot work',
@@ -1681,6 +1757,15 @@ const translations = {
   },
   // Per-vertical h1 + description/meta copy, swapped when a category filter is
   // active (see learningHeading / learningDescription).
+  'learning.categories.basics.heading': {
+    en: 'ComfyUI Basics',
+    'zh-CN': 'ComfyUI 基础教程'
+  },
+  'learning.categories.basics.description': {
+    en: 'Beginner ComfyUI tutorials — learn the node graph, LoRAs, style transfer, and ControlNets from the ground up.',
+    'zh-CN':
+      '面向初学者的 ComfyUI 教程——从零开始掌握节点图、LoRA、风格迁移与 ControlNet。'
+  },
   'learning.categories.vfx.heading': {
     en: 'VFX Tutorials',
     'zh-CN': 'VFX 教程'

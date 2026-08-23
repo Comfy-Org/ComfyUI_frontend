@@ -194,15 +194,27 @@ test.describe('Events page — desktop @smoke', () => {
         await expect(row).toContainText(event.location![locale])
         await expect(row).toContainText(event.dateLabel![locale])
 
-        const livestreamLink = row.getByRole('link', {
-          name: new RegExp(t('events.upcoming.livestream', locale))
+        // In-person events override the CTA label (e.g. "Register"); the rest
+        // fall back to the default "Livestream" label.
+        const ctaLabel =
+          event.ctaLabel?.[locale] ?? t('events.upcoming.livestream', locale)
+        const ctaLink = row.getByRole('link', {
+          name: `${event.title[locale]} — ${ctaLabel}`,
+          exact: true
         })
         // Events with a stream open their own detail page (dialog over the
         // directory); the rest link to the event's page.
+        const eventLink = event.link
         const expectedHref = eventVideoId(event)
           ? localizeHref(eventPath(event), locale)
-          : event.link!.href[locale]
-        await expect(livestreamLink).toHaveAttribute('href', expectedHref)
+          : eventLink?.href[locale]
+        if (expectedHref) {
+          await expect(ctaLink).toHaveAttribute('href', expectedHref)
+        }
+        // External registration links open in a new tab.
+        if (!eventVideoId(event) && eventLink?.newTab) {
+          await expect(ctaLink).toHaveAttribute('target', '_blank')
+        }
       }
     }
   })
@@ -211,7 +223,9 @@ test.describe('Events page — desktop @smoke', () => {
     page
   }) => {
     const event = upcomingEvents.find((entry) => eventVideoId(entry))
-    test.skip(!event, 'needs an upcoming event with a video')
+    const videoId = event && eventVideoId(event)
+    test.skip(!videoId, 'needs an upcoming event with a video')
+    if (!event || !videoId) return
 
     for (const [path, locale] of LOCALES) {
       await page.goto(path)
@@ -220,21 +234,21 @@ test.describe('Events page — desktop @smoke', () => {
 
       await section
         .getByRole('link', {
-          name: `${event!.title[locale]} — ${t('events.upcoming.livestream', locale)}`
+          name: `${event.title[locale]} — ${t('events.upcoming.livestream', locale)}`
         })
         .click()
 
       await expect(page).toHaveURL(
-        new RegExp(`${localizeHref(eventPath(event!), locale)}/?$`)
+        new RegExp(`${localizeHref(eventPath(event), locale)}/?$`)
       )
-      const dialog = page.getByRole('dialog', { name: event!.title[locale] })
+      const dialog = page.getByRole('dialog', { name: event.title[locale] })
       await expect(dialog).toBeVisible()
       await expect(
-        dialog.getByRole('heading', { level: 1, name: event!.title[locale] })
+        dialog.getByRole('heading', { level: 1, name: event.title[locale] })
       ).toBeVisible()
       await expect(dialog.locator('iframe')).toHaveAttribute(
         'src',
-        new RegExp(eventVideoId(event!)!)
+        new RegExp(videoId)
       )
 
       // Future events offer adding the stream to the visitor's calendar; the
