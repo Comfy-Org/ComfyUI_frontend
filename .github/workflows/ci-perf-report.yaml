@@ -72,8 +72,11 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
+      # Save whenever metrics exist, not only when every perf test passed.
+      # Gating on steps.perf.outcome == 'success' let a single failing test
+      # silently kill the baseline pipeline for months (issue #15545).
       - name: Save perf baseline to perf-data branch
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.perf.outcome == 'success'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && hashFiles('test-results/perf-metrics.json') != ''
         continue-on-error: true
         run: |
           git config user.name "github-actions[bot]"
@@ -112,3 +115,20 @@ jobs:
           git worktree remove /tmp/perf-data --force 2>/dev/null || true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # The save step above is continue-on-error, so a broken save is
+      # invisible on its own. This step turns sustained staleness into a
+      # red job on main pushes: if the newest commit on perf-data is older
+      # than 7 days, the baseline pipeline is broken and someone must look.
+      - name: Alarm if perf baseline is stale
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          git fetch origin perf-data
+          NEWEST=$(git log -1 --format=%ct origin/perf-data)
+          NOW=$(date +%s)
+          AGE_DAYS=$(( (NOW - NEWEST) / 86400 ))
+          echo "Newest perf-data commit is ${AGE_DAYS} day(s) old"
+          if [ "$AGE_DAYS" -gt 7 ]; then
+            echo "::error::Perf baseline is stale (${AGE_DAYS} days old). The baseline save step is failing silently. See issue #15545 for the last occurrence."
+            exit 1
+          fi

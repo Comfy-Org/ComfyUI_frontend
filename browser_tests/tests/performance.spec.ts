@@ -420,12 +420,23 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
     })
 
     test('zoom out culling', async ({ comfyPage }) => {
+      // Wheel zoom is clamped by ds.min_scale (0.1), which keeps ~200px
+      // nodes at >=20px on screen — the <4px culling regime is unreachable
+      // and the assertion below could never pass (see issue #15545).
+      // Lower the clamp for this test so zooming can enter the regime.
+      await comfyPage.page.evaluate(() => {
+        window.app!.canvas.ds.min_scale = 0.001
+      })
+
       await comfyPage.perf.startMeasuring()
 
       // Zoom out far enough that nodes become < 4px screen size
-      // (triggers size-based culling in isNodeInViewport)
-      for (let i = 0; i < 20; i++) {
+      // (triggers size-based culling in isNodeInViewport). The fitted
+      // starting scale varies with graph bounds, so zoom until the regime
+      // is reached rather than a fixed step count (bounded at 60 steps).
+      for (let i = 0; i < 60; i++) {
         await comfyPage.canvasOps.zoom(100)
+        if ((await comfyPage.canvasOps.getScale()) < 0.02) break
       }
 
       // Verify we actually entered the culling regime.
