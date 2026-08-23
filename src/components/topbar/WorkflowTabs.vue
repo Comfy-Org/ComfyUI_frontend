@@ -175,15 +175,18 @@ const { withConsent } = useAgentConsent()
 const tabActivity = useWorkflowTabActivityStore()
 
 function onAgentEntryClick(): void {
-  useTelemetry()?.trackAgentEntryButtonClicked({
-    resulting_state: agentPanelStore.isOpen ? 'closed' : 'opened'
-  })
-  // Closing never needs consent; opening does, the first time.
+  // Closing never needs consent; opening does, the first time. Report the
+  // click only once it has an outcome, so a declined consent is not counted
+  // as an open.
   if (agentPanelStore.isOpen) {
+    useTelemetry()?.trackAgentEntryButtonClicked({ resulting_state: 'closed' })
     agentPanelStore.toggle()
     return
   }
-  withConsent(() => agentPanelStore.open())
+  withConsent(() => {
+    useTelemetry()?.trackAgentEntryButtonClicked({ resulting_state: 'opened' })
+    agentPanelStore.open()
+  })
 }
 const { isLoggedIn } = useCurrentUser()
 // Dismiss a tab's terminal status badge once it has been viewed
