@@ -34,7 +34,11 @@ export function getComfyApiBaseUrl(): string {
 }
 
 export function getComfyCloudBaseUrl(): string {
-  return BUILD_TIME_CLOUD_BASE_URL
+  return configValueOrDefault(
+    remoteConfig.value,
+    'comfy_cloud_base_url',
+    BUILD_TIME_CLOUD_BASE_URL
+  )
 }
 
 export function getComfyPlatformBaseUrl(): string {
