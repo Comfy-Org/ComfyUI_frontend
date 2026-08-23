@@ -42,6 +42,7 @@ import { parsePreviewExposures } from '@/core/schemas/previewExposureSchema'
 import { parseProxyWidgetErrorQuarantine } from '@/core/schemas/proxyWidgetQuarantineSchema'
 import {
   getPreviewExposureHostLocator,
+  tryGetPreviewExposureHostLocator,
   usePreviewExposureStore
 } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -560,28 +561,23 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   private _hydratePreviewExposures() {
     const store = usePreviewExposureStore()
     const rootGraphId = this.rootGraph.id
-    const hostLocator = getPreviewExposureHostLocator(this)
     const rawProperty = this.properties.previewExposures
     const hasExplicitProperty = Array.isArray(rawProperty)
     const fromProperty = parsePreviewExposures(rawProperty)
-    if (fromProperty.length) {
-      store.setExposures(rootGraphId, hostLocator, fromProperty)
-      return
-    }
-    if (hasExplicitProperty) {
-      store.setExposures(rootGraphId, hostLocator, [])
+    if (fromProperty.length || hasExplicitProperty) {
+      const hostLocator = tryGetPreviewExposureHostLocator(this)
+      if (hostLocator)
+        store.setExposures(rootGraphId, hostLocator, fromProperty)
       return
     }
     const legacyKey = createNodeLocatorId(null, this.id)
     const legacy = store.getExposures(rootGraphId, legacyKey)
-    if (legacy.length) {
-      store.setExposures(rootGraphId, hostLocator, [...legacy])
-      if (legacyKey !== hostLocator) {
-        store.setExposures(rootGraphId, legacyKey, [])
-      }
-      return
+    if (!legacy.length) return
+    const hostLocator = getPreviewExposureHostLocator(this)
+    store.setExposures(rootGraphId, hostLocator, [...legacy])
+    if (legacyKey !== hostLocator) {
+      store.setExposures(rootGraphId, legacyKey, [])
     }
-    store.setExposures(rootGraphId, hostLocator, [])
   }
 
   rebuildInputWidgetBindings(): void {
@@ -945,12 +941,11 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const serialized = super.serializeFromStoreState(state)
     const serializedProperties = { ...(serialized.properties ?? {}) }
     const rootGraphId = this.rootGraph.id
-    const hostLocator = getPreviewExposureHostLocator(this)
+    const hostLocator = tryGetPreviewExposureHostLocator(this)
 
-    const previewExposures = usePreviewExposureStore().getExposures(
-      rootGraphId,
-      hostLocator
-    )
+    const previewExposures = hostLocator
+      ? usePreviewExposureStore().getExposures(rootGraphId, hostLocator)
+      : []
     serializedProperties.previewExposures = previewExposures.map((entry) => ({
       ...entry
     }))
