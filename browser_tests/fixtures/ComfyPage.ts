@@ -645,11 +645,7 @@ export const comfyPageFixture = base.extend<{
         ...(isVueNodes && { 'Comfy.VueNodes.Enabled': true }),
         ...initialSettings
       }
-      try {
-        await comfyPage.setupSettings(startupSettings)
-      } catch (e) {
-        console.error(e)
-      }
+      await comfyPage.setupSettings(startupSettings)
       if (testInfo.tags.includes('@cloud')) {
         const context = page.context()
         await context.route('**/api/auth/session', (route) =>
