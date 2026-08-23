@@ -68,7 +68,9 @@ describe('useNodeDataStore', () => {
     const duplicate = node(1, 'sub-1')
 
     store.registerNode(graphScope(rootA, rootA), first)
-    expect(() => store.registerNode(graphScope(rootA, 'sub-1'), duplicate)).toThrow()
+    expect(() =>
+      store.registerNode(graphScope(rootA, 'sub-1'), duplicate)
+    ).toThrow()
   })
 
   it('asserts when the same state object is re-registered under a different owner', () => {
@@ -76,7 +78,9 @@ describe('useNodeDataStore', () => {
     const registered = node(1)
     store.registerNode(graphScope(rootA, rootA), registered)
 
-    expect(() => store.registerNode(graphScope(rootA, 'sub-1'), registered)).toThrow()
+    expect(() =>
+      store.registerNode(graphScope(rootA, 'sub-1'), registered)
+    ).toThrow()
   })
 
   it('does NOT assert on idempotent same-state re-registration', () => {
