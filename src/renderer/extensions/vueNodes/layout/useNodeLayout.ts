@@ -16,12 +16,9 @@ export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<NodeId>) {
   const mutations = useLayoutMutations()
 
   // Get the customRef for this node (shared write access)
-  const layoutRef = layoutStore.getNodeLayoutRef(nodeId)
+  const { layout: layoutRef, release } = layoutStore.retainNodeLayoutRef(nodeId)
 
-  // Clean up refs and triggers when Vue component unmounts
-  onUnmounted(() => {
-    layoutStore.cleanupNodeRef(nodeId)
-  })
+  onUnmounted(release)
 
   // Computed properties for easy access
   const position = computed(() => {
