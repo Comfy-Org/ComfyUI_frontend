@@ -147,7 +147,9 @@ export class WorkspaceApiError extends Error {
 function parseRetryAfterSeconds(value: unknown): number | undefined {
   if (typeof value !== 'string' || value.trim() === '') return undefined
   const seconds = Number(value)
-  return Number.isFinite(seconds) && seconds > 0 ? Math.ceil(seconds) : undefined
+  return Number.isFinite(seconds) && seconds > 0
+    ? Math.ceil(seconds)
+    : undefined
 }
 
 const workspaceApiClient = axios.create({
