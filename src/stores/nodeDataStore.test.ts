@@ -62,32 +62,29 @@ describe('useNodeDataStore', () => {
     expect(store.getGraphNodesFor(rootA, sub).map((n) => n.id)).toEqual(['2'])
   })
 
-  it('rejects a duplicate id without changing either registration', () => {
+  it('asserts on duplicate (id, graphId) distinct-state registration', () => {
     const store = useNodeDataStore()
     const first = node(1)
     const duplicate = node(1, 'sub-1')
 
-    const registered = store.registerNode(graphScope(rootA, rootA), first)
-    const rejected = store.registerNode(graphScope(rootA, 'sub-1'), duplicate)
-
-    expect(registered?.id).toBe(first.id)
-    expect(rejected).toBeUndefined()
-    expect(duplicate.graphId).toBe('sub-1')
-    expect(store.getGraphNodesFor(rootA, rootA)).toEqual([registered])
-    expect(store.getGraphNodesFor(rootA, 'sub-1')).toEqual([])
+    store.registerNode(graphScope(rootA, rootA), first)
+    expect(() => store.registerNode(graphScope(rootA, 'sub-1'), duplicate)).toThrow()
   })
 
-  it('rejects the registered node identity from a sibling owner', () => {
+  it('asserts when the same state object is re-registered under a different owner', () => {
     const store = useNodeDataStore()
     const registered = node(1)
     store.registerNode(graphScope(rootA, rootA), registered)
 
-    expect(
-      store.registerNode(graphScope(rootA, 'sub-1'), registered)
-    ).toBeUndefined()
-    expect(registered.graphId).toBe(rootA)
-    expect(store.getGraphNodesFor(rootA, rootA)).toEqual([registered])
-    expect(store.getGraphNodesFor(rootA, 'sub-1')).toEqual([])
+    expect(() => store.registerNode(graphScope(rootA, 'sub-1'), registered)).toThrow()
+  })
+
+  it('does NOT assert on idempotent same-state re-registration', () => {
+    const store = useNodeDataStore()
+    const state = node(1)
+    const scope = graphScope(rootA, rootA)
+    const registered = store.registerNode(scope, state)!
+    expect(() => store.registerNode(scope, registered)).not.toThrow()
   })
 
   it('only deletes the registered identity from its owning graph', () => {

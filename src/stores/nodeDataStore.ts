@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { reactive, toRaw } from 'vue'
 
+import { assert } from '@/base/assert'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type {
   GraphScope,
@@ -53,7 +54,13 @@ export const useNodeDataStore = defineStore('nodeData', () => {
       incumbent.graphId === graphScope.owningGraphId
     )
       return incumbent
-    if (incumbent) return undefined
+    if (incumbent) {
+      assert(
+        false,
+        `nodeDataStore: duplicate NodeState for node ${state.id} in graph ${state.graphId}`
+      )
+      return undefined
+    }
     const bucket = existingBucket ?? rootBucket(graphScope.rootGraphId)
     const registered: NodeState = reactive(
       Object.assign(state, { graphId: graphScope.owningGraphId })

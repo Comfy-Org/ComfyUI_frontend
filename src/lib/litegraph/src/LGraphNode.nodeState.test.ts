@@ -11,7 +11,11 @@ import type { NodeState } from '@/types/nodeState'
 
 import { LGraphNode } from './litegraph'
 import type { Subgraph } from './litegraph'
-import { createTestSubgraph } from './subgraph/__fixtures__/subgraphHelpers'
+import { registerNodeState, unregisterNodeState } from './LGraphNode'
+import {
+  createTestRootGraph,
+  createTestSubgraph
+} from './subgraph/__fixtures__/subgraphHelpers'
 
 describe('LGraphNode node-data adoption', () => {
   beforeEach(() => {
@@ -160,5 +164,48 @@ describe('LGraphNode node-data adoption', () => {
       'LiteGraph: changing a node type after construction is deprecated'
     )
     expect(warn).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('LGraphNode registerNodeState / unregisterNodeState invariants', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  it('asserts when registering a node that already belongs to a different root graph', () => {
+    // Register node in rootA's subgraph, then attempt to register into rootB.
+    const subgraphA = createTestSubgraph()
+    const node = new LGraphNode('Node')
+    subgraphA.add(node)
+
+    const rootB = createTestRootGraph()
+    expect(() => registerNodeState(rootB, node)).toThrow()
+  })
+
+  it('asserts when unregistering after _state has drifted from the bucket', () => {
+    const { subgraph, node } = (() => {
+      const sg = createTestSubgraph()
+      const n = new LGraphNode('Node')
+      sg.add(n)
+      return { subgraph: sg, node: n }
+    })()
+
+    // Manually replace _state so unregister can't find the original identity.
+    const originalState = node._state
+    // @ts-expect-error — deliberately corrupting internal state for test
+    node._state = { ...originalState }
+
+    expect(() => unregisterNodeState(node)).toThrow()
+
+    // Restore so cleanup doesn't double-assert.
+    // @ts-expect-error — restore after corruption
+    node._state = originalState
+  })
+
+  it('does not assert on normal register → remove cycle', () => {
+    const sg = createTestSubgraph()
+    const node = new LGraphNode('Node')
+    sg.add(node)
+    expect(() => sg.remove(node)).not.toThrow()
   })
 })
