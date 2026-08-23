@@ -601,7 +601,7 @@ The dedicated stores use per-concern keying strategies:
 | `widgetValueStore`        | `WidgetId` (`graphId:nodeId:name`) |
 | `domWidgetStore`          | Widget UUID                        |
 | `layoutStore`             | Raw nodeId/linkId/rerouteId        |
-| `nodeOutputStore`         | `"${subgraphId}:${nodeId}"`        |
+| `nodeOutputStore`         | `"${subgraphUUID}:${nodeId}"`      |
 | `subgraphNavigationStore` | subgraphId or `'root'`             |
 
 ADR 0009 refines the promoted-widget target: promoted value widgets should use

@@ -59,7 +59,7 @@ graph LR
 graphId:nodeId:name
 (branded string, src/types/widgetId.ts)"]
         NLID["nodeLocatorId
-subgraphId:nodeId"]
+subgraphUUID:nodeId"]
         NID["nodeId (raw)"]
         LID["linkId (raw)"]
         RID["rerouteId (raw)"]
@@ -73,10 +73,11 @@ subgraphId:nodeId"]
 ```
 
 `WidgetId = graphId:nodeId:name` is itself a branded string (see
-`src/types/widgetId.ts`). `nodeLocatorId = subgraphId:nodeId` addresses node
-outputs. `layoutStore` keys layout records by raw `nodeId` / `linkId` /
-`rerouteId`. Each store enforces its own key shape; there is no single shared
-entity-ID type across stores.
+`src/types/widgetId.ts`). `nodeLocatorId = subgraphDefinitionUUID:nodeId` addresses node
+outputs, where the first segment is the subgraph definition's UUID and the second is
+the node's sequential integer ID (not a UUID). `layoutStore` keys layout records by raw
+`nodeId` / `linkId` / `rerouteId`. Each store enforces its own key shape; there is no
+single shared entity-ID type across stores.
 
 Note: `graphId` is a scope identifier. It identifies which graph an entity
 belongs to and forms the prefix of `WidgetId`. Subgraphs are nodes with a
