@@ -3696,18 +3696,34 @@ export class LGraphNode
     if (!this.graph) throw new NullGraphError()
     this.graph.incrementVersion()
 
-    // A collapsed missing-node placeholder serializes the size recorded in its
-    // file rather than its live one, so refresh that record with the size the
-    // node is being collapsed FROM: capturing after the flip would record the
-    // collapsed card Vue nodes mode re-measures into `size`. A recorded
-    // serialization without a size still gets none, matching `serialize()`.
+    // A missing-node placeholder has no definition to re-derive an expanded
+    // size from, so `last_serialization.size` is the sole record of it and has
+    // to track the live node in BOTH directions. Both halves run before the
+    // flag flips, because in Vue nodes mode `size` is a DOM measurement of
+    // whichever card is currently rendered and the other card's measurement
+    // only lands a frame later:
+    //   collapsing captures `size` while it still measures the expanded card;
+    //   expanding restores `size`, which still measures the collapsed card, so
+    //   that neither a serialize() inside that window nor an immediate second
+    //   collapse can substitute the collapsed dimensions for the recorded ones.
+    // A recorded serialization without a size still gets none, matching
+    // `serialize()`.
     const recordedSerialization = this.last_serialization
     if (
       this.constructor === LGraphNode &&
-      recordedSerialization?.size != null &&
-      !this.flags.collapsed
+      recordedSerialization?.size != null
     ) {
-      recordedSerialization.size = [this.size[0], this.size[1]]
+      if (this.flags.collapsed) {
+        this.size = recordedSerialization.size
+      } else {
+        // Replaced rather than mutated in place: `LGraph.configure()` assigns
+        // `last_serialization` by reference straight out of the caller's
+        // workflow data, which this node does not own.
+        this.last_serialization = {
+          ...recordedSerialization,
+          size: [this.size[0], this.size[1]]
+        }
+      }
     }
 
     this.flags.collapsed = !this.flags.collapsed
