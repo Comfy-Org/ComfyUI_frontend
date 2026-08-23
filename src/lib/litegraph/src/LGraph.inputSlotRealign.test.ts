@@ -288,12 +288,16 @@ const LINK_BY_INPUT_NAME: Record<string, number> = {
   in_c: 2
 }
 
-function assertLinksRealigned(graph: LGraph, targetNodeId: NodeId) {
+function assertLinksRealigned(
+  graph: LGraph,
+  targetNodeId: NodeId,
+  linkByInputName: Record<string, number> = LINK_BY_INPUT_NAME
+) {
   const target = graph.getNodeById(targetNodeId)!
   const linkStore = useLinkStore()
 
   for (const [slot, input] of target.inputs.entries()) {
-    const expectedLinkId = toLinkId(LINK_BY_INPUT_NAME[input.name])
+    const expectedLinkId = toLinkId(linkByInputName[input.name])
     const link = graph.links.get(expectedLinkId)!
 
     expect(link.target_slot, `link.target_slot for input ${input.name}`).toBe(
@@ -339,8 +343,16 @@ describe('LGraph.configure input slot realignment (#3348)', () => {
     const graph = new LGraph()
     graph.configure(savedWorkflow({ duplicate: true }))
 
-    expect(graph.links.has(toLinkId(4))).toBe(false)
-    assertLinksRealigned(graph, toNodeId(2))
+    // #15577: links 3 and 4 both target `2:2` from the same origin `1:0`, so
+    // they are interchangeable and only the surviving *id* changed here - the
+    // serialized input names link 4, so 4 now wins and 3 is the rejected alias.
+    // Topology is unchanged: `in_a` resolves to origin `1:0` in both arms, as
+    // assertLinksRealigned still checks below.
+    expect(graph.links.has(toLinkId(3))).toBe(false)
+    assertLinksRealigned(graph, toNodeId(2), {
+      ...LINK_BY_INPUT_NAME,
+      in_a: 4
+    })
   })
 
   it('maps a rejected subgraph input fanout branch to its exact survivor', () => {
@@ -355,7 +367,11 @@ describe('LGraph.configure input slot realignment (#3348)', () => {
     graph.configure(workflow)
 
     const subgraph = graph.subgraphs.get(SUBGRAPH_ID)!
-    expect(subgraph.inputs[0].linkIds).toEqual([toLinkId(2)])
+    // #15577: links 2 and 3 both target `2:0` from the same origin, so only the
+    // surviving *id* changed - node 2's input scalar and the boundary slot both
+    // name link 3, so 3 now wins instead of document-order 2. Topology is
+    // unchanged: the slot still fans out to nodes 1 and 2 from the same origin.
+    expect(subgraph.inputs[0].linkIds).toEqual([toLinkId(3)])
   })
 
   it('uses the first slot when one link is referenced by multiple inputs', () => {

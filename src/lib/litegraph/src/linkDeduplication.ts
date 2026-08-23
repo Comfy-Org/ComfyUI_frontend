@@ -54,36 +54,125 @@ export function remapLinkReferences(
   }
 }
 
+/**
+ * Removes serialized link ids from every list and scalar that names them.
+ * Used for links dropped because a *different* connection already owns the
+ * target slot: remapping would hand the loser's origin a link it does not own,
+ * so the reference must be deleted rather than repointed.
+ */
+function pruneLinkReferences(
+  data: ConfiguredGraph,
+  dropped: ReadonlySet<number>
+): void {
+  if (!dropped.size) return
+  const nodes = data.nodes ?? []
+
+  for (const input of nodes.flatMap((node) => node.inputs ?? [])) {
+    if (input.link != null && dropped.has(input.link)) input.link = null
+  }
+
+  const linkIdLists = [
+    ...nodes.flatMap((node) =>
+      (node.outputs ?? []).map((output) => output.links)
+    ),
+    ...(data.inputs ?? []).map((slot) => slot.linkIds),
+    ...(data.outputs ?? []).map((slot) => slot.linkIds),
+    ...(data.reroutes ?? []).map((reroute) => reroute.linkIds)
+  ]
+  for (const ids of linkIdLists) {
+    if (!ids) continue
+    const kept = ids.filter((id) => !dropped.has(id))
+    if (kept.length !== ids.length) ids.splice(0, ids.length, ...kept)
+  }
+
+  if (data.extra?.linkExtensions) {
+    data.extra.linkExtensions = data.extra.linkExtensions.filter(
+      (extension) => !dropped.has(extension.id)
+    )
+  }
+}
+
+/**
+ * Maps each `target_id:target_slot` to the link id the *target side* of the
+ * serialized data names, when that side can name exactly one.
+ *
+ * Positional, not membership. A node input holds a single scalar at a known
+ * index, so it is authoritative. A subgraph boundary slot holds an *array*
+ * (`SubgraphIO.linkIds`), and a file with two links into one boundary slot
+ * lists both ids, so containment cannot discriminate between them - such
+ * slots deliberately produce no entry here and fall back to document order.
+ */
+function authoritativeSurvivorByTarget(
+  data: ConfiguredGraph
+): Map<string, number> {
+  const authoritative = new Map<string, number>()
+  for (const node of data.nodes ?? []) {
+    const inputs = node.inputs ?? []
+    for (const [slot, input] of inputs.entries()) {
+      if (input?.link == null) continue
+      authoritative.set(`${toNodeId(node.id)}:${slot}`, input.link)
+    }
+  }
+  return authoritative
+}
+
 export function normalizeConfiguredTopology<T extends ConfiguredGraph>(
   data: T
 ): T {
   if (!data.links?.length) return data
 
-  const survivorByTarget = new Map<string, ReturnType<typeof linkFields>>()
-  const survivorByDuplicateId = new Map<number, number>()
-  const links = data.links.filter((link) => {
+  const authoritative = authoritativeSurvivorByTarget(data)
+
+  // Pass 1: group every link by the slot it targets, in document order.
+  const byTarget = new Map<string, ReturnType<typeof linkFields>[]>()
+  for (const link of data.links) {
     const fields = linkFields(link)
     const key = `${toNodeId(fields.target_id)}:${fields.target_slot}`
-    const survivor = survivorByTarget.get(key)
-    if (!survivor) {
-      survivorByTarget.set(key, fields)
-      return true
+    const group = byTarget.get(key)
+    if (group) group.push(fields)
+    else byTarget.set(key, [fields])
+  }
+
+  // Pass 2: pick the survivor per slot. The target side wins when it names a
+  // link that is actually in the group; otherwise keep document order.
+  const survivorIdByKey = new Map<string, number>()
+  const remapped = new Map<number, number>()
+  const dropped = new Set<number>()
+  for (const [key, group] of byTarget) {
+    if (group.length === 1) continue
+    const named = authoritative.get(key)
+    const survivor =
+      (named == null
+        ? undefined
+        : group.find((fields) => fields.id === named)) ?? group[0]
+    survivorIdByKey.set(key, survivor.id)
+    for (const fields of group) {
+      if (fields.id === survivor.id) continue
+      if (
+        toNodeId(survivor.origin_id) === toNodeId(fields.origin_id) &&
+        survivor.origin_slot === fields.origin_slot
+      ) {
+        remapped.set(fields.id, survivor.id)
+      } else {
+        dropped.add(fields.id)
+        console.warn(
+          `LiteGraph: link ${fields.id} (origin ${String(fields.origin_id)}:${fields.origin_slot}) dropped; ` +
+            `${key} is already connected by link ${survivor.id} (origin ${String(survivor.origin_id)}:${survivor.origin_slot})`
+        )
+      }
     }
-    if (
-      toNodeId(survivor.origin_id) === toNodeId(fields.origin_id) &&
-      survivor.origin_slot === fields.origin_slot
-    ) {
-      survivorByDuplicateId.set(fields.id, survivor.id)
-    }
-    return false
+  }
+
+  if (!remapped.size && !dropped.size) return data
+
+  const links = data.links.filter((link) => {
+    const { id } = linkFields(link)
+    return !remapped.has(id) && !dropped.has(id)
   })
-  if (links.length === data.links.length) return data
 
-  const normalized = Object.assign({}, data, { links })
-  if (!survivorByDuplicateId.size) return normalized
-
-  const cloned = cloneDeep(normalized)
-  remapLinkReferences(cloned, survivorByDuplicateId)
+  const cloned = cloneDeep(Object.assign({}, data, { links }))
+  if (remapped.size) remapLinkReferences(cloned, remapped)
+  pruneLinkReferences(cloned, dropped)
   return cloned
 }
 
