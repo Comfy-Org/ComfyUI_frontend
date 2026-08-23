@@ -99,10 +99,10 @@ function useBillingCapabilitiesInternal() {
     }
   }
 
-  function initialize(): void {
+  async function initialize(): Promise<void> {
     initialized = true
     if (!isCloud) return
-    void fetchCapabilities()
+    await fetchCapabilities()
   }
 
   watch(

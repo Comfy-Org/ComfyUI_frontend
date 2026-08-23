@@ -130,6 +130,7 @@ describe('WorkspaceAuthGate', () => {
     mockWorkspaceStoreInitState.value = 'uninitialized'
     mockActiveWorkspaceId.value = 'workspace-123'
     mockRefreshRemoteConfig.mockResolvedValue(undefined)
+    mockBillingCapabilitiesInitialize.mockResolvedValue(undefined)
     mockWorkspaceStoreInitialize.mockImplementation(async () => {
       mockWorkspaceStoreInitState.value = 'ready'
     })
@@ -295,6 +296,28 @@ describe('WorkspaceAuthGate', () => {
 
       expect(mockWorkspaceStoreInitialize).toHaveBeenCalled()
       expect(mockBillingCapabilitiesInitialize).toHaveBeenCalled()
+      expect(screen.getByTestId('slot-content')).toBeInTheDocument()
+    })
+
+    it('waits for billing capabilities before rendering the app', async () => {
+      let resolveCapabilities!: () => void
+      mockBillingCapabilitiesInitialize.mockImplementationOnce(
+        () =>
+          new Promise<void>((resolve) => {
+            resolveCapabilities = resolve
+          })
+      )
+
+      mountComponent()
+      await vi.waitFor(() =>
+        expect(mockBillingCapabilitiesInitialize).toHaveBeenCalledOnce()
+      )
+
+      expect(screen.queryByTestId('slot-content')).not.toBeInTheDocument()
+
+      resolveCapabilities()
+      await flushPromises()
+
       expect(screen.getByTestId('slot-content')).toBeInTheDocument()
     })
 

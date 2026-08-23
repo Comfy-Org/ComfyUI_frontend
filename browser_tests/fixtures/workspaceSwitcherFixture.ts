@@ -1,6 +1,7 @@
 import type { WorkspaceTokenResponse } from '@/platform/workspace/stores/workspaceAuthStore'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import {
   EMPTY_BILLING_BALANCE,
   EMPTY_BILLING_PLANS,
@@ -15,8 +16,8 @@ import { mockWorkspaceList } from '@e2e/fixtures/utils/workspaceMocks'
 
 /**
  * Boots the app with the workspace-switcher endpoints mocked: remote config
- * (team workspaces enabled), the workspace list, workspace-token minting for
- * whichever workspace is being switched to, and a no-op session refresh.
+ * (team workspaces enabled), the workspace list, workspace-token minting and
+ * billing capabilities for the selected workspace, and a no-op session refresh.
  */
 export const workspaceSwitcherTest = comfyPageFixture.extend({
   page: async ({ page }, use) => {
@@ -65,6 +66,20 @@ export const workspaceSwitcherTest = comfyPageFixture.extend({
     await page.route('**/api/billing/plans', (route) =>
       route.fulfill(jsonRoute(EMPTY_BILLING_PLANS))
     )
+    await page.route('**/api/billing/capabilities', async (route) => {
+      if (route.request().method() !== 'GET') return route.fallback()
+      const token = route.request().headers().authorization
+      const workspaceId =
+        token?.replace('Bearer mock-workspace-token-', '') ?? 'ws-personal'
+      await route.fulfill(
+        jsonRoute(
+          createBillingCapabilities(workspaceId, {
+            can_subscribe_self_serve: workspaceId !== 'ws-team-long',
+            can_top_up: workspaceId !== 'ws-team-long'
+          })
+        )
+      )
+    })
 
     await use(page)
   }

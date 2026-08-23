@@ -86,25 +86,22 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canTopUp.value).toBe(false)
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
 
-    billingCapabilities.initialize()
+    const initialization = billingCapabilities.initialize()
     expect(billingCapabilities.canTopUp.value).toBe(false)
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
 
     resolveRequest(capabilitiesResponse(true))
-    await vi.waitFor(() =>
-      expect(billingCapabilities.canTopUp.value).toBe(true)
-    )
+    await initialization
+    expect(billingCapabilities.canTopUp.value).toBe(true)
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(true)
   })
 
   it('keeps top-up available when the endpoint is unavailable', async () => {
     mockGetBillingCapabilities.mockRejectedValueOnce(new Error('unavailable'))
 
-    billingCapabilities.initialize()
+    await billingCapabilities.initialize()
 
-    await vi.waitFor(() =>
-      expect(billingCapabilities.canTopUp.value).toBe(true)
-    )
+    expect(billingCapabilities.canTopUp.value).toBe(true)
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
   })
 
@@ -113,19 +110,40 @@ describe('useBillingCapabilities', () => {
       capabilitiesResponse(false, 'workspace-2')
     )
 
-    billingCapabilities.initialize()
+    await billingCapabilities.initialize()
 
-    await vi.waitFor(() =>
-      expect(mockGetBillingCapabilities).toHaveBeenCalledOnce()
-    )
+    expect(mockGetBillingCapabilities).toHaveBeenCalledOnce()
     expect(billingCapabilities.canTopUp.value).toBe(true)
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
   })
 
-  it('keeps local top-up available without calling the Cloud endpoint', () => {
+  it('discards a stale response after the active workspace changes', async () => {
+    let resolveFirstRequest!: (value: BillingCapabilitiesResponse) => void
+    mockGetBillingCapabilities
+      .mockImplementationOnce(
+        () =>
+          new Promise<BillingCapabilitiesResponse>((resolve) => {
+            resolveFirstRequest = resolve
+          })
+      )
+      .mockResolvedValueOnce(capabilitiesResponse(false, 'workspace-2', false))
+
+    const firstInitialization = billingCapabilities.initialize()
+    mockScope.workspaceId = 'workspace-2'
+    await billingCapabilities.initialize()
+
+    resolveFirstRequest(capabilitiesResponse(true, 'workspace-1', true))
+    await firstInitialization
+
+    expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(2)
+    expect(billingCapabilities.canTopUp.value).toBe(false)
+    expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
+  })
+
+  it('keeps local top-up available without calling the Cloud endpoint', async () => {
     mockIsCloud.value = false
 
-    billingCapabilities.initialize()
+    await billingCapabilities.initialize()
 
     expect(billingCapabilities.canTopUp.value).toBe(true)
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
@@ -137,10 +155,8 @@ describe('useBillingCapabilities', () => {
       capabilitiesResponse(false)
     )
 
-    billingCapabilities.initialize()
+    await billingCapabilities.initialize()
 
-    await vi.waitFor(() =>
-      expect(billingCapabilities.canTopUp.value).toBe(false)
-    )
+    expect(billingCapabilities.canTopUp.value).toBe(false)
   })
 })
