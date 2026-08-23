@@ -50,12 +50,21 @@ if (perfStatus === 'ready' && existsSync('test-results/perf-metrics.json')) {
       { encoding: 'utf-8' }
     ).trimEnd()
     lines.push(perfReport)
-  } catch {
-    lines.push('## ⚡ Performance')
-    lines.push('')
-    lines.push(
-      '> ⚠️ Failed to render performance report. Check the CI workflow logs.'
-    )
+  } catch (error) {
+    // A non-zero exit does not mean nothing was rendered: perf-report.ts writes
+    // the whole report to stdout and only then sets a failing exit code. Keep
+    // whatever it produced rather than replacing a complete report with a stub.
+    const partial = (error as { stdout?: string | Buffer })?.stdout
+    const rendered = typeof partial === 'string' ? partial.trimEnd() : ''
+    if (rendered.length > 0) {
+      lines.push(rendered)
+    } else {
+      lines.push('## ⚡ Performance')
+      lines.push('')
+      lines.push(
+        '> ⚠️ Failed to render performance report. Check the CI workflow logs.'
+      )
+    }
   }
 } else if (
   perfStatus === 'failed' ||

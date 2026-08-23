@@ -1,6 +1,14 @@
-import { existsSync, readFileSync, readdirSync } from 'node:fs'
-import { join } from 'node:path'
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  writeFileSync
+} from 'node:fs'
+import { dirname, join } from 'node:path'
 
+import type { FpsSample, PerfGateResult } from './perf-gate'
+import { TARGET_P5_FPS, evaluatePerfGate, formatGateFailure } from './perf-gate'
 import type { MetricStats } from './perf-stats'
 import {
   classifyChange,
@@ -90,8 +98,13 @@ const REPORTED_METRICS: MetricDef[] = [
   { key: 'eventListeners', label: 'event listeners', unit: '', minAbsDelta: 5 }
 ]
 
-/** Target: P5 FPS ≥ 52 */
-const TARGET_P5_FPS = 52
+const GATE_PATH = 'test-results/perf-gate.json'
+
+/**
+ * Opt-in. Without it this script keeps its historical contract: render to
+ * stdout, exit 0, never fail a job.
+ */
+const FAIL_ON_FPS_BUDGET = process.argv.includes('--fail-on-fps-budget')
 
 function groupByName(
   measurements: PerfMeasurement[]
@@ -218,20 +231,40 @@ function frameTimeToFps(ms: number): number {
   return ms > 0 ? 1000 / ms : 0
 }
 
-function renderHeadlineSummary(
+/**
+ * P5 FPS per test, in the same units the gate asserts against. Derived here
+ * rather than inside the renderer so the number the gate acts on is the exact
+ * number the summary prints.
+ */
+function collectFpsSamples(
   prGroups: Map<string, PerfMeasurement[]>
+): FpsSample[] {
+  const samples: FpsSample[] = []
+  for (const [testName, prSamples] of prGroups) {
+    const p95Frame = medianMetric(prSamples, 'p95FrameDurationMs')
+    samples.push({
+      testName,
+      p5Fps: p95Frame !== null ? frameTimeToFps(p95Frame) : null
+    })
+  }
+  return samples
+}
+
+function renderHeadlineSummary(
+  prGroups: Map<string, PerfMeasurement[]>,
+  fpsSamples: FpsSample[]
 ): string[] {
   const lines: string[] = []
   const summaries: string[] = []
+  const fpsByTest = new Map(fpsSamples.map((s) => [s.testName, s.p5Fps]))
 
   for (const [testName, prSamples] of prGroups) {
     const avgFrame = medianMetric(prSamples, 'frameDurationMs')
-    const p95Frame = medianMetric(prSamples, 'p95FrameDurationMs')
     const tbt = medianMetric(prSamples, 'totalBlockingTimeMs')
     const heap = medianMetric(prSamples, 'heapUsedBytes')
 
     const avgFps = avgFrame !== null ? frameTimeToFps(avgFrame) : null
-    const p5Fps = p95Frame !== null ? frameTimeToFps(p95Frame) : null
+    const p5Fps = fpsByTest.get(testName) ?? null
 
     const parts: string[] = [`**${testName}**:`]
     if (avgFps !== null) parts.push(`${avgFps.toFixed(1)} avg FPS`)
@@ -258,7 +291,7 @@ function renderFullReport(
   prGroups: Map<string, PerfMeasurement[]>,
   baseline: PerfReport,
   historical: PerfReport[]
-): string[] {
+): { lines: string[]; regressionCount: number } {
   const lines: string[] = []
   const baselineGroups = groupByName(baseline.measurements)
   const tableHeader = [
@@ -383,7 +416,7 @@ function renderFullReport(
     )
   }
 
-  return lines
+  return { lines, regressionCount: flaggedRows.length }
 }
 
 function renderColdStartReport(
@@ -462,12 +495,42 @@ function renderNoBaselineReport(
   return lines
 }
 
+/**
+ * The gate verdict as a file, so a workflow step can act on it without
+ * re-parsing markdown. Written on every run, gate enabled or not.
+ */
+function writeGateArtifact(gate: PerfGateResult): void {
+  try {
+    mkdirSync(dirname(GATE_PATH), { recursive: true })
+    writeFileSync(GATE_PATH, JSON.stringify(gate, null, 2) + '\n')
+  } catch (error) {
+    console.warn(`Could not write ${GATE_PATH}: ${String(error)}`)
+  }
+}
+
+/** Reports the verdict on stderr so it never contaminates the markdown. */
+function applyGate(gate: PerfGateResult): void {
+  writeGateArtifact(gate)
+  if (gate.passed) return
+  for (const failure of gate.failures) {
+    console.error(`perf gate: ${formatGateFailure(failure)}`)
+  }
+  if (FAIL_ON_FPS_BUDGET) process.exitCode = 1
+}
+
 function main() {
   if (!existsSync(CURRENT_PATH)) {
     process.stdout.write(
       '## ⚡ Performance Report\n\nNo perf metrics found. Perf tests may not have run.\n'
     )
-    process.exit(0)
+    applyGate(
+      evaluatePerfGate({
+        metricsPresent: false,
+        fpsSamples: [],
+        regressionCount: 0
+      })
+    )
+    return
   }
 
   const current: PerfReport = JSON.parse(readFileSync(CURRENT_PATH, 'utf-8'))
@@ -479,12 +542,17 @@ function main() {
   const historical = loadHistoricalReports()
   const prGroups = groupByName(current.measurements)
 
+  const fpsSamples = collectFpsSamples(prGroups)
+  let regressionCount = 0
+
   const lines: string[] = []
   lines.push('## ⚡ Performance Report\n')
-  lines.push(...renderHeadlineSummary(prGroups))
+  lines.push(...renderHeadlineSummary(prGroups, fpsSamples))
 
   if (baseline && historical.length >= 2) {
-    lines.push(...renderFullReport(prGroups, baseline, historical))
+    const full = renderFullReport(prGroups, baseline, historical)
+    lines.push(...full.lines)
+    regressionCount = full.regressionCount
   } else if (baseline) {
     lines.push(...renderColdStartReport(prGroups, baseline, historical.length))
   } else {
@@ -504,6 +572,10 @@ function main() {
   lines.push('\n</details>')
 
   process.stdout.write(lines.join('\n') + '\n')
+
+  applyGate(
+    evaluatePerfGate({ metricsPresent: true, fpsSamples, regressionCount })
+  )
 }
 
 main()
