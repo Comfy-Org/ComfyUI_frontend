@@ -132,7 +132,7 @@ belongs here rather than in a thread.
 **The prior art was built, shipped, and deleted.** Two rounds:
 
 - PR 8856 (`proto-widget-v2`) introduced `PromotedWidgetView` — synthetic widget
-  *objects* with identities held stable across re-derivation by a
+  _objects_ with identities held stable across re-derivation by a
   `PromotedWidgetViewManager` cache.
 - PR 12617 deleted that manager, the view class, the `world/widgetValueIO`
   indirection layer, and `IBaseWidget.entityId`, and declared `WidgetId` the
@@ -141,8 +141,8 @@ belongs here rather than in a thread.
 Note that the deleted `WidgetEntityId` (`src/world/entityIds.ts`) was **not** a
 synthetic id. It was `Brand<string, 'WidgetEntityId'>` over the same
 `graphId:nodeId:name` composite — the same key under a different brand, removed
-as a duplicate. What PR 12617 actually retired was the synthetic *widget-object
-identity* layer, not a competing id scheme. An earlier revision of this
+as a duplicate. What PR 12617 actually retired was the synthetic _widget-object
+identity_ layer, not a competing id scheme. An earlier revision of this
 amendment described `WidgetEntityId` as "synthetic numeric", which made the
 alternative look untried; it was not.
 
