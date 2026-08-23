@@ -17,7 +17,8 @@ import type { UUID } from '@/utils/uuid'
  */
 export const useNodeDataStore = defineStore('nodeData', () => {
   interface RootNodeBucket {
-    byOwner: Map<OwningGraphId, Map<NodeId, NodeState>>
+    byId: Map<NodeId, NodeState>
+    idsByOwner: Map<OwningGraphId, Set<NodeId>>
   }
 
   const roots = reactive(new Map<RootGraphId, RootNodeBucket>())
@@ -26,7 +27,8 @@ export const useNodeDataStore = defineStore('nodeData', () => {
     const existing = roots.get(rootGraphId)
     if (existing) return existing
     const created = reactive<RootNodeBucket>({
-      byOwner: new Map()
+      byId: new Map(),
+      idsByOwner: new Map()
     })
     roots.set(rootGraphId, created)
     return created
@@ -44,22 +46,26 @@ export const useNodeDataStore = defineStore('nodeData', () => {
     state: NodeState
   ): NodeState | undefined {
     const existingBucket = roots.get(graphScope.rootGraphId)
-    const ownerNodes = existingBucket?.byOwner.get(graphScope.owningGraphId)
-    const incumbent = ownerNodes?.get(state.id)
-    if (incumbent && toRaw(incumbent) === toRaw(state)) return incumbent
+    const incumbent = existingBucket?.byId.get(state.id)
+    if (
+      incumbent &&
+      toRaw(incumbent) === toRaw(state) &&
+      incumbent.graphId === graphScope.owningGraphId
+    )
+      return incumbent
     if (incumbent) return undefined
-    for (const nodes of existingBucket?.byOwner.values() ?? []) {
-      for (const registered of nodes.values()) {
-        if (toRaw(registered) === toRaw(state)) return undefined
-      }
-    }
     const bucket = existingBucket ?? rootBucket(graphScope.rootGraphId)
     const registered: NodeState = reactive(
       Object.assign(state, { graphId: graphScope.owningGraphId })
     )
-    const nodes = ownerNodes ?? reactive(new Map<NodeId, NodeState>())
-    nodes.set(registered.id, registered)
-    if (!ownerNodes) bucket.byOwner.set(graphScope.owningGraphId, nodes)
+    bucket.byId.set(registered.id, registered)
+    const ownerIds = bucket.idsByOwner.get(graphScope.owningGraphId)
+    if (ownerIds) ownerIds.add(registered.id)
+    else
+      bucket.idsByOwner.set(
+        graphScope.owningGraphId,
+        reactive(new Set([registered.id]))
+      )
     return registered
   }
 
@@ -69,26 +75,36 @@ export const useNodeDataStore = defineStore('nodeData', () => {
   ): NodeState[] {
     const graphScope = scope(rootGraphId, owningGraphId)
     const bucket = roots.get(graphScope.rootGraphId)
-    const nodes = bucket?.byOwner.get(graphScope.owningGraphId)
-    return nodes ? [...nodes.values()] : []
+    const ids = bucket?.idsByOwner.get(graphScope.owningGraphId)
+    if (!bucket || !ids) return []
+    return [...ids].flatMap((id) => {
+      const state = bucket.byId.get(id)
+      return state ? [state] : []
+    })
   }
 
   function ownsNode(graphScope: GraphScope, state: NodeState): boolean {
-    const registered = roots
-      .get(graphScope.rootGraphId)
-      ?.byOwner.get(graphScope.owningGraphId)
-      ?.get(state.id)
-    return toRaw(registered) === toRaw(state)
+    const registered = roots.get(graphScope.rootGraphId)?.byId.get(state.id)
+    return (
+      registered?.graphId === graphScope.owningGraphId &&
+      toRaw(registered) === toRaw(state)
+    )
   }
 
   function deleteNode(graphScope: GraphScope, state: NodeState): boolean {
     const bucket = roots.get(graphScope.rootGraphId)
-    const nodes = bucket?.byOwner.get(graphScope.owningGraphId)
-    const registered = nodes?.get(state.id)
-    if (!bucket || !nodes || toRaw(registered) !== toRaw(state)) return false
-    nodes.delete(state.id)
-    if (nodes.size === 0) bucket.byOwner.delete(graphScope.owningGraphId)
-    if (bucket.byOwner.size === 0) roots.delete(graphScope.rootGraphId)
+    const registered = bucket?.byId.get(state.id)
+    if (
+      !bucket ||
+      registered?.graphId !== graphScope.owningGraphId ||
+      toRaw(registered) !== toRaw(state)
+    )
+      return false
+    bucket.byId.delete(state.id)
+    const ownerIds = bucket.idsByOwner.get(graphScope.owningGraphId)
+    ownerIds?.delete(state.id)
+    if (ownerIds?.size === 0) bucket.idsByOwner.delete(graphScope.owningGraphId)
+    if (bucket.byId.size === 0) roots.delete(graphScope.rootGraphId)
     return true
   }
 
@@ -98,9 +114,11 @@ export const useNodeDataStore = defineStore('nodeData', () => {
 
   function clearOwner(graphScope: GraphScope): void {
     const bucket = roots.get(graphScope.rootGraphId)
-    if (!bucket) return
-    bucket.byOwner.delete(graphScope.owningGraphId)
-    if (bucket.byOwner.size === 0) roots.delete(graphScope.rootGraphId)
+    const ids = bucket?.idsByOwner.get(graphScope.owningGraphId)
+    if (!bucket || !ids) return
+    for (const id of ids) bucket.byId.delete(id)
+    bucket.idsByOwner.delete(graphScope.owningGraphId)
+    if (bucket.byId.size === 0) roots.delete(graphScope.rootGraphId)
   }
 
   return {
