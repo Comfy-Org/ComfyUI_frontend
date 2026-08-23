@@ -3,16 +3,30 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { getErrorMessage } from '@/utils/errorUtil'
+import { toError } from '@/utils/errorUtil'
 import { fixBadLinks } from '@/utils/linkFixer'
 
 interface ValidationResult {
   graphData: ComfyWorkflowJSON | null
 }
 
-const LOG_SAMPLE_LIMIT = 20
-const LOG_LINE_LIMIT = 200
 const MAX_REPORTS_PER_KIND = 25
+
+/**
+ * FNV-1a. The fixer's log lines interpolate node ids, which the schema leaves
+ * unconstrained (`zNodeId` accepts any string), so they cannot be forwarded to
+ * the sinks or pinned in memory verbatim. Digesting them keeps distinct
+ * corruption distinguishable — for dedup, and for grouping in a dashboard —
+ * without shipping workflow content anywhere.
+ */
+function digest(value: string): string {
+  let hash = 0x811c9dc5
+  for (let i = 0; i < value.length; i++) {
+    hash ^= value.charCodeAt(i)
+    hash = Math.imul(hash, 0x01000193)
+  }
+  return (hash >>> 0).toString(16)
+}
 
 /**
  * Workflow loads re-enter validation on undo/redo, so without these a single
@@ -26,7 +40,7 @@ const MAX_REPORTS_PER_KIND = 25
 const reportedCorruption = new Set<string>()
 const reportedFixerFailures = new Set<string>()
 
-function reportOnce(seen: Set<string>, key: string, report: () => void): void {
+function reportOnce(key: string, seen: Set<string>, report: () => void): void {
   if (seen.has(key)) return
   if (seen.size >= MAX_REPORTS_PER_KIND) return
   seen.add(key)
@@ -56,14 +70,12 @@ export function useWorkflowValidation() {
 
     const { patched, deleted, hasBadLinks } = linkValidation
     const workflowId = graphData.id ?? 'unidentified'
-    const logSample = logs
-      .slice(0, LOG_SAMPLE_LIMIT)
-      .map((line) => line.slice(0, LOG_LINE_LIMIT))
+    const corruptionDigest = digest(logs.join('\n'))
 
     if (patched || deleted) {
       reportOnce(
+        [workflowId, patched, deleted, corruptionDigest].join('|'),
         reportedCorruption,
-        [workflowId, patched, deleted, ...logSample].join('|'),
         () => {
           reportError(new Error('Workflow loaded with corrupt links'), {
             errorType: 'workflow_link_corruption',
@@ -73,7 +85,7 @@ export function useWorkflowValidation() {
               workflowId,
               patched,
               deleted,
-              logSample,
+              corruptionDigest,
               logCount: logs.length
             }
           })
@@ -135,8 +147,8 @@ export function useWorkflowValidation() {
         // Link fixer itself is throwing an error
         console.error(err)
         const workflowId = graphData.id ?? 'unidentified'
-        const cause = getErrorMessage(err) ?? String(err)
-        reportOnce(reportedFixerFailures, `${workflowId}|${cause}`, () => {
+        const cause = toError(err).message
+        reportOnce(`${workflowId}|${cause}`, reportedFixerFailures, () => {
           reportError(err, {
             errorType: 'workflow_link_fixer_failure',
             context: { workflowId }

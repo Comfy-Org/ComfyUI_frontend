@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import type * as LinkFixer from '@/utils/linkFixer'
 import { fixBadLinks } from '@/utils/linkFixer'
 
@@ -145,17 +146,15 @@ describe('useWorkflowValidation', () => {
     expect(options.context.workflowId).toBe(workflowId)
   })
 
-  it('keeps the diagnostics when validation is silenced', async () => {
-    await useWorkflowValidation().validateWorkflow(
+  it('reports, without a toast, when validation is silenced', async () => {
+    const { graphData } = await useWorkflowValidation().validateWorkflow(
       corruptWorkflow(uniqueId()),
       { silent: true }
     )
 
-    const [, options] = reportError.mock.calls[0] as [
-      Error,
-      { context: { logSample: string[] } }
-    ]
-    expect(options.context.logSample.length).toBeGreaterThan(0)
+    expect(reportError).toHaveBeenCalledOnce()
+    expect(useToastStore().add).not.toHaveBeenCalled()
+    expect(graphData?.links).toHaveLength(0)
   })
 
   it('reports a corrupt workflow once, not once per reload', async () => {
@@ -178,13 +177,16 @@ describe('useWorkflowValidation', () => {
   })
 
   it('stops reporting once the per-session cap is reached', async () => {
-    const validation = useWorkflowValidation()
+    vi.resetModules()
+    const { useWorkflowValidation: withEmptyBudget } =
+      await import('./useWorkflowValidation')
+    const validation = withEmptyBudget()
 
     for (let i = 0; i < 40; i++) {
       await validation.validateWorkflow(unidentifiedCorruptWorkflow())
     }
 
-    expect(reportError.mock.calls.length).toBeLessThanOrEqual(25)
+    expect(reportError).toHaveBeenCalledTimes(25)
   })
 
   it('stays quiet for an intact workflow', async () => {
