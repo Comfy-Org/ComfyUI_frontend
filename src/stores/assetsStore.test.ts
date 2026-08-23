@@ -2410,7 +2410,7 @@ describe('assetsStore - Flat Output Assets (cloud-only)', () => {
       expect(store.flatOutputAssets.map((a) => a.id)).toEqual(['fresh-1'])
     })
 
-    it('a stale loadMore that resolves before the refresh does not corrupt seenIds', async () => {
+    it('does not double-advance the offset with a discarded loadMore page', async () => {
       const { store } = await setupStoreWithFirstPage()
       const loadMorePage = deferredPage()
       const refreshPage = deferredPage()
@@ -2422,23 +2422,24 @@ describe('assetsStore - Flat Output Assets (cloud-only)', () => {
       const loadMoreResult = store.loadMoreFlatOutputs()
       const refreshResult = store.updateFlatOutputs()
 
-      // The stale loadMore settles first, before the refresh has replaced the
-      // list. Its page must be discarded rather than folded into seenIds.
-      loadMorePage.resolve(makePage([makeAsset('extra-1', 'extra.png')]))
       refreshPage.resolve(
         makePage([makeAsset('fresh-1', 'fresh.png')], { hasMore: true })
       )
+      loadMorePage.resolve(makePage([makeAsset('extra-1', 'extra.png')]))
       await Promise.all([loadMoreResult, refreshResult])
 
-      expect(store.flatOutputAssets.map((a) => a.id)).toEqual(['fresh-1'])
-
-      // If the discarded loadMore had leaked 'extra-1' into seenIds, this
-      // legitimate next page would be filtered out and never shown.
+      // The refreshed list holds one asset, so the next page starts at 1. A
+      // discarded page that still advanced the offset would skip a row here.
       vi.mocked(assetService.getAssetsPageByTag).mockResolvedValueOnce(
         makePage([makeAsset('extra-1', 'extra.png')])
       )
       await store.loadMoreFlatOutputs()
 
+      expect(assetService.getAssetsPageByTag).toHaveBeenLastCalledWith(
+        'output',
+        true,
+        { limit: FLAT_OUTPUT_PAGE_SIZE, offset: 1 }
+      )
       expect(store.flatOutputAssets.map((a) => a.id)).toEqual([
         'fresh-1',
         'extra-1'
@@ -2457,11 +2458,11 @@ describe('assetsStore - Flat Output Assets (cloud-only)', () => {
       const loadMoreResult = store.loadMoreFlatOutputs()
       const refreshResult = store.updateFlatOutputs()
 
-      loadMorePage.resolve(
-        makePage([makeAsset('extra-1', 'extra.png')], { hasMore: true })
-      )
       refreshPage.resolve(
         makePage([makeAsset('fresh-1', 'fresh.png')], { hasMore: false })
+      )
+      loadMorePage.resolve(
+        makePage([makeAsset('extra-1', 'extra.png')], { hasMore: true })
       )
       await Promise.all([loadMoreResult, refreshResult])
 
