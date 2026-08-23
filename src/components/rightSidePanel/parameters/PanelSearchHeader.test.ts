@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import { h } from 'vue'
 import { createI18n } from 'vue-i18n'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import PanelSearchHeader from './PanelSearchHeader.vue'
 
@@ -25,10 +25,6 @@ function renderHeader(
 }
 
 describe('PanelSearchHeader', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('forwards the searcher to the embedded search input', async () => {
     const searcher = vi.fn().mockResolvedValue(undefined)
     renderHeader(searcher)
