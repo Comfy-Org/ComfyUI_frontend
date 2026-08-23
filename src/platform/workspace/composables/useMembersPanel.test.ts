@@ -681,7 +681,8 @@ describe('useMembersPanel', () => {
       expect(mockToastAdd).toHaveBeenCalledWith({
         severity: 'warn',
         summary: 'workspacePanel.toast.inviteResendCooldown',
-        detail: 'workspacePanel.toast.inviteResendCooldownDetail|{"seconds":3}|3',
+        detail:
+          'workspacePanel.toast.inviteResendCooldownDetail|{"seconds":3}|3',
         life: 3000
       })
     })
