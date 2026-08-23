@@ -9,7 +9,10 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { isCloud } from '@/platform/distribution/types'
-import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
+import {
+  WorkspaceApiError,
+  type WorkspaceRole
+} from '@/platform/workspace/api/workspaceApi'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useTeamPlan } from '@/platform/workspace/composables/useTeamPlan'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
@@ -362,7 +365,23 @@ export function useMembersPanel() {
         summary: t('workspacePanel.toast.inviteResent'),
         life: 2000
       })
-    } catch {
+    } catch (err) {
+      if (err instanceof WorkspaceApiError && err.status === 429) {
+        const seconds = err.retryAfter
+        toast.add({
+          severity: 'warn',
+          summary: t('workspacePanel.toast.inviteResendCooldown'),
+          detail: seconds
+            ? t(
+                'workspacePanel.toast.inviteResendCooldownDetail',
+                { seconds },
+                seconds
+              )
+            : undefined,
+          life: Math.min((seconds ?? 5) * 1000, 10_000)
+        })
+        return
+      }
       toast.add({
         severity: 'error',
         summary: t('workspacePanel.toast.inviteResendFailed')

@@ -136,11 +136,18 @@ export class WorkspaceApiError extends Error {
   constructor(
     message: string,
     public readonly status?: number,
-    public readonly code?: string
+    public readonly code?: string,
+    public readonly retryAfter?: number
   ) {
     super(message)
     this.name = 'WorkspaceApiError'
   }
+}
+
+function parseRetryAfterSeconds(value: unknown): number | undefined {
+  if (typeof value !== 'string' || value.trim() === '') return undefined
+  const seconds = Number(value)
+  return Number.isFinite(seconds) && seconds > 0 ? Math.ceil(seconds) : undefined
 }
 
 const workspaceApiClient = axios.create({
@@ -166,10 +173,15 @@ function handleAxiosError(err: unknown): never {
     )
     // Callers compare `code` against server-defined values, so the parser's
     // "no code reported" sentinel must stay out of that contract.
+    const retryAfter =
+      status === 429
+        ? parseRetryAfterSeconds(err.response?.headers?.['retry-after'])
+        : undefined
     throw new WorkspaceApiError(
       message,
       status,
-      code === UNKNOWN_ERROR_CODE ? undefined : code
+      code === UNKNOWN_ERROR_CODE ? undefined : code,
+      retryAfter
     )
   }
   throw err
