@@ -34,10 +34,6 @@ exports[`LGraph > supports schema v0.4 graphs > oldSchemaGraph 1`] = `
         10,
         10,
       ],
-      "size": [
-        140,
-        60,
-      ],
     },
   ],
   "revision": 0,

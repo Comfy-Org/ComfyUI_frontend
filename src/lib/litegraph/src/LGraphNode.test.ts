@@ -101,12 +101,15 @@ describe('LGraphNode', () => {
   })
 
   describe('missing-node placeholder serialization', () => {
-    function createPlaceholder(): LGraphNode {
+    function createPlaceholder(
+      overrides: Partial<ISerialisedNode> = {}
+    ): LGraphNode {
       const lastSerialization = getMockISerialisedNode({
         type: 'UninstalledNodeType',
         pos: [100, 100],
         size: [140, 60],
-        widgets_values: [512]
+        widgets_values: [512],
+        ...overrides
       })
       const placeholder = new LGraphNode('')
       placeholder.last_serialization = lastSerialization
@@ -117,8 +120,8 @@ describe('LGraphNode', () => {
 
     test('carries the live pos and size through to the replayed serialization', () => {
       const placeholder = createPlaceholder()
-      placeholder.pos = [999, 888]
-      placeholder.size = [777, 666]
+      placeholder.setPos(999, 888)
+      placeholder.setSize([777, 666])
 
       const serialized = placeholder.serialize()
 
@@ -128,12 +131,32 @@ describe('LGraphNode', () => {
 
     test('still replays the fields it has no definition to regenerate', () => {
       const placeholder = createPlaceholder()
-      placeholder.size = [777, 666]
+      placeholder.setSize([777, 666])
 
       const serialized = placeholder.serialize()
 
       expect(serialized.type).toEqual('UninstalledNodeType')
       expect(serialized.widgets_values).toEqual([512])
+    })
+
+    test('does not invent a size when the recorded serialization has none', () => {
+      const placeholder = createPlaceholder()
+      delete (placeholder.last_serialization as Partial<ISerialisedNode>).size
+
+      const serialized = placeholder.serialize()
+
+      expect(serialized).not.toHaveProperty('size')
+    })
+
+    test('keeps the recorded size while collapsed, since flags are replayed from the file', () => {
+      const placeholder = createPlaceholder({ flags: { collapsed: false } })
+      placeholder.flags.collapsed = true
+      placeholder.setSize([80, 30])
+
+      const serialized = placeholder.serialize()
+
+      expect(serialized.size).toEqual([140, 60])
+      expect(serialized.flags).toEqual({ collapsed: false })
     })
   })
 
