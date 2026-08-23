@@ -14,6 +14,7 @@ const TOUR_WORKFLOW = { path: 'tour.json' }
 const OTHER_WORKFLOW = { path: 'other.json' }
 const INTRO_PREVIEW_MS = 500
 const OFFLINE_GRACE_MS = 20_000
+const ACCEPT_DEADLINE_MS = 15_000
 
 const mocks = vi.hoisted(() => ({
   canRunWorkflows: { value: true },
@@ -21,6 +22,7 @@ const mocks = vi.hoisted(() => ({
   workflowStatus: { value: new Map<unknown, string>() },
   executionErrors: { hasNodeError: false, hasPromptError: false },
   activeWorkflow: { value: null as unknown },
+  queuedJobs: { value: {} as Record<string, { workflow?: unknown }> },
   linearMode: { value: false },
   vueNodesEnabled: true,
   setSetting: vi.fn(),
@@ -46,29 +48,33 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
+// Each factory runs on the first dynamic import, which lands mid-test for
+// whichever test runs first. Seed the new ref from the holder so that test's
+// setup survives instead of being discarded.
 vi.mock('@/stores/executionStore', async () => {
   const { shallowRef } = await import('vue')
-  mocks.workflowStatus = shallowRef(new Map<unknown, string>())
+  mocks.workflowStatus = shallowRef(new Map(mocks.workflowStatus.value))
+  mocks.queuedJobs = shallowRef(mocks.queuedJobs.value)
   return {
     useExecutionStore: () => ({
       getWorkflowStatus: (workflow: unknown) =>
-        mocks.workflowStatus.value.get(workflow)
+        mocks.workflowStatus.value.get(workflow),
+      get queuedJobs() {
+        return mocks.queuedJobs.value
+      }
     })
   }
 })
 
 vi.mock('@/stores/executionErrorStore', async () => {
   const { reactive } = await import('vue')
-  mocks.executionErrors = reactive({
-    hasNodeError: false,
-    hasPromptError: false
-  })
+  mocks.executionErrors = reactive({ ...mocks.executionErrors })
   return { useExecutionErrorStore: () => mocks.executionErrors }
 })
 
 vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
   const { shallowRef } = await import('vue')
-  mocks.activeWorkflow = shallowRef(null as unknown)
+  mocks.activeWorkflow = shallowRef(mocks.activeWorkflow.value)
   return {
     useWorkflowStore: () => ({
       get activeWorkflow() {
@@ -80,7 +86,7 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
 
 vi.mock('@/renderer/core/canvas/canvasStore', async () => {
   const { shallowRef } = await import('vue')
-  mocks.linearMode = shallowRef(false)
+  mocks.linearMode = shallowRef(mocks.linearMode.value)
   return {
     useCanvasStore: () => ({
       get linearMode() {
@@ -190,6 +196,18 @@ const EVERY_ENDING: { named: string; ending: TourEnding }[] = [
   ...UNFINISHED_ENDINGS
 ]
 
+/** The queue storing a job, which is what acceptance actually looks like. */
+function acceptRun(workflow: unknown) {
+  mocks.queuedJobs.value = { 'job-1': { workflow } }
+  return nextTick()
+}
+
+/** The queue letting a job go, which `resetExecutionState` does silently. */
+function removeRun() {
+  mocks.queuedJobs.value = {}
+  return nextTick()
+}
+
 function finishRun(workflow: unknown, status: string) {
   mocks.workflowStatus.value = new Map(mocks.workflowStatus.value).set(
     workflow,
@@ -230,6 +248,7 @@ describe('useFirstRunTourController', () => {
   beforeEach(() => {
     mocks.canRunWorkflows = ref(true)
     mocks.workflowStatus.value = new Map()
+    mocks.queuedJobs.value = {}
     mocks.executionErrors.hasNodeError = false
     mocks.executionErrors.hasPromptError = false
     mocks.activeWorkflow.value = null
@@ -423,13 +442,83 @@ describe('useFirstRunTourController', () => {
   })
 
   describe('a run behind a dropped socket', () => {
+    /**
+     * A run the queue accepted: the click reports `generating`, then the
+     * backend answers with a status. The acknowledgement matters — an
+     * unacknowledged submission is a refusal, and is covered separately below.
+     */
     async function generatingRun() {
       await tourOnRunStep()
       mountRunButton('queue-button', () => {}).click()
       expect(mocks.runState.value).toBe('generating')
+      await finishRun(TOUR_WORKFLOW, 'running')
       const { api } = await import('@/scripts/api')
       return api
     }
+
+    it('stops promising a result the queue never accepted', async () => {
+      await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      expect(mocks.runState.value).toBe('generating')
+
+      // No status ever arrives. A refused submission gets no prompt_id, and
+      // account preconditions - sign-in, subscription, credits - are kept out
+      // of the error stores on purpose, so nothing else can report this.
+      await vi.advanceTimersByTimeAsync(ACCEPT_DEADLINE_MS)
+
+      expect(
+        mocks.runState.value,
+        'a paid user out of credits is refused silently; the card must not promise a result forever'
+      ).toBe('failed')
+    })
+
+    it('leaves a run accepted but still waiting for a machine alone', async () => {
+      // Cloud accepts the job and reports "Waiting for a machine" — it is in
+      // `initializingJobIds` with NO workflow status until a worker picks it
+      // up, which routinely outlasts the deadline. Keying on status instead of
+      // acceptance would fail this healthy run and tell the user to run again,
+      // prompting a duplicate paid submission.
+      await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      await acceptRun(TOUR_WORKFLOW)
+
+      await vi.advanceTimersByTimeAsync(ACCEPT_DEADLINE_MS * 4)
+
+      expect(
+        mocks.runState.value,
+        'an accepted job with no status yet is queued, not refused'
+      ).toBe('generating')
+    })
+
+    it('lets the offline grace outlive the acceptance deadline', async () => {
+      // The grace is 20s and the acceptance deadline 15s. A drop before the
+      // first status must still get the full grace: acceptance arrives on the
+      // queuePrompt response, not the socket, so it disarms this deadline even
+      // while the connection is down.
+      const { api } = await import('@/scripts/api')
+      await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      await acceptRun(TOUR_WORKFLOW)
+
+      api.dispatchCustomEvent('reconnecting')
+      await vi.advanceTimersByTimeAsync(OFFLINE_GRACE_MS - 1)
+
+      expect(
+        mocks.runState.value,
+        'the 15s acceptance deadline must not cut the 20s grace short'
+      ).toBe('generating')
+    })
+
+    it('leaves an accepted run past the acceptance deadline alone', async () => {
+      await generatingRun()
+
+      await vi.advanceTimersByTimeAsync(ACCEPT_DEADLINE_MS * 4)
+
+      expect(
+        mocks.runState.value,
+        'the deadline is on acceptance, not on the run: a job that answered must never be cut short'
+      ).toBe('generating')
+    })
 
     it('stops promising a result once the socket stays gone', async () => {
       const api = await generatingRun()
@@ -497,6 +586,110 @@ describe('useFirstRunTourController', () => {
         mocks.runState.value,
         'the grace timer must not clobber an outcome that arrived before it fired'
       ).toBe('succeeded')
+    })
+
+    it('stops promising a result once the queue lets go of its job', async () => {
+      await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      await acceptRun(TOUR_WORKFLOW)
+
+      await removeRun()
+
+      expect(
+        mocks.runState.value,
+        'an accepted job that leaves without an outcome leaves the card waiting on a result nobody will send'
+      ).toBe('failed')
+    })
+
+    it('stops promising a result when a running job is dropped mid-run', async () => {
+      // `handleServiceLevelError` ("Job has stagnated") is the live path: it
+      // drops the job and records a prompt error but never touches
+      // `workflowStatus`, so the `running` from `handleExecutionStart`
+      // outlives the run and no status change reports the end.
+      //
+      // Deliberately not the mid-run credits path — #15161 made
+      // `handleAccountPreconditionError` clear the status, so that one ends
+      // via the `undefined`-after-`running` branch without this watcher.
+      await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      await acceptRun(TOUR_WORKFLOW)
+      await finishRun(TOUR_WORKFLOW, 'running')
+
+      await removeRun()
+
+      expect(
+        mocks.runState.value,
+        'a run cut short for credits keeps its running status, so losing the job is the only signal left'
+      ).toBe('failed')
+    })
+
+    it('keeps a completed run that drops out of the queue as it finishes', async () => {
+      await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      await acceptRun(TOUR_WORKFLOW)
+
+      // `handleExecutionSuccess` reports the outcome and drops the job in one
+      // tick, so both land before either watcher runs.
+      void finishRun(TOUR_WORKFLOW, 'completed')
+      await removeRun()
+
+      expect(
+        mocks.runState.value,
+        'every healthy run leaves the queue when it finishes; failing those would fail every run'
+      ).toBe('succeeded')
+    })
+
+    it('keeps a failed run that leaves the queue after reporting', async () => {
+      await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      await acceptRun(TOUR_WORKFLOW)
+      await finishRun(TOUR_WORKFLOW, 'failed')
+
+      await removeRun()
+
+      expect(
+        mocks.runState.value,
+        'a reported outcome is the last word; losing the job afterwards says nothing new'
+      ).toBe('failed')
+    })
+
+    // Pins the transition gate on the status watcher. The stagnation path
+    // leaves `running` in `workflowStatus` forever, and that source
+    // re-evaluates whenever the map is replaced for *any* workflow. Without
+    // the gate the stale `running` is re-read and the card goes back to
+    // promising a result it has already given up on.
+    it('stays failed when an unrelated workflow churns the status map', async () => {
+      await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      await acceptRun(TOUR_WORKFLOW)
+      await finishRun(TOUR_WORKFLOW, 'running')
+
+      await removeRun()
+      expect(mocks.runState.value).toBe('failed')
+
+      await finishRun(OTHER_WORKFLOW, 'running')
+
+      expect(
+        mocks.runState.value,
+        'another workflow starting is not this run coming back from the dead'
+      ).toBe('failed')
+    })
+
+    // The other half of the stagnation path: the prompt error it records must
+    // still be able to end the run while the stale `running` sits there.
+    it('gives up on a stagnated job that leaves an error and a stale status', async () => {
+      await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      await acceptRun(TOUR_WORKFLOW)
+      await finishRun(TOUR_WORKFLOW, 'running')
+
+      mocks.executionErrors.hasPromptError = true
+      await removeRun()
+
+      expect(
+        mocks.runState.value,
+        'a stagnated run reports an error and abandons the job; the status it leaves behind is not news'
+      ).toBe('failed')
     })
   })
 
