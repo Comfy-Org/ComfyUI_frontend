@@ -58,14 +58,24 @@ describe('useBillingRouting', () => {
     mockActiveWorkspaceBillingRail.value = null
   })
 
-  it('uses legacy billing off Cloud', () => {
+  it('uses legacy billing off Cloud until a workspace context loads', () => {
     mockIsCloud.value = false
-    mockActiveWorkspace.value = team
+    mockActiveWorkspace.value = null
 
     const { type, shouldUseWorkspaceBilling } = useBillingRouting()
 
     expect(type.value).toBe('legacy')
     expect(shouldUseWorkspaceBilling.value).toBe(false)
+  })
+
+  it('uses workspace billing off Cloud once a workspace context loads', () => {
+    mockIsCloud.value = false
+    mockActiveWorkspace.value = team
+
+    const { type, shouldUseWorkspaceBilling } = useBillingRouting()
+
+    expect(type.value).toBe('workspace')
+    expect(shouldUseWorkspaceBilling.value).toBe(true)
   })
 
   it('uses workspace billing for a Cloud personal workspace', () => {
@@ -76,7 +86,6 @@ describe('useBillingRouting', () => {
   })
 
   it('uses unified pricing while keeping legacy Stripe top-ups on Checkout', () => {
-    mockActiveWorkspace.value = personal
     mockActiveWorkspaceBillingRail.value = 'legacy_stripe'
 
     const { type, shouldUseWorkspaceBilling, shouldUseUnifiedPricing } =

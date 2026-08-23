@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
@@ -199,6 +199,32 @@ describe('SectionWidgets', () => {
     )
     return { node, widget }
   }
+
+  it('initializes dragging after mounting', async () => {
+    const { node, widget } = createSimpleNodeWithWidget()
+
+    render(SectionWidgets, {
+      props: {
+        widgets: [{ widget, node }],
+        isDraggable: true
+      },
+      global: {
+        plugins: [i18n],
+        stubs: {
+          WidgetItem: WidgetItemStub,
+          PropertiesAccordionItem: PropertiesAccordionItemStub
+        }
+      }
+    })
+
+    await waitFor(() =>
+      expect(
+        screen
+          .getByTestId('section-widgets-list')
+          .getAttribute('data-draggable-ready')
+      ).toBe('true')
+    )
+  })
 
   it('tracks and locates the node when the Locate button is clicked', async () => {
     const { node, widget } = createSimpleNodeWithWidget()
