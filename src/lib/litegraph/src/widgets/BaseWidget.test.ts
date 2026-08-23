@@ -112,6 +112,18 @@ describe('BaseWidget store integration', () => {
   })
 
   describe('metadata properties after registration', () => {
+    it('writes type changes to the store', () => {
+      const widget = createMutableTypeWidget(node)
+      widget.setNodeId(toNodeId(1))
+
+      widget.type = 'number-custom'
+
+      expect(
+        store.getWidget(widgetId(graph.id, toNodeId(1), 'typeChangedWidget'))
+          ?.type
+      ).toBe('number-custom')
+    })
+
     it('reads from store when registered', () => {
       const widget = createTestWidget(node, {
         name: 'storeWidget',

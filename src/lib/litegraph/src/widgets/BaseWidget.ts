@@ -211,7 +211,17 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
       },
       deriveWidgetRenderState(this)
     )
-    if (registered) this._state = registered
+    if (registered) {
+      this._state = registered
+      Object.defineProperty(this, 'type', {
+        configurable: true,
+        enumerable: true,
+        get: () => this._state.type as TWidget['type'],
+        set: (value: TWidget['type']) => {
+          this._state.type = value as TWidgetType
+        }
+      })
+    }
   }
 
   constructor(widget: TWidget & { node: LGraphNode })
