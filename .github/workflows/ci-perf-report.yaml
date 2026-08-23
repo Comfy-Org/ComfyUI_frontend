@@ -126,9 +126,12 @@ jobs:
           git fetch origin perf-data
           NEWEST=$(git log -1 --format=%ct origin/perf-data)
           NOW=$(date +%s)
-          AGE_DAYS=$(( (NOW - NEWEST) / 86400 ))
+          AGE_SECONDS=$(( NOW - NEWEST ))
+          AGE_DAYS=$(( AGE_SECONDS / 86400 ))
           echo "Newest perf-data commit is ${AGE_DAYS} day(s) old"
-          if [ "$AGE_DAYS" -gt 7 ]; then
+          # Compare exact elapsed seconds: integer AGE_DAYS truncates, so a
+          # commit 7d23h old would otherwise pass the -gt 7 day check.
+          if [ "$AGE_SECONDS" -gt $(( 7 * 86400 )) ]; then
             echo "::error::Perf baseline is stale (${AGE_DAYS} days old). The baseline save step is failing silently. See issue #15545 for the last occurrence."
             exit 1
           fi

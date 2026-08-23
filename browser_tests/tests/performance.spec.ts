@@ -433,24 +433,26 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
       // below the readable-font threshold, reachable at production zoom),
       // this measures the honest current behavior: frame cost at maximum
       // supported zoom-out with all Vue node DOM still mounted.
-      await comfyPage.perf.startMeasuring()
-
-      // Zoom out to the ds.min_scale clamp (0.1).
+      // Zoom out to the ds.min_scale clamp (0.1) before measuring so the
+      // metric captures only idle frames at minimum scale, not zoom
+      // input/render cost.
       for (let i = 0; i < 20; i++) {
         await comfyPage.canvasOps.zoom(100)
       }
+
+      await comfyPage.perf.startMeasuring()
 
       // Idle at maximum zoom-out with everything mounted.
       for (let i = 0; i < 60; i++) {
         await comfyPage.nextFrame()
       }
 
-      // Zoom back in
+      const m = await comfyPage.perf.stopMeasuring('vue-zoom-out-idle')
+
+      // Zoom back in (outside the measured window).
       for (let i = 0; i < 20; i++) {
         await comfyPage.canvasOps.zoom(-100)
       }
-
-      const m = await comfyPage.perf.stopMeasuring('vue-zoom-out-idle')
       recordMeasurement(m)
       console.log(
         `Vue zoom out idle: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, ${m.frameDurationMs.toFixed(1)}ms/frame`
