@@ -248,6 +248,27 @@ describe('SubgraphNode Synchronization', () => {
     )
   })
 
+  it('declines promotion when an empty widget name cannot be registered', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: '', type: 'STRING' }]
+    })
+
+    const interiorNode = new LGraphNode('Interior')
+    const input = interiorNode.addInput('', 'STRING')
+    input.widget = { name: '' }
+    interiorNode.addWidget('text', '', 'initial', () => {})
+    subgraph.add(interiorNode)
+    subgraph.inputNode.slots[0].connect(interiorNode.inputs[0], interiorNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const promotedInput = subgraphNode.inputs[0]
+
+    expect(promotedInput.widgetId).toBeUndefined()
+    expect(subgraphNode.getWidgetFromSlot(promotedInput)).toBeUndefined()
+    expect(subgraphNode.widgets).toEqual([])
+  })
+
   it('binds promoted host widgets as stable LiteGraph widgets', () => {
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'text', type: 'STRING' }]

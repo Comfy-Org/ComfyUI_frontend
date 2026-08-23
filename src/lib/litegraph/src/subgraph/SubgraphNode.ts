@@ -668,8 +668,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     const id = widgetId(this.rootGraph.id, this.id, subgraphInput.name)
     const store = useWidgetValueStore()
-    input.widgetId = id
-    store.registerWidget(
+    const registered = store.registerWidget(
       id,
       {
         type: interiorWidget.type,
@@ -681,6 +680,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       },
       deriveWidgetRenderState(interiorWidget)
     )
+    if (!registered) return
+
+    input.widgetId = id
     input._widget =
       this.createPromotedHostWidget(input, id, interiorWidget) ??
       this._projectPromotedWidget(input)
