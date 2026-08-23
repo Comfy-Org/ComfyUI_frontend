@@ -176,6 +176,42 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     return getGraphWidgetStates(graphId).delete(widgetId)
   }
 
+  function renameWidget(
+    oldId: WidgetId,
+    newId: WidgetId
+  ): WidgetState | undefined {
+    if (!isWidgetId(oldId) || !isWidgetId(newId)) return undefined
+    if (oldId === newId) return getWidget(oldId)
+
+    const previous = parseWidgetId(oldId)
+    const next = parseWidgetId(newId)
+    if (previous.graphId !== next.graphId) return undefined
+    if (previous.nodeId !== next.nodeId) return undefined
+
+    const { graphId, nodeId, name } = next
+    const widgetStates = getGraphWidgetStates(graphId)
+    const state = widgetStates.get(oldId)
+    if (!state) return undefined
+    if (widgetStates.has(newId)) return undefined
+
+    const renderStates = getGraphWidgetRenderStates(graphId)
+    const renderState = renderStates.get(oldId)
+    const order = getNodeWidgetOrder(graphId, nodeId)
+    const index = order.indexOf(oldId)
+
+    widgetStates.delete(oldId)
+    renderStates.delete(oldId)
+    if (index !== -1) order.splice(index, 1)
+
+    state.name = name
+    widgetStates.set(newId, state)
+    if (renderState) renderStates.set(newId, renderState)
+    if (index !== -1) order.splice(index, 0, newId)
+    else if (!order.includes(newId)) order.push(newId)
+
+    return widgetStates.get(newId)
+  }
+
   function getNodeWidgets(graphId: UUID, localNodeId: NodeId): WidgetState[] {
     return getNodeWidgetIds(graphId, localNodeId).flatMap((id) => {
       const state = getWidget(id)
@@ -279,6 +315,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     setValue,
     updateOptions,
     deleteWidget,
+    renameWidget,
     getNodeWidgets,
     getNodeWidgetIds,
     setNodeWidgetOrder,
