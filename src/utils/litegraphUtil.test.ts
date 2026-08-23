@@ -6,6 +6,8 @@ import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
@@ -14,6 +16,7 @@ import {
   createNode,
   getWidgetIdForNode,
   mapLiveWidgetsById,
+  migrateWidgetsValues,
   resolveNode
 } from './litegraphUtil'
 
@@ -224,5 +227,34 @@ describe('getWidgetIdForNode', () => {
   it('returns undefined for placeholder node id (-1)', () => {
     const node = fakeNode(-1)
     expect(getWidgetIdForNode(node, { name: 'x' })).toBeUndefined()
+  })
+})
+
+describe('migrateWidgetsValues', () => {
+  const inputDefs = {
+    forced: fromPartial<InputSpec>({ name: 'forced', forceInput: true }),
+    steps: fromPartial<InputSpec>({ name: 'steps' })
+  }
+
+  function makeWidget(name: string, serialize = true): IBaseWidget {
+    return fromPartial<IBaseWidget>({ name, serialize })
+  }
+
+  it('migrates a sparse value array with a non-trailing skipped widget', () => {
+    const widgets = [
+      makeWidget('forced'),
+      makeWidget('preview', false),
+      makeWidget('steps')
+    ]
+
+    expect(migrateWidgetsValues(inputDefs, widgets, [1, null, 20])).toEqual([
+      20
+    ])
+  })
+
+  it('continues to migrate a value array without skipped widgets', () => {
+    const widgets = [makeWidget('forced'), makeWidget('steps')]
+
+    expect(migrateWidgetsValues(inputDefs, widgets, [1, 20])).toEqual([20])
   })
 })
