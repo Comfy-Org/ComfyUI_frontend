@@ -117,7 +117,7 @@ describe('badge renderer parity (I2)', () => {
       expect(legacyBadgeText(node)).toBe('#1 BETA my_pack')
     })
 
-    it.fails('renders Vue badges in the same display order', () => {
+    it('renders Vue badges in the same display order', () => {
       const node = setup(
         NodeBadgeMode.ShowAll,
         'CustomNode',
@@ -139,7 +139,7 @@ describe('badge renderer parity (I2)', () => {
       expect(legacyBadgeText(node)).toBe('#1 BETA my_pack')
     })
 
-    it.fails('renders Vue badges in the same display order', () => {
+    it('renders Vue badges in the same display order', () => {
       const node = setup(
         NodeBadgeMode.HideBuiltIn,
         'CustomNode',
@@ -164,7 +164,7 @@ describe('badge renderer parity (I2)', () => {
       expect(legacyBadgeText(node)).toBe(`#1 BETA ${CORE_SOURCE_BADGE}`)
     })
 
-    it.fails('renders Vue badges in the same display order', () => {
+    it('renders Vue badges in the same display order', () => {
       const node = setup(NodeBadgeMode.ShowAll, 'CoreNode', 'nodes')
 
       expect(vueBadgeText(node)).toBe(`#1 BETA ${CORE_SOURCE_BADGE}`)
