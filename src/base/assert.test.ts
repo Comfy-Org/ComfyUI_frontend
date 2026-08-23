@@ -73,7 +73,7 @@ describe('assert', () => {
     expect(failure.stack).toContain('violatesAnInvariant')
   })
 
-  it('forwards structured context to the reporter', () => {
+  it('forwards structured context to the reporter, the console and the error', () => {
     vi.stubEnv('DEV', false)
     const reporter = vi.fn()
     setAssertReporter(reporter)
@@ -83,6 +83,12 @@ describe('assert', () => {
     expect(reporter).toHaveBeenCalledWith(expect.any(Error), {
       workflowPath: 'a/b.json'
     })
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      '[Assertion failed]: tracker is inactive',
+      { workflowPath: 'a/b.json' }
+    )
+    const [failure] = reporter.mock.calls[0] as [Error]
+    expect(failure.cause).toEqual({ workflowPath: 'a/b.json' })
   })
 
   it('does not call reporter when condition is true', () => {

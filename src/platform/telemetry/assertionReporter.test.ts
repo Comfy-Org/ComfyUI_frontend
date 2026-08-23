@@ -6,7 +6,9 @@ import { createAssertReporter } from '@/platform/telemetry/assertionReporter'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
 const mockIsNightly = { value: false }
+const mockRumConfig: { value: object | undefined } = { value: undefined }
 const captureException = vi.fn()
+const addError = vi.fn()
 
 vi.mock('@/platform/distribution/types', () => ({
   get isNightly() {
@@ -21,14 +23,15 @@ vi.mock('@sentry/vue', () => ({
 
 vi.mock('@datadog/browser-rum', () => ({
   datadogRum: {
-    addError: vi.fn(),
-    getInitConfiguration: () => undefined
+    addError: (...args: unknown[]) => addError(...args),
+    getInitConfiguration: () => mockRumConfig.value
   }
 }))
 
 describe('createAssertReporter', () => {
   beforeEach(() => {
     mockIsNightly.value = false
+    mockRumConfig.value = undefined
     vi.spyOn(console, 'error').mockImplementation(() => {})
   })
 
@@ -50,6 +53,24 @@ describe('createAssertReporter', () => {
         level: 'warning',
         tags: expect.objectContaining({ error_type: 'assertion_failure' }),
         extra: { workflowPath: 'a/b.json' }
+      })
+    )
+  })
+
+  it('reaches Datadog too, which is the sink the console echo is dropped for', () => {
+    mockRumConfig.value = {}
+    vi.stubEnv('DEV', false)
+    setAssertReporter(createAssertReporter(createPinia()))
+
+    assert(false, 'graph is corrupt', { workflowPath: 'a/b.json' })
+
+    expect(addError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: '[Assertion failed]: graph is corrupt'
+      }),
+      expect.objectContaining({
+        error_type: 'assertion_failure',
+        workflowPath: 'a/b.json'
       })
     )
   })
