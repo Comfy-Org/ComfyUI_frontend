@@ -408,6 +408,12 @@ export async function runRecord(): Promise<void> {
       `Reusing running dev server — it may not point at ${distribution.backendUrl}`
     )
   }
+  if (!distribution.needsLocalBackend && seedWorkflow) {
+    warn(
+      `Recording against ${distribution.label} can't pre-load workflows — ` +
+        `load "${seedWorkflow}" manually in the app once recording starts.`
+    )
+  }
 
   let result
   try {
@@ -415,7 +421,8 @@ export async function runRecord(): Promise<void> {
       testName: slug,
       workflow: seedWorkflow || undefined,
       featureFlags,
-      projectRoot
+      projectRoot,
+      distribution
     })
   } finally {
     devServer.stop()

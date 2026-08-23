@@ -19,6 +19,27 @@ incomplete.
 | Test tags              | Tag multiselect with hints                   | `tags` lists the registry with descriptions; `plan --tags` and `transform --tags` apply tags |
 | Feature flags          | Feature-flag selector and custom flag prompt | `plan --feature-flags <specs>` or `transform --feature-flags <specs>`                        |
 
+## Distribution-aware recording template
+
+The `comfyPage` fixture boots through OSS-only devtools APIs
+(`/api/devtools/set_settings` etc.) that cloud backends don't serve, so the
+recording template branches on the selected distribution
+(`recordingTarget` in `src/recorder/template.ts`):
+
+- **local** — full `comfyPage` template: workflow pre-load, `test.use({
+initialFeatureFlags })`.
+- **cloud / cloud-staging / cloud-prod / custom** — bare-page template:
+  `page.goto(PLAYWRIGHT_TEST_URL)` and the recorder enabled immediately —
+  no boot gate, so a sign-in screen can't stall the Inspector (sign in
+  manually, then record). Feature flags are seeded via `ff:<key>`
+  localStorage entries (the same mechanism as `FeatureFlagHelper.seedFlags`).
+  Workflow pre-load is unsupported; `record` warns and the human loads it
+  in the app.
+
+The transformed output test always uses the `comfyPage` harness and runs
+against the local backend in CI — a cloud recording captures selectors and
+flows; it is not a test that replays against cloud as-is.
+
 ## Package conventions
 
 - Keep reusable logic in importable pure functions and cover it with focused

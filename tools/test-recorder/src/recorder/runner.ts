@@ -6,17 +6,20 @@ import {
   cleanupRecordedCode,
   cleanupRecordingTemplate,
   generateRecordingTemplate,
-  recordedCodePath
+  recordedCodePath,
+  recordingTarget
 } from './template'
 import { runCommand } from '../cli/run'
 import { devServerUrl } from '../checks/devServerUrl'
 import { box, info } from '../ui/logger'
+import type { Distribution } from '../devserver/distributions'
 
 interface RunnerOptions {
   testName: string
   workflow?: string
   featureFlags?: Record<string, unknown>
   projectRoot: string
+  distribution?: Distribution
 }
 
 interface RecordingResult {
@@ -71,12 +74,19 @@ export async function runRecording(
   options: RunnerOptions
 ): Promise<RecordingResult> {
   const browserTestsDir = join(options.projectRoot, 'browser_tests')
+  const target = recordingTarget(options.distribution)
+
+  // A Ctrl-C'd session can leave a stale autosave behind — the playwright
+  // child flushes it after our signal handler runs. Start clean so this
+  // session can't pick up code recorded by a previous one.
+  cleanupRecordedCode(browserTestsDir)
 
   generateRecordingTemplate(
     {
       testName: options.testName,
       workflow: options.workflow,
-      featureFlags: options.featureFlags
+      featureFlags: options.featureFlags,
+      target
     },
     browserTestsDir
   )

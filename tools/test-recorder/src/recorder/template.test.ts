@@ -13,7 +13,8 @@ import {
   cleanupRecordedCode,
   cleanupRecordingTemplate,
   generateRecordingTemplate,
-  recordedCodePath
+  recordedCodePath,
+  recordingTarget
 } from './template'
 
 describe('recording template', () => {
@@ -31,6 +32,7 @@ describe('recording template', () => {
     testName: string
     workflow?: string
     featureFlags?: Record<string, unknown>
+    target?: 'local' | 'cloud'
   }) {
     const path = generateRecordingTemplate(options, browserTestsDir)
     return { path, code: readFileSync(path, 'utf-8') }
@@ -141,5 +143,82 @@ describe('recording template', () => {
 
   it('is a no-op cleaning up recorded code that was never saved', () => {
     expect(() => cleanupRecordedCode(browserTestsDir)).not.toThrow()
+  })
+
+  describe('cloud target', () => {
+    // The comfyPage fixture boots via OSS-only devtools APIs, which cloud
+    // backends don't serve — a cloud recording using it dies before the
+    // browser is usable.
+    it('uses a bare page, never the comfyPage fixture', () => {
+      const { code } = generate({ testName: 'demo', target: 'cloud' })
+      expect(code).toContain("from '@playwright/test'")
+      expect(code).not.toContain('ComfyPage')
+      expect(code).not.toContain('comfyPage')
+    })
+
+    it('navigates to the dev server and pauses for recording', () => {
+      const { code } = generate({ testName: 'demo', target: 'cloud' })
+      const gotoAt = code.indexOf('page.goto(process.env.PLAYWRIGHT_TEST_URL')
+      expect(gotoAt).toBeGreaterThan(-1)
+      expect(gotoAt).toBeLessThan(code.indexOf('_enableRecorder'))
+      expect(code).toContain('await page.pause()')
+    })
+
+    it('opens the recorder without gating on app boot, so a sign-in screen cannot stall it', () => {
+      const { code } = generate({ testName: 'demo', target: 'cloud' })
+      expect(code).not.toContain('waitForFunction')
+    })
+
+    it('ignores workflows — cloud has no devtools API to pre-load them', () => {
+      const { code } = generate({
+        testName: 'demo',
+        workflow: 'default',
+        target: 'cloud'
+      })
+      expect(code).not.toContain('loadWorkflow')
+    })
+
+    it('seeds feature flags via ff: localStorage keys before navigation', () => {
+      const { code } = generate({
+        testName: 'demo',
+        featureFlags: { onboarding_tour_enabled: true, custom_flag: 12 },
+        target: 'cloud'
+      })
+      const seedAt = code.indexOf('addInitScript')
+      expect(seedAt).toBeGreaterThan(-1)
+      expect(seedAt).toBeLessThan(code.indexOf('page.goto('))
+      expect(code).toContain("'ff:' + key")
+      expect(code).toContain(
+        '{"onboarding_tour_enabled":true,"custom_flag":12}'
+      )
+    })
+
+    it('omits flag seeding when no flags are selected', () => {
+      const { code } = generate({ testName: 'demo', target: 'cloud' })
+      expect(code).not.toContain('addInitScript')
+    })
+
+    it('keeps a hostile test name inside the title literal', () => {
+      const { code } = generate({
+        testName: String.raw`x'); process.exit(1); //`,
+        target: 'cloud'
+      })
+      const title = code.match(/^test\((.*), async/m)
+      expect(title).not.toBeNull()
+      expect(JSON.parse(title![1])).toContain(
+        String.raw`x'); process.exit(1); //`
+      )
+    })
+  })
+
+  describe('recordingTarget', () => {
+    it('keeps the comfyPage template for local backends', () => {
+      expect(recordingTarget({ needsLocalBackend: true })).toBe('local')
+      expect(recordingTarget(undefined)).toBe('local')
+    })
+
+    it('uses the bare-page template for cloud and custom backends', () => {
+      expect(recordingTarget({ needsLocalBackend: false })).toBe('cloud')
+    })
   })
 })
