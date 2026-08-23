@@ -334,7 +334,9 @@ export const useDialogService = () => {
     isInsufficientCredits?: boolean
   }) {
     const { type } = useBillingContext()
-    const { canTopUp, canSubscribeSelfServe } = useBillingCapabilities()
+    const { canTopUp, canSubscribeSelfServe, isReady } =
+      useBillingCapabilities()
+    if (!isReady.value) return
     if (!canTopUp.value && canSubscribeSelfServe.value) {
       await showSubscriptionRequiredDialog({
         reason: options?.isInsufficientCredits
@@ -344,7 +346,7 @@ export const useDialogService = () => {
       return
     }
 
-    if (!canTopUp.value) {
+    if (!canTopUp.value && type.value === 'workspace') {
       return dialogStore.showDialog({
         key: 'insufficient-credits-member',
         component: InsufficientCreditsMemberDialog,
@@ -360,6 +362,7 @@ export const useDialogService = () => {
         }
       })
     }
+    if (!canTopUp.value) return
 
     const component =
       type.value === 'workspace'

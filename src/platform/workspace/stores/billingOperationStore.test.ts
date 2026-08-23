@@ -6,6 +6,7 @@ import type { BillingOpStatusResponse } from '@/platform/workspace/api/workspace
 const mockFetchStatus = vi.fn()
 const mockFetchBalance = vi.fn()
 const mockReconcileSubscriptionSuccess = vi.fn()
+const mockRefreshCapabilities = vi.fn()
 const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
 
 vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
@@ -16,6 +17,10 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     fetchBalance: mockFetchBalance,
     reconcileSubscriptionSuccess: mockReconcileSubscriptionSuccess
   })
+}))
+
+vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
+  useBillingCapabilities: () => ({ refresh: mockRefreshCapabilities })
 }))
 
 const mockToastAdd = vi.fn()
@@ -323,6 +328,7 @@ describe('billingOperationStore', () => {
       expect(store.hasPendingOperations).toBe(false)
 
       expect(mockReconcileSubscriptionSuccess).toHaveBeenCalledOnce()
+      expect(mockRefreshCapabilities).toHaveBeenCalledOnce()
       expect(mockFetchStatus).not.toHaveBeenCalled()
       expect(mockFetchBalance).not.toHaveBeenCalled()
 

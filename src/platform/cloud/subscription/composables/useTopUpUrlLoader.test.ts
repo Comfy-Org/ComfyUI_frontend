@@ -40,11 +40,13 @@ vi.mock('@/services/dialogService', () => ({
 
 const mockCanTopUp = vi.hoisted(() => ({ value: true }))
 const mockCanSubscribeSelfServe = vi.hoisted(() => ({ value: false }))
+const mockInitialize = vi.hoisted(() => vi.fn(async (): Promise<void> => {}))
 
 vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
   useBillingCapabilities: () => ({
     canTopUp: mockCanTopUp,
-    canSubscribeSelfServe: mockCanSubscribeSelfServe
+    canSubscribeSelfServe: mockCanSubscribeSelfServe,
+    initialize: mockInitialize
   })
 }))
 
@@ -61,6 +63,7 @@ describe('useTopUpUrlLoader', () => {
     mockRouteQuery.value = {}
     mockCanTopUp.value = true
     mockCanSubscribeSelfServe.value = false
+    mockInitialize.mockResolvedValue(undefined)
     mockShowTopUpCreditsDialog.mockResolvedValue(undefined)
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue(null)
   })
@@ -94,6 +97,32 @@ describe('useTopUpUrlLoader', () => {
     expect(mockTrackAddApiCreditButtonClicked).toHaveBeenCalledWith({
       source: 'deep_link'
     })
+  })
+
+  it('retains the deep link until capability loading settles', async () => {
+    let resolveCapabilities!: () => void
+    mockRouteQuery.value = { topup: '1' }
+    mockCanTopUp.value = false
+    mockInitialize.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveCapabilities = resolve
+        })
+    )
+
+    const { loadTopUpFromUrl } = useTopUpUrlLoader()
+    const loading = loadTopUpFromUrl()
+    await Promise.resolve()
+
+    expect(mockRouterReplace).not.toHaveBeenCalled()
+    expect(preservedQueryMocks.clearPreservedQuery).not.toHaveBeenCalled()
+
+    mockCanTopUp.value = true
+    resolveCapabilities()
+    await loading
+
+    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+    expect(mockShowTopUpCreditsDialog).toHaveBeenCalledOnce()
   })
 
   it('is a silent no-op when the server denies top-up', async () => {
@@ -161,6 +190,7 @@ describe('useTopUpUrlLoader', () => {
     expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
       'topup'
     )
+    expect(mockInitialize).not.toHaveBeenCalled()
   })
 
   it('strips but does not open for a non-string param', async () => {

@@ -3111,6 +3111,7 @@
         "title": "Out of credits",
         "body": "Your team has used all its credits. Add more credits to continue generating or wait until credits refill on {date}.",
         "bodyNoDate": "Your team has used all its credits. Add more credits to continue generating.",
+        "upgradeBody": "Upgrade your plan to add credits and continue generating.",
         "memberBody": "Your team has used all its credits. Your workspace admins need to add more credits to continue generating.",
         "addCredits": "Add credits",
         "dismiss": "Dismiss"

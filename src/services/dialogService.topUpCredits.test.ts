@@ -9,7 +9,8 @@ const closeDialog = vi.hoisted(() => vi.fn())
 const state = vi.hoisted(() => ({
   type: 'workspace' as 'workspace' | 'legacy',
   canTopUp: true,
-  canSubscribeSelfServe: false
+  canSubscribeSelfServe: false,
+  isReady: true
 }))
 
 vi.mock('@/stores/dialogStore', () => ({
@@ -40,7 +41,8 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
 vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
   useBillingCapabilities: () => ({
     canTopUp: { value: state.canTopUp },
-    canSubscribeSelfServe: { value: state.canSubscribeSelfServe }
+    canSubscribeSelfServe: { value: state.canSubscribeSelfServe },
+    isReady: { value: state.isReady }
   })
 }))
 
@@ -64,6 +66,7 @@ describe('showTopUpCreditsDialog', () => {
     state.type = 'workspace'
     state.canTopUp = true
     state.canSubscribeSelfServe = false
+    state.isReady = true
     mockIsCloud.value = true
   })
 
@@ -105,6 +108,26 @@ describe('showTopUpCreditsDialog', () => {
 
     const [args] = showDialog.mock.calls[0]
     expect(args.key).toBe('top-up-credits')
+  })
+
+  it('does not show workspace-admin copy for denied legacy billing', async () => {
+    state.type = 'legacy'
+    state.canTopUp = false
+
+    await useDialogService().showTopUpCreditsDialog()
+
+    expect(showDialog).not.toHaveBeenCalled()
+    expect(showSubscriptionDialog).not.toHaveBeenCalled()
+  })
+
+  it('does not route while capabilities are unresolved', async () => {
+    state.canTopUp = false
+    state.isReady = false
+
+    await useDialogService().showTopUpCreditsDialog()
+
+    expect(showDialog).not.toHaveBeenCalled()
+    expect(showSubscriptionDialog).not.toHaveBeenCalled()
   })
 
   it('routes self-serve subscribers to the subscription-required flow', async () => {

@@ -33,7 +33,11 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
 }))
 
 vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
-  useBillingCapabilities: () => ({ canTopUp: { value: true } })
+  useBillingCapabilities: () => ({
+    canTopUp: { value: true },
+    canSubscribeSelfServe: { value: false },
+    isReady: { value: true }
+  })
 }))
 
 import { useDialogService } from '@/services/dialogService'

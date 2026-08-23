@@ -24,7 +24,8 @@ export function useTopUpUrlLoader() {
   const route = useRoute()
   const router = useRouter()
   const dialogService = useDialogService()
-  const { canTopUp, canSubscribeSelfServe } = useBillingCapabilities()
+  const { canTopUp, canSubscribeSelfServe, initialize } =
+    useBillingCapabilities()
   const telemetry = useTelemetry()
 
   /** Reads `?topup=`, strips it, and opens the dialog when the gate allows. */
@@ -35,9 +36,11 @@ export function useTopUpUrlLoader() {
     const param = query.topup
     if (param === undefined) return
 
+    const shouldOpen = typeof param === 'string' && param.length > 0
+    if (shouldOpen) await initialize()
+
     // Strip any present topup param (even ineligible or malformed values) and
-    // write the clean URL in a single replace before any await, so a clean URL
-    // is guaranteed even if the replace rejects or the gate later denies.
+    // write the clean URL in a single replace once capability loading settles.
     const cleanQuery = { ...query }
     delete cleanQuery.topup
     router.replace({ query: cleanQuery }).catch((error) => {
@@ -47,7 +50,7 @@ export function useTopUpUrlLoader() {
 
     // Only a non-empty string value opens the dialog; an empty/array param
     // just gets stripped above.
-    if (typeof param !== 'string' || !param) return
+    if (!shouldOpen) return
 
     if (!canTopUp.value && !canSubscribeSelfServe.value) return
 

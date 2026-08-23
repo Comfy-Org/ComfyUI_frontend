@@ -10,6 +10,8 @@ export function useBillingCapabilities() {
   return {
     canTopUp: computed(() => canTopUpState.value),
     canSubscribeSelfServe: computed(() => false),
-    initialize: () => undefined
+    isReady: computed(() => true),
+    initialize: () => undefined,
+    refresh: () => undefined
   }
 }
