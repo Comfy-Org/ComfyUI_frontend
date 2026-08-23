@@ -1198,7 +1198,11 @@ export class LGraphNode
 
     // special case for when there were errors
     if (this.constructor === LGraphNode && state.lastSerialization)
-      return { ...state.lastSerialization, mode: o.mode, pos: o.pos }
+      return {
+        ...LiteGraph.cloneObject(state.lastSerialization),
+        mode: o.mode,
+        pos: o.pos
+      }
 
     if (state.inputs)
       o.inputs = state.inputs.map((input, i) =>
