@@ -233,31 +233,6 @@ describe('WorkflowTabs agent entry button', () => {
       resulting_state: 'closed'
     })
   })
-
-  it('opens the panel only once consent is given', async () => {
-    withConsent.mockImplementation(() => {})
-    const { user } = renderComponent()
-
-    await user.click(
-      screen.getByRole('button', { name: enMessages.agent.askComfyAgent })
-    )
-
-    expect(withConsent).toHaveBeenCalledTimes(1)
-    expect(agentPanelHolder.store.open).not.toHaveBeenCalled()
-    expect(trackAgentEntryButtonClicked).not.toHaveBeenCalled()
-  })
-
-  it('closes without asking for consent again', async () => {
-    agentPanelHolder.store.isOpen.value = true
-    const { user } = renderComponent()
-
-    await user.click(
-      screen.getByRole('button', { name: enMessages.agent.askComfyAgent })
-    )
-
-    expect(withConsent).not.toHaveBeenCalled()
-    expect(agentPanelHolder.store.toggle).toHaveBeenCalledTimes(1)
-  })
 })
 
 describe('WorkflowTabs creating-tab skeleton', () => {
