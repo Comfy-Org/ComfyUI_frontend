@@ -63,19 +63,24 @@ describe('useNodeDataStore', () => {
     expect(store.getGraphNodesFor(rootA, sub).map((n) => n.id)).toEqual(['2'])
   })
 
-  it('rejects a duplicate id without changing either registration', () => {
+  it('allows the same node id in different graph owners', () => {
     const store = useNodeDataStore()
     const first = node(1)
     const duplicate = node(1, 'sub-1')
 
     const registered = store.registerNode(graphScope(rootA, rootA), first)
-    const rejected = store.registerNode(graphScope(rootA, 'sub-1'), duplicate)
+    const registeredDuplicate = store.registerNode(
+      graphScope(rootA, 'sub-1'),
+      duplicate
+    )
 
     expect(registered?.id).toBe(first.id)
-    expect(rejected).toBeUndefined()
+    expect(registeredDuplicate?.id).toBe(duplicate.id)
     expect(duplicate.graphId).toBe('sub-1')
     expect(store.getGraphNodesFor(rootA, rootA)).toEqual([registered])
-    expect(store.getGraphNodesFor(rootA, 'sub-1')).toEqual([])
+    expect(store.getGraphNodesFor(rootA, 'sub-1')).toEqual([
+      registeredDuplicate
+    ])
   })
 
   it('rejects the registered node identity from a sibling owner', () => {

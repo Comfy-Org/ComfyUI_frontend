@@ -38,14 +38,18 @@ function normalizePreviewExposure(
 export function getPreviewExposureHostLocator(
   host: SubgraphNode
 ): NodeLocatorId {
+  const locator = tryGetPreviewExposureHostLocator(host)
+  if (locator) return locator
+  throw new Error(
+    `Cannot create preview exposure host locator for node ${String(host.id)}`
+  )
+}
+
+export function tryGetPreviewExposureHostLocator(
+  host: SubgraphNode
+): NodeLocatorId | null {
   const graphId = host.graph?.isRootGraph ? null : (host.graph?.id ?? null)
-  const locator = createNodeLocatorId(graphId, host.id)
-  if (!locator) {
-    throw new Error(
-      `Cannot create preview exposure host locator for node ${String(host.id)}`
-    )
-  }
-  return locator
+  return createNodeLocatorId(graphId, host.id)
 }
 
 export const usePreviewExposureStore = defineStore('previewExposure', () => {
