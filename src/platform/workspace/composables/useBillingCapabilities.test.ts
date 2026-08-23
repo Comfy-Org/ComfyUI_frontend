@@ -117,6 +117,20 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(true)
   })
 
+  it('applies changed capabilities when the current scope is refreshed', async () => {
+    mockGetBillingCapabilities
+      .mockResolvedValueOnce(capabilitiesResponse(false, 'workspace-1', true))
+      .mockResolvedValueOnce(capabilitiesResponse(true, 'workspace-1', false))
+
+    await billingCapabilities.initialize()
+    expect(billingCapabilities.canTopUp.value).toBe(false)
+    expect(billingCapabilities.canSubscribeSelfServe.value).toBe(true)
+
+    await billingCapabilities.refresh()
+    expect(billingCapabilities.canTopUp.value).toBe(true)
+    expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
+  })
+
   it('forwards the initialization signal to the capability request', async () => {
     const controller = new AbortController()
     mockGetBillingCapabilities.mockResolvedValueOnce(capabilitiesResponse(true))
