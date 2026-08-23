@@ -43,4 +43,14 @@ describe('ComfyNodeDefImpl.toSerializable', () => {
     expect(crossed.display_name).toBeUndefined()
     expect(crossed.description).toBeUndefined()
   })
+
+  it('emits no other accessor, so the type must not promise one', () => {
+    const serialized: Record<string, unknown> = new ComfyNodeDefImpl(
+      backendDef
+    ).toSerializable()
+
+    expect(serialized.nodePath).toBeUndefined()
+    expect(serialized.nodeLifeCycleBadgeText).toBeUndefined()
+    expect(serialized.toSerializable).toBeUndefined()
+  })
 })
