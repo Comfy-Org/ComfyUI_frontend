@@ -1,4 +1,5 @@
 import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -7,6 +8,8 @@ import { fixBadLinks } from '@/utils/linkFixer'
 interface ValidationResult {
   graphData: ComfyWorkflowJSON | null
 }
+
+const LOG_SAMPLE_LIMIT = 20
 
 export function useWorkflowValidation() {
   const toastStore = useToastStore()
@@ -29,6 +32,19 @@ export function useWorkflowValidation() {
         }
       }
     })
+
+    const { patched, deleted, hasBadLinks } = linkValidation
+    if (patched || deleted || hasBadLinks) {
+      reportError(new Error('Workflow loaded with corrupt links'), {
+        errorType: 'workflow_link_corruption',
+        level: 'warning',
+        tags: { patched, deleted, unrepaired: hasBadLinks, silent },
+        context: {
+          logSample: logs.slice(0, LOG_SAMPLE_LIMIT),
+          logCount: logs.length
+        }
+      })
+    }
 
     if (!silent && logs.length > 0) {
       toastStore.add({
@@ -83,6 +99,7 @@ export function useWorkflowValidation() {
       } catch (err) {
         // Link fixer itself is throwing an error
         console.error(err)
+        reportError(err, { errorType: 'workflow_link_fixer_failure' })
       }
     }
 
