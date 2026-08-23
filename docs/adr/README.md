@@ -25,6 +25,7 @@ An Architecture Decision Record captures an important architectural decision mad
 | [0013](0013-telemetry-service-selection.md)                                 | Telemetry Service Selection                                 | Accepted | 2026-07-28 |
 | [0014](0014-billing-telemetry-attempt-correlation-and-workspace-scoping.md) | Billing Telemetry Attempt Correlation and Workspace Scoping | Proposed | 2026-07-28 |
 | [0015](0015-adopt-fallow.md)                                                | Adopt Fallow                                                | Proposed | 2026-06-29 |
+| [0017](0017-null-is-a-legal-widget-value.md)                                | `null` Is a Legal Widget Value                              | Proposed | 2026-08-23 |
 
 ## Creating a New ADR
 
