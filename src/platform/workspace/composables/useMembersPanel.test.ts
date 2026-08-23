@@ -329,9 +329,13 @@ vi.mock('primevue/usetoast', () => ({
   useToast: () => ({ add: mockToastAdd })
 }))
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({ t: (key: string) => key })
-}))
+vi.mock('vue-i18n', async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...(actual as object),
+    useI18n: () => ({ t: (key: string) => key })
+  }
+})
 
 vi.mock('pinia', async (importOriginal) => {
   const actual = await importOriginal()
