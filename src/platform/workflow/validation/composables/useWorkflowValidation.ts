@@ -3,6 +3,7 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { getErrorMessage } from '@/utils/errorUtil'
 import { fixBadLinks } from '@/utils/linkFixer'
 
 interface ValidationResult {
@@ -13,9 +14,17 @@ const LOG_SAMPLE_LIMIT = 20
 
 /**
  * Workflow loads re-enter validation on undo/redo, so without this a single
- * corrupt workflow would report once per history step.
+ * corrupt workflow would report once per history step. Keys must describe the
+ * corruption itself, not just the workflow: `id` is optional in the schema, and
+ * the workflows most likely to be corrupt are the legacy ones that lack it.
  */
-const reportedCorruptWorkflows = new Set<string>()
+const reportedCorruption = new Set<string>()
+
+function reportOnce(key: string, report: () => void): void {
+  if (reportedCorruption.has(key)) return
+  reportedCorruption.add(key)
+  report()
+}
 
 export function useWorkflowValidation() {
   const toastStore = useToastStore()
@@ -39,19 +48,23 @@ export function useWorkflowValidation() {
     })
 
     const { patched, deleted, hasBadLinks } = linkValidation
-    const corruptionKey = `${graphData.id ?? 'unidentified'}:${patched}:${deleted}`
-    if ((patched || deleted) && !reportedCorruptWorkflows.has(corruptionKey)) {
-      reportedCorruptWorkflows.add(corruptionKey)
-      reportError(new Error('Workflow loaded with corrupt links'), {
-        errorType: 'workflow_link_corruption',
-        level: 'warning',
-        context: {
-          patched,
-          deleted,
-          unrepaired: hasBadLinks,
-          logSample: logs.slice(0, LOG_SAMPLE_LIMIT),
-          logCount: logs.length
-        }
+    const workflowId = graphData.id ?? 'unidentified'
+    const logSample = logs.slice(0, LOG_SAMPLE_LIMIT)
+
+    if (patched || deleted) {
+      reportOnce([workflowId, patched, deleted, ...logSample].join('|'), () => {
+        reportError(new Error('Workflow loaded with corrupt links'), {
+          errorType: 'workflow_link_corruption',
+          level: 'warning',
+          tags: { unrepaired: hasBadLinks },
+          context: {
+            workflowId,
+            patched,
+            deleted,
+            logSample,
+            logCount: logs.length
+          }
+        })
       })
     }
 
@@ -108,7 +121,16 @@ export function useWorkflowValidation() {
       } catch (err) {
         // Link fixer itself is throwing an error
         console.error(err)
-        reportError(err, { errorType: 'workflow_link_fixer_failure' })
+        const workflowId = graphData.id ?? 'unidentified'
+        reportOnce(
+          `fixer-failure|${workflowId}|${getErrorMessage(err)}`,
+          () => {
+            reportError(err, {
+              errorType: 'workflow_link_fixer_failure',
+              context: { workflowId }
+            })
+          }
+        )
       }
     }
 

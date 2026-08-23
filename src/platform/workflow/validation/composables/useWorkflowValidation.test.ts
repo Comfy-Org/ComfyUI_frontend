@@ -60,12 +60,12 @@ function createNode({
 }
 
 function createWorkflow(
-  id: string,
+  id: string | undefined,
   nodes: ReturnType<typeof createNode>[],
   links: SerialisedLLinkArray[]
 ): ComfyWorkflowJSON {
   return {
-    id,
+    ...(id ? { id } : {}),
     last_node_id: 2,
     last_link_id: 1,
     nodes,
@@ -95,6 +95,18 @@ const corruptWorkflow = (id: string) =>
     [[1, 1, 0, 2, 0, '*']]
   )
 
+/**
+ * Two id-less workflows whose corruption differs only in which nodes it names.
+ * `patched`/`deleted` counts are identical, so a key built from counts alone
+ * would report the first and discard the second.
+ */
+const unidentifiedCorruptWorkflow = (originId: number, missingId: number) =>
+  createWorkflow(
+    undefined,
+    [createNode({ id: originId, outputs: [createOutput([1])] })],
+    [[1, originId, 0, missingId, 0, '*']]
+  )
+
 let workflowCount = 0
 const uniqueId = () =>
   `b4e984f1-b421-4d24-b8b4-ff895793a${String(workflowCount++).padStart(3, '0')}`
@@ -110,13 +122,22 @@ describe('useWorkflowValidation', () => {
       expect.objectContaining({
         errorType: 'workflow_link_corruption',
         level: 'warning',
-        context: expect.objectContaining({
-          patched: 1,
-          deleted: 1,
-          unrepaired: false
-        })
+        tags: { unrepaired: false },
+        context: expect.objectContaining({ patched: 1, deleted: 1 })
       })
     )
+  })
+
+  it('attributes the report to the workflow it came from', async () => {
+    const workflowId = uniqueId()
+
+    await useWorkflowValidation().validateWorkflow(corruptWorkflow(workflowId))
+
+    const [, options] = reportError.mock.calls[0] as [
+      Error,
+      { context: { workflowId: string } }
+    ]
+    expect(options.context.workflowId).toBe(workflowId)
   })
 
   it('keeps the diagnostics when validation is silenced', async () => {
@@ -142,6 +163,15 @@ describe('useWorkflowValidation', () => {
     expect(reportError).toHaveBeenCalledOnce()
   })
 
+  it('does not collapse distinct workflows that carry no id', async () => {
+    const validation = useWorkflowValidation()
+
+    await validation.validateWorkflow(unidentifiedCorruptWorkflow(3, 4))
+    await validation.validateWorkflow(unidentifiedCorruptWorkflow(5, 6))
+
+    expect(reportError).toHaveBeenCalledTimes(2)
+  })
+
   it('stays quiet for an intact workflow', async () => {
     await useWorkflowValidation().validateWorkflow(intactWorkflow(uniqueId()))
 
@@ -158,7 +188,7 @@ describe('useWorkflowValidation', () => {
 
     expect(reportError).toHaveBeenCalledWith(
       expect.objectContaining({ message: 'link fixer exploded' }),
-      { errorType: 'workflow_link_fixer_failure' }
+      expect.objectContaining({ errorType: 'workflow_link_fixer_failure' })
     )
   })
 })
