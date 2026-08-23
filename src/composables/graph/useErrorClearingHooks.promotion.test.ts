@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
@@ -26,7 +24,6 @@ import { toNodeId } from '@/types/nodeId'
 
 describe('link ownership error surface', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     seedMediaNodeDefs()
     vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(false)
   })
@@ -76,7 +73,6 @@ describe('link ownership error surface', () => {
 
 describe('link ownership while a workflow loads', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     seedMediaNodeDefs()
     vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(false)
   })
@@ -152,10 +148,13 @@ describe('link ownership while a workflow loads', () => {
 
 describe('promotion listener lifecycle', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     seedMediaNodeDefs()
     vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(false)
   })
+
+  /** Lets a removal's own deferred reconcile land before the test seeds. */
+  const flushRemovalReconcile = () =>
+    new Promise((resolve) => setTimeout(resolve, 0))
 
   /** A candidate for a node that does not exist, so any reconcile drops it. */
   function seedStaleCandidate() {
@@ -186,6 +185,7 @@ describe('promotion listener lifecycle', () => {
     } = createSharedDefinitionGraph([65])
     installErrorClearingHooks(rootGraph)
     rootGraph.remove(host)
+    await flushRemovalReconcile()
 
     const mediaStore = seedStaleCandidate()
     subgraph.events.dispatch('widget-promoted', {
@@ -211,6 +211,7 @@ describe('promotion listener lifecycle', () => {
     // already in the graph, so hosts counted at install time arrive again.
     rootGraph.onNodeAdded?.(host)
     rootGraph.remove(host)
+    await flushRemovalReconcile()
 
     const mediaStore = seedStaleCandidate()
     subgraph.events.dispatch('widget-promoted', {
@@ -230,6 +231,7 @@ describe('promotion listener lifecycle', () => {
     } = createSharedDefinitionGraph([65, 66])
     installErrorClearingHooks(rootGraph)
     rootGraph.remove(first)
+    await flushRemovalReconcile()
 
     const mediaStore = seedStaleCandidate()
     subgraph.events.dispatch('widget-promoted', {
@@ -243,7 +245,6 @@ describe('promotion listener lifecycle', () => {
 
 describe('promoted widget promotion error surface moves with ownership', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     seedMediaNodeDefs()
     vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(false)
   })
@@ -326,7 +327,6 @@ describe('promoted widget promotion error surface moves with ownership', () => {
 
 describe('promoted widget demotion error clearing', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     seedMediaNodeDefs()
     vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(false)
   })

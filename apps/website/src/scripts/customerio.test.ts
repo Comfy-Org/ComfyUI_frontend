@@ -3,9 +3,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const hoisted = vi.hoisted(() => ({
   sdkImported: vi.fn(),
-  mockIdentify: vi.fn().mockResolvedValue(undefined),
-  mockTrack: vi.fn().mockResolvedValue(undefined),
-  mockLoad: vi.fn()
+  mockIdentify: vi.fn(async () => undefined),
+  mockTrack: vi.fn(async () => undefined),
+  mockLoad: vi.fn(() =>
+    Promise.resolve([
+      { identify: hoisted.mockIdentify, track: hoisted.mockTrack },
+      {}
+    ])
+  )
 }))
 
 vi.mock('@customerio/cdp-analytics-browser', () => {
@@ -13,12 +18,7 @@ vi.mock('@customerio/cdp-analytics-browser', () => {
   // AnalyticsBrowser.load returns a thenable resolving to [Analytics, Context]
   return {
     AnalyticsBrowser: {
-      load: hoisted.mockLoad.mockReturnValue(
-        Promise.resolve([
-          { identify: hoisted.mockIdentify, track: hoisted.mockTrack },
-          {}
-        ])
-      )
+      load: hoisted.mockLoad
     }
   }
 })
@@ -30,9 +30,7 @@ async function importModule(writeKey: string) {
 
 describe('customerio', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     vi.resetModules()
-    vi.unstubAllEnvs()
   })
 
   it('is disabled and never loads the SDK when the write key is empty', async () => {

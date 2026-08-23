@@ -44,6 +44,44 @@ mkdir -p /path/to/your/ComfyUI/custom_nodes/ComfyUI_devtools
 cp -r tools/devtools/* /path/to/your/ComfyUI/custom_nodes/ComfyUI_devtools/
 ```
 
+### Containerized ComfyUI
+
+To run a containerized ComfyUI backend instead of maintaining a separate
+install, install and start Docker, then run:
+
+```bash
+pnpm container:start
+```
+
+The command mounts `tools/devtools` and starts ComfyUI at `localhost:8188`.
+Leave it running. Use another terminal for `pnpm dev` and a third for
+`pnpm test:browser:local`.
+
+Run browser tests against port 5173 when using this container. Port 8188 serves
+the frontend bundled into the container, not the current frontend checkout.
+
+If the image is not cached, the launcher tries to pull it from GHCR. It uses
+`GH_TOKEN` and gets the matching username from `gh api user`.
+`COMFY_CI_CONTAINER_TOKEN` and `COMFY_CI_CONTAINER_USER` take precedence when
+set. If credentials are missing or the pull fails, the launcher says why and
+builds the matching release from source instead. This fallback may differ from
+the published CI image. The source build can take several minutes and uses about
+10 GB, plus Docker build cache.
+
+### Remote agent containers
+
+Remote development containers used by coding agents default to local mode.
+Local mode runs the containerized backend and one local frontend. Cloud mode
+skips Docker and the local backend, and runs one frontend against the Comfy test
+cloud. Set `COMFYUI_FRONTEND_MODE=cloud` in the container environment to switch
+modes.
+
+If the container's `GH_TOKEN` can read the private package, no other credentials
+are needed. Otherwise, add a GitHub token with `read:packages` access to the
+container's secret settings. You can use `COMFY_CI_CONTAINER_TOKEN` with
+`COMFY_CI_CONTAINER_USER` instead of `GH_TOKEN`; these dedicated values take
+precedence. Recreate the container after changing its environment or secrets.
+
 ### Node.js & Playwright
 
 Install the Node version in `.nvmrc`, then the workspace dependencies and the
@@ -167,6 +205,15 @@ flowchart TD
     E -- Yes --> P[fixtures/components/]
     E -- No, coordinates actions<br/>across the app --> H[fixtures/helpers/]
 ```
+
+### Custom-node regression suite
+
+`tests/customNodes/` holds the manifest-driven suite that proves community
+custom-node packs load, render in both renderers (LiteGraph canvas and Vue
+Nodes 2.0), and execute real workflows. It has its own prerequisites, pnpm
+scripts (`pnpm test:custom-nodes` and variants), and a one-JSON-row process
+for adding packs - see
+[docs/custom-node-regression-suite.md](../docs/custom-node-regression-suite.md).
 
 ## Writing Tests
 
@@ -749,7 +796,10 @@ the other browser report links in the PR comment. It's scoped to added
 files only — the existing suite always runs without video — to keep CI cost
 and time bounded. Recording is opt-in via `RECORD_VIDEO=true` (set only by
 that CI job; see `playwright.config.ts`) and slowed down with `SLOW_MO` so
-the result is legible for reviewers.
+the result is legible for reviewers. Files containing no tests eligible for
+the `chromium` project, such as `@perf`-only specs, are skipped with an
+explanation in the workflow summary. Newly added `@audit` tests fail this
+job instead because the audit project has no regular CI coverage.
 
 ## After Making Changes
 

@@ -61,10 +61,6 @@ function drawFrame(canvas: LGraphCanvas) {
 }
 
 describe('DomWidgets positioning', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('positions an active visible widget relative to its owning node', () => {
     const canvasStore = useCanvasStore()
     const domWidgetStore = useDomWidgetStore()

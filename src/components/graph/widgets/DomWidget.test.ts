@@ -1,8 +1,6 @@
-import { createTestingPinia } from '@pinia/testing'
 import { render } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, reactive } from 'vue'
 
 import type { BaseDOMWidget } from '@/scripts/domWidget'
@@ -88,13 +86,8 @@ function createWidgetState(disabled: boolean): DomWidgetState {
 }
 
 describe('DomWidget disabled style', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   afterEach(() => {
     useDomWidgetStore().clear()
-    vi.clearAllMocks()
   })
 
   it('uses disabled style when widget is computedDisabled', async () => {

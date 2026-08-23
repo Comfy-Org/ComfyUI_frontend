@@ -18,9 +18,12 @@ import type {
   CheckoutAttributionMetadata,
   ResubscribeClickMetadata
 } from '@/platform/telemetry/types'
+import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { useDialogService } from '@/services/dialogService'
-import { TIER_TO_KEY } from '@/platform/cloud/subscription/constants/tierPricing'
+import { toTierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { operations } from '@/types/comfyRegistryTypes'
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import {
@@ -37,14 +40,10 @@ type CloudSubscriptionCheckoutResponse = NonNullable<
   operations['createCloudSubscriptionCheckout']['responses']['201']['content']['application/json']
 >
 
-export type CloudSubscriptionStatusResponse = NonNullable<
-  operations['GetCloudSubscriptionStatus']['responses']['200']['content']['application/json']
->
-
 const PENDING_SUBSCRIPTION_CHECKOUT_RETRY_DELAYS_MS = [3000, 10000, 30000]
 
 function useSubscriptionInternal() {
-  const subscriptionStatus = ref<CloudSubscriptionStatusResponse | null>(null)
+  const subscriptionStatus = ref<BillingStatusResponse | null>(null)
   const telemetry = useTelemetry()
   const isInitialized = ref(false)
 
@@ -57,13 +56,14 @@ function useSubscriptionInternal() {
   const { showSubscriptionRequiredDialog } = useDialogService()
 
   const authStore = useAuthStore()
-  const { getAuthHeader, fetchWithCustomerRecovery } = authStore
+  const workspaceStore = useTeamWorkspaceStore()
+  const { getFirebaseAuthHeader, fetchWithCustomerRecovery } = authStore
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
   const { isLoggedIn } = useCurrentUser()
 
   const isCancelled = computed(() => {
-    return !!subscriptionStatus.value?.end_date
+    return !!subscriptionStatus.value?.cancel_at
   })
 
   const formattedRenewalDate = computed(() => {
@@ -79,9 +79,9 @@ function useSubscriptionInternal() {
   })
 
   const formattedEndDate = computed(() => {
-    if (!subscriptionStatus.value?.end_date) return ''
+    if (!subscriptionStatus.value?.cancel_at) return ''
 
-    const endDate = new Date(subscriptionStatus.value.end_date)
+    const endDate = new Date(subscriptionStatus.value.cancel_at)
 
     return endDate.toLocaleDateString('en-US', {
       month: 'short',
@@ -107,7 +107,7 @@ function useSubscriptionInternal() {
   const subscriptionTierName = computed(() => {
     const tier = subscriptionTier.value
     if (!tier) return ''
-    const key = TIER_TO_KEY[tier] ?? 'standard'
+    const key = toTierKey(tier) ?? 'standard'
     const baseName = t(`subscription.tiers.${key}.name`)
     return isYearlySubscription.value
       ? t('subscription.tierNameYearly', { name: baseName })
@@ -170,7 +170,7 @@ function useSubscriptionInternal() {
   }
 
   const syncPendingSubscriptionSuccess = (
-    statusData: CloudSubscriptionStatusResponse
+    statusData: BillingStatusResponse
   ) => {
     const metadata = consumePendingSubscriptionCheckoutSuccess(statusData)
 
@@ -211,7 +211,7 @@ function useSubscriptionInternal() {
   }
 
   const buildAuthHeaders = async (): Promise<Record<string, string>> => {
-    const authHeader = await getAuthHeader()
+    const authHeader = await getFirebaseAuthHeader()
     if (!authHeader) {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
@@ -253,13 +253,15 @@ function useSubscriptionInternal() {
       return
     }
 
+    const previousTierKey = subscriptionTier.value
+      ? toTierKey(subscriptionTier.value)
+      : null
+
     recordPendingSubscriptionCheckoutAttempt({
       tier: 'standard',
       cycle: 'monthly',
       checkout_type: canAccessSubscriptionFeatures.value ? 'change' : 'new',
-      ...(subscriptionTier.value
-        ? { previous_tier: TIER_TO_KEY[subscriptionTier.value] }
-        : {}),
+      ...(previousTierKey ? { previous_tier: previousTierKey } : {}),
       ...(subscriptionDuration.value === 'ANNUAL'
         ? { previous_cycle: 'yearly' as const }
         : subscriptionDuration.value === 'MONTHLY'
@@ -278,7 +280,6 @@ function useSubscriptionInternal() {
 
   /**
    * Whether cloud subscription mode is enabled (cloud distribution with subscription_required config).
-   * Use to determine which UI to show (SubscriptionPanel vs CreditsPanel).
    */
   const isSubscriptionEnabled = (): boolean =>
     Boolean(isCloud && window.__CONFIG__?.subscription_required)
@@ -349,39 +350,66 @@ function useSubscriptionInternal() {
   }
 
   // Coalesce concurrent callers so an auth/session-rotation burst mints one fetch.
-  let inFlightStatusFetch: Promise<CloudSubscriptionStatusResponse | null> | null =
-    null
+  let inFlightStatusFetch: Promise<BillingStatusResponse | null> | null = null
+  let inFlightStatusOwnerId: string | null = null
+  let inFlightStatusWorkspaceId: string | null = null
 
-  async function fetchSubscriptionStatus(): Promise<CloudSubscriptionStatusResponse | null> {
-    if (inFlightStatusFetch) return inFlightStatusFetch
-    inFlightStatusFetch = performFetchSubscriptionStatus().finally(() => {
-      inFlightStatusFetch = null
-    })
-    return inFlightStatusFetch
-  }
-
-  async function performFetchSubscriptionStatus(): Promise<CloudSubscriptionStatusResponse | null> {
-    const headers = await buildAuthHeaders()
-
-    const response = await fetchWithCustomerRecovery(
-      buildApiUrl('/customers/cloud-subscription-status'),
-      {
-        headers
-      }
-    )
-
-    if (!response.ok) {
-      const { message } = await parseErrorResponse(response)
-      throw new AuthStoreError(
-        t('toastMessages.failedToFetchSubscription', {
-          error: message
-        }),
-        response.status
-      )
+  async function fetchSubscriptionStatus(): Promise<BillingStatusResponse | null> {
+    const ownerId = authStore.userId ?? null
+    const workspaceId = workspaceStore.activeWorkspaceId
+    if (
+      inFlightStatusFetch &&
+      inFlightStatusOwnerId === ownerId &&
+      inFlightStatusWorkspaceId === workspaceId
+    ) {
+      return inFlightStatusFetch
     }
 
-    const statusData = await response.json()
+    const fetchPromise = performFetchSubscriptionStatus(ownerId, workspaceId)
+    inFlightStatusFetch = fetchPromise
+    inFlightStatusOwnerId = ownerId
+    inFlightStatusWorkspaceId = workspaceId
+    void fetchPromise
+      .catch(() => undefined)
+      .finally(() => {
+        if (inFlightStatusFetch === fetchPromise) {
+          inFlightStatusFetch = null
+          inFlightStatusOwnerId = null
+          inFlightStatusWorkspaceId = null
+        }
+      })
+    return fetchPromise
+  }
+
+  async function performFetchSubscriptionStatus(
+    ownerId: string | null,
+    workspaceId: string | null
+  ): Promise<BillingStatusResponse | null> {
+    if (!isCloud) return null
+
+    let statusData: BillingStatusResponse
+    try {
+      statusData = await workspaceApi.getBillingStatus()
+    } catch (error) {
+      throw new AuthStoreError(
+        t('toastMessages.failedToFetchSubscription', {
+          error: error instanceof Error ? error.message : String(error)
+        })
+      )
+    }
+    if (
+      (authStore.userId ?? null) !== ownerId ||
+      workspaceStore.activeWorkspaceId !== workspaceId
+    ) {
+      return null
+    }
     subscriptionStatus.value = statusData
+    if (workspaceId && statusData.billing_rail) {
+      workspaceStore.setWorkspaceBillingRail(
+        workspaceId,
+        statusData.billing_rail
+      )
+    }
     syncPendingSubscriptionSuccess(statusData)
 
     return statusData
@@ -418,7 +446,8 @@ function useSubscriptionInternal() {
   })
 
   watch(
-    () => [authStore.isInitialized, isLoggedIn.value] as const,
+    () =>
+      [authStore.isInitialized, isLoggedIn.value, authStore.userId] as const,
     async ([authInitialized, loggedIn]) => {
       if (!authInitialized) {
         return
