@@ -5,8 +5,8 @@ import AgentConsentCard from '@/workbench/extensions/agent/components/agent/Agen
 const VIDEO_SRC = 'https://media.comfy.org/website/mcp/launch-film.mp4'
 
 const paragraphs = [
-  'The agent can read your workflow, add and edit nodes, and run the graph on your behalf. It only acts on the workflow you have open.',
-  'You can revoke access at any time from settings. Nothing is shared until you accept.'
+  'Comfy Agent can read the workflow you have open, add and edit nodes, and change widget values on your behalf. It only acts on the workflow you have open.',
+  'Running stays your decision: the agent prepares the graph and you click Run to execute it.'
 ]
 
 const meta: Meta<typeof AgentConsentCard> = {
@@ -16,7 +16,7 @@ const meta: Meta<typeof AgentConsentCard> = {
   // The card is designed on a dark surface; default the theme toolbar to dark.
   globals: { theme: 'dark' },
   args: {
-    title: 'Let the agent work in your workflow',
+    title: 'Let Comfy Agent work in your workflow',
     paragraphs,
     videoSrc: VIDEO_SRC,
     docsUrl: 'https://docs.comfy.org/agent-tools/in-app-agent'
@@ -24,7 +24,7 @@ const meta: Meta<typeof AgentConsentCard> = {
   decorators: [
     () => ({
       template:
-        '<div class="grid min-h-screen place-items-center bg-base-background p-8"><story /></div>'
+        '<div class="grid place-items-center bg-base-background p-8"><story /></div>'
     })
   ]
 }
@@ -60,7 +60,7 @@ export const InNarrowPanel: Story = {
   decorators: [
     () => ({
       template:
-        '<div class="grid min-h-screen place-items-center bg-base-background p-8"><div class="w-[380px]"><story /></div></div>'
+        '<div class="grid place-items-center bg-base-background p-8"><div class="w-[380px]"><story /></div></div>'
     })
   ]
 }
