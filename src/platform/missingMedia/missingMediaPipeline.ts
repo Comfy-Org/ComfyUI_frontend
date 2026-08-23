@@ -16,7 +16,6 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 interface RunMissingMediaPipelineOptions {
-  /** Must be the root graph: candidates are keyed by root-relative execution id. */
   rootGraph: LGraph
   silent?: boolean
 }

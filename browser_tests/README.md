@@ -206,6 +206,15 @@ flowchart TD
     E -- No, coordinates actions<br/>across the app --> H[fixtures/helpers/]
 ```
 
+### Custom-node regression suite
+
+`tests/customNodes/` holds the manifest-driven suite that proves community
+custom-node packs load, render in both renderers (LiteGraph canvas and Vue
+Nodes 2.0), and execute real workflows. It has its own prerequisites, pnpm
+scripts (`pnpm test:custom-nodes` and variants), and a one-JSON-row process
+for adding packs - see
+[docs/custom-node-regression-suite.md](../docs/custom-node-regression-suite.md).
+
 ## Writing Tests
 
 ### Golden rules
@@ -787,7 +796,10 @@ the other browser report links in the PR comment. It's scoped to added
 files only — the existing suite always runs without video — to keep CI cost
 and time bounded. Recording is opt-in via `RECORD_VIDEO=true` (set only by
 that CI job; see `playwright.config.ts`) and slowed down with `SLOW_MO` so
-the result is legible for reviewers.
+the result is legible for reviewers. Files containing no tests eligible for
+the `chromium` project, such as `@perf`-only specs, are skipped with an
+explanation in the workflow summary. Newly added `@audit` tests fail this
+job instead because the audit project has no regular CI coverage.
 
 ## After Making Changes
 

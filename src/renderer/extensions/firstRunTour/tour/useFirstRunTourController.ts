@@ -46,13 +46,21 @@ function useFirstRunTourControllerInternal() {
   /** Only a tour walked to the end made a first result to be congratulated for. */
   const tourWasCompleted = ref(false)
 
+  /**
+   * The half of the tour's context that exists before the tour does: a canvas
+   * the steps can point at. Linear mode `display:none`s it entirely, and below
+   * the desktop layout the spotlights are placed against a screen that isn't
+   * there. Split out so it can also serve as the precondition for opening one.
+   */
+  const canvasContextHolds = computed(
+    () => desktopLayout.value && !canvasStore.linearMode
+  )
+
   // The tour's node ids are graph-local, so they only describe the workflow it
   // resolved against: swapping workflows leaves it pointing at strangers.
-  // Linear mode hides the canvas entirely, so its nodes are nothing to point at.
   const tourContextHolds = computed(
     () =>
-      desktopLayout.value &&
-      !canvasStore.linearMode &&
+      canvasContextHolds.value &&
       workflowStore.activeWorkflow === tourWorkflow.value
   )
 
@@ -145,6 +153,11 @@ function useFirstRunTourControllerInternal() {
   /** False when there is no tour to give; any renderer switch is undone. */
   async function beginTour(templateId?: string): Promise<boolean> {
     if (engine.activeTour) return false
+    // Holds only ever end a tour that is already running, and only when they
+    // change — a context lost before the tour opens (`?template=X&mode=linear`
+    // boots straight into linear mode) never produces that change. Refused
+    // here, ahead of the renderer switch below, so nothing is left to undo.
+    if (!canvasContextHolds.value) return false
 
     const enabledForTour = !settingStore.get('Comfy.VueNodes.Enabled')
     if (enabledForTour) await settingStore.set('Comfy.VueNodes.Enabled', true)
@@ -158,7 +171,10 @@ function useFirstRunTourControllerInternal() {
       tourContextHolds
     )
     await delay(INTRO_PREVIEW_MS)
-    const started = await engine.startTour('firstRun')
+    // The preview is long enough for the canvas to go away underneath it, and
+    // the holds watcher cannot catch that: there is no active tour to end yet.
+    const started =
+      canvasContextHolds.value && (await engine.startTour('firstRun'))
     if (!started) {
       releaseFirstRunTargets()
       tourWorkflow.value = null
