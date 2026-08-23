@@ -23,6 +23,7 @@ const mocks = vi.hoisted(() => ({
   activeWorkflow: { value: null as unknown },
   linearMode: { value: false },
   vueNodesEnabled: true,
+  setSetting: vi.fn(),
   steps: [] as CoachStep[],
   runState: { value: 'idle' } as Ref<string>,
   releaseFirstRunTargets: vi.fn(),
@@ -92,10 +93,9 @@ vi.mock('@/renderer/core/canvas/canvasStore', async () => {
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
     get: () => mocks.vueNodesEnabled,
-    set: (_key: string, value: boolean) => {
-      mocks.vueNodesEnabled = value
-      return Promise.resolve()
-    }
+    // A spy, not a plain writer: a value that was flipped and put back reads
+    // the same as one that was never touched.
+    set: mocks.setSetting
   })
 }))
 
@@ -235,6 +235,10 @@ describe('useFirstRunTourController', () => {
     mocks.activeWorkflow.value = null
     mocks.linearMode.value = false
     mocks.vueNodesEnabled = true
+    mocks.setSetting.mockImplementation((_key: string, value: boolean) => {
+      mocks.vueNodesEnabled = value
+      return Promise.resolve()
+    })
     mocks.steps = []
     mocks.engine.activeTour = null
     mocks.engine.lastEnding = null
@@ -311,6 +315,77 @@ describe('useFirstRunTourController', () => {
       ).toBe(false)
       expect(mocks.engine.startTour).not.toHaveBeenCalled()
       expect(mocks.vueNodesEnabled).toBe(true)
+    })
+
+    // Holds only ever end a tour that is already running, and only when they
+    // change, so a context that is lost before the tour opens has to be
+    // refused at the door. Asserted as "nothing opened" rather than as the
+    // holds value: with no tour registered there is nothing to hold.
+    it('refuses to open over the linear view, which hides the canvas', async () => {
+      mocks.linearMode.value = true
+      mocks.vueNodesEnabled = false
+      mocks.steps = [runStep()]
+      const controller = await freshController()
+
+      const starting = controller.beginTour('image_z_image_turbo')
+      await vi.advanceTimersByTimeAsync(INTRO_PREVIEW_MS)
+
+      expect(
+        await starting,
+        '?template=X&mode=linear display:none-s the canvas, so every card would point at a node nobody can see'
+      ).toBe(false)
+      expect(
+        mocks.engine.startTour,
+        'the cards would sit over a hidden canvas until their targets timed out'
+      ).not.toHaveBeenCalled()
+      expect(
+        mocks.setSetting,
+        'a tour that never opened must not touch the renderer setting at all'
+      ).not.toHaveBeenCalledWith('Comfy.VueNodes.Enabled', true)
+    })
+
+    it('refuses to open on a viewport below the desktop layout', async () => {
+      setViewportWidth(500)
+      mocks.vueNodesEnabled = false
+      mocks.steps = [runStep()]
+      const controller = await freshController()
+
+      const starting = controller.beginTour('image_z_image_turbo')
+      await vi.advanceTimersByTimeAsync(INTRO_PREVIEW_MS)
+
+      expect(
+        await starting,
+        'the spotlights are placed against a desktop layout, so below md they point nowhere'
+      ).toBe(false)
+      expect(mocks.engine.startTour).not.toHaveBeenCalled()
+      expect(mocks.setSetting).not.toHaveBeenCalledWith(
+        'Comfy.VueNodes.Enabled',
+        true
+      )
+    })
+
+    it('refuses to open when the canvas goes away during the intro preview', async () => {
+      mocks.vueNodesEnabled = false
+      mocks.steps = [runStep()]
+      const controller = await freshController()
+
+      const starting = controller.beginTour('image_z_image_turbo')
+      // Flush the renderer switch first, so the canvas is lost inside the
+      // preview delay rather than while beginTour is still setting up. Only
+      // the post-delay re-check can catch it from there.
+      await vi.advanceTimersByTimeAsync(0)
+      mocks.linearMode.value = true
+      await vi.advanceTimersByTimeAsync(INTRO_PREVIEW_MS)
+
+      expect(
+        await starting,
+        'the holds watcher cannot catch this — there is no active tour to end yet'
+      ).toBe(false)
+      expect(mocks.engine.startTour).not.toHaveBeenCalled()
+      expect(
+        mocks.vueNodesEnabled,
+        'the renderer switch thrown for a tour that never opened is handed back'
+      ).toBe(false)
     })
 
     it('leaves the workflow undimmed before taking the screen over', async () => {
@@ -472,26 +547,6 @@ describe('useFirstRunTourController', () => {
         registeredTourHolds(),
         'a tour must not end just because its run progressed'
       ).toBe(true)
-    })
-
-    it('refuses to hold a tour on a viewport below the desktop layout', async () => {
-      setViewportWidth(500)
-      await tourOnRunStep()
-
-      expect(
-        registeredTourHolds(),
-        'the spotlight is placed against a desktop layout, so below md it points nowhere'
-      ).toBe(false)
-    })
-
-    it('refuses to hold a tour over the linear view, which hides the canvas', async () => {
-      mocks.linearMode.value = true
-      await tourOnRunStep()
-
-      expect(
-        registeredTourHolds(),
-        '?mode=linear display:none-s the canvas, so every spotlight lands on a node nobody can see'
-      ).toBe(false)
     })
 
     it('ends the tour when the user switches into the linear view mid-walk', async () => {
