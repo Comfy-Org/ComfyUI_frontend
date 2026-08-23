@@ -1227,6 +1227,10 @@ describe('useWorkspaceAuthStore', () => {
       const store = useWorkspaceAuthStore()
       const { currentWorkspace, workspaceToken } = storeToRefs(store)
       let workspaceWhenRevocationHandled: string | null = null
+      const cancelWorkflowTransition = vi.fn()
+      mockPrepareWorkflowWorkspaceTransition.mockReturnValue(
+        cancelWorkflowTransition
+      )
       mockForgetRevokedActiveWorkspace.mockImplementation(() => {
         workspaceWhenRevocationHandled = sessionStorage.getItem(
           WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE
@@ -1249,6 +1253,8 @@ describe('useWorkspaceAuthStore', () => {
       expect(workspaceWhenRevocationHandled).toBe(
         JSON.stringify(mockWorkspaceWithRole)
       )
+      expect(cancelWorkflowTransition).toHaveBeenCalledOnce()
+      expect(mockReload).not.toHaveBeenCalled()
     })
   })
 
