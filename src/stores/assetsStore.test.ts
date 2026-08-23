@@ -2511,6 +2511,33 @@ describe('assetsStore - Flat Output Assets (cloud-only)', () => {
       }
     })
 
+    it('defers a loadMore started during a refresh instead of stranding hasMore', async () => {
+      const { store } = await setupStoreWithFirstPage()
+      const refreshPage = deferredPage()
+
+      vi.mocked(assetService.getAssetsPageByTag).mockReturnValueOnce(
+        refreshPage.promise
+      )
+
+      const refreshResult = store.updateFlatOutputs()
+      const loadMoreResult = store.loadMoreFlatOutputs()
+
+      // The refresh already rewound the offset to the head, so the loadMore has
+      // no next page to ask for and must not issue a second request.
+      expect(vi.mocked(assetService.getAssetsPageByTag)).toHaveBeenCalledTimes(
+        1
+      )
+
+      const head = Array.from({ length: FLAT_OUTPUT_PAGE_SIZE }, (_, i) =>
+        makeAsset(`b${i}`, `g${i}.png`)
+      )
+      refreshPage.resolve(makePage(head, { hasMore: true }))
+      await Promise.all([refreshResult, loadMoreResult])
+
+      expect(store.flatOutputHasMore).toBe(true)
+      expect(store.flatOutputAssets).toHaveLength(FLAT_OUTPUT_PAGE_SIZE)
+    })
+
     it('concurrent refreshes deduplicate the network call and produce consistent state', async () => {
       const page = deferredPage()
       vi.mocked(assetService.getAssetsPageByTag).mockReturnValueOnce(

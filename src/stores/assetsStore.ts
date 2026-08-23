@@ -329,6 +329,14 @@ export const useAssetsStore = defineStore('assets', () => {
       await flatOutputLoadMoreInFlight.value
       return
     }
+    // A refresh has already reset the offset and cursor to the head, so there
+    // is no next page to ask for yet; the refresh itself delivers that page.
+    // Issuing one anyway re-fetches the head, which dedupes to nothing and
+    // would strand `flatOutputHasMore` at false.
+    if (flatOutputRefreshInFlight.value) {
+      await flatOutputRefreshInFlight.value
+      return
+    }
 
     flatOutputError.value = null
 
