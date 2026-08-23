@@ -11,12 +11,12 @@ import {
 } from '@/core/graph/subgraph/promotionUtils'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 
 import { searchWidgets } from '../shared'
 import type { NodeWidgetsList } from '../shared'
+import PanelSearchHeader from './PanelSearchHeader.vue'
 import SectionWidgets from './SectionWidgets.vue'
 
 const { node } = defineProps<{
@@ -122,20 +122,12 @@ const label = computed(() => {
 </script>
 
 <template>
-  <div
-    class="flex items-center border-b border-interface-stroke px-4 pt-1 pb-4"
-  >
-    <AsyncSearchInput
-      v-model="searchQuery"
-      :searcher
-      :update-key="widgetsList"
-      class="flex-1"
-    />
+  <PanelSearchHeader v-model="searchQuery" :searcher :update-key="widgetsList">
     <CollapseToggleButton
       v-model="isAllCollapsed"
       :show="!isSearching && advancedInputsWidgets.length > 0"
     />
-  </div>
+  </PanelSearchHeader>
   <SectionWidgets
     :collapse="firstSectionCollapsed && !isSearching"
     :node
