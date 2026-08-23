@@ -9,8 +9,7 @@
  *   startup/telemetry-init         | ~0–0.3 s
  *   startup/firebase-init          | ~0–0.1 s
  *   startup/sentry-init            | ~0–0.1 s
- *   auth-gate/initialized          | variable  (Firebase session restore)
- *   auth-gate/authenticated        | variable  (token refresh)
+ *   auth-gate/initialized          | variable  (Firebase session restore + timeout/retry)
  *   auth-gate/user-store           | ~0–2.5 s  (GET /api/user/*)
  *   auth-gate/needs-login          | ~0 s      (computed resolution)
  *   bootstrap/settings             | ~0.2 s    (parallel, non-blocking)
@@ -40,7 +39,6 @@ export type BootstrapPhase =
   | 'startup/firebase-init'
   | 'startup/sentry-init'
   | 'auth-gate/initialized'
-  | 'auth-gate/authenticated'
   | 'auth-gate/user-store'
   | 'auth-gate/needs-login'
   | 'bootstrap/settings'
