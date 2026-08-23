@@ -53,7 +53,12 @@ export const useNodeDataStore = defineStore('nodeData', () => {
       incumbent.graphId === graphScope.owningGraphId
     )
       return incumbent
-    if (incumbent) return undefined
+    if (incumbent) {
+      console.error(
+        `Node ${state.id} belongs to graph ${incumbent.graphId}; graph ${graphScope.owningGraphId} cannot overwrite it.`
+      )
+      return undefined
+    }
     const bucket = existingBucket ?? rootBucket(graphScope.rootGraphId)
     const registered: NodeState = reactive(
       Object.assign(state, { graphId: graphScope.owningGraphId })

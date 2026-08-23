@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { assert, beforeEach, describe, expect, it } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -66,28 +66,36 @@ describe('useNodeDataStore', () => {
     const store = useNodeDataStore()
     const first = node(1)
     const duplicate = node(1, 'sub-1')
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     const registered = store.registerNode(graphScope(rootA, rootA), first)
     const rejected = store.registerNode(graphScope(rootA, 'sub-1'), duplicate)
 
     expect(registered?.id).toBe(first.id)
     expect(rejected).toBeUndefined()
+    expect(errorSpy).toHaveBeenCalledOnce()
+    expect(errorSpy.mock.calls[0][0]).toMatch(/belongs to graph/)
     expect(duplicate.graphId).toBe('sub-1')
     expect(store.getGraphNodesFor(rootA, rootA)).toEqual([registered])
     expect(store.getGraphNodesFor(rootA, 'sub-1')).toEqual([])
+    errorSpy.mockRestore()
   })
 
   it('rejects the registered node identity from a sibling owner', () => {
     const store = useNodeDataStore()
     const registered = node(1)
     store.registerNode(graphScope(rootA, rootA), registered)
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     expect(
       store.registerNode(graphScope(rootA, 'sub-1'), registered)
     ).toBeUndefined()
+    expect(errorSpy).toHaveBeenCalledOnce()
+    expect(errorSpy.mock.calls[0][0]).toMatch(/belongs to graph/)
     expect(registered.graphId).toBe(rootA)
     expect(store.getGraphNodesFor(rootA, rootA)).toEqual([registered])
     expect(store.getGraphNodesFor(rootA, 'sub-1')).toEqual([])
+    errorSpy.mockRestore()
   })
 
   it('only deletes the registered identity from its owning graph', () => {
