@@ -10,8 +10,7 @@ export default function lintStaged(stagedFiles: string[]) {
   const formattableFiles = relativePaths.filter(
     (fileName) =>
       /\.(js|ts|tsx|vue|mts|json|yaml|md)$/.test(fileName) &&
-      !fileName.endsWith('pnpm-lock.yaml') &&
-      !fileName.startsWith('src/locales/')
+      !fileName.endsWith('pnpm-lock.yaml')
   )
   const codeFiles = relativePaths.filter((fileName) =>
     /\.(js|ts|tsx|vue|mts)$/.test(fileName)
