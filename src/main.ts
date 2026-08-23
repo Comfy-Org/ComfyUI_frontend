@@ -118,7 +118,6 @@ phaseSentry.stop()
 
 flushErrorReports()
 
-
 // Assertion reporter receives pre-formatted messages (with "[Assertion failed]: " prefix).
 // Strings here are intentionally not i18n'd: they're developer/nightly diagnostics,
 // not user-facing in stable releases.
