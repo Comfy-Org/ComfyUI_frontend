@@ -128,6 +128,7 @@ app.registerExtension({
         const audioUIWidget: DOMWidget<HTMLAudioElement, string> =
           node.addDOMWidget(inputName, /* name=*/ 'audioUI', audio)
         audioUIWidget.serialize = false
+        audioUIWidget.options.serialize = false
         const { nodeData } = node.constructor
         if (nodeData == null) throw new TypeError('nodeData is null')
 
@@ -218,11 +219,15 @@ app.registerExtension({
         ) as unknown as DOMWidget<HTMLAudioElement, string>
 
         const onAudioWidgetUpdate = () => {
+          const value = audioWidget.value
+          const values = audioWidget.options.values
+          const isEmptySentinel =
+            value === 'none' && values?.length === 1 && values[0] === value
           updateUIWidget(
             audioUIWidget,
-            api.apiURL(
-              getResourceURL(...splitFilePath(audioWidget.value ?? ''))
-            )
+            value && !isEmptySentinel
+              ? api.apiURL(getResourceURL(...splitFilePath(value)))
+              : ''
           )
         }
         // Initially load default audio file to audioUIWidget.

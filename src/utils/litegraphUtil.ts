@@ -1,4 +1,4 @@
-import _ from 'es-toolkit/compat'
+import { every, filter, head, isEmpty, isEqual, map } from 'es-toolkit/compat'
 
 import type { ColorOption, LGraph } from '@/lib/litegraph/src/litegraph'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
@@ -20,13 +20,14 @@ import type {
   IComboWidget,
   WidgetCallbackOptions
 } from '@/lib/litegraph/src/types/widgets'
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { app } from '@/scripts/app'
 import { t } from '@/i18n'
 import { parseNodeLocatorId } from '@/types/nodeIdentification'
+import type { SerializedNodeId } from '@/types/nodeId'
+import { UNASSIGNED_NODE_ID, parseNodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
 
@@ -150,15 +151,13 @@ export const isReroute = (item: unknown): item is Reroute => {
  * @returns The color option of the item.
  */
 export const getItemsColorOption = (items: unknown[]): ColorOption | null => {
-  const validItems = _.filter(items, isColorable)
-  if (_.isEmpty(validItems)) return null
+  const validItems = filter(items, isColorable)
+  if (isEmpty(validItems)) return null
 
-  const colorOptions = _.map(validItems, (item) => item.getColorOption())
+  const colorOptions = map(validItems, (item) => item.getColorOption())
 
-  return _.every(colorOptions, (option) =>
-    _.isEqual(option, _.head(colorOptions))
-  )
-    ? _.head(colorOptions)!
+  return every(colorOptions, (option) => isEqual(option, head(colorOptions)))
+    ? head(colorOptions)!
     : null
 }
 
@@ -322,20 +321,21 @@ export function getLinkTypeColor(typeName: string): string {
 }
 
 export function resolveNode(
-  nodeId: NodeId,
+  nodeId: SerializedNodeId,
   graph: LGraph | null | undefined = app.rootGraph
 ): LGraphNode | undefined {
-  if (!graph) return undefined
-  const found = graph.getNodeById(nodeId)
+  const parsedNodeId = parseNodeId(nodeId)
+  if (!graph || !parsedNodeId) return undefined
+  const found = graph.getNodeById(parsedNodeId)
   if (found) return found
   for (const sg of graph.subgraphs.values()) {
-    const node = sg.getNodeById(nodeId)
+    const node = sg.getNodeById(parsedNodeId)
     if (node) return node
   }
   return undefined
 }
 export function resolveNodeWidget(
-  nodeId: NodeId,
+  nodeId: SerializedNodeId,
   widgetName?: string,
   graph: LGraph = app.rootGraph
 ): [LGraphNode, IBaseWidget] | [LGraphNode] | [] {
@@ -350,7 +350,10 @@ export function resolveNodeWidget(
     }
   }
 
-  const node = graph.getNodeById(nodeId)
+  const parsedNodeId = parseNodeId(nodeId)
+  if (!parsedNodeId) return []
+
+  const node = graph.getNodeById(parsedNodeId)
   if (!widgetName) return node ? [node] : []
   if (node) {
     const widget = node.widgets?.find((w) => w.name === widgetName)
@@ -367,10 +370,11 @@ export function getWidgetIdForNode(
 ): WidgetId | undefined {
   if (widget.widgetId) return widget.widgetId
   const graphId = node.graph?.rootGraph.id
-  if (!graphId || node.id === -1) return undefined
+  const nodeId = parseNodeId(node.id)
+  if (!graphId || !nodeId || nodeId === UNASSIGNED_NODE_ID) return undefined
   const name =
     duplicateIndex > 0 ? `${widget.name}#${duplicateIndex}` : widget.name
-  return widgetId(graphId, node.id, name)
+  return widgetId(graphId, nodeId, name)
 }
 
 export function isLoad3dNode(node: LGraphNode) {

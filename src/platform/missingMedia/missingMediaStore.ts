@@ -31,6 +31,15 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
       new Set(missingMediaCandidates.value?.map((m) => String(m.nodeId)) ?? [])
   )
 
+  /** `nodeId::widgetName` keys, so per-widget render lookups stay O(1). */
+  const missingMediaWidgetKeys = computed<Set<string>>(() => {
+    const keys = new Set<string>()
+    for (const candidate of missingMediaCandidates.value ?? []) {
+      keys.add(`${String(candidate.nodeId)}::${candidate.widgetName}`)
+    }
+    return keys
+  })
+
   /**
    * Set of all execution ID prefixes derived from missing media node IDs,
    * including the missing media nodes themselves.
@@ -68,12 +77,15 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
     missingMediaCandidates.value = media.length ? media : null
   }
 
-  function hasMissingMediaOnNode(nodeLocatorId: string): boolean {
-    return missingMediaNodeIds.value.has(nodeLocatorId)
-  }
-
   function isContainerWithMissingMedia(node: LGraphNode): boolean {
     return activeMissingMediaGraphIds.value.has(String(node.id))
+  }
+
+  function isWidgetMissingMedia(
+    nodeId: NodeExecutionId,
+    widgetName: string
+  ): boolean {
+    return missingMediaWidgetKeys.value.has(`${String(nodeId)}::${widgetName}`)
   }
 
   function removeMissingMediaByWidget(nodeId: string, widgetName: string) {
@@ -157,7 +169,7 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
     clearMissingMedia,
     createVerificationAbortController,
 
-    hasMissingMediaOnNode,
-    isContainerWithMissingMedia
+    isContainerWithMissingMedia,
+    isWidgetMissingMedia
   }
 })

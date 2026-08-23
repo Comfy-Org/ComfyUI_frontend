@@ -4,9 +4,8 @@
  * Tests for SubgraphNode instances including construction,
  * IO synchronization, and edge cases.
  */
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
 
 import {
   BaseWidget,
@@ -18,6 +17,7 @@ import {
 import type { ExportedSubgraphInstance } from '@/lib/litegraph/src/types/serialisation'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { toNodeId } from '@/types/nodeId'
 
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
 import {
@@ -27,7 +27,6 @@ import {
 } from './__fixtures__/subgraphHelpers'
 
 beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   resetSubgraphFixtureState()
 })
 
@@ -60,7 +59,7 @@ describe('SubgraphNode Construction', () => {
       size: [180, 80]
     })
 
-    expect(subgraphNode.id).toBe(42)
+    expect(subgraphNode.id).toBe(toNodeId(42))
     expect(Array.from(subgraphNode.pos)).toEqual([300, 150])
     expect(Array.from(subgraphNode.size)).toEqual([180, 80])
   })
@@ -83,6 +82,19 @@ describe('SubgraphNode Construction', () => {
 
     expect(() => subgraphNode.rootGraph).toThrow()
     expect(subgraphNode.graph).toBeNull()
+  })
+
+  it('should return empty widgets array (not throw) after removal', () => {
+    const subgraph = createTestSubgraph()
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const parentGraph = subgraphNode.graph!
+    parentGraph.add(subgraphNode)
+
+    parentGraph.remove(subgraphNode)
+
+    expect(subgraphNode.graph).toBeNull()
+    expect(() => subgraphNode.widgets).not.toThrow()
+    expect(subgraphNode.widgets).toEqual([])
   })
 
   subgraphTest(
@@ -940,8 +952,6 @@ describe('SubgraphNode Cleanup', () => {
 
 describe('SubgraphNode duplicate input pruning (#9977)', () => {
   it('should prune inputs that have no matching subgraph slot after configure', () => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-
     const subgraph = createTestSubgraph({
       inputs: [
         { name: 'a', type: 'STRING' },
@@ -950,11 +960,11 @@ describe('SubgraphNode duplicate input pruning (#9977)', () => {
     })
 
     const parentGraph = new LGraph()
-    const instanceData = {
-      id: 1 as const,
+    const instanceData = fromPartial<ExportedSubgraphInstance>({
+      id: 1,
       type: subgraph.id,
-      pos: [0, 0] as [number, number],
-      size: [200, 100] as [number, number],
+      pos: [0, 0],
+      size: [200, 100],
       inputs: [
         { name: 'a', type: 'STRING', link: null },
         { name: 'b', type: 'NUMBER', link: null },
@@ -966,21 +976,15 @@ describe('SubgraphNode duplicate input pruning (#9977)', () => {
       flags: {},
       mode: 0,
       order: 0
-    }
+    })
 
-    const node = new SubgraphNode(
-      parentGraph,
-      subgraph,
-      instanceData as ExportedSubgraphInstance
-    )
+    const node = new SubgraphNode(parentGraph, subgraph, instanceData)
 
     expect(node.inputs).toHaveLength(2)
     expect(node.inputs.every((i) => i._subgraphSlot)).toBe(true)
   })
 
   it('should not accumulate duplicate inputs on reconfigure', () => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-
     const subgraph = createTestSubgraph({
       inputs: [
         { name: 'a', type: 'STRING' },
@@ -1001,8 +1005,6 @@ describe('SubgraphNode duplicate input pruning (#9977)', () => {
   })
 
   it('should serialize with exactly the subgraph-defined inputs', () => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-
     const subgraph = createTestSubgraph({
       inputs: [
         { name: 'x', type: 'IMAGE' },
@@ -1020,8 +1022,6 @@ describe('SubgraphNode duplicate input pruning (#9977)', () => {
 
 describe('Nested SubgraphNode duplicate input prevention', () => {
   it('should not duplicate inputs when the referenced subgraph is reconfigured', () => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-
     const subgraph = createTestSubgraph({
       inputs: [
         { name: 'a', type: 'STRING' },
@@ -1045,8 +1045,6 @@ describe('Nested SubgraphNode duplicate input prevention', () => {
   })
 
   it('should not accumulate inputs across multiple reconfigure cycles', () => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-
     const subgraph = createTestSubgraph({
       inputs: [
         { name: 'x', type: 'IMAGE' },

@@ -1,15 +1,20 @@
 import { merge } from 'es-toolkit/compat'
+import { watch } from 'vue'
 import type { Component } from 'vue'
 
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
 import ErrorDialogContent from '@/components/dialog/content/ErrorDialogContent.vue'
 import PromptDialogContent from '@/components/dialog/content/PromptDialogContent.vue'
 import TopUpCreditsDialogContentLegacy from '@/components/dialog/content/TopUpCreditsDialogContentLegacy.vue'
+import InsufficientCreditsMemberDialog from '@/platform/workspace/components/InsufficientCreditsMemberDialog.vue'
 import TopUpCreditsDialogContentWorkspace from '@/platform/workspace/components/TopUpCreditsDialogContentWorkspace.vue'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 import { isCloud } from '@/platform/distribution/types'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingPolicyCapabilities } from '@/platform/cloud/subscription/composables/useBillingPolicyCapabilities'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import type {
   DialogComponentProps,
@@ -17,7 +22,9 @@ import type {
 } from '@/stores/dialogStore'
 
 import type { ComponentAttrs } from 'vue-component-type-helpers'
-import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
+import type { DowngradeToPersonalResult } from '@/platform/workspace/composables/useDowngradeToPersonal'
 
 // Lazy loaders for dialogs - components are loaded on first use
 const lazyApiNodesSignInContent = () =>
@@ -327,14 +334,39 @@ export const useDialogService = () => {
   async function showTopUpCreditsDialog(options?: {
     isInsufficientCredits?: boolean
   }) {
-    const { isActiveSubscription, isFreeTier, type } = useBillingContext()
-    if (!isActiveSubscription.value || isFreeTier.value) {
+    const { type } = useBillingContext()
+    const { billingPolicyCapabilities } = useBillingPolicyCapabilities()
+    if (
+      billingPolicyCapabilities.value.topUpAccess === 'subscription-required'
+    ) {
       await showSubscriptionRequiredDialog({
         reason: options?.isInsufficientCredits
           ? 'out_of_credits'
           : 'top_up_blocked'
       })
       return
+    }
+
+    // Members can't top up a team workspace, so they get a read-only
+    // "ask your workspace admins" notice instead of the purchase dialog.
+    if (
+      type.value === 'workspace' &&
+      !useWorkspaceUI().permissions.value.canTopUp
+    ) {
+      return dialogStore.showDialog({
+        key: 'insufficient-credits-member',
+        component: InsufficientCreditsMemberDialog,
+        props: {
+          onClose: () =>
+            dialogStore.closeDialog({ key: 'insufficient-credits-member' })
+        },
+        dialogComponentProps: {
+          renderer: 'reka',
+          headless: true,
+          contentClass:
+            'w-[min(360px,95vw)] max-w-[min(360px,95vw)] sm:max-w-[min(360px,95vw)] border-0 bg-transparent shadow-none'
+        }
+      })
     }
 
     const component =
@@ -440,9 +472,9 @@ export const useDialogService = () => {
     })
   }
 
-  async function showSubscriptionRequiredDialog(options?: {
-    reason?: SubscriptionDialogReason
-  }) {
+  async function showSubscriptionRequiredDialog(
+    options?: SubscriptionDialogOptions
+  ) {
     if (!isCloud || !window.__CONFIG__?.subscription_required) {
       return
     }
@@ -541,6 +573,37 @@ export const useDialogService = () => {
     })
   }
 
+  async function showChangeMemberRoleDialog(props: {
+    memberId: string
+    memberName: string
+    targetRole: WorkspaceRole
+  }) {
+    const { default: component } =
+      await import('@/platform/workspace/components/dialogs/ChangeMemberRoleDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'change-member-role',
+      component,
+      props,
+      dialogComponentProps: workspaceDialogProps
+    })
+  }
+
+  async function showSetMemberCreditLimitDialog(props: {
+    memberId: string
+    memberName: string
+    creditsUsed?: number
+    currentLimit?: number | null
+  }) {
+    const { default: component } =
+      await import('@/platform/workspace/components/dialogs/SetMemberCreditLimitDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'set-member-credit-limit',
+      component,
+      props,
+      dialogComponentProps: workspaceDialogProps
+    })
+  }
+
   async function showInviteMemberDialog() {
     const { default: component } =
       await import('@/platform/workspace/components/dialogs/InviteMemberDialogContent.vue')
@@ -594,16 +657,136 @@ export const useDialogService = () => {
     })
   }
 
-  async function showCancelSubscriptionDialog(cancelAt?: string) {
+  async function showCancelSubscriptionDialog(
+    cancelAt?: string,
+    flowAlreadyOpened = false
+  ) {
     const { default: component } =
       await import('@/components/dialog/content/subscription/CancelSubscriptionDialogContent.vue')
     return dialogStore.showDialog({
       key: 'cancel-subscription',
       component,
-      props: { cancelAt },
+      props: { cancelAt, flowAlreadyOpened },
       dialogComponentProps: {
         ...workspaceDialogProps
       }
+    })
+  }
+
+  async function showCancelSubscriptionFlow(cancelAt?: string) {
+    const cancellationFlow =
+      await import('@/platform/cloud/subscription/launchCancellationFlow')
+    return cancellationFlow.launchCancellationFlow({
+      cancelAt,
+      showFallback: ({ flowAlreadyOpened = false } = {}) =>
+        showCancelSubscriptionDialog(cancelAt, flowAlreadyOpened)
+    })
+  }
+
+  /**
+   * Downgrade a team plan to a personal plan. Skips the type-"I understand"
+   * confirm dialog only when there's nothing to confirm: no other members to
+   * remove and no reactivation charge to disclose. Failures on that fast
+   * path surface as an error toast.
+   */
+  async function showDowngradeToPersonalDialog(options: {
+    planName: string
+    planSlug: string
+  }): Promise<DowngradeToPersonalResult | null> {
+    const {
+      useDowngradeToPersonal,
+      ReactivationConfirmationRequiredError,
+      ReactivationAmountChangedError
+    } = await import('@/platform/workspace/composables/useDowngradeToPersonal')
+    const {
+      hasOtherMembers,
+      refreshMembers,
+      previewDowngrade,
+      downgradeToPersonal
+    } = useDowngradeToPersonal()
+
+    let requiresReactivation = false
+    let chargeCents = 0
+    try {
+      await refreshMembers()
+      const preview = await previewDowngrade(options.planSlug)
+      requiresReactivation = preview.requiresReactivationConfirmation
+      chargeCents = preview.preview.cost_today_cents
+      if (!hasOtherMembers.value && !requiresReactivation) {
+        return await downgradeToPersonal(options.planSlug)
+      }
+    } catch (error) {
+      useToastStore().add({
+        severity: 'error',
+        summary: t('subscription.downgrade.failed'),
+        detail: error instanceof Error ? error.message : t('g.unknownError')
+      })
+      return null
+    }
+
+    const { default: component } =
+      await import('@/platform/workspace/components/dialogs/DowngradeRemoveMembersDialogContent.vue')
+    const dialogKey = 'downgrade-remove-members'
+    dialogStore.closeDialog({ key: dialogKey })
+    return new Promise((resolve) => {
+      const stopWatching = watch(
+        () => dialogStore.isDialogOpen(dialogKey),
+        (isOpen) => {
+          if (!isOpen) resolveResult(null)
+        },
+        { flush: 'sync' }
+      )
+      function resolveResult(result: DowngradeToPersonalResult | null) {
+        stopWatching()
+        resolve(result)
+      }
+
+      dialogStore.showDialog({
+        key: dialogKey,
+        component,
+        props: {
+          planName: options.planName,
+          planSlug: options.planSlug,
+          requiresRemoval: hasOtherMembers.value,
+          requiresReactivation,
+          chargeCents,
+          onConfirm: async (planSlug: string, confirmReactivation: boolean) => {
+            try {
+              const result = await downgradeToPersonal(
+                planSlug,
+                confirmReactivation,
+                chargeCents
+              )
+              resolveResult(result)
+            } catch (error) {
+              // A fresh preview inside downgradeToPersonal() found the
+              // dialog's captured state (open-time cancellation/charge) is
+              // stale and refused to bill it. Push the corrected values into
+              // the still-open dialog so a retry sends what these errors'
+              // own preview says is actually true, instead of repeating the
+              // same rejected request forever.
+              if (
+                error instanceof ReactivationConfirmationRequiredError ||
+                error instanceof ReactivationAmountChangedError
+              ) {
+                requiresReactivation = true
+                chargeCents = error.preview.cost_today_cents
+                dialogStore.updateDialog({
+                  key: dialogKey,
+                  contentProps: { requiresReactivation, chargeCents }
+                })
+              }
+              throw error
+            }
+          }
+        },
+        dialogComponentProps: {
+          ...workspaceDialogProps,
+          closable: false,
+          dismissableMask: false,
+          onClose: () => resolveResult(null)
+        }
+      })
     })
   }
 
@@ -664,10 +847,14 @@ export const useDialogService = () => {
     showLeaveWorkspaceDialog,
     showEditWorkspaceDialog,
     showRemoveMemberDialog,
+    showChangeMemberRoleDialog,
+    showSetMemberCreditLimitDialog,
     showRevokeInviteDialog,
     showInviteMemberDialog,
     showInviteMemberUpsellDialog,
     showBillingComingSoonDialog,
-    showCancelSubscriptionDialog
+    showCancelSubscriptionDialog,
+    showCancelSubscriptionFlow,
+    showDowngradeToPersonalDialog
   }
 }

@@ -1,8 +1,6 @@
-import { createTestingPinia } from '@pinia/testing'
 import { render } from '@testing-library/vue'
 import { fromAny } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -10,6 +8,7 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { widgetId } from '@/types/widgetId'
 import WidgetItem from './WidgetItem.vue'
+import { toNodeId } from '@/types/nodeId'
 
 const { mockGetInputSpecForWidget, StubWidgetComponent } = vi.hoisted(() => ({
   mockGetInputSpecForWidget: vi.fn(),
@@ -123,11 +122,6 @@ function getStubWidget(container: Element) {
 }
 
 describe('WidgetItem', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
-  })
-
   describe('widget state rendering', () => {
     it('passes options from a regular widget to the widget component', () => {
       const widget = createMockWidget({
@@ -145,7 +139,7 @@ describe('WidgetItem', () => {
       const expectedOptions = {
         values: ['model_a.safetensors', 'model_b.safetensors']
       }
-      const id = widgetId('test-graph-id', 1, 'ckpt_name')
+      const id = widgetId('test-graph-id', toNodeId(1), 'ckpt_name')
       const widget = createMockWidget({ widgetId: id, name: 'ckpt_name' })
       useWidgetValueStore().registerWidget(id, {
         type: 'combo',
@@ -160,7 +154,7 @@ describe('WidgetItem', () => {
     })
 
     it('passes type from widget state to the widget component', () => {
-      const id = widgetId('test-graph-id', 1, 'ckpt_name')
+      const id = widgetId('test-graph-id', toNodeId(1), 'ckpt_name')
       const widget = createMockWidget({ widgetId: id, type: 'string' })
       useWidgetValueStore().registerWidget(id, {
         type: 'combo',
@@ -175,7 +169,7 @@ describe('WidgetItem', () => {
     })
 
     it('passes name from widget state to the widget component', () => {
-      const id = widgetId('test-graph-id', 1, 'ckpt_name')
+      const id = widgetId('test-graph-id', toNodeId(1), 'ckpt_name')
       const widget = createMockWidget({ widgetId: id, name: 'source_name' })
       useWidgetValueStore().registerWidget(id, {
         type: 'combo',
@@ -190,7 +184,7 @@ describe('WidgetItem', () => {
     })
 
     it('passes value from widget state to the widget component', () => {
-      const id = widgetId('test-graph-id', 1, 'ckpt_name')
+      const id = widgetId('test-graph-id', toNodeId(1), 'ckpt_name')
       const widget = createMockWidget({ widgetId: id, value: 'source value' })
       useWidgetValueStore().registerWidget(id, {
         type: 'combo',

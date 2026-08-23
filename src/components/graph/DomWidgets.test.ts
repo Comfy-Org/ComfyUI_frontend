@@ -1,8 +1,6 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import DomWidgets from '@/components/graph/DomWidgets.vue'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
@@ -11,6 +9,7 @@ import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { BaseDOMWidget } from '@/scripts/domWidget'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
+import { toNodeId } from '@/types/nodeId'
 
 type TestWidget = BaseDOMWidget<object | string>
 
@@ -21,7 +20,7 @@ function createNode(
   pos: [number, number]
 ) {
   const node = new LGraphNode(title)
-  node.id = id
+  node.id = toNodeId(id)
   node.pos = [...pos]
   node.size = [240, 120]
   graph.add(node)
@@ -58,10 +57,6 @@ function drawFrame(canvas: LGraphCanvas) {
 }
 
 describe('DomWidgets positioning', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('positions an active visible widget relative to its owning node', () => {
     const canvasStore = useCanvasStore()
     const domWidgetStore = useDomWidgetStore()

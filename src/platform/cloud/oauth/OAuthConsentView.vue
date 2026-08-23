@@ -1,22 +1,32 @@
 <template>
-  <main
-    class="dark-theme mx-auto flex min-h-screen max-w-md flex-col justify-center p-6"
-  >
-    <section
-      v-if="challenge"
-      class="flex flex-col gap-6 rounded-2xl border border-solid border-muted bg-secondary-background p-6 shadow-sm"
-    >
-      <header class="flex flex-col items-center gap-3 pt-2 text-center">
-        <div
-          class="flex size-12 items-center justify-center rounded-2xl bg-secondary-background"
-        >
+  <main class="mx-auto flex min-h-screen max-w-lg flex-col justify-center p-6">
+    <section v-if="challenge" class="flex flex-col gap-8">
+      <header class="flex flex-col items-center gap-4 text-center">
+        <div class="flex items-center gap-4">
+          <div
+            class="flex size-14 items-center justify-center rounded-2xl bg-white"
+          >
+            <i
+              class="icon-[lucide--app-window] size-8 text-black"
+              aria-hidden="true"
+              data-testid="client-icon"
+            />
+          </div>
           <i
-            class="icon-[lucide--key] size-5 text-base-foreground"
+            class="icon-[lucide--arrow-left-right] size-6 text-muted"
             aria-hidden="true"
           />
+          <div
+            class="flex size-14 items-center justify-center rounded-2xl bg-plum-600"
+          >
+            <i
+              class="icon-[comfy--comfy-c] size-8 text-white"
+              aria-hidden="true"
+            />
+          </div>
         </div>
-        <div class="flex flex-col items-center gap-1.5">
-          <h1 class="m-0 text-xl/tight font-semibold">
+        <div class="flex flex-col items-center gap-2">
+          <h1 class="m-0 text-2xl/tight font-semibold text-base-foreground">
             {{
               t('oauth.consent.title', {
                 client: challenge.client_display_name
@@ -35,7 +45,7 @@
         </p>
         <div
           v-if="challenge.workspaces.length === 0"
-          class="p-3 text-sm text-muted"
+          class="rounded-lg bg-ink-400 p-3 text-sm text-muted"
         >
           {{ t('oauth.consent.noWorkspaces') }}
         </div>
@@ -43,7 +53,7 @@
           v-else
           v-model="selectedWorkspaceId"
           :aria-label="t('oauth.consent.workspaceLabel')"
-          class="m-0 flex scrollbar-custom max-h-72 list-none flex-col gap-1 overflow-y-auto p-0"
+          class="m-0 flex scrollbar-custom max-h-72 list-none flex-col divide-y divide-white/10 overflow-hidden overflow-y-auto rounded-lg bg-ink-400 p-0"
         >
           <RadioGroupItem
             v-for="workspace in challenge.workspaces"
@@ -51,11 +61,10 @@
             :value="workspace.id"
             :class="
               cn(
-                'flex w-full cursor-pointer items-center gap-3 rounded-md border-none bg-transparent px-3 py-2 text-left transition-colors',
-                'hover:bg-secondary-background-hover',
-                'focus-visible:ring-ring focus-visible:ring-1 focus-visible:outline-none',
-                selectedWorkspaceId === workspace.id &&
-                  'bg-secondary-background'
+                'flex w-full cursor-pointer items-center gap-3 border-none bg-transparent p-3 text-left transition-colors',
+                'hover:bg-ink-300',
+                'focus-visible:ring-ring focus-visible:ring-1 focus-visible:outline-none focus-visible:ring-inset',
+                selectedWorkspaceId === workspace.id && 'bg-ink-200'
               )
             "
           >
@@ -78,49 +87,52 @@
             />
           </RadioGroupItem>
         </RadioGroupRoot>
-        <p class="m-0 text-xs text-muted">
-          {{ t('oauth.consent.workspaceHelp') }}
-        </p>
       </section>
 
       <section class="flex flex-col gap-3">
         <p class="m-0 text-sm font-medium">
-          {{ t('oauth.consent.permissionsHeader') }}
+          {{ t('oauth.consent.detailsHeader') }}
         </p>
-        <ul class="m-0 flex list-none flex-col gap-1.5 p-0">
-          <li
-            v-for="scope in challenge.scopes"
-            :key="scope"
-            class="flex items-center gap-2"
+        <div class="flex flex-col gap-1.5 rounded-lg bg-ink-400 p-3">
+          <span class="text-xs text-muted">
+            {{ t('oauth.consent.permissionsHeader') }}
+          </span>
+          <ul
+            class="m-0 flex scrollbar-custom max-h-72 list-none flex-col gap-1.5 overflow-y-auto p-0"
           >
-            <i
-              class="icon-[lucide--check] size-4 shrink-0 text-primary-background"
-              aria-hidden="true"
-            />
-            <span class="text-sm">
-              {{ scopeLabel(scope) }}
-            </span>
-          </li>
-        </ul>
-      </section>
-
-      <section
-        v-if="challenge.redirect_uri"
-        class="flex flex-col gap-1.5 rounded-lg border border-solid border-muted bg-secondary-background/40 p-3"
-      >
-        <span class="text-xs text-muted">
-          {{ t('oauth.consent.redirectNotice') }}
-        </span>
-        <code
-          class="m-0 truncate font-mono text-xs text-base-foreground"
-          :title="challenge.redirect_uri"
+            <li
+              v-for="scope in challenge.scopes"
+              :key="scope"
+              class="flex items-center gap-2"
+            >
+              <i
+                class="icon-[lucide--check] size-4 shrink-0 text-brand-yellow"
+                aria-hidden="true"
+              />
+              <span class="text-sm">
+                {{ scopeLabel(scope) }}
+              </span>
+            </li>
+          </ul>
+        </div>
+        <div
+          v-if="challenge.redirect_uri"
+          class="flex flex-col gap-1.5 rounded-lg bg-ink-400 p-3"
         >
-          {{ challenge.redirect_uri }}
-        </code>
+          <span class="text-xs text-muted">
+            {{ t('oauth.consent.redirectNotice') }}
+          </span>
+          <code
+            class="m-0 block truncate rounded-md bg-ink-200 px-3 py-2 font-mono text-xs text-base-foreground"
+            :title="challenge.redirect_uri"
+          >
+            {{ challenge.redirect_uri }}
+          </code>
+        </div>
       </section>
 
       <p
-        v-if="errorMessage"
+        v-show="errorMessage"
         role="alert"
         class="m-0 rounded-md border border-solid border-destructive-background bg-destructive-background/10 p-3 text-sm text-destructive-background"
       >
@@ -129,9 +141,9 @@
 
       <footer class="flex flex-col gap-2">
         <Button
-          variant="primary"
+          variant="secondary"
           size="lg"
-          class="w-full"
+          class="w-full bg-ink-500 hover:bg-ink-400"
           :loading="submitting === 'allow'"
           :disabled="isSubmitting || !selectedWorkspaceIsValid"
           @click="submit('allow')"
@@ -141,9 +153,9 @@
         <Button
           variant="secondary"
           size="lg"
-          class="w-full"
+          class="w-full bg-ink-600 hover:bg-ink-400"
           :loading="submitting === 'deny'"
-          :disabled="isSubmitting || challenge.workspaces.length === 0"
+          :disabled="isSubmitting"
           @click="submit('deny')"
         >
           {{ t('oauth.consent.deny') }}
@@ -261,6 +273,7 @@ async function loadChallenge() {
 function messageForError(error: unknown): string {
   if (error instanceof OAuthApiError) {
     if (error.status === 400) return t('oauth.consent.errorExpired')
+    if (error.status === 401) return t('oauth.consent.sessionError')
     if (error.status === 403) return t('oauth.consent.errorScopeBroadening')
     if (error.status === 404) return t('oauth.consent.errorUnavailable')
   }
@@ -270,11 +283,12 @@ function messageForError(error: unknown): string {
 async function submit(decision: 'allow' | 'deny') {
   if (!challenge.value) return
   if (decision === 'allow' && !selectedWorkspaceIsValid.value) return
-  // Cloud requires workspace_id on both allow and deny. A deny with no
-  // workspaces is disabled in the template, so a workspace is guaranteed.
   const workspaceId =
     selectedWorkspaceId.value ?? challenge.value.workspaces[0]?.id
-  if (!workspaceId) return
+  if (!workspaceId) {
+    errorMessage.value = t('oauth.consent.genericError')
+    return
+  }
 
   errorMessage.value = ''
   submitting.value = decision

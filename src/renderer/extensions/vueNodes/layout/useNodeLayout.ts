@@ -5,22 +5,20 @@ import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMuta
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { Point } from '@/renderer/core/layout/types'
+import type { NodeId } from '@/types/nodeId'
 
 /**
  * Composable for individual Vue node components
  * Uses customRef for shared write access with Canvas renderer
  */
-export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<string>) {
+export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<NodeId>) {
   const nodeId = toValue(nodeIdMaybe)
   const mutations = useLayoutMutations()
 
   // Get the customRef for this node (shared write access)
-  const layoutRef = layoutStore.getNodeLayoutRef(nodeId)
+  const { layout: layoutRef, release } = layoutStore.retainNodeLayoutRef(nodeId)
 
-  // Clean up refs and triggers when Vue component unmounts
-  onUnmounted(() => {
-    layoutStore.cleanupNodeRef(nodeId)
-  })
+  onUnmounted(release)
 
   // Computed properties for easy access
   const position = computed(() => {

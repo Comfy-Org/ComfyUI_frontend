@@ -77,6 +77,7 @@ function dynamicComboWidget(
   widgetName?: string
 ) {
   const { addNodeInput } = useLitegraphService()
+  const { deleteWidget } = useWidgetValueStore()
   const parseResult = zDynamicComboInputSpec.safeParse(untypedInputData)
   if (!parseResult.success) throw new Error('invalid DynamicCombo spec')
   const inputData = parseResult.data
@@ -99,7 +100,10 @@ function dynamicComboWidget(
     const newSpec = value ? options[value] : undefined
 
     const removedInputs = remove(node.inputs, isInGroup)
-    for (const widget of remove(node.widgets, isInGroup)) widget.onRemove?.()
+    for (const widget of remove(node.widgets, isInGroup)) {
+      widget.onRemove?.()
+      if (widget.widgetId) deleteWidget(widget.widgetId)
+    }
 
     if (!newSpec) return
 
@@ -344,8 +348,16 @@ function withComfyMatchType(node: LGraphNode): asserts node is MatchTypeNode {
 function applyMatchType(node: LGraphNode, inputSpec: InputSpecV2) {
   const { addNodeInput } = useLitegraphService()
   const name = inputSpec.name
-  const matchTypeSpec = zMatchTypeOptions.safeParse(inputSpec).data
-  if (!matchTypeSpec) return
+  const parseResult = zMatchTypeOptions.safeParse(inputSpec)
+  if (!parseResult.success) {
+    console.warn(
+      `Unparseable COMFY_MATCHTYPE_V3 spec for input "${name}"; falling back to a wildcard socket.`,
+      parseResult.error.issues
+    )
+    addNodeInput(node, { ...inputSpec, type: '*' })
+    return
+  }
+  const matchTypeSpec = parseResult.data
 
   const { allowed_types, template_id } = matchTypeSpec.template
   const typedSpec = { ...inputSpec, type: allowed_types }

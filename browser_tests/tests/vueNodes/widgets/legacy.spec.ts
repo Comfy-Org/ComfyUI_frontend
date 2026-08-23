@@ -2,6 +2,7 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
+import { toNodeId } from '@/types/nodeId'
 
 test('@vue-nodes In App Mode, widget width updates with panel size', async ({
   comfyPage,
@@ -17,7 +18,8 @@ test('@vue-nodes In App Mode, widget width updates with panel size', async ({
 
   const getWidth = () =>
     comfyPage.page.evaluate(
-      () => graph!.getNodeById(10)!.widgets![0].width ?? 0
+      (nodeId) => graph!.getNodeById(nodeId)!.widgets![0].width ?? 0,
+      toNodeId(10)
     )
 
   await test.step('Mouse clicks resolve to button regions', async () => {

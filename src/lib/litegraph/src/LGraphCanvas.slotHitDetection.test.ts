@@ -26,8 +26,6 @@ describe('LGraphCanvas slot hit detection', () => {
   let canvasElement: HTMLCanvasElement
 
   beforeEach(() => {
-    vi.clearAllMocks()
-
     canvasElement = document.createElement('canvas')
     canvasElement.width = 800
     canvasElement.height = 600
@@ -107,7 +105,7 @@ describe('LGraphCanvas slot hit detection', () => {
 
       // Mock the slot query to return our node's slot
       vi.mocked(layoutStore.querySlotAtPoint).mockReturnValue({
-        nodeId: String(node.id),
+        nodeId: node.id,
         index: 0,
         type: 'output',
         position: { x: 252, y: 120 },
@@ -188,7 +186,7 @@ describe('LGraphCanvas slot hit detection', () => {
       expect(node.isPointInside(clickX, clickY)).toBe(false)
 
       vi.mocked(layoutStore.querySlotAtPoint).mockReturnValue({
-        nodeId: String(node.id),
+        nodeId: node.id,
         index: 0,
         type: 'input',
         position: { x: 98, y: 140 },

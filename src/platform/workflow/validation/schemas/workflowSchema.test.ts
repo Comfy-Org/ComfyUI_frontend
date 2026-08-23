@@ -119,6 +119,31 @@ describe('parseComfyWorkflow', () => {
       const result = await validateComfyWorkflow(workflow)
       expect(result).toBeNull()
     })
+
+    it('accepts mixed int/string node ids and preserves linearMode', async () => {
+      const workflow = JSON.parse(JSON.stringify(defaultGraph))
+      workflow.extra = {
+        linearMode: true,
+        linearData: {
+          inputs: [
+            [3, 'file'],
+            [5, 'upscaler_model'],
+            [5, 'upscaler_resolution'],
+            ['5', 'upscaler_creativity']
+          ],
+          outputs: [4]
+        }
+      }
+      const result = await validateComfyWorkflow(workflow)
+      expect(result).not.toBeNull()
+      expect(result!.extra!.linearMode).toBe(true)
+      expect(result!.extra!.linearData!.inputs).toEqual([
+        [3, 'file'],
+        [5, 'upscaler_model'],
+        [5, 'upscaler_resolution'],
+        ['5', 'upscaler_creativity']
+      ])
+    })
   })
 
   it('workflow.nodes.pos', async () => {

@@ -6,7 +6,6 @@ import type { Raw } from 'vue'
 import { useAppMode } from '@/composables/useAppMode'
 
 import type { Point, Positionable } from '@/lib/litegraph/src/interfaces'
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type {
   LGraph,
   LGraphCanvas,
@@ -17,6 +16,7 @@ import type {
 import { promoteRecommendedWidgets } from '@/core/graph/subgraph/promotionUtils'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { app } from '@/scripts/app'
+import type { NodeId } from '@/types/nodeId'
 import { isLGraphGroup, isLGraphNode, isReroute } from '@/utils/litegraphUtil'
 
 export const useTitleEditorStore = defineStore('titleEditor', () => {
@@ -56,6 +56,7 @@ export const useCanvasStore = defineStore('canvas', () => {
       setMode(val ? 'app' : 'graph')
     }
   })
+  const isReadOnly = ref(false)
 
   // Set up scale synchronization when canvas is available
   let originalOnChanged: ((scale: number, offset: Point) => void) | undefined =
@@ -119,18 +120,36 @@ export const useCanvasStore = defineStore('canvas', () => {
   const isGhostPlacing = ref(false)
 
   // Provide selection state to all Vue nodes
-  const selectedNodeIds = computed(
+  const selectedNodeIds = computed<Set<NodeId>>(
     () =>
-      new Set(
-        selectedItems.value
-          .filter((item) => item.id !== undefined && isLGraphNode(item))
-          .map((item) => String(item.id))
-      )
+      new Set(selectedItems.value.filter(isLGraphNode).map((item) => item.id))
   )
 
   whenever(
     () => canvas.value,
     (newCanvas) => {
+      currentGraph.value = newCanvas.graph
+      // Scoped to the on-screen graph: selection only holds items from it,
+      // so removals in other graphs can't affect the live selection.
+      useEventListener(
+        () => currentGraph.value?.events,
+        'node:before-removed',
+        (e: CustomEvent<{ node: LGraphNode }>) => {
+          newCanvas.deselect(e.detail.node)
+          updateSelectedItems()
+        }
+      )
+
+      isReadOnly.value = newCanvas.read_only
+
+      useEventListener(
+        newCanvas.canvas,
+        'litegraph:read-only-changed',
+        (event: CustomEvent<{ readOnly: boolean }>) => {
+          isReadOnly.value = event.detail.readOnly
+        }
+      )
+
       useEventListener(
         newCanvas.canvas,
         'litegraph:set-graph',
@@ -159,7 +178,7 @@ export const useCanvasStore = defineStore('canvas', () => {
           isGhostPlacing.value = e.detail.active
           if (e.detail.active) {
             const mutations = useLayoutMutations()
-            mutations.bringNodeToFront(String(e.detail.nodeId))
+            mutations.bringNodeToFront(e.detail.nodeId)
           }
         }
       )
@@ -176,6 +195,7 @@ export const useCanvasStore = defineStore('canvas', () => {
     rerouteSelected,
     appScalePercentage,
     linearMode,
+    isReadOnly,
     updateSelectedItems,
     getCanvas,
     setAppZoomFromPercentage,

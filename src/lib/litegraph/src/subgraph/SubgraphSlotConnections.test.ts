@@ -1,6 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 
 import {
   SUBGRAPH_INPUT_ID,
@@ -21,9 +19,9 @@ import {
   createTestSubgraphNode,
   resetSubgraphFixtureState
 } from './__fixtures__/subgraphHelpers'
+import { toNodeId } from '@/types/nodeId'
 
 beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   resetSubgraphFixtureState()
 })
 
@@ -132,7 +130,7 @@ describe('Subgraph slot connections', () => {
 
       // Create a node inside the subgraph
       const internalNode = new LGraphNode('InternalNode')
-      internalNode.id = 100
+      internalNode.id = toNodeId(100)
       internalNode.addInput('in', 'number')
       subgraph.add(internalNode)
 

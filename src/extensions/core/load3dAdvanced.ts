@@ -45,7 +45,7 @@ useExtensionService().registerExtension({
           name: 'viewport_state',
           component: Load3DAdvanced,
           inputSpec: inputSpecLoad3DAdvanced,
-          options: {}
+          options: { hideInPanel: true }
         })
 
         widget.type = 'load3DAdvanced'

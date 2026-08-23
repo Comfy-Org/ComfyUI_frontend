@@ -1,3 +1,5 @@
+import { normalizeEmail } from '@/platform/telemetry/utils/normalizeEmail'
+
 import type {
   AuthMetadata,
   BeginCheckoutMetadata,
@@ -27,7 +29,8 @@ import type {
   UiButtonClickMetadata,
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
-  WorkflowSavedMetadata
+  WorkflowSavedMetadata,
+  WorkspaceInviteMetadata
 } from '../../types'
 import { TelemetryEvents } from '../../types'
 
@@ -137,16 +140,11 @@ export class GtmTelemetryProvider implements TelemetryProvider {
   }
 
   trackAuth(metadata: AuthMetadata): void {
+    const normalizedEmail = normalizeEmail(metadata.email)
     const payload = {
       method: metadata.method,
       ...(metadata.user_id ? { user_id: metadata.user_id } : {}),
-      ...(metadata.email
-        ? {
-            user_data: {
-              email: metadata.email.trim().toLowerCase()
-            }
-          }
-        : {})
+      ...(normalizedEmail ? { user_data: { email: normalizedEmail } } : {})
     }
 
     this.pushEvent(metadata.is_new_user ? 'sign_up' : 'login', payload)
@@ -180,6 +178,12 @@ export class GtmTelemetryProvider implements TelemetryProvider {
       'subscription_success',
       metadata ? { ...metadata } : undefined
     )
+  }
+
+  trackWorkspaceInviteSent(metadata: WorkspaceInviteMetadata): void {
+    // GA4 names must be bare snake_case; the TelemetryEvents enum carries an
+    // `app:` prefix for Mixpanel/PostHog that dataLayer would forward verbatim.
+    this.pushEvent('workspace_invite_sent', metadata)
   }
 
   trackRunButton(properties: RunButtonProperties): void {

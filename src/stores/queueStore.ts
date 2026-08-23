@@ -7,7 +7,7 @@ import type {
   JobListItem,
   TaskType
 } from '@/platform/remote/comfyui/jobs/jobTypes'
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { SerializedNodeId } from '@/types/nodeId'
 import type {
   ResultItem,
   StatusWsMessageStatus,
@@ -21,6 +21,7 @@ import { useExtensionService } from '@/services/extensionService'
 import { getJobDetail } from '@/services/jobOutputCache'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { tryNormalizeNodeExecutionId } from '@/types/nodeIdentification'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
@@ -33,7 +34,7 @@ enum TaskItemDisplayStatus {
 }
 
 interface ResultItemInit extends ResultItem {
-  nodeId: NodeId
+  nodeId: SerializedNodeId
   mediaType: string
   format?: string
   frame_rate?: number
@@ -46,7 +47,7 @@ export class ResultItemImpl {
   subfolder: string
   type: string
 
-  nodeId: NodeId
+  nodeId: SerializedNodeId
   // 'audio' | 'images' | ...
   mediaType: string
 
@@ -223,7 +224,10 @@ export class ResultItemImpl {
     return getMediaTypeFromFilename(this.filename) === '3D'
   }
   get isText(): boolean {
-    return this.mediaType === 'text'
+    return (
+      this.mediaType === 'text' ||
+      getMediaTypeFromFilename(this.filename) === 'text'
+    )
   }
 
   get supportsPreview(): boolean {
@@ -324,6 +328,11 @@ export class TaskItemImpl {
 
   get outputsCount(): number | undefined {
     return this.job.outputs_count ?? undefined
+  }
+
+  /** Absent on backends or jobs that predate this field. */
+  get previewableOutputsCount(): number | undefined {
+    return this.job.previewable_outputs_count ?? undefined
   }
 
   get status() {
@@ -440,10 +449,12 @@ export class TaskItemImpl {
 
     const nodeOutputsStore = useNodeOutputStore()
     const rawOutputs = toRaw(outputsToLoad)
-    for (const nodeExecutionId in rawOutputs) {
+    for (const rawNodeExecutionId in rawOutputs) {
+      const nodeExecutionId = tryNormalizeNodeExecutionId(rawNodeExecutionId)
+      if (!nodeExecutionId) continue
       nodeOutputsStore.setNodeOutputsByExecutionId(
         nodeExecutionId,
-        rawOutputs[nodeExecutionId]
+        rawOutputs[rawNodeExecutionId]
       )
     }
     useExtensionService().invokeExtensions(
@@ -574,7 +585,11 @@ export const useQueueStore = defineStore('queue', () => {
           const existing = existingByJobId.get(job.id)
           if (!existing) return new TaskItemImpl(job)
           // Recreate if outputs_count changed to ensure lazy loading works
-          if (existing.outputsCount !== (job.outputs_count ?? undefined)) {
+          if (
+            existing.outputsCount !== (job.outputs_count ?? undefined) ||
+            existing.previewableOutputsCount !==
+              (job.previewable_outputs_count ?? undefined)
+          ) {
             return new TaskItemImpl(job)
           }
           return existing
@@ -650,28 +665,6 @@ export const useQueuePendingTaskCountStore = defineStore(
     }
   }
 )
-
-export type AutoQueueMode =
-  | 'disabled'
-  | 'change'
-  | 'instant-idle'
-  | 'instant-running'
-
-export const isInstantMode = (
-  mode: AutoQueueMode
-): mode is 'instant-idle' | 'instant-running' =>
-  mode === 'instant-idle' || mode === 'instant-running'
-
-export const isInstantRunningMode = (
-  mode: AutoQueueMode
-): mode is 'instant-running' => mode === 'instant-running'
-
-export const useQueueSettingsStore = defineStore('queueSettingsStore', {
-  state: () => ({
-    mode: 'disabled' as AutoQueueMode,
-    batchCount: 1
-  })
-})
 
 export const useQueueUIStore = defineStore('queueUIStore', () => {
   const settingStore = useSettingStore()

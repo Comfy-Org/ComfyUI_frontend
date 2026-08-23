@@ -1,14 +1,15 @@
 import { defineStore } from 'pinia'
 import { reactive, ref } from 'vue'
 
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { UUID } from '@/utils/uuid'
-import { parseWidgetId } from '@/types/widgetId'
+import { parseNodeId } from '@/types/nodeId'
+import type { NodeId, SerializedNodeId } from '@/types/nodeId'
+import { isWidgetId, parseWidgetId } from '@/types/widgetId'
 import type { WidgetId } from '@/types/widgetId'
 import type { WidgetState, WidgetStateInit } from '@/types/widgetState'
 
-export function stripGraphPrefix(scopedId: NodeId | string): NodeId {
-  return String(scopedId).replace(/^(.*:)+/, '') as NodeId
+export function stripGraphPrefix(scopedId: SerializedNodeId): NodeId | null {
+  return parseNodeId(String(scopedId).replace(/^(.*:)+/, ''))
 }
 
 export const useWidgetValueStore = defineStore('widgetValue', () => {
@@ -26,9 +27,19 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   function registerWidget<TValue = unknown>(
     widgetId: WidgetId,
     init: WidgetStateInit<TValue>
-  ): WidgetState<TValue> {
+  ): WidgetState<TValue> | undefined {
+    if (!isWidgetId(widgetId)) {
+      console.warn(
+        'widgetValueStore.registerWidget: ignoring un-keyable widget id',
+        widgetId
+      )
+      return undefined
+    }
+
     const existing = getWidget(widgetId)
-    if (existing) return existing as WidgetState<TValue>
+    if (existing && existing.type === init.type) {
+      return existing as WidgetState<TValue>
+    }
 
     const { graphId, nodeId, name } = parseWidgetId(widgetId)
     const state: WidgetState<TValue> = {
@@ -43,6 +54,8 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   }
 
   function getWidget(widgetId: WidgetId): WidgetState | undefined {
+    if (!isWidgetId(widgetId)) return undefined
+
     const { graphId } = parseWidgetId(widgetId)
     return getGraphWidgetStates(graphId).get(widgetId)
   }
@@ -55,13 +68,15 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   }
 
   function deleteWidget(widgetId: WidgetId): boolean {
+    if (!isWidgetId(widgetId)) return false
+
     const { graphId } = parseWidgetId(widgetId)
     return getGraphWidgetStates(graphId).delete(widgetId)
   }
 
-  function getNodeWidgets(graphId: UUID, nodeId: NodeId): WidgetState[] {
+  function getNodeWidgets(graphId: UUID, localNodeId: NodeId): WidgetState[] {
     return [...getGraphWidgetStates(graphId).values()].filter(
-      (state) => String(state.nodeId) === String(nodeId)
+      (state) => state.nodeId === localNodeId
     )
   }
 

@@ -7,6 +7,7 @@ import { createI18n } from 'vue-i18n'
 
 import PricingTable from '@/platform/cloud/subscription/components/PricingTable.vue'
 import Button from '@/components/ui/button/Button.vue'
+import type { IngestSubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import { PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 
 async function flushPromises() {
@@ -22,14 +23,13 @@ function createDeferredPromise<T>() {
   return { promise, resolve }
 }
 
-const mockIsActiveSubscription = ref(false)
-const mockSubscriptionTier = ref<
-  'STANDARD' | 'CREATOR' | 'PRO' | 'FOUNDERS_EDITION' | null
->(null)
-const mockIsYearlySubscription = ref(false)
+const mockCanAccessSubscriptionFeatures = ref(false)
+const mockSubscriptionTier = ref<IngestSubscriptionTier | null>(null)
+const mockSubscriptionDuration = ref<'MONTHLY' | 'ANNUAL'>('MONTHLY')
 const mockAccessBillingPortal = vi.fn()
 const mockReportError = vi.fn()
 const mockTrackBeginCheckout = vi.fn()
+const mockTrackBillingEvent = vi.fn()
 const mockUserId = ref<string | undefined>('user-123')
 const mockGetAuthHeader = vi.fn(() =>
   Promise.resolve({ Authorization: 'Bearer test-token' })
@@ -65,13 +65,27 @@ Object.defineProperty(globalThis, 'localStorage', {
   writable: true
 })
 
-vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
-  useSubscription: () => ({
-    isActiveSubscription: computed(() => mockIsActiveSubscription.value),
-    isFreeTier: computed(() => false),
-    subscriptionTier: computed(() => mockSubscriptionTier.value),
-    isYearlySubscription: computed(() => mockIsYearlySubscription.value),
-    subscriptionStatus: ref(null)
+vi.mock('@/composables/billing/useBillingContext', () => ({
+  useBillingContext: () => ({
+    canAccessSubscriptionFeatures: computed(
+      () => mockCanAccessSubscriptionFeatures.value
+    ),
+    isFreeTier: computed(() => mockSubscriptionTier.value === 'FREE'),
+    tier: computed(() => mockSubscriptionTier.value),
+    subscription: computed(() =>
+      mockSubscriptionTier.value
+        ? {
+            isActive: mockCanAccessSubscriptionFeatures.value,
+            tier: mockSubscriptionTier.value,
+            duration: mockSubscriptionDuration.value,
+            planSlug: null,
+            renewalDate: null,
+            endDate: null,
+            isCancelled: false,
+            hasFunds: true
+          }
+        : null
+    )
   })
 }))
 
@@ -103,15 +117,24 @@ vi.mock('@/composables/useErrorHandling', () => ({
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: () =>
     reactive({
-      getAuthHeader: mockGetAuthHeader,
+      getFirebaseAuthHeader: mockGetAuthHeader,
+      fetchWithCustomerRecovery: (input: string, init?: RequestInit) =>
+        fetch(input, init),
       userId: computed(() => mockUserId.value)
     }),
-  AuthStoreError: class extends Error {}
+  AuthStoreError: class extends Error {
+    readonly status: number | undefined
+    constructor(message: string, status?: number) {
+      super(message)
+      this.status = status
+    }
+  }
 }))
 
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
-    trackBeginCheckout: mockTrackBeginCheckout
+    trackBeginCheckout: mockTrackBeginCheckout,
+    trackBillingEvent: mockTrackBillingEvent
   })
 }))
 
@@ -181,6 +204,10 @@ function renderComponent() {
       onChooseTeamWorkspace: onChooseTeamWorkspace
     },
     global: {
+      // A test in this suite intentionally makes handleSubscribe reject to
+      // verify checkout-failure telemetry; without an app-level errorHandler,
+      // Vue's dev-mode default handler re-throws it as an unhandled rejection.
+      config: { errorHandler: () => {} },
       plugins: [createTestingPinia({ createSpy: vi.fn }), i18n],
       components: {
         Button
@@ -214,14 +241,11 @@ const onChooseTeamWorkspace = vi.fn()
 
 describe('PricingTable', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    mockIsActiveSubscription.value = false
+    mockCanAccessSubscriptionFeatures.value = false
     mockSubscriptionTier.value = null
-    mockIsYearlySubscription.value = false
+    mockSubscriptionDuration.value = 'MONTHLY'
     mockUserId.value = 'user-123'
-    mockAccessBillingPortal.mockReset()
     mockAccessBillingPortal.mockResolvedValue(true)
-    mockTrackBeginCheckout.mockReset()
     mockLocalStorage.__reset()
     vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
@@ -231,7 +255,7 @@ describe('PricingTable', () => {
 
   describe('billing portal deep linking', () => {
     it('should call accessBillingPortal with yearly tier suffix when billing cycle is yearly (default)', async () => {
-      mockIsActiveSubscription.value = true
+      mockCanAccessSubscriptionFeatures.value = true
       mockSubscriptionTier.value = 'STANDARD'
 
       renderComponent()
@@ -250,13 +274,14 @@ describe('PricingTable', () => {
         tier: 'creator',
         cycle: 'yearly',
         checkout_type: 'change',
+        checkout_attempt_id: expect.any(String),
         previous_tier: 'standard'
       })
       expect(mockAccessBillingPortal).toHaveBeenCalledWith('creator-yearly')
     })
 
     it('should call accessBillingPortal with different tiers correctly', async () => {
-      mockIsActiveSubscription.value = true
+      mockCanAccessSubscriptionFeatures.value = true
       mockSubscriptionTier.value = 'STANDARD'
 
       renderComponent()
@@ -273,7 +298,7 @@ describe('PricingTable', () => {
     })
 
     it('records the plan snapshot that was actually opened', async () => {
-      mockIsActiveSubscription.value = true
+      mockCanAccessSubscriptionFeatures.value = true
       mockSubscriptionTier.value = 'STANDARD'
 
       const portalOpen = createDeferredPromise<boolean>()
@@ -313,7 +338,7 @@ describe('PricingTable', () => {
     })
 
     it('does not record a pending upgrade when the billing portal does not open', async () => {
-      mockIsActiveSubscription.value = true
+      mockCanAccessSubscriptionFeatures.value = true
       mockSubscriptionTier.value = 'STANDARD'
       mockAccessBillingPortal.mockResolvedValueOnce(false)
 
@@ -330,10 +355,11 @@ describe('PricingTable', () => {
       expect(
         window.localStorage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
       ).toBeNull()
+      expect(mockTrackBeginCheckout).not.toHaveBeenCalled()
     })
 
     it('should use the latest userId value when it changes after mount', async () => {
-      mockIsActiveSubscription.value = true
+      mockCanAccessSubscriptionFeatures.value = true
       mockSubscriptionTier.value = 'STANDARD'
       mockUserId.value = 'user-early'
 
@@ -355,13 +381,15 @@ describe('PricingTable', () => {
         tier: 'creator',
         cycle: 'yearly',
         checkout_type: 'change',
+        checkout_attempt_id: expect.any(String),
         previous_tier: 'standard'
       })
     })
 
     it('should not call accessBillingPortal when clicking current plan', async () => {
-      mockIsActiveSubscription.value = true
+      mockCanAccessSubscriptionFeatures.value = true
       mockSubscriptionTier.value = 'CREATOR'
+      mockSubscriptionDuration.value = 'ANNUAL'
 
       renderComponent()
       await flushPromises()
@@ -370,14 +398,31 @@ describe('PricingTable', () => {
         .getAllByRole('button')
         .find((b) => b.textContent?.includes('Current Plan'))
 
+      expect(currentPlanButton).toBeDefined()
+      expect(currentPlanButton).toBeDisabled()
       await userEvent.click(currentPlanButton!)
       await flushPromises()
 
       expect(mockAccessBillingPortal).not.toHaveBeenCalled()
     })
 
+    it('does not highlight a current plan when the facade duration differs from the selected cycle', async () => {
+      mockCanAccessSubscriptionFeatures.value = true
+      mockSubscriptionTier.value = 'CREATOR'
+      mockSubscriptionDuration.value = 'MONTHLY'
+
+      renderComponent()
+      await flushPromises()
+
+      const currentPlanButton = screen
+        .getAllByRole('button')
+        .find((b) => b.textContent?.includes('Current Plan'))
+
+      expect(currentPlanButton).toBeUndefined()
+    })
+
     it('should initiate checkout instead of billing portal for new subscribers', async () => {
-      mockIsActiveSubscription.value = false
+      mockCanAccessSubscriptionFeatures.value = false
 
       const windowOpenSpy = vi
         .spyOn(window, 'open')
@@ -406,8 +451,62 @@ describe('PricingTable', () => {
       windowOpenSpy.mockRestore()
     })
 
+    it('tracks and rethrows a subscription checkout failure for new subscribers', async () => {
+      mockCanAccessSubscriptionFeatures.value = false
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: false,
+        status: 400,
+        statusText: 'Bad Request',
+        json: async () => ({ message: 'declined for person@example.com' }),
+        text: async () => ''
+      } as Response)
+
+      renderComponent()
+      await flushPromises()
+
+      const subscribeButton = screen
+        .getAllByRole('button')
+        .find((b) => b.textContent?.includes('Subscribe'))
+
+      await userEvent.click(subscribeButton!)
+      await flushPromises()
+
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        operation: 'subscription_checkout',
+        stage: 'failed',
+        outcome: 'failure',
+        tier: 'standard',
+        cycle: 'yearly',
+        checkout_type: 'new',
+        payment_intent_source: undefined,
+        failure_category: 'api_rejected'
+      })
+      expect(mockReportError).toHaveBeenCalled()
+    })
+
+    it('categorizes a connectivity failure as network, not api_rejected', async () => {
+      mockCanAccessSubscriptionFeatures.value = false
+      vi.mocked(global.fetch).mockRejectedValue(
+        new TypeError('Failed to fetch')
+      )
+
+      renderComponent()
+      await flushPromises()
+
+      const subscribeButton = screen
+        .getAllByRole('button')
+        .find((b) => b.textContent?.includes('Subscribe'))
+
+      await userEvent.click(subscribeButton!)
+      await flushPromises()
+
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ failure_category: 'network' })
+      )
+    })
+
     it('should pass correct tier for each subscription level', async () => {
-      mockIsActiveSubscription.value = true
+      mockCanAccessSubscriptionFeatures.value = true
       mockSubscriptionTier.value = 'PRO'
 
       renderComponent()

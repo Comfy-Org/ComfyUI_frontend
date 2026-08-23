@@ -115,7 +115,7 @@ If slots are reordered (e.g., by an extension adding a slot), all links referenc
 
 ### No Cross-Kind ID Safety
 
-Nothing prevents passing a `LinkId` where a `NodeId` is expected — they're both `number`. This is the core motivation for the branded ID types proposed in ADR 0008.
+Nothing prevents passing a `LinkId` where a `NodeId` is expected — they're both `number`. The dedicated-store direction addresses this with branded string keys where cross-kind safety pays off (for example `WidgetId` in `widgetValueStore`, `src/types/widgetId.ts`).
 
 ## 5. Law of Demeter Violations
 
@@ -201,12 +201,12 @@ This means:
 
 ## How ECS Addresses These Problems
 
-| Problem                | ECS Solution                                                                  |
-| ---------------------- | ----------------------------------------------------------------------------- |
-| God objects            | Data split into small, focused components; behavior lives in systems          |
-| Circular dependencies  | Entities are just IDs; components have no inheritance hierarchy               |
-| Mixed concerns         | Each system handles exactly one concern (render, serialize, execute)          |
-| Inconsistent IDs       | Branded per-kind IDs with compile-time safety                                 |
-| Demeter violations     | Systems query the World directly; no entity-to-entity references              |
-| Scattered side effects | Version tracking becomes a system responsibility; stores become systems       |
-| Render-time mutations  | Render system reads components without writing; layout system runs separately |
+| Problem                | ECS Solution                                                                                |
+| ---------------------- | ------------------------------------------------------------------------------------------- |
+| God objects            | Data split into small, focused components in dedicated stores; behavior lives in systems    |
+| Circular dependencies  | Entities are addressed by string keys; components have no inheritance hierarchy             |
+| Mixed concerns         | Each system handles exactly one concern (render, serialize, execute)                        |
+| Inconsistent IDs       | Branded string keys per store (for example `WidgetId`) for cross-kind safety                |
+| Demeter violations     | Systems query the relevant store directly; no entity-to-entity references                   |
+| Scattered side effects | Version tracking becomes a system responsibility; mutations flow through store command APIs |
+| Render-time mutations  | Render system reads components without writing; layout system runs separately               |

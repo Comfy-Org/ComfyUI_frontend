@@ -8,6 +8,7 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { toNodeId } from '@/types/nodeId'
 import { createMockLLink } from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock('@/scripts/app', () => ({
@@ -39,7 +40,7 @@ function createTargetNode(
   id = 7
 ): Pick<LGraphNode, 'id' | 'inputs' | 'widgets'> {
   return fromPartial<Pick<LGraphNode, 'id' | 'inputs' | 'widgets'>>({
-    id,
+    id: toNodeId(id),
     inputs: [
       fromPartial<INodeInputSlot>({
         widget: { name: widget.name }

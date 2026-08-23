@@ -2,12 +2,17 @@ import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { toNodeId } from '@/types/nodeId'
 import { computed } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
-import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
+import {
+  LGraphEventMode,
+  TitleMode
+} from '@/lib/litegraph/src/types/globalEnums'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -152,7 +157,7 @@ function renderLGraphNode(props: ComponentProps<typeof LGraphNode>) {
   })
 }
 const mockNodeData: VueNodeData = {
-  id: 'test-node-123',
+  id: toNodeId('test-node-123'),
   title: 'Test Node',
   type: 'TestNode',
   mode: 0,
@@ -166,7 +171,7 @@ const mockNodeData: VueNodeData = {
 
 const mockRerouteNodeData: VueNodeData = {
   ...mockNodeData,
-  id: 'reroute-node-1',
+  id: toNodeId('reroute-node-1'),
   title: '',
   type: 'Reroute',
   titleMode: TitleMode.NO_TITLE
@@ -174,7 +179,6 @@ const mockRerouteNodeData: VueNodeData = {
 
 describe('LGraphNode', () => {
   beforeEach(() => {
-    vi.resetAllMocks()
     mockData.mockExecuting = false
 
     setActivePinia(pinia)
@@ -222,7 +226,7 @@ describe('LGraphNode', () => {
   it('should apply selected styling when selected prop is true', async () => {
     const canvasStore = useCanvasStore()
     canvasStore.selectedNodeIds.clear()
-    canvasStore.selectedNodeIds.add('test-node-123')
+    canvasStore.selectedNodeIds.add(mockNodeData.id)
 
     const { container } = renderLGraphNode({ nodeData: mockNodeData })
     const root = getNodeRoot(container)
@@ -243,6 +247,38 @@ describe('LGraphNode', () => {
 
     const overlay = screen.getByTestId('node-state-outline-overlay')
     expect(overlay).toHaveClass('border-node-stroke-executing')
+  })
+
+  it('should widen the selection outline rounding when the node has an error', () => {
+    const canvasStore = useCanvasStore()
+    canvasStore.selectedNodeIds.add(mockNodeData.id)
+
+    renderLGraphNode({
+      nodeData: { ...mockNodeData, hasErrors: true }
+    })
+
+    const overlay = screen.getByTestId('node-state-outline-overlay')
+    expect(overlay).toHaveClass('rounded-[19px]')
+    expect(overlay).not.toHaveClass('rounded-[15px]')
+  })
+
+  it('should apply the bypass overlay when the node is bypassed', () => {
+    renderLGraphNode({
+      nodeData: { ...mockNodeData, mode: LGraphEventMode.BYPASS }
+    })
+
+    const wrapper = screen.getByTestId('node-inner-wrapper')
+    expect(wrapper).toHaveClass('before:bg-bypass/60')
+  })
+
+  it('should apply the muted overlay when the node is muted', () => {
+    renderLGraphNode({
+      nodeData: { ...mockNodeData, mode: LGraphEventMode.NEVER }
+    })
+
+    const wrapper = screen.getByTestId('node-inner-wrapper')
+    expect(wrapper).toHaveClass('before:rounded-xl')
+    expect(wrapper).not.toHaveClass('before:bg-bypass/60')
   })
 
   it('should initialize height CSS vars for collapsed nodes', () => {

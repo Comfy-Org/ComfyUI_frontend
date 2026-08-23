@@ -1,0 +1,20 @@
+---
+import type { GetStaticPaths } from 'astro'
+import LearningTutorialPage from '../../../components/learning/LearningTutorialPage.astro'
+import {
+  getTutorialByCategoryAndSlug,
+  learningTutorials
+} from '../../../data/learningTutorials'
+
+export const getStaticPaths: GetStaticPaths = () =>
+  learningTutorials.map((tutorial) => ({
+    params: { category: tutorial.category, slug: tutorial.slug }
+  }))
+
+const tutorial = getTutorialByCategoryAndSlug(
+  Astro.params.category as string,
+  Astro.params.slug as string
+)!
+---
+
+<LearningTutorialPage tutorial={tutorial} />

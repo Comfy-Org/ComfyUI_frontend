@@ -14,7 +14,9 @@ import type {
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { clone } from '@/scripts/utils'
-import type { NodeLocatorId } from '@/types/nodeIdentification'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
+import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
+import type { NodeId } from '@/types/nodeId'
 import { parseFilePath } from '@/utils/formatUtil'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 import {
@@ -48,9 +50,15 @@ interface SetOutputOptions {
 }
 
 export const useNodeOutputStore = defineStore('nodeOutput', () => {
-  const { nodeIdToNodeLocatorId, nodeToNodeLocatorId } = useWorkflowStore()
+  const workflowStore = useWorkflowStore()
+  const { nodeIdToNodeLocatorId, nodeToNodeLocatorId } = workflowStore
   const scheduledRevoke: Record<NodeLocatorId, { stop: () => void }> = {}
   const latestPreview = ref<string[]>([])
+  /**
+   * Previews belonging to open-but-inactive workflows, keyed by workflow path.
+   * The stash owns the object URL retain taken when the previews were set.
+   */
+  const stashedPreviews = new Map<string, Record<string, string[]>>()
 
   function scheduleRevoke(locator: NodeLocatorId, cb: () => void) {
     scheduledRevoke[locator]?.stop()
@@ -127,7 +135,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   }
 
   function getNodeOutputByExecutionId(
-    executionId: string
+    executionId: NodeExecutionId
   ): ExecutedWsMessage['output'] | undefined {
     const locatorId = executionIdToNodeLocatorId(app.rootGraph, executionId)
     if (!locatorId) return undefined
@@ -135,7 +143,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   }
 
   function getNodePreviewImagesByExecutionId(
-    executionId: string
+    executionId: NodeExecutionId
   ): string[] | undefined {
     const locatorId = executionIdToNodeLocatorId(app.rootGraph, executionId)
     if (!locatorId) return undefined
@@ -143,7 +151,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   }
 
   function getNodeImageUrlsByExecutionId(
-    executionId: string,
+    executionId: NodeExecutionId,
     node: LGraphNode
   ): string[] | undefined {
     const previews = getNodePreviewImagesByExecutionId(executionId)
@@ -188,7 +196,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
       if (existingOutput && outputs) {
         for (const k in outputs) {
           const existingValue = existingOutput[k]
-          const newValue = (outputs as Record<NodeLocatorId, unknown>)[k]
+          const newValue = (outputs as Record<string, unknown>)[k]
 
           if (Array.isArray(existingValue) && Array.isArray(newValue)) {
             existingOutput[k] = existingValue.concat(newValue)
@@ -232,7 +240,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   }
 
   function setNodeOutputsByExecutionId(
-    executionId: string,
+    executionId: NodeExecutionId,
     outputs: ExecutedWsMessage['output'] | ResultItem,
     options: SetOutputOptions = {}
   ) {
@@ -242,7 +250,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   }
 
   function setNodePreviewsByExecutionId(
-    executionId: string,
+    executionId: NodeExecutionId,
     previewImages: string[]
   ) {
     const nodeLocatorId = executionIdToNodeLocatorId(app.rootGraph, executionId)
@@ -272,14 +280,11 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     nodePreviewImages.value[nodeLocatorId] = previewImages
   }
 
-  function setNodePreviewsByNodeId(
-    nodeId: string | number,
-    previewImages: string[]
-  ) {
+  function setNodePreviewsByNodeId(nodeId: NodeId, previewImages: string[]) {
     setNodePreviewsByLocatorId(nodeIdToNodeLocatorId(nodeId), previewImages)
   }
 
-  function revokePreviewsByExecutionId(executionId: string) {
+  function revokePreviewsByExecutionId(executionId: NodeExecutionId) {
     const nodeLocatorId = executionIdToNodeLocatorId(app.rootGraph, executionId)
     if (!nodeLocatorId) return
     scheduleRevoke(nodeLocatorId, () =>
@@ -299,27 +304,86 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     delete nodePreviewImages.value[nodeLocatorId]
   }
 
-  function revokeAllPreviews() {
-    for (const nodeLocatorId of Object.keys(app.nodePreviewImages)) {
-      const previews = app.nodePreviewImages[nodeLocatorId]
-      if (!previews?.[Symbol.iterator]) continue
+  function releasePreviewUrls(previews: Record<string, string[]>) {
+    for (const urls of Object.values(previews)) {
+      if (!urls?.[Symbol.iterator]) continue
 
-      for (const url of previews) {
+      for (const url of urls) {
         releaseSharedObjectUrl(url)
       }
     }
+  }
+
+  function revokeAllPreviews() {
+    releasePreviewUrls(app.nodePreviewImages)
     app.nodePreviewImages = {}
     nodePreviewImages.value = {}
+  }
+
+  /** Release the previews held for a workflow that is going away. */
+  function discardPreviewsForWorkflow(workflowPath: string) {
+    const stashed = stashedPreviews.get(workflowPath)
+    if (!stashed) return
+
+    stashedPreviews.delete(workflowPath)
+    releasePreviewUrls(stashed)
+  }
+
+  function discardClosedWorkflowPreviews() {
+    const openPaths = new Set(workflowStore.openWorkflows.map((wf) => wf.path))
+    for (const path of [...stashedPreviews.keys()]) {
+      if (!openPaths.has(path)) discardPreviewsForWorkflow(path)
+    }
+  }
+
+  /**
+   * Move the live previews into the stash so `app.clean()` cannot revoke them
+   * while `workflowPath` is loaded out of the editor. Preview frames arrive
+   * over the websocket and cannot be re-fetched, so releasing their object
+   * URLs on a tab switch loses them for good.
+   */
+  function stashPreviewsForWorkflow(workflowPath: string) {
+    discardClosedWorkflowPreviews()
+    discardPreviewsForWorkflow(workflowPath)
+
+    const previews = app.nodePreviewImages
+    if (Object.keys(previews).length) {
+      stashedPreviews.set(workflowPath, previews)
+    }
+    app.nodePreviewImages = {}
+    nodePreviewImages.value = {}
+  }
+
+  function restorePreviewsForWorkflow(workflowPath: string | undefined) {
+    if (!workflowPath) return
+
+    const stashed = stashedPreviews.get(workflowPath)
+    if (!stashed) return
+    stashedPreviews.delete(workflowPath)
+
+    const live = app.nodePreviewImages
+    const superseded: Record<string, string[]> = {}
+    for (const [nodeLocatorId, urls] of Object.entries(stashed)) {
+      // A preview that arrived while the graph was loading wins; the stashed
+      // copy for that node then has no owner left to release it.
+      if (nodeLocatorId in live) superseded[nodeLocatorId] = urls
+      else live[nodeLocatorId] = urls
+    }
+    releasePreviewUrls(superseded)
+    nodePreviewImages.value = { ...live }
   }
 
   function revokeSubgraphPreviews(subgraphNode: SubgraphNode) {
     const { graph } = subgraphNode
     if (!graph) return
 
-    const graphId = graph.isRootGraph ? '' : graph.id + ':'
-    revokePreviewsByLocatorId(graphId + subgraphNode.id)
+    revokePreviewsByLocatorId(
+      createNodeLocatorId(graph.isRootGraph ? null : graph.id, subgraphNode.id)
+    )
     for (const node of subgraphNode.subgraph.nodes) {
-      revokePreviewsByLocatorId(subgraphNode.subgraph.id + node.id)
+      revokePreviewsByLocatorId(
+        createNodeLocatorId(subgraphNode.subgraph.id, node.id)
+      )
     }
   }
 
@@ -342,8 +406,8 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     return hadOutputs
   }
 
-  function removeNodeOutputs(nodeId: number | string) {
-    const nodeLocatorId = nodeIdToNodeLocatorId(Number(nodeId))
+  function removeNodeOutputs(nodeId: NodeId) {
+    const nodeLocatorId = nodeIdToNodeLocatorId(nodeId)
     if (!nodeLocatorId) return false
     return removeOutputsByLocatorId(nodeLocatorId)
   }
@@ -404,13 +468,13 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   }
 
   function syncLegacyNodeImgs(
-    nodeId: string | number,
+    nodeId: NodeId,
     element: HTMLImageElement,
     activeIndex: number = 0
   ) {
     if (!LiteGraph.vueNodesMode) return
 
-    const node = resolveNode(Number(nodeId))
+    const node = resolveNode(nodeId)
     if (!node) return
 
     node.imgs = [element]
@@ -442,6 +506,9 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     revokePreviewsByLocatorId,
     revokeAllPreviews,
     revokeSubgraphPreviews,
+    stashPreviewsForWorkflow,
+    restorePreviewsForWorkflow,
+    discardPreviewsForWorkflow,
     removeNodeOutputs,
     removeNodeOutputsForNode,
     snapshotOutputs,

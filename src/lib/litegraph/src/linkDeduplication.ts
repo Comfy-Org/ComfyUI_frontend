@@ -1,4 +1,5 @@
-import type { LGraphNode, NodeId } from './LGraphNode'
+import type { LGraphNode } from './LGraphNode'
+import type { SerializedNodeId } from '@/types/nodeId'
 import type { LLink, LinkId } from './LLink'
 
 /** Generates a unique string key for a link's connection tuple. */
@@ -43,7 +44,7 @@ export function purgeOrphanedLinks(
   ids: LinkId[],
   keepId: LinkId,
   links: Map<LinkId, LLink>,
-  getNodeById: (id: NodeId) => LGraphNode | null
+  getNodeById: (id: SerializedNodeId) => LGraphNode | null
 ): void {
   for (const id of ids) {
     if (id === keepId) continue

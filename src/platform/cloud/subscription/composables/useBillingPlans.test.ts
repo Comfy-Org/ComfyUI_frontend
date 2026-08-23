@@ -39,7 +39,6 @@ describe('useBillingPlans', () => {
 
   beforeEach(() => {
     vi.resetModules()
-    mockGetBillingPlans.mockReset()
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
   })
 
@@ -81,6 +80,42 @@ describe('useBillingPlans', () => {
       expect(currentPlanSlug.value).toBeNull()
     })
 
+    it('populates teamCreditStops from the response', async () => {
+      const stops = {
+        default_stop_index: 2,
+        stops: [
+          {
+            id: 'team_700',
+            credits: 147_700,
+            monthly: { list_price_cents: 70_000, price_cents: 66_500 },
+            yearly: { list_price_cents: 70_000, price_cents: 63_000 }
+          }
+        ]
+      }
+      mockGetBillingPlans.mockResolvedValue({
+        plans: [buildPlan()],
+        team_credit_stops: stops
+      })
+
+      const useBillingPlans = await importUseBillingPlans()
+      const { fetchPlans, teamCreditStops } = useBillingPlans()
+
+      await fetchPlans()
+
+      expect(teamCreditStops.value).toEqual(stops)
+    })
+
+    it('leaves teamCreditStops null when the response omits it', async () => {
+      mockGetBillingPlans.mockResolvedValue({ plans: [buildPlan()] })
+
+      const useBillingPlans = await importUseBillingPlans()
+      const { fetchPlans, teamCreditStops } = useBillingPlans()
+
+      await fetchPlans()
+
+      expect(teamCreditStops.value).toBeNull()
+    })
+
     it('dedupes concurrent calls while a fetch is in flight', async () => {
       let resolveFetch: (value: { plans: Plan[] }) => void = () => {}
       mockGetBillingPlans.mockImplementation(
@@ -91,16 +126,23 @@ describe('useBillingPlans', () => {
       )
 
       const useBillingPlans = await importUseBillingPlans()
-      const { fetchPlans, isLoading } = useBillingPlans()
+      const { fetchPlans, isLoading, plans } = useBillingPlans()
 
       const first = fetchPlans()
       expect(isLoading.value).toBe(true)
-      const second = fetchPlans()
+      let secondResolved = false
+      const second = fetchPlans().then(() => {
+        secondResolved = true
+      })
+
+      await Promise.resolve()
+      expect(secondResolved).toBe(false)
 
       resolveFetch({ plans: [buildPlan()] })
       await Promise.all([first, second])
 
       expect(mockGetBillingPlans).toHaveBeenCalledTimes(1)
+      expect(plans.value).toEqual([buildPlan()])
       expect(isLoading.value).toBe(false)
     })
 

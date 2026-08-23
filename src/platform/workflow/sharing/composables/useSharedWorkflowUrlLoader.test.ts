@@ -194,7 +194,6 @@ function createDeferred() {
 
 describe('useSharedWorkflowUrlLoader', () => {
   beforeEach(() => {
-    vi.resetAllMocks()
     mockQueryParams = {}
     mockIsLoggedIn.value = false
     mockDialogStack.length = 0
@@ -266,11 +265,7 @@ describe('useSharedWorkflowUrlLoader', () => {
       view_mode: 'graph',
       is_app_mode: false
     })
-    expect(preservedQueryMocks.capturePreservedQuery).toHaveBeenCalledWith(
-      'share_auth',
-      { share: 'share-id-1' },
-      ['share']
-    )
+    expect(preservedQueryMocks.capturePreservedQuery).not.toHaveBeenCalled()
     expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
     expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
       'share'

@@ -171,10 +171,7 @@ function createAssetBrowserWidget(
     widgetName: inputSpec.name,
     nodeTypeForBrowser: node.comfyClass ?? '',
     inputNameForBrowser: inputSpec.name,
-    defaultValue,
-    onValueChange: (widget, newValue, oldValue) => {
-      node.onWidgetChanged?.(widget.name, newValue, oldValue, widget)
-    }
+    defaultValue
   })
 }
 
