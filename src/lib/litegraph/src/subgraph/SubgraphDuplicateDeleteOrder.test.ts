@@ -199,7 +199,7 @@ describe('duplicated subgraph deleted in both orders (I4)', () => {
     expectSurvivorUndamaged(buildScenario(), 1)
   })
 
-  it.fails('releases promoted widget state when an instance is removed', () => {
+  it('releases promoted widget state when an instance is removed', () => {
     const scenario = buildScenario()
     const removed = scenario.instances[0]
     const removedWidgetId = promotedId(removed)

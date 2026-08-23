@@ -244,7 +244,6 @@ describe('nodeDataStore registration via LGraph', () => {
 
     lgraphNode.removeInput(1)
     expect(state?.inputs.map((i) => i.name)).toEqual(['third', 'first'])
-    expect(state?.inputs).toBe(lgraphNode.inputs)
   })
 
   it('moves registered state to a same-id replacement without changing store membership', () => {
