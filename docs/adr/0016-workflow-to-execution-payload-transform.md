@@ -54,12 +54,12 @@ primary conversion function. It runs in this order:
 
 Several transforms happen outside `graphToPrompt()` and are not visible to it:
 
-| Transform | Location | Mechanism |
-|---|---|---|
-| Dynamic prompt `{a\|b}` substitution | `src/extensions/core/dynamicPrompts.ts` | Overrides `widget.serializeValue` on `nodeCreated` |
-| Promoted widget control (`control_after_generate`) | `src/scripts/promotedWidgetControl.ts` | Called from `app.queuePrompt()` before `graphToPrompt` |
-| Widget value propagation for UI feedback | `src/extensions/core/widgetValuePropagation.ts` | Separate extension hook, not in prompt path |
-| Subgraph input promotion resolution | `src/core/graph/subgraph/resolveConcretePromotedWidget.ts` | Called from within `node.resolveInput()` inside the DTO |
+| Transform                                          | Location                                                   | Mechanism                                               |
+| -------------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------- |
+| Dynamic prompt `{a\|b}` substitution               | `src/extensions/core/dynamicPrompts.ts`                    | Overrides `widget.serializeValue` on `nodeCreated`      |
+| Promoted widget control (`control_after_generate`) | `src/scripts/promotedWidgetControl.ts`                     | Called from `app.queuePrompt()` before `graphToPrompt`  |
+| Widget value propagation for UI feedback           | `src/extensions/core/widgetValuePropagation.ts`            | Separate extension hook, not in prompt path             |
+| Subgraph input promotion resolution                | `src/core/graph/subgraph/resolveConcretePromotedWidget.ts` | Called from within `node.resolveInput()` inside the DTO |
 
 The extension hook system (`ComfyExtension` in `src/types/comfy.ts`) exposes
 `beforeConfigureGraph`, `nodeCreated`, `loadedGraphNode`, and
