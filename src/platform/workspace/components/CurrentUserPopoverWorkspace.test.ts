@@ -453,4 +453,38 @@ describe('CurrentUserPopoverWorkspace', () => {
       expect(emitted('close')).toHaveLength(1)
     })
   }
+
+  it('opens local Plan and Credits instead of Cloud pricing actions', async () => {
+    state.isCloud = false
+    state.canManageSubscription = true
+    const user = userEvent.setup()
+    const { emitted } = renderComponent()
+
+    expect(
+      screen.queryByTestId('plans-pricing-menu-item')
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByTestId('manage-plan-menu-item')
+    ).not.toBeInTheDocument()
+
+    await user.click(
+      screen.getByRole('button', {
+        name: enMessages.subscription.plansAndCredits
+      })
+    )
+
+    expect(state.showSettingsDialog).toHaveBeenCalledWith('credits')
+    expect(state.showPricingTable).not.toHaveBeenCalled()
+    expect(emitted('close')).toHaveLength(1)
+  })
+
+  it('hides local Plan and Credits without subscription management permission', () => {
+    state.isCloud = false
+
+    renderComponent()
+
+    expect(
+      screen.queryByTestId('plans-credits-menu-item')
+    ).not.toBeInTheDocument()
+  })
 })
