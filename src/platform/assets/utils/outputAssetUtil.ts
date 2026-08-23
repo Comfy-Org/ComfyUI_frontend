@@ -48,8 +48,6 @@ export function getTotalAssetOutputCount(
   return assets.reduce((sum, asset) => sum + getAssetOutputCount(asset), 0)
 }
 
-export { getOutputKey } from '@/platform/assets/utils/outputKeyUtil'
-
 /**
  * Maps a job's outputs to AssetItems with ids derived from the composite
  * `<nodeId>-<subfolder>-<filename>` key. Records sharing a composite key are

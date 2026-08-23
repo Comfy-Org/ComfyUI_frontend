@@ -108,7 +108,10 @@ function assetsQueryInternal(
     hasMore.value = true
     next_cursor = undefined
     items.value = []
-    await Promise.allSettled([loadingMorePromise, loadingNewPromise])
+    await Promise.allSettled([
+      loadingMorePromise.value,
+      loadingNewPromise.value
+    ])
     await loadMore()
   }
 
