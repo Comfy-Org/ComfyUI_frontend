@@ -107,4 +107,4 @@ src/__ecs_matrix__/
 matrix-proof/
 
 # Agent telemetry working files
-telemetry/
+/telemetry/
