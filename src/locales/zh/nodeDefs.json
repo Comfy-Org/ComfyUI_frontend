@@ -19825,11 +19825,11 @@
     },
     "outputs": {
       "0": {
-        "name": "高方差",
+        "name": "高 sigma",
         "tooltip": null
       },
       "1": {
-        "name": "低方差",
+        "name": "低 sigma",
         "tooltip": null
       }
     }
@@ -19846,11 +19846,11 @@
     },
     "outputs": {
       "0": {
-        "name": "高方差",
+        "name": "高 sigma",
         "tooltip": null
       },
       "1": {
-        "name": "低方差",
+        "name": "低 sigma",
         "tooltip": null
       }
     }
@@ -22487,7 +22487,7 @@
     }
   },
   "VAEEncodeTiled": {
-    "display_name": "VAE编码分块）",
+    "display_name": "VAE编码（分块）",
     "inputs": {
       "overlap": {
         "name": "重叠"
