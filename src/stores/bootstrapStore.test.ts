@@ -28,6 +28,7 @@ vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: vi.fn(() => ({
     load: vi.fn(() => {
       mockIsSettingsReady.value = true
+      return Promise.resolve()
     }),
     get isReady() {
       return mockIsSettingsReady.value
@@ -39,7 +40,7 @@ vi.mock('@/platform/settings/settingStore', () => ({
 
 vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   useWorkflowStore: vi.fn(() => ({
-    loadWorkflows: vi.fn(),
+    loadWorkflows: vi.fn().mockResolvedValue(undefined),
     syncWorkflows: vi.fn().mockResolvedValue(undefined)
   }))
 }))
@@ -69,6 +70,17 @@ vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
 const mockReportError = vi.hoisted(() => vi.fn())
 vi.mock('@/platform/telemetry/reportError', () => ({
   reportError: mockReportError
+}))
+
+const mockCaptureException = vi.hoisted(() => vi.fn())
+vi.mock('@sentry/vue', () => ({
+  captureException: mockCaptureException,
+  addBreadcrumb: vi.fn()
+}))
+
+const mockAddError = vi.hoisted(() => vi.fn())
+vi.mock('@datadog/browser-rum', () => ({
+  datadogRum: { addError: mockAddError }
 }))
 
 function requestFailure(status: number) {
