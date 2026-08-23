@@ -46,6 +46,7 @@ export function useNodeResize(
 
   const startResize = (event: PointerEvent, corner: CompassCorners = 'SE') => {
     event.stopPropagation()
+    if (isResizing.value) return
 
     const target = event.currentTarget
     if (!(target instanceof HTMLElement)) return
