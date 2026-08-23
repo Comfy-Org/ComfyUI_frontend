@@ -29,7 +29,11 @@ const widgetStates = computed(() => [...domWidgetStore.widgetStates.values()])
 // props — Vue watchers in DomWidget won't fire unless widgetState.pos gets
 // a new array identity. We force reassignment whenever these change so the
 // downstream watcher re-runs updatePosition / updateDomClipping.
-const lastViewport = { offsetX: Number.NaN, offsetY: Number.NaN, scale: Number.NaN }
+const lastViewport = {
+  offsetX: Number.NaN,
+  offsetY: Number.NaN,
+  scale: Number.NaN
+}
 const lastSelected = {
   id: undefined as string | number | undefined,
   posX: 0,
