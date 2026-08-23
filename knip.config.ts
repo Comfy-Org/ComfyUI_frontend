@@ -7,6 +7,7 @@ const config: KnipConfig = {
     '.': {
       entry: [
         '{build,scripts}/**/*.{js,ts}',
+        'vitest.matrix.config.mts',
         'src/assets/css/style.css',
         'src/scripts/ui/menu/index.ts',
         'src/types/index.ts',
@@ -14,7 +15,13 @@ const config: KnipConfig = {
         'tools/oxlint-plugins/comfyIngestTypes.ts',
         'tools/oxlint-plugins/vitestCleanup.ts'
       ],
-      project: ['**/*.{js,ts,vue}', '*.{js,ts,mts}', '!.claude/**']
+      project: [
+        '**/*.{js,ts,vue}',
+        '*.{js,ts,mts}',
+        '!.claude/**',
+        '!src/__ecs_matrix__/**'
+      ],
+      ignore: ['scripts/registry-census/detection-proof/**']
     },
     'apps/desktop-ui': {
       entry: ['src/i18n.ts'],

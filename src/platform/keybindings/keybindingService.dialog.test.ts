@@ -58,14 +58,15 @@ describe('keybindingService - dialog gate', () => {
 
   function createKeyboardEvent(
     key: string,
-    target: HTMLElement = document.body
+    target: HTMLElement = document.body,
+    modifiers: { ctrlKey?: boolean; metaKey?: boolean } = {}
   ): KeyboardEvent {
     const event = new KeyboardEvent('keydown', {
       key,
       bubbles: true,
-      cancelable: true
+      cancelable: true,
+      ...modifiers
     })
-    event.preventDefault = vi.fn()
     event.composedPath = vi.fn(() => [target])
     return event
   }
@@ -104,7 +105,7 @@ describe('keybindingService - dialog gate', () => {
       await keybindingService.keybindHandler(event)
 
       expect(mockCommandExecute).not.toHaveBeenCalled()
-      expect(event.preventDefault).not.toHaveBeenCalled()
+      expect(event.defaultPrevented).toBe(false)
     } finally {
       document.body.removeChild(dialog)
     }
@@ -121,7 +122,7 @@ describe('keybindingService - dialog gate', () => {
       await keybindingService.keybindHandler(event)
 
       expect(mockCommandExecute).not.toHaveBeenCalled()
-      expect(event.preventDefault).not.toHaveBeenCalled()
+      expect(event.defaultPrevented).toBe(false)
     } finally {
       document.body.removeChild(dialog)
     }
@@ -138,11 +139,31 @@ describe('keybindingService - dialog gate', () => {
       await keybindingService.keybindHandler(event)
 
       expect(mockCommandExecute).not.toHaveBeenCalled()
-      expect(event.preventDefault).not.toHaveBeenCalled()
+      expect(event.defaultPrevented).toBe(false)
     } finally {
       document.body.removeChild(dialog)
     }
   })
+
+  it.for([
+    { label: 'Ctrl+S', modifiers: { ctrlKey: true } },
+    { label: 'Meta+S', modifiers: { metaKey: true } }
+  ] as {
+    label: string
+    modifiers: { ctrlKey?: boolean; metaKey?: boolean }
+  }[])(
+    'still suppresses the browser default for $label while a dialog is open',
+    async ({ modifiers }) => {
+      const dialogStore = useDialogStore()
+      dialogStore.dialogStack.push(createTestDialogInstance('templates-dialog'))
+
+      const event = createKeyboardEvent('s', document.body, modifiers)
+      await keybindingService.keybindHandler(event)
+
+      expect(mockCommandExecute).not.toHaveBeenCalled()
+      expect(event.defaultPrevented).toBe(true)
+    }
+  )
 
   it('executes a global keybinding while a reka popover is open', async () => {
     const popper = document.createElement('div')
