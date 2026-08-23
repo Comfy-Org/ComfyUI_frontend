@@ -155,7 +155,7 @@
       type="button"
       class="flex w-full cursor-pointer appearance-none items-center gap-2 border-0 bg-transparent px-4 py-2 text-left hover:bg-secondary-background-hover focus-visible:bg-secondary-background-hover focus-visible:outline-none"
       data-testid="manage-plan-menu-item"
-      @click="handleOpenPlanAndCreditsSettings"
+      @click="handleOpenManagePlanSettings"
     >
       <i class="icon-[lucide--credit-card] size-4 text-muted-foreground" />
       <span class="flex-1 text-sm text-base-foreground">{{
@@ -164,11 +164,11 @@
     </button>
 
     <button
-      v-if="!accountActionsOnly && !isCloud && showPlansAndPricing"
+      v-if="!accountActionsOnly && showLocalPlansAndCredits"
       type="button"
       class="flex w-full cursor-pointer appearance-none items-center gap-2 border-0 bg-transparent px-4 py-2 text-left hover:bg-secondary-background-hover focus-visible:bg-secondary-background-hover focus-visible:outline-none"
       data-testid="plans-credits-menu-item"
-      @click="handleOpenPlanAndCreditsSettings"
+      @click="handleOpenCreditsSettings"
     >
       <i class="icon-[lucide--coins] size-4 text-muted-foreground" />
       <span class="flex-1 text-sm text-base-foreground">{{
@@ -326,6 +326,9 @@ const displayedCredits = computed(() => {
 const showPlansAndPricing = computed(
   () => permissions.value.canManageSubscription
 )
+const showLocalPlansAndCredits = computed(
+  () => !isCloud && permissions.value.canManageSubscription
+)
 const hasDelinquentSubscription = computed(
   () =>
     (billingStatus.value === 'payment_failed' ||
@@ -360,13 +363,13 @@ const handleOpenPlansAndPricing = () => {
   emit('close')
 }
 
-const handleOpenPlanAndCreditsSettings = () => {
-  if (isCloud) {
-    settingsDialog.show('workspace')
-  } else {
-    settingsDialog.show('credits')
-  }
+const handleOpenManagePlanSettings = () => {
+  settingsDialog.show('workspace')
+  emit('close')
+}
 
+const handleOpenCreditsSettings = () => {
+  settingsDialog.show('credits')
   emit('close')
 }
 

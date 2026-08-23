@@ -436,4 +436,14 @@ describe('CurrentUserPopoverWorkspace', () => {
     expect(state.showPricingTable).not.toHaveBeenCalled()
     expect(emitted('close')).toHaveLength(1)
   })
+
+  it('hides local Plan and Credits without subscription management permission', () => {
+    distribution.isCloud = false
+
+    renderComponent()
+
+    expect(
+      screen.queryByTestId('plans-credits-menu-item')
+    ).not.toBeInTheDocument()
+  })
 })
