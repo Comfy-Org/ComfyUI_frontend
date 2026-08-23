@@ -17,6 +17,8 @@ import type {
   ModelFolderInfo
 } from '@/platform/assets/schemas/assetSchema'
 import { isCloud } from '@/platform/distribution/types'
+import * as Sentry from '@sentry/vue'
+import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ShareableAssetsResponse } from '@/schemas/apiSchema'
 import {
@@ -519,11 +521,42 @@ export class ComfyApi extends EventTarget {
     }
 
     addHeaderEntry(headers, 'Comfy-User', this.user)
+
+    // AbortController timeout prevents connection pool exhaustion after long sessions.
+    // See: https://github.com/Comfy-Org/ComfyUI_frontend/issues/14389
+    const FETCH_TIMEOUT_MS = 60_000
+    const controller = new AbortController()
+    const startTime = Date.now()
+    const timeoutId = setTimeout(() => {
+      const duration_ms = Date.now() - startTime
+      const method = (options?.method ?? 'GET').toUpperCase()
+
+      Sentry.addBreadcrumb({
+        category: 'fetch',
+        message: `Timeout on ${method} ${route}`,
+        level: 'warning',
+        data: { duration_ms, timeout_ms: FETCH_TIMEOUT_MS }
+      })
+
+      useTelemetry()?.trackFetchTimeout?.({
+        route,
+        method,
+        duration_ms,
+        timeout_ms: FETCH_TIMEOUT_MS
+      })
+
+      controller.abort()
+    }, FETCH_TIMEOUT_MS)
+
+    const signal = options?.signal
+      ? AbortSignal.any([options.signal, controller.signal])
+      : controller.signal
+
     return fetchWithUnifiedRemint(
       this.apiURL(route),
-      { cache: 'no-cache', ...options, headers },
+      { cache: 'no-cache', ...options, headers, signal },
       unifiedRetryOn401
-    )
+    ).finally(() => clearTimeout(timeoutId))
   }
 
   /**
