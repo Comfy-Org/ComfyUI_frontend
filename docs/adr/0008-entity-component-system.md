@@ -66,11 +66,12 @@ from the return types, which look alike but do not mean the same thing.
 
 **Minted-id stores — `nodeDataStore`, `linkStore`, `rerouteStore` — reject.**
 All three share one contract: a registration whose id is already held by a
-*different* state object is refused and returns `undefined`; re-registering the
-*same* object under the same owner is idempotent and returns the incumbent. Ids
+_different_ state object is refused and returns `undefined`; re-registering the
+_same_ object under the same owner is idempotent and returns the incumbent. Ids
 here are minted counters, so a collision is two distinct entities claiming one
 id — an invariant violation, first-wins. The loser stays detached, so its later
 writes and its removal cannot corrupt the winner's registration.
+`linkStore` also rejects a distinct link whose target input is already occupied.
 
 **The derived-key store — `widgetValueStore` — overwrites.** `WidgetId` is
 `graphId:nodeId:name`, computed rather than minted, so "same id" means "same
@@ -83,21 +84,20 @@ one-state-per-entity. **Neither direction is a safe unification.**
 **Production code does not see the store-level return shape.** Each minted-id
 store is fronted by a litegraph adapter that normalizes `T | undefined` to a
 boolean and adopts the store's reactive proxy on success: `registerNodeState`
-(`LGraphNode.ts`), `registerLinkTopology` / `replaceLinkTopology` (`LLink.ts`),
-and `registerRerouteChain` (`Reroute.ts`). Every production call site goes
-through one of these. `LGraph.add` is the only caller that acts on rejection, by
-re-minting the id and retrying:
-`while (!registerNodeState(this, node)) node.id = mintNodeId(state)`. A richer
+(`nodeShellState.ts`), `registerLinkTopology` / `replaceLinkTopology`
+(`LLink.ts`), and `registerRerouteChain` (`Reroute.ts`). Every production call
+site goes through one of these. Only node attachment retries a rejection by
+re-minting the id; link and reroute callers abort the operation. A richer
 `registered | alreadyRegistered | conflict` union would add API surface without
 changing any decision a current caller can make; revisit it when a second caller
 needs the distinction.
 
 **Hazard: `undefined` is overloaded across the two groups.**
-`widgetValueStore.registerWidget` has no adapter — `BaseWidget.setNodeId` and
-`SubgraphNode` call it directly — and its `undefined` means *un-keyable id*, not
-*collision*. `setNodeId` treats it as "keep my local state", leaving the widget
-silently detached from the store. Do not read `undefined` from one of these five
-functions as though it carried the meaning it has in the others.
+`widgetValueStore.registerWidget` has no adapter; several consumers call it
+directly, and its `undefined` means _un-keyable id_, not _collision_.
+`BaseWidget.setNodeId` treats it as "keep my local state", leaving the widget
+detached from the store. Do not read `undefined` from one of these five functions
+as though it carried the meaning it has in the others.
 
 ## Context
 
