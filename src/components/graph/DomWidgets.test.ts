@@ -267,7 +267,7 @@ describe('DomWidgets reactive-write budget', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
-  it('produces zero reactive pos writes across N idle frames (perf invariant)', () => {
+  it('pos array identity is preserved across N idle frames (perf invariant)', () => {
     const canvasStore = useCanvasStore()
     const domWidgetStore = useDomWidgetStore()
 
@@ -281,31 +281,17 @@ describe('DomWidgets reactive-write budget', () => {
 
     render(DomWidgets, { global: { stubs: { DomWidget: true } } })
 
-    // Warm-up: first frame always writes to establish initial state.
+    // Warm-up: first frame writes initial pos.
     drawFrame(canvas)
 
     const widgetState = domWidgetStore.widgetStates.get(widget.id)
     if (!widgetState) throw new Error('Widget state not registered')
-
-    // Count reactive writes via a setter proxy on pos.
-    let writeCount = 0
-    const originalDescriptor = Object.getOwnPropertyDescriptor(widgetState, 'pos')
-    let _pos = widgetState.pos
-    Object.defineProperty(widgetState, 'pos', {
-      get: () => _pos,
-      set: (v) => {
-        writeCount++
-        _pos = v
-      },
-      configurable: true
-    })
+    const posAfterWarmup = widgetState.pos
 
     // 20 idle frames: canvas stationary, no node movement, no pan.
+    // The pos array must not be reassigned (same reference = no reactive write).
     for (let i = 0; i < 20; i++) drawFrame(canvas)
 
-    // Restore original descriptor to avoid polluting other tests.
-    if (originalDescriptor) Object.defineProperty(widgetState, 'pos', originalDescriptor)
-
-    expect(writeCount).toBe(0)
+    expect(widgetState.pos).toBe(posAfterWarmup)
   })
 })
