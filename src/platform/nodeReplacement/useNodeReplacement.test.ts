@@ -1,8 +1,11 @@
 import { fromAny } from '@total-typescript/shoehorn'
+import { pickBy } from 'es-toolkit'
 import { describe, expect, it, vi } from 'vitest'
 
+import type { Point } from '@/lib/litegraph/src/interfaces'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
 import type { MissingNodeType } from '@/types/comfy'
 import type { NodeReplacement } from './types'
 
@@ -95,7 +98,7 @@ function createPlaceholderNode(
   outputs: { name: string; links: number[] | null }[] = [],
   graph?: LGraph
 ): LGraphNode {
-  return fromAny<LGraphNode, unknown>({
+  const node = fromAny<LGraphNode, unknown>({
     id,
     type,
     pos: [100, 200],
@@ -118,20 +121,28 @@ function createPlaceholderNode(
     },
     inputs: inputs.map((i) => ({ ...i, type: 'IMAGE' })),
     outputs: outputs.map((o) => ({ ...o, type: 'IMAGE' })),
-    graph: graph ?? null,
-    serialize: vi.fn(() => ({
-      id,
-      type,
-      pos: [100, 200],
-      size: [200, 100],
-      flags: {},
-      order: 0,
-      mode: 0,
-      inputs: inputs.map((i) => ({ ...i, type: 'IMAGE' })),
-      outputs: outputs.map((o) => ({ ...o, type: 'IMAGE' })),
-      widgets_values: []
-    }))
+    graph: graph ?? null
   })
+
+  // Mirrors the placeholder branch of LGraphNode.serialize(): the loaded file's
+  // structural fields replayed verbatim, with the live decorations overlaid.
+  node.serialize = vi.fn(() => ({
+    ...node.last_serialization!,
+    mode: node.mode,
+    pos: [node.pos[0], node.pos[1]] satisfies Point,
+    ...pickBy(
+      {
+        title: node.title,
+        color: node.color,
+        bgcolor: node.bgcolor,
+        boxcolor: node.boxcolor,
+        shape: node.shape
+      },
+      (value) => value !== undefined
+    )
+  }))
+
+  return node
 }
 
 function createNewNode(
@@ -1153,6 +1164,49 @@ describe('useNodeReplacement', () => {
 
       expect(onNodeAdded).toHaveBeenCalledTimes(1)
       expect(onNodeAdded).toHaveBeenCalledWith(newNode)
+    })
+
+    it('carries the live title and decorations of a renamed placeholder onto the replacement', () => {
+      const placeholder = createPlaceholderNode(1, 'OldType')
+      Object.assign(placeholder.last_serialization!, {
+        title: 'Title From File',
+        color: '#000000',
+        bgcolor: '#111111',
+        boxcolor: '#222222',
+        shape: RenderShape.BOX
+      })
+      Object.assign(placeholder, {
+        title: 'My Rename',
+        color: '#123456',
+        bgcolor: '#654321',
+        boxcolor: '#abcdef',
+        shape: RenderShape.ROUND
+      })
+      const graph = createMockGraph([placeholder])
+      placeholder.graph = graph
+      Object.assign(app, { rootGraph: graph })
+
+      vi.mocked(collectAllNodes).mockReturnValue([placeholder])
+
+      const newNode = createNewNode()
+      vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
+
+      const { replaceNodesInPlace } = useNodeReplacement()
+      replaceNodesInPlace([
+        makeMissingNodeType('OldType', {
+          new_node_id: 'NewType',
+          old_node_id: 'OldType',
+          old_widget_ids: null,
+          input_mapping: null,
+          output_mapping: null
+        })
+      ])
+
+      expect(newNode.title).toBe('My Rename')
+      expect(newNode.color).toBe('#123456')
+      expect(newNode.bgcolor).toBe('#654321')
+      expect(newNode.boxcolor).toBe('#abcdef')
+      expect(newNode.shape).toBe(RenderShape.ROUND)
     })
   })
 })

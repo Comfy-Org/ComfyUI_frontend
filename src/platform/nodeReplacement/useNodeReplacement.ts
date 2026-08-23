@@ -175,9 +175,15 @@ function replaceWithMapping(
     if (isNodeBindable(widget)) widget.setNodeId(newNode.id)
   }
 
-  const serialized = node.last_serialization ?? node.serialize()
+  // The live node, not the file it was loaded with: a placeholder the user
+  // renamed or recoloured carries those edits only on serialize() output.
+  const serialized = node.serialize()
 
   if (serialized.title != null) newNode.title = serialized.title
+  if (serialized.color != null) newNode.color = serialized.color
+  if (serialized.bgcolor != null) newNode.bgcolor = serialized.bgcolor
+  if (serialized.boxcolor != null) newNode.boxcolor = serialized.boxcolor
+  if (serialized.shape != null) newNode.shape = serialized.shape
   if (serialized.properties) {
     newNode.properties = { ...serialized.properties }
     if ('Node name for S&R' in newNode.properties) {
@@ -284,10 +290,7 @@ export function useNodeReplacement() {
           ? replacement
           : {
               ...replacement,
-              ...generateDefaultMapping(
-                node.last_serialization ?? node.serialize(),
-                newNode
-              )
+              ...generateDefaultMapping(node.serialize(), newNode)
             }
         replaceWithMapping(node, newNode, effectiveReplacement, nodeGraph, idx)
 
