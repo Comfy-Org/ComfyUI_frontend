@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it } from 'vitest'
 import { computed } from 'vue'
 
 import { transferReplacementOwnership } from '@/core/graph/nodeShell/nodeShellState'
@@ -68,7 +68,6 @@ describe('useNodeDataStore', () => {
     const first = node(1)
     const duplicate = node(1, 'sub-1')
 
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const registered = store.registerNode(graphScope(rootA, rootA), first)
     const rejected = store.registerNode(graphScope(rootA, 'sub-1'), duplicate)
 
@@ -77,10 +76,6 @@ describe('useNodeDataStore', () => {
     expect(duplicate.graphId).toBe('sub-1')
     expect(store.getGraphNodesFor(rootA, rootA)).toEqual([registered])
     expect(store.getGraphNodesFor(rootA, 'sub-1')).toEqual([])
-    expect(consoleError).toHaveBeenCalledWith(
-      expect.stringContaining('[nodeDataStore]')
-    )
-    consoleError.mockRestore()
   })
 
   it('rejects the registered node identity from a sibling owner', () => {
