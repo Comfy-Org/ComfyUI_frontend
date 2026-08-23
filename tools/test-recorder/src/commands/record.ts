@@ -30,11 +30,17 @@ import { pass, fail, warn, alert, info, blank, box } from '../ui/logger'
 import { toSlug } from '../cli/slug'
 import { TAG_REGISTRY } from '../tags'
 import { addWorkflow } from '../workflows/add'
-import { DISTRIBUTIONS, resolveDistribution } from '../devserver/distributions'
+import {
+  customDistribution,
+  DISTRIBUTIONS,
+  normalizeBackendUrl,
+  resolveDistribution
+} from '../devserver/distributions'
 import { ensureDevServer } from '../devserver/manager'
 
 const PASTE_SENTINEL = '.'
 const ADD_WORKFLOW_SENTINEL = '__add-workflow__'
+const CUSTOM_DISTRIBUTION_SENTINEL = 'custom'
 
 /**
  * Ctrl+D closes stdin for good, leaving every later prompt unanswerable, so
@@ -140,18 +146,42 @@ export async function runRecord(): Promise<void> {
   stepHeader(1, 7, 'Target Distribution')
   const selectedDistribution = await select({
     message: 'Which distribution do you want to record against?',
-    options: DISTRIBUTIONS.map(({ id, label, hint }) => ({
-      value: id,
-      label,
-      hint
-    })),
+    options: [
+      ...DISTRIBUTIONS.map(({ id, label, hint }) => ({
+        value: id,
+        label,
+        hint
+      })),
+      {
+        value: CUSTOM_DISTRIBUTION_SENTINEL,
+        label: 'Custom backend…',
+        hint: 'connect Vite to another backend URL'
+      }
+    ],
     initialValue: 'cloud'
   })
   if (isCancel(selectedDistribution)) {
     cancel('Operation cancelled')
     process.exit(0)
   }
-  const distribution = resolveDistribution(selectedDistribution)
+  let distribution = resolveDistribution(selectedDistribution)
+  if (selectedDistribution === CUSTOM_DISTRIBUTION_SENTINEL) {
+    const backendInput = await text({
+      message: 'Backend URL:',
+      placeholder: 'agent.comfy.org',
+      validate: (value) => {
+        const result = normalizeBackendUrl(value ?? '')
+        return result.ok ? undefined : result.reason
+      }
+    })
+    if (isCancel(backendInput)) {
+      cancel('Operation cancelled')
+      process.exit(0)
+    }
+    const normalized = normalizeBackendUrl(backendInput)
+    if (!normalized.ok) throw new Error(normalized.reason)
+    distribution = customDistribution(normalized.url)
+  }
   if (!distribution) throw new Error('Selected distribution is unavailable')
 
   stepHeader(2, 7, 'Environment Check')
@@ -331,6 +361,11 @@ export async function runRecord(): Promise<void> {
   serverSpinner.stop(
     devServer.ownedByUs ? 'Dev server started' : 'Using running dev server'
   )
+  if (distribution.backendUrl && devServer.reused) {
+    warn(
+      `Reusing running dev server — it may not point at ${distribution.backendUrl}`
+    )
+  }
 
   let result
   try {

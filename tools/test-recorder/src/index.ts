@@ -92,12 +92,43 @@ try {
     }
     case 'check': {
       const { parseFlags } = await import('./cli/flags')
-      const { flags } = parseFlags(args.slice(1), ['distribution'])
-      const { distributionIds, resolveDistribution } =
-        await import('./devserver/distributions')
+      const { flags } = parseFlags(args.slice(1), ['backend', 'distribution'])
+      const {
+        customDistribution,
+        distributionIds,
+        normalizeBackendUrl,
+        resolveDistribution
+      } = await import('./devserver/distributions')
+      const backendInput = flags.backend ?? process.env.COMFY_TEST_BACKEND
       const distributionId =
         flags.distribution ?? process.env.COMFY_TEST_DISTRIBUTION
-      const distribution = resolveDistribution(distributionId)
+      if (
+        backendInput !== undefined &&
+        flags.distribution !== undefined &&
+        flags.distribution !== 'custom'
+      ) {
+        console.log(
+          pc.red(
+            '  --backend cannot be combined with --distribution other than custom.'
+          )
+        )
+        process.exitCode = 1
+        break
+      }
+      const normalizedBackend =
+        backendInput === undefined
+          ? undefined
+          : normalizeBackendUrl(backendInput)
+      if (normalizedBackend && !normalizedBackend.ok) {
+        console.log(
+          pc.red(`  Invalid backend URL: ${normalizedBackend.reason}`)
+        )
+        process.exitCode = 1
+        break
+      }
+      const distribution = normalizedBackend?.ok
+        ? customDistribution(normalizedBackend.url)
+        : resolveDistribution(distributionId)
       if (!distribution) {
         console.log(
           pc.red(
@@ -150,7 +181,7 @@ Commands:
   plan        Print a test plan for an agent to hand to playwright-test-generator
   transform   Transform raw codegen output to conventions
   pr          Open a pull request for a generated test
-  check [--distribution cloud|cloud-staging|cloud-prod|local]
+  check [--distribution cloud|cloud-staging|cloud-prod|local] [--backend <url>]
               Check environment prerequisites (defaults to cloud)
   list [--filter <keyword>]
               List available test workflows, optionally filtered by path

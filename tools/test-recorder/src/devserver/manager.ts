@@ -10,6 +10,7 @@ import { devServerPort, devServerUrl } from '../checks/devServerUrl'
 export interface ManagedDevServer {
   url: string
   ownedByUs: boolean
+  reused: boolean
   stop: () => void
 }
 
@@ -27,7 +28,7 @@ export async function ensureDevServer(
   const url = devServerUrl()
   const initial = await probeDevServer(url, projectRoot)
   if (initial.status === 'ready') {
-    return { url, ownedByUs: false, stop: () => {} }
+    return { url, ownedByUs: false, reused: true, stop: () => {} }
   }
   if (initial.status === 'different-checkout') {
     throw new Error(
@@ -43,7 +44,10 @@ export async function ensureDevServer(
   const child = spawn('pnpm', ['run', distribution.script], {
     cwd: projectRoot,
     stdio: 'ignore',
-    detached: true
+    detached: true,
+    env: distribution.backendUrl
+      ? { ...process.env, DEV_SERVER_COMFYUI_URL: distribution.backendUrl }
+      : process.env
   })
   let spawnError: Error | undefined
   child.once('error', (error) => {
@@ -80,7 +84,7 @@ export async function ensureDevServer(
     }
     const probe = await probeDevServer(url, projectRoot)
     if (probe.status === 'ready') {
-      return { url, ownedByUs: true, stop }
+      return { url, ownedByUs: true, reused: false, stop }
     }
     if (child.exitCode !== null) {
       stop()
