@@ -40,6 +40,9 @@ export function useAmbientSubgraphPreviews(
 
     const { subgraph } = node
 
+    // `subgraph.nodes` (`LGraph._nodes`) is a plain, non-reactive array, so
+    // interior node add/remove while collapsed isn't tracked here; the next
+    // WS preview frame (nodeOutputs/nodePreviewImages change) self-heals it.
     return subgraph.nodes.flatMap((interiorNode): PromotedPreview[] => {
       // Nested subgraph hosts derive their own previews independently.
       if (interiorNode instanceof SubgraphNode) return []
