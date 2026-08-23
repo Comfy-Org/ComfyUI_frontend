@@ -158,7 +158,8 @@ function replaceWithMapping(
   newNode: LGraphNode,
   replacement: NodeReplacement,
   nodeGraph: LGraph,
-  idx: number
+  idx: number,
+  serialized: ISerialisedNode
 ): void {
   node.onRemoved?.()
   newNode.id = node.id
@@ -174,10 +175,6 @@ function replaceWithMapping(
   for (const widget of newNode.widgets ?? []) {
     if (isNodeBindable(widget)) widget.setNodeId(newNode.id)
   }
-
-  // The live node, not the file it was loaded with: a placeholder the user
-  // renamed or recoloured carries those edits only on serialize() output.
-  const serialized = node.serialize()
 
   if (serialized.title != null) newNode.title = serialized.title
   if (serialized.color != null) newNode.color = serialized.color
@@ -286,13 +283,26 @@ export function useNodeReplacement() {
           replacement.input_mapping != null ||
           replacement.output_mapping != null
 
+        // Snapshot the live node before any graph mutation: a placeholder the
+        // user renamed or recoloured carries those edits only on serialize()
+        // output, and one snapshot keeps the mapping and the value transfer
+        // reading the same state.
+        const serialized = node.serialize()
+
         const effectiveReplacement = hasMapping
           ? replacement
           : {
               ...replacement,
-              ...generateDefaultMapping(node.serialize(), newNode)
+              ...generateDefaultMapping(serialized, newNode)
             }
-        replaceWithMapping(node, newNode, effectiveReplacement, nodeGraph, idx)
+        replaceWithMapping(
+          node,
+          newNode,
+          effectiveReplacement,
+          nodeGraph,
+          idx,
+          serialized
+        )
 
         // Refresh Vue node data — replaceWithMapping bypasses graph.add()
         // so onNodeAdded must be called explicitly to update VueNodeData.

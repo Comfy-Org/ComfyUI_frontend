@@ -1,5 +1,5 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { pickBy } from 'es-toolkit'
+import { omit, pickBy } from 'es-toolkit'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { Point } from '@/lib/litegraph/src/interfaces'
@@ -8,6 +8,15 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
 import type { MissingNodeType } from '@/types/comfy'
 import type { NodeReplacement } from './types'
+
+/** Mirrors `PLACEHOLDER_LIVE_DECORATIONS` in LGraphNode. */
+const PLACEHOLDER_LIVE_DECORATIONS = [
+  'title',
+  'color',
+  'bgcolor',
+  'boxcolor',
+  'shape'
+] as const
 
 vi.mock('@/lib/litegraph/src/litegraph', () => ({
   LiteGraph: {
@@ -125,20 +134,25 @@ function createPlaceholderNode(
   })
 
   // Mirrors the placeholder branch of LGraphNode.serialize(): the loaded file's
-  // structural fields replayed verbatim, with the live decorations overlaid.
+  // structural fields replayed verbatim, with the recorded decorations dropped
+  // before the live ones are re-applied, so a cleared decoration cannot
+  // resurrect the recorded one.
   node.serialize = vi.fn(() => ({
-    ...node.last_serialization!,
+    ...omit(node.last_serialization!, PLACEHOLDER_LIVE_DECORATIONS),
     mode: node.mode,
     pos: [node.pos[0], node.pos[1]] satisfies Point,
     ...pickBy(
       {
-        title: node.title,
+        title:
+          node.title === (node.constructor as { title?: string }).title
+            ? undefined
+            : node.title,
         color: node.color,
         bgcolor: node.bgcolor,
         boxcolor: node.boxcolor,
         shape: node.shape
       },
-      (value) => value !== undefined
+      Boolean
     )
   }))
 
@@ -1207,6 +1221,56 @@ describe('useNodeReplacement', () => {
       expect(newNode.bgcolor).toBe('#654321')
       expect(newNode.boxcolor).toBe('#abcdef')
       expect(newNode.shape).toBe(RenderShape.ROUND)
+    })
+
+    it('does not resurrect a file decoration the placeholder no longer carries', () => {
+      const placeholder = createPlaceholderNode(1, 'OldType')
+      Object.assign(placeholder.last_serialization!, {
+        title: 'Title From File',
+        color: '#000000',
+        bgcolor: '#111111',
+        boxcolor: '#222222',
+        shape: RenderShape.BOX
+      })
+      Object.assign(placeholder, {
+        title: undefined,
+        color: undefined,
+        bgcolor: '',
+        boxcolor: undefined,
+        shape: undefined
+      })
+      const graph = createMockGraph([placeholder])
+      placeholder.graph = graph
+      Object.assign(app, { rootGraph: graph })
+
+      vi.mocked(collectAllNodes).mockReturnValue([placeholder])
+
+      const newNode = createNewNode()
+      Object.assign(newNode, {
+        title: 'New Node',
+        color: undefined,
+        bgcolor: undefined,
+        boxcolor: undefined,
+        shape: undefined
+      })
+      vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
+
+      const { replaceNodesInPlace } = useNodeReplacement()
+      replaceNodesInPlace([
+        makeMissingNodeType('OldType', {
+          new_node_id: 'NewType',
+          old_node_id: 'OldType',
+          old_widget_ids: null,
+          input_mapping: null,
+          output_mapping: null
+        })
+      ])
+
+      expect(newNode.title).toBe('New Node')
+      expect(newNode.color).toBeUndefined()
+      expect(newNode.bgcolor).toBeUndefined()
+      expect(newNode.boxcolor).toBeUndefined()
+      expect(newNode.shape).toBeUndefined()
     })
   })
 })
