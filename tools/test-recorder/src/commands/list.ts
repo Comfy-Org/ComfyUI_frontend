@@ -2,13 +2,28 @@ import pc from 'picocolors'
 import { listWorkflows, findProjectRoot } from '../recorder/runner'
 import { header } from '../ui/logger'
 
-export async function runList(): Promise<void> {
+export function filterWorkflows(
+  workflows: string[],
+  keyword: string
+): string[] {
+  const normalizedKeyword = keyword.toLowerCase()
+  return workflows.filter((workflow) =>
+    workflow.toLowerCase().includes(normalizedKeyword)
+  )
+}
+
+export async function runList(filter?: string): Promise<void> {
   header('Available Workflows')
 
   const projectRoot = findProjectRoot()
-  const workflows = listWorkflows(projectRoot)
+  const allWorkflows = listWorkflows(projectRoot)
+  const workflows = filterWorkflows(allWorkflows, filter ?? '')
 
   if (workflows.length === 0) {
+    if (filter) {
+      console.log(pc.dim(`  No workflows match "${filter}".`))
+      return
+    }
     console.log(pc.dim('  No workflow assets found in browser_tests/assets/'))
     return
   }

@@ -3,7 +3,7 @@ import { writeFileSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import {
   text,
-  select,
+  autocomplete,
   multiselect,
   confirm,
   isCancel,
@@ -183,7 +183,7 @@ export async function runRecord(): Promise<void> {
     message: 'What are you testing?',
     placeholder: 'e.g., collapsing a KSampler node keeps its connections',
     validate: (value) =>
-      toSlug(value) ? undefined : 'Use some letters or numbers.'
+      toSlug(value ?? '') ? undefined : 'Use some letters or numbers.'
   })
   if (isCancel(description)) {
     cancel('Operation cancelled')
@@ -204,7 +204,7 @@ export async function runRecord(): Promise<void> {
       message: 'Enter a custom filename (without .spec.ts):',
       placeholder: slug,
       validate: (value) =>
-        toSlug(value) ? undefined : 'Use letters or numbers.'
+        toSlug(value ?? '') ? undefined : 'Use letters or numbers.'
     })
     if (isCancel(customName)) {
       cancel('Operation cancelled')
@@ -250,9 +250,10 @@ export async function runRecord(): Promise<void> {
     ...rest.map((wf) => ({ value: wf, label: wf }))
   ]
 
-  const selectedWorkflow = await select({
-    message: `Start with a pre-loaded workflow? (${workflows.length} available — type-ahead is not supported, use ↑/↓)`,
+  const selectedWorkflow = await autocomplete({
+    message: `Start with a pre-loaded workflow? (${workflows.length} available)`,
     options: workflowOptions,
+    initialValue: '',
     maxItems: 12
   })
   if (isCancel(selectedWorkflow)) {
