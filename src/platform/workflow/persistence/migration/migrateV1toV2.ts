@@ -3,7 +3,6 @@
  *
  * Migrates draft data from V1 blob format to V2 per-draft keys.
  * Runs once on first load if V2 index doesn't exist.
- * Keeps V1 data intact for rollback until 2026-07-15.
  */
 
 import type { DraftIndexV2 } from '../base/draftTypes'
@@ -165,41 +164,5 @@ function migrateV1TabState(workspaceId: string, clientId?: string): void {
     writeOpenPaths(clientId, { workspaceId, paths, activeIndex })
   } catch {
     // Best effort - don't block draft migration on tab state errors
-  }
-}
-
-/**
- * Cleans up V1 data after successful migration.
- * Should NOT be called until 2026-07-15 to allow rollback.
- */
-export function cleanupV1Data(workspaceId: string = getWorkspaceId()): void {
-  try {
-    localStorage.removeItem(V1_KEYS.drafts(workspaceId))
-    localStorage.removeItem(V1_KEYS.order(workspaceId))
-    localStorage.removeItem(V1_KEYS.openPaths)
-    localStorage.removeItem(V1_KEYS.activeIndex)
-    console.warn('[V2 Migration] Cleaned up V1 data')
-  } catch {
-    // Ignore cleanup errors
-  }
-}
-
-/**
- * Gets migration status for debugging.
- */
-export function getMigrationStatus(workspaceId: string = getWorkspaceId()): {
-  v1Exists: boolean
-  v2Exists: boolean
-  v1DraftCount: number
-  v2DraftCount: number
-} {
-  const v1Data = readV1Drafts(workspaceId)
-  const v2Index = readIndex(workspaceId)
-
-  return {
-    v1Exists: v1Data !== null,
-    v2Exists: v2Index !== null,
-    v1DraftCount: v1Data ? v1Data.order.length : 0,
-    v2DraftCount: v2Index ? v2Index.order.length : 0
   }
 }
