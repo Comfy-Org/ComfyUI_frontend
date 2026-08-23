@@ -187,6 +187,32 @@ is later architecture work outside this data-centralization phase.
 7. Preserve callback ordering assumptions only where covered below; subscribe
    to graph events when observation is sufficient and no override is required.
 
+## Graph-level call-site atomicity audit
+
+Audited against `345eddfef` (2026-08-24). All graph-level callers of
+`attachNodeToStores` (via `registerNodeState`), `replaceLink` (via
+`replaceLinkTopology`), and `updateEndpoints` follow validate-then-mutate
+ordering. No non-atomic sites were found.
+
+| Call site                                              | Function called                            | Atomic? | Notes                                                                                                                                                                      |
+| ------------------------------------------------------ | ------------------------------------------ | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `LGraph.add()` (`LGraph.ts:1169`)                      | `attachNodeToStores` → `registerNodeState` | Yes     | `attachNodeToStores` retries with a fresh minted id on collision; `node.graph = this` is set before the call but graph arrays mutate only after registration succeeds.     |
+| `LGraphNode.connect()` (`LGraphNode.ts:3171`)          | `replaceLinkTopology` → `replaceLink`      | Yes     | Returns before any topology mutation when `replaceLinkTopology` returns `false`. `finalizeInputLinkRemoval`, slot updates, and `onConnectionsChange` all follow the guard. |
+| `SubgraphInput.connect()` (`SubgraphInput.ts:102`)     | `replaceLinkTopology` → `replaceLink`      | Yes     | Returns before `_disconnectNodeInput`, `linkIds.push`, and `anchorRerouteChain` when `replaceLinkTopology` returns `false`.                                                |
+| `SubgraphOutput.connect()` (`SubgraphOutput.ts:73`)    | `replaceLinkTopology` → `replaceLink`      | Yes     | Returns before `existingLink.disconnect`, `linkIds[0]` assignment, and `anchorRerouteChain` when `replaceLinkTopology` returns `false`.                                    |
+| `replaceNodeInputs()` (`node/slotLinks.ts:187`)        | `updateEndpoints`                          | Yes     | Returns `[]` on `!result.ok` before `node.inputs.splice` or `finalizeInputLinkRemoval`.                                                                                    |
+| `realignInputLinkSlots()` (`linkDeduplication.ts:154`) | `updateEndpoints`                          | Yes     | Breaks the pass loop on `!result.ok` before firing any `onConnectionsChange` callbacks.                                                                                    |
+
+### Declared-non-atomic edge cases
+
+These are cosmetic side effects that leave no graph inconsistency. They are
+pinned by `it.fails` assertions in
+`src/lib/litegraph/src/node/graphCallSiteAtomicity.test.ts`.
+
+| Edge case                                                                                                                            | Observable partial state                                                                                                                                                                             | Severity                                                         |
+| ------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `mintLinkId` runs before `replaceLinkTopology` in `LGraphNode.connect()`, `SubgraphInput.connect()`, and `SubgraphOutput.connect()`. | `graph.state.lastLinkId` advances even when `replaceLinkTopology` is rejected, creating a gap in the link ID sequence. No topology is corrupted; no dangling link or double-registered slot results. | Cosmetic — IDs remain unique and monotonic, just non-contiguous. |
+
 ## Required follow-up evidence
 
 Existing evidence includes `LLink.store.test.ts`, `NodeInputSlot.test.ts`,
