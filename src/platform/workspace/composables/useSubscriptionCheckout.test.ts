@@ -2964,7 +2964,7 @@ describe('useSubscriptionCheckout', () => {
     })
 
     it('persists the pending attempt until its operation becomes terminal', async () => {
-      const checkout = await setup()
+      const checkout = await setupWithApprovedPreview()
       checkout.selectedTierKey.value = 'creator'
       checkout.selectedBillingCycle.value = 'monthly'
       mockSubscribe.mockResolvedValueOnce({

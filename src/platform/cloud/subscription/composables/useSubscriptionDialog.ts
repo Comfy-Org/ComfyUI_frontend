@@ -243,7 +243,13 @@ export const useSubscriptionDialog = () => {
     const selection = pending.selection
     if (selection.planMode === 'personal') return selection
 
-    const { fetchPlans, teamCreditStops } = useBillingContext()
+    const {
+      fetchPlans,
+      teamCreditStops,
+      currentTeamCreditStop,
+      subscription,
+      subscriptionStatus
+    } = useBillingContext()
     await fetchPlans()
     const stop = mapApiTeamCreditStops(teamCreditStops.value?.stops ?? []).find(
       ({ id }) => id === selection.teamCreditStopId
@@ -258,7 +264,14 @@ export const useSubscriptionDialog = () => {
         credits: stop.credits,
         discountedUsd: getStopDiscountedMonthlyUsd(stop, selection.billingCycle)
       },
-      billingCycle: selection.billingCycle
+      billingCycle: selection.billingCycle,
+      isChange:
+        currentTeamCreditStop.value !== null &&
+        subscriptionStatus.value !== 'ended' &&
+        (currentTeamCreditStop.value.id !== stop.id ||
+          (subscription.value?.duration === 'MONTHLY'
+            ? 'monthly'
+            : 'yearly') !== selection.billingCycle)
     }
   }
 
@@ -287,12 +300,10 @@ export const useSubscriptionDialog = () => {
       if (operation.status === 'succeeded') return
 
       const initialCheckout = await restoreCheckoutSelection(pending)
-      if (initialCheckout) {
-        showPricingTable({
-          planMode: initialCheckout.planMode,
-          initialCheckout
-        })
-      }
+      showPricingTable({
+        planMode: pending.selection.planMode,
+        ...(initialCheckout && { initialCheckout })
+      })
     } finally {
       clearPendingSubscriptionCheckout(pending.operationId)
     }

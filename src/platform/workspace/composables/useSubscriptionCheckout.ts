@@ -48,6 +48,7 @@ export type SubscriptionCheckoutSelection =
       planMode: 'team'
       stop: TeamPlanSelection
       billingCycle: BillingCycle
+      isChange?: boolean
     }
 
 interface SelectedTeamCheckout {
