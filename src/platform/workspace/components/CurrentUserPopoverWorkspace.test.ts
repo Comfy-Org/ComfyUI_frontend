@@ -319,6 +319,10 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.canManageSubscription = true
     const { rerender } = renderComponent('personal')
 
+    expect(
+      screen.queryByRole('button', { name: 'Subscribe' })
+    ).not.toBeInTheDocument()
+
     if (!workspaceStoreMock.store) throw new Error('Workspace store not ready')
     workspaceStoreMock.store.workspaceName = 'Team Workspace'
     workspaceStoreMock.store.isInPersonalWorkspace = false
@@ -329,6 +333,18 @@ describe('CurrentUserPopoverWorkspace', () => {
     )
     expect(
       screen.queryByRole('button', { name: 'Subscribe' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('keeps Resubscribe hidden on Local for a cancelled plan', () => {
+    state.isCloud = false
+    state.isCancelled = true
+    state.canManageSubscriptionLifecycle = true
+
+    renderComponent('team')
+
+    expect(
+      screen.queryByRole('button', { name: 'Resubscribe' })
     ).not.toBeInTheDocument()
   })
 
