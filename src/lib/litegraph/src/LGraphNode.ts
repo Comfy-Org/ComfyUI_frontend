@@ -1,3 +1,4 @@
+import { omit, pickBy } from 'es-toolkit'
 import { toValue } from 'vue'
 
 import { LGraphNodeProperties } from '@/lib/litegraph/src/LGraphNodeProperties'
@@ -124,6 +125,18 @@ const MUTATING_SIZE_METHODS = new Set([
 
 /** Captures only the {@link layoutStore} singleton, so shared across nodes. */
 const layoutMutations = useLayoutMutations()
+
+/**
+ * Serialised keys a missing-node placeholder mirrors from the live node rather
+ * than replaying from the file it was loaded with.
+ */
+const PLACEHOLDER_LIVE_DECORATIONS = [
+  'title',
+  'color',
+  'bgcolor',
+  'boxcolor',
+  'shape'
+] as const satisfies readonly (keyof ISerialisedNode)[]
 
 interface INodePropertyInfo {
   name?: string
@@ -1067,33 +1080,33 @@ export class LGraphNode
       // With no recorded size there is nothing to fall back to either, so the
       // live size would invent a dimension the file never had.
       const carriesLiveSize =
-        this.last_serialization.size != null && !this.flags.collapsed
+        this.last_serialization.size != null && !this.flags?.collapsed
 
-      const result: ISerialisedNode = {
-        ...this.last_serialization,
+      // The live node owns its decorations, so the file's recorded values are
+      // dropped before whatever is set now is re-applied: skipping them
+      // instead would let a cleared decoration resurrect the recorded one.
+      // `title` mirrors the normal path's guard against the class default.
+      const liveDecorations = pickBy(
+        {
+          title: this.title === this.constructor.title ? undefined : this.title,
+          color: this.color,
+          bgcolor: this.bgcolor,
+          boxcolor: this.boxcolor,
+          shape: this.shape
+        },
+        Boolean
+      )
+
+      return {
+        ...omit(this.last_serialization, PLACEHOLDER_LIVE_DECORATIONS),
         mode: o.mode,
         pos: o.pos,
-        ...(carriesLiveSize && { size: o.size })
+        // Required by the workflow schema, so an empty object rather than a
+        // missing key represents "no flags".
+        flags: o.flags ?? {},
+        ...(carriesLiveSize && { size: o.size }),
+        ...liveDecorations
       }
-
-      // `flags` is required by the schema, but a hand-written file can omit it
-      // and an untouched placeholder has to round-trip that absence.
-      if (this.last_serialization.flags || Object.keys(o.flags).length)
-        result.flags = o.flags
-
-      // Mirror the normal path's title guard, and delete rather than skip the
-      // unset keys so a cleared decoration cannot resurrect the file's value.
-      if (this.title && this.title !== this.constructor.title)
-        result.title = this.title
-      else delete result.title
-
-      if (this.color) result.color = this.color
-      else delete result.color
-
-      if (this.bgcolor) result.bgcolor = this.bgcolor
-      else delete result.bgcolor
-
-      return result
     }
 
     if (this.inputs)

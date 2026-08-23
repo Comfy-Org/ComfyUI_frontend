@@ -12,7 +12,8 @@ import {
   LGraph,
   LGraphCanvas,
   NodeInputSlot,
-  NodeOutputSlot
+  NodeOutputSlot,
+  RenderShape
 } from '@/lib/litegraph/src/litegraph'
 
 import { test } from './__fixtures__/testExtensions'
@@ -202,12 +203,28 @@ describe('LGraphNode', () => {
       expect(serialized).not.toHaveProperty('bgcolor')
     })
 
+    test('carries a live shape and box colour through, over the recorded ones', () => {
+      const placeholder = createPlaceholder({
+        shape: RenderShape.BOX,
+        boxcolor: '#333'
+      })
+      placeholder.shape = RenderShape.CARD
+      placeholder.boxcolor = '#444'
+
+      const serialized = placeholder.serialize()
+
+      expect(serialized.shape).toEqual(RenderShape.CARD)
+      expect(serialized.boxcolor).toEqual('#444')
+    })
+
     test('round-trips an untouched placeholder that recorded decorations', () => {
       const recorded = {
         title: 'Recorded Title',
         flags: { collapsed: true, pinned: true },
         color: '#111',
-        bgcolor: '#222'
+        bgcolor: '#222',
+        boxcolor: '#333',
+        shape: RenderShape.CARD
       }
       const serialized = createPlaceholder(recorded).serialize()
 
@@ -223,11 +240,11 @@ describe('LGraphNode', () => {
       expect(serialized.flags).toEqual({})
     })
 
-    test('does not invent flags when the recorded serialization has none', () => {
+    test('emits empty flags when the recorded serialization has none, since the schema requires the key', () => {
       const placeholder = createPlaceholder()
       delete (placeholder.last_serialization as Partial<ISerialisedNode>).flags
 
-      expect(placeholder.serialize()).not.toHaveProperty('flags')
+      expect(placeholder.serialize().flags).toEqual({})
     })
   })
 
