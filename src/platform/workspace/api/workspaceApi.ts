@@ -422,13 +422,15 @@ export const workspaceApi = {
    * Get billing capabilities for the current workspace
    * GET /api/billing/capabilities
    */
-  async getBillingCapabilities(): Promise<BillingCapabilitiesResponse> {
+  async getBillingCapabilities(
+    signal?: AbortSignal
+  ): Promise<BillingCapabilitiesResponse> {
     const headers = await getAuthHeaderOrThrow()
     try {
       const response =
         await workspaceApiClient.get<BillingCapabilitiesResponse>(
           workspaceApiUrl('/billing/capabilities'),
-          { headers, timeout: 10_000 }
+          { headers, timeout: 10_000, signal }
         )
       return response.data
     } catch (err) {

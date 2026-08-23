@@ -321,6 +321,29 @@ describe('WorkspaceAuthGate', () => {
       expect(screen.getByTestId('slot-content')).toBeInTheDocument()
     })
 
+    it('aborts capability initialization when unmounted', async () => {
+      mockBillingCapabilitiesInitialize.mockImplementationOnce(
+        (signal: AbortSignal) =>
+          new Promise<void>((resolve) => {
+            signal.addEventListener('abort', () => resolve(), { once: true })
+          })
+      )
+
+      const { unmount } = mountComponent()
+      await vi.waitFor(() =>
+        expect(mockBillingCapabilitiesInitialize).toHaveBeenCalledOnce()
+      )
+      const signal = mockBillingCapabilitiesInitialize.mock.calls[0][0]
+
+      unmount()
+      await flushPromises()
+
+      expect(signal).toBeInstanceOf(AbortSignal)
+      expect(signal.aborted).toBe(true)
+      expect(mockResumePendingPricingFlow).not.toHaveBeenCalled()
+      expect(mockReportError).not.toHaveBeenCalled()
+    })
+
     it('stops initialization when unmounted', async () => {
       let resolveRefresh: (() => void) | undefined
       mockRefreshRemoteConfig.mockImplementation(

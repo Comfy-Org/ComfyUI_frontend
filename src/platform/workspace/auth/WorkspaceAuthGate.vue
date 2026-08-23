@@ -168,7 +168,7 @@ async function initialize(): Promise<void> {
 
     await initializeWorkspaceMode()
     if (generation !== initializationGeneration) return
-    await billingCapabilities.initialize()
+    await billingCapabilities.initialize(controller.signal)
     if (generation !== initializationGeneration) return
     if (
       flags.unifiedCloudAuthEnabled &&

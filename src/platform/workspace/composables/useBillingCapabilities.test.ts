@@ -96,6 +96,15 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(true)
   })
 
+  it('forwards the initialization signal to the capability request', async () => {
+    const controller = new AbortController()
+    mockGetBillingCapabilities.mockResolvedValueOnce(capabilitiesResponse(true))
+
+    await billingCapabilities.initialize(controller.signal)
+
+    expect(mockGetBillingCapabilities).toHaveBeenCalledWith(controller.signal)
+  })
+
   it('keeps top-up available when the endpoint is unavailable', async () => {
     mockGetBillingCapabilities.mockRejectedValueOnce(new Error('unavailable'))
 

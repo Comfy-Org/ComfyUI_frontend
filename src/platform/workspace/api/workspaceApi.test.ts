@@ -378,6 +378,7 @@ describe('workspaceApi', () => {
     })
 
     it('getBillingCapabilities() sends GET /billing/capabilities', async () => {
+      const controller = new AbortController()
       const data = {
         resolved_for: { user_id: 'user-1', workspace_id: 'workspace-1' },
         capabilities: {
@@ -392,11 +393,13 @@ describe('workspaceApi', () => {
       }
       mockAxiosInstance.get.mockResolvedValue({ data })
 
-      const result = await workspaceApi.getBillingCapabilities()
+      const result = await workspaceApi.getBillingCapabilities(
+        controller.signal
+      )
 
       expect(mockAxiosInstance.get).toHaveBeenCalledWith(
         '/api/billing/capabilities',
-        { headers: AUTH_HEADER, timeout: 10_000 }
+        { headers: AUTH_HEADER, timeout: 10_000, signal: controller.signal }
       )
       expect(result).toEqual(data)
     })

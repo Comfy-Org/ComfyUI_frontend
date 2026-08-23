@@ -61,7 +61,7 @@ function useBillingCapabilitiesInternal() {
     () => isCloud && (capabilities.value?.can_subscribe_self_serve ?? false)
   )
 
-  async function fetchCapabilities(): Promise<void> {
+  async function fetchCapabilities(signal?: AbortSignal): Promise<void> {
     const requestId = ++latestRequestId
     const userId = authStore.currentUser?.uid
     const workspaceId = workspaceStore.activeWorkspaceId
@@ -71,7 +71,7 @@ function useBillingCapabilitiesInternal() {
     }
 
     try {
-      const response = await workspaceApi.getBillingCapabilities()
+      const response = await workspaceApi.getBillingCapabilities(signal)
       if (
         requestId !== latestRequestId ||
         userId !== authStore.currentUser?.uid ||
@@ -99,10 +99,10 @@ function useBillingCapabilitiesInternal() {
     }
   }
 
-  async function initialize(): Promise<void> {
+  async function initialize(signal?: AbortSignal): Promise<void> {
     initialized = true
     if (!isCloud) return
-    await fetchCapabilities()
+    await fetchCapabilities(signal)
   }
 
   watch(
