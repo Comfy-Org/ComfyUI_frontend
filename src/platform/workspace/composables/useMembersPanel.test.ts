@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
+import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
+
 import type {
   WorkspacePendingInvite,
   WorkspaceMember
@@ -333,7 +335,12 @@ vi.mock('vue-i18n', async (importOriginal) => {
   const actual = await importOriginal()
   return {
     ...(actual as object),
-    useI18n: () => ({ t: (key: string) => key })
+    useI18n: () => ({
+      t: (key: string, params?: Record<string, unknown>, plural?: number) =>
+        params !== undefined
+          ? `${key}|${JSON.stringify(params)}|${String(plural)}`
+          : key
+    })
   }
 })
 
@@ -664,6 +671,45 @@ describe('useMembersPanel', () => {
         })
       )
     })
+
+    it('shows a cooldown toast with interpolated seconds on 429 with Retry-After', async () => {
+      mockResendInvite.mockRejectedValue(
+        new WorkspaceApiError('rate limited', 429, undefined, 3)
+      )
+      const panel = await setup()
+      await panel.handleResendInvite(createInvite({ id: 'inv-1' }))
+      expect(mockToastAdd).toHaveBeenCalledWith({
+        severity: 'warn',
+        summary: 'workspacePanel.toast.inviteResendCooldown',
+        detail: 'workspacePanel.toast.inviteResendCooldownDetail|{"seconds":3}|3',
+        life: 3000
+      })
+    })
+
+    it('caps the cooldown toast duration at 10 seconds', async () => {
+      mockResendInvite.mockRejectedValue(
+        new WorkspaceApiError('rate limited', 429, undefined, 30)
+      )
+      const panel = await setup()
+      await panel.handleResendInvite(createInvite({ id: 'inv-1' }))
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'warn', life: 10_000 })
+      )
+    })
+
+    it('shows the cooldown toast without detail when Retry-After is absent', async () => {
+      mockResendInvite.mockRejectedValue(
+        new WorkspaceApiError('rate limited', 429)
+      )
+      const panel = await setup()
+      await panel.handleResendInvite(createInvite({ id: 'inv-1' }))
+      expect(mockToastAdd).toHaveBeenCalledWith({
+        severity: 'warn',
+        summary: 'workspacePanel.toast.inviteResendCooldown',
+        detail: undefined,
+        life: 5000
+      })
+    })
   })
 
   describe('handleRevokeInvite', () => {
@@ -945,7 +991,7 @@ describe('useMembersPanel', () => {
       const panel = await setup()
       expect(panel.isInviteDisabled.value).toBe(true)
       expect(panel.inviteTooltip.value).toBe(
-        'workspacePanel.inviteLimitReached'
+        'workspacePanel.inviteLimitReached|{"count":73}|undefined'
       )
       panel.handleInviteMember()
       expect(mockShowInviteMemberDialog).not.toHaveBeenCalled()
