@@ -8,7 +8,8 @@ import {
   confirm,
   isCancel,
   cancel,
-  spinner
+  spinner,
+  path
 } from '@clack/prompts'
 import pc from 'picocolors'
 import { runChecks } from './check'
@@ -27,8 +28,10 @@ import { stepHeader } from '../ui/steps'
 import { pass, fail, warn, alert, info, blank, box } from '../ui/logger'
 import { toSlug } from '../cli/slug'
 import { TAG_REGISTRY } from '../tags'
+import { addWorkflow } from '../workflows/add'
 
 const PASTE_SENTINEL = '.'
+const ADD_WORKFLOW_SENTINEL = '__add-workflow__'
 
 /**
  * Ctrl+D closes stdin for good, leaving every later prompt unanswerable, so
@@ -245,6 +248,11 @@ export async function runRecord(): Promise<void> {
     hint?: string
   }[] = [
     { value: '', label: '(empty canvas)', hint: 'start fresh' },
+    {
+      value: ADD_WORKFLOW_SENTINEL,
+      label: '(add from file…)',
+      hint: 'import a workflow JSON'
+    },
     ...common.map((wf) => ({ value: wf, label: wf, hint: 'standard graph' })),
     ...rest.map((wf) => ({ value: wf, label: wf }))
   ]
@@ -260,11 +268,39 @@ export async function runRecord(): Promise<void> {
     process.exit(0)
   }
 
+  let seedWorkflow = selectedWorkflow
+  if (selectedWorkflow === ADD_WORKFLOW_SENTINEL) {
+    const workflowPath = await path({
+      message: 'Select a ComfyUI workflow JSON file:',
+      root: process.cwd(),
+      directory: false,
+      validate: (value) =>
+        value?.toLowerCase().endsWith('.json')
+          ? undefined
+          : 'Select a .json file.'
+    })
+    if (isCancel(workflowPath)) {
+      cancel('Operation cancelled')
+      process.exit(0)
+    }
+
+    try {
+      seedWorkflow = addWorkflow(workflowPath, projectRoot).destRelPath
+      pass('Workflow added', seedWorkflow)
+    } catch (error) {
+      fail(
+        'Could not add workflow; starting with an empty canvas instead.',
+        error instanceof Error ? error.message : String(error)
+      )
+      seedWorkflow = ''
+    }
+  }
+
   stepHeader(4, 6, 'Record')
 
   const result = await runRecording({
     testName: slug,
-    workflow: selectedWorkflow || undefined,
+    workflow: seedWorkflow || undefined,
     projectRoot
   })
   if (!result.success) {
@@ -306,7 +342,7 @@ export async function runRecord(): Promise<void> {
   const transformResult = transform(recordedCode, {
     testName: slug,
     tags: selectedTags as string[],
-    workflow: (selectedWorkflow as string) || undefined
+    workflow: seedWorkflow || undefined
   })
 
   blank()

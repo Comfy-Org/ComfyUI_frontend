@@ -15,6 +15,20 @@ try {
       await runRecord()
       break
     }
+    case 'add-workflow': {
+      const { parseFlags } = await import('./cli/flags')
+      const { positional, flags } = parseFlags(args.slice(1), ['name'])
+      const filePath = positional[0]
+      if (!filePath) {
+        console.log(
+          pc.red('  Usage: comfy-test add-workflow <file> [--name <n>]')
+        )
+        process.exit(1)
+      }
+      const { runAddWorkflow } = await import('./commands/addWorkflow')
+      runAddWorkflow(filePath, flags.name)
+      break
+    }
     case 'transform': {
       const { parseFlags, parseTags } = await import('./cli/flags')
       const { positional, flags } = parseFlags(args.slice(1), [
@@ -115,6 +129,8 @@ Usage: comfy-test <command>
 
 Commands:
   record      Record a new browser test interactively (needs a terminal)
+  add-workflow <file> [--name <n>]
+              Add and validate a workflow asset from disk
   plan        Print a test plan for an agent to hand to playwright-test-generator
   transform   Transform raw codegen output to conventions
   pr          Open a pull request for a generated test
@@ -133,7 +149,7 @@ TTY and will refuse to run. Use this instead:
   → hand the printed block to the playwright-test-generator agent
   → comfy-test pr <the file it wrote>
 
-'transform', 'pr', 'check', 'plan', 'list', and 'tags' work non-interactively.
+'add-workflow', 'transform', 'pr', 'check', 'plan', 'list', and 'tags' work non-interactively.
 `)
       break
     }
