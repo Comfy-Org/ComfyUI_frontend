@@ -233,6 +233,7 @@ describe('getWidgetIdForNode', () => {
 describe('migrateWidgetsValues', () => {
   const inputDefs = {
     forced: fromPartial<InputSpec>({ name: 'forced', forceInput: true }),
+    preview: fromPartial<InputSpec>({ name: 'preview' }),
     steps: fromPartial<InputSpec>({ name: 'steps' })
   }
 

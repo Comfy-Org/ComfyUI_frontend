@@ -193,22 +193,30 @@ export function migrateWidgetsValues<TWidgetValue>(
   const originalWidgetsInputs = Object.values(inputDefs).filter(
     (input) => widgetNames.has(input.name) || input.forceInput
   )
+  const skippedWidgetNames = new Set(
+    map(
+      filter(widgets, (widget) => widget.serialize === false),
+      (widget) => widget.name
+    )
+  )
 
-  const widgetIndexHasForceInput = originalWidgetsInputs.flatMap((input) =>
-    input.control_after_generate
+  const widgetIndexHasForceInput = originalWidgetsInputs.flatMap((input) => {
+    if (skippedWidgetNames.has(input.name)) return []
+    return input.control_after_generate
       ? [!!input.forceInput, false]
       : [!!input.forceInput]
-  )
+  })
 
   const normalizedWidgetValues =
     widgetsValues.length === widgets.length
-      ? widgetsValues.filter((_, index) => widgets[index]?.serialize !== false)
+      ? filter(widgetsValues, (_, index) => widgets[index]?.serialize !== false)
       : widgetsValues
 
   if (widgetIndexHasForceInput.length !== normalizedWidgetValues.length)
     return widgetsValues
 
-  return normalizedWidgetValues.filter(
+  return filter(
+    normalizedWidgetValues,
     (_, index) => !widgetIndexHasForceInput[index]
   )
 }
