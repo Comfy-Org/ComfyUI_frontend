@@ -126,6 +126,13 @@ const WorkspaceSwitcherPopoverStub = defineComponent({
   `
 })
 
+const SubscribeButtonStub = defineComponent({
+  props: {
+    label: { type: String, required: true }
+  },
+  template: '<button type="button">{{ label }}</button>'
+})
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -154,7 +161,7 @@ function renderComponent(
       },
       stubs: {
         WorkspaceSwitcherPopover: WorkspaceSwitcherPopoverStub,
-        SubscribeButton: true,
+        SubscribeButton: SubscribeButtonStub,
         UserAvatar: true,
         WorkspaceProfilePic: true,
         Skeleton: true,
