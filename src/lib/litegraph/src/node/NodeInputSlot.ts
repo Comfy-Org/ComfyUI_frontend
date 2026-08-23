@@ -1,5 +1,5 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { LinkId } from '@/lib/litegraph/src/LLink'
+import type { LLink,LinkId } from '@/lib/litegraph/src/LLink'
 import { LabelPosition } from '@/lib/litegraph/src/draw'
 import type {
   INodeInputSlot,
@@ -9,7 +9,8 @@ import type {
 } from '@/lib/litegraph/src/interfaces'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
-import { inputHasLink, inputLinkId } from '@/lib/litegraph/src/node/slotLinks'
+import { inputHasLink, inputLink } from '@/lib/litegraph/src/node/slotLinks'
+import { restoreLegacyLink } from '@/lib/litegraph/src/node/restoreLegacyLink'
 import { warnDeprecated } from '@/lib/litegraph/src/utils/feedback'
 import type { IDrawOptions } from '@/lib/litegraph/src/node/NodeSlot'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
@@ -19,17 +20,20 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
 export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
   alwaysVisible?: boolean
+  private legacyLink?: LLink
 
   /**
    * @deprecated Reads return the store-derived link id. Assigning null
-   * disconnects through the store; assigning an id is ignored. First-party
-   * code uses the slotLinks helpers and node topology methods.
+   * disconnects through the store; assigning that id again restores the
+   * observed topology when it is still valid.
    */
   get link(): LinkId | null {
     warnDeprecated(
       'input.link is deprecated. Read connectivity via node.isInputConnected(slot) / node.getInputLink(slot); mutate via node.connect() / node.disconnectInput().'
     )
-    return linkIdOf(this)
+    const link = linkOf(this)
+    if (link) this.legacyLink = link
+    return link?.id ?? null
   }
 
   set link(value: LinkId | null) {
@@ -37,7 +41,14 @@ export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
       'Assignment to input.link is deprecated; null disconnects through the link store. Mutate via node.connect() / node.disconnectInput().'
     )
     const slot = indexOf(this)
-    if (value === null && slot !== -1) this._node.disconnectInput(slot)
+    if (slot === -1) return
+    if (value === null) {
+      const link = linkOf(this)
+      if (link) this.legacyLink = link
+      this._node.disconnectInput(slot)
+    } else if (this.legacyLink?.id === value) {
+      restoreLegacyLink(this.legacyLink, this._node, slot, 'input')
+    }
   }
 
   get isWidgetInputSlot(): boolean {
@@ -124,7 +135,10 @@ function indexOf(slot: NodeInputSlot): number {
 }
 
 function linkIdOf(slot: NodeInputSlot): LinkId | null {
+  return linkOf(slot)?.id ?? null
+}
+
+function linkOf(slot: NodeInputSlot): LLink | undefined {
   const { graph } = slot.node
-  if (!graph) return null
-  return inputLinkId(graph, slot.node.id, indexOf(slot)) ?? null
+  return graph ? inputLink(graph, slot.node.id, indexOf(slot)) : undefined
 }
