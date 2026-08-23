@@ -207,7 +207,8 @@ export function useGPUResources() {
   async function initTypeGPU(): Promise<void> {
     if (store.tgpuRoot) {
       /* c8 ignore start */
-      device = store.tgpuRoot.device
+      // typegpu vendors its own WebGPU types; align with @webgpu/types
+      device = store.tgpuRoot.device as GPUDevice
       return
       /* c8 ignore stop */
     }
@@ -215,7 +216,7 @@ export function useGPUResources() {
       /* c8 ignore start — requires functional WebGPU hardware */
       const root = await tgpu.init()
       store.tgpuRoot = root
-      device = root.device
+      device = root.device as GPUDevice
       console.warn('✅ TypeGPU initialized! Root:', root)
       console.warn('Device info:', root.device.limits)
       /* c8 ignore stop */
@@ -494,7 +495,7 @@ export function useGPUResources() {
 
     renderer.renderStrokeToAccumulator(strokePoints, {
       size: effectiveSize,
-      opacity: 0.5,
+      coverage: 1,
       hardness: effectiveHardness,
       color,
       width: store.maskCanvas!.width,
@@ -558,7 +559,7 @@ export function useGPUResources() {
       [{ x: point.x, y: point.y, pressure: opacity }],
       {
         size: effectiveSize,
-        opacity: 0.5,
+        coverage: 1,
         hardness: effectiveHardness,
         color: [1, 1, 1],
         width,

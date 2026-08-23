@@ -5,30 +5,16 @@ import { ref } from 'vue'
 interface UsePaletteSwatchRowOptions {
   modelValue: Ref<string[]>
   container: Readonly<ShallowRef<HTMLDivElement | null>>
-  picker: Readonly<ShallowRef<HTMLInputElement | null>>
 }
 
 export function usePaletteSwatchRow({
   modelValue,
-  container,
-  picker
+  container
 }: UsePaletteSwatchRowOptions) {
-  const pickerIndex = ref<number | null>(null)
-
-  function openPicker(i: number, e: MouseEvent) {
-    e.stopPropagation()
-    pickerIndex.value = i
-    const el = picker.value
-    if (!el) return
-    el.value = modelValue.value[i] || '#ffffff'
-    el.click()
-  }
-
-  function onPickerInput(e: Event) {
-    const v = (e.target as HTMLInputElement).value
-    if (pickerIndex.value === null) return
+  function updateAt(i: number, value: string) {
+    if (modelValue.value[i] === value) return
     const next = modelValue.value.slice()
-    next[pickerIndex.value] = v
+    next[i] = value
     modelValue.value = next
   }
 
@@ -105,8 +91,7 @@ export function usePaletteSwatchRow({
   })
 
   return {
-    openPicker,
-    onPickerInput,
+    updateAt,
     remove,
     addColor,
     onPointerDown

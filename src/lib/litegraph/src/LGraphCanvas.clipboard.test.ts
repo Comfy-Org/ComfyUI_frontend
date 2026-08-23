@@ -2,13 +2,10 @@ import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { flushProxyWidgetMigration } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
 import { autoExposeKnownPreviewNodes } from '@/core/graph/subgraph/promotionUtils'
-import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import {
   LGraph,
   LGraphCanvas,
@@ -26,6 +23,8 @@ import type {
 } from '@/lib/litegraph/src/types/serialisation'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
+
+import { registerTestSubgraphNodeTypes } from './subgraph/__fixtures__/subgraphHelpers'
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({})
@@ -194,7 +193,6 @@ describe('_deserializeItems paste-time migration & auto-expose', () => {
   const registeredTypesToCleanup: string[] = []
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     originalFlush = LGraph.proxyWidgetMigrationFlush
     originalAutoExpose = LGraph.autoExposePreviewNodes
   })
@@ -207,29 +205,6 @@ describe('_deserializeItems paste-time migration & auto-expose', () => {
     }
     registeredTypesToCleanup.length = 0
   })
-
-  function registerSubgraphNodeTypeOnCreate(rootGraph: LGraph): void {
-    rootGraph.events.addEventListener('subgraph-created', (e) => {
-      const { subgraph } = e.detail
-      class TestSubgraphNode extends SubgraphNode {
-        constructor() {
-          super(rootGraph, subgraph as Subgraph, {
-            id: -1,
-            type: subgraph.id,
-            pos: [0, 0],
-            size: [100, 100],
-            inputs: [],
-            outputs: [],
-            flags: {},
-            order: 0,
-            mode: 0
-          })
-        }
-      }
-      LiteGraph.registerNodeType(subgraph.id, TestSubgraphNode)
-      registeredTypesToCleanup.push(subgraph.id)
-    })
-  }
 
   function createCanvas(graph: LGraph): LGraphCanvas {
     const el = document.createElement('canvas')
@@ -309,7 +284,7 @@ describe('_deserializeItems paste-time migration & auto-expose', () => {
       })
 
     const rootGraph = new LGraph()
-    registerSubgraphNodeTypeOnCreate(rootGraph)
+    registerTestSubgraphNodeTypes(rootGraph)
     const canvas = createCanvas(rootGraph)
 
     const subgraphId = createUuidv4()
@@ -385,7 +360,7 @@ describe('_deserializeItems paste-time migration & auto-expose', () => {
       autoExposeKnownPreviewNodes(hostNode)
 
     const rootGraph = new LGraph()
-    registerSubgraphNodeTypeOnCreate(rootGraph)
+    registerTestSubgraphNodeTypes(rootGraph)
     const canvas = createCanvas(rootGraph)
 
     const subgraphId = createUuidv4()

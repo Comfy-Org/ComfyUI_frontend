@@ -15,7 +15,6 @@ vi.mock('posthog-js', () => ({
 
 describe('initPostHog', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     vi.resetModules()
   })
 
@@ -56,7 +55,6 @@ describe('initPostHog', () => {
 
 describe('captureDownloadClick', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     vi.resetModules()
   })
 
@@ -74,6 +72,30 @@ describe('captureDownloadClick', () => {
   it('does not capture before PostHog is initialized', async () => {
     const { captureDownloadClick } = await import('./posthog')
     captureDownloadClick('windows')
+
+    expect(hoisted.mockCapture).not.toHaveBeenCalled()
+  })
+})
+
+describe('captureMcpClientTabClick', () => {
+  beforeEach(() => {
+    vi.resetModules()
+  })
+
+  it('captures the tab click with the client id', async () => {
+    const { initPostHog, captureMcpClientTabClick } = await import('./posthog')
+    initPostHog()
+    captureMcpClientTabClick('claude-code')
+
+    expect(hoisted.mockCapture).toHaveBeenCalledWith(
+      'website:mcp_client_tab_clicked',
+      { client: 'claude-code' }
+    )
+  })
+
+  it('does not capture before PostHog is initialized', async () => {
+    const { captureMcpClientTabClick } = await import('./posthog')
+    captureMcpClientTabClick('cursor')
 
     expect(hoisted.mockCapture).not.toHaveBeenCalled()
   })

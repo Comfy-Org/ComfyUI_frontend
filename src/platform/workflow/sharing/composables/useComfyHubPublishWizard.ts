@@ -51,6 +51,7 @@ function extractPrefillFromFormData(
   formData: ComfyHubPublishFormData
 ): PublishPrefill {
   return {
+    name: formData.name || undefined,
     description: formData.description || undefined,
     tags: formData.tags.length > 0 ? normalizeTags(formData.tags) : undefined,
     thumbnailType: formData.thumbnailType,
@@ -109,6 +110,10 @@ export function useComfyHubPublishWizard() {
       : (prefill.thumbnailUrl ?? current.thumbnailUrl)
     formData.value = {
       ...current,
+      name:
+        current.name === defaults.name
+          ? (prefill.name ?? current.name)
+          : current.name,
       description:
         current.description === defaults.description
           ? (prefill.description ?? current.description)

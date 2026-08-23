@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
+import Button from '../ui/button/Button.vue'
+
 const { title, description, cta, href, bg } = defineProps<{
   title: string
   description: string
@@ -28,11 +30,14 @@ const { title, description, cta, href, bg } = defineProps<{
       <p class="text-sm text-white/70">
         {{ description }}
       </p>
-      <span
-        class="bg-primary-comfy-yellow text-primary-comfy-ink mt-4 inline-block rounded-xl px-4 py-2 text-xs font-bold tracking-wide"
+      <Button
+        as="span"
+        variant="default"
+        size="sm"
+        class="mt-4 h-auto whitespace-normal"
       >
         {{ cta }}
-      </span>
+      </Button>
     </div>
   </a>
 </template>

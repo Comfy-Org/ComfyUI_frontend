@@ -152,10 +152,32 @@ async function loadAudioUploadWidget() {
 
 describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     capturedDragDrop = undefined
     capturedFileSelect = undefined
     capturedPaste = undefined
+  })
+
+  it('does not preview an empty audio option', async () => {
+    const AUDIOUPLOAD = await loadAudioUploadWidget()
+    const { audioWidget, node } = createAudioNode()
+    audioWidget.value = 'none'
+    audioWidget.options.values = ['none']
+
+    AUDIOUPLOAD(node, 'upload')
+
+    expect(mockApiURL).not.toHaveBeenCalled()
+
+    audioWidget.value = ''
+    audioWidget.options.values = []
+    audioWidget.callback()
+    expect(mockApiURL).not.toHaveBeenCalled()
+
+    audioWidget.value = 'none'
+    audioWidget.options.values = ['none', 'other.mp3']
+    audioWidget.callback()
+    expect(mockApiURL).toHaveBeenCalledWith(
+      '/view?filename=none&subfolder=&type=input'
+    )
   })
 
   it('sets isUploading while upload is in progress and clears it after success', async () => {

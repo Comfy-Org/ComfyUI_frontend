@@ -84,13 +84,14 @@ export function useExternalLink() {
 
   const staticUrls = {
     // Static external URLs
-    discord: 'https://www.comfy.org/discord',
+    discord: 'https://discord.com/invite/comfyorg',
     github: 'https://github.com/Comfy-Org/ComfyUI',
     githubIssues: 'https://github.com/Comfy-Org/ComfyUI/issues',
     githubFrontend: 'https://github.com/Comfy-Org/ComfyUI_frontend',
     githubElectron: 'https://github.com/Comfy-Org/electron',
     forum: 'https://forum.comfy.org/',
-    comfyOrg: 'https://www.comfy.org/'
+    comfyOrg: 'https://www.comfy.org/',
+    status: 'https://status.comfy.org/'
   }
 
   /** Common doc paths for use with buildDocsUrl */

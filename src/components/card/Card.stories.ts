@@ -11,7 +11,7 @@ import CardTop from './CardTop.vue'
 
 interface CardStoryArgs {
   // CardContainer props
-  containerSize: 'mini' | 'compact' | 'regular' | 'portrait' | 'tall'
+  containerSize: 'mini' | 'compact' | 'regular' | 'portrait' | 'tall' | 'auto'
   variant: 'default' | 'ghost' | 'outline'
   rounded: 'none' | 'sm' | 'lg' | 'xl'
   customAspectRatio?: string
@@ -54,7 +54,7 @@ const meta: Meta<CardStoryArgs> = {
   argTypes: {
     containerSize: {
       control: 'select',
-      options: ['mini', 'compact', 'regular', 'portrait', 'tall'],
+      options: ['mini', 'compact', 'regular', 'portrait', 'tall', 'auto'],
       description: 'Card container size preset'
     },
     variant: {
