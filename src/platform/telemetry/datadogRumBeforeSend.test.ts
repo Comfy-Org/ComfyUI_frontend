@@ -1,6 +1,8 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import type { RumErrorEvent } from '@datadog/browser-rum'
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { setAssertReporter } from '@/base/assert'
 
 import { classifyRumErrorOrigin, rumBeforeSend } from './datadogRumBeforeSend'
 
@@ -16,6 +18,14 @@ function createErrorEvent(
 }
 
 describe('rumBeforeSend', () => {
+  beforeEach(() => {
+    setAssertReporter(vi.fn())
+  })
+
+  afterEach(() => {
+    setAssertReporter(null)
+  })
+
   it('drops known third-party network noise', () => {
     const event = createErrorEvent(
       'Failed to fetch https://px.ads.linkedin.com/pixel'
@@ -39,6 +49,17 @@ describe('rumBeforeSend', () => {
       '[Assertion failed]: graph is corrupt',
       undefined,
       'custom'
+    )
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
+  })
+
+  it('keeps the console copy while no reporter exists to replace it', () => {
+    setAssertReporter(null)
+    const event = createErrorEvent(
+      '[Assertion failed]: fired before boot finished',
+      undefined,
+      'console'
     )
 
     expect(rumBeforeSend(event, fromPartial({}))).toBe(true)

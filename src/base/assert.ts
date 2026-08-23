@@ -1,6 +1,8 @@
 export const ASSERTION_FAILURE_PREFIX = '[Assertion failed]: '
 
-export type AssertReporter = (failure: Error) => void
+export type AssertContext = Record<string, unknown>
+
+export type AssertReporter = (failure: Error, context?: AssertContext) => void
 
 let reporter: AssertReporter | null = null
 
@@ -13,6 +15,10 @@ export function setAssertReporter(fn: AssertReporter | null): void {
   reporter = fn
 }
 
+export function hasAssertReporter(): boolean {
+  return reporter !== null
+}
+
 /**
  * Centralized invariant assertion.
  *
@@ -20,11 +26,15 @@ export function setAssertReporter(fn: AssertReporter | null): void {
  * - DEV: throws (surfaces bugs immediately)
  * - Otherwise: delegates to registered reporter (Sentry, toast, etc.)
  *
- * Reporters forward `message` to external telemetry, so it must be a static
- * description of the invariant. Never interpolate user data (workflow names,
- * paths, prompts) into it.
+ * `context` reaches the reporter as structured data. Put high-cardinality or
+ * user-derived values there rather than in `message`, which is what the error
+ * sinks group on.
  */
-export function assert(condition: unknown, message: string): asserts condition {
+export function assert(
+  condition: unknown,
+  message: string,
+  context?: AssertContext
+): asserts condition {
   if (condition) return
 
   const formatted = `${ASSERTION_FAILURE_PREFIX}${message}`
@@ -37,7 +47,7 @@ export function assert(condition: unknown, message: string): asserts condition {
   }
 
   try {
-    reporter?.(failure)
+    reporter?.(failure, context)
   } catch (error) {
     console.error('[Assertion reporter failed]', error)
   }

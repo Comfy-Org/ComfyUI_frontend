@@ -13,10 +13,11 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
  * diagnostics, not user-facing copy in stable releases.
  */
 export function createAssertReporter(pinia: Pinia): AssertReporter {
-  return (failure) => {
+  return (failure, context) => {
     reportError(failure, {
       errorType: 'assertion_failure',
-      level: 'warning'
+      level: 'warning',
+      context
     })
 
     if (isNightly) {

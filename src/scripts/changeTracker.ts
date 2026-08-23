@@ -239,7 +239,9 @@ function reportInactiveTrackerCall(method: string, workflowPath: string) {
   const key = `${method}:${workflowPath}`
   if (reportedInactiveCalls.has(key)) return
   reportedInactiveCalls.add(key)
-  assert(false, `ChangeTracker.${method}() called on inactive tracker`)
+  assert(false, `ChangeTracker.${method}() called on inactive tracker`, {
+    workflowPath
+  })
 }
 
 export class ChangeTracker {

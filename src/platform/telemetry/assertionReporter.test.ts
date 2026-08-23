@@ -40,7 +40,7 @@ describe('createAssertReporter', () => {
     vi.stubEnv('DEV', false)
     setAssertReporter(createAssertReporter(createPinia()))
 
-    assert(false, 'graph is corrupt')
+    assert(false, 'graph is corrupt', { workflowPath: 'a/b.json' })
 
     expect(captureException).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -48,7 +48,8 @@ describe('createAssertReporter', () => {
       }),
       expect.objectContaining({
         level: 'warning',
-        tags: expect.objectContaining({ error_type: 'assertion_failure' })
+        tags: expect.objectContaining({ error_type: 'assertion_failure' }),
+        extra: { workflowPath: 'a/b.json' }
       })
     )
   })
