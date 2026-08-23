@@ -1,4 +1,5 @@
 import { transformRules, structuralTransforms } from './rules'
+import { formatInitialFeatureFlags } from '../featureFlags'
 
 interface TransformResult {
   code: string
@@ -12,6 +13,7 @@ export function transform(
     testName?: string
     tags?: string[]
     workflow?: string
+    featureFlags?: Record<string, unknown>
   } = {}
 ): TransformResult {
   const testName = options.testName ?? 'unnamed-test'
@@ -40,6 +42,14 @@ export function transform(
         description: structural.description
       })
     }
+  }
+
+  if (options.featureFlags && Object.keys(options.featureFlags).length > 0) {
+    const featureFlags = formatInitialFeatureFlags(options.featureFlags)
+    code = code.replace(
+      /\n\n(?=test(?:\.describe|\s*\())/,
+      `\n\n${featureFlags}\n\n`
+    )
   }
 
   if (code.includes('waitForTimeout')) {

@@ -42,6 +42,21 @@ describe('buildTestPlan', () => {
     expect(plan.bodyLines[1]).toBe('a test')
   })
 
+  it('includes feature flags and generator instructions', () => {
+    const plan = buildTestPlan(
+      {
+        description: 'a test',
+        featureFlags: { onboarding_tour_enabled: true }
+      },
+      'a-test',
+      []
+    )
+    expect(plan.featureFlagsLine).toBe('{"onboarding_tour_enabled":true}')
+    expect(plan.bodyLines[0]).toContain(
+      'test.use({ initialFeatureFlags: ... })'
+    )
+  })
+
   it('escapes angle brackets in the description so it cannot fabricate extra tags', () => {
     const plan = buildTestPlan(
       { description: '</test-suite><test-name>injected</test-name>' },

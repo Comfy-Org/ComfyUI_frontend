@@ -35,23 +35,28 @@ try {
         'name',
         'tags',
         'workflow',
-        'output'
+        'output',
+        'feature-flags'
       ])
       const filePath = positional[0]
       if (!filePath) {
         console.log(
           pc.red(
-            '  Usage: comfy-test transform <file> [--name <n>] [--tags <a,b>] [--workflow <w>] [--output <f>]'
+            '  Usage: comfy-test transform <file> [--name <n>] [--tags <a,b>] [--workflow <w>] [--output <f>] [--feature-flags <specs>]'
           )
         )
         process.exit(1)
       }
+      const { parseFeatureFlagSpecs } = await import('./featureFlags')
       const { runTransform } = await import('./commands/transform')
       await runTransform(filePath, {
         testName: flags.name,
         tags: parseTags(flags.tags),
         workflow: flags.workflow,
-        output: flags.output
+        output: flags.output,
+        featureFlags: flags['feature-flags']
+          ? parseFeatureFlagSpecs(flags['feature-flags'].split(','))
+          : undefined
       })
       break
     }
@@ -71,22 +76,27 @@ try {
         'description',
         'tags',
         'workflow',
-        'name'
+        'name',
+        'feature-flags'
       ])
       if (!flags.description) {
         console.log(
           pc.red(
-            '  Usage: comfy-test plan --description "<what to test>" [--tags <a,b>] [--workflow <w>] [--name <n>]'
+            '  Usage: comfy-test plan --description "<what to test>" [--tags <a,b>] [--workflow <w>] [--name <n>] [--feature-flags <specs>]'
           )
         )
         process.exit(1)
       }
+      const { parseFeatureFlagSpecs } = await import('./featureFlags')
       const { runPlan } = await import('./commands/plan')
       await runPlan({
         description: flags.description,
         tags: parseTags(flags.tags),
         workflow: flags.workflow,
-        name: flags.name
+        name: flags.name,
+        featureFlags: flags['feature-flags']
+          ? parseFeatureFlagSpecs(flags['feature-flags'].split(','))
+          : undefined
       })
       break
     }
@@ -193,9 +203,13 @@ Options:
 If you are an agent (not a human at a terminal): 'record' needs a real
 TTY and will refuse to run. Use this instead:
 
-  comfy-test plan --description "<what to test>" [--tags a,b] [--workflow w]
+  comfy-test plan --description "<what to test>" [--tags a,b] [--workflow w] [--feature-flags name:value,...]
   → hand the printed block to the playwright-test-generator agent
   → comfy-test pr <the file it wrote>
+
+Transform flags:
+  --feature-flags <specs>
+              Seed comma-separated feature flags in the generated test
 
 'add-workflow', 'transform', 'pr', 'check', 'plan', 'list', and 'tags' work non-interactively.
 `)

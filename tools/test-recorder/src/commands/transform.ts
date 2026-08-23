@@ -12,6 +12,7 @@ export async function runTransform(
     tags?: string[]
     output?: string
     workflow?: string
+    featureFlags?: Record<string, unknown>
   } = {}
 ): Promise<void> {
   header('Transform Codegen → Conventions')
@@ -33,7 +34,8 @@ export async function runTransform(
   const result = transform(rawCode, {
     testName,
     tags,
-    workflow: options.workflow
+    workflow: options.workflow,
+    featureFlags: options.featureFlags
   })
 
   console.log('  Transforms applied:')

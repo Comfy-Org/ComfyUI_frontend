@@ -12,6 +12,7 @@ export interface PlanOptions {
   tags?: string[]
   workflow?: string
   name?: string
+  featureFlags?: Record<string, unknown>
 }
 
 export interface TestPlan {
@@ -20,6 +21,7 @@ export interface TestPlan {
   testFile: string
   seedFile: string
   tagLine: string
+  featureFlagsLine?: string
   bodyLines: string[]
 }
 
@@ -48,6 +50,11 @@ export function buildTestPlan(
         `Call \`generator_setup_page\`, then load the workflow: comfyPage.workflow.loadWorkflow(${JSON.stringify(options.workflow)})`
       ]
     : []
+  const featureFlagsStep = options.featureFlags
+    ? [
+        'Add `test.use({ initialFeatureFlags: ... })` above the test using the feature flags provided.'
+      ]
+    : []
 
   return {
     testSuite: description,
@@ -55,8 +62,12 @@ export function buildTestPlan(
     testFile: `browser_tests/tests/${slug}.spec.ts`,
     seedFile: SEED_FILE,
     tagLine: tags.length > 0 ? tags.join(', ') : '@canvas',
+    featureFlagsLine: options.featureFlags
+      ? escapeForHandoff(JSON.stringify(options.featureFlags))
+      : undefined,
     bodyLines: [
       ...workflowStep,
+      ...featureFlagsStep,
       description,
       'Add at least one assertion verifying the expected result'
     ]
@@ -72,6 +83,9 @@ function printTestPlan(plan: TestPlan): void {
   console.log(`  <test-file>${plan.testFile}</test-file>`)
   console.log(`  <seed-file>${plan.seedFile}</seed-file>`)
   console.log(`  <tag>${plan.tagLine}</tag>`)
+  if (plan.featureFlagsLine) {
+    console.log(`  <feature-flags>${plan.featureFlagsLine}</feature-flags>`)
+  }
   console.log('  <body>')
   plan.bodyLines.forEach((line, i) => console.log(`  ${i + 1}. ${line}`))
   console.log('  </body>')

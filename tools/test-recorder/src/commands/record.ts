@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import {
   text,
   autocomplete,
+  autocompleteMultiselect,
   multiselect,
   confirm,
   isCancel,
@@ -37,6 +38,7 @@ import {
   resolveDistribution
 } from '../devserver/distributions'
 import { ensureDevServer } from '../devserver/manager'
+import { discoverFlagKeys, parseFeatureFlagSpecs } from '../featureFlags'
 
 const PASTE_SENTINEL = '.'
 const ADD_WORKFLOW_SENTINEL = '__add-workflow__'
@@ -348,6 +350,46 @@ export async function runRecord(): Promise<void> {
     }
   }
 
+  const overrideFeatureFlags = await confirm({
+    message: 'Override feature flags for this test?',
+    initialValue: false
+  })
+  if (isCancel(overrideFeatureFlags)) {
+    cancel('Operation cancelled')
+    process.exit(0)
+  }
+
+  let selectedFeatureFlags: string[] = []
+  if (overrideFeatureFlags) {
+    const availableFlags = discoverFlagKeys(projectRoot)
+    if (availableFlags.length > 0) {
+      const selected = await autocompleteMultiselect({
+        message: 'Select feature flags to enable:',
+        options: availableFlags.map((flag) => ({ value: flag, label: flag })),
+        required: false
+      })
+      if (isCancel(selected)) {
+        cancel('Operation cancelled')
+        process.exit(0)
+      }
+      selectedFeatureFlags = selected
+    }
+
+    const customFlags = await text({
+      message: 'Custom flags (name:value, comma-separated, blank to skip)',
+      placeholder: 'asset_rename_enabled:false, custom_flag:12'
+    })
+    if (isCancel(customFlags)) {
+      cancel('Operation cancelled')
+      process.exit(0)
+    }
+    selectedFeatureFlags = [
+      ...selectedFeatureFlags,
+      ...customFlags.split(',').map((flag) => flag.trim())
+    ]
+  }
+  const featureFlags = parseFeatureFlagSpecs(selectedFeatureFlags)
+
   stepHeader(5, 7, 'Record')
 
   const serverSpinner = spinner()
@@ -372,6 +414,7 @@ export async function runRecord(): Promise<void> {
     result = await runRecording({
       testName: slug,
       workflow: seedWorkflow || undefined,
+      featureFlags,
       projectRoot
     })
   } finally {
@@ -416,7 +459,8 @@ export async function runRecord(): Promise<void> {
   const transformResult = transform(recordedCode, {
     testName: slug,
     tags: selectedTags as string[],
-    workflow: seedWorkflow || undefined
+    workflow: seedWorkflow || undefined,
+    featureFlags
   })
 
   blank()

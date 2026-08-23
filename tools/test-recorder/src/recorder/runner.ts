@@ -15,6 +15,7 @@ import { box, info } from '../ui/logger'
 interface RunnerOptions {
   testName: string
   workflow?: string
+  featureFlags?: Record<string, unknown>
   projectRoot: string
 }
 
@@ -72,7 +73,11 @@ export async function runRecording(
   const browserTestsDir = join(options.projectRoot, 'browser_tests')
 
   generateRecordingTemplate(
-    { testName: options.testName, workflow: options.workflow },
+    {
+      testName: options.testName,
+      workflow: options.workflow,
+      featureFlags: options.featureFlags
+    },
     browserTestsDir
   )
 

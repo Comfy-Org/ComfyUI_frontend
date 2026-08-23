@@ -34,6 +34,18 @@ test('my test', async ({ page }) => {
     expect(result.code).toContain('"canvas test"')
   })
 
+  it('injects feature flags between imports and the test suite', () => {
+    const result = transform(rawCodegenOutput, {
+      featureFlags: { onboarding_tour_enabled: true }
+    })
+    const importAt = result.code.indexOf("from '@e2e/fixtures/ComfyPage'")
+    const useAt = result.code.indexOf('test.use({')
+    const describeAt = result.code.indexOf('test.describe(')
+    expect(useAt).toBeGreaterThan(importAt)
+    expect(useAt).toBeLessThan(describeAt)
+    expect(result.code).toContain('onboarding_tour_enabled: true')
+  })
+
   it('warns about remaining pixel coordinates', () => {
     const input = `import { test } from '@playwright/test'
 

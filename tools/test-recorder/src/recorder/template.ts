@@ -1,9 +1,11 @@
 import { writeFileSync, mkdirSync, unlinkSync } from 'node:fs'
 import { join, dirname } from 'node:path'
+import { formatInitialFeatureFlags } from '../featureFlags'
 
 interface TemplateOptions {
   workflow?: string
   testName: string
+  featureFlags?: Record<string, unknown>
 }
 
 export const RECORDING_SPEC_BASENAME = '_recording-session'
@@ -32,6 +34,10 @@ export function generateRecordingTemplate(
 
   const safeName = JSON.stringify(`recording: ${options.testName}`)
   const safeOutputPath = JSON.stringify(outputPath)
+  const featureFlags = options.featureFlags
+    ? formatInitialFeatureFlags(options.featureFlags)
+    : ''
+  const featureFlagsBlock = featureFlags ? `${featureFlags}\n\n` : ''
 
   const code = `/**
  * Auto-generated recording session.
@@ -44,7 +50,7 @@ import {
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
 
-test(${safeName}, async ({ comfyPage }) => {
+${featureFlagsBlock}test(${safeName}, async ({ comfyPage }) => {
 ${workflowLine}
   // _enableRecorder is a private playwright-core API — same underlying
   // machinery as \`playwright codegen -o <file>\`, just reached through the

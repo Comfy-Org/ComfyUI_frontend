@@ -27,7 +27,11 @@ describe('recording template', () => {
     rmSync(browserTestsDir, { recursive: true, force: true })
   })
 
-  function generate(options: { testName: string; workflow?: string }) {
+  function generate(options: {
+    testName: string
+    workflow?: string
+    featureFlags?: Record<string, unknown>
+  }) {
     const path = generateRecordingTemplate(options, browserTestsDir)
     return { path, code: readFileSync(path, 'utf-8') }
   }
@@ -47,6 +51,19 @@ describe('recording template', () => {
 
   it('omits the load when recording starts on an empty canvas', () => {
     expect(generate({ testName: 'demo' }).code).not.toContain('loadWorkflow')
+  })
+
+  it('seeds selected feature flags before the recorded test', () => {
+    const { code } = generate({
+      testName: 'demo',
+      featureFlags: { onboarding_tour_enabled: true }
+    })
+    const useAt = code.indexOf('test.use({')
+    expect(useAt).toBeGreaterThan(
+      code.indexOf("from '@e2e/fixtures/ComfyPage'")
+    )
+    expect(useAt).toBeLessThan(code.indexOf('test("recording: demo"'))
+    expect(code).toContain('onboarding_tour_enabled: true')
   })
 
   // Asset names come off disk, so a crafted filename must stay data rather
