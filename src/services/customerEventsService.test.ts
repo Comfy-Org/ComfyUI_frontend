@@ -13,7 +13,7 @@ const mockAxiosInstance = vi.hoisted(() => ({
 }))
 
 const mockAuthStore = vi.hoisted(() => ({
-  getAuthHeader: vi.fn()
+  getFirebaseAuthHeader: vi.fn()
 }))
 
 const mockI18n = vi.hoisted(() => ({
@@ -80,8 +80,7 @@ describe('useCustomerEventsService', () => {
   }
 
   beforeEach(() => {
-    // Setup default mocks
-    mockAuthStore.getAuthHeader.mockResolvedValue(mockAuthHeaders)
+    mockAuthStore.getFirebaseAuthHeader.mockResolvedValue(mockAuthHeaders)
     mockI18n.d.mockImplementation((date, options) => {
       // Mock i18n date formatting
       if (options?.month === 'short') {
@@ -118,7 +117,7 @@ describe('useCustomerEventsService', () => {
         limit: 10
       })
 
-      expect(mockAuthStore.getAuthHeader).toHaveBeenCalled()
+      expect(mockAuthStore.getFirebaseAuthHeader).toHaveBeenCalled()
       expect(mockAxiosInstance.get).toHaveBeenCalledWith('/customers/events', {
         params: { page: 1, limit: 10 },
         headers: mockAuthHeaders
@@ -141,7 +140,7 @@ describe('useCustomerEventsService', () => {
     })
 
     it('should return null when auth headers are missing', async () => {
-      mockAuthStore.getAuthHeader.mockResolvedValue(null)
+      mockAuthStore.getFirebaseAuthHeader.mockResolvedValue(null)
 
       const result = await service.getMyEvents()
 

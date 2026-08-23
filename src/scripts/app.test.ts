@@ -69,7 +69,7 @@ const {
     getApiKey: vi.fn()
   },
   mockAuthStore: {
-    getAuthToken: vi.fn()
+    getWorkspaceAuthToken: vi.fn()
   },
   mockSettingStore: {
     get: vi.fn()
@@ -225,11 +225,12 @@ function createTestFile(name: string, type: string): File {
  * Point the workflowService mock at the real implementation for tests that
  * exercise the load lifecycle itself rather than app.ts's calls into it.
  */
+const actualWorkflowService = await vi.importActual<
+  typeof import('@/platform/workflow/core/services/workflowService')
+>('@/platform/workflow/core/services/workflowService')
+
 async function useRealWorkflowService(): Promise<WorkflowService> {
-  const actual = await vi.importActual<
-    typeof import('@/platform/workflow/core/services/workflowService')
-  >('@/platform/workflow/core/services/workflowService')
-  const real = actual.useWorkflowService()
+  const real = actualWorkflowService.useWorkflowService()
   mockWorkflowService.beforeLoadNewGraph.mockImplementation(
     real.beforeLoadNewGraph
   )
@@ -282,7 +283,7 @@ describe('ComfyApp', () => {
       return workflow
     })
     mockApiKeyAuthStore.getApiKey.mockReturnValue(undefined)
-    mockAuthStore.getAuthToken.mockResolvedValue(undefined)
+    mockAuthStore.getWorkspaceAuthToken.mockResolvedValue(undefined)
     mockExtensionService.invokeExtensions.mockReturnValue([])
     mockExtensionService.invokeExtensionsAsync.mockResolvedValue(undefined)
     vi.mocked(extractFilesFromDragEvent).mockResolvedValue([])
@@ -310,6 +311,32 @@ describe('ComfyApp', () => {
       })
       vi.spyOn(api, 'dispatchCustomEvent').mockImplementation(() => true)
     }
+
+    it('waits for workspace authentication before submitting the prompt', async () => {
+      prepareEmptyPromptQueue()
+      let resolveToken: (token: string) => void = () => {}
+      mockAuthStore.getWorkspaceAuthToken.mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveToken = resolve
+        })
+      )
+      const queuePrompt = vi
+        .spyOn(api, 'queuePrompt')
+        .mockImplementation(() => {
+          expect(api.authToken).toBe('workspace-token')
+          return Promise.resolve({ prompt_id: 'job-1', error: '' })
+        })
+
+      const submission = app.queuePrompt(0)
+      await vi.waitFor(() =>
+        expect(mockAuthStore.getWorkspaceAuthToken).toHaveBeenCalledOnce()
+      )
+      expect(queuePrompt).not.toHaveBeenCalled()
+
+      resolveToken('workspace-token')
+      await expect(submission).resolves.toBe(true)
+      expect(queuePrompt).toHaveBeenCalledOnce()
+    })
 
     it('preserves missing node packs when submitting a prompt', async () => {
       prepareEmptyPromptQueue()

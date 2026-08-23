@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const {
   mockAxiosInstance,
-  mockGetAuthHeaderOrThrow,
+  mockGetWorkspaceAuthHeaderOrThrow,
   mockGetFirebaseAuthHeaderOrThrow
 } = vi.hoisted(() => ({
   mockAxiosInstance: {
@@ -12,7 +12,7 @@ const {
     delete: vi.fn(),
     interceptors: { response: { use: vi.fn() } }
   },
-  mockGetAuthHeaderOrThrow: vi.fn(),
+  mockGetWorkspaceAuthHeaderOrThrow: vi.fn(),
   mockGetFirebaseAuthHeaderOrThrow: vi.fn()
 }))
 
@@ -40,9 +40,13 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
+vi.mock('./workspaceApiUrl', () => ({
+  workspaceApiUrl: (path: string) => `/api${path}`
+}))
+
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: () => ({
-    getAuthHeaderOrThrow: mockGetAuthHeaderOrThrow,
+    getWorkspaceAuthHeaderOrThrow: mockGetWorkspaceAuthHeaderOrThrow,
     getFirebaseAuthHeaderOrThrow: mockGetFirebaseAuthHeaderOrThrow
   })
 }))
@@ -53,14 +57,14 @@ const AUTH_HEADER = { Authorization: 'Bearer test-token' }
 
 describe('workspaceApi', () => {
   beforeEach(() => {
-    mockGetAuthHeaderOrThrow.mockResolvedValue(AUTH_HEADER)
+    mockGetWorkspaceAuthHeaderOrThrow.mockResolvedValue(AUTH_HEADER)
     mockGetFirebaseAuthHeaderOrThrow.mockResolvedValue(AUTH_HEADER)
   })
 
   describe('authentication', () => {
-    it('propagates error when getAuthHeaderOrThrow rejects', async () => {
+    it('propagates error when workspace authentication rejects', async () => {
       const authError = new Error('toastMessages.userNotAuthenticated')
-      mockGetAuthHeaderOrThrow.mockRejectedValue(authError)
+      mockGetWorkspaceAuthHeaderOrThrow.mockRejectedValue(authError)
 
       await expect(workspaceApi.list()).rejects.toBe(authError)
     })
@@ -332,7 +336,7 @@ describe('workspaceApi', () => {
       const result = await workspaceApi.acceptInvite('abc-token')
 
       expect(mockGetFirebaseAuthHeaderOrThrow).toHaveBeenCalled()
-      expect(mockGetAuthHeaderOrThrow).not.toHaveBeenCalled()
+      expect(mockGetWorkspaceAuthHeaderOrThrow).not.toHaveBeenCalled()
       expect(mockAxiosInstance.post).toHaveBeenCalledWith(
         '/api/invites/abc-token/accept',
         null,
@@ -435,15 +439,23 @@ describe('workspaceApi', () => {
   })
 
   describe('subscription', () => {
-    it('previewSubscribe() sends POST with plan_slug', async () => {
+    it('previewSubscribe() sends only fields defined by the ingest contract', async () => {
       const data = { allowed: true, transition_type: 'new_subscription' }
       mockAxiosInstance.post.mockResolvedValue({ data })
 
-      const result = await workspaceApi.previewSubscribe('pro-monthly')
+      const result = await workspaceApi.previewSubscribe(
+        'team_per_credit_annual',
+        {
+          teamCreditStopId: 'team_700'
+        }
+      )
 
       expect(mockAxiosInstance.post).toHaveBeenCalledWith(
         '/api/billing/preview-subscribe',
-        { plan_slug: 'pro-monthly' },
+        {
+          plan_slug: 'team_per_credit_annual',
+          team_credit_stop_id: 'team_700'
+        },
         { headers: AUTH_HEADER }
       )
       expect(result).toEqual(data)

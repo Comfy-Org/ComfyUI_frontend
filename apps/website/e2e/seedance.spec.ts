@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 
-import { externalLinks, getRoutes } from '../src/config/routes'
+import { getRoutes } from '../src/config/routes'
 import { creatorReviews } from '../src/data/creatorReviews'
 import { seedancePage } from '../src/data/seedance'
 import { t } from '../src/i18n/translations'
@@ -20,7 +20,10 @@ const HERO_PRIMARY_CTA: ModelLaunchCta | undefined =
 if (!HERO_PRIMARY_CTA)
   throw new Error('seedancePage must configure a hero primary CTA')
 const SEEDANCE_RUN: string = HERO_PRIMARY_CTA.href
-const CLOUD_WORKFLOWS_HUB = externalLinks.workflows
+// The hub's Seedance family page, which lists the shipped 2.5 workflows. The
+// CTA used to open the hub root, leaving the reader to find the model they had
+// just read about.
+const SEEDANCE_HUB_PAGE: string = seedancePage.hero.secondaryCta?.href ?? ''
 const PROMPT_CTA = t('seedance.hero.promptCta', 'en')
 const COPY_PROMPT = t('modelLaunch.copyPrompt', 'en')
 // `faq` is optional on the template (Wan Animate 2 ships without one), but
@@ -106,7 +109,9 @@ test.describe('Seedance 2.5 page — link targets', () => {
     await expect(primary).toHaveAttribute('href', /video_wan2_2/)
   })
 
-  test('the hero run CTA opens the same Cloud workflow', async ({ page }) => {
+  test('the hero CTAs open Cloud to run and the hub to browse', async ({
+    page
+  }) => {
     const hero = page.locator('section').filter({
       has: page.getByRole('heading', { level: 1, name: HERO_TITLE })
     })
@@ -116,7 +121,10 @@ test.describe('Seedance 2.5 page — link targets', () => {
 
     await expect(
       hero.getByRole('link', { name: t('seedance.hero.secondaryCta', 'en') })
-    ).toHaveAttribute('href', CLOUD_WORKFLOWS_HUB)
+    ).toHaveAttribute('href', SEEDANCE_HUB_PAGE)
+    await expect(
+      hero.getByRole('link', { name: t('seedance.hero.secondaryCta', 'en') })
+    ).toHaveAttribute('href', /\/workflows\/model\/seedance$/)
   })
 
   test('renders one step card per configured step', async ({ page }) => {
