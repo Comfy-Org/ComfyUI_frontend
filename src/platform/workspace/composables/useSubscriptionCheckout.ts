@@ -29,6 +29,10 @@ import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import {
+  clearPendingSubscriptionCheckout,
+  savePendingSubscriptionCheckout
+} from '@/platform/workspace/utils/pendingSubscriptionCheckout'
 import { trackWorkspaceCheckoutStarted } from '@/platform/workspace/utils/workspaceCheckoutTelemetry'
 
 type CheckoutStep = 'pricing' | 'preview' | 'success'
@@ -1193,6 +1197,8 @@ export function useSubscriptionCheckout(
       return
     }
 
+    savePendingCheckout(response.billing_op_id, context)
+
     let initialActionUrl: string | undefined
     if (response.status === 'needs_payment_method') {
       if (!response.payment_method_url) {
@@ -1217,6 +1223,41 @@ export function useSubscriptionCheckout(
     )
   }
 
+  function savePendingCheckout(
+    operationId: string,
+    context: SubscriptionOutcomeContext
+  ): void {
+    const workspaceId = workspaceStore.activeWorkspaceId
+    if (context.attemptStartedAt === undefined || !workspaceId) return
+
+    if (context.tier === 'team') {
+      const teamCreditStopId = selectedTeamCheckout.value?.stop.id
+      if (!teamCreditStopId) return
+      savePendingSubscriptionCheckout({
+        operationId,
+        workspaceId,
+        selection: {
+          planMode: 'team',
+          teamCreditStopId,
+          billingCycle: context.cycle
+        },
+        attemptedAt: context.attemptStartedAt
+      })
+      return
+    }
+
+    savePendingSubscriptionCheckout({
+      operationId,
+      workspaceId,
+      selection: {
+        planMode: 'personal',
+        tierKey: context.tier,
+        billingCycle: context.cycle
+      },
+      attemptedAt: context.attemptStartedAt
+    })
+  }
+
   // A Stripe-backed subscribe finishes asynchronously: await the billing op and
   // advance to the success step ourselves. The store refreshes status/balance
   // before resolving and surfaces any failure via toast.
@@ -1226,33 +1267,37 @@ export function useSubscriptionCheckout(
     initialActionUrl?: string
   ) {
     activeCheckoutOperationId.value = opId
-    const metadata = {
-      tier: context.tier,
-      cycle: context.cycle,
-      checkoutType: context.checkoutType,
-      paymentIntentSource,
-      attemptStartedAt: context.attemptStartedAt,
-      ...(embeddedCheckoutEnabled && {
-        suppressProcessingToast: true,
-        autoHandleRequiresAction: true
-      })
-    }
-    const terminalOperation = initialActionUrl
-      ? billingOperationStore.startOperation(
-          opId,
-          'subscription',
-          metadata,
-          initialActionUrl
-        )
-      : billingOperationStore.startOperation(opId, 'subscription', metadata)
-    if (embeddedCheckoutEnabled) isSubscribing.value = false
-    const operation = await terminalOperation
-    if (
-      operation.status === 'succeeded' &&
-      activeCheckoutOperationId.value === opId &&
-      operation.workspaceId === workspaceStore.activeWorkspaceId
-    ) {
-      checkoutStep.value = 'success'
+    try {
+      const metadata = {
+        tier: context.tier,
+        cycle: context.cycle,
+        checkoutType: context.checkoutType,
+        paymentIntentSource,
+        attemptStartedAt: context.attemptStartedAt,
+        ...(embeddedCheckoutEnabled && {
+          suppressProcessingToast: true,
+          autoHandleRequiresAction: true
+        })
+      }
+      const terminalOperation = initialActionUrl
+        ? billingOperationStore.startOperation(
+            opId,
+            'subscription',
+            metadata,
+            initialActionUrl
+          )
+        : billingOperationStore.startOperation(opId, 'subscription', metadata)
+      if (embeddedCheckoutEnabled) isSubscribing.value = false
+      const operation = await terminalOperation
+      if (
+        operation.status === 'succeeded' &&
+        activeCheckoutOperationId.value === opId &&
+        operation.workspaceId === workspaceStore.activeWorkspaceId
+      ) {
+        checkoutStep.value = 'success'
+      }
+    } finally {
+      clearPendingSubscriptionCheckout(opId)
     }
   }
 

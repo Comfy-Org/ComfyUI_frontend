@@ -173,12 +173,10 @@ async function initialize(): Promise<void> {
       throw new Error('Unified cloud auth was cleared during workspace setup')
     }
 
-    // Resume any pending pricing flow from team workspace creation
-    // Only safe after workspace store initialized successfully — the pricing
-    // dialog reads workspace state to decide which variant to show.
+    // Pricing recovery reads the initialized workspace to scope its intent.
     const workspaceStore = useTeamWorkspaceStore()
     if (workspaceStore.initState === 'ready') {
-      subscriptionDialog.resumePendingPricingFlow()
+      void subscriptionDialog.resumePendingPricingFlow()
     }
 
     if (generation === initializationGeneration) {

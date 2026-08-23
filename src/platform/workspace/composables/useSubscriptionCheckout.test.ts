@@ -463,6 +463,7 @@ describe('useSubscriptionCheckout', () => {
       canDowngradeToPersonal: true
     }
     mockSubscription.value = null
+    sessionStorage.clear()
     emit = vi.fn()
   })
 
@@ -2960,6 +2961,51 @@ describe('useSubscriptionCheckout', () => {
         }
       )
       expect(checkout.checkoutStep.value).toBe('preview')
+    })
+
+    it('persists the pending attempt until its operation becomes terminal', async () => {
+      const checkout = await setup()
+      checkout.selectedTierKey.value = 'creator'
+      checkout.selectedBillingCycle.value = 'monthly'
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'pending_payment',
+        billing_op_id: 'op-alipay'
+      })
+      let resolveOperation!: (operation: {
+        status: 'failed'
+        workspaceId: string
+      }) => void
+      mockStartOperation.mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveOperation = resolve
+          })
+      )
+
+      const payment = checkout.handleAddCreditCard()
+      await vi.waitFor(() => {
+        expect(
+          JSON.parse(
+            sessionStorage.getItem('comfy:pending-subscription-checkout') ??
+              'null'
+          )
+        ).toMatchObject({
+          operationId: 'op-alipay',
+          workspaceId: 'workspace-1',
+          selection: {
+            planMode: 'personal',
+            tierKey: 'creator',
+            billingCycle: 'monthly'
+          }
+        })
+      })
+
+      resolveOperation({ status: 'failed', workspaceId: 'workspace-1' })
+      await payment
+
+      expect(
+        sessionStorage.getItem('comfy:pending-subscription-checkout')
+      ).toBeNull()
     })
 
     it('shows error toast on subscribe failure', async () => {
