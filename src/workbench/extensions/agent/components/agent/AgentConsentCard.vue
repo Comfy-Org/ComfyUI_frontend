@@ -19,16 +19,13 @@ const emit = defineEmits<{
 }>()
 
 function openDocs(): void {
-  if (docsUrl) window.open(docsUrl, '_blank', 'noopener')
+  window.open(docsUrl, '_blank', 'noopener')
 }
 </script>
 
 <template>
   <div class="@container w-full max-w-[1040px]">
     <div
-      role="dialog"
-      aria-modal="true"
-      :aria-label="title"
       class="bg-agent-surface border-agent-border grid max-h-[90dvh] grid-cols-1 overflow-hidden rounded-2xl border shadow-[0_20px_24px_-4px_rgba(10,13,18,0.4),0_8px_8px_-4px_rgba(10,13,18,0.25)] @2xl:min-h-[543px] @2xl:grid-cols-[555fr_483fr]"
     >
       <div class="shrink-0 p-2">

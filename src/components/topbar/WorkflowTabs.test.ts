@@ -244,6 +244,7 @@ describe('WorkflowTabs agent entry button', () => {
 
     expect(withConsent).toHaveBeenCalledTimes(1)
     expect(agentPanelHolder.store.open).not.toHaveBeenCalled()
+    expect(trackAgentEntryButtonClicked).not.toHaveBeenCalled()
   })
 
   it('closes without asking for consent again', async () => {

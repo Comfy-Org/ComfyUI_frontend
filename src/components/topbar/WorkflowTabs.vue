@@ -201,15 +201,18 @@ const { isOpen: isAgentPanelOpen, enabled: agentPanelEnabled } =
   storeToRefs(agentPanelStore)
 
 function onAgentEntryClick(): void {
-  useTelemetry()?.trackAgentEntryButtonClicked({
-    resulting_state: isAgentPanelOpen.value ? 'closed' : 'opened'
-  })
-  // Closing never needs consent; opening does, the first time.
+  // Closing never needs consent; opening does, the first time. Report the
+  // click only once it has an outcome, so a declined consent is not counted
+  // as an open.
   if (isAgentPanelOpen.value) {
+    useTelemetry()?.trackAgentEntryButtonClicked({ resulting_state: 'closed' })
     agentPanelStore.toggle()
     return
   }
-  withConsent(() => agentPanelStore.open())
+  withConsent(() => {
+    useTelemetry()?.trackAgentEntryButtonClicked({ resulting_state: 'opened' })
+    agentPanelStore.open()
+  })
 }
 const { isLoggedIn } = useCurrentUser()
 

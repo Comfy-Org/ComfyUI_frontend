@@ -5,6 +5,19 @@ import { useDialogStore } from '@/stores/dialogStore'
 
 import { useAgentConsent } from './useAgentConsent'
 
+const userHolder = vi.hoisted(() => ({}) as { id: { value: string | null } })
+vi.mock('@/composables/auth/useCurrentUser', async () => {
+  const { computed, ref } = await import('vue')
+  userHolder.id = ref<string | null>('user-a')
+  return {
+    useCurrentUser: () => ({
+      resolvedUserInfo: computed(() =>
+        userHolder.id.value ? { id: userHolder.id.value } : null
+      )
+    })
+  }
+})
+
 function setSearch(search: string): void {
   window.history.replaceState({}, '', `${window.location.pathname}${search}`)
 }
@@ -14,6 +27,7 @@ describe('useAgentConsent', () => {
     setActivePinia(createPinia())
     localStorage.clear()
     setSearch('')
+    userHolder.id.value = 'user-a'
     useAgentConsent().accepted.value = false
   })
 
@@ -102,5 +116,17 @@ describe('useAgentConsent', () => {
       expect(onAccept).toHaveBeenCalledOnce()
       expect(consent.accepted.value).toBe(false)
     })
+  })
+
+  it("keeps one account's consent off another account", () => {
+    const consent = useAgentConsent()
+    consent.accepted.value = true
+
+    userHolder.id.value = 'user-b'
+
+    expect(consent.accepted.value).toBe(false)
+
+    userHolder.id.value = 'user-a'
+    expect(consent.accepted.value).toBe(true)
   })
 })
