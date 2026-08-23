@@ -3,8 +3,8 @@ import pc from 'picocolors'
 import { findProjectRoot, listWorkflows } from '../recorder/runner'
 import { toSlug } from '../cli/slug'
 import { fail, info, header } from '../ui/logger'
+import { filterKnownTags, unknownTagWarningLines } from '../tags'
 
-const KNOWN_TAGS = ['@canvas', '@widget', '@sidebar', '@smoke', '@screenshot']
 const SEED_FILE = 'browser_tests/tests/interaction.spec.ts'
 
 export interface PlanOptions {
@@ -34,19 +34,6 @@ function escapeForHandoff(value: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/\r?\n/g, ' ')
-}
-
-/** Drops any tag not in the suite's known set, reporting each one dropped. */
-export function filterKnownTags(tags: string[]): {
-  kept: string[]
-  unknown: string[]
-} {
-  const kept: string[] = []
-  const unknown: string[] = []
-  for (const tag of tags) {
-    ;(KNOWN_TAGS.includes(tag) ? kept : unknown).push(tag)
-  }
-  return { kept, unknown }
 }
 
 /** Builds the plan block handed to the playwright-test-generator agent. */
@@ -127,10 +114,7 @@ export async function runPlan(options: PlanOptions): Promise<void> {
 
   const { kept: tags, unknown } = filterKnownTags(options.tags ?? [])
   if (unknown.length > 0) {
-    info([
-      `Unknown tag(s) dropped: ${unknown.join(', ')}`,
-      `Known tags: ${KNOWN_TAGS.join(', ')}`
-    ])
+    info(unknownTagWarningLines(unknown))
   }
 
   if (options.workflow) {

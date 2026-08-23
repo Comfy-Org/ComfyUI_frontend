@@ -26,6 +26,7 @@ import { runAgentRefactor } from '../agent/refactor'
 import { stepHeader } from '../ui/steps'
 import { pass, fail, warn, alert, info, blank, box } from '../ui/logger'
 import { toSlug } from '../cli/slug'
+import { TAG_REGISTRY } from '../tags'
 
 const PASTE_SENTINEL = '.'
 
@@ -221,13 +222,11 @@ export async function runRecord(): Promise<void> {
 
   const selectedTags = await multiselect({
     message: 'Select tags for this test (space to toggle, enter for none):',
-    options: [
-      { value: '@canvas', label: '@canvas', hint: 'canvas/graph interactions' },
-      { value: '@widget', label: '@widget', hint: 'node widgets' },
-      { value: '@sidebar', label: '@sidebar', hint: 'sidebar panels' },
-      { value: '@smoke', label: '@smoke', hint: 'critical-path smoke test' },
-      { value: '@screenshot', label: '@screenshot', hint: 'visual regression' }
-    ],
+    options: TAG_REGISTRY.map(({ tag, hint }) => ({
+      value: tag,
+      label: tag,
+      hint
+    })),
     initialValues: [],
     required: false
   })

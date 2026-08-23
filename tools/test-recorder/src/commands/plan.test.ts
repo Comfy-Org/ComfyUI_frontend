@@ -1,23 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildTestPlan, filterKnownTags } from './plan'
-
-describe('filterKnownTags', () => {
-  it('keeps every tag from the known set', () => {
-    const { kept, unknown } = filterKnownTags(['@canvas', '@widget'])
-    expect(kept).toEqual(['@canvas', '@widget'])
-    expect(unknown).toEqual([])
-  })
-
-  it('separates unknown tags rather than silently dropping them', () => {
-    const { kept, unknown } = filterKnownTags(['@canvas', '@made-up'])
-    expect(kept).toEqual(['@canvas'])
-    expect(unknown).toEqual(['@made-up'])
-  })
-
-  it('handles an empty list', () => {
-    expect(filterKnownTags([])).toEqual({ kept: [], unknown: [] })
-  })
-})
+import { buildTestPlan } from './plan'
 
 describe('buildTestPlan', () => {
   it('builds a plan block matching what playwright-test-generator expects', () => {

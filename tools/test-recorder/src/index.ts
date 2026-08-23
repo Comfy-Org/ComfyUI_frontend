@@ -97,6 +97,11 @@ try {
       await runList(flags.filter)
       break
     }
+    case 'tags': {
+      const { runTags } = await import('./commands/tags')
+      runTags()
+      break
+    }
     default: {
       // Help is a successful request; a typo is not.
       const askedForHelp =
@@ -116,6 +121,7 @@ Commands:
   check       Check environment prerequisites
   list [--filter <keyword>]
               List available test workflows, optionally filtered by path
+  tags        List test tags with their meanings
 
 Options:
   --help      Show help
@@ -127,7 +133,7 @@ TTY and will refuse to run. Use this instead:
   → hand the printed block to the playwright-test-generator agent
   → comfy-test pr <the file it wrote>
 
-'transform', 'pr', 'check', 'plan', and 'list' all work non-interactively.
+'transform', 'pr', 'check', 'plan', 'list', and 'tags' work non-interactively.
 `)
       break
     }
