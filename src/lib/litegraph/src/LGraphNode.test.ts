@@ -67,6 +67,25 @@ describe('LGraphNode', () => {
     Object.assign(LiteGraph, origLiteGraph)
   })
 
+  // Regression (#15628): a missing-node placeholder carries
+  // last_serialization so original data is not lost; serialize() preserved
+  // the live pos but silently dropped the live size, so resizing a
+  // placeholder was lost on save.
+  test('placeholder serialize keeps the live size', () => {
+    const node = new LGraphNode('MissingNode')
+    node.pos = [11, 22]
+    node.size = [700, 800]
+    node.last_serialization = getMockISerialisedNode({
+      type: 'MissingNode',
+      pos: [1, 2],
+      size: [300, 400]
+    })
+
+    const json = node.serialize()
+    expect(json.pos).toEqual([11, 22])
+    expect(json.size).toEqual([700, 800])
+  })
+
   test('should serialize position/size correctly', () => {
     const node = new LGraphNode('TestNode')
     node.pos = [10, 20]
