@@ -100,6 +100,43 @@ describe('LGraphNode', () => {
     expect(Array.from(node.size)).toEqual([70, 80])
   })
 
+  describe('missing-node placeholder serialization', () => {
+    function createPlaceholder(): LGraphNode {
+      const lastSerialization = getMockISerialisedNode({
+        type: 'UninstalledNodeType',
+        pos: [100, 100],
+        size: [140, 60],
+        widgets_values: [512]
+      })
+      const placeholder = new LGraphNode('')
+      placeholder.last_serialization = lastSerialization
+      placeholder.has_errors = true
+      placeholder.configure(lastSerialization)
+      return placeholder
+    }
+
+    test('carries the live pos and size through to the replayed serialization', () => {
+      const placeholder = createPlaceholder()
+      placeholder.pos = [999, 888]
+      placeholder.size = [777, 666]
+
+      const serialized = placeholder.serialize()
+
+      expect(serialized.pos).toEqual([999, 888])
+      expect(serialized.size).toEqual([777, 666])
+    })
+
+    test('still replays the fields it has no definition to regenerate', () => {
+      const placeholder = createPlaceholder()
+      placeholder.size = [777, 666]
+
+      const serialized = placeholder.serialize()
+
+      expect(serialized.type).toEqual('UninstalledNodeType')
+      expect(serialized.widgets_values).toEqual([512])
+    })
+  })
+
   test('should configure inputs correctly', () => {
     const node = new LGraphNode('TestNode')
     node.configure(
