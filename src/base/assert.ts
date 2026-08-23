@@ -15,10 +15,6 @@ export function setAssertReporter(fn: AssertReporter | null): void {
   reporter = fn
 }
 
-/**
- * `datadogRumBeforeSend` reads this as "a tagged copy of the failure will
- * exist", and drops the untagged console echo when it does.
- */
 export function hasAssertReporter(): boolean {
   return reporter !== null
 }
@@ -42,7 +38,7 @@ export function assert(
   if (condition) return
 
   const formatted = `${ASSERTION_FAILURE_PREFIX}${message}`
-  if (context) {
+  if (import.meta.env.DEV && context) {
     console.error(formatted, context)
   } else {
     console.error(formatted)
