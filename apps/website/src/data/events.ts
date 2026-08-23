@@ -576,15 +576,17 @@ const events: readonly ComfyEvent[] = [
   }
 ]
 
-// The site is statically built, so classification is fixed at build time: an
-// event moves between the upcoming and past sections on the next deploy.
-const BUILD_NOW = new Date()
+// Sampled once per module load: at build time for the pre-rendered HTML, and
+// again in the browser when the events islands hydrate. An event therefore
+// leaves the upcoming section on the first page load after it ends, rather than
+// on the next deploy; a page left open keeps the list it hydrated with.
+const NOW = new Date()
 
-export const upcomingEvents = deriveUpcomingEvents(events, BUILD_NOW)
+export const upcomingEvents = deriveUpcomingEvents(events, NOW)
 
-export const pastEvents = derivePastEvents(events, BUILD_NOW)
+export const pastEvents = derivePastEvents(events, NOW)
 
-export const featuredEvents = deriveFeaturedEvents(events, BUILD_NOW)
+export const featuredEvents = deriveFeaturedEvents(events, NOW)
 
 export const watchablePastEvents: readonly ComfyEvent[] = pastEvents.filter(
   (event) => eventVideoId(event)

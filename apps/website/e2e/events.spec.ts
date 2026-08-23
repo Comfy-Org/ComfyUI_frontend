@@ -185,6 +185,9 @@ test.describe('Events page — desktop @smoke', () => {
     for (const [path, locale] of LOCALES) {
       await page.goto(path)
       const section = upcomingSection(page, locale)
+      // Every configured event ages out eventually, so the row assertions
+      // scale to zero — the list itself has to render either way.
+      await expect(section.getByRole('list')).toBeAttached()
       const rows = section.locator('li')
       await expect(rows).toHaveCount(upcomingEvents.length)
 
