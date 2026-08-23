@@ -238,6 +238,8 @@ pnpm format
 
 - Use Tailwind CSS classes instead of custom CSS
 - NEVER use `dark:` or `dark-theme:` tailwind variants. Instead use a semantic value from the [style.css](packages/design-system/src/css/style.css) like `bg-node-component-surface`
+- For mockup-derived UI, follow the [design-system workflow](docs/design-system/MOCKUP_WORKFLOW.md), reuse the [component inventory](docs/design-system/generated/COMPONENTS.md), and run `pnpm lint:design-system`. Public website work uses the [website contract](docs/design-system/website/README.md) and shipped website patterns before Figma composition evidence
+- Run `pnpm design-system:docs` after changing shared UI components or design-system CSS
 
 ## Design Team Approval (Required for Notable UI Changes)
 

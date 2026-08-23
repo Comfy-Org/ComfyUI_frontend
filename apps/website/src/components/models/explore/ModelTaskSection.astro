@@ -1,0 +1,38 @@
+---
+import SectionLabel from '../../common/SectionLabel.vue'
+import TaskTile from '../../ui/task-tile/TaskTile.vue'
+
+import ModelMediaPlaceholder from './ModelMediaPlaceholder.astro'
+import type { ExploreTaskFixture } from './modelExploreFixtures'
+
+interface Props {
+  label: string
+  description: string
+  tasks: ExploreTaskFixture[]
+}
+
+const { label, description, tasks } = Astro.props
+---
+
+<section
+  aria-labelledby="model-task-heading"
+  class="mx-auto max-w-10xl px-6 py-14 md:px-10 xl:px-30"
+>
+  <div class="flex flex-col gap-2">
+    <h2 id="model-task-heading"><SectionLabel>{label}</SectionLabel></h2>
+    <p class="text-base font-light text-primary-warm-gray">{description}</p>
+  </div>
+  <div class="mt-7 grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
+    {
+      tasks.map((task) => (
+        <TaskTile
+          title={task.title}
+          description={task.description}
+          meta={task.meta}
+        >
+          <ModelMediaPlaceholder slot="media" tone={task.mediaTone} />
+        </TaskTile>
+      ))
+    }
+  </div>
+</section>

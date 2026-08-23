@@ -1,0 +1,77 @@
+---
+import SectionLabel from '../../common/SectionLabel.vue'
+import CardWorkflow01 from '../../blocks/CardWorkflow01.vue'
+import type { CardWorkflowItem } from '../../blocks/CardWorkflow01.vue'
+
+import ModelMediaPlaceholder from './ModelMediaPlaceholder.astro'
+import type {
+  ExploreModelCardFixture,
+  ExploreModelStatus,
+} from './modelExploreFixtures'
+
+interface Props {
+  headingId: string
+  label: string
+  description: string
+  models: ExploreModelCardFixture[]
+  dayZeroBadgeLabel: string
+  openWeightsBadgeLabel: string
+}
+
+const {
+  headingId,
+  label,
+  description,
+  models,
+  dayZeroBadgeLabel,
+  openWeightsBadgeLabel,
+} = Astro.props
+
+const statusLabels: Record<ExploreModelStatus, string> = {
+  'day-zero': dayZeroBadgeLabel,
+  'open-weights': openWeightsBadgeLabel,
+}
+
+function toWorkflowItem(model: ExploreModelCardFixture): CardWorkflowItem {
+  return {
+    id: model.name,
+    title: model.name,
+    href: model.href,
+    target: model.target,
+    description: model.description,
+    statusBadges: model.statuses?.map((type) => ({
+      type,
+      label: statusLabels[type],
+    })),
+    tags: [
+      model.modality,
+      ...(model.statuses?.includes('open-weights') ? [] : [model.tag]),
+    ],
+    media:
+      model.media.type === 'image'
+        ? { type: 'image', src: model.media.src, alt: '' }
+        : { type: 'placeholder', alt: '' },
+  }
+}
+---
+
+<section
+  aria-labelledby={headingId}
+  class="mx-auto max-w-10xl px-6 pt-14 pb-8 md:px-10 xl:px-30"
+>
+  <div class="flex flex-col gap-2">
+    <h2 id={headingId}><SectionLabel>{label}</SectionLabel></h2>
+    <p class="text-base font-light text-primary-warm-gray">{description}</p>
+  </div>
+  <div class="mt-7 grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
+    {
+      models.map((model) => (
+        <CardWorkflow01 item={toWorkflowItem(model)} variant="compact">
+          {model.media.type === 'placeholder' && (
+            <ModelMediaPlaceholder slot="media" tone={model.media.tone} />
+          )}
+        </CardWorkflow01>
+      ))
+    }
+  </div>
+</section>

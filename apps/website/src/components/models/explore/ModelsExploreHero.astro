@@ -1,0 +1,97 @@
+---
+import BrandButton from '../../common/BrandButton.vue'
+import SectionHeader from '../../common/SectionHeader.vue'
+import CardWorkflow01 from '../../blocks/CardWorkflow01.vue'
+import type { CardWorkflowItem } from '../../blocks/CardWorkflow01.vue'
+
+import ModelMediaPlaceholder from './ModelMediaPlaceholder.astro'
+
+interface Props {
+  eyebrow: string
+  titleFirstLine: string
+  titleSecondLine: string
+  description: string
+  primaryCta: string
+  secondaryCta: string
+  stats: string
+  featuredBadge: string
+  featuredTitle: string
+  featuredHref: string
+  primaryHref: string
+  secondaryHref: string
+}
+
+const {
+  eyebrow,
+  titleFirstLine,
+  titleSecondLine,
+  description,
+  primaryCta,
+  secondaryCta,
+  stats,
+  featuredBadge,
+  featuredTitle,
+  featuredHref,
+  primaryHref,
+  secondaryHref
+} = Astro.props
+
+const featuredItem: CardWorkflowItem = {
+  id: 'featured-model',
+  title: featuredTitle,
+  href: featuredHref,
+  target: '_blank',
+  statusBadges: [{ type: 'day-zero', label: featuredBadge }],
+  media: { type: 'placeholder', alt: '' },
+}
+---
+
+<section class="mx-auto max-w-10xl px-6 pt-18 pb-16 md:px-10 xl:px-30">
+  <div
+    class="grid items-center gap-12 xl:grid-cols-[minmax(0,1.025fr)_minmax(0,1fr)] xl:gap-16"
+  >
+    <div class="flex min-w-0 flex-col items-start gap-6">
+      <SectionHeader
+        label={eyebrow}
+        headingTag="h1"
+        headingSize="hero"
+        align="start"
+      >
+        <span class="block">{titleFirstLine}</span>
+        <span class="block">{titleSecondLine}</span>
+      </SectionHeader>
+      <p
+        class="max-w-2xl text-base/relaxed font-light text-primary-comfy-canvas"
+      >
+        {description}
+      </p>
+      <div class="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap">
+        <BrandButton
+          href={primaryHref}
+          variant="solid"
+          size="nav"
+        >
+          {primaryCta}
+        </BrandButton>
+        <BrandButton
+          href={secondaryHref}
+          variant="outline"
+          size="nav"
+        >
+          {secondaryCta}
+        </BrandButton>
+      </div>
+      <p class="text-sm text-primary-warm-gray">{stats}</p>
+    </div>
+
+    <div class="min-w-0">
+      <CardWorkflow01
+        item={featuredItem}
+        variant="compact"
+        statusBadgePlacement="featured-media"
+      >
+        <ModelMediaPlaceholder slot="media" tone="forest" />
+      </CardWorkflow01>
+    </div>
+  </div>
+</section>

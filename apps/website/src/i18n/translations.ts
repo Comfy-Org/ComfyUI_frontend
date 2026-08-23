@@ -4838,6 +4838,182 @@ const translations = {
     en: "Run the world's leading AI models in ComfyUI",
     'zh-CN': '在 ComfyUI 中运行世界领先的 AI 模型'
   },
+  'models.explore.eyebrow': {
+    en: 'SUPPORTED MODELS',
+    'zh-CN': '支持的模型'
+  },
+  'models.explore.title.first': {
+    en: 'Every model.',
+    'zh-CN': '每一个模型。'
+  },
+  'models.explore.title.second': {
+    en: 'One graph.',
+    'zh-CN': '一张图。'
+  },
+  'models.explore.description': {
+    en: 'Run {count} catalogued open-weight components and partner integrations with professional control — Flux, Wan, Kling, Veo, Seedance, and every day-zero release. On your GPU or on Comfy Cloud.',
+    'zh-CN':
+      '以专业级控制运行 {count} 个已收录的开放权重组件和合作伙伴集成，包括 Flux、Wan、Kling、Veo、Seedance 以及每个首发模型。可在你的 GPU 或 Comfy Cloud 上运行。'
+  },
+  'models.explore.primaryCta': {
+    en: 'RUN A MODEL NOW',
+    'zh-CN': '立即运行模型'
+  },
+  'models.explore.secondaryCta': {
+    en: 'BROWSE WORKFLOWS',
+    'zh-CN': '浏览工作流'
+  },
+  'models.explore.stats': {
+    en: '{count} catalog entries · {localCount} local components · {partnerCount} partner integrations',
+    'zh-CN':
+      '{count} 个目录条目 · {localCount} 个本地组件 · {partnerCount} 个合作伙伴集成'
+  },
+  'models.explore.featuredBadge': {
+    en: 'DAY ZERO',
+    'zh-CN': '首发'
+  },
+  'models.explore.openWeightsBadge': {
+    en: 'OPEN WEIGHTS',
+    'zh-CN': '开放权重'
+  },
+  'models.explore.featuredTitle': {
+    en: 'Wan 2.6 — open-weights video, native audio',
+    'zh-CN': 'Wan 2.6 — 开放权重视频，原生音频'
+  },
+  'models.explore.search.label': {
+    en: 'Search supported models',
+    'zh-CN': '搜索支持的模型'
+  },
+  'models.explore.search.placeholder': {
+    en: 'Search models, tasks, and publishers...',
+    'zh-CN': '搜索模型、任务和发布者...'
+  },
+  'models.explore.categories.label': {
+    en: 'Model categories',
+    'zh-CN': '模型类别'
+  },
+  'models.explore.categories': {
+    en: 'ALL|Image|Video|Audio|3D|Edit|Upscale|LLM|Train',
+    'zh-CN': '全部|图像|视频|音频|3D|编辑|放大|LLM|训练'
+  },
+  'models.explore.trending.label': {
+    en: 'TRENDING',
+    'zh-CN': '热门'
+  },
+  'models.explore.trending.description': {
+    en: 'What the graph is running this week.',
+    'zh-CN': '本周图中正在运行的模型。'
+  },
+  'models.explore.dayZero.label': {
+    en: 'DAY ZERO THIS WEEK',
+    'zh-CN': '本周首发'
+  },
+  'models.explore.dayZero.description': {
+    en: 'New weights, supported the day they drop. That is the standard.',
+    'zh-CN': '新权重发布当天即获支持。这就是标准。'
+  },
+  'models.explore.tasks.label': {
+    en: 'START FROM THE TASK',
+    'zh-CN': '从任务开始'
+  },
+  'models.explore.tasks.description': {
+    en: 'Category pages that match how people actually search.',
+    'zh-CN': '符合人们实际搜索方式的分类页面。'
+  },
+  'models.explore.access.heading': {
+    en: 'Choose how you access models',
+    'zh-CN': '选择模型访问方式'
+  },
+  'models.explore.access.open.title': {
+    en: 'Open\nweights',
+    'zh-CN': '开放\n权重'
+  },
+  'models.explore.access.open.description': {
+    en: 'Download the checkpoint, chain your LoRAs, and keep the graph forever.',
+    'zh-CN': '下载检查点、串联 LoRA，并永久保留工作流。'
+  },
+  'models.explore.access.open.cta': {
+    en: 'BROWSE OPEN MODELS',
+    'zh-CN': '浏览开放模型'
+  },
+  'models.explore.access.partner.title': {
+    en: 'Partner\nAPIs',
+    'zh-CN': '合作伙伴\nAPI'
+  },
+  'models.explore.access.partner.description': {
+    en: 'Use partner models on the same canvas as your open models.',
+    'zh-CN': '在同一画布中使用合作伙伴模型和开放模型。'
+  },
+  'models.explore.access.partner.cta': {
+    en: 'BROWSE PARTNER MODELS',
+    'zh-CN': '浏览合作伙伴模型'
+  },
+  'models.explore.family.eyebrow': {
+    en: 'MODEL FAMILY',
+    'zh-CN': '模型家族'
+  },
+  'models.explore.family.title': {
+    en: 'The Wan family',
+    'zh-CN': 'Wan 模型家族'
+  },
+  'models.explore.family.description': {
+    en: 'Nine open-weights video models, one lineage. Every generation and variant stays accessible from the same graph.',
+    'zh-CN':
+      '九个开放权重视频模型，同属一个谱系。每一代和每个变体都可从同一工作流访问。'
+  },
+  'models.explore.family.viewModel': {
+    en: 'View {name} model page',
+    'zh-CN': '查看 {name} 模型页面'
+  },
+  'models.explore.faq.label': {
+    en: 'QUESTIONS',
+    'zh-CN': '常见问题'
+  },
+  'models.explore.faq.heading': {
+    en: 'AI models in ComfyUI',
+    'zh-CN': 'ComfyUI 中的 AI 模型'
+  },
+  'models.explore.faq.1.q': {
+    en: 'What does day-zero support mean?',
+    'zh-CN': '首发支持是什么意思？'
+  },
+  'models.explore.faq.1.a': {
+    en: 'It means a newly released model can be used in ComfyUI as soon as its supported integration is available.',
+    'zh-CN': '这意味着新发布的模型在受支持的集成可用后即可在 ComfyUI 中使用。'
+  },
+  'models.explore.faq.2.q': {
+    en: 'Is ComfyUI free?',
+    'zh-CN': 'ComfyUI 免费吗？'
+  },
+  'models.explore.faq.2.a': {
+    en: 'ComfyUI Desktop is free to run on your own hardware. Cloud and partner services have separate usage terms.',
+    'zh-CN':
+      'ComfyUI 桌面版可在您自己的硬件上免费运行。Cloud 和合作伙伴服务有各自的使用条款。'
+  },
+  'models.explore.faq.3.q': {
+    en: 'Do partner models need separate accounts?',
+    'zh-CN': '合作伙伴模型需要单独的账户吗？'
+  },
+  'models.explore.faq.3.a': {
+    en: 'Account and billing requirements depend on the partner integration used by a workflow.',
+    'zh-CN': '账户和计费要求取决于工作流使用的合作伙伴集成。'
+  },
+  'models.explore.faq.4.q': {
+    en: 'What VRAM do open models need?',
+    'zh-CN': '开放模型需要多少显存？'
+  },
+  'models.explore.faq.4.a': {
+    en: 'Requirements vary by model, resolution, precision, and workflow. Quantized variants can reduce memory use.',
+    'zh-CN': '要求因模型、分辨率、精度和工作流而异。量化变体可以减少内存使用。'
+  },
+  'models.explore.faq.5.q': {
+    en: 'Can I run these models through an API?',
+    'zh-CN': '可以通过 API 运行这些模型吗？'
+  },
+  'models.explore.faq.5.a': {
+    en: 'Comfy API can turn supported workflows into production endpoints.',
+    'zh-CN': 'Comfy API 可以将受支持的工作流转换为生产端点。'
+  },
   'models.breadcrumb.models': {
     en: 'Supported Models',
     'zh-CN': '支持的模型'

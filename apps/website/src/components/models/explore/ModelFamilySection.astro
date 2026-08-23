@@ -1,0 +1,70 @@
+---
+import SectionLabel from '../../common/SectionLabel.vue'
+import IconButton from '../../ui/icon-button/IconButton.vue'
+
+import ModelMediaPlaceholder from './ModelMediaPlaceholder.astro'
+import type { ExploreFamilyVariant } from './modelExploreFixtures'
+
+interface Props {
+  eyebrow: string
+  title: string
+  description: string
+  variants: ExploreFamilyVariant[]
+  viewModelLabel: string
+}
+
+const { eyebrow, title, description, variants, viewModelLabel } = Astro.props
+---
+
+<section
+  aria-labelledby="model-family-heading"
+  class="mx-auto max-w-10xl px-6 py-16 md:px-10 xl:px-30"
+>
+  <div class="grid items-stretch gap-10 lg:grid-cols-2 lg:gap-16">
+    <div class="flex flex-col">
+      <SectionLabel>{eyebrow}</SectionLabel>
+      <h2
+        id="model-family-heading"
+        class="mt-4 text-4xl font-light text-primary-comfy-canvas lg:text-5xl"
+      >
+        {title}
+      </h2>
+      <p class="mt-5 text-base/relaxed font-light text-primary-comfy-canvas">
+        {description}
+      </p>
+      <div class="mt-8 border-t border-primary-comfy-canvas/20">
+        {
+          variants.map((variant) => (
+            <article class="flex items-center justify-between gap-6 border-b border-primary-comfy-canvas/20 py-5">
+              <div>
+                <h3 class="text-base font-semibold text-primary-comfy-canvas">
+                  {variant.name}
+                </h3>
+                <p class="mt-1 text-sm font-light text-primary-warm-gray">
+                  {variant.description}
+                </p>
+              </div>
+              <div class="flex shrink-0 items-center gap-3">
+                <p class="text-sm text-primary-warm-gray">{variant.meta}</p>
+                <IconButton
+                  as="a"
+                  href={variant.href}
+                  variant="solid"
+                  size="sm"
+                  aria-label={viewModelLabel.replace('{name}', variant.name)}
+                >
+                  <img src="/icons/arrow-right.svg" alt="" class="size-3" />
+                </IconButton>
+              </div>
+            </article>
+          ))
+        }
+      </div>
+    </div>
+    <div
+      class="bg-transparency-white-t4 min-h-80 overflow-hidden rounded-5xl p-2 lg:min-h-full"
+    >
+      <ModelMediaPlaceholder tone="plum" />
+    </div>
+  </div>
+</section>

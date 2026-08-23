@@ -18,8 +18,20 @@ export default function lintStaged(stagedFiles: string[]) {
   const styleFiles = relativePaths.filter((fileName) =>
     /\.(css|vue)$/.test(fileName)
   )
-  const typecheckFiles = formattableFiles.filter((fileName) =>
-    /\.(ts|tsx|vue|mts)$/.test(fileName)
+  const designFiles = relativePaths.filter((fileName) =>
+    /\.(astro|css|vue)$/.test(fileName)
+  )
+  const designSystemSourceFiles = relativePaths.filter(
+    (fileName) =>
+      fileName.startsWith('src/components/ui/') ||
+      fileName.startsWith('packages/design-system/src/css/') ||
+      fileName === 'apps/website/src/styles/global.css' ||
+      fileName.startsWith('apps/website/src/components/common/') ||
+      fileName.startsWith('apps/website/src/components/blocks/') ||
+      fileName.startsWith('apps/website/src/components/ui/')
+  )
+  const typecheckFiles = relativePaths.filter((fileName) =>
+    /\.(astro|ts|tsx|vue|mts)$/.test(fileName)
   )
 
   return [
@@ -28,6 +40,10 @@ export default function lintStaged(stagedFiles: string[]) {
       'pnpm exec oxfmt --write --no-error-on-unmatched-pattern'
     ),
     ...lintCommands(codeFiles, styleFiles),
+    ...(designFiles.length > 0 ? ['pnpm lint:design-system --staged'] : []),
+    ...(designSystemSourceFiles.length > 0
+      ? ['pnpm design-system:docs:check']
+      : []),
     ...typecheckCommands(typecheckFiles)
   ]
 }

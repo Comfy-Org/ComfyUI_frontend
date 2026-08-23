@@ -1,0 +1,46 @@
+---
+import type { ModelMediaTone } from './modelExploreFixtures'
+
+interface Props {
+  tone: ModelMediaTone
+}
+
+const { tone } = Astro.props
+
+const toneClass: Record<ModelMediaTone, string> = {
+  forest:
+    'from-illustration-forest via-primary-comfy-ink-light to-primary-comfy-plum/70',
+  plum:
+    'from-primary-comfy-plum via-secondary-deep-plum to-primary-comfy-ink-light',
+  ember:
+    'from-primary-comfy-orange/70 via-secondary-mauve to-primary-comfy-ink',
+  canvas:
+    'from-primary-comfy-canvas/50 via-primary-warm-gray/40 to-secondary-deep-plum'
+}
+---
+
+<div
+  aria-hidden="true"
+  class={`relative size-full overflow-hidden rounded-4.5xl bg-linear-to-br ${toneClass[tone]}`}
+>
+  <div
+    class="absolute inset-8 rounded-3xl border border-primary-comfy-canvas/10 bg-primary-comfy-ink/20"
+  >
+  </div>
+  <div
+    class="absolute top-12 left-12 h-12 w-28 rounded-xl border border-primary-comfy-canvas/20 bg-primary-comfy-canvas/10"
+  >
+  </div>
+  <div
+    class="absolute right-14 bottom-12 h-20 w-36 rounded-2xl border border-primary-comfy-yellow/20 bg-primary-comfy-yellow/10"
+  >
+  </div>
+  <div
+    class="absolute top-24 right-28 size-3 rounded-full bg-primary-comfy-yellow/70"
+  >
+  </div>
+  <div
+    class="absolute bottom-20 left-32 h-px w-40 rotate-12 bg-primary-comfy-canvas/20"
+  >
+  </div>
+</div>

@@ -5,15 +5,18 @@ import { computed, reactive } from 'vue'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 
 import { t } from '../../i18n/translations'
+import SectionLabel from './SectionLabel.vue'
 
 const {
   locale = 'en',
+  labelKey,
   headingKey,
   faqPrefix,
   faqCount,
   footerKey
 } = defineProps<{
   locale?: Locale
+  labelKey?: TranslationKey
   headingKey: TranslationKey
   faqPrefix: string
   faqCount: number
@@ -48,7 +51,15 @@ function toggle(index: number) {
       <div
         class="sticky top-20 z-10 w-full shrink-0 self-start bg-primary-comfy-ink py-4 md:top-28 md:w-80 md:py-0"
       >
-        <h2 class="text-4xl font-light text-primary-comfy-canvas md:text-5xl">
+        <SectionLabel v-if="labelKey">{{ t(labelKey, locale) }}</SectionLabel>
+        <h2
+          :class="
+            cn(
+              'text-4xl font-light text-primary-comfy-canvas md:text-5xl',
+              labelKey && 'mt-4'
+            )
+          "
+        >
           {{ t(headingKey, locale) }}
         </h2>
       </div>
