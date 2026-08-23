@@ -98,6 +98,7 @@ catalog:
   husky: ^9.1.7
   jsdom: ^29.1.1
   jsonata: ^2.1.0
+  jsonc-parser: 3.3.1
   knip: ^6.27.0
   lenis: ^1.3.21
   lint-staged: ^16.2.7
