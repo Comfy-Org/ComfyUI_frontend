@@ -419,32 +419,28 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
         })
     })
 
-    test('zoom out culling', async ({ comfyPage }) => {
-      // Wheel zoom is clamped by ds.min_scale (0.1), which keeps ~200px
-      // nodes at >=20px on screen — the <4px culling regime is unreachable
-      // and the assertion below could never pass (see issue #15545).
-      // Lower the clamp for this test so zooming can enter the regime.
-      await comfyPage.page.evaluate(() => {
-        window.app!.canvas.ds.min_scale = 0.001
-      })
-
+    test('zoom out idle', async ({ comfyPage }) => {
+      // This test previously claimed to measure size-based culling
+      // (isNodeTooSmall / isNodeInViewport) and asserted scale < 0.02.
+      // No such culling exists in production source: GraphCanvas.vue mounts
+      // every Vue node from allNodes at any zoom, and the only
+      // isNodeTooSmall / isNodeInViewport matches in the repo are stale
+      // comments in this file. The assertion could never pass at the real
+      // ds.min_scale clamp (0.1), which is what kept the perf job red and
+      // the baseline pipeline dead (issue #15545).
+      //
+      // Until renderer-owned LOD lands (PR #15031 replaces Vue widget DOM
+      // below the readable-font threshold, reachable at production zoom),
+      // this measures the honest current behavior: frame cost at maximum
+      // supported zoom-out with all Vue node DOM still mounted.
       await comfyPage.perf.startMeasuring()
 
-      // Zoom out far enough that nodes become < 4px screen size
-      // (triggers size-based culling in isNodeInViewport). The fitted
-      // starting scale varies with graph bounds, so zoom until the regime
-      // is reached rather than a fixed step count (bounded at 60 steps).
-      for (let i = 0; i < 60; i++) {
+      // Zoom out to the ds.min_scale clamp (0.1).
+      for (let i = 0; i < 20; i++) {
         await comfyPage.canvasOps.zoom(100)
-        if ((await comfyPage.canvasOps.getScale()) < 0.02) break
       }
 
-      // Verify we actually entered the culling regime.
-      // isNodeTooSmall triggers when max(width, height) * scale < 4px.
-      // Typical nodes are ~200px wide, so scale must be < 0.02.
-      await expect.poll(() => comfyPage.canvasOps.getScale()).toBeLessThan(0.02)
-
-      // Idle at extreme zoom-out — most nodes should be culled
+      // Idle at maximum zoom-out with everything mounted.
       for (let i = 0; i < 60; i++) {
         await comfyPage.nextFrame()
       }
@@ -454,10 +450,10 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
         await comfyPage.canvasOps.zoom(-100)
       }
 
-      const m = await comfyPage.perf.stopMeasuring('vue-zoom-culling')
+      const m = await comfyPage.perf.stopMeasuring('vue-zoom-out-idle')
       recordMeasurement(m)
       console.log(
-        `Vue zoom culling: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, ${m.frameDurationMs.toFixed(1)}ms/frame`
+        `Vue zoom out idle: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, ${m.frameDurationMs.toFixed(1)}ms/frame`
       )
     })
   })
