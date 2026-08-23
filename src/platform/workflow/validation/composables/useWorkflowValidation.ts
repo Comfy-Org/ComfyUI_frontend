@@ -11,6 +11,12 @@ interface ValidationResult {
 
 const LOG_SAMPLE_LIMIT = 20
 
+/**
+ * Workflow loads re-enter validation on undo/redo, so without this a single
+ * corrupt workflow would report once per history step.
+ */
+const reportedCorruptWorkflows = new Set<string>()
+
 export function useWorkflowValidation() {
   const toastStore = useToastStore()
 
@@ -25,7 +31,6 @@ export function useWorkflowValidation() {
     // Then validate and fix links if schema validation passed
     const linkValidation = fixBadLinks(graphData as ISerialisedGraph, {
       fix: true,
-      silent,
       logger: {
         log: (...args: unknown[]) => {
           logs.push(args.join(' '))
@@ -34,12 +39,16 @@ export function useWorkflowValidation() {
     })
 
     const { patched, deleted, hasBadLinks } = linkValidation
-    if (patched || deleted || hasBadLinks) {
+    const corruptionKey = `${graphData.id ?? 'unidentified'}:${patched}:${deleted}`
+    if ((patched || deleted) && !reportedCorruptWorkflows.has(corruptionKey)) {
+      reportedCorruptWorkflows.add(corruptionKey)
       reportError(new Error('Workflow loaded with corrupt links'), {
         errorType: 'workflow_link_corruption',
         level: 'warning',
-        tags: { patched, deleted, unrepaired: hasBadLinks, silent },
         context: {
+          patched,
+          deleted,
+          unrepaired: hasBadLinks,
           logSample: logs.slice(0, LOG_SAMPLE_LIMIT),
           logCount: logs.length
         }
