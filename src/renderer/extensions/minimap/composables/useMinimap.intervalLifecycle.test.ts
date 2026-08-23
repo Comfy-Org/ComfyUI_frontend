@@ -131,7 +131,6 @@ describe('useMinimap change-detection interval', () => {
     // onto its callbacks, so tear down before the next test builds its own.
     active?.destroy()
     active = null
-    vi.useRealTimers()
   })
 
   it('polls on the interval and redraws when the graph changed', async () => {

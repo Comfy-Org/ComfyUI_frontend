@@ -87,7 +87,10 @@ const {
   },
   mockNodeOutputStore: {
     refreshNodeOutputs: vi.fn(),
-    resetAllOutputsAndPreviews: vi.fn()
+    resetAllOutputsAndPreviews: vi.fn(),
+    stashPreviewsForWorkflow: vi.fn(),
+    restorePreviewsForWorkflow: vi.fn(),
+    discardPreviewsForWorkflow: vi.fn()
   },
   mockTeamWorkspaceStore: {
     activeWorkspaceId: 'workspace-a' as string | null,

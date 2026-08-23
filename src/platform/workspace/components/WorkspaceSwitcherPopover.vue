@@ -71,6 +71,20 @@
       </template>
     </div>
 
+    <div
+      v-if="!isCloud"
+      class="flex shrink-0 items-center gap-2 px-4 py-2 text-xs text-muted-foreground"
+    >
+      <i
+        v-tooltip.left="{
+          value: $t('workspaceSwitcher.scopeTooltip'),
+          showDelay: 300
+        }"
+        class="pi pi-info-circle text-xs"
+      />
+      <span>{{ $t('workspaceSwitcher.scopeCaption') }}</span>
+    </div>
+
     <!-- Create workspace button -->
     <div v-if="isCloud" class="shrink-0 border-t border-border-default p-2">
       <div

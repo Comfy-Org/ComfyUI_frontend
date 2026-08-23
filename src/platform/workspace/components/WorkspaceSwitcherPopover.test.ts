@@ -35,6 +35,9 @@ const i18n = createI18n({
         personal: 'Personal',
         roleOwner: 'Owner',
         roleMember: 'Member',
+        scopeCaption: 'Workspaces only affect which credits you use.',
+        scopeTooltip:
+          'Runs that use partner nodes spend credits from this workspace. Unlike on Cloud, every workspace saves to your usual output folder.',
         createWorkspace: 'Create a team workspace',
         maxWorkspacesReached:
           'You can only own 10 workspaces. Delete one to create a new one.'
@@ -103,6 +106,16 @@ function renderComponent(
 }
 
 describe('WorkspaceSwitcherPopover', () => {
+  it('shows the credits-scope caption off cloud', () => {
+    distributionMocks.isCloud = false
+    renderComponent()
+    expect(
+      screen.getByText('Workspaces only affect which credits you use.')
+    ).toBeInTheDocument()
+
+    distributionMocks.isCloud = true
+  })
+
   beforeEach(() => {
     billingMocks.subscription.value = null
     distributionMocks.isCloud = true
