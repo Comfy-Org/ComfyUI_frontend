@@ -112,8 +112,8 @@ describe('legacy slot link creation and plain-object slots (uncovered)', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
-  it.fails('restores a link from a saved id', () => {
-    const { source, target } = connectedPair()
+  it('restores a link from a saved id', () => {
+    const { graph, source, target } = connectedPair()
     const saved = target.inputs[0].link
 
     target.inputs[0].link = null
@@ -122,9 +122,52 @@ describe('legacy slot link creation and plain-object slots (uncovered)', () => {
     target.inputs[0].link = saved
     expect(target.inputs[0].link).toBe(saved)
     expect(source.isOutputConnected(0)).toBe(true)
+    expect(saved && graph.getLink(saved)).toBeDefined()
   })
 
-  it.fails('reconnects a link pushed back onto the output view', () => {
+  it('does not restore a saved input link over a newer connection', () => {
+    const { graph, source, target } = connectedPair()
+    const saved = target.inputs[0].link
+    target.inputs[0].link = null
+
+    const replacementSource = new LGraphNode('Replacement source')
+    replacementSource.addOutput('out', 'INT')
+    graph.add(replacementSource)
+    const replacement = replacementSource.connect(0, target, 0)!
+
+    target.inputs[0].link = saved
+
+    expect(target.inputs[0].link).toBe(replacement.id)
+    expect(source.isOutputConnected(0)).toBe(false)
+    expect(replacementSource.isOutputConnected(0)).toBe(true)
+  })
+
+  it('does not restore a saved input link after its source is removed', () => {
+    const { graph, source, target } = connectedPair()
+    const saved = target.inputs[0].link
+    target.inputs[0].link = null
+    graph.remove(source)
+
+    expect(() => {
+      target.inputs[0].link = saved
+    }).not.toThrow()
+    expect(target.inputs[0].link).toBeNull()
+  })
+
+  it('does not restore an id copied from another input slot', () => {
+    const { graph, target } = connectedPair()
+    const saved = target.inputs[0].link
+    target.inputs[0].link = null
+
+    const otherTarget = new LGraphNode('Other target')
+    otherTarget.addInput('in', 'INT')
+    graph.add(otherTarget)
+    otherTarget.inputs[0].link = saved
+
+    expect(otherTarget.inputs[0].link).toBeNull()
+  })
+
+  it('reconnects a link pushed back onto the output view', () => {
     const { source, target } = connectedPair()
     const output = source.outputs[0]
     const [id] = output.links!
@@ -135,6 +178,32 @@ describe('legacy slot link creation and plain-object slots (uncovered)', () => {
     output.links!.push(id)
     expect(source.isOutputConnected(0)).toBe(true)
     expect(target.isInputConnected(0)).toBe(true)
+    expect(target.inputs[0].link).toBe(id)
+  })
+
+  it('restores one removed fan-out link without disturbing its sibling', () => {
+    const { source, targets } = fanOut(2)
+    const view = source.outputs[0].links!
+    const removed = view.pop()!
+
+    expect(targets[0].isInputConnected(0)).toBe(true)
+    expect(targets[1].isInputConnected(0)).toBe(false)
+
+    view.push(removed)
+
+    expect(targets.every((target) => target.isInputConnected(0))).toBe(true)
+    expect(source.outputs[0].links).toHaveLength(2)
+  })
+
+  it('does not restore an output link after its target is removed', () => {
+    const { graph, source, target } = connectedPair()
+    const view = source.outputs[0].links!
+    const [id] = view
+    view.length = 0
+    graph.remove(target)
+
+    expect(() => view.push(id)).not.toThrow()
+    expect(source.outputs[0].links).toEqual([])
   })
 
   it('disconnects through a plain-object input slot', () => {
