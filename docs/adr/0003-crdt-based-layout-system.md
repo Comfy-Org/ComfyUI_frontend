@@ -218,6 +218,67 @@ content in someone else's node. The defect was never that a measurement exists.
 It was that a view-derived value was promoted into replicated entity state by a
 mutation with no name.
 
+### Amendment (2026-08-23): merge-boundary reconciliation constraint
+
+**Open question resolved.** Can duplicate-entity-ID reconciliation live at the
+CRDT merge boundary while the in-memory registries keep a strict no-collision
+invariant? **Yes — and that is the required split of responsibility.**
+
+**What the in-memory registries guarantee.** Each dedicated store
+(`nodeDataStore`, `widgetValueStore`, `linkStore`, `rerouteStore`) enforces
+its own collision contract at registration time:
+
+- `nodeDataStore.registerNode` is identity-keyed (Set membership); re-adding
+  the same `NodeState` object is a no-op, not a collision.
+- `widgetValueStore.registerWidget` is type-discriminated: same `WidgetId` and
+  same `type` returns the existing state; same `WidgetId` with a different
+  `type` overwrites (the widget has changed kind). This is idempotent on
+  re-registration but intentional on type change.
+- `linkStore.registerLink` is first-registration-wins per target input slot: a
+  second topology claiming the same slot is rejected (`undefined` return) rather
+  than clobbering the incumbent.
+- `rerouteStore.registerReroute` is first-registration-wins per chain ID: a
+  duplicate chain ID logs a warning and leaves the live registration untouched.
+
+None of these stores resolve conflicts between two independently-created
+entities that happen to share an ID. They assume incoming IDs are already
+deduplicated. If two concurrent operations created a node with ID `42`, the
+stores have no mechanism to choose between them — they will silently keep
+whichever arrived first and discard the other without surfacing a diagnostic.
+
+**What the CRDT merge boundary must guarantee.** Before any merged entity set
+is committed to the in-memory registries, the Yjs merge layer is responsible
+for ensuring every entity ID is unique. Concretely:
+
+1. **Layout store.** Yjs's own map-merge semantics (last-writer-wins per key)
+   give each `makeScopedLayoutKey(rootGraphId, id)` a single authoritative
+   value after merge. No post-merge deduplication is needed for layout; the
+   Yjs document itself is the deduplication layer.
+
+2. **Non-layout stores.** Nodes, widgets, links, and reroutes are not yet
+   CRDT-replicated. When they are, the applier that materializes semantic ops
+   into store registrations must resolve any concurrent `add_node`/`add_link`
+   collisions using the op-stamp ordering rule (see
+   `decisions/ADR-007-op-based-crdt-v1.md` in the `comfy-multi-player` repo)
+   before calling `registerNode`/`registerLink`. The stores must not be
+   expected to detect or resolve such conflicts.
+
+**Invariant to carry forward.** Any future Yjs-backed entity store must
+satisfy the same guarantee the `layoutStore` already provides: a key in the
+Yjs document maps to exactly one canonical value at any point after a merge.
+The in-memory registration layer is not a conflict-resolution layer; it is a
+commitment layer. Routing a post-merge duplicate ID into a registration call
+is a bug in the applier, not a case the store contract covers.
+
+**Why this matters for the Yjs work.** When the graph entity stores are
+extended to use Yjs backing, the Yjs merge behavior for each entity kind
+(map-merge, array-merge, or op-based) must be chosen so that the
+deduplicated view is what the store receives. Choosing raw Yjs structural
+updates for entity sets (rather than semantic ops with the LWW gate) would
+propagate unresolved duplicates into stores that have no diagnostic path for
+them — the confirmed failure mode documented in the `comfy-multi-player`
+spike (chapter 7, "the length-8 corruption").
+
 ## Notes
 
 This centralized state + CRDT architecture follows patterns from modern collaborative applications:
