@@ -183,22 +183,17 @@ describe('LGraphNode registerNodeState / unregisterNodeState invariants', () => 
   })
 
   it('asserts when unregistering after _state has drifted from the bucket', () => {
-    const { subgraph, node } = (() => {
-      const sg = createTestSubgraph()
-      const n = new LGraphNode('Node')
-      sg.add(n)
-      return { subgraph: sg, node: n }
-    })()
+    const sg = createTestSubgraph()
+    const node = new LGraphNode('Node')
+    sg.add(node)
 
     // Manually replace _state so unregister can't find the original identity.
     const originalState = node._state
-    // @ts-expect-error — deliberately corrupting internal state for test
     node._state = { ...originalState }
 
     expect(() => unregisterNodeState(node)).toThrow()
 
     // Restore so cleanup doesn't double-assert.
-    // @ts-expect-error — restore after corruption
     node._state = originalState
   })
 
