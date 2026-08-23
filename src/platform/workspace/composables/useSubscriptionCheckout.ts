@@ -1229,7 +1229,8 @@ export function useSubscriptionCheckout(
     context: SubscriptionOutcomeContext
   ): void {
     const workspaceId = workspaceStore.activeWorkspaceId
-    if (context.attemptStartedAt === undefined || !workspaceId) return
+    if (!workspaceId) return
+    const attemptedAt = context.attemptStartedAt ?? Date.now()
 
     if (context.tier === 'team') {
       const teamCreditStopId = selectedTeamCheckout.value?.stop.id
@@ -1242,7 +1243,7 @@ export function useSubscriptionCheckout(
           teamCreditStopId,
           billingCycle: context.cycle
         },
-        attemptedAt: context.attemptStartedAt
+        attemptedAt
       })
       return
     }
@@ -1255,7 +1256,7 @@ export function useSubscriptionCheckout(
         tierKey: context.tier,
         billingCycle: context.cycle
       },
-      attemptedAt: context.attemptStartedAt
+      attemptedAt
     })
   }
 
