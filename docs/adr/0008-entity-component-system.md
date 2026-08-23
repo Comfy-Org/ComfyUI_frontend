@@ -58,6 +58,47 @@ system's pricing dependencies. Badge rows remain transient: they are
 not serialized, transmitted through CRDT, or included in undo history. See
 [Node Badge Store](../architecture/node-badge-store.md) for the design history.
 
+### Amendment (2026-08-23): registration and collision contract
+
+The entity stores answer a colliding registration in two different ways. The
+divergence is deliberate and is recorded here because it is not discoverable
+from the return types, which look alike but do not mean the same thing.
+
+**Minted-id stores — `nodeDataStore`, `linkStore`, `rerouteStore` — reject.**
+All three share one contract: a registration whose id is already held by a
+*different* state object is refused and returns `undefined`; re-registering the
+*same* object under the same owner is idempotent and returns the incumbent. Ids
+here are minted counters, so a collision is two distinct entities claiming one
+id — an invariant violation, first-wins. The loser stays detached, so its later
+writes and its removal cannot corrupt the winner's registration.
+
+**The derived-key store — `widgetValueStore` — overwrites.** `WidgetId` is
+`graphId:nodeId:name`, computed rather than minted, so "same id" means "same
+widget" by construction. Re-registering with a different `type` is a legitimate
+re-mint (the node definition changed), not two entities colliding, and
+overwriting is the correct resolution. Converging this store on rejection would
+break widget re-mint; converging the other three on overwrite would violate
+one-state-per-entity. **Neither direction is a safe unification.**
+
+**Production code does not see the store-level return shape.** Each minted-id
+store is fronted by a litegraph adapter that normalizes `T | undefined` to a
+boolean and adopts the store's reactive proxy on success: `registerNodeState`
+(`LGraphNode.ts`), `registerLinkTopology` / `replaceLinkTopology` (`LLink.ts`),
+and `registerRerouteChain` (`Reroute.ts`). Every production call site goes
+through one of these. `LGraph.add` is the only caller that acts on rejection, by
+re-minting the id and retrying:
+`while (!registerNodeState(this, node)) node.id = mintNodeId(state)`. A richer
+`registered | alreadyRegistered | conflict` union would add API surface without
+changing any decision a current caller can make; revisit it when a second caller
+needs the distinction.
+
+**Hazard: `undefined` is overloaded across the two groups.**
+`widgetValueStore.registerWidget` has no adapter — `BaseWidget.setNodeId` and
+`SubgraphNode` call it directly — and its `undefined` means *un-keyable id*, not
+*collision*. `setNodeId` treats it as "keep my local state", leaving the widget
+silently detached from the store. Do not read `undefined` from one of these five
+functions as though it carried the meaning it has in the others.
+
 ## Context
 
 The litegraph layer is built on deeply coupled OOP classes (`LGraphNode`, `LLink`, `Subgraph`, `BaseWidget`, `Reroute`, `LGraphGroup`, `SlotBase`). Each entity directly references its container and children — nodes hold widget arrays, widgets back-reference their node, links reference origin/target node IDs, subgraphs extend the graph class, and so on.

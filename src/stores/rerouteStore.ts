@@ -111,7 +111,10 @@ export const useRerouteStore = defineStore('reroute', () => {
   }
 
   /**
-   * Registers a reroute's chain state.
+   * Registers a reroute's chain state. The first registration for a reroute id
+   * wins; a duplicate stays detached and returns `undefined`. See "Amendment
+   * (2026-08-23): registration and collision contract" in
+   * `docs/adr/0008-entity-component-system.md`.
    * @returns The store-held reactive state — callers keep it as their live
    * state object so later field writes are tracked.
    */

@@ -85,6 +85,15 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     if (order.length === 0) graphOrders.delete(nodeId)
   }
 
+  /**
+   * Registers a widget's state. Unlike the minted-id entity stores, a
+   * re-registration under an existing `WidgetId` does not collide: the key is
+   * derived from `graphId:nodeId:name`, so a differing `type` is a re-mint and
+   * **overwrites** the incumbent. See "Amendment (2026-08-23): registration and
+   * collision contract" in `docs/adr/0008-entity-component-system.md`.
+   * @returns The store-held reactive state, or `undefined` when `widgetId` is
+   * un-keyable — never to signal a collision.
+   */
   function registerWidget<TValue extends WidgetValue = WidgetValue>(
     widgetId: WidgetId,
     init: WidgetStateInit<TValue>,

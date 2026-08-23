@@ -178,6 +178,8 @@ export const useLinkStore = defineStore('link', () => {
    * a link id or target slot wins — a duplicate stays detached instead of
    * clobbering the incumbent — and re-registering the already-registered
    * topology is a no-op.
+   * See "Amendment (2026-08-23): registration and collision contract" in
+   * `docs/adr/0008-entity-component-system.md`.
    * @returns The store-held reactive state when `topology` holds the
    * registration afterwards, otherwise `undefined`.
    */
