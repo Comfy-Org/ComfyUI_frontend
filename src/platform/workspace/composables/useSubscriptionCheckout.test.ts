@@ -3010,7 +3010,7 @@ describe('useSubscriptionCheckout', () => {
 
     it('persists pending checkout context on the legacy Stripe rail', async () => {
       mockShouldUseWorkspaceBilling.value = false
-      const checkout = await setup()
+      const checkout = await setup(undefined, 'personal', false)
       checkout.selectedTierKey.value = 'creator'
       checkout.selectedBillingCycle.value = 'monthly'
       mockSubscribe.mockResolvedValueOnce({
