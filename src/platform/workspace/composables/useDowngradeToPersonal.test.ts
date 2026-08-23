@@ -53,6 +53,18 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   useWorkspaceUI: () => ({ permissions: mockPermissions })
 }))
 
+vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
+
+vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
+  useBillingCapabilities: () => ({
+    canDowngradeToPersonal: {
+      get value() {
+        return mockPermissions.value.canDowngradeToPersonal
+      }
+    }
+  })
+}))
+
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     subscribe: mockSubscribe,

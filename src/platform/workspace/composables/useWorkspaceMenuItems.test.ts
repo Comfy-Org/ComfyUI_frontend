@@ -38,6 +38,22 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
+vi.mock('@/composables/billing/useBillingRouting', () => ({
+  useBillingRouting: () => ({ shouldUseWorkspaceBilling: computed(() => true) })
+}))
+
+vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
+
+vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
+  useBillingCapabilities: () => ({
+    canCancel: {
+      get value() {
+        return state.canManageSubscriptionLifecycle
+      }
+    }
+  })
+}))
+
 vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   useWorkspaceUI: () => ({
     permissions: {
@@ -111,7 +127,7 @@ describe('useWorkspaceMenuItems', () => {
   })
 
   it('withholds cancellation for an already-cancelled plan', () => {
-    state.canManageSubscriptionLifecycle = true
+    state.canManageSubscriptionLifecycle = false
     state.isSubscriptionCancelled = true
 
     const { menuItems } = useWorkspaceMenuItems()
@@ -147,7 +163,7 @@ describe('useWorkspaceMenuItems', () => {
 
   it('withholds cancellation when payment_failed has no subscription plan', () => {
     state.billingStatus = 'payment_failed'
-    state.canManageSubscriptionLifecycle = true
+    state.canManageSubscriptionLifecycle = false
     state.isActiveSubscription = false
     state.planSlug = null
 

@@ -1,15 +1,46 @@
-import { computed, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
+
+interface BillingCapabilitiesMockState {
+  canCancel: boolean
+  canReactivate: boolean
+  canChangeSeats: boolean
+  canInviteMembers: boolean
+  canDowngradeToPersonal: boolean
+}
 
 const canTopUpState = ref(true)
+const defaultCapabilityState: BillingCapabilitiesMockState = {
+  canCancel: true,
+  canReactivate: true,
+  canChangeSeats: true,
+  canInviteMembers: true,
+  canDowngradeToPersonal: true
+}
+const capabilityState = reactive<BillingCapabilitiesMockState>({
+  ...defaultCapabilityState
+})
 
 export function setCanTopUpMock(canTopUp: boolean) {
   canTopUpState.value = canTopUp
+}
+
+export function setBillingCapabilitiesMock(
+  capabilities: Partial<BillingCapabilitiesMockState>
+) {
+  Object.assign(capabilityState, defaultCapabilityState, capabilities)
 }
 
 export function useBillingCapabilities() {
   return {
     canTopUp: computed(() => canTopUpState.value),
     canSubscribeSelfServe: computed(() => false),
+    canCancel: computed(() => capabilityState.canCancel),
+    canReactivate: computed(() => capabilityState.canReactivate),
+    canChangeSeats: computed(() => capabilityState.canChangeSeats),
+    canInviteMembers: computed(() => capabilityState.canInviteMembers),
+    canDowngradeToPersonal: computed(
+      () => capabilityState.canDowngradeToPersonal
+    ),
     initialize: () => undefined
   }
 }

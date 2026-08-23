@@ -260,10 +260,7 @@
                   }}
                 </Button>
                 <Button
-                  v-if="
-                    isSubscriptionCancelled &&
-                    permissions.canManageSubscriptionLifecycle
-                  "
+                  v-if="isSubscriptionCancelled && canReactivatePlan"
                   size="lg"
                   variant="primary"
                   class="rounded-lg px-4 text-sm font-normal"
@@ -276,7 +273,7 @@
                   v-else-if="
                     !isSubscriptionCancelled &&
                     canAccessSubscriptionFeatures &&
-                    permissions.canManageSubscription
+                    canChangePlan
                   "
                   size="lg"
                   variant="secondary"
@@ -420,6 +417,7 @@ import type { TierBenefit } from '@/platform/cloud/subscription/utils/tierBenefi
 import { getCommonTierBenefits } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { isCloud } from '@/platform/distribution/types'
 import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceMenuItems } from '@/platform/workspace/composables/useWorkspaceMenuItems'
 import { useWorkspacePlanPricing } from '@/platform/workspace/composables/useWorkspacePlanPricing'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
@@ -434,6 +432,8 @@ const workspaceStore = useTeamWorkspaceStore()
 const { isWorkspaceSubscribed, isInPersonalWorkspace } =
   storeToRefs(workspaceStore)
 const { permissions, isSubscriptionCancelled, workspaceRole } = useWorkspaceUI()
+const { canReactivate, canChangeSeats, canSubscribeSelfServe } =
+  useBillingCapabilities()
 const { maxAvailable: freeRunsAllowance, quotaEnabled: freeRunsQuotaEnabled } =
   useFreeTierQuota()
 const { t, n, locale } = useI18n()
@@ -482,7 +482,12 @@ const isSubscriptionEnded = computed(() => {
 // Show subscribe prompt to owners without active subscription. A cancelled plan
 // stays active until its end date, so it keeps the subscribed treatment.
 const showSubscribePrompt = computed(() => {
-  if (!permissions.value.canManageSubscription) return false
+  if (
+    !(isCloud
+      ? canSubscribeSelfServe.value
+      : permissions.value.canManageSubscription)
+  )
+    return false
   if (isSubscriptionEnded.value) return true
   if (isSubscriptionCancelled.value) return false
   if (
@@ -494,6 +499,15 @@ const showSubscribePrompt = computed(() => {
   if (isInPersonalWorkspace.value) return !canAccessSubscriptionFeatures.value
   return !isWorkspaceSubscribed.value
 })
+
+const canReactivatePlan = computed(() =>
+  isCloud
+    ? canReactivate.value
+    : permissions.value.canManageSubscriptionLifecycle
+)
+const canChangePlan = computed(() =>
+  isCloud ? canChangeSeats.value : permissions.value.canManageSubscription
+)
 
 const showTeamSubscribePrompt = computed(
   () => showSubscribePrompt.value && !isInPersonalWorkspace.value

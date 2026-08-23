@@ -60,6 +60,21 @@ function useBillingCapabilitiesInternal() {
   const canSubscribeSelfServe = computed(
     () => isCloud && (capabilities.value?.can_subscribe_self_serve ?? false)
   )
+  const canCancel = computed(
+    () => isCloud && (capabilities.value?.can_cancel ?? false)
+  )
+  const canReactivate = computed(
+    () => isCloud && (capabilities.value?.can_reactivate ?? false)
+  )
+  const canChangeSeats = computed(
+    () => isCloud && (capabilities.value?.can_change_seats ?? false)
+  )
+  const canInviteMembers = computed(
+    () => isCloud && (capabilities.value?.can_invite_members ?? false)
+  )
+  const canDowngradeToPersonal = computed(
+    () => isCloud && (capabilities.value?.can_downgrade_to_personal ?? false)
+  )
 
   async function fetchCapabilities(signal?: AbortSignal): Promise<void> {
     const requestId = ++latestRequestId
@@ -114,7 +129,16 @@ function useBillingCapabilitiesInternal() {
     }
   )
 
-  return { canTopUp, canSubscribeSelfServe, initialize }
+  return {
+    canTopUp,
+    canSubscribeSelfServe,
+    canCancel,
+    canReactivate,
+    canChangeSeats,
+    canInviteMembers,
+    canDowngradeToPersonal,
+    initialize
+  }
 }
 
 export const useBillingCapabilities = createSharedComposable(

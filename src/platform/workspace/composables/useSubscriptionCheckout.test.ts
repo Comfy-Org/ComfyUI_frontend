@@ -242,6 +242,33 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   })
 }))
 
+vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
+
+vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
+  useBillingCapabilities: () => ({
+    canSubscribeSelfServe: {
+      get value() {
+        return mockPermissions.value.canManageSubscription
+      }
+    },
+    canReactivate: {
+      get value() {
+        return mockPermissions.value.canManageSubscriptionLifecycle
+      }
+    },
+    canChangeSeats: {
+      get value() {
+        return mockPermissions.value.canManageSubscription
+      }
+    },
+    canDowngradeToPersonal: {
+      get value() {
+        return mockPermissions.value.canDowngradeToPersonal
+      }
+    }
+  })
+}))
+
 vi.mock('@/services/dialogService', () => ({
   useDialogService: () => ({
     showDowngradeToPersonalDialog: mockShowDowngradeToPersonalDialog

@@ -52,8 +52,9 @@ import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { getSubscriptionCancellationMetadata } from '@/platform/cloud/subscription/utils/subscriptionCancellationTelemetry'
+import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useDialogStore } from '@/stores/dialogStore'
 import { parseIsoDateSafe } from '@/utils/dateTimeUtil'
 import { getErrorMessage } from '@/utils/errorUtil'
@@ -69,7 +70,7 @@ const toast = useToast()
 const { cancelSubscription, fetchStatus, subscription, tier } =
   useBillingContext()
 const { shouldUseWorkspaceBilling } = useBillingRouting()
-const { permissions } = useWorkspaceUI()
+const { canCancel } = useBillingCapabilities()
 const telemetry = useTelemetry()
 
 const isLoading = ref(false)
@@ -117,10 +118,7 @@ function onClose() {
 }
 
 async function onConfirmCancel() {
-  if (
-    shouldUseWorkspaceBilling.value &&
-    !permissions.value.canManageSubscriptionLifecycle
-  ) {
+  if (isCloud && shouldUseWorkspaceBilling.value && !canCancel.value) {
     return
   }
 

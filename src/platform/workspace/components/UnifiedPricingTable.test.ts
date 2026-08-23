@@ -42,12 +42,12 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
-  useWorkspaceUI: () => ({
-    permissions: computed(() => ({
-      canManageSubscription: mockCanManageSubscription.value,
-      canDowngradeToPersonal: mockCanDowngradeToPersonal.value
-    }))
+vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
+  useBillingCapabilities: () => ({
+    canSubscribeSelfServe: computed(() => mockCanManageSubscription.value),
+    canReactivate: computed(() => mockCanManageSubscription.value),
+    canChangeSeats: computed(() => mockCanManageSubscription.value),
+    canDowngradeToPersonal: computed(() => mockCanDowngradeToPersonal.value)
   })
 }))
 

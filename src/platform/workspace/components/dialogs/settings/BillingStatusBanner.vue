@@ -70,6 +70,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingBanner } from '@/platform/workspace/composables/useBillingBanner'
+import { isCloud } from '@/platform/distribution/types'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
@@ -80,14 +81,17 @@ type BannerAction = 'addCredits' | 'reactivate' | 'updatePayment'
 const { t, d } = useI18n()
 const { renewalDate, subscription, manageSubscription } = useBillingContext()
 const { permissions } = useWorkspaceUI()
-const { canTopUp, canSubscribeSelfServe } = useBillingCapabilities()
+const { canTopUp, canSubscribeSelfServe, canReactivate } =
+  useBillingCapabilities()
 const { kind, dismiss } = useBillingBanner()
 const { isResubscribing, handleResubscribe } = useResubscribe()
 const dialogService = useDialogService()
 
 const canManage = computed(() => permissions.value.canManageSubscription)
-const canManageLifecycle = computed(
-  () => permissions.value.canManageSubscriptionLifecycle
+const canReactivatePlan = computed(() =>
+  isCloud
+    ? canReactivate.value
+    : permissions.value.canManageSubscriptionLifecycle
 )
 const cycleResetDate = computed(() => {
   const raw = renewalDate.value
@@ -148,7 +152,7 @@ const banner = computed<BannerView | null>(() => {
         muted: true,
         title: t(`${bs}.ending.title`, { date: planEndDate.value }),
         body: t(`${bs}.ending.body`),
-        action: canManageLifecycle.value ? 'reactivate' : null,
+        action: canReactivatePlan.value ? 'reactivate' : null,
         dismissible: false
       }
     default:

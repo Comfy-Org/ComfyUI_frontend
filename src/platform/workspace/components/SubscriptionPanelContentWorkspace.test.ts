@@ -226,6 +226,15 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   })
 }))
 
+vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
+  useBillingCapabilities: () => ({
+    canCancel: computed(() => mockCanManageSubscriptionLifecycle.value),
+    canReactivate: computed(() => mockCanManageSubscriptionLifecycle.value),
+    canChangeSeats: computed(() => mockCanManageSubscription.value),
+    canSubscribeSelfServe: computed(() => mockCanManageSubscription.value)
+  })
+}))
+
 vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
   useBillingOperationStore: () => ({
     get isSettingUp() {

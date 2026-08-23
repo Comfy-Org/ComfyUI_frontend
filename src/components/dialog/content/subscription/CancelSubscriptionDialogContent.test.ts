@@ -72,6 +72,14 @@ vi.mock('@/composables/billing/useBillingRouting', () => ({
   })
 }))
 
+vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
+
+vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
+  useBillingCapabilities: () => ({
+    canCancel: mockCanManageSubscriptionLifecycle
+  })
+}))
+
 vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   useWorkspaceUI: () => ({
     permissions: {

@@ -81,7 +81,8 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
 vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
   useBillingCapabilities: () => ({
     canTopUp: computed(() => state.canTopUp),
-    canSubscribeSelfServe: computed(() => state.canSubscribeSelfServe)
+    canSubscribeSelfServe: computed(() => state.canSubscribeSelfServe),
+    canReactivate: computed(() => state.canManageSubscriptionLifecycle)
   })
 }))
 
@@ -312,6 +313,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.billingStatus = 'payment_failed'
     state.canAccessSubscriptionFeatures = false
     state.canManageSubscription = true
+    state.canSubscribeSelfServe = true
     state.planSlug = null
 
     renderComponent('team')
@@ -331,6 +333,7 @@ describe('CurrentUserPopoverWorkspace', () => {
       isCancelled: true,
       canManageSubscription: false,
       canManageSubscriptionLifecycle: true,
+      canSubscribeSelfServe: false,
       action: 'Resubscribe',
       visible: true
     },
@@ -340,6 +343,7 @@ describe('CurrentUserPopoverWorkspace', () => {
       isCancelled: true,
       canManageSubscription: true,
       canManageSubscriptionLifecycle: false,
+      canSubscribeSelfServe: false,
       action: 'Resubscribe',
       visible: false
     },
@@ -349,6 +353,7 @@ describe('CurrentUserPopoverWorkspace', () => {
       isCancelled: false,
       canManageSubscription: true,
       canManageSubscriptionLifecycle: false,
+      canSubscribeSelfServe: true,
       action: 'Subscribe',
       visible: true
     },
@@ -358,6 +363,7 @@ describe('CurrentUserPopoverWorkspace', () => {
       isCancelled: false,
       canManageSubscription: false,
       canManageSubscriptionLifecycle: true,
+      canSubscribeSelfServe: false,
       action: 'Subscribe',
       visible: false
     }
@@ -368,6 +374,7 @@ describe('CurrentUserPopoverWorkspace', () => {
       isCancelled,
       canManageSubscription,
       canManageSubscriptionLifecycle,
+      canSubscribeSelfServe,
       action,
       visible
     }) => {
@@ -375,6 +382,7 @@ describe('CurrentUserPopoverWorkspace', () => {
       state.isCancelled = isCancelled
       state.canManageSubscription = canManageSubscription
       state.canManageSubscriptionLifecycle = canManageSubscriptionLifecycle
+      state.canSubscribeSelfServe = canSubscribeSelfServe
 
       renderComponent('team')
 

@@ -79,7 +79,8 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
 vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
   useBillingCapabilities: () => ({
     canTopUp: computed(() => state.canTopUp),
-    canSubscribeSelfServe: computed(() => state.canSubscribeSelfServe)
+    canSubscribeSelfServe: computed(() => state.canSubscribeSelfServe),
+    canReactivate: computed(() => state.canManageSubscriptionLifecycle)
   })
 }))
 
