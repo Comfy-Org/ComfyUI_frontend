@@ -91,8 +91,24 @@ try {
       break
     }
     case 'check': {
+      const { parseFlags } = await import('./cli/flags')
+      const { flags } = parseFlags(args.slice(1), ['distribution'])
+      const { distributionIds, resolveDistribution } =
+        await import('./devserver/distributions')
+      const distributionId =
+        flags.distribution ?? process.env.COMFY_TEST_DISTRIBUTION
+      const distribution = resolveDistribution(distributionId)
+      if (!distribution) {
+        console.log(
+          pc.red(
+            `  Invalid distribution "${distributionId}". Valid distributions: ${distributionIds().join(', ')}`
+          )
+        )
+        process.exitCode = 1
+        break
+      }
       const { runChecks } = await import('./commands/check')
-      const { allPassed } = await runChecks()
+      const { allPassed } = await runChecks(distribution)
       if (!allPassed) {
         console.log()
         console.log(
@@ -134,7 +150,8 @@ Commands:
   plan        Print a test plan for an agent to hand to playwright-test-generator
   transform   Transform raw codegen output to conventions
   pr          Open a pull request for a generated test
-  check       Check environment prerequisites
+  check [--distribution cloud|cloud-staging|cloud-prod|local]
+              Check environment prerequisites (defaults to cloud)
   list [--filter <keyword>]
               List available test workflows, optionally filtered by path
   tags        List test tags with their meanings

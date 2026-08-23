@@ -10,10 +10,12 @@ import { checkGh } from '../checks/gh'
 import { checkDevServer } from '../checks/devServer'
 import { checkBackend } from '../checks/backend'
 import { checkModels } from '../checks/models'
-import { header, alert } from '../ui/logger'
+import type { Distribution } from '../devserver/distributions'
+import { alert, header, pass } from '../ui/logger'
 import type { CheckResult } from '../checks/types'
 
 export async function runChecks(
+  distribution: Distribution,
   projectRoot?: string,
   options: { showHeader?: boolean } = {}
 ): Promise<{
@@ -44,9 +46,14 @@ export async function runChecks(
 
   header('Services Check')
 
-  results.push(await checkBackend())
-  results.push(await checkModels())
-  results.push(await checkDevServer(undefined, root))
+  if (distribution.needsLocalBackend) {
+    results.push(await checkBackend())
+    results.push(await checkModels())
+  } else {
+    pass('Backend', 'skipped (cloud backend)')
+    pass('Models', 'skipped (cloud backend)')
+  }
+  results.push(await checkDevServer(undefined, root, distribution.script))
 
   const requiredFailed = results.filter((r) => !r.ok && !r.optional)
 

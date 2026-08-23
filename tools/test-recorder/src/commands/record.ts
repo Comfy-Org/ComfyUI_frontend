@@ -9,7 +9,8 @@ import {
   isCancel,
   cancel,
   spinner,
-  path
+  path,
+  select
 } from '@clack/prompts'
 import pc from 'picocolors'
 import { runChecks } from './check'
@@ -29,6 +30,8 @@ import { pass, fail, warn, alert, info, blank, box } from '../ui/logger'
 import { toSlug } from '../cli/slug'
 import { TAG_REGISTRY } from '../tags'
 import { addWorkflow } from '../workflows/add'
+import { DISTRIBUTIONS, resolveDistribution } from '../devserver/distributions'
+import { ensureDevServer } from '../devserver/manager'
 
 const PASTE_SENTINEL = '.'
 const ADD_WORKFLOW_SENTINEL = '__add-workflow__'
@@ -134,15 +137,34 @@ export async function runRecord(): Promise<void> {
   ])
   blank()
 
-  stepHeader(1, 6, 'Environment Check')
-  const { allPassed } = await runChecks(undefined, { showHeader: false })
+  stepHeader(1, 7, 'Target Distribution')
+  const selectedDistribution = await select({
+    message: 'Which distribution do you want to record against?',
+    options: DISTRIBUTIONS.map(({ id, label, hint }) => ({
+      value: id,
+      label,
+      hint
+    })),
+    initialValue: 'cloud'
+  })
+  if (isCancel(selectedDistribution)) {
+    cancel('Operation cancelled')
+    process.exit(0)
+  }
+  const distribution = resolveDistribution(selectedDistribution)
+  if (!distribution) throw new Error('Selected distribution is unavailable')
+
+  stepHeader(2, 7, 'Environment Check')
+  const { allPassed } = await runChecks(distribution, undefined, {
+    showHeader: false
+  })
   if (!allPassed) {
     blank()
     fail('Some required checks failed. Fix the issues above.')
     process.exit(1)
   }
 
-  stepHeader(2, 6, 'Project Setup')
+  stepHeader(3, 7, 'Project Setup')
 
   let projectRoot: string
   try {
@@ -170,7 +192,7 @@ export async function runRecord(): Promise<void> {
   s.stop('Dependencies installed')
   pass('Project ready', projectRoot)
 
-  stepHeader(3, 6, 'Configure Your Test')
+  stepHeader(4, 7, 'Configure Your Test')
 
   info([
     'Naming tip: describe the user-visible behavior, not the steps —',
@@ -296,19 +318,36 @@ export async function runRecord(): Promise<void> {
     }
   }
 
-  stepHeader(4, 6, 'Record')
+  stepHeader(5, 7, 'Record')
 
-  const result = await runRecording({
-    testName: slug,
-    workflow: seedWorkflow || undefined,
-    projectRoot
-  })
+  const serverSpinner = spinner()
+  serverSpinner.start(`Starting dev server (${distribution.script})…`)
+  const devServer = await ensureDevServer(distribution, projectRoot).catch(
+    (error: unknown) => {
+      serverSpinner.stop('Dev server failed to start')
+      throw error
+    }
+  )
+  serverSpinner.stop(
+    devServer.ownedByUs ? 'Dev server started' : 'Using running dev server'
+  )
+
+  let result
+  try {
+    result = await runRecording({
+      testName: slug,
+      workflow: seedWorkflow || undefined,
+      projectRoot
+    })
+  } finally {
+    devServer.stop()
+  }
   if (!result.success) {
     fail('Recording failed', result.error)
     process.exit(1)
   }
 
-  stepHeader(5, 6, 'Transform')
+  stepHeader(6, 7, 'Transform')
 
   let recordedCode: string
   let stdinOpen = true
@@ -379,7 +418,7 @@ export async function runRecord(): Promise<void> {
   blank()
   pass('Test saved', outputPath)
 
-  stepHeader(6, 6, 'Refactor (optional)')
+  stepHeader(7, 7, 'Refactor (optional)')
   await offerAgentRefactor(outputPath, projectRoot)
   blank()
 
