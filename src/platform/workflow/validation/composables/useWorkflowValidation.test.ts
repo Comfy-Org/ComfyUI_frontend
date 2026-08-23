@@ -96,16 +96,21 @@ const corruptWorkflow = (id: string) =>
   )
 
 /**
- * Two id-less workflows whose corruption differs only in which nodes it names.
- * `patched`/`deleted` counts are identical, so a key built from counts alone
- * would report the first and discard the second.
+ * Id-less workflows whose corruption differs only in which nodes it names.
+ * `patched`/`deleted` counts are identical across them, so a key built from
+ * counts alone would report the first and discard the rest. Node ids come from
+ * a counter because `reportedCorruption` outlives a test: fixed ids would make
+ * a CI retry of a transient failure fail permanently.
  */
-const unidentifiedCorruptWorkflow = (originId: number, missingId: number) =>
-  createWorkflow(
+let nodeIdSeed = 1000
+const unidentifiedCorruptWorkflow = () => {
+  const originId = (nodeIdSeed += 2)
+  return createWorkflow(
     undefined,
     [createNode({ id: originId, outputs: [createOutput([1])] })],
-    [[1, originId, 0, missingId, 0, '*']]
+    [[1, originId, 0, originId + 1, 0, '*']]
   )
+}
 
 let workflowCount = 0
 const uniqueId = () =>
@@ -166,10 +171,20 @@ describe('useWorkflowValidation', () => {
   it('does not collapse distinct workflows that carry no id', async () => {
     const validation = useWorkflowValidation()
 
-    await validation.validateWorkflow(unidentifiedCorruptWorkflow(3, 4))
-    await validation.validateWorkflow(unidentifiedCorruptWorkflow(5, 6))
+    await validation.validateWorkflow(unidentifiedCorruptWorkflow())
+    await validation.validateWorkflow(unidentifiedCorruptWorkflow())
 
     expect(reportError).toHaveBeenCalledTimes(2)
+  })
+
+  it('stops reporting once the per-session cap is reached', async () => {
+    const validation = useWorkflowValidation()
+
+    for (let i = 0; i < 40; i++) {
+      await validation.validateWorkflow(unidentifiedCorruptWorkflow())
+    }
+
+    expect(reportError.mock.calls.length).toBeLessThanOrEqual(25)
   })
 
   it('stays quiet for an intact workflow', async () => {
