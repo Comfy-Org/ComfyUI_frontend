@@ -43,6 +43,7 @@ const mockBillingState = vi.hoisted(() => ({
   canAccessSubscriptionFeatures: false
 }))
 const mockClearAllWorkflowStorage = vi.hoisted(() => vi.fn())
+const mockPrepareWorkflowLogoutTransition = vi.hoisted(() => vi.fn())
 
 const knownAuthErrorCodes = new Set([
   'auth/invalid-credential',
@@ -77,7 +78,8 @@ vi.mock('@/platform/updates/common/toastStore', () => ({
 }))
 
 vi.mock('@/platform/workflow/persistence/base/storageIO', () => ({
-  clearAllWorkflowStorage: mockClearAllWorkflowStorage
+  clearAllWorkflowStorage: mockClearAllWorkflowStorage,
+  prepareWorkflowLogoutTransition: mockPrepareWorkflowLogoutTransition
 }))
 
 vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
@@ -214,12 +216,14 @@ describe('useAuthActions.logout', () => {
 
     await logout()
 
-    expect(mockClearAllWorkflowStorage).toHaveBeenCalledExactlyOnceWith({
-      blockWrites: true
-    })
+    expect(mockPrepareWorkflowLogoutTransition).toHaveBeenCalledOnce()
+    expect(mockClearAllWorkflowStorage).toHaveBeenCalledExactlyOnceWith()
     expect(mockAuthStore.logout.mock.invocationCallOrder[0]).toBeLessThan(
-      mockClearAllWorkflowStorage.mock.invocationCallOrder[0]
+      mockPrepareWorkflowLogoutTransition.mock.invocationCallOrder[0]
     )
+    expect(
+      mockPrepareWorkflowLogoutTransition.mock.invocationCallOrder[0]
+    ).toBeLessThan(mockClearAllWorkflowStorage.mock.invocationCallOrder[0])
     expect(
       mockClearAllWorkflowStorage.mock.invocationCallOrder[0]
     ).toBeLessThan(navigationSpy.mock.invocationCallOrder[0])
@@ -231,6 +235,7 @@ describe('useAuthActions.logout', () => {
 
     await logout()
 
+    expect(mockPrepareWorkflowLogoutTransition).not.toHaveBeenCalled()
     expect(mockClearAllWorkflowStorage).not.toHaveBeenCalled()
   })
 

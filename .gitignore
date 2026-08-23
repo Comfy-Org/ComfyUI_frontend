@@ -98,5 +98,10 @@ vitest.config.*.timestamp*
 # Weekly docs check output
 /output.txt
 
-.amp/*
-!.amp/services.yaml
+.amp
+# Registry census working tree (scripts/registry-census) - corpus, lockfile, results
+.census/
+# Ecosystem matrix fixture (scripts/registry-census/build_matrix.py) - generated per-pack specs
+src/__ecs_matrix__/
+# Per-pack result rows written by a local detection-proof run
+matrix-proof/
