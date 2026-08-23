@@ -22,7 +22,7 @@ describe('extensionStore', () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
       try {
         const first = { name: 'dup' }
-        store.registerExtension(first)
+        expect(store.registerExtension(first)).toBe(true)
         expect(store.registerExtension({ name: 'dup' })).toBe(false)
         expect(warnSpy).toHaveBeenCalledWith(
           "Extension named 'dup' already registered - skipping"
