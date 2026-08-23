@@ -10,6 +10,7 @@ import {
   LGraphNode,
   LiteGraph,
   LGraph,
+  LGraphCanvas,
   NodeInputSlot,
   NodeOutputSlot
 } from '@/lib/litegraph/src/litegraph'
@@ -148,15 +149,85 @@ describe('LGraphNode', () => {
       expect(serialized).not.toHaveProperty('size')
     })
 
-    test('keeps the recorded size while collapsed, since flags are replayed from the file', () => {
+    test('keeps the recorded size while collapsed, since a placeholder cannot re-derive an expanded one', () => {
       const placeholder = createPlaceholder({ flags: { collapsed: false } })
-      placeholder.flags.collapsed = true
+      new LGraph().add(placeholder)
+      placeholder.collapse(true)
       placeholder.setSize([80, 30])
 
       const serialized = placeholder.serialize()
 
       expect(serialized.size).toEqual([140, 60])
-      expect(serialized.flags).toEqual({ collapsed: false })
+      expect(serialized.flags).toEqual({ collapsed: true })
+    })
+
+    test('carries a live pin through', () => {
+      const placeholder = createPlaceholder()
+      new LGraph().add(placeholder)
+      placeholder.pin(true)
+
+      expect(placeholder.serialize().flags).toEqual({ pinned: true })
+    })
+
+    test('carries a live rename through', () => {
+      const placeholder = createPlaceholder({ title: 'Recorded Title' })
+      placeholder.title = 'renamed'
+
+      expect(placeholder.serialize().title).toEqual('renamed')
+    })
+
+    test('carries a live recolour through, over the recorded colours', () => {
+      const placeholder = createPlaceholder({
+        color: '#111',
+        bgcolor: '#222'
+      })
+      placeholder.setColorOption(LGraphCanvas.node_colors.red)
+
+      const serialized = placeholder.serialize()
+
+      expect(serialized.color).toEqual(LGraphCanvas.node_colors.red.color)
+      expect(serialized.bgcolor).toEqual(LGraphCanvas.node_colors.red.bgcolor)
+    })
+
+    test('drops the recorded colours when the live colour is cleared', () => {
+      const placeholder = createPlaceholder({
+        color: '#111',
+        bgcolor: '#222'
+      })
+      placeholder.setColorOption(null)
+
+      const serialized = placeholder.serialize()
+
+      expect(serialized).not.toHaveProperty('color')
+      expect(serialized).not.toHaveProperty('bgcolor')
+    })
+
+    test('round-trips an untouched placeholder that recorded decorations', () => {
+      const recorded = {
+        title: 'Recorded Title',
+        flags: { collapsed: true, pinned: true },
+        color: '#111',
+        bgcolor: '#222'
+      }
+      const serialized = createPlaceholder(recorded).serialize()
+
+      expect(serialized).toMatchObject(recorded)
+    })
+
+    test('round-trips an untouched placeholder that recorded no decorations', () => {
+      const serialized = createPlaceholder().serialize()
+
+      expect(serialized).not.toHaveProperty('title')
+      expect(serialized).not.toHaveProperty('color')
+      expect(serialized).not.toHaveProperty('bgcolor')
+      expect(serialized.flags).toEqual({})
+    })
+
+    test('does not invent flags when the recorded serialization has none', () => {
+      const placeholder = createPlaceholder()
+      delete (placeholder.last_serialization as Partial<ISerialisedNode>).flags
+
+      expect(placeholder.serialize()).not.toHaveProperty('flags')
     })
   })
 

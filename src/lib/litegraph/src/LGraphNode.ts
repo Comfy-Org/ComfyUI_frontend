@@ -1061,22 +1061,39 @@ export class LGraphNode
 
     // special case for when there were errors
     if (this.constructor === LGraphNode && this.last_serialization) {
-      // Only an expanded placeholder whose file recorded a size has a live
-      // size worth keeping. Vue nodes mode drops the CSS width/height floors
-      // on collapse, so a collapsed node's size is a measurement of the
-      // collapsed card, and `flags` is replayed from the file — keeping both
-      // would pair `collapsed: false` with collapsed dimensions. With no
-      // recorded size there is no definition to compute a real one from, so
-      // keeping the live size would invent a dimension the file never had.
+      // A collapsed placeholder keeps the file's recorded (expanded) size:
+      // it has no definition to re-derive one from, and in Vue nodes mode a
+      // collapsed node's live size is a measurement of the collapsed card.
+      // With no recorded size there is nothing to fall back to either, so the
+      // live size would invent a dimension the file never had.
       const carriesLiveSize =
         this.last_serialization.size != null && !this.flags.collapsed
 
-      return {
+      const result: ISerialisedNode = {
         ...this.last_serialization,
         mode: o.mode,
         pos: o.pos,
         ...(carriesLiveSize && { size: o.size })
       }
+
+      // `flags` is required by the schema, but a hand-written file can omit it
+      // and an untouched placeholder has to round-trip that absence.
+      if (this.last_serialization.flags || Object.keys(o.flags).length)
+        result.flags = o.flags
+
+      // Mirror the normal path's title guard, and delete rather than skip the
+      // unset keys so a cleared decoration cannot resurrect the file's value.
+      if (this.title && this.title !== this.constructor.title)
+        result.title = this.title
+      else delete result.title
+
+      if (this.color) result.color = this.color
+      else delete result.color
+
+      if (this.bgcolor) result.bgcolor = this.bgcolor
+      else delete result.bgcolor
+
+      return result
     }
 
     if (this.inputs)
