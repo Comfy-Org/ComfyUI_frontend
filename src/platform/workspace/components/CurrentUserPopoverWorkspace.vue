@@ -168,7 +168,7 @@
       type="button"
       class="flex w-full cursor-pointer appearance-none items-center gap-2 border-0 bg-transparent px-4 py-2 text-left hover:bg-secondary-background-hover focus-visible:bg-secondary-background-hover focus-visible:outline-none"
       data-testid="plans-credits-menu-item"
-      @click="handleOpenCreditsSettings"
+      @click="handleOpenPlanCreditsSettings"
     >
       <i class="icon-[lucide--coins] size-4 text-muted-foreground" />
       <span class="flex-1 text-sm text-base-foreground">{{
@@ -369,8 +369,8 @@ const handleOpenManagePlanSettings = () => {
   emit('close')
 }
 
-const handleOpenCreditsSettings = () => {
-  settingsDialog.show('credits')
+const handleOpenPlanCreditsSettings = () => {
+  settingsDialog.show('workspace')
   emit('close')
 }
 

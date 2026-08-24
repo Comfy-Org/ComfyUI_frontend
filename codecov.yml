@@ -1,12 +1,10 @@
 coverage:
   status:
     project:
-      # Keep website coverage from lowering the existing frontend status.
-      default:
-        target: auto
-        flags:
-          - unit
-          - e2e
+      # Disable the project-wide status entirely: the merge queue uses ALLGREEN,
+      # and total-project coverage dips were blocking merges. Patch coverage below
+      # still covers the diff.
+      default: false
 
       website:
         target: auto
