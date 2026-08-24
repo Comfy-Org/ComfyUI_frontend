@@ -9,6 +9,7 @@ export type BillingPolicyState =
   | { kind: 'LocalAndPro' }
   | { kind: 'LocalAndFounders' }
   | { kind: 'LocalAndTeam' }
+  | { kind: 'LocalAndUnrecognizedTier' }
   | { kind: 'CloudWithoutActiveSubscription' }
   | { kind: 'CloudTeamWithoutActiveSubscription' }
   | { kind: 'CloudEnterpriseWithoutActiveSubscription' }
@@ -19,3 +20,4 @@ export type BillingPolicyState =
   | { kind: 'CloudAndPro' }
   | { kind: 'CloudAndFounders' }
   | { kind: 'CloudAndTeam' }
+  | { kind: 'CloudAndUnrecognizedTier' }

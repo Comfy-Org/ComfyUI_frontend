@@ -63,7 +63,7 @@ export function deriveBillingPolicyState(input: {
       return { kind: `${distribution}AndUnknown` }
     default: {
       input.tier satisfies never
-      return { kind: `${distribution}AndUnknown` }
+      return { kind: `${distribution}AndUnrecognizedTier` }
     }
   }
 }

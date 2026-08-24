@@ -112,8 +112,8 @@ describe('deriveBillingPolicyState', () => {
   })
 
   it.for<[string, boolean]>([
-    ['LocalAndUnknown', false],
-    ['CloudAndUnknown', true]
+    ['LocalAndUnrecognizedTier', false],
+    ['CloudAndUnrecognizedTier', true]
   ])(
     'degrades a tier outside the generated enum to %s instead of crashing (isCloud=%s)',
     ([kind, isCloud]) => {
