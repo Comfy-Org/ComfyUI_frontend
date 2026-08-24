@@ -312,15 +312,15 @@ const faqJsonLd = {
       <!-- RESULT CARD -->
       <div class="flex flex-col overflow-hidden rounded-2xl border border-white/10">
         <div class="flex items-center justify-between px-5 py-3.5">
-          <h2 id="result-label" class="text-[11px] font-extrabold uppercase tracking-[0.2em] text-primary-warm-white">Result · example output</h2>
+          <h2 class="text-[11px] font-extrabold uppercase tracking-[0.2em] text-primary-warm-white">Result</h2>
           <div id="rview-toggle" class="flex gap-1.5 text-[10px] font-extrabold uppercase tracking-wider">
             <button data-rview="preview" class="rounded-md bg-white/10 px-2.5 py-1 text-primary-warm-white">Preview</button>
             <button data-rview="json" class="rounded-md px-2.5 py-1 text-primary-warm-gray hover:text-primary-warm-white">JSON</button>
           </div>
         </div>
-        <div class="relative aspect-video w-full bg-secondary-mauve/30">
+        <div class="relative aspect-video w-full">
           <img id="result-img" src={img} alt={`${name} output`} class="h-full w-full object-cover transition-opacity duration-500" onerror="this.style.display='none'" />
-          <div id="result-json-box" class="absolute inset-4 hidden overflow-hidden rounded-2xl border border-white/15 bg-primary-comfy-ink">
+          <div id="result-json-box" class="absolute inset-4 hidden overflow-hidden rounded-2xl border border-white/15">
             <pre id="result-json" class="scrollbar-code h-full overflow-auto whitespace-pre-wrap break-words p-4 font-mono text-xs leading-relaxed text-primary-warm-gray"></pre>
             <button type="button" data-copy="result-json" title="Copy" aria-label="Copy" class="absolute right-3 top-3 group shrink-0 cursor-pointer rounded-lg border border-white/15 bg-white/5 p-1.5 text-primary-warm-gray transition-colors hover:bg-white/10 hover:text-primary-warm-white"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-3.5 group-data-[copied]:hidden"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden size-3.5 group-data-[copied]:block"><path d="M20 6 9 17l-5-5"/></svg></button>
           </div>
@@ -559,7 +559,6 @@ const faqJsonLd = {
       const upgrade = $('upgrade-overlay')!
       const fill = $('progress-fill')!
       const img = $('result-img') as HTMLImageElement
-      const label = $('result-label')!
       const metaEl = $('result-meta')!
       const runMobile = $('pg-run-mobile')!
       const prompt = $('pg-prompt') as HTMLTextAreaElement
@@ -738,7 +737,6 @@ const faqJsonLd = {
             nodes_executed: 24,
             output: { type: 'video/webp', watermark: false, saved_to_history: true }
           }
-          label.textContent = 'Result · your run'
           metaEl.textContent = `Seed ${seed} · 4.2s render · saved to history · no watermark`
           meter.textContent = runsLeft > 0 ? `Free runs: ${runsLeft} left` : 'Free runs used'
           varBlock.classList.remove('hidden')
@@ -800,7 +798,6 @@ const faqJsonLd = {
         varStrip.classList.add('hidden'); varStrip.classList.remove('grid')
         $('ref-thumb')?.classList.add('hidden')
         const dl = $('dropzone-label'); if (dl) dl.textContent = 'or drop a frame to animate it'
-        label.textContent = 'Result · example output'
         metaEl.textContent = 'Seed 428790123 · 4.2s render · prompt saved through sign-in'
         meter.textContent = 'Free runs: 5 left'
         renderAll()
