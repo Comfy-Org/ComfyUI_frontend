@@ -8,7 +8,7 @@
 import { cn } from '@comfyorg/tailwind-utils'
 
 import BaseLayout from '../../layouts/BaseLayout.astro'
-import { ArrowUpRight, Coins as CreditsIcon } from '@lucide/vue'
+import { ArrowRight, Coins as CreditsIcon } from '@lucide/vue'
 
 import BrandButton from '../../components/common/BrandButton.vue'
 import GlassCard from '../../components/common/GlassCard.vue'
@@ -25,6 +25,7 @@ import {
   type LaunchModel
 } from '../../config/models-v2-demo'
 import Breadcrumbs from '../../components/common/Breadcrumbs.astro'
+import { buttonVariants } from '../../components/ui/button'
 import { highlightInline } from '../../lib/highlight'
 
 export function getStaticPaths() {
@@ -161,6 +162,11 @@ const breadcrumbJsonLd = {
     { '@type': 'ListItem', position: 3, name }
   ]
 }
+// Same call and merge the events section makes, so the link reads identically.
+// cn resolves the variant's casing and type scale against the size defaults —
+// concatenating leaves both and the wrong one wins. The arrow carries no size
+// class on purpose: the variant sizes a bare svg to size-6.
+const runLink = cn(buttonVariants({ variant: 'link' }), 'normal-case')
 const breadcrumbs = [
   { label: 'Home', href: 'https://comfy.org' },
   { label: 'AI Models', href: '/models-v2' },
@@ -221,7 +227,6 @@ const faqJsonLd = {
       <div class="hidden gap-2 lg:flex">
         {docsUrl && <BrandButton href={docsUrl} variant="outline" size="sm" class="text-2xs uppercase tracking-widest">Learn more</BrandButton>}
         <BrandButton href={workflowsUrl} variant="solid" size="sm" class="text-2xs uppercase tracking-widest">Try workflows</BrandButton>
-        {hfUrl && <BrandButton href={hfUrl} variant="outline" size="sm" class="text-2xs uppercase tracking-widest">Download weights ↗</BrandButton>}
       </div>
     </div>
     <p class="mt-2 max-w-3xl text-sm text-primary-comfy-canvas lg:text-base">{blurb}</p>
@@ -253,6 +258,15 @@ const faqJsonLd = {
           <div id="llms-menu" role="menu" class="absolute right-0 top-full z-40 mt-1.5 hidden w-60 overflow-hidden rounded-xl border border-transparency-white-t20 bg-site-dropdown py-1.5 shadow-2xl">
             <a href={mdUrl} class="block px-4 py-2.5 text-xs text-primary-warm-white hover:bg-transparency-white-t4">View as Markdown</a>
             <a href="/models-v2/llms.txt" class="block px-4 py-2.5 text-xs text-primary-warm-white hover:bg-transparency-white-t4">llms.txt — full catalog</a>
+            {hfUrl && (
+              <Fragment>
+                <div class="my-1.5 border-t border-transparency-white-t20"></div>
+                <a href={hfUrl} class="flex items-center justify-between gap-3 px-4 py-2.5 text-xs text-primary-warm-white hover:bg-transparency-white-t4">
+                  Download weights
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-4 shrink-0"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg>
+                </a>
+              </Fragment>
+            )}
           </div>
         </div>
         <div class="relative" id="graph-wrap">
@@ -527,7 +541,7 @@ const faqJsonLd = {
                       <p class="truncate text-sm font-semibold text-primary-warm-white">{v.displayName}</p>
                       <p class="text-2xs font-light text-primary-warm-gray">{dirLabel[v.directory] ?? v.directory} · {v.workflowCount} workflows</p>
                     </div>
-                    <span class="flex shrink-0 items-center gap-1.5 text-2xs font-bold uppercase tracking-widest text-primary-comfy-yellow">Run <ArrowUpRight class="size-4 shrink-0" aria-hidden="true" /></span>
+                    <span class={runLink}>Run <ArrowRight aria-hidden="true" /></span>
                   </a>
                 ))}
               </div>
