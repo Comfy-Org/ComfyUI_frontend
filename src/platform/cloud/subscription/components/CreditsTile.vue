@@ -188,16 +188,7 @@
 
     <div v-if="showActionButton" class="flex flex-col gap-3">
       <Button
-        v-if="billingPolicyCapabilities.showsSubscribeUpsellUI"
-        variant="subscribe"
-        size="lg"
-        class="w-full font-normal"
-        @click="handleUpgradeToAddCredits"
-      >
-        {{ $t('subscription.upgradeToAddCredits') }}
-      </Button>
-      <Button
-        v-else
+        v-if="canTopUp"
         :variant="isOutOfCredits ? 'inverted' : 'secondary'"
         size="lg"
         :class="
@@ -210,6 +201,15 @@
         @click="handleAddCredits"
       >
         {{ $t('subscription.addCredits') }}
+      </Button>
+      <Button
+        v-else
+        variant="subscribe"
+        size="lg"
+        class="w-full font-normal"
+        @click="handleUpgradeToAddCredits"
+      >
+        {{ $t('subscription.upgradeToAddCredits') }}
       </Button>
     </div>
   </div>
@@ -228,17 +228,15 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
-import { useBillingPolicyCapabilities } from '@/platform/cloud/subscription/composables/useBillingPolicyCapabilities'
 import {
   DEFAULT_TIER_KEY,
   toTierKey,
   getTierCredits
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import { computeMonthlyUsage } from '@/platform/cloud/subscription/utils/creditsProgress'
-import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { pendingTopupNeedsRefresh } from '@/platform/telemetry/topupTracker'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useCustomerEventsService } from '@/services/customerEventsService'
 import { useDialogService } from '@/services/dialogService'
 
@@ -256,10 +254,9 @@ const {
   canAccessSubscriptionFeatures,
   currentTeamCreditStop,
   fetchBalance,
-  fetchStatus,
-  type
+  fetchStatus
 } = useBillingContext()
-const { billingPolicyCapabilities } = useBillingPolicyCapabilities()
+const { canTopUp, canSubscribeSelfServe } = useBillingCapabilities()
 const {
   monthlyBonusCredits,
   prepaidCredits,
@@ -268,9 +265,8 @@ const {
   prepaidCreditsValue,
   isLoadingBalance
 } = useSubscriptionCredits()
-const { permissions } = useWorkspaceUI()
-const { showPricingTable } = useSubscriptionDialog()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
+const { showPricingTable } = useSubscriptionDialog()
 const customerEventsService = useCustomerEventsService()
 const dialogService = useDialogService()
 const telemetry = useTelemetry()
@@ -361,19 +357,15 @@ const showBreakdown = computed(
 )
 const showBar = computed(
   () =>
-    isCloud &&
     showBreakdown.value &&
     creditPoolTotalCredits.value !== null &&
     creditPoolTotalCredits.value > 0
 )
-// Workspace-owner gating only applies to team billing; legacy (personal,
-// including local/desktop) accounts have no workspace concept to gate on.
 const showActionButton = computed(
   () =>
-    canAccessSubscriptionFeatures.value &&
+    (canTopUp.value || canSubscribeSelfServe.value) &&
     !zeroState &&
-    !inactivePlan &&
-    (type.value !== 'workspace' || permissions.value.canTopUp)
+    !inactivePlan
 )
 
 const isMonthlyDepleted = computed(

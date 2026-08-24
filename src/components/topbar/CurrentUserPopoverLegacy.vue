@@ -167,10 +167,10 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import WorkspaceSwitcherPopover from '@/platform/workspace/components/WorkspaceSwitcherPopover.vue'
 import { useWorkspaceTierLabel } from '@/platform/workspace/composables/useWorkspaceTierLabel'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
 
@@ -214,11 +214,9 @@ const showWorkspaceSwitcher = computed(
   () => initState.value === 'ready' && workspaces.value.length > 0
 )
 
-const { permissions } = useWorkspaceUI()
-const showAddCredits = computed(() =>
-  showWorkspaceSwitcher.value
-    ? permissions.value.canTopUp
-    : canAccessSubscriptionFeatures.value
+const { canTopUp, canSubscribeSelfServe } = useBillingCapabilities()
+const showAddCredits = computed(
+  () => canTopUp.value || canSubscribeSelfServe.value
 )
 
 const subscriptionTierName = computed(() =>
