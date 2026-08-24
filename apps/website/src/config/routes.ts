@@ -95,7 +95,7 @@ export const externalLinks = {
   cloudStatus: 'https://status.comfy.org',
   discord: 'https://discord.com/invite/comfyorg',
   docs: 'https://docs.comfy.org/',
-  docsApi: 'https://docs.comfy.org/development/cloud/overview#quick-start',
+  docsApi: 'https://docs.comfy.org/development/cloud/overview',
   comfyMcpRepo: 'https://github.com/Comfy-Org/comfy-mcp',
   docsMcp: 'https://docs.comfy.org/agent-tools/mcp',
   docsMcpLocal:

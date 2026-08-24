@@ -50,11 +50,14 @@ const DEFAULT_AUTOPLAY_MS = 5000
 const {
   locale = 'en',
   slides,
-  class: className
+  class: className,
+  headingLevel = 'h2'
 } = defineProps<{
   locale?: Locale
   slides: FeaturedSplitSlide[]
   class?: HTMLAttributes['class']
+  /** Slide-title heading tag, so callers can nest slides under a section h2. */
+  headingLevel?: 'h2' | 'h3'
 }>()
 
 const activeIndex = ref(0)
@@ -231,11 +234,12 @@ useCarouselAutoplay({
             >
               {{ slide.eyebrow }}
             </p>
-            <h2
+            <component
+              :is="headingLevel"
               class="mt-7 max-w-200 text-3xl leading-[135%] font-medium text-primary-comfy-canvas"
             >
               {{ slide.title }}
-            </h2>
+            </component>
             <p
               v-if="slide.body"
               class="mt-5 max-w-160 text-[17px] leading-[160%] font-light text-primary-comfy-canvas"

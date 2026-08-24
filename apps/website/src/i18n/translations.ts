@@ -144,6 +144,10 @@ const translations = {
   },
 
   // Model release carousel (home page)
+  'modelRelease.heading': {
+    en: 'Latest model releases',
+    'zh-CN': '最新模型发布'
+  },
   'modelRelease.eyebrow': {
     en: 'New Model Release',
     'zh-CN': '新模型发布'
@@ -256,6 +260,10 @@ const translations = {
   },
   'showcase.badgeHow': { en: 'HOW', 'zh-CN': '了解' },
   'showcase.badgeWorks': { en: 'WORKS', 'zh-CN': '运行方式' },
+  'showcase.heading': {
+    en: 'How ComfyUI works',
+    'zh-CN': 'ComfyUI 如何运作'
+  },
 
   // UseCaseSection
   'useCase.label': {
@@ -429,6 +437,36 @@ const translations = {
   'buildWhat.subtitle': {
     en: "Comfy gives you the building blocks to create workflows nobody's imagined yet — and share them with everyone.",
     'zh-CN': 'Comfy 为您提供构建模块，创造出前所未有的工作流——并与所有人分享。'
+  },
+
+  // 404 page recovery links
+  'notFound.hint': {
+    en: 'This path does not exist. These do:',
+    'zh-CN': '此路径不存在。下面这些存在：'
+  },
+  'notFound.home': {
+    en: 'Home',
+    'zh-CN': '首页'
+  },
+  'notFound.download': {
+    en: 'Download',
+    'zh-CN': '下载'
+  },
+  'notFound.sitemap': {
+    en: 'Site map',
+    'zh-CN': '站点地图'
+  },
+  'notFound.openapi': {
+    en: 'OpenAPI spec',
+    'zh-CN': 'OpenAPI 规范'
+  },
+  'notFound.llms': {
+    en: 'llms.txt',
+    'zh-CN': 'llms.txt'
+  },
+  'notFound.linksLabel': {
+    en: 'Places to go from here',
+    'zh-CN': '可以前往的页面'
   },
 
   // API – HeroSection

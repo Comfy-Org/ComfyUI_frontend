@@ -6,9 +6,22 @@ import AutomationSection from '../components/product/api/AutomationSection.vue'
 import StepsSection from '../components/product/api/StepsSection.vue'
 import ReasonSection from '../components/product/api/ReasonSection.vue'
 import ProductCardsSection from '../components/common/ProductCardsSection.vue'
+import { t } from '../i18n/translations'
 ---
 
-<BaseLayout title="Comfy API">
+<BaseLayout
+  title="Comfy API - Run ComfyUI Workflows Programmatically"
+  description={t('api.hero.subtitle', 'en')}
+  keywords={[
+    'comfy api',
+    'comfyui api',
+    'comfy cloud api',
+    'comfyui workflow api',
+    'comfy sdk',
+    'comfyui sdk',
+    'image generation api',
+    'video generation api'
+  ]}>
   <CloudBannerSection />
   <HeroSection client:load />
   <AutomationSection />

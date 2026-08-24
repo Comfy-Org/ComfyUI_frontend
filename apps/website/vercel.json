@@ -7,6 +7,16 @@
   "github": {
     "enabled": false
   },
+  "rewrites": [
+    {
+      "source": "/openapi.json",
+      "destination": "https://api.comfy.org/openapi"
+    },
+    {
+      "source": "/api/openapi.json",
+      "destination": "https://api.comfy.org/openapi"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
@@ -14,6 +24,22 @@
         { "type": "host", "value": "website-frontend-comfyui.vercel.app" }
       ],
       "headers": [{ "key": "X-Robots-Tag", "value": "index, follow" }]
+    },
+    {
+      "source": "/((?!.*\\.(?:md|txt|xml|json|ico|png|jpg|jpeg|webp|avif|gif|svg|css|js|mjs|map|woff|woff2|ttf|otf|eot|mp4|webm|vtt|pdf|zip|webmanifest)$).*)",
+      "headers": [{ "key": "Vary", "value": "Accept" }]
+    },
+    {
+      "source": "/index.md",
+      "headers": [
+        { "key": "Link", "value": "<https://comfy.org/>; rel=\"canonical\"" }
+      ]
+    },
+    {
+      "source": "/api.md",
+      "headers": [
+        { "key": "Link", "value": "<https://comfy.org/api>; rel=\"canonical\"" }
+      ]
     },
     {
       "source": "/payment/(.*)",
@@ -93,6 +119,16 @@
     {
       "source": "/login",
       "destination": "https://cloud.comfy.org/cloud/login",
+      "permanent": false
+    },
+    {
+      "source": "/developers",
+      "destination": "/api",
+      "permanent": false
+    },
+    {
+      "source": "/docs",
+      "destination": "https://docs.comfy.org/",
       "permanent": false
     }
   ]
