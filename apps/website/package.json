@@ -10,7 +10,7 @@
     "build-storybook": "pnpm storybook:manifest && storybook build -o dist/storybook",
     "preview": "astro preview",
     "storybook": "pnpm storybook:manifest && storybook dev -p 6008",
-    "storybook:manifest": "tsx scripts/generate-storybook-manifest.ts",
+    "storybook:manifest": "tsx scripts/generate-storybook-manifest.ts && pnpm exec oxfmt --write .storybook/generated/*.json",
     "typecheck": "astro check",
     "typecheck:storybook": "vue-tsc --noEmit --composite false -p tsconfig.stories.json",
     "test:unit": "vitest run",
