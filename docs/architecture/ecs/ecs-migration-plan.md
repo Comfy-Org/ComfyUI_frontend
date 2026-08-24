@@ -144,8 +144,9 @@ unless they cover a new invariant.
 ### 2. Centralize remaining Component and Entity data
 
 All 19 scoped concerns are implemented. The authoritative commit-by-commit
-record and current compatibility boundaries are in the
-[Component and Entity data audit](ecs-component-entity-data-audit.md#progress-record).
+record is in the Component and Entity data audit's
+[progress record](ecs-component-entity-data-audit.md#progress-record), with
+current boundaries under [verified current limitations](ecs-component-entity-data-audit.md#verified-current-limitations).
 
 Remaining work is the audit's five-part
 [structural follow-up plan](ecs-component-entity-data-audit.md#structural-follow-up-plan):

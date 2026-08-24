@@ -353,25 +353,9 @@ function serialiseOwnedTopology(owner: LGraph) {
   })
   const links = topologies.filter((link) => !isFloatingTopology(link))
   const floatingLinks = topologies.filter(isFloatingTopology)
-  const reroutes = [...useRerouteStore().graphChains(scope)].map((reroute) => {
-    const layout = layoutStore.getRerouteLayout(owner.rootGraph.id, reroute.id)
-    if (!layout) {
-      throw new Error(
-        `Cannot serialize graph ${owner.id}: reroute ${reroute.id} has no layout`
-      )
-    }
-    const position = layout.position
-    const membership = useRerouteStore().getMembership(scope, reroute.id)
-    return {
-      id: reroute.id,
-      parentId: reroute.parentId,
-      pos: [position.x, position.y] as [number, number],
-      linkIds: [...membership.linkIds].sort((a, b) => a - b),
-      floating: reroute.floating
-        ? { slotType: reroute.floating.slotType }
-        : undefined
-    }
-  })
+  const reroutes = [...owner.reroutes.values()].map((reroute) =>
+    reroute.asSerialisable()
+  )
   return {
     links: links.length ? links.map(serialiseLink) : undefined,
     floatingLinks: floatingLinks.length
@@ -388,7 +372,7 @@ function serialiseStoredNodes(owner: LGraph, sortNodes: boolean) {
     owner.id
   )
   const ordered = sortNodes
-    ? [...states].sort((a, b) => Number(a.id) - Number(b.id))
+    ? [...states].sort((a, b) => compareNodeIds(a.id, b.id))
     : states
   return ordered.map((state) => {
     const adapter = adapters.get(state.id)
@@ -399,6 +383,19 @@ function serialiseStoredNodes(owner: LGraph, sortNodes: boolean) {
     }
     return adapter.serializeFromStoreState(state)
   })
+}
+
+function compareNodeIds(left: NodeId, right: NodeId): number {
+  const leftNumber = Number(left)
+  const rightNumber = Number(right)
+  const leftIsNumber = Number.isFinite(leftNumber)
+  const rightIsNumber = Number.isFinite(rightNumber)
+  if (leftIsNumber && rightIsNumber) {
+    return leftNumber - rightNumber || left.localeCompare(right)
+  }
+  if (leftIsNumber) return -1
+  if (rightIsNumber) return 1
+  return left.localeCompare(right)
 }
 
 function serialiseStoredGroups(owner: LGraph) {
@@ -435,7 +432,7 @@ export function serialiseMutableGraphParts(
   sortNodes: boolean = false
 ) {
   const nodes = sortNodes
-    ? [...owner._nodes].sort((a, b) => Number(a.id) - Number(b.id))
+    ? [...owner._nodes].sort((a, b) => compareNodeIds(a.id, b.id))
     : owner._nodes
   return {
     nodes: nodes.map((node) => node.serialize()),

@@ -54,6 +54,16 @@ function descriptorOf<T extends INodeSlot>(slot: T): SlotDescriptor<T> {
   return shallowReactive(descriptor)
 }
 
+function isNodeSlot(value: unknown): value is INodeSlot {
+  if (typeof value !== 'object' || value === null) return false
+  const name = Reflect.get(value, 'name')
+  const type = Reflect.get(value, 'type')
+  return (
+    typeof name === 'string' &&
+    (typeof type === 'string' || typeof type === 'number')
+  )
+}
+
 function project<T extends INodeSlot>(
   descriptor: SlotDescriptor<T>,
   create: (slot: T) => T
@@ -160,8 +170,9 @@ function slotView<T extends INodeSlot>(
     },
     set(target, property, value, receiver) {
       if (typeof property !== 'symbol' && /^\d+$/.test(property)) {
+        if (!isNodeSlot(value)) return true
         const descriptor =
-          Reflect.get(value, slotDescriptor) ?? descriptorOf(value as T)
+          Reflect.get(value, slotDescriptor) ?? descriptorOf(value)
         return Reflect.set(target, property, descriptor, receiver)
       }
       return Reflect.set(target, property, value, receiver)

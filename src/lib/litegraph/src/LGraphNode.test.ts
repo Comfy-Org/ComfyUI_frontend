@@ -1154,6 +1154,35 @@ describe('layout geometry projection', () => {
     ])
     expect(node.serialize().size).toEqual([190, 150])
   })
+
+  test('uses the attached graph for geometry and measured content', () => {
+    const attachedGraph = new LGraph()
+    const currentGraph = new LGraph()
+    const node = new LGraphNode('attached')
+    const decoy = new LGraphNode('decoy')
+    node.id = toNodeId(1)
+    decoy.id = node.id
+    attachedGraph.add(node)
+    currentGraph.add(decoy)
+    node.graph = currentGraph
+    decoy.pos = [30, 40]
+    decoy.size = [200, 80]
+    layoutStore.reportContentSize(attachedGraph.id, node.id, {
+      width: 225,
+      height: 90
+    })
+
+    node.pos = [30, 40]
+    node.size = [200, 80]
+
+    expect(
+      layoutStore.getNodeLayoutRef(attachedGraph.id, node.id).value
+    ).toMatchObject({
+      position: { x: 30, y: 40 },
+      size: { width: 200, height: 80 }
+    })
+    expect([...node.renderingSize]).toEqual([225, 90])
+  })
 })
 
 describe('execution order projection', () => {

@@ -40,4 +40,14 @@ describe('slot descriptor views', () => {
     expect(targetSlot.node).toBe(target)
     expect(sourceSlot.node).toBe(source)
   })
+
+  it('ignores invalid indexed assignments', () => {
+    const node = new LGraphNode('Node')
+    node.addInput('slot', 'INT')
+    const slot = node.inputs[0]
+
+    expect(Reflect.set(node.inputs, '0', null)).toBe(true)
+    expect(Reflect.set(node.inputs, '0', {})).toBe(true)
+    expect(node.inputs[0]).toBe(slot)
+  })
 })
