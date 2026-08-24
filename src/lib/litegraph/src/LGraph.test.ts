@@ -139,11 +139,6 @@ describe('LGraph', () => {
       vi.spyOn(console, 'error').mockImplementation(() => {})
     })
 
-    afterEach(() => {
-      vi.unstubAllEnvs()
-      vi.restoreAllMocks()
-    })
-
     describe('in DEV', () => {
       beforeEach(() => {
         vi.stubEnv('DEV', true)
