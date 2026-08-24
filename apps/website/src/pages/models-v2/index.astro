@@ -19,6 +19,9 @@ const featured = launches.slice(0, 8)
 const hrefFor = (slug: string) => `/models-v2/${slug}`
 
 const kindTag = (l: LaunchModel) => (l.kind === 'open weights' ? 'open' : 'partner')
+const kindLabel = (k: string) => (k === 'open weights' ? 'Open weights' : 'Partner API')
+const pill = 'shrink-0 inline-flex h-6 items-center gap-1 rounded-full px-4 text-xs font-normal transition-colors'
+const pillIdle = 'bg-transparency-white-t4 text-primary-comfy-canvas'
 const modTag = (l: LaunchModel) =>
   l.modality === 'i2v' || l.modality === 'video' ? 'video'
   : l.modality === 'audio' ? 'audio'
@@ -204,7 +207,7 @@ const PILLS = [
       ].map(([label, action]) => (
         <button
           data-try={action}
-          class="shrink-0 rounded-full border border-white/12 bg-white/[0.04] px-3 py-1.5 text-[11px] text-primary-comfy-canvas transition hover:border-primary-comfy-yellow/50 hover:text-primary-warm-white"
+          class:list={[pill, pillIdle, 'hover:bg-transparency-white-t8 hover:text-primary-warm-white']}
         >
           {label}
         </button>
@@ -215,10 +218,10 @@ const PILLS = [
         <button
           data-pill={value}
           class:list={[
-            'shrink-0 rounded-full px-4 py-2 text-xs font-extrabold uppercase tracking-widest transition',
+            pill,
             i === 0
               ? 'is-active bg-primary-comfy-yellow text-primary-comfy-ink'
-              : 'border border-white/15 bg-white/5 text-primary-comfy-canvas hover:bg-white/10'
+              : `${pillIdle} hover:bg-transparency-white-t8`
           ]}
         >
           {label} <span class="opacity-60">{count}</span>
@@ -280,7 +283,7 @@ const PILLS = [
                     >
                       {meta.label}
                     </span>
-                    <span class="rounded-full border border-white/15 px-2 py-0.5 text-[10px] text-primary-comfy-canvas">{card.kind}</span>
+                    <span class:list={[pill, pillIdle]}>{kindLabel(card.kind)}</span>
                   </div>
                   <div class="flex items-center justify-between text-[11px] text-primary-warm-gray">
                     <span>{card.runs}</span>
@@ -541,9 +544,8 @@ const PILLS = [
             b.classList.toggle('is-active', active)
             b.classList.toggle('bg-primary-comfy-yellow', active)
             b.classList.toggle('text-primary-comfy-ink', active)
-            b.classList.toggle('border', !active)
-            b.classList.toggle('border-white/15', !active)
-            b.classList.toggle('bg-white/5', !active)
+            b.classList.toggle('bg-transparency-white-t4', !active)
+            b.classList.toggle('hover:bg-transparency-white-t8', !active)
             b.classList.toggle('text-primary-comfy-canvas', !active)
           }
           syncClear()
@@ -560,9 +562,8 @@ const PILLS = [
           b.classList.toggle('is-active', active)
           b.classList.toggle('bg-primary-comfy-yellow', active)
           b.classList.toggle('text-primary-comfy-ink', active)
-          b.classList.toggle('border', !active)
-          b.classList.toggle('border-white/15', !active)
-          b.classList.toggle('bg-white/5', !active)
+          b.classList.toggle('bg-transparency-white-t4', !active)
+          b.classList.toggle('hover:bg-transparency-white-t8', !active)
           b.classList.toggle('text-primary-comfy-canvas', !active)
         }
         apply()
