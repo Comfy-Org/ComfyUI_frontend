@@ -1,6 +1,6 @@
 {
   "APG": {
-    "display_name": "APG",
+    "display_name": "適応投影ガイダンス",
     "inputs": {
       "eta": {
         "name": "イータ",
@@ -147,7 +147,8 @@
     }
   },
   "AddTextPrefix": {
-    "display_name": "テキスト接頭辞を追加",
+    "description": "すべてのテキストに接頭辞を追加します。",
+    "display_name": "テキスト接頭辞を追加（非推奨）",
     "inputs": {
       "prefix": {
         "name": "接頭辞",
@@ -166,7 +167,8 @@
     }
   },
   "AddTextSuffix": {
-    "display_name": "テキスト接尾辞を追加",
+    "description": "すべてのテキストに接尾辞を追加します。",
+    "display_name": "テキスト接尾辞を追加（非推奨）",
     "inputs": {
       "suffix": {
         "name": "接尾辞",
@@ -185,6 +187,7 @@
     }
   },
   "AdjustBrightness": {
+    "description": "画像の明るさを調整します。",
     "display_name": "明るさを調整",
     "inputs": {
       "factor": {
@@ -204,6 +207,7 @@
     }
   },
   "AdjustContrast": {
+    "description": "画像のコントラストを調整します。",
     "display_name": "コントラストを調整",
     "inputs": {
       "factor": {
@@ -242,7 +246,7 @@
     }
   },
   "AnimaLLLiteApply": {
-    "display_name": "AnimaLLLiteApply",
+    "display_name": "Anima LLLiteを適用",
     "inputs": {
       "end_percent": {
         "name": "終了パーセント"
@@ -268,6 +272,7 @@
     }
   },
   "ApplyTextureToMesh": {
+    "description": "ベイク済みテクスチャIMAGEをメッシュのUVレイアウトに割り当て、SaveGLBで使用します。ベイクに使用した同じメッシュを入力してください。",
     "display_name": "メッシュにテクスチャを適用",
     "inputs": {
       "base_color": {
@@ -297,7 +302,8 @@
     }
   },
   "AudioAdjustVolume": {
-    "display_name": "オーディオ音量を調整",
+    "description": "音声の音量を指定したデシベル（dB）量で調整します。",
+    "display_name": "音量を調整",
     "inputs": {
       "audio": {
         "name": "オーディオ"
@@ -314,7 +320,8 @@
     }
   },
   "AudioConcat": {
-    "display_name": "オーディオを連結",
+    "description": "指定した方向にaudio1をaudio2へ連結します。",
+    "display_name": "音声を連結",
     "inputs": {
       "audio1": {
         "name": "オーディオ1"
@@ -350,7 +357,7 @@
     }
   },
   "AudioEncoderLoader": {
-    "display_name": "オーディオエンコーダーローダー",
+    "display_name": "音声エンコーダーを読み込み",
     "inputs": {
       "audio_encoder_name": {
         "name": "オーディオエンコーダー名"
@@ -363,7 +370,7 @@
     }
   },
   "AudioEqualizer3Band": {
-    "display_name": "3バンドオーディオイコライザー",
+    "display_name": "音声イコライザー（3バンド）",
     "inputs": {
       "audio": {
         "name": "audio"
@@ -404,7 +411,8 @@
     }
   },
   "AudioMerge": {
-    "display_name": "オーディオをマージ",
+    "description": "2つの音声トラックの波形を重ねて結合します。",
+    "display_name": "音声をマージ",
     "inputs": {
       "audio1": {
         "name": "オーディオ1"
@@ -424,6 +432,7 @@
     }
   },
   "BakeAmbientOcclusion": {
+    "description": "高ポリゴンメッシュからアンビエントオクルージョンマップを低ポリゴンのUVレイアウトへベイクします（白 = 開放部、暗色 = 隙間）。UV展開済みのlow_polyと、それをデシメーションする前のhigh_polyを入力してください。Apply Texture To Meshのocclusion入力用のグレースケール画像を出力します（ORMマップ / occlusionTextureにパックされます）。",
     "display_name": "アンビエントオクルージョンをベイク",
     "inputs": {
       "bias": {
@@ -460,7 +469,8 @@
     }
   },
   "BakeNormalMapFromMesh": {
-    "display_name": "メッシュから法線マップをベイク",
+    "description": "高ポリゴンメッシュからタンジェント空間ノーマルマップ（glTF/OpenGL +Y）を低ポリゴンのUVレイアウトへベイクし、デシメーション時に失われたディテールを取得します。UV展開済みのlow_polyと、それをデシメーションする前のhigh_polyを入力してください。Apply Texture To Meshのnormal_map入力用画像を出力します。",
+    "display_name": "メッシュからノーマルマップをベイク",
     "inputs": {
       "cage_distance": {
         "name": "ケージ距離",
@@ -488,7 +498,8 @@
     }
   },
   "BakeTextureFromVoxel": {
-    "display_name": "BakeTextureFromVoxel",
+    "description": "メッシュの既存UVレイアウトにPBRテクスチャをベイクします（疎なボクセルボリュームをトリリニアサンプリング）。UV展開は行いません。上流にUV展開ノードを接続してください。base_colorとmetallic/roughnessのグレースケールIMAGEを出力します（PBRがない場合は黒）。SaveGLB用にApplyTextureToMeshへ入力してください（同じメッシュ）。",
+    "display_name": "ボクセルからテクスチャをベイク",
     "inputs": {
       "mesh": {
         "name": "mesh"
@@ -521,7 +532,7 @@
     }
   },
   "BasicGuider": {
-    "display_name": "BasicGuider",
+    "display_name": "基本ガイダー",
     "inputs": {
       "conditioning": {
         "name": "コンディショニング"
@@ -559,7 +570,7 @@
     }
   },
   "BatchImagesNode": {
-    "display_name": "BatchImagesNode",
+    "display_name": "画像をバッチ化",
     "inputs": {
       "images": {
         "name": "画像"
@@ -572,7 +583,7 @@
     }
   },
   "BatchLatentsNode": {
-    "display_name": "BatchLatentsNode",
+    "display_name": "latentをバッチ化",
     "inputs": {
       "latents": {
         "name": "latent"
@@ -585,7 +596,7 @@
     }
   },
   "BatchMasksNode": {
-    "display_name": "BatchMasksNode",
+    "display_name": "マスクをバッチ化",
     "inputs": {
       "masks": {
         "name": "マスク"
@@ -598,7 +609,8 @@
     }
   },
   "BeebleSwitchXImageEdit": {
-    "display_name": "BeebleSwitchXImageEdit",
+    "description": "Beeble SwitchXで単一画像を編集します。元の被写体のピクセルを保持したまま、シーン内のあらゆる要素（背景、照明、衣装）を変更できます。新しい見た目を説明するために、参照画像および/またはテキストプロンプトを指定してください。最大約2.77MP。",
+    "display_name": "Beeble SwitchX 画像編集",
     "inputs": {
       "alpha_mode": {
         "name": "アルファモード",
@@ -639,7 +651,8 @@
     }
   },
   "BeebleSwitchXVideoEdit": {
-    "display_name": "BeebleSwitchXVideoEdit",
+    "description": "Beeble SwitchXで動画を編集します。元の被写体のピクセルと動きを保持したまま、シーン内のあらゆる要素（背景、照明、衣装）を変更できます。新しい見た目を説明するために、参照画像および/またはテキストプロンプトを指定してください。最大240フレーム、1フレームあたり最大約2.77MP。",
+    "display_name": "Beeble SwitchX 動画編集",
     "inputs": {
       "alpha_mode": {
         "name": "アルファモード",
@@ -680,7 +693,8 @@
     }
   },
   "BerniniConditioning": {
-    "display_name": "BerniniConditioning",
+    "description": "Berniniのインコンテキスト動画/画像コンディショニング用ノードです。次のタスクに使用できます：t2v（テキストから動画）、v2v（動画から動画）、rv2v（参照ガイド付き動画編集）、r2v（参照から動画）、ads2v（画像/動画を動画へ挿入）。インコンテキストトークンとして注入される参照画像（r2v、rv2v）は、それぞれ固有のネイティブアスペクト比で個別にエンコードされます（長辺はref_max_sizeで上限設定）。",
+    "display_name": "Bernini コンディショニング",
     "inputs": {
       "batch_size": {
         "name": "バッチサイズ"
@@ -757,7 +771,8 @@
     }
   },
   "BriaEraser": {
-    "display_name": "BriaEraser",
+    "description": "Briaを使用して、マスクで囲まれたオブジェクトまたは領域を画像から削除します。",
+    "display_name": "Bria Eraser",
     "inputs": {
       "image": {
         "name": "image"
@@ -782,7 +797,8 @@
     }
   },
   "BriaExpandImage": {
-    "display_name": "BriaExpandImage",
+    "description": "Bria を使用して、生成コンテンツで画像を境界の外側まで拡張します。",
+    "display_name": "Bria 画像を拡張",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -820,7 +836,8 @@
     }
   },
   "BriaGenFill": {
-    "display_name": "BriaGenFill",
+    "description": "Bria を使用して、画像のmask領域内にオブジェクトや風景を生成します。",
+    "display_name": "Bria 生成塗りつぶし",
     "inputs": {
       "control_after_generate": {
         "name": "生成後に制御"
@@ -858,7 +875,8 @@
     }
   },
   "BriaImageEditNode": {
-    "display_name": "BriaImageEditNode",
+    "description": "Bria の最新モデルを使用して画像を編集します",
+    "display_name": "Bria FIBO 画像編集",
     "inputs": {
       "control_after_generate": {
         "name": "生成後コントロール"
@@ -910,7 +928,8 @@
     }
   },
   "BriaIncreaseResolution": {
-    "display_name": "BriaIncreaseResolution",
+    "description": "Bria を使用して、元のコンテンツを保持したまま画像を2倍または4倍にアップスケールします。",
+    "display_name": "Bria 解像度向上",
     "inputs": {
       "auto_downscale": {
         "name": "auto_downscale",
@@ -935,7 +954,8 @@
     }
   },
   "BriaRemoveImageBackground": {
-    "display_name": "BriaRemoveImageBackground",
+    "description": "Bria RMBG 2.0 を使用して画像から背景を除去します。",
+    "display_name": "Bria 画像背景除去",
     "inputs": {
       "control_after_generate": {
         "name": "生成後の制御"
@@ -959,7 +979,8 @@
     }
   },
   "BriaRemoveVideoBackground": {
-    "display_name": "BriaRemoveVideoBackground",
+    "description": "Bria を使用して動画から背景を除去します。",
+    "display_name": "Bria 動画背景除去",
     "inputs": {
       "background_color": {
         "name": "背景色",
@@ -983,7 +1004,8 @@
     }
   },
   "BriaTransparentVideoBackground": {
-    "display_name": "BriaTransparentVideoBackground",
+    "description": "Bria を使用して動画から背景を除去し、切り抜きフレームとアルファmaskを返します。両方を合成ノードに接続するか、Save WEBM に入力して透明な動画を書き出します。",
+    "display_name": "Bria 動画背景除去（透明）",
     "inputs": {
       "control_after_generate": {
         "name": "生成後に制御"
@@ -1008,7 +1030,8 @@
     }
   },
   "BriaVideoGreenScreen": {
-    "display_name": "BriaVideoGreenScreen",
+    "description": "Bria を使用して、動画の背景を単色のクロマキー用スクリーンに置き換えます。",
+    "display_name": "Bria 動画グリーンスクリーン",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -1032,7 +1055,8 @@
     }
   },
   "BriaVideoReplaceBackground": {
-    "display_name": "BriaVideoReplaceBackground",
+    "description": "Bria を使用して、動画の背景を指定した画像または動画に置き換えます。出力は前景の解像度とフレームレートを維持します。アスペクト比が異なる背景は収まるように引き伸ばされるため、歪みのない結果を得るにはアスペクト比を合わせてください。",
+    "display_name": "Bria 動画背景置換",
     "inputs": {
       "background_image": {
         "name": "背景画像",
@@ -1061,7 +1085,8 @@
     }
   },
   "BuildJsonPromptIdeogram": {
-    "display_name": "BuildJsonPromptIdeogram",
+    "description": "Ideogram 4 モデル用のJSONプロンプトを構築します。",
+    "display_name": "JSONプロンプトを構築（Ideogram）",
     "inputs": {
       "aesthetics": {
         "name": "美的要素",
@@ -1103,7 +1128,8 @@
     }
   },
   "BuildPoseFile": {
-    "display_name": "BuildPoseFile",
+    "description": "ポーズデータからアニメーション付きGLBを構築するか、BVHモーションキャプチャファイルを保存します。",
+    "display_name": "3Dアニメーションファイルを作成",
     "inputs": {
       "camera_translation": {
         "name": "camera_translation",
@@ -1149,7 +1175,8 @@
     }
   },
   "ByteDance2FirstLastFrameNode": {
-    "display_name": "ByteDance2FirstLastFrameNode",
+    "description": "最初のフレーム画像と任意の最後のフレーム画像から、Seedance 2.5 または 2.0 を使用して動画を生成します。",
+    "display_name": "ByteDance Seedance 2.5 最初と最後のフレームから動画",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -1205,7 +1232,8 @@
     }
   },
   "ByteDance2ReferenceNode": {
-    "display_name": "ByteDance2ReferenceNode",
+    "description": "参照画像、動画、音声とともに Seedance 2.5 または 2.0 を使用して、動画の生成、編集、拡張を行います。マルチモーダル参照、動画編集、動画拡張に対応しています。",
+    "display_name": "ByteDance Seedance 2.5 参照から動画（レガシー）",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -1257,7 +1285,8 @@
     }
   },
   "ByteDance2ReferenceNodeV2": {
-    "display_name": "ByteDance2ReferenceNodeV2",
+    "description": "参照画像、動画、音声とともに Seedance 2.5 または 2.0 を使用して、動画の生成、編集、拡張を行います。マルチモーダル参照、動画編集、動画拡張に対応しています。",
+    "display_name": "ByteDance Seedance 2.5 参照から動画",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -1309,7 +1338,8 @@
     }
   },
   "ByteDance2TextToVideoNode": {
-    "display_name": "ByteDance2TextToVideoNode",
+    "description": "テキストプロンプトに基づいて、Seedance 2.5 または 2.0 モデルを使用して動画を生成します。",
+    "display_name": "ByteDance Seedance 2.5 テキストから動画",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -1352,7 +1382,8 @@
     }
   },
   "ByteDanceCreateImageAsset": {
-    "display_name": "ByteDanceCreateImageAsset",
+    "description": "Seedance 2.0 の個人用画像アセットを作成します。入力画像をアップロードし、指定したアセットグループに登録します。group_id が空の場合、アセットを追加する前に実在人物のH5認証フローを実行して新しいグループを作成します。",
+    "display_name": "ByteDance 画像アセットを作成",
     "inputs": {
       "group_id": {
         "name": "group_id",
@@ -1375,7 +1406,8 @@
     }
   },
   "ByteDanceCreateVideoAsset": {
-    "display_name": "ByteDanceCreateVideoAsset",
+    "description": "Seedance 2.0 の個人用動画アセットを作成します。入力動画をアップロードし、指定したアセットグループに登録します。group_id が空の場合、アセットを追加する前に実在人物のH5認証フローを実行して新しいグループを作成します。",
+    "display_name": "ByteDance 動画アセットを作成",
     "inputs": {
       "group_id": {
         "name": "group_id",
@@ -1398,7 +1430,8 @@
     }
   },
   "ByteDanceFirstLastFrameNode": {
-    "display_name": "ByteDanceFirstLastFrameNode",
+    "description": "プロンプトと最初および最後のフレームを使用して動画を生成します。",
+    "display_name": "ByteDance 最初と最後のフレームから動画",
     "inputs": {
       "aspect_ratio": {
         "name": "アスペクト比",
@@ -1454,7 +1487,8 @@
     }
   },
   "ByteDanceImageNode": {
-    "display_name": "ByteDanceImageNode",
+    "description": "プロンプトに基づき、api 経由で ByteDance モデルを使用して画像を生成します。",
+    "display_name": "ByteDance 画像",
     "inputs": {
       "control_after_generate": {
         "name": "生成後の制御"
@@ -1498,7 +1532,8 @@
     }
   },
   "ByteDanceImageReferenceNode": {
-    "display_name": "ByteDanceImageReferenceNode",
+    "description": "プロンプトと参照画像を使用して動画を生成します。",
+    "display_name": "ByteDance 参照画像から動画",
     "inputs": {
       "aspect_ratio": {
         "name": "アスペクト比",
@@ -1542,7 +1577,8 @@
     }
   },
   "ByteDanceImageToVideoNode": {
-    "display_name": "ByteDanceImageToVideoNode",
+    "description": "画像とプロンプトに基づき、API 経由で ByteDance モデルを使用して動画を生成します",
+    "display_name": "ByteDance 画像から動画",
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio",
@@ -1594,7 +1630,8 @@
     }
   },
   "ByteDanceSeedAudio": {
-    "display_name": "ByteDanceSeedAudio",
+    "description": "ByteDance Seed Audio 1.0 を使用して、単一のプロンプトから音声、音楽、効果音、複数話者の会話を生成します。プロンプトには声、感情、環境音、背景音楽、効果音を記述し、話す台詞を含めてください。必要に応じて内蔵プリセット音声を選択するか、最大 3 つの参照クリップ（プロンプト内で {'@'}Audio1-3 とタグ付け）から声をクローンするか、キャラクター画像から声を生成できます。1 回の実行で最大 2 分間の音声に対応します。多言語モデルは 20 言語とタイムスタンプベースのタイミング制御をサポートします。",
+    "display_name": "ByteDance Seed Audio 1.0",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -1639,7 +1676,8 @@
     }
   },
   "ByteDanceSeedNode": {
-    "display_name": "ByteDanceSeedNode",
+    "description": "ByteDance の Seed 2.0 モデルでテキスト応答を生成します。テキストプロンプトを指定し、必要に応じてマルチモーダルコンテキスト用の 1 つ以上の画像または動画を指定します。",
+    "display_name": "ByteDance Seed",
     "inputs": {
       "control_after_generate": {
         "name": "生成後の制御"
@@ -1671,7 +1709,8 @@
     }
   },
   "ByteDanceSeedreamLayerSeparationNode": {
-    "display_name": "ByteDanceSeedreamLayerSeparationNode",
+    "description": "画像を背景プレートと、再配置可能な最大 16 個の透明レイヤーに分解します。各レイヤーには重なり順、バウンディングボックス、名前、説明が含まれます。",
+    "display_name": "ByteDance Seedream 5.0 Pro レイヤー分離",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -1733,7 +1772,8 @@
     }
   },
   "ByteDanceSeedreamNode": {
-    "display_name": "ByteDanceSeedreamNode",
+    "description": "最大 4K 解像度での統合テキストから画像生成と、正確な一文編集を行います。",
+    "display_name": "ByteDance Seedream 4.5 & 5.0",
     "inputs": {
       "control_after_generate": {
         "name": "生成後の制御"
@@ -1789,7 +1829,8 @@
     }
   },
   "ByteDanceSeedreamNodeV2": {
-    "display_name": "ByteDanceSeedreamNodeV2",
+    "description": "最大 4K 解像度での統合テキストから画像生成と、正確な一文編集を行います。",
+    "display_name": "ByteDance Seedream 4.5 & 5.0（レガシー）",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -1830,7 +1871,8 @@
     }
   },
   "ByteDanceSeedreamNodeV3": {
-    "display_name": "ByteDanceSeedreamNodeV3",
+    "description": "最大 4K 解像度での統合テキストから画像生成と、正確な一文編集を行います。",
+    "display_name": "ByteDance Seedream 4.5 & 5.0",
     "inputs": {
       "control_after_generate": {
         "name": "生成後の制御"
@@ -1871,7 +1913,8 @@
     }
   },
   "ByteDanceTextToVideoNode": {
-    "display_name": "ByteDanceTextToVideoNode",
+    "description": "プロンプトに基づき、API 経由で ByteDance モデルを使用して動画を生成します",
+    "display_name": "ByteDance テキストから動画",
     "inputs": {
       "aspect_ratio": {
         "name": "アスペクト比",
@@ -1919,7 +1962,8 @@
     }
   },
   "ByteDanceVideoEnhanceNode": {
-    "display_name": "ByteDanceVideoEnhanceNode",
+    "description": "ByteDance vCube で動画をアップスケールおよび復元します。最大 8K の超解像、圧縮アーティファクトとノイズの除去、色彩とシャープネスの強調、任意のフレーム補間に対応します。",
+    "display_name": "ByteDance vCube 動画強調",
     "inputs": {
       "bitrate_level": {
         "name": "bitrate_level",
@@ -1955,7 +1999,7 @@
     }
   },
   "CFGGuider": {
-    "display_name": "CFGGuider",
+    "display_name": "CFG ガイダー",
     "inputs": {
       "cfg": {
         "name": "cfg"
@@ -1998,7 +2042,8 @@
     }
   },
   "CFGOverride": {
-    "display_name": "CFGOverride",
+    "description": "[start, end] パーセント（sigma）範囲にわたり、cfg を固定値でオーバーライドします。複数のオーバーライドがある場合、重複部分ではサンプラーに最も近いものが優先されます。",
+    "display_name": "CFG オーバーライド",
     "inputs": {
       "cfg": {
         "name": "cfg"
@@ -2059,7 +2104,8 @@
     }
   },
   "CLIPLoader": {
-    "display_name": "CLIPLoader",
+    "description": "レシピ:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl（226 トークンパディング）\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1（推奨）または t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL または Music3 Qwen/RVQ",
+    "display_name": "CLIP を読み込む",
     "inputs": {
       "clip_name": {
         "name": "clip名"
@@ -2123,7 +2169,7 @@
     }
   },
   "CLIPSetLastLayer": {
-    "display_name": "CLIPSetLastLayer",
+    "display_name": "CLIP 最終レイヤーを設定",
     "inputs": {
       "clip": {
         "name": "クリップ"
@@ -2134,7 +2180,8 @@
     }
   },
   "CLIPTextEncode": {
-    "display_name": "CLIPTextEncode",
+    "description": "CLIP モデルを使用してテキストプロンプトを埋め込みにエンコードし、拡散モデルを特定の画像の生成へ導くために使用できます。",
+    "display_name": "CLIP テキストエンコード（プロンプト）",
     "inputs": {
       "clip": {
         "name": "クリップ",
@@ -2152,7 +2199,7 @@
     }
   },
   "CLIPTextEncodeControlnet": {
-    "display_name": "CLIPTextEncodeControlnet",
+    "display_name": "CLIP テキストエンコード（Controlnet）",
     "inputs": {
       "clip": {
         "name": "クリップ"
@@ -2193,7 +2240,7 @@
     }
   },
   "CLIPTextEncodeHiDream": {
-    "display_name": "CLIPTextEncodeHiDream",
+    "display_name": "CLIP テキストエンコード（HiDream）",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -2218,7 +2265,7 @@
     }
   },
   "CLIPTextEncodeHunyuanDiT": {
-    "display_name": "CLIPTextEncodeHunyuanDiT",
+    "display_name": "CLIP テキストエンコード（Hunyuan Image）",
     "inputs": {
       "bert": {
         "name": "bert"
@@ -2237,7 +2284,7 @@
     }
   },
   "CLIPTextEncodeKandinsky5": {
-    "display_name": "CLIPテキストエンコード（Kandinsky 5）",
+    "display_name": "CLIP テキストエンコード（Kandinsky 5）",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -2256,6 +2303,7 @@
     }
   },
   "CLIPTextEncodeLumina2": {
+    "description": "システムプロンプトとユーザープロンプトをCLIPモデルでエンコードし、拡散モデルを特定の画像の生成へ導くために使用できる埋め込みにします。",
     "display_name": "CLIPテキストエンコード（Lumina 2）",
     "inputs": {
       "clip": {
@@ -2278,6 +2326,7 @@
     }
   },
   "CLIPTextEncodePixArtAlpha": {
+    "description": "テキストをエンコードし、PixArt Alphaの解像度コンディショニングを設定します。PixArt Sigmaには適用されません。",
     "display_name": "CLIPテキストエンコード（PixArt Alpha）",
     "inputs": {
       "clip": {
@@ -2387,7 +2436,7 @@
     }
   },
   "CLIPVisionEncode": {
-    "display_name": "CLIPビジョンエンコード",
+    "display_name": "CLIP Visionエンコード",
     "inputs": {
       "clip_vision": {
         "name": "クリップビジョン"
@@ -2401,7 +2450,7 @@
     }
   },
   "CLIPVisionLoader": {
-    "display_name": "CLIPビジョンローダー",
+    "display_name": "CLIP Visionを読み込み",
     "inputs": {
       "clip_name": {
         "name": "クリップ名"
@@ -2409,7 +2458,7 @@
     }
   },
   "Canny": {
-    "display_name": "Canny",
+    "display_name": "エッジを検出（Canny）",
     "inputs": {
       "high_threshold": {
         "name": "高い閾値"
@@ -2428,7 +2477,7 @@
     }
   },
   "CaseConverter": {
-    "display_name": "CaseConverter",
+    "display_name": "テキストの大文字・小文字を変換",
     "inputs": {
       "mode": {
         "name": "モード"
@@ -2444,7 +2493,8 @@
     }
   },
   "CenterCropImages": {
-    "display_name": "CenterCropImages",
+    "description": "指定した寸法に画像を中央クロップします。",
+    "display_name": "画像をクロップ（中央）",
     "inputs": {
       "height": {
         "name": "高さ",
@@ -2467,7 +2517,7 @@
     }
   },
   "CheckpointLoader": {
-    "display_name": "CheckpointLoader",
+    "display_name": "設定付きでチェックポイントを読み込む（非推奨）",
     "inputs": {
       "ckpt_name": {
         "name": "ckpt名"
@@ -2478,7 +2528,8 @@
     }
   },
   "CheckpointLoaderSimple": {
-    "display_name": "CheckpointLoaderSimple",
+    "description": "拡散モデルのチェックポイントを読み込みます。拡散モデルは latent のノイズ除去に使用されます。",
+    "display_name": "チェックポイントを読み込む",
     "inputs": {
       "ckpt_name": {
         "name": "ckpt名",
@@ -2498,7 +2549,7 @@
     }
   },
   "CheckpointSave": {
-    "display_name": "CheckpointSave",
+    "display_name": "チェックポイントを保存",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -2515,6 +2566,7 @@
     }
   },
   "ChromaRadianceOptions": {
+    "description": "Chroma Radiance モデルの詳細オプションを設定できます。",
     "display_name": "ChromaRadianceオプション",
     "inputs": {
       "end_sigma": {
@@ -2548,7 +2600,8 @@
     }
   },
   "ClaudeNode": {
-    "display_name": "ClaudeNode",
+    "description": "Anthropic の Claude モデルでテキスト応答を生成します。テキストプロンプトを指定し、必要に応じてマルチモーダルコンテキスト用の 1 つ以上の画像を指定します。",
+    "display_name": "Anthropic Claude",
     "inputs": {
       "control_after_generate": {
         "name": "生成後の制御"
@@ -2587,7 +2640,8 @@
     }
   },
   "ColorToRGBInt": {
-    "display_name": "色をRGB整数に変換",
+    "description": "カラーのRGB整数値と16進数表現を返します。",
+    "display_name": "カラーピッカー",
     "inputs": {
       "color": {
         "name": "カラー"
@@ -2609,7 +2663,8 @@
     }
   },
   "ColorTransfer": {
-    "display_name": "色転送",
+    "description": "さまざまなアルゴリズムを使用して、ある画像の色を別の画像に合わせます。",
+    "display_name": "カラー転送",
     "inputs": {
       "image_ref": {
         "name": "image_ref",
@@ -2638,7 +2693,7 @@
     }
   },
   "CombineHooks2": {
-    "display_name": "フックを結合（2）",
+    "display_name": "フックを結合 [2]",
     "inputs": {
       "hooks_A": {
         "name": "フック_A"
@@ -2649,7 +2704,7 @@
     }
   },
   "CombineHooks4": {
-    "display_name": "フックを結合（4）",
+    "display_name": "フックを結合 [4]",
     "inputs": {
       "hooks_A": {
         "name": "フック_A"
@@ -2666,7 +2721,7 @@
     }
   },
   "CombineHooks8": {
-    "display_name": "フックを結合（8）",
+    "display_name": "フックを結合 [8]",
     "inputs": {
       "hooks_A": {
         "name": "フック_A"
@@ -2695,7 +2750,8 @@
     }
   },
   "ComfyAndNode": {
-    "display_name": "Comfy ANDノード",
+    "description": "論理AND演算です。すべての値が真と評価される場合にtrueを返します。真偽値の判定にはPythonの規則を使用します。",
+    "display_name": "AND",
     "inputs": {
       "values": {
         "name": "values"
@@ -2708,7 +2764,7 @@
     }
   },
   "ComfyMathExpression": {
-    "display_name": "Comfy数式",
+    "display_name": "数式",
     "inputs": {
       "expression": {
         "name": "式"
@@ -2731,7 +2787,8 @@
     }
   },
   "ComfyNotNode": {
-    "display_name": "Comfy NOTノード",
+    "description": "論理NOT演算です。値が偽と評価される場合にtrueを返します。真偽値の判定にはPythonの規則を使用します。",
+    "display_name": "NOT",
     "inputs": {
       "value": {
         "name": "value"
@@ -2744,7 +2801,7 @@
     }
   },
   "ComfyNumberConvert": {
-    "display_name": "Comfy数値変換",
+    "display_name": "数値を変換",
     "inputs": {
       "value": {
         "name": "値"
@@ -2760,7 +2817,8 @@
     }
   },
   "ComfyOrNode": {
-    "display_name": "Comfy ORノード",
+    "description": "論理OR演算です。いずれかの値が真と評価される場合にtrueを返します。真偽値の判定にはPythonの規則を使用します。",
+    "display_name": "OR",
     "inputs": {
       "values": {
         "name": "values"
@@ -2773,7 +2831,7 @@
     }
   },
   "ComfySwitchNode": {
-    "display_name": "Comfyスイッチノード",
+    "display_name": "If/Elseスイッチ",
     "inputs": {
       "on_false": {
         "name": "偽の場合"
@@ -2793,7 +2851,7 @@
     }
   },
   "ConditioningAverage": {
-    "display_name": "コンディショニング平均",
+    "display_name": "コンディショニング（平均）",
     "inputs": {
       "conditioning_from": {
         "name": "条件付け元"
@@ -2807,7 +2865,7 @@
     }
   },
   "ConditioningCombine": {
-    "display_name": "コンディショニング結合",
+    "display_name": "コンディショニング（結合）",
     "inputs": {
       "conditioning_1": {
         "name": "条件付け_1"
@@ -2818,7 +2876,7 @@
     }
   },
   "ConditioningConcat": {
-    "display_name": "コンディショニング連結",
+    "display_name": "コンディショニング（連結）",
     "inputs": {
       "conditioning_from": {
         "name": "条件付け元"
@@ -2829,7 +2887,7 @@
     }
   },
   "ConditioningMultiply": {
-    "display_name": "コンディショニング乗算",
+    "display_name": "コンディショニング（乗算）",
     "inputs": {
       "conditioning": {
         "name": "conditioning"
@@ -2840,7 +2898,7 @@
     }
   },
   "ConditioningSetArea": {
-    "display_name": "コンディショニング領域設定",
+    "display_name": "コンディショニング（領域を設定）",
     "inputs": {
       "conditioning": {
         "name": "条件付け"
@@ -2863,7 +2921,7 @@
     }
   },
   "ConditioningSetAreaPercentage": {
-    "display_name": "コンディショニング領域割合設定",
+    "display_name": "コンディショニング（割合で領域を設定）",
     "inputs": {
       "conditioning": {
         "name": "条件付け"
@@ -2886,7 +2944,7 @@
     }
   },
   "ConditioningSetAreaPercentageVideo": {
-    "display_name": "コンディショニング領域割合設定（動画）",
+    "display_name": "コンディショニング（動画用に割合で領域を設定）",
     "inputs": {
       "conditioning": {
         "name": "条件設定"
@@ -2915,7 +2973,7 @@
     }
   },
   "ConditioningSetAreaStrength": {
-    "display_name": "コンディショニング領域強度設定",
+    "display_name": "コンディショニング（領域強度を設定）",
     "inputs": {
       "conditioning": {
         "name": "条件付け"
@@ -2926,7 +2984,7 @@
     }
   },
   "ConditioningSetDefaultCombine": {
-    "display_name": "コンディショニングデフォルト結合設定",
+    "display_name": "Condのデフォルト結合を設定",
     "inputs": {
       "cond": {
         "name": "条件"
@@ -2940,7 +2998,7 @@
     }
   },
   "ConditioningSetMask": {
-    "display_name": "コンディショニングmask設定",
+    "display_name": "コンディショニング（maskを設定）",
     "inputs": {
       "conditioning": {
         "name": "条件付け"
@@ -2957,7 +3015,7 @@
     }
   },
   "ConditioningSetProperties": {
-    "display_name": "コンディショニングプロパティ設定",
+    "display_name": "Condプロパティを設定",
     "inputs": {
       "cond_NEW": {
         "name": "新しい条件"
@@ -2980,7 +3038,7 @@
     }
   },
   "ConditioningSetPropertiesAndCombine": {
-    "display_name": "コンディショニングプロパティ設定と結合",
+    "display_name": "Condプロパティを設定して結合",
     "inputs": {
       "cond": {
         "name": "条件"
@@ -3047,7 +3105,7 @@
     }
   },
   "ConditioningTimestepsRange": {
-    "display_name": "コンディショニングタイムステップ範囲",
+    "display_name": "タイムステップ範囲",
     "inputs": {
       "end_percent": {
         "name": "終了パーセント"
@@ -3074,6 +3132,7 @@
     }
   },
   "ContextWindowsManual": {
+    "description": "コンテキストウィンドウを手動で設定します。",
     "display_name": "コンテキストウィンドウ（手動）",
     "inputs": {
       "causal_window_fix": {
@@ -3136,7 +3195,7 @@
     }
   },
   "ControlNetApply": {
-    "display_name": "ControlNet適用",
+    "display_name": "ControlNetを適用（非推奨）",
     "inputs": {
       "conditioning": {
         "name": "コンディショニング"
@@ -3153,7 +3212,7 @@
     }
   },
   "ControlNetApplyAdvanced": {
-    "display_name": "ControlNet適用（高度）",
+    "display_name": "ControlNetを適用",
     "inputs": {
       "control_net": {
         "name": "コントロールネット"
@@ -3190,7 +3249,7 @@
     }
   },
   "ControlNetApplySD3": {
-    "display_name": "ControlNet適用（SD3）",
+    "display_name": "VAEでControlNetを適用",
     "inputs": {
       "control_net": {
         "name": "コントロールネット"
@@ -3229,7 +3288,7 @@
     }
   },
   "ControlNetInpaintingAliMamaApply": {
-    "display_name": "ControlNetインペインティングAliMama適用",
+    "display_name": "ControlNetインペイントを適用（AliMama）",
     "inputs": {
       "control_net": {
         "name": "コントロールネット"
@@ -3271,7 +3330,7 @@
     }
   },
   "ControlNetLoader": {
-    "display_name": "ControlNetローダー",
+    "display_name": "ControlNetモデルを読み込む",
     "inputs": {
       "control_net_name": {
         "name": "コントロールネット名"
@@ -3375,6 +3434,7 @@
     }
   },
   "CreateBoundingBoxes": {
+    "description": "キャンバスにバウンディングボックスを描画します。Ideogramプロンプト要素、ピクセル空間のバウンディングボックス、プレビュー画像を出力します。",
     "display_name": "バウンディングボックスを作成",
     "inputs": {
       "background": {
@@ -3418,6 +3478,7 @@
     }
   },
   "CreateCameraInfo": {
+    "description": "camera_infoを構築します。'orbit'はターゲットを中心にヨー／ピッチ／距離で照準を合わせ、'look_at'はカメラをワールド位置に配置します。座標はビューアのワールド空間です（右手系、Yアップ）。",
     "display_name": "カメラ情報を作成",
     "inputs": {
       "camera_type": {
@@ -3512,7 +3573,7 @@
     }
   },
   "CreateHookKeyframesInterpolated": {
-    "display_name": "補間されたフックキーフレームを作成",
+    "display_name": "補間フックキーフレームを作成",
     "inputs": {
       "end_percent": {
         "name": "end_percent"
@@ -3546,7 +3607,7 @@
     }
   },
   "CreateHookLora": {
-    "display_name": "フックloraを作成",
+    "display_name": "フックLoRAを作成",
     "inputs": {
       "lora_name": {
         "name": "lora_name"
@@ -3563,7 +3624,7 @@
     }
   },
   "CreateHookLoraModelOnly": {
-    "display_name": "モデルのみのフックloraを作成",
+    "display_name": "フックLoRAを作成（MO）",
     "inputs": {
       "lora_name": {
         "name": "lora_name"
@@ -3577,7 +3638,7 @@
     }
   },
   "CreateHookModelAsLora": {
-    "display_name": "モデルをloraとしてフック作成",
+    "display_name": "モデルをLoRAとしてフック作成",
     "inputs": {
       "ckpt_name": {
         "name": "ckpt_name"
@@ -3594,7 +3655,7 @@
     }
   },
   "CreateHookModelAsLoraModelOnly": {
-    "display_name": "モデルをモデルのみのloraとしてフック作成",
+    "display_name": "モデルをLoRAとしてフック作成（MO）",
     "inputs": {
       "ckpt_name": {
         "name": "ckpt_name"
@@ -3622,6 +3683,7 @@
     }
   },
   "CreateVideo": {
+    "description": "画像から動画を作成します。",
     "display_name": "動画を作成",
     "inputs": {
       "audio": {
@@ -3651,6 +3713,7 @@
     }
   },
   "CropByBBoxes": {
+    "description": "指定されたバウンディングボックスに基づき、入力画像バッチの領域を切り抜いてリサイズします。",
     "display_name": "バウンディングボックスで切り抜き",
     "inputs": {
       "bboxes": {
@@ -3744,6 +3807,7 @@
     }
   },
   "DA3GeometryToMesh": {
+    "description": "深度マップを三角形分割された3Dメッシュに変換します。",
     "display_name": "DA3ジオメトリをメッシュに変換",
     "inputs": {
       "batch_index": {
@@ -3781,7 +3845,8 @@
     }
   },
   "DA3Inference": {
-    "display_name": "DA3推論",
+    "description": "画像に対してDepth Anything 3を実行します。マルチビュー モードでは、各画像を同一シーンの別ビューとして扱います。",
+    "display_name": "Depth Anything 3を実行",
     "inputs": {
       "da3_model": {
         "name": "da3_model"
@@ -3810,7 +3875,8 @@
     }
   },
   "DA3Render": {
-    "display_name": "DA3レンダリング",
+    "description": "Depth Anything 3のジオメトリデータから、深度マップ、信頼度マップ、または空maskをレンダリングします。",
+    "display_name": "Depth Anything 3をレンダリング",
     "inputs": {
       "da3_geometry": {
         "name": "da3_geometry"
@@ -3833,6 +3899,7 @@
     }
   },
   "DecimateMesh": {
+    "description": "アクティブな演算デバイスでQEMを使用し、メッシュを目標面数まで簡略化します。'midpoint'はcumesh-faithfulプリセットです（最高品質で、細い特徴／髪を保持）。'qem'はライン／特徴エッジ制御により頂点をQEM最適位置に配置します。出力は結合状態を維持します。",
     "display_name": "メッシュを簡略化",
     "inputs": {
       "mesh": {
@@ -3855,7 +3922,7 @@
     }
   },
   "DiffControlNetLoader": {
-    "display_name": "Diff controlnetローダー",
+    "display_name": "ControlNetモデルを読み込む（diff）",
     "inputs": {
       "control_net_name": {
         "name": "control_net_name"
@@ -3882,7 +3949,7 @@
     }
   },
   "DiffusersLoader": {
-    "display_name": "Diffusersローダー",
+    "display_name": "Diffusersモデルを読み込む（非推奨）",
     "inputs": {
       "model_path": {
         "name": "モデルパス"
@@ -3915,7 +3982,7 @@
     }
   },
   "DualCFGGuider": {
-    "display_name": "デュアルcfgガイダー",
+    "display_name": "デュアルCFGガイダー",
     "inputs": {
       "cfg_cond2_negative": {
         "name": "cfg_cond2_negative"
@@ -3946,7 +4013,8 @@
     }
   },
   "DualCLIPLoader": {
-    "display_name": "デュアルCLIPローダー",
+    "description": "レシピ：\nsdxl: clip-l, clip-g\nsd3: clip-l, clip-g / clip-l, t5 / clip-g, t5\nflux: clip-l, t5\nhidream: t5 または llama の少なくとも一方、t5 と llama を推奨\nhunyuan_image: qwen2.5vl 7b および byt5 small\nnewbie: gemma-3-4b-it, jina clip v2",
+    "display_name": "CLIP（デュアル）を読み込む",
     "inputs": {
       "clip_name1": {
         "name": "clip_name1"
@@ -3963,7 +4031,7 @@
     }
   },
   "DualModelGuider": {
-    "display_name": "デュアルモデルガイダー",
+    "display_name": "デュアルモデル CFG ガイダー",
     "inputs": {
       "cfg": {
         "name": "cfg"
@@ -3991,6 +4059,7 @@
     }
   },
   "EasyCache": {
+    "description": "ネイティブ EasyCache 実装。",
     "display_name": "EasyCache",
     "inputs": {
       "end_percent": {
@@ -4021,7 +4090,8 @@
     }
   },
   "ElevenLabsAudioIsolation": {
-    "display_name": "ElevenLabs音声分離",
+    "description": "音声から背景ノイズを除去し、ボーカルまたは発話を分離します。",
+    "display_name": "ElevenLabs 音声分離",
     "inputs": {
       "audio": {
         "name": "音声",
@@ -4035,7 +4105,8 @@
     }
   },
   "ElevenLabsInstantVoiceClone": {
-    "display_name": "ElevenLabsインスタント音声クローン",
+    "description": "音声サンプルからクローン音声を作成します。クローンする音声の録音を1～8件指定してください。",
+    "display_name": "ElevenLabs インスタント音声クローン",
     "inputs": {
       "files": {
         "name": "ファイル",
@@ -4054,7 +4125,8 @@
     }
   },
   "ElevenLabsSpeechToSpeech": {
-    "display_name": "ElevenLabs音声から音声",
+    "description": "元の内容と感情を保持したまま、ある音声を別の音声に変換します。",
+    "display_name": "ElevenLabs 音声変換",
     "inputs": {
       "audio": {
         "name": "音声",
@@ -4107,7 +4179,8 @@
     }
   },
   "ElevenLabsSpeechToText": {
-    "display_name": "ElevenLabs音声からテキスト",
+    "description": "音声をテキストに書き起こします。自動言語検出、話者ダイアライゼーション、音声イベントタグ付けに対応しています。",
+    "display_name": "ElevenLabs 音声テキスト変換",
     "inputs": {
       "audio": {
         "name": "音声",
@@ -4164,6 +4237,7 @@
     }
   },
   "ElevenLabsTextToDialogue": {
+    "description": "テキストから複数話者の対話を生成します。各対話エントリには独自のテキストと音声があります。",
     "display_name": "ElevenLabs テキストから対話",
     "inputs": {
       "apply_text_normalization": {
@@ -4208,6 +4282,7 @@
     }
   },
   "ElevenLabsTextToSoundEffects": {
+    "description": "テキストの説明から効果音を生成します。",
     "display_name": "ElevenLabs テキストから効果音",
     "inputs": {
       "model": {
@@ -4239,7 +4314,8 @@
     }
   },
   "ElevenLabsTextToSpeech": {
-    "display_name": "ElevenLabs テキストから音声",
+    "description": "テキストを音声に変換します。",
+    "display_name": "ElevenLabs テキスト読み上げ",
     "inputs": {
       "apply_text_normalization": {
         "name": "apply_text_normalization",
@@ -4296,7 +4372,8 @@
     }
   },
   "ElevenLabsVoiceSelector": {
-    "display_name": "ElevenLabs 音声選択",
+    "description": "テキスト読み上げ生成用に定義済みの ElevenLabs 音声を選択します。",
+    "display_name": "ElevenLabs 音声セレクター",
     "inputs": {
       "voice": {
         "name": "voice",
@@ -4333,7 +4410,7 @@
     }
   },
   "EmptyAceStep1_5LatentAudio": {
-    "display_name": "空のAceStep1.5 latent音声",
+    "display_name": "空の Ace Step 1.5 latent 音声",
     "inputs": {
       "batch_size": {
         "name": "バッチサイズ",
@@ -4350,7 +4427,7 @@
     }
   },
   "EmptyAceStepLatentAudio": {
-    "display_name": "空のAceStep latent音声",
+    "display_name": "空の Ace Step 1.0 latent 音声",
     "inputs": {
       "batch_size": {
         "name": "batch_size",
@@ -4430,7 +4507,7 @@
     }
   },
   "EmptyFlux2LatentImage": {
-    "display_name": "空のFlux2 latent画像",
+    "display_name": "空の Flux 2 latent",
     "inputs": {
       "batch_size": {
         "name": "バッチサイズ"
@@ -4449,7 +4526,8 @@
     }
   },
   "EmptyHiDreamO1LatentImage": {
-    "display_name": "空のHiDreamO1 latent画像",
+    "description": "HiDream-O1-Image 用の空のピクセル空間 latent です。モデルは約400万ピクセルで学習されており、低解像度では分布外となり、品質が著しく低下します。学習解像度：2048x2048、2304x1728、1728x2304、2560x1440、1440x2560、2496x1664、1664x2496、3104x1312、1312x3104、2304x1792、1792x2304。",
+    "display_name": "空の HiDream-O1 latent 画像",
     "inputs": {
       "batch_size": {
         "name": "バッチサイズ"
@@ -4487,7 +4565,7 @@
     }
   },
   "EmptyHunyuanLatentVideo": {
-    "display_name": "空のHunyuan latent動画",
+    "display_name": "空の HunyuanVideo 1.0 latent",
     "inputs": {
       "batch_size": {
         "name": "バッチサイズ"
@@ -4509,7 +4587,7 @@
     }
   },
   "EmptyHunyuanVideo15Latent": {
-    "display_name": "空のHunyuanVideo15 latent",
+    "display_name": "空の HunyuanVideo 1.5 latent",
     "inputs": {
       "batch_size": {
         "name": "バッチサイズ"
@@ -4570,7 +4648,7 @@
     }
   },
   "EmptyLatentAudio": {
-    "display_name": "空のlatent音声",
+    "display_name": "空の latent 音声",
     "inputs": {
       "batch_size": {
         "name": "バッチサイズ",
@@ -4604,7 +4682,8 @@
     }
   },
   "EmptyLatentImage": {
-    "display_name": "空のlatent画像",
+    "description": "サンプリングによってノイズ除去する、空の latent 画像の新しいバッチを作成します。",
+    "display_name": "空の latent 画像",
     "inputs": {
       "batch_size": {
         "name": "バッチサイズ",
@@ -4626,7 +4705,8 @@
     }
   },
   "EmptyMiniMaxH3LatentAV": {
-    "display_name": "空のMiniMaxH3 latent AV",
+    "description": "MiniMax H3 用の動画+音声統合 latent です。長さは24 fpsでモデルの 17k+5 フレームグリッドに合わせられます。",
+    "display_name": "空の MiniMax H3 AV latent",
     "inputs": {
       "height": {
         "name": "高さ"
@@ -4646,7 +4726,8 @@
     }
   },
   "EmptyMiniMaxMusic3LatentAudio": {
-    "display_name": "空のMiniMaxMusic3 latent音声",
+    "description": "指定した長さの空の MiniMax Music3 音声 latent を作成します。",
+    "display_name": "空の MiniMax Music3 latent 音声",
     "inputs": {
       "batch_size": {
         "name": "バッチサイズ"
@@ -4684,7 +4765,7 @@
     }
   },
   "EmptyQwenImageLayeredLatentImage": {
-    "display_name": "空のQwenImageLayered latent画像",
+    "display_name": "空の Qwen Image Layered latent",
     "inputs": {
       "batch_size": {
         "name": "バッチサイズ"
@@ -4799,7 +4880,7 @@
     }
   },
   "FeatherMask": {
-    "display_name": "maskをぼかす",
+    "display_name": "mask をぼかす",
     "inputs": {
       "bottom": {
         "name": "下"
@@ -4824,7 +4905,8 @@
     }
   },
   "File3DToSplat": {
-    "display_name": "3DファイルをSplatに変換",
+    "description": "splat File3D を解析して gaussian splat に変換します。Create 3D File (from Splat) の逆操作です。対応形式：PLY、SPLAT、KSPLAT、SPZ。PLY は完全な球面調和関数を保持し、その他の形式はベースカラーのみです。形式はファイル内容から自動検出されます。",
+    "display_name": "Splat を取得",
     "inputs": {
       "model_3d": {
         "name": "3Dモデル",
@@ -4839,6 +4921,7 @@
     }
   },
   "FillHoles": {
+    "description": "最大周長までの穴を埋め、既存のジオメトリ/UVを保持します。GPUベクトル化され、巻き方向の自動補正とループ平均による重心色に対応しています",
     "display_name": "穴を埋める",
     "inputs": {
       "fill_chains": {
@@ -4869,7 +4952,8 @@
     }
   },
   "FishAudioInstantVoiceClone": {
-    "display_name": "FishAudio 即時音声クローン",
+    "description": "音声サンプルからプライベートなクローン音声を作成し、すぐにテキスト読み上げに使用できます。録音は1～20件、各10～30秒、合計270秒未満を推奨します。",
+    "display_name": "Fish Audio インスタント音声クローン",
     "inputs": {
       "enhance_audio_quality": {
         "name": "音声品質を向上",
@@ -4888,7 +4972,8 @@
     }
   },
   "FishAudioSpeechToText": {
-    "display_name": "FishAudioSpeechToText",
+    "description": "言語を自動検出して音声をテキストに変換します。",
+    "display_name": "Fish Audio 音声テキスト変換",
     "inputs": {
       "audio": {
         "name": "音声",
@@ -4919,7 +5004,8 @@
     }
   },
   "FishAudioTextToSpeech": {
-    "display_name": "FishAudioTextToSpeech",
+    "description": "テキストを音声に変換します。テキスト内の感情キュー（s2.1-proでは[happy]、[whispering]、s1では(happy)）と、複数の接続済み音声で{'@'}Voice1/{'@'}Voice2タグを使用した複数話者の会話に対応します。",
+    "display_name": "Fish Audio テキスト読み上げ",
     "inputs": {
       "control_after_generate": {
         "name": "生成後の制御"
@@ -4959,7 +5045,8 @@
     }
   },
   "FishAudioVoiceSelector": {
-    "display_name": "FishAudioVoiceSelector",
+    "description": "テキスト読み上げ生成用にFish Audioライブラリから音声を選択します。",
+    "display_name": "Fish Audio 音声セレクター",
     "inputs": {
       "voice": {
         "name": "音声",
@@ -4987,7 +5074,8 @@
     }
   },
   "Flux2ImageNode": {
-    "display_name": "Flux2ImageNode",
+    "description": "プロンプトと任意の参照画像から、Flux.2 [pro]またはFlux.2 [max]で画像を生成します。",
+    "display_name": "Flux.2 画像",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -5017,7 +5105,8 @@
     }
   },
   "Flux2MaxImageNode": {
-    "display_name": "Flux2MaxImageNode",
+    "description": "プロンプトと解像度に基づいて画像を同期生成します。",
+    "display_name": "Flux.2 [max] 画像",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -5052,7 +5141,8 @@
     }
   },
   "Flux2ProImageNode": {
-    "display_name": "Flux2ProImageNode",
+    "description": "プロンプトと解像度に基づいて画像を同期生成します。",
+    "display_name": "Flux.2 [pro] 画像",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -5106,7 +5196,8 @@
     }
   },
   "Flux3ImageToVideoNode": {
-    "display_name": "Flux3ImageToVideoNode",
+    "description": "FLUX 3で1～10枚の画像をアニメーション化します。各画像はクリップのフレームになります。1枚なら開始フレーム、2枚なら1枚目から2枚目へモーフィングし、さらに多い場合はクリップ全体に配置するか、指定した時刻に固定します。",
+    "display_name": "Flux 3 画像から動画",
     "inputs": {
       "aspect_ratio": {
         "name": "アスペクト比",
@@ -5155,7 +5246,8 @@
     }
   },
   "Flux3TextToVideoNode": {
-    "display_name": "Flux3TextToVideoNode",
+    "description": "FLUX 3を介して、テキストプロンプトから音声同期付き動画を生成します。",
+    "display_name": "Flux 3 テキストから動画",
     "inputs": {
       "aspect_ratio": {
         "name": "アスペクト比",
@@ -5196,7 +5288,8 @@
     }
   },
   "Flux3VideoContinuationNode": {
-    "display_name": "Flux3VideoContinuationNode",
+    "description": "FLUX 3で動画を継続します。新しいクリップは、指定した動画の最後のフレームから続きます。",
+    "display_name": "Flux 3 動画継続",
     "inputs": {
       "aspect_ratio": {
         "name": "アスペクト比",
@@ -5241,6 +5334,7 @@
     }
   },
   "FluxDisableGuidance": {
+    "description": "このノードは、FluxおよびFlux系モデルのガイダンス埋め込みを完全に無効化します",
     "display_name": "FluxDisableGuidance",
     "inputs": {
       "conditioning": {
@@ -5254,7 +5348,8 @@
     }
   },
   "FluxEraseNode": {
-    "display_name": "FluxEraseNode",
+    "description": "画像からmaskで指定したオブジェクトを除去し、背景を再構成します。消去したい部分にmaskを描画してください。",
+    "display_name": "Flux 画像消去",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -5298,7 +5393,8 @@
     }
   },
   "FluxKVCache": {
-    "display_name": "FluxKVCache",
+    "description": "Fluxファミリモデルで参照画像向けのKV Cache最適化を有効にします。",
+    "display_name": "Flux KV Cache",
     "inputs": {
       "model": {
         "name": "モデル",
@@ -5312,6 +5408,7 @@
     }
   },
   "FluxKontextImageScale": {
+    "description": "このノードは、flux kontextにより適したサイズへ画像をリサイズします。",
     "display_name": "FluxKontextImageScale",
     "inputs": {
       "image": {
@@ -5325,7 +5422,8 @@
     }
   },
   "FluxKontextMaxImageNode": {
-    "display_name": "FluxKontextMaxImageNode",
+    "description": "プロンプトとアスペクト比に基づき、APIを介してFlux.1 Kontext [pro]で画像を編集します。",
+    "display_name": "Flux.1 Kontext [max] 画像",
     "inputs": {
       "aspect_ratio": {
         "name": "アスペクト比",
@@ -5365,7 +5463,7 @@
     }
   },
   "FluxKontextMultiReferenceLatentMethod": {
-    "display_name": "FluxKontextMultiReferenceLatentMethod",
+    "display_name": "編集モデル参照方式",
     "inputs": {
       "conditioning": {
         "name": "コンディショニング"
@@ -5381,7 +5479,8 @@
     }
   },
   "FluxKontextProImageNode": {
-    "display_name": "FluxKontextProImageNode",
+    "description": "プロンプトとアスペクト比に基づき、APIを介してFlux.1 Kontext [pro]で画像を編集します。",
+    "display_name": "Flux.1 Kontext [pro] 画像",
     "inputs": {
       "aspect_ratio": {
         "name": "アスペクト比",
@@ -5421,7 +5520,8 @@
     }
   },
   "FluxProExpandNode": {
-    "display_name": "FluxProExpandNode",
+    "description": "プロンプトに基づいて画像をアウトペイントします。",
+    "display_name": "Flux.1 画像拡張",
     "inputs": {
       "bottom": {
         "name": "下",
@@ -5473,7 +5573,8 @@
     }
   },
   "FluxProFillNode": {
-    "display_name": "FluxProFillNode",
+    "description": "maskとプロンプトに基づいて画像をインペイントします。",
+    "display_name": "Flux.1 画像塗りつぶし",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -5512,7 +5613,8 @@
     }
   },
   "FluxProUltraImageNode": {
-    "display_name": "FluxProUltraImageNode",
+    "description": "プロンプトと解像度に基づき、APIを介してFlux Pro 1.1 Ultraで画像を生成します。",
+    "display_name": "Flux 1.1 [pro] Ultra 画像",
     "inputs": {
       "aspect_ratio": {
         "name": "アスペクト比",
@@ -5552,7 +5654,8 @@
     }
   },
   "FluxVTONode": {
-    "display_name": "FluxVTONode",
+    "description": "バーチャル試着：指定した衣服を人物に着せます。",
+    "display_name": "Flux バーチャル試着",
     "inputs": {
       "control_after_generate": {
         "name": "生成後コントロール"
@@ -5581,7 +5684,8 @@
     }
   },
   "FluxVideoUpscaleNode": {
-    "display_name": "FluxVideoUpscaleNode",
+    "description": "FLUX超解像により動画を1.5～3倍にアップスケールし、ソースを正確に維持するか、ディテールを創造的に強調します。",
+    "display_name": "Flux 動画アップスケール",
     "inputs": {
       "auto_downscale": {
         "name": "auto_downscale",
@@ -5622,7 +5726,7 @@
     }
   },
   "FrameInterpolate": {
-    "display_name": "FrameInterpolate",
+    "display_name": "フレーム補間モデルを実行",
     "inputs": {
       "images": {
         "name": "画像"
@@ -5641,7 +5745,7 @@
     }
   },
   "FrameInterpolationModelLoader": {
-    "display_name": "FrameInterpolationModelLoader",
+    "display_name": "フレーム補間モデルを読み込み",
     "inputs": {
       "model_name": {
         "name": "モデル名",
@@ -5655,6 +5759,7 @@
     }
   },
   "FreSca": {
+    "description": "ガイダンスに周波数依存のスケーリングを適用します",
     "display_name": "FreSca",
     "inputs": {
       "freq_cutoff": {
@@ -5749,7 +5854,7 @@
     }
   },
   "GLIGENLoader": {
-    "display_name": "GLIGENLoader",
+    "display_name": "GLIGENモデルを読み込み",
     "inputs": {
       "gligen_name": {
         "name": "gligen_name"
@@ -5786,6 +5891,7 @@
     }
   },
   "GLSLShader": {
+    "description": "画像にGLSL ESフラグメントシェーダーを適用します。u_resolution (vec2)は常に使用できます。",
     "display_name": "GLSLシェーダー",
     "inputs": {
       "bools": {
@@ -5837,7 +5943,8 @@
     }
   },
   "GeminiImage2Node": {
-    "display_name": "GeminiImage2Node",
+    "description": "Google Vertex API経由で画像を同期的に生成または編集します。",
+    "display_name": "Nano Banana Pro（Google Gemini Image）",
     "inputs": {
       "aspect_ratio": {
         "name": "アスペクト比",
@@ -5888,7 +5995,8 @@
     }
   },
   "GeminiImageNode": {
-    "display_name": "GeminiImageNode",
+    "description": "Google API経由で画像を同期的に編集します。",
+    "display_name": "Nano Banana（Google Gemini Image）",
     "inputs": {
       "aspect_ratio": {
         "name": "アスペクト比",
@@ -5936,7 +6044,8 @@
     }
   },
   "GeminiInputFiles": {
-    "display_name": "GeminiInputFiles",
+    "description": "Gemini LLMノードの入力に含める入力ファイルを読み込み、準備します。ファイルは応答の生成時にGeminiモデルによって読み取られます。テキストファイルの内容はトークン上限にカウントされます。🛈 ヒント：他のGemini Input Fileノードと連結できます。",
+    "display_name": "Gemini 入力ファイル",
     "inputs": {
       "GEMINI_INPUT_FILES": {
         "name": "GEMINI_INPUT_FILES",
@@ -5954,7 +6063,8 @@
     }
   },
   "GeminiNanoBanana2": {
-    "display_name": "GeminiNanoBanana2",
+    "description": "Google Vertex API経由で画像を同期的に生成または編集します。",
+    "display_name": "Nano Banana 2",
     "inputs": {
       "aspect_ratio": {
         "name": "アスペクト比",
@@ -6011,7 +6121,8 @@
     }
   },
   "GeminiNanoBanana2V2": {
-    "display_name": "GeminiNanoBanana2V2",
+    "description": "Google Vertex API経由で画像を同期的に生成または編集します。",
+    "display_name": "Nano Banana 2",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -6066,7 +6177,8 @@
     }
   },
   "GeminiNode": {
-    "display_name": "GeminiNode",
+    "description": "GoogleのGemini AIモデルでテキスト応答を生成します。より関連性が高く有意義な応答を生成するためのコンテキストとして、複数種類の入力（テキスト、画像、音声、動画）を指定できます。",
+    "display_name": "Google Gemini",
     "inputs": {
       "audio": {
         "name": "音声",
@@ -6111,7 +6223,8 @@
     }
   },
   "GeminiNodeV2": {
-    "display_name": "GeminiNodeV2",
+    "description": "GoogleのGeminiモデルでテキスト応答を生成します。テキストプロンプトと、任意で1つ以上の画像、音声クリップ、動画、またはファイルをマルチモーダルコンテキストとして指定します。",
+    "display_name": "Google Gemini",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -6152,7 +6265,8 @@
     }
   },
   "GeminiVideoOmni": {
-    "display_name": "GeminiVideoOmni",
+    "description": "GoogleのGemini Omni Flashモデルを使用して、テキストプロンプトから音声付き動画を生成します。任意で参照画像や動画を指定し、結果の誘導または編集に使用できます。希望する長さ（3～10秒）とアスペクト比（16:9または9:16）は、プロンプト内で直接指定してください。",
+    "display_name": "Google Gemini Omni（動画）",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -6185,7 +6299,7 @@
     }
   },
   "GenerateTracks": {
-    "display_name": "GenerateTracks",
+    "display_name": "動画トラックを生成",
     "inputs": {
       "bezier": {
         "name": "ベジエ",
@@ -6251,7 +6365,8 @@
     }
   },
   "GetICLoRAParameters": {
-    "display_name": "GetICLoRAParameters",
+    "description": "LoRAが読み込まれたモデルのsafetensorsメタデータからIC-LoRAパラメータを抽出し、LTXVAddGuide用に出力します（例：reference_downscale_factor）。",
+    "display_name": "IC-LoRAパラメータを取得",
     "inputs": {
       "iclora_model": {
         "name": "iclora_model",
@@ -6266,7 +6381,8 @@
     }
   },
   "GetImageSize": {
-    "display_name": "GetImageSize",
+    "description": "画像の幅と高さを返し、変更せずにそのまま渡します。",
+    "display_name": "画像サイズを取得",
     "inputs": {
       "image": {
         "name": "画像"
@@ -6288,7 +6404,7 @@
     }
   },
   "GetMeshInfo": {
-    "display_name": "GetMeshInfo",
+    "display_name": "メッシュ情報を取得",
     "inputs": {
       "mesh": {
         "name": "mesh"
@@ -6306,7 +6422,8 @@
     }
   },
   "GetSplatCount": {
-    "display_name": "GetSplatCount",
+    "description": "バッチ全体のスプラット数の合計を返します。",
+    "display_name": "スプラット数を取得",
     "inputs": {
       "splat": {
         "name": "splat"
@@ -6324,7 +6441,8 @@
     }
   },
   "GetVideoComponents": {
-    "display_name": "GetVideoComponents",
+    "description": "動画フレーム、音声、フレームレート、ビット深度、色空間を抽出します。",
+    "display_name": "動画コンポーネントを取得",
     "inputs": {
       "video": {
         "name": "ビデオ",
@@ -6355,7 +6473,8 @@
     }
   },
   "GrokImageEditNode": {
-    "display_name": "Grok画像編集",
+    "description": "テキストプロンプトに基づいて既存の画像を変更します",
+    "display_name": "Grok 画像編集",
     "inputs": {
       "aspect_ratio": {
         "name": "アスペクト比",
@@ -6393,7 +6512,8 @@
     }
   },
   "GrokImageEditNodeV2": {
-    "display_name": "Grok画像編集 V2",
+    "description": "テキストプロンプトに基づいて既存の画像を変更します",
+    "display_name": "Grok 画像編集",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -6429,7 +6549,8 @@
     }
   },
   "GrokImageNode": {
-    "display_name": "Grok画像",
+    "description": "テキストプロンプトに基づいて Grok で画像を生成します",
+    "display_name": "Grok 画像",
     "inputs": {
       "aspect_ratio": {
         "name": "アスペクト比"
@@ -6467,7 +6588,8 @@
     }
   },
   "GrokVideoEditNode": {
-    "display_name": "Grok動画編集",
+    "description": "テキストプロンプトに基づいて既存の動画を編集します。",
+    "display_name": "Grok 動画編集",
     "inputs": {
       "control_after_generate": {
         "name": "生成後の制御"
@@ -6495,7 +6617,8 @@
     }
   },
   "GrokVideoExtendNode": {
-    "display_name": "Grok動画延長",
+    "description": "テキストプロンプトに基づき、既存の動画をシームレスに続く形で延長します。",
+    "display_name": "Grok 動画延長",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -6527,7 +6650,8 @@
     }
   },
   "GrokVideoNode": {
-    "display_name": "Grok動画",
+    "description": "プロンプトまたは画像から動画を生成します",
+    "display_name": "Grok 動画",
     "inputs": {
       "aspect_ratio": {
         "name": "アスペクト比",
@@ -6568,7 +6692,8 @@
     }
   },
   "GrokVideoReferenceNode": {
-    "display_name": "Grok動画リファレンス",
+    "description": "リファレンス画像をもとに動画を生成します。プリセット音声リファレンスは任意で使用できます。",
+    "display_name": "Grok リファレンスから動画",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -6611,7 +6736,7 @@
     }
   },
   "GrowMask": {
-    "display_name": "maskを拡張",
+    "display_name": "マスクを拡張",
     "inputs": {
       "expand": {
         "name": "拡大"
@@ -6630,7 +6755,8 @@
     }
   },
   "HappyHorseImageToVideoApi": {
-    "display_name": "HappyHorse画像から動画 API",
+    "description": "HappyHorse モデルを使用して、最初のフレーム画像から動画を生成します。",
+    "display_name": "HappyHorse 画像から動画",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -6667,7 +6793,8 @@
     }
   },
   "HappyHorseReferenceVideoApi": {
-    "display_name": "HappyHorseリファレンス動画 API",
+    "description": "HappyHorse モデルを使用して、リファレンス素材に含まれる人物または物体をフィーチャーした動画を生成します。単一キャラクターの演技と複数キャラクターのインタラクションに対応しています。",
+    "display_name": "HappyHorse リファレンスから動画",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -6703,7 +6830,8 @@
     }
   },
   "HappyHorseTextToVideoApi": {
-    "display_name": "HappyHorseテキストから動画 API",
+    "description": "HappyHorse モデルを使用して、テキストプロンプトに基づく動画を生成します。",
+    "display_name": "HappyHorse テキストから動画",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -6739,7 +6867,8 @@
     }
   },
   "HappyHorseVideoEditApi": {
-    "display_name": "HappyHorse動画編集 API",
+    "description": "HappyHorse モデルを使用して、テキスト指示またはリファレンス画像で動画を編集します。出力時間は3～15秒で入力動画に合わせられ、15秒を超える入力は切り詰められます。",
+    "display_name": "HappyHorse 動画編集",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -6776,7 +6905,8 @@
     }
   },
   "HeyGenAvatarVideoNode": {
-    "display_name": "HeyGenアバター動画",
+    "description": "HeyGen アバターから話すプレゼンター動画を生成します。HeyGen で人気の公開アバターを含み、任意のルック ID を上書き指定できます。",
+    "display_name": "HeyGen アバター動画",
     "inputs": {
       "aspect_ratio": {
         "name": "アスペクト比",
@@ -6832,7 +6962,8 @@
     }
   },
   "HeyGenCreateAvatarNode": {
-    "display_name": "HeyGenアバターを作成",
+    "description": "人物の写真またはテキストプロンプト（生成キャラクター）から、再利用可能な独自の HeyGen アバターを作成します。生成された avatar_id を HeyGen Avatar Video の custom_avatar_id に入力し、今後のワークフローでアバターを再利用できるよう ID を保存してください。",
+    "display_name": "HeyGen アバターを作成",
     "inputs": {
       "source": {
         "name": "ソース",
@@ -6854,7 +6985,8 @@
     }
   },
   "HeyGenTalkingPhotoNode": {
-    "display_name": "HeyGenトーキングフォト",
+    "description": "人物の任意の画像を、リップシンクした話す動画にアニメーション化します（HeyGen Avatar IV）。テキストスクリプトまたは独自の音声で動かせます。",
+    "display_name": "HeyGen 話す写真",
     "inputs": {
       "aspect_ratio": {
         "name": "アスペクト比",
@@ -6903,7 +7035,8 @@
     }
   },
   "HeyGenTextToSpeechNode": {
-    "display_name": "HeyGenテキスト読み上げ",
+    "description": "HeyGen の Starfish TTS エンジンを使用して、テキストから音声を生成します。17言語に対応した HeyGen の人気音声を含みます。",
+    "display_name": "HeyGen テキスト読み上げ",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -6940,7 +7073,8 @@
     }
   },
   "HeyGenVideoTranslateNode": {
-    "display_name": "HeyGen動画翻訳",
+    "description": "話している動画を別の言語に翻訳します。元の話者の声を複製し、翻訳後の音声に合わせて口の動きを再アニメーション化します。",
+    "display_name": "HeyGen 動画翻訳",
     "inputs": {
       "control_after_generate": {
         "name": "生成後の制御"
@@ -6977,7 +7111,8 @@
     }
   },
   "HiDreamO1PatchSeamSmoothing": {
-    "display_name": "HiDream O1パッチ継ぎ目平滑化",
+    "description": "サンプリングの後半で、複数のシフトしたパッチグリッド位置にわたってモデル出力を平均化します。境界を除去します。",
+    "display_name": "HiDream-O1 パッチ境界の平滑化",
     "inputs": {
       "blend": {
         "name": "ブレンド",
@@ -7014,7 +7149,8 @@
     }
   },
   "HiDreamO1ReferenceImages": {
-    "display_name": "HiDream O1リファレンス画像",
+    "description": "1～10枚のリファレンス画像を conditioning に追加します。編集指示には1枚、被写体主導のパーソナライズには複数枚を使用します。",
+    "display_name": "HiDream-O1 リファレンス画像",
     "inputs": {
       "images": {
         "name": "画像",
@@ -7039,7 +7175,8 @@
     }
   },
   "HitPawGeneralImageEnhance": {
-    "display_name": "HitPaw一般画像強化",
+    "description": "低解像度画像を超解像化し、アーティファクトとノイズを除去します。最大出力は32メガピクセルです。",
+    "display_name": "HitPaw 一般画像強調",
     "inputs": {
       "auto_downscale": {
         "name": "自動ダウンスケール",
@@ -7062,7 +7199,8 @@
     }
   },
   "HitPawVideoEnhance": {
-    "display_name": "HitPaw動画強化",
+    "description": "低解像度動画を高解像度化し、アーティファクトとノイズを除去します。表示価格は動画1秒あたりです。",
+    "display_name": "HitPaw 動画強調",
     "inputs": {
       "model": {
         "name": "モデル"
@@ -7165,7 +7303,7 @@
     }
   },
   "HunyuanRefinerLatent": {
-    "display_name": "Hunyuan Refiner latent",
+    "display_name": "Hunyuan latent リファイナー",
     "inputs": {
       "latent": {
         "name": "潜在表現"
@@ -7242,7 +7380,7 @@
     }
   },
   "HunyuanVideo15LatentUpscaleWithModel": {
-    "display_name": "Hunyuan Video 1.5 latentをモデルでアップスケール",
+    "display_name": "Hunyuan Video 15 モデルによる latent アップスケール",
     "inputs": {
       "crop": {
         "name": "切り抜き"
@@ -7270,7 +7408,7 @@
     }
   },
   "HunyuanVideo15SuperResolution": {
-    "display_name": "Hunyuan Video 1.5超解像",
+    "display_name": "Hunyuan Video 1.5 超解像",
     "inputs": {
       "clip_vision_output": {
         "name": "clipビジョン出力"
@@ -7335,7 +7473,7 @@
     }
   },
   "HypernetworkLoader": {
-    "display_name": "ハイパーネットワークを読み込み",
+    "display_name": "ハイパーネットワークを読み込む",
     "inputs": {
       "hypernetwork_name": {
         "name": "hypernetwork_name"
@@ -7354,7 +7492,7 @@
     }
   },
   "Ideogram4Scheduler": {
-    "display_name": "Ideogram 4スケジューラー",
+    "display_name": "Ideogram 4 スケジューラー",
     "inputs": {
       "height": {
         "name": "高さ"
@@ -7379,7 +7517,8 @@
     }
   },
   "IdeogramPImage": {
-    "display_name": "Ideogram P画像",
+    "description": "Ideogramの高速テキスト画像生成モデルであるP-Imageを使用して画像を生成します。優れたタイポグラフィと写実性を備え、正確なテキスト、色、レイアウトのためのIdeogram 4.0構造化JSONキャプションをサポートします。",
+    "display_name": "Ideogram & Pruna P-Image",
     "inputs": {
       "aspect_ratio": {
         "name": "アスペクト比",
@@ -7420,6 +7559,7 @@
     }
   },
   "IdeogramV3": {
+    "description": "Ideogram V3モデルを使用して画像を生成します。テキストプロンプトからの通常の画像生成と、maskを使用した画像編集の両方をサポートします。",
     "display_name": "Ideogram V3",
     "inputs": {
       "aspect_ratio": {
@@ -7475,6 +7615,7 @@
     }
   },
   "IdeogramV4": {
+    "description": "テキストプロンプトからIdeogram 4.0モデルを使用して画像を生成します。",
     "display_name": "Ideogram V4",
     "inputs": {
       "control_after_generate": {
@@ -7525,7 +7666,7 @@
     }
   },
   "ImageBatch": {
-    "display_name": "画像バッチ",
+    "display_name": "画像をバッチ化（非推奨）",
     "inputs": {
       "image1": {
         "name": "画像1"
@@ -7593,6 +7734,7 @@
     }
   },
   "ImageCompare": {
+    "description": "スライダーで2つの画像を並べて比較します。",
     "display_name": "画像を比較",
     "inputs": {
       "compare_view": {
@@ -7607,7 +7749,7 @@
     }
   },
   "ImageCompositeMasked": {
-    "display_name": "mask付きで画像を合成",
+    "display_name": "マスク付き画像合成",
     "inputs": {
       "destination": {
         "name": "宛先"
@@ -7635,7 +7777,7 @@
     }
   },
   "ImageCompositor": {
-    "display_name": "画像コンポジター",
+    "display_name": "レイヤー画像を作成",
     "inputs": {
       "compositor": {
         "name": "compositor",
@@ -7656,7 +7798,7 @@
     }
   },
   "ImageCrop": {
-    "display_name": "画像を切り抜き",
+    "display_name": "画像を切り抜く（非推奨）",
     "inputs": {
       "height": {
         "name": "高さ"
@@ -7681,7 +7823,7 @@
     }
   },
   "ImageCropToMask": {
-    "display_name": "マスクに合わせて画像を切り抜き",
+    "display_name": "画像をmaskに合わせて切り抜く",
     "inputs": {
       "background": {
         "name": "背景",
@@ -7718,7 +7860,8 @@
     }
   },
   "ImageCropV2": {
-    "display_name": "画像切り抜きV2",
+    "description": "指定した寸法に画像を切り抜きます。",
+    "display_name": "画像を切り抜く",
     "inputs": {
       "crop_region": {
         "name": "crop_region"
@@ -7738,7 +7881,8 @@
     }
   },
   "ImageDeduplication": {
-    "display_name": "画像の重複除去",
+    "description": "リストから重複または非常に類似した画像を削除します。",
+    "display_name": "重複画像を削除",
     "inputs": {
       "images": {
         "name": "画像",
@@ -7757,7 +7901,7 @@
     }
   },
   "ImageFlip": {
-    "display_name": "画像反転",
+    "display_name": "画像を反転",
     "inputs": {
       "flip_method": {
         "name": "反転方法"
@@ -7773,7 +7917,7 @@
     }
   },
   "ImageFromBatch": {
-    "display_name": "バッチから画像",
+    "display_name": "バッチから画像を取得",
     "inputs": {
       "batch_index": {
         "name": "バッチインデックス"
@@ -7792,7 +7936,8 @@
     }
   },
   "ImageGrid": {
-    "display_name": "画像グリッド",
+    "description": "複数の画像をグリッドレイアウトに配置します。",
+    "display_name": "画像グリッドを作成",
     "inputs": {
       "cell_height": {
         "name": "セル高さ",
@@ -7853,7 +7998,7 @@
     }
   },
   "ImageInvert": {
-    "display_name": "画像の色反転",
+    "display_name": "画像の色を反転",
     "inputs": {
       "image": {
         "name": "画像"
@@ -7861,7 +8006,7 @@
     }
   },
   "ImageMergeTileList": {
-    "display_name": "画像タイルリスト結合",
+    "display_name": "タイルのリストを画像に結合",
     "inputs": {
       "final_height": {
         "name": "final_height"
@@ -7883,7 +8028,7 @@
     }
   },
   "ImageOnlyCheckpointLoader": {
-    "display_name": "画像専用チェックポイント読み込み",
+    "display_name": "チェックポイント画像のみを読み込む（img2vidモデル）",
     "inputs": {
       "ckpt_name": {
         "name": "ckpt_name"
@@ -7908,7 +8053,7 @@
     }
   },
   "ImagePadForOutpaint": {
-    "display_name": "アウトペイント用画像パディング",
+    "display_name": "アウトペイント用に画像をパディング",
     "inputs": {
       "bottom": {
         "name": "下"
@@ -7931,7 +8076,7 @@
     }
   },
   "ImageQuantize": {
-    "display_name": "画像量子化",
+    "display_name": "画像を量子化",
     "inputs": {
       "colors": {
         "name": "色"
@@ -7950,7 +8095,7 @@
     }
   },
   "ImageRGBToYUV": {
-    "display_name": "画像RGBからYUVへ",
+    "display_name": "画像をRGBからYUVに変換",
     "inputs": {
       "image": {
         "name": "画像"
@@ -7972,7 +8117,7 @@
     }
   },
   "ImageRotate": {
-    "display_name": "画像回転",
+    "display_name": "画像を回転",
     "inputs": {
       "image": {
         "name": "画像"
@@ -7988,7 +8133,7 @@
     }
   },
   "ImageScale": {
-    "display_name": "画像スケール",
+    "display_name": "画像をアップスケール",
     "inputs": {
       "crop": {
         "name": "クロップ"
@@ -8008,7 +8153,7 @@
     }
   },
   "ImageScaleBy": {
-    "display_name": "係数で画像スケール",
+    "display_name": "倍率で画像をアップスケール",
     "inputs": {
       "image": {
         "name": "画像"
@@ -8022,7 +8167,7 @@
     }
   },
   "ImageScaleToMaxDimension": {
-    "display_name": "最大寸法に画像スケール",
+    "display_name": "画像を最大寸法に拡大・縮小",
     "inputs": {
       "image": {
         "name": "画像"
@@ -8041,7 +8186,7 @@
     }
   },
   "ImageScaleToTotalPixels": {
-    "display_name": "総ピクセル数に画像スケール",
+    "display_name": "画像を総ピクセル数に合わせて拡大・縮小",
     "inputs": {
       "image": {
         "name": "画像"
@@ -8063,7 +8208,7 @@
     }
   },
   "ImageSharpen": {
-    "display_name": "画像シャープ化",
+    "display_name": "画像をシャープ化",
     "inputs": {
       "alpha": {
         "name": "アルファ"
@@ -8085,7 +8230,8 @@
     }
   },
   "ImageStitch": {
-    "display_name": "画像連結",
+    "description": "指定した方向にimage2をimage1へ結合します。\nimage2が指定されていない場合は、image1を変更せずに返します。\n画像間に任意の間隔を追加できます。",
+    "display_name": "画像を結合",
     "inputs": {
       "direction": {
         "name": "方向"
@@ -8113,7 +8259,7 @@
     }
   },
   "ImageToMask": {
-    "display_name": "画像をマスクに",
+    "display_name": "画像をマスクに変換",
     "inputs": {
       "channel": {
         "name": "チャンネル"
@@ -8129,7 +8275,7 @@
     }
   },
   "ImageUpscaleWithModel": {
-    "display_name": "モデルで画像アップスケール",
+    "display_name": "画像をアップスケール（モデル使用）",
     "inputs": {
       "image": {
         "name": "画像"
@@ -8145,7 +8291,7 @@
     }
   },
   "ImageYUVToRGB": {
-    "display_name": "画像YUVからRGBへ",
+    "display_name": "画像 YUV を RGB に変換",
     "inputs": {
       "U": {
         "name": "U"
@@ -8230,7 +8376,7 @@
     }
   },
   "InvertMask": {
-    "display_name": "マスク反転",
+    "display_name": "マスクを反転",
     "inputs": {
       "mask": {
         "name": "マスク"
@@ -8243,7 +8389,8 @@
     }
   },
   "JoinAudioChannels": {
-    "display_name": "オーディオチャンネル結合",
+    "description": "左右のモノラルオーディオチャンネルをステレオオーディオに結合します。",
+    "display_name": "オーディオチャンネルを結合",
     "inputs": {
       "audio_left": {
         "name": "audio_left"
@@ -8260,7 +8407,7 @@
     }
   },
   "JoinImageWithAlpha": {
-    "display_name": "アルファ付き画像結合",
+    "display_name": "画像とアルファを結合",
     "inputs": {
       "alpha": {
         "name": "アルファ"
@@ -8276,7 +8423,7 @@
     }
   },
   "JsonExtractString": {
-    "display_name": "Json文字列抽出",
+    "display_name": "JSONからテキストを抽出",
     "inputs": {
       "json_string": {
         "name": "json_string"
@@ -8292,6 +8439,7 @@
     }
   },
   "KSampler": {
+    "description": "指定されたモデル、ポジティブおよびネガティブconditioningを使用して、潜在画像をノイズ除去します。",
     "display_name": "Kサンプラー",
     "inputs": {
       "cfg": {
@@ -8474,7 +8622,8 @@
     }
   },
   "KlingAvatarNode": {
-    "display_name": "Klingアバター",
+    "description": "1枚の写真とオーディオファイルから、放送スタイルのデジタルヒューマン動画を生成します。",
+    "display_name": "Kling Avatar 2.0",
     "inputs": {
       "control_after_generate": {
         "name": "生成後に制御"
@@ -8506,7 +8655,8 @@
     }
   },
   "KlingFirstLastFrameNode": {
-    "display_name": "Kling最初・最後フレーム",
+    "description": "最初と最後のフレームを使用してKling V3で動画を生成します。",
+    "display_name": "Kling 3.0 開始・終了フレームから動画",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -8545,7 +8695,7 @@
     }
   },
   "KlingImage2VideoNode": {
-    "display_name": "Kling画像から動画",
+    "display_name": "Kling 画像（最初のフレーム）から動画",
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio"
@@ -8590,7 +8740,8 @@
     }
   },
   "KlingImageGenerationNode": {
-    "display_name": "Kling画像生成",
+    "description": "Kling画像生成ノード。テキストプロンプトと任意の参照画像から画像を生成します。",
+    "display_name": "Kling 3.0 画像",
     "inputs": {
       "aspect_ratio": {
         "name": "アスペクト比"
@@ -8639,7 +8790,7 @@
     }
   },
   "KlingImageToVideoWithAudio": {
-    "display_name": "Kling音声付き画像から動画",
+    "display_name": "Kling 2.6 画像（最初のフレーム）からオーディオ付き動画",
     "inputs": {
       "duration": {
         "name": "継続時間"
@@ -8668,7 +8819,8 @@
     }
   },
   "KlingLipSyncAudioToVideoNode": {
-    "display_name": "Klingリップシンク（音声から動画）",
+    "description": "Klingリップシンク音声から動画ノード。動画ファイル内の口の動きを、オーディオファイルの音声内容に同期させます。使用時は、オーディオに明確に聞き分けられるボーカルが含まれ、動画に明瞭な顔が含まれていることを確認してください。オーディオファイルは5MB以下にしてください。動画ファイルは100MB以下、縦横のサイズは720px～1920px、長さは2s～10sである必要があります。",
+    "display_name": "Kling オーディオ付きリップシンク動画",
     "inputs": {
       "audio": {
         "name": "音声"
@@ -8695,7 +8847,8 @@
     }
   },
   "KlingLipSyncTextToVideoNode": {
-    "display_name": "Klingリップシンク（テキストから動画）",
+    "description": "Klingリップシンクテキストから動画ノード。動画ファイル内の口の動きをテキストプロンプトに同期させます。動画ファイルは100MB以下、縦横のサイズは720px～1920px、長さは2s～10sである必要があります。",
+    "display_name": "Kling テキスト付きリップシンク動画",
     "inputs": {
       "text": {
         "name": "テキスト",
@@ -8727,7 +8880,7 @@
     }
   },
   "KlingMotionControl": {
-    "display_name": "Klingモーションコントロール",
+    "display_name": "Kling モーションコントロール",
     "inputs": {
       "character_orientation": {
         "name": "キャラクターの向き",
@@ -8760,7 +8913,8 @@
     }
   },
   "KlingOmniProEditVideoNode": {
-    "display_name": "Kling OmniPro動画編集",
+    "description": "Klingの最新モデルで既存の動画を編集します。",
+    "display_name": "Kling 3.0 Omni 動画編集",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -8798,7 +8952,8 @@
     }
   },
   "KlingOmniProFirstLastFrameNode": {
-    "display_name": "Kling OmniPro最初・最後フレーム",
+    "description": "最新のKlingモデルで、開始フレーム、任意の終了フレーム、または参照画像を使用します。",
+    "display_name": "Kling 3.0 Omni 最初・最後のフレームから動画",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -8847,7 +9002,8 @@
     }
   },
   "KlingOmniProImageNode": {
-    "display_name": "Kling OmniPro画像",
+    "description": "Klingの最新モデルで画像を作成または編集します。",
+    "display_name": "Kling 3.0 Omni 画像",
     "inputs": {
       "aspect_ratio": {
         "name": "アスペクト比"
@@ -8885,7 +9041,8 @@
     }
   },
   "KlingOmniProImageToVideoNode": {
-    "display_name": "Kling OmniPro画像から動画",
+    "description": "最大7枚の参照画像を使用して、最新のKlingモデルで動画を生成します。",
+    "display_name": "Kling 3.0 Omni 画像から動画",
     "inputs": {
       "aspect_ratio": {
         "name": "アスペクト比"
@@ -8930,7 +9087,8 @@
     }
   },
   "KlingOmniProTextToVideoNode": {
-    "display_name": "Kling OmniProテキストから動画",
+    "description": "テキストプロンプトを使用して、最新のKlingモデルで動画を生成します。",
+    "display_name": "Kling 3.0 Omni テキストから動画",
     "inputs": {
       "aspect_ratio": {
         "name": "アスペクト比"
@@ -8970,7 +9128,8 @@
     }
   },
   "KlingOmniProVideoToVideoNode": {
-    "display_name": "Kling OmniPro動画から動画",
+    "description": "動画と最大4枚の参照画像を使用して、最新のKlingモデルで動画を生成します。",
+    "display_name": "Kling 3.0 Omni 動画から動画",
     "inputs": {
       "aspect_ratio": {
         "name": "アスペクト比"
@@ -9014,7 +9173,8 @@
     }
   },
   "KlingStartEndFrameNode": {
-    "display_name": "Kling開始・終了フレーム",
+    "description": "指定した開始画像と終了画像の間を遷移する動画シーケンスを生成します。ノードはその間のすべてのフレームを作成し、最初のフレームから最後のフレームへの滑らかな変換を実現します。",
+    "display_name": "Kling 開始・終了フレームから動画",
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio"
@@ -9058,7 +9218,8 @@
     }
   },
   "KlingTextToVideoNode": {
-    "display_name": "Klingテキストから動画",
+    "description": "Klingテキストから動画ノード",
+    "display_name": "Kling テキストから動画",
     "inputs": {
       "aspect_ratio": {
         "name": "アスペクト比"
@@ -9094,7 +9255,7 @@
     }
   },
   "KlingTextToVideoWithAudio": {
-    "display_name": "Kling音声付きテキストから動画",
+    "display_name": "Kling 2.6 テキストからオーディオ付き動画",
     "inputs": {
       "aspect_ratio": {
         "name": "アスペクト比"
@@ -9123,7 +9284,8 @@
     }
   },
   "KlingVideoExtendNode": {
-    "display_name": "Kling動画延長",
+    "description": "Kling動画拡張ノード。ほかのKlingノードで作成した動画を拡張します。video_idは、ほかのKlingノードを使用して作成されます。",
+    "display_name": "Kling動画の拡張",
     "inputs": {
       "cfg_scale": {
         "name": "cfg_scale"
@@ -9156,7 +9318,8 @@
     }
   },
   "KlingVideoNode": {
-    "display_name": "Kling動画",
+    "description": "Kling V3で動画を生成します。ストーリーボードのマルチプロンプトと音声生成をオプションで使用したテキストから動画、画像から動画に対応しています。",
+    "display_name": "Kling 3.0 動画",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -9204,7 +9367,8 @@
     }
   },
   "Krea2ImageNode": {
-    "display_name": "Krea2画像",
+    "description": "Krea 2で画像を生成します。Medium（表現力豊かなイラスト）またはLarge（表現力豊かなフォトリアリズム）を選択できます。オプションのムードボードと、最大10個の連結した画像スタイル参照に対応しています。",
+    "display_name": "Krea 2 画像",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -9244,7 +9408,8 @@
     }
   },
   "Krea2StyleReferenceNode": {
-    "display_name": "Krea2スタイル参照",
+    "description": "Krea 2の生成に画像スタイル参照を追加します。複数のKrea 2 スタイル参照ノードを連結し（最大10個）、最終的な`style_reference`出力をKrea 2 画像に入力します。各画像はComfyAPIストレージにアップロードされ、URLとして渡されます。",
+    "display_name": "Krea 2 スタイル参照",
     "inputs": {
       "image": {
         "name": "画像",
@@ -9267,7 +9432,8 @@
     }
   },
   "LTXAVTextEncoderLoader": {
-    "display_name": "LTXAVテキストエンコーダーローダー",
+    "description": "レシピ:\nltxav: gemma 3 12B または対応する gemma 4 モデル",
+    "display_name": "LTXV オーディオテキストエンコーダーを読み込み",
     "inputs": {
       "ckpt_name": {
         "name": "ckpt_name"
@@ -9336,7 +9502,7 @@
     }
   },
   "LTXVAudioVAEDecode": {
-    "display_name": "LTXVオーディオVAEデコード",
+    "display_name": "LTXV オーディオ VAE デコード",
     "inputs": {
       "audio_vae": {
         "name": "audio_vae",
@@ -9355,7 +9521,7 @@
     }
   },
   "LTXVAudioVAEEncode": {
-    "display_name": "LTXVオーディオVAEエンコード",
+    "display_name": "LTXV オーディオ VAE エンコード",
     "inputs": {
       "audio": {
         "name": "audio",
@@ -9374,7 +9540,7 @@
     }
   },
   "LTXVAudioVAELoader": {
-    "display_name": "LTXVオーディオVAEローダー",
+    "display_name": "LTXV オーディオ VAE を読み込み",
     "inputs": {
       "ckpt_name": {
         "name": "ckpt_name",
@@ -9389,7 +9555,8 @@
     }
   },
   "LTXVConcatAVLatent": {
-    "display_name": "LTXV AV latent連結",
+    "description": "動画 latent と音声 latent を結合し、共有 AV latent にします（LTXV や MiniMax H3 など、任意の AV モデル）。",
+    "display_name": "AV Latent を連結",
     "inputs": {
       "audio_latent": {
         "name": "audio_latent"
@@ -9430,7 +9597,8 @@
     }
   },
   "LTXVContextWindows": {
-    "display_name": "LTXVコンテキストウィンドウ",
+    "description": "LTXV 系モデルのコンテキストウィンドウを設定します。",
+    "display_name": "LTXV コンテキストウィンドウ",
     "inputs": {
       "closed_loop": {
         "name": "closed_loop",
@@ -9508,7 +9676,8 @@
     }
   },
   "LTXVDualCFGGuider": {
-    "display_name": "LTXVデュアルCFGガイダー",
+    "description": "パックされた LTXV-AV latent の動画モダリティと音声モダリティに、それぞれ別の CFG スケールを設定します。",
+    "display_name": "LTXV デュアル CFG ガイダー",
     "inputs": {
       "audio_cfg": {
         "name": "audio_cfg"
@@ -9533,7 +9702,8 @@
     }
   },
   "LTXVDurationPredictor": {
-    "display_name": "LTXV長さ予測器",
+    "description": "ModelPatchLoaderで読み込んだLTX 2.4期間ヘッドを使用して、プロンプトに適した自然なショット長を予測し、VAEの8k+1フレームグリッドに合わせます。",
+    "display_name": "LTXV 長さ予測器",
     "inputs": {
       "duration_head": {
         "name": "duration_head",
@@ -9567,7 +9737,7 @@
     }
   },
   "LTXVEmptyLatentAudio": {
-    "display_name": "LTXV空のlatentオーディオ",
+    "display_name": "LTXV 空の潜在オーディオ",
     "inputs": {
       "audio_vae": {
         "name": "audio_vae",
@@ -9686,7 +9856,8 @@
     }
   },
   "LTXVModalityGuidance": {
-    "display_name": "LTXVモダリティガイダンス",
+    "description": "LTXV-AV向けのクロスモーダル（音声・動画）ガイダンスです。a2v/v2aクロスアテンションを切断した状態でステップごとに追加のフォワードパスを1回実行し、結果を結合された予測へ近づけることで、音声と映像の同期（例：リップシンク）を強化します。参照実装でのデフォルトのmodality_scaleは3.0です。デュアルCFGガイダーおよびSTGと併用できます。1.0に設定すると無効になります（追加パスなし）。",
+    "display_name": "LTXV モダリティガイダンス（A/Vカップリング）",
     "inputs": {
       "end_percent": {
         "name": "end_percent"
@@ -9708,7 +9879,7 @@
     }
   },
   "LTXVPreprocess": {
-    "display_name": "LTXV前処理",
+    "display_name": "LTXV 前処理",
     "inputs": {
       "image": {
         "name": "画像"
@@ -9726,7 +9897,8 @@
     }
   },
   "LTXVReferenceAudio": {
-    "display_name": "LTXV参照オーディオ",
+    "description": "ID-LoRAの話者アイデンティティ転送用の参照オーディオを設定します。参照オーディオクリップをコンディショニングにエンコードし、必要に応じてアイデンティティガイダンスでモデルにパッチを適用します（参照なしの追加フォワードパスにより、話者アイデンティティの効果を増幅します）。",
+    "display_name": "LTXV 参照オーディオ（ID-LoRA）",
     "inputs": {
       "audio_vae": {
         "name": "audio_vae",
@@ -9803,7 +9975,8 @@
     }
   },
   "LTXVSeparateAVLatent": {
-    "display_name": "LTXV AV latent分離",
+    "description": "結合されたAV潜在を動画潜在と音声潜在に分割します（LTXVやMiniMax H3など、任意のAVモデルに対応）。",
+    "display_name": "AV潜在を分離",
     "inputs": {
       "av_latent": {
         "name": "av_latent"
@@ -9821,7 +9994,8 @@
     }
   },
   "LTXVSpatioTemporalGuidance": {
-    "display_name": "LTXV時空間ガイダンス",
+    "description": "選択したブロックの自己アテンションを値のパススルーに劣化させた状態で、ステップごとに追加パスを1回実行し、そこから離れるように誘導することで、空間的なディテールと動きの一貫性を向上させます。",
+    "display_name": "LTXV 時空間ガイダンス（STG）",
     "inputs": {
       "blocks": {
         "name": "blocks",
@@ -9920,7 +10094,7 @@
     }
   },
   "LatentBatch": {
-    "display_name": "潜在バッチ",
+    "display_name": "潜在をバッチ化（非推奨）",
     "inputs": {
       "samples1": {
         "name": "サンプル1"
@@ -10033,7 +10207,7 @@
     }
   },
   "LatentCrop": {
-    "display_name": "潜在クロップ",
+    "display_name": "潜在を切り抜き",
     "inputs": {
       "height": {
         "name": "高さ"
@@ -10094,7 +10268,7 @@
     }
   },
   "LatentFlip": {
-    "display_name": "潜在反転",
+    "display_name": "潜在を反転",
     "inputs": {
       "flip_method": {
         "name": "反転方法"
@@ -10105,7 +10279,7 @@
     }
   },
   "LatentFromBatch": {
-    "display_name": "バッチから潜在",
+    "display_name": "バッチから潜在を取得",
     "inputs": {
       "batch_index": {
         "name": "バッチインデックス"
@@ -10186,7 +10360,7 @@
     }
   },
   "LatentRotate": {
-    "display_name": "潜在回転",
+    "display_name": "潜在を回転",
     "inputs": {
       "rotation": {
         "name": "回転"
@@ -10213,7 +10387,7 @@
     }
   },
   "LatentUpscale": {
-    "display_name": "潜在アップスケール",
+    "display_name": "潜在をアップスケール",
     "inputs": {
       "crop": {
         "name": "クロップ"
@@ -10233,7 +10407,7 @@
     }
   },
   "LatentUpscaleBy": {
-    "display_name": "倍率指定の潜在アップスケール",
+    "display_name": "潜在を指定倍率でアップスケール",
     "inputs": {
       "samples": {
         "name": "samples"
@@ -10247,7 +10421,7 @@
     }
   },
   "LatentUpscaleModelLoader": {
-    "display_name": "潜在アップスケールモデルを読み込む",
+    "display_name": "潜在アップスケールモデルを読み込み",
     "inputs": {
       "model_name": {
         "name": "model_name"
@@ -10260,7 +10434,8 @@
     }
   },
   "LayersFromBoundingBoxes": {
-    "display_name": "バウンディングボックスからレイヤー",
+    "description": "画像バッチとそのバウンディングボックスを、フレームごとに1レイヤーを含むレイヤースタックに変換し、各レイヤーをそれぞれのボックスに配置します。ノードがレイヤーをバッチとして出力する場合に使用してください。バッチではすべてのフレームに単一の配置情報が適用されるため、個別の位置情報は失われます。",
+    "display_name": "バウンディングボックスからレイヤーを作成",
     "inputs": {
       "bboxes": {
         "name": "bboxes",
@@ -10298,6 +10473,7 @@
     }
   },
   "LazyCache": {
+    "description": "EasyCacheの自作版です。実装しやすい、さらに「簡単な」EasyCacheです。全体的にはEasyCacheより性能が劣りますが、まれなケースでは優れており、ComfyUI内のすべての機能との汎用的な互換性があります。",
     "display_name": "LazyCache",
     "inputs": {
       "end_percent": {
@@ -10328,7 +10504,7 @@
     }
   },
   "Load3D": {
-    "display_name": "3Dを読み込む",
+    "display_name": "3Dとアニメーションを読み込み",
     "inputs": {
       "clear": {},
       "height": {
@@ -10382,7 +10558,7 @@
     }
   },
   "Load3DAdvanced": {
-    "display_name": "3Dを読み込む（高度）",
+    "display_name": "3Dを読み込み（高度）",
     "inputs": {
       "height": {
         "name": "height"
@@ -10421,7 +10597,7 @@
     }
   },
   "LoadAudio": {
-    "display_name": "音声を読み込む",
+    "display_name": "音声を読み込み",
     "inputs": {
       "audio": {
         "name": "オーディオ"
@@ -10440,7 +10616,7 @@
     }
   },
   "LoadBackgroundRemovalModel": {
-    "display_name": "背景除去モデルを読み込む",
+    "display_name": "背景除去モデルを読み込み",
     "inputs": {
       "bg_removal_name": {
         "name": "bg_removal_name",
@@ -10455,7 +10631,7 @@
     }
   },
   "LoadDA3Model": {
-    "display_name": "DA3モデルを読み込む",
+    "display_name": "Depth Anything 3を読み込み",
     "inputs": {
       "model_name": {
         "name": "model_name"
@@ -10471,7 +10647,7 @@
     }
   },
   "LoadImage": {
-    "display_name": "画像を読み込む",
+    "display_name": "画像を読み込み",
     "inputs": {
       "image": {
         "name": "画像"
@@ -10482,7 +10658,8 @@
     }
   },
   "LoadImageDataSetFromFolder": {
-    "display_name": "フォルダーから画像データセットを読み込む",
+    "description": "指定したフォルダーから画像のデータセットを読み込み、画像のリストを返します。対応形式：PNG、JPG、JPEG、WEBP。",
+    "display_name": "画像を読み込み（フォルダーから）",
     "inputs": {
       "folder": {
         "name": "フォルダ",
@@ -10497,7 +10674,7 @@
     }
   },
   "LoadImageMask": {
-    "display_name": "画像マスクを読み込む",
+    "display_name": "画像を読み込み（マスクとして）",
     "inputs": {
       "channel": {
         "name": "チャンネル"
@@ -10511,7 +10688,8 @@
     }
   },
   "LoadImageOutput": {
-    "display_name": "画像出力を読み込む",
+    "description": "出力フォルダーから画像を読み込みます。更新ボタンをクリックすると、ノードが画像リストを更新して最初の画像を自動的に選択するため、簡単に反復処理できます。",
+    "display_name": "画像を読み込み（出力から）",
     "inputs": {
       "Auto-refresh after generation": {},
       "image": {
@@ -10524,7 +10702,8 @@
     }
   },
   "LoadImageTextDataSetFromFolder": {
-    "display_name": "フォルダーから画像テキストデータセットを読み込む",
+    "description": "指定したフォルダーから画像とテキストキャプションのペアのデータセットを読み込み、リストとして返します。対応形式：PNG、JPG、JPEG、WEBP。",
+    "display_name": "画像・テキストを読み込み（フォルダーから）",
     "inputs": {
       "folder": {
         "name": "フォルダ",
@@ -10543,7 +10722,7 @@
     }
   },
   "LoadLatent": {
-    "display_name": "latentを読み込む",
+    "display_name": "潜在を読み込み",
     "inputs": {
       "latent": {
         "name": "latent"
@@ -10551,7 +10730,7 @@
     }
   },
   "LoadMediaPipeFaceLandmarker": {
-    "display_name": "MediaPipe顔ランドマーカーを読み込む",
+    "display_name": "顔検出モデルを読み込み（MediaPipe）",
     "inputs": {
       "model_name": {
         "name": "model_name",
@@ -10565,7 +10744,7 @@
     }
   },
   "LoadMoGeModel": {
-    "display_name": "MoGeモデルを読み込む",
+    "display_name": "MoGeモデルを読み込み",
     "inputs": {
       "model_name": {
         "name": "model_name"
@@ -10578,7 +10757,8 @@
     }
   },
   "LoadTrainingDataset": {
-    "display_name": "トレーニングデータセットを読み込む",
+    "description": "エンコード済みのトレーニングデータセット（latent + conditioning）をディスクから読み込み、トレーニングに使用します。",
+    "display_name": "トレーニングデータセットを読み込み",
     "inputs": {
       "folder_name": {
         "name": "folder_name",
@@ -10597,7 +10777,7 @@
     }
   },
   "LoadVideo": {
-    "display_name": "動画を読み込む",
+    "display_name": "動画を読み込み",
     "inputs": {
       "file": {
         "name": "ファイル"
@@ -10613,7 +10793,8 @@
     }
   },
   "LoadVideoDataSetFromFolder": {
-    "display_name": "フォルダーから動画データセットを読み込む",
+    "description": "指定したフォルダーから動画のデータセットを読み込み、動画のリストとして返します。対応形式: MP4、AVI、MOV、WEBM、MKV、FLV。",
+    "display_name": "動画を読み込み（フォルダーから）",
     "inputs": {
       "folder": {
         "name": "フォルダ",
@@ -10628,7 +10809,8 @@
     }
   },
   "LoadVideoTextDataSetFromFolder": {
-    "display_name": "フォルダーから動画テキストデータセットを読み込む",
+    "description": "指定したフォルダーから動画とテキストキャプションのペアのデータセットを読み込み、リストとして返します。対応形式: MP4、AVI、MOV、WEBM、MKV、FLV。",
+    "display_name": "動画・テキストを読み込み（フォルダーから）",
     "inputs": {
       "folder": {
         "name": "フォルダ",
@@ -10647,7 +10829,8 @@
     }
   },
   "LoraLoader": {
-    "display_name": "loraローダー",
+    "description": "この LoRA ローダーは、拡散モデルと CLIP モデルの両方を変更し、スタイルの適用など latent のノイズ除去方法を変更します。複数の LoRA ノードを連結できます。",
+    "display_name": "LoRA を読み込み（モデルと CLIP）",
     "inputs": {
       "clip": {
         "name": "クリップ",
@@ -10680,7 +10863,8 @@
     }
   },
   "LoraLoaderBypass": {
-    "display_name": "loraローダー（バイパス）",
+    "description": "バイパスモードで LoRA を適用します。通常の LoRA とは異なり、モデルの重みを変更せず、フォワードパス中に LoRA 計算を注入します。トレーニングシナリオで役立ちます。",
+    "display_name": "LoRA を読み込み（バイパス）（デバッグ用）",
     "inputs": {
       "clip": {
         "name": "clip",
@@ -10713,7 +10897,8 @@
     }
   },
   "LoraLoaderBypassModelOnly": {
-    "display_name": "loraローダー（モデルのみ・バイパス）",
+    "description": "バイパスモードで LoRA を適用します。通常の LoRA とは異なり、モデルの重みを変更せず、フォワードパス中に LoRA 計算を注入します。トレーニングシナリオで役立ちます。",
+    "display_name": "LoRA を読み込み（バイパス、モデルのみ）（デバッグ用）",
     "inputs": {
       "lora_name": {
         "name": "lora_name"
@@ -10732,7 +10917,8 @@
     }
   },
   "LoraLoaderModelOnly": {
-    "display_name": "loraローダー（モデルのみ）",
+    "description": "この LoRA ローダーは拡散モデルを変更し、スタイルの適用など latent のノイズ除去方法を変更します。複数の LoRA ノードを連結できます。",
+    "display_name": "LoRA を読み込み",
     "inputs": {
       "lora_name": {
         "name": "lora_name"
@@ -10751,7 +10937,7 @@
     }
   },
   "LoraModelLoader": {
-    "display_name": "loraモデルローダー",
+    "display_name": "LoRA モデルを読み込み",
     "inputs": {
       "bypass": {
         "name": "バイパス",
@@ -10778,7 +10964,7 @@
     }
   },
   "LoraSave": {
-    "display_name": "loraを保存",
+    "display_name": "LoRA を抽出して保存",
     "inputs": {
       "bias_diff": {
         "name": "バイアスの差"
@@ -10803,7 +10989,7 @@
     }
   },
   "LossGraphNode": {
-    "display_name": "損失グラフノード",
+    "display_name": "損失グラフをプロット",
     "inputs": {
       "filename_prefix": {
         "name": "ファイル名プレフィックス",
@@ -10825,7 +11011,8 @@
     }
   },
   "LtxApi25AudioToVideo": {
-    "display_name": "LtxApi25 オーディオから動画",
+    "description": "音声トラックに基づいて動画を生成します。最初のフレーム画像は任意で指定できます。",
+    "display_name": "LTX 2.5 オーディオから動画",
     "inputs": {
       "audio": {
         "name": "オーディオ",
@@ -10859,7 +11046,8 @@
     }
   },
   "LtxApi25ImageToVideo": {
-    "display_name": "LtxApi25 画像から動画",
+    "description": "開始画像に基づき、長さと解像度をカスタマイズ可能なプロ品質の動画。",
+    "display_name": "LTX 2.5 画像から動画",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -10902,7 +11090,8 @@
     }
   },
   "LtxApi25TextToVideo": {
-    "display_name": "LtxApi25 テキストから動画",
+    "description": "長さと解像度をカスタマイズ可能なプロ品質の動画。",
+    "display_name": "LTX 2.5 テキストから動画",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -10937,7 +11126,8 @@
     }
   },
   "LtxvApiImageToVideo": {
-    "display_name": "LtxvApi 画像から動画",
+    "description": "開始画像に基づき、長さと解像度をカスタマイズ可能なプロ品質の動画。",
+    "display_name": "LTXV 画像から動画",
     "inputs": {
       "duration": {
         "name": "長さ"
@@ -10970,7 +11160,8 @@
     }
   },
   "LtxvApiTextToVideo": {
-    "display_name": "LtxvApi テキストから動画",
+    "description": "長さと解像度をカスタマイズ可能なプロ品質の動画。",
+    "display_name": "LTXV テキストから動画",
     "inputs": {
       "duration": {
         "name": "長さ"
@@ -10999,7 +11190,8 @@
     }
   },
   "LumaConceptsNode": {
-    "display_name": "Lumaコンセプトノード",
+    "description": "Luma テキストから動画ノードおよびLuma 画像から動画ノードで使用するカメラコンセプトです。",
+    "display_name": "Luma コンセプト",
     "inputs": {
       "concept1": {
         "name": "concept1"
@@ -11026,7 +11218,8 @@
     }
   },
   "LumaImageEditNode2": {
-    "display_name": "Luma画像編集ノード2",
+    "description": "Luma UNI-1モデルを使用して、テキストプロンプトで既存の画像を編集します。",
+    "display_name": "Luma UNI-1 画像編集",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -11061,7 +11254,8 @@
     }
   },
   "LumaImageModifyNode": {
-    "display_name": "Luma画像変更ノード",
+    "description": "プロンプトとアスペクト比に基づいて、画像を同期的に変更します。",
+    "display_name": "Luma 画像から画像",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -11092,7 +11286,8 @@
     }
   },
   "LumaImageNode": {
-    "display_name": "Luma画像ノード",
+    "description": "プロンプトとアスペクト比に基づいて、画像を同期的に生成します。",
+    "display_name": "Luma テキストから画像",
     "inputs": {
       "aspect_ratio": {
         "name": "アスペクト比"
@@ -11135,7 +11330,8 @@
     }
   },
   "LumaImageNode2": {
-    "display_name": "Luma画像ノード2",
+    "description": "Luma UNI-1モデルを使用して、テキストから画像を生成します。",
+    "display_name": "Luma UNI-1 画像",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -11169,7 +11365,8 @@
     }
   },
   "LumaImageToVideoNode": {
-    "display_name": "Luma画像から動画ノード",
+    "description": "プロンプト、入力画像、output_sizeに基づいて、動画を同期的に生成します。",
+    "display_name": "Luma 画像から動画",
     "inputs": {
       "control_after_generate": {
         "name": "生成後の制御"
@@ -11214,7 +11411,8 @@
     }
   },
   "LumaRay32ExtendVideoNode": {
-    "display_name": "LumaRay32動画拡張ノード",
+    "description": "以前のRay 3.2生成を前方（後に続ける）または後方（前に導入部を追加する）へ延長します。先行するLuma Ray 3.2ノードのgeneration_id出力を接続してください。延長は常に5秒です。",
+    "display_name": "Luma Ray 3.2 動画を延長",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -11253,7 +11451,8 @@
     }
   },
   "LumaRay32ImageToVideoNode": {
-    "display_name": "LumaRay32画像から動画ノード",
+    "description": "LumaのRay 3.2モデルを使用して、開始フレームおよび／または終了フレームから動画を生成します。画像をアンカーにした生成は常に5秒です。",
+    "display_name": "Luma Ray 3.2 画像から動画",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -11293,7 +11492,8 @@
     }
   },
   "LumaRay32KeyframeNode": {
-    "display_name": "LumaRay32キーフレームノード",
+    "description": "ガイド画像をRay 3.2出力動画のタイムライン上の位置にアンカーします。これをLuma Ray 3.2 キーフレームから動画ノードの「keyframes」入力に接続してください。下のオプションの「keyframes」入力を介して、複数を連結できます。",
+    "display_name": "Luma Ray 3.2 キーフレーム",
     "inputs": {
       "image": {
         "name": "image",
@@ -11319,7 +11519,8 @@
     }
   },
   "LumaRay32KeyframesToVideoNode": {
-    "display_name": "LumaRay32キーフレームから動画ノード",
+    "description": "Luma Ray 3.2を使用して、タイムライン上の位置にそれぞれアンカーされた一連のガイド画像を補間する動画を生成します。Luma Ray 3.2 キーフレームノードを使用してシーケンスを作成してください（2つ以上必要）。",
+    "display_name": "Luma Ray 3.2 キーフレームから動画",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -11354,7 +11555,8 @@
     }
   },
   "LumaRay32TextToVideoNode": {
-    "display_name": "LumaRay32テキストから動画ノード",
+    "description": "LumaのRay 3.2モデルを使用して、テキストプロンプトから動画を生成します。",
+    "display_name": "Luma Ray 3.2 テキストから動画",
     "inputs": {
       "aspect_ratio": {
         "name": "アスペクト比"
@@ -11392,7 +11594,8 @@
     }
   },
   "LumaRay32VideoEditNode": {
-    "display_name": "LumaRay32動画編集ノード",
+    "description": "Luma Ray 3.2を使用して、元の動きを維持したまま、既存の動画を新しいプロンプトで再レンダリングします（スタイル変更、再照明、要素の追加または削除）。元動画は最大18秒までで、編集後の動画は元動画の長さを維持します。",
+    "display_name": "Luma Ray 3.2 動画編集",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -11428,7 +11631,8 @@
     }
   },
   "LumaRay32VideoReframeNode": {
-    "display_name": "LumaRay32動画リフレームノード",
+    "description": "Luma Ray 3.2を使用して、新たに露出したキャンバス領域を補完し、既存動画のアスペクト比を変更します。元動画は最大30秒までです。出力1秒ごとに課金されます。",
+    "display_name": "Luma Ray 3.2 動画リフレーム",
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio"
@@ -11463,7 +11667,8 @@
     }
   },
   "LumaReferenceNode": {
-    "display_name": "Lumaリファレンスノード",
+    "description": "Luma Generate Imageノードで使用する画像と重みを保持します。",
+    "display_name": "Luma 参照",
     "inputs": {
       "image": {
         "name": "image",
@@ -11485,7 +11690,8 @@
     }
   },
   "LumaVideoNode": {
-    "display_name": "Luma動画ノード",
+    "description": "prompt と output_size に基づいて動画を同期的に生成します。",
+    "display_name": "Luma テキストから動画",
     "inputs": {
       "aspect_ratio": {
         "name": "アスペクト比"
@@ -11525,7 +11731,8 @@
     }
   },
   "MagnificImageRelightNode": {
-    "display_name": "Magnific画像再照明ノード",
+    "description": "照明を調整し、任意で参照画像ベースの光転写を使用して画像をリライトします。",
+    "display_name": "Magnific Image リライト",
     "inputs": {
       "advanced_settings": {
         "name": "advanced_settings",
@@ -11571,7 +11778,8 @@
     }
   },
   "MagnificImageSkinEnhancerNode": {
-    "display_name": "Magnific画像スキン強調ノード",
+    "description": "複数の処理モードによるポートレートの肌補正。",
+    "display_name": "Magnific Image 肌補正",
     "inputs": {
       "image": {
         "name": "image",
@@ -11597,7 +11805,8 @@
     }
   },
   "MagnificImageStyleTransferNode": {
-    "display_name": "Magnific画像スタイル転送ノード",
+    "description": "参照画像のスタイルを入力画像に転写します。",
+    "display_name": "Magnific Image スタイル転写",
     "inputs": {
       "engine": {
         "name": "engine",
@@ -11642,7 +11851,8 @@
     }
   },
   "MagnificImageUpscalerCreativeNode": {
-    "display_name": "Magnific画像クリエイティブアップスケーラーノード",
+    "description": "prompt によるガイド付きの強調、スタイル化、2x/4x/8x/16x アップスケーリング。最大出力：25.3メガピクセル。",
+    "display_name": "Magnific Image アップスケール（クリエイティブ）",
     "inputs": {
       "auto_downscale": {
         "name": "自動ダウンスケール",
@@ -11686,7 +11896,8 @@
     }
   },
   "MagnificImageUpscalerPreciseV2Node": {
-    "display_name": "Magnific画像高精度アップスケーラーV2ノード",
+    "description": "シャープネス、粒子、ディテールを細かく制御できる高忠実度アップスケーリング。最大出力：10060×10060ピクセル。",
+    "display_name": "Magnific Image アップスケール（高精度 V2）",
     "inputs": {
       "auto_downscale": {
         "name": "自動ダウンスケール",
@@ -11722,7 +11933,8 @@
     }
   },
   "Mahiro": {
-    "display_name": "Mahiro",
+    "description": "ネガティブ prompt との差異ではなく、ポジティブ prompt の「方向」により強くスケールするようガイダンスを変更します。",
+    "display_name": "ポジティブ寄りガイダンス",
     "inputs": {
       "model": {
         "name": "モデル"
@@ -11736,7 +11948,8 @@
     }
   },
   "MakeTrainingDataset": {
-    "display_name": "学習データセット作成",
+    "description": "画像を VAE で、テキストを CLIP でエンコードし、latent とコンディショニングのトレーニングデータセットを作成します。",
+    "display_name": "トレーニングデータセットを作成",
     "inputs": {
       "clip": {
         "name": "clip",
@@ -11780,7 +11993,7 @@
     }
   },
   "MaskComposite": {
-    "display_name": "マスク合成",
+    "display_name": "mask を結合",
     "inputs": {
       "destination": {
         "name": "目的地"
@@ -11805,7 +12018,8 @@
     }
   },
   "MaskPreview": {
-    "display_name": "マスクプレビュー",
+    "description": "mask を ComfyUI の出力ディレクトリに保存せずにプレビューします。",
+    "display_name": "mask をプレビュー",
     "inputs": {
       "mask": {
         "name": "mask"
@@ -11819,7 +12033,7 @@
     }
   },
   "MaskToImage": {
-    "display_name": "マスクから画像",
+    "display_name": "mask を画像に変換",
     "inputs": {
       "mask": {
         "name": "マスク"
@@ -11832,7 +12046,8 @@
     }
   },
   "MediaPipeFaceLandmarker": {
-    "display_name": "MediaPipe顔ランドマーカー",
+    "description": "MediaPipe モデルを使用して顔ランドマークを検出します。",
+    "display_name": "顔ランドマークを検出（MediaPipe）",
     "inputs": {
       "detector_variant": {
         "name": "detector_variant",
@@ -11869,7 +12084,8 @@
     }
   },
   "MediaPipeFaceMask": {
-    "display_name": "MediaPipe顔マスク",
+    "description": "顔ランドマークから mask を描画します。",
+    "display_name": "顔 mask を描画（MediaPipe）",
     "inputs": {
       "face_landmarks": {
         "name": "face_landmarks"
@@ -11886,7 +12102,8 @@
     }
   },
   "MediaPipeFaceMeshVisualize": {
-    "display_name": "MediaPipe顔メッシュ可視化",
+    "description": "入力画像に顔ランドマークメッシュを描画します。",
+    "display_name": "顔ランドマークを可視化（MediaPipe）",
     "inputs": {
       "color": {
         "name": "color"
@@ -11918,7 +12135,8 @@
     }
   },
   "MergeImageLists": {
-    "display_name": "画像リスト結合",
+    "description": "複数の画像リストを1つに連結します。",
+    "display_name": "画像リストをマージ（非推奨）",
     "inputs": {
       "images": {
         "name": "画像",
@@ -11933,7 +12151,8 @@
     }
   },
   "MergeMeshes": {
-    "display_name": "メッシュ結合",
+    "description": "面インデックスをオフセットし、verts、faces、uvs、colors をスタックして、N 個のメッシュを1つに連結します。",
+    "display_name": "メッシュをマージ",
     "inputs": {
       "meshes": {
         "name": "meshes"
@@ -11947,7 +12166,8 @@
     }
   },
   "MergeSplat": {
-    "display_name": "スプラット結合",
+    "description": "任意の数のガウシアンスプラットを1つに連結します。同じ latent を異なるシードで複数回デコードした結果を統合すると表面が高密度化し、メッシュ化時の表面品質を向上できます。",
+    "display_name": "スプラットをマージ",
     "inputs": {
       "splats": {
         "name": "splats"
@@ -11961,7 +12181,8 @@
     }
   },
   "MergeTextLists": {
-    "display_name": "テキストリスト結合",
+    "description": "複数のテキストリストを1つに連結します。",
+    "display_name": "テキストリストをマージ（非推奨）",
     "inputs": {
       "texts": {
         "name": "テキスト",
@@ -11976,7 +12197,8 @@
     }
   },
   "MeshSmoothNormals": {
-    "display_name": "メッシュ法線を滑らかにする",
+    "description": "頂点ごとの滑らかな法線を計算し、メッシュに追加します。法線のないメッシュは glTF ビューアーでフラット（面ごと）にシェーディングされますが、これにより滑らかにシェーディングされます。crease_angle が 180 未満の場合、しきい値より鋭いエッジは、そのエッジに沿って頂点を分割することでハードエッジとして保持されます。",
+    "display_name": "メッシュ法線をスムーズ化",
     "inputs": {
       "crease_angle": {
         "name": "crease_angle",
@@ -11994,7 +12216,8 @@
     }
   },
   "MeshTextureToImage": {
-    "display_name": "メッシュテクスチャから画像",
+    "description": "メッシュのベイク済みテクスチャを個別の IMAGE として抽出します：base_color、metallic、roughness、occlusion、normal_map。何もベイクされていないチャンネルはニュートラルな値で返されます（occlusion は白、normal はフラット）。",
+    "display_name": "メッシュテクスチャを画像へ",
     "inputs": {
       "mesh": {
         "name": "mesh"
@@ -12024,7 +12247,8 @@
     }
   },
   "MeshToFile3D": {
-    "display_name": "MeshToFile3D",
+    "description": "メッシュを GLB File3D オブジェクトへシリアライズし、UV、色、法線、テクスチャ、normal/occlusion/emissive マップ、マテリアルを保持して Save / Preview 3D ノードで使用できるようにします。バッチごとに1項目のみ対応しています。",
+    "display_name": "3D ファイルを作成（メッシュから）",
     "inputs": {
       "mesh": {
         "name": "メッシュ"
@@ -12038,7 +12262,8 @@
     }
   },
   "MeshyAnimateModelNode": {
-    "display_name": "MeshyAnimateModelNode",
+    "description": "事前にリギングされたキャラクターに特定のアニメーションアクションを適用します。",
+    "display_name": "Meshy：モデルをアニメート",
     "inputs": {
       "action_id": {
         "name": "action_id",
@@ -12064,7 +12289,7 @@
     }
   },
   "MeshyImageToModelNode": {
-    "display_name": "MeshyImageToModelNode",
+    "display_name": "Meshy: 画像からモデル",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -12103,8 +12328,15 @@
       "should_texture_texture_prompt": {
         "name": "texture_prompt"
       },
+      "should_texture_texture_resolution": {
+        "name": "texture_resolution"
+      },
       "symmetry_mode": {
         "name": "symmetry_mode"
+      },
+      "ultra_mode": {
+        "name": "ultra_mode",
+        "tooltip": "より精細な表面ディテールを持つ高忠実度のジオメトリのために、追加のリファインメント処理を実行します。"
       }
     },
     "outputs": {
@@ -12127,7 +12359,7 @@
     }
   },
   "MeshyMultiImageToModelNode": {
-    "display_name": "MeshyMultiImageToModelNode",
+    "display_name": "Meshy: 複数画像からモデル",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -12166,6 +12398,9 @@
       "should_texture_texture_prompt": {
         "name": "texture_prompt"
       },
+      "should_texture_texture_resolution": {
+        "name": "texture_resolution"
+      },
       "symmetry_mode": {
         "name": "symmetry_mode"
       }
@@ -12190,11 +12425,12 @@
     }
   },
   "MeshyRefineNode": {
-    "display_name": "MeshyRefineNode",
+    "description": "以前に作成したドラフトモデルをリファインします。",
+    "display_name": "Meshy: ドラフトモデルをリファイン",
     "inputs": {
       "enable_pbr": {
         "name": "enable_pbr",
-        "tooltip": "ベースカラーに加えてPBRマップ（金属度、粗さ、法線）を生成します。注意：Sculptureスタイルを使用する場合はfalseに設定してください。Sculptureスタイルは独自のPBRマップを生成します。"
+        "tooltip": "ベースカラーに加えて、PBRマップ（メタリック、ラフネス、法線）を生成します。"
       },
       "meshy_task_id": {
         "name": "meshy_task_id"
@@ -12209,6 +12445,10 @@
       "texture_prompt": {
         "name": "texture_prompt",
         "tooltip": "テクスチャリングプロセスをガイドするテキストプロンプトを入力してください。最大600文字。「texture_image」と同時に使用することはできません。"
+      },
+      "texture_resolution": {
+        "name": "texture_resolution",
+        "tooltip": "ベースカラーテクスチャの解像度。高解像度ほど、より多くの表面ディテールを取得できます。"
       }
     },
     "outputs": {
@@ -12231,7 +12471,8 @@
     }
   },
   "MeshyRigModelNode": {
-    "display_name": "MeshyRigModelNode",
+    "description": "標準形式のリギング済みキャラクターを提供します。自動リギングは現在、テクスチャなしのメッシュ、ヒューマノイド以外のアセット、または手足や身体構造が不明確なヒューマノイドアセットには適していません。",
+    "display_name": "Meshy: モデルをリギング",
     "inputs": {
       "height_meters": {
         "name": "height_meters",
@@ -12265,7 +12506,7 @@
     }
   },
   "MeshyTextToModelNode": {
-    "display_name": "MeshyTextToModelNode",
+    "display_name": "Meshy: テキストからモデル",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -12299,6 +12540,10 @@
       },
       "symmetry_mode": {
         "name": "symmetry_mode"
+      },
+      "ultra_mode": {
+        "name": "ultra_mode",
+        "tooltip": "より精細な表面ディテールを持つ高忠実度のジオメトリのために、追加のリファインメント処理を実行します。"
       }
     },
     "outputs": {
@@ -12320,8 +12565,53 @@
       }
     }
   },
+  "MeshyTextureMultiViewNode": {
+    "description": "同一オブジェクトの1～4枚の参照ビューを使用して、以前に作成したモデルをテクスチャリングします。",
+    "display_name": "Meshy: モデルをテクスチャリング（マルチビュー）",
+    "inputs": {
+      "enable_original_uv": {
+        "name": "enable_original_uv",
+        "tooltip": "新しいUVを生成する代わりに、モデルの元のUVを使用します。有効にすると、Meshyはアップロードしたモデルの既存テクスチャを保持します。モデルに元のUVがない場合、出力品質が低下する可能性があります。"
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "model": {
+        "name": "model"
+      },
+      "multiview_images": {
+        "name": "multiview_images",
+        "tooltip": "同一オブジェクトの参照ビュー。最初の画像は主要（正面）ビューです。残りのビューの順序は問いません。"
+      },
+      "pbr": {
+        "name": "pbr"
+      },
+      "texture_resolution": {
+        "name": "texture_resolution",
+        "tooltip": "ベースカラーテクスチャの解像度。高解像度ほど、より多くの表面ディテールを取得できます。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
   "MeshyTextureNode": {
-    "display_name": "MeshyTextureNode",
+    "display_name": "Meshy: モデルをテクスチャリング",
     "inputs": {
       "enable_original_uv": {
         "name": "元のUVを使用",
@@ -12343,6 +12633,10 @@
       "text_style_prompt": {
         "name": "テキストスタイルプロンプト",
         "tooltip": "オブジェクトの希望するテクスチャスタイルをテキストで説明してください。最大600文字。'image_style'と同時に使用することはできません。"
+      },
+      "texture_resolution": {
+        "name": "texture_resolution",
+        "tooltip": "ベースカラーテクスチャの解像度。高解像度ほど、より多くの表面ディテールを取得できます。"
       }
     },
     "outputs": {
@@ -12365,7 +12659,8 @@
     }
   },
   "MiniMaxH3AddGuide": {
-    "display_name": "MiniMaxH3AddGuide",
+    "description": "MiniMax H3動画の任意のフレームに、画像、短いclip、音声、またはサウンドトラック付きclipを固定します。複数のノードを連結して、複数のフレームを固定できます。",
+    "display_name": "MiniMax H3 のガイドを追加",
     "inputs": {
       "audio": {
         "name": "音声",
@@ -12402,7 +12697,7 @@
     }
   },
   "MiniMaxH3ImageToVideo": {
-    "display_name": "MiniMaxH3ImageToVideo",
+    "display_name": "MiniMax H3 画像から動画",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -12441,7 +12736,8 @@
     }
   },
   "MiniMaxH3ReferenceToVideo": {
-    "display_name": "MiniMaxH3ReferenceToVideo",
+    "description": "MiniMax H3用の<Picture i> / <Video k> / <Audio j>参照条件付け。プロンプトでも同じタグを使用してください。",
+    "display_name": "MiniMax H3 参照から動画",
     "inputs": {
       "audio_vae": {
         "name": "audio_vae"
@@ -12493,7 +12789,8 @@
     }
   },
   "MiniMaxH3SigmaShift": {
-    "display_name": "MiniMaxH3SigmaShift",
+    "description": "動画/音声のフローシフトを設定します。",
+    "display_name": "ModelSamplingMiniMaxH3",
     "inputs": {
       "model": {
         "name": "model"
@@ -12512,7 +12809,8 @@
     }
   },
   "MiniMaxMusic3TextEncode": {
-    "display_name": "MiniMaxMusic3TextEncode",
+    "description": "MiniMax Music3 CLIPモデルを使用して、音響コンディショニングシーケンスを生成します。",
+    "display_name": "MiniMax Music3 テキストエンコード",
     "inputs": {
       "caption": {
         "name": "キャプション"
@@ -12551,7 +12849,8 @@
     }
   },
   "MinimaxHailuo03ContextIRNode": {
-    "display_name": "MinimaxHailuo03ContextIRNode",
+    "description": "MiniMax H3 Context IRでテキストとメディアのコンテキストを分析し、強化された構造化動画プロンプトを生成します。出力をMiniMax H3動画ノードのプロンプトに入力し、同じメディアを同じ順序で接続してください。強化されたプロンプトは、接続されたメディアを位置で参照します。",
+    "display_name": "MiniMax H3 Context IR（プロンプト強化）",
     "inputs": {
       "first_frame": {
         "name": "最初のフレーム",
@@ -12582,7 +12881,8 @@
     }
   },
   "MinimaxHailuo03FirstLastFrameNode": {
-    "display_name": "MinimaxHailuo03FirstLastFrameNode",
+    "description": "MiniMax H3モデルを使用して、最初のフレーム画像と任意の最後のフレーム画像から動画を生成します。動画のアスペクト比は入力画像に従います。",
+    "display_name": "MiniMax H3 最初と最後のフレームから動画",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -12624,7 +12924,8 @@
     }
   },
   "MinimaxHailuo03ReferenceNode": {
-    "display_name": "MinimaxHailuo03ReferenceNode",
+    "description": "MiniMax H3モデルを使用して、参照画像、動画、音声を条件として動画を生成します。プロンプトでは参照を順序に従って「Image 1」、「Image 2」、「Video 1」、「Audio 1」のように指定します。",
+    "display_name": "MiniMax H3 参照から動画",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -12661,7 +12962,8 @@
     }
   },
   "MinimaxHailuo03RegenerateNode": {
-    "display_name": "MinimaxHailuo03RegenerateNode",
+    "description": "MiniMax H3の768P出力を2K解像度で再レンダリングします。未変更の768P動画と、生成時に使用した正確なプロンプトを接続してください。元の生成で最初/最後のフレームまたは参照メディアを使用していた場合は、同じ入力を接続します。",
+    "display_name": "MiniMax H3 2Kへ再生成",
     "inputs": {
       "first_frame": {
         "name": "最初のフレーム",
@@ -12697,7 +12999,8 @@
     }
   },
   "MinimaxHailuo03TextToVideoNode": {
-    "display_name": "MinimaxHailuo03TextToVideoNode",
+    "description": "MiniMax H3モデルを使用して、テキストプロンプトから動画を生成します。",
+    "display_name": "MiniMax H3 テキストから動画",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -12734,7 +13037,8 @@
     }
   },
   "MinimaxHailuoVideoNode": {
-    "display_name": "MinimaxHailuoVideoNode",
+    "description": "MiniMax Hailuo-02モデルを使用して、プロンプトと任意の開始フレームから動画を生成します。",
+    "display_name": "MiniMax Hailuo 02 動画",
     "inputs": {
       "control_after_generate": {
         "name": "生成後の制御"
@@ -12771,7 +13075,8 @@
     }
   },
   "MinimaxImageToVideoNode": {
-    "display_name": "MinimaxImageToVideoNode",
+    "description": "画像、プロンプト、および任意のパラメータに基づいて、動画を同期的に生成します。",
+    "display_name": "MiniMax 画像から動画",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -12800,7 +13105,8 @@
     }
   },
   "MinimaxTextToVideoNode": {
-    "display_name": "MinimaxTextToVideoNode",
+    "description": "プロンプトおよび任意のパラメータに基づいて、動画を同期的に生成します。",
+    "display_name": "MiniMax テキストから動画",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -12825,7 +13131,8 @@
     }
   },
   "MoGeGeometryToFOV": {
-    "display_name": "MoGeGeometryToFOV",
+    "description": "MoGeの内部パラメータから視野角と焦点距離を導出します。",
+    "display_name": "MoGeジオメトリからFoVを取得",
     "inputs": {
       "axis": {
         "name": "軸",
@@ -12851,7 +13158,8 @@
     }
   },
   "MoGeInference": {
-    "display_name": "MoGeInference",
+    "description": "単一画像でMoGeを実行し、深度とジオメトリを推定します。",
+    "display_name": "MoGe推論を実行",
     "inputs": {
       "apply_mask": {
         "name": "apply_mask",
@@ -12887,7 +13195,8 @@
     }
   },
   "MoGePanoramaInference": {
-    "display_name": "MoGePanoramaInference",
+    "description": "正距円筒パノラマを12個の透視ビューに分割してMoGeを実行し、各ビューで推論を行った後、結果を単一の深度マップに統合します。",
+    "display_name": "MoGeパノラマ推論を実行",
     "inputs": {
       "batch_size": {
         "name": "batch_size",
@@ -12921,7 +13230,8 @@
     }
   },
   "MoGePointMapToMesh": {
-    "display_name": "MoGePointMapToMesh",
+    "description": "MoGeポイントマップを3Dメッシュに変換します。",
+    "display_name": "MoGeポイントマップをメッシュに変換",
     "inputs": {
       "batch_index": {
         "name": "batch_index",
@@ -12950,7 +13260,8 @@
     }
   },
   "MoGeRender": {
-    "display_name": "MoGeRender",
+    "description": "ジオメトリデータから深度マップまたは法線マップをレンダリングします。",
+    "display_name": "MoGeジオメトリをレンダリング",
     "inputs": {
       "moge_geometry": {
         "name": "moge_geometry"
@@ -15025,6 +15336,7 @@
     }
   },
   "ModelMergeWAN2_1": {
+    "description": "1.3Bモデルは30ブロック、14Bモデルは40ブロックです。画像から動画モデルには追加のimg_embがあります。",
     "display_name": "ModelMergeWAN2_1",
     "inputs": {
       "blocks_0_": {
@@ -15186,7 +15498,7 @@
     }
   },
   "ModelPatchLoader": {
-    "display_name": "ModelPatchLoader",
+    "display_name": "モデルパッチを読み込む",
     "inputs": {
       "name": {
         "name": "名前"
@@ -15328,7 +15640,7 @@
     }
   },
   "Morphology": {
-    "display_name": "モルフォロジー",
+    "display_name": "モルフォロジーを適用",
     "inputs": {
       "image": {
         "name": "画像"
@@ -15347,7 +15659,8 @@
     }
   },
   "MultiGPU_WorkUnits": {
-    "display_name": "MultiGPU_WorkUnits",
+    "description": "ワークユニットを分割してサンプリングを高速化できるよう、モデルを準備します。\n\ncompileノードやattention-switchノードなど、モデルオブジェクト自体を変更するノードの後に配置してください。\n\nこれらの例外を除き、このノードは任意の順序で配置できます。",
+    "display_name": "マルチGPU CFG分割",
     "inputs": {
       "max_gpus": {
         "name": "max_gpus"
@@ -15363,7 +15676,8 @@
     }
   },
   "NAGuidance": {
-    "display_name": "NAGuidance",
+    "description": "モデルに正規化アテンションガイダンスを適用し、蒸留モデル/schnellモデルでネガティブプロンプトを有効にします。",
+    "display_name": "正規化アテンションガイダンス",
     "inputs": {
       "model": {
         "name": "model",
@@ -15388,7 +15702,8 @@
     }
   },
   "NormalizeImages": {
-    "display_name": "画像を正規化",
+    "description": "平均値と標準偏差を使用して画像を正規化します。",
+    "display_name": "画像の色を正規化",
     "inputs": {
       "images": {
         "name": "画像",
@@ -15411,6 +15726,7 @@
     }
   },
   "NormalizeVideoLatentStart": {
+    "description": "動画latentの初期フレームを正規化し、後続の参照フレームの平均値と標準偏差に一致させます。開始フレームと動画の残りの部分との差異を減らすのに役立ちます。",
     "display_name": "NormalizeVideoLatentStart",
     "inputs": {
       "latent": {
@@ -15433,7 +15749,8 @@
     }
   },
   "OpenAIChatConfig": {
-    "display_name": "OpenAIチャット設定",
+    "description": "OpenAI Chatノードの高度な設定オプションを指定できます。",
+    "display_name": "OpenAI ChatGPT 高度なオプション",
     "inputs": {
       "instructions": {
         "name": "指示",
@@ -15455,7 +15772,8 @@
     }
   },
   "OpenAIChatNode": {
-    "display_name": "OpenAIチャットノード",
+    "description": "OpenAIモデルからテキスト応答を生成します。",
+    "display_name": "OpenAI ChatGPT",
     "inputs": {
       "advanced_options": {
         "name": "詳細オプション",
@@ -15489,7 +15807,8 @@
     }
   },
   "OpenAIDalle2": {
-    "display_name": "OpenAIDalle2",
+    "description": "OpenAIのDALL·E 2エンドポイント経由で画像を同期生成します。",
+    "display_name": "OpenAI DALL·E 2",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -15526,7 +15845,8 @@
     }
   },
   "OpenAIDalle3": {
-    "display_name": "OpenAIDalle3",
+    "description": "OpenAIのDALL·E 3エンドポイント経由で画像を同期生成します。",
+    "display_name": "OpenAI DALL·E 3",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -15559,7 +15879,8 @@
     }
   },
   "OpenAIGPTImage1": {
-    "display_name": "OpenAIGPTImage1",
+    "description": "OpenAIのGPT Imageエンドポイント経由で画像を同期生成します。",
+    "display_name": "OpenAI GPT Image 2",
     "inputs": {
       "background": {
         "name": "背景",
@@ -15615,7 +15936,8 @@
     }
   },
   "OpenAIGPTImageNodeV2": {
-    "display_name": "OpenAIGPTImageNodeV2",
+    "description": "OpenAIのGPT Imageエンドポイント経由で画像を生成します。",
+    "display_name": "OpenAI GPT Image 2",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -15658,7 +15980,8 @@
     }
   },
   "OpenAIInputFiles": {
-    "display_name": "OpenAI入力ファイル",
+    "description": "OpenAI Chatノードへの入力として含める入力ファイル（テキスト、pdfなど）を読み込み、準備します。応答を生成する際に、ファイルはOpenAIモデルによって読み取られます。🛈 ヒント: 他のOpenAI Input Fileノードと連結できます。",
+    "display_name": "OpenAI ChatGPT 入力ファイル",
     "inputs": {
       "OPENAI_INPUT_FILES": {
         "name": "OPENAI_INPUT_FILES",
@@ -15676,7 +15999,8 @@
     }
   },
   "OpenAIVideoSora2": {
-    "display_name": "OpenAIVideoSora2",
+    "description": "OpenAIによる動画および音声生成。\n\n非推奨のお知らせ: OpenAIは2026年9月にSora v2 APIの提供を終了します。このノードはその時点でComfyUIから削除されます。",
+    "display_name": "OpenAI Sora - 動画（非推奨）",
     "inputs": {
       "control_after_generate": {
         "name": "生成後の制御"
@@ -15709,7 +16033,8 @@
     }
   },
   "OpenRouterLLMNode": {
-    "display_name": "OpenRouter LLMノード",
+    "description": "OpenRouterを介してテキスト応答を生成します。Anthropic（Claude）、OpenAI（GPT）、Google（Gemini）、xAI（Grok）、DeepSeek、Qwen、Mistral、Z.AI（GLM）、Moonshot（Kimi）、Perplexity Sonarの人気モデルから厳選されたセットへルーティングします。",
+    "display_name": "OpenRouter LLM",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -15741,7 +16066,7 @@
     }
   },
   "OpticalFlowLoader": {
-    "display_name": "オプティカルフローローダー",
+    "display_name": "オプティカルフローモデルを読み込み",
     "inputs": {
       "model_name": {
         "name": "model_name",
@@ -15774,6 +16099,7 @@
     }
   },
   "PaintMesh": {
+    "description": "入力ボクセルフィールドから最も近いボクセルの色で、各メッシュ頂点をペイントします。",
     "display_name": "メッシュをペイント",
     "inputs": {
       "mesh": {
@@ -15820,7 +16146,7 @@
     }
   },
   "PairConditioningCombine": {
-    "display_name": "ペアConditioningを結合",
+    "display_name": "Cond ペア結合",
     "inputs": {
       "negative_A": {
         "name": "ネガティブ_A"
@@ -15845,7 +16171,7 @@
     }
   },
   "PairConditioningSetDefaultCombine": {
-    "display_name": "ペアConditioningのデフォルトを設定して結合",
+    "display_name": "Cond ペアのデフォルト設定と結合",
     "inputs": {
       "hooks": {
         "name": "フック"
@@ -15873,7 +16199,7 @@
     }
   },
   "PairConditioningSetProperties": {
-    "display_name": "ペアConditioningのプロパティを設定",
+    "display_name": "Cond ペアのプロパティ設定",
     "inputs": {
       "hooks": {
         "name": "フック"
@@ -15907,7 +16233,7 @@
     }
   },
   "PairConditioningSetPropertiesAndCombine": {
-    "display_name": "ペアConditioningのプロパティを設定して結合",
+    "display_name": "Cond ペアのプロパティ設定と結合",
     "inputs": {
       "hooks": {
         "name": "フック"
@@ -15947,7 +16273,7 @@
     }
   },
   "PatchModelAddDownscale": {
-    "display_name": "モデルパッチにダウンスケールを追加",
+    "display_name": "PatchModelAddDownscale (Kohya Deep Shrink)",
     "inputs": {
       "block_number": {
         "name": "ブロック番号"
@@ -15981,7 +16307,7 @@
     }
   },
   "PerpNeg": {
-    "display_name": "PerpNeg",
+    "display_name": "Perp-Neg（Perp-Neg Guiderにより非推奨）",
     "inputs": {
       "empty_conditioning": {
         "name": "空のコンディショニング"
@@ -16000,7 +16326,7 @@
     }
   },
   "PerpNegGuider": {
-    "display_name": "PerpNegガイダー",
+    "display_name": "Perp-Neg Guider",
     "inputs": {
       "cfg": {
         "name": "cfg"
@@ -16044,7 +16370,7 @@
     }
   },
   "PhotoMakerEncode": {
-    "display_name": "PhotoMakerEncode",
+    "display_name": "PhotoMaker エンコード",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -16066,7 +16392,7 @@
     }
   },
   "PhotoMakerLoader": {
-    "display_name": "PhotoMakerLoader",
+    "display_name": "PhotoMakerモデルを読み込み",
     "inputs": {
       "photomaker_model_name": {
         "name": "photomakerモデル名"
@@ -16079,7 +16405,8 @@
     }
   },
   "PiDConditioning": {
-    "display_name": "PiDConditioning",
+    "description": "PiDのデコード／アップスケール用に、latentとdegrade_sigmaスカラーをCONDITIONINGに付加します",
+    "display_name": "PiD Conditioning",
     "inputs": {
       "degrade_sigma": {
         "name": "degrade_sigma",
@@ -16131,7 +16458,8 @@
     }
   },
   "PixverseImageToVideoNode": {
-    "display_name": "Pixverse画像から動画",
+    "description": "promptとoutput_sizeに基づいて動画を生成します。",
+    "display_name": "PixVerse 画像から動画",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -16172,7 +16500,7 @@
     }
   },
   "PixverseTemplateNode": {
-    "display_name": "Pixverseテンプレート",
+    "display_name": "PixVerse テンプレート",
     "inputs": {
       "template": {
         "name": "テンプレート"
@@ -16186,7 +16514,8 @@
     }
   },
   "PixverseTextToVideoNode": {
-    "display_name": "Pixverseテキストから動画",
+    "description": "promptとoutput_sizeに基づいて動画を生成します。",
+    "display_name": "PixVerse テキストから動画",
     "inputs": {
       "aspect_ratio": {
         "name": "アスペクト比"
@@ -16227,7 +16556,8 @@
     }
   },
   "PixverseTransitionVideoNode": {
-    "display_name": "Pixverseトランジション動画",
+    "description": "promptとoutput_sizeに基づいて動画を生成します。",
+    "display_name": "PixVerse トランジション動画",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -16289,7 +16619,7 @@
     }
   },
   "PorterDuffImageComposite": {
-    "display_name": "Porter-Duff画像合成",
+    "display_name": "Porter-Duff 画像合成",
     "inputs": {
       "destination": {
         "name": "デスティネーション"
@@ -16317,7 +16647,8 @@
     }
   },
   "Preview3D": {
-    "display_name": "3Dプレビュー",
+    "description": "3DモデルファイルをComfyUIの出力ディレクトリに保存せずにプレビューします。",
+    "display_name": "3Dとアニメーションをプレビュー",
     "inputs": {
       "bg_image": {
         "name": "bg_image"
@@ -16335,7 +16666,8 @@
     }
   },
   "Preview3DAdvanced": {
-    "display_name": "高度な3Dプレビュー",
+    "description": "3DモデルファイルをComfyUIの出力ディレクトリに保存せずにプレビューします。",
+    "display_name": "3Dをプレビュー（高度）",
     "inputs": {
       "camera_info": {
         "name": "カメラ情報"
@@ -16381,7 +16713,8 @@
     }
   },
   "PreviewAny": {
-    "display_name": "任意プレビュー",
+    "description": "任意の入力値をテキストとしてプレビューします。",
+    "display_name": "テキストとしてプレビュー",
     "inputs": {
       "preview_mode": {},
       "preview_text": {},
@@ -16391,7 +16724,8 @@
     }
   },
   "PreviewAudio": {
-    "display_name": "音声プレビュー",
+    "description": "音声をComfyUIの出力ディレクトリに保存せずにプレビューします。",
+    "display_name": "音声をプレビュー",
     "inputs": {
       "audio": {
         "name": "オーディオ"
@@ -16408,7 +16742,8 @@
     }
   },
   "PreviewGaussianSplat": {
-    "display_name": "ガウシアンスプラットプレビュー",
+    "description": "ガウシアンスプラット3DファイルをComfyUIの出力ディレクトリに保存せずにプレビューします。",
+    "display_name": "スプラットをプレビュー",
     "inputs": {
       "camera_info": {
         "name": "camera_info"
@@ -16454,7 +16789,8 @@
     }
   },
   "PreviewImage": {
-    "display_name": "画像プレビュー",
+    "description": "画像をComfyUIの出力ディレクトリに保存せずにプレビューします。",
+    "display_name": "画像をプレビュー",
     "inputs": {
       "images": {
         "name": "画像"
@@ -16467,7 +16803,8 @@
     }
   },
   "PreviewPointCloud": {
-    "display_name": "点群プレビュー",
+    "description": "点群3DファイルをComfyUIの出力ディレクトリに保存せずにプレビューします。",
+    "display_name": "点群をプレビュー",
     "inputs": {
       "camera_info": {
         "name": "camera_info"
@@ -16513,7 +16850,7 @@
     }
   },
   "PrimitiveBoolean": {
-    "display_name": "プリミティブBoolean",
+    "display_name": "真偽値",
     "inputs": {
       "value": {
         "name": "値"
@@ -16526,7 +16863,7 @@
     }
   },
   "PrimitiveBoundingBox": {
-    "display_name": "プリミティブ境界ボックス",
+    "display_name": "バウンディングボックス",
     "inputs": {
       "height": {
         "name": "height"
@@ -16548,7 +16885,7 @@
     }
   },
   "PrimitiveFloat": {
-    "display_name": "プリミティブFloat",
+    "display_name": "浮動小数点数",
     "inputs": {
       "value": {
         "name": "値"
@@ -16561,7 +16898,7 @@
     }
   },
   "PrimitiveInt": {
-    "display_name": "プリミティブInt",
+    "display_name": "整数",
     "inputs": {
       "fixed": {
         "name": "生成後に制御"
@@ -16577,7 +16914,7 @@
     }
   },
   "PrimitiveString": {
-    "display_name": "プリミティブ文字列",
+    "display_name": "テキスト",
     "inputs": {
       "value": {
         "name": "値"
@@ -16590,7 +16927,7 @@
     }
   },
   "PrimitiveStringMultiline": {
-    "display_name": "プリミティブ複数行文字列",
+    "display_name": "テキスト（複数行）",
     "inputs": {
       "value": {
         "name": "値"
@@ -16603,7 +16940,8 @@
     }
   },
   "QuadrupleCLIPLoader": {
-    "display_name": "4重CLIPローダー",
+    "description": "レシピ:\nhidream: long clip-l, long clip-g, t5xxl, llama_8b_3.1_instruct",
+    "display_name": "CLIPを読み込む（4つ）",
     "inputs": {
       "clip_name1": {
         "name": "clip_name1"
@@ -16625,7 +16963,8 @@
     }
   },
   "QuiverImageToSVGNode": {
-    "display_name": "Quiver画像からSVG",
+    "description": "Quiver AIを使用してラスター画像をSVGにベクター化します。",
+    "display_name": "Quiver 画像をSVGに変換",
     "inputs": {
       "auto_crop": {
         "name": "auto_crop",
@@ -16666,7 +17005,8 @@
     }
   },
   "QuiverTextToSVGNode": {
-    "display_name": "QuiverテキストからSVG",
+    "description": "Quiver AIを使用してテキストプロンプトからSVGを生成します。",
+    "display_name": "Quiver テキストをSVGに変換",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -16708,7 +17048,7 @@
     }
   },
   "QwenImageDiffsynthControlnet": {
-    "display_name": "Qwen Image Diffsynth Controlnet",
+    "display_name": "Qwen Image DiffSynth ControlNetを適用",
     "inputs": {
       "image": {
         "name": "画像"
@@ -16731,7 +17071,8 @@
     }
   },
   "QwenImageEditApi": {
-    "display_name": "Qwen画像編集API",
+    "description": "Qwen-Image 3.0モデルを使用して、テキストプロンプトに基づき最大3枚の参照画像を編集または結合します。",
+    "display_name": "Qwen Image 3 編集",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -16774,7 +17115,8 @@
     }
   },
   "QwenImageTextToImageApi": {
-    "display_name": "Qwen画像・テキストから画像API",
+    "description": "Qwen-Image 3.0モデルを使用して、テキストプロンプトから画像を生成します。",
+    "display_name": "Qwen Image 3 テキストから画像",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -16819,7 +17161,7 @@
     }
   },
   "RTDETR_detect": {
-    "display_name": "RTDETR_detect",
+    "display_name": "リアルタイム検出を実行（RT-DETR）",
     "inputs": {
       "class_name": {
         "name": "class_name",
@@ -16847,7 +17189,8 @@
     }
   },
   "RandomCropImages": {
-    "display_name": "画像をランダムに切り抜き",
+    "description": "画像を指定したサイズにランダムで切り抜きます。",
+    "display_name": "画像を切り抜き（ランダム）",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -16893,7 +17236,7 @@
     }
   },
   "RebatchImages": {
-    "display_name": "画像を再バッチ",
+    "display_name": "画像を再バッチ化",
     "inputs": {
       "batch_size": {
         "name": "バッチサイズ"
@@ -16909,7 +17252,7 @@
     }
   },
   "RebatchLatents": {
-    "display_name": "latentを再バッチ",
+    "display_name": "latentを再バッチ化",
     "inputs": {
       "batch_size": {
         "name": "バッチサイズ"
@@ -16938,7 +17281,8 @@
     }
   },
   "RecraftColorRGB": {
-    "display_name": "RecraftカラーRGB",
+    "description": "特定のRGB値を選択してRecraft Colorを作成します。",
+    "display_name": "Recraft Color RGB",
     "inputs": {
       "b": {
         "name": "b",
@@ -16964,7 +17308,8 @@
     }
   },
   "RecraftControls": {
-    "display_name": "Recraftコントロール",
+    "description": "Recraft生成をカスタマイズするためのRecraft Controlsを作成します。",
+    "display_name": "Recraft Controls",
     "inputs": {
       "background_color": {
         "name": "background_color"
@@ -16981,7 +17326,8 @@
     }
   },
   "RecraftCreateStyleNode": {
-    "display_name": "Recraftスタイルを作成",
+    "description": "参照画像からカスタムスタイルを作成します。スタイル参照として1～5枚の画像をアップロードします。すべての画像の合計サイズは5 MBに制限されます。",
+    "display_name": "Recraft スタイルを作成",
     "inputs": {
       "images": {
         "name": "画像"
@@ -16999,7 +17345,8 @@
     }
   },
   "RecraftCreativeUpscaleNode": {
-    "display_name": "Recraftクリエイティブアップスケール",
+    "description": "画像を同期的にアップスケールします。\n「クリエイティブアップスケール」ツールを使用して指定したラスター画像を強化し、小さなディテールや顔の改善に重点を置いて解像度を向上させます。",
+    "display_name": "Recraft クリエイティブ画像アップスケール",
     "inputs": {
       "image": {
         "name": "画像"
@@ -17012,7 +17359,8 @@
     }
   },
   "RecraftCrispUpscaleNode": {
-    "display_name": "Recraft鮮明アップスケール",
+    "description": "画像を同期的にアップスケールします。\n「クリスプアップスケール」ツールを使用して指定したラスター画像を強化し、画像解像度を上げて、よりシャープでクリーンにします。",
+    "display_name": "Recraft クリスプ画像アップスケール",
     "inputs": {
       "image": {
         "name": "画像"
@@ -17025,7 +17373,8 @@
     }
   },
   "RecraftImageInpaintingNode": {
-    "display_name": "Recraft画像インペインティング",
+    "description": "プロンプトとマスクに基づいて画像を変更します。",
+    "display_name": "Recraft 画像インペインティング",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -17063,7 +17412,8 @@
     }
   },
   "RecraftImageToImageNode": {
-    "display_name": "Recraft画像から画像",
+    "description": "プロンプトと強度に基づいて画像を変更します。",
+    "display_name": "Recraft V3 画像から画像",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -17106,7 +17456,8 @@
     }
   },
   "RecraftRemoveBackgroundNode": {
-    "display_name": "Recraft背景を削除",
+    "description": "画像から背景を削除し、処理済み画像とマスクを返します。",
+    "display_name": "Recraft 背景を削除",
     "inputs": {
       "image": {
         "name": "画像"
@@ -17122,7 +17473,8 @@
     }
   },
   "RecraftReplaceBackgroundNode": {
-    "display_name": "Recraft背景を置換",
+    "description": "指定したプロンプトに基づいて、画像の背景を置換します。",
+    "display_name": "Recraft 背景を置換",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -17157,7 +17509,8 @@
     }
   },
   "RecraftStyleV3DigitalIllustration": {
-    "display_name": "RecraftスタイルV3デジタルイラスト",
+    "description": "realistic_image スタイルと任意のサブスタイルを選択します。",
+    "display_name": "Recraft スタイル - デジタルイラスト",
     "inputs": {
       "substyle": {
         "name": "サブスタイル"
@@ -17171,7 +17524,8 @@
     }
   },
   "RecraftStyleV3InfiniteStyleLibrary": {
-    "display_name": "RecraftスタイルV3無限スタイルライブラリ",
+    "description": "Recraftの無限スタイルライブラリにある既存のUUIDに基づいてスタイルを選択します。",
+    "display_name": "Recraft スタイル - 無限スタイルライブラリ",
     "inputs": {
       "style_id": {
         "name": "style_id",
@@ -17186,7 +17540,8 @@
     }
   },
   "RecraftStyleV3LogoRaster": {
-    "display_name": "RecraftスタイルV3ロゴラスタ",
+    "description": "realistic_image スタイルと任意のサブスタイルを選択します。",
+    "display_name": "Recraft スタイル - ラスターロゴ",
     "inputs": {
       "substyle": {
         "name": "サブスタイル"
@@ -17200,7 +17555,8 @@
     }
   },
   "RecraftStyleV3RealisticImage": {
-    "display_name": "RecraftStyleV3RealisticImage",
+    "description": "realistic_image スタイルと任意のサブスタイルを選択します。",
+    "display_name": "Recraft スタイル - リアルな画像",
     "inputs": {
       "substyle": {
         "name": "サブスタイル"
@@ -17214,7 +17570,8 @@
     }
   },
   "RecraftTextToImageNode": {
-    "display_name": "RecraftTextToImageNode",
+    "description": "プロンプトと解像度に基づいて画像を同期的に生成します。",
+    "display_name": "Recraft V3 テキストから画像",
     "inputs": {
       "control_after_generate": {
         "name": "生成後コントロール"
@@ -17254,7 +17611,8 @@
     }
   },
   "RecraftTextToVectorNode": {
-    "display_name": "RecraftTextToVectorNode",
+    "description": "プロンプトと解像度に基づいてSVGを同期的に生成します。",
+    "display_name": "Recraft V3 テキストからベクター",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -17294,7 +17652,8 @@
     }
   },
   "RecraftV4TextToImageNode": {
-    "display_name": "RecraftV4TextToImageNode",
+    "description": "Recraft V4およびV4.1モデルを使用して画像を生成します。",
+    "display_name": "Recraft V4 テキストから画像",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -17334,7 +17693,8 @@
     }
   },
   "RecraftV4TextToVectorNode": {
-    "display_name": "RecraftV4TextToVectorNode",
+    "description": "Recraft V4およびV4.1モデルを使用してSVGを生成します。",
+    "display_name": "Recraft V4 テキストからベクター",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -17374,7 +17734,8 @@
     }
   },
   "RecraftVectorizeImageNode": {
-    "display_name": "RecraftVectorizeImageNode",
+    "description": "入力画像からSVGを同期的に生成します。",
+    "display_name": "Recraft 画像をベクター化",
     "inputs": {
       "image": {
         "name": "画像"
@@ -17387,7 +17748,8 @@
     }
   },
   "ReferenceLatent": {
-    "display_name": "ReferenceLatent",
+    "description": "このノードは編集モデル用のガイドlatentを設定します。モデルが対応している場合は、複数のノードを連結して複数の参照画像を設定できます。",
+    "display_name": "参照latentを設定",
     "inputs": {
       "conditioning": {
         "name": "条件付け"
@@ -17403,7 +17765,8 @@
     }
   },
   "ReferenceTimbreAudio": {
-    "display_name": "ReferenceTimbreAudio",
+    "description": "このノードはace step 1.5用の参照オーディオを設定します。",
+    "display_name": "参照オーディオを設定",
     "inputs": {
       "conditioning": {
         "name": "コンディショニング"
@@ -17419,7 +17782,7 @@
     }
   },
   "RegexExtract": {
-    "display_name": "RegexExtract",
+    "display_name": "テキストを抽出",
     "inputs": {
       "case_insensitive": {
         "name": "大文字小文字を区別しない"
@@ -17450,7 +17813,7 @@
     }
   },
   "RegexMatch": {
-    "display_name": "RegexMatch",
+    "display_name": "テキストを照合",
     "inputs": {
       "case_insensitive": {
         "name": "大文字小文字を区別しない"
@@ -17476,7 +17839,8 @@
     }
   },
   "RegexReplace": {
-    "display_name": "RegexReplace",
+    "description": "正規表現パターンを使用してテキストを検索・置換します。",
+    "display_name": "テキストを置換（正規表現）",
     "inputs": {
       "case_insensitive": {
         "name": "大文字小文字を区別しない"
@@ -17509,7 +17873,8 @@
     }
   },
   "RemeshMesh": {
-    "display_name": "RemeshMesh",
+    "description": "アクティブな演算デバイス上で、ナローバンド距離場と Dual Contouring により、均一にテッセレーションされたメッシュを再抽出します。乱雑な／非多様体／自己交差したトポロジーを正規化します。正確な面数にするには、Decimate Mesh の前に実行してください。出力は頂点が結合された状態を維持します。",
+    "display_name": "メッシュをリメッシュ（ナローバンド DC）",
     "inputs": {
       "band": {
         "name": "band",
@@ -17564,7 +17929,8 @@
     }
   },
   "RemoveBackground": {
-    "display_name": "RemoveBackground",
+    "description": "背景除去モデルを使用して前景maskを生成し、画像から背景を削除します。",
+    "display_name": "背景を削除",
     "inputs": {
       "bg_removal_model": {
         "name": "bg_removal_model",
@@ -17583,7 +17949,8 @@
     }
   },
   "RenderMesh": {
-    "display_name": "RenderMesh",
+    "description": "メッシュの単一ビューをレイキャストします。カメラと任意のモデル変換は、Load3D / Preview3D ビューアーから取得できます。",
+    "display_name": "メッシュをレンダリング",
     "inputs": {
       "background": {
         "name": "背景"
@@ -17622,7 +17989,8 @@
     }
   },
   "RenderSplat": {
-    "display_name": "RenderSplat",
+    "description": "異方性 EWA ラスタライザー（方向付き楕円形スプラット、アンチエイリアス、奥から手前への深度ソート）で、ガウシアン・スプラットを画像としてレンダリングします。カメラは camera_info 入力（Load / Preview 3D、または Create Camera Info ノード）から取得します。空のままにすると、スプラットが自動的にフレーミングされます。Video ノードに渡すターンテーブル画像バッチを作成するには、frames を 1 より大きく設定してください。",
+    "display_name": "スプラットをレンダリング",
     "inputs": {
       "background": {
         "name": "背景"
@@ -17681,7 +18049,8 @@
     }
   },
   "RenderUVAtlas": {
-    "display_name": "RenderUVAtlas",
+    "description": "メッシュの UV レイアウトを画像としてレンダリングします。",
+    "display_name": "UV アトラスをレンダリング",
     "inputs": {
       "mesh": {
         "name": "メッシュ"
@@ -17717,7 +18086,7 @@
     }
   },
   "RepeatImageBatch": {
-    "display_name": "RepeatImageBatch",
+    "display_name": "画像バッチを繰り返す",
     "inputs": {
       "amount": {
         "name": "量"
@@ -17733,7 +18102,7 @@
     }
   },
   "RepeatLatentBatch": {
-    "display_name": "RepeatLatentBatch",
+    "display_name": "latent バッチを繰り返す",
     "inputs": {
       "amount": {
         "name": "量"
@@ -17744,7 +18113,8 @@
     }
   },
   "ReplaceText": {
-    "display_name": "ReplaceText",
+    "description": "すべてのテキスト内の文字列を置換します。",
+    "display_name": "テキストを置換（非推奨）",
     "inputs": {
       "find": {
         "name": "find",
@@ -17767,7 +18137,7 @@
     }
   },
   "ReplaceVideoLatentFrames": {
-    "display_name": "ReplaceVideoLatentFrames",
+    "display_name": "動画latentフレームを置換",
     "inputs": {
       "destination": {
         "name": "destination",
@@ -17800,7 +18170,7 @@
     }
   },
   "ResizeAndPadImage": {
-    "display_name": "ResizeAndPadImage",
+    "display_name": "画像をリサイズしてパディング",
     "inputs": {
       "image": {
         "name": "画像"
@@ -17825,7 +18195,8 @@
     }
   },
   "ResizeImageMaskNode": {
-    "display_name": "ResizeImageMaskNode",
+    "description": "さまざまなスケーリング方法を使用して、画像またはmaskをリサイズします。",
+    "display_name": "画像／maskをリサイズ",
     "inputs": {
       "input": {
         "name": "input"
@@ -17856,7 +18227,8 @@
     }
   },
   "ResizeImagesByLongerEdge": {
-    "display_name": "ResizeImagesByLongerEdge",
+    "description": "アスペクト比を維持しながら、長辺が指定した寸法に一致するように画像をリサイズします。",
+    "display_name": "長辺に合わせて画像をリサイズ（非推奨）",
     "inputs": {
       "images": {
         "name": "images",
@@ -17875,7 +18247,8 @@
     }
   },
   "ResizeImagesByShorterEdge": {
-    "display_name": "ResizeImagesByShorterEdge",
+    "description": "アスペクト比を維持しながら、短辺が指定した寸法に一致するように画像をリサイズします。",
+    "display_name": "短辺に合わせて画像をリサイズ（非推奨）",
     "inputs": {
       "images": {
         "name": "images",
@@ -17894,7 +18267,8 @@
     }
   },
   "ResolutionBucket": {
-    "display_name": "ResolutionBucket",
+    "description": "latentとconditioningをバケットにグループ化します",
+    "display_name": "解像度バケット",
     "inputs": {
       "conditioning": {
         "name": "conditioning",
@@ -17917,7 +18291,8 @@
     }
   },
   "ResolutionSelector": {
-    "display_name": "ResolutionSelector",
+    "description": "アスペクト比とメガピクセル目標から幅と高さを計算します。Empty Latent Image の寸法設定に便利です。",
+    "display_name": "解像度セレクター",
     "inputs": {
       "aspect_ratio": {
         "name": "アスペクト比",
@@ -17944,7 +18319,8 @@
     }
   },
   "ReveImageCreateNode": {
-    "display_name": "ReveImageCreateNode",
+    "description": "Reve を使用して、テキストによる説明から画像を生成します。",
+    "display_name": "Reve 画像作成",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -17983,7 +18359,8 @@
     }
   },
   "ReveImageEditNode": {
-    "display_name": "ReveImageEditNode",
+    "description": "Reve を使用して、自然言語の指示で画像を編集します。",
+    "display_name": "Reve 画像編集",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -18026,7 +18403,8 @@
     }
   },
   "ReveImageRemixNode": {
-    "display_name": "ReveImageRemixNode",
+    "description": "Reve を使用して、参照画像とテキストプロンプトを組み合わせ、新しい画像を作成します。",
+    "display_name": "Reve 画像リミックス",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -18068,7 +18446,8 @@
     }
   },
   "Rodin3D_Detail": {
-    "display_name": "Rodin3D_Detail",
+    "description": "Rodin API を使用して 3D アセットを生成します",
+    "display_name": "Rodin 3D 生成 - 詳細生成",
     "inputs": {
       "Images": {
         "name": "画像"
@@ -18095,7 +18474,8 @@
     }
   },
   "Rodin3D_Gen2": {
-    "display_name": "Rodin3D_Gen2",
+    "description": "Rodin API を使用して 3D アセットを生成します",
+    "display_name": "Rodin 3D 生成 - Gen-2 生成",
     "inputs": {
       "Images": {
         "name": "画像"
@@ -18125,7 +18505,8 @@
     }
   },
   "Rodin3D_Gen25_Image": {
-    "display_name": "Rodin3D_Gen25_Image",
+    "description": "Rodin Gen-2.5 により、1～5枚の参照画像から3Dモデルを生成します。モード（Fast / Regular / Extreme-High）を選択して、品質とコストのバランスを調整します。",
+    "display_name": "Rodin 3D Gen-2.5 - 画像から3D",
     "inputs": {
       "TAPose": {
         "name": "TAPose",
@@ -18205,7 +18586,8 @@
     }
   },
   "Rodin3D_Gen25_Text": {
-    "display_name": "Rodin3D_Gen25_Text",
+    "description": "Rodin Gen-2.5 により、テキストプロンプトから3Dモデルを生成します。モード（Fast / Regular / Extreme-High）を選択して、品質とコストのバランスを調整します。",
+    "display_name": "Rodin 3D Gen-2.5 - テキストから3D",
     "inputs": {
       "TAPose": {
         "name": "T/Aポーズ",
@@ -18281,7 +18663,8 @@
     }
   },
   "Rodin3D_Regular": {
-    "display_name": "Rodin3D_Regular",
+    "description": "Rodin APIを使用して3Dアセットを生成",
+    "display_name": "Rodin 3D生成 - 通常生成",
     "inputs": {
       "Images": {
         "name": "画像"
@@ -18308,7 +18691,8 @@
     }
   },
   "Rodin3D_Sketch": {
-    "display_name": "Rodin3D_Sketch",
+    "description": "Rodin APIを使用して3Dアセットを生成",
+    "display_name": "Rodin 3D生成 - スケッチ生成",
     "inputs": {
       "Images": {
         "name": "画像"
@@ -18329,7 +18713,8 @@
     }
   },
   "Rodin3D_Smooth": {
-    "display_name": "Rodin3D_Smooth",
+    "description": "Rodin APIを使用して3Dアセットを生成",
+    "display_name": "Rodin 3D生成 - スムーズ生成",
     "inputs": {
       "Images": {
         "name": "画像"
@@ -18356,7 +18741,8 @@
     }
   },
   "RotateMesh": {
-    "display_name": "RotateMesh",
+    "description": "メッシュを回転します。Euler XYZはワールド軸を基準にX、Y、Zの順で適用されます（度）。Quaternionは(w, x, y, z)で、自動的に正規化されます。",
+    "display_name": "メッシュを回転",
     "inputs": {
       "mesh": {
         "name": "メッシュ"
@@ -18382,7 +18768,8 @@
     }
   },
   "RunwayAleph2KeyframeNode": {
-    "display_name": "RunwayAleph2KeyframeNode",
+    "description": "ガイダンス画像を入力（ソース）ビデオ内の特定の時点に固定し、その時点の映像編集をAleph2で誘導します。Runway Aleph2 Video to Videoノードの'keyframes'入力に接続してください。下の任意の'keyframes'入力を介して複数を連結できます（最大5つ）。",
+    "display_name": "Runway Aleph2 キーフレーム",
     "inputs": {
       "image": {
         "name": "画像",
@@ -18408,7 +18795,8 @@
     }
   },
   "RunwayAleph2PromptImageNode": {
-    "display_name": "RunwayAleph2PromptImageNode",
+    "description": "ガイダンス画像を出力（結果）ビデオ内の特定の時点に固定し、その時点で編集後のビデオをどのように見せるか誘導します。Runway Aleph2 Video to Videoノードの'prompt_images'入力に接続してください。下の任意の'prompt_images'入力を介して複数を連結できます（最大5つ）。",
+    "display_name": "Runway Aleph2 プロンプト画像",
     "inputs": {
       "image": {
         "name": "画像",
@@ -18434,7 +18822,8 @@
     }
   },
   "RunwayAleph2VideoToVideoNode": {
-    "display_name": "RunwayAleph2VideoToVideoNode",
+    "description": "RunwayのAleph2モデルを使用して、テキストプロンプトでビデオを編集します。Aleph2は元の動きとタイミングを維持しながら映像を変換します（スタイル変更、照明変更、要素の追加または削除、視点の変更）。出力解像度は入力ビデオと同じで、入力ビデオは30 fps以下で2～30秒である必要があります。キーフレーム（入力ビデオに固定）またはプロンプト画像（出力ビデオに固定）のいずれかで任意に編集を誘導できます。一方のみを使用し、両方は使用しないでください。",
+    "display_name": "Runway Aleph2 ビデオからビデオ",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -18471,7 +18860,8 @@
     }
   },
   "RunwayFirstLastFrameNode": {
-    "display_name": "RunwayFirstLastFrameNode",
+    "description": "最初と最後のキーフレームをアップロードし、プロンプトを作成してビデオを生成します。最後のフレームが最初のフレームと完全に異なる場合など、より複雑な遷移では、長い10秒の長さが有効な場合があります。これにより、2つの入力間を滑らかに遷移するための時間をより多く確保できます。開始前に、入力の選択によって生成を成功に導けるよう、次のベストプラクティスを確認してください: https://help.runwayml.com/hc/en-us/articles/34170748696595-Creating-with-Keyframes-on-Gen-3.",
+    "display_name": "Runway 最初と最後のフレームからビデオ",
     "inputs": {
       "control_after_generate": {
         "name": "生成後の制御"
@@ -18506,7 +18896,8 @@
     }
   },
   "RunwayImageToVideoNodeGen3a": {
-    "display_name": "RunwayImageToVideoNodeGen3a",
+    "description": "Gen3a Turboモデルを使用して、1枚の開始フレームからビデオを生成します。開始前に、入力の選択によって生成を成功に導けるよう、次のベストプラクティスを確認してください: https://help.runwayml.com/hc/en-us/articles/33927968552339-Creating-with-Act-One-on-Gen-3-Alpha-and-Turbo.",
+    "display_name": "Runway 画像からビデオ（Gen3a Turbo）",
     "inputs": {
       "control_after_generate": {
         "name": "生成後の制御"
@@ -18537,7 +18928,8 @@
     }
   },
   "RunwayImageToVideoNodeGen4": {
-    "display_name": "RunwayImageToVideoNodeGen4",
+    "description": "Gen4 Turboモデルを使用して、1枚の開始フレームからビデオを生成します。開始前に、入力の選択によって生成を成功に導けるよう、次のベストプラクティスを確認してください: https://help.runwayml.com/hc/en-us/articles/37327109429011-Creating-with-Gen-4-Video.",
+    "display_name": "Runway 画像からビデオ（Gen4 Turbo）",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -18568,7 +18960,8 @@
     }
   },
   "RunwayTextToImageNode": {
-    "display_name": "RunwayTextToImageNode",
+    "description": "RunwayのGen 4モデルを使用して、テキストプロンプトから画像を生成します。生成を誘導するための参照画像を含めることもできます。",
+    "display_name": "Runway テキストから画像",
     "inputs": {
       "prompt": {
         "name": "prompt",
@@ -18589,7 +18982,8 @@
     }
   },
   "SAM3DBody_FaceExpression": {
-    "display_name": "SAM3DBody_FaceExpression",
+    "description": "コアMediaPipe Face LandmarkerからMHRの顔ブレンドシェイプを駆動します。",
+    "display_name": "顔の表情からSAM3D Body",
     "inputs": {
       "blendshape_smooth_window": {
         "name": "blendshape_smooth_window",
@@ -18633,7 +19027,7 @@
     }
   },
   "SAM3DBody_Loader": {
-    "display_name": "SAM3DBody_Loader",
+    "display_name": "SAM3D Bodyモデルを読み込む",
     "inputs": {
       "model_file": {
         "name": "model_file"
@@ -18647,7 +19041,7 @@
     }
   },
   "SAM3DBody_Predict": {
-    "display_name": "SAM3DBody_Predict",
+    "display_name": "SAM3D Body予測を実行",
     "inputs": {
       "batch_size": {
         "name": "batch_size",
@@ -18684,7 +19078,7 @@
     }
   },
   "SAM3DBody_Render": {
-    "display_name": "SAM3DBody_Render",
+    "display_name": "3Dボディポーズをレンダリング",
     "inputs": {
       "background": {
         "name": "background",
@@ -18731,7 +19125,8 @@
     }
   },
   "SAM3DBody_Smooth": {
-    "display_name": "SAM3DBody_Smooth",
+    "description": "時間的スムージングによりフレーム間の揺れを軽減します。",
+    "display_name": "SAM3D Bodyポーズデータをスムーズ化",
     "inputs": {
       "method": {
         "name": "method",
@@ -18761,7 +19156,7 @@
     }
   },
   "SAM3_Detect": {
-    "display_name": "SAM3_Detect",
+    "display_name": "SAM3 検出",
     "inputs": {
       "bboxes": {
         "name": "bboxes",
@@ -18809,7 +19204,7 @@
     }
   },
   "SAM3_TrackPreview": {
-    "display_name": "SAM3_TrackPreview",
+    "display_name": "SAM3 トラックプレビュー",
     "inputs": {
       "fps": {
         "name": "fps"
@@ -18826,7 +19221,7 @@
     }
   },
   "SAM3_TrackToMask": {
-    "display_name": "SAM3_TrackToMask",
+    "display_name": "SAM3 トラックからマスク",
     "inputs": {
       "object_indices": {
         "name": "object_indices",
@@ -18844,7 +19239,7 @@
     }
   },
   "SAM3_VideoTrack": {
-    "display_name": "SAM3_VideoTrack",
+    "display_name": "SAM3 ビデオトラックを実行",
     "inputs": {
       "conditioning": {
         "name": "conditioning",
@@ -18882,7 +19277,7 @@
     }
   },
   "SCAIL2ColoredMask": {
-    "display_name": "SCAIL2カラーmask",
+    "display_name": "SCAIL-2カラーマスクを作成",
     "inputs": {
       "driving_track_data": {
         "name": "ドライビングトラックデータ",
@@ -18976,7 +19371,8 @@
     }
   },
   "SDPoseKeypointExtractor": {
-    "display_name": "SDPoseキーポイント抽出器",
+    "description": "SDPoseモデルを使用して画像からポーズキーポイントを抽出します: https://huggingface.co/Comfy-Org/SDPose/tree/main/checkpoints",
+    "display_name": "SDPoseキーポイント抽出",
     "inputs": {
       "batch_size": {
         "name": "バッチサイズ"
@@ -19177,7 +19573,7 @@
     }
   },
   "SamplerARVideo": {
-    "display_name": "SamplerARVideo",
+    "display_name": "ARビデオサンプラー",
     "inputs": {
       "num_frame_per_block": {
         "name": "num_frame_per_block",
@@ -19424,7 +19820,7 @@
     }
   },
   "SamplerEulerAncestralCFGPP": {
-    "display_name": "SamplerEulerAncestralCFGPP",
+    "display_name": "SamplerEulerAncestralCFG++",
     "inputs": {
       "eta": {
         "name": "eta"
@@ -19440,7 +19836,7 @@
     }
   },
   "SamplerEulerCFGpp": {
-    "display_name": "SamplerEulerCFGpp",
+    "display_name": "SamplerEulerCFG++",
     "inputs": {
       "version": {
         "name": "バージョン"
@@ -19453,6 +19849,7 @@
     }
   },
   "SamplerLCM": {
+    "description": "ステップごとのノイズを調整可能なLCMサンプラー。s_noiseはモデルの学習ノイズスケールに対する乗数です",
     "display_name": "SamplerLCM",
     "inputs": {
       "noise_clip_std": {
@@ -19544,6 +19941,7 @@
     }
   },
   "SamplerSEEDS2": {
+    "description": "このサンプラーノードは複数のサンプラーを表現できます。\n\nseeds_2\n- デフォルト設定\n\nexp_heun_2_x0\n- solver_type=phi_2, r=1.0, eta=0.0\n\nexp_heun_2_x0_sde\n- solver_type=phi_2, r=1.0, eta=1.0, s_noise=1.0",
     "display_name": "SamplerSEEDS2",
     "inputs": {
       "eta": {
@@ -19590,7 +19988,7 @@
     }
   },
   "Save3DAdvanced": {
-    "display_name": "Save3DAdvanced",
+    "display_name": "3Dを保存（高度な設定）",
     "inputs": {
       "camera_info": {
         "name": "camera_info"
@@ -19639,7 +20037,7 @@
     }
   },
   "SaveAnimatedPNG": {
-    "display_name": "SaveAnimatedPNG",
+    "display_name": "アニメーションPNGを保存",
     "inputs": {
       "compress_level": {
         "name": "圧縮レベル"
@@ -19662,7 +20060,7 @@
     }
   },
   "SaveAnimatedWEBP": {
-    "display_name": "SaveAnimatedWEBP",
+    "display_name": "アニメーションWEBPを保存",
     "inputs": {
       "filename_prefix": {
         "name": "ファイル名プレフィックス"
@@ -19691,7 +20089,7 @@
     }
   },
   "SaveAudio": {
-    "display_name": "オーディオを保存",
+    "display_name": "音声を保存（FLAC）（非推奨）",
     "inputs": {
       "audio": {
         "name": "オーディオ"
@@ -19711,7 +20109,8 @@
     }
   },
   "SaveAudioAdvanced": {
-    "display_name": "オーディオを高度な設定で保存",
+    "description": "入力音声をComfyUIの出力ディレクトリに保存します。",
+    "display_name": "音声を保存（詳細設定）",
     "inputs": {
       "audio": {
         "name": "audio",
@@ -19737,7 +20136,7 @@
     }
   },
   "SaveAudioMP3": {
-    "display_name": "オーディオをMP3で保存",
+    "display_name": "音声を保存（MP3）（非推奨）",
     "inputs": {
       "audio": {
         "name": "audio"
@@ -19760,7 +20159,7 @@
     }
   },
   "SaveAudioOpus": {
-    "display_name": "オーディオをOpusで保存",
+    "display_name": "音声を保存（Opus）（非推奨）",
     "inputs": {
       "audio": {
         "name": "audio"
@@ -19783,7 +20182,7 @@
     }
   },
   "SaveGLB": {
-    "display_name": "GLBを保存",
+    "display_name": "3Dモデルを保存",
     "inputs": {
       "filename_prefix": {
         "name": "ファイル名のプレフィックス"
@@ -19798,7 +20197,7 @@
     }
   },
   "SaveGaussianSplat": {
-    "display_name": "ガウシアンスプラットを保存",
+    "display_name": "スプラットを保存",
     "inputs": {
       "camera_info": {
         "name": "camera_info"
@@ -19847,6 +20246,7 @@
     }
   },
   "SaveImage": {
+    "description": "入力画像をComfyUIの出力ディレクトリに保存します。",
     "display_name": "画像を保存",
     "inputs": {
       "filename_prefix": {
@@ -19865,7 +20265,8 @@
     }
   },
   "SaveImageAdvanced": {
-    "display_name": "画像を高度な設定で保存",
+    "description": "入力画像をComfyUIの出力ディレクトリに保存します。",
+    "display_name": "画像を保存（詳細設定）",
     "inputs": {
       "filename_prefix": {
         "name": "ファイル名プレフィックス",
@@ -19894,7 +20295,8 @@
     }
   },
   "SaveImageDataSetToFolder": {
-    "display_name": "画像データセットをフォルダーに保存",
+    "description": "画像データセットを指定したフォルダーに保存します。対応形式: PNG。",
+    "display_name": "画像を保存（フォルダーへ）（非推奨）",
     "inputs": {
       "filename_prefix": {
         "name": "filename_prefix",
@@ -19915,7 +20317,8 @@
     }
   },
   "SaveImageTextDataSetToFolder": {
-    "display_name": "画像・テキストデータセットをフォルダーに保存",
+    "description": "画像とテキストキャプションのペアからなるデータセットを指定したフォルダーに保存します。画像はPNGファイル、キャプションは同じfilename_prefixを持つTXTファイルとして保存されます。",
+    "display_name": "画像とテキストを保存（フォルダーへ）",
     "inputs": {
       "filename_prefix": {
         "name": "filename_prefix",
@@ -19940,7 +20343,7 @@
     }
   },
   "SaveImageWebsocket": {
-    "display_name": "画像をWebSocketで保存",
+    "display_name": "画像を保存（Websocket）",
     "inputs": {
       "images": {
         "name": "画像"
@@ -19964,7 +20367,7 @@
     }
   },
   "SaveLoRA": {
-    "display_name": "LoRAを保存",
+    "display_name": "LoRAウェイトを保存",
     "inputs": {
       "lora": {
         "name": "lora",
@@ -20030,7 +20433,8 @@
     }
   },
   "SaveSVGNode": {
-    "display_name": "SVGノードを保存",
+    "description": "SVGファイルをディスクに保存します。",
+    "display_name": "SVGを保存",
     "inputs": {
       "filename_prefix": {
         "name": "ファイル名プレフィックス",
@@ -20048,6 +20452,7 @@
     }
   },
   "SaveText": {
+    "description": "テキスト内容を出力ディレクトリ内のファイルに保存します。",
     "display_name": "テキストを保存",
     "inputs": {
       "filename_prefix": {
@@ -20070,7 +20475,8 @@
     }
   },
   "SaveTrainingDataset": {
-    "display_name": "学習データセットを保存",
+    "description": "トレーニング中に効率的に読み込めるよう、エンコード済みトレーニングデータセット（latent + conditioning）をディスクに保存します。",
+    "display_name": "トレーニングデータセットを保存",
     "inputs": {
       "conditioning": {
         "name": "conditioning",
@@ -20091,6 +20497,7 @@
     }
   },
   "SaveVideo": {
+    "description": "入力動画をComfyUIの出力ディレクトリに保存します。",
     "display_name": "動画を保存",
     "inputs": {
       "codec": {
@@ -20149,6 +20556,7 @@
     }
   },
   "ScaleROPE": {
+    "description": "モデルのROPEをスケーリングしてシフトします。",
     "display_name": "ROPEスケーリング",
     "inputs": {
       "model": {
@@ -20180,7 +20588,7 @@
     }
   },
   "SeedNode": {
-    "display_name": "シードノード",
+    "display_name": "Seed",
     "inputs": {
       "fixed": {
         "name": "生成後に制御"
@@ -20197,7 +20605,8 @@
     }
   },
   "SeedVR2Conditioning": {
-    "display_name": "SeedVR2コンディショニング",
+    "description": "VAE latentからSeedVR2のポジティブ/ネガティブconditioningを構築します。",
+    "display_name": "SeedVR2 conditioningを適用",
     "inputs": {
       "model": {
         "name": "model",
@@ -20219,7 +20628,8 @@
     }
   },
   "SeedVR2PostProcessing": {
-    "display_name": "SeedVR2後処理",
+    "description": "生成画像を元のリサイズ済み画像に合わせ、色補正を適用します。",
+    "display_name": "SeedVR2出力を後処理",
     "inputs": {
       "color_correction_method": {
         "name": "color_correction_method",
@@ -20242,7 +20652,8 @@
     }
   },
   "SeedVR2Preprocess": {
-    "display_name": "SeedVR2前処理",
+    "description": "SeedVR2 モデル用にリサイズ済み画像をパディングします。アルファチャンネルは削除されます。ノード「SeedVR2 出力を後処理」は、元のリサイズ済み画像からアルファチャンネルを再適用します。",
+    "display_name": "SeedVR2 入力を前処理",
     "inputs": {
       "resized_images": {
         "name": "resized_images",
@@ -20257,7 +20668,8 @@
     }
   },
   "SeedVR2TemporalChunk": {
-    "display_name": "SeedVR2時間チャンク",
+    "description": "SeedVR2 動画 latent を、VRAM 内で一度にサンプリングできるサイズの重複する時間チャンクに分割します。latent 出力を「SeedVR2 Conditioning を適用」とサンプラーの latent 入力の両方に接続してから、「SeedVR2 Latents を結合」で再結合します。",
+    "display_name": "SeedVR2 latent を分割",
     "inputs": {
       "chunking_mode": {
         "name": "chunking_mode",
@@ -20284,7 +20696,8 @@
     }
   },
   "SeedVR2TemporalMerge": {
-    "display_name": "SeedVR2時間マージ",
+    "description": "サンプリング済みの SeedVR2 latent 時間チャンクを1つの latent に再結合します。「SeedVR2 Latent を分割」から接続された temporal_overlap のサイズに基づくハン窓で、各重複部分をクロスフェードします。",
+    "display_name": "SeedVR2 Latents を結合",
     "inputs": {
       "latents": {
         "name": "latents",
@@ -20303,7 +20716,8 @@
     }
   },
   "SelectCLIPDevice": {
-    "display_name": "CLIPデバイスを選択",
+    "description": "CLIP テキストエンコーダーを特定のデバイスに配置します（default / cpu / gpu:N）。\n\n- \"default\" はローダーによって割り当てられたデバイスに戻します。\n- \"cpu\" はロードとオフロードの両方のデバイスを CPU に固定します。\n- \"gpu:N\" はロードデバイスを N 番目の利用可能な GPU に固定します。\n\n選択したデバイスが現在のマシンに存在しない場合\n（例: 2 GPU マシンで作成したワークフローを 1 GPU マシンで開いた場合）、\nノードはエラーにせず CLIP を変更せずに通過させ、メッセージをログに記録します。",
+    "display_name": "CLIP デバイスを選択",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -20319,6 +20733,7 @@
     }
   },
   "SelectModelDevice": {
+    "description": "拡散モデルを特定のデバイスに配置します（default / cpu / gpu:N）。\n\n- \"default\" はローダーによって割り当てられたデバイスに戻します（以前に\n  「モデルデバイスを選択」を呼び出した後でも有効です）。\n- \"cpu\" はロードとオフロードの両方のデバイスを CPU に固定します。\n- \"gpu:N\" はロードデバイスを N 番目の利用可能な GPU に固定します。オフロード\n  デバイスはローダーの元の選択に戻ります。\n\n要求されたデバイスが入力モデルがすでに配置されているデバイスと異なる場合、\nローダーのリロードファクトリー（cached_patcher_init）を介して新しいモデルが生成され、\n新しいパッチャーが新しいデバイス上で独立した重みを所有します。マルチ GPU をサポート\nしないローダー（ファクトリーなし）の場合、警告とともに変更せずに通過します。\n\nワークフローにすでに MultiGPU CFG Split が適用されており、選択した GPU が既存の\nマルチ GPU クローンのいずれかと競合する場合、2つのパッチャーが同じデバイスに\nバインドされないよう、そのクローンは削除されます。\n\n選択したデバイスが現在のマシンに存在しない場合\n（例: 2 GPU マシンで作成したワークフローを 1 GPU マシンで開いた場合）、\nノードはエラーにせずモデルを変更せずに通過させ、メッセージをログに記録します。\n\n注: 同じモデルをすでに使用したノード（例: 元のデバイスでこのモデルを使用して実行した\nKSampler）の*後*に「モデルデバイスを選択」を配置することは推奨されません。以前の\nコンシューマーが元のモデルに変更した状態は、選択したデバイスが元のデバイスと一致する\n場合に確認されます（高速パス）。「モデルデバイスを選択」は、モデルを使用する\nすべてのノードより前に配置してください。",
     "display_name": "モデルデバイスを選択",
     "inputs": {
       "device": {
@@ -20335,7 +20750,8 @@
     }
   },
   "SelectVAEDevice": {
-    "display_name": "VAEデバイスを選択",
+    "description": "VAE を特定のデバイスに配置します（default / gpu:N）。\n\n- \"default\" はローダーによって割り当てられたデバイスに戻します。\n- \"gpu:N\" はロードデバイスを N 番目の利用可能な GPU に固定します。オフロード\n  デバイスは標準の VAE オフロードデバイスに設定されます。\n\nVAE の CPU は意図的に UI に公開されていません。ワークフローでそれでも \"cpu\" が\n指定された場合（例: 別のマシンから開いた場合）、ログメッセージとともに要求は破棄され、\nVAE は変更されずに通過します。\n\n選択したデバイスが現在のマシンに存在しない場合\n（例: 2 GPU マシンで作成したワークフローを 1 GPU マシンで開いた場合）、\nノードはエラーにせず VAE を変更せずに通過させ、メッセージをログに記録します。",
+    "display_name": "VAE デバイスを選択",
     "inputs": {
       "device": {
         "name": "デバイス"
@@ -20351,7 +20767,7 @@
     }
   },
   "SelfAttentionGuidance": {
-    "display_name": "自己注意ガイダンス",
+    "display_name": "自己アテンションガイダンス",
     "inputs": {
       "blur_sigma": {
         "name": "ブラーシグマ"
@@ -20370,7 +20786,7 @@
     }
   },
   "SetClipHooks": {
-    "display_name": "CLIPフックを設定",
+    "display_name": "CLIP フックを設定",
     "inputs": {
       "apply_to_conds": {
         "name": "apply_to_conds"
@@ -20414,7 +20830,7 @@
     }
   },
   "SetLatentNoiseMask": {
-    "display_name": "latentノイズmaskを設定",
+    "display_name": "Latent ノイズ mask を設定",
     "inputs": {
       "mask": {
         "name": "マスク"
@@ -20425,7 +20841,7 @@
     }
   },
   "SetUnionControlNetType": {
-    "display_name": "Union ControlNetタイプを設定",
+    "display_name": "Union ControlNet タイプを設定",
     "inputs": {
       "control_net": {
         "name": "control_net"
@@ -20441,7 +20857,8 @@
     }
   },
   "ShuffleDataset": {
-    "display_name": "データセットをシャッフル",
+    "description": "リスト内の画像の順序をランダムにシャッフルします。",
+    "display_name": "画像リストをシャッフル",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -20463,7 +20880,8 @@
     }
   },
   "ShuffleImageTextDataset": {
-    "display_name": "画像・テキストデータセットをシャッフル",
+    "description": "リスト内の画像とテキストのペアの順序をランダムにシャッフルします。",
+    "display_name": "画像とテキストのペアをシャッフル",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -20493,7 +20911,8 @@
     }
   },
   "ShuffleVideoDataset": {
-    "display_name": "動画データセットをシャッフル",
+    "description": "リスト内の動画の順序をランダムにシャッフルします。",
+    "display_name": "動画リストをシャッフル",
     "inputs": {
       "control_after_generate": {
         "name": "生成後の制御"
@@ -20515,7 +20934,8 @@
     }
   },
   "ShuffleVideoTextDataset": {
-    "display_name": "動画・テキストデータセットをシャッフル",
+    "description": "リスト内の動画とテキストのペアの順序をランダムにシャッフルします。",
+    "display_name": "動画とテキストのペアをシャッフル",
     "inputs": {
       "control_after_generate": {
         "name": "生成後の制御"
@@ -20545,6 +20965,7 @@
     }
   },
   "SkipLayerGuidanceDiT": {
+    "description": "すべての DiT モデルで使用できる SkipLayerGuidance ノードの汎用バージョンです。",
     "display_name": "SkipLayerGuidanceDiT",
     "inputs": {
       "double_layers": {
@@ -20576,6 +20997,7 @@
     }
   },
   "SkipLayerGuidanceDiTSimple": {
+    "description": "uncond パスのみを変更する SkipLayerGuidanceDiT ノードのシンプルなバージョンです。",
     "display_name": "スキップレイヤーガイダンスDiT簡易版",
     "inputs": {
       "double_layers": {
@@ -20601,6 +21023,7 @@
     }
   },
   "SkipLayerGuidanceSD3": {
+    "description": "すべての DiT モデルで使用できる SkipLayerGuidance ノードの汎用バージョンです。",
     "display_name": "SkipLayerGuidanceSD3",
     "inputs": {
       "end_percent": {
@@ -20626,7 +21049,7 @@
     }
   },
   "SolidMask": {
-    "display_name": "単色mask",
+    "display_name": "単色 mask を作成",
     "inputs": {
       "height": {
         "name": "高さ"
@@ -20645,7 +21068,8 @@
     }
   },
   "SoniloTextToMusic": {
-    "display_name": "Soniloテキストから音楽",
+    "description": "Sonilo の AI モデルを使用して、テキストプロンプトから音楽を生成します。",
+    "display_name": "Sonilo テキストから音楽",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -20670,7 +21094,8 @@
     }
   },
   "SoniloVideoToMusic": {
-    "display_name": "Sonilo動画から音楽",
+    "description": "Sonilo の AI モデルを使用して、動画コンテンツから音楽を生成します。動画を解析し、それに合った音楽を作成します。",
+    "display_name": "Sonilo 動画から音楽",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -20695,7 +21120,8 @@
     }
   },
   "SplatToFile3D": {
-    "display_name": "Splatを3Dファイルへ",
+    "description": "gaussian splat を、Save / Preview 3D ノード用の File3D オブジェクトにシリアライズします。バッチあたり1項目のみ対応しています。",
+    "display_name": "3D ファイルを作成（Splat から）",
     "inputs": {
       "format": {
         "name": "フォーマット",
@@ -20713,7 +21139,8 @@
     }
   },
   "SplatToMesh": {
-    "display_name": "Splatをメッシュへ",
+    "description": "gaussian splat から色付きメッシュを抽出します。",
+    "display_name": "Splat からメッシュを抽出",
     "inputs": {
       "color_sharpen": {
         "name": "色シャープ化",
@@ -20755,7 +21182,8 @@
     }
   },
   "SplitAudioChannels": {
-    "display_name": "音声チャンネルを分割",
+    "description": "オーディオを左チャンネルと右チャンネルに分離します。",
+    "display_name": "オーディオチャンネルを分割",
     "inputs": {
       "audio": {
         "name": "オーディオ"
@@ -20773,7 +21201,8 @@
     }
   },
   "SplitImageToTileList": {
-    "display_name": "画像をタイルリストに分割",
+    "description": "指定したオーバーラップで画像をタイルのバッチリストに分割します。",
+    "display_name": "画像をタイルのリストに分割",
     "inputs": {
       "image": {
         "name": "image"
@@ -21037,7 +21466,7 @@
     }
   },
   "StringCompare": {
-    "display_name": "文字列を比較",
+    "display_name": "テキストを比較",
     "inputs": {
       "case_sensitive": {
         "name": "case_sensitive"
@@ -21059,7 +21488,7 @@
     }
   },
   "StringConcatenate": {
-    "display_name": "文字列を連結",
+    "display_name": "テキストを連結",
     "inputs": {
       "delimiter": {
         "name": "delimiter"
@@ -21078,7 +21507,7 @@
     }
   },
   "StringContains": {
-    "display_name": "文字列に含む",
+    "display_name": "テキストを含む",
     "inputs": {
       "case_sensitive": {
         "name": "case_sensitive"
@@ -21098,7 +21527,8 @@
     }
   },
   "StringFormat": {
-    "display_name": "文字列をフォーマット",
+    "description": "Pythonの文字列formatメソッドと同じです。Pythonのすべてのformatオプションと機能をサポートします。",
+    "display_name": "テキストをフォーマット",
     "inputs": {
       "f_string": {
         "name": "f_string"
@@ -21114,7 +21544,7 @@
     }
   },
   "StringLength": {
-    "display_name": "文字列の長さ",
+    "display_name": "テキストの長さ",
     "inputs": {
       "string": {
         "name": "string"
@@ -21128,7 +21558,7 @@
     }
   },
   "StringReplace": {
-    "display_name": "文字列を置換",
+    "display_name": "テキストを置換",
     "inputs": {
       "find": {
         "name": "find"
@@ -21147,7 +21577,7 @@
     }
   },
   "StringSubstring": {
-    "display_name": "文字列の部分文字列",
+    "display_name": "部分文字列",
     "inputs": {
       "end": {
         "name": "end"
@@ -21166,7 +21596,7 @@
     }
   },
   "StringTrim": {
-    "display_name": "文字列のトリム",
+    "display_name": "テキストをトリム",
     "inputs": {
       "mode": {
         "name": "mode"
@@ -21182,7 +21612,8 @@
     }
   },
   "StripWhitespace": {
-    "display_name": "空白を削除",
+    "description": "すべてのテキストから先頭と末尾の空白文字を削除します。",
+    "display_name": "空白文字を削除（非推奨）",
     "inputs": {
       "texts": {
         "name": "テキスト",
@@ -21225,7 +21656,8 @@
     }
   },
   "SyncLipSyncNode": {
-    "display_name": "リップシンクを同期",
+    "description": "sync.soを使用して、動画内の口の動きを新しい音声に再同期します。話者の表情を維持しながら、クローズアップ、横顔、遮蔽物を自動的に処理します。コストは出力時間に応じて増加します。",
+    "display_name": "sync.so リップシンク",
     "inputs": {
       "audio": {
         "name": "audio",
@@ -21269,7 +21701,8 @@
     }
   },
   "SyncTalkingImageNode": {
-    "display_name": "会話画像を同期",
+    "description": "sync.soのsync-3モデルを使用して、静止ポートレートを音声に連動した話す動画にアニメーション化します。出力時間は音声に一致します。コストは出力時間に応じて増加します。",
+    "display_name": "sync.so トーキングイメージ",
     "inputs": {
       "audio": {
         "name": "audio",
@@ -21314,7 +21747,7 @@
     }
   },
   "T5TokenizerOptions": {
-    "display_name": "T5トークナイザーオプション",
+    "display_name": "T5 トークナイザーオプション",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -21333,7 +21766,8 @@
     }
   },
   "TCFG": {
-    "display_name": "TCFG",
+    "description": "TCFG – 接線方向減衰 CFG (2503.18137)\n\n品質を向上させるため、cond（positive）に整合するようuncond（negative）を調整します。",
+    "display_name": "接線方向減衰 CFG",
     "inputs": {
       "model": {
         "name": "モデル"
@@ -21347,7 +21781,8 @@
     }
   },
   "TemporalScoreRescaling": {
-    "display_name": "時間的スコア再スケーリング",
+    "description": "[Post-CFG 関数]\nTSR - 時間スコア再スケーリング (2510.01184)\n\nサンプリングの多様性を制御するため、モデルのスコアまたはノイズを再スケーリングします。\n",
+    "display_name": "TSR - 時間スコア再スケーリング",
     "inputs": {
       "model": {
         "name": "モデル"
@@ -21369,7 +21804,8 @@
     }
   },
   "Tencent3DPartNode": {
-    "display_name": "Tencent 3Dパーツノード",
+    "description": "モデル構造に基づいて、コンポーネントの識別と生成を自動的に実行します。",
+    "display_name": "Hunyuan3D: 3D パーツ",
     "inputs": {
       "control_after_generate": {
         "name": "生成後の制御"
@@ -21391,7 +21827,8 @@
     }
   },
   "Tencent3DTextureEditNode": {
-    "display_name": "Tencent 3Dテクスチャ編集ノード",
+    "description": "3Dモデルを入力した後、3Dモデルのテクスチャを再描画します。",
+    "display_name": "Hunyuan3D: 3D テクスチャ編集",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -21425,7 +21862,7 @@
     }
   },
   "TencentImageToModelNode": {
-    "display_name": "Tencent画像からモデルノード",
+    "display_name": "Hunyuan3D: 画像からモデル",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -21492,7 +21929,8 @@
     }
   },
   "TencentModelTo3DUVNode": {
-    "display_name": "Tencentモデルから3D UVノード",
+    "description": "3DモデルにUV展開を実行してUVテクスチャを生成します。入力モデルは面数が30000未満である必要があります。",
+    "display_name": "Hunyuan3D: モデルからUV",
     "inputs": {
       "control_after_generate": {
         "name": "生成後の制御"
@@ -21522,7 +21960,8 @@
     }
   },
   "TencentSmartTopologyNode": {
-    "display_name": "Tencentスマートトポロジーノード",
+    "description": "3Dモデルにスマートリトポロジーを実行します。GLB/OBJ形式に対応し、最大200MBまで。高ポリゴンモデルに推奨されます。",
+    "display_name": "Hunyuan3D: スマートトポロジー",
     "inputs": {
       "control_after_generate": {
         "name": "生成後の制御"
@@ -21552,7 +21991,7 @@
     }
   },
   "TencentTextToModelNode": {
-    "display_name": "Tencentテキストからモデルノード",
+    "display_name": "Hunyuan3D: テキストからモデル",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -21756,6 +22195,7 @@
     }
   },
   "TextEncodeMageFlowEdit": {
+    "description": "Mage-Flow-Edit用に、1枚以上の参照画像を使用して編集指示をエンコードします。参照latentは出力解像度（width/height、または0の場合は最初の画像のサイズ）にリサイズされます。サイズが常に一致するよう、サンプリングにはlatent出力を使用してください。",
     "display_name": "TextEncodeMageFlowEdit",
     "inputs": {
       "batch_size": {
@@ -21948,7 +22388,7 @@
     }
   },
   "TextGenerateLTX2Prompt": {
-    "display_name": "LTX2プロンプトを生成",
+    "display_name": "LTX2 プロンプトを生成",
     "inputs": {
       "audio": {
         "name": "オーディオ"
@@ -22010,7 +22450,8 @@
     }
   },
   "TextOverlay": {
-    "display_name": "テキストを重ねる",
+    "description": "画像または画像バッチにテキストオーバーレイを描画します。",
+    "display_name": "テキストオーバーレイを描画",
     "inputs": {
       "align": {
         "name": "整列"
@@ -22045,7 +22486,8 @@
     }
   },
   "TextToLowercase": {
-    "display_name": "テキストを小文字に変換",
+    "description": "テキストを小文字に変換します。",
+    "display_name": "テキストを小文字に変換（非推奨）",
     "inputs": {
       "texts": {
         "name": "テキスト",
@@ -22060,7 +22502,8 @@
     }
   },
   "TextToUppercase": {
-    "display_name": "テキストを大文字に変換",
+    "description": "テキストを大文字に変換します。",
+    "display_name": "テキストを大文字に変換（非推奨）",
     "inputs": {
       "texts": {
         "name": "テキスト",
@@ -22075,7 +22518,7 @@
     }
   },
   "ThresholdMask": {
-    "display_name": "マスクしきい値",
+    "display_name": "マスクのしきい値",
     "inputs": {
       "mask": {
         "name": "マスク"
@@ -22107,7 +22550,8 @@
     }
   },
   "TopazImageEnhance": {
-    "display_name": "Topaz画像強調",
+    "description": "業界標準のアップスケーリングと画像強調。",
+    "display_name": "Topaz Image Enhance（レガシー）",
     "inputs": {
       "color_preservation": {
         "name": "色の保持",
@@ -22165,7 +22609,8 @@
     }
   },
   "TopazImageEnhanceV2": {
-    "display_name": "Topaz画像強調V2",
+    "description": "業界標準のアップスケーリングと画像強調。",
+    "display_name": "Topaz Image Enhance",
     "inputs": {
       "image": {
         "name": "画像"
@@ -22216,7 +22661,8 @@
     }
   },
   "TopazVideoEnhance": {
-    "display_name": "Topaz動画強調",
+    "description": "強力なアップスケーリングと復元技術で、動画に新たな命を吹き込みます。",
+    "display_name": "Topaz Video Enhance（レガシー）",
     "inputs": {
       "dynamic_compression_level": {
         "name": "動的圧縮レベル",
@@ -22268,7 +22714,8 @@
     }
   },
   "TopazVideoEnhanceV2": {
-    "display_name": "Topaz動画強調V2",
+    "description": "強力なアップスケーリングと復元技術で、動画に新たな命を吹き込みます。",
+    "display_name": "Topaz Video Enhance",
     "inputs": {
       "dynamic_compression_level": {
         "name": "ダイナミック圧縮レベル",
@@ -22322,7 +22769,7 @@
     }
   },
   "TrainLoraNode": {
-    "display_name": "loraトレーニングノード",
+    "display_name": "LoRAをトレーニング",
     "inputs": {
       "algorithm": {
         "name": "algorithm",
@@ -22428,7 +22875,8 @@
     }
   },
   "TransformSplat": {
-    "display_name": "スプラット変換",
+    "description": "ガウシアン スプラットを移動、回転、拡大・縮小します。非均一スケールでは各スプラットの形状も変更されるため、処理が遅くなります。",
+    "display_name": "スプラットを変形",
     "inputs": {
       "rotate_x": {
         "name": "X回転"
@@ -22546,7 +22994,7 @@
     }
   },
   "Trellis2UpsampleStage": {
-    "display_name": "Trellis2アップサンプルステージ",
+    "display_name": "Trellis2 アップサンプルステージ",
     "inputs": {
       "negative": {
         "name": "ネガティブ"
@@ -22581,7 +23029,8 @@
     }
   },
   "TrimAudioDuration": {
-    "display_name": "音声長をトリミング",
+    "description": "オーディオテンソルを選択した時間範囲にトリミングします。",
+    "display_name": "オーディオの長さをトリミング",
     "inputs": {
       "audio": {
         "name": "audio"
@@ -22602,7 +23051,7 @@
     }
   },
   "TrimVideoLatent": {
-    "display_name": "動画潜在をトリミング",
+    "display_name": "動画latentをトリミング",
     "inputs": {
       "samples": {
         "name": "サンプル"
@@ -22618,7 +23067,8 @@
     }
   },
   "TripleCLIPLoader": {
-    "display_name": "トリプルclipローダー",
+    "description": "レシピ：\nsd3: clip-l, clip-g, t5",
+    "display_name": "CLIPを読み込み（トリプル）",
     "inputs": {
       "clip_name1": {
         "name": "clip_name1"
@@ -22637,7 +23087,7 @@
     }
   },
   "TripoConversionNode": {
-    "display_name": "Tripo変換ノード",
+    "display_name": "Tripo: モデルを変換",
     "inputs": {
       "animate_in_place": {
         "name": "その場でアニメーション"
@@ -22699,7 +23149,7 @@
     }
   },
   "TripoImageToModelNode": {
-    "display_name": "TripoImageToModelNode",
+    "display_name": "Tripo: 画像からモデル",
     "inputs": {
       "face_limit": {
         "name": "face_limit"
@@ -22758,7 +23208,8 @@
     }
   },
   "TripoImportModelNode": {
-    "display_name": "TripoImportModelNode",
+    "description": "外部3Dモデル（例：Rodin、Hunyuan3D、またはローカルファイル）をTripoにインポートし、Tripoの後処理ノード（Texture、Rig、Convert）で使用します。GLBを推奨します。テクスチャはファイルに埋め込まれている場合にのみインポート後も保持されます。インポートしたモデルのテクスチャリングにはテクスチャプロンプトが必要です。",
+    "display_name": "Tripo: モデルをインポート",
     "inputs": {
       "model_3d": {
         "name": "model_3d",
@@ -22773,7 +23224,7 @@
     }
   },
   "TripoMultiviewToModelNode": {
-    "display_name": "TripoMultiviewToModelNode",
+    "display_name": "Tripo: マルチビューからモデル",
     "inputs": {
       "face_limit": {
         "name": "face_limit"
@@ -22839,7 +23290,8 @@
     }
   },
   "TripoP1ImageToModelNode": {
-    "display_name": "TripoP1ImageToModelNode",
+    "description": "Tripo P1の画像から3D。ローポリでゲーム対応のメッシュに最適化されています。",
+    "display_name": "Tripo P1: 画像からモデル",
     "inputs": {
       "auto_size": {
         "name": "自動サイズ調整",
@@ -22888,7 +23340,8 @@
     }
   },
   "TripoP1MultiviewToModelNode": {
-    "display_name": "TripoP1MultiviewToModelNode",
+    "description": "Tripo P1のマルチビューから3D。参照画像2～4枚を[front, left, back, right]の順序で使用します。frontは必須で、残り3つは任意の組み合わせで省略できます。",
+    "display_name": "Tripo P1: マルチビューからモデル",
     "inputs": {
       "auto_size": {
         "name": "自動サイズ調整",
@@ -22946,7 +23399,8 @@
     }
   },
   "TripoP1TextToModelNode": {
-    "display_name": "TripoP1TextToModelNode",
+    "description": "Tripo P1のテキストから3D。安定したトポロジーを持つローポリでゲーム対応のメッシュに最適化されています。",
+    "display_name": "Tripo P1: テキストからモデル",
     "inputs": {
       "auto_size": {
         "name": "自動サイズ調整",
@@ -22999,7 +23453,8 @@
     }
   },
   "TripoRefineNode": {
-    "display_name": "TripoRefineNode",
+    "description": "v1.4 Tripoモデルで作成されたドラフトモデルのみを精細化します。",
+    "display_name": "Tripo: ドラフトモデルを精細化",
     "inputs": {
       "model_task_id": {
         "name": "model_task_id",
@@ -23022,7 +23477,7 @@
     }
   },
   "TripoRetargetNode": {
-    "display_name": "TripoRetargetNode",
+    "display_name": "Tripo: リグ付きモデルをリターゲット",
     "inputs": {
       "animation": {
         "name": "animation"
@@ -23047,7 +23502,7 @@
     }
   },
   "TripoRigNode": {
-    "display_name": "TripoRigNode",
+    "display_name": "Tripo: モデルをリグ化",
     "inputs": {
       "original_model_task_id": {
         "name": "original_model_task_id"
@@ -23069,7 +23524,8 @@
     }
   },
   "TripoSplatConditioning": {
-    "display_name": "TripoSplatConditioning",
+    "description": "DINOv3とFlux2 VAEで画像をエンコードしてTripoSplatのポジティブ／ネガティブコンディショニングを作成し、KSampler用の固定サイズノイズターゲット（latent + camera）を作成します",
+    "display_name": "TripoSplat コンディショニング",
     "inputs": {
       "clip_vision": {
         "name": "clip_vision",
@@ -23099,7 +23555,8 @@
     }
   },
   "TripoSplatPreprocessImage": {
-    "display_name": "TripoSplatPreprocessImage",
+    "description": "各画像を黒い背景の正方形キャンバスに中央配置で切り抜き、余白を追加します。",
+    "display_name": "TripoSplat 画像を前処理",
     "inputs": {
       "erode_radius": {
         "name": "erode_radius",
@@ -23124,7 +23581,8 @@
     }
   },
   "TripoSplatSamplingPreview": {
-    "display_name": "TripoSplatSamplingPreview",
+    "description": "標準の Ksampler ノード用に TripoSplat モデルをパッチし、各ステップでデコード済みのガウシアンスプラットのライブプレビューを表示します。",
+    "display_name": "TripoSplat サンプリングプレビュー",
     "inputs": {
       "model": {
         "name": "model"
@@ -23161,7 +23619,7 @@
     }
   },
   "TripoTextToModelNode": {
-    "display_name": "TripoTextToModelNode",
+    "display_name": "Tripo: テキストからモデル",
     "inputs": {
       "face_limit": {
         "name": "face_limit"
@@ -23219,7 +23677,7 @@
     }
   },
   "TripoTextureNode": {
-    "display_name": "TripoTextureNode",
+    "display_name": "Tripo: テクスチャモデル",
     "inputs": {
       "model_task_id": {
         "name": "model_task_id"
@@ -23260,7 +23718,8 @@
     }
   },
   "TruncateText": {
-    "display_name": "TruncateText",
+    "description": "テキストを最大長まで切り詰めます。",
+    "display_name": "テキストを切り詰め",
     "inputs": {
       "max_length": {
         "name": "最大長",
@@ -23279,7 +23738,7 @@
     }
   },
   "UNETLoader": {
-    "display_name": "UNETLoader",
+    "display_name": "拡散モデルを読み込み",
     "inputs": {
       "unet_name": {
         "name": "unet_name"
@@ -23365,7 +23824,7 @@
     }
   },
   "USOStyleReference": {
-    "display_name": "USOStyleReference",
+    "display_name": "USO スタイルリファレンスを適用",
     "inputs": {
       "clip_vision_output": {
         "name": "CLIP Vision出力"
@@ -23379,7 +23838,8 @@
     }
   },
   "UnwrapMesh": {
-    "display_name": "UnwrapMesh",
+    "description": "UV アトラスを生成します。サーフェスをチャートに分割し、それぞれをパラメータ化して [0,1] アトラスにパックします。チャートの継ぎ目にある頂点は複製されます（チャートごとに1つ、位置は同じで個別の UV を持つ）ため、出力メッシュの頂点数は入力より多くなります。Remesh/Decimate の後、テクスチャベイクの前に実行してください。",
+    "display_name": "メッシュ UV をアンラップ",
     "inputs": {
       "mesh": {
         "name": "mesh"
@@ -23409,7 +23869,7 @@
     }
   },
   "UpscaleModelLoader": {
-    "display_name": "UpscaleModelLoader",
+    "display_name": "アップスケールモデルを読み込み",
     "inputs": {
       "model_name": {
         "name": "モデル名"
@@ -23422,7 +23882,8 @@
     }
   },
   "VAEDecode": {
-    "display_name": "VAEDecode",
+    "description": "latent画像をピクセル空間の画像にデコードします。",
+    "display_name": "VAE デコード",
     "inputs": {
       "samples": {
         "name": "サンプル",
@@ -23440,7 +23901,7 @@
     }
   },
   "VAEDecodeAudio": {
-    "display_name": "VAEDecodeAudio",
+    "display_name": "VAE 音声デコード",
     "inputs": {
       "samples": {
         "name": "サンプル"
@@ -23456,7 +23917,7 @@
     }
   },
   "VAEDecodeAudioTiled": {
-    "display_name": "VAEDecodeAudioTiled",
+    "display_name": "VAE 音声デコード（タイル）",
     "inputs": {
       "overlap": {
         "name": "オーバーラップ"
@@ -23500,7 +23961,7 @@
     }
   },
   "VAEDecodeTiled": {
-    "display_name": "VAEDecodeTiled",
+    "display_name": "VAE デコード（タイル）",
     "inputs": {
       "overlap": {
         "name": "オーバーラップ"
@@ -23525,7 +23986,8 @@
     }
   },
   "VAEDecodeTripoSplat": {
-    "display_name": "VAEDecodeTripoSplat",
+    "description": "サンプリングされた TripoSplat latent を3Dガウシアンスプラットにデコードします。ガウシアン数を変更して密度を調整します。",
+    "display_name": "TripoSplat デコード",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -23554,7 +24016,7 @@
     }
   },
   "VAEEncode": {
-    "display_name": "VAEEncode",
+    "display_name": "VAE エンコード",
     "inputs": {
       "pixels": {
         "name": "ピクセル"
@@ -23565,7 +24027,7 @@
     }
   },
   "VAEEncodeAudio": {
-    "display_name": "VAEEncodeAudio",
+    "display_name": "VAE 音声エンコード",
     "inputs": {
       "audio": {
         "name": "オーディオ"
@@ -23581,7 +24043,7 @@
     }
   },
   "VAEEncodeForInpaint": {
-    "display_name": "VAEEncodeForInpaint",
+    "display_name": "VAE エンコード（インペイント用）",
     "inputs": {
       "grow_mask_by": {
         "name": "マスクの拡大"
@@ -23598,7 +24060,7 @@
     }
   },
   "VAEEncodeTiled": {
-    "display_name": "VAEEncodeTiled",
+    "display_name": "VAE エンコード（タイル）",
     "inputs": {
       "overlap": {
         "name": "オーバーラップ"
@@ -23623,7 +24085,7 @@
     }
   },
   "VAELoader": {
-    "display_name": "VAELoader",
+    "display_name": "VAE を読み込み",
     "inputs": {
       "vae_name": {
         "name": "vae_name"
@@ -23691,7 +24153,7 @@
     }
   },
   "VOIDQuadmaskPreprocess": {
-    "display_name": "VOIDQuadmaskPreprocess",
+    "display_name": "VOID Quadmask プリプロセッサ",
     "inputs": {
       "dilate_width": {
         "name": "dilate_width",
@@ -23847,7 +24309,8 @@
     }
   },
   "Veo3FirstLastFrameNode": {
-    "display_name": "Veo3FirstLastFrameNode",
+    "description": "プロンプトと開始・終了フレームを使用して動画を生成します。",
+    "display_name": "Google Veo 3 開始・終了フレームから動画",
     "inputs": {
       "aspect_ratio": {
         "name": "アスペクト比",
@@ -23898,7 +24361,8 @@
     }
   },
   "Veo3VideoGenerationNode": {
-    "display_name": "Veo3VideoGenerationNode",
+    "description": "Google の Veo 3 API を使用してテキストプロンプトから動画を生成します。",
+    "display_name": "Google Veo 3 動画生成",
     "inputs": {
       "aspect_ratio": {
         "name": "アスペクト比",
@@ -23955,7 +24419,8 @@
     }
   },
   "VeoVideoGenerationNode": {
-    "display_name": "VeoVideoGenerationNode",
+    "description": "Google の Veo 2 API を使用してテキストプロンプトから動画を生成します。",
+    "display_name": "Google Veo 2 動画生成",
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio",
@@ -24004,7 +24469,7 @@
     }
   },
   "Video Slice": {
-    "display_name": "Video Slice",
+    "display_name": "動画をトリミング",
     "inputs": {
       "duration": {
         "name": "時間",
@@ -24029,7 +24494,8 @@
     }
   },
   "VideoFrameSample": {
-    "display_name": "VideoFrameSample",
+    "description": "さまざまな方法を使用して、動画から固定数のフレームをサンプリングします。",
+    "display_name": "動画フレームをサンプリング",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -24059,7 +24525,7 @@
     }
   },
   "VideoLinearCFGGuidance": {
-    "display_name": "VideoLinearCFGGuidance",
+    "display_name": "動画線形 CFG ガイダンス",
     "inputs": {
       "min_cfg": {
         "name": "最小cfg"
@@ -24070,7 +24536,8 @@
     }
   },
   "VideoRandomTemporalCrop": {
-    "display_name": "VideoRandomTemporalCrop",
+    "description": "動画から連続した範囲のフレームをランダムに切り抜きます。",
+    "display_name": "動画を切り抜き（時間ランダム）",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -24096,7 +24563,8 @@
     }
   },
   "VideoTemporalCrop": {
-    "display_name": "VideoTemporalCrop",
+    "description": "動画から連続した範囲のフレームを切り抜きます。",
+    "display_name": "動画を切り抜き（時間）",
     "inputs": {
       "length": {
         "name": "長さ",
@@ -24119,7 +24587,7 @@
     }
   },
   "VideoTriangleCFGGuidance": {
-    "display_name": "VideoTriangleCFGGuidance",
+    "display_name": "動画三角形 CFG ガイダンス",
     "inputs": {
       "min_cfg": {
         "name": "最小cfg"
@@ -24130,7 +24598,8 @@
     }
   },
   "Vidu2ImageToVideoNode": {
-    "display_name": "Vidu2ImageToVideoNode",
+    "description": "画像と任意のプロンプトから動画を生成します。",
+    "display_name": "Vidu2 画像から動画の生成",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -24167,7 +24636,8 @@
     }
   },
   "Vidu2ReferenceVideoNode": {
-    "display_name": "Vidu2ReferenceVideoNode",
+    "description": "複数の参照画像とプロンプトから動画を生成します。",
+    "display_name": "Vidu2 参照画像から動画の生成",
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio"
@@ -24211,7 +24681,8 @@
     }
   },
   "Vidu2StartEndToVideoNode": {
-    "display_name": "Vidu2StartEndToVideoNode",
+    "description": "開始フレーム、終了フレーム、プロンプトから動画を生成します。",
+    "display_name": "Vidu2 開始/終了フレームから動画の生成",
     "inputs": {
       "control_after_generate": {
         "name": "生成後に制御"
@@ -24250,7 +24721,8 @@
     }
   },
   "Vidu2TextToVideoNode": {
-    "display_name": "Vidu2TextToVideoNode",
+    "description": "テキストプロンプトから動画を生成します",
+    "display_name": "Vidu2 テキストから動画の生成",
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio"
@@ -24286,7 +24758,8 @@
     }
   },
   "Vidu3ImageToVideoNode": {
-    "display_name": "Vidu3ImageToVideoNode",
+    "description": "画像と任意のプロンプトから動画を生成します。",
+    "display_name": "Vidu Q3 画像から動画の生成",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -24323,7 +24796,8 @@
     }
   },
   "Vidu3StartEndToVideoNode": {
-    "display_name": "Vidu3StartEndToVideoNode",
+    "description": "開始フレーム、終了フレーム、プロンプトから動画を生成します。",
+    "display_name": "Vidu Q3 開始/終了フレームから動画の生成",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -24362,7 +24836,8 @@
     }
   },
   "Vidu3TextToVideoNode": {
-    "display_name": "Vidu3TextToVideoNode",
+    "description": "テキストプロンプトから動画を生成します。",
+    "display_name": "Vidu Q3 テキストから動画の生成",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -24398,7 +24873,8 @@
     }
   },
   "ViduExtendVideoNode": {
-    "display_name": "ViduExtendVideoNode",
+    "description": "追加フレームを生成して既存の動画を延長します。",
+    "display_name": "Vidu 動画延長",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -24435,7 +24911,8 @@
     }
   },
   "ViduImageToVideoNode": {
-    "display_name": "ViduImageToVideoNode",
+    "description": "画像と任意のプロンプトから動画を生成します",
+    "display_name": "Vidu 画像から動画の生成",
     "inputs": {
       "control_after_generate": {
         "name": "生成後の制御"
@@ -24476,7 +24953,8 @@
     }
   },
   "ViduMultiFrameVideoNode": {
-    "display_name": "ViduMultiFrameVideoNode",
+    "description": "複数のキーフレーム遷移を含む動画を生成します。",
+    "display_name": "Vidu マルチフレーム動画生成",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -24518,7 +24996,8 @@
     }
   },
   "ViduReferenceVideoNode": {
-    "display_name": "ViduReferenceVideoNode",
+    "description": "複数の画像とプロンプトから動画を生成します",
+    "display_name": "Vidu 参照画像から動画の生成",
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio",
@@ -24563,7 +25042,8 @@
     }
   },
   "ViduStartEndToVideoNode": {
-    "display_name": "ViduStartEndToVideoNode",
+    "description": "開始フレーム、終了フレーム、プロンプトから動画を生成します",
+    "display_name": "Vidu 開始/終了フレームから動画の生成",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -24608,7 +25088,8 @@
     }
   },
   "ViduTextToVideoNode": {
-    "display_name": "ViduTextToVideoNode",
+    "description": "テキストプロンプトから動画を生成します",
+    "display_name": "Vidu テキストから動画の生成",
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio",
@@ -24649,7 +25130,8 @@
     }
   },
   "VoxelToMesh": {
-    "display_name": "VoxelToMesh",
+    "description": "ボクセルグリッドをメッシュに変換します。",
+    "display_name": "ボクセルからメッシュ",
     "inputs": {
       "algorithm": {
         "name": "アルゴリズム"
@@ -24668,7 +25150,8 @@
     }
   },
   "VoxelToMeshBasic": {
-    "display_name": "VoxelToMeshBasic",
+    "description": "ボクセルグリッドをメッシュに変換します。",
+    "display_name": "ボクセルからメッシュ（基本）（非推奨）",
     "inputs": {
       "threshold": {
         "name": "閾値"
@@ -24758,7 +25241,8 @@
     }
   },
   "Wan2ImageToVideoApi": {
-    "display_name": "Wan2ImageToVideoApi",
+    "description": "先頭フレーム画像から動画を生成します。最終フレーム画像と音声は任意です。",
+    "display_name": "Wan 2.7 画像から動画",
     "inputs": {
       "audio": {
         "name": "audio",
@@ -24810,7 +25294,8 @@
     }
   },
   "Wan2ReferenceVideoApi": {
-    "display_name": "Wan2ReferenceVideoApi",
+    "description": "参照素材に含まれる人物または物体を特徴とする動画を生成します。単一キャラクターの演技と複数キャラクターのインタラクションに対応しています。",
+    "display_name": "Wan 2.7 参照から動画",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -24849,7 +25334,8 @@
     }
   },
   "Wan2TextToVideoApi": {
-    "display_name": "Wan2TextToVideoApi",
+    "description": "Wan 2.7 モデルを使用して、テキストプロンプトに基づく動画を生成します。",
+    "display_name": "Wan 2.7 テキストから動画",
     "inputs": {
       "audio": {
         "name": "オーディオ",
@@ -24896,7 +25382,8 @@
     }
   },
   "Wan2VideoContinuationApi": {
-    "display_name": "Wan2VideoContinuationApi",
+    "description": "動画が終了した位置から継続します。最終フレーム制御は任意です。",
+    "display_name": "Wan 2.7 動画継続",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -24944,7 +25431,8 @@
     }
   },
   "Wan2VideoEditApi": {
-    "display_name": "Wan2VideoEditApi",
+    "description": "テキスト指示、参照画像、またはスタイル転送を使用して動画を編集します。",
+    "display_name": "Wan 2.7 動画編集",
     "inputs": {
       "audio_setting": {
         "name": "オーディオ設定",
@@ -24987,7 +25475,102 @@
       }
     }
   },
+  "Wan3ImageToVideoApi": {
+    "description": "Wan 3.0 モデルを使用し、最初のフレーム画像から動画を生成します。最後のフレーム制御は任意で使用できます。",
+    "display_name": "Wan 3.0 画像から動画",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "最初のフレーム画像。"
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "最後のフレーム画像。モデルは最初のフレームから最後のフレームへ遷移する動画を生成します。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_prompt_extend": {
+        "name": "prompt_extend"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "生成に使用するシード。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "結果にAI生成のウォーターマークを追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan3ReferenceToVideoApi": {
+    "description": "Wan 3.0 モデルを使用し、テキストプロンプトと任意の参照画像、動画、音声から動画を生成します。参照メディアは自由に組み合わせられ、プロンプト内で {'@'}Image1、{'@'}Video1、{'@'}Audio1 として指定できます。",
+    "display_name": "Wan 3.0 参照から動画",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_prompt_extend": {
+        "name": "prompt_extend"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "生成に使用するシード。"
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "結果にAI生成のウォーターマークを追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "WanAnimate2Cache": {
+    "description": "ポーズ動画のブロックごとの活性化をキャッシュし、サンプリングステップごとではなく1回だけ実行するようにします。生成時間をおよそ半分に短縮できますが、480x832/81フレーム、bf16では約12.5 GBのシステムRAMが必要になります（解像度と長さに応じて増減します）。コンテキストウィンドウ使用時は各ウィンドウが個別にキャッシュされるため、RAM使用量はウィンドウ数に応じて増加します。uniformスケジュールでは毎ステップでウィンドウがずれ、キャッシュに再出現しないため、static_standard スケジュールを使用してください。",
     "display_name": "WanAnimate2Cache",
     "inputs": {
       "device": {
@@ -25009,6 +25592,7 @@
     }
   },
   "WanAnimate2ToVideo": {
+    "description": "動画を使用して参照画像内のキャラクターをアニメーション化し、動画の顔のアニメーション、身体の動き、手のジェスチャーを効果的に再現します。",
     "display_name": "WanAnimate2ToVideo",
     "inputs": {
       "batch_size": {
@@ -25288,7 +25872,8 @@
     }
   },
   "WanContextWindowsManual": {
-    "display_name": "WanContextWindowsManual",
+    "description": "Wan系モデルのコンテキストウィンドウを設定します。",
+    "display_name": "Wan コンテキストウィンドウ",
     "inputs": {
       "closed_loop": {
         "name": "クローズドループ",
@@ -25684,7 +26269,8 @@
     }
   },
   "WanImageToImageApi": {
-    "display_name": "WanImageToImageApi",
+    "description": "1つまたは2つの入力画像とテキストプロンプトから画像を生成します。出力画像は現在1.6 MPに固定され、アスペクト比は入力画像に一致します。",
+    "display_name": "Wan 画像から画像",
     "inputs": {
       "control_after_generate": {
         "name": "生成後の制御"
@@ -25767,7 +26353,8 @@
     }
   },
   "WanImageToVideoApi": {
-    "display_name": "WanImageToVideoApi",
+    "description": "最初のフレームとテキストプロンプトから動画を生成します。",
+    "display_name": "Wan 画像から動画",
     "inputs": {
       "audio": {
         "name": "オーディオ",
@@ -26063,7 +26650,8 @@
     }
   },
   "WanReferenceVideoApi": {
-    "display_name": "WanReferenceVideoApi",
+    "description": "入力動画のキャラクターと音声をプロンプトと組み合わせ、キャラクターの一貫性を維持した新しい動画を生成します。",
+    "display_name": "Wan リファレンスから動画",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -26294,7 +26882,8 @@
     }
   },
   "WanTextToImageApi": {
-    "display_name": "WanTextToImageApi",
+    "description": "テキストプロンプトに基づいて画像を生成します。",
+    "display_name": "Wan テキストから画像",
     "inputs": {
       "control_after_generate": {
         "name": "生成後の制御"
@@ -26337,7 +26926,8 @@
     }
   },
   "WanTextToVideoApi": {
-    "display_name": "WanTextToVideoApi",
+    "description": "テキストプロンプトに基づいて動画を生成します。",
+    "display_name": "Wan テキストから動画",
     "inputs": {
       "audio": {
         "name": "audio",
@@ -26448,7 +27038,7 @@
     }
   },
   "WanUni3CControlnetApply": {
-    "display_name": "WanUni3CControlnetApply",
+    "display_name": "Wan Uni3C ControlNetを適用",
     "inputs": {
       "end_percent": {
         "name": "終了パーセント"
@@ -26531,7 +27121,8 @@
     }
   },
   "WavespeedFlashVSRNode": {
-    "display_name": "WavespeedFlashVSRNode",
+    "description": "低解像度またはぼやけた映像の解像度を高め、鮮明さを復元する高速・高品質な動画アップスケーラーです。",
+    "display_name": "FlashVSR 動画アップスケール",
     "inputs": {
       "target_resolution": {
         "name": "目標解像度"
@@ -26547,7 +27138,8 @@
     }
   },
   "WavespeedImageUpscaleNode": {
-    "display_name": "WavespeedImageUpscaleNode",
+    "description": "画像の解像度と品質を向上させ、写真を4Kまたは8Kにアップスケールして、鮮明で精細な結果を実現します。",
+    "display_name": "WaveSpeed 画像アップスケール",
     "inputs": {
       "image": {
         "name": "画像"
@@ -26566,7 +27158,7 @@
     }
   },
   "WebcamCapture": {
-    "display_name": "WebcamCapture",
+    "display_name": "ウェブカメラキャプチャ",
     "inputs": {
       "capture_on_queue": {
         "name": "キューでキャプチャ"
@@ -26584,7 +27176,8 @@
     }
   },
   "WeldVertices": {
-    "display_name": "WeldVertices",
+    "description": "L_infグリッド量子化により一致する頂点をマージします。メッシュが未溶接（面ごとの頂点、共有エッジなし）の場合に使用してください。FillHoles、DecimateMesh、またはトポロジを考慮する操作の前処理として使用します。色はクラスターごとに平均化されます。",
+    "display_name": "頂点を溶接",
     "inputs": {
       "epsilon_abs": {
         "name": "epsilon_abs",
@@ -26606,7 +27199,7 @@
     }
   },
   "ZImageFunControlnet": {
-    "display_name": "ZImageFunControlnet",
+    "display_name": "Z-Image Fun ControlNetを適用",
     "inputs": {
       "image": {
         "name": "画像"
@@ -26632,7 +27225,7 @@
     }
   },
   "unCLIPCheckpointLoader": {
-    "display_name": "unCLIPCheckpointLoader",
+    "display_name": "unCLIP チェックポイントを読み込み",
     "inputs": {
       "ckpt_name": {
         "name": "ckpt_name"
@@ -26657,6 +27250,7 @@
     }
   },
   "wanBlockSwap": {
+    "description": "大きな不安定性を引き起こす wanBlockSwap カスタムノードをインターセプトし、何もしないようにします。",
     "display_name": "wanBlockSwap",
     "inputs": {
       "model": {
