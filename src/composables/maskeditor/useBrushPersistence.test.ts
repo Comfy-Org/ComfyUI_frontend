@@ -1,6 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
+import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('es-toolkit/compat', async (importOriginal) => {
   const actual = await importOriginal()
@@ -25,12 +23,6 @@ import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { useBrushPersistence } from './useBrushPersistence'
 
 const STORAGE_KEY = 'maskeditor_brush_settings'
-
-beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
-  localStorage.clear()
-  vi.resetAllMocks()
-})
 
 describe('loadAndApply', () => {
   it('does not mutate the store when localStorage is empty', () => {

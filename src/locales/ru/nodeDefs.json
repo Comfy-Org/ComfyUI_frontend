@@ -890,7 +890,7 @@
       },
       "model": {
         "name": "модель",
-        "tooltip": "Seedance 2.0 для максимального качества; Seedance 2.0 Fast для оптимизации скорости."
+        "tooltip": "Seedance 2.5 — новейшая модель, видео до 30 секунд и вывод в mp4/mov; Seedance 2.0 — максимальное качество и 1080p/4k; Fast — оптимизация скорости; Mini — самая быстрая и экономичная генерация."
       },
       "model_duration": {
         "name": "длительность"
@@ -931,7 +931,7 @@
       },
       "model": {
         "name": "модель",
-        "tooltip": "Seedance 2.0 для максимального качества; Seedance 2.0 Fast для оптимизации скорости."
+        "tooltip": "Seedance 2.5 — новейшая модель, видео до 30 секунд и вывод в mp4/mov; Seedance 2.0 — максимальное качество и 1080p/4k; Fast — оптимизация скорости; Mini — самая быстрая и экономичная генерация."
       },
       "model_auto_downscale": {
         "name": "автоматическое уменьшение масштаба"
@@ -984,7 +984,7 @@
       },
       "model": {
         "name": "модель",
-        "tooltip": "Seedance 2.0 для максимального качества; Seedance 2.0 Fast для оптимизации скорости."
+        "tooltip": "Seedance 2.5 — новейшая модель, видео до 30 секунд и вывод в mp4/mov; Seedance 2.0 — максимальное качество и 1080p/4k; Fast — оптимизация скорости; Mini — самая быстрая и экономичная генерация."
       },
       "model_duration": {
         "name": "длительность"
@@ -5824,6 +5824,9 @@
       "model_number_of_images": {
         "name": "number_of_images"
       },
+      "model_quality": {
+        "name": "качество"
+      },
       "model_resolution": {
         "name": "resolution"
       },
@@ -5862,6 +5865,10 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "Текстовый запрос, используемый для генерации изображения"
+      },
+      "quality": {
+        "name": "качество",
+        "tooltip": "Уровень качества, поддерживается только моделью grok-imagine-image-2.0."
       },
       "resolution": {
         "name": "разрешение"
@@ -5956,19 +5963,19 @@
       },
       "image": {
         "name": "image",
-        "tooltip": "Необязательное начальное изображение для grok-imagine-video. Обязательно для grok-imagine-video-1.5."
+        "tooltip": "Необязательное начальное изображение. Если оно не указано, видео генерируется только по текстовому запросу."
       },
       "model": {
         "name": "model",
-        "tooltip": "grok-imagine-video-1.5 в настоящее время всегда требует входное изображение."
+        "tooltip": "Модель, используемая для генерации видео."
       },
       "prompt": {
         "name": "prompt",
-        "tooltip": "Текстовое описание желаемого видео."
+        "tooltip": "Текстовое описание желаемого видео. Необязательно для grok-imagine-video-1.5, если предоставлено входное изображение."
       },
       "resolution": {
         "name": "resolution",
-        "tooltip": "Разрешение выходного видео."
+        "tooltip": "Разрешение выходного видео. 1080p доступно только для grok-imagine-video-1.5."
       },
       "seed": {
         "name": "seed",
@@ -5982,7 +5989,7 @@
     }
   },
   "GrokVideoReferenceNode": {
-    "description": "Генерируйте видео, используя референсные изображения в качестве стиля и содержания.",
+    "description": "Генерирует видео на основе референсных изображений с необязательными референсами предустановленных голосов.",
     "display_name": "Grok Reference-to-Video",
     "inputs": {
       "control_after_generate": {
@@ -8809,7 +8816,7 @@
   },
   "LTXVConcatAVLatent": {
     "description": "Объединяет видео латент и аудио латент в совместный AV латент (любой AV-модель, например LTXV или MiniMax H3).",
-    "display_name": "LTXVConcatAVLatent",
+    "display_name": "Объединить AV-латент",
     "inputs": {
       "audio_latent": {
         "name": "audio_latent"
@@ -8925,6 +8932,67 @@
       "2": {
         "name": "скрытое пространство",
         "tooltip": null
+      }
+    }
+  },
+  "LTXVDualCFGGuider": {
+    "description": "Раздельные масштабы CFG для видео- и аудиомодальностей упакованного LTXV-AV latent.",
+    "display_name": "LTXV Dual CFG Guider",
+    "inputs": {
+      "audio_cfg": {
+        "name": "audio_cfg"
+      },
+      "model": {
+        "name": "model"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "video_cfg": {
+        "name": "video_cfg"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVDurationPredictor": {
+    "description": "Предсказывает естественную длительность кадра для промпта с помощью duration head LTX 2.4 (загруженного через ModelPatchLoader) и подгоняет её под сетку кадров VAE 8k+1.",
+    "display_name": "LTXV Duration Predictor",
+    "inputs": {
+      "duration_head": {
+        "name": "duration_head",
+        "tooltip": "duration head LTX 2.4, загруженный через ModelPatchLoader."
+      },
+      "frame_rate": {
+        "name": "frame_rate"
+      },
+      "max_seconds": {
+        "name": "max_seconds"
+      },
+      "min_seconds": {
+        "name": "min_seconds"
+      },
+      "model": {
+        "name": "model"
+      },
+      "positive": {
+        "name": "positive"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "num_frames",
+        "tooltip": null
+      },
+      "1": {
+        "name": "seconds",
+        "tooltip": "Сырая (неограниченная) предсказанная длительность."
       }
     }
   },
@@ -9047,6 +9115,29 @@
       }
     }
   },
+  "LTXVModalityGuidance": {
+    "description": "Кросс-модальная (аудио-видео) направляющая для LTXV-AV. Выполняет дополнительный прямой проход на каждом шаге с разорванным кросс-вниманием a2v/v2a, затем сдвигает результат к сопряжённому предсказанию — усиливая аудиовизуальную синхронизацию (например, синхронизацию губ). Рекомендуемое значение modality_scale по умолчанию — 3.0. Совместимо с dual-CFG guider и STG. Установите 1.0 для отключения (без дополнительного прохода).",
+    "display_name": "LTXV Modality Guidance (A/V coupling)",
+    "inputs": {
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "modality_scale": {
+        "name": "modality_scale"
+      },
+      "model": {
+        "name": "model"
+      },
+      "start_percent": {
+        "name": "start_percent"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LTXVPreprocess": {
     "display_name": "LTXVPreprocess",
     "inputs": {
@@ -9144,8 +9235,8 @@
     }
   },
   "LTXVSeparateAVLatent": {
-    "description": "LTXV Separate AV Latent",
-    "display_name": "LTXVSeparateAVLatent",
+    "description": "Разделяет общий AV-латент на видео- и аудиолатенты (для любой AV-модели, например LTXV или MiniMax H3).",
+    "display_name": "Разделить AV-латент",
     "inputs": {
       "av_latent": {
         "name": "av_latent"
@@ -9158,6 +9249,33 @@
       },
       "1": {
         "name": "audio_latent",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVSpatioTemporalGuidance": {
+    "description": "Выполняет дополнительный проход на каждом шаге с деградированным self-attention выбранных блоков до value-passthrough, затем направляет в противоположную сторону — улучшая пространственные детали и согласованность движения.",
+    "display_name": "LTXV Spatio-Temporal Guidance (STG)",
+    "inputs": {
+      "blocks": {
+        "name": "blocks",
+        "tooltip": "Индексы transformer-блоков для изменения, через запятую."
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "model": {
+        "name": "model"
+      },
+      "scale": {
+        "name": "scale"
+      },
+      "start_percent": {
+        "name": "start_percent"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -10148,6 +10266,121 @@
     "outputs": {
       "0": {
         "name": "условие",
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApi25AudioToVideo": {
+    "description": "Создайте видео, управляемое аудиодорожкой, с необязательным изображением первого кадра.",
+    "display_name": "LTX 2.5 Аудио в Видео",
+    "inputs": {
+      "audio": {
+        "name": "аудио",
+        "tooltip": "Аудиодорожка, управляющая видео. Её длина (2-20 секунд) определяет продолжительность видео."
+      },
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "image": {
+        "name": "изображение",
+        "tooltip": "Необязательный первый кадр для использования в видео."
+      },
+      "model": {
+        "name": "модель"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "prompt": {
+        "name": "промпт"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed для определения необходимости повторного запуска узла; фактические результаты недетерминированы независимо от seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApi25ImageToVideo": {
+    "description": "Профессиональные видео с настраиваемой продолжительностью и разрешением на основе стартового изображения.",
+    "display_name": "LTX 2.5 Изображение в Видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "image": {
+        "name": "изображение",
+        "tooltip": "Первый кадр для использования в видео."
+      },
+      "last_frame": {
+        "name": "последний кадр",
+        "tooltip": "Последний кадр для использования в видео."
+      },
+      "model": {
+        "name": "модель"
+      },
+      "model_duration": {
+        "name": "длительность"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "генерировать аудио"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "prompt": {
+        "name": "промпт"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed для определения необходимости повторного запуска узла; фактические результаты недетерминированы независимо от seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApi25TextToVideo": {
+    "description": "Профессиональные видео с настраиваемой продолжительностью и разрешением.",
+    "display_name": "LTX 2.5 Текст в Видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "model": {
+        "name": "модель"
+      },
+      "model_duration": {
+        "name": "длительность"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "генерировать аудио"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "prompt": {
+        "name": "промпт"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed для определения необходимости повторного запуска узла; фактические результаты недетерминированы независимо от seed."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -11979,6 +12212,17 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "ModelAttentionBackend": {
+    "display_name": "ModelAttentionBackend",
+    "inputs": {
+      "attention": {
+        "name": "attention"
+      },
+      "model": {
+        "name": "model"
       }
     }
   },
@@ -15716,6 +15960,96 @@
       },
       "vae": {
         "name": "vae"
+      }
+    }
+  },
+  "QwenImageEditApi": {
+    "description": "Редактирует или комбинирует до 3 референсных изображений, используя текстовый промпт и модели Qwen-Image 3.0.",
+    "display_name": "Qwen Image 3 Edit",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Модель для использования."
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "Количество изображений для генерации, возвращается пакетом."
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "Улучшать ли промпт с помощью ИИ."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Сид для генерации."
+      },
+      "size": {
+        "name": "size",
+        "tooltip": "Выходное разрешение. 'match input' использует размер первого референсного изображения, 'auto' позволяет модели выбрать размер с тем же соотношением сторон, 'custom' задаёт явную ширину и высоту."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Добавлять ли сгенерированный ИИ водяной знак к результату."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QwenImageTextToImageApi": {
+    "description": "Генерирует изображения по текстовому промпту с помощью моделей Qwen-Image 3.0.",
+    "display_name": "Qwen Image 3 Text to Image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Модель для использования."
+      },
+      "model_height": {
+        "name": "height"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_width": {
+        "name": "width"
+      },
+      "n": {
+        "name": "n",
+        "tooltip": "Количество изображений для генерации, возвращается пакетом."
+      },
+      "prompt_extend": {
+        "name": "prompt_extend",
+        "tooltip": "Улучшать ли промпт с помощью ИИ."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Сид для генерации."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Добавлять ли сгенерированный ИИ водяной знак к результату."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },

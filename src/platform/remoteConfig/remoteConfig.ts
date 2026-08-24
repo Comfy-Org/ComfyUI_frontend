@@ -54,15 +54,12 @@ export function configValueOrDefault<K extends keyof RemoteConfig>(
   return configValue || defaultValue
 }
 
-export const cachedConsolidatedBillingEnabled = useStorage<boolean | undefined>(
-  'consolidated_billing_enabled' satisfies `${ServerFeatureFlag.CONSOLIDATED_BILLING_ENABLED}`,
-  undefined
-)
-
 export const cachedBillingControlEnabled = useStorage<boolean | undefined>(
   'billing_control_enabled' satisfies `${ServerFeatureFlag.BILLING_CONTROL_ENABLED}`,
   undefined
 )
+
+export const cachedLegacyBillingMigrationEnabled = ref<boolean | undefined>()
 
 export const cachedV1PaymentRecovery = useStorage<boolean | undefined>(
   'v1_payment_recovery' satisfies `${ServerFeatureFlag.V1_PAYMENT_RECOVERY}`,

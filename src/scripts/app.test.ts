@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -71,7 +69,7 @@ const {
     getApiKey: vi.fn()
   },
   mockAuthStore: {
-    getAuthToken: vi.fn()
+    getWorkspaceAuthToken: vi.fn()
   },
   mockSettingStore: {
     get: vi.fn()
@@ -87,7 +85,10 @@ const {
   },
   mockNodeOutputStore: {
     refreshNodeOutputs: vi.fn(),
-    resetAllOutputsAndPreviews: vi.fn()
+    resetAllOutputsAndPreviews: vi.fn(),
+    stashPreviewsForWorkflow: vi.fn(),
+    restorePreviewsForWorkflow: vi.fn(),
+    discardPreviewsForWorkflow: vi.fn()
   },
   mockWorkspaceWorkflow: {
     activeWorkflow: null as ComfyWorkflow | null,
@@ -224,11 +225,12 @@ function createTestFile(name: string, type: string): File {
  * Point the workflowService mock at the real implementation for tests that
  * exercise the load lifecycle itself rather than app.ts's calls into it.
  */
+const actualWorkflowService = await vi.importActual<
+  typeof import('@/platform/workflow/core/services/workflowService')
+>('@/platform/workflow/core/services/workflowService')
+
 async function useRealWorkflowService(): Promise<WorkflowService> {
-  const actual = await vi.importActual<
-    typeof import('@/platform/workflow/core/services/workflowService')
-  >('@/platform/workflow/core/services/workflowService')
-  const real = actual.useWorkflowService()
+  const real = actualWorkflowService.useWorkflowService()
   mockWorkflowService.beforeLoadNewGraph.mockImplementation(
     real.beforeLoadNewGraph
   )
@@ -266,8 +268,6 @@ describe('ComfyApp', () => {
   let mockCanvas: LGraphCanvas
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.resetAllMocks()
     app = new ComfyApp()
     mockCanvas = createMockCanvas() as LGraphCanvas
     app.canvas = mockCanvas as LGraphCanvas
@@ -283,7 +283,7 @@ describe('ComfyApp', () => {
       return workflow
     })
     mockApiKeyAuthStore.getApiKey.mockReturnValue(undefined)
-    mockAuthStore.getAuthToken.mockResolvedValue(undefined)
+    mockAuthStore.getWorkspaceAuthToken.mockResolvedValue(undefined)
     mockExtensionService.invokeExtensions.mockReturnValue([])
     mockExtensionService.invokeExtensionsAsync.mockResolvedValue(undefined)
     vi.mocked(extractFilesFromDragEvent).mockResolvedValue([])
@@ -311,6 +311,60 @@ describe('ComfyApp', () => {
       })
       vi.spyOn(api, 'dispatchCustomEvent').mockImplementation(() => true)
     }
+
+    it('waits for workspace authentication before submitting the prompt', async () => {
+      prepareEmptyPromptQueue()
+      let resolveToken: (token: string) => void = () => {}
+      mockAuthStore.getWorkspaceAuthToken.mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveToken = resolve
+        })
+      )
+      const queuePrompt = vi
+        .spyOn(api, 'queuePrompt')
+        .mockImplementation(() => {
+          expect(api.authToken).toBe('workspace-token')
+          return Promise.resolve({ prompt_id: 'job-1', error: '' })
+        })
+
+      const submission = app.queuePrompt(0)
+      await vi.waitFor(() =>
+        expect(mockAuthStore.getWorkspaceAuthToken).toHaveBeenCalledOnce()
+      )
+      expect(queuePrompt).not.toHaveBeenCalled()
+
+      resolveToken('workspace-token')
+      await expect(submission).resolves.toBe(true)
+      expect(queuePrompt).toHaveBeenCalledOnce()
+    })
+
+    it('preserves missing node packs when submitting a prompt', async () => {
+      prepareEmptyPromptQueue()
+      const missingNodesStore = useMissingNodesErrorStore()
+      const executionErrorStore = useExecutionErrorStore()
+      missingNodesStore.setMissingNodeTypes(['test/UninstalledLiveNode'])
+      executionErrorStore.recordExecutionError({
+        prompt_id: 'previous-run',
+        timestamp: 0,
+        node_id: '1',
+        node_type: 'Test',
+        executed: [],
+        exception_message: 'fail',
+        exception_type: 'RuntimeError',
+        traceback: []
+      })
+      vi.spyOn(api, 'queuePrompt').mockResolvedValue({
+        prompt_id: 'job-1',
+        error: ''
+      })
+
+      await app.queuePrompt(0)
+
+      expect(missingNodesStore.missingNodesError?.nodeTypes).toEqual([
+        'test/UninstalledLiveNode'
+      ])
+      expect(executionErrorStore.lastExecutionError).toBeNull()
+    })
 
     it('shows the error overlay for successful prompt responses with node errors', async () => {
       const graph = new LGraph()
@@ -1036,6 +1090,73 @@ describe('ComfyApp', () => {
       ])
     })
   })
+  describe('A1111 import', () => {
+    it('clears missing node packs, which its graph swap skips clean() for', async () => {
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      const missingNodesStore = useMissingNodesErrorStore()
+      missingNodesStore.setMissingNodeTypes(['OutgoingMissingNode'])
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+        parameters: 'positive\nNegative prompt: negative\nSteps: 20'
+      })
+      mockImportA1111.mockImplementation(
+        async (_graph, _parameters, beforeGraphClear) => {
+          beforeGraphClear?.()
+          return 'imported'
+        }
+      )
+
+      await app.handleFile(createTestFile('a1111.png', 'image/png'))
+
+      expect(missingNodesStore.missingNodesError).toBeNull()
+    })
+
+    it.for(['not-a1111', 'core-nodes-unavailable'] as const)(
+      'keeps missing node packs when the import fails with %s',
+      async (outcome) => {
+        const graph = new LGraph()
+        Reflect.set(app, 'rootGraphInternal', graph)
+        const missingNodesStore = useMissingNodesErrorStore()
+        missingNodesStore.setMissingNodeTypes(['OutgoingMissingNode'])
+        vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+          parameters: 'positive\nNegative prompt: negative\nSteps: 20'
+        })
+        mockImportA1111.mockResolvedValue(outcome)
+
+        await app.handleFile(createTestFile('a1111.png', 'image/png'))
+
+        expect(missingNodesStore.missingNodesError?.nodeTypes).toEqual([
+          'OutgoingMissingNode'
+        ])
+      }
+    )
+  })
+
+  describe('clean', () => {
+    it('clears missing node packs when the graph is discarded', () => {
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      const missingNodesStore = useMissingNodesErrorStore()
+      const executionErrorStore = useExecutionErrorStore()
+      missingNodesStore.setMissingNodeTypes(['MissingGroupNode'])
+      executionErrorStore.recordExecutionError({
+        prompt_id: 'previous-run',
+        timestamp: 0,
+        node_id: '1',
+        node_type: 'Test',
+        executed: [],
+        exception_message: 'fail',
+        exception_type: 'RuntimeError',
+        traceback: []
+      })
+
+      app.clean()
+
+      expect(missingNodesStore.missingNodesError).toBeNull()
+      expect(executionErrorStore.lastExecutionError).toBeNull()
+    })
+  })
+
   describe('refreshComboInNodes', () => {
     it('shows success toast and removes the pending toast after node defs reload', async () => {
       app.vueAppReady = true

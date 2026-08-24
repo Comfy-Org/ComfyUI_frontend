@@ -1,5 +1,6 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { MockInstance } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   downloadFile,
@@ -25,19 +26,20 @@ vi.mock('@/platform/updates/common/toastStore', () => ({
   useToastStore: vi.fn(() => ({ addAlert: vi.fn() }))
 }))
 
-// Global stubs
-const createObjectURLSpy = vi
-  .spyOn(URL, 'createObjectURL')
-  .mockReturnValue('blob:mock-url')
-const revokeObjectURLSpy = vi
-  .spyOn(URL, 'revokeObjectURL')
-  .mockImplementation(() => {})
+let createObjectURLSpy: MockInstance<typeof URL.createObjectURL>
+let revokeObjectURLSpy: MockInstance<typeof URL.revokeObjectURL>
 
 describe('downloadUtil', () => {
   let mockLink: HTMLAnchorElement
   let fetchMock: ReturnType<typeof vi.fn>
 
   beforeEach(() => {
+    createObjectURLSpy = vi
+      .spyOn(URL, 'createObjectURL')
+      .mockReturnValue('blob:mock-url')
+    revokeObjectURLSpy = vi
+      .spyOn(URL, 'revokeObjectURL')
+      .mockImplementation(() => {})
     mockIsCloud.value = false
     fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)
@@ -55,10 +57,6 @@ describe('downloadUtil', () => {
     vi.spyOn(document, 'createElement').mockReturnValue(mockLink)
     vi.spyOn(document.body, 'appendChild').mockImplementation(() => mockLink)
     vi.spyOn(document.body, 'removeChild').mockImplementation(() => mockLink)
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
   })
 
   describe('downloadFile', () => {
@@ -316,12 +314,7 @@ describe('downloadUtil', () => {
     let windowOpenSpy: ReturnType<typeof vi.spyOn>
 
     beforeEach(() => {
-      vi.useFakeTimers()
       windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
-    })
-
-    afterEach(() => {
-      vi.useRealTimers()
     })
 
     it('opens URL directly when not in cloud mode', async () => {

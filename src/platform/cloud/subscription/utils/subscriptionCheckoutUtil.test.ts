@@ -71,7 +71,7 @@ vi.mock('@/platform/telemetry', () => ({
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: vi.fn(() =>
     reactive({
-      getAuthHeader: mockGetAuthHeader,
+      getFirebaseAuthHeader: mockGetAuthHeader,
       fetchWithCustomerRecovery: (input: string, init?: RequestInit) =>
         fetch(input, init),
       userId: computed(() => mockUserId.value)
@@ -118,14 +118,12 @@ function createDeferred<T>() {
 describe('performSubscriptionCheckout', () => {
   beforeEach(() => {
     setDistribution('cloud')
-    vi.clearAllMocks()
     mockIsCloud.value = true
     mockUserId.value = 'user-123'
     mockLocalStorage.__reset()
   })
 
   afterEach(() => {
-    vi.restoreAllMocks()
     setDistribution('localhost')
     mockLocalStorage.__reset()
   })

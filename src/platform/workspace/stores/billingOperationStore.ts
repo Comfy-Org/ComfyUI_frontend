@@ -7,6 +7,7 @@ import { t } from '@/i18n'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type {
   BillingFailure,
@@ -423,7 +424,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     // so leave it open. Top-ups have no such step: close and surface settings.
     if (operation.type === 'topup') {
       useDialogStore().closeDialog({ key: 'top-up-credits' })
-      useSettingsDialog().show('workspace')
+      useSettingsDialog().show(isCloud ? 'workspace' : 'credits')
     }
 
     const toastStore = useToastStore()
