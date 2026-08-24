@@ -25,25 +25,7 @@
 name: 'CI: Ecosystem Matrix'
 
 on:
-  # A frontend change is the thing this advisory exists to catch, so src/** runs
-  # it. The corpus is restored, not refetched, so a PR run is bounded by
-  # execution rather than by the network.
-  pull_request:
-    paths:
-      - 'src/**'
-      - 'scripts/registry-census/**'
-      - 'vitest.matrix.config.mts'
-      - '.github/workflows/ci-ecosystem-matrix.yaml'
-  # Refreshes the corpus and writes the baseline every PR is measured against.
-  # Actions cache scoping means only a default-branch run can produce an entry
-  # that other branches restore.
-  push:
-    branches: [main]
-    paths:
-      - 'src/**'
-      - 'scripts/registry-census/**'
-      - 'vitest.matrix.config.mts'
-      - '.github/workflows/ci-ecosystem-matrix.yaml'
+  workflow_call:
   workflow_dispatch:
 
 permissions:
