@@ -19,6 +19,9 @@ export function fnv1a(str: string): number {
 /**
  * Creates an 8-character hex digest of a string using FNV-1a.
  *
+ * Callers persist this output — see `hashPath`, which keys unsaved workflow
+ * drafts by it — so the digest of a given string must not change.
+ *
  * @param str - The string to hash
  * @returns An 8-character hex string (e.g., "a1b2c3d4")
  *

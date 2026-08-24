@@ -8,6 +8,11 @@ describe('hashPath', () => {
     expect(result).toMatch(/^[0-9a-f]{8}$/)
   })
 
+  it('keys the same path the same way it did in earlier releases', () => {
+    expect(hashPath('')).toBe('811c9dc5')
+    expect(hashPath('workflows/Untitled.json')).toBe('325d5d45')
+  })
+
   it('returns consistent results', () => {
     const path = 'workflows/My Complex Workflow Name.json'
     const hash1 = hashPath(path)

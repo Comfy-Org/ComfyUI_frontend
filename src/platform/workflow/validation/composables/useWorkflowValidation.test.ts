@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { ReportErrorOptions } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type * as LinkFixer from '@/utils/linkFixer'
 import { fixBadLinks } from '@/utils/linkFixer'
 
@@ -46,6 +47,13 @@ function captureFixerLogs(): string[] {
 
 const reportedOptions = (call = 0) =>
   (reportError.mock.calls[call] as [Error, ReportErrorOptions])[1]
+
+/**
+ * `loadGraphData` builds the composable anew for every load, so a test that
+ * reuses one instance cannot tell a per-session guard from a per-load one.
+ */
+const reload = (workflow: ComfyWorkflowJSON) =>
+  useWorkflowValidation().validateWorkflow(workflow)
 
 describe('useWorkflowValidation', () => {
   it('reports the corruption the link fixer found while loading a workflow', async () => {
@@ -97,19 +105,16 @@ describe('useWorkflowValidation', () => {
 
   it('reports a corrupt workflow once, not once per reload', async () => {
     const workflowId = uniqueId()
-    const validation = useWorkflowValidation()
 
-    await validation.validateWorkflow(corruptWorkflow(workflowId))
-    await validation.validateWorkflow(corruptWorkflow(workflowId))
+    await reload(corruptWorkflow(workflowId))
+    await reload(corruptWorkflow(workflowId))
 
     expect(reportError).toHaveBeenCalledOnce()
   })
 
   it('does not collapse distinct workflows that carry no id', async () => {
-    const validation = useWorkflowValidation()
-
-    await validation.validateWorkflow(unidentifiedCorruptWorkflow())
-    await validation.validateWorkflow(unidentifiedCorruptWorkflow())
+    await reload(unidentifiedCorruptWorkflow())
+    await reload(unidentifiedCorruptWorkflow())
 
     expect(reportError).toHaveBeenCalledTimes(2)
   })
@@ -140,10 +145,9 @@ describe('useWorkflowValidation', () => {
       throw new Error('link fixer exploded')
     })
     const workflowId = uniqueId()
-    const validation = useWorkflowValidation()
 
-    await validation.validateWorkflow(intactWorkflow(workflowId))
-    await validation.validateWorkflow(intactWorkflow(workflowId))
+    await reload(intactWorkflow(workflowId))
+    await reload(intactWorkflow(workflowId))
 
     expect(reportError).toHaveBeenCalledOnce()
   })

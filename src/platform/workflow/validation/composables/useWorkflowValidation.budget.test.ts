@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type * as LinkFixer from '@/utils/linkFixer'
 import { fixBadLinks } from '@/utils/linkFixer'
 
@@ -24,6 +25,9 @@ vi.mock('@/utils/linkFixer', async (importOriginal) => {
   return { ...actual, fixBadLinks: vi.fn(actual.fixBadLinks) }
 })
 
+const reload = (workflow: ComfyWorkflowJSON) =>
+  useWorkflowValidation().validateWorkflow(workflow)
+
 /**
  * The reporters are module state, so spending one of them here would leave the
  * rest of a shared file asserting against an exhausted budget. Vitest gives
@@ -35,21 +39,20 @@ describe('useWorkflowValidation reporting budget', () => {
 
   it('keeps reporting fixer failures after corruption reports run out', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
-    const validation = useWorkflowValidation()
 
     for (let i = 0; i <= MAX_REPORTS_PER_KIND; i++) {
-      await validation.validateWorkflow(unidentifiedCorruptWorkflow())
+      await reload(unidentifiedCorruptWorkflow())
     }
 
     reportError.mockClear()
-    await validation.validateWorkflow(unidentifiedCorruptWorkflow())
+    await reload(unidentifiedCorruptWorkflow())
     expect(reportError).not.toHaveBeenCalled()
 
     const cause = `link fixer exploded ${(explosions += 1)}`
     vi.mocked(fixBadLinks).mockImplementation(() => {
       throw new Error(cause)
     })
-    await validation.validateWorkflow(intactWorkflow(uniqueId()))
+    await reload(intactWorkflow(uniqueId()))
 
     expect(reportError).toHaveBeenCalledWith(
       expect.objectContaining({ message: cause }),

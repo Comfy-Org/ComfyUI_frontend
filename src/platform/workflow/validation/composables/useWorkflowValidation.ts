@@ -36,7 +36,9 @@ export function useWorkflowValidation() {
 
     // Collect all logs in an array
     const logs: string[] = []
-    // Then validate and fix links if schema validation passed
+    // Then validate and fix links if schema validation passed. The fixer keeps
+    // logging even when validation is silenced, because the report below is
+    // derived from these lines; the toasts are what `silent` suppresses.
     const linkValidation = fixBadLinks(graphData as ISerialisedGraph, {
       fix: true,
       logger: {
