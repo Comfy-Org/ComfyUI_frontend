@@ -144,10 +144,12 @@ const run = async () => {
     md.status() === 200 && (await md.text()).includes('FLUX 3'),
     mdHref ?? ''
   )
+  // Scoped to <main> rather than one menu: the deep links have moved between
+  // the LLMs and open-in menus, and the check is about them existing.
   check(
     'llm deep links',
     (await desktop.$$eval(
-      '#llms-menu a[href*="claude.ai"], #llms-menu a[href*="chatgpt.com"]',
+      'main a[href*="claude.ai"], main a[href*="chatgpt.com"]',
       (a) => a.length
     )) === 2,
     ''
