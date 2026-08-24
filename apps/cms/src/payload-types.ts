@@ -207,6 +207,7 @@ export interface Event {
   description: string;
   startDateTime: string;
   endDateTime?: string | null;
+  timeZone?: string | null;
   locationMode: 'online' | 'in-person';
   locationName?: string | null;
   href?: string | null;
@@ -383,6 +384,7 @@ export interface EventsSelect<T extends boolean = true> {
   description?: T;
   startDateTime?: T;
   endDateTime?: T;
+  timeZone?: T;
   locationMode?: T;
   locationName?: T;
   href?: T;

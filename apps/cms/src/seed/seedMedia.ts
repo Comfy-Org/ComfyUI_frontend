@@ -3,6 +3,8 @@ import { mkdir, rename, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import type { Payload } from 'payload'
 
+import { ensureFaststart } from './faststart'
+
 // Upload a local file to the media collection unless a doc with the same
 // filename already exists. The idempotency check and Payload's stored filename
 // both key on the file's basename, so `filePath` must be named as it should be
@@ -13,8 +15,10 @@ import type { Payload } from 'payload'
 export const uploadMediaFile = async (
   payload: Payload,
   filePath: string,
-  { alt, zhAlt }: { alt: string; zhAlt?: string },
+  { alt, zhAlt, faststart }: { alt: string; zhAlt?: string; faststart?: boolean },
 ): Promise<number> => {
+  if (faststart) await ensureFaststart(filePath)
+
   const filename = path.basename(filePath)
 
   const existing = await payload.find({
@@ -61,7 +65,13 @@ export const uploadMediaFile = async (
 export const seedMedia = async (
   payload: Payload,
   cacheDir: string,
-  { url, filename, alt, zhAlt }: { url: string; filename: string; alt: string; zhAlt?: string },
+  {
+    url,
+    filename,
+    alt,
+    zhAlt,
+    faststart,
+  }: { url: string; filename: string; alt: string; zhAlt?: string; faststart?: boolean },
 ): Promise<number> => {
   const cachePath = path.join(cacheDir, filename)
 
@@ -77,5 +87,5 @@ export const seedMedia = async (
     await rename(tempPath, cachePath)
   }
 
-  return uploadMediaFile(payload, cachePath, { alt, zhAlt })
+  return uploadMediaFile(payload, cachePath, { alt, zhAlt, faststart })
 }

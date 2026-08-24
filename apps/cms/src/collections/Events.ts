@@ -81,6 +81,15 @@ export const Events: CollectionConfig = {
       },
     },
     {
+      // IANA zone the website renders the display date in (for the PT/ET label);
+      // a missing value defaults to Pacific, matching the site.
+      name: 'timeZone',
+      type: 'text',
+      admin: {
+        placeholder: 'America/Los_Angeles',
+      },
+    },
+    {
       // Semantic online/in-person switch driving the virtual-vs-physical
       // presentation and the JSON-LD branch — never inferred from the
       // location text.

@@ -101,8 +101,9 @@ function eventVideo(
   }
 }
 
-// zh-CN copy is a first pass and pending native review.
-const events: readonly ComfyEventSource[] = [
+// zh-CN copy is a first pass and pending native review. Exported as the one-time
+// seed source for the CMS events collection (retired once the CMS drives events).
+export const events: readonly ComfyEventSource[] = [
   {
     id: 'la-august-meetup',
     category: 'community',
