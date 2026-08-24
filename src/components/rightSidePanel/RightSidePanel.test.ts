@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
-import { getActivePinia, setActivePinia } from 'pinia'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { markRaw, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -51,11 +51,9 @@ function renderPanel(
     rootGraph: LGraph
     currentGraph: LGraph
     node: LGraphNode
-  }
+  },
+  pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false })
 ) {
-  const pinia =
-    (graphContext && getActivePinia()) ||
-    createTestingPinia({ createSpy: vi.fn, stubActions: false })
   setActivePinia(pinia)
 
   const rootGraph = graphContext?.rootGraph ?? new LGraph()
@@ -175,7 +173,8 @@ describe('RightSidePanel active tab fallback', () => {
   })
 
   it('keeps errors active for a pending subgraph interior node scan', () => {
-    setActivePinia(createTestingPinia({ createSpy: vi.fn, stubActions: false }))
+    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false })
+    setActivePinia(pinia)
     const subgraph = createTestSubgraph()
     const node = new LGraphNode('CheckpointLoaderSimple')
     node.id = toNodeId(7)
@@ -185,7 +184,7 @@ describe('RightSidePanel active tab fallback', () => {
     rootGraph.add(host)
 
     const { executionErrorStore, executionId, openPanel, rightSidePanelStore } =
-      renderPanel('errors', { rootGraph, currentGraph: subgraph, node })
+      renderPanel('errors', { rootGraph, currentGraph: subgraph, node }, pinia)
 
     expect(
       executionErrorStore.hasPendingAddedNodeErrorScan(rootGraph, executionId)
