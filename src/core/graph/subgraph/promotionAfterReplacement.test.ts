@@ -20,6 +20,7 @@ vi.mock('@/services/litegraphService', () => ({
 import { promoteValueWidgetViaSubgraphInput } from './promotionUtils'
 
 const HOST_ID = 7
+const KEEPALIVE_ID = 3
 
 function promotedWidgetId(host: SubgraphNode, name: string): WidgetId {
   const input = host.inputs.find((input) => input.name === name)
@@ -61,6 +62,18 @@ function buildPromotedHost(withSibling = false) {
   }
 
   return { subgraph, host, interior, valueWidget }
+}
+
+/**
+ * Removing a subgraph's last instance releases its definition (link
+ * topologies, store attachments), so replacement tests hold a second
+ * instance to keep the definition registered. The release boundary itself
+ * is pinned in its own test below.
+ */
+function addKeepaliveHost(subgraph: Subgraph) {
+  const keepalive = createTestSubgraphNode(subgraph, { id: KEEPALIVE_ID })
+  subgraph.rootGraph.add(keepalive)
+  return keepalive
 }
 
 /**
@@ -120,6 +133,7 @@ describe('promoted widget survival across host replacement', () => {
       const countId = promotedWidgetId(host, 'count')
       store.setValue(valueId, null)
       store.setValue(countId, 42)
+      addKeepaliveHost(subgraph)
 
       const upstream = connectExternalLink(subgraph, host)
       subgraph.rootGraph.remove(host)
@@ -145,6 +159,7 @@ describe('promoted widget survival across host replacement', () => {
       const store = useWidgetValueStore()
       const valueId = promotedWidgetId(host, 'value')
       store.setValue(valueId, null)
+      addKeepaliveHost(subgraph)
 
       subgraph.rootGraph.remove(host)
       await flushDeferredCleanup()
@@ -157,10 +172,31 @@ describe('promoted widget survival across host replacement', () => {
       expect(store.getWidget(valueId)?.type).toBe('number')
       expect(promotedValue(replacement, 'value')).toBe('initial')
     })
+
+    it('releases the definition with its last host, so a naive same-id replacement has no promoted widget', async () => {
+      const { subgraph, host } = buildPromotedHost()
+      const store = useWidgetValueStore()
+      const valueId = promotedWidgetId(host, 'value')
+      store.setValue(valueId, null)
+
+      subgraph.rootGraph.remove(host)
+      await flushDeferredCleanup()
+
+      // The value outlives the host; the definition's interior links do not,
+      // so a host built from the released live object cannot re-resolve the
+      // promoted widget. Real re-entry (configure(), paste) re-registers the
+      // definition first.
+      expect(store.getWidget(valueId)?.value).toBeNull()
+
+      const replacement = createTestSubgraphNode(subgraph, { id: HOST_ID })
+      subgraph.rootGraph.add(replacement)
+      const input = replacement.inputs.find((input) => input.name === 'value')
+      expect(input?.widgetId).toBeUndefined()
+    })
   })
 
   describe('null is a value, not absence', () => {
-    it('omits widgets_values entirely when the only promoted value is null', () => {
+    it('keeps widgets_values with an explicit null when the only promoted value is null', () => {
       const { host } = buildPromotedHost()
       const store = useWidgetValueStore()
       const valueId = promotedWidgetId(host, 'value')
@@ -170,19 +206,17 @@ describe('promoted widget survival across host replacement', () => {
 
       store.setValue(valueId, null)
       expect(promotedValue(host, 'value')).toBeNull()
-      expect('widgets_values' in host.serialize()).toBe(false)
+      expect(host.serialize().widgets_values).toEqual([null])
     })
 
-    it('serializes a null promoted value as an undefined slot beside a live sibling', () => {
+    it('serializes a null promoted value as an explicit null beside a live sibling', () => {
       const { host } = buildPromotedHost(true)
       const store = useWidgetValueStore()
       store.setValue(promotedWidgetId(host, 'value'), null)
       store.setValue(promotedWidgetId(host, 'count'), 42)
 
       const widgetValues = host.serialize().widgets_values
-      expect(widgetValues).toHaveLength(2)
-      expect(widgetValues?.[0]).toBeUndefined()
-      expect(widgetValues?.[1]).toBe(42)
+      expect(widgetValues).toEqual([null, 42])
       expect(JSON.parse(JSON.stringify(widgetValues))).toEqual([null, 42])
     })
 

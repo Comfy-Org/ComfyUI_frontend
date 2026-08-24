@@ -2129,7 +2129,8 @@
     "extensionFileHint": "This may be due to the following script",
     "promptExecutionError": "Prompt execution failed",
     "accessRestrictedTitle": "Access Restricted",
-    "accessRestrictedMessage": "Your account is not authorized for this feature."
+    "accessRestrictedMessage": "Your account is not authorized for this feature.",
+    "workspaceChangedDuringExecution": "Your active workspace changed while preparing this execution. Run the workflow again to use the current workspace."
   },
   "apiNodesSignInDialog": {
     "title": "Sign In Required to Use API Nodes",
@@ -2436,6 +2437,9 @@
     "unsupportedHDRIFormat": "Unsupported file format. Please upload a .hdr or .exr file.",
     "failedToToggleGizmo": "Failed to toggle gizmo",
     "failedToSetGizmoMode": "Failed to set gizmo mode"
+  },
+  "nodeBadge": {
+    "partnerNodesCount": "Partner Nodes x {count}"
   },
   "nodeErrors": {
     "render": "Node Render Error",
@@ -4202,7 +4206,6 @@
     "settings": "Settings",
     "addFavorite": "Favorite",
     "removeFavorite": "Unfavorite",
-    "hideInput": "Hide input",
     "showInput": "Show input",
     "locateNode": "Locate node on canvas",
     "locateNodeFor": "Locate {item}",

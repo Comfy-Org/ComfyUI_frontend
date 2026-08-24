@@ -280,15 +280,22 @@ test.describe('Node replacement', { tag: ['@node', '@ui'] }, () => {
       const [ksampler] = await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
       await ksampler.dragBy({ x: 120, y: 90 })
       await comfyPage.nextFrame()
-      const draggedPosition =
-        await ksampler.getProperty<[number, number]>('pos')
+      const draggedTitlePosition = await ksampler.getTitlePosition()
 
       await comfyPage.menu.topbar.setVueNodesEnabled(true)
       await comfyPage.vueNodes.waitForNodes()
 
+      const { header } = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
       await expect
-        .poll(() => ksampler.getProperty<[number, number]>('pos'))
-        .toEqual(draggedPosition)
+        .poll(async () => {
+          const box = await header.boundingBox()
+          if (!box) return Number.POSITIVE_INFINITY
+          return Math.max(
+            Math.abs(box.x + box.width / 2 - draggedTitlePosition.x),
+            Math.abs(box.y + box.height / 2 - draggedTitlePosition.y)
+          )
+        })
+        .toBeLessThanOrEqual(2)
     }
   )
 })

@@ -184,13 +184,14 @@ describe('compound undo', () => {
       expect(graph.links.get(outboundLinkId)).toBeUndefined()
 
       // The reroute is *not* removed with the link it was on. It stays in the
-      // graph holding a floating-link id that the graph itself does not have.
-      // Asserted as current behaviour; see the file header.
+      // graph, and the floating-link id it holds resolves to a real registered
+      // floating link — the store migration made the preserved reroute chain
+      // authoritative instead of leaving a dangling id (see ADR-0003).
       const orphan = graph.reroutes.get(rerouteId)!
       expect(orphan).toBeDefined()
       expect([...orphan.linkIds]).toEqual([])
       expect([...orphan.floatingLinkIds].length).toBe(1)
-      expect(graph.floatingLinks.size).toBe(0)
+      expect(graph.floatingLinks.size).toBe(1)
     })
 
     test('undo restores the node with its own id, position and size', () => {
@@ -306,11 +307,13 @@ describe('compound undo', () => {
       expect(linkInto(graph, middleId, 0)).toBeUndefined()
       expect(linkInto(graph, sinkId, 0)).toBeUndefined()
       expect(graph.links.size).toBe(0)
-      expect(graph.floatingLinks.size).toBe(0)
+      // The preserved reroute chain's floating link is serialised and restored
+      // with the snapshot, so redo reproduces the post-delete state exactly.
+      expect(graph.floatingLinks.size).toBe(1)
       expect(graph.getNodeById(sinkId)!.inputs[0].link).toBeNull()
     })
 
-    test('redo drops the orphaned reroute that the in-memory removal kept', () => {
+    test('redo preserves the floating reroute that the in-memory removal kept', () => {
       const { graph, middleId, rerouteId } = buildCompoundGraph()
 
       graph.remove(graph.getNodeById(middleId)!)
@@ -323,12 +326,15 @@ describe('compound undo', () => {
 
       restore(graph, redoState)
 
-      // Reloading it discards it, because a reroute with no live links does not
-      // survive validation. So redo and the original delete do not leave the
-      // same graph: the delete keeps a dangling reroute, the redo does not.
-      // Asserted as current behaviour, not endorsed.
-      expect(graph.reroutes.size).toBe(0)
-      expect(serialisedReroutes(snapshot(graph))).toEqual([])
+      // The snapshot carries the floating link alongside the reroute, so the
+      // reroute survives validation on reload: redo and the original delete
+      // now leave the same graph. (The dedicated stores made the preserved
+      // chain a real floating link where it used to be a dangling id that
+      // reload validation discarded; see ADR-0003.)
+      expect(graph.reroutes.size).toBe(1)
+      expect(
+        serialisedReroutes(snapshot(graph)).map((reroute) => reroute.id)
+      ).toEqual([rerouteId])
     })
 
     test('a redone state is stable under a further redo of itself', () => {
