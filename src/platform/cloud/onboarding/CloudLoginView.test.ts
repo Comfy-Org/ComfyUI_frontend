@@ -68,7 +68,6 @@ async function renderLoginView(
 
 afterEach(() => {
   isEmbeddedWebView.value = false
-  vi.unstubAllGlobals()
 })
 
 describe('CloudLoginView', () => {
