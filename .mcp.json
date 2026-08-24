@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "comfy-marketing-storybook": {
+      "type": "http",
+      "url": "https://comfy-website-storybook-mcp.vercel.app/mcp",
+      "headers": {
+        "Authorization": "Bearer ${COMFY_STORYBOOK_MCP_TOKEN}"
+      }
+    }
+  }
+}

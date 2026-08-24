@@ -42,6 +42,7 @@ const preview: Preview = {
           'Website',
           [
             'Start Here',
+            'MCP Setup',
             'Foundations',
             'UI',
             'Common',

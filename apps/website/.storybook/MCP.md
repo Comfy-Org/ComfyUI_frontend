@@ -79,6 +79,38 @@ project owner. Browser access uses Google Workspace login and is restricted to
 verified `@comfy.org` accounts. Anonymous requests to the Storybook, manifests,
 and MCP endpoint are rejected.
 
+### Coworker installation
+
+Request `COMFY_STORYBOOK_MCP_TOKEN` from the Storybook project owner through the
+team's approved secret-sharing tool. Never commit or paste the token into
+screenshots, tickets, or chat. Set it in the shell that launches the agent:
+
+```bash
+export COMFY_STORYBOOK_MCP_TOKEN="<team token>"
+```
+
+Install the remote server in Codex:
+
+```bash
+codex mcp add comfy_marketing_storybook \
+  --url https://comfy-website-storybook-mcp.vercel.app/mcp \
+  --bearer-token-env-var COMFY_STORYBOOK_MCP_TOKEN
+```
+
+This branch also includes a project-level `.mcp.json` for Claude Code. Start
+Claude Code from the repository root after setting the environment variable,
+then approve the `comfy-marketing-storybook` server. For a user-level install:
+
+```bash
+claude mcp add --scope user --transport http comfy-marketing-storybook \
+  https://comfy-website-storybook-mcp.vercel.app/mcp \
+  --header "Authorization: Bearer $COMFY_STORYBOOK_MCP_TOKEN"
+```
+
+Restart the client after installation. Verify with
+`codex mcp get comfy_marketing_storybook` or
+`claude mcp get comfy-marketing-storybook`.
+
 Storybook's official component manifests currently support React only. This
 Vue Storybook adapts its checked-in design-system manifest to Storybook MCP's
 v0 schema during the Vercel build. The remote server provides component and

@@ -1,0 +1,108 @@
+import { Meta } from '@storybook/addon-docs/blocks'
+
+<Meta title="Website/MCP Setup" />
+
+# Install the Storybook MCP
+
+Connect Codex or Claude Code to this Storybook to discover approved marketing
+components and stories from an agent conversation.
+
+## Before you start
+
+Request the `COMFY_STORYBOOK_MCP_TOKEN` from the Storybook project owner through
+the team's approved secret-sharing tool. Do not paste the token into Git,
+screenshots, tickets, or chat.
+
+Set it in the shell that launches your agent:
+
+```bash
+export COMFY_STORYBOOK_MCP_TOKEN="<team token>"
+```
+
+The remote MCP endpoint is:
+
+```text
+https://comfy-website-storybook-mcp.vercel.app/mcp
+```
+
+## Codex
+
+Run:
+
+```bash
+codex mcp add comfy_marketing_storybook \
+  --url https://comfy-website-storybook-mcp.vercel.app/mcp \
+  --bearer-token-env-var COMFY_STORYBOOK_MCP_TOKEN
+```
+
+Restart Codex, then verify the saved configuration:
+
+```bash
+codex mcp get comfy_marketing_storybook
+```
+
+## Claude Code
+
+This experimental branch includes a project-level `.mcp.json`. After cloning
+the repository and setting `COMFY_STORYBOOK_MCP_TOKEN`, start Claude Code from
+the repository root and approve the `comfy-marketing-storybook` server when
+prompted.
+
+To install it for your user account without cloning the repository, run:
+
+```bash
+claude mcp add --scope user --transport http comfy-marketing-storybook \
+  https://comfy-website-storybook-mcp.vercel.app/mcp \
+  --header "Authorization: Bearer $COMFY_STORYBOOK_MCP_TOKEN"
+```
+
+Then verify it:
+
+```bash
+claude mcp get comfy-marketing-storybook
+```
+
+## Test the connection
+
+Start a new agent conversation and ask:
+
+```text
+Use the Comfy marketing Storybook MCP. List the documented website components,
+then show me the available NodeBadge stories and their supported states.
+```
+
+A successful remote connection can read component and story documentation. It
+cannot edit files, preview unbuilt local changes, or run local interaction and
+accessibility tests.
+
+## Local development tools
+
+To author stories, preview changes, and run tests, start Storybook from the
+repository root:
+
+```bash
+pnpm install
+pnpm --filter @comfyorg/website storybook
+```
+
+Use `http://localhost:6008/mcp` as a separate local MCP server. The local server
+does not use the shared bearer token.
+
+## Troubleshooting
+
+- **401 Authentication required:** the token is missing, expired, or unavailable
+  to the process that launched the agent. Set the environment variable and
+  restart the agent.
+- **Server is configured but unavailable:** restart the agent after adding the
+  MCP configuration.
+- **Documentation works but previews or tests do not:** the remote server is
+  documentation-only. Start the local Storybook for development tools.
+- **The browser asks for Google login:** browser access and MCP access use
+  separate authentication. The browser uses a verified `@comfy.org` account;
+  MCP clients use the bearer token.
+
+## Security boundary
+
+The Storybook UI requires a verified `@comfy.org` Google account. The MCP
+endpoint requires the team bearer token. Anonymous requests are rejected, and
+the deployment is marked `noindex`.
