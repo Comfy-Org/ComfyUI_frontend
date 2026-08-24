@@ -312,7 +312,10 @@ export function registerTestSubgraphNodeTypes(rootGraph: LGraph): void {
   })
 
   onTestFinished(() => {
-    for (const type of registeredTypes) LiteGraph.unregisterNodeType(type)
+    for (const type of registeredTypes) {
+      if (!LiteGraph.registered_node_types[type]) continue
+      LiteGraph.unregisterNodeType(type)
+    }
   })
 }
 
