@@ -1,4 +1,7 @@
 import type { z } from 'zod'
+import type { Locale } from '../i18n/locales'
+
+import { toLocale } from '../i18n/locales'
 
 /**
  * Public production CMS URL, committed as a non-secret default so an open-source
@@ -15,10 +18,14 @@ export const DEFAULT_CMS_URL = 'https://cms.comfy.org'
 interface CmsListView<TDoc, TItem> {
   /** Payload REST query string (the `select`/`populate`/`sort` params). */
   query: string
-  /** Zod schema for the `{ docs }` response. */
-  schema: z.ZodType<{ docs: TDoc[] }>
-  /** Flatten a CMS doc into the shape the Astro template consumes. */
-  toItem: (doc: TDoc, cmsBase: string) => TItem
+  /** Zod schema for the `{ docs }` response, parsed from raw JSON. */
+  schema: z.ZodType<{ docs: TDoc[] }, z.ZodTypeDef, unknown>
+  /**
+   * Flatten a CMS doc into the shape the Astro template consumes. `locale` is
+   * the locale the docs were requested in, for the fields the CMS cannot
+   * pre-localize (a site-relative `href` is stored unlocalized).
+   */
+  toItem: (doc: TDoc, cmsBase: string, locale: Locale) => TItem
 }
 
 /** A CMS-backed content collection's list descriptor (e.g. gallery). */
@@ -31,7 +38,7 @@ export interface CmsCollection<TDoc, TItem> {
 export interface LoadContentOptions {
   /** Override the CMS base URL (else `WEBSITE_CMS_URL`, else `DEFAULT_CMS_URL`). */
   cmsUrl?: string
-  /** Fetch unpublished drafts. Callers supply this (preview builds pass `true`). */
+  /** Fetch unpublished drafts. Defaults to the `PREVIEW_MODE` build flag. */
   draft?: boolean
   /**
    * CMS locale to request (e.g. `zh-CN`). Non-default locales append the Payload
@@ -40,7 +47,7 @@ export interface LoadContentOptions {
    * fields with no value in the requested locale.
    */
   locale?: string
-  /** Payload API key for authenticated draft reads (used only with `draft`). */
+  /** Payload API key for authenticated draft reads. Defaults to `PAYLOAD_API_KEY`. */
   apiKey?: string
   /** Injectable fetch, for tests. */
   fetchImpl?: typeof fetch
@@ -68,7 +75,14 @@ export async function loadList<TDoc, TItem>(
   options: LoadContentOptions = {}
 ): Promise<TItem[]> {
   const base = resolveCmsBase(options.cmsUrl)
-  const { draft = false, locale, apiKey } = options
+  // `draft`/`apiKey` come from the same build env as the CMS URL above, so they
+  // default here rather than being threaded through every page's frontmatter —
+  // a new collection cannot forget to wire up draft preview.
+  const {
+    locale,
+    draft = import.meta.env.PREVIEW_MODE === 'true',
+    apiKey = import.meta.env.PAYLOAD_API_KEY
+  } = options
   const fetchImpl = options.fetchImpl ?? fetch
 
   // The default locale (`en`) is requested by sending no `locale` param, so the
@@ -96,5 +110,7 @@ export async function loadList<TDoc, TItem>(
     )
   }
 
-  return parsed.data.docs.map((doc) => collection.list.toItem(doc, base))
+  return parsed.data.docs.map((doc) =>
+    collection.list.toItem(doc, base, toLocale(locale))
+  )
 }

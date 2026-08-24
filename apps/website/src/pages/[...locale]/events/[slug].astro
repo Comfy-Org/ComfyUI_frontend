@@ -10,10 +10,11 @@ import EventVideoDialog from '../../../templates/events/EventVideoDialog.vue'
 import PastEventsSection from '../../../templates/events/PastEventsSection.vue'
 import UpcomingEventsSection from '../../../templates/events/UpcomingEventsSection.vue'
 import { localizeHref } from '../../../config/routes'
-import { eventsForLocale, getEventBySlug, watchableEvents } from '../../../data/events'
 import { DEFAULT_LOCALE } from '../../../i18n/locales'
 import { localeSlugPaths } from '../../../i18n/routing'
 import { t } from '../../../i18n/translations'
+import { loadList } from '../../../utils/cmsContent'
+import { eventsCollection } from '../../../utils/eventsCms'
 import {
   eventJsonLdNode,
   eventStatus,
@@ -29,9 +30,15 @@ import {
   videoObjectNode
 } from '../../../utils/jsonLd'
 
-// The watchable id set is locale-invariant, so enumerate slugs once.
-export const getStaticPaths: GetStaticPaths = () =>
-  localeSlugPaths(watchableEvents(DEFAULT_LOCALE).map((event) => event.id))
+// The watchable slug set is locale-invariant, so enumerate it from one locale's
+// fetch. Route params only, never data (ADR 0001) — the page body loads the
+// events itself, so the static and preview-server builds take the same path.
+export const getStaticPaths: GetStaticPaths = async () => {
+  const events = await loadList(eventsCollection, { locale: DEFAULT_LOCALE })
+  return localeSlugPaths(
+    events.filter((event) => eventVideoId(event)).map((event) => event.id)
+  )
+}
 
 const { siteUrl, locale, url } = pageContext(
   Astro.site,
@@ -39,11 +46,17 @@ const { siteUrl, locale, url } = pageContext(
   Astro.currentLocale
 )
 
-const event = getEventBySlug(Astro.params.slug as string, locale)!
+const events = await loadList(eventsCollection, { locale })
+
+const { slug } = Astro.params
+const event = events.find((candidate) => candidate.id === slug)
+const videoId = event && eventVideoId(event)
+if (!event || !videoId) {
+  throw new Error(`[events] No watchable CMS event for slug "${slug}"`)
+}
+
 const title = event.title
 const description = event.description
-
-const events = eventsForLocale(locale)
 // The directory renders behind the dialog; the split reconciles client-side,
 // while this page's JSON-LD stays build-time (search engines classify from the
 // event's own dates, not our UI split).
@@ -109,7 +122,7 @@ const breadcrumbs = [
   <EventVideoDialog
     title={title}
     description={description}
-    youtubeVideoId={eventVideoId(event)!}
+    youtubeVideoId={videoId}
     calendarEvent={isPast ? undefined : toCalendarEvent(event, locale)}
     locale={locale}
     client:load

@@ -7,7 +7,6 @@ import type {
 } from '../utils/events'
 
 import { localizeHref } from '../config/routes'
-import { eventVideoId } from '../utils/events'
 
 // The authoring shape: structurally the flat render model, but with every
 // localized text still carried per locale. Flattening to a single locale
@@ -430,14 +429,3 @@ export const events: readonly ComfyEventSource[] = [
 
 export const eventsForLocale = (locale: Locale): readonly ComfyEvent[] =>
   events.map((event) => flattenEvent(event, locale))
-
-// Events with a stream or recording get their own /events/[slug] page; the
-// slug is the event id.
-export const watchableEvents = (locale: Locale): readonly ComfyEvent[] =>
-  eventsForLocale(locale).filter((event) => eventVideoId(event))
-
-export const getEventBySlug = (
-  slug: string,
-  locale: Locale
-): ComfyEvent | undefined =>
-  watchableEvents(locale).find((event) => event.id === slug)

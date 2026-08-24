@@ -8,9 +8,10 @@ import EventsHeroSection from '../../templates/events/EventsHeroSection.vue'
 import PastEventsSection from '../../templates/events/PastEventsSection.vue'
 import UpcomingEventsSection from '../../templates/events/UpcomingEventsSection.vue'
 import { localizeHref } from '../../config/routes'
-import { eventsForLocale } from '../../data/events'
 import { localePaths } from '../../i18n/routing'
 import { t } from '../../i18n/translations'
+import { loadList } from '../../utils/cmsContent'
+import { eventsCollection } from '../../utils/eventsCms'
 import {
   deriveUpcomingEvents,
   derivePastEvents,
@@ -29,7 +30,7 @@ const { siteUrl, locale, url } = pageContext(
   Astro.currentLocale
 )
 
-const events = eventsForLocale(locale)
+const events = await loadList(eventsCollection, { locale })
 
 // The build-time clock: the client sections reconcile against it on mount, and
 // the build-time JSON-LD (which search engines classify from) is derived from it.

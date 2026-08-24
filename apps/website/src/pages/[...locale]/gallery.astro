@@ -17,11 +17,7 @@ export const getStaticPaths = localePaths
 
 const locale = toLocale(Astro.params.locale)
 
-const galleryItems = await loadList(galleryCollection, {
-  locale,
-  draft: import.meta.env.PREVIEW_MODE === 'true',
-  apiKey: import.meta.env.PAYLOAD_API_KEY,
-})
+const galleryItems = await loadList(galleryCollection, { locale })
 ---
 
 <BaseLayout title={t('gallery.pageTitle', locale)}>
