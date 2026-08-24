@@ -356,11 +356,11 @@ const faqJsonLd = {
               min="0"
               step="1"
               value={defaultSeed}
-              class="w-full rounded-lg border border-transparency-white-t20 bg-transparency-white-t4 px-3 py-2.5 font-mono text-xs text-primary-comfy-canvas focus:border-primary-comfy-yellow/60 focus:outline-none"
+              class="w-full rounded-lg border border-transparency-white-t20 bg-transparency-white-t4 px-3 py-2.5 text-xs text-primary-comfy-canvas focus:border-primary-comfy-yellow/60 focus:outline-none"
             />
-            <BrandButton id="seed-shuffle" variant="outline-light" size="sm" class="shrink-0 px-3 py-1.5 text-2xs uppercase tracking-widest">Shuffle</BrandButton>
+            <button id="seed-shuffle" type="button" class="shrink-0 cursor-pointer rounded-lg border border-transparency-white-t20 bg-transparency-white-t4 px-3 py-2.5 text-xs font-normal text-primary-comfy-canvas transition-colors hover:bg-transparency-white-t8"><span class="ppformula-text-center">Shuffle</span></button>
           </div>
-          <p class:list={[helperCopy, 'mt-1.5']}>Same seed and prompt give the same output. Change it for a different take.</p>
+          <p class:list={[helperCopy, 'mt-1.5']}>Change value for a different output.</p>
           <label class:list={[fieldLabel, 'mt-4']}>Reference image</label>
           <div id="dropzone" class="mt-2 flex flex-col items-center gap-3 rounded-xl border border-dashed border-transparency-white-t20 bg-transparency-white-t4 px-4 py-4 text-center">
             <BrandButton id="add-image-btn" variant="outline-light" size="sm" class="px-3 py-1.5 text-2xs uppercase tracking-widest">Add image</BrandButton>
