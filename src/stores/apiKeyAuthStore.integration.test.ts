@@ -1,7 +1,8 @@
 import type { User } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
-import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Pinia } from 'pinia'
+import { createPinia, disposePinia, setActivePinia } from 'pinia'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as vuefire from 'vuefire'
 
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
@@ -73,9 +74,12 @@ vi.mock('@/services/dialogService', () => ({
 }))
 
 describe('API key authentication initialization', () => {
+  let pinia: Pinia
+
   beforeEach(() => {
     localStorage.clear()
-    setActivePinia(createPinia())
+    pinia = createPinia()
+    setActivePinia(pinia)
     vi.stubGlobal('fetch', mockFetch)
     mockFetch.mockResolvedValue({
       ok: true,
@@ -95,6 +99,36 @@ describe('API key authentication initialization', () => {
     vi.mocked(firebaseAuth.onIdTokenChanged).mockReturnValue(vi.fn())
   })
 
+  afterEach(() => {
+    disposePinia(pinia)
+  })
+
+  const customerResponse = (id: string) => ({
+    ok: true,
+    statusText: 'OK',
+    json: () => Promise.resolve({ id })
+  })
+
+  const settleQueuedTasks = () => new Promise((resolve) => setTimeout(resolve))
+
+  const initializeStoreWithPendingLookup = async () => {
+    let settleLookup!: {
+      resolve: (response: unknown) => void
+      reject: (reason: Error) => void
+    }
+    mockFetch.mockImplementationOnce(
+      () =>
+        new Promise((resolve, reject) => {
+          settleLookup = { resolve, reject }
+        })
+    )
+    localStorage.setItem('comfy_api_key', 'key-a')
+    useAuthStore()
+    const apiKeyStore = useApiKeyAuthStore()
+    await vi.waitFor(() => expect(mockFetch).toHaveBeenCalledOnce())
+    return { apiKeyStore, ...settleLookup }
+  }
+
   it('retains and validates a persisted key while the API key store initializes', async () => {
     localStorage.setItem('comfy_api_key', 'persisted-api-key')
     useAuthStore()
@@ -113,5 +147,68 @@ describe('API key authentication initialization', () => {
         })
       })
     )
+  })
+
+  it('sends one customer lookup for the replacement key when the key changes before initialization runs', async () => {
+    localStorage.setItem('comfy_api_key', 'key-a')
+    useAuthStore()
+    const apiKeyStore = useApiKeyAuthStore()
+
+    void apiKeyStore.storeApiKey('key-b')
+
+    await vi.waitFor(() =>
+      expect(apiKeyStore.currentUser).toEqual({ id: 'test-customer-id' })
+    )
+    await settleQueuedTasks()
+
+    expect(mockFetch).toHaveBeenCalledOnce()
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.stringContaining('/customers'),
+      expect.objectContaining({
+        headers: expect.objectContaining({ 'X-API-KEY': 'key-b' })
+      })
+    )
+  })
+
+  it('ignores a stale customer response after the key is replaced', async () => {
+    const { apiKeyStore, resolve } = await initializeStoreWithPendingLookup()
+
+    await apiKeyStore.storeApiKey('key-b')
+    await vi.waitFor(() =>
+      expect(apiKeyStore.currentUser).toEqual({ id: 'test-customer-id' })
+    )
+
+    resolve(customerResponse('stale-customer-id'))
+    await settleQueuedTasks()
+
+    expect(apiKeyStore.currentUser).toEqual({ id: 'test-customer-id' })
+    expect(apiKeyStore.getApiKey()).toBe('key-b')
+  })
+
+  it('retains the replacement key when the stale lookup fails', async () => {
+    const { apiKeyStore, reject } = await initializeStoreWithPendingLookup()
+
+    await apiKeyStore.storeApiKey('key-b')
+    await vi.waitFor(() =>
+      expect(apiKeyStore.currentUser).toEqual({ id: 'test-customer-id' })
+    )
+
+    reject(new Error('stale lookup failed'))
+    await settleQueuedTasks()
+
+    expect(apiKeyStore.getApiKey()).toBe('key-b')
+    expect(apiKeyStore.currentUser).toEqual({ id: 'test-customer-id' })
+  })
+
+  it('keeps the user signed out when a pending lookup resolves after the key is cleared', async () => {
+    const { apiKeyStore, resolve } = await initializeStoreWithPendingLookup()
+
+    await apiKeyStore.clearStoredApiKey()
+    resolve(customerResponse('stale-customer-id'))
+    await settleQueuedTasks()
+
+    expect(apiKeyStore.currentUser).toBeNull()
+    expect(apiKeyStore.getApiKey()).toBeNull()
+    expect(mockFetch).toHaveBeenCalledOnce()
   })
 })
