@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { IngestSubscriptionTier } from './tierPricing'
-import { toTierKey } from './tierPricing'
+import { hasActivePaidPlan, toTierKey } from './tierPricing'
 
 describe('toTierKey', () => {
   it('maps every personal-catalog tier to its key', () => {
@@ -41,4 +41,20 @@ describe('toTierKey', () => {
       expect(toTierKey(value as unknown as IngestSubscriptionTier)).toBeNull()
     }
   )
+})
+
+describe('hasActivePaidPlan', () => {
+  // Deliberately not keyed off toTierKey: workspace-level tiers map to no
+  // catalog key yet are paid plans, so a null key must not read as unpaid.
+  it('treats catalog, workspace-level, and unrecognised tiers as paid', () => {
+    expect(hasActivePaidPlan('PRO')).toBe(true)
+    expect(hasActivePaidPlan('TEAM')).toBe(true)
+    expect(hasActivePaidPlan('ENTERPRISE' as IngestSubscriptionTier)).toBe(true)
+  })
+
+  it('treats FREE and an absent tier as unpaid', () => {
+    expect(hasActivePaidPlan('FREE')).toBe(false)
+    expect(hasActivePaidPlan(null)).toBe(false)
+    expect(hasActivePaidPlan(undefined)).toBe(false)
+  })
 })
