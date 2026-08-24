@@ -16,6 +16,7 @@ import { app, sanitizeNodeName } from '@/scripts/app'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { clearNodeOwnedStoreState } from '@/stores/clearNodeOwnedStoreState'
 import type { MissingNodeType } from '@/types/comfy'
+import type { LinkId } from '@/types/linkId'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
 
 interface ReplacementGroup {
@@ -173,6 +174,38 @@ function replaceWithMapping(
     !canTransferReplacementOwnership(node, newNode)
   )
     throw new Error(`Cannot replace node ${node.id}: ownership is invalid`)
+
+  const transferredLinkIds = new Set<LinkId>()
+  for (const inputMap of replacement.input_mapping ?? []) {
+    if (!('old_id' in inputMap) || isDotNotation(inputMap.new_id)) continue
+    const oldSlotIdx = node.inputs?.findIndex((i) => i.name === inputMap.old_id)
+    const newSlotIdx = newNode.inputs?.findIndex(
+      (i) => i.name === inputMap.new_id
+    )
+    if (
+      oldSlotIdx == null ||
+      oldSlotIdx === -1 ||
+      newSlotIdx == null ||
+      newSlotIdx === -1
+    )
+      continue
+    const linkId = inputLinkId(nodeGraph, node.id, oldSlotIdx)
+    if (linkId != null) transferredLinkIds.add(linkId)
+  }
+  for (const outMap of replacement.output_mapping ?? []) {
+    if (!newNode.outputs?.[outMap.new_idx]) continue
+    for (const link of outputLinks(nodeGraph, node.id, outMap.old_idx)) {
+      transferredLinkIds.add(link.id)
+    }
+  }
+  for (const link of [...nodeGraph.links.values()]) {
+    if (
+      (link.origin_id === node.id || link.target_id === node.id) &&
+      !transferredLinkIds.has(link.id)
+    ) {
+      nodeGraph.removeLink(link.id)
+    }
+  }
 
   node.onRemoved?.()
   if (

@@ -72,17 +72,29 @@ export function badgeRows(node: LGraphNode): readonly BadgeData[] {
 type BadgeRowsProvider = typeof badgeRows
 
 let rowsProvider: BadgeRowsProvider | undefined
+let rowsProviderRegistration: symbol | undefined
 
 /**
  * Installs the app-layer badge derivation. A seam so litegraph never
  * imports the derivation's store/pricing dependency graph.
  */
-export function registerBadgeRowsProvider(provider: BadgeRowsProvider): void {
+export function registerBadgeRowsProvider(
+  provider: BadgeRowsProvider
+): () => void {
   if (rowsProvider && rowsProvider !== provider) {
     console.error('A badge rows provider is already registered')
-    return
+    return () => {}
   }
+
+  const registration = Symbol()
   rowsProvider = provider
+  rowsProviderRegistration = registration
+
+  return () => {
+    if (rowsProviderRegistration !== registration) return
+    rowsProvider = undefined
+    rowsProviderRegistration = undefined
+  }
 }
 
 const drawCache = new WeakMap<

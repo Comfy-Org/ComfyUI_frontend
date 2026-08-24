@@ -1965,14 +1965,14 @@ export class LGraphNode
 
     if (graph) {
       const previous = captureInputLayout(this)
-      replaceNodeInputs(
+      const result = replaceNodeInputs(
         this,
         previous,
         previous.inputs.toSpliced(slot, 1),
         previous.links,
         true
       )
-      if (this.inputs.includes(slotInfo)) return
+      if (!result.ok) return
       for (const floatingLink of graph.floatingLinks.values()) {
         if (
           floatingLink.target_id === this.id &&

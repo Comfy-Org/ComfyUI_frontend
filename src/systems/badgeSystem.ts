@@ -291,6 +291,6 @@ export function graphCreditsBadges(
 }
 
 /** Installs {@link nodeBadges} as the legacy canvas's badge row source. */
-export function installNodeBadges(): void {
-  registerBadgeRowsProvider(nodeBadges)
+export function installNodeBadges(): () => void {
+  return registerBadgeRowsProvider(nodeBadges)
 }

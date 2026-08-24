@@ -303,11 +303,8 @@ export function promoteValueWidgetViaSubgraphInput(
   )
   if (hostInput) {
     hostInput.label = sourceSlot.label
-    const promotedState = hostInput.widgetId
-      ? useWidgetValueStore().getWidget(hostInput.widgetId)
-      : undefined
-    if (promotedState && sourceSlot.label)
-      promotedState.label = sourceSlot.label
+    if (hostInput.widgetId && sourceSlot.label)
+      useWidgetValueStore().setLabel(hostInput.widgetId, sourceSlot.label)
   }
 
   seedNestedPromotedInputState(subgraphNode, subgraphInput.name, sourceSlot)

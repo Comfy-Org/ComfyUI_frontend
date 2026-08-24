@@ -60,6 +60,7 @@ describe('notifyLayoutChanges', () => {
     await vi.waitFor(() => expect(setDirty).toHaveBeenCalled())
 
     expect(onResize).toHaveBeenCalledTimes(1)
+    expect([...onResize.mock.calls[0][0]]).toEqual([300, 200])
   })
 
   it.for([
