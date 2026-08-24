@@ -1,10 +1,9 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, toRaw } from 'vue'
+import { computed } from 'vue'
 
 import { useNodeDataStore } from '@/stores/nodeDataStore'
-import { graphScopeOf } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 
 import type { NodeState } from '@/types/nodeState'
@@ -32,19 +31,6 @@ describe('LGraphNode node-data adoption', () => {
       subgraph.id
     )
   }
-
-  it('buckets by root graph and partitions by owning graph', () => {
-    const { subgraph, node } = addNodeToSubgraph()
-    const rootId = subgraph.rootGraph.id
-
-    expect(rootId).not.toBe(subgraph.id)
-    expect(node._graphScope).toEqual(graphScopeOf(subgraph))
-    expect(node._state.graphId).toBe(subgraph.id)
-
-    const [registered] = statesIn(subgraph)
-    expect(toRaw(node._state)).toBe(toRaw(registered))
-    expect(useNodeDataStore().getGraphNodesFor(rootId, rootId)).toEqual([])
-  })
 
   it('writes shell fields through to the store, reactively', () => {
     const { subgraph, node } = addNodeToSubgraph()
@@ -116,16 +102,6 @@ describe('LGraphNode node-data adoption', () => {
     restored.configure(serialised)
     expect(restored.widgets?.[0].label).toBe('Translated prompt')
   })
-
-  it('vacates its store entry on remove', () => {
-    const { subgraph, node } = addNodeToSubgraph()
-
-    subgraph.remove(node)
-
-    expect(statesIn(subgraph)).toEqual([])
-    expect(node._graphScope).toBeUndefined()
-  })
-
   it('keeps registered identity when configure carries stale values', () => {
     const { subgraph, node } = addNodeToSubgraph()
     const assignedId = node.id

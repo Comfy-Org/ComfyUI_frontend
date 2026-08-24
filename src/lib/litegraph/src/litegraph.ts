@@ -118,11 +118,7 @@ export { LGraphBadge } from './LGraphBadge'
 export { LGraphCanvas } from './LGraphCanvas'
 export { LGraphGroup } from './LGraphGroup'
 export type { GroupId } from '@/types/groupId'
-export {
-  LGraphNode,
-  registerNodeState,
-  unregisterNodeState
-} from './LGraphNode'
+export { LGraphNode } from './LGraphNode'
 export { LLink } from './LLink'
 export { createBounds } from './measure'
 export { Reroute, type RerouteId } from './Reroute'
