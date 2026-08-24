@@ -124,10 +124,10 @@ test.describe('Events page — desktop @smoke', () => {
   test('a video slide that ends while hovered advances once the pointer leaves', async ({
     page
   }) => {
-    const firstVideoIndex = featuredEvents.findIndex(
-      (event) => event.media.type === 'video'
-    )
-    test.skip(firstVideoIndex < 0, 'needs a featured video slide')
+    const videoSlideTitles = featuredEvents
+      .filter((event) => event.media.type === 'video')
+      .map((event) => event.title.en)
+    test.skip(videoSlideTitles.length === 0, 'needs a featured video slide')
 
     await page.goto(PATH_EN)
     const hero = heroSection(page, 'en')
@@ -141,19 +141,22 @@ test.describe('Events page — desktop @smoke', () => {
 
     const activeSlide = hero.locator('[aria-hidden="false"]')
 
-    // The first featured slide is an image; advance to the first video slide.
-    // Retry to wait out island hydration, but click only while the active slide
-    // is not yet the video slide so a slow render never overshoots past it.
-    const videoSlideTitle = featuredEvents[firstVideoIndex].title.en
-    await expect(async () => {
-      const activeLabel = await activeSlide
-        .locator('a')
-        .getAttribute('aria-label')
-      if (activeLabel !== videoSlideTitle) await nextSlide.click()
-      await expect(activeSlide.locator('a')).toHaveAccessibleName(
-        videoSlideTitle
+    // Advance to whichever video slide comes next, waiting out island hydration
+    // first and then each transition, so no click overshoots a slow render.
+    const activeLabel = () =>
+      activeSlide.locator('a').getAttribute('aria-label')
+    await expect(activeSlide.locator('a')).toHaveCount(1)
+
+    for (let step = 0; step < featuredEvents.length; step++) {
+      const label = await activeLabel()
+      if (label && videoSlideTitles.includes(label)) break
+      await nextSlide.click()
+      await expect(activeSlide.locator('a')).not.toHaveAttribute(
+        'aria-label',
+        label!
       )
-    }).toPass({ timeout: 15_000 })
+    }
+    expect(videoSlideTitles).toContain(await activeLabel())
     // Clicking left the button focused; drop that focus so only the hover holds
     // the slide, letting the pointer leaving be what releases the advance.
     await nextSlide.blur()
