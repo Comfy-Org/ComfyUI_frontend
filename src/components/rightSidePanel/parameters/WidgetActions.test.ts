@@ -8,7 +8,10 @@ import { h } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import { promoteWidget } from '@/core/graph/subgraph/promotionUtils'
+import {
+  demoteWidget,
+  promoteWidget
+} from '@/core/graph/subgraph/promotionUtils'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -29,7 +32,8 @@ const {
 }))
 
 vi.mock('@/core/graph/subgraph/promotionUtils', () => ({
-  promoteWidget: vi.fn()
+  promoteWidget: vi.fn(),
+  demoteWidget: vi.fn()
 }))
 
 vi.mock('@/stores/nodeDefStore', () => ({
@@ -79,6 +83,7 @@ const i18n = createI18n({
       },
       rightSidePanel: {
         showInput: 'Show input',
+        hideInput: 'Hide input',
         addFavorite: 'Favorite',
         removeFavorite: 'Unfavorite',
         resetToDefault: 'Reset to default'
@@ -316,6 +321,59 @@ describe('WidgetActions', () => {
 
     expect(
       screen.queryByRole('button', { name: /Show input/ })
+    ).not.toBeInTheDocument()
+  })
+
+  it('demotes the widget from the host when "Hide input" is clicked', async () => {
+    const widget = createMockWidget()
+    const node = fromAny<LGraphNode, unknown>({
+      id: 1,
+      type: 'TestNode',
+      rootGraph: { id: 'graph-test' },
+      isSubgraphNode: () => true,
+      getSlotFromWidget: (candidate: IBaseWidget) =>
+        candidate.name === 'test_widget'
+          ? { widgetId: 'graph-test:1:test_widget' }
+          : undefined
+    })
+    const host = fromAny<SubgraphNode, unknown>({ id: 2 })
+
+    const { user } = renderWidgetActions(widget, node, { host })
+
+    await user.click(screen.getByRole('button', { name: /Hide input/ }))
+
+    expect(demoteWidget).toHaveBeenCalledWith(node, widget, [host])
+  })
+
+  it('does not offer "Hide input" without a host', () => {
+    const widget = createMockWidget()
+    const node = fromAny<LGraphNode, unknown>({
+      id: 1,
+      type: 'TestNode',
+      rootGraph: { id: 'graph-test' },
+      isSubgraphNode: () => true,
+      getSlotFromWidget: (candidate: IBaseWidget) =>
+        candidate.name === 'test_widget'
+          ? { widgetId: 'graph-test:1:test_widget' }
+          : undefined
+    })
+
+    renderWidgetActions(widget, node)
+
+    expect(
+      screen.queryByRole('button', { name: /Hide input/ })
+    ).not.toBeInTheDocument()
+  })
+
+  it('does not offer "Hide input" when the widget is not linked', () => {
+    const widget = createMockWidget()
+    const node = createMockNode()
+    const host = fromAny<SubgraphNode, unknown>({ id: 2 })
+
+    renderWidgetActions(widget, node, { host })
+
+    expect(
+      screen.queryByRole('button', { name: /Hide input/ })
     ).not.toBeInTheDocument()
   })
 
