@@ -278,7 +278,9 @@ const faqJsonLd = {
 
         <!-- JSON VIEW -->
         <div id="panel-json" class="hidden">
-          <pre id="input-json" class="mt-4 max-h-[340px] overflow-auto rounded-xl border border-white/12 bg-[#141018] p-4 font-mono text-[11.5px] leading-relaxed text-[#b7ded5]"></pre>
+          <div class="mt-4 overflow-hidden rounded-2xl border border-white/15">
+            <pre id="input-json" class="max-h-96 overflow-auto whitespace-pre-wrap break-words p-4 font-mono text-xs leading-relaxed text-primary-warm-gray"></pre>
+          </div>
           <p class="mt-2 text-[11px] font-light text-primary-warm-gray">Live from your inputs — the exact payload the API takes. <button id="copy-json" class="font-extrabold uppercase tracking-widest text-primary-comfy-yellow">Copy</button><span id="copy-done" class="hidden pl-2 text-[#b7ded5]">copied ✓</span></p>
         </div>
 
@@ -305,7 +307,7 @@ const faqJsonLd = {
         </div>
         <div class="relative aspect-video w-full bg-secondary-mauve/30">
           <img id="result-img" src={img} alt={`${name} output`} class="h-full w-full object-cover transition-opacity duration-500" onerror="this.style.display='none'" />
-          <pre id="result-json" class="absolute inset-0 hidden overflow-auto bg-[#141018] p-5 font-mono text-[11.5px] leading-relaxed text-[#b7ded5]"></pre>
+          <pre id="result-json" class="absolute inset-0 hidden bg-primary-comfy-ink overflow-auto whitespace-pre-wrap break-words p-4 font-mono text-xs leading-relaxed text-primary-warm-gray"></pre>
           <div id="running-overlay" class="absolute inset-0 hidden flex-col items-center justify-center gap-4 bg-primary-comfy-ink/95 px-8 text-center">
             <p class="text-[10px] font-extrabold uppercase tracking-[0.25em] text-[#b7ded5]">Restored your prompt and settings ✓</p>
             <p class="text-lg font-semibold text-primary-warm-white">Running the graph</p>
@@ -388,8 +390,8 @@ const faqJsonLd = {
   <!-- API -->
   <section id="panel-api" data-panel="api" role="tabpanel" hidden class="mx-auto max-w-7xl scroll-mt-24 px-5 py-12 sm:px-6 lg:px-8 lg:pb-24">
     <h2 class="text-sm font-extrabold uppercase tracking-[0.3em] text-primary-comfy-yellow">Run it your way</h2>
-    <div class="mt-4 overflow-x-auto rounded-2xl border border-white/10 bg-black/40 p-5 sm:p-7">
-      <pre class="font-mono text-xs leading-relaxed text-[#b7ded5] sm:text-[13px]">{`# Same graph the playground runs — as an endpoint
+    <div class="mt-4 overflow-hidden rounded-2xl border border-white/15">
+      <pre class="overflow-auto whitespace-pre-wrap break-words p-4 font-mono text-xs leading-relaxed text-primary-warm-gray">{`# Same graph the playground runs — as an endpoint
 curl -X POST https://api.comfy.org/v1/run \\
   -H "Authorization: Bearer $COMFY_KEY" \\
   -d '{ "workflow": "${slugId}", "prompt": "…" }'
