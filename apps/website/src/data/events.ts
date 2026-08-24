@@ -318,6 +318,26 @@ const events: readonly ComfyEvent[] = [
     })
   },
   {
+    id: 'local-mcp',
+    category: 'livestream',
+    title: {
+      en: 'Local MCP: Run ComfyUI with Your Agent & Hardware',
+      'zh-CN': '本地 MCP：用你的智能体与硬件运行 ComfyUI'
+    },
+    description: {
+      en: 'Run ComfyUI locally through MCP — a live walkthrough of driving your own agent and hardware to build and run workflows from the tools you already use.',
+      'zh-CN':
+        '通过 MCP 在本地运行 ComfyUI——现场演示如何驱动你自己的智能体与硬件，用你已经在使用的工具来构建并运行工作流。'
+    },
+    location: { en: 'Online', 'zh-CN': '线上' },
+    dateLabel: {
+      en: 'August 26, 2026 · 10AM PT',
+      'zh-CN': '2026年8月26日 · 上午10点（PT）'
+    },
+    startDateTime: '2026-08-26T10:00:00-07:00',
+    liveVideoId: '6yH_15XSd0w'
+  },
+  {
     id: 'beyond-the-models',
     category: 'livestream',
     title: {
@@ -556,15 +576,17 @@ const events: readonly ComfyEvent[] = [
   }
 ]
 
-// The site is statically built, so classification is fixed at build time: an
-// event moves between the upcoming and past sections on the next deploy.
-const BUILD_NOW = new Date()
+// Sampled once per module load: at build time for the pre-rendered HTML, and
+// again in the browser when the events islands hydrate. An event therefore
+// leaves the upcoming section on the first page load after it ends, rather than
+// on the next deploy; a page left open keeps the list it hydrated with.
+const NOW = new Date()
 
-export const upcomingEvents = deriveUpcomingEvents(events, BUILD_NOW)
+export const upcomingEvents = deriveUpcomingEvents(events, NOW)
 
-export const pastEvents = derivePastEvents(events, BUILD_NOW)
+export const pastEvents = derivePastEvents(events, NOW)
 
-export const featuredEvents = deriveFeaturedEvents(events, BUILD_NOW)
+export const featuredEvents = deriveFeaturedEvents(events, NOW)
 
 export const watchablePastEvents: readonly ComfyEvent[] = pastEvents.filter(
   (event) => eventVideoId(event)
