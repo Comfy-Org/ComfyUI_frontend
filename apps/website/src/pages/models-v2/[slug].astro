@@ -73,6 +73,9 @@ const promptExample = launch
   ? launch.promptExample
   : 'Golden hour drone shot pushing over a ridge line, fog pooling in the valley — native ambient audio.'
 const baseCredits = kind === 'partner api' ? 12 : 6
+const kindLabel = kind === 'open weights' ? 'Open weights' : 'Partner API'
+const sentence = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
+const tagPill = 'inline-flex h-6 items-center rounded-full px-4 text-xs font-normal'
 const workflowsUrl = launch
   ? launch.workflowsUrl
   : registry!.hubSlug
@@ -205,11 +208,11 @@ const faqJsonLd = {
     </div>
     <p class="mt-2 max-w-3xl text-sm font-light leading-relaxed text-primary-comfy-canvas sm:text-base">{blurb}</p>
     <div class="mt-4 flex flex-wrap gap-1.5">
-      {dayZero && <span class="rounded bg-primary-comfy-yellow px-2 py-1 text-[10px] font-extrabold uppercase tracking-widest text-primary-comfy-ink">Day zero</span>}
-      <span class:list={['rounded px-2 py-1 text-[10px] font-extrabold uppercase tracking-widest', kind === 'open weights' ? 'bg-[#96b4ff]/15 text-[#96b4ff]' : 'bg-[#dbd6f2]/15 text-[#dbd6f2]']}>{kind}</span>
-      <span class="rounded border border-white/15 px-2 py-1 text-[10px] font-extrabold uppercase tracking-widest text-primary-comfy-canvas">Commercial use</span>
-      <span class="rounded border border-white/15 px-2 py-1 text-[10px] font-extrabold uppercase tracking-widest text-primary-comfy-canvas">{price}</span>
-      <span class="rounded border border-white/15 px-2 py-1 text-[10px] font-extrabold uppercase tracking-widest text-primary-comfy-canvas">{runs}</span>
+      {dayZero && <span class:list={[tagPill, 'bg-primary-comfy-yellow text-primary-comfy-ink']}>Day zero</span>}
+      <span class:list={[tagPill, kind === 'open weights' ? 'bg-[#96b4ff]/15 text-[#96b4ff]' : 'bg-[#dbd6f2]/15 text-[#dbd6f2]']}>{kindLabel}</span>
+      <span class:list={[tagPill, 'bg-transparency-white-t4 text-primary-comfy-canvas']}>Commercial use</span>
+      <span class:list={[tagPill, 'bg-transparency-white-t4 text-primary-comfy-canvas']}>{sentence(price)}</span>
+      <span class:list={[tagPill, 'bg-transparency-white-t4 text-primary-comfy-canvas']}>{sentence(runs)}</span>
     </div>
   </section>
 
