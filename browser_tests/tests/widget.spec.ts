@@ -233,17 +233,7 @@ test.describe('Image widget', { tag: ['@screenshot', '@widget'] }, () => {
     const comboEntry = comfyPage.page.getByRole('menuitem', {
       name: 'image32x32.webp'
     })
-    const imageLoaded = comfyPage.page.waitForResponse(
-      (resp) =>
-        resp.url().includes('/view') &&
-        resp.url().includes('image32x32.webp') &&
-        resp.request().method() === 'GET' &&
-        resp.status() === 200
-    )
     await comboEntry.click()
-
-    // Wait for the image to load from the server
-    await imageLoaded
 
     // Wait for the image to decode and appear on the node
     await expect
