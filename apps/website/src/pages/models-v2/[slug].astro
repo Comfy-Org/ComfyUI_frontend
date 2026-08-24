@@ -310,17 +310,17 @@ const faqJsonLd = {
       </div>
 
       <!-- RESULT CARD -->
-      <div class="flex flex-col overflow-hidden rounded-2xl border border-white/10">
-        <div class="flex items-center justify-between px-5 py-3.5">
+      <div class="flex flex-col rounded-2xl border border-white/10 p-5 sm:p-6">
+        <div class="flex items-center justify-between">
           <h2 class="text-[11px] font-extrabold uppercase tracking-[0.2em] text-primary-warm-white">Result</h2>
           <div id="rview-toggle" class="flex gap-1.5">
             <button data-rview="preview" class="inline-flex h-6 items-center rounded-full px-4 text-xs font-normal transition-colors bg-transparency-white-t8 text-primary-comfy-canvas">Preview</button>
             <button data-rview="json" class="inline-flex h-6 items-center rounded-full px-4 text-xs font-normal transition-colors text-primary-warm-gray hover:bg-transparency-white-t4 hover:text-primary-comfy-canvas">JSON</button>
           </div>
         </div>
-        <div class="relative aspect-video w-full">
+        <div class="relative mt-5 aspect-video w-full overflow-hidden rounded-2xl">
           <img id="result-img" src={img} alt={`${name} output`} class="h-full w-full object-cover transition-opacity duration-500" onerror="this.style.display='none'" />
-          <div id="result-json-box" class="absolute inset-4 hidden overflow-hidden rounded-2xl border border-white/15">
+          <div id="result-json-box" class="absolute inset-0 hidden overflow-hidden rounded-2xl border border-white/15">
             <pre id="result-json" class="scrollbar-code h-full overflow-auto whitespace-pre-wrap break-words p-4 font-mono text-xs leading-relaxed text-primary-warm-gray"></pre>
             <button type="button" data-copy="result-json" title="Copy" aria-label="Copy" class="absolute right-3 top-3 group shrink-0 cursor-pointer rounded-lg border border-white/15 bg-white/5 p-1.5 text-primary-warm-gray transition-colors hover:bg-white/10 hover:text-primary-warm-white"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-3.5 group-data-[copied]:hidden"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden size-3.5 group-data-[copied]:block"><path d="M20 6 9 17l-5-5"/></svg></button>
           </div>
@@ -353,7 +353,7 @@ const faqJsonLd = {
             </div>
           </div>
         </div>
-        <div class="flex items-center justify-between gap-3 px-5 py-3">
+        <div class="flex items-center justify-between gap-3 pt-3">
           <p id="result-meta" class="truncate text-[10px] font-semibold uppercase tracking-[0.15em] text-primary-warm-gray">Seed 428790123 · 4.2s render · prompt saved through sign-in</p>
           <span class="shrink-0 text-[11px] font-extrabold uppercase tracking-widest text-primary-comfy-yellow">Download ↓</span>
         </div>
@@ -419,7 +419,7 @@ const faqJsonLd = {
   </section>
 
   <!-- COST + FAMILY -->
-  <section class="bg-black/25 py-12 lg:py-16">
+  <section class="py-12 lg:py-16">
     <div class="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
       <div class="grid gap-5 lg:grid-cols-2">
         <div class="rounded-2xl border border-white/10 bg-white/[0.04] p-6 sm:p-7">
