@@ -228,7 +228,7 @@ describe('duplicated subgraph deleted in both orders (I4)', () => {
     expect(promotedValueOf(second)).toBe(before)
   })
 
-  it.fails('keeps the shared definition only while a nested instance references it', () => {
+  it('keeps the shared definition only while a nested instance references it', () => {
     const { rootGraph, definition, instances } = buildScenario()
     const outer = rootGraph.createSubgraph(
       createTestSubgraphData({ name: 'Outer' })
