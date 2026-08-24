@@ -103,6 +103,9 @@ jobs:
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
 
+      - name: Setup Playwright
+        uses: ./.github/actions/setup-playwright
+
       - name: Typecheck website stories
         run: pnpm --filter @comfyorg/website run typecheck:storybook
 
