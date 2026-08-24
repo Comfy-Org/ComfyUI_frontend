@@ -12,6 +12,24 @@ components and stories from an agent conversation.
 You need a verified `@comfy.org` Google account. You do not need to request or
 manage a shared token.
 
+Verify that the Codex CLI is available:
+
+```bash
+codex --version
+```
+
+If the Codex desktop app is installed on macOS but Terminal reports `command
+not found`, expose the app's bundled CLI and restart the shell:
+
+```bash
+mkdir -p ~/.local/bin
+ln -s /Applications/ChatGPT.app/Contents/Resources/codex ~/.local/bin/codex
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
+exec zsh
+```
+
+If the link already exists, skip the `ln -s` command.
+
 The remote MCP endpoint is:
 
 ```text
