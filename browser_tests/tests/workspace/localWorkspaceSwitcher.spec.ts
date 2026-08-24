@@ -117,7 +117,9 @@ test.describe('Local workspace switcher', { tag: '@auth' }, () => {
       .getByText(TEAM_WORKSPACE_NAME, { exact: true })
       .click()
     await workspaceSwitchTokenGate.requestReceived
-    await comfyPage.actionbar.queueButton.primaryButton.click()
+    await page.evaluate(() => {
+      void window.app!.queuePrompt(0)
+    })
     workspaceSwitchTokenGate.release()
 
     expect((await promptRequest).postDataJSON()).toEqual(
