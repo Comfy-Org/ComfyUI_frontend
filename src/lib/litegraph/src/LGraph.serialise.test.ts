@@ -129,6 +129,23 @@ describe('LGraph Serialisation', () => {
     expect(Object.hasOwn(node, 'legacyData')).toBe(false)
   })
 
+  test('does not apply unsafe extension keys to the configure view', ({
+    expect
+  }) => {
+    const node = new LGraphNode('Extended')
+    const saved = node.serialize()
+    saved.extensions = Object.fromEntries([['__proto__', { polluted: true }]])
+    let configuredPrototype: object | null | undefined
+    node.onConfigure = (data) => {
+      configuredPrototype = Object.getPrototypeOf(data)
+    }
+
+    node.configure(saved)
+
+    expect(configuredPrototype).toBe(Object.prototype)
+    expect(node.serialize().extensions).toBeUndefined()
+  })
+
   test('isolates graph extension payloads from graph properties', ({
     expect
   }) => {

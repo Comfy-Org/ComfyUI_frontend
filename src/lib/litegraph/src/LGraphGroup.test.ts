@@ -122,6 +122,8 @@ describe('LGraphGroup', () => {
     group.flags.pinned = true
 
     expect(group._presentation).not.toBe(presentation)
+    expect(presentation.flags).not.toBe(group.flags)
+    expect(presentation.flags.pinned).toBeUndefined()
     expect(group.pinned).toBe(true)
     expect(
       useGraphDefinitionStore()

@@ -106,9 +106,8 @@ export function refreshNodeGeometry(node: LGraphNode): LegacySize {
     )
   }
 
-  const rootGraphId = node.graph?.rootGraph.id
-  const contentSize = rootGraphId
-    ? layoutStore.contentSizeOf(rootGraphId, node.id)
+  const contentSize = attachment
+    ? layoutStore.contentSizeOf(attachment.graphId, attachment.id)
     : undefined
   projection.renderedSize[0] = Math.max(
     projection.size[0],
@@ -129,13 +128,14 @@ export function setNodePosition(node: LGraphNode, value: LegacyPoint): void {
 }
 
 function commitNodePosition(node: LGraphNode): void {
-  if (node.id === UNASSIGNED_NODE_ID || !node.graph) return
+  const attachment = nodeAttachments.get(node)
+  if (node.id === UNASSIGNED_NODE_ID || !attachment) return
   const projection = nodeGeometryProjection(node)
   const position = { x: projection.position[0], y: projection.position[1] }
   if (
     layoutStore.readNodeRect(
-      node.graph.rootGraph.id,
-      node.id,
+      attachment.graphId,
+      attachment.id,
       storedRectScratch
     ) &&
     storedRectScratch[0] === position.x &&
@@ -156,12 +156,13 @@ export function setNodeSize(node: LGraphNode, value: LegacySize): void {
 }
 
 function commitNodeSize(node: LGraphNode): void {
-  if (node.id === UNASSIGNED_NODE_ID || !node.graph) return
+  const attachment = nodeAttachments.get(node)
+  if (node.id === UNASSIGNED_NODE_ID || !attachment) return
   const projection = nodeGeometryProjection(node)
   if (
     layoutStore.readNodeRect(
-      node.graph.rootGraph.id,
-      node.id,
+      attachment.graphId,
+      attachment.id,
       storedRectScratch
     ) &&
     storedRectScratch[2] === projection.size[0] &&

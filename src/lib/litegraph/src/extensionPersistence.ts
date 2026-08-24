@@ -66,6 +66,8 @@ const isJsonValue = (value: unknown): value is JsonValue => {
   )
 }
 
+const isSafeExtensionKey = (key: string): boolean => key !== '__proto__'
+
 const readPayload = (value: unknown): ExtensionPayload => {
   if (
     !isJsonValue(value) ||
@@ -74,11 +76,32 @@ const readPayload = (value: unknown): ExtensionPayload => {
     Array.isArray(value)
   )
     return {}
-  return structuredClone(value)
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([key]) => isSafeExtensionKey(key))
+      .map(([key, entry]) => [key, structuredClone(entry)])
+  )
 }
 
 const cloneSerialisable = <T>(value: T): T =>
   JSON.parse(JSON.stringify(value)) as T
+
+function copyExtensionFields(
+  target: ExtensionPayload,
+  source: Record<string, unknown>,
+  canonicalFields: ReadonlySet<string>
+): void {
+  for (const [key, value] of Object.entries(source)) {
+    if (
+      !isSafeExtensionKey(key) ||
+      canonicalFields.has(key) ||
+      key === 'extensions' ||
+      !isJsonValue(value)
+    )
+      continue
+    target[key] = structuredClone(value)
+  }
+}
 
 export const hydrateExtensionPayload = (
   owner: object,
@@ -87,12 +110,7 @@ export const hydrateExtensionPayload = (
 ): void => {
   const record = Object.fromEntries(Object.entries(data))
   const payload = readPayload(record.extensions)
-
-  for (const [key, value] of Object.entries(record)) {
-    if (canonicalFields.has(key) || key === 'extensions' || !isJsonValue(value))
-      continue
-    payload[key] = structuredClone(value)
-  }
+  copyExtensionFields(payload, record, canonicalFields)
   payloads.set(owner, payload)
 }
 
@@ -121,11 +139,7 @@ export const runExtensionSerializeHook = <T extends object>(
 
   const viewRecord = Object.fromEntries(Object.entries(view))
   const result = readPayload(viewRecord.extensions)
-  for (const [key, value] of Object.entries(viewRecord)) {
-    if (canonicalFields.has(key) || key === 'extensions' || !isJsonValue(value))
-      continue
-    result[key] = structuredClone(value)
-  }
+  copyExtensionFields(result, viewRecord, canonicalFields)
   payloads.set(owner, result)
 
   return Object.keys(result).length

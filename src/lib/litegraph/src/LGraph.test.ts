@@ -15,12 +15,10 @@ import {
   LiteGraph,
   LLink,
   Reroute,
+  Subgraph,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
-import {
-  serialiseMutableGraphParts,
-  Subgraph
-} from '@/lib/litegraph/src/LGraph'
+import { serialiseMutableGraphParts } from '@/lib/litegraph/src/LGraph'
 import type {
   ExportedSubgraph,
   SerialisableGraph,
@@ -277,6 +275,19 @@ describe('LGraph', () => {
     const result2 = graph.serialize({ sortNodes: true })
 
     expect(result1).toEqual(result2)
+  })
+
+  it('sorts numeric and non-numeric node IDs deterministically', () => {
+    const graph = new LGraph()
+    for (const id of ['beta', '10', 'alpha', '2']) {
+      const node = new DummyNode()
+      node.id = toNodeId(id)
+      graph.add(node)
+    }
+
+    expect(
+      graph.serialize({ sortNodes: true }).nodes.map((node) => String(node.id))
+    ).toEqual(['2', '10', 'alpha', 'beta'])
   })
 
   it('projects graph-scoped derived execution order to extensions and wire data', () => {
@@ -942,7 +953,10 @@ describe('Store-driven serialization parity', () => {
     )
   })
 
-  test('rejects a reroute without layout', ({ expect, linkedNodesGraph }) => {
+  test('serializes a reroute from its detached position', ({
+    expect,
+    linkedNodesGraph
+  }) => {
     const graph = new LGraph(linkedNodesGraph)
     const link = graph.links.values().next().value!
     const reroute = graph.createReroute([10, 20], link)!
@@ -954,8 +968,8 @@ describe('Store-driven serialization parity', () => {
       timestamp: Date.now()
     })
 
-    expect(() => graph.asSerialisable()).toThrow(
-      `Cannot serialize graph ${graph.id}: reroute ${reroute.id} has no layout`
+    expect(graph.asSerialisable().reroutes).toContainEqual(
+      expect.objectContaining({ id: reroute.id, pos: [10, 20] })
     )
   })
 })
