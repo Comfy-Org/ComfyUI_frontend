@@ -185,4 +185,49 @@ describe('SettingsPlansSection — API is the source of truth', () => {
     ).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Contact us' })).toBeDisabled()
   })
+
+  it('shows the default stop credits when live stops replace the seeded set', async () => {
+    // Seed with one breakpoint set, then swap to a disjoint set: the previously
+    // seeded USD matches no new stop, so the display falls back to the API
+    // default stop (no stale/blank credits).
+    const { rerender } = renderSection({
+      teamCreditStops: {
+        default_stop_index: 0,
+        stops: [
+          {
+            id: 'team_200',
+            credits: 42_200,
+            monthly: { list_price_cents: 20_000, price_cents: 20_000 },
+            yearly: { list_price_cents: 20_000, price_cents: 18_000 }
+          }
+        ]
+      }
+    })
+    await userEvent.click(screen.getByRole('button', { name: 'Teams' }))
+    expect(screen.getByText('42,200')).toBeTruthy()
+
+    await rerender({
+      catalogPlans: CATALOG,
+      teamCreditStops: {
+        default_stop_index: 1,
+        stops: [
+          {
+            id: 'team_400',
+            credits: 84_400,
+            monthly: { list_price_cents: 40_000, price_cents: 40_000 },
+            yearly: { list_price_cents: 40_000, price_cents: 36_000 }
+          },
+          {
+            id: 'team_1200',
+            credits: 253_200,
+            monthly: { list_price_cents: 120_000, price_cents: 114_000 },
+            yearly: { list_price_cents: 120_000, price_cents: 108_000 }
+          }
+        ]
+      }
+    })
+
+    expect(await screen.findByText('253,200')).toBeTruthy()
+    expect(screen.queryByText('42,200')).toBeNull()
+  })
 })

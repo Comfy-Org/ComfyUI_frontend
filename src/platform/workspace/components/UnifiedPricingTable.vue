@@ -480,8 +480,6 @@ const QUESTIONS_URL = 'https://portal.usepylon.com/comfy-org/forms/question'
 const ENTERPRISE_URL = 'https://www.comfy.org/enterprise'
 const PRICING_URL = 'https://www.comfy.org/pricing'
 
-// Videos-per-credit ratio (shared presentation constant).
-
 interface BillingCycleOption {
   label: string
   value: BillingCycle

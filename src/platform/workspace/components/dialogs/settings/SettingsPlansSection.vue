@@ -253,7 +253,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { I18nT, useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -394,13 +394,9 @@ const selectedTeamStop = computed(
     }
 )
 
-// API stops can resolve after mount with different breakpoints, leaving the
-// seeded USD matching none; snap to the resolved default.
-watch(defaultTeamStop, (stop) => {
-  if (!stop) return
-  if (teamStops.value.some((s) => s.usd === teamUsd.value)) return
-  teamUsd.value = stop.usd
-})
+// No re-snap watch needed: when the seeded teamUsd matches no live stop,
+// both selectedTeamStop and CreditSlider's selectedIndex fall back to the
+// default stop, so the display and slider stay correct as stops resolve.
 
 const teamVideoEstimate = computed(() =>
   Math.round(selectedTeamStop.value.credits * VIDEO_PER_CREDIT)
