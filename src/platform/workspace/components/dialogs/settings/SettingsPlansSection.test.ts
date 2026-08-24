@@ -1,4 +1,5 @@
 import userEvent from '@testing-library/user-event'
+import { nextTick } from 'vue'
 import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -73,11 +74,18 @@ describe('SettingsPlansSection personal cards from the API catalog', () => {
     expect(screen.getByText('50,400')).toBeTruthy()
     expect(screen.getByText('88,800')).toBeTruthy()
     expect(screen.getByText('253,200')).toBeTruthy()
+
+    // Video estimate = monthly credits × the fixed ratio (derived from the API
+    // grant, not a per-tier constant).
+    expect(screen.getByText('Generates ~381 5s videos*')).toBeTruthy()
+    expect(screen.getByText('Generates ~672 5s videos*')).toBeTruthy()
+    expect(screen.getByText('Generates ~1,916 5s videos*')).toBeTruthy()
   })
 
   it('renders the API price and credits for the monthly cycle', async () => {
     renderSection()
     await userEvent.click(screen.getByRole('switch'))
+    await nextTick()
 
     expect(screen.getByText('$20')).toBeTruthy()
     expect(screen.getByText('$35')).toBeTruthy()
@@ -120,6 +128,12 @@ describe('SettingsPlansSection personal cards from the API catalog', () => {
     expect(screen.getByText('Standard')).toBeTruthy()
     expect(screen.queryByText('Creator')).toBeNull()
     expect(screen.queryByText('Pro')).toBeNull()
+  })
+
+  it('exposes the billing switch by its accessible name', () => {
+    renderSection()
+
+    expect(screen.getByRole('switch', { name: 'Billed yearly' })).toBeTruthy()
   })
 
   it('disables the choose CTA and shows no discount pill or checkout caption', () => {

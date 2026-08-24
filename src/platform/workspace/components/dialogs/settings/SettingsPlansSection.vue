@@ -11,7 +11,10 @@
 
     <div class="flex items-center justify-end">
       <div class="flex items-center gap-2">
-        <Switch v-model="billedYearly" />
+        <Switch
+          v-model="billedYearly"
+          :aria-label="t('settingsPlans.billedYearlyToggle')"
+        />
         <span class="text-sm font-semibold text-base-foreground">
           {{ t('settingsPlans.billedYearlyToggle') }}
         </span>
@@ -77,6 +80,11 @@
           <span class="text-sm text-muted-foreground tabular-nums">
             {{ t('settingsPlans.perDollar', { credits: plan.perDollar }) }}
           </span>
+          <span class="text-sm text-muted-foreground">
+            {{
+              t('subscription.videoEstimate', { count: n(plan.videoEstimate) })
+            }}
+          </span>
         </div>
 
         <div class="flex flex-col gap-2">
@@ -137,11 +145,17 @@ interface PersonalCard extends PersonalTier {
   billedYearlyTotal: number
   credits: number
   perDollar: number
+  videoEstimate: number
 }
 
 const { t, n } = useI18n()
 
 const billedYearly = ref(true)
+
+// Videos generated per credit for the Wan 2.2 i2v template — a fixed, disclosed
+// presentation ratio (the copy carries the "*" template caveat). Applied to the
+// API credit grant so the estimate tracks what is sold and cannot drift.
+const VIDEO_PER_CREDIT = 0.0908
 
 // Presentation-only tier metadata; price/credits/slug come from the API row.
 const personalTiers = computed<PersonalTier[]>(() => [
@@ -186,6 +200,11 @@ const personalCards = computed<PersonalCard[]>(() =>
     const pricePerMonth = billedYearly.value
       ? Math.round(periodPrice / 12)
       : periodPrice
+    // The video estimate is a per-month figure; annual credits_cents is the
+    // yearly grant, so scale it down to a month before applying the ratio.
+    const monthlyCredits = billedYearly.value
+      ? plan.credits_cents / 12
+      : plan.credits_cents
     return [
       {
         ...tier,
@@ -196,7 +215,8 @@ const personalCards = computed<PersonalCard[]>(() =>
         // Annual credits_cents is already the yearly total (not monthly).
         credits: plan.credits_cents,
         perDollar:
-          periodPrice > 0 ? Math.round(plan.credits_cents / periodPrice) : 0
+          periodPrice > 0 ? Math.round(plan.credits_cents / periodPrice) : 0,
+        videoEstimate: Math.round(monthlyCredits * VIDEO_PER_CREDIT)
       }
     ]
   })
