@@ -108,3 +108,6 @@ vitest.config.*.timestamp*
 src/__ecs_matrix__/
 # Per-pack result rows written by a local detection-proof run
 matrix-proof/
+
+# Agent telemetry working files
+/telemetry/
