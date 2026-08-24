@@ -327,6 +327,9 @@ catalogs:
     rollup-plugin-visualizer:
       specifier: ^6.0.4
       version: 6.0.11
+    shiki:
+      specifier: ^4.3.1
+      version: 4.3.1
     storybook:
       specifier: ^10.5.6
       version: 10.5.6
@@ -997,6 +1000,9 @@ importers:
       reka-ui:
         specifier: 'catalog:'
         version: 2.6.2(typescript@6.0.3)(vue@3.5.41(typescript@6.0.3))
+      shiki:
+        specifier: 'catalog:'
+        version: 4.3.1
       three:
         specifier: 'catalog:'
         version: 0.184.0
@@ -9898,7 +9904,7 @@ snapshots:
     dependencies:
       '@emnapi/core': 1.11.1
       '@emnapi/runtime': 1.11.1
-      '@napi-rs/wasm-runtime': 1.1.6(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)
+      '@napi-rs/wasm-runtime': 1.2.3(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)
     optional: true
 
   '@bruits/satteri-win32-arm64-msvc@0.9.5':
@@ -11054,6 +11060,13 @@ snapshots:
     dependencies:
       '@emnapi/core': 1.9.2
       '@emnapi/runtime': 1.9.2
+      '@tybys/wasm-util': 0.10.3
+    optional: true
+
+  '@napi-rs/wasm-runtime@1.2.3(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)':
+    dependencies:
+      '@emnapi/core': 1.11.1
+      '@emnapi/runtime': 1.11.1
       '@tybys/wasm-util': 0.10.3
     optional: true
 

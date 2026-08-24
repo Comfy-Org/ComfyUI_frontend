@@ -16,6 +16,7 @@ import {
   proxyImg,
   type LaunchModel
 } from '../../config/models-v2-demo'
+import { highlightInline } from '../../lib/highlight'
 
 export function getStaticPaths() {
   const launchLike = [...launches, ...topPartnerApis.filter((p) => !launches.includes(p))]
@@ -105,6 +106,14 @@ const costRows: Array<[string, string]> = [
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site ?? 'https://comfy.org')
 const mdUrl = `/models-v2/${pageSlug}.md`
+
+const curlSnippet = `# Same graph the playground runs — as an endpoint
+curl -X POST https://api.comfy.org/v1/run \\
+  -H "Authorization: Bearer $COMFY_KEY" \\
+  -d '{ "workflow": "${slugId}", "prompt": "…" }'
+
+# → { "job_id": "j_8f2…", "credits": ${baseCredits}, "eta_s": 4 }`
+const curlHtml = await highlightInline(curlSnippet, 'shell')
 const llmPrompt = encodeURIComponent(`Read ${canonicalURL.href}.md and help me run ${name} in ComfyUI. I want to understand the inputs and get my first output.`)
 const workflowCount = registry?.workflowCount ?? 0
 const softwareAppJsonLd = {
@@ -279,9 +288,13 @@ const faqJsonLd = {
         <!-- JSON VIEW -->
         <div id="panel-json" class="hidden">
           <div class="mt-4 overflow-hidden rounded-2xl border border-white/15">
-            <pre id="input-json" class="max-h-96 overflow-auto whitespace-pre-wrap break-words p-4 font-mono text-xs leading-relaxed text-primary-warm-gray"></pre>
+            <div class="flex items-center justify-between gap-3 border-b border-white/15 px-4 py-2.5">
+              <span class="truncate text-[11px] font-extrabold uppercase tracking-widest text-primary-warm-gray">Request payload</span>
+              <button type="button" data-copy="input-json" title="Copy" aria-label="Copy" class="group shrink-0 cursor-pointer rounded-lg border border-white/15 bg-white/5 p-1.5 text-primary-warm-gray transition-colors hover:bg-white/10 hover:text-primary-warm-white"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-3.5 group-data-[copied]:hidden"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden size-3.5 group-data-[copied]:block"><path d="M20 6 9 17l-5-5"/></svg></button>
+            </div>
+            <pre id="input-json" class="max-h-96 scrollbar-code overflow-auto whitespace-pre-wrap break-words p-4 font-mono text-xs leading-relaxed text-primary-warm-gray"></pre>
           </div>
-          <p class="mt-2 text-[11px] font-light text-primary-warm-gray">Live from your inputs — the exact payload the API takes. <button id="copy-json" class="font-extrabold uppercase tracking-widest text-primary-comfy-yellow">Copy</button><span id="copy-done" class="hidden pl-2 text-[#b7ded5]">copied ✓</span></p>
+          <p class="mt-2 text-[11px] font-light text-primary-warm-gray">Live from your inputs — the exact payload the API takes.</p>
         </div>
 
         <div class="mt-5 flex items-center justify-between gap-3 border-t border-white/10 pt-4">
@@ -307,7 +320,8 @@ const faqJsonLd = {
         </div>
         <div class="relative aspect-video w-full bg-secondary-mauve/30">
           <img id="result-img" src={img} alt={`${name} output`} class="h-full w-full object-cover transition-opacity duration-500" onerror="this.style.display='none'" />
-          <pre id="result-json" class="absolute inset-0 hidden bg-primary-comfy-ink overflow-auto whitespace-pre-wrap break-words p-4 font-mono text-xs leading-relaxed text-primary-warm-gray"></pre>
+          <pre id="result-json" class="absolute inset-0 hidden bg-primary-comfy-ink scrollbar-code overflow-auto whitespace-pre-wrap break-words p-4 font-mono text-xs leading-relaxed text-primary-warm-gray"></pre>
+          <button type="button" id="copy-result" data-copy="result-json" title="Copy" aria-label="Copy" class="absolute right-3 top-3 hidden group shrink-0 cursor-pointer rounded-lg border border-white/15 bg-white/5 p-1.5 text-primary-warm-gray transition-colors hover:bg-white/10 hover:text-primary-warm-white"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-3.5 group-data-[copied]:hidden"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden size-3.5 group-data-[copied]:block"><path d="M20 6 9 17l-5-5"/></svg></button>
           <div id="running-overlay" class="absolute inset-0 hidden flex-col items-center justify-center gap-4 bg-primary-comfy-ink/95 px-8 text-center">
             <p class="text-[10px] font-extrabold uppercase tracking-[0.25em] text-[#b7ded5]">Restored your prompt and settings ✓</p>
             <p class="text-lg font-semibold text-primary-warm-white">Running the graph</p>
@@ -391,12 +405,13 @@ const faqJsonLd = {
   <section id="panel-api" data-panel="api" role="tabpanel" hidden class="mx-auto max-w-7xl scroll-mt-24 px-5 py-12 sm:px-6 lg:px-8 lg:pb-24">
     <h2 class="text-sm font-extrabold uppercase tracking-[0.3em] text-primary-comfy-yellow">Run it your way</h2>
     <div class="mt-4 overflow-hidden rounded-2xl border border-white/15">
-      <pre class="overflow-auto whitespace-pre-wrap break-words p-4 font-mono text-xs leading-relaxed text-primary-warm-gray">{`# Same graph the playground runs — as an endpoint
-curl -X POST https://api.comfy.org/v1/run \\
-  -H "Authorization: Bearer $COMFY_KEY" \\
-  -d '{ "workflow": "${slugId}", "prompt": "…" }'
-
-# → { "job_id": "j_8f2…", "credits": ${baseCredits}, "eta_s": 4 }`}</pre>
+      <div class="flex items-center justify-between gap-3 border-b border-white/15 px-4 py-2.5">
+        <span class="truncate text-[11px] font-extrabold uppercase tracking-widest text-primary-warm-gray">curl</span>
+        <button type="button" data-copy="api-curl" title="Copy" aria-label="Copy" class="group shrink-0 cursor-pointer rounded-lg border border-white/15 bg-white/5 p-1.5 text-primary-warm-gray transition-colors hover:bg-white/10 hover:text-primary-warm-white"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-3.5 group-data-[copied]:hidden"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden size-3.5 group-data-[copied]:block"><path d="M20 6 9 17l-5-5"/></svg></button>
+      </div>
+      {curlHtml
+        ? <pre id="api-curl" class="scrollbar-code overflow-auto whitespace-pre-wrap break-words p-4 font-mono text-xs leading-relaxed text-primary-warm-gray" set:html={curlHtml} />
+        : <pre id="api-curl" class="scrollbar-code overflow-auto whitespace-pre-wrap break-words p-4 font-mono text-xs leading-relaxed text-primary-warm-gray">{curlSnippet}</pre>}
     </div>
     <p class="mt-3 text-xs font-light text-primary-warm-gray">The app above is this call — the JSON view shows the exact payload. Full reference · Comfy MCP · <a href={mdUrl} class="text-primary-comfy-yellow">this page as Markdown</a> · <a href="/models-v2/llms.txt" class="text-primary-comfy-yellow">llms.txt</a></p>
   </section>
@@ -498,12 +513,43 @@ curl -X POST https://api.comfy.org/v1/run \\
       window.addEventListener('hashchange', showFromHash)
     }
 
+    function initCodeCopy() {
+      const buttons = Array.from(document.querySelectorAll<HTMLElement>('[data-copy]'))
+      if (!buttons.length || buttons[0].dataset.bound === '1') return
+      buttons.forEach((b) => (b.dataset.bound = '1'))
+
+      buttons.forEach((b) =>
+        b.addEventListener('click', async () => {
+          const text = document.getElementById(b.dataset.copy!)?.textContent
+          if (!text) return
+          try {
+            await navigator.clipboard.writeText(text)
+            b.dataset.copied = ''
+            window.setTimeout(() => delete b.dataset.copied, 1200)
+          } catch { /* clipboard unavailable */ }
+        })
+      )
+    }
+
     function initPlaygroundDemo() {
       const runDesktop = document.getElementById('pg-run')
       if (!runDesktop || runDesktop.dataset.bound === '1') return
       runDesktop.dataset.bound = '1'
 
       const $ = (id: string) => document.getElementById(id)
+
+      // Text lands first so the block is never blank; the tokenized markup
+      // replaces it once Shiki resolves. A newer paint wins on late arrivals.
+      const paintJson = (el: HTMLElement, code: string) => {
+        el.textContent = code
+        const stamp = String(Number(el.dataset.paint ?? '0') + 1)
+        el.dataset.paint = stamp
+        void import('../../lib/highlight').then(({ highlightInline }) =>
+          highlightInline(code, 'json').then((html) => {
+            if (html && el.dataset.paint === stamp) el.innerHTML = html
+          })
+        )
+      }
       const modal = $('auth-modal')!
       const strip = $('signed-in-strip')!
       const meter = $('free-meter')!
@@ -550,7 +596,7 @@ curl -X POST https://api.comfy.org/v1/run \\
           },
           estimate: { credits: creditsNow(), charged_on: 'success only' }
         }
-        inputJson.textContent = JSON.stringify(payload, null, 2)
+        paintJson(inputJson, JSON.stringify(payload, null, 2))
       }
 
       const renderResultJson = () => {
@@ -560,7 +606,7 @@ curl -X POST https://api.comfy.org/v1/run \\
           seed,
           model: slug
         }
-        resultJson.textContent = JSON.stringify(receipt, null, 2)
+        paintJson(resultJson, JSON.stringify(receipt, null, 2))
       }
 
       const setRunLabels = () => {
@@ -606,6 +652,7 @@ curl -X POST https://api.comfy.org/v1/run \\
         if (!btn) return
         const json = btn.dataset.rview === 'json'
         resultJson.classList.toggle('hidden', !json)
+        $('copy-result')?.classList.toggle('hidden', !json)
         img.classList.toggle('hidden', json)
         for (const b of $('rview-toggle')!.querySelectorAll<HTMLElement>('[data-rview]')) {
           const active = b === btn
@@ -628,15 +675,6 @@ curl -X POST https://api.comfy.org/v1/run \\
         if (dl) dl.textContent = 'frame_0001.png ✓ — will run image-to-video'
         $('dropzone')?.classList.add('border-[#b7ded5]/50')
         renderAll()
-      })
-
-      // copy input json
-      $('copy-json')?.addEventListener('click', async () => {
-        try {
-          await navigator.clipboard.writeText(inputJson.textContent ?? '')
-          $('copy-done')?.classList.remove('hidden')
-          window.setTimeout(() => $('copy-done')?.classList.add('hidden'), 1600)
-        } catch { /* clipboard unavailable */ }
       })
 
       // LLMs menu
@@ -679,7 +717,7 @@ curl -X POST https://api.comfy.org/v1/run \\
         }
         strip.classList.remove('hidden'); strip.classList.add('flex')
         overlay.classList.remove('hidden'); overlay.classList.add('flex')
-        resultJson.classList.add('hidden'); img.classList.remove('hidden')
+        resultJson.classList.add('hidden'); $('copy-result')?.classList.add('hidden'); img.classList.remove('hidden')
         fill.style.width = '0%'
         requestAnimationFrame(() => requestAnimationFrame(() => (fill.style.width = '92%')))
         window.setTimeout(() => {
@@ -770,11 +808,13 @@ curl -X POST https://api.comfy.org/v1/run \\
       renderAll()
     }
 
-    initModelTabs()
-    initPlaygroundDemo()
-    document.addEventListener('astro:page-load', () => {
+    const initAll = () => {
       initModelTabs()
+      initCodeCopy()
       initPlaygroundDemo()
-    })
+    }
+
+    initAll()
+    document.addEventListener('astro:page-load', initAll)
   </script>
 </BaseLayout>
