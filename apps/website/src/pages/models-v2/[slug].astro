@@ -8,7 +8,7 @@
 import { cn } from '@comfyorg/tailwind-utils'
 
 import BaseLayout from '../../layouts/BaseLayout.astro'
-import { ArrowRight, Coins as CreditsIcon, Download as DownloadIcon } from '@lucide/vue'
+import { ArrowRight, Coins as CreditsIcon, Download as DownloadIcon, X as RemoveIcon } from '@lucide/vue'
 
 import BrandButton from '../../components/common/BrandButton.vue'
 import GlassCard from '../../components/common/GlassCard.vue'
@@ -372,10 +372,23 @@ const faqJsonLd = {
           </div>
           <p class:list={[helperCopy, 'mt-1.5']}>Change value for a different output.</p>
           <label class:list={[fieldLabel, 'mt-4']}>Reference image</label>
-          <div id="dropzone" class="mt-2 flex flex-col items-center gap-3 rounded-xl border border-dashed border-transparency-white-t20 bg-transparency-white-t4 px-4 py-4 text-center">
-            <BrandButton id="add-image-btn" variant="outline-light" size="sm" class="px-3 py-1.5 text-2xs uppercase tracking-widest">Add image</BrandButton>
-            <span id="dropzone-label" class="text-xs font-light text-primary-warm-gray">or drop a frame to animate it</span>
-            <img id="ref-thumb" src={gallery[1] ?? gallery[0]} alt="" class="hidden h-10 w-16 rounded-md object-cover" onerror="this.style.display='none'" />
+          <div id="dropzone" class="mt-2 flex flex-col items-center gap-3 rounded-xl border border-dashed border-transparency-white-t20 bg-transparency-white-t4 px-4 py-4 text-center transition-colors hover:border-primary-comfy-yellow/40 hover:bg-transparency-white-t8">
+            <button id="add-image-btn" type="button" class="cursor-pointer rounded-lg border border-transparency-white-t20 bg-transparency-white-t4 px-3 py-2.5 text-xs font-normal text-primary-comfy-canvas transition-colors hover:bg-transparency-white-t8"><span class="ppformula-text-center">Add image</span></button>
+            <span class="text-xs font-light text-primary-warm-gray">or drag and drop the image here</span>
+          </div>
+
+          <!-- Attachment — media above content, as the shared attachment pattern lays it out -->
+          <div id="ref-attachment" class="mt-2 hidden overflow-hidden rounded-xl border border-transparency-white-t20 bg-transparency-white-t4">
+            <img src={gallery[1] ?? gallery[0]} alt="" class="aspect-video w-full object-cover" onerror="this.style.display='none'" />
+            <div class="flex items-center justify-between gap-3 px-3 py-2.5">
+              <div class="min-w-0">
+                <p class="truncate text-xs text-primary-comfy-canvas">frame_0001.png</p>
+                <p class="text-2xs font-light text-primary-warm-gray">PNG · 820 KB</p>
+              </div>
+              <button id="ref-remove" type="button" title="Remove" aria-label="Remove" class="shrink-0 cursor-pointer rounded-lg border border-transparency-white-t20 bg-transparency-white-t4 p-1.5 text-primary-warm-gray transition-colors hover:bg-transparency-white-t8 hover:text-primary-warm-white">
+                <RemoveIcon class="size-3.5 shrink-0" aria-hidden="true" />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -828,10 +841,13 @@ const faqJsonLd = {
       // reference image demo
       $('add-image-btn')?.addEventListener('click', () => {
         refImage = true
-        $('ref-thumb')?.classList.remove('hidden')
-        const dl = $('dropzone-label')
-        if (dl) dl.textContent = 'frame_0001.png ✓ — will run image-to-video'
-        $('dropzone')?.classList.add('border-primary-comfy-yellow/50')
+        $('ref-attachment')?.classList.remove('hidden')
+        renderAll()
+      })
+
+      $('ref-remove')?.addEventListener('click', () => {
+        refImage = false
+        $('ref-attachment')?.classList.add('hidden')
         renderAll()
       })
 
@@ -967,8 +983,7 @@ const faqJsonLd = {
         strip.classList.add('hidden'); strip.classList.remove('flex')
         varBlock.classList.add('hidden')
         varStrip.classList.add('hidden'); varStrip.classList.remove('grid')
-        $('ref-thumb')?.classList.add('hidden')
-        const dl = $('dropzone-label'); if (dl) dl.textContent = 'or drop a frame to animate it'
+        $('ref-attachment')?.classList.add('hidden')
         resultSeed.textContent = `Seed ${DEFAULT_SEED}`
         meter.textContent = 'Free runs: 5 left'
         renderAll()
