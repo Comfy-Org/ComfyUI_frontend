@@ -12,6 +12,7 @@ import type {
 import { cn } from '@comfyorg/tailwind-utils'
 
 import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
+import { DROPDOWN_PANEL_CLASS } from './shared'
 import type { LayoutMode, SortOption } from './types'
 
 const { t } = useI18n()
@@ -157,7 +158,7 @@ function handleSearchEnter(event: KeyboardEvent) {
       unstyled
       :pt="{
         root: {
-          class: 'absolute z-50'
+          class: ['absolute z-50', DROPDOWN_PANEL_CLASS]
         },
         content: {
           class: ['bg-transparent border-none p-0 pt-2 rounded-lg shadow-lg']
@@ -219,7 +220,7 @@ function handleSearchEnter(event: KeyboardEvent) {
       unstyled
       :pt="{
         root: {
-          class: 'absolute z-50'
+          class: ['absolute z-50', DROPDOWN_PANEL_CLASS]
         },
         content: {
           class: ['bg-transparent border-none p-0 pt-2 rounded-lg shadow-lg']
@@ -281,7 +282,7 @@ function handleSearchEnter(event: KeyboardEvent) {
       unstyled
       :pt="{
         root: {
-          class: 'absolute z-50'
+          class: ['absolute z-50', DROPDOWN_PANEL_CLASS]
         },
         content: {
           class: ['bg-transparent border-none p-0 pt-2 rounded-lg shadow-lg']

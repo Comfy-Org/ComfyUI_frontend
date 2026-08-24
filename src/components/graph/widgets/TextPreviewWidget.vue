@@ -14,10 +14,10 @@
 <script setup lang="ts">
 import { default as DOMPurify } from 'dompurify'
 import Skeleton from 'primevue/skeleton'
-import { computed, onMounted, watch } from 'vue'
+import { computed } from 'vue'
 
-import type { NodeId } from '@/lib/litegraph/src/litegraph'
 import { useExecutionStore } from '@/stores/executionStore'
+import type { NodeId } from '@/types/nodeId'
 import { linkifyHtml, nl2br } from '@/utils/formatUtil'
 
 const modelValue = defineModel<string>({ required: true })
@@ -28,8 +28,7 @@ const props = defineProps<{
 const executionStore = useExecutionStore()
 const isParentNodeExecuting = computed(() => {
   if (executionStore.isIdle) return false
-  if (!parentNodeId) return executionStore.executingNodeIds.length > 0
-  return executionStore.executingNodeIds.includes(parentNodeId)
+  return executionStore.executingNodeIds.includes(props.nodeId)
 })
 const formattedText = computed(() => {
   const src = modelValue.value
@@ -64,19 +63,4 @@ const formattedText = computed(() => {
     ALLOWED_ATTR: ['href', 'target', 'rel']
   })
 })
-
-let parentNodeId: NodeId | null = null
-onMounted(() => {
-  // Get the parent node ID from props if provided
-  // For backward compatibility, fall back to the first executing node
-  parentNodeId = props.nodeId ?? parentNodeId
-})
-
-// Lazily adopt the first executing node as the parent when no nodeId is known.
-watch(
-  () => executionStore.executingNodeIds,
-  (ids) => {
-    if (!parentNodeId && ids.length > 0) parentNodeId = ids[0]
-  }
-)
 </script>

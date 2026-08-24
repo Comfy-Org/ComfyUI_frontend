@@ -1,3 +1,5 @@
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -8,16 +10,9 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
-vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
-  layoutStore: {
-    querySlotAtPoint: vi.fn(),
-    queryRerouteAtPoint: vi.fn(),
-    getNodeLayoutRef: vi.fn(() => ({ value: null })),
-    getSlotLayout: vi.fn(),
-    setSource: vi.fn(),
-    batchUpdateNodeBounds: vi.fn()
-  }
-}))
+vi.mock('@/renderer/core/layout/store/layoutStore')
+
+beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
 
 describe('LGraphCanvas slot hit detection', () => {
   let graph: LGraph
@@ -26,8 +21,6 @@ describe('LGraphCanvas slot hit detection', () => {
   let canvasElement: HTMLCanvasElement
 
   beforeEach(() => {
-    vi.clearAllMocks()
-
     canvasElement = document.createElement('canvas')
     canvasElement.width = 800
     canvasElement.height = 600
@@ -107,7 +100,7 @@ describe('LGraphCanvas slot hit detection', () => {
 
       // Mock the slot query to return our node's slot
       vi.mocked(layoutStore.querySlotAtPoint).mockReturnValue({
-        nodeId: String(node.id),
+        nodeId: node.id,
         index: 0,
         type: 'output',
         position: { x: 252, y: 120 },
@@ -188,7 +181,7 @@ describe('LGraphCanvas slot hit detection', () => {
       expect(node.isPointInside(clickX, clickY)).toBe(false)
 
       vi.mocked(layoutStore.querySlotAtPoint).mockReturnValue({
-        nodeId: String(node.id),
+        nodeId: node.id,
         index: 0,
         type: 'input',
         position: { x: 98, y: 140 },

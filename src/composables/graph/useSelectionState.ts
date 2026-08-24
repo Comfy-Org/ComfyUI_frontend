@@ -7,7 +7,12 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
-import { isImageNode, isLGraphNode, isLoad3dNode } from '@/utils/litegraphUtil'
+import {
+  isImageNode,
+  isLGraphGroup,
+  isLGraphNode,
+  isLoad3dNode
+} from '@/utils/litegraphUtil'
 import { filterOutputNodes } from '@/utils/nodeFilterUtil'
 
 export interface NodeSelectionState {
@@ -41,6 +46,11 @@ export function useSelectionState() {
   const hasAnySelection = computed(() => selectedItems.value.length > 0)
   const hasSingleSelection = computed(() => selectedItems.value.length === 1)
   const hasMultipleSelection = computed(() => selectedItems.value.length > 1)
+  const hasGroupedNodesSelection = computed(() =>
+    selectedItems.value.some(
+      (item) => isLGraphGroup(item) && [...item.children].some(isLGraphNode)
+    )
+  )
 
   const isSingleNode = computed(
     () => hasSingleSelection.value && isLGraphNode(selectedItems.value[0])
@@ -112,6 +122,7 @@ export function useSelectionState() {
     openNodeInfo,
     hasAny3DNodeSelected,
     hasAnySelection,
+    hasGroupedNodesSelection,
     hasSingleSelection,
     hasMultipleSelection,
     isSingleNode,

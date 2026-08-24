@@ -27,14 +27,13 @@ vi.mock('@/scripts/domWidget', () => ({
   isDOMWidget: isDOMWidgetMock
 }))
 
+import { toNodeId } from '@/types/nodeId'
+
 import WidgetDOM from './WidgetDOM.vue'
 import { createMockWidget } from './widgetTestUtils'
 
 describe('WidgetDOM', () => {
   beforeEach(() => {
-    canvasMocks.canvas.graph.getNodeById.mockReset()
-    resolveMock.mockReset()
-    isDOMWidgetMock.mockReset()
     isDOMWidgetMock.mockReturnValue(true)
   })
 
@@ -48,12 +47,12 @@ describe('WidgetDOM', () => {
     }
     return render(WidgetDOM, {
       props: {
-        widget: createMockWidget<void>({
+        widget: createMockWidget<undefined>({
           value: undefined,
           name: 'dom',
           type: 'dom'
         }),
-        nodeId: 'n1'
+        nodeId: toNodeId('n1')
       }
     })
   }
@@ -75,12 +74,12 @@ describe('WidgetDOM', () => {
 
     const { container } = render(WidgetDOM, {
       props: {
-        widget: createMockWidget<void>({
+        widget: createMockWidget<undefined>({
           value: undefined,
           name: 'dom',
           type: 'dom'
         }),
-        nodeId: 'missing'
+        nodeId: toNodeId('missing')
       }
     })
 
@@ -104,12 +103,12 @@ describe('WidgetDOM', () => {
 
     const { container } = render(WidgetDOM, {
       props: {
-        widget: createMockWidget<void>({
+        widget: createMockWidget<undefined>({
           value: undefined,
           name: 'dom',
           type: 'dom'
         }),
-        nodeId: 'n1'
+        nodeId: toNodeId('n1')
       }
     })
 

@@ -367,6 +367,22 @@ const menuItems = computed<MenuItem[]>(() => {
     }
   ]
 
+  // System status page - only in cloud distributions
+  if (isCloud) {
+    items.push({
+      key: 'status',
+      type: 'item',
+      icon: 'icon-[lucide--activity]',
+      label: t('helpCenter.systemStatus'),
+      showExternalIcon: true,
+      action: () => {
+        trackResourceClick('status', true)
+        openExternalLink(staticUrls.status)
+        emit('close')
+      }
+    })
+  }
+
   // Extension manager - only in non-cloud distributions
   if (!isCloud) {
     items.push({
@@ -420,7 +436,8 @@ const trackResourceClick = (
     | 'github'
     | 'help_feedback'
     | 'manager'
-    | 'release_notes',
+    | 'release_notes'
+    | 'status',
   isExternal: boolean
 ): void => {
   telemetry?.trackHelpResourceClicked({

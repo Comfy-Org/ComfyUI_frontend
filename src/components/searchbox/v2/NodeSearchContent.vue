@@ -142,9 +142,8 @@ const sourceCategoryFilters: Record<string, (n: ComfyNodeDefImpl) => boolean> =
     [RootCategory.Custom]: isCustomNode
   }
 
-const { filters, defaultRootFilter = null } = defineProps<{
+const { filters } = defineProps<{
   filters: FuseFilterWithValue<ComfyNodeDefImpl, string>[]
-  defaultRootFilter?: RootCategoryId | null
 }>()
 
 const emit = defineEmits<{
@@ -195,12 +194,8 @@ function onSearchFocus() {
   if (isMobile.value) isSidebarOpen.value = false
 }
 
-const rootFilter = ref<RootCategoryId | null>(
-  defaultRootFilter === RootCategory.Essentials &&
-    !nodeAvailability.value.essential
-    ? null
-    : defaultRootFilter
-)
+// Root filter from filter bar category buttons (radio toggle)
+const rootFilter = ref<RootCategoryId | null>(null)
 
 const rootFilterLabel = computed(() => {
   switch (rootFilter.value) {

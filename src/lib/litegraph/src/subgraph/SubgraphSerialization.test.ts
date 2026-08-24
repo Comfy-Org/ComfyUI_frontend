@@ -4,19 +4,24 @@
  * Tests for saving, loading, and version compatibility of subgraphs.
  * This covers serialization, deserialization, data integrity, and migration scenarios.
  */
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
+import {
+  SUBGRAPH_INPUT_ID,
+  SUBGRAPH_OUTPUT_ID
+} from '@/lib/litegraph/src/constants'
+import { afterEach, assert, beforeEach, describe, expect, it } from 'vitest'
 
 import { duplicateSubgraphNodeIds } from '@/lib/litegraph/src/__fixtures__/duplicateSubgraphNodeIds'
+import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import {
   LGraph,
   LGraphNode,
+  LLink,
   LiteGraph,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
-import type { ISlotType } from '@/lib/litegraph/src/litegraph'
 
+import { toLinkId } from '@/types/linkId'
+import { toNodeId, UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import {
   createTestSubgraph,
   createTestSubgraphNode,
@@ -27,34 +32,10 @@ class DummyNode extends LGraphNode {}
 
 const DUPLICATE_ID_SUBGRAPH_A = '11111111-1111-4111-8111-111111111111'
 const DUPLICATE_ID_SUBGRAPH_B = '22222222-2222-4222-8222-222222222222'
-
-function createRegisteredNode(
-  graph: LGraph | Subgraph,
-  inputs: ISlotType[] = [],
-  outputs: ISlotType[] = [],
-  title?: string
-) {
-  const type = JSON.stringify({ inputs, outputs })
-  if (!LiteGraph.registered_node_types[type]) {
-    class testnode extends LGraphNode {
-      constructor(title: string) {
-        super(title)
-        let i = 0
-        for (const input of inputs) this.addInput('input_' + i++, input)
-        let o = 0
-        for (const output of outputs) this.addOutput('output_' + o++, output)
-      }
-    }
-    LiteGraph.registered_node_types[type] = testnode
-  }
-  const node = LiteGraph.createNode(type, title)
-  if (!node) throw new Error('Failed to create node')
-  graph.add(node)
-  return node
-}
+const LEGACY_SUBGRAPH_INPUT_ID = -10
+const LEGACY_SUBGRAPH_OUTPUT_ID = -20
 
 beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   resetSubgraphFixtureState()
   LiteGraph.registerNodeType('dummy', DummyNode)
 })
@@ -282,11 +263,11 @@ describe('SubgraphSerialization - Version Compatibility', () => {
       inputs: [{ id: 'input-id', name: 'modern_input', type: 'number' }],
       outputs: [{ id: 'output-id', name: 'modern_output', type: 'string' }],
       inputNode: {
-        id: -10,
+        id: LEGACY_SUBGRAPH_INPUT_ID,
         bounding: [0, 0, 120, 60]
       },
       outputNode: {
-        id: -20,
+        id: LEGACY_SUBGRAPH_OUTPUT_ID,
         bounding: [300, 0, 120, 60]
       },
       widgets: []
@@ -298,6 +279,8 @@ describe('SubgraphSerialization - Version Compatibility', () => {
       expect(subgraph.name).toBe('Modern Subgraph')
       expect(subgraph.inputs.length).toBe(1)
       expect(subgraph.outputs.length).toBe(1)
+      expect(subgraph.inputNode.id).toBe(SUBGRAPH_INPUT_ID)
+      expect(subgraph.outputNode.id).toBe(SUBGRAPH_OUTPUT_ID)
     }).not.toThrow()
   })
 
@@ -312,11 +295,11 @@ describe('SubgraphSerialization - Version Compatibility', () => {
       config: {},
       definitions: { subgraphs: [] },
       inputNode: {
-        id: -10,
+        id: LEGACY_SUBGRAPH_INPUT_ID,
         bounding: [0, 0, 120, 60]
       },
       outputNode: {
-        id: -20,
+        id: LEGACY_SUBGRAPH_OUTPUT_ID,
         bounding: [300, 0, 120, 60]
       }
       // Missing optional: inputs, outputs, widgets
@@ -329,6 +312,8 @@ describe('SubgraphSerialization - Version Compatibility', () => {
       // Should have default empty arrays
       expect(Array.isArray(subgraph.inputs)).toBe(true)
       expect(Array.isArray(subgraph.outputs)).toBe(true)
+      expect(subgraph.inputNode.id).toBe(SUBGRAPH_INPUT_ID)
+      expect(subgraph.outputNode.id).toBe(SUBGRAPH_OUTPUT_ID)
     }).not.toThrow()
   })
 
@@ -345,11 +330,11 @@ describe('SubgraphSerialization - Version Compatibility', () => {
       inputs: [],
       outputs: [],
       inputNode: {
-        id: -10,
+        id: LEGACY_SUBGRAPH_INPUT_ID,
         bounding: [0, 0, 120, 60]
       },
       outputNode: {
-        id: -20,
+        id: LEGACY_SUBGRAPH_OUTPUT_ID,
         bounding: [300, 0, 120, 60]
       },
       widgets: [],
@@ -361,6 +346,8 @@ describe('SubgraphSerialization - Version Compatibility', () => {
       // @ts-expect-error Type mismatch in ExportedSubgraph format
       const subgraph = new Subgraph(new LGraph(), futureFormat)
       expect(subgraph.name).toBe('Future Subgraph')
+      expect(subgraph.inputNode.id).toBe(SUBGRAPH_INPUT_ID)
+      expect(subgraph.outputNode.id).toBe(SUBGRAPH_OUTPUT_ID)
     }).not.toThrow()
   })
 })
@@ -458,9 +445,9 @@ describe('SubgraphSerialization - Data Integrity', () => {
   it('should preserve interior link structure through serialization', () => {
     const subgraph = createTestSubgraph({ nodeCount: 0 })
 
-    const nodeA = createRegisteredNode(subgraph, [], ['number'], 'A')
-    const nodeB = createRegisteredNode(subgraph, ['number'], ['string'], 'B')
-    const nodeC = createRegisteredNode(subgraph, ['string'], [], 'C')
+    const nodeA = createTestNode(subgraph, [], ['number'], 'A')
+    const nodeB = createTestNode(subgraph, ['number'], ['string'], 'B')
+    const nodeC = createTestNode(subgraph, ['string'], [], 'C')
 
     nodeA.connect(0, nodeB, 0)
     nodeB.connect(0, nodeC, 0)
@@ -487,27 +474,111 @@ describe('SubgraphSerialization - Data Integrity', () => {
     }
   })
 
+  it('serializes interior links with contract key order and round-trips byte-identically', () => {
+    const subgraph = createTestSubgraph({ nodeCount: 0 })
+
+    const nodeA = createTestNode(subgraph, [], ['number'], 'A')
+    const nodeB = createTestNode(subgraph, ['number'], ['string'], 'B')
+    const nodeC = createTestNode(subgraph, ['string'], [], 'C')
+
+    nodeA.connect(0, nodeB, 0)
+    nodeB.connect(0, nodeC, 0)
+
+    const first = subgraph.asSerialisable()
+    expect(first.links?.length).toBe(2)
+    for (const link of first.links ?? []) {
+      expect(Object.keys(link)).toEqual([
+        'id',
+        'origin_id',
+        'origin_slot',
+        'target_id',
+        'target_slot',
+        'type'
+      ])
+    }
+
+    const restored = new Subgraph(new LGraph(), first)
+    restored.configure(first)
+    const second = restored.asSerialisable()
+
+    expect(JSON.stringify(second.links)).toBe(JSON.stringify(first.links))
+  })
+
+  it('preserves owned topology through serialization and configure', () => {
+    const subgraph = createTestSubgraph({ nodeCount: 0 })
+    const origin = createTestNode(subgraph, [], ['number'], 'Origin')
+    const target = createTestNode(subgraph, ['number'], [], 'Target')
+    const link = origin.connect(0, target, 0)!
+    const floatingLink = new LLink(
+      toLinkId(-1),
+      'number',
+      origin.id,
+      0,
+      UNASSIGNED_NODE_ID,
+      -1
+    )
+    const storedFloatingLink = subgraph.addFloatingLink(floatingLink)
+    assert(storedFloatingLink)
+    subgraph.createReroute([10, 20], link)
+    subgraph.createReroute([30, 40], storedFloatingLink)
+
+    const exported = structuredClone(subgraph.asSerialisable())
+    const rootGraph = subgraph.rootGraph
+    subgraph.clear()
+    const restored = createTestSubgraph({ rootGraph, nodeCount: 0 })
+    restored.configure(exported)
+
+    expect(restored.links.size).toBe(1)
+    expect(restored.floatingLinks.size).toBe(1)
+    expect(restored.reroutes.size).toBe(2)
+    expect(restored.asSerialisable()).toMatchObject({
+      links: exported.links,
+      floatingLinks: exported.floatingLinks,
+      reroutes: exported.reroutes
+    })
+  })
+
+  it('remaps rejected link aliases without mutating subgraph input', () => {
+    const subgraph = createTestSubgraph({
+      nodeCount: 0,
+      outputs: [{ name: 'value', type: 'number' }]
+    })
+    const origin = createTestNode(subgraph, [], ['number'], 'Origin')
+    const link = subgraph.outputs[0].connect(origin.outputs[0], origin)
+    assert(link)
+    const data = structuredClone(subgraph.asSerialisable())
+    const rejectedId = toLinkId(link.id + 1)
+    data.links!.push({ ...data.links![0], id: rejectedId })
+    data.outputs![0].linkIds = [rejectedId]
+    const original = structuredClone(data)
+
+    const restored = createTestSubgraph({
+      rootGraph: subgraph.rootGraph,
+      nodeCount: 0
+    })
+    restored.configure(data)
+
+    expect(restored.outputs[0].linkIds).toEqual([link.id])
+    expect(data).toEqual(original)
+  })
+
   it('deduplicates duplicate subgraph node IDs while keeping root nodes canonical', () => {
     const graph = new LGraph()
-    graph.configure(structuredClone(duplicateSubgraphNodeIds))
+    const data = structuredClone(duplicateSubgraphNodeIds)
+    const expectedRootIds = data.nodes.map((node) => Number(node.id))
+    graph.configure(data)
 
-    const rootIds = graph.nodes
-      .map((node) => node.id)
-      .filter((id): id is number => typeof id === 'number')
-      .sort((a, b) => a - b)
-    expect(rootIds).toEqual([102, 103])
+    const rootIds = graph.nodes.map((node) => Number(node.id))
+    expect(new Set(rootIds)).toEqual(new Set(expectedRootIds))
 
-    const subgraphAIds = new Set(
-      graph.subgraphs.get(DUPLICATE_ID_SUBGRAPH_A)!.nodes.map((node) => node.id)
-    )
-    const subgraphBIds = new Set(
-      graph.subgraphs.get(DUPLICATE_ID_SUBGRAPH_B)!.nodes.map((node) => node.id)
-    )
-
-    expect(subgraphAIds).toEqual(new Set([3, 8, 37]))
-    for (const id of subgraphAIds) {
-      expect(subgraphBIds.has(id)).toBe(false)
-    }
+    const subgraphAIds = graph.subgraphs
+      .get(DUPLICATE_ID_SUBGRAPH_A)!
+      .nodes.map((node) => Number(node.id))
+    const subgraphBIds = graph.subgraphs
+      .get(DUPLICATE_ID_SUBGRAPH_B)!
+      .nodes.map((node) => Number(node.id))
+    const allIds = [...rootIds, ...subgraphAIds, ...subgraphBIds]
+    expect(new Set(allIds).size).toBe(allIds.length)
   })
 
   it('patches remapped link and proxyWidget references during duplicate-ID hydration', () => {
@@ -522,13 +593,15 @@ describe('SubgraphSerialization - Data Integrity', () => {
     const subgraphB = graph.subgraphs.get(DUPLICATE_ID_SUBGRAPH_B)!
     const subgraphBIds = new Set(subgraphB.nodes.map((node) => String(node.id)))
 
-    const rootProxyWidgetsA = graph.getNodeById(102)?.properties?.proxyWidgets
+    const rootProxyWidgetsA = graph.getNodeById(toNodeId(102))?.properties
+      ?.proxyWidgets
     expect(Array.isArray(rootProxyWidgetsA)).toBe(true)
     for (const entry of rootProxyWidgetsA as string[][]) {
       expect(subgraphAIds.has(String(entry[0]))).toBe(true)
     }
 
-    const rootProxyWidgetsB = graph.getNodeById(103)?.properties?.proxyWidgets
+    const rootProxyWidgetsB = graph.getNodeById(toNodeId(103))?.properties
+      ?.proxyWidgets
     expect(Array.isArray(rootProxyWidgetsB)).toBe(true)
     for (const entry of rootProxyWidgetsB as string[][]) {
       expect(subgraphBIds.has(String(entry[0]))).toBe(true)

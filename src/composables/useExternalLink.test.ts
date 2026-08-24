@@ -31,7 +31,6 @@ import { electronAPI } from '@/utils/envUtil'
 
 describe('useExternalLink', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     // Reset to default state
     i18n.global.locale.value = 'en'
     mockData.isDesktop = false
@@ -42,7 +41,7 @@ describe('useExternalLink', () => {
       const { staticUrls } = useExternalLink()
 
       // Static URLs
-      expect(staticUrls.discord).toBe('https://www.comfy.org/discord')
+      expect(staticUrls.discord).toBe('https://discord.com/invite/comfyorg')
       expect(staticUrls.github).toBe('https://github.com/Comfy-Org/ComfyUI')
       expect(staticUrls.githubIssues).toBe(
         'https://github.com/Comfy-Org/ComfyUI/issues'

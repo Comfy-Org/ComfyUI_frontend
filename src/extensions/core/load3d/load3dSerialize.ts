@@ -6,7 +6,7 @@ import type {
 } from '@/extensions/core/load3d/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 
-export type Load3dSerializedBase = {
+type Load3dSerializedBase = {
   camera_info: CameraState | null
   model_3d_info: Model3DInfo
 }

@@ -266,10 +266,6 @@ export class LiteGraphGlobal {
    */
   ctrl_shift_v_paste_connect_unselected_outputs = true
 
-  // if true, all newly created nodes/links will use string UUIDs for their id fields instead of integers.
-  // use this if you must have node IDs that are unique across all graphs and subgraphs.
-  use_uuids = false
-
   // Whether to highlight the bounding box of selected groups
   highlight_selected_group = true
 
@@ -341,6 +337,13 @@ export class LiteGraphGlobal {
    * @default true
    */
   saveViewportWithGraph: boolean = true
+
+  /**
+   * If `true`, widgets values are deserialised using a map of widget names to values instead of a list.
+   * This is intended as a temporary setting. It is planned to be made the default and eventually removed.
+   * @default false
+   */
+  namedValuesRestore: boolean = false
 
   /**
    * Enable Vue nodes mode for rendering and positioning.
@@ -541,18 +544,14 @@ export class LiteGraphGlobal {
 
     let node: LGraphNode
 
-    if (this.catch_exceptions) {
-      try {
-        node = new base_class(title)
-      } catch (error) {
-        console.error(error)
-        return null
-      }
-    } else {
+    try {
       node = new base_class(title)
+      node._state.type = type
+    } catch (error) {
+      if (!this.catch_exceptions) throw error
+      console.error(error)
+      return null
     }
-
-    node.type = type
 
     if (!node.title && title) node.title = title
     node.properties ||= {}

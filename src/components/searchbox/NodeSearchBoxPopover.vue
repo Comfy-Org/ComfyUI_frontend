@@ -27,7 +27,6 @@
         <div v-if="useSearchBoxV2" role="search" class="relative">
           <NodeSearchContent
             :filters="nodeFilters"
-            :default-root-filter="defaultRootFilter"
             @add-filter="addFilter"
             @remove-filter="removeFilter"
             @add-node="addNode"
@@ -78,8 +77,6 @@ import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 import type { FuseFilterWithValue } from '@/utils/fuseUtil'
 
 import NodePreviewCard from '@/components/node/NodePreviewCard.vue'
-import { RootCategory } from '@/components/searchbox/v2/rootCategories'
-import type { RootCategoryId } from '@/components/searchbox/v2/rootCategories'
 
 import NodeSearchContent from './v2/NodeSearchContent.vue'
 import NodeSearchBox from './NodeSearchBox.vue'
@@ -91,7 +88,6 @@ let disconnectOnReset = false
 const settingStore = useSettingStore()
 const searchBoxStore = useSearchBoxStore()
 const litegraphService = useLitegraphService()
-const canvasStore = useCanvasStore()
 const { trackFeatureUsed } = useSurveyFeatureTracking('node-search')
 
 const { visible, newSearchBoxEnabled, useSearchBoxV2 } =
@@ -107,13 +103,6 @@ const enableNodePreview = computed(
     settingStore.get('Comfy.NodeSearchBoxImpl.NodePreview') &&
     windowWidth.value >= MIN_WIDTH_FOR_PREVIEW
 )
-const defaultRootFilter = ref<RootCategoryId | null>(null)
-watch(visible, (isVisible) => {
-  if (!isVisible) return
-  defaultRootFilter.value = !canvasStore.canvas?.graph?.nodes?.length
-    ? RootCategory.Essentials
-    : null
-})
 function getNewNodeLocation(): Point {
   return triggerEvent
     ? [triggerEvent.canvasX, triggerEvent.canvasY]
@@ -138,6 +127,7 @@ function clearFilters() {
 function closeDialog() {
   visible.value = false
 }
+const canvasStore = useCanvasStore()
 
 function addNode(nodeDef: ComfyNodeDefImpl, dragEvent?: MouseEvent) {
   const followCursor = settingStore.get('Comfy.NodeSearchBoxImpl.FollowCursor')

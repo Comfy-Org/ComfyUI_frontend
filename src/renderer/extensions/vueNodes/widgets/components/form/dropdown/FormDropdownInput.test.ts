@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import FormDropdownInput from './FormDropdownInput.vue'
@@ -130,6 +131,81 @@ describe('FormDropdownInput', () => {
         new File(['hi'], 'hi.txt', { type: 'text/plain' })
       )
       expect(onFileChange).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('Exposed showPicker', () => {
+    const overriddenMethods = ['showPicker', 'click'] as const
+    const originalDescriptors = overriddenMethods.map(
+      (name) =>
+        [
+          name,
+          Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, name)
+        ] as const
+    )
+
+    afterEach(() => {
+      for (const [name, descriptor] of originalDescriptors) {
+        if (descriptor) {
+          Object.defineProperty(HTMLInputElement.prototype, name, descriptor)
+        } else {
+          Reflect.deleteProperty(HTMLInputElement.prototype, name)
+        }
+      }
+    })
+
+    /** Mount a harness that captures the FormDropdownInput instance so we can
+     *  invoke its exposed methods, mirroring how FormDropdown drives it. */
+    async function mountWithRef(props: Partial<FormDropdownInputProps> = {}) {
+      const inputRef = ref<InstanceType<typeof FormDropdownInput> | null>(null)
+      const Harness = defineComponent({
+        components: { FormDropdownInput },
+        setup: () => ({
+          inputRef,
+          bindings: {
+            items,
+            selected: new Set<string>(),
+            maxSelectable: 1,
+            uploadable: true,
+            disabled: false,
+            ...props
+          }
+        }),
+        template: '<FormDropdownInput ref="inputRef" v-bind="bindings" />'
+      })
+      render(Harness, { global: { plugins: [i18n] } })
+      await nextTick()
+      return inputRef
+    }
+
+    it('calls showPicker on the file input when available', async () => {
+      const showPickerSpy = vi.fn()
+      Object.defineProperty(HTMLInputElement.prototype, 'showPicker', {
+        value: showPickerSpy,
+        configurable: true,
+        writable: true
+      })
+      const inputRef = await mountWithRef()
+      inputRef.value!.showPicker()
+      expect(showPickerSpy).toHaveBeenCalledTimes(1)
+    })
+
+    it('falls back to click() when showPicker is unavailable', async () => {
+      // Simulate older browsers that predate showPicker
+      Object.defineProperty(HTMLInputElement.prototype, 'showPicker', {
+        value: undefined,
+        configurable: true,
+        writable: true
+      })
+      const clickSpy = vi.fn()
+      Object.defineProperty(HTMLInputElement.prototype, 'click', {
+        value: clickSpy,
+        configurable: true,
+        writable: true
+      })
+      const inputRef = await mountWithRef()
+      inputRef.value!.showPicker()
+      expect(clickSpy).toHaveBeenCalledTimes(1)
     })
   })
 })

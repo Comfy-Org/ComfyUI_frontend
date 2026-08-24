@@ -1,8 +1,13 @@
 #!/bin/bash
 set -e
 
-# Deploy Playwright test reports to Cloudflare Pages and comment on PR
+# Deploy Playwright test reports to Cloudflare Pages and write section markdown.
 # Usage: ./pr-playwright-deploy-and-comment.sh <pr_number> <branch_name> <status>
+#
+# When SUMMARY_FILE env var is set, the generated markdown is written there
+# instead of posted as a standalone GitHub comment. The caller is then
+# responsible for upserting that content into the unified PR report via the
+# upsert-comment-section action.
 
 # Input validation
 # Validate PR number is numeric
@@ -103,17 +108,50 @@ deploy_report() {
     echo "failed"
 }
 
-# Post or update GitHub comment
+# Parses a Playwright counts JSON blob into "passed failed flaky skipped total" (missing fields as 0).
+parse_counts() {
+    json="$1"
+    if command -v jq > /dev/null 2>&1; then
+        echo "$json" | jq -r '[.passed, .failed, .flaky, .skipped, .total] | map(. // 0) | @tsv'
+    else
+        printf '%s\t%s\t%s\t%s\t%s\n' \
+            "$(echo "$json" | sed -n 's/.*"passed":\([0-9]*\).*/\1/p')" \
+            "$(echo "$json" | sed -n 's/.*"failed":\([0-9]*\).*/\1/p')" \
+            "$(echo "$json" | sed -n 's/.*"flaky":\([0-9]*\).*/\1/p')" \
+            "$(echo "$json" | sed -n 's/.*"skipped":\([0-9]*\).*/\1/p')" \
+            "$(echo "$json" | sed -n 's/.*"total":\([0-9]*\).*/\1/p')"
+    fi
+}
+
+# Builds the " (✅ x / ❌ x / ⚠️ x / ⏭️ x)" suffix for a report line, or "" when there's no total.
+counts_suffix() {
+    read -r passed failed flaky skipped total <<< "$(parse_counts "$1")"
+    [ "${total:-0}" != "0" ] && echo " (✅ ${passed:-0} / ❌ ${failed:-0} / ⚠️ ${flaky:-0} / ⏭️ ${skipped:-0})"
+    return 0
+}
+
+# Post or update GitHub comment, or write to SUMMARY_FILE if set.
+# When SUMMARY_FILE is set, the caller (workflow) is responsible for upserting
+# the content into the unified PR report via upsert-comment-section.
+# The gh-api branch below is unused in CI (SUMMARY_FILE is always set there);
+# it is retained for local/standalone runs that post a comment directly.
 post_comment() {
     body="$1"
+
+    if [ -n "${SUMMARY_FILE:-}" ]; then
+        printf '%s\n' "$body" > "$SUMMARY_FILE" || { echo "Failed to write $SUMMARY_FILE" >&2; exit 1; }
+        echo "Wrote playwright section to $SUMMARY_FILE" >&2
+        return
+    fi
+
     temp_file=$(mktemp)
     echo "$body" > "$temp_file"
-    
+
     if command -v gh > /dev/null 2>&1; then
         # Find existing comment ID
         existing=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" \
             --jq ".[] | select(.body | contains(\"$COMMENT_MARKER\")) | .id" | head -1)
-        
+
         if [ -n "$existing" ]; then
             # Update specific comment by ID
             gh api --method PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$existing" \
@@ -126,15 +164,20 @@ post_comment() {
         echo "GitHub CLI not available, outputting comment:"
         cat "$temp_file"
     fi
-    
+
     rm -f "$temp_file"
 }
 
 # Main execution
 if [ "$STATUS" = "starting" ]; then
-    # Post concise starting comment
-    comment="$COMMENT_MARKER
+    # When writing to SUMMARY_FILE, omit the standalone marker (the upsert
+    # action uses its own section delimiters).
+    if [ -n "${SUMMARY_FILE:-}" ]; then
+        comment="## 🎭 Playwright: ⏳ Running..."
+    else
+        comment="$COMMENT_MARKER
 ## 🎭 Playwright: ⏳ Running..."
+    fi
     post_comment "$comment"
     
 else
@@ -228,41 +271,44 @@ else
     
     # Clean up temp directory
     rm -rf "$temp_dir"
-    
+
+    # Deploy the focused new-tests report (with embedded video), if the PR
+    # added spec files (see playwright-video-new-tests in ci-tests-e2e.yaml).
+    # Reuses the chromium project on its own branch so it doesn't clobber the
+    # main chromium report deployed above.
+    new_tests_url=""
+    new_tests_counts="{}"
+    if [ -d "reports/playwright-report-new-tests" ]; then
+        echo "Found new-tests report, deploying..."
+        new_tests_url=$(deploy_report "reports/playwright-report-new-tests" "chromium" "${cloudflare_branch}-new-tests")
+
+        EXTRACT_SCRIPT="$SCRIPT_DIR/extract-playwright-counts.ts"
+        REPORT_DIR="$BASE_DIR/reports/playwright-report-new-tests"
+        if command -v tsx > /dev/null 2>&1 && [ -f "$EXTRACT_SCRIPT" ]; then
+            new_tests_counts=$(tsx "$EXTRACT_SCRIPT" "$REPORT_DIR" "$new_tests_url" 2>&1 || echo '{}')
+        fi
+    fi
+
+    # counts_array (browsers only, read again below) must stay separate: the
+    # per-browser listing loop zips it positionally against BROWSERS/urls.
+    agg_all_counts="$all_counts|$new_tests_counts"
+
     # Calculate total test counts across all browsers
     total_passed=0
     total_failed=0
     total_flaky=0
     total_skipped=0
     total_tests=0
-    
-    # Parse counts and calculate totals
-    IFS='|' read -r -a counts_array <<< "$all_counts"
-    for counts_json in "${counts_array[@]}"; do
+
+    IFS='|' read -r -a agg_counts_array <<< "$agg_all_counts"
+    for counts_json in "${agg_counts_array[@]}"; do
         [ -z "$counts_json" ] && continue
-        if [ "$counts_json" != "{}" ] && [ -n "$counts_json" ]; then
-            # Parse JSON counts using simple grep/sed if jq is not available
-            if command -v jq > /dev/null 2>&1; then
-                passed=$(echo "$counts_json" | jq -r '.passed // 0')
-                failed=$(echo "$counts_json" | jq -r '.failed // 0')
-                flaky=$(echo "$counts_json" | jq -r '.flaky // 0')
-                skipped=$(echo "$counts_json" | jq -r '.skipped // 0')
-                total=$(echo "$counts_json" | jq -r '.total // 0')
-            else
-                # Fallback parsing without jq
-                passed=$(echo "$counts_json" | sed -n 's/.*"passed":\([0-9]*\).*/\1/p')
-                failed=$(echo "$counts_json" | sed -n 's/.*"failed":\([0-9]*\).*/\1/p')
-                flaky=$(echo "$counts_json" | sed -n 's/.*"flaky":\([0-9]*\).*/\1/p')
-                skipped=$(echo "$counts_json" | sed -n 's/.*"skipped":\([0-9]*\).*/\1/p')
-                total=$(echo "$counts_json" | sed -n 's/.*"total":\([0-9]*\).*/\1/p')
-            fi
-            
-            total_passed=$((total_passed + ${passed:-0}))
-            total_failed=$((total_failed + ${failed:-0}))
-            total_flaky=$((total_flaky + ${flaky:-0}))
-            total_skipped=$((total_skipped + ${skipped:-0}))
-            total_tests=$((total_tests + ${total:-0}))
-        fi
+        read -r passed failed flaky skipped total <<< "$(parse_counts "$counts_json")"
+        total_passed=$((total_passed + passed))
+        total_failed=$((total_failed + failed))
+        total_flaky=$((total_flaky + flaky))
+        total_skipped=$((total_skipped + skipped))
+        total_tests=$((total_tests + total))
     done
     unset IFS
     
@@ -281,18 +327,22 @@ else
         flaky_note=" · $total_flaky flaky"
     fi
     
-    # Generate compact single-line comment
-    comment="$COMMENT_MARKER
+    # Generate compact single-line comment (omit standalone marker when writing
+    # to SUMMARY_FILE — the upsert action adds its own section delimiters).
+    if [ -n "${SUMMARY_FILE:-}" ]; then
+        comment="## 🎭 Playwright: $status_icon $total_passed passed, $total_failed failed$flaky_note"
+    else
+        comment="$COMMENT_MARKER
 ## 🎭 Playwright: $status_icon $total_passed passed, $total_failed failed$flaky_note"
+    fi
 
     # Extract and display failed tests from all browsers (flaky tests are treated as passing)
     if [ $total_failed -gt 0 ]; then
         comment="$comment
 
 ### ❌ Failed Tests"
-        
-        # Process each browser's failures
-        for counts_json in "${counts_array[@]}"; do
+
+        for counts_json in "${agg_counts_array[@]}"; do
             [ -z "$counts_json" ] || [ "$counts_json" = "{}" ] && continue
             
             if command -v jq > /dev/null 2>&1; then
@@ -333,39 +383,15 @@ $test_line"
     i=0
     IFS=' ' read -r -a browser_array <<< "$BROWSERS"
     IFS=' ' read -r -a url_array <<< "$urls"
+    IFS='|' read -r -a counts_array <<< "$all_counts"
     for counts_json in "${counts_array[@]}"; do
         [ -z "$counts_json" ] && { i=$((i + 1)); continue; }
         browser="${browser_array[$i]:-}"
         url="${url_array[$i]:-}"
         
         if [ "$url" != "failed" ] && [ -n "$url" ]; then
-            # Parse individual browser counts
-            if [ "$counts_json" != "{}" ] && [ -n "$counts_json" ]; then
-                if command -v jq > /dev/null 2>&1; then
-                    b_passed=$(echo "$counts_json" | jq -r '.passed // 0')
-                    b_failed=$(echo "$counts_json" | jq -r '.failed // 0')
-                    b_flaky=$(echo "$counts_json" | jq -r '.flaky // 0')
-                    b_skipped=$(echo "$counts_json" | jq -r '.skipped // 0')
-                    b_total=$(echo "$counts_json" | jq -r '.total // 0')
-                else
-                    b_passed=$(echo "$counts_json" | sed -n 's/.*"passed":\([0-9]*\).*/\1/p')
-                    b_failed=$(echo "$counts_json" | sed -n 's/.*"failed":\([0-9]*\).*/\1/p')
-                    b_flaky=$(echo "$counts_json" | sed -n 's/.*"flaky":\([0-9]*\).*/\1/p')
-                    b_skipped=$(echo "$counts_json" | sed -n 's/.*"skipped":\([0-9]*\).*/\1/p')
-                    b_total=$(echo "$counts_json" | sed -n 's/.*"total":\([0-9]*\).*/\1/p')
-                fi
-                
-                if [ -n "$b_total" ] && [ "$b_total" != "0" ]; then
-                    counts_str=" (✅ $b_passed / ❌ $b_failed / ⚠️ $b_flaky / ⏭️ $b_skipped)"
-                else
-                    counts_str=""
-                fi
-            else
-                counts_str=""
-            fi
-            
             comment="$comment
-- **${browser}**: [View Report](${url})${counts_str}"
+- **${browser}**: [View Report](${url})$(counts_suffix "$counts_json")"
         else
             comment="$comment
 - **${browser}**: ❌ Deployment failed"
@@ -373,10 +399,15 @@ $test_line"
         i=$((i + 1))
     done
     unset IFS
-    
+
+    if [ -n "$new_tests_url" ] && [ "$new_tests_url" != "failed" ]; then
+        comment="$comment
+- **New-test walkthrough** (chromium, recorded video): [View Report](${new_tests_url})$(counts_suffix "$new_tests_counts")"
+    fi
+
     comment="$comment
 
 </details>"
-    
+
     post_comment "$comment"
 fi

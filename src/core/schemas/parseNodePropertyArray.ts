@@ -10,7 +10,7 @@ import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
  */
 export function parseNodePropertyArray<T>(
   property: NodeProperty | undefined,
-  schema: z.ZodType<T[]>,
+  schema: z.ZodType<T[], z.ZodTypeDef, unknown>,
   contextName: string
 ): T[] {
   if (property === undefined) return []

@@ -88,20 +88,23 @@ const { t } = useI18n()
 onMounted(() => {
   // Impression event — uses trackUiButtonClicked as no dedicated impression tracker exists
   useTelemetry()?.trackUiButtonClicked({
-    button_id: 'cloud_notification_modal_impression'
+    button_id: 'cloud_notification_modal_impression',
+    element_group: 'cloud_notification'
   })
 })
 
 function onDismiss() {
   useTelemetry()?.trackUiButtonClicked({
-    button_id: 'cloud_notification_continue_locally_clicked'
+    button_id: 'cloud_notification_continue_locally_clicked',
+    element_group: 'cloud_notification'
   })
   useDialogStore().closeDialog()
 }
 
 function onExplore() {
   useTelemetry()?.trackUiButtonClicked({
-    button_id: 'cloud_notification_explore_cloud_clicked'
+    button_id: 'cloud_notification_explore_cloud_clicked',
+    element_group: 'cloud_notification'
   })
 
   const params = new URLSearchParams({

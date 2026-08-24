@@ -16,18 +16,14 @@ vi.mock('@/renderer/core/layout/slots/slotIdentifier', () => ({
   getSlotKey: vi.fn()
 }))
 
-vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
-  layoutStore: {
-    getSlotLayout: vi.fn().mockReturnValue(null),
-    getNodeLayoutRef: vi.fn().mockReturnValue({ value: null })
-  }
-}))
+vi.mock('@/renderer/core/layout/store/layoutStore')
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@/lib/litegraph/src/interfaces'
+import { toNodeId } from '@/types/nodeId'
 
 import {
   calculateInputSlotPosFromSlot,
@@ -69,7 +65,7 @@ function makeNode(
   }> = {}
 ): LGraphNode {
   return fromPartial<LGraphNode>({
-    id: 1,
+    id: toNodeId(1),
     pos: [100, 200],
     size: [180, 120],
     flags: { collapsed: overrides.collapsed ?? false },

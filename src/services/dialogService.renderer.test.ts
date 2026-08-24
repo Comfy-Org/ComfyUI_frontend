@@ -3,7 +3,7 @@
  * Reka-migrated dialog, the dialog stack item must carry `renderer: 'reka'`.
  * Catches accidental reverts of the Reka renderer flip.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 const showDialog = vi.hoisted(() => vi.fn())
 
@@ -25,8 +25,9 @@ vi.mock('@/platform/distribution/types', () => ({
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
-    isActiveSubscription: { value: true },
-    isFreeTier: { value: false },
+    canAccessSubscriptionFeatures: { value: true },
+    isTeamPlan: { value: false },
+    tier: { value: 'STANDARD' },
     type: { value: 'legacy' }
   })
 }))
@@ -34,10 +35,6 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
 import { useDialogService } from '@/services/dialogService'
 
 describe('dialogService Reka renderer opt-in', () => {
-  beforeEach(() => {
-    showDialog.mockReset()
-  })
-
   it("prompt() sets renderer 'reka' and size 'md'", () => {
     void useDialogService().prompt({ title: 'T', message: 'M' })
     const [args] = showDialog.mock.calls[0]
@@ -78,5 +75,57 @@ describe('dialogService Reka renderer opt-in', () => {
     const [args] = showDialog.mock.calls[0]
     expect(args.dialogComponentProps.renderer).toBe('reka')
     expect(args.dialogComponentProps.size).toBe('lg')
+  })
+
+  it("showTopUpCreditsDialog() sets renderer 'reka' with a transparent shrink-wrapped chrome", async () => {
+    await useDialogService().showTopUpCreditsDialog()
+    const [args] = showDialog.mock.calls[0]
+    expect(args.dialogComponentProps.renderer).toBe('reka')
+    expect(args.dialogComponentProps.headless).toBe(true)
+    expect(args.dialogComponentProps.pt).toBeUndefined()
+    expect(args.dialogComponentProps.contentClass).toContain('w-fit')
+    expect(args.dialogComponentProps.contentClass).toContain('bg-transparent')
+  })
+
+  it("showLayoutDialog() defaults to renderer 'reka' headless without pt", () => {
+    const Component = { template: '<div />' }
+    useDialogService().showLayoutDialog({
+      key: 'layout-test',
+      component: Component,
+      props: {}
+    })
+    const [args] = showDialog.mock.calls[0]
+    expect(args.dialogComponentProps.renderer).toBe('reka')
+    expect(args.dialogComponentProps.headless).toBe(true)
+    expect(args.dialogComponentProps.pt).toBeUndefined()
+  })
+
+  it('showLayoutDialog() lets callers override the defaults', () => {
+    const Component = { template: '<div />' }
+    useDialogService().showLayoutDialog({
+      key: 'layout-override-test',
+      component: Component,
+      props: {},
+      dialogComponentProps: { closable: false, contentClass: 'w-170' }
+    })
+    const [args] = showDialog.mock.calls[0]
+    expect(args.dialogComponentProps.renderer).toBe('reka')
+    expect(args.dialogComponentProps.closable).toBe(false)
+    expect(args.dialogComponentProps.contentClass).toBe('w-170')
+  })
+
+  it("showSmallLayoutDialog() sets renderer 'reka' with zeroed section padding", () => {
+    const Component = { template: '<div />' }
+    useDialogService().showSmallLayoutDialog({
+      key: 'small-layout-test',
+      component: Component
+    })
+    const [args] = showDialog.mock.calls[0]
+    expect(args.dialogComponentProps.renderer).toBe('reka')
+    expect(args.dialogComponentProps.pt).toBeUndefined()
+    expect(args.dialogComponentProps.contentClass).toContain('w-fit')
+    expect(args.dialogComponentProps.headerClass).toBe('p-0')
+    expect(args.dialogComponentProps.bodyClass).toBe('p-0 overflow-y-hidden')
+    expect(args.dialogComponentProps.footerClass).toBe('p-0')
   })
 })

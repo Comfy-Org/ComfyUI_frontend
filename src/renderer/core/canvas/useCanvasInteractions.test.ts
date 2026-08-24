@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -13,7 +13,8 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => {
   return {
     useCanvasStore: vi.fn(() => ({
       getCanvas,
-      setCursorStyle
+      setCursorStyle,
+      isReadOnly: false
     }))
   }
 })
@@ -69,10 +70,6 @@ function createMockWheelEvent(
 }
 
 describe('useCanvasInteractions', () => {
-  beforeEach(() => {
-    vi.resetAllMocks()
-  })
-
   describe('pointer handlers', () => {
     it('should intercept left mouse events when canvas is read_only to enable space+drag navigation', () => {
       const { getCanvas } = useCanvasStore()

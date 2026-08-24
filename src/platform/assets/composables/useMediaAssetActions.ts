@@ -18,13 +18,19 @@ import { getOutputAssetMetadata } from '../schemas/assetMetadataSchema'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { getAssetDisplayName } from '../utils/assetMetadataUtils'
+import {
+  getAssetDisplayName,
+  getAssetStoredFilename
+} from '../utils/assetMetadataUtils'
 import { getAssetType } from '../utils/assetTypeUtil'
 import { getAssetUrl } from '../utils/assetUrlUtil'
 import { clearDeletedAssetWidgetValues } from '../utils/clearDeletedAssetWidgetValues'
 import { clearNodePreviewCacheForValues } from '../utils/clearNodePreviewCacheForValues'
 import { markDeletedAssetsAsMissingMedia } from '../utils/markDeletedAssetsAsMissingMedia'
-import { getAssetOutputCount } from '../utils/outputAssetUtil'
+import {
+  getAssetOutputCount,
+  resolveOutputAssetItems
+} from '../utils/outputAssetUtil'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
 import { isResultItemType } from '@/utils/typeGuardUtil'
@@ -36,6 +42,17 @@ import { MediaAssetKey } from '../schemas/mediaAssetSchema'
 import { assetService } from '../services/assetService'
 
 const EXCLUDED_TAGS = new Set(['models', 'input', 'output'])
+
+function createAssetWidgetPath(asset: AssetItem): string {
+  const metadata = getOutputAssetMetadata(asset.user_metadata)
+  const assetType = getAssetType(asset, 'input')
+
+  return createAnnotatedPath({
+    filename: getAssetStoredFilename(asset),
+    subfolder: metadata?.subfolder ?? '',
+    type: isResultItemType(assetType) ? assetType : undefined
+  })
+}
 
 /**
  * Canonical widget-value strings that may reference this asset, scoped by the
@@ -86,7 +103,9 @@ export function useMediaAssetActions() {
     asset: AssetItem,
     assetType: string
   ): Promise<void> => {
-    if (assetType === 'output') {
+    // Temp files (e.g. preview-node outputs) are history-backed outputs that
+    // happen to live in the temp dir, so they delete via the history API too.
+    if (assetType === 'output' || assetType === 'temp') {
       const jobId =
         getOutputAssetMetadata(asset.user_metadata)?.jobId || asset.id
       if (!jobId) {
@@ -106,8 +125,9 @@ export function useMediaAssetActions() {
    * Download one or more assets.
    * In cloud mode, creates a ZIP export via the backend when called with
    * 2+ assets or with any asset whose job has `outputCount > 1`.
-   * Falls back to direct downloads in OSS mode and for single single-output
-   * assets. With no argument, uses the asset from `MediaAssetKey` context.
+   * In OSS mode, downloads each file directly, expanding grouped assets
+   * (`outputCount > 1`) into their individual outputs.
+   * With no argument, uses the asset from `MediaAssetKey` context.
    */
   const downloadAssets = (assets?: AssetItem[]) => {
     const targetAssets =
@@ -124,17 +144,77 @@ export function useMediaAssetActions() {
       return
     }
 
-    try {
-      targetAssets.forEach((asset) => {
-        const filename = getAssetDisplayName(asset)
-        const downloadUrl = asset.preview_url || getAssetUrl(asset)
-        downloadFile(downloadUrl, filename)
-      })
+    if (hasMultiOutputJobs) {
+      void downloadAssetsIndividually(targetAssets)
+      return
+    }
 
+    try {
+      targetAssets.forEach((asset) => downloadSingleAsset(asset))
       toast.add({
         severity: 'success',
         summary: t('g.success'),
         detail: t('mediaAsset.selection.downloadsStarted', targetAssets.length),
+        life: 2000
+      })
+    } catch (error) {
+      console.error('Failed to download assets:', error)
+      toast.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: t('g.failedToDownloadImage')
+      })
+    }
+  }
+
+  function downloadSingleAsset(asset: AssetItem) {
+    const filename = getAssetDisplayName(asset)
+    const downloadUrl = asset.preview_url || getAssetUrl(asset)
+    downloadFile(downloadUrl, filename)
+  }
+
+  async function expandAssetForDownload(
+    asset: AssetItem
+  ): Promise<AssetItem[]> {
+    const metadata = getOutputAssetMetadata(asset.user_metadata)
+    if (
+      !metadata ||
+      typeof metadata.outputCount !== 'number' ||
+      metadata.outputCount <= 1
+    ) {
+      return [asset]
+    }
+
+    try {
+      const resolved = await resolveOutputAssetItems(metadata, {
+        createdAt: asset.created_at
+      })
+      return resolved.length > 0 ? resolved : [asset]
+    } catch (error) {
+      console.error('Failed to expand grouped asset for download:', error)
+      return [asset]
+    }
+  }
+
+  async function downloadAssetsIndividually(assets: AssetItem[]) {
+    try {
+      const expanded = await Promise.all(assets.map(expandAssetForDownload))
+      const seenAssetIds = new Set<string>()
+      const filesToDownload = expanded.flat().filter((asset) => {
+        if (seenAssetIds.has(asset.id)) return false
+        seenAssetIds.add(asset.id)
+        return true
+      })
+
+      filesToDownload.forEach((asset) => downloadSingleAsset(asset))
+
+      toast.add({
+        severity: 'success',
+        summary: t('g.success'),
+        detail: t(
+          'mediaAsset.selection.downloadsStarted',
+          filesToDownload.length
+        ),
         life: 2000
       })
     } catch (error) {
@@ -158,8 +238,9 @@ export function useMediaAssetActions() {
       let fileCount = 0
 
       for (const asset of assets) {
-        if (getAssetType(asset) === 'output') {
-          const metadata = getOutputAssetMetadata(asset.user_metadata)
+        const assetType = getAssetType(asset)
+        const metadata = getOutputAssetMetadata(asset.user_metadata)
+        if (assetType === 'output' || (assetType === 'temp' && metadata)) {
           const jobId = metadata?.jobId || asset.id
           if (!jobIds.includes(jobId)) {
             jobIds.push(jobId)
@@ -297,26 +378,7 @@ export function useMediaAssetActions() {
       return
     }
 
-    // Get metadata to construct the annotated path
-    const metadata = getOutputAssetMetadata(targetAsset.user_metadata)
-    const assetType = getAssetType(targetAsset, 'input')
-
-    // In Cloud mode, use the content hash (the actual stored filename).
-    // In OSS mode, use the original name.
-    const cloudHash = targetAsset.hash
-    const filename = isCloud && cloudHash ? cloudHash : targetAsset.name
-
-    // Create annotated path for the asset
-    const annotated = createAnnotatedPath(
-      {
-        filename,
-        subfolder: metadata?.subfolder || '',
-        type: isResultItemType(assetType) ? assetType : undefined
-      },
-      {
-        rootFolder: isResultItemType(assetType) ? assetType : undefined
-      }
-    )
+    const annotated = createAssetWidgetPath(targetAsset)
 
     const widget = node.widgets?.find((w) => w.name === widgetName)
     if (widget) {
@@ -442,24 +504,7 @@ export function useMediaAssetActions() {
         continue
       }
 
-      const metadata = getOutputAssetMetadata(asset.user_metadata)
-      const assetType = getAssetType(asset, 'input')
-
-      // In Cloud mode, use the content hash (the actual stored filename).
-      // In OSS mode, use the original name.
-      const cloudHash = asset.hash
-      const filename = isCloud && cloudHash ? cloudHash : asset.name
-
-      const annotated = createAnnotatedPath(
-        {
-          filename,
-          subfolder: metadata?.subfolder || '',
-          type: isResultItemType(assetType) ? assetType : undefined
-        },
-        {
-          rootFolder: isResultItemType(assetType) ? assetType : undefined
-        }
-      )
+      const annotated = createAssetWidgetPath(asset)
 
       const widget = node.widgets?.find((w) => w.name === widgetName)
       if (widget) {
@@ -670,9 +715,10 @@ export function useMediaAssetActions() {
               })
 
               // Update stores after deletions
-              const hasOutputAssets = assetArray.some(
-                (a) => getAssetType(a) === 'output'
-              )
+              const hasOutputAssets = assetArray.some((a) => {
+                const type = getAssetType(a)
+                return type === 'output' || type === 'temp'
+              })
               const hasInputAssets = assetArray.some(
                 (a) => getAssetType(a) === 'input'
               )
@@ -779,6 +825,10 @@ export function useMediaAssetActions() {
           onCancel: () => {
             resolve(false)
           }
+        },
+        dialogComponentProps: {
+          renderer: 'reka',
+          size: 'md'
         }
       })
     })

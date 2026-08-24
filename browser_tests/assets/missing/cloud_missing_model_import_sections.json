@@ -1,0 +1,60 @@
+{
+  "last_node_id": 2,
+  "last_link_id": 0,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "CheckpointLoaderSimple",
+      "pos": [100, 100],
+      "size": [400, 200],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        { "name": "MODEL", "type": "MODEL", "links": null },
+        { "name": "CLIP", "type": "CLIP", "links": null },
+        { "name": "VAE", "type": "VAE", "links": null }
+      ],
+      "properties": {
+        "Node name for S&R": "CheckpointLoaderSimple"
+      },
+      "widgets_values": ["cloud_importable_model.safetensors"]
+    },
+    {
+      "id": 2,
+      "type": "LoadImage",
+      "pos": [560, 100],
+      "size": [400, 314],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        { "name": "IMAGE", "type": "IMAGE", "links": null },
+        { "name": "MASK", "type": "MASK", "links": null }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": ["cloud_unknown_model.safetensors", "image"]
+    }
+  ],
+  "links": [],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 1,
+      "offset": [0, 0]
+    }
+  },
+  "models": [
+    {
+      "name": "cloud_importable_model.safetensors",
+      "url": "http://localhost:8188/api/devtools/fake_model.safetensors",
+      "directory": "checkpoints"
+    }
+  ],
+  "version": 0.4
+}

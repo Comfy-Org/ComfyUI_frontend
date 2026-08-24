@@ -50,10 +50,6 @@ function makeContext(): ModelLoadContext {
 
 describe('SplatModelAdapter', () => {
   beforeEach(() => {
-    splatMeshSpies.ctor.mockClear()
-    splatMeshSpies.dispose.mockClear()
-    splatMeshSpies.getBoundingBox.mockClear()
-    splatMeshSpies.updateWorldMatrix.mockClear()
     vi.spyOn(ModelAdapterModule, 'fetchModelData').mockResolvedValue(
       new ArrayBuffer(8)
     )
@@ -63,7 +59,7 @@ describe('SplatModelAdapter', () => {
     const adapter = new SplatModelAdapter()
     expect(adapter.kind).toBe('splat')
     expect(adapter.capabilities.lighting).toBe(false)
-    expect(adapter.capabilities.exportable).toBe(false)
+    expect(adapter.capabilities.exportable).toBe(true)
     expect([...adapter.capabilities.materialModes]).toEqual([])
   })
 

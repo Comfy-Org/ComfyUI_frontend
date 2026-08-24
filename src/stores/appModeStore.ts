@@ -4,7 +4,6 @@ import { useEventListener } from '@vueuse/core'
 
 import { useEmptyWorkflowDialog } from '@/components/builder/useEmptyWorkflowDialog'
 import { useAppMode } from '@/composables/useAppMode'
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type {
   InputWidgetConfig,
@@ -17,24 +16,27 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import {
-  getWidgetEntityIdForNode,
+  getWidgetIdForNode,
   resolveNode,
   resolveNodeWidget
 } from '@/utils/litegraphUtil'
-import type { WidgetEntityId } from '@/world/entityIds'
-import { isWidgetEntityId, parseWidgetEntityId } from '@/world/entityIds'
+import { parseNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
+import type { WidgetId } from '@/types/widgetId'
+import { isWidgetId, parseWidgetId } from '@/types/widgetId'
+import type { ViewMode } from '@/utils/appMode'
 
 function findWidgetByEntityId(
   rootGraph: LGraph,
-  entityId: WidgetEntityId
+  widgetId: WidgetId
 ): IBaseWidget | undefined {
   for (const node of rootGraph.nodes) {
     const widget = node.widgets?.find(
-      (w) => getWidgetEntityIdForNode(node, w) === entityId
+      (w) => getWidgetIdForNode(node, w) === widgetId
     )
     if (widget) return widget
   }
@@ -49,10 +51,31 @@ export const useAppModeStore = defineStore('appMode', () => {
   const { getCanvas } = useCanvasStore()
   const settingStore = useSettingStore()
   const workflowStore = useWorkflowStore()
-  const { mode, setMode, isBuilderMode, isSelectMode } = useAppMode()
+  const { mode, setMode, isAppMode, isBuilderMode, isSelectMode } = useAppMode()
   const emptyWorkflowDialog = useEmptyWorkflowDialog()
 
   const showVueNodeSwitchPopup = ref(false)
+
+  const viewMode = computed<ViewMode>(() => (isAppMode.value ? 'app' : 'graph'))
+
+  /**
+   * Frame-lagged mirror of {@link viewMode} driving the view-mode toggle's
+   * segment morph. The two-frame lag lets a toggle that mounts mid-switch
+   * render the previous mode first, then animate in. Kept in the store so it
+   * outlives the graph-mode toggle unmounting as the app toggle replaces it.
+   */
+  const displayViewMode = ref<ViewMode>(viewMode.value)
+  let outerFrame: number | undefined
+  let innerFrame: number | undefined
+  watch(viewMode, (next) => {
+    if (outerFrame !== undefined) cancelAnimationFrame(outerFrame)
+    if (innerFrame !== undefined) cancelAnimationFrame(innerFrame)
+    outerFrame = requestAnimationFrame(() => {
+      innerFrame = requestAnimationFrame(() => {
+        displayViewMode.value = next
+      })
+    })
+  })
 
   const selectedInputs = ref<LinearInput[]>([])
   const selectedOutputs = ref<NodeId[]>([])
@@ -64,29 +87,42 @@ export const useAppModeStore = defineStore('appMode', () => {
     return !!app.rootGraph?.nodes?.length
   })
 
-  function pruneLinearData(data: Partial<LinearData> | undefined): LinearData {
+  function pruneLinearData(data: Partial<LinearData> | undefined): {
+    inputs: LinearInput[]
+    outputs: NodeId[]
+  } {
     const rawInputs = data?.inputs ?? []
     const rawOutputs = data?.outputs ?? []
     const rootGraph = app.rootGraph
     if (!rootGraph) {
-      return { inputs: rawInputs, outputs: rawOutputs }
+      return {
+        inputs: rawInputs,
+        outputs: rawOutputs.flatMap((nodeId) => {
+          const parsedNodeId = parseNodeId(nodeId)
+          return parsedNodeId ? [parsedNodeId] : []
+        })
+      }
     }
     return {
       inputs: rawInputs
         .map((input) => upgradeAndValidateInput(input, rootGraph))
         .filter((entry): entry is LinearInput => entry !== null),
-      outputs: ChangeTracker.isLoadingGraph
-        ? rawOutputs
-        : rawOutputs.filter((nodeId) => resolveNode(nodeId))
+      outputs: rawOutputs.flatMap((nodeId) => {
+        const parsedNodeId = parseNodeId(nodeId)
+        if (!parsedNodeId) return []
+        return ChangeTracker.isLoadingGraph || resolveNode(parsedNodeId)
+          ? [parsedNodeId]
+          : []
+      })
     }
   }
 
   function buildEntry(
-    entityId: WidgetEntityId,
+    widgetId: WidgetId,
     name: string,
     config: InputWidgetConfig | undefined
   ): LinearInput {
-    return config === undefined ? [entityId, name] : [entityId, name, config]
+    return config === undefined ? [widgetId, name] : [widgetId, name, config]
   }
 
   function upgradeAndValidateInput(
@@ -95,10 +131,10 @@ export const useAppModeStore = defineStore('appMode', () => {
   ): LinearInput | null {
     const [storedId, widgetName, config] = input
 
-    if (typeof storedId === 'string' && isWidgetEntityId(storedId)) {
+    if (typeof storedId === 'string' && isWidgetId(storedId)) {
       const widget = findWidgetByEntityId(rootGraph, storedId)
       if (widget) return buildEntry(storedId, widgetName, config)
-      const { nodeId } = parseWidgetEntityId(storedId)
+      const { nodeId } = parseWidgetId(storedId)
       if (rootGraph.getNodeById?.(nodeId)) {
         return buildEntry(storedId, widgetName, config)
       }
@@ -107,31 +143,32 @@ export const useAppModeStore = defineStore('appMode', () => {
 
     if (typeof storedId === 'string' && storedId.includes(':')) {
       const [, widget] = resolveNodeWidget(storedId, widgetName)
-      if (!widget?.entityId) return null
-      return buildEntry(widget.entityId, widgetName, config)
+      if (!widget?.widgetId) return null
+      return buildEntry(widget.widgetId, widgetName, config)
     }
 
-    const directNode = rootGraph.getNodeById?.(storedId)
+    const directNodeId = parseNodeId(storedId)
+    const directNode = directNodeId
+      ? rootGraph.getNodeById?.(directNodeId)
+      : null
     const directWidget = directNode?.widgets?.find((w) => w.name === widgetName)
     if (directNode && directWidget) {
-      const derivedId = getWidgetEntityIdForNode(directNode, directWidget)
+      const derivedId = getWidgetIdForNode(directNode, directWidget)
       if (derivedId) return buildEntry(derivedId, widgetName, config)
     }
 
     const matches: LinearInput[] = rootGraph.nodes.flatMap((node) => {
       if (!(node instanceof SubgraphNode)) return []
       return node.inputs.flatMap((inputSlot): LinearInput[] => {
-        const widget = inputSlot._widget
-        if (!widget || !isPromotedWidgetView(widget)) return []
+        if (!inputSlot.widgetId) return []
+        const target = resolveSubgraphInputTarget(node, inputSlot.name)
         if (
-          widget.sourceNodeId !== String(storedId) ||
-          widget.sourceWidgetName !== widgetName
+          target?.nodeId !== String(storedId) ||
+          target.widgetName !== widgetName
         ) {
           return []
         }
-        return widget.entityId
-          ? [buildEntry(widget.entityId, inputSlot.name, config)]
-          : []
+        return [buildEntry(inputSlot.widgetId, inputSlot.name, config)]
       })
     })
     if (matches.length === 1) return matches[0]
@@ -150,10 +187,29 @@ export const useAppModeStore = defineStore('appMode', () => {
     return null
   }
 
+  function warnOnUninterpretableAppConfig(
+    data: Partial<LinearData> | undefined,
+    resolvedInputs: LinearInput[],
+    resolvedOutputs: NodeId[]
+  ) {
+    if (ChangeTracker.isLoadingGraph) return
+
+    if (!app.rootGraph?.nodes?.length) return
+
+    const hadConfig = !!(data?.inputs?.length || data?.outputs?.length)
+    if (!hadConfig || resolvedInputs.length || resolvedOutputs.length) return
+
+    console.warn(
+      '[appModeStore] app config could not be interpreted; no inputs or outputs resolved from linearData',
+      { inputs: data?.inputs, outputs: data?.outputs }
+    )
+  }
+
   function loadSelections(data: Partial<LinearData> | undefined) {
     const { inputs, outputs } = pruneLinearData(data)
     selectedInputs.value = inputs
     selectedOutputs.value = outputs
+    warnOnUninterpretableAppConfig(data, inputs, outputs)
   }
 
   function resetSelectedToWorkflow() {
@@ -193,14 +249,13 @@ export const useAppModeStore = defineStore('appMode', () => {
 
   let unwatchReadOnly: (() => void) | undefined
   function enforceReadOnly(inSelect: boolean) {
-    const { state } = getCanvas()
-    if (!state) return
-    state.readOnly = inSelect
+    const canvas = getCanvas()
+    canvas.read_only = inSelect
     unwatchReadOnly?.()
     if (inSelect)
       unwatchReadOnly = watch(
-        () => state.readOnly,
-        () => (state.readOnly = true)
+        () => canvas.read_only,
+        () => (canvas.read_only = true)
       )
   }
 
@@ -246,7 +301,7 @@ export const useAppModeStore = defineStore('appMode', () => {
   }
 
   function removeSelectedInput(widget: IBaseWidget) {
-    const targetEntityId = widget.entityId
+    const targetEntityId = widget.widgetId
     if (!targetEntityId) return
     const index = selectedInputs.value.findIndex(
       ([id]) => id === targetEntityId
@@ -255,7 +310,7 @@ export const useAppModeStore = defineStore('appMode', () => {
   }
 
   function updateInputConfig(widget: IBaseWidget, config: InputWidgetConfig) {
-    const targetEntityId = widget.entityId
+    const targetEntityId = widget.widgetId
     if (!targetEntityId) return
     const index = selectedInputs.value.findIndex(
       ([id]) => id === targetEntityId
@@ -277,6 +332,8 @@ export const useAppModeStore = defineStore('appMode', () => {
     selectedInputs,
     selectedOutputs,
     updateInputConfig,
-    showVueNodeSwitchPopup
+    showVueNodeSwitchPopup,
+    viewMode,
+    displayViewMode
   }
 })

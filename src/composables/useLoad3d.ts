@@ -8,6 +8,7 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { createLoad3d } from '@/extensions/core/load3d/createLoad3d'
+import { isLoad3dResultViewerNode } from '@/extensions/core/load3d/nodeTypes'
 import {
   isAssetPreviewSupported,
   persistThumbnail
@@ -118,7 +119,9 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
 
   const sceneConfig = ref<SceneConfig>({
     showGrid: true,
-    backgroundColor: '#000000',
+    backgroundColor: getActivePinia()
+      ? '#' + useSettingStore().get('Comfy.Load3D.BackgroundColor')
+      : '#282828',
     backgroundImage: '',
     backgroundRenderMode: 'tiled'
   })
@@ -140,7 +143,8 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
 
   const cameraConfig = ref<CameraConfig>({
     cameraType: 'perspective',
-    fov: 75
+    fov: 75,
+    hasCustomUp: false
   })
 
   const lightConfig = ref<LightConfig>({
@@ -169,6 +173,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   const isPreview = ref(false)
   const isSplatModel = ref(false)
   const isPlyModel = ref(false)
+  const sourceFormat = ref<string | null>(null)
   const canFitToViewer = ref(true)
   const canCenterCameraOnModel = ref(false)
   const canUseGizmo = ref(true)
@@ -176,6 +181,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   const canExport = ref(true)
   const materialModes = ref<readonly MaterialMode[]>([
     'original',
+    'clay',
     'normal',
     'wireframe'
   ])
@@ -191,6 +197,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       const heightWidget = node.widgets?.find((w) => w.name === 'height')
 
       if (
+        isLoad3dResultViewerNode(node.constructor.comfyClass ?? '') ||
         node.constructor.comfyClass?.startsWith('Preview') ||
         !(widthWidget && heightWidget)
       ) {
@@ -238,7 +245,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
         node.onDrawBackground,
         function (this: LGraphNode) {
           if (load3d) {
-            load3d.renderer.domElement.hidden = this.flags.collapsed ?? false
+            load3d.domElement.hidden = this.flags.collapsed ?? false
           }
         }
       )
@@ -246,6 +253,8 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       ensureNodeCleanupChained(node)
 
       nodeToLoad3dMap.set(node, load3d)
+
+      handleEvents('add')
 
       const callbacks = pendingCallbacks.get(node)
 
@@ -262,8 +271,6 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
           if (load3d) invokeReadyCallback(callback, load3d)
         })
       }
-
-      handleEvents('add')
     } catch (error) {
       console.error('Error initializing Load3d:', error)
       useToastStore().addAlert(
@@ -528,6 +535,9 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
         nodeRef.value.properties['Camera Config'] = newValue
         load3d.toggleCamera(newValue.cameraType)
         load3d.setFOV(newValue.fov)
+        if (newValue.hasCustomUp) {
+          load3d.setUseCustomUp(newValue.useCustomUp)
+        }
       }
       markDirty()
     },
@@ -764,6 +774,9 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       : '3d'
 
     const uploadedPath = await Load3dUtils.uploadFile(file, subfolder)
+    if (!uploadedPath) return
+
+    sceneConfig.value.backgroundRenderMode = 'tiled'
     sceneConfig.value.backgroundImage = uploadedPath
     await load3d?.setBackgroundImage(uploadedPath)
   }
@@ -865,6 +878,21 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     cameraTypeChange: (value: string) => {
       cameraConfig.value.cameraType = value as CameraType
     },
+    cameraUpStateChange: (value: {
+      hasCustomUp: boolean
+      usingCustomUp: boolean
+    }) => {
+      const { cameraType, fov, state } = cameraConfig.value
+      cameraConfig.value = value.hasCustomUp
+        ? {
+            cameraType,
+            fov,
+            state,
+            hasCustomUp: true,
+            useCustomUp: value.usingCustomUp
+          }
+        : { cameraType, fov, state, hasCustomUp: false }
+    },
     showGridChange: (value: boolean) => {
       sceneConfig.value.showGrid = value
     },
@@ -905,6 +933,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       loading.value = false
       isSplatModel.value = load3d?.isSplatModel() ?? false
       isPlyModel.value = load3d?.isPlyModel() ?? false
+      sourceFormat.value = load3d?.getSourceFormat() ?? null
       canCenterCameraOnModel.value = isSplatModel.value || isPlyModel.value
       const caps = load3d?.getCurrentModelCapabilities()
       canFitToViewer.value = caps?.fitToViewer ?? true
@@ -1070,6 +1099,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     isPreview,
     isSplatModel,
     isPlyModel,
+    sourceFormat,
     canFitToViewer,
     canCenterCameraOnModel,
     canUseGizmo,

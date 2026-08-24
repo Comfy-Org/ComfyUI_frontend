@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 
 import JobContextMenu from '@/components/queue/job/JobContextMenu.vue'
@@ -115,10 +115,6 @@ async function openMenu(
   await nextTick()
   return trigger
 }
-
-afterEach(() => {
-  document.body.innerHTML = ''
-})
 
 describe('JobContextMenu', () => {
   it('passes disabled state to action buttons', async () => {

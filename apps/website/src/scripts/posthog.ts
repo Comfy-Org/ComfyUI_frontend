@@ -2,6 +2,8 @@ import posthog from 'posthog-js'
 
 import { createPostHogBeforeSend } from '@comfyorg/shared-frontend-utils/piiUtil'
 
+import type { Platform } from '@/composables/useDownloadUrl'
+
 const POSTHOG_KEY =
   import.meta.env.PUBLIC_POSTHOG_KEY ??
   'phc_iKfK86id4xVYws9LybMje0h44eGtfwFgRPIBehmy8rO'
@@ -39,11 +41,29 @@ export function capturePageview() {
   }
 }
 
-export function captureDownloadClick(platform: string) {
+export function captureDownloadClick(platform: Platform) {
   if (!initialized) return
   try {
     posthog.capture('website:download_button_clicked', { platform })
   } catch (error) {
     console.error('PostHog download click capture failed', error)
+  }
+}
+
+export function captureMcpConnectionTabClick(connection: string) {
+  if (!initialized) return
+  try {
+    posthog.capture('website:mcp_connection_tab_clicked', { connection })
+  } catch (error) {
+    console.error('PostHog MCP connection tab capture failed', error)
+  }
+}
+
+export function captureMcpClientTabClick(client: string) {
+  if (!initialized) return
+  try {
+    posthog.capture('website:mcp_client_tab_clicked', { client })
+  } catch (error) {
+    console.error('PostHog MCP client tab capture failed', error)
   }
 }

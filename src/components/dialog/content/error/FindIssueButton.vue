@@ -25,7 +25,8 @@ const queryString = computed(() => props.errorMessage + ' is:issue')
 
 function openGitHubIssues() {
   useTelemetry()?.trackUiButtonClicked({
-    button_id: 'error_dialog_find_existing_issues_clicked'
+    button_id: 'error_dialog_find_existing_issues_clicked',
+    element_group: 'error_dialog'
   })
   const query = encodeURIComponent(queryString.value)
   const url = `https://github.com/${props.repoOwner}/${props.repoName}/issues?q=${query}`

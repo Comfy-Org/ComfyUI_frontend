@@ -12,7 +12,6 @@ import type {
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 
-import { ExecutableGroupNodeDTO, isGroupNode } from './executableGroupNodeDto'
 import { compressWidgetInputSlots } from './litegraphUtil'
 
 /**
@@ -59,9 +58,11 @@ export const graphToPrompt = async (
 
   const nodeDtoMap = new Map<ExecutionId, ExecutableLGraphNode>()
   for (const node of graph.computeExecutionOrder(false)) {
-    const dto: ExecutableLGraphNode = isGroupNode(node)
-      ? new ExecutableGroupNodeDTO(node, [], nodeDtoMap)
-      : new ExecutableNodeDTO(node, [], nodeDtoMap)
+    const dto: ExecutableLGraphNode = new ExecutableNodeDTO(
+      node,
+      [],
+      nodeDtoMap
+    )
 
     nodeDtoMap.set(dto.id, dto)
 
@@ -107,11 +108,12 @@ export const graphToPrompt = async (
         // of the array as a node connection.
         // The backend automatically unwraps the object to an array during
         // execution.
-        inputs[widget.name] = Array.isArray(widgetValue)
-          ? widget.type === 'curve'
+        inputs[widget.name] =
+          widget.type === 'curve' && widgetValue != null
             ? { __type__: 'CURVE', __value__: widgetValue }
-            : { __value__: widgetValue }
-          : widgetValue
+            : Array.isArray(widgetValue)
+              ? { __value__: widgetValue }
+              : widgetValue
       }
     }
 

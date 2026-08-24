@@ -1,3 +1,4 @@
+import type { UploadImageResponse } from '@comfyorg/ingest-types'
 import type { Ref } from 'vue'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useElementSize } from '@vueuse/core'
@@ -12,11 +13,11 @@ import { hexToRgb } from '@/utils/colorUtil'
 import type { Point } from '@/extensions/core/maskeditor/types'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { isCloud } from '@/platform/distribution/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import type { NodeId } from '@/types/nodeId'
 
 type PainterTool = 'brush' | 'eraser'
 
@@ -31,7 +32,7 @@ interface UsePainterOptions {
   modelValue: Ref<string>
 }
 
-export function usePainter(nodeId: string, options: UsePainterOptions) {
+export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
   const { canvasEl, cursorEl, modelValue } = options
   const { t } = useI18n()
   const nodeOutputStore = useNodeOutputStore()
@@ -631,8 +632,7 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
     const name = `painter-${nodeId}-${Date.now()}.png`
     const body = new FormData()
     body.append('image', blob, name)
-    if (!isCloud) body.append('subfolder', 'painter')
-    body.append('type', isCloud ? 'input' : 'temp')
+    body.append('type', 'input')
 
     let resp: Response
     try {
@@ -650,15 +650,16 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
     }
 
     if (resp.status !== 200) {
+      const bodyText = await resp.text().catch(() => '')
       const err = t('painter.uploadError', {
         status: resp.status,
-        statusText: resp.statusText
+        statusText: bodyText || resp.statusText || 'unknown error'
       })
       toastStore.addAlert(err)
       throw new Error(err)
     }
 
-    let data: { name: string }
+    let data: UploadImageResponse
     try {
       data = await resp.json()
     } catch (e) {
@@ -670,9 +671,13 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
       throw new Error(err, { cause: e })
     }
 
-    const result = isCloud
-      ? `${data.name} [input]`
-      : `painter/${data.name} [temp]`
+    if (!data?.name) {
+      const detail = `Painter upload succeeded (${resp.status}) but response is missing 'name'`
+      toastStore.addAlert(detail)
+      throw new Error(detail)
+    }
+
+    const result = `${data.name} [input]`
     modelValue.value = result
     isDirty.value = false
     return result

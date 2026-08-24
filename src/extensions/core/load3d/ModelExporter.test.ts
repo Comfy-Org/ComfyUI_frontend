@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { ModelExporter } from './ModelExporter'
 
@@ -57,16 +57,6 @@ vi.mock('@comfyorg/fbx-exporter-three', () => ({
 }))
 
 describe('ModelExporter', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    vi.useFakeTimers()
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
-    vi.restoreAllMocks()
-  })
-
   describe('detectFormatFromURL', () => {
     it('extracts the lowercase extension from the filename query parameter', () => {
       expect(
@@ -335,6 +325,35 @@ describe('ModelExporter', () => {
       expect(addAlertMock).toHaveBeenCalledWith(
         'toastMessages.failedToExportModel:{"format":"STL"}'
       )
+    })
+  })
+
+  describe('exportDirect', () => {
+    it('downloads the original source file unchanged', async () => {
+      const blob = new Blob(['x'])
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn()
+          .mockResolvedValue({ ok: true, blob: () => Promise.resolve(blob) })
+      )
+
+      await ModelExporter.exportDirect(
+        'http://example.com/api/view?filename=src.ply',
+        'out.ply',
+        'ply'
+      )
+
+      expect(downloadBlobMock).toHaveBeenCalledWith('out.ply', blob)
+      vi.unstubAllGlobals()
+    })
+
+    it('throws without toasting when there is no source URL, leaving the alert to the caller', async () => {
+      await expect(
+        ModelExporter.exportDirect(null, 'out.spz', 'spz')
+      ).rejects.toThrow('No source file available to export as spz')
+      expect(downloadBlobMock).not.toHaveBeenCalled()
+      expect(addAlertMock).not.toHaveBeenCalled()
     })
   })
 

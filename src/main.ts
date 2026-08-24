@@ -5,7 +5,6 @@ import { initializeApp } from 'firebase/app'
 import { createPinia } from 'pinia'
 import 'primeicons/primeicons.css'
 import PrimeVue from 'primevue/config'
-import ConfirmationService from 'primevue/confirmationservice'
 import ToastService from 'primevue/toastservice'
 import Tooltip from 'primevue/tooltip'
 import { createApp } from 'vue'
@@ -20,6 +19,8 @@ import {
   configValueOrDefault,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
+import { syncHostUserIdWithFirebaseAuth } from '@/platform/telemetry/hostUserIdSync'
+import { flushErrorReports } from '@/platform/telemetry/reportError'
 import '@/lib/litegraph/public/css/litegraph.css'
 import router from '@/router'
 import { isDesktop, isNightly } from '@/platform/distribution/types'
@@ -31,19 +32,24 @@ import App from './App.vue'
 import './assets/css/style.css'
 import { i18n } from './i18n'
 
-/**
- * CRITICAL: Load remote config FIRST for cloud builds to ensure
- * window.__CONFIG__is available for all modules during initialization
- */
 const isCloud = __DISTRIBUTION__ === 'cloud'
+const hasHostTelemetryBridge = Boolean(window.__comfyDesktop2?.Telemetry)
+
+// Load remote config before initializeApp() below, so getFirebaseConfig() resolves
+// against the server's runtime values instead of the build-time defaults.
+const { refreshRemoteConfig } =
+  await import('@/platform/remoteConfig/refreshRemoteConfig')
+await refreshRemoteConfig({ useAuth: false })
 
 if (isCloud) {
-  const { refreshRemoteConfig } =
-    await import('@/platform/remoteConfig/refreshRemoteConfig')
-  await refreshRemoteConfig({ useAuth: false })
-
   const { initTelemetry } = await import('@/platform/telemetry/initTelemetry')
   await initTelemetry()
+}
+
+if (hasHostTelemetryBridge) {
+  const { initHostTelemetry } =
+    await import('@/platform/telemetry/initHostTelemetry')
+  initHostTelemetry()
 }
 
 const ComfyUIPreset = definePreset(Aura, {
@@ -62,10 +68,16 @@ const sentryDsn = isCloud
   ? configValueOrDefault(remoteConfig.value, 'sentry_dsn', __SENTRY_DSN__)
   : __SENTRY_DSN__
 
+// __SENTRY_ENABLED__ is baked from the *build machine's* SENTRY_DSN, but cloud
+// resolves its DSN at runtime from remote config. Trusting the build-time flag
+// alone leaves every capture in the app silently inert whenever a cloud build
+// runs without the env var, however valid the runtime DSN turns out to be.
+const sentryEnabled = !import.meta.env.DEV && !!sentryDsn
+
 Sentry.init({
   app,
   dsn: sentryDsn,
-  enabled: __SENTRY_ENABLED__,
+  enabled: sentryEnabled,
   release: __COMFYUI_FRONTEND_VERSION__,
   normalizeDepth: 8,
   tracesSampleRate: isCloud ? 1.0 : 0,
@@ -87,6 +99,9 @@ Sentry.init({
         defaultIntegrations: false
       })
 })
+
+flushErrorReports()
+
 // Assertion reporter receives pre-formatted messages (with "[Assertion failed]: " prefix).
 // Strings here are intentionally not i18n'd: they're developer/nightly diagnostics,
 // not user-facing in stable releases.
@@ -111,7 +126,9 @@ app
       modal: 1800,
       overlay: 1800,
       menu: 1800,
-      tooltip: 1800
+      // Tooltips sit above modals/menus so a menu-item tooltip isn't hidden
+      // behind a body-portaled dropdown that lifts itself to modal + 1.
+      tooltip: 2000
     },
     theme: {
       preset: ComfyUIPreset,
@@ -127,7 +144,6 @@ app
       }
     }
   })
-  .use(ConfirmationService)
   .use(ToastService)
   .use(pinia)
   .use(i18n)
@@ -135,6 +151,10 @@ app
     firebaseApp,
     modules: [VueFireAuth()]
   })
+
+if (isCloud && hasHostTelemetryBridge) {
+  syncHostUserIdWithFirebaseAuth()
+}
 
 LGraph.proxyWidgetMigrationFlush = (hostNode, nodeData) =>
   flushProxyWidgetMigration({

@@ -30,6 +30,10 @@
           "
         />
       </Button>
+      <slot
+        name="header-actions"
+        :has-results="filteredPersistedWorkflows.length > 0"
+      />
     </template>
     <template #header>
       <SidebarTopArea>

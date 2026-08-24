@@ -1,18 +1,19 @@
 import { useEventListener } from '@vueuse/core'
 import { computed, shallowRef, triggerRef } from 'vue'
 
+import { promotedInputWidgets } from '@/core/graph/subgraph/promotedInputWidget'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { InputWidgetConfig } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { app } from '@/scripts/app'
 import { useAppModeStore } from '@/stores/appModeStore'
-import type { WidgetEntityId } from '@/world/entityIds'
-import { isWidgetEntityId, parseWidgetEntityId } from '@/world/entityIds'
+import type { WidgetId } from '@/types/widgetId'
+import { isWidgetId, parseWidgetId } from '@/types/widgetId'
 
 export type ResolvedSelection =
   | {
       status: 'resolved'
-      entityId: WidgetEntityId
+      widgetId: WidgetId
       node: LGraphNode
       widget: IBaseWidget
       displayName: string
@@ -20,7 +21,7 @@ export type ResolvedSelection =
     }
   | {
       status: 'unknown'
-      entityId: WidgetEntityId
+      widgetId: WidgetId
       displayName: string
       config?: InputWidgetConfig
     }
@@ -54,16 +55,19 @@ export function useResolvedSelectedInputs() {
     if (!rootGraph) return []
 
     return appModeStore.selectedInputs.flatMap(
-      ([entityId, displayName, config]): ResolvedSelection[] => {
-        if (!isWidgetEntityId(entityId)) return []
-        const { nodeId, name } = parseWidgetEntityId(entityId)
+      ([widgetId, displayName, config]): ResolvedSelection[] => {
+        if (!isWidgetId(widgetId)) return []
+        const { nodeId, name } = parseWidgetId(widgetId)
         const node = rootGraph.getNodeById(nodeId)
-        const widget = node?.widgets?.find((w) => w.name === name)
+        const widgets = node?.isSubgraphNode()
+          ? promotedInputWidgets(node)
+          : node?.widgets
+        const widget = widgets?.find((w) => w.name === name)
         if (!node || !widget) {
-          return [{ status: 'unknown', entityId, displayName, config }]
+          return [{ status: 'unknown', widgetId, displayName, config }]
         }
         return [
-          { status: 'resolved', entityId, node, widget, displayName, config }
+          { status: 'resolved', widgetId, node, widget, displayName, config }
         ]
       }
     )

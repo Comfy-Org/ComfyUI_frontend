@@ -53,7 +53,7 @@ defineEmits<{ click: [] }>()
         <div class="flex w-full items-end justify-between p-4">
           <div class="gap-2">
             <p class="text-sm font-bold text-white">{{ item.title }}</p>
-            <p class="text-primary-comfy-canvas text-xs">
+            <p class="text-xs text-primary-comfy-canvas">
               <GalleryItemAttribution :item :locale />
             </p>
           </div>
@@ -82,7 +82,7 @@ defineEmits<{ click: [] }>()
     <!-- Mobile metadata -->
     <div v-if="mobile" class="mt-2 gap-2">
       <p class="text-sm font-bold text-white">{{ item.title }}</p>
-      <p class="text-primary-comfy-canvas text-xs">
+      <p class="text-xs text-primary-comfy-canvas">
         <GalleryItemAttribution :item :locale />
       </p>
     </div>

@@ -1,5 +1,6 @@
 <template>
   <div
+    data-testid="asset-card"
     data-component-id="AssetCard"
     :data-asset-id="asset.id"
     :aria-labelledby="titleId"
