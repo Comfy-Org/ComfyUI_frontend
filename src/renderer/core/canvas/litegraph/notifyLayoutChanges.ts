@@ -2,6 +2,8 @@ import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 
+import { projectLegacyNodeOrder } from './arrangeForLegacyRender'
+
 export function notifyLayoutChanges(canvas: LGraphCanvas): () => void {
   const stopOperations = layoutStore.onChange((change) => {
     const graph = canvas.graph
@@ -22,6 +24,7 @@ export function notifyLayoutChanges(canvas: LGraphCanvas): () => void {
     const graph = canvas.graph
     if (!graph || !graphIds.has(graph.rootGraph.id)) return
 
+    projectLegacyNodeOrder(graph)
     canvas.setDirty(true, true)
   })
 

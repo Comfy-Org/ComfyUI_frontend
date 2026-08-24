@@ -405,9 +405,10 @@ export function reloadSerializedGraph(
   graphFactory: () => LGraph
 ): LGraph {
   const payload = JSON.parse(JSON.stringify(serialized)) as typeof serialized
+  const reloaded = graphFactory()
+  payload.id = reloaded.id
   useWidgetValueStore().clearGraph(payload.id)
   usePreviewExposureStore().clearGraph(payload.id)
-  const reloaded = graphFactory()
   reloaded.configure(payload)
   return reloaded
 }

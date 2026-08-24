@@ -1273,7 +1273,10 @@ describe('ComfyApp', () => {
         })
 
         const roundTripGraph = new LGraph()
-        roundTripGraph.configure(serializedGraph)
+        roundTripGraph.configure({
+          ...serializedGraph,
+          id: roundTripGraph.id
+        })
         const roundTripPlaceholder = roundTripGraph.getNodeById(toNodeId(3))
         expect(roundTripPlaceholder?.inputs[0]).toMatchObject({
           name: 'images',
@@ -1291,7 +1294,10 @@ describe('ComfyApp', () => {
         LiteGraph.registerNodeType(missingNodeType, InstalledInputNode)
         installedTypeRegistered = true
         const installedGraph = new LGraph()
-        installedGraph.configure(serializedGraph)
+        installedGraph.configure({
+          ...serializedGraph,
+          id: installedGraph.id
+        })
         expect(
           installedGraph
             .getNodeById(toNodeId(3))

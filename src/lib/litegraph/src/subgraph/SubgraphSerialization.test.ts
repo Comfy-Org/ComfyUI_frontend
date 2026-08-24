@@ -71,7 +71,7 @@ describe('SubgraphSerialization - Basic Serialization', () => {
 
     expect(() => {
       subgraph.id = createUuidv4()
-    }).toThrow("Cannot change a populated graph's ID")
+    }).not.toThrow()
     expect(root.subgraphs.get(subgraph.id)).toBe(subgraph)
     expect(root.subgraphs.has(previousId)).toBe(false)
   })
@@ -582,6 +582,8 @@ describe('SubgraphSerialization - Data Integrity', () => {
     data.links!.push({ ...data.links![0], id: rejectedId })
     data.outputs![0].linkIds = [rejectedId]
     const original = structuredClone(data)
+    const expectedLinkId = link.id
+    subgraph.clear()
 
     const restored = createTestSubgraph({
       rootGraph: subgraph.rootGraph,
@@ -589,7 +591,7 @@ describe('SubgraphSerialization - Data Integrity', () => {
     })
     restored.configure(data)
 
-    expect(restored.outputs[0].linkIds).toEqual([link.id])
+    expect(restored.outputs[0].linkIds).toEqual([expectedLinkId])
     expect(data).toEqual(original)
   })
 

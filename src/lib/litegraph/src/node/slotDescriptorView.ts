@@ -101,7 +101,12 @@ function findSlotIndex<T extends INodeSlot>(
   fromIndex: number
 ): number {
   const descriptor = Reflect.get(slot, slotDescriptor)
-  for (let index = fromIndex; index < descriptors.length; index++) {
+  const integerIndex = Math.trunc(fromIndex) || 0
+  const startIndex =
+    integerIndex < 0
+      ? Math.max(descriptors.length + integerIndex, 0)
+      : integerIndex
+  for (let index = startIndex; index < descriptors.length; index++) {
     if (
       Reflect.get(receiver, String(index)) === slot ||
       toRaw(descriptors[index]) === descriptor ||

@@ -259,6 +259,7 @@ describe('LGraph.configure that throws partway through', () => {
     completed.configure(sameWorkflowThatLoads())
     expect(completed.reroutes.size).toBe(0)
     expect(completed._groups).toHaveLength(1)
+    completed.clear()
 
     const failed = graphAfterFailedConfigure()
 
@@ -373,6 +374,7 @@ describe('a workflow loaded after a failed load, on the same graph', () => {
     })
     expect(previewStore.getExposures(BAD_ID, hostLocator)).toEqual([])
     expect(graph.id).toBe(GOOD_ID)
+    graph.clear()
   })
 
   it('clears nested-owner state before loading the next workflow', () => {

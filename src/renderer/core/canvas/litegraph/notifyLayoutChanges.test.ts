@@ -36,6 +36,21 @@ function setup() {
 type TestContext = ReturnType<typeof setup>
 
 describe('notifyLayoutChanges', () => {
+  it('projects direct z-index changes to legacy node order', async () => {
+    using context = setup()
+    const second = context.graph.add(new LGraphNode('second'))!
+
+    useLayoutMutations(LayoutSource.Vue).setNodeZIndex(
+      context.graph.id,
+      context.node.id,
+      100
+    )
+
+    await vi.waitFor(() =>
+      expect(context.graph._nodes).toEqual([second, context.node])
+    )
+  })
+
   it('does not repeat onResize for a canvas resize', async () => {
     using context = setup()
     const { node, setDirty } = context
