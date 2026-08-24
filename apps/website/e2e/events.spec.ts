@@ -141,8 +141,8 @@ test.describe('Events page — desktop @smoke', () => {
 
     const activeSlide = hero.locator('[aria-hidden="false"]')
 
-    // Advance to whichever video slide comes next, waiting out island hydration
-    // first and then each transition, so no click overshoots a slow render.
+    // Advance to whichever video slide comes next. A click before the island
+    // hydrates is a no-op, so each advance retries until the slide changes.
     await expect(activeSlide.locator('a')).toHaveCount(1)
     const activeLabel = async () => {
       const label = await activeSlide.locator('a').getAttribute('aria-label')
@@ -153,11 +153,13 @@ test.describe('Events page — desktop @smoke', () => {
     for (let step = 0; step < featuredEvents.length; step++) {
       const label = await activeLabel()
       if (videoSlideTitles.includes(label)) break
-      await nextSlide.click()
-      await expect(activeSlide.locator('a')).not.toHaveAttribute(
-        'aria-label',
-        label
-      )
+      await expect(async () => {
+        await nextSlide.click()
+        await expect(activeSlide.locator('a')).not.toHaveAttribute(
+          'aria-label',
+          label
+        )
+      }).toPass()
     }
     expect(videoSlideTitles).toContain(await activeLabel())
     // Clicking left the button focused; drop that focus so only the hover holds
