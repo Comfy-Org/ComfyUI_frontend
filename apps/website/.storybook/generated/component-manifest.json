@@ -1,9 +1,26 @@
 {
   "schemaVersion": 1,
   "generatedFrom": "apps/website/src/**/*.stories.ts",
-  "componentCount": 39,
-  "storyCount": 139,
+  "componentCount": 45,
+  "storyCount": 150,
   "components": [
+    {
+      "component": "AddToCalendarButton",
+      "source": "src/components/blocks/AddToCalendarButton.vue",
+      "storyFile": "src/components/blocks/AddToCalendarButton.stories.ts",
+      "title": "Website/Blocks/AddToCalendarButton",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": ["activation", "keyboard-focus"],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-addtocalendarbutton--default"
+        }
+      ]
+    },
     {
       "component": "BenefitsGrid01",
       "source": "src/components/blocks/BenefitsGrid01.vue",
@@ -293,6 +310,31 @@
       ]
     },
     {
+      "component": "FAQSplit01",
+      "source": "src/components/blocks/FAQSplit01.vue",
+      "storyFile": "src/components/blocks/FAQSplit01.stories.ts",
+      "title": "Website/Blocks/FAQSplit01",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": [
+        "disclosure",
+        "keyboard-activation",
+        "responsive-layout"
+      ],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-faqsplit01--default"
+        },
+        {
+          "exportName": "Mobile",
+          "storyId": "website-blocks-faqsplit01--mobile"
+        }
+      ]
+    },
+    {
       "component": "FeatureGrid02",
       "source": "src/components/blocks/FeatureGrid02.vue",
       "storyFile": "src/components/blocks/FeatureGrid02.stories.ts",
@@ -318,6 +360,27 @@
         {
           "exportName": "Mobile",
           "storyId": "website-blocks-featuregrid02--mobile"
+        }
+      ]
+    },
+    {
+      "component": "FeatureRows01",
+      "source": "src/components/blocks/FeatureRows01.vue",
+      "storyFile": "src/components/blocks/FeatureRows01.stories.ts",
+      "title": "Website/Blocks/FeatureRows01",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": [],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-featurerows01--default"
+        },
+        {
+          "exportName": "Mobile",
+          "storyId": "website-blocks-featurerows01--mobile"
         }
       ]
     },
@@ -432,6 +495,48 @@
         {
           "exportName": "Mobile",
           "storyId": "website-blocks-herosplit01--mobile"
+        }
+      ]
+    },
+    {
+      "component": "ReasonsSplit01",
+      "source": "src/components/blocks/ReasonsSplit01.vue",
+      "storyFile": "src/components/blocks/ReasonsSplit01.stories.ts",
+      "title": "Website/Blocks/ReasonsSplit01",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": ["responsive-layout"],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-reasonssplit01--default"
+        },
+        {
+          "exportName": "WithoutHighlight",
+          "storyId": "website-blocks-reasonssplit01--without-highlight"
+        }
+      ]
+    },
+    {
+      "component": "StepsGrid01",
+      "source": "src/components/blocks/StepsGrid01.vue",
+      "storyFile": "src/components/blocks/StepsGrid01.stories.ts",
+      "title": "Website/Blocks/StepsGrid01",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": ["responsive-layout"],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "EvenStepCount",
+          "storyId": "website-blocks-stepsgrid01--even-step-count"
+        },
+        {
+          "exportName": "OddStepCount",
+          "storyId": "website-blocks-stepsgrid01--odd-step-count"
         }
       ]
     },
@@ -724,6 +829,27 @@
         {
           "exportName": "Compact",
           "storyId": "website-common-cardarrow--compact"
+        }
+      ]
+    },
+    {
+      "component": "CategoryNav",
+      "source": "src/components/common/CategoryNav.vue",
+      "storyFile": "src/components/common/CategoryNav.stories.ts",
+      "title": "Website/Common/CategoryNav",
+      "status": "stable",
+      "category": "common",
+      "capabilities": [],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-common-categorynav--default"
+        },
+        {
+          "exportName": "SelectedVideo",
+          "storyId": "website-common-categorynav--selected-video"
         }
       ]
     },
