@@ -96,6 +96,8 @@ const iconButton = 'group shrink-0 cursor-pointer rounded-lg border border-trans
 const primaryButton = brandButtonVariants({ variant: 'solid', size: 'xs' })
 const outlineAccentButton = brandButtonVariants({ variant: 'outline', size: 'xs' })
 const outlineButton = brandButtonVariants({ variant: 'outline-light', size: 'sm' })
+const solidAccentButton = brandButtonVariants({ variant: 'solid', size: 'sm' })
+const outlineAccentButtonSm = brandButtonVariants({ variant: 'outline', size: 'sm' })
 const tab = cn(
   toggleVariants(),
   'rounded-none px-4 first:rounded-l-xl last:rounded-r-xl'
@@ -215,22 +217,10 @@ const faqJsonLd = {
         <h1 class="max-w-full truncate text-2xl font-semibold text-primary-warm-white sm:text-3xl">{name}</h1>
         <Badge variant="accent">{meta.label}</Badge>
       </div>
-      <div class="hidden gap-2 sm:flex">
-        {docsUrl && <a href={docsUrl} class:list={[outlineButton, 'text-2xs uppercase tracking-widest']}>{launch?.launchUrl ? 'Launch page ↗' : 'Docs ↗'}</a>}
-        <div class="relative" id="llms-wrap">
-          <button id="llms-btn" class="inline-flex items-center gap-3 rounded-lg border border-transparency-white-t20 bg-transparency-white-t4 px-3 py-2.5 text-xs font-normal text-primary-comfy-canvas transition-colors hover:bg-transparency-white-t8">
-            LLMs
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-4"><path d="m6 9 6 6 6-6"/></svg>
-          </button>
-          <div id="llms-menu" class="absolute right-0 top-full z-40 mt-1.5 hidden w-60 overflow-hidden rounded-xl border border-transparency-white-t20 bg-site-dropdown py-1.5 shadow-2xl">
-            <button id="llms-copy" class="block w-full cursor-pointer px-4 py-2.5 text-left text-xs text-primary-warm-white hover:bg-transparency-white-t4">Copy page as Markdown<span id="llms-copied" class="hidden pl-2 text-primary-comfy-yellow">✓</span></button>
-            <a href={mdUrl} class="block px-4 py-2.5 text-xs text-primary-warm-white hover:bg-transparency-white-t4">View as Markdown</a>
-            <a href="/models-v2/llms.txt" class="block px-4 py-2.5 text-xs text-primary-warm-white hover:bg-transparency-white-t4">llms.txt — full catalog</a>
-            <div class="my-1 border-t border-white/10"></div>
-            <a href={`https://claude.ai/new?q=${llmPrompt}`} class="block px-4 py-2.5 text-xs text-primary-warm-white hover:bg-transparency-white-t4">Open in Claude ↗</a>
-            <a href={`https://chatgpt.com/?q=${llmPrompt}`} class="block px-4 py-2.5 text-xs text-primary-warm-white hover:bg-transparency-white-t4">Open in ChatGPT ↗</a>
-          </div>
-        </div>
+      <div class="hidden gap-2 lg:flex">
+        {docsUrl && <a href={docsUrl} class:list={[outlineAccentButtonSm, 'text-2xs uppercase tracking-widest']}>Learn more</a>}
+        <a href={workflowsUrl} class:list={[solidAccentButton, 'text-2xs uppercase tracking-widest']}>Try workflows</a>
+        {hfUrl && <a href={hfUrl} class:list={[outlineAccentButtonSm, 'text-2xs uppercase tracking-widest']}>Download weights ↗</a>}
       </div>
     </div>
     <p class="mt-2 max-w-3xl text-sm font-light leading-relaxed text-primary-comfy-canvas sm:text-base">{blurb}</p>
@@ -251,11 +241,37 @@ const faqJsonLd = {
         <button type="button" role="tab" data-tab="api" data-state="off" aria-controls="panel-api" aria-selected="false" class={tab}>API</button>
         <button type="button" role="tab" data-tab="gallery" data-state="off" aria-controls="panel-gallery" aria-selected="false" class={tab}>Examples</button>
       </nav>
-      <div class="hidden gap-2 pb-2 lg:flex">
-        <a href="https://comfy.org/download" class:list={[outlineButton, 'text-2xs uppercase tracking-widest']}>Run locally</a>
-        <a href={workflowsUrl} class:list={[outlineButton, 'text-2xs uppercase tracking-widest']}>Workflows ↗</a>
-        {hfUrl && <a href={hfUrl} class:list={[outlineButton, 'text-2xs uppercase tracking-widest']}>Download weights ↗</a>}
-        <a href="https://cloud.comfy.org?utm_source=models_v2_preview" class:list={[outlineButton, 'text-2xs uppercase tracking-widest']}>Open the full graph ↗</a>
+      <div class="hidden gap-2 sm:flex">
+        <div class="relative" id="llms-wrap">
+          <div class="inline-flex items-stretch divide-x divide-transparency-white-t20 overflow-hidden rounded-lg border border-transparency-white-t20 bg-transparency-white-t4 text-xs font-normal text-primary-comfy-canvas">
+            <button id="llms-copy" class="cursor-pointer px-3 py-2.5 transition-colors hover:bg-transparency-white-t8">Copy markdown<span id="llms-copied" class="hidden pl-2 text-primary-comfy-yellow">✓</span></button>
+            <button id="llms-btn" aria-haspopup="menu" aria-expanded="false" aria-label="More formats for LLMs" class="cursor-pointer px-2 transition-colors hover:bg-transparency-white-t8">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-4"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+          </div>
+          <div id="llms-menu" role="menu" class="absolute right-0 top-full z-40 mt-1.5 hidden w-60 overflow-hidden rounded-xl border border-transparency-white-t20 bg-site-dropdown py-1.5 shadow-2xl">
+            <a href={mdUrl} class="block px-4 py-2.5 text-xs text-primary-warm-white hover:bg-transparency-white-t4">View as Markdown</a>
+            <a href="/models-v2/llms.txt" class="block px-4 py-2.5 text-xs text-primary-warm-white hover:bg-transparency-white-t4">llms.txt — full catalog</a>
+          </div>
+        </div>
+        <div class="relative" id="graph-wrap">
+          <div class="inline-flex items-stretch divide-x divide-transparency-white-t20 overflow-hidden rounded-lg border border-transparency-white-t20 bg-transparency-white-t4 text-xs font-normal text-primary-comfy-canvas">
+            <a href="https://cloud.comfy.org?utm_source=models_v2_preview" class="px-3 py-2.5 transition-colors hover:bg-transparency-white-t8">Open the full graph</a>
+            <button id="graph-btn" aria-haspopup="menu" aria-expanded="false" aria-label="More ways to open this model" class="cursor-pointer px-2 transition-colors hover:bg-transparency-white-t8">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-4"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+          </div>
+          <div id="graph-menu" role="menu" class="absolute right-0 top-full z-40 mt-1.5 hidden w-60 overflow-hidden rounded-xl border border-transparency-white-t20 bg-site-dropdown py-1.5 shadow-2xl">
+            <a href={`https://chatgpt.com/?q=${llmPrompt}`} class="flex items-center justify-between gap-3 px-4 py-2.5 text-xs text-primary-warm-white hover:bg-transparency-white-t4">
+              Open in ChatGPT
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-4 shrink-0"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg>
+            </a>
+            <a href={`https://claude.ai/new?q=${llmPrompt}`} class="flex items-center justify-between gap-3 px-4 py-2.5 text-xs text-primary-warm-white hover:bg-transparency-white-t4">
+              Open in Claude
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-4 shrink-0"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg>
+            </a>
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -762,26 +778,35 @@ const faqJsonLd = {
         renderAll()
       })
 
-      // LLMs menu
-      const llmsBtn = $('llms-btn')
-      const llmsMenu = $('llms-menu')
-      llmsBtn?.addEventListener('click', (e) => {
-        e.stopPropagation()
-        llmsMenu?.classList.toggle('hidden')
-      })
+      // split button menus
+      const splitMenus = [
+        { wrap: '#llms-wrap', trigger: 'llms-btn', menu: 'llms-menu' },
+        { wrap: '#graph-wrap', trigger: 'graph-btn', menu: 'graph-menu' }
+      ]
+      const setMenuOpen = (trigger: string, menu: string, open: boolean) => {
+        $(menu)?.classList.toggle('hidden', !open)
+        $(trigger)?.setAttribute('aria-expanded', String(open))
+      }
+      for (const { trigger, menu } of splitMenus) {
+        $(trigger)?.addEventListener('click', (e) => {
+          e.stopPropagation()
+          const open = $(menu)?.classList.contains('hidden') ?? false
+          for (const other of splitMenus) setMenuOpen(other.trigger, other.menu, false)
+          setMenuOpen(trigger, menu, open)
+        })
+      }
       document.addEventListener('click', (e) => {
-        if (!llmsMenu || llmsMenu.classList.contains('hidden')) return
-        if (!(e.target as HTMLElement).closest('#llms-wrap')) llmsMenu.classList.add('hidden')
+        const target = e.target as HTMLElement
+        for (const { wrap, trigger, menu } of splitMenus) {
+          if (!target.closest(wrap)) setMenuOpen(trigger, menu, false)
+        }
       })
       $('llms-copy')?.addEventListener('click', async () => {
         try {
           const md = await (await fetch(window.location.pathname + '.md')).text()
           await navigator.clipboard.writeText(md)
           $('llms-copied')?.classList.remove('hidden')
-          window.setTimeout(() => {
-            $('llms-copied')?.classList.add('hidden')
-            llmsMenu?.classList.add('hidden')
-          }, 1200)
+          window.setTimeout(() => $('llms-copied')?.classList.add('hidden'), 1200)
         } catch { /* fetch or clipboard unavailable */ }
       })
 
