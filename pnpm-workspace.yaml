@@ -156,6 +156,11 @@ catalog:
   zod: ^3.23.8
   zod-to-json-schema: ^3.24.1
   zod-validation-error: ^3.3.0
+  storybook-addon-tag-badges: ^3.1.0
+  '@storybook/addon-vitest': 10.5.10
+  '@vitest/browser-playwright': 4.1.10
+  playwright: 1.61.1
+  '@storybook/addon-a11y': ^10.5.10
 
 cleanupUnusedCatalogs: true
 

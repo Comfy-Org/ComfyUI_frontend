@@ -3,15 +3,14 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 
 import HeroBackdrop01 from './HeroBackdrop01.vue'
 
-const sampleImage =
-  'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1600&q=80'
+const sampleImage = '/images/mcp/mcp-thumb-keyart.webp'
 
 type HeroBackdropStoryArgs = ComponentProps<typeof HeroBackdrop01>
 
 const meta = {
   title: 'Website/Blocks/HeroBackdrop01',
   component: HeroBackdrop01,
-  tags: ['autodocs'],
+  tags: ['autodocs', '!test', 'needs-tests'],
   args: {
     backdrop: { type: 'image', src: sampleImage, alt: 'Abstract gradient' },
     title: 'Build anything\nwith ComfyUI',
@@ -40,5 +39,11 @@ export const WithFootnote: Story = {
 export const NoBackdrop: Story = {
   args: {
     backdrop: undefined
+  }
+}
+
+export const Mobile: Story = {
+  globals: {
+    viewport: { value: 'mobile1', isRotated: false }
   }
 }

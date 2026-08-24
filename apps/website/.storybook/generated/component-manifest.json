@@ -1,0 +1,730 @@
+{
+  "schemaVersion": 1,
+  "generatedFrom": "apps/website/src/**/*.stories.ts",
+  "componentCount": 25,
+  "storyCount": 93,
+  "components": [
+    {
+      "component": "BenefitsGrid01",
+      "source": "src/components/blocks/BenefitsGrid01.vue",
+      "storyFile": "src/components/blocks/BenefitsGrid01.stories.ts",
+      "title": "Website/Blocks/BenefitsGrid01",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": ["responsive-layout"],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-benefitsgrid01--default"
+        },
+        {
+          "exportName": "WithTitlesAndFootnote",
+          "storyId": "website-blocks-benefitsgrid01--with-titles-and-footnote"
+        },
+        {
+          "exportName": "Mobile",
+          "storyId": "website-blocks-benefitsgrid01--mobile"
+        }
+      ]
+    },
+    {
+      "component": "CardArticleGallery01",
+      "source": "src/components/blocks/CardArticleGallery01.vue",
+      "storyFile": "src/components/blocks/CardArticleGallery01.stories.ts",
+      "title": "Website/Blocks/CardArticleGallery01",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": [
+        "collection-layout",
+        "filtering",
+        "linked-content",
+        "pagination",
+        "responsive-layout"
+      ],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-cardarticlegallery01--default"
+        },
+        {
+          "exportName": "WithTabsAndLoadMore",
+          "storyId": "website-blocks-cardarticlegallery01--with-tabs-and-load-more"
+        },
+        {
+          "exportName": "ThreeColumnWithAuthors",
+          "storyId": "website-blocks-cardarticlegallery01--three-column-with-authors"
+        },
+        {
+          "exportName": "MixedLayout",
+          "storyId": "website-blocks-cardarticlegallery01--mixed-layout"
+        },
+        {
+          "exportName": "Mobile",
+          "storyId": "website-blocks-cardarticlegallery01--mobile"
+        }
+      ]
+    },
+    {
+      "component": "CardSplitContent01",
+      "source": "src/components/blocks/CardSplitContent01.vue",
+      "storyFile": "src/components/blocks/CardSplitContent01.stories.ts",
+      "title": "Website/Blocks/CardSplitContent01",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": ["linked-content", "responsive-layout"],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-cardsplitcontent01--default"
+        },
+        {
+          "exportName": "WithoutTags",
+          "storyId": "website-blocks-cardsplitcontent01--without-tags"
+        },
+        {
+          "exportName": "SingleCta",
+          "storyId": "website-blocks-cardsplitcontent01--single-cta"
+        },
+        {
+          "exportName": "Mobile",
+          "storyId": "website-blocks-cardsplitcontent01--mobile"
+        }
+      ]
+    },
+    {
+      "component": "CardWorkflow01",
+      "source": "src/components/blocks/CardWorkflow01.vue",
+      "storyFile": "src/components/blocks/CardWorkflow01.stories.ts",
+      "title": "Website/Blocks/CardWorkflow01",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": ["linked-content"],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-cardworkflow01--default"
+        },
+        {
+          "exportName": "ImageMedia",
+          "storyId": "website-blocks-cardworkflow01--image-media"
+        },
+        {
+          "exportName": "Compact",
+          "storyId": "website-blocks-cardworkflow01--compact"
+        },
+        {
+          "exportName": "TitleOnly",
+          "storyId": "website-blocks-cardworkflow01--title-only"
+        }
+      ]
+    },
+    {
+      "component": "CardWorkflowGallery01",
+      "source": "src/components/blocks/CardWorkflowGallery01.vue",
+      "storyFile": "src/components/blocks/CardWorkflowGallery01.stories.ts",
+      "title": "Website/Blocks/CardWorkflowGallery01",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": [
+        "collection-layout",
+        "linked-content",
+        "responsive-layout"
+      ],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-cardworkflowgallery01--default"
+        },
+        {
+          "exportName": "NoTitle",
+          "storyId": "website-blocks-cardworkflowgallery01--no-title"
+        },
+        {
+          "exportName": "LinkedCards",
+          "storyId": "website-blocks-cardworkflowgallery01--linked-cards"
+        }
+      ]
+    },
+    {
+      "component": "ChecklistSplit01",
+      "source": "src/components/blocks/ChecklistSplit01.vue",
+      "storyFile": "src/components/blocks/ChecklistSplit01.stories.ts",
+      "title": "Website/Blocks/ChecklistSplit01",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": ["responsive-layout"],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-checklistsplit01--default"
+        },
+        {
+          "exportName": "WithoutHeading",
+          "storyId": "website-blocks-checklistsplit01--without-heading"
+        },
+        {
+          "exportName": "Mobile",
+          "storyId": "website-blocks-checklistsplit01--mobile"
+        }
+      ]
+    },
+    {
+      "component": "CtaBands01",
+      "source": "src/components/blocks/CtaBands01.vue",
+      "storyFile": "src/components/blocks/CtaBands01.stories.ts",
+      "title": "Website/Blocks/CtaBands01",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": ["responsive-layout"],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-ctabands01--default"
+        },
+        {
+          "exportName": "SingleBand",
+          "storyId": "website-blocks-ctabands01--single-band"
+        },
+        {
+          "exportName": "ExternalCta",
+          "storyId": "website-blocks-ctabands01--external-cta"
+        },
+        {
+          "exportName": "Mobile",
+          "storyId": "website-blocks-ctabands01--mobile"
+        }
+      ]
+    },
+    {
+      "component": "FeaturedCarousel01",
+      "source": "src/components/blocks/FeaturedCarousel01.vue",
+      "storyFile": "src/components/blocks/FeaturedCarousel01.stories.ts",
+      "title": "Website/Blocks/FeaturedCarousel01",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": ["carousel-navigation", "responsive-layout"],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-featuredcarousel01--default"
+        },
+        {
+          "exportName": "SingleSlide",
+          "storyId": "website-blocks-featuredcarousel01--single-slide"
+        },
+        {
+          "exportName": "TitleHidden",
+          "storyId": "website-blocks-featuredcarousel01--title-hidden"
+        },
+        {
+          "exportName": "Mobile",
+          "storyId": "website-blocks-featuredcarousel01--mobile"
+        }
+      ]
+    },
+    {
+      "component": "HeroBackdrop01",
+      "source": "src/components/blocks/HeroBackdrop01.vue",
+      "storyFile": "src/components/blocks/HeroBackdrop01.stories.ts",
+      "title": "Website/Blocks/HeroBackdrop01",
+      "status": "needs-tests",
+      "category": "blocks",
+      "capabilities": ["responsive-layout"],
+      "testEligible": false,
+      "limitations": [
+        "Excluded from browser tests because the Vitest importer fails before render."
+      ],
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-herobackdrop01--default"
+        },
+        {
+          "exportName": "WithBadge",
+          "storyId": "website-blocks-herobackdrop01--with-badge"
+        },
+        {
+          "exportName": "WithFootnote",
+          "storyId": "website-blocks-herobackdrop01--with-footnote"
+        },
+        {
+          "exportName": "NoBackdrop",
+          "storyId": "website-blocks-herobackdrop01--no-backdrop"
+        },
+        {
+          "exportName": "Mobile",
+          "storyId": "website-blocks-herobackdrop01--mobile"
+        }
+      ]
+    },
+    {
+      "component": "HeroCentered01",
+      "source": "src/components/blocks/HeroCentered01.vue",
+      "storyFile": "src/components/blocks/HeroCentered01.stories.ts",
+      "title": "Website/Blocks/HeroCentered01",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": ["responsive-layout"],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-herocentered01--default"
+        },
+        {
+          "exportName": "WithoutEyebrow",
+          "storyId": "website-blocks-herocentered01--without-eyebrow"
+        },
+        {
+          "exportName": "TitleOnly",
+          "storyId": "website-blocks-herocentered01--title-only"
+        }
+      ]
+    },
+    {
+      "component": "TeamGrid01",
+      "source": "src/components/blocks/TeamGrid01.vue",
+      "storyFile": "src/components/blocks/TeamGrid01.stories.ts",
+      "title": "Website/Blocks/TeamGrid01",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": [
+        "dialog",
+        "focus-management",
+        "keyboard-dismissal",
+        "responsive-layout"
+      ],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-teamgrid01--default"
+        },
+        {
+          "exportName": "CardsOnly",
+          "storyId": "website-blocks-teamgrid01--cards-only"
+        },
+        {
+          "exportName": "WithoutWorkflows",
+          "storyId": "website-blocks-teamgrid01--without-workflows"
+        },
+        {
+          "exportName": "Mobile",
+          "storyId": "website-blocks-teamgrid01--mobile"
+        }
+      ]
+    },
+    {
+      "component": "TeamMemberDialog01",
+      "source": "src/components/blocks/TeamMemberDialog01.vue",
+      "storyFile": "src/components/blocks/TeamMemberDialog01.stories.ts",
+      "title": "Website/Blocks/TeamMemberDialog01",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": ["dialog", "focus-management", "keyboard-dismissal"],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-teammemberdialog01--default"
+        },
+        {
+          "exportName": "WithoutTags",
+          "storyId": "website-blocks-teammemberdialog01--without-tags"
+        },
+        {
+          "exportName": "WithoutWorkflows",
+          "storyId": "website-blocks-teammemberdialog01--without-workflows"
+        }
+      ]
+    },
+    {
+      "component": "WatchAuthorCard",
+      "source": "src/components/blocks/WatchAuthorCard.vue",
+      "storyFile": "src/components/blocks/WatchAuthorCard.stories.ts",
+      "title": "Website/Blocks/WatchAuthorCard",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": ["linked-content"],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-watchauthorcard--default"
+        },
+        {
+          "exportName": "WithoutAvatar",
+          "storyId": "website-blocks-watchauthorcard--without-avatar"
+        },
+        {
+          "exportName": "NameOnly",
+          "storyId": "website-blocks-watchauthorcard--name-only"
+        }
+      ]
+    },
+    {
+      "component": "WatchAuthorCard",
+      "source": "src/components/blocks/WatchAuthorCard.vue",
+      "storyFile": "src/components/blocks/WatchPageLayout.stories.ts",
+      "title": "Website/Blocks/WatchPageLayout",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": ["linked-content"],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-watchpagelayout--default"
+        },
+        {
+          "exportName": "TitleOnly",
+          "storyId": "website-blocks-watchpagelayout--title-only"
+        }
+      ]
+    },
+    {
+      "component": "WatchRecommendedCard",
+      "source": "src/components/blocks/WatchRecommendedCard.vue",
+      "storyFile": "src/components/blocks/WatchRecommendedCard.stories.ts",
+      "title": "Website/Blocks/WatchRecommendedCard",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": ["linked-content"],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-watchrecommendedcard--default"
+        },
+        {
+          "exportName": "WithoutTag",
+          "storyId": "website-blocks-watchrecommendedcard--without-tag"
+        }
+      ]
+    },
+    {
+      "component": "WatchRelatedCard",
+      "source": "src/components/blocks/WatchRelatedCard.vue",
+      "storyFile": "src/components/blocks/WatchRelatedCard.stories.ts",
+      "title": "Website/Blocks/WatchRelatedCard",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": ["linked-content"],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-watchrelatedcard--default"
+        },
+        {
+          "exportName": "WithTitle",
+          "storyId": "website-blocks-watchrelatedcard--with-title"
+        }
+      ]
+    },
+    {
+      "component": "WatchRelatedStrip",
+      "source": "src/components/blocks/WatchRelatedStrip.vue",
+      "storyFile": "src/components/blocks/WatchRelatedStrip.stories.ts",
+      "title": "Website/Blocks/WatchRelatedStrip",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": [],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-watchrelatedstrip--default"
+        },
+        {
+          "exportName": "Empty",
+          "storyId": "website-blocks-watchrelatedstrip--empty"
+        }
+      ]
+    },
+    {
+      "component": "BrandButton",
+      "source": "src/components/common/BrandButton.vue",
+      "storyFile": "src/components/common/BrandButton.stories.ts",
+      "title": "Website/Common/BrandButton",
+      "status": "stable",
+      "category": "common",
+      "capabilities": ["activation", "keyboard-focus"],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "Solid",
+          "storyId": "website-common-brandbutton--solid"
+        },
+        {
+          "exportName": "Outline",
+          "storyId": "website-common-brandbutton--outline"
+        },
+        {
+          "exportName": "OutlineDark",
+          "storyId": "website-common-brandbutton--outline-dark"
+        },
+        {
+          "exportName": "LargeSolid",
+          "storyId": "website-common-brandbutton--large-solid"
+        },
+        {
+          "exportName": "LargeOutline",
+          "storyId": "website-common-brandbutton--large-outline"
+        },
+        {
+          "exportName": "AsButton",
+          "storyId": "website-common-brandbutton--as-button"
+        },
+        {
+          "exportName": "AllVariants",
+          "storyId": "website-common-brandbutton--all-variants"
+        }
+      ]
+    },
+    {
+      "component": "FAQSection",
+      "source": "src/components/common/FAQSection.vue",
+      "storyFile": "src/components/common/FAQSection.stories.ts",
+      "title": "Website/Common/FAQSection",
+      "status": "stable",
+      "category": "common",
+      "capabilities": [
+        "disclosure",
+        "keyboard-activation",
+        "responsive-layout"
+      ],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-common-faqsection--default"
+        },
+        {
+          "exportName": "ManyItems",
+          "storyId": "website-common-faqsection--many-items"
+        },
+        {
+          "exportName": "Mobile",
+          "storyId": "website-common-faqsection--mobile"
+        }
+      ]
+    },
+    {
+      "component": "FooterLinkColumn",
+      "source": "src/components/common/FooterLinkColumn.vue",
+      "storyFile": "src/components/common/FooterLinkColumn.stories.ts",
+      "title": "Website/Common/FooterLinkColumn",
+      "status": "needs-tests",
+      "category": "common",
+      "capabilities": [],
+      "testEligible": false,
+      "limitations": [
+        "Excluded from browser tests because the Vitest importer fails before render."
+      ],
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-common-footerlinkcolumn--default"
+        },
+        {
+          "exportName": "WithExternalLinks",
+          "storyId": "website-common-footerlinkcolumn--with-external-links"
+        }
+      ]
+    },
+    {
+      "component": "NodeBadge",
+      "source": "src/components/common/NodeBadge.vue",
+      "storyFile": "src/components/common/NodeBadge.stories.ts",
+      "title": "Website/Common/NodeBadge",
+      "status": "needs-tests",
+      "category": "common",
+      "capabilities": [],
+      "testEligible": false,
+      "limitations": [
+        "Excluded from browser tests because the Vitest importer fails before render."
+      ],
+      "stories": [
+        {
+          "exportName": "TextOnly",
+          "storyId": "website-common-nodebadge--text-only"
+        },
+        {
+          "exportName": "MultipleSegments",
+          "storyId": "website-common-nodebadge--multiple-segments"
+        },
+        {
+          "exportName": "WithLogo",
+          "storyId": "website-common-nodebadge--with-logo"
+        }
+      ]
+    },
+    {
+      "component": "ProductCard",
+      "source": "src/components/common/ProductCard.vue",
+      "storyFile": "src/components/common/ProductCard.stories.ts",
+      "title": "Website/Common/ProductCard",
+      "status": "stable",
+      "category": "common",
+      "capabilities": ["linked-content"],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-common-productcard--default"
+        },
+        {
+          "exportName": "AllCards",
+          "storyId": "website-common-productcard--all-cards"
+        }
+      ]
+    },
+    {
+      "component": "ReasonSection",
+      "source": "src/components/product/shared/ReasonSection.vue",
+      "storyFile": "src/components/product/shared/ReasonSection.stories.ts",
+      "title": "Website/Product/ReasonSection",
+      "status": "stable",
+      "category": "product",
+      "capabilities": ["responsive-layout"],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-product-reasonsection--default"
+        },
+        {
+          "exportName": "FewReasons",
+          "storyId": "website-product-reasonsection--few-reasons"
+        }
+      ]
+    },
+    {
+      "component": "ButtonMask",
+      "source": "src/components/ui/button-mask/ButtonMask.vue",
+      "storyFile": "src/components/ui/button-mask/ButtonMask.stories.ts",
+      "title": "Website/UI/ButtonMask",
+      "status": "stable",
+      "category": "ui",
+      "capabilities": ["activation", "keyboard-focus"],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-ui-buttonmask--default"
+        },
+        {
+          "exportName": "Ghost",
+          "storyId": "website-ui-buttonmask--ghost"
+        },
+        {
+          "exportName": "IconLeft",
+          "storyId": "website-ui-buttonmask--icon-left"
+        },
+        {
+          "exportName": "DefaultSolid",
+          "storyId": "website-ui-buttonmask--default-solid"
+        },
+        {
+          "exportName": "LargeSolid",
+          "storyId": "website-ui-buttonmask--large-solid"
+        },
+        {
+          "exportName": "WithCustomIcon",
+          "storyId": "website-ui-buttonmask--with-custom-icon"
+        },
+        {
+          "exportName": "LabelVisible",
+          "storyId": "website-ui-buttonmask--label-visible"
+        },
+        {
+          "exportName": "Disabled",
+          "storyId": "website-ui-buttonmask--disabled"
+        },
+        {
+          "exportName": "AllVariants",
+          "storyId": "website-ui-buttonmask--all-variants"
+        }
+      ]
+    },
+    {
+      "component": "ButtonPill",
+      "source": "src/components/ui/button-pill/ButtonPill.vue",
+      "storyFile": "src/components/ui/button-pill/ButtonPill.stories.ts",
+      "title": "Website/UI/ButtonPill",
+      "status": "stable",
+      "category": "ui",
+      "capabilities": ["activation", "keyboard-focus"],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "AsAnchor",
+          "storyId": "website-ui-buttonpill--as-anchor"
+        },
+        {
+          "exportName": "AsButton",
+          "storyId": "website-ui-buttonpill--as-button"
+        },
+        {
+          "exportName": "Ghost",
+          "storyId": "website-ui-buttonpill--ghost"
+        },
+        {
+          "exportName": "DefaultSolid",
+          "storyId": "website-ui-buttonpill--default-solid"
+        },
+        {
+          "exportName": "LargeSolid",
+          "storyId": "website-ui-buttonpill--large-solid"
+        },
+        {
+          "exportName": "WithCustomIcon",
+          "storyId": "website-ui-buttonpill--with-custom-icon"
+        },
+        {
+          "exportName": "IconLeft",
+          "storyId": "website-ui-buttonpill--icon-left"
+        },
+        {
+          "exportName": "Disabled",
+          "storyId": "website-ui-buttonpill--disabled"
+        },
+        {
+          "exportName": "AllVariants",
+          "storyId": "website-ui-buttonpill--all-variants"
+        }
+      ]
+    }
+  ]
+}

@@ -5,7 +5,7 @@ import NodeBadge from './NodeBadge.vue'
 const meta: Meta<typeof NodeBadge> = {
   title: 'Website/Common/NodeBadge',
   component: NodeBadge,
-  tags: ['autodocs'],
+  tags: ['autodocs', '!test', 'needs-tests'],
   decorators: [
     () => ({
       template: '<div class="bg-primary-comfy-ink p-8"><story /></div>'
