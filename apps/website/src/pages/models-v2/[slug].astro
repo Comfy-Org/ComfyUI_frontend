@@ -135,7 +135,17 @@ const costRows = [
 const canonicalURL = new URL(Astro.url.pathname, Astro.site ?? 'https://comfy.org')
 const mdUrl = `/models-v2/${pageSlug}.md`
 
-const defaultSeed = 428790123
+// A model's example seed is derived from its slug: distinct per model, and
+// stable across builds so the page output stays reproducible.
+const seedFromSlug = (slug: string) => {
+  let hash = 2166136261
+  for (let i = 0; i < slug.length; i++) {
+    hash ^= slug.charCodeAt(i)
+    hash = Math.imul(hash, 16777619)
+  }
+  return (Math.abs(hash) % 900_000_000) + 100_000_000
+}
+const defaultSeed = seedFromSlug(slugId)
 const curlSnippet = `# Same graph the playground runs — as an endpoint
 curl -X POST https://api.comfy.org/v1/run \\
   -H "Authorization: Bearer $COMFY_KEY" \\
