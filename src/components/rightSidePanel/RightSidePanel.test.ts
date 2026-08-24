@@ -116,7 +116,6 @@ function renderPanel(
 
 describe('RightSidePanel active tab fallback', () => {
   beforeEach(() => {
-    vi.restoreAllMocks()
     mockApp.rootGraph = null
   })
 

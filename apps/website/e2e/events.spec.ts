@@ -185,6 +185,9 @@ test.describe('Events page — desktop @smoke', () => {
     for (const [path, locale] of LOCALES) {
       await page.goto(path)
       const section = upcomingSection(page, locale)
+      // Every configured event ages out eventually, so the row assertions
+      // scale to zero — the list itself has to render either way.
+      await expect(section.getByRole('list')).toBeAttached()
       const rows = section.locator('li')
       await expect(rows).toHaveCount(upcomingEvents.length)
 
@@ -223,7 +226,9 @@ test.describe('Events page — desktop @smoke', () => {
     page
   }) => {
     const event = upcomingEvents.find((entry) => eventVideoId(entry))
-    test.skip(!event, 'needs an upcoming event with a video')
+    const videoId = event && eventVideoId(event)
+    test.skip(!videoId, 'needs an upcoming event with a video')
+    if (!event || !videoId) return
 
     for (const [path, locale] of LOCALES) {
       await page.goto(path)
@@ -232,26 +237,21 @@ test.describe('Events page — desktop @smoke', () => {
 
       await section
         .getByRole('link', {
-          name: `${event!.title[locale]} — ${t('events.upcoming.livestream', locale)}`
+          name: `${event.title[locale]} — ${t('events.upcoming.livestream', locale)}`
         })
         .click()
 
       await expect(page).toHaveURL(
-        new RegExp(`${localizeHref(eventPath(event!), locale)}/?$`)
+        new RegExp(`${localizeHref(eventPath(event), locale)}/?$`)
       )
-      const dialog = page.getByRole('dialog', {
-        name: event!.title[locale]
-      })
+      const dialog = page.getByRole('dialog', { name: event.title[locale] })
       await expect(dialog).toBeVisible()
       await expect(
-        dialog.getByRole('heading', {
-          level: 1,
-          name: event!.title[locale]
-        })
+        dialog.getByRole('heading', { level: 1, name: event.title[locale] })
       ).toBeVisible()
       await expect(dialog.locator('iframe')).toHaveAttribute(
         'src',
-        new RegExp(eventVideoId(event!)!)
+        new RegExp(videoId)
       )
 
       // Future events offer adding the stream to the visitor's calendar; the

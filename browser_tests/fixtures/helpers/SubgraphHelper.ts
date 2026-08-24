@@ -550,6 +550,49 @@ export class SubgraphHelper {
     return id
   }
 
+  async getBoundaryLinkSnapshot() {
+    return this.page.evaluate(() => {
+      const graph = window.app!.graph!
+      const host = graph.nodes.find((node) => node.isSubgraphNode())
+      if (!host) {
+        return {
+          rootLinks: ['no subgraph node'],
+          incompatibleHostInputLinks: ['no subgraph node'],
+          incompatibleHostOutputLinks: ['no subgraph node']
+        }
+      }
+
+      const hostId = host.id
+      function label(id: string | number) {
+        return id === hostId ? 'HOST' : String(id)
+      }
+
+      const links = [...graph.links.values()]
+      return {
+        rootLinks: links
+          .map(
+            (link) =>
+              `${label(link.origin_id)}:${link.origin_slot}->${label(link.target_id)}:${link.target_slot}`
+          )
+          .sort(),
+        incompatibleHostInputLinks: links
+          .filter((link) => link.target_id === host.id)
+          .filter((link) => host.inputs[link.target_slot]?.type !== link.type)
+          .map(
+            (link) =>
+              `${link.type} link landed on slot ${link.target_slot} typed ${host.inputs[link.target_slot]?.type}`
+          ),
+        incompatibleHostOutputLinks: links
+          .filter((link) => link.origin_id === host.id)
+          .filter((link) => host.outputs[link.origin_slot]?.type !== link.type)
+          .map(
+            (link) =>
+              `${link.type} link left slot ${link.origin_slot} typed ${host.outputs[link.origin_slot]?.type}`
+          )
+      }
+    })
+  }
+
   async serializeAndReload(): Promise<void> {
     const serialized = await this.page.evaluate(() =>
       window.app!.graph!.serialize()

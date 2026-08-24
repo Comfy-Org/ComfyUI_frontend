@@ -83,22 +83,42 @@
     {
       "class": "billing",
       "tier": "R3",
-      "why": "billing / credits — money moves",
+      "why": "billing / credits — money moves. Scoped to the application source tree: an unscoped **/ token glob matched the marketing site, e2e specs, PNG snapshots, stories, locale files and docs on filename characters alone",
       "paths": [
-        "**/billing/**",
-        "**/pricing/**",
-        "**/credits/**",
-        "**/subscription/**",
-        "**/*billing*",
-        "**/*Billing*",
-        "**/*subscription*",
-        "**/*Subscription*",
-        "**/*credit*",
-        "**/*Credit*",
-        "**/*price*",
-        "**/*Price*",
-        "**/*pricing*",
-        "**/*Pricing*"
+        "src/**/billing/**",
+        "src/**/pricing/**",
+        "src/**/credit/**",
+        "src/**/credits/**",
+        "src/**/subscription/**",
+        "src/**/*TopUp*.vue",
+        "src/platform/**/*billing*",
+        "src/platform/**/*Billing*",
+        "src/platform/**/*subscription*",
+        "src/platform/**/*Subscription*",
+        "src/platform/**/*credit*",
+        "src/platform/**/*Credit*",
+        "src/platform/**/*price*",
+        "src/platform/**/*Price*",
+        "src/platform/**/*pricing*",
+        "src/platform/**/*Pricing*",
+        "src/stores/*billing*",
+        "src/stores/*Billing*",
+        "src/stores/*credit*",
+        "src/stores/*Credit*",
+        "src/services/*billing*",
+        "src/services/*Billing*",
+        "src/services/*credit*",
+        "src/services/*Credit*",
+        "src/config/*billing*",
+        "src/config/*Billing*",
+        "src/config/*credit*",
+        "src/config/*Credit*",
+        "src/config/*price*",
+        "src/config/*Price*",
+        "src/config/*pricing*",
+        "src/config/*Pricing*",
+        "src/config/*subscription*",
+        "src/config/*Subscription*"
       ]
     },
     {
@@ -197,6 +217,12 @@
         "src/lib/litegraph/**",
         "packages/**"
       ]
+    },
+    {
+      "class": "website",
+      "tier": "R2",
+      "why": "the marketing site is production and had no rule at all — but it is copy and layout, so it cannot corrupt a saved workflow or move money",
+      "paths": ["apps/website/**"]
     },
 
     {
