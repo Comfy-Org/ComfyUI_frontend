@@ -377,14 +377,15 @@ describe('CreditsTile', () => {
     expect(state.showTopUpCreditsDialog).toHaveBeenCalledOnce()
   })
 
-  it('keeps add-credits available on local for an unsubscribed team workspace', () => {
+  it('keeps add-credits available on local for an unsubscribed team workspace', async () => {
     mockIsCloud.value = false
     state.canAccessSubscriptionFeatures = false
     state.isTeamPlan = true
     state.balance = { amountMicros: 500 }
     renderTile()
-    expect(screen.getByText('Add credits')).toBeInTheDocument()
     expect(screen.queryByText('Upgrade to add credits')).toBeNull()
+    await userEvent.click(screen.getByText('Add credits'))
+    expect(state.showTopUpCreditsDialog).toHaveBeenCalledOnce()
   })
 
   it('shows no depletion notice or in-use badge while monthly credits remain', () => {
