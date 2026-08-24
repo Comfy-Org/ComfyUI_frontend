@@ -1,6 +1,6 @@
 import { useLocalStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
@@ -39,12 +39,12 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
 
   watch(
     apiKey,
-    () => {
+    async () => {
       if (apiKey.value) {
-        // IF API key is set, initialize user
+        await nextTick()
+        if (!apiKey.value) return
         void initializeUserFromApiKey()
       } else {
-        // IF API key is cleared, clear user
         currentUser.value = null
       }
     },
