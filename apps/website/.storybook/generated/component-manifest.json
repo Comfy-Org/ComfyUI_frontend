@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "generatedFrom": "apps/website/src/**/*.stories.ts",
-  "componentCount": 25,
-  "storyCount": 93,
+  "componentCount": 35,
+  "storyCount": 128,
   "components": [
     {
       "component": "BenefitsGrid01",
@@ -26,6 +26,60 @@
         {
           "exportName": "Mobile",
           "storyId": "website-blocks-benefitsgrid01--mobile"
+        }
+      ]
+    },
+    {
+      "component": "BrandAssetsGrid01",
+      "source": "src/components/blocks/BrandAssetsGrid01.vue",
+      "storyFile": "src/components/blocks/BrandAssetsGrid01.stories.ts",
+      "title": "Website/Blocks/BrandAssetsGrid01",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": ["responsive-layout"],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-brandassetsgrid01--default"
+        },
+        {
+          "exportName": "TwoAssets",
+          "storyId": "website-blocks-brandassetsgrid01--two-assets"
+        },
+        {
+          "exportName": "Mobile",
+          "storyId": "website-blocks-brandassetsgrid01--mobile"
+        }
+      ]
+    },
+    {
+      "component": "CardArticle01",
+      "source": "src/components/blocks/CardArticle01.vue",
+      "storyFile": "src/components/blocks/CardArticle01.stories.ts",
+      "title": "Website/Blocks/CardArticle01",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": ["linked-content"],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-cardarticle01--default"
+        },
+        {
+          "exportName": "WithAuthor",
+          "storyId": "website-blocks-cardarticle01--with-author"
+        },
+        {
+          "exportName": "Minimal",
+          "storyId": "website-blocks-cardarticle01--minimal"
+        },
+        {
+          "exportName": "LongTitleClamped",
+          "storyId": "website-blocks-cardarticle01--long-title-clamped"
         }
       ]
     },
@@ -206,6 +260,64 @@
         {
           "exportName": "Mobile",
           "storyId": "website-blocks-ctabands01--mobile"
+        }
+      ]
+    },
+    {
+      "component": "CtaCenter01",
+      "source": "src/components/blocks/CtaCenter01.vue",
+      "storyFile": "src/components/blocks/CtaCenter01.stories.ts",
+      "title": "Website/Blocks/CtaCenter01",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": [],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-ctacenter01--default"
+        },
+        {
+          "exportName": "PrimaryOnly",
+          "storyId": "website-blocks-ctacenter01--primary-only"
+        },
+        {
+          "exportName": "HeadingAndAction",
+          "storyId": "website-blocks-ctacenter01--heading-and-action"
+        },
+        {
+          "exportName": "Mobile",
+          "storyId": "website-blocks-ctacenter01--mobile"
+        }
+      ]
+    },
+    {
+      "component": "FeatureGrid02",
+      "source": "src/components/blocks/FeatureGrid02.vue",
+      "storyFile": "src/components/blocks/FeatureGrid02.stories.ts",
+      "title": "Website/Blocks/FeatureGrid02",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": ["responsive-layout"],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-featuregrid02--default"
+        },
+        {
+          "exportName": "WithoutActions",
+          "storyId": "website-blocks-featuregrid02--without-actions"
+        },
+        {
+          "exportName": "TwoSteps",
+          "storyId": "website-blocks-featuregrid02--two-steps"
+        },
+        {
+          "exportName": "Mobile",
+          "storyId": "website-blocks-featuregrid02--mobile"
         }
       ]
     },
@@ -508,6 +620,89 @@
       ]
     },
     {
+      "component": "BreadcrumbBar",
+      "source": "src/components/common/BreadcrumbBar.vue",
+      "storyFile": "src/components/common/BreadcrumbBar.stories.ts",
+      "title": "Website/Common/BreadcrumbBar",
+      "status": "stable",
+      "category": "common",
+      "capabilities": [],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-common-breadcrumbbar--default"
+        },
+        {
+          "exportName": "WithoutUpdatedDate",
+          "storyId": "website-common-breadcrumbbar--without-updated-date"
+        },
+        {
+          "exportName": "LongTrail",
+          "storyId": "website-common-breadcrumbbar--long-trail"
+        },
+        {
+          "exportName": "Mobile",
+          "storyId": "website-common-breadcrumbbar--mobile"
+        }
+      ]
+    },
+    {
+      "component": "CallToActionSection",
+      "source": "src/components/common/CallToActionSection.vue",
+      "storyFile": "src/components/common/CallToActionSection.stories.ts",
+      "title": "Website/Common/CallToActionSection",
+      "status": "stable",
+      "category": "common",
+      "capabilities": ["responsive-layout"],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-common-calltoactionsection--default"
+        },
+        {
+          "exportName": "PrimaryOnly",
+          "storyId": "website-common-calltoactionsection--primary-only"
+        },
+        {
+          "exportName": "Chinese",
+          "storyId": "website-common-calltoactionsection--chinese"
+        },
+        {
+          "exportName": "Mobile",
+          "storyId": "website-common-calltoactionsection--mobile"
+        }
+      ]
+    },
+    {
+      "component": "CardArrow",
+      "source": "src/components/common/CardArrow.vue",
+      "storyFile": "src/components/common/CardArrow.stories.ts",
+      "title": "Website/Common/CardArrow",
+      "status": "stable",
+      "category": "common",
+      "capabilities": ["linked-content"],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-common-cardarrow--default"
+        },
+        {
+          "exportName": "GroupHover",
+          "storyId": "website-common-cardarrow--group-hover"
+        },
+        {
+          "exportName": "Compact",
+          "storyId": "website-common-cardarrow--compact"
+        }
+      ]
+    },
+    {
       "component": "FAQSection",
       "source": "src/components/common/FAQSection.vue",
       "storyFile": "src/components/common/FAQSection.stories.ts",
@@ -604,6 +799,81 @@
         {
           "exportName": "AllCards",
           "storyId": "website-common-productcard--all-cards"
+        }
+      ]
+    },
+    {
+      "component": "SectionHeader",
+      "source": "src/components/common/SectionHeader.vue",
+      "storyFile": "src/components/common/SectionHeader.stories.ts",
+      "title": "Website/Common/SectionHeader",
+      "status": "stable",
+      "category": "common",
+      "capabilities": ["responsive-layout"],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-common-sectionheader--default"
+        },
+        {
+          "exportName": "StartAligned",
+          "storyId": "website-common-sectionheader--start-aligned"
+        },
+        {
+          "exportName": "HeroScale",
+          "storyId": "website-common-sectionheader--hero-scale"
+        },
+        {
+          "exportName": "WithoutLabel",
+          "storyId": "website-common-sectionheader--without-label"
+        },
+        {
+          "exportName": "Mobile",
+          "storyId": "website-common-sectionheader--mobile"
+        }
+      ]
+    },
+    {
+      "component": "SectionLabel",
+      "source": "src/components/common/SectionLabel.vue",
+      "storyFile": "src/components/common/SectionLabel.stories.ts",
+      "title": "Website/Common/SectionLabel",
+      "status": "stable",
+      "category": "common",
+      "capabilities": ["responsive-layout"],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-common-sectionlabel--default"
+        },
+        {
+          "exportName": "LongLabel",
+          "storyId": "website-common-sectionlabel--long-label"
+        }
+      ]
+    },
+    {
+      "component": "SocialProofBarSection",
+      "source": "src/components/common/SocialProofBarSection.vue",
+      "storyFile": "src/components/common/SocialProofBarSection.stories.ts",
+      "title": "Website/Common/SocialProofBarSection",
+      "status": "stable",
+      "category": "common",
+      "capabilities": ["responsive-layout"],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "Desktop",
+          "storyId": "website-common-socialproofbarsection--desktop"
+        },
+        {
+          "exportName": "Mobile",
+          "storyId": "website-common-socialproofbarsection--mobile"
         }
       ]
     },
