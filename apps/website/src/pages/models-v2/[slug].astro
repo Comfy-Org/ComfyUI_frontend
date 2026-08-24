@@ -235,8 +235,8 @@ const faqJsonLd = {
     </div>
     <p class="mt-2 max-w-3xl text-sm font-light leading-relaxed text-primary-comfy-canvas sm:text-base">{blurb}</p>
     <div class="mt-4 flex flex-wrap gap-1.5">
-      {dayZero && <span class:list={[pill, 'bg-primary-comfy-yellow text-primary-comfy-ink']}>Day zero</span>}
-      <span class:list={[pill, kind === 'open weights' ? 'bg-primary-comfy-plum/30 text-primary-comfy-canvas' : 'bg-secondary-mauve/30 text-primary-comfy-canvas']}>{kindLabel}</span>
+      {dayZero && <span class:list={[pill, pillMuted]}>Day zero</span>}
+      <span class:list={[pill, pillMuted]}>{kindLabel}</span>
       <span class:list={[pill, pillMuted]}>Commercial use</span>
       <span class:list={[pill, pillMuted]}>{sentence(price)}</span>
       <span class:list={[pill, pillMuted]}>{sentence(runs)}</span>
