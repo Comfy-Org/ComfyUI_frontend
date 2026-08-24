@@ -1,11 +1,4 @@
-import { Editor as TiptapEditor } from '@tiptap/core'
-import TiptapLink from '@tiptap/extension-link'
-import TiptapTable from '@tiptap/extension-table'
-import TiptapTableCell from '@tiptap/extension-table-cell'
-import TiptapTableHeader from '@tiptap/extension-table-header'
-import TiptapTableRow from '@tiptap/extension-table-row'
-import TiptapStarterKit from '@tiptap/starter-kit'
-import { Markdown as TiptapMarkdown } from 'tiptap-markdown'
+import type { Editor as TiptapEditor } from '@tiptap/core'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { resolveNodeRootGraphId } from '@/lib/litegraph/src/litegraph'
@@ -24,31 +17,19 @@ function addMarkdownWidget(
   name: string,
   opts: { defaultVal: string }
 ) {
-  TiptapMarkdown.configure({
-    html: false,
-    breaks: true,
-    transformPastedText: true
-  })
-  const editor = new TiptapEditor({
-    extensions: [
-      TiptapStarterKit,
-      TiptapMarkdown,
-      TiptapLink,
-      TiptapTable,
-      TiptapTableCell,
-      TiptapTableHeader,
-      TiptapTableRow
-    ],
-    content: opts.defaultVal,
-    editable: false
-  })
-
   const widgetStore = useWidgetValueStore()
 
-  const inputEl = editor.options.element as HTMLElement
+  // Build the shell synchronously so the widget is fully wired before Tiptap
+  // loads. The Tiptap editor (~0.7MB) is imported lazily and mounted into this
+  // element on arrival, keeping it off the app boot path.
+  const inputEl = document.createElement('div')
   inputEl.classList.add('comfy-markdown')
   const textarea = document.createElement('textarea')
+  textarea.value = opts.defaultVal
   inputEl.append(textarea)
+
+  let editor: TiptapEditor | undefined
+  let removed = false
 
   const widget = node.addDOMWidget(name, 'MARKDOWN', inputEl, {
     getValue(): string {
@@ -60,7 +41,7 @@ function addMarkdownWidget(
     },
     setValue(v: string) {
       textarea.value = v
-      editor.commands.setContent(v)
+      editor?.commands.setContent(v)
       const graphId = resolveNodeRootGraphId(node, app.rootGraph.id)
       const widgetState = widgetStore.getWidget(
         widgetId(graphId, node.id, name)
@@ -101,7 +82,7 @@ function addMarkdownWidget(
   textarea.addEventListener(
     'change',
     () => {
-      editor.commands.setContent(textarea.value)
+      editor?.commands.setContent(textarea.value)
       widget.callback?.(widget.value)
     },
     { signal }
@@ -113,9 +94,24 @@ function addMarkdownWidget(
 
   forwardMiddleButtonToCanvas(inputEl, signal)
 
+  // Attach the rich editor once its chunk resolves. A dynamic import can't be
+  // cancelled, so a `removed` guard makes a late arrival a no-op after the node
+  // is gone. On failure the shell textarea stays fully usable.
+  void import('./markdownEditor')
+    .then(({ createMarkdownEditor }) => {
+      if (removed) return
+      // Initialise from the current value, not the construction-time default,
+      // so a setValue during the load window is reflected.
+      editor = createMarkdownEditor(inputEl, textarea.value)
+    })
+    .catch((error) => {
+      console.error('[markdownWidget] Failed to load editor', error)
+    })
+
   widget.onRemove = useChainCallback(widget.onRemove, () => {
+    removed = true
     controller.abort()
-    if (!editor.isDestroyed) editor.destroy()
+    if (editor && !editor.isDestroyed) editor.destroy()
   })
 
   return widget
