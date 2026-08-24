@@ -5,7 +5,11 @@ import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
-import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
+import {
+  attachNodeToStores,
+  detachAllNodesFromStores,
+  detachNodeFromStores
+} from '@/core/graph/nodeShell/nodeShellLifecycle'
 import type { UUID } from '@/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/utils/uuid'
 import {
@@ -18,6 +22,11 @@ import {
   materializeRerouteLayout
 } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useLinkStore } from '@/stores/linkStore'
+import { useNodeDataStore } from '@/stores/nodeDataStore'
+import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import { useRerouteStore } from '@/stores/rerouteStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toLinkId } from '@/types/linkId'
 import { isFloatingTopology } from '@/types/linkTopology'
 import { toRerouteId } from '@/types/rerouteId'
@@ -34,9 +43,6 @@ import {
   observeRerouteId
 } from './idAllocation'
 import type { LGraphState } from './idAllocation'
-import { useLinkStore } from '@/stores/linkStore'
-import { useNodeDataStore } from '@/stores/nodeDataStore'
-import { useRerouteStore } from '@/stores/rerouteStore'
 import {
   inputHasLink,
   inputLink,
@@ -44,8 +50,6 @@ import {
   outputLinks
 } from './node/slotLinks'
 import { normalizeWidgetsView } from './node/widgetsView'
-import { usePreviewExposureStore } from '@/stores/previewExposureStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { UNASSIGNED_NODE_ID, parseNodeId, toNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import { forEachNode, visitGraphNodes } from '@/utils/graphTraversalUtil'
@@ -63,12 +67,7 @@ import type { DragAndScaleState } from './DragAndScale'
 import { LGraphCanvas } from './LGraphCanvas'
 import { Rectangle } from './infrastructure/Rectangle'
 import { LGraphGroup } from './LGraphGroup'
-import {
-  LGraphNode,
-  registerNodeState,
-  unregisterAllNodeStates,
-  unregisterNodeState
-} from './LGraphNode'
+import { LGraphNode } from './LGraphNode'
 import {
   LLink,
   registerLinkTopology,
@@ -111,7 +110,6 @@ import {
   snapPoint
 } from './measure'
 import { warnDeprecated } from './utils/feedback'
-import { getWidgetIds } from './utils/widget'
 import { SubgraphInput } from './subgraph/SubgraphInput'
 import { SubgraphInputNode } from './subgraph/SubgraphInputNode'
 import { SubgraphOutput } from './subgraph/SubgraphOutput'
@@ -253,7 +251,7 @@ function teardownOwnedGraphs(owner: LGraph): void {
       for (const node of graph._nodes) nodes.add(node)
     }
     for (const node of nodes) {
-      unregisterNodeState(node)
+      detachNodeFromStores(owner, node, 'discard-values')
       node.graph = null
     }
     detachGraphLayouts([owner], { removeLayouts: !owner.isRootGraph })
@@ -1168,21 +1166,7 @@ export class LGraph
     normalizeWidgetsView(node)
     node.graph = this
 
-    while (!registerNodeState(this, node)) node.id = mintNodeId(state)
-
-    // Register all widgets with the WidgetValueStore now that node has a
-    // valid ID and graph reference.
-    if (node.widgets) {
-      const widgetValueStore = useWidgetValueStore()
-      for (const widget of node.widgets) {
-        if (isNodeBindable(widget)) widget.setNodeId(node.id)
-      }
-      widgetValueStore.setNodeWidgetOrder(
-        this.rootGraph.id,
-        node.id,
-        getWidgetIds(node.widgets)
-      )
-    }
+    attachNodeToStores(this, node, () => mintNodeId(state))
 
     this._nodes.push(node)
     this._nodes_by_id[node.id] = node
@@ -1300,7 +1284,7 @@ export class LGraph
       for (const subgraph of releasedSubgraphs) {
         unregisterAllLinkTopologies(subgraph)
         unregisterAllRerouteChains(subgraph)
-        unregisterAllNodeStates(subgraph)
+        detachAllNodesFromStores(subgraph)
         this.rootGraph.subgraphs.delete(subgraph.id)
       }
       detachGraphLayouts(releasedSubgraphs)
@@ -1309,7 +1293,7 @@ export class LGraph
     // callback
     node.onRemoved?.()
 
-    unregisterNodeState(node)
+    detachNodeFromStores(this, node)
     detachNodeLayout(node)
 
     node.graph = null

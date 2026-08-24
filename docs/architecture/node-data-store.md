@@ -126,13 +126,38 @@ synthetic `VueNodeData` today). `AppModeWidgetList` stops calling
 
 Follows the shipped trio convention (`LLink` / `Reroute`):
 
-- `LGraphNode` constructs its `_state: NodeState` at instantiation;
-  `registerNodeState(graph, node)` inserts it by reference and the class
-  adopts the returned reactive proxy; `node._graphScope` is the
-  registration-ownership marker.
+- `LGraphNode` constructs its `_state: NodeState` at instantiation (via
+  `createNodeShellState`); `registerNodeState(graph, node)` inserts it by
+  reference and the class adopts the returned reactive proxy;
+  `node._graphId` (root id) is the registration-ownership marker.
 - Chokepoints: `LGraph.add` / `LGraph.remove` (the canonical sites),
   `unregisterAllNodeStates(graph)` on graph `clear()`, identity-checked
   delete (`toRaw` compare) so only the registered state vacates its key.
+- Two ways that lifecycle can silently drift are asserted rather than left to
+  the renderer to expose: re-registering an already-registered node under a
+  different root graph (its old bucket entry would strand), and unregistering a
+  state the bucket does not hold (`deleteNode` returning `false` — a ghost the
+  renderer keeps drawing). Re-registering the _same_ state object under the
+  _same_ root stays legal: `reactive()` returns a cached proxy, so
+  unregister→register sequences (`useNodeReplacement`) are idempotent.
+- `assert` throws in DEV and reports (Sentry) elsewhere, so both paths repair
+  the store before reporting rather than relying on the throw to stop them:
+  `registerNodeState` deletes the stale entry from the previous root's bucket
+  and drops `node._graphScope` with it; `unregisterNodeState` clears
+  `_graphScope` regardless of the outcome. A production build is left
+  consistent, and a DEV throw cannot strand the node it names.
+- Not asserted: a second `NodeState` object for a `(graphId, id)` the bucket
+  already holds. Deserialising a graph keeps its persisted id, so two live
+  `LGraph` instances round-tripped from one workflow share a bucket and collide
+  on every node id by design. Catching duplicate-id regressions needs bucket
+  identity to be per-instance rather than per-id — a separate change.
+- The lifecycle coordination itself is app-owned and lives in
+  `src/core/graph/nodeShell/`: `nodeShellState.ts` (`createNodeShellState`,
+  `setTrackedNodeState`, `registerNodeState`, `unregisterNodeState`,
+  `unregisterAllNodeStates`) and `nodeShellLifecycle.ts`
+  (`attachNodeToStores`, `releaseGraphStores` — the single calls `LGraph.add`
+  and `LGraph.clear` make into the stores). None of these are re-exported from
+  the litegraph barrel; the registration surface is internal.
 - Class fields become accessors reading through `_state`. Reads go
   through the reactive proxy directly (there is no `_stateRaw` raw view),
   so `node.title` / `node.mode` / … track inside Vue effects, matching a
