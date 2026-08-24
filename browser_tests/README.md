@@ -400,8 +400,10 @@ await expect(node).toHaveClass(BYPASS_CLASS)
   before `page.keyboard.press(...)`, or keys go nowhere.
 - Mark the canvas dirty after programmatic state changes:
   `window['app'].graph.setDirtyCanvas(true, true)`.
-- `dblclick()` on canvas needs a small `{ delay: 5 }`; drags need
-  `{ steps: 10 }` not `{ steps: 1 }`.
+- `dblclick()` on canvas needs a small `{ delay: 5 }`. Use the shared drag
+  helpers, which emit enough intermediate events for canvas behavior without
+  making coverage runs process excessive pointer events. For a local drag,
+  use the fewest steps the behavior needs (usually 5–20), never 100.
 
 ### Custom assertions
 
