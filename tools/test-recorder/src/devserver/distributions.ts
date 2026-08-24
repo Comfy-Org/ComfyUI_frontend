@@ -13,21 +13,24 @@ export const DISTRIBUTIONS: readonly Distribution[] = [
     label: 'Cloud',
     hint: 'testcloud.comfy.org (default)',
     script: 'dev:cloud',
-    needsLocalBackend: false
+    needsLocalBackend: false,
+    backendUrl: 'https://testcloud.comfy.org/'
   },
   {
     id: 'cloud-staging',
     label: 'Cloud staging',
     hint: 'staging cloud backend',
     script: 'dev:cloud:staging',
-    needsLocalBackend: false
+    needsLocalBackend: false,
+    backendUrl: 'https://stagingcloud.comfy.org/'
   },
   {
     id: 'cloud-prod',
     label: 'Cloud production',
     hint: 'production cloud backend',
     script: 'dev:cloud:prod',
-    needsLocalBackend: false
+    needsLocalBackend: false,
+    backendUrl: 'https://cloud.comfy.org/'
   },
   {
     id: 'local',

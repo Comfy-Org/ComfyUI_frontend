@@ -39,6 +39,7 @@ import {
   resolveDistribution
 } from '../devserver/distributions'
 import { ensureDevServer } from '../devserver/manager'
+import { fetchEnvInfo } from '../devserver/envInfo'
 import { discoverFlagKeys, parseFeatureFlagSpecs } from '../featureFlags'
 import type { RecordPrefill } from './recordPrefill'
 
@@ -179,15 +180,32 @@ export async function runRecord(
   }
 
   stepHeader(1, 7, 'Target Distribution')
+  const distributionInfo = await Promise.all(
+    DISTRIBUTIONS.map(async (candidate) => ({
+      id: candidate.id,
+      info:
+        candidate.backendUrl && candidate.id !== 'local'
+          ? await fetchEnvInfo(candidate.backendUrl)
+          : { ok: false as const }
+    }))
+  )
   const selectedDistribution = prefill.distribution
     ? prefill.distribution.id
     : await select({
         message: 'Which distribution do you want to record against?',
         options: [
-          ...DISTRIBUTIONS.map(({ id, label, hint }) => ({
+          ...DISTRIBUTIONS.map(({ id, label, hint, backendUrl }) => ({
             value: id,
             label,
-            hint
+            hint: (() => {
+              const env = distributionInfo.find(
+                (entry) => entry.id === id
+              )?.info
+              if (!env?.ok || !backendUrl) return hint
+              const host = new URL(backendUrl).host
+              const suffix = id === 'cloud' ? ' (default)' : ''
+              return `${host} — backend ${env.cloudVersion}${suffix}`
+            })()
           })),
           {
             value: CUSTOM_DISTRIBUTION_SENTINEL,
@@ -227,6 +245,17 @@ export async function runRecord(
     distribution = customDistribution(normalized.url)
   }
   if (!distribution) throw new Error('Selected distribution is unavailable')
+
+  const branch = runCommand('git', ['branch', '--show-current'], {
+    cwd: process.cwd(),
+    stdio: 'pipe'
+  })
+    .stdout?.toString()
+    .trim()
+  info([
+    `The app you're testing is your local checkout (branch ${branch || 'unknown'}). ` +
+      'The environment choice only picks which backend it talks to.'
+  ])
 
   stepHeader(2, 7, 'Environment Check')
   const { allPassed } = await runChecks(distribution, undefined, {
