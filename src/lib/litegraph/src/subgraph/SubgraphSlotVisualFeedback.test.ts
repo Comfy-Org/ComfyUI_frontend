@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { DefaultConnectionColors } from '@/lib/litegraph/src/interfaces'
@@ -23,7 +21,6 @@ describe('SubgraphSlot visual feedback', () => {
   let globalAlphaValues: number[]
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     resetSubgraphFixtureState()
 
     // Clear the array before each test

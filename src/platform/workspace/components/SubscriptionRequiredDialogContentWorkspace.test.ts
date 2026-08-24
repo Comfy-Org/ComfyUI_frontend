@@ -110,7 +110,6 @@ function renderComponent(
 
 describe('SubscriptionRequiredDialogContentWorkspace', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockUseSubscriptionCheckout.mockReturnValue({
       checkoutStep: mockCheckoutStep,
       isLoadingPreview: ref(false),
@@ -120,6 +119,7 @@ describe('SubscriptionRequiredDialogContentWorkspace', () => {
       previewData: mockPreviewData,
       selectedTierKey: ref('standard'),
       selectedBillingCycle: ref('yearly'),
+      activeCheckoutActionUrl: ref(null),
       isPolling: ref(false),
       handleSubscribeClick: mockHandleSubscribeClick,
       handleBackToPricing: mockHandleBackToPricing,

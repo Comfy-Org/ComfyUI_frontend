@@ -21,6 +21,7 @@ vi.mock('@/platform/workspace/composables/useSubscriptionCheckout', () => ({
     selectedTierKey: ref(null),
     selectedTeamStop: ref(null),
     selectedBillingCycle: ref('yearly'),
+    activeCheckoutActionUrl: ref(null),
     isPolling: ref(false),
     isTeamCheckout: computed(() => false),
     previewVariant: computed(() => null),
@@ -87,7 +88,6 @@ function renderComponent(props: Record<string, unknown> = {}) {
 
 describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockIsInPersonalWorkspace.value = false
   })
 

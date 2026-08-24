@@ -24,12 +24,10 @@ const dotColor = computed(() => {
   ]
 })
 const label = computed(() =>
-  available.value === 0
-    ? t('actionbar.freeTierRunsExhausted')
-    : t('actionbar.freeTierRuns', {
-        available: available.value,
-        MAX_AVAILABLE: maxAvailable.value
-      })
+  t('actionbar.freeTierRuns', {
+    available: available.value,
+    MAX_AVAILABLE: maxAvailable.value
+  })
 )
 </script>
 <template>
@@ -43,7 +41,7 @@ const label = computed(() =>
       v-if="hasInvalidNodes"
       class="flex w-full items-center justify-center gap-2"
     >
-      <i class="icon-[comfy--credits] bg-credit" />
+      <i class="icon-[lucide--coins] bg-credit" />
       {{ t('actionbar.freeTierPartner') }}
     </div>
     <div v-else class="flex w-full items-center justify-between">

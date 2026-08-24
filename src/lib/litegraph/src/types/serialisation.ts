@@ -1,7 +1,7 @@
 import type { UUID } from '@/utils/uuid'
 
 import type { LGraphConfig, LGraphExtra, SubgraphId } from '../LGraph'
-import type { GroupId, IGraphGroupFlags } from '../LGraphGroup'
+import type { IGraphGroupFlags } from '../LGraphGroup'
 import type { NodeProperty } from '../LGraphNode'
 import type { SerializedNodeId } from '@/types/nodeId'
 import type { SerialisedLLinkArray } from '../LLink'
@@ -48,7 +48,8 @@ interface BaseExportedGraph {
 }
 
 interface SerialisableGraphState {
-  lastGroupId: GroupId
+  /** Counter, not an id — brand at the point a group is constructed. */
+  lastGroupId: number
   lastNodeId: number
   lastLinkId: number
   lastRerouteId: number
@@ -68,14 +69,14 @@ export interface SerialisableGraph extends BaseExportedGraph {
 
 export type ISerialisableNodeInput = Omit<
   INodeInputSlot,
-  'boundingRect' | 'widget' | 'link' | '_floatingLinks'
+  'boundingRect' | 'widget' | 'link'
 > & {
   link?: number | null
   widget?: { name: string }
 }
 export type ISerialisableNodeOutput = Omit<
   INodeOutputSlot,
-  'boundingRect' | '_data' | 'links' | '_floatingLinks'
+  'boundingRect' | '_data' | 'links'
 > & {
   links?: number[] | null
   widget?: { name: string }
@@ -106,6 +107,7 @@ export interface ISerialisedNode {
    * See example in https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite/blob/8629188458dc6cb832f871ece3bd273507e8a766/web/js/VHS.core.js#L59-L84
    */
   widgets_values?: TWidgetValue[]
+  widgets_values_named?: Record<string, TWidgetValue>
 }
 
 /** Properties of nodes that are used by subgraph instances. */
@@ -164,7 +166,7 @@ export interface ExportedSubgraph extends SerialisableGraph {
 /** Properties shared by subgraph and node I/O slots. */
 type SubgraphIOShared = Omit<
   INodeSlot,
-  'boundingRect' | 'nameLocked' | 'locked' | 'removable' | '_floatingLinks'
+  'boundingRect' | 'nameLocked' | 'locked' | 'removable'
 >
 
 /** Subgraph I/O slots */
@@ -187,7 +189,7 @@ export interface ExposedWidget {
 
 /** Serialised LGraphGroup */
 export interface ISerialisedGroup {
-  id: GroupId
+  id: number
   title: string
   bounding: number[]
   color?: string
