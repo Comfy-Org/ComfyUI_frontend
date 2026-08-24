@@ -274,6 +274,12 @@ export class ComfyApp {
   static clipspace_return_node = null
 
   vueAppReady: boolean
+  /**
+   * In-flight `/object_info` fetch started at the top of setup() so its round
+   * trip overlaps loadExtensions and the init hooks instead of running after
+   * them. registerNodes() awaits it, falling back to a fresh fetch on failure.
+   */
+  private nodeDefsPrefetch?: Promise<Record<string, ComfyNodeDefV1> | undefined>
   api: ComfyApi
   ui: ComfyUI
   extensionManager!: ExtensionManager
@@ -926,6 +932,12 @@ export class ComfyApp {
 
     this.canvasElRef.value = canvasEl
 
+    // Start the node-definition fetch now so its round trip overlaps the work
+    // below; registerNodes() awaits the result. Auth is already resolved by the
+    // time setup() runs, so this carries the same credentials the later call
+    // would. Errors are swallowed here and surfaced by the fallback refetch.
+    this.nodeDefsPrefetch = this.getNodeDefs().catch(() => undefined)
+
     await useWorkspaceStore().workflow.syncWorkflows()
     //Doesn't need to block. Blueprints will load async
     void useSubgraphStore().fetchSubgraphs()
@@ -1131,8 +1143,11 @@ export class ComfyApp {
    * Registers nodes with the graph
    */
   async registerNodes() {
-    // Load node definitions from the backend
-    const defs = await this.getNodeDefs()
+    // Load node definitions from the backend, reusing the prefetch kicked off
+    // in setup() when it succeeded and refetching if it failed or was skipped.
+    const prefetch = this.nodeDefsPrefetch
+    this.nodeDefsPrefetch = undefined
+    const defs = (await prefetch) ?? (await this.getNodeDefs())
     await this.registerNodesFromDefs(defs)
     await useExtensionService().invokeExtensionsAsync('registerCustomNodes')
     if (this.vueAppReady) {
