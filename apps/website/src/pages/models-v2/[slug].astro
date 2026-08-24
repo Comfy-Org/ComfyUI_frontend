@@ -8,7 +8,7 @@
 import { cn } from '@comfyorg/tailwind-utils'
 
 import BaseLayout from '../../layouts/BaseLayout.astro'
-import { ArrowRight, Coins as CreditsIcon } from '@lucide/vue'
+import { ArrowRight, Coins as CreditsIcon, Download as DownloadIcon } from '@lucide/vue'
 
 import BrandButton from '../../components/common/BrandButton.vue'
 import GlassCard from '../../components/common/GlassCard.vue'
@@ -263,7 +263,7 @@ const faqJsonLd = {
                 <div class="my-1.5 border-t border-transparency-white-t20"></div>
                 <a href={hfUrl} class="flex items-center justify-between gap-3 px-4 py-2.5 text-xs text-primary-warm-white hover:bg-transparency-white-t4">
                   Download weights
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-4 shrink-0"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg>
+                  <DownloadIcon class="size-4 shrink-0" aria-hidden="true" />
                 </a>
               </Fragment>
             )}
