@@ -235,13 +235,15 @@
       "contactSupport": "כדי למחוק את חשבונך, אנא פנה אל {email}"
     },
     "errors": {
-      "auth/cancelled-popup-request": "ההתחברות בוטלה. אנא נסה שוב.",
+      "auth/account-exists-with-different-credential": "כבר קיים חשבון עם כתובת דוא״ל זו, אך הוא משתמש בשיטת התחברות אחרת. התחברו באותה דרך שבה התחברתם במקור.",
+      "auth/cancelled-popup-request": "חלון התחברות אחר כבר היה פתוח, ולכן חלון זה בוטל. נסו שוב.",
       "auth/email-already-in-use": "כבר קיים חשבון עם דוא\"ל זה. נסה להתחבר במקום זאת.",
       "auth/invalid-credential": "פרטי כניסה לא תקינים. אנא בדוק את הדוא\"ל והסיסמה שלך.",
       "auth/invalid-email": "אנא הזן כתובת דוא\"ל תקינה.",
       "auth/network-request-failed": "שגיאת רשת. אנא בדוק את החיבור שלך ונסה שוב.",
       "auth/operation-not-allowed": "שיטת התחברות זו אינה נתמכת כרגע.",
-      "auth/popup-closed-by-user": "ההתחברות בוטלה. אנא נסה שוב.",
+      "auth/popup-blocked": "הדפדפן חסם את חלון ההתחברות. אפשרו חלונות קופצים עבור אתר זה ונסו שוב.",
+      "auth/popup-closed-by-user": "חלון ההתחברות נסגר לפני שההתחברות הושלמה. נסו שוב.",
       "auth/too-many-requests": "יותר מדי ניסיונות התחברות. אנא המתן רגע ונסה שוב.",
       "auth/user-disabled": "חשבון זה הושבת. אנא פנה לתמיכה.",
       "auth/user-not-found": "לא נמצא חשבון עם דוא\"ל זה. האם ברצונך ליצור חשבון חדש?",
@@ -845,6 +847,7 @@
       "message": "הקרדיטים אוחדו",
       "tooltip": "איחדנו את התשלומים ברחבי Comfy. הכול פועל כעת על Comfy Credits:\n- צמתי שותפים (לשעבר צמתי API)\n- תהליכי עבודה בענן\n\nיתרת צמתי השותפים הקיימת שלך הומרה לקרדיטים."
     },
+    "workspaceCredits": "קרדיטים של סביבת העבודה",
     "yourCreditBalance": "יתרת הקרדיטים שלך"
   },
   "curveWidget": {
@@ -894,6 +897,7 @@
     "FILE_3D_SPZ": "FILE_3D_SPZ",
     "FILE_3D_STL": "FILE_3D_STL",
     "FILE_3D_USDZ": "FILE_3D_USDZ",
+    "FISHAUDIO_VOICE": "FISHAUDIO_VOICE",
     "FLOAT": "FLOAT",
     "FLOATS": "FLOATS",
     "GEMINI_INPUT_FILES": "GEMINI_INPUT_FILES",
@@ -907,6 +911,7 @@
     "IMAGECOMPARE": "IMAGECOMPARE",
     "INT": "INT",
     "INTERP_MODEL": "INTERP_MODEL",
+    "KIMODO_POSE_DATA": "KIMODO_POSE_DATA",
     "KREA_STYLE_REF": "KREA_STYLE_REF",
     "LATENT": "LATENT",
     "LATENT_OPERATION": "LATENT_OPERATION",
@@ -924,6 +929,7 @@
     "MESH": "MESH",
     "MESHY_RIGGED_TASK_ID": "MESHY_RIGGED_TASK_ID",
     "MESHY_TASK_ID": "MESHY_TASK_ID",
+    "MHR_POSE_DATA": "MHR_POSE_DATA",
     "MODEL": "MODEL",
     "MODEL_PATCH": "MODEL_PATCH",
     "MODEL_TASK_ID": "MODEL_TASK_ID",
@@ -943,8 +949,10 @@
     "RIG_TASK_ID": "RIG_TASK_ID",
     "RUNWAY_ALEPH2_KEYFRAME": "RUNWAY_ALEPH2_KEYFRAME",
     "RUNWAY_ALEPH2_PROMPT_IMAGE": "RUNWAY_ALEPH2_PROMPT_IMAGE",
+    "SAM3D_BODY_MODEL": "SAM3D_BODY_MODEL",
     "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "SAMPLER",
+    "SHAPE_SUBDIVIDES": "SHAPE_SUBDIVIDES",
     "SIGMAS": "SIGMAS",
     "SPLAT": "SPLAT",
     "STRING": "STRING",
@@ -960,12 +968,20 @@
     "WEBCAM": "WEBCAM"
   },
   "desktopDialogs": {
-    "": {
+    "invalidDialog": {
       "buttons": {
-        "Close": "סגירה"
+        "Close": "סגור"
       },
-      "message": "סופק מזהה חלון לא תקין.",
-      "title": "חלון לא תקין"
+      "message": "סופק מזהה תיבת דו-שיח לא חוקי.",
+      "title": "תיבת דו-שיח לא חוקית"
+    },
+    "reinstallVenv": {
+      "buttons": {
+        "Learn More": "למידע נוסף",
+        "Reinstall": "התקן מחדש"
+      },
+      "message": "מצטערים, אין אפשרות להפעיל את ComfyUI משום שחלק מהחבילות המותקנות אינן תואמות.\n\nלחצו על \"התקן מחדש\" כדי לשחזר את ComfyUI ולחזור לפעולה.\n\nשימו לב: אם הוספתם צמתים מותאמים אישית, יהיה עליכם להתקין אותם מחדש לאחר תהליך זה.",
+      "title": "להתקין מחדש את ComfyUI (התחלה חדשה)?"
     }
   },
   "desktopLogin": {
@@ -1638,6 +1654,7 @@
     "increment": "הגדלה",
     "info": "מידע על הצומת",
     "input": "קלט",
+    "inputTooltip": "קלט: {name}",
     "insert": "הוספה",
     "install": "התקנה",
     "installed": "מותקן",
@@ -2283,6 +2300,7 @@
     "clearRecording": "ניקוי ההקלטה",
     "dropToLoad": "גרור לכאן מודל תלת-ממד לטעינה",
     "edgeThreshold": "סף הקצה",
+    "exitLookThrough": "יציאה מתצוגת מצלמה",
     "export": "ייצוא",
     "exportModel": "ייצוא המודל",
     "exportRecording": "ייצוא ההקלטה",
@@ -2305,11 +2323,13 @@
       "showAsBackground": "הצגה כרקע",
       "uploadFile": "העלאת HDRI (.hdr, .exr)"
     },
+    "hideGizmos": "הסתרת גיזמואים",
     "light": "תאורה",
     "lightIntensity": "עוצמת התאורה",
     "loadingBackgroundImage": "טוען תמונת רקע",
     "loadingHDRI": "טוען HDRI...",
     "loadingModel": "טוען מודל תלת-ממד...",
+    "lookThrough": "תצוגת מצלמה",
     "materialMode": "מצב חומר",
     "materialModes": {
       "clay": "חימר",
@@ -2350,6 +2370,7 @@
     "removeBackgroundImage": "הסרת תמונת הרקע",
     "resizeNodeMatchOutput": "שינוי גודל הצומת להתאמה לפלט",
     "scene": "סצנה",
+    "showGizmos": "הצגת גיזמואים",
     "showGrid": "הצגת הרשת",
     "showSkeleton": "הצגת השלד",
     "startRecording": "התחלת הקלטה",
@@ -2357,6 +2378,13 @@
     "switchCamera": "החלפת מצלמה",
     "switchingMaterialMode": "מחליף מצב חומר...",
     "tiledMode": "מרוצף",
+    "transformGizmo": {
+      "cameraRotate": "סיבוב מצלמה",
+      "cameraTranslate": "מיקום מצלמה",
+      "label": "עריכה",
+      "none": "ללא",
+      "target": "יעד"
+    },
     "unsupportedFileType": "סוג קובץ לא נתמך (תומך ב-.gltf, .glb, .obj, .fbx, .stl, .ply, .spz, .splat, .ksplat)",
     "upDirection": "כיוון 'מעלה'",
     "upDirections": {
@@ -2365,6 +2393,8 @@
     "uploadBackgroundImage": "העלאת תמונת רקע",
     "uploadTexture": "העלאת מרקם (Texture)",
     "uploadingModel": "מעלה מודל תלת-ממד...",
+    "useCustomUp": "שחזור כיוון המעלה של המצלמה מהקלט",
+    "useNaturalUp": "איפוס כיוון המעלה של המצלמה ל־Y",
     "viewer": {
       "apply": "החלה",
       "cameraSettings": "הגדרות המצלמה",
@@ -2898,6 +2928,9 @@
     "notNow": "לא עכשיו",
     "title": "עזרו לנו להשתפר"
   },
+  "nodeBadge": {
+    "partnerNodesCount": "צמתי שותפים x {count}"
+  },
   "nodeCategories": {
     "": "",
     "3d": "3d",
@@ -2907,6 +2940,7 @@
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "ElevenLabs": "ElevenLabs",
+    "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
     "Grok": "Grok",
     "HeyGen": "HeyGen",
@@ -2996,7 +3030,9 @@
     "mage": "mage",
     "mask": "mask",
     "merging": "merging",
+    "mesh": "רשת",
     "minimax": "minimax",
+    "minimax music": "מוזיקת minimax",
     "mochi": "mochi",
     "model": "model",
     "model specific": "מותאם למודל",
@@ -3035,8 +3071,11 @@
     "supir": "supir",
     "sync_so": "sync.so",
     "text": "text",
+    "texturing": "טקסטורציה",
     "training": "training",
     "transform": "transform",
+    "trellis": "trellis",
+    "trellis2": "trellis2",
     "triposplat": "triposplat",
     "unet": "unet",
     "upscaling": "upscaling",
@@ -3427,7 +3466,7 @@
       "expandNodes": "הצגת הצמתים המפנים",
       "gatedModelDownloadTooltip": "ההורדה עשויה לדרוש התחברות ל-Hugging Face תחילה.",
       "gatedModelTooltip": "מודל זה מוגבל ודורש התחברות ל-Hugging Face ואישור הסכם הרישיון.",
-      "gatedModelsHint": "חלק מהמודלים מוגבלים. כדי להוריד אותם, התחברו ל-Hugging Face ואשרו את הסכם הרישיון של המודל.",
+      "gatedModelsHint": "{count} מודל מוגבל בגישה. כדי להוריד אותו, יש להיכנס ל-Hugging Face ולאשר את הסכם הרישיון שלו. | {count} מודלים מוגבלים בגישה. כדי להוריד אותם, יש להיכנס ל-Hugging Face ולאשר את הסכמי הרישיון שלהם.",
       "gatedModelsHintLabel": "הערה:",
       "import": "ייבוא",
       "importNotSupported": "ייבוא אינו נתמך",
@@ -4128,6 +4167,7 @@
       "freeRuns": "{count} הרצה חינמית | {count} הרצות חינמיות",
       "maxRuntime": "זמן ריצה מרבי {duration}"
     },
+    "fullUsageActivity": "פעילות שימוש מלאה",
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
     "haveQuestions": "יש לך שאלות או מתעניין במסלול ארגוני (enterprise)?",
     "inactive": {
@@ -4201,6 +4241,7 @@
       "personal": "לשימוש אישי",
       "team": "לצוותים"
     },
+    "plansAndCredits": "תוכניות וקרדיטים",
     "plansAndPricing": "מסלולים ותמחור",
     "plansForWorkspace": "מסלולים עבור {workspace}",
     "prepaidCreditsInfo": "קרדיטים ששולמו מראש פגים שנה אחת מתאריך הרכישה.",
@@ -4499,6 +4540,7 @@
     "failedToFetchBalance": "אחזור היתרה נכשל: {error}",
     "failedToFetchLogs": "אחזור יומני השרת נכשל",
     "failedToFetchSubscription": "אחזור סטטוס המנוי נכשל: {error}",
+    "failedToInitializeCameraInfoViewer": "אתחול מציג פרטי המצלמה נכשל. נסו לטעון מחדש את הדף.",
     "failedToInitializeLoad3dViewer": "אתחול מציג התלת-ממד נכשל",
     "failedToInitiateCreditPurchase": "יזימת רכישת הקרדיטים נכשלה: {error}",
     "failedToInitiateSubscription": "יזימת המנוי נכשלה: {error}",
@@ -4978,6 +5020,8 @@
     "personal": "אישי",
     "roleMember": "חבר",
     "roleOwner": "בעלים",
+    "scopeCaption": "סביבות עבודה משפיעות רק על הקרדיטים שבהם אתם משתמשים.",
+    "scopeTooltip": "הרצות המשתמשות בצמתי שותפים צורכות קרדיטים מסביבת עבודה זו. בשונה מ־Cloud, כל סביבת עבודה שומרת בתיקיית הפלט הרגילה שלכם.",
     "subscribe": "הרשמה",
     "switchWorkspace": "מעבר בין סביבות עבודה"
   },
