@@ -265,6 +265,20 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
       targetSlot: target_slot,
       parentId
     }
+    for (const property of [
+      'id',
+      'type',
+      'origin_id',
+      'origin_slot',
+      'target_id',
+      'target_slot',
+      'parentId'
+    ] as const) {
+      Object.defineProperty(this, property, {
+        ...Object.getOwnPropertyDescriptor(LLink.prototype, property),
+        enumerable: true
+      })
+    }
 
     this._data = null
     // center
