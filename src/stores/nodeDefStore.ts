@@ -207,20 +207,6 @@ export class ComfyNodeDefImpl
     return resolveNodeDefText('description', this.name, this.backendDescription)
   }
 
-  /**
-   * `display_name` and `description` are prototype accessors, and Playwright's
-   * `page.evaluate` serializes own enumerable properties only. Anything that
-   * carries a def out of the browser must materialize them or both silently
-   * arrive `undefined` — which is how the release locale collector would have
-   * written every node's `display_name` as its internal `name`.
-   */
-  toSerializable(): SerializableComfyNodeDef {
-    return Object.assign({}, this, {
-      display_name: this.display_name,
-      description: this.description
-    })
-  }
-
   get nodePath(): string {
     return (this.category ? this.category + '/' : '') + this.name
   }
@@ -242,22 +228,6 @@ export class ComfyNodeDefImpl
     return ''
   }
 }
-
-/**
- * What `toSerializable()` emits: own data properties plus the two resolved
- * strings. `Object.assign` copies neither accessors nor methods, so naming them
- * here would repeat the defect this type exists to prevent.
- */
-export type SerializableComfyNodeDef = Omit<
-  ComfyNodeDefImpl,
-  | 'display_name'
-  | 'description'
-  | 'nodePath'
-  | 'isDummyFolder'
-  | 'nodeLifeCycleBadgeText'
-  | 'postProcessSearchScores'
-  | 'toSerializable'
-> & { display_name: string; description: string }
 
 export const SYSTEM_NODE_DEFS: Record<string, ComfyNodeDefV1> = {
   PrimitiveNode: {
