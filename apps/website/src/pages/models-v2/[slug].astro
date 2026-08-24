@@ -1,8 +1,8 @@
 ---
 // A/B TEST PREVIEW — playground-first model page, generated for every launch
-// model and every registry entry. Every visible control works: APP ⇄ GRAPH ⇄
-// JSON input views (App = the workflow's exposed inputs, Graph = the actual
-// node graph live-bound to them), Preview ⇄ JSON result receipt, live credit
+// model and every registry entry. Every visible control works: APP ⇄ JSON
+// input views (App = the workflow's exposed inputs), Preview ⇄ JSON result
+// receipt, live credit
 // repricing, LLMs menu with per-page markdown, gallery prompt warm-starts,
 // variations queue, and the full signup-journey demo. Not linked. noindex.
 import BaseLayout from '../../layouts/BaseLayout.astro'
@@ -153,15 +153,6 @@ const faqJsonLd = {
       : [])
   ]
 }
-
-const WIRE = {
-  model: '#c8b4f5',
-  clip: '#f2ff59',
-  vae: '#f58ea8',
-  cond: '#ffa94d',
-  latent: '#ff99f7',
-  image: '#96b4ff'
-}
 ---
 
 <BaseLayout
@@ -244,7 +235,6 @@ const WIRE = {
           <h2 class="text-xs font-extrabold uppercase tracking-[0.2em] text-primary-warm-white">Input</h2>
           <div id="iview-toggle" class="flex overflow-hidden rounded-lg border border-white/15 text-[10px] font-extrabold uppercase tracking-wider">
             <button data-iview="app" class="bg-primary-comfy-yellow px-3 py-1.5 text-primary-comfy-ink">App</button>
-            <button data-iview="graph" class="px-3 py-1.5 text-primary-comfy-canvas hover:text-primary-warm-white">Graph</button>
             <button data-iview="json" class="px-3 py-1.5 text-primary-comfy-canvas hover:text-primary-warm-white">JSON</button>
           </div>
         </div>
@@ -257,7 +247,7 @@ const WIRE = {
             rows="4"
             class="mt-2 w-full resize-none rounded-xl border border-white/15 bg-primary-comfy-ink p-4 text-sm font-light leading-relaxed text-primary-comfy-canvas focus:border-primary-comfy-yellow/60 focus:outline-none"
           >{promptExample}</textarea>
-          <p class="mt-1.5 text-[11px] font-light text-primary-warm-gray">App view = this workflow’s exposed inputs. Flip to GRAPH to see where each one lands.</p>
+          <p class="mt-1.5 text-[11px] font-light text-primary-warm-gray">App view = this workflow’s exposed inputs.</p>
           <div class="mt-4 grid grid-cols-3 gap-2.5">
             <div>
               <span class="block text-[10px] font-extrabold uppercase tracking-[0.2em] text-primary-warm-gray">Aspect</span>
@@ -284,81 +274,6 @@ const WIRE = {
             <span id="dropzone-label" class="text-xs font-light text-primary-warm-gray">or drop a frame to animate it</span>
             <img id="ref-thumb" src={gallery[1] ?? gallery[0]} alt="" class="ml-auto hidden h-10 w-16 rounded-md object-cover" onerror="this.style.display='none'" />
           </div>
-        </div>
-
-        <!-- GRAPH VIEW — the actual node graph, live-bound -->
-        <div id="panel-graph" class="hidden">
-          <div class="mt-4 overflow-hidden rounded-xl border border-white/12 bg-[#141018]">
-            <svg viewBox="0 0 440 330" class="w-full" font-family="ui-monospace, monospace">
-              <path d="M150 44 C 200 44, 150 138, 168 138" stroke={WIRE.model} fill="none" stroke-width="1.5"/>
-              <path d="M150 56 C 165 56, 155 34, 168 34" stroke={WIRE.clip} fill="none" stroke-width="1.5"/>
-              <path d="M150 68 C 210 68, 120 262, 168 262" stroke={WIRE.vae} fill="none" stroke-width="1.5"/>
-              <path d="M352 44 C 380 44, 140 156, 168 156" stroke={WIRE.cond} fill="none" stroke-width="1.5"/>
-              <path d="M152 148 C 162 148, 158 174, 168 174" stroke={WIRE.latent} fill="none" stroke-width="1.5"/>
-              <path d="M352 170 C 380 170, 140 276, 168 276" stroke={WIRE.latent} fill="none" stroke-width="1.5"/>
-              <path d="M292 266 C 306 266, 300 266, 312 266" stroke={WIRE.image} fill="none" stroke-width="1.5"/>
-
-              <g>
-                <rect x="10" y="18" width="140" height="62" rx="6" fill="#221b29" stroke="#3a3142"/>
-                <rect x="10" y="18" width="140" height="16" rx="6" fill="#2c2435"/>
-                <text x="16" y="30" fill="#f0efed" font-size="9" font-weight="bold">Load Checkpoint</text>
-                <text x="16" y="47" fill="#7e7c78" font-size="8">{slugId.slice(0, 22)}</text>
-                <circle cx="150" cy="44" r="3" fill={WIRE.model}/><text x="108" y="47" fill={WIRE.model} font-size="7">MODEL</text>
-                <circle cx="150" cy="56" r="3" fill={WIRE.clip}/><text x="120" y="59" fill={WIRE.clip} font-size="7">CLIP</text>
-                <circle cx="150" cy="68" r="3" fill={WIRE.vae}/><text x="124" y="71" fill={WIRE.vae} font-size="7">VAE</text>
-              </g>
-
-              <g>
-                <rect x="168" y="14" width="184" height="76" rx="6" fill="#221b29" stroke="#f2ff59" stroke-opacity="0.55"/>
-                <rect x="168" y="14" width="184" height="16" rx="6" fill="#2c2435"/>
-                <text x="174" y="26" fill="#f0efed" font-size="9" font-weight="bold">CLIP Text Encode</text>
-                <text x="174" y="43" fill="#c2bfb9" font-size="7.5" id="g-prompt-1">…</text>
-                <text x="174" y="54" fill="#c2bfb9" font-size="7.5" id="g-prompt-2"></text>
-                <text x="174" y="70" fill="#7e7c78" font-size="7">↑ your prompt field, live</text>
-                <circle cx="352" cy="44" r="3" fill={WIRE.cond}/>
-              </g>
-
-              <g>
-                <rect x="10" y="118" width="142" height="58" rx="6" fill="#221b29" stroke="#3a3142"/>
-                <rect x="10" y="118" width="142" height="16" rx="6" fill="#2c2435"/>
-                <text x="16" y="130" fill="#f0efed" font-size="9" font-weight="bold">Empty Latent</text>
-                <text x="16" y="148" fill="#c2bfb9" font-size="8" id="g-res">1280 × 720</text>
-                <text x="16" y="162" fill="#7e7c78" font-size="7">↑ resolution select</text>
-                <circle cx="152" cy="148" r="3" fill={WIRE.latent}/>
-              </g>
-
-              <g>
-                <rect x="168" y="112" width="184" height="106" rx="6" fill="#221b29" stroke="#3a3142"/>
-                <rect x="168" y="112" width="184" height="16" rx="6" fill="#2c2435"/>
-                <text x="174" y="124" fill="#f0efed" font-size="9" font-weight="bold">KSampler</text>
-                <circle cx="168" cy="138" r="3" fill={WIRE.model}/>
-                <circle cx="168" cy="156" r="3" fill={WIRE.cond}/>
-                <circle cx="168" cy="174" r="3" fill={WIRE.latent}/>
-                <text x="180" y="146" fill="#c2bfb9" font-size="8">seed <tspan id="g-seed" fill="#f2ff59">428790123</tspan></text>
-                <text x="180" y="162" fill="#c2bfb9" font-size="8">steps 24 · cfg 5.5</text>
-                <text x="180" y="178" fill="#c2bfb9" font-size="8">euler · duration <tspan id="g-dur" fill="#f2ff59">5s</tspan></text>
-                <text x="180" y="200" fill="#7e7c78" font-size="7">where the image is decided</text>
-                <circle cx="352" cy="170" r="3" fill={WIRE.latent}/>
-              </g>
-
-              <g>
-                <rect x="168" y="240" width="124" height="52" rx="6" fill="#221b29" stroke="#3a3142"/>
-                <rect x="168" y="240" width="124" height="16" rx="6" fill="#2c2435"/>
-                <text x="174" y="252" fill="#f0efed" font-size="9" font-weight="bold">VAE Decode</text>
-                <circle cx="292" cy="266" r="3" fill={WIRE.image}/>
-              </g>
-              <g>
-                <rect x="312" y="240" width="118" height="52" rx="6" fill="#221b29" stroke="#3a3142"/>
-                <rect x="312" y="240" width="118" height="16" rx="6" fill="#2c2435"/>
-                <text x="318" y="252" fill="#f0efed" font-size="9" font-weight="bold">Save Output</text>
-                <text x="318" y="270" fill="#7e7c78" font-size="7.5">yours, no watermark</text>
-              </g>
-            </svg>
-          </div>
-          <p class="mt-2 text-[11px] font-light text-primary-warm-gray">
-            The actual graph behind the app — typed wires and all. The app is a view; the graph is the truth.
-            <a href="https://cloud.comfy.org?utm_source=models_v2_preview" class="font-extrabold uppercase tracking-widest text-primary-comfy-yellow"> Open it in Cloud →</a>
-          </p>
         </div>
 
         <!-- JSON VIEW -->
@@ -646,16 +561,6 @@ curl -X POST https://api.comfy.org/v1/run \\
         resultJson.textContent = JSON.stringify(receipt, null, 2)
       }
 
-      const renderGraph = () => {
-        const p = prompt.value.trim()
-        const l1 = $('g-prompt-1'); const l2 = $('g-prompt-2')
-        if (l1) l1.textContent = '“' + p.slice(0, 34) + (p.length > 34 ? '…' : '”')
-        if (l2) l2.textContent = p.length > 34 ? p.slice(34, 66) + '…”' : ''
-        const res = $('g-res'); if (res) res.textContent = selRes.value === '1080p' ? '1920 × 1080' : '1280 × 720'
-        const gd = $('g-dur'); if (gd) gd.textContent = mult(selDur) * 5 + 's'
-        const gs = $('g-seed'); if (gs) gs.textContent = String(seed)
-      }
-
       const setRunLabels = () => {
         const c = creditsNow()
         costLine.textContent = `${c} credits ≈ $${(c * 0.0084).toFixed(2)}`
@@ -673,11 +578,11 @@ curl -X POST https://api.comfy.org/v1/run \\
         }
       }
 
-      const renderAll = () => { renderInputJson(); renderResultJson(); renderGraph(); setRunLabels() }
+      const renderAll = () => { renderInputJson(); renderResultJson(); setRunLabels() }
 
-      // input view toggle (APP | GRAPH | JSON)
+      // input view toggle (APP | JSON)
       const iPanels: Record<string, HTMLElement> = {
-        app: $('panel-app')!, graph: $('panel-graph')!, json: $('panel-json')!
+        app: $('panel-app')!, json: $('panel-json')!
       }
       $('iview-toggle')!.addEventListener('click', (e) => {
         const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-iview]')

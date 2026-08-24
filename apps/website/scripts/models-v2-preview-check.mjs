@@ -78,21 +78,7 @@ const run = async () => {
   await desktop.waitForURL('**/models-v2/flux-3')
   await desktop.waitForTimeout(400)
 
-  // APP | GRAPH | JSON
-  await desktop.click('[data-iview="graph"]')
-  check(
-    'graph view',
-    await desktop.$eval(
-      '#panel-graph',
-      (el) => !el.classList.contains('hidden')
-    ),
-    ''
-  )
-  check(
-    'graph svg',
-    (await desktop.$$eval('#panel-graph svg g', (g) => g.length)) >= 5,
-    ''
-  )
+  // APP | JSON
   await desktop.click('[data-iview="json"]')
   const j1 = (await desktop.textContent('#input-json')) ?? ''
   check('json view payload', j1.includes('"workflow": "flux-3"'), '')
@@ -104,12 +90,6 @@ const run = async () => {
     ((await desktop.textContent('#input-json')) ?? '').includes(
       'a red fox in the snow'
     ),
-    ''
-  )
-  await desktop.click('[data-iview="graph"]')
-  check(
-    'prompt live-binds graph',
-    ((await desktop.textContent('#g-prompt-1')) ?? '').includes('a red fox'),
     ''
   )
   await desktop.click('[data-iview="app"]')
