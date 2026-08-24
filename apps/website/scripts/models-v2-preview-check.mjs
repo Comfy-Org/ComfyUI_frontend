@@ -135,9 +135,9 @@ const run = async () => {
   check(
     'remove clears the reference image',
     !(await desktop.isVisible('#ref-attachment')) &&
-      !(
-        (await desktop.textContent('#input-json')) ?? ''
-      ).includes('reference_image'),
+      !((await desktop.textContent('#input-json')) ?? '').includes(
+        'reference_image'
+      ),
     ''
   )
 
