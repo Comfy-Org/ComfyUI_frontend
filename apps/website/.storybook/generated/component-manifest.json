@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "generatedFrom": "apps/website/src/**/*.stories.ts",
-  "componentCount": 45,
-  "storyCount": 150,
+  "componentCount": 55,
+  "storyCount": 190,
   "components": [
     {
       "component": "AddToCalendarButton",
@@ -709,6 +709,31 @@
       ]
     },
     {
+      "component": "AudioPlayer",
+      "source": "src/components/common/AudioPlayer.vue",
+      "storyFile": "src/components/common/AudioPlayer.stories.ts",
+      "title": "Website/Common/AudioPlayer",
+      "status": "stable",
+      "category": "common",
+      "capabilities": [],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-common-audioplayer--default"
+        },
+        {
+          "exportName": "KeyboardSeek",
+          "storyId": "website-common-audioplayer--keyboard-seek"
+        },
+        {
+          "exportName": "Mobile",
+          "storyId": "website-common-audioplayer--mobile"
+        }
+      ]
+    },
+    {
       "component": "BrandButton",
       "source": "src/components/common/BrandButton.vue",
       "storyFile": "src/components/common/BrandButton.stories.ts",
@@ -958,6 +983,31 @@
       ]
     },
     {
+      "component": "PlayPauseButton",
+      "source": "src/components/common/PlayPauseButton.vue",
+      "storyFile": "src/components/common/PlayPauseButton.stories.ts",
+      "title": "Website/Common/PlayPauseButton",
+      "status": "stable",
+      "category": "common",
+      "capabilities": ["activation", "keyboard-focus"],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "Play",
+          "storyId": "website-common-playpausebutton--play"
+        },
+        {
+          "exportName": "Pause",
+          "storyId": "website-common-playpausebutton--pause"
+        },
+        {
+          "exportName": "Small",
+          "storyId": "website-common-playpausebutton--small"
+        }
+      ]
+    },
+    {
       "component": "ProductCard",
       "source": "src/components/common/ProductCard.vue",
       "storyFile": "src/components/common/ProductCard.stories.ts",
@@ -1081,6 +1131,31 @@
       ]
     },
     {
+      "component": "SiteVideo",
+      "source": "src/components/common/SiteVideo.vue",
+      "storyFile": "src/components/common/SiteVideo.stories.ts",
+      "title": "Website/Common/SiteVideo",
+      "status": "stable",
+      "category": "common",
+      "capabilities": [],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "WithControls",
+          "storyId": "website-common-sitevideo--with-controls"
+        },
+        {
+          "exportName": "DecorativeAutoplay",
+          "storyId": "website-common-sitevideo--decorative-autoplay"
+        },
+        {
+          "exportName": "Mp4Only",
+          "storyId": "website-common-sitevideo--mp4-only"
+        }
+      ]
+    },
+    {
       "component": "SocialProofBarSection",
       "source": "src/components/common/SocialProofBarSection.vue",
       "storyFile": "src/components/common/SocialProofBarSection.stories.ts",
@@ -1102,6 +1177,47 @@
       ]
     },
     {
+      "component": "VideoPlayer",
+      "source": "src/components/common/VideoPlayer.vue",
+      "storyFile": "src/components/common/VideoPlayer.stories.ts",
+      "title": "Website/Common/VideoPlayer",
+      "status": "stable",
+      "category": "common",
+      "capabilities": [],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-common-videoplayer--default"
+        },
+        {
+          "exportName": "WithCaptions",
+          "storyId": "website-common-videoplayer--with-captions"
+        },
+        {
+          "exportName": "KeyboardSeek",
+          "storyId": "website-common-videoplayer--keyboard-seek"
+        },
+        {
+          "exportName": "Minimal",
+          "storyId": "website-common-videoplayer--minimal"
+        },
+        {
+          "exportName": "MuteOnly",
+          "storyId": "website-common-videoplayer--mute-only"
+        },
+        {
+          "exportName": "Contained",
+          "storyId": "website-common-videoplayer--contained"
+        },
+        {
+          "exportName": "ReducedMotionPreview",
+          "storyId": "website-common-videoplayer--reduced-motion-preview"
+        }
+      ]
+    },
+    {
       "component": "ReasonSection",
       "source": "src/components/product/shared/ReasonSection.vue",
       "storyFile": "src/components/product/shared/ReasonSection.stories.ts",
@@ -1119,6 +1235,43 @@
         {
           "exportName": "FewReasons",
           "storyId": "website-product-reasonsection--few-reasons"
+        }
+      ]
+    },
+    {
+      "component": "Badge",
+      "source": "src/components/ui/badge/Badge.vue",
+      "storyFile": "src/components/ui/badge/Badge.stories.ts",
+      "title": "Website/UI/Badge",
+      "status": "stable",
+      "category": "ui",
+      "capabilities": [],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-ui-badge--default"
+        },
+        {
+          "exportName": "Subtle",
+          "storyId": "website-ui-badge--subtle"
+        },
+        {
+          "exportName": "Category",
+          "storyId": "website-ui-badge--category"
+        },
+        {
+          "exportName": "Accent",
+          "storyId": "website-ui-badge--accent"
+        },
+        {
+          "exportName": "Callout",
+          "storyId": "website-ui-badge--callout"
+        },
+        {
+          "exportName": "ExtraSmall",
+          "storyId": "website-ui-badge--extra-small"
         }
       ]
     },
@@ -1217,6 +1370,143 @@
         {
           "exportName": "AllVariants",
           "storyId": "website-ui-buttonpill--all-variants"
+        }
+      ]
+    },
+    {
+      "component": "Button",
+      "source": "src/components/ui/button/Button.vue",
+      "storyFile": "src/components/ui/button/Button.stories.ts",
+      "title": "Website/UI/Button",
+      "status": "stable",
+      "category": "ui",
+      "capabilities": ["activation", "keyboard-focus"],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-ui-button--default"
+        },
+        {
+          "exportName": "Outline",
+          "storyId": "website-ui-button--outline"
+        },
+        {
+          "exportName": "Link",
+          "storyId": "website-ui-button--link"
+        },
+        {
+          "exportName": "WithIcon",
+          "storyId": "website-ui-button--with-icon"
+        },
+        {
+          "exportName": "Disabled",
+          "storyId": "website-ui-button--disabled"
+        },
+        {
+          "exportName": "Large",
+          "storyId": "website-ui-button--large"
+        }
+      ]
+    },
+    {
+      "component": "CopyTextButton",
+      "source": "src/components/ui/copy-text-button/CopyTextButton.vue",
+      "storyFile": "src/components/ui/copy-text-button/CopyTextButton.stories.ts",
+      "title": "Website/UI/CopyTextButton",
+      "status": "stable",
+      "category": "ui",
+      "capabilities": ["activation", "keyboard-focus"],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-ui-copytextbutton--default"
+        }
+      ]
+    },
+    {
+      "component": "CopyableField",
+      "source": "src/components/ui/copyable-field/CopyableField.vue",
+      "storyFile": "src/components/ui/copyable-field/CopyableField.stories.ts",
+      "title": "Website/UI/CopyableField",
+      "status": "stable",
+      "category": "ui",
+      "capabilities": [],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "SingleLine",
+          "storyId": "website-ui-copyablefield--single-line"
+        },
+        {
+          "exportName": "Multiline",
+          "storyId": "website-ui-copyablefield--multiline"
+        }
+      ]
+    },
+    {
+      "component": "IconButton",
+      "source": "src/components/ui/icon-button/IconButton.vue",
+      "storyFile": "src/components/ui/icon-button/IconButton.stories.ts",
+      "title": "Website/UI/IconButton",
+      "status": "stable",
+      "category": "ui",
+      "capabilities": ["activation", "keyboard-focus"],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "Ghost",
+          "storyId": "website-ui-iconbutton--ghost"
+        },
+        {
+          "exportName": "Outline",
+          "storyId": "website-ui-iconbutton--outline"
+        },
+        {
+          "exportName": "Solid",
+          "storyId": "website-ui-iconbutton--solid"
+        },
+        {
+          "exportName": "LargeClose",
+          "storyId": "website-ui-iconbutton--large-close"
+        },
+        {
+          "exportName": "Disabled",
+          "storyId": "website-ui-iconbutton--disabled"
+        }
+      ]
+    },
+    {
+      "component": "Slider",
+      "source": "src/components/ui/slider/Slider.vue",
+      "storyFile": "src/components/ui/slider/Slider.stories.ts",
+      "title": "Website/UI/Slider",
+      "status": "stable",
+      "category": "ui",
+      "capabilities": [],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-ui-slider--default"
+        },
+        {
+          "exportName": "WithTicks",
+          "storyId": "website-ui-slider--with-ticks"
+        },
+        {
+          "exportName": "Range",
+          "storyId": "website-ui-slider--range"
+        },
+        {
+          "exportName": "Disabled",
+          "storyId": "website-ui-slider--disabled"
         }
       ]
     }
