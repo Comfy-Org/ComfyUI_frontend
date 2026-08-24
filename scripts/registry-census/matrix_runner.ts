@@ -256,6 +256,7 @@ export async function runPack(
   let storeReadErrors = 0
   const { lg, app } = await installGlobals()
   const { LGraph, LiteGraph } = lg
+  row.vueNodesMode = LiteGraph.vueNodesMode
 
   // ---- LOAD the pack's real entry files ---------------------------------
   const typesBefore = new Set(Object.keys(LiteGraph.registered_node_types))
