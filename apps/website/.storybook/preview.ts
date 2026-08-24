@@ -7,6 +7,14 @@ document.body.classList.add('font-formula', 'antialiased')
 
 const preview: Preview = {
   tags: ['stable'],
+  initialGlobals: {
+    backgrounds: { value: 'dark' }
+  },
+  decorators: [
+    (_, context) => ({
+      template: `<div class="min-h-screen ${context.globals.backgrounds?.value === 'light' ? 'bg-primary-warm-white' : 'bg-primary-comfy-ink'}"><story /></div>`
+    })
+  ],
   parameters: {
     layout: 'fullscreen',
     design: {
@@ -20,7 +28,10 @@ const preview: Preview = {
       }
     },
     a11y: {
-      test: 'todo'
+      test: 'error',
+      config: {
+        rules: [{ id: 'color-contrast', enabled: false }]
+      }
     },
     viewport: {
       options: INITIAL_VIEWPORTS
@@ -42,9 +53,9 @@ const preview: Preview = {
       }
     },
     backgrounds: {
-      default: 'website',
+      default: 'dark',
       values: [
-        { name: 'website', value: '#211927' },
+        { name: 'dark', value: '#211927' },
         { name: 'light', value: '#f0efed' }
       ]
     }

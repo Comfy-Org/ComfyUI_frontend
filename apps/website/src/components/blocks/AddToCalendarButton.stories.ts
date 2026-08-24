@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { expect, userEvent, within } from 'storybook/test'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
 
 import AddToCalendarButton from './AddToCalendarButton.vue'
 
@@ -40,5 +40,11 @@ export const Default: Story = {
     await expect(
       canvas.getByRole('menuitem', { name: /apple/i })
     ).toHaveAttribute('download', 'comfyui-community-livestream.ics')
+    await userEvent.keyboard('{Escape}')
+    await expect(canvas.getByRole('menu', { hidden: true })).toHaveAttribute(
+      'data-state',
+      'closed'
+    )
+    await waitFor(() => expect(trigger).not.toHaveAttribute('aria-hidden'))
   }
 }

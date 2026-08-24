@@ -25,17 +25,30 @@ changing production pages.
 - **Blocks** contains reusable marketing sections.
 - **Product** contains product-oriented compositions.
 - **Compositions** contains isolated page previews assembled from existing parts.
+- **Recipes** contains approved page structures for product, editorial, pricing,
+  event, and model-launch work.
 
 ## Agent access
 
 Codex and Claude can query the running Storybook through its MCP endpoint at
 `/mcp`. The generated component catalog is available at
-`/design-system/component-manifest.json` and records source paths, story IDs,
-status, and supported capabilities.
+`/design-system/component-manifest.json`. Schema v2 records source and Figma
+provenance, import paths, direct story and docs paths, supported states,
+interaction and responsive coverage, capabilities, and composition safety.
+
+The manifest also exposes five page recipes. An agent should choose cataloged
+components from the recipe, preserve their complete anatomy, and treat an
+unknown pattern as a component gap rather than generating a substitute.
 
 The current coverage audit is available at
-`/design-system/story-coverage.json`. Components listed there are gaps in the
-catalog, not automatically approved alternatives.
+`/design-system/story-coverage.json`. Every uncataloged Vue file has a
+disposition: page-local, template-local, compound part, icon, integration, or
+reusable candidate. Only reusable candidates should be considered for future
+promotion, and they still require an explicit contract.
+
+Structural accessibility checks fail the story test suite. Color contrast is
+reported in the Accessibility panel but remains a website-token review because
+changing the shipped marketing palette is outside this isolated experiment.
 
 ## Review boundary
 

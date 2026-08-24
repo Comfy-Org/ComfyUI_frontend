@@ -93,7 +93,9 @@ jobs:
 
       - name: Update screenshots
         id: update-screenshots
-        run: pnpm --filter @comfyorg/website test:visual:update
+        run: |
+          pnpm --filter @comfyorg/website test:visual:update
+          pnpm --filter @comfyorg/website test:storybook:visual:update
         continue-on-error: true
 
       - name: Commit updated screenshots

@@ -106,6 +106,17 @@ jobs:
       - name: Typecheck website stories
         run: pnpm --filter @comfyorg/website run typecheck:storybook
 
+      - name: Run website story interactions and accessibility checks
+        run: pnpm --filter @comfyorg/website exec vitest run --project storybook
+
+      - name: Verify website Storybook manifests
+        run: |
+          pnpm --filter @comfyorg/website storybook:manifest
+          git diff --exit-code -- apps/website/.storybook/generated/
+
+      - name: Verify responsive screenshot suite
+        run: pnpm --filter @comfyorg/website exec playwright test --config .storybook/playwright.config.ts --list
+
       - name: Build website Storybook
         run: pnpm build-storybook:website
 
@@ -116,6 +127,18 @@ jobs:
           name: website-storybook-static
           path: apps/website/dist/storybook/
           retention-days: 7
+
+      - name: Deploy isolated website Storybook
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          HEAD_REF: ${{ github.head_ref || github.ref_name }}
+        run: |
+          BRANCH=$(echo "$HEAD_REF" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g;s/--*/-/g;s/^-\|-$//g')
+          pnpm dlx wrangler@^4.0.0 pages deploy apps/website/dist/storybook \
+            --project-name=comfy-website-storybook \
+            --branch="$BRANCH"
 
   # Chromatic deployment only for version-bump-* branches or manual triggers
   chromatic-deployment:

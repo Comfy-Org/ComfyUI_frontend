@@ -19,6 +19,7 @@
     "test:e2e:local": "cross-env PLAYWRIGHT_LOCAL=1 playwright test",
     "test:visual": "playwright test --project visual",
     "test:storybook:visual": "playwright test --config .storybook/playwright.config.ts",
+    "test:storybook:visual:update": "playwright test --config .storybook/playwright.config.ts --update-snapshots",
     "test:visual:update": "playwright test --project visual --update-snapshots",
     "ashby:refresh-snapshot": "tsx ./scripts/refresh-ashby-snapshot.ts",
     "cloud-nodes:refresh-snapshot": "tsx ./scripts/refresh-cloud-nodes-snapshot.ts",
