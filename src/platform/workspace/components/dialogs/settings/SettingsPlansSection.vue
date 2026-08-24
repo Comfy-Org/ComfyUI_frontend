@@ -9,16 +9,7 @@
       </p>
     </div>
 
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <ToggleGroup v-model="audienceModel" type="single" variant="outline">
-        <ToggleGroupItem value="personal">
-          {{ t('settingsPlans.personal') }}
-        </ToggleGroupItem>
-        <ToggleGroupItem value="teams">
-          {{ t('settingsPlans.teams') }}
-        </ToggleGroupItem>
-      </ToggleGroup>
-
+    <div class="flex items-center justify-end">
       <div class="flex items-center gap-2">
         <Switch v-model="billedYearly" />
         <span class="text-sm font-semibold text-base-foreground">
@@ -27,10 +18,7 @@
       </div>
     </div>
 
-    <div
-      v-if="audience === 'personal'"
-      class="flex flex-col items-stretch gap-4 xl:flex-row"
-    >
+    <div class="flex flex-col items-stretch gap-4 xl:flex-row">
       <div
         v-for="plan in personalCards"
         :key="plan.key"
@@ -116,119 +104,6 @@
         </Button>
       </div>
     </div>
-
-    <template v-else>
-      <div
-        class="flex flex-col rounded-2xl border border-interface-stroke xl:flex-row"
-      >
-        <div class="flex flex-1 flex-col gap-4 p-6">
-          <div class="flex flex-col gap-1">
-            <span class="text-base font-bold text-base-foreground">
-              {{ t('subscription.teamPlan.name') }}
-            </span>
-            <p class="m-0 max-w-md text-sm text-muted-foreground">
-              {{ t('subscription.teamPlan.tagline') }}
-            </p>
-          </div>
-
-          <CreditSlider
-            v-model="teamUsd"
-            :stops="teamStops"
-            :default-stop-index="teamDefaultStopIndex"
-            :cycle="billedYearly ? 'yearly' : 'monthly'"
-          />
-
-          <div class="flex flex-col gap-1">
-            <div class="flex items-center gap-1.5">
-              <i
-                class="icon-[lucide--coins] size-4 shrink-0 bg-credit"
-                aria-hidden="true"
-              />
-              <I18nT
-                keypath="settingsPlans.creditsPerMonth"
-                tag="span"
-                class="text-sm text-base-foreground"
-              >
-                <template #credits>
-                  <span class="font-bold tabular-nums">
-                    {{ n(selectedTeamStop.credits) }}
-                  </span>
-                </template>
-              </I18nT>
-            </div>
-            <span class="text-sm text-muted-foreground">
-              {{
-                t('subscription.videoEstimate', {
-                  count: n(teamVideoEstimate)
-                })
-              }}
-            </span>
-          </div>
-
-          <Button variant="secondary" size="lg" disabled class="mt-auto w-full">
-            {{
-              billedYearly
-                ? t('subscription.teamPlan.cta')
-                : t('subscription.teamPlan.ctaMonthly')
-            }}
-          </Button>
-        </div>
-
-        <div
-          class="h-px w-full shrink-0 self-stretch bg-interface-stroke xl:h-auto xl:w-px"
-        />
-
-        <div class="flex flex-col gap-3 p-6 xl:w-80">
-          <span class="text-base font-semibold text-base-foreground">
-            {{ t('subscription.teamPlan.detailsTitle') }}
-          </span>
-          <span class="text-sm text-muted-foreground">
-            {{
-              t('subscription.everythingInPlus', {
-                plan: t('subscription.tiers.pro.name')
-              })
-            }}
-          </span>
-          <div
-            v-for="perk in teamPerks"
-            :key="perk"
-            class="flex items-start gap-2"
-          >
-            <i class="pi pi-check mt-0.5 text-xs text-base-foreground" />
-            <span class="text-sm text-base-foreground">{{ perk }}</span>
-          </div>
-          <span class="text-sm text-muted-foreground">
-            {{ t('subscription.teamPlan.comingSoonLabel') }}
-          </span>
-          <div
-            v-for="item in teamComingSoon"
-            :key="item"
-            class="flex items-start gap-2"
-          >
-            <i class="pi pi-clock mt-0.5 text-xs text-muted-foreground" />
-            <span class="text-sm text-muted-foreground">{{ item }}</span>
-          </div>
-        </div>
-      </div>
-
-      <div
-        class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-interface-stroke px-6 py-4"
-      >
-        <div class="flex items-center gap-4">
-          <span
-            class="text-2xs font-bold tracking-widest text-credit uppercase"
-          >
-            {{ t('subscription.enterprise.name') }}
-          </span>
-          <span class="text-sm text-muted-foreground">
-            {{ t('settingsPlans.enterpriseCopy') }}
-          </span>
-        </div>
-        <Button variant="secondary" size="lg" disabled>
-          {{ t('settingsPlans.contactUs') }}
-        </Button>
-      </div>
-    </template>
   </section>
 </template>
 
@@ -237,17 +112,7 @@ import { computed, ref } from 'vue'
 import { I18nT, useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import CreditSlider from '@/components/ui/credit-slider/CreditSlider.vue'
 import Switch from '@/components/ui/switch/Switch.vue'
-import ToggleGroup from '@/components/ui/toggle-group/ToggleGroup.vue'
-import ToggleGroupItem from '@/components/ui/toggle-group/ToggleGroupItem.vue'
-import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
-import {
-  DEFAULT_TEAM_PLAN_STOP_INDEX,
-  TEAM_PLAN_CREDIT_STOPS,
-  mapApiTeamCreditStops
-} from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
-import { TIER_PRICING } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { Plan } from '@/platform/workspace/api/workspaceApi'
 
 // The API catalog is the source of truth for personal price/credits/slug/tier;
@@ -276,13 +141,6 @@ interface PersonalCard extends PersonalTier {
 
 const { t, n } = useI18n()
 
-const audience = ref<'personal' | 'teams'>('personal')
-const audienceModel = computed({
-  get: () => audience.value,
-  set: (value: string) => {
-    if (value === 'personal' || value === 'teams') audience.value = value
-  }
-})
 const billedYearly = ref(true)
 
 // Presentation-only tier metadata; price/credits/slug come from the API row.
@@ -343,47 +201,4 @@ const personalCards = computed<PersonalCard[]>(() =>
     ]
   })
 )
-
-// TEAM column (unchanged in this slice; the API conversion lands with the fetch
-// in the next slice). VIDEO_PER_CREDIT is the disclosed presentation ratio for
-// the team video estimate only — the personal cards render no video line.
-const VIDEO_PER_CREDIT =
-  TIER_PRICING.pro.videoEstimate / TIER_PRICING.pro.credits
-
-const { teamCreditStops } = useBillingPlans()
-
-const teamStops = computed(() => {
-  const apiStops = teamCreditStops.value?.stops
-  return apiStops?.length
-    ? mapApiTeamCreditStops(apiStops)
-    : TEAM_PLAN_CREDIT_STOPS
-})
-const teamDefaultStopIndex = computed(
-  () =>
-    teamCreditStops.value?.default_stop_index ?? DEFAULT_TEAM_PLAN_STOP_INDEX
-)
-const defaultTeamStop = computed(
-  () => teamStops.value[teamDefaultStopIndex.value] ?? teamStops.value[0]
-)
-
-const teamUsd = ref(defaultTeamStop.value.usd)
-const selectedTeamStop = computed(
-  () =>
-    teamStops.value.find((stop) => stop.usd === teamUsd.value) ??
-    defaultTeamStop.value
-)
-const teamVideoEstimate = computed(() =>
-  Math.round(selectedTeamStop.value.credits * VIDEO_PER_CREDIT)
-)
-
-const teamPerks = computed(() => [
-  t('subscription.teamPlan.perkInviteMembers'),
-  t('subscription.teamPlan.perkConcurrentRuns'),
-  t('subscription.teamPlan.perkSharedPool'),
-  t('subscription.teamPlan.perkRolePermissions')
-])
-const teamComingSoon = computed(() => [
-  t('settingsPlans.comingSharedWorkflows'),
-  t('settingsPlans.comingProjects')
-])
 </script>

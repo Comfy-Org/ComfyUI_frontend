@@ -51,16 +51,7 @@ const CATALOG: Plan[] = [
 function renderSection(catalogPlans: Plan[] = CATALOG) {
   return render(SettingsPlansSection, {
     props: { catalogPlans },
-    global: {
-      plugins: [i18n],
-      stubs: {
-        CreditSlider: {
-          template:
-            '<button data-testid="team-slider" @click="$emit(\'update:modelValue\', 200)" />',
-          emits: ['update:modelValue']
-        }
-      }
-    }
+    global: { plugins: [i18n] }
   })
 }
 
@@ -114,13 +105,21 @@ describe('SettingsPlansSection personal cards from the API catalog', () => {
     expect(screen.queryByText('$240 Billed yearly')).toBeNull()
   })
 
-  it('renders no personal cards when the catalog is empty', () => {
+  it('renders no cards when the catalog is empty', () => {
     renderSection([])
 
     expect(screen.queryByText('Standard')).toBeNull()
     expect(screen.queryByText('Creator')).toBeNull()
     expect(screen.queryByText('Pro')).toBeNull()
     expect(screen.queryByText(/\$\d+ Billed yearly/)).toBeNull()
+  })
+
+  it('only renders tiers that have a matching catalog row', () => {
+    renderSection([makePlan('STANDARD', 'ANNUAL', 24000, 50400)])
+
+    expect(screen.getByText('Standard')).toBeTruthy()
+    expect(screen.queryByText('Creator')).toBeNull()
+    expect(screen.queryByText('Pro')).toBeNull()
   })
 
   it('disables the choose CTA and shows no discount pill or checkout caption', () => {
@@ -131,17 +130,5 @@ describe('SettingsPlansSection personal cards from the API catalog', () => {
     }
     expect(screen.queryByText('Save 20%')).toBeNull()
     expect(screen.queryByText(/Checkout happens right here/)).toBeNull()
-  })
-
-  it('keeps the active audience selected when its toggle is clicked again', async () => {
-    renderSection()
-
-    await userEvent.click(screen.getByRole('button', { name: 'Personal' }))
-    expect(screen.getByText('Choose Standard')).toBeTruthy()
-
-    await userEvent.click(screen.getByRole('button', { name: 'Teams' }))
-    await userEvent.click(screen.getByRole('button', { name: 'Teams' }))
-    expect(screen.getByText('Team Plan')).toBeTruthy()
-    expect(screen.queryByText('Choose Standard')).toBeNull()
   })
 })
