@@ -378,18 +378,19 @@ const faqJsonLd = {
             <span class="text-xs font-light text-primary-warm-gray">or drag and drop the image here</span>
           </div>
 
-          <!-- Attachment — media above content, as the shared attachment pattern lays it out -->
-          <div id="ref-attachment" class="mt-2 hidden overflow-hidden rounded-xl border border-transparency-white-t20 bg-transparency-white-t4">
-            <img id="ref-preview" alt="" class="aspect-video w-full object-cover" onerror="this.style.display='none'" />
-            <div class="flex items-center justify-between gap-3 px-3 py-2.5">
-              <div class="min-w-0">
-                <p id="ref-name" class="truncate text-xs text-primary-comfy-canvas"></p>
-                <p id="ref-meta" class="text-2xs font-light text-primary-warm-gray"></p>
-              </div>
-              <button id="ref-remove" type="button" title="Remove" aria-label="Remove" class="shrink-0 cursor-pointer rounded-lg border border-transparency-white-t20 bg-transparency-white-t4 p-1.5 text-primary-warm-gray transition-colors hover:bg-transparency-white-t8 hover:text-primary-warm-white">
-                <RemoveIcon class="size-3.5 shrink-0" aria-hidden="true" />
-              </button>
+          <!-- Attachment — the shared pattern's vertical form: a square media box,
+               the file below it, and the remove action over the media's corner. -->
+          <div id="ref-attachment" class="relative mt-2 hidden w-30 rounded-xl border border-transparency-white-t20 bg-transparency-white-t4 p-2">
+            <div class="aspect-square w-full overflow-hidden rounded-lg bg-transparency-white-t8">
+              <img id="ref-preview" alt="" class="aspect-square w-full object-cover" onerror="this.style.display='none'" />
             </div>
+            <div class="px-0.5 pt-2">
+              <p id="ref-name" class="truncate text-xs text-primary-comfy-canvas"></p>
+              <p id="ref-meta" class="truncate text-2xs font-light text-primary-warm-gray"></p>
+            </div>
+            <button id="ref-remove" type="button" title="Remove" aria-label="Remove" class="absolute right-3 top-3 z-20 cursor-pointer rounded-lg border border-transparency-white-t20 bg-primary-comfy-ink/80 p-1.5 text-primary-comfy-canvas backdrop-blur transition-colors hover:bg-primary-comfy-ink hover:text-primary-warm-white">
+              <RemoveIcon class="size-3.5 shrink-0" aria-hidden="true" />
+            </button>
           </div>
         </div>
 
