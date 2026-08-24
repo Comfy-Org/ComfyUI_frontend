@@ -19,8 +19,6 @@ const { canvasMock, createMarkdownEditorMock, setContentSpy, destroySpy } =
       },
       setContentSpy,
       destroySpy,
-      // Fake editor: mounts nothing real, records the content it was created
-      // with, and exposes the surface useMarkdownWidget touches.
       createMarkdownEditorMock: vi.fn((_el: HTMLElement, content: string) => ({
         __content: content,
         isDestroyed: false,
@@ -40,14 +38,11 @@ vi.mock('@/lib/litegraph/src/litegraph', async (importOriginal) => {
 vi.mock('@/stores/widgetValueStore', () => ({
   useWidgetValueStore: () => ({ getWidget: () => undefined })
 }))
-// Mock the lazily-imported editor module so the deferred import() resolves to a
-// synchronous fake and never fires a real async attach after test teardown.
 vi.mock(
   '@/renderer/extensions/vueNodes/widgets/composables/markdownEditor',
   () => ({ createMarkdownEditor: createMarkdownEditorMock })
 )
 
-// Let the pending `import('./markdownEditor').then(...)` microtask settle.
 const flushEditorAttach = () => new Promise<void>((r) => setTimeout(r, 0))
 
 function createMarkdownWidget(node: LGraphNode) {
@@ -140,7 +135,6 @@ describe('useMarkdownWidget', () => {
 
   it('has a fully interactive shell before the editor chunk resolves', () => {
     const { textarea, callback } = setup()
-    // No editor attach flushed yet — the shell alone must work.
     expect(createMarkdownEditorMock).not.toHaveBeenCalled()
     textarea.value = 'typed'
     textarea.dispatchEvent(new Event('input', { bubbles: true }))
@@ -149,8 +143,6 @@ describe('useMarkdownWidget', () => {
 
   it('mounts the editor with the current value, not the construction default', async () => {
     const { textarea } = setup()
-    // A value present in the shell during the load window (e.g. from a
-    // workflow restore) must be what the editor initialises from on attach.
     textarea.value = 'edited during load'
 
     await flushEditorAttach()
@@ -163,21 +155,17 @@ describe('useMarkdownWidget', () => {
   it('routes content to the editor only once it has attached', async () => {
     const { textarea } = setup()
 
-    // Before attach: a textarea change must not touch a (nonexistent) editor.
     textarea.dispatchEvent(new Event('change', { bubbles: true }))
     expect(setContentSpy).not.toHaveBeenCalled()
 
     await flushEditorAttach()
 
-    // After attach: the same change now flows through to the editor.
     textarea.value = 'after attach'
     textarea.dispatchEvent(new Event('change', { bubbles: true }))
     expect(setContentSpy).toHaveBeenCalledWith('after attach')
   })
 
   it('setValue writes the editor once attached and is a no-op on it before', async () => {
-    // Capture the real getValue/setValue the widget registers (the shared mock
-    // otherwise drops them) so we can drive setValue directly.
     let captured: { setValue?: (v: string) => void } = {}
     const node = createMockDOMWidgetNode({
       addDOMWidget: vi.fn(
@@ -192,14 +180,12 @@ describe('useMarkdownWidget', () => {
     document.body.append(inputEl)
     onTestFinished(() => inputEl.remove())
 
-    // Pre-attach: setValue updates the shell without throwing (editor undefined).
     expect(() => captured.setValue?.('before')).not.toThrow()
     expect(inputEl.querySelector('textarea')!.value).toBe('before')
     expect(setContentSpy).not.toHaveBeenCalled()
 
     await flushEditorAttach()
 
-    // Post-attach: setValue now routes the content into the editor too.
     captured.setValue?.('after')
     expect(setContentSpy).toHaveBeenCalledWith('after')
   })
@@ -214,6 +200,16 @@ describe('useMarkdownWidget', () => {
     expect(destroySpy).not.toHaveBeenCalled()
   })
 
+  it('destroys the attached editor on removal', async () => {
+    const { widget } = setup()
+    await flushEditorAttach()
+    expect(createMarkdownEditorMock).toHaveBeenCalledTimes(1)
+
+    widget.onRemove?.()
+
+    expect(destroySpy).toHaveBeenCalledTimes(1)
+  })
+
   it('degrades to the shell when the editor chunk fails to load', async () => {
     createMarkdownEditorMock.mockImplementationOnce(() => {
       throw new Error('chunk load failed')
@@ -222,7 +218,6 @@ describe('useMarkdownWidget', () => {
 
     await flushEditorAttach()
 
-    // No throw escaped; the shell textarea stays fully usable.
     textarea.value = 'still works'
     textarea.dispatchEvent(new Event('input', { bubbles: true }))
     expect(callback).toHaveBeenCalledTimes(1)
