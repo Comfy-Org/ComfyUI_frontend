@@ -151,9 +151,15 @@ export function realignInputLinkSlots(
         topology: link._state,
         patch: { targetSlot: slot }
       }))
+      const movedLinks = new Set(moved.map(({ link }) => link))
+      const removals = moved.flatMap(({ slot }) => {
+        const incumbent = node.getInputLink(slot)
+        return incumbent && !movedLinks.has(incumbent) ? [incumbent._state] : []
+      })
       const result = useLinkStore().updateEndpoints(
         graphScopeOf(graph),
-        updates
+        updates,
+        removals
       )
       if (!result.ok) {
         console.error('Failed to realign input link slots', result.error)
