@@ -17,7 +17,6 @@ import { useDialogStore } from '@/stores/dialogStore'
 
 interface LoadWorkflowTemplateOptions {
   input?: ResultItem
-  transformWorkflow?: (workflow: ComfyWorkflowJSON) => ComfyWorkflowJSON
 }
 
 export function useTemplateWorkflows() {
@@ -143,8 +142,6 @@ export function useTemplateWorkflows() {
         if (!template || template.sourceModule !== sourceModule) return false
         json = replaceTemplateImageInput(json, template, options.input)
       }
-
-      if (options.transformWorkflow) json = options.transformWorkflow(json)
 
       const workflowName =
         sourceModule === 'default'

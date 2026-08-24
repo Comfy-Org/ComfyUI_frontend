@@ -1,10 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { TemplateInfo } from '../types/template'
-import {
-  replaceTemplateImageInput,
-  replaceUniqueTemplateWidgetValue
-} from './templateWorkflowTransforms'
+import { replaceTemplateImageInput } from './templateWorkflowTransforms'
 
 const template: TemplateInfo = {
   name: 'image-template',
@@ -48,27 +45,6 @@ describe('template workflow transforms', () => {
     expect(workflow.nodes[0].widgets_values).toEqual(['starter.png', 'image'])
   })
 
-  it('configures a unique template widget without relying on its node id', () => {
-    const workflow = {
-      nodes: [
-        {
-          id: 37,
-          type: 'ImageScaleBy',
-          widgets_values: ['lanczos', 2]
-        }
-      ]
-    }
-
-    const configured = replaceUniqueTemplateWidgetValue(
-      workflow,
-      'ImageScaleBy',
-      2,
-      4
-    )
-
-    expect(configured.nodes[0].widgets_values).toEqual(['lanczos', 4])
-  })
-
   it('rejects drift between declared input metadata and workflow widgets', () => {
     const workflow = {
       nodes: [
@@ -86,4 +62,30 @@ describe('template workflow transforms', () => {
       })
     ).toThrow('Expected one matching template widget value')
   })
+
+  it.for(['nodeId', 'nodeType', 'file'] as const)(
+    'rejects an image input without %s',
+    (field) => {
+      const incompleteTemplate = structuredClone(template)
+      const input = incompleteTemplate.io?.inputs?.[0]
+      if (!input) throw new Error('Expected template image input')
+      Object.defineProperty(input, field, { value: undefined })
+      const workflow = {
+        nodes: [
+          {
+            id: 2,
+            type: 'LoadImage',
+            widgets_values: ['starter.png', 'image']
+          }
+        ]
+      }
+
+      expect(() =>
+        replaceTemplateImageInput(workflow, incompleteTemplate, {
+          filename: 'first-output.png'
+        })
+      ).toThrow('Template image input declaration is invalid')
+      expect(workflow.nodes[0].widgets_values).toEqual(['starter.png', 'image'])
+    }
+  )
 })

@@ -191,19 +191,26 @@ const UNFINISHED_ENDINGS: { named: string; ending: TourEnding }[] = [
   { named: 'a lost context ended', ending: skippedBecause('trigger_lost') }
 ]
 
-const EVERY_ENDING: { named: string; ending: TourEnding }[] = [
-  { named: 'the user walked to the end', ending: COMPLETED },
-  ...UNFINISHED_ENDINGS
-]
-
 /** The queue storing a job, which is what acceptance actually looks like. */
-function acceptRun(workflow: unknown) {
-  mocks.queuedJobs.value = { 'job-1': { workflow } }
+function acceptRun(workflow: unknown, jobId = 'job-1') {
+  mocks.queuedJobs.value = {
+    ...mocks.queuedJobs.value,
+    [jobId]: { workflow }
+  }
   return nextTick()
 }
 
 /** The queue letting a job go, which `resetExecutionState` does silently. */
 function removeRun() {
+  mocks.queuedJobs.value = {}
+  return nextTick()
+}
+
+function acceptThenRemoveRun(workflow: unknown, jobId = 'job-1') {
+  mocks.queuedJobs.value = {
+    ...mocks.queuedJobs.value,
+    [jobId]: { workflow }
+  }
   mocks.queuedJobs.value = {}
   return nextTick()
 }
@@ -217,6 +224,7 @@ function finishRun(workflow: unknown, status: string) {
 }
 
 async function captureFirstImage(promptId = 'tour-job') {
+  await acceptRun(TOUR_WORKFLOW, promptId)
   const { api } = await import('@/scripts/api')
   api.dispatchCustomEvent('execution_start', {
     prompt_id: promptId,
@@ -624,6 +632,15 @@ describe('useFirstRunTourController', () => {
       ).toBe('failed')
     })
 
+    it('stops when accepted job metadata is removed in the same tick', async () => {
+      await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+
+      await acceptThenRemoveRun(TOUR_WORKFLOW)
+
+      expect(mocks.runState.value).toBe('failed')
+    })
+
     it('stops promising a result when a running job is dropped mid-run', async () => {
       // `handleServiceLevelError` ("Job has stagnated") is the live path: it
       // drops the job and records a prompt error but never touches
@@ -958,6 +975,7 @@ describe('useFirstRunTourController', () => {
     it('ignores image output from a different job', async () => {
       const { controller } = await tourOnRunStep()
       mountRunButton('queue-button', () => {}).click()
+      await acceptRun(TOUR_WORKFLOW, 'tour-job')
       const { api } = await import('@/scripts/api')
       api.dispatchCustomEvent('execution_start', {
         prompt_id: 'tour-job',
@@ -975,6 +993,49 @@ describe('useFirstRunTourController', () => {
       await endTour(COMPLETED)
 
       expect(controller.nudgeArmed.value).toBe(false)
+    })
+
+    it('correlates output after an unrelated execution starts first', async () => {
+      const { controller } = await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      const { api } = await import('@/scripts/api')
+      api.dispatchCustomEvent('execution_start', {
+        prompt_id: 'other-job',
+        timestamp: 1
+      })
+      api.dispatchCustomEvent('executed', {
+        prompt_id: 'other-job',
+        node: 1,
+        display_node: 1,
+        output: {
+          images: [{ filename: 'other.png', type: 'output' }]
+        }
+      })
+      await nextTick()
+
+      await captureFirstImage()
+      await endTour(COMPLETED)
+
+      expect(controller.nudgeOutput.value?.filename).toBe('first-output.png')
+    })
+
+    it('captures output that arrives before accepted job metadata', async () => {
+      const { controller } = await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      const { api } = await import('@/scripts/api')
+      api.dispatchCustomEvent('executed', {
+        prompt_id: 'tour-job',
+        node: 1,
+        display_node: 1,
+        output: {
+          images: [{ filename: 'early.png', type: 'output' }]
+        }
+      })
+
+      await acceptRun(TOUR_WORKFLOW, 'tour-job')
+      await endTour(COMPLETED)
+
+      expect(controller.nudgeOutput.value?.filename).toBe('early.png')
     })
 
     it('takes an armed nudge off the screen when a second tour starts', async () => {
