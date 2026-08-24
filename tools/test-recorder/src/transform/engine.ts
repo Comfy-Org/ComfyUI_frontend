@@ -85,7 +85,7 @@ export function transform(
   }
   if (!/\bexpect\s*\(/.test(code)) {
     warnings.push(
-      'No assertions — the playwright/expect-expect lint rule rejects this, so the commit hook will refuse it. Add an assertion in the Inspector before stopping.'
+      'No assertions — the test never proves anything happened, so the commit hook will refuse it. Add a proof step with the assert buttons in the floating toolbar (next to Record) before closing the window.'
     )
   }
   if (/position:\s*\{\s*x:\s*\d+,\s*y:\s*\d+/.test(code)) {

@@ -137,9 +137,9 @@ export async function runRecord(): Promise<void> {
     'This walks you through recording a real browser test — no coding',
     'required. You will:',
     '',
-    '  1. Perform the steps you want tested in a real browser window',
-    '  2. Paste what got recorded back here',
-    '  3. Optionally have an AI agent clean it up and open a PR',
+    '  1. Answer a few quick questions about what you want to show',
+    '  2. Do the steps in a real browser window while they are recorded',
+    '  3. Optionally have an AI agent tidy it up and open a PR',
     '',
     'Full docs, if you want them: browser_tests/README.md'
   ])
@@ -278,7 +278,8 @@ export async function runRecord(): Promise<void> {
   blank()
 
   const selectedTags = await multiselect({
-    message: 'Select tags for this test (space to toggle, enter for none):',
+    message:
+      'Pick tags: press SPACE to select each one, ENTER when done (ENTER alone = no tags):',
     options: TAG_REGISTRY.map(({ tag, hint }) => ({
       value: tag,
       label: tag,
@@ -441,9 +442,10 @@ export async function runRecord(): Promise<void> {
     recordedCode = result.recordedCode
   } else {
     info([
-      'Copy the generated code from the Playwright Inspector.',
+      "The recording didn't save automatically this time.",
       '',
-      'Paste your code below. When you are done, type a single ' +
+      'If you still have the generated code, paste it below. When you',
+      'are done, type a single ' +
         pc.bold('.') +
         ' on its own line and press Enter:'
     ])
@@ -495,12 +497,14 @@ export async function runRecord(): Promise<void> {
     w.includes('No assertions')
   )
   if (hasNoAssertions) {
-    alert('This test has no assertions', [
-      "Playwright can't tell your test passed unless it checks something",
-      'concrete — text, a value, whether something is visible.',
+    alert('This test has no proof step', [
+      'A proof step checks that something visible really happened —',
+      'text appeared, a value changed. Without one, the test cannot',
+      'tell success from failure, and it will be rejected on commit.',
       '',
-      'FIX: this WILL be rejected when you commit. Open the file below',
-      'and add at least one line like:',
+      'Easiest fix: record again and use the assert buttons next to',
+      'Record in the floating toolbar. Or add a line like this to the',
+      'file below:',
       '',
       "  await expect(comfyPage.page.getByText('Queue')).toBeVisible()"
     ])

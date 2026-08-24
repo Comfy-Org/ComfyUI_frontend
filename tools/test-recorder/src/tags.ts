@@ -7,47 +7,47 @@ export interface TagInfo {
 export const TAG_REGISTRY: readonly TagInfo[] = [
   {
     tag: '@smoke',
-    hint: 'core critical-path suite',
+    hint: 'the most important everyday flows',
     description: 'Marks a core critical-path test for the smoke suite.'
   },
   {
     tag: '@slow',
-    hint: 'long-running test',
+    hint: 'takes a while to run',
     description: 'Marks a long-running test that is excluded from quick runs.'
   },
   {
     tag: '@screenshot',
-    hint: 'screenshot comparison',
+    hint: 'compares the screen to a saved image',
     description: 'Marks a test that performs screenshot comparison.'
   },
   {
     tag: '@canvas',
-    hint: 'canvas and graph interactions',
+    hint: 'moving around the graph area',
     description: 'Makes tests for canvas and graph interactions discoverable.'
   },
   {
     tag: '@node',
-    hint: 'node behavior',
+    hint: 'how nodes behave',
     description: 'Makes tests of node behavior discoverable.'
   },
   {
     tag: '@widget',
-    hint: 'node widgets',
+    hint: 'controls inside nodes (sliders, text boxes)',
     description: 'Makes tests of node widgets discoverable.'
   },
   {
     tag: '@vue-nodes',
-    hint: 'Vue-rendered nodes',
+    hint: 'the new-style node rendering',
     description: 'Makes tests of Vue-rendered nodes discoverable.'
   },
   {
     tag: '@subgraph',
-    hint: 'subgraph functionality',
+    hint: 'groups of nodes nested inside a node',
     description: 'Makes tests of subgraph functionality discoverable.'
   },
   {
     tag: '@ui',
-    hint: 'general user interface',
+    hint: 'menus, dialogs, general interface',
     description: 'Makes tests of general user-interface behavior discoverable.'
   }
 ]

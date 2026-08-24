@@ -19,6 +19,6 @@ describe('filterKnownTags', () => {
     const warning = unknownTagWarningLines(['@made-up']).join('\n')
 
     expect(warning).toContain('Unknown tag(s) dropped: @made-up')
-    expect(warning).toContain('@canvas (canvas and graph interactions)')
+    expect(warning).toContain('@canvas (moving around the graph area)')
   })
 })
