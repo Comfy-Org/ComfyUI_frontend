@@ -107,10 +107,12 @@ function project<T extends INodeSlot>(
 function findSlotIndex<T extends INodeSlot>(
   descriptors: SlotDescriptor<T>[],
   receiver: T[],
-  slot: T,
+  slot: unknown,
   fromIndex: number
 ): number {
-  const descriptor = Reflect.get(slot, slotDescriptor)
+  if (!isNodeSlot(slot)) return -1
+  const rawSlot = toRaw(slot)
+  const descriptor = Reflect.get(rawSlot, slotDescriptor) ?? rawSlot
   const integerIndex = Math.trunc(fromIndex) || 0
   const startIndex =
     integerIndex < 0
@@ -162,7 +164,7 @@ function slotView<T extends INodeSlot>(
         return Reflect.get(projected, property).bind(projected)
       }
       if (property === 'indexOf')
-        return (slot: T, fromIndex = 0) =>
+        return (slot: unknown, fromIndex = 0) =>
           findSlotIndex(target, receiver, slot, fromIndex)
       const value = Reflect.get(target, property, receiver)
       if (typeof property === 'symbol' || !/^\d+$/.test(property)) return value

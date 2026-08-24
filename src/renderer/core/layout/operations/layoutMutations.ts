@@ -80,6 +80,7 @@ export function useLayoutMutations(source: LayoutSource) {
     order: 'front' | 'back'
   ): void => {
     const rootGraphId = graph.rootGraph.id
+    if (!graph._nodes.some((node) => node.id === nodeId)) return
     if (!layoutStore.getNodeLayout(rootGraphId, nodeId)) return
 
     const zIndex =

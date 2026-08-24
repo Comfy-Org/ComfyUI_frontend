@@ -36,7 +36,7 @@ function setup() {
 type TestContext = ReturnType<typeof setup>
 
 describe('notifyLayoutChanges', () => {
-  it('projects direct z-index changes to legacy node order', async () => {
+  it('does not change graph membership order after a z-index change', async () => {
     using context = setup()
     const second = context.graph.add(new LGraphNode('second'))!
 
@@ -46,9 +46,8 @@ describe('notifyLayoutChanges', () => {
       100
     )
 
-    await vi.waitFor(() =>
-      expect(context.graph._nodes).toEqual([second, context.node])
-    )
+    await vi.waitFor(() => expect(context.setDirty).toHaveBeenCalled())
+    expect(context.graph._nodes).toEqual([context.node, second])
   })
 
   it('does not repeat onResize for a canvas resize', async () => {

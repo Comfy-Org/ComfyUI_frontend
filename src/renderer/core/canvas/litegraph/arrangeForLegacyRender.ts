@@ -1,13 +1,13 @@
 import log from 'loglevel'
 
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
 const logger = log.getLogger('arrangeForLegacyRender')
 
-export function projectLegacyNodeOrder(graph: LGraph): void {
+export function nodesInRenderOrder(graph: LGraph): LGraphNode[] {
   const rootGraphId = graph.rootGraph.id
-  graph._nodes.sort(
+  return [...graph._nodes].sort(
     (a, b) =>
       (layoutStore.getNodeLayout(rootGraphId, a.id)?.zIndex ?? 0) -
       (layoutStore.getNodeLayout(rootGraphId, b.id)?.zIndex ?? 0)
@@ -22,8 +22,6 @@ export function projectLegacyNodeOrder(graph: LGraph): void {
  * Delete when `getSlotPosition` is consistent across both renderers.
  */
 export function arrangeForLegacyRender(graph: LGraph): void {
-  projectLegacyNodeOrder(graph)
-
   for (const node of graph._nodes) {
     if (node.flags.collapsed) continue
     try {

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { toRaw } from 'vue'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
@@ -49,5 +50,15 @@ describe('slot descriptor views', () => {
     expect(Reflect.set(node.inputs, '0', null)).toBe(true)
     expect(Reflect.set(node.inputs, '0', {})).toBe(true)
     expect(node.inputs[0]).toBe(slot)
+  })
+
+  it('preserves native indexOf behavior for arbitrary values', () => {
+    const node = new LGraphNode('Node')
+    node.addInput('slot', 'INT')
+    const descriptor = toRaw(node.inputs)[0]
+
+    expect(Reflect.apply(node.inputs.indexOf, node.inputs, [null])).toBe(-1)
+    expect(Reflect.apply(node.inputs.indexOf, node.inputs, ['slot'])).toBe(-1)
+    expect(node.inputs.indexOf(descriptor)).toBe(0)
   })
 })

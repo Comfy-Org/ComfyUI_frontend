@@ -8,6 +8,7 @@ import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
 import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
 import { LitegraphLinkAdapter } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import type { LinkRenderContext } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
+import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
 import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -5021,7 +5022,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     visible_nodes.length = 0
     if (!this.graph) throw new NullGraphError()
 
-    const _nodes = nodes || this.graph._nodes
+    const _nodes = nodes || nodesInRenderOrder(this.graph)
     for (const node of _nodes) {
       node.updateArea(this.ctx)
       // Not in visible area

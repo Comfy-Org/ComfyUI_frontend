@@ -250,7 +250,7 @@ describe('LGraph', () => {
 
   it('remints a subgraph instead of replacing a live definition', () => {
     const root = new LGraph()
-    const incumbent = new Subgraph(root, createTestSubgraphData())
+    const incumbent = createTestSubgraph({ rootGraph: root })
     incumbent.addInput('value', 'number')
 
     const configured = new Subgraph(
@@ -261,6 +261,16 @@ describe('LGraph', () => {
     expect(configured.id).not.toBe(incumbent.id)
     expect(configured.inputs[0]?.name).toBe('value')
     expect(incumbent.inputs[0]?.name).toBe('value')
+  })
+
+  it('does not rekey an empty subgraph to its root graph ID', () => {
+    const root = new LGraph()
+    const subgraph = createTestSubgraph({ rootGraph: root })
+    const originalId = subgraph.id
+
+    subgraph.id = root.id
+
+    expect(subgraph.id).toBe(originalId)
   })
 
   it('should serialize deterministic node order', async () => {
