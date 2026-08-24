@@ -366,6 +366,23 @@ describe('CurrentUserPopoverWorkspace', () => {
     expect(state.showTopUpCreditsDialog).toHaveBeenCalledOnce()
   })
 
+  it('keeps add-credits hidden for an unsubscribed Cloud owner', () => {
+    state.canAccessSubscriptionFeatures = false
+    state.tier = null
+    state.canTopUp = true
+    state.canManageSubscription = true
+
+    renderComponent('personal')
+
+    expect(screen.queryByTestId('add-credits-button')).not.toBeInTheDocument()
+    expect(
+      screen.queryByTestId('upgrade-to-add-credits-button')
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Subscribe' })
+    ).toBeInTheDocument()
+  })
+
   it('offers add-credits instead of the upgrade upsell on the Local free tier', () => {
     state.isCloud = false
     state.isFreeTier = true

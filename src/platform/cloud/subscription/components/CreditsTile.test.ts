@@ -377,6 +377,16 @@ describe('CreditsTile', () => {
     expect(state.showTopUpCreditsDialog).toHaveBeenCalledOnce()
   })
 
+  it('keeps add-credits available on local for an unsubscribed team workspace', () => {
+    mockIsCloud.value = false
+    state.canAccessSubscriptionFeatures = false
+    state.isTeamPlan = true
+    state.balance = { amountMicros: 500 }
+    renderTile()
+    expect(screen.getByText('Add credits')).toBeInTheDocument()
+    expect(screen.queryByText('Upgrade to add credits')).toBeNull()
+  })
+
   it('shows no depletion notice or in-use badge while monthly credits remain', () => {
     activeProSubscription()
     const { container } = renderTile()
