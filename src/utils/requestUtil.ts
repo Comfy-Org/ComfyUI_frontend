@@ -1,5 +1,4 @@
 import { omitBy } from 'es-toolkit/object'
-import { ref } from 'vue'
 
 type Params = Record<string, string[] | string | number | boolean>
 
@@ -24,14 +23,4 @@ export function sortedParams(params: Params = {}): Params {
     obj[k] = Array.isArray(v) ? v.toSorted((a, b) => a.localeCompare(b)) : v
   }
   return obj
-}
-
-export function singletonInvocation<T>(fn: () => Promise<T>) {
-  const loading = ref<Promise<T>>()
-  function wrappedFn(): Promise<T> {
-    if (!loading.value)
-      loading.value = fn().finally(() => (loading.value = undefined))
-    return loading.value
-  }
-  return { loading, fn: wrappedFn }
 }

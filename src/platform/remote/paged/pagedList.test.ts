@@ -1,9 +1,9 @@
+import { describe, expect, it, vi } from 'vitest'
 import { computed, effectScope, ref, shallowRef, toValue } from 'vue'
 import type { Ref } from 'vue'
-import { describe, expect, it, vi } from 'vitest'
 
 import type { PagedList } from './pagedList'
-import { createSharedPagedList } from './pagedList'
+import { createSharedPagedList, usePreemptableQueue } from './pagedList'
 
 function mockPagedList<T>(initial: T[] = [], genNew?: () => T): PagedList<T> {
   const items: Ref<T[]> = shallowRef(initial)
@@ -124,5 +124,162 @@ describe('createSharedPagedList', () => {
       expect(list3.invalidate).not.toHaveBeenCalled()
     })
     scope.stop()
+  })
+})
+
+function deferred<T = void>() {
+  let resolve!: (value: T) => void
+  let reject!: (reason?: unknown) => void
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res
+    reject = rej
+  })
+  return { promise, resolve, reject }
+}
+
+const noop = async () => {}
+
+describe('usePreemptableQueue', () => {
+  it('coalesces concurrent same-kind enqueue calls', async () => {
+    const { enqueue } = usePreemptableQueue()
+    const gate = deferred()
+    const runner = vi.fn(async () => {
+      await gate.promise
+    })
+
+    const a = enqueue('more', runner)
+    const b = enqueue('more', runner)
+    const c = enqueue('more', runner)
+
+    expect(runner).toHaveBeenCalledTimes(1)
+    gate.resolve()
+    await Promise.all([a, b, c])
+    expect(runner).toHaveBeenCalledTimes(1)
+  })
+
+  it('serializes different kinds: second waits for the first to finish', async () => {
+    const { enqueue } = usePreemptableQueue()
+    const moreGate = deferred()
+    const order: string[] = []
+
+    const morePromise = enqueue('more', async () => {
+      order.push('more:start')
+      await moreGate.promise
+      order.push('more:end')
+    })
+    const newPromise = enqueue('new', async () => {
+      order.push('new:start')
+      order.push('new:end')
+    })
+
+    expect(order).toEqual(['more:start'])
+    moreGate.resolve()
+    await Promise.all([morePromise, newPromise])
+    expect(order).toEqual(['more:start', 'more:end', 'new:start', 'new:end'])
+  })
+
+  it('preempt aborts the running task', async () => {
+    const { enqueue, preempt } = usePreemptableQueue()
+    const started = deferred()
+    let observedSignal: AbortSignal | null = null
+
+    const morePromise = enqueue('more', async (signal) => {
+      observedSignal = signal
+      started.resolve()
+      await new Promise<void>((resolve) =>
+        signal.addEventListener('abort', () => resolve())
+      )
+    })
+
+    await started.promise
+    const preemptPromise = preempt(async () => {})
+
+    await Promise.all([morePromise, preemptPromise])
+    expect(observedSignal!.aborted).toBe(true)
+  })
+
+  it('enqueue during in-flight preempt returns the preempt promise', async () => {
+    const { enqueue, preempt } = usePreemptableQueue()
+    const gate = deferred()
+    const preemptRunner = vi.fn(async () => {
+      await gate.promise
+    })
+    const other = vi.fn(noop)
+
+    const preemptPromise = preempt(preemptRunner)
+    const morePromise = enqueue('more', other)
+    const newPromise = enqueue('new', other)
+
+    expect(other).not.toHaveBeenCalled()
+    gate.resolve()
+    await Promise.all([preemptPromise, morePromise, newPromise])
+    expect(other).not.toHaveBeenCalled()
+    expect(preemptRunner).toHaveBeenCalledTimes(1)
+  })
+
+  it('coalesces concurrent preempt calls', async () => {
+    const { preempt } = usePreemptableQueue()
+    const gate = deferred()
+    const runner = vi.fn(async () => {
+      await gate.promise
+    })
+
+    const a = preempt(runner)
+    const b = preempt(runner)
+    const c = preempt(runner)
+
+    expect(runner).toHaveBeenCalledTimes(1)
+    gate.resolve()
+    await Promise.all([a, b, c])
+    expect(runner).toHaveBeenCalledTimes(1)
+  })
+
+  it('preempt displaces a queued task and redirects its promise', async () => {
+    const { enqueue, preempt } = usePreemptableQueue()
+    const moreGate = deferred()
+    const preemptRunner = vi.fn(noop)
+    const other = vi.fn(noop)
+
+    const morePromise = enqueue('more', async () => {
+      await moreGate.promise
+    })
+    const newPromise = enqueue('new', other)
+    const preemptPromise = preempt(preemptRunner)
+
+    moreGate.resolve()
+    await Promise.all([morePromise, newPromise, preemptPromise])
+    expect(other).not.toHaveBeenCalled()
+    expect(preemptRunner).toHaveBeenCalledTimes(1)
+  })
+
+  it('running is true while any task is active', async () => {
+    const { enqueue, running } = usePreemptableQueue()
+    const gate = deferred()
+
+    expect(running.value).toBe(false)
+    const done = enqueue('more', async () => {
+      await gate.promise
+    })
+    expect(running.value).toBe(true)
+    gate.resolve()
+    await done
+    await new Promise((r) => setTimeout(r, 0))
+    expect(running.value).toBe(false)
+  })
+
+  it('promotes a queued task after the current completes', async () => {
+    const { enqueue } = usePreemptableQueue()
+    const moreGate = deferred()
+    const news = vi.fn(noop)
+
+    const morePromise = enqueue('more', async () => {
+      await moreGate.promise
+    })
+    const newPromise = enqueue('new', news)
+
+    expect(news).not.toHaveBeenCalled()
+    moreGate.resolve()
+    await Promise.all([morePromise, newPromise])
+    expect(news).toHaveBeenCalledTimes(1)
   })
 })
