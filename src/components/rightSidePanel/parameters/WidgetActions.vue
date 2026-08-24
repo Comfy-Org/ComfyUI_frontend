@@ -10,6 +10,7 @@ import {
   demoteWidget,
   promoteWidget
 } from '@/core/graph/subgraph/promotionUtils'
+import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -77,7 +78,13 @@ function handleShowInput() {
 
 function handleHideInput() {
   if (!host) return
-  demoteWidget(node, widget, [host])
+  const source = resolvePromotedWidgetSource(
+    node.graph?.rootGraph,
+    node,
+    widget
+  )
+  if (!source) return
+  demoteWidget(source.sourceNode, source.sourceWidget, [host])
 }
 
 function handleToggleFavorite() {

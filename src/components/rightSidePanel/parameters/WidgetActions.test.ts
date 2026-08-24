@@ -8,12 +8,19 @@ import { h } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { promotedInputWidgets } from '@/core/graph/subgraph/promotedInputWidget'
 import {
   demoteWidget,
+  promoteValueWidgetViaSubgraphInput,
   promoteWidget
 } from '@/core/graph/subgraph/promotionUtils'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type * as PromotionUtilsModule from '@/core/graph/subgraph/promotionUtils'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { widgetId } from '@/types/widgetId'
@@ -31,10 +38,14 @@ const {
   mockTrackWidgetFavoriteToggled: vi.fn()
 }))
 
-vi.mock('@/core/graph/subgraph/promotionUtils', () => ({
-  promoteWidget: vi.fn(),
-  demoteWidget: vi.fn()
-}))
+vi.mock('@/core/graph/subgraph/promotionUtils', async (importOriginal) => {
+  const actual = await importOriginal<typeof PromotionUtilsModule>()
+  return {
+    ...actual,
+    promoteWidget: vi.fn(),
+    demoteWidget: vi.fn(actual.demoteWidget)
+  }
+})
 
 vi.mock('@/stores/nodeDefStore', () => ({
   useNodeDefStore: () => ({
@@ -324,25 +335,47 @@ describe('WidgetActions', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('demotes the widget from the host when "Hide input" is clicked', async () => {
-    const widget = createMockWidget()
-    const node = fromAny<LGraphNode, unknown>({
-      id: 1,
-      type: 'TestNode',
-      rootGraph: { id: 'graph-test' },
-      isSubgraphNode: () => true,
-      getSlotFromWidget: (candidate: IBaseWidget) =>
-        candidate.name === 'test_widget'
-          ? { widgetId: 'graph-test:1:test_widget' }
-          : undefined
-    })
-    const host = fromAny<SubgraphNode, unknown>({ id: 2 })
+  function setupLinkedPromotedWidget() {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const interiorNode = new LGraphNode('TestNode')
+    host.subgraph.add(interiorNode)
+    const interiorInput = interiorNode.addInput('value', 'STRING')
+    const interiorWidget = interiorNode.addWidget(
+      'text',
+      'value',
+      'initial',
+      () => {}
+    )
+    interiorInput.widget = { name: interiorWidget.name }
 
-    const { user } = renderWidgetActions(widget, node, { host })
+    const result = promoteValueWidgetViaSubgraphInput(
+      host,
+      interiorNode,
+      interiorWidget
+    )
+    expect(result.ok).toBe(true)
+
+    const promotedWidget = promotedInputWidgets(host)[0]
+    if (!promotedWidget) throw new Error('Expected a promoted widget on host')
+
+    return { host, interiorNode, interiorWidget, promotedWidget }
+  }
+
+  it('resolves the real interior source and demotes it when "Hide input" is clicked on a linked promoted widget', async () => {
+    const { host, interiorNode, interiorWidget, promotedWidget } =
+      setupLinkedPromotedWidget()
+
+    const { user } = renderWidgetActions(promotedWidget, host, { host })
 
     await user.click(screen.getByRole('button', { name: /Hide input/ }))
 
-    expect(demoteWidget).toHaveBeenCalledWith(node, widget, [host])
+    expect(demoteWidget).toHaveBeenCalledWith(interiorNode, interiorWidget, [
+      host
+    ])
+    expect(host.subgraph.inputs).toHaveLength(0)
+    expect(host.inputs).toHaveLength(0)
+    expect(promotedInputWidgets(host)).toHaveLength(0)
   })
 
   it('does not offer "Hide input" without a host', () => {
