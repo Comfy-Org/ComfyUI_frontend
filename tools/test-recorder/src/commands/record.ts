@@ -135,6 +135,14 @@ function printPrefill(label: string, value: string, source: string): void {
   console.log(`  ${label}: ${value} (from ${source})`)
 }
 
+function answered<T>(value: T | symbol): T {
+  if (isCancel(value)) {
+    cancel('Operation cancelled')
+    process.exit(0)
+  }
+  return value
+}
+
 async function preparePrCheckout(
   pr: string,
   projectRoot: string
@@ -282,39 +290,38 @@ export async function runRecord(
   )
   const selectedDistribution = prefill.distribution
     ? prefill.distribution.id
-    : await select({
-        message: 'Which distribution do you want to record against?',
-        options: [
-          ...DISTRIBUTIONS.map(({ id, label, hint, backendUrl }) => ({
-            value: id,
-            label,
-            hint: (() => {
-              const env = distributionInfo.find(
-                (entry) => entry.id === id
-              )?.info
-              if (!env?.ok || !backendUrl) return hint
-              const host = new URL(backendUrl).host
-              const suffix = id === 'cloud' ? ' (default)' : ''
-              return `${host} — backend ${env.cloudVersion}${suffix}`
-            })()
-          })),
-          {
-            value: CUSTOM_DISTRIBUTION_SENTINEL,
-            label: 'Custom backend…',
-            hint: 'connect Vite to another backend URL'
-          }
-        ],
-        initialValue: 'cloud'
-      })
+    : answered(
+        await select({
+          message: 'Which distribution do you want to record against?',
+          options: [
+            ...DISTRIBUTIONS.map(({ id, label, hint, backendUrl }) => ({
+              value: id,
+              label,
+              hint: (() => {
+                const env = distributionInfo.find(
+                  (entry) => entry.id === id
+                )?.info
+                if (!env?.ok || !backendUrl) return hint
+                const host = new URL(backendUrl).host
+                const suffix = id === 'cloud' ? ' (default)' : ''
+                return `${host} — backend ${env.cloudVersion}${suffix}`
+              })()
+            })),
+            {
+              value: CUSTOM_DISTRIBUTION_SENTINEL,
+              label: 'Custom backend…',
+              hint: 'connect Vite to another backend URL'
+            }
+          ],
+          initialValue: 'cloud'
+        })
+      )
   if (prefill.distribution) {
     printPrefill(
       'Distribution',
       prefill.distribution.id,
       prefill.distributionSource ?? '--distribution'
     )
-  } else if (isCancel(selectedDistribution)) {
-    cancel('Operation cancelled')
-    process.exit(0)
   }
   let distribution =
     prefill.distribution ?? resolveDistribution(selectedDistribution)
@@ -390,20 +397,19 @@ export async function runRecord(
 
   const useCaseChoice = prefill.useCase
     ? prefill.useCase.id
-    : await select({
-        message:
-          "What brings you here today? There's no wrong answer — this just helps us ask the right question next.",
-        options: USE_CASES.map(({ id, label, hint }) => ({
-          value: id,
-          label,
-          hint
-        }))
-      })
+    : answered(
+        await select({
+          message:
+            "What brings you here today? There's no wrong answer — this just helps us ask the right question next.",
+          options: USE_CASES.map(({ id, label, hint }) => ({
+            value: id,
+            label,
+            hint
+          }))
+        })
+      )
   if (prefill.useCase) {
     printPrefill('Use case', prefill.useCase.id, '--use-case')
-  } else if (isCancel(useCaseChoice)) {
-    cancel('Operation cancelled')
-    process.exit(0)
   }
   const useCase = useCaseById(useCaseChoice) ?? USE_CASES[0]
 
@@ -420,17 +426,16 @@ export async function runRecord(
 
   const description =
     prefill.description ??
-    (await text({
-      message: useCase.question,
-      placeholder: useCase.placeholder,
-      validate: (value) =>
-        toSlug(value ?? '') ? undefined : 'Use some letters or numbers.'
-    }))
+    answered(
+      await text({
+        message: useCase.question,
+        placeholder: useCase.placeholder,
+        validate: (value) =>
+          toSlug(value ?? '') ? undefined : 'Use some letters or numbers.'
+      })
+    )
   if (prefill.description) {
     printPrefill('Description', prefill.description, '--description')
-  } else if (isCancel(description)) {
-    cancel('Operation cancelled')
-    process.exit(0)
   }
 
   let testDescription: string = description
@@ -438,15 +443,14 @@ export async function runRecord(
 
   const filenameOk = prefill.name
     ? true
-    : await confirm({
-        message: `Generated filename: ${slug}.spec.ts — looks good?`
-      })
+    : answered(
+        await confirm({
+          message: `Generated filename: ${slug}.spec.ts — looks good?`
+        })
+      )
   if (prefill.name) {
     slug = prefill.name
     printPrefill('Name', prefill.name, '--name')
-  } else if (isCancel(filenameOk)) {
-    cancel('Operation cancelled')
-    process.exit(0)
   }
   if (!filenameOk) {
     const customName = await text({
@@ -470,22 +474,21 @@ export async function runRecord(
 
   const selectedTags =
     prefill.tags ??
-    (await multiselect({
-      message:
-        'Pick tags: press SPACE to select each one, ENTER when done (ENTER alone = no tags):',
-      options: TAG_REGISTRY.map(({ tag, hint }) => ({
-        value: tag,
-        label: tag,
-        hint
-      })),
-      initialValues: [],
-      required: false
-    }))
+    answered(
+      await multiselect({
+        message:
+          'Pick tags: press SPACE to select each one, ENTER when done (ENTER alone = no tags):',
+        options: TAG_REGISTRY.map(({ tag, hint }) => ({
+          value: tag,
+          label: tag,
+          hint
+        })),
+        initialValues: [],
+        required: false
+      })
+    )
   if (prefill.tags) {
     printPrefill('Tags', prefill.tags.join(', '), '--tags')
-  } else if (isCancel(selectedTags)) {
-    cancel('Operation cancelled')
-    process.exit(0)
   }
 
   const workflows = listWorkflows(projectRoot)
@@ -517,21 +520,20 @@ export async function runRecord(
   }
   const selectedWorkflow =
     validPrefillWorkflow ??
-    (await autocomplete({
-      message: `Start with a pre-loaded workflow? (${workflows.length} available)`,
-      options: workflowOptions,
-      initialValue: '',
-      maxItems: 12
-    }))
+    answered(
+      await autocomplete({
+        message: `Start with a pre-loaded workflow? (${workflows.length} available)`,
+        options: workflowOptions,
+        initialValue: '',
+        maxItems: 12
+      })
+    )
   if (validPrefillWorkflow !== undefined) {
     printPrefill(
       'Workflow',
       validPrefillWorkflow || '(empty canvas)',
       '--workflow'
     )
-  } else if (isCancel(selectedWorkflow)) {
-    cancel('Operation cancelled')
-    process.exit(0)
   }
 
   let seedWorkflow = selectedWorkflow
@@ -564,10 +566,12 @@ export async function runRecord(
 
   const overrideFeatureFlags = prefill.featureFlags
     ? true
-    : await confirm({
-        message: 'Override feature flags for this test?',
-        initialValue: false
-      })
+    : answered(
+        await confirm({
+          message: 'Override feature flags for this test?',
+          initialValue: false
+        })
+      )
   if (prefill.featureFlags) {
     printPrefill(
       'Feature flags',
@@ -576,9 +580,6 @@ export async function runRecord(
         .join(', '),
       '--feature-flags'
     )
-  } else if (isCancel(overrideFeatureFlags)) {
-    cancel('Operation cancelled')
-    process.exit(0)
   }
 
   let selectedFeatureFlags: string[] = []
@@ -712,7 +713,7 @@ export async function runRecord(
 
   const transformResult = transform(recordedCode, {
     testName: slug,
-    tags: selectedTags as string[],
+    tags: selectedTags,
     workflow: seedWorkflow || undefined,
     featureFlags
   })

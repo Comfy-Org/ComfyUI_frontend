@@ -31,9 +31,9 @@ describe('fetchEnvInfo', () => {
   })
 
   it.for([
-    ['HTTP failure', new Response('', { status: 503 })],
-    ['invalid payload', new Response('{}')]
-  ])('returns failure for %s', async ([_label, response]) => {
+    { label: 'HTTP failure', response: new Response('', { status: 503 }) },
+    { label: 'invalid payload', response: new Response('{}') }
+  ])('returns failure for $label', async ({ response }) => {
     vi.mocked(fetch).mockResolvedValue(response)
     await expect(fetchEnvInfo('https://example.com/')).resolves.toEqual({
       ok: false
