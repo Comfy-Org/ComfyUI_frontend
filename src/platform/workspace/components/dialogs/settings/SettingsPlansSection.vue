@@ -24,11 +24,6 @@
         <span class="text-sm font-semibold text-base-foreground">
           {{ t('settingsPlans.billedYearlyToggle') }}
         </span>
-        <span
-          class="rounded-full bg-base-foreground px-2 py-0.5 text-2xs font-bold text-base-background"
-        >
-          {{ t('subscription.saveYearly') }}
-        </span>
       </div>
     </div>
 
@@ -37,7 +32,7 @@
       class="flex flex-col items-stretch gap-4 xl:flex-row"
     >
       <div
-        v-for="plan in plans"
+        v-for="plan in personalCards"
         :key="plan.key"
         class="flex flex-1 flex-col gap-4 rounded-2xl border border-interface-stroke p-6"
       >
@@ -50,7 +45,7 @@
             <span
               class="text-[28px] leading-normal font-semibold text-base-foreground tabular-nums"
             >
-              ${{ billedYearly ? plan.pricing.yearly : plan.pricing.monthly }}
+              ${{ plan.pricePerMonth }}
             </span>
             <span class="text-base text-muted-foreground">
               {{ t('subscription.usdPerMonth') }}
@@ -60,7 +55,7 @@
             {{
               billedYearly
                 ? t('subscription.billedYearly', {
-                    total: `$${plan.pricing.yearly * 12}`
+                    total: `$${plan.billedYearlyTotal}`
                   })
                 : t('subscription.billedMonthly')
             }}
@@ -86,19 +81,13 @@
             >
               <template #credits>
                 <span class="font-bold tabular-nums">
-                  {{
-                    n(
-                      billedYearly
-                        ? plan.pricing.credits * 12
-                        : plan.pricing.credits
-                    )
-                  }}
+                  {{ n(plan.credits) }}
                 </span>
               </template>
             </I18nT>
           </div>
           <span class="text-sm text-muted-foreground tabular-nums">
-            {{ t('settingsPlans.perDollar', { credits: perDollar(plan) }) }}
+            {{ t('settingsPlans.perDollar', { credits: plan.perDollar }) }}
           </span>
         </div>
 
@@ -122,7 +111,7 @@
           </div>
         </div>
 
-        <Button variant="secondary" size="lg" class="mt-auto w-full">
+        <Button variant="secondary" size="lg" disabled class="mt-auto w-full">
           {{ t('settingsPlans.choosePlan', { tier: plan.name }) }}
         </Button>
       </div>
@@ -176,7 +165,7 @@
             </span>
           </div>
 
-          <Button variant="secondary" size="lg" class="mt-auto w-full">
+          <Button variant="secondary" size="lg" disabled class="mt-auto w-full">
             {{
               billedYearly
                 ? t('subscription.teamPlan.cta')
@@ -235,15 +224,11 @@
             {{ t('settingsPlans.enterpriseCopy') }}
           </span>
         </div>
-        <Button variant="secondary" size="lg">
+        <Button variant="secondary" size="lg" disabled>
           {{ t('settingsPlans.contactUs') }}
         </Button>
       </div>
     </template>
-
-    <p class="m-0 text-sm text-muted-foreground">
-      {{ t('settingsPlans.checkoutCaption') }}
-    </p>
   </section>
 </template>
 
@@ -263,14 +248,30 @@ import {
   mapApiTeamCreditStops
 } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import { TIER_PRICING } from '@/platform/cloud/subscription/constants/tierPricing'
-import type { TierPricing } from '@/platform/cloud/subscription/constants/tierPricing'
+import type { Plan } from '@/platform/workspace/api/workspaceApi'
 
-interface PlanCard {
+// The API catalog is the source of truth for personal price/credits/slug/tier;
+// the frontend holds only presentation copy. Supplied by the fetch in a later
+// slice — empty until then, so no card renders a frontend-authored offer.
+const { catalogPlans = [] } = defineProps<{
+  catalogPlans?: Plan[]
+}>()
+
+interface PersonalTier {
   key: string
+  tier: Plan['tier']
   name: string
-  pricing: TierPricing
   benefits: string[]
   everythingIn?: string
+}
+
+interface PersonalCard extends PersonalTier {
+  slug: string
+  available: boolean
+  pricePerMonth: number
+  billedYearlyTotal: number
+  credits: number
+  perDollar: number
 }
 
 const { t, n } = useI18n()
@@ -284,11 +285,12 @@ const audienceModel = computed({
 })
 const billedYearly = ref(true)
 
-const plans = computed<PlanCard[]>(() => [
+// Presentation-only tier metadata; price/credits/slug come from the API row.
+const personalTiers = computed<PersonalTier[]>(() => [
   {
     key: 'standard',
+    tier: 'STANDARD',
     name: t('subscription.tiers.standard.name'),
-    pricing: TIER_PRICING.standard,
     benefits: [
       t('subscription.tiers.standard.feature1'),
       t('subscription.tiers.standard.feature2')
@@ -296,29 +298,58 @@ const plans = computed<PlanCard[]>(() => [
   },
   {
     key: 'creator',
+    tier: 'CREATOR',
     name: t('subscription.tiers.creator.name'),
-    pricing: TIER_PRICING.creator,
     benefits: [t('subscription.tiers.creator.feature1')],
     everythingIn: t('subscription.tiers.standard.name')
   },
   {
     key: 'pro',
+    tier: 'PRO',
     name: t('subscription.tiers.pro.name'),
-    pricing: TIER_PRICING.pro,
     benefits: [t('subscription.tiers.pro.feature1')],
     everythingIn: t('subscription.tiers.creator.name')
   }
 ])
 
-function perDollar(plan: PlanCard): number {
-  const price = billedYearly.value ? plan.pricing.yearly : plan.pricing.monthly
-  return Math.round(plan.pricing.credits / price)
+function findApiPlan(tier: Plan['tier']): Plan | undefined {
+  const duration = billedYearly.value ? 'ANNUAL' : 'MONTHLY'
+  return catalogPlans.find((p) => p.tier === tier && p.duration === duration)
 }
 
+// A tier with no matching catalog row renders no card: an offer we cannot
+// source from the API is never shown.
+const personalCards = computed<PersonalCard[]>(() =>
+  personalTiers.value.flatMap((tier) => {
+    const plan = findApiPlan(tier.tier)
+    if (!plan) return []
+    // Annual price_cents is the full-year total; per-month is /12.
+    const periodPrice = plan.price_cents / 100
+    const pricePerMonth = billedYearly.value
+      ? Math.round(periodPrice / 12)
+      : periodPrice
+    return [
+      {
+        ...tier,
+        slug: plan.slug,
+        available: plan.availability.available,
+        pricePerMonth,
+        billedYearlyTotal: periodPrice,
+        // Annual credits_cents is already the yearly total (not monthly).
+        credits: plan.credits_cents,
+        perDollar:
+          periodPrice > 0 ? Math.round(plan.credits_cents / periodPrice) : 0
+      }
+    ]
+  })
+)
+
+// TEAM column (unchanged in this slice; the API conversion lands with the fetch
+// in the next slice). VIDEO_PER_CREDIT is the disclosed presentation ratio for
+// the team video estimate only — the personal cards render no video line.
 const VIDEO_PER_CREDIT =
   TIER_PRICING.pro.videoEstimate / TIER_PRICING.pro.credits
 
-// Backend-sourced stops when the shared plans state has them, DES-197 fallback otherwise.
 const { teamCreditStops } = useBillingPlans()
 
 const teamStops = computed(() => {

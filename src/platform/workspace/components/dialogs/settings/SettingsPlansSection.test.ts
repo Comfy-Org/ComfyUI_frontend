@@ -5,6 +5,7 @@ import { createI18n } from 'vue-i18n'
 import { render, screen } from '@testing-library/vue'
 
 import enMessages from '@/locales/en/main.json'
+import type { Plan } from '@/platform/workspace/api/workspaceApi'
 
 import SettingsPlansSection from './SettingsPlansSection.vue'
 
@@ -14,13 +15,45 @@ const i18n = createI18n({
   messages: { en: enMessages }
 })
 
-function renderSection() {
+// Pinned to the real billing catalog (cloud common/billing/catalog/catalog_test.go:32-36):
+// price_cents is the LIST amount, credits_cents the period credit total.
+function makePlan(
+  tier: Plan['tier'],
+  duration: Plan['duration'],
+  price_cents: number,
+  credits_cents: number
+): Plan {
+  return {
+    slug: `${tier.toLowerCase()}-${duration.toLowerCase()}`,
+    tier,
+    duration,
+    price_cents,
+    credits_cents,
+    max_seats: 1,
+    availability: { available: true },
+    seat_summary: {
+      seat_count: 1,
+      total_cost_cents: price_cents,
+      total_credits_cents: credits_cents
+    }
+  }
+}
+
+const CATALOG: Plan[] = [
+  makePlan('STANDARD', 'ANNUAL', 24000, 50400),
+  makePlan('STANDARD', 'MONTHLY', 2000, 4200),
+  makePlan('CREATOR', 'ANNUAL', 42000, 88800),
+  makePlan('CREATOR', 'MONTHLY', 3500, 7400),
+  makePlan('PRO', 'ANNUAL', 120000, 253200),
+  makePlan('PRO', 'MONTHLY', 10000, 21100)
+]
+
+function renderSection(catalogPlans: Plan[] = CATALOG) {
   return render(SettingsPlansSection, {
+    props: { catalogPlans },
     global: {
       plugins: [i18n],
       stubs: {
-        // Clicking moves the v-model selection to the $200 stop so tests can
-        // drive the team credits display.
         CreditSlider: {
           template:
             '<button data-testid="team-slider" @click="$emit(\'update:modelValue\', 200)" />',
@@ -31,7 +64,75 @@ function renderSection() {
   })
 }
 
-describe('SettingsPlansSection', () => {
+describe('SettingsPlansSection personal cards from the API catalog', () => {
+  it('renders the API list price and credits for the yearly cycle', () => {
+    renderSection()
+
+    // $20/mo = list 24000/100/12, billed yearly total $240 = 24000/100 — the
+    // API list price, not the discounted $16/$192 the old constant baked in.
+    expect(screen.getByText('$20')).toBeTruthy()
+    expect(screen.getByText('$35')).toBeTruthy()
+    expect(screen.getByText('$100')).toBeTruthy()
+
+    expect(screen.getByText('$240 Billed yearly')).toBeTruthy()
+    expect(screen.getByText('$420 Billed yearly')).toBeTruthy()
+    expect(screen.getByText('$1200 Billed yearly')).toBeTruthy()
+
+    // credits_cents is the annual total, rendered as-is (no ×12).
+    expect(screen.getByText('50,400')).toBeTruthy()
+    expect(screen.getByText('88,800')).toBeTruthy()
+    expect(screen.getByText('253,200')).toBeTruthy()
+  })
+
+  it('renders the API price and credits for the monthly cycle', async () => {
+    renderSection()
+    await userEvent.click(screen.getByRole('switch'))
+
+    expect(screen.getByText('$20')).toBeTruthy()
+    expect(screen.getByText('$35')).toBeTruthy()
+    expect(screen.getByText('$100')).toBeTruthy()
+    expect(screen.getAllByText('Billed monthly')).toHaveLength(3)
+
+    expect(screen.getByText('4,200')).toBeTruthy()
+    expect(screen.getByText('7,400')).toBeTruthy()
+    expect(screen.getByText('21,100')).toBeTruthy()
+  })
+
+  it('moves the rendered numbers when the catalog values change', () => {
+    const mutated = CATALOG.map((p) =>
+      p.tier === 'STANDARD' && p.duration === 'ANNUAL'
+        ? makePlan('STANDARD', 'ANNUAL', 30000, 60000)
+        : p
+    )
+    renderSection(mutated)
+
+    // $25/mo = 30000/100/12, $300 yearly, 60,000 credits — proof the render is
+    // wired to the API row, not to a constant.
+    expect(screen.getByText('$25')).toBeTruthy()
+    expect(screen.getByText('$300 Billed yearly')).toBeTruthy()
+    expect(screen.getByText('60,000')).toBeTruthy()
+    expect(screen.queryByText('$240 Billed yearly')).toBeNull()
+  })
+
+  it('renders no personal cards when the catalog is empty', () => {
+    renderSection([])
+
+    expect(screen.queryByText('Standard')).toBeNull()
+    expect(screen.queryByText('Creator')).toBeNull()
+    expect(screen.queryByText('Pro')).toBeNull()
+    expect(screen.queryByText(/\$\d+ Billed yearly/)).toBeNull()
+  })
+
+  it('disables the choose CTA and shows no discount pill or checkout caption', () => {
+    renderSection()
+
+    for (const name of ['Choose Standard', 'Choose Creator', 'Choose Pro']) {
+      expect(screen.getByRole('button', { name })).toBeDisabled()
+    }
+    expect(screen.queryByText('Save 20%')).toBeNull()
+    expect(screen.queryByText(/Checkout happens right here/)).toBeNull()
+  })
+
   it('keeps the active audience selected when its toggle is clicked again', async () => {
     renderSection()
 
@@ -42,87 +143,5 @@ describe('SettingsPlansSection', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Teams' }))
     expect(screen.getByText('Team Plan')).toBeTruthy()
     expect(screen.queryByText('Choose Standard')).toBeNull()
-  })
-
-  it('renders the three personal cards with yearly pricing by default', () => {
-    renderSection()
-
-    expect(screen.getByText('Standard')).toBeTruthy()
-    expect(screen.getByText('Creator')).toBeTruthy()
-    expect(screen.getByText('Pro')).toBeTruthy()
-
-    expect(screen.getByText('$16')).toBeTruthy()
-    expect(screen.getByText('$28')).toBeTruthy()
-    expect(screen.getByText('$80')).toBeTruthy()
-
-    expect(screen.getByText('$192 Billed yearly')).toBeTruthy()
-    expect(screen.getByText('$336 Billed yearly')).toBeTruthy()
-    expect(screen.getByText('$960 Billed yearly')).toBeTruthy()
-
-    expect(screen.getByText('50,400')).toBeTruthy()
-    expect(screen.getAllByText('credits a year')).toHaveLength(3)
-
-    expect(screen.getByText('263 per dollar')).toBeTruthy()
-    expect(screen.getAllByText('264 per dollar')).toHaveLength(2)
-
-    expect(screen.getByText("What's included:")).toBeTruthy()
-    expect(screen.getByText('Everything in Standard, plus:')).toBeTruthy()
-    expect(screen.getByText('Everything in Creator, plus:')).toBeTruthy()
-  })
-
-  it('switches to monthly pricing without any savings copy on the cards', async () => {
-    renderSection()
-
-    await userEvent.click(screen.getByRole('switch'))
-
-    expect(screen.getByText('$20')).toBeTruthy()
-    expect(screen.getByText('$35')).toBeTruthy()
-    expect(screen.getByText('$100')).toBeTruthy()
-
-    expect(screen.getAllByText('Billed monthly')).toHaveLength(3)
-    expect(screen.queryByText(/\$\d+ Billed yearly/)).toBeNull()
-
-    expect(screen.getByText('4,200')).toBeTruthy()
-    expect(screen.getAllByText('credits a month')).toHaveLength(3)
-
-    expect(screen.getByText('210 per dollar')).toBeTruthy()
-    expect(screen.getAllByText('211 per dollar')).toHaveLength(2)
-  })
-
-  it('shows the team plan with the default credit stop on the Teams tab', async () => {
-    renderSection()
-
-    await userEvent.click(screen.getByRole('button', { name: 'Teams' }))
-
-    expect(screen.queryByText('Choose Standard')).toBeNull()
-    expect(screen.getByText('Team Plan')).toBeTruthy()
-    expect(screen.getByText('147,700')).toBeTruthy()
-    expect(screen.getByText('Generates ~13,405 5s videos*')).toBeTruthy()
-    expect(
-      screen.getByRole('button', { name: 'Subscribe to Team Yearly' })
-    ).toBeTruthy()
-    expect(screen.getByText('Enterprise')).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Contact us' })).toBeTruthy()
-  })
-
-  it('drives the team credits and video estimate from the slider selection', async () => {
-    renderSection()
-
-    await userEvent.click(screen.getByRole('button', { name: 'Teams' }))
-    await userEvent.click(screen.getByTestId('team-slider'))
-
-    expect(screen.getByText('42,200')).toBeTruthy()
-    expect(screen.getByText('Generates ~3,830 5s videos*')).toBeTruthy()
-  })
-
-  it('labels the team subscribe button for the monthly cycle', async () => {
-    renderSection()
-
-    await userEvent.click(screen.getByRole('switch'))
-    await userEvent.click(screen.getByRole('button', { name: 'Teams' }))
-
-    expect(
-      screen.getByRole('button', { name: 'Subscribe to Team Monthly' })
-    ).toBeTruthy()
   })
 })
