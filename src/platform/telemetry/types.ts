@@ -27,6 +27,7 @@ export type PaymentIntentSource =
   | 'subscribe_to_run'
   | 'subscribe_now_button'
   | 'upgrade_to_add_credits'
+  | 'credits_tile_upgrade'
   | 'settings_billing_panel'
   | 'avatar_menu_plans'
   | 'team_members_panel'

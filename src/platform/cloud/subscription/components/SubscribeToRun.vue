@@ -39,13 +39,13 @@ const canResubscribe = computed(() => permissions.value.canManageSubscription)
 const buttonLabel = computed(() => {
   if (!canResubscribe.value) return t('subscription.inactive.runLabel')
   return isMdOrLarger.value
-    ? t('subscription.subscribeToRunFull')
-    : t('subscription.subscribeToRun')
+    ? t('subscription.upgradeToRunFull')
+    : t('subscription.upgradeToRun')
 })
 
 const buttonTooltip = computed(() =>
   canResubscribe.value
-    ? t('subscription.subscribeToRunFull')
+    ? t('subscription.upgradeToRunFull')
     : t('subscription.inactive.memberRunTooltip')
 )
 
