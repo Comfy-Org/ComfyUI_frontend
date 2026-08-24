@@ -7,7 +7,11 @@ import {
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
+import type {
+  ExportedSubgraph,
+  ISerialisedNode,
+  SerialisableGraph
+} from '@/lib/litegraph/src/types/serialisation'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
@@ -36,8 +40,8 @@ import type { UUID } from '@/utils/uuid'
 
 const SUB_A = '11111111-1111-4111-8111-111111111111'
 const SUB_B = '22222222-2222-4222-8222-222222222222'
-const FAILED_GRAPH_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' as UUID
-const NEXT_GRAPH_ID = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb' as UUID
+const FAILED_GRAPH_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+const NEXT_GRAPH_ID = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
 
 const FAILED_NODE_IDS = [101, 102, 103, 104]
 const NEXT_NODE_IDS = [1, 2]
@@ -66,7 +70,7 @@ class ThrowingNode extends LGraphNode {
   }
 }
 
-function interiorNode(id: number, order: number) {
+function interiorNode(id: number, order: number): ISerialisedNode {
   return {
     id,
     type: 'plain',
@@ -78,7 +82,7 @@ function interiorNode(id: number, order: number) {
   }
 }
 
-function subgraphDefinition(id: string, name: string) {
+function subgraphDefinition(id: string, name: string): ExportedSubgraph {
   return {
     id,
     version: 1,
@@ -106,7 +110,7 @@ function subgraphDefinition(id: string, name: string) {
   }
 }
 
-function rootNode(id: number, type: string, order: number) {
+function rootNode(id: number, type: string, order: number): ISerialisedNode {
   return {
     id,
     type,
@@ -161,7 +165,7 @@ const interruptedWorkflow = {
       subgraphDefinition(SUB_B, 'SubB')
     ]
   }
-} as unknown as SerialisableGraph
+} satisfies SerialisableGraph
 
 /** The innocent workflow the user opens after the failed load. */
 const nextWorkflow = {
@@ -181,7 +185,7 @@ const nextWorkflow = {
     }
   ],
   groups: []
-} as unknown as SerialisableGraph
+} satisfies SerialisableGraph
 
 function scopeOf(graphId: UUID) {
   return {
@@ -213,9 +217,9 @@ function ownershipUnder(graphId: UUID, nodeIds: number[]) {
 function loadInterrupted(graph: LGraph) {
   throwOnConfigure = true
   try {
-    expect(() =>
-      graph.configure(structuredClone(interruptedWorkflow) as never)
-    ).toThrow('configure callback exploded')
+    expect(() => graph.configure(structuredClone(interruptedWorkflow))).toThrow(
+      'configure callback exploded'
+    )
   } finally {
     throwOnConfigure = false
   }
@@ -224,8 +228,8 @@ function loadInterrupted(graph: LGraph) {
 beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
   throwOnConfigure = false
-  LiteGraph.registerNodeType('plain', PlainNode as never)
-  LiteGraph.registerNodeType('throwing', ThrowingNode as never)
+  LiteGraph.registerNodeType('plain', PlainNode)
+  LiteGraph.registerNodeType('throwing', ThrowingNode)
 })
 
 describe('LGraph.configure interrupted by a throwing node callback', () => {
@@ -250,7 +254,7 @@ describe('LGraph.configure interrupted by a throwing node callback', () => {
     const graph = new LGraph()
     loadInterrupted(graph)
 
-    graph.configure(structuredClone(nextWorkflow) as never)
+    graph.configure(structuredClone(nextWorkflow))
 
     expect(ownershipUnder(FAILED_GRAPH_ID, FAILED_NODE_IDS)).toEqual({
       links: [],
@@ -264,7 +268,7 @@ describe('LGraph.configure interrupted by a throwing node callback', () => {
 
   it('gives the next workflow the same state as if the failed load never happened', () => {
     const reference = new LGraph()
-    reference.configure(structuredClone(nextWorkflow) as never)
+    reference.configure(structuredClone(nextWorkflow))
     const referenceOwnership = ownershipUnder(NEXT_GRAPH_ID, NEXT_NODE_IDS)
     const referenceShape = {
       nodes: reference.nodes.length,
@@ -277,7 +281,7 @@ describe('LGraph.configure interrupted by a throwing node callback', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     const graph = new LGraph()
     loadInterrupted(graph)
-    graph.configure(structuredClone(nextWorkflow) as never)
+    graph.configure(structuredClone(nextWorkflow))
 
     expect({
       nodes: graph.nodes.length,

@@ -1,9 +1,13 @@
 import { createTestingPinia } from '@pinia/testing'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
+import type {
+  ISerialisedGraph,
+  SerialisableGraph
+} from '@/lib/litegraph/src/types/serialisation'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 
@@ -29,7 +33,7 @@ import { toNodeId } from '@/types/nodeId'
  * is built on the same three corruptions.
  */
 
-const CORRUPT_WORKFLOW = {
+const CORRUPT_WORKFLOW = fromPartial<ISerialisedGraph>({
   last_node_id: 3,
   last_link_id: 99,
   version: 0.4,
@@ -84,7 +88,7 @@ const CORRUPT_WORKFLOW = {
     // Arm C: an orphan record; neither endpoint exists.
     [99, 404, 0, 405, 0, 'number']
   ]
-} as unknown as ISerialisedGraph
+})
 
 class SourceNode extends LGraphNode {
   constructor(title?: string) {
@@ -101,9 +105,9 @@ class SinkNode extends LGraphNode {
   }
 }
 
-function load(data: ISerialisedGraph) {
+function load(data: ISerialisedGraph | SerialisableGraph) {
   const graph = new LGraph()
-  graph.configure(structuredClone(data) as never)
+  graph.configure(structuredClone(data))
   return graph
 }
 
@@ -118,8 +122,8 @@ function mirrors(graph: LGraph) {
 
 beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
-  LiteGraph.registerNodeType('source', SourceNode as never)
-  LiteGraph.registerNodeType('sink', SinkNode as never)
+  LiteGraph.registerNodeType('source', SourceNode)
+  LiteGraph.registerNodeType('sink', SinkNode)
 })
 
 describe('legacy slot mirrors are rebuilt from link records on load', () => {
@@ -146,7 +150,7 @@ describe('legacy slot mirrors are rebuilt from link records on load', () => {
   })
 
   it('persists the rebuilt mirrors through a save and reload', () => {
-    const reloaded = load(load(CORRUPT_WORKFLOW).serialize() as never)
+    const reloaded = load(load(CORRUPT_WORKFLOW).serialize())
 
     expect(mirrors(reloaded)).toEqual({
       inputOfNode3: 3,
