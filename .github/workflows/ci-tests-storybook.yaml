@@ -131,6 +131,33 @@ jobs:
           path: apps/website/dist/storybook/
           retention-days: 7
 
+      - name: Deploy website Storybook MCP to Vercel
+        if: |
+          (github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
+          && env.VERCEL_PROJECT_ID != ''
+          && env.VERCEL_TOKEN != ''
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_WEBSITE_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_WEBSITE_STORYBOOK_PROJECT_ID }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_WEBSITE_TOKEN }}
+        run: |
+          if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]]; then
+            TARGET_FLAGS=(--prod)
+            ENVIRONMENT="production"
+          else
+            TARGET_FLAGS=()
+            ENVIRONMENT="preview"
+          fi
+          pnpm dlx vercel@latest pull --yes --environment="$ENVIRONMENT" \
+            --cwd apps/website-storybook-mcp --token="$VERCEL_TOKEN"
+          pnpm dlx vercel@latest build "${TARGET_FLAGS[@]}" \
+            --cwd apps/website-storybook-mcp --token="$VERCEL_TOKEN"
+          mkdir -p .vercel
+          cp apps/website-storybook-mcp/.vercel/project.json .vercel/project.json
+          cp -R apps/website-storybook-mcp/.vercel/output .vercel/output
+          pnpm dlx vercel@latest deploy --prebuilt "${TARGET_FLAGS[@]}" \
+            --token="$VERCEL_TOKEN"
+
       - name: Deploy isolated website Storybook
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false
         env:

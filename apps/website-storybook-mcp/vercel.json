@@ -1,0 +1,26 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "pnpm build",
+  "outputDirectory": "public",
+  "framework": null,
+  "github": {
+    "enabled": false
+  },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/mcp",
+      "destination": "/api/mcp"
+    }
+  ]
+}

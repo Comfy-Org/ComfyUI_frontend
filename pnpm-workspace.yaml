@@ -41,6 +41,7 @@ catalog:
   '@storybook/addon-docs': ^10.5.10
   '@storybook/addon-designs': ^11.1.4
   '@storybook/addon-mcp': 0.7.0
+  '@storybook/mcp': 0.8.0
   '@storybook/vue3': ^10.5.10
   '@storybook/vue3-vite': ^10.5.10
   '@stripe/stripe-js': ^9.12.0

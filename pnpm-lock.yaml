@@ -102,6 +102,9 @@ catalogs:
     '@storybook/addon-vitest':
       specifier: 10.5.10
       version: 10.5.10
+    '@storybook/mcp':
+      specifier: 0.8.0
+      version: 0.8.0
     '@storybook/vue3':
       specifier: ^10.5.10
       version: 10.5.10
@@ -1141,6 +1144,22 @@ importers:
       vue-tsc:
         specifier: 'catalog:'
         version: 3.3.9(typescript@6.0.3)
+
+  apps/website-storybook-mcp:
+    dependencies:
+      '@storybook/mcp':
+        specifier: 'catalog:'
+        version: 0.8.0(typescript@6.0.3)
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 25.9.5
+      tsx:
+        specifier: 'catalog:'
+        version: 4.23.1
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
 
   packages/comfyui-desktop-bridge-types: {}
 
