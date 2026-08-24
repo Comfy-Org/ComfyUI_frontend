@@ -3,10 +3,10 @@ import BreadthumbIcon from '@/components/icons/BreadthumbIcon.vue'
 import { ChevronLeft, ChevronRight } from '@lucide/vue'
 import { computed, onUnmounted, ref, watch } from 'vue'
 import { getMainNavigation } from '../../../data/mainNavigation'
-import { getRoutes } from '../../../config/routes.ts'
+import { getRoutes } from '../../../config/routes'
 import { lockScroll, unlockScroll } from '../../../composables/scrollLock'
-import type { Locale } from '../../../i18n/translations.ts'
-import { t } from '../../../i18n/translations.ts'
+import type { Locale } from '../../../i18n/translations'
+import { t } from '../../../i18n/translations'
 import NavLinkContent from './NavLinkContent.vue'
 import NewBadge from './NewBadge.vue'
 import Sheet from '@/components/ui/sheet/Sheet.vue'
@@ -137,7 +137,7 @@ onUnmounted(() => {
                   class="flex flex-col gap-y-3"
                 >
                   <p
-                    class="text-primary-warm-gray text-base font-bold tracking-wider uppercase"
+                    class="text-base font-bold tracking-wider text-primary-warm-gray uppercase"
                   >
                     {{ column.header }}
                   </p>

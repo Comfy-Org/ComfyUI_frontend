@@ -56,11 +56,6 @@ export default defineConfig({
         test: {
           name: 'storybook',
           fileParallelism: false,
-          exclude: [
-            'src/components/blocks/HeroBackdrop01.stories.ts',
-            'src/components/common/FooterLinkColumn.stories.ts',
-            'src/components/common/NodeBadge.stories.ts'
-          ],
           browser: {
             enabled: true,
             headless: true,

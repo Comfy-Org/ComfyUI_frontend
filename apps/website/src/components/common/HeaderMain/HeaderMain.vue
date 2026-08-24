@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { Locale } from '../../../i18n/translations.ts'
-import { t } from '../../../i18n/translations.ts'
-import { externalLinks, getRoutes } from '../../../config/routes.ts'
+import type { Locale } from '../../../i18n/translations'
+import { t } from '../../../i18n/translations'
+import { externalLinks, getRoutes } from '../../../config/routes'
 import GitHubStarBadge from '../GitHubStarBadge.vue'
 import HeaderMainDesktop from './HeaderMainDesktop.vue'
 import HeaderMainMobile from './HeaderMainMobile.vue'
