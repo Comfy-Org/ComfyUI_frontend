@@ -1,9 +1,9 @@
 import * as fs from 'fs'
 
+import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
-import type { ComfyNodeDefImpl } from '../src/stores/nodeDefStore'
 import type { WidgetLabels } from './nodeDefLocaleSerializer'
 import { serializeNodeDefLocales } from './nodeDefLocaleSerializer'
 
@@ -20,22 +20,21 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
 
   // Note: Don't mock the object_info API endpoint - let it hit the actual backend
 
-  const nodeDefs: ComfyNodeDefImpl[] = await comfyPage.page.evaluate(
-    async () => {
-      const app = window.app
-      if (!app) throw new Error('ComfyUI app is not initialized')
+  const nodeDefs: ComfyNodeDefV2[] = await comfyPage.page.evaluate(async () => {
+    const app = window.app
+    if (!app) throw new Error('ComfyUI app is not initialized')
 
-      const rawNodeDefs = await app.api.getNodeDefs()
-      const { ComfyNodeDefImpl } = await import('../src/stores/nodeDefStore')
+    const rawNodeDefs = await app.api.getNodeDefs()
+    const { transformNodeDefV1ToV2 } =
+      await import('../src/schemas/nodeDef/migration')
 
-      return (
-        Object.values(rawNodeDefs)
-          // Ignore DevTools nodes (used for internal testing)
-          .filter((def: ComfyNodeDef) => !def.name.startsWith('DevTools'))
-          .map((def: ComfyNodeDef) => new ComfyNodeDefImpl(def))
-      )
-    }
-  )
+    return (
+      Object.values(rawNodeDefs)
+        // Ignore DevTools nodes (used for internal testing)
+        .filter((def: ComfyNodeDef) => !def.name.startsWith('DevTools'))
+        .map((def: ComfyNodeDef) => transformNodeDefV1ToV2(def))
+    )
+  })
 
   async function extractWidgetLabels() {
     const nodeLabels: WidgetLabels = {}
