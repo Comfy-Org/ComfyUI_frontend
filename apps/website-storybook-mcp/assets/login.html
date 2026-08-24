@@ -18,6 +18,12 @@
         font-weight: 600;
       }
 
+      @font-face {
+        font-family: 'PP Formula Narrow';
+        src: url('/fonts/PPFormula-NarrowSemibold.woff2') format('woff2');
+        font-weight: 600;
+      }
+
       :root {
         color-scheme: dark;
         font-family: 'PP Formula', Arial, sans-serif;
@@ -62,15 +68,29 @@
       }
 
       .product {
-        padding: 5px 9px 4px;
-        border-radius: 5px;
-        background: #e8ff2f;
+        height: 22px;
+        display: flex;
+        align-items: stretch;
         color: #1d1724;
-        font-size: 12px;
+        font-family: 'PP Formula Narrow', sans-serif;
+        font-size: 11px;
         font-weight: 600;
-        letter-spacing: 0.06em;
-        line-height: 1;
+        letter-spacing: 0.04em;
         text-transform: uppercase;
+      }
+
+      .product img {
+        width: auto;
+        height: 100%;
+        margin-inline: -1px;
+      }
+
+      .product span {
+        display: flex;
+        align-items: center;
+        padding: 2px 8px 0;
+        background: #e8ff2f;
+        line-height: 1;
       }
 
       h1 {
@@ -168,7 +188,11 @@
     <main>
       <div class="brand">
         <img src="/icons/logo.svg" alt="Comfy" />
-        <span class="product">Storybook</span>
+        <span class="product">
+          <img src="/icons/node-left.svg" alt="" aria-hidden="true" />
+          <span>Storybook</span>
+          <img src="/icons/node-right.svg" alt="" aria-hidden="true" />
+        </span>
       </div>
       <h1>Website design system</h1>
       <p class="description">
