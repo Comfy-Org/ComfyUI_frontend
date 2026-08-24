@@ -860,15 +860,18 @@ export type SubscribeRequest = {
   quote_version?: number
   /**
    * URL to redirect after payment method is added successfully.
-   * Required if workspace has no payment method on file or when
-   * confirmation_token is provided.
+   * Required if the workspace has no payment method on file, when
+   * confirmation_token is provided, or when a selected saved payment
+   * method is redirect-based (any non-card type). Redirect-based flows
+   * require an absolute HTTPS URL; plain HTTP is accepted only for
+   * loopback hosts during local development.
    *
    */
   return_url?: string
   /**
-   * Optional saved card or Alipay payment method selected for this
-   * subscription. It must be attached to the current workspace's Stripe
-   * customer. Mutually exclusive with confirmation_token.
+   * Optional saved payment method selected for this subscription. It
+   * must be attached to the current workspace's Stripe customer.
+   * Mutually exclusive with confirmation_token.
    *
    */
   saved_payment_method_id?: string
@@ -972,12 +975,15 @@ export type SavedPaymentMethod = {
    */
   brand?: string
   id: string
+  /**
+   * Exactly one item is the default when the returned list is non-empty.
+   */
   is_default: boolean
   /**
    * Masked card suffix. Present only for card payment methods.
    */
   last4?: string
-  type: 'card' | 'alipay'
+  type: string
 }
 
 /**
@@ -1324,19 +1330,12 @@ export type PreviewSubscribeResponse = {
    * The Stripe payment method configuration governing which payment
    * methods the embedded checkout offers for this environment. Mount
    * Stripe Elements with `paymentMethodConfiguration` set to this id
-   * instead of hardcoding payment method types. Absent when the
-   * environment has none configured.
+   * instead of hardcoding payment method types. Present on every
+   * successful preview while embedded checkout is enabled and absent
+   * from legacy previews.
    *
    */
   payment_method_configuration_id?: string
-  /**
-   * Whether this previewed change requires explicit reactivation
-   * consent. This decision is authoritative for the preview and is
-   * computed from the persisted subscription plus the live Stripe
-   * lifecycle state used by the subscribe enforcement path.
-   *
-   */
-  requires_reactivation_confirmation?: boolean
   /**
    * Normalized promotion code accepted by Stripe.
    */
@@ -1370,6 +1369,14 @@ export type PreviewSubscribeResponse = {
    *
    */
   renewal_at?: string
+  /**
+   * Whether this previewed change requires explicit reactivation
+   * consent. Computed from the persisted subscription and a short-lived
+   * cache of Stripe lifecycle state. The subscribe enforcement path
+   * performs its own uncached Stripe lifecycle read.
+   *
+   */
+  requires_reactivation_confirmation?: boolean
   /**
    * Type of subscription transition
    */
@@ -3250,6 +3257,23 @@ export type DeleteSessionResponse = {
 }
 
 /**
+ * The workspace bound to the presented credential, plus how that credential authenticated. Same shape as Workspace with the caller's role and the auth method added, and without created_at (callers of this endpoint want identity, not provenance).
+ */
+export type CurrentWorkspaceResponse = {
+  /**
+   * How this request authenticated. Known values are firebase, cookie, comfy_api_key, comfy_admin_key, cloud_api_key and cloud_jwt; treat it as an open string so a new auth method is not a breaking change.
+   */
+  auth_method: string
+  id: string
+  name: string
+  /**
+   * The requesting user's role in this workspace. Omitted (absent from the object, never an explicit null) when the credential carries no resolvable user membership.
+   */
+  role?: 'owner' | 'member'
+  type: 'personal' | 'team'
+}
+
+/**
  * Request body for creating a new workspace.
  */
 export type CreateWorkspaceRequest = {
@@ -3527,6 +3551,23 @@ export type BulkRevokeApiKeysResponse = {
 }
 
 /**
+ * A tax identifier for a company Stripe customer. Stripe validates the
+ * type/value combination synchronously and verifies VAT/ABN-style IDs
+ * asynchronously.
+ *
+ */
+export type BillingTaxId = {
+  /**
+   * Stripe tax ID type, e.g. `eu_vat`, `us_ein`, `au_abn`. See
+   * https://docs.stripe.com/api/tax_ids/object#tax_id_object-type
+   * for the full list.
+   *
+   */
+  type: string
+  value: string
+}
+
+/**
  * Current billing and subscription status for a workspace.
  */
 export type BillingStatusResponse = {
@@ -3536,8 +3577,7 @@ export type BillingStatusResponse = {
    * needing authentication (SCA/3DS);
    * send the customer there to complete payment. Mirrors the field of
    * the same name on BillingOpStatusResponse. This bearer capability is
-   * returned only to workspace billing managers or a recorded initiating
-   * actor.
+   * returned only to workspace billing managers.
    *
    */
   action_url?: string
@@ -3566,6 +3606,16 @@ export type BillingStatusResponse = {
    * Current workspace members plus non-expired pending invites, used against max_seats. 0 when billing is disabled.
    */
   occupied_seats: number
+  /**
+   * Present when a pending operation supports embedded Stripe
+   * authentication. It may be returned alongside a hosted payment page
+   * when both recovery methods are available. This bearer
+   * capability is returned only to workspace billing managers. Pass
+   * directly to Stripe.js; do not log or
+   * persist it in client storage.
+   *
+   */
+  payment_intent_client_secret?: string
   /**
    * The workspace's in-flight billing operation, when one exists. Lets a
    * client recover a payment it has lost the local reference to — a
@@ -3638,8 +3688,7 @@ export type BillingOpStatusResponse = {
    * without the customer. Today this is a Stripe-hosted payment page for
    * a subscription whose first invoice needs authentication (SCA/3DS);
    * send the customer there to complete payment. This bearer capability is
-   * returned only to workspace billing managers or a recorded initiating
-   * actor. Absent otherwise.
+   * returned only to workspace billing managers. Absent otherwise.
    *
    */
   action_url?: string
@@ -3675,6 +3724,7 @@ export type BillingOpStatusResponse = {
     | 'insufficient_funds'
     | 'expired_card'
     | 'incorrect_cvc'
+    | 'authentication_required'
     | 'authentication_failed'
     | 'processing_error'
     | 'generic'
@@ -3689,7 +3739,7 @@ export type BillingOpStatusResponse = {
   /**
    * Stripe PaymentIntent client secret for completing requires_action.
    * This bearer capability is returned only to workspace billing managers
-   * or a recorded initiating actor, and is absent otherwise.
+   * and is absent otherwise.
    *
    */
   payment_intent_client_secret?: string
@@ -3762,6 +3812,51 @@ export type BillingEvent = {
   params?: {
     [key: string]: unknown
   }
+}
+
+/**
+ * Fields to set on the workspace's Stripe customer. Every group is
+ * optional; omit a group to leave that part of the customer unchanged.
+ *
+ */
+export type BillingCompanyDetailsUpdateRequest = {
+  address?: BillingAddress
+  /**
+   * Legal or trading name to show on invoices.
+   */
+  company_name?: string
+  tax_id?: BillingTaxId
+}
+
+/**
+ * A billing address for a company Stripe customer. city and postal_code
+ * are optional because some countries (e.g. Hong Kong, the UAE, Panama)
+ * have no postal code and are not collected for them; Stripe validates
+ * what a given country actually requires.
+ *
+ */
+export type BillingAddress = {
+  city?: string
+  /**
+   * Two-letter ISO 3166-1 country code.
+   */
+  country: string
+  line1: string
+  line2?: string
+  postal_code?: string
+  state?: string
+}
+
+/**
+ * Company billing details on file for the workspace's Stripe customer.
+ * A field is absent until the workspace sets it via PATCH
+ * /api/billing/company-details.
+ *
+ */
+export type BillingCompanyDetailsResponse = {
+  address?: BillingAddress
+  company_name?: string
+  tax_id?: BillingTaxId
 }
 
 /**
@@ -3996,6 +4091,69 @@ export type AgentThreadCreateRequest = {
    * Workflow the thread is about. Optional — a thread can exist without a workflow.
    */
   workflow_id?: string
+}
+
+/**
+ * A user-authored skill pack to create or replace. Plain JSON — a pack body is small enough that a signed-URL upload would be pure overhead.
+ */
+export type AgentSkillPublishRequest = {
+  /**
+   * Accepted only so an `always: true` copied out of a SKILL.md frontmatter is refused with an explanation instead of silently dropped. User packs are on-demand only, so true is rejected.
+   */
+  always?: boolean
+  /**
+   * The full instruction text, injected only when the pack is loaded. Capped per pack and, together with the caller's other packs, in total; the exact byte limits are deployment configuration and are named in the rejection message when exceeded.
+   */
+  body: string
+  /**
+   * One line saying when the agent should load this pack. It is what every prompt carries for an unloaded pack, so it is a trigger description, not a title. Single-line: control characters, including CR and LF, are refused. maxLength is counted in code points, as JSON Schema defines it, and the service counts the same way.
+   */
+  description: string
+  /**
+   * The pack's flat identifier and the load_skill argument: letters, digits, '.', '_' and '-'. Publishing a name already held by the caller replaces that pack. A name matching a built-in always-on pack is refused; a name matching a built-in on-demand pack is accepted, and is the name consumption will resolve to the user's pack. Must contain at least one character that is not a dot: "." and ".." are path segments a normalizing client rewrites.
+   */
+  name: string
+}
+
+/**
+ * The caller's skill packs, ordered by name.
+ */
+export type AgentSkillListResponse = {
+  skills: Array<AgentSkill>
+}
+
+/**
+ * One of the caller's user-authored skill packs.
+ */
+export type AgentSkill = {
+  /**
+   * The full instruction text.
+   */
+  body: string
+  /**
+   * Lowercase hex sha256 of body, with no algorithm prefix. Stamped on every write, so a client can tell whether the stored pack matches the body it last sent.
+   */
+  body_hash: string
+  /**
+   * RFC3339 timestamp of when the pack was first published.
+   */
+  created_at: string
+  /**
+   * One-line trigger description the agent selects the pack from.
+   */
+  description: string
+  /**
+   * Server-assigned pack ID.
+   */
+  id: string
+  /**
+   * The pack's flat identifier and the load_skill argument.
+   */
+  name: string
+  /**
+   * RFC3339 timestamp of the pack's most recent publish.
+   */
+  updated_at: string
 }
 
 /**
@@ -4476,6 +4634,152 @@ export type AgentGetDraftResponses = {
 
 export type AgentGetDraftResponse =
   AgentGetDraftResponses[keyof AgentGetDraftResponses]
+
+export type AgentListSkillsData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/agent/skills'
+}
+
+export type AgentListSkillsErrors = {
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Internal server error (ingest-raised failures use the standard ErrorResponse shape instead)
+   */
+  500: AgentError
+  /**
+   * Agent service unavailable
+   */
+  502: ErrorResponse
+  /**
+   * The agent proxy is not configured to forward safely (a non-local agent service URL with no shared machine-to-machine secret), so ingest refuses rather than sending unverifiable identity headers.
+   */
+  503: ErrorResponse
+}
+
+export type AgentListSkillsError =
+  AgentListSkillsErrors[keyof AgentListSkillsErrors]
+
+export type AgentListSkillsResponses = {
+  /**
+   * The caller's skill packs.
+   */
+  200: AgentSkillListResponse
+}
+
+export type AgentListSkillsResponse =
+  AgentListSkillsResponses[keyof AgentListSkillsResponses]
+
+export type AgentPublishSkillData = {
+  body: AgentSkillPublishRequest
+  path?: never
+  query?: never
+  url: '/api/agent/skills'
+}
+
+export type AgentPublishSkillErrors = {
+  /**
+   * The pack was rejected by publish-time validation (name shape, empty description or body, control characters in either, body over the per-pack size cap, always:true, a reserved always-on name, or comfy-cli shell syntax in the body). The message names what to change.
+   */
+  400: AgentError
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * A per-user budget is full — the pack count, or the combined size of the caller's packs. Nothing about this pack can be edited to make it fit; another pack has to be deleted first.
+   */
+  409: AgentError
+  /**
+   * Request body over ingest's transport-level cap (AGENT_SKILL_REQUEST_BODY_LIMIT), which is set well above the per-pack size cap so an over-size pack gets the actionable 400 above instead. Reaching this means the request itself is outsized.
+   */
+  413: ErrorResponse
+  /**
+   * Internal server error (ingest-raised failures use the standard ErrorResponse shape instead)
+   */
+  500: AgentError
+  /**
+   * Agent service unavailable
+   */
+  502: ErrorResponse
+  /**
+   * The agent proxy is not configured to forward safely (a non-local agent service URL with no shared machine-to-machine secret), so ingest refuses rather than sending unverifiable identity headers.
+   */
+  503: ErrorResponse
+}
+
+export type AgentPublishSkillError =
+  AgentPublishSkillErrors[keyof AgentPublishSkillErrors]
+
+export type AgentPublishSkillResponses = {
+  /**
+   * An existing pack of the same name was replaced.
+   */
+  200: AgentSkill
+  /**
+   * A new pack was created.
+   */
+  201: AgentSkill
+}
+
+export type AgentPublishSkillResponse =
+  AgentPublishSkillResponses[keyof AgentPublishSkillResponses]
+
+export type AgentDeleteSkillData = {
+  body?: never
+  path: {
+    /**
+     * The pack's name.
+     */
+    name: string
+  }
+  query?: never
+  url: '/api/agent/skills/{name}'
+}
+
+export type AgentDeleteSkillErrors = {
+  /**
+   * The name is not a valid pack name.
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * The caller holds no pack with that name.
+   */
+  404: AgentError
+  /**
+   * Internal server error (ingest-raised failures use the standard ErrorResponse shape instead)
+   */
+  500: AgentError
+  /**
+   * Agent service unavailable
+   */
+  502: ErrorResponse
+  /**
+   * The agent proxy is not configured to forward safely (a non-local agent service URL with no shared machine-to-machine secret), so ingest refuses rather than sending unverifiable identity headers.
+   */
+  503: ErrorResponse
+}
+
+export type AgentDeleteSkillError =
+  AgentDeleteSkillErrors[keyof AgentDeleteSkillErrors]
+
+export type AgentDeleteSkillResponses = {
+  /**
+   * The pack was deleted.
+   */
+  204: void
+}
+
+export type AgentDeleteSkillResponse =
+  AgentDeleteSkillResponses[keyof AgentDeleteSkillResponses]
 
 export type AgentListThreadsData = {
   body?: never
@@ -6151,6 +6455,76 @@ export type GetChurnkeyAuthResponses = {
 export type GetChurnkeyAuthResponse =
   GetChurnkeyAuthResponses[keyof GetChurnkeyAuthResponses]
 
+export type GetBillingCompanyDetailsData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/billing/company-details'
+}
+
+export type GetBillingCompanyDetailsErrors = {
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Workspace owner role required
+   */
+  403: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type GetBillingCompanyDetailsError =
+  GetBillingCompanyDetailsErrors[keyof GetBillingCompanyDetailsErrors]
+
+export type GetBillingCompanyDetailsResponses = {
+  /**
+   * Success
+   */
+  200: BillingCompanyDetailsResponse
+}
+
+export type GetBillingCompanyDetailsResponse =
+  GetBillingCompanyDetailsResponses[keyof GetBillingCompanyDetailsResponses]
+
+export type UpdateBillingCompanyDetailsData = {
+  body: BillingCompanyDetailsUpdateRequest
+  path?: never
+  query?: never
+  url: '/api/billing/company-details'
+}
+
+export type UpdateBillingCompanyDetailsErrors = {
+  /**
+   * Bad request (e.g., missing address fields or an invalid tax ID)
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type UpdateBillingCompanyDetailsError =
+  UpdateBillingCompanyDetailsErrors[keyof UpdateBillingCompanyDetailsErrors]
+
+export type UpdateBillingCompanyDetailsResponses = {
+  /**
+   * Success
+   */
+  200: BillingCompanyDetailsResponse
+}
+
+export type UpdateBillingCompanyDetailsResponse =
+  UpdateBillingCompanyDetailsResponses[keyof UpdateBillingCompanyDetailsResponses]
+
 export type GetBillingEventsData = {
   body?: never
   path?: never
@@ -6816,25 +7190,7 @@ export type GetFeaturesResponses = {
      * Whether the server supports preview metadata
      */
     supports_preview_metadata?: boolean
-    [key: string]:
-      | unknown
-      | {
-          /**
-           * Total free jobs granted for the current period
-           */
-          allowance: number
-          /**
-           * Free jobs remaining (allowance - used, floored at 0)
-           */
-          remaining: number
-          /**
-           * Free jobs consumed so far
-           */
-          used: number
-        }
-      | number
-      | boolean
-      | undefined
+    [key: string]: unknown
   }
 }
 
@@ -11102,6 +11458,41 @@ export type UpdateWorkspaceResponses = {
 
 export type UpdateWorkspaceResponse =
   UpdateWorkspaceResponses[keyof UpdateWorkspaceResponses]
+
+export type GetCurrentWorkspaceData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/workspaces/current'
+}
+
+export type GetCurrentWorkspaceErrors = {
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * No workspace resolves for this credential — it carries no workspace binding, the workspace was deleted, or the credential's user is no longer a member. Deliberately not 401: the credential itself is valid, so clients must not discard it or re-authenticate.
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type GetCurrentWorkspaceError =
+  GetCurrentWorkspaceErrors[keyof GetCurrentWorkspaceErrors]
+
+export type GetCurrentWorkspaceResponses = {
+  /**
+   * The credential's workspace
+   */
+  200: CurrentWorkspaceResponse
+}
+
+export type GetCurrentWorkspaceResponse =
+  GetCurrentWorkspaceResponses[keyof GetCurrentWorkspaceResponses]
 
 export type GetStaticExtensionsData = {
   body?: never
