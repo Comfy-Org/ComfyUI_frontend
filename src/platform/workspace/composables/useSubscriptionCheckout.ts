@@ -16,6 +16,7 @@ import type {
   SubscriptionCheckoutType
 } from '@/platform/telemetry/types'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
+import { useAuthStore } from '@/stores/authStore'
 import type {
   Plan,
   PreviewSubscribeOptions,
@@ -26,6 +27,10 @@ import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import {
+  clearPendingSubscriptionCheckout,
+  savePendingSubscriptionCheckout
+} from '@/platform/workspace/utils/pendingSubscriptionCheckout'
 import { trackWorkspaceCheckoutStarted } from '@/platform/workspace/utils/workspaceCheckoutTelemetry'
 
 type CheckoutStep = 'pricing' | 'preview' | 'success'
@@ -41,6 +46,7 @@ export type SubscriptionCheckoutSelection =
       planMode: 'team'
       stop: TeamPlanSelection
       billingCycle: BillingCycle
+      isChange?: boolean
     }
 
 interface SelectedTeamCheckout {
@@ -885,6 +891,8 @@ export function useSubscriptionCheckout(
       return
     }
 
+    savePendingCheckout(response.billing_op_id, context)
+
     // needs_payment_method / pending_payment both finish asynchronously, so poll
     // the billing op either way. needs_payment_method additionally points at a
     // Stripe page to collect a card when the backend supplies the URL; without
@@ -907,6 +915,45 @@ export function useSubscriptionCheckout(
     await advanceToSuccessOnOperation(response.billing_op_id, context)
   }
 
+  function savePendingCheckout(
+    operationId: string,
+    context: SubscriptionOutcomeContext
+  ): void {
+    const workspaceId = workspaceStore.activeWorkspaceId
+    const ownerUid = useAuthStore().userId
+    if (!workspaceId || !ownerUid) return
+    const attemptedAt = context.attemptStartedAt ?? Date.now()
+
+    if (context.tier === 'team') {
+      const teamCreditStopId = selectedTeamCheckout.value?.stop.id
+      if (!teamCreditStopId) return
+      savePendingSubscriptionCheckout({
+        operationId,
+        workspaceId,
+        ownerUid,
+        selection: {
+          planMode: 'team',
+          teamCreditStopId,
+          billingCycle: context.cycle
+        },
+        attemptedAt
+      })
+      return
+    }
+
+    savePendingSubscriptionCheckout({
+      operationId,
+      workspaceId,
+      ownerUid,
+      selection: {
+        planMode: 'personal',
+        tierKey: context.tier,
+        billingCycle: context.cycle
+      },
+      attemptedAt
+    })
+  }
+
   // A Stripe-backed subscribe finishes asynchronously: await the billing op and
   // advance to the success step ourselves. The store refreshes status/balance
   // before resolving and surfaces any failure via toast.
@@ -915,23 +962,27 @@ export function useSubscriptionCheckout(
     context: SubscriptionOutcomeContext
   ) {
     activeCheckoutOperationId.value = opId
-    const operation = await billingOperationStore.startOperation(
-      opId,
-      'subscription',
-      {
-        tier: context.tier,
-        cycle: context.cycle,
-        checkoutType: context.checkoutType,
-        paymentIntentSource,
-        attemptStartedAt: context.attemptStartedAt
+    try {
+      const operation = await billingOperationStore.startOperation(
+        opId,
+        'subscription',
+        {
+          tier: context.tier,
+          cycle: context.cycle,
+          checkoutType: context.checkoutType,
+          paymentIntentSource,
+          attemptStartedAt: context.attemptStartedAt
+        }
+      )
+      if (
+        operation.status === 'succeeded' &&
+        activeCheckoutOperationId.value === opId &&
+        operation.workspaceId === workspaceStore.activeWorkspaceId
+      ) {
+        checkoutStep.value = 'success'
       }
-    )
-    if (
-      operation.status === 'succeeded' &&
-      activeCheckoutOperationId.value === opId &&
-      operation.workspaceId === workspaceStore.activeWorkspaceId
-    ) {
-      checkoutStep.value = 'success'
+    } finally {
+      clearPendingSubscriptionCheckout(opId)
     }
   }
 

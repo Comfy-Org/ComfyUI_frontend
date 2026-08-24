@@ -394,6 +394,7 @@ describe('useSubscriptionCheckout', () => {
       canDowngradeToPersonal: true
     }
     mockSubscription.value = null
+    sessionStorage.clear()
     emit = vi.fn()
   })
 
@@ -2379,6 +2380,55 @@ describe('useSubscriptionCheckout', () => {
         }
       )
       expect(checkout.checkoutStep.value).toBe('preview')
+    })
+
+    it('persists pending checkout context on the legacy Stripe rail', async () => {
+      mockShouldUseWorkspaceBilling.value = false
+      const checkout = await setup()
+      checkout.selectedTierKey.value = 'creator'
+      checkout.selectedBillingCycle.value = 'monthly'
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'pending_payment',
+        billing_op_id: 'op-legacy-alipay'
+      })
+      let resolveOperation!: (operation: {
+        status: 'failed'
+        workspaceId: string
+      }) => void
+      mockStartOperation.mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveOperation = resolve
+          })
+      )
+
+      const payment = checkout.handleAddCreditCard()
+      await vi.waitFor(() => expect(mockSubscribe).toHaveBeenCalledOnce())
+      await vi.waitFor(() => {
+        expect(
+          JSON.parse(
+            sessionStorage.getItem('comfy:pending-subscription-checkout') ??
+              'null'
+          )
+        ).toMatchObject({
+          operationId: 'op-legacy-alipay',
+          workspaceId: 'workspace-1',
+          ownerUid: 'user-1',
+          selection: {
+            planMode: 'personal',
+            tierKey: 'creator',
+            billingCycle: 'monthly'
+          },
+          attemptedAt: expect.any(Number)
+        })
+      })
+
+      resolveOperation({ status: 'failed', workspaceId: 'workspace-1' })
+      await payment
+
+      expect(
+        sessionStorage.getItem('comfy:pending-subscription-checkout')
+      ).toBeNull()
     })
 
     it('shows error toast on subscribe failure', async () => {
