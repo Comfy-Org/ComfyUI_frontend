@@ -2,7 +2,57 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 import { toNodeId } from '@/types/nodeId'
+
+test.describe(
+  'Plain legacy widgets',
+  { tag: ['@vue-nodes', '@widget'] },
+  () => {
+    test('renders widgets added before and after graph attachment', async ({
+      comfyPage
+    }) => {
+      await comfyPage.nodeOps.clearGraph()
+      const nodeId = toNodeId(
+        await comfyPage.page.evaluate(() => {
+          const node = window.LiteGraph!.createNode(
+            'DevToolsNodeWithLegacyWidget',
+            undefined,
+            { pos: [400, 200] }
+          )!
+          window.app!.graph.add(node)
+          node.addCustomWidget({
+            name: 'after_attach',
+            type: 'legacy_test',
+            value: 0,
+            options: {},
+            y: 0,
+            draw() {}
+          })
+          return String(node.id)
+        })
+      )
+
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate((id) => {
+            const node = window.app!.graph.getNodeById(id)
+            return (
+              node?.widgets?.filter((widget) =>
+                ['legacy_widget', 'after_attach'].includes(widget.name)
+              ).length ?? 0
+            )
+          }, nodeId)
+        )
+        .toBe(2)
+
+      const node = comfyPage.vueNodes.getNodeLocator(nodeId)
+      await expect(
+        node.getByTestId(TestIds.widgets.widget).locator('canvas')
+      ).toHaveCount(2)
+    })
+  }
+)
 
 test('@vue-nodes In App Mode, widget width updates with panel size', async ({
   comfyPage,
