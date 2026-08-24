@@ -247,10 +247,7 @@ jobs:
     needs: setup
     if: ${{ github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
-    # Serial video-recorded run of every newly-added spec file: a PR that
-    # introduces several spec files legitimately needs more than the old
-    # 15-minute cap (container setup alone takes ~5 of them).
-    timeout-minutes: 30
+    timeout-minutes: 15
     container:
       image: ghcr.io/comfy-org/comfyui-ci-container:0.0.22
       credentials:
