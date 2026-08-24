@@ -5,7 +5,7 @@ import FooterLinkColumn from './FooterLinkColumn.vue'
 const meta: Meta<typeof FooterLinkColumn> = {
   title: 'Website/Common/FooterLinkColumn',
   component: FooterLinkColumn,
-  tags: ['autodocs', '!test', 'needs-tests'],
+  tags: ['autodocs', 'needs-tests'],
   decorators: [
     () => ({
       template:

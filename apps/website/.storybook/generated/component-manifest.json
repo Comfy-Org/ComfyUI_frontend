@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "generatedFrom": "apps/website/src/**/*.stories.ts",
-  "componentCount": 35,
-  "storyCount": 128,
+  "componentCount": 39,
+  "storyCount": 139,
   "components": [
     {
       "component": "BenefitsGrid01",
@@ -411,6 +411,31 @@
       ]
     },
     {
+      "component": "HeroSplit01",
+      "source": "src/components/blocks/HeroSplit01.vue",
+      "storyFile": "src/components/blocks/HeroSplit01.stories.ts",
+      "title": "Website/Blocks/HeroSplit01",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": ["responsive-layout"],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-herosplit01--default"
+        },
+        {
+          "exportName": "ImageLeft",
+          "storyId": "website-blocks-herosplit01--image-left"
+        },
+        {
+          "exportName": "Mobile",
+          "storyId": "website-blocks-herosplit01--mobile"
+        }
+      ]
+    },
+    {
       "component": "TeamGrid01",
       "source": "src/components/blocks/TeamGrid01.vue",
       "storyFile": "src/components/blocks/TeamGrid01.stories.ts",
@@ -755,6 +780,31 @@
       ]
     },
     {
+      "component": "HeaderMain",
+      "source": "src/components/common/HeaderMain/HeaderMain.vue",
+      "storyFile": "src/components/common/HeaderMain/HeaderMain.stories.ts",
+      "title": "Website/Common/HeaderMain",
+      "status": "stable",
+      "category": "common",
+      "capabilities": [],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-common-headermain--default"
+        },
+        {
+          "exportName": "WithoutGitHubStars",
+          "storyId": "website-common-headermain--without-git-hub-stars"
+        },
+        {
+          "exportName": "Mobile",
+          "storyId": "website-common-headermain--mobile"
+        }
+      ]
+    },
+    {
       "component": "NodeBadge",
       "source": "src/components/common/NodeBadge.vue",
       "storyFile": "src/components/common/NodeBadge.stories.ts",
@@ -799,6 +849,31 @@
         {
           "exportName": "AllCards",
           "storyId": "website-common-productcard--all-cards"
+        }
+      ]
+    },
+    {
+      "component": "ProductHeroBadge",
+      "source": "src/components/common/ProductHeroBadge.vue",
+      "storyFile": "src/components/common/ProductHeroBadge.stories.ts",
+      "title": "Website/Common/ProductHeroBadge",
+      "status": "stable",
+      "category": "common",
+      "capabilities": ["responsive-layout"],
+      "testEligible": true,
+      "limitations": [],
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-common-productherobadge--default"
+        },
+        {
+          "exportName": "Cloud",
+          "storyId": "website-common-productherobadge--cloud"
+        },
+        {
+          "exportName": "CustomProduct",
+          "storyId": "website-common-productherobadge--custom-product"
         }
       ]
     },
@@ -853,6 +928,29 @@
         {
           "exportName": "LongLabel",
           "storyId": "website-common-sectionlabel--long-label"
+        }
+      ]
+    },
+    {
+      "component": "SiteFooter",
+      "source": "src/components/common/SiteFooter.vue",
+      "storyFile": "src/components/common/SiteFooter.stories.ts",
+      "title": "Website/Common/SiteFooter",
+      "status": "needs-tests",
+      "category": "common",
+      "capabilities": [],
+      "testEligible": false,
+      "limitations": [
+        "Excluded from browser tests because the Vitest importer fails before render."
+      ],
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-common-sitefooter--default"
+        },
+        {
+          "exportName": "Mobile",
+          "storyId": "website-common-sitefooter--mobile"
         }
       ]
     },

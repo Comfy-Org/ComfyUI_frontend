@@ -10,7 +10,7 @@ type HeroBackdropStoryArgs = ComponentProps<typeof HeroBackdrop01>
 const meta = {
   title: 'Website/Blocks/HeroBackdrop01',
   component: HeroBackdrop01,
-  tags: ['autodocs', '!test', 'needs-tests'],
+  tags: ['autodocs', 'needs-tests'],
   args: {
     backdrop: { type: 'image', src: sampleImage, alt: 'Abstract gradient' },
     title: 'Build anything\nwith ComfyUI',

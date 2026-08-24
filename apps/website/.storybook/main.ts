@@ -7,6 +7,12 @@ import type { InlineConfig } from 'vite'
 
 const websiteSource = fileURLToPath(new URL('../src', import.meta.url))
 
+const isNamedPlugin = (plugin: unknown): plugin is { name: string } =>
+  typeof plugin === 'object' &&
+  plugin !== null &&
+  'name' in plugin &&
+  typeof plugin.name === 'string'
+
 const config: StorybookConfig = {
   stories: [
     '../src/storybook/*.mdx',
@@ -35,12 +41,26 @@ const config: StorybookConfig = {
   async viteFinal(config) {
     const { mergeConfig } = await import('vite')
 
+    config.plugins = config.plugins?.filter(
+      (plugin) => !isNamedPlugin(plugin) || plugin.name !== 'vite:vue'
+    )
+
     return mergeConfig(config, {
-      plugins: [vue(), tailwindcss()],
+      plugins: [
+        vue({
+          template: {
+            transformAssetUrls: false
+          }
+        }),
+        tailwindcss()
+      ],
       resolve: {
         alias: {
           '@': websiteSource
         }
+      },
+      optimizeDeps: {
+        include: ['gsap', 'gsap/ScrollToPlugin', 'gsap/ScrollTrigger', 'lenis']
       },
       build: {
         chunkSizeWarningLimit: 1000
