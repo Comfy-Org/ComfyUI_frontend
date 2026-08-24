@@ -267,6 +267,9 @@ catalogs:
     jsonata:
       specifier: ^2.1.0
       version: 2.2.1
+    jsonc-parser:
+      specifier: 3.3.1
+      version: 3.3.1
     knip:
       specifier: ^6.27.0
       version: 6.27.0
@@ -800,6 +803,9 @@ importers:
       jsdom:
         specifier: 'catalog:'
         version: 29.1.1
+      jsonc-parser:
+        specifier: 'catalog:'
+        version: 3.3.1
       knip:
         specifier: 'catalog:'
         version: 6.27.0

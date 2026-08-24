@@ -38,7 +38,11 @@
           size="lg"
           @click="handleAddCredits"
         >
-          {{ $t('workspacePanel.billingStatus.outOfCredits.addCredits') }}
+          {{
+            canTopUp
+              ? $t('workspacePanel.billingStatus.outOfCredits.addCredits')
+              : $t('subscription.upgradeToAddCredits')
+          }}
         </Button>
         <Button
           v-else-if="banner.action === 'reactivate'"
@@ -137,11 +141,12 @@ const banner = computed<BannerView | null>(() => {
       return {
         muted: false,
         title: t(`${bs}.outOfCredits.title`),
-        body:
-          canTopUp.value || canSubscribeSelfServe.value
-            ? cycleResetDate.value
-              ? t(`${bs}.outOfCredits.body`, { date: cycleResetDate.value })
-              : t(`${bs}.outOfCredits.bodyNoDate`)
+        body: canTopUp.value
+          ? cycleResetDate.value
+            ? t(`${bs}.outOfCredits.body`, { date: cycleResetDate.value })
+            : t(`${bs}.outOfCredits.bodyNoDate`)
+          : canSubscribeSelfServe.value
+            ? t(`${bs}.outOfCredits.upgradeBody`)
             : t(`${bs}.outOfCredits.memberBody`),
         action:
           canTopUp.value || canSubscribeSelfServe.value ? 'addCredits' : null,

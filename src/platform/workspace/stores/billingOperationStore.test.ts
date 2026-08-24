@@ -6,6 +6,8 @@ import type { BillingOpStatusResponse } from '@/platform/workspace/api/workspace
 const mockFetchStatus = vi.fn()
 const mockFetchBalance = vi.fn()
 const mockReconcileSubscriptionSuccess = vi.fn()
+const mockRefreshCapabilities = vi.fn()
+const mockCanSubscribeSelfServe = ref(true)
 const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
 
 vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
@@ -15,6 +17,13 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     fetchStatus: mockFetchStatus,
     fetchBalance: mockFetchBalance,
     reconcileSubscriptionSuccess: mockReconcileSubscriptionSuccess
+  })
+}))
+
+vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
+  useBillingCapabilities: () => ({
+    canSubscribeSelfServe: mockCanSubscribeSelfServe,
+    refresh: mockRefreshCapabilities
   })
 }))
 
@@ -86,6 +95,7 @@ describe('billingOperationStore', () => {
   beforeEach(() => {
     mockDistributionTypes.isCloud = true
     mockActiveWorkspaceId.value = 'workspace-1'
+    mockCanSubscribeSelfServe.value = true
   })
 
   describe('startOperation', () => {
@@ -312,6 +322,9 @@ describe('billingOperationStore', () => {
         started_at: new Date().toISOString(),
         completed_at: new Date().toISOString()
       })
+      mockRefreshCapabilities.mockImplementationOnce(async () => {
+        mockCanSubscribeSelfServe.value = false
+      })
 
       const store = useBillingOperationStore()
       void store.startOperation('op-1', 'subscription')
@@ -321,6 +334,7 @@ describe('billingOperationStore', () => {
       const operation = store.getOperation('op-1')
       expect(operation?.status).toBe('succeeded')
       expect(store.hasPendingOperations).toBe(false)
+      expect(mockCanSubscribeSelfServe.value).toBe(false)
 
       expect(mockReconcileSubscriptionSuccess).toHaveBeenCalledOnce()
       expect(mockFetchStatus).not.toHaveBeenCalled()

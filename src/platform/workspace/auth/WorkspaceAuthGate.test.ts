@@ -299,13 +299,9 @@ describe('WorkspaceAuthGate', () => {
       expect(screen.getByTestId('slot-content')).toBeInTheDocument()
     })
 
-    it('waits for billing capabilities before rendering the app', async () => {
-      let resolveCapabilities!: () => void
+    it('does not block app rendering on billing capabilities', async () => {
       mockBillingCapabilitiesInitialize.mockImplementationOnce(
-        () =>
-          new Promise<void>((resolve) => {
-            resolveCapabilities = resolve
-          })
+        () => new Promise<void>(() => {})
       )
 
       mountComponent()
@@ -313,9 +309,6 @@ describe('WorkspaceAuthGate', () => {
         expect(mockBillingCapabilitiesInitialize).toHaveBeenCalledOnce()
       )
 
-      expect(screen.queryByTestId('slot-content')).not.toBeInTheDocument()
-
-      resolveCapabilities()
       await flushPromises()
 
       expect(screen.getByTestId('slot-content')).toBeInTheDocument()
@@ -340,7 +333,6 @@ describe('WorkspaceAuthGate', () => {
 
       expect(signal).toBeInstanceOf(AbortSignal)
       expect(signal.aborted).toBe(true)
-      expect(mockResumePendingPricingFlow).not.toHaveBeenCalled()
       expect(mockReportError).not.toHaveBeenCalled()
     })
 

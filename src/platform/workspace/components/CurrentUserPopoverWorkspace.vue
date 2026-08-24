@@ -136,7 +136,7 @@
     <Divider v-if="!accountActionsOnly" class="mx-0 my-2" />
 
     <div
-      v-if="!accountActionsOnly && showPlansAndPricing"
+      v-if="!accountActionsOnly && isCloud && showPlansAndPricing"
       class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="plans-pricing-menu-item"
       @click="handleOpenPlansAndPricing"
@@ -148,15 +148,28 @@
     </div>
 
     <button
-      v-if="!accountActionsOnly && showManagePlan"
+      v-if="!accountActionsOnly && isCloud && showManagePlan"
       type="button"
       class="flex w-full cursor-pointer appearance-none items-center gap-2 border-0 bg-transparent px-4 py-2 text-left hover:bg-secondary-background-hover focus-visible:bg-secondary-background-hover focus-visible:outline-none"
       data-testid="manage-plan-menu-item"
-      @click="handleOpenPlanAndCreditsSettings"
+      @click="handleOpenManagePlanSettings"
     >
       <i class="icon-[lucide--credit-card] size-4 text-muted-foreground" />
       <span class="flex-1 text-sm text-base-foreground">{{
         $t('subscription.managePlan')
+      }}</span>
+    </button>
+
+    <button
+      v-if="!accountActionsOnly && showLocalPlansAndCredits"
+      type="button"
+      class="flex w-full cursor-pointer appearance-none items-center gap-2 border-0 bg-transparent px-4 py-2 text-left hover:bg-secondary-background-hover focus-visible:bg-secondary-background-hover focus-visible:outline-none"
+      data-testid="plans-credits-menu-item"
+      @click="handleOpenPlanCreditsSettings"
+    >
+      <i class="icon-[lucide--coins] size-4 text-muted-foreground" />
+      <span class="flex-1 text-sm text-base-foreground">{{
+        $t('subscription.plansAndCredits')
       }}</span>
     </button>
 
@@ -312,6 +325,12 @@ const displayedCredits = computed(() => {
 const showPlansAndPricing = computed(
   () => permissions.value.canManageSubscription
 )
+// Subscribing is a Cloud-only concept: Local users manage plan/credits
+// through settings instead (see showLocalPlansAndCredits below), regardless
+// of subscription status.
+const showLocalPlansAndCredits = computed(
+  () => !isCloud && permissions.value.canManageSubscription
+)
 const hasDelinquentSubscription = computed(
   () =>
     (billingStatus.value === 'payment_failed' ||
@@ -325,15 +344,13 @@ const showManagePlan = computed(
 )
 const showSubscribeAction = computed(
   () =>
-    (isCancelled.value &&
-      (isCloud
-        ? canReactivate.value
-        : permissions.value.canManageSubscriptionLifecycle)) ||
-    (!canAccessSubscriptionFeatures.value &&
-      !hasDelinquentSubscription.value &&
-      (isCloud
-        ? canSubscribeSelfServe.value
-        : permissions.value.canManageSubscription))
+    // Subscribing is Cloud-only, so the whole action stays gated on isCloud;
+    // inside it the server-resolved capabilities are authoritative.
+    isCloud &&
+    ((isCancelled.value && canReactivate.value) ||
+      (!canAccessSubscriptionFeatures.value &&
+        !hasDelinquentSubscription.value &&
+        canSubscribeSelfServe.value))
 )
 
 const handleOpenUserSettings = () => {
@@ -351,13 +368,13 @@ const handleOpenPlansAndPricing = () => {
   emit('close')
 }
 
-const handleOpenPlanAndCreditsSettings = () => {
-  if (isCloud) {
-    settingsDialog.show('workspace')
-  } else {
-    settingsDialog.show('credits')
-  }
+const handleOpenManagePlanSettings = () => {
+  settingsDialog.show('workspace')
+  emit('close')
+}
 
+const handleOpenPlanCreditsSettings = () => {
+  settingsDialog.show('workspace')
   emit('close')
 }
 

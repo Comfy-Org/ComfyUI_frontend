@@ -17,6 +17,7 @@ import type {
 } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -405,12 +406,17 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     }
 
     const billingContext = useBillingContext()
+    const capabilities = useBillingCapabilities()
     if (operation.type === 'subscription') {
-      await Promise.allSettled([billingContext.reconcileSubscriptionSuccess()])
+      await Promise.allSettled([
+        billingContext.reconcileSubscriptionSuccess(),
+        capabilities.refresh()
+      ])
     } else {
       await Promise.allSettled([
         billingContext.fetchStatus(),
-        billingContext.fetchBalance()
+        billingContext.fetchBalance(),
+        capabilities.refresh()
       ])
     }
 

@@ -41,6 +41,8 @@ export function useBillingCapabilities() {
     canDowngradeToPersonal: computed(
       () => capabilityState.canDowngradeToPersonal
     ),
-    initialize: () => undefined
+    isReady: computed(() => true),
+    initialize: () => undefined,
+    refresh: () => undefined
   }
 }

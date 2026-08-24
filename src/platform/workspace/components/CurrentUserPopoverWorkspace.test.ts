@@ -12,6 +12,7 @@ import enMessages from '@/locales/en/main.json'
 import CurrentUserPopoverWorkspace from './CurrentUserPopoverWorkspace.vue'
 
 const state = vi.hoisted(() => ({
+  isCloud: true,
   billingStatus: 'paid',
   canAccessSubscriptionFeatures: true,
   isCancelled: false,
@@ -97,7 +98,11 @@ vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
   useSettingsDialog: () => ({ show: state.showSettingsDialog })
 }))
 
-vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
+vi.mock('@/platform/distribution/types', () => ({
+  get isCloud() {
+    return state.isCloud
+  }
+}))
 
 vi.mock('@/services/dialogService', () => ({
   useDialogService: () => ({
@@ -167,6 +172,7 @@ function renderComponent(
 
 describe('CurrentUserPopoverWorkspace', () => {
   beforeEach(() => {
+    state.isCloud = true
     state.billingStatus = 'paid'
     state.canAccessSubscriptionFeatures = true
     state.isCancelled = false
@@ -326,6 +332,41 @@ describe('CurrentUserPopoverWorkspace', () => {
     ).toBeInTheDocument()
   })
 
+  it('keeps Subscribe hidden on Local after switching to an unsubscribed workspace', async () => {
+    state.isCloud = false
+    state.canAccessSubscriptionFeatures = false
+    state.canManageSubscription = true
+    const { rerender } = renderComponent('personal')
+
+    expect(
+      screen.queryByRole('button', { name: 'Subscribe' })
+    ).not.toBeInTheDocument()
+
+    if (!workspaceStoreMock.store) throw new Error('Workspace store not ready')
+    workspaceStoreMock.store.workspaceName = 'Team Workspace'
+    workspaceStoreMock.store.isInPersonalWorkspace = false
+    await rerender({})
+
+    expect(screen.getByTestId('workspace-switcher-trigger')).toHaveTextContent(
+      'Team Workspace'
+    )
+    expect(
+      screen.queryByRole('button', { name: 'Subscribe' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('keeps Resubscribe hidden on Local for a cancelled plan', () => {
+    state.isCloud = false
+    state.isCancelled = true
+    state.canManageSubscriptionLifecycle = true
+
+    renderComponent('team')
+
+    expect(
+      screen.queryByRole('button', { name: 'Resubscribe' })
+    ).not.toBeInTheDocument()
+  })
+
   it.for([
     {
       name: 'allows a lifecycle manager to resubscribe a cancelled plan',
@@ -430,4 +471,51 @@ describe('CurrentUserPopoverWorkspace', () => {
       expect(emitted('close')).toHaveLength(1)
     })
   }
+
+  it('opens local Plan and Credits instead of Cloud pricing actions', async () => {
+    state.isCloud = false
+    state.canManageSubscription = true
+    const user = userEvent.setup()
+    const { emitted } = renderComponent()
+
+    expect(
+      screen.queryByTestId('plans-pricing-menu-item')
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByTestId('manage-plan-menu-item')
+    ).not.toBeInTheDocument()
+
+    await user.click(
+      screen.getByRole('button', {
+        name: enMessages.subscription.plansAndCredits
+      })
+    )
+
+    expect(state.showSettingsDialog).toHaveBeenCalledWith('workspace')
+    expect(state.showPricingTable).not.toHaveBeenCalled()
+    expect(emitted('close')).toHaveLength(1)
+  })
+
+  it('hides local Plan and Credits without subscription management permission', () => {
+    state.isCloud = false
+
+    renderComponent()
+
+    expect(
+      screen.queryByTestId('plans-credits-menu-item')
+    ).not.toBeInTheDocument()
+  })
+
+  // Paired with the negative case above: on its own, "hidden without
+  // permission" can pass vacuously if the item is missing for an unrelated
+  // reason (e.g. a renamed/merged testid), so this asserts the item actually
+  // renders once the only gating permission is granted.
+  it('shows local Plan and Credits with subscription management permission', () => {
+    state.isCloud = false
+    state.canManageSubscription = true
+
+    renderComponent()
+
+    expect(screen.getByTestId('plans-credits-menu-item')).toBeInTheDocument()
+  })
 })
