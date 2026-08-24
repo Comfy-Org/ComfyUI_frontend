@@ -242,9 +242,9 @@ const faqJsonLd = {
       <div class="rounded-2xl border border-white/10 p-5 sm:p-6">
         <div class="flex items-center justify-between">
           <h2 class="text-xs font-extrabold uppercase tracking-[0.2em] text-primary-warm-white">Input</h2>
-          <div id="iview-toggle" class="flex gap-1.5 text-[10px] font-extrabold uppercase tracking-wider">
-            <button data-iview="app" class="rounded-md bg-white/10 px-2.5 py-1 text-primary-warm-white">App</button>
-            <button data-iview="json" class="rounded-md px-2.5 py-1 text-primary-warm-gray hover:text-primary-warm-white">JSON</button>
+          <div id="iview-toggle" class="flex gap-1.5">
+            <button data-iview="app" class="inline-flex h-6 items-center rounded-full px-4 text-xs font-normal transition-colors bg-transparency-white-t8 text-primary-comfy-canvas">App</button>
+            <button data-iview="json" class="inline-flex h-6 items-center rounded-full px-4 text-xs font-normal transition-colors text-primary-warm-gray hover:bg-transparency-white-t4 hover:text-primary-comfy-canvas">JSON</button>
           </div>
         </div>
 
@@ -310,9 +310,9 @@ const faqJsonLd = {
       <div class="flex flex-col overflow-hidden rounded-2xl border border-white/10">
         <div class="flex items-center justify-between px-5 py-3.5">
           <h2 class="text-[11px] font-extrabold uppercase tracking-[0.2em] text-primary-warm-white">Result</h2>
-          <div id="rview-toggle" class="flex gap-1.5 text-[10px] font-extrabold uppercase tracking-wider">
-            <button data-rview="preview" class="rounded-md bg-white/10 px-2.5 py-1 text-primary-warm-white">Preview</button>
-            <button data-rview="json" class="rounded-md px-2.5 py-1 text-primary-warm-gray hover:text-primary-warm-white">JSON</button>
+          <div id="rview-toggle" class="flex gap-1.5">
+            <button data-rview="preview" class="inline-flex h-6 items-center rounded-full px-4 text-xs font-normal transition-colors bg-transparency-white-t8 text-primary-comfy-canvas">Preview</button>
+            <button data-rview="json" class="inline-flex h-6 items-center rounded-full px-4 text-xs font-normal transition-colors text-primary-warm-gray hover:bg-transparency-white-t4 hover:text-primary-comfy-canvas">JSON</button>
           </div>
         </div>
         <div class="relative aspect-video w-full">
@@ -637,9 +637,11 @@ const faqJsonLd = {
         for (const [k, panel] of Object.entries(iPanels)) panel.classList.toggle('hidden', k !== view)
         for (const b of $('iview-toggle')!.querySelectorAll<HTMLElement>('[data-iview]')) {
           const active = b === btn
-          b.classList.toggle('bg-white/10', active)
-          b.classList.toggle('text-primary-warm-white', active)
+          b.classList.toggle('bg-transparency-white-t8', active)
+          b.classList.toggle('text-primary-comfy-canvas', active)
           b.classList.toggle('text-primary-warm-gray', !active)
+          b.classList.toggle('hover:bg-transparency-white-t4', !active)
+          b.classList.toggle('hover:text-primary-comfy-canvas', !active)
         }
         renderAll()
       })
@@ -653,9 +655,11 @@ const faqJsonLd = {
         img.classList.toggle('hidden', json)
         for (const b of $('rview-toggle')!.querySelectorAll<HTMLElement>('[data-rview]')) {
           const active = b === btn
-          b.classList.toggle('bg-white/10', active)
-          b.classList.toggle('text-primary-warm-white', active)
+          b.classList.toggle('bg-transparency-white-t8', active)
+          b.classList.toggle('text-primary-comfy-canvas', active)
           b.classList.toggle('text-primary-warm-gray', !active)
+          b.classList.toggle('hover:bg-transparency-white-t4', !active)
+          b.classList.toggle('hover:text-primary-comfy-canvas', !active)
         }
         renderResultJson()
       })
