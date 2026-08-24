@@ -3,8 +3,17 @@ import { useEventListener } from '@vueuse/core'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
 
-const clipboardHTMLWrapper = [
-  '<meta charset="utf-8"><div><span data-metadata="',
+/**
+ * Identifies the copy that produced the clipboard's node metadata, so the
+ * paste handler can tell an in-app copy from a payload left behind by an
+ * earlier one. Only the id is stored, never the payload: a serialized
+ * selection can run to megabytes against a ~5MB origin quota, and a failed
+ * write would misclassify the user's own fresh copy as stale.
+ */
+export const LAST_COPY_ID_KEY = 'Comfy.Clipboard.LastCopyId'
+
+const clipboardHTMLWrapper = (id: string) => [
+  `<meta charset="utf-8"><div><span data-copy-id="${id}" data-metadata="`,
   '"></span></div><span style="white-space:pre-wrap;">Text</span>'
 ]
 const clipboardByteChunkSize = 0x8000
@@ -47,12 +56,14 @@ export const useCopy = () => {
     if (canvas?.selectedItems) {
       const serializedData = canvas.copyToClipboard()
       try {
+        const copyId = crypto.randomUUID()
         const base64Data = encodeClipboardData(serializedData)
         // clearData doesn't remove images from clipboard
         e.clipboardData?.setData(
           'text/html',
-          clipboardHTMLWrapper.join(base64Data)
+          clipboardHTMLWrapper(copyId).join(base64Data)
         )
+        localStorage.setItem(LAST_COPY_ID_KEY, copyId)
       } catch (error) {
         console.error(error)
       }
