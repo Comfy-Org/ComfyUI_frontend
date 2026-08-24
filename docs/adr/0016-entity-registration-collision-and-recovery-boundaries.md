@@ -40,7 +40,8 @@ from recyclable structural keys.
    boundaries where possible.
 2. Stores keyed by stable entity identity never overwrite an incumbent with a
    distinct entity. They return an explicit rejection for a conflict while
-   allowing idempotent registration of the same identity.
+   allowing idempotent re-registration of the same entity or state object. A
+   distinct object with the same identity key remains a conflict.
 3. Callers that own ID allocation may recover from a rejected registration by
    re-minting the ID. Emit diagnostics at that recovery site, where both the old
    and new IDs and any downstream consequences are known.
@@ -51,6 +52,18 @@ from recyclable structural keys.
 6. Evolve registration APIs toward an explicit discriminated result such as
    `registered | alreadyRegistered | conflict` instead of relying indefinitely
    on proxy-or-`undefined` return values.
+
+### Current Registry Contracts
+
+The ECS branch has these intentionally distinct contracts. Here, "same object"
+means equality after Vue proxy unwrapping.
+
+| Registry           | Key                                                 | Collision result                                                                | Idempotence                                             | Diagnostic behavior                                                     |
+| ------------------ | --------------------------------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `nodeDataStore`    | Root graph plus `NodeId`                            | A distinct state returns `undefined`; the incumbent is unchanged                | Same state object under the same owner returns it       | The store is silent; an ID-owning caller diagnoses any re-mint          |
+| `linkStore`        | Root graph plus `LinkId`; owner-scoped target slot  | A duplicate ID or occupied non-floating target returns `undefined`              | Same topology object under the same owner returns it    | The store logs ID and target-slot conflicts                             |
+| `rerouteStore`     | Root graph plus `RerouteId`                         | A distinct chain returns `undefined`; the incumbent is unchanged                | Same chain object under the same owner returns it       | The store logs the incumbent and requesting owners                      |
+| `widgetValueStore` | Structural `WidgetId` (`graphId:nodeId:widgetName`) | The same widget type keeps the incumbent; a different type replaces stale state | Matching key and widget type returns the existing state | Type recycling is expected and silent; an un-keyable ID emits a warning |
 
 ## Alternatives Considered
 
