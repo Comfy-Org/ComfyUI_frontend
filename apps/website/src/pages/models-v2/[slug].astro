@@ -340,9 +340,9 @@ const faqJsonLd = {
         </div>
 
         <div class="mt-5 flex items-center justify-between gap-3 border-t border-white/10 pt-4">
-          <button id="pg-reset" class={textAction}>Reset</button>
+          <span class="hidden text-2xs text-primary-warm-gray sm:block"><span id="cost-line">{baseCredits} credits ≈ ${(baseCredits * 0.0084).toFixed(2)}</span> · est.</span>
           <div class="flex items-center gap-3">
-            <span class="hidden text-2xs text-primary-warm-gray sm:block"><span id="cost-line">{baseCredits} credits ≈ ${(baseCredits * 0.0084).toFixed(2)}</span> · est.</span>
+            <button id="pg-reset" class:list={[outlineAccentButton, 'uppercase tracking-widest']}>Reset</button>
             <button id="pg-run" data-base-credits={baseCredits} data-slug={slugId} class:list={[primaryButton, 'uppercase tracking-widest']}>
               Sign in to run — 5 free
             </button>
