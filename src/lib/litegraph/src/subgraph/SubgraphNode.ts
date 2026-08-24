@@ -451,6 +451,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   override configure(info: ExportedSubgraphInstance): void {
     for (const input of this.inputs) {
+      this._clearPromotedWidget(input)
       if (
         input._listenerController &&
         typeof input._listenerController.abort === 'function'
