@@ -346,6 +346,20 @@ const faqJsonLd = {
               </div>
             </div>
           </div>
+          <label class:list={[fieldLabel, 'mt-4']} for="pg-seed">Seed</label>
+          <div class="mt-1.5 flex gap-2">
+            <input
+              id="pg-seed"
+              type="number"
+              inputmode="numeric"
+              min="0"
+              step="1"
+              value={428790123}
+              class="w-full rounded-lg border border-transparency-white-t20 bg-transparency-white-t4 px-3 py-2.5 font-mono text-xs text-primary-comfy-canvas focus:border-primary-comfy-yellow/60 focus:outline-none"
+            />
+            <BrandButton id="seed-shuffle" variant="outline-light" size="sm" class="shrink-0 px-3 py-1.5 text-2xs uppercase tracking-widest">Shuffle</BrandButton>
+          </div>
+          <p class:list={[helperCopy, 'mt-1.5']}>Same seed and prompt give the same output. Change it for a different take.</p>
           <label class:list={[fieldLabel, 'mt-4']}>Reference image</label>
           <div id="dropzone" class="mt-2 flex flex-col items-center gap-3 rounded-xl border border-dashed border-transparency-white-t20 bg-transparency-white-t4 px-4 py-4 text-center">
             <BrandButton id="add-image-btn" variant="outline-light" size="sm" class="px-3 py-1.5 text-2xs uppercase tracking-widest">Add image</BrandButton>
@@ -693,9 +707,12 @@ const faqJsonLd = {
       const runDesktopLabel = label(runDesktop)
       const runMobileLabel = label(runMobile)
 
+      const seedInput = $('pg-seed') as HTMLInputElement
+      const DEFAULT_SEED = '428790123'
+      const seedNow = () => Number(seedInput.value) || 0
+
       let authed = false
       let runsLeft = 5
-      let seed = 428790123
       let refImage = false
       let lastRun: Record<string, unknown> | null = null
 
@@ -710,7 +727,7 @@ const faqJsonLd = {
             aspect_ratio: selAspect.value,
             duration_s: mult(selDur) * 5,
             resolution: selRes.value,
-            seed,
+            seed: seedNow(),
             ...(refImage ? { reference_image: 'frame_0001.png' } : {})
           },
           estimate: { credits: creditsNow(), charged_on: 'success only' }
@@ -722,7 +739,7 @@ const faqJsonLd = {
         const receipt = lastRun ?? {
           status: 'example',
           note: 'This is a curated example. Run it to get your own receipt.',
-          seed,
+          seed: seedNow(),
           model: slug
         }
         paintJson(resultJson, JSON.stringify(receipt, null, 2))
@@ -789,7 +806,13 @@ const faqJsonLd = {
 
       // live bindings
       prompt.addEventListener('input', renderAll)
+      seedInput.addEventListener('input', renderAll)
       for (const sel of [selAspect, selDur, selRes]) sel.addEventListener('change', renderAll)
+
+      $('seed-shuffle')!.addEventListener('click', () => {
+        seedInput.value = String(Math.floor(Math.random() * 1_000_000_000))
+        renderAll()
+      })
 
       // reference image demo
       $('add-image-btn')?.addEventListener('click', () => {
@@ -860,19 +883,19 @@ const faqJsonLd = {
           img.style.opacity = '0.4'
           window.setTimeout(() => (img.style.opacity = '1'), 350)
           runsLeft -= 1
-          seed += 1
+          const runSeed = seedNow()
           lastRun = {
-            job_id: 'j_' + seed.toString(16),
+            job_id: 'j_' + runSeed.toString(16),
             status: 'succeeded',
             model: slug,
-            seed,
+            seed: runSeed,
             credits_charged: creditsNow(),
             charged_on: 'success only',
             duration_s: 4.2,
             nodes_executed: 24,
             output: { type: 'video/webp', watermark: false, saved_to_history: true }
           }
-          resultSeed.textContent = `Seed ${seed}`
+          resultSeed.textContent = `Seed ${runSeed}`
           meter.textContent = runsLeft > 0 ? `Free runs: ${runsLeft} left` : 'Free runs used'
           varBlock.classList.remove('hidden')
           renderAll()
@@ -927,14 +950,15 @@ const faqJsonLd = {
         modal.classList.add('hidden'); modal.classList.remove('flex')
       })
       $('demo-reset')!.addEventListener('click', () => {
-        authed = false; runsLeft = 5; seed = 428790123; lastRun = null; refImage = false
+        authed = false; runsLeft = 5; lastRun = null; refImage = false
+        seedInput.value = DEFAULT_SEED
         upgrade.classList.add('hidden'); upgrade.classList.remove('flex')
         strip.classList.add('hidden'); strip.classList.remove('flex')
         varBlock.classList.add('hidden')
         varStrip.classList.add('hidden'); varStrip.classList.remove('grid')
         $('ref-thumb')?.classList.add('hidden')
         const dl = $('dropzone-label'); if (dl) dl.textContent = 'or drop a frame to animate it'
-        resultSeed.textContent = 'Seed 428790123'
+        resultSeed.textContent = `Seed ${DEFAULT_SEED}`
         meter.textContent = 'Free runs: 5 left'
         renderAll()
       })
