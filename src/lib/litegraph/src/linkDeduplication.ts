@@ -162,11 +162,6 @@ export function realignInputLinkSlots(
       referencedNames.set(link, names)
     }
 
-    const removals = [...referencedNames].flatMap(([link, names]) =>
-      node.inputs.some((input) => names.includes(input.name)) ? [] : [link]
-    )
-    for (const link of removals) referencedNames.delete(link)
-
     for (let pass = 0; pass < Math.max(1, referencedNames.size); pass++) {
       const moved: { link: LLink; slot: number }[] = []
       for (const [link, names] of referencedNames) {
@@ -179,7 +174,16 @@ export function realignInputLinkSlots(
           : slots[0]
         if (link.target_slot !== slot) moved.push({ link, slot })
       }
-      if (!moved.length && !removals.length) break
+      if (!moved.length) break
+
+      const unmatched = [...referencedNames].flatMap(([link, names]) =>
+        node.inputs.some((input) => names.includes(input.name)) ? [] : [link]
+      )
+      const destinationSlots = new Set(moved.map(({ slot }) => slot))
+      const removals = unmatched.filter(
+        (link) =>
+          graph.links.has(link.id) && destinationSlots.has(link.target_slot)
+      )
 
       const updates: EndpointUpdate[] = moved.map(({ link, slot }) => ({
         topology: link._state,
@@ -218,7 +222,6 @@ export function realignInputLinkSlots(
         }
         break
       }
-      removals.length = 0
       for (const { link, slot } of moved) {
         node.onConnectionsChange?.(
           NodeSlotType.INPUT,
