@@ -1,103 +1,35 @@
-/**
- * Layout Mutations - Simplified Direct Operations
- *
- * Provides a clean API for layout operations that are CRDT-ready.
- * Operations are synchronous and applied directly to the store.
- */
-import log from 'loglevel'
-
 import type { NodeId } from '@/types/nodeId'
+import type { UUID } from '@/utils/uuid'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type {
-  LayoutSource,
-  LinkId,
-  NodeLayout,
-  Point,
-  RerouteId,
-  Size
-} from '@/renderer/core/layout/types'
+import type { LayoutSource, Point } from '@/renderer/core/layout/types'
 
-const logger = log.getLogger('LayoutMutations')
-
-interface LayoutMutations {
-  moveNode(nodeId: NodeId, position: Point): void
-  batchMoveNodes(updates: Array<{ nodeId: NodeId; position: Point }>): void
-  resizeNode(nodeId: NodeId, size: Size): void
-  setNodeZIndex(nodeId: NodeId, zIndex: number): void
-  createNode(nodeId: NodeId, layout: Partial<NodeLayout>): void
-  deleteNode(nodeId: NodeId): void
-  createLink(
-    linkId: LinkId,
-    sourceNodeId: NodeId,
-    sourceSlot: number,
-    targetNodeId: NodeId,
-    targetSlot: number
-  ): void
-  deleteLink(linkId: LinkId): void
-
-  // Reroute operations
-  createReroute(
-    rerouteId: RerouteId,
-    position: Point,
-    parentId?: RerouteId,
-    linkIds?: LinkId[]
-  ): void
-  deleteReroute(rerouteId: RerouteId): void
-  moveReroute(
-    rerouteId: RerouteId,
-    position: Point,
-    previousPosition: Point
-  ): void
-
-  bringNodeToFront(nodeId: NodeId): void
-  setSource(source: LayoutSource): void
-  setActor(actor: string): void
-}
-
-/**
- * Composable for accessing layout mutations with clean destructuring API
- */
-export function useLayoutMutations(): LayoutMutations {
-  /**
-   * Set the current mutation source
-   */
-  const setSource = (source: LayoutSource): void => {
-    layoutStore.setSource(source)
-  }
-
-  /**
-   * Set the current actor (for CRDT)
-   */
-  const setActor = (actor: string): void => {
-    layoutStore.setActor(actor)
-  }
-
-  /**
-   * Move a node to a new position
-   */
-  const moveNode = (nodeId: NodeId, position: Point): void => {
-    const existing = layoutStore.getNodeLayoutRef(nodeId).value
+export function useLayoutMutations(source: LayoutSource) {
+  const moveNode = (
+    rootGraphId: UUID,
+    nodeId: NodeId,
+    position: Point
+  ): void => {
+    const existing = layoutStore.getNodeLayout(rootGraphId, nodeId)
     if (!existing) return
 
     layoutStore.applyOperation({
       type: 'moveNode',
-      entity: 'node',
+      graphId: rootGraphId,
       nodeId,
       position,
-      previousPosition: existing.position,
       timestamp: Date.now(),
-      source: layoutStore.getCurrentSource(),
-      actor: layoutStore.getCurrentActor()
+      source
     })
   }
 
   function batchMoveNodes(
+    rootGraphId: UUID,
     updates: Array<{ nodeId: NodeId; position: Point }>
   ): void {
     if (updates.length === 0) return
 
     const nodeBoundsUpdates = updates.flatMap(({ nodeId, position }) => {
-      const existing = layoutStore.getNodeLayoutRef(nodeId).value
+      const existing = layoutStore.getNodeLayout(rootGraphId, nodeId)
       if (!existing) return []
 
       return [
@@ -114,235 +46,37 @@ export function useLayoutMutations(): LayoutMutations {
     })
 
     if (nodeBoundsUpdates.length === 0) return
-    layoutStore.batchUpdateNodeBounds(nodeBoundsUpdates)
-  }
-
-  /**
-   * Resize a node
-   */
-  const resizeNode = (nodeId: NodeId, size: Size): void => {
-    const existing = layoutStore.getNodeLayoutRef(nodeId).value
-    if (!existing) return
-
-    layoutStore.applyOperation({
-      type: 'resizeNode',
-      entity: 'node',
-      nodeId,
-      size,
-      previousSize: existing.size,
-      timestamp: Date.now(),
-      source: layoutStore.getCurrentSource(),
-      actor: layoutStore.getCurrentActor()
+    layoutStore.batchUpdateNodeBounds(rootGraphId, nodeBoundsUpdates, {
+      source
     })
   }
 
-  /**
-   * Set node z-index
-   */
-  const setNodeZIndex = (nodeId: NodeId, zIndex: number): void => {
-    const existing = layoutStore.getNodeLayoutRef(nodeId).value
+  const setNodeZIndex = (
+    rootGraphId: UUID,
+    nodeId: NodeId,
+    zIndex: number
+  ): void => {
+    const existing = layoutStore.getNodeLayout(rootGraphId, nodeId)
     if (!existing) return
 
     layoutStore.applyOperation({
       type: 'setNodeZIndex',
-      entity: 'node',
+      graphId: rootGraphId,
       nodeId,
       zIndex,
-      previousZIndex: existing.zIndex,
       timestamp: Date.now(),
-      source: layoutStore.getCurrentSource(),
-      actor: layoutStore.getCurrentActor()
+      source
     })
   }
 
-  /**
-   * Create a new node
-   */
-  const createNode = (nodeId: NodeId, layout: Partial<NodeLayout>): void => {
-    const fullLayout: NodeLayout = {
-      id: nodeId,
-      position: layout.position ?? { x: 0, y: 0 },
-      size: layout.size ?? { width: 200, height: 100 },
-      zIndex: layout.zIndex ?? 0,
-      visible: layout.visible ?? true,
-      bounds: {
-        x: layout.position?.x ?? 0,
-        y: layout.position?.y ?? 0,
-        width: layout.size?.width ?? 200,
-        height: layout.size?.height ?? 100
-      }
-    }
-
-    layoutStore.applyOperation({
-      type: 'createNode',
-      entity: 'node',
-      nodeId,
-      layout: fullLayout,
-      timestamp: Date.now(),
-      source: layoutStore.getCurrentSource(),
-      actor: layoutStore.getCurrentActor()
-    })
-  }
-
-  /**
-   * Delete a node
-   */
-  const deleteNode = (nodeId: NodeId): void => {
-    const existing = layoutStore.getNodeLayoutRef(nodeId).value
-    if (!existing) return
-
-    layoutStore.applyOperation({
-      type: 'deleteNode',
-      entity: 'node',
-      nodeId,
-      previousLayout: existing,
-      timestamp: Date.now(),
-      source: layoutStore.getCurrentSource(),
-      actor: layoutStore.getCurrentActor()
-    })
-  }
-
-  /**
-   * Bring a node to the front (highest z-index)
-   */
-  const bringNodeToFront = (nodeId: NodeId): void => {
-    const allNodes = layoutStore.getAllNodes().value
-    let maxZIndex = 0
-
-    for (const [, layout] of allNodes) {
-      if (layout.zIndex > maxZIndex) {
-        maxZIndex = layout.zIndex
-      }
-    }
-    setNodeZIndex(nodeId, maxZIndex + 1)
-  }
-
-  /**
-   * Create a new link
-   */
-  const createLink = (
-    linkId: LinkId,
-    sourceNodeId: NodeId,
-    sourceSlot: number,
-    targetNodeId: NodeId,
-    targetSlot: number
-  ): void => {
-    logger.debug('Creating link:', {
-      linkId,
-      from: `${sourceNodeId}[${sourceSlot}]`,
-      to: `${targetNodeId}[${targetSlot}]`
-    })
-    layoutStore.applyOperation({
-      type: 'createLink',
-      entity: 'link',
-      linkId,
-      sourceNodeId,
-      sourceSlot,
-      targetNodeId,
-      targetSlot,
-      timestamp: Date.now(),
-      source: layoutStore.getCurrentSource(),
-      actor: layoutStore.getCurrentActor()
-    })
-  }
-
-  /**
-   * Delete a link
-   */
-  const deleteLink = (linkId: LinkId): void => {
-    logger.debug('Deleting link:', linkId)
-    layoutStore.applyOperation({
-      type: 'deleteLink',
-      entity: 'link',
-      linkId,
-      timestamp: Date.now(),
-      source: layoutStore.getCurrentSource(),
-      actor: layoutStore.getCurrentActor()
-    })
-  }
-
-  /**
-   * Create a new reroute
-   */
-  const createReroute = (
-    rerouteId: RerouteId,
-    position: Point,
-    parentId?: RerouteId,
-    linkIds: LinkId[] = []
-  ): void => {
-    logger.debug('Creating reroute:', {
-      rerouteId,
-      position,
-      parentId,
-      linkCount: linkIds.length
-    })
-    layoutStore.applyOperation({
-      type: 'createReroute',
-      entity: 'reroute',
-      rerouteId,
-      position,
-      parentId,
-      linkIds,
-      timestamp: Date.now(),
-      source: layoutStore.getCurrentSource(),
-      actor: layoutStore.getCurrentActor()
-    })
-  }
-
-  /**
-   * Delete a reroute
-   */
-  const deleteReroute = (rerouteId: RerouteId): void => {
-    logger.debug('Deleting reroute:', rerouteId)
-    layoutStore.applyOperation({
-      type: 'deleteReroute',
-      entity: 'reroute',
-      rerouteId,
-      timestamp: Date.now(),
-      source: layoutStore.getCurrentSource(),
-      actor: layoutStore.getCurrentActor()
-    })
-  }
-
-  /**
-   * Move a reroute
-   */
-  const moveReroute = (
-    rerouteId: RerouteId,
-    position: Point,
-    previousPosition: Point
-  ): void => {
-    logger.debug('Moving reroute:', {
-      rerouteId,
-      from: previousPosition,
-      to: position
-    })
-    layoutStore.applyOperation({
-      type: 'moveReroute',
-      entity: 'reroute',
-      rerouteId,
-      position,
-      previousPosition,
-      timestamp: Date.now(),
-      source: layoutStore.getCurrentSource(),
-      actor: layoutStore.getCurrentActor()
-    })
+  const bringNodeToFront = (rootGraphId: UUID, nodeId: NodeId): void => {
+    setNodeZIndex(rootGraphId, nodeId, layoutStore.allocateZIndex())
   }
 
   return {
-    setSource,
-    setActor,
     moveNode,
     batchMoveNodes,
-    resizeNode,
     setNodeZIndex,
-    createNode,
-    deleteNode,
-    bringNodeToFront,
-    createLink,
-    deleteLink,
-    createReroute,
-    deleteReroute,
-    moveReroute
+    bringNodeToFront
   }
 }
