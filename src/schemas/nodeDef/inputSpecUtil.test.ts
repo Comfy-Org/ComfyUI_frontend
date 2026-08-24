@@ -200,14 +200,55 @@ describe('flattenInputSpecs', () => {
     } as ComfyNodeDefV1
 
     const nodeDefImpl = new ComfyNodeDefImpl(nodeDef)
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
-    // assert() throws in DEV (Vitest's default); it only skips in production.
-    expect(() => flattenInputSpecs(nodeDefImpl.inputs)).toThrow(
-      /expected an options array on dynamic combo/
-    )
-
-    vi.stubEnv('DEV', false)
     const result = flattenInputSpecs(nodeDefImpl.inputs)
+
     expect(result.map((spec) => spec.name)).toEqual(['model'])
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('Unparseable COMFY_DYNAMICCOMBO_V3 spec'),
+      expect.anything()
+    )
+    warn.mockRestore()
+  })
+
+  it('keeps well-formed sibling options when one option is unparseable', () => {
+    const nodeDef: ComfyNodeDefV1 = {
+      name: 'PartiallyMalformedNode',
+      display_name: 'Partially Malformed Node',
+      category: 'Test',
+      python_module: 'test_module',
+      description: 'A node with one good and one malformed combo option',
+      input: {
+        required: {
+          model: [
+            'COMFY_DYNAMICCOMBO_V3',
+            {
+              options: [
+                { key: 'good', inputs: { required: { image: ['IMAGE', {}] } } },
+                { key: 'bad' }
+              ]
+            }
+          ]
+        },
+        optional: {}
+      },
+      output: [],
+      output_is_list: [],
+      output_name: [],
+      output_node: false
+    } as ComfyNodeDefV1
+
+    const nodeDefImpl = new ComfyNodeDefImpl(nodeDef)
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    const result = flattenInputSpecs(nodeDefImpl.inputs)
+
+    expect(result.map((spec) => spec.name)).toEqual(['model', 'image'])
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('option index 1'),
+      expect.anything()
+    )
+    warn.mockRestore()
   })
 })
