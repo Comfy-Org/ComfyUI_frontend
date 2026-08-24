@@ -285,6 +285,7 @@ export async function runRecord(): Promise<void> {
     process.exit(0)
   }
 
+  let testDescription: string = description
   let slug = toSlug(description)
 
   const filenameOk = await confirm({
@@ -470,6 +471,29 @@ export async function runRecord(): Promise<void> {
     process.exit(1)
   }
 
+  const nameStillFits = await confirm({
+    message: `Before recording you called this "${testDescription}" — does that still match what you just did?`
+  })
+  if (isCancel(nameStillFits)) {
+    cancel('Operation cancelled')
+    process.exit(0)
+  }
+  if (!nameStillFits) {
+    const newDescription = await text({
+      message: 'No problem — what does the recording actually show?',
+      placeholder: testDescription,
+      validate: (value) =>
+        toSlug(value ?? '') ? undefined : 'Use some letters or numbers.'
+    })
+    if (isCancel(newDescription)) {
+      cancel('Operation cancelled')
+      process.exit(0)
+    }
+    testDescription = newDescription
+    slug = toSlug(newDescription)
+    pass('Renamed', `${slug}.spec.ts`)
+  }
+
   stepHeader(6, 7, 'Transform')
 
   let recordedCode: string
@@ -596,7 +620,7 @@ export async function runRecord(): Promise<void> {
     await openPr({
       testFilePath: outputPath,
       testName: slug,
-      description: description,
+      description: testDescription,
       projectRoot
     })
   } else {
