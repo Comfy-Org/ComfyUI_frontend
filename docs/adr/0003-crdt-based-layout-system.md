@@ -228,23 +228,40 @@ invariant? **Yes — and that is the required split of responsibility.**
 (`nodeDataStore`, `widgetValueStore`, `linkStore`, `rerouteStore`) enforces
 its own collision contract at registration time:
 
-- `nodeDataStore.registerNode` is identity-keyed (Set membership); re-adding
-  the same `NodeState` object is a no-op, not a collision.
-- `widgetValueStore.registerWidget` is type-discriminated: same `WidgetId` and
-  same `type` returns the existing state; same `WidgetId` with a different
-  `type` overwrites (the widget has changed kind). This is idempotent on
-  re-registration but intentional on type change.
-- `linkStore.registerLink` is first-registration-wins per target input slot: a
-  second topology claiming the same slot is rejected (`undefined` return) rather
-  than clobbering the incumbent.
+- `nodeDataStore.registerNode` is id-keyed (a `Map<NodeId, NodeState>` per
+  root graph), with an identity escape: re-registering the _same_ raw
+  `NodeState` object under the same owning graph returns the incumbent. A
+  _different_ state object under an occupied id is rejected
+  (`undefined` return) with no store-level diagnostic — rejection is control
+  flow for the remint loop in `attachNodeToStores`, which resolves the
+  collision and owns the diagnostic. Re-registering an object already
+  registered under a different root graph asserts (`registerNodeState`), and
+  unregistering a state the store does not hold asserts
+  (`unregisterNodeState`): those are lifecycle corruption, not collisions.
+- `widgetValueStore.registerWidget` is structurally keyed
+  (`graphId:nodeId:name`) and type-discriminated: same `WidgetId` and same
+  `type` returns the existing state; same `WidgetId` with a different `type`
+  overwrites, keeping the newcomer (the widget has changed kind). Its
+  `console.warn` fires only on an un-keyable id, never on this path.
+- `linkStore.registerLink` rejects a duplicate **link id** first
+  (`console.error`, `undefined` return). The per-target-slot rule is
+  secondary and applies only to non-floating topologies: a second non-floating
+  topology claiming an occupied target input slot is rejected
+  (`console.error`), while floating links (either endpoint unassigned) may
+  share an input slot by design.
 - `rerouteStore.registerReroute` is first-registration-wins per chain ID: a
-  duplicate chain ID logs a warning and leaves the live registration untouched.
+  duplicate chain ID logs a `console.error` and leaves the live registration
+  untouched (`undefined` return); re-registering the same raw chain object
+  under the same owning graph returns the incumbent.
 
 None of these stores resolve conflicts between two independently-created
 entities that happen to share an ID. They assume incoming IDs are already
 deduplicated. If two concurrent operations created a node with ID `42`, the
-stores have no mechanism to choose between them — they will silently keep
-whichever arrived first and discard the other without surfacing a diagnostic.
+stores keep whichever arrived first and reject the other; the node path
+surfaces the conflict at its recovery site (the remint loop), the link and
+reroute paths at the store (`console.error`), and the widget path resolves it
+structurally. See ADR-0008 "Amendment (2026-08-23): registration and collision
+contract" for the full per-store contract and its rationale.
 
 **What the CRDT merge boundary must guarantee.** Before any merged entity set
 is committed to the in-memory registries, the Yjs merge layer is responsible
