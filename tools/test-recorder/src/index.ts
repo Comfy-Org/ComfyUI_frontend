@@ -173,6 +173,11 @@ try {
       runTags()
       break
     }
+    case 'guide': {
+      const { runGuide } = await import('./commands/guide')
+      runGuide()
+      break
+    }
     default: {
       // Help is a successful request; a typo is not.
       const askedForHelp =
@@ -196,9 +201,13 @@ Commands:
   list [--filter <keyword>]
               List available test workflows, optionally filtered by path
   tags        List test tags with their meanings
+  guide       Print instructions for an agent who is helping a human record
 
 Options:
   --help      Show help
+
+If you are an agent helping a HUMAN record a test: run 'comfy-test guide'
+first and follow it — it tells you what to say and what never to say.
 
 If you are an agent (not a human at a terminal): 'record' needs a real
 TTY and will refuse to run. Use this instead:

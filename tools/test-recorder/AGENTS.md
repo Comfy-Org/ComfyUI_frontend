@@ -8,6 +8,21 @@ environment variables for automation. When adding or changing a feature,
 implement and document both paths. A prompt-only or flag-only feature is
 incomplete.
 
+## Third audience: an agent supervising a human
+
+There is a third user of this tool beyond "human at a terminal" and
+"agent automating": **an agent helping a non-technical human walk through
+the human path**. That agent shapes how the human experiences the tool, so
+it must be steered too. `comfy-test guide` prints the operating manual for
+that role (`src/commands/guide.ts`): hand over the three setup commands
+immediately, use plain words ("proof step", never "assertion"), never
+mention lint/CI/branches, reassure constantly that messy contributions are
+genuinely valuable, and never close a PR because the human is worried.
+
+When changing user-facing prompts or flows, check whether `guide` needs a
+matching update — its description of what the human will see must stay
+true.
+
 ## Interface parity
 
 | Capability             | Interactive `record` path                    | Non-interactive path                                                                         |
@@ -19,6 +34,7 @@ incomplete.
 | Test tags              | Tag multiselect with hints                   | `tags` lists the registry with descriptions; `plan --tags` and `transform --tags` apply tags |
 | Feature flags          | Feature-flag selector and custom flag prompt | `plan --feature-flags <specs>` or `transform --feature-flags <specs>`                        |
 | Secret scrubbing       | Automatic during `record`, with a loud alert | Automatic in `transform <file>`; findings print as 🔒 lines in the summary                   |
+| Supervisor guidance    | Woven into `record` prompts and warnings     | `guide` prints the full operating manual for an agent helping a human                        |
 
 ## Distribution-aware recording template
 
