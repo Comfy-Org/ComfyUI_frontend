@@ -317,10 +317,10 @@ const faqJsonLd = {
             </div>
           </div>
           <label class:list={[fieldLabel, 'mt-4']}>Reference image</label>
-          <div id="dropzone" class="mt-2 flex items-center gap-3 rounded-xl border border-dashed border-transparency-white-t20 bg-transparency-white-t4 px-4 py-4">
-            <button id="add-image-btn" class:list={[outlineButton, 'px-3 py-1.5 text-2xs uppercase tracking-widest']}>Add image ▾</button>
+          <div id="dropzone" class="mt-2 flex flex-col items-center gap-3 rounded-xl border border-dashed border-transparency-white-t20 bg-transparency-white-t4 px-4 py-4 text-center">
+            <button id="add-image-btn" class:list={[outlineButton, 'px-3 py-1.5 text-2xs uppercase tracking-widest']}>Add image</button>
             <span id="dropzone-label" class="text-xs font-light text-primary-warm-gray">or drop a frame to animate it</span>
-            <img id="ref-thumb" src={gallery[1] ?? gallery[0]} alt="" class="ml-auto hidden h-10 w-16 rounded-md object-cover" onerror="this.style.display='none'" />
+            <img id="ref-thumb" src={gallery[1] ?? gallery[0]} alt="" class="hidden h-10 w-16 rounded-md object-cover" onerror="this.style.display='none'" />
           </div>
         </div>
 
