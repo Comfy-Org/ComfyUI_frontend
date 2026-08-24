@@ -1,19 +1,20 @@
-import { createTestingPinia } from '@pinia/testing'
 import type { DetachedWindowAPI } from 'happy-dom'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
 import type { EffectScope, Ref } from 'vue'
 
+import type { TourEnding } from '@/platform/onboarding/onboardingTourStore'
 import type {
   CoachStep,
   SpotlightStep
 } from '@/platform/onboarding/onboardingTours'
+import type { OnboardingTourSkipReason } from '@/platform/telemetry/types'
 
 const TOUR_WORKFLOW = { path: 'tour.json' }
 const OTHER_WORKFLOW = { path: 'other.json' }
 const INTRO_PREVIEW_MS = 500
 const OFFLINE_GRACE_MS = 20_000
+const ACCEPT_DEADLINE_MS = 15_000
 
 const mocks = vi.hoisted(() => ({
   canRunWorkflows: { value: true },
@@ -21,13 +22,16 @@ const mocks = vi.hoisted(() => ({
   workflowStatus: { value: new Map<unknown, string>() },
   executionErrors: { hasNodeError: false, hasPromptError: false },
   activeWorkflow: { value: null as unknown },
+  queuedJobs: { value: {} as Record<string, { workflow?: unknown }> },
   linearMode: { value: false },
   vueNodesEnabled: true,
+  setSetting: vi.fn(),
   steps: [] as CoachStep[],
   runState: { value: 'idle' } as Ref<string>,
   releaseFirstRunTargets: vi.fn(),
   engine: {
     activeTour: null as string | null,
+    lastEnding: null as TourEnding | null,
     step: null as CoachStep | null,
     isLast: false,
     startTour: vi.fn(),
@@ -44,29 +48,33 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
+// Each factory runs on the first dynamic import, which lands mid-test for
+// whichever test runs first. Seed the new ref from the holder so that test's
+// setup survives instead of being discarded.
 vi.mock('@/stores/executionStore', async () => {
   const { shallowRef } = await import('vue')
-  mocks.workflowStatus = shallowRef(new Map<unknown, string>())
+  mocks.workflowStatus = shallowRef(new Map(mocks.workflowStatus.value))
+  mocks.queuedJobs = shallowRef(mocks.queuedJobs.value)
   return {
     useExecutionStore: () => ({
       getWorkflowStatus: (workflow: unknown) =>
-        mocks.workflowStatus.value.get(workflow)
+        mocks.workflowStatus.value.get(workflow),
+      get queuedJobs() {
+        return mocks.queuedJobs.value
+      }
     })
   }
 })
 
 vi.mock('@/stores/executionErrorStore', async () => {
   const { reactive } = await import('vue')
-  mocks.executionErrors = reactive({
-    hasNodeError: false,
-    hasPromptError: false
-  })
+  mocks.executionErrors = reactive({ ...mocks.executionErrors })
   return { useExecutionErrorStore: () => mocks.executionErrors }
 })
 
 vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
   const { shallowRef } = await import('vue')
-  mocks.activeWorkflow = shallowRef(null as unknown)
+  mocks.activeWorkflow = shallowRef(mocks.activeWorkflow.value)
   return {
     useWorkflowStore: () => ({
       get activeWorkflow() {
@@ -78,7 +86,7 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
 
 vi.mock('@/renderer/core/canvas/canvasStore', async () => {
   const { shallowRef } = await import('vue')
-  mocks.linearMode = shallowRef(false)
+  mocks.linearMode = shallowRef(mocks.linearMode.value)
   return {
     useCanvasStore: () => ({
       get linearMode() {
@@ -91,10 +99,9 @@ vi.mock('@/renderer/core/canvas/canvasStore', async () => {
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
     get: () => mocks.vueNodesEnabled,
-    set: (_key: string, value: boolean) => {
-      mocks.vueNodesEnabled = value
-      return Promise.resolve()
-    }
+    // A spy, not a plain writer: a value that was flipped and put back reads
+    // the same as one that was never touched.
+    set: mocks.setSetting
   })
 }))
 
@@ -159,6 +166,48 @@ async function tourOnRunStep() {
   return { controller, started: await starting }
 }
 
+/** The engine ending the tour and recording how, the way `finish()` leaves it. */
+function endTour(ending: TourEnding) {
+  mocks.engine.lastEnding = ending
+  mocks.engine.activeTour = null
+  mocks.engine.step = null
+  return nextTick()
+}
+
+const COMPLETED: TourEnding = { tour: 'firstRun', outcome: 'completed' }
+
+function skippedBecause(skipReason: OnboardingTourSkipReason): TourEnding {
+  return { tour: 'firstRun', outcome: 'skipped', skipReason }
+}
+
+/** Every ending short of walking the tour to the end. */
+const UNFINISHED_ENDINGS: { named: string; ending: TourEnding }[] = [
+  { named: 'the user waved away on step 1', ending: skippedBecause('user') },
+  {
+    named: 'a missing target tore down',
+    ending: skippedBecause('target_timeout')
+  },
+  { named: 'the paywall parked', ending: skippedBecause('postponed') },
+  { named: 'a lost context ended', ending: skippedBecause('trigger_lost') }
+]
+
+const EVERY_ENDING: { named: string; ending: TourEnding }[] = [
+  { named: 'the user walked to the end', ending: COMPLETED },
+  ...UNFINISHED_ENDINGS
+]
+
+/** The queue storing a job, which is what acceptance actually looks like. */
+function acceptRun(workflow: unknown) {
+  mocks.queuedJobs.value = { 'job-1': { workflow } }
+  return nextTick()
+}
+
+/** The queue letting a job go, which `resetExecutionState` does silently. */
+function removeRun() {
+  mocks.queuedJobs.value = {}
+  return nextTick()
+}
+
 function finishRun(workflow: unknown, status: string) {
   mocks.workflowStatus.value = new Map(mocks.workflowStatus.value).set(
     workflow,
@@ -197,18 +246,21 @@ function mountRunButton(
 
 describe('useFirstRunTourController', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
-    vi.useFakeTimers()
     mocks.canRunWorkflows = ref(true)
     mocks.workflowStatus.value = new Map()
+    mocks.queuedJobs.value = {}
     mocks.executionErrors.hasNodeError = false
     mocks.executionErrors.hasPromptError = false
     mocks.activeWorkflow.value = null
     mocks.linearMode.value = false
     mocks.vueNodesEnabled = true
+    mocks.setSetting.mockImplementation((_key: string, value: boolean) => {
+      mocks.vueNodesEnabled = value
+      return Promise.resolve()
+    })
     mocks.steps = []
     mocks.engine.activeTour = null
+    mocks.engine.lastEnding = null
     mocks.engine.step = null
     mocks.engine.isLast = false
   })
@@ -216,9 +268,7 @@ describe('useFirstRunTourController', () => {
   afterEach(() => {
     controllerScope?.stop()
     controllerScope = undefined
-    document.body.innerHTML = ''
     setViewportWidth(1280)
-    vi.useRealTimers()
   })
 
   describe('starting', () => {
@@ -286,6 +336,77 @@ describe('useFirstRunTourController', () => {
       expect(mocks.vueNodesEnabled).toBe(true)
     })
 
+    // Holds only ever end a tour that is already running, and only when they
+    // change, so a context that is lost before the tour opens has to be
+    // refused at the door. Asserted as "nothing opened" rather than as the
+    // holds value: with no tour registered there is nothing to hold.
+    it('refuses to open over the linear view, which hides the canvas', async () => {
+      mocks.linearMode.value = true
+      mocks.vueNodesEnabled = false
+      mocks.steps = [runStep()]
+      const controller = await freshController()
+
+      const starting = controller.beginTour('image_z_image_turbo')
+      await vi.advanceTimersByTimeAsync(INTRO_PREVIEW_MS)
+
+      expect(
+        await starting,
+        '?template=X&mode=linear display:none-s the canvas, so every card would point at a node nobody can see'
+      ).toBe(false)
+      expect(
+        mocks.engine.startTour,
+        'the cards would sit over a hidden canvas until their targets timed out'
+      ).not.toHaveBeenCalled()
+      expect(
+        mocks.setSetting,
+        'a tour that never opened must not touch the renderer setting at all'
+      ).not.toHaveBeenCalledWith('Comfy.VueNodes.Enabled', true)
+    })
+
+    it('refuses to open on a viewport below the desktop layout', async () => {
+      setViewportWidth(500)
+      mocks.vueNodesEnabled = false
+      mocks.steps = [runStep()]
+      const controller = await freshController()
+
+      const starting = controller.beginTour('image_z_image_turbo')
+      await vi.advanceTimersByTimeAsync(INTRO_PREVIEW_MS)
+
+      expect(
+        await starting,
+        'the spotlights are placed against a desktop layout, so below md they point nowhere'
+      ).toBe(false)
+      expect(mocks.engine.startTour).not.toHaveBeenCalled()
+      expect(mocks.setSetting).not.toHaveBeenCalledWith(
+        'Comfy.VueNodes.Enabled',
+        true
+      )
+    })
+
+    it('refuses to open when the canvas goes away during the intro preview', async () => {
+      mocks.vueNodesEnabled = false
+      mocks.steps = [runStep()]
+      const controller = await freshController()
+
+      const starting = controller.beginTour('image_z_image_turbo')
+      // Flush the renderer switch first, so the canvas is lost inside the
+      // preview delay rather than while beginTour is still setting up. Only
+      // the post-delay re-check can catch it from there.
+      await vi.advanceTimersByTimeAsync(0)
+      mocks.linearMode.value = true
+      await vi.advanceTimersByTimeAsync(INTRO_PREVIEW_MS)
+
+      expect(
+        await starting,
+        'the holds watcher cannot catch this — there is no active tour to end yet'
+      ).toBe(false)
+      expect(mocks.engine.startTour).not.toHaveBeenCalled()
+      expect(
+        mocks.vueNodesEnabled,
+        'the renderer switch thrown for a tour that never opened is handed back'
+      ).toBe(false)
+    })
+
     it('leaves the workflow undimmed before taking the screen over', async () => {
       mocks.steps = [runStep()]
       const controller = await freshController()
@@ -321,13 +442,83 @@ describe('useFirstRunTourController', () => {
   })
 
   describe('a run behind a dropped socket', () => {
+    /**
+     * A run the queue accepted: the click reports `generating`, then the
+     * backend answers with a status. The acknowledgement matters — an
+     * unacknowledged submission is a refusal, and is covered separately below.
+     */
     async function generatingRun() {
       await tourOnRunStep()
       mountRunButton('queue-button', () => {}).click()
       expect(mocks.runState.value).toBe('generating')
+      await finishRun(TOUR_WORKFLOW, 'running')
       const { api } = await import('@/scripts/api')
       return api
     }
+
+    it('stops promising a result the queue never accepted', async () => {
+      await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      expect(mocks.runState.value).toBe('generating')
+
+      // No status ever arrives. A refused submission gets no prompt_id, and
+      // account preconditions - sign-in, subscription, credits - are kept out
+      // of the error stores on purpose, so nothing else can report this.
+      await vi.advanceTimersByTimeAsync(ACCEPT_DEADLINE_MS)
+
+      expect(
+        mocks.runState.value,
+        'a paid user out of credits is refused silently; the card must not promise a result forever'
+      ).toBe('failed')
+    })
+
+    it('leaves a run accepted but still waiting for a machine alone', async () => {
+      // Cloud accepts the job and reports "Waiting for a machine" — it is in
+      // `initializingJobIds` with NO workflow status until a worker picks it
+      // up, which routinely outlasts the deadline. Keying on status instead of
+      // acceptance would fail this healthy run and tell the user to run again,
+      // prompting a duplicate paid submission.
+      await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      await acceptRun(TOUR_WORKFLOW)
+
+      await vi.advanceTimersByTimeAsync(ACCEPT_DEADLINE_MS * 4)
+
+      expect(
+        mocks.runState.value,
+        'an accepted job with no status yet is queued, not refused'
+      ).toBe('generating')
+    })
+
+    it('lets the offline grace outlive the acceptance deadline', async () => {
+      // The grace is 20s and the acceptance deadline 15s. A drop before the
+      // first status must still get the full grace: acceptance arrives on the
+      // queuePrompt response, not the socket, so it disarms this deadline even
+      // while the connection is down.
+      const { api } = await import('@/scripts/api')
+      await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      await acceptRun(TOUR_WORKFLOW)
+
+      api.dispatchCustomEvent('reconnecting')
+      await vi.advanceTimersByTimeAsync(OFFLINE_GRACE_MS - 1)
+
+      expect(
+        mocks.runState.value,
+        'the 15s acceptance deadline must not cut the 20s grace short'
+      ).toBe('generating')
+    })
+
+    it('leaves an accepted run past the acceptance deadline alone', async () => {
+      await generatingRun()
+
+      await vi.advanceTimersByTimeAsync(ACCEPT_DEADLINE_MS * 4)
+
+      expect(
+        mocks.runState.value,
+        'the deadline is on acceptance, not on the run: a job that answered must never be cut short'
+      ).toBe('generating')
+    })
 
     it('stops promising a result once the socket stays gone', async () => {
       const api = await generatingRun()
@@ -396,6 +587,110 @@ describe('useFirstRunTourController', () => {
         'the grace timer must not clobber an outcome that arrived before it fired'
       ).toBe('succeeded')
     })
+
+    it('stops promising a result once the queue lets go of its job', async () => {
+      await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      await acceptRun(TOUR_WORKFLOW)
+
+      await removeRun()
+
+      expect(
+        mocks.runState.value,
+        'an accepted job that leaves without an outcome leaves the card waiting on a result nobody will send'
+      ).toBe('failed')
+    })
+
+    it('stops promising a result when a running job is dropped mid-run', async () => {
+      // `handleServiceLevelError` ("Job has stagnated") is the live path: it
+      // drops the job and records a prompt error but never touches
+      // `workflowStatus`, so the `running` from `handleExecutionStart`
+      // outlives the run and no status change reports the end.
+      //
+      // Deliberately not the mid-run credits path — #15161 made
+      // `handleAccountPreconditionError` clear the status, so that one ends
+      // via the `undefined`-after-`running` branch without this watcher.
+      await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      await acceptRun(TOUR_WORKFLOW)
+      await finishRun(TOUR_WORKFLOW, 'running')
+
+      await removeRun()
+
+      expect(
+        mocks.runState.value,
+        'a run cut short for credits keeps its running status, so losing the job is the only signal left'
+      ).toBe('failed')
+    })
+
+    it('keeps a completed run that drops out of the queue as it finishes', async () => {
+      await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      await acceptRun(TOUR_WORKFLOW)
+
+      // `handleExecutionSuccess` reports the outcome and drops the job in one
+      // tick, so both land before either watcher runs.
+      void finishRun(TOUR_WORKFLOW, 'completed')
+      await removeRun()
+
+      expect(
+        mocks.runState.value,
+        'every healthy run leaves the queue when it finishes; failing those would fail every run'
+      ).toBe('succeeded')
+    })
+
+    it('keeps a failed run that leaves the queue after reporting', async () => {
+      await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      await acceptRun(TOUR_WORKFLOW)
+      await finishRun(TOUR_WORKFLOW, 'failed')
+
+      await removeRun()
+
+      expect(
+        mocks.runState.value,
+        'a reported outcome is the last word; losing the job afterwards says nothing new'
+      ).toBe('failed')
+    })
+
+    // Pins the transition gate on the status watcher. The stagnation path
+    // leaves `running` in `workflowStatus` forever, and that source
+    // re-evaluates whenever the map is replaced for *any* workflow. Without
+    // the gate the stale `running` is re-read and the card goes back to
+    // promising a result it has already given up on.
+    it('stays failed when an unrelated workflow churns the status map', async () => {
+      await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      await acceptRun(TOUR_WORKFLOW)
+      await finishRun(TOUR_WORKFLOW, 'running')
+
+      await removeRun()
+      expect(mocks.runState.value).toBe('failed')
+
+      await finishRun(OTHER_WORKFLOW, 'running')
+
+      expect(
+        mocks.runState.value,
+        'another workflow starting is not this run coming back from the dead'
+      ).toBe('failed')
+    })
+
+    // The other half of the stagnation path: the prompt error it records must
+    // still be able to end the run while the stale `running` sits there.
+    it('gives up on a stagnated job that leaves an error and a stale status', async () => {
+      await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      await acceptRun(TOUR_WORKFLOW)
+      await finishRun(TOUR_WORKFLOW, 'running')
+
+      mocks.executionErrors.hasPromptError = true
+      await removeRun()
+
+      expect(
+        mocks.runState.value,
+        'a stagnated run reports an error and abandons the job; the status it leaves behind is not news'
+      ).toBe('failed')
+    })
   })
 
   describe('run outcome', () => {
@@ -445,26 +740,6 @@ describe('useFirstRunTourController', () => {
         registeredTourHolds(),
         'a tour must not end just because its run progressed'
       ).toBe(true)
-    })
-
-    it('refuses to hold a tour on a viewport below the desktop layout', async () => {
-      setViewportWidth(500)
-      await tourOnRunStep()
-
-      expect(
-        registeredTourHolds(),
-        'the spotlight is placed against a desktop layout, so below md it points nowhere'
-      ).toBe(false)
-    })
-
-    it('refuses to hold a tour over the linear view, which hides the canvas', async () => {
-      mocks.linearMode.value = true
-      await tourOnRunStep()
-
-      expect(
-        registeredTourHolds(),
-        '?mode=linear display:none-s the canvas, so every spotlight lands on a node nobody can see'
-      ).toBe(false)
     })
 
     it('ends the tour when the user switches into the linear view mid-walk', async () => {
@@ -587,6 +862,19 @@ describe('useFirstRunTourController', () => {
       ).toBe('failed')
     })
 
+    it('gives up on a run the validator refused before it reached a node', async () => {
+      await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+
+      mocks.executionErrors.hasPromptError = true
+      await nextTick()
+
+      expect(
+        mocks.runState.value,
+        'a prompt refused whole never reaches a node, so no node error and no status will ever end the wait'
+      ).toBe('failed')
+    })
+
     it('leaves errors alone until the tour has run something', async () => {
       await tourOnRunStep()
 
@@ -644,11 +932,52 @@ describe('useFirstRunTourController', () => {
       ).toBe(false)
     })
 
+    it('congratulates a tour the user walked to the end', async () => {
+      const { controller } = await tourOnRunStep()
+
+      await endTour(COMPLETED)
+
+      expect(controller.tourWasCompleted.value).toBe(true)
+    })
+
+    it.for(UNFINISHED_ENDINGS)(
+      'congratulates nobody for a tour $named',
+      async ({ ending }) => {
+        const { controller } = await tourOnRunStep()
+
+        await endTour(ending)
+
+        expect(
+          controller.tourWasCompleted.value,
+          'a tour the user never walked to the end made no first result to congratulate'
+        ).toBe(false)
+      }
+    )
+
+    it.for(EVERY_ENDING)(
+      'still offers the nudge after a tour $named',
+      async ({ ending }) => {
+        const { controller } = await tourOnRunStep()
+
+        await endTour(ending)
+
+        expect(
+          controller.nudgeArmed.value,
+          'suppressing the nudge takes the way forward from the user who most needs it (#14144)'
+        ).toBe(true)
+      }
+    )
+
     it('congratulates nobody when the tour never appeared', async () => {
       mocks.steps = []
       mocks.activeWorkflow.value = TOUR_WORKFLOW
       mocks.engine.startTour.mockImplementation(async () => {
         await resolveRegisteredTour()
+        // The store requests the run, resolves no steps and returns to idle, so
+        // nothing ever calls `finish()` and no ending is recorded.
+        mocks.engine.activeTour = 'firstRun'
+        await nextTick()
+        mocks.engine.activeTour = null
         return false
       })
       const controller = await freshController()
@@ -656,11 +985,16 @@ describe('useFirstRunTourController', () => {
       const starting = controller.beginTour('image_z_image_turbo')
       await vi.advanceTimersByTimeAsync(INTRO_PREVIEW_MS)
       await starting
+      await nextTick()
 
       expect(
-        controller.tourWasShown.value,
+        controller.tourWasCompleted.value,
         'a tour that resolved no steps made nothing for the nudge to celebrate'
       ).toBe(false)
+      expect(
+        controller.nudgeArmed.value,
+        'a user who saw no tour is the one who most needs somewhere to go next'
+      ).toBe(true)
     })
 
     it('stops offering the nudge once it is waved away', async () => {

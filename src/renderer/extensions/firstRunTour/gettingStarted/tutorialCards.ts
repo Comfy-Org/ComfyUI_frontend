@@ -10,7 +10,7 @@ export const CURATED_TEMPLATE_IDS = [
 export const FALLBACK_TEMPLATE_IDS = [
   'templates-image_to_real',
   'image_qwen_image_edit_2509',
-  'templates-qwen_multiangle.app',
+  'flux_fill_inpaint_example',
   'video_ltx2_i2v_distilled'
 ] as const
 

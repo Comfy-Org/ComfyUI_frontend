@@ -10,8 +10,9 @@ import {
   computeAncestorExecutionIds,
   createVerificationAbortController
 } from '@/platform/missing/missingCandidateHelpers'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { NodeExecutionId } from '@/types/nodeIdentification'
+import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 
 /**
  * Missing media error state.
@@ -59,6 +60,12 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
 
   function setMissingMedia(media: MissingMediaCandidate[]) {
     missingMediaCandidates.value = media.length ? media : null
+  }
+
+  function hasMissingMediaOnNode(nodeLocatorId: NodeLocatorId): boolean {
+    const executionId =
+      useWorkflowStore().nodeLocatorIdToNodeExecutionId(nodeLocatorId)
+    return executionId ? missingMediaNodeIds.value.has(executionId) : false
   }
 
   function isContainerWithMissingMedia(node: LGraphNode): boolean {
@@ -144,6 +151,7 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
     missingMediaAncestorExecutionIds,
     activeMissingMediaGraphIds,
 
+    hasMissingMediaOnNode,
     setMissingMedia,
     addMissingMedia,
     removeMissingMediaByWidget,

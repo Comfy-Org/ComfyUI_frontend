@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Load3dDeps } from '@/extensions/core/load3d/Load3d'
 import Load3d from '@/extensions/core/load3d/Load3d'
@@ -136,7 +136,9 @@ function makeInstance() {
     eventManager,
     adapterRef: { current: null },
     forceRender: vi.fn(),
-    handleResize: vi.fn()
+    handleResize: vi.fn(),
+    preRenderCallbacks: [],
+    postRenderCallbacks: []
   })
 
   return {
@@ -158,10 +160,6 @@ describe('Load3d', () => {
 
   beforeEach(() => {
     ctx = makeInstance()
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   describe('gizmo delegation', () => {
@@ -1149,14 +1147,6 @@ describe('Load3d', () => {
   })
 
   describe('exportModel', () => {
-    beforeEach(() => {
-      cloneSkinnedMock.mockReset()
-      exportGLBMock.mockReset()
-      exportOBJMock.mockReset()
-      exportSTLMock.mockReset()
-      exportFBXMock.mockReset()
-    })
-
     function setupForExport(overrides: {
       currentModel: THREE.Object3D | null
       originalModel?: THREE.Object3D | null

@@ -28,8 +28,18 @@ const MEDIA_KIND_BY_SLOT_TYPE: Partial<Record<string, TourMediaKind>> = {
  * `negate`, `negligible` and Spanish `negro` disqualify a real prompt. */
 const DISQUALIFYING = ['negative', 'neg', 'system', 'undesired', 'avoid']
 
+/** `anti` names the negative box only next to the noun — `Anti-prompt`,
+ * `AntiPrompt`, `ANTIPROMPT` — since `anti_aliasing` and `antique` are ordinary
+ * words a real prompt carries. Read off the normalised label, not its words, so
+ * the pair survives the separator and camelCase spellings alike. */
+const ANTI_PROMPT = /\banti ?prompts?\b/
+
 function disqualified(word: string): boolean {
   return DISQUALIFYING.includes(word) || word.startsWith('negative')
+}
+
+function readsAsAntiPrompt(label: string | undefined): boolean {
+  return ANTI_PROMPT.test(labelWords(label).join(' '))
 }
 
 /** Real templates ship nodes with no title and widgets with no name. */
@@ -57,6 +67,7 @@ function consumerInputNames(nodes: LGraphNode[]): Map<LGraphNode, string[]> {
   const names = new Map<LGraphNode, string[]>()
 
   for (const consumer of nodes) {
+    if (consumer.isVirtualNode) continue
     const inputs = consumer.inputs ?? []
     inputs.forEach((input, slot) => {
       const producer = consumer.getInputNode(slot)
@@ -95,6 +106,7 @@ function promptScore(labels: string[], fedInputNames: string[]): number {
   const fed = fedInputNames.flatMap(labelWords)
 
   if ([...words, ...fed].some(disqualified)) return -1
+  if ([...labels, ...fedInputNames].some(readsAsAntiPrompt)) return -1
   if (fed.includes('positive')) return 3
   if (words.includes('positive')) return 2
   if (words.includes('prompt')) return 1

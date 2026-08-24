@@ -1,9 +1,8 @@
 <template>
   <div class="flex flex-col xl:h-full">
     <!-- Plan-scope toggle (personal vs team PLAN on one workspace): sits directly
-         on top of the content area — outside it, attached with no gap (DES QA).
-         Only shown when team plans are available (teamWorkspacesEnabled). -->
-    <div v-if="showTeam" class="flex justify-center">
+         on top of the content area — outside it, attached with no gap (DES QA). -->
+    <div class="flex justify-center">
       <SelectButton
         v-model="planMode"
         :options="planScopeOptions"
@@ -166,7 +165,7 @@
             <div class="mt-auto flex flex-col gap-1">
               <div class="flex flex-row items-center gap-2">
                 <i
-                  class="icon-[comfy--credits] size-4 shrink-0 bg-credit"
+                  class="icon-[lucide--coins] size-4 shrink-0 bg-credit"
                   aria-hidden="true"
                 />
                 <span
@@ -244,7 +243,7 @@
               <div class="flex flex-col gap-1">
                 <div class="flex flex-row items-center gap-2">
                   <i
-                    class="icon-[comfy--credits] size-4 shrink-0 bg-credit"
+                    class="icon-[lucide--coins] size-4 shrink-0 bg-credit"
                     aria-hidden="true"
                   />
                   <span
@@ -416,13 +415,13 @@ import { I18nT, useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import CreditSlider from '@/components/ui/credit-slider/CreditSlider.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   TIER_PRICING,
-  TIER_TO_KEY
+  hasActivePaidPlan,
+  toTierKey
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
-  SubscriptionTier,
+  RegistrySubscriptionTier,
   TierKey,
   TierPricing
 } from '@/platform/cloud/subscription/constants/tierPricing'
@@ -443,8 +442,7 @@ type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 interface Props {
   isLoading?: boolean
   loadingTier?: CheckoutTierKey | null
-  /** Initial plan scope. The toggle to switch is only shown when team plans
-   *  are available (`teamWorkspacesEnabled`). */
+  /** Initial plan scope. */
   initialPlanMode?: 'personal' | 'team'
 }
 
@@ -468,11 +466,7 @@ const emit = defineEmits<{
 }>()
 
 const { t, n } = useI18n()
-const { flags } = useFeatureFlags()
 const { permissions } = useWorkspaceUI()
-
-/** Team plans only exist behind the flag (mirrors useBillingContext type). */
-const showTeam = computed(() => flags.teamWorkspacesEnabled)
 
 const planMode = ref<'personal' | 'team'>(initialPlanMode)
 
@@ -501,7 +495,7 @@ interface PlanScopeOption {
 }
 
 interface PricingTierConfig {
-  id: SubscriptionTier
+  id: RegistrySubscriptionTier
   key: CheckoutTierKey
   name: string
   pricing: TierPricing
@@ -786,10 +780,12 @@ function getPriceFromApi(tier: PricingTierConfig): number | null {
   return currentBillingCycle.value === 'yearly' ? price / 12 : price
 }
 
+const currentAccountTier = computed(() =>
+  subscription.value?.tier && !isEnded.value ? subscription.value.tier : null
+)
+
 const currentTierKey = computed<TierKey | null>(() =>
-  subscription.value?.tier && !isEnded.value
-    ? TIER_TO_KEY[subscription.value.tier]
-    : null
+  currentAccountTier.value ? toTierKey(currentAccountTier.value) : null
 )
 
 const isYearlySubscription = computed(
@@ -822,11 +818,7 @@ const getButtonLabel = (tier: PricingTierConfig): string => {
       : t('subscription.currentPlan')
   }
 
-  // Free tier is not a paid plan to "change" from — those users subscribe.
-  const hasActivePaidPlan =
-    currentTierKey.value !== null && currentTierKey.value !== 'free'
-
-  return hasActivePaidPlan
+  return hasActivePaidPlan(currentAccountTier.value)
     ? t('subscription.changeTo', { plan: planName })
     : t('subscription.subscribeTo', { plan: planName })
 }

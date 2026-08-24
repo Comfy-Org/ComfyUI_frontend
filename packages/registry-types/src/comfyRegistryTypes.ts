@@ -6720,8 +6720,18 @@ export interface components {
              *     • Size: No more than 10 MB (30 MB for seedream-5.0-pro)
              *     • Total pixels: No more than 6000x6000 (36,000,000 px) for seedream-5.0-pro
              *     • Maximum of 14 reference images (10 for seedream-5.0-pro)
+             *
+             *     In the layer-separation scenario (layer_decomposition enabled), image is required and only a single input image is supported (passing multiple images returns an error). Input images must be png, jpeg, webp, bmp, tiff or gif (heic and heif are not supported), up to 30 MB, with total pixels in the range [512x512, 6000x6000] and aspect ratio in [1/16, 16].
              */
             image?: string | string[];
+            /**
+             * @description Controls whether layer separation is enabled. Only seedream-5.0-pro supports this parameter.
+             *     true: Layer-separation mode. The model decomposes the single input image into one base image plus multiple layers (up to 16), and returns the position and content information of each produced layer, including the stacking order (z_index), bounding box (bounding_box), name (name) and description (description).
+             *     false: Standard image-generation mode; no layer separation is performed.
+             *     Notes on layer-separation mode: only a single input image is supported (passing multiple images returns an error); if any single layer fails to generate, the whole request fails — partial success is not supported; at most 17 images are returned (1 base image + 16 layers). sequential_image_generation, sequential_image_generation_options, tools and stream return an error if passed.
+             * @default false
+             */
+            layer_decomposition: boolean;
             /** @enum {string} */
             model: "seedream-3-0-t2i-250415" | "seededit-3-0-i2i-250628" | "seedream-4-0-250828" | "seedream-4-5-251128" | "seedream-5-0-260128" | "seedream-5-0-pro-260628";
             /** @description Configuration for prompt optimization feature. Only seedream-5.0-pro/5.0-lite/4.5 (only support standard mode) and seedream-4.0 support this parameter. */
@@ -6734,13 +6744,16 @@ export interface components {
                 mode: "standard" | "fast";
             };
             /**
-             * @description Specifies the format of the output image. Only seedream-5.0-pro and 5.0-lite support this parameter.
+             * @description Specifies the format of the output image. Only seedream-5.0-pro and 5.0-lite support this parameter. In the layer-separation scenario, output_format only controls the format of the base image; every layer is always output as png.
              * @default jpeg
              * @enum {string}
              */
             output_format: "png" | "jpeg";
-            /** @description Text description for image generation or transformation */
-            prompt: string;
+            /**
+             * @description Text description for image generation or transformation.
+             *     Optional in the layer-separation scenario (seedream-5.0-pro with layer_decomposition enabled): if a prompt is provided, the model recognizes and separates the elements you specify according to the prompt intent; if no prompt is provided, the model automatically detects all major elements in the image and separates them into independent layers.
+             */
+            prompt?: string;
             /**
              * @description Specifies the format of the generated image returned in the response
              * @default url
@@ -6784,6 +6797,9 @@ export interface components {
              *     "seedream-5-0-pro-260628": Two methods available (cannot be used together).
              *       Method 1 | Specify the resolution and describe the aspect ratio, shape or purpose of the image in the prompt; the model decides the final size. Optional values: 1K, 2K
              *       Method 2 | Specify width and height in pixels. Default: 1024x1024, total pixels: [1024x1024 (1048576), 2048x2048 (4194304)], aspect ratio: [1/16, 16]
+             *     "seedream-5-0-pro-260628" with layer_decomposition enabled: Only the resolution-level method is supported. Optional values: 1K, 1.5K, 2K, auto. Default: auto.
+             *       The base image is output at the specified resolution with the aspect ratio of the original input image; each layer is output close to the specified resolution, keeping the aspect ratio it had in the original image.
+             *       auto: Output is based on the size and aspect ratio of the input image. Inputs within [1280x720, ~2048x2048] are output at the original input size; inputs smaller than 1K are output at 1K; inputs larger than 2K are output at 2K.
              */
             size?: string;
             /**
@@ -6800,10 +6816,24 @@ export interface components {
         BytePlusImageGenerationResponse: {
             /** @description Unix timestamp (in seconds) indicating the time when the request was created */
             created?: number;
-            /** @description Contains information about the generated image(s) */
+            /**
+             * @description Contains information about the generated image(s).
+             *     In the layer-separation scenario, the first element of the array is the base image (z_index=0), and the following elements are the layers, ordered by increasing z_index.
+             */
             data?: {
                 /** @description Base64-encoded image data (if response_format is "b64_json") */
                 b64_json?: string;
+                /** @description The bounding-box information of the region that the current layer occupies within the base image. Only layers return this field; the base image covers the whole canvas and does not return bounding_box. Returned only when layer_decomposition is true. */
+                bounding_box?: {
+                    /** @description The absolute pixel coordinates of the layer's bounding box, in the output base image's coordinate system with the top-left corner at (0, 0). Coordinate format: [left, top, right, bottom]. */
+                    absolute?: number[];
+                    /** @description The per-mille quantized (normalized) coordinates of the layer's bounding box, proportionally mapped to a discrete integer range of [0, 1000] based on the base image size, truncated at a maximum of 1000. Coordinate format: [left, top, right, bottom]. */
+                    normalized?: number[];
+                };
+                /** @description A detailed description of the current separated element, providing richer layer characteristics (such as color, state, material) than name. Only layers return this field; the base image does not. Returned only when layer_decomposition is true. */
+                description?: string;
+                /** @description The name/label of the current separated element, automatically generated by the model from the characteristics of the separated subject. Only layers return this field; the base image does not. Returned only when layer_decomposition is true. */
+                name?: string;
                 /** @description The file format of the output image. Only seedream-5.0-pro supports this field. */
                 output_format?: string;
                 /** @description The width and height of the image in pixels, in the format <width>x<height>. Only seedream-5.0-pro, 5.0-lite, 4.5 and 4.0 support this parameter. */
@@ -6813,6 +6843,8 @@ export interface components {
                  * @description URL for image download (if response_format is "url")
                  */
                 url?: string;
+                /** @description The stacking order of the layer, increasing from bottom to top: 0 is the bottom-most layer (the base image); larger values sit higher. Use it to recompose the layers into the complete image at the correct stacking order. Returned only when layer_decomposition is true. */
+                z_index?: number;
             }[];
             /** @description Error information (if any) */
             error?: {
@@ -7528,7 +7560,7 @@ export interface components {
             aigc_watermark?: boolean;
         };
         BytePlusVideoGenerationContent: {
-            /** @description Input audio object. Only Seedance 2.0 & 2.0 fast support audio input. Cannot be used alone - must include at least 1 image or video. */
+            /** @description Input audio object. Only Seedance 2.5, 2.0 & 2.0 fast support audio input. Seedance 2.0 & 2.0 fast cannot use audio alone - they must include at least 1 image or video; Seedance 2.5 supports audio-only input. */
             audio_url?: {
                 /**
                  * @description Audio URL, Base64 encoding, or Asset ID.
@@ -7550,8 +7582,8 @@ export interface components {
             /**
              * @description The role/position of the content item.
              *     For images: first_frame, last_frame, or reference_image.
-             *     For videos: reference_video (Seedance 2.0 & 2.0 fast only).
-             *     For audio: reference_audio (Seedance 2.0 & 2.0 fast only).
+             *     For videos: reference_video (Seedance 2.5, 2.0 & 2.0 fast only).
+             *     For audio: reference_audio (Seedance 2.5, 2.0 & 2.0 fast only).
              * @enum {string}
              */
             role?: "first_frame" | "last_frame" | "reference_image" | "reference_video" | "reference_audio";
@@ -7577,7 +7609,7 @@ export interface components {
              * @enum {string}
              */
             type: "text" | "image_url" | "video_url" | "audio_url";
-            /** @description Input video object. Only Seedance 2.0 & 2.0 fast support video input. */
+            /** @description Input video object. Only Seedance 2.5, 2.0 & 2.0 fast support video input. */
             video_url?: {
                 /**
                  * @description Video URL or Asset ID.
@@ -7590,6 +7622,8 @@ export interface components {
         BytePlusVideoGenerationQueryResponse: {
             /** @description The output after the video generation task is completed, which contains the download URL of the output video. */
             content?: {
+                /** @description Container format of the generated video (mp4 or mov). Returned only by Seedance 2.5. */
+                output_format?: string;
                 /** @description The URL of the output video. For security purposes, the output video is cleared after 24 hours. */
                 video_url?: string;
             };
@@ -7629,12 +7663,12 @@ export interface components {
             callback_url?: string;
             /** @description The input content for the model to generate a video */
             content: components["schemas"]["BytePlusVideoGenerationContent"][];
-            /** @description Video duration in seconds. Seedance 2.0 & 2.0 fast: [4,15] or -1 (auto). Seedance 1.5 pro: [4,12] or -1. Seedance 1.0: [2,12]. */
+            /** @description Video duration in seconds. Seedance 2.5: [4,30] or -1 (auto; video editing tasks support only -1). Seedance 2.0 & 2.0 fast: [4,15] or -1 (auto). Seedance 1.5 pro: [4,12] or -1. Seedance 1.0: [2,12]. */
             duration?: number;
             /** @description Task timeout threshold in seconds. Default 172800 (48h). Range: [3600, 259200]. */
             execution_expires_after?: number;
             /**
-             * @description Supported by Seedance 2.0, 2.0 fast, and 1.5 pro. Whether the generated video includes audio synchronized with the visuals.
+             * @description Supported by Seedance 2.5, 2.0, 2.0 fast, and 1.5 pro. Whether the generated video includes audio synchronized with the visuals.
              *     true: The model outputs a video with synchronized audio.
              *     false: The model outputs a silent video.
              * @default true
@@ -7644,15 +7678,22 @@ export interface components {
              * @description The ID of the model to call. Available models include seedance-1-5-pro-251215, seedance-1-0-pro-250528, seedance-1-0-pro-fast-251015, seedance-1-0-lite-t2v-250428, seedance-1-0-lite-i2v-250428
              * @enum {string}
              */
-            model: "seedance-1-5-pro-251215" | "seedance-1-0-pro-250528" | "seedance-1-0-lite-t2v-250428" | "seedance-1-0-lite-i2v-250428" | "seedance-1-0-pro-fast-251015" | "dreamina-seedance-2-0-260128" | "dreamina-seedance-2-0-fast-260128" | "dreamina-seedance-2-0-mini";
+            model: "seedance-1-5-pro-251215" | "seedance-1-0-pro-250528" | "seedance-1-0-lite-t2v-250428" | "seedance-1-0-lite-i2v-250428" | "seedance-1-0-pro-fast-251015" | "dreamina-seedance-2-0-260128" | "dreamina-seedance-2-0-fast-260128" | "dreamina-seedance-2-0-mini" | "dreamina-seedance-2-5-260628";
+            /**
+             * @description Seedance 2.5 only. Container format of the output video.
+             *     mp4: General-purpose container (H.264/AAC, yuv420p) with broad compatibility and smaller file size.
+             *     mov: Professional container (H.264 High 4:4:4 Predictive/PCM, yuv444p) with high color precision, suited for post-production; larger file size.
+             * @default mp4
+             */
+            output_format: string;
             /**
              * @description Aspect ratio of the generated video. Seedance 2.0 & 2.0 fast, 1.5 pro default: adaptive.
              * @enum {string}
              */
             ratio?: "16:9" | "4:3" | "1:1" | "3:4" | "9:16" | "21:9" | "adaptive";
             /**
-             * @description Video resolution. Seedance 2.0 & 2.0 fast, 1.5 pro, 1.0 lite default: 720p. Seedance 1.0 pro & pro-fast default: 1080p.
-             *     Note: Seedance 2.0 & 2.0 fast do not support 1080p.
+             * @description Video resolution. Seedance 2.5, 2.0 & 2.0 fast, 1.5 pro, 1.0 lite default: 720p. Seedance 1.0 pro & pro-fast default: 1080p.
+             *     Note: Seedance 2.0 & 2.0 fast do not support 1080p. Seedance 2.5 supports 480p and 720p only.
              * @enum {string}
              */
             resolution?: "480p" | "720p" | "1080p" | "4k";
@@ -7666,7 +7707,7 @@ export interface components {
             /** @description Seed integer for controlling randomness. Range: [-1, 2^32-1]. -1 uses a random seed. */
             seed?: number;
             /**
-             * @description Service tier for processing. Seedance 2.0 & 2.0 fast do not support flex (offline inference).
+             * @description Service tier for processing. Seedance 2.5, 2.0 & 2.0 fast do not support flex (offline inference).
              * @enum {string}
              */
             service_tier?: "default" | "flex";
@@ -11687,16 +11728,16 @@ export interface components {
         };
         LTXImage2VideoRequest: {
             /**
-             * @description Video duration in seconds
+             * @description Video duration in seconds (maximum depends on resolution and frame rate)
              * @enum {integer}
              */
-            duration: 6 | 8 | 10;
+            duration: 2 | 3 | 4 | 5 | 6 | 8 | 10 | 12 | 14 | 16 | 18 | 20;
             /**
              * @description Frame rate in frames per second
              * @default 25
              * @enum {integer}
              */
-            fps: 25 | 50;
+            fps: 24 | 25 | 48 | 50;
             /**
              * @description Generate audio for the video
              * @default true
@@ -11704,31 +11745,33 @@ export interface components {
             generate_audio: boolean;
             /** @description Image to be used as the first frame of the video (HTTPS URL or base64 data URI) */
             image_uri: string;
+            /** @description Image to be used as the last frame of the video (HTTPS URL or base64 data URI) */
+            last_frame_uri?: string;
             /**
              * @description Model to use for generation
              * @enum {string}
              */
-            model: "ltx-2-fast" | "ltx-2-pro";
+            model: "ltx-2-fast" | "ltx-2-pro" | "ltx-2-5-fast" | "ltx-2-5-pro";
             /** @description Text description of how the image should be animated */
             prompt: string;
             /**
              * @description Output video resolution
              * @enum {string}
              */
-            resolution: "1920x1080" | "2560x1440" | "3840x2160";
+            resolution: "1280x720" | "720x1280" | "1920x1080" | "1080x1920" | "2560x1440" | "1440x2560" | "3840x2160" | "2160x3840";
         };
         LTXText2VideoRequest: {
             /**
-             * @description Video duration in seconds
+             * @description Video duration in seconds (maximum depends on resolution and frame rate)
              * @enum {integer}
              */
-            duration: 6 | 8 | 10;
+            duration: 2 | 3 | 4 | 5 | 6 | 8 | 10 | 12 | 14 | 16 | 18 | 20;
             /**
              * @description Frame rate in frames per second
              * @default 25
              * @enum {integer}
              */
-            fps: 25 | 50;
+            fps: 24 | 25 | 48 | 50;
             /**
              * @description Generate audio for the video
              * @default true
@@ -11738,14 +11781,14 @@ export interface components {
              * @description Model to use for generation
              * @enum {string}
              */
-            model: "ltx-2-fast" | "ltx-2-pro";
+            model: "ltx-2-fast" | "ltx-2-pro" | "ltx-2-5-fast" | "ltx-2-5-pro";
             /** @description Text prompt describing the desired video content */
             prompt: string;
             /**
              * @description Output video resolution
              * @enum {string}
              */
-            resolution: "1920x1080" | "2560x1440" | "3840x2160";
+            resolution: "1280x720" | "720x1280" | "1920x1080" | "1080x1920" | "2560x1440" | "1440x2560" | "3840x2160" | "2160x3840";
         };
         /**
          * @description Output aspect ratio. The ray-3.2 video models support the subset 9:16, 3:4, 1:1, 4:3, 16:9, 21:9.
@@ -12826,7 +12869,7 @@ export interface components {
                 /** @description A publicly reachable URL, an mm_file://{file_id} reference, or a data URI. */
                 url?: string;
             };
-            /** @description Role of a media item. Options: first_frame, last_frame, reference_image, reference_video, reference_audio. Keyframe roles and reference_* roles are mutually exclusive within a request. */
+            /** @description Role of a media item. Options: first_frame, last_frame, reference_image, reference_video, reference_audio, base_video. Keyframe roles and reference_* roles are mutually exclusive within a request; base_video marks the source video of a video regeneration request. */
             role?: string;
             /** @description The prompt text. Exactly one non-empty text item is required per request. */
             text?: string;
@@ -12842,6 +12885,8 @@ export interface components {
         MinimaxV2TaskResult: {
             /** @description Generated output; present when status is succeeded. */
             content?: {
+                /** @description The enhanced video prompt produced by a succeeded h3_context_ir task. */
+                prompt?: string;
                 /** @description Time-limited URL of the generated MP4. Query again for a refreshed URL. */
                 url?: string;
             };
@@ -12865,9 +12910,13 @@ export interface components {
             task_type?: string;
             /** @description Usage recorded for the task. */
             usage?: {
+                completion_tokens?: number;
+                input_image_count?: number;
                 input_seconds?: number;
                 output_seconds?: number;
+                prompt_tokens?: number;
                 total_seconds?: number;
+                total_tokens?: number;
             };
         };
         /** @description Response from querying a Minimax V2 video generation task status. */
@@ -17243,13 +17292,18 @@ export interface components {
         };
         TopazEnhanceGenRequest: {
             /**
-             * @description To preserve the original color - available for Reimagine only (must be string "true" or "false" due to Topaz API requirement)
+             * @description Automatically generate a prompt from the input image - available for Bloom 2 only
+             * @default true
+             */
+            autoprompt: boolean;
+            /**
+             * @description To preserve the original color - available for Reimagine and Bloom 2 only (must be string "true" or "false" due to Topaz API requirement)
              * @default true
              * @enum {string}
              */
             color_preservation: "true" | "false";
             /**
-             * @description Creativity settings range from 1 to 9 -  - available for Reimagine only
+             * @description Creativity settings range from 1 to 9 - available for Reimagine and Bloom 2 only
              * @default 3
              */
             creativity: number;
@@ -17258,6 +17312,11 @@ export interface components {
              * @default false
              */
             crop_to_fill: boolean;
+            /**
+             * @description Strength of the enhancement - low, medium or high - available for Wonder 3.5 only
+             * @default high
+             */
+            enhancement_strength: string;
             /**
              * @description By default, faces (if any) are enhanced during image processing as well. Set face_enhancement to false if you don't want this
              * @default true
@@ -17280,16 +17339,45 @@ export interface components {
              */
             face_preservation: "true" | "false";
             /**
+             * @description Whether to add grain to the output image - available for Wonder 3.5 and Bloom 2 only
+             * @default false
+             */
+            grain: boolean;
+            /**
+             * @description Density of the added grain from 0 to 1 - ignored if grain is false - available for Wonder 3.5 and Bloom 2 only
+             * @default 0.5
+             */
+            grain_density: number;
+            /**
+             * @description Grain model - silver, gaussian or grey - ignored if grain is false - available for Wonder 3.5 and Bloom 2 only
+             * @default silver
+             */
+            grain_model: string;
+            /**
+             * @description Size of the added grain from 1 to 5 - ignored if grain is false - available for Wonder 3.5 and Bloom 2 only
+             * @default 1
+             */
+            grain_size: number;
+            /**
+             * @description Strength of the added grain from 0 to 1 - ignored if grain is false - available for Wonder 3.5 and Bloom 2 only
+             * @default 0.5
+             */
+            grain_strength: number;
+            /**
              * Format: binary
              * @description The image file to be processed. Supported formats - jpeg (or jpg), png, tiff (or tif)
              */
             image?: string;
+            /** @description Height of the input image in pixels - available for Wonder 3.5 and Bloom 2 only */
+            input_height?: number;
+            /** @description Width of the input image in pixels - available for Wonder 3.5 and Bloom 2 only */
+            input_width?: number;
             /**
-             * @description The model to use for processing the image (Bloom - Creative Upscale)
+             * @description The model to use for processing the image
              * @default Reimagine
              * @enum {string}
              */
-            model: "Reimagine";
+            model: "Reimagine" | "Wonder 3.5" | "Bloom 2";
             /**
              * @description The desired format of the output image
              * @default jpeg
@@ -17301,10 +17389,14 @@ export interface components {
             /** @description The desired width of the output image in pixels */
             output_width?: number;
             /**
-             * @description Text prompt for creative upscaling guidance - available for Reimagine only
+             * @description Text prompt for creative upscaling guidance - available for Reimagine and Bloom 2 only
              * @example enter-your-prompt-here
              */
             prompt?: string;
+            /** @description URI of a reference image to guide generation - available for Bloom 2 only */
+            reference_uri?: string;
+            /** @description Seed for reproducible generation - available for Bloom 2 only */
+            seed?: number;
             /**
              * @description Unique identifier of the source image
              * @example d7b3b3b3-7b3b-4b3b-8b3b-3b3b3b3b3b3b

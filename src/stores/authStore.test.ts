@@ -11,10 +11,16 @@ import {
   clearPreservedQuery
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import {
+  cachedLegacyBillingMigrationEnabled,
+  remoteConfig,
+  remoteConfigState
+} from '@/platform/remoteConfig/remoteConfig'
+import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { useDialogService } from '@/services/dialogService'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import type * as ApiModule from '@/scripts/api'
+import { api } from '@/scripts/api'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { createTestingPinia } from '@pinia/testing'
 
@@ -29,13 +35,21 @@ const { mockDistributionTypes } = vi.hoisted(() => ({
 
 const { mockFeatureFlags } = vi.hoisted(() => ({
   mockFeatureFlags: {
-    teamWorkspacesEnabled: false,
     unifiedCloudAuthEnabled: false
   }
 }))
 
 const { mockResetSocket } = vi.hoisted(() => ({
   mockResetSocket: vi.fn()
+}))
+
+const mockTeamWorkspaceStore = vi.hoisted(() => ({
+  activeWorkspaceId: null as string | null,
+  resetForIdentityChange: vi.fn()
+}))
+
+vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
+  useTeamWorkspaceStore: () => mockTeamWorkspaceStore
 }))
 
 type MockUser = Omit<User, 'getIdToken' | 'delete'> & {
@@ -47,7 +61,6 @@ type MockAuth = Record<string, unknown>
 
 // Mock fetch
 const mockFetch = vi.fn()
-vi.stubGlobal('fetch', mockFetch)
 
 const customerRequestBody = (): Record<string, unknown> | undefined => {
   const customerCall = mockFetch.mock.calls.find(([url]) =>
@@ -129,13 +142,6 @@ vi.mock('@/platform/telemetry', () => ({
   })
 }))
 
-// Mock useToastStore
-vi.mock('@/stores/toastStore', () => ({
-  useToastStore: () => ({
-    add: vi.fn()
-  })
-}))
-
 // Keep the real API singleton (other modules rely on its full surface) but
 // override resetSocket so we can assert socket lifecycle calls without opening
 // a real WebSocket.
@@ -182,11 +188,9 @@ describe('useAuthStore', () => {
   } as Partial<User> as MockUser
 
   beforeEach(() => {
-    vi.resetAllMocks()
-    sessionStorage.clear()
+    vi.stubGlobal('fetch', mockFetch)
     clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.SHARE_AUTH)
 
-    mockFeatureFlags.teamWorkspacesEnabled = false
     mockFeatureFlags.unifiedCloudAuthEnabled = false
 
     // Setup dialog service mock
@@ -229,16 +233,15 @@ describe('useAuthStore', () => {
       return Promise.reject(new Error('Unexpected API call'))
     })
 
-    // Initialize Pinia
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useAuthStore()
 
     // Reset and set up getIdToken mock
-    mockUser.getIdToken.mockReset()
     mockUser.getIdToken.mockResolvedValue('mock-id-token')
 
     // Default: no API key auth
     mockApiKeyGetAuthHeader.mockReturnValue(null)
+    mockTeamWorkspaceStore.activeWorkspaceId = null
+    mockTeamWorkspaceStore.resetForIdentityChange.mockReset()
   })
 
   describe('token refresh events', () => {
@@ -699,10 +702,6 @@ describe('useAuthStore', () => {
   })
 
   describe('getAuthHeader workspace recovery', () => {
-    beforeEach(() => {
-      mockFeatureFlags.teamWorkspacesEnabled = true
-    })
-
     it('uses the workspace header when a valid workspace token exists', async () => {
       const workspaceAuth = useWorkspaceAuthStore()
       vi.spyOn(workspaceAuth, 'getWorkspaceAuthHeader').mockReturnValue({
@@ -717,8 +716,7 @@ describe('useAuthStore', () => {
 
     it('recovers the workspace token instead of downgrading to personal auth', async () => {
       const workspaceAuth = useWorkspaceAuthStore()
-      const teamStore = useTeamWorkspaceStore()
-      teamStore.activeWorkspaceId = 'workspace-123'
+      mockTeamWorkspaceStore.activeWorkspaceId = 'workspace-123'
       vi.spyOn(workspaceAuth, 'getWorkspaceAuthHeader').mockReturnValue(null)
       const ensureSpy = vi
         .spyOn(workspaceAuth, 'ensureWorkspaceAuthHeader')
@@ -733,8 +731,7 @@ describe('useAuthStore', () => {
 
     it('fails closed (no personal Firebase downgrade) when recovery yields no token', async () => {
       const workspaceAuth = useWorkspaceAuthStore()
-      const teamStore = useTeamWorkspaceStore()
-      teamStore.activeWorkspaceId = 'workspace-123'
+      mockTeamWorkspaceStore.activeWorkspaceId = 'workspace-123'
       vi.spyOn(workspaceAuth, 'getWorkspaceAuthHeader').mockReturnValue(null)
       vi.spyOn(workspaceAuth, 'ensureWorkspaceAuthHeader').mockResolvedValue(
         null
@@ -748,8 +745,7 @@ describe('useAuthStore', () => {
 
     it('falls back to Firebase when workspace mode is not yet initialized', async () => {
       const workspaceAuth = useWorkspaceAuthStore()
-      const teamStore = useTeamWorkspaceStore()
-      teamStore.activeWorkspaceId = null
+      mockTeamWorkspaceStore.activeWorkspaceId = null
       vi.spyOn(workspaceAuth, 'getWorkspaceAuthHeader').mockReturnValue(null)
       const ensureSpy = vi.spyOn(workspaceAuth, 'ensureWorkspaceAuthHeader')
 
@@ -761,14 +757,9 @@ describe('useAuthStore', () => {
   })
 
   describe('getAuthToken workspace recovery', () => {
-    beforeEach(() => {
-      mockFeatureFlags.teamWorkspacesEnabled = true
-    })
-
     it('recovers the workspace token instead of downgrading to personal auth', async () => {
       const workspaceAuth = useWorkspaceAuthStore()
-      const teamStore = useTeamWorkspaceStore()
-      teamStore.activeWorkspaceId = 'workspace-123'
+      mockTeamWorkspaceStore.activeWorkspaceId = 'workspace-123'
       const ensureSpy = vi
         .spyOn(workspaceAuth, 'ensureWorkspaceToken')
         .mockResolvedValue('recovered-ws-token')
@@ -782,8 +773,7 @@ describe('useAuthStore', () => {
 
     it('fails closed (no personal Firebase downgrade) when recovery yields no token', async () => {
       const workspaceAuth = useWorkspaceAuthStore()
-      const teamStore = useTeamWorkspaceStore()
-      teamStore.activeWorkspaceId = 'workspace-123'
+      mockTeamWorkspaceStore.activeWorkspaceId = 'workspace-123'
       vi.spyOn(workspaceAuth, 'ensureWorkspaceToken').mockResolvedValue(null)
 
       const token = await store.getAuthToken()
@@ -794,8 +784,7 @@ describe('useAuthStore', () => {
 
     it('falls back to Firebase when workspace mode is not yet initialized', async () => {
       const workspaceAuth = useWorkspaceAuthStore()
-      const teamStore = useTeamWorkspaceStore()
-      teamStore.activeWorkspaceId = null
+      mockTeamWorkspaceStore.activeWorkspaceId = null
       vi.spyOn(workspaceAuth, 'getWorkspaceToken').mockReturnValue(undefined)
       const ensureSpy = vi.spyOn(workspaceAuth, 'ensureWorkspaceToken')
 
@@ -1203,22 +1192,15 @@ describe('useAuthStore', () => {
       })
     })
 
-    it('should succeed with API key auth when no Firebase user is present', async () => {
+    it('should reject API key auth when no Firebase user is present', async () => {
       authStateCallback(null)
       mockApiKeyGetAuthHeader.mockReturnValue({ 'X-API-KEY': 'test-api-key' })
 
-      const result = await store.createCustomer()
-
-      expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/customers'),
-        expect.objectContaining({
-          method: 'POST',
-          headers: expect.objectContaining({
-            'X-API-KEY': 'test-api-key'
-          })
-        })
-      )
-      expect(result).toEqual({ id: 'test-customer-id' })
+      await expect(store.createCustomer()).rejects.toMatchObject({
+        name: 'AuthStoreError',
+        message: 'toastMessages.userNotAuthenticated'
+      })
+      expect(mockFetch).not.toHaveBeenCalled()
     })
 
     it('should use Firebase token when Firebase user is present', async () => {
@@ -1256,6 +1238,375 @@ describe('useAuthStore', () => {
     })
   })
 
+  describe('fetchWithCustomerRecovery', () => {
+    function make409(message: string) {
+      const body = { message }
+      return {
+        ok: false,
+        status: 409,
+        statusText: 'Conflict',
+        json: () => Promise.resolve(body),
+        clone: () => ({ json: () => Promise.resolve(body) })
+      }
+    }
+    function makeConflictResponse() {
+      return make409('Failed to find customer')
+    }
+
+    function countCustomerPosts() {
+      return mockFetch.mock.calls.filter(
+        ([url, init]) =>
+          typeof url === 'string' &&
+          url.endsWith('/customers') &&
+          (init as RequestInit | undefined)?.method === 'POST'
+      ).length
+    }
+
+    it('should provision the customer and retry once when a /customers/* call returns 409', async () => {
+      let balanceCalls = 0
+      mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+        if (url.endsWith('/customers') && init?.method === 'POST') {
+          return Promise.resolve(mockCreateCustomerResponse)
+        }
+        if (url.endsWith('/customers/balance')) {
+          balanceCalls++
+          return Promise.resolve(
+            balanceCalls === 1
+              ? makeConflictResponse()
+              : mockFetchBalanceResponse
+          )
+        }
+        return Promise.reject(new Error('Unexpected API call'))
+      })
+
+      const result = await store.fetchBalance()
+
+      expect(result).toEqual({ balance: 0 })
+      expect(balanceCalls).toBe(2)
+      expect(countCustomerPosts()).toBe(1)
+    })
+
+    it('should deduplicate concurrent recovery attempts into a single customer creation', async () => {
+      const seenUrls = new Set<string>()
+      mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+        if (url.endsWith('/customers') && init?.method === 'POST') {
+          return Promise.resolve(mockCreateCustomerResponse)
+        }
+        if (!seenUrls.has(url)) {
+          seenUrls.add(url)
+          return Promise.resolve(makeConflictResponse())
+        }
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({}) })
+      })
+
+      const [first, second] = await Promise.all([
+        store.fetchWithCustomerRecovery('https://api.test/customers/balance'),
+        store.fetchWithCustomerRecovery(
+          'https://api.test/customers/cloud-subscription-status'
+        )
+      ])
+
+      expect(first.ok).toBe(true)
+      expect(second.ok).toBe(true)
+      expect(countCustomerPosts()).toBe(1)
+    })
+
+    it('should not provision the customer again after a successful recovery', async () => {
+      mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+        if (url.endsWith('/customers') && init?.method === 'POST') {
+          return Promise.resolve(mockCreateCustomerResponse)
+        }
+        // Endpoint keeps conflicting even after recovery succeeds
+        return Promise.resolve(makeConflictResponse())
+      })
+
+      const first = await store.fetchWithCustomerRecovery(
+        'https://api.test/customers/balance'
+      )
+      const second = await store.fetchWithCustomerRecovery(
+        'https://api.test/customers/balance'
+      )
+
+      expect(first.status).toBe(409)
+      expect(second.status).toBe(409)
+      expect(countCustomerPosts()).toBe(1)
+    })
+
+    it('should return the original 409 response when customer provisioning fails', async () => {
+      mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+        if (url.endsWith('/customers') && init?.method === 'POST') {
+          return Promise.resolve({
+            ok: false,
+            status: 500,
+            statusText: 'Internal Server Error'
+          })
+        }
+        return Promise.resolve(makeConflictResponse())
+      })
+
+      const response = await store.fetchWithCustomerRecovery(
+        'https://api.test/customers/balance'
+      )
+
+      expect(response.status).toBe(409)
+      expect(countCustomerPosts()).toBe(1)
+    })
+
+    it('should pass through non-409 responses without provisioning', async () => {
+      mockFetch.mockImplementation(() =>
+        Promise.resolve({ ok: true, json: () => Promise.resolve({}) })
+      )
+
+      const response = await store.fetchWithCustomerRecovery(
+        'https://api.test/customers/balance'
+      )
+
+      expect(response.ok).toBe(true)
+      expect(countCustomerPosts()).toBe(0)
+    })
+
+    it('should not provision for a 409 that is not a missing-customer conflict', async () => {
+      mockFetch.mockImplementation(() =>
+        Promise.resolve(make409('Subscription already active'))
+      )
+
+      const response = await store.fetchWithCustomerRecovery(
+        'https://api.test/customers/cloud-subscription-checkout/standard',
+        { method: 'POST' }
+      )
+
+      expect(response.status).toBe(409)
+      expect(countCustomerPosts()).toBe(0)
+    })
+
+    it('should not provision for a 409 from a non-customer endpoint', async () => {
+      mockFetch.mockImplementation(() =>
+        Promise.resolve(makeConflictResponse())
+      )
+
+      const response = await store.fetchWithCustomerRecovery(
+        'https://api.test/workflows'
+      )
+
+      expect(response.status).toBe(409)
+      expect(countCustomerPosts()).toBe(0)
+    })
+
+    it('should not provision when /customers/ is not the root path segment', async () => {
+      mockFetch.mockImplementation(() =>
+        Promise.resolve(makeConflictResponse())
+      )
+
+      const response = await store.fetchWithCustomerRecovery(
+        'https://api.test/foo/customers/bar'
+      )
+
+      expect(response.status).toBe(409)
+      expect(countCustomerPosts()).toBe(0)
+    })
+
+    it('should re-provision after the auth state changes to a different session', async () => {
+      mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+        if (url.endsWith('/customers') && init?.method === 'POST') {
+          return Promise.resolve(mockCreateCustomerResponse)
+        }
+        return Promise.resolve(makeConflictResponse())
+      })
+
+      await store.fetchWithCustomerRecovery(
+        'https://api.test/customers/balance'
+      )
+      expect(countCustomerPosts()).toBe(1)
+
+      // Sign out, then a different account signs in: the memoized recovery
+      // from the previous account must not short-circuit the new one.
+      authStateCallback(null)
+      authStateCallback(mockUser)
+
+      await store.fetchWithCustomerRecovery(
+        'https://api.test/customers/balance'
+      )
+      expect(countCustomerPosts()).toBe(2)
+    })
+
+    it('re-provisions when the active uid changes without an auth-state reset', async () => {
+      mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+        if (url.endsWith('/customers') && init?.method === 'POST') {
+          return Promise.resolve(mockCreateCustomerResponse)
+        }
+        return Promise.resolve(makeConflictResponse())
+      })
+
+      await store.fetchWithCustomerRecovery(
+        'https://api.test/customers/balance'
+      )
+      expect(countCustomerPosts()).toBe(1)
+
+      // A uid change that did not pass through onAuthStateChanged (which would
+      // otherwise clear the memo) must still start a fresh recovery rather than
+      // reuse the previous account's settled one.
+      store.currentUser = {
+        ...mockUser,
+        uid: 'different-uid'
+      } as Partial<User> as User
+
+      await store.fetchWithCustomerRecovery(
+        'https://api.test/customers/balance'
+      )
+      expect(countCustomerPosts()).toBe(2)
+    })
+
+    it('should return the original 409 when the retry fails at the network level', async () => {
+      let balanceCalls = 0
+      mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+        if (url.endsWith('/customers') && init?.method === 'POST') {
+          return Promise.resolve(mockCreateCustomerResponse)
+        }
+        balanceCalls++
+        return balanceCalls === 1
+          ? Promise.resolve(makeConflictResponse())
+          : Promise.reject(new TypeError('network down'))
+      })
+
+      const response = await store.fetchWithCustomerRecovery(
+        'https://api.test/customers/balance'
+      )
+
+      expect(response.status).toBe(409)
+      expect(countCustomerPosts()).toBe(1)
+    })
+
+    it('should share one customer creation between concurrent credit pre-flights', async () => {
+      mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+        if (url.endsWith('/customers') && init?.method === 'POST') {
+          return Promise.resolve(mockCreateCustomerResponse)
+        }
+        if (url.endsWith('/customers/credit')) {
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({ checkout_url: 'https://stripe.test/checkout' })
+          })
+        }
+        return Promise.reject(new Error('Unexpected API call'))
+      })
+
+      await Promise.all([
+        store.initiateCreditPurchase({
+          amount_micros: 5_000_000,
+          currency: 'usd'
+        }),
+        store.initiateCreditPurchase({
+          amount_micros: 5_000_000,
+          currency: 'usd'
+        })
+      ])
+
+      expect(countCustomerPosts()).toBe(1)
+    })
+
+    it('stale rejection from previous session does not null out a new in-flight recovery', async () => {
+      let rejectSession1Create!: (reason: unknown) => void
+      let resolveSession2Create!: (value: Response) => void
+      let postCount = 0
+
+      const session1CreateP = new Promise<Response>((_, reject) => {
+        rejectSession1Create = reject
+      })
+      const session2CreateP = new Promise<Response>((resolve) => {
+        resolveSession2Create = resolve
+      })
+
+      mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+        if (url.endsWith('/customers') && init?.method === 'POST') {
+          postCount++
+          return postCount === 1 ? session1CreateP : session2CreateP
+        }
+        return Promise.resolve(makeConflictResponse())
+      })
+
+      // Session 1: trigger a recovery whose POST will hang
+      const session1Done = store
+        .fetchWithCustomerRecovery('https://api.test/customers/balance')
+        .then(() => 'session1')
+        .catch(() => 'session1-failed')
+
+      // Drain microtasks so session1's POST is registered
+      await new Promise<void>((resolve) => setTimeout(resolve, 0))
+
+      // Auth resets; new session starts
+      authStateCallback(null)
+      authStateCallback(mockUser)
+
+      // Session 2 recovery — should create a new independent in-flight promise
+      const session2Done = store
+        .fetchWithCustomerRecovery('https://api.test/customers/balance')
+        .then(() => 'session2')
+        .catch(() => 'session2-failed')
+
+      await new Promise<void>((resolve) => setTimeout(resolve, 0))
+
+      // Session 1's POST fails — stale rejection fires; must NOT null out session 2's recovery
+      rejectSession1Create(new Error('network error'))
+      await session1Done
+
+      // Session 2's POST resolves successfully
+      resolveSession2Create({
+        ok: true,
+        statusText: 'OK',
+        json: () => Promise.resolve({ id: 'id-2' })
+      } as Response)
+      const session2Result = await session2Done
+
+      // Session 2 must succeed, proving its recovery was not nulled by session 1's rejection
+      expect(session2Result).toBe('session2')
+    })
+
+    it('does not skip re-provisioning when createCustomer resolves after sign-out', async () => {
+      let resolveCreate!: (value: Response) => void
+      const slowCreateP = new Promise<Response>((resolve) => {
+        resolveCreate = resolve
+      })
+      let postCount = 0
+
+      mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+        if (url.endsWith('/customers') && init?.method === 'POST') {
+          postCount++
+          return postCount === 1
+            ? slowCreateP
+            : Promise.resolve(mockCreateCustomerResponse)
+        }
+        return Promise.resolve(makeConflictResponse())
+      })
+
+      // Session 1 triggers recovery with a slow POST
+      const session1Done = store
+        .fetchWithCustomerRecovery('https://api.test/customers/balance')
+        .catch(() => {})
+
+      await new Promise<void>((resolve) => setTimeout(resolve, 0))
+
+      // User signs out before the POST resolves
+      authStateCallback(null)
+      authStateCallback(mockUser)
+
+      // Stale POST resolves successfully after session reset
+      resolveCreate!({
+        ok: true,
+        statusText: 'OK',
+        json: () => Promise.resolve({ id: 'stale-id' })
+      } as Response)
+      await session1Done
+
+      // A fresh recovery for the new session must POST again;
+      // customerCreated must not have been set by the stale resolution.
+      await store.fetchWithCustomerRecovery(
+        'https://api.test/customers/balance'
+      )
+      expect(postCount).toBe(2)
+    })
+  })
+
   describe('realtime socket identity lifecycle', () => {
     const accountB: MockUser = {
       ...mockUser,
@@ -1276,6 +1627,45 @@ describe('useAuthStore', () => {
       authStateCallback(accountB)
 
       expect(mockResetSocket).toHaveBeenCalledTimes(1)
+    })
+
+    it('discards a remote config response from the previous account', async () => {
+      let resolveAccountA: ((response: Response) => void) | undefined
+      let accountASignal: AbortSignal | undefined
+      vi.spyOn(api, 'fetchApi')
+        .mockImplementationOnce(
+          (_route, options) =>
+            new Promise<Response>((resolve) => {
+              accountASignal = options?.signal ?? undefined
+              resolveAccountA = resolve
+            })
+        )
+        .mockResolvedValueOnce(
+          new Response(
+            JSON.stringify({ legacy_billing_migration_enabled: false }),
+            { status: 200 }
+          )
+        )
+
+      const accountARefresh = refreshRemoteConfig()
+      await vi.waitFor(() => expect(api.fetchApi).toHaveBeenCalledTimes(1))
+
+      authStateCallback(accountB)
+      expect(accountASignal?.aborted).toBe(true)
+      expect(remoteConfigState.value).toBe('unloaded')
+      expect(cachedLegacyBillingMigrationEnabled.value).toBeUndefined()
+
+      await refreshRemoteConfig()
+      resolveAccountA?.(
+        new Response(
+          JSON.stringify({ legacy_billing_migration_enabled: true }),
+          { status: 200 }
+        )
+      )
+      await accountARefresh
+
+      expect(remoteConfig.value.legacy_billing_migration_enabled).toBe(false)
+      expect(cachedLegacyBillingMigrationEnabled.value).toBe(false)
     })
 
     it('does not reconnect on a same-account token refresh', () => {

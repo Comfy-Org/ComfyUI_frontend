@@ -1,11 +1,9 @@
-import { createPinia, setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import { DragAndScale } from '@/lib/litegraph/src/DragAndScale'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import {
   clearCoachmarks,
   targetMounted
@@ -95,21 +93,14 @@ function loadTemplate(templateId: keyof typeof TOUR_ROLE_PINS): LGraph {
     node.updateArea()
   }
   appState.graph = graph
-  layoutStore.initializeFromLiteGraph(graph.nodes)
   useCanvasStore().currentGraph = graph
   return graph
 }
 
 describe('firstRunTourSteps', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-    disposals.spy.mockClear()
-  })
-
   afterEach(() => {
     releaseFirstRunTargets()
     clearCoachmarks()
-    document.body.replaceChildren()
     appState.graph = undefined
     runState.value = 'idle'
     framings.length = 0
@@ -186,14 +177,22 @@ describe('firstRunTourSteps', () => {
     expect(result?.name).toBe('result.image')
   })
 
-  it('lets only interactive steps take pointer input', async () => {
+  it('lets every step but the result take pointer input', async () => {
     loadTemplate(FROM_IMAGE)
 
-    const interactive = (await buildSteps(FROM_IMAGE))
-      .filter((step) => step.kind === 'spotlight' && step.interactive)
-      .map((step) => step.name)
+    const byName = new Map(
+      (await buildSteps(FROM_IMAGE)).map((step) => [
+        step.name,
+        step.kind === 'spotlight' && step.interactive === true
+      ])
+    )
 
-    expect(interactive).toEqual(['prompt.image-edit', 'run'])
+    expect(Object.fromEntries(byName)).toEqual({
+      'upload.image-edit': true,
+      'prompt.image-edit': true,
+      run: true,
+      'result.image': false
+    })
   })
 
   it('registers each spotlit node so the engine can find it', async () => {
