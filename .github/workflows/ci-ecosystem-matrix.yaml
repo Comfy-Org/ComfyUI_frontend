@@ -1,5 +1,6 @@
 # PR advisory: execute every registry pack's frontend JS against this commit's
-# frontend runtime and report the population result.
+# frontend runtime in both legacy and Nodes 2.0 modes, reporting each result
+# independently.
 #
 # The corpus is a mirror of the frontend JS of EVERY registry pack (~5,100
 # packs). Only the executable surface is kept - .js/.mjs plus the text assets
@@ -212,13 +213,13 @@ jobs:
   # gates (browser + backend): every JS-shipping pack's real extension code
   # is imported and driven against the real frontend runtime under vitest -
   # registration lifecycle, a user-operation battery, serialize/reload.
-  # Sharded 4 ways; vitest additionally parallelizes per core within a
-  # shard (~4.7s of test time per pack, measured).
+  # Each renderer is sharded 4 ways; vitest additionally parallelizes per core
+  # within a shard (~4.7s of test time per pack, measured).
   #
   # A shard checks harness integrity only: every built spec must write its
   # per-pack row. vitest's own exit code is ignored here because pack code
-  # leaks unhandled rejections. The ecosystem PASS/FAIL verdict is applied
-  # once, over all shards combined, by matrix-verdict below.
+  # leaks unhandled rejections. Each mode's ecosystem PASS/FAIL verdict is
+  # applied over its four shards by matrix-verdict below.
   ecosystem-matrix:
     needs: corpus
     if: github.repository == 'Comfy-Org/ComfyUI_frontend'
@@ -227,7 +228,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        renderer: [legacy, vue]
         shard: [1, 2, 3, 4]
+    env:
+      MATRIX_RENDERER: ${{ matrix.renderer }}
+      MATRIX_VUE: ${{ matrix.renderer == 'vue' && '1' || '0' }}
     steps:
       # This job EXECUTES unreviewed third-party pack code under vitest;
       # the checkout must not leave a usable git credential behind for it.
@@ -332,14 +337,13 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: ecosystem-matrix-shard-${{ matrix.shard }}
+          name: ecosystem-matrix-${{ matrix.renderer }}-shard-${{ matrix.shard }}
           path: matrix-rows/
           retention-days: 30
           if-no-files-found: warn
 
-  # The single combined result: all four shards' rows merge into one table
-  # and one combined verdict - this job's exit code IS the ecosystem verdict
-  # (0 PASS, 1 FAIL, 2 harness failure / no rows / short population).
+  # Each renderer gets its own combined result: four shards merge into one
+  # table and verdict. A Vue-only regression cannot hide behind a legacy PASS.
   #
   # MATRIX_EXPECT_SHARDS makes a dead shard withhold rather than PASS. Every
   # criterion is a ratio, so three shards produce a perfectly plausible
@@ -356,6 +360,12 @@ jobs:
       && github.repository == 'Comfy-Org/ComfyUI_frontend'
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        renderer: [legacy, vue]
+    env:
+      MATRIX_RENDERER: ${{ matrix.renderer }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -373,7 +383,7 @@ jobs:
         continue-on-error: true
         uses: actions/download-artifact@v8
         with:
-          pattern: ecosystem-matrix-shard-*
+          pattern: ecosystem-matrix-${{ matrix.renderer }}-shard-*
           path: matrix-rows
           merge-multiple: true
 
@@ -397,8 +407,8 @@ jobs:
         uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: matrix-metrics
-          key: matrix-metrics-${{ github.run_id }}
-          restore-keys: matrix-metrics-
+          key: ${{ matrix.renderer == 'vue' && 'matrix-vue-metrics-' || 'matrix-metrics-' }}${{ github.run_id }}
+          restore-keys: ${{ matrix.renderer == 'vue' && 'matrix-vue-metrics-' || 'matrix-metrics-' }}
 
       - name: Verdict
         id: verdict
@@ -425,13 +435,13 @@ jobs:
         uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: matrix-metrics
-          key: matrix-metrics-${{ github.run_id }}-${{ github.run_attempt }}
+          key: ${{ matrix.renderer == 'vue' && 'matrix-vue-metrics-' || 'matrix-metrics-' }}${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Upload combined result
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: ecosystem-matrix-combined
+          name: ecosystem-matrix-${{ matrix.renderer }}-combined
           path: matrix-rows/
           retention-days: 30
           if-no-files-found: warn
@@ -449,6 +459,13 @@ jobs:
     if: github.repository == 'Comfy-Org/ComfyUI_frontend'
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        renderer: [legacy, vue]
+    env:
+      MATRIX_RENDERER: ${{ matrix.renderer }}
+      MATRIX_VUE: ${{ matrix.renderer == 'vue' && '1' || '0' }}
     steps:
       # Runs the poison packs (and the same harness that runs real pack
       # code); same rule as the shard jobs - no persisted credential.
@@ -489,7 +506,8 @@ jobs:
       - name: Verdict must FAIL on poison
         run: |
           set +e
-          MATRIX_OUT="$PWD/matrix-proof" python3 scripts/registry-census/summarize_matrix.py > proof-verdict.txt 2>&1
+          MATRIX_OUT="$PWD/matrix-proof" MATRIX_RENDERER="$MATRIX_RENDERER" \
+            python3 scripts/registry-census/summarize_matrix.py > proof-verdict.txt 2>&1
           rc=$?
           set -e
           tail -8 proof-verdict.txt

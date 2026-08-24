@@ -107,14 +107,23 @@ agree. A cache without its provenance cannot produce a verdict.
 `build_matrix.py` + `matrix_runner.ts` generate one vitest spec per
 JS-shipping pack and execute its real extension code against the real
 frontend runtime (registration lifecycle, a user-operation battery,
-serialize/reload), one JSON row per pack, sharded 4 ways. Packs with no
-extension JS are skipped and reported only as a count.
+serialize/reload), one JSON row per pack. The workflow runs four shards in
+legacy mode and four in Nodes 2.0 mode, with separate artifacts, baselines,
+and verdicts. Packs with no extension JS are skipped and reported only as a
+count.
 
 ### What the harness drives, and what it does not
 
 This is the scope of every number below. `ComfyApp.setup()` non-null-asserts
 five DOM elements and needs a 2D canvas context, so the real boot cannot run
 under happy-dom and the lifecycle is simulated.
+
+The Nodes 2.0 arm sets `LiteGraph.vueNodesMode` before pack code loads and
+therefore exercises mode-dependent graph, widget-store, and serialization
+behavior. It does not mount the Vue node component tree or make claims about
+pixels and DOM layout; browser-level custom-node coverage owns that surface.
+Every completed row records the active mode, and the verdict withholds if rows
+from different modes are mixed or the rows disagree with the workflow arm.
 
 | extension hook                                                                                                                                                                                                                                                 | driven                      |
 | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- |
@@ -137,8 +146,8 @@ row. A green matrix did not catch a `setup`-dispatch regression, and cannot.
 
 ### PASS criteria
 
-Applied once by the `matrix-verdict` job over all four shards combined
-(`summarize_matrix.py`; exit 0 PASS, 1 FAIL, 2 harness/withheld):
+Applied independently by the two `matrix-verdict` jobs over each mode's four
+shards (`summarize_matrix.py`; exit 0 PASS, 1 FAIL, 2 harness/withheld):
 
 | criterion                                 | floor     | measured baseline |
 | ----------------------------------------- | --------- | ----------------- |
@@ -195,6 +204,8 @@ array-concatenation would otherwise smuggle in.
 | `MATRIX_RUN_ID`        | summarizer         | skips the delta when the baseline is this same run |
 | `MATRIX_EXPECT_SHARDS` | summarizer         | required manifest count; unset disables the check  |
 | `MATRIX_STALE_MARKER`  | summarizer         | path to `registry-stale.json`, if present          |
+| `MATRIX_RENDERER`      | summarizer         | expected row identity: `legacy` or `vue`           |
+| `MATRIX_VUE`           | runner             | exact mode selector: `0` for legacy, `1` for Vue   |
 
 ## Security posture
 
@@ -264,11 +275,12 @@ workflow never reports.
 
 `detection-proof/corpus/` is a synthetic corpus of seven poison packs, each
 broken in exactly one measured way, plus three clean controls. The
-`matrix-detection-proof` job runs the real matrix over it and passes only if
-`verify_detection.py` sees every channel fire with its exact poison message
-**and** breach the criterion it targets, AND `summarize_matrix.py` exits
-FAIL. Asserting only that the combined verdict went red would certify a
-channel as "fired" while it contributed nothing to the gate.
+`matrix-detection-proof` runs the real matrix over it once in each mode and
+passes only if `verify_detection.py` sees every channel fire with its exact
+poison message **and** breach the criterion it targets, AND
+`summarize_matrix.py` exits FAIL. Asserting only that the combined verdict went
+red would certify a channel as "fired" while it contributed nothing to the
+gate.
 
 The verifier also checks the reverse mapping: every verdict criterion must
 have poison counter-evidence or an explicit exemption explaining why it

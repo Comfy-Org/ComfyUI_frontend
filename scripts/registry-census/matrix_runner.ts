@@ -19,6 +19,7 @@ import type {
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { matrixRendererFromEnv } from '@/../scripts/registry-census/matrixMode'
 
 const S = (v: unknown) => JSON.stringify(v)
 const errMsg = (e: unknown) =>
@@ -141,7 +142,8 @@ async function installGlobals() {
   const utilsMod = await import('@/scripts/utils')
   const domWidgetMod = await import('@/scripts/domWidget')
   lg.LiteGraph.alwaysRepeatWarnings = true
-  if (process.env.MATRIX_VUE) lg.LiteGraph.vueNodesMode = true
+  const renderer = matrixRendererFromEnv()
+  lg.LiteGraph.vueNodesMode = renderer === 'vue'
   lg.LiteGraph.onDeprecationWarning = [
     (m: string) => {
       const st = new Error().stack ?? ''
@@ -170,7 +172,7 @@ async function installGlobals() {
   }
   Object.assign(globalThis, globals)
   if (typeof window !== 'undefined') Object.assign(window, globals)
-  return { lg, app: appMod.app }
+  return { lg, app: appMod.app, renderer }
 }
 
 function signature(graph: LGraph, store: WidgetValueStore | undefined) {
@@ -254,7 +256,8 @@ export async function runPack(
   const row: Record<string, unknown> = { pack, safe }
   const ops: Record<string, OpRecord> = {}
   let storeReadErrors = 0
-  const { lg, app } = await installGlobals()
+  const { lg, app, renderer } = await installGlobals()
+  row.renderer = renderer
   const { LGraph, LiteGraph } = lg
 
   // ---- LOAD the pack's real entry files ---------------------------------

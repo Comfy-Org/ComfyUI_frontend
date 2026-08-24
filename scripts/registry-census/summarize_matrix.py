@@ -70,6 +70,7 @@ CRITERION_LABELS = {
 DELTA_CRITERION_LABEL = 'entry-clean delta vs previous run'
 
 EXPECTED_ROW_KEYS = (
+    'renderer',
     'selfCheck',
     'load',
     'loadedOk',
@@ -117,6 +118,7 @@ def evaluate(
     run_id: str = '',
     expect_shards: int | None = None,
     stale: dict | None = None,
+    expected_renderer: str | None = None,
 ) -> Verdict:
     if not rows:
         return Verdict(2, ['no matrix rows to summarize'])
@@ -160,6 +162,25 @@ def evaluate(
             lines.append(f'  {key}: {len(packs)} row(s): {_named(packs)}')
         lines.append('')
         return Verdict(2, lines)
+
+    renderers = {row.get('renderer') for row in done}
+    if len(renderers) != 1 or not renderers <= {'legacy', 'vue'}:
+        lines.append(
+            'RENDERER IDENTITY DRIFT: completed rows must all report exactly'
+            f' one supported renderer, received {sorted(map(str, renderers))}.'
+        )
+        return Verdict(2, lines)
+    renderer = next(iter(renderers))
+    if expected_renderer is not None and renderer != expected_renderer:
+        lines.append(
+            'RENDERER IDENTITY DRIFT: workflow expected '
+            f'{expected_renderer}, rows reported {renderer}. Verdict withheld.'
+        )
+        return Verdict(2, lines)
+    lines.append(
+        f'renderer: {renderer} (vueNodesMode = '
+        f'{str(renderer == "vue").lower()})'
+    )
 
     # build_matrix.py marks a pack indeterminate when it cannot tell which
     # files ComfyUI would actually serve. Those packs still run - the row is
@@ -377,11 +398,20 @@ def evaluate(
         if not held:
             breaches.append(f'{label} {measured_pct:.1f}% < {floor:.0f}%')
 
+    prev_renderer = prev.get('renderer') if isinstance(prev, dict) else None
+    prev_matches_renderer = prev_renderer == renderer or (
+        prev_renderer is None and renderer == 'legacy'
+    )
     prev_entry = prev.get('entryPct') if isinstance(prev, dict) else None
     if prev is None:
         lines.append(
             f'  {DELTA_CRITERION_LABEL:42s}   n/a'
             '  (no previous metrics)'
+        )
+    elif isinstance(prev, dict) and not prev_matches_renderer:
+        lines.append(
+            f'  {DELTA_CRITERION_LABEL:42s}   n/a'
+            '  (previous metrics are for another or unknown renderer)'
         )
     elif isinstance(prev, dict) and run_id and prev.get('runId') == run_id:
         # A re-run restored this same run's earlier write; comparing a
@@ -415,7 +445,11 @@ def evaluate(
     # widget rows, say - moves the signature and nothing else. Reported, not
     # gated: a legitimate frontend change moves these too, so a floor here
     # would cry wolf on the diffs it is supposed to be measuring.
-    prev_sigs = prev.get('sigHashes') if isinstance(prev, dict) else None
+    prev_sigs = (
+        prev.get('sigHashes')
+        if isinstance(prev, dict) and prev_matches_renderer
+        else None
+    )
     if isinstance(prev_sigs, dict):
         shared = sig_hashes.keys() & prev_sigs.keys()
         moved = sorted(p for p in shared if sig_hashes[p] != prev_sigs[p])
@@ -440,6 +474,7 @@ def evaluate(
         lines,
         [],
         {
+            'renderer': renderer,
             'packs': len(done),
             'incomplete': len(stubs),
             'anyPct': round(any_pct, 3),
@@ -513,6 +548,14 @@ def main() -> int:
         )
         return 2
 
+    expected_renderer = os.environ.get('MATRIX_RENDERER', '')
+    if expected_renderer not in ('', 'legacy', 'vue'):
+        print(
+            f'MATRIX_RENDERER is not legacy or vue: {expected_renderer!r}',
+            file=sys.stderr,
+        )
+        return 2
+
     prev_path = os.environ.get('MATRIX_PREV', '')
     prev = (
         _read_json(prev_path, 'previous metrics')
@@ -536,6 +579,7 @@ def main() -> int:
         os.environ.get('MATRIX_RUN_ID', ''),
         int(expect_raw) if expect_raw else None,
         stale,
+        expected_renderer or None,
     )
 
     report = '\n'.join(verdict.lines)
