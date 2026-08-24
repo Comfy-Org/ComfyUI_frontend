@@ -5,7 +5,7 @@ import pc from 'picocolors'
 import { copyToClipboard } from './clipboard'
 import { checkGhAvailable, createPr, switchBranch } from './gh'
 import { printManualInstructions } from './manual'
-import { info, warn } from '../ui/logger'
+import { box, info, warn } from '../ui/logger'
 
 interface OpenPrOptions {
   testFilePath: string
@@ -55,6 +55,14 @@ export async function openPr(options: OpenPrOptions): Promise<void> {
     return
   }
 
+  box([
+    '🎉 Your test is on its way!',
+    '',
+    'You turned real user behavior into a permanent safety net —',
+    'every future change gets checked against what you recorded.',
+    'The team takes it from here; nothing else is needed from you.'
+  ])
+
   if (created.originalBranch && created.currentBranch) {
     // A non-TTY caller can't answer this, and the PR is already open by
     // this point — hanging here would bury a real success behind a stuck
@@ -68,7 +76,7 @@ export async function openPr(options: OpenPrOptions): Promise<void> {
     }
 
     const goBack = await confirm({
-      message: `Switch back to ${created.originalBranch}?`,
+      message: `Put your project back the way it was before recording? (switches back to ${created.originalBranch})`,
       initialValue: true
     })
     if (!isCancel(goBack) && goBack) {
