@@ -571,6 +571,28 @@ describe('useTeamWorkspaceStore', () => {
       await workspaceSwitch
     })
 
+    it('does not wait for a previous identity workspace switch', async () => {
+      mockDistributionTypes.isCloud = false
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+
+      let finishSwitch: () => void = () => {}
+      mockWorkspaceAuthStore.switchWorkspace.mockImplementationOnce(
+        () =>
+          new Promise<void>((resolve) => {
+            finishSwitch = resolve
+          })
+      )
+
+      const previousIdentitySwitch = store.switchWorkspace(mockTeamWorkspace.id)
+      store.resetForIdentityChange()
+
+      await expect(store.waitForWorkspaceSwitch()).resolves.toBeUndefined()
+
+      finishSwitch()
+      await previousIdentitySwitch
+    })
+
     it('propagates a failed local workspace switch to waiters', async () => {
       mockDistributionTypes.isCloud = false
       const store = useTeamWorkspaceStore()

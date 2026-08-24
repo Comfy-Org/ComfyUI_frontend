@@ -924,6 +924,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   function resetForIdentityChange(): void {
     identityGeneration++
     mutableWorkspaceTransitionGeneration.value++
+    pendingWorkspaceSwitch = null
     initializationPromise = null
     initState.value = 'uninitialized'
     workspaces.value = []
