@@ -1,51 +1,29 @@
 import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
 import { reportError } from '@/platform/telemetry/reportError'
+import { createOnceReporter } from '@/platform/telemetry/reportOnce'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { toError } from '@/utils/errorUtil'
+import { fnv1aHex } from '@/utils/hashUtil'
 import { fixBadLinks } from '@/utils/linkFixer'
 
 interface ValidationResult {
   graphData: ComfyWorkflowJSON | null
 }
 
-const MAX_REPORTS_PER_KIND = 25
+export const MAX_REPORTS_PER_KIND = 25
 
 /**
- * FNV-1a. The fixer's log lines interpolate node ids, which the schema leaves
- * unconstrained (`zNodeId` accepts any string), so they cannot be forwarded to
- * the sinks or pinned in memory verbatim. Digesting them keeps distinct
- * corruption distinguishable — for dedup, and for grouping in a dashboard —
- * without shipping workflow content anywhere.
- */
-function digest(value: string): string {
-  let hash = 0x811c9dc5
-  for (let i = 0; i < value.length; i++) {
-    hash ^= value.charCodeAt(i)
-    hash = Math.imul(hash, 0x01000193)
-  }
-  return (hash >>> 0).toString(16)
-}
-
-/**
- * Workflow loads re-enter validation on undo/redo, so without these a single
- * corrupt workflow would report once per history step. Keys must describe the
- * corruption itself, not just the workflow: `id` is optional in the schema, and
- * the workflows most likely to be corrupt are the legacy ones that lack it.
+ * Keys must describe the corruption itself, not just the workflow: `id` is
+ * optional in the schema, and the workflows most likely to be corrupt are the
+ * legacy ones that lack it.
  *
  * The two kinds hold separate budgets so that a session full of repairable
  * corruption cannot crowd out the rarer report that the fixer itself broke.
  */
-const reportedCorruption = new Set<string>()
-const reportedFixerFailures = new Set<string>()
-
-function reportOnce(key: string, seen: Set<string>, report: () => void): void {
-  if (seen.has(key)) return
-  if (seen.size >= MAX_REPORTS_PER_KIND) return
-  seen.add(key)
-  report()
-}
+const reportCorruptionOnce = createOnceReporter(MAX_REPORTS_PER_KIND)
+const reportFixerFailureOnce = createOnceReporter(MAX_REPORTS_PER_KIND)
 
 export function useWorkflowValidation() {
   const toastStore = useToastStore()
@@ -70,12 +48,15 @@ export function useWorkflowValidation() {
 
     const { patched, deleted, hasBadLinks } = linkValidation
     const workflowId = graphData.id ?? 'unidentified'
-    const corruptionDigest = digest(logs.join('\n'))
+    // The fixer's log lines interpolate node ids, which the schema leaves
+    // unconstrained (`zNodeId` accepts any string), so they must not reach the
+    // sinks or be pinned in memory verbatim. The digest keeps distinct
+    // corruption distinguishable without shipping workflow content anywhere.
+    const corruptionDigest = fnv1aHex(logs.join('\n'))
 
     if (patched || deleted) {
-      reportOnce(
+      reportCorruptionOnce(
         [workflowId, patched, deleted, corruptionDigest].join('|'),
-        reportedCorruption,
         () => {
           reportError(new Error('Workflow loaded with corrupt links'), {
             errorType: 'workflow_link_corruption',
@@ -148,7 +129,7 @@ export function useWorkflowValidation() {
         console.error(err)
         const workflowId = graphData.id ?? 'unidentified'
         const cause = toError(err).message
-        reportOnce(`${workflowId}|${cause}`, reportedFixerFailures, () => {
+        reportFixerFailureOnce(`${workflowId}|${cause}`, () => {
           reportError(err, {
             errorType: 'workflow_link_fixer_failure',
             context: { workflowId }

@@ -1,16 +1,17 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
-import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ReportErrorOptions } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type * as LinkFixer from '@/utils/linkFixer'
 import { fixBadLinks } from '@/utils/linkFixer'
 
+import {
+  corruptWorkflow,
+  intactWorkflow,
+  unidentifiedCorruptWorkflow,
+  uniqueId
+} from './__fixtures__/corruptWorkflows'
 import { useWorkflowValidation } from './useWorkflowValidation'
-
-type SerialisedInput = NonNullable<ISerialisedNode['inputs']>[number]
-type SerialisedOutput = NonNullable<ISerialisedNode['outputs']>[number]
 
 const reportError = vi.fn()
 
@@ -23,99 +24,28 @@ vi.mock('@/utils/linkFixer', async (importOriginal) => {
   return { ...actual, fixBadLinks: vi.fn(actual.fixBadLinks) }
 })
 
-const createInput = (link: number | null): SerialisedInput =>
-  ({
-    name: 'in',
-    type: '*',
-    link
-  }) satisfies Partial<SerialisedInput> as SerialisedInput
+const actualLinkFixer =
+  await vi.importActual<typeof LinkFixer>('@/utils/linkFixer')
 
-const createOutput = (links: number[]): SerialisedOutput =>
-  ({
-    name: 'out',
-    type: '*',
-    links
-  }) satisfies Partial<SerialisedOutput> as SerialisedOutput
-
-function createNode({
-  id,
-  inputs = [],
-  outputs = []
-}: {
-  id: number
-  inputs?: SerialisedInput[]
-  outputs?: SerialisedOutput[]
-}) {
-  return {
-    id,
-    type: 'TestNode',
-    pos: [0, 0],
-    size: [100, 100],
-    flags: {},
-    order: 0,
-    mode: 0,
-    properties: {},
-    inputs,
-    outputs
-  }
+/** Tees every line the real fixer emits, without changing what it does. */
+function captureFixerLogs(): string[] {
+  const lines: string[] = []
+  vi.mocked(fixBadLinks).mockImplementation((graph, options = {}) =>
+    actualLinkFixer.fixBadLinks(graph, {
+      ...options,
+      logger: {
+        log: (...args: unknown[]) => {
+          lines.push(args.join(' '))
+          options.logger?.log(...args)
+        }
+      }
+    })
+  )
+  return lines
 }
 
-function createWorkflow(
-  id: string | undefined,
-  nodes: ReturnType<typeof createNode>[],
-  links: SerialisedLLinkArray[]
-): ComfyWorkflowJSON {
-  return {
-    ...(id ? { id } : {}),
-    last_node_id: 2,
-    last_link_id: 1,
-    nodes,
-    links,
-    groups: [],
-    config: {},
-    extra: {},
-    version: 0.4
-  } as unknown as ComfyWorkflowJSON
-}
-
-const intactWorkflow = (id: string) =>
-  createWorkflow(
-    id,
-    [
-      createNode({ id: 1, outputs: [createOutput([1])] }),
-      createNode({ id: 2, inputs: [createInput(1)] })
-    ],
-    [[1, 1, 0, 2, 0, '*']]
-  )
-
-/** Link 1 targets node 2, which is not in the graph. */
-const corruptWorkflow = (id: string) =>
-  createWorkflow(
-    id,
-    [createNode({ id: 1, outputs: [createOutput([1])] })],
-    [[1, 1, 0, 2, 0, '*']]
-  )
-
-/**
- * Id-less workflows whose corruption differs only in which nodes it names.
- * `patched`/`deleted` counts are identical across them, so a key built from
- * counts alone would report the first and discard the rest. Node ids come from
- * a counter because `reportedCorruption` outlives a test: fixed ids would make
- * a CI retry of a transient failure fail permanently.
- */
-let nodeIdSeed = 1000
-const unidentifiedCorruptWorkflow = () => {
-  const originId = (nodeIdSeed += 2)
-  return createWorkflow(
-    undefined,
-    [createNode({ id: originId, outputs: [createOutput([1])] })],
-    [[1, originId, 0, originId + 1, 0, '*']]
-  )
-}
-
-let workflowCount = 0
-const uniqueId = () =>
-  `b4e984f1-b421-4d24-b8b4-ff895793a${String(workflowCount++).padStart(3, '0')}`
+const reportedOptions = (call = 0) =>
+  (reportError.mock.calls[call] as [Error, ReportErrorOptions])[1]
 
 describe('useWorkflowValidation', () => {
   it('reports the corruption the link fixer found while loading a workflow', async () => {
@@ -139,11 +69,19 @@ describe('useWorkflowValidation', () => {
 
     await useWorkflowValidation().validateWorkflow(corruptWorkflow(workflowId))
 
-    const [, options] = reportError.mock.calls[0] as [
-      Error,
-      { context: { workflowId: string } }
-    ]
-    expect(options.context.workflowId).toBe(workflowId)
+    expect(reportedOptions().context?.workflowId).toBe(workflowId)
+  })
+
+  it('digests the fixer log instead of forwarding it', async () => {
+    const fixerLogs = captureFixerLogs()
+
+    await useWorkflowValidation().validateWorkflow(corruptWorkflow(uniqueId()))
+
+    const options = reportedOptions()
+    expect(options.context?.corruptionDigest).toMatch(/^[0-9a-f]{8}$/)
+    expect(fixerLogs).not.toHaveLength(0)
+    const payload = JSON.stringify(options)
+    for (const line of fixerLogs) expect(payload).not.toContain(line)
   })
 
   it('reports, without a toast, when validation is silenced', async () => {
@@ -176,19 +114,6 @@ describe('useWorkflowValidation', () => {
     expect(reportError).toHaveBeenCalledTimes(2)
   })
 
-  it('stops reporting once the per-session cap is reached', async () => {
-    vi.resetModules()
-    const { useWorkflowValidation: withEmptyBudget } =
-      await import('./useWorkflowValidation')
-    const validation = withEmptyBudget()
-
-    for (let i = 0; i < 40; i++) {
-      await validation.validateWorkflow(unidentifiedCorruptWorkflow())
-    }
-
-    expect(reportError).toHaveBeenCalledTimes(25)
-  })
-
   it('stays quiet for an intact workflow', async () => {
     await useWorkflowValidation().validateWorkflow(intactWorkflow(uniqueId()))
 
@@ -207,5 +132,19 @@ describe('useWorkflowValidation', () => {
       expect.objectContaining({ message: 'link fixer exploded' }),
       expect.objectContaining({ errorType: 'workflow_link_fixer_failure' })
     )
+  })
+
+  it('reports a fixer that keeps failing the same way once', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.mocked(fixBadLinks).mockImplementation(() => {
+      throw new Error('link fixer exploded')
+    })
+    const workflowId = uniqueId()
+    const validation = useWorkflowValidation()
+
+    await validation.validateWorkflow(intactWorkflow(workflowId))
+    await validation.validateWorkflow(intactWorkflow(workflowId))
+
+    expect(reportError).toHaveBeenCalledOnce()
   })
 })

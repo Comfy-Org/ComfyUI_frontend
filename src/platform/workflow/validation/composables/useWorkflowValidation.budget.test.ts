@@ -1,0 +1,59 @@
+import { describe, expect, it, vi } from 'vitest'
+
+import type * as LinkFixer from '@/utils/linkFixer'
+import { fixBadLinks } from '@/utils/linkFixer'
+
+import {
+  intactWorkflow,
+  unidentifiedCorruptWorkflow,
+  uniqueId
+} from './__fixtures__/corruptWorkflows'
+import {
+  MAX_REPORTS_PER_KIND,
+  useWorkflowValidation
+} from './useWorkflowValidation'
+
+const reportError = vi.fn()
+
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: (...args: unknown[]) => reportError(...args)
+}))
+
+vi.mock('@/utils/linkFixer', async (importOriginal) => {
+  const actual = await importOriginal<typeof LinkFixer>()
+  return { ...actual, fixBadLinks: vi.fn(actual.fixBadLinks) }
+})
+
+/**
+ * The reporters are module state, so spending one of them here would leave the
+ * rest of a shared file asserting against an exhausted budget. Vitest gives
+ * each file its own module registry; this one is that budget's own file, so no
+ * ordering rule or `vi.resetModules()` is needed to keep the two apart.
+ */
+describe('useWorkflowValidation reporting budget', () => {
+  let explosions = 0
+
+  it('keeps reporting fixer failures after corruption reports run out', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const validation = useWorkflowValidation()
+
+    for (let i = 0; i <= MAX_REPORTS_PER_KIND; i++) {
+      await validation.validateWorkflow(unidentifiedCorruptWorkflow())
+    }
+
+    reportError.mockClear()
+    await validation.validateWorkflow(unidentifiedCorruptWorkflow())
+    expect(reportError).not.toHaveBeenCalled()
+
+    const cause = `link fixer exploded ${(explosions += 1)}`
+    vi.mocked(fixBadLinks).mockImplementation(() => {
+      throw new Error(cause)
+    })
+    await validation.validateWorkflow(intactWorkflow(uniqueId()))
+
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: cause }),
+      expect.objectContaining({ errorType: 'workflow_link_fixer_failure' })
+    )
+  })
+})
