@@ -285,6 +285,9 @@ catalogs:
     husky:
       specifier: ^9.1.7
       version: 9.1.7
+    jose:
+      specifier: ^6.2.10
+      version: 6.2.10
     jsdom:
       specifier: ^29.1.1
       version: 29.1.1
@@ -1162,6 +1165,9 @@ importers:
       '@vercel/functions':
         specifier: 'catalog:'
         version: 3.9.5(ws@8.21.1)
+      jose:
+        specifier: 'catalog:'
+        version: 6.2.10
     devDependencies:
       '@types/node':
         specifier: 'catalog:'

@@ -10,7 +10,8 @@
   "dependencies": {
     "@auth/core": "catalog:",
     "@storybook/mcp": "catalog:",
-    "@vercel/functions": "catalog:"
+    "@vercel/functions": "catalog:",
+    "jose": "catalog:"
   },
   "devDependencies": {
     "@types/node": "catalog:",
