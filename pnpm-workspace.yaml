@@ -162,6 +162,8 @@ catalog:
   '@vitest/browser-playwright': 4.1.10
   playwright: 1.61.1
   '@storybook/addon-a11y': ^10.5.10
+  '@auth/core': 0.41.3
+  '@vercel/functions': 3.9.5
 
 cleanupUnusedCatalogs: true
 

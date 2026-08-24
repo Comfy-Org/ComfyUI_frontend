@@ -71,7 +71,13 @@ endpoint:
 ```toml
 [mcp_servers.comfy_marketing_storybook]
 url = "https://comfy-website-storybook-mcp.vercel.app/mcp"
+bearer_token_env_var = "COMFY_STORYBOOK_MCP_TOKEN"
 ```
+
+Set `COMFY_STORYBOOK_MCP_TOKEN` to the team token supplied by the Storybook
+project owner. Browser access uses Google Workspace login and is restricted to
+verified `@comfy.org` accounts. Anonymous requests to the Storybook, manifests,
+and MCP endpoint are rejected.
 
 Storybook's official component manifests currently support React only. This
 Vue Storybook adapts its checked-in design-system manifest to Storybook MCP's
