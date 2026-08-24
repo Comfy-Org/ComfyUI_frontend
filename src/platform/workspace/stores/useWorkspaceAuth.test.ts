@@ -1,5 +1,5 @@
-import { createPinia, setActivePinia, storeToRefs } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { storeToRefs } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   useWorkspaceAuthStore,
@@ -22,11 +22,12 @@ const mockCurrentUser = vi.hoisted((): { value: { uid: string } | null } => ({
 const mockForgetRevokedActiveWorkspace = vi.fn()
 const mockPrepareWorkflowWorkspaceTransition = vi.hoisted(() => vi.fn())
 const mockReload = vi.fn()
+const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
+const mockTeamWorkspaceState = vi.hoisted(() => ({
+  activeWorkspaceId: null as string | null
+}))
 
-vi.stubGlobal('location', {
-  reload: mockReload,
-  origin: 'http://localhost'
-})
+vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
 
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: () => ({
@@ -40,7 +41,10 @@ vi.mock('@/stores/authStore', () => ({
 
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   useTeamWorkspaceStore: () => ({
-    forgetRevokedActiveWorkspace: mockForgetRevokedActiveWorkspace
+    forgetRevokedActiveWorkspace: mockForgetRevokedActiveWorkspace,
+    get activeWorkspaceId() {
+      return mockTeamWorkspaceState.activeWorkspaceId
+    }
   })
 }))
 
@@ -66,19 +70,19 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
+vi.mock('@/platform/workspace/api/workspaceApiUrl', () => ({
+  workspaceApiUrl: (route: string) => `https://api.example.com/api${route}`
+}))
+
 vi.mock('@/i18n', () => ({
   t: (key: string) => key
 }))
 
-const mockTeamWorkspacesEnabled = vi.hoisted(() => ({ value: true }))
 const mockUnifiedCloudAuthEnabled = vi.hoisted(() => ({ value: false }))
 
 vi.mock('@/composables/useFeatureFlags', () => ({
   useFeatureFlags: () => ({
     flags: {
-      get teamWorkspacesEnabled() {
-        return mockTeamWorkspacesEnabled.value
-      },
       get unifiedCloudAuthEnabled() {
         return mockUnifiedCloudAuthEnabled.value
       }
@@ -99,7 +103,7 @@ const mockWorkspaceWithRole = {
 
 const mockTokenResponse = {
   token: 'workspace-token-abc',
-  expires_at: new Date(Date.now() + 3600 * 1000).toISOString(),
+  expires_at: new Date('2024-06-15T13:00:00Z').toISOString(),
   workspace: mockWorkspace,
   role: 'owner' as const,
   permissions: ['owner:*']
@@ -111,18 +115,16 @@ function expectedExpiresAtMs(expiresAt: string): string {
 
 describe('useWorkspaceAuthStore', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
-    vi.resetAllMocks()
-    vi.useFakeTimers()
-    sessionStorage.clear()
-    mockTeamWorkspacesEnabled.value = true
+    mockDistributionTypes.isCloud = true
+    mockTeamWorkspaceState.activeWorkspaceId = null
+    vi.stubGlobal('location', {
+      reload: mockReload,
+      origin: 'http://localhost'
+    })
+    vi.useFakeTimers({ shouldAdvanceTime: false })
     mockUnifiedCloudAuthEnabled.value = false
     mockCurrentUser.value = { uid: 'user-a' }
     mockEnsureSessionCookie.mockResolvedValue(undefined)
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
   })
 
   describe('initial state', () => {
@@ -533,7 +535,8 @@ describe('useWorkspaceAuthStore', () => {
           ok: false,
           status: 403,
           statusText: 'Forbidden',
-          json: () => Promise.resolve({ message: 'Access denied' })
+          text: () =>
+            Promise.resolve(JSON.stringify({ message: 'Access denied' }))
         })
       )
 
@@ -556,7 +559,8 @@ describe('useWorkspaceAuthStore', () => {
           ok: false,
           status: 404,
           statusText: 'Not Found',
-          json: () => Promise.resolve({ message: 'Workspace not found' })
+          text: () =>
+            Promise.resolve(JSON.stringify({ message: 'Workspace not found' }))
         })
       )
 
@@ -581,7 +585,8 @@ describe('useWorkspaceAuthStore', () => {
           ok: false,
           status: 401,
           statusText: 'Unauthorized',
-          json: () => Promise.resolve({ message: 'Invalid token' })
+          text: () =>
+            Promise.resolve(JSON.stringify({ message: 'Invalid token' }))
         })
       )
 
@@ -606,7 +611,8 @@ describe('useWorkspaceAuthStore', () => {
           ok: false,
           status: 500,
           statusText: 'Internal Server Error',
-          json: () => Promise.resolve({ message: 'Server error' })
+          text: () =>
+            Promise.resolve(JSON.stringify({ message: 'Server error' }))
         })
       )
 
@@ -958,19 +964,6 @@ describe('useWorkspaceAuthStore', () => {
       expect(header).toBeNull()
     })
 
-    it('is a no-op returning null when the feature flag is disabled', async () => {
-      mockTeamWorkspacesEnabled.value = false
-      const mockFetch = vi.fn()
-      vi.stubGlobal('fetch', mockFetch)
-
-      const store = useWorkspaceAuthStore()
-
-      const header = await store.ensureWorkspaceAuthHeader('workspace-123')
-
-      expect(header).toBeNull()
-      expect(mockFetch).not.toHaveBeenCalled()
-    })
-
     it('tears down workspace context and surfaces a toast on a permanent recovery failure', async () => {
       mockGetIdToken.mockResolvedValue('firebase-token-xyz')
       const mockFetch = vi
@@ -983,7 +976,8 @@ describe('useWorkspaceAuthStore', () => {
           ok: false,
           status: 403,
           statusText: 'Forbidden',
-          json: () => Promise.resolve({ message: 'Access denied' })
+          text: () =>
+            Promise.resolve(JSON.stringify({ message: 'Access denied' }))
         })
       vi.stubGlobal('fetch', mockFetch)
 
@@ -1026,7 +1020,8 @@ describe('useWorkspaceAuthStore', () => {
           ok: false,
           status: 403,
           statusText: 'Forbidden',
-          json: () => Promise.resolve({ message: 'Access denied' })
+          text: () =>
+            Promise.resolve(JSON.stringify({ message: 'Access denied' }))
         })
       )
 
@@ -1143,6 +1138,37 @@ describe('useWorkspaceAuthStore', () => {
       expect(token).toBe('token-workspace-123')
       expect(mockFetch).toHaveBeenCalledTimes(2)
     })
+
+    it('does not restore a stale local selection after another switch completes', async () => {
+      mockDistributionTypes.isCloud = false
+      mockTeamWorkspaceState.activeWorkspaceId = 'workspace-123'
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      const mockFetch = vi.fn().mockImplementation((_url, options) => {
+        const { workspace_id: workspaceId } = JSON.parse(options.body)
+        if (workspaceId === 'workspace-other') {
+          mockTeamWorkspaceState.activeWorkspaceId = workspaceId
+        }
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              ...mockTokenResponse,
+              token: `token-${workspaceId}`,
+              workspace: { ...mockWorkspace, id: workspaceId }
+            })
+        })
+      })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      const switchPromise = store.switchWorkspace('workspace-other')
+      const token = await store.ensureWorkspaceToken('workspace-123')
+      await switchPromise
+
+      expect(token).toBeNull()
+      expect(store.currentWorkspace?.id).toBe('workspace-other')
+      expect(mockFetch).toHaveBeenCalledOnce()
+    })
   })
 
   describe('token refresh scheduling', () => {
@@ -1193,13 +1219,18 @@ describe('useWorkspaceAuthStore', () => {
           ok: false,
           status: 403,
           statusText: 'Forbidden',
-          json: () => Promise.resolve({ message: 'Access denied' })
+          text: () =>
+            Promise.resolve(JSON.stringify({ message: 'Access denied' }))
         })
       vi.stubGlobal('fetch', mockFetch)
 
       const store = useWorkspaceAuthStore()
       const { currentWorkspace, workspaceToken } = storeToRefs(store)
       let workspaceWhenRevocationHandled: string | null = null
+      const cancelWorkflowTransition = vi.fn()
+      mockPrepareWorkflowWorkspaceTransition.mockReturnValue(
+        cancelWorkflowTransition
+      )
       mockForgetRevokedActiveWorkspace.mockImplementation(() => {
         workspaceWhenRevocationHandled = sessionStorage.getItem(
           WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE
@@ -1222,6 +1253,8 @@ describe('useWorkspaceAuthStore', () => {
       expect(workspaceWhenRevocationHandled).toBe(
         JSON.stringify(mockWorkspaceWithRole)
       )
+      expect(cancelWorkflowTransition).toHaveBeenCalledOnce()
+      expect(mockReload).not.toHaveBeenCalled()
     })
   })
 
@@ -1306,54 +1339,6 @@ describe('useWorkspaceAuthStore', () => {
     })
   })
 
-  describe('feature flag disabled', () => {
-    beforeEach(() => {
-      mockTeamWorkspacesEnabled.value = false
-    })
-
-    afterEach(() => {
-      mockTeamWorkspacesEnabled.value = true
-    })
-
-    it('initializeFromSession returns false when flag disabled', () => {
-      const futureExpiry = Date.now() + 3600 * 1000
-      sessionStorage.setItem(
-        WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
-        JSON.stringify(mockWorkspaceWithRole)
-      )
-      sessionStorage.setItem(WORKSPACE_STORAGE_KEYS.TOKEN, 'valid-token')
-      sessionStorage.setItem(
-        WORKSPACE_STORAGE_KEYS.EXPIRES_AT,
-        futureExpiry.toString()
-      )
-
-      const store = useWorkspaceAuthStore()
-      const { currentWorkspace, workspaceToken } = storeToRefs(store)
-
-      const result = store.initializeFromSession()
-
-      expect(result).toBe(false)
-      expect(currentWorkspace.value).toBeNull()
-      expect(workspaceToken.value).toBeNull()
-    })
-
-    it('switchWorkspace is a no-op when flag disabled', async () => {
-      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
-      const mockFetch = vi.fn()
-      vi.stubGlobal('fetch', mockFetch)
-
-      const store = useWorkspaceAuthStore()
-      const { currentWorkspace, workspaceToken, isLoading } = storeToRefs(store)
-
-      await store.switchWorkspace('workspace-123')
-
-      expect(mockFetch).not.toHaveBeenCalled()
-      expect(currentWorkspace.value).toBeNull()
-      expect(workspaceToken.value).toBeNull()
-      expect(isLoading.value).toBe(false)
-    })
-  })
-
   describe('refreshToken retry/race paths', () => {
     it('ends an expired workspace session behind the workflow write barrier', async () => {
       mockGetIdToken.mockResolvedValue('firebase-token-xyz')
@@ -1421,7 +1406,7 @@ describe('useWorkspaceAuthStore', () => {
         ok: false,
         status: 500,
         statusText: 'Internal Server Error',
-        json: () => Promise.resolve({ message: 'Server error' })
+        text: () => Promise.resolve(JSON.stringify({ message: 'Server error' }))
       })
 
       const consoleErrorSpy = vi
@@ -1513,7 +1498,8 @@ describe('useWorkspaceAuthStore', () => {
         ok: false,
         status: 401,
         statusText: 'Unauthorized',
-        json: () => Promise.resolve({ message: 'Invalid token' })
+        text: () =>
+          Promise.resolve(JSON.stringify({ message: 'Invalid token' }))
       })
 
       const consoleErrorSpy = vi
@@ -1555,7 +1541,8 @@ describe('useWorkspaceAuthStore', () => {
         ok: false,
         status: 403,
         statusText: 'Forbidden',
-        json: () => Promise.resolve({ message: 'Access denied' })
+        text: () =>
+          Promise.resolve(JSON.stringify({ message: 'Access denied' }))
       })
       await expect(store.switchWorkspace('workspace-other')).rejects.toThrow(
         WorkspaceAuthError
@@ -1827,7 +1814,7 @@ describe('useWorkspaceAuthStore', () => {
         ok: false,
         status: 500,
         statusText: 'Internal Server Error',
-        json: () => Promise.resolve({ message: 'Server error' })
+        text: () => Promise.resolve(JSON.stringify({ message: 'Server error' }))
       })
       await refreshPromise
 
@@ -2284,7 +2271,8 @@ describe('useWorkspaceAuthStore', () => {
           ok: false,
           status: 401,
           statusText: 'Unauthorized',
-          json: () => Promise.resolve({ message: 'Invalid token' })
+          text: () =>
+            Promise.resolve(JSON.stringify({ message: 'Invalid token' }))
         })
       vi.stubGlobal('fetch', mockFetch)
 
@@ -2329,7 +2317,7 @@ describe('useWorkspaceAuthStore', () => {
           ok: false,
           status: 500,
           statusText: 'Internal Server Error',
-          json: () => Promise.resolve({ message: 'try again' })
+          text: () => Promise.resolve(JSON.stringify({ message: 'try again' }))
         })
       vi.stubGlobal('fetch', mockFetch)
 
@@ -2567,23 +2555,6 @@ describe('useWorkspaceAuthStore', () => {
       expect(mockNotifyTokenRefreshed).not.toHaveBeenCalled()
     })
 
-    it('keeps the legacy refresh path gated: both flags OFF ⇒ no network from any timer', async () => {
-      mockTeamWorkspacesEnabled.value = false
-      mockUnifiedCloudAuthEnabled.value = false
-      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
-      const mockFetch = vi.fn()
-      vi.stubGlobal('fetch', mockFetch)
-
-      const store = useWorkspaceAuthStore()
-
-      await store.switchWorkspace('workspace-123')
-      await store.mintAtLogin()
-      await store.refreshToken()
-      await vi.advanceTimersByTimeAsync(60 * 60 * 1000)
-
-      expect(mockFetch).not.toHaveBeenCalled()
-    })
-
     it.for([
       {
         status: 403,
@@ -2621,7 +2592,7 @@ describe('useWorkspaceAuthStore', () => {
             ok: false,
             status,
             statusText,
-            json: () => Promise.resolve({ message: statusText })
+            text: () => Promise.resolve(JSON.stringify({ message: statusText }))
           })
         vi.stubGlobal('fetch', mockFetch)
 
@@ -2716,7 +2687,7 @@ describe('useWorkspaceAuthStore', () => {
           ok: false,
           status: 500,
           statusText: 'Internal Server Error',
-          json: () => Promise.resolve({ message: 'try again' })
+          text: () => Promise.resolve(JSON.stringify({ message: 'try again' }))
         })
       vi.stubGlobal('fetch', mockFetch)
 
@@ -2739,7 +2710,8 @@ describe('useWorkspaceAuthStore', () => {
         ok: false,
         status: 401,
         statusText: 'Unauthorized',
-        json: () => Promise.resolve({ message: 'Invalid token' })
+        text: () =>
+          Promise.resolve(JSON.stringify({ message: 'Invalid token' }))
       })
       vi.stubGlobal('fetch', mockFetch)
 

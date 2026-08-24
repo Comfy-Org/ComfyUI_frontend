@@ -177,7 +177,6 @@ const findActionEntry = (entries: MenuEntry[], key: string) =>
 
 describe('useJobMenu', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     currentItem = ref<JobListItem | null>(null)
     settingStoreMock.get.mockReturnValue(false)
     dialogServiceMock.prompt.mockResolvedValue(undefined)
@@ -441,6 +440,7 @@ describe('useJobMenu', () => {
       filename: 'foo.png',
       widget: 'image',
       type: 'temp',
+      // TODO(#14356): Missing-media detection cannot yet verify [temp] paths.
       expectedWidgetValue: 'bar/foo.png [temp]'
     },
     {

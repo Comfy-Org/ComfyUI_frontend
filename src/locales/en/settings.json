@@ -455,6 +455,9 @@
   "Comfy_Workflow_ConfirmDelete": {
     "name": "Show confirmation when deleting workflows"
   },
+  "Comfy_Workflow_NamedValuesRestore": {
+    "name": "Restore widget values by name"
+  },
   "Comfy_Workflow_Persist": {
     "name": "Persist workflow state and restore on page (re)load"
   },

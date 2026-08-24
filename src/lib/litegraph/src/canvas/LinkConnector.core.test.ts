@@ -1,5 +1,7 @@
 // oxlint-disable no-empty-pattern
-import { test as baseTest, describe, expect, vi } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
+import { test as baseTest, beforeEach, describe, expect, vi } from 'vitest'
 
 import type {
   MovingInputLink,
@@ -26,8 +28,15 @@ import {
   createMockNodeOutputSlot
 } from '@/utils/__tests__/litegraphTestUtils'
 
+import { registerLinkTopology } from '../LLink'
+import { registerRerouteChain } from '../Reroute'
+
 interface TestContext {
-  network: LinkNetwork & { add(node: LGraphNode): void }
+  network: LinkNetwork & {
+    add(node: LGraphNode): void
+    rootGraph: LGraph
+    id: LGraph['id']
+  }
   connector: LinkConnector
   setConnectingLinks: (value: ConnectingLink[]) => void
   createTestNode: (id: number, slotType?: ISlotType) => LGraphNode
@@ -39,6 +48,8 @@ interface TestContext {
   ) => LLink
 }
 
+beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
+
 const test = baseTest.extend<TestContext>({
   network: async ({}, use) => {
     const graph = new LGraph()
@@ -46,7 +57,7 @@ const test = baseTest.extend<TestContext>({
     const reroutes = new Map<RerouteId, Reroute>()
 
     await use({
-      links: new Map<LinkId, LLink>(),
+      links: graph.links,
       reroutes,
       floatingLinks,
       getLink: graph.getLink.bind(graph),
@@ -59,7 +70,10 @@ const test = baseTest.extend<TestContext>({
       getReroute: ((id: RerouteId | null | undefined) =>
         id == null ? undefined : reroutes.get(id)) as LinkNetwork['getReroute'],
       removeReroute: (id: RerouteId) => reroutes.delete(id),
-      add: (node: LGraphNode) => graph.add(node)
+      _removeReroute: (id: RerouteId) => void reroutes.delete(id),
+      add: (node: LGraphNode) => graph.add(node),
+      rootGraph: graph,
+      id: graph.id
     })
   },
 
@@ -125,11 +139,10 @@ describe('LinkConnector', () => {
       sourceNode.addOutput('out', slotType)
       targetNode.addInput('in', slotType)
 
-      const link = new LLink(toLinkId(1), slotType, 1, 0, 2, 0)
-      network.links.set(link.id, link)
-      targetNode.inputs[0].link = link.id
+      const link = sourceNode.connect(0, targetNode, 0)!
+      expect(link).toBeTruthy()
 
-      connector.moveInputLink(network, targetNode.inputs[0])
+      connector.moveInputLink(network, targetNode, targetNode.inputs[0])
 
       expect(connector.state.connectingTo).toBe('input')
       expect(connector.state.draggingExistingLinks).toBe(true)
@@ -146,6 +159,7 @@ describe('LinkConnector', () => {
       expect(() => {
         connector.moveInputLink(
           network,
+          new LGraphNode('mock'),
           createMockNodeInputSlot({ link: toLinkId(1) })
         )
       }).toThrow('Already dragging links.')
@@ -165,11 +179,10 @@ describe('LinkConnector', () => {
       sourceNode.addOutput('out', slotType)
       targetNode.addInput('in', slotType)
 
-      const link = new LLink(toLinkId(1), slotType, 1, 0, 2, 0)
-      network.links.set(link.id, link)
-      sourceNode.outputs[0].links = [link.id]
+      const link = sourceNode.connect(0, targetNode, 0)!
+      expect(link).toBeTruthy()
 
-      connector.moveOutputLink(network, sourceNode.outputs[0])
+      connector.moveOutputLink(network, sourceNode, sourceNode.outputs[0])
 
       expect(connector.state.connectingTo).toBe('output')
       expect(connector.state.draggingExistingLinks).toBe(true)
@@ -187,6 +200,7 @@ describe('LinkConnector', () => {
       expect(() => {
         connector.moveOutputLink(
           network,
+          new LGraphNode('mock'),
           createMockNodeOutputSlot({ links: [toLinkId(1)] })
         )
       }).toThrow('Already dragging links.')
@@ -241,11 +255,11 @@ describe('LinkConnector', () => {
       targetNode.addInput('in', 'number')
 
       const link = createTestLink(1, 1, 2)
-      const reroute = new Reroute(toRerouteId(1), network, [0, 0], undefined, [
-        link.id
-      ])
+      const reroute = new Reroute(toRerouteId(1), network, [0, 0])
       network.reroutes.set(reroute.id, reroute)
+      registerRerouteChain(network, reroute)
       link.parentId = reroute.id
+      registerLinkTopology(network, link)
 
       connector.dragFromReroute(network, reroute)
 

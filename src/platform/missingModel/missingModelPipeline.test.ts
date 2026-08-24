@@ -172,7 +172,6 @@ function createGraph(graphData = createWorkflowGraphData()): LGraph {
 
 describe('missingModelPipeline', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockHandles.state.enrichedCandidates = []
     mockHandles.missingModelStore.missingModelCandidates = null
     mockHandles.workspaceWorkflow.activeWorkflow = null
@@ -514,6 +513,42 @@ describe('missingModelPipeline', () => {
         'https://huggingface.co/bfl/FLUX.1'
       )
       expect(mockHandles.missingModelStore.setFileSize).not.toHaveBeenCalled()
+    })
+
+    it('does not store gated repo URLs after verification is aborted', async () => {
+      const controller = new AbortController()
+      const downloadableCandidate = {
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: 'ckpt_name',
+        name: 'gated.safetensors',
+        url: 'https://huggingface.co/bfl/FLUX.1/resolve/main/gated.safetensors',
+        directory: 'checkpoints',
+        isMissing: true,
+        isAssetSupported: true
+      } satisfies MissingModelCandidate
+      mockHandles.state.enrichedCandidates = [downloadableCandidate]
+      mockHandles.missingModelStore.createVerificationAbortController.mockReturnValueOnce(
+        controller
+      )
+      mockHandles.fetchModelMetadata.mockResolvedValue({
+        fileSize: null,
+        gatedRepoUrl: 'https://huggingface.co/bfl/FLUX.1'
+      })
+      controller.abort()
+
+      await runMissingModelPipeline({
+        graph: createGraph(),
+        graphData: createWorkflowGraphData(),
+        missingModelStore: mockHandles.missingModelStore
+      })
+      await vi.dynamicImportSettled()
+
+      expect(mockHandles.fetchModelMetadata).toHaveBeenCalledWith(
+        'https://huggingface.co/bfl/FLUX.1/resolve/main/gated.safetensors'
+      )
+      expect(
+        mockHandles.missingModelStore.setGatedRepoUrl
+      ).not.toHaveBeenCalled()
     })
 
     it('clears surfaced and cached missing models when no candidates are confirmed missing', async () => {

@@ -3,7 +3,18 @@
   <Toast group="billing-operation" position="top-right">
     <template #message="slotProps">
       <div class="flex items-center gap-2">
-        <i class="pi pi-spin pi-spinner text-primary" />
+        <!-- A spinner claims work is underway; an operation waiting on the
+             customer is not underway, so it gets a prompt icon instead. -->
+        <i
+          v-if="slotProps.message.severity === 'warn'"
+          class="pi pi-exclamation-circle text-warning-background"
+          aria-hidden="true"
+        />
+        <i
+          v-else
+          class="pi pi-spin pi-spinner text-primary"
+          aria-hidden="true"
+        />
         <span>{{ slotProps.message.summary }}</span>
       </div>
     </template>

@@ -4,6 +4,8 @@ import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import type { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { WidgetId } from '@/types/widgetId'
 import { parseImageWidgetValue } from '@/utils/imageUtil'
 
 type LoaderMediaType = 'image' | 'video' | 'audio'
@@ -69,17 +71,20 @@ function buildMediaUrl(
  */
 export function getLoaderDropIndicator(
   node: LGraphNode,
+  id: WidgetId,
   options: {
     mobile: boolean
     label: (key: string) => string
     onMaskEdit: (node: LGraphNode) => void
+    widgetValueStore: Pick<ReturnType<typeof useWidgetValueStore>, 'getWidget'>
   }
 ): LoaderDropIndicator | undefined {
   const config = LOADER_MEDIA_CONFIG[node.type ?? '']
   if (!config) return undefined
 
-  const fileWidget = node.widgets?.find((w) => w.name === config.widgetName)
-  const stringValue = extractWidgetStringValue(fileWidget?.value)
+  const stringValue = extractWidgetStringValue(
+    options.widgetValueStore.getWidget(id)?.value
+  )
   const { filename, subfolder, type } = stringValue
     ? parseImageWidgetValue(stringValue)
     : { filename: '', subfolder: '', type: 'input' }

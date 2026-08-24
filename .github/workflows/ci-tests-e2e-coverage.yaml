@@ -1,13 +1,30 @@
 name: 'CI: E2E Coverage'
 
 on:
+  workflow_call:
+    inputs:
+      source_branch:
+        required: true
+        type: string
+      source_pr:
+        required: false
+        type: string
+      source_run_id:
+        required: true
+        type: string
+      source_sha:
+        required: true
+        type: string
+    secrets:
+      CODECOV_TOKEN:
+        required: true
   workflow_run:
     workflows: ['CI: Tests E2E']
     types:
       - completed
 
 concurrency:
-  group: e2e-coverage-${{ github.event.workflow_run.head_sha }}
+  group: e2e-coverage-${{ inputs.source_sha || github.event.workflow_run.head_sha }}
   cancel-in-progress: true
 
 permissions:
@@ -15,25 +32,32 @@ permissions:
 
 jobs:
   merge:
+    # Not gated on full success: fail-fast:false means one flaky shard flips the whole run to failure, which would skip merging every other shard's real coverage.
     if: >
       github.repository == 'Comfy-Org/ComfyUI_frontend' &&
-      github.event.workflow_run.conclusion == 'success'
+      (github.event_name == 'workflow_call' ||
+        github.event.workflow_run.event != 'pull_request' ||
+        github.event.workflow_run.head_repository.full_name != github.repository ||
+        github.event.workflow_run.actor.login == 'dependabot[bot]') &&
+      github.event.workflow_run.conclusion != 'cancelled'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
       has-coverage: ${{ steps.coverage-shards.outputs.has-coverage }}
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Setup frontend
-        uses: ./.github/actions/setup-frontend
+      - name: Checkout sources for genhtml
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.source_sha || github.event.workflow_run.head_sha }}
+          sparse-checkout: |
+            src
+            packages
 
       - name: Download all shard coverage data
         uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
         with:
-          run_id: ${{ github.event.workflow_run.id }}
+          run_id: ${{ inputs.source_run_id || github.event.workflow_run.id }}
           name: e2e-coverage-shard-.*
           name_is_regexp: true
           path: temp/coverage-shards
@@ -85,6 +109,16 @@ jobs:
             fi
           done
 
+      - name: Assert coverage was mapped back to source
+        if: steps.coverage-shards.outputs.has-coverage == 'true'
+        run: |
+          MAPPED_SF=$(grep -cE '^SF:(src|packages)/' coverage/playwright/coverage.lcov || true)
+          echo "Source-mapped files: $MAPPED_SF" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${MAPPED_SF:-0}" -lt 100 ]; then
+            echo "::error::Only $MAPPED_SF files under src/ or packages/ in the merged tracefile. Observed paths: $(grep -m 5 '^SF:' coverage/playwright/coverage.lcov | tr '\n' ' '). Served bundle paths mean the E2E build dropped its '//# sourceMappingURL=' comment — check it ran with COLLECT_COVERAGE=true (vite.config.mts build.sourcemap)."
+            exit 1
+          fi
+
       - name: Strip non-source entries from coverage
         if: steps.coverage-shards.outputs.has-coverage == 'true'
         run: |
@@ -106,10 +140,13 @@ jobs:
 
       - name: Upload E2E coverage to Codecov
         if: steps.coverage-shards.outputs.has-coverage == 'true'
-        uses: codecov/codecov-action@1af58845a975a7985b0beb0cbe6fbbb71a41dbad # v5.5.3
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
           files: coverage/playwright/coverage.lcov
           flags: e2e
+          override_branch: ${{ inputs.source_branch || github.event.workflow_run.head_branch }}
+          override_commit: ${{ inputs.source_sha || github.event.workflow_run.head_sha }}
+          override_pr: ${{ inputs.source_pr || github.event.workflow_run.pull_requests[0].number }}
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
 
@@ -147,7 +184,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Download HTML report
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: e2e-coverage-html
           path: coverage/html

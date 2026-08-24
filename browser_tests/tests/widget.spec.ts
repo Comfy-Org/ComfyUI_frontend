@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { getWav } from '@e2e/fixtures/components/AudioPreview'
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 
 test.beforeEach(async ({ comfyPage }) => {
@@ -400,9 +401,45 @@ test.describe(
 )
 
 test.describe('Load audio widget', { tag: ['@screenshot', '@widget'] }, () => {
-  test('Can load audio', async ({ comfyPage }) => {
+  test('Hides an empty preview and loads uploaded audio', async ({
+    comfyPage,
+    comfyFiles
+  }) => {
     await comfyPage.workflow.loadWorkflow('widgets/load_audio_widget')
-    await expect(comfyPage.page.locator('.comfy-audio')).toBeVisible()
+    const audioPreview = comfyPage.page.locator('.comfy-audio')
+    await expect(audioPreview).toBeHidden()
+
+    const [loadAudioNode] =
+      await comfyPage.nodeOps.getNodeRefsByType('LoadAudio')
+    if (!loadAudioNode) throw new Error('LoadAudio node not found')
+    const audioWidget = await loadAudioNode.getWidgetByName('audio')
+    const uploadWidget = await loadAudioNode.getWidgetByName('upload')
+    const filename = 'test-audio.wav'
+    const uploadResponse = comfyPage.page.waitForResponse((response) =>
+      response.url().includes('/upload/image')
+    )
+    const fileChooser = comfyPage.page.waitForEvent('filechooser')
+
+    await uploadWidget.click()
+    await (
+      await fileChooser
+    ).setFiles({
+      name: filename,
+      buffer: getWav(),
+      mimeType: 'audio/x-wav'
+    })
+    comfyFiles.deleteAfterTest({ filename, type: 'input' })
+    expect((await uploadResponse).status()).toBe(200)
+
+    await expect.poll(() => audioWidget.getValue()).toBe(filename)
+    await expect(audioPreview).toBeVisible()
+    await expect
+      .poll(() =>
+        audioPreview.evaluate((audio: HTMLAudioElement) =>
+          new URL(audio.src).searchParams.get('filename')
+        )
+      )
+      .toBe(filename)
     await expect(comfyPage.canvas).toHaveScreenshot('load_audio_widget.png')
   })
 })

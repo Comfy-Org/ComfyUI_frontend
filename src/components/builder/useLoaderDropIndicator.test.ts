@@ -3,6 +3,9 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { WidgetState } from '@/types/widgetState'
+import { widgetId } from '@/types/widgetId'
+import { toNodeId } from '@/types/nodeId'
 
 import { getLoaderDropIndicator } from './useLoaderDropIndicator'
 
@@ -22,32 +25,41 @@ vi.mock('@/scripts/app', () => ({
 
 function makeWidget(
   name: string,
-  value: unknown,
   callback?: IBaseWidget['callback']
 ): IBaseWidget {
-  return fromAny<IBaseWidget, unknown>({ name, value, callback })
+  return fromAny<IBaseWidget, unknown>({ name, callback })
 }
 
 function makeNode(type: string, widgets: IBaseWidget[]): LGraphNode {
   return fromAny<LGraphNode, unknown>({ type, widgets })
 }
 
+function makeWidgetValueStore(value: unknown) {
+  return { getWidget: vi.fn(() => fromAny<WidgetState, unknown>({ value })) }
+}
+
+const id = widgetId('graph-test', toNodeId(1), 'image')
+
 const options = {
   mobile: false,
   label: (key: string) => key,
-  onMaskEdit: vi.fn()
+  onMaskEdit: vi.fn(),
+  widgetValueStore: makeWidgetValueStore(undefined)
 }
 
 describe('getLoaderDropIndicator', () => {
   it('returns undefined for node types with no loader preview', () => {
     const node = makeNode('KSampler', [])
-    expect(getLoaderDropIndicator(node, options)).toBeUndefined()
+    expect(getLoaderDropIndicator(node, id, options)).toBeUndefined()
   })
 
   it('builds an image preview for LoadImage with a selected file', () => {
-    const node = makeNode('LoadImage', [makeWidget('image', 'photo.png')])
+    const node = makeNode('LoadImage', [makeWidget('image')])
 
-    const indicator = getLoaderDropIndicator(node, options)
+    const indicator = getLoaderDropIndicator(node, id, {
+      ...options,
+      widgetValueStore: makeWidgetValueStore('photo.png')
+    })
 
     expect(indicator?.mediaType).toBe('image')
     expect(indicator?.mediaUrl).toBe(
@@ -58,9 +70,12 @@ describe('getLoaderDropIndicator', () => {
   })
 
   it('builds a video preview for LoadVideo without appending the image preview format param', () => {
-    const node = makeNode('LoadVideo', [makeWidget('file', 'clip.mp4')])
+    const node = makeNode('LoadVideo', [makeWidget('file')])
 
-    const indicator = getLoaderDropIndicator(node, options)
+    const indicator = getLoaderDropIndicator(node, id, {
+      ...options,
+      widgetValueStore: makeWidgetValueStore('clip.mp4')
+    })
 
     expect(indicator?.mediaType).toBe('video')
     expect(indicator?.mediaUrl).toBe(
@@ -71,9 +86,12 @@ describe('getLoaderDropIndicator', () => {
   })
 
   it('builds an audio preview for LoadAudio', () => {
-    const node = makeNode('LoadAudio', [makeWidget('audio', 'voice.mp3')])
+    const node = makeNode('LoadAudio', [makeWidget('audio')])
 
-    const indicator = getLoaderDropIndicator(node, options)
+    const indicator = getLoaderDropIndicator(node, id, {
+      ...options,
+      widgetValueStore: makeWidgetValueStore('voice.mp3')
+    })
 
     expect(indicator?.mediaType).toBe('audio')
     expect(indicator?.mediaUrl).toBe(
@@ -84,11 +102,12 @@ describe('getLoaderDropIndicator', () => {
   })
 
   it('parses subfolder and type annotations out of the widget value', () => {
-    const node = makeNode('LoadVideo', [
-      makeWidget('file', 'sub/dir/clip.mp4 [output]')
-    ])
+    const node = makeNode('LoadVideo', [makeWidget('file')])
 
-    const indicator = getLoaderDropIndicator(node, options)
+    const indicator = getLoaderDropIndicator(node, id, {
+      ...options,
+      widgetValueStore: makeWidgetValueStore('sub/dir/clip.mp4 [output]')
+    })
 
     expect(indicator?.mediaUrl).toBe(
       'http://localhost:8188/api/view?filename=clip.mp4&subfolder=sub%2Fdir&type=output'
@@ -96,20 +115,24 @@ describe('getLoaderDropIndicator', () => {
   })
 
   it('returns no mediaUrl when no file has been selected yet', () => {
-    const node = makeNode('LoadVideo', [makeWidget('file', '')])
+    const node = makeNode('LoadVideo', [makeWidget('file')])
 
-    const indicator = getLoaderDropIndicator(node, options)
+    const indicator = getLoaderDropIndicator(node, id, {
+      ...options,
+      widgetValueStore: makeWidgetValueStore('')
+    })
 
     expect(indicator?.mediaUrl).toBeUndefined()
     expect(indicator?.iconClass).toBeTruthy()
   })
 
   it('omits the label on mobile', () => {
-    const node = makeNode('LoadVideo', [makeWidget('file', 'clip.mp4')])
+    const node = makeNode('LoadVideo', [makeWidget('file')])
 
-    const indicator = getLoaderDropIndicator(node, {
+    const indicator = getLoaderDropIndicator(node, id, {
       ...options,
-      mobile: true
+      mobile: true,
+      widgetValueStore: makeWidgetValueStore('clip.mp4')
     })
 
     expect(indicator?.label).toBeUndefined()
@@ -118,13 +141,29 @@ describe('getLoaderDropIndicator', () => {
   it('clicking the indicator opens the upload dialog via the "upload" widget', () => {
     const uploadCallback = vi.fn()
     const node = makeNode('LoadVideo', [
-      makeWidget('file', 'clip.mp4'),
-      makeWidget('upload', undefined, uploadCallback)
+      makeWidget('file'),
+      makeWidget('upload', uploadCallback)
     ])
 
-    const indicator = getLoaderDropIndicator(node, options)
+    const indicator = getLoaderDropIndicator(node, id, {
+      ...options,
+      widgetValueStore: makeWidgetValueStore('clip.mp4')
+    })
     indicator?.onClick()
 
     expect(uploadCallback).toHaveBeenCalledWith(undefined)
+  })
+
+  it('reads the current value from widgetValueStore rather than node.widgets', () => {
+    const node = makeNode('LoadImage', [makeWidget('image')])
+    const widgetValueStore = makeWidgetValueStore('from-store.png')
+
+    const indicator = getLoaderDropIndicator(node, id, {
+      ...options,
+      widgetValueStore
+    })
+
+    expect(widgetValueStore.getWidget).toHaveBeenCalledWith(id)
+    expect(indicator?.mediaUrl).toContain('from-store.png')
   })
 })

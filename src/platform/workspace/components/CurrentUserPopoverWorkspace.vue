@@ -25,13 +25,18 @@
     </div>
 
     <!-- Workspace Selector -->
-    <div class="relative">
-      <div
+    <div v-if="!accountActionsOnly" class="relative">
+      <button
         ref="workspaceSwitcherTrigger"
         v-tooltip="{ value: workspaceName, showDelay: 300 }"
-        class="flex cursor-pointer items-center justify-between rounded-lg px-4 py-2 hover:bg-secondary-background-hover"
+        type="button"
+        class="flex w-full cursor-pointer appearance-none items-center justify-between rounded-lg border-0 bg-transparent px-4 py-2 text-left hover:bg-secondary-background-hover"
+        :aria-expanded="isWorkspaceSwitcherOpen"
+        aria-haspopup="menu"
+        aria-controls="workspace-switcher-panel"
         data-testid="workspace-switcher-trigger"
         @click="toggleWorkspaceSwitcher"
+        @keydown.escape.stop="isWorkspaceSwitcherOpen = false"
       >
         <div class="flex w-0 flex-1 items-center gap-2">
           <WorkspaceProfilePic
@@ -43,11 +48,13 @@
           </span>
         </div>
         <i class="pi pi-chevron-down shrink-0 text-sm text-muted-foreground" />
-      </div>
+      </button>
 
       <div
         v-if="isWorkspaceSwitcherOpen"
+        id="workspace-switcher-panel"
         ref="workspaceSwitcherPanel"
+        role="menu"
         class="absolute top-0 right-full z-10 mr-4 rounded-lg border border-border-default bg-base-background shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
         data-testid="workspace-switcher-panel"
       >
@@ -60,8 +67,8 @@
 
     <!-- Credits Section -->
 
-    <div class="flex items-center gap-2 px-4 py-2">
-      <i class="icon-[lucide--component] text-sm text-credit" />
+    <div v-if="!accountActionsOnly" class="flex items-center gap-2 px-4 py-2">
+      <i class="icon-[lucide--coins] text-sm text-credit" />
       <Skeleton
         v-if="isLoadingBalance"
         width="4rem"
@@ -83,7 +90,9 @@
       </Button>
       <!-- Upgrade to add credits (free tier) -->
       <Button
-        v-if="isActiveSubscription && permissions.canTopUp && isFreeTier"
+        v-if="
+          canAccessSubscriptionFeatures && permissions.canTopUp && isFreeTier
+        "
         variant="subscribe"
         size="sm"
         data-testid="upgrade-to-add-credits-button"
@@ -92,7 +101,7 @@
         {{ $t('subscription.upgradeToAddCredits') }}
       </Button>
       <Button
-        v-else-if="isActiveSubscription && permissions.canTopUp"
+        v-else-if="canAccessSubscriptionFeatures && permissions.canTopUp"
         variant="secondary"
         size="sm"
         class="text-base-foreground"
@@ -127,10 +136,10 @@
       </Button>
     </div>
 
-    <Divider class="mx-0 my-2" />
+    <Divider v-if="!accountActionsOnly" class="mx-0 my-2" />
 
     <div
-      v-if="showPlansAndPricing"
+      v-if="!accountActionsOnly && isCloud && showPlansAndPricing"
       class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="plans-pricing-menu-item"
       @click="handleOpenPlansAndPricing"
@@ -141,20 +150,35 @@
       }}</span>
     </div>
 
-    <div
-      v-if="showManagePlan"
-      class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
+    <button
+      v-if="!accountActionsOnly && isCloud && showManagePlan"
+      type="button"
+      class="flex w-full cursor-pointer appearance-none items-center gap-2 border-0 bg-transparent px-4 py-2 text-left hover:bg-secondary-background-hover focus-visible:bg-secondary-background-hover focus-visible:outline-none"
       data-testid="manage-plan-menu-item"
-      @click="handleOpenPlanAndCreditsSettings"
+      @click="handleOpenManagePlanSettings"
     >
-      <i class="icon-[lucide--file-text] text-sm text-muted-foreground" />
+      <i class="icon-[lucide--credit-card] size-4 text-muted-foreground" />
       <span class="flex-1 text-sm text-base-foreground">{{
         $t('subscription.managePlan')
       }}</span>
-    </div>
+    </button>
+
+    <button
+      v-if="!accountActionsOnly && showLocalPlansAndCredits"
+      type="button"
+      class="flex w-full cursor-pointer appearance-none items-center gap-2 border-0 bg-transparent px-4 py-2 text-left hover:bg-secondary-background-hover focus-visible:bg-secondary-background-hover focus-visible:outline-none"
+      data-testid="plans-credits-menu-item"
+      @click="handleOpenCreditsSettings"
+    >
+      <i class="icon-[lucide--coins] size-4 text-muted-foreground" />
+      <span class="flex-1 text-sm text-base-foreground">{{
+        $t('subscription.plansAndCredits')
+      }}</span>
+    </button>
 
     <!-- Partner Nodes Pricing (always shown) -->
     <div
+      v-if="!accountActionsOnly"
       class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="partner-nodes-menu-item"
       @click="handleOpenPartnerNodesInfo"
@@ -165,10 +189,11 @@
       }}</span>
     </div>
 
-    <Divider class="mx-0 my-2" />
+    <Divider v-if="!accountActionsOnly" class="mx-0 my-2" />
 
     <!-- Workspace Settings (always shown) -->
     <div
+      v-if="!accountActionsOnly"
       class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="workspace-settings-menu-item"
       @click="handleOpenWorkspaceSettings"
@@ -256,6 +281,10 @@ const emit = defineEmits<{
   close: []
 }>()
 
+const { accountActionsOnly = false } = defineProps<{
+  accountActionsOnly?: boolean
+}>()
+
 const { buildDocsUrl, docsPaths } = useExternalLink()
 
 const { userDisplayName, userEmail, userPhotoUrl, handleSignOut } =
@@ -263,7 +292,8 @@ const { userDisplayName, userEmail, userPhotoUrl, handleSignOut } =
 const settingsDialog = useSettingsDialog()
 const dialogService = useDialogService()
 const {
-  isActiveSubscription,
+  billingStatus,
+  canAccessSubscriptionFeatures,
   isFreeTier,
   subscription,
   balance,
@@ -296,13 +326,27 @@ const displayedCredits = computed(() => {
 const showPlansAndPricing = computed(
   () => permissions.value.canManageSubscription
 )
+const showLocalPlansAndCredits = computed(
+  () => !isCloud && permissions.value.canManageSubscription
+)
+const hasDelinquentSubscription = computed(
+  () =>
+    (billingStatus.value === 'payment_failed' ||
+      billingStatus.value === 'paused') &&
+    Boolean(subscription.value?.planSlug)
+)
 const showManagePlan = computed(
-  () => permissions.value.canManageSubscription && isActiveSubscription.value
+  () =>
+    permissions.value.canManageSubscription &&
+    (canAccessSubscriptionFeatures.value || hasDelinquentSubscription.value)
 )
 const showSubscribeAction = computed(
   () =>
-    (isCancelled.value && permissions.value.canManageSubscriptionLifecycle) ||
-    (!isActiveSubscription.value && permissions.value.canManageSubscription)
+    isCloud &&
+    ((isCancelled.value && permissions.value.canManageSubscriptionLifecycle) ||
+      (!canAccessSubscriptionFeatures.value &&
+        !hasDelinquentSubscription.value &&
+        permissions.value.canManageSubscription))
 )
 
 const handleOpenUserSettings = () => {
@@ -320,13 +364,13 @@ const handleOpenPlansAndPricing = () => {
   emit('close')
 }
 
-const handleOpenPlanAndCreditsSettings = () => {
-  if (isCloud) {
-    settingsDialog.show('workspace')
-  } else {
-    settingsDialog.show('credits')
-  }
+const handleOpenManagePlanSettings = () => {
+  settingsDialog.show('workspace')
+  emit('close')
+}
 
+const handleOpenCreditsSettings = () => {
+  settingsDialog.show('credits')
   emit('close')
 }
 
@@ -365,7 +409,7 @@ const toggleWorkspaceSwitcher = () => {
 }
 
 const refreshBalance = () => {
-  void fetchBalance()
+  if (!accountActionsOnly) void fetchBalance()
 }
 
 defineExpose({ refreshBalance })
