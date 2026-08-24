@@ -179,7 +179,7 @@ describe('LGraph.configure that throws partway through', () => {
       'test/throwing',
       'test/good'
     ])
-    expect(graph._links.size).toBe(1)
+    expect(graph.links.size).toBe(1)
   })
 
   it('keeps a reroute that a completed load would have discarded', () => {
@@ -248,11 +248,19 @@ describe('a workflow loaded after a failed load, on the same graph', () => {
   it('serialises identically to the same workflow on a fresh graph', () => {
     const reused = graphAfterFailedConfigure()
     reused.configure(unrelatedWorkflow())
+    const reusedSerialized = reused.serialize()
+
+    // Release the reused graph's store entities before configuring a second
+    // graph with the same workflow id: the dedicated stores are keyed by root
+    // graph id, and two live graphs claiming the same id are a collision the
+    // stores resolve by reminting (see ADR-0003), which is not what this test
+    // is about.
+    reused.clear()
 
     const fresh = new LGraph()
     fresh.configure(unrelatedWorkflow())
 
-    expect(reused.serialize()).toEqual(fresh.serialize())
+    expect(reusedSerialized).toEqual(fresh.serialize())
   })
 
   it('holds no node, link, reroute or group from the failed load', () => {

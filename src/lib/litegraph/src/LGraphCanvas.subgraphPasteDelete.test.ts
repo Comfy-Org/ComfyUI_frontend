@@ -36,8 +36,9 @@ import {
  * `proxyWidgets` clearing and preview auto-exposure. None of that outlives the
  * paste. This file starts where that one stops: what the *deletions* do.
  *
- * These assertions describe `main` as it behaves today. Two of them pin
- * behaviour that is arguably wrong; they are asserted as-is and called out.
+ * These assertions characterise the ECS stores (ADR-0003). Where they differ
+ * from pre-ECS `main` — phantom reroute floating entries, widget-store leaks
+ * on host deletion — the delta is intended and called out inline.
  */
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
@@ -197,7 +198,7 @@ function terminalState(f: Fixture) {
   return {
     remainingNodes: f.rootGraph.nodes.map((node) => String(node.id)),
     remainingDefinitions: f.rootGraph.subgraphs.size,
-    remainingLinks: [...f.rootGraph._links.keys()],
+    remainingLinks: [...f.rootGraph.links.keys()],
     remainingFloatingLinks: [...f.rootGraph.floatingLinks.keys()],
     remainingReroutes: [...f.rootGraph.reroutes.values()].map((reroute) => ({
       linkIds: [...reroute.linkIds],
@@ -253,11 +254,11 @@ describe('subgraph copy/paste then delete in both orders', () => {
     // Only inbound links are serialised, so the copy has no outbound link.
     expect(f.copy.outputs[0].links ?? []).toHaveLength(0)
 
-    // `createReroute` seeds `floatingLinkIds` from a non-floating link, so the
-    // reroute claims a floating link the graph has never had. This predates any
-    // deletion; asserting it here stops the terminal state below from being
-    // misread as deletion damage.
-    expect([...f.reroute.floatingLinkIds]).toStrictEqual([f.originalInLinkId])
+    // On main, `createReroute` seeded `floatingLinkIds` from a non-floating
+    // link, so the reroute claimed a floating link the graph never had. The
+    // ECS link store keeps floating membership consistent with the graph:
+    // no phantom entry at paste time (ADR-0003).
+    expect([...f.reroute.floatingLinkIds]).toStrictEqual([])
     expect(f.rootGraph.floatingLinks.size).toBe(0)
   })
 
@@ -299,12 +300,10 @@ describe('subgraph copy/paste then delete in both orders', () => {
     expect(f.rootGraph.getLink(f.originalOutLinkId)).toBeUndefined()
     expect(f.downstream.inputs[0].link).toBeNull()
 
-    // Store leak on `main`: removing a SubgraphNode never deletes the widget
-    // states its promoted inputs registered, so the deleted instance's value
-    // outlives the instance.
-    expect(storedWidgets(f.rootGraph, f.original)).toStrictEqual([
-      { name: 'seed', value: ORIGINAL_SEED }
-    ])
+    // On main, removing a SubgraphNode leaked its promoted widget states in
+    // the store. The ECS widget-value store releases the deleted host's
+    // registrations, so nothing keyed to the removed instance survives.
+    expect(storedWidgets(f.rootGraph, f.original)).toStrictEqual([])
   })
 
   it('leaves the original whole when the copy is deleted first', () => {
@@ -344,9 +343,9 @@ describe('subgraph copy/paste then delete in both orders', () => {
 
     expect(f.rootGraph.getLink(f.copyInLinkId)).toBeUndefined()
 
-    expect(storedWidgets(f.rootGraph, f.copy)).toStrictEqual([
-      { name: 'seed', value: COPY_SEED }
-    ])
+    // Same release semantics as above: the deleted copy's widget states are
+    // removed from the store rather than leaking (see ADR-0003).
+    expect(storedWidgets(f.rootGraph, f.copy)).toStrictEqual([])
   })
 
   it('reaches the same terminal state whichever instance is deleted first', () => {
@@ -369,9 +368,14 @@ describe('subgraph copy/paste then delete in both orders', () => {
     expect(terminalState(copyFirst)).toStrictEqual(terminalState(originalFirst))
 
     // That shared state is: both definitions released, both instances gone,
-    // every link gone — but the reroute survives carrying no links at all,
-    // because the phantom `floatingLinkIds` entry keeps `totalLinks` above
-    // zero, and both promoted widget states are still in the store.
+    // every real link gone — and the reroute survives on a *real* floating
+    // link. Where main kept the reroute alive via a phantom `floatingLinkIds`
+    // entry (no matching graph record), the ECS link store materialises the
+    // preserved chain as an actual floating link in `graph.floatingLinks`
+    // (ADR-0003). Both deleted hosts' widget states are released rather than
+    // leaked.
+    const [floatingId] = [...originalFirst.rootGraph.floatingLinks.keys()]
+    expect(floatingId).toBeDefined()
     expect(terminalState(originalFirst)).toStrictEqual({
       remainingNodes: [
         String(originalFirst.upstream.id),
@@ -379,12 +383,10 @@ describe('subgraph copy/paste then delete in both orders', () => {
       ],
       remainingDefinitions: 0,
       remainingLinks: [],
-      remainingFloatingLinks: [],
-      remainingReroutes: [
-        { linkIds: [], floatingLinkIds: [originalFirst.originalInLinkId] }
-      ],
-      originalWidgetStates: [{ name: 'seed', value: ORIGINAL_SEED }],
-      copyWidgetStates: [{ name: 'seed', value: COPY_SEED }]
+      remainingFloatingLinks: [floatingId],
+      remainingReroutes: [{ linkIds: [], floatingLinkIds: [floatingId] }],
+      originalWidgetStates: [],
+      copyWidgetStates: []
     })
   })
 })

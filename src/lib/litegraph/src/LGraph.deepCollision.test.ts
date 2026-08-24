@@ -19,7 +19,6 @@ import {
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { toNodeId } from '@/types/nodeId'
-import { toRerouteId } from '@/types/rerouteId'
 
 import { registerTestSubgraphNodeTypes } from './subgraph/__fixtures__/subgraphHelpers'
 
@@ -305,34 +304,59 @@ describe('LGraph.configure with simultaneous cross-scope ID collisions', () => {
     }
   })
 
-  it('leaves link, reroute and group ids colliding across scopes because each scope owns its own id space', () => {
+  it('remints link, reroute and group ids so no id collides across scopes, because all scopes share the root graph store', () => {
+    // The dedicated stores are keyed by root graph id, so ids colliding across
+    // scopes are identity collisions the stores refuse to merge: the later
+    // registration remints a fresh id (see ADR-0003). Each scope still owns
+    // exactly one link, reroute and group, and every reference is patched.
     const graph = configureColliding()
     const scopes = scopesOf(graph)
 
-    for (const { graph: scope } of scopes) {
-      expect([...scope.links.keys()]).toEqual([COLLIDING_ENTITY_ID])
-      expect([...scope.reroutes.keys()]).toEqual([COLLIDING_ENTITY_ID])
-      expect(scope.groups.map((group) => group.id)).toEqual([
-        COLLIDING_ENTITY_ID
-      ])
+    const linkIds = scopes.map(({ graph: scope }) => [...scope.links.keys()])
+    const rerouteIds = scopes.map(({ graph: scope }) => [
+      ...scope.reroutes.keys()
+    ])
+    const groupIds = scopes.map(({ graph: scope }) =>
+      scope.groups.map((group) => group.id)
+    )
 
+    for (const ids of [...linkIds, ...rerouteIds, ...groupIds]) {
+      expect(ids).toHaveLength(1)
+    }
+    expect(new Set(linkIds.flat()).size).toBe(scopes.length)
+    expect(new Set(rerouteIds.flat()).size).toBe(scopes.length)
+    expect(new Set(groupIds.flat()).size).toBe(scopes.length)
+
+    for (const { graph: scope } of scopes) {
       // The reroute survives normalisation attached to its own scope's link,
       // rather than being dropped as broken.
-      const reroute = scope.reroutes.get(toRerouteId(COLLIDING_ENTITY_ID))!
-      expect([...reroute.linkIds]).toEqual([COLLIDING_ENTITY_ID])
+      const [linkId] = [...scope.links.keys()]
+      const [rerouteId] = [...scope.reroutes.keys()]
+      const reroute = scope.reroutes.get(rerouteId)!
+      expect([...reroute.linkIds]).toEqual([linkId])
     }
   })
 
   it('normalisation is value-idempotent: the second save reproduces every id, reference and entity of the first', () => {
-    const first = configureColliding().serialize()
+    // Release each instance's store entities (graph.clear()) before loading
+    // the same root graph id again: two live claimants of one root id are an
+    // identity collision the store resolves by reminting (ADR-0003), which is
+    // correct in the app (one live graph per id) but would skew this harness.
+    const graph = configureColliding()
+    const first = graph.serialize()
+    graph.clear()
     const second = load(structuredClone(first)).serialize()
 
     expect(second).toEqual(first)
   })
 
   it('normalisation is NOT byte-stable on the first re-save: root `extra` key order flips, then settles', () => {
-    const first = configureColliding().serialize()
-    const second = load(structuredClone(first)).serialize()
+    const graph1 = configureColliding()
+    const first = graph1.serialize()
+    graph1.clear()
+    const graph2 = load(structuredClone(first))
+    const second = graph2.serialize()
+    graph2.clear()
     const third = load(structuredClone(second)).serialize()
 
     expect(JSON.stringify(second)).not.toEqual(JSON.stringify(first))

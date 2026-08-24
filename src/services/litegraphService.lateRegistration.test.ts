@@ -103,14 +103,13 @@ const workflow = (): SerialisableGraph => ({
 })
 
 /**
- * A graph loaded and populated the way the Vue renderer leaves it:
- * `useVueNodeLifecycle` seeds the layout store from the graph's nodes, so the
+ * A graph loaded and populated the way the app leaves it: `LGraph.add` (via
+ * `configure`) attaches each node to the layout and shell stores, so the
  * layout entities the registration must not disturb actually exist.
  */
 function loadedSession() {
   const graph = new LGraph()
   graph.configure(workflow())
-  layoutStore.initializeFromLiteGraph(graph.nodes)
   return graph
 }
 
@@ -118,27 +117,39 @@ function installLateDefinition() {
   return useLitegraphService().registerNodeDef(LATE, nodeDef(LATE))
 }
 
-function operationsAddedBy(action: () => void): LayoutOperation[] {
-  const before = layoutStore.getOperationsSince(0).length
-  action()
-  return layoutStore.getOperationsSince(0).slice(before)
-}
-
-async function operationsAddedByAsync(
-  action: () => Promise<void>
+/**
+ * Layout operations emitted while `action` runs. `onChange` notifications are
+ * deferred to a microtask, so flush before unsubscribing.
+ */
+async function operationsAddedBy(
+  action: () => void | Promise<void>
 ): Promise<LayoutOperation[]> {
-  const before = layoutStore.getOperationsSince(0).length
-  await action()
-  return layoutStore.getOperationsSince(0).slice(before)
+  const operations: LayoutOperation[] = []
+  const unsubscribe = layoutStore.onChange((change) => {
+    operations.push(change.operation)
+  })
+  try {
+    await action()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+  } finally {
+    unsubscribe()
+  }
+  return operations
 }
 
-function layoutEntities() {
-  return [...layoutStore.getAllNodes().value]
+/** Per-node layout entities plus the store-wide count, as a comparable snapshot. */
+function layoutEntities(graph: LGraph) {
+  return {
+    nodeCount: layoutStore.nodeCount,
+    layouts: graph.nodes.map((node) =>
+      layoutStore.getNodeLayout(graph.rootGraph.id, node.id)
+    )
+  }
 }
 
 beforeEach(async () => {
   setActivePinia(createTestingPinia({ stubActions: false }))
-  layoutStore.initializeFromLiteGraph([])
+  layoutStore.resetForTests()
   await useLitegraphService().registerNodeDef(INSTALLED, nodeDef(INSTALLED))
 })
 
@@ -172,18 +183,18 @@ describe('registering a node definition while a graph is already loaded', () => 
   it('creates no layout entity operations', async () => {
     const graph = loadedSession()
 
-    // Control: the op log is live and wired to this graph's entities, so an
-    // empty diff below is an observation rather than a dead channel.
-    const control = operationsAddedBy(() => {
+    // Control: the change channel is live and wired to this graph's entities,
+    // so an empty diff below is an observation rather than a dead channel.
+    const control = await operationsAddedBy(() => {
       graph.nodes[0].pos = [500, 500]
     })
     expect(control.map((operation) => operation.type)).toEqual(['moveNode'])
 
-    const entitiesBefore = layoutEntities()
-    const operations = await operationsAddedByAsync(installLateDefinition)
+    const entitiesBefore = layoutEntities(graph)
+    const operations = await operationsAddedBy(installLateDefinition)
 
     expect(operations).toEqual([])
-    expect(layoutEntities()).toEqual(entitiesBefore)
+    expect(layoutEntities(graph)).toEqual(entitiesBefore)
   })
 
   it('re-registers no widget entity belonging to the loaded graph', async () => {
