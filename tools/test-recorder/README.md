@@ -19,6 +19,10 @@ pnpm comfy-test list        # List available workflows
 
 See the [Browser Tests README](../../browser_tests/README.md) for full setup instructions.
 
+Cloud recordings pass feature flags as repeatable `?ff=name:value` URL
+parameters. These overrides are scoped to the opened browser tab and disappear
+when it closes. Local recordings continue to seed `ff:<name>` in local storage.
+
 ## For Agents
 
 `record` requires an interactive terminal and a human clicking a real
