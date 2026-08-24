@@ -320,8 +320,10 @@ const faqJsonLd = {
         </div>
         <div class="relative aspect-video w-full bg-secondary-mauve/30">
           <img id="result-img" src={img} alt={`${name} output`} class="h-full w-full object-cover transition-opacity duration-500" onerror="this.style.display='none'" />
-          <pre id="result-json" class="absolute inset-0 hidden bg-primary-comfy-ink scrollbar-code overflow-auto whitespace-pre-wrap break-words p-4 font-mono text-xs leading-relaxed text-primary-warm-gray"></pre>
-          <button type="button" id="copy-result" data-copy="result-json" title="Copy" aria-label="Copy" class="absolute right-3 top-3 hidden group shrink-0 cursor-pointer rounded-lg border border-white/15 bg-white/5 p-1.5 text-primary-warm-gray transition-colors hover:bg-white/10 hover:text-primary-warm-white"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-3.5 group-data-[copied]:hidden"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden size-3.5 group-data-[copied]:block"><path d="M20 6 9 17l-5-5"/></svg></button>
+          <div id="result-json-box" class="absolute inset-4 hidden overflow-hidden rounded-2xl border border-white/15 bg-primary-comfy-ink">
+            <pre id="result-json" class="scrollbar-code h-full overflow-auto whitespace-pre-wrap break-words p-4 font-mono text-xs leading-relaxed text-primary-warm-gray"></pre>
+            <button type="button" data-copy="result-json" title="Copy" aria-label="Copy" class="absolute right-3 top-3 group shrink-0 cursor-pointer rounded-lg border border-white/15 bg-white/5 p-1.5 text-primary-warm-gray transition-colors hover:bg-white/10 hover:text-primary-warm-white"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-3.5 group-data-[copied]:hidden"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden size-3.5 group-data-[copied]:block"><path d="M20 6 9 17l-5-5"/></svg></button>
+          </div>
           <div id="running-overlay" class="absolute inset-0 hidden flex-col items-center justify-center gap-4 bg-primary-comfy-ink/95 px-8 text-center">
             <p class="text-[10px] font-extrabold uppercase tracking-[0.25em] text-[#b7ded5]">Restored your prompt and settings ✓</p>
             <p class="text-lg font-semibold text-primary-warm-white">Running the graph</p>
@@ -651,8 +653,7 @@ const faqJsonLd = {
         const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-rview]')
         if (!btn) return
         const json = btn.dataset.rview === 'json'
-        resultJson.classList.toggle('hidden', !json)
-        $('copy-result')?.classList.toggle('hidden', !json)
+        $('result-json-box')!.classList.toggle('hidden', !json)
         img.classList.toggle('hidden', json)
         for (const b of $('rview-toggle')!.querySelectorAll<HTMLElement>('[data-rview]')) {
           const active = b === btn
@@ -717,7 +718,7 @@ const faqJsonLd = {
         }
         strip.classList.remove('hidden'); strip.classList.add('flex')
         overlay.classList.remove('hidden'); overlay.classList.add('flex')
-        resultJson.classList.add('hidden'); $('copy-result')?.classList.add('hidden'); img.classList.remove('hidden')
+        $('result-json-box')!.classList.add('hidden'); img.classList.remove('hidden')
         fill.style.width = '0%'
         requestAnimationFrame(() => requestAnimationFrame(() => (fill.style.width = '92%')))
         window.setTimeout(() => {
