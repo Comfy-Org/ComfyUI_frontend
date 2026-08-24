@@ -10,6 +10,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import GlassCard from '../../components/common/GlassCard.vue'
 import { brandButtonVariants } from '../../components/common/brandButton.variants'
+import Badge from '../../components/ui/badge/Badge.vue'
 import { toggleVariants } from '../../components/ui/toggle'
 import {
   launches,
@@ -212,7 +213,7 @@ const faqJsonLd = {
     <div class="mt-3 flex flex-wrap items-center justify-between gap-3">
       <div class="flex min-w-0 flex-wrap items-center gap-3">
         <h1 class="max-w-full truncate text-2xl font-semibold text-primary-warm-white sm:text-3xl">{name}</h1>
-        <span class:list={[pill, pillMuted]}>{meta.label}</span>
+        <Badge variant="accent">{meta.label}</Badge>
       </div>
       <div class="hidden gap-2 sm:flex">
         {docsUrl && <a href={docsUrl} class:list={[outlineButton, 'text-2xs uppercase tracking-widest']}>{launch?.launchUrl ? 'Launch page ↗' : 'Docs ↗'}</a>}
