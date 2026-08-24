@@ -175,6 +175,35 @@ describe('useMarkdownWidget', () => {
     expect(setContentSpy).toHaveBeenCalledWith('after attach')
   })
 
+  it('setValue writes the editor once attached and is a no-op on it before', async () => {
+    // Capture the real getValue/setValue the widget registers (the shared mock
+    // otherwise drops them) so we can drive setValue directly.
+    let captured: { setValue?: (v: string) => void } = {}
+    const node = createMockDOMWidgetNode({
+      addDOMWidget: vi.fn(
+        (name: string, type: string, element: HTMLElement, options) => {
+          captured = options
+          return { name, type, element, options: {}, value: '' }
+        }
+      )
+    })
+    const widget = createMarkdownWidget(node)
+    const inputEl = widget.element
+    document.body.append(inputEl)
+    onTestFinished(() => inputEl.remove())
+
+    // Pre-attach: setValue updates the shell without throwing (editor undefined).
+    expect(() => captured.setValue?.('before')).not.toThrow()
+    expect(inputEl.querySelector('textarea')!.value).toBe('before')
+    expect(setContentSpy).not.toHaveBeenCalled()
+
+    await flushEditorAttach()
+
+    // Post-attach: setValue now routes the content into the editor too.
+    captured.setValue?.('after')
+    expect(setContentSpy).toHaveBeenCalledWith('after')
+  })
+
   it('does not mount the editor if the node is removed before the chunk resolves', async () => {
     const { widget } = setup()
     widget.onRemove?.()
