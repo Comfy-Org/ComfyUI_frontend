@@ -16,6 +16,7 @@ import {
   LiteGraph,
   LLink,
   Reroute,
+  serialiseMutableGraphParts,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import type {
@@ -27,11 +28,15 @@ import type {
 import type { UUID } from '@/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/utils/uuid'
 import { useLinkStore } from '@/stores/linkStore'
+import { useExecutionOrderStore } from '@/stores/executionOrderStore'
+import { useGraphDefinitionStore } from '@/stores/graphDefinitionStore'
+import { useGraphMetadataStore } from '@/stores/graphMetadataStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { slotFloatingLinks } from '@/lib/litegraph/src/LLink'
 import { toLinkId } from '@/types/linkId'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toRerouteId } from '@/types/rerouteId'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
@@ -76,7 +81,105 @@ class DummyNode extends LGraphNode {
   }
 }
 
+class ThrowingConfigureNode extends LGraphNode {
+  constructor() {
+    super('throwing configure')
+  }
+
+  override configure(info: Parameters<LGraphNode['configure']>[0]): void {
+    super.configure(info)
+    const graphId = this.graph!.id
+    useWidgetValueStore().registerWidget(widgetId(graphId, this.id, 'value'), {
+      type: 'number',
+      value: 1,
+      options: {}
+    })
+    usePreviewExposureStore().addExposure(graphId, String(this.id), {
+      sourceNodeId: this.id,
+      sourcePreviewName: 'preview'
+    })
+    throw new Error('configure failed')
+  }
+}
+
 describe('LGraph', () => {
+  it('batches version updates while keeping distinct mutations distinct', () => {
+    const graph = new LGraph()
+    const version = graph._version
+
+    graph.batchVersionUpdates(() => {
+      graph.add(new DummyNode())
+      graph.add(new DummyNode())
+    })
+    expect(graph._version).toBe(version + 1)
+
+    graph.add(new DummyNode())
+    graph.add(new DummyNode())
+    expect(graph._version).toBe(version + 3)
+  })
+
+  it('invalidates once when removing a node disconnects multiple links', () => {
+    const graph = new LGraph()
+    const source = new DummyNode()
+    const firstTarget = new DummyNode()
+    const secondTarget = new DummyNode()
+    source.addOutput('value', 'number')
+    firstTarget.addInput('value', 'number')
+    secondTarget.addInput('value', 'number')
+    graph.add(source)
+    graph.add(firstTarget)
+    graph.add(secondTarget)
+    source.connect(0, firstTarget, 0)
+    source.connect(0, secondTarget, 0)
+    const version = graph._version
+
+    graph.remove(source)
+
+    expect(graph._version).toBe(version + 1)
+  })
+
+  it('projects ordered membership from root-scoped definition records', () => {
+    const graph = new LGraph()
+    const first = new DummyNode()
+    const second = new DummyNode()
+    const group = new LGraphGroup()
+    graph.add(first)
+    graph.add(second)
+    graph.add(group)
+
+    const store = useGraphDefinitionStore()
+    const membership = store.membership(graph.id, graph.id)
+    expect(graph.nodes).toBe(membership.nodes)
+    expect(graph.groups).toBe(membership.groups)
+    expect(membership.nodes).toEqual([first, second])
+    expect(membership.groups).toEqual([group])
+
+    const previousId = graph.id
+    expect(() => {
+      graph.id = createUuidv4()
+    }).toThrow("Cannot change a populated graph's ID")
+    expect(graph.id).toBe(previousId)
+    expect(store.membership(graph.id, graph.id)).toBe(membership)
+
+    graph.clear()
+    expect(store.membership(previousId, previousId).nodes).toEqual([])
+    expect(store.membership(graph.id, graph.id).nodes).toEqual([])
+  })
+
+  it('allows an empty graph to adopt a new ID', () => {
+    const graph = new LGraph()
+    const store = useGraphDefinitionStore()
+    const membership = store.membership(graph.id, graph.id)
+    const previousId = graph.id
+    const nextId = createUuidv4()
+
+    graph.id = nextId
+
+    expect(graph.id).toBe(nextId)
+    expect(store.membership(nextId, nextId)).toBe(membership)
+    expect(store.membership(previousId, previousId)).not.toBe(membership)
+  })
+
   it('should serialize deterministic node order', async () => {
     LiteGraph.registerNodeType('dummy', DummyNode)
     const node1 = new DummyNode()
@@ -91,6 +194,108 @@ describe('LGraph', () => {
     expect(result1).toEqual(result2)
   })
 
+  it('projects graph-scoped derived execution order to extensions and wire data', () => {
+    const root = new LGraph()
+    const rootNode = new DummyNode()
+    root.add(rootNode)
+    const subgraph = createTestSubgraph({ rootGraph: root })
+    const subgraphNode = new DummyNode()
+    subgraph.add(subgraphNode)
+    const store = useExecutionOrderStore()
+
+    store.set(graphScopeOf(root), rootNode.id, 7)
+    store.set(graphScopeOf(subgraph), subgraphNode.id, 9)
+
+    expect(rootNode.order).toBe(7)
+    expect(subgraphNode.order).toBe(9)
+    expect(rootNode.serialize().order).toBe(7)
+    expect(subgraphNode.serialize().order).toBe(9)
+
+    root.updateExecutionOrder()
+    expect(rootNode.order).toBe(0)
+    expect(subgraphNode.order).toBe(9)
+  })
+
+  it('cleans derived order on removal while preserving the detached projection', () => {
+    const graph = new LGraph()
+    const first = new DummyNode()
+    const removed = new DummyNode()
+    graph.add(first)
+    graph.add(removed)
+    const scope = graphScopeOf(graph)
+    const store = useExecutionOrderStore()
+
+    expect(removed.order).toBe(1)
+    graph.remove(removed)
+
+    expect(store.get(scope, removed.id)).toBeUndefined()
+    expect(removed.order).toBe(1)
+    expect(first.order).toBe(0)
+  })
+
+  it('hydrates wire order before topology recomputation replaces it', () => {
+    const node = new DummyNode()
+    const data = node.serialize()
+    data.order = 12
+
+    node.configure(data)
+    expect(node.order).toBe(12)
+    expect(node.serialize().order).toBe(12)
+
+    const graph = new LGraph()
+    graph.add(node)
+    expect(node.order).toBe(0)
+    expect(node.serialize().order).toBe(0)
+  })
+
+  it('cleans partially configured node-owned records before rethrowing', () => {
+    LiteGraph.registerNodeType('throwing-configure', ThrowingConfigureNode)
+    const source = new LGraph()
+    const sourceNode = new ThrowingConfigureNode()
+    source.add(sourceNode)
+    const data = source.asSerialisable()
+    const graphId = data.id
+    const id = widgetId(graphId, sourceNode.id, 'value')
+    const target = new LGraph()
+
+    expect(() => target.configure(data)).toThrow('configure failed')
+
+    expect(target.nodes).toEqual([])
+    expect(useWidgetValueStore().getWidget(id)).toBeUndefined()
+    expect(
+      usePreviewExposureStore().getExposures(graphId, String(sourceNode.id))
+    ).toEqual([])
+  })
+
+  it('preserves existing entities when keep-old configuration fails', () => {
+    LiteGraph.registerNodeType('throwing-configure', ThrowingConfigureNode)
+    const source = new LGraph()
+    const sourceNode = new ThrowingConfigureNode()
+    source.add(sourceNode)
+    const data = source.asSerialisable()
+    const graph = new LGraph()
+    data.id = graph.id
+    const existingNode = new DummyNode()
+    const existingGroup = new LGraphGroup('existing')
+    graph.add(existingNode)
+    graph.add(existingGroup)
+
+    expect(() => graph.configure(data, true)).toThrow('configure failed')
+
+    expect(graph.nodes).toEqual([existingNode])
+    expect(graph.groups).toEqual([existingGroup])
+    expect(existingNode.graph).toBe(graph)
+    expect(existingGroup.graph).toBe(graph)
+    expect(
+      useWidgetValueStore().getWidget(
+        widgetId(graph.id, sourceNode.id, 'value')
+      )
+    ).toBeUndefined()
+    expect(
+      usePreviewExposureStore().getExposures(graph.id, String(sourceNode.id))
+    ).toEqual([])
+  })
+
   it('should handle adding null node gracefully', () => {
     const graph = new LGraph()
     const initialNodeCount = graph.nodes.length
@@ -99,6 +304,38 @@ describe('LGraph', () => {
 
     expect(result).toBeUndefined()
     expect(graph.nodes.length).toBe(initialNodeCount)
+  })
+
+  it('configures and serializes graph metadata through the store', () => {
+    const graph = new LGraph()
+    const id = createUuidv4()
+    graph.configure({
+      id,
+      version: 1,
+      revision: 4,
+      state: {
+        lastGroupId: 0,
+        lastNodeId: 0,
+        lastLinkId: 0,
+        lastRerouteId: 0
+      },
+      config: { links_ontop: true },
+      extra: { workflowRendererVersion: 'Vue' }
+    })
+
+    const metadata = useGraphMetadataStore().get(id)
+    expect(metadata).toMatchObject({
+      revision: 4,
+      config: { links_ontop: true },
+      extra: { workflowRendererVersion: 'Vue' }
+    })
+
+    graph.config.links_ontop = false
+    expect(graph.asSerialisable()).toMatchObject({
+      revision: 4,
+      config: { links_ontop: false },
+      extra: { workflowRendererVersion: 'Vue' }
+    })
   })
   it('normalizes legacy numeric node ids when adding nodes', () => {
     const graph = new LGraph()
@@ -486,6 +723,75 @@ describe('Link serialization goldens (ADR-0008 topology-store migration)', () =>
     expect(reroutes.some((r) => r.parentId === undefined)).toBe(true)
     for (const reroute of reroutes) expectRerouteContractKeyOrder(reroute)
     expect(JSON.stringify(second.reroutes)).toBe(JSON.stringify(first.reroutes))
+  })
+})
+
+describe('Store-driven serialization parity', () => {
+  test('matches normalized mutable serialization across topology variants', ({
+    expect,
+    linkedNodesGraph,
+    reroutesComplexGraph,
+    floatingLinkGraph
+  }) => {
+    for (const graph of [
+      new LGraph(linkedNodesGraph),
+      reroutesComplexGraph,
+      new LGraph(floatingLinkGraph)
+    ]) {
+      const stored = graph.asSerialisable({ sortNodes: true })
+      const mutable = serialiseMutableGraphParts(graph, true)
+      const normalizedStored = {
+        nodes: stored.nodes,
+        groups: stored.groups,
+        links: stored.links,
+        floatingLinks: stored.floatingLinks,
+        reroutes: stored.reroutes
+      }
+      expect(JSON.parse(JSON.stringify(normalizedStored))).toEqual(
+        JSON.parse(JSON.stringify(mutable))
+      )
+    }
+  })
+
+  test('rejects a stored node without a live adapter', ({ expect }) => {
+    const graph = createGraph(new DummyNode())
+    graph._nodes = []
+
+    expect(() => graph.asSerialisable()).toThrow(
+      /Cannot serialize graph .*: node .* has no live adapter/
+    )
+  })
+
+  test('rejects a member group without presentation', ({ expect }) => {
+    const graph = new LGraph()
+    const group = new LGraphGroup()
+    graph.add(group)
+    useGraphDefinitionStore().deleteGroupPresentation(
+      graph.id,
+      graph.id,
+      group.id
+    )
+
+    expect(() => graph.asSerialisable()).toThrow(
+      `Cannot serialize graph ${graph.id}: group ${group.id} has no presentation`
+    )
+  })
+
+  test('rejects a member group without layout', ({ expect }) => {
+    const graph = new LGraph()
+    const group = new LGraphGroup()
+    graph.add(group)
+    layoutStore.applyOperation({
+      type: 'deleteGroup',
+      graphId: graph.id,
+      groupId: group.id,
+      source: LayoutSource.Canvas,
+      timestamp: Date.now()
+    })
+
+    expect(() => graph.asSerialisable()).toThrow(
+      `Cannot serialize graph ${graph.id}: group ${group.id} has no layout`
+    )
   })
 })
 
@@ -910,6 +1216,55 @@ describe('Subgraph Definition Garbage Collection', () => {
     rootGraph.remove(subgraphNode)
 
     expect(removedNodeIds.size).toBe(2)
+  })
+
+  it('removing a node clears its widget and preview exposure records', () => {
+    const rootGraph = new LGraph()
+    const node = new LGraphNode('owned state')
+    rootGraph.add(node)
+    const id = widgetId(rootGraph.id, node.id, 'value')
+    useWidgetValueStore().registerWidget(id, {
+      type: 'number',
+      value: 1,
+      options: {}
+    })
+    usePreviewExposureStore().addExposure(rootGraph.id, String(node.id), {
+      sourceNodeId: node.id,
+      sourcePreviewName: 'preview'
+    })
+
+    rootGraph.remove(node)
+
+    expect(useWidgetValueStore().getWidget(id)).toBeUndefined()
+    expect(
+      usePreviewExposureStore().getExposures(rootGraph.id, String(node.id))
+    ).toEqual([])
+  })
+
+  it('released subgraphs clear inner node-owned records', () => {
+    const rootGraph = new LGraph()
+    const { subgraph, innerNodes } = createSubgraphWithNodes(rootGraph, 1)
+    const innerNode = innerNodes[0]
+    const id = widgetId(rootGraph.id, innerNode.id, 'value')
+    const locator = createNodeLocatorId(subgraph.id, innerNode.id)
+    useWidgetValueStore().registerWidget(id, {
+      type: 'number',
+      value: 1,
+      options: {}
+    })
+    usePreviewExposureStore().addExposure(rootGraph.id, locator, {
+      sourceNodeId: innerNode.id,
+      sourcePreviewName: 'preview'
+    })
+    const host = createTestSubgraphNode(subgraph)
+    rootGraph.add(host)
+
+    rootGraph.remove(host)
+
+    expect(useWidgetValueStore().getWidget(id)).toBeUndefined()
+    expect(
+      usePreviewExposureStore().getExposures(rootGraph.id, locator)
+    ).toEqual([])
   })
 
   it('removing SubgraphNode fires onNodeRemoved callback', () => {

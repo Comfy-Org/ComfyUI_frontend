@@ -108,6 +108,7 @@ export type {
 } from './interfaces'
 export {
   LGraph,
+  serialiseMutableGraphParts,
   type LGraphTriggerAction,
   type LGraphTriggerParam,
   type GraphAddOptions,

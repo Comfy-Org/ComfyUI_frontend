@@ -2,6 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { NodeId } from '@/types/nodeId'
@@ -187,4 +188,32 @@ describe('bringNodeToFront', () => {
     const z2 = layoutStore.getNodeLayoutRef(GRAPH, NODE_2).value?.zIndex ?? 0
     expect(z1).toBeGreaterThan(z2)
   })
+})
+
+describe('setNodeOrder', () => {
+  it.for([
+    ['front', 1, 0],
+    ['back', 0, 1]
+  ] as const)(
+    'projects %s order to layout and the legacy node array',
+    ([order, expectedFirstIndex, expectedSecondIndex]) => {
+      const graph = new LGraph()
+      const first = graph.add(new LGraphNode('first'))!
+      const second = graph.add(new LGraphNode('second'))!
+
+      useLayoutMutations(LayoutSource.Canvas).setNodeOrder(
+        graph,
+        first.id,
+        order
+      )
+
+      expect(graph._nodes[expectedFirstIndex]).toBe(first)
+      expect(graph._nodes[expectedSecondIndex]).toBe(second)
+      const firstZ = layoutStore.getNodeLayout(graph.id, first.id)?.zIndex ?? 0
+      const secondZ =
+        layoutStore.getNodeLayout(graph.id, second.id)?.zIndex ?? 0
+      if (order === 'front') expect(firstZ).toBeGreaterThan(secondZ)
+      else expect(firstZ).toBeLessThan(secondZ)
+    }
+  )
 })

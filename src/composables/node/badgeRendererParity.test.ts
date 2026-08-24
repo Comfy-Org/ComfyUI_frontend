@@ -69,6 +69,7 @@ function vueBadgeText(node: LGraphNode): string {
     inputs: node.inputs,
     mode: node.mode,
     outputs: node.outputs,
+    properties: node.properties,
     title: node.title,
     type: node.type
   }

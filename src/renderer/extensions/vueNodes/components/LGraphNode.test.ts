@@ -167,7 +167,8 @@ const mockNodeData: NodeState = {
   mode: 0,
   flags: {},
   inputs: [],
-  outputs: []
+  outputs: [],
+  properties: {}
 }
 
 const mockRerouteNodeData: NodeState = {

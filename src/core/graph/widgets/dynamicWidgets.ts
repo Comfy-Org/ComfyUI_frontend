@@ -350,7 +350,6 @@ function withComfyMatchType(node: LGraphNode): asserts node is MatchTypeNode {
       if (!outputType) throw new Error('invalid connection')
       this.outputs.forEach((_output, idx) => {
         if (!(outputGroups?.[idx] == matchKey)) return
-        this.outputs[idx] = shallowReactive(this.outputs[idx])
         changeOutputType(this, idx, outputType)
       })
       app.canvas?.setDirty(true, true)
