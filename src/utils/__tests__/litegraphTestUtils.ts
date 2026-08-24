@@ -42,7 +42,8 @@ export function createNodeState(overrides: Partial<NodeState> = {}): NodeState {
     outputs: [],
     title: 'Test Node',
     type: 'TestNode',
-    ...overrides
+    ...overrides,
+    properties: overrides.properties ?? {}
   }
 }
 

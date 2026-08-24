@@ -59,7 +59,10 @@ import { $el } from '@/scripts/ui'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import {
+  getPreviewExposureHostLocator,
+  usePreviewExposureStore
+} from '@/stores/previewExposureStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
@@ -194,7 +197,7 @@ export const useLitegraphService = () => {
   }
 
   function getPseudoWidgetPreviewTargets(node: SubgraphNode): LGraphNode[] {
-    const hostLocator = String(node.id)
+    const hostLocator = getPreviewExposureHostLocator(node)
     const promotions = usePreviewExposureStore().getExposuresAsPromotionShape(
       node.rootGraph.id,
       hostLocator

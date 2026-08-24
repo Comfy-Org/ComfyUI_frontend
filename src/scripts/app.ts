@@ -15,6 +15,10 @@ import { normalizeI18nKey } from '@/utils/formatUtil'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import {
+  createArrayMutationView,
+  createMutationView
+} from '@/lib/litegraph/src/infrastructure/createMutationView'
+import {
   inputAsSerialisable,
   LGraph,
   LGraphCanvas,
@@ -247,6 +251,32 @@ export interface QueuePromptOptions {
   intent?: WorkflowQueueIntent
 }
 
+function createNodeOutputsMutationView(
+  outputs: Record<string, NodeExecutionOutput>,
+  commit: () => void
+): Record<string, NodeExecutionOutput> {
+  const outputViews = new WeakMap<object, object>()
+  const arrayViews = new WeakMap<object, object>()
+  const mapArray = (_property: PropertyKey, value: unknown): unknown => {
+    if (!Array.isArray(value)) return value
+    const existing = arrayViews.get(value)
+    if (existing) return existing
+    const view = createArrayMutationView(value, commit)
+    arrayViews.set(value, view)
+    return view
+  }
+  const mapOutput = (_property: PropertyKey, value: unknown): unknown => {
+    if (value === null || typeof value !== 'object' || Array.isArray(value))
+      return value
+    const existing = outputViews.get(value)
+    if (existing) return existing
+    const view = createMutationView(value, { commit, mapValue: mapArray })
+    outputViews.set(value, view)
+    return view
+  }
+  return createMutationView(outputs, { commit, mapValue: mapOutput })
+}
+
 export class ComfyApp {
   /**
    * List of entries to queue
@@ -278,7 +308,14 @@ export class ComfyApp {
   api: ComfyApi
   ui: ComfyUI
   extensionManager!: ExtensionManager
-  private _nodeOutputs!: Record<string, NodeExecutionOutput>
+  private readonly nodeOutputsData: Record<string, NodeExecutionOutput> = {}
+  private readonly _nodeOutputs = createNodeOutputsMutationView(
+    this.nodeOutputsData,
+    () => {
+      if (this.vueAppReady)
+        useNodeOutputStore().replaceOutputsFromLegacy(this.nodeOutputsData)
+    }
+  )
   nodePreviewImages: Record<string, string[]>
 
   private rootGraphInternal: LGraph | undefined
@@ -443,9 +480,15 @@ export class ComfyApp {
   }
 
   set nodeOutputs(value) {
-    this._nodeOutputs = value
-    if (this.vueAppReady)
+    if (value !== this._nodeOutputs) {
+      for (const key of Object.keys(this.nodeOutputsData))
+        delete this.nodeOutputsData[key]
+      Object.assign(this.nodeOutputsData, value)
+    }
+    if (this.vueAppReady) {
+      useNodeOutputStore().replaceOutputsFromLegacy(this.nodeOutputsData)
       useExtensionService().invokeExtensions('onNodeOutputsUpdated', value)
+    }
   }
 
   /**
@@ -507,8 +550,7 @@ export class ComfyApp {
     const combinedIndex = imgs ? imgs.length + 2 : 2
 
     // for vueNodes mode
-    const images =
-      node.images ?? useNodeOutputStore().getNodeOutputs(node)?.images
+    const images = useNodeOutputStore().getNodeOutputs(node)?.images
 
     ComfyApp.clipspace = {
       widgets: widgets,
@@ -543,16 +585,11 @@ export class ComfyApp {
       if (ComfyApp.clipspace.imgs && node.imgs) {
         // Update node.images even if it's initially undefined (vueNodes mode)
         if (ComfyApp.clipspace.images) {
-          if (ComfyApp.clipspace['img_paste_mode'] == 'selected') {
-            node.images = [
-              ComfyApp.clipspace.images[ComfyApp.clipspace['selectedIndex']]
-            ]
-          } else {
-            node.images = ComfyApp.clipspace.images
-          }
-
-          if (app.nodeOutputs[node.id + ''])
-            app.nodeOutputs[node.id + ''].images = node.images
+          const images =
+            ComfyApp.clipspace['img_paste_mode'] == 'selected'
+              ? [ComfyApp.clipspace.images[ComfyApp.clipspace['selectedIndex']]]
+              : ComfyApp.clipspace.images
+          useNodeOutputStore().setNodeOutputImages(node, images)
         }
 
         if (ComfyApp.clipspace.imgs) {
@@ -643,8 +680,6 @@ export class ComfyApp {
       }
 
       app.canvas.setDirty(true)
-
-      useNodeOutputStore().updateNodeImages(node)
     }
   }
 

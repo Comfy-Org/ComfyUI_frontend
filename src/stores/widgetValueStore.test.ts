@@ -318,6 +318,20 @@ describe('useWidgetValueStore', () => {
       expect(store.getWidget(seedA)).toBeUndefined()
       expect(store.getWidget(seedB)?.value).toBe(2)
     })
+
+    it('clearNode removes only the target node values, render state, and order', () => {
+      const store = useWidgetValueStore()
+      const sibling = widgetId(graphA, toNodeId('node-2'), 'seed')
+      store.registerWidget(seedA, state('number', 1), { advanced: true })
+      store.registerWidget(sibling, state('number', 2))
+
+      store.clearNode(graphA, toNodeId('node-1'))
+
+      expect(store.getWidget(seedA)).toBeUndefined()
+      expect(store.getWidgetRenderState(seedA)).toBeUndefined()
+      expect(store.getNodeWidgetIds(graphA, toNodeId('node-1'))).toEqual([])
+      expect(store.getWidget(sibling)?.value).toBe(2)
+    })
   })
 
   describe('un-keyable widget ids', () => {

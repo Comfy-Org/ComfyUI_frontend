@@ -165,7 +165,13 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
  * happens to carry the same key.
  */
 function indexOf(slot: NodeOutputSlot): number {
-  return slot.node.outputs.indexOf(slot)
+  const index = slot.node.outputs.indexOf(slot)
+  return index !== -1
+    ? index
+    : slot.node.outputs.findIndex(
+        (candidate) =>
+          candidate.name === slot.name && candidate.type === slot.type
+      )
 }
 
 function linkIdsOf(slot: NodeOutputSlot): LinkId[] {

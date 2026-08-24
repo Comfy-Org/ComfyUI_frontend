@@ -167,6 +167,24 @@ describe(usePreviewExposureStore, () => {
     })
   })
 
+  describe('clearHost', () => {
+    it('removes only the target host', () => {
+      store.addExposure(rootGraphA, hostA, {
+        sourceNodeId: '1',
+        sourcePreviewName: 'p'
+      })
+      store.addExposure(rootGraphA, hostB, {
+        sourceNodeId: '2',
+        sourcePreviewName: 'p'
+      })
+
+      store.clearHost(rootGraphA, hostA)
+
+      expect(store.getExposures(rootGraphA, hostA)).toEqual([])
+      expect(store.getExposures(rootGraphA, hostB)).toHaveLength(1)
+    })
+  })
+
   describe('isolation between (rootGraphId, hostNodeLocator) pairs', () => {
     it('keeps separate buckets per host and per root graph', () => {
       store.addExposure(rootGraphA, hostA, {

@@ -10,10 +10,13 @@ import {
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
+import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { MissingNodeType } from '@/types/comfy'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
 import type { UUID } from '@/utils/uuid'
 import type { NodeReplacement } from './types'
 
@@ -245,6 +248,38 @@ describe('useNodeReplacement', () => {
       expect(newNode.configure).not.toHaveBeenCalled()
       expect(newNode.id).toBe(1)
       expect(newNode.has_errors).toBe(false)
+    })
+
+    it('clears stale node-owned records before binding the replacement', () => {
+      const placeholder = createPlaceholderNode(1, 'MissingNode')
+      const graph = createMockGraph([placeholder])
+      placeholder.graph = graph
+      Object.assign(app, { rootGraph: graph })
+      vi.mocked(collectAllNodes).mockReturnValue([placeholder])
+      vi.mocked(LiteGraph.createNode).mockReturnValue(createNewNode())
+      const id = widgetId(GRAPH_ID, toNodeId(1), 'stale')
+      useWidgetValueStore().registerWidget(id, {
+        type: 'number',
+        value: 1,
+        options: {}
+      })
+      usePreviewExposureStore().addExposure(GRAPH_ID, '1', {
+        sourceNodeId: '2',
+        sourcePreviewName: 'preview'
+      })
+
+      useNodeReplacement().replaceNodesInPlace([
+        makeMissingNodeType('MissingNode', {
+          new_node_id: 'Replacement',
+          old_node_id: 'MissingNode',
+          old_widget_ids: null,
+          input_mapping: null,
+          output_mapping: null
+        })
+      ])
+
+      expect(useWidgetValueStore().getWidget(id)).toBeUndefined()
+      expect(usePreviewExposureStore().getExposures(GRAPH_ID, '1')).toEqual([])
     })
 
     it('should transfer input connections using input_mapping', () => {
@@ -532,6 +567,7 @@ describe('useNodeReplacement', () => {
 
       const graph = createMockGraph([placeholder], [link])
       placeholder.graph = graph
+      placeholder.order = 6
       Object.assign(app, { rootGraph: graph })
 
       vi.mocked(collectAllNodes).mockReturnValue([placeholder])
@@ -558,6 +594,8 @@ describe('useNodeReplacement', () => {
       expect(newNode.id).toBe(42)
       expect(newNode.pos).toEqual([300, 400])
       expect(newNode.size).toEqual([250, 150])
+      expect(newNode.order).toBe(6)
+      expect(placeholder.order).toBe(6)
       expect(graph._nodes[0]).toBe(newNode)
       expect(placeholder.onRemoved).toHaveBeenCalledOnce()
     })

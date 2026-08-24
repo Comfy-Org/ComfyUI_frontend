@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
-import { setActivePinia } from 'pinia'
+import { getActivePinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { markRaw, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -53,7 +53,9 @@ function renderPanel(
     node: LGraphNode
   }
 ) {
-  const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false })
+  const pinia =
+    (graphContext && getActivePinia()) ||
+    createTestingPinia({ createSpy: vi.fn, stubActions: false })
   setActivePinia(pinia)
 
   const rootGraph = graphContext?.rootGraph ?? new LGraph()

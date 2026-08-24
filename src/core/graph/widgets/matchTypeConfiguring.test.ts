@@ -2,6 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { describe, expect, test } from 'vitest'
+import { effect, stop } from 'vue'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
@@ -99,6 +100,10 @@ describe('MatchType during configure', () => {
     const graph = new LGraph()
     const switchNode = createMatchTypeNode(graph)
     const source1 = createSourceNode(graph, 'IMAGE')
+    const observedTypes: unknown[] = []
+    const runner = effect(() => {
+      observedTypes.push(switchNode.outputs[0].type)
+    })
 
     expect(app.configuringGraph).toBe(false)
 
@@ -106,6 +111,8 @@ describe('MatchType during configure', () => {
 
     expect(switchNode.inputs[0].link).not.toBeNull()
     expect(switchNode.outputs[0].type).toBe('IMAGE')
+    expect(observedTypes).toEqual(['*', 'IMAGE'])
+    stop(runner)
   })
 
   test('connects both inputs with same type', () => {

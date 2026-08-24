@@ -21,12 +21,13 @@ import type { ContextMenu } from './ContextMenu'
 import { createCursorCache } from './cursorCache'
 import { DragAndScale } from './DragAndScale'
 import type { AnimationOptions } from './DragAndScale'
+import { mintNodeId, observeNodeId } from './idAllocation'
 import type { LGraph, SubgraphId } from './LGraph'
 import { LGraphGroup } from './LGraphGroup'
 import { LGraphNode } from './LGraphNode'
 import type { NodeProperty } from './LGraphNode'
 import { detachSerialisedLinks } from './linkDeduplication'
-import { parseNodeId, serializeNodeId } from '@/types/nodeId'
+import { parseNodeId, serializeNodeId, toNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
 import { LLink, slotFloatingLinks } from './LLink'
 import {
@@ -4992,16 +4993,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const { graph } = this
     if (!graph) throw new NullGraphError()
 
-    const i = graph._nodes.indexOf(node)
-    if (i == -1) return
-
-    useLayoutMutations(LayoutSource.Canvas).bringNodeToFront(
-      graph.rootGraph.id,
-      node.id
+    useLayoutMutations(LayoutSource.Canvas).setNodeOrder(
+      graph,
+      node.id,
+      'front'
     )
-
-    graph._nodes.splice(i, 1)
-    graph._nodes.push(node)
   }
 
   /**
@@ -5011,11 +5007,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const { graph } = this
     if (!graph) throw new NullGraphError()
 
-    const i = graph._nodes.indexOf(node)
-    if (i == -1) return
-
-    graph._nodes.splice(i, 1)
-    graph._nodes.unshift(node)
+    useLayoutMutations(LayoutSource.Canvas).setNodeOrder(graph, node.id, 'back')
   }
 
   /**
@@ -9054,13 +9046,14 @@ export function remapClipboardSubgraphNodeIds(
     const numericId = Number(node.id)
     if (!Number.isInteger(numericId)) return
     usedNodeIds.add(numericId)
-    if (rootGraph.state.lastNodeId < numericId)
-      rootGraph.state.lastNodeId = numericId
+    observeNodeId(rootGraph.state, toNodeId(numericId))
   })
 
   function nextUniqueNodeId() {
-    while (usedNodeIds.has(++rootGraph.state.lastNodeId));
-    const nextId = rootGraph.state.lastNodeId
+    let nextId = Number(mintNodeId(rootGraph.state))
+    while (usedNodeIds.has(nextId)) {
+      nextId = Number(mintNodeId(rootGraph.state))
+    }
     usedNodeIds.add(nextId)
     return nextId
   }
@@ -9085,8 +9078,7 @@ export function remapClipboardSubgraphNodeIds(
       }
 
       usedNodeIds.add(nodeInfo.id)
-      if (rootGraph.state.lastNodeId < nodeInfo.id)
-        rootGraph.state.lastNodeId = nodeInfo.id
+      observeNodeId(rootGraph.state, toNodeId(nodeInfo.id))
     }
 
     if (remappedIds.size > 0) {

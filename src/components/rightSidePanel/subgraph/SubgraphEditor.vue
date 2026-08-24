@@ -32,7 +32,10 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import { useLitegraphService } from '@/services/litegraphService'
-import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import {
+  getPreviewExposureHostLocator,
+  usePreviewExposureStore
+} from '@/stores/previewExposureStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -114,7 +117,7 @@ const activePromotedRows = computed<PromotedRow[]>({
 })
 
 function getActivePreviewRows(node: SubgraphNode): PreviewRow[] {
-  const hostLocator = String(node.id)
+  const hostLocator = getPreviewExposureHostLocator(node)
   const rootGraphId = node.rootGraph.id
   const exposures = previewExposureStore.getExposures(rootGraphId, hostLocator)
   return exposures.flatMap((exposure): PreviewRow[] => {
@@ -283,7 +286,7 @@ function demoteRow(row: ActiveRow) {
   }
   previewExposureStore.removeExposure(
     subgraphNode.rootGraph.id,
-    String(subgraphNode.id),
+    getPreviewExposureHostLocator(subgraphNode),
     row.exposure.name
   )
   refreshActiveNodeRendering()

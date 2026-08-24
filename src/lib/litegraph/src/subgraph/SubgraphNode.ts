@@ -40,9 +40,13 @@ import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConc
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import { parsePreviewExposures } from '@/core/schemas/previewExposureSchema'
 import { parseProxyWidgetErrorQuarantine } from '@/core/schemas/proxyWidgetQuarantineSchema'
-import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import {
+  getPreviewExposureHostLocator,
+  usePreviewExposureStore
+} from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
+import type { NodeState } from '@/types/nodeState'
 import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
 
@@ -556,7 +560,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   private _hydratePreviewExposures() {
     const store = usePreviewExposureStore()
     const rootGraphId = this.rootGraph.id
-    const hostLocator = String(this.id)
+    const hostLocator = getPreviewExposureHostLocator(this)
     const rawProperty = this.properties.previewExposures
     const hasExplicitProperty = Array.isArray(rawProperty)
     const fromProperty = parsePreviewExposures(rawProperty)
@@ -572,6 +576,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const legacy = store.getExposures(rootGraphId, legacyKey)
     if (legacy.length) {
       store.setExposures(rootGraphId, hostLocator, [...legacy])
+      if (legacyKey !== hostLocator) {
+        store.setExposures(rootGraphId, legacyKey, [])
+      }
       return
     }
     store.setExposures(rootGraphId, hostLocator, [])
@@ -931,10 +938,14 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
 
   override serialize(): ISerialisedNode {
-    const serialized = super.serialize()
+    return this.serializeFromStoreState(this._state)
+  }
+
+  override serializeFromStoreState(state: NodeState): ISerialisedNode {
+    const serialized = super.serializeFromStoreState(state)
     const serializedProperties = { ...(serialized.properties ?? {}) }
     const rootGraphId = this.rootGraph.id
-    const hostLocator = String(this.id)
+    const hostLocator = getPreviewExposureHostLocator(this)
 
     const previewExposures = usePreviewExposureStore().getExposures(
       rootGraphId,
