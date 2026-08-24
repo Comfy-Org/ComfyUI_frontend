@@ -53,6 +53,7 @@ import { widgetId } from '@/types/widgetId'
 
 import { ExecutableNodeDTO } from './ExecutableNodeDTO'
 import type { ExecutableLGraphNode, ExecutionId } from './ExecutableNodeDTO'
+import { createPromotedWidgetStoreProjection } from './promotedWidgetStoreProjection'
 import type { SubgraphInput } from './SubgraphInput'
 import { createBitmapCache } from './svgBitmapCache'
 
@@ -282,51 +283,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const id = input.widgetId
     if (!id) return
 
-    const store = useWidgetValueStore()
-    const widget: IBaseWidget = {
-      get name() {
-        return store.getWidget(id)?.name ?? input.name
-      },
-      get label() {
-        return store.getWidget(id)?.label ?? input.label ?? input.name
-      },
-      set label(next) {
-        const state = store.getWidget(id)
-        if (state) state.label = next
-      },
-      get y() {
-        return store.getWidget(id)?.y ?? 0
-      },
-      set y(next) {
-        const state = store.getWidget(id)
-        if (state) state.y = next
-      },
-      get type() {
-        return store.getWidget(id)?.type ?? 'text'
-      },
-      get options() {
-        return store.getWidget(id)?.options ?? {}
-      },
-      get value() {
-        return store.getWidget(id)?.value
-      },
-      set value(next) {
-        store.setValue(id, next)
-      },
-      // Canvas edits operate on a transient concrete widget (toConcreteWidget),
-      // so the value setter above is never invoked; BaseWidget.setValue writes
-      // its own local state and then calls this callback, which is the only
-      // bridge back to the store.
-      callback(next) {
-        store.setValue(id, next)
-      }
-    }
-    Object.defineProperty(widget, 'widgetId', {
-      value: id,
-      enumerable: false,
-      configurable: true
-    })
-    input._widget = widget
+    input._widget = createPromotedWidgetStoreProjection(input, id)
     return input._widget
   }
 

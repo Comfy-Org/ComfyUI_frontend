@@ -91,7 +91,8 @@ function createMockLink(
     origin_slot: originSlot,
     target_id: targetId,
     target_slot: targetSlot,
-    type: 'IMAGE'
+    type: 'IMAGE',
+    disconnect: vi.fn()
   }
 }
 
@@ -108,7 +109,7 @@ function createMockGraph(
   const linksMap = new Map(links.map((l) => [l.id, l]))
   const linkStore = useLinkStore()
   for (const l of links) {
-    linkStore.registerLink(GRAPH_SCOPE, {
+    const topology = linkStore.registerLink(GRAPH_SCOPE, {
       id: toLinkId(l.id),
       graphId: GRAPH_SCOPE.owningGraphId,
       originNodeId: toNodeId(l.origin_id),
@@ -116,6 +117,16 @@ function createMockGraph(
       targetNodeId: toNodeId(l.target_id),
       targetSlot: l.target_slot,
       type: l.type
+    })
+    if (!topology) throw new Error('expected registered link')
+    Object.defineProperties(l, {
+      origin_id: { get: () => topology.originNodeId },
+      origin_slot: { get: () => topology.originSlot },
+      target_id: { get: () => topology.targetNodeId },
+      target_slot: { get: () => topology.targetSlot }
+    })
+    l.disconnect.mockImplementation(() => {
+      linksMap.delete(l.id)
     })
   }
   return fromAny<LGraph, unknown>({
@@ -325,7 +336,7 @@ describe('useNodeReplacement', () => {
 
       expect(result).toEqual(['T2IAdapterLoader'])
       // Link should be updated to point at new node's input
-      expect(link.target_id).toBe(1)
+      expect(link.target_id).toBe(toNodeId(1))
       expect(link.target_slot).toBe(0)
     })
 
@@ -365,7 +376,7 @@ describe('useNodeReplacement', () => {
       ])
 
       // Output link should be remapped
-      expect(link.origin_id).toBe(1)
+      expect(link.origin_id).toBe(toNodeId(1))
       expect(link.origin_slot).toBe(0)
     })
 
@@ -404,6 +415,46 @@ describe('useNodeReplacement', () => {
       expect(
         [...useLinkStore().graphTopologies(GRAPH_SCOPE)].map((link) => link.id)
       ).toEqual([toLinkId(20)])
+    })
+
+    it('does not mutate graph state when replacement preparation fails', () => {
+      const link = createMockLink(21, 1, 0, 6, 0)
+      const placeholder = createPlaceholderNode(
+        1,
+        'OldNode',
+        [],
+        [{ name: 'removed', links: [21] }]
+      )
+      placeholder.onRemoved = vi.fn(() => {
+        throw new Error('removal failed')
+      })
+      const graph = createMockGraph([placeholder], [link])
+      placeholder.graph = graph
+      Object.assign(app, { rootGraph: graph })
+      vi.mocked(collectAllNodes).mockReturnValue([placeholder])
+      vi.mocked(LiteGraph.createNode).mockReturnValue(createNewNode())
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+      const staleWidgetId = widgetId(GRAPH_ID, toNodeId(1), 'stale')
+      useWidgetValueStore().registerWidget(staleWidgetId, {
+        type: 'number',
+        value: 1,
+        options: {}
+      })
+
+      const result = useNodeReplacement().replaceNodesInPlace([
+        makeMissingNodeType('OldNode', {
+          new_node_id: 'NewNode',
+          old_node_id: 'OldNode',
+          old_widget_ids: null,
+          input_mapping: null,
+          output_mapping: null
+        })
+      ])
+
+      expect(result).toEqual([])
+      expect(graph._nodes[0]).toBe(placeholder)
+      expect(graph.links.has(toLinkId(21))).toBe(true)
+      expect(useWidgetValueStore().getWidget(staleWidgetId)?.value).toBe(1)
     })
 
     it('should apply set_value to widget', () => {
@@ -788,9 +839,9 @@ describe('useNodeReplacement', () => {
 
       // Default mapping transfers connections and widget values by name
       expect(newNode.id).toBe(13)
-      expect(link.target_id).toBe(13)
+      expect(link.target_id).toBe(toNodeId(13))
       expect(link.target_slot).toBe(0)
-      expect(outLink.origin_id).toBe(13)
+      expect(outLink.origin_id).toBe(toNodeId(13))
       expect(outLink.origin_slot).toBe(0)
       expect(newNode.widgets![0].value).toBe(0.75)
     })

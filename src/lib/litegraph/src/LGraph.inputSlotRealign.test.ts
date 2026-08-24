@@ -582,7 +582,7 @@ describe('realignInputLinkSlots with a rejected batch (#15581)', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
-  it('lands the non-conflicting moves when one move is blocked', () => {
+  it('atomically removes an unmatched blocker and moves links', () => {
     const graph = new LGraph()
     const source = new LGraphNode('Source')
     source.addOutput('out', 'number')
@@ -651,7 +651,7 @@ describe('realignInputLinkSlots', () => {
     )
   })
 
-  it('continues after one link cannot be realigned', () => {
+  it('rejects all moves when one link cannot be realigned', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     const graph = new LGraph()
     const source = new LGraphNode('Source')
@@ -677,9 +677,9 @@ describe('realignInputLinkSlots', () => {
     realignInputLinkSlots(graph, [nodeData])
 
     expect(blocked.target_slot).toBe(0)
-    expect(movable.target_slot).toBe(3)
+    expect(movable.target_slot).toBe(2)
     expect(console.error).toHaveBeenCalledWith(
-      'Failed to realign input link slot',
+      'Failed to realign input link slots',
       expect.objectContaining({ code: 'occupied-target' })
     )
   })

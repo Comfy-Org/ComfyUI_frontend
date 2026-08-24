@@ -195,31 +195,7 @@ export function realignInputLinkSlots(
         removals.map((link) => link._state)
       )
       if (!result.ok) {
-        if (removals.length) {
-          useLinkStore().updateEndpoints(
-            graphScopeOf(graph),
-            [],
-            removals.map((link) => link._state)
-          )
-        }
-        for (const { link, slot } of moved) {
-          const fallback = useLinkStore().updateEndpoint(
-            graphScopeOf(graph),
-            link._state,
-            { targetSlot: slot }
-          )
-          if (!fallback.ok) {
-            console.error('Failed to realign input link slot', fallback.error)
-            continue
-          }
-          node.onConnectionsChange?.(
-            NodeSlotType.INPUT,
-            slot,
-            true,
-            link,
-            node.inputs[slot]
-          )
-        }
+        console.error('Failed to realign input link slots', result.error)
         break
       }
       for (const { link, slot } of moved) {
