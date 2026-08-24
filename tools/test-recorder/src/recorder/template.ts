@@ -1,4 +1,5 @@
-import { writeFileSync, mkdirSync, unlinkSync } from 'node:fs'
+import { existsSync, writeFileSync, mkdirSync, unlinkSync } from 'node:fs'
+import { homedir } from 'node:os'
 import { join, dirname } from 'node:path'
 import { formatInitialFeatureFlags } from '../featureFlags'
 
@@ -9,6 +10,17 @@ interface TemplateOptions {
   testName: string
   featureFlags?: Record<string, unknown>
   target?: RecordingTarget
+  /** Browser storage-state file that persists sign-in across recordings. */
+  storageStateFile?: string
+}
+
+export function storageStatePath(distributionId: string): string {
+  return join(homedir(), '.comfy-test', `storage-state.${distributionId}.json`)
+}
+
+export function ensureStorageStateDir(storageStateFile: string): void {
+  // 0700 — the file holds live session cookies.
+  mkdirSync(dirname(storageStateFile), { recursive: true, mode: 0o700 })
 }
 
 export const RECORDING_SPEC_BASENAME = '_recording-session'
@@ -135,12 +147,34 @@ function cloudTemplate(
 `
     : ''
 
+  const stateFile = options.storageStateFile
+  const safeStateFile = stateFile ? JSON.stringify(stateFile) : undefined
+  const reuseLoginBlock =
+    stateFile && safeStateFile && existsSync(stateFile)
+      ? `test.use({ storageState: ${safeStateFile} })
+
+`
+      : ''
+  // The window can close at any moment and there is no reliable on-close
+  // hook, so the signed-in session is saved on a timer — the last save is
+  // what the next recording reuses to skip login.
+  const persistLoginBlock = safeStateFile
+    ? `  const persistLogin = setInterval(() => {
+    void page
+      .context()
+      .storageState({ path: ${safeStateFile} })
+      .catch(() => {})
+  }, 5000)
+  persistLogin.unref()
+`
+    : ''
+
   return `${FILE_HEADER}
 import { test } from '@playwright/test'
 
-test(${safeName}, async ({ page }) => {
+${reuseLoginBlock}test(${safeName}, async ({ page }) => {
 ${flagSeedBlock}  await page.goto(process.env.PLAYWRIGHT_TEST_URL ?? 'http://localhost:5173')
-  // The cloud app may show a sign-in screen first — sign in manually, then
+${persistLoginBlock}  // The cloud app may show a sign-in screen first — sign in manually, then
   // record. Nothing is captured until the Record button is clicked, so the
   // Inspector opens immediately rather than gating on app boot.
 ${recorderBlock('page', safeOutputPath)}})

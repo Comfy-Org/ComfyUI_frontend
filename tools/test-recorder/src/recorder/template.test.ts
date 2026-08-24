@@ -33,6 +33,7 @@ describe('recording template', () => {
     workflow?: string
     featureFlags?: Record<string, unknown>
     target?: 'local' | 'cloud'
+    storageStateFile?: string
   }) {
     const path = generateRecordingTemplate(options, browserTestsDir)
     return { path, code: readFileSync(path, 'utf-8') }
@@ -220,6 +221,53 @@ describe('recording template', () => {
         String.raw`x'); process.exit(1); //`
       )
     })
+
+    it('reuses a saved sign-in when the storage-state file exists', () => {
+      const stateFile = join(browserTestsDir, 'storage-state.cloud.json')
+      writeFileSync(stateFile, '{}')
+      const { code } = generate({
+        testName: 'demo',
+        target: 'cloud',
+        storageStateFile: stateFile
+      })
+      expect(code).toContain(
+        `test.use({ storageState: ${JSON.stringify(stateFile)} })`
+      )
+    })
+
+    it('skips reuse — but still saves — when no sign-in was stored yet', () => {
+      const stateFile = join(browserTestsDir, 'storage-state.cloud.json')
+      const { code } = generate({
+        testName: 'demo',
+        target: 'cloud',
+        storageStateFile: stateFile
+      })
+      expect(code).not.toContain('test.use({ storageState:')
+      expect(code).toContain(
+        `.storageState({ path: ${JSON.stringify(stateFile)} })`
+      )
+    })
+
+    it('saves the session on a timer, since the window can close at any moment', () => {
+      const stateFile = join(browserTestsDir, 'storage-state.cloud.json')
+      const { code } = generate({
+        testName: 'demo',
+        target: 'cloud',
+        storageStateFile: stateFile
+      })
+      const saveAt = code.indexOf('setInterval')
+      expect(saveAt).toBeGreaterThan(-1)
+      expect(saveAt).toBeGreaterThan(code.indexOf('page.goto('))
+      expect(code).toContain('persistLogin.unref()')
+    })
+  })
+
+  it('never persists sign-in for local recordings', () => {
+    const { code } = generate({
+      testName: 'demo',
+      storageStateFile: join(browserTestsDir, 'storage-state.local.json')
+    })
+    expect(code).not.toContain('storageState')
   })
 
   describe('recordingTarget', () => {

@@ -5,9 +5,11 @@ import {
   RECORDING_SPEC_BASENAME,
   cleanupRecordedCode,
   cleanupRecordingTemplate,
+  ensureStorageStateDir,
   generateRecordingTemplate,
   recordedCodePath,
-  recordingTarget
+  recordingTarget,
+  storageStatePath
 } from './template'
 import { runCommand } from '../cli/run'
 import { devServerUrl } from '../checks/devServerUrl'
@@ -81,12 +83,19 @@ export async function runRecording(
   // session can't pick up code recorded by a previous one.
   cleanupRecordedCode(browserTestsDir)
 
+  let storageStateFile: string | undefined
+  if (target === 'cloud') {
+    storageStateFile = storageStatePath(options.distribution?.id ?? 'cloud')
+    ensureStorageStateDir(storageStateFile)
+  }
+
   generateRecordingTemplate(
     {
       testName: options.testName,
       workflow: options.workflow,
       featureFlags: options.featureFlags,
-      target
+      target,
+      storageStateFile
     },
     browserTestsDir
   )
