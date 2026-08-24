@@ -41,7 +41,7 @@ component family whose live state is still owned by class instances — the
 
 ### The ambiguity this ADR resolves
 
-#15544 proposes flipping `NodeState` slot arrays from class instances to
+PR #15544 proposes flipping `NodeState` slot arrays from class instances to
 plain descriptors, with a Proxy virtual array projecting descriptors back to
 class instances at the extension boundary. Its own structural follow-up plan
 (slice 1) then proposes restoring **real slot-class arrays** at the extension
