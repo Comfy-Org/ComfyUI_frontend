@@ -209,16 +209,37 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     }
   }
 
+  // The workspace ID alone cannot reject a response returned during an
+  // in-progress switch: the ID flips only when the switch completes, while the
+  // transition generation increments the moment it starts.
+  function captureWorkspaceIdentity() {
+    return {
+      workspaceId: workspaceStore.activeWorkspace?.id,
+      transitionGeneration: workspaceStore.workspaceTransitionGeneration
+    }
+  }
+
+  function isCurrentWorkspaceIdentity(
+    identity: ReturnType<typeof captureWorkspaceIdentity>
+  ): boolean {
+    return (
+      identity.workspaceId === workspaceStore.activeWorkspace?.id &&
+      identity.transitionGeneration ===
+        workspaceStore.workspaceTransitionGeneration
+    )
+  }
+
   async function fetchStatus(): Promise<void> {
     const requestId = ++latestBillingReadIds.status
-    const workspaceId = workspaceStore.activeWorkspace?.id
+    const identity = captureWorkspaceIdentity()
+    const workspaceId = identity.workspaceId
     isLoading.value = true
     error.value = null
     try {
       const status = await workspaceApi.getBillingStatus()
       if (
         requestId !== latestBillingReadIds.status ||
-        workspaceId !== workspaceStore.activeWorkspace?.id
+        !isCurrentWorkspaceIdentity(identity)
       ) {
         return
       }
@@ -267,11 +288,15 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
 
   async function fetchBalance(): Promise<void> {
     const requestId = ++latestBillingReadIds.balance
+    const identity = captureWorkspaceIdentity()
     isLoading.value = true
     error.value = null
     try {
       const balance = await workspaceApi.getBillingBalance()
-      if (requestId === latestBillingReadIds.balance) {
+      if (
+        requestId === latestBillingReadIds.balance &&
+        isCurrentWorkspaceIdentity(identity)
+      ) {
         balanceData.value = balance
       }
     } catch (err) {
@@ -336,10 +361,13 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   ): Promise<SubscribeResponse> {
     isLoading.value = true
     error.value = null
+    const identity = captureWorkspaceIdentity()
     try {
       const response = await workspaceApi.subscribe(planSlug, options)
       isLoading.value = false
-      void reconcileBillingStateAfterSubscribe()
+      if (isCurrentWorkspaceIdentity(identity)) {
+        void reconcileBillingStateAfterSubscribe()
+      }
       return response
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to subscribe'

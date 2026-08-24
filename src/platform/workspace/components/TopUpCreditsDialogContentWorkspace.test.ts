@@ -431,6 +431,21 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     })
   })
 
+  it('does not close the dialog or open settings when the workspace changes during the completion refresh', async () => {
+    mockTopup.mockResolvedValue(topupResponse('completed'))
+    mockFetchBalance.mockImplementationOnce(async () => {
+      mockWorkspace.workspaceTransitionGeneration++
+      mockWorkspace.activeWorkspaceId = 'workspace-2'
+    })
+
+    renderDialog()
+    await clickAddCredits()
+    await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
+
+    expect(mockCloseDialog).not.toHaveBeenCalled()
+    expect(mockShowSettings).not.toHaveBeenCalled()
+  })
+
   it('ignores a completed top-up after switching away and back', async () => {
     let resolveTopup!: (response: CreateTopupResponse) => void
     mockTopup.mockReturnValueOnce(

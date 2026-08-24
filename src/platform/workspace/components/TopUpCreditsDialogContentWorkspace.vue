@@ -481,6 +481,15 @@ async function handleBuy() {
         life: 5000
       })
       await Promise.allSettled([fetchBalance(), fetchStatus()])
+      if (
+        shouldUseWorkspaceBilling.value &&
+        (workspaceId !== workspaceStore.activeWorkspaceId ||
+          workspaceTransitionGeneration !==
+            workspaceStore.workspaceTransitionGeneration)
+      ) {
+        paymentSubmitted.value = false
+        return
+      }
       handleClose(false)
       settingsDialog.show('workspace')
     } else if (response.status === 'pending') {
