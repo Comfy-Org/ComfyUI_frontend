@@ -287,12 +287,9 @@ const faqJsonLd = {
 
         <!-- JSON VIEW -->
         <div id="panel-json" class="hidden">
-          <div class="mt-4 overflow-hidden rounded-2xl border border-white/15">
-            <div class="flex items-center justify-between gap-3 border-b border-white/15 px-4 py-2.5">
-              <span class="truncate text-[11px] font-extrabold uppercase tracking-widest text-primary-warm-gray">Request payload</span>
-              <button type="button" data-copy="input-json" title="Copy" aria-label="Copy" class="group shrink-0 cursor-pointer rounded-lg border border-white/15 bg-white/5 p-1.5 text-primary-warm-gray transition-colors hover:bg-white/10 hover:text-primary-warm-white"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-3.5 group-data-[copied]:hidden"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden size-3.5 group-data-[copied]:block"><path d="M20 6 9 17l-5-5"/></svg></button>
-            </div>
+          <div class="relative mt-4 overflow-hidden rounded-2xl border border-white/15">
             <pre id="input-json" class="max-h-96 scrollbar-code overflow-auto whitespace-pre-wrap break-words p-4 font-mono text-xs leading-relaxed text-primary-warm-gray"></pre>
+            <button type="button" data-copy="input-json" title="Copy" aria-label="Copy" class="absolute right-3 top-3 group shrink-0 cursor-pointer rounded-lg border border-white/15 bg-white/5 p-1.5 text-primary-warm-gray transition-colors hover:bg-white/10 hover:text-primary-warm-white"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-3.5 group-data-[copied]:hidden"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden size-3.5 group-data-[copied]:block"><path d="M20 6 9 17l-5-5"/></svg></button>
           </div>
           <p class="mt-2 text-[11px] font-light text-primary-warm-gray">Live from your inputs — the exact payload the API takes.</p>
         </div>
