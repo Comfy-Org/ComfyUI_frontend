@@ -1225,11 +1225,21 @@ describe('useAuthStore', () => {
       expect(result).toEqual({ id: 'test-customer-id' })
     })
 
+    it('should not fall back to API key when Firebase token retrieval fails', async () => {
+      mockUser.getIdToken.mockResolvedValue(undefined)
+      mockApiKeyGetAuthHeader.mockReturnValue({ 'X-API-KEY': 'test-api-key' })
+
+      await expect(store.createCustomer()).rejects.toThrow()
+      expect(mockApiKeyGetAuthHeader).not.toHaveBeenCalled()
+      expect(mockFetch).not.toHaveBeenCalled()
+    })
+
     it('should throw when no auth method is available', async () => {
       authStateCallback(null)
       mockApiKeyGetAuthHeader.mockReturnValue(null)
 
       await expect(store.createCustomer()).rejects.toThrow()
+      expect(mockFetch).not.toHaveBeenCalled()
     })
 
     it('carries the HTTP status on a non-ok response', async () => {
