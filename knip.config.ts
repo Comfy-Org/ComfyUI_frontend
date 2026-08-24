@@ -19,6 +19,7 @@ const config: KnipConfig = {
         '**/*.{js,ts,vue}',
         '*.{js,ts,mts}',
         '!.claude/**',
+        '!worktrees/**',
         '!src/__ecs_matrix__/**'
       ],
       ignore: ['scripts/registry-census/detection-proof/**']

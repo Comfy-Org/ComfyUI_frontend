@@ -417,7 +417,6 @@ describe('useSubscriptionCheckout', () => {
 
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     mockSubscribe.mockReset()
     mockPreviewSubscribe.mockReset()
     mockFetchPlans.mockReset()

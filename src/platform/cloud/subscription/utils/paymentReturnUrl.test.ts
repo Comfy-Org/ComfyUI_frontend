@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { paymentReturnUrl } from './paymentReturnUrl'
 
@@ -7,10 +7,6 @@ vi.mock('@/config/comfyApi', () => ({
 }))
 
 describe('paymentReturnUrl', () => {
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
-
   it('returns to the page the checkout started on, without query or hash', () => {
     vi.stubGlobal('location', {
       origin: 'https://cloud.comfy.org',

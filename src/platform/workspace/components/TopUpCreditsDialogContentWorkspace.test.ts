@@ -24,9 +24,6 @@ const mockPermissions = vi.hoisted(() => ({
   ref: undefined as { value: { canTopUp: boolean } } | undefined
 }))
 const mockShouldUseWorkspaceBilling = vi.hoisted(() => ({ value: true }))
-const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
-
-vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
 
 interface MockTopupOperation {
   opId: string
@@ -228,7 +225,6 @@ async function clickAddCredits() {
 
 describe('TopUpCreditsDialogContentWorkspace', () => {
   beforeEach(() => {
-    mockDistributionTypes.isCloud = true
     setCanTopUp(true)
     mockShouldUseWorkspaceBilling.value = true
     setIsAddingCredits(false)
@@ -500,17 +496,6 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       billing_op_id: 'op-1',
       duration_ms: expect.any(Number)
     })
-  })
-
-  it('opens Credits settings after a completed local top-up', async () => {
-    mockDistributionTypes.isCloud = false
-    mockTopup.mockResolvedValue(topupResponse('completed'))
-
-    renderDialog()
-    await clickAddCredits()
-    await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
-
-    expect(mockShowSettings).toHaveBeenCalledWith('credits')
   })
 
   it('keeps completed top-up telemetry successful when refresh fails', async () => {

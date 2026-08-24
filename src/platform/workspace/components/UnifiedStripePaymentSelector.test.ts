@@ -74,7 +74,6 @@ function renderSelector(
 describe('UnifiedStripePaymentSelector', () => {
   beforeEach(() => {
     vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_test_example')
-    vi.resetAllMocks()
     stripeMocks.loadStripe.mockResolvedValue(stripeMocks.stripe)
     stripeMocks.stripe.elements.mockReturnValue(stripeMocks.elements)
     stripeMocks.create.mockReturnValue({
@@ -235,7 +234,6 @@ describe('UnifiedStripePaymentSelector', () => {
 describe('UnifiedStripePaymentSelector payment method configuration', () => {
   beforeEach(() => {
     vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_test_example')
-    vi.resetAllMocks()
     stripeMocks.loadStripe.mockResolvedValue(stripeMocks.stripe)
     stripeMocks.stripe.elements.mockReturnValue(stripeMocks.elements)
     stripeMocks.create.mockReturnValue({
