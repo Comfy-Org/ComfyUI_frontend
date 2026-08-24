@@ -139,6 +139,11 @@ jobs:
           HEAD_REF: ${{ github.head_ref || github.ref_name }}
         run: |
           BRANCH=$(echo "$HEAD_REF" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g;s/--*/-/g;s/^-\|-$//g')
+          if ! pnpm dlx wrangler@^4.0.0 pages project list --json | jq -e \
+            '.[] | select(.name == "comfy-website-storybook")' > /dev/null; then
+            pnpm dlx wrangler@^4.0.0 pages project create comfy-website-storybook \
+              --production-branch=main
+          fi
           pnpm dlx wrangler@^4.0.0 pages deploy apps/website/dist/storybook \
             --project-name=comfy-website-storybook \
             --branch="$BRANCH"
