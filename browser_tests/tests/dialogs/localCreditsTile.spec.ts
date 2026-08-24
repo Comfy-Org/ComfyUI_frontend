@@ -5,7 +5,6 @@ import {
   createBalance,
   createSubscriptionStatus
 } from '@e2e/fixtures/data/subscriptionFixtures'
-import { TestIds } from '@e2e/fixtures/selectors'
 
 test.describe('Local credits tile', () => {
   test('hides the Cloud monthly progress bar for an active subscription', async ({
@@ -35,20 +34,24 @@ test.describe('Local credits tile', () => {
       })
     )
 
-    await page.getByTestId(TestIds.user.currentUserButton).click()
-    await page
-      .getByTestId(TestIds.user.currentUserPopover)
-      .getByTestId('manage-plan-menu-item')
-      .click()
-
     const settingsDialog = comfyPage.settingDialog
-    await settingsDialog.waitForVisible()
+    await settingsDialog.open()
+    await settingsDialog.category('Plan & Credits').click()
     const creditsContent = settingsDialog.contentArea
+
+    const refreshedBalance = page.waitForResponse(
+      (response) =>
+        response.url().includes('/customers/balance') && response.ok()
+    )
     await creditsContent
       .getByRole('button', { name: 'Refresh credits' })
       .click()
+    await refreshedBalance
 
     await expect(creditsContent.getByText('Total credits')).toBeVisible()
+    await expect(
+      creditsContent.getByText('8,440', { exact: true })
+    ).toBeVisible()
     await expect(creditsContent.getByText('Additional credits')).toBeVisible()
     await expect(
       creditsContent.getByRole('button', { name: 'Add credits' })
