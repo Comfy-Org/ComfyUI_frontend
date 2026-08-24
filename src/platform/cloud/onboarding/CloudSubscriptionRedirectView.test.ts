@@ -231,6 +231,38 @@ describe('CloudSubscriptionRedirectView', () => {
     ).not.toHaveBeenCalled()
   })
 
+  test('opens the generic team pricing table when plan loading fails', async () => {
+    subscriptionMocks.teamCreditStops.value = null
+    subscriptionMocks.fetchPlans.mockRejectedValue(new Error('plans down'))
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {})
+
+    await mountView({ tier: 'team', stop: 'team_700', cycle: 'yearly' })
+
+    expect(mockShowPricingTable).toHaveBeenCalledWith({
+      reason: 'deep_link',
+      planMode: 'team',
+      initialCheckout: undefined
+    })
+    expect(mockRouterPush).not.toHaveBeenCalled()
+    expect(
+      legacyCheckoutMocks.performTeamSubscriptionCheckout
+    ).not.toHaveBeenCalled()
+
+    consoleErrorSpy.mockRestore()
+  })
+
+  test('removes the pre-Vue splash loader on mount', async () => {
+    const splashLoader = document.createElement('div')
+    splashLoader.id = 'splash-loader'
+    document.body.append(splashLoader)
+
+    await mountView({ tier: 'creator' })
+
+    expect(splashLoader).not.toBeInTheDocument()
+  })
+
   test('redirects to home for a team link with no stop', async () => {
     await mountView({ tier: 'team', cycle: 'yearly' })
 

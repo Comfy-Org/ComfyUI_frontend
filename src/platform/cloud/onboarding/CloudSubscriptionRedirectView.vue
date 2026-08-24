@@ -140,7 +140,14 @@ const runRedirect = wrapWithErrorHandlingAsync(async () => {
     return
   }
 
-  if (!teamCreditStops.value) await fetchPlans()
+  if (!teamCreditStops.value) {
+    await fetchPlans().catch((error) => {
+      console.error(
+        '[CloudSubscriptionRedirectView] Failed to load Team pricing plans:',
+        error
+      )
+    })
+  }
   const initialCheckout = getPricingCheckoutSelection(
     tierKeyParam,
     stopId,
@@ -155,6 +162,7 @@ const runRedirect = wrapWithErrorHandlingAsync(async () => {
 }, reportError)
 
 onMounted(() => {
+  document.getElementById('splash-loader')?.remove()
   void runRedirect()
 })
 </script>
