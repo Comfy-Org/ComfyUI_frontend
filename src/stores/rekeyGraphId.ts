@@ -19,7 +19,8 @@ export function rekeyGraphId(
   const definitionOccupied =
     owner.kind === 'root'
       ? definitions.hasRoot(nextId)
-      : definitions.hasGraph(owner.rootGraphId, nextId)
+      : nextId === owner.rootGraphId ||
+        definitions.hasGraph(owner.rootGraphId, nextId)
   const metadataOccupied =
     owner.kind === 'root'
       ? metadata.hasRoot(nextId)

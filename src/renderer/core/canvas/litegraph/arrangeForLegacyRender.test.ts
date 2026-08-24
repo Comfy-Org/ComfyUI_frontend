@@ -3,7 +3,10 @@ import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { arrangeForLegacyRender } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
+import {
+  arrangeForLegacyRender,
+  nodesInRenderOrder
+} from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 
@@ -48,7 +51,7 @@ describe('arrangeForLegacyRender', () => {
     expect(node._widgetSlotsDirty).toBe(true)
   })
 
-  it('projects authoritative z-index into legacy node order', () => {
+  it('returns authoritative render order without changing graph membership', () => {
     const graph = new LGraph()
     const first = addedNode(graph)
     const second = addedNode(graph)
@@ -56,8 +59,7 @@ describe('arrangeForLegacyRender', () => {
     mutations.setNodeZIndex(graph.id, first.id, 2)
     mutations.setNodeZIndex(graph.id, second.id, 1)
 
-    arrangeForLegacyRender(graph)
-
-    expect(graph._nodes).toEqual([second, first])
+    expect(nodesInRenderOrder(graph)).toEqual([second, first])
+    expect(graph._nodes).toEqual([first, second])
   })
 })

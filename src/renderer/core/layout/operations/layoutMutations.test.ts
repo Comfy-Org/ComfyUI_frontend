@@ -3,6 +3,7 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { NodeId } from '@/types/nodeId'
@@ -191,6 +192,25 @@ describe('bringNodeToFront', () => {
 })
 
 describe('setNodeOrder', () => {
+  it('does not update a node owned by a sibling graph', () => {
+    const root = new LGraph()
+    root.add(new LGraphNode('root'))
+    const sibling = createTestSubgraph({ rootGraph: root })
+    const siblingNode = sibling.add(new LGraphNode('sibling'))!
+    const before = layoutStore.getNodeLayout(root.id, siblingNode.id)?.zIndex
+    expect(before).toBeTypeOf('number')
+
+    useLayoutMutations(LayoutSource.Canvas).setNodeOrder(
+      root,
+      siblingNode.id,
+      'front'
+    )
+
+    expect(layoutStore.getNodeLayout(root.id, siblingNode.id)?.zIndex).toBe(
+      before
+    )
+  })
+
   it('does not reorder legacy nodes when the target layout is missing', () => {
     const graph = new LGraph()
     const first = graph.add(new LGraphNode('first'))!
