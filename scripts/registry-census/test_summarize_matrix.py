@@ -28,6 +28,7 @@ import summarize_matrix as sm
 def row(pack: str, **over: object) -> dict:
     base: dict = {
         'pack': pack,
+        'renderer': 'legacy',
         'selfCheck': 'OK',
         'load': {'./a.js': 'OK', './b.js': 'OK'},
         'loadedOk': 2,
@@ -209,6 +210,18 @@ class HarnessGates(unittest.TestCase):
         self.assertIn('selfCheck: 99 row(s)', report)
         self.assertIsNone(verdict.metrics)
 
+    def test_mixed_renderer_rows_are_withheld(self) -> None:
+        rows = population()
+        rows[0]['renderer'] = 'vue'
+        verdict = sm.evaluate(rows, {})
+        self.assertEqual(verdict.code, 2)
+        self.assertIn('RENDERER IDENTITY DRIFT', '\n'.join(verdict.lines))
+
+    def test_expected_renderer_must_match_rows(self) -> None:
+        verdict = sm.evaluate(population(), {}, expected_renderer='vue')
+        self.assertEqual(verdict.code, 2)
+        self.assertIn('workflow expected vue', '\n'.join(verdict.lines))
+
     def test_empty_operation_maps_fail_closed(self) -> None:
         rows = population()
         for r in rows:
@@ -313,26 +326,63 @@ class DeltaGate(unittest.TestCase):
         self.assertIn('no previous metrics', '\n'.join(v.lines))
 
     def test_erosion_beyond_tolerance_fails(self) -> None:
-        prev = {'entryPct': 100.0, 'runId': 'run-1'}
+        prev = {
+            'renderer': 'legacy',
+            'entryPct': 100.0,
+            'runId': 'run-1',
+        }
         v = sm.evaluate(self.eroded(), {}, prev, 'run-2')
         self.assertEqual(v.code, 1)
         self.assertIn('dropped 5.0pp', v.breaches[0])
         self.assertIsNone(v.metrics)
 
     def test_same_run_metrics_skip_the_delta(self) -> None:
-        prev = {'entryPct': 100.0, 'runId': 'run-2'}
+        prev = {
+            'renderer': 'legacy',
+            'entryPct': 100.0,
+            'runId': 'run-2',
+        }
         v = sm.evaluate(self.eroded(), {}, prev, 'run-2')
         self.assertEqual(v.code, 0)
         self.assertIn('metrics are from this run', '\n'.join(v.lines))
 
     def test_malformed_metrics_skip_the_delta(self) -> None:
-        for prev in ({'runId': 'run-1'}, {'entryPct': 'n/a'}, []):
+        for prev in (
+            {'renderer': 'legacy', 'runId': 'run-1'},
+            {'renderer': 'legacy', 'entryPct': 'n/a'},
+            [],
+        ):
             with self.subTest(prev=prev):
                 v = sm.evaluate(self.eroded(), {}, prev, 'run-2')
                 self.assertEqual(v.code, 0)
                 self.assertIn(
                     'previous metrics malformed', '\n'.join(v.lines)
                 )
+
+    def test_other_renderer_metrics_do_not_feed_the_delta(self) -> None:
+        prev = {'renderer': 'vue', 'entryPct': 100.0, 'runId': 'run-1'}
+        verdict = sm.evaluate(self.eroded(), {}, prev, 'run-2')
+        self.assertEqual(verdict.code, 0)
+        self.assertIn(
+            'previous metrics are for another or unknown renderer',
+            '\n'.join(verdict.lines),
+        )
+
+    def test_unlabelled_pre_renderer_baseline_is_legacy_only(self) -> None:
+        previous = {'entryPct': 100.0, 'runId': 'run-1'}
+        legacy = sm.evaluate(self.eroded(), {}, previous, 'run-2')
+        self.assertEqual(legacy.code, 1)
+        self.assertIn('dropped 5.0pp', legacy.breaches[0])
+
+        vue_rows = self.eroded()
+        for item in vue_rows:
+            item['renderer'] = 'vue'
+        vue = sm.evaluate(vue_rows, {}, previous, 'run-2')
+        self.assertEqual(vue.code, 0)
+        self.assertIn(
+            'previous metrics are for another or unknown renderer',
+            '\n'.join(vue.lines),
+        )
 
 
 class StaleRegistry(unittest.TestCase):
@@ -391,6 +441,18 @@ class MainIO(unittest.TestCase):
         self.assertEqual(json.loads(metrics)['verdict'], 'PASS')
         self.assertIn('## Ecosystem matrix', output)
         self.assertIn('VERDICT: PASS', output)
+        self.assertIn('renderer: legacy (vueNodesMode = false)', output)
+
+    def test_vue_renderer_identity_reaches_metrics_and_summary(self) -> None:
+        rows = population()
+        for item in rows:
+            item['renderer'] = 'vue'
+        code, metrics, output = self.run_main(
+            rows, MATRIX_RENDERER='vue'
+        )
+        self.assertEqual(code, 0)
+        self.assertEqual(json.loads(metrics)['renderer'], 'vue')
+        self.assertIn('renderer: vue (vueNodesMode = true)', output)
 
     def test_fail_does_not_ratchet_the_baseline(self) -> None:
         code, metrics, output = self.run_main(broken(50, break_op_err))
@@ -425,6 +487,13 @@ class MainIO(unittest.TestCase):
     def test_non_numeric_shard_expectation_is_withheld(self) -> None:
         code, _, _ = self.run_main(population(), MATRIX_EXPECT_SHARDS='four')
         self.assertEqual(code, 2)
+
+    def test_unknown_renderer_expectation_is_withheld(self) -> None:
+        code, metrics, _ = self.run_main(
+            population(), MATRIX_RENDERER='nodes-2'
+        )
+        self.assertEqual(code, 2)
+        self.assertEqual(metrics, '')
 
     def test_stale_marker_is_read_from_the_environment(self) -> None:
         with tempfile.NamedTemporaryFile('w', suffix='.json') as fh:
