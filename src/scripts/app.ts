@@ -935,8 +935,8 @@ export class ComfyApp {
     // Start the node-definition fetch now so its round trip overlaps the work
     // below; registerNodes() awaits the result. Auth is already resolved by the
     // time setup() runs, so this carries the same credentials the later call
-    // would. Errors are swallowed here and surfaced by the fallback refetch.
-    this.nodeDefsPrefetch = this.getNodeDefs().catch(() => undefined)
+    // would.
+    this.startNodeDefsPrefetch()
 
     await useWorkspaceStore().workflow.syncWorkflows()
     //Doesn't need to block. Blueprints will load async
@@ -1142,6 +1142,15 @@ export class ComfyApp {
   /**
    * Registers nodes with the graph
    */
+  /**
+   * Kicks off the `/object_info` fetch and stores it for registerNodes() to
+   * await. A failed fetch resolves to `undefined` so it never becomes an
+   * unhandled rejection; registerNodes() then refetches.
+   */
+  startNodeDefsPrefetch() {
+    this.nodeDefsPrefetch = this.getNodeDefs().catch(() => undefined)
+  }
+
   async registerNodes() {
     // Load node definitions from the backend, reusing the prefetch kicked off
     // in setup() when it succeeded and refetching if it failed or was skipped.

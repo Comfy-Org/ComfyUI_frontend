@@ -10,6 +10,7 @@ vi.mock('@/services/extensionService', () => ({
 type AppInternals = {
   nodeDefsPrefetch?: Promise<Record<string, ComfyNodeDefV1> | undefined>
   vueAppReady: boolean
+  startNodeDefsPrefetch: () => void
   registerNodesFromDefs: (defs: Record<string, ComfyNodeDefV1>) => Promise<void>
 }
 
@@ -57,6 +58,42 @@ describe('ComfyApp.registerNodes prefetch reuse', () => {
     await comfyApp.registerNodes()
 
     expect(getNodeDefs).toHaveBeenCalledTimes(1)
+    expect(internals.registerNodesFromDefs).toHaveBeenCalledWith(fresh)
+  })
+
+  test('startNodeDefsPrefetch stores the in-flight defs for reuse', async () => {
+    const defs = { A: {} } as unknown as Record<string, ComfyNodeDefV1>
+    const getNodeDefs = vi
+      .spyOn(comfyApp, 'getNodeDefs')
+      .mockResolvedValue(defs)
+
+    internals.startNodeDefsPrefetch()
+
+    expect(getNodeDefs).toHaveBeenCalledTimes(1)
+    await expect(internals.nodeDefsPrefetch).resolves.toBe(defs)
+  })
+
+  test('startNodeDefsPrefetch swallows a rejection into undefined', async () => {
+    vi.spyOn(comfyApp, 'getNodeDefs').mockRejectedValue(new Error('boom'))
+
+    internals.startNodeDefsPrefetch()
+
+    // Must resolve to undefined, never reject (no unhandled rejection), so
+    // registerNodes falls back cleanly.
+    await expect(internals.nodeDefsPrefetch).resolves.toBeUndefined()
+  })
+
+  test('a failed prefetch from startNodeDefsPrefetch falls back to a refetch', async () => {
+    const fresh = { B: {} } as unknown as Record<string, ComfyNodeDefV1>
+    const getNodeDefs = vi
+      .spyOn(comfyApp, 'getNodeDefs')
+      .mockRejectedValueOnce(new Error('boom'))
+      .mockResolvedValue(fresh)
+
+    internals.startNodeDefsPrefetch()
+    await comfyApp.registerNodes()
+
+    expect(getNodeDefs).toHaveBeenCalledTimes(2)
     expect(internals.registerNodesFromDefs).toHaveBeenCalledWith(fresh)
   })
 
