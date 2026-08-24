@@ -104,11 +104,11 @@ async function verifyReloadPersistence(comfyPage: ComfyPage): Promise<void> {
 
       // The draft carrying the drag is what survives F5 — wait for the persist
       // debounce to flush before pulling the rug out.
-      // Timestamp taken AFTER the retried drag settles: the index-recency
-      // wait would otherwise be satisfied by a flush from an early partial
-      // attempt, before the final position is persisted.
-      const editSettledAt = Date.now()
-      await comfyPage.workflow.waitForDraftIndexUpdatedSince(editSettledAt)
+      // No pre-reload draft wait: the app flushes pending persistence on
+      // pagehide (useWorkflowPersistenceV2 registers flushPendingPersistence),
+      // so the F5 below is itself the guarantee that the debounced save
+      // lands. Waiting on the debounce here is unreliable — background-page
+      // timer throttling stalls it under parallel workers and on CI.
       return afterEdit
     })
 

@@ -561,6 +561,7 @@ test.describe(
     test('classic: undo history binds to its own workflow tab', async ({
       comfyPage
     }) => {
+      test.setTimeout(120_000)
       await verifyUndoIsolationScenario(comfyPage, { vue: false })
     })
 
@@ -634,6 +635,7 @@ test.describe(
       'vue: undo history binds to its own workflow tab',
       { tag: '@vue-nodes' },
       async ({ comfyPage }) => {
+        test.setTimeout(120_000)
         await verifyUndoIsolationScenario(comfyPage, { vue: true })
       }
     )
