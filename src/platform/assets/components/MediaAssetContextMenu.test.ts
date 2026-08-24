@@ -143,7 +143,6 @@ async function showMenu(container: Element): Promise<HTMLElement> {
 afterEach(() => {
   capturedRef = null
   capturedMenu.model = []
-  document.body.innerHTML = ''
 })
 
 type MenuItemWithCommand = MenuItem & {

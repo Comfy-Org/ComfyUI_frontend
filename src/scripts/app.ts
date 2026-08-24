@@ -6,12 +6,11 @@ import { shallowRef } from 'vue'
 
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { syncLayoutStoreNodeBoundsFromGraph } from '@/renderer/core/layout/sync/syncLayoutStoreFromGraph'
 import { flushScheduledSlotLayoutSync } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 
 import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
-import { resolveNodeDefText, setBackendNodeText, st, t } from '@/i18n'
+import { setBackendNodeText, st, t } from '@/i18n'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
@@ -113,6 +112,7 @@ import { normalizePromptError } from '@/utils/executionErrorUtil'
 import { graphToPrompt } from '@/utils/executionUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 import { getCnrIdFromProperties } from '@/platform/nodeReplacement/cnrIdUtil'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { rescanAndSurfaceMissingNodes } from '@/platform/nodeReplacement/missingNodeScan'
 import {
   refreshMissingModelPipeline,
@@ -135,7 +135,6 @@ import {
 import {
   executeWidgetsCallback,
   createNode,
-  fixLinkInputSlots,
   isImageNode,
   isVideoNode
 } from '@/utils/litegraphUtil'
@@ -895,8 +894,6 @@ export class ComfyApp {
       }
 
       try {
-        fixLinkInputSlots(this)
-
         // Fire callbacks before the onConfigure, this is used by widget inputs to setup the config
         triggerCallbackOnAllNodes(this, 'onGraphConfigured')
 
@@ -1100,16 +1097,6 @@ export class ComfyApp {
     const translateNodeDef = (def: ComfyNodeDefV1): ComfyNodeDefV1 => {
       return {
         ...def,
-        display_name: resolveNodeDefText(
-          'display_name',
-          def.name,
-          def.display_name || undefined
-        ),
-        description: resolveNodeDefText(
-          'description',
-          def.name,
-          def.description || undefined
-        ),
         category: (typeof def.category === 'string' ? def.category : '')
           .split('/')
           .map((category: string) =>
@@ -1418,7 +1405,6 @@ export class ComfyApp {
 
     ChangeTracker.isLoadingGraph = true
     try {
-      let normalizedMainGraph = false
       try {
         // @ts-expect-error Discrepancies between zod and litegraph - in progress
         this.rootGraph.configure(graphData)
@@ -1428,10 +1414,7 @@ export class ComfyApp {
           this.rootGraph.extra.workflowRendererVersion
 
         // Scale main graph
-        normalizedMainGraph = ensureCorrectLayoutScale(
-          originalMainGraphRenderer,
-          this.rootGraph
-        )
+        ensureCorrectLayoutScale(originalMainGraphRenderer, this.rootGraph)
 
         // Scale all subgraphs that were loaded with the workflow
         // Use original main graph renderer as fallback (not the modified one)
@@ -1508,10 +1491,6 @@ export class ComfyApp {
 
         useExtensionService().invokeExtensions('loadedGraphNode', node)
       })
-
-      if (normalizedMainGraph) {
-        syncLayoutStoreNodeBoundsFromGraph(this.rootGraph)
-      }
 
       await useExtensionService().invokeExtensionsAsync(
         'afterConfigureGraph',
@@ -1645,11 +1624,11 @@ export class ComfyApp {
     const executionStore = useExecutionStore()
     const executionErrorStore = useExecutionErrorStore()
     const telemetry = useTelemetry()
-    executionErrorStore.clearAllErrors()
+    executionErrorStore.clearRunErrors()
     let queueResultOverride: boolean | null = null
 
     // Get auth token for backend nodes - uses workspace token if enabled, otherwise Firebase token
-    const comfyOrgAuthToken = await useAuthStore().getAuthToken()
+    const comfyOrgAuthToken = await useAuthStore().getWorkspaceAuthToken()
     const comfyOrgApiKey = useApiKeyAuthStore().getApiKey()
 
     try {
@@ -2019,7 +1998,11 @@ export class ComfyApp {
     // Use parameters strictly as the final fallback
     if (parameters && typeof parameters === 'string') {
       const outcome = await importA1111(this.rootGraph, parameters, () => {
-        useWorkflowService().beforeLoadNewGraph()
+        try {
+          useWorkflowService().beforeLoadNewGraph()
+        } finally {
+          useMissingNodesErrorStore().setMissingNodeTypes([])
+        }
         this.canvas.setGraph(this.rootGraph)
       })
       if (outcome === 'core-nodes-unavailable') {
@@ -2183,8 +2166,11 @@ export class ComfyApp {
         | Extract<MissingNodeType, { type: string }>
         | undefined
       if (!node) {
-        node = new LGraphNode(data._meta?.title ?? data.class_type)
-        node.type = sanitizeNodeName(data.class_type)
+        const missingNode = new LGraphNode(
+          data._meta?.title ?? data.class_type,
+          sanitizeNodeName(data.class_type)
+        )
+        node = missingNode
         node.has_errors = true
         const widgetValues: TWidgetValue[] = []
         const widgetValuesNamed: Record<string, TWidgetValue> =
@@ -2206,7 +2192,9 @@ export class ComfyApp {
           order: 0,
           mode: node.mode,
           title: data._meta?.title ?? data.class_type,
-          inputs: node.inputs.map(inputAsSerialisable),
+          inputs: node.inputs.map((input, i) =>
+            inputAsSerialisable(input, missingNode, i)
+          ),
           widgets_values: widgetValues,
           widgets_values_named: widgetValuesNamed
         }
@@ -2272,7 +2260,9 @@ export class ComfyApp {
         }
       }
       if (node.last_serialization) {
-        node.last_serialization.inputs = node.inputs.map(inputAsSerialisable)
+        node.last_serialization.inputs = node.inputs.map((input, i) =>
+          inputAsSerialisable(input, node, i)
+        )
       }
     }
 
@@ -2430,7 +2420,8 @@ export class ComfyApp {
     const nodeOutputStore = useNodeOutputStore()
     nodeOutputStore.resetAllOutputsAndPreviews()
     const executionErrorStore = useExecutionErrorStore()
-    executionErrorStore.clearAllErrors()
+    executionErrorStore.clearRunErrors()
+    useMissingNodesErrorStore().setMissingNodeTypes([])
 
     useDomWidgetStore().clear()
 

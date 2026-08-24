@@ -1,5 +1,4 @@
-import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
@@ -101,8 +100,6 @@ function addExposedPrompt(root: LGraph, portName: string) {
 }
 
 describe('heuristicRoles', () => {
-  beforeEach(() => setActivePinia(createPinia()))
-
   it('takes the prompt wired to positive when negative comes first', () => {
     const graph = createTestRootGraph()
     addWiredSink(graph)
@@ -299,6 +296,27 @@ describe('heuristicRoles', () => {
     expect(
       heuristicRoles(graph)?.prompt,
       'a note carries a multiline text widget but never runs'
+    ).toBeNull()
+  })
+
+  it('ignores input-name evidence from a virtual consumer', () => {
+    const graph = createTestRootGraph()
+    addWiredSink(graph)
+    const candidate = addNode(graph, 'PrimitiveStringMultiline', {
+      prompts: ['value'],
+      outputs: ['STRING']
+    })
+    const virtualConsumer = addNode(graph, 'Reroute', {
+      inputs: ['positive'],
+      inputType: 'STRING',
+      virtual: true
+    })
+    addNode(graph, 'PrimitiveStringMultiline', { prompts: ['value'] })
+    candidate.connect(0, virtualConsumer, 0)
+
+    expect(
+      heuristicRoles(graph)?.prompt,
+      'a virtual consumer cannot turn an otherwise ambiguous text node into the positive prompt'
     ).toBeNull()
   })
 
