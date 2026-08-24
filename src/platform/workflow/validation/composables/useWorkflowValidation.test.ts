@@ -119,6 +119,18 @@ describe('useWorkflowValidation', () => {
     expect(reportError).toHaveBeenCalledTimes(2)
   })
 
+  it('counts each identified workflow carrying the same corruption', async () => {
+    await reload(corruptWorkflow(uniqueId()))
+    await reload(corruptWorkflow(uniqueId()))
+
+    expect(reportError).toHaveBeenCalledTimes(2)
+    const [first, second] = [reportedOptions(0), reportedOptions(1)]
+    expect(first.context?.corruptionDigest).toBe(
+      second.context?.corruptionDigest
+    )
+    expect(first.context?.workflowId).not.toBe(second.context?.workflowId)
+  })
+
   it('stays quiet for an intact workflow', async () => {
     await useWorkflowValidation().validateWorkflow(intactWorkflow(uniqueId()))
 

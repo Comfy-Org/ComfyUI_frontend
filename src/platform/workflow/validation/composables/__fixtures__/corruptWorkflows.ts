@@ -1,23 +1,24 @@
-import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
-import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type {
+  ComfyWorkflowJSON,
+  WorkflowJSON04
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 
-type SerialisedInput = NonNullable<ISerialisedNode['inputs']>[number]
-type SerialisedOutput = NonNullable<ISerialisedNode['outputs']>[number]
+type SerialisedNode = WorkflowJSON04['nodes'][number]
+type SerialisedLink = WorkflowJSON04['links'][number]
+type SerialisedInput = NonNullable<SerialisedNode['inputs']>[number]
+type SerialisedOutput = NonNullable<SerialisedNode['outputs']>[number]
 
-const createInput = (link: number | null): SerialisedInput =>
-  ({
-    name: 'in',
-    type: '*',
-    link
-  }) satisfies Partial<SerialisedInput> as SerialisedInput
+const createInput = (link: number | null): SerialisedInput => ({
+  name: 'in',
+  type: '*',
+  link
+})
 
-const createOutput = (links: number[]): SerialisedOutput =>
-  ({
-    name: 'out',
-    type: '*',
-    links
-  }) satisfies Partial<SerialisedOutput> as SerialisedOutput
+const createOutput = (links: number[]): SerialisedOutput => ({
+  name: 'out',
+  type: '*',
+  links
+})
 
 function createNode({
   id,
@@ -27,7 +28,7 @@ function createNode({
   id: number
   inputs?: SerialisedInput[]
   outputs?: SerialisedOutput[]
-}) {
+}): SerialisedNode {
   return {
     id,
     type: 'TestNode',
@@ -44,8 +45,8 @@ function createNode({
 
 function createWorkflow(
   id: string | undefined,
-  nodes: ReturnType<typeof createNode>[],
-  links: SerialisedLLinkArray[]
+  nodes: SerialisedNode[],
+  links: SerialisedLink[]
 ): ComfyWorkflowJSON {
   return {
     ...(id ? { id } : {}),
@@ -57,7 +58,7 @@ function createWorkflow(
     config: {},
     extra: {},
     version: 0.4
-  } as unknown as ComfyWorkflowJSON
+  }
 }
 
 export const intactWorkflow = (id: string) =>
