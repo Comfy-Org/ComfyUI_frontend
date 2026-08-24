@@ -8,6 +8,8 @@
 import { cn } from '@comfyorg/tailwind-utils'
 
 import BaseLayout from '../../layouts/BaseLayout.astro'
+import { Coins as CreditsIcon } from '@lucide/vue'
+
 import BrandButton from '../../components/common/BrandButton.vue'
 import GlassCard from '../../components/common/GlassCard.vue'
 import Badge from '../../components/ui/badge/Badge.vue'
@@ -122,11 +124,11 @@ const familyVariants = registryModels
   .filter((m) => m.slug.startsWith(familyToken) && m.slug !== (registry?.slug ?? ''))
   .slice(0, 6)
 
-const costRows: Array<[string, string]> = [
-  [`${name} · 5s · 720p`, `${baseCredits} credits ≈ $${(baseCredits * 0.0084).toFixed(2)} · est.`],
-  [`${name} · 5s · 1080p`, `${baseCredits * 2} credits ≈ $${(baseCredits * 2 * 0.0084).toFixed(2)} · est.`],
-  [`${name} · 10s · 720p`, `${baseCredits * 2} credits ≈ $${(baseCredits * 2 * 0.0084).toFixed(2)} · est.`],
-  ['Creator plan / month', `≈ ${Math.round(2400 / baseCredits) * 10} runs · est.`]
+const costRows = [
+  { label: `${name} · 5s · 720p`, value: `${baseCredits} credits ≈ $${(baseCredits * 0.0084).toFixed(2)} · est.`, credits: true },
+  { label: `${name} · 5s · 1080p`, value: `${baseCredits * 2} credits ≈ $${(baseCredits * 2 * 0.0084).toFixed(2)} · est.`, credits: true },
+  { label: `${name} · 10s · 720p`, value: `${baseCredits * 2} credits ≈ $${(baseCredits * 2 * 0.0084).toFixed(2)} · est.`, credits: true },
+  { label: 'Creator plan / month', value: `≈ ${Math.round(2400 / baseCredits) * 10} runs · est.`, credits: false }
 ]
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site ?? 'https://comfy.org')
@@ -354,7 +356,10 @@ const faqJsonLd = {
         </div>
 
         <div class="mt-5 flex items-center justify-between gap-3 border-t border-white/10 pt-4">
-          <span class="hidden text-2xs text-primary-warm-gray sm:block"><span id="cost-line">{baseCredits} credits ≈ ${(baseCredits * 0.0084).toFixed(2)}</span> · est.</span>
+          <span class="hidden items-center gap-1.5 text-2xs text-primary-warm-gray sm:flex">
+            <CreditsIcon class="size-3.5 shrink-0 text-primary-comfy-orange" aria-hidden="true" />
+            <span><span id="cost-line">{baseCredits} credits ≈ ${(baseCredits * 0.0084).toFixed(2)}</span> · est.</span>
+          </span>
           <div class="flex items-center gap-3">
             <BrandButton id="pg-reset" variant="outline" size="xs" class="uppercase tracking-widest">Reset</BrandButton>
             <BrandButton id="pg-run" data-base-credits={baseCredits} data-slug={slugId} variant="solid" size="xs" class="uppercase tracking-widest">Sign in to run — 5 free</BrandButton>
@@ -500,10 +505,13 @@ const faqJsonLd = {
             <h2 class={cardTitle}>What it costs</h2>
             <p class:list={[bodyCopy, 'mt-2']}>Credits before you commit. No surprises after the wall.</p>
             <div class="mt-4 divide-y divide-white/10 border-t border-white/10">
-              {costRows.map(([l, v]) => (
+              {costRows.map((row) => (
                 <div class="flex items-center justify-between gap-4 py-3">
-                  <span class="text-sm text-primary-warm-white">{l}</span>
-                  <span class="text-right text-xs font-semibold text-primary-comfy-canvas">{v}</span>
+                  <span class="text-sm text-primary-warm-white">{row.label}</span>
+                  <span class="flex items-center gap-1.5 text-right text-xs font-semibold text-primary-comfy-canvas">
+                    {row.credits && <CreditsIcon class="size-3.5 shrink-0 text-primary-comfy-orange" aria-hidden="true" />}
+                    {row.value}
+                  </span>
                 </div>
               ))}
             </div>
