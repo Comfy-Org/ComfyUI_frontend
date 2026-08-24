@@ -3,13 +3,20 @@ import { render, screen } from '@testing-library/vue'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { fromAny } from '@total-typescript/shoehorn'
+
+import type { NodeError } from '@/schemas/apiSchema'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { toNodeId } from '@/types/nodeId'
 import { computed } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
-import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
+import {
+  LGraphEventMode,
+  TitleMode
+} from '@/lib/litegraph/src/types/globalEnums'
+import type { NodeState } from '@/types/nodeState'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -25,7 +32,6 @@ vi.mock('@/utils/graphTraversalUtil', async (importOriginal) => {
   const actual = (await importOriginal()) as Record<string, unknown>
   return {
     ...actual,
-    getLocatorIdFromNodeData: vi.fn(() => 'test-node-123'),
     getNodeByLocatorId: vi.fn(
       () => mockData.mockLgraphNode ?? { isSubgraphNode: () => false }
     )
@@ -60,7 +66,7 @@ vi.mock(
 
 vi.mock('@/scripts/app', () => ({
   app: {
-    rootGraph: { getNodeById: vi.fn() },
+    rootGraph: { id: 'graph-test', getNodeById: vi.fn() },
     canvas: { setDirty: vi.fn() }
   }
 }))
@@ -153,20 +159,18 @@ function renderLGraphNode(props: ComponentProps<typeof LGraphNode>) {
     }
   })
 }
-const mockNodeData: VueNodeData = {
+const mockNodeData: NodeState = {
   id: toNodeId('test-node-123'),
+  graphId: 'test-graph',
   title: 'Test Node',
   type: 'TestNode',
   mode: 0,
   flags: {},
   inputs: [],
-  outputs: [],
-  widgets: [],
-  selected: false,
-  executing: false
+  outputs: []
 }
 
-const mockRerouteNodeData: VueNodeData = {
+const mockRerouteNodeData: NodeState = {
   ...mockNodeData,
   id: toNodeId('reroute-node-1'),
   title: '',
@@ -176,8 +180,8 @@ const mockRerouteNodeData: VueNodeData = {
 
 describe('LGraphNode', () => {
   beforeEach(() => {
-    vi.resetAllMocks()
     mockData.mockExecuting = false
+    mockData.mockLgraphNode = null
 
     setActivePinia(pinia)
     const canvasStore = useCanvasStore()
@@ -247,17 +251,55 @@ describe('LGraphNode', () => {
     expect(overlay).toHaveClass('border-node-stroke-executing')
   })
 
-  it('should initialize height CSS vars for collapsed nodes', () => {
-    const { container } = renderLGraphNode({
-      nodeData: {
-        ...mockNodeData,
-        flags: { collapsed: true }
-      }
+  it('should widen the selection outline rounding when the node has an error', () => {
+    const canvasStore = useCanvasStore()
+    canvasStore.selectedNodeIds.add(mockNodeData.id)
+    vi.mocked(useExecutionErrorStore().getNodeErrors).mockReturnValue(
+      fromAny<NodeError, unknown>({ errors: [], class_type: 'TestNode' })
+    )
+
+    renderLGraphNode({ nodeData: mockNodeData })
+
+    const overlay = screen.getByTestId('node-state-outline-overlay')
+    expect(overlay).toHaveClass('rounded-[19px]')
+    expect(overlay).not.toHaveClass('rounded-[15px]')
+  })
+
+  it('should apply the bypass overlay when the node is bypassed', () => {
+    renderLGraphNode({
+      nodeData: { ...mockNodeData, mode: LGraphEventMode.BYPASS }
+    })
+
+    const wrapper = screen.getByTestId('node-inner-wrapper')
+    expect(wrapper).toHaveClass('before:bg-bypass/60')
+  })
+
+  it('should apply the muted overlay when the node is muted', () => {
+    renderLGraphNode({
+      nodeData: { ...mockNodeData, mode: LGraphEventMode.NEVER }
+    })
+
+    const wrapper = screen.getByTestId('node-inner-wrapper')
+    expect(wrapper).toHaveClass('before:rounded-xl')
+    expect(wrapper).not.toHaveClass('before:bg-bypass/60')
+  })
+
+  it('drops the height var while collapsed and restores the size on expand', async () => {
+    const { container, rerender } = renderLGraphNode({
+      nodeData: { ...mockNodeData, flags: { collapsed: false } }
     })
     const root = getNodeRoot(container)
+    expect(root.style.getPropertyValue('--node-height')).toBe('130px')
 
+    await rerender({
+      nodeData: { ...mockNodeData, flags: { collapsed: true } }
+    })
     expect(root.style.getPropertyValue('--node-height')).toBe('')
-    expect(root.style.getPropertyValue('--node-height-x')).toBe('130px')
+
+    await rerender({
+      nodeData: { ...mockNodeData, flags: { collapsed: false } }
+    })
+    expect(root.style.getPropertyValue('--node-height')).toBe('130px')
   })
 
   it('should initialize height CSS vars for expanded nodes', () => {
@@ -274,17 +316,16 @@ describe('LGraphNode', () => {
   })
 
   it('should hide advanced footer button while the node is collapsed', () => {
+    mockData.mockLgraphNode = {
+      isSubgraphNode: () => false,
+      widgets: [
+        { name: 'advancedWidget', type: 'number', options: { advanced: true } }
+      ]
+    }
     renderLGraphNode({
       nodeData: {
         ...mockNodeData,
-        flags: { collapsed: true },
-        widgets: [
-          {
-            name: 'advancedWidget',
-            type: 'number',
-            options: { advanced: true }
-          }
-        ]
+        flags: { collapsed: true }
       }
     })
 
@@ -294,18 +335,21 @@ describe('LGraphNode', () => {
   })
 
   it('should show error-only footer for collapsed nodes with advanced widgets', () => {
+    mockData.mockLgraphNode = {
+      isSubgraphNode: () => false,
+      widgets: [
+        { name: 'advancedWidget', type: 'number', options: { advanced: true } }
+      ]
+    }
+    // Seed the store, not `node.has_errors`: the ring is derived from the error
+    // stores so it can react when the error clears.
+    vi.mocked(useExecutionErrorStore().getNodeErrors).mockReturnValue(
+      fromAny<NodeError, unknown>({ errors: [], class_type: 'TestNode' })
+    )
     renderLGraphNode({
       nodeData: {
         ...mockNodeData,
-        flags: { collapsed: true },
-        hasErrors: true,
-        widgets: [
-          {
-            name: 'advancedWidget',
-            type: 'number',
-            options: { advanced: true }
-          }
-        ]
+        flags: { collapsed: true }
       }
     })
 

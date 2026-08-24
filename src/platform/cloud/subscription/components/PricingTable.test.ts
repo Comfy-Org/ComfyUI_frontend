@@ -7,7 +7,7 @@ import { createI18n } from 'vue-i18n'
 
 import PricingTable from '@/platform/cloud/subscription/components/PricingTable.vue'
 import Button from '@/components/ui/button/Button.vue'
-import type { SubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
+import type { IngestSubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import { PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 
 async function flushPromises() {
@@ -24,7 +24,7 @@ function createDeferredPromise<T>() {
 }
 
 const mockCanAccessSubscriptionFeatures = ref(false)
-const mockSubscriptionTier = ref<SubscriptionTier | null>(null)
+const mockSubscriptionTier = ref<IngestSubscriptionTier | null>(null)
 const mockSubscriptionDuration = ref<'MONTHLY' | 'ANNUAL'>('MONTHLY')
 const mockAccessBillingPortal = vi.fn()
 const mockReportError = vi.fn()
@@ -117,12 +117,18 @@ vi.mock('@/composables/useErrorHandling', () => ({
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: () =>
     reactive({
-      getAuthHeader: mockGetAuthHeader,
+      getFirebaseAuthHeader: mockGetAuthHeader,
       fetchWithCustomerRecovery: (input: string, init?: RequestInit) =>
         fetch(input, init),
       userId: computed(() => mockUserId.value)
     }),
-  AuthStoreError: class extends Error {}
+  AuthStoreError: class extends Error {
+    readonly status: number | undefined
+    constructor(message: string, status?: number) {
+      super(message)
+      this.status = status
+    }
+  }
 }))
 
 vi.mock('@/platform/telemetry', () => ({
@@ -235,14 +241,11 @@ const onChooseTeamWorkspace = vi.fn()
 
 describe('PricingTable', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockCanAccessSubscriptionFeatures.value = false
     mockSubscriptionTier.value = null
     mockSubscriptionDuration.value = 'MONTHLY'
     mockUserId.value = 'user-123'
-    mockAccessBillingPortal.mockReset()
     mockAccessBillingPortal.mockResolvedValue(true)
-    mockTrackBeginCheckout.mockReset()
     mockLocalStorage.__reset()
     vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
@@ -452,7 +455,10 @@ describe('PricingTable', () => {
       mockCanAccessSubscriptionFeatures.value = false
       vi.mocked(global.fetch).mockResolvedValue({
         ok: false,
-        json: async () => ({ message: 'declined for person@example.com' })
+        status: 400,
+        statusText: 'Bad Request',
+        json: async () => ({ message: 'declined for person@example.com' }),
+        text: async () => ''
       } as Response)
 
       renderComponent()
@@ -473,9 +479,30 @@ describe('PricingTable', () => {
         cycle: 'yearly',
         checkout_type: 'new',
         payment_intent_source: undefined,
-        failure_category: 'unknown'
+        failure_category: 'api_rejected'
       })
       expect(mockReportError).toHaveBeenCalled()
+    })
+
+    it('categorizes a connectivity failure as network, not api_rejected', async () => {
+      mockCanAccessSubscriptionFeatures.value = false
+      vi.mocked(global.fetch).mockRejectedValue(
+        new TypeError('Failed to fetch')
+      )
+
+      renderComponent()
+      await flushPromises()
+
+      const subscribeButton = screen
+        .getAllByRole('button')
+        .find((b) => b.textContent?.includes('Subscribe'))
+
+      await userEvent.click(subscribeButton!)
+      await flushPromises()
+
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ failure_category: 'network' })
+      )
     })
 
     it('should pass correct tier for each subscription level', async () => {

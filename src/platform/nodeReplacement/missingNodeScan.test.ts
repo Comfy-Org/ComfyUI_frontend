@@ -1,5 +1,4 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -31,12 +30,6 @@ vi.mock('@/i18n', () => ({
 
 vi.mock('@/platform/distribution/types', () => ({
   isCloud: false
-}))
-
-vi.mock('@/stores/settingStore', () => ({
-  useSettingStore: () => ({
-    get: vi.fn(() => true)
-  })
 }))
 
 vi.mock('@/platform/settings/settingStore', () => ({
@@ -83,8 +76,6 @@ function getMissingNodesError(
 
 describe('scanMissingNodes (via rescanAndSurfaceMissingNodes)', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
-    vi.clearAllMocks()
     // Reset registered_node_types
     const reg = LiteGraph.registered_node_types as Record<string, unknown>
     for (const key of Object.keys(reg)) {

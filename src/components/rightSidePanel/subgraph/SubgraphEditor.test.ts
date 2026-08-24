@@ -1,8 +1,6 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -53,18 +51,12 @@ const i18n = createI18n({
 })
 
 describe('SubgraphEditor', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
-  })
-
   it('renders preview exposures after promoted inputs without drag handles', () => {
     const subgraph = createTestSubgraph()
     const host = createTestSubgraphNode(subgraph)
     const firstNode = new LGraphNode('FirstNode')
     const secondNode = new LGraphNode('SecondNode')
-    const previewNode = new LGraphNode('PreviewImage')
-    previewNode.type = 'PreviewImage'
+    const previewNode = new LGraphNode('PreviewImage', 'PreviewImage')
     subgraph.add(firstNode)
     subgraph.add(secondNode)
     subgraph.add(previewNode)
@@ -329,8 +321,7 @@ describe('SubgraphEditor', () => {
   it('removes the exposure when a preview row without a real source widget is demoted', async () => {
     const subgraph = createTestSubgraph()
     const host = createTestSubgraphNode(subgraph)
-    const orphanedSourceNode = new LGraphNode('OrphanedNode')
-    orphanedSourceNode.type = 'OrphanedNode'
+    const orphanedSourceNode = new LGraphNode('OrphanedNode', 'OrphanedNode')
     subgraph.add(orphanedSourceNode)
 
     const previewStore = usePreviewExposureStore()

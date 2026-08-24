@@ -82,7 +82,8 @@ function buildResponse(
   return {
     ok: init.ok ?? true,
     status: init.status ?? 200,
-    json: vi.fn().mockResolvedValue(body)
+    json: vi.fn().mockResolvedValue(body),
+    text: vi.fn().mockResolvedValue(JSON.stringify(body))
   } as unknown as Response
 }
 
@@ -108,13 +109,14 @@ function validAsset(overrides: Partial<AssetItem> = {}): AssetItem {
     name: 'model.safetensors',
     loader_path: overrides.name ?? 'model.safetensors',
     tags: ['models'],
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z',
     ...overrides
   }
 }
 
 describe(assetService.shouldUseAssetBrowser, () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockDistributionState.isCloud = false
     mockSettingStoreGet.mockReturnValue(false)
   })
@@ -178,10 +180,6 @@ describe(assetService.shouldUseAssetBrowser, () => {
 })
 
 describe(assetService.getAssetMetadata, () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('throws a localized message when the response is not ok', async () => {
     fetchApiMock.mockResolvedValueOnce(
       buildResponse({ code: 'FILE_TOO_LARGE' }, { ok: false, status: 413 })
@@ -230,7 +228,6 @@ describe(assetService.getAssetMetadata, () => {
 
 describe(assetService.uploadAssetFromUrl, () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     assetService.invalidateInputAssetsIncludingPublic()
   })
 
@@ -299,7 +296,6 @@ describe(assetService.uploadAssetFromUrl, () => {
 
 describe(assetService.uploadAssetFromBase64, () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     assetService.invalidateInputAssetsIncludingPublic()
   })
 
@@ -373,10 +369,6 @@ describe(assetService.uploadAssetFromBase64, () => {
 })
 
 describe(assetService.uploadAssetAsync, () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('returns an async result when the server responds 202', async () => {
     fetchApiMock.mockResolvedValueOnce(
       buildResponse(
@@ -412,10 +404,6 @@ describe(assetService.uploadAssetAsync, () => {
 })
 
 describe(assetService.deleteAsset, () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('throws an error containing the status code when the response is not ok', async () => {
     fetchApiMock.mockResolvedValueOnce(
       buildResponse(null, { ok: false, status: 503 })
@@ -436,9 +424,27 @@ describe(assetService.deleteAsset, () => {
   })
 })
 
+describe('assetResponseSchema accepts real API shapes', () => {
+  it("parses an asset that doesn't satisfy cloud schema", async () => {
+    const asset = {
+      id: 'real-api-shape',
+      created_at: '2025-06-15T09:30:00',
+      updated_at: '2025-06-15T10:00:00',
+      hash: 'badhash'
+    }
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([validAsset(asset)])
+    )
+
+    const assets = await assetService.getAssetsByTag('models')
+
+    expect(assets).toHaveLength(1)
+    expect(assets[0]).toMatchObject(asset)
+  })
+})
+
 describe(assetService.getAssetModels, () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     assetService.invalidateModelBuckets()
     mockSupportsModelTypeTags.value = true
   })
@@ -783,10 +789,6 @@ describe(assetService.getAssetModels, () => {
 })
 
 describe(assetService.onModelsScanned, () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('invokes the callback when the scan event fires and unsubscribes cleanly', () => {
     const callback = vi.fn()
 
@@ -808,10 +810,6 @@ describe(assetService.onModelsScanned, () => {
 })
 
 describe(assetService.seedModelAssets, () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('POSTs the models root to the seed endpoint', async () => {
     fetchApiMock.mockResolvedValueOnce(
       buildResponse({ status: 'started' }, { status: 202 })
@@ -844,10 +842,6 @@ describe(assetService.seedModelAssets, () => {
 })
 
 describe(assetService.updateAsset, () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('throws when the response body fails schema validation', async () => {
     fetchApiMock.mockResolvedValueOnce(
       buildResponse({ name: 'no-id-field.safetensors' })
@@ -882,10 +876,6 @@ describe(assetService.updateAsset, () => {
 })
 
 describe(assetService.getAssetsByTag, () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('forwards include_public=true by default and requests missing-tag exclusion', async () => {
     fetchApiMock.mockResolvedValueOnce(
       buildAssetListResponse([validAsset({ id: 'visible', tags: ['input'] })])
@@ -916,10 +906,6 @@ describe(assetService.getAssetsByTag, () => {
 })
 
 describe(assetService.getAllAssetsByTag, () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('walks pages by keyset cursor with include_public=true', async () => {
     fetchApiMock
       .mockResolvedValueOnce(
@@ -1124,10 +1110,6 @@ describe(assetService.getAllAssetsByTag, () => {
 })
 
 describe(assetService.getAssetsPageForNodeType, () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('returns an empty page without fetching when no category is registered', async () => {
     const page = await assetService.getAssetsPageForNodeType('UnknownLoader')
 
@@ -1211,10 +1193,6 @@ describe(assetService.getAssetsPageForNodeType, () => {
 })
 
 describe(assetService.getAssetsForNodeType, () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('returns just the assets array from the page response', async () => {
     fetchApiMock.mockResolvedValueOnce(
       buildAssetListResponse([validAsset({ id: 'ckpt-1' })], { hasMore: true })
@@ -1237,7 +1215,6 @@ describe(assetService.getAssetsForNodeType, () => {
 
 describe(assetService.getInputAssetsIncludingPublic, () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     assetService.invalidateInputAssetsIncludingPublic()
   })
 

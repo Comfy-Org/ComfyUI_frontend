@@ -1,98 +1,35 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { InputSpec } from '@/schemas/nodeDefSchema'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot
+} from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import { CONFIG, GET_CONFIG } from '@/services/litegraphService'
-
+import { useLinkStore } from '@/stores/linkStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
-import {
-  createMockLGraphNode,
-  createMockLLink,
-  createMockLinks
-} from '@/utils/__tests__/litegraphTestUtils'
+
+/** `app.configuringGraph` is a getter on the real app, so route it via a ref. */
+const appState = vi.hoisted(() => ({ configuringGraph: false }))
 
 vi.mock('@/scripts/app', () => ({
   app: {
-    canvas: {
-      graph_mouse: [0, 0]
+    canvas: { graph_mouse: [0, 0], graph: null },
+    get configuringGraph() {
+      return appState.configuringGraph
     },
-    configuringGraph: false,
     registerExtension: vi.fn()
   }
 }))
 
-vi.mock('@/scripts/widgets', () => {
-  function createWidgetFactory(type: string, value: unknown, extra = {}) {
-    return vi.fn((node: { widgets?: unknown[] }) => {
-      const widget = {
-        name: 'value',
-        type,
-        value,
-        options: {},
-        callback: vi.fn(),
-        y: 0,
-        ...extra
-      }
-      if (!node.widgets) node.widgets = []
-      node.widgets.push(widget)
-      return { widget }
-    })
-  }
-
-  return {
-    ComfyWidgets: {
-      INT: createWidgetFactory('number', 0),
-      FLOAT: createWidgetFactory('number', 0),
-      COMBO: createWidgetFactory('combo', '', { options: { values: [] } }),
-      STRING: createWidgetFactory('string', '')
-    },
-    addValueControlWidgets: vi.fn(),
-    isValidWidgetType: vi.fn(
-      (type: string) =>
-        type === 'INT' ||
-        type === 'FLOAT' ||
-        type === 'COMBO' ||
-        type === 'STRING'
-    )
-  }
-})
-
-vi.mock('@/platform/assets/services/assetService', () => ({
-  assetService: {
-    shouldUseAssetBrowser: vi.fn(() => false)
-  }
-}))
-
-vi.mock('@/platform/assets/utils/createAssetWidget', () => ({
-  createAssetWidget: vi.fn(() => ({
-    name: 'value',
-    type: 'combo',
-    value: '',
-    options: {},
-    callback: vi.fn()
-  }))
-}))
-
-vi.mock('@/utils/searchAndReplace', () => ({
-  applyTextReplacements: vi.fn((_, v: string) => `replaced:${v}`)
-}))
-
-vi.mock('@/utils/nodeDefUtil', () => ({
-  mergeInputSpec: vi.fn(() => null)
-}))
-
-vi.mock('@/renderer/utils/nodeTypeGuards', () => ({
-  isPrimitiveNode: vi.fn(() => false)
-}))
-
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
-import { assetService } from '@/platform/assets/services/assetService'
-import { createAssetWidget } from '@/platform/assets/utils/createAssetWidget'
 import { app } from '@/scripts/app'
-import { applyTextReplacements } from '@/utils/searchAndReplace'
-import { mergeInputSpec } from '@/utils/nodeDefUtil'
 
 import {
   PrimitiveNode,
@@ -102,947 +39,376 @@ import {
   setWidgetConfig
 } from './widgetInputs'
 
-function makeWidget(overrides: Partial<IBaseWidget> = {}): IBaseWidget {
-  return {
-    name: 'value',
-    value: 0,
-    type: 'number',
-    options: {},
-    y: 0,
-    ...overrides
+beforeEach(() => {
+  appState.configuringGraph = false
+  app.canvas.graph = null
+})
+
+/**
+ * `registerExtension` is a mock, and `mockReset: true` clears its calls before
+ * the first test runs — so the registered extension is captured at collection.
+ */
+const widgetInputsExtension = vi.mocked(app.registerExtension).mock
+  .calls[0]?.[0]
+if (!widgetInputsExtension)
+  throw new Error('Comfy.WidgetInputs was not registered on import')
+
+/**
+ * Applies the extension's `beforeRegisterNodeDef` to a throwaway node class.
+ * `prepare` runs first, so hooks it installs are the ones the extension chains.
+ */
+async function applyNodeDefHooks(
+  prepare?: (nodeType: typeof LGraphNode) => void
+) {
+  class TestNodeType extends LGraphNode {
+    static override nodeData: LGraphNode['constructor']['nodeData']
   }
+  prepare?.(TestNodeType)
+  await widgetInputsExtension.beforeRegisterNodeDef?.(
+    TestNodeType,
+    fromPartial<ComfyNodeDef>({}),
+    app
+  )
+  return TestNodeType
 }
 
-function createPrimitiveNode(): PrimitiveNode {
-  return new PrimitiveNode('Primitive')
-}
-
-function createTargetNode(widgetName: string, widgetValue: unknown = 'test') {
-  const widget = {
-    name: widgetName,
-    value: widgetValue,
-    type: 'string',
-    options: {},
-    callback: vi.fn()
-  }
-  return createMockLGraphNode({
-    id: 2,
-    inputs: [
-      {
-        name: widgetName,
-        type: 'STRING',
-        link: 1,
-        widget: {
-          name: widgetName,
-          [GET_CONFIG]: () => ['STRING', {}] as InputSpec
-        }
-      }
-    ],
-    widgets: [widget]
+function widgetSlot(
+  config: InputSpec,
+  name = 'value'
+): INodeInputSlot | INodeOutputSlot {
+  return fromPartial({
+    name,
+    widget: { name, [GET_CONFIG]: () => config }
   })
-}
-
-function setupGraphWithLink(node: PrimitiveNode, targetNode: LGraphNode) {
-  const link = createMockLLink({
-    id: toLinkId(1),
-    target_id: targetNode.id,
-    target_slot: 0
-  })
-  node.graph = {
-    links: createMockLinks([link]),
-    getNodeById: vi.fn(() => targetNode)
-  } as any
-  node.outputs[0].links = [toLinkId(1)]
-  return link
 }
 
 describe('PrimitiveNode', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
-  afterEach(() => {
-    vi.useRealTimers()
-    vi.restoreAllMocks()
-  })
-
-  describe('constructor', () => {
-    it('initializes with wildcard output and virtual node properties', () => {
-      const node = createPrimitiveNode()
-      expect(node.outputs).toHaveLength(1)
-      expect(node.outputs[0].type).toBe('*')
-      expect(node.outputs[0].name).toBe('connect to widget input')
-      expect(node.isVirtualNode).toBe(true)
-      expect(node.serialize_widgets).toBe(true)
-      expect(node.properties['Run widget replace on values']).toBe(false)
+  it('resets itself when the store reports a link the graph cannot resolve', () => {
+    const graph = new LGraph()
+    const node = new PrimitiveNode('Primitive')
+    graph.add(node)
+    useLinkStore().registerLink(graphScopeOf(graph), {
+      id: toLinkId(999),
+      graphId: graphScopeOf(graph).owningGraphId,
+      originNodeId: node.id,
+      originSlot: 0,
+      targetNodeId: toNodeId(42),
+      targetSlot: 0,
+      type: '*'
     })
-  })
+    const onLastDisconnect = vi.spyOn(node, 'onLastDisconnect')
 
-  describe('applyToGraph', () => {
-    it('copies widget value to connected nodes and calls callback', () => {
-      const node = createPrimitiveNode()
-      const targetNode = createTargetNode('seed', 42)
-      setupGraphWithLink(node, targetNode)
-      node.widgets = [makeWidget({ value: 99 })]
+    node.onAfterGraphConfigured()
 
-      node.applyToGraph()
-
-      expect(targetNode.widgets![0].value).toBe(99)
-      expect(targetNode.widgets![0].callback).toHaveBeenCalled()
-    })
-
-    it('applies text replacements when property is enabled', () => {
-      const node = createPrimitiveNode()
-      const targetNode = createTargetNode('text', 'original')
-      setupGraphWithLink(node, targetNode)
-      node.widgets = [makeWidget({ value: 'hello {name}', type: 'string' })]
-      node.properties['Run widget replace on values'] = true
-
-      node.applyToGraph()
-
-      expect(vi.mocked(applyTextReplacements)).toHaveBeenCalledWith(
-        node.graph,
-        'hello {name}'
-      )
-      expect(targetNode.widgets![0].value).toBe('replaced:hello {name}')
-    })
-
-    it('applies value to extra links in addition to existing ones', () => {
-      const node = createPrimitiveNode()
-      const targetNode = createTargetNode('seed', 0)
-      setupGraphWithLink(node, targetNode)
-      node.widgets = [makeWidget({ value: 77 })]
-
-      const extraLink = { target_id: 2, target_slot: 0 } as any
-      node.applyToGraph([extraLink])
-
-      expect(targetNode.widgets![0].callback).toHaveBeenCalledTimes(2)
-      expect(targetNode.widgets![0].value).toBe(77)
-    })
-
-    it('warns and skips when target node is not found', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-      const node = createPrimitiveNode()
-      const link = createMockLLink({
-        id: toLinkId(1),
-        target_id: toNodeId(999),
-        target_slot: 0
-      })
-      node.graph = {
-        links: createMockLinks([link]),
-        getNodeById: vi.fn(() => undefined)
-      } as any
-      node.outputs[0].links = [toLinkId(1)]
-      node.widgets = [makeWidget({ value: 99 })]
-
-      node.applyToGraph()
-
-      expect(warnSpy).toHaveBeenCalled()
-      warnSpy.mockRestore()
-    })
-
-    it('warns when widget name is missing from input', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-      const node = createPrimitiveNode()
-      const targetNode = createMockLGraphNode({
-        id: 2,
-        inputs: [{ name: 'test', type: 'STRING', link: 1, widget: {} }],
-        widgets: []
-      })
-      setupGraphWithLink(node, targetNode)
-      node.widgets = [makeWidget({ value: 99 })]
-
-      node.applyToGraph()
-
-      expect(warnSpy).toHaveBeenCalledWith(
-        'Invalid widget or widget name',
-        expect.anything()
-      )
-      warnSpy.mockRestore()
-    })
-
-    it('warns when named widget does not exist on target node', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-      const node = createPrimitiveNode()
-      const targetNode = createMockLGraphNode({
-        id: 2,
-        inputs: [
-          {
-            name: 'seed',
-            type: 'INT',
-            link: 1,
-            widget: { name: 'nonexistent' }
-          }
-        ],
-        widgets: [{ name: 'other_widget', value: 0 }]
-      })
-      setupGraphWithLink(node, targetNode)
-      node.widgets = [makeWidget({ value: 99 })]
-
-      node.applyToGraph()
-
-      expect(warnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Unable to find widget')
-      )
-      warnSpy.mockRestore()
-    })
-  })
-
-  describe('refreshComboInNode', () => {
-    it('updates combo values from output widget config', () => {
-      const node = createPrimitiveNode()
-      const comboValues = ['a', 'b', 'c']
-      node.widgets = [
-        makeWidget({
-          type: 'combo',
-          value: 'a',
-          options: { values: [] },
-          callback: vi.fn()
-        })
-      ]
-      node.outputs[0].widget = {
-        name: 'value',
-        [GET_CONFIG]: () => [comboValues, {}]
-      }
-
-      node.refreshComboInNode()
-
-      expect(node.widgets[0].options.values).toEqual(comboValues)
-    })
-
-    it('resets value to first option when current value is removed', () => {
-      const node = createPrimitiveNode()
-      const comboValues = ['x', 'y', 'z']
-      const callbackFn = vi.fn()
-      node.widgets = [
-        makeWidget({
-          type: 'combo',
-          value: 'removed_value',
-          options: { values: [] },
-          callback: callbackFn
-        })
-      ]
-      node.outputs[0].widget = {
-        name: 'value',
-        [GET_CONFIG]: () => [comboValues, {}]
-      }
-
-      node.refreshComboInNode()
-
-      expect(node.widgets[0].value).toBe('x')
-      expect(callbackFn).toHaveBeenCalledWith('x')
-    })
-  })
-
-  describe('onConnectionsChange', () => {
-    it('skips processing when app is configuring graph', () => {
-      ;(app as any).configuringGraph = true
-
-      const node = createPrimitiveNode()
-      node.outputs[0].links = [toLinkId(1)]
-      node.outputs[0].type = 'INT'
-
-      node.onConnectionsChange(2, 0, true)
-
-      // Output type should remain unchanged (not reset by disconnect logic)
-      expect(node.outputs[0].type).toBe('INT')
-      ;(app as any).configuringGraph = false
-    })
-
-    it('resets output on last disconnect', () => {
-      const node = createPrimitiveNode()
-      node.outputs[0].links = []
-      node.outputs[0].type = 'INT'
-      node.outputs[0].name = 'INT'
-
-      node.onConnectionsChange(2, 0, false)
-
-      expect(node.outputs[0].type).toBe('*')
-      expect(node.outputs[0].name).toBe('connect to widget input')
-    })
-  })
-
-  describe('onConnectOutput', () => {
-    it('rejects connection when input has no widget and type not in ComfyWidgets', () => {
-      const node = createPrimitiveNode()
-      const input = { name: 'test', type: 'CUSTOM_TYPE' } as any
-      const targetNode = createMockLGraphNode({ id: 3 })
-
-      const result = node.onConnectOutput(
-        0,
-        'CUSTOM_TYPE',
-        input,
-        targetNode,
-        0
-      )
-      expect(result).toBe(false)
-    })
-
-    it('allows first connection when no existing links', () => {
-      const node = createPrimitiveNode()
-      node.outputs[0].links = undefined as any
-      const input = {
-        name: 'seed',
-        type: 'INT',
-        widget: {
-          name: 'seed',
-          [GET_CONFIG]: () => ['INT', {}]
-        }
-      } as any
-      const targetNode = createMockLGraphNode({ id: 3 })
-
-      const result = node.onConnectOutput(0, 'INT', input, targetNode, 0)
-      expect(result).toBe(true)
-    })
-
-    it('validates and applies value when connecting additional outputs', () => {
-      const node = createPrimitiveNode()
-      const existingLink = createMockLLink({
-        id: toLinkId(1),
-        target_id: toNodeId(2),
-        target_slot: 0
-      })
-      const existingTarget = createTargetNode('seed', 50)
-
-      node.outputs[0].links = [toLinkId(1)]
-      node.outputs[0].widget = {
-        [GET_CONFIG]: () => ['INT', { min: 0, max: 100 }] as InputSpec
-      } as any
-
-      const input = {
-        name: 'steps',
-        type: 'INT',
-        widget: {
-          name: 'steps',
-          [GET_CONFIG]: () => ['INT', { min: 0, max: 100 }] as InputSpec
-        }
-      } as any
-      const targetNode = createMockLGraphNode({
-        id: 3,
-        inputs: [{ name: 'steps', type: 'INT', widget: { name: 'steps' } }],
-        widgets: [{ name: 'steps', value: 50, callback: vi.fn() }]
-      })
-
-      node.graph = {
-        links: createMockLinks([existingLink]),
-        getNodeById: vi.fn((id: number) =>
-          id === 2 ? existingTarget : targetNode
-        )
-      } as any
-      node.widgets = [makeWidget({ value: 50 })]
-
-      // mergeIfValid returns truthy → connection is valid
-      const result = node.onConnectOutput(0, 'INT', input, targetNode, 0)
-      expect(result).toBe(true)
-    })
-  })
-
-  describe('onLastDisconnect', () => {
-    it('resets output and cleans up widgets', () => {
-      const node = createPrimitiveNode()
-      const onRemove = vi.fn()
-      node.outputs[0].type = 'INT'
-      node.outputs[0].name = 'INT'
-      node.outputs[0].widget = { name: 'test' } as any
-      node.widgets = [
-        makeWidget({ value: 0, onRemove }),
-        makeWidget({ name: 'control', type: 'combo', value: 'fixed', onRemove })
-      ]
-
-      node.onLastDisconnect()
-
-      expect(node.outputs[0].type).toBe('*')
-      expect(node.outputs[0].name).toBe('connect to widget input')
-      expect(node.outputs[0].widget).toBeUndefined()
-      expect(onRemove).toHaveBeenCalledTimes(2)
-      expect(node.widgets).toHaveLength(0)
-    })
-
-    it('temporarily stores controlValues and lastType for recreation', () => {
-      vi.useFakeTimers()
-
-      const node = createPrimitiveNode()
-      node.widgets = [
-        makeWidget({ value: 42 }),
-        makeWidget({ name: 'control', type: 'combo', value: 'fixed' })
-      ]
-
-      node.onLastDisconnect()
-
-      expect(node.lastType).toBe('number')
-      expect(node.controlValues).toEqual(['fixed'])
-
-      vi.advanceTimersByTime(15)
-      expect(node.lastType).toBeUndefined()
-      expect(node.controlValues).toBeUndefined()
-
-      vi.useRealTimers()
-    })
-  })
-
-  describe('onAfterGraphConfigured', () => {
-    it('sets up output type and creates widget from connected node', () => {
-      const node = createPrimitiveNode()
-      const targetNode = createTargetNode('seed', 42)
-      setupGraphWithLink(node, targetNode)
-      node.widgets = undefined
-
-      node.onAfterGraphConfigured()
-
-      expect(node.outputs[0].type).toBe('STRING')
-      expect(node.outputs[0].name).toBe('STRING')
-    })
-
-    it('restores widgets_values after connection setup', () => {
-      const node = createPrimitiveNode()
-      const targetNode = createTargetNode('seed', 42)
-      setupGraphWithLink(node, targetNode)
-      node.widgets = undefined
-      node.widgets_values = ['restored_value']
-
-      node.onAfterGraphConfigured()
-
-      expect(node.widgets).toHaveLength(1)
-      expect(node.widgets![0].value).toBe('restored_value')
-    })
-
-    it('creates fake widget when input has no widget but type is in ComfyWidgets', () => {
-      const node = createPrimitiveNode()
-      const targetNode = createMockLGraphNode({
-        id: 2,
-        inputs: [{ name: 'value', type: 'INT', link: 1 }],
-        widgets: []
-      })
-      setupGraphWithLink(node, targetNode)
-      node.widgets = undefined
-
-      node.onAfterGraphConfigured()
-
-      expect(node.outputs[0].type).toBe('INT')
-    })
-
-    it('falls back to onLastDisconnect when graph is missing', () => {
-      const node = createPrimitiveNode()
-      node.outputs[0].links = [toLinkId(1)]
-      node.outputs[0].type = 'INT'
-      node.graph = null
-      node.widgets = undefined
-
-      node.onConnectionsChange(2, 0, true)
-
-      expect(node.outputs[0].type).toBe('*')
-    })
-
-    it('returns early when link target node is not found', () => {
-      const node = createPrimitiveNode()
-      const link = createMockLLink({
-        id: toLinkId(1),
-        target_id: toNodeId(999),
-        target_slot: 0
-      })
-      node.graph = {
-        links: createMockLinks([link]),
-        getNodeById: vi.fn(() => undefined)
-      } as any
-      node.outputs[0].links = [toLinkId(1)]
-      node.widgets = undefined
-
-      node.onAfterGraphConfigured()
-
-      expect(node.outputs[0].type).toBe('*')
-    })
-
-    it('returns early when link is not found in graph', () => {
-      const node = createPrimitiveNode()
-      node.graph = {
-        links: createMockLinks([]),
-        getNodeById: vi.fn()
-      } as any
-      node.outputs[0].links = [toLinkId(99)]
-      node.widgets = undefined
-
-      node.onAfterGraphConfigured()
-
-      expect(node.outputs[0].type).toBe('*')
-    })
-  })
-
-  describe('_createWidget with asset browser', () => {
-    it('creates asset widget and copies target widget value', () => {
-      vi.mocked(assetService.shouldUseAssetBrowser).mockReturnValue(true)
-
-      const node = createPrimitiveNode()
-      const targetNode = createMockLGraphNode({
-        id: 2,
-        comfyClass: 'CheckpointLoader',
-        inputs: [
-          {
-            name: 'ckpt_name',
-            type: 'COMBO',
-            link: 1,
-            widget: {
-              name: 'ckpt_name',
-              [GET_CONFIG]: () =>
-                [['model1.safetensors', 'model2.safetensors'], {}] as InputSpec
-            }
-          }
-        ],
-        widgets: [{ name: 'ckpt_name', value: 'model1.safetensors' }]
-      })
-      setupGraphWithLink(node, targetNode)
-      node.widgets = undefined
-
-      node.onAfterGraphConfigured()
-
-      expect(vi.mocked(createAssetWidget)).toHaveBeenCalledWith(
-        expect.objectContaining({
-          node,
-          widgetName: 'value',
-          nodeTypeForBrowser: 'CheckpointLoader',
-          inputNameForBrowser: 'ckpt_name'
-        })
-      )
-      // The target widget's value should have been copied onto the created widget
-      const createdWidget = vi.mocked(createAssetWidget).mock.results[0]?.value
-      expect(createdWidget?.value).toBe('model1.safetensors')
-    })
-  })
-
-  describe('_mergeWidgetConfig via onConnectionsChange', () => {
-    it('removes CONFIG and recreates widget when links < 2 and had config', () => {
-      const node = createPrimitiveNode()
-      node.outputs[0].links = [toLinkId(1)]
-      node.outputs[0].widget = {
-        name: 'test',
-        [CONFIG]: ['INT', { min: 0 }],
-        [GET_CONFIG]: () => ['INT', { min: 0 }] as InputSpec
-      } as any
-
-      const targetNode = createTargetNode('seed', 42)
-      const link = createMockLLink({
-        id: toLinkId(1),
-        target_id: toNodeId(2),
-        target_slot: 0
-      })
-      node.graph = {
-        links: createMockLinks([link]),
-        getNodeById: vi.fn(() => targetNode)
-      } as any
-      node.widgets = [makeWidget({ value: 0 })]
-
-      node.onConnectionsChange(2, 0, false)
-
-      expect(node.outputs[0].widget?.[CONFIG]).toBeUndefined()
-    })
-  })
-
-  describe('recreateWidget', () => {
-    it('preserves widget values across recreation', () => {
-      const node = createPrimitiveNode()
-      const targetNode = createTargetNode('seed', 42)
-      setupGraphWithLink(node, targetNode)
-      node.widgets = [makeWidget({ value: 123 })]
-
-      node.recreateWidget()
-
-      expect(node.widgets[0].value).toBe(123)
-      expect(node.widgets[0].name).toBe('value')
-    })
+    expect(onLastDisconnect).toHaveBeenCalled()
   })
 })
 
 describe('getWidgetConfig', () => {
-  it('returns CONFIG if present on widget', () => {
-    const config: InputSpec = ['INT', { min: 0, max: 100 }]
-    const slot = {
-      widget: {
-        [CONFIG]: config,
-        [GET_CONFIG]: () => ['FLOAT', {}] as InputSpec
-      }
-    } as any
+  it('prefers the merged CONFIG over the slot definition', () => {
+    const merged: InputSpec = ['INT', { min: 10, max: 20 }]
+    const slot = widgetSlot(['INT', { min: 0, max: 100 }])
+    slot.widget![CONFIG] = merged
 
-    expect(getWidgetConfig(slot)).toEqual(config)
+    expect(getWidgetConfig(slot)).toEqual(merged)
   })
 
-  it('falls back to GET_CONFIG when CONFIG is missing', () => {
-    const config: InputSpec = ['FLOAT', { step: 0.1 }]
-    const slot = {
-      widget: { [GET_CONFIG]: () => config }
-    } as any
+  it('falls back to the slot definition, then to a wildcard', () => {
+    const declared: InputSpec = ['FLOAT', { step: 0.1 }]
 
-    expect(getWidgetConfig(slot)).toEqual(config)
-  })
-
-  it('returns wildcard default when no widget config exists', () => {
-    const slot = {} as any
-    expect(getWidgetConfig(slot)).toEqual(['*', {}])
-  })
-})
-
-describe('convertToInput', () => {
-  it('logs deprecation warning and returns matching input slot', () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const node = createMockLGraphNode({
-      inputs: [
-        { name: 'a', type: 'INT', widget: { name: 'widgetA' } },
-        { name: 'b', type: 'STRING', widget: { name: 'widgetB' } }
-      ]
-    })
-
-    const result = convertToInput(node, { name: 'widgetB' } as any)
-
-    expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining('remove call to convertToInput')
-    )
-    expect(result!.name).toBe('b')
-    warnSpy.mockRestore()
-  })
-
-  it('returns undefined when no matching input exists', () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const node = createMockLGraphNode({
-      inputs: [{ name: 'a', type: 'INT', widget: { name: 'widgetA' } }]
-    })
-
-    const result = convertToInput(node, { name: 'nonexistent' } as any)
-    expect(result).toBeUndefined()
-    vi.restoreAllMocks()
-  })
-})
-
-describe('setWidgetConfig', () => {
-  it('does nothing when slot has no widget', () => {
-    const slot = { link: null } as any
-    setWidgetConfig(slot, ['INT', {}])
-    expect(slot.widget).toBeUndefined()
-  })
-
-  it('sets GET_CONFIG when config is provided', () => {
-    const config: InputSpec = ['INT', { min: 0 }]
-    const slot = { widget: { name: 'test' } } as any
-
-    setWidgetConfig(slot, config)
-
-    expect(slot.widget[GET_CONFIG]()).toEqual(config)
-  })
-
-  it('deletes widget when config is undefined', () => {
-    const slot = { widget: { name: 'test' } } as any
-
-    setWidgetConfig(slot)
-
-    expect(slot.widget).toBeUndefined()
-  })
-
-  it('sets GET_CONFIG on a real NodeInputSlot (exercises instanceof NodeSlot path)', () => {
-    const config: InputSpec = ['INT', { min: 5 }]
-    const parentNode = createMockLGraphNode({ id: 1 })
-    // Construct a real NodeInputSlot so the instanceof NodeSlot guard is reached.
-    // The slot has no graph link so the function returns after setting GET_CONFIG.
-    const slot = new NodeInputSlot(
-      { name: 'seed', type: 'INT', link: null, widget: { name: 'seed' } },
-      parentNode
-    )
-
-    setWidgetConfig(slot, config)
-
-    expect((slot.widget![GET_CONFIG] as () => unknown)()).toEqual(config)
-  })
-})
-
-describe('extension registration', () => {
-  // Capture before any test clears mock calls
-  const extension = vi.mocked(app.registerExtension).mock.calls[0]?.[0] as any
-
-  it('registers the Comfy.WidgetInputs extension', () => {
-    expect(extension).toEqual(
-      expect.objectContaining({
-        name: 'Comfy.WidgetInputs',
-        beforeRegisterNodeDef: expect.any(Function),
-        registerCustomNodes: expect.any(Function)
-      })
-    )
-  })
-
-  describe('beforeRegisterNodeDef', () => {
-    it('adds convertWidgetToInput that warns and returns false', async () => {
-      class TestNodeType extends LGraphNode {}
-      await extension.beforeRegisterNodeDef(TestNodeType, {})
-
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-      const instance = new TestNodeType('test')
-      const result = (instance as any).convertWidgetToInput?.()
-
-      expect(result).toBe(false)
-      expect(warnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('remove call to convertWidgetToInput')
-      )
-      warnSpy.mockRestore()
-    })
-
-    it('onGraphConfigured sets up GET_CONFIG on widget inputs', async () => {
-      class TestNodeType extends LGraphNode {}
-      await extension.beforeRegisterNodeDef(TestNodeType, {})
-
-      const instance = new TestNodeType('test')
-      instance.inputs = [
-        { name: 'seed', type: 'INT', widget: { name: 'seed' } } as any
-      ]
-      instance.widgets = [{ name: 'seed', value: 0 } as any]
-      ;(instance.constructor as any).nodeData = {
-        input: { required: { seed: ['INT', { min: 0 }] } }
-      }
-
-      instance.onGraphConfigured?.()
-
-      const config = (instance.inputs[0].widget?.[GET_CONFIG] as Function)?.()
-      expect(config).toEqual(['INT', { min: 0 }])
-    })
-
-    it('onGraphConfigured removes inputs without matching widgets', async () => {
-      class TestNodeType extends LGraphNode {}
-      await extension.beforeRegisterNodeDef(TestNodeType, {})
-
-      const instance = new TestNodeType('test')
-      instance.inputs = [
-        {
-          name: 'orphan',
-          type: 'INT',
-          widget: { name: 'orphan_widget' }
-        } as any
-      ]
-      instance.widgets = []
-      const removeInputSpy = vi.fn()
-      instance.removeInput = removeInputSpy
-
-      instance.onGraphConfigured?.()
-
-      expect(removeInputSpy).toHaveBeenCalled()
-    })
-
-    it('onConfigure sets GET_CONFIG on widget inputs during paste', async () => {
-      class TestNodeType extends LGraphNode {}
-      await extension.beforeRegisterNodeDef(TestNodeType, {})
-      ;(app as any).configuringGraph = false
-
-      const instance = new TestNodeType('test')
-      instance.inputs = [
-        { name: 'steps', type: 'INT', widget: { name: 'steps' } } as any
-      ]
-      ;(instance.constructor as any).nodeData = {
-        input: { optional: { steps: ['INT', { max: 50 }] } }
-      }
-
-      instance.onConfigure?.({} as any)
-
-      expect(instance.inputs[0].widget?.[GET_CONFIG]).toBeDefined()
-    })
-
-    it('onInputDblClick skips non-widget non-ComfyWidgets inputs', async () => {
-      class TestNodeType extends LGraphNode {}
-      await extension.beforeRegisterNodeDef(TestNodeType, {})
-
-      const instance = new TestNodeType('test')
-      instance.inputs = [{ name: 'image', type: 'IMAGE' } as any]
-      instance.pos = [100, 100]
-
-      const createNodeSpy = vi.spyOn(LiteGraph, 'createNode')
-      instance.onInputDblClick?.(0, {} as any)
-
-      expect(createNodeSpy).not.toHaveBeenCalled()
-      createNodeSpy.mockRestore()
-    })
-
-    it('onInputDblClick creates and connects a primitive node', async () => {
-      class TestNodeType extends LGraphNode {}
-      await extension.beforeRegisterNodeDef(TestNodeType, {})
-
-      const instance = new TestNodeType('test')
-      instance.inputs = [
-        {
-          name: 'seed',
-          type: 'INT',
-          widget: {
-            name: 'seed',
-            [GET_CONFIG]: () => ['INT', {}] as InputSpec
-          }
-        } as any
-      ]
-      instance.pos = [100, 100]
-
-      const mockPrimNode = {
-        size: [200, 100],
-        pos: [0, 0],
-        connect: vi.fn(),
-        title: ''
-      }
-      const mockGraph = {
-        add: vi.fn(),
-        getNodeOnPos: vi.fn(() => null),
-        nodes: []
-      }
-
-      vi.spyOn(LiteGraph, 'createNode').mockReturnValue(mockPrimNode as any)
-      ;(app.canvas as any).graph = mockGraph
-
-      instance.onInputDblClick?.(0, {} as any)
-
-      expect(LiteGraph.createNode).toHaveBeenCalledWith('PrimitiveNode')
-      expect(mockGraph.add).toHaveBeenCalledWith(mockPrimNode)
-      expect(mockPrimNode.connect).toHaveBeenCalledWith(0, instance, 0)
-      expect(mockPrimNode.title).toBe('seed')
-    })
-
-    it('onInputDblClick adjusts position to avoid overlapping nodes', async () => {
-      class TestNodeType extends LGraphNode {}
-      await extension.beforeRegisterNodeDef(TestNodeType, {})
-
-      const instance = new TestNodeType('test')
-      instance.inputs = [
-        {
-          name: 'seed',
-          type: 'INT',
-          widget: {
-            name: 'seed',
-            [GET_CONFIG]: () => ['INT', {}] as InputSpec
-          }
-        } as any
-      ]
-      instance.pos = [100, 100]
-
-      const mockPrimNode = {
-        size: [200, 100],
-        pos: [0, 0] as [number, number],
-        connect: vi.fn(),
-        title: ''
-      }
-      const mockGraph = {
-        add: vi.fn(),
-        getNodeOnPos: vi
-          .fn()
-          .mockReturnValueOnce({ id: 99 })
-          .mockReturnValueOnce({ id: 98 })
-          .mockReturnValueOnce(null),
-        nodes: []
-      }
-
-      vi.spyOn(LiteGraph, 'createNode').mockReturnValue(mockPrimNode as any)
-      ;(app.canvas as any).graph = mockGraph
-
-      instance.onInputDblClick?.(0, {} as any)
-
-      expect(mockPrimNode.pos[1]).toBeGreaterThan(100)
-    })
-  })
-
-  describe('registerCustomNodes', () => {
-    it('registers PrimitiveNode with LiteGraph', () => {
-      const registerSpy = vi.spyOn(LiteGraph, 'registerNodeType')
-      extension.registerCustomNodes()
-
-      expect(registerSpy).toHaveBeenCalledWith(
-        'PrimitiveNode',
-        expect.anything()
-      )
-      expect(PrimitiveNode.category).toBe('utilities/primitive')
-      registerSpy.mockRestore()
-    })
+    expect(getWidgetConfig(widgetSlot(declared))).toEqual(declared)
+    expect(getWidgetConfig(fromPartial({ name: 'image' }))).toEqual(['*', {}])
   })
 })
 
 describe('mergeIfValid', () => {
-  it('returns empty customConfig when merge returns null', () => {
-    const output = {
-      widget: {
-        [GET_CONFIG]: () => ['INT', { min: 0, max: 100 }] as InputSpec
-      }
-    } as any
+  it('narrows a numeric range to the intersection and records it on the slot', () => {
+    // The call shape used by groupNode.ts: `config1` is supplied explicitly and
+    // the "slot" is a bare object whose `widget` is the spec itself.
+    const spec: InputSpec = ['INT', { min: 0, max: 100 }]
+    const output: Parameters<typeof mergeIfValid>[0] = fromAny({ widget: spec })
 
-    const result = mergeIfValid(output, ['INT', { min: 50, max: 200 }])
-    expect(result).toEqual({ customConfig: {} })
-  })
-
-  it('uses provided config1 instead of fetching from output', () => {
-    // GET_CONFIG returns FLOAT — if config1 is ignored, mergeInputSpec would
-    // receive ['FLOAT', {}] as its first argument instead of config1.
-    const output = {
-      widget: {
-        [GET_CONFIG]: () => ['FLOAT', {}] as InputSpec
-      }
-    } as any
-
-    const config1: InputSpec = ['INT', { min: 0 }]
-    const config2: InputSpec = ['INT', { max: 100 }]
-
-    mergeIfValid(output, config2, false, undefined, config1)
-
-    // Verify config1 (not GET_CONFIG's result) was passed as the first argument
-    expect(vi.mocked(mergeInputSpec)).toHaveBeenCalledWith(config1, config2)
-  })
-
-  it('clamps widget value to min when below range', () => {
-    vi.mocked(mergeInputSpec).mockReturnValueOnce(['INT', { min: 10, max: 50 }])
-
-    const mockWidget = {
-      value: 5,
-      options: { min: 10, max: 50 },
-      callback: vi.fn()
-    }
-    const recreateWidget = vi.fn(() => mockWidget)
-    const output = {
-      widget: {
-        [GET_CONFIG]: () => ['INT', { min: 0 }] as InputSpec
-      }
-    } as any
-
-    const result = mergeIfValid(
+    const { customConfig } = mergeIfValid(
       output,
-      ['INT', { min: 10, max: 50 }],
+      ['INT', { min: 50, max: 200 }],
+      false,
+      undefined,
+      spec
+    )
+
+    expect(customConfig).toEqual({ min: 50, max: 100, step: 1 })
+    expect(output.widget![CONFIG]).toEqual(['INT', customConfig])
+  })
+
+  it('reads config1 from the slot when the caller omits it', () => {
+    const output = widgetSlot(['INT', { min: 0, max: 10 }])
+
+    const { customConfig } = mergeIfValid(output, ['INT', { min: 4, max: 10 }])
+
+    expect(customConfig).toEqual({ min: 4, max: 10, step: 1 })
+  })
+
+  it('rejects disjoint ranges without touching the slot or recreating', () => {
+    const output = widgetSlot(['INT', { min: 0, max: 10 }])
+    const recreateWidget = vi.fn()
+
+    const { customConfig } = mergeIfValid(
+      output,
+      ['INT', { min: 50, max: 60 }],
       false,
       recreateWidget
     )
 
+    expect(customConfig).toEqual({})
+    expect(output.widget![CONFIG]).toBeUndefined()
+    expect(recreateWidget).not.toHaveBeenCalled()
+  })
+
+  it('recreates the widget on forceUpdate even when the merge fails', () => {
+    const output = widgetSlot(['INT', { min: 0, max: 10 }])
+    const recreateWidget = vi.fn()
+
+    mergeIfValid(output, ['INT', { min: 50, max: 60 }], true, recreateWidget)
+
     expect(recreateWidget).toHaveBeenCalled()
-    expect(mockWidget.value).toBe(10)
-    expect(mockWidget.callback).toHaveBeenCalledWith(10)
-    expect(result.customConfig).toEqual({ min: 10, max: 50 })
+    expect(output.widget![CONFIG]).toBeUndefined()
   })
 
-  it('clamps widget value to max when above range', () => {
-    vi.mocked(mergeInputSpec).mockReturnValueOnce(['INT', { min: 0, max: 20 }])
-
-    const mockWidget = {
-      value: 100,
-      options: { min: 0, max: 20 },
-      callback: vi.fn()
-    }
-    const recreateWidget = vi.fn(() => mockWidget)
-    const output = {
-      widget: {
-        [GET_CONFIG]: () => ['INT', {}] as InputSpec
-      }
-    } as any
-
-    mergeIfValid(output, ['INT', { max: 20 }], false, recreateWidget)
-
-    expect(mockWidget.value).toBe(20)
-  })
-
-  it('calls recreateWidget on forceUpdate even when merge returns null', () => {
-    const mockWidget = {
+  it('clamps the recreated widget into the merged range and notifies it', () => {
+    const widget = fromPartial<IBaseWidget>({
       value: 5,
-      options: {},
+      options: { min: 10, max: 50 },
       callback: vi.fn()
-    }
-    const recreateWidget = vi.fn(() => mockWidget)
-    const output = {
-      widget: {
-        [GET_CONFIG]: () => ['STRING', {}] as InputSpec
-      }
-    } as any
+    })
+    const output = widgetSlot(['INT', { min: 0, max: 50 }])
 
-    mergeIfValid(output, ['STRING', {}], true, recreateWidget)
+    mergeIfValid(output, ['INT', { min: 10, max: 50 }], false, () => widget)
+
+    expect(widget.value).toBe(10)
+    expect(widget.callback).toHaveBeenCalledWith(10)
+  })
+})
+
+describe('convertToInput', () => {
+  it('warns and resolves the input slot hosting the widget', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const node = new LGraphNode('Target')
+    node.addInput('seed', 'INT')
+    node.addInput('steps', 'INT')
+    node.inputs[1].widget = { name: 'steps' }
+
+    expect(convertToInput(node, fromPartial({ name: 'steps' }))?.name).toBe(
+      'steps'
+    )
+    expect(convertToInput(node, fromPartial({ name: 'seed' }))).toBeUndefined()
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('remove call to convertToInput')
+    )
+  })
+})
+
+describe('setWidgetConfig', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    widgetInputsExtension.registerCustomNodes?.(app)
+  })
+
+  /** A primitive feeding a widget-backed input, as reroute/paste leave it. */
+  function connectedPrimitive() {
+    const graph = new LGraph()
+    const target = new LGraphNode('Target')
+    graph.add(target)
+    target.addInput('value', 'INT')
+    target.inputs[0].widget = { name: 'value' }
+
+    const primitive = LiteGraph.createNode('PrimitiveNode')
+    if (!(primitive instanceof PrimitiveNode)) throw new Error('not registered')
+    graph.add(primitive)
+    primitive.connect(0, target, 0)
+
+    return { graph, primitive, slot: target.inputs[0] }
+  }
+
+  it('ignores slots that have no widget', () => {
+    const slot = fromPartial<INodeInputSlot>({ name: 'image', type: 'IMAGE' })
+
+    setWidgetConfig(slot, ['INT', {}])
+
+    expect(slot.widget).toBeUndefined()
+  })
+
+  it('publishes the config through GET_CONFIG, and drops the widget without one', () => {
+    const config: InputSpec = ['INT', { min: 0 }]
+    const slot = fromPartial<INodeInputSlot>({ widget: { name: 'value' } })
+
+    setWidgetConfig(slot, config)
+    expect(slot.widget![GET_CONFIG]!()).toEqual(config)
+
+    setWidgetConfig(slot)
+    expect(slot.widget).toBeUndefined()
+  })
+
+  it('rebuilds the upstream primitive when a config arrives', () => {
+    const { primitive, slot } = connectedPrimitive()
+    const recreateWidget = vi.spyOn(primitive, 'recreateWidget')
+
+    setWidgetConfig(slot, ['INT', { min: 0, max: 10 }])
 
     expect(recreateWidget).toHaveBeenCalled()
+  })
+
+  it('disconnects and resets the upstream primitive when the config is dropped', () => {
+    const { graph, primitive, slot } = connectedPrimitive()
+    primitive.outputs[0].type = 'INT'
+
+    setWidgetConfig(slot, undefined)
+
+    expect(primitive.isOutputConnected(0)).toBe(false)
+    expect(primitive.outputs[0].type).toBe('*')
+    expect(graph.getNodeById(primitive.id)).toBe(primitive)
+  })
+
+  it('leaves the upstream primitive connected while the graph is configuring', () => {
+    const { primitive, slot } = connectedPrimitive()
+    appState.configuringGraph = true
+
+    setWidgetConfig(slot, undefined)
+
+    expect(primitive.isOutputConnected(0)).toBe(true)
+  })
+})
+
+describe('Comfy.WidgetInputs node-def hooks', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  describe('onGraphConfigured', () => {
+    it('resolves GET_CONFIG from the node definition, chaining the original hook', async () => {
+      const original = vi.fn()
+      const TestNodeType = await applyNodeDefHooks((nodeType) => {
+        nodeType.prototype.onGraphConfigured = original
+      })
+      TestNodeType.nodeData = fromPartial({
+        input: { optional: { seed: ['INT', { min: 0, max: 8 }] } }
+      })
+
+      const node = new TestNodeType('Test')
+      node.addInput('seed', 'INT')
+      node.inputs[0].widget = { name: 'seed' }
+      node.addWidget('number', 'seed', 0, () => {})
+
+      node.onGraphConfigured?.()
+
+      expect(original).toHaveBeenCalled()
+      expect(node.inputs[0].widget![GET_CONFIG]!()).toEqual([
+        'INT',
+        { min: 0, max: 8 }
+      ])
+    })
+
+    it('removes widget inputs that no longer have a backing widget', async () => {
+      const TestNodeType = await applyNodeDefHooks()
+      const node = new TestNodeType('Test')
+      node.addInput('orphan', 'INT')
+      node.inputs[0].widget = { name: 'orphan' }
+
+      node.onGraphConfigured?.()
+
+      expect(node.inputs).toHaveLength(0)
+    })
+  })
+
+  describe('onConfigure', () => {
+    it('restores GET_CONFIG on pasted nodes', async () => {
+      const TestNodeType = await applyNodeDefHooks()
+      TestNodeType.nodeData = fromPartial({
+        input: { required: { steps: ['INT', { max: 50 }] } }
+      })
+      const node = new TestNodeType('Test')
+      node.addInput('steps', 'INT')
+      node.inputs[0].widget = { name: 'steps' }
+
+      node.onConfigure?.(fromPartial({}))
+
+      expect(node.inputs[0].widget![GET_CONFIG]!()).toEqual([
+        'INT',
+        { max: 50 }
+      ])
+    })
+
+    it('defers to onGraphConfigured while a whole graph is loading', async () => {
+      const TestNodeType = await applyNodeDefHooks()
+      appState.configuringGraph = true
+      const node = new TestNodeType('Test')
+      node.addInput('steps', 'INT')
+      node.inputs[0].widget = { name: 'steps' }
+
+      node.onConfigure?.(fromPartial({}))
+
+      expect(node.inputs[0].widget![GET_CONFIG]).toBeUndefined()
+    })
+  })
+
+  describe('onInputDblClick', () => {
+    beforeEach(() => {
+      widgetInputsExtension.registerCustomNodes?.(app)
+    })
+
+    async function targetIn(graph: LGraph) {
+      const TestNodeType = await applyNodeDefHooks()
+      const node = new TestNodeType('Test')
+      graph.add(node)
+      node.pos = [400, 400]
+      app.canvas.graph = graph
+      return node
+    }
+
+    it('ignores inputs that are neither widget-backed nor widget-typed', async () => {
+      const graph = new LGraph()
+      const node = await targetIn(graph)
+      node.addInput('image', 'IMAGE')
+
+      node.onInputDblClick?.(0, fromPartial({}))
+
+      expect(graph.nodes).toHaveLength(1)
+    })
+
+    it('attaches a titled primitive to a widget input', async () => {
+      const graph = new LGraph()
+      const node = await targetIn(graph)
+      node.addInput('seed', 'INT')
+      node.inputs[0].widget = { name: 'seed', [GET_CONFIG]: () => ['INT', {}] }
+
+      node.onInputDblClick?.(0, fromPartial({}))
+
+      const primitive = graph.nodes.find((n) => n instanceof PrimitiveNode)
+      expect(primitive).toBeDefined()
+      expect(primitive!.title).toBe('seed')
+      expect(primitive!.isOutputConnected(0)).toBe(true)
+      expect(primitive!.pos[0]).toBeLessThan(node.pos[0])
+    })
+
+    it('steps the primitive down past a node already occupying the slot', async () => {
+      const graph = new LGraph()
+      const node = await targetIn(graph)
+      node.addInput('seed', 'INT')
+      node.inputs[0].widget = { name: 'seed', [GET_CONFIG]: () => ['INT', {}] }
+
+      const blocker = new LGraphNode('Blocker')
+      graph.add(blocker)
+      blocker.pos = [0, 400]
+      blocker.size = [400, 20]
+      blocker.updateArea()
+
+      node.onInputDblClick?.(0, fromPartial({}))
+
+      const primitive = graph.nodes.find((n) => n instanceof PrimitiveNode)
+      expect(primitive!.pos[1]).toBeGreaterThan(node.pos[1])
+    })
   })
 })

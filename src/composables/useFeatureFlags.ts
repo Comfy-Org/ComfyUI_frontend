@@ -4,14 +4,14 @@ import type { Ref } from 'vue'
 import { isCloud, isNightly } from '@/platform/distribution/types'
 import {
   cachedBillingControlEnabled,
-  cachedConsolidatedBillingEnabled,
-  cachedTeamWorkspacesEnabled,
+  cachedLegacyBillingMigrationEnabled,
   cachedV1PaymentRecovery,
   isAuthenticatedConfigLoaded,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
 import { api } from '@/scripts/api'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
+import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 
 /**
  * Known server feature flags (top-level, not extensions)
@@ -25,7 +25,6 @@ export enum ServerFeatureFlag {
   PRIVATE_MODELS_ENABLED = 'private_models_enabled',
   ONBOARDING_SURVEY_ENABLED = 'onboarding_survey_enabled',
   LINEAR_TOGGLE_ENABLED = 'linear_toggle_enabled',
-  TEAM_WORKSPACES_ENABLED = 'team_workspaces_enabled',
   PARTNER_NODE_GOVERNANCE_ENABLED = 'partner_node_governance_enabled',
   USER_SECRETS_ENABLED = 'user_secrets_enabled',
   NODE_REPLACEMENTS = 'node_replacements',
@@ -35,8 +34,8 @@ export enum ServerFeatureFlag {
   COMFYHUB_PROFILE_GATE_ENABLED = 'comfyhub_profile_gate_enabled',
   SHOW_SIGNIN_BUTTON = 'show_signin_button',
   UNIFIED_CLOUD_AUTH = 'unified_cloud_auth',
-  CONSOLIDATED_BILLING_ENABLED = 'consolidated_billing_enabled',
   BILLING_CONTROL_ENABLED = 'billing_control_enabled',
+  LEGACY_BILLING_MIGRATION_ENABLED = 'legacy_billing_migration_enabled',
   V1_PAYMENT_RECOVERY = 'v1_payment_recovery',
   FREE_TIER_JOB_ALLOWANCE_ENABLED = 'free_tier_job_allowance_enabled',
   CHURNKEY_APP_ID = 'churnkey_app_id',
@@ -46,13 +45,17 @@ export enum ServerFeatureFlag {
 }
 
 /**
- * Resolves a feature flag value with dev override > remoteConfig > serverFeature priority.
+ * Resolves a feature flag value with session override > dev override >
+ * remoteConfig > serverFeature priority.
  */
 function resolveFlag<T>(
   flagKey: string,
   remoteConfigValue: T | undefined,
   defaultValue: T
 ): T {
+  const sessionOverride = getSessionOverride<T>(flagKey)
+  if (sessionOverride !== undefined) return sessionOverride
+
   const override = getDevOverride<T>(flagKey)
   if (override !== undefined) return override
   return remoteConfigValue ?? api.getServerFeature(flagKey, defaultValue)
@@ -69,6 +72,9 @@ function resolveAuthGatedFlag(
   remoteConfigValue: boolean | undefined,
   cachedValue: Ref<boolean | undefined>
 ): boolean {
+  const sessionOverride = getSessionOverride<boolean>(flagKey)
+  if (sessionOverride !== undefined) return sessionOverride
+
   const override = getDevOverride<boolean>(flagKey)
   if (override !== undefined) return override
 
@@ -121,25 +127,10 @@ export function useFeatureFlags() {
       )
     },
     get linearToggleEnabled() {
-      if (isNightly) return true
-
       return resolveFlag(
         ServerFeatureFlag.LINEAR_TOGGLE_ENABLED,
         remoteConfig.value.linear_toggle_enabled,
-        false
-      )
-    },
-    /**
-     * Whether team workspaces feature is enabled.
-     * IMPORTANT: Returns false until authenticated remote config is loaded.
-     * This ensures we never use workspace tokens when the feature is disabled,
-     * and prevents race conditions during initialization.
-     */
-    get teamWorkspacesEnabled() {
-      return resolveAuthGatedFlag(
-        ServerFeatureFlag.TEAM_WORKSPACES_ENABLED,
-        remoteConfig.value.team_workspaces_enabled,
-        cachedTeamWorkspacesEnabled
+        isNightly
       )
     },
     get partnerNodeGovernanceEnabled() {
@@ -160,14 +151,10 @@ export function useFeatureFlags() {
       return api.getServerFeature(ServerFeatureFlag.NODE_REPLACEMENTS, false)
     },
     get nodeLibraryEssentialsEnabled() {
-      if (isNightly || import.meta.env.DEV) return true
-
-      return (
-        remoteConfig.value.node_library_essentials_enabled ??
-        api.getServerFeature(
-          ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED,
-          false
-        )
+      return resolveFlag(
+        ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED,
+        remoteConfig.value.node_library_essentials_enabled,
+        isNightly || import.meta.env.DEV
       )
     },
     get workflowSharingEnabled() {
@@ -200,22 +187,12 @@ export function useFeatureFlags() {
       )
     },
     get unifiedCloudAuthEnabled() {
+      if (!isCloud) return false
+
       return resolveFlag(
         ServerFeatureFlag.UNIFIED_CLOUD_AUTH,
         remoteConfig.value.unified_cloud_auth,
         false
-      )
-    },
-    /**
-     * Whether personal workspaces use the consolidated (workspace-scoped)
-     * billing flow. While false (default), personal workspaces stay on the
-     * legacy per-user billing flow; team workspaces are unaffected.
-     */
-    get consolidatedBillingEnabled() {
-      return resolveAuthGatedFlag(
-        ServerFeatureFlag.CONSOLIDATED_BILLING_ENABLED,
-        remoteConfig.value.consolidated_billing_enabled,
-        cachedConsolidatedBillingEnabled
       )
     },
     get billingControlEnabled() {
@@ -223,6 +200,13 @@ export function useFeatureFlags() {
         ServerFeatureFlag.BILLING_CONTROL_ENABLED,
         remoteConfig.value.billing_control_enabled,
         cachedBillingControlEnabled
+      )
+    },
+    get legacyBillingMigrationEnabled() {
+      return resolveAuthGatedFlag(
+        ServerFeatureFlag.LEGACY_BILLING_MIGRATION_ENABLED,
+        remoteConfig.value.legacy_billing_migration_enabled,
+        cachedLegacyBillingMigrationEnabled
       )
     },
     get v1PaymentRecovery() {

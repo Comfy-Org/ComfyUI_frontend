@@ -8,10 +8,6 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import CurrentUserButton from './CurrentUserButton.vue'
 
-const mockFeatureFlags = vi.hoisted(() => ({
-  teamWorkspacesEnabled: false
-}))
-
 const mockTeamWorkspaceStore = vi.hoisted(() => ({
   workspaceName: { value: '' },
   initState: { value: 'idle' },
@@ -38,13 +34,6 @@ vi.mock('firebase/auth', () => ({
 // Mock pinia
 vi.mock('pinia', () => ({
   storeToRefs: vi.fn((store: Record<string, unknown>) => store)
-}))
-
-// Mock the useFeatureFlags composable
-vi.mock('@/composables/useFeatureFlags', () => ({
-  useFeatureFlags: vi.fn(() => ({
-    flags: mockFeatureFlags
-  }))
 }))
 
 // Mock the useTeamWorkspaceStore
@@ -126,8 +115,6 @@ vi.mock('./CurrentUserPopoverLegacy.vue', () => ({
 
 describe('CurrentUserButton', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    mockFeatureFlags.teamWorkspacesEnabled = false
     mockTeamWorkspaceStore.workspaceName.value = ''
     mockTeamWorkspaceStore.initState.value = 'idle'
     mockTeamWorkspaceStore.isInPersonalWorkspace.value = false
@@ -189,7 +176,6 @@ describe('CurrentUserButton', () => {
     'shows account actions while Cloud workspace initialization is %s',
     async (initState) => {
       mockIsCloud.value = true
-      mockFeatureFlags.teamWorkspacesEnabled = true
       mockTeamWorkspaceStore.initState.value = initState
       const { user } = renderComponent()
 
@@ -213,7 +199,6 @@ describe('CurrentUserButton', () => {
 
   it('shows UserAvatar in personal workspace', () => {
     mockIsCloud.value = true
-    mockFeatureFlags.teamWorkspacesEnabled = true
     mockTeamWorkspaceStore.initState.value = 'ready'
     mockTeamWorkspaceStore.isInPersonalWorkspace.value = true
 
@@ -224,7 +209,6 @@ describe('CurrentUserButton', () => {
 
   it('shows WorkspaceProfilePic in team workspace', () => {
     mockIsCloud.value = true
-    mockFeatureFlags.teamWorkspacesEnabled = true
     mockTeamWorkspaceStore.initState.value = 'ready'
     mockTeamWorkspaceStore.isInPersonalWorkspace.value = false
     mockTeamWorkspaceStore.workspaceName.value = 'My Team'
@@ -232,5 +216,26 @@ describe('CurrentUserButton', () => {
     renderComponent()
     expect(screen.getByText('WorkspaceProfilePic')).toBeInTheDocument()
     expect(screen.queryByText('Avatar')).not.toBeInTheDocument()
+  })
+
+  it('shows WorkspaceProfilePic for an active local team workspace', () => {
+    mockTeamWorkspaceStore.initState.value = 'ready'
+    mockTeamWorkspaceStore.isInPersonalWorkspace.value = false
+    mockTeamWorkspaceStore.workspaceName.value = 'My Team'
+
+    renderComponent()
+
+    expect(screen.getByText('WorkspaceProfilePic')).toBeInTheDocument()
+    expect(screen.queryByText('Avatar')).not.toBeInTheDocument()
+  })
+
+  it('shows workspace actions after local workspace initialization', async () => {
+    mockTeamWorkspaceStore.initState.value = 'ready'
+    const { user } = renderComponent()
+
+    await user.click(screen.getByRole('button', { name: 'Current user' }))
+
+    expect(screen.getByText('Workspace Popover Content')).toBeInTheDocument()
+    expect(screen.queryByText('Popover Content')).not.toBeInTheDocument()
   })
 })

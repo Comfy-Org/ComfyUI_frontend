@@ -1,6 +1,5 @@
 import { expect } from '@playwright/test'
 
-import type { CloudSubscriptionStatusResponse } from '@/platform/cloud/subscription/composables/useSubscription'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type {
   BillingStatusResponse,
@@ -10,6 +9,8 @@ import type { WorkspaceTokenResponse } from '@/platform/workspace/stores/workspa
 import type { operations } from '@/types/comfyRegistryTypes'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
+import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
 type CustomerBalanceResponse = NonNullable<
   operations['GetCustomerBalance']['responses']['200']['content']['application/json']
@@ -18,7 +19,7 @@ type CustomerBalanceResponse = NonNullable<
 const PERSONAL_WORKSPACE_NAME = 'Personal Workspace'
 const FUTURE_DATE = '2099-01-01T00:00:00Z'
 
-const mockRemoteConfig: RemoteConfig = { team_workspaces_enabled: true }
+const mockRemoteConfig: RemoteConfig = {}
 
 const mockListWorkspacesResponse: { workspaces: WorkspaceWithRole[] } = {
   workspaces: [
@@ -45,22 +46,15 @@ const mockTokenResponse: WorkspaceTokenResponse = {
   permissions: []
 }
 
-// Cancelled but still active: `end_date` set (cancelled) while `is_active` is
-// true. A personal owner in this state sees BOTH "Add credits" and "Resubscribe"
-// in the credits row.
-const mockSubscriptionStatus: CloudSubscriptionStatusResponse = {
-  is_active: true,
-  subscription_id: 'sub_e2e',
-  renewal_date: FUTURE_DATE,
-  end_date: FUTURE_DATE
-}
-
-// Cancelled-but-active maps to `is_active: true` with
-// `subscription_status: 'canceled'`; a paid tier keeps "Add credits" visible.
+// The facade routes a Cloud personal workspace through `/api/billing/*`. The
+// cancelled-but-active state maps to `is_active: true`
+// with `subscription_status: 'canceled'`; a paid tier keeps "Add credits"
+// visible (free tier would swap it for "Upgrade to add credits").
 const mockBillingStatus: BillingStatusResponse = {
   is_active: true,
   max_seats: 1,
   occupied_seats: 1,
+  team_credit_stop: null,
   subscription_status: 'canceled',
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY',
@@ -77,30 +71,19 @@ const mockBalance: CustomerBalanceResponse = {
   currency: 'usd'
 }
 
-// Free tier: the popover swaps "Add credits" for the single contextual
-// "Upgrade" action (DES-534). A personal workspace stays on the LEGACY
-// billing backend (consolidated billing is off by default), so the tier
-// must come from the legacy status response.
-const mockFreeTierSubscriptionStatus: CloudSubscriptionStatusResponse = {
-  is_active: true,
-  subscription_id: 'sub_e2e_free',
+// Free tier on the workspace backend: the popover swaps "Add credits" for
+// the single contextual "Upgrade" action (DES-534).
+const mockFreeTierBillingStatus: BillingStatusResponse = {
+  ...mockBillingStatus,
+  subscription_status: 'active',
   subscription_tier: 'FREE',
-  renewal_date: FUTURE_DATE
+  has_funds: false,
+  cancel_at: undefined
 }
 
-function extendWithWorkspaceMocks(
-  legacyStatus: CloudSubscriptionStatusResponse
-) {
+function extendWithBilling(billingStatus: BillingStatusResponse) {
   return comfyPageFixture.extend({
     page: async ({ page }, use) => {
-      // teamWorkspacesEnabled is auth-gated and stays false until the
-      // authenticated remote config loads; seed the cached flag (what a
-      // returning user has) so the workspace popover — not the legacy one —
-      // is what these tests exercise.
-      await page.addInitScript(() => {
-        localStorage.setItem('team_workspaces_enabled', 'true')
-      })
-
       await page.route('**/api/features', (route) =>
         route.fulfill({
           status: 200,
@@ -133,14 +116,6 @@ function extendWithWorkspaceMocks(
         route.fulfill({ status: 204 })
       )
 
-      await page.route('**/customers/cloud-subscription-status', (route) =>
-        route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(legacyStatus)
-        })
-      )
-
       await page.route('**/customers/balance', (route) =>
         route.fulfill({
           status: 200,
@@ -149,14 +124,12 @@ function extendWithWorkspaceMocks(
         })
       )
 
-      // A personal workspace stays on legacy billing (consolidated billing
-      // defaults off), so the popover's tier/status come from /customers/*
-      // above; these workspace endpoints are mocked so bootstrap never 404s.
+      // The popover sources its data from the workspace billing endpoints.
       await page.route('**/api/billing/status', (route) =>
         route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify(mockBillingStatus)
+          body: JSON.stringify(billingStatus)
         })
       )
 
@@ -181,8 +154,8 @@ function extendWithWorkspaceMocks(
   })
 }
 
-const test = extendWithWorkspaceMocks(mockSubscriptionStatus)
-const freeTierTest = extendWithWorkspaceMocks(mockFreeTierSubscriptionStatus)
+const test = extendWithBilling(mockBillingStatus)
+const freeTierTest = extendWithBilling(mockFreeTierBillingStatus)
 
 test.describe('Current user popover credits row', { tag: '@cloud' }, () => {
   test('keeps both action buttons inside the popover when cancelled but active', async ({
@@ -210,6 +183,44 @@ test.describe('Current user popover credits row', { tag: '@cloud' }, () => {
     const resubscribeRight = resubscribeBox!.x + resubscribeBox!.width
     expect(resubscribeRight).toBeLessThanOrEqual(popoverRight)
   })
+
+  test(
+    'renders Manage plan as a plain full-width menu row',
+    { tag: '@screenshot' },
+    async ({ page }) => {
+      test.setTimeout(60_000)
+      await setupCloudApp(page, {
+        workspace: workspace('personal', 'owner'),
+        features: { subscription_required: false }
+      })
+      await page.goto(APP_URL)
+      await page.waitForFunction(() => !!window.app?.extensionManager, null, {
+        timeout: 45_000
+      })
+      await page.getByRole('button', { name: 'Close dialog' }).click()
+      await expect(page.getByTestId('dialog-overlay')).toBeHidden()
+
+      await page.getByRole('button', { name: 'Current user' }).click()
+
+      const workspaceSelector = page.getByTestId('workspace-switcher-trigger')
+      await expect(workspaceSelector).toBeVisible()
+      await expect(workspaceSelector).toHaveScreenshot(
+        'workspace-selector-menu-item.png'
+      )
+
+      const managePlan = page.getByRole('button', { name: 'Manage plan' })
+      await expect(managePlan).toBeVisible()
+      await expect(managePlan).toHaveScreenshot('manage-plan-menu-item.png')
+
+      await managePlan.focus()
+      await page.keyboard.press('Shift+Tab')
+      await page.keyboard.press('Tab')
+      await expect(managePlan).toBeFocused()
+      await expect(managePlan).toHaveScreenshot(
+        'manage-plan-menu-item-focused.png'
+      )
+    }
+  )
 })
 
 freeTierTest.describe(
@@ -233,8 +244,6 @@ freeTierTest.describe(
           popover.getByTestId('workspace-switcher-trigger')
         ).toBeVisible()
 
-        // DES-534: one toned-down "Upgrade" action; plain "Add credits" is
-        // paid-tier only.
         const upgrade = popover.getByTestId(
           TestIds.user.upgradeToAddCreditsButton
         )

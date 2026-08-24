@@ -27,6 +27,7 @@ export type PaymentIntentSource =
   | 'subscribe_to_run'
   | 'subscribe_now_button'
   | 'upgrade_to_add_credits'
+  | 'credits_tile_upgrade'
   | 'settings_billing_panel'
   | 'avatar_menu_plans'
   | 'team_members_panel'
@@ -156,6 +157,13 @@ export interface OnboardingTourStepMetadata {
 /** The nudge is post-tour, so it reports no step and no count. */
 export interface OnboardingTourNudgeMetadata {
   tour: string
+  /**
+   * Whether the tour was walked to the end. Without it `nudge_shown` and
+   * `explore_templates_clicked` cannot be split by how the tour ended, so a
+   * conversion from a completed tour and one from a tour that never started
+   * land in the same bucket.
+   */
+  tour_completed?: boolean
 }
 
 export type OnboardingTourMetadata =
@@ -574,6 +582,7 @@ export interface HelpResourceClickedMetadata {
     | 'help_feedback'
     | 'manager'
     | 'release_notes'
+    | 'status'
   is_external: boolean
   source:
     | 'menu'
@@ -697,6 +706,15 @@ export interface SubscriptionSuccessMetadata extends Record<string, unknown> {
   value?: number
   currency?: string
   ecommerce?: EcommerceMetadata
+  /**
+   * Set when the underlying checkout attempt was initiated from the resubscribe
+   * flow, so the pending-checkout recovery in `useSubscription.ts` can emit the
+   * canonical `billing.resubscribe.succeeded` terminal instead of leaving the
+   * legacy rail's `started`/`pending` resubscribe event unclosed forever.
+   */
+  operation?: 'resubscribe'
+  /** The click-time source, carried through so the terminal event can report it. */
+  resubscribe_source?: ResubscribeClickMetadata['source']
 }
 
 export interface WorkspaceInviteMetadata extends Record<string, unknown> {
@@ -763,34 +781,58 @@ type SubscriptionCheckoutBillingEvent = {
   cycle?: BillingCycle
   checkout_type?: SubscriptionCheckoutType
   payment_intent_source?: PaymentIntentSource
-} & (BillingSucceeded | BillingFailed)
+  /**
+   * Client-observed end-to-end wall time from this attempt's canonical
+   * `started` event through to this terminal event.
+   */
+  duration_ms?: number
+} & (BillingStarted | BillingSucceeded | BillingFailed)
 
 type BillingOperationBillingEvent = {
   operation: 'operation'
-  billing_op_id: string
+  /** Absent when the initiating call itself failed, before the backend returned one to poll. */
+  billing_op_id?: string
   operation_type: 'subscription' | 'topup' | 'cancel'
   tier?: SubscriptionCheckoutTier
   cycle?: BillingCycle
   checkout_type?: SubscriptionCheckoutType
   payment_intent_source?: PaymentIntentSource
-} & (BillingSucceeded | BillingFailed | BillingTimedOut)
+  /**
+   * Client-observed end-to-end wall time from this attempt's canonical
+   * `started` event through to this terminal event, including the
+   * initiating API call's latency (not just the poll-observation window).
+   * On `timeout` this is how long the client watched, not the operation's
+   * true duration.
+   */
+  duration_ms?: number
+} & (BillingStarted | BillingSucceeded | BillingFailed | BillingTimedOut)
 
 type ResubscribeBillingEvent = {
   operation: 'resubscribe'
   source: ResubscribeClickMetadata['source']
   payment_intent_source?: PaymentIntentSource
-} & (BillingSucceeded | BillingFailed)
+} & (BillingStarted | BillingSucceeded | BillingFailed)
 
 type TopupBillingEvent = {
   operation: 'topup'
   billing_op_id?: string
-} & (BillingSucceeded | BillingFailed)
+  /**
+   * Client-observed end-to-end wall time from this attempt's canonical
+   * `started` event through to this terminal event.
+   */
+  duration_ms?: number
+} & (BillingStarted | BillingSucceeded | BillingFailed)
 
 type DowngradeToPersonalBillingEvent = {
   operation: 'downgrade_to_personal'
   member_removal_count: number
   member_removal_failures: number
   target_tier?: TierKey
+  /**
+   * Client-observed end-to-end wall time from this attempt's canonical
+   * `started` event through to this terminal event.
+   */
+  duration_ms?: number
 } & (BillingStarted | BillingSucceeded | BillingFailed)
 
 export type BillingTelemetryEvent =
@@ -848,7 +890,9 @@ export function getBillingTelemetryEventPayload(event: BillingTelemetryEvent) {
       member_removal_failures: event.member_removal_failures
     }),
     ...('target_tier' in event &&
-      event.target_tier !== undefined && { target_tier: event.target_tier })
+      event.target_tier !== undefined && { target_tier: event.target_tier }),
+    ...('duration_ms' in event &&
+      event.duration_ms !== undefined && { duration_ms: event.duration_ms })
   }
 }
 
@@ -1024,14 +1068,19 @@ export const TelemetryEvents = {
   BEGIN_CHECKOUT: 'begin_checkout',
 
   // Canonical Billing Lifecycle
+  BILLING_SUBSCRIPTION_CHECKOUT_STARTED:
+    'billing.subscription_checkout.started',
   BILLING_SUBSCRIPTION_CHECKOUT_SUCCEEDED:
     'billing.subscription_checkout.succeeded',
   BILLING_SUBSCRIPTION_CHECKOUT_FAILED: 'billing.subscription_checkout.failed',
+  BILLING_OPERATION_STARTED: 'billing.operation.started',
   BILLING_OPERATION_SUCCEEDED: 'billing.operation.succeeded',
   BILLING_OPERATION_FAILED: 'billing.operation.failed',
   BILLING_OPERATION_TIMEOUT: 'billing.operation.timeout',
+  BILLING_RESUBSCRIBE_STARTED: 'billing.resubscribe.started',
   BILLING_RESUBSCRIBE_SUCCEEDED: 'billing.resubscribe.succeeded',
   BILLING_RESUBSCRIBE_FAILED: 'billing.resubscribe.failed',
+  BILLING_TOPUP_STARTED: 'billing.topup.started',
   BILLING_TOPUP_SUCCEEDED: 'billing.topup.succeeded',
   BILLING_TOPUP_FAILED: 'billing.topup.failed',
   BILLING_DOWNGRADE_TO_PERSONAL_STARTED:

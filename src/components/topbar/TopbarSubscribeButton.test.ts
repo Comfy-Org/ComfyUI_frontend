@@ -28,7 +28,18 @@ vi.mock(
 
 const mockBilling = vi.hoisted(() => ({
   isFreeTier: true,
-  canRunWorkflows: true
+  canRunWorkflows: true,
+  isBuilderMode: false
+}))
+
+vi.mock('@/composables/useAppMode', () => ({
+  useAppMode: () => ({
+    isBuilderMode: {
+      get value() {
+        return mockBilling.isBuilderMode
+      }
+    }
+  })
 }))
 
 vi.mock('@/composables/billing/useBillingContext', async () => {
@@ -75,6 +86,7 @@ describe('TopbarSubscribeButton', () => {
     mockIsCloud.value = true
     mockBilling.isFreeTier = true
     mockBilling.canRunWorkflows = true
+    mockBilling.isBuilderMode = false
   })
 
   it('renders for a free-tier user who can still run', () => {
@@ -100,6 +112,25 @@ describe('TopbarSubscribeButton', () => {
 
   it('hides when the user cannot run (e.g. free-tier quota exhausted)', () => {
     mockBilling.canRunWorkflows = false
+    renderComponent()
+    expect(
+      screen.queryByTestId('topbar-subscribe-button')
+    ).not.toBeInTheDocument()
+  })
+
+  // The run bar is the only thing this button defers to, and builder and
+  // arrange mode omit the menu that hosts it — so hiding there would leave
+  // a free-tier user with no upgrade entry at all on the Legacy tab layout.
+  it('stays visible in builder mode even when the user cannot run', () => {
+    mockBilling.canRunWorkflows = false
+    mockBilling.isBuilderMode = true
+    renderComponent()
+    expect(screen.getByTestId('topbar-subscribe-button')).toBeInTheDocument()
+  })
+
+  it('hides in builder mode for a paid tier', () => {
+    mockBilling.isFreeTier = false
+    mockBilling.isBuilderMode = true
     renderComponent()
     expect(
       screen.queryByTestId('topbar-subscribe-button')

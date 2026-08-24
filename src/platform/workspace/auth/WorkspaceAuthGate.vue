@@ -43,24 +43,29 @@
 
 <script setup lang="ts">
 /**
- * WorkspaceAuthGate - Conditional auth checkpoint for workspace mode.
+ * WorkspaceAuthGate - Cloud workspace auth checkpoint.
  *
  * This gate ensures proper initialization order for workspace-scoped auth:
  * 1. Wait for Firebase auth to resolve
- * 2. Check if teamWorkspacesEnabled feature flag is on
- * 3. If YES: Initialize workspace token and store before rendering
- * 4. If NO: Render immediately using existing Firebase auth
+ * 2. Load authenticated remote configuration
+ * 3. Initialize the workspace token and store before rendering
  *
  * This prevents race conditions where API calls use Firebase tokens
- * instead of workspace tokens when the workspace feature is enabled.
+ * instead of workspace tokens.
  *
  * The splash loader in index.html (z-9999) covers the screen during this
  * phase, so no separate loading indicator is needed here.
  */
-import { captureException } from '@sentry/vue'
 import { until } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { nextTick, onMounted, onUnmounted, ref, useTemplateRef } from 'vue'
+import {
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref,
+  useTemplateRef,
+  watch
+} from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
@@ -72,6 +77,7 @@ import {
   remoteConfigState
 } from '@/platform/remoteConfig/remoteConfig'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -87,15 +93,22 @@ const errorPanel = useTemplateRef<HTMLElement>('errorPanel')
 const subscriptionDialog = useSubscriptionDialog()
 let initializationGeneration = 0
 let initializationController: AbortController | null = null
+let backgroundInitialization: Promise<void> | null = null
+let backgroundInitializationUserId: string | null | undefined
 
 function cancelInitialization(): void {
   initializationGeneration++
   initializationController?.abort()
   initializationController = null
+  backgroundInitialization = null
+  backgroundInitializationUserId = undefined
 }
 
 async function initialize(): Promise<void> {
-  if (!isCloud) return
+  if (!isCloud) {
+    void initializeWorkspacesInBackground()
+    return
+  }
 
   cancelInitialization()
   const generation = initializationGeneration
@@ -125,7 +138,6 @@ async function initialize(): Promise<void> {
     }
 
     // Step 3: Refresh feature flags with auth context
-    // This ensures teamWorkspacesEnabled reflects the authenticated user's state
     // Timeout prevents hanging if server is slow/unresponsive
     let timeoutId: ReturnType<typeof setTimeout>
     await Promise.race([
@@ -142,7 +154,6 @@ async function initialize(): Promise<void> {
       throw new Error('Failed to load authenticated remote config')
     }
 
-    // Step 4: THE CHECKPOINT - Are we in workspace mode?
     const { flags } = useFeatureFlags()
     const workspaceAuthStore = useWorkspaceAuthStore()
     if (flags.unifiedCloudAuthEnabled) {
@@ -153,14 +164,6 @@ async function initialize(): Promise<void> {
       }
     }
 
-    if (!flags.teamWorkspacesEnabled) {
-      // Not in workspace mode - use existing Firebase auth flow
-      // No additional initialization needed
-      initializationState.value = 'ready'
-      return
-    }
-
-    // Step 5: WORKSPACE MODE - Full initialization
     await initializeWorkspaceMode()
     if (generation !== initializationGeneration) return
     if (
@@ -170,7 +173,7 @@ async function initialize(): Promise<void> {
       throw new Error('Unified cloud auth was cleared during workspace setup')
     }
 
-    // Step 6: Resume any pending pricing flow from team workspace creation
+    // Resume any pending pricing flow from team workspace creation
     // Only safe after workspace store initialized successfully — the pricing
     // dialog reads workspace state to decide which variant to show.
     const workspaceStore = useTeamWorkspaceStore()
@@ -184,10 +187,8 @@ async function initialize(): Promise<void> {
   } catch (error) {
     if (generation !== initializationGeneration) return
     console.error('[WorkspaceAuthGate] Initialization failed:', error)
-    captureException(error, {
-      tags: {
-        error_type: 'workspace_auth_gate_initialization_failure'
-      }
+    reportError(error, {
+      errorType: 'workspace_auth_gate_initialization_failure'
     })
     initializationRetryable.value = isRetryableInitializationError(error)
     initializationState.value = 'error'
@@ -241,11 +242,66 @@ async function initializeWorkspaceMode(): Promise<void> {
   }
 }
 
+function initializeWorkspacesInBackground(): Promise<void> {
+  const { isInitialized, currentUser } = storeToRefs(useAuthStore())
+  const userId = currentUser.value?.uid ?? null
+  if (backgroundInitialization && backgroundInitializationUserId === userId) {
+    return backgroundInitialization
+  }
+
+  cancelInitialization()
+  const generation = initializationGeneration
+  backgroundInitializationUserId = userId
+
+  const operation = (async () => {
+    if (!isInitialized.value) {
+      await until(isInitialized).toBe(true, {
+        timeout: FIREBASE_INIT_TIMEOUT_MS,
+        throwOnTimeout: true
+      })
+    }
+    if (
+      generation !== initializationGeneration ||
+      currentUser.value?.uid !== userId
+    ) {
+      return
+    }
+    await initializeWorkspaceMode()
+  })().catch((error: unknown) => {
+    if (generation === initializationGeneration) {
+      console.warn(
+        '[WorkspaceAuthGate] Background workspace initialization failed:',
+        error
+      )
+    }
+  })
+
+  backgroundInitialization = operation
+  void operation.finally(() => {
+    if (backgroundInitialization === operation) {
+      backgroundInitialization = null
+      backgroundInitializationUserId = undefined
+    }
+  })
+  return operation
+}
+
 // Initialize on mount. This gate should be placed on the authenticated layout
 // (LayoutDefault) so it mounts fresh after login and unmounts on logout.
 // The router guard ensures only authenticated users reach this layout.
 onMounted(() => {
   void initialize()
 })
+
+if (!isCloud) {
+  const { currentUser } = storeToRefs(useAuthStore())
+  watch(currentUser, (user) => {
+    if (user) {
+      void initializeWorkspacesInBackground()
+    } else {
+      cancelInitialization()
+    }
+  })
+}
 onUnmounted(cancelInitialization)
 </script>

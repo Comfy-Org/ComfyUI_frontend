@@ -108,11 +108,12 @@ export const graphToPrompt = async (
         // of the array as a node connection.
         // The backend automatically unwraps the object to an array during
         // execution.
-        inputs[widget.name] = Array.isArray(widgetValue)
-          ? widget.type === 'curve'
+        inputs[widget.name] =
+          widget.type === 'curve' && widgetValue != null
             ? { __type__: 'CURVE', __value__: widgetValue }
-            : { __value__: widgetValue }
-          : widgetValue
+            : Array.isArray(widgetValue)
+              ? { __value__: widgetValue }
+              : widgetValue
       }
     }
 

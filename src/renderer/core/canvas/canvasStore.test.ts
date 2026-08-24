@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
 import { nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -57,9 +55,7 @@ describe('useCanvasStore', () => {
 
   beforeEach(() => {
     appModeState.isAppMode = ref(false)
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useCanvasStore()
-    vi.clearAllMocks()
   })
 
   describe('appScalePercentage', () => {
@@ -135,6 +131,25 @@ describe('useCanvasStore', () => {
         'selectedItems must not contain the node when onRemoved fires'
       ).toBe(false)
       expect(store.selectedItems).toEqual([])
+    })
+  })
+
+  describe('rootGraphId', () => {
+    it('tracks the graph id reassigned by a workflow load', async () => {
+      const graph = new LGraph()
+      const fakeCanvas = {
+        canvas: document.createElement('canvas'),
+        graph,
+        selectedItems: new Set()
+      }
+      store.canvas = fakeCanvas as unknown as LGraphCanvas
+      await nextTick()
+      expect(store.rootGraphId).toBe(graph.id)
+
+      const workflowId = '11111111-1111-4111-8111-111111111111'
+      graph.configure({ ...graph.serialize(), id: workflowId })
+
+      expect(store.rootGraphId).toBe(workflowId)
     })
   })
 

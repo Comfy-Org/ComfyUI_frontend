@@ -31,7 +31,20 @@ export function toSafeBranchName(branch: string): string {
   return branch.replaceAll('/', '-')
 }
 
-const BACKPORT_BRANCH_PATTERN = /^backport-\d+-to-(.+)$/
+/**
+ * The optional leading path segment is what makes this useful for the manual
+ * backports this workflow exists to catch. `pr-backport.yaml` creates
+ * `backport-<pr>-to-<target>`, but a human finishing a conflicted cherry-pick
+ * by hand almost always ends up with `<user>/backport-<pr>-to-<target>` —
+ * that is what `gh` and most local conventions produce. Two such PRs appeared
+ * in one week (#15102, #15103) and had to be labelled by hand.
+ *
+ * Widening the prefix does not widen what counts as a backport: the
+ * `\d+-to-` core and the base check below still do that work, so branches
+ * like `glary/backport-resilient-partial-failure` — real branches in this
+ * repo, about backporting rather than backports — stay rejected.
+ */
+const BACKPORT_BRANCH_PATTERN = /^(?:.*\/)?backport-\d+-to-(.+)$/
 
 /**
  * True when `headRef` is the backport branch that `pr-backport.yaml` would
@@ -57,7 +70,7 @@ export interface PullRequestSummary {
   labels: { name: string }[]
 }
 
-export const BACKPORT_LABEL = 'backport'
+const BACKPORT_LABEL = 'backport'
 
 /**
  * Returns the numbers of the PRs that are backports by branch convention but

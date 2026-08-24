@@ -27,7 +27,7 @@
         <i
           :class="
             cn(
-              'icon-[lucide--component] size-4 self-center',
+              'icon-[lucide--coins] size-4 self-center',
               !inactivePlan && 'text-credit'
             )
           "
@@ -93,7 +93,7 @@
             v-else
             class="flex items-center gap-1 font-bold text-text-primary"
           >
-            <i class="icon-[lucide--component] size-4 text-credit" />
+            <i class="icon-[lucide--coins] size-4 text-credit" />
             <span class="@max-[180px]:hidden">
               {{
                 $t('subscription.creditsLeftOfTotal', {
@@ -146,7 +146,7 @@
             v-else
             class="flex items-center gap-1 font-bold text-text-primary"
           >
-            <i class="icon-[lucide--component] size-4 text-credit" />
+            <i class="icon-[lucide--coins] size-4 text-credit" />
             {{ displayPrepaid }}
           </span>
         </div>
@@ -176,7 +176,7 @@
             </Button>
           </span>
           <span class="flex items-center gap-1 font-bold">
-            <i class="icon-[lucide--component] size-4" />
+            <i class="icon-[lucide--coins] size-4" />
             {{ displayPrepaid }}
           </span>
         </div>
@@ -238,13 +238,15 @@ import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables
 import { useBillingPolicyCapabilities } from '@/platform/cloud/subscription/composables/useBillingPolicyCapabilities'
 import {
   DEFAULT_TIER_KEY,
-  TIER_TO_KEY,
+  toTierKey,
   getTierCredits
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import { computeMonthlyUsage } from '@/platform/cloud/subscription/utils/creditsProgress'
+import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
-import { consumePendingTopup } from '@/platform/telemetry/topupTracker'
+import { pendingTopupNeedsRefresh } from '@/platform/telemetry/topupTracker'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useCustomerEventsService } from '@/services/customerEventsService'
 import { useDialogService } from '@/services/dialogService'
 
 const { zeroState = false, inactivePlan } = defineProps<{
@@ -276,13 +278,14 @@ const {
 const { permissions } = useWorkspaceUI()
 const { showPricingTable } = useSubscriptionDialog()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
+const customerEventsService = useCustomerEventsService()
 const dialogService = useDialogService()
 const telemetry = useTelemetry()
 
 const tierKey = computed(() => {
   const tier = subscription.value?.tier
   if (!tier) return DEFAULT_TIER_KEY
-  return TIER_TO_KEY[tier] ?? DEFAULT_TIER_KEY
+  return toTierKey(tier) ?? DEFAULT_TIER_KEY
 })
 
 const creditPoolTotalCredits = computed<number | null>(() => {
@@ -365,6 +368,7 @@ const showBreakdown = computed(
 )
 const showBar = computed(
   () =>
+    isCloud &&
     showBreakdown.value &&
     creditPoolTotalCredits.value !== null &&
     creditPoolTotalCredits.value > 0
@@ -415,9 +419,55 @@ const emptyStateNotice = computed(() => {
   return null
 })
 
-const handleRefresh = wrapWithErrorHandlingAsync(async () => {
-  await Promise.all([fetchBalance(), fetchStatus()])
-})
+async function refreshCredits() {
+  const results = await Promise.allSettled([fetchBalance(), fetchStatus()])
+  for (const result of results) {
+    if (result.status === 'rejected') throw result.reason
+  }
+
+  if (!pendingTopupNeedsRefresh()) return
+
+  const response = await customerEventsService.getMyEvents({
+    page: 1,
+    limit: 10
+  })
+  if (!response) {
+    throw new Error(
+      customerEventsService.error.value ?? 'Fetching customer events failed'
+    )
+  }
+  telemetry?.checkForCompletedTopup(response.events)
+}
+
+let refreshRequested = false
+let activeRefresh: Promise<void> | null = null
+
+async function refreshLatestCredits() {
+  refreshRequested = true
+  if (activeRefresh) return activeRefresh
+
+  activeRefresh = (async () => {
+    let lastError: unknown
+    while (refreshRequested) {
+      refreshRequested = false
+      try {
+        await refreshCredits()
+        lastError = undefined
+      } catch (error) {
+        lastError = error
+      }
+    }
+    if (lastError) throw lastError
+  })()
+
+  try {
+    await activeRefresh
+  } finally {
+    activeRefresh = null
+  }
+}
+
+const handleRefresh = wrapWithErrorHandlingAsync(refreshLatestCredits)
 
 function handleAddCredits() {
   telemetry?.trackAddApiCreditButtonClicked({ source: 'credits_panel' })
@@ -425,11 +475,11 @@ function handleAddCredits() {
 }
 
 function handleUpgradeToAddCredits() {
-  showPricingTable({ reason: 'upgrade_to_add_credits' })
+  showPricingTable({ reason: 'credits_tile_upgrade' })
 }
 
 async function handleWindowFocus() {
-  if (consumePendingTopup()) {
+  if (pendingTopupNeedsRefresh()) {
     await handleRefresh()
   }
 }

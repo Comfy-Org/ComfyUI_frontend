@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { useTemplateRankingStore } from '@/stores/templateRankingStore'
 
@@ -12,11 +10,6 @@ vi.mock('axios', () => ({
 }))
 
 describe('templateRankingStore', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
-  })
-
   describe('computeFreshness', () => {
     it('returns 1.0 for brand new template (today)', () => {
       const store = useTemplateRankingStore()
@@ -55,12 +48,14 @@ describe('templateRankingStore', () => {
     it('scores an uncurated template from usage and freshness alone', () => {
       const store = useTemplateRankingStore()
       store.largestUsageScore = 100
+      const threeYearsAgo = new Date(Date.now() - 3 * 365 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split('T')[0]
       // curation = neutral 0.5, freshness = 0.1 (old date), usage = 0
       // score = 0 * 0.5 + 0.5 * 0.3 + 0.1 * 0.2 = 0.17
-      expect(store.computeDefaultScore('2024-01-01', undefined, 0)).toBeCloseTo(
-        0.17,
-        2
-      )
+      expect(
+        store.computeDefaultScore(threeYearsAgo, undefined, 0)
+      ).toBeCloseTo(0.17, 2)
     })
 
     it('ranks promoted above neutral above demoted', () => {

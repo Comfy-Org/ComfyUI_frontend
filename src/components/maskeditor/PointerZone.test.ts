@@ -51,7 +51,6 @@ const getZone = (): HTMLDivElement =>
 
 describe('PointerZone', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockStore = initialMock()
   })
 
