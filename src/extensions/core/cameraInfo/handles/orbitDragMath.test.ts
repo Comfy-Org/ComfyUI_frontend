@@ -105,3 +105,20 @@ describe('pointToDistance', () => {
     )
   })
 })
+
+describe('point coinciding with the target', () => {
+  it('yields a finite yaw of 0', () => {
+    expect(pointToYawAngle(SHIFTED_TARGET, SHIFTED_TARGET)).toBe(0)
+  })
+
+  it('yields a finite pitch of 0 at any yaw', () => {
+    expect(pointToPitchAngle(SHIFTED_TARGET, SHIFTED_TARGET, 0)).toBe(0)
+    expect(pointToPitchAngle(SHIFTED_TARGET, SHIFTED_TARGET, 137)).toBe(0)
+  })
+
+  it('yields MIN_DISTANCE instead of collapsing to 0', () => {
+    expect(pointToDistance(SHIFTED_TARGET, SHIFTED_TARGET, 0, 0)).toBe(
+      MIN_DISTANCE
+    )
+  })
+})

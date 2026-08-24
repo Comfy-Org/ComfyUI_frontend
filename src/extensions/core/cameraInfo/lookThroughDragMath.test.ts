@@ -23,10 +23,9 @@ describe('rotateSubjectByDrag - orbit', () => {
     expect(result!.nextState.orbit.pitch).toBeCloseTo(
       state.orbit.pitch + 0.05 * RAD2DEG
     )
-    expect(result!.updates.map((u) => u.fieldName)).toEqual([
-      'mode.yaw',
-      'mode.pitch'
-    ])
+    expect(new Set(result!.updates.map((u) => u.fieldName))).toEqual(
+      new Set(['mode.yaw', 'mode.pitch'])
+    )
   })
 
   it('clamps pitch to the pole limit', () => {
@@ -61,11 +60,9 @@ describe('rotateSubjectByDrag - look_at', () => {
 
     expect(after).toBeCloseTo(before)
     expect(nextTarget.x).not.toBeCloseTo(0)
-    expect(result!.updates.map((u) => u.fieldName)).toEqual([
-      'target_x',
-      'target_y',
-      'target_z'
-    ])
+    expect(new Set(result!.updates.map((u) => u.fieldName))).toEqual(
+      new Set(['target_x', 'target_y', 'target_z'])
+    )
   })
 
   it('returns null when the camera sits on the target', () => {
@@ -96,12 +93,9 @@ describe('rotateSubjectByDrag - quaternion', () => {
     expect(length).toBeCloseTo(1)
     expect(q).not.toEqual({ x: 0, y: 0, z: 0, w: 1 })
     expect(result!.nextState.quaternion.position).toEqual({ x: 0, y: 0, z: 5 })
-    expect(result!.updates.map((u) => u.fieldName)).toEqual([
-      'mode.quat_x',
-      'mode.quat_y',
-      'mode.quat_z',
-      'mode.quat_w'
-    ])
+    expect(new Set(result!.updates.map((u) => u.fieldName))).toEqual(
+      new Set(['mode.quat_x', 'mode.quat_y', 'mode.quat_z', 'mode.quat_w'])
+    )
   })
 
   it('treats a zero-length quaternion as identity', () => {

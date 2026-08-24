@@ -78,13 +78,15 @@ export interface ModelConfig {
   gizmo?: GizmoConfig
 }
 
-export interface CameraConfig {
+type CustomUpConfig =
+  | { hasCustomUp?: false }
+  | { hasCustomUp: true; useCustomUp: boolean }
+
+export type CameraConfig = {
   cameraType: CameraType
   fov: number
   state?: CameraState
-  hasCustomUp?: boolean
-  useCustomUp?: boolean
-}
+} & CustomUpConfig
 
 export interface LightConfig {
   intensity: number

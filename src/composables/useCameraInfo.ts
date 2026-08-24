@@ -1,11 +1,11 @@
-import { ref, toRaw, toRef } from 'vue'
+import { computed, ref, toRaw, toRef } from 'vue'
 import type { MaybeRef } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { CameraInfoViewport } from '@/extensions/core/cameraInfo/CameraInfoViewport'
 import type { TransformGizmoMode } from '@/extensions/core/cameraInfo/CameraInfoViewport'
 import { DEFAULT_CAMERA_INFO_STATE } from '@/extensions/core/cameraInfo/types'
-import type { CameraInfoMode } from '@/extensions/core/cameraInfo/types'
+import type { CameraInfoState } from '@/extensions/core/cameraInfo/types'
 import {
   readStateFromWidgets,
   writeWidgetValue
@@ -50,7 +50,8 @@ export function useCameraInfo(nodeRef: MaybeRef<LGraphNode | null>) {
   let originalOnMouseEnter: LGraphNode['onMouseEnter']
   let originalOnMouseLeave: LGraphNode['onMouseLeave']
 
-  const mode = ref<CameraInfoMode>(DEFAULT_CAMERA_INFO_STATE.mode)
+  const cameraState = ref<CameraInfoState>(DEFAULT_CAMERA_INFO_STATE)
+  const mode = computed(() => cameraState.value.mode)
 
   const wrappedWidgets: { widget: MutableWidget; original?: WidgetCallback }[] =
     []
@@ -63,7 +64,7 @@ export function useCameraInfo(nodeRef: MaybeRef<LGraphNode | null>) {
 
     try {
       const initialState = readStateFromWidgets(raw as NodeWithWidgets)
-      mode.value = initialState.mode
+      cameraState.value = initialState
       viewport = new CameraInfoViewport(container, initialState, {
         onHandleDrag: (fieldName, value) => {
           writeWidgetValue(raw as NodeWithWidgets, fieldName, value)
@@ -144,7 +145,7 @@ export function useCameraInfo(nodeRef: MaybeRef<LGraphNode | null>) {
         if (isModeWidget) wireWidgetsToOverlay(target)
         if (!viewport) return
         const state = readStateFromWidgets(target)
-        mode.value = state.mode
+        cameraState.value = state
         viewport.applyState(state)
       }
     }

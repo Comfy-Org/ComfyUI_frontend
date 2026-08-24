@@ -151,14 +151,14 @@ describe('Viewport3d', () => {
       expect(ctx.viewport.isActive()).toBe(false)
     })
 
-    it('does not consult recording or animation state — that is a Load3d concern', () => {
+    it('is active from mouse presence alone — recording and animation are Load3d concerns', () => {
       Object.assign(ctx.viewport, {
         STATUS_MOUSE_ON_NODE: false,
-        STATUS_MOUSE_ON_SCENE: false,
+        STATUS_MOUSE_ON_SCENE: true,
         STATUS_MOUSE_ON_VIEWER: false,
         INITIAL_RENDER_DONE: true
       })
-      expect(() => ctx.viewport.isActive()).not.toThrow()
+      expect(ctx.viewport.isActive()).toBe(true)
     })
   })
 

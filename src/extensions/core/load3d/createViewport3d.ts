@@ -31,11 +31,7 @@ function buildViewport3dDeps(container: HTMLElement): Viewport3dDeps {
   )
 
   cameraManager = new CameraManager(renderer, eventManager)
-  controlsManager = new ControlsManager(
-    container,
-    cameraManager.activeCamera,
-    eventManager
-  )
+  controlsManager = new ControlsManager(container, cameraManager.activeCamera)
   cameraManager.setControls(controlsManager.controls)
 
   const lightingManager = new LightingManager(sceneManager.scene, eventManager)
@@ -43,6 +39,7 @@ function buildViewport3dDeps(container: HTMLElement): Viewport3dDeps {
     renderer,
     getActiveCamera,
     getControls,
+    () => cameraManager.getCameraState(),
     eventManager
   )
 

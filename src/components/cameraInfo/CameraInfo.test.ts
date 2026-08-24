@@ -144,6 +144,24 @@ describe('CameraInfo transform gizmo reconciliation', () => {
     expect(api().setTransformGizmoMode).toHaveBeenLastCalledWith('none')
   })
 
+  it('restores the previous selection when the mode re-enables it', async () => {
+    setMode('quaternion')
+    renderComponent()
+    const user = userEvent.setup()
+
+    await user.click(screen.getByRole('button', { name: 'Cam rot' }))
+    setMode('orbit')
+    await nextTick()
+    expect(api().setTransformGizmoMode).toHaveBeenLastCalledWith('none')
+
+    setMode('quaternion')
+    await nextTick()
+
+    expect(api().setTransformGizmoMode).toHaveBeenLastCalledWith(
+      'camera-rotate'
+    )
+  })
+
   it('keeps the selected gizmo when the new mode still supports it', async () => {
     setMode('orbit')
     renderComponent()

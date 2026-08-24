@@ -51,12 +51,14 @@
           v-tooltip.bottom="tip($t(option.labelKey))"
           type="button"
           :disabled="lookingThrough || !option.enabled"
-          :aria-pressed="!lookingThrough && transformGizmoMode === option.value"
+          :aria-pressed="
+            !lookingThrough && effectiveTransformGizmoMode === option.value
+          "
           :aria-label="compact ? $t(option.labelKey) : undefined"
           :class="
             cn(
               actionClass(
-                !lookingThrough && transformGizmoMode === option.value
+                !lookingThrough && effectiveTransformGizmoMode === option.value
               ),
               (lookingThrough || !option.enabled) &&
                 'cursor-not-allowed opacity-40'
@@ -189,6 +191,14 @@ const transformGizmoOptions = computed(() => [
   }
 ])
 
+const effectiveTransformGizmoMode = computed<TransformGizmoMode>(() =>
+  transformGizmoOptions.value.some(
+    ({ value, enabled }) => value === transformGizmoMode.value && enabled
+  )
+    ? transformGizmoMode.value
+    : 'none'
+)
+
 function focusContainer() {
   container.value?.focus()
 }
@@ -206,14 +216,8 @@ function selectTransformGizmo(value: TransformGizmoMode) {
 }
 
 watch(gizmosOn, (on) => setGizmosVisible(on))
-watch(transformGizmoMode, (m) => setTransformGizmoMode(m))
+watch(effectiveTransformGizmoMode, (m) => setTransformGizmoMode(m))
 watch(lookingThrough, (on) => setLookThrough(on))
-watch(mode, () => {
-  const selected = transformGizmoOptions.value.find(
-    ({ value }) => value === transformGizmoMode.value
-  )
-  if (!selected?.enabled) transformGizmoMode.value = 'none'
-})
 
 onMounted(() => {
   if (container.value) initialize(container.value)

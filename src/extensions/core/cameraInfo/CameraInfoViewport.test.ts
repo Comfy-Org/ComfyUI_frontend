@@ -257,10 +257,6 @@ describe('CameraInfoViewport look-through drag', () => {
     vi.stubGlobal('cancelAnimationFrame', () => {})
   })
 
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
-
   it('rotates the subject on left-drag while looking through', () => {
     const stub = makeViewportStub()
     createViewport3dMock.mockReturnValue(stub)

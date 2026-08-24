@@ -60,6 +60,8 @@ interface DragState {
   pointerId: number
 }
 
+type PointerPosition = Pick<PointerEvent, 'clientX' | 'clientY'>
+
 export class CameraInfoViewport {
   readonly viewport: Viewport3d
   readonly overlay: CameraInfoOverlay
@@ -82,7 +84,10 @@ export class CameraInfoViewport {
   } | null = null
   private pendingRotation: { dx: number; dy: number } | null = null
   private pendingDolly: number | null = null
+  private pendingDragPointer: PointerPosition | null = null
+  private pendingHoverPointer: PointerPosition | null = null
   private inputFrame: number | null = null
+  private readonly dragPoint = new THREE.Vector3()
   private hoveredHandle: DragHandleType | null = null
   private gizmosOn = true
   private lookingThrough = false
@@ -294,6 +299,7 @@ export class CameraInfoViewport {
 
   private readonly onPointerLeave = (): void => {
     if (this.dragState || this.lookThroughDrag) return
+    this.pendingHoverPointer = null
     this.setHoveredHandle(null)
   }
 
@@ -304,10 +310,10 @@ export class CameraInfoViewport {
     this.queueDolly(event.deltaY)
   }
 
-  private updatePointer(event: PointerEvent): void {
+  private updatePointer({ clientX, clientY }: PointerPosition): void {
     const rect = this.canvas.getBoundingClientRect()
-    this.pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1
-    this.pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1
+    this.pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1
+    this.pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1
   }
 
   private pickableTargetsFor(mode: CameraInfoMode): THREE.Object3D[] {
@@ -321,11 +327,11 @@ export class CameraInfoViewport {
     return targets
   }
 
-  private pickHandle(event: PointerEvent): DragHandleType | null {
+  private pickHandle(position: PointerPosition): DragHandleType | null {
     if (!this.gizmosOn || this.lookingThrough) return null
     const targets = this.pickableTargetsFor(this.overlay.getState().mode)
     if (targets.length === 0) return null
-    this.updatePointer(event)
+    this.updatePointer(position)
     return pickHandleAtPointer<DragHandleType>(
       this.raycaster,
       this.pointer,
@@ -361,6 +367,7 @@ export class CameraInfoViewport {
 
     const type = this.pickHandle(event)
     if (!type) return
+    this.pendingHoverPointer = null
 
     this.setHoveredHandle(type)
     this.dragState = { type, pointerId: event.pointerId }
@@ -382,12 +389,22 @@ export class CameraInfoViewport {
     }
 
     if (!this.dragState) {
-      this.setHoveredHandle(this.pickHandle(event))
+      this.pendingHoverPointer = {
+        clientX: event.clientX,
+        clientY: event.clientY
+      }
+      this.scheduleInputFrame()
       return
     }
     if (event.pointerId !== this.dragState.pointerId) return
 
-    this.updatePointer(event)
+    this.pendingDragPointer = { clientX: event.clientX, clientY: event.clientY }
+    this.scheduleInputFrame()
+  }
+
+  private processDragMove(position: PointerPosition): void {
+    if (!this.dragState) return
+    this.updatePointer(position)
     this.raycaster.setFromCamera(
       this.pointer,
       this.viewport.cameraManager.activeCamera
@@ -398,13 +415,12 @@ export class CameraInfoViewport {
       this.dragState.type === 'roll'
         ? this.rollHandle.dragPlane(state)
         : this.orbitHandles.dragPlaneFor(this.dragState.type, state)
-    const point = new THREE.Vector3()
-    if (!this.raycaster.ray.intersectPlane(plane, point)) return
+    if (!this.raycaster.ray.intersectPlane(plane, this.dragPoint)) return
 
     const { fieldName, value, nextState } = computeNextState(
       this.dragState.type,
       state,
-      point
+      this.dragPoint
     )
     this.applyState(nextState)
     this.onHandleDrag?.(fieldName, value)
@@ -424,6 +440,8 @@ export class CameraInfoViewport {
     }
 
     if (!this.dragState || event.pointerId !== this.dragState.pointerId) return
+    this.flushInput()
+    this.cancelInputFrame()
     if (this.canvas.hasPointerCapture(event.pointerId)) {
       this.canvas.releasePointerCapture(event.pointerId)
     }
@@ -456,8 +474,17 @@ export class CameraInfoViewport {
   private flushInput(): void {
     const rotation = this.pendingRotation
     const dolly = this.pendingDolly
+    const dragPointer = this.pendingDragPointer
+    const hoverPointer = this.pendingHoverPointer
     this.pendingRotation = null
     this.pendingDolly = null
+    this.pendingDragPointer = null
+    this.pendingHoverPointer = null
+    if (dragPointer) {
+      this.processDragMove(dragPointer)
+    } else if (hoverPointer && !this.dragState) {
+      this.setHoveredHandle(this.pickHandle(hoverPointer))
+    }
     if (rotation) {
       this.applyResult(
         rotateSubjectByDrag(
@@ -487,6 +514,8 @@ export class CameraInfoViewport {
     }
     this.pendingRotation = null
     this.pendingDolly = null
+    this.pendingDragPointer = null
+    this.pendingHoverPointer = null
   }
 
   private fitSubjectAspect(): void {

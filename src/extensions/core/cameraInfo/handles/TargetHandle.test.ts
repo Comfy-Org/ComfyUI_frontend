@@ -4,10 +4,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { TargetHandle } from './TargetHandle'
 
+function gizmoControls(handle: unknown): TransformControls {
+  return (handle as { controls: TransformControls }).controls
+}
+
 describe('TargetHandle', () => {
   let scene: THREE.Scene
-  let onDragging: ReturnType<typeof vi.fn>
-  let onChange: ReturnType<typeof vi.fn>
+  let onDragging: ReturnType<typeof vi.fn<(dragging: boolean) => void>>
+  let onChange: ReturnType<typeof vi.fn<(target: THREE.Vector3Like) => void>>
   let handle: TargetHandle
 
   beforeEach(() => {
@@ -17,8 +21,8 @@ describe('TargetHandle', () => {
     handle = new TargetHandle(
       new THREE.PerspectiveCamera(),
       document.createElement('div'),
-      onDragging as unknown as (dragging: boolean) => void,
-      onChange as unknown as (target: THREE.Vector3Like) => void
+      onDragging,
+      onChange
     )
     handle.attach(scene)
   })
@@ -32,7 +36,7 @@ describe('TargetHandle', () => {
   }
 
   function controls(): TransformControls {
-    return (handle as unknown as { controls: TransformControls }).controls
+    return gizmoControls(handle)
   }
 
   it('adds proxy + helper to the scene on attach', () => {
@@ -56,7 +60,10 @@ describe('TargetHandle', () => {
   })
 
   it('setTarget is a no-op when the position already matches', () => {
-    handle.setTarget({ x: 0, y: 0, z: 0 })
+    handle.setTarget({ x: 1, y: 2, z: 3 })
+    handle.setTarget({ x: 1, y: 2, z: 3 })
+
+    expect(proxy().position.toArray()).toEqual([1, 2, 3])
     expect(onChange).not.toHaveBeenCalled()
   })
 

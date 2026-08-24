@@ -1,40 +1,38 @@
-import * as THREE from 'three'
+﻿import * as THREE from 'three'
 import type { TransformControls } from 'three/examples/jsm/controls/TransformControls'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { CameraHandle } from './CameraHandle'
 import type { CameraHandleMode, CameraHandleTransform } from './CameraHandle'
 
+function gizmoControls(handle: unknown): TransformControls {
+  return (handle as { controls: TransformControls }).controls
+}
+
 describe('CameraHandle', () => {
   let scene: THREE.Scene
   let camera: THREE.PerspectiveCamera
   let dom: HTMLElement
-  let onDragging: (dragging: boolean) => void
-  let onDraggingMock: ReturnType<typeof vi.fn>
-  let onChange: (
-    transform: CameraHandleTransform,
-    mode: CameraHandleMode
-  ) => void
-  let onChangeMock: ReturnType<typeof vi.fn>
+  let onDragging: ReturnType<typeof vi.fn<(dragging: boolean) => void>>
+  let onChange: ReturnType<
+    typeof vi.fn<
+      (transform: CameraHandleTransform, mode: CameraHandleMode) => void
+    >
+  >
   let handle: CameraHandle
 
   beforeEach(() => {
     scene = new THREE.Scene()
     camera = new THREE.PerspectiveCamera()
     dom = document.createElement('div')
-    onDraggingMock = vi.fn()
-    onDragging = onDraggingMock as unknown as (dragging: boolean) => void
-    onChangeMock = vi.fn()
-    onChange = onChangeMock as unknown as (
-      transform: CameraHandleTransform,
-      mode: CameraHandleMode
-    ) => void
+    onDragging = vi.fn()
+    onChange = vi.fn()
     handle = new CameraHandle(camera, dom, onDragging, onChange)
     handle.attach(scene)
   })
 
   function controls(): TransformControls {
-    return (handle as unknown as { controls: TransformControls }).controls
+    return gizmoControls(handle)
   }
 
   afterEach(() => {
@@ -76,16 +74,16 @@ describe('CameraHandle', () => {
     expect(proxy.position.x).toBe(1)
     expect(proxy.position.y).toBe(2)
     expect(proxy.position.z).toBe(3)
-    expect(onChangeMock).not.toHaveBeenCalled()
+    expect(onChange).not.toHaveBeenCalled()
   })
 
   it('setSubject is a no-op when the pose already matches', () => {
     handle.setSubject({ x: 0, y: 0, z: 0 }, { x: 0, y: 0, z: 0, w: 1 })
-    onChangeMock.mockClear()
+    onChange.mockClear()
 
     handle.setSubject({ x: 0, y: 0, z: 0 }, { x: 0, y: 0, z: 0, w: 1 })
 
-    expect(onChangeMock).not.toHaveBeenCalled()
+    expect(onChange).not.toHaveBeenCalled()
   })
 
   it('setVisible toggles helper.visible and controls.enabled together', () => {
@@ -106,7 +104,7 @@ describe('CameraHandle', () => {
 
     controls().dispatchEvent({ type: 'objectChange' })
 
-    expect(onChangeMock).toHaveBeenCalledWith(
+    expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({ position: { x: 1, y: 2, z: 3 } }),
       'translate'
     )
@@ -115,7 +113,7 @@ describe('CameraHandle', () => {
   it('forwards dragging-changed to the dragging listener', () => {
     controls().dispatchEvent({ type: 'dragging-changed', value: true })
 
-    expect(onDraggingMock).toHaveBeenCalledWith(true)
+    expect(onDragging).toHaveBeenCalledWith(true)
   })
 
   it('dispose removes proxy and helper from the scene', () => {

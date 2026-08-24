@@ -20,9 +20,10 @@ useExtensionService().registerExtension({
             type: 'CAMERA_INFO_STATE',
             isPreview: false
           },
-          options: {}
+          options: { serialize: false }
         })
         widget.type = 'cameraInfo'
+        widget.serialize = false
         addWidget(node, widget)
         return { widget }
       }

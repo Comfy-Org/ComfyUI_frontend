@@ -206,6 +206,7 @@ export class CameraManager implements CameraManagerInterface {
         state.quaternion.z,
         state.quaternion.w
       )
+      if (q.lengthSq() === 0) q.identity()
       const appliedUp = new THREE.Vector3(0, 1, 0).applyQuaternion(q)
       const isFirstDerivation = this.customUp === null
       this.customUp = appliedUp.clone()
@@ -214,6 +215,14 @@ export class CameraManager implements CameraManagerInterface {
       this.eventManager.emitEvent('cameraUpStateChange', {
         hasCustomUp: true,
         usingCustomUp: this.usingCustomUp
+      })
+    } else if (this.customUp !== null) {
+      this.customUp = null
+      this.usingCustomUp = false
+      this.activeCamera.up.set(0, 1, 0)
+      this.eventManager.emitEvent('cameraUpStateChange', {
+        hasCustomUp: false,
+        usingCustomUp: false
       })
     }
 
