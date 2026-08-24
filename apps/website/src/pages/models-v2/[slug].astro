@@ -8,7 +8,7 @@
 import { cn } from '@comfyorg/tailwind-utils'
 
 import BaseLayout from '../../layouts/BaseLayout.astro'
-import { Coins as CreditsIcon } from '@lucide/vue'
+import { ArrowUpRight, Coins as CreditsIcon } from '@lucide/vue'
 
 import BrandButton from '../../components/common/BrandButton.vue'
 import GlassCard from '../../components/common/GlassCard.vue'
@@ -527,7 +527,7 @@ const faqJsonLd = {
                       <p class="truncate text-sm font-semibold text-primary-warm-white">{v.displayName}</p>
                       <p class="text-2xs font-light text-primary-warm-gray">{dirLabel[v.directory] ?? v.directory} · {v.workflowCount} workflows</p>
                     </div>
-                    <span class="shrink-0 text-2xs font-bold uppercase tracking-widest text-primary-comfy-yellow">Run →</span>
+                    <span class="flex shrink-0 items-center gap-1.5 text-2xs font-bold uppercase tracking-widest text-primary-comfy-yellow">Run <ArrowUpRight class="size-4 shrink-0" aria-hidden="true" /></span>
                   </a>
                 ))}
               </div>
