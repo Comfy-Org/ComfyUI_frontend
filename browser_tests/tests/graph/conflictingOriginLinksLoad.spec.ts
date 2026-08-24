@@ -69,9 +69,11 @@ test.describe(
     // link the file's own input.link names (Origin B), not the first record
     // in document order. Flips to unexpected-pass when #15577 is fixed.
     test('the survivor is the link input.link names', async ({ comfyPage }) => {
-      test.fail()
       await comfyPage.workflow.loadWorkflow(WORKFLOW)
       const state = await readTargetInputState(comfyPage)
+      // Armed only after load succeeded, so setup errors fail the test
+      // instead of satisfying the pin.
+      test.fail()
       expect(
         state.resolvedOriginId,
         `input must stay wired to the origin the file names — got ${JSON.stringify(state)}`
@@ -82,7 +84,6 @@ test.describe(
     test('dropping a conflicting link warns on the console', async ({
       comfyPage
     }) => {
-      test.fail()
       const warnings: string[] = []
       comfyPage.page.on('console', (message) => {
         if (message.type() === 'warning' || message.type() === 'error') {
@@ -91,6 +92,7 @@ test.describe(
       })
       await comfyPage.workflow.loadWorkflow(WORKFLOW)
       await readTargetInputState(comfyPage)
+      test.fail()
       // Anchored on the contested records so unrelated litegraph chatter
       // containing "link" cannot flip this pin to unexpected-pass.
       expect(

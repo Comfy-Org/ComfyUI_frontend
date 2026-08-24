@@ -335,13 +335,13 @@ async function verifyUndoIsolationScenario(
     // Real UI gestures may checkpoint more than once (a title click can
     // register a micro-move before the delete), so the depth is captured
     // rather than assumed and every later count is relative to it.
-    const depth = await comfyPage.workflow.getUndoQueueSize()
+    const depth = (await comfyPage.workflow.getUndoQueueSize()) ?? 0
     expect(
       depth,
       'three edits produced at least three entries'
     ).toBeGreaterThanOrEqual(3)
 
-    return { snapshot: await captureGraphSnapshot(comfyPage), depth: depth! }
+    return { snapshot: await captureGraphSnapshot(comfyPage), depth }
   })
 
   const aPostEditSnapshot = aPostEdit.snapshot
@@ -419,7 +419,7 @@ async function verifyUndoIsolationScenario(
           timeout: 10_000
         })
         .toBeGreaterThanOrEqual(2)
-      const depth = await comfyPage.workflow.getUndoQueueSize()
+      const depth = (await comfyPage.workflow.getUndoQueueSize()) ?? 0
 
       const snapshot = await captureGraphSnapshot(comfyPage)
 
@@ -444,7 +444,7 @@ async function verifyUndoIsolationScenario(
         })
         .toEqual(snapshot)
 
-      return { snapshot, depth: depth! }
+      return { snapshot, depth }
     })
 
   const bPostEditSnapshot = bPostEdit.snapshot
@@ -466,12 +466,15 @@ async function verifyUndoIsolationScenario(
   })
 
   await test.step('Undo pressed in A never touches B', async () => {
-    // Known pre-existing behaviour on BOTH refs (verified 2026-08-24 at
-    // a2603c59a6 and f1bfb313d6): after switching away and back, Ctrl+Z in
-    // this tab is a silent no-op — pinned below as a dedicated test.fail.
-    // Whatever undo does or does not do here, it must never leak into B.
+    // Symmetric undo/redo churn, so the step holds whether or not the
+    // pinned tab-return no-op defect is present: while the defect exists
+    // all four presses are no-ops; once fixed they round-trip. Either way
+    // A ends at its post-edit state and nothing may leak into B.
     await comfyPage.keyboard.undo()
     await comfyPage.keyboard.undo()
+    await comfyPage.nextFrame()
+    await comfyPage.keyboard.redo()
+    await comfyPage.keyboard.redo()
     await comfyPage.nextFrame()
 
     await comfyPage.workflow.switchToTab(TAB_B)
@@ -489,7 +492,10 @@ async function verifyUndoIsolationScenario(
   })
 
   await test.step('Undo pressed in B never touches A', async () => {
+    // Same symmetric churn as the A-side step, for the same reason.
     await comfyPage.keyboard.undo()
+    await comfyPage.nextFrame()
+    await comfyPage.keyboard.redo()
     await comfyPage.nextFrame()
     await comfyPage.workflow.switchToTab(TAB_A)
     await expect
@@ -565,10 +571,12 @@ test.describe(
     test('classic: promoted text edit creates an undo checkpoint', async ({
       comfyPage
     }) => {
-      test.fail()
       await comfyPage.workflow.loadWorkflow(WORKFLOW_B)
       const before = (await comfyPage.workflow.getUndoQueueSize()) ?? 0
       await editPromotedText(comfyPage)
+      // Armed only after the edit committed, so setup errors fail the test
+      // instead of satisfying the pin.
+      test.fail()
       await expect
         .poll(() => comfyPage.workflow.getUndoQueueSize(), {
           message: 'text edit must checkpoint',
@@ -583,10 +591,10 @@ test.describe(
       'vue: widget edit creates an undo checkpoint',
       { tag: '@vue-nodes' },
       async ({ comfyPage }) => {
-        test.fail()
         await comfyPage.workflow.loadWorkflow(WORKFLOW_A)
         const before = (await comfyPage.workflow.getUndoQueueSize()) ?? 0
         await setSeedWidget(comfyPage, true)
+        test.fail()
         await expect
           .poll(() => comfyPage.workflow.getUndoQueueSize(), {
             message: 'widget edit must checkpoint',
@@ -603,7 +611,6 @@ test.describe(
     test('classic: undo still works after returning to a tab', async ({
       comfyPage
     }) => {
-      test.fail()
       await comfyPage.settings.setSetting(
         'Comfy.Workflow.WorkflowTabsPosition',
         'Topbar'
@@ -615,6 +622,7 @@ test.describe(
       await comfyPage.workflow.loadWorkflow(WORKFLOW_B)
       await comfyPage.workflow.switchToTab(TAB_A)
       await comfyPage.keyboard.undo()
+      test.fail()
       await expect
         .poll(() => nodeExists(comfyPage, SAVE_IMAGE_ID), {
           message: 'undo after tab round-trip restores the deleted node'

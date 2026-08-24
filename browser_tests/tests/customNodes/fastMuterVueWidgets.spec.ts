@@ -46,6 +46,22 @@ async function buildMuterPair(comfyPage: ComfyPage): Promise<MuterModel> {
 
   await source.connectOutput(0, muter, 0)
   await comfyPage.nextFrame()
+  await expect
+    .poll(
+      () =>
+        comfyPage.page.evaluate(
+          ({ srcId, muterId }) =>
+            [...window.app!.graph.links.values()].some(
+              (l) =>
+                String(l.origin_id) === srcId &&
+                String(l.target_id) === muterId &&
+                Number(l.target_slot) === 0
+            ),
+          { srcId: String(source.id), muterId: String(muter.id) }
+        ),
+      { message: 'source output connected into the muter input' }
+    )
+    .toBe(true)
 
   return expectMuterWidgetInModel(
     comfyPage,
@@ -110,7 +126,6 @@ test.describe(
     test('vue nodes: renamed toggle widget renders a visible row', async ({
       comfyPage
     }) => {
-      test.fail()
       test.slow()
       await skipUnlessMuterRegistered(comfyPage)
       await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
@@ -119,8 +134,10 @@ test.describe(
 
       const muterFixture =
         await comfyPage.vueNodes.getFixtureByTitle(/Fast Muter/)
-      // Bounded timeout so the pin fails on THIS assertion, not the test
-      // deadline — a test timeout would also satisfy test.fail().
+      // Armed only now, with a bounded timeout: the pin must fail on THIS
+      // assertion — an early test.fail() would let setup errors or the test
+      // deadline satisfy it.
+      test.fail()
       await expect(
         muterFixture.widgets.filter({
           hasText: `Enable ${model.linkedTitle}`

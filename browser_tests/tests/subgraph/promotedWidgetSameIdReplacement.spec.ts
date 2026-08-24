@@ -48,6 +48,8 @@ async function replaceHostInPlace(
 
     const replacement = window.LiteGraph!.createNode(data.type)
     if (!replacement) throw new Error(`createNode(${data.type}) returned null`)
+    // Compile-time brand only: toNodeId is not available inside the
+    // browser evaluate context, and String() is its exact runtime behavior.
     replacement.id = String(data.id) as NodeId
     graph.add(replacement)
     replacement.configure(data)
@@ -82,6 +84,9 @@ async function verifyPromotedWidgetSurvivesReplacement(
   await comfyPage.workflow.loadWorkflow(WORKFLOW)
   const result = await replaceHostInPlace(comfyPage)
 
+  // Armed only after setup succeeded: an early test.fail() would record
+  // fixture/setup errors as the expected failure and stop pinning #15665.
+  test.fail()
   expect(
     result.replacementWidgetId,
     `same-id replacement must keep the promoted input's widgetId (was ${result.originalWidgetId})`
@@ -108,7 +113,6 @@ test.describe(
     test('classic: same-id host replacement keeps promoted widgetId and value', async ({
       comfyPage
     }) => {
-      test.fail()
       await verifyPromotedWidgetSurvivesReplacement(comfyPage)
     })
 
@@ -116,7 +120,6 @@ test.describe(
       'vue nodes: same-id host replacement keeps promoted widgetId and value',
       { tag: '@vue-nodes' },
       async ({ comfyPage }) => {
-        test.fail()
         await verifyPromotedWidgetSurvivesReplacement(comfyPage)
       }
     )

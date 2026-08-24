@@ -15,15 +15,17 @@ test.describe('Badge order parity', { tag: ['@vue-nodes', '@node'] }, () => {
   test('vue node renders id badge before the lifecycle badge', async ({
     comfyPage
   }) => {
-    test.fail()
     // Guard: the pin depends on this node type carrying a lifecycle badge.
     // If it graduates out of experimental, skip instead of letting the
     // test.fail() keep "passing" for the wrong reason and silently
     // un-pinning #15662.
     const hasLifecycleBadge = await comfyPage.page.evaluate(
       async (nodeType) => {
+        type LifecycleFlags = { experimental?: boolean; deprecated?: boolean }
         const response = await fetch(`api/object_info/${nodeType}`)
-        const info = await response.json()
+        const info = (await response.json()) as
+          | Record<string, LifecycleFlags | undefined>
+          | undefined
         const def = info?.[nodeType]
         return Boolean(def?.experimental || def?.deprecated)
       },
@@ -56,10 +58,14 @@ test.describe('Badge order parity', { tag: ['@vue-nodes', '@node'] }, () => {
       'lifecycle badge renders'
     ).toBeVisible()
     await expect(
-      nodeLocator.getByText(idBadgeText),
+      nodeLocator.getByText(idBadgeText, { exact: true }),
       'id badge renders'
     ).toBeVisible()
 
+    // Armed only now: guard and setup errors above must fail the test —
+    // an early test.fail() would record them as the expected failure and
+    // report a pass without exercising the pinned behaviour.
+    test.fail()
     const text = await nodeLocator.innerText()
     const idIndex = text.indexOf(idBadgeText)
     const lifecycleIndex = text.indexOf(LIFECYCLE_TEXT)

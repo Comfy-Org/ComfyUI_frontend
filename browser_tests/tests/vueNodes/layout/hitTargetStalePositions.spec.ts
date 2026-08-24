@@ -493,10 +493,10 @@ async function verifyStaleHitScenario(
   })
 
   await test.step('Hit targets after full undo/redo replay', async () => {
-    const depth = await comfyPage.workflow.getUndoQueueSize()
+    const depth = (await comfyPage.workflow.getUndoQueueSize()) ?? 0
     expect(depth, 'mutations produced undo history').toBeGreaterThan(0)
 
-    for (let i = 0; i < depth!; i++) {
+    for (let i = 0; i < depth; i++) {
       await comfyPage.keyboard.undo()
       await comfyPage.nextFrame()
     }
@@ -506,7 +506,7 @@ async function verifyStaleHitScenario(
       })
       .toBe(depth)
 
-    for (let i = 0; i < depth!; i++) {
+    for (let i = 0; i < depth; i++) {
       await comfyPage.keyboard.redo()
       await comfyPage.nextFrame()
     }

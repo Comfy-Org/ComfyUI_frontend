@@ -430,19 +430,11 @@ export class SubgraphHelper {
 
     const enterButton =
       this.comfyPage.vueNodes.getSubgraphEnterButton(targetNodeId)
-    if ((await enterButton.count()) > 0) {
-      await this.comfyPage.vueNodes.enterSubgraph(targetNodeId)
-    } else {
-      await this.page.evaluate((id) => {
-        const graph = window.app?.canvas.graph
-        const node = graph?.getNodeById(id)
-        if (!node?.isSubgraphNode()) {
-          throw new Error(`Expected visible subgraph node ${id}`)
-        }
-        window.app!.canvas.setGraph(node.subgraph)
-      }, targetNodeId)
+    if ((await enterButton.count()) === 0) {
+      return this.enterSubgraphDirect(nodeId)
     }
 
+    await this.comfyPage.vueNodes.enterSubgraph(targetNodeId)
     await this.comfyPage.nextFrame()
     await expect.poll(async () => this.isInSubgraph()).toBe(true)
     if (this.comfyPage.isVueNodes) {

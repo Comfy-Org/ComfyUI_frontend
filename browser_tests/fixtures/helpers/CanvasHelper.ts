@@ -198,9 +198,11 @@ export class CanvasHelper {
       }, baseline)
 
     let created: Position | null = null
+    let attempt = 0
     await expect(async () => {
       created = await findNew()
       if (created) return
+      attempt += 1
       const midpoint = await this.page.evaluate((targetNodeId) => {
         const graph = window.app!.graph
         const node = graph.getNodeById(targetNodeId)
@@ -215,7 +217,12 @@ export class CanvasHelper {
         const [inX, inY] = node.getInputPos(0)
         return { x: (outX + inX) / 2, y: (outY + inY) / 2 }
       }, nodeId)
-      const client = await this.centerViewOn(midpoint)
+      // Alternate the anchor so a retried click never lands on the same
+      // pixels as the previous attempt and cannot register as a
+      // double-click.
+      const client = await this.centerViewOn(midpoint, {
+        anchorShift: attempt % 2 === 0 ? 80 : -80
+      })
       await this.page.keyboard.down('Alt')
       try {
         await this.page.mouse.click(client.x, client.y)
