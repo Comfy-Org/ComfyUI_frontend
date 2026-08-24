@@ -28,7 +28,6 @@ const datadogLive = (live: boolean) =>
 
 describe('reportError', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     sentryLive(true)
     datadogLive(true)
   })

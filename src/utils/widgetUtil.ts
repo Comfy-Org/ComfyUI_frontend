@@ -1,5 +1,4 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -45,10 +44,8 @@ export function getWidgetDefaultValue(
 export function renameWidget(
   widget: IBaseWidget,
   node: LGraphNode,
-  newLabel: string,
-  parents?: SubgraphNode[]
+  newLabel: string
 ): boolean {
-  void parents
   const label = newLabel || undefined
   // TODO(ecs-widget-label-identity): the `input.label` write below is the interim
   // on-ramp. End-state is an ECS WidgetIdentity.label serialized field (name =
@@ -91,8 +88,7 @@ export async function promptWidgetLabel(
 export async function promptRenameWidget(
   widget: IBaseWidget,
   node: LGraphNode,
-  t: (key: string) => string,
-  parents?: SubgraphNode[]
+  t: (key: string) => string
 ): Promise<string | null> {
   const rawLabel = await promptWidgetLabel(widget, t)
   if (rawLabel === null) return null
@@ -100,7 +96,7 @@ export async function promptRenameWidget(
   const normalizedLabel = rawLabel.trim()
   if (!normalizedLabel) return null
 
-  if (!renameWidget(widget, node, normalizedLabel, parents)) return null
+  if (!renameWidget(widget, node, normalizedLabel)) return null
 
   widget.callback?.(widget.value)
   useCanvasStore().canvas?.setDirty(true)

@@ -135,12 +135,10 @@ export function useFeatureFlags() {
       )
     },
     get linearToggleEnabled() {
-      if (isNightly) return true
-
       return resolveFlag(
         ServerFeatureFlag.LINEAR_TOGGLE_ENABLED,
         remoteConfig.value.linear_toggle_enabled,
-        false
+        isNightly
       )
     },
     get partnerNodeGovernanceEnabled() {
@@ -197,6 +195,8 @@ export function useFeatureFlags() {
       )
     },
     get unifiedCloudAuthEnabled() {
+      if (!isCloud) return false
+
       return resolveFlag(
         ServerFeatureFlag.UNIFIED_CLOUD_AUTH,
         remoteConfig.value.unified_cloud_auth,
