@@ -11,11 +11,36 @@ type ComponentManifestEntry = {
   capabilities: string[]
   testEligible: boolean
   limitations: string[]
+  provenance: {
+    implementation: 'shipped-website'
+    figma: string
+    sourceOfTruth: string
+  }
+  agent: {
+    importPath: string
+    storybookPath: string
+    docsPath: string
+    states: string[]
+    hasInteractionTest: boolean
+    hasResponsiveStories: boolean
+    compositionSafe: boolean
+  }
   stories: Array<{
     exportName: string
     storyId: string
   }>
 }
+
+type CoverageDisposition =
+  | 'page-local'
+  | 'template-local'
+  | 'compound-part'
+  | 'icon'
+  | 'integration'
+  | 'reusable-candidate'
+
+const figmaUrl =
+  'https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9'
 
 const websiteRoot = resolve(import.meta.dirname, '..')
 const sourceRoot = join(websiteRoot, 'src')
@@ -80,6 +105,57 @@ function capabilities(component: string): string[] {
   ].sort()
 }
 
+function classifyUncatalogued(source: string): {
+  disposition: CoverageDisposition
+  reason: string
+} {
+  if (source.includes('/icons/')) {
+    return {
+      disposition: 'icon',
+      reason:
+        'Decorative implementation asset; catalog through its owning control.'
+    }
+  }
+  if (/Hubspot|Embed|Arcade/.test(source)) {
+    return {
+      disposition: 'integration',
+      reason:
+        'External integration boundary; verify in its owning page or integration test.'
+    }
+  }
+  if (source.includes('/templates/')) {
+    return {
+      disposition: 'template-local',
+      reason:
+        'Template-specific section; compose from cataloged blocks before promoting.'
+    }
+  }
+  if (
+    source.includes('/ui/') &&
+    /(Content|Description|Footer|Header|Item|Link|List|Overlay|Title|Trigger|Viewport|Close)\.vue$/.test(
+      source
+    )
+  ) {
+    return {
+      disposition: 'compound-part',
+      reason:
+        'Compound component part documented through its cataloged root composition.'
+    }
+  }
+  if (source.includes('/common/') || source.includes('/ui/')) {
+    return {
+      disposition: 'reusable-candidate',
+      reason:
+        'Shared location indicates reuse potential; requires an explicit contract before promotion.'
+    }
+  }
+  return {
+    disposition: 'page-local',
+    reason:
+      'Feature or page-specific section; not an independent design-system primitive.'
+  }
+}
+
 async function manifestEntry(
   storyFile: string
 ): Promise<ComponentManifestEntry> {
@@ -119,6 +195,22 @@ async function manifestEntry(
           'Excluded from browser tests because the Vitest importer fails before render.'
         ]
       : [],
+    provenance: {
+      implementation: 'shipped-website',
+      figma: figmaUrl,
+      sourceOfTruth: source
+    },
+    agent: {
+      importPath: `@/${source.replace(/^src\//, '').replace(/\.vue$/, '')}`,
+      storybookPath: `/?path=/story/${storyId(title, exports[0])}`,
+      docsPath: `/?path=/docs/${storyId(title, 'docs').replace(/--docs$/, '--docs')}`,
+      states: exports,
+      hasInteractionTest: /\bplay\s*:/.test(contents),
+      hasResponsiveStories: exports.some((name) =>
+        /Mobile|Desktop|Tablet/.test(name)
+      ),
+      compositionSafe: !needsTests
+    },
     stories: exports.map((exportName) => ({
       exportName,
       storyId: storyId(title, exportName)
@@ -131,27 +223,86 @@ const storyFiles = (await findStoryFiles(sourceRoot)).filter(
 )
 const components = await Promise.all(storyFiles.sort().map(manifestEntry))
 const manifest = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   generatedFrom: 'apps/website/src/**/*.stories.ts',
+  figma: figmaUrl,
+  usagePolicy: {
+    evidenceOrder: [
+      'shipped website implementation',
+      'component story and interaction contract',
+      'Figma provenance',
+      'page recipe'
+    ],
+    unknownPattern: 'Treat as a gap; do not invent a local substitute.'
+  },
   componentCount: components.length,
   storyCount: components.reduce(
     (count, component) => count + component.stories.length,
     0
   ),
-  components
+  components,
+  recipes: [
+    {
+      name: 'Product landing',
+      storyId: 'website-recipes-page-patterns--product-landing',
+      requiredBlocks: [
+        'HeroSplit01',
+        'FeatureRows01',
+        'StepsGrid01',
+        'CtaCenter01'
+      ]
+    },
+    {
+      name: 'Article gallery',
+      storyId: 'website-recipes-page-patterns--article-gallery',
+      requiredBlocks: ['HeroCentered01', 'CardArticleGallery01', 'CtaCenter01']
+    },
+    {
+      name: 'Pricing',
+      storyId: 'website-recipes-page-patterns--pricing',
+      requiredBlocks: ['PricingSection', 'CtaCenter01']
+    },
+    {
+      name: 'Event',
+      storyId: 'website-recipes-page-patterns--event',
+      requiredBlocks: ['HeroCentered01', 'CardArticleGallery01']
+    },
+    {
+      name: 'Model launch',
+      storyId: 'website-recipes-page-patterns--model-launch',
+      requiredBlocks: [
+        'HeroSplit01',
+        'StepsGrid01',
+        'FAQSplit01',
+        'CtaCenter01'
+      ]
+    }
+  ]
 }
 const documentedSources = new Set(components.map(({ source }) => source))
 const vueComponents = (await findVueFiles(sourceRoot)).map((path) =>
   relative(websiteRoot, path)
 )
+const uncatalogued = vueComponents
+  .filter((source) => !documentedSources.has(source))
+  .sort()
+  .map((source) => ({ source, ...classifyUncatalogued(source) }))
+const dispositionCounts = Object.fromEntries(
+  [...new Set(uncatalogued.map(({ disposition }) => disposition))]
+    .sort()
+    .map((disposition) => [
+      disposition,
+      uncatalogued.filter((entry) => entry.disposition === disposition).length
+    ])
+)
 const coverage = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   componentCount: vueComponents.length,
   documentedComponentCount: documentedSources.size,
   missingStoryCount: vueComponents.length - documentedSources.size,
-  missingStories: vueComponents
-    .filter((source) => !documentedSources.has(source))
-    .sort()
+  dispositionCounts,
+  classifications: uncatalogued,
+  missingStories: uncatalogued.map(({ source }) => source)
 }
 const coveragePath = join(
   websiteRoot,
