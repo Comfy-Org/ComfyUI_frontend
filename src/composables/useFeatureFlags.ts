@@ -127,12 +127,10 @@ export function useFeatureFlags() {
       )
     },
     get linearToggleEnabled() {
-      if (isNightly) return true
-
       return resolveFlag(
         ServerFeatureFlag.LINEAR_TOGGLE_ENABLED,
         remoteConfig.value.linear_toggle_enabled,
-        false
+        isNightly
       )
     },
     get partnerNodeGovernanceEnabled() {

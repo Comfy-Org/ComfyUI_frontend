@@ -8,6 +8,8 @@
     "dist/*",
     "packages/registry-types/src/comfyRegistryTypes.ts",
     "playwright-report/*",
+    "scripts/registry-census/detection-proof/**",
+    "src/__ecs_matrix__/**",
     "src/extensions/core/*",
     "src/scripts/*",
     "src/types/generatedManagerTypes.ts",
@@ -132,8 +134,8 @@
     {
       "files": ["**/*.test.{ts,tsx}"],
       "rules": {
-        "comfy/no-module-scope-vitest-mocks": "warn",
-        "comfy/no-redundant-vitest-cleanup": "warn"
+        "comfy/no-module-scope-vitest-mocks": "error",
+        "comfy/no-redundant-vitest-cleanup": "error"
       }
     },
     {
