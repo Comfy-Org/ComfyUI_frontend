@@ -95,8 +95,20 @@ async function offerAgentRefactor(
   if (isCancel(wantRefactor) || !wantRefactor) return
 
   const s = spinner()
-  s.start(`${adapter.label} is reviewing the test...`)
-  const result = runAgentRefactor({ adapter, specPath, projectRoot })
+  s.start(
+    `${adapter.label} is reviewing the test — this can take up to 10 minutes`
+  )
+  const result = await runAgentRefactor({
+    adapter,
+    specPath,
+    projectRoot,
+    onProgress: (elapsedMs) => {
+      const seconds = Math.round(elapsedMs / 1000)
+      s.message(
+        `${adapter.label} is still working (${seconds}s) — this can take up to 10 minutes, please leave this window open`
+      )
+    }
+  })
 
   if (!result.ran) {
     s.stop(`${adapter.label} refactor skipped`)
@@ -106,6 +118,9 @@ async function offerAgentRefactor(
   }
 
   s.stop(`${adapter.label} finished`)
+  if (result.summary) {
+    info(['What was changed:', ...result.summary.split('\n')])
+  }
   if (!formatFile(specPath)) {
     info([`Could not format ${specPath} — run pnpm format before committing.`])
   }
