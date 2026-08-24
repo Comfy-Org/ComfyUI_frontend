@@ -1,6 +1,7 @@
 ---
 // A/B TEST PREVIEW — v2 supported-models directory ("explore" variant).
 // Not linked from anywhere. noindex. Delete this folder to remove the preview.
+import Breadcrumbs from '../../components/common/Breadcrumbs.astro'
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import {
   launches,
@@ -19,6 +20,9 @@ const featured = launches.slice(0, 8)
 const hrefFor = (slug: string) => `/models-v2/${slug}`
 
 const kindTag = (l: LaunchModel) => (l.kind === 'open weights' ? 'open' : 'partner')
+const kindLabel = (k: string) => (k === 'open weights' ? 'Open weights' : 'Partner API')
+const pill = 'shrink-0 inline-flex h-6 items-center gap-1 rounded-full px-4 text-xs font-normal transition-colors'
+const pillIdle = 'bg-transparency-white-t4 text-primary-comfy-canvas'
 const modTag = (l: LaunchModel) =>
   l.modality === 'i2v' || l.modality === 'video' ? 'video'
   : l.modality === 'audio' ? 'audio'
@@ -63,6 +67,10 @@ const breadcrumbJsonLd = {
     { '@type': 'ListItem', position: 2, name: 'AI Models' }
   ]
 }
+const breadcrumbs = [
+  { label: 'Home', href: 'https://comfy.org' },
+  { label: 'AI Models' }
+]
 const faqJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'FAQPage',
@@ -108,12 +116,10 @@ const PILLS = [
   </div>
 
   <!-- HERO — the measured CVR leader gets the slot -->
-  <section class="mx-auto max-w-7xl px-5 pb-10 pt-12 sm:px-6 lg:px-8 lg:pt-20">
+  <section class="mx-auto max-w-9xl px-5 pb-10 pt-12 sm:px-6 lg:px-20 lg:pt-20">
     <div class="flex flex-col items-start gap-10 lg:flex-row lg:items-center lg:gap-16">
       <div class="max-w-xl">
-        <p class="mb-3 text-[11px] font-semibold uppercase tracking-[0.25em] text-primary-warm-gray">
-          <a href="https://comfy.org" class="hover:text-primary-warm-white">Home</a> / AI models
-        </p>
+        <Breadcrumbs crumbs={breadcrumbs} class="mb-3" />
         <p class="mb-4 text-xs font-extrabold uppercase tracking-[0.35em] text-primary-comfy-yellow sm:text-sm">
           Supported models
         </p>
@@ -172,7 +178,7 @@ const PILLS = [
 
   <!-- SEARCH + FILTERS (sticky) -->
   <section class="sticky top-0 z-30 border-b border-white/5 bg-primary-comfy-ink/95 py-4 backdrop-blur" id="model-filter-root">
-    <div class="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+    <div class="mx-auto max-w-9xl px-5 sm:px-6 lg:px-20">
     <div class="flex flex-col gap-3 sm:flex-row">
       <label class="flex flex-1 items-center gap-3 rounded-xl border border-white/15 bg-white/5 px-4 py-3.5 focus-within:border-primary-comfy-yellow/60 sm:px-5">
         <svg class="h-4 w-4 shrink-0 text-primary-warm-gray" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.5"/><path d="M11 11l3.5 3.5" stroke="currentColor" stroke-width="1.5"/></svg>
@@ -204,7 +210,7 @@ const PILLS = [
       ].map(([label, action]) => (
         <button
           data-try={action}
-          class="shrink-0 rounded-full border border-white/12 bg-white/[0.04] px-3 py-1.5 text-[11px] text-primary-comfy-canvas transition hover:border-primary-comfy-yellow/50 hover:text-primary-warm-white"
+          class:list={[pill, pillIdle, 'hover:bg-transparency-white-t8 hover:text-primary-warm-white']}
         >
           {label}
         </button>
@@ -215,10 +221,10 @@ const PILLS = [
         <button
           data-pill={value}
           class:list={[
-            'shrink-0 rounded-full px-4 py-2 text-xs font-extrabold uppercase tracking-widest transition',
+            pill,
             i === 0
               ? 'is-active bg-primary-comfy-yellow text-primary-comfy-ink'
-              : 'border border-white/15 bg-white/5 text-primary-comfy-canvas hover:bg-white/10'
+              : `${pillIdle} hover:bg-transparency-white-t8`
           ]}
         >
           {label} <span class="opacity-60">{count}</span>
@@ -230,7 +236,7 @@ const PILLS = [
 
   <!-- FEATURED LAUNCHES -->
   <section class="py-10 lg:py-14" data-cardsection>
-    <div class="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+    <div class="mx-auto max-w-9xl px-5 sm:px-6 lg:px-20">
       <div class="mb-6 flex items-end justify-between gap-4">
         <div>
           <h2 class="text-sm font-extrabold uppercase tracking-[0.3em] text-primary-comfy-yellow">Featured launches</h2>
@@ -280,7 +286,7 @@ const PILLS = [
                     >
                       {meta.label}
                     </span>
-                    <span class="rounded-full border border-white/15 px-2 py-0.5 text-[10px] text-primary-comfy-canvas">{card.kind}</span>
+                    <span class:list={[pill, pillIdle]}>{kindLabel(card.kind)}</span>
                   </div>
                   <div class="flex items-center justify-between text-[11px] text-primary-warm-gray">
                     <span>{card.runs}</span>
@@ -297,7 +303,7 @@ const PILLS = [
 
   <!-- TOP PARTNER APIS -->
   <section class="bg-black/25 py-10 lg:py-14" data-cardsection>
-    <div class="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+    <div class="mx-auto max-w-9xl px-5 sm:px-6 lg:px-20">
       <div class="mb-6">
         <h2 class="text-sm font-extrabold uppercase tracking-[0.3em] text-primary-comfy-yellow">Top partner APIs</h2>
         <p class="mt-1.5 text-sm font-light text-primary-warm-gray">Ranked by real usage across the platform — one subscription, one queue.</p>
@@ -342,7 +348,7 @@ const PILLS = [
 
   <!-- USE-CASE WORKFLOWS -->
   <section class="py-10 lg:py-14">
-    <div class="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+    <div class="mx-auto max-w-9xl px-5 sm:px-6 lg:px-20">
       <div class="mb-6 flex items-end justify-between gap-4">
         <div>
           <h2 class="text-sm font-extrabold uppercase tracking-[0.3em] text-primary-comfy-yellow">Start from the deliverable</h2>
@@ -371,7 +377,7 @@ const PILLS = [
 
   <!-- BROWSE ALL -->
   <section class="bg-black/25 py-10 lg:py-14" data-cardsection id="browse-all">
-    <div class="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+    <div class="mx-auto max-w-9xl px-5 sm:px-6 lg:px-20">
       <div class="mb-6 flex items-end justify-between gap-4">
         <div>
           <h2 class="text-sm font-extrabold uppercase tracking-[0.3em] text-primary-comfy-yellow">Browse all {registryModels.length} models</h2>
@@ -411,7 +417,7 @@ const PILLS = [
   </section>
 
   <!-- OPEN VS API -->
-  <section class="mx-auto max-w-7xl px-5 py-10 sm:px-6 lg:px-8 lg:py-14">
+  <section class="mx-auto max-w-9xl px-5 py-10 sm:px-6 lg:px-20 lg:py-14">
     <div class="grid gap-5 lg:grid-cols-2">
       <div class="rounded-2xl border border-[#96b4ff]/35 bg-white/[0.04] p-7">
         <h3 class="text-sm font-extrabold uppercase tracking-[0.3em] text-[#96b4ff]">Open weights</h3>
@@ -431,7 +437,7 @@ const PILLS = [
   </section>
 
   <!-- CONVERSION BAND -->
-  <section class="mx-auto max-w-7xl px-5 pb-12 sm:px-6 lg:px-8 lg:pb-16">
+  <section class="mx-auto max-w-9xl px-5 pb-12 sm:px-6 lg:px-20 lg:pb-16">
     <div class="flex flex-col items-start justify-between gap-3 rounded-2xl bg-primary-comfy-yellow px-6 py-5 sm:flex-row sm:items-center sm:px-8">
       <p class="text-sm font-extrabold uppercase tracking-[0.15em] text-primary-comfy-ink sm:text-base">
         Five free runs. One sign-in. No countdowns.
@@ -443,7 +449,7 @@ const PILLS = [
   </section>
 
   <!-- FAQ -->
-  <section class="mx-auto max-w-7xl px-5 pb-16 sm:px-6 lg:grid lg:grid-cols-[280px_1fr] lg:gap-14 lg:px-8 lg:pb-24">
+  <section class="mx-auto max-w-9xl px-5 pb-16 sm:px-6 lg:grid lg:grid-cols-[280px_1fr] lg:gap-14 lg:px-20 lg:pb-24">
     <div class="mb-6 lg:mb-0">
       <h2 class="text-sm font-extrabold uppercase tracking-[0.3em] text-primary-comfy-yellow">Questions</h2>
       <p class="mt-2 text-2xl font-semibold text-primary-warm-white">AI models in ComfyUI</p>
@@ -541,9 +547,8 @@ const PILLS = [
             b.classList.toggle('is-active', active)
             b.classList.toggle('bg-primary-comfy-yellow', active)
             b.classList.toggle('text-primary-comfy-ink', active)
-            b.classList.toggle('border', !active)
-            b.classList.toggle('border-white/15', !active)
-            b.classList.toggle('bg-white/5', !active)
+            b.classList.toggle('bg-transparency-white-t4', !active)
+            b.classList.toggle('hover:bg-transparency-white-t8', !active)
             b.classList.toggle('text-primary-comfy-canvas', !active)
           }
           syncClear()
@@ -560,9 +565,8 @@ const PILLS = [
           b.classList.toggle('is-active', active)
           b.classList.toggle('bg-primary-comfy-yellow', active)
           b.classList.toggle('text-primary-comfy-ink', active)
-          b.classList.toggle('border', !active)
-          b.classList.toggle('border-white/15', !active)
-          b.classList.toggle('bg-white/5', !active)
+          b.classList.toggle('bg-transparency-white-t4', !active)
+          b.classList.toggle('hover:bg-transparency-white-t8', !active)
           b.classList.toggle('text-primary-comfy-canvas', !active)
         }
         apply()
