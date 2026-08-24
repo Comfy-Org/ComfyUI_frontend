@@ -16,6 +16,8 @@ const state = vi.hoisted(() => ({
   billingStatus: 'paid',
   canAccessSubscriptionFeatures: true,
   isFreeTier: false,
+  isTeamPlan: false,
+  tier: 'PRO' as 'PRO' | 'FREE' | null,
   isCancelled: false,
   planSlug: 'pro-monthly' as string | null,
   canTopUp: false,
@@ -61,6 +63,8 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
       () => state.canAccessSubscriptionFeatures
     ),
     isFreeTier: computed(() => state.isFreeTier),
+    isTeamPlan: computed(() => state.isTeamPlan),
+    tier: computed(() => state.tier),
     subscription: computed(() => ({
       isCancelled: state.isCancelled,
       planSlug: state.planSlug
@@ -177,6 +181,8 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.billingStatus = 'paid'
     state.canAccessSubscriptionFeatures = true
     state.isFreeTier = false
+    state.isTeamPlan = false
+    state.tier = 'PRO'
     state.isCancelled = false
     state.planSlug = 'pro-monthly'
     state.canTopUp = false
@@ -343,6 +349,67 @@ describe('CurrentUserPopoverWorkspace', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('lets an owner add credits on Local without an active subscription', async () => {
+    const user = userEvent.setup()
+    state.isCloud = false
+    state.canAccessSubscriptionFeatures = false
+    state.tier = null
+    state.canTopUp = true
+
+    renderComponent('personal')
+
+    expect(
+      screen.queryByTestId('upgrade-to-add-credits-button')
+    ).not.toBeInTheDocument()
+    await user.click(screen.getByTestId('add-credits-button'))
+
+    expect(state.showTopUpCreditsDialog).toHaveBeenCalledOnce()
+  })
+
+  it('keeps add-credits hidden for an unsubscribed Cloud owner', () => {
+    state.canAccessSubscriptionFeatures = false
+    state.tier = null
+    state.canTopUp = true
+    state.canManageSubscription = true
+
+    renderComponent('personal')
+
+    expect(screen.queryByTestId('add-credits-button')).not.toBeInTheDocument()
+    expect(
+      screen.queryByTestId('upgrade-to-add-credits-button')
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Subscribe' })
+    ).toBeInTheDocument()
+  })
+
+  it('offers add-credits instead of the upgrade upsell on the Local free tier', () => {
+    state.isCloud = false
+    state.isFreeTier = true
+    state.tier = 'FREE'
+    state.canTopUp = true
+
+    renderComponent('personal')
+
+    expect(
+      screen.queryByTestId('upgrade-to-add-credits-button')
+    ).not.toBeInTheDocument()
+    expect(screen.getByTestId('add-credits-button')).toBeInTheDocument()
+  })
+
+  it('keeps the upgrade upsell for the Cloud free tier', () => {
+    state.isFreeTier = true
+    state.tier = 'FREE'
+    state.canTopUp = true
+
+    renderComponent('personal')
+
+    expect(
+      screen.getByTestId('upgrade-to-add-credits-button')
+    ).toBeInTheDocument()
+    expect(screen.queryByTestId('add-credits-button')).not.toBeInTheDocument()
+  })
+
   it('keeps Resubscribe hidden on Local for a cancelled plan', () => {
     state.isCloud = false
     state.isCancelled = true
@@ -473,7 +540,7 @@ describe('CurrentUserPopoverWorkspace', () => {
       })
     )
 
-    expect(state.showSettingsDialog).toHaveBeenCalledWith('credits')
+    expect(state.showSettingsDialog).toHaveBeenCalledWith('workspace')
     expect(state.showPricingTable).not.toHaveBeenCalled()
     expect(emitted('close')).toHaveLength(1)
   })

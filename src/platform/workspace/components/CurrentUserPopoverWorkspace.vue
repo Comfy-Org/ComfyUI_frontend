@@ -91,7 +91,9 @@
       <!-- Upgrade to add credits (free tier) -->
       <Button
         v-if="
-          canAccessSubscriptionFeatures && permissions.canTopUp && isFreeTier
+          billingPolicyCapabilities.showsSubscribeUpsellUI &&
+          permissions.canTopUp &&
+          isFreeTier
         "
         variant="subscribe"
         size="sm"
@@ -101,7 +103,10 @@
         {{ $t('subscription.upgradeToAddCredits') }}
       </Button>
       <Button
-        v-else-if="canAccessSubscriptionFeatures && permissions.canTopUp"
+        v-else-if="
+          billingPolicyCapabilities.topUpAccess === 'allowed' &&
+          permissions.canTopUp
+        "
         variant="secondary"
         size="sm"
         class="text-base-foreground"
@@ -168,7 +173,7 @@
       type="button"
       class="flex w-full cursor-pointer appearance-none items-center gap-2 border-0 bg-transparent px-4 py-2 text-left hover:bg-secondary-background-hover focus-visible:bg-secondary-background-hover focus-visible:outline-none"
       data-testid="plans-credits-menu-item"
-      @click="handleOpenCreditsSettings"
+      @click="handleOpenPlanCreditsSettings"
     >
       <i class="icon-[lucide--coins] size-4 text-muted-foreground" />
       <span class="flex-1 text-sm text-base-foreground">{{
@@ -250,6 +255,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
+import { useBillingPolicyCapabilities } from '@/platform/cloud/subscription/composables/useBillingPolicyCapabilities'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
@@ -300,6 +306,8 @@ const {
   isLoading,
   fetchBalance
 } = useBillingContext()
+
+const { billingPolicyCapabilities } = useBillingPolicyCapabilities()
 
 const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
 const subscriptionDialog = useSubscriptionDialog()
@@ -369,8 +377,8 @@ const handleOpenManagePlanSettings = () => {
   emit('close')
 }
 
-const handleOpenCreditsSettings = () => {
-  settingsDialog.show('credits')
+const handleOpenPlanCreditsSettings = () => {
+  settingsDialog.show('workspace')
   emit('close')
 }
 
