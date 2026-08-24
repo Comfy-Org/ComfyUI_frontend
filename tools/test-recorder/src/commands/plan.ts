@@ -69,7 +69,8 @@ export function buildTestPlan(
       ...workflowStep,
       ...featureFlagsStep,
       description,
-      'Add at least one assertion verifying the expected result'
+      'Add at least one assertion verifying the expected result',
+      'If the behavior depends on actually running a workflow, use the execution fixture to queue and await real runs (see browser_tests/fixtures/helpers/ExecutionHelper.ts)'
     ]
   }
 }
