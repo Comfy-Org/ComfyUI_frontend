@@ -1,6 +1,7 @@
 ---
 // A/B TEST PREVIEW — v2 supported-models directory ("explore" variant).
 // Not linked from anywhere. noindex. Delete this folder to remove the preview.
+import Breadcrumbs from '../../components/common/Breadcrumbs.astro'
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import {
   launches,
@@ -66,6 +67,10 @@ const breadcrumbJsonLd = {
     { '@type': 'ListItem', position: 2, name: 'AI Models' }
   ]
 }
+const breadcrumbs = [
+  { label: 'Home', href: 'https://comfy.org' },
+  { label: 'AI Models' }
+]
 const faqJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'FAQPage',
@@ -114,9 +119,7 @@ const PILLS = [
   <section class="mx-auto max-w-9xl px-5 pb-10 pt-12 sm:px-6 lg:px-20 lg:pt-20">
     <div class="flex flex-col items-start gap-10 lg:flex-row lg:items-center lg:gap-16">
       <div class="max-w-xl">
-        <p class="mb-3 text-[11px] font-semibold uppercase tracking-[0.25em] text-primary-warm-gray">
-          <a href="https://comfy.org" class="hover:text-primary-warm-white">Home</a> / AI models
-        </p>
+        <Breadcrumbs crumbs={breadcrumbs} class="mb-3" />
         <p class="mb-4 text-xs font-extrabold uppercase tracking-[0.35em] text-primary-comfy-yellow sm:text-sm">
           Supported models
         </p>

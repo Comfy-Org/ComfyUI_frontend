@@ -22,6 +22,7 @@ import {
   proxyImg,
   type LaunchModel
 } from '../../config/models-v2-demo'
+import Breadcrumbs from '../../components/common/Breadcrumbs.astro'
 import { highlightInline } from '../../lib/highlight'
 
 export function getStaticPaths() {
@@ -158,6 +159,11 @@ const breadcrumbJsonLd = {
     { '@type': 'ListItem', position: 3, name }
   ]
 }
+const breadcrumbs = [
+  { label: 'Home', href: 'https://comfy.org' },
+  { label: 'AI Models', href: '/models-v2' },
+  { label: name }
+]
 const faqJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'FAQPage',
@@ -204,9 +210,7 @@ const faqJsonLd = {
 
   <!-- COMPACT HEADER -->
   <section class="mx-auto max-w-9xl px-5 pt-8 sm:px-6 lg:px-20 lg:pt-12">
-    <p class="text-2xs font-bold uppercase tracking-widest text-primary-warm-gray">
-      <a href="/models-v2" class="hover:text-primary-warm-white">Models</a> / {meta.label} / {name}
-    </p>
+    <Breadcrumbs crumbs={breadcrumbs} />
     <div class="mt-3 flex flex-wrap items-center justify-between gap-3">
       <div class="flex min-w-0 flex-wrap items-center gap-3">
         <h1 class="max-w-full truncate text-2xl font-semibold text-primary-warm-white sm:text-3xl">{name}</h1>

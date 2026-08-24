@@ -1,0 +1,56 @@
+---
+/**
+ * Breadcrumb trail, matching the treatment on the workflow detail pages.
+ *
+ * The rendered trail MUST mirror the BreadcrumbList JSON-LD of the page
+ * exactly — same labels, same order — so the visible navigation agrees with
+ * the structured data. A crumb without an `href` renders as the current page.
+ *
+ * This is the trail only. The caller owns the surrounding layout, because the
+ * directory nests it inside a hero column while the model page gives it its
+ * own row. `BreadcrumbBar.vue` is the full-width variant, with its own
+ * container and an "updated" slot.
+ */
+interface Crumb {
+  label: string
+  href?: string
+}
+
+interface Props {
+  crumbs: readonly Crumb[]
+  label?: string
+  class?: string
+}
+
+const { crumbs, label = 'Breadcrumb', class: className } = Astro.props
+---
+
+<nav aria-label={label} class:list={['text-sm', className]}>
+  <ol class="flex min-w-0 items-center gap-2 text-primary-comfy-canvas/75">
+    {
+      crumbs.map((crumb, i) => (
+        <li class:list={['flex items-center gap-2', i === crumbs.length - 1 ? 'min-w-0' : 'shrink-0']}>
+          {i > 0 && (
+            <svg
+              class="size-3.5 shrink-0 text-primary-comfy-canvas/40"
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path
+                d="M9 6l6 6-6 6"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          )}
+          {crumb.href
+            ? <a href={crumb.href} class="transition-colors hover:text-primary-comfy-canvas">{crumb.label}</a>
+            : <span aria-current="page" class="line-clamp-1 text-primary-comfy-canvas">{crumb.label}</span>}
+        </li>
+      ))
+    }
+  </ol>
+</nav>
