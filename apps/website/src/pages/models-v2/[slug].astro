@@ -216,10 +216,10 @@ const WIRE = {
   <!-- TABS + TRIO -->
   <section class="mx-auto max-w-7xl px-5 pt-6 sm:px-6 lg:px-8">
     <div class="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-0">
-      <nav class="flex gap-6 overflow-x-auto text-xs font-extrabold uppercase tracking-[0.2em] sm:gap-8">
-        <span class="border-b-2 border-primary-comfy-yellow pb-3 text-primary-comfy-yellow">Playground</span>
-        <a href="#api" class="pb-3 text-primary-warm-gray hover:text-primary-warm-white">API</a>
-        <a href="#gallery" class="pb-3 text-primary-warm-gray hover:text-primary-warm-white">Examples</a>
+      <nav class="flex gap-6 overflow-x-auto text-xs font-extrabold uppercase tracking-[0.2em] sm:gap-8" role="tablist" aria-label="Model page sections">
+        <button type="button" role="tab" data-tab="playground" aria-controls="panel-playground" aria-selected="true" class="border-b-2 border-transparent pb-3 uppercase text-primary-warm-gray transition hover:text-primary-warm-white aria-selected:border-primary-comfy-yellow aria-selected:text-primary-comfy-yellow">Playground</button>
+        <button type="button" role="tab" data-tab="api" aria-controls="panel-api" aria-selected="false" class="border-b-2 border-transparent pb-3 uppercase text-primary-warm-gray transition hover:text-primary-warm-white aria-selected:border-primary-comfy-yellow aria-selected:text-primary-comfy-yellow">API</button>
+        <button type="button" role="tab" data-tab="gallery" aria-controls="panel-gallery" aria-selected="false" class="border-b-2 border-transparent pb-3 uppercase text-primary-warm-gray transition hover:text-primary-warm-white aria-selected:border-primary-comfy-yellow aria-selected:text-primary-comfy-yellow">Examples</button>
         <a href={workflowsUrl} class="pb-3 text-primary-warm-gray hover:text-primary-warm-white">Workflows ↗</a>
       </nav>
       <div class="hidden gap-2 pb-2 lg:flex">
@@ -231,7 +231,7 @@ const WIRE = {
   </section>
 
   <!-- PLAYGROUND -->
-  <section class="mx-auto max-w-7xl px-5 pt-6 sm:px-6 lg:px-8">
+  <section id="panel-playground" data-panel="playground" role="tabpanel" class="mx-auto max-w-7xl px-5 pt-6 sm:px-6 lg:px-8">
     <div id="signed-in-strip" class="mb-4 hidden items-center justify-between gap-3 rounded-xl border border-[#b7ded5]/40 bg-[#b7ded5]/10 px-4 py-2.5 sm:flex-nowrap">
       <p class="text-[11px] font-extrabold uppercase tracking-[0.15em] text-[#b7ded5]">Signed in · inputs restored — no survey, no plan picker</p>
       <p id="free-meter" class="shrink-0 text-[11px] font-extrabold uppercase tracking-widest text-primary-comfy-yellow">Free runs: 5 left</p>
@@ -450,7 +450,7 @@ const WIRE = {
   </section>
 
   <!-- EXAMPLES -->
-  <section id="gallery" class="mx-auto max-w-7xl scroll-mt-24 px-5 py-12 sm:px-6 lg:px-8 lg:py-16">
+  <section id="panel-gallery" data-panel="gallery" role="tabpanel" hidden class="mx-auto max-w-7xl scroll-mt-24 px-5 py-12 sm:px-6 lg:px-8 lg:py-16">
     <div class="mb-6">
       <h2 class="text-sm font-extrabold uppercase tracking-[0.3em] text-primary-comfy-yellow">Made with {name}</h2>
       <p class="mt-1.5 text-sm font-light text-primary-warm-gray">Real outputs from the workflow templates — click one to load its prompt into the app.</p>
@@ -468,6 +468,20 @@ const WIRE = {
         </li>
       ))}
     </ul>
+  </section>
+
+  <!-- API -->
+  <section id="panel-api" data-panel="api" role="tabpanel" hidden class="mx-auto max-w-7xl scroll-mt-24 px-5 py-12 sm:px-6 lg:px-8 lg:pb-24">
+    <h2 class="text-sm font-extrabold uppercase tracking-[0.3em] text-primary-comfy-yellow">Run it your way</h2>
+    <div class="mt-4 overflow-x-auto rounded-2xl border border-white/10 bg-black/40 p-5 sm:p-7">
+      <pre class="font-mono text-xs leading-relaxed text-[#b7ded5] sm:text-[13px]">{`# Same graph the playground runs — as an endpoint
+curl -X POST https://api.comfy.org/v1/run \\
+  -H "Authorization: Bearer $COMFY_KEY" \\
+  -d '{ "workflow": "${slugId}", "prompt": "…" }'
+
+# → { "job_id": "j_8f2…", "credits": ${baseCredits}, "eta_s": 4 }`}</pre>
+    </div>
+    <p class="mt-3 text-xs font-light text-primary-warm-gray">The app above is this call — the JSON view shows the exact payload. Full reference · Comfy MCP · <a href={mdUrl} class="text-primary-comfy-yellow">this page as Markdown</a> · <a href="/models-v2/llms.txt" class="text-primary-comfy-yellow">llms.txt</a></p>
   </section>
 
   <!-- COST + FAMILY -->
@@ -507,20 +521,6 @@ const WIRE = {
     </div>
   </section>
 
-  <!-- API -->
-  <section id="api" class="mx-auto max-w-7xl scroll-mt-24 px-5 py-12 sm:px-6 lg:px-8 lg:pb-24">
-    <h2 class="text-sm font-extrabold uppercase tracking-[0.3em] text-primary-comfy-yellow">Run it your way</h2>
-    <div class="mt-4 overflow-x-auto rounded-2xl border border-white/10 bg-black/40 p-5 sm:p-7">
-      <pre class="font-mono text-xs leading-relaxed text-[#b7ded5] sm:text-[13px]">{`# Same graph the playground runs — as an endpoint
-curl -X POST https://api.comfy.org/v1/run \\
-  -H "Authorization: Bearer $COMFY_KEY" \\
-  -d '{ "workflow": "${slugId}", "prompt": "…" }'
-
-# → { "job_id": "j_8f2…", "credits": ${baseCredits}, "eta_s": 4 }`}</pre>
-    </div>
-    <p class="mt-3 text-xs font-light text-primary-warm-gray">The app above is this call — the JSON view shows the exact payload. Full reference · Comfy MCP · <a href={mdUrl} class="text-primary-comfy-yellow">this page as Markdown</a> · <a href="/models-v2/llms.txt" class="text-primary-comfy-yellow">llms.txt</a></p>
-  </section>
-
   <!-- MOBILE STICKY RUN BAR -->
   <div class="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-primary-comfy-ink/95 px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3 backdrop-blur lg:hidden">
     <button id="pg-run-mobile" class="w-full rounded-xl bg-primary-comfy-yellow py-3.5 text-sm font-extrabold uppercase tracking-widest text-primary-comfy-ink">
@@ -547,6 +547,40 @@ curl -X POST https://api.comfy.org/v1/run \\
   </div>
 
   <script>
+    function initModelTabs() {
+      const tabs = Array.from(document.querySelectorAll<HTMLElement>('[data-tab]'))
+      const panels = Array.from(document.querySelectorAll<HTMLElement>('[data-panel]'))
+      if (!tabs.length || tabs[0].dataset.bound === '1') return
+      tabs.forEach((t) => (t.dataset.bound = '1'))
+
+      const names = tabs.map((t) => t.dataset.tab)
+      const show = (name: string | undefined) => {
+        const active = name && names.includes(name) ? name : 'playground'
+        tabs.forEach((t) => t.setAttribute('aria-selected', String(t.dataset.tab === active)))
+        panels.forEach((p) => (p.hidden = p.dataset.panel !== active))
+      }
+
+      tabs.forEach((t) =>
+        t.addEventListener('click', () => {
+          show(t.dataset.tab)
+          history.replaceState(null, '', t.dataset.tab === 'playground' ? location.pathname : `#${t.dataset.tab}`)
+        })
+      )
+
+      const toTop = () => window.scrollTo(0, 0)
+
+      const showFromHash = () => {
+        show(location.hash.slice(1))
+        if (!location.hash) return
+        toTop()
+        requestAnimationFrame(toTop)
+        window.addEventListener('load', toTop, { once: true })
+      }
+
+      showFromHash()
+      window.addEventListener('hashchange', showFromHash)
+    }
+
     function initPlaygroundDemo() {
       const runDesktop = document.getElementById('pg-run')
       if (!runDesktop || runDesktop.dataset.bound === '1') return
@@ -726,6 +760,7 @@ curl -X POST https://api.comfy.org/v1/run \\
         b.addEventListener('click', () => {
           prompt.value = b.dataset.usePrompt ?? prompt.value
           renderAll()
+          document.querySelector<HTMLElement>('[data-tab="playground"]')?.click()
           document.getElementById('pg-prompt')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
         })
       )
@@ -828,7 +863,11 @@ curl -X POST https://api.comfy.org/v1/run \\
       renderAll()
     }
 
+    initModelTabs()
     initPlaygroundDemo()
-    document.addEventListener('astro:page-load', initPlaygroundDemo)
+    document.addEventListener('astro:page-load', () => {
+      initModelTabs()
+      initPlaygroundDemo()
+    })
   </script>
 </BaseLayout>

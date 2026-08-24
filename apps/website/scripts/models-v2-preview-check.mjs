@@ -175,9 +175,7 @@ const run = async () => {
   await desktop.click('body', { position: { x: 10, y: 400 } })
 
   // gallery warm start
-  await desktop.evaluate(() =>
-    document.getElementById('gallery')?.scrollIntoView()
-  )
+  await desktop.click('[data-tab="gallery"]')
   await desktop.waitForTimeout(300)
   const firstPrompt = await desktop.$eval(
     '[data-use-prompt]',
