@@ -334,8 +334,11 @@ export const useDialogService = () => {
     isInsufficientCredits?: boolean
   }) {
     const { type } = useBillingContext()
-    const { canTopUp, canSubscribeSelfServe, isReady } =
+    const { canTopUp, canSubscribeSelfServe, isReady, initialize } =
       useBillingCapabilities()
+    // A capability read still in flight has to be awaited here, or a top-up
+    // triggered during that window is silently dropped with no recovery UI.
+    if (!isReady.value) await initialize()
     if (!isReady.value) return
     if (!canTopUp.value && canSubscribeSelfServe.value) {
       await showSubscriptionRequiredDialog({
