@@ -51,9 +51,9 @@ export function useWorkflowValidation() {
     const { patched, deleted, hasBadLinks } = linkValidation
     const workflowId = graphData.id ?? 'unidentified'
     // The fixer's log lines interpolate node ids, which the schema leaves
-    // unconstrained (`zNodeId` accepts any string), so they must not reach the
-    // sinks or be pinned in memory verbatim. The digest keeps distinct
-    // corruption distinguishable without shipping workflow content anywhere.
+    // unconstrained (`zNodeId` accepts any string), so the text itself must not
+    // reach the sinks or be pinned in memory. The digest distinguishes one
+    // corruption from another — it is a key, not an anonymiser.
     const corruptionDigest = fnv1aHex(logs.join('\n'))
 
     if (patched || deleted) {
