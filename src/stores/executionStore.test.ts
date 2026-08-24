@@ -1817,6 +1817,35 @@ describe('useExecutionStore - RAF batching', () => {
         expect.objectContaining({ state: 'running' })
       )
     })
+
+    it('discards a pending node progress state when execution stops', () => {
+      expect.assertions(1)
+      const progressStateHandler = getRegisteredHandler('progress_state')
+      const executingHandler = apiEventHandlers.get('executing')!
+
+      progressStateHandler(
+        new CustomEvent('progress_state', {
+          detail: {
+            prompt_id: 'job-1',
+            nodes: {
+              '1': {
+                value: 0,
+                max: 10,
+                state: 'running',
+                node_id: '1',
+                prompt_id: 'job-1',
+                display_node_id: '1'
+              }
+            }
+          }
+        })
+      )
+
+      executingHandler(new CustomEvent('executing', { detail: null }))
+      vi.advanceTimersToNextFrame()
+
+      expect(Object.keys(store.nodeProgressStates)).toHaveLength(0)
+    })
   })
 
   describe('concurrent progress and progress_state in the same frame', () => {
