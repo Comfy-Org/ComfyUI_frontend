@@ -14,7 +14,7 @@ interface TransformableWorkflow {
 }
 
 interface NodeSelector {
-  nodeId?: string | number
+  nodeId: string | number
   nodeType: string
 }
 
@@ -63,8 +63,7 @@ function replaceNodeWidgetValue<T extends TransformableWorkflow>(
   const matchingNodes = workflow.nodes.filter(
     (node) =>
       node.type === selector.nodeType &&
-      (selector.nodeId === undefined ||
-        String(node.id) === String(selector.nodeId))
+      String(node.id) === String(selector.nodeId)
   )
   if (matchingNodes.length !== 1)
     throw new Error('Expected one matching template node')
@@ -98,6 +97,17 @@ export function replaceTemplateImageInput<T extends TransformableWorkflow>(
     ({ mediaType }) => mediaType === 'image'
   )
   if (!input) throw new Error('Template has no declared image input')
+  const hasNodeId =
+    (typeof input.nodeId === 'number' && Number.isFinite(input.nodeId)) ||
+    (typeof input.nodeId === 'string' && input.nodeId.length > 0)
+  if (
+    !hasNodeId ||
+    typeof input.nodeType !== 'string' ||
+    input.nodeType.length === 0 ||
+    typeof input.file !== 'string' ||
+    input.file.length === 0
+  )
+    throw new Error('Template image input declaration is invalid')
 
   return replaceNodeWidgetValue(
     workflow,
@@ -105,10 +115,4 @@ export function replaceTemplateImageInput<T extends TransformableWorkflow>(
     input.file,
     createAnnotatedPath({ ...image, type: image.type ?? 'output' })
   )
-}
-
-export function replaceUniqueTemplateWidgetValue<
-  T extends TransformableWorkflow
->(workflow: T, nodeType: string, currentValue: unknown, nextValue: unknown): T {
-  return replaceNodeWidgetValue(workflow, { nodeType }, currentValue, nextValue)
 }

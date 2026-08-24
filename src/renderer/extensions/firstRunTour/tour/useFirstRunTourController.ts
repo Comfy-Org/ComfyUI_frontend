@@ -14,11 +14,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import type {
-  ExecutedWsMessage,
-  ExecutionStartWsMessage,
-  ResultItem
-} from '@/schemas/apiSchema'
+import type { ExecutedWsMessage, ResultItem } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -54,7 +50,10 @@ function useFirstRunTourControllerInternal() {
   const tourWasCompleted = ref(false)
   const nudgeOutput = shallowRef<ResultItem | null>(null)
   const firstRunOutput = shallowRef<ResultItem | null>(null)
-  let tourJobId: string | null = null
+  const tourJobId = ref<string | null>(null)
+  const runCorrelationActive = ref(false)
+  let queuedJobIdsBeforeRun = new Set<string>()
+  const pendingRunOutputs = new Map<string, ResultItem>()
 
   /**
    * The half of the tour's context that exists before the tour does: a canvas
@@ -122,10 +121,34 @@ function useFirstRunTourControllerInternal() {
    * while a worker is allocated. Allocation routinely outlasts any deadline
    * short enough to be useful, so keying on status would fail healthy runs.
    */
-  const tourRunAccepted = computed(() =>
-    Object.values(executionStore.queuedJobs).some(
-      (job) => job.workflow === tourWorkflow.value
-    )
+  const acceptedTourJobId = computed(
+    () =>
+      (runCorrelationActive.value
+        ? Object.entries(executionStore.queuedJobs).find(
+            ([jobId, job]) =>
+              !queuedJobIdsBeforeRun.has(jobId) &&
+              job.workflow === tourWorkflow.value
+          )?.[0]
+        : undefined) ?? null
+  )
+  const tourRunAccepted = computed(() => tourJobId.value !== null)
+  const tourRunPresent = computed(
+    () =>
+      tourJobId.value !== null &&
+      runCorrelationActive.value &&
+      executionStore.queuedJobs[tourJobId.value]?.workflow ===
+        tourWorkflow.value
+  )
+
+  watch(
+    acceptedTourJobId,
+    (jobId) => {
+      if (!jobId || tourJobId.value) return
+      tourJobId.value = jobId
+      firstRunOutput.value ??= pendingRunOutputs.get(jobId) ?? null
+      stopAcceptDeadline()
+    },
+    { flush: 'sync' }
   )
 
   /**
@@ -160,10 +183,15 @@ function useFirstRunTourControllerInternal() {
    * same flush, and the terminal branches above overwrite unconditionally — so
    * the outcome wins whichever watcher runs first.
    */
-  watch(tourRunAccepted, (accepted) => {
-    if (accepted) stopAcceptDeadline()
-    else if (runState.value === 'generating') runState.value = 'failed'
-  })
+  watch(
+    tourRunPresent,
+    (present, wasPresent) => {
+      if (present) stopAcceptDeadline()
+      else if (wasPresent && runState.value === 'generating')
+        runState.value = 'failed'
+    },
+    { flush: 'sync' }
+  )
 
   let acceptTimer: ReturnType<typeof setTimeout> | undefined
   function stopAcceptDeadline() {
@@ -193,22 +221,23 @@ function useFirstRunTourControllerInternal() {
   })
   useEventListener(api, 'reconnected', stopOfflineGrace)
 
-  useEventListener(api, 'execution_start', (event) => {
-    const { detail } = event as CustomEvent<ExecutionStartWsMessage>
+  useEventListener(api, 'executed', (event) => {
+    const { detail } = event as CustomEvent<ExecutedWsMessage>
     if (
       engine.activeTour !== 'firstRun' ||
       runState.value !== 'generating' ||
-      tourJobId
+      queuedJobIdsBeforeRun.has(detail.prompt_id)
     )
       return
-    tourJobId = detail.prompt_id
-  })
-
-  useEventListener(api, 'executed', (event) => {
-    const { detail } = event as CustomEvent<ExecutedWsMessage>
-    if (detail.prompt_id !== tourJobId || firstRunOutput.value) return
     const image = detail.output.images?.find(({ filename }) => filename)
-    if (image) firstRunOutput.value = { ...image, type: image.type ?? 'output' }
+    if (!image) return
+    const output = { ...image, type: image.type ?? 'output' }
+    if (detail.prompt_id === tourJobId.value) {
+      firstRunOutput.value ??= output
+      return
+    }
+    if (!pendingRunOutputs.has(detail.prompt_id))
+      pendingRunOutputs.set(detail.prompt_id, output)
   })
 
   /**
@@ -229,6 +258,10 @@ function useFirstRunTourControllerInternal() {
         return
       }
 
+      queuedJobIdsBeforeRun = new Set(Object.keys(executionStore.queuedJobs))
+      pendingRunOutputs.clear()
+      tourJobId.value = null
+      runCorrelationActive.value = true
       runState.value = 'generating'
       startAcceptDeadline()
       engine.next()
@@ -250,7 +283,10 @@ function useFirstRunTourControllerInternal() {
       releaseFirstRunTargets()
       tourWorkflow.value = null
       firstRunOutput.value = null
-      tourJobId = null
+      pendingRunOutputs.clear()
+      queuedJobIdsBeforeRun.clear()
+      runCorrelationActive.value = false
+      tourJobId.value = null
       runState.value = 'idle'
     }
   )
@@ -276,7 +312,10 @@ function useFirstRunTourControllerInternal() {
     nudgeArmed.value = false
     nudgeOutput.value = null
     firstRunOutput.value = null
-    tourJobId = null
+    pendingRunOutputs.clear()
+    queuedJobIdsBeforeRun.clear()
+    runCorrelationActive.value = false
+    tourJobId.value = null
     registerTour(
       'firstRun',
       () => firstRunTourSteps(templateId, runState),

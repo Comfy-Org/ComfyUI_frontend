@@ -102,8 +102,6 @@ import Button from '@/components/ui/button/Button.vue'
 import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
 import { useTelemetry } from '@/platform/telemetry'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
-import { replaceUniqueTemplateWidgetValue } from '@/platform/workflow/templates/utils/templateWorkflowTransforms'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useDialogStore } from '@/stores/dialogStore'
 
 import { useFirstRunTourController } from '../tour/useFirstRunTourController'
@@ -118,29 +116,26 @@ interface Suggestion {
   titleKey: string
   detailKey: string
   icon: string
-  transformWorkflow?: (workflow: ComfyWorkflowJSON) => ComfyWorkflowJSON
 }
 
 const suggestions: Suggestion[] = [
   {
     id: 'animate',
-    templateId: 'video_wan2_2_14B_i2v',
+    templateId: 'video_minimax_h3_i2v_continuation',
     titleKey: 'onboardingCoachmarks.firstRun.nudge.animate.title',
     detailKey: 'onboardingCoachmarks.firstRun.nudge.animate.detail',
     icon: 'icon-[lucide--film]'
   },
   {
     id: 'upscale',
-    templateId: 'utility_interpolation_image_upscale',
+    templateId: 'utility_interpolation_image_upscale_4x',
     titleKey: 'onboardingCoachmarks.firstRun.nudge.upscale.title',
     detailKey: 'onboardingCoachmarks.firstRun.nudge.upscale.detail',
-    icon: 'icon-[lucide--maximize-2]',
-    transformWorkflow: (workflow) =>
-      replaceUniqueTemplateWidgetValue(workflow, 'ImageScaleBy', 2, 4)
+    icon: 'icon-[lucide--maximize-2]'
   },
   {
     id: 'restyle',
-    templateId: 'api_google_nano_banana2_image_edit',
+    templateId: 'api_google_nano_banana2_image_edit_continuation',
     titleKey: 'onboardingCoachmarks.firstRun.nudge.restyle.title',
     detailKey: 'onboardingCoachmarks.firstRun.nudge.restyle.detail',
     icon: 'icon-[ph--swatches]'
@@ -201,8 +196,7 @@ async function onSuggestion(suggestion: Suggestion) {
     const workflowLoaded =
       templatesLoaded &&
       (await loadWorkflowTemplate(suggestion.templateId, 'default', {
-        input,
-        transformWorkflow: suggestion.transformWorkflow
+        input
       }))
 
     if (workflowLoaded) {

@@ -13,6 +13,26 @@ const FIRST_OUTPUT = {
   subfolder: 'tour',
   type: 'output' as const
 }
+type SuggestionId = 'animate' | 'upscale' | 'restyle'
+
+const SUGGESTION_TITLES: Record<SuggestionId, string> = {
+  animate: enMessages.onboardingCoachmarks.firstRun.nudge.animate.title,
+  upscale: enMessages.onboardingCoachmarks.firstRun.nudge.upscale.title,
+  restyle: enMessages.onboardingCoachmarks.firstRun.nudge.restyle.title
+}
+
+type Deferred<T> = {
+  promise: Promise<T>
+  resolve: (value: T) => void
+}
+
+function createDeferred<T>(): Deferred<T> {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((resolveFn) => {
+    resolve = resolveFn
+  })
+  return { promise, resolve }
+}
 
 const mocks = await vi.hoisted(async () => {
   const { ref, shallowRef } = await import('vue')
@@ -89,6 +109,12 @@ function nudge() {
   return screen.queryByTestId('first-run-nudge')
 }
 
+function suggestionButton(id: SuggestionId) {
+  return screen.getByRole('button', {
+    name: new RegExp(SUGGESTION_TITLES[id], 'i')
+  })
+}
+
 async function showNudge() {
   mocks.nudgeArmed.value = true
   renderNudge()
@@ -153,48 +179,72 @@ describe('FirstRunTourNudge', () => {
   it.for([
     {
       id: 'animate',
-      templateId: 'video_wan2_2_14B_i2v'
+      templateId: 'video_minimax_h3_i2v_continuation'
     },
     {
       id: 'upscale',
-      templateId: 'utility_interpolation_image_upscale'
+      templateId: 'utility_interpolation_image_upscale_4x'
     },
     {
       id: 'restyle',
-      templateId: 'api_google_nano_banana2_image_edit'
+      templateId: 'api_google_nano_banana2_image_edit_continuation'
     }
-  ])('continues the first output through $id', async ({ id, templateId }) => {
+  ] as const)(
+    'continues the first output through $id',
+    async ({ id, templateId }) => {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+      await showNudge()
+
+      await user.click(suggestionButton(id))
+
+      expect(mocks.loadTemplates).toHaveBeenCalled()
+      expect(mocks.loadWorkflowTemplate).toHaveBeenCalledWith(
+        templateId,
+        'default',
+        { input: FIRST_OUTPUT }
+      )
+      expect(mocks.dismissNudge).toHaveBeenCalled()
+    }
+  )
+
+  it('exposes the pending continuation and blocks competing actions', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    const templatesLoaded = createDeferred<boolean>()
+    mocks.loadTemplates.mockReturnValueOnce(templatesLoaded.promise)
     await showNudge()
 
-    await user.click(screen.getByTestId(`first-run-nudge-${id}`))
+    const animate = suggestionButton('animate')
+    await user.click(animate)
 
-    expect(mocks.loadTemplates).toHaveBeenCalled()
-    expect(mocks.loadWorkflowTemplate).toHaveBeenCalledWith(
-      templateId,
-      'default',
-      expect.objectContaining({ input: FIRST_OUTPUT })
-    )
-    expect(mocks.dismissNudge).toHaveBeenCalled()
+    expect(animate).toHaveAttribute('aria-busy', 'true')
+    expect(animate).toBeDisabled()
+    expect(suggestionButton('upscale')).toBeDisabled()
+    expect(suggestionButton('restyle')).toBeDisabled()
+    expect(
+      screen.getByRole('button', {
+        name: enMessages.onboardingCoachmarks.firstRun.nudge.explore
+      })
+    ).toBeDisabled()
+
+    templatesLoaded.resolve(true)
+    await vi.waitFor(() => {
+      expect(mocks.loadWorkflowTemplate).toHaveBeenCalled()
+      expect(mocks.dismissNudge).toHaveBeenCalled()
+    })
   })
 
-  it('configures the upscale action for 4x', async () => {
+  it('keeps the card open when the template catalog fails to load', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    mocks.loadTemplates.mockResolvedValue(false)
     await showNudge()
 
-    await user.click(screen.getByTestId('first-run-nudge-upscale'))
-    const options = mocks.loadWorkflowTemplate.mock.calls[0][2]
-    const transformed = options.transformWorkflow({
-      nodes: [
-        {
-          id: 3,
-          type: 'ImageScaleBy',
-          widgets_values: ['lanczos', 2]
-        }
-      ]
-    })
+    await user.click(suggestionButton('animate'))
 
-    expect(transformed.nodes[0].widgets_values).toEqual(['lanczos', 4])
+    expect(mocks.loadWorkflowTemplate).not.toHaveBeenCalled()
+    expect(mocks.dismissNudge).not.toHaveBeenCalled()
+    expect(mocks.addToast).toHaveBeenCalledWith(
+      expect.objectContaining({ severity: 'error' })
+    )
   })
 
   it('keeps the card open and reports a template load failure', async () => {
@@ -202,7 +252,7 @@ describe('FirstRunTourNudge', () => {
     mocks.loadWorkflowTemplate.mockResolvedValue(false)
     await showNudge()
 
-    await user.click(screen.getByTestId('first-run-nudge-animate'))
+    await user.click(suggestionButton('animate'))
 
     expect(mocks.dismissNudge).not.toHaveBeenCalled()
     expect(mocks.addToast).toHaveBeenCalledWith(
@@ -214,7 +264,11 @@ describe('FirstRunTourNudge', () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     await showNudge()
 
-    await user.click(screen.getByTestId('first-run-nudge-explore'))
+    await user.click(
+      screen.getByRole('button', {
+        name: enMessages.onboardingCoachmarks.firstRun.nudge.explore
+      })
+    )
 
     expect(mocks.showTemplates).toHaveBeenCalledWith('first_run_nudge')
     expect(mocks.trackOnboardingTour).toHaveBeenCalledWith(
