@@ -130,6 +130,8 @@ export function useWorkflowValidation() {
         // Link fixer itself is throwing an error
         console.error(err)
         const workflowId = graphData.id ?? 'unidentified'
+        // Unlike the log above, this message reaches the sinks verbatim, so
+        // throw sites in the fixer must keep interpolating nothing.
         const cause = toError(err).message
         reportFixerFailureOnce(`${workflowId}|${cause}`, () => {
           reportError(err, {

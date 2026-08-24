@@ -33,22 +33,24 @@ const reload = (workflow: ComfyWorkflowJSON) =>
  * rest of a shared file asserting against an exhausted budget. Vitest gives
  * each file its own module registry; this one is that budget's own file, so no
  * ordering rule or `vi.resetModules()` is needed to keep the two apart.
+ *
+ * A budget can only be spent once per registry, so `retry` is off: a second
+ * attempt would assert against the budget the first attempt spent.
  */
-describe('useWorkflowValidation reporting budget', () => {
-  let explosions = 0
-
+describe('useWorkflowValidation reporting budget', { retry: 0 }, () => {
   it('keeps reporting fixer failures after corruption reports run out', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
 
-    for (let i = 0; i <= MAX_REPORTS_PER_KIND; i++) {
+    for (let i = 0; i < MAX_REPORTS_PER_KIND; i++) {
       await reload(unidentifiedCorruptWorkflow())
     }
+    expect(reportError).toHaveBeenCalledTimes(MAX_REPORTS_PER_KIND)
 
     reportError.mockClear()
     await reload(unidentifiedCorruptWorkflow())
     expect(reportError).not.toHaveBeenCalled()
 
-    const cause = `link fixer exploded ${(explosions += 1)}`
+    const cause = 'link fixer exploded'
     vi.mocked(fixBadLinks).mockImplementation(() => {
       throw new Error(cause)
     })

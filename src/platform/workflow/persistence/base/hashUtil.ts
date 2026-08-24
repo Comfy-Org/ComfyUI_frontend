@@ -7,10 +7,10 @@ import { fnv1aHex } from '@/utils/hashUtil'
  * draft a user has not saved yet.
  *
  * @param path - The workflow path (e.g., "workflows/My Workflow.json")
- * @returns An 8-character hex string (e.g., "a1b2c3d4")
+ * @returns An 8-character hex string
  *
  * @example
- * hashPath("workflows/Untitled.json") // "1a2b3c4d"
+ * hashPath("workflows/Untitled.json") // "325d5d45"
  */
 export function hashPath(path: string): string {
   return fnv1aHex(path)

@@ -23,10 +23,10 @@ export function fnv1a(str: string): number {
  * drafts by it — so the digest of a given string must not change.
  *
  * @param str - The string to hash
- * @returns An 8-character hex string (e.g., "a1b2c3d4")
+ * @returns An 8-character hex string
  *
  * @example
- * fnv1aHex("workflows/Untitled.json") // "1a2b3c4d"
+ * fnv1aHex("workflows/Untitled.json") // "325d5d45"
  */
 export function fnv1aHex(str: string): string {
   return fnv1a(str).toString(16).padStart(8, '0')
