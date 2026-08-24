@@ -8,6 +8,7 @@
     "dist/*",
     "packages/registry-types/src/comfyRegistryTypes.ts",
     "playwright-report/*",
+    "scripts/patch-playwright-agents.js",
     "scripts/registry-census/detection-proof/**",
     "src/__ecs_matrix__/**",
     "src/extensions/core/*",
@@ -136,6 +137,12 @@
       "rules": {
         "comfy/no-module-scope-vitest-mocks": "error",
         "comfy/no-redundant-vitest-cleanup": "error"
+      }
+    },
+    {
+      "files": ["tools/test-recorder/**/*.ts"],
+      "rules": {
+        "no-console": "allow"
       }
     },
     {
