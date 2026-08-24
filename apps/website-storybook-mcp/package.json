@@ -8,7 +8,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@storybook/mcp": "catalog:"
+    "@auth/core": "catalog:",
+    "@storybook/mcp": "catalog:",
+    "@vercel/functions": "catalog:"
   },
   "devDependencies": {
     "@types/node": "catalog:",

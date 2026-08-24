@@ -39,7 +39,7 @@ const config: KnipConfig = {
       entry: ['src/scripts/**/*.ts']
     },
     'apps/website-storybook-mcp': {
-      entry: ['api/**/*.ts', 'scripts/**/*.ts']
+      entry: ['api/**/*.ts', 'middleware.ts', 'scripts/**/*.ts']
     }
   },
   ignoreDependencies: [
