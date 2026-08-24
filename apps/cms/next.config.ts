@@ -8,9 +8,19 @@ const dirname = path.dirname(__filename)
 
 const nextConfig: NextConfig = {
   images: {
+    // Local disk path, used when the GCS storage plugin is disabled (no GCS_BUCKET).
     localPatterns: [
       {
         pathname: '/api/media/file/**',
+      },
+    ],
+    // Admin thumbnails when media is served from the CDN-backed bucket. Host is
+    // literal — keep in sync with GCS_PUBLIC_BASE_URL / GCS_MEDIA_PREFIX.
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'media.comfy.org',
+        pathname: '/website/cms/**',
       },
     ],
   },

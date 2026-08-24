@@ -1,5 +1,6 @@
 import { postgresAdapter } from '@payloadcms/db-postgres'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
+import { gcsStorage } from '@payloadcms/storage-gcs'
 import path from 'path'
 import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
@@ -16,6 +17,20 @@ import { rebuildWebsiteEndpoint } from './endpoints/rebuildWebsite'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
+
+// Media is served from the GCS bucket behind the media.comfy.org CDN, not the
+// Next server's local disk — so autoplay hero videos range-serve from a fast
+// origin. Gated on GCS_BUCKET: unset (local dev without creds) leaves media on
+// local disk at /api/media/file/<filename>, exactly as before.
+const gcsBucket = process.env.GCS_BUCKET
+const gcsMediaPrefix = process.env.GCS_MEDIA_PREFIX || 'website/cms'
+const gcsPublicBase = (process.env.GCS_PUBLIC_BASE_URL || 'https://media.comfy.org').replace(
+  /\/+$/,
+  '',
+)
+const gcsCredentials = process.env.GCS_CREDENTIALS_JSON
+  ? JSON.parse(process.env.GCS_CREDENTIALS_JSON)
+  : undefined
 
 export default buildConfig({
   admin: {
@@ -63,5 +78,30 @@ export default buildConfig({
     },
   }),
   sharp,
-  plugins: [],
+  plugins: [
+    gcsStorage({
+      enabled: Boolean(gcsBucket),
+      bucket: gcsBucket || '',
+      acl: 'Public',
+      options: {
+        projectId: process.env.GCS_PROJECT_ID,
+        credentials: gcsCredentials,
+      },
+      collections: {
+        media: {
+          prefix: gcsMediaPrefix,
+          // Store the raw CDN url on the doc instead of routing bytes back
+          // through Payload's access-controlled /api/media/file proxy. Media is
+          // already `read: anyone`, so the gate protects nothing.
+          disablePayloadAccessControl: true,
+          // Absolute CDN url, so the website's `new URL(doc.url, base)` uses it
+          // verbatim (base ignored). Media has no imageSizes, so `size` is unused.
+          generateFileURL: ({ filename, prefix }) => {
+            const key = [prefix ?? gcsMediaPrefix, filename].filter(Boolean).join('/')
+            return `${gcsPublicBase}/${key}`
+          },
+        },
+      },
+    }),
+  ],
 })
