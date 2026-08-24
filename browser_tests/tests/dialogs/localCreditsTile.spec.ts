@@ -36,7 +36,12 @@ test.describe('Local credits tile', () => {
 
     const settingsDialog = comfyPage.settingDialog
     await settingsDialog.open()
+    const initialBalance = page.waitForResponse(
+      (response) =>
+        response.url().includes('/customers/balance') && response.ok()
+    )
     await settingsDialog.category('Plan & Credits').click()
+    await initialBalance
     const creditsContent = settingsDialog.contentArea
 
     const refreshedBalance = page.waitForResponse(
