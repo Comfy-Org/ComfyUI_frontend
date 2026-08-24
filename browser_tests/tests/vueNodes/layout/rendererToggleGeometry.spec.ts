@@ -5,6 +5,8 @@ import {
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 import { toNodeId } from '@/types/nodeId'
 
+const LEGACY_TITLE_HEIGHT = 30
+
 test.describe('Renderer toggle geometry', { tag: ['@vue-nodes'] }, () => {
   test('slot geometry survives a Vue to legacy round trip', async ({
     comfyPage
@@ -117,6 +119,89 @@ test.describe('Renderer toggle geometry', { tag: ['@vue-nodes'] }, () => {
           return zIndices.filter((zIndex) => zIndex >= ksamplerZIndex).length
         })
         .toBe(1)
+    }
+  )
+
+  test(
+    'preserves frontmost order when switching to legacy rendering',
+    { tag: ['@node'] },
+    async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow('vueNodes/simple-triple')
+      await fitToViewInstant(comfyPage)
+
+      const [ksampler] = await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
+      const [clip] = await comfyPage.nodeOps.getNodeRefsByTitle(
+        'CLIP Text Encode (Prompt)'
+      )
+      const ksamplerNode = comfyPage.vueNodes.getNodeByTitle('KSampler')
+      const clipNode = comfyPage.vueNodes.getNodeByTitle('CLIP Text Encode')
+      const { header } = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+      const { header: clipHeader } =
+        await comfyPage.vueNodes.getFixtureByTitle('CLIP Text Encode')
+      const headerBox = await header.boundingBox()
+      const clipBox = await clipHeader.boundingBox()
+      if (!headerBox || !clipBox) throw new Error('Fixture nodes not found')
+
+      await comfyPage.canvasOps.dragAndDrop(
+        {
+          x: headerBox.x + headerBox.width / 2,
+          y: headerBox.y + headerBox.height / 2
+        },
+        {
+          x: clipBox.x + clipBox.width / 2,
+          y: clipBox.y + clipBox.height / 2
+        }
+      )
+
+      await expect
+        .poll(async () => {
+          const ksamplerZIndex = await ksamplerNode.evaluate((node) =>
+            Number(getComputedStyle(node).zIndex)
+          )
+          const clipZIndex = await clipNode.evaluate((node) =>
+            Number(getComputedStyle(node).zIndex)
+          )
+          return ksamplerZIndex - clipZIndex
+        })
+        .toBeGreaterThan(0)
+
+      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
+      await comfyPage.nextFrame()
+      await comfyPage.page.evaluate(() => window.app!.canvas.deselectAll())
+      expect(await comfyPage.nodeOps.getSelectedNodeIds()).toEqual([])
+
+      const ksamplerGeometry = await comfyPage.canvasOps.getNodeGeometry(
+        ksampler.id
+      )
+      const clipGeometry = await comfyPage.canvasOps.getNodeGeometry(clip.id)
+      const overlap = {
+        left: Math.max(ksamplerGeometry.pos[0], clipGeometry.pos[0]),
+        top: Math.max(
+          ksamplerGeometry.pos[1] - LEGACY_TITLE_HEIGHT,
+          clipGeometry.pos[1] - LEGACY_TITLE_HEIGHT
+        ),
+        right: Math.min(
+          ksamplerGeometry.pos[0] + ksamplerGeometry.size[0],
+          clipGeometry.pos[0] + clipGeometry.size[0]
+        ),
+        bottom: Math.min(ksamplerGeometry.pos[1], clipGeometry.pos[1])
+      }
+      if (overlap.left >= overlap.right || overlap.top >= overlap.bottom) {
+        throw new Error('Fixture nodes do not overlap')
+      }
+
+      const clickPosition = await comfyPage.canvasOps.convertOffsetToCanvas([
+        (overlap.left + overlap.right) / 2,
+        (overlap.top + overlap.bottom) / 2
+      ])
+      await comfyPage.canvasOps.mouseClickAt({
+        x: clickPosition[0],
+        y: clickPosition[1]
+      })
+
+      expect(await comfyPage.nodeOps.getSelectedNodeIds()).toEqual([
+        ksampler.id
+      ])
     }
   )
 })
