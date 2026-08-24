@@ -71,7 +71,7 @@ describe('normalizeConfiguredTopology with conflicting origins (#15577)', () => 
     LiteGraph.registerNodeType('test/DupTestNode', DupTestNode)
   })
 
-  it.fails('keeps the link that input.link references', () => {
+  it('keeps the link that input.link references', () => {
     const graph = configureConflictingOrigins()
 
     expect(graph.getNodeById(toNodeId(3))?.getInputLink(0)?.origin_id).toBe(
@@ -97,7 +97,7 @@ describe('normalizeConfiguredTopology with conflicting origins (#15577)', () => 
     expect(graph.getNodeById(toNodeId(3))?.getInputLink(0)).toBeDefined()
   })
 
-  it.fails('re-saves the workflow without changing the upstream node', () => {
+  it('re-saves the workflow without changing the upstream node', () => {
     const graph = configureConflictingOrigins()
 
     const [survivor] = linksIntoTargetSlot(
