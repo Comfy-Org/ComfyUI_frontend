@@ -5,6 +5,7 @@ import {
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { inputLinkId, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
+import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
@@ -15,8 +16,12 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { app, sanitizeNodeName } from '@/scripts/app'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { clearNodeOwnedStoreState } from '@/stores/clearNodeOwnedStoreState'
+import type { EndpointPatch, EndpointUpdate } from '@/stores/linkStore'
+import { useLinkStore } from '@/stores/linkStore'
 import type { MissingNodeType } from '@/types/comfy'
+import { graphScopeOf } from '@/types/graphScopeId'
 import type { LinkId } from '@/types/linkId'
+import type { LinkTopology } from '@/types/linkTopology'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
 
 interface ReplacementGroup {
@@ -37,43 +42,63 @@ function findMatchingType(
   return undefined
 }
 
-function transferInputConnection(
-  oldNode: LGraphNode,
-  oldInputName: string,
-  newNode: LGraphNode,
-  newInputName: string,
-  graph: LGraph
-): void {
-  const oldSlotIdx = oldNode.inputs?.findIndex((i) => i.name === oldInputName)
-  const newSlotIdx = newNode.inputs?.findIndex((i) => i.name === newInputName)
-  if (oldSlotIdx == null || oldSlotIdx === -1) return
-  if (newSlotIdx == null || newSlotIdx === -1) return
-
-  const linkId = inputLinkId(graph, oldNode.id, oldSlotIdx)
-  if (linkId == null) return
-
-  const link = graph.links.get(linkId)
-  if (!link) return
-
-  link.target_id = newNode.id
-  link.target_slot = newSlotIdx
+interface ReplacementTopologyPlan {
+  updates: EndpointUpdate[]
+  removals: { link: LLink; topology: LinkTopology }[]
 }
 
-function transferOutputConnections(
+function planReplacementTopology(
   oldNode: LGraphNode,
-  oldOutputIdx: number,
   newNode: LGraphNode,
-  newOutputIdx: number,
+  replacement: NodeReplacement,
   graph: LGraph
-): void {
-  const links = outputLinks(graph, oldNode.id, oldOutputIdx)
-  if (!links.length) return
-  if (!newNode.outputs?.[newOutputIdx]) return
-
-  for (const link of links) {
-    link.origin_id = newNode.id
-    link.origin_slot = newOutputIdx
+): ReplacementTopologyPlan {
+  const linkStore = useLinkStore()
+  const scope = graphScopeOf(graph)
+  const oldNodeId = String(oldNode.id)
+  const updates = new Map<LinkId, EndpointUpdate>()
+  const addUpdate = (link: LLink, patch: EndpointPatch) => {
+    const topology = linkStore.getTopology(scope.rootGraphId, link.id)
+    if (!topology) return
+    const existing = updates.get(link.id)
+    updates.set(link.id, {
+      topology,
+      patch: { ...existing?.patch, ...patch }
+    })
   }
+
+  for (const inputMap of replacement.input_mapping ?? []) {
+    if (!('old_id' in inputMap) || isDotNotation(inputMap.new_id)) continue
+    const oldSlot = oldNode.inputs?.findIndex(
+      (input) => input.name === inputMap.old_id
+    )
+    const newSlot = newNode.inputs?.findIndex(
+      (input) => input.name === inputMap.new_id
+    )
+    if (oldSlot == null || oldSlot === -1 || newSlot == null || newSlot === -1)
+      continue
+    const linkId = inputLinkId(graph, oldNode.id, oldSlot)
+    const link = linkId == null ? undefined : graph.links.get(linkId)
+    if (link) addUpdate(link, { targetSlot: newSlot })
+  }
+
+  for (const outputMap of replacement.output_mapping ?? []) {
+    if (!newNode.outputs?.[outputMap.new_idx]) continue
+    for (const link of outputLinks(graph, oldNode.id, outputMap.old_idx)) {
+      addUpdate(link, { originSlot: outputMap.new_idx })
+    }
+  }
+
+  const removals = [...graph.links.values()].flatMap((link) => {
+    if (
+      (link.origin_id !== oldNodeId && link.target_id !== oldNodeId) ||
+      updates.has(link.id)
+    )
+      return []
+    const topology = linkStore.getTopology(scope.rootGraphId, link.id)
+    return topology ? [{ link, topology }] : []
+  })
+  return { updates: [...updates.values()], removals }
 }
 
 /** Uses old_widget_ids as name→index lookup into widgets_values. */
@@ -161,10 +186,11 @@ function replaceWithMapping(
   nodeGraph: LGraph,
   idx: number
 ): void {
+  const order = node.order
   newNode.id = node.id
   newNode.pos = [...node.pos]
   newNode.size = [...node.size]
-  newNode.order = node.order
+  newNode.order = order
   newNode.mode = node.mode
   if (node.flags) newNode.flags = { ...node.flags }
 
@@ -175,59 +201,7 @@ function replaceWithMapping(
   )
     throw new Error(`Cannot replace node ${node.id}: ownership is invalid`)
 
-  const transferredLinkIds = new Set<LinkId>()
-  for (const inputMap of replacement.input_mapping ?? []) {
-    if (!('old_id' in inputMap) || isDotNotation(inputMap.new_id)) continue
-    const oldSlotIdx = node.inputs?.findIndex((i) => i.name === inputMap.old_id)
-    const newSlotIdx = newNode.inputs?.findIndex(
-      (i) => i.name === inputMap.new_id
-    )
-    if (
-      oldSlotIdx == null ||
-      oldSlotIdx === -1 ||
-      newSlotIdx == null ||
-      newSlotIdx === -1
-    )
-      continue
-    const linkId = inputLinkId(nodeGraph, node.id, oldSlotIdx)
-    if (linkId != null) transferredLinkIds.add(linkId)
-  }
-  for (const outMap of replacement.output_mapping ?? []) {
-    if (!newNode.outputs?.[outMap.new_idx]) continue
-    for (const link of outputLinks(nodeGraph, node.id, outMap.old_idx)) {
-      transferredLinkIds.add(link.id)
-    }
-  }
-  for (const link of [...nodeGraph.links.values()]) {
-    if (
-      (link.origin_id === node.id || link.target_id === node.id) &&
-      !transferredLinkIds.has(link.id)
-    ) {
-      nodeGraph.removeLink(link.id)
-    }
-  }
-
-  node.onRemoved?.()
-  if (
-    nodeGraph._nodes[idx] !== node ||
-    nodeGraph._nodes_by_id[node.id] !== node ||
-    !transferReplacementOwnership(node, newNode)
-  )
-    throw new Error(
-      `Cannot replace node ${node.id}: ownership changed during removal`
-    )
-  clearNodeOwnedStoreState(node)
-  nodeGraph._nodes[idx] = newNode
-  newNode.graph = nodeGraph
-  node.graph = null
-  nodeGraph._nodes_by_id[newNode.id] = newNode
-
-  for (const widget of newNode.widgets ?? []) {
-    if (isNodeBindable(widget)) widget.setNodeId(newNode.id)
-  }
-
   const serialized = node.last_serialization ?? node.serialize()
-
   if (serialized.title != null) newNode.title = serialized.title
   if (serialized.properties) {
     newNode.properties = { ...serialized.properties }
@@ -240,13 +214,6 @@ function replaceWithMapping(
     for (const inputMap of replacement.input_mapping) {
       if ('old_id' in inputMap) {
         if (isDotNotation(inputMap.new_id)) continue // Autogrow/DynamicCombo
-        transferInputConnection(
-          node,
-          inputMap.old_id,
-          newNode,
-          inputMap.new_id,
-          nodeGraph
-        )
         transferWidgetValue(
           serialized,
           replacement.old_widget_ids,
@@ -262,22 +229,54 @@ function replaceWithMapping(
     }
   }
 
-  if (replacement.output_mapping) {
-    for (const outMap of replacement.output_mapping) {
-      transferOutputConnections(
-        node,
-        outMap.old_idx,
-        newNode,
-        outMap.new_idx,
-        nodeGraph
-      )
-    }
-  }
-
+  const topology = planReplacementTopology(
+    node,
+    newNode,
+    replacement,
+    nodeGraph
+  )
   newNode.has_errors = false
 
-  nodeGraph.onNodeAdded?.(newNode)
-  nodeGraph.events.dispatch('node:added', { node: newNode })
+  node.onRemoved?.()
+  if (
+    nodeGraph._nodes[idx] !== node ||
+    nodeGraph._nodes_by_id[node.id] !== node ||
+    !canTransferReplacementOwnership(node, newNode) ||
+    !transferReplacementOwnership(node, newNode)
+  )
+    throw new Error(
+      `Cannot replace node ${node.id}: ownership changed during removal`
+    )
+
+  const topologyResult = useLinkStore().updateEndpoints(
+    graphScopeOf(nodeGraph),
+    topology.updates,
+    topology.removals.map(({ topology }) => topology)
+  )
+  if (!topologyResult.ok) {
+    transferReplacementOwnership(newNode, node)
+    throw new Error(
+      `Cannot replace node ${node.id}: ${topologyResult.error.message}`
+    )
+  }
+
+  clearNodeOwnedStoreState(node)
+  nodeGraph._nodes[idx] = newNode
+  newNode.graph = nodeGraph
+  node.graph = null
+  node.order = order
+  nodeGraph._nodes_by_id[newNode.id] = newNode
+  for (const { link } of topology.removals) link.disconnect(nodeGraph)
+  for (const widget of newNode.widgets ?? []) {
+    if (isNodeBindable(widget)) widget.setNodeId(newNode.id)
+  }
+
+  try {
+    nodeGraph.onNodeAdded?.(newNode)
+    nodeGraph.events.dispatch('node:added', { node: newNode })
+  } catch (error) {
+    console.error(`Failed to notify replacement node ${newNode.id}`, error)
+  }
 }
 
 export function useNodeReplacement() {

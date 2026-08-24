@@ -2295,6 +2295,7 @@ export class LGraphNode
 
     const widgetIndex = this.widgets.indexOf(widget)
     if (widgetIndex === -1) throw new Error('Widget not found on this node')
+    const id = widget.widgetId
 
     // Clean up slot references to prevent memory leaks
     if (this.inputs) {
@@ -2308,6 +2309,7 @@ export class LGraphNode
     }
 
     widget.onRemove?.()
+    if (id) useWidgetValueStore().deleteWidget(id)
     this.widgets.splice(widgetIndex, 1)
   }
 
