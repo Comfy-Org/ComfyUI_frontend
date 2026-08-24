@@ -22,6 +22,7 @@ describe('matrix runner', () => {
     { renderer: 'Vue', matrixVue: '1', selectedMode: true }
   ])(
     'records $renderer initialization and post-pack mutation',
+    { timeout: 30_000 },
     async ({ matrixVue, selectedMode }) => {
       outputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'matrix-runner-'))
       vi.stubEnv('MATRIX_OUT', outputDir)
@@ -48,7 +49,6 @@ describe('matrix runner', () => {
       expect(modeDuringLoad).toBe(selectedMode)
       expect(row.loadedOk).toBe(1)
       expect(row.vueNodesMode).toBe(!selectedMode)
-    },
-    30_000
+    }
   )
 })
