@@ -9,7 +9,6 @@ test.describe(
   { tag: ['@vue-nodes', '@canvas'] },
   () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
       await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
     })
 
