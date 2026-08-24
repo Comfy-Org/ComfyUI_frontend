@@ -8,6 +8,7 @@
       variant="muted-textonly"
       class="absolute top-2.5 left-2.5 shrink-0 rounded-full text-text-secondary hover:bg-white/10"
       :aria-label="$t('g.back')"
+      :disabled="isPolling"
       @click="handleBackToPricing"
     >
       <i class="pi pi-arrow-left text-xl" />
@@ -85,6 +86,7 @@
       :tier-key="selectedTierKey!"
       :billing-cycle="selectedBillingCycle"
       :is-loading="isSubscribing || isPolling"
+      :action-url="activeCheckoutActionUrl"
       @add-credit-card="handleAddCreditCard"
       @back="handleBackToPricing"
     />
@@ -98,6 +100,8 @@
       "
       :preview-data="previewData"
       :is-loading="isSubscribing || isPolling"
+      :action-url="activeCheckoutActionUrl"
+      :force-reactivation="reactivationRequired"
       @confirm="handleConfirmTransition"
       @back="handleBackToPricing"
     />
@@ -149,8 +153,10 @@ const {
   isSubscribing,
   isResubscribing,
   previewData,
+  reactivationRequired,
   selectedTierKey,
   selectedBillingCycle,
+  activeCheckoutActionUrl,
   isPolling,
   handleSubscribeClick,
   handleBackToPricing,

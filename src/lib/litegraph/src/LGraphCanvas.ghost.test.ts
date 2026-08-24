@@ -1,19 +1,14 @@
 import userEvent from '@testing-library/user-event'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
-vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
-  layoutStore: {
-    querySlotAtPoint: vi.fn(),
-    queryRerouteAtPoint: vi.fn(),
-    getNodeLayoutRef: vi.fn(() => ({ value: null })),
-    getSlotLayout: vi.fn(),
-    setSource: vi.fn(),
-    setActor: vi.fn()
-  }
-}))
+vi.mock('@/renderer/core/layout/store/layoutStore')
+
+beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
 
 function createGhostTestHarness() {
   const canvasElement = document.createElement('canvas')
@@ -54,7 +49,6 @@ describe('LGraphCanvas ghost placement auto-pan', () => {
   let node: LGraphNode
 
   beforeEach(() => {
-    vi.useFakeTimers()
     ;({ canvas, canvasElement, node } = createGhostTestHarness())
     // Near left edge so autopan fires by default
     canvas.mouse[0] = 5
@@ -64,7 +58,6 @@ describe('LGraphCanvas ghost placement auto-pan', () => {
   afterEach(() => {
     if (canvas.state.ghostNodeId != null) canvas.finalizeGhostPlacement(false)
     canvasElement.remove()
-    vi.useRealTimers()
   })
 
   it('moves the ghost node when pointer is near edge', () => {

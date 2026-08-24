@@ -1,3 +1,6 @@
+// @vitest-environment jsdom
+// dompurify is inert under happy-dom — see the tripwire note in
+// vitest.setup.ts (capricorn86/happy-dom#2182, FE-1189).
 import { render, screen } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -58,7 +61,6 @@ describe('TextPreviewWidget', () => {
   beforeEach(() => {
     execState().executingNodeIds = []
     execState().isIdle = true
-    vi.clearAllMocks()
   })
 
   describe('Text formatting', () => {

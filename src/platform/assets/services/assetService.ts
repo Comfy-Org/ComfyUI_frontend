@@ -3,6 +3,7 @@ import { z } from 'zod'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { st } from '@/i18n'
+import { ASSETS_SEED_FAST_COMPLETE_EVENT } from '@/platform/assets/constants/assetEvents'
 
 import {
   assetFilenameSchema,
@@ -22,13 +23,14 @@ import type {
   TagsOperationResult
 } from '@/platform/assets/schemas/assetSchema'
 import {
-  MODEL_TYPE_TAG_PREFIX,
+  getAssetCategories,
   getAssetFilename
 } from '@/platform/assets/utils/assetMetadataUtils'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
+import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 
 export interface PaginationOptions {
   limit?: number
@@ -222,26 +224,6 @@ function normalizeAssetTags(tags: string[]): string[] {
 }
 
 /**
- * Resolves the model folder a tag represents, or undefined when the tag is not
- * a folder category. `supports_model_type_tags` backends carry the category as
- * a namespaced `model_type:<folder>` tag; older backends mint bare tags, which
- * may carry subfolder paths (e.g. `Chatterbox/sub/model`) and group by their
- * top-level segment, matching the asset browser's legacy grouping.
- */
-function modelFolderFromTag(
-  tag: string,
-  modelTypeMode: boolean
-): string | undefined {
-  if (modelTypeMode) {
-    return tag.startsWith(MODEL_TYPE_TAG_PREFIX)
-      ? tag.slice(MODEL_TYPE_TAG_PREFIX.length)
-      : undefined
-  }
-  if (tag === MODELS_TAG || tag.length === 0) return undefined
-  return tag.split('/')[0]
-}
-
-/**
  * Orders loader paths as subdirectories before files at every level,
  * alphabetical within each group. The asset API returns models in storage
  * order, which would otherwise interleave root-level files with folder
@@ -410,11 +392,13 @@ function createAssetService() {
   }
   /**
    * Walks every `models`-tagged asset once and buckets each into the folder
-   * categories carried by its `model_type:` tags. A single asset lands in every
-   * category it is tagged with (e.g. a shared-root model in both `checkpoints`
-   * and `diffusion_models`). Which folders are actually shown is decided by
-   * `/experiment/models`; models with no category tag are dropped with a warning
-   * rather than hidden silently.
+   * categories `getAssetCategories` resolves for it. A single asset lands in
+   * every category it is tagged with (e.g. a shared-root model in both
+   * `checkpoints` and `diffusion_models`); an asset covered by `model_type:`
+   * tags is grouped by those alone, so a legacy bare-tag twin left over from a
+   * partial re-tagging cannot also cross-list it into another folder. Which
+   * folders are actually shown is decided by `/experiment/models`; models with
+   * no category tag are dropped with a warning rather than hidden silently.
    */
   async function buildModelBuckets(
     modelTypeMode: boolean
@@ -425,9 +409,7 @@ function createAssetService() {
     const buckets = new Map<string, AssetItem[]>()
 
     for (const asset of assets) {
-      const folders = asset.tags
-        .map((tag) => modelFolderFromTag(tag, modelTypeMode))
-        .filter((folder): folder is string => folder !== undefined)
+      const folders = [...new Set(getAssetCategories(asset, modelTypeMode))]
 
       if (folders.length === 0) {
         console.warn(
@@ -554,16 +536,16 @@ function createAssetService() {
   /**
    * Subscribes to the backend's scan fast-phase completion broadcast — the
    * moment newly scanned files' tags and loader paths become queryable. The
-   * wire-level event (`assets.seed.fast_complete`) is owned here; consumers
-   * receive a callback and an unsubscribe function.
+   * wire-level event name is shared via `ASSETS_SEED_FAST_COMPLETE_EVENT`;
+   * consumers receive a callback and an unsubscribe function.
    */
   function onModelsScanned(callback: () => void | Promise<void>): () => void {
     const handler = () => {
       void callback()
     }
-    api.addCustomEventListener('assets.seed.fast_complete', handler)
+    api.addCustomEventListener(ASSETS_SEED_FAST_COMPLETE_EVENT, handler)
     return () => {
-      api.removeCustomEventListener('assets.seed.fast_complete', handler)
+      api.removeCustomEventListener(ASSETS_SEED_FAST_COMPLETE_EVENT, handler)
     }
   }
 
@@ -919,10 +901,8 @@ function createAssetService() {
     )
 
     if (!res.ok) {
-      const errorData = await res.json().catch(() => ({}))
-      throw new Error(
-        getLocalizedErrorMessage(errorData.code || 'UNKNOWN_ERROR')
-      )
+      const { code } = await parseErrorResponse(res)
+      throw new Error(getLocalizedErrorMessage(code))
     }
 
     const data: AssetMetadata = await res.json()
