@@ -249,10 +249,10 @@ const faqJsonLd = {
         <button type="button" role="tab" data-tab="playground" data-state="on" aria-controls="panel-playground" aria-selected="true" class={tab}>Playground</button>
         <button type="button" role="tab" data-tab="api" data-state="off" aria-controls="panel-api" aria-selected="false" class={tab}>API</button>
         <button type="button" role="tab" data-tab="gallery" data-state="off" aria-controls="panel-gallery" aria-selected="false" class={tab}>Examples</button>
-        <a href={workflowsUrl} data-state="off" class={tab}>Workflows ↗</a>
       </nav>
       <div class="hidden gap-2 pb-2 lg:flex">
         <a href="https://comfy.org/download" class:list={[outlineButton, 'text-2xs uppercase tracking-widest']}>Run locally</a>
+        <a href={workflowsUrl} class:list={[outlineButton, 'text-2xs uppercase tracking-widest']}>Workflows ↗</a>
         {hfUrl && <a href={hfUrl} class:list={[outlineButton, 'text-2xs uppercase tracking-widest']}>Download weights ↗</a>}
         <a href="https://cloud.comfy.org?utm_source=models_v2_preview" class:list={[outlineButton, 'text-2xs uppercase tracking-widest']}>Open the full graph ↗</a>
       </div>
