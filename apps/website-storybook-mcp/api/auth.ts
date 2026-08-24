@@ -15,6 +15,7 @@ const authConfig = {
     })
   ],
   basePath: '/api/auth',
+  pages: { signIn: '/login' },
   secret: requiredEnvironmentVariable('AUTH_SECRET'),
   trustHost: true,
   session: { strategy: 'jwt' as const },

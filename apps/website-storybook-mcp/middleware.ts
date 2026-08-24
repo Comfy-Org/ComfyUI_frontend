@@ -4,7 +4,7 @@ import { getToken } from '@auth/core/jwt'
 import { next } from '@vercel/functions'
 
 export const config = {
-  matcher: '/((?!api/auth).*)',
+  matcher: '/((?!api/auth|favicon|fonts|icons|login).*)',
   runtime: 'nodejs'
 }
 
