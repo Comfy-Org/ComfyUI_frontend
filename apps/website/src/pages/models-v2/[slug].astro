@@ -242,9 +242,9 @@ const faqJsonLd = {
       <div class="rounded-2xl border border-white/10 p-5 sm:p-6">
         <div class="flex items-center justify-between">
           <h2 class="text-xs font-extrabold uppercase tracking-[0.2em] text-primary-warm-white">Input</h2>
-          <div id="iview-toggle" class="flex overflow-hidden rounded-lg border border-white/15 text-[10px] font-extrabold uppercase tracking-wider">
-            <button data-iview="app" class="bg-primary-comfy-yellow px-3 py-1.5 text-primary-comfy-ink">App</button>
-            <button data-iview="json" class="px-3 py-1.5 text-primary-comfy-canvas hover:text-primary-warm-white">JSON</button>
+          <div id="iview-toggle" class="flex gap-1.5 text-[10px] font-extrabold uppercase tracking-wider">
+            <button data-iview="app" class="rounded-md bg-white/10 px-2.5 py-1 text-primary-warm-white">App</button>
+            <button data-iview="json" class="rounded-md px-2.5 py-1 text-primary-warm-gray hover:text-primary-warm-white">JSON</button>
           </div>
         </div>
 
@@ -637,9 +637,9 @@ const faqJsonLd = {
         for (const [k, panel] of Object.entries(iPanels)) panel.classList.toggle('hidden', k !== view)
         for (const b of $('iview-toggle')!.querySelectorAll<HTMLElement>('[data-iview]')) {
           const active = b === btn
-          b.classList.toggle('bg-primary-comfy-yellow', active)
-          b.classList.toggle('text-primary-comfy-ink', active)
-          b.classList.toggle('text-primary-comfy-canvas', !active)
+          b.classList.toggle('bg-white/10', active)
+          b.classList.toggle('text-primary-warm-white', active)
+          b.classList.toggle('text-primary-warm-gray', !active)
         }
         renderAll()
       })
