@@ -118,7 +118,12 @@ export class WorkflowHelper {
     await this.comfyPage.workflowUploadInput.setInputFiles(
       assetPath(`${workflowName}.json`)
     )
-    await expect(this.comfyPage.workflowUploadInput).toHaveValue('')
+    // The app clears the input only after it has finished processing the
+    // file; large workflows (hundreds of nodes) can take well over the 5s
+    // default on CI hardware.
+    await expect(this.comfyPage.workflowUploadInput).toHaveValue('', {
+      timeout: 30_000
+    })
     await this.comfyPage.nextFrame()
     if (test.info().tags.includes('@vue-nodes')) {
       await this.comfyPage.vueNodes.waitForNodes()

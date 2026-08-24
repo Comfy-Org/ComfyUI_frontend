@@ -163,7 +163,9 @@ test.describe('Reload persistence smoke', { tag: ['@slow', '@canvas'] }, () => {
     'vue: a 245-node workflow and a fresh edit survive F5',
     { tag: '@vue-nodes' },
     async ({ comfyPage }) => {
-      test.setTimeout(180_000)
+      // Mounting 245 Vue nodes twice (load + F5 restore) is CPU-bound and
+      // several times slower on CI runners than locally.
+      test.setTimeout(300_000)
       await verifyReloadPersistence(comfyPage)
     }
   )
