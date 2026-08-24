@@ -1,37 +1,37 @@
 ---
-// Shared body for /events/[slug] in every locale: the locale-specific page
-// files are thin wrappers so meta, breadcrumbs, and JSON-LD stay defined once.
-// The events directory renders behind the SSR'd-open video dialog; past events
-// carry VideoObject JSON-LD for the recording, upcoming ones an Event node and
-// an add-to-calendar action. Locale comes from the page's URL.
-import BaseLayout from '../../layouts/BaseLayout.astro'
-import EventVideoDialog from './EventVideoDialog.vue'
-import PastEventsSection from './PastEventsSection.vue'
-import UpcomingEventsSection from './UpcomingEventsSection.vue'
-import { localizeHref } from '../../config/routes'
-import { eventsForLocale } from '../../data/events'
-import { t } from '../../i18n/translations'
-import type { ComfyEvent } from '../../utils/events'
+// /events/[slug] in every locale from one source file (ADR 0001). The events
+// directory renders behind the SSR'd-open video dialog; past events carry
+// VideoObject JSON-LD for the recording, upcoming ones an Event node and an
+// add-to-calendar action. getStaticPaths returns the locale × watchable-slug
+// product (params only); the locale is read from the URL.
+import type { GetStaticPaths } from 'astro'
+import BaseLayout from '../../../layouts/BaseLayout.astro'
+import EventVideoDialog from '../../../templates/events/EventVideoDialog.vue'
+import PastEventsSection from '../../../templates/events/PastEventsSection.vue'
+import UpcomingEventsSection from '../../../templates/events/UpcomingEventsSection.vue'
+import { localizeHref } from '../../../config/routes'
+import { eventsForLocale, getEventBySlug, watchableEvents } from '../../../data/events'
+import { DEFAULT_LOCALE } from '../../../i18n/locales'
+import { localeSlugPaths } from '../../../i18n/routing'
+import { t } from '../../../i18n/translations'
 import {
   eventJsonLdNode,
   eventStatus,
   eventVideoId,
   toCalendarEvent,
   youtubeWatchHref
-} from '../../utils/events'
-import type { JsonLdNode } from '../../utils/jsonLd'
+} from '../../../utils/events'
+import type { JsonLdNode } from '../../../utils/jsonLd'
 import {
   absoluteUrl,
   jsonLdId,
   pageContext,
   videoObjectNode
-} from '../../utils/jsonLd'
+} from '../../../utils/jsonLd'
 
-interface Props {
-  event: ComfyEvent
-}
-
-const { event } = Astro.props
+// The watchable id set is locale-invariant, so enumerate slugs once.
+export const getStaticPaths: GetStaticPaths = () =>
+  localeSlugPaths(watchableEvents(DEFAULT_LOCALE).map((event) => event.id))
 
 const { siteUrl, locale, url } = pageContext(
   Astro.site,
@@ -39,6 +39,7 @@ const { siteUrl, locale, url } = pageContext(
   Astro.currentLocale
 )
 
+const event = getEventBySlug(Astro.params.slug as string, locale)!
 const title = event.title
 const description = event.description
 

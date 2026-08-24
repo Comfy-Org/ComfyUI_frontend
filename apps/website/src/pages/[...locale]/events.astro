@@ -1,15 +1,15 @@
 ---
-// Shared body for /events in every locale: the locale-specific page files are
-// thin wrappers so meta, breadcrumbs, and JSON-LD stay defined once. Locale
-// comes from the rendering page's URL. Mirrors LearningDirectoryPage.astro:
-// CollectionPage + ItemList of the event detail pages, plus an Event node per
-// dated upcoming event.
+// /events in every locale from one source file (ADR 0001). CollectionPage +
+// ItemList of the event detail pages, plus an Event node per dated upcoming
+// event. getStaticPaths returns route params only; the locale is read from the
+// URL so the file behaves identically in the static and preview-server builds.
 import BaseLayout from '../../layouts/BaseLayout.astro'
-import EventsHeroSection from './EventsHeroSection.vue'
-import PastEventsSection from './PastEventsSection.vue'
-import UpcomingEventsSection from './UpcomingEventsSection.vue'
+import EventsHeroSection from '../../templates/events/EventsHeroSection.vue'
+import PastEventsSection from '../../templates/events/PastEventsSection.vue'
+import UpcomingEventsSection from '../../templates/events/UpcomingEventsSection.vue'
 import { localizeHref } from '../../config/routes'
 import { eventsForLocale } from '../../data/events'
+import { localePaths } from '../../i18n/routing'
 import { t } from '../../i18n/translations'
 import {
   deriveUpcomingEvents,
@@ -20,6 +20,8 @@ import {
 } from '../../utils/events'
 import type { JsonLdNode } from '../../utils/jsonLd'
 import { absoluteUrl, itemListNode, jsonLdId, pageContext } from '../../utils/jsonLd'
+
+export const getStaticPaths = localePaths
 
 const { siteUrl, locale, url } = pageContext(
   Astro.site,

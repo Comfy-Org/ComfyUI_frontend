@@ -17,3 +17,15 @@ export function localePaths(): LocalePathEntry[] {
     params: { locale: locale === DEFAULT_LOCALE ? undefined : locale }
   }))
 }
+
+// The locale × slug product for a `[...locale]/…/[slug].astro` file. Carries the
+// default locale's `undefined` segment through (so the root route stays
+// unprefixed) and pairs every locale with every slug — the shape every localized
+// dynamic route needs.
+export function localeSlugPaths(
+  slugs: readonly string[]
+): { params: { locale: Locale | undefined; slug: string } }[] {
+  return localePaths().flatMap(({ params: { locale } }) =>
+    slugs.map((slug) => ({ params: { locale, slug } }))
+  )
+}
