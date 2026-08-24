@@ -1,4 +1,9 @@
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { LGraph } from '@/lib/litegraph/src/litegraph'
+import type * as GraphTraversalUtil from '@/utils/graphTraversalUtil'
 
 import {
   computeActiveGraphIds,
@@ -10,7 +15,8 @@ const mocks = vi.hoisted(() => ({
   getActiveGraphNodeIds: vi.fn()
 }))
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
+vi.mock('@/utils/graphTraversalUtil', async (importOriginal) => ({
+  ...(await importOriginal<typeof GraphTraversalUtil>()),
   getActiveGraphNodeIds: mocks.getActiveGraphNodeIds
 }))
 
@@ -74,6 +80,7 @@ describe('computeAncestorExecutionIds', () => {
 
 describe('computeActiveGraphIds', () => {
   beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
     mocks.getActiveGraphNodeIds.mockReset()
   })
 
@@ -84,36 +91,29 @@ describe('computeActiveGraphIds', () => {
   })
 
   it('delegates to getActiveGraphNodeIds with the current graph', () => {
-    const rootGraph = { id: 'root' }
-    const currentGraph = { id: 'current' }
+    const rootGraph = new LGraph()
+    const currentGraph = new LGraph()
     mocks.getActiveGraphNodeIds.mockReturnValue(new Set(['1']))
 
     const ancestors = computeAncestorExecutionIds(['65'])
-    const result = computeActiveGraphIds(
-      rootGraph as never,
-      currentGraph as never,
-      ancestors
-    )
+    const result = computeActiveGraphIds(rootGraph, currentGraph, ancestors)
 
     expect(result).toEqual(new Set(['1']))
-    expect(mocks.getActiveGraphNodeIds).toHaveBeenCalledWith(
-      rootGraph,
-      currentGraph,
-      ancestors
-    )
+    const [root, active, ids] = mocks.getActiveGraphNodeIds.mock.calls[0]
+    expect(root).toBe(rootGraph)
+    expect(active).toBe(currentGraph)
+    expect(ids).toBe(ancestors)
   })
 
   it('falls back to the root graph when no current graph is given', () => {
-    const rootGraph = { id: 'root' }
+    const rootGraph = new LGraph()
     mocks.getActiveGraphNodeIds.mockReturnValue(new Set(['9']))
 
-    const result = computeActiveGraphIds(rootGraph as never, null, new Set())
+    const result = computeActiveGraphIds(rootGraph, null, new Set())
 
     expect(result).toEqual(new Set(['9']))
-    expect(mocks.getActiveGraphNodeIds).toHaveBeenCalledWith(
-      rootGraph,
-      rootGraph,
-      expect.any(Set)
-    )
+    const [root, active] = mocks.getActiveGraphNodeIds.mock.calls[0]
+    expect(root).toBe(rootGraph)
+    expect(active).toBe(rootGraph)
   })
 })
