@@ -476,6 +476,21 @@ export async function runRecord(): Promise<void> {
     console.log(`    ${line}`)
   }
 
+  if (transformResult.securityFindings.length > 0) {
+    alert('Something sensitive was removed from your recording', [
+      'The recording captured typing that looked like a password or a',
+      'secret key. It was removed automatically and is NOT in your test:',
+      '',
+      ...transformResult.securityFindings.map((finding) => `  ${finding}`),
+      '',
+      'If you typed a real password while recording, consider changing',
+      'it — the raw recording may linger in terminal or agent history.',
+      '',
+      'Tip: sign in BEFORE pressing Record. Nothing is captured until',
+      'you press Record in the floating toolbar.'
+    ])
+  }
+
   const hasNoAssertions = transformResult.warnings.some((w) =>
     w.includes('No assertions')
   )

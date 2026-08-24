@@ -78,6 +78,23 @@ test('x', async ({ page }) => {})`
     const result = transform(rawCodegenOutput)
     expect(result.code).toMatch(/[^\n]\n$/)
   })
+
+  it('scrubs credential-shaped input before transforming', () => {
+    const input = `import { test, expect } from '@playwright/test'
+
+test('login', async ({ page }) => {
+  await page.getByLabel('Password').fill('hunter2')
+  await page.locator('canvas').click()
+})`
+    const result = transform(input)
+    expect(result.code).not.toContain('hunter2')
+    expect(result.securityFindings).toHaveLength(1)
+  })
+
+  it('reports no security findings for clean input', () => {
+    const result = transform(rawCodegenOutput)
+    expect(result.securityFindings).toEqual([])
+  })
 })
 
 describe('formatTransformSummary', () => {
@@ -85,7 +102,8 @@ describe('formatTransformSummary', () => {
     const lines = formatTransformSummary({
       code: '',
       appliedRules: [{ name: 'test-rule', description: 'Did a thing' }],
-      warnings: []
+      warnings: [],
+      securityFindings: []
     })
     expect(lines).toEqual(['✅ Did a thing'])
   })
@@ -94,7 +112,8 @@ describe('formatTransformSummary', () => {
     const lines = formatTransformSummary({
       code: '',
       appliedRules: [],
-      warnings: ['Something is wrong']
+      warnings: ['Something is wrong'],
+      securityFindings: []
     })
     expect(lines).toEqual(['⚠️  Something is wrong'])
   })
@@ -103,8 +122,19 @@ describe('formatTransformSummary', () => {
     const lines = formatTransformSummary({
       code: '',
       appliedRules: [],
-      warnings: []
+      warnings: [],
+      securityFindings: []
     })
     expect(lines).toEqual([])
+  })
+
+  it('formats security findings with a lock marker', () => {
+    const lines = formatTransformSummary({
+      code: '',
+      appliedRules: [],
+      warnings: [],
+      securityFindings: ['Removed typing into a sensitive field (line 4)']
+    })
+    expect(lines).toEqual(['🔒 Removed typing into a sensitive field (line 4)'])
   })
 })

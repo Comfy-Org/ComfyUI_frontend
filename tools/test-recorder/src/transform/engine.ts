@@ -1,10 +1,12 @@
 import { transformRules, structuralTransforms } from './rules'
+import { scrubSecrets } from './scrub'
 import { formatInitialFeatureFlags } from '../featureFlags'
 
 interface TransformResult {
   code: string
   appliedRules: { name: string; description: string }[]
   warnings: string[]
+  securityFindings: string[]
 }
 
 export function transform(
@@ -19,7 +21,8 @@ export function transform(
   const testName = options.testName ?? 'unnamed-test'
   const tags = options.tags ?? ['@canvas']
 
-  let code = rawCode
+  const scrubbed = scrubSecrets(rawCode)
+  let code = scrubbed.code
   const appliedRules: { name: string; description: string }[] = []
   const warnings: string[] = []
 
@@ -91,13 +94,21 @@ export function transform(
     )
   }
 
-  return { code: code.trim() + '\n', appliedRules, warnings }
+  return {
+    code: code.trim() + '\n',
+    appliedRules,
+    warnings,
+    securityFindings: scrubbed.findings
+  }
 }
 
 export function formatTransformSummary(result: TransformResult): string[] {
   const lines: string[] = []
   for (const rule of result.appliedRules) {
     lines.push(`✅ ${rule.description}`)
+  }
+  for (const finding of result.securityFindings) {
+    lines.push(`🔒 ${finding}`)
   }
   for (const warning of result.warnings) {
     lines.push(`⚠️  ${warning}`)

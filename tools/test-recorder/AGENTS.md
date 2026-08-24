@@ -18,6 +18,7 @@ incomplete.
 | Add workflow from file | “(add from file…)” workflow option           | `add-workflow <file> [--name <n>]`                                                           |
 | Test tags              | Tag multiselect with hints                   | `tags` lists the registry with descriptions; `plan --tags` and `transform --tags` apply tags |
 | Feature flags          | Feature-flag selector and custom flag prompt | `plan --feature-flags <specs>` or `transform --feature-flags <specs>`                        |
+| Secret scrubbing       | Automatic during `record`, with a loud alert | Automatic in `transform <file>`; findings print as 🔒 lines in the summary                   |
 
 ## Distribution-aware recording template
 
