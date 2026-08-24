@@ -143,17 +143,20 @@ test.describe('Events page — desktop @smoke', () => {
 
     // Advance to whichever video slide comes next, waiting out island hydration
     // first and then each transition, so no click overshoots a slow render.
-    const activeLabel = () =>
-      activeSlide.locator('a').getAttribute('aria-label')
     await expect(activeSlide.locator('a')).toHaveCount(1)
+    const activeLabel = async () => {
+      const label = await activeSlide.locator('a').getAttribute('aria-label')
+      if (label === null) throw new Error('active slide link has no aria-label')
+      return label
+    }
 
     for (let step = 0; step < featuredEvents.length; step++) {
       const label = await activeLabel()
-      if (label && videoSlideTitles.includes(label)) break
+      if (videoSlideTitles.includes(label)) break
       await nextSlide.click()
       await expect(activeSlide.locator('a')).not.toHaveAttribute(
         'aria-label',
-        label!
+        label
       )
     }
     expect(videoSlideTitles).toContain(await activeLabel())
@@ -171,14 +174,13 @@ test.describe('Events page — desktop @smoke', () => {
           .catch(() => false)
       )
       .toBe(true)
-    const heldLabel = await activeSlide.locator('a').getAttribute('aria-label')
-    expect(heldLabel).toBeTruthy()
+    const heldLabel = await activeLabel()
 
     // Leaving the carousel releases the held advance.
     await page.mouse.move(0, 0)
     await expect(activeSlide.locator('a')).not.toHaveAttribute(
       'aria-label',
-      heldLabel!
+      heldLabel
     )
   })
 
