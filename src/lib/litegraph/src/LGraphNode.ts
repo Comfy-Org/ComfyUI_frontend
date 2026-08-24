@@ -164,6 +164,22 @@ interface IMouseOverData {
   overWidget?: IBaseWidget
 }
 
+function serialiseWidgetValues(widgets: IBaseWidget[]) {
+  const positional: TWidgetValue[] = []
+  const named: Record<string, TWidgetValue> = {}
+  for (const widget of widgets) {
+    if (widget.serialize === false) continue
+    const value = widget.value
+    const serialisedValue =
+      value != null && typeof value === 'object'
+        ? JSON.parse(JSON.stringify(value))
+        : (value ?? null)
+    positional.push(serialisedValue)
+    named[widget.name] = serialisedValue
+  }
+  return { widgets_values: positional, widgets_values_named: named }
+}
+
 interface ConnectByTypeOptions {
   /** @deprecated Events */
   createEventInCase?: boolean
@@ -1219,21 +1235,8 @@ export class LGraphNode
     if (state.properties) o.properties = LiteGraph.cloneObject(state.properties)
 
     const { widgets } = this
-    if (widgets?.length && this.serialize_widgets) {
-      o.widgets_values = []
-      o.widgets_values_named = {}
-      for (const widget of widgets) {
-        if (widget.serialize === false) continue
-        const val = widget.value
-        // Ensure object values are plain (not reactive proxies) for structuredClone compatibility.
-        const serialisedVal =
-          val != null && typeof val === 'object'
-            ? JSON.parse(JSON.stringify(val))
-            : (val ?? null)
-        o.widgets_values.push(serialisedVal)
-        o.widgets_values_named[widget.name] = serialisedVal
-      }
-    }
+    if (widgets?.length && this.serialize_widgets)
+      Object.assign(o, serialiseWidgetValues(widgets))
 
     if (!o.type && this.constructor.type) o.type = this.constructor.type
 

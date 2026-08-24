@@ -94,6 +94,38 @@ function project<T extends INodeSlot>(
   return view
 }
 
+function findSlotIndex<T extends INodeSlot>(
+  descriptors: SlotDescriptor<T>[],
+  receiver: T[],
+  slot: T,
+  fromIndex: number
+): number {
+  const descriptor = Reflect.get(slot, slotDescriptor)
+  for (let index = fromIndex; index < descriptors.length; index++) {
+    if (
+      Reflect.get(receiver, String(index)) === slot ||
+      toRaw(descriptors[index]) === descriptor ||
+      Reflect.get(toRaw(descriptors[index]), sourceSlot) === slot
+    )
+      return index
+  }
+  return -1
+}
+
+function projectedSlot<T extends INodeSlot>(
+  descriptor: SlotDescriptor<T> | undefined,
+  projections: WeakMap<object, T>,
+  create: (slot: T) => T
+): T | undefined {
+  if (!descriptor) return descriptor
+  const raw = toRaw(descriptor)
+  const existing = projections.get(raw)
+  if (existing) return existing
+  const created = project(descriptor, create)
+  projections.set(raw, created)
+  return created
+}
+
 function slotView<T extends INodeSlot>(
   descriptors: SlotDescriptor<T>[],
   create: (slot: T) => T
@@ -115,27 +147,11 @@ function slotView<T extends INodeSlot>(
         return Reflect.get(projected, property).bind(projected)
       }
       if (property === 'indexOf')
-        return (slot: T, fromIndex = 0) => {
-          const descriptor = Reflect.get(slot, slotDescriptor)
-          for (let index = fromIndex; index < target.length; index++) {
-            if (
-              Reflect.get(receiver, String(index)) === slot ||
-              toRaw(target[index]) === descriptor ||
-              Reflect.get(toRaw(target[index]), sourceSlot) === slot
-            )
-              return index
-          }
-          return -1
-        }
+        return (slot: T, fromIndex = 0) =>
+          findSlotIndex(target, receiver, slot, fromIndex)
       const value = Reflect.get(target, property, receiver)
       if (typeof property === 'symbol' || !/^\d+$/.test(property)) return value
-      if (!value) return value
-      const raw = toRaw(value)
-      const existing = projections.get(raw)
-      if (existing) return existing
-      const created = project(value, create)
-      projections.set(raw, created)
-      return created
+      return projectedSlot(value, projections, create)
     },
     set(target, property, value, receiver) {
       if (typeof property !== 'symbol' && /^\d+$/.test(property)) {
