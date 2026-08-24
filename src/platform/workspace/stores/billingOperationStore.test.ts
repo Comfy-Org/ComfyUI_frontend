@@ -967,7 +967,7 @@ describe('billingOperationStore', () => {
   })
 
   describe('polling timeout', () => {
-    it('does not time out a subscription while its workspace is inactive', async () => {
+    it('silently times out a subscription while its workspace stays inactive', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-1',
         status: 'pending',
@@ -975,15 +975,40 @@ describe('billingOperationStore', () => {
       })
 
       const store = useBillingOperationStore()
-      void store.startOperation('op-1', 'subscription')
+      const terminal = store.startOperation('op-1', 'subscription')
       mockActiveWorkspaceId.value = 'workspace-2'
 
       await vi.advanceTimersByTimeAsync(5 * 60_000 + 8001)
 
-      expect(store.getOperation('op-1')?.status).toBe('pending')
+      await expect(terminal).resolves.toMatchObject({ status: 'timeout' })
       expect(mockToastAdd).not.toHaveBeenCalledWith(
         expect.objectContaining({ severity: 'error' })
       )
+      expect(vi.getTimerCount()).toBe(0)
+    })
+
+    it('silently times out after an in-flight poll rejects in another workspace', async () => {
+      let rejectStatus!: (error: Error) => void
+      vi.mocked(workspaceApi.getBillingOpStatus).mockImplementationOnce(
+        () =>
+          new Promise((_, reject) => {
+            rejectStatus = reject
+          })
+      )
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-1', 'subscription')
+      mockActiveWorkspaceId.value = 'workspace-2'
+      await vi.advanceTimersByTimeAsync(5 * 60_000 + 1)
+
+      rejectStatus(new Error('Network error'))
+      await vi.advanceTimersByTimeAsync(0)
+
+      await expect(terminal).resolves.toMatchObject({ status: 'timeout' })
+      expect(mockToastAdd).not.toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
+      expect(vi.getTimerCount()).toBe(0)
     })
 
     it('restarts a subscription operation after a polling timeout', async () => {
