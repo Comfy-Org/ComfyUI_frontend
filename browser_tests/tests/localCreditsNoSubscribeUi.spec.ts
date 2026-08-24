@@ -8,6 +8,8 @@ import { TestIds } from '@e2e/fixtures/selectors'
 type CreditPurchaseResponse =
   operations['InitiateCreditPurchase']['responses']['201']['content']['application/json']
 
+const MOCK_CHECKOUT_URL = 'https://checkout.stripe.com/mock'
+
 /**
  * Regression coverage for a local/non-cloud dead-click: an unsubscribed user
  * on a local (non-Cloud) distribution must never see subscribe/upgrade UI in
@@ -24,6 +26,15 @@ type CreditPurchaseResponse =
  * the default (local) `chromium` project instead.
  */
 test.describe('Local credits surfaces hide subscribe UI (non-cloud)', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      window.open = (url) => {
+        document.documentElement.dataset.openedUrl = String(url)
+        return window
+      }
+    })
+  })
+
   test('lets an unsubscribed user add credits from local billing surfaces', async ({
     comfyPage
   }) => {
@@ -79,7 +90,7 @@ test.describe('Local credits surfaces hide subscribe UI (non-cloud)', () => {
       route.fulfill({
         status: 201,
         json: {
-          checkout_url: 'https://checkout.stripe.com/mock'
+          checkout_url: MOCK_CHECKOUT_URL
         } satisfies CreditPurchaseResponse
       })
     )
@@ -93,6 +104,9 @@ test.describe('Local credits surfaces hide subscribe UI (non-cloud)', () => {
       amount_micros: 50_000_000,
       currency: 'usd'
     })
+    await expect
+      .poll(() => page.locator('html').getAttribute('data-opened-url'))
+      .toBe(MOCK_CHECKOUT_URL)
     await expect(topUpDialog.root).toBeHidden()
 
     await settingsDialog.close()
