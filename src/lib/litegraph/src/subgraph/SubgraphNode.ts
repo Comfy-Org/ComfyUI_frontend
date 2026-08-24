@@ -287,7 +287,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     // reconnect of the promoted input — which deletes and re-registers the
     // store entry, seeded from interiorWidget.value — does not revert the
     // edit. See #14495.
-    const writeBack = (next: unknown) => {
+    const writeBack = (next: TWidgetValue) => {
       store.setValue(id, next)
       // super.configure()'s legacy widgets_values loop also assigns through
       // this setter; _configuring keeps that deserialization from reaching
