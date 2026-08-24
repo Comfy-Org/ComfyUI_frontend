@@ -431,7 +431,8 @@ export const useAuthStore = defineStore('auth', () => {
     payload?: Omit<CreateCustomerPayload, 'signup_source'>
   ): Promise<CreateCustomerResponse> => {
     const sessionUserId = currentUser.value?.uid
-    const authHeader = await getFirebaseAuthHeader()
+    const authHeader =
+      (await getFirebaseAuthHeader()) ?? useApiKeyAuthStore().getAuthHeader()
     if (!authHeader) {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
