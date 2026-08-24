@@ -66,6 +66,11 @@ export function resolveRecordPrefill(
     warnings.push(`Unknown --tags: ${invalidTags.join(', ')}.`)
   }
 
+  const pr = flags.pr?.trim()
+  if (pr !== undefined && !/^\d+$/.test(pr)) {
+    warnings.push(`Invalid --pr "${pr}": use a pull request number.`)
+  }
+
   return {
     distribution,
     distributionSource,
@@ -78,6 +83,6 @@ export function resolveRecordPrefill(
     description: toSlug(description ?? '') ? description : undefined,
     name: toSlug(name ?? '') ? toSlug(name ?? '') : undefined,
     warnings,
-    pr: flags.pr
+    pr: pr && /^\d+$/.test(pr) ? pr : undefined
   }
 }

@@ -53,4 +53,13 @@ describe('resolveRecordPrefill', () => {
       distributionSource: '--backend'
     })
   })
+
+  it('keeps a numeric pull request and rejects other values', () => {
+    expect(resolveRecordPrefill({ pr: '123' }).pr).toBe('123')
+    const invalid = resolveRecordPrefill({ pr: 'abc' })
+    expect(invalid.pr).toBeUndefined()
+    expect(invalid.warnings).toContain(
+      'Invalid --pr "abc": use a pull request number.'
+    )
+  })
 })

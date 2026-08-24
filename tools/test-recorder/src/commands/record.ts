@@ -42,6 +42,7 @@ import { ensureDevServer } from '../devserver/manager'
 import { fetchEnvInfo } from '../devserver/envInfo'
 import { discoverFlagKeys, parseFeatureFlagSpecs } from '../featureFlags'
 import type { RecordPrefill } from './recordPrefill'
+import { decidePrCheckout } from './prCheckout'
 
 const PASTE_SENTINEL = '.'
 const ADD_WORKFLOW_SENTINEL = '__add-workflow__'
@@ -134,6 +135,85 @@ function printPrefill(label: string, value: string, source: string): void {
   console.log(`  ${label}: ${value} (from ${source})`)
 }
 
+async function preparePrCheckout(
+  pr: string,
+  projectRoot: string
+): Promise<void> {
+  const details = runCommand(
+    'gh',
+    [
+      'pr',
+      'view',
+      pr,
+      '--json',
+      'headRefName,title,state',
+      '-q',
+      '[.headRefName,.title,.state] | @tsv'
+    ],
+    { cwd: projectRoot, stdio: 'pipe' }
+  )
+  if (details.error || details.status !== 0) {
+    warn(`Could not look up PR #${pr}. Continuing on the current checkout.`)
+    info([`Install or sign in to gh, then run: gh pr checkout ${pr}`])
+    return
+  }
+
+  const [prBranch, title] = details.stdout.toString().trim().split('\t')
+  if (!prBranch || !title) {
+    warn(`Could not read PR #${pr}. Continuing on the current checkout.`)
+    return
+  }
+  const currentBranch = runCommand('git', ['branch', '--show-current'], {
+    cwd: projectRoot,
+    stdio: 'pipe'
+  })
+    .stdout.toString()
+    .trim()
+  const dirty =
+    runCommand('git', ['status', '--porcelain'], {
+      cwd: projectRoot,
+      stdio: 'pipe'
+    })
+      .stdout.toString()
+      .trim().length > 0
+  const action = decidePrCheckout(currentBranch, prBranch, dirty)
+  if (action === 'already-on-branch') {
+    pass(`Your checkout already has the code for PR #${pr}`, prBranch)
+    return
+  }
+  if (action === 'refuse-dirty') {
+    warn(
+      `PR #${pr} targets "${prBranch}", but this checkout has unsaved changes. ` +
+        `I won't switch and risk losing them. Continuing on "${currentBranch}".`
+    )
+    info([`Save or commit your changes, then run: gh pr checkout ${pr}`])
+    return
+  }
+
+  info([
+    `This test plan targets PR #${pr} — '${title}'.`,
+    `Your checkout is on '${currentBranch}'. I can switch to the PR's code for you.`
+  ])
+  const shouldSwitch = await confirm({
+    message: `Switch to the code for PR #${pr}?`
+  })
+  if (isCancel(shouldSwitch) || !shouldSwitch) {
+    warn(`Continuing on "${currentBranch}" instead of PR #${pr}.`)
+    info([`To switch later, run: gh pr checkout ${pr}`])
+    return
+  }
+  const checkout = runCommand('gh', ['pr', 'checkout', pr], {
+    cwd: projectRoot,
+    stdio: 'pipe'
+  })
+  if (checkout.error || checkout.status !== 0) {
+    warn(`Could not switch to PR #${pr}. Continuing on "${currentBranch}".`)
+    info([`Try manually: gh pr checkout ${pr}`])
+    return
+  }
+  pass(`Switched to the code for PR #${pr}`, prBranch)
+}
+
 export async function runRecord(
   prefill: RecordPrefill = { warnings: [] }
 ): Promise<void> {
@@ -177,6 +257,17 @@ export async function runRecord(
 
   for (const warning of prefill.warnings) {
     warn(`${warning} Asking you instead.`)
+  }
+
+  if (prefill.pr) {
+    let root: string
+    try {
+      root = findProjectRoot()
+    } catch {
+      warn(`Could not find the checkout for PR #${prefill.pr}. Continuing.`)
+      root = process.cwd()
+    }
+    await preparePrCheckout(prefill.pr, root)
   }
 
   stepHeader(1, 7, 'Target Distribution')
