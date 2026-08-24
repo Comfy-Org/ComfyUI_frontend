@@ -31,7 +31,7 @@ recording template branches on the selected distribution
 initialFeatureFlags })`.
 - **cloud / cloud-staging / cloud-prod / custom** — bare-page template:
   `page.goto(PLAYWRIGHT_TEST_URL)` and the recorder enabled immediately —
-  no boot gate, so a sign-in screen can't stall the Inspector (sign in
+  no boot gate, so a sign-in screen can't stall the recorder (sign in
   manually, then record). Feature flags are seeded via `ff:<key>`
   localStorage entries (the same mechanism as `FeatureFlagHelper.seedFlags`).
   Workflow pre-load is unsupported; `record` warns and the human loads it

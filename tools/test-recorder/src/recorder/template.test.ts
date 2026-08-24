@@ -39,7 +39,7 @@ describe('recording template', () => {
     return { path, code: readFileSync(path, 'utf-8') }
   }
 
-  it('pauses so the Inspector opens with the app already loaded', () => {
+  it('pauses so the recorder toolbar appears with the app already loaded', () => {
     const { code } = generate({ testName: 'demo' })
     expect(code).toContain('await comfyPage.page.pause()')
     expect(code).toContain("from '@e2e/fixtures/ComfyPage'")

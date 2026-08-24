@@ -176,7 +176,7 @@ ${reuseLoginBlock}test(${safeName}, async ({ page }) => {
 ${flagSeedBlock}  await page.goto(process.env.PLAYWRIGHT_TEST_URL ?? 'http://localhost:5173')
 ${persistLoginBlock}  // The cloud app may show a sign-in screen first — sign in manually, then
   // record. Nothing is captured until the Record button is clicked, so the
-  // Inspector opens immediately rather than gating on app boot.
+  // recorder opens immediately rather than gating on app boot.
 ${recorderBlock('page', safeOutputPath)}})
 `
 }

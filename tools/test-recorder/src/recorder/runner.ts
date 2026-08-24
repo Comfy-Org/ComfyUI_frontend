@@ -102,15 +102,17 @@ export async function runRecording(
 
   console.log()
   box([
-    'Two windows are about to open: the app, and a separate',
-    'Playwright Inspector window next to it.',
+    'A browser window is about to open with a small floating toolbar',
+    'at the top middle. That toolbar is all you need.',
     '',
-    '1. In the Inspector, click the red ⏺ Record button — nothing is',
-    '   captured until you do.',
-    '2. Perform your test actions in the app window: click, type, drag.',
-    '3. Add at least one assertion (required — see below) using the',
-    '   Inspector toolbar\'s "Assert visibility/value/text" buttons.',
-    '4. When done, just close both windows — your code is saved',
+    '1. Get set up first — sign in, look around. Nothing is recorded',
+    '   until you press Record.',
+    '2. Press the ⏺ Record button in the floating toolbar, then do the',
+    '   thing you want to show: click, type, drag.',
+    '3. Add a proof step (required): press one of the assert buttons',
+    '   next to Record, then click the thing that proves your action',
+    '   worked — text that appeared, a value that changed.',
+    '4. When done, just close the window — everything is saved',
     '   automatically as you go, no copying needed.'
   ])
   console.log()
@@ -147,6 +149,10 @@ export async function runRecording(
           // No PWDEBUG: it breaks inside fixture setup, before the app loads.
           COMFY_TEST_RECORDING: '1',
           PLAYWRIGHT_LOCAL: '1',
+          // The Inspector window confuses non-devs into clicking around in
+          // it; the in-app floating toolbar carries Record and the assert
+          // buttons, which is everything a recording needs.
+          PW_CODEGEN_NO_INSPECTOR: '1',
           // Without this the fixture records against :8188's bundled frontend.
           PLAYWRIGHT_TEST_URL: devServerUrl()
         }
@@ -160,17 +166,6 @@ export async function runRecording(
       }
     }
 
-    if (result.status !== 0) {
-      return {
-        success: false,
-        error: `Playwright exited with status ${result.status}`
-      }
-    }
-
-    console.log()
-    console.log(pc.green('  ✅ Recording session complete.'))
-    console.log()
-
     // Read before cleanUp() runs in `finally` — it deletes this file.
     const savedCodePath = recordedCodePath(browserTestsDir)
     let recordedCode: string | undefined
@@ -181,6 +176,21 @@ export async function runRecording(
         // Fall through to the manual paste flow below.
       }
     }
+
+    // Closing the browser mid-pause makes playwright report a failure even
+    // though the recording itself finished fine — the autosaved code is the
+    // real signal of success.
+    if (result.status !== 0 && !recordedCode) {
+      return {
+        success: false,
+        error: `Playwright exited with status ${result.status}`
+      }
+    }
+
+    console.log()
+    console.log(pc.green('  ✅ Recording session complete.'))
+    console.log()
+
     if (!recordedCode) {
       info([
         "Couldn't find the auto-saved code — falling back to manual paste."
