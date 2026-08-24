@@ -1192,15 +1192,22 @@ describe('useAuthStore', () => {
       })
     })
 
-    it('should reject API key auth when no Firebase user is present', async () => {
+    it('should use API key auth when no Firebase user is present', async () => {
       authStateCallback(null)
       mockApiKeyGetAuthHeader.mockReturnValue({ 'X-API-KEY': 'test-api-key' })
 
-      await expect(store.createCustomer()).rejects.toMatchObject({
-        name: 'AuthStoreError',
-        message: 'toastMessages.userNotAuthenticated'
-      })
-      expect(mockFetch).not.toHaveBeenCalled()
+      const result = await store.createCustomer()
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/customers'),
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({
+            'X-API-KEY': 'test-api-key'
+          })
+        })
+      )
+      expect(result).toEqual({ id: 'test-customer-id' })
     })
 
     it('should use Firebase token when Firebase user is present', async () => {
@@ -1218,11 +1225,21 @@ describe('useAuthStore', () => {
       expect(result).toEqual({ id: 'test-customer-id' })
     })
 
+    it('should not fall back to API key when Firebase token retrieval fails', async () => {
+      mockUser.getIdToken.mockResolvedValue(undefined)
+      mockApiKeyGetAuthHeader.mockReturnValue({ 'X-API-KEY': 'test-api-key' })
+
+      await expect(store.createCustomer()).rejects.toThrow()
+      expect(mockApiKeyGetAuthHeader).not.toHaveBeenCalled()
+      expect(mockFetch).not.toHaveBeenCalled()
+    })
+
     it('should throw when no auth method is available', async () => {
       authStateCallback(null)
       mockApiKeyGetAuthHeader.mockReturnValue(null)
 
       await expect(store.createCustomer()).rejects.toThrow()
+      expect(mockFetch).not.toHaveBeenCalled()
     })
 
     it('carries the HTTP status on a non-ok response', async () => {
