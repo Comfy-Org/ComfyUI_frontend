@@ -105,17 +105,41 @@ const run = async () => {
   )
   await desktop.selectOption('#sel-resolution', '720p')
 
-  // reference image
-  await desktop.click('#add-image-btn')
+  // reference image — Add image opens the OS picker, which the browser cannot
+  // drive, so set the file on the input the button forwards to.
+  await desktop.setInputFiles('#ref-file', {
+    name: 'frame_0001.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from(
+      '89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000a49444154789c63000100000500010d0a2db40000000049454e44ae426082',
+      'hex'
+    )
+  })
+  await desktop.waitForTimeout(300)
+  check(
+    'reference image attachment',
+    await desktop.isVisible('#ref-attachment'),
+    (await desktop.textContent('#ref-name')) ?? ''
+  )
   await desktop.click('[data-iview="json"]')
   check(
     'reference image in payload',
     ((await desktop.textContent('#input-json')) ?? '').includes(
-      'reference_image'
+      '"reference_image": "frame_0001.png"'
     ),
     ''
   )
   await desktop.click('[data-iview="app"]')
+  await desktop.click('#ref-remove')
+  await desktop.waitForTimeout(200)
+  check(
+    'remove clears the reference image',
+    !(await desktop.isVisible('#ref-attachment')) &&
+      !(
+        (await desktop.textContent('#input-json')) ?? ''
+      ).includes('reference_image'),
+    ''
+  )
 
   // result JSON tab (pre-run receipt)
   await desktop.click('[data-rview="json"]')

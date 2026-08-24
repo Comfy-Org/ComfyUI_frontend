@@ -372,18 +372,19 @@ const faqJsonLd = {
           </div>
           <p class:list={[helperCopy, 'mt-1.5']}>Change value for a different output.</p>
           <label class:list={[fieldLabel, 'mt-4']}>Reference image</label>
-          <div id="dropzone" class="mt-2 flex flex-col items-center gap-3 rounded-xl border border-dashed border-transparency-white-t20 bg-transparency-white-t4 px-4 py-4 text-center transition-colors hover:border-primary-comfy-yellow/40 hover:bg-transparency-white-t8">
+          <input id="ref-file" type="file" accept="image/*" class="hidden" />
+          <div id="dropzone" class="mt-2 flex flex-col items-center gap-3 rounded-xl border border-dashed border-transparency-white-t20 bg-transparency-white-t4 px-4 py-4 text-center transition-colors data-[dragging]:border-primary-comfy-yellow/40 data-[dragging]:bg-transparency-white-t8">
             <button id="add-image-btn" type="button" class="cursor-pointer rounded-lg border border-transparency-white-t20 bg-transparency-white-t4 px-3 py-2.5 text-xs font-normal text-primary-comfy-canvas transition-colors hover:bg-transparency-white-t8"><span class="ppformula-text-center">Add image</span></button>
             <span class="text-xs font-light text-primary-warm-gray">or drag and drop the image here</span>
           </div>
 
           <!-- Attachment — media above content, as the shared attachment pattern lays it out -->
           <div id="ref-attachment" class="mt-2 hidden overflow-hidden rounded-xl border border-transparency-white-t20 bg-transparency-white-t4">
-            <img src={gallery[1] ?? gallery[0]} alt="" class="aspect-video w-full object-cover" onerror="this.style.display='none'" />
+            <img id="ref-preview" alt="" class="aspect-video w-full object-cover" onerror="this.style.display='none'" />
             <div class="flex items-center justify-between gap-3 px-3 py-2.5">
               <div class="min-w-0">
-                <p class="truncate text-xs text-primary-comfy-canvas">frame_0001.png</p>
-                <p class="text-2xs font-light text-primary-warm-gray">PNG · 820 KB</p>
+                <p id="ref-name" class="truncate text-xs text-primary-comfy-canvas"></p>
+                <p id="ref-meta" class="text-2xs font-light text-primary-warm-gray"></p>
               </div>
               <button id="ref-remove" type="button" title="Remove" aria-label="Remove" class="shrink-0 cursor-pointer rounded-lg border border-transparency-white-t20 bg-transparency-white-t4 p-1.5 text-primary-warm-gray transition-colors hover:bg-transparency-white-t8 hover:text-primary-warm-white">
                 <RemoveIcon class="size-3.5 shrink-0" aria-hidden="true" />
@@ -737,7 +738,7 @@ const faqJsonLd = {
 
       let authed = false
       let runsLeft = 5
-      let refImage = false
+      let refImage: string | null = null
       let lastRun: Record<string, unknown> | null = null
 
       const mult = (sel: HTMLSelectElement) => Number(sel.selectedOptions[0]?.dataset.mult ?? '1')
@@ -752,7 +753,7 @@ const faqJsonLd = {
             duration_s: mult(selDur) * 5,
             resolution: selRes.value,
             seed: seedNow(),
-            ...(refImage ? { reference_image: 'frame_0001.png' } : {})
+            ...(refImage ? { reference_image: refImage } : {})
           },
           estimate: { credits: creditsNow(), charged_on: 'success only' }
         }
@@ -839,16 +840,59 @@ const faqJsonLd = {
       })
 
       // reference image demo
-      $('add-image-btn')?.addEventListener('click', () => {
-        refImage = true
-        $('ref-attachment')?.classList.remove('hidden')
-        renderAll()
-      })
+      const refFile = $('ref-file') as HTMLInputElement
+      const refPreview = $('ref-preview') as HTMLImageElement
+      const dropzone = $('dropzone')!
+      let previewUrl: string | null = null
 
-      $('ref-remove')?.addEventListener('click', () => {
-        refImage = false
-        $('ref-attachment')?.classList.add('hidden')
+      const fileSize = (bytes: number) =>
+        bytes >= 1024 * 1024
+          ? `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+          : `${Math.max(1, Math.round(bytes / 1024))} KB`
+
+      const fileKind = (file: File) =>
+        (file.type.split('/')[1] || file.name.split('.').pop() || 'image').toUpperCase()
+
+      const clearImage = () => {
+        if (previewUrl) URL.revokeObjectURL(previewUrl)
+        previewUrl = null
+        refImage = null
+        refFile.value = ''
+        $('ref-attachment')!.classList.add('hidden')
         renderAll()
+      }
+
+      const acceptImage = (file: File | undefined) => {
+        if (!file || !file.type.startsWith('image/')) return
+        if (previewUrl) URL.revokeObjectURL(previewUrl)
+        previewUrl = URL.createObjectURL(file)
+        refPreview.style.display = ''
+        refPreview.src = previewUrl
+        $('ref-name')!.textContent = file.name
+        $('ref-meta')!.textContent = `${fileKind(file)} · ${fileSize(file.size)}`
+        refImage = file.name
+        $('ref-attachment')!.classList.remove('hidden')
+        renderAll()
+      }
+
+      $('add-image-btn')?.addEventListener('click', () => refFile.click())
+      refFile.addEventListener('change', () => acceptImage(refFile.files?.[0]))
+      $('ref-remove')?.addEventListener('click', clearImage)
+
+      // The drop zone lights up while a file is over it, not on plain hover.
+      for (const type of ['dragenter', 'dragover']) {
+        dropzone.addEventListener(type, (e) => {
+          e.preventDefault()
+          dropzone.dataset.dragging = ''
+        })
+      }
+      dropzone.addEventListener('dragleave', (e) => {
+        if (!dropzone.contains(e.relatedTarget as Node)) delete dropzone.dataset.dragging
+      })
+      dropzone.addEventListener('drop', (e) => {
+        e.preventDefault()
+        delete dropzone.dataset.dragging
+        acceptImage(e.dataTransfer?.files?.[0])
       })
 
       // split button menus
@@ -977,13 +1021,13 @@ const faqJsonLd = {
         modal.classList.add('hidden'); modal.classList.remove('flex')
       })
       $('demo-reset')!.addEventListener('click', () => {
-        authed = false; runsLeft = 5; lastRun = null; refImage = false
+        authed = false; runsLeft = 5; lastRun = null
+        clearImage()
         seedInput.value = DEFAULT_SEED
         upgrade.classList.add('hidden'); upgrade.classList.remove('flex')
         strip.classList.add('hidden'); strip.classList.remove('flex')
         varBlock.classList.add('hidden')
         varStrip.classList.add('hidden'); varStrip.classList.remove('grid')
-        $('ref-attachment')?.classList.add('hidden')
         resultSeed.textContent = `Seed ${DEFAULT_SEED}`
         meter.textContent = 'Free runs: 5 left'
         renderAll()
