@@ -19825,11 +19825,11 @@
     },
     "outputs": {
       "0": {
-        "name": "高方差",
+        "name": "高Sigmas",
         "tooltip": null
       },
       "1": {
-        "name": "低方差",
+        "name": "低Sigmas",
         "tooltip": null
       }
     }
@@ -19846,11 +19846,11 @@
     },
     "outputs": {
       "0": {
-        "name": "高方差",
+        "name": "高Sigmas",
         "tooltip": null
       },
       "1": {
-        "name": "低方差",
+        "name": "低Sigmas",
         "tooltip": null
       }
     }

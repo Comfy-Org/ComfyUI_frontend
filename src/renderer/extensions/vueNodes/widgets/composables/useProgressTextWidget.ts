@@ -38,14 +38,19 @@ export function useTextPreviewWidget(
         nodeId: node.id
       },
       options: {
-        getValue: () =>
-          useWidgetValueStore().getWidget(
-            widgetId(
-              resolveNodeRootGraphId(node, app.rootGraph.id),
-              node.id,
-              inputSpec.name
-            )
-          )?.value ?? '',
+        getValue: () => {
+          const value =
+            useWidgetValueStore().getWidget(
+              widgetId(
+                resolveNodeRootGraphId(node, app.rootGraph.id),
+                node.id,
+                inputSpec.name
+              )
+            )?.value ?? ''
+          return typeof value === 'number' || typeof value === 'boolean'
+            ? String(value)
+            : value
+        },
         setValue: (value: string | object) => {
           const graphId = resolveNodeRootGraphId(node, app.rootGraph.id)
           const widgetState = useWidgetValueStore().getWidget(
