@@ -473,7 +473,7 @@ describe('CurrentUserPopoverWorkspace', () => {
       })
     )
 
-    expect(state.showSettingsDialog).toHaveBeenCalledWith('credits')
+    expect(state.showSettingsDialog).toHaveBeenCalledWith('workspace')
     expect(state.showPricingTable).not.toHaveBeenCalled()
     expect(emitted('close')).toHaveLength(1)
   })
