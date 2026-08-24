@@ -122,6 +122,19 @@ export const useGraphDefinitionStore = defineStore('graphDefinition', () => {
     roots.set(nextId, existing)
   }
 
+  function hasRoot(rootGraphId: UUID): boolean {
+    return roots.has(rootGraphId)
+  }
+
+  function hasGraph(rootGraphId: UUID, graphId: UUID): boolean {
+    const definitions = roots.get(rootGraphId)
+    return Boolean(
+      definitions?.subgraphs.has(graphId) ||
+      definitions?.membershipByGraph.has(graphId) ||
+      definitions?.definitions.has(graphId)
+    )
+  }
+
   function rekeyGraph(
     rootGraphId: UUID,
     previousId: SubgraphId,
@@ -162,6 +175,8 @@ export const useGraphDefinitionStore = defineStore('graphDefinition', () => {
     clearRoot,
     deleteGroupPresentation,
     definition,
+    hasGraph,
+    hasRoot,
     membership,
     registerGroupPresentation,
     rekeyGraph,

@@ -182,8 +182,9 @@ describe('nodeDataStore registration via LGraph', () => {
       pos: [300, 400],
       mode: 2
     })
-    expect(() => structuredClone(graph.asSerialisable())).not.toThrow()
-    expect(new LGraph(graph.asSerialisable()).nodes[0]?.serialize()).toEqual({
+    const serialized = structuredClone(graph.asSerialisable())
+    graph.clear()
+    expect(new LGraph(serialized).nodes[0]?.serialize()).toEqual({
       ...fallback,
       pos: [300, 400],
       mode: 2

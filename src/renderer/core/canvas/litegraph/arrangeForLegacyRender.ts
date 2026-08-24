@@ -5,6 +5,15 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
 const logger = log.getLogger('arrangeForLegacyRender')
 
+export function projectLegacyNodeOrder(graph: LGraph): void {
+  const rootGraphId = graph.rootGraph.id
+  graph._nodes.sort(
+    (a, b) =>
+      (layoutStore.getNodeLayout(rootGraphId, a.id)?.zIndex ?? 0) -
+      (layoutStore.getNodeLayout(rootGraphId, b.id)?.zIndex ?? 0)
+  )
+}
+
 /**
  * `drawConnections` normally arranges slots, but Vue-mode `drawNode` clears
  * `_widgetSlotsDirty`, so that pass is skipped after switching to legacy mode.
@@ -13,12 +22,7 @@ const logger = log.getLogger('arrangeForLegacyRender')
  * Delete when `getSlotPosition` is consistent across both renderers.
  */
 export function arrangeForLegacyRender(graph: LGraph): void {
-  const rootGraphId = graph.rootGraph.id
-  graph._nodes.sort(
-    (a, b) =>
-      (layoutStore.getNodeLayout(rootGraphId, a.id)?.zIndex ?? 0) -
-      (layoutStore.getNodeLayout(rootGraphId, b.id)?.zIndex ?? 0)
-  )
+  projectLegacyNodeOrder(graph)
 
   for (const node of graph._nodes) {
     if (node.flags.collapsed) continue

@@ -32,6 +32,7 @@ describe('LGraph Serialisation', () => {
 
     const serialised = JSON.stringify(minimalGraph.serialize())
     const deserialised = JSON.parse(serialised) as ISerialisedGraph
+    minimalGraph.clear()
 
     const copied = new LGraph(deserialised)
     expect(copied.nodes.length).toBe(1)
@@ -89,10 +90,11 @@ describe('LGraph Serialisation', () => {
       data.extensions = { 'example.graph': { version: 1 } }
     }
 
-    const saved = minimalGraph.asSerialisable()
+    const saved = structuredClone(minimalGraph.asSerialisable())
     expect(saved.revision).toBe(999)
+    minimalGraph.clear()
     const copied = new LGraph()
-    copied.configure(structuredClone(saved))
+    copied.configure(saved)
 
     expect(copied.asSerialisable().extensions).toEqual({
       'example.graph': { version: 1 }

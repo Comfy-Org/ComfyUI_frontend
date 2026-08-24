@@ -29,9 +29,13 @@ export const useEntityIdStore = defineStore('entityId', () => {
     states.value.set(nextId, existing)
   }
 
+  function has(rootGraphId: UUID): boolean {
+    return states.value.has(rootGraphId)
+  }
+
   function clear(rootGraphId: UUID): void {
     states.value.delete(rootGraphId)
   }
 
-  return { get, set, rekey, clear }
+  return { get, has, set, rekey, clear }
 })

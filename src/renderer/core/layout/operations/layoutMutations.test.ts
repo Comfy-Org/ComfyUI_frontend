@@ -191,12 +191,30 @@ describe('bringNodeToFront', () => {
 })
 
 describe('setNodeOrder', () => {
-  it.for([
-    ['front', 1, 0],
-    ['back', 0, 1]
-  ] as const)(
-    'projects %s order to layout and the legacy node array',
-    ([order, expectedFirstIndex, expectedSecondIndex]) => {
+  it('does not reorder legacy nodes when the target layout is missing', () => {
+    const graph = new LGraph()
+    const first = graph.add(new LGraphNode('first'))!
+    const second = graph.add(new LGraphNode('second'))!
+    layoutStore.applyOperation({
+      type: 'deleteNode',
+      graphId: graph.id,
+      nodeId: first.id,
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas
+    })
+
+    useLayoutMutations(LayoutSource.Canvas).setNodeOrder(
+      graph,
+      first.id,
+      'front'
+    )
+
+    expect(graph._nodes).toEqual([first, second])
+  })
+
+  it.for([['front'], ['back']] as const)(
+    'writes %s order only to the authoritative layout',
+    ([order]) => {
       const graph = new LGraph()
       const first = graph.add(new LGraphNode('first'))!
       const second = graph.add(new LGraphNode('second'))!
@@ -207,8 +225,7 @@ describe('setNodeOrder', () => {
         order
       )
 
-      expect(graph._nodes[expectedFirstIndex]).toBe(first)
-      expect(graph._nodes[expectedSecondIndex]).toBe(second)
+      expect(graph._nodes).toEqual([first, second])
       const firstZ = layoutStore.getNodeLayout(graph.id, first.id)?.zIndex ?? 0
       const secondZ =
         layoutStore.getNodeLayout(graph.id, second.id)?.zIndex ?? 0

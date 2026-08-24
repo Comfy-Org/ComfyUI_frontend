@@ -15,7 +15,7 @@ describe(useGraphMetadataStore, () => {
     metadata.config = { links_ontop: true }
     metadata.extra = { workflowRendererVersion: 'Vue' }
 
-    store.rekey(first, second)
+    store.rekeyRoot(first, second)
 
     expect(store.get(second)).toBe(metadata)
     expect(store.get(second)).toMatchObject({
@@ -35,5 +35,12 @@ describe(useGraphMetadataStore, () => {
 
     expect(store.get(first)).not.toBe(firstMetadata)
     expect(store.get(second)).toBe(secondMetadata)
+  })
+
+  it('scopes subgraph metadata by root graph', () => {
+    const store = useGraphMetadataStore()
+    const subgraphId = '00000000-0000-4000-8000-000000000003' as UUID
+
+    expect(store.get(first, subgraphId)).not.toBe(store.get(second, subgraphId))
   })
 })

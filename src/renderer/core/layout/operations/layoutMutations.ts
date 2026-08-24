@@ -79,10 +79,9 @@ export function useLayoutMutations(source: LayoutSource) {
     nodeId: NodeId,
     order: 'front' | 'back'
   ): void => {
-    const index = graph._nodes.findIndex((node) => node.id === nodeId)
-    if (index === -1) return
-
     const rootGraphId = graph.rootGraph.id
+    if (!layoutStore.getNodeLayout(rootGraphId, nodeId)) return
+
     const zIndex =
       order === 'front'
         ? layoutStore.allocateZIndex()
@@ -93,10 +92,6 @@ export function useLayoutMutations(source: LayoutSource) {
             )
           ) - 1
     setNodeZIndex(rootGraphId, nodeId, zIndex)
-
-    const [node] = graph._nodes.splice(index, 1)
-    if (order === 'front') graph._nodes.push(node)
-    else graph._nodes.unshift(node)
   }
 
   return {

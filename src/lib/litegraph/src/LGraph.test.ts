@@ -29,6 +29,7 @@ import type {
 } from '@/lib/litegraph/src/types/serialisation'
 import type { UUID } from '@/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/utils/uuid'
+import { useEntityIdStore } from '@/stores/entityIdStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useExecutionOrderStore } from '@/stores/executionOrderStore'
 import { useGraphDefinitionStore } from '@/stores/graphDefinitionStore'
@@ -171,7 +172,7 @@ describe('LGraph', () => {
     const previousId = graph.id
     expect(() => {
       graph.id = createUuidv4()
-    }).toThrow("Cannot change a populated graph's ID")
+    }).not.toThrow()
     expect(graph.id).toBe(previousId)
     expect(store.membership(graph.id, graph.id)).toBe(membership)
 
@@ -194,6 +195,43 @@ describe('LGraph', () => {
     expect(store.membership(previousId, previousId)).not.toBe(membership)
   })
 
+  it('keeps its ID when another live graph already owns the requested ID', () => {
+    const source = new LGraph()
+    const destination = new LGraph()
+    const definitions = useGraphDefinitionStore()
+    const metadata = useGraphMetadataStore()
+    const entityIds = useEntityIdStore()
+    const destinationMembership = definitions.membership(
+      destination.id,
+      destination.id
+    )
+    const destinationMetadata = metadata.get(destination.id)
+    const destinationEntityIds = entityIds.get(destination.id)
+    const sourceId = source.id
+
+    expect(() => {
+      source.id = destination.id
+    }).not.toThrow()
+    expect(source.id).toBe(sourceId)
+    expect(definitions.membership(destination.id, destination.id)).toBe(
+      destinationMembership
+    )
+    expect(metadata.get(destination.id)).toBe(destinationMetadata)
+    expect(entityIds.get(destination.id)).toBe(destinationEntityIds)
+  })
+
+  it('remints a configured graph when another live graph owns its ID', () => {
+    const incumbent = new LGraph()
+    incumbent.extra = { marker: 'incumbent' }
+    const serialized = structuredClone(incumbent.asSerialisable())
+
+    const configured = new LGraph(serialized)
+
+    expect(configured.id).not.toBe(incumbent.id)
+    expect(configured.extra).toEqual({ marker: 'incumbent' })
+    expect(incumbent.extra).toEqual({ marker: 'incumbent' })
+  })
+
   it('subgraph construction clears only its target definition', () => {
     const store = useGraphDefinitionStore()
     const root = new LGraph()
@@ -210,6 +248,21 @@ describe('LGraph', () => {
     expect(store.definition(root.id, data.id)).not.toBe(staleDefinition)
     expect(store.membership(root.id, siblingId)).toBe(siblingMembership)
     expect(store.definition(root.id, siblingId)).toBe(siblingDefinition)
+  })
+
+  it('remints a subgraph instead of replacing a live definition', () => {
+    const root = new LGraph()
+    const incumbent = new Subgraph(root, createTestSubgraphData())
+    incumbent.addInput('value', 'number')
+
+    const configured = new Subgraph(
+      root,
+      structuredClone(incumbent.asSerialisable())
+    )
+
+    expect(configured.id).not.toBe(incumbent.id)
+    expect(configured.inputs[0]?.name).toBe('value')
+    expect(incumbent.inputs[0]?.name).toBe('value')
   })
 
   it('should serialize deterministic node order', async () => {
@@ -288,6 +341,7 @@ describe('LGraph', () => {
     const data = source.asSerialisable()
     const graphId = data.id
     const id = widgetId(graphId, sourceNode.id, 'value')
+    source.clear()
     const target = new LGraph()
 
     expect(() => target.configure(data)).toThrow('configure failed')
@@ -328,7 +382,7 @@ describe('LGraph', () => {
     ).toEqual([])
   })
 
-  it('restores topology and reroutes when keep-old configuration fails', () => {
+  it('restores link instances, state, and reroutes when keep-old configuration fails', () => {
     LiteGraph.registerNodeType('throwing-configure', ThrowingConfigureNode)
     const graph = new LGraph()
     const source = new DummyNode()
@@ -338,6 +392,19 @@ describe('LGraph', () => {
     graph.add(source)
     graph.add(target)
     const link = source.connect(0, target, 0)!
+    link.color = '#123456'
+    link._data = { value: 42 }
+    const floatingLink = new LLink(
+      toLinkId(-1),
+      'number',
+      source.id,
+      0,
+      UNASSIGNED_NODE_ID,
+      -1
+    )
+    graph.addFloatingLink(floatingLink)
+    floatingLink.color = '#654321'
+    floatingLink._data = { value: 24 }
     const reroute = graph.createReroute([10, 20], link)!
     const before = graph.asSerialisable()
     const data = structuredClone(before)
@@ -356,6 +423,12 @@ describe('LGraph', () => {
     expect(() => graph.configure(data, true)).toThrow('configure failed')
 
     const after = graph.asSerialisable()
+    expect(graph.links.get(link.id)).toBe(link)
+    expect(link.color).toBe('#123456')
+    expect(link._data).toEqual({ value: 42 })
+    expect(graph.floatingLinks.get(floatingLink.id)).toBe(floatingLink)
+    expect(floatingLink.color).toBe('#654321')
+    expect(floatingLink._data).toEqual({ value: 24 })
     expect(after.links).toEqual(before.links)
     expect(after.floatingLinks).toEqual(before.floatingLinks)
     expect(after.reroutes).toEqual(before.reroutes)
@@ -730,7 +803,9 @@ describe('Link serialization goldens (ADR-0008 topology-store migration)', () =>
     expect,
     linkedNodesGraph
   }) => {
-    const first = new LGraph(linkedNodesGraph).asSerialisable()
+    const graph = new LGraph(linkedNodesGraph)
+    const first = graph.asSerialisable()
+    graph.clear()
     const second = new LGraph(first).asSerialisable()
 
     expect(first.links?.length).toBeGreaterThan(0)
@@ -743,6 +818,7 @@ describe('Link serialization goldens (ADR-0008 topology-store migration)', () =>
     reroutesComplexGraph
   }) => {
     const first = reroutesComplexGraph.asSerialisable()
+    reroutesComplexGraph.clear()
     const second = new LGraph(first).asSerialisable()
 
     const chainedLinks = (first.links ?? []).filter(
@@ -757,7 +833,9 @@ describe('Link serialization goldens (ADR-0008 topology-store migration)', () =>
     expect,
     floatingLinkGraph
   }) => {
-    const first = new LGraph(floatingLinkGraph).asSerialisable()
+    const graph = new LGraph(floatingLinkGraph)
+    const first = graph.asSerialisable()
+    graph.clear()
     const second = new LGraph(first).asSerialisable()
 
     expect(first.floatingLinks?.length).toBeGreaterThan(0)
@@ -784,6 +862,7 @@ describe('Link serialization goldens (ADR-0008 topology-store migration)', () =>
     reroutesComplexGraph
   }) => {
     const first = reroutesComplexGraph.asSerialisable()
+    reroutesComplexGraph.clear()
     const second = new LGraph(first).asSerialisable()
 
     const reroutes = first.reroutes ?? []
@@ -2076,6 +2155,7 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
     )
     try {
       const graph = new LGraph()
+      serialized.id = graph.id
       graph.configure(serialized)
 
       const migrationCall = warn.mock.calls.find(
@@ -2352,7 +2432,12 @@ describe('graph teardown drops layout entries', () => {
     ['clear', (graph: LGraph) => graph.clear()],
     [
       'reconfigure',
-      (graph: LGraph) => graph.configure(new LGraph().serialize())
+      (graph: LGraph) => {
+        const replacement = new LGraph()
+        const data = replacement.serialize()
+        replacement.clear()
+        graph.configure(data)
+      }
     ]
   ] as const)('drops every entry on %s', ([, teardown]) => {
     const populated = createGraphWithEveryLayoutEntryType()

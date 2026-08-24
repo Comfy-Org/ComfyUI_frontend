@@ -55,6 +55,7 @@ import { useEntityIdStore } from '@/stores/entityIdStore'
 import { useExecutionOrderStore } from '@/stores/executionOrderStore'
 import { useGraphDefinitionStore } from '@/stores/graphDefinitionStore'
 import { useGraphMetadataStore } from '@/stores/graphMetadataStore'
+import { rekeyGraphId } from '@/stores/rekeyGraphId'
 import {
   UNASSIGNED_NODE_ID,
   parseNodeId,
@@ -249,6 +250,7 @@ function fireNodeRemovalLifecycles(nodes: LGraphNode[]): void {
 }
 
 function teardownOwnedGraphs(owner: LGraph): void {
+  const rootGraphId = owner.rootGraph?.id ?? owner.id
   const initialOwnedGraphs = owner.isRootGraph
     ? [owner, ...owner._subgraphs.values()]
     : [owner]
@@ -266,7 +268,7 @@ function teardownOwnedGraphs(owner: LGraph): void {
     for (const graph of ownedGraphs) {
       unregisterAllLinkTopologies(graph)
       unregisterAllRerouteChains(graph)
-      useGraphMetadataStore().clear(graph.id)
+      useGraphMetadataStore().clear(rootGraphId, graph.id)
     }
     const nodes = new Set(lifecycleNodes)
     for (const graph of ownedGraphs) {
@@ -502,7 +504,7 @@ export class LGraph
       rootGraph && rootGraph !== raw
         ? useGraphDefinitionStore().definition(rootGraph.id, raw._id.value)
         : undefined
-    if (
+    const populated =
       raw._id.value !== zeroUuid &&
       (raw._nodes.length > 0 ||
         raw._groups.length > 0 ||
@@ -514,22 +516,27 @@ export class LGraph
           (subgraphDefinition.inputs.length > 0 ||
             subgraphDefinition.outputs.length > 0 ||
             subgraphDefinition.widgets.length > 0)))
+    if (populated) return
+    const rekeyed = rekeyGraphId(
+      raw._id.value,
+      value,
+      !rootGraph || rootGraph === raw
+        ? { kind: 'root' }
+        : { kind: 'subgraph', rootGraphId: rootGraph.id }
     )
-      throw new Error("Cannot change a populated graph's ID; clear it first")
-    if (!rootGraph || rootGraph === raw)
-      useGraphDefinitionStore().rekeyRoot(raw._id.value, value)
-    else
-      useGraphDefinitionStore().rekeyGraph(rootGraph.id, raw._id.value, value)
-    useGraphMetadataStore().rekey(raw._id.value, value)
-    useEntityIdStore().rekey(raw._id.value, value)
+    if (!rekeyed) return
     raw._id.value = value
   }
 
   get revision(): number {
-    return useGraphMetadataStore().get(this.id).revision
+    return useGraphMetadataStore().get(this.rootGraph?.id ?? this.id, this.id)
+      .revision
   }
   set revision(value: number) {
-    useGraphMetadataStore().get(this.id).revision = value
+    useGraphMetadataStore().get(
+      this.rootGraph?.id ?? this.id,
+      this.id
+    ).revision = value
   }
 
   private readonly _versionRef = shallowRef(-1)
@@ -613,20 +620,24 @@ export class LGraph
   filter?: string
   /** Must contain serialisable values, e.g. primitive types */
   get config(): LGraphConfig {
-    return useGraphMetadataStore().get(this.id).config
+    return useGraphMetadataStore().get(this.rootGraph?.id ?? this.id, this.id)
+      .config
   }
   set config(value: LGraphConfig) {
-    useGraphMetadataStore().get(this.id).config = value
+    useGraphMetadataStore().get(this.rootGraph?.id ?? this.id, this.id).config =
+      value
   }
   vars: Dictionary<unknown> = {}
   nodes_executing: boolean[] = []
   nodes_actioning: (string | boolean)[] = []
   nodes_executedAction: string[] = []
   get extra(): LGraphExtra {
-    return useGraphMetadataStore().get(this.id).extra
+    return useGraphMetadataStore().get(this.rootGraph?.id ?? this.id, this.id)
+      .extra
   }
   set extra(value: LGraphExtra) {
-    useGraphMetadataStore().get(this.id).extra = value
+    useGraphMetadataStore().get(this.rootGraph?.id ?? this.id, this.id).extra =
+      value
   }
 
   /** @deprecated Deserialising a workflow sets this unused property. */
@@ -759,7 +770,7 @@ export class LGraph
   private resetAfterClear(): void {
     const graphId = this.id
     const definitionStore = useGraphDefinitionStore()
-    useGraphMetadataStore().clear(graphId)
+    useGraphMetadataStore().clear(this.rootGraph?.id ?? graphId, graphId)
     if (this.isRootGraph) useEntityIdStore().clear(graphId)
     if (this.isRootGraph && graphId !== zeroUuid) {
       useExecutionOrderStore().clearRoot(toRootGraphId(graphId))
@@ -1486,7 +1497,7 @@ export class LGraph
         unregisterAllRerouteChains(subgraph)
         detachAllNodesFromStores(subgraph)
         useExecutionOrderStore().clearGraph(graphScopeOf(subgraph))
-        useGraphMetadataStore().clear(subgraph.id)
+        useGraphMetadataStore().clear(this.rootGraph.id, subgraph.id)
         this.rootGraph.subgraphs.delete(subgraph.id)
       }
       detachGraphLayouts(releasedSubgraphs)
@@ -2760,6 +2771,7 @@ export class LGraph
     // Create a new graph ID if none is provided or the zero UUID is used on the root graph
     if (id && !(this.isRootGraph && id === zeroUuid)) {
       this.id = id
+      if (this.id !== id && this.id === zeroUuid) this.id = createUuidv4()
     } else if (this.id === zeroUuid) {
       this.id = createUuidv4()
     }
@@ -2791,6 +2803,12 @@ export class LGraph
     const existingGroups = !options.clearGraph ? [...this._groups] : undefined
     const existingNodesById = !options.clearGraph
       ? { ...this._nodes_by_id }
+      : undefined
+    const existingLinks = !options.clearGraph
+      ? [...this.links.values()]
+      : undefined
+    const existingFloatingLinks = !options.clearGraph
+      ? [...this.floatingLinks.values()]
       : undefined
     const existingTopology = !options.clearGraph
       ? serialiseOwnedTopology(this)
@@ -3041,7 +3059,13 @@ export class LGraph
       this.setDirtyCanvas(true, true)
       return error
     } catch (error) {
-      if (existingNodes && existingGroups && existingNodesById) {
+      if (
+        existingNodes &&
+        existingGroups &&
+        existingNodesById &&
+        existingLinks &&
+        existingFloatingLinks
+      ) {
         const existingNodeSet = new Set(existingNodes)
         const existingGroupSet = new Set(existingGroups)
         try {
@@ -3061,11 +3085,11 @@ export class LGraph
           for (const reroute of [...this.reroutes.values()]) {
             this._removeReroute(reroute.id)
           }
-          for (const linkData of existingTopology?.links ?? []) {
-            this._addLink(LLink.create(linkData))
+          for (const link of existingLinks) {
+            this._addLink(link)
           }
-          for (const linkData of existingTopology?.floatingLinks ?? []) {
-            this.addFloatingLink(LLink.create(linkData))
+          for (const link of existingFloatingLinks) {
+            this.addFloatingLink(link)
           }
           for (const rerouteData of existingTopology?.reroutes ?? []) {
             this.setReroute(rerouteData)
@@ -3202,6 +3226,9 @@ export class Subgraph
 
     this._rootGraph = rootGraph
     const cloned = structuredClone(data)
+    if (useGraphMetadataStore().has(rootGraph.id, cloned.id)) {
+      cloned.id = createUuidv4()
+    }
     useGraphDefinitionStore().clearGraph(rootGraph.id, cloned.id)
     this._configureBase(cloned)
     this._configureSubgraph(cloned)
