@@ -4,16 +4,8 @@ type UUID = string
 
 /**
  * A widget's canonical identity: `graphId:nodeId:name`.
- *
- * Derived, not minted — computable at any call site that already holds the
- * three segments, so addressing a widget needs no registry lookup. The tail
- * segment is the widget's `name` (never `label`, which is display-only and is
- * what a user rename changes).
- *
- * A synthetic widget identity was built (PR 8856) and deleted (PR 12617); see
- * "Widget identity keys on `name`" in `docs/adr/0008-entity-component-system.md`
- * before proposing one again. Note the trade: because the key is derived, a
- * widget renamed in a node definition orphans its stored state, and two widgets
+ * Because the key is derived, a widget renamed in a node
+ * definition orphans its stored state, and two widgets
  * on one node cannot share a name.
  */
 export type WidgetId = string & { readonly __brand: 'WidgetId' }
