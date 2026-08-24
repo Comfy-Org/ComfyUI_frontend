@@ -145,6 +145,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   )
   let identityGeneration = 0
   let initializationPromise: Promise<void> | null = null
+  let pendingWorkspaceSwitch: Promise<void> | null = null
 
   function isStaleIdentity(generation: number): boolean {
     return generation !== identityGeneration
@@ -461,11 +462,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
    * Switch to a different workspace.
    * Clears workspace context and reloads the page.
    */
-  async function switchWorkspace(workspaceId: string): Promise<void> {
-    if (workspaceId === activeWorkspaceId.value) return
-    if (!isCloud && isSwitching.value)
-      throw new Error('Workspace switch already in progress')
-
+  async function executeWorkspaceSwitch(workspaceId: string): Promise<void> {
     const generation = identityGeneration
     const workspaceAuthStore = useWorkspaceAuthStore()
 
@@ -514,6 +511,26 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
       }
       throw e
     }
+  }
+
+  async function switchWorkspace(workspaceId: string): Promise<void> {
+    if (workspaceId === activeWorkspaceId.value) return
+    if (!isCloud && isSwitching.value)
+      throw new Error('Workspace switch already in progress')
+
+    const workspaceSwitch = executeWorkspaceSwitch(workspaceId)
+    pendingWorkspaceSwitch = workspaceSwitch
+    try {
+      await workspaceSwitch
+    } finally {
+      if (pendingWorkspaceSwitch === workspaceSwitch) {
+        pendingWorkspaceSwitch = null
+      }
+    }
+  }
+
+  function waitForWorkspaceSwitch(): Promise<void> {
+    return pendingWorkspaceSwitch ?? Promise.resolve()
   }
 
   /**
@@ -959,6 +976,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
 
     // Workspace Actions
     switchWorkspace,
+    waitForWorkspaceSwitch,
     forgetRevokedActiveWorkspace,
     createWorkspace,
     deleteWorkspace,

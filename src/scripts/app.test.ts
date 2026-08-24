@@ -94,7 +94,8 @@ const {
   },
   mockTeamWorkspaceStore: {
     activeWorkspaceId: 'workspace-a' as string | null,
-    workspaceTransitionGeneration: 0
+    workspaceTransitionGeneration: 0,
+    waitForWorkspaceSwitch: vi.fn(() => Promise.resolve())
   },
   mockWorkspaceWorkflow: {
     activeWorkflow: null as ComfyWorkflow | null,
@@ -296,6 +297,7 @@ describe('ComfyApp', () => {
     mockAuthStore.getWorkspaceAuthToken.mockResolvedValue('workspace-token')
     mockTeamWorkspaceStore.activeWorkspaceId = 'workspace-a'
     mockTeamWorkspaceStore.workspaceTransitionGeneration = 0
+    mockTeamWorkspaceStore.waitForWorkspaceSwitch.mockResolvedValue()
     mockExtensionService.invokeExtensions.mockReturnValue([])
     mockExtensionService.invokeExtensionsAsync.mockResolvedValue(undefined)
     vi.mocked(extractFilesFromDragEvent).mockResolvedValue([])
@@ -348,6 +350,62 @@ describe('ComfyApp', () => {
       resolveToken('workspace-token')
       await expect(submission).resolves.toBe(true)
       expect(queuePrompt).toHaveBeenCalledOnce()
+    })
+
+    it('waits for a workspace switch before selecting the billing context', async () => {
+      prepareEmptyPromptQueue()
+      let finishSwitch: () => void = () => {}
+      mockTeamWorkspaceStore.waitForWorkspaceSwitch.mockImplementationOnce(
+        () =>
+          new Promise<void>((resolve) => {
+            finishSwitch = () => {
+              mockTeamWorkspaceStore.activeWorkspaceId = 'workspace-b'
+              resolve()
+            }
+          })
+      )
+      mockAuthStore.getWorkspaceAuthToken.mockResolvedValueOnce(
+        'workspace-token-b'
+      )
+      const queuePrompt = vi
+        .spyOn(api, 'queuePrompt')
+        .mockImplementation(() => {
+          expect(api.authToken).toBe('workspace-token-b')
+          return Promise.resolve({ prompt_id: 'job-1', error: '' })
+        })
+
+      const submission = app.queuePrompt(0)
+      await vi.waitFor(() =>
+        expect(
+          mockTeamWorkspaceStore.waitForWorkspaceSwitch
+        ).toHaveBeenCalledOnce()
+      )
+
+      expect(mockAuthStore.getWorkspaceAuthToken).not.toHaveBeenCalled()
+      expect(app.graphToPrompt).not.toHaveBeenCalled()
+      expect(queuePrompt).not.toHaveBeenCalled()
+
+      finishSwitch()
+      await expect(submission).resolves.toBe(true)
+
+      expect(mockAuthStore.getWorkspaceAuthToken).toHaveBeenCalledOnce()
+      expect(queuePrompt).toHaveBeenCalledOnce()
+    })
+
+    it('does not submit when an in-progress workspace switch fails', async () => {
+      prepareEmptyPromptQueue()
+      mockTeamWorkspaceStore.waitForWorkspaceSwitch.mockRejectedValueOnce(
+        new Error('Token exchange failed')
+      )
+      const queuePrompt = vi.spyOn(api, 'queuePrompt')
+      const showDialog = vi.spyOn(useDialogStore(), 'showDialog')
+
+      await expect(app.queuePrompt(0)).resolves.toBe(false)
+
+      expect(mockAuthStore.getWorkspaceAuthToken).not.toHaveBeenCalled()
+      expect(app.graphToPrompt).not.toHaveBeenCalled()
+      expect(queuePrompt).not.toHaveBeenCalled()
+      expect(showDialog).toHaveBeenCalledOnce()
     })
 
     it.skipIf(isCloud)(

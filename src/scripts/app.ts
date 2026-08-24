@@ -1642,6 +1642,17 @@ export class ComfyApp {
 
     // Get auth token for backend nodes - uses workspace token if enabled, otherwise Firebase token
     const teamWorkspaceStore = useTeamWorkspaceStore()
+    try {
+      await teamWorkspaceStore.waitForWorkspaceSwitch()
+    } catch (error) {
+      useDialogService().showErrorDialog(error, {
+        title: t('errorDialog.promptExecutionError'),
+        reportType: 'promptExecutionError'
+      })
+      this.queueItems.length = 0
+      this.processingQueue = false
+      return false
+    }
     const workspaceIdBeforeAuthentication = teamWorkspaceStore.activeWorkspaceId
     const workspaceGenerationBeforeAuthentication =
       teamWorkspaceStore.workspaceTransitionGeneration

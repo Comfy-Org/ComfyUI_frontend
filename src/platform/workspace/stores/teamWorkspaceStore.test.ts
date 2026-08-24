@@ -537,6 +537,59 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.activeWorkspaceId).toBe(mockTeamWorkspace.id)
     })
 
+    it('waits for an in-progress local workspace switch', async () => {
+      mockDistributionTypes.isCloud = false
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+
+      let finishSwitch: () => void = () => {}
+      mockWorkspaceAuthStore.switchWorkspace.mockImplementationOnce(
+        () =>
+          new Promise<void>((resolve) => {
+            finishSwitch = () => {
+              mockWorkspaceAuthStore.currentWorkspace = mockTeamWorkspace
+              resolve()
+            }
+          })
+      )
+
+      const workspaceSwitch = store.switchWorkspace(mockTeamWorkspace.id)
+      const switchBarrier = store.waitForWorkspaceSwitch()
+      let barrierResolved = false
+      void switchBarrier.then(() => {
+        barrierResolved = true
+      })
+
+      await Promise.resolve()
+      expect(barrierResolved).toBe(false)
+      expect(store.activeWorkspaceId).toBe(mockPersonalWorkspace.id)
+
+      finishSwitch()
+      await switchBarrier
+
+      expect(store.activeWorkspaceId).toBe(mockTeamWorkspace.id)
+      await workspaceSwitch
+    })
+
+    it('propagates a failed local workspace switch to waiters', async () => {
+      mockDistributionTypes.isCloud = false
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+      mockWorkspaceAuthStore.switchWorkspace.mockRejectedValueOnce(
+        new Error('Token exchange failed')
+      )
+
+      const workspaceSwitch = store.switchWorkspace(mockTeamWorkspace.id)
+
+      await Promise.all([
+        expect(workspaceSwitch).rejects.toThrow('Token exchange failed'),
+        expect(store.waitForWorkspaceSwitch()).rejects.toThrow(
+          'Token exchange failed'
+        )
+      ])
+      expect(store.activeWorkspaceId).toBe(mockPersonalWorkspace.id)
+    })
+
     it('sets isSwitching flag during operation', async () => {
       const store = useTeamWorkspaceStore()
       await store.initialize()
