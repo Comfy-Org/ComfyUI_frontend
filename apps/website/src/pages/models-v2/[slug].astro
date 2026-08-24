@@ -8,8 +8,8 @@
 import { cn } from '@comfyorg/tailwind-utils'
 
 import BaseLayout from '../../layouts/BaseLayout.astro'
+import BrandButton from '../../components/common/BrandButton.vue'
 import GlassCard from '../../components/common/GlassCard.vue'
-import { brandButtonVariants } from '../../components/common/brandButton.variants'
 import Badge from '../../components/ui/badge/Badge.vue'
 import { toggleVariants } from '../../components/ui/toggle'
 import {
@@ -93,11 +93,6 @@ const helperCopy = 'text-2xs font-light text-primary-warm-gray'
 const fieldLabel = 'block text-2xs font-bold uppercase tracking-widest text-primary-warm-gray'
 const textAction = 'text-2xs font-bold uppercase tracking-widest text-primary-warm-gray hover:text-primary-warm-white'
 const iconButton = 'group shrink-0 cursor-pointer rounded-lg border border-transparency-white-t20 bg-transparency-white-t4 p-1.5 text-primary-warm-gray transition-colors hover:bg-transparency-white-t8 hover:text-primary-warm-white'
-const primaryButton = brandButtonVariants({ variant: 'solid', size: 'xs' })
-const outlineAccentButton = brandButtonVariants({ variant: 'outline', size: 'xs' })
-const outlineButton = brandButtonVariants({ variant: 'outline-light', size: 'sm' })
-const solidAccentButton = brandButtonVariants({ variant: 'solid', size: 'sm' })
-const outlineAccentButtonSm = brandButtonVariants({ variant: 'outline', size: 'sm' })
 const tab = cn(
   toggleVariants(),
   'rounded-none px-4 first:rounded-l-xl last:rounded-r-xl'
@@ -218,9 +213,9 @@ const faqJsonLd = {
         <Badge variant="accent">{meta.label}</Badge>
       </div>
       <div class="hidden gap-2 lg:flex">
-        {docsUrl && <a href={docsUrl} class:list={[outlineAccentButtonSm, 'text-2xs uppercase tracking-widest']}>Learn more</a>}
-        <a href={workflowsUrl} class:list={[solidAccentButton, 'text-2xs uppercase tracking-widest']}>Try workflows</a>
-        {hfUrl && <a href={hfUrl} class:list={[outlineAccentButtonSm, 'text-2xs uppercase tracking-widest']}>Download weights ↗</a>}
+        {docsUrl && <BrandButton href={docsUrl} variant="outline" size="sm" class="text-2xs uppercase tracking-widest">Learn more</BrandButton>}
+        <BrandButton href={workflowsUrl} variant="solid" size="sm" class="text-2xs uppercase tracking-widest">Try workflows</BrandButton>
+        {hfUrl && <BrandButton href={hfUrl} variant="outline" size="sm" class="text-2xs uppercase tracking-widest">Download weights ↗</BrandButton>}
       </div>
     </div>
     <p class="mt-2 max-w-3xl text-sm font-light leading-relaxed text-primary-comfy-canvas sm:text-base">{blurb}</p>
@@ -237,14 +232,14 @@ const faqJsonLd = {
   <section class="mx-auto max-w-9xl px-5 pt-16 sm:px-6 lg:px-20">
     <div class="flex flex-wrap items-center justify-between gap-4">
       <nav class="ring-primary-warm-white/20 flex w-fit max-w-full items-center gap-0.5 overflow-x-auto rounded-2xl p-1.5 ring-2" role="tablist" aria-label="Model page sections">
-        <button type="button" role="tab" data-tab="playground" data-state="on" aria-controls="panel-playground" aria-selected="true" class={tab}>Playground</button>
-        <button type="button" role="tab" data-tab="api" data-state="off" aria-controls="panel-api" aria-selected="false" class={tab}>API</button>
-        <button type="button" role="tab" data-tab="gallery" data-state="off" aria-controls="panel-gallery" aria-selected="false" class={tab}>Examples</button>
+        <button type="button" role="tab" data-tab="playground" data-state="on" aria-controls="panel-playground" aria-selected="true" class={tab}><span class="ppformula-text-center">Playground</span></button>
+        <button type="button" role="tab" data-tab="api" data-state="off" aria-controls="panel-api" aria-selected="false" class={tab}><span class="ppformula-text-center">API</span></button>
+        <button type="button" role="tab" data-tab="gallery" data-state="off" aria-controls="panel-gallery" aria-selected="false" class={tab}><span class="ppformula-text-center">Examples</span></button>
       </nav>
       <div class="hidden gap-2 sm:flex">
         <div class="relative" id="llms-wrap">
           <div class="inline-flex items-stretch divide-x divide-transparency-white-t20 overflow-hidden rounded-lg border border-transparency-white-t20 bg-transparency-white-t4 text-xs font-normal text-primary-comfy-canvas">
-            <button id="llms-copy" class="cursor-pointer px-3 py-2.5 transition-colors hover:bg-transparency-white-t8">Copy markdown<span id="llms-copied" class="hidden pl-2 text-primary-comfy-yellow">✓</span></button>
+            <button id="llms-copy" class="cursor-pointer px-3 py-2.5 transition-colors hover:bg-transparency-white-t8"><span class="ppformula-text-center">Copy markdown<span id="llms-copied" class="hidden pl-2 text-primary-comfy-yellow">✓</span></span></button>
             <button id="llms-btn" aria-haspopup="menu" aria-expanded="false" aria-label="More formats for LLMs" class="cursor-pointer px-2 transition-colors hover:bg-transparency-white-t8">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-4"><path d="m6 9 6 6 6-6"/></svg>
             </button>
@@ -256,7 +251,7 @@ const faqJsonLd = {
         </div>
         <div class="relative" id="graph-wrap">
           <div class="inline-flex items-stretch divide-x divide-transparency-white-t20 overflow-hidden rounded-lg border border-transparency-white-t20 bg-transparency-white-t4 text-xs font-normal text-primary-comfy-canvas">
-            <a href="https://cloud.comfy.org?utm_source=models_v2_preview" class="px-3 py-2.5 transition-colors hover:bg-transparency-white-t8">Open the full graph</a>
+            <a href="https://cloud.comfy.org?utm_source=models_v2_preview" class="px-3 py-2.5 transition-colors hover:bg-transparency-white-t8"><span class="ppformula-text-center">Open the full graph</span></a>
             <button id="graph-btn" aria-haspopup="menu" aria-expanded="false" aria-label="More ways to open this model" class="cursor-pointer px-2 transition-colors hover:bg-transparency-white-t8">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-4"><path d="m6 9 6 6 6-6"/></svg>
             </button>
@@ -333,7 +328,7 @@ const faqJsonLd = {
           </div>
           <label class:list={[fieldLabel, 'mt-4']}>Reference image</label>
           <div id="dropzone" class="mt-2 flex flex-col items-center gap-3 rounded-xl border border-dashed border-transparency-white-t20 bg-transparency-white-t4 px-4 py-4 text-center">
-            <button id="add-image-btn" class:list={[outlineButton, 'px-3 py-1.5 text-2xs uppercase tracking-widest']}>Add image</button>
+            <BrandButton id="add-image-btn" variant="outline-light" size="sm" class="px-3 py-1.5 text-2xs uppercase tracking-widest">Add image</BrandButton>
             <span id="dropzone-label" class="text-xs font-light text-primary-warm-gray">or drop a frame to animate it</span>
             <img id="ref-thumb" src={gallery[1] ?? gallery[0]} alt="" class="hidden h-10 w-16 rounded-md object-cover" onerror="this.style.display='none'" />
           </div>
@@ -357,10 +352,8 @@ const faqJsonLd = {
         <div class="mt-5 flex items-center justify-between gap-3 border-t border-white/10 pt-4">
           <span class="hidden text-2xs text-primary-warm-gray sm:block"><span id="cost-line">{baseCredits} credits ≈ ${(baseCredits * 0.0084).toFixed(2)}</span> · est.</span>
           <div class="flex items-center gap-3">
-            <button id="pg-reset" class:list={[outlineAccentButton, 'uppercase tracking-widest']}>Reset</button>
-            <button id="pg-run" data-base-credits={baseCredits} data-slug={slugId} class:list={[primaryButton, 'uppercase tracking-widest']}>
-              Sign in to run — 5 free
-            </button>
+            <BrandButton id="pg-reset" variant="outline" size="xs" class="uppercase tracking-widest">Reset</BrandButton>
+            <BrandButton id="pg-run" data-base-credits={baseCredits} data-slug={slugId} variant="solid" size="xs" class="uppercase tracking-widest">Sign in to run — 5 free</BrandButton>
           </div>
         </div>
       </div>
@@ -414,7 +407,7 @@ const faqJsonLd = {
             </div>
             <p class="text-xs font-light leading-relaxed text-primary-warm-gray">Your graphs, seeds, history, and all five outputs stay yours — free, forever. Or run it locally: it’s open source.</p>
             <div class="flex flex-wrap items-center gap-4">
-              <button class:list={[primaryButton, 'uppercase tracking-widest']}>Go Creator</button>
+              <BrandButton variant="solid" size="xs" class="uppercase tracking-widest">Go Creator</BrandButton>
               <span class="text-2xs font-bold uppercase tracking-widest text-primary-comfy-canvas">See all plans →</span>
               <button id="demo-reset" class={textAction}>Replay demo</button>
             </div>
@@ -426,14 +419,14 @@ const faqJsonLd = {
         </div>
         <div class="mt-auto flex justify-end pt-3">
           <div id="result-download" class="shrink-0">
-            <a href={img} download={`${slugId}-result`} class:list={[outlineAccentButton, 'uppercase tracking-widest']}>Download</a>
+            <BrandButton href={img} download={`${slugId}-result`} variant="outline" size="xs" class="uppercase tracking-widest">Download</BrandButton>
           </div>
         </div>
         <!-- VARIATIONS QUEUE -->
         <div id="var-block" class="hidden border-t border-white/10 px-5 py-4">
           <div class="flex items-center justify-between gap-3">
             <p class={panelTitle}>The queue — pick the best, not the first</p>
-            <button id="queue-vars" class:list={[primaryButton, 'uppercase tracking-widest']}>Queue 4 variations — <span id="var-cost">24</span> cr</button>
+            <BrandButton id="queue-vars" variant="solid" size="xs" class="uppercase tracking-widest">Queue 4 variations — <span id="var-cost">24</span> cr</BrandButton>
           </div>
           <div id="var-strip" class="mt-3 hidden grid-cols-4 gap-2">
             {[0, 1, 2, 3].map((i) => (
@@ -454,7 +447,7 @@ const faqJsonLd = {
         <p class="text-lg font-bold text-primary-comfy-canvas">Start free. Upgrade when you're ready.</p>
         <p class="mt-1 text-sm text-primary-comfy-canvas">5 free runs on real GPUs — no credit card required.</p>
       </div>
-      <button id="free-run-cta" class:list={[outlineAccentButton, 'shrink-0 self-start sm:self-auto']}>Try free</button>
+      <BrandButton id="free-run-cta" variant="outline" size="xs" class="shrink-0 self-start sm:self-auto">Try free</BrandButton>
     </div>
   </section>
 
@@ -535,9 +528,7 @@ const faqJsonLd = {
 
   <!-- MOBILE STICKY RUN BAR -->
   <div class="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-primary-comfy-ink/95 px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3 backdrop-blur lg:hidden">
-    <button id="pg-run-mobile" class:list={[primaryButton, 'w-full py-3.5 uppercase tracking-widest']}>
-      Run — ~{baseCredits} credits
-    </button>
+    <BrandButton id="pg-run-mobile" variant="solid" size="xs" class="w-full py-3.5 uppercase tracking-widest">Run — ~{baseCredits} credits</BrandButton>
     <p class:list={[helperCopy, 'mt-1.5 text-center']}>Sign in at run · 5 free · no card</p>
   </div>
   <div class="h-24 lg:hidden"></div>
@@ -549,9 +540,9 @@ const faqJsonLd = {
       <h3 class="mt-4 text-2xl font-semibold text-primary-warm-white">5 free runs. No card.</h3>
       <p class="mt-2 text-sm font-light leading-relaxed text-primary-comfy-canvas">Your prompt and settings are saved. The run starts the moment you’re in.</p>
       <div class="mt-5 flex flex-col gap-2.5">
-        <button data-auth class:list={[primaryButton, 'w-full']}>Continue with Google</button>
-        <button data-auth class:list={[outlineButton, 'w-full']}>Continue with GitHub</button>
-        <button data-auth class:list={[outlineButton, 'w-full']}>Continue with email</button>
+        <BrandButton data-auth variant="solid" size="xs" class="w-full">Continue with Google</BrandButton>
+        <BrandButton data-auth variant="outline-light" size="sm" class="w-full">Continue with GitHub</BrandButton>
+        <BrandButton data-auth variant="outline-light" size="sm" class="w-full">Continue with email</BrandButton>
       </div>
       <p class:list={[helperCopy, 'mt-4 leading-relaxed']}>By continuing you agree to the Terms. Open source stays open — your graphs and outputs are yours.</p>
       <button id="auth-close" class:list={[textAction, 'mt-3']}>Not now</button>
@@ -670,6 +661,12 @@ const faqJsonLd = {
       const base = Number(runDesktop.dataset.baseCredits ?? '6')
       const slug = runDesktop.dataset.slug ?? 'model'
 
+      // BrandButton wraps labels in a centering span — writing to the button
+      // itself would strip it.
+      const label = (el: HTMLElement) => el.querySelector('span') ?? el
+      const runDesktopLabel = label(runDesktop)
+      const runMobileLabel = label(runMobile)
+
       let authed = false
       let runsLeft = 5
       let seed = 428790123
@@ -711,14 +708,14 @@ const faqJsonLd = {
         modalCredits.textContent = String(c)
         varCost.textContent = String(c * 4)
         if (!authed) {
-          runDesktop.textContent = 'Sign in to run — 5 free'
-          runMobile.textContent = `Run — ~${c} credits`
+          runDesktopLabel.textContent = 'Sign in to run — 5 free'
+          runMobileLabel.textContent = `Run — ~${c} credits`
         } else if (runsLeft > 0) {
-          runDesktop.textContent = `Run again — ${runsLeft} free left`
-          runMobile.textContent = `Run — ${runsLeft} free left`
+          runDesktopLabel.textContent = `Run again — ${runsLeft} free left`
+          runMobileLabel.textContent = `Run — ${runsLeft} free left`
         } else {
-          runDesktop.textContent = 'Go Creator — from $20/mo'
-          runMobile.textContent = 'Go Creator — from $20/mo'
+          runDesktopLabel.textContent = 'Go Creator — from $20/mo'
+          runMobileLabel.textContent = 'Go Creator — from $20/mo'
         }
       }
 
