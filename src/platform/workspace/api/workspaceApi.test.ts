@@ -2,11 +2,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const {
   mockAxiosInstance,
-  mockGetAuthHeaderOrThrow,
-  mockGetFirebaseAuthHeaderOrThrow,
-  mockIsCloud
+  mockGetWorkspaceAuthHeaderOrThrow,
+  mockGetFirebaseAuthHeaderOrThrow
 } = vi.hoisted(() => ({
-  mockIsCloud: { value: true },
   mockAxiosInstance: {
     get: vi.fn(),
     post: vi.fn(),
@@ -14,7 +12,7 @@ const {
     delete: vi.fn(),
     interceptors: { response: { use: vi.fn() } }
   },
-  mockGetAuthHeaderOrThrow: vi.fn(),
+  mockGetWorkspaceAuthHeaderOrThrow: vi.fn(),
   mockGetFirebaseAuthHeaderOrThrow: vi.fn()
 }))
 
@@ -42,20 +40,13 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
-  get isCloud() {
-    return mockIsCloud.value
-  }
-}))
-
-// Fixed sentinel origin; resolution itself is covered by comfyApi.test.ts.
-vi.mock('@/config/comfyApi', () => ({
-  getCloudIngestBaseUrl: () => 'https://ingest.example'
+vi.mock('./workspaceApiUrl', () => ({
+  workspaceApiUrl: (path: string) => `/api${path}`
 }))
 
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: () => ({
-    getAuthHeaderOrThrow: mockGetAuthHeaderOrThrow,
+    getWorkspaceAuthHeaderOrThrow: mockGetWorkspaceAuthHeaderOrThrow,
     getFirebaseAuthHeaderOrThrow: mockGetFirebaseAuthHeaderOrThrow
   })
 }))
@@ -66,15 +57,14 @@ const AUTH_HEADER = { Authorization: 'Bearer test-token' }
 
 describe('workspaceApi', () => {
   beforeEach(() => {
-    mockIsCloud.value = true
-    mockGetAuthHeaderOrThrow.mockResolvedValue(AUTH_HEADER)
+    mockGetWorkspaceAuthHeaderOrThrow.mockResolvedValue(AUTH_HEADER)
     mockGetFirebaseAuthHeaderOrThrow.mockResolvedValue(AUTH_HEADER)
   })
 
   describe('authentication', () => {
-    it('propagates error when getAuthHeaderOrThrow rejects', async () => {
+    it('propagates error when workspace authentication rejects', async () => {
       const authError = new Error('toastMessages.userNotAuthenticated')
-      mockGetAuthHeaderOrThrow.mockRejectedValue(authError)
+      mockGetWorkspaceAuthHeaderOrThrow.mockRejectedValue(authError)
 
       await expect(workspaceApi.list()).rejects.toBe(authError)
     })
@@ -346,7 +336,7 @@ describe('workspaceApi', () => {
       const result = await workspaceApi.acceptInvite('abc-token')
 
       expect(mockGetFirebaseAuthHeaderOrThrow).toHaveBeenCalled()
-      expect(mockGetAuthHeaderOrThrow).not.toHaveBeenCalled()
+      expect(mockGetWorkspaceAuthHeaderOrThrow).not.toHaveBeenCalled()
       expect(mockAxiosInstance.post).toHaveBeenCalledWith(
         '/api/invites/abc-token/accept',
         null,
@@ -448,66 +438,24 @@ describe('workspaceApi', () => {
     })
   })
 
-  describe('billing routing off cloud', () => {
-    beforeEach(() => {
-      mockIsCloud.value = false
-    })
-
-    it('routes billing reads to cloud ingest', async () => {
-      mockAxiosInstance.get.mockResolvedValue({ data: {} })
-
-      await workspaceApi.getBillingStatus()
-      await workspaceApi.getBillingBalance()
-      await workspaceApi.getBillingPlans()
-
-      expect(mockAxiosInstance.get).toHaveBeenNthCalledWith(
-        1,
-        'https://ingest.example/api/billing/status',
-        { headers: AUTH_HEADER }
-      )
-      expect(mockAxiosInstance.get).toHaveBeenNthCalledWith(
-        2,
-        'https://ingest.example/api/billing/balance',
-        { headers: AUTH_HEADER }
-      )
-      expect(mockAxiosInstance.get).toHaveBeenNthCalledWith(
-        3,
-        'https://ingest.example/api/billing/plans',
-        { headers: AUTH_HEADER }
-      )
-    })
-
-    it('keeps mutating billing endpoints on the local relative form', async () => {
-      mockAxiosInstance.post.mockResolvedValue({ data: {} })
-
-      await workspaceApi.createTopup(1000, 'key-local')
-      await workspaceApi.subscribe('pro-monthly')
-
-      expect(mockAxiosInstance.post).toHaveBeenNthCalledWith(
-        1,
-        '/api/billing/topup',
-        { amount_cents: 1000, idempotency_key: 'key-local' },
-        { headers: AUTH_HEADER }
-      )
-      expect(mockAxiosInstance.post).toHaveBeenNthCalledWith(
-        2,
-        '/api/billing/subscribe',
-        { plan_slug: 'pro-monthly' },
-        { headers: AUTH_HEADER }
-      )
-    })
-  })
-
   describe('subscription', () => {
-    it('previewSubscribe() sends POST with plan_slug', async () => {
+    it('previewSubscribe() sends only fields defined by the ingest contract', async () => {
       const data = { allowed: true, transition_type: 'new_subscription' }
       mockAxiosInstance.post.mockResolvedValue({ data })
 
-      const result = await workspaceApi.previewSubscribe('pro-monthly')
+      const result = await workspaceApi.previewSubscribe(
+        'team_per_credit_annual',
+        {
+          teamCreditStopId: 'team_700'
+        }
+      )
 
       expect(mockAxiosInstance.post).toHaveBeenCalledWith(
         '/api/billing/preview-subscribe',
-        { plan_slug: 'pro-monthly' },
+        {
+          plan_slug: 'team_per_credit_annual',
+          team_credit_stop_id: 'team_700'
+        },
         { headers: AUTH_HEADER }
       )
       expect(result).toEqual(data)

@@ -1,13 +1,30 @@
 name: 'CI: E2E Coverage'
 
 on:
+  workflow_call:
+    inputs:
+      source_branch:
+        required: true
+        type: string
+      source_pr:
+        required: false
+        type: string
+      source_run_id:
+        required: true
+        type: string
+      source_sha:
+        required: true
+        type: string
+    secrets:
+      CODECOV_TOKEN:
+        required: true
   workflow_run:
     workflows: ['CI: Tests E2E']
     types:
       - completed
 
 concurrency:
-  group: e2e-coverage-${{ github.event.workflow_run.head_sha }}
+  group: e2e-coverage-${{ inputs.source_sha || github.event.workflow_run.head_sha }}
   cancel-in-progress: true
 
 permissions:
@@ -18,6 +35,10 @@ jobs:
     # Not gated on full success: fail-fast:false means one flaky shard flips the whole run to failure, which would skip merging every other shard's real coverage.
     if: >
       github.repository == 'Comfy-Org/ComfyUI_frontend' &&
+      (github.event_name == 'workflow_call' ||
+        github.event.workflow_run.event != 'pull_request' ||
+        github.event.workflow_run.head_repository.full_name != github.repository ||
+        github.event.workflow_run.actor.login == 'dependabot[bot]') &&
       github.event.workflow_run.conclusion != 'cancelled'
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -28,6 +49,7 @@ jobs:
       - name: Checkout sources for genhtml
         uses: actions/checkout@v7
         with:
+          ref: ${{ inputs.source_sha || github.event.workflow_run.head_sha }}
           sparse-checkout: |
             src
             packages
@@ -35,7 +57,7 @@ jobs:
       - name: Download all shard coverage data
         uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
         with:
-          run_id: ${{ github.event.workflow_run.id }}
+          run_id: ${{ inputs.source_run_id || github.event.workflow_run.id }}
           name: e2e-coverage-shard-.*
           name_is_regexp: true
           path: temp/coverage-shards
@@ -122,6 +144,9 @@ jobs:
         with:
           files: coverage/playwright/coverage.lcov
           flags: e2e
+          override_branch: ${{ inputs.source_branch || github.event.workflow_run.head_branch }}
+          override_commit: ${{ inputs.source_sha || github.event.workflow_run.head_sha }}
+          override_pr: ${{ inputs.source_pr || github.event.workflow_run.pull_requests[0].number }}
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
 
