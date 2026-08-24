@@ -31,11 +31,11 @@ const authConfig = {
 
 function handleAuthRequest(request: Request): Promise<Response> {
   const url = new URL(request.url)
-  const path = url.searchParams.get('...path')
+  const path = url.searchParams.get('path')
 
   if (path) {
     url.pathname = `/api/auth/${path}`
-    url.searchParams.delete('...path')
+    url.searchParams.delete('path')
   }
 
   return Auth(new Request(url, request), authConfig)
