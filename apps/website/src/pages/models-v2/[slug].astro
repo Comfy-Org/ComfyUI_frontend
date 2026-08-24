@@ -326,9 +326,15 @@ const faqJsonLd = {
 
         <!-- JSON VIEW -->
         <div id="panel-json" class="hidden">
-          <div class="relative mt-4 overflow-hidden rounded-2xl border border-transparency-white-t20">
+          <div class="mt-4 overflow-hidden rounded-2xl border border-transparency-white-t20">
+            <div class="flex items-center justify-between border-b border-transparency-white-t20 px-4 py-2">
+              <div class="flex items-center gap-2 text-primary-warm-gray">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-3.5"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><path d="M14 2v6h6"/><path d="m10 13-2 2 2 2"/><path d="m14 17 2-2-2-2"/></svg>
+                <span class="font-mono text-2xs">json</span>
+              </div>
+              <button type="button" data-copy="input-json" title="Copy" aria-label="Copy" class={iconButton}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-3.5 group-data-[copied]:hidden"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden size-3.5 group-data-[copied]:block"><path d="M20 6 9 17l-5-5"/></svg></button>
+            </div>
             <pre id="input-json" class="max-h-96 scrollbar-code overflow-auto whitespace-pre-wrap break-words p-4 font-mono text-xs leading-relaxed text-primary-warm-gray"></pre>
-            <button type="button" data-copy="input-json" title="Copy" aria-label="Copy" class:list={[iconButton, 'absolute right-3 top-3']}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-3.5 group-data-[copied]:hidden"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden size-3.5 group-data-[copied]:block"><path d="M20 6 9 17l-5-5"/></svg></button>
           </div>
           <p class:list={[helperCopy, 'mt-2']}>Live from your inputs — the exact payload the API takes.</p>
         </div>
@@ -357,8 +363,16 @@ const faqJsonLd = {
         <div class="relative mt-5 aspect-video w-full overflow-hidden rounded-2xl">
           <img id="result-img" src={img} alt={`${name} output`} class="h-full w-full object-cover transition-opacity duration-500" onerror="this.style.display='none'" />
           <div id="result-json-box" class="absolute inset-0 hidden overflow-hidden rounded-2xl border border-transparency-white-t20">
-            <pre id="result-json" class="scrollbar-code h-full overflow-auto whitespace-pre-wrap break-words p-4 font-mono text-xs leading-relaxed text-primary-warm-gray"></pre>
-            <button type="button" data-copy="result-json" title="Copy" aria-label="Copy" class:list={[iconButton, 'absolute right-3 top-3']}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-3.5 group-data-[copied]:hidden"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden size-3.5 group-data-[copied]:block"><path d="M20 6 9 17l-5-5"/></svg></button>
+            <div class="flex h-full flex-col">
+              <div class="flex items-center justify-between border-b border-transparency-white-t20 px-4 py-2">
+                <div class="flex items-center gap-2 text-primary-warm-gray">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-3.5"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><path d="M14 2v6h6"/><path d="m10 13-2 2 2 2"/><path d="m14 17 2-2-2-2"/></svg>
+                  <span class="font-mono text-2xs">json</span>
+                </div>
+                <button type="button" data-copy="result-json" title="Copy" aria-label="Copy" class={iconButton}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-3.5 group-data-[copied]:hidden"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden size-3.5 group-data-[copied]:block"><path d="M20 6 9 17l-5-5"/></svg></button>
+              </div>
+              <pre id="result-json" class="scrollbar-code min-h-0 flex-1 overflow-auto whitespace-pre-wrap break-words p-4 font-mono text-xs leading-relaxed text-primary-warm-gray"></pre>
+            </div>
           </div>
           <div id="running-overlay" class="absolute inset-0 hidden flex-col items-center justify-center gap-4 bg-primary-comfy-ink/95 px-8 text-center">
             <p class={sectionTitle}>Restored your prompt and settings ✓</p>
