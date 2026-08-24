@@ -9,15 +9,8 @@ components and stories from an agent conversation.
 
 ## Before you start
 
-Request the `COMFY_STORYBOOK_MCP_TOKEN` from the Storybook project owner through
-the team's approved secret-sharing tool. Do not paste the token into Git,
-screenshots, tickets, or chat.
-
-Set it in the shell that launches your agent:
-
-```bash
-export COMFY_STORYBOOK_MCP_TOKEN="<team token>"
-```
+You need a verified `@comfy.org` Google account. You do not need to request or
+manage a shared token.
 
 The remote MCP endpoint is:
 
@@ -31,11 +24,12 @@ Run:
 
 ```bash
 codex mcp add comfy_marketing_storybook \
-  --url https://comfy-website-storybook-mcp.vercel.app/mcp \
-  --bearer-token-env-var COMFY_STORYBOOK_MCP_TOKEN
+  --url https://comfy-website-storybook-mcp.vercel.app/mcp
 ```
 
-Restart Codex, then verify the saved configuration:
+Codex detects OAuth and opens the Comfy sign-in flow. Continue with your
+`@comfy.org` Google account, return to Codex, then verify the saved
+configuration:
 
 ```bash
 codex mcp get comfy_marketing_storybook
@@ -44,16 +38,15 @@ codex mcp get comfy_marketing_storybook
 ## Claude Code
 
 This experimental branch includes a project-level `.mcp.json`. After cloning
-the repository and setting `COMFY_STORYBOOK_MCP_TOKEN`, start Claude Code from
-the repository root and approve the `comfy-marketing-storybook` server when
-prompted.
+the repository, start Claude Code from the repository root and approve the
+`comfy-marketing-storybook` server when prompted. Claude opens the Comfy sign-in
+flow the first time it connects.
 
 To install it for your user account without cloning the repository, run:
 
 ```bash
 claude mcp add --scope user --transport http comfy-marketing-storybook \
-  https://comfy-website-storybook-mcp.vercel.app/mcp \
-  --header "Authorization: Bearer $COMFY_STORYBOOK_MCP_TOKEN"
+  https://comfy-website-storybook-mcp.vercel.app/mcp
 ```
 
 Then verify it:
@@ -90,19 +83,19 @@ does not use the shared bearer token.
 
 ## Troubleshooting
 
-- **401 Authentication required:** the token is missing, expired, or unavailable
-  to the process that launched the agent. Set the environment variable and
-  restart the agent.
+- **401 Authentication required:** run `codex mcp login
+comfy_marketing_storybook` again, or reconnect the server in Claude Code.
+- **Google sign-in is rejected:** use a verified `@comfy.org` account. Personal
+  Google accounts cannot access this MCP.
 - **Server is configured but unavailable:** restart the agent after adding the
   MCP configuration.
 - **Documentation works but previews or tests do not:** the remote server is
   documentation-only. Start the local Storybook for development tools.
-- **The browser asks for Google login:** browser access and MCP access use
-  separate authentication. The browser uses a verified `@comfy.org` account;
-  MCP clients use the bearer token.
+- **The browser asks for Google login:** this is expected. The client stores its
+  own OAuth session after sign-in; no token needs to be copied.
 
 ## Security boundary
 
-The Storybook UI requires a verified `@comfy.org` Google account. The MCP
-endpoint requires the team bearer token. Anonymous requests are rejected, and
-the deployment is marked `noindex`.
+The Storybook UI and MCP endpoint require a verified `@comfy.org` Google
+account. Each coworker authorizes their own client session. Anonymous and
+non-Comfy requests are rejected, and the deployment is marked `noindex`.
