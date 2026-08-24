@@ -65,29 +65,26 @@ function recorderBlock(pageExpr: string, safeOutputPath: string): string {
       ${pageExpr}.context() as unknown as RecorderEnabledContext
     )._enableRecorder({
       language: 'playwright-test',
-      mode: 'recording',
-      pauseOnNextStatement: true,
+      // Standby: NOTHING is captured until the Record button is pressed.
+      // Signing in, exploring, and getting set up all stay off the record —
+      // no accidental actions and no typed passwords end up in the code.
+      mode: 'standby',
+      pauseOnNextStatement: false,
       outputFile: ${safeOutputPath}
     })
   } catch {
     await ${pageExpr}.pause()
   }
-  // The Playwright Inspector will open.
-  //
-  // 1. Click the Record button (red circle) to start
-  // 2. Perform your test actions in the browser
-  //
-  // 3. Add an assertion — this is required, not optional. An assertion
-  //    checks that something actually happened (a value changed, text
-  //    appeared, an element is visible); without one, the test can
-  //    "pass" even if the feature is broken. Click an element, then use
-  //    the Inspector's toolbar buttons:
-  //      "Assert visibility" — element is on screen
-  //      "Assert value"      — an input/widget holds a value
-  //      "Assert text"       — element contains specific text
-  //    Add at least one before stopping.
-  //
-  // 4. Click Stop, then close the browser window — the code is already
+  // 1. Get set up first — sign in, look around. Nothing is being
+  //    captured yet.
+  // 2. Press the Record button in the floating toolbar (top middle of
+  //    the app window) when you are ready. From then on your clicks and
+  //    typing are captured.
+  // 3. Add a proof step — required. It checks something visible really
+  //    happened (text appeared, a value changed). Use the toolbar's
+  //    assert buttons next to Record, then click the thing that shows
+  //    your action worked.
+  // 4. When done, close the browser window — the code is already
   //    saved, no copy/paste needed.
   await ${pageExpr}.pause()
 `
