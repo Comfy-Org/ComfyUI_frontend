@@ -228,6 +228,18 @@ export class WorkflowHelper {
   async switchToTab(tabName: string): Promise<void> {
     await this.comfyPage.menu.topbar.getWorkflowTab(tabName).click()
     await this.waitForWorkflowIdle()
+    await expect
+      .poll(() => this.comfyPage.menu.topbar.getActiveTabName(), {
+        message: `active tab is ${tabName}`
+      })
+      .toContain(tabName)
+    // Keyboard shortcuts need canvas focus; after clicking a tab the focus
+    // sits on the tab button and Ctrl+Z would go nowhere.
+    await this.comfyPage.canvas.focus()
+    await this.comfyPage.nextFrame()
+    if (this.comfyPage.isVueNodes) {
+      await this.comfyPage.vueNodes.waitForNodes()
+    }
   }
 
   async getExportedWorkflow(options: { api: true }): Promise<ComfyApiWorkflow>
