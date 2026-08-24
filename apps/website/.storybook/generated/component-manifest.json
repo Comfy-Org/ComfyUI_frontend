@@ -644,13 +644,11 @@
       "source": "src/components/blocks/HeroBackdrop01.vue",
       "storyFile": "src/components/blocks/HeroBackdrop01.stories.ts",
       "title": "Website/Blocks/HeroBackdrop01",
-      "status": "needs-tests",
+      "status": "stable",
       "category": "blocks",
       "capabilities": ["responsive-layout"],
-      "testEligible": false,
-      "limitations": [
-        "Excluded from browser tests because the Vitest importer fails before render."
-      ],
+      "testEligible": true,
+      "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
         "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
@@ -667,9 +665,9 @@
           "NoBackdrop",
           "Mobile"
         ],
-        "hasInteractionTest": false,
+        "hasInteractionTest": true,
         "hasResponsiveStories": true,
-        "compositionSafe": false
+        "compositionSafe": true
       },
       "stories": [
         {
@@ -1418,13 +1416,11 @@
       "source": "src/components/common/FooterLinkColumn.vue",
       "storyFile": "src/components/common/FooterLinkColumn.stories.ts",
       "title": "Website/Common/FooterLinkColumn",
-      "status": "needs-tests",
+      "status": "stable",
       "category": "common",
       "capabilities": [],
-      "testEligible": false,
-      "limitations": [
-        "Excluded from browser tests because the Vitest importer fails before render."
-      ],
+      "testEligible": true,
+      "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
         "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
@@ -1435,9 +1431,9 @@
         "storybookPath": "/?path=/story/website-common-footerlinkcolumn--default",
         "docsPath": "/?path=/docs/website-common-footerlinkcolumn--docs",
         "states": ["Default", "WithExternalLinks"],
-        "hasInteractionTest": false,
+        "hasInteractionTest": true,
         "hasResponsiveStories": false,
-        "compositionSafe": false
+        "compositionSafe": true
       },
       "stories": [
         {
@@ -1734,13 +1730,11 @@
       "source": "src/components/common/SiteFooter.vue",
       "storyFile": "src/components/common/SiteFooter.stories.ts",
       "title": "Website/Common/SiteFooter",
-      "status": "needs-tests",
+      "status": "stable",
       "category": "common",
       "capabilities": [],
-      "testEligible": false,
-      "limitations": [
-        "Excluded from browser tests because the Vitest importer fails before render."
-      ],
+      "testEligible": true,
+      "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
         "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
@@ -1751,9 +1745,9 @@
         "storybookPath": "/?path=/story/website-common-sitefooter--default",
         "docsPath": "/?path=/docs/website-common-sitefooter--docs",
         "states": ["Default", "Mobile"],
-        "hasInteractionTest": false,
+        "hasInteractionTest": true,
         "hasResponsiveStories": true,
-        "compositionSafe": false
+        "compositionSafe": true
       },
       "stories": [
         {

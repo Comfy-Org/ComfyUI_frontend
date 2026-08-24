@@ -1,11 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import { expect, userEvent, within } from 'storybook/test'
 
 import FooterLinkColumn from './FooterLinkColumn.vue'
 
 const meta: Meta<typeof FooterLinkColumn> = {
   title: 'Website/Common/FooterLinkColumn',
   component: FooterLinkColumn,
-  tags: ['autodocs', 'needs-tests'],
+  tags: ['autodocs', 'stable'],
   decorators: [
     () => ({
       template:
@@ -38,5 +39,14 @@ export const WithExternalLinks: Story = {
       { label: 'Twitter', href: 'https://twitter.com/comfy', external: true },
       { label: 'Blog', href: '/blog' }
     ]
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const discord = canvas.getByRole('link', { name: 'Discord' })
+
+    await expect(discord).toHaveAttribute('target', '_blank')
+    await expect(discord).toHaveAttribute('rel', 'noopener')
+    await userEvent.tab()
+    await expect(discord).toHaveFocus()
   }
 }
