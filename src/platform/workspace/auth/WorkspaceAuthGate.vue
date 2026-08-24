@@ -71,7 +71,6 @@ import Button from '@/components/ui/button/Button.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
-import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import {
   remoteConfigErrorStatus,
   remoteConfigState
@@ -90,7 +89,6 @@ const initializationState = ref<
 >(isCloud ? 'initializing' : 'ready')
 const initializationRetryable = ref(true)
 const errorPanel = useTemplateRef<HTMLElement>('errorPanel')
-const subscriptionDialog = useSubscriptionDialog()
 let initializationGeneration = 0
 let initializationController: AbortController | null = null
 let backgroundInitialization: Promise<void> | null = null
@@ -171,12 +169,6 @@ async function initialize(): Promise<void> {
       !workspaceAuthStore.getUnifiedToken()
     ) {
       throw new Error('Unified cloud auth was cleared during workspace setup')
-    }
-
-    // Pricing recovery reads the initialized workspace to scope its intent.
-    const workspaceStore = useTeamWorkspaceStore()
-    if (workspaceStore.initState === 'ready') {
-      void subscriptionDialog.resumePendingPricingFlow()
     }
 
     if (generation === initializationGeneration) {
