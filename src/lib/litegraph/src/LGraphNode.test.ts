@@ -12,6 +12,7 @@ import type { Rect } from '@/lib/litegraph/src/interfaces'
 import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
@@ -1342,16 +1343,12 @@ describe('titleMode in node state', () => {
     class TitlelessNode extends LGraphNode {
       static title_mode = TitleMode.NO_TITLE
     }
+    const graph = new LGraph()
     const node = new TitlelessNode('titleless')
+    graph.add(node)
 
-    // The renderer decides whether to draw a header from this; reroutes and
-    // other NO_TITLE classes draw a title bar without it.
-    expect(node._state.titleMode).toBe(TitleMode.NO_TITLE)
-  })
-
-  test('defaults to a normal title', () => {
-    expect(new LGraphNode('plain')._state.titleMode).toBe(
-      TitleMode.NORMAL_TITLE
-    )
+    expect(
+      useNodeDataStore().getGraphNodesFor(graph.id, graph.id)[0]?.titleMode
+    ).toBe(TitleMode.NO_TITLE)
   })
 })

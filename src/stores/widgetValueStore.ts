@@ -222,6 +222,13 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     return true
   }
 
+  function setLabel(widgetId: WidgetId, label: string): boolean {
+    const state = getWidget(widgetId)
+    if (!state) return false
+    state.label = label
+    return true
+  }
+
   function updateOptions(
     widgetId: WidgetId,
     options: Partial<WidgetState['options']>
@@ -369,6 +376,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     getWidget,
     getWidgetRenderState,
     setValue,
+    setLabel,
     updateOptions,
     deleteWidget,
     getNodeWidgets,

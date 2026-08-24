@@ -106,8 +106,9 @@ function createMockGraph(
   links: ReturnType<typeof createMockLink>[] = []
 ): LGraph {
   const linksMap = new Map(links.map((l) => [l.id, l]))
+  const linkStore = useLinkStore()
   for (const l of links) {
-    useLinkStore().registerLink(GRAPH_SCOPE, {
+    linkStore.registerLink(GRAPH_SCOPE, {
       id: toLinkId(l.id),
       graphId: GRAPH_SCOPE.owningGraphId,
       originNodeId: toNodeId(l.origin_id),
@@ -122,6 +123,13 @@ function createMockGraph(
     _nodes_by_id: Object.fromEntries(nodes.map((n) => [n.id, n])),
     links: linksMap,
     getLink: (id: number) => linksMap.get(id),
+    removeLink: (id: number) => {
+      const topology = [...linkStore.graphTopologies(GRAPH_SCOPE)].find(
+        (link) => link.id === id
+      )
+      if (topology) linkStore.deleteLink(GRAPH_SCOPE, topology)
+      linksMap.delete(id)
+    },
     id: GRAPH_ID,
     rootGraph: { id: GRAPH_ID },
     events: new CustomEventTarget<LGraphEventMap>(),
@@ -359,6 +367,43 @@ describe('useNodeReplacement', () => {
       // Output link should be remapped
       expect(link.origin_id).toBe(1)
       expect(link.origin_slot).toBe(0)
+    })
+
+    it('removes unmapped links without removing mapped links', () => {
+      const mapped = createMockLink(20, 1, 0, 5, 0)
+      const unmapped = createMockLink(21, 1, 1, 6, 0)
+      const placeholder = createPlaceholderNode(
+        1,
+        'OldNode',
+        [],
+        [
+          { name: 'kept', links: [20] },
+          { name: 'removed', links: [21] }
+        ]
+      )
+      const graph = createMockGraph([placeholder], [mapped, unmapped])
+      placeholder.graph = graph
+      Object.assign(app, { rootGraph: graph })
+      vi.mocked(collectAllNodes).mockReturnValue([placeholder])
+      vi.mocked(LiteGraph.createNode).mockReturnValue(
+        createNewNode([], [{ name: 'kept', links: null }])
+      )
+
+      useNodeReplacement().replaceNodesInPlace([
+        makeMissingNodeType('OldNode', {
+          new_node_id: 'NewNode',
+          old_node_id: 'OldNode',
+          old_widget_ids: null,
+          input_mapping: null,
+          output_mapping: [{ new_idx: 0, old_idx: 0 }]
+        })
+      ])
+
+      expect(graph.links.has(toLinkId(20))).toBe(true)
+      expect(graph.links.has(toLinkId(21))).toBe(false)
+      expect(
+        [...useLinkStore().graphTopologies(GRAPH_SCOPE)].map((link) => link.id)
+      ).toEqual([toLinkId(20)])
     })
 
     it('should apply set_value to widget', () => {

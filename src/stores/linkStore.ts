@@ -22,7 +22,7 @@ export interface EndpointUpdate {
   topology: LinkTopology
   patch: EndpointPatch
 }
-interface EndpointUpdateError {
+export interface EndpointUpdateError {
   code:
     | 'duplicate-topology'
     | 'unowned-topology'

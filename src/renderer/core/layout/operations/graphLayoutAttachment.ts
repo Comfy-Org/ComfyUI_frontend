@@ -29,6 +29,34 @@ const nodeAttachments = new WeakMap<
   LGraphNode,
   LayoutAttachment<LGraphNode['id']>
 >()
+const nodeAttachmentOwners = new Map<
+  UUID,
+  Map<LGraphNode['id'], WeakRef<LGraphNode>>
+>()
+
+function nodeAttachmentOwner(
+  graphId: UUID,
+  nodeId: LGraphNode['id']
+): LGraphNode | undefined {
+  return nodeAttachmentOwners.get(graphId)?.get(nodeId)?.deref()
+}
+
+function setNodeAttachmentOwner(graphId: UUID, node: LGraphNode): void {
+  let owners = nodeAttachmentOwners.get(graphId)
+  if (!owners) {
+    owners = new Map()
+    nodeAttachmentOwners.set(graphId, owners)
+  }
+  owners.set(node.id, new WeakRef(node))
+}
+
+function deleteNodeAttachmentOwner(graphId: UUID, node: LGraphNode): boolean {
+  const owners = nodeAttachmentOwners.get(graphId)
+  if (owners?.get(node.id)?.deref() !== node) return false
+  owners.delete(node.id)
+  if (owners.size === 0) nodeAttachmentOwners.delete(graphId)
+  return true
+}
 interface NodeGeometryProjection {
   buffer: Rectangle
   geometryVersion: number
@@ -231,6 +259,7 @@ function adoptNodeAttachment(graphId: UUID, node: LGraphNode): void {
     projection.buffer
   )
   nodeAttachments.set(node, { graphId, id: node.id })
+  setNodeAttachmentOwner(graphId, node)
   if (geometrySynchronized) {
     projection.geometryVersion = layoutStore.geometryVersion
   }
@@ -245,6 +274,7 @@ function transferableNodeAttachment(
     !attachment ||
     nodeAttachments.has(replacement) ||
     attachment.id !== replacement.id ||
+    nodeAttachmentOwner(attachment.graphId, attachment.id) !== node ||
     !layoutStore.getNodeLayout(attachment.graphId, attachment.id)
   )
     return
@@ -273,6 +303,7 @@ export function transferLayoutAttachment(
 
   nodeAttachments.delete(node)
   nodeAttachments.set(replacement, attachment)
+  setNodeAttachmentOwner(attachment.graphId, replacement)
   if (geometrySynchronized) {
     nodeGeometryProjection(replacement).geometryVersion =
       layoutStore.geometryVersion
@@ -287,6 +318,7 @@ export function detachNodeLayout(node: LGraphNode): void {
 
   layoutStore.readNodeRect(graphId, nodeId, nodeGeometryProjection(node).buffer)
   nodeAttachments.delete(node)
+  if (!deleteNodeAttachmentOwner(graphId, node)) return
   layoutStore.applyOperation({
     ...canvasOperationMeta(),
     graphId,
@@ -466,7 +498,8 @@ export function detachGraphLayouts(
         nodeGeometryProjection(node).buffer
       )
       nodeAttachments.delete(node)
-      if (meta) {
+      const owned = deleteNodeAttachmentOwner(attachment.graphId, node)
+      if (meta && owned) {
         operations.push({
           ...meta,
           graphId: attachment.graphId,
