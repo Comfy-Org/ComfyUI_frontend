@@ -102,15 +102,16 @@ function addChunk(
         outputCount: number
       } | null> = []
       for (const [index, type] of chunk.entries()) {
-        const node = window.LiteGraph!.createNode(type)
+        const node = window.LiteGraph!.createNode(type, undefined, {
+          pos: [
+            (index % cols) * (spacingX as number),
+            Math.floor(index / cols) * (spacingY as number)
+          ]
+        })
         if (!node) {
           shapes.push(null)
           continue
         }
-        node.pos = [
-          (index % cols) * (spacingX as number),
-          Math.floor(index / cols) * (spacingY as number)
-        ]
         window.app!.graph.add(node)
         shapes.push({
           id: String(node.id),

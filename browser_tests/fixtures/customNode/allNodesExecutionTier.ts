@@ -314,9 +314,10 @@ async function runBatch(
       const nodeIdByKey: Record<string, string> = {}
       const sinkIdByKey: Record<string, string> = {}
       for (const [index, spec] of nodes.entries()) {
-        const node = window.LiteGraph!.createNode(spec.key)
+        const node = window.LiteGraph!.createNode(spec.key, undefined, {
+          pos: [0, index * (spacingY as number)]
+        })
         if (!node) throw new Error(`${spec.key}: createNode returned null`)
-        node.pos = [0, index * (spacingY as number)]
         window.app!.graph.add(node)
         ids.push(String(node.id))
         allIds.push(String(node.id))
@@ -339,19 +340,25 @@ async function runBatch(
           )
           if (inputIndex < 0) continue
           const producer = producers[socket.type]
-          const producerNode = window.LiteGraph!.createNode(producer.nodeType)
+          const producerNode = window.LiteGraph!.createNode(
+            producer.nodeType,
+            undefined,
+            {
+              pos: [
+                -420 - socketIndex * 40,
+                index * (spacingY as number) + socketIndex * 90
+              ]
+            }
+          )
           if (!producerNode) continue
-          producerNode.pos = [
-            -420 - socketIndex * 40,
-            index * (spacingY as number) + socketIndex * 90
-          ]
           window.app!.graph.add(producerNode)
           allIds.push(String(producerNode.id))
           producerNode.connect(producer.outputIndex, node, inputIndex)
         }
         if (spec.needsPreviewSink) {
-          const sink = window.LiteGraph!.createNode('PreviewAny')!
-          sink.pos = [460, index * (spacingY as number)]
+          const sink = window.LiteGraph!.createNode('PreviewAny', undefined, {
+            pos: [460, index * (spacingY as number)]
+          })!
           window.app!.graph.add(sink)
           node.connect(0, sink, 0)
           sinkIdByKey[spec.key] = String(sink.id)
