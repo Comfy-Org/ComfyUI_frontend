@@ -34,3 +34,9 @@ export const SingleCta: Story = {
     secondaryCta: undefined
   }
 }
+
+export const Mobile: Story = {
+  globals: {
+    viewport: { value: 'mobile1', isRotated: false }
+  }
+}

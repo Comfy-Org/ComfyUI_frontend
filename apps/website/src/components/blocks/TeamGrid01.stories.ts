@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import { expect, userEvent, within } from 'storybook/test'
 
 import TeamGrid01 from './TeamGrid01.vue'
 
@@ -81,7 +82,24 @@ const meta: Meta<typeof TeamGrid01> = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-export const Default: Story = {}
+export const Default: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const body = within(document.body)
+
+    const [firstTrigger] = canvas.getAllByRole('button', {
+      name: 'See Placeholder’s work'
+    })
+
+    await userEvent.click(firstTrigger)
+    const dialog = body.getByRole('dialog')
+    await expect(dialog).toHaveAttribute('data-state', 'open')
+    await expect(dialog).toHaveTextContent('Placeholder One')
+    await userEvent.keyboard('{Escape}')
+    await expect(dialog).toHaveAttribute('data-state', 'closed')
+    await expect(firstTrigger).toHaveAttribute('aria-expanded', 'false')
+  }
+}
 
 export const CardsOnly: Story = {
   args: { heading: undefined, lead: undefined }
@@ -90,5 +108,11 @@ export const CardsOnly: Story = {
 export const WithoutWorkflows: Story = {
   args: {
     people: people.map((person) => ({ ...person, workflows: undefined }))
+  }
+}
+
+export const Mobile: Story = {
+  globals: {
+    viewport: { value: 'mobile1', isRotated: false }
   }
 }

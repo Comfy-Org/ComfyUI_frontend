@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import { expect, userEvent, within } from 'storybook/test'
 
 import CardArticleGallery01 from './CardArticleGallery01.vue'
 import type { CardArticleGalleryItem } from './CardArticleGallery01.vue'
 
-const sampleImage =
-  'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1600&q=80'
+const sampleImage = '/images/mcp/mcp-thumb-keyart.webp'
 
 function item(
   id: string,
@@ -58,6 +58,18 @@ export const WithTabsAndLoadMore: Story = {
     allLabel: 'ALL',
     pageSize: 4,
     loadMoreLabel: 'LOAD MORE'
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await expect(canvas.getAllByRole('link')).toHaveLength(4)
+    await userEvent.click(canvas.getByRole('button', { name: 'LOAD MORE' }))
+    await expect(canvas.getAllByRole('link')).toHaveLength(6)
+    await userEvent.click(canvas.getByRole('button', { name: 'Hackathon' }))
+    await expect(canvas.getAllByRole('link')).toHaveLength(1)
+    await expect(
+      canvas.getByText('Comfy Spring Hackathon: Winning Projects')
+    ).toBeVisible()
   }
 }
 
@@ -99,5 +111,15 @@ export const MixedLayout: Story = {
         cta: { label: 'EXPLORE', href: '#' }
       }))
     ]
+  }
+}
+
+export const Mobile: Story = {
+  globals: {
+    viewport: { value: 'mobile1', isRotated: false }
+  },
+  args: {
+    titleClamp: true,
+    layout: 'three-column'
   }
 }

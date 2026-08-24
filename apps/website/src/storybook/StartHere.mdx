@@ -1,0 +1,44 @@
+import { Meta } from '@storybook/addon-docs/blocks'
+
+<Meta title="Website/Start Here" />
+
+# Comfy website Storybook
+
+This Storybook is the executable catalog for reusable components currently
+shipped by the Comfy marketing website. It documents rendering, responsive
+behavior, supported interactions, and accessibility expectations without
+changing production pages.
+
+## How to use it
+
+1. Start with **Stable** components when composing a new page.
+2. Open focused stories instead of inferring behavior from a default screenshot.
+3. Use the viewport toolbar to review narrow and desktop layouts.
+4. Use the Interactions panel to inspect supported behavior.
+5. Use the Accessibility panel before approving a composition.
+6. Treat missing variants as gaps, not permission to invent new anatomy.
+
+## Catalog structure
+
+- **UI** contains reusable controls.
+- **Common** contains shared website components.
+- **Blocks** contains reusable marketing sections.
+- **Product** contains product-oriented compositions.
+- **Compositions** contains isolated page previews assembled from existing parts.
+
+## Agent access
+
+Codex and Claude can query the running Storybook through its MCP endpoint at
+`/mcp`. The generated component catalog is available at
+`/design-system/component-manifest.json` and records source paths, story IDs,
+status, and supported capabilities.
+
+The current coverage audit is available at
+`/design-system/story-coverage.json`. Components listed there are gaps in the
+catalog, not automatically approved alternatives.
+
+## Review boundary
+
+Stories demonstrate the shipped component API. Storybook-only fixtures,
+viewports, tests, and compositions are not production routes. A defect that
+requires changing a production component must be reviewed separately.

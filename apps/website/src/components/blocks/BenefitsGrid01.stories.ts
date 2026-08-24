@@ -55,3 +55,9 @@ export const WithTitlesAndFootnote: Story = {
     primaryCta: undefined
   }
 }
+
+export const Mobile: Story = {
+  globals: {
+    viewport: { value: 'mobile1', isRotated: false }
+  }
+}
