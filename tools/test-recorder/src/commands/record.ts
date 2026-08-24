@@ -40,6 +40,7 @@ import {
 } from '../devserver/distributions'
 import { ensureDevServer } from '../devserver/manager'
 import { discoverFlagKeys, parseFeatureFlagSpecs } from '../featureFlags'
+import type { RecordPrefill } from './recordPrefill'
 
 const PASTE_SENTINEL = '.'
 const ADD_WORKFLOW_SENTINEL = '__add-workflow__'
@@ -128,7 +129,13 @@ async function offerAgentRefactor(
   pass('Test refactored', specPath)
 }
 
-export async function runRecord(): Promise<void> {
+function printPrefill(label: string, value: string, source: string): void {
+  console.log(`  ${label}: ${value} (from ${source})`)
+}
+
+export async function runRecord(
+  prefill: RecordPrefill = { warnings: [] }
+): Promise<void> {
   if (!process.stdin.isTTY) {
     fail(
       'comfy-test record needs an interactive terminal',
@@ -167,28 +174,41 @@ export async function runRecord(): Promise<void> {
   ])
   blank()
 
+  for (const warning of prefill.warnings) {
+    warn(`${warning} Asking you instead.`)
+  }
+
   stepHeader(1, 7, 'Target Distribution')
-  const selectedDistribution = await select({
-    message: 'Which distribution do you want to record against?',
-    options: [
-      ...DISTRIBUTIONS.map(({ id, label, hint }) => ({
-        value: id,
-        label,
-        hint
-      })),
-      {
-        value: CUSTOM_DISTRIBUTION_SENTINEL,
-        label: 'Custom backend…',
-        hint: 'connect Vite to another backend URL'
-      }
-    ],
-    initialValue: 'cloud'
-  })
-  if (isCancel(selectedDistribution)) {
+  const selectedDistribution = prefill.distribution
+    ? prefill.distribution.id
+    : await select({
+        message: 'Which distribution do you want to record against?',
+        options: [
+          ...DISTRIBUTIONS.map(({ id, label, hint }) => ({
+            value: id,
+            label,
+            hint
+          })),
+          {
+            value: CUSTOM_DISTRIBUTION_SENTINEL,
+            label: 'Custom backend…',
+            hint: 'connect Vite to another backend URL'
+          }
+        ],
+        initialValue: 'cloud'
+      })
+  if (prefill.distribution) {
+    printPrefill(
+      'Distribution',
+      prefill.distribution.id,
+      prefill.distributionSource ?? '--distribution'
+    )
+  } else if (isCancel(selectedDistribution)) {
     cancel('Operation cancelled')
     process.exit(0)
   }
-  let distribution = resolveDistribution(selectedDistribution)
+  let distribution =
+    prefill.distribution ?? resolveDistribution(selectedDistribution)
   if (selectedDistribution === CUSTOM_DISTRIBUTION_SENTINEL) {
     const backendInput = await text({
       message: 'Backend URL:',
@@ -248,16 +268,20 @@ export async function runRecord(): Promise<void> {
 
   stepHeader(4, 7, 'Configure Your Test')
 
-  const useCaseChoice = await select({
-    message:
-      "What brings you here today? There's no wrong answer — this just helps us ask the right question next.",
-    options: USE_CASES.map(({ id, label, hint }) => ({
-      value: id,
-      label,
-      hint
-    }))
-  })
-  if (isCancel(useCaseChoice)) {
+  const useCaseChoice = prefill.useCase
+    ? prefill.useCase.id
+    : await select({
+        message:
+          "What brings you here today? There's no wrong answer — this just helps us ask the right question next.",
+        options: USE_CASES.map(({ id, label, hint }) => ({
+          value: id,
+          label,
+          hint
+        }))
+      })
+  if (prefill.useCase) {
+    printPrefill('Use case', prefill.useCase.id, '--use-case')
+  } else if (isCancel(useCaseChoice)) {
     cancel('Operation cancelled')
     process.exit(0)
   }
@@ -274,13 +298,17 @@ export async function runRecord(): Promise<void> {
   ])
   blank()
 
-  const description = await text({
-    message: useCase.question,
-    placeholder: useCase.placeholder,
-    validate: (value) =>
-      toSlug(value ?? '') ? undefined : 'Use some letters or numbers.'
-  })
-  if (isCancel(description)) {
+  const description =
+    prefill.description ??
+    (await text({
+      message: useCase.question,
+      placeholder: useCase.placeholder,
+      validate: (value) =>
+        toSlug(value ?? '') ? undefined : 'Use some letters or numbers.'
+    }))
+  if (prefill.description) {
+    printPrefill('Description', prefill.description, '--description')
+  } else if (isCancel(description)) {
     cancel('Operation cancelled')
     process.exit(0)
   }
@@ -288,10 +316,15 @@ export async function runRecord(): Promise<void> {
   let testDescription: string = description
   let slug = toSlug(description)
 
-  const filenameOk = await confirm({
-    message: `Generated filename: ${slug}.spec.ts — looks good?`
-  })
-  if (isCancel(filenameOk)) {
+  const filenameOk = prefill.name
+    ? true
+    : await confirm({
+        message: `Generated filename: ${slug}.spec.ts — looks good?`
+      })
+  if (prefill.name) {
+    slug = prefill.name
+    printPrefill('Name', prefill.name, '--name')
+  } else if (isCancel(filenameOk)) {
     cancel('Operation cancelled')
     process.exit(0)
   }
@@ -315,18 +348,22 @@ export async function runRecord(): Promise<void> {
   ])
   blank()
 
-  const selectedTags = await multiselect({
-    message:
-      'Pick tags: press SPACE to select each one, ENTER when done (ENTER alone = no tags):',
-    options: TAG_REGISTRY.map(({ tag, hint }) => ({
-      value: tag,
-      label: tag,
-      hint
-    })),
-    initialValues: [],
-    required: false
-  })
-  if (isCancel(selectedTags)) {
+  const selectedTags =
+    prefill.tags ??
+    (await multiselect({
+      message:
+        'Pick tags: press SPACE to select each one, ENTER when done (ENTER alone = no tags):',
+      options: TAG_REGISTRY.map(({ tag, hint }) => ({
+        value: tag,
+        label: tag,
+        hint
+      })),
+      initialValues: [],
+      required: false
+    }))
+  if (prefill.tags) {
+    printPrefill('Tags', prefill.tags.join(', '), '--tags')
+  } else if (isCancel(selectedTags)) {
     cancel('Operation cancelled')
     process.exit(0)
   }
@@ -350,13 +387,29 @@ export async function runRecord(): Promise<void> {
     ...rest.map((wf) => ({ value: wf, label: wf }))
   ]
 
-  const selectedWorkflow = await autocomplete({
-    message: `Start with a pre-loaded workflow? (${workflows.length} available)`,
-    options: workflowOptions,
-    initialValue: '',
-    maxItems: 12
-  })
-  if (isCancel(selectedWorkflow)) {
+  const validPrefillWorkflow =
+    prefill.workflow !== undefined &&
+    (prefill.workflow === '' || workflows.includes(prefill.workflow))
+      ? prefill.workflow
+      : undefined
+  if (prefill.workflow !== undefined && validPrefillWorkflow === undefined) {
+    warn(`Unknown --workflow "${prefill.workflow}". Asking you instead.`)
+  }
+  const selectedWorkflow =
+    validPrefillWorkflow ??
+    (await autocomplete({
+      message: `Start with a pre-loaded workflow? (${workflows.length} available)`,
+      options: workflowOptions,
+      initialValue: '',
+      maxItems: 12
+    }))
+  if (validPrefillWorkflow !== undefined) {
+    printPrefill(
+      'Workflow',
+      validPrefillWorkflow || '(empty canvas)',
+      '--workflow'
+    )
+  } else if (isCancel(selectedWorkflow)) {
     cancel('Operation cancelled')
     process.exit(0)
   }
@@ -389,17 +442,27 @@ export async function runRecord(): Promise<void> {
     }
   }
 
-  const overrideFeatureFlags = await confirm({
-    message: 'Override feature flags for this test?',
-    initialValue: false
-  })
-  if (isCancel(overrideFeatureFlags)) {
+  const overrideFeatureFlags = prefill.featureFlags
+    ? true
+    : await confirm({
+        message: 'Override feature flags for this test?',
+        initialValue: false
+      })
+  if (prefill.featureFlags) {
+    printPrefill(
+      'Feature flags',
+      Object.entries(prefill.featureFlags)
+        .map(([key, value]) => `${key}:${JSON.stringify(value)}`)
+        .join(', '),
+      '--feature-flags'
+    )
+  } else if (isCancel(overrideFeatureFlags)) {
     cancel('Operation cancelled')
     process.exit(0)
   }
 
   let selectedFeatureFlags: string[] = []
-  if (overrideFeatureFlags) {
+  if (overrideFeatureFlags && !prefill.featureFlags) {
     const availableFlags = discoverFlagKeys(projectRoot)
     if (availableFlags.length > 0) {
       const selected = await autocompleteMultiselect({
@@ -427,7 +490,8 @@ export async function runRecord(): Promise<void> {
       ...customFlags.split(',').map((flag) => flag.trim())
     ]
   }
-  const featureFlags = parseFeatureFlagSpecs(selectedFeatureFlags)
+  const featureFlags =
+    prefill.featureFlags ?? parseFeatureFlagSpecs(selectedFeatureFlags)
 
   stepHeader(5, 7, 'Record')
 
