@@ -369,7 +369,10 @@ const faqJsonLd = {
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-3.5"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><path d="M14 2v6h6"/><path d="m10 13-2 2 2 2"/><path d="m14 17 2-2-2-2"/></svg>
                   <span class="font-mono text-2xs">json</span>
                 </div>
-                <button type="button" data-copy="result-json" title="Copy" aria-label="Copy" class={iconButton}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-3.5 group-data-[copied]:hidden"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden size-3.5 group-data-[copied]:block"><path d="M20 6 9 17l-5-5"/></svg></button>
+                <div class="flex items-center gap-2">
+                  <button type="button" data-copy="result-json" title="Copy" aria-label="Copy" class={iconButton}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-3.5 group-data-[copied]:hidden"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden size-3.5 group-data-[copied]:block"><path d="M20 6 9 17l-5-5"/></svg></button>
+                  <button type="button" data-download="result-json" data-filename={`${slugId}-result.json`} title="Download JSON" aria-label="Download JSON" class={iconButton}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-3.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg></button>
+                </div>
               </div>
               <pre id="result-json" class="scrollbar-code min-h-0 flex-1 overflow-auto whitespace-pre-wrap break-words p-4 font-mono text-xs leading-relaxed text-primary-warm-gray"></pre>
             </div>
@@ -589,6 +592,19 @@ const faqJsonLd = {
             b.dataset.copied = ''
             window.setTimeout(() => delete b.dataset.copied, 1200)
           } catch { /* clipboard unavailable */ }
+        })
+      )
+
+      document.querySelectorAll<HTMLElement>('[data-download]').forEach((button) =>
+        button.addEventListener('click', () => {
+          const text = document.getElementById(button.dataset.download!)?.textContent
+          if (!text) return
+          const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }))
+          const link = document.createElement('a')
+          link.href = url
+          link.download = button.dataset.filename ?? 'result.json'
+          link.click()
+          URL.revokeObjectURL(url)
         })
       )
     }
