@@ -12,13 +12,12 @@ import enMessages from '@/locales/en/main.json'
 import CurrentUserPopoverWorkspace from './CurrentUserPopoverWorkspace.vue'
 
 const state = vi.hoisted(() => ({
-  isCloud: true,
   billingStatus: 'paid',
   canAccessSubscriptionFeatures: true,
-  isFreeTier: false,
   isCancelled: false,
   planSlug: 'pro-monthly' as string | null,
   canTopUp: false,
+  canSubscribeSelfServe: false,
   canManageSubscription: false,
   canManageSubscriptionLifecycle: false,
   showCreateWorkspaceDialog: vi.fn(),
@@ -60,7 +59,6 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     canAccessSubscriptionFeatures: computed(
       () => state.canAccessSubscriptionFeatures
     ),
-    isFreeTier: computed(() => state.isFreeTier),
     subscription: computed(() => ({
       isCancelled: state.isCancelled,
       planSlug: state.planSlug
@@ -74,10 +72,16 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
 vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   useWorkspaceUI: () => ({
     permissions: computed(() => ({
-      canTopUp: state.canTopUp,
       canManageSubscription: state.canManageSubscription,
       canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
     }))
+  })
+}))
+
+vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
+  useBillingCapabilities: () => ({
+    canTopUp: computed(() => state.canTopUp),
+    canSubscribeSelfServe: computed(() => state.canSubscribeSelfServe)
   })
 }))
 
@@ -92,11 +96,7 @@ vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
   useSettingsDialog: () => ({ show: state.showSettingsDialog })
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
-  get isCloud() {
-    return state.isCloud
-  }
-}))
+vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
 
 vi.mock('@/services/dialogService', () => ({
   useDialogService: () => ({
@@ -124,13 +124,6 @@ const WorkspaceSwitcherPopoverStub = defineComponent({
       <button data-testid="stub-create-workspace" @click="$emit('create')" />
     </div>
   `
-})
-
-const SubscribeButtonStub = defineComponent({
-  props: {
-    label: { type: String, required: true }
-  },
-  template: '<button type="button">{{ label }}</button>'
 })
 
 const i18n = createI18n({
@@ -161,7 +154,7 @@ function renderComponent(
       },
       stubs: {
         WorkspaceSwitcherPopover: WorkspaceSwitcherPopoverStub,
-        SubscribeButton: SubscribeButtonStub,
+        SubscribeButton: true,
         UserAvatar: true,
         WorkspaceProfilePic: true,
         Skeleton: true,
@@ -173,13 +166,12 @@ function renderComponent(
 
 describe('CurrentUserPopoverWorkspace', () => {
   beforeEach(() => {
-    state.isCloud = true
     state.billingStatus = 'paid'
     state.canAccessSubscriptionFeatures = true
-    state.isFreeTier = false
     state.isCancelled = false
     state.planSlug = 'pro-monthly'
     state.canTopUp = false
+    state.canSubscribeSelfServe = false
     state.canManageSubscription = false
     state.canManageSubscriptionLifecycle = false
   })
@@ -288,6 +280,18 @@ describe('CurrentUserPopoverWorkspace', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('offers subscription when top-up is denied but self-serve is allowed', async () => {
+    const user = userEvent.setup()
+    state.canSubscribeSelfServe = true
+    renderComponent('team')
+
+    await user.click(screen.getByTestId('upgrade-to-add-credits-button'))
+
+    expect(state.showPricingTable).toHaveBeenCalledWith({
+      reason: 'upgrade_to_add_credits'
+    })
+  })
+
   it.for(['payment_failed', 'paused'])(
     'keeps Manage plan available for an existing %s subscription',
     (billingStatus) => {
@@ -318,41 +322,6 @@ describe('CurrentUserPopoverWorkspace', () => {
     expect(
       screen.getByRole('button', { name: 'Subscribe' })
     ).toBeInTheDocument()
-  })
-
-  it('keeps Subscribe hidden on Local after switching to an unsubscribed workspace', async () => {
-    state.isCloud = false
-    state.canAccessSubscriptionFeatures = false
-    state.canManageSubscription = true
-    const { rerender } = renderComponent('personal')
-
-    expect(
-      screen.queryByRole('button', { name: 'Subscribe' })
-    ).not.toBeInTheDocument()
-
-    if (!workspaceStoreMock.store) throw new Error('Workspace store not ready')
-    workspaceStoreMock.store.workspaceName = 'Team Workspace'
-    workspaceStoreMock.store.isInPersonalWorkspace = false
-    await rerender({})
-
-    expect(screen.getByTestId('workspace-switcher-trigger')).toHaveTextContent(
-      'Team Workspace'
-    )
-    expect(
-      screen.queryByRole('button', { name: 'Subscribe' })
-    ).not.toBeInTheDocument()
-  })
-
-  it('keeps Resubscribe hidden on Local for a cancelled plan', () => {
-    state.isCloud = false
-    state.isCancelled = true
-    state.canManageSubscriptionLifecycle = true
-
-    renderComponent('team')
-
-    expect(
-      screen.queryByRole('button', { name: 'Resubscribe' })
-    ).not.toBeInTheDocument()
   })
 
   it.for([
@@ -453,38 +422,4 @@ describe('CurrentUserPopoverWorkspace', () => {
       expect(emitted('close')).toHaveLength(1)
     })
   }
-
-  it('opens local Plan and Credits instead of Cloud pricing actions', async () => {
-    state.isCloud = false
-    state.canManageSubscription = true
-    const user = userEvent.setup()
-    const { emitted } = renderComponent()
-
-    expect(
-      screen.queryByTestId('plans-pricing-menu-item')
-    ).not.toBeInTheDocument()
-    expect(
-      screen.queryByTestId('manage-plan-menu-item')
-    ).not.toBeInTheDocument()
-
-    await user.click(
-      screen.getByRole('button', {
-        name: enMessages.subscription.plansAndCredits
-      })
-    )
-
-    expect(state.showSettingsDialog).toHaveBeenCalledWith('workspace')
-    expect(state.showPricingTable).not.toHaveBeenCalled()
-    expect(emitted('close')).toHaveLength(1)
-  })
-
-  it('hides local Plan and Credits without subscription management permission', () => {
-    state.isCloud = false
-
-    renderComponent()
-
-    expect(
-      screen.queryByTestId('plans-credits-menu-item')
-    ).not.toBeInTheDocument()
-  })
 })
