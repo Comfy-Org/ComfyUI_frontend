@@ -1494,13 +1494,11 @@
       "source": "src/components/common/NodeBadge.vue",
       "storyFile": "src/components/common/NodeBadge.stories.ts",
       "title": "Website/Common/NodeBadge",
-      "status": "needs-tests",
+      "status": "stable",
       "category": "common",
       "capabilities": [],
-      "testEligible": false,
-      "limitations": [
-        "Excluded from browser tests because the Vitest importer fails before render."
-      ],
+      "testEligible": true,
+      "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
         "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
@@ -1511,9 +1509,9 @@
         "storybookPath": "/?path=/story/website-common-nodebadge--text-only",
         "docsPath": "/?path=/docs/website-common-nodebadge--docs",
         "states": ["TextOnly", "MultipleSegments", "WithLogo"],
-        "hasInteractionTest": false,
+        "hasInteractionTest": true,
         "hasResponsiveStories": false,
-        "compositionSafe": false
+        "compositionSafe": true
       },
       "stories": [
         {
