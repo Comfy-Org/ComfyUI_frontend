@@ -157,6 +157,12 @@ export async function runRecord(): Promise<void> {
     '  2. Do the steps in a real browser window while they are recorded',
     '  3. Optionally have an AI agent tidy it up and open a PR',
     '',
+    "You can't do this wrong. Whatever you record is genuinely useful —",
+    'what only YOU know is how real people actually use the app, and',
+    "that's the part no developer can produce. Messy is fine; the",
+    'maintainers happily tidy things up, and nothing here can break',
+    'the product.',
+    '',
     'Full docs, if you want them: browser_tests/README.md'
   ])
   blank()
@@ -569,6 +575,14 @@ export async function runRecord(): Promise<void> {
     ])
     return
   }
+
+  info([
+    'A pull request just shares your recording with the team — nothing',
+    'goes live from it. Rough edges are expected and welcome: reviewers',
+    'gladly polish contributions like this, and a recording that needs',
+    'cleanup is still far more valuable than no recording at all.'
+  ])
+  blank()
 
   const wantPr = await confirm({
     message: 'Create a Pull Request now?'
