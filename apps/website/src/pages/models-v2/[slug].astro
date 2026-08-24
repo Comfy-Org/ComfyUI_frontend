@@ -406,9 +406,14 @@ const faqJsonLd = {
             </div>
           </div>
         </div>
-        <div class="flex items-center justify-between gap-3 pt-3">
-          <p id="result-meta" class="truncate text-2xs font-bold uppercase tracking-widest text-primary-warm-gray">Seed 428790123 · 4.2s render · prompt saved through sign-in</p>
-          <span class="shrink-0 text-2xs font-bold uppercase tracking-widest text-primary-comfy-yellow">Download ↓</span>
+        <div id="result-meta" class="flex max-w-full flex-wrap items-center gap-2 pt-3">
+          <span id="result-seed" class:list={[pill, pillMuted]}>Seed 428790123</span>
+          <span class:list={[pill, pillMuted]}>4.2s render</span>
+        </div>
+        <div class="mt-auto flex justify-end pt-3">
+          <div id="result-download" class="shrink-0">
+            <a href={img} download={`${slugId}-result`} class:list={[outlineAccentButton, 'uppercase tracking-widest']}>Download</a>
+          </div>
         </div>
         <!-- VARIATIONS QUEUE -->
         <div id="var-block" class="hidden border-t border-white/10 px-5 py-4">
@@ -635,7 +640,7 @@ const faqJsonLd = {
       const upgrade = $('upgrade-overlay')!
       const fill = $('progress-fill')!
       const img = $('result-img') as HTMLImageElement
-      const metaEl = $('result-meta')!
+      const resultSeed = $('result-seed')!
       const runMobile = $('pg-run-mobile')!
       const prompt = $('pg-prompt') as HTMLTextAreaElement
       const selDur = $('sel-duration') as HTMLSelectElement
@@ -732,6 +737,8 @@ const faqJsonLd = {
         const json = btn.dataset.rview === 'json'
         $('result-json-box')!.classList.toggle('hidden', !json)
         img.classList.toggle('hidden', json)
+        $('result-meta')!.classList.toggle('hidden', json)
+        $('result-download')!.classList.toggle('hidden', json)
         for (const b of $('rview-toggle')!.querySelectorAll<HTMLElement>('[data-rview]')) {
           const active = b === btn
           b.classList.toggle('bg-transparency-white-t8', active)
@@ -798,6 +805,8 @@ const faqJsonLd = {
         strip.classList.remove('hidden'); strip.classList.add('flex')
         overlay.classList.remove('hidden'); overlay.classList.add('flex')
         $('result-json-box')!.classList.add('hidden'); img.classList.remove('hidden')
+        $('result-meta')!.classList.remove('hidden')
+        $('result-download')!.classList.remove('hidden')
         fill.style.width = '0%'
         requestAnimationFrame(() => requestAnimationFrame(() => (fill.style.width = '92%')))
         window.setTimeout(() => {
@@ -817,7 +826,7 @@ const faqJsonLd = {
             nodes_executed: 24,
             output: { type: 'video/webp', watermark: false, saved_to_history: true }
           }
-          metaEl.textContent = `Seed ${seed} · 4.2s render · saved to history · no watermark`
+          resultSeed.textContent = `Seed ${seed}`
           meter.textContent = runsLeft > 0 ? `Free runs: ${runsLeft} left` : 'Free runs used'
           varBlock.classList.remove('hidden')
           renderAll()
@@ -879,7 +888,7 @@ const faqJsonLd = {
         varStrip.classList.add('hidden'); varStrip.classList.remove('grid')
         $('ref-thumb')?.classList.add('hidden')
         const dl = $('dropzone-label'); if (dl) dl.textContent = 'or drop a frame to animate it'
-        metaEl.textContent = 'Seed 428790123 · 4.2s render · prompt saved through sign-in'
+        resultSeed.textContent = 'Seed 428790123'
         meter.textContent = 'Free runs: 5 left'
         renderAll()
       })
