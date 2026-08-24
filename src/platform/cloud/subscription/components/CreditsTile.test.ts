@@ -209,7 +209,6 @@ describe('CreditsTile', () => {
     state.type = 'workspace'
     state.customerEventsError = null
     mockIsCloud.value = true
-    localStorage.clear()
   })
 
   it('renders the total balance (cents converted to credits) with the remaining suffix', () => {
@@ -230,6 +229,16 @@ describe('CreditsTile', () => {
     expect(container.textContent).toContain('Additional credits')
     expect(container.textContent).toContain('633')
     expect(container.textContent).toContain('Used after monthly runs out')
+  })
+
+  it('hides the monthly usage bar on Local', () => {
+    mockIsCloud.value = false
+    activeProSubscription()
+    renderTile()
+
+    expect(screen.queryByRole('progressbar')).toBeNull()
+    expect(screen.queryByText('Monthly')).toBeNull()
+    expect(screen.getByText('Additional credits')).toBeTruthy()
   })
 
   it('renders a compact monthly summary for narrow containers', () => {

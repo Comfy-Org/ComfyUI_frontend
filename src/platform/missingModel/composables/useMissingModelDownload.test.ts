@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type * as MissingModelDownload from '@/platform/missingModel/missingModelDownload'
@@ -28,7 +26,6 @@ const repoUrl = 'https://huggingface.co/org/model'
 
 describe('useMissingModelDownload', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     delete window.__comfyDesktop2
     mocks.isTrustedHuggingFaceUrl.mockImplementation((url) => url === repoUrl)
     mocks.fetchModelMetadata.mockResolvedValue({

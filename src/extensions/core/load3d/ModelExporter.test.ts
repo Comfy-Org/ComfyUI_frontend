@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { ModelExporter } from './ModelExporter'
 
@@ -57,14 +57,6 @@ vi.mock('@comfyorg/fbx-exporter-three', () => ({
 }))
 
 describe('ModelExporter', () => {
-  beforeEach(() => {
-    vi.useFakeTimers()
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
-  })
-
   describe('detectFormatFromURL', () => {
     it('extracts the lowercase extension from the filename query parameter', () => {
       expect(

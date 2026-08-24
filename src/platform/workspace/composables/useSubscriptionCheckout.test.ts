@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, effectScope, reactive } from 'vue'
 
@@ -366,7 +364,6 @@ describe('useSubscriptionCheckout', () => {
   }
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     mockSubscriptionActionOperation.value = undefined
     mockPlans.value = allPlans()
     mockFetchPlans.mockResolvedValue(undefined)
@@ -453,6 +450,7 @@ describe('useSubscriptionCheckout', () => {
 
     it.for([
       ['SUBSCRIPTION_PAYMENT_REQUIRED', null],
+      ['OUTSTANDING_PAYMENT_REQUIRED', null],
       ['TRANSITION_NOT_ALLOWED', 'payment_failed']
     ] as const)(
       'routes %s previews to the billing portal',
@@ -833,7 +831,7 @@ describe('useSubscriptionCheckout', () => {
 
       expect(mockPreviewSubscribe).toHaveBeenCalledWith(
         'team_per_credit_monthly',
-        { teamCreditStopId: 'team_1400', billingCycle: 'monthly' }
+        { teamCreditStopId: 'team_1400' }
       )
       expect(checkout.previewData.value).toStrictEqual(transition)
     })
@@ -1061,8 +1059,7 @@ describe('useSubscriptionCheckout', () => {
       expect(mockPreviewSubscribe).toHaveBeenCalledWith(
         'team_per_credit_monthly',
         {
-          teamCreditStopId: 'team_700',
-          billingCycle: 'monthly'
+          teamCreditStopId: 'team_700'
         }
       )
       expect(checkout.previewData.value).not.toBeNull()

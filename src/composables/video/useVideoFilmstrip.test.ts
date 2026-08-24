@@ -188,7 +188,6 @@ describe('useVideoFilmstrip', () => {
     vi.mocked(fetchVideoMetadata).mockResolvedValueOnce({
       fps: 24,
       duration: 10,
-      frame_count: 240,
       width: 512,
       height: 512,
       size: 5 * 1024 * 1024
@@ -219,7 +218,6 @@ describe('useVideoFilmstrip', () => {
     vi.mocked(fetchVideoMetadata).mockResolvedValueOnce({
       fps: 24,
       duration: 8,
-      frame_count: null,
       width: 640,
       height: 360,
       size: 1024
@@ -311,24 +309,19 @@ describe('useVideoFilmstrip', () => {
   })
 
   it('still completes when the first-frame seek times out', async () => {
-    vi.useFakeTimers()
-    try {
-      installVideoMocks({
-        onVideoCreated: (video) => {
-          video.shouldEmitSeeked = () => false
-        }
-      })
+    installVideoMocks({
+      onVideoCreated: (video) => {
+        video.shouldEmitSeeked = () => false
+      }
+    })
 
-      const videoUrl = ref('https://example.com/video.mp4')
-      const { error, loading } = runWithScope(() => useVideoFilmstrip(videoUrl))
+    const videoUrl = ref('https://example.com/video.mp4')
+    const { error, loading } = runWithScope(() => useVideoFilmstrip(videoUrl))
 
-      await vi.advanceTimersByTimeAsync(6000)
-      await vi.waitFor(() => expect(loading.value).toBe(false))
+    await vi.advanceTimersByTimeAsync(6000)
+    await vi.waitFor(() => expect(loading.value).toBe(false))
 
-      expect(error.value).toBeNull()
-    } finally {
-      vi.useRealTimers()
-    }
+    expect(error.value).toBeNull()
   })
 
   it('captures the thumbnail via createImageBitmap when available', async () => {

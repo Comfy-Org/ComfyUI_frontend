@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -66,7 +64,6 @@ vi.mock('@vueuse/router', () => ({ useRouteHash: vi.fn() }))
 
 describe('useSubgraphNavigationStore', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     app.rootGraph.subgraphs.clear()
     app.canvas.subgraph = undefined
     app.canvas.ds.scale = 1
