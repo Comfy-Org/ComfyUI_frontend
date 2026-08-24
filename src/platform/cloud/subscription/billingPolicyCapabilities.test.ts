@@ -81,7 +81,7 @@ describe('getBillingPolicyCapabilities', () => {
     ],
     [
       'CloudAndUnrecognizedTier',
-      { topUpAccess: 'allowed', showsSubscribeUpsellUI: false }
+      { topUpAccess: 'subscription-required', showsSubscribeUpsellUI: false }
     ]
   ])('maps %s to %o', ([kind, expected]) => {
     expect(getBillingPolicyCapabilities({ kind })).toEqual(expected)

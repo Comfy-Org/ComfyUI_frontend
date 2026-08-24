@@ -67,11 +67,14 @@ export function getBillingPolicyCapabilities(
       return { topUpAccess: 'allowed', showsSubscribeUpsellUI: false }
     case 'CloudAndTeam':
       return { topUpAccess: 'allowed', showsSubscribeUpsellUI: false }
-    // Only reachable with an active subscription, so money-in stays open: the
-    // plan is unidentified, not absent. No upsell — we cannot price a catalog
-    // entry this build does not know.
+    // Cloud top-up always requires a subscription, and an unidentified tier is
+    // not evidence of one — it could be the next FREE. No upsell either: we
+    // cannot price a catalog entry this build does not know.
     case 'CloudAndUnrecognizedTier':
-      return { topUpAccess: 'allowed', showsSubscribeUpsellUI: false }
+      return {
+        topUpAccess: 'subscription-required',
+        showsSubscribeUpsellUI: false
+      }
     // A state kind that does not exist in this build at all. Nothing can be
     // reasoned about it, so it fails closed rather than returning undefined.
     default: {
