@@ -101,6 +101,12 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     registerWidgetRenderState(widgetId, renderState)
 
     const existing = getWidget(widgetId)
+    // WidgetId is `graphId:nodeId:name`. A node replacement can reuse the same
+    // numeric nodeId, so a stale entry from the previous occupant may survive in
+    // the store under the same key. The type check distinguishes a live
+    // re-registration (same widget, keep its value) from a recycled key (new
+    // widget type at an old address, overwrite). Without it a text widget
+    // rendered as the prior int type until the next full reload (#13073, #13773).
     if (existing && existing.type === init.type) {
       appendNodeWidgetOrder(widgetId)
       return existing as WidgetState<TValue>

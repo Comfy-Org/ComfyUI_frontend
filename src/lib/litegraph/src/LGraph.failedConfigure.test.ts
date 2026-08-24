@@ -7,8 +7,17 @@ import type {
   SerialisableGraph
 } from '@/lib/litegraph/src/types/serialisation'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useLinkStore } from '@/stores/linkStore'
+import { useNodeDataStore } from '@/stores/nodeDataStore'
+import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import { useRerouteStore } from '@/stores/rerouteStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toNodeId } from '@/types/nodeId'
+import type { GraphScope } from '@/types/graphScopeId'
+import { graphScopeOf } from '@/types/graphScopeId'
+import type { GroupId } from '@/types/groupId'
+import type { NodeId } from '@/types/nodeId'
+import type { RerouteId } from '@/types/rerouteId'
 import { widgetId } from '@/types/widgetId'
 import { createTestSubgraphData } from './subgraph/__fixtures__/subgraphHelpers'
 
@@ -57,6 +66,7 @@ class ThrowingNode extends LGraphNode {
 
 beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
+  layoutStore.resetForTests()
   LiteGraph.registerNodeType('test/good', GoodNode)
   LiteGraph.registerNodeType('test/throwing', ThrowingNode)
 })
@@ -117,6 +127,14 @@ const workflowWithMiddleNode = (type: string) =>
 
 const failingWorkflow = () => workflowWithMiddleNode('test/throwing')
 const sameWorkflowThatLoads = () => workflowWithMiddleNode('test/good')
+function workflowThatFailsAfterGroups(): SerialisableGraph {
+  const workflow = sameWorkflowThatLoads()
+  return {
+    ...workflow,
+    links: workflow.links?.map((link) => ({ ...link, parentId: 1 })),
+    reroutes: [{ id: 1, pos: [50, 50], linkIds: [1] }]
+  }
+}
 
 /** A failure inside a nested definition, before any root node is created. */
 const failingNestedWorkflow = (): SerialisableGraph => ({
@@ -131,10 +149,27 @@ const failingNestedWorkflow = (): SerialisableGraph => ({
       createTestSubgraphData({
         id: NESTED_DEFINITION_ID,
         name: 'definition that fails to configure',
+        state: {
+          lastNodeId: 3,
+          lastLinkId: 1,
+          lastGroupId: 0,
+          lastRerouteId: 1
+        },
         nodes: [
           serialisedNode(2, 'test/good'),
           serialisedNode(3, 'test/throwing')
-        ]
+        ],
+        links: [
+          {
+            id: 1,
+            origin_id: 2,
+            origin_slot: 0,
+            target_id: 3,
+            target_slot: 0,
+            type: '*'
+          }
+        ],
+        reroutes: [{ id: 1, pos: [50, 50], linkIds: [1] }]
       })
     ]
   },
@@ -168,6 +203,47 @@ function graphAfterFailedConfigure(
   const graph = new LGraph()
   expect(() => graph.configure(data)).toThrow('onConfigure exploded')
   return graph
+}
+
+function graphAfterLateFailedConfigure() {
+  const graph = new LGraph()
+  graph.onConfigure = () => {
+    throw new Error('graph configure exploded')
+  }
+  expect(() => graph.configure(workflowThatFailsAfterGroups())).toThrow(
+    'graph configure exploded'
+  )
+  graph.onConfigure = undefined
+  return graph
+}
+
+function storeOwnership(
+  scope: GraphScope,
+  nodeIds: NodeId[],
+  rerouteIds: RerouteId[],
+  groupIds: GroupId[]
+) {
+  return {
+    nodes: useNodeDataStore()
+      .getGraphNodesFor(scope.rootGraphId, scope.owningGraphId)
+      .map((node) => node.id),
+    links: [...useLinkStore().graphTopologies(scope)].map((link) => link.id),
+    reroutes: rerouteIds.filter((id) =>
+      useRerouteStore().getReroute(scope, id)
+    ),
+    nodeLayouts: nodeIds.filter((id) =>
+      layoutStore.getNodeLayout(scope.rootGraphId, id)
+    ),
+    rerouteLayouts: rerouteIds.filter((id) =>
+      layoutStore.getRerouteLayout(scope.rootGraphId, id)
+    ),
+    groupLayouts: groupIds.filter((id) =>
+      layoutStore.getGroupLayout(scope.rootGraphId, id)
+    ),
+    widgets: nodeIds.flatMap((id) =>
+      useWidgetValueStore().getNodeWidgetIds(scope.rootGraphId, id)
+    )
+  }
 }
 
 describe('LGraph.configure that throws partway through', () => {
@@ -263,33 +339,96 @@ describe('a workflow loaded after a failed load, on the same graph', () => {
     expect(reusedSerialized).toEqual(fresh.serialize())
   })
 
-  it('holds no node, link, reroute or group from the failed load', () => {
-    const graph = graphAfterFailedConfigure()
+  it('clears every root-owned store entry before loading the next workflow', () => {
+    const graph = graphAfterLateFailedConfigure()
+    const scope = graphScopeOf(graph)
+    const nodeIds = graph.nodes.map((node) => node.id)
+    const linkIds = [...graph.links.keys()]
+    const rerouteIds = [...graph.reroutes.keys()]
+    const groupIds = graph._groups.map((group) => group.id)
+    const widgetIds = nodeIds.map((id) => widgetId(BAD_ID, id, 'seed'))
+    const hostLocator = `${BAD_ID}:1`
+    const previewStore = usePreviewExposureStore()
+    previewStore.addExposure(BAD_ID, hostLocator, {
+      sourceNodeId: 1,
+      sourcePreviewName: 'preview'
+    })
+
+    expect([
+      nodeIds.length,
+      linkIds.length,
+      rerouteIds.length,
+      groupIds.length,
+      widgetIds.length
+    ]).toEqual([3, 1, 1, 1, 3])
+    expect(storeOwnership(scope, nodeIds, rerouteIds, groupIds)).toEqual({
+      nodes: nodeIds,
+      links: linkIds,
+      reroutes: rerouteIds,
+      nodeLayouts: nodeIds,
+      rerouteLayouts: rerouteIds,
+      groupLayouts: groupIds,
+      widgets: widgetIds
+    })
+    expect(previewStore.getExposures(BAD_ID, hostLocator)).toHaveLength(1)
+
     graph.configure(unrelatedWorkflow())
 
-    expect(graph.getNodeById(toNodeId(3))).toBeUndefined()
-    expect(graph.nodes.map((node) => node.type)).toEqual([
-      'test/good',
-      'test/good'
-    ])
-    expect(graph.reroutes.size).toBe(0)
-    expect(graph._groups.map((group) => group.title)).toEqual(['good group'])
+    expect(storeOwnership(scope, nodeIds, rerouteIds, groupIds)).toEqual({
+      nodes: [],
+      links: [],
+      reroutes: [],
+      nodeLayouts: [],
+      rerouteLayouts: [],
+      groupLayouts: [],
+      widgets: []
+    })
+    expect(previewStore.getExposures(BAD_ID, hostLocator)).toEqual([])
     expect(graph.id).toBe(GOOD_ID)
   })
 
-  it('holds no widget state or subgraph definition from the failed load', () => {
-    const store = useWidgetValueStore()
-    const failedWidget = widgetId(BAD_ID, toNodeId(1), 'seed')
-
-    const graph = graphAfterFailedConfigure()
-    expect(store.getWidget(failedWidget)).toBeDefined()
-
-    graph.configure(unrelatedWorkflow())
-
-    expect(store.getWidget(failedWidget)).toBeUndefined()
-
+  it('clears nested-owner state before loading the next workflow', () => {
     const nested = graphAfterFailedConfigure(failingNestedWorkflow())
+    const definition = nested.subgraphs.get(NESTED_DEFINITION_ID)
+    if (!definition) throw new Error('Expected failed subgraph definition')
+
+    const scope = graphScopeOf(definition)
+    const nodeIds = definition.nodes.map((node) => node.id)
+    const linkIds = [...useLinkStore().graphTopologies(scope)].map(
+      (link) => link.id
+    )
+    const rerouteIds = [...definition.reroutes.keys()]
+    const widgetIds = nodeIds.flatMap((id) =>
+      useWidgetValueStore().getNodeWidgetIds(BAD_ID, id)
+    )
+
+    expect([
+      nodeIds.length,
+      linkIds.length,
+      rerouteIds.length,
+      widgetIds.length
+    ]).toEqual([2, 1, 1, 2])
+    expect(storeOwnership(scope, nodeIds, rerouteIds, [])).toEqual({
+      nodes: nodeIds,
+      links: linkIds,
+      reroutes: rerouteIds,
+      nodeLayouts: nodeIds,
+      rerouteLayouts: rerouteIds,
+      groupLayouts: [],
+      widgets: widgetIds
+    })
+
     nested.configure(unrelatedWorkflow())
+
+    expect(storeOwnership(scope, nodeIds, rerouteIds, [])).toEqual({
+      nodes: [],
+      links: [],
+      reroutes: [],
+      nodeLayouts: [],
+      rerouteLayouts: [],
+      groupLayouts: [],
+      widgets: []
+    })
     expect(nested.subgraphs.has(NESTED_DEFINITION_ID)).toBe(false)
   })
 

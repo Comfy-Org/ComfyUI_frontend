@@ -124,6 +124,67 @@ await comfyPage.setup({ mockReleases: false })
 
 See `tests/releaseNotifications.spec.ts` for release-specific tests.
 
+## Recording Tests (For Non-Developers)
+
+If you're a QA tester or non-developer, use the interactive recorder:
+
+```bash
+pnpm comfy-test record
+```
+
+This guides you through a 6-step flow:
+
+1. **Environment check** — verifies the tools, the backend, and the dev server (with install instructions if anything is missing)
+2. **Project setup** — installs dependencies
+3. **Configure** — set test name, tags, and starting workflow
+4. **Record** — opens the browser with the Playwright Inspector; press Record, act, then close both windows — the generated code is saved automatically as you go, no copy/paste
+5. **Transform** — the captured code is rewritten to project conventions automatically
+6. **Refactor (optional)** — offers to hand the spec to a local coding-agent CLI (Claude Code, Codex, Gemini CLI, ...) for a convention pass, if one is installed
+
+Then, if you want, it opens a PR for you via `gh` CLI (or gives manual instructions).
+
+`record` needs a real terminal — it exits immediately with guidance if run
+without one (piped input, CI, etc).
+
+The dev server must be serving _this_ checkout. Step 1 fails if the port is
+held by a server started from a different folder. To use another port:
+
+```bash
+pnpm dev --port 5174 --strictPort
+COMFY_TEST_DEV_PORT=5174 pnpm comfy-test record
+```
+
+### For agents
+
+`record` is built around a human clicking a real browser and can't be
+driven programmatically. An agent should use `comfy-test plan` instead —
+fully non-interactive, no terminal required:
+
+```bash
+pnpm comfy-test plan --description "collapsing a KSampler node keeps its connections" \
+  --tags @canvas,@widget
+```
+
+This validates the environment/tags/workflow and prints a test-plan block
+ready to hand to the `playwright-test-generator` agent
+(`.claude/agents/playwright-test-generator.md`), which drives the app via
+Playwright MCP tools and writes a convention-compliant spec directly — no
+`transform` step needed. Then open the PR:
+
+```bash
+pnpm comfy-test pr browser_tests/tests/<slug>.spec.ts
+```
+
+Other commands:
+
+```bash
+pnpm comfy-test check       # Just run environment checks
+pnpm comfy-test plan --description "<what to test>"  # Print a plan for playwright-test-generator
+pnpm comfy-test transform <file>  # Transform a raw codegen file
+pnpm comfy-test pr <file>   # Open a PR for a generated test
+pnpm comfy-test list        # List available workflow assets
+```
+
 ## Running Tests
 
 ```bash
