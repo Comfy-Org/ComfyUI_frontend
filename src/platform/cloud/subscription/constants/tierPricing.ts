@@ -41,6 +41,14 @@ export const TIER_PRICING: Record<
   pro: { monthly: 100, yearly: 80, credits: 21100, videoEstimate: 1915 }
 }
 
+/**
+ * Videos-per-credit ratio, constant across tiers. Presentation-only: the
+ * "~N 5s videos" estimate is derived from an API credit grant times this ratio,
+ * so it tracks what is sold rather than pinning a per-tier video count.
+ */
+export const VIDEO_PER_CREDIT =
+  TIER_PRICING.pro.videoEstimate / TIER_PRICING.pro.credits
+
 interface TierFeatures {
   customLoRAs: boolean
   maxMembers: number

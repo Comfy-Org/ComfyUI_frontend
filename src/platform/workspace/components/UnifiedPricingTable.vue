@@ -417,6 +417,7 @@ import CreditSlider from '@/components/ui/credit-slider/CreditSlider.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import {
   TIER_PRICING,
+  VIDEO_PER_CREDIT,
   hasActivePaidPlan,
   toTierKey
 } from '@/platform/cloud/subscription/constants/tierPricing'
@@ -479,10 +480,7 @@ const QUESTIONS_URL = 'https://portal.usepylon.com/comfy-org/forms/question'
 const ENTERPRISE_URL = 'https://www.comfy.org/enterprise'
 const PRICING_URL = 'https://www.comfy.org/pricing'
 
-/** Videos-per-credit ratio is constant across tiers; reuse it for the team
- *  plan's template-based estimate until the BE carries a team figure. */
-const VIDEO_PER_CREDIT =
-  TIER_PRICING.pro.videoEstimate / TIER_PRICING.pro.credits
+// Videos-per-credit ratio (shared presentation constant).
 
 interface BillingCycleOption {
   label: string
