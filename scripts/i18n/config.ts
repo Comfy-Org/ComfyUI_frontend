@@ -22,8 +22,6 @@ export interface TranslationPipelineConfig {
   localeConcurrency: number
   requestConcurrency: number
   maxTranslationRounds: number
-  pruneCountFloor: number
-  pruneRatioLimit: number
   glossary: string
   outputLocales: OutputLocale[]
 }
@@ -55,8 +53,6 @@ export const translationPipelineConfig: TranslationPipelineConfig = {
   localeConcurrency: 3,
   requestConcurrency: 2,
   maxTranslationRounds: 3,
-  pruneCountFloor: 25,
-  pruneRatioLimit: 0.02,
   glossary,
   outputLocales: [
     {

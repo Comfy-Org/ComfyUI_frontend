@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
 
 import { toNodeId } from '@/types/nodeId'
+import { createUuidv4 } from '@/utils/uuid'
 
 import { canvasNodeTarget } from './canvasCoachTarget'
 
@@ -9,17 +10,21 @@ const { TITLE_HEIGHT } = vi.hoisted(() => ({ TITLE_HEIGHT: 30 }))
 
 const state = vi.hoisted(() => ({
   camera: null as Record<string, number> | null,
-  currentGraph: null as { getNodeById: (id: unknown) => unknown } | null,
+  currentGraph: null as {
+    getNodeById: (id: unknown) => unknown
+    rootGraph: { id: ReturnType<typeof createUuidv4> }
+  } | null,
   collapsed: new Set<string>(),
   layout: null as { value: unknown } | null,
+  layoutReads: vi.fn(),
   canvasOffset: { left: 0, top: 0 },
-  releaseBounds: vi.fn(),
-  releaseLayout: vi.fn()
+  releaseBounds: vi.fn()
 }))
 
 function graph(id: string) {
   return {
     id,
+    rootGraph: { id: createUuidv4() },
     getNodeById: (nodeId: unknown) => ({
       collapsed: state.collapsed.has(String(nodeId))
     })
@@ -47,10 +52,10 @@ vi.mock('@/renderer/core/layout/store/layoutStore', async () => {
   state.layout = shallowRef<unknown>(null)
   return {
     layoutStore: {
-      retainNodeLayoutRef: () => ({
-        layout: state.layout,
-        release: state.releaseLayout
-      })
+      getNodeLayoutRef: (graphId: unknown, nodeId: unknown) => {
+        state.layoutReads(graphId, nodeId)
+        return state.layout
+      }
     }
   }
 })
@@ -80,10 +85,12 @@ describe('canvasNodeTarget', () => {
     state.canvasOffset = { left: 0, top: 0 }
     if (state.camera) Object.assign(state.camera, { x: 0, y: 0, z: 1 })
     if (state.layout) state.layout.value = null
+    state.layoutReads.mockClear()
     state.releaseBounds.mockClear()
   })
 
   it('releases what it watches when the tour drops it', () => {
+    state.currentGraph = graph('root')
     const target = canvasNodeTarget(toNodeId(1))
     expect(state.releaseBounds).not.toHaveBeenCalled()
 
@@ -93,7 +100,6 @@ describe('canvasNodeTarget', () => {
       state.releaseBounds,
       'nothing here runs from a component, so unreleased observers outlive every tour'
     ).toHaveBeenCalledTimes(1)
-    expect(state.releaseLayout).toHaveBeenCalledTimes(1)
   })
 
   it('places the rect over the node, title bar included', () => {
@@ -127,11 +133,14 @@ describe('canvasNodeTarget', () => {
 
   it('withholds a rect until the node has a layout', () => {
     state.currentGraph = graph('root')
+    const rootGraphId = state.currentGraph.rootGraph.id
+    const nodeId = toNodeId(6)
 
     expect(
-      canvasNodeTarget(toNodeId(6)).getRect(),
+      canvasNodeTarget(nodeId).getRect(),
       'a step must wait for its target rather than spotlight nothing'
     ).toBeNull()
+    expect(state.layoutReads).toHaveBeenCalledWith(rootGraphId, nodeId)
   })
 
   it('withholds a rect once the graph it resolved against is gone', () => {
