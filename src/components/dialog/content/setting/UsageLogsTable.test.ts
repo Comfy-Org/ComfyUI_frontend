@@ -1,8 +1,8 @@
 import { createTestingPinia } from '@pinia/testing'
 import PrimeVue from 'primevue/config'
 import Tooltip from 'primevue/tooltip'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, nextTick, onMounted, ref } from 'vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { render, screen, waitFor } from '@testing-library/vue'
@@ -91,22 +91,6 @@ const globalConfig = {
   directives: { tooltip: Tooltip }
 }
 
-/**
- * The component starts with loading=true and only loads data when refresh()
- * is called via template ref. This wrapper auto-calls refresh on mount.
- */
-const AutoRefreshWrapper = defineComponent({
-  components: { UsageLogsTable },
-  setup() {
-    const tableRef = ref<InstanceType<typeof UsageLogsTable> | null>(null)
-    onMounted(async () => {
-      await tableRef.value?.refresh()
-    })
-    return { tableRef }
-  },
-  template: '<UsageLogsTable ref="tableRef" />'
-})
-
 async function flushMicrotasks() {
   await new Promise((resolve) => setTimeout(resolve, 0))
   await nextTick()
@@ -150,8 +134,6 @@ describe('UsageLogsTable', () => {
   ])
 
   beforeEach(() => {
-    vi.clearAllMocks()
-
     mockCustomerEventsService.getMyEvents.mockResolvedValue(mockEventsResponse)
     mockWorkspaceApi.getBillingEvents.mockResolvedValue(mockEventsResponse)
     mockBillingRouting.shouldUseWorkspaceBilling = false
@@ -206,20 +188,12 @@ describe('UsageLogsTable', () => {
     mockCustomerEventsService.isLoading.value = false
   })
 
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
   function renderComponent() {
     return render(UsageLogsTable, { global: globalConfig })
   }
 
-  function renderWithAutoRefresh() {
-    return render(AutoRefreshWrapper, { global: globalConfig })
-  }
-
   async function renderLoaded() {
-    const result = renderWithAutoRefresh()
+    const result = renderComponent()
     await waitFor(() => {
       expect(screen.getByRole('table')).toBeInTheDocument()
     })
@@ -227,7 +201,25 @@ describe('UsageLogsTable', () => {
   }
 
   describe('loading states', () => {
-    it('shows loading spinner before refresh is called', () => {
+    it('loads activity on mount without an external refresh', async () => {
+      await renderLoaded()
+
+      expect(mockCustomerEventsService.getMyEvents).toHaveBeenCalledTimes(1)
+    })
+
+    it('loads activity on mount on the workspace billing rail', async () => {
+      mockBillingRouting.shouldUseWorkspaceBilling = true
+
+      await renderLoaded()
+
+      expect(mockWorkspaceApi.getBillingEvents).toHaveBeenCalledTimes(1)
+    })
+
+    it('shows a loading spinner while the initial load is in flight', () => {
+      mockCustomerEventsService.getMyEvents.mockReturnValue(
+        new Promise(() => {})
+      )
+
       renderComponent()
 
       expect(screen.getByRole('progressbar')).toBeInTheDocument()
@@ -238,7 +230,7 @@ describe('UsageLogsTable', () => {
       mockCustomerEventsService.getMyEvents.mockResolvedValue(null)
       mockCustomerEventsService.error.value = 'Failed to load events'
 
-      renderWithAutoRefresh()
+      renderComponent()
 
       await waitFor(() => {
         expect(screen.getByText('Failed to load events')).toBeInTheDocument()
@@ -250,7 +242,7 @@ describe('UsageLogsTable', () => {
         new Error('Network error')
       )
 
-      renderWithAutoRefresh()
+      renderComponent()
 
       await waitFor(() => {
         expect(
@@ -266,7 +258,7 @@ describe('UsageLogsTable', () => {
       mockCustomerEventsService.getMyEvents.mockResolvedValue(null)
       mockCustomerEventsService.error.value = null
 
-      renderWithAutoRefresh()
+      renderComponent()
 
       await waitFor(() => {
         expect(
@@ -318,7 +310,7 @@ describe('UsageLogsTable', () => {
         ])
       )
 
-      renderWithAutoRefresh()
+      renderComponent()
 
       await waitFor(() => {
         expect(screen.getByText('Account initialized')).toBeInTheDocument()
@@ -406,7 +398,7 @@ describe('UsageLogsTable', () => {
         ])
       )
 
-      renderWithAutoRefresh()
+      renderComponent()
 
       mockBillingRouting.shouldUseWorkspaceBilling = true
       await waitFor(() => {
@@ -448,7 +440,7 @@ describe('UsageLogsTable', () => {
         ])
       )
 
-      renderWithAutoRefresh()
+      renderComponent()
 
       mockBillingRouting.shouldUseWorkspaceBilling = true
       await waitFor(() => {

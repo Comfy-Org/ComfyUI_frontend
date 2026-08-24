@@ -1,4 +1,6 @@
 import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import { createI18n } from 'vue-i18n'
 import { describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -9,13 +11,6 @@ import type {
 
 import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPreviewWorkspace.vue'
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string) => key,
-    n: (value: number) => value.toLocaleString('en-US')
-  })
-}))
-
 // Not cancelled: keeps the reactivation banner out of these baseline scenarios.
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
@@ -24,8 +19,14 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: {} }
+})
+
 const globalOptions = {
-  mocks: { $t: (key: string) => key },
+  plugins: [i18n],
   stubs: {
     SubscriptionTermsNote: { template: '<div />' },
     Button: { template: '<button @click="$emit(\'click\')"><slot /></button>' }
@@ -130,6 +131,31 @@ describe('SubscriptionTransitionPreviewWorkspace', () => {
     expect(screen.getByText('$82.50')).toBeTruthy()
   })
 
+  it('opens verification only from its button without exposing the URL', async () => {
+    const actionUrl = 'https://verify.example/sensitive-token'
+    const open = vi.spyOn(window, 'open').mockReturnValue({} as Window)
+    const { container } = render(SubscriptionTransitionPreviewWorkspace, {
+      props: {
+        previewData: preview({}),
+        actionUrl
+      },
+      global: globalOptions
+    })
+
+    expect(open).not.toHaveBeenCalled()
+    expect(container.innerHTML).not.toContain(actionUrl)
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: 'subscription.preview.completeVerification'
+      })
+    )
+    expect(open).toHaveBeenCalledWith(
+      actionUrl,
+      '_blank',
+      'noopener,noreferrer'
+    )
+  })
+
   it('renders a scheduled downgrade with the after-that block and no charge', () => {
     render(SubscriptionTransitionPreviewWorkspace, {
       props: {
@@ -159,6 +185,35 @@ describe('SubscriptionTransitionPreviewWorkspace', () => {
     expect(screen.queryByText('subscription.preview.switchesToday')).toBeNull()
     expect(
       screen.queryByText('subscription.preview.yearlySubscription')
+    ).toBeNull()
+  })
+
+  it('renders a scheduled annual downgrade with yearly refill and billing', () => {
+    render(SubscriptionTransitionPreviewWorkspace, {
+      props: {
+        previewData: preview({
+          transition_type: 'downgrade',
+          is_immediate: false,
+          cost_today_cents: 0,
+          effective_at: '2026-08-30T00:00:00Z',
+          current_plan: plan('CREATOR', 'MONTHLY', 3500),
+          new_plan: plan('STANDARD', 'ANNUAL', 19_200)
+        })
+      },
+      global: globalOptions
+    })
+
+    expect(screen.getByText('$16')).toBeTruthy()
+    expect(
+      screen.getByText('subscription.preview.eachYearCreditsRefill')
+    ).toBeTruthy()
+    expect(screen.getByText('50,400')).toBeTruthy()
+    expect(screen.getByText('subscription.billedYearly')).toBeTruthy()
+    expect(
+      screen.queryByText('subscription.preview.creditsRefillMonthlyTo')
+    ).toBeNull()
+    expect(
+      screen.queryByText('subscription.preview.billedEachMonth')
     ).toBeNull()
   })
 

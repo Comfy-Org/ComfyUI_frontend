@@ -25,6 +25,24 @@ describe('useVideoEditFormats', () => {
     })
   })
 
+  describe('formatTimecode', () => {
+    it('formats seconds as m:ss', () => {
+      const { formatTimecode } = useVideoEditFormats()
+
+      expect(formatTimecode(0)).toBe('0:00')
+      expect(formatTimecode(9.4)).toBe('0:09')
+      expect(formatTimecode(90)).toBe('1:30')
+      expect(formatTimecode(605)).toBe('10:05')
+    })
+
+    it('clamps negative and non-finite values to zero', () => {
+      const { formatTimecode } = useVideoEditFormats()
+
+      expect(formatTimecode(-3)).toBe('0:00')
+      expect(formatTimecode(Number.NaN)).toBe('0:00')
+    })
+  })
+
   describe('formatFileSize', () => {
     it('shows a placeholder for unknown sizes', () => {
       const { formatFileSize } = useVideoEditFormats()

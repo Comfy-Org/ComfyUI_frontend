@@ -2,8 +2,7 @@
  * Storybook mock for `useFeatureFlags`.
  *
  * The real composable resolves flags from authenticated remote config, which is
- * unavailable in Storybook. This stub enables the workspace-facing flags so
- * team-plan billing components (e.g. the post-upgrade invite block) render.
+ * unavailable in Storybook. This stub enables billing controls.
  */
 // Inlined from `@/composables/useFeatureFlags` (the alias points here) so the
 // enum, consumed by modules like nodeReplacementStore, resolves without dragging
@@ -17,7 +16,6 @@ export enum ServerFeatureFlag {
   PRIVATE_MODELS_ENABLED = 'private_models_enabled',
   ONBOARDING_SURVEY_ENABLED = 'onboarding_survey_enabled',
   LINEAR_TOGGLE_ENABLED = 'linear_toggle_enabled',
-  TEAM_WORKSPACES_ENABLED = 'team_workspaces_enabled',
   USER_SECRETS_ENABLED = 'user_secrets_enabled',
   NODE_REPLACEMENTS = 'node_replacements',
   NODE_LIBRARY_ESSENTIALS_ENABLED = 'node_library_essentials_enabled',
@@ -26,16 +24,15 @@ export enum ServerFeatureFlag {
   COMFYHUB_PROFILE_GATE_ENABLED = 'comfyhub_profile_gate_enabled',
   SHOW_SIGNIN_BUTTON = 'show_signin_button',
   UNIFIED_CLOUD_AUTH = 'unified_cloud_auth',
-  CONSOLIDATED_BILLING_ENABLED = 'consolidated_billing_enabled',
-  BILLING_CONTROL_ENABLED = 'billing_control_enabled'
+  BILLING_CONTROL_ENABLED = 'billing_control_enabled',
+  V1_PAYMENT_RECOVERY = 'v1_payment_recovery'
 }
 
 export function useFeatureFlags() {
   return {
     flags: {
-      teamWorkspacesEnabled: true,
-      consolidatedBillingEnabled: true,
-      billingControlEnabled: true
+      billingControlEnabled: true,
+      v1PaymentRecovery: true
     }
   }
 }

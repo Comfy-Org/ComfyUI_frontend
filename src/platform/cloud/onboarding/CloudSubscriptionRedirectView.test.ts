@@ -39,7 +39,7 @@ vi.mock('@/composables/useErrorHandling', () => ({
 }))
 
 const subscriptionMocks = vi.hoisted(() => ({
-  isActiveSubscription: { value: false },
+  canAccessSubscriptionFeatures: { value: false },
   isInitialized: { value: true },
   subscriptionStatus: { value: null }
 }))
@@ -109,9 +109,8 @@ const mountView = async (query: Record<string, unknown>) => {
 
 describe('CloudSubscriptionRedirectView', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockQuery = {}
-    subscriptionMocks.isActiveSubscription.value = false
+    subscriptionMocks.canAccessSubscriptionFeatures.value = false
     subscriptionMocks.isInitialized.value = true
   })
 
@@ -153,7 +152,7 @@ describe('CloudSubscriptionRedirectView', () => {
   })
 
   test('opens billing portal when subscription is already active', async () => {
-    subscriptionMocks.isActiveSubscription.value = true
+    subscriptionMocks.canAccessSubscriptionFeatures.value = true
 
     await mountView({ tier: 'creator' })
 
