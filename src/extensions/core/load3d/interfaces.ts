@@ -11,9 +11,11 @@ export type MaterialMode =
   | 'normal'
   | 'wireframe'
   | 'depth'
+  | 'clay'
 export type UpDirection = 'original' | '-x' | '+x' | '-y' | '+y' | '-z' | '+z'
 export type CameraType = 'perspective' | 'orthographic'
 export type BackgroundRenderModeType = 'tiled' | 'panorama'
+export type LoadFolder = 'temp' | 'output'
 
 interface CameraQuaternion {
   x: number
@@ -76,11 +78,15 @@ export interface ModelConfig {
   gizmo?: GizmoConfig
 }
 
-export interface CameraConfig {
+type CustomUpConfig =
+  | { hasCustomUp?: false }
+  | { hasCustomUp: true; useCustomUp: boolean }
+
+export type CameraConfig = {
   cameraType: CameraType
   fov: number
   state?: CameraState
-}
+} & CustomUpConfig
 
 export interface LightConfig {
   intensity: number
@@ -157,6 +163,7 @@ export interface CameraManagerInterface extends BaseManager {
   setFOV(fov: number): void
   setCameraState(state: CameraState): void
   getCameraState(): CameraState
+  setUseCustomUp(use: boolean): void
   handleResize(width: number, height: number): void
   setControls(controls: OrbitControls): void
 }

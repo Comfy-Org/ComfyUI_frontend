@@ -31,7 +31,16 @@ function renderItem(
 describe('NodeSearchListItem', () => {
   beforeEach(() => {
     setupTestPinia()
-    vi.restoreAllMocks()
+  })
+
+  it('renders node names as text rather than HTML', () => {
+    const displayName = '<img src=x onerror=alert(1)>Node'
+    renderItem({
+      nodeDef: createMockNodeDef({ display_name: displayName })
+    })
+
+    expect(screen.queryByRole('img')).not.toBeInTheDocument()
+    expect(screen.getByText(displayName)).toBeInTheDocument()
   })
 
   describe('id name badge', () => {

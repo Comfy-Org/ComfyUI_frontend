@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import type { EffectScope } from 'vue'
 import { effectScope, ref, shallowRef } from 'vue'
 
@@ -13,16 +13,11 @@ afterEach(() => {
 function setup(initial: string[]) {
   const modelValue = ref(initial)
   const container = shallowRef(document.createElement('div'))
-  const picker = shallowRef(document.createElement('input'))
   const scope = effectScope()
   scopes.push(scope)
-  const api = scope.run(() =>
-    usePaletteSwatchRow({ modelValue, container, picker })
-  )!
-  return { modelValue, container, picker, ...api }
+  const api = scope.run(() => usePaletteSwatchRow({ modelValue, container }))!
+  return { modelValue, container, ...api }
 }
-
-const mouseEvent = () => ({ stopPropagation: vi.fn() }) as unknown as MouseEvent
 
 describe('usePaletteSwatchRow', () => {
   it('appends a default color', () => {
@@ -37,31 +32,17 @@ describe('usePaletteSwatchRow', () => {
     expect(modelValue.value).toEqual(['#a', '#c'])
   })
 
-  it('seeds the picker input with the clicked color before opening it', () => {
-    const { picker, openPicker } = setup(['#112233'])
-    const click = vi.spyOn(picker.value!, 'click')
-    openPicker(0, mouseEvent())
-    expect(picker.value!.value).toBe('#112233')
-    expect(click).toHaveBeenCalled()
-  })
-
-  it('falls back to white when the slot is empty', () => {
-    const { picker, openPicker } = setup([''])
-    openPicker(0, mouseEvent())
-    expect(picker.value!.value).toBe('#ffffff')
-  })
-
-  it('writes the picked color back to the open slot', () => {
-    const { modelValue, openPicker, onPickerInput } = setup(['#a', '#b'])
-    openPicker(1, mouseEvent())
-    onPickerInput({ target: { value: '#123456' } } as unknown as Event)
+  it('updates the color at an index', () => {
+    const { modelValue, updateAt } = setup(['#a', '#b'])
+    updateAt(1, '#123456')
     expect(modelValue.value).toEqual(['#a', '#123456'])
   })
 
-  it('ignores picker input when no slot is open', () => {
-    const { modelValue, onPickerInput } = setup(['#a'])
-    onPickerInput({ target: { value: '#123456' } } as unknown as Event)
-    expect(modelValue.value).toEqual(['#a'])
+  it('ignores an update that does not change the color', () => {
+    const { modelValue, updateAt } = setup(['#a'])
+    const before = modelValue.value
+    updateAt(0, '#a')
+    expect(modelValue.value).toBe(before)
   })
 
   it('reorders via drag when the pointer crosses another swatch', () => {

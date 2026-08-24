@@ -1,6 +1,5 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -12,6 +11,7 @@ import type { SecretMetadata } from '@/platform/secrets/types'
 const DIALOG_HANDLE = { key: 'confirm-delete-secret' }
 const mockDeleteSecret = vi.fn().mockResolvedValue(undefined)
 const mockFetchSecrets = vi.fn().mockResolvedValue(undefined)
+const mockFetchProviders = vi.fn().mockResolvedValue(undefined)
 const mockCloseDialog = vi.fn()
 
 const mockSecret: SecretMetadata = {
@@ -26,9 +26,11 @@ vi.mock('@/platform/secrets/composables/useSecrets', () => ({
   useSecrets: () => ({
     loading: ref(false),
     secrets: ref<SecretMetadata[]>([mockSecret]),
+    availableProviders: ref<string[]>([]),
     operatingSecretId: ref(null),
     existingProviders: ref([]),
     fetchSecrets: mockFetchSecrets,
+    fetchProviders: mockFetchProviders,
     deleteSecret: mockDeleteSecret
   })
 }))
@@ -84,7 +86,6 @@ const i18n = createI18n({
 })
 
 function renderPanel() {
-  setActivePinia(createPinia())
   return render(SecretsPanel, {
     global: {
       plugins: [i18n],
@@ -110,7 +111,6 @@ function renderPanel() {
 
 describe('SecretsPanel', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockShowConfirmDialog.mockReturnValue(
       DIALOG_HANDLE as ReturnType<typeof showConfirmDialog>
     )

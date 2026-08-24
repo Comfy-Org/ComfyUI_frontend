@@ -28,7 +28,6 @@ const MODELS_AND_NODES: LocalizedText = {
   'zh-CN': '模型与节点'
 }
 const NEW_BADGE: LocalizedText = { en: 'NEW', 'zh-CN': '新' }
-const FEATURED_BADGE: LocalizedText = { en: 'FEATURED', 'zh-CN': '精选' }
 
 function imageFor(fileName: string, alt: LocalizedText): DropMedia {
   return {
@@ -73,6 +72,24 @@ export const drops: readonly Drop[] = [
     }
   },
   {
+    id: 'comfy-mcp',
+    badge: NEW_BADGE,
+    category: CLOUD,
+    media: imageFor('Drops_2x2card_MCP.jpg', {
+      en: 'Comfy MCP',
+      'zh-CN': 'Comfy MCP'
+    }),
+    title: { en: 'Comfy MCP', 'zh-CN': 'Comfy MCP' },
+    description: {
+      en: 'The full power of ComfyUI from anywhere — no setup, no GPU required.',
+      'zh-CN': '随时随地体验 ComfyUI 的全部能力 — 无需配置，无需 GPU。'
+    },
+    cta: {
+      label: EXPLORE,
+      href: { en: '/mcp', 'zh-CN': '/zh-CN/mcp' }
+    }
+  },
+  {
     id: 'app-mode',
     badge: NEW_BADGE,
     category: PLATFORM,
@@ -110,24 +127,6 @@ export const drops: readonly Drop[] = [
     cta: {
       label: EXPLORE,
       href: { en: '/api', 'zh-CN': '/zh-CN/api' }
-    }
-  },
-  {
-    id: 'comfy-mcp',
-    badge: NEW_BADGE,
-    category: CLOUD,
-    media: imageFor('Drops_2x2card_MCP.jpg', {
-      en: 'Comfy MCP',
-      'zh-CN': 'Comfy MCP'
-    }),
-    title: { en: 'Comfy MCP', 'zh-CN': 'Comfy MCP' },
-    description: {
-      en: 'The full power of ComfyUI from anywhere — no setup, no GPU required.',
-      'zh-CN': '随时随地体验 ComfyUI 的全部能力 — 无需配置，无需 GPU。'
-    },
-    cta: {
-      label: EXPLORE,
-      href: { en: '/mcp', 'zh-CN': '/zh-CN/mcp' }
     }
   },
   {

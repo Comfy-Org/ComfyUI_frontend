@@ -33,6 +33,7 @@
             :data-nav-id="item.id"
             :icon="item.icon"
             :badge="item.badge"
+            :suffix-icon="item.suffixIcon"
             :active="activeCategoryKey === item.id"
             @click="onNavItemClick(item.id)"
           >
@@ -135,14 +136,19 @@ const { fetchBalance } = useBillingContext()
 const navRef = ref<HTMLElement | null>(null)
 const activeCategoryKey = ref<string | null>(defaultCategory.value?.key ?? null)
 
+const navItems = computed(() => navGroups.value.flatMap((group) => group.items))
 const searchableNavItems = computed(() =>
-  navGroups.value.flatMap((g) =>
-    g.items.map((item) => ({
-      key: item.id,
-      label: item.label
-    }))
-  )
+  navItems.value.map((item) => ({
+    key: item.id,
+    label: item.label
+  }))
 )
+
+watch(navItems, (items) => {
+  const activeKey = activeCategoryKey.value
+  if (!activeKey || items.some(({ id }) => id === activeKey)) return
+  activeCategoryKey.value = items[0]?.id ?? null
+})
 
 watch(
   [searchResultsCategories, matchedNavItemKeys],

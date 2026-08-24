@@ -4,12 +4,8 @@ import type { Ref } from 'vue'
 
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
-import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
-import {
-  LGraphGroup,
-  LGraphNode,
-  LiteGraph
-} from '@/lib/litegraph/src/litegraph'
+import type { ReadOnlyRect, Rect } from '@/lib/litegraph/src/interfaces'
+import { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
@@ -48,40 +44,12 @@ function currentSelectionMatchesSignature(
   return buildSelectionSignature(store) === moreOptionsSelectionSignature
 }
 
-function getFullNodeBounds(item: LGraphNode | LGraphGroup): ReadOnlyRect {
-  if (item instanceof LGraphGroup) {
-    return [item.pos[0], item.pos[1], item.size[0], item.size[1]]
-  }
+function getSelectionBounds(item: LGraphNode | LGraphGroup): ReadOnlyRect {
+  if (item instanceof LGraphGroup) return item.boundingRect
 
-  return [
-    item.pos[0],
-    item.pos[1] - LiteGraph.NODE_TITLE_HEIGHT,
-    item.size[0],
-    item.size[1] + LiteGraph.NODE_TITLE_HEIGHT
-  ]
-}
-
-function getVueNodeBounds(item: LGraphNode): ReadOnlyRect | null {
-  const layout = layoutStore.getNodeLayoutRef(item.id).value
-  if (!layout) return null
-
-  return [
-    layout.bounds.x,
-    layout.bounds.y - LiteGraph.NODE_TITLE_HEIGHT,
-    layout.bounds.width,
-    layout.bounds.height + LiteGraph.NODE_TITLE_HEIGHT
-  ]
-}
-
-function getSelectionBounds(
-  item: LGraphNode | LGraphGroup,
-  shouldUseVueLayout: boolean
-): ReadOnlyRect {
-  if (shouldUseVueLayout && item instanceof LGraphNode) {
-    return getVueNodeBounds(item) ?? getFullNodeBounds(item)
-  }
-
-  return getFullNodeBounds(item)
+  const bounds: Rect = [0, 0, 0, 0]
+  item.measure(bounds)
+  return bounds
 }
 
 export function useSelectionToolboxPosition(
@@ -136,7 +104,7 @@ export function useSelectionToolboxPosition(
       if (item.id == null) continue
 
       if (item instanceof LGraphNode || item instanceof LGraphGroup) {
-        allBounds.push(getSelectionBounds(item, shouldRenderVueNodes.value))
+        allBounds.push(getSelectionBounds(item))
       }
     }
 

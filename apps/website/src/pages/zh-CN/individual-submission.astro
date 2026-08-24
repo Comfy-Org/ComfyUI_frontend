@@ -1,0 +1,57 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import PlansPricingCta from '../../components/individual-submission/PlansPricingCta.vue'
+import HeroSection from '../../components/legal/HeroSection.vue'
+import { getRoutes } from '../../config/routes'
+
+const routes = getRoutes('zh-CN')
+---
+
+<BaseLayout
+  title="感谢您的联系 - Comfy"
+  description="感谢您的联系。根据您提供的信息，我们的自助服务套餐之一可能更适合您。"
+  noindex
+>
+  <HeroSection title="感谢您的联系。" class="text-center" />
+
+  <section class="-mt-8 px-6 pb-24 lg:-mt-12 lg:pb-40">
+    <div
+      class="text-primary-comfy-canvas mx-auto flex max-w-2xl flex-col gap-6 text-center text-base font-light lg:text-lg"
+    >
+      <p>
+        根据您提供的信息，我们的自助服务套餐之一可能更适合您。面向个人创作者的
+        <strong class="text-primary-comfy-yellow font-semibold italic">
+          Standard</strong
+        >、
+        <strong class="text-primary-comfy-yellow font-semibold italic">
+          Creator</strong
+        >
+        和
+        <strong class="text-primary-comfy-yellow font-semibold italic">
+          Pro</strong
+        >，以及我们全新的
+        <strong class="text-primary-comfy-yellow font-semibold italic">
+          Teams</strong
+        > 套餐，可让多位用户共享账单。
+      </p>
+
+      <PlansPricingCta href={routes.cloudPricing} label="查看套餐与价格 →" />
+
+      <p class="text-primary-warm-gray mt-8 text-sm">
+        仍然认为您有企业级需求？我们很乐意为您提供帮助。邮箱：<a
+          href="mailto:gtm-team@comfy.org"
+          class="text-primary-comfy-yellow whitespace-nowrap underline underline-offset-4 hover:no-underline"
+          >gtm-team@comfy.org</a
+        >
+      </p>
+
+      <p class="text-primary-warm-gray text-sm">
+        需要其他方面的帮助？邮箱：<a
+          href="mailto:support@comfy.org"
+          class="text-primary-comfy-yellow whitespace-nowrap underline underline-offset-4 hover:no-underline"
+          >support@comfy.org</a
+        >
+      </p>
+    </div>
+  </section>
+</BaseLayout>
