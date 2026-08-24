@@ -30,6 +30,7 @@ import { stepHeader } from '../ui/steps'
 import { pass, fail, warn, alert, info, blank, box } from '../ui/logger'
 import { toSlug } from '../cli/slug'
 import { TAG_REGISTRY } from '../tags'
+import { USE_CASES, useCaseById } from '../useCases'
 import { addWorkflow } from '../workflows/add'
 import {
   customDistribution,
@@ -241,20 +242,35 @@ export async function runRecord(): Promise<void> {
 
   stepHeader(4, 7, 'Configure Your Test')
 
+  const useCaseChoice = await select({
+    message:
+      "What brings you here today? There's no wrong answer — this just helps us ask the right question next.",
+    options: USE_CASES.map(({ id, label, hint }) => ({
+      value: id,
+      label,
+      hint
+    }))
+  })
+  if (isCancel(useCaseChoice)) {
+    cancel('Operation cancelled')
+    process.exit(0)
+  }
+  const useCase = useCaseById(useCaseChoice) ?? USE_CASES[0]
+
   info([
     'Naming tip: describe the user-visible behavior, not the steps —',
     pc.dim('"collapsing a node keeps its connections"') +
       ' reads better than ' +
       pc.dim('"click node then press collapse"') +
       '.',
-    'This becomes both the filename and the test name, so specific beats',
-    'generic: prefer "queuing a workflow with a missing model" over "test 1".'
+    'Your answer becomes both the filename and the test name, so specific',
+    'beats generic: "queuing a workflow with a missing model" over "test 1".'
   ])
   blank()
 
   const description = await text({
-    message: 'What are you testing?',
-    placeholder: 'e.g., collapsing a KSampler node keeps its connections',
+    message: useCase.question,
+    placeholder: useCase.placeholder,
     validate: (value) =>
       toSlug(value ?? '') ? undefined : 'Use some letters or numbers.'
   })
