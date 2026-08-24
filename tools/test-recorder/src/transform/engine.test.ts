@@ -58,6 +58,18 @@ test('pos test', async ({ page }) => {
     )
   })
 
+  it('warns when the recording uploads a local file', () => {
+    const input = `import { test } from '@playwright/test'
+
+test('upload', async ({ page }) => {
+  await page.locator('input[type="file"]').setInputFiles('/Users/me/my-workflow.json')
+})`
+    const result = transform(input)
+    expect(result.warnings).toContainEqual(
+      expect.stringContaining('will not exist where tests run')
+    )
+  })
+
   it('uses default testName and tags when not provided', () => {
     const result = transform(rawCodegenOutput)
     expect(result.code).toContain('"unnamed test"')

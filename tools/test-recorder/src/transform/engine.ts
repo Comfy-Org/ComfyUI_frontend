@@ -93,6 +93,11 @@ export function transform(
       'Contains pixel coordinates — consider replacing with node references (comfyPage.nodeOps.*) where possible'
     )
   }
+  if (code.includes('setInputFiles')) {
+    warnings.push(
+      'Uploads a file from this computer — that file will not exist where tests run. Use an asset from browser_tests/assets/ instead, or add one with comfy-test add-workflow.'
+    )
+  }
 
   return {
     code: code.trim() + '\n',
