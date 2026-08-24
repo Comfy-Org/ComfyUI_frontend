@@ -17,6 +17,7 @@ import type { GraphScope } from '@/types/graphScopeId'
 import { graphScopeOf } from '@/types/graphScopeId'
 import type { GroupId } from '@/types/groupId'
 import type { NodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
 import type { RerouteId } from '@/types/rerouteId'
 import { widgetId } from '@/types/widgetId'
 import { createTestSubgraphData } from './subgraph/__fixtures__/subgraphHelpers'
@@ -247,18 +248,14 @@ function storeOwnership(
 }
 
 describe('LGraph.configure that throws partway through', () => {
-  it('keeps every node it created, including the one that threw', () => {
+  it('rolls back every node and link it created', () => {
     const graph = graphAfterFailedConfigure()
 
-    expect(graph.nodes.map((node) => node.type)).toEqual([
-      'test/good',
-      'test/throwing',
-      'test/good'
-    ])
-    expect(graph.links.size).toBe(1)
+    expect(graph.nodes).toEqual([])
+    expect(graph.links.size).toBe(0)
   })
 
-  it('keeps a reroute that a completed load would have discarded', () => {
+  it('rolls back reroutes and groups', () => {
     const completed = new LGraph()
     completed.configure(sameWorkflowThatLoads())
     expect(completed.reroutes.size).toBe(0)
@@ -266,9 +263,7 @@ describe('LGraph.configure that throws partway through', () => {
 
     const failed = graphAfterFailedConfigure()
 
-    // The throw happens before reroute validation and before groups are built,
-    // so the graph holds a reroute the same data would not have produced.
-    expect(failed.reroutes.size).toBe(1)
+    expect(failed.reroutes.size).toBe(0)
     expect(failed._groups).toHaveLength(0)
   })
 
@@ -299,7 +294,7 @@ describe('LGraph.configure that throws partway through', () => {
     expect(configuredEvents).toBe(1)
   })
 
-  it('LEAK: a nested definition that fails stays registered on an otherwise empty graph', () => {
+  it('rolls back a nested definition that fails', () => {
     const graph = new LGraph()
     const created: string[] = []
     graph.events.addEventListener('subgraph-created', (event) => {
@@ -308,14 +303,8 @@ describe('LGraph.configure that throws partway through', () => {
 
     expect(() => graph.configure(failingNestedWorkflow())).toThrow()
 
-    // The definition is registered, and `subgraph-created` has already told
-    // listeners (node-def registration, among others) about it. LGraphEventMap
-    // has no removal counterpart, so nothing retracts it.
     expect(created).toEqual([NESTED_DEFINITION_ID])
-    expect(graph.subgraphs.has(NESTED_DEFINITION_ID)).toBe(true)
-
-    // Nothing else made it in, so the graph reports itself as empty while
-    // still holding the definition.
+    expect(graph.subgraphs.has(NESTED_DEFINITION_ID)).toBe(false)
     expect(graph.empty).toBe(true)
   })
 })
@@ -387,6 +376,18 @@ describe('a workflow loaded after a failed load, on the same graph', () => {
     expect(graph.id).toBe(GOOD_ID)
   })
 
+  it('holds no widget state or subgraph definition from the failed load', () => {
+    const store = useWidgetValueStore()
+    const failedWidget = widgetId(BAD_ID, toNodeId(1), 'seed')
+
+    const graph = graphAfterFailedConfigure()
+    expect(store.getWidget(failedWidget)).toBeUndefined()
+
+    graph.configure(unrelatedWorkflow())
+
+    expect(store.getWidget(failedWidget)).toBeUndefined()
+  })
+
   it('clears nested-owner state before loading the next workflow', () => {
     const nested = graphAfterFailedConfigure(failingNestedWorkflow())
     const definition = nested.subgraphs.get(NESTED_DEFINITION_ID)
@@ -432,19 +433,11 @@ describe('a workflow loaded after a failed load, on the same graph', () => {
     expect(nested.subgraphs.has(NESTED_DEFINITION_ID)).toBe(false)
   })
 
-  it('LEAK: keeps top-level workflow keys that `configure` does not recognise', () => {
+  it('does not retain unrecognised top-level workflow keys', () => {
     const graph = graphAfterFailedConfigure()
     graph.configure(unrelatedWorkflow())
 
-    // `configure` copies every key not in LGraph.ConfigureProperties straight
-    // onto the instance, and `clear()` only resets the properties it knows
-    // about. The successor workflow has no `extensionData` key, so the failed
-    // workflow's value is still there — on a graph that otherwise believes it
-    // is the good workflow. Not serialised today, which is the only reason
-    // this does not reach disk.
-    expect(Reflect.get(graph, 'extensionData')).toEqual({
-      source: 'workflow-that-failed'
-    })
+    expect(Reflect.get(graph, 'extensionData')).toBeUndefined()
     expect(Reflect.get(new LGraph(), 'extensionData')).toBeUndefined()
   })
 })

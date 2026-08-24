@@ -14,6 +14,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app, sanitizeNodeName } from '@/scripts/app'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { clearNodeOwnedStoreState } from '@/stores/clearNodeOwnedStoreState'
 import type { MissingNodeType } from '@/types/comfy'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
 
@@ -182,6 +183,7 @@ function replaceWithMapping(
     throw new Error(
       `Cannot replace node ${node.id}: ownership changed during removal`
     )
+  clearNodeOwnedStoreState(node)
   nodeGraph._nodes[idx] = newNode
   newNode.graph = nodeGraph
   node.graph = null
