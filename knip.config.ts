@@ -44,7 +44,8 @@ const config: KnipConfig = {
       project: ['src/**/*.{js,ts}']
     },
     'apps/website': {
-      entry: ['src/scripts/**/*.ts']
+      // middleware.ts is the Vercel Edge Middleware entry point
+      entry: ['src/scripts/**/*.ts', 'middleware.ts']
     }
   },
   ignoreDependencies: [

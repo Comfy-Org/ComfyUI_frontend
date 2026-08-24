@@ -1,5 +1,20 @@
 ---
+import { externalLinks, getRoutes } from '../config/routes'
+import { t } from '../i18n/translations'
 import BaseLayout from '../layouts/BaseLayout.astro'
+
+const routes = getRoutes('en')
+
+const recoveryLinks = [
+  { label: t('notFound.home', 'en'), href: routes.home },
+  { label: t('notFound.download', 'en'), href: routes.download },
+  { label: t('nav.comfyCloud', 'en'), href: routes.cloud },
+  { label: t('nav.comfyHub', 'en'), href: externalLinks.workflows },
+  { label: t('nav.docs', 'en'), href: externalLinks.docs },
+  { label: t('notFound.sitemap', 'en'), href: '/sitemap-index.xml' },
+  { label: t('notFound.llms', 'en'), href: '/llms.txt' },
+  { label: t('notFound.openapi', 'en'), href: '/openapi.json' }
+]
 ---
 
 <BaseLayout
@@ -33,6 +48,20 @@ import BaseLayout from '../layouts/BaseLayout.astro'
           class="mx-2.5 opacity-50">|</span
         >Best: <span id="scoreBest">0</span></p
       >
+      <nav
+        aria-label={t('notFound.linksLabel', 'en')}
+        class="flex max-w-xl flex-wrap items-center justify-center gap-x-4 gap-y-1 font-mono text-xs tracking-[0.05em] opacity-75 max-md:landscape:hidden">
+        <span>{t('notFound.hint', 'en')}</span>
+        {
+          recoveryLinks.map((link) => (
+            <a
+              class="underline underline-offset-2 hover:opacity-80"
+              href={link.href}>
+              {link.label}
+            </a>
+          ))
+        }
+      </nav>
     </div>
     <div class="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden">
       <svg

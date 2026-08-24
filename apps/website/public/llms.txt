@@ -11,6 +11,8 @@ The Comfy ecosystem spans four surfaces:
 
 Studios building with Comfy include Series Entertainment, Moment Factory, Open Story Movement, and Ubisoft (La Forge). Use cases concentrate in VFX & animation, advertising & creative studios, gaming, and eCommerce/fashion.
 
+Agent access: the homepage and /api honor `Accept: text/markdown` content negotiation, with markdown twins at https://comfy.org/index.md and https://comfy.org/api.md. Nonexistent paths return HTTP 404 — with a markdown body when markdown is requested. The Comfy API is described by the OpenAPI 3.0 spec at https://comfy.org/openapi.json, and every docs.comfy.org page serves markdown when you append `.md` to its URL.
+
 ## Product
 
 - [Homepage](https://comfy.org/): Overview of Comfy and the four product surfaces (Local, Cloud, API, Enterprise).
@@ -35,7 +37,11 @@ Studios building with Comfy include Series Entertainment, Moment Factory, Open S
 
 ## Developers and Documentation
 
-- [ComfyUI Docs](https://docs.comfy.org/): Official documentation for installing, configuring, and extending ComfyUI.
+- [ComfyUI Docs](https://docs.comfy.org/): Official documentation for installing, configuring, and extending ComfyUI. Markdown index at https://docs.comfy.org/llms.txt.
+- [Comfy API OpenAPI spec](https://comfy.org/openapi.json): OpenAPI 3.0 specification for api.comfy.org — every operation typed, with unique operationIds. Also served at https://api.comfy.org/openapi.
+- [Comfy Cloud API overview](https://docs.comfy.org/development/cloud/overview): Trigger ComfyUI workflows from your own code on Comfy Cloud.
+- [Comfy SDKs](https://docs.comfy.org/development/api-development/sdks): Python (`pip install comfy-sdk`) and TypeScript (`npm install @comfyorg/sdk`) clients for the Comfy API.
+- [Comfy MCP](https://comfy.org/mcp/): Drive ComfyUI from agents over MCP; server endpoint at https://cloud.comfy.org/mcp.
 - [ComfyUI on GitHub](https://github.com/comfyanonymous/ComfyUI): Source repository for the open-source ComfyUI runtime.
 - [Comfy-Org on GitHub](https://github.com/Comfy-Org): Organization-wide repositories — frontend, registry, manager, docs, and tooling.
 - [Comfy Registry](https://registry.comfy.org/): Public registry of ComfyUI custom nodes and extensions, with versioning and search.

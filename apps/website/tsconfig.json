@@ -17,6 +17,7 @@
     "e2e/**/*",
     "scripts/**/*",
     "astro.config.ts",
+    "middleware.ts",
     "playwright.config.ts",
     "vitest.config.ts"
   ],

@@ -35,5 +35,13 @@ const slides: FeaturedSplitSlide[] = modelReleaseSlides.map((slide) => ({
 </script>
 
 <template>
-  <FeaturedCarousel02 :locale :slides class="py-14 md:py-20" />
+  <section>
+    <h2 class="sr-only">{{ t('modelRelease.heading', locale) }}</h2>
+    <FeaturedCarousel02
+      :locale
+      :slides
+      heading-level="h3"
+      class="py-14 md:py-20"
+    />
+  </section>
 </template>

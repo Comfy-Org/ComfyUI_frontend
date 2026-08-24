@@ -10,10 +10,13 @@ describe('ModelReleaseSection', () => {
   it('renders the four model slides with locale-aware CTAs', () => {
     render(ModelReleaseSection)
 
-    expect(screen.getByText('Seedance 2.5', { selector: 'h2' })).toBeTruthy()
-    expect(screen.getByText('LTX 2.5', { selector: 'h2' })).toBeTruthy()
-    expect(screen.getByText('Wan Animate 2', { selector: 'h2' })).toBeTruthy()
-    expect(screen.getByText('MiniMax H3', { selector: 'h2' })).toBeTruthy()
+    expect(
+      screen.getByText('Latest model releases', { selector: 'h2' })
+    ).toBeTruthy()
+    expect(screen.getByText('Seedance 2.5', { selector: 'h3' })).toBeTruthy()
+    expect(screen.getByText('LTX 2.5', { selector: 'h3' })).toBeTruthy()
+    expect(screen.getByText('Wan Animate 2', { selector: 'h3' })).toBeTruthy()
+    expect(screen.getByText('MiniMax H3', { selector: 'h3' })).toBeTruthy()
 
     const explore = screen.getByRole('link', { name: 'Explore Seedance 2.5' })
     expect(explore.getAttribute('href')).toBe('/seedance-2.5')
