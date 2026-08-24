@@ -94,9 +94,7 @@ describe('fetchCloudNodesForBuild', () => {
 
   beforeEach(() => {
     resetCloudNodesFetcherForTests()
-    fetchRegistryPacksWithNodesMock.mockReset()
     fetchRegistryPacksWithNodesMock.mockResolvedValue(new Map())
-    sanitizeCallSpy.mockReset()
     delete process.env.WEBSITE_CLOUD_API_KEY
   })
 

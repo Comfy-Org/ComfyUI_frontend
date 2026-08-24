@@ -1,7 +1,6 @@
 /* eslint-disable testing-library/no-container, testing-library/no-node-access, testing-library/prefer-user-event */
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -98,7 +97,6 @@ const lastBoxes = (emitted: () => Record<string, unknown[][]>) => {
 }
 
 beforeEach(() => {
-  setActivePinia(createPinia())
   appState.node = {
     widgets: [
       { name: 'width', value: 512 },

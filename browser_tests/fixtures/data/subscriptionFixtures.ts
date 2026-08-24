@@ -13,6 +13,9 @@ export function createSubscriptionStatus(
     subscription_tier: 'FREE',
     has_funds: false,
     billing_rail: 'legacy_stripe',
+    max_seats: 0,
+    occupied_seats: 0,
+    team_credit_stop: null,
     ...overrides
   }
 }

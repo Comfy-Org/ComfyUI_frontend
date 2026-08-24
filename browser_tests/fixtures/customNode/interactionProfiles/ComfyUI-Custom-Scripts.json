@@ -1,0 +1,74 @@
+{
+  "recordedAt": {
+    "core": "b08e6cf35fac50d3ca8470dffb3f9a1fbb7187d2",
+    "pin": "609f3afaa74b2f88ef9ce8d939626065e3247469"
+  },
+  "schema": 1,
+  "nodes": {
+    "CheckpointLoader|pysssss": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ConstrainImage|pysssss": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ConstrainImageforVideo|pysssss": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "LoadText|pysssss": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "LoraLoader|pysssss": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "MathExpression|pysssss": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "PlaySound|pysssss": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "Repeater|pysssss": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ReroutePrimitive|pysssss": {
+      "connectFirst": ["+output:*:INT", "-output:*:*"],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": ["+output:*:*", "-output:*:INT"]
+    },
+    "SaveText|pysssss": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ShowText|pysssss": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "StringFunction|pysssss": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SystemNotification|pysssss": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    }
+  }
+}

@@ -4,7 +4,10 @@ import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import GizmoMenuGroup from '@/components/load3d/menubar/GizmoMenuGroup.vue'
-import type { ModelConfig } from '@/extensions/core/load3d/interfaces'
+import type {
+  GizmoMode,
+  ModelConfig
+} from '@/extensions/core/load3d/interfaces'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 const i18n = createI18n({
@@ -30,8 +33,10 @@ function makeConfig(enabled: boolean): ModelConfig {
 
 type Props = {
   config: ModelConfig
+  compact?: boolean
   onToggleGizmo?: (enabled: boolean) => void
-  onSetGizmoMode?: (mode: string) => void
+  onSetGizmoMode?: (mode: GizmoMode) => void
+  onResetGizmoTransform?: () => void
 }
 
 function renderGroup(props: Props) {
@@ -68,5 +73,71 @@ describe('GizmoMenuGroup', () => {
 
     expect(onSetGizmoMode).toHaveBeenCalledWith('rotate')
     expect(config.gizmo?.mode).toBe('rotate')
+  })
+
+  it('collapses the mode controls into a dropdown when compact', async () => {
+    const config = makeConfig(true)
+    const onSetGizmoMode = vi.fn()
+    const { user } = renderGroup({ config, compact: true, onSetGizmoMode })
+
+    expect(
+      screen.queryByRole('button', { name: 'Rotate' })
+    ).not.toBeInTheDocument()
+
+    await user.click(screen.getByTestId('gizmo-mode-menu'))
+
+    expect(
+      screen.getByRole('button', { name: 'Translate', pressed: true })
+    ).toBeInTheDocument()
+
+    await user.click(
+      screen.getByRole('button', { name: 'Rotate', pressed: false })
+    )
+
+    expect(onSetGizmoMode).toHaveBeenCalledWith('rotate')
+    expect(config.gizmo?.mode).toBe('rotate')
+    expect(
+      screen.queryByRole('button', { name: 'Scale' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('labels the compact dropdown trigger with the active mode', () => {
+    const config = makeConfig(true)
+    config.gizmo!.mode = 'scale'
+    renderGroup({ config, compact: true })
+
+    expect(screen.getByTestId('gizmo-mode-menu')).toHaveAccessibleName('Scale')
+  })
+
+  it('does not reopen the mode menu after the gizmo is disabled and re-enabled', async () => {
+    const { user, rerender } = renderGroup({
+      config: makeConfig(true),
+      compact: true
+    })
+
+    await user.click(screen.getByTestId('gizmo-mode-menu'))
+    expect(screen.getByRole('button', { name: 'Reset' })).toBeInTheDocument()
+
+    await rerender({ config: makeConfig(false), compact: true })
+    await rerender({ config: makeConfig(true), compact: true })
+
+    expect(
+      screen.queryByRole('button', { name: 'Reset' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('forwards resetGizmoTransform from the compact dropdown', async () => {
+    const config = makeConfig(true)
+    const onResetGizmoTransform = vi.fn()
+    const { user } = renderGroup({
+      config,
+      compact: true,
+      onResetGizmoTransform
+    })
+
+    await user.click(screen.getByTestId('gizmo-mode-menu'))
+    await user.click(screen.getByRole('button', { name: 'Reset' }))
+
+    expect(onResetGizmoTransform).toHaveBeenCalledOnce()
   })
 })

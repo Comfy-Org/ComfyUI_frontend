@@ -91,7 +91,6 @@ const i18n = createI18n({
 
 describe('NodeLibrarySidebarTabV2', () => {
   beforeEach(() => {
-    hoisted.mockSearchNode.mockReset()
     hoisted.mockSearchNode.mockReturnValue([])
   })
 

@@ -20,7 +20,6 @@ describe('useArrangeSession', () => {
   let nextHandle: number
 
   beforeEach(() => {
-    mockArrangeNodes.mockReset()
     frameCallbacks = []
     nextHandle = 1
     vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation(

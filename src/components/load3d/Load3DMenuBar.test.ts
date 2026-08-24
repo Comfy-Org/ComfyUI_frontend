@@ -1,6 +1,8 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Ref } from 'vue'
+import { ref } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
@@ -12,6 +14,20 @@ import type {
   SceneConfig
 } from '@/extensions/core/load3d/interfaces'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+
+let mockedTopBarWidth: Ref<number>
+
+vi.mock('@vueuse/core', async () => {
+  const actual = await vi.importActual<Record<string, unknown>>('@vueuse/core')
+  return {
+    ...actual,
+    useElementSize: () => ({ width: mockedTopBarWidth, height: ref(40) })
+  }
+})
+
+beforeEach(() => {
+  mockedTopBarWidth = ref(0)
+})
 
 const i18n = createI18n({
   legacy: false,
@@ -230,6 +246,33 @@ describe('Load3DMenuBar', () => {
     expect(
       screen.queryByRole('button', { name: 'Light' })
     ).not.toBeInTheDocument()
+  })
+
+  it('shows the category label as text when the bar is wide', () => {
+    mockedTopBarWidth = ref(600)
+    renderMenuBar()
+
+    expect(screen.getByTestId('load3d-category-menu')).toHaveTextContent(
+      'Scene'
+    )
+  })
+
+  it('collapses the category trigger to an icon when the bar is narrow', () => {
+    mockedTopBarWidth = ref(300)
+    renderMenuBar()
+
+    const trigger = screen.getByTestId('load3d-category-menu')
+    expect(trigger).not.toHaveTextContent('Scene')
+    expect(trigger).toHaveAccessibleName('Scene')
+  })
+
+  it('still lists labeled categories in the menu when the bar is narrow', async () => {
+    mockedTopBarWidth = ref(300)
+    const { user } = renderMenuBar()
+
+    await openCategoryMenu(user)
+
+    expect(screen.getByRole('button', { name: 'Gizmo' })).toBeInTheDocument()
   })
 
   it('hides scene controls when sceneConfig is undefined', () => {

@@ -190,8 +190,7 @@ export const useCustomerEventsService = () => {
       404: 'Not found'
     }
 
-    // Get auth headers
-    const authHeaders = await useAuthStore().getAuthHeader()
+    const authHeaders = await useAuthStore().getFirebaseAuthHeader()
     if (!authHeaders) {
       error.value = 'Authentication header is missing'
       return null

@@ -123,6 +123,7 @@ export type RemoteConfig = {
   comfyhub_profile_gate_enabled?: boolean
   unified_cloud_auth?: boolean
   billing_control_enabled?: boolean
+  legacy_billing_migration_enabled?: boolean
   v1_payment_recovery?: boolean
   churnkey_app_id?: string
   sentry_dsn?: string

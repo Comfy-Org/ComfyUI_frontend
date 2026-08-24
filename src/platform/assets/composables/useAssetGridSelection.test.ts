@@ -8,9 +8,9 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useAssetGridSelection } from './useAssetGridSelection'
 
 const assets: AssetItem[] = [
-  { id: 'a', name: 'a.png', tags: [] },
-  { id: 'b', name: 'b.png', tags: [] },
-  { id: 'c', name: 'c.png', tags: [] }
+  fromPartial({ id: 'a', name: 'a.png', tags: [] }),
+  fromPartial({ id: 'b', name: 'b.png', tags: [] }),
+  fromPartial({ id: 'c', name: 'c.png', tags: [] })
 ]
 
 const cardBoxes: Record<string, { left: number; right: number }> = {

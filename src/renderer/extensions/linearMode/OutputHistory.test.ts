@@ -1,3 +1,5 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import type { RenderResult } from '@testing-library/vue'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -143,7 +145,7 @@ vi.mock('@/renderer/extensions/linearMode/OutputPreviewItem.vue', () => ({
 }))
 
 function makeAsset(id: string): AssetItem {
-  return { id, name: `${id}.png`, tags: [], user_metadata: {} }
+  return fromPartial({ id, name: `${id}.png`, tags: [], user_metadata: {} })
 }
 
 function makeResult(filename: string): ResultItemImpl {

@@ -136,21 +136,16 @@ describe('ManagerSurveyDialog', () => {
   })
 
   it('removes the iframe and shows the error state when loading times out', async () => {
-    vi.useFakeTimers()
-    try {
-      mocks.remoteConfig.value = { manager_survey_url: SURVEY_URL }
+    mocks.remoteConfig.value = { manager_survey_url: SURVEY_URL }
 
-      renderDialog()
-      expect(screen.getByTestId('manager-survey-iframe')).toBeTruthy()
+    renderDialog()
+    expect(screen.getByTestId('manager-survey-iframe')).toBeTruthy()
 
-      await vi.advanceTimersByTimeAsync(8000)
-      await nextTick()
+    await vi.advanceTimersByTimeAsync(8000)
+    await nextTick()
 
-      expect(screen.queryByTestId('manager-survey-iframe')).toBeNull()
-      expect(screen.getByTestId('manager-survey-error')).toBeTruthy()
-    } finally {
-      vi.useRealTimers()
-    }
+    expect(screen.queryByTestId('manager-survey-iframe')).toBeNull()
+    expect(screen.getByTestId('manager-survey-error')).toBeTruthy()
   })
 
   it('closes the dialog when the close button is clicked', async () => {

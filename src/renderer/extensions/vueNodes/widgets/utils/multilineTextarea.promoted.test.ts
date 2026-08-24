@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromAny } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/scripts/app', () => ({
@@ -52,7 +50,6 @@ function promote(
 
 describe('createPromotedMultilineWidget', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     useWidgetValueStore().registerWidget(WIDGET_ID, {
       type: 'customtext',
       value: 'hello',

@@ -156,6 +156,13 @@ export interface OnboardingTourStepMetadata {
 /** The nudge is post-tour, so it reports no step and no count. */
 export interface OnboardingTourNudgeMetadata {
   tour: string
+  /**
+   * Whether the tour was walked to the end. Without it `nudge_shown` and
+   * `explore_templates_clicked` cannot be split by how the tour ended, so a
+   * conversion from a completed tour and one from a tour that never started
+   * land in the same bucket.
+   */
+  tour_completed?: boolean
 }
 
 export type OnboardingTourMetadata =

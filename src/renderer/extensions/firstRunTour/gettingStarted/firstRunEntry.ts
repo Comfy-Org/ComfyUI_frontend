@@ -27,36 +27,50 @@ export const useFirstRunEntry = createSharedComposable(() => {
   const isDesktopWidth =
     useBreakpoints(breakpointsTailwind).greaterOrEqual('md')
 
-  function isFirstRunCandidate(): boolean {
-    if (!useFeatureFlags().flags.onboardingTourEnabled) return false
-    if (!isCloud) return false
-    if (!isDesktopWidth.value) return false
-    if (!useSubscription().isSubscriptionEnabled()) return false
-    return useNewUserService().isNewUser() === true
+  /**
+   * `defer` is ineligibility a later boot can lift — the tour flag, the
+   * viewport, remote config that has not arrived. `Comfy.TutorialCompleted` is
+   * write-once and server-side, so only `complete` may set it.
+   */
+  type FirstRunDecision = 'getting-started' | 'defer' | 'complete'
+
+  function decideFirstRun(): FirstRunDecision {
+    if (!isCloud) return 'complete'
+
+    const isNewUser = useNewUserService().isNewUser()
+    if (isNewUser === false) return 'complete'
+
+    if (!useFeatureFlags().flags.onboardingTourEnabled) return 'defer'
+    if (!isDesktopWidth.value) return 'defer'
+    if (!useSubscription().isSubscriptionEnabled()) return 'defer'
+    if (isNewUser === null) return 'defer'
+
+    return 'getting-started'
   }
 
-  /**
-   * Candidacy is read once, here: a later breakpoint, flag or subscription
-   * change must not unmount the screen out from under the user.
-   * Only a boot that opened a blank canvas can be onboarded over. `isNewUser()`
-   * cannot carry that alone — it reads `Comfy.TutorialCompleted`, which is
-   * exactly what a user predating the setting is missing.
-   */
+  function isFirstRunCandidate(): boolean {
+    return decideFirstRun() === 'getting-started'
+  }
+
+  // `url-intent` defers to handleUrlWorkflow: we don't know yet whether
+  // anything arrived to tour, and TutorialCompleted is write-once.
   async function handleStartupOutcome(outcome: StartupOutcome) {
     if (outcome === 'restored') return
     if (settingStore.get('Comfy.TutorialCompleted')) return
 
+    const decision = decideFirstRun()
+
     if (outcome === 'url-intent') {
-      await markTutorialCompleted()
+      if (decision === 'complete') await markTutorialCompleted()
       return
     }
 
-    if (isFirstRunCandidate()) {
+    if (decision === 'getting-started') {
       gettingStartedVisible.value = true
       return
     }
 
-    await markTutorialCompleted()
+    if (decision === 'complete') await markTutorialCompleted()
     await useCommandStore().execute('Comfy.BrowseTemplates')
   }
 
@@ -64,6 +78,11 @@ export const useFirstRunEntry = createSharedComposable(() => {
    * A share or template link loads its workflow instead of the Getting Started
    * screen, so the tour is offered over whatever arrived. The engine declines
    * to repeat a tour the user has already seen.
+   *
+   * A tour that actually started is what `Comfy.TutorialCompleted` pays for, so
+   * only that writes it. A link that loaded nothing, or a start the engine
+   * refused, leaves the account eligible: the next boot has no URL to honour and
+   * offers Getting Started, which is the onboarding this one failed to deliver.
    */
   async function handleUrlWorkflow(
     outcome: StartupOutcome | undefined,
@@ -74,9 +93,10 @@ export const useFirstRunEntry = createSharedComposable(() => {
     const shareLoaded =
       sharedStatus === 'loaded' || sharedStatus === 'loaded-without-assets'
     if (templateId === undefined && !shareLoaded) return
-    await useFirstRunTourController().beginTour(
+    const started = await useFirstRunTourController().beginTour(
       shareLoaded ? undefined : templateId
     )
+    if (started) await markTutorialCompleted()
   }
 
   // Applied locally before the request, so a failed write is next launch's problem.

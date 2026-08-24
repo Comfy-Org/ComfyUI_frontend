@@ -33,8 +33,6 @@ function fakeNode(className: string, hooks: NodeHooks = {}): LGraphNode {
 
 describe('reportNamedValuesShadowDiff', () => {
   beforeEach(() => {
-    trackNamedValuesShadowDiffMismatch.mockClear()
-    trackNamedValuesShadowDiffSummary.mockClear()
     getCnrIdFromNode.mockReset().mockReturnValue(undefined)
   })
 
@@ -97,8 +95,6 @@ describe('reportNamedValuesShadowDiff', () => {
 
 describe('named values shadow diff load aggregation', () => {
   beforeEach(() => {
-    trackNamedValuesShadowDiffMismatch.mockClear()
-    trackNamedValuesShadowDiffSummary.mockClear()
     getCnrIdFromNode.mockReset().mockReturnValue(undefined)
   })
 

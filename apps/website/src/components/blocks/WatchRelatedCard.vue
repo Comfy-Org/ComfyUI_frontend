@@ -39,7 +39,7 @@ const { item, class: className } = defineProps<{
       class="size-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
     />
     <PlayOverlay size="sm" class="text-white" />
-    <span class="text-primary-warm-white absolute bottom-2 left-3 text-xs">
+    <span class="absolute bottom-2 left-3 text-xs text-primary-warm-white">
       {{ item.label }}
     </span>
   </a>

@@ -113,6 +113,13 @@ export class ComfyMouse implements Omit<Mouse, 'move'> {
     )
   }
 
+  async hold(...args: Parameters<Mouse['down']>) {
+    await this.mouse.down(...args)
+    const release = new AsyncDisposableStack()
+    release.defer(() => this.mouse.up(...args))
+    return release
+  }
+
   //#region Pass-through
   async click(...args: Parameters<Mouse['click']>) {
     return await this.mouse.click(...args)

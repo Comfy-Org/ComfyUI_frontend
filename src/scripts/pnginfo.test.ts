@@ -1,8 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
@@ -251,10 +249,6 @@ describe('importA1111', () => {
   const parametersWithoutNegativePrompt =
     'positive\nSteps: 20, Sampler: Euler, CFG scale: 7, Seed: 1, Size: 512x512, Model: model.safetensors'
 
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it.each([
     ['has no steps', 'positive'],
     ['has no options', 'positive\nNegative prompt: negative\nSteps:']
@@ -294,8 +288,7 @@ describe('importA1111', () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {})
     vi.spyOn(graph, 'arrange').mockImplementation(() => {})
     vi.spyOn(LiteGraph, 'createNode').mockImplementation((type) => {
-      const node = new LGraphNode(type)
-      node.type = type
+      const node = new LGraphNode(type, type)
       if (type === 'CLIPTextEncode') {
         node.addWidget('text', 'text', '', () => {})
       }

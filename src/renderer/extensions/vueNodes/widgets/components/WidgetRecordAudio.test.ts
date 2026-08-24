@@ -134,21 +134,12 @@ describe('WidgetRecordAudio', () => {
     recorder.isRecording.value = false
     recorder.recordedURL.value = null
     recorder.mediaRecorder.value = null
-    recorder.startRecording.mockClear()
-    recorder.stopRecording.mockClear()
-    recorder.dispose.mockClear()
 
     playback.isPlaying.value = false
     playback.audioElementKey.value = 0
     playback.playbackTimerInterval.value = null
-    playback.play.mockClear()
-    playback.stop.mockClear()
 
     waveform.waveformBars.value = []
-
-    useAudioRecorderMock.mockClear()
-    useAudioPlaybackMock.mockClear()
-    useAudioWaveformMock.mockClear()
 
     appMock.app.canvas.graph.getNodeById.mockReset().mockReturnValue(null)
     isDOMWidgetMock.mockReset().mockReturnValue(false)

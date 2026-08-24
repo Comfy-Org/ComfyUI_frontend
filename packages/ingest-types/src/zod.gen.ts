@@ -1394,6 +1394,7 @@ export const zJobDetailResponse = z.object({
   user_id: z.string().optional(),
   workflow: z.record(z.unknown()).optional(),
   workflow_id: z.string().optional(),
+  workflow_version_id: z.string().optional(),
   workspace_id: z.string().optional()
 })
 
@@ -1489,6 +1490,7 @@ export const zHubWorkflowTemplateEntry = z.object({
       outputs: z.array(z.record(z.unknown())).optional()
     })
     .optional(),
+  isApp: z.boolean(),
   isEssential: z.boolean().optional(),
   logos: z.array(z.record(z.unknown())).optional(),
   mediaSubtype: z.string().optional(),
@@ -1552,6 +1554,7 @@ export const zHubWorkflowTemplateEntry = z.object({
 export const zHubWorkflowSummary = z.object({
   custom_nodes: z.array(zLabelRef).optional(),
   description: z.string().optional(),
+  is_app: z.boolean(),
   metadata: z.record(z.unknown()).optional(),
   models: z.array(zLabelRef).optional(),
   name: z.string(),
@@ -1574,6 +1577,7 @@ export const zHubWorkflowDetail = z.object({
   assets: z.array(zAssetInfo),
   custom_nodes: z.array(zLabelRef).optional(),
   description: z.string().optional(),
+  is_app: z.boolean(),
   metadata: z.record(z.unknown()).optional(),
   models: z.array(zLabelRef).optional(),
   name: z.string(),

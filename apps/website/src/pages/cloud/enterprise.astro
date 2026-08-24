@@ -9,6 +9,7 @@ import DataOwnershipSection from '../../components/product/enterprise/DataOwners
 import BYOKeySection from '../../components/product/enterprise/BYOKeySection.vue'
 import OrchestrationSection from '../../components/product/enterprise/OrchestrationSection.vue'
 import ProductCardsSection from '../../components/common/ProductCardsSection.vue'
+import PricingFaq from '../../components/pricing/PricingFaq.astro'
 ---
 
 <BaseLayout title="Comfy Enterprise">
@@ -20,5 +21,6 @@ import ProductCardsSection from '../../components/common/ProductCardsSection.vue
   <DataOwnershipSection client:visible />
   <BYOKeySection />
   <OrchestrationSection client:visible />
+  <PricingFaq category="enterprise" />
   <ProductCardsSection exclude-product="enterprise" label-key="products.labelProducts" />
 </BaseLayout>

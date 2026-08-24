@@ -1,5 +1,4 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { createPinia, setActivePinia } from 'pinia'
 import { nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -213,10 +212,8 @@ function createErrorGroups() {
 
 describe('useErrorGroups', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     mockIsCloud.value = false
     vi.mocked(isLGraphNode).mockReturnValue(false)
-    vi.mocked(getNodeByExecutionId).mockReset()
   })
 
   describe('missingPackGroups', () => {
@@ -1274,7 +1271,9 @@ describe('useErrorGroups', () => {
       // A container selection matches interior errors by execution-id prefix,
       // even when the interior node does not resolve at the current level.
       const containerNode = fromAny<SubgraphNode, unknown>(
-        Object.assign(Object.create(SubgraphNode.prototype), { id: '2' })
+        Object.assign(Object.create(SubgraphNode.prototype), {
+          _state: { id: '2' }
+        })
       )
       vi.mocked(getNodeByExecutionId).mockReturnValue(null)
       vi.mocked(getExecutionIdByNode).mockReturnValue(

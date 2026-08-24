@@ -44,6 +44,13 @@ test.describe('Flux 3 page @smoke', () => {
     await expect(modelsCrumb).toHaveAttribute('href', MODELS_ROUTE)
   })
 
+  test('footer links back to this page', async ({ page }) => {
+    const footerLink = page
+      .locator('footer')
+      .getByRole('link', { name: t('footer.flux3', 'en') })
+    await expect(footerLink).toHaveAttribute('href', getRoutes('en').flux3)
+  })
+
   test('renders pricing and run options', async ({ page }) => {
     const runOptions = page.getByRole('heading', {
       level: 2,

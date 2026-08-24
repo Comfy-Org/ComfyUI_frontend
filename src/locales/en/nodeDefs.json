@@ -5832,6 +5832,9 @@
       "model_number_of_images": {
         "name": "number_of_images"
       },
+      "model_quality": {
+        "name": "quality"
+      },
       "model_resolution": {
         "name": "resolution"
       }
@@ -5866,6 +5869,10 @@
       },
       "resolution": {
         "name": "resolution"
+      },
+      "quality": {
+        "name": "quality",
+        "tooltip": "Quality level, supported only by the grok-imagine-image-2.0 model."
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -9674,9 +9681,124 @@
       }
     }
   },
+  "LtxApi25AudioToVideo": {
+    "display_name": "LTX 2.5 Audio To Video",
+    "description": "Generate a video driven by an audio track, with an optional first frame image.",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Audio track driving the video. Its length (2-20 seconds) sets the video duration."
+      },
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to determine if node should re-run; actual results are nondeterministic regardless of seed."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Optional first frame to be used for the video."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApi25ImageToVideo": {
+    "display_name": "LTX 2.5 Image To Video",
+    "description": "Professional-quality videos with customizable duration and resolution based on start image.",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "First frame to be used for the video."
+      },
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to determine if node should re-run; actual results are nondeterministic regardless of seed."
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "Last frame to be used for the video."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApi25TextToVideo": {
+    "display_name": "LTX 2.5 Text To Video",
+    "description": "Professional-quality videos with customizable duration and resolution.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to determine if node should re-run; actual results are nondeterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LTXAVTextEncoderLoader": {
     "display_name": "Load LTXV Audio Text Encoder",
-    "description": "Recipes:\nltxav: gemma 3 12B",
+    "description": "Recipes:\nltxav: gemma 3 12B or matching gemma 4 model",
     "inputs": {
       "text_encoder": {
         "name": "text_encoder"
@@ -9982,6 +10104,67 @@
       }
     }
   },
+  "LTXVDualCFGGuider": {
+    "display_name": "LTXV Dual CFG Guider",
+    "description": "Separate CFG scales for the video and audio modalities of a packed LTXV-AV latent.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "video_cfg": {
+        "name": "video_cfg"
+      },
+      "audio_cfg": {
+        "name": "audio_cfg"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVDurationPredictor": {
+    "display_name": "LTXV Duration Predictor",
+    "description": "Predicts the natural shot duration for a prompt using the LTX 2.4 duration head (loaded with ModelPatchLoader), and snaps it to the VAE's 8k+1 frame grid.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "duration_head": {
+        "name": "duration_head",
+        "tooltip": "LTX 2.4 duration head loaded with ModelPatchLoader."
+      },
+      "frame_rate": {
+        "name": "frame_rate"
+      },
+      "min_seconds": {
+        "name": "min_seconds"
+      },
+      "max_seconds": {
+        "name": "max_seconds"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "num_frames",
+        "tooltip": null
+      },
+      "1": {
+        "name": "seconds",
+        "tooltip": "Raw (unclamped) predicted duration."
+      }
+    }
+  },
   "LTXVEmptyLatentAudio": {
     "display_name": "LTXV Empty Latent Audio",
     "inputs": {
@@ -10101,6 +10284,29 @@
       }
     }
   },
+  "LTXVModalityGuidance": {
+    "display_name": "LTXV Modality Guidance (A/V coupling)",
+    "description": "Cross-modal (audio-video) guidance for LTXV-AV. Runs one extra forward pass per step with the a2v/v2a cross-attention severed, then pushes the result toward the coupled prediction - strengthening audio-visual sync (e.g. lip-sync). Reference default modality_scale is 3.0. Stacks with the dual-CFG guider and STG. Set to 1.0 to disable (no extra pass).",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "modality_scale": {
+        "name": "modality_scale"
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LTXVPreprocess": {
     "display_name": "LTXV Preprocess",
     "inputs": {
@@ -10212,6 +10418,33 @@
       },
       "1": {
         "name": "audio_latent",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVSpatioTemporalGuidance": {
+    "display_name": "LTXV Spatio-Temporal Guidance (STG)",
+    "description": "Runs one extra pass per step with the self-attention of the selected blocks degraded to a value-passthrough, then guides away from it - improving spatial detail and motion coherence.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "scale": {
+        "name": "scale"
+      },
+      "blocks": {
+        "name": "blocks",
+        "tooltip": "Comma-separated transformer block indices to perturb."
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -11859,6 +12092,17 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "ModelAttentionBackend": {
+    "display_name": "ModelAttentionBackend",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "attention": {
+        "name": "attention"
       }
     }
   },

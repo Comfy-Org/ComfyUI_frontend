@@ -3,7 +3,7 @@ import type { Locale } from '../../i18n/translations'
 import type { PlanFeatureGroup } from './PricingPlanFeatureList.vue'
 import { computed, ref } from 'vue'
 
-import { Component as ComponentIcon } from '@lucide/vue'
+import { Coins as CreditsIcon } from '@lucide/vue'
 
 import { subscribeUrl } from '../../data/pricingPlans'
 import {
@@ -84,7 +84,7 @@ const ctaHref = computed(() =>
           class="flex flex-col items-start gap-2 lg:flex-row lg:items-center lg:gap-4"
         >
           <PricingPlanLabel :label="t('pricing.plan.team.label', locale)" />
-          <p class="text-primary-warm-gray text-sm">
+          <p class="text-sm text-primary-warm-gray">
             {{ t('pricing.team.description', locale) }}
           </p>
         </div>
@@ -115,13 +115,14 @@ const ctaHref = computed(() =>
             :thumb-value-text="`${selectedTeamTier.credits.toLocaleString('en-US')} ${t('pricing.creditsLabel', locale)}, ${fmtPrice(selectedTeamPrice)} ${t('pricing.plan.period', locale)}`"
           >
             <template #tick="{ index, active }">
-              <ComponentIcon
+              <CreditsIcon
                 class="hidden size-4 shrink-0 lg:block"
                 :class="
                   active
                     ? 'text-primary-comfy-orange'
                     : 'text-primary-warm-gray'
                 "
+                aria-hidden="true"
               />
               <span
                 class="text-sm max-sm:text-[10px]"

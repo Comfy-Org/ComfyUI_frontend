@@ -1,0 +1,91 @@
+# Bump the ecosystem matrix's corpus pins.
+#
+# Manual only, and that is the design. scripts/registry-census/corpus.pins.json
+# names the exact commit of every registry pack the matrix measures, so the
+# gate is a constant: a pack author pushing a bug cannot red an unrelated PR.
+# The cost of that is that pack breakage is invisible until someone bumps the
+# pins - so this workflow opens the PR where a whole month of ecosystem churn
+# lands at once, reviewed, by someone who expected it.
+#
+# A red on THAT pr means the ecosystem moved. A red anywhere else means the
+# diff did. Keeping those two apart is the entire point.
+name: 'Update corpus pins'
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  update-pins:
+    if: github.repository == 'Comfy-Org/ComfyUI_frontend'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Report the pins being replaced
+        run: python3 scripts/registry-census/pins.py
+
+      - name: Refresh registry snapshot
+        run: python3 scripts/registry-census/refresh_registry.py
+
+      # git ls-remote, not the REST API: ~5,100 packs would exhaust the
+      # authenticated 5,000/hour REST budget in a single run.
+      - name: Resolve every pack to a commit
+        run: python3 scripts/registry-census/fetch_corpus.py --write-pins --workers 32
+
+      - name: Summarize the bump
+        id: summary
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json, subprocess
+          path = 'scripts/registry-census/corpus.pins.json'
+          new = json.load(open(path))['packs']
+          old = json.loads(
+              subprocess.run(['git', 'show', f'HEAD:{path}'],
+                             capture_output=True, text=True).stdout or '{"packs":{}}'
+          )['packs']
+          moved = sorted(k for k in new.keys() & old.keys() if new[k] != old[k])
+          added = sorted(new.keys() - old.keys())
+          dropped = sorted(old.keys() - new.keys())
+          print(f'## Corpus pin bump\n')
+          print(f'- {len(new)} packs pinned')
+          print(f'- {len(moved)} moved, {len(added)} added, {len(dropped)} dropped\n')
+          if moved:
+              print('<details><summary>moved</summary>\n')
+              print('\n'.join(f'- `{k}` {old[k][:8]} -> {new[k][:8]}' for k in moved))
+              print('\n</details>')
+          PY
+
+      - name: Open the bump PR
+        uses: peter-evans/create-pull-request@22a9089034f40e5a961c8808d113e2c98fb63676 # v7.0.11
+        with:
+          branch: chore/corpus-pins
+          commit-message: 'chore: bump ecosystem matrix corpus pins'
+          title: 'chore: bump ecosystem matrix corpus pins'
+          body: |
+            Regenerates `scripts/registry-census/corpus.pins.json`, which names the
+            exact commit of every registry pack the ecosystem matrix measures.
+
+            **A red `CI: Ecosystem Matrix` on this PR means the ecosystem moved, not
+            that this diff broke something.** That is what this PR is for. Read the
+            verdict's breached criterion and the per-pack signature drift, decide
+            whether it is real breakage worth an upstream issue or acceptable churn,
+            and merge either way — leaving the pins stale is strictly worse, because
+            it makes the gate measure an ecosystem that no longer exists.
+
+            See the step summary on the triggering run for the moved/added/dropped
+            breakdown.
+          add-paths: scripts/registry-census/corpus.pins.json

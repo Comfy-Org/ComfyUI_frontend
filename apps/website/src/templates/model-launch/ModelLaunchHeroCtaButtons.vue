@@ -12,7 +12,7 @@ const {
   secondaryCta,
   locale = 'en'
 } = defineProps<{
-  primaryCta: ModelLaunchHero['primaryCta']
+  primaryCta?: ModelLaunchHero['primaryCta']
   primaryVariant: BrandButtonVariants['variant']
   secondaryCta?: ModelLaunchHero['secondaryCta']
   locale?: Locale
@@ -20,8 +20,12 @@ const {
 </script>
 
 <template>
-  <div class="mt-8 flex w-full flex-col gap-4 sm:w-auto sm:flex-row">
+  <div
+    v-if="primaryCta || secondaryCta"
+    class="mt-8 flex w-full flex-col gap-4 sm:w-auto sm:flex-row"
+  >
     <BrandButton
+      v-if="primaryCta"
       :href="primaryCta.href"
       :target="primaryCta.target"
       :variant="primaryVariant"

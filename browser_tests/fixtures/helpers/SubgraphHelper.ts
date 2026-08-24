@@ -373,6 +373,28 @@ export class SubgraphHelper {
       .then((m) => m.clickMenuItemExact(`Un-Promote Widget: ${widgetName}`))
   }
 
+  /**
+   * Converts the current canvas selection via the selection toolbox and returns
+   * the id of the subgraph node it produced.
+   */
+  async convertSelectionToSubgraph(): Promise<string> {
+    const findSubgraphNodeIds = async () =>
+      (await this.comfyPage.nodeOps.getNodeRefsByTitle('New Subgraph')).map(
+        (node) => String(node.id)
+      )
+    const existingIds = new Set(await findSubgraphNodeIds())
+
+    await this.page
+      .getByTestId(TestIds.selectionToolbox.convertSubgraph)
+      .click()
+
+    const findAddedIds = async () =>
+      (await findSubgraphNodeIds()).filter((id) => !existingIds.has(id))
+    await expect.poll(findAddedIds).toHaveLength(1)
+    const [addedId] = await findAddedIds()
+    return addedId
+  }
+
   async enterSubgraphWithFallback(nodeId: string): Promise<void> {
     const targetNodeId = parseNodeId(nodeId)
     if (!targetNodeId) {
@@ -526,6 +548,49 @@ export class SubgraphHelper {
     })
     if (!id) throw new Error('No subgraph node found in current graph')
     return id
+  }
+
+  async getBoundaryLinkSnapshot() {
+    return this.page.evaluate(() => {
+      const graph = window.app!.graph!
+      const host = graph.nodes.find((node) => node.isSubgraphNode())
+      if (!host) {
+        return {
+          rootLinks: ['no subgraph node'],
+          incompatibleHostInputLinks: ['no subgraph node'],
+          incompatibleHostOutputLinks: ['no subgraph node']
+        }
+      }
+
+      const hostId = host.id
+      function label(id: string | number) {
+        return id === hostId ? 'HOST' : String(id)
+      }
+
+      const links = [...graph.links.values()]
+      return {
+        rootLinks: links
+          .map(
+            (link) =>
+              `${label(link.origin_id)}:${link.origin_slot}->${label(link.target_id)}:${link.target_slot}`
+          )
+          .sort(),
+        incompatibleHostInputLinks: links
+          .filter((link) => link.target_id === host.id)
+          .filter((link) => host.inputs[link.target_slot]?.type !== link.type)
+          .map(
+            (link) =>
+              `${link.type} link landed on slot ${link.target_slot} typed ${host.inputs[link.target_slot]?.type}`
+          ),
+        incompatibleHostOutputLinks: links
+          .filter((link) => link.origin_id === host.id)
+          .filter((link) => host.outputs[link.origin_slot]?.type !== link.type)
+          .map(
+            (link) =>
+              `${link.type} link left slot ${link.origin_slot} typed ${host.outputs[link.origin_slot]?.type}`
+          )
+      }
+    })
   }
 
   async serializeAndReload(): Promise<void> {

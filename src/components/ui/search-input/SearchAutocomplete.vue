@@ -70,7 +70,7 @@
         v-if="suggestions.length > 0"
         position="popper"
         :side-offset="4"
-        :style="contentStyle"
+        :style="[contentStyle, liftedContentStyle]"
         :class="
           cn(
             'z-3000 max-h-60 w-(--reka-combobox-trigger-width) overflow-y-auto',
@@ -115,6 +115,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 import type { SearchInputVariants } from './searchInput.variants'
 import {
   searchInputSizeConfig,
@@ -160,6 +161,7 @@ const modelValue = defineModel<string>({ required: true })
 const inputRef = ref<InstanceType<typeof ComboboxInput> | null>(null)
 const isOpen = ref(false)
 const isComposing = ref(false)
+const liftedContentStyle = useModalLiftedZIndex(isOpen)
 
 function focus() {
   inputRef.value?.$el?.focus()

@@ -157,6 +157,56 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
     )
   })
 
+  test('large graph legacy node drag', async ({ comfyPage }) => {
+    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
+    await comfyPage.workflow.loadWorkflow('large-graph-workflow')
+
+    // Legacy drags write to layoutStore every frame because registration is
+    // renderer-independent.
+    const nodePos = await comfyPage.page.evaluate(() => {
+      const app = window.app
+      if (!app) throw new Error('window.app is not available')
+
+      const { canvas } = app
+      const node = app.graph.nodes[0]
+      if (!node) throw new Error('Graph has no nodes')
+
+      canvas.ds.scale = 1
+      canvas.centerOnNode(node)
+      const [x, y] = app.canvasPosToClientPos(node.pos)
+      return { id: node.id, x, y, graphX: node.pos[0] }
+    })
+    await comfyPage.nextFrame()
+
+    await comfyPage.perf.startMeasuring()
+
+    await comfyPage.page.mouse.move(nodePos.x + 40, nodePos.y + 10)
+    await comfyPage.page.mouse.down()
+    for (let i = 0; i < 60; i++) {
+      await comfyPage.page.mouse.move(
+        nodePos.x + 40 + i * 4,
+        nodePos.y + 10 + i * 2
+      )
+      await comfyPage.nextFrame()
+    }
+    await comfyPage.page.mouse.up()
+
+    const m = await comfyPage.perf.stopMeasuring('legacy-node-drag')
+    recordMeasurement(m)
+
+    // Verify the measured interaction was a node drag, not a canvas pan.
+    const movedX = await comfyPage.page.evaluate((id) => {
+      const node = window.app?.graph.getNodeById(id)
+      if (!node) throw new Error(`Node ${id} not found`)
+      return node.pos[0]
+    }, nodePos.id)
+    expect(movedX).not.toBeCloseTo(nodePos.graphX, 0)
+
+    console.log(
+      `Legacy node drag: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, ${m.taskDurationMs.toFixed(1)}ms task`
+    )
+  })
+
   test('large graph zoom interaction', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('large-graph-workflow')
 

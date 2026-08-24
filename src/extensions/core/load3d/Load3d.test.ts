@@ -136,7 +136,9 @@ function makeInstance() {
     eventManager,
     adapterRef: { current: null },
     forceRender: vi.fn(),
-    handleResize: vi.fn()
+    handleResize: vi.fn(),
+    preRenderCallbacks: [],
+    postRenderCallbacks: []
   })
 
   return {
@@ -1145,14 +1147,6 @@ describe('Load3d', () => {
   })
 
   describe('exportModel', () => {
-    beforeEach(() => {
-      cloneSkinnedMock.mockReset()
-      exportGLBMock.mockReset()
-      exportOBJMock.mockReset()
-      exportSTLMock.mockReset()
-      exportFBXMock.mockReset()
-    })
-
     function setupForExport(overrides: {
       currentModel: THREE.Object3D | null
       originalModel?: THREE.Object3D | null

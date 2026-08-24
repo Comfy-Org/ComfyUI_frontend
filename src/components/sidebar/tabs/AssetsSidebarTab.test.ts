@@ -4,24 +4,19 @@ import { createPinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-
 import AssetsSidebarTab from './AssetsSidebarTab.vue'
 
-const folderAsset = vi.hoisted(
-  () =>
-    ({
-      id: 'multi-output',
-      name: 'multi-output.png',
-      tags: ['output'],
-      user_metadata: {
-        jobId: 'multi-output-job',
-        nodeId: '1',
-        subfolder: '',
-        outputCount: 2
-      }
-    }) satisfies AssetItem
-)
+const folderAsset = vi.hoisted(() => ({
+  id: 'multi-output',
+  name: 'multi-output.png',
+  tags: ['output'],
+  user_metadata: {
+    jobId: 'multi-output-job',
+    nodeId: '1',
+    subfolder: '',
+    outputCount: 2
+  }
+}))
 
 vi.mock('@/platform/assets/composables/media/useAssetsApi', async () => {
   const { ref } = await import('vue')

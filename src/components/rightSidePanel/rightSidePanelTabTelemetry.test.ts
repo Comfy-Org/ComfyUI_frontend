@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 const { mockTrackUiButtonClicked } = vi.hoisted(() => ({
   mockTrackUiButtonClicked: vi.fn()
@@ -13,10 +13,6 @@ vi.mock('@/platform/telemetry', () => ({
 import { trackRightSidePanelTabOpened } from './rightSidePanelTabTelemetry'
 
 describe('trackRightSidePanelTabOpened', () => {
-  beforeEach(() => {
-    mockTrackUiButtonClicked.mockClear()
-  })
-
   it('tracks opening the settings tab', () => {
     trackRightSidePanelTabOpened('settings')
 

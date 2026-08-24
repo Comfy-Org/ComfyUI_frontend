@@ -62,9 +62,6 @@ function toUint8Array(data: BufferSource): Uint8Array {
 
 describe('ImpactTelemetryProvider', () => {
   beforeEach(() => {
-    mockCaptureCheckoutAttributionFromSearch.mockReset()
-    mockUseApiKeyAuthStore.mockReset()
-    mockUseAuthStore.mockReset()
     mockApiKeyAuthStore.isAuthenticated = false
     mockApiKeyAuthStore.currentUser = null
     mockAuthStore.currentUser = null

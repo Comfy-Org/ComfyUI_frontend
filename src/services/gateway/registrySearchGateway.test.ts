@@ -20,7 +20,6 @@ describe('useRegistrySearchGateway', () => {
   afterEach(() => {
     consoleWarnSpy.mockRestore()
     consoleInfoSpy.mockRestore()
-    vi.useRealTimers()
   })
 
   describe('Provider initialization', () => {

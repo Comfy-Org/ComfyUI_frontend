@@ -103,12 +103,10 @@ describe('useCurveEditor', () => {
   beforeEach(() => {
     ensureMatrixTransformPolyfill()
     harness = undefined
-    mockCreateInterpolator.mockClear()
   })
 
   afterEach(() => {
     harness?.unmount()
-    document.body.innerHTML = ''
   })
 
   describe('curvePath', () => {

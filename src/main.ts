@@ -20,6 +20,7 @@ import {
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
 import { syncHostUserIdWithFirebaseAuth } from '@/platform/telemetry/hostUserIdSync'
+import { flushErrorReports } from '@/platform/telemetry/reportError'
 import '@/lib/litegraph/public/css/litegraph.css'
 import router from '@/router'
 import { isDesktop, isNightly } from '@/platform/distribution/types'
@@ -67,10 +68,16 @@ const sentryDsn = isCloud
   ? configValueOrDefault(remoteConfig.value, 'sentry_dsn', __SENTRY_DSN__)
   : __SENTRY_DSN__
 
+// __SENTRY_ENABLED__ is baked from the *build machine's* SENTRY_DSN, but cloud
+// resolves its DSN at runtime from remote config. Trusting the build-time flag
+// alone leaves every capture in the app silently inert whenever a cloud build
+// runs without the env var, however valid the runtime DSN turns out to be.
+const sentryEnabled = !import.meta.env.DEV && !!sentryDsn
+
 Sentry.init({
   app,
   dsn: sentryDsn,
-  enabled: __SENTRY_ENABLED__,
+  enabled: sentryEnabled,
   release: __COMFYUI_FRONTEND_VERSION__,
   normalizeDepth: 8,
   tracesSampleRate: isCloud ? 1.0 : 0,
@@ -92,6 +99,9 @@ Sentry.init({
         defaultIntegrations: false
       })
 })
+
+flushErrorReports()
+
 // Assertion reporter receives pre-formatted messages (with "[Assertion failed]: " prefix).
 // Strings here are intentionally not i18n'd: they're developer/nightly diagnostics,
 // not user-facing in stable releases.

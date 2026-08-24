@@ -1,5 +1,5 @@
 import { render } from '@testing-library/vue'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import DesktopCloudNotificationController from './DesktopCloudNotificationController.vue'
@@ -55,8 +55,6 @@ function createDeferred() {
 
 describe('DesktopCloudNotificationController', () => {
   beforeEach(() => {
-    vi.useFakeTimers()
-
     settingState.shown = false
     electron.getPlatform.mockReturnValue('darwin')
     settingStore.load.mockResolvedValue(undefined)
@@ -66,10 +64,6 @@ describe('DesktopCloudNotificationController', () => {
       }
     )
     dialogService.showCloudNotification.mockResolvedValue(undefined)
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
   })
 
   it('waits for settings to load before deciding whether to show the notification', async () => {

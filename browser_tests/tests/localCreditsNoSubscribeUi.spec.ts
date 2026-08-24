@@ -47,7 +47,7 @@ test.describe('Local credits surfaces hide subscribe UI (non-cloud)', () => {
     //    button working, not just render a dead replacement for it.
     await page.getByTestId(TestIds.user.currentUserButton).click()
     popover = page.getByTestId(TestIds.user.currentUserPopover)
-    await popover.getByTestId('manage-plan-menu-item').click()
+    await popover.getByTestId('plans-credits-menu-item').click()
 
     const settingsDialog = comfyPage.settingDialog
     await settingsDialog.waitForVisible()

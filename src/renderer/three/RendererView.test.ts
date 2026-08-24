@@ -30,7 +30,6 @@ vi.mock('three', async (importOriginal) => {
 const drawImage = vi.fn()
 
 beforeEach(() => {
-  drawImage.mockClear()
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
     drawImage,
     globalCompositeOperation: 'source-over'

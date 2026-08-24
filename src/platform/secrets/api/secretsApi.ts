@@ -3,8 +3,8 @@ import type {
   SecretProvidersResponse
 } from '@comfyorg/ingest-types'
 
-import { api } from '@/scripts/api'
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
+import { api } from '@/scripts/api'
 
 import type {
   SecretCreateRequest,

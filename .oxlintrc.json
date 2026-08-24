@@ -1,7 +1,6 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "ignorePatterns": [
-    ".i18nrc.cjs",
     "**/vite.config.*.timestamp*",
     "**/vitest.config.*.timestamp*",
     "components.d.ts",
@@ -9,6 +8,8 @@
     "dist/*",
     "packages/registry-types/src/comfyRegistryTypes.ts",
     "playwright-report/*",
+    "scripts/registry-census/detection-proof/**",
+    "src/__ecs_matrix__/**",
     "src/extensions/core/*",
     "src/scripts/*",
     "src/types/generatedManagerTypes.ts",
@@ -25,7 +26,9 @@
     "vitest",
     "vue"
   ],
+  "jsPlugins": ["./tools/oxlint-plugins/comfy.ts"],
   "rules": {
+    "comfy/no-duplicate-ingest-type": "error",
     "no-async-promise-executor": "off",
     "no-console": [
       "error",
@@ -126,6 +129,13 @@
       "files": ["**/*.{stories,test,spec}.ts", "**/*.stories.vue"],
       "rules": {
         "no-console": "allow"
+      }
+    },
+    {
+      "files": ["**/*.test.{ts,tsx}"],
+      "rules": {
+        "comfy/no-module-scope-vitest-mocks": "error",
+        "comfy/no-redundant-vitest-cleanup": "error"
       }
     },
     {

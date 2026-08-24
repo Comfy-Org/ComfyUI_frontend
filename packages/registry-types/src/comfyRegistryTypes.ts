@@ -11751,7 +11751,7 @@ export interface components {
              * @description Model to use for generation
              * @enum {string}
              */
-            model: "ltx-2-fast" | "ltx-2-pro" | "ltx-2-5-fast";
+            model: "ltx-2-fast" | "ltx-2-pro" | "ltx-2-5-fast" | "ltx-2-5-pro";
             /** @description Text description of how the image should be animated */
             prompt: string;
             /**
@@ -11781,7 +11781,7 @@ export interface components {
              * @description Model to use for generation
              * @enum {string}
              */
-            model: "ltx-2-fast" | "ltx-2-pro" | "ltx-2-5-fast";
+            model: "ltx-2-fast" | "ltx-2-pro" | "ltx-2-5-fast" | "ltx-2-5-pro";
             /** @description Text prompt describing the desired video content */
             prompt: string;
             /**
@@ -12869,7 +12869,7 @@ export interface components {
                 /** @description A publicly reachable URL, an mm_file://{file_id} reference, or a data URI. */
                 url?: string;
             };
-            /** @description Role of a media item. Options: first_frame, last_frame, reference_image, reference_video, reference_audio. Keyframe roles and reference_* roles are mutually exclusive within a request. */
+            /** @description Role of a media item. Options: first_frame, last_frame, reference_image, reference_video, reference_audio, base_video. Keyframe roles and reference_* roles are mutually exclusive within a request; base_video marks the source video of a video regeneration request. */
             role?: string;
             /** @description The prompt text. Exactly one non-empty text item is required per request. */
             text?: string;
@@ -12885,6 +12885,8 @@ export interface components {
         MinimaxV2TaskResult: {
             /** @description Generated output; present when status is succeeded. */
             content?: {
+                /** @description The enhanced video prompt produced by a succeeded h3_context_ir task. */
+                prompt?: string;
                 /** @description Time-limited URL of the generated MP4. Query again for a refreshed URL. */
                 url?: string;
             };
@@ -12908,9 +12910,13 @@ export interface components {
             task_type?: string;
             /** @description Usage recorded for the task. */
             usage?: {
+                completion_tokens?: number;
+                input_image_count?: number;
                 input_seconds?: number;
                 output_seconds?: number;
+                prompt_tokens?: number;
                 total_seconds?: number;
+                total_tokens?: number;
             };
         };
         /** @description Response from querying a Minimax V2 video generation task status. */

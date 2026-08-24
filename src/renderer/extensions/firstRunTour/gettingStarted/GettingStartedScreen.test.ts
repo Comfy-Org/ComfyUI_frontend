@@ -1,8 +1,6 @@
-import { createTestingPinia } from '@pinia/testing'
 import userEvent from '@testing-library/user-event'
-import { cleanup, render, screen, waitFor } from '@testing-library/vue'
-import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { render, screen, waitFor } from '@testing-library/vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -79,18 +77,12 @@ async function renderScreen() {
 
 describe('GettingStartedScreen', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     mocks.isLoaded = true
     mocks.catalog = CURATED_TEMPLATE_IDS.map((name) => ({ name }))
     mocks.loadTemplate.mockResolvedValue(true)
     mocks.loadCatalog.mockResolvedValue(undefined)
     mocks.beginTour.mockResolvedValue(true)
     mocks.loadingTemplateId.value = null
-  })
-
-  afterEach(() => {
-    cleanup()
-    document.body.replaceChildren()
   })
 
   async function pickFirstTemplate() {

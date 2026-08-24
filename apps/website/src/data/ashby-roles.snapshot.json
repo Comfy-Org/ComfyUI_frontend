@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-08-07T01:02:05.342Z",
+  "fetchedAt": "2026-08-15T00:35:36.606Z",
   "departments": [
     {
       "name": "DESIGN",
@@ -100,13 +100,6 @@
       "key": "sales",
       "roles": [
         {
-          "id": "aee143fb0b181931",
-          "title": "Account Executive: SMB & Mid-Market",
-          "department": "Sales",
-          "location": "San Francisco",
-          "jobUrl": "https://jobs.ashbyhq.com/comfy-org/1047ae85-efa4-4f75-b938-4eb6e3d76db2"
-        },
-        {
           "id": "ac930fdae3b69872",
           "title": "Enterprise Account Executive",
           "department": "Sales",
@@ -122,7 +115,7 @@
         },
         {
           "id": "ecbfd8b4411ce699",
-          "title": "Forward Deployed Creative Technologist",
+          "title": "Forward Deployed Creative",
           "department": "Sales",
           "location": "San Francisco",
           "jobUrl": "https://jobs.ashbyhq.com/comfy-org/b8faf3c0-a21c-4bed-8651-93daa6bfe81c"

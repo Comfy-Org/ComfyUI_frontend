@@ -6,6 +6,8 @@ Date: 2025-08-27
 
 Proposed
 
+Implementation status: Partial
+
 ## Context
 
 ComfyUI's node graph editor currently suffers from fundamental architectural limitations around spatial data management that prevent us from achieving key product goals.
@@ -43,8 +45,12 @@ We will implement a centralized layout management system using CRDT (Conflict-fr
 
 This solution applies proven centralized state management patterns:
 
-- **Centralized Store**: All spatial data (position, size, bounds, transform) managed in a single CRDT-backed store
-- **Command Interface**: All mutations flow through explicit commands rather than direct property access
+- **Centralized Store**: Durable entity geometry (requested position, size,
+  bounds, and z-order) is managed in one CRDT-backed store; transient renderer
+  measurements remain local projections as clarified by later amendments.
+- **Command Interface**: Durable entity-geometry mutations flow through explicit
+  operations rather than direct property access. This is not a claim that every
+  graph-domain mutation is command-driven.
 - **Observer Pattern**: Independent systems (rendering, interaction, layout) subscribe to state changes
 - **Domain Separation**: Layout logic completely separated from rendering and UI concerns
 
@@ -56,7 +62,7 @@ This provides single source of truth, predictable state updates, and natural sys
 
    ```typescript
    // Instead of: node.position = {x, y}
-   layoutStore.moveNode(nodeId, { x, y })
+   useLayoutMutations(source).moveNode(rootGraphId, nodeId, { x, y })
    ```
 
 2. **Command Pattern**: All spatial mutations flow through explicit commands:
@@ -118,7 +124,7 @@ This combination provides both architectural and technical benefits:
 - **Eliminates Polling**: Observer pattern removes O(n) graph traversals, improving performance
 - **System Modularity**: Independent systems can be developed, tested, and optimized separately
 - **Renderer Flexibility**: Easy to add WebGL, DOM accessibility, or hybrid rendering systems
-- **Rich Interactions**: Command pattern enables robust undo/redo, macros, and interaction history
+- **Rich Interactions**: Command pattern enables robust undo/redo and macros
 - **Collaboration-Ready**: CRDT foundation enables real-time multi-user editing
 - **Conflict Resolution**: Eliminates position "snap-back" behavior between competing systems
 - **Better Developer Experience**: Clear separation of concerns and predictable data flow patterns
@@ -137,6 +143,141 @@ This combination provides both architectural and technical benefits:
 - Build compatibility layer for gradual, low-risk migration
 - Implement operation history pruning for long-running sessions
 - Phase implementation to validate approach before full migration
+
+### Amendment (2026-07-30)
+
+The Yjs operation log is deleted. Nothing ever read it: undo/redo is
+snapshot-based through `changeTracker`, and the two query methods
+(`getOperationsSince`, `getOperationsByActor`) had no callers outside tests.
+It was pure write amplification on every mutation, so the "operation history
+storage" memory cost and the history-pruning mitigation above no longer
+apply. What is lost is a timestamped, per-actor record: the interaction
+history promised above is struck, and the Yjs document runs with the default
+`gc: true`, so it is a mergeable state record rather than a replayable one.
+Transmission stays a capability of the document rather than of the store:
+`applyUpdate` / `getStateAsUpdate` were removed as callerless (see
+[Removed CRDT sync seam](../architecture/ecs/ecs-migration-plan.md)) and are a few
+lines against `this.ydoc` to reinstate. `LayoutOperation` is the serializable
+command shape for persistent node, group, and reroute geometry mutations.
+Transient renderer measurements remain outside that command stream. Producers
+supply the operation source; the store stamps its session actor at submission.
+
+Entity geometry registers and unregisters with the entity that owns it
+(`LGraph.add` / `LGraph.remove`) rather than being seeded per graph on renderer
+entry. All three entity types key by `makeScopedLayoutKey(rootGraphId, id)`, so
+a root graph's teardown is one `clearGraph`; graphs sharing that bucket drop
+their entries individually through `detachGraphLayouts`.
+
+### Amendment (2026-08-04): the replicated document holds intent, not measurement
+
+`NodeLayout.size` conflates two values with different natures. **Requested**
+size is what a user, a workflow file, or `computeSize()` asked for. **Rendered**
+size is what the DOM produced, which for height is `max(requested, natural
+content)` because the node container is `min-h-(--node-height)`. A shared
+`ResizeObserver` in `useVueNodeResizeTracking.ts` measures the second and writes
+it into the first through `batchUpdateNodeBounds`.
+
+A measurement is not a command. Replayed on a peer with different fonts, locale,
+browser, or installed custom-node versions it produces a different — and equally
+correct — answer, so it is neither deterministic nor meaningfully undoable. The
+command contract applies to durable requested layout, not transient renderer
+measurement. Persisting the observer's write would violate that boundary.
+
+Three consequences follow, and they are the reason to act rather than to
+document and move on:
+
+- `serialize()` reads `this.size`, which reads through to the store. Saved
+  workflows therefore carry a DOM measurement and are not byte-portable across
+  machines. Saving while a node is collapsed persists the header box as the
+  node's size; on reload `min-h` heals the height and nothing heals the width.
+- Under `min-h` semantics with last-writer-wins, a replicated height converges
+  to the largest natural height across every connected peer's rendering
+  environment. Node geometry becomes a function of who has the document open.
+- Collapse is not stored. It is inferred from a box shrinking to its header,
+  which is why the store holds rendered rather than requested geometry at all.
+  In Vue mode the collapsed width this produces is read by nothing:
+  `_collapsed_width` is assigned only in the branch `vueNodesMode` skips
+  (`LGraphNode.ts`), so every reader falls through to `NODE_COLLAPSED_WIDTH`.
+
+**Decision.** The Yjs document holds requested geometry, written only by named
+commands. Measured geometry belongs to the local, view-scoped tier that
+`slotLayouts` already occupies — a plain map, not replicated, dropped by
+`clearViewGeometry`. Slot geometry is measured from the DOM at higher frequency
+than node height and has never been considered a violation, because it lands in
+a tier that nothing replicates and nothing writes back into the DOM. Recording a
+measurement stays an explicit, named mutation rather than an ambient observer
+write. `LGraphNode.size` exposes requested size; `renderingSize`, `measure()`,
+and `boundingRect` expose rendered geometry. Collapse becomes stored data.
+
+**This does not forbid measurement.** Content-driven height is real: widget
+hydration, media loading, badges, slot changes, and third-party DOM inserted by
+reference through `WidgetDOM.vue`. Making layout strictly one-directional would
+mean modelling in TypeScript what CSS already computes, enforced as a height
+contract across 40+ repositories we do not control, and paid for in clipped
+content in someone else's node. The defect was never that a measurement exists.
+It was that a view-derived value was promoted into replicated entity state by a
+mutation with no name.
+
+### Amendment (2026-08-23): merge-boundary reconciliation constraint
+
+**Open question resolved.** Can duplicate-entity-ID reconciliation live at the
+CRDT merge boundary while the in-memory registries keep a strict no-collision
+invariant? **Yes — and that is the required split of responsibility.**
+
+**What the in-memory registries guarantee.** Each dedicated store
+(`nodeDataStore`, `widgetValueStore`, `linkStore`, `rerouteStore`) enforces
+its own collision contract at registration time:
+
+- `nodeDataStore.registerNode` is identity-keyed (Set membership); re-adding
+  the same `NodeState` object is a no-op, not a collision.
+- `widgetValueStore.registerWidget` is type-discriminated: same `WidgetId` and
+  same `type` returns the existing state; same `WidgetId` with a different
+  `type` overwrites (the widget has changed kind). This is idempotent on
+  re-registration but intentional on type change.
+- `linkStore.registerLink` is first-registration-wins per target input slot: a
+  second topology claiming the same slot is rejected (`undefined` return) rather
+  than clobbering the incumbent.
+- `rerouteStore.registerReroute` is first-registration-wins per chain ID: a
+  duplicate chain ID logs a warning and leaves the live registration untouched.
+
+None of these stores resolve conflicts between two independently-created
+entities that happen to share an ID. They assume incoming IDs are already
+deduplicated. If two concurrent operations created a node with ID `42`, the
+stores have no mechanism to choose between them — they will silently keep
+whichever arrived first and discard the other without surfacing a diagnostic.
+
+**What the CRDT merge boundary must guarantee.** Before any merged entity set
+is committed to the in-memory registries, the Yjs merge layer is responsible
+for ensuring every entity ID is unique. Concretely:
+
+1. **Layout store.** Yjs's own map-merge semantics (last-writer-wins per key)
+   give each `makeScopedLayoutKey(rootGraphId, id)` a single authoritative
+   value after merge. No post-merge deduplication is needed for layout; the
+   Yjs document itself is the deduplication layer.
+
+2. **Non-layout stores.** Nodes, widgets, links, and reroutes are not yet
+   CRDT-replicated. When they are, the applier that materializes semantic ops
+   into store registrations must resolve any concurrent `add_node`/`add_link`
+   collisions using the op-stamp ordering rule (see
+   `decisions/ADR-007-op-based-crdt-v1.md` in the `comfy-multi-player` repo)
+   before calling `registerNode`/`registerLink`. The stores must not be
+   expected to detect or resolve such conflicts.
+
+**Invariant to carry forward.** Any future Yjs-backed entity store must
+satisfy the same guarantee the `layoutStore` already provides: a key in the
+Yjs document maps to exactly one canonical value at any point after a merge.
+The in-memory registration layer is not a conflict-resolution layer; it is a
+commitment layer. Routing a post-merge duplicate ID into a registration call
+is a bug in the applier, not a case the store contract covers.
+
+**Why this matters for the Yjs work.** When the graph entity stores are
+extended to use Yjs backing, the Yjs merge behavior for each entity kind
+(map-merge, array-merge, or op-based) must be chosen so that the
+deduplicated view is what the store receives. Choosing raw Yjs structural
+updates for entity sets (rather than semantic ops with the LWW gate) would
+propagate unresolved duplicates into stores that have no diagnostic path for
+them — the confirmed failure mode documented in the `comfy-multi-player`
+spike (chapter 7, "the length-8 corruption").
 
 ## Notes
 

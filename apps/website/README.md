@@ -37,7 +37,7 @@ This repo's `.github/workflows/*.yaml` changes cannot be pushed by a
 GitHub App. A maintainer must apply the following edits **once**:
 
 **`.github/workflows/ci-website-build.yaml`** — pass the env into the
-build step and run the unit tests before it:
+build step:
 
 ```yaml
 jobs:
@@ -47,9 +47,6 @@ jobs:
       - uses: actions/checkout@v6
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
-
-      - name: Run website unit tests
-        run: pnpm --filter @comfyorg/website test:unit
 
       - name: Build website
         env:

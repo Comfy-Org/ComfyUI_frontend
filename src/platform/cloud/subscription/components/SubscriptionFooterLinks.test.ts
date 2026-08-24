@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
+import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
 import SubscriptionFooterLinks from './SubscriptionFooterLinks.vue'
@@ -11,6 +12,10 @@ const state = vi.hoisted(() => ({
   manageSubscription: vi.fn(),
   handleLearnMoreClick: vi.fn(),
   handleMessageSupport: vi.fn()
+}))
+
+vi.mock('@/config/comfyApi', () => ({
+  getComfyPlatformBaseUrl: () => 'https://platform.comfy.org'
 }))
 
 vi.mock('@/platform/distribution/types', () => ({
@@ -52,15 +57,18 @@ const i18n = createI18n({
         learnMore: 'Learn more',
         partnerNodesPricingTable: 'Partner Nodes pricing',
         messageSupport: 'Message support',
-        invoiceHistory: 'Invoice history'
+        invoiceHistory: 'Invoice history',
+        fullUsageActivity: 'Full usage activity'
       }
     }
   }
 })
 
-function renderComponent(showInvoiceHistory?: boolean) {
+function renderComponent(
+  props: Partial<ComponentProps<typeof SubscriptionFooterLinks>> = {}
+) {
   return render(SubscriptionFooterLinks, {
-    props: showInvoiceHistory === undefined ? {} : { showInvoiceHistory },
+    props,
     global: {
       plugins: [i18n],
       stubs: {
@@ -124,11 +132,35 @@ describe('SubscriptionFooterLinks', () => {
 
   it('hides Invoice history from local users without billing permission', () => {
     state.isCloud = false
-    renderComponent(false)
+    renderComponent({ showInvoiceHistory: false })
 
     expect(
       screen.queryByRole('button', { name: 'Invoice history' })
     ).not.toBeInTheDocument()
     expect(state.manageSubscription).not.toHaveBeenCalled()
+  })
+
+  it('opens the platform usage page', async () => {
+    const user = userEvent.setup()
+    const openSpy = vi.spyOn(window, 'open').mockReturnValue(null)
+    renderComponent()
+
+    await user.click(
+      screen.getByRole('button', { name: 'Full usage activity' })
+    )
+
+    expect(openSpy).toHaveBeenCalledWith(
+      'https://platform.comfy.org/profile/usage',
+      '_blank',
+      'noopener'
+    )
+  })
+
+  it('hides Full usage activity when the caller opts out', () => {
+    renderComponent({ showUsageActivity: false })
+
+    expect(
+      screen.queryByRole('button', { name: 'Full usage activity' })
+    ).not.toBeInTheDocument()
   })
 })

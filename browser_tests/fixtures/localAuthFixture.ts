@@ -5,11 +5,12 @@ import {
   createSubscriptionHelper,
   withFreeTier
 } from '@e2e/fixtures/helpers/SubscriptionHelper'
+import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
 const LOCAL_AUTH_BOOT_TIMEOUT = 45_000
 
 /**
- * Boots the local (non-Cloud) build as a logged-in, legacy Free-tier user.
+ * Boots the local (non-Cloud) build as a logged-in Free-tier workspace owner.
  *
  * Firebase auth must be seeded via `ComfyPage.cloudAuth` *before* the app's
  * first navigation: seeding it against an already-booted page races the
@@ -32,6 +33,7 @@ export const localAuthFixture = base.extend<{ comfyPage: ComfyPage }>({
     })
 
     await comfyPage.cloudAuth.mockAuth()
+    await mockWorkspace(page, workspace('personal', 'owner'), [])
     const subscriptionHelper = createSubscriptionHelper(page, withFreeTier())
     await subscriptionHelper.mock()
 

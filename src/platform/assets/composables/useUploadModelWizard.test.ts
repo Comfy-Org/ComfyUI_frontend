@@ -1,6 +1,5 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createApp, nextTick, ref } from 'vue'
 import type { App } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -87,10 +86,6 @@ describe('useUploadModelWizard', () => {
   ): ReturnType<typeof useUploadModelWizard> {
     return setupWithI18n(() => useUploadModelWizard(...args))
   }
-
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
 
   afterEach(() => {
     vi.mocked(api.getServerFeature).mockReset()
@@ -255,11 +250,11 @@ describe('useUploadModelWizard', () => {
       await import('@/platform/assets/services/assetService')
     vi.mocked(assetService.uploadAssetAsync).mockResolvedValue({
       type: 'sync',
-      asset: {
+      asset: fromPartial({
         id: 'asset-1',
         name: 'model.safetensors',
         tags: ['models', 'checkpoints']
-      }
+      })
     })
 
     const wizard = setupUploadModelWizard(modelTypes, {
@@ -286,11 +281,11 @@ describe('useUploadModelWizard', () => {
       await import('@/platform/assets/services/assetService')
     vi.mocked(assetService.uploadAssetAsync).mockResolvedValue({
       type: 'sync',
-      asset: {
+      asset: fromPartial({
         id: 'asset-1',
         name: 'model.safetensors',
         tags: ['models', 'model_type:checkpoints']
-      }
+      })
     })
     vi.mocked(api.getServerFeature).mockImplementation((name, defaultValue) =>
       name === 'supports_model_type_tags' ? true : defaultValue
@@ -315,14 +310,14 @@ describe('useUploadModelWizard', () => {
       await import('@/platform/assets/services/assetService')
     vi.mocked(assetService.uploadAssetAsync).mockResolvedValue({
       type: 'sync',
-      asset: {
+      asset: fromPartial({
         id: 'asset-canonical',
         name: 'asset-record-display-name.safetensors',
         tags: ['models', 'checkpoints'],
         user_metadata: {
           filename: 'models/checkpoints/canonical-model.safetensors'
         }
-      }
+      })
     })
 
     const wizard = setupUploadModelWizard(modelTypes)
@@ -350,11 +345,11 @@ describe('useUploadModelWizard', () => {
       await import('@/platform/assets/services/assetService')
     vi.mocked(assetService.uploadAssetAsync).mockResolvedValue({
       type: 'sync',
-      asset: {
+      asset: fromPartial({
         id: 'asset-lora',
         name: 'model.safetensors',
         tags: ['models', 'loras']
-      }
+      })
     })
 
     const wizard = setupUploadModelWizard(
@@ -383,11 +378,11 @@ describe('useUploadModelWizard', () => {
       await import('@/platform/assets/services/assetService')
     vi.mocked(assetService.uploadAssetAsync).mockResolvedValue({
       type: 'sync',
-      asset: {
+      asset: fromPartial({
         id: 'asset-1',
         name: 'model.safetensors',
         tags: ['models', 'model_type:checkpoints']
-      }
+      })
     })
 
     const wizard = setupUploadModelWizard(
@@ -410,11 +405,11 @@ describe('useUploadModelWizard', () => {
       await import('@/platform/assets/services/assetService')
     vi.mocked(assetService.uploadAssetAsync).mockResolvedValue({
       type: 'sync',
-      asset: {
+      asset: fromPartial({
         id: 'asset-lora',
         name: 'model.safetensors',
         tags: ['models', 'model_type:loras']
-      }
+      })
     })
 
     const wizard = setupUploadModelWizard(
@@ -442,11 +437,11 @@ describe('useUploadModelWizard', () => {
       await import('@/platform/assets/services/assetService')
     vi.mocked(assetService.uploadAssetAsync).mockResolvedValue({
       type: 'sync',
-      asset: {
+      asset: fromPartial({
         id: 'asset-lora',
         name: 'model.safetensors',
         tags: ['models', 'loras']
-      }
+      })
     })
 
     const wizard = setupUploadModelWizard(

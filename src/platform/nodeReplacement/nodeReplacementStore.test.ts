@@ -209,10 +209,6 @@ describe('useNodeReplacementStore', () => {
       ]
     }
 
-    beforeEach(() => {
-      vi.mocked(fetchNodeReplacements).mockReset()
-    })
-
     it('should fetch and assign replacements on successful load', async () => {
       vi.mocked(fetchNodeReplacements).mockResolvedValue(mockReplacements)
       store = createStore()

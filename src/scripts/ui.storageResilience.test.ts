@@ -19,6 +19,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 // Node >= 25's unconfigured Web Storage stub, installed before the import below
 // so the module-scope `new ComfyApp()` restores against it.
+// oxlint-disable-next-line comfy/no-module-scope-vitest-mocks -- must precede import-time ComfyApp construction
 vi.stubGlobal('localStorage', {} as Storage)
 
 // Imported once here rather than per test behind `vi.resetModules()`, which

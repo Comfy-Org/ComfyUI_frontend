@@ -1,5 +1,10 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
+import type {
+  IBaseWidget,
+  IWidgetOptions
+} from '@/lib/litegraph/src/types/widgets'
+import type { WidgetRenderState } from '@/stores/widgetValueStore'
+import type { WidgetId } from '@/types/widgetId'
 import type { UUID } from '@/utils/uuid'
 
 import { evaluateMathExpression } from '@/lib/litegraph/src/utils/mathParser'
@@ -22,6 +27,35 @@ export function evaluateInput(input: string): number | undefined {
   const newValue = Number(input)
   if (!isFinite(newValue)) return undefined
   return newValue
+}
+
+export function getWidgetIds(
+  widgets: readonly { readonly widgetId?: WidgetId }[]
+): WidgetId[] {
+  return widgets
+    .map((widget) => widget.widgetId)
+    .filter((id): id is WidgetId => id !== undefined)
+}
+
+function isDOMBackedWidget(widget: Readonly<IBaseWidget>): boolean {
+  if ('isDOMWidget' in widget && typeof widget.isDOMWidget === 'boolean') {
+    return widget.isDOMWidget
+  }
+  return (
+    ('element' in widget && !!widget.element) ||
+    ('component' in widget && !!widget.component)
+  )
+}
+
+export function deriveWidgetRenderState(
+  widget: Readonly<IBaseWidget>
+): WidgetRenderState {
+  return {
+    advanced: widget.options?.advanced ?? widget.advanced,
+    hasLayoutSize: typeof widget.computeLayoutSize === 'function',
+    isDOMWidget: isDOMBackedWidget(widget),
+    tooltip: widget.tooltip
+  }
 }
 
 export function resolveNodeRootGraphId(

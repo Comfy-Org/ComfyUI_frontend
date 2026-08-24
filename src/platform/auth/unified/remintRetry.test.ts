@@ -43,8 +43,6 @@ describe('fetchWithUnifiedRemint', () => {
   let mockFetch: ReturnType<typeof vi.fn>
 
   beforeEach(() => {
-    mockRemint.mockReset()
-    mockTrackUnifiedAuthRetry.mockReset()
     flagState.unifiedCloudAuthEnabled = true
     mockFetch = vi.fn()
     vi.stubGlobal('fetch', mockFetch)
@@ -292,8 +290,6 @@ describe('fetchWithUnifiedRemint', () => {
 
 describe('attachUnifiedRemintInterceptor', () => {
   beforeEach(() => {
-    mockRemint.mockReset()
-    mockTrackUnifiedAuthRetry.mockReset()
     flagState.unifiedCloudAuthEnabled = true
   })
 

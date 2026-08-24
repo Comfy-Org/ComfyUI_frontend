@@ -15,6 +15,7 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { promoteRecommendedWidgets } from '@/core/graph/subgraph/promotionUtils'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import { LayoutSource } from '@/renderer/core/layout/types'
 import { app } from '@/scripts/app'
 import type { NodeId } from '@/types/nodeId'
 import { isLGraphGroup, isLGraphNode, isReroute } from '@/utils/litegraphUtil'
@@ -116,6 +117,7 @@ export const useCanvasStore = defineStore('canvas', () => {
   }
 
   const currentGraph = shallowRef<LGraph | null>(null)
+  const rootGraphId = computed(() => currentGraph.value?.rootGraph.id)
   const isInSubgraph = ref(false)
   const isGhostPlacing = ref(false)
 
@@ -176,9 +178,10 @@ export const useCanvasStore = defineStore('canvas', () => {
         'litegraph:ghost-placement',
         (e: CustomEvent<{ active: boolean; nodeId: NodeId }>) => {
           isGhostPlacing.value = e.detail.active
-          if (e.detail.active) {
-            const mutations = useLayoutMutations()
-            mutations.bringNodeToFront(e.detail.nodeId)
+          const graphId = rootGraphId.value
+          if (e.detail.active && graphId) {
+            const mutations = useLayoutMutations(LayoutSource.Canvas)
+            mutations.bringNodeToFront(graphId, e.detail.nodeId)
           }
         }
       )
@@ -202,6 +205,7 @@ export const useCanvasStore = defineStore('canvas', () => {
     initScaleSync,
     cleanupScaleSync,
     currentGraph,
+    rootGraphId,
     isInSubgraph,
     isGhostPlacing
   }

@@ -24,6 +24,8 @@ const events = computed(() =>
   upcomingEvents.map((event) => ({
     ...event,
     calendarEvent: toCalendarEvent(event, locale),
+    ctaText:
+      event.ctaLabel?.[locale] ?? t('events.upcoming.livestream', locale),
     learnMore: eventVideoId(event)
       ? { href: localizeHref(eventPath(event), locale) }
       : event.link && {
@@ -56,7 +58,7 @@ const events = computed(() =>
           >
             <div class="min-w-0">
               <h3
-                class="text-primary-warm-white text-lg font-medium md:text-xl"
+                class="text-lg font-medium text-primary-warm-white md:text-xl"
               >
                 {{ event.title[locale] }}
               </h3>
@@ -98,10 +100,10 @@ const events = computed(() =>
                 })
               "
               :append-icon="ArrowRight"
-              :aria-label="`${event.title[locale]} — ${t('events.upcoming.livestream', locale)}`"
+              :aria-label="`${event.title[locale]} — ${event.ctaText}`"
               class="shrink-0 normal-case"
             >
-              {{ t('events.upcoming.livestream', locale) }}
+              {{ event.ctaText }}
             </Button>
           </li>
         </ul>

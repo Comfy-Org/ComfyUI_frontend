@@ -1,5 +1,6 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import { render, screen } from '@testing-library/vue'
-import { createPinia, setActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -49,7 +50,7 @@ const ORIGINAL_FILENAME = 'sunset_photo.png'
 function createDisplayAsset(
   overrides: Partial<AssetDisplayItem> = {}
 ): AssetDisplayItem {
-  const base = {
+  return fromPartial({
     id: 'asset-1',
     name: HASH,
     hash: HASH,
@@ -61,12 +62,10 @@ function createDisplayAsset(
     user_metadata: {},
     metadata: { filename: ORIGINAL_FILENAME },
     ...overrides
-  }
-  return base
+  })
 }
 
 function renderCard(asset: AssetDisplayItem) {
-  setActivePinia(createPinia())
   const i18n = createI18n({
     legacy: false,
     locale: 'en',

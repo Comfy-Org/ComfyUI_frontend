@@ -58,14 +58,16 @@ vi.mock('@/renderer/extensions/vueNodes/composables/useShiftKeySync', () => ({
   })
 }))
 
+vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+  useCanvasStore: () => ({ rootGraphId: 'root-graph' })
+}))
+
 vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   layoutStore: {
     isResizingVueNodes: { value: false },
-    getNodeLayoutRef: vi.fn(() => ({
-      value: {
-        position: { x: 100, y: 200 },
-        size: { width: 300, height: 400 }
-      }
+    getNodeLayout: vi.fn(() => ({
+      position: { x: 100, y: 200 },
+      size: { width: 300, height: 400 }
     }))
   }
 }))

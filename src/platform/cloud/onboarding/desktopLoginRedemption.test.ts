@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { reactive } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
@@ -9,8 +9,6 @@ import type { RouteRecordRaw } from 'vue-router'
  * stash is the only carrier, and redemption fires from router.afterEach, an
  * auth watcher, and a delayed retry after a transient failure.
  *
- * The fake clock (installed for every test) keeps those retry timers from
- * leaking into later tests: afterEach discards them with vi.useRealTimers().
  */
 
 const mockConfirm = vi.hoisted(() => vi.fn())
@@ -130,11 +128,8 @@ async function setup(
 describe('installDesktopLoginRedemption', () => {
   beforeEach(() => {
     vi.resetModules()
-    vi.useFakeTimers()
-    sessionStorage.clear()
     vi.stubGlobal('fetch', mockFetch)
     vi.spyOn(console, 'warn').mockImplementation(() => {})
-    mockFetch.mockReset()
     mockConfirm.mockResolvedValue(true)
     mockUserGetIdToken.mockResolvedValue('firebase-id-token')
     mockAuthStore = reactive({
@@ -145,10 +140,6 @@ describe('installDesktopLoginRedemption', () => {
       getIdToken: mockStoreGetIdToken
     })
     authStoreHolder.store = mockAuthStore
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
   })
 
   it('does nothing on navigation when no code is stashed', async () => {

@@ -1,6 +1,6 @@
-import { cleanup, render, screen, within } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Slots } from 'vue'
 import { computed, h, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -8,7 +8,7 @@ import { createI18n } from 'vue-i18n'
 import MembersPanelContent from './MembersPanelContent.vue'
 
 import type {
-  PendingInvite,
+  WorkspacePendingInvite,
   WorkspaceMember
 } from '../../../stores/teamWorkspaceStore'
 
@@ -18,8 +18,6 @@ const mockMemberMenuItems = vi.fn(() => [])
 const mockShowTeamPlans = vi.fn()
 const mockToggleSort = vi.fn()
 const mockHandleInviteMember = vi.fn()
-
-afterEach(cleanup)
 
 const {
   mockMembers,
@@ -48,7 +46,7 @@ const {
 
   return {
     mockMembers: ref<WorkspaceMember[]>([]),
-    mockPendingInvites: ref<PendingInvite[]>([]),
+    mockPendingInvites: ref<WorkspacePendingInvite[]>([]),
     mockOriginalOwnerId: ref<string | null>(null),
     mockHasMultipleMembers: ref(true),
     mockShowSearch: ref(true),
@@ -56,7 +54,7 @@ const {
     mockShowInviteButton: ref(true),
     mockIsInviteDisabled: ref(false),
     mockFilteredMembers: ref<WorkspaceMember[]>([]),
-    mockFilteredPendingInvites: ref<PendingInvite[]>([]),
+    mockFilteredPendingInvites: ref<WorkspacePendingInvite[]>([]),
     mockMaxSeats: ref<number | null>(20),
     mockIsInPersonalWorkspace: ref(false),
     mockHasTeamPlan: ref(true),
@@ -214,7 +212,9 @@ function createMember(
   }
 }
 
-function createInvite(overrides: Partial<PendingInvite> = {}): PendingInvite {
+function createInvite(
+  overrides: Partial<WorkspacePendingInvite> = {}
+): WorkspacePendingInvite {
   return {
     id: 'invite-1',
     email: 'invitee@example.com',

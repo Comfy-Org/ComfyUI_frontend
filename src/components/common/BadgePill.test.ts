@@ -13,17 +13,15 @@ describe('BadgePill', () => {
 
   it('renders icon when provided', () => {
     render(BadgePill, {
-      props: { icon: 'icon-[comfy--credits]', text: 'Credits' }
+      props: { icon: 'icon-[lucide--coins]', text: 'Credits' }
     })
-    expect(screen.getByTestId('badge-icon')).toHaveClass(
-      'icon-[comfy--credits]'
-    )
+    expect(screen.getByTestId('badge-icon')).toHaveClass('icon-[lucide--coins]')
   })
 
   it('applies iconClass to icon', () => {
     render(BadgePill, {
       props: {
-        icon: 'icon-[comfy--credits]',
+        icon: 'icon-[lucide--coins]',
         iconClass: 'text-amber-400'
       }
     })

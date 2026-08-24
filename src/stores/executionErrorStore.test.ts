@@ -3,7 +3,6 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
-import type { MissingNodeType } from '@/types/comfy'
 import {
   createBoundaryLinkedSubgraph,
   createTestRootGraph,
@@ -53,10 +52,6 @@ function mockGraphReady(rootGraph: typeof app.rootGraph) {
 }
 
 describe('executionErrorStore — node error operations', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-
   describe('clearSimpleNodeErrors', () => {
     it('does nothing if lastNodeErrors is null', () => {
       const store = useExecutionErrorStore()
@@ -628,7 +623,6 @@ describe('executionErrorStore — node error operations', () => {
 
 describe('surfaceMissingModels — silent option', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     mockShowErrorsTab.value = true
   })
 
@@ -696,7 +690,6 @@ describe('surfaceMissingModels — silent option', () => {
 
 describe('surfaceMissingMedia — silent option', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     mockShowErrorsTab.value = true
   })
 
@@ -763,10 +756,6 @@ describe('surfaceMissingMedia — silent option', () => {
 })
 
 describe('recordNodeErrors', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-
   it('normalizes an empty error record to null', () => {
     const store = useExecutionErrorStore()
 
@@ -785,15 +774,13 @@ describe('recordNodeErrors', () => {
 })
 
 describe('hasMissingError', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-
   it.for([
     {
       type: 'nodes',
       seedMissingError: () => {
-        useMissingNodesErrorStore().missingNodesError = fromAny({})
+        useMissingNodesErrorStore().setMissingNodeTypes([
+          { type: 'TestNode', hint: '' }
+        ])
       }
     },
     {
@@ -818,7 +805,7 @@ describe('hasMissingError', () => {
     expect(executionErrorStore.hasMissingError).toBe(true)
   })
 
-  it('excludes node validation errors', () => {
+  it('returns false when only node validation errors exist', () => {
     const executionErrorStore = useExecutionErrorStore()
     executionErrorStore.recordNodeErrors({
       '1': nodeError([validationError('required_input_missing', 'input')])
@@ -828,7 +815,7 @@ describe('hasMissingError', () => {
   })
 })
 
-describe('clearAllErrors', () => {
+describe('clearRunErrors', () => {
   let executionErrorStore: ReturnType<typeof useExecutionErrorStore>
   let missingNodesStore: ReturnType<typeof useMissingNodesErrorStore>
 
@@ -839,7 +826,7 @@ describe('clearAllErrors', () => {
     missingNodesStore = useMissingNodesErrorStore()
   })
 
-  it('resets all error categories and closes error overlay', () => {
+  it('resets run errors and closes the overlay, leaving missing resources', () => {
     executionErrorStore.recordExecutionError({
       prompt_id: 'test',
       timestamp: 0,
@@ -869,18 +856,49 @@ describe('clearAllErrors', () => {
         class_type: 'Test'
       }
     })
-    missingNodesStore.setMissingNodeTypes(
-      fromAny<MissingNodeType[], unknown>([{ type: 'MissingNode', hint: '' }])
-    )
+    missingNodesStore.setMissingNodeTypes([{ type: 'MissingNode', hint: '' }])
     executionErrorStore.showErrorOverlay()
 
-    executionErrorStore.clearAllErrors()
+    executionErrorStore.clearRunErrors()
 
     expect(executionErrorStore.lastExecutionError).toBeNull()
     expect(executionErrorStore.lastPromptError).toBeNull()
     expect(executionErrorStore.lastNodeErrors).toBeNull()
-    expect(missingNodesStore.missingNodesError).toBeNull()
     expect(executionErrorStore.isErrorOverlayOpen).toBe(false)
-    expect(executionErrorStore.hasAnyError).toBe(false)
+    expect(missingNodesStore.missingNodesError?.nodeTypes).toEqual([
+      { type: 'MissingNode', hint: '' }
+    ])
+    expect(executionErrorStore.hasAnyError).toBe(true)
+  })
+})
+
+describe('added-node error scan coordination', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('keeps overlapping scans isolated by graph until every scan finishes', () => {
+    const store = useExecutionErrorStore()
+    const graphA = createTestRootGraph()
+    const graphB = createTestRootGraph()
+    const executionId = createNodeExecutionId([toNodeId(1)])
+
+    const finishFirst = store.beginAddedNodeErrorScan(graphA, executionId)
+    const finishSecond = store.beginAddedNodeErrorScan(graphA, executionId)
+    const finishOtherGraph = store.beginAddedNodeErrorScan(graphB, executionId)
+
+    expect(store.hasPendingAddedNodeErrorScan(graphA, executionId)).toBe(true)
+    expect(store.hasPendingAddedNodeErrorScan(graphB, executionId)).toBe(true)
+
+    finishFirst()
+    finishFirst()
+    expect(store.hasPendingAddedNodeErrorScan(graphA, executionId)).toBe(true)
+
+    finishSecond()
+    expect(store.hasPendingAddedNodeErrorScan(graphA, executionId)).toBe(false)
+    expect(store.hasPendingAddedNodeErrorScan(graphB, executionId)).toBe(true)
+
+    finishOtherGraph()
+    expect(store.hasPendingAddedNodeErrorScan(graphB, executionId)).toBe(false)
   })
 })

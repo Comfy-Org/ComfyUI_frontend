@@ -28,7 +28,6 @@ const MODELS_AND_NODES: LocalizedText = {
   'zh-CN': '模型与节点'
 }
 const NEW_BADGE: LocalizedText = { en: 'NEW', 'zh-CN': '新' }
-const FEATURED_BADGE: LocalizedText = { en: 'FEATURED', 'zh-CN': '精选' }
 
 function imageFor(fileName: string, alt: LocalizedText): DropMedia {
   return {

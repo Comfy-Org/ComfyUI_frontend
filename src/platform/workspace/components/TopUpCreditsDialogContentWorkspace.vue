@@ -50,7 +50,7 @@
         <span
           class="flex items-center gap-2 py-2 text-2xl font-semibold text-base-foreground tabular-nums"
         >
-          <i class="icon-[lucide--component] size-5 text-gold-500" />
+          <i class="icon-[lucide--coins] size-5 text-gold-500" />
           {{ formatNumber(creditsModel) }}
         </span>
         <div
@@ -147,7 +147,7 @@
           @max-reached="showCeilingWarning = true"
         >
           <template #prefix>
-            <i class="icon-[lucide--component] size-4 shrink-0 text-gold-500" />
+            <i class="icon-[lucide--coins] size-4 shrink-0 text-gold-500" />
           </template>
         </FormattedNumberStepper>
       </div>
@@ -159,7 +159,7 @@
       v-if="isBelowMin && step === 'amount'"
       class="m-0 flex items-center justify-center gap-1 px-8 pt-4 text-center text-sm text-red-500"
     >
-      <i class="icon-[lucide--component] size-4" />
+      <i class="icon-[lucide--coins] size-4" />
       {{
         $t('credits.topUp.minRequired', {
           credits: formatNumber(usdToCredits(MIN_AMOUNT))
@@ -170,7 +170,7 @@
       v-if="showCeilingWarning && step === 'amount'"
       class="m-0 flex items-center justify-center gap-1 px-8 pt-4 text-center text-sm text-gold-500"
     >
-      <i class="icon-[lucide--component] size-4" />
+      <i class="icon-[lucide--coins] size-4" />
       {{
         $t('credits.topUp.maxAllowed', {
           credits: formatNumber(usdToCredits(MAX_AMOUNT))
@@ -259,6 +259,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'
+import { isCloud } from '@/platform/distribution/types'
 import { clearTopupTracking } from '@/platform/telemetry/topupTracker'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
@@ -468,7 +469,7 @@ async function handleBuy() {
       })
       await Promise.allSettled([fetchBalance(), fetchStatus()])
       handleClose(false)
-      settingsDialog.show('workspace')
+      settingsDialog.show(isCloud ? 'workspace' : 'credits')
     } else if (response.status === 'pending') {
       void billingOperationStore
         .startOperation(response.billing_op_id, 'topup', { attemptStartedAt })

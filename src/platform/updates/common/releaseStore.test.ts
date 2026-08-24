@@ -1,5 +1,4 @@
 import { until } from '@vueuse/core'
-import { setActivePinia } from 'pinia'
 import { compare } from 'semver'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
@@ -9,7 +8,6 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useReleaseService } from '@/platform/updates/common/releaseService'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import { createTestingPinia } from '@pinia/testing'
 import type { SystemStats } from '@/types'
 
 // Mock the dependencies
@@ -113,8 +111,6 @@ describe('useReleaseStore', () => {
   }
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-
     mockSystemStatsState.reset()
     mockData.isCloud = false
   })

@@ -117,12 +117,6 @@ describe('useSubscriptionDialog', () => {
     mockIsTeamPlan.value = false
     mockCurrentPlanSlug.value = null
     mockCanManageSubscription.value = true
-
-    try {
-      sessionStorage.clear()
-    } catch {
-      // noop
-    }
   })
 
   describe('showPricingTable', () => {

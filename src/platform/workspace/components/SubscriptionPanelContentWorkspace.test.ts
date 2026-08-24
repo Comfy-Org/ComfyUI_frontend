@@ -584,7 +584,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
   })
 
   it.for(['paid', 'payment_failed', 'paused'] as BillingStatus[])(
-    'keeps a %s personal plan visible until it is terminal',
+    'keeps billing access for a non-terminal %s personal plan',
     (billingStatus) => {
       mockIsInPersonalWorkspace.value = true
       mockIsActiveSubscription.value = false
@@ -597,6 +597,12 @@ describe('SubscriptionPanelContentWorkspace', () => {
       ).not.toBeInTheDocument()
       expect(
         screen.queryByRole('button', { name: 'Subscribe' })
+      ).not.toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'Billing & invoices' })
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Change plan' })
       ).not.toBeInTheDocument()
     }
   )
@@ -866,7 +872,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     { state: 'never-subscribed', hasSubscription: false, tier: 'PRO' },
     { state: 'Free', hasSubscription: true, tier: 'FREE' }
   ] as const)(
-    'hides legacy billing access from $state personal workspaces',
+    'keeps billing access for $state personal workspaces',
     ({ hasSubscription, tier }) => {
       mockBillingType.value = 'legacy'
       mockBillingStatus.value = 'inactive'
@@ -881,8 +887,8 @@ describe('SubscriptionPanelContentWorkspace', () => {
 
       expect(screen.getByRole('heading', { name: 'Free' })).toBeInTheDocument()
       expect(
-        screen.queryByRole('button', { name: 'Billing & invoices' })
-      ).not.toBeInTheDocument()
+        screen.getByRole('button', { name: 'Billing & invoices' })
+      ).toBeInTheDocument()
       expect(
         screen.getByRole('button', { name: 'Subscribe' })
       ).toBeInTheDocument()

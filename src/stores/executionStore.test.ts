@@ -1,5 +1,4 @@
-import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { app } from '@/scripts/app'
@@ -63,7 +62,6 @@ beforeEach(() => {
   mockAppModeState.isAppMode.value = false
 })
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
-import { createTestingPinia } from '@pinia/testing'
 import { toNodeId } from '@/types/nodeId'
 
 // Mock the workflowStore
@@ -189,11 +187,7 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
 
   beforeEach(() => {
     // Reset mock implementations
-    mockNodeIdToNodeLocatorId.mockReset()
-    mockNodeLocatorIdToNodeExecutionId.mockReset()
-    mockExecutionIdToCurrentId.mockReset()
 
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
   })
 
@@ -275,11 +269,6 @@ describe('useExecutionStore - nodeLocationProgressStates caching', () => {
   let store: ReturnType<typeof useExecutionStore>
 
   beforeEach(() => {
-    mockNodeIdToNodeLocatorId.mockReset()
-    mockNodeLocatorIdToNodeExecutionId.mockReset()
-    mockExecutionIdToCurrentId.mockReset()
-
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
   })
 
@@ -464,15 +453,9 @@ describe('useExecutionStore - nodeProgressStatesByJob eviction', () => {
   }
 
   beforeEach(() => {
-    vi.useFakeTimers()
     apiEventHandlers.clear()
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
     store.bindExecutionEvents()
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
   })
 
   it('should retain entries below the limit', () => {
@@ -527,7 +510,6 @@ describe('useExecutionStore - reconcileInitializingJobs', () => {
   let store: ReturnType<typeof useExecutionStore>
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
   })
 
@@ -634,7 +616,6 @@ describe('useExecutionStore - workflowStatus', () => {
   beforeEach(() => {
     apiEventHandlers.clear()
     mockOpenWorkflows.value = [workflowA, workflowB]
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
     store.bindExecutionEvents()
   })
@@ -955,6 +936,28 @@ describe('useExecutionStore - workflowStatus', () => {
     }
   })
 
+  it('clears running when an account precondition error ends the run', () => {
+    callStoreJob('job-1', workflowA)
+    fireExecutionStart('job-1')
+    expect(store.getWorkflowStatus(workflowA)).toBe('running')
+
+    apiEventHandlers.get('execution_error')!(
+      new CustomEvent('execution_error', {
+        detail: {
+          prompt_id: 'job-1',
+          node_id: '1',
+          node_type: 'TestNode',
+          exception_message:
+            'Payment Required: Please add credits to your account to use this node.',
+          exception_type: 'InsufficientFundsError',
+          traceback: []
+        }
+      })
+    )
+
+    expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
+  })
+
   it('drops pending failed when service-level error fires before storeJob', () => {
     apiEventHandlers.get('execution_error')!(
       new CustomEvent('execution_error', {
@@ -988,7 +991,6 @@ describe('useExecutionStore - clearActiveJobIfStale', () => {
   let store: ReturnType<typeof useExecutionStore>
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
   })
 
@@ -1049,7 +1051,6 @@ describe('useExecutionStore - progress_text startup guard', () => {
 
   beforeEach(() => {
     apiEventHandlers.clear()
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
     store.bindExecutionEvents()
   })
@@ -1102,7 +1103,6 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
   let store: ReturnType<typeof useExecutionErrorStore>
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionErrorStore()
   })
 
@@ -1288,7 +1288,6 @@ describe('useExecutionStore - executingNode with subgraphs', () => {
   let store: ReturnType<typeof useExecutionStore>
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
   })
 
@@ -1384,7 +1383,6 @@ describe('useMissingNodesErrorStore - setMissingNodeTypes', () => {
   let store: ReturnType<typeof useMissingNodesErrorStore>
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useMissingNodesErrorStore()
   })
 
@@ -1486,15 +1484,8 @@ describe('useExecutionStore - RAF batching', () => {
   }
 
   beforeEach(() => {
-    vi.useFakeTimers()
-    vi.clearAllMocks()
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
     store.bindExecutionEvents()
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
   })
 
   describe('handleProgress', () => {
@@ -1872,7 +1863,6 @@ describe('useExecutionStore - WebSocket event handlers', () => {
 
   beforeEach(() => {
     apiEventHandlers.clear()
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
     store.bindExecutionEvents()
   })
@@ -2155,36 +2145,26 @@ describe('useExecutionStore - WebSocket event handlers', () => {
     })
 
     it('discards a progress update still queued when the next node starts', () => {
-      vi.useFakeTimers()
-      try {
-        fire('progress', { value: 3, max: 10, prompt_id: 'job-1', node: 'n1' })
+      fire('progress', { value: 3, max: 10, prompt_id: 'job-1', node: 'n1' })
 
-        fire('executing', 'n2')
-        vi.advanceTimersToNextFrame()
+      fire('executing', 'n2')
+      vi.advanceTimersToNextFrame()
 
-        expect(store._executingNodeProgress).toBeNull()
-      } finally {
-        vi.useRealTimers()
-      }
+      expect(store._executingNodeProgress).toBeNull()
     })
   })
 
   describe('progress', () => {
     it('sets _executingNodeProgress from the event payload (RAF-batched)', () => {
-      vi.useFakeTimers()
-      try {
-        const payload = { value: 3, max: 10, prompt_id: 'job-1', node: 'n1' }
+      const payload = { value: 3, max: 10, prompt_id: 'job-1', node: 'n1' }
 
-        fire('progress', payload)
-        // RAF-batched: not applied synchronously
-        expect(store._executingNodeProgress).toBeNull()
+      fire('progress', payload)
+      // RAF-batched: not applied synchronously
+      expect(store._executingNodeProgress).toBeNull()
 
-        vi.advanceTimersToNextFrame()
+      vi.advanceTimersToNextFrame()
 
-        expect(store._executingNodeProgress).toEqual(payload)
-      } finally {
-        vi.useRealTimers()
-      }
+      expect(store._executingNodeProgress).toEqual(payload)
     })
   })
 
@@ -2366,7 +2346,6 @@ describe('useExecutionStore - storeJob and workflow path tracking', () => {
 
   beforeEach(() => {
     apiEventHandlers.clear()
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
   })
 

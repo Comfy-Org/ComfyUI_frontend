@@ -167,6 +167,40 @@ export const MODEL_TYPE_CHECKPOINT_PRE_CUTOVER: CoreModelAsset =
     updated_at: '2025-02-18T09:00:00Z'
   })
 
+/**
+ * A legacy bare-tagged asset (no `model_type:` prefix) that still carries a
+ * `loader_path`, mimicking a `model_type:`-capable backend that has not
+ * finished re-tagging every asset. Asset grouping must fall back to bare-tag
+ * grouping for it instead of dropping it from the sidebar.
+ */
+export const MODEL_TYPE_CHECKPOINT_LEGACY_TAG: CoreModelAsset =
+  createCoreModelAsset({
+    id: 'mt-checkpoint-007',
+    name: 'legacy_tagged_checkpoint.safetensors',
+    tags: ['models', 'checkpoints'],
+    loader_path: 'legacy_tagged_checkpoint.safetensors',
+    created_at: '2025-02-22T09:00:00Z',
+    updated_at: '2025-02-22T09:00:00Z'
+  })
+
+/**
+ * An asset caught mid-migration: it already carries the authoritative
+ * `model_type:checkpoints` tag alongside its pre-migration bare-tag twin
+ * (`checkpoints`), plus an unrelated leftover bare tag (`loras`) that happens
+ * to match another real folder. A `model_type:`-covered asset must group by
+ * its `model_type:` tags alone, so it lands in `checkpoints` exactly once and
+ * never cross-lists into `loras`.
+ */
+export const MODEL_TYPE_CHECKPOINT_MID_RETAG: CoreModelAsset =
+  createCoreModelAsset({
+    id: 'mt-checkpoint-008',
+    name: 'mid_retag_checkpoint.safetensors',
+    tags: ['models', 'model_type:checkpoints', 'checkpoints', 'loras'],
+    loader_path: 'mid_retag_checkpoint.safetensors',
+    created_at: '2025-02-23T09:00:00Z',
+    updated_at: '2025-02-23T09:00:00Z'
+  })
+
 export const MODEL_TYPE_LORA: CoreModelAsset = createCoreModelAsset({
   id: 'mt-lora-001',
   name: 'detail_enhancer_v1.2.safetensors',

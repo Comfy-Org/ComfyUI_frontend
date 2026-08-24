@@ -50,6 +50,15 @@ export function captureDownloadClick(platform: Platform) {
   }
 }
 
+export function captureMcpConnectionTabClick(connection: string) {
+  if (!initialized) return
+  try {
+    posthog.capture('website:mcp_connection_tab_clicked', { connection })
+  } catch (error) {
+    console.error('PostHog MCP connection tab capture failed', error)
+  }
+}
+
 export function captureMcpClientTabClick(client: string) {
   if (!initialized) return
   try {

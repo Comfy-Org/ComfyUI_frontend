@@ -243,7 +243,6 @@ describe('useJobList', () => {
     unmount?.()
     unmount = null
     api = null
-    vi.useRealTimers()
   })
 
   const initComposable = () => {
@@ -254,7 +253,6 @@ describe('useJobList', () => {
   }
 
   it('tracks recently added pending jobs and clears the hint after expiry', async () => {
-    vi.useFakeTimers()
     queueStoreMock.pendingTasks = [
       createTask({ jobId: '1', job: { priority: 1 }, mockState: 'pending' })
     ]
@@ -282,7 +280,6 @@ describe('useJobList', () => {
   })
 
   it('removes pending hint immediately when the task leaves the queue', async () => {
-    vi.useFakeTimers()
     const taskId = '2'
     queueStoreMock.pendingTasks = [
       createTask({ jobId: taskId, job: { priority: 1 }, mockState: 'pending' })
@@ -310,7 +307,6 @@ describe('useJobList', () => {
   })
 
   it('cleans up timeouts on unmount', async () => {
-    vi.useFakeTimers()
     queueStoreMock.pendingTasks = [
       createTask({ jobId: '3', job: { priority: 1 }, mockState: 'pending' })
     ]
@@ -420,7 +416,6 @@ describe('useJobList', () => {
   })
 
   it('filters jobs by search query', async () => {
-    vi.useFakeTimers()
     queueStoreMock.historyTasks = [
       createTask({
         jobId: 'alpha',
@@ -560,8 +555,6 @@ describe('useJobList', () => {
   })
 
   it('groups terminal jobs without an execution end timestamp by create time', async () => {
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date('2024-01-10T12:00:00Z'))
     queueStoreMock.historyTasks = [
       createTask({
         jobId: 'failed-before-execution',
@@ -589,8 +582,6 @@ describe('useJobList', () => {
   })
 
   it('groups job items by date label and sorts by total generation time when requested', async () => {
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date('2024-01-10T12:00:00Z'))
     queueStoreMock.historyTasks = [
       createTask({
         jobId: 'today-small',

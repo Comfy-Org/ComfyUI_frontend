@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { defineComponent } from 'vue'
 
 import { useDialogStore } from '@/stores/dialogStore'
@@ -22,10 +20,6 @@ const MockContentPropsComponent = defineComponent({
 })
 
 describe('dialogStore', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   describe('priority system', () => {
     it('should create dialogs in correct priority order', () => {
       const store = useDialogStore()

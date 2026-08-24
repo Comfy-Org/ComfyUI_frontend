@@ -890,7 +890,7 @@
       },
       "model": {
         "name": "モデル",
-        "tooltip": "最高品質には Seedance 2.0、速度最適化には Seedance 2.0 Fast を使用します。"
+        "tooltip": "最新モデル、最長30秒の動画、mp4/mov出力にはSeedance 2.5。最高品質と1080p/4kにはSeedance 2.0。速度最適化にはFast。最速かつ最低コストの生成にはMini。"
       },
       "model_duration": {
         "name": "継続時間"
@@ -931,7 +931,7 @@
       },
       "model": {
         "name": "モデル",
-        "tooltip": "最高品質には Seedance 2.0、速度最適化には Seedance 2.0 Fast を使用します。"
+        "tooltip": "最新モデル、最長30秒の動画、mp4/mov出力にはSeedance 2.5。最高品質と1080p/4kにはSeedance 2.0。速度最適化にはFast。最速かつ最低コストの生成にはMini。"
       },
       "model_auto_downscale": {
         "name": "自動ダウンスケール"
@@ -984,7 +984,7 @@
       },
       "model": {
         "name": "モデル",
-        "tooltip": "最高品質には Seedance 2.0、速度最適化には Seedance 2.0 Fast を使用します。"
+        "tooltip": "最新モデル、最長30秒の動画、mp4/mov出力にはSeedance 2.5。最高品質と1080p/4kにはSeedance 2.0。速度最適化にはFast。最速かつ最低コストの生成にはMini。"
       },
       "model_duration": {
         "name": "継続時間"
@@ -5824,6 +5824,9 @@
       "model_number_of_images": {
         "name": "画像数"
       },
+      "model_quality": {
+        "name": "品質"
+      },
       "model_resolution": {
         "name": "解像度"
       },
@@ -5862,6 +5865,10 @@
       "prompt": {
         "name": "プロンプト",
         "tooltip": "画像生成に使用するテキストプロンプト"
+      },
+      "quality": {
+        "name": "品質",
+        "tooltip": "品質レベル。grok-imagine-image-2.0モデルのみ対応しています。"
       },
       "resolution": {
         "name": "解像度"
@@ -5956,19 +5963,19 @@
       },
       "image": {
         "name": "image",
-        "tooltip": "grok-imagine-video のオプションの開始画像。grok-imagine-video-1.5 では必須です。"
+        "tooltip": "省略可能な開始画像。省略すると、テキストプロンプトのみから動画が生成されます。"
       },
       "model": {
         "name": "model",
-        "tooltip": "grok-imagine-video-1.5 では必ず入力画像が必要です。"
+        "tooltip": "動画生成に使用するモデル。"
       },
       "prompt": {
         "name": "プロンプト",
-        "tooltip": "希望する動画のテキスト説明。"
+        "tooltip": "目的の動画のテキスト説明。入力画像が指定されている場合、grok-imagine-video-1.5 では省略可能です。"
       },
       "resolution": {
         "name": "解像度",
-        "tooltip": "出力動画の解像度。"
+        "tooltip": "出力動画の解像度。1080pはgrok-imagine-video-1.5でのみ利用できます。"
       },
       "seed": {
         "name": "シード値",
@@ -5982,7 +5989,7 @@
     }
   },
   "GrokVideoReferenceNode": {
-    "description": "リファレンス画像をスタイルや内容の参考として、ビデオを生成します。",
+    "description": "参照画像に基づいて動画を生成します。プリセット音声の参照も任意で指定できます。",
     "display_name": "Grokリファレンス→ビデオ",
     "inputs": {
       "control_after_generate": {
@@ -8809,7 +8816,7 @@
   },
   "LTXVConcatAVLatent": {
     "description": "ビデオラテントとオーディオラテントを結合し、ジョイントAVラテントを作成します（任意のAVモデル、例：LTXVまたはMiniMax H3）。",
-    "display_name": "LTXVConcatAVLatent",
+    "display_name": "AV Latentを結合",
     "inputs": {
       "audio_latent": {
         "name": "audio_latent"
@@ -8925,6 +8932,67 @@
       "2": {
         "name": "潜在",
         "tooltip": null
+      }
+    }
+  },
+  "LTXVDualCFGGuider": {
+    "description": "パックされたLTXV-AVのlatentに対して、ビデオとオーディオのモダリティごとに個別のCFGスケールを設定します。",
+    "display_name": "LTXVデュアルCFGガイダー",
+    "inputs": {
+      "audio_cfg": {
+        "name": "audio_cfg"
+      },
+      "model": {
+        "name": "model"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "video_cfg": {
+        "name": "video_cfg"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVDurationPredictor": {
+    "description": "LTX 2.4のduration head（ModelPatchLoaderでロード）を使用してプロンプトの自然なショット持続時間を予測し、それをVAEの8k+1フレームグリッドにスナップします。",
+    "display_name": "LTXV持続時間予測器",
+    "inputs": {
+      "duration_head": {
+        "name": "duration_head",
+        "tooltip": "ModelPatchLoaderでロードされたLTX 2.4のduration head。"
+      },
+      "frame_rate": {
+        "name": "frame_rate"
+      },
+      "max_seconds": {
+        "name": "max_seconds"
+      },
+      "min_seconds": {
+        "name": "min_seconds"
+      },
+      "model": {
+        "name": "model"
+      },
+      "positive": {
+        "name": "positive"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "num_frames",
+        "tooltip": null
+      },
+      "1": {
+        "name": "seconds",
+        "tooltip": "生（クランプされていない）予測持続時間。"
       }
     }
   },
@@ -9047,6 +9115,29 @@
       }
     }
   },
+  "LTXVModalityGuidance": {
+    "description": "LTXV-AVのクロスモーダル（オーディオ-ビデオ）ガイダンス。各ステップでa2v/v2aクロスアテンションを切断した追加のフォワードパスを1回実行し、その結果をカップルされた予測に近づけます。これによりオーディオとビジュアルの同期（例：リップシンク）が強化されます。デフォルトのmodality_scaleは3.0です。デュアルCFGガイダーやSTGと併用可能。1.0に設定すると無効化（追加パスなし）されます。",
+    "display_name": "LTXVモダリティガイダンス（A/Vカップリング）",
+    "inputs": {
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "modality_scale": {
+        "name": "modality_scale"
+      },
+      "model": {
+        "name": "model"
+      },
+      "start_percent": {
+        "name": "start_percent"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LTXVPreprocess": {
     "display_name": "LTXVPreprocess",
     "inputs": {
@@ -9144,8 +9235,8 @@
     }
   },
   "LTXVSeparateAVLatent": {
-    "description": "LTXV Separate AV Latent",
-    "display_name": "LTXVSeparateAVLatent",
+    "description": "結合された AV latent を動画と音声の latent に分離します（任意の AV モデル、例：LTXV または MiniMax H3）。",
+    "display_name": "AV Latentを分離",
     "inputs": {
       "av_latent": {
         "name": "av_latent"
@@ -9158,6 +9249,33 @@
       },
       "1": {
         "name": "オーディオlatent",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVSpatioTemporalGuidance": {
+    "description": "選択したブロックのセルフアテンションをvalue-passthroughに劣化させた追加パスを各ステップで1回実行し、そこから離れるようにガイドします。これにより空間的なディテールと動きの一貫性が向上します。",
+    "display_name": "LTXV時空間ガイダンス（STG）",
+    "inputs": {
+      "blocks": {
+        "name": "blocks",
+        "tooltip": "カンマ区切りのトランスフォーマーブロックインデックス。"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "model": {
+        "name": "model"
+      },
+      "scale": {
+        "name": "scale"
+      },
+      "start_percent": {
+        "name": "start_percent"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -9648,7 +9766,7 @@
   "Load3D": {
     "display_name": "3Dを読み込む",
     "inputs": {
-      "clear": "クリア",
+      "clear": {},
       "height": {
         "name": "高さ"
       },
@@ -9658,8 +9776,8 @@
       "model_file": {
         "name": "モデルファイル"
       },
-      "upload 3d model": "3Dモデルをアップロード",
-      "upload extra resources": "追加リソースをアップロード",
+      "upload 3d model": {},
+      "upload extra resources": {},
       "width": {
         "name": "幅"
       }
@@ -10148,6 +10266,121 @@
     "outputs": {
       "0": {
         "name": "コンディショニング",
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApi25AudioToVideo": {
+    "description": "オーディオトラックに合わせてビデオを生成します。最初のフレーム画像はオプションです。",
+    "display_name": "LTX 2.5 オーディオからビデオへ",
+    "inputs": {
+      "audio": {
+        "name": "オーディオ",
+        "tooltip": "ビデオを駆動するオーディオトラック。長さ（2～20秒）がビデオの長さになります。"
+      },
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "image": {
+        "name": "画像",
+        "tooltip": "ビデオの最初のフレームとして使用するオプション画像。"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "prompt": {
+        "name": "プロンプト"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "ノードを再実行するかどうかを決定するシード。実際の結果はシードに関係なく非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApi25ImageToVideo": {
+    "description": "開始画像に基づき、カスタマイズ可能な長さと解像度でプロフェッショナル品質のビデオを生成します。",
+    "display_name": "LTX 2.5 画像からビデオへ",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "image": {
+        "name": "画像",
+        "tooltip": "ビデオの最初のフレームとして使用します。"
+      },
+      "last_frame": {
+        "name": "ラストフレーム",
+        "tooltip": "ビデオの最後のフレームとして使用します。"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_duration": {
+        "name": "長さ"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "オーディオ生成"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "prompt": {
+        "name": "プロンプト"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "ノードを再実行するかどうかを決定するシード。実際の結果はシードに関係なく非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApi25TextToVideo": {
+    "description": "カスタマイズ可能な長さと解像度でプロフェッショナル品質のビデオを生成します。",
+    "display_name": "LTX 2.5 テキストからビデオへ",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_duration": {
+        "name": "長さ"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "オーディオ生成"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "prompt": {
+        "name": "プロンプト"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "ノードを再実行するかどうかを決定するシード。実際の結果はシードに関係なく非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -11979,6 +12212,17 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "ModelAttentionBackend": {
+    "display_name": "ModelAttentionBackend",
+    "inputs": {
+      "attention": {
+        "name": "attention"
+      },
+      "model": {
+        "name": "model"
       }
     }
   },
@@ -15365,7 +15609,7 @@
     "description": "任意の入力値をテキストとしてプレビューします。",
     "display_name": "プレビュー任意",
     "inputs": {
-      "preview_mode": "プレビューモード",
+      "preview_mode": {},
       "preview_text": {},
       "source": {
         "name": "ソース"

@@ -20,7 +20,6 @@ function mockNavigationType(type: string): void {
 describe('trackUserManualRefresh', () => {
   beforeEach(() => {
     hoisted.getInternalContext.mockReturnValue({ session_id: 'session-1' })
-    localStorage.clear()
   })
 
   it('counts reloads within the same session', () => {

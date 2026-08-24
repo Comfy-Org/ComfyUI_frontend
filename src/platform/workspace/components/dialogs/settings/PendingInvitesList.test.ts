@@ -7,7 +7,7 @@ import { createI18n } from 'vue-i18n'
 
 import PendingInvitesList from './PendingInvitesList.vue'
 
-import type { PendingInvite } from '../../../stores/teamWorkspaceStore'
+import type { WorkspacePendingInvite } from '../../../stores/teamWorkspaceStore'
 
 const mockMenuClose = vi.hoisted(() => vi.fn())
 
@@ -24,7 +24,9 @@ const i18n = createI18n({
   fallbackWarn: false
 })
 
-function createInvite(overrides: Partial<PendingInvite> = {}): PendingInvite {
+function createInvite(
+  overrides: Partial<WorkspacePendingInvite> = {}
+): WorkspacePendingInvite {
   return {
     id: 'invite-1',
     email: 'invitee@example.com',
@@ -34,7 +36,7 @@ function createInvite(overrides: Partial<PendingInvite> = {}): PendingInvite {
   }
 }
 
-function renderComponent(invites: PendingInvite[]) {
+function renderComponent(invites: WorkspacePendingInvite[]) {
   return render(PendingInvitesList, {
     props: {
       invites,

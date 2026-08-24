@@ -1,11 +1,15 @@
+import type { SubscriptionTier as IngestSubscriptionTier } from '@comfyorg/ingest-types'
+
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import type { components } from '@/types/comfyRegistryTypes'
 
-export type SubscriptionTier = components['schemas']['SubscriptionTier']
+export type { IngestSubscriptionTier }
+
+export type RegistrySubscriptionTier = components['schemas']['SubscriptionTier']
 
 export type TierKey = 'free' | 'standard' | 'creator' | 'pro' | 'founder'
 
-export const TIER_TO_KEY: Record<SubscriptionTier, TierKey> = {
+const TIER_TO_KEY: Record<RegistrySubscriptionTier, TierKey> = {
   FREE: 'free',
   STANDARD: 'standard',
   CREATOR: 'creator',
@@ -13,7 +17,7 @@ export const TIER_TO_KEY: Record<SubscriptionTier, TierKey> = {
   FOUNDERS_EDITION: 'founder'
 }
 
-export const KEY_TO_TIER: Record<TierKey, SubscriptionTier> = {
+export const KEY_TO_TIER: Record<TierKey, RegistrySubscriptionTier> = {
   free: 'FREE',
   standard: 'STANDARD',
   creator: 'CREATOR',
@@ -51,6 +55,19 @@ const TIER_FEATURES: Record<TierKey, TierFeatures> = {
 }
 
 export const DEFAULT_TIER_KEY: TierKey = 'standard'
+
+// TEAM is workspace-level, so it maps to no key in this personal plan catalog.
+export function toTierKey(tier: IngestSubscriptionTier): TierKey | null {
+  return tier === 'TEAM' ? null : TIER_TO_KEY[tier]
+}
+
+// Includes the workspace-level TEAM, which toTierKey maps to null: a catalog
+// key is not a usable test for "is on a paid plan".
+export function hasActivePaidPlan(
+  tier: IngestSubscriptionTier | null | undefined
+): boolean {
+  return tier != null && tier !== 'FREE'
+}
 
 const FOUNDER_MONTHLY_PRICE = 20
 const FOUNDER_MONTHLY_CREDITS = 5460

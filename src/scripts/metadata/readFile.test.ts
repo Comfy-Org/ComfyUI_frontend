@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import {
   mockFileReaderAbort,
@@ -7,8 +7,6 @@ import {
 import { readFileAsArrayBuffer } from './readFile'
 
 describe('readFileAsArrayBuffer', () => {
-  afterEach(() => vi.restoreAllMocks())
-
   it('reads the whole file into an ArrayBuffer when no cap is given', async () => {
     const bytes = new Uint8Array([1, 2, 3, 4, 5])
     const file = new File([bytes], 'test.bin')

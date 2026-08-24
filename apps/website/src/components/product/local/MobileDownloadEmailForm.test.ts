@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
-import { cleanup, fireEvent, render, screen } from '@testing-library/vue'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { fireEvent, render, screen } from '@testing-library/vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import MobileDownloadEmailForm from './MobileDownloadEmailForm.vue'
 
@@ -33,10 +33,6 @@ describe('MobileDownloadEmailForm', () => {
   beforeEach(() => {
     hoisted.isEnabled = true
     hoisted.isMobileUa = true
-  })
-
-  afterEach(() => {
-    cleanup()
   })
 
   it('renders nothing when the write key is not configured', () => {
