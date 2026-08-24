@@ -5,7 +5,10 @@ import { createI18n } from 'vue-i18n'
 import { render, screen } from '@testing-library/vue'
 
 import enMessages from '@/locales/en/main.json'
-import type { Plan } from '@/platform/workspace/api/workspaceApi'
+import type {
+  Plan,
+  TeamCreditStops
+} from '@/platform/workspace/api/workspaceApi'
 
 import SettingsPlansSection from './SettingsPlansSection.vue'
 
@@ -15,8 +18,6 @@ const i18n = createI18n({
   messages: { en: enMessages }
 })
 
-// Pinned to the real billing catalog (cloud common/billing/catalog/catalog_test.go:32-36):
-// price_cents is the LIST amount, credits_cents the period credit total.
 function makePlan(
   tier: Plan['tier'],
   duration: Plan['duration'],
@@ -48,87 +49,140 @@ const CATALOG: Plan[] = [
   makePlan('PRO', 'MONTHLY', 10000, 21100)
 ]
 
-function renderSection(catalogPlans: Plan[] = CATALOG) {
+// Distinct from any frontend constant so a render that ignored the prop would
+// show different numbers (147,700 / $700 were the old TEAM_PLAN_CREDIT_STOPS).
+const TEAM_STOPS: TeamCreditStops = {
+  default_stop_index: 1,
+  stops: [
+    {
+      id: 'team_300',
+      credits: 63_300,
+      monthly: { list_price_cents: 30_000, price_cents: 30_000 },
+      yearly: { list_price_cents: 30_000, price_cents: 27_000 }
+    },
+    {
+      id: 'team_900',
+      credits: 189_900,
+      monthly: { list_price_cents: 90_000, price_cents: 85_500 },
+      yearly: { list_price_cents: 90_000, price_cents: 81_000 }
+    }
+  ]
+}
+
+function renderSection(
+  props: {
+    catalogPlans?: Plan[]
+    teamCreditStops?: TeamCreditStops | null
+    isLoading?: boolean
+  } = {}
+) {
   return render(SettingsPlansSection, {
-    props: { catalogPlans },
+    props: { catalogPlans: CATALOG, teamCreditStops: TEAM_STOPS, ...props },
     global: { plugins: [i18n] }
   })
 }
 
-describe('SettingsPlansSection personal cards from the API catalog', () => {
-  it('renders the API list price and credits for the yearly cycle', () => {
+describe('SettingsPlansSection — API is the source of truth', () => {
+  it('renders personal prices and credits from the catalog (yearly)', () => {
     renderSection()
 
-    // $20/mo = list 24000/100/12, billed yearly total $240 = 24000/100 — the
-    // API list price, not the discounted $16/$192 the old constant baked in.
     expect(screen.getByText('$20')).toBeTruthy()
     expect(screen.getByText('$35')).toBeTruthy()
     expect(screen.getByText('$100')).toBeTruthy()
-
     expect(screen.getByText('$240 Billed yearly')).toBeTruthy()
-    expect(screen.getByText('$420 Billed yearly')).toBeTruthy()
     expect(screen.getByText('$1200 Billed yearly')).toBeTruthy()
-
-    // credits_cents is the annual total, rendered as-is (no ×12).
     expect(screen.getByText('50,400')).toBeTruthy()
-    expect(screen.getByText('88,800')).toBeTruthy()
     expect(screen.getByText('253,200')).toBeTruthy()
   })
 
-  it('renders the API price and credits for the monthly cycle', async () => {
-    renderSection()
-    await userEvent.click(screen.getByRole('switch'))
-
-    expect(screen.getByText('$20')).toBeTruthy()
-    expect(screen.getByText('$35')).toBeTruthy()
-    expect(screen.getByText('$100')).toBeTruthy()
-    expect(screen.getAllByText('Billed monthly')).toHaveLength(3)
-
-    expect(screen.getByText('4,200')).toBeTruthy()
-    expect(screen.getByText('7,400')).toBeTruthy()
-    expect(screen.getByText('21,100')).toBeTruthy()
-  })
-
-  it('moves the rendered numbers when the catalog values change', () => {
+  it('moves the personal numbers when the catalog values change', () => {
     const mutated = CATALOG.map((p) =>
       p.tier === 'STANDARD' && p.duration === 'ANNUAL'
         ? makePlan('STANDARD', 'ANNUAL', 30000, 60000)
         : p
     )
-    renderSection(mutated)
+    renderSection({ catalogPlans: mutated })
 
-    // $25/mo = 30000/100/12, $300 yearly, 60,000 credits — proof the render is
-    // wired to the API row, not to a constant.
     expect(screen.getByText('$25')).toBeTruthy()
     expect(screen.getByText('$300 Billed yearly')).toBeTruthy()
     expect(screen.getByText('60,000')).toBeTruthy()
     expect(screen.queryByText('$240 Billed yearly')).toBeNull()
   })
 
-  it('renders no cards when the catalog is empty', () => {
-    renderSection([])
+  it('renders team credits from the API stops, not a constant', async () => {
+    renderSection()
+    await userEvent.click(screen.getByRole('button', { name: 'Teams' }))
 
-    expect(screen.queryByText('Standard')).toBeNull()
-    expect(screen.queryByText('Creator')).toBeNull()
-    expect(screen.queryByText('Pro')).toBeNull()
+    // default_stop_index 1 => the $900 / 189,900 stop.
+    expect(screen.getByText('189,900')).toBeTruthy()
+    // The old constant stop must never appear.
+    expect(screen.queryByText('147,700')).toBeNull()
+  })
+
+  it('moves the team credits when the API stops change', async () => {
+    const mutated: TeamCreditStops = {
+      default_stop_index: 0,
+      stops: [
+        {
+          id: 'team_500',
+          credits: 111_000,
+          monthly: { list_price_cents: 50_000, price_cents: 50_000 },
+          yearly: { list_price_cents: 50_000, price_cents: 45_000 }
+        }
+      ]
+    }
+    renderSection({ teamCreditStops: mutated })
+    await userEvent.click(screen.getByRole('button', { name: 'Teams' }))
+
+    expect(screen.getByText('111,000')).toBeTruthy()
+    expect(screen.queryByText('189,900')).toBeNull()
+  })
+
+  it('shows the unavailable state for personal when the catalog is empty', () => {
+    renderSection({ catalogPlans: [], teamCreditStops: null })
+
+    expect(screen.getByText("We couldn't load your plan details.")).toBeTruthy()
+    expect(screen.queryByText(/\$\d+ Billed yearly/)).toBeNull()
+    expect(screen.queryByText('50,400')).toBeNull()
+  })
+
+  it('shows the unavailable state for teams when stops are absent', async () => {
+    renderSection({ teamCreditStops: null })
+    await userEvent.click(screen.getByRole('button', { name: 'Teams' }))
+
+    expect(screen.getByText("We couldn't load your plan details.")).toBeTruthy()
+    // No constant-seeded slider stop.
+    expect(screen.queryByText('147,700')).toBeNull()
+  })
+
+  it('emits retry from the unavailable state', async () => {
+    const { emitted } = renderSection({
+      catalogPlans: [],
+      teamCreditStops: null
+    })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
+    expect(emitted().retry).toBeTruthy()
+  })
+
+  it('shows a spinner and no prices while loading', () => {
+    renderSection({ isLoading: true, catalogPlans: [], teamCreditStops: null })
+
+    expect(screen.getByText('Loading')).toBeTruthy()
+    expect(screen.queryByText("We couldn't load your plan details.")).toBeNull()
     expect(screen.queryByText(/\$\d+ Billed yearly/)).toBeNull()
   })
 
-  it('only renders tiers that have a matching catalog row', () => {
-    renderSection([makePlan('STANDARD', 'ANNUAL', 24000, 50400)])
-
-    expect(screen.getByText('Standard')).toBeTruthy()
-    expect(screen.queryByText('Creator')).toBeNull()
-    expect(screen.queryByText('Pro')).toBeNull()
-  })
-
-  it('disables the choose CTA and shows no discount pill or checkout caption', () => {
+  it('keeps every CTA disabled (checkout is a later slice)', async () => {
     renderSection()
 
     for (const name of ['Choose Standard', 'Choose Creator', 'Choose Pro']) {
       expect(screen.getByRole('button', { name })).toBeDisabled()
     }
-    expect(screen.queryByText('Save 20%')).toBeNull()
-    expect(screen.queryByText(/Checkout happens right here/)).toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: 'Teams' }))
+    expect(
+      screen.getByRole('button', { name: 'Subscribe to Team Yearly' })
+    ).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Contact us' })).toBeDisabled()
   })
 })

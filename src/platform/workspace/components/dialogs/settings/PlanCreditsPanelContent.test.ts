@@ -1,10 +1,13 @@
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
+
+import { ref } from 'vue'
 
 import { render, screen, waitFor } from '@testing-library/vue'
 
 import enMessages from '@/locales/en/main.json'
+import type { Plan } from '@/platform/workspace/api/workspaceApi'
 
 import PlanCreditsPanelContent from './PlanCreditsPanelContent.vue'
 
@@ -16,6 +19,26 @@ vi.mock('@/platform/distribution/types', () => ({
 }))
 
 const refreshSpy = vi.hoisted(() => vi.fn(() => Promise.resolve()))
+
+const billing = vi.hoisted(() => ({
+  fetchPlans: vi.fn()
+}))
+
+// Refs the fetch writes and the panel reads; created after imports so `ref` is
+// available (vi.hoisted runs before imports, so it can't call ref itself).
+const billingState = {
+  plans: ref<unknown[]>([]),
+  teamCreditStops: ref<unknown>(null),
+  isLoading: ref(false)
+}
+
+vi.mock('@/composables/billing/useBillingContext', () => ({
+  useBillingContext: () => ({ fetchPlans: billing.fetchPlans })
+}))
+
+vi.mock('@/platform/cloud/subscription/composables/useBillingPlans', () => ({
+  useBillingPlans: () => billingState
+}))
 
 const stubs = {
   SubscriptionPanelContentWorkspace: {
@@ -129,5 +152,114 @@ describe('PlanCreditsPanelContent', () => {
         error
       )
     )
+  })
+})
+
+describe('PlanCreditsPanelContent — the fetch drives the rendered offer', () => {
+  function makePlan(
+    tier: Plan['tier'],
+    duration: Plan['duration'],
+    price_cents: number,
+    credits_cents: number
+  ): Plan {
+    return {
+      slug: `${tier.toLowerCase()}-${duration.toLowerCase()}`,
+      tier,
+      duration,
+      price_cents,
+      credits_cents,
+      max_seats: 1,
+      availability: { available: true },
+      seat_summary: {
+        seat_count: 1,
+        total_cost_cents: price_cents,
+        total_credits_cents: credits_cents
+      }
+    }
+  }
+
+  // Section rendered UNSTUBBED so the assertion is on real rendered values —
+  // a stubbed section would pass with the wire cut (the round-1 failure).
+  const wireStubs = {
+    SubscriptionPanelContentWorkspace: {
+      template: '<section aria-label="Plan and credits overview" />'
+    },
+    CreditsPanel: {
+      props: ['embedded'],
+      template: '<section aria-label="Local credits overview" />'
+    },
+    SubscriptionFooterLinks: {
+      template: '<footer aria-label="Subscription links" />'
+    },
+    UsageLogsTable: {
+      template: '<section aria-label="Usage logs" />',
+      methods: { refresh: refreshSpy }
+    }
+  }
+
+  function renderWired({ cloud = false } = {}) {
+    mockDistribution.cloud = cloud
+    const i18n = createI18n({
+      legacy: false,
+      locale: 'en',
+      messages: { en: enMessages }
+    })
+    return render(PlanCreditsPanelContent, {
+      global: { plugins: [i18n], stubs: wireStubs }
+    })
+  }
+
+  beforeEach(() => {
+    billingState.plans.value = []
+    billingState.teamCreditStops.value = null
+    billingState.isLoading.value = false
+    billing.fetchPlans.mockReset()
+    // fetchPlans populates the singleton the section reads — the real wire.
+    billing.fetchPlans.mockImplementation(async () => {
+      billingState.plans.value = [makePlan('STANDARD', 'ANNUAL', 24000, 50400)]
+    })
+  })
+
+  it('fetches on mount off-cloud and renders the fetched catalog', async () => {
+    renderWired({ cloud: false })
+
+    expect(billing.fetchPlans).toHaveBeenCalledTimes(1)
+    // The fetched STANDARD/ANNUAL row: $20/mo, 50,400 credits — from the fetch,
+    // not a constant.
+    expect(await screen.findByText('$20')).toBeTruthy()
+    expect(screen.getByText('50,400')).toBeTruthy()
+  })
+
+  it('renders different numbers when the fetch returns different data', async () => {
+    billing.fetchPlans.mockImplementation(async () => {
+      billingState.plans.value = [makePlan('STANDARD', 'ANNUAL', 30000, 60000)]
+    })
+    renderWired({ cloud: false })
+
+    expect(await screen.findByText('$25')).toBeTruthy()
+    expect(screen.getByText('60,000')).toBeTruthy()
+    expect(screen.queryByText('$20')).toBeNull()
+  })
+
+  it('renders the unavailable state when the fetch yields no catalog', async () => {
+    billing.fetchPlans.mockImplementation(async () => {
+      billingState.plans.value = []
+    })
+    renderWired({ cloud: false })
+
+    expect(
+      await screen.findByText("We couldn't load your plan details.")
+    ).toBeTruthy()
+    expect(screen.queryByText(/\$\d+ Billed yearly/)).toBeNull()
+  })
+
+  it('does not fetch or mount the section on cloud', () => {
+    renderWired({ cloud: true })
+
+    expect(billing.fetchPlans).not.toHaveBeenCalled()
+    expect(screen.queryByText('$20')).toBeNull()
+    expect(
+      screen.getByRole('region', { name: 'Plan and credits overview' })
+    ).toBeTruthy()
   })
 })
