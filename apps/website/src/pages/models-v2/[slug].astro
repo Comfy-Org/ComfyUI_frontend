@@ -135,6 +135,7 @@ const costRows = [
 const canonicalURL = new URL(Astro.url.pathname, Astro.site ?? 'https://comfy.org')
 const mdUrl = `/models-v2/${pageSlug}.md`
 
+const defaultSeed = 428790123
 const curlSnippet = `# Same graph the playground runs — as an endpoint
 curl -X POST https://api.comfy.org/v1/run \\
   -H "Authorization: Bearer $COMFY_KEY" \\
@@ -354,7 +355,7 @@ const faqJsonLd = {
               inputmode="numeric"
               min="0"
               step="1"
-              value={428790123}
+              value={defaultSeed}
               class="w-full rounded-lg border border-transparency-white-t20 bg-transparency-white-t4 px-3 py-2.5 font-mono text-xs text-primary-comfy-canvas focus:border-primary-comfy-yellow/60 focus:outline-none"
             />
             <BrandButton id="seed-shuffle" variant="outline-light" size="sm" class="shrink-0 px-3 py-1.5 text-2xs uppercase tracking-widest">Shuffle</BrandButton>
@@ -451,7 +452,7 @@ const faqJsonLd = {
           </div>
         </div>
         <div id="result-meta" class="flex max-w-full flex-wrap items-center gap-2 pt-3">
-          <span id="result-seed" class:list={[pill, pillMuted]}>Seed 428790123</span>
+          <span id="result-seed" class:list={[pill, pillMuted]}>Seed {defaultSeed}</span>
           <span class:list={[pill, pillMuted]}>4.2s render</span>
         </div>
         <div class="mt-auto flex justify-end pt-3">
@@ -708,7 +709,7 @@ const faqJsonLd = {
       const runMobileLabel = label(runMobile)
 
       const seedInput = $('pg-seed') as HTMLInputElement
-      const DEFAULT_SEED = '428790123'
+      const DEFAULT_SEED = seedInput.defaultValue
       const seedNow = () => Number(seedInput.value) || 0
 
       let authed = false
