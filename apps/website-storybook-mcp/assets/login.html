@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Sign in · Comfy Website Storybook</title>
+    <style>
+      @font-face {
+        font-family: 'PP Formula';
+        src: url('/fonts/PPFormula-Regular.woff2') format('woff2');
+        font-weight: 400;
+      }
+
+      @font-face {
+        font-family: 'PP Formula';
+        src: url('/fonts/PPFormula-Semibold.woff2') format('woff2');
+        font-weight: 600;
+      }
+
+      :root {
+        color-scheme: dark;
+        font-family: 'PP Formula', Arial, sans-serif;
+        background: #1d1724;
+        color: #f5f2f7;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        min-height: 100vh;
+        margin: 0;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        background:
+          radial-gradient(circle at 50% 42%, #33293e 0, transparent 34rem),
+          #1d1724;
+      }
+
+      main {
+        width: min(100%, 420px);
+        padding: 36px 32px 30px;
+        border: 1px solid #493f54;
+        border-radius: 18px;
+        background: #2c2435;
+        box-shadow: 0 24px 80px rgb(7 4 11 / 28%);
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 26px;
+      }
+
+      .brand img {
+        width: 112px;
+        height: auto;
+      }
+
+      .product {
+        padding: 5px 9px 4px;
+        border-radius: 5px;
+        background: #e8ff2f;
+        color: #1d1724;
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        line-height: 1;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 0;
+        max-width: 320px;
+        font-size: 30px;
+        font-weight: 600;
+        letter-spacing: -0.025em;
+        line-height: 1.08;
+      }
+
+      .description {
+        margin: 14px 0 26px;
+        color: #c7c0cc;
+        font-size: 16px;
+        line-height: 1.45;
+      }
+
+      button {
+        width: 100%;
+        min-height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        border: 1px solid #62576d;
+        border-radius: 12px;
+        background: #332a3d;
+        color: #f5f2f7;
+        font: inherit;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition:
+          border-color 140ms ease,
+          background-color 140ms ease,
+          transform 140ms ease;
+      }
+
+      button:hover {
+        border-color: #e8ff2f;
+        background: #3b3046;
+        transform: translateY(-1px);
+      }
+
+      button:focus-visible {
+        outline: 3px solid #e8ff2f;
+        outline-offset: 3px;
+      }
+
+      button:disabled {
+        cursor: wait;
+        opacity: 0.7;
+        transform: none;
+      }
+
+      button svg {
+        width: 20px;
+        height: 20px;
+      }
+
+      .restriction {
+        margin: 18px 0 0;
+        color: #918899;
+        font-size: 13px;
+        text-align: center;
+      }
+
+      .error {
+        display: none;
+        margin: 16px 0 0;
+        color: #ffb4ab;
+        font-size: 14px;
+        text-align: center;
+      }
+
+      @media (max-width: 480px) {
+        main {
+          padding: 30px 24px 26px;
+        }
+
+        h1 {
+          font-size: 27px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        button {
+          transition: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="brand">
+        <img src="/icons/logo.svg" alt="Comfy" />
+        <span class="product">Storybook</span>
+      </div>
+      <h1>Website design system</h1>
+      <p class="description">
+        This Storybook is internal. Sign in with your Comfy Google account to
+        review components, patterns, and page recipes.
+      </p>
+      <button id="google-sign-in" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            fill="#4285f4"
+            d="M21.6 12.23c0-.71-.06-1.4-.18-2.07H12v3.92h5.38a4.6 4.6 0 0 1-2 3.01v2.55h3.24c1.9-1.75 2.98-4.33 2.98-7.41Z"
+          />
+          <path
+            fill="#34a853"
+            d="M12 22c2.7 0 4.98-.9 6.63-2.43l-3.24-2.55c-.9.6-2.05.96-3.39.96-2.61 0-4.82-1.76-5.61-4.13H3.04v2.63A10 10 0 0 0 12 22Z"
+          />
+          <path
+            fill="#fbbc05"
+            d="M6.39 13.85A6.02 6.02 0 0 1 6.08 12c0-.64.11-1.27.31-1.85V7.52H3.04A10 10 0 0 0 2 12c0 1.61.38 3.14 1.04 4.48l3.35-2.63Z"
+          />
+          <path
+            fill="#ea4335"
+            d="M12 6.02c1.47 0 2.79.51 3.83 1.5l2.87-2.88A9.65 9.65 0 0 0 12 2a10 10 0 0 0-8.96 5.52l3.35 2.63C7.18 7.78 9.39 6.02 12 6.02Z"
+          />
+        </svg>
+        <span>Continue with Google</span>
+      </button>
+      <p class="restriction">Comfy.org accounts only.</p>
+      <p class="error" id="sign-in-error" role="alert">
+        Sign-in could not start. Refresh the page and try again.
+      </p>
+    </main>
+    <script>
+      const button = document.querySelector('#google-sign-in')
+      const error = document.querySelector('#sign-in-error')
+
+      button.addEventListener('click', async () => {
+        button.disabled = true
+
+        try {
+          const response = await fetch('/api/auth/csrf')
+          if (!response.ok) throw new Error('CSRF request failed')
+
+          const { csrfToken } = await response.json()
+          const callbackUrl = new URLSearchParams(location.search).get(
+            'callbackUrl'
+          )
+          const form = document.createElement('form')
+          form.method = 'post'
+          form.action = '/api/auth/signin/google'
+          form.hidden = true
+
+          for (const [name, value] of Object.entries({
+            csrfToken,
+            callbackUrl: callbackUrl || '/'
+          })) {
+            const input = document.createElement('input')
+            input.name = name
+            input.value = value
+            form.append(input)
+          }
+
+          document.body.append(form)
+          form.submit()
+        } catch {
+          button.disabled = false
+          error.style.display = 'block'
+        }
+      })
+    </script>
+  </body>
+</html>

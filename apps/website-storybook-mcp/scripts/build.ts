@@ -111,6 +111,10 @@ await rm(publicRoot, { recursive: true, force: true })
 await cp(resolve(websiteRoot, 'dist/storybook'), publicRoot, {
   recursive: true
 })
+await cp(
+  resolve(appRoot, 'assets/login.html'),
+  resolve(publicRoot, 'login.html')
+)
 
 const manifestPath = resolve(publicRoot, 'manifests/components.json')
 await mkdir(dirname(manifestPath), { recursive: true })
