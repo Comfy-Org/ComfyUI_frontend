@@ -164,11 +164,3 @@ export function extractTemplateModelRequirementDetails(
 
   return mergeModelRequirementDetails([...nodeDetails, ...topLevelDetails])
 }
-
-export function extractTemplateModelRequirements(
-  workflow: unknown
-): readonly ModelFile[] {
-  return extractTemplateModelRequirementDetails(workflow).map(
-    ({ model }) => model
-  )
-}
