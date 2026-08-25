@@ -1,12 +1,56 @@
 import { readFileSync } from 'fs'
 import { basename } from 'path'
 
-import type { Page } from '@playwright/test'
+import type { Page, Response } from '@playwright/test'
 
 import type { Position } from '@e2e/fixtures/types'
 import { getMimeType } from '@e2e/fixtures/utils/mimeTypeUtil'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
+
+function isUploadSuccessResponse(response: Response): boolean {
+  return response.url().includes('/upload/') && response.status() === 200
+}
+
+/**
+ * Resolves once `count` distinct `/upload/` 200 responses have been seen.
+ *
+ * `page.waitForResponse()` with the same predicate called `count` times
+ * doesn't work for this: every one of those listeners matches the first
+ * `/upload/` 200 that arrives, so a `Promise.all` over them resolves after
+ * one upload rather than `count`. Counting matching events off a single
+ * `page.on('response', ...)` listener instead ties resolution to how many
+ * matching responses actually arrived.
+ */
+function waitForUploadResponses(
+  page: Page,
+  count: number,
+  timeout = 10000
+): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    let seen = 0
+
+    const onResponse = (response: Response) => {
+      if (!isUploadSuccessResponse(response)) return
+      seen++
+      if (seen < count) return
+      clearTimeout(timer)
+      page.off('response', onResponse)
+      resolve()
+    }
+
+    const timer = setTimeout(() => {
+      page.off('response', onResponse)
+      reject(
+        new Error(
+          `Timed out waiting for ${count} /upload/ response(s); saw ${seen}.`
+        )
+      )
+    }, timeout)
+
+    page.on('response', onResponse)
+  })
+}
 
 interface DroppedFilePayload {
   fileName: string
@@ -185,18 +229,10 @@ export class DragDropHelper {
     const files = fileNames.map((fileName) => readDroppedFile(fileName))
 
     // One DragEvent can carry N files, each triggering its own upload
-    // request - wait for a response per file, not just the first one, or
-    // callers uploading multiple files get a false all-clear.
+    // request - wait for N distinct upload responses, not just the first
+    // one, or callers uploading multiple files get a false all-clear.
     const uploadResponsePromise = waitForUpload
-      ? Promise.all(
-          files.map(() =>
-            this.page.waitForResponse(
-              (resp) =>
-                resp.url().includes('/upload/') && resp.status() === 200,
-              { timeout: 10000 }
-            )
-          )
-        )
+      ? waitForUploadResponses(this.page, files.length)
       : null
 
     await this.dispatchDrop({ dropPosition, files, preserveNativePropagation })
