@@ -190,15 +190,23 @@ export const useCustomerEventsService = () => {
 
     const authStore = useAuthStore()
     const requestOwner = authStore.currentUserIdentity()
-    const authHeaders = await authStore.getUserAuthHeader()
-    if (!authHeaders) {
-      error.value = 'Authentication header is missing'
-      return null
-    }
-
     const requestId = ++latestRequestId
     isLoading.value = true
     error.value = null
+
+    const authHeaders = await authStore.getUserAuthHeader()
+    if (requestId !== latestRequestId) {
+      return null
+    }
+    if (authStore.currentUserIdentity() !== requestOwner) {
+      isLoading.value = false
+      return null
+    }
+    if (!authHeaders) {
+      isLoading.value = false
+      error.value = 'Authentication header is missing'
+      return null
+    }
 
     const { data, errorMessage } = await executeRequest<CustomerEventsResponse>(
       () =>

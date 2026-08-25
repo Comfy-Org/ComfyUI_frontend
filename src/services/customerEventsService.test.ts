@@ -194,6 +194,34 @@ describe('useCustomerEventsService', () => {
       expect(service.isLoading.value).toBe(false)
     })
 
+    it('ignores a stale auth preflight once a newer request begins', async () => {
+      let resolveStaleHeader!: (value: unknown) => void
+      mockAuthStore.getUserAuthHeader.mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveStaleHeader = resolve
+          })
+      )
+      const staleRequest = service.getMyEvents()
+
+      mockAuthStore.currentUserIdentity.mockReturnValue('api-key-b')
+      const activeRequestStarted = new Promise<void>((requestStarted) => {
+        mockAxiosInstance.get.mockImplementation(() => {
+          requestStarted()
+          return new Promise(() => {})
+        })
+      })
+      const activeRequest = service.getMyEvents()
+      await activeRequestStarted
+
+      resolveStaleHeader(null)
+      await expect(staleRequest).resolves.toBeNull()
+
+      expect(service.error.value).toBeNull()
+      expect(service.isLoading.value).toBe(true)
+      void activeRequest
+    })
+
     it('should handle 400 errors', async () => {
       const errorResponse = {
         response: {

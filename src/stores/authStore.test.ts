@@ -556,7 +556,7 @@ describe('useAuthStore', () => {
       resolveCreate(mockCreateCustomerResponse)
 
       await expect(request).rejects.toMatchObject({
-        message: 'toastMessages.failedToAccessBillingPortal'
+        message: 'toastMessages.userNotAuthenticated'
       })
       expect(billingCallCount).toBe(1)
     })
@@ -757,6 +757,126 @@ describe('useAuthStore', () => {
         'X-API-KEY': 'another-api-key'
       })
       resolveCreditBody({ checkout_url: 'https://stripe.test/checkout' })
+
+      await expect(request).rejects.toMatchObject({
+        message: 'toastMessages.userNotAuthenticated'
+      })
+    })
+
+    const accountAFailureResponse = {
+      ok: false,
+      status: 500,
+      statusText: 'Internal Server Error',
+      clone: () => ({
+        json: () => Promise.resolve({ message: 'account A backend error' })
+      }),
+      json: () => Promise.resolve({ message: 'account A backend error' }),
+      text: () =>
+        Promise.resolve(JSON.stringify({ message: 'account A backend error' }))
+    }
+
+    const switchToAnotherApiKey = () => {
+      mockApiKeyGetApiKey.mockReturnValue('another-api-key')
+      mockApiKeyGetAuthHeader.mockReturnValue({
+        'X-API-KEY': 'another-api-key'
+      })
+    }
+
+    it('suppresses a balance error that rejects after an A->B API key switch', async () => {
+      let resolveBalance!: (value: unknown) => void
+      const balanceRequestStarted = new Promise<void>((requestStarted) => {
+        mockFetch.mockImplementation((url: string) => {
+          if (url.endsWith('/customers/balance')) {
+            requestStarted()
+            return new Promise((resolve) => {
+              resolveBalance = resolve
+            })
+          }
+          return Promise.reject(new Error('Unexpected API call'))
+        })
+      })
+
+      const request = store.fetchBalance()
+      await balanceRequestStarted
+      switchToAnotherApiKey()
+      resolveBalance(accountAFailureResponse)
+
+      await expect(request).resolves.toBeNull()
+      expect(store.balance).toBeNull()
+    })
+
+    it('withholds a checkout error that rejects after an A->B API key switch', async () => {
+      let resolveCredit!: (value: unknown) => void
+      const creditRequestStarted = new Promise<void>((requestStarted) => {
+        mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+          if (url.endsWith('/customers') && init?.method === 'POST') {
+            return Promise.resolve(mockCreateCustomerResponse)
+          }
+          if (url.endsWith('/customers/credit')) {
+            requestStarted()
+            return new Promise((resolve) => {
+              resolveCredit = resolve
+            })
+          }
+          return Promise.reject(new Error('Unexpected API call'))
+        })
+      })
+
+      const request = store.initiateCreditPurchase({
+        amount_micros: 5_000_000,
+        currency: 'usd'
+      })
+      await creditRequestStarted
+      switchToAnotherApiKey()
+      resolveCredit(accountAFailureResponse)
+
+      await expect(request).rejects.toMatchObject({
+        message: 'toastMessages.userNotAuthenticated'
+      })
+    })
+
+    it('withholds a portal error that rejects after an A->B API key switch', async () => {
+      let resolveBilling!: (value: unknown) => void
+      const billingRequestStarted = new Promise<void>((requestStarted) => {
+        mockFetch.mockImplementation((url: string) => {
+          if (url.endsWith('/customers/billing')) {
+            requestStarted()
+            return new Promise((resolve) => {
+              resolveBilling = resolve
+            })
+          }
+          return Promise.reject(new Error('Unexpected API call'))
+        })
+      })
+
+      const request = store.accessBillingPortal()
+      await billingRequestStarted
+      switchToAnotherApiKey()
+      resolveBilling(accountAFailureResponse)
+
+      await expect(request).rejects.toMatchObject({
+        message: 'toastMessages.userNotAuthenticated'
+      })
+    })
+
+    it('withholds a customer-creation error that rejects after an A->B API key switch', async () => {
+      let resolveCreate!: (value: unknown) => void
+      const createRequestStarted = new Promise<void>((requestStarted) => {
+        mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+          if (url.endsWith('/customers') && init?.method === 'POST') {
+            requestStarted()
+            return new Promise((resolve) => {
+              resolveCreate = resolve
+            })
+          }
+          return Promise.reject(new Error('Unexpected API call'))
+        })
+      })
+
+      const request = store.createCustomer()
+      await createRequestStarted
+      switchToAnotherApiKey()
+      resolveCreate(accountAFailureResponse)
 
       await expect(request).rejects.toMatchObject({
         message: 'toastMessages.userNotAuthenticated'
