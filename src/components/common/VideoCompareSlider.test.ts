@@ -9,7 +9,8 @@ const overlaySrc = 'overlay.mp4'
 
 function renderSlider(startPosition?: number) {
   return render(VideoCompareSlider, {
-    props: { baseSrc, overlaySrc, label: 'Compare', startPosition }
+    props: { baseSrc, overlaySrc, label: 'Compare', startPosition },
+    slots: { default: '<button type="button">Close</button>' }
   })
 }
 

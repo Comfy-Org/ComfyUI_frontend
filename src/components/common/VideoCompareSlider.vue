@@ -101,6 +101,9 @@ function positionFromPointer(event: PointerEvent) {
 const isDragging = ref(false)
 
 useEventListener(root, 'pointerdown', (event: PointerEvent) => {
+  // Overlay controls (mute, close) live in the slot on top of the videos;
+  // a press on one must click it, not start a compare drag.
+  if ((event.target as HTMLElement).closest('button')) return
   isDragging.value = true
   root.value?.setPointerCapture(event.pointerId)
   positionFromPointer(event)
