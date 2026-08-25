@@ -122,7 +122,6 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
   implements BaseDOMWidget<V>
 {
   static readonly DEFAULT_MARGIN = 10
-  declare readonly name: string
   declare readonly options: DOMWidgetOptions<V>
   declare callback?: (value: V) => void
 
