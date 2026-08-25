@@ -1,6 +1,6 @@
 import { useLocalStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
@@ -154,12 +154,20 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
 
   watch(
     apiKey,
-    () => {
-      if (!apiKey.value) {
+    async (watchedApiKey) => {
+      if (!watchedApiKey) {
         currentUser.value = null
         return
       }
+      // Checked before yielding: storeApiKey sets this around its own write,
+      // and by the next tick it has finished and cleared it.
       if (isValidating.value) return
+      // Yield before starting, so a key replaced in the same tick — a stored
+      // key signed over at launch — costs one lookup for the winner rather
+      // than one for each. The guards in resolveUser only discard the loser's
+      // result; this is what stops the request being made at all.
+      await nextTick()
+      if (apiKey.value !== watchedApiKey) return
       // A stored key the backend rejects or refuses is the user's problem to
       // fix; a backend that is merely unreachable is not worth a startup toast.
       void resolveUser().catch((error: unknown) => {

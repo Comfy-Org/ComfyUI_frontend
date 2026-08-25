@@ -1,6 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Pinia } from 'pinia'
+import { disposePinia, setActivePinia } from 'pinia'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -45,11 +46,20 @@ const severities = () =>
   useToastStore().messagesToAdd.map((m) => `${m.severity}:${m.summary}`)
 
 describe('useApiKeyAuthStore', () => {
+  let pinia: Pinia
+
   beforeEach(() => {
     localStorage.clear()
-    setActivePinia(createTestingPinia({ stubActions: false }))
+    pinia = createTestingPinia({ stubActions: false })
+    setActivePinia(pinia)
     mockCreateCustomer.mockReset()
     mockTrackAuthFailed.mockReset()
+  })
+
+  // Without this the previous test's store keeps its watch on the shared
+  // storage key and reacts inside the next one.
+  afterEach(() => {
+    disposePinia(pinia)
   })
 
   describe('storeApiKey', () => {
