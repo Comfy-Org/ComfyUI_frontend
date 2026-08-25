@@ -83,6 +83,10 @@ vi.mock(
   })
 )
 
+vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
+  useWorkflowStore: () => ({ activeWorkflow: { key: 'loaded-template' } })
+}))
+
 // Mock fetch
 global.fetch = vi.fn()
 
@@ -364,7 +368,7 @@ describe('useTemplateWorkflows', () => {
 
     await loadWorkflowTemplate('template1', 'default')
 
-    expect(mockRequestCard).toHaveBeenCalledTimes(1)
+    expect(mockRequestCard).toHaveBeenCalledWith('loaded-template')
   })
 
   it('does not request the education card for open-source templates', async () => {

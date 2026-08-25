@@ -1,24 +1,34 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 /**
- * Requests showing the one-off "this template uses partner nodes" education
- * card after a paid template loads. Not persisted: the card shows on every
+ * Requests the one-off partner-nodes education card after a paid template
+ * loads, keyed to the workflow that triggered it so the card retires when a
+ * different workflow becomes active. Not persisted: it shows on every
  * paid-template load by design.
  */
 export const usePartnerNodesEducationStore = defineStore(
   'partnerNodesEducation',
   () => {
-    const isCardRequested = ref(false)
+    const requestedForWorkflowKey = ref<string | undefined>(undefined)
 
-    const requestCard = () => {
-      isCardRequested.value = true
+    const isCardRequested = computed(
+      () => requestedForWorkflowKey.value !== undefined
+    )
+
+    const requestCard = (workflowKey: string) => {
+      requestedForWorkflowKey.value = workflowKey
     }
 
     const dismissCard = () => {
-      isCardRequested.value = false
+      requestedForWorkflowKey.value = undefined
     }
 
-    return { isCardRequested, requestCard, dismissCard }
+    return {
+      requestedForWorkflowKey,
+      isCardRequested,
+      requestCard,
+      dismissCard
+    }
   }
 )

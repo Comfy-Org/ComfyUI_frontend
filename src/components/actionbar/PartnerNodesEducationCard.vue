@@ -35,8 +35,8 @@
                 class="absolute bottom-2 left-2 size-7 rounded-full bg-black/40 text-white backdrop-blur-sm hover:bg-black/60 hover:text-white"
                 :aria-label="
                   audibleSide === 'open'
-                    ? t('partnerNodesEducation.mute')
-                    : t('partnerNodesEducation.unmute')
+                    ? t('partnerNodesEducation.muteOpen')
+                    : t('partnerNodesEducation.unmuteOpen')
                 "
                 @click="toggleAudio('open')"
               >
@@ -55,8 +55,8 @@
                 class="absolute right-2 bottom-2 size-7 rounded-full bg-black/40 text-white backdrop-blur-sm hover:bg-black/60 hover:text-white"
                 :aria-label="
                   audibleSide === 'partner'
-                    ? t('partnerNodesEducation.mute')
-                    : t('partnerNodesEducation.unmute')
+                    ? t('partnerNodesEducation.mutePartner')
+                    : t('partnerNodesEducation.unmutePartner')
                 "
                 @click="toggleAudio('partner')"
               >
@@ -212,6 +212,7 @@ import { usePartnerNodesRunGate } from '@/composables/billing/usePartnerNodesRun
 import { usePartnerNodesInGraph } from '@/composables/node/usePartnerNodesInGraph'
 import { useDialogService } from '@/services/dialogService'
 import { usePartnerNodesEducationStore } from '@/platform/workflow/templates/stores/partnerNodesEducationStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
 interface ComparisonRow {
   key: string
@@ -243,9 +244,10 @@ function toggleAudio(side: 'open' | 'partner') {
 }
 
 const educationStore = usePartnerNodesEducationStore()
-const { isCardRequested } = storeToRefs(educationStore)
+const { isCardRequested, requestedForWorkflowKey } = storeToRefs(educationStore)
 const { hasPartnerNodes } = usePartnerNodesInGraph()
 const { gate, partnerNodes } = usePartnerNodesRunGate()
+const { activeWorkflow } = storeToRefs(useWorkflowStore())
 const dialogService = useDialogService()
 
 function openSignIn() {
@@ -256,11 +258,14 @@ function openSignIn() {
 
 const isVisible = computed(() => isCardRequested.value && hasPartnerNodes.value)
 
-/**
- * Dismiss the card only on a true → false transition of partner nodes,
- * avoiding transient false during template loads.
- */
-watch(hasPartnerNodes, (present, previous) => {
-  if (previous && !present) educationStore.dismissCard()
-})
+// Retire the card once the user leaves the workflow that requested it, even if
+// the next workflow also has partner nodes.
+watch(
+  () => activeWorkflow.value?.key,
+  (key) => {
+    if (isCardRequested.value && key !== requestedForWorkflowKey.value) {
+      educationStore.dismissCard()
+    }
+  }
+)
 </script>

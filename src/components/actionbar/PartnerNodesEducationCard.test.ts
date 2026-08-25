@@ -9,6 +9,8 @@ import { createI18n } from 'vue-i18n'
 import * as runGateModule from '@/composables/billing/usePartnerNodesRunGate'
 import * as partnerNodesInGraphModule from '@/composables/node/usePartnerNodesInGraph'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { usePartnerNodesEducationStore } from '@/platform/workflow/templates/stores/partnerNodesEducationStore'
 
 import PartnerNodesEducationCard from './PartnerNodesEducationCard.vue'
@@ -73,6 +75,16 @@ function renderCard() {
   })
 }
 
+function setActiveWorkflow(key: string) {
+  useWorkflowStore().activeWorkflow = { key } as LoadedComfyWorkflow
+}
+
+/** Load a paid template: it becomes the active workflow and requests the card. */
+function loadPaidTemplate(workflowKey: string) {
+  setActiveWorkflow(workflowKey)
+  usePartnerNodesEducationStore().requestCard(workflowKey)
+}
+
 describe('PartnerNodesEducationCard', () => {
   beforeEach(() => {
     pinia = createTestingPinia({ stubActions: false })
@@ -88,19 +100,17 @@ describe('PartnerNodesEducationCard', () => {
   })
 
   it('shows when a paid template load requests it', async () => {
-    const store = usePartnerNodesEducationStore()
     renderCard()
 
-    store.requestCard()
+    loadPaidTemplate('paid-wf')
     await nextTick()
     expect(screen.getByTestId(CARD_TESTID)).toBeInTheDocument()
     expect(screen.getByText(copy.pitch)).toBeInTheDocument()
   })
 
   it('dismisses via the close button', async () => {
-    const store = usePartnerNodesEducationStore()
     renderCard()
-    store.requestCard()
+    loadPaidTemplate('paid-wf')
     await nextTick()
 
     await userEvent.click(screen.getByTestId('partner-nodes-education-dismiss'))
@@ -111,7 +121,7 @@ describe('PartnerNodesEducationCard', () => {
     const store = usePartnerNodesEducationStore()
     __setHasPartnerNodes(false)
     renderCard()
-    store.requestCard()
+    loadPaidTemplate('paid-wf')
     await nextTick()
 
     __setHasPartnerNodes(true)
@@ -121,9 +131,8 @@ describe('PartnerNodesEducationCard', () => {
   })
 
   it('hides when the graph no longer contains partner nodes', async () => {
-    const store = usePartnerNodesEducationStore()
     renderCard()
-    store.requestCard()
+    loadPaidTemplate('paid-wf')
     await nextTick()
     expect(screen.getByTestId(CARD_TESTID)).toBeInTheDocument()
 
@@ -132,27 +141,24 @@ describe('PartnerNodesEducationCard', () => {
     expect(screen.queryByTestId(CARD_TESTID)).not.toBeInTheDocument()
   })
 
-  it('does not resurface on a later partner-node graph the template never described', async () => {
+  it('retires when a different workflow becomes active, even one with partner nodes', async () => {
     const store = usePartnerNodesEducationStore()
     renderCard()
-    store.requestCard()
+    loadPaidTemplate('paid-wf')
     await nextTick()
+    expect(screen.getByTestId(CARD_TESTID)).toBeInTheDocument()
 
-    __setHasPartnerNodes(false)
-    await nextTick()
-
-    // Opening an unrelated workflow that happens to contain partner nodes must
-    // not revive a card that claims a template introduced them.
-    __setHasPartnerNodes(true)
+    // Switch to an unrelated workflow that also has partner nodes: presence
+    // never drops to false, so only the workflow-identity change can retire it.
+    setActiveWorkflow('other-wf')
     await nextTick()
     expect(screen.queryByTestId(CARD_TESTID)).not.toBeInTheDocument()
     expect(store.isCardRequested).toBe(false)
   })
 
   it('shows a sign-in CTA only when the run gate requires sign-in', async () => {
-    const store = usePartnerNodesEducationStore()
     renderCard()
-    store.requestCard()
+    loadPaidTemplate('paid-wf')
     await nextTick()
     expect(
       screen.queryByTestId('partner-nodes-education-sign-in')
@@ -166,37 +172,30 @@ describe('PartnerNodesEducationCard', () => {
   })
 
   it('opens the partner sign-in dialog with the loaded model names', async () => {
-    const store = usePartnerNodesEducationStore()
     __setGate('sign-in')
     renderCard()
-    store.requestCard()
+    loadPaidTemplate('paid-wf')
     await nextTick()
 
     await userEvent.click(screen.getByTestId('partner-nodes-education-sign-in'))
     expect(showApiNodesSignInDialog).toHaveBeenCalledWith(['Kling'])
   })
 
-  it('makes only one clip audible at a time', async () => {
-    const store = usePartnerNodesEducationStore()
+  it('gives each audio toggle a distinct, side-specific accessible name', async () => {
     renderCard()
-    store.requestCard()
+    loadPaidTemplate('paid-wf')
     await nextTick()
 
-    const [openBtn, partnerBtn] = screen.getAllByLabelText(
-      new RegExp(`${copy.mute}|${copy.unmute}`)
-    )
-    expect(openBtn).toHaveAccessibleName(copy.unmute)
-    expect(partnerBtn).toHaveAccessibleName(copy.unmute)
+    const openBtn = screen.getByRole('button', { name: copy.unmuteOpen })
+    const partnerBtn = screen.getByRole('button', { name: copy.unmutePartner })
+    expect(openBtn).not.toBe(partnerBtn)
 
     await userEvent.click(openBtn)
-    expect(openBtn).toHaveAccessibleName(copy.mute)
-    expect(partnerBtn).toHaveAccessibleName(copy.unmute)
+    expect(openBtn).toHaveAccessibleName(copy.muteOpen)
+    expect(partnerBtn).toHaveAccessibleName(copy.unmutePartner)
 
     await userEvent.click(partnerBtn)
-    expect(openBtn).toHaveAccessibleName(copy.unmute)
-    expect(partnerBtn).toHaveAccessibleName(copy.mute)
-
-    await userEvent.click(partnerBtn)
-    expect(partnerBtn).toHaveAccessibleName(copy.unmute)
+    expect(openBtn).toHaveAccessibleName(copy.unmuteOpen)
+    expect(partnerBtn).toHaveAccessibleName(copy.mutePartner)
   })
 })
