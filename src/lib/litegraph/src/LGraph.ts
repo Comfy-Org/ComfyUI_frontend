@@ -70,6 +70,11 @@ import {
   realignInputLinkSlots
 } from './linkDeduplication'
 import {
+  countRequestedNodeIds,
+  recordUnambiguousRemint,
+  remapRemintedEndpoints
+} from './remintLinkRemap'
+import {
   beginNamedValuesShadowDiffLoad,
   endNamedValuesShadowDiffLoad
 } from './utils/namedValuesShadowDiffTelemetry'
@@ -2787,6 +2792,13 @@ export class LGraph
       }
 
       let reroutes: SerialisableReroute[] | undefined
+      /**
+       * Links restored from this payload, in case node-id remints during the
+       * node-creation pass require their endpoints to be remapped
+       * (ADR-0008). Only payload links are candidates; incumbent links are
+       * never touched.
+       */
+      const addedLinkIds: LinkId[] = []
       // TODO: Determine whether this should this fall back to 0.4.
       if (data.version === 0.4) {
         const { extra } = data
@@ -2794,7 +2806,7 @@ export class LGraph
         if (Array.isArray(data.links)) {
           for (const linkData of data.links) {
             const link = LLink.createFromArray(linkData)
-            this._addLink(link)
+            if (this._addLink(link)) addedLinkIds.push(link.id)
           }
         }
         // #region `extra` embeds for v0.4
@@ -2835,7 +2847,7 @@ export class LGraph
         if (Array.isArray(data.links)) {
           for (const linkData of data.links) {
             const link = LLink.create(linkData)
-            this._addLink(link)
+            if (this._addLink(link)) addedLinkIds.push(link.id)
           }
         }
 
@@ -2888,9 +2900,20 @@ export class LGraph
       const nodeDataMap = new Map<SerializedNodeId, ISerialisedNode>()
       const realignmentDataMap = new Map<SerializedNodeId, ISerialisedNode>()
 
+      /**
+       * Requested (serialized) id → final id for nodes whose id was
+       * reminted on collision during `this.add` (ADR-0008). Payload links
+       * name nodes by requested id, so their endpoints must follow the
+       * remint. Ambiguous requested ids (claimed by >1 payload node) are
+       * never recorded — see {@link recordUnambiguousRemint}.
+       */
+      const remintedIds = new Map<NodeId, NodeId>()
+
       // create nodes
       this._nodes = []
       if (effectiveNodesData) {
+        const requestedIdCounts = countRequestedNodeIds(effectiveNodesData)
+
         for (const n_info of effectiveNodesData) {
           // stored info
           let node = LiteGraph.createNode(String(n_info.type), n_info.title)
@@ -2907,14 +2930,33 @@ export class LGraph
           }
 
           // id it or it will create a new id
-          node.id = toNodeId(n_info.id)
+          const requestedId = toNodeId(n_info.id)
+          node.id = requestedId
           // add before configure, otherwise configure cannot create links
           this.add(node, true)
+          if (node.id !== requestedId) {
+            recordUnambiguousRemint(
+              remintedIds,
+              requestedIdCounts,
+              requestedId,
+              node.id
+            )
+          }
           nodeDataMap.set(node.id, n_info)
           realignmentDataMap.set(node.id, {
             ...n_info,
             inputs: n_info.inputs?.map((input) => ({ ...input }))
           })
+        }
+
+        // Follow remints: repoint this payload's link endpoints from
+        // requested ids to the reminted ids before nodes configure their
+        // slots against those links.
+        if (remintedIds.size > 0) {
+          for (const linkId of addedLinkIds) {
+            const link = this.links.get(linkId)
+            if (link) remapRemintedEndpoints(link, remintedIds)
+          }
         }
 
         // configure nodes afterwards so they can reach each other
@@ -2937,6 +2979,7 @@ export class LGraph
       if (Array.isArray(data.floatingLinks)) {
         for (const linkData of data.floatingLinks) {
           const floatingLink = LLink.create(linkData)
+          remapRemintedEndpoints(floatingLink, remintedIds)
           if (
             this.links.has(floatingLink.id) ||
             this.floatingLinks.has(floatingLink.id)

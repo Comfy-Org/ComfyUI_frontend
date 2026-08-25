@@ -1,0 +1,245 @@
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it } from 'vitest'
+
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type {
+  ISerialisedNode,
+  SerialisableGraph
+} from '@/lib/litegraph/src/types/serialisation'
+import { toLinkId } from '@/types/linkId'
+import { toNodeId } from '@/types/nodeId'
+
+/**
+ * Pins the remint→remap contract for serialized link endpoints (ADR-0008,
+ * "Collision recovery lives at the remint site").
+ *
+ * When `LGraph.configure` adds a payload node whose id collides with a live
+ * registration, `attachNodeToStores` remints the node's id. Links restored
+ * from the same payload named the node by its *requested* (serialized) id, so
+ * their endpoints must follow the remint — otherwise they silently attach to
+ * the incumbent that kept the old id (link theft) or dangle.
+ *
+ * The remap applies only to unambiguous remints: a serialized id requested by
+ * more than one payload node cannot name a single node, so links referencing
+ * it are left on the first claimant (status quo) rather than guessed at.
+ */
+
+const GRAPH_ID = 'aa000000-0000-4000-8000-000000000000'
+
+class DummyNode extends LGraphNode {
+  constructor() {
+    super('dummy')
+    this.addInput('in', 'number')
+    this.addOutput('out', 'number')
+  }
+}
+
+function serialisedNode(
+  id: number,
+  title: string,
+  order: number,
+  slots: { inputLink?: number; outputLinks?: number[] } = {}
+): ISerialisedNode {
+  return {
+    id,
+    type: 'dummy',
+    title,
+    pos: [order * 200, 0],
+    size: [100, 60],
+    flags: {},
+    order,
+    mode: 0,
+    inputs: [{ name: 'in', type: 'number', link: slots.inputLink ?? null }],
+    outputs: [{ name: 'out', type: 'number', links: slots.outputLinks ?? [] }],
+    properties: {}
+  }
+}
+
+function baseGraph(
+  overrides: Partial<SerialisableGraph> & Pick<SerialisableGraph, 'nodes'>
+): SerialisableGraph {
+  return {
+    id: GRAPH_ID,
+    version: 1,
+    revision: 0,
+    state: { lastNodeId: 0, lastLinkId: 0, lastGroupId: 0, lastRerouteId: 0 },
+    links: [],
+    groups: [],
+    extra: {},
+    ...overrides
+  }
+}
+
+/** Incumbent graph: node 1 → link 100 → node 2. */
+function incumbentGraph(): SerialisableGraph {
+  return baseGraph({
+    state: { lastNodeId: 2, lastLinkId: 100, lastGroupId: 0, lastRerouteId: 0 },
+    nodes: [
+      serialisedNode(1, 'incumbent', 0, { outputLinks: [100] }),
+      serialisedNode(2, 'sink', 1, { inputLink: 100 })
+    ],
+    links: [
+      {
+        id: 100,
+        origin_id: 1,
+        origin_slot: 0,
+        target_id: 2,
+        target_slot: 0,
+        type: 'number'
+      }
+    ]
+  })
+}
+
+/**
+ * Merge payload whose node 1 collides with the live incumbent. Its links name
+ * the payload's own node 1: 200 originates there, 201 targets it.
+ */
+function mergePayload(): SerialisableGraph {
+  return baseGraph({
+    state: { lastNodeId: 3, lastLinkId: 201, lastGroupId: 0, lastRerouteId: 0 },
+    nodes: [
+      serialisedNode(1, 'newcomer', 0, { outputLinks: [200], inputLink: 201 }),
+      serialisedNode(3, 'merge-sink', 1, {
+        inputLink: 200,
+        outputLinks: [201]
+      })
+    ],
+    links: [
+      {
+        id: 200,
+        origin_id: 1,
+        origin_slot: 0,
+        target_id: 3,
+        target_slot: 0,
+        type: 'number'
+      },
+      {
+        id: 201,
+        origin_id: 3,
+        origin_slot: 0,
+        target_id: 1,
+        target_slot: 0,
+        type: 'number'
+      }
+    ]
+  })
+}
+
+beforeEach(() => {
+  setActivePinia(createTestingPinia({ stubActions: false }))
+  LiteGraph.registerNodeType('dummy', DummyNode)
+})
+
+function findByTitle(graph: LGraph, title: string): LGraphNode {
+  const node = graph.nodes.find((n) => n.title === title)
+  if (!node) throw new Error(`node titled ${title} not found`)
+  return node
+}
+
+describe('LGraph.configure remint link remap', () => {
+  it('remaps payload link endpoints to follow a reminted node', () => {
+    const graph = new LGraph()
+    graph.configure(incumbentGraph())
+
+    graph.configure(mergePayload(), true)
+
+    const newcomer = findByTitle(graph, 'newcomer')
+    // The collision itself: the payload's node 1 must have been reminted.
+    expect(newcomer.id).not.toBe(toNodeId(1))
+
+    const origin = graph.links.get(toLinkId(200))
+    expect(origin?.origin_id).toBe(newcomer.id)
+    expect(origin?.target_id).toBe(toNodeId(3))
+
+    const target = graph.links.get(toLinkId(201))
+    expect(target?.origin_id).toBe(toNodeId(3))
+    expect(target?.target_id).toBe(newcomer.id)
+  })
+
+  it('leaves links that predate the merge on the incumbent', () => {
+    const graph = new LGraph()
+    graph.configure(incumbentGraph())
+
+    graph.configure(mergePayload(), true)
+
+    const incumbentLink = graph.links.get(toLinkId(100))
+    expect(incumbentLink?.origin_id).toBe(toNodeId(1))
+    expect(incumbentLink?.target_id).toBe(toNodeId(2))
+  })
+
+  it('remaps floating link endpoints to follow a reminted node', () => {
+    const graph = new LGraph()
+    graph.configure(incumbentGraph())
+
+    const payload = baseGraph({
+      state: {
+        lastNodeId: 1,
+        lastLinkId: 400,
+        lastGroupId: 0,
+        lastRerouteId: 0
+      },
+      nodes: [serialisedNode(1, 'newcomer', 0)],
+      floatingLinks: [
+        {
+          id: 400,
+          origin_id: 1,
+          origin_slot: 0,
+          target_id: -1,
+          target_slot: -1,
+          type: 'number'
+        }
+      ]
+    })
+    graph.configure(payload, true)
+
+    const newcomer = findByTitle(graph, 'newcomer')
+    expect(newcomer.id).not.toBe(toNodeId(1))
+
+    const floating = [...graph.floatingLinks.values()].find(
+      (link) => link.id === toLinkId(400)
+    )
+    expect(floating?.origin_id).toBe(newcomer.id)
+  })
+
+  it('does not remap links whose serialized id is claimed by two payload nodes', () => {
+    const graph = new LGraph()
+    const payload = baseGraph({
+      state: {
+        lastNodeId: 6,
+        lastLinkId: 300,
+        lastGroupId: 0,
+        lastRerouteId: 0
+      },
+      nodes: [
+        serialisedNode(5, 'first-claimant', 0, { outputLinks: [300] }),
+        serialisedNode(5, 'second-claimant', 1),
+        serialisedNode(6, 'sink', 2, { inputLink: 300 })
+      ],
+      links: [
+        {
+          id: 300,
+          origin_id: 5,
+          origin_slot: 0,
+          target_id: 6,
+          target_slot: 0,
+          type: 'number'
+        }
+      ]
+    })
+
+    graph.configure(payload)
+
+    const first = findByTitle(graph, 'first-claimant')
+    const second = findByTitle(graph, 'second-claimant')
+    expect(first.id).toBe(toNodeId(5))
+    expect(second.id).not.toBe(toNodeId(5))
+
+    // Ambiguous claim: the link stays with the first claimant instead of
+    // being guessed onto the remint.
+    const link = graph.links.get(toLinkId(300))
+    expect(link?.origin_id).toBe(toNodeId(5))
+    expect(link?.target_id).toBe(toNodeId(6))
+  })
+})
