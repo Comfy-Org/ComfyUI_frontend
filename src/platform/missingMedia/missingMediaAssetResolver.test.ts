@@ -12,6 +12,11 @@ import {
 } from './missingMediaAssetResolver'
 
 const mockInputItems = ref<AssetItem[]>([])
+const mockInputHasMore = ref(false)
+
+const { mockUseAssetsQuery } = vi.hoisted(() => ({
+  mockUseAssetsQuery: vi.fn()
+}))
 
 const { mockGetAssetsPageByTag } = vi.hoisted(() => ({
   mockGetAssetsPageByTag: vi.fn()
@@ -21,10 +26,8 @@ const { mockFetchHistoryPage } = vi.hoisted(() => ({
   mockFetchHistoryPage: vi.fn()
 }))
 
-vi.mock('@/stores/assetsStore', () => ({
-  useAssetsStore: () => ({
-    inputAssets: { items: mockInputItems }
-  })
+vi.mock('@/platform/remote/paged/assets', () => ({
+  useAssetsQuery: mockUseAssetsQuery
 }))
 
 vi.mock('@/platform/assets/services/assetService', async () => {
@@ -107,11 +110,20 @@ function makeAssetPage(
 describe('resolveMissingMediaAssetSources', () => {
   beforeEach(() => {
     mockInputItems.value = []
+    mockInputHasMore.value = false
+    mockUseAssetsQuery.mockReturnValue({
+      items: mockInputItems,
+      hasMore: mockInputHasMore,
+      loadMore: vi.fn(() => {
+        mockInputHasMore.value = false
+        return Promise.resolve()
+      })
+    })
     mockGetAssetsPageByTag.mockResolvedValue(makeAssetPage([]))
     mockFetchHistoryPage.mockResolvedValue(makeHistoryPage([]))
   })
 
-  it('loads cloud input assets from the store', async () => {
+  it('loads cloud input assets via a public-inclusive query', async () => {
     const inputAsset = makeAsset('photo.png')
     mockInputItems.value = [inputAsset]
 
@@ -122,6 +134,10 @@ describe('resolveMissingMediaAssetSources', () => {
       allowCompactSuffix: true
     })
 
+    expect(mockUseAssetsQuery).toHaveBeenCalledWith({
+      include_tags: ['input'],
+      include_public: true
+    })
     expect(result.inputAssets).toEqual([inputAsset])
     expect(result.generatedAssets).toEqual([])
     expect(mockFetchHistoryPage).not.toHaveBeenCalled()
