@@ -310,8 +310,14 @@ function insert(text: string): void {
   textareaRef.value?.focus()
 }
 
+function replaceDraft(text: string): void {
+  composer.draft.value = text
+  textareaRef.value?.focus()
+}
+
 defineExpose({
   insert,
+  replaceDraft,
   addAttachment: composer.addAttachment,
   updateAttachment: composer.updateAttachment,
   removeAttachment: composer.removeAttachment

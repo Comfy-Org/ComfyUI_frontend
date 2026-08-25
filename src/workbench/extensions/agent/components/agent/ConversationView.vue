@@ -8,15 +8,18 @@ import { buildAgentTooltipConfig } from '@/composables/useTooltipConfig'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { ConversationEntry } from '../../stores/agent/agentConversationStore'
+import type { TurnId } from '../../schemas/agentApiSchema'
 
 import AgentMessage from './message/AgentMessage.vue'
 import UserMessage from './message/UserMessage.vue'
 
-const { entries } = defineProps<{
+const { entries, editableTurnId = null } = defineProps<{
   entries: ConversationEntry[]
+  editableTurnId?: TurnId | null
 }>()
 const emit = defineEmits<{
   feedback: [turnId: string, vote: 'up' | 'down' | null]
+  editPrompt: [text: string]
 }>()
 
 const { t } = useI18n()
@@ -77,6 +80,8 @@ watch(
               :text="entry.text"
               :attachments="entry.attachments"
               :tags="entry.tags"
+              :editable="entry.id === editableTurnId"
+              @edit="emit('editPrompt', $event)"
             />
             <AgentMessage
               v-else

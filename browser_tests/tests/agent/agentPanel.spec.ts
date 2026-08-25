@@ -284,6 +284,45 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       .toBeLessThanOrEqual(1)
   })
 
+  test('edits and resubmits the last prompt after stopping its turn', async ({
+    comfyPage,
+    postedMessages,
+    getWebSocket
+  }) => {
+    const page = comfyPage.page
+    await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+
+    const panel = page.locator('#agent-panel-root')
+    const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
+    const originalPrompt = 'Build a rainy city at night'
+    const revisedPrompt = 'Build a rainy city at sunrise'
+
+    await composer.fill(originalPrompt)
+    await panel.getByRole('button', { name: enMessages.agent.send }).click()
+    await expect.poll(() => postedMessages.length).toBe(1)
+
+    await expect(
+      panel.getByRole('button', { name: enMessages.g.edit })
+    ).toHaveCount(0)
+    await panel.getByRole('button', { name: enMessages.agent.stop }).click()
+    await expect(
+      panel.getByRole('button', { name: enMessages.g.edit })
+    ).toHaveCount(0)
+
+    pushEvent(await getWebSocket(), MESSAGE_DONE_EVENT)
+    const editButton = panel.getByRole('button', { name: enMessages.g.edit })
+    await expect(editButton).toHaveCount(1)
+    await editButton.click()
+
+    await expect(composer).toHaveValue(originalPrompt)
+    await expect(composer).toBeFocused()
+
+    await composer.fill(revisedPrompt)
+    await panel.getByRole('button', { name: enMessages.agent.send }).click()
+    await expect.poll(() => postedMessages.length).toBe(2)
+    expect(postedMessages[1]).toContain(revisedPrompt)
+  })
+
   test('applies a draft_patch graph to the canvas', async ({
     comfyPage,
     postedMessages,

@@ -14,6 +14,7 @@ import { buildAgentTooltipConfig } from '@/composables/useTooltipConfig'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
 import type { ActiveTab } from '../../types/activeTab'
+import type { TurnId } from '../../schemas/agentApiSchema'
 import type { ComposerAttachment } from '../../composables/agent/useComposer'
 import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
 import type { ConversationEntry } from '../../stores/agent/agentConversationStore'
@@ -41,7 +42,8 @@ const {
   getMentionAssets = async () => [],
   sessionId = null,
   customTitle,
-  historyGroups
+  historyGroups,
+  editableTurnId = null
 } = defineProps<{
   entries: ConversationEntry[]
   userName?: string
@@ -59,6 +61,7 @@ const {
   sessionId?: string | null
   customTitle?: string
   historyGroups: HistoryGroups
+  editableTurnId?: TurnId | null
 }>()
 const emit = defineEmits<{
   send: [text: string, attachments: ComposerAttachment[]]
@@ -287,6 +290,8 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
         <ConversationView
           v-else
           :entries="entries"
+          :editable-turn-id="editableTurnId"
+          @edit-prompt="composerRef?.replaceDraft($event)"
           @feedback="(id, vote) => emit('feedback', id, vote)"
         />
       </div>
