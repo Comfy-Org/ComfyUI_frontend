@@ -425,9 +425,10 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
       // No such culling exists in production source: GraphCanvas.vue mounts
       // every Vue node from allNodes at any zoom, and the only
       // isNodeTooSmall / isNodeInViewport matches in the repo are stale
-      // comments in this file. The assertion could never pass at the real
-      // ds.min_scale clamp (0.1), which is what kept the perf job red and
-      // the baseline pipeline dead (issue #15545).
+      // comments in this file. The helper sent wheel events over an overlay,
+      // leaving the workflow's 0.5 scale unchanged; the old <0.02 assertion
+      // was also below the real ds.min_scale clamp (0.1). This kept the perf
+      // job red and the baseline pipeline dead (issue #15545).
       //
       // Until renderer-owned LOD lands (PR #15031 replaces Vue widget DOM
       // below the readable-font threshold, reachable at production zoom),
@@ -436,9 +437,19 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
       // Zoom out to the ds.min_scale clamp (0.1) before measuring so the
       // metric captures only idle frames at minimum scale, not zoom
       // input/render cost.
+      const box = await comfyPage.canvas.boundingBox()
+      if (!box) throw new Error('Canvas bounding box not available')
+      await comfyPage.page.mouse.move(
+        box.x + box.width / 2,
+        box.y + box.height / 2
+      )
       for (let i = 0; i < 20; i++) {
-        await comfyPage.canvasOps.zoom(100)
+        await comfyPage.page.mouse.wheel(0, 100)
+        await comfyPage.nextFrame()
       }
+      await expect
+        .poll(() => comfyPage.canvasOps.getScale())
+        .toBeCloseTo(0.1, 5)
 
       await comfyPage.perf.startMeasuring()
 
