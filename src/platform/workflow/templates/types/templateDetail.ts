@@ -1,6 +1,6 @@
 import type { TemplateModelDownloadState } from '@/platform/workflow/templates/utils/templateModelDownloadState'
 
-export type TemplateDetailRowStatus =
+type TemplateDetailRowStatus =
   | {
       kind: 'installed'
       label: string

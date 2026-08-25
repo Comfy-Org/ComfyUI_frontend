@@ -1,79 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-type TemplateModelDownloadState =
-  | { status: 'idle'; attempt: 0 }
-  | { status: 'queued'; attempt: number }
-  | { status: 'starting'; attempt: number }
-  | {
-      status: 'downloading'
-      attempt: number
-      activity: 'active' | 'paused'
-      receivedBytes: number | null
-      totalBytes: number | null
-      fraction: number | null
-    }
-  | { status: 'done'; attempt: number }
-  | {
-      status: 'failed'
-      attempt: number
-      reason: 'error' | 'cancelled'
-      retryable: true
-    }
-
-type TemplateModelDownloadEvent =
-  | { type: 'request' }
-  | { type: 'started'; attempt: number }
-  | {
-      type: 'progress'
-      attempt: number
-      activity: 'active' | 'paused'
-      receivedBytes: number | null
-      totalBytes: number | null
-      fraction: number | null
-    }
-  | { type: 'completed'; attempt: number }
-  | { type: 'error' | 'cancelled'; attempt: number }
-
-type TemplateModelDownloadStateModule = {
-  createTemplateModelDownloadState: () => TemplateModelDownloadState
-  getTemplateModelDownloadIdentity: (model: {
-    name: string
-    directory: string
-  }) => string
-  reduceTemplateModelDownloadState: (
-    state: TemplateModelDownloadState,
-    event: TemplateModelDownloadEvent
-  ) => TemplateModelDownloadState
-}
-
-function isStateModule(
-  value: unknown
-): value is TemplateModelDownloadStateModule {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'createTemplateModelDownloadState' in value &&
-    typeof value.createTemplateModelDownloadState === 'function' &&
-    'getTemplateModelDownloadIdentity' in value &&
-    typeof value.getTemplateModelDownloadIdentity === 'function' &&
-    'reduceTemplateModelDownloadState' in value &&
-    typeof value.reduceTemplateModelDownloadState === 'function'
-  )
-}
-
-async function loadStateModule(): Promise<TemplateModelDownloadStateModule> {
-  const modulePath = './templateModelDownloadState'
-  const value: unknown = await import(modulePath)
-  if (!isStateModule(value)) {
-    throw new Error('Expected the template model download state module')
-  }
-  return value
-}
+import {
+  createTemplateModelDownloadState,
+  getTemplateModelDownloadIdentity,
+  reduceTemplateModelDownloadState
+} from '@/platform/workflow/templates/utils/templateModelDownloadState'
 
 describe('template model download state', () => {
-  it('identifies models by exact name and directory', async () => {
-    const { getTemplateModelDownloadIdentity } = await loadStateModule()
-
+  it('identifies models by exact name and directory', () => {
     const checkpoint = getTemplateModelDownloadIdentity({
       name: 'shared/name.safetensors',
       directory: 'checkpoints'
@@ -94,11 +28,7 @@ describe('template model download state', () => {
     expect(lora).not.toBe(checkpoint)
   })
 
-  it('assigns a monotonic attempt and ignores repeated active requests', async () => {
-    const {
-      createTemplateModelDownloadState,
-      reduceTemplateModelDownloadState
-    } = await loadStateModule()
+  it('assigns a monotonic attempt and ignores repeated active requests', () => {
     const idle = createTemplateModelDownloadState()
 
     expect(idle).toEqual({ status: 'idle', attempt: 0 })
@@ -130,11 +60,7 @@ describe('template model download state', () => {
     ).toBe(downloading)
   })
 
-  it('keeps exact nullable progress and requires explicit completion', async () => {
-    const {
-      createTemplateModelDownloadState,
-      reduceTemplateModelDownloadState
-    } = await loadStateModule()
+  it('keeps exact nullable progress and requires explicit completion', () => {
     const queued = reduceTemplateModelDownloadState(
       createTemplateModelDownloadState(),
       { type: 'request' }
@@ -170,11 +96,7 @@ describe('template model download state', () => {
 
   it.for(['error', 'cancelled'] as const)(
     'makes %s retryable and ignores stale attempt events',
-    async (type) => {
-      const {
-        createTemplateModelDownloadState,
-        reduceTemplateModelDownloadState
-      } = await loadStateModule()
+    (type) => {
       const queued = reduceTemplateModelDownloadState(
         createTemplateModelDownloadState(),
         { type: 'request' }
