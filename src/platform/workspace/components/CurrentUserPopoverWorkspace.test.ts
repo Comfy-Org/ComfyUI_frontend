@@ -510,4 +510,16 @@ describe('CurrentUserPopoverWorkspace', () => {
 
     expect(screen.getByTestId('plans-credits-menu-item')).toBeInTheDocument()
   })
+
+  // The pair above only varies the permission, so both cases would still pass
+  // if the Local-only guard were dropped. This varies the distribution instead.
+  it('hides local Plan and Credits on Cloud', () => {
+    state.canManageSubscription = true
+
+    renderComponent()
+
+    expect(
+      screen.queryByTestId('plans-credits-menu-item')
+    ).not.toBeInTheDocument()
+  })
 })
