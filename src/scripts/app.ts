@@ -777,12 +777,16 @@ export class ComfyApp {
 
           // A file above (e.g. a dropped workflow JSON) may have called
           // loadGraphData and replaced the graph out from under us. Any
-          // dropBatchNodes from before that point are now detached, and
-          // positioning against their stale coordinates would be wrong.
+          // dropBatchNodes or createdNodes from before that point are now
+          // detached, and positioning against/repositioning them would be
+          // wrong.
           const liveDropBatchNodes = dropBatchNodes.filter(
             (node) => node.graph === this.canvas.graph
           )
-          positionNodes(this.canvas, createdNodes, liveDropBatchNodes)
+          const liveCreatedNodes = createdNodes.filter(
+            (node) => node.graph === this.canvas.graph
+          )
+          positionNodes(this.canvas, liveCreatedNodes, liveDropBatchNodes)
         } finally {
           workspace.spinner = false
         }
