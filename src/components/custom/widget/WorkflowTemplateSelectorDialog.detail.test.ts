@@ -68,7 +68,10 @@ const mocks = vi.hoisted(() => ({
   getTemplateTitle: vi.fn((template: { title: string }) => template.title),
   loadTemplates: vi.fn(async () => true),
   resolveModelAvailability: vi.fn(async (models: readonly unknown[]) =>
-    models.map((model) => ({ model, status: 'missing' as const }))
+    models.map((model) => ({
+      model,
+      status: 'missing' as 'missing' | 'installed'
+    }))
   ),
   resolveModelMetadata: vi.fn(async (models: readonly unknown[]) => ({
     status: 'completed' as const,
@@ -351,6 +354,58 @@ describe('WorkflowTemplateSelectorDialog template detail navigation', () => {
       fixtures.prepared,
       { closeDialog: false }
     )
+    expect(mocks.onClose).toHaveBeenCalledOnce()
+  })
+
+  it('opens Desktop templates directly when every declared model is installed', async () => {
+    environment.isDesktop = true
+    mocks.resolveModelAvailability.mockResolvedValueOnce([
+      {
+        model: fixtures.prepared.workflow.models[0],
+        status: 'installed'
+      }
+    ])
+    const user = userEvent.setup()
+    renderDialog()
+
+    await user.click(
+      await screen.findByTestId(`template-workflow-${fixtures.template.name}`)
+    )
+
+    await waitFor(() => {
+      expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledOnce()
+    })
+    expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledWith(
+      fixtures.prepared,
+      { closeDialog: false }
+    )
+    expect(
+      screen.queryByRole('article', { name: fixtures.template.title })
+    ).not.toBeInTheDocument()
+    expect(mocks.resolveModelMetadata).not.toHaveBeenCalled()
+    expect(mocks.onClose).toHaveBeenCalledOnce()
+  })
+
+  it('opens Desktop templates without model declarations directly', async () => {
+    environment.isDesktop = true
+    const user = userEvent.setup()
+    renderDialog()
+
+    await user.click(
+      await screen.findByTestId(
+        `template-workflow-${fixtures.secondTemplate.name}`
+      )
+    )
+
+    await waitFor(() => {
+      expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledOnce()
+    })
+    expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledWith(
+      fixtures.secondPrepared,
+      { closeDialog: false }
+    )
+    expect(mocks.resolveModelAvailability).not.toHaveBeenCalled()
+    expect(mocks.resolveModelMetadata).not.toHaveBeenCalled()
     expect(mocks.onClose).toHaveBeenCalledOnce()
   })
 
