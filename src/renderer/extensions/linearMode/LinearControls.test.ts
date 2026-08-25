@@ -48,7 +48,12 @@ vi.mock<unknown>(import('@/components/error/useErrorOverlayState'), () => ({
 }))
 
 vi.mock('@/stores/templateInputDownloadStore', () => ({
-  useTemplateInputDownloadStore: () => inputDownloadMock
+  useTemplateInputDownloadStore: () => ({
+    downloads: inputDownloadMock.downloads,
+    blockingFilenames: new Set(
+      inputDownloadMock.downloads.map(({ filename }) => filename)
+    )
+  })
 }))
 
 const i18n = createI18n({
