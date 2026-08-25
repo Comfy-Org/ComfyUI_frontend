@@ -6,7 +6,8 @@ import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@/lib/litegraph/src/interfaces'
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useLinkStore } from '@/stores/linkStore'
 
 function connectedPair() {
@@ -204,6 +205,87 @@ describe('legacy slot link creation and plain-object slots (uncovered)', () => {
 
     expect(() => view.push(id)).not.toThrow()
     expect(source.outputs[0].links).toEqual([])
+  })
+
+  it('does not restore a second event output when fan-out is disabled', () => {
+    const { source, targets } = fanOut(2)
+    source.outputs[0].type = LiteGraph.EVENT
+    const saved = targets[0].inputs[0].link
+    targets[0].inputs[0].link = null
+
+    const previous = LiteGraph.allow_multi_output_for_events
+    LiteGraph.allow_multi_output_for_events = false
+    try {
+      targets[0].inputs[0].link = saved
+    } finally {
+      LiteGraph.allow_multi_output_for_events = previous
+    }
+
+    expect(targets[0].isInputConnected(0)).toBe(false)
+    expect(targets[1].isInputConnected(0)).toBe(true)
+    expect(source.outputs[0].links).toHaveLength(1)
+  })
+
+  it('fails safely when restoring from a subgraph input', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'value', type: 'INT' }]
+    })
+    const target = new LGraphNode('Target')
+    target.addInput('in', 'INT')
+    subgraph.add(target)
+    const saved = subgraph.inputs[0].connect(target.inputs[0], target)!.id
+    target.inputs[0].link = null
+
+    expect(() => {
+      target.inputs[0].link = saved
+    }).not.toThrow()
+    expect(target.inputs[0].link).toBeNull()
+  })
+
+  it('fails safely when restoring to a subgraph output', () => {
+    const subgraph = createTestSubgraph({
+      outputs: [{ name: 'value', type: 'INT' }]
+    })
+    const source = new LGraphNode('Source')
+    source.addOutput('out', 'INT')
+    subgraph.add(source)
+    const saved = subgraph.outputs[0].connect(source.outputs[0], source)!.id
+    const view = source.outputs[0].links!
+    source.disconnectOutput(0)
+
+    expect(source.outputs[0].links).toBeNull()
+    expect(() => view.push(saved)).not.toThrow()
+    expect(source.outputs[0].links).toBeNull()
+  })
+
+  it('honors connection callback vetoes when restoring', () => {
+    for (const side of ['input', 'output'] as const) {
+      const { source, target } = connectedPair()
+      const saved = target.inputs[0].link
+      target.inputs[0].link = null
+      if (side === 'input') target.onConnectInput = () => false
+      else source.onConnectOutput = () => false
+
+      target.inputs[0].link = saved
+
+      expect(target.isInputConnected(0), side).toBe(false)
+      expect(source.isOutputConnected(0), side).toBe(false)
+    }
+  })
+
+  it('fails safely when a connection callback removes the restored link', () => {
+    const { source, target } = connectedPair()
+    const saved = target.inputs[0].link
+    target.inputs[0].link = null
+    source.onConnectionsChange = (_side, _slot, connected) => {
+      if (connected) target.disconnectInput(0)
+    }
+
+    expect(() => {
+      target.inputs[0].link = saved
+    }).not.toThrow()
+    expect(target.isInputConnected(0)).toBe(false)
+    expect(source.isOutputConnected(0)).toBe(false)
   })
 
   it('disconnects through a plain-object input slot', () => {
