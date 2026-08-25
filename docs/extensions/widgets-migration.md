@@ -77,7 +77,7 @@ Despite being an accessor rather than an own data property, `widgets` (like
 constructor specifically so `Object.keys(node)` and `{...node}` still surface
 it — this is called out explicitly as a deliberate compatibility guarantee in
 the ECS extension-compatibility audit (`docs/architecture/ecs/ecs-extension-compatibility-audit.md:107-114`).
-That guarantee does *not* extend to most other node fields: `id`, `type`,
+That guarantee does _not_ extend to most other node fields: `id`, `type`,
 `title`, `flags`, `mode`, `color`, `bgcolor`, `shape`, and `showAdvanced` lost
 their own-enumerable status in the same refactor and no longer appear in
 generic enumeration.
@@ -130,10 +130,10 @@ Continue to call `node.removeWidget(widget)` rather than splicing
 `node.widgets` and expecting slot/DOM cleanup to happen on its own — it still
 clears any input slot's `_widget`/`widget`/`pos` reference to the removed
 widget before splicing it out. Removing a widget from `node.widgets` updates
-the store's *order* record for the node automatically (via the mutation-view
-commit), but does not by itself delete the widget's *value* from
+the store's _order_ record for the node automatically (via the mutation-view
+commit), but does not by itself delete the widget's _value_ from
 `widgetValueStore` — value cleanup on node/widget teardown is handled by the
-node-detach path (`detachNodeFromStores` /  `releaseNodeWidgets`,
+node-detach path (`detachNodeFromStores` / `releaseNodeWidgets`,
 `src/core/graph/nodeShell/nodeShellLifecycle.ts:60-71`) and a few
 subgraph-specific call sites (`SubgraphNode.ts:377`,
 `promotionUtils.ts:436`, `dynamicWidgets.ts:569`) that call

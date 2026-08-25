@@ -61,7 +61,7 @@ For `graph.remove(node)` (`src/lib/litegraph/src/LGraph.ts:1248-1319`):
 6. `onNodeRemoved(node)` and then `node:removed` fire — both observe an
    already-detached node absent from `getNodeById()`.
 
-The practical guidance: if an `onConnectionsChange` handler on a *peer* node
+The practical guidance: if an `onConnectionsChange` handler on a _peer_ node
 needs to resolve the node being removed via `graph.getNodeById()`, do it from
 step 2, not from a `node:removed` listener — by then the node is gone. If
 your own node needs to react to disconnects triggered by its own removal
@@ -100,7 +100,13 @@ if (graph.getLink(link.id) !== link) {
   graph.afterChange()
   return
 }
-inputNode.onConnectionsChange?.(NodeSlotType.INPUT, inputIndex, true, link, input)
+inputNode.onConnectionsChange?.(
+  NodeSlotType.INPUT,
+  inputIndex,
+  true,
+  link,
+  input
+)
 ```
 
 In practice: if the output-side `onConnectionsChange` handler itself mutates

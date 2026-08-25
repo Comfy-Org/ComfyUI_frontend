@@ -77,7 +77,7 @@ the same per-frame cached rectangle it always did.
 ## Stale-instance safety
 
 Layout registrations are now tied to the specific `LGraphNode` / `LGraphGroup`
-/ `Reroute` *instance* that attached them, not just to an ID (#15017). If an
+/ `Reroute` _instance_ that attached them, not just to an ID (#15017). If an
 extension holds on to a node reference after it has been removed from the
 graph — a detached clone, or a stale reference captured before an async
 callback resolves — calling `setPos()` / `setSize()` on it is now a safe
