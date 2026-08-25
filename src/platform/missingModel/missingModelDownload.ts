@@ -184,22 +184,21 @@ export function downloadModel(
   const outcome = dispatchModelDownload(model, paths)
 
   if (outcome.status === 'dispatch-failed') {
-    if (outcome.host === 'electron') throw outcome.error
-
-    console.error('Failed to start Desktop2 model download:', outcome.error)
+    console.error(
+      `Failed to start ${outcome.host === 'desktop2' ? 'Desktop2' : 'Electron'} model download:`,
+      outcome.error
+    )
     return
   }
 
   if (outcome.status !== 'host-requested') return
 
-  if (outcome.host === 'desktop2') {
-    void outcome.hostResult.catch((error: unknown) => {
-      console.error('Failed to start Desktop2 model download:', error)
-    })
-    return
-  }
-
-  void outcome.hostResult.catch(() => undefined)
+  void outcome.hostResult.catch((error: unknown) => {
+    console.error(
+      `Failed to start ${outcome.host === 'desktop2' ? 'Desktop2' : 'Electron'} model download:`,
+      error
+    )
+  })
 }
 
 export interface ModelMetadata {

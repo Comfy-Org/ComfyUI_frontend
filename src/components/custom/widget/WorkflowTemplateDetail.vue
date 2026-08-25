@@ -276,10 +276,10 @@ function getFailedDownloadLabel(
               <span
                 v-else-if="
                   row.status?.kind === 'downloadable' &&
-                  getPassiveDownloadLabel(row.status.downloadState)
+                  (row.status.downloadState?.status === 'queued' ||
+                    row.status.downloadState?.status === 'starting')
                 "
                 role="status"
-                :aria-label="getPassiveDownloadLabel(row.status.downloadState)"
                 class="shrink-0 text-xs text-muted-foreground"
               >
                 {{ getPassiveDownloadLabel(row.status.downloadState) }}
@@ -304,13 +304,13 @@ function getFailedDownloadLabel(
                   class="block h-1 w-24 overflow-hidden rounded-full bg-secondary-background"
                 >
                   <span
-                    data-testid="download-progress-fill"
                     :class="
                       cn(
                         'block h-full rounded-full bg-primary-background',
+                        row.status.downloadState.fraction === null && 'w-1/3',
                         row.status.downloadState.fraction === null &&
                           row.status.downloadState.activity === 'active' &&
-                          'w-1/3 animate-pulse'
+                          'animate-pulse'
                       )
                     "
                     :style="
@@ -383,19 +383,6 @@ function getFailedDownloadLabel(
                   variant="label"
                   class="h-5 px-2 py-0.5 text-xs font-medium text-muted-foreground normal-case"
                 />
-                <a
-                  v-if="
-                    (row.status.kind === 'unavailable' ||
-                      row.status.kind === 'unknown') &&
-                    row.status.action
-                  "
-                  :href="row.status.action.href"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="focus-visible:ring-ring text-xs text-muted-foreground no-underline hover:text-base-foreground hover:underline focus-visible:rounded-sm focus-visible:ring-1 focus-visible:outline-none"
-                >
-                  {{ row.status.action.label }}
-                </a>
               </span>
             </li>
           </ul>
