@@ -31,6 +31,10 @@ const borderStyle = computed(() =>
 const linkedDisplay = computed(() =>
   widget.linkedDisplay === 'control' ? widget.linkedDisplay : undefined
 )
+
+function stopWidgetPointer(event: PointerEvent) {
+  if (!linkedDisplay.value) event.stopPropagation()
+}
 </script>
 
 <template>
@@ -60,9 +64,9 @@ const linkedDisplay = computed(() =>
             !noBorder && borderStyle
           )
         "
-        @pointerdown.stop
-        @pointermove.stop
-        @pointerup.stop
+        @pointerdown="stopWidgetPointer"
+        @pointermove="stopWidgetPointer"
+        @pointerup="stopWidgetPointer"
       >
         <div
           :class="cn('contents', linkedDisplay && 'invisible')"

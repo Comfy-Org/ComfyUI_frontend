@@ -133,11 +133,14 @@ describe('WidgetLayoutField', () => {
   describe('Pointer-event isolation', () => {
     // The slot wrapper stops pointerdown/move/up so inner controls can capture
     // drags without triggering node selection/drag on the outer canvas.
-    function renderInsideParent(onParentPointer: (type: string) => void) {
+    function renderInsideParent(
+      onParentPointer: (type: string) => void,
+      widget: WidgetShape = { name: 'seed' }
+    ) {
       const Harness = defineComponent({
         components: { WidgetLayoutField },
         setup: () => ({
-          widget: { name: 'seed' },
+          widget,
           onDown: () => onParentPointer('pointerdown'),
           onMove: () => onParentPointer('pointermove'),
           onUp: () => onParentPointer('pointerup')
@@ -172,6 +175,26 @@ describe('WidgetLayoutField', () => {
         await dispatch(inner)
 
         expect(parentSpy).not.toHaveBeenCalled()
+      }
+    )
+
+    it.for([
+      ['pointerdown', fireEvent.pointerDown],
+      ['pointermove', fireEvent.pointerMove],
+      ['pointerup', fireEvent.pointerUp]
+    ] as const)(
+      'allows linked status %s to propagate to the parent',
+      async ([type, dispatch]) => {
+        renderInsideParent(vi.fn(), {
+          name: 'seed',
+          linkedDisplay: 'control'
+        })
+        const parentSpy = vi.fn()
+        screen.getByTestId('parent').addEventListener(type, parentSpy)
+
+        await dispatch(screen.getByRole('img', { name: 'seed: Linked input' }))
+
+        expect(parentSpy).toHaveBeenCalledTimes(1)
       }
     )
 
