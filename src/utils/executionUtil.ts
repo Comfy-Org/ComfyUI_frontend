@@ -14,6 +14,22 @@ import type {
 
 import { compressWidgetInputSlots } from './litegraphUtil'
 
+type ExportedWidgetValueWrapper = {
+  __type__?: unknown
+  __value__: unknown
+}
+
+function isExportedWidgetValueWrapper(
+  value: unknown
+): value is ExportedWidgetValueWrapper {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    !Array.isArray(value) &&
+    '__value__' in value
+  )
+}
+
 /**
  * Inverse of the wrapping applied during Export (API). Curve values carry a
  * type marker and may be objects; untyped wrappers are reserved for arrays so
@@ -21,15 +37,10 @@ import { compressWidgetInputSlots } from './litegraphUtil'
  */
 export function unwrapExportedWidgetValue(value: unknown): unknown {
   if (
-    typeof value === 'object' &&
-    value !== null &&
-    !Array.isArray(value) &&
-    '__value__' in value
+    isExportedWidgetValueWrapper(value) &&
+    (value.__type__ === 'CURVE' || Array.isArray(value.__value__))
   ) {
-    const wrapper = value as { __type__?: unknown; __value__: unknown }
-    if (wrapper.__type__ === 'CURVE' || Array.isArray(wrapper.__value__)) {
-      return wrapper.__value__
-    }
+    return value.__value__
   }
   return value
 }
