@@ -1,65 +1,94 @@
-# Repository Exceptions Log
+# Repository exceptions and compatibility contracts
 
-This file is the central log of **known, bounded, deliberate exceptions** to
-the repository's house invariants (single source of truth, store-owned state
-with derived views, documented-and-tested contracts, no compatibility
-guarantees beyond those explicitly granted).
+This file records two kinds of deliberate departures from the repository's
+normal architecture rules:
 
-An exception belongs here when a change knowingly deviates from an invariant
-**on purpose** — as a transitional state, a scoped compatibility contract, or
-a consciously accepted gap — rather than by accident. Logging it makes the
-deviation legible: anyone who finds the deviating code can look up whether it
-is intended, who owns it, and what closes it.
+- Temporary exceptions describe a known transitional state and how to end it.
+- Compatibility contracts preserve a specific behavior for external consumers.
 
 ## Rules
 
-1. **Every entry has an owner, an entry date, an exit condition, and a link
-   to the decision that granted it.** An exception without an exit condition
-   is not an exception; it is an unrecorded change to the invariant.
-2. **Entries are never silently deleted.** When an exception's exit condition
-   is met, move its row to the Closed section with the closing date and the
-   change that closed it.
-3. **Exceptions do not generalize.** Each entry covers exactly the scope it
-   states. Extending an exception (more properties, more stores, more time)
-   requires a new decision, not an edit to the existing row.
-4. **Reviewers may cite this log.** A PR that deviates from a house invariant
-   without a matching entry here (or a new entry added in the same PR) is a
-   defect, not a judgment call.
+A temporary exception must name its scope, owner, opening date, closing
+condition, and decision record. When it closes, move it to the closed section
+and add the closing date and change that closed it.
+
+An entry applies only to the scope it names. Expanding that scope requires a
+new decision. A pull request that introduces another exception must add or
+reference an entry here.
+
+Compatibility contracts do not need a closing date. Changing one requires a
+superseding decision.
 
 ## Open exceptions
 
-### EX-001 — Slot state is class-owned (dual representation) during the slot migration
+### EX-001: Slot metadata remains class-owned during migration
 
-| Field                  | Value                                                                                                                                                                                                                                                                                                                                                       |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Invariant excepted** | Stores own entity state; class instances and boundary projections are derived views.                                                                                                                                                                                                                                                                        |
-| **Exception**          | Node slot state (`NodeInputSlot` / `NodeOutputSlot` instances) remains live, class-owned state: `NodeState` holds slot-class instances, `nodeShellState` exposes them via `shallowReactive` arrays, and `LGraphNode.inputs`/`outputs` read them through the store proxy. The store holds the _container_; the slot _fields_ are class-owned.                |
-| **Owner**              | Christian Byrne                                                                                                                                                                                                                                                                                                                                             |
-| **Entered**            | 2026-08-24                                                                                                                                                                                                                                                                                                                                                  |
-| **Exit condition**     | ID-based slot records own slot state and **both** interim representations — the class-instance `NodeState` arrays and any descriptor/Proxy boundary layer (#15544 family) — are retired. Authority direction is one-way in the meantime: once a slot field moves store-side, no change may make a class instance or projection authoritative over it again. |
-| **Decision record**    | [ADR-0017](adr/0017-id-based-slot-records-are-the-slot-destination.md) (program decision D-dq-08, 2026-08-24; mirrored to the Notion decision log)                                                                                                                                                                                                          |
+**Normal rule:** Stores own entity state. Classes and boundary objects expose
+views of that state.
 
-### EX-002 — Store collision contract is live in code but not yet documented and pinned on `main`
+**Current exception:** `NodeState` holds `NodeInputSlot` and `NodeOutputSlot`
+instances in `shallowReactive` arrays. `LGraphNode.inputs` and
+`LGraphNode.outputs` expose those arrays through the store proxy. The array
+containers are store-held, but slot fields remain on the class instances.
 
-| Field                  | Value                                                                                                                                                                                                                                                                                                                                                       |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Invariant excepted** | Behavioral contracts are documented in ADRs and pinned by tests before they are relied on.                                                                                                                                                                                                                                                                  |
-| **Exception**          | The per-store registration collision contract (identity-keyed stores — `nodeDataStore`, `linkStore`, `rerouteStore` — reject on collision, caller remints; the structural-keyed `widgetValueStore` resolves) is live in code, but `main`'s ADR collision table predates it and misstates per-store behavior, and no invariant test suite pins the contract. |
-| **Owner**              | Christian Byrne                                                                                                                                                                                                                                                                                                                                             |
-| **Entered**            | 2026-08-24                                                                                                                                                                                                                                                                                                                                                  |
-| **Exit condition**     | The D-dq-04 bundle lands on `main`: the remint-loop collision log (#15720), the corrected contract documentation (#15761 rebase — ADR-0003 table corrections and the ADR-0008 registration/collision amendment), and the four-store invariant test suite (`src/stores/storeCollisionContracts.test.ts`).                                                    |
-| **Decision record**    | Program decision D-dq-04 (2026-08-24; mirrored to the Notion decision log); PRs #15720, #15761; issue #15743                                                                                                                                                                                                                                                |
+**Owner:** Christian Byrne
 
-### EX-003 — `LLink` guarantees exactly seven own-enumerable legacy topology properties
+**Opened:** 2026-08-24
 
-| Field                  | Value                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Invariant excepted** | Entity instances make no enumeration or spread-copy compatibility guarantee; state is exposed through accessors over store-backed state.                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| **Exception**          | Exactly seven historically own-enumerable `LLink` properties — `id`, `type`, `origin_id`, `origin_slot`, `target_id`, `target_slot`, `parentId` — are preserved as own enumerable **forwarding descriptors** (prototype accessors copied onto each instance) so ecosystem spread-copy consumers keep working. Reads and writes still delegate to the store-backed `LLink._state`; no synchronized plain fields exist. This is **not** a general entity-enumeration guarantee: no other `LLink` keys, and no other entity types (`Reroute`, widgets, nodes), are covered. |
-| **Owner**              | Christian Byrne (implementation vehicle: #15654)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| **Entered**            | 2026-08-24                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| **Exit condition**     | Bounded in scope, not time. Superseding decision required if: the project adopts and publishes a breaking policy that entity enumeration is unsupported; the forwarding descriptors are shown to violate a concrete invariant; or measured consumers require an exact whole-object/key-order contract rather than these seven values.                                                                                                                                                                                                                                    |
-| **Decision record**    | Program decision D-c6-01 (2026-08-24; mirrored to the Notion decision log); PR #15654 (implementation), PR #15778 (closed as duplicate; carries the original patch and discussion)                                                                                                                                                                                                                                                                                                                                                                                       |
+**Closes when:** ID-keyed store records own slot state and both interim
+representations have been removed: the class-instance arrays and any descriptor
+or Proxy compatibility layer. Once a field moves into a store record, no class
+or projection may become a separate source of truth for it.
+
+**Decision:** [ADR-0017](adr/0017-id-based-slot-records-are-the-slot-destination.md)
+
+### EX-002: Store collision behavior is not yet documented and tested
+
+**Normal rule:** Tests and ADRs document behavioral contracts before other code
+relies on them.
+
+**Current exception:** `nodeDataStore`, `linkStore`, and `rerouteStore` reject
+identity-key collisions so the caller can mint a new ID. `widgetValueStore`
+resolves structural-key collisions. The behavior exists in code, but the ADR
+collision table is outdated and no shared test suite covers all four stores.
+
+**Owner:** Christian Byrne
+
+**Opened:** 2026-08-24
+
+**Closes when:** PRs #15720 and #15761 land with the corrected ADR text and
+`src/stores/storeCollisionContracts.test.ts` covers all four stores. Issue
+#15743 tracks the work.
+
+**Decision:** PRs #15720 and #15761
+
+## Compatibility contracts
+
+### EX-003: `LLink` preserves seven enumerable topology properties
+
+`LLink` keeps these own enumerable properties for consumers that copy links
+with object spread:
+
+- `id`
+- `type`
+- `origin_id`
+- `origin_slot`
+- `target_id`
+- `target_slot`
+- `parentId`
+
+They are forwarding descriptors. Reads and writes still use the store-backed
+`LLink._state`; the instance does not keep synchronized copies.
+
+This contract covers no other `LLink` properties and no other entity types.
+Changing it requires a superseding decision based on the published extension
+policy, a concrete invariant violation, or measured consumer requirements.
+
+**Owner:** Christian Byrne
+
+**Recorded:** 2026-08-24
+
+**Decision:** PR #15654. PR #15778 contains the original patch and discussion.
 
 ## Closed exceptions
 
