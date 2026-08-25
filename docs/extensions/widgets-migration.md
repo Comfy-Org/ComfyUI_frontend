@@ -1,165 +1,90 @@
 # Widget System Migration Notes
 
-Widget values now live in `widgetValueStore`, a Pinia store, instead of only
-on the widget instance. `node.widgets` itself is unchanged in shape: still
-an array of widget objects, still ordered, still enumerable, but it is now a
-proxy-backed accessor rather than a plain instance property, and each
-widget's identity in the store is derived from its name, not from its
-position in that array.
+Widget values now live in a Pinia-backed store instead of directly on the
+widget instance. Two hazards follow: widget names must be unique per node,
+and renaming a widget after it's added leaves its stored value behind.
+`node.widgets` can also be `undefined` until it's first assigned, and only
+registered widgets participate in the store.
 
-## Widgets are keyed by `graphId:nodeId:name`, not by index or object identity
+## Widget names must be unique and stable
 
-`WidgetId` is a branded string of the form `graphId:nodeId:name`
-(`src/types/widgetId.ts`). Two consequences follow directly from the key
-being derived rather than assigned:
-
-- Two widgets on the same node cannot share a `name`. If your extension ever
-  added widgets with duplicate names (relying on positional access into
-  `node.widgets` to disambiguate them), the second registration collides with
-  the first in the store.
-- Renaming a widget after it is registered orphans its stored state: the
-  store entry stays filed under the old `name`, while anything that derives
-  the widget's id afterward (`widget.widgetId`, `src/lib/litegraph/src/widgets/BaseWidget.ts:136-141`)
-  computes the new key. `BaseWidget.name` is currently a plain data field, not
-  an accessor, so nothing intercepts the assignment to re-key the store for
-  you. Avoid renaming a widget post-construction; if you must, re-register it
-  explicitly rather than assuming the store follows the rename. A fix that
-  turns `name` into a rename-aware accessor has been proposed but is not
-  present in this codebase; verify against your checkout before relying on
-  automatic re-keying.
-
-## `node.widgets` can be `undefined`, and is a mutation-tracking proxy
-
-`node.widgets` is defined via `Object.defineProperty` in the node constructor
-(`src/lib/litegraph/src/node/widgetsView.ts`, wired up from
-`LGraphNode.ts:1004`), backed by a `shallowReactive` array. The getter returns
-`undefined` until the property has been assigned at least once:
+Two widgets on the same node cannot share a name. Adding a second widget with
+a name that's already in use overwrites the first widget's stored value:
 
 ```ts
-// src/lib/litegraph/src/node/widgetsView.ts
-get: () => (state.present ? state.view : undefined)
+node.addWidget('number', 'strength', 0, () => {})
+node.addWidget('number', 'strength', 1, () => {}) // overwrites the first widget's value
 ```
 
-The idiom extensions already use for this still works unmodified:
+Renaming a widget after it's registered has the same effect in reverse: the
+store keeps the value filed under the old name, and nothing re-keys it for
+you. Don't rename a widget after registration. Remove it and add a new one
+with the name you want instead.
+
+## `node.widgets` may be undefined
+
+`node.widgets` returns `undefined` until it's been assigned at least once.
+Initialize the array before adding widgets:
 
 ```ts
-this.widgets ||= []
-this.widgets.push(widget)
-```
-
-`this.widgets ||= []` runs the setter with `[]`, which is enough to flip
-`present` to `true`. From then on `node.widgets` returns a stable proxy
-(`createArrayMutationView`) over the backing array. Ordinary array reads pass
-through; `push`, `splice`, `pop`, `shift`, `unshift`, `sort`, `reverse`,
-`copyWithin`, and `fill` are intercepted so that any reordering is written
-back to the store via `replaceNodeWidgetOrder` (`src/lib/litegraph/src/node/widgetsView.ts:19-32`).
-Index assignment (`node.widgets[2] = w`) and `delete node.widgets[2]` are
-intercepted the same way. Nothing here requires extension code to change:
-direct mutation of `node.widgets` continues to work and continues to be the
-supported pattern (`removeWidget` in `LGraphNode.ts:2252-2272` still does
-`this.widgets.splice(widgetIndex, 1)`).
-
-Two things to be aware of:
-
-- Assigning `node.widgets = undefined` clears the array and flips `present`
-  back to `false`. A subsequent read then returns `undefined` again, not `[]`.
-  Guard reads with `node.widgets?.length` rather than assuming an array.
-- The order-sync commit needs `node.graph?.rootGraph.id`. If you mutate
-  `node.widgets` before the node has been added to a graph, the mutation
-  still applies locally but the store isn't told about the new order yet;
-  order registration happens for you when the node is attached
-  (`attachNodeToStores` in `src/core/graph/nodeShell/nodeShellLifecycle.ts:19-35`).
-  You don't need to call anything yourself in the common case of building
-  widgets inside a node constructor or `onNodeCreated`.
-
-Despite being an accessor rather than an own data property, `widgets` (like
-`inputs` and `outputs`) is re-declared as an enumerable own property in the
-constructor specifically so `Object.keys(node)` and `{...node}` still surface
-it. This is called out explicitly as a deliberate compatibility guarantee in
-the ECS extension-compatibility audit (`docs/architecture/ecs/ecs-extension-compatibility-audit.md:107-114`).
-That guarantee does _not_ extend to most other node fields: `id`, `type`,
-`title`, `flags`, `mode`, `color`, `bgcolor`, `shape`, and `showAdvanced` lost
-their own-enumerable status in the same refactor and no longer appear in
-generic enumeration.
-
-## Widget registration is a separate step from construction
-
-Constructing a widget (via `BaseWidget`'s constructor, or `node.addWidget` /
-`node.addCustomWidget`) does not, by itself, register it in
-`widgetValueStore`. Registration happens through `setNodeId`
-(`src/lib/litegraph/src/widgets/BaseWidget.ts:147-161`), which requires the
-node to already have a root graph id:
-
-```ts
-setNodeId(nodeId: NodeId): void {
-  const graphId = this.node.graph?.rootGraph.id
-  if (!graphId) return
-  const registered = useWidgetValueStore().registerWidget(
-    widgetId(graphId, nodeId, this.name),
-    { ...this._state, type: this.type, value: this.value },
-    deriveWidgetRenderState(this)
-  )
-  if (registered) this._state = registered
+export function nodeCreated(node: LGraphNode) {
+  node.widgets ??= []
+  node.widgets.push(myWidget)
 }
 ```
 
-`addCustomWidget` calls `setNodeId` immediately only if the node already has
-a valid id; otherwise registration is deferred until the node is added to a
-graph, at which point `attachNodeToStores` walks `node.widgets` and calls
-`setNodeId` on every bindable widget. This is transparent for the common case
-(building widgets in a constructor before the node is placed on the graph),
-but matters if your extension holds a widget reference and reads/writes
-`widget.value` before the node is attached: those reads/writes hit a local,
-per-instance state object, not the shared store, until attachment happens.
-No values are lost in that window: `setNodeId` seeds the store from the
-widget's current `value`/`type`. But until then the value won't be visible
-to store-driven UI (e.g. the right-side-panel widget list) or other systems
-that read `widgetValueStore` directly.
+Guard reads the same way:
 
-Only widgets that implement `NodeBindable` (i.e. expose `setNodeId`) get
-registered at all. `BaseWidget` subclasses do; a plain object literal
-returned from a custom widget constructor does not unless it is normalized
-into a concrete widget class first. Extend `BaseWidget`, or produce widgets
-through the existing `ComfyWidgetConstructor` contract (unchanged: still
-`{ widget, minWidth?, minHeight? }`), rather than hand-rolling a plain object
-if you need store participation.
+```ts
+const widgetCount = node.widgets?.length ?? 0
+```
 
-## Removing widgets
+**Setting `node.widgets = undefined` clears it.** A later read returns
+`undefined` again, not `[]`.
 
-Continue to call `node.removeWidget(widget)` rather than splicing
-`node.widgets` and expecting slot/DOM cleanup to happen on its own. It still
-clears any input slot's `_widget`/`widget`/`pos` reference to the removed
-widget before splicing it out. Removing a widget from `node.widgets` updates
-the store's _order_ record for the node automatically (via the mutation-view
-commit), but does not by itself delete the widget's _value_ from
-`widgetValueStore`: value cleanup on node/widget teardown is handled by the
-node-detach path (`detachNodeFromStores` / `releaseNodeWidgets`,
-`src/core/graph/nodeShell/nodeShellLifecycle.ts:60-71`) and a few
-subgraph-specific call sites (`SubgraphNode.ts:377`,
-`promotionUtils.ts:436`, `dynamicWidgets.ts:569`) that call
-`widgetValueStore().deleteWidget` explicitly. Removing a node from the graph
-keeps its widgets' values in the store by default (so undo can restore them)
-and only discards values outright when the whole containing graph is torn
-down. You don't need to (and shouldn't) call into `widgetValueStore`
-directly to manage this from extension code.
+**Mutations made before the node is attached to a graph are picked up
+automatically.** You don't need to call anything yourself for the common
+case of building widgets in a constructor or `onNodeCreated`.
 
-## Don't reach into `widgetValueStore` from extension code
+`node.widgets` shows up in `Object.keys(node)` and object spreads like
+`{...node}`.
 
-The store is an internal implementation detail behind `node.widgets` and the
-`BaseWidget` API, not a documented extension surface: it requires an active
-Pinia instance and keys everything by the derived `WidgetId`, both of which
-are implementation choices that could still change. Use `node.widgets`,
-`node.addWidget`/`addCustomWidget`/`removeWidget`, and `widget.value` as
-before; there is no supported reason for extension code to call
-`useWidgetValueStore()` directly.
+## Extend `BaseWidget` instead of returning a plain object
 
-## Widget-level `serializeValue` is unchanged, for now
+Widgets created through `BaseWidget` (directly, or via `node.addWidget`,
+`node.addCustomWidget`, `node.addDOMWidget`) get registered in the store
+automatically. A plain object literal is not registered and won't
+participate in the store:
 
-`widget.serializeValue` and other execution-time widget hooks are called out
-in the mutation/compatibility audits (`docs/architecture/ecs/ecs-mutation-audit.md:46`,
-`docs/architecture/ecs/ecs-extension-compatibility-audit.md:147-155`) as
-retaining their existing (unconstrained, effectful) contract for now, with
-further tightening described as future work rather than something already
-shipped. If your extension relies on `serializeValue` for side effects during
-prompt construction, treat that contract as unchanged today, but expect it to
-narrow in a future release; no timeline is documented yet.
+```ts
+class MyWidget extends BaseWidget<MyWidgetState> {
+  // draw, computeSize, etc.
+}
+
+node.addCustomWidget(
+  new MyWidget({ name: 'my_widget', type: 'custom', value: '' }, node)
+)
+```
+
+```ts
+// Not registered: the store never sees this widget
+node.widgets.push({ name: 'my_widget', type: 'custom', value: '' })
+```
+
+If you read or write `widget.value` before the node is attached to a graph,
+the value is held locally and synced to the store on attachment. No values
+are lost, but store-driven UI (such as the right-side panel) won't see the
+value until then.
+
+## Remove widgets with `node.removeWidget()`
+
+Use `node.removeWidget(widget)` to remove a widget. Splicing `node.widgets`
+directly skips slot cleanup, and the removed widget's value stays in the
+store until the node itself is removed from the graph.
+
+## Don't call `useWidgetValueStore()` from extension code
+
+Do not call `useWidgetValueStore()` from extensions. Use `node.widgets`,
+`node.addWidget()` / `addCustomWidget()` / `removeWidget()`, and
+`widget.value` instead. The store's internal keying and its dependency on
+Pinia are not a supported extension surface.
