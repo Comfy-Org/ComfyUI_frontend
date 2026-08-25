@@ -463,6 +463,34 @@ describe('useAuthStore', () => {
         })
       )
     })
+
+    it('accessBillingPortal sends the stored API key when no Firebase user exists', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({ billing_portal_url: 'https://stripe.test/portal' })
+      })
+
+      await store.accessBillingPortal()
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/customers/billing'),
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({ 'X-API-KEY': 'test-api-key' })
+        })
+      )
+    })
+
+    it('accessBillingPortal throws userNotAuthenticated when neither credential exists', async () => {
+      mockApiKeyGetAuthHeader.mockReturnValue(null)
+
+      await expect(store.accessBillingPortal()).rejects.toMatchObject({
+        name: 'AuthStoreError',
+        message: 'toastMessages.userNotAuthenticated'
+      })
+      expect(mockFetch).not.toHaveBeenCalled()
+    })
   })
 
   describe('login', () => {

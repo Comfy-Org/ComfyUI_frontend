@@ -807,7 +807,7 @@ export const useAuthStore = defineStore('auth', () => {
   const accessBillingPortal = async (
     targetTier?: BillingPortalTargetTier
   ): Promise<AccessBillingPortalResponse> => {
-    const authHeader = await getFirebaseAuthHeader()
+    const authHeader = await getUserAuthHeader()
     if (!authHeader) {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
