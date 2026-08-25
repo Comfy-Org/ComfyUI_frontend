@@ -1,55 +1,79 @@
 name: 'CI: E2E Coverage'
 
 on:
-  workflow_call:
-    inputs:
-      source_branch:
-        required: true
-        type: string
-      source_pr:
-        required: false
-        type: string
-      source_run_id:
-        required: true
-        type: string
-      source_sha:
-        required: true
-        type: string
-    secrets:
-      CODECOV_TOKEN:
-        required: true
-  workflow_run:
-    workflows: ['CI: Tests E2E']
-    types:
-      - completed
+  schedule:
+    - cron: '17 */3 * * *'
+  workflow_dispatch:
 
 concurrency:
-  group: e2e-coverage-${{ inputs.source_sha || github.event.workflow_run.head_sha }}
+  group: e2e-coverage-scheduled
   cancel-in-progress: true
 
 permissions:
+  actions: read
   contents: read
 
 jobs:
   merge:
-    # Not gated on full success: fail-fast:false means one flaky shard flips the whole run to failure, which would skip merging every other shard's real coverage.
-    if: >
-      github.repository == 'Comfy-Org/ComfyUI_frontend' &&
-      (github.event_name == 'workflow_call' ||
-        github.event.workflow_run.event != 'pull_request' ||
-        github.event.workflow_run.head_repository.full_name != github.repository ||
-        github.event.workflow_run.actor.login == 'dependabot[bot]') &&
-      github.event.workflow_run.conclusion != 'cancelled'
+    if: github.repository == 'Comfy-Org/ComfyUI_frontend'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
       has-coverage: ${{ steps.coverage-shards.outputs.has-coverage }}
 
     steps:
-      - name: Checkout sources for genhtml
-        uses: actions/checkout@v7
+      - name: Resolve latest complete main E2E coverage run
+        id: source
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v9
         with:
-          ref: ${{ inputs.source_sha || github.event.workflow_run.head_sha }}
+          script: |
+            const expectedShards = 16
+            const { data } = await github.rest.actions.listWorkflowRuns({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'ci-tests-e2e.yaml',
+              branch: 'main',
+              event: 'push',
+              status: 'completed',
+              per_page: 30
+            })
+
+            for (const run of data.workflow_runs) {
+              if (run.conclusion === 'cancelled') continue
+
+              const artifacts = await github.paginate(
+                github.rest.actions.listWorkflowRunArtifacts,
+                {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  run_id: run.id,
+                  per_page: 100
+                }
+              )
+              const shardCount = artifacts.filter(
+                ({ expired, name }) =>
+                  !expired && /^e2e-coverage-shard-\d+$/.test(name)
+              ).length
+              if (shardCount !== expectedShards) continue
+
+              core.setOutput('run-id', String(run.id))
+              core.setOutput('sha', run.head_sha)
+              core.setOutput('url', run.html_url)
+              core.info(
+                `Using ${run.html_url} at ${run.head_sha} with ${shardCount} coverage shards`
+              )
+              return
+            }
+
+            core.setFailed(
+              `No completed main E2E run has all ${expectedShards} live coverage shard artifacts`
+            )
+
+      - name: Checkout sources for genhtml
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ steps.source.outputs.sha }}
+          persist-credentials: false
           sparse-checkout: |
             src
             packages
@@ -57,7 +81,7 @@ jobs:
       - name: Download all shard coverage data
         uses: dawidd6/action-download-artifact@0bd50d53a6d7fb5cb921e607957e9cc12b4ce392 # v12
         with:
-          run_id: ${{ inputs.source_run_id || github.event.workflow_run.id }}
+          run_id: ${{ steps.source.outputs.run-id }}
           name: e2e-coverage-shard-.*
           name_is_regexp: true
           path: temp/coverage-shards
@@ -131,7 +155,7 @@ jobs:
 
       - name: Upload merged coverage data
         if: steps.coverage-shards.outputs.has-coverage == 'true'
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: e2e-coverage
           path: coverage/playwright/
@@ -144,9 +168,8 @@ jobs:
         with:
           files: coverage/playwright/coverage.lcov
           flags: e2e
-          override_branch: ${{ inputs.source_branch || github.event.workflow_run.head_branch }}
-          override_commit: ${{ inputs.source_sha || github.event.workflow_run.head_sha }}
-          override_pr: ${{ inputs.source_pr || github.event.workflow_run.pull_requests[0].number }}
+          override_branch: main
+          override_commit: ${{ steps.source.outputs.sha }}
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
 
@@ -163,7 +186,7 @@ jobs:
 
       - name: Upload HTML report artifact
         if: steps.coverage-shards.outputs.has-coverage == 'true'
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: e2e-coverage-html
           path: coverage/html/
@@ -171,10 +194,7 @@ jobs:
 
   deploy:
     needs: merge
-    if: >
-      github.event.workflow_run.head_branch == 'main' &&
-      needs.merge.outputs.has-coverage == 'true' &&
-      github.event.workflow_run.event == 'push'
+    if: needs.merge.outputs.has-coverage == 'true'
     runs-on: ubuntu-latest
     permissions:
       pages: write
@@ -184,7 +204,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Download HTML report
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: e2e-coverage-html
           path: coverage/html
