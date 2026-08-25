@@ -10,17 +10,23 @@ import {
   Pencil,
   Video
 } from '@lucide/vue'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 
 import HubFilterTabs from '../../ui/hub-filter-tabs/HubFilterTabs.vue'
 import type { HubFilterTab } from '../../ui/hub-filter-tabs/HubFilterTabs.vue'
+import type { ModelCategory } from '../../../config/modelCategories'
+
+export interface ModelCategoryOption {
+  label: string
+  value: 'all' | ModelCategory
+}
 
 const { categories, label } = defineProps<{
-  categories: string[]
+  categories: ModelCategoryOption[]
   label: string
 }>()
 
-const selection = ref(categories[0] ?? '')
+const selection = defineModel<'all' | ModelCategory>({ default: 'all' })
 const categoryIcons = [
   LayoutGrid,
   Image,
@@ -35,8 +41,8 @@ const categoryIcons = [
 const items = computed<HubFilterTab[]>(() =>
   categories.map((category, index) => ({
     icon: categoryIcons[index],
-    label: category,
-    value: category
+    label: category.label,
+    value: category.value
   }))
 )
 </script>

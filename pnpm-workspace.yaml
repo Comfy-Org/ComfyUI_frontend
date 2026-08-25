@@ -38,10 +38,11 @@ catalog:
   '@sentry/vite-plugin': ^4.6.0
   '@sentry/vue': ^10.32.1
   '@sparkjsdev/spark': ^2.1.0
-  '@storybook/addon-docs': ^10.5.6
+  '@storybook/addon-docs': ^10.5.10
+  '@storybook/addon-designs': ^11.1.4
   '@storybook/addon-mcp': 0.7.0
-  '@storybook/vue3': ^10.5.6
-  '@storybook/vue3-vite': ^10.5.6
+  '@storybook/vue3': ^10.5.10
+  '@storybook/vue3-vite': ^10.5.10
   '@stripe/stripe-js': ^9.12.0
   '@tailwindcss/vite': ^4.3.2
   '@tanstack/vue-virtual': ^3.13.12
@@ -86,7 +87,7 @@ catalog:
   eslint-plugin-import-x: ^4.17.1
   eslint-plugin-oxlint: 1.78.0
   eslint-plugin-playwright: ^2.11.0
-  eslint-plugin-storybook: ^10.5.7
+  eslint-plugin-storybook: ^10.5.10
   eslint-plugin-testing-library: ^7.16.2
   eslint-plugin-unused-imports: ^4.4.1
   eslint-plugin-vue: ^10.10.0
@@ -123,7 +124,7 @@ catalog:
   reka-ui: 2.6.2
   rollup-plugin-visualizer: ^6.0.4
   start-server-and-test: ^3.0.11
-  storybook: ^10.5.6
+  storybook: ^10.5.10
   stylelint: ^17.14.0
   tailwindcss: ^4.3.2
   tailwindcss-primeui: ^0.6.1
@@ -190,3 +191,13 @@ overrides:
   brace-expansion@^4.0.0: ^5.0.9
   brace-expansion@^5.0.0: ^5.0.9
   sharp@^0.34.0: ^0.35.0
+
+minimumReleaseAgeExclude:
+  - '@storybook/addon-docs@10.5.10'
+  - '@storybook/builder-vite@10.5.10'
+  - '@storybook/csf-plugin@10.5.10'
+  - '@storybook/react-dom-shim@10.5.10'
+  - '@storybook/vue3-vite@10.5.10'
+  - '@storybook/vue3@10.5.10'
+  - storybook@10.5.10
+  - eslint-plugin-storybook@10.5.10

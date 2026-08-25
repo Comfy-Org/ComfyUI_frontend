@@ -1,6 +1,6 @@
 # Supported Models Explore Page
 
-Status: visually approved preview baseline with recorded exclusions
+Status: visually approved baseline with build-generated catalog integration
 
 Visual approval recorded: 2026-08-20. The page design is approved for the
 current design-only phase. Carousel pagination and the minor polish items in
@@ -42,9 +42,10 @@ as implementation constraints.
    horizontal overflow behavior.
 6. Featured, Trending, and Day Zero cards reuse the compact
    `CardWorkflow01` anatomy. The page does not own a separate card system.
-7. Day Zero and Open Weights are governed model-status roles. Day Zero maps to
-   the yellow slanted `accent` badge; Open Weights maps to the plum slanted
-   `callout` badge. Status badges use `md`; descriptive badges use `card`.
+7. Open Weights is the only model-status badge used on this page and maps to
+   the plum slanted `callout` badge. Day Zero remains an editorial section
+   label, not a card or hero badge. Status badges use `md`; descriptive badges
+   use `card`.
 8. Task discovery cards gained a governed 16:9 media slot above their content.
    The current imagery remains the approved design-only placeholder treatment.
 9. Access cards reuse `ProductCard`. Open Weights uses deep plum; Partner APIs
@@ -57,12 +58,10 @@ as implementation constraints.
 12. FAQ uses the existing localized `FAQSection`; no page-local accordion
     states were introduced.
 13. Editorial model cards link only to reviewed canonical Comfy destinations.
-    Shipped launch pages and exact catalog records stay in-tab; the Wan 2.6
-    launch article opens as an external Comfy resource. No display-name-based
-    route inference is permitted.
-14. The hero's Day Zero badge uses the governed featured-media status
-    treatment: 28px high and inset 24px from the media's top-left corner. This
-    exception applies only to the hero card; collection status badges retain
+    Shipped launch pages and exact catalog records stay in-tab; Wan 2.6 links
+    to its governed dedicated preview route. No display-name-based route
+    inference is permitted.
+14. The hero card has no status badge. Collection Open Weights badges retain
     their existing content placement and `md` size.
 
 ## Approved exclusions and follow-up work
@@ -72,11 +71,11 @@ as implementation constraints.
 | Featured carousel pagination | intentionally absent | Design and document controls, states, motion, and reduced-motion behavior |
 | Featured carousel rotation   | intentionally absent | Approve content ownership and carousel behavior before adding state       |
 | Search suggestion chips      | blocked gap          | Approve a reusable suggestion-chip component and keyboard behavior        |
-| Inline collection actions    | blocked gap          | Approve label, icon, destination, focus, and hover anatomy                |
+| Inline collection actions    | integrated           | Approved `BrandButton` links reveal the complete generated catalog        |
 | Task-card actions            | blocked gap          | Approve destinations and linked-card interaction states                   |
 | Production model media       | preview-integrated   | Six exact owned stills plus two governed source-gap fallbacks             |
-| Production catalog data      | partially integrated | Generated summary, ItemList, and reviewed card destinations connected     |
-| Search and filter behavior   | preview-only         | Controls demonstrate approved anatomy; catalog behavior is not connected  |
+| Production catalog data      | build-integrated     | Generated routes, summary, categories, ItemList, and search records       |
+| Search and filter behavior   | integrated           | Query and categories filter the generated route-backed catalog            |
 | Minor visual polish          | accepted follow-up   | Resolve through the owning component contract, never page-local CSS       |
 
 ## Implemented provenance map
@@ -87,10 +86,11 @@ as implementation constraints.
 | Hero actions              | `BrandButton.vue`                   | Existing `solid` and yellow `outline` variants at `nav` size  |
 | Search                    | `SearchField.vue`                   | Shipped `/workflows` anatomy and interaction states           |
 | Featured and model cards  | `CardWorkflow01.vue`                | Existing compact workflow-card anatomy with placeholder media |
-| Model status badges       | `Badge.vue`                         | Slanted `accent` for Day Zero; `callout` for Open Weights     |
+| Model status badges       | `Badge.vue`                         | Slanted `callout` for Open Weights                            |
 | Category selection        | `HubFilterTabs.vue`                 | `/workflows` anatomy with model-modality labels               |
 | Trending label            | `SectionLabel.vue`                  | Default label treatment                                       |
 | Day-zero model cards      | `CardWorkflow01.vue`                | Reuses the approved compact collection anatomy                |
+| Collection actions        | `BrandButton.vue`                   | Existing outline CTA links reveal the complete model catalog  |
 | Task discovery tiles      | `TaskTile.vue`                      | Governed non-interactive card with 16:9 placeholder media     |
 | Access and run-path cards | `ProductCard.vue`                   | Existing website destination-card anatomy                     |
 | Free-runs banner          | `PricingFreeBanner.vue`             | Exact shipped `/cloud/pricing` banner anatomy                 |
@@ -106,9 +106,10 @@ the appearance or states of the approved components above.
 | Composition                    | Status             | Responsibility                                                 |
 | ------------------------------ | ------------------ | -------------------------------------------------------------- |
 | `ModelsExploreHero.astro`      | catalog-integrated | Approved anatomy with generated-catalog summary copy           |
-| `ModelCategoryFilter.vue`      | design-only        | Demonstrates approved website tabs with model-modality labels  |
+| `ModelCatalogExplorer.vue`     | catalog-integrated | Owns query/category state and renders matching approved cards  |
+| `ModelCategoryFilter.vue`      | catalog-integrated | Controlled wrapper around the approved website tabs            |
 | `ModelCollectionSection.astro` | media-integrated   | Approved cards with governed owned stills or explicit fallback |
-| `ModelMediaPlaceholder.astro`  | approved-fallback  | Shared decorative fallback for catalog entries without a still |
+| `ModelMediaPlaceholder.vue`    | approved-fallback  | Shared decorative fallback for catalog entries without a still |
 | `ModelTaskSection.astro`       | design-only        | Task-tile layout and governed placeholder-media composition    |
 | `ModelAccessSection.astro`     | design-only        | Two-column layout around approved destination cards            |
 | `ModelFamilySection.astro`     | design-only        | Linked family hierarchy with approved placeholder media        |
@@ -116,13 +117,12 @@ the appearance or states of the approved components above.
 
 ## Remaining component gaps for lint enforcement
 
-| Needed pattern           | Status              | Current implementation                                           |
-| ------------------------ | ------------------- | ---------------------------------------------------------------- |
-| Search suggestion chip   | `blocked-gap`       | Omitted; not substituted with a raw button                       |
-| Inline collection action | `blocked-gap`       | Omitted until link and icon anatomy are approved                 |
-| Task tile action         | `blocked-gap`       | Count remains metadata; linked state and action icon are omitted |
-| Featured-model carousel  | `blocked-gap`       | Static card only; invented pagination indicators removed         |
-| Model media              | `approved-fallback` | `ModelMediaPlaceholder.astro` where no exact owned still exists  |
+| Needed pattern          | Status              | Current implementation                                           |
+| ----------------------- | ------------------- | ---------------------------------------------------------------- |
+| Search suggestion chip  | `blocked-gap`       | Omitted; not substituted with a raw button                       |
+| Task tile action        | `blocked-gap`       | Count remains metadata; linked state and action icon are omitted |
+| Featured-model carousel | `blocked-gap`       | Static card only; invented pagination indicators removed         |
+| Model media             | `approved-fallback` | `ModelMediaPlaceholder.vue` where no exact owned still exists    |
 
 A blocked gap must not be filled by copying the mockup CSS. Design the missing
 component, document its variants and states, add it to the website registry,
@@ -133,12 +133,31 @@ and then restore the page element.
 - `config/models.ts` is the page's authoritative production catalog. It is
   generated from supported workflow templates and enriched by
   `config/model-metadata.ts`.
+- This repository does not own a supported-model database or CMS contract.
+  Catalog integration is intentionally build-time and static. A future API or
+  database must replace the typed adapter input rather than leaking backend
+  fields into page components.
+- `scripts/generate-models.ts` reads the workflow-template `index.json` and the
+  exact template files. Category membership comes only from their explicit
+  sections and capability tags; it is not inferred from model display names.
+- Image, Video, Audio, 3D, Edit, Upscale, and LLM are source-derived. Train is
+  retained as an approved tab but remains empty until the source explicitly
+  identifies a training capability.
 - The visible catalog count is derived from `models.length`; it must not be a
   manually maintained marketing number.
 - Local-component and partner-integration counts are classified by the
   `partner_nodes` directory boundary in `modelExploreCatalog.ts`.
 - The page publishes every catalog entry as an `ItemList` linked to its
   canonical `/p/supported-models/{slug}` detail route.
+- `ModelCatalogExplorer.vue` filters the generated route-backed records. An
+  empty query with the All category preserves the approved editorial page;
+  entering a query or selecting a category reveals matching catalog cards.
+- Trending and Day Zero collection headers use the shipped `BrandButton`
+  outline CTA. Both “View all” links set `catalog=all` and reveal the complete
+  generated catalog. They do not claim separate ranking or release datasets.
+- Catalog result cards reuse `CardWorkflow01`; missing exact thumbnails use the
+  governed shared placeholder. Result links always use the catalog slug and
+  never a display-name guess.
 - `workflowCount` values are references per catalog entry. Their sum is not a
   verified unique-workflow count and must not be presented as one.
 - Editorial cards remain fixtures until a reviewed mapping exists between each
@@ -156,17 +175,13 @@ and then restore the page element.
 - Flux 3 remains on the governed placeholder because its launch media currently
   has no poster still. Wan 2.6 remains on the placeholder because the website
   repository has no exact owned media record for that release.
-- Search and category controls are intentionally presentational in this
-  preview. Production query state, classification, result rendering, and empty
-  states require a separate implementation pass after preview handoff.
 
 ## Remaining prototype boundaries
 
 - Static fixtures exercise text lengths and existing badge variants.
 - Six reviewed remote still URLs are connected through existing launch-page or
   catalog ownership; source gaps retain the governed fallback.
-- Search and category selection demonstrate the approved control anatomy but
-  do not query or filter the generated catalog.
+- Search and category selection query the build-generated catalog in-browser.
 - Placeholder media is decorative and hidden from assistive technology.
 - Access, conversion, and FAQ actions use destinations and behavior already
   owned by existing website components.
@@ -194,7 +209,7 @@ and then restore the page element.
 
 ### Integration gate
 
-This handoff is a design preview. Catalog summary data, reviewed media, and
-reviewed links are connected where they already support the visual review.
-Search, filtering, carousel controls, suggestion chips, and comprehensive link
-coverage remain separate production work and are not part of this preview.
+This handoff preserves the approved design while connecting the build-generated
+catalog, search, and category filters. Carousel controls, suggestion chips,
+editorial ranking, and comprehensive curated link coverage remain separate
+work because their source data or governed component contracts do not exist.

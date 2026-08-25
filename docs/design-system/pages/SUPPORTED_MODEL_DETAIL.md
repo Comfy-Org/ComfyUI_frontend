@@ -12,6 +12,11 @@ an entry in the generated website model catalog, so this route is intentionally
 static. It must not be used to infer production model data or to alter every
 generated detail page.
 
+The explore-page hero, editorial card, and Wan-family row may link directly to
+this reviewed route. The route remains outside generated catalog search until
+the workflow-template source exposes a stable Wan 2.6 model record rather than
+only provider-level API entries.
+
 The shipped website remains the component authority. Figma establishes the
 page hierarchy, content direction, and owned preview media.
 
@@ -23,7 +28,7 @@ page hierarchy, content direction, and owned preview media.
 | Breadcrumb         | `BreadcrumbBar.vue`                        | Existing website breadcrumb anatomy                       |
 | Headings           | `SectionHeader.vue` and `SectionLabel.vue` | Existing hero and section typography                      |
 | Actions            | `BrandButton.vue`                          | Existing solid and outline link variants                  |
-| Status labels      | `Badge.vue`                                | Yellow `accent` Day Zero and plum `callout` Open Weights  |
+| Status labels      | `Badge.vue`                                | Plum `callout` Open Weights plus descriptive tags         |
 | Workflow cards     | `CardWorkflow01.vue`                       | Existing compact card anatomy with supplied Figma media   |
 | FAQ                | `FAQSplit01.vue`                           | Existing accordion behavior and focus states              |
 | Gallery            | Page composition                           | Static semantic figures using exact Figma-supplied assets |

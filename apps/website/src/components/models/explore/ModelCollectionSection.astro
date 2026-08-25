@@ -1,9 +1,10 @@
 ---
 import SectionLabel from '../../common/SectionLabel.vue'
 import CardWorkflow01 from '../../blocks/CardWorkflow01.vue'
+import BrandButton from '../../common/BrandButton.vue'
 import type { CardWorkflowItem } from '../../blocks/CardWorkflow01.vue'
 
-import ModelMediaPlaceholder from './ModelMediaPlaceholder.astro'
+import ModelMediaPlaceholder from './ModelMediaPlaceholder.vue'
 import type {
   ExploreModelCardFixture,
   ExploreModelStatus,
@@ -14,8 +15,9 @@ interface Props {
   label: string
   description: string
   models: ExploreModelCardFixture[]
-  dayZeroBadgeLabel: string
   openWeightsBadgeLabel: string
+  actionLabel: string
+  actionHref: string
 }
 
 const {
@@ -23,12 +25,12 @@ const {
   label,
   description,
   models,
-  dayZeroBadgeLabel,
   openWeightsBadgeLabel,
+  actionLabel,
+  actionHref,
 } = Astro.props
 
 const statusLabels: Record<ExploreModelStatus, string> = {
-  'day-zero': dayZeroBadgeLabel,
   'open-weights': openWeightsBadgeLabel,
 }
 
@@ -59,9 +61,20 @@ function toWorkflowItem(model: ExploreModelCardFixture): CardWorkflowItem {
   aria-labelledby={headingId}
   class="mx-auto max-w-10xl px-6 pt-14 pb-8 md:px-10 xl:px-30"
 >
-  <div class="flex flex-col gap-2">
-    <h2 id={headingId}><SectionLabel>{label}</SectionLabel></h2>
-    <p class="text-base font-light text-primary-warm-gray">{description}</p>
+  <div class="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+    <div class="flex flex-col gap-2">
+      <h2 id={headingId}><SectionLabel>{label}</SectionLabel></h2>
+      <p class="text-base font-light text-primary-warm-gray">{description}</p>
+    </div>
+    <div class="shrink-0">
+      <BrandButton
+        href={actionHref}
+        variant="outline"
+        size="xs"
+      >
+        {actionLabel}
+      </BrandButton>
+    </div>
   </div>
   <div class="mt-7 grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
     {

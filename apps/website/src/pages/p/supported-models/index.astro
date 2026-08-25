@@ -2,21 +2,25 @@
 import BaseLayout from '../../../layouts/BaseLayout.astro'
 import FAQSection from '../../../components/common/FAQSection.vue'
 import ModelAccessSection from '../../../components/models/explore/ModelAccessSection.astro'
-import ModelCategoryFilter from '../../../components/models/explore/ModelCategoryFilter.vue'
+import ModelCatalogExplorer from '../../../components/models/explore/ModelCatalogExplorer.vue'
 import ModelCollectionSection from '../../../components/models/explore/ModelCollectionSection.astro'
 import ModelConversionSection from '../../../components/models/explore/ModelConversionSection.astro'
 import ModelFamilySection from '../../../components/models/explore/ModelFamilySection.astro'
 import ModelTaskSection from '../../../components/models/explore/ModelTaskSection.astro'
 import ModelsExploreHero from '../../../components/models/explore/ModelsExploreHero.astro'
-import SearchField from '../../../components/ui/search-field/SearchField.vue'
+import type { ModelCategoryOption } from '../../../components/models/explore/ModelCategoryFilter.vue'
 import {
   dayZeroModelFixtures,
   familyVariantFixtures,
   taskFixtures,
   trendingModelFixtures,
 } from '../../../components/models/explore/modelExploreFixtures'
-import { summarizeModelExploreCatalog } from '../../../components/models/explore/modelExploreCatalog'
+import {
+  createModelExploreCatalog,
+  summarizeModelExploreCatalog,
+} from '../../../components/models/explore/modelExploreCatalog'
 import { models } from '../../../config/models'
+import { MODEL_CATEGORIES } from '../../../config/modelCategories'
 import { externalLinks, getRoutes } from '../../../config/routes'
 import { t } from '../../../i18n/translations'
 import {
@@ -52,6 +56,15 @@ const modelList = itemListNode(
   })),
 )
 const categories = t('models.explore.categories', locale).split('|')
+const categoryOptions: ModelCategoryOption[] = [
+  { value: 'all', label: categories[0] ?? 'ALL' },
+  ...MODEL_CATEGORIES.map((value, index) => ({
+    value,
+    label: categories[index + 1] ?? value,
+  })),
+]
+const catalog = createModelExploreCatalog(models)
+const catalogAllHref = '/p/supported-models?catalog=all#model-catalog-results'
 const routes = getRoutes(locale)
 const accessCards = [
   {
@@ -120,41 +133,41 @@ const conversionCards = [
     primaryCta={t('models.explore.primaryCta', locale)}
     secondaryCta={t('models.explore.secondaryCta', locale)}
     {stats}
-    featuredBadge={t('models.explore.featuredBadge', locale)}
     featuredTitle={t('models.explore.featuredTitle', locale)}
-    featuredHref="https://blog.comfy.org/p/wan26-reference-to-video"
+    featuredHref="/p/supported-models/wan-2-6"
     primaryHref={externalLinks.cloud}
     secondaryHref={externalLinks.workflows}
   />
-  <section class="mx-auto max-w-10xl px-6 py-8 md:px-10 xl:px-30">
-    <SearchField
-      client:load
-      label={t('models.explore.search.label', locale)}
-      placeholder={t('models.explore.search.placeholder', locale)}
-    />
-  </section>
-  <div class="mx-auto max-w-10xl overflow-x-auto px-6 py-3 md:px-10 xl:px-30">
-    <ModelCategoryFilter
-      client:load
-      label={t('models.explore.categories.label', locale)}
-      {categories}
-    />
-  </div>
+  <ModelCatalogExplorer
+    client:load
+    {catalog}
+    {categoryOptions}
+    categoryLabel={t('models.explore.categories.label', locale)}
+    searchLabel={t('models.explore.search.label', locale)}
+    searchPlaceholder={t('models.explore.search.placeholder', locale)}
+    workflowCountOne={t('models.explore.catalog.workflowCountOne', locale)}
+    workflowCountMany={t('models.explore.catalog.workflowCountMany', locale)}
+    partnerLabel={t('models.explore.catalog.partner', locale)}
+    resultCountLabel={t('models.explore.catalog.resultCount', locale)}
+    emptyLabel={t('models.explore.catalog.empty', locale)}
+  />
   <ModelCollectionSection
     headingId="trending-models-heading"
     label={t('models.explore.trending.label', locale)}
     description={t('models.explore.trending.description', locale)}
     models={trendingModelFixtures}
-    dayZeroBadgeLabel={t('models.explore.featuredBadge', locale)}
     openWeightsBadgeLabel={t('models.explore.openWeightsBadge', locale)}
+    actionLabel={t('models.explore.collections.viewAll', locale)}
+    actionHref={catalogAllHref}
   />
   <ModelCollectionSection
     headingId="day-zero-models-heading"
     label={t('models.explore.dayZero.label', locale)}
     description={t('models.explore.dayZero.description', locale)}
     models={dayZeroModelFixtures}
-    dayZeroBadgeLabel={t('models.explore.featuredBadge', locale)}
     openWeightsBadgeLabel={t('models.explore.openWeightsBadge', locale)}
+    actionLabel={t('models.explore.collections.viewAll', locale)}
+    actionHref={catalogAllHref}
   />
   <ModelTaskSection
     label={t('models.explore.tasks.label', locale)}

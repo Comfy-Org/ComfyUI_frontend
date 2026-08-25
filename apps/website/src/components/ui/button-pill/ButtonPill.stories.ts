@@ -1,8 +1,14 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import type { ComponentProps } from 'vue-component-type-helpers'
 
 import ButtonPill from './ButtonPill.vue'
 
-const meta: Meta<typeof ButtonPill> = {
+type ButtonPillStoryArgs = ComponentProps<typeof ButtonPill> & {
+  href?: string
+  type?: 'button' | 'reset' | 'submit'
+}
+
+const meta = {
   title: 'Website/UI/ButtonPill',
   component: ButtonPill,
   tags: ['autodocs'],
@@ -24,18 +30,17 @@ const meta: Meta<typeof ButtonPill> = {
     },
     size: {
       control: { type: 'select' },
-      options: ['default', 'lg', 'icon']
+      options: ['default', 'lg']
     },
     iconPosition: {
       control: { type: 'select' },
       options: ['right', 'left']
-    },
-    hideLabel: { control: 'boolean' }
+    }
   }
-}
+} satisfies Meta<ButtonPillStoryArgs>
 
 export default meta
-type Story = StoryObj<typeof meta>
+type Story = StoryObj<ButtonPillStoryArgs>
 
 export const AsAnchor: Story = {
   args: { as: 'a', href: '#' },
@@ -114,15 +119,6 @@ export const IconLeft: Story = {
     components: { ButtonPill },
     setup: () => ({ args }),
     template: '<ButtonPill v-bind="args">Go Back</ButtonPill>'
-  })
-}
-
-export const RevealLabelOnHover: Story = {
-  args: { as: 'a', href: '#', hideLabel: true },
-  render: (args) => ({
-    components: { ButtonPill },
-    setup: () => ({ args }),
-    template: '<ButtonPill v-bind="args">Try Workflow</ButtonPill>'
   })
 }
 

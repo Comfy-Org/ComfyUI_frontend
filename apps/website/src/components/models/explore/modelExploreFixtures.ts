@@ -6,7 +6,7 @@ import { seedancePage } from '../../../data/seedance'
 import { wanAnimate2Page } from '../../../data/wanAnimate2'
 
 export type ModelMediaTone = 'forest' | 'plum' | 'ember' | 'canvas'
-export type ExploreModelStatus = 'day-zero' | 'open-weights'
+export type ExploreModelStatus = 'open-weights'
 type ExploreModelMedia =
   | { type: 'image'; src: string }
   | { type: 'placeholder'; tone: ModelMediaTone }
@@ -56,8 +56,8 @@ export const trendingModelFixtures: ExploreModelCardFixture[] = [
   },
   {
     name: 'Wan 2.6',
-    href: 'https://blog.comfy.org/p/wan26-reference-to-video',
-    target: '_blank',
+    href: '/p/supported-models/wan-2-6',
+    target: '_self',
     description:
       'Open-weights video with native audio. Full graph control, LoRA-ready.',
     modality: 'Text to video',
@@ -106,7 +106,6 @@ export const dayZeroModelFixtures: ExploreModelCardFixture[] = [
       'Image-to-video with strong physics and character hold across shots.',
     modality: 'Image to video',
     tag: 'Partner API',
-    statuses: ['day-zero'],
     media: {
       type: 'image',
       src: requiredMediaSource('MiniMax H3', minimaxPage.hero.posterSrc)
@@ -120,7 +119,7 @@ export const dayZeroModelFixtures: ExploreModelCardFixture[] = [
       'Character animation from a single reference. Open weights, day zero.',
     modality: 'Image to video',
     tag: 'Open weights',
-    statuses: ['day-zero', 'open-weights'],
+    statuses: ['open-weights'],
     media: {
       type: 'image',
       src: requiredMediaSource('Wan Animate 2', wanAnimate2Page.hero.posterSrc)
@@ -134,7 +133,7 @@ export const dayZeroModelFixtures: ExploreModelCardFixture[] = [
       'Fast iteration video. Draft loops in seconds, refine on the same seed.',
     modality: 'Text to video',
     tag: 'Open weights',
-    statuses: ['day-zero', 'open-weights'],
+    statuses: ['open-weights'],
     media: {
       type: 'image',
       src: requiredMediaSource('LTX 2.5', ltxPage.hero.posterSrc)
@@ -148,7 +147,6 @@ export const dayZeroModelFixtures: ExploreModelCardFixture[] = [
       'Complete songs with structure — verse, chorus, and a mix you can direct.',
     modality: 'Text to audio',
     tag: 'Partner API',
-    statuses: ['day-zero'],
     media: {
       type: 'image',
       src: requiredMediaSource(
@@ -216,7 +214,7 @@ export const familyVariantFixtures: ExploreFamilyVariant[] = [
     name: 'Wan 2.6',
     description: 'Text and image to video with native audio.',
     meta: '1.8M runs',
-    href: 'https://blog.comfy.org/p/wan26-reference-to-video'
+    href: '/p/supported-models/wan-2-6'
   },
   {
     name: 'Wan 2.5',

@@ -8,9 +8,10 @@
     "composite": true,
     "resolveJsonModule": true,
     "esModuleInterop": true,
+    "types": ["vite/client"],
     "paths": {
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src/**/*.stories.ts"]
+  "include": [".storybook/**/*.ts", "src/**/*.stories.ts"]
 }

@@ -4896,6 +4896,30 @@ const translations = {
     en: 'ALL|Image|Video|Audio|3D|Edit|Upscale|LLM|Train',
     'zh-CN': '全部|图像|视频|音频|3D|编辑|放大|LLM|训练'
   },
+  'models.explore.catalog.workflowCountOne': {
+    en: 'Used by {count} supported workflow.',
+    'zh-CN': '由 {count} 个受支持的工作流使用。'
+  },
+  'models.explore.catalog.workflowCountMany': {
+    en: 'Used by {count} supported workflows.',
+    'zh-CN': '由 {count} 个受支持的工作流使用。'
+  },
+  'models.explore.catalog.partner': {
+    en: 'Partner API',
+    'zh-CN': '合作伙伴 API'
+  },
+  'models.explore.catalog.resultCount': {
+    en: '{count} matching models',
+    'zh-CN': '{count} 个匹配模型'
+  },
+  'models.explore.catalog.empty': {
+    en: 'No supported models match this search yet.',
+    'zh-CN': '暂无与此搜索匹配的受支持模型。'
+  },
+  'models.explore.collections.viewAll': {
+    en: 'VIEW ALL',
+    'zh-CN': '查看全部'
+  },
   'models.explore.trending.label': {
     en: 'TRENDING',
     'zh-CN': '热门'

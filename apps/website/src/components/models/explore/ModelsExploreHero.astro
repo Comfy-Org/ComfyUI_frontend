@@ -4,7 +4,7 @@ import SectionHeader from '../../common/SectionHeader.vue'
 import CardWorkflow01 from '../../blocks/CardWorkflow01.vue'
 import type { CardWorkflowItem } from '../../blocks/CardWorkflow01.vue'
 
-import ModelMediaPlaceholder from './ModelMediaPlaceholder.astro'
+import ModelMediaPlaceholder from './ModelMediaPlaceholder.vue'
 
 interface Props {
   eyebrow: string
@@ -14,7 +14,6 @@ interface Props {
   primaryCta: string
   secondaryCta: string
   stats: string
-  featuredBadge: string
   featuredTitle: string
   featuredHref: string
   primaryHref: string
@@ -29,7 +28,6 @@ const {
   primaryCta,
   secondaryCta,
   stats,
-  featuredBadge,
   featuredTitle,
   featuredHref,
   primaryHref,
@@ -40,8 +38,7 @@ const featuredItem: CardWorkflowItem = {
   id: 'featured-model',
   title: featuredTitle,
   href: featuredHref,
-  target: '_blank',
-  statusBadges: [{ type: 'day-zero', label: featuredBadge }],
+  target: '_self',
   media: { type: 'placeholder', alt: '' },
 }
 ---
@@ -88,7 +85,6 @@ const featuredItem: CardWorkflowItem = {
       <CardWorkflow01
         item={featuredItem}
         variant="compact"
-        statusBadgePlacement="featured-media"
       >
         <ModelMediaPlaceholder slot="media" tone="forest" />
       </CardWorkflow01>

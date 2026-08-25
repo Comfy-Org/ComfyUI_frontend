@@ -1,11 +1,14 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import type { ComponentProps } from 'vue-component-type-helpers'
 
 import HeroBackdrop01 from './HeroBackdrop01.vue'
 
 const sampleImage =
   'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1600&q=80'
 
-const meta: Meta<typeof HeroBackdrop01> = {
+type HeroBackdropStoryArgs = ComponentProps<typeof HeroBackdrop01>
+
+const meta = {
   title: 'Website/Blocks/HeroBackdrop01',
   component: HeroBackdrop01,
   tags: ['autodocs'],
@@ -15,7 +18,7 @@ const meta: Meta<typeof HeroBackdrop01> = {
     subtitle:
       'A powerful, modular visual interface for building and running AI workflows.'
   }
-}
+} satisfies Meta<HeroBackdropStoryArgs>
 
 export default meta
 type Story = StoryObj<typeof meta>
