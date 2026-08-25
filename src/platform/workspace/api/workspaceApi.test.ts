@@ -530,6 +530,19 @@ describe('workspaceApi', () => {
       expect(mockAxiosInstance.post).not.toHaveBeenCalled()
     })
 
+    it('subscribe() rejects an empty credential alongside a saved one', async () => {
+      await expect(
+        workspaceApi.subscribe('pro-monthly', {
+          confirmationToken: '',
+          savedPaymentMethodId: 'pm_saved'
+        })
+      ).rejects.toThrow(
+        'confirmationToken and savedPaymentMethodId are mutually exclusive'
+      )
+
+      expect(mockAxiosInstance.post).not.toHaveBeenCalled()
+    })
+
     it('previewSubscribe() sends fields defined by the ingest contract', async () => {
       const data = { allowed: true, transition_type: 'new_subscription' }
       mockAxiosInstance.post.mockResolvedValue({ data })

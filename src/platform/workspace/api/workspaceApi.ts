@@ -493,7 +493,10 @@ export const workspaceApi = {
     planSlug: string,
     options: SubscribeOptions = {}
   ): Promise<SubscribeResponse> {
-    if (options.confirmationToken && options.savedPaymentMethodId) {
+    if (
+      options.confirmationToken !== undefined &&
+      options.savedPaymentMethodId !== undefined
+    ) {
       throw new TypeError(
         'confirmationToken and savedPaymentMethodId are mutually exclusive'
       )
