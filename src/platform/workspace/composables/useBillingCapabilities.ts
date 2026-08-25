@@ -19,9 +19,15 @@ import { useAuthStore } from '@/stores/authStore'
 type CapabilityReadState =
   | { status: 'idle' }
   | {
-      status: 'pending' | 'unavailable' | 'denied'
+      status: 'pending' | 'denied'
       authUid: string
       workspaceId: string
+    }
+  | {
+      status: 'unavailable'
+      authUid: string
+      workspaceId: string
+      retryAt: number
     }
   | {
       status: 'resolved'
@@ -38,6 +44,10 @@ type CapabilityReadState =
 const MIN_REFRESH_DELAY_MS = 5_000
 const MAX_REFRESH_DELAY_MS = 60 * 60 * 1000
 const FALLBACK_REFRESH_DELAY_MS = 60_000
+// An outage fails every visible session at once, so a flat retry interval would
+// keep them retrying in lockstep. Consecutive failures double up to this
+// ceiling, and each delay is jittered to spread the sessions apart.
+const MAX_RETRY_DELAY_MS = 5 * 60 * 1000
 
 interface ActiveCapabilityRequest {
   requestId: number
@@ -55,6 +65,8 @@ function useBillingCapabilitiesInternal() {
   let latestRequestId = 0
   let activeRequest: ActiveCapabilityRequest | null = null
   let refreshTimer: ReturnType<typeof setTimeout> | null = null
+  let readFailures = 0
+  let invalidatedRequestId = 0
 
   const capabilities = computed(() => {
     const userId = authStore.currentUser?.uid
@@ -112,7 +124,25 @@ function useBillingCapabilitiesInternal() {
   }
 
   function scheduledRefreshAt(state: CapabilityReadState): number | null {
-    return state.status === 'resolved' ? state.refreshAt : null
+    if (state.status === 'resolved') return state.refreshAt
+    return state.status === 'unavailable' ? state.retryAt : null
+  }
+
+  /** Requires `readFailures` to already count this failure. */
+  function unavailableState(
+    authUid: string,
+    workspaceId: string
+  ): CapabilityReadState {
+    const delay = Math.min(
+      FALLBACK_REFRESH_DELAY_MS * 2 ** (readFailures - 1),
+      MAX_RETRY_DELAY_MS
+    )
+    return {
+      status: 'unavailable',
+      authUid,
+      workspaceId,
+      retryAt: Date.now() + delay / 2 + Math.random() * (delay / 2)
+    }
   }
 
   // NaN from an unparseable timestamp fails the comparison and lands on the
@@ -155,6 +185,12 @@ function useBillingCapabilitiesInternal() {
   })
 
   const stopRevisionListener = onCapabilityRevision((revision) => {
+    // A read already in flight may have loaded its data before this mutation
+    // committed, and the revision it returns cannot rule that out: the server
+    // mints that number when it serializes the response, not when it read. So
+    // the read is refetched once it settles - the dedupe below would otherwise
+    // hand back the very request that missed the mutation.
+    if (activeRequest) invalidatedRequestId = activeRequest.requestId
     const state = readState.value
     if (state.status !== 'resolved' || state.response.revision === revision) {
       return
@@ -197,17 +233,19 @@ function useBillingCapabilitiesInternal() {
     }
 
     // Refetching the same scope revalidates in the background, keeping the
-    // resolved snapshot readable so its affordances do not blink out once per
-    // snapshot lifetime. A scope change makes it wrong, not stale, so it resets.
+    // prior read - a resolved snapshot or the unavailable fallback - readable
+    // so its affordances do not blink out once per refresh. A scope change
+    // makes it wrong, not stale, so it resets.
     const currentState = readState.value
-    const priorSnapshot =
-      currentState.status === 'resolved' &&
+    const revalidating =
+      (currentState.status === 'resolved' ||
+        currentState.status === 'unavailable') &&
       currentState.authUid === userId &&
       currentState.workspaceId === workspaceId
-        ? currentState
-        : null
+    const priorSnapshot =
+      revalidating && currentState.status === 'resolved' ? currentState : null
 
-    if (priorSnapshot) cancelActiveRead()
+    if (revalidating) cancelActiveRead()
     else resetRead()
 
     const requestId = ++latestRequestId
@@ -215,7 +253,7 @@ function useBillingCapabilitiesInternal() {
     const abortRequest = () => controller.abort()
     if (signal?.aborted) controller.abort()
     else signal?.addEventListener('abort', abortRequest, { once: true })
-    if (!priorSnapshot) {
+    if (!revalidating) {
       readState.value = {
         status: 'pending',
         authUid: userId,
@@ -224,6 +262,7 @@ function useBillingCapabilitiesInternal() {
     }
 
     const promise = (async () => {
+      let refetchAfterSettle = false
       try {
         const response = await workspaceApi.getBillingCapabilities(
           controller.signal
@@ -236,17 +275,24 @@ function useBillingCapabilitiesInternal() {
           return
         }
 
-        readState.value =
+        const resolvedForScope =
           response.resolved_for.workspace_id === workspaceId
-            ? {
-                status: 'resolved',
-                authUid: userId,
-                workspaceId,
-                response,
-                refreshAt: nextRefreshAt(response)
-              }
-            : { status: 'unavailable', authUid: userId, workspaceId }
+        if (resolvedForScope) {
+          readFailures = 0
+          readState.value = {
+            status: 'resolved',
+            authUid: userId,
+            workspaceId,
+            response,
+            refreshAt: nextRefreshAt(response)
+          }
+        } else {
+          readFailures++
+          readState.value = unavailableState(userId, workspaceId)
+        }
         scheduleRefresh()
+        refetchAfterSettle =
+          resolvedForScope && invalidatedRequestId === requestId
       } catch (error) {
         if (
           requestId !== latestRequestId ||
@@ -256,7 +302,7 @@ function useBillingCapabilitiesInternal() {
           return
         }
         if (controller.signal.aborted) {
-          if (!priorSnapshot) readState.value = { status: 'idle' }
+          if (!revalidating) readState.value = { status: 'idle' }
           return
         }
 
@@ -267,19 +313,22 @@ function useBillingCapabilitiesInternal() {
         // A transient failure keeps the last good snapshot - stale, not wrong -
         // and retries. A denial is the server answering about this actor, so it
         // replaces the snapshot even mid-revalidation.
+        const firstFailure = readFailures === 0
+        if (!denied) readFailures++
         if (priorSnapshot && !denied) {
           readState.value = {
             ...priorSnapshot,
             refreshAt: Date.now() + FALLBACK_REFRESH_DELAY_MS
           }
-          scheduleRefresh()
         } else {
-          readState.value = {
-            status: denied ? 'denied' : 'unavailable',
-            authUid: userId,
-            workspaceId
-          }
+          readState.value = denied
+            ? { status: 'denied', authUid: userId, workspaceId }
+            : unavailableState(userId, workspaceId)
         }
+        scheduleRefresh()
+        // A sustained outage retries on a timer, so reporting every attempt
+        // would emit one warning a minute for as long as the tab is open.
+        if (!denied && !firstFailure) return
         reportError(error, {
           errorType: 'billing_capabilities_read_failure',
           level: 'warning',
@@ -293,7 +342,13 @@ function useBillingCapabilitiesInternal() {
         })
       } finally {
         signal?.removeEventListener('abort', abortRequest)
-        if (activeRequest?.requestId === requestId) activeRequest = null
+        if (activeRequest?.requestId === requestId) {
+          activeRequest = null
+          // Deferred to here so the refetch is not deduped onto the request
+          // it replaces. It cannot loop: this one is issued after the revision
+          // that marked it, so only a further mutation can mark it in turn.
+          if (refetchAfterSettle) void fetchCapabilities()
+        }
       }
     })()
 
@@ -331,6 +386,7 @@ function useBillingCapabilitiesInternal() {
       () => workspaceStore.activeWorkspace?.role
     ],
     () => {
+      readFailures = 0
       resetRead()
       if (initialized && isCloud) void fetchCapabilities()
     }
