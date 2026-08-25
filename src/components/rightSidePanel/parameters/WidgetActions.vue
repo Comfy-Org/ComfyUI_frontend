@@ -5,12 +5,14 @@ import { useI18n } from 'vue-i18n'
 
 import MoreButton from '@/components/button/MoreButton.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { inputForWidget } from '@/core/graph/subgraph/promotedInputWidget'
+import {
+  inputForWidget,
+  resolveImmediatePromotedWidgetSource
+} from '@/core/graph/subgraph/promotedInputWidget'
 import {
   demoteWidget,
   promoteWidget
 } from '@/core/graph/subgraph/promotionUtils'
-import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -78,11 +80,7 @@ function handleShowInput() {
 
 function handleHideInput() {
   if (!host) return
-  const source = resolvePromotedWidgetSource(
-    node.graph?.rootGraph,
-    node,
-    widget
-  )
+  const source = resolveImmediatePromotedWidgetSource(node, widget)
   if (!source) return
   demoteWidget(source.sourceNode, source.sourceWidget, [host])
 }

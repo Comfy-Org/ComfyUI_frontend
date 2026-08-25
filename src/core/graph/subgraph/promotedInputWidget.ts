@@ -98,3 +98,44 @@ export function promotedInputWidgets(node: LGraphNode): IBaseWidget[] {
     return widget ? [widget] : []
   })
 }
+
+interface ImmediatePromotedWidgetSource {
+  sourceNode: LGraphNode
+  sourceWidget: IBaseWidget
+}
+
+/**
+ * Resolves a promoted widget's immediate source: the node/widget pair one
+ * level into the subgraph, matching how {@link findHostInputForPromotion}
+ * keys a host input. For a promotion nested through another `SubgraphNode`,
+ * this is that nested node and its own promoted input widget — not the
+ * fully-resolved concrete widget several levels deeper.
+ */
+export function resolveImmediatePromotedWidgetSource(
+  node: LGraphNode,
+  widget: IBaseWidget
+): ImmediatePromotedWidgetSource | undefined {
+  if (!node.isSubgraphNode()) return undefined
+
+  const input = inputForWidget(node, widget)
+  if (!input) return undefined
+
+  const source = promotedInputSource(node, input)
+  if (!source) return undefined
+
+  const sourceNode = node.subgraph.getNodeById(source.nodeId)
+  if (!sourceNode) return undefined
+
+  if (sourceNode.isSubgraphNode()) {
+    const sourceInput = sourceNode.inputs.find(
+      (entry) => entry.name === source.widgetName
+    )
+    const sourceWidget = sourceInput && promotedInputWidget(sourceInput)
+    return sourceWidget ? { sourceNode, sourceWidget } : undefined
+  }
+
+  const sourceWidget = sourceNode.widgets?.find(
+    (entry) => entry.name === source.widgetName
+  )
+  return sourceWidget ? { sourceNode, sourceWidget } : undefined
+}

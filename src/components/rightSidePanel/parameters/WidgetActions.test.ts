@@ -378,6 +378,69 @@ describe('WidgetActions', () => {
     expect(promotedInputWidgets(host)).toHaveLength(0)
   })
 
+  function setupNestedLinkedPromotedWidget() {
+    const {
+      host: innerHost,
+      interiorNode,
+      interiorWidget
+    } = setupLinkedPromotedWidget()
+
+    const outerSubgraph = createTestSubgraph()
+    outerSubgraph.add(innerHost)
+    const outerHost = createTestSubgraphNode(outerSubgraph)
+
+    const innerHostInput = innerHost.inputs[0]
+    if (!innerHostInput)
+      throw new Error('Expected a promoted input on inner host')
+    const nestedPromotedWidget = promotedInputWidgets(innerHost).find(
+      (widget) => widget.name === innerHostInput.name
+    )
+    if (!nestedPromotedWidget)
+      throw new Error('Expected a promoted widget on inner host')
+
+    const result = promoteValueWidgetViaSubgraphInput(
+      outerHost,
+      innerHost,
+      nestedPromotedWidget
+    )
+    expect(result.ok).toBe(true)
+
+    const outerPromotedWidget = promotedInputWidgets(outerHost)[0]
+    if (!outerPromotedWidget)
+      throw new Error('Expected a promoted widget on outer host')
+
+    return {
+      outerHost,
+      innerHost,
+      interiorNode,
+      interiorWidget,
+      outerPromotedWidget
+    }
+  }
+
+  it('demotes through the immediate nested source when "Hide input" is clicked on a promotion nested two levels deep', async () => {
+    const { outerHost, innerHost, outerPromotedWidget } =
+      setupNestedLinkedPromotedWidget()
+
+    const { user } = renderWidgetActions(outerPromotedWidget, outerHost, {
+      host: outerHost
+    })
+
+    await user.click(screen.getByRole('button', { name: /Hide input/ }))
+
+    expect(demoteWidget).toHaveBeenCalledWith(
+      innerHost,
+      expect.objectContaining({ name: 'value' }),
+      [outerHost]
+    )
+    expect(outerHost.subgraph.inputs).toHaveLength(0)
+    expect(outerHost.inputs).toHaveLength(0)
+    expect(promotedInputWidgets(outerHost)).toHaveLength(0)
+    // The inner promotion is untouched — only the outer host's projection of
+    // it was hidden.
+    expect(promotedInputWidgets(innerHost)).toHaveLength(1)
+  })
+
   it('does not offer "Hide input" without a host', () => {
     const widget = createMockWidget()
     const node = fromAny<LGraphNode, unknown>({

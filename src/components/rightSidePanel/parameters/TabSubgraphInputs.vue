@@ -66,10 +66,11 @@ watch(
 )
 
 // `node.inputs` is a plain litegraph array, not Vue-reactive, so promoting or
-// demoting a widget wouldn't otherwise invalidate this computed. Track the
-// same subgraph events SubgraphEditor.vue reacts to so the list — and the
-// AsyncSearchInput-driven `searchedWidgetsList` below, which keys off it —
-// stays in sync when nothing is typed into the search box.
+// demoting a widget wouldn't otherwise invalidate `widgetsList` or
+// `advancedInputsWidgets` below. Track the same subgraph events
+// SubgraphEditor.vue reacts to so both lists — and the AsyncSearchInput-driven
+// `searchedWidgetsList`, which keys off `widgetsList` — stay in sync when
+// nothing is typed into the search box.
 const promotionVersion = ref(0)
 useEventListener(
   () => node.subgraph.events,
@@ -89,6 +90,7 @@ const widgetsList = computed((): NodeWidgetsList => {
 })
 
 const advancedInputsWidgets = computed((): NodeWidgetsList => {
+  void promotionVersion.value
   const interiorNodes = node.subgraph.nodes
 
   const allInteriorWidgets = interiorNodes.flatMap((interiorNode) => {
