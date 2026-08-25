@@ -661,11 +661,10 @@ export function useMediaAssetActions() {
 
     if (flags.assetsEnabled && !flags.assetDeletionEnabled) {
       toast.add({
-        severity: 'error',
+        severity: 'warn',
         summary: t('g.error'),
         detail: t('mediaAsset.deletionUnsupported')
       })
-      return false
     }
 
     const assetsStore = useAssetsStore()
@@ -707,8 +706,10 @@ export function useMediaAssetActions() {
                     getOutputAssetMetadata(asset.user_metadata) ?? {}
                   if (!jobId) return []
 
-                  for (const item of resolveChildItems(asset)) {
-                    if (!succeededIds.has(item.id)) return []
+                  if (flags.assetsEnabled && flags.assetDeletionEnabled) {
+                    for (const item of resolveChildItems(asset)) {
+                      if (!succeededIds.has(item.id)) return []
+                    }
                   }
                   return api.deleteItem('history', jobId)
                 })
@@ -770,6 +771,21 @@ export function useMediaAssetActions() {
 
               if (succeededIds.size > 0) {
                 void assetsStore.inputAssets.invalidate([...succeededIds])
+              } else if (!flags.assetsEnabled) {
+                const hasOutputAssets = assetArray.some((a) => {
+                  const type = getAssetType(a)
+                  return type === 'output' || type === 'temp'
+                })
+                const hasInputAssets = assetArray.some(
+                  (a) => getAssetType(a) === 'input'
+                )
+
+                if (hasOutputAssets) {
+                  await assetsStore.outputAssets.invalidate()
+                }
+                if (hasInputAssets) {
+                  await assetsStore.inputAssets.invalidate()
+                }
               }
 
               // Show appropriate feedback based on results

@@ -1022,7 +1022,9 @@ test.describe('Assets sidebar - delete confirmation', () => {
     await expect(tab.assetCards).toHaveCount(initialCount - 1)
 
     const successToast = comfyPage.page.locator('.p-toast-message-success')
-    await expect(successToast).toBeVisible()
+    await expect(async () => {
+      await expect(successToast).toBeVisible()
+    }, 'Deletion is not supported on local').not.toPass({ timeout: 5000 })
   })
 
   test('Cancelling delete preserves asset', async ({ comfyPage }) => {

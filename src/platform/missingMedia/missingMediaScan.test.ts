@@ -31,6 +31,11 @@ import {
 import type { MissingMediaCandidate } from './types'
 
 const mockInputItems = ref<AssetItem[]>([])
+const mockInputHasMore = ref(false)
+
+const { mockUseAssetsQuery } = vi.hoisted(() => ({
+  mockUseAssetsQuery: vi.fn()
+}))
 
 const { mockGetAssetsPageByTag } = vi.hoisted(() => ({
   mockGetAssetsPageByTag: vi.fn()
@@ -76,10 +81,8 @@ vi.mock('@/utils/graphTraversalUtil', async (importActual) => {
   }
 })
 
-vi.mock('@/stores/assetsStore', () => ({
-  useAssetsStore: () => ({
-    inputAssets: { items: mockInputItems }
-  })
+vi.mock('@/platform/assets/composables/useAssetsQuery', () => ({
+  useAssetsQuery: mockUseAssetsQuery
 }))
 
 vi.mock('@/platform/assets/services/assetService', async () => {
@@ -665,6 +668,15 @@ describe('verifyMediaCandidates', () => {
 
   beforeEach(() => {
     mockInputItems.value = []
+    mockInputHasMore.value = false
+    mockUseAssetsQuery.mockReturnValue({
+      items: mockInputItems,
+      hasMore: mockInputHasMore,
+      loadMore: vi.fn(() => {
+        mockInputHasMore.value = false
+        return Promise.resolve()
+      })
+    })
     mockGetAssetsPageByTag.mockResolvedValue(makeAssetPage([]))
     mockFetchHistoryPage.mockResolvedValue({
       jobs: [],
