@@ -24,45 +24,54 @@ jobs:
     steps:
       - name: Resolve latest complete main E2E coverage run
         id: source
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v9
+        uses: actions/github-script@v9
         with:
           script: |
             const expectedShards = 16
-            const { data } = await github.rest.actions.listWorkflowRuns({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: 'ci-tests-e2e.yaml',
-              branch: 'main',
-              event: 'push',
-              status: 'completed',
-              per_page: 30
-            })
+            const artifactCutoff = new Date(
+              Date.now() - 26 * 60 * 60 * 1000
+            ).toISOString()
+            const runPages = github.paginate.iterator(
+              github.rest.actions.listWorkflowRuns,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: 'ci-tests-e2e.yaml',
+                branch: 'main',
+                event: 'push',
+                status: 'completed',
+                created: `>=${artifactCutoff}`,
+                per_page: 100
+              }
+            )
 
-            for (const run of data.workflow_runs) {
-              if (run.conclusion === 'cancelled') continue
+            for await (const { data: runs } of runPages) {
+              for (const run of runs) {
+                if (run.conclusion === 'cancelled') continue
 
-              const artifacts = await github.paginate(
-                github.rest.actions.listWorkflowRunArtifacts,
-                {
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  run_id: run.id,
-                  per_page: 100
-                }
-              )
-              const shardCount = artifacts.filter(
-                ({ expired, name }) =>
-                  !expired && /^e2e-coverage-shard-\d+$/.test(name)
-              ).length
-              if (shardCount !== expectedShards) continue
+                const artifacts = await github.paginate(
+                  github.rest.actions.listWorkflowRunArtifacts,
+                  {
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    run_id: run.id,
+                    per_page: 100
+                  }
+                )
+                const shardCount = artifacts.filter(
+                  ({ expired, name }) =>
+                    !expired && /^e2e-coverage-shard-\d+$/.test(name)
+                ).length
+                if (shardCount !== expectedShards) continue
 
-              core.setOutput('run-id', String(run.id))
-              core.setOutput('sha', run.head_sha)
-              core.setOutput('url', run.html_url)
-              core.info(
-                `Using ${run.html_url} at ${run.head_sha} with ${shardCount} coverage shards`
-              )
-              return
+                core.setOutput('run-id', String(run.id))
+                core.setOutput('sha', run.head_sha)
+                core.setOutput('url', run.html_url)
+                core.info(
+                  `Using ${run.html_url} at ${run.head_sha} with ${shardCount} coverage shards`
+                )
+                return
+              }
             }
 
             core.setFailed(
@@ -70,7 +79,7 @@ jobs:
             )
 
       - name: Checkout sources for genhtml
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7
         with:
           ref: ${{ steps.source.outputs.sha }}
           persist-credentials: false
@@ -155,7 +164,7 @@ jobs:
 
       - name: Upload merged coverage data
         if: steps.coverage-shards.outputs.has-coverage == 'true'
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@v6
         with:
           name: e2e-coverage
           path: coverage/playwright/
@@ -186,7 +195,7 @@ jobs:
 
       - name: Upload HTML report artifact
         if: steps.coverage-shards.outputs.has-coverage == 'true'
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@v6
         with:
           name: e2e-coverage-html
           path: coverage/html/
@@ -204,7 +213,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Download HTML report
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@v8
         with:
           name: e2e-coverage-html
           path: coverage/html
