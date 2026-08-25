@@ -2680,7 +2680,7 @@
       "addMoreCreditsToRun": "Add more credits to run",
       "insufficientWorkflowMessage": "You don't have enough credits to run this workflow.",
       "creditsDescription": "Credits are used to run workflows or partner nodes.",
-      "chargedImmediatelyNote": "Your saved card is charged immediately.",
+      "chargedImmediatelyNote": "Your saved payment method is charged immediately.",
       "confirmSubtitle": "Credits are added to this workspace as soon as payment completes.",
       "confirmTitle": "Confirm",
       "howManyCredits": "How many credits would you like to add?",
@@ -2745,6 +2745,17 @@
     "topupSuccess": "Credits added successfully",
     "topupFailed": "Top-up failed",
     "topupTimeout": "Top-up verification timed out",
+    "paymentDeclinedDetail": "Your bank declined this payment. Try another payment method or contact your bank.",
+    "insufficientFundsDetail": "This payment method has insufficient funds. Try another payment method or contact your bank.",
+    "expiredCardDetail": "This card has expired. Use a different payment method.",
+    "incorrectCvcDetail": "The card security code is incorrect. Check it and try again.",
+    "processingErrorDetail": "Your payment couldn't be processed. Try again or use another payment method.",
+    "authenticationUnavailable": "Secure payment authentication is unavailable. Please refresh and try again.",
+    "authenticationFailedDetail": "We couldn't complete payment verification. Please try again.",
+    "authenticationManagerRequired": "Payment verification needs attention from a workspace billing manager.",
+    "retryVerification": "Retry verification",
+    "reconciliationTitle": "Payment received — confirmation pending",
+    "reconciliationDetail": "Your payment was received, but we couldn't finish updating your workspace. Contact support and include this operation ID:",
     "cancelFailed": "Failed to cancel subscription",
     "cancelTimeout": "Subscription cancellation timed out"
   },
@@ -3056,6 +3067,12 @@
       "confirmChange": "Confirm change",
       "confirmChangeTitle": "Review your scheduled change",
       "paymentPopupBlocked": "Couldn't open the payment page — please allow popups and try again.",
+      "paymentMethod": "Payment method",
+      "stripeMethodChoice": "Your payment details are handled securely by Stripe.",
+      "alipayRenewalNote": "Alipay authorization will also be used for automatic renewals and future purchases.",
+      "payAndSubscribe": "Pay and subscribe",
+      "stripeUnavailable": "Payment options are unavailable. Please refresh and try again.",
+      "quoteUnavailable": "Unavailable",
       "switchesToday": "Switches today",
       "startsOn": "Starts {date}",
       "yearlySubscription": "Yearly subscription",
@@ -3069,7 +3086,7 @@
       "creditsRefillMonthlyTo": "Credits refill monthly to",
       "billedEachMonth": "{amount} billed each month. Cancel anytime.",
       "stayOnUntil": "You'll stay on {plan} until {date}.",
-      "termsAgreement": "By continuing, you agree to Comfy Org's {terms} and {privacy}.",
+      "termsAgreement": "By continuing, you agree to Comfy Org's {terms} and {privacy}, and authorize Comfy Org to charge your payment method each billing period until you cancel.",
       "terms": "Terms",
       "privacyPolicy": "Privacy Policy",
       "addCreditCard": "Add credit card",
@@ -3090,7 +3107,22 @@
         "confirmationRequired": "Your subscription is cancelled — please confirm the reactivation charge before continuing",
         "amountChanged": "The charge amount changed since you confirmed it — please review and try again",
         "unavailable": "We can't confirm this reactivation right now — please choose your plan again"
-      }
+      },
+      "promoCodePlaceholder": "Promo code",
+      "applyPromoCode": "Apply",
+      "applyQuoteBeforeContinuing": "Apply the promo code to refresh your quote before continuing.",
+      "quoteStale": "Your quote changed. Review the updated amount and try again.",
+      "quoteRefreshFailed": "Your quote expired and couldn't be refreshed. Choose your plan again.",
+      "renewsAt": "Renews at {amount} on {date}. Cancel anytime.",
+      "discountComposition": "Discounts",
+      "discount": {
+        "plan": "Plan discount",
+        "promotion": "Promo code"
+      },
+      "changePaymentMethod": "Change",
+      "savedPaymentMethod": "Payment method",
+      "addNewPaymentMethod": "Add new payment method",
+      "alipay": "Alipay"
     },
     "success": {
       "allSet": "You're all set",
@@ -3099,7 +3131,9 @@
       "inviteTitle": "Invite your team",
       "planUpdated": "Your plan has been successfully updated.",
       "receiptEmailed": "A receipt has been emailed to you.",
-      "sendInvites": "Send invites"
+      "sendInvites": "Send invites",
+      "promoApplied": "{code} applied.",
+      "promoRenews": "Renews at {amount} on {date}"
     }
   },
   "userSettings": {
