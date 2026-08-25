@@ -14,7 +14,6 @@ describe('pack storage', () => {
   let storage: StorageHandle
 
   beforeEach(() => {
-    vi.restoreAllMocks()
     storage = createStorageApi()
   })
 
