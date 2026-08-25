@@ -83,26 +83,29 @@ async function benchmarkViewportKeepAlive(
     () => window.app!.graph.nodes.length
   )
 
-  // Wait for every node to have mounted at least once (not just the first),
-  // then let the throttled keep-alive refresh settle, before measuring —
-  // otherwise initial mount cost lands inside the measurement window.
-  await comfyPage.vueNodes.waitForNodes(totalNodeCount)
+  // Wait for the first node to mount, then let the throttled keep-alive
+  // refresh settle, before measuring — otherwise mount cost lands inside
+  // the measurement window. Retention keeps the attached count below the
+  // total from the start, so waiting for the full total here would hang
+  // when keep-alive is on.
+  await comfyPage.vueNodes.waitForNodes()
   await comfyPage.idleFrames(30)
 
   if (keepAliveEnabled) {
     // Sanity check that retention actually engaged for this graph size — a
     // silent no-op here would make the run identical to "off". Detached
     // nodes are moved out of the live document, so attached count reads
-    // lower than the total.
+    // lower than the total. This poll also acts as this variant's settle
+    // gate: it only resolves once retention has caught up.
     await expect
       .poll(() => comfyPage.vueNodes.nodes.count())
       .toBeLessThan(totalNodeCount)
   } else {
-    // Confirm the baseline really does hold every node attached before the
-    // timed measurement starts — guards against the same mount-lag issue
-    // biasing the baseline this benchmark compares "on" against.
+    // Confirm the baseline really does mount and hold every node attached
+    // before the timed measurement starts — keep-alive never engages here,
+    // so this should simply catch up with a slow-mounting CI container.
     await expect
-      .poll(() => comfyPage.vueNodes.nodes.count())
+      .poll(() => comfyPage.vueNodes.nodes.count(), { timeout: 30_000 })
       .toBe(totalNodeCount)
   }
 
