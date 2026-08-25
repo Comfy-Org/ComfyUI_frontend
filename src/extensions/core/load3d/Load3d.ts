@@ -137,7 +137,8 @@ class Load3d extends Viewport3d {
 
   async exportModel(format: string): Promise<void> {
     if (!this.modelManager.currentModel) {
-      throw new Error('No model to export')
+      console.error('No model to export')
+      return
     }
 
     const exportMessage = `Exporting as ${format.toUpperCase()}...`
@@ -150,9 +151,10 @@ class Load3d extends Viewport3d {
     if (DIRECT_EXPORT_FORMATS.has(format)) {
       try {
         if (this.getSourceFormat() !== format) {
-          throw new Error(
+          console.error(
             `Cannot export ${format} without converting from the loaded ${this.getSourceFormat() ?? 'unknown'} source`
           )
+          return
         }
         await ModelExporter.exportDirect(originalURL, filename, format)
       } catch (error) {
@@ -205,7 +207,8 @@ class Load3d extends Viewport3d {
           await ModelExporter.exportFBX(model, filename, originalURL)
           break
         default:
-          throw new Error(`Unsupported export format: ${format}`)
+          console.error(`Unsupported export format: ${format}`)
+          return
       }
 
       await new Promise((resolve) => setTimeout(resolve, 10))
@@ -550,7 +553,8 @@ class Load3d extends Viewport3d {
     height: number = 256
   ): Promise<string> {
     if (!this.modelManager.currentModel) {
-      throw new Error('No model loaded for thumbnail capture')
+      console.error('No model loaded for thumbnail capture')
+      return ''
     }
 
     const savedState = this.cameraManager.getCameraState()

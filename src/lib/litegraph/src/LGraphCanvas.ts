@@ -8535,8 +8535,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           {
             content: 'Convert to Subgraph',
             callback: () => {
-              if (!this.selectedItems.size)
-                throw new Error('Convert to Subgraph: Nothing selected.')
+              if (!this.selectedItems.size) {
+                console.error('Convert to Subgraph: Nothing selected.')
+                return
+              }
               this._graph.convertToSubgraph(this.selectedItems)
             }
           },

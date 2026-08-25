@@ -45,7 +45,10 @@ export async function probeDevServer(
   let body: string
   try {
     const res = await fetch(url, { signal: AbortSignal.timeout(3000) })
-    if (!res.ok && res.status !== 304) throw new Error(`Status ${res.status}`)
+    if (!res.ok && res.status !== 304) {
+      console.error(`Status ${res.status}`)
+      return { status: 'not-running' }
+    }
     body = await res.text()
   } catch {
     return { status: 'not-running' }

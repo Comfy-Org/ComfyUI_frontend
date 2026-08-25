@@ -200,6 +200,24 @@ describe('PackVersionSelectorPopover', () => {
     expect(onSubmit).toHaveBeenCalledOnce()
   })
 
+  it('does not queue installation without a pack ID', async () => {
+    mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { user } = renderComponent({
+      props: { nodePack: { ...mockNodePack, id: '' } }
+    })
+    await waitForPromises()
+
+    const installButton = screen.getByRole('button', { name: 'Install' })
+    await user.click(installButton)
+
+    expect(consoleSpy).toHaveBeenCalledWith(
+      'Node ID is required for installation'
+    )
+    expect(mockInstallPack).not.toHaveBeenCalled()
+    expect(installButton).not.toBeDisabled()
+  })
+
   it('is reactive to nodePack prop changes', async () => {
     mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
 
