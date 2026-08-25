@@ -22,13 +22,11 @@ vi.mock('@/utils/envUtil', () => ({
 
 function deferred<T>() {
   let resolve!: (value: T) => void
-  let reject!: (reason?: unknown) => void
-  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+  const promise = new Promise<T>((resolvePromise) => {
     resolve = resolvePromise
-    reject = rejectPromise
   })
 
-  return { promise, reject, resolve }
+  return { promise, resolve }
 }
 
 function downloadState(overrides: Partial<DownloadState> = {}): DownloadState {
