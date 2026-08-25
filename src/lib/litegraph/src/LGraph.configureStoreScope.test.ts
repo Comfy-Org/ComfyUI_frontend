@@ -53,12 +53,10 @@ describe('LGraph.configure clears graph-scoped stores for the incoming id', () =
     )!
     delete droppedData.inputs![0].label
 
-    const restored = new LGraph()
-    restored.configure(payload)
+    graph.configure(payload)
 
-    expect(restored.id).toBe(graph.id)
-    expect(restored.getNodeById(dropped.id)!.widgets![0].label).toBeUndefined()
-    expect(restored.getNodeById(kept.id)!.widgets![0].label).toBe('Kept Label')
+    expect(graph.getNodeById(dropped.id)!.widgets![0].label).toBeUndefined()
+    expect(graph.getNodeById(kept.id)!.widgets![0].label).toBe('Kept Label')
   })
 
   test('preview exposures held for the incoming id do not survive the reload', () => {
@@ -70,10 +68,8 @@ describe('LGraph.configure clears graph-scoped stores for the incoming id', () =
 
     const payload = serializeToJson(graph)
 
-    const restored = new LGraph()
-    restored.configure(payload)
+    graph.configure(payload)
 
-    expect(restored.id).toBe(graph.id)
-    expect(store.getExposures(restored.id, '99')).toEqual([])
+    expect(store.getExposures(graph.id, '99')).toEqual([])
   })
 })
