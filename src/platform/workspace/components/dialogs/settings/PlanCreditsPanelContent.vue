@@ -26,6 +26,7 @@
           :current-plan-slug="currentPlanSlug"
           :current-team-credit-stop="currentTeamCreditStop"
           :is-loading="isLoadingPlans"
+          :error="plansError"
           @retry="loadPlans"
         />
         <SubscriptionFooterLinks
@@ -86,7 +87,8 @@ const { fetchPlans, currentPlanSlug, currentTeamCreditStop } =
 const {
   plans: catalogPlans,
   teamCreditStops,
-  isLoading: isLoadingPlans
+  isLoading: isLoadingPlans,
+  error: plansError
 } = useBillingPlans()
 
 function loadPlans() {

@@ -2653,6 +2653,7 @@
     "creditsAMonth": "{credits} credits a month",
     "perDollar": "{credits} per dollar",
     "choosePlan": "Choose {tier}",
+    "noPlansAvailable": "No plans are available right now. Check back soon.",
     "creditsPerMonth": "{credits} credits per month",
     "comingSharedWorkflows": "Shared workflows & assets",
     "comingProjects": "Projects",

@@ -23,7 +23,10 @@
       </ToggleGroup>
 
       <div class="flex items-center gap-2">
-        <Switch v-model="billedYearly" />
+        <Switch
+          v-model="billedYearly"
+          :aria-label="t('settingsPlans.billedYearlyToggle')"
+        />
         <span class="text-sm font-semibold text-base-foreground">
           {{ t('settingsPlans.billedYearlyToggle') }}
         </span>
@@ -33,7 +36,7 @@
     <!-- Loading: never render a frontend-authored price while the catalog is in
          flight; a spinner stands in for the offer. -->
     <div
-      v-if="isLoading"
+      v-if="isLoading && !personalCards.length"
       class="flex items-center gap-2 py-8 text-muted-foreground"
     >
       <i class="pi pi-spin pi-spinner" />
@@ -149,7 +152,11 @@
       </div>
 
       <!-- No personal catalog rows: an offer we cannot source is not shown. -->
-      <PlansUnavailable v-if="!personalCards.length" @retry="emit('retry')" />
+      <PlansUnavailable
+        v-if="!personalCards.length"
+        :variant="unavailableVariant"
+        @retry="emit('retry')"
+      />
     </div>
 
     <!-- Teams -->
@@ -258,7 +265,11 @@
 
       <!-- No team stops in the catalog: explicit unavailable state, never a
            constant-seeded slider. -->
-      <PlansUnavailable v-else @retry="emit('retry')" />
+      <PlansUnavailable
+        v-else
+        :variant="unavailableVariant"
+        @retry="emit('retry')"
+      />
 
       <div
         class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-interface-stroke px-6 py-4"
@@ -313,19 +324,27 @@ const {
   teamCreditStops = null,
   currentPlanSlug = null,
   currentTeamCreditStop = null,
-  isLoading = false
+  isLoading = false,
+  error = null
 } = defineProps<{
   catalogPlans?: Plan[]
   teamCreditStops?: TeamCreditStops | null
   currentPlanSlug?: string | null
   currentTeamCreditStop?: TeamCreditStopSummary | null
   isLoading?: boolean
+  error?: string | null
 }>()
 
 const emit = defineEmits<{ retry: [] }>()
 
 const { isSubscribing, subscribeToPersonal, subscribeToTeam } =
   useSettingsPlansCheckout()
+
+// A load failure is retryable ('error'); a catalog that loaded with no plans is
+// a successful empty result ('empty', no retry).
+const unavailableVariant = computed<'empty' | 'error'>(() =>
+  error ? 'error' : 'empty'
+)
 
 const { t, n } = useI18n()
 

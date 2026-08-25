@@ -99,6 +99,7 @@ function renderSection(
     currentPlanSlug?: string | null
     currentTeamCreditStop?: TeamCreditStopSummary | null
     isLoading?: boolean
+    error?: string | null
   } = {}
 ) {
   return render(SettingsPlansSection, {
@@ -168,26 +169,31 @@ describe('SettingsPlansSection — API is the source of truth', () => {
     expect(screen.queryByText('189,900')).toBeNull()
   })
 
-  it('shows the unavailable state for personal when the catalog is empty', () => {
+  it('shows the unavailable state and no prices when the personal catalog is empty', () => {
     renderSection({ catalogPlans: [], teamCreditStops: null })
 
-    expect(screen.getByText("We couldn't load your plan details.")).toBeTruthy()
+    expect(
+      screen.getByText('No plans are available right now. Check back soon.')
+    ).toBeTruthy()
     expect(screen.queryByText(/\$\d+ Billed yearly/)).toBeNull()
     expect(screen.queryByText('50,400')).toBeNull()
   })
 
-  it('shows the unavailable state for teams when stops are absent', async () => {
+  it('shows the unavailable state and no constant stop when team stops are absent', async () => {
     renderSection({ teamCreditStops: null })
     await userEvent.click(screen.getByRole('button', { name: 'Teams' }))
 
-    expect(screen.getByText("We couldn't load your plan details.")).toBeTruthy()
+    expect(
+      screen.getByText('No plans are available right now. Check back soon.')
+    ).toBeTruthy()
     expect(screen.queryByText('147,700')).toBeNull()
   })
 
-  it('emits retry from the unavailable state', async () => {
+  it('emits retry from the error state', async () => {
     const { emitted } = renderSection({
       catalogPlans: [],
-      teamCreditStops: null
+      teamCreditStops: null,
+      error: 'network down'
     })
 
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
@@ -200,6 +206,12 @@ describe('SettingsPlansSection — API is the source of truth', () => {
     expect(screen.getByText('Loading')).toBeTruthy()
     expect(screen.queryByText("We couldn't load your plan details.")).toBeNull()
     expect(screen.queryByText(/\$\d+ Billed yearly/)).toBeNull()
+  })
+
+  it('exposes the billing switch by its accessible name', () => {
+    renderSection()
+
+    expect(screen.getByRole('switch', { name: 'Billed yearly' })).toBeTruthy()
   })
 
   it('shows the default stop credits when live stops replace the seeded set', async () => {
@@ -242,6 +254,45 @@ describe('SettingsPlansSection — API is the source of truth', () => {
 
     expect(await screen.findByText('253,200')).toBeTruthy()
     expect(screen.queryByText('42,200')).toBeNull()
+  })
+
+  it('shows the empty-state copy (no retry) when the catalog loaded but is empty', () => {
+    renderSection({ catalogPlans: [], teamCreditStops: null, error: null })
+
+    expect(
+      screen.getByText('No plans are available right now. Check back soon.')
+    ).toBeTruthy()
+    expect(screen.queryByText("We couldn't load your plan details.")).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull()
+  })
+
+  it('shows the error copy and a working retry when the load failed', async () => {
+    const { emitted } = renderSection({
+      catalogPlans: [],
+      teamCreditStops: null,
+      error: 'network down'
+    })
+
+    expect(screen.getByText("We couldn't load your plan details.")).toBeTruthy()
+    expect(
+      screen.queryByText('No plans are available right now. Check back soon.')
+    ).toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
+    expect(emitted().retry).toBeTruthy()
+  })
+
+  it('keeps the cards visible during a refetch instead of flashing the spinner', async () => {
+    const { rerender } = renderSection()
+    expect(screen.getByText('$20')).toBeTruthy()
+
+    await rerender({
+      catalogPlans: CATALOG,
+      teamCreditStops: TEAM_STOPS,
+      isLoading: true
+    })
+
+    expect(screen.getByText('$20')).toBeTruthy()
+    expect(screen.queryByText('Loading')).toBeNull()
   })
 })
 
