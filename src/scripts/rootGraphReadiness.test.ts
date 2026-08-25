@@ -20,7 +20,6 @@ describe('ComfyApp root graph readiness', () => {
   afterEach(() => {
     scope.stop()
     setRootGraph(app, previousRootGraph)
-    vi.restoreAllMocks()
   })
 
   it('re-runs an effect reading isGraphReady when the graph is assigned', async () => {
