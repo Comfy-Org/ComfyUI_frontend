@@ -116,6 +116,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Fail if performance tests failed
+        if: steps.perf.outcome == 'failure'
+        run: |
+          echo "::error::Performance tests failed; partial metrics were saved when available."
+          exit 1
+
       # The save step above is continue-on-error, so a broken save is
       # invisible on its own. This step turns sustained staleness into a
       # red job on main pushes: if the newest commit on perf-data is older
