@@ -6,8 +6,7 @@ page, or another repository, the objection cannot be checked — it can only be
 deferred to or ignored. This document defines how canonical knowledge enters
 this repo so that does not happen.
 
-It applies to any body of design knowledge, not just the extension-API axioms
-that motivated it.
+It applies to any body of design knowledge.
 
 ## 1. Where canonical knowledge lives
 
@@ -40,7 +39,6 @@ Every vendored doc therefore carries a header block:
 and splits its body into those two buckets under explicit headings. A claim goes
 in **Binding now** only if it can be pointed at code on `main`. If it cannot be
 verified, it goes in **Direction of travel** or it does not get vendored.
-See `extension-api-v2-axioms.md` for a worked example.
 
 ## 3. Staying in sync with upstream
 

@@ -15,8 +15,7 @@ Design records that rely on this vocabulary:
 [ADR 0003](../adr/0003-crdt-based-layout-system.md),
 [ADR 0008](../adr/0008-entity-component-system.md),
 [ADR 0009](../adr/0009-subgraph-promoted-widgets-use-linked-inputs.md),
-[Subgraph Boundaries and Widget Promotion](subgraph-boundaries-and-promotion.md),
-[Extension API v2 Axioms](extension-api-v2-axioms.md).
+[Subgraph Boundaries and Widget Promotion](subgraph-boundaries-and-promotion.md).
 
 ## Widgets & Values
 
@@ -150,26 +149,3 @@ closely they meet it.
   replayed, undone, and transmitted over CRDT
   ([ADR 0003](../adr/0003-crdt-based-layout-system.md)). Not a fire-and-forget
   imperative call.
-
-## Extension API v2 terms
-
-These name concepts in the **planned** v2 extension surface. They are not
-present in the shipping extension API; use them when discussing that design,
-not when describing current behaviour. See
-[Extension API v2 Axioms](extension-api-v2-axioms.md).
-
-- **Handle** — the opaque, typed accessor (`NodeHandle`, `WidgetHandle`) an
-  extension would use instead of a raw entity or a raw id.
-- **Mount** — the single DOM seam of a v2 Widget: a `mount(host, ctx)` callback
-  that runs once per instance, appends into a runtime-owned host element, and
-  returns cleanup.
-- **Recreate** — dispose an instance and build a fresh one from Schema. The
-  lifecycle for split views, promotion projections, and workflow load. Internal
-  instance state does not survive.
-- **Remount** — move an existing instance to a new host element without
-  disposing it, preserving instance state. Not Recreate; the two are separate
-  hooks precisely because they differ on state survival.
-- **Augmenter** — an extension that decorates an existing Widget type
-  (transform values, add handlers) rather than declaring a new one.
-- **Blueprint** — the serialized template a linked/cloned instance is
-  instantiated from.

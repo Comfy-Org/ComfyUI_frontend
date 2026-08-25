@@ -222,7 +222,6 @@ When working from a TDD or design doc, record its tradeoffs, alternatives consid
 Shared vocabulary and cross-cutting invariants live in `docs/architecture/` (see `docs/architecture/AGENTS.md`, which auto-loads when working there):
 
 - `domain-glossary.md` — the repo's only glossary. Use its definitions of Widget, Value, Schema, Topology, Layout, Promotion, Entity/Component/System.
-- `extension-api-v2-axioms.md` — the A1–A16 axioms. §2 binds current code; §3 is the v2 target surface and must **not** be enforced against `main`. Cite a section, never "the axioms".
 - `canonical-knowledge.md` — how outside knowledge becomes binding here. Follow it before vendoring design rules from another repo, Notion, or a meeting.
 
 ### Entity Architecture Constraints (ADR 0003 + ADR 0008)
