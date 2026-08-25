@@ -41,12 +41,12 @@ vi.mock('@/stores/modelToNodeStore', () => {
   const registeredNodeTypes: Record<string, string> = {
     CheckpointLoaderSimple: 'ckpt_name',
     LoraLoader: 'lora_name',
-    AILab_QwenVL: 'model_name'
+    LoadChatGLM3: 'chatglm3_checkpoint'
   }
   const nodeTypeCategories: Record<string, string> = {
     CheckpointLoaderSimple: 'checkpoints',
     LoraLoader: 'loras',
-    AILab_QwenVL: 'LLM/Qwen-VL/Qwen2.5-VL-3B-Instruct'
+    LoadChatGLM3: 'LLM/checkpoints'
   }
   return {
     useModelToNodeStore: vi.fn(() => ({
@@ -774,13 +774,13 @@ describe(assetService.getAssetModels, () => {
   it.fails("resolves models when queried by the node-widget's full category path, not just the bucket's top-level folder key", async () => {
     mockSupportsModelTypeTags.value = false
     const category =
-      useModelToNodeStore().getCategoryForNodeType('AILab_QwenVL')
+      useModelToNodeStore().getCategoryForNodeType('LoadChatGLM3')
     fetchApiMock.mockResolvedValueOnce(
       buildAssetListResponse([
         validAsset({
-          id: 'qwen-vl',
-          name: 'Qwen2.5-VL-3B-Instruct.safetensors',
-          tags: ['models', 'LLM/Qwen-VL/Qwen2.5-VL-3B-Instruct']
+          id: 'chatglm3',
+          name: 'chatglm3-checkpoint.safetensors',
+          tags: ['models', 'LLM/checkpoints']
         })
       ])
     )
