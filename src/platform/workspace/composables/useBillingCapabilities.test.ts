@@ -129,6 +129,47 @@ async function emitMutationRevision(
   await vi.advanceTimersByTimeAsync(0)
 }
 
+/**
+ * Serves capability reads through the shared revision interceptor the way the
+ * real client does: the response carries the revision matching its body, and
+ * axios publishes it before the awaited GET resolves. Reads settle only when
+ * released, so a read that invalidates itself surfaces as one extra call
+ * instead of an unbounded loop.
+ */
+function capabilityReadsThroughInterceptor() {
+  const pending: Array<(data: BillingCapabilitiesResponse) => void> = []
+  const client = axios.create()
+  client.defaults.adapter = (config: InternalAxiosRequestConfig) =>
+    new Promise<AxiosResponse>((resolve) => {
+      pending.push((data) =>
+        resolve({
+          data,
+          status: 200,
+          statusText: '',
+          headers: new AxiosHeaders({
+            'X-Capability-Revision': String(data.revision)
+          }),
+          config
+        })
+      )
+    })
+  attachCapabilityRevisionInterceptor(client)
+
+  return {
+    read: async (): Promise<BillingCapabilitiesResponse> =>
+      (
+        await client.get<BillingCapabilitiesResponse>(
+          '/api/billing/capabilities'
+        )
+      ).data,
+    async release(data: BillingCapabilitiesResponse): Promise<void> {
+      await vi.advanceTimersByTimeAsync(0)
+      pending.shift()!(data)
+      await vi.advanceTimersByTimeAsync(0)
+    }
+  }
+}
+
 describe('useBillingCapabilities', () => {
   let scope: EffectScope
   let billingCapabilities: ReturnType<typeof useBillingCapabilities>
@@ -738,6 +779,44 @@ describe('useBillingCapabilities', () => {
     )
     await initialization
     await vi.advanceTimersByTimeAsync(0)
+
+    expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(2)
+    expect(billingCapabilities.canTopUp.value).toBe(true)
+  })
+
+  it('does not refetch a read whose own response reports its revision', async () => {
+    const reads = capabilityReadsThroughInterceptor()
+    mockGetBillingCapabilities.mockImplementation(reads.read)
+
+    const initialization = billingCapabilities.initialize()
+    await reads.release(
+      capabilitiesResponse(true, 'workspace-1', true, { revision: 4 })
+    )
+    await initialization
+
+    expect(mockGetBillingCapabilities).toHaveBeenCalledOnce()
+    expect(billingCapabilities.canTopUp.value).toBe(true)
+  })
+
+  it('refetches an interceptor-served read that a mutation invalidated in flight', async () => {
+    const reads = capabilityReadsThroughInterceptor()
+    mockGetBillingCapabilities.mockImplementation(reads.read)
+
+    const initialization = billingCapabilities.initialize()
+    await emitMutationRevision('5')
+    expect(mockGetBillingCapabilities).toHaveBeenCalledOnce()
+
+    // Serialized after the mutation stamped its header, so it carries a higher
+    // revision than the mutation despite having read pre-mutation data.
+    await reads.release(
+      capabilitiesResponse(false, 'workspace-1', true, { revision: 7 })
+    )
+    await initialization
+    expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(2)
+
+    await reads.release(
+      capabilitiesResponse(true, 'workspace-1', true, { revision: 8 })
+    )
 
     expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(2)
     expect(billingCapabilities.canTopUp.value).toBe(true)
