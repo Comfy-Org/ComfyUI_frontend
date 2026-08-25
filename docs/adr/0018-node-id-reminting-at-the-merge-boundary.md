@@ -33,8 +33,8 @@ another merge-shaped operation inserts externally minted content.
 
 ### What a collision means
 
-Per the collision-contract taxonomy (D-gl-A4, pinned by the #15720 test suite
-and documented in the ADR-0003/ADR-0008 amendments of #15761):
+Per the collision-contract taxonomy (D-gl-A4, with pending test coverage in
+#15720 and a pending ADR-0003/ADR-0008 documentation fold in #15761):
 
 - **Identity keys reject.** A collision on an identity key is two different
   entities claiming one name. They must never be merged; merging silently
@@ -52,12 +52,11 @@ keep a strict no-collision invariant.**
 
 Concretely:
 
-1. Stores and registries (nodeStore, linkStore, rerouteStore,
-   widgetValueStore, and any future id-keyed registry) treat a second
-   _different_ object claiming a registered id as a programming-error-grade
-   event: reject, never silently remap. (Same raw object re-registered under
-   the same owner is idempotent and returns the incumbent — see
-   `linkStore.ts` registration.)
+1. Identity-keyed registries (`nodeDataStore`, `linkStore`, `rerouteStore`, and
+   any future minted-id registry) reject a second _different_ object claiming
+   a registered id; they never silently remap it. Idempotent re-registration
+   may return the incumbent. Structural-keyed registries such as
+   `widgetValueStore` keep their separate resolve-and-reuse contract.
 2. The **current local-content boundary** is `LGraph.add` →
    `attachNodeToStores`. Workflow load, paste, and subgraph materialization
    reach that path. Its `nodeShellLifecycle` loop attempts registration; after
@@ -74,51 +73,67 @@ Concretely:
 4. A replacement id must come from a space that cannot re-collide, so
    reconciliation terminates and never ping-pongs.
 
-### Echo-back semantics (why this converges)
+### Local reminting and future CRDT convergence
 
-The most common confusion: "if client B remints client A's node, doesn't that
-conflict with A's copy when it syncs back?" No — because B remints **its
-imported copy**, never A's original.
+The two materialization paths do not share propagation semantics. Today's
+local adapter remints only the copy being inserted into one graph:
 
 ```
-Client A                          Client B
-+-----------------+               +-----------------+
-| mints node id 7 |               | mints node id 7 |   two DIFFERENT entities,
-| (its own node)  |               | (its own node)  |   same id -- by accident
-+--------+--------+               +--------+--------+
-         |  A's ops sync to B              |
-         v                                 |
-+--------------------------------+         |
-| B's MERGE BOUNDARY             |         |
-| registry: "7 is taken"         |<--------+
-| -> remint A's copy to 7'       |
-| -> console.warn(old, new, root)|
-+--------+-----------------------+
-         | remint is an ordinary local edit on B's replica
-         | -> becomes a normal CRDT op -> syncs back to A
-         v
-+-----------------+               +-----------------+
-| A: own 7 + B's  |               | B: own 7 + A's  |
-| copy of A-node  |               | copy of A-node  |
-| stays 7; B-node |               | as 7'; own      |
-| arrives as its  |               | B-node stays 7  |
-| own id          |               |                 |
-+-----------------+               +-----------------+
-     converged: same two nodes, same two ids, everywhere
+incoming local node id 7
+          |
+          v
+      LGraph.add
+          |
+          v
+registry rejects: local id 7 is occupied
+          |
+          v
+remint incoming copy to local id 8; retry succeeds
+          |
+          +---- no CRDT operation is emitted
 ```
 
-The remint is a local edit that propagates like any other operation. Neither
-replica ever holds two live entities under one id, so the registry invariant
-holds on both sides at all times, and both replicas converge on the same
-(node, id) pairs.
+A future semantic-operation applier must instead derive one canonical mapping
+from the same merged operation set on every replica. ADR-0003 requires
+op-stamp ordering before registration. The concrete replacement encoding
+belongs to that applier, but it must be deterministic and collision-free; for
+example, it can retain the raw id for the winning stamp and derive an
+actor-scoped replacement from the losing stamp:
+
+```
+Replica A operation                 Replica B operation
+add alpha, id 7, stamp A:1          add beta, id 7, stamp B:1
+                 \                    /
+                  \                  /
+             same merged operation set
+                          |
+                          v
+               semantic-operation applier
+               order collision by op stamp
+               alpha -> 7
+               beta  -> replacement(B:1)
+                          |
+                          v
+             register collision-free entities
+                          |
+                          v
+        both replicas materialize the same two mappings
+```
+
+This model has no replica-local echo-back step. Both original entities survive,
+the same operation keeps id `7` everywhere, and the same losing operation gets
+the same replacement everywhere. No raw duplicate reaches an in-memory
+registry.
 
 ### Relationship to CRDT creator-minting
 
 CRDT practice says the creator mints ids, actor-scoped (actor id + counter),
 making collisions impossible by construction. Merge-boundary reminting does
 not violate that principle — it **compensates for an id space that predates
-it**. The importer is, in CRDT terms, the creator of the imported copy inside
-its replica, and it mints accordingly.
+it**. For local imports, `LGraph.add` creates a local copy and may assign that
+copy a fresh local id; this mutation is not replicated. For future semantic
+operations, the creator's immutable operation stamp gives every replica the
+same input for choosing the incumbent and deriving the replacement.
 
 **Future work (recorded, not scheduled):** make node ids actor-scoped at
 creation. Once that lands, merge-boundary reminting decays to dead code for
@@ -144,7 +159,7 @@ Let stores absorb collisions by remapping ids internally on registration.
   future store must reimplement it.
 - Hides real data-model bugs behind auto-repair — a duplicate id caused by a
   lifecycle bug would be silently "fixed" instead of surfaced.
-- Breaks the identity-keys-reject contract already pinned by the #15720
+- Breaks the identity-keys-reject contract exercised by the pending #15720
   suite.
 
 ### Hybrid: registries tolerate duplicates temporarily (rejected)
@@ -158,19 +173,21 @@ Tag colliding entries with an epoch/namespace and reconcile lazily.
 
 ## Consequences
 
-- Registries stay simple and their no-collision invariant is test-pinned
-  (#15720). Collision handling is localized to one auditable boundary.
-- Every collision is observable (the required warning), so telemetry can
-  count real-world collision frequency and inform the actor-scoped refactor's
-  priority.
+- Registries stay simple and their no-collision invariant is covered by the
+  pending #15720 suite. Local collision handling stays in `LGraph.add`; future
+  replicated collision handling stays in one semantic-operation applier.
+- Every local remint must be observable so telemetry can count real-world
+  collision frequency and inform the actor-scoped refactor's priority. That
+  warning is pending in #15720; current `main` does not yet emit it.
 - **Known deliberate gap (open at time of writing):** the remint loop does
   not yet record an old→new id map, and `LGraph.configure` restores links
   before nodes are added — so serialized link endpoints referencing the old
   id dangle after a remint. ADR-0008 (as amended in #15761) documents the gap
   and its two candidate fixes: (a) record the map during the remint loop and
   remap serialized link/reroute/group endpoints before `configure` restores
-  connections, or (b) reject ambiguous payloads outright. Until one lands,
-  reminting is correct for node identity but incomplete for references.
+  connections, or (b) reject ambiguous payloads outright. Pending #15882
+  implements option (a). Until it lands, reminting is correct for node
+  identity but incomplete for references.
 - Imports/pastes of colliding content mutate the incoming copy's id. Any
   external system that memorized the old id (e.g. a URL fragment or a test
   fixture) will miss; this is inherent to any rejection-based scheme and is
@@ -185,9 +202,10 @@ Tag colliding entries with an epoch/namespace and reconcile lazily.
   amendments via #15761).
 - ADR-0017 — ID-Based Slot Records Are the Slot Destination (the same
   identity-vs-structural key taxonomy, applied to slots).
-- #15720 — collision-contract invariant test suite (registry rejection +
-  remint warning pinned).
-- #15761 — collision-contract documentation fold.
+- #15720 — pending collision-contract invariant test suite (registry rejection
+  + remint warning).
+- #15761 — pending collision-contract documentation fold.
+- #15882 — pending serialized-reference remap after a local node-id remint.
 - Program decisions D-gl-A2 (no silent remints), D-gl-A4 (identity keys
   reject / structural keys resolve), D-gl-A6 (this decision).
 
@@ -208,7 +226,7 @@ Tag colliding entries with an epoch/namespace and reconcile lazily.
 - **Actor-scoped id** — an id embedding the minting client's identity
   (actor id + counter), collision-free by construction; the eventual
   replacement for bare-integer node ids.
-- **Echo-back** — the reminted copy propagating back to the originating
-  client as an ordinary CRDT operation, converging both replicas.
+- **Operation stamp** — immutable actor and sequence metadata used to order
+  concurrent semantic operations deterministically on every replica.
 - **Registry no-collision invariant** — a store never holds two different
   live objects under one id; second different claimant is rejected.
