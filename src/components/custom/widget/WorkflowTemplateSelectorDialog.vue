@@ -456,7 +456,6 @@ import type {
 import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
 import type { TemplateDetailGroup } from '@/platform/workflow/templates/types/templateDetail'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
-import { extractTemplateCustomNodeRequirements } from '@/platform/workflow/templates/utils/templateCustomNodeRequirements'
 import {
   filterTemplatesByType,
   getTemplateTags,
@@ -934,19 +933,10 @@ function buildTemplateDetailGroups(
 
     return {
       id: `model:${JSON.stringify([model.name, model.directory])}`,
-      kind: 'model' as const,
       name: model.name,
       description: descriptionParts.filter(Boolean).join(' · ')
     }
   })
-  const customNodeRows = extractTemplateCustomNodeRequirements(template).map(
-    (packageId) => ({
-      id: `custom-node:${packageId}`,
-      kind: 'custom-node' as const,
-      name: packageId,
-      description: t('templateWorkflows.detail.customNodeRequirement')
-    })
-  )
   const groups: TemplateDetailGroup[] = []
 
   if (modelRows.length > 0) {
@@ -958,13 +948,6 @@ function buildTemplateDetailGroups(
         Number.isFinite(declaredSize) &&
         declaredSize >= 0 && { total: formatSize(declaredSize) }),
       rows: modelRows
-    })
-  }
-  if (customNodeRows.length > 0) {
-    groups.push({
-      id: 'custom-nodes',
-      label: t('templateWorkflows.detail.customNodes'),
-      rows: customNodeRows
     })
   }
 

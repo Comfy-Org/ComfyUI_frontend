@@ -1,6 +1,5 @@
 export interface TemplateDetailRow {
   id: string
-  kind: 'model' | 'custom-node'
   name: string
   description: string
 }
