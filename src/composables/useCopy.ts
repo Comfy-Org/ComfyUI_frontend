@@ -7,15 +7,6 @@ const clipboardHTMLWrapper = [
   '<meta charset="utf-8"><div><span data-metadata="',
   '"></span></div><span style="white-space:pre-wrap;">Text</span>'
 ]
-
-/**
- * Last serialized payload written to the OS clipboard by the in-app copy
- * handler. Lets the paste handler recognize OS-clipboard metadata as
- * in-app even after later menu/command copies moved the internal
- * clipboard past it.
- */
-export const LAST_COPY_EVENT_PAYLOAD_KEY =
-  'Comfy.Clipboard.LastCopyEventPayload'
 const clipboardByteChunkSize = 0x8000
 
 function bytesToBinaryString(bytes: Uint8Array): string {
@@ -62,7 +53,6 @@ export const useCopy = () => {
           'text/html',
           clipboardHTMLWrapper.join(base64Data)
         )
-        localStorage.setItem(LAST_COPY_EVENT_PAYLOAD_KEY, serializedData)
       } catch (error) {
         console.error(error)
       }
