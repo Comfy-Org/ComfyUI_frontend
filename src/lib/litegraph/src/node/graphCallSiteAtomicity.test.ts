@@ -232,23 +232,26 @@ describe('updateEndpoints – replaceNodeInputs() atomicity', () => {
 describe('updateEndpoints – realignInputLinkSlots() atomicity', () => {
   beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
 
-  it('does not fire onConnectionsChange when updateEndpoints is rejected', () => {
+  it('keeps the original connection when updateEndpoints is rejected', () => {
     const graph = new LGraph()
     const source = new LGraphNode('S')
     source.addOutput('out', 'INT')
     graph.add(source)
     const target = new LGraphNode('T')
+    target.addInput('other', 'INT')
     target.addInput('x', 'INT')
     graph.add(target)
-    source.connect(0, target, 0)
+    const link = source.connect(0, target, 0)!
 
     const onConnectionsChange = vi.fn()
     target.onConnectionsChange = onConnectionsChange
 
-    vi.spyOn(useLinkStore(), 'updateEndpoints').mockReturnValue({
-      ok: false,
-      error: { code: 'unowned-topology', message: 'forced' }
-    })
+    const updateEndpoints = vi
+      .spyOn(useLinkStore(), 'updateEndpoints')
+      .mockReturnValue({
+        ok: false,
+        error: { code: 'unowned-topology', message: 'forced' }
+      })
     vi.spyOn(console, 'error').mockImplementation(() => {})
 
     const serialized = [
@@ -261,7 +264,13 @@ describe('updateEndpoints – realignInputLinkSlots() atomicity', () => {
     ] as unknown as ISerialisedNode[]
     realignInputLinkSlots(graph, serialized)
 
+    expect(updateEndpoints).toHaveBeenCalledOnce()
+    expect(updateEndpoints).toHaveReturnedWith(
+      expect.objectContaining({ ok: false })
+    )
     // onConnectionsChange must not fire — no partial side effects.
     expect(onConnectionsChange).not.toHaveBeenCalled()
+    expect(target.getInputLink(0)?.id).toBe(link.id)
+    expect(target.getInputLink(1)).toBeNull()
   })
 })
