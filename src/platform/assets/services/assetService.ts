@@ -29,7 +29,6 @@ import {
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
-import { useAssetsStore } from '@/stores/assetsStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 
@@ -299,10 +298,6 @@ function createAssetService() {
     modelBucketsRequestId++
     modelBuckets = null
     pendingModelBuckets = null
-  }
-
-  function invalidateInputAssets(items?: AssetId[]): void {
-    void useAssetsStore().inputAssets.invalidate(items)
   }
 
   /**
@@ -771,8 +766,6 @@ function createAssetService() {
         `Unable to delete asset ${id}: Server returned ${res.status}`
       )
     }
-
-    void useAssetsStore().inputAssets.invalidate([id])
   }
 
   /**
@@ -878,9 +871,7 @@ function createAssetService() {
       )
     }
 
-    const asset = validateUploadedAssetResponse(await res.json())
-    invalidateInputAssets()
-    return asset
+    return validateUploadedAssetResponse(await res.json())
   }
 
   /**
@@ -933,9 +924,7 @@ function createAssetService() {
       )
     }
 
-    const asset = validateUploadedAssetResponse(await res.json())
-    invalidateInputAssets([asset.id])
-    return asset
+    return validateUploadedAssetResponse(await res.json())
   }
 
   /**
@@ -965,7 +954,6 @@ function createAssetService() {
     if (!parseResult.success) {
       throw fromZodError(parseResult.error)
     }
-    invalidateInputAssets()
     return parseResult.data
   }
 
@@ -996,7 +984,6 @@ function createAssetService() {
     if (!parseResult.success) {
       throw fromZodError(parseResult.error)
     }
-    invalidateInputAssets()
     return parseResult.data
   }
 
@@ -1048,7 +1035,6 @@ function createAssetService() {
           )
         )
       }
-      invalidateInputAssets(data.asset && [data.asset.id])
       return result.data
     }
 
@@ -1064,8 +1050,6 @@ function createAssetService() {
         )
       )
     }
-    const asset = result.data.type === 'sync' ? result.data.asset : undefined
-    invalidateInputAssets(asset && [asset.id])
     return result.data
   }
 

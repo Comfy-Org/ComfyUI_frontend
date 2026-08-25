@@ -768,6 +768,10 @@ export function useMediaAssetActions() {
                 assetsStore.invalidateModelsForCategory(category)
               }
 
+              if (succeededIds.size > 0) {
+                void assetsStore.inputAssets.invalidate([...succeededIds])
+              }
+
               // Show appropriate feedback based on results
               if (failed.length === 0) {
                 toast.add({
