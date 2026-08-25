@@ -147,7 +147,7 @@
               <span
                 v-if="group.blockedLastRun"
                 data-testid="blocked-last-run-indicator"
-                class="flex shrink-0 items-center rounded-full bg-warning-background/10 px-2 py-0.5 text-2xs font-medium text-warning-background"
+                class="flex shrink-0 items-center rounded-full bg-warning-background px-2 py-0.5 text-2xs font-medium text-warning-on-background"
               >
                 {{ t('rightSidePanel.blockedLastRun') }}
               </span>

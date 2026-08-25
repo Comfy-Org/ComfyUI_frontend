@@ -1,5 +1,6 @@
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
@@ -29,6 +30,7 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 import { seedRequiredInputMissingNodeError } from '@/utils/__tests__/executionErrorTestUtils'
+import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 
@@ -1182,6 +1184,35 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
 
     expect(host.widgets).toHaveLength(0)
     expect(mediaStore.missingMediaCandidates).toBeNull()
+  })
+
+  it('retires an absorbed promoted media error when its host is deleted', async () => {
+    const {
+      rootGraph,
+      hosts: [host],
+      sourceNodes: [sourceNode]
+    } = createPromotedMediaRuntime()
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
+    vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(true)
+    installErrorClearingHooks(rootGraph)
+
+    const mediaStore = useMissingMediaStore()
+    mediaStore.setMissingMedia([createPromotedMissingMediaCandidate(host)])
+    const errorStore = useExecutionErrorStore()
+    const sourceExecutionId = createNodeExecutionId([host.id, sourceNode.id])
+    errorStore.recordNodeErrors({
+      [sourceExecutionId]: nodeError([
+        validationError('value_not_in_list', 'image', {
+          received_value: 'missing-host.png'
+        })
+      ])
+    })
+
+    rootGraph.remove(host)
+    await nextTick()
+
+    expect(mediaStore.missingMediaCandidates).toBeNull()
+    expect(errorStore.lastNodeErrors).toBeNull()
   })
 
   it('keeps promoted missing media until the last fanout consumer is deleted', () => {
