@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { addBreadcrumb, trackFetchTimeout } = vi.hoisted(() => ({
   addBreadcrumb: vi.fn(),
@@ -197,10 +197,6 @@ describe('api.fetchApi', () => {
   describe('response header timeout', () => {
     beforeEach(() => {
       vi.useFakeTimers()
-    })
-
-    afterEach(() => {
-      vi.useRealTimers()
     })
 
     it('aborts with a TimeoutError and forwards normalized diagnostics', async () => {
