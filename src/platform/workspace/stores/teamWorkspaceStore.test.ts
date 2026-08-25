@@ -499,21 +499,42 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.activeWorkspace?.role).toBe('member')
     })
 
-    it('errors after retries when the credential resolves no workspace', async () => {
+    it('fails immediately when the credential resolves no workspace', async () => {
       mockWorkspaceApi.getCurrentWorkspace.mockRejectedValue(
         new mockWorkspaceApiError('No workspace is bound', 404, 'NOT_FOUND')
       )
 
       const store = useTeamWorkspaceStore()
+
+      await expect(store.initialize()).rejects.toThrow('No workspace is bound')
+
+      expect(mockWorkspaceApi.getCurrentWorkspace).toHaveBeenCalledOnce()
+      expect(store.initState).toBe('error')
+      expect(store.activeWorkspaceId).toBeNull()
+    })
+
+    it('retries transient failures before seeding the workspace', async () => {
+      mockWorkspaceApi.getCurrentWorkspace
+        .mockRejectedValueOnce(
+          new mockWorkspaceApiError('bad gateway', 502, 'BAD_GATEWAY')
+        )
+        .mockResolvedValueOnce({
+          id: 'ws-api-key',
+          name: 'Key Workspace',
+          type: 'team',
+          role: 'owner',
+          auth_method: 'cloud_api_key'
+        })
+
+      const store = useTeamWorkspaceStore()
       const initialization = store.initialize()
 
       await vi.advanceTimersByTimeAsync(1000)
-      await vi.advanceTimersByTimeAsync(2000)
-      await vi.advanceTimersByTimeAsync(4000)
-      await expect(initialization).rejects.toThrow('No workspace is bound')
+      await initialization
 
-      expect(store.initState).toBe('error')
-      expect(store.activeWorkspaceId).toBeNull()
+      expect(mockWorkspaceApi.getCurrentWorkspace).toHaveBeenCalledTimes(2)
+      expect(store.initState).toBe('ready')
+      expect(store.activeWorkspaceId).toBe('ws-api-key')
     })
   })
 

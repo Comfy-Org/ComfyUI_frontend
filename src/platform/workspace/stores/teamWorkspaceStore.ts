@@ -21,7 +21,7 @@ import type {
   SubscriptionTier,
   WorkspaceWithRole
 } from '../api/workspaceApi'
-import { workspaceApi } from '../api/workspaceApi'
+import { WorkspaceApiError, workspaceApi } from '../api/workspaceApi'
 
 export interface WorkspaceMember {
   id: string
@@ -407,9 +407,24 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
         if (isStaleIdentity(generation)) return
         const isNoWorkspacesError =
           e instanceof Error && e.message === 'No workspaces available'
+        // A definitive 4xx on the credential lookup cannot be repaired by
+        // resending the same key; retries stay reserved for transient
+        // failures (network, 408/429, 5xx).
+        const isPermanentCredentialError =
+          isApiKeySession &&
+          e instanceof WorkspaceApiError &&
+          e.status !== undefined &&
+          e.status >= 400 &&
+          e.status < 500 &&
+          e.status !== 408 &&
+          e.status !== 429
 
         // Don't retry on permanent errors (no workspaces available)
-        if (isNoWorkspacesError || attempt >= MAX_INIT_RETRIES) {
+        if (
+          isNoWorkspacesError ||
+          isPermanentCredentialError ||
+          attempt >= MAX_INIT_RETRIES
+        ) {
           error.value = e instanceof Error ? e : new Error('Unknown error')
           initState.value = 'error'
           isFetchingWorkspaces.value = false

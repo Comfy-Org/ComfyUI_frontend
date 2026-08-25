@@ -1653,7 +1653,19 @@ export class ComfyApp {
         workspaceGenerationBeforeAuthentication !==
           executionWorkspaceGeneration) &&
       (isCloud || workspaceIdBeforeAuthentication !== null)
-    if (executionWorkspaceId && !comfyOrgAuthToken) {
+    const comfyOrgApiKey = useApiKeyAuthStore().getApiKey()
+    // An API-key session mints no workspace JWT: the key itself is the
+    // execution credential and the server resolves its bound workspace. Only a
+    // key-authenticated session may pass without a token — a Firebase session
+    // whose token mint failed must still fail closed rather than fall back to
+    // a stored key and charge the key's workspace.
+    const isApiKeySessionExecution =
+      !useAuthStore().currentUser && useApiKeyAuthStore().isAuthenticated
+    if (
+      executionWorkspaceId &&
+      !comfyOrgAuthToken &&
+      !isApiKeySessionExecution
+    ) {
       useDialogService().showErrorDialog(
         new Error(t('toastMessages.userNotAuthenticated')),
         {
@@ -1665,7 +1677,6 @@ export class ComfyApp {
       this.processingQueue = false
       return false
     }
-    const comfyOrgApiKey = useApiKeyAuthStore().getApiKey()
 
     try {
       while (this.queueItems.length) {
