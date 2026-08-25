@@ -4,7 +4,7 @@ Covers `onConnectionsChange`, `onConnectInput`, `onConnectOutput`,
 `onBeforeConnectInput`, and the graph-level node lifecycle events these
 callbacks fire alongside, following the ECS data-centralization refactor.
 For input-replacement ordering and `LinkNetwork` API changes, see
-[Link registration migration](link-registration-migration.md) — this note
+[Link registration migration](link-registration-migration.md). This note
 does not repeat that content.
 
 ## Callback surface and signatures are unchanged
@@ -17,7 +17,7 @@ connection by returning `false`
 (`src/lib/litegraph/src/LGraphNode.ts:3130-3149`); `onConnectionsChange`
 still fires after the topology store is updated, with the same
 `(type, index, isConnected, link_info, inputOrOutput)` shape. Nothing about
-these hooks required a compatibility shim — no `onConnectionsChange`- or
+these hooks required a compatibility shim: no `onConnectionsChange`- or
 `onConnectInput`/`onConnectOutput`-specific shim exists in the codebase.
 
 Subgraph boundary crossings (`SubgraphInput`, `SubgraphOutput`,
@@ -32,8 +32,8 @@ a plain slot object should check for this.
 
 `graph.events` now dispatches `node:added`, `node:before-removed`, and
 `node:removed` (`src/lib/litegraph/src/infrastructure/LGraphEventMap.ts:60-78`).
-These are additive — `node.onAdded`, `node.onRemoved`, and the single-slot
-`graph.onNodeAdded`/`onNodeRemoved` callbacks remain and fire as before — but
+These are additive: `node.onAdded`, `node.onRemoved`, and the single-slot
+`graph.onNodeAdded`/`onNodeRemoved` callbacks remain and fire as before, but
 the new events support multiple subscribers without clobbering each other,
 which matters if more than one extension (or first-party system) wants to
 observe add/remove around the same node. Prefer these events over
@@ -51,19 +51,19 @@ For `graph.remove(node)` (`src/lib/litegraph/src/LGraph.ts:1248-1319`):
 1. `node:before-removed` dispatches while the node is still fully attached.
 2. Every connected input and output is disconnected, firing
    `onConnectionsChange(..., false, ...)` on the removed node **and** on each
-   peer node still holding the other end of a link — at this point the
+   peer node still holding the other end of a link. At this point the
    removed node is still in `graph._nodes_by_id` and `node.graph` is still
    set.
 3. Floating links touching the node are removed.
-4. `node.onRemoved()` runs — `node.graph` is still non-null here.
+4. `node.onRemoved()` runs; `node.graph` is still non-null here.
 5. The node is detached from stores/layout, `node.graph` is set to `null`,
    and it is removed from graph indexes.
-6. `onNodeRemoved(node)` and then `node:removed` fire — both observe an
+6. `onNodeRemoved(node)` and then `node:removed` fire; both observe an
    already-detached node absent from `getNodeById()`.
 
 The practical guidance: if an `onConnectionsChange` handler on a _peer_ node
 needs to resolve the node being removed via `graph.getNodeById()`, do it from
-step 2, not from a `node:removed` listener — by then the node is gone. If
+step 2, not from a `node:removed` listener. By then the node is gone. If
 your own node needs to react to disconnects triggered by its own removal
 before general node-removed cleanup runs, `onConnectionsChange` still fires
 before `onRemoved`, same as before.
@@ -81,7 +81,7 @@ fires `onConnectionsChange` for each restored input/output
 (`src/lib/litegraph/src/LGraphNode.ts:1085,1098`), this means: during
 workflow load, when your `onConnectionsChange` callback fires for a restored
 connection, every peer node already exists in the graph and the link is
-already registered in the topology store — `graph.getNodeById()` and link
+already registered in the topology store. `graph.getNodeById()` and link
 lookups from inside that callback resolve correctly, rather than possibly
 hitting a not-yet-created peer. This ordering is called out explicitly as
 part of the compatibility contract in
@@ -114,7 +114,7 @@ the graph (e.g. disconnects the link it was just called about, or something
 that reassigns the same link id), the input-side call for that same connect
 is skipped rather than firing against stale state. Do not assume the
 output-side and input-side `onConnectionsChange` calls for one `connect()`
-always both fire — check that the link you were handed is still the one
+always both fire. Check that the link you were handed is still the one
 connected if you re-enter the graph from inside the callback. This guard is
 directly observable in the source above; no dedicated unit test currently
 exercises the skip path, so treat this as a documented code behavior rather
@@ -136,7 +136,7 @@ Extensions that subscribed to either string must migrate to one of:
 
 ## Connectivity callbacks see the store, not the deprecated mirrors
 
-`input.link` and `output.links` are now deprecated, store-derived reads —
+`input.link` and `output.links` are now deprecated, store-derived reads:
 writes through them no longer drive topology (see
 [Link registration migration](link-registration-migration.md)). The
 `link_info` value your `onConnectionsChange`/`onConnectInput`/`onConnectOutput`
@@ -149,7 +149,7 @@ Prefer `slotLinks.ts` helpers or the callback arguments themselves over
 
 This note describes the current implementation and the ECS audit docs'
 account of it. This behavior has not been independently verified against
-pre-refactor history — the claims above are sourced from the audits and
+pre-refactor history: the claims above are sourced from the audits and
 current code, not a side-by-side comparison. If your extension depends on
 exact callback firing behavior not covered above, file a report with a
 reproduction rather than assuming it is unchanged.

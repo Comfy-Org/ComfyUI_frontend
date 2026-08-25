@@ -1,8 +1,8 @@
 # Widget System Migration Notes
 
 Widget values now live in `widgetValueStore`, a Pinia store, instead of only
-on the widget instance. `node.widgets` itself is unchanged in shape — still
-an array of widget objects, still ordered, still enumerable — but it is now a
+on the widget instance. `node.widgets` itself is unchanged in shape: still
+an array of widget objects, still ordered, still enumerable, but it is now a
 proxy-backed accessor rather than a plain instance property, and each
 widget's identity in the store is derived from its name, not from its
 position in that array.
@@ -62,7 +62,7 @@ supported pattern (`removeWidget` in `LGraphNode.ts:2252-2272` still does
 Two things to be aware of:
 
 - Assigning `node.widgets = undefined` clears the array and flips `present`
-  back to `false` — a subsequent read returns `undefined` again, not `[]`.
+  back to `false`. A subsequent read then returns `undefined` again, not `[]`.
   Guard reads with `node.widgets?.length` rather than assuming an array.
 - The order-sync commit needs `node.graph?.rootGraph.id`. If you mutate
   `node.widgets` before the node has been added to a graph, the mutation
@@ -75,7 +75,7 @@ Two things to be aware of:
 Despite being an accessor rather than an own data property, `widgets` (like
 `inputs` and `outputs`) is re-declared as an enumerable own property in the
 constructor specifically so `Object.keys(node)` and `{...node}` still surface
-it — this is called out explicitly as a deliberate compatibility guarantee in
+it. This is called out explicitly as a deliberate compatibility guarantee in
 the ECS extension-compatibility audit (`docs/architecture/ecs/ecs-extension-compatibility-audit.md:107-114`).
 That guarantee does _not_ extend to most other node fields: `id`, `type`,
 `title`, `flags`, `mode`, `color`, `bgcolor`, `shape`, and `showAdvanced` lost
@@ -111,28 +111,28 @@ graph, at which point `attachNodeToStores` walks `node.widgets` and calls
 but matters if your extension holds a widget reference and reads/writes
 `widget.value` before the node is attached: those reads/writes hit a local,
 per-instance state object, not the shared store, until attachment happens.
-No values are lost in that window — `setNodeId` seeds the store from the
-widget's current `value`/`type` — but until then the value won't be visible
+No values are lost in that window: `setNodeId` seeds the store from the
+widget's current `value`/`type`. But until then the value won't be visible
 to store-driven UI (e.g. the right-side-panel widget list) or other systems
 that read `widgetValueStore` directly.
 
 Only widgets that implement `NodeBindable` (i.e. expose `setNodeId`) get
 registered at all. `BaseWidget` subclasses do; a plain object literal
 returned from a custom widget constructor does not unless it is normalized
-into a concrete widget class first. Extend `BaseWidget` (or produce widgets
-through the existing `ComfyWidgetConstructor` contract, which is unchanged —
-still `{ widget, minWidth?, minHeight? }`) rather than hand-rolling a plain
-object if you need store participation.
+into a concrete widget class first. Extend `BaseWidget`, or produce widgets
+through the existing `ComfyWidgetConstructor` contract (unchanged: still
+`{ widget, minWidth?, minHeight? }`), rather than hand-rolling a plain object
+if you need store participation.
 
 ## Removing widgets
 
 Continue to call `node.removeWidget(widget)` rather than splicing
-`node.widgets` and expecting slot/DOM cleanup to happen on its own — it still
+`node.widgets` and expecting slot/DOM cleanup to happen on its own. It still
 clears any input slot's `_widget`/`widget`/`pos` reference to the removed
 widget before splicing it out. Removing a widget from `node.widgets` updates
 the store's _order_ record for the node automatically (via the mutation-view
 commit), but does not by itself delete the widget's _value_ from
-`widgetValueStore` — value cleanup on node/widget teardown is handled by the
+`widgetValueStore`: value cleanup on node/widget teardown is handled by the
 node-detach path (`detachNodeFromStores` / `releaseNodeWidgets`,
 `src/core/graph/nodeShell/nodeShellLifecycle.ts:60-71`) and a few
 subgraph-specific call sites (`SubgraphNode.ts:377`,
@@ -140,13 +140,13 @@ subgraph-specific call sites (`SubgraphNode.ts:377`,
 `widgetValueStore().deleteWidget` explicitly. Removing a node from the graph
 keeps its widgets' values in the store by default (so undo can restore them)
 and only discards values outright when the whole containing graph is torn
-down — you don't need to (and shouldn't) call into `widgetValueStore`
+down. You don't need to (and shouldn't) call into `widgetValueStore`
 directly to manage this from extension code.
 
 ## Don't reach into `widgetValueStore` from extension code
 
 The store is an internal implementation detail behind `node.widgets` and the
-`BaseWidget` API, not a documented extension surface — it requires an active
+`BaseWidget` API, not a documented extension surface: it requires an active
 Pinia instance and keys everything by the derived `WidgetId`, both of which
 are implementation choices that could still change. Use `node.widgets`,
 `node.addWidget`/`addCustomWidget`/`removeWidget`, and `widget.value` as

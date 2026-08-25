@@ -20,8 +20,8 @@ Durable node (and now group) geometry lives in a single Yjs-backed
 helpers, and a bulk graph-to-store resync that could disagree with each other
 (#14110). `node.pos` and `node.size` are Proxy-backed "mutation views" over
 that store: every read re-synchronizes from the current store revision first,
-and every write — whole-array assignment, an indexed write like
-`node.pos[0] = x`, or an in-place array method — commits back through the
+and every write (whole-array assignment, an indexed write like
+`node.pos[0] = x`, or an in-place array method) commits back through the
 store. Extensions should keep using the node/group geometry facade and must
 not import or depend on `layoutStore` or its scoped-key format; it is a
 private implementation detail (see
@@ -44,11 +44,11 @@ and hit-testing.
 
 `node.size` is the size you (or the user) requested, and is what gets
 serialized. It is no longer overwritten by DOM measurements of Vue-rendered
-content (#14758) — previously, a resize driven by a node's actual rendered
+content (#14758): previously, a resize driven by a node's actual rendered
 content (widgets, dynamic content) could leak back into the saved `size`, so,
 for example, collapsing a node could clobber its expanded size. If you need
-the node's actual on-screen footprint — which can be larger than the
-requested `size` when content forces the node to grow — read `getBounding()`
+the node's actual on-screen footprint (which can be larger than the
+requested `size` when content forces the node to grow), read `getBounding()`
 / `boundingRect`, not `size`; both already account for render-time content
 size internally (`renderingSize`).
 
@@ -71,7 +71,7 @@ canvas.applyNodePositions(newPositions)
 
 `boundingRect` / `renderArea` are still computed once per frame in
 `updateArea()` (via `measure()` and the `onBounding` hook), not recalculated
-on every read. This was not touched by the ECS work — `getBounding()` returns
+on every read. This was not touched by the ECS work. `getBounding()` returns
 the same per-frame cached rectangle it always did.
 
 ## Stale-instance safety
@@ -79,8 +79,8 @@ the same per-frame cached rectangle it always did.
 Layout registrations are now tied to the specific `LGraphNode` / `LGraphGroup`
 / `Reroute` _instance_ that attached them, not just to an ID (#15017). If an
 extension holds on to a node reference after it has been removed from the
-graph — a detached clone, or a stale reference captured before an async
-callback resolves — calling `setPos()` / `setSize()` on it is now a safe
+graph (a detached clone, or a stale reference captured before an async
+callback resolves), calling `setPos()` / `setSize()` on it is now a safe
 no-op instead of silently mutating whatever entity now owns that ID. (An
 earlier attempt at this, #14480, shipped speculative multiplayer
 retry/compensation machinery for a CRDT transport that doesn't exist yet; that
@@ -100,10 +100,10 @@ revision was closed unmerged and the simpler ownership check landed via
 ## Migration checklist
 
 1. Keep using `node.pos`, `node.size`, `boundingRect`, `getBounding()`,
-   `setPos()`, `setSize()` — no signature changes required.
+   `setPos()`, `setSize()`; no signature changes required.
 2. Replace `repositionNodesVueMode()` calls with `applyNodePositions()`.
 3. If you were relying on `node.size` reflecting measured/rendered content,
-   switch to `getBounding()` / `boundingRect` — `size` now strictly reflects
+   switch to `getBounding()` / `boundingRect`: `size` now strictly reflects
    the requested value.
 4. Do not import `layoutStore` or depend on its scoped-key format; use the
    node/group geometry facade instead.

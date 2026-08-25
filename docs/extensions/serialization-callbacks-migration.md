@@ -1,7 +1,7 @@
 # Serialization Callback Migration Notes
 
 Covers `node.onSerialize`, `node.onConfigure`, `graph.onSerialize`, and
-`graph.onConfigure` — the workflow save/load hooks — following the ECS
+`graph.onConfigure` (the workflow save/load hooks) following the ECS
 data-centralization refactor. For connection-timing hooks
 (`onConnectionsChange`, etc.) see
 [Connection callbacks migration](connection-callbacks-migration.md); for
@@ -41,7 +41,7 @@ here.
 
 Constructing or configuring any root `LGraph` requires an active Pinia.
 `LGraph.configure()` calls directly into the ECS stores while clearing and
-rebuilding the graph — `useLinkStore().clearGraph(...)`,
+rebuilding the graph: `useLinkStore().clearGraph(...)`,
 `useRerouteStore().clearGraph(...)`, `useNodeDataStore().clearGraph(...)`,
 `useWidgetValueStore().clearGraph(...)`, and
 `usePreviewExposureStore().clearGraph(...)` for a root graph, or the matching
@@ -49,7 +49,7 @@ rebuilding the graph — `useLinkStore().clearGraph(...)`,
 (`src/lib/litegraph/src/LGraph.ts:2589-2602`). A test harness, worker, or
 standalone LiteGraph consumer that calls `new LGraph(serializedData)` or
 `graph.configure(data)` without an active Pinia now fails outright, rather
-than silently getting an empty graph — this mirrors the same requirement
+than silently getting an empty graph. This mirrors the same requirement
 already documented for link registration in
 [Link registration migration](link-registration-migration.md), which notes
 that "constructing a root `LGraph`, or configuring one from serialized data,
@@ -61,7 +61,7 @@ its lifecycle."
 The hooks still receive full, mutable data: `onConfigure` gets the raw parsed
 node/graph object, and `this` inside either hook is the live node/graph
 instance, so an extension can read or write any field from inside the
-callback exactly as before — including stashing extra keys into the object
+callback exactly as before, including stashing extra keys into the object
 `onSerialize` is given and reading them back from the equivalent field in
 `onConfigure` on the next load. What's different is what's on the other end
 of that write: node/graph shell fields are now store-backed
@@ -75,11 +75,11 @@ documented as a currently open compatibility gap, not a guarantee:
 > load-time mutation channels. These extension hooks can override
 > store-backed fields without schema, ownership, replay, transaction, or undo
 > boundaries.
-> — `docs/architecture/ecs/ecs-migration-plan.md:124-127`
+> Source: `docs/architecture/ecs/ecs-migration-plan.md:124-127`
 
 The extension-compatibility audit reaches the same conclusion and names the
-intended fix — restricting these hooks to "a controlled adapter for
-validated, namespaced plain-data payloads" instead of live DTOs/objects — as
+intended fix: restricting these hooks to "a controlled adapter for
+validated, namespaced plain-data payloads" instead of live DTOs/objects, as
 future work, contingent on measuring real extension usage first
 (`docs/architecture/ecs/ecs-extension-compatibility-audit.md:127-137`). Don't
 write new extension code that depends on this staying wide open. Keep
@@ -88,7 +88,7 @@ extension-owned serialized data in `node.properties[...]` /
 persisted data, rather than mutating canonical shell fields from inside these
 hooks.
 
-## Node shell fields are no longer own-enumerable — `serialize()` is the correct read path, not enumeration
+## Node shell fields are no longer own-enumerable: `serialize()` is the correct read path, not enumeration
 
 `id`, `type`, `title`, `flags`, `mode`, `color`, `bgcolor`, `shape`, and
 `showAdvanced` are now accessor properties over `nodeDataStore` rather than
@@ -112,13 +112,13 @@ own properties to build a serialized or debug representation, switch it to
 `app.rootGraph.serialize()`, and restores a snapshot by calling
 `graph.configure()` (`docs/architecture/change-tracker.md:8-12`). So
 `onSerialize`/`onConfigure` still fire once per undo/redo step, exactly as
-before this refactor — nothing here requires extension changes.
+before this refactor. Nothing here requires extension changes.
 
 ## Widget-level `serializeValue` is unrelated, and its own contract is unchanged (for now)
 
 `widget.serializeValue` builds the API prompt payload, not the workflow JSON
-— a different serialization layer from everything above, and unaffected by
-it. Its existing async, side-effecting contract (resolving random values,
+(a different serialization layer from everything above, and unaffected by
+it). Its existing async, side-effecting contract (resolving random values,
 mutating widget/workflow shadows, uploading files, updating UI state) is
 called out as unchanged, with tightening described only as later work
 (`docs/architecture/ecs/ecs-extension-compatibility-audit.md:147-155`,
@@ -129,24 +129,24 @@ which this refactor also left alone.
 
 ## Current behavior: `graph.onSerialize` sees the newer schema shape, and a custom top-level field can be dropped by `graph.serialize()`
 
-This behavior is not attributed to this refactor specifically — pre-refactor
-history was not available to confirm when it was introduced — but it is
+This behavior is not attributed to this refactor specifically (pre-refactor
+history was not available to confirm when it was introduced), but it is
 worth knowing if you rely on `graph.onSerialize`/`graph.serialize()` directly
 rather than the app's save path. `graph.onSerialize` actually fires inside
 `LGraph.asSerialisable()`, against that method's current-schema data shape
 (`LGraph.serialisedSchemaVersion`, `src/lib/litegraph/src/LGraph.ts:2500-2543`).
 The classic `LGraph.serialize()` entry point (marked `@deprecated` in favor of
 `asSerialisable()`, `src/lib/litegraph/src/LGraph.ts:2435-2440`) then
-destructures only a fixed set of known keys out of that result — `config`,
-`state`, `groups`, `nodes`, `reroutes`, `extra`, `floatingLinks`,
-`definitions` — to build its own 0.4-schema return value, recomputing `links`
+destructures only a fixed set of known keys out of that result: `config`,
+`state`, `groups`, `nodes`, `reroutes`, `extra`, `floatingLinks`, and
+`definitions`, to build its own 0.4-schema return value, recomputing `links`
 separately in the legacy array format
 (`src/lib/litegraph/src/LGraph.ts:2440-2476`). A consequence: if your
 extension adds a new top-level key to the data object from inside
 `graph.onSerialize`, it survives when the caller uses `asSerialisable()`
 directly, but is silently dropped when the caller goes through
-`serialize()`. Node-level `onSerialize` has no equivalent allowlist —
-`LGraphNode.serialize()` returns the exact object `onSerialize` was given —
+`serialize()`. Node-level `onSerialize` has no equivalent allowlist:
+`LGraphNode.serialize()` returns the exact object `onSerialize` was given,
 so this asymmetry is graph-level only. `graph.extra[...]` is preserved by
 both entry points and remains the place for extension-owned graph data.
 
