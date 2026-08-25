@@ -18,6 +18,7 @@ import WatchPageLayout from '../blocks/WatchPageLayout.vue'
 import WatchRecommendedCard from '../blocks/WatchRecommendedCard.vue'
 import Button from '../ui/button/Button.vue'
 import VideoPlayer from '../common/VideoPlayer.vue'
+import LearningVideoEmbed from './LearningVideoEmbed.vue'
 import Badge from '../ui/badge/Badge.vue'
 
 const { tutorial, locale = 'en' } = defineProps<{
@@ -59,7 +60,15 @@ const recommended = recommendedFor(tutorial).map((item) => ({
     :read-more-label="t('ui.readMore', locale)"
     :read-less-label="t('ui.readLess', locale)"
   >
+    <LearningVideoEmbed
+      v-if="tutorial.youtubeId"
+      :key="tutorial.id"
+      :youtube-id="tutorial.youtubeId"
+      :title="tutorial.title[locale]"
+      class="w-full"
+    />
     <VideoPlayer
+      v-else
       :key="tutorial.id"
       :locale
       :src="tutorial.videoSrc"
@@ -93,8 +102,9 @@ const recommended = recommendedFor(tutorial).map((item) => ({
         size="sm"
         :href="tutorial.href"
         :target="tutorial.newTab ? '_blank' : undefined"
+        :rel="tutorial.newTab ? 'noopener noreferrer' : undefined"
       >
-        {{ t('cta.tryWorkflow', locale) }}
+        {{ t(tutorial.ctaLabelKey ?? 'cta.tryWorkflow', locale) }}
       </Button>
     </template>
 
@@ -106,7 +116,7 @@ const recommended = recommendedFor(tutorial).map((item) => ({
     </template>
 
     <template v-if="recommended.length" #sidebar>
-      <h2 class="text-primary-warm-gray font-medium">
+      <h2 class="font-medium text-primary-warm-gray">
         {{ t('learning.watch.recommended', locale) }}
       </h2>
       <div class="mt-4 flex flex-col gap-10">

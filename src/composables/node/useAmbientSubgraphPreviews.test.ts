@@ -86,7 +86,6 @@ function seedOutputs(hostId: number | string, nodeIds: Array<number | string>) {
 describe(useAmbientSubgraphPreviews, () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.resetAllMocks()
     clearMockNodeOutputStore()
   })
 
