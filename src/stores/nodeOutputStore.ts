@@ -24,6 +24,7 @@ import {
   isVideoNode,
   resolveNode
 } from '@/utils/litegraphUtil'
+import { isInputPreviewOutput } from '@/utils/nodeOutputUtil'
 import {
   releaseSharedObjectUrl,
   retainSharedObjectUrl
@@ -158,17 +159,6 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     if (previews?.length) return previews
 
     return buildImageUrls(node, getNodeOutputByExecutionId(executionId))
-  }
-
-  function isInputPreviewOutput(
-    output: ExecutedWsMessage['output'] | ResultItem | undefined
-  ): boolean {
-    const images = (output as ExecutedWsMessage['output'] | undefined)?.images
-    return (
-      Array.isArray(images) &&
-      images.length > 0 &&
-      images.every((i) => i?.type === 'input')
-    )
   }
 
   function setOutputsByLocatorId(

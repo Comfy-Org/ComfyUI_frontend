@@ -186,6 +186,12 @@ test.describe('Current user popover credits row', { tag: '@cloud' }, () => {
 
       await page.getByRole('button', { name: 'Current user' }).click()
 
+      const workspaceSelector = page.getByTestId('workspace-switcher-trigger')
+      await expect(workspaceSelector).toBeVisible()
+      await expect(workspaceSelector).toHaveScreenshot(
+        'workspace-selector-menu-item.png'
+      )
+
       const managePlan = page.getByRole('button', { name: 'Manage plan' })
       await expect(managePlan).toBeVisible()
       await expect(managePlan).toHaveScreenshot('manage-plan-menu-item.png')

@@ -66,7 +66,6 @@ const cloudStats: SystemStats = {
 
 describe('useCopySystemInfo', () => {
   beforeEach(() => {
-    vi.resetAllMocks()
     distributionFlags.isCloud = false
   })
 
