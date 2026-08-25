@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { CurveData } from '@/components/curve/types'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import type {
@@ -851,18 +852,32 @@ describe('ComfyApp', () => {
       }
     })
 
-    it('unwraps exported array widget values on API JSON import', async () => {
+    it('unwraps exported widget values on API JSON import', async () => {
       const graph = new LGraph()
       Reflect.set(app, 'rootGraphInternal', graph)
       Reflect.set(singletonApp, 'rootGraphInternal', graph)
       const widgetNodeType = 'test/ApiCurveNode'
+      const curveCallback = vi.fn()
       class ApiCurveNode extends LGraphNode {
         constructor(title = 'ApiCurveNode') {
           super(title)
+          this.addWidget(
+            'curve',
+            'curve',
+            { points: [], interpolation: 'linear' },
+            curveCallback
+          )
           this.addWidget('text', 'points', '', null)
         }
       }
       LiteGraph.registerNodeType(widgetNodeType, ApiCurveNode)
+      const curve: CurveData = {
+        points: [
+          [0, 0],
+          [0.5, 1]
+        ],
+        interpolation: 'linear'
+      }
       const points = [
         [0, 0],
         [0.5, 1]
@@ -873,12 +888,18 @@ describe('ComfyApp', () => {
           {
             '1': {
               class_type: widgetNodeType,
-              inputs: { points: { __type__: 'CURVE', __value__: points } },
+              inputs: {
+                curve: { __type__: 'CURVE', __value__: curve },
+                points: { __value__: points }
+              },
               _meta: { title: 'Curve' }
             },
             '2': {
               class_type: 'Uninstalled/CurveNode',
-              inputs: { points: { __value__: points } },
+              inputs: {
+                curve: { __type__: 'CURVE', __value__: curve },
+                points: { __value__: points }
+              },
               _meta: { title: 'Missing Curve' }
             }
           },
@@ -888,17 +909,20 @@ describe('ComfyApp', () => {
         const [widgetNode] = graph.nodes.filter(
           (n) => n.type === widgetNodeType
         )
-        expect(widgetNode?.widgets?.[0].value).toEqual(points)
+        expect(widgetNode?.widgets?.[0].value).toEqual(curve)
+        expect(widgetNode?.widgets?.[1].value).toEqual(points)
+        expect(curveCallback).toHaveBeenCalledWith(curve)
 
         const [placeholder] = graph.nodes.filter(
           (n) => n.type === 'Uninstalled/CurveNode'
         )
         expect(placeholder?.last_serialization?.widgets_values).toEqual([
+          curve,
           points
         ])
         expect(
           placeholder?.last_serialization?.widgets_values_named
-        ).toMatchObject({ points })
+        ).toMatchObject({ curve, points })
 
         // An object value whose __value__ is not an array is a legitimate
         // widget value, not the export wrapper - it must pass through as-is.
@@ -913,10 +937,10 @@ describe('ComfyApp', () => {
           },
           ''
         )
-        const [passthroughNode] = graph.nodes.filter(
-          (n) => n.type === widgetNodeType
-        )
-        expect(passthroughNode?.widgets?.[0].value).toEqual(passthrough)
+        const passthroughNode = graph.nodes
+          .filter((n) => n.type === widgetNodeType)
+          .at(-1)
+        expect(passthroughNode?.widgets?.[1].value).toEqual(passthrough)
       } finally {
         LiteGraph.unregisterNodeType(widgetNodeType)
       }

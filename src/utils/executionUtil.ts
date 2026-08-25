@@ -15,20 +15,21 @@ import type {
 import { compressWidgetInputSlots } from './litegraphUtil'
 
 /**
- * Inverse of the array wrapping applied during Export (API): array widget
- * values are wrapped as `{ __value__: [...] }` (optionally with `__type__`)
- * so they are not read as node links. The backend unwraps them during
- * execution; import must unwrap them the same way.
+ * Inverse of the wrapping applied during Export (API). Curve values carry a
+ * type marker and may be objects; untyped wrappers are reserved for arrays so
+ * ordinary objects containing a `__value__` property pass through unchanged.
  */
 export function unwrapExportedWidgetValue(value: unknown): unknown {
   if (
     typeof value === 'object' &&
     value !== null &&
     !Array.isArray(value) &&
-    '__value__' in value &&
-    Array.isArray((value as { __value__: unknown }).__value__)
+    '__value__' in value
   ) {
-    return (value as { __value__: unknown }).__value__
+    const wrapper = value as { __type__?: unknown; __value__: unknown }
+    if (wrapper.__type__ === 'CURVE' || Array.isArray(wrapper.__value__)) {
+      return wrapper.__value__
+    }
   }
   return value
 }
