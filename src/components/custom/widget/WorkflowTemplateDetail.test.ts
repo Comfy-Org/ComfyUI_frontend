@@ -1,26 +1,11 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
-import type { Component } from 'vue'
-import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-const componentPath = './WorkflowTemplateDetail.vue'
-const componentModule: unknown = await import(componentPath).catch(
-  () => undefined
-)
+import type { TemplateDetailGroup } from '@/platform/workflow/templates/types/templateDetail'
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === 'object'
-}
-
-function hasDefaultComponent(value: unknown): value is { default: Component } {
-  return isRecord(value) && 'default' in value
-}
-
-const WorkflowTemplateDetail = hasDefaultComponent(componentModule)
-  ? componentModule.default
-  : defineComponent({ template: '<div />' })
+import WorkflowTemplateDetail from './WorkflowTemplateDetail.vue'
 
 const i18n = createI18n({
   legacy: false,
@@ -52,27 +37,13 @@ const groups = [
     rows: [
       {
         id: 'model:checkpoint',
-        kind: 'model',
         name: 'wan2.2_i2v_high_noise_14B_fp16.safetensors',
         description: 'Checkpoint · Used by Load Checkpoint'
       },
       {
         id: 'model:text-encoder',
-        kind: 'model',
         name: 'umt5_xxl_fp8_e4m3fn_scaled.safetensors',
         description: 'Text encoder · Used by CLIP Text Encode'
-      }
-    ]
-  },
-  {
-    id: 'custom-nodes',
-    label: 'Custom Nodes',
-    rows: [
-      {
-        id: 'custom-node:ComfyUI-KJNodes',
-        kind: 'custom-node',
-        name: 'ComfyUI-KJNodes',
-        description: 'Required custom node package'
       }
     ]
   }
@@ -84,12 +55,12 @@ function renderDetail({
   isPartnerNode = false,
   openPending = false
 }: {
-  renderedGroups?: readonly unknown[]
+  renderedGroups?: readonly TemplateDetailGroup[]
   cloudUrl?: string
   isPartnerNode?: boolean
   openPending?: boolean
 } = {}) {
-  return render(WorkflowTemplateDetail as Component, {
+  return render(WorkflowTemplateDetail, {
     props: {
       title: 'Wan 2.2 Image to Video',
       description: 'Create a video from a starting image.',
@@ -106,7 +77,7 @@ function renderDetail({
 }
 
 describe('WorkflowTemplateDetail', () => {
-  it('presents only declared model and custom-node requirements', () => {
+  it('presents only declared model requirements', () => {
     renderDetail()
 
     const detail = screen.getByRole('article', {
@@ -134,14 +105,6 @@ describe('WorkflowTemplateDetail', () => {
     expect(within(models).getByText('30 GB')).toBeInTheDocument()
     expect(
       within(models).getByText('Checkpoint · Used by Load Checkpoint')
-    ).toBeInTheDocument()
-
-    const customNodes = within(requirements).getByRole('region', {
-      name: 'Custom Nodes'
-    })
-    expect(within(customNodes).getAllByRole('listitem')).toHaveLength(1)
-    expect(
-      within(customNodes).getByText('Required custom node package')
     ).toBeInTheDocument()
 
     expect(within(detail).queryByText('Installed')).not.toBeInTheDocument()

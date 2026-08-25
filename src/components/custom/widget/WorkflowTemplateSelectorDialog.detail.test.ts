@@ -15,8 +15,7 @@ const fixtures = vi.hoisted(() => {
     description: 'Inspect this workflow before opening it.',
     mediaType: 'image',
     mediaSubtype: 'webp',
-    size: 1024,
-    requiresCustomNodes: ['ComfyUI-KJNodes']
+    size: 1024
   }
   const secondTemplate = {
     name: 'second-detail',
@@ -210,8 +209,6 @@ const i18n = createI18n({
           openInCloud: 'Open in Cloud',
           requirements: 'Template requirements',
           models: 'Models',
-          customNodes: 'Custom Nodes',
-          customNodeRequirement: 'Required custom node package',
           usedBy: 'Used by {nodes}',
           openTemplate: 'Open template',
           backToTemplates: 'Back to {category}',
@@ -323,12 +320,6 @@ describe('WorkflowTemplateSelectorDialog template detail navigation', () => {
       within(requirements).getByText('Checkpoints · Used by Starter Loader')
     ).toBeInTheDocument()
     expect(within(requirements).getByText('1 KB')).toBeInTheDocument()
-    expect(
-      within(requirements).getByText('ComfyUI-KJNodes')
-    ).toBeInTheDocument()
-    expect(
-      within(requirements).getByText('Required custom node package')
-    ).toBeInTheDocument()
   })
 
   it('uses one combined category/back button and keeps the sidebar navigable', async () => {
