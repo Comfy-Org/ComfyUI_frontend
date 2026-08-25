@@ -949,17 +949,20 @@ describe('useFirstRunTourController', () => {
       })
     })
 
-    it('does not arm when a completed tour produced no image', async () => {
+    it('arms with nothing to continue when the tour produced no image', async () => {
       const { controller } = await tourOnRunStep()
 
       await endTour(COMPLETED)
 
-      expect(controller.nudgeArmed.value).toBe(false)
+      expect(
+        controller.nudgeArmed.value,
+        'suppressing the nudge takes the way forward from the user who most needs it (#14144)'
+      ).toBe(true)
       expect(controller.nudgeOutput.value).toBeNull()
     })
 
     it.for(UNFINISHED_ENDINGS)(
-      'does not arm after a tour $named',
+      'offers the image to continue after a tour $named',
       async ({ ending }) => {
         const { controller } = await tourOnRunStep()
         mountRunButton('queue-button', () => {}).click()
@@ -967,12 +970,76 @@ describe('useFirstRunTourController', () => {
 
         await endTour(ending)
 
-        expect(controller.nudgeArmed.value).toBe(false)
-        expect(controller.nudgeOutput.value).toBeNull()
+        expect(controller.nudgeArmed.value).toBe(true)
+        expect(controller.nudgeOutput.value?.filename).toBe('first-output.png')
       }
     )
 
-    it('skips a preview output in favour of the saved result', async () => {
+    it('keeps correlating a run the user walked past', async () => {
+      const { controller } = await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      await acceptRun(TOUR_WORKFLOW, 'tour-job')
+
+      await endTour(COMPLETED)
+      expect(controller.nudgeOutput.value).toBeNull()
+
+      const { api } = await import('@/scripts/api')
+      api.dispatchCustomEvent('executed', {
+        prompt_id: 'tour-job',
+        node: 1,
+        display_node: 1,
+        output: { images: [{ filename: 'late.png', type: 'output' }] }
+      })
+      await nextTick()
+
+      expect(
+        controller.nudgeOutput.value?.filename,
+        'clicking Done during a long generation must not throw the result away'
+      ).toBe('late.png')
+    })
+
+    it('continues from a video run through the template browser only', async () => {
+      const { controller } = await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      await acceptRun(TOUR_WORKFLOW, 'tour-job')
+      const { api } = await import('@/scripts/api')
+      api.dispatchCustomEvent('executed', {
+        prompt_id: 'tour-job',
+        node: 1,
+        display_node: 1,
+        output: { video: [{ filename: 'result.mp4', type: 'output' }] }
+      })
+
+      await endTour(COMPLETED)
+
+      expect(controller.nudgeArmed.value).toBe(true)
+      expect(
+        controller.nudgeOutput.value,
+        'no image-input continuation can be seeded from a video'
+      ).toBeNull()
+    })
+
+    it('takes a preview temp file when nothing saved one', async () => {
+      const { controller } = await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      await acceptRun(TOUR_WORKFLOW, 'tour-job')
+      const { api } = await import('@/scripts/api')
+      api.dispatchCustomEvent('executed', {
+        prompt_id: 'tour-job',
+        node: 1,
+        display_node: 1,
+        output: { images: [{ filename: 'preview.png', type: 'temp' }] }
+      })
+
+      await endTour(COMPLETED)
+
+      expect(
+        controller.nudgeOutput.value,
+        'a PreviewImage sink is the whole result, and the backend still serves it'
+      ).toEqual({ filename: 'preview.png', subfolder: '', type: 'temp' })
+    })
+
+    it('replaces a preview output with the saved result', async () => {
       const { controller } = await tourOnRunStep()
       mountRunButton('queue-button', () => {}).click()
       await acceptRun(TOUR_WORKFLOW, 'tour-job')
@@ -998,7 +1065,7 @@ describe('useFirstRunTourController', () => {
 
       expect(
         controller.nudgeOutput.value?.filename,
-        'a temp file is collected away, so continuing from it seeds a path the backend has forgotten'
+        'the saved result is the one the user was shown, so it wins the seed'
       ).toBe('saved.png')
     })
 
@@ -1022,7 +1089,7 @@ describe('useFirstRunTourController', () => {
 
       await endTour(COMPLETED)
 
-      expect(controller.nudgeArmed.value).toBe(false)
+      expect(controller.nudgeOutput.value).toBeNull()
     })
 
     it('correlates output after an unrelated execution starts first', async () => {
@@ -1106,8 +1173,12 @@ describe('useFirstRunTourController', () => {
 
       expect(
         controller.nudgeArmed.value,
+        'a user who saw no tour is the one who most needs somewhere to go next'
+      ).toBe(true)
+      expect(
+        controller.nudgeOutput.value,
         'there is no first output to seed into any suggestion'
-      ).toBe(false)
+      ).toBeNull()
     })
 
     it('stops offering the nudge once it is waved away', async () => {

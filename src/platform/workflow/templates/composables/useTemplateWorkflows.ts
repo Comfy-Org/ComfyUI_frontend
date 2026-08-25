@@ -174,14 +174,22 @@ export function useTemplateWorkflows() {
     id: string,
     sourceModule: string
   ): Promise<ComfyWorkflowJSON> => {
-    if (sourceModule === 'default') {
-      // Default templates provided by frontend are served on this separate endpoint
-      return fetch(api.fileURL(`/templates/${id}.json`)).then((r) => r.json())
-    } else {
-      return fetch(
-        api.apiURL(`/workflow_templates/${sourceModule}/${id}.json`)
-      ).then((r) => r.json())
-    }
+    // Default templates provided by frontend are served on this separate endpoint
+    const url =
+      sourceModule === 'default'
+        ? api.fileURL(`/templates/${id}.json`)
+        : api.apiURL(`/workflow_templates/${sourceModule}/${id}.json`)
+
+    const response = await fetch(url)
+    // An install pinning an older template package serves an error page here,
+    // which parses as neither JSON nor a workflow. Separating that from a
+    // template whose metadata drifted is the difference between a bad pin and
+    // a bad template.
+    if (!response.ok)
+      throw new Error(
+        `Template ${id} is not served by this install (${response.status})`
+      )
+    return response.json()
   }
 
   return {

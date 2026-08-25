@@ -64,10 +64,14 @@ const mocks = await vi.hoisted(async () => {
   const { ref, shallowRef } = await import('vue')
   return {
     nudgeArmed: ref(false),
-    nudgeOutput: shallowRef({
+    nudgeOutput: shallowRef<{
+      filename: string
+      subfolder: string
+      type: 'output'
+    } | null>({
       filename: 'first-output.png',
       subfolder: 'tour',
-      type: 'output' as const
+      type: 'output'
     }),
     openDialogs: ref<string[]>([]),
     catalog: ref<string[]>([]),
@@ -183,7 +187,8 @@ describe('FirstRunTourNudge', () => {
       screen.getByText(enMessages.onboardingCoachmarks.firstRun.nudge.title)
     ).toBeTruthy()
     expect(mocks.trackOnboardingTour).toHaveBeenCalledWith('nudge_shown', {
-      tour: 'firstRun'
+      tour: 'firstRun',
+      suggestion_count: 3
     })
   })
 
@@ -242,7 +247,12 @@ describe('FirstRunTourNudge', () => {
       )
       expect(mocks.trackOnboardingTour).toHaveBeenCalledWith(
         'nudge_suggestion_clicked',
-        { tour: 'firstRun', suggestion: id, loaded: true }
+        {
+          tour: 'firstRun',
+          suggestion_count: 3,
+          suggestion: id,
+          loaded: true
+        }
       )
       expect(mocks.dismissNudge).toHaveBeenCalled()
     }
@@ -268,15 +278,66 @@ describe('FirstRunTourNudge', () => {
       catalog: CATALOG_TEMPLATE_IDS,
       stripIo: true
     }
-  ])('shows nothing when the install $named', async ({ catalog, stripIo }) => {
-    mocks.catalog.value = catalog
-    mocks.catalogHasIo.value = !stripIo
+  ])(
+    'falls back to the template browser when the install $named',
+    async ({ catalog, stripIo }) => {
+      mocks.catalog.value = catalog
+      mocks.catalogHasIo.value = !stripIo
+      await showNudge()
+
+      expect(
+        screen.queryByRole('button', {
+          name: new RegExp(SUGGESTION_TITLES.animate, 'i')
+        }),
+        'every action would be a dead end found by clicking it'
+      ).toBeNull()
+      expect(
+        screen.getByText(
+          enMessages.onboardingCoachmarks.firstRun.nudge.fallback.title
+        ),
+        'the way forward is what the card is for (#14144)'
+      ).toBeTruthy()
+      expect(mocks.trackOnboardingTour).toHaveBeenCalledWith('nudge_shown', {
+        tour: 'firstRun',
+        suggestion_count: 0
+      })
+    }
+  )
+
+  it('falls back to the template browser when the run made no image', async () => {
+    mocks.nudgeOutput.value = null
     await showNudge()
 
     expect(
-      nudge(),
-      'every action would be a dead end found by clicking it'
+      screen.getByText(
+        enMessages.onboardingCoachmarks.firstRun.nudge.fallback.title
+      )
+    ).toBeTruthy()
+    expect(
+      screen.queryByRole('button', {
+        name: new RegExp(SUGGESTION_TITLES.animate, 'i')
+      }),
+      'there is nothing to seed a continuation with'
     ).toBeNull()
+  })
+
+  it('keeps the card while a continuation is loading', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    mocks.loadWorkflowTemplate.mockReturnValueOnce(
+      createDeferred<boolean>().promise
+    )
+    await showNudge()
+
+    await user.click(suggestionButton('animate'))
+    await user.keyboard('{Escape}')
+
+    expect(
+      mocks.dismissNudge,
+      'the graph is about to be replaced, so there is nothing to dismiss out of'
+    ).not.toHaveBeenCalled()
+    expect(
+      screen.getByRole('button', { name: enMessages.g.close })
+    ).toBeDisabled()
   })
 
   it('exposes the pending continuation and blocks competing actions', async () => {
@@ -317,7 +378,12 @@ describe('FirstRunTourNudge', () => {
     )
     expect(mocks.trackOnboardingTour).toHaveBeenCalledWith(
       'nudge_suggestion_clicked',
-      { tour: 'firstRun', suggestion: 'animate', loaded: false }
+      {
+        tour: 'firstRun',
+        suggestion_count: 3,
+        suggestion: 'animate',
+        loaded: false
+      }
     )
   })
 
@@ -334,7 +400,7 @@ describe('FirstRunTourNudge', () => {
     expect(mocks.showTemplates).toHaveBeenCalledWith('first_run_nudge')
     expect(mocks.trackOnboardingTour).toHaveBeenCalledWith(
       'explore_templates_clicked',
-      { tour: 'firstRun' }
+      { tour: 'firstRun', suggestion_count: 3 }
     )
     expect(mocks.dismissNudge).toHaveBeenCalled()
   })
