@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { CurveData } from '@/components/curve/types'
 import { t } from '@/i18n'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
@@ -1144,6 +1145,106 @@ describe('ComfyApp', () => {
         cleanupErrorHooks()
         LiteGraph.unregisterNodeType(sourceType)
         LiteGraph.unregisterNodeType(targetType)
+      }
+    })
+
+    it('unwraps exported widget values on API JSON import', async () => {
+      const graph = new LGraph()
+      const previousAppGraph = app.rootGraph
+      const previousSingletonGraph = singletonApp.rootGraph
+      const missingNodesStore = useMissingNodesErrorStore()
+      const previousMissingNodeTypes =
+        missingNodesStore.missingNodesError?.nodeTypes ?? []
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      const widgetNodeType = 'test/ApiCurveNode'
+      const curveCallback = vi.fn()
+      class ApiCurveNode extends LGraphNode {
+        constructor(title = 'ApiCurveNode') {
+          super(title)
+          this.addWidget(
+            'curve',
+            'curve',
+            { points: [], interpolation: 'linear' },
+            curveCallback
+          )
+          this.addWidget('text', 'points', '', null)
+        }
+      }
+      LiteGraph.registerNodeType(widgetNodeType, ApiCurveNode)
+      const curve: CurveData = {
+        points: [
+          [0, 0],
+          [0.5, 1]
+        ],
+        interpolation: 'linear'
+      }
+      const points = [
+        [0, 0],
+        [0.5, 1]
+      ]
+
+      try {
+        await app.loadApiJson(
+          {
+            '1': {
+              class_type: widgetNodeType,
+              inputs: {
+                curve: { __type__: 'CURVE', __value__: curve },
+                points: { __value__: points }
+              },
+              _meta: { title: 'Curve' }
+            },
+            '2': {
+              class_type: 'Uninstalled/CurveNode',
+              inputs: {
+                curve: { __type__: 'CURVE', __value__: curve },
+                points: { __value__: points }
+              },
+              _meta: { title: 'Missing Curve' }
+            }
+          },
+          ''
+        )
+
+        const [widgetNode] = graph.nodes.filter(
+          (n) => n.type === widgetNodeType
+        )
+        expect(widgetNode?.widgets?.[0].value).toEqual(curve)
+        expect(widgetNode?.widgets?.[1].value).toEqual(points)
+        expect(curveCallback).toHaveBeenCalledWith(curve)
+
+        const [placeholder] = graph.nodes.filter(
+          (n) => n.type === 'Uninstalled/CurveNode'
+        )
+        expect(placeholder?.last_serialization?.widgets_values).toEqual([
+          curve,
+          points
+        ])
+        expect(
+          placeholder?.last_serialization?.widgets_values_named
+        ).toMatchObject({ curve, points })
+
+        const passthrough = { __value__: 'not-the-wrapper', other: 1 }
+        await app.loadApiJson(
+          {
+            '1': {
+              class_type: widgetNodeType,
+              inputs: { points: passthrough },
+              _meta: { title: 'Curve' }
+            }
+          },
+          ''
+        )
+        const passthroughNode = graph.nodes
+          .filter((n) => n.type === widgetNodeType)
+          .at(-1)
+        expect(passthroughNode?.widgets?.[1].value).toEqual(passthrough)
+      } finally {
+        missingNodesStore.setMissingNodeTypes(previousMissingNodeTypes)
+        Reflect.set(app, 'rootGraphInternal', previousAppGraph)
+        Reflect.set(singletonApp, 'rootGraphInternal', previousSingletonGraph)
+        LiteGraph.unregisterNodeType(widgetNodeType)
       }
     })
 

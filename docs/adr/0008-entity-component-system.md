@@ -173,6 +173,21 @@ derived, re-registering an existing `WidgetId` with a different `type` is a
 legitimate re-mint rather than an identity collision — which is why
 `widgetValueStore.registerWidget` overwrites where the minted-id stores reject.
 
+#### Future work
+
+The current slot/widget identity split remains the contract. A future proposal
+to unify those identities must demonstrate all four of the following before it
+can supersede this decision:
+
+1. Slot and widget lifecycle equivalence, including promotion and demotion.
+2. A migration story for persisted workflows.
+3. Compatibility with the collision contracts above: minted identity keys
+   reject collisions, while structural keys resolve them.
+4. A net reduction in implementation and maintenance complexity.
+
+This bar records the outcome of the
+[#15762 review discussion](https://github.com/Comfy-Org/ComfyUI_frontend/pull/15762#discussion_r3848938262).
+
 ### Component Decomposition
 
 Components are plain data objects — no methods, no back-references to parent entities. Systems query components to implement behavior.

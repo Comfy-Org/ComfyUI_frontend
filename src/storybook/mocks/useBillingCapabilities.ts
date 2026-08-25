@@ -1,6 +1,7 @@
 import { computed, reactive, ref } from 'vue'
 
 interface BillingCapabilitiesMockState {
+  canSubscribeSelfServe: boolean
   canCancel: boolean
   canReactivate: boolean
   canChangeSeats: boolean
@@ -10,6 +11,7 @@ interface BillingCapabilitiesMockState {
 
 const canTopUpState = ref(true)
 const defaultCapabilityState: BillingCapabilitiesMockState = {
+  canSubscribeSelfServe: false,
   canCancel: true,
   canReactivate: true,
   canChangeSeats: true,
@@ -30,10 +32,16 @@ export function setBillingCapabilitiesMock(
   Object.assign(capabilityState, defaultCapabilityState, capabilities)
 }
 
+export function setCanSubscribeSelfServeMock(canSubscribeSelfServe: boolean) {
+  capabilityState.canSubscribeSelfServe = canSubscribeSelfServe
+}
+
 export function useBillingCapabilities() {
   return {
     canTopUp: computed(() => canTopUpState.value),
-    canSubscribeSelfServe: computed(() => false),
+    canSubscribeSelfServe: computed(
+      () => capabilityState.canSubscribeSelfServe
+    ),
     canCancel: computed(() => capabilityState.canCancel),
     canReactivate: computed(() => capabilityState.canReactivate),
     canChangeSeats: computed(() => capabilityState.canChangeSeats),

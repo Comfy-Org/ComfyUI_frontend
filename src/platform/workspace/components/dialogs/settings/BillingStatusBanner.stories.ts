@@ -4,7 +4,10 @@ import type { SubscriptionInfo } from '@/composables/billing/types'
 import { i18n } from '@/i18n'
 import type { BillingContextMockState } from '@/storybook/mocks/useBillingContext'
 import { setBillingContextMock } from '@/storybook/mocks/useBillingContext'
-import { setCanTopUpMock } from '@/storybook/mocks/useBillingCapabilities'
+import {
+  setCanSubscribeSelfServeMock,
+  setCanTopUpMock
+} from '@/storybook/mocks/useBillingCapabilities'
 import type { WorkspaceUIMockState } from '@/storybook/mocks/useWorkspaceUI'
 import { setWorkspaceUIMock } from '@/storybook/mocks/useWorkspaceUI'
 
@@ -64,7 +67,7 @@ const member: Partial<WorkspaceUIMockState> = {
 function story(
   billing: Partial<BillingContextMockState>,
   workspace: Partial<WorkspaceUIMockState>,
-  canTopUp = true
+  capabilities: { canTopUp?: boolean; canSubscribeSelfServe?: boolean } = {}
 ): Story {
   return {
     beforeEach() {
@@ -73,7 +76,8 @@ function story(
       i18n.global.locale.value = 'en'
       setBillingContextMock({ isTeamPlan: true, ...billing })
       setWorkspaceUIMock(workspace)
-      setCanTopUpMock(canTopUp)
+      setCanTopUpMock(capabilities.canTopUp ?? true)
+      setCanSubscribeSelfServeMock(capabilities.canSubscribeSelfServe ?? false)
     }
   }
 }
@@ -102,7 +106,7 @@ export const PausedMember: Story = story(
     subscriptionStatus: 'active'
   },
   member,
-  false
+  { canTopUp: false }
 )
 
 /**
@@ -153,7 +157,20 @@ export const OutOfCreditsMember: Story = story(
     renewalDate: RENEWAL_DATE
   },
   member,
-  false
+  { canTopUp: false }
+)
+
+/** No top-up entitlement but self-serve upgrade is open: upgrade copy, not contact-admin. */
+export const OutOfCreditsSelfServe: Story = story(
+  {
+    subscription: exhausted,
+    isActiveSubscription: true,
+    billingStatus: 'paid',
+    subscriptionStatus: 'active',
+    renewalDate: RENEWAL_DATE
+  },
+  owner,
+  { canTopUp: false, canSubscribeSelfServe: true }
 )
 
 /** Cancelled but still active until the period end. Informational. */
