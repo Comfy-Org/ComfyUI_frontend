@@ -330,6 +330,42 @@ describe('fetchModelMetadataWithStatus', () => {
     ).resolves.toEqual({ metadata: emptyMetadata, resolution: 'failed' })
   })
 
+  it('forwards cancellation to an active metadata request', async () => {
+    const controller = new AbortController()
+    const url =
+      'https://huggingface.co/org/model/resolve/main/cancelled.safetensors'
+    const fetchWithSignal: (
+      url: string,
+      options?: { signal?: AbortSignal }
+    ) => ReturnType<typeof fetchModelMetadataWithStatus> =
+      fetchModelMetadataWithStatus
+    fetchMock.mockImplementationOnce(
+      (_url: string, options: RequestInit | undefined) =>
+        new Promise<Response>((_resolve, reject) => {
+          options?.signal?.addEventListener('abort', () => {
+            reject(new DOMException('Aborted', 'AbortError'))
+          })
+        })
+    )
+
+    const result = fetchWithSignal(url, {
+      signal: controller.signal
+    })
+    await vi.waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(url, {
+        method: 'HEAD',
+        signal: controller.signal
+      })
+    })
+
+    controller.abort()
+
+    await expect(result).resolves.toEqual({
+      metadata: emptyMetadata,
+      resolution: 'failed'
+    })
+  })
+
   it.for([
     {
       name: 'gated proof',

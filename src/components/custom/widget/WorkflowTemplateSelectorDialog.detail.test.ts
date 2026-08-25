@@ -81,7 +81,8 @@ const mocks = vi.hoisted(() => ({
   ),
   resolveModelMetadata: vi.fn(
     async (
-      models: readonly (typeof fixtures.prepared.workflow.models)[number][]
+      models: readonly (typeof fixtures.prepared.workflow.models)[number][],
+      _options?: { signal?: AbortSignal }
     ): Promise<TemplateModelMetadataBatchResult> => ({
       status: 'completed',
       entries: models.map((model) => ({
@@ -343,6 +344,25 @@ describe('WorkflowTemplateSelectorDialog template detail navigation', () => {
       screen.getByRole('article', { name: fixtures.template.title })
     ).toBeInTheDocument()
     expect(mocks.openPreparedWorkflowTemplate).not.toHaveBeenCalled()
+  })
+
+  it('aborts Desktop metadata when leaving Detail', async () => {
+    environment.isDesktop = true
+    let signal: AbortSignal | undefined
+    mocks.resolveModelMetadata.mockImplementationOnce((_models, options) => {
+      signal = options?.signal
+      return new Promise<TemplateModelMetadataBatchResult>(() => undefined)
+    })
+    const user = await openDetail()
+
+    await waitFor(() => expect(signal).toBeDefined())
+    expect(signal?.aborted).toBe(false)
+
+    await user.click(
+      screen.getByRole('button', { name: 'Back to All Templates' })
+    )
+
+    expect(signal?.aborted).toBe(true)
   })
 
   it('starts eligible Desktop model rows before immediately opening the stored workflow', async () => {
