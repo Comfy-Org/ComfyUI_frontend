@@ -15,9 +15,8 @@ interface ValidationResult {
 export const MAX_REPORTS_PER_KIND = 25
 
 /**
- * Keys must describe the corruption itself, not just the workflow: `id` is
- * optional in the schema, and the workflows most likely to be corrupt are the
- * legacy ones that lack it.
+ * DQ-18: per-corruption-shape dedup (2026-08-25). Keys describe the corruption
+ * itself so identical shapes report once per session, regardless of workflow.
  *
  * The two kinds hold separate budgets so that a session full of repairable
  * corruption cannot crowd out the rarer report that the fixer itself broke.
@@ -58,7 +57,7 @@ export function useWorkflowValidation() {
 
     if (patched || deleted) {
       reportCorruptionOnce(
-        [workflowId, patched, deleted, corruptionDigest].join('|'),
+        [patched, deleted, corruptionDigest].join('|'),
         () => {
           reportError(new Error('Workflow loaded with corrupt links'), {
             errorType: 'workflow_link_corruption',

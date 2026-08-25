@@ -55,9 +55,15 @@ const reportedOptions = (call = 0) =>
 const reload = (workflow: ComfyWorkflowJSON) =>
   useWorkflowValidation().validateWorkflow(workflow)
 
+let corruptionShape = 10
+const distinctCorruptWorkflow = (id: string) =>
+  corruptWorkflow(id, corruptionShape++)
+
 describe('useWorkflowValidation', () => {
   it('reports the corruption the link fixer found while loading a workflow', async () => {
-    await useWorkflowValidation().validateWorkflow(corruptWorkflow(uniqueId()))
+    await useWorkflowValidation().validateWorkflow(
+      distinctCorruptWorkflow(uniqueId())
+    )
 
     expect(reportError).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -75,7 +81,9 @@ describe('useWorkflowValidation', () => {
   it('attributes the report to the workflow it came from', async () => {
     const workflowId = uniqueId()
 
-    await useWorkflowValidation().validateWorkflow(corruptWorkflow(workflowId))
+    await useWorkflowValidation().validateWorkflow(
+      distinctCorruptWorkflow(workflowId)
+    )
 
     expect(reportedOptions().context?.workflowId).toBe(workflowId)
   })
@@ -83,7 +91,9 @@ describe('useWorkflowValidation', () => {
   it('digests the fixer log instead of forwarding it', async () => {
     const fixerLogs = captureFixerLogs()
 
-    await useWorkflowValidation().validateWorkflow(corruptWorkflow(uniqueId()))
+    await useWorkflowValidation().validateWorkflow(
+      distinctCorruptWorkflow(uniqueId())
+    )
 
     const options = reportedOptions()
     expect(options.context?.corruptionDigest).toMatch(/^[0-9a-f]{8}$/)
@@ -94,7 +104,7 @@ describe('useWorkflowValidation', () => {
 
   it('reports, without a toast, when validation is silenced', async () => {
     const { graphData } = await useWorkflowValidation().validateWorkflow(
-      corruptWorkflow(uniqueId()),
+      distinctCorruptWorkflow(uniqueId()),
       { silent: true }
     )
 
@@ -105,30 +115,30 @@ describe('useWorkflowValidation', () => {
 
   it('reports a corrupt workflow once, not once per reload', async () => {
     const workflowId = uniqueId()
+    const shape = corruptionShape++
 
-    await reload(corruptWorkflow(workflowId))
-    await reload(corruptWorkflow(workflowId))
+    await reload(corruptWorkflow(workflowId, shape))
+    await reload(corruptWorkflow(workflowId, shape))
 
     expect(reportError).toHaveBeenCalledOnce()
   })
 
-  it('does not collapse distinct workflows that carry no id', async () => {
+  it('reports distinct corruption shapes separately without workflow ids', async () => {
     await reload(unidentifiedCorruptWorkflow())
     await reload(unidentifiedCorruptWorkflow())
 
     expect(reportError).toHaveBeenCalledTimes(2)
+    expect(reportedOptions(0).context?.corruptionDigest).not.toBe(
+      reportedOptions(1).context?.corruptionDigest
+    )
   })
 
-  it('counts each identified workflow carrying the same corruption', async () => {
-    await reload(corruptWorkflow(uniqueId()))
-    await reload(corruptWorkflow(uniqueId()))
+  it('reports the same corruption shape once across identified workflows', async () => {
+    const shape = corruptionShape++
+    await reload(corruptWorkflow(uniqueId(), shape))
+    await reload(corruptWorkflow(uniqueId(), shape))
 
-    expect(reportError).toHaveBeenCalledTimes(2)
-    const [first, second] = [reportedOptions(0), reportedOptions(1)]
-    expect(first.context?.corruptionDigest).toBe(
-      second.context?.corruptionDigest
-    )
-    expect(first.context?.workflowId).not.toBe(second.context?.workflowId)
+    expect(reportError).toHaveBeenCalledOnce()
   })
 
   it('stays quiet for an intact workflow', async () => {

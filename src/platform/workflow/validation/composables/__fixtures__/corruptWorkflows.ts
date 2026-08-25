@@ -71,12 +71,12 @@ export const intactWorkflow = (id: string) =>
     [[1, 1, 0, 2, 0, '*']]
   )
 
-/** Link 1 targets node 2, which is not in the graph. */
-export const corruptWorkflow = (id: string) =>
+/** Link 1 targets the node after `originId`, which is not in the graph. */
+export const corruptWorkflow = (id: string, originId = 1) =>
   createWorkflow(
     id,
-    [createNode({ id: 1, outputs: [createOutput([1])] })],
-    [[1, 1, 0, 2, 0, '*']]
+    [createNode({ id: originId, outputs: [createOutput([1])] })],
+    [[1, originId, 0, originId + 1, 0, '*']]
   )
 
 /**
