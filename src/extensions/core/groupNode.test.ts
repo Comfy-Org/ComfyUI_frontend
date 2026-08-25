@@ -9,9 +9,15 @@ import type { ComfyExtension } from '@/types/comfy'
 
 import type { GroupNodeWorkflowData } from './groupNode'
 
+const { registeredExtensions } = vi.hoisted(() => ({
+  registeredExtensions: [] as ComfyExtension[]
+}))
+
 vi.mock('@/scripts/app', () => ({
   app: {
-    registerExtension: vi.fn(),
+    registerExtension: vi.fn((ext: ComfyExtension) => {
+      registeredExtensions.push(ext)
+    }),
     registerNodeDef: vi.fn(() => Promise.resolve())
   }
 }))
@@ -142,17 +148,19 @@ describe('GroupNodeConfig.processInputSlots', () => {
   })
 })
 
+function getGroupNodeExtension(): ComfyExtension {
+  const ext = registeredExtensions.find((e) => e.name === 'Comfy.GroupNode')
+  if (!ext) throw new Error('Comfy.GroupNode extension was not registered')
+  return ext
+}
+
 describe('GroupNodeHandler.getGroupData', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
   })
 
   it('returns the registered GroupNodeConfig for legacy custom-node callers (#12931)', async () => {
-    const [ext] = vi
-      .mocked(app.registerExtension)
-      .mock.calls.find(
-        ([e]) => (e as ComfyExtension).name === 'Comfy.GroupNode'
-      ) as [ComfyExtension]
+    const ext = getGroupNodeExtension()
     ext.addCustomNodeDefs?.(
       {
         KSampler: {
@@ -196,11 +204,7 @@ describe('GroupNodeHandler.getGroupData', () => {
   })
 
   it('checks the instance before falling back to the constructor', async () => {
-    const [ext] = vi
-      .mocked(app.registerExtension)
-      .mock.calls.find(
-        ([e]) => (e as ComfyExtension).name === 'Comfy.GroupNode'
-      ) as [ComfyExtension]
+    const ext = getGroupNodeExtension()
     ext.addCustomNodeDefs?.(
       {
         KSampler: {
