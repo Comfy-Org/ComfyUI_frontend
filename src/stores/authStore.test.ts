@@ -491,6 +491,65 @@ describe('useAuthStore', () => {
       })
       expect(mockFetch).not.toHaveBeenCalled()
     })
+    it('re-provisions the customer after the API key changes', async () => {
+      let customerPostCount = 0
+      mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+        if (url.endsWith('/customers') && init?.method === 'POST') {
+          customerPostCount++
+          return Promise.resolve(mockCreateCustomerResponse)
+        }
+        if (url.endsWith('/customers/credit')) {
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({ checkout_url: 'https://stripe.test/checkout' })
+          })
+        }
+        return Promise.reject(new Error('Unexpected API call'))
+      })
+      const payload = { amount_micros: 5_000_000, currency: 'usd' }
+
+      await store.initiateCreditPurchase(payload)
+      mockApiKeyGetApiKey.mockReturnValue('another-api-key')
+      mockApiKeyGetAuthHeader.mockReturnValue({
+        'X-API-KEY': 'another-api-key'
+      })
+      await store.initiateCreditPurchase(payload)
+
+      expect(customerPostCount).toBe(2)
+    })
+
+    it('aborts a credit purchase when the API key changes during recovery', async () => {
+      let resolveCreate!: (value: unknown) => void
+      mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+        if (url.endsWith('/customers') && init?.method === 'POST') {
+          return new Promise((resolve) => {
+            resolveCreate = resolve
+          })
+        }
+        return Promise.reject(new Error('Unexpected API call'))
+      })
+
+      const request = store.initiateCreditPurchase({
+        amount_micros: 5_000_000,
+        currency: 'usd'
+      })
+      await new Promise<void>((resolve) => setTimeout(resolve, 0))
+      mockApiKeyGetApiKey.mockReturnValue('another-api-key')
+      mockApiKeyGetAuthHeader.mockReturnValue({
+        'X-API-KEY': 'another-api-key'
+      })
+      resolveCreate(mockCreateCustomerResponse)
+
+      await expect(request).rejects.toMatchObject({
+        message: 'toastMessages.userNotAuthenticated'
+      })
+      expect(
+        mockFetch.mock.calls.some(([url]) =>
+          String(url).endsWith('/customers/credit')
+        )
+      ).toBe(false)
+    })
   })
 
   describe('login', () => {

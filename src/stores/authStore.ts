@@ -79,7 +79,7 @@ export const useAuthStore = defineStore('auth', () => {
   const loading = ref(false)
   const currentUser = ref<User | null>(null)
   const isInitialized = ref(false)
-  const customerCreated = ref(false)
+  const customerProvisionedIdentity = ref<string | null>(null)
   /**
    * Memoizes the in-flight or successful customer provisioning attempt for
    * the current account (see recoverMissingCustomer). Declared here so the
@@ -87,7 +87,7 @@ export const useAuthStore = defineStore('auth', () => {
    * otherwise run.
    */
   let customerRecovery: Promise<void> | null = null
-  let customerRecoveryUid: string | undefined
+  let customerRecoveryIdentity: string | null = null
   const isFetchingBalance = ref(false)
 
   // Balance state
@@ -176,9 +176,9 @@ export const useAuthStore = defineStore('auth', () => {
     // Customer provisioning state is per-account: without this reset, a
     // second account in the same browser session would be short-circuited by
     // the previous account's memoized recovery and stay stuck on 409s.
-    customerCreated.value = false
+    customerProvisionedIdentity.value = null
     customerRecovery = null
-    customerRecoveryUid = undefined
+    customerRecoveryIdentity = null
   })
 
   // Listen for token refresh events
@@ -444,7 +444,7 @@ export const useAuthStore = defineStore('auth', () => {
   const createCustomer = async (
     payload?: Omit<CreateCustomerPayload, 'signup_source'>
   ): Promise<CreateCustomerResponse> => {
-    const sessionUserId = currentUser.value?.uid
+    const sessionIdentity = currentUserIdentity()
     const authHeader = await getUserAuthHeader()
     if (!authHeader) {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
@@ -486,8 +486,8 @@ export const useAuthStore = defineStore('auth', () => {
       )
     }
 
-    if (currentUser.value?.uid === sessionUserId) {
-      customerCreated.value = true
+    if (sessionIdentity !== null && currentUserIdentity() === sessionIdentity) {
+      customerProvisionedIdentity.value = sessionIdentity
     }
     return createCustomerResJson
   }
@@ -499,19 +499,22 @@ export const useAuthStore = defineStore('auth', () => {
    * request can retry, e.g. after a transient network failure.
    */
   const recoverMissingCustomer = (): Promise<void> => {
-    const sessionUserId = currentUser.value?.uid
-    if (customerRecovery === null || customerRecoveryUid !== sessionUserId) {
+    const sessionIdentity = currentUserIdentity()
+    if (
+      customerRecovery === null ||
+      customerRecoveryIdentity !== sessionIdentity
+    ) {
       const thisRecovery: Promise<void> = createCustomer()
         .then(() => undefined)
         .catch((error: unknown) => {
           if (customerRecovery === thisRecovery) {
             customerRecovery = null
-            customerRecoveryUid = undefined
+            customerRecoveryIdentity = null
           }
           throw error
         })
       customerRecovery = thisRecovery
-      customerRecoveryUid = sessionUserId
+      customerRecoveryIdentity = sessionIdentity
     }
     return customerRecovery
   }
@@ -762,6 +765,7 @@ export const useAuthStore = defineStore('auth', () => {
   const addCredits = async (
     requestBodyContent: CreditPurchasePayload
   ): Promise<CreditPurchaseResponse> => {
+    const requestOwner = currentUserIdentity()
     const authHeader = await getUserAuthHeader()
     if (!authHeader) {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
@@ -770,8 +774,11 @@ export const useAuthStore = defineStore('auth', () => {
     // Ensure customer was created during login/registration. Routed through
     // recoverMissingCustomer so a concurrent 409-triggered recovery and this
     // pre-flight share one POST /customers instead of racing.
-    if (!customerCreated.value) {
+    if (customerProvisionedIdentity.value !== requestOwner) {
       await recoverMissingCustomer()
+      if (currentUserIdentity() !== requestOwner) {
+        throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
+      }
     }
 
     const response = await fetchWithCustomerRecovery(
