@@ -29,8 +29,9 @@ Two problems motivated this record (raised in
    `launchCancellationFlow.ts` asks `rail !== 'stripe'`. A `metronome`
    workspace is classified "workspace-served" by routing but "not
    Churnkey-eligible" by cancellation. Each answer is correct today, but
-   nothing forces the two sites to agree, and an unrecognised fourth rail
-   value silently falls through to workspace billing at both sites.
+   nothing forces the two sites to agree, and an unrecognised fourth rail value
+   routes to workspace billing in `useBillingRouting.ts` while
+   `launchCancellationFlow.ts` uses the non-Churnkey fallback dialog.
 2. **The fail-open default and the `legacy_stripe` exit contract lived only in
    a review thread.** With the flags gone, the previous server-side recovery
    lever (flipping `consolidated_billing_enabled` off) no longer exists;
