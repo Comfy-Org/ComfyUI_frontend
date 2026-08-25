@@ -89,10 +89,10 @@ export function useSettingsPlansCheckout() {
         return
       }
 
-      if (!response) {
-        showSubscribeError()
-        return
-      }
+      // A void response means the active billing rail drove its own checkout
+      // (the legacy adapter launches Stripe itself and returns nothing); that is
+      // not a failure, so return quietly rather than toasting a false error.
+      if (!response) return
 
       if (response.status === 'subscribed') {
         // A refresh hiccup after a successful subscribe is not a failed subscribe.

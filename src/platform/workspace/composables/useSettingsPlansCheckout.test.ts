@@ -260,6 +260,17 @@ describe('useSettingsPlansCheckout', () => {
     })
   })
 
+  it('does not toast a failure when the rail drove its own checkout (void response)', async () => {
+    const checkout = await setup()
+    // The legacy adapter returns void after launching Stripe itself.
+    mockSubscribe.mockResolvedValueOnce(undefined)
+
+    await checkout.subscribeToPersonal('standard-yearly', 'yearly')
+
+    expect(mockToastAdd).not.toHaveBeenCalled()
+    expect(mockStartOperation).not.toHaveBeenCalled()
+  })
+
   it('surfaces a rejected subscribe through the error toast', async () => {
     const checkout = await setup()
     mockSubscribe.mockRejectedValueOnce(new Error('card declined'))

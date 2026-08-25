@@ -292,6 +292,31 @@ describe('SettingsPlansSection — checkout uses API plan identity', () => {
     expect(mockSubscribeToPersonal).not.toHaveBeenCalled()
   })
 
+  it('disables a card whose API plan is unavailable and blocks its checkout', async () => {
+    const catalog = CATALOG.map((p) =>
+      p.tier === 'STANDARD' && p.duration === 'ANNUAL'
+        ? { ...p, availability: { available: false } }
+        : p
+    )
+    renderSection({ catalogPlans: catalog })
+
+    const standard = screen.getByRole('button', { name: 'Choose Standard' })
+    expect(standard).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Choose Pro' })).toBeEnabled()
+
+    await userEvent.click(standard)
+    expect(mockSubscribeToPersonal).not.toHaveBeenCalled()
+  })
+
+  it('disables every CTA while a checkout is in flight', () => {
+    mockIsSubscribing.current = ref(true)
+    renderSection()
+
+    for (const name of ['Choose Standard', 'Choose Creator', 'Choose Pro']) {
+      expect(screen.getByRole('button', { name })).toBeDisabled()
+    }
+  })
+
   it('marks no card current for an enterprise/founder/legacy slug', () => {
     renderSection({ currentPlanSlug: 'enterprise-annual' })
 
