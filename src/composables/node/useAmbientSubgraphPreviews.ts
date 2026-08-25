@@ -1,13 +1,38 @@
-import type { MaybeRefOrGetter } from 'vue'
-import { computed, toValue } from 'vue'
+import type { MaybeRefOrGetter, Ref } from 'vue'
+import { computed, ref, toValue } from 'vue'
 
+import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 import type { PromotedPreview } from './usePromotedPreviews'
 import { getPreviewMediaType } from './usePromotedPreviews'
+
+/**
+ * One shared, ever-incrementing version `ref` per {@link Subgraph}, bumped
+ * whenever an interior node is added or removed. `subgraph.nodes` itself is
+ * a plain, non-reactive array, so {@link useAmbientSubgraphPreviews} reads
+ * this alongside it purely to give Vue something reactive to invalidate on.
+ */
+const topologyVersions = new WeakMap<Subgraph, Ref<number>>()
+
+function useSubgraphTopologyVersion(subgraph: Subgraph): Ref<number> {
+  const existing = topologyVersions.get(subgraph)
+  if (existing) return existing
+
+  const version = ref(0)
+  subgraph.onNodeAdded = useChainCallback(subgraph.onNodeAdded, () => {
+    version.value++
+  })
+  subgraph.onNodeRemoved = useChainCallback(subgraph.onNodeRemoved, () => {
+    version.value++
+  })
+  topologyVersions.set(subgraph, version)
+  return version
+}
 
 /**
  * Synthetic `sourceWidgetName` for ambient previews, so they share
@@ -39,10 +64,8 @@ export function useAmbientSubgraphPreviews(
     if (node.isDetached) return []
 
     const { subgraph } = node
+    void useSubgraphTopologyVersion(subgraph).value
 
-    // `subgraph.nodes` (`LGraph._nodes`) is a plain, non-reactive array, so
-    // interior node add/remove while collapsed isn't tracked here; the next
-    // WS preview frame (nodeOutputs/nodePreviewImages change) self-heals it.
     return subgraph.nodes.flatMap((interiorNode): PromotedPreview[] => {
       // Nested subgraph hosts derive their own previews independently.
       if (interiorNode instanceof SubgraphNode) return []
