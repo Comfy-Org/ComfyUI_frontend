@@ -59,13 +59,43 @@ const test = comfyPageFixture.extend<{
   stubCloudAssets: [
     async ({ page }, use) => {
       const pattern = /\/api\/assets(?:\?.*)?$/
-      await page.route(pattern, (route) =>
-        route.fulfill({
+      await page.route(pattern, (route) => {
+        const url = new URL(route.request().url())
+        const csv = (key: string) =>
+          (url.searchParams.get(key) ?? '').split(',').filter(Boolean)
+        const tagsAny = csv('tags_any')
+        const includeTags = csv('include_tags')
+        const tagsNone = csv('tags_none')
+
+        if (url.searchParams.get('after')) {
+          return route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(makeAssetsResponse([]))
+          })
+        }
+
+        const matches = MIXED_ASSETS.filter((asset) => {
+          if (tagsNone.some((tag) => asset.tags?.includes(tag))) return false
+          if (
+            includeTags.length &&
+            !includeTags.every((tag) => asset.tags?.includes(tag))
+          )
+            return false
+          if (
+            tagsAny.length &&
+            !tagsAny.some((tag) => asset.tags?.includes(tag))
+          )
+            return false
+          return tagsAny.length > 0 || includeTags.length > 0
+        })
+
+        return route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify(makeAssetsResponse(MIXED_ASSETS))
+          body: JSON.stringify(makeAssetsResponse(matches))
         })
-      )
+      })
       await use()
       await page.unroute(pattern)
     },
