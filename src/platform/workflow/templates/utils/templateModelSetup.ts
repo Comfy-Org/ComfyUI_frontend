@@ -33,7 +33,7 @@ type TemplateModelSetupRowBase = {
   modelType: TemplateModelType
 }
 
-export type TemplateModelSetupRow =
+type TemplateModelSetupRow =
   | (TemplateModelSetupRowBase & {
       status: 'manual'
       href: string
@@ -49,7 +49,6 @@ type TemplateModelSetupTotal = {
 
 export type TemplateModelSetupResult = {
   rows: readonly TemplateModelSetupRow[]
-  remainingDownload: TemplateModelSetupTotal
   rowTotal: TemplateModelSetupTotal
 }
 
@@ -167,7 +166,6 @@ export function deriveTemplateModelSetup(
 
   return {
     rows,
-    remainingDownload: totalRows(rows, (row) => row.status === 'downloadable'),
     rowTotal: totalRows(rows, () => true)
   }
 }
