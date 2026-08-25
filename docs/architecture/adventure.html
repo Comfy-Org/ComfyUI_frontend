@@ -1286,6 +1286,25 @@
         color: var(--text);
       }
 
+      /* --- Accessibility --- */
+      button:focus-visible,
+      a:focus-visible,
+      summary:focus-visible,
+      [role='button']:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+
       /* --- Responsive --- */
       @media (max-width: 900px) {
         #stat-bars {
@@ -1342,8 +1361,8 @@
         }
         #restart-btn,
         #toggle-map {
-          padding: 3px 8px;
-          font-size: 10px;
+          padding: 7px 10px;
+          font-size: 11px;
         }
         #main {
           flex-direction: column;
@@ -1406,13 +1425,13 @@
     </header>
 
     <!-- Map Dialog -->
-    <dialog id="map-dialog">
-      <h3>Architecture Map</h3>
+    <dialog id="map-dialog" aria-labelledby="map-dialog-title">
+      <h3 id="map-dialog-title">Architecture Map</h3>
       <div id="map"></div>
     </dialog>
 
     <!-- Main Layout -->
-    <div id="main">
+    <main id="main">
       <!-- Narrative -->
       <section id="narrative">
         <div id="room-header">
@@ -1449,7 +1468,7 @@
           <div id="challenge-desc"></div>
           <div id="challenge-choices"></div>
         </div>
-        <div id="result-banner"></div>
+        <div id="result-banner" aria-live="polite"></div>
         <div id="artifacts">
           <div id="artifacts-header">Artifacts in this room</div>
           <div id="artifacts-list"></div>
@@ -1496,13 +1515,13 @@
             <span style="flex: 1">Log</span>
             <span id="log-count">0</span>
           </summary>
-          <div class="sidebar-body" id="log"></div>
+          <div class="sidebar-body" id="log" role="log" aria-label="Event log"></div>
         </details>
       </aside>
-    </div>
+    </main>
 
     <!-- Ending Dialog -->
-    <dialog id="ending-dialog">
+    <dialog id="ending-dialog" aria-labelledby="ending-title">
       <div class="ending-label">Adventure Complete</div>
       <h2 id="ending-title"></h2>
       <div class="ending-desc" id="ending-desc"></div>
@@ -2926,7 +2945,7 @@
         const sz = size || 36
         if (a.icon) {
           return `<div class="artifact-icon" style="width:${sz}px;height:${sz}px">
-          <img src="icons/${a.icon}.png" alt="${a.name}"
+          <img src="icons/${a.icon}.png" alt=""
                onerror="this.parentElement.classList.add('placeholder');this.parentElement.innerHTML='${iconFallbacks[a.type] || '&#9670;'}'">
         </div>`
         }
@@ -2977,7 +2996,7 @@
         els.roomImage.classList.remove('placeholder')
         const img = new Image()
         img.src = `images/${roomId}.png`
-        img.alt = prompt || room.title
+        img.alt = `Illustration of ${room.title}`
         img.onload = () => {
           els.roomImage.innerHTML = ''
           els.roomImage.appendChild(img)
@@ -3310,7 +3329,7 @@
             }
 
             return `
-          <div class="${classes.join(' ')}" data-room="${id}">
+          <div class="${classes.join(' ')}" data-room="${id}" role="button" tabindex="0" aria-label="Go to ${room.title}">
             <div class="room-header">
               <div class="room-layer">${room.layer}</div>
               ${badge}
@@ -3322,9 +3341,16 @@
           .join('')
 
         els.map.querySelectorAll('.map-room').forEach((el) => {
-          el.addEventListener('click', () => {
+          const go = () => {
             toggleMap()
             render(el.dataset.room)
+          }
+          el.addEventListener('click', go)
+          el.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              go()
+            }
           })
         })
       }
@@ -3436,8 +3462,11 @@
             .map((e) => {
               const got = unlocked.includes(e.id)
               const cls = got ? 'ach-slot unlocked' : 'ach-slot locked'
-              return `<div class="${cls}" data-ending="${e.id}">
-          <img src="icons/ending-${e.id}.png" alt="${got ? e.title : '?'}"
+              const interactive = got
+                ? ` role="button" tabindex="0" aria-label="Review ending: ${e.title}"`
+                : ''
+              return `<div class="${cls}" data-ending="${e.id}"${interactive}>
+          <img src="icons/ending-${e.id}.png" alt="${got ? e.title : 'Locked ending'}"
                onerror="this.style.display='none'">
         </div>`
             })
@@ -3455,6 +3484,12 @@
           })
           if (got) {
             slot.addEventListener('click', () => previewEnding(e.id))
+            slot.addEventListener('keydown', (ev) => {
+              if (ev.key === 'Enter' || ev.key === ' ') {
+                ev.preventDefault()
+                previewEnding(e.id)
+              }
+            })
           }
         })
 
