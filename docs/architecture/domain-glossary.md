@@ -35,10 +35,12 @@ Design records that rely on this vocabulary:
 - **Widget id** — the string key a Value is stored under,
   `graphId:nodeId:name` (`src/types/widgetId.ts`). A Value is addressed by this
   key, not by an object reference to a widget instance.
-- **Widget instance** — one live rendering of a Widget. Several instances may be
-  backed by the same Value at the same time (subgraph host plus interior,
-  preview surfaces, app mode). Instance identity is not durable and carries no
-  authority over the Value.
+- **Widget instance** — one live rendering of a Widget. Several surfaces may
+  render the same `WidgetId`-keyed Value at once, but a promoted host Widget and
+  its interior source are separate entities with separate `WidgetId`s and store
+  entries. The promotion bridge keeps those related Values aligned
+  (`src/core/graph/subgraph/promotionUtils.ts`); instance identity is not
+  durable and carries no authority over either Value.
 - **Schema** — the structural definition a Widget is built from: type, name,
   constraints, default. Sourced from the node definition's `INPUT_TYPES` /
   `InputSpec`. Not the Value, and not the mutable per-instance options.
@@ -46,12 +48,13 @@ Design records that rely on this vocabulary:
   hidden, min/max, callback). Distinct from Schema, which does not change over
   a Widget's lifetime, and from Value, which the user owns.
 - **Promotion** — exposing an interior subgraph Widget on the subgraph's host
-  node so it can be edited from outside. Promotion creates a new projected
-  surface referencing the interior Value; it does not move or re-key the
-  interior Widget. Not the same as "convert widget to input".
-- **Promoted widget** — the projected Widget on the host node produced by
-  Promotion. Its authority is the interior Widget's Value; the host projection
-  is a view.
+  node so it can be edited from outside. Promotion creates a host-owned Widget
+  and Value, then bridges it explicitly to the interior source; it does not
+  move or re-key the interior Widget. Not the same as "convert widget to
+  input" ([ADR 0009](../adr/0009-subgraph-promoted-widgets-use-linked-inputs.md)).
+- **Promoted widget** — the host-scoped Widget produced by Promotion, owned by
+  a linked `SubgraphInput`. Its host Value is authoritative at that boundary;
+  the interior Widget supplies schema and metadata but owns a separate Value.
 - **DOM widget** — a Widget whose display is a DOM element positioned over the
   canvas rather than drawn on it. A rendering strategy, not a separate kind of
   Value.
