@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
@@ -59,6 +59,41 @@ describe('AgentPanel', () => {
         'The AI agent can make mistakes. Double check your response.'
       )
     ).toBeInTheDocument()
+  })
+
+  it('groups chat options with the title and separates history navigation', () => {
+    const title = 'A comfortably short title'
+    render(AgentPanel, {
+      props: {
+        entries: [],
+        historyGroups,
+        sessionId: 'thread-1',
+        customTitle: title
+      },
+      global: {
+        plugins: [i18n],
+        stubs: {
+          Composer: true,
+          EmptyState: true,
+          PanelHeader: true
+        }
+      }
+    })
+
+    const titleGroup = screen.getByRole('group', {
+      name: i18n.global.t('agent.chatOptions')
+    })
+    const titleButton = within(titleGroup).getByRole('button', { name: title })
+    const optionsButton = within(titleGroup).getByRole('button', {
+      name: i18n.global.t('agent.chatOptions')
+    })
+    const historyButton = screen.getByRole('button', {
+      name: i18n.global.t('agent.showChatHistory')
+    })
+
+    expect(titleButton).toBeVisible()
+    expect(optionsButton).toBeVisible()
+    expect(titleGroup).not.toContainElement(historyButton)
   })
 
   it('focuses the composer input body after a suggestion and clears on blur', async () => {

@@ -194,33 +194,49 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
 
     <template v-else>
       <div class="flex h-10 shrink-0 items-center px-2">
-        <div
-          v-if="renaming"
-          class="text-agent-fg-muted flex items-center rounded-sm px-2 py-1"
+        <button
+          v-tooltip.bottom="buildAgentTooltipConfig(t('agent.showChatHistory'))"
+          type="button"
+          :aria-label="t('agent.showChatHistory')"
+          :class="[
+            'text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg',
+            'focus-visible:ring-agent-accent focus-visible:ring-2 focus-visible:outline-none',
+            'flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm transition-colors'
+          ]"
+          @click="onOpenHistory"
         >
-          <span class="icon-[lucide--align-justify] size-4 shrink-0" />
+          <span class="icon-[lucide--history] size-4 shrink-0" />
+        </button>
+        <template v-if="renaming">
           <input
             ref="renameInput"
             v-model="renameDraft"
             type="text"
             :aria-label="t('g.rename')"
-            class="text-agent-fg border-agent-accent h-6 max-w-64 rounded-lg border px-2 py-1 text-xs outline-none"
+            class="text-agent-fg border-agent-accent h-6 min-w-0 flex-1 rounded-lg border px-2 py-1 text-xs outline-none"
             @keydown="onRenameKeydown"
             @blur="commitRename"
           />
-        </div>
-        <template v-else>
+        </template>
+        <div
+          v-else
+          role="group"
+          :aria-label="t('agent.chatOptions')"
+          class="flex w-fit max-w-full min-w-0 items-center"
+        >
           <button
             ref="titleButton"
-            v-tooltip.bottom="
-              buildAgentTooltipConfig(t('agent.showChatHistory'))
-            "
             type="button"
-            class="text-agent-fg-muted hover:bg-agent-surface-hover flex h-6 cursor-pointer items-center gap-2 rounded-sm px-2 py-1 text-xs transition-colors"
-            @click="onOpenHistory"
+            :disabled="sessionId === null"
+            :class="[
+              'text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg disabled:hover:text-agent-fg-muted',
+              'focus-visible:ring-agent-accent focus-visible:ring-2 focus-visible:outline-none',
+              'flex h-6 min-w-0 cursor-pointer items-center rounded-sm px-2 py-1 text-left text-xs transition-colors',
+              'disabled:cursor-default disabled:hover:bg-transparent'
+            ]"
+            @click="startRename"
           >
-            <span class="icon-[lucide--align-justify] size-4 shrink-0" />
-            <span class="max-w-56 truncate">{{
+            <span class="min-w-0 truncate">{{
               sessionTitle || t('agent.newChatTitle')
             }}</span>
           </button>
@@ -228,7 +244,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             <DropdownMenuTrigger
               v-tooltip.bottom="buildAgentTooltipConfig(t('agent.chatOptions'))"
               :aria-label="t('agent.chatOptions')"
-              class="text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg flex size-6 cursor-pointer items-center justify-center rounded-sm transition-colors"
+              class="text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm transition-colors"
             >
               <span class="icon-[lucide--chevron-down] size-3" />
             </DropdownMenuTrigger>
@@ -259,7 +275,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
               </DropdownMenuContent>
             </DropdownMenuPortal>
           </DropdownMenuRoot>
-        </template>
+        </div>
       </div>
 
       <div class="min-h-0 flex-1">
