@@ -454,7 +454,7 @@ defineExpose({
           v-model="composer.draft.value"
           :aria-label="t('agent.placeholder')"
           rows="1"
-          class="text-agent-fg field-sizing-content max-h-50 min-h-16 w-full min-w-0 resize-none overflow-x-hidden overflow-y-auto rounded-none bg-transparent px-3 py-2 font-inter text-[14px]/5 font-normal wrap-break-word whitespace-pre-wrap focus-visible:ring-0"
+          class="text-agent-fg field-sizing-content max-h-100 min-h-16 w-full min-w-0 resize-none overflow-x-hidden overflow-y-auto rounded-none bg-transparent px-3 py-2 font-inter text-[14px]/5 font-normal wrap-break-word whitespace-pre-wrap focus-visible:ring-0"
           :aria-expanded="mentionVisible"
           aria-controls="agent-mention-listbox"
           :aria-activedescendant="

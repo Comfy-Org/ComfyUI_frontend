@@ -170,6 +170,57 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(firstSummary).toHaveAttribute('aria-expanded', 'false')
   })
 
+  test.describe('composer sizing', () => {
+    test.use({ viewport: { width: 1920, height: 1080 } })
+
+    test('caps long text at 400px and scrolls internally', async ({
+      comfyPage
+    }) => {
+      const page = comfyPage.page
+      await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+
+      const panel = page.locator('#agent-panel-root')
+      const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
+
+      await composer.fill('A growing prompt line\n'.repeat(14))
+      await expect
+        .poll(() =>
+          composer.evaluate((element) =>
+            Math.round(element.getBoundingClientRect().height)
+          )
+        )
+        .toBeGreaterThan(200)
+
+      await composer.fill('An overflowing prompt line\n'.repeat(60))
+      await expect
+        .poll(() =>
+          composer.evaluate((element) => ({
+            height: Math.round(element.getBoundingClientRect().height),
+            scrolls: element.scrollHeight > element.clientHeight
+          }))
+        )
+        .toEqual({ height: 400, scrolls: true })
+      await expect(
+        panel.getByText('What do you want to make?')
+      ).toBeInViewport()
+
+      await panel
+        .getByRole('button', { name: enMessages.agent.maximize })
+        .click()
+      await expect
+        .poll(() =>
+          composer.evaluate((element) => ({
+            height: Math.round(element.getBoundingClientRect().height),
+            scrolls: element.scrollHeight > element.clientHeight
+          }))
+        )
+        .toEqual({ height: 400, scrolls: true })
+      await expect(
+        panel.getByText('What do you want to make?')
+      ).toBeInViewport()
+    })
+  })
+
   test('keeps the Agent scrollbar track transparent', async ({ comfyPage }) => {
     const page = comfyPage.page
     await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
