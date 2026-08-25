@@ -573,6 +573,7 @@ export const useAuthStore = defineStore('auth', () => {
     input: string,
     init?: RequestInit
   ): Promise<Response> => {
+    const requestOwner = currentUserIdentity()
     const remintFetch = (): Promise<Response> =>
       fetchWithUnifiedRemint(
         input,
@@ -583,7 +584,8 @@ export const useAuthStore = defineStore('auth', () => {
     const response = await remintFetch()
     if (
       !isCustomerEndpoint(input) ||
-      !(await isMissingCustomerResponse(response))
+      !(await isMissingCustomerResponse(response)) ||
+      currentUserIdentity() !== requestOwner
     ) {
       return response
     }
@@ -595,6 +597,10 @@ export const useAuthStore = defineStore('auth', () => {
         'Customer provisioning during 409 recovery failed; returning original response',
         error
       )
+      return response
+    }
+
+    if (currentUserIdentity() !== requestOwner) {
       return response
     }
 

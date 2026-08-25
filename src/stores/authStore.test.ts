@@ -519,6 +519,48 @@ describe('useAuthStore', () => {
       expect(customerPostCount).toBe(2)
     })
 
+    it('does not retry with the old API key after a mid-recovery switch', async () => {
+      const missingCustomerResponse = {
+        ok: false,
+        status: 409,
+        clone: () => ({
+          json: () => Promise.resolve({ message: 'Failed to find customer' })
+        }),
+        json: () => Promise.resolve({ message: 'Failed to find customer' }),
+        text: () =>
+          Promise.resolve(
+            JSON.stringify({ message: 'Failed to find customer' })
+          )
+      }
+      let resolveCreate!: (value: unknown) => void
+      let billingCallCount = 0
+      mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+        if (url.endsWith('/customers') && init?.method === 'POST') {
+          return new Promise((resolve) => {
+            resolveCreate = resolve
+          })
+        }
+        if (url.endsWith('/customers/billing')) {
+          billingCallCount++
+          return Promise.resolve(missingCustomerResponse)
+        }
+        return Promise.reject(new Error('Unexpected API call'))
+      })
+
+      const request = store.accessBillingPortal()
+      await new Promise<void>((resolve) => setTimeout(resolve, 0))
+      mockApiKeyGetApiKey.mockReturnValue('another-api-key')
+      mockApiKeyGetAuthHeader.mockReturnValue({
+        'X-API-KEY': 'another-api-key'
+      })
+      resolveCreate(mockCreateCustomerResponse)
+
+      await expect(request).rejects.toMatchObject({
+        message: 'toastMessages.failedToAccessBillingPortal'
+      })
+      expect(billingCallCount).toBe(1)
+    })
+
     it('aborts a credit purchase when the API key changes during recovery', async () => {
       let resolveCreate!: (value: unknown) => void
       mockFetch.mockImplementation((url: string, init?: RequestInit) => {
