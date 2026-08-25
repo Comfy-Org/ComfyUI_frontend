@@ -77,6 +77,8 @@ const emit = defineEmits<{
   focusTag: [id: string]
   mentionPick: [node: SelectedNode]
   feedback: [turnId: string, vote: 'up' | 'down' | null]
+  addCredits: []
+  upgradeSubscription: []
   selectTab: [path: string]
   clearWorkflow: []
   newChat: []
@@ -300,6 +302,8 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             (workflowId, workflowName) =>
               emit('openWorkflow', workflowId, workflowName)
           "
+          @add-credits="emit('addCredits')"
+          @upgrade-subscription="emit('upgradeSubscription')"
         />
       </div>
     </template>
