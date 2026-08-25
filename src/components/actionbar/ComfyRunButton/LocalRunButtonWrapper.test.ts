@@ -8,8 +8,8 @@ import LocalRunButtonWrapper from './LocalRunButtonWrapper.vue'
 type PartnerNode = { nodeName: string; displayName: string }
 
 const gateState = vi.hoisted(() => ({
-  gate: undefined as unknown as { value: 'sign-in' | 'none' },
-  partnerNodes: undefined as unknown as { value: PartnerNode[] }
+  gate: { value: 'none' as 'sign-in' | 'none' },
+  partnerNodes: { value: [] as PartnerNode[] }
 }))
 
 const showApiNodesSignInDialog = vi.hoisted(() =>
