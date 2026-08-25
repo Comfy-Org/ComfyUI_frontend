@@ -114,34 +114,3 @@ function _emitToSentry(name: string, durationMs: number): void {
     // never break the app for telemetry
   }
 }
-
-/**
- * Retrieve all recorded performance entries for a given prefix.
- * Useful for debugging in DevTools or in unit tests.
- */
-export function getPerfEntries(prefix: string): PerformanceEntry[] {
-  try {
-    return performance
-      .getEntriesByType('measure')
-      .filter((e) => e.name.startsWith(prefix))
-      .concat(
-        performance
-          .getEntriesByType('mark')
-          .filter((e) => e.name.startsWith(prefix))
-      )
-  } catch {
-    return []
-  }
-}
-
-/** Clear all perf marks/measures with the given prefix (test cleanup). */
-export function clearPerfEntries(prefix: string): void {
-  try {
-    for (const e of getPerfEntries(prefix)) {
-      if (e.entryType === 'mark') performance.clearMarks(e.name)
-      if (e.entryType === 'measure') performance.clearMeasures(e.name)
-    }
-  } catch {
-    return
-  }
-}

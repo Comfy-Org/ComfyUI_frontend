@@ -5,6 +5,7 @@ import { ref } from 'vue'
 
 import { mergeCustomNodesI18n } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { api } from '@/scripts/api'
 
 import { useBootstrapStore } from './bootstrapStore'
@@ -23,13 +24,12 @@ vi.mock('@/i18n', () => ({
 }))
 
 const mockIsSettingsReady = ref(false)
+const mockSettingLoad = vi.hoisted(() => vi.fn(() => Promise.resolve()))
+const mockWorkflowLoad = vi.hoisted(() => vi.fn(() => Promise.resolve()))
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: vi.fn(() => ({
-    load: vi.fn(() => {
-      mockIsSettingsReady.value = true
-      return Promise.resolve()
-    }),
+    load: mockSettingLoad,
     get isReady() {
       return mockIsSettingsReady.value
     },
@@ -40,7 +40,7 @@ vi.mock('@/platform/settings/settingStore', () => ({
 
 vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   useWorkflowStore: vi.fn(() => ({
-    loadWorkflows: vi.fn().mockResolvedValue(undefined),
+    loadWorkflows: mockWorkflowLoad,
     syncWorkflows: vi.fn().mockResolvedValue(undefined)
   }))
 }))
@@ -72,15 +72,8 @@ vi.mock('@/platform/telemetry/reportError', () => ({
   reportError: mockReportError
 }))
 
-const mockCaptureException = vi.hoisted(() => vi.fn())
 vi.mock('@sentry/vue', () => ({
-  captureException: mockCaptureException,
   addBreadcrumb: vi.fn()
-}))
-
-const mockAddError = vi.hoisted(() => vi.fn())
-vi.mock('@datadog/browser-rum', () => ({
-  datadogRum: { addError: mockAddError }
 }))
 
 function requestFailure(status: number) {
@@ -96,6 +89,11 @@ describe('bootstrapStore', () => {
     mockIsAuthAuthenticated.value = false
     mockNeedsLogin.value = false
     mockDistributionTypes.isCloud = false
+    mockSettingLoad.mockImplementation(() => {
+      mockIsSettingsReady.value = true
+      return Promise.resolve()
+    })
+    mockWorkflowLoad.mockResolvedValue(undefined)
   })
 
   it('initializes with all flags false', () => {
@@ -112,6 +110,22 @@ describe('bootstrapStore', () => {
 
     await vi.waitFor(() => {
       expect(settingStore.isReady).toBe(true)
+      expect(store.isI18nReady).toBe(true)
+    })
+  })
+
+  it('finishes bootstrap when authenticated store loads reject', async () => {
+    mockSettingLoad.mockRejectedValueOnce(new Error('settings failed'))
+    mockWorkflowLoad.mockRejectedValueOnce(new Error('workflows failed'))
+    const logSummary = vi
+      .spyOn(bootstrapTracer, 'logSummary')
+      .mockImplementation(() => undefined)
+    const store = useBootstrapStore()
+
+    await expect(store.startStoreBootstrap()).resolves.toBeUndefined()
+
+    await vi.waitFor(() => {
+      expect(logSummary).toHaveBeenCalledOnce()
       expect(store.isI18nReady).toBe(true)
     })
   })
