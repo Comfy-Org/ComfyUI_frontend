@@ -51,7 +51,9 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
-    get: vi.fn(() => mockDomClippingEnabled.value)
+    get: vi.fn((key: string) =>
+      key === 'Comfy.DOMClippingEnabled' ? mockDomClippingEnabled.value : false
+    )
   })
 }))
 
@@ -121,7 +123,7 @@ describe('DomWidget style', () => {
     expect(root.style.opacity).toBe('0.5')
   })
 
-  it('applies asynchronous clipping style updates', async () => {
+  it('applies clipping style when DOM clipping is enabled', async () => {
     mockDomClippingEnabled.value = true
     const widgetState = createWidgetState(false)
     const { container } = render(DomWidget, {
@@ -136,6 +138,37 @@ describe('DomWidget style', () => {
     // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const root = container.querySelector('.dom-widget') as HTMLElement
     expect(root.style.clipPath).toBe('inset(1px)')
+  })
+
+  it('updates clipping when DOM clipping is enabled', async () => {
+    const widgetState = createWidgetState(false)
+    render(DomWidget, {
+      props: {
+        widgetState
+      }
+    })
+    mockUpdateClipPath.mockClear()
+
+    mockDomClippingEnabled.value = true
+    await nextTick()
+
+    expect(mockUpdateClipPath).toHaveBeenCalled()
+  })
+
+  it('ignores clipping style when DOM clipping is disabled', async () => {
+    const widgetState = createWidgetState(false)
+    const { container } = render(DomWidget, {
+      props: {
+        widgetState
+      }
+    })
+
+    mockClippingStyle.value = { clipPath: 'inset(1px)' }
+    await nextTick()
+
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    const root = container.querySelector('.dom-widget') as HTMLElement
+    expect(root.style.clipPath).toBe('')
   })
 
   it('disables pointer events when widget is not visible', async () => {
