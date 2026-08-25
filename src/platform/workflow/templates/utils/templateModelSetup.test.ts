@@ -5,67 +5,7 @@ import type { TemplateModelMetadataBatchResult } from '@/platform/workflow/templ
 import type { ResolvedTemplateModelAvailability } from '@/platform/workflow/templates/utils/templateModelAvailability'
 import type { TemplateModelRequirementDetail } from '@/platform/workflow/templates/utils/templateModelRequirements'
 import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
-
-type TemplateModelSetupStatus =
-  | 'installed'
-  | 'downloadable'
-  | 'manual'
-  | 'unavailable'
-  | 'unknown'
-
-type TemplateModelType =
-  | {
-      kind: 'known'
-      key:
-        | 'model'
-        | 'checkpoint'
-        | 'diffusionModel'
-        | 'textEncoder'
-        | 'vae'
-        | 'lora'
-    }
-  | { kind: 'directory'; raw: string }
-
-type TemplateModelSetupResult = {
-  rows: readonly {
-    model: ModelFile
-    usedBy: readonly string[]
-    fileSize: number | null
-    modelType: TemplateModelType
-    status: TemplateModelSetupStatus
-    href?: string
-  }[]
-  remainingDownload: { bytes: number; isComplete: boolean }
-  rowTotal: { bytes: number; isComplete: boolean }
-}
-
-type DeriveTemplateModelSetup = (
-  requirements: readonly TemplateModelRequirementDetail[],
-  availability: readonly ResolvedTemplateModelAvailability[],
-  metadata: TemplateModelMetadataBatchResult,
-  options: { isDownloadable: (model: ModelWithUrl) => boolean }
-) => TemplateModelSetupResult
-
-function isSetupModule(value: unknown): value is {
-  deriveTemplateModelSetup: DeriveTemplateModelSetup
-} {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'deriveTemplateModelSetup' in value &&
-    typeof value.deriveTemplateModelSetup === 'function'
-  )
-}
-
-async function loadDerivation(): Promise<DeriveTemplateModelSetup> {
-  const modulePath = './templateModelSetup'
-  const value: unknown = await import(modulePath)
-  if (!isSetupModule(value)) {
-    throw new Error('Expected the template model setup derivation')
-  }
-
-  return value.deriveTemplateModelSetup
-}
+import { deriveTemplateModelSetup } from './templateModelSetup'
 
 function model(
   name: string,
@@ -97,7 +37,6 @@ function resolvedMetadata(
 
 describe('deriveTemplateModelSetup', () => {
   it('derives strict statuses by identity in stable requirement order', async () => {
-    const deriveTemplateModelSetup = await loadDerivation()
     const manual = model('manual.safetensors')
     const installed = model('installed.safetensors')
     const inventoryUnknown = model('inventory-unknown.safetensors')
@@ -182,7 +121,6 @@ describe('deriveTemplateModelSetup', () => {
       metadata: { status: 'completed', entries: [] }
     }
   ])('keeps missing models unknown for $label', async ({ metadata }) => {
-    const deriveTemplateModelSetup = await loadDerivation()
     const missing = model('incomplete.safetensors')
     const isDownloadable = vi.fn(() => true)
 
@@ -207,7 +145,6 @@ describe('deriveTemplateModelSetup', () => {
   })
 
   it('deduplicates totals by exact identity while preserving every row', async () => {
-    const deriveTemplateModelSetup = await loadDerivation()
     const installed = model('installed.safetensors')
     const checkpoint = model('shared-name.safetensors', 'checkpoints')
     const duplicateCheckpoint = { ...checkpoint }
@@ -281,7 +218,6 @@ describe('deriveTemplateModelSetup', () => {
   })
 
   it('treats a known zero-byte downloadable model as complete', async () => {
-    const deriveTemplateModelSetup = await loadDerivation()
     const empty = model('empty.safetensors')
 
     const result = deriveTemplateModelSetup(
@@ -306,7 +242,6 @@ describe('deriveTemplateModelSetup', () => {
   })
 
   it('derives known model types and preserves a raw directory fallback', async () => {
-    const deriveTemplateModelSetup = await loadDerivation()
     const models = [
       model('checkpoint.safetensors', 'checkpoints'),
       model('diffusion.safetensors', 'diffusion_models'),
