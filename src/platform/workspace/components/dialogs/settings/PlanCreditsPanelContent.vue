@@ -20,7 +20,14 @@
       <SubscriptionPanelContentWorkspace v-if="isCloud" />
       <div v-else class="flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto">
         <CreditsPanel embedded />
-        <SettingsPlansSection />
+        <SettingsPlansSection
+          :catalog-plans="catalogPlans"
+          :team-credit-stops="teamCreditStops"
+          :current-plan-slug="currentPlanSlug"
+          :current-team-credit-stop="currentTeamCreditStop"
+          :is-loading="isLoadingPlans"
+          @retry="loadPlans"
+        />
         <SubscriptionFooterLinks
           class="mt-auto shrink-0"
           :show-invoice-history="false"
@@ -45,7 +52,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, useTemplateRef, watch } from 'vue'
+import { computed, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import CreditsPanel from '@/components/dialog/content/setting/CreditsPanel.vue'
@@ -53,6 +60,8 @@ import UsageLogsTable from '@/components/dialog/content/setting/UsageLogsTable.v
 import Button from '@/components/ui/button/Button.vue'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import SubscriptionFooterLinks from '@/platform/cloud/subscription/components/SubscriptionFooterLinks.vue'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
 import { isCloud } from '@/platform/distribution/types'
 import SubscriptionPanelContentWorkspace from '@/platform/workspace/components/SubscriptionPanelContentWorkspace.vue'
 import SettingsPlansSection from '@/platform/workspace/components/dialogs/settings/SettingsPlansSection.vue'
@@ -67,6 +76,28 @@ const tabs = computed<{ key: View; label: string }[]>(() => [
 ])
 
 const activeView = ref<View>('overview')
+
+// The panel owns the catalog fetch. useBillingContext().fetchPlans routes the
+// read (to cloud ingest off-cloud, per FE-1584's workspaceApiUrl); the
+// observable state is read from the useBillingPlans singleton the fetch writes
+// (context.error/isLoading only reflect initialize(), never fetchPlans).
+const { fetchPlans, currentPlanSlug, currentTeamCreditStop } =
+  useBillingContext()
+const {
+  plans: catalogPlans,
+  teamCreditStops,
+  isLoading: isLoadingPlans
+} = useBillingPlans()
+
+function loadPlans() {
+  void fetchPlans()
+}
+
+// Off-cloud only: on cloud the local plans section never mounts, so no extra
+// local fetch fires. Deduped across re-mounts by useBillingPlans.fetchPromise.
+onMounted(() => {
+  if (!isCloud) loadPlans()
+})
 
 function openFullActivity() {
   window.open(

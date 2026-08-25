@@ -24,20 +24,26 @@
         <span class="text-sm font-semibold text-base-foreground">
           {{ t('settingsPlans.billedYearlyToggle') }}
         </span>
-        <span
-          class="rounded-full bg-base-foreground px-2 py-0.5 text-2xs font-bold text-base-background"
-        >
-          {{ t('subscription.saveYearly') }}
-        </span>
       </div>
     </div>
 
+    <!-- Loading: never render a frontend-authored price while the catalog is in
+         flight; a spinner stands in for the offer. -->
     <div
-      v-if="audience === 'personal'"
+      v-if="isLoading"
+      class="flex items-center gap-2 py-8 text-muted-foreground"
+    >
+      <i class="pi pi-spin pi-spinner" />
+      <span class="text-sm">{{ t('g.loading') }}</span>
+    </div>
+
+    <!-- Personal -->
+    <div
+      v-else-if="audience === 'personal'"
       class="flex flex-col items-stretch gap-4 xl:flex-row"
     >
       <div
-        v-for="plan in plans"
+        v-for="plan in personalCards"
         :key="plan.key"
         class="flex flex-1 flex-col gap-4 rounded-2xl border border-interface-stroke p-6"
       >
@@ -50,7 +56,7 @@
             <span
               class="text-[28px] leading-normal font-semibold text-base-foreground tabular-nums"
             >
-              ${{ billedYearly ? plan.pricing.yearly : plan.pricing.monthly }}
+              ${{ plan.pricePerMonth }}
             </span>
             <span class="text-base text-muted-foreground">
               {{ t('subscription.usdPerMonth') }}
@@ -60,7 +66,7 @@
             {{
               billedYearly
                 ? t('subscription.billedYearly', {
-                    total: `$${plan.pricing.yearly * 12}`
+                    total: `$${plan.billedYearlyTotal}`
                   })
                 : t('subscription.billedMonthly')
             }}
@@ -86,19 +92,13 @@
             >
               <template #credits>
                 <span class="font-bold tabular-nums">
-                  {{
-                    n(
-                      billedYearly
-                        ? plan.pricing.credits * 12
-                        : plan.pricing.credits
-                    )
-                  }}
+                  {{ n(plan.credits) }}
                 </span>
               </template>
             </I18nT>
           </div>
           <span class="text-sm text-muted-foreground tabular-nums">
-            {{ t('settingsPlans.perDollar', { credits: perDollar(plan) }) }}
+            {{ t('settingsPlans.perDollar', { credits: plan.perDollar }) }}
           </span>
         </div>
 
@@ -126,20 +126,27 @@
           variant="secondary"
           size="lg"
           class="mt-auto w-full"
-          :disabled="isCurrentPlan(plan.key) || isSubscribing"
-          @click="subscribeToPersonal(plan.key, selectedCycle)"
+          :disabled="
+            isCurrentSlug(plan.slug) || !plan.available || isSubscribing
+          "
+          @click="subscribeToPersonal(plan.slug, selectedCycle)"
         >
           {{
-            isCurrentPlan(plan.key)
+            isCurrentSlug(plan.slug)
               ? t('subscription.currentPlan')
               : t('settingsPlans.choosePlan', { tier: plan.name })
           }}
         </Button>
       </div>
+
+      <!-- No personal catalog rows: an offer we cannot source is not shown. -->
+      <PlansUnavailable v-if="!personalCards.length" @retry="emit('retry')" />
     </div>
 
+    <!-- Teams -->
     <template v-else>
       <div
+        v-if="hasTeamStops"
         class="flex flex-col rounded-2xl border border-interface-stroke xl:flex-row"
       >
         <div class="flex flex-1 flex-col gap-4 p-6">
@@ -190,11 +197,11 @@
             variant="secondary"
             size="lg"
             class="mt-auto w-full"
-            :disabled="isTeamCurrentPlan || isSubscribing"
-            @click="subscribeToTeam(selectedTeamStop, selectedCycle)"
+            :disabled="isTeamStopCurrent || !teamPlanSlug || isSubscribing"
+            @click="onSubscribeTeam"
           >
             {{
-              isTeamCurrentPlan
+              isTeamStopCurrent
                 ? t('subscription.teamPlan.currentPlan')
                 : billedYearly
                   ? t('subscription.teamPlan.cta')
@@ -240,6 +247,10 @@
         </div>
       </div>
 
+      <!-- No team stops in the catalog: explicit unavailable state, never a
+           constant-seeded slider. -->
+      <PlansUnavailable v-else @retry="emit('retry')" />
+
       <div
         class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-interface-stroke px-6 py-4"
       >
@@ -253,49 +264,58 @@
             {{ t('settingsPlans.enterpriseCopy') }}
           </span>
         </div>
-        <Button variant="secondary" size="lg">
+        <Button variant="secondary" size="lg" disabled>
           {{ t('settingsPlans.contactUs') }}
         </Button>
       </div>
     </template>
-
-    <p class="m-0 text-sm text-muted-foreground">
-      {{ t('settingsPlans.checkoutCaption') }}
-    </p>
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { I18nT, useI18n } from 'vue-i18n'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
 import Button from '@/components/ui/button/Button.vue'
 import CreditSlider from '@/components/ui/credit-slider/CreditSlider.vue'
 import Switch from '@/components/ui/switch/Switch.vue'
 import ToggleGroup from '@/components/ui/toggle-group/ToggleGroup.vue'
 import ToggleGroupItem from '@/components/ui/toggle-group/ToggleGroupItem.vue'
-import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
-import {
-  DEFAULT_TEAM_PLAN_STOP_INDEX,
-  TEAM_PLAN_CREDIT_STOPS,
-  getTeamPlanSlug,
-  mapApiTeamCreditStops
-} from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
-import { TIER_PRICING } from '@/platform/cloud/subscription/constants/tierPricing'
-import type { TierPricing } from '@/platform/cloud/subscription/constants/tierPricing'
+import { mapApiTeamCreditStops } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
+import { VIDEO_PER_CREDIT } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
+import type {
+  Plan,
+  TeamCreditStops,
+  TeamCreditStopSummary
+} from '@/platform/workspace/api/workspaceApi'
 import { useSettingsPlansCheckout } from '@/platform/workspace/composables/useSettingsPlansCheckout'
-import { findPlanSlug } from '@/platform/workspace/composables/useSubscriptionCheckout'
-import type { CheckoutTierKey } from '@/platform/workspace/composables/useSubscriptionCheckout'
 
-interface PlanCard {
-  key: CheckoutTierKey
-  name: string
-  pricing: TierPricing
-  benefits: string[]
-  everythingIn?: string
-}
+import PlansUnavailable from './PlansUnavailable.vue'
+
+// The API catalog is the source of truth for every rendered price, credit,
+// slug, and stop; the frontend holds only presentation copy. A missing or
+// incomplete catalog renders the unavailable state, never a constant. Checkout
+// submits the exact API slug/stop rendered here, so render and checkout can
+// never disagree on identity.
+const {
+  catalogPlans = [],
+  teamCreditStops = null,
+  currentPlanSlug = null,
+  currentTeamCreditStop = null,
+  isLoading = false
+} = defineProps<{
+  catalogPlans?: Plan[]
+  teamCreditStops?: TeamCreditStops | null
+  currentPlanSlug?: string | null
+  currentTeamCreditStop?: TeamCreditStopSummary | null
+  isLoading?: boolean
+}>()
+
+const emit = defineEmits<{ retry: [] }>()
+
+const { isSubscribing, subscribeToPersonal, subscribeToTeam } =
+  useSettingsPlansCheckout()
 
 const { t, n } = useI18n()
 
@@ -308,11 +328,29 @@ const audienceModel = computed({
 })
 const billedYearly = ref(true)
 
-const plans = computed<PlanCard[]>(() => [
+interface PersonalTier {
+  key: string
+  tier: Plan['tier']
+  name: string
+  benefits: string[]
+  everythingIn?: string
+}
+
+interface PersonalCard extends PersonalTier {
+  slug: string
+  available: boolean
+  pricePerMonth: number
+  billedYearlyTotal: number
+  credits: number
+  perDollar: number
+}
+
+// Presentation-only tier metadata; price/credits/slug come from the API row.
+const personalTiers = computed<PersonalTier[]>(() => [
   {
     key: 'standard',
+    tier: 'STANDARD',
     name: t('subscription.tiers.standard.name'),
-    pricing: TIER_PRICING.standard,
     benefits: [
       t('subscription.tiers.standard.feature1'),
       t('subscription.tiers.standard.feature2')
@@ -320,85 +358,110 @@ const plans = computed<PlanCard[]>(() => [
   },
   {
     key: 'creator',
+    tier: 'CREATOR',
     name: t('subscription.tiers.creator.name'),
-    pricing: TIER_PRICING.creator,
     benefits: [t('subscription.tiers.creator.feature1')],
     everythingIn: t('subscription.tiers.standard.name')
   },
   {
     key: 'pro',
+    tier: 'PRO',
     name: t('subscription.tiers.pro.name'),
-    pricing: TIER_PRICING.pro,
     benefits: [t('subscription.tiers.pro.feature1')],
     everythingIn: t('subscription.tiers.creator.name')
   }
 ])
 
-function perDollar(plan: PlanCard): number {
-  const price = billedYearly.value ? plan.pricing.yearly : plan.pricing.monthly
-  return Math.round(plan.pricing.credits / price)
+function findApiPlan(tier: Plan['tier']): Plan | undefined {
+  const duration = billedYearly.value ? 'ANNUAL' : 'MONTHLY'
+  return catalogPlans.find((p) => p.tier === tier && p.duration === duration)
 }
-
-const VIDEO_PER_CREDIT =
-  TIER_PRICING.pro.videoEstimate / TIER_PRICING.pro.credits
-
-// Backend-sourced stops when the shared plans state has them, DES-197 fallback otherwise.
-const { teamCreditStops } = useBillingPlans()
-const { fetchPlans, plans: catalogPlans, currentPlanSlug } = useBillingContext()
-const { isSubscribing, subscribeToPersonal, subscribeToTeam } =
-  useSettingsPlansCheckout()
-
-onMounted(() => {
-  void fetchPlans()
-})
 
 const selectedCycle = computed<BillingCycle>(() =>
   billedYearly.value ? 'yearly' : 'monthly'
 )
 
-// True only when the tier's catalog slug is the current plan. A founder or
-// legacy slug matches no rendered card, so every card stays actionable.
-function isCurrentPlan(tierKey: CheckoutTierKey): boolean {
-  return (
-    currentPlanSlug.value !== null &&
-    findPlanSlug(catalogPlans.value, tierKey, selectedCycle.value) ===
-      currentPlanSlug.value
-  )
-}
-
-const isTeamCurrentPlan = computed(
-  () => currentPlanSlug.value === getTeamPlanSlug(selectedCycle.value)
+const personalCards = computed<PersonalCard[]>(() =>
+  personalTiers.value.flatMap((tier) => {
+    const plan = findApiPlan(tier.tier)
+    if (!plan) return []
+    // Annual price_cents is the full-year total; per-month is /12.
+    const periodPrice = plan.price_cents / 100
+    const pricePerMonth = billedYearly.value
+      ? Math.round(periodPrice / 12)
+      : periodPrice
+    return [
+      {
+        ...tier,
+        slug: plan.slug,
+        available: plan.availability.available,
+        pricePerMonth,
+        billedYearlyTotal: periodPrice,
+        credits: plan.credits_cents,
+        perDollar:
+          periodPrice > 0 ? Math.round(plan.credits_cents / periodPrice) : 0
+      }
+    ]
+  })
 )
 
+// The current plan is matched by the exact API slug rendered on the card, so a
+// founder/legacy/enterprise slug outside the catalog matches nothing and leaves
+// every card actionable — the inherited behavior Dante asked us to preserve.
+function isCurrentSlug(slug: string): boolean {
+  return currentPlanSlug !== null && slug === currentPlanSlug
+}
+
+// Team stops come from the API only — no TEAM_PLAN_CREDIT_STOPS fallback (D3).
 const teamStops = computed(() => {
-  const apiStops = teamCreditStops.value?.stops
-  return apiStops?.length
-    ? mapApiTeamCreditStops(apiStops)
-    : TEAM_PLAN_CREDIT_STOPS
+  const apiStops = teamCreditStops?.stops
+  return apiStops?.length ? mapApiTeamCreditStops(apiStops) : []
 })
+const hasTeamStops = computed(() => teamStops.value.length > 0)
 const teamDefaultStopIndex = computed(
-  () =>
-    teamCreditStops.value?.default_stop_index ?? DEFAULT_TEAM_PLAN_STOP_INDEX
+  () => teamCreditStops?.default_stop_index ?? 0
 )
 const defaultTeamStop = computed(
   () => teamStops.value[teamDefaultStopIndex.value] ?? teamStops.value[0]
 )
 
-const teamUsd = ref(defaultTeamStop.value.usd)
+const teamUsd = ref(defaultTeamStop.value?.usd ?? 0)
 const selectedTeamStop = computed(
   () =>
     teamStops.value.find((stop) => stop.usd === teamUsd.value) ??
-    defaultTeamStop.value
+    defaultTeamStop.value ?? {
+      id: undefined,
+      usd: 0,
+      credits: 0,
+      discountPercentYearly: 0
+    }
 )
 
-// Re-snap the slider when late API stops leave the seeded USD matching none.
-watch(defaultTeamStop, (stop) => {
-  if (teamStops.value.some((s) => s.usd === teamUsd.value)) return
-  teamUsd.value = stop.usd
-})
+// No re-snap watch needed: when the seeded teamUsd matches no live stop,
+// both selectedTeamStop and CreditSlider's selectedIndex fall back to the
+// default stop, so the display and slider stay correct as stops resolve.
+
 const teamVideoEstimate = computed(() =>
   Math.round(selectedTeamStop.value.credits * VIDEO_PER_CREDIT)
 )
+
+// The team plan slug is the API TEAM row for the selected cycle — never
+// synthesized. Absent from the catalog => no offer, CTA disabled (D3).
+const teamPlanSlug = computed(() => findApiPlan('TEAM')?.slug ?? null)
+
+// "Current" is the exact subscribed stop (status.team_credit_stop.id), not the
+// cycle: other stops stay actionable so a subscriber can change commitment.
+const isTeamStopCurrent = computed(
+  () =>
+    currentTeamCreditStop !== null &&
+    selectedTeamStop.value.id === currentTeamCreditStop.id
+)
+
+function onSubscribeTeam() {
+  const slug = teamPlanSlug.value
+  if (!slug) return
+  void subscribeToTeam(slug, selectedTeamStop.value, selectedCycle.value)
+}
 
 const teamPerks = computed(() => [
   t('subscription.teamPlan.perkInviteMembers'),

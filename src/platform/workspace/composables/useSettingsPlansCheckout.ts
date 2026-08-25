@@ -4,24 +4,23 @@ import { useI18n } from 'vue-i18n'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
-import { getTeamPlanSlug } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { CreditStop } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type {
   SubscribeOptions,
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
-import { findPlanSlug } from '@/platform/workspace/composables/useSubscriptionCheckout'
-import type { CheckoutTierKey } from '@/platform/workspace/composables/useSubscriptionCheckout'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'
 
 /**
- * Subscribe flow for the local (non-cloud) Settings plans section: resolve the
- * catalog slug, run the sign-in-first gate for API-key-only users, POST the
- * subscribe, and hand async outcomes to the billing-op poller, which owns
- * progress toasts, timeouts, and the success-side billing refresh.
+ * Subscribe flow for the local (non-cloud) Settings plans section. The caller
+ * passes the exact API `Plan.slug` it rendered — the slug is never synthesized
+ * here, so what checkout sells always matches what the card advertised. Runs
+ * the sign-in-first gate for API-key-only users, POSTs the subscribe, and hands
+ * async outcomes to the billing-op poller, which owns progress toasts,
+ * timeouts, and the success-side billing refresh.
  */
 export function useSettingsPlansCheckout() {
   const { t } = useI18n()
@@ -29,20 +28,22 @@ export function useSettingsPlansCheckout() {
   const authStore = useAuthStore()
   const dialogService = useDialogService()
   const billingOperationStore = useBillingOperationStore()
-  const { plans, subscribe, reconcileSubscriptionSuccess } = useBillingContext()
+  const { subscribe, reconcileSubscriptionSuccess } = useBillingContext()
 
   const isSubscribing = ref(false)
 
   async function subscribeToPersonal(
-    tierKey: CheckoutTierKey,
+    planSlug: string,
     billingCycle: BillingCycle
   ) {
-    await startCheckout(findPlanSlug(plans.value, tierKey, billingCycle), {
-      billingCycle
-    })
+    await startCheckout(planSlug, { billingCycle })
   }
 
-  async function subscribeToTeam(stop: CreditStop, billingCycle: BillingCycle) {
+  async function subscribeToTeam(
+    planSlug: string,
+    stop: CreditStop,
+    billingCycle: BillingCycle
+  ) {
     if (!stop.id) {
       toast.add({
         severity: 'error',
@@ -51,7 +52,7 @@ export function useSettingsPlansCheckout() {
       })
       return
     }
-    await startCheckout(getTeamPlanSlug(billingCycle), {
+    await startCheckout(planSlug, {
       billingCycle,
       teamCreditStopId: stop.id
     })

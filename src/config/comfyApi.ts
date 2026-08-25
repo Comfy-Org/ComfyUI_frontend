@@ -6,26 +6,24 @@ import {
 const PROD_API_BASE_URL = 'https://api.comfy.org'
 const STAGING_API_BASE_URL = 'https://stagingapi.comfy.org'
 
+const PROD_CLOUD_BASE_URL = 'https://cloud.comfy.org'
+const STAGING_CLOUD_BASE_URL = 'https://testcloud.comfy.org'
+
 const PROD_PLATFORM_BASE_URL = 'https://platform.comfy.org'
 const STAGING_PLATFORM_BASE_URL = 'https://stagingplatform.comfy.org'
-
-const PROD_CLOUD_INGEST_BASE_URL = 'https://cloud.comfy.org'
-const STAGING_CLOUD_INGEST_BASE_URL = 'https://stagingcloud.comfy.org'
 
 const BUILD_TIME_API_BASE_URL = __USE_PROD_CONFIG__
   ? PROD_API_BASE_URL
   : (import.meta.env.VITE_STAGING_API_BASE_URL ?? STAGING_API_BASE_URL)
 
+const BUILD_TIME_CLOUD_BASE_URL = __USE_PROD_CONFIG__
+  ? PROD_CLOUD_BASE_URL
+  : (import.meta.env.VITE_STAGING_CLOUD_BASE_URL ?? STAGING_CLOUD_BASE_URL)
+
 const BUILD_TIME_PLATFORM_BASE_URL = __USE_PROD_CONFIG__
   ? PROD_PLATFORM_BASE_URL
   : (import.meta.env.VITE_STAGING_PLATFORM_BASE_URL ??
     STAGING_PLATFORM_BASE_URL)
-
-// Build-time only: consumed off-cloud, where remoteConfig never carries cloud keys.
-const BUILD_TIME_CLOUD_INGEST_BASE_URL = __USE_PROD_CONFIG__
-  ? PROD_CLOUD_INGEST_BASE_URL
-  : (import.meta.env.VITE_CLOUD_INGEST_BASE_URL ??
-    STAGING_CLOUD_INGEST_BASE_URL)
 
 export function getComfyApiBaseUrl(): string {
   return configValueOrDefault(
@@ -35,14 +33,14 @@ export function getComfyApiBaseUrl(): string {
   )
 }
 
+export function getComfyCloudBaseUrl(): string {
+  return BUILD_TIME_CLOUD_BASE_URL
+}
+
 export function getComfyPlatformBaseUrl(): string {
   return configValueOrDefault(
     remoteConfig.value,
     'comfy_platform_base_url',
     BUILD_TIME_PLATFORM_BASE_URL
   )
-}
-
-export function getCloudIngestBaseUrl(): string {
-  return BUILD_TIME_CLOUD_INGEST_BASE_URL
 }

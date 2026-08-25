@@ -11,24 +11,18 @@ import type { BillingType } from './types'
  * (`/customers/*`) or workspace-scoped (`/api/billing/*`). Personal workspaces
  * use workspace billing unless an explicit legacy Stripe rail selects legacy
  * account operations and its migration flag is off. An unloaded workspace
- * remains legacy during bootstrap. Off-cloud, account operations (`type`) stay
- * legacy while the plans rail (`shouldUseUnifiedPricing`) reads workspace
- * billing from cloud ingest — the same split cloud runs for legacy Stripe
- * workspaces.
+ * remains legacy during bootstrap; Local/Desktop uses workspace billing after
+ * its Cloud-backed workspace context loads.
  */
 export function useBillingRouting() {
   const { flags } = useFeatureFlags()
   const workspaceStore = useTeamWorkspaceStore()
 
   const shouldUseUnifiedPricing = computed(() => {
-    return !isCloud || workspaceStore.activeWorkspace?.type !== undefined
+    return isCloud && workspaceStore.activeWorkspace?.type !== undefined
   })
 
   const type = computed<BillingType>(() => {
-    if (!isCloud) return 'legacy'
-
-    // An unloaded workspace has no type yet; stay legacy so bootstrap never
-    // eagerly routes to workspace billing.
     const workspaceType = workspaceStore.activeWorkspace?.type
     if (!workspaceType) return 'legacy'
 

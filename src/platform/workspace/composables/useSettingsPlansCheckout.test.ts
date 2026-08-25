@@ -1,12 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 
-import type { Plan } from '@/platform/workspace/api/workspaceApi'
-
 const {
   mockSubscribe,
   mockReconcile,
-  mockPlans,
   mockToastAdd,
   mockStartOperation,
   mockShowSignInDialog,
@@ -15,7 +12,6 @@ const {
 } = vi.hoisted(() => ({
   mockSubscribe: vi.fn(),
   mockReconcile: vi.fn(),
-  mockPlans: { value: [] as Plan[] },
   mockToastAdd: vi.fn(),
   mockStartOperation: vi.fn(),
   mockShowSignInDialog: vi.fn(),
@@ -26,7 +22,6 @@ const {
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     subscribe: mockSubscribe,
-    plans: mockPlans,
     reconcileSubscriptionSuccess: mockReconcile
   })
 }))
@@ -69,27 +64,6 @@ vi.mock('vue-i18n', async (importOriginal) => {
   }
 })
 
-function makePlan(
-  slug: string,
-  tier: Plan['tier'],
-  duration: Plan['duration']
-): Plan {
-  return {
-    slug,
-    tier,
-    duration,
-    price_cents: 1600,
-    credits_cents: 4200,
-    max_seats: 1,
-    availability: { available: true },
-    seat_summary: {
-      seat_count: 1,
-      total_cost_cents: 1600,
-      total_credits_cents: 4200
-    }
-  }
-}
-
 describe('useSettingsPlansCheckout', () => {
   const scopes: ReturnType<typeof effectScope>[] = []
 
@@ -102,10 +76,6 @@ describe('useSettingsPlansCheckout', () => {
   }
 
   beforeEach(() => {
-    mockPlans.value = [
-      makePlan('standard-yearly', 'STANDARD', 'ANNUAL'),
-      makePlan('creator-monthly', 'CREATOR', 'MONTHLY')
-    ]
     mockFirebaseUser.value = { uid: 'user-1' }
     mockShowSignInDialog.mockResolvedValue(true)
     mockStartOperation.mockResolvedValue({ status: 'succeeded' })
@@ -116,8 +86,6 @@ describe('useSettingsPlansCheckout', () => {
 
   afterEach(() => {
     scopes.splice(0).forEach((scope) => scope.stop())
-    vi.unstubAllGlobals()
-    vi.clearAllMocks()
   })
 
   it('subscribes with the catalog slug, platform return URLs, and cycle', async () => {
@@ -127,7 +95,7 @@ describe('useSettingsPlansCheckout', () => {
       billing_op_id: 'op-1'
     })
 
-    await checkout.subscribeToPersonal('standard', 'yearly')
+    await checkout.subscribeToPersonal('standard-yearly', 'yearly')
 
     expect(mockSubscribe).toHaveBeenCalledWith('standard-yearly', {
       billingCycle: 'yearly',
@@ -143,7 +111,7 @@ describe('useSettingsPlansCheckout', () => {
       billing_op_id: 'op-1'
     })
 
-    await checkout.subscribeToPersonal('standard', 'yearly')
+    await checkout.subscribeToPersonal('standard-yearly', 'yearly')
 
     expect(mockReconcile).toHaveBeenCalledTimes(1)
     expect(mockStartOperation).not.toHaveBeenCalled()
@@ -159,7 +127,7 @@ describe('useSettingsPlansCheckout', () => {
     })
     mockReconcile.mockRejectedValueOnce(new Error('refresh failed'))
 
-    await checkout.subscribeToPersonal('standard', 'yearly')
+    await checkout.subscribeToPersonal('standard-yearly', 'yearly')
 
     expect(mockToastAdd).not.toHaveBeenCalled()
     expect(consoleError).toHaveBeenCalled()
@@ -173,7 +141,7 @@ describe('useSettingsPlansCheckout', () => {
       billing_op_id: 'op-2'
     })
 
-    await checkout.subscribeToPersonal('standard', 'yearly')
+    await checkout.subscribeToPersonal('standard-yearly', 'yearly')
 
     expect(mockOpen).toHaveBeenCalledWith(
       'https://checkout.stripe.com/pay',
@@ -189,7 +157,7 @@ describe('useSettingsPlansCheckout', () => {
       billing_op_id: 'op-3'
     })
 
-    await checkout.subscribeToPersonal('standard', 'yearly')
+    await checkout.subscribeToPersonal('standard-yearly', 'yearly')
 
     expect(mockOpen).not.toHaveBeenCalled()
     expect(mockStartOperation).toHaveBeenCalledWith('op-3', 'subscription')
@@ -209,11 +177,11 @@ describe('useSettingsPlansCheckout', () => {
       billing_op_id: 'op-lock'
     })
 
-    const firstClick = checkout.subscribeToPersonal('standard', 'yearly')
+    const firstClick = checkout.subscribeToPersonal('standard-yearly', 'yearly')
     await vi.waitFor(() => expect(mockStartOperation).toHaveBeenCalledTimes(1))
     expect(checkout.isSubscribing.value).toBe(true)
 
-    await checkout.subscribeToPersonal('standard', 'yearly')
+    await checkout.subscribeToPersonal('standard-yearly', 'yearly')
     expect(mockSubscribe).toHaveBeenCalledTimes(1)
 
     resolveOperation({ status: 'succeeded' })
@@ -230,7 +198,7 @@ describe('useSettingsPlansCheckout', () => {
       billing_op_id: 'op-4'
     })
 
-    await checkout.subscribeToPersonal('standard', 'yearly')
+    await checkout.subscribeToPersonal('standard-yearly', 'yearly')
 
     expect(mockToastAdd).toHaveBeenCalledWith({
       severity: 'warn',
@@ -248,7 +216,7 @@ describe('useSettingsPlansCheckout', () => {
       billing_op_id: 'op-5'
     })
 
-    await checkout.subscribeToPersonal('standard', 'yearly')
+    await checkout.subscribeToPersonal('standard-yearly', 'yearly')
 
     expect(mockShowSignInDialog).toHaveBeenCalledTimes(1)
     expect(mockSubscribe).toHaveBeenCalledTimes(1)
@@ -262,7 +230,7 @@ describe('useSettingsPlansCheckout', () => {
     mockFirebaseUser.value = null
     mockShowSignInDialog.mockResolvedValueOnce(false)
 
-    await checkout.subscribeToPersonal('standard', 'yearly')
+    await checkout.subscribeToPersonal('standard-yearly', 'yearly')
 
     expect(mockSubscribe).not.toHaveBeenCalled()
   })
@@ -274,16 +242,15 @@ describe('useSettingsPlansCheckout', () => {
       billing_op_id: 'op-6'
     })
 
-    await checkout.subscribeToPersonal('standard', 'yearly')
+    await checkout.subscribeToPersonal('standard-yearly', 'yearly')
 
     expect(mockShowSignInDialog).not.toHaveBeenCalled()
   })
 
-  it('shows the subscribe-failed toast when the catalog has no matching plan', async () => {
+  it('shows the subscribe-failed toast when the slug is missing', async () => {
     const checkout = await setup()
-    mockPlans.value = []
 
-    await checkout.subscribeToPersonal('standard', 'yearly')
+    await checkout.subscribeToPersonal('', 'yearly')
 
     expect(mockSubscribe).not.toHaveBeenCalled()
     expect(mockToastAdd).toHaveBeenCalledWith({
@@ -297,7 +264,7 @@ describe('useSettingsPlansCheckout', () => {
     const checkout = await setup()
     mockSubscribe.mockRejectedValueOnce(new Error('card declined'))
 
-    await checkout.subscribeToPersonal('standard', 'yearly')
+    await checkout.subscribeToPersonal('standard-yearly', 'yearly')
 
     expect(mockToastAdd).toHaveBeenCalledWith({
       severity: 'error',
@@ -308,19 +275,22 @@ describe('useSettingsPlansCheckout', () => {
     expect(checkout.isSubscribing.value).toBe(false)
   })
 
-  it('subscribes to the team plan with the cycle slug and stop id', async () => {
+  it('submits the caller-supplied team API slug verbatim with the stop id', async () => {
     const checkout = await setup()
     mockSubscribe.mockResolvedValueOnce({
       status: 'subscribed',
       billing_op_id: 'op-7'
     })
 
+    // The slug is the API TEAM row passed by the caller — never synthesized
+    // here, so the submitted slug is exactly what was rendered.
     await checkout.subscribeToTeam(
+      'team-monthly-catalog',
       { id: 'team_700', usd: 700, credits: 147_700, discountPercentYearly: 10 },
       'monthly'
     )
 
-    expect(mockSubscribe).toHaveBeenCalledWith('team_per_credit_monthly', {
+    expect(mockSubscribe).toHaveBeenCalledWith('team-monthly-catalog', {
       billingCycle: 'monthly',
       teamCreditStopId: 'team_700',
       returnUrl: 'https://platform.comfy.org/payment/success',
@@ -328,10 +298,11 @@ describe('useSettingsPlansCheckout', () => {
     })
   })
 
-  it('refuses a team subscribe on a fallback stop without a backend id', async () => {
+  it('refuses a team subscribe on a stop without a backend id', async () => {
     const checkout = await setup()
 
     await checkout.subscribeToTeam(
+      'team-monthly-catalog',
       { usd: 700, credits: 147_700, discountPercentYearly: 10 },
       'monthly'
     )

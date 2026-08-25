@@ -12,6 +12,7 @@ import enMessages from '@/locales/en/main.json'
 import CurrentUserPopoverWorkspace from './CurrentUserPopoverWorkspace.vue'
 
 const state = vi.hoisted(() => ({
+  isCloud: true,
   billingStatus: 'paid',
   canAccessSubscriptionFeatures: true,
   isFreeTier: false,
@@ -91,7 +92,11 @@ vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
   useSettingsDialog: () => ({ show: state.showSettingsDialog })
 }))
 
-vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
+vi.mock('@/platform/distribution/types', () => ({
+  get isCloud() {
+    return state.isCloud
+  }
+}))
 
 vi.mock('@/services/dialogService', () => ({
   useDialogService: () => ({
@@ -119,6 +124,13 @@ const WorkspaceSwitcherPopoverStub = defineComponent({
       <button data-testid="stub-create-workspace" @click="$emit('create')" />
     </div>
   `
+})
+
+const SubscribeButtonStub = defineComponent({
+  props: {
+    label: { type: String, required: true }
+  },
+  template: '<button type="button">{{ label }}</button>'
 })
 
 const i18n = createI18n({
@@ -149,7 +161,7 @@ function renderComponent(
       },
       stubs: {
         WorkspaceSwitcherPopover: WorkspaceSwitcherPopoverStub,
-        SubscribeButton: true,
+        SubscribeButton: SubscribeButtonStub,
         UserAvatar: true,
         WorkspaceProfilePic: true,
         Skeleton: true,
@@ -161,6 +173,7 @@ function renderComponent(
 
 describe('CurrentUserPopoverWorkspace', () => {
   beforeEach(() => {
+    state.isCloud = true
     state.billingStatus = 'paid'
     state.canAccessSubscriptionFeatures = true
     state.isFreeTier = false
@@ -174,15 +187,35 @@ describe('CurrentUserPopoverWorkspace', () => {
   it('toggles the workspace switcher panel from the selector row', async () => {
     const user = userEvent.setup()
     renderComponent()
+    const trigger = screen.getByTestId('workspace-switcher-trigger')
 
     expect(
       screen.queryByTestId('workspace-switcher-panel')
     ).not.toBeInTheDocument()
+    expect(trigger).toHaveAttribute('aria-expanded', 'false')
+    expect(trigger).toHaveAttribute('aria-haspopup', 'menu')
+    expect(trigger).toHaveAttribute('aria-controls', 'workspace-switcher-panel')
 
-    await user.click(screen.getByTestId('workspace-switcher-trigger'))
-    expect(screen.getByTestId('workspace-switcher-panel')).toBeInTheDocument()
+    await user.click(trigger)
+    const panel = screen.getByTestId('workspace-switcher-panel')
+    expect(panel).toHaveAttribute('id', 'workspace-switcher-panel')
+    expect(panel).toHaveAttribute('role', 'menu')
+    expect(trigger).toHaveAttribute('aria-expanded', 'true')
 
-    await user.click(screen.getByTestId('workspace-switcher-trigger'))
+    await user.click(trigger)
+    expect(
+      screen.queryByTestId('workspace-switcher-panel')
+    ).not.toBeInTheDocument()
+  })
+
+  it('closes the workspace switcher panel on Escape', async () => {
+    const user = userEvent.setup()
+    renderComponent()
+    const trigger = screen.getByTestId('workspace-switcher-trigger')
+
+    await user.click(trigger)
+    await user.keyboard('{Escape}')
+
     expect(
       screen.queryByTestId('workspace-switcher-panel')
     ).not.toBeInTheDocument()
@@ -287,6 +320,41 @@ describe('CurrentUserPopoverWorkspace', () => {
     ).toBeInTheDocument()
   })
 
+  it('keeps Subscribe hidden on Local after switching to an unsubscribed workspace', async () => {
+    state.isCloud = false
+    state.canAccessSubscriptionFeatures = false
+    state.canManageSubscription = true
+    const { rerender } = renderComponent('personal')
+
+    expect(
+      screen.queryByRole('button', { name: 'Subscribe' })
+    ).not.toBeInTheDocument()
+
+    if (!workspaceStoreMock.store) throw new Error('Workspace store not ready')
+    workspaceStoreMock.store.workspaceName = 'Team Workspace'
+    workspaceStoreMock.store.isInPersonalWorkspace = false
+    await rerender({})
+
+    expect(screen.getByTestId('workspace-switcher-trigger')).toHaveTextContent(
+      'Team Workspace'
+    )
+    expect(
+      screen.queryByRole('button', { name: 'Subscribe' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('keeps Resubscribe hidden on Local for a cancelled plan', () => {
+    state.isCloud = false
+    state.isCancelled = true
+    state.canManageSubscriptionLifecycle = true
+
+    renderComponent('team')
+
+    expect(
+      screen.queryByRole('button', { name: 'Resubscribe' })
+    ).not.toBeInTheDocument()
+  })
+
   it.for([
     {
       name: 'allows a lifecycle manager to resubscribe a cancelled plan',
@@ -385,4 +453,38 @@ describe('CurrentUserPopoverWorkspace', () => {
       expect(emitted('close')).toHaveLength(1)
     })
   }
+
+  it('opens local Plan and Credits instead of Cloud pricing actions', async () => {
+    state.isCloud = false
+    state.canManageSubscription = true
+    const user = userEvent.setup()
+    const { emitted } = renderComponent()
+
+    expect(
+      screen.queryByTestId('plans-pricing-menu-item')
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByTestId('manage-plan-menu-item')
+    ).not.toBeInTheDocument()
+
+    await user.click(
+      screen.getByRole('button', {
+        name: enMessages.subscription.plansAndCredits
+      })
+    )
+
+    expect(state.showSettingsDialog).toHaveBeenCalledWith('workspace')
+    expect(state.showPricingTable).not.toHaveBeenCalled()
+    expect(emitted('close')).toHaveLength(1)
+  })
+
+  it('hides local Plan and Credits without subscription management permission', () => {
+    state.isCloud = false
+
+    renderComponent()
+
+    expect(
+      screen.queryByTestId('plans-credits-menu-item')
+    ).not.toBeInTheDocument()
+  })
 })

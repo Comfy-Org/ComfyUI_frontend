@@ -3,7 +3,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 
-import { getComfyApiBaseUrl, getComfyPlatformBaseUrl } from './comfyApi'
+import {
+  getComfyApiBaseUrl,
+  getComfyCloudBaseUrl,
+  getComfyPlatformBaseUrl
+} from './comfyApi'
 
 vi.mock('@/scripts/api', () => ({
   api: {
@@ -38,6 +42,12 @@ describe('getComfyApiBaseUrl', () => {
   })
 })
 
+describe('getComfyCloudBaseUrl', () => {
+  it('matches the non-production Firebase environment', () => {
+    expect(getComfyCloudBaseUrl()).toBe('https://testcloud.comfy.org')
+  })
+})
+
 describe('getComfyPlatformBaseUrl', () => {
   const originalConfig = remoteConfig.value
 
@@ -65,32 +75,6 @@ describe('getComfyPlatformBaseUrl', () => {
   it('falls back to the build-time default when the value is empty', () => {
     remoteConfig.value = { comfy_platform_base_url: '' }
     expect(getComfyPlatformBaseUrl()).toBe('https://stagingplatform.comfy.org')
-  })
-})
-
-// Resolved at module load, so each case stubs the env and imports a fresh module.
-describe('getCloudIngestBaseUrl', () => {
-  afterEach(() => {
-    vi.unstubAllEnvs()
-    vi.resetModules()
-  })
-
-  it('resolves the staging cloud origin in non-prod builds', async () => {
-    vi.stubEnv('VITE_CLOUD_INGEST_BASE_URL', undefined)
-    vi.resetModules()
-
-    const { getCloudIngestBaseUrl } = await import('./comfyApi')
-
-    expect(getCloudIngestBaseUrl()).toBe('https://stagingcloud.comfy.org')
-  })
-
-  it('honors the VITE_CLOUD_INGEST_BASE_URL build-time override', async () => {
-    vi.stubEnv('VITE_CLOUD_INGEST_BASE_URL', 'https://testcloud.comfy.org')
-    vi.resetModules()
-
-    const { getCloudIngestBaseUrl } = await import('./comfyApi')
-
-    expect(getCloudIngestBaseUrl()).toBe('https://testcloud.comfy.org')
   })
 })
 

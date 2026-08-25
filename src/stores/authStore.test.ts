@@ -1192,22 +1192,15 @@ describe('useAuthStore', () => {
       })
     })
 
-    it('should succeed with API key auth when no Firebase user is present', async () => {
+    it('should reject API key auth when no Firebase user is present', async () => {
       authStateCallback(null)
       mockApiKeyGetAuthHeader.mockReturnValue({ 'X-API-KEY': 'test-api-key' })
 
-      const result = await store.createCustomer()
-
-      expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/customers'),
-        expect.objectContaining({
-          method: 'POST',
-          headers: expect.objectContaining({
-            'X-API-KEY': 'test-api-key'
-          })
-        })
-      )
-      expect(result).toEqual({ id: 'test-customer-id' })
+      await expect(store.createCustomer()).rejects.toMatchObject({
+        name: 'AuthStoreError',
+        message: 'toastMessages.userNotAuthenticated'
+      })
+      expect(mockFetch).not.toHaveBeenCalled()
     })
 
     it('should use Firebase token when Firebase user is present', async () => {
