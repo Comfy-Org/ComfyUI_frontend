@@ -333,7 +333,6 @@ test.describe('Local plans section subscribe', () => {
       .getByRole('button', { name: 'Subscribe to Standard' })
       .click()
 
-    // The subscribe goes to the workspace rail on the ingest origin, never the
     await expect.poll(() => subscribeRequests.length).toBe(1)
     expect(billingPosts).toEqual(['preview', 'subscribe'])
     expect(subscribeRequests[0].body).toMatchObject({

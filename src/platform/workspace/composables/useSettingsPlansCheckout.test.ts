@@ -12,7 +12,7 @@ const {
   mockCanManageSubscription,
   mockIsSettingUp,
   mockCurrentTeamCreditStop,
-  mockDialogOpen
+  mockSetDialogOpen
 } = vi.hoisted(() => ({
   mockShowSignInDialog: vi.fn(),
   mockShowLayoutDialog: vi.fn(),
@@ -24,7 +24,7 @@ const {
   mockCanManageSubscription: { value: true },
   mockIsSettingUp: { value: false },
   mockCurrentTeamCreditStop: { value: null as { id: string } | null },
-  mockDialogOpen: { value: false }
+  mockSetDialogOpen: { impl: (_value: boolean) => {} }
 }))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
@@ -54,17 +54,17 @@ vi.mock('@/services/dialogService', () => ({
 
 vi.mock('@/stores/dialogStore', async () => {
   const { ref } = await import('vue')
+  // A real ref so the composable's flush:sync watch on isDialogOpen reacts.
   const open = ref(false)
-  mockDialogOpen.value = false
+  mockSetDialogOpen.impl = (value: boolean) => {
+    open.value = value
+  }
   return {
     useDialogStore: () => ({
       isDialogOpen: (key: string) =>
         key === 'settings-plan-checkout' && open.value,
       closeDialog: () => {
         open.value = false
-      },
-      __setOpen: (value: boolean) => {
-        open.value = value
       }
     })
   }
@@ -129,15 +129,9 @@ const TEAM_STOP = {
 
 describe('useSettingsPlansCheckout', () => {
   const scopes: ReturnType<typeof effectScope>[] = []
-  let setDialogOpen: (value: boolean) => void
-
   async function setup() {
     const { useSettingsPlansCheckout } =
       await import('./useSettingsPlansCheckout')
-    const { useDialogStore } = await import('@/stores/dialogStore')
-    setDialogOpen = (
-      useDialogStore() as unknown as { __setOpen: (value: boolean) => void }
-    ).__setOpen
     const scope = effectScope()
     scopes.push(scope)
     return scope.run(() => useSettingsPlansCheckout())!
@@ -161,7 +155,7 @@ describe('useSettingsPlansCheckout', () => {
     mockShowSignInDialog.mockResolvedValue(true)
     mockInitialize.mockResolvedValue(undefined)
     mockShowLayoutDialog.mockReset()
-    mockShowLayoutDialog.mockImplementation(() => setDialogOpen(true))
+    mockShowLayoutDialog.mockImplementation(() => mockSetDialogOpen.impl(true))
     mockToastAdd.mockReset()
   })
 
@@ -173,7 +167,7 @@ describe('useSettingsPlansCheckout', () => {
     const pending = run()
     await vi.waitFor(() => expect(mockShowLayoutDialog).toHaveBeenCalled())
     const { props } = lastDialogProps()
-    setDialogOpen(false)
+    mockSetDialogOpen.impl(false)
     props.onClose()
     await pending
     return lastDialogProps()
@@ -297,7 +291,7 @@ describe('useSettingsPlansCheckout', () => {
 
     hydrate()
     await vi.waitFor(() => expect(mockShowLayoutDialog).toHaveBeenCalled())
-    setDialogOpen(false)
+    mockSetDialogOpen.impl(false)
     lastDialogProps().props.onClose()
     await pending
   })
@@ -358,7 +352,7 @@ describe('useSettingsPlansCheckout', () => {
     await checkout.subscribeToPersonal(PERSONAL)
     expect(mockShowLayoutDialog).toHaveBeenCalledTimes(1)
 
-    setDialogOpen(false)
+    mockSetDialogOpen.impl(false)
     lastDialogProps().props.onClose()
     await first
     expect(checkout.isSubscribing.value).toBe(false)
@@ -414,7 +408,7 @@ describe('useSettingsPlansCheckout', () => {
       'section locked while the dialog is open'
     ).toBe(true)
 
-    setDialogOpen(false)
+    mockSetDialogOpen.impl(false)
     lastDialogProps().props.onClose()
     await pending
     expect(settled).toBe(true)
@@ -432,7 +426,7 @@ describe('useSettingsPlansCheckout', () => {
       await vi.waitFor(() =>
         expect(mockShowLayoutDialog).toHaveBeenCalledTimes(cycle + 1)
       )
-      setDialogOpen(false)
+      mockSetDialogOpen.impl(false)
       lastDialogProps().props.onClose()
       await pending
     }
