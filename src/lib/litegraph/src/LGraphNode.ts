@@ -1156,6 +1156,7 @@ export class LGraphNode
           if (widget.serialize === false) continue
           if (i >= info.widgets_values.length) break
           widget.value = info.widgets_values[i++]
+          widget.configuredByLoad = true
         }
       }
     }
