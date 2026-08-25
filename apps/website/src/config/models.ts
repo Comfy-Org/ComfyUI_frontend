@@ -2,7 +2,7 @@ import generatedModels from './generated-models.json'
 import { modelMetadata } from './model-metadata'
 import type { ModelCategory } from './modelCategories'
 
-export type ModelDirectory =
+type ModelDirectory =
   | 'diffusion_models'
   | 'checkpoints'
   | 'loras'
