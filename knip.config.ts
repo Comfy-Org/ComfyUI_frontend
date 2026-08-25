@@ -82,7 +82,7 @@ const config: KnipConfig = {
     // Agent review check config, not part of the build
     '.agents/checks/eslint.strict.config.js',
     // ECS draft interfaces (ADR 0008) — not yet consumed by production code
-    'src/ecs/**/*.ts'
+    'src/ecs/**/*.ts',
     // Devtools extensions, included dynamically
     'tools/devtools/web/**'
   ],
