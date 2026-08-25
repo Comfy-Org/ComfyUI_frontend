@@ -202,7 +202,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, ref, useId, useTemplateRef, watch } from 'vue'
+import { computed, ref, useId, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import VideoCompareSlider from '@/components/common/VideoCompareSlider.vue'
@@ -256,16 +256,13 @@ function openSignIn() {
   )
 }
 
-const isVisible = computed(() => isCardRequested.value && hasPartnerNodes.value)
-
-// Retire the card once the user leaves the workflow that requested it, even if
-// the next workflow also has partner nodes.
-watch(
-  () => activeWorkflow.value?.key,
-  (key) => {
-    if (isCardRequested.value && key !== requestedForWorkflowKey.value) {
-      educationStore.dismissCard()
-    }
-  }
+// Visible only while the workflow that requested the card is still active, so
+// switching away (even to another partner-node graph) hides it immediately and
+// a request that resolves after the switch never shows on the wrong workflow.
+const isVisible = computed(
+  () =>
+    isCardRequested.value &&
+    hasPartnerNodes.value &&
+    activeWorkflow.value?.key === requestedForWorkflowKey.value
 )
 </script>

@@ -141,19 +141,29 @@ describe('PartnerNodesEducationCard', () => {
     expect(screen.queryByTestId(CARD_TESTID)).not.toBeInTheDocument()
   })
 
-  it('retires when a different workflow becomes active, even one with partner nodes', async () => {
-    const store = usePartnerNodesEducationStore()
+  it('hides when a different workflow becomes active, even one with partner nodes', async () => {
     renderCard()
     loadPaidTemplate('paid-wf')
     await nextTick()
     expect(screen.getByTestId(CARD_TESTID)).toBeInTheDocument()
 
-    // Switch to an unrelated workflow that also has partner nodes: presence
-    // never drops to false, so only the workflow-identity change can retire it.
     setActiveWorkflow('other-wf')
     await nextTick()
-    expect(screen.queryByTestId(CARD_TESTID)).not.toBeInTheDocument()
-    expect(store.isCardRequested).toBe(false)
+    expect(
+      screen.queryByTestId(CARD_TESTID),
+      'card must not describe a workflow the user has left'
+    ).not.toBeInTheDocument()
+  })
+
+  it('stays hidden when the request resolves after the user already switched away', async () => {
+    renderCard()
+    setActiveWorkflow('other-wf')
+    usePartnerNodesEducationStore().requestCard('paid-wf')
+    await nextTick()
+    expect(
+      screen.queryByTestId(CARD_TESTID),
+      'a request for a workflow the user already left must never show'
+    ).not.toBeInTheDocument()
   })
 
   it('shows a sign-in CTA only when the run gate requires sign-in', async () => {
