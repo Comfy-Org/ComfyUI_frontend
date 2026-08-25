@@ -53,6 +53,7 @@ function assetsQueryInternal(
   function loadNew() {
     return enqueue('loadNew', async function (signal: AbortSignal) {
       const knownIds = new Set(items.value.map((item) => item.id))
+      const newItems: AssetItem[] = []
       let headCursor: string | undefined
       while (true) {
         const assetResponse = await doQuery({ after: headCursor }, signal)
@@ -60,10 +61,10 @@ function assetsQueryInternal(
 
         const { assets, has_more, next_cursor } = assetResponse
         headCursor = next_cursor
-        const newItems = assets.filter(({ id }) => !knownIds.has(id))
-        items.value.splice(0, 0, ...newItems)
+        newItems.push(...assets.filter(({ id }) => !knownIds.has(id)))
         if (newItems.length !== assets.length || !has_more) break
       }
+      items.value.splice(0, 0, ...newItems)
     })
   }
 
