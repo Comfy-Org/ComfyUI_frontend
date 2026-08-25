@@ -1,4 +1,4 @@
-export interface TemplateDetailRow {
+interface TemplateDetailRow {
   id: string
   name: string
   description: string

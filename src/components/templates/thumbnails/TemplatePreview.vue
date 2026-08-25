@@ -28,7 +28,6 @@ const isVideo = computed(
 
 <template>
   <div
-    data-testid="template-preview"
     class="relative w-full overflow-hidden rounded-lg"
     @mouseenter="internalHovered = true"
     @mouseleave="internalHovered = false"

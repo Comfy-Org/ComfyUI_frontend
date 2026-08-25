@@ -63,7 +63,6 @@ const mocks = vi.hoisted(() => ({
   getTemplateThumbnailUrl: vi.fn(() => '/thumbnail.webp'),
   getTemplateTitle: vi.fn((template: { title: string }) => template.title),
   loadTemplates: vi.fn(async () => true),
-  loadWorkflowTemplate: vi.fn(async () => true),
   onClose: vi.fn(),
   openPreparedWorkflowTemplate: vi.fn(async () => true),
   prepareWorkflowTemplate: vi.fn(
@@ -89,7 +88,6 @@ vi.mock(
       getTemplateThumbnailUrl: mocks.getTemplateThumbnailUrl,
       getTemplateTitle: mocks.getTemplateTitle,
       loadTemplates: mocks.loadTemplates,
-      loadWorkflowTemplate: mocks.loadWorkflowTemplate,
       openPreparedWorkflowTemplate: mocks.openPreparedWorkflowTemplate,
       prepareWorkflowTemplate: mocks.prepareWorkflowTemplate
     })
@@ -304,7 +302,6 @@ describe('WorkflowTemplateSelectorDialog template detail navigation', () => {
       fixtures.template.name,
       'default'
     )
-    expect(mocks.loadWorkflowTemplate).not.toHaveBeenCalled()
     expect(mocks.openPreparedWorkflowTemplate).not.toHaveBeenCalled()
     expect(mocks.onClose).not.toHaveBeenCalled()
 
@@ -365,7 +362,6 @@ describe('WorkflowTemplateSelectorDialog template detail navigation', () => {
       { closeDialog: false }
     )
     expect(mocks.prepareWorkflowTemplate).toHaveBeenCalledOnce()
-    expect(mocks.loadWorkflowTemplate).not.toHaveBeenCalled()
     expect(mocks.onClose).toHaveBeenCalledOnce()
   })
 
