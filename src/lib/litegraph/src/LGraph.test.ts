@@ -120,6 +120,14 @@ describe('LGraph', () => {
     expect(graph.last_node_id).toBe(7)
   })
 
+  it('getNodeById returns null, never undefined, for unknown ids', () => {
+    const graph = new LGraph()
+
+    expect(graph.getNodeById(toNodeId(999))).toBeNull()
+    expect(graph.getNodeById(null)).toBeNull()
+    expect(graph.getNodeById(undefined)).toBeNull()
+  })
+
   test('can be instantiated', ({ expect }) => {
     // @ts-expect-error Intentional - extra holds any / all consumer data that should be serialised
     const graph = new LGraph({ extra: 'TestGraph' })

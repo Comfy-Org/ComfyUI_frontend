@@ -1081,7 +1081,7 @@ describe('appModeStore', () => {
         rootGraph.getNodeById(id)
       )
 
-      expect(rootGraph.getNodeById(interior.id)).toBeUndefined()
+      expect(rootGraph.getNodeById(interior.id)).toBeNull()
 
       const result = store.pruneLinearData({
         inputs: [[interior.id, sourceWidgetName, { height: 120 }]],

@@ -1334,7 +1334,7 @@ export class LGraph
    */
   getNodeById(id: NodeId | null | undefined): LGraphNode | null {
     return id != null && id !== UNASSIGNED_NODE_ID
-      ? this._nodes_by_id[id]
+      ? (this._nodes_by_id[id] ?? null)
       : null
   }
 
