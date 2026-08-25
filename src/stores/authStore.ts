@@ -264,6 +264,10 @@ export const useAuthStore = defineStore('auth', () => {
     if (flags.unifiedCloudAuthEnabled) {
       const uid = currentUser.value?.uid
       if (uid) await mintUnifiedToken(uid).catch(() => false)
+      // The mint wait can outlast an account switch; a stale caller must not
+      // read the new identity's unified token or fall back to its Firebase
+      // token.
+      if (currentUser.value?.uid !== uid) return null
       const token = useWorkspaceAuthStore().getUnifiedToken()
       if (token) return { Authorization: `Bearer ${token}` }
       return await getFirebaseAuthHeader()
@@ -322,6 +326,9 @@ export const useAuthStore = defineStore('auth', () => {
     if (flags.unifiedCloudAuthEnabled) {
       const uid = currentUser.value?.uid
       if (uid) await mintUnifiedToken(uid).catch(() => false)
+      // See getAuthHeader: a stale caller must not read the new identity's
+      // unified token after an account switch during the mint wait.
+      if (currentUser.value?.uid !== uid) return undefined
       return useWorkspaceAuthStore().getUnifiedToken()
     }
 

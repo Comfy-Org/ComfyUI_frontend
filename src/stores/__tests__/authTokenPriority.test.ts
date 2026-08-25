@@ -601,6 +601,82 @@ describe('auth token priority chain', () => {
       expect(mockClearWorkspaceContext).toHaveBeenCalledTimes(2)
     })
 
+    it('fails closed when an A-started getAuthHeader call outlives an A->B switch', async () => {
+      let resolveA: (minted: boolean) => void = () => {}
+      mockMintAtLogin.mockReturnValueOnce(
+        new Promise<boolean>((resolve) => {
+          resolveA = resolve
+        })
+      )
+      authStateCallback({ ...mockUser, uid: 'user-a' })
+      mockUnifiedToken = null
+
+      // Started while A is current and A's mint is still in flight.
+      const headerPromise = store.getAuthHeader()
+
+      let resolveB: (minted: boolean) => void = () => {}
+      mockMintAtLogin.mockReturnValueOnce(
+        new Promise<boolean>((resolve) => {
+          resolveB = resolve
+        })
+      )
+      authStateCallback({
+        ...mockUser,
+        uid: 'user-b',
+        email: 'b@example.com'
+      })
+
+      // B's mint commits while A's original call is still waiting.
+      mockUnifiedToken = 'b-token'
+      resolveB(true)
+      await Promise.resolve()
+
+      // A's stale mint only resolves (failed) after the switch.
+      resolveA(false)
+      const header = await headerPromise
+
+      expect(header).toBeNull()
+      expect(mockUser.getIdToken).not.toHaveBeenCalled()
+    })
+
+    it('fails closed when an A-started getAuthToken call outlives an A->B switch', async () => {
+      let resolveA: (minted: boolean) => void = () => {}
+      mockMintAtLogin.mockReturnValueOnce(
+        new Promise<boolean>((resolve) => {
+          resolveA = resolve
+        })
+      )
+      authStateCallback({ ...mockUser, uid: 'user-a' })
+      mockUnifiedToken = null
+
+      // Started while A is current and A's mint is still in flight.
+      const tokenPromise = store.getAuthToken()
+
+      let resolveB: (minted: boolean) => void = () => {}
+      mockMintAtLogin.mockReturnValueOnce(
+        new Promise<boolean>((resolve) => {
+          resolveB = resolve
+        })
+      )
+      authStateCallback({
+        ...mockUser,
+        uid: 'user-b',
+        email: 'b@example.com'
+      })
+
+      // B's mint commits while A's original call is still waiting.
+      mockUnifiedToken = 'b-token'
+      resolveB(true)
+      await Promise.resolve()
+
+      // A's stale mint only resolves (failed) after the switch.
+      resolveA(false)
+      const token = await tokenPromise
+
+      expect(token).toBeUndefined()
+      expect(mockUser.getIdToken).not.toHaveBeenCalled()
+    })
+
     it('returns immediately on sign-out instead of waiting on an abandoned mint', async () => {
       let resolveMint: (minted: boolean) => void = () => {}
       mockMintAtLogin.mockReturnValueOnce(
