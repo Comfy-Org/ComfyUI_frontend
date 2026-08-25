@@ -1200,8 +1200,6 @@
       "openInCloud": "Open in Cloud",
       "requirements": "Template requirements",
       "models": "Models",
-      "customNodes": "Custom Nodes",
-      "customNodeRequirement": "Required custom node package",
       "usedBy": "Used by {nodes}",
       "openTemplate": "Open template",
       "backToTemplates": "Back to {category}",
