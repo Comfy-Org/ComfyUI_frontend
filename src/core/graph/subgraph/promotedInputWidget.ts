@@ -51,6 +51,14 @@ export function inputForWidget(
  * {@link useWidgetValueStore}, so without this the interior widget.callback
  * set by custom node extensions never fires when the host edits the promoted
  * value — this is the bridge that keeps that contract intact.
+ *
+ * The host {@link useWidgetValueStore} entry stays the sole authoritative
+ * value (ADR-0009) — callers write it before reaching here. Writing
+ * `sourceWidget.value` below only mirrors that value onto the interior widget
+ * instance, the same way {@link BaseWidget.setValue} writes `this.value`
+ * before invoking `this.callback`. Without it, first-party callbacks that
+ * ignore their callback args and read their captured widget's own `.value`
+ * (e.g. `useImageUploadWidget`) would observe a stale value.
  */
 export function invokePromotedWidgetSourceCallback(
   node: LGraphNode,
@@ -71,6 +79,7 @@ export function invokePromotedWidgetSourceCallback(
   if (resolution.status !== 'resolved') return
 
   const { node: sourceNode, widget: sourceWidget } = resolution.resolved
+  sourceWidget.value = value
   sourceWidget.callback?.(value, canvas, sourceNode, pos, e)
 }
 

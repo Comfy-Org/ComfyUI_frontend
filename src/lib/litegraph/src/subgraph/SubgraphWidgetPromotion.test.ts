@@ -499,6 +499,32 @@ describe('SubgraphWidgetPromotion', () => {
       expect(callback).toHaveBeenCalledTimes(1)
       expect(callback).toHaveBeenCalledWith(99, canvas, node, [0, 0], e)
     })
+
+    it('makes the interior widget observe its own fresh value from inside the callback', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'value', type: 'number' }]
+      })
+
+      const { node, widget } = createNodeWithWidget('Test Node')
+      // First-party callbacks (e.g. useImageUploadWidget) ignore the callback
+      // args entirely and read their captured widget's own `.value` instead.
+      // Simulate that by reading `widget.value` from inside the callback,
+      // rather than trusting the value the callback was invoked with.
+      let observedDuringCallback: unknown
+      widget.callback = () => {
+        observedDuringCallback = widget.value
+      }
+      const subgraphNode = setupPromotedWidget(subgraph, node)
+
+      const hostWidget = subgraphNode.widgets[0]
+      const concrete = new NumberWidget(fromAny(hostWidget), subgraphNode)
+      const canvas = fromAny<LGraphCanvas, unknown>({ graph_mouse: [0, 0] })
+      concrete.setValue(99, { e: fromAny({}), node: subgraphNode, canvas })
+
+      // Must observe the fresh 99, not the stale 42 the widget started with.
+      expect(observedDuringCallback).toBe(99)
+      expect(widget.value).toBe(99)
+    })
   })
 
   describe('Nested Subgraph Widget Promotion', () => {
