@@ -34,6 +34,15 @@ describe('previousEntryUrl', () => {
     )
   })
 
+  it('falls back to the referrer at the first Navigation API entry', () => {
+    expect(
+      previousEntryUrl(
+        nav(0, ['https://a.test/events/x']),
+        'https://a.test/events'
+      )
+    ).toBe('https://a.test/events')
+  })
+
   it('returns null at the first entry, where there is no previous', () => {
     expect(previousEntryUrl(nav(0, ['https://a.test/events/x']), '')).toBeNull()
   })

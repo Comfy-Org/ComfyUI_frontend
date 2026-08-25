@@ -13,10 +13,11 @@ export function previousEntryUrl(
   referrer: string
 ): string | null {
   const currentIndex = nav?.currentEntry?.index
-  if (nav && currentIndex !== undefined) {
-    return nav.entries()[currentIndex - 1]?.url ?? null
-  }
-  return referrer || null
+  const previousUrl =
+    nav && currentIndex !== undefined
+      ? nav.entries()[currentIndex - 1]?.url
+      : undefined
+  return previousUrl || referrer || null
 }
 
 /** Matches the prefix itself or a path below it, never a sibling like `/events-archive`. */
