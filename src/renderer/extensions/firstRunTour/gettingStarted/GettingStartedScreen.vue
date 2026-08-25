@@ -5,7 +5,7 @@
         ref="screenRef"
         class="fixed inset-0 z-1600 flex overflow-y-auto bg-base-background focus:outline-none"
         role="dialog"
-        aria-modal="true"
+        :aria-modal="!dialogOpen"
         :aria-label="t('gettingStarted.title')"
         tabindex="-1"
         @keydown.escape.capture.prevent="dismissGettingStarted()"
@@ -211,7 +211,9 @@ async function loadCatalog() {
 // Nothing else loads the catalog on this path, so load it (and take focus) on open.
 onMounted(() => {
   if (!templatesStore.isLoaded) void loadCatalog()
-  void nextTick(() => screenRef.value?.focus())
+  void nextTick(() => {
+    if (!dialogOpen.value) screenRef.value?.focus()
+  })
 })
 
 function tutorialThumbnail(

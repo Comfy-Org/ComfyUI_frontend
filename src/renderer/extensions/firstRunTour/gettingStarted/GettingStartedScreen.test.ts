@@ -78,9 +78,15 @@ const FocusScopeStub = {
     '<div data-testid="focus-scope-stub" :data-trapped="trapped"><slot /></div>'
 }
 
-async function renderScreen({ stubFocusScope = false } = {}) {
+async function renderScreen({
+  stubFocusScope = false,
+  withOpenDialog = false
+} = {}) {
   const pinia = createPinia()
   setActivePinia(pinia)
+  if (withOpenDialog) {
+    useDialogStore().showDialog({ component: { template: '<div />' } })
+  }
   const { default: GettingStartedScreen } =
     await import('./GettingStartedScreen.vue')
   return render(GettingStartedScreen, {
@@ -236,6 +242,27 @@ describe('GettingStartedScreen', () => {
   })
 
   describe('dialog arbitration', () => {
+    it('takes focus and modal semantics when it mounts with no dialog open', async () => {
+      await renderScreen()
+      await nextTick()
+
+      const takeover = screen.getByRole('dialog')
+      expect(takeover).toHaveFocus()
+      expect(takeover.getAttribute('aria-modal')).toBe('true')
+    })
+
+    it('leaves focus and modality with a dialog that was open before it mounted', async () => {
+      await renderScreen({ withOpenDialog: true })
+      await nextTick()
+
+      const takeover = screen.getByRole('dialog')
+      expect(
+        takeover,
+        'stealing focus on mount would pull the user out of the open dialog (desktop sign-in approval)'
+      ).not.toHaveFocus()
+      expect(takeover.getAttribute('aria-modal')).toBe('false')
+    })
+
     it('releases its focus trap while a dialog is open and re-arms after', async () => {
       await renderScreen({ stubFocusScope: true })
       const dialogStore = useDialogStore()
