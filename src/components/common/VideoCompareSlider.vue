@@ -10,10 +10,11 @@
       :src="baseSrc"
       class="pointer-events-none absolute inset-0 size-full object-cover"
       :muted="baseMuted"
-      autoplay
+      :autoplay="motionAllowed"
       loop
       playsinline
       aria-hidden="true"
+      data-testid="compare-clip"
     />
 
     <div
@@ -25,15 +26,16 @@
         :src="overlaySrc"
         class="pointer-events-none absolute inset-0 size-full object-cover"
         :muted="overlayMuted"
-        autoplay
+        :autoplay="motionAllowed"
         loop
         playsinline
         aria-hidden="true"
+        data-testid="compare-clip"
       />
     </div>
 
     <div
-      class="absolute inset-y-0 w-0.5 -translate-x-1/2 bg-white/90 shadow-lg outline-none"
+      class="absolute inset-y-0 w-0.5 -translate-x-1/2 bg-white/90 shadow-lg outline-none focus-visible:ring-2 focus-visible:ring-white"
       :style="{ left: `${position}%` }"
       role="slider"
       tabindex="0"
@@ -58,8 +60,8 @@
 </template>
 
 <script setup lang="ts">
-import { useEventListener } from '@vueuse/core'
-import { ref, useTemplateRef } from 'vue'
+import { usePreferredReducedMotion, useEventListener } from '@vueuse/core'
+import { computed, ref, useTemplateRef, watchEffect } from 'vue'
 
 const {
   baseSrc,
@@ -88,12 +90,45 @@ function setPosition(value: number) {
   position.value = Math.max(0, Math.min(100, value))
 }
 
-useEventListener(root, 'pointermove', (event: PointerEvent) => {
+function positionFromPointer(event: PointerEvent) {
   const el = root.value
   if (!el) return
   const rect = el.getBoundingClientRect()
   if (rect.width === 0) return
   setPosition(((event.clientX - rect.left) / rect.width) * 100)
+}
+
+const isDragging = ref(false)
+
+useEventListener(root, 'pointerdown', (event: PointerEvent) => {
+  isDragging.value = true
+  root.value?.setPointerCapture(event.pointerId)
+  positionFromPointer(event)
+})
+
+useEventListener(root, 'pointermove', (event: PointerEvent) => {
+  if (isDragging.value) positionFromPointer(event)
+})
+
+function endDrag(event: PointerEvent) {
+  isDragging.value = false
+  root.value?.releasePointerCapture(event.pointerId)
+}
+
+useEventListener(root, 'pointerup', endDrag)
+useEventListener(root, 'pointercancel', endDrag)
+
+/**
+ * Respect the OS "reduce motion" setting: hold both clips on their first frame
+ * instead of looping indefinitely, satisfying WCAG 2.2.2 without extra chrome.
+ */
+const reducedMotion = usePreferredReducedMotion()
+const motionAllowed = computed(() => reducedMotion.value !== 'reduce')
+
+watchEffect(() => {
+  if (motionAllowed.value) return
+  baseVideo.value?.pause()
+  overlayVideo.value?.pause()
 })
 
 const KEY_STEP = 5

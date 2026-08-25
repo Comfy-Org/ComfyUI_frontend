@@ -2361,6 +2361,8 @@
     "mute": "Mute",
     "unmute": "Unmute",
     "sliderLabel": "Compare open-weights and partner-node output",
+    "included": "Included",
+    "notIncluded": "Not included",
     "benefits": {
       "noDownload": "No setup required",
       "noVram": "No VRAM, your GPU stays free",

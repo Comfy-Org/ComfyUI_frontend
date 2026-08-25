@@ -152,6 +152,14 @@
                     class="size-4"
                     aria-hidden="true"
                   />
+                  <span class="sr-only">
+                    {{ t('partnerNodesEducation.openHeader') }}:
+                    {{
+                      row.open
+                        ? t('partnerNodesEducation.included')
+                        : t('partnerNodesEducation.notIncluded')
+                    }}
+                  </span>
                 </span>
                 <span class="flex w-15 justify-center">
                   <i
@@ -163,6 +171,14 @@
                     class="size-4"
                     aria-hidden="true"
                   />
+                  <span class="sr-only">
+                    {{ t('partnerNodesEducation.partnerHeader') }}:
+                    {{
+                      row.partner
+                        ? t('partnerNodesEducation.included')
+                        : t('partnerNodesEducation.notIncluded')
+                    }}
+                  </span>
                 </span>
               </div>
             </div>

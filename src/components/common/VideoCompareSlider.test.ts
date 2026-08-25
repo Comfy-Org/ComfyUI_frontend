@@ -1,6 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import VideoCompareSlider from './VideoCompareSlider.vue'
 
@@ -13,11 +13,22 @@ function renderSlider(startPosition?: number) {
   })
 }
 
-function movePointer(clientX: number, trackWidth: number) {
+function stubTrackWidth(trackWidth: number) {
   const track = screen.getByRole('group')
   track.getBoundingClientRect = () =>
     ({ left: 0, width: trackWidth }) as DOMRect
-  track.dispatchEvent(new MouseEvent('pointermove', { clientX, bubbles: true }))
+  return track
+}
+
+function dispatchPointer(type: string, clientX: number) {
+  screen
+    .getByRole('group')
+    .dispatchEvent(new MouseEvent(type, { clientX, bubbles: true, buttons: 1 }))
+}
+
+function dragPointer(clientX: number, trackWidth: number) {
+  stubTrackWidth(trackWidth)
+  dispatchPointer('pointerdown', clientX)
 }
 
 describe('VideoCompareSlider', () => {
@@ -57,12 +68,42 @@ describe('VideoCompareSlider', () => {
     expect(slider).toHaveAttribute('aria-valuenow', '100')
   })
 
-  it('tracks the pointer as a percentage of the track width', async () => {
+  it('tracks the pointer as a percentage of the track width while dragging', async () => {
     renderSlider(50)
 
     await waitFor(() => {
-      movePointer(50, 200)
+      dragPointer(50, 200)
       expect(screen.getByRole('slider')).toHaveAttribute('aria-valuenow', '25')
+    })
+  })
+
+  it('ignores pointer movement that is not an active drag', () => {
+    renderSlider(50)
+    stubTrackWidth(200)
+
+    dispatchPointer('pointermove', 50)
+
+    expect(screen.getByRole('slider')).toHaveAttribute('aria-valuenow', '50')
+  })
+
+  describe('reduced motion', () => {
+    it('does not autoplay the clips when reduced motion is preferred', () => {
+      vi.stubGlobal(
+        'matchMedia',
+        vi.fn((query: string) => ({
+          matches: query.includes('prefers-reduced-motion: reduce'),
+          media: query,
+          onchange: null,
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          dispatchEvent: vi.fn()
+        }))
+      )
+      renderSlider(50)
+
+      for (const video of screen.getAllByTestId('compare-clip')) {
+        expect(video).not.toHaveAttribute('autoplay')
+      }
     })
   })
 })
