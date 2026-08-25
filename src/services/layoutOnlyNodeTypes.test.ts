@@ -13,7 +13,6 @@ import { createTestNodeDef } from '@/utils/__tests__/litegraphTestUtils'
 describe('layoutOnlyNodeTypes', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.restoreAllMocks()
   })
 
   it('marks a declared type as layout-only on its node def', () => {

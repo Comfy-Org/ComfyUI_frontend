@@ -1,8 +1,6 @@
-import { createTestingPinia } from '@pinia/testing'
 import userEvent from '@testing-library/user-event'
-import { cleanup, render, screen } from '@testing-library/vue'
-import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { render, screen } from '@testing-library/vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -67,17 +65,9 @@ function nudge() {
 
 describe('FirstRunTourNudge', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
-    vi.useFakeTimers()
     mocks.nudgeArmed.value = false
     mocks.tourWasCompleted.value = true
     mocks.openDialogs.value = []
-  })
-
-  afterEach(() => {
-    cleanup()
-    vi.useRealTimers()
   })
 
   it('shows a nudge that came due before it mounted', async () => {
@@ -97,7 +87,8 @@ describe('FirstRunTourNudge', () => {
       'a nudge armed before this mounted still has to appear'
     ).not.toBeNull()
     expect(mocks.trackOnboardingTour).toHaveBeenCalledWith('nudge_shown', {
-      tour: 'firstRun'
+      tour: 'firstRun',
+      tour_completed: true
     })
   })
 
@@ -233,7 +224,29 @@ describe('FirstRunTourNudge', () => {
     expect(mocks.dismissNudge).toHaveBeenCalled()
     expect(mocks.trackOnboardingTour).toHaveBeenCalledWith(
       'explore_templates_clicked',
-      { tour: 'firstRun' }
+      { tour: 'firstRun', tour_completed: true }
+    )
+  })
+
+  it('separates a conversion from a completed tour from one that never ran', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    mocks.tourWasCompleted.value = false
+    mocks.nudgeArmed.value = true
+    renderNudge()
+    await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
+
+    await user.click(screen.getByTestId('first-run-nudge-explore'))
+
+    // Both events carry it, so the funnel can be read end to end: without it
+    // a conversion from a finished tour and one from a tour that never
+    // started are indistinguishable.
+    expect(mocks.trackOnboardingTour).toHaveBeenCalledWith('nudge_shown', {
+      tour: 'firstRun',
+      tour_completed: false
+    })
+    expect(mocks.trackOnboardingTour).toHaveBeenCalledWith(
+      'explore_templates_clicked',
+      { tour: 'firstRun', tour_completed: false }
     )
   })
 })

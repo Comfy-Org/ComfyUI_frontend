@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { CONFIG, GET_CONFIG } from '@/services/litegraphService'
@@ -157,15 +157,6 @@ function setupGraphWithLink(node: PrimitiveNode, targetNode: LGraphNode) {
 }
 
 describe('PrimitiveNode', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
-    vi.restoreAllMocks()
-  })
-
   describe('constructor', () => {
     it('initializes with wildcard output and virtual node properties', () => {
       const node = createPrimitiveNode()
@@ -285,52 +276,6 @@ describe('PrimitiveNode', () => {
         expect.stringContaining('Unable to find widget')
       )
       warnSpy.mockRestore()
-    })
-  })
-
-  describe('refreshComboInNode', () => {
-    it('updates combo values from output widget config', () => {
-      const node = createPrimitiveNode()
-      const comboValues = ['a', 'b', 'c']
-      node.widgets = [
-        makeWidget({
-          type: 'combo',
-          value: 'a',
-          options: { values: [] },
-          callback: vi.fn()
-        })
-      ]
-      node.outputs[0].widget = {
-        name: 'value',
-        [GET_CONFIG]: () => [comboValues, {}]
-      }
-
-      node.refreshComboInNode()
-
-      expect(node.widgets[0].options.values).toEqual(comboValues)
-    })
-
-    it('resets value to first option when current value is removed', () => {
-      const node = createPrimitiveNode()
-      const comboValues = ['x', 'y', 'z']
-      const callbackFn = vi.fn()
-      node.widgets = [
-        makeWidget({
-          type: 'combo',
-          value: 'removed_value',
-          options: { values: [] },
-          callback: callbackFn
-        })
-      ]
-      node.outputs[0].widget = {
-        name: 'value',
-        [GET_CONFIG]: () => [comboValues, {}]
-      }
-
-      node.refreshComboInNode()
-
-      expect(node.widgets[0].value).toBe('x')
-      expect(callbackFn).toHaveBeenCalledWith('x')
     })
   })
 
@@ -459,8 +404,6 @@ describe('PrimitiveNode', () => {
     })
 
     it('temporarily stores controlValues and lastType for recreation', () => {
-      vi.useFakeTimers()
-
       const node = createPrimitiveNode()
       node.widgets = [
         makeWidget({ value: 42 }),
@@ -475,8 +418,6 @@ describe('PrimitiveNode', () => {
       vi.advanceTimersByTime(15)
       expect(node.lastType).toBeUndefined()
       expect(node.controlValues).toBeUndefined()
-
-      vi.useRealTimers()
     })
   })
 

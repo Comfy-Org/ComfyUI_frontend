@@ -105,7 +105,6 @@ function createOutputNode(id: number, type: string): LGraphNode {
 
 describe('AppBuilder', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockState.nodes = []
     mockState.selectedInputs.length = 0
     mockState.selectedOutputs.length = 0

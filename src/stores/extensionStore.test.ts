@@ -1,16 +1,10 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { applyLayoutOnlyDeclarations } from '@/services/layoutOnlyNodeTypes'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { createTestNodeDef } from '@/utils/__tests__/litegraphTestUtils'
 
 describe('extensionStore', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   describe('registerExtension', () => {
     it('registers an extension by name', () => {
       const store = useExtensionStore()

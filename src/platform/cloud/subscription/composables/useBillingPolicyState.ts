@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import type { SubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
+import type { IngestSubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import { isCloud } from '@/platform/distribution/types'
 
 import type { BillingPolicyState } from '../billingPolicyState'
@@ -14,11 +14,11 @@ export function deriveBillingPolicyState(input: {
   isCloud: boolean
   canAccessSubscriptionFeatures: boolean
   isTeamPlan: boolean
-  tier: SubscriptionTier | null
+  tier: IngestSubscriptionTier | null
 }): BillingPolicyState {
   const distribution = input.isCloud ? 'Cloud' : 'Local'
 
-  if (input.isTeamPlan) {
+  if (input.isTeamPlan || input.tier === 'TEAM') {
     return {
       kind: input.canAccessSubscriptionFeatures
         ? `${distribution}AndTeam`

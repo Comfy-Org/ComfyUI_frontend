@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   createNestedSubgraphs,
@@ -220,26 +218,17 @@ function omitOptionalSubgraphCollections(state: ComfyWorkflowJSON) {
 
 describe('ChangeTracker', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    vi.mocked(api.dispatchCustomEvent).mockReset()
-    vi.useFakeTimers()
-    setActivePinia(createTestingPinia({ stubActions: false }))
     useNodeDefStore().updateNodeDefs(Object.values(SYSTEM_NODE_DEFS))
     resetSubgraphFixtureState()
     nodeIdCounter = 0
     ChangeTracker.isLoadingGraph = false
+    ChangeTracker.resetCheckStateWarningForTest()
     mockWorkflowStore.activeWorkflow = null
     mockWorkflowStore.getWorkflowByPath.mockReturnValue(null)
-    vi.mocked(app.rootGraph.serialize).mockReset()
     mockCanvasState(createState())
     useQueueSettingsStore().mode = 'change'
     app.ui.autoQueueEnabled = false
     app.ui.autoQueueMode = 'instant'
-  })
-
-  afterEach(() => {
-    vi.clearAllTimers()
-    vi.useRealTimers()
   })
 
   describe('updateModified', () => {
@@ -290,6 +279,33 @@ describe('ChangeTracker', () => {
 
       expect(equivalentProjectionTraversals).toHaveBeenCalledOnce()
       expectAutoQueueGraphChangedNotDispatched()
+    })
+
+    it('releases the cached projection when Run on change is disabled', () => {
+      const initial = createState(1)
+      initial.nodes[0].widgets_values = [1]
+      const first = structuredClone(initial)
+      first.nodes[0].widgets_values = [2]
+      const second = structuredClone(first)
+      second.nodes[0].widgets_values = [3]
+      const firstProjectionTraversals = vi.fn()
+      const trackedFirst = new Proxy(first, {
+        ownKeys(target) {
+          firstProjectionTraversals()
+          return Reflect.ownKeys(target)
+        }
+      })
+      const tracker = createTracker(initial)
+
+      tracker.activeState = trackedFirst
+      tracker.updateModified(initial)
+      useQueueSettingsStore().mode = 'disabled'
+      tracker.updateModified(trackedFirst)
+      useQueueSettingsStore().mode = 'change'
+      tracker.activeState = second
+      tracker.updateModified(trackedFirst)
+
+      expect(firstProjectionTraversals).toHaveBeenCalledTimes(2)
     })
   })
 
@@ -425,14 +441,38 @@ describe('ChangeTracker', () => {
         )
       })
 
-      it('decides execution relevance before graphChanged listeners run', () => {
+      it('detects a change after a listener mutates the prior checkpoint', () => {
+        const initial = createState(1)
+        initial.nodes[0].widgets_values = [0]
+        const canvasState = structuredClone(initial)
+        canvasState.nodes[0].widgets_values = [1]
+        const tracker = createTracker(initial)
+        mockCanvasState(canvasState)
+        vi.mocked(api.dispatchCustomEvent).mockImplementationOnce((event) => {
+          if (event === 'graphChanged') {
+            tracker.activeState.nodes[0].widgets_values = [2]
+          }
+          return true
+        })
+
+        tracker.captureCanvasState()
+        vi.mocked(api.dispatchCustomEvent).mockClear()
+        mockCanvasState(canvasState)
+        tracker.captureCanvasState()
+
+        expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+          'autoQueueGraphChanged'
+        )
+      })
+
+      it('honors a listener mutation that masks the next canvas change', () => {
         const initial = createState(1)
         initial.nodes[0].widgets_values = [1]
         const changed = structuredClone(initial)
         changed.nodes[0].widgets_values = [2]
         const tracker = createTracker(initial)
         mockCanvasState(changed)
-        vi.mocked(api.dispatchCustomEvent).mockImplementation((event) => {
+        vi.mocked(api.dispatchCustomEvent).mockImplementationOnce((event) => {
           if (event === 'graphChanged') {
             tracker.activeState.nodes[0].widgets_values = [1]
           }
@@ -440,10 +480,10 @@ describe('ChangeTracker', () => {
         })
 
         tracker.captureCanvasState()
+        mockCanvasState(initial)
+        tracker.captureCanvasState()
 
-        expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
-          'autoQueueGraphChanged'
-        )
+        expectAutoQueueGraphChangedNotDispatched()
       })
 
       it('squashes late serialized updates into the captured state', async () => {
@@ -1318,14 +1358,25 @@ describe('ChangeTracker', () => {
   })
 
   describe('checkState (deprecated)', () => {
-    it('delegates to captureCanvasState', () => {
+    it('captures each state and warns once across repeated calls', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
       const tracker = createTracker(createState(1))
-      const changed = createState(2)
-      mockCanvasState(changed)
+      const firstChanged = createState(2)
+      mockCanvasState(firstChanged)
 
       tracker.checkState()
 
-      expect(tracker.activeState).toEqual(changed)
+      expect(tracker.activeState).toEqual(firstChanged)
+
+      const secondChanged = createState(3)
+      mockCanvasState(secondChanged)
+      tracker.checkState()
+
+      expect(tracker.activeState).toEqual(secondChanged)
+      expect(warn).toHaveBeenCalledOnce()
+      expect(warn).toHaveBeenCalledWith(
+        'checkState() is deprecated — use captureCanvasState() instead.'
+      )
     })
   })
 
