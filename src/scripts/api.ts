@@ -133,6 +133,8 @@ interface QueuePromptRequestBody {
   number?: number
 }
 
+const FETCH_TIMEOUT_MS = 60_000
+
 /**
  * Options for queuePrompt method
  */
@@ -522,41 +524,43 @@ export class ComfyApi extends EventTarget {
 
     addHeaderEntry(headers, 'Comfy-User', this.user)
 
-    // AbortController timeout prevents connection pool exhaustion after long sessions.
-    // See: https://github.com/Comfy-Org/ComfyUI_frontend/issues/14389
-    const FETCH_TIMEOUT_MS = 60_000
-    const controller = new AbortController()
+    const controller = options?.signal ? null : new AbortController()
     const startTime = Date.now()
-    const timeoutId = setTimeout(() => {
-      const duration_ms = Date.now() - startTime
-      const method = (options?.method ?? 'GET').toUpperCase()
+    const timeoutId = controller
+      ? setTimeout(() => {
+          const duration_ms = Date.now() - startTime
+          const method = (options?.method ?? 'GET').toUpperCase()
 
-      Sentry.addBreadcrumb({
-        category: 'fetch',
-        message: `Timeout on ${method} ${route}`,
-        level: 'warning',
-        data: { duration_ms, timeout_ms: FETCH_TIMEOUT_MS }
-      })
+          Sentry.addBreadcrumb({
+            category: 'fetch',
+            message: `Timeout on ${method} ${route}`,
+            level: 'warning',
+            data: { duration_ms, timeout_ms: FETCH_TIMEOUT_MS }
+          })
 
-      useTelemetry()?.trackFetchTimeout({
-        route,
-        method,
-        duration_ms,
-        timeout_ms: FETCH_TIMEOUT_MS
-      })
+          useTelemetry()?.trackFetchTimeout({
+            route,
+            method,
+            duration_ms,
+            timeout_ms: FETCH_TIMEOUT_MS
+          })
 
-      controller.abort()
-    }, FETCH_TIMEOUT_MS)
-
-    const signal = options?.signal
-      ? AbortSignal.any([options.signal, controller.signal])
-      : controller.signal
+          controller.abort()
+        }, FETCH_TIMEOUT_MS)
+      : undefined
 
     return fetchWithUnifiedRemint(
       this.apiURL(route),
-      { cache: 'no-cache', ...options, headers, signal },
+      {
+        cache: 'no-cache',
+        ...options,
+        headers,
+        signal: options?.signal ?? controller?.signal
+      },
       unifiedRetryOn401
-    ).finally(() => clearTimeout(timeoutId))
+    ).finally(() => {
+      if (timeoutId !== undefined) clearTimeout(timeoutId)
+    })
   }
 
   /**
