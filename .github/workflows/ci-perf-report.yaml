@@ -5,6 +5,8 @@ on:
     branches: [main, core/*]
   pull_request:
     branches-ignore: [wip/*, draft/*, temp/*]
+  schedule:
+    - cron: '17 8 * * *'
 
 concurrency:
   group: perf-${{ github.ref }}
@@ -15,6 +17,7 @@ permissions:
 
 jobs:
   changes:
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -122,22 +125,27 @@ jobs:
           echo "::error::Performance tests failed; partial metrics were saved when available."
           exit 1
 
-      # The save step above is continue-on-error, so a broken save is
-      # invisible on its own. This step turns sustained staleness into a
-      # red job on main pushes: if the newest commit on perf-data is older
-      # than 7 days, the baseline pipeline is broken and someone must look.
-      - name: Alarm if perf baseline is stale
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+  perf-baseline-freshness:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Check perf baseline freshness
         run: |
-          git fetch origin perf-data
-          NEWEST=$(git log -1 --format=%ct origin/perf-data)
+          if ! git fetch --depth=1 origin perf-data; then
+            echo "::error::The perf-data branch could not be read."
+            exit 1
+          fi
+          NEWEST=$(git log -1 --format=%ct FETCH_HEAD)
           NOW=$(date +%s)
           AGE_SECONDS=$(( NOW - NEWEST ))
           AGE_DAYS=$(( AGE_SECONDS / 86400 ))
           echo "Newest perf-data commit is ${AGE_DAYS} day(s) old"
-          # Compare exact elapsed seconds: integer AGE_DAYS truncates, so a
-          # commit 7d23h old would otherwise pass the -gt 7 day check.
           if [ "$AGE_SECONDS" -gt $(( 7 * 86400 )) ]; then
-            echo "::error::Perf baseline is stale (${AGE_DAYS} days old). The baseline save step is failing silently. See issue #15545 for the last occurrence."
+            echo "::error::Perf baseline is stale (${AGE_DAYS} days old). CI has not saved a baseline in seven days. Inspect performance workflow failures and issue #15545."
             exit 1
           fi
