@@ -76,7 +76,6 @@ export const workspaceSwitcherTest = comfyPageFixture.extend({
       await route.fulfill(
         jsonRoute(
           createBillingCapabilities(workspaceId, {
-            can_subscribe_self_serve: workspaceId !== 'ws-team-long',
             can_top_up: workspaceId !== 'ws-team-long'
           })
         )
