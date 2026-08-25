@@ -3,6 +3,9 @@ import type { DownloadState } from '@comfyorg/comfyui-electron-types'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
+import type { ElectronDownload } from '@/stores/electronDownloadStore'
+
 const downloadManager = vi.hoisted(() => ({
   cancelDownload: vi.fn(),
   getAllDownloads: vi.fn(),
@@ -16,63 +19,6 @@ vi.mock('@/platform/distribution/types', () => ({ isDesktop: true }))
 vi.mock('@/utils/envUtil', () => ({
   electronAPI: () => ({ DownloadManager: downloadManager })
 }))
-
-type ElectronDownload = {
-  url: string
-  filename: string
-  progress?: number
-  receivedBytes?: number
-  savePath?: string
-  status?: DownloadStatus
-  totalBytes?: number
-}
-
-type NormalizedElectronDownload = ElectronDownload & {
-  status: DownloadStatus
-  receivedBytes: number
-  totalBytes: number
-}
-
-type NormalizeElectronDownloadState = (
-  download: DownloadState
-) => NormalizedElectronDownload
-
-type ElectronDownloadStore = {
-  findByUrl: (url: string) => ElectronDownload | undefined
-  initialize: () => Promise<void>
-  subscribeToDownloadProgress?: (
-    listener: (download: ElectronDownload) => void
-  ) => () => void
-}
-
-type ElectronDownloadStoreModule = {
-  normalizeElectronDownloadState: NormalizeElectronDownloadState
-  useElectronDownloadStore: () => ElectronDownloadStore
-}
-
-function isElectronDownloadStoreModule(
-  value: unknown
-): value is ElectronDownloadStoreModule {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'normalizeElectronDownloadState' in value &&
-    typeof value.normalizeElectronDownloadState === 'function' &&
-    'useElectronDownloadStore' in value &&
-    typeof value.useElectronDownloadStore === 'function'
-  )
-}
-
-const modulePath = './electronDownloadStore'
-const electronDownloadStoreModule: unknown = await import(modulePath)
-
-function getModule(): ElectronDownloadStoreModule {
-  if (!isElectronDownloadStoreModule(electronDownloadStoreModule)) {
-    throw new Error('Expected electron download store exports')
-  }
-
-  return electronDownloadStoreModule
-}
 
 function deferred<T>() {
   let resolve!: (value: T) => void
@@ -108,37 +54,6 @@ function progressUpdate(overrides: Partial<ElectronDownload> = {}) {
   }
 }
 
-describe('normalizeElectronDownloadState', () => {
-  it('maps restored state, bytes, and a valid byte fraction', () => {
-    expect(
-      getModule().normalizeElectronDownloadState(
-        downloadState({ state: DownloadStatus.PAUSED })
-      )
-    ).toEqual({
-      url: 'https://example.com/model.safetensors',
-      filename: 'model.safetensors',
-      status: DownloadStatus.PAUSED,
-      receivedBytes: 256,
-      totalBytes: 1024,
-      progress: 0.25
-    })
-  })
-
-  it('keeps restored bytes without inventing a fraction for an empty total', () => {
-    expect(
-      getModule().normalizeElectronDownloadState(
-        downloadState({ receivedBytes: 0, totalBytes: 0 })
-      )
-    ).toEqual({
-      url: 'https://example.com/model.safetensors',
-      filename: 'model.safetensors',
-      status: DownloadStatus.IN_PROGRESS,
-      receivedBytes: 0,
-      totalBytes: 0
-    })
-  })
-})
-
 describe('useElectronDownloadStore progress observation', () => {
   let emitProgress: ((download: ElectronDownload) => void) | undefined
 
@@ -153,12 +68,47 @@ describe('useElectronDownloadStore progress observation', () => {
       })
   })
 
+  it('restores status, bytes, and a valid byte fraction', async () => {
+    downloadManager.getAllDownloads.mockResolvedValueOnce([
+      downloadState({ state: DownloadStatus.PAUSED })
+    ])
+    const store = useElectronDownloadStore()
+
+    await vi.waitFor(() => {
+      expect(store.findByUrl('https://example.com/model.safetensors')).toEqual({
+        url: 'https://example.com/model.safetensors',
+        filename: 'model.safetensors',
+        status: DownloadStatus.PAUSED,
+        receivedBytes: 256,
+        totalBytes: 1024,
+        progress: 0.25
+      })
+    })
+  })
+
+  it('keeps restored bytes without inventing a fraction for an empty total', async () => {
+    downloadManager.getAllDownloads.mockResolvedValueOnce([
+      downloadState({ receivedBytes: 0, totalBytes: 0 })
+    ])
+    const store = useElectronDownloadStore()
+
+    await vi.waitFor(() => {
+      expect(store.findByUrl('https://example.com/model.safetensors')).toEqual({
+        url: 'https://example.com/model.safetensors',
+        filename: 'model.safetensors',
+        status: DownloadStatus.IN_PROGRESS,
+        receivedBytes: 0,
+        totalBytes: 0
+      })
+    })
+  })
+
   it('installs the live listener before awaiting the restored snapshot', () => {
     downloadManager.getAllDownloads.mockReturnValueOnce(
       deferred<DownloadState[]>().promise
     )
 
-    getModule().useElectronDownloadStore()
+    useElectronDownloadStore()
 
     expect(downloadManager.onDownloadProgress).toHaveBeenCalledOnce()
     expect(emitProgress).toBeTypeOf('function')
@@ -169,7 +119,7 @@ describe('useElectronDownloadStore progress observation', () => {
     downloadManager.getAllDownloads.mockReturnValueOnce(
       automaticSnapshot.promise
     )
-    const store = getModule().useElectronDownloadStore()
+    const store = useElectronDownloadStore()
     downloadManager.getAllDownloads.mockRejectedValueOnce(
       new Error('snapshot unavailable')
     )
@@ -193,7 +143,7 @@ describe('useElectronDownloadStore progress observation', () => {
 
   it('notifies only the changed live item and clears restored byte details', async () => {
     downloadManager.getAllDownloads.mockResolvedValueOnce([downloadState()])
-    const store = getModule().useElectronDownloadStore()
+    const store = useElectronDownloadStore()
     await vi.waitFor(() => {
       expect(
         store.findByUrl('https://example.com/model.safetensors')
