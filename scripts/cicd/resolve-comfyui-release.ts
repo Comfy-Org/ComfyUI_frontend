@@ -159,10 +159,13 @@ function resolveTargetVersion({
   branchVersion: string | null
 }): { targetVersion: string; pendingBump: boolean } | null {
   const taggedVersion = latestPatchTag?.replace(/^v/, '') ?? null
+  const [branchMajor, branchMinor] = branchVersion?.split('.').map(Number) ?? []
 
   if (
     branchVersion !== null &&
     isValidSemver(branchVersion) &&
+    branchMajor === targetMajor &&
+    branchMinor === targetMinor &&
     (taggedVersion === null || compareSemver(branchVersion, taggedVersion) > 0)
   ) {
     return { targetVersion: branchVersion, pendingBump: true }

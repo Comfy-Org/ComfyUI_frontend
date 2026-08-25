@@ -189,4 +189,18 @@ describe('resolveTargetVersion', () => {
       })
     ).toEqual({ targetVersion: '1.48.8', pendingBump: false })
   })
+
+  it.for([{ branchVersion: '1.49.0' }, { branchVersion: '2.0.0' }])(
+    'ignores branch version $branchVersion from another release line',
+    ({ branchVersion }) => {
+      expect(
+        resolveTargetVersion({
+          ...line,
+          latestPatchTag: 'v1.48.7',
+          hasPendingCommits: true,
+          branchVersion
+        })
+      ).toEqual({ targetVersion: '1.48.8', pendingBump: false })
+    }
+  )
 })
