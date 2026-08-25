@@ -32,11 +32,16 @@ test.describe('Homepage @smoke', () => {
     ).toBeVisible()
   })
 
-  test('ModelReleaseSection is visible', async ({ page }) => {
-    await expect(page.getByText('New Model Release')).toBeVisible()
-    const cta = page.getByRole('link', { name: 'View Model Features' })
+  test('ModelReleaseSection carousel shows the active slide', async ({
+    page
+  }) => {
+    const activeSlide = page.locator('article[aria-hidden="false"]', {
+      hasText: 'New Model Release'
+    })
+    await expect(activeSlide.getByText('New Model Release')).toBeVisible()
+    const cta = activeSlide.getByRole('link', { name: 'Explore Seedance 2.5' })
     await expect(cta).toBeVisible()
-    await expect(cta).toHaveAttribute('href', '/minimax-h3')
+    await expect(cta).toHaveAttribute('href', '/seedance-2.5')
   })
 
   test('FeaturedWorkflowsSection carousel is visible', async ({ page }) => {
