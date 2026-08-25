@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { effectScope, ref } from 'vue'
+import { effectScope } from 'vue'
 
 const {
   mockShowSignInDialog,
@@ -393,11 +393,51 @@ describe('useSettingsPlansCheckout', () => {
     expect(mockShowLayoutDialog).not.toHaveBeenCalled()
   })
 
-  it('is unlocked while nothing is in flight', async () => {
+  it('is unlocked at rest before any checkout begins', async () => {
     const checkout = await setup()
-    const open = ref(false)
-    expect(open.value).toBe(false)
 
     expect(checkout.isSubscribing.value).toBe(false)
+  })
+
+  it('keeps the launcher promise pending until the dialog actually closes', async () => {
+    const checkout = await setup()
+    let settled = false
+    const pending = checkout.subscribeToPersonal(PERSONAL).then(() => {
+      settled = true
+    })
+    await vi.waitFor(() => expect(mockShowLayoutDialog).toHaveBeenCalled())
+
+    // Dialog is open: the click must still be in flight and the section locked.
+    await Promise.resolve()
+    expect(settled).toBe(false)
+    expect(checkout.isSubscribing.value).toBe(true)
+
+    setDialogOpen(false)
+    lastDialogProps().props.onClose()
+    await pending
+    expect(settled).toBe(true)
+    expect(checkout.isSubscribing.value).toBe(false)
+  })
+
+  it('resolves each checkout once across repeated open/close cycles', async () => {
+    const checkout = await setup()
+    let resolutions = 0
+
+    for (let cycle = 0; cycle < 2; cycle++) {
+      const pending = checkout.subscribeToPersonal(PERSONAL).then(() => {
+        resolutions++
+      })
+      await vi.waitFor(() =>
+        expect(mockShowLayoutDialog).toHaveBeenCalledTimes(cycle + 1)
+      )
+      setDialogOpen(false)
+      lastDialogProps().props.onClose()
+      await pending
+    }
+
+    // A leaked watcher from cycle 0 would fire again on cycle 1's close and
+    // over-resolve; a re-entrancy leak would open a third dialog.
+    expect(resolutions).toBe(2)
+    expect(mockShowLayoutDialog).toHaveBeenCalledTimes(2)
   })
 })

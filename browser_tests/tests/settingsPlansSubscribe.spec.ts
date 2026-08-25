@@ -25,14 +25,6 @@ import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { CommandHelper } from '@e2e/fixtures/helpers/CommandHelper'
 import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
-/**
- * Off-cloud, the plan-card CTAs run the shared checkout flow in a dialog: every
- * pick is previewed by the server first, a fresh subscribe confirms then opens
- * the returned Stripe page, and a plan change shows the server's proration and
- * echoes it on subscribe. Requests go to the workspace rail on cloud ingest
- * (never the legacy checkout shortlink). Mocks are cross-origin, so fulfills
- * carry CORS headers and answer OPTIONS preflights.
- */
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
 const CORS_HEADERS = {
@@ -54,8 +46,6 @@ async function fulfillJson(route: Route, body: unknown) {
   })
 }
 
-// Distinct credits per tier so a confirm step that showed another tier's (or
-// a constant's) figure could not pass as the clicked card's.
 function makePlan(
   slug: string,
   tier: Plan['tier'],
@@ -155,8 +145,6 @@ const newSubscriptionPreview: PreviewSubscribeResponse = {
 const PRORATION_AT = '2026-08-25T10:00:00Z'
 const CURRENT_PERIOD_END = '2026-09-30T00:00:00Z'
 
-// The server's word on a Standard -> Creator upgrade: what is charged today,
-// when it lands, and the instant the charge was priced at.
 const upgradePreview: PreviewSubscribeResponse = {
   allowed: true,
   transition_type: 'upgrade',
@@ -188,19 +176,7 @@ async function mockLegacyReads(page: Page) {
   )
 }
 
-/**
- * Boots the app with a mocked Firebase session and opens Plan & Credits.
- * window.open is stubbed; the opened URL lands in dataset.openedUrl.
- *
- * A multi-user server boots to a user-selection screen unless a real user id
- * is seeded, and a fresh CI server has no users at all — find or create one
- * (this drives a raw page, so it cannot reuse ComfyPage.setupUser; mirror its
- * status guards so a server error surfaces here, not as a later opaque boot
- * hang).
- */
-// FE-1584: off-cloud billing reads carry the WORKSPACE token, so the boot must
-// hydrate a personal owner wallet the way localAuthFixture does. Cross-origin,
-// hence the CORS-aware fulfills instead of the same-origin workspaceMocks.
+// FE-1584: off-cloud billing reads need a hydrated workspace wallet + token.
 async function mockWorkspaceBootstrap(page: Page) {
   const personal = workspace('personal', 'owner')
   await page.route('**/api/workspaces', (r) =>
@@ -302,8 +278,6 @@ test.describe('Local plans section subscribe', () => {
     await page.route('**/api/billing/status', (r) =>
       fulfillJson(r, billingStatus(subscribed ? 'standard-yearly' : undefined))
     )
-    // With a hydrated wallet the credits tile reads the workspace rail, so its
-    // balance flips with `subscribed` to prove the reconcile reaches the tile.
     await page.route('**/api/billing/balance', (r) => {
       const balance: BillingBalanceResponse = {
         amount_micros: subscribed ? 6000 : 0,
@@ -351,8 +325,6 @@ test.describe('Local plans section subscribe', () => {
     await expect(dialog.getByText('12,660')).toHaveCount(0)
     await chooseStandard.click()
 
-    // The server previews the pick first; the confirm step shows the credits
-    // the catalog card advertised, then the user subscribes from it.
     const checkout = page.getByTestId('settings-plan-checkout')
     await expect(checkout.getByText('Confirm your payment')).toBeVisible()
     await expect(checkout.getByText('50,400')).toBeVisible()
@@ -362,8 +334,6 @@ test.describe('Local plans section subscribe', () => {
       .click()
 
     // The subscribe goes to the workspace rail on the ingest origin, never the
-    // legacy checkout shortlink. The slug encodes the cadence, so the personal
-    // body carries no billing_cycle.
     await expect.poll(() => subscribeRequests.length).toBe(1)
     expect(billingPosts).toEqual(['preview', 'subscribe'])
     expect(subscribeRequests[0].body).toMatchObject({
@@ -381,8 +351,6 @@ test.describe('Local plans section subscribe', () => {
       )
       .toBe('https://checkout.stripe.com/c/pay/test-session')
 
-    // Op-polling lands the success step; closing it reveals the section with
-    // the subscribed card flipped to disabled Current.
     await expect(checkout.getByText("You're all set")).toBeVisible({
       timeout: 30_000
     })
@@ -394,8 +362,6 @@ test.describe('Local plans section subscribe', () => {
       dialog.getByRole('button', { name: 'Choose Creator' })
     ).toBeEnabled()
 
-    // The embedded credits tile re-renders from the reconciled balance
-    // (6000 micros -> 12,660 credits), proving the reconcile reaches the tile.
     await expect(dialog.getByText('12,660').first()).toBeVisible({
       timeout: 15_000
     })
@@ -447,8 +413,6 @@ test.describe('Local plans section subscribe', () => {
     ).toBeDisabled()
     await dialog.getByRole('button', { name: 'Choose Creator' }).click()
 
-    // The transition step is the server's preview: today's charge, the
-    // effective instant, and the target plan's own credits.
     const checkout = page.getByTestId('settings-plan-checkout')
     await expect(checkout.getByText('Confirm your upgrade')).toBeVisible()
     await expect(checkout.getByText('Total due today')).toBeVisible()
@@ -518,8 +482,6 @@ test.describe('Local plans section subscribe', () => {
     const dialog = await bootToPlansSection(page, request)
     await dialog.getByRole('button', { name: 'Choose Creator' }).click()
 
-    // A cancelled subscription is reactivated by the change, so the banner
-    // discloses the charge and the confirm stays locked until it is accepted.
     const checkout = page.getByTestId('settings-plan-checkout')
     await expect(
       checkout.getByText('Reactivating your subscription')
@@ -612,7 +574,6 @@ test.describe('Local plans section subscribe', () => {
 
     await page.setViewportSize({ width: 390, height: 844 })
 
-    // 1px tolerance for subpixel rounding.
     await expect
       .poll(() => section.evaluate((el) => el.scrollWidth - el.clientWidth))
       .toBeLessThanOrEqual(1)
