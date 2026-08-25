@@ -34,12 +34,18 @@ test.describe(
       await comfyPage.workflow.loadWorkflow('execution/dynamic_combo_preview')
 
       const sourceNode = await comfyPage.nodeOps.getNodeRefById('1')
-      await comfyPage.canvas.click()
-      await comfyPage.page.keyboard.press('Control+a')
-      const subgraphNode = await sourceNode.convertToSubgraph()
+      const previewNode = await comfyPage.nodeOps.getNodeRefById('2')
+      await sourceNode.click('title')
+      await previewNode.click('title', { modifiers: ['Control'] })
+      await sourceNode.convertToSubgraph()
+
+      const subgraphNodeId = await comfyPage.subgraph.findSubgraphNodeId()
+      const subgraphNode =
+        await comfyPage.nodeOps.getNodeRefById(subgraphNodeId)
 
       await comfyPage.runButton.click()
 
+      await subgraphNode.centerOnNode()
       await subgraphNode.navigateIntoSubgraph()
 
       await expectPreviewTextContains(comfyPage.page, 'DynamicCombo output')
