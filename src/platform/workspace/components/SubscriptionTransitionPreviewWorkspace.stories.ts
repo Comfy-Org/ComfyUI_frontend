@@ -43,6 +43,19 @@ const NEXT_MONTHLY_RENEWAL = '2026-09-01T00:00:00Z'
 const NEXT_ANNUAL_RENEWAL = '2027-08-01T00:00:00Z'
 const NEXT_MONTHLY_AFTER_CANCEL = '2026-09-25T00:00:00Z'
 
+const MONTHLY_CREDITS: Partial<Record<PreviewPlanInfo['tier'], number>> = {
+  STANDARD: 4_200,
+  CREATOR: 7_400,
+  PRO: 21_100
+}
+
+function periodCredits(
+  tier: PreviewPlanInfo['tier'],
+  duration: PreviewPlanInfo['duration']
+): number {
+  return (MONTHLY_CREDITS[tier] ?? 0) * (duration === 'ANNUAL' ? 12 : 1)
+}
+
 function plan(
   tier: PreviewPlanInfo['tier'],
   duration: PreviewPlanInfo['duration'],
@@ -54,11 +67,11 @@ function plan(
     tier,
     duration,
     price_cents: priceCents,
-    credits_cents: 0,
+    credits_cents: periodCredits(tier, duration),
     seat_summary: {
       seat_count: 1,
       total_cost_cents: priceCents,
-      total_credits_cents: 0
+      total_credits_cents: periodCredits(tier, duration)
     },
     period_end: periodEnd
   }

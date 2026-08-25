@@ -155,12 +155,12 @@ const priceUnitLabel = computed(() =>
 )
 
 const displayCredits = computed(() => {
-  const monthlyCredits = teamPlan
-    ? teamPlan.credits
-    : tierKey
-      ? (getTierCredits(tierKey) ?? 0)
-      : 0
-  return n(isYearly.value ? monthlyCredits * 12 : monthlyCredits)
+  if (teamPlan) {
+    return n(isYearly.value ? teamPlan.credits * 12 : teamPlan.credits)
+  }
+  if (previewData) return n(previewData.new_plan.credits_cents)
+  const monthly = tierKey ? (getTierCredits(tierKey) ?? 0) : 0
+  return n(isYearly.value ? monthly * 12 : monthly)
 })
 
 const creditsUnitLabel = computed(() =>

@@ -46,7 +46,8 @@ vi.mock('./InviteMembersForm.vue', () => ({
 
 function makePreviewData(
   priceCents: number,
-  duration: 'MONTHLY' | 'ANNUAL' = 'MONTHLY'
+  duration: 'MONTHLY' | 'ANNUAL' = 'MONTHLY',
+  creditsCents = duration === 'ANNUAL' ? 88_800 : 7_400
 ): PreviewSubscribeResponse {
   return {
     allowed: true,
@@ -62,11 +63,11 @@ function makePreviewData(
       tier: 'STANDARD',
       duration,
       price_cents: priceCents,
-      credits_cents: 0,
+      credits_cents: creditsCents,
       seat_summary: {
         seat_count: 1,
         total_cost_cents: priceCents,
-        total_credits_cents: 0
+        total_credits_cents: creditsCents
       }
     }
   }
@@ -83,9 +84,7 @@ function renderCard(props: Record<string, unknown> = {}) {
   return render(SubscriptionSuccessWorkspace, {
     props: {
       tierKey: 'creator',
-      previewData: {
-        new_plan: { price_cents: 1600 }
-      } as unknown as PreviewSubscribeResponse,
+      previewData: makePreviewData(1_600),
       ...props
     },
     global: {
@@ -148,6 +147,25 @@ describe('SubscriptionSuccessWorkspace', () => {
     expect(screen.queryByText('$28')).toBeNull()
     expect(screen.getByText('subscription.usdPerYear')).toBeTruthy()
     expect(screen.getByText(/88800 subscription\.perYear/)).toBeTruthy()
+  })
+
+  it('shows the credits from the preview, not the tier constant', () => {
+    render(SubscriptionSuccessWorkspace, {
+      props: {
+        tierKey: 'creator',
+        previewData: makePreviewData(3_500, 'MONTHLY', 9_900)
+      },
+      global: {
+        mocks: { $t: (key: string) => key },
+        stubs: {
+          Button: {
+            template: '<button @click="$emit(\'click\')"><slot /></button>'
+          }
+        }
+      }
+    })
+    expect(screen.getByText(/9900 subscription\.perMonth/)).toBeTruthy()
+    expect(screen.queryByText(/7400 subscription\.perMonth/)).toBeNull()
   })
 
   it('shows the monthly price and monthly credits for a monthly personal plan', () => {
