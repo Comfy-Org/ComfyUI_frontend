@@ -2,10 +2,22 @@ import { expect } from '@playwright/test'
 import type { Route } from '@playwright/test'
 
 import type {
+  BillingBalanceResponse,
+  BillingOpStatusResponse,
   BillingPlansResponse,
   BillingStatusResponse,
-  Plan
+  Plan,
+  SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
+
+// The GET /api/users contract (comfy server, not the ingest billing API): a
+// user map keyed by id. Typed locally so a mock can't drift from the shape the
+// app reads (ComfyApi.getUserConfig).
+interface ComfyUsersResponse {
+  storage: 'server' | 'browser'
+  migrated?: boolean
+  users: Record<string, string>
+}
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
@@ -125,9 +137,11 @@ test.describe('Local plans section subscribe (FE-1600 S2)', () => {
     await page.route('**/api/billing/status', (r) =>
       fulfillJson(r, billingStatus(subscribed ? 'standard-yearly' : undefined))
     )
-    await page.route('**/api/billing/balance', (r) =>
-      fulfillJson(r, { amount_micros: 0, currency: 'usd' })
-    )
+    const balance: BillingBalanceResponse = {
+      amount_micros: 0,
+      currency: 'usd'
+    }
+    await page.route('**/api/billing/balance', (r) => fulfillJson(r, balance))
     await page.route('**/api/billing/subscribe', async (r) => {
       if (r.request().method() === 'POST') {
         subscribed = true
@@ -136,23 +150,28 @@ test.describe('Local plans section subscribe (FE-1600 S2)', () => {
           body: r.request().postDataJSON()
         })
       }
-      await fulfillJson(r, {
+      // Typed from the contract so a schema change can't leave this green
+      // against a payload production would reject.
+      const response: SubscribeResponse = {
         status: 'needs_payment_method',
         payment_method_url: 'https://checkout.stripe.com/c/pay/test-session',
         billing_op_id: 'op-e2e-1'
-      })
+      }
+      await fulfillJson(r, response)
     })
-    await page.route('**/api/billing/ops/**', (r) =>
-      fulfillJson(r, { status: 'succeeded' })
-    )
+    const opStatus: BillingOpStatusResponse = {
+      id: 'op-e2e-1',
+      status: 'succeeded',
+      started_at: '2026-01-01T00:00:00Z',
+      completed_at: '2026-01-01T00:00:05Z'
+    }
+    await page.route('**/api/billing/ops/**', (r) => fulfillJson(r, opStatus))
 
     // A multi-user server boots to a user-selection screen unless a real user
     // id is seeded, and a fresh CI server has no users at all — find or create
     // one, same approach as the ComfyPage fixture.
     const usersResponse = await request.get(`${APP_URL}/api/users`)
-    const usersBody = (await usersResponse.json()) as {
-      users?: Record<string, string>
-    }
+    const usersBody = (await usersResponse.json()) as ComfyUsersResponse
     let userId = Object.keys(usersBody.users ?? {})[0]
     if (!userId) {
       const created = await request.post(`${APP_URL}/api/users`, {
