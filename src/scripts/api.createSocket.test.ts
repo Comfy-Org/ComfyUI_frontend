@@ -25,8 +25,6 @@ describe('createSocket WebSocket host', () => {
   })
 
   afterEach(() => {
-    vi.useRealTimers()
-    vi.unstubAllGlobals()
     delete window.__COMFY_API_WS_HOST__
     window.name = ''
     api.socket = null
