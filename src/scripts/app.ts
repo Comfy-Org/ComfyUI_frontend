@@ -2057,13 +2057,28 @@ export class ComfyApp {
         }
         this.canvas.setGraph(this.rootGraph)
       })
-      if (outcome === 'core-nodes-unavailable') {
-        useToastStore().addAlert(t('toastMessages.a1111CoreNodesUnavailable'))
-        return
-      }
-      if (outcome === 'not-a1111') {
-        this.showErrorOnFileLoad(file)
-        return
+      switch (outcome) {
+        case 'core-nodes-unavailable':
+          useToastStore().addAlert(t('toastMessages.a1111CoreNodesUnavailable'))
+          return
+        case 'not-a1111':
+          this.showErrorOnFileLoad(file)
+          return
+        case 'imported-without-embeddings':
+          useToastStore().add({
+            severity: 'warn',
+            summary: t('g.warning'),
+            detail: t('toastMessages.a1111EmbeddingsUnavailable')
+          })
+          break
+        case 'imported':
+          break
+        default: {
+          const unexpectedOutcome: never = outcome
+          throw new Error(
+            `Unhandled A1111 import outcome: ${unexpectedOutcome}`
+          )
+        }
       }
       await useWorkflowService().afterLoadNewGraph(
         fileName,
