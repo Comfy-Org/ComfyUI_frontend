@@ -52,8 +52,8 @@ canvas, a viewport overlay, an emitted event. If you're just deriving one
 value from another, that's a `computed` (or a writable `computed` if the UI
 also needs to write it back), not a watcher.
 
-Before reaching for `watch`, ask: *is this a value, or is this a side
-effect?* A widget-store-backed `computed` re-evaluates automatically whenever
+Before reaching for `watch`, ask: _is this a value, or is this a side
+effect?_ A widget-store-backed `computed` re-evaluates automatically whenever
 its dependencies change — no explicit synchronization code, and nothing to
 dispose. Reach for a `watch` only for the leftover imperative step (calling
 into Three.js, a canvas 2D context, a legacy callback) that a computed value
