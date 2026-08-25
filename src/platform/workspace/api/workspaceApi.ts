@@ -649,7 +649,7 @@ export const workspaceApi = {
     const headers = await getAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.get<BillingOpStatusResponse>(
-        workspaceApiUrl(`/billing/ops/${opId}`),
+        workspaceApiUrl(`/billing/ops/${encodeURIComponent(opId)}`),
         { headers, timeout: 30_000 }
       )
       return response.data

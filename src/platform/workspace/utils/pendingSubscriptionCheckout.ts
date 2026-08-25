@@ -21,6 +21,7 @@ type PendingSubscriptionSelection =
 export interface PendingSubscriptionCheckout {
   operationId: string
   workspaceId: string
+  ownerUid: string
   selection: PendingSubscriptionSelection
   attemptedAt: number
 }
@@ -68,6 +69,8 @@ function isPendingCheckout(
     !isNonEmptyString(value.operationId) ||
     !('workspaceId' in value) ||
     !isNonEmptyString(value.workspaceId) ||
+    !('ownerUid' in value) ||
+    !isNonEmptyString(value.ownerUid) ||
     !('attemptedAt' in value) ||
     typeof value.attemptedAt !== 'number' ||
     !Number.isFinite(value.attemptedAt) ||

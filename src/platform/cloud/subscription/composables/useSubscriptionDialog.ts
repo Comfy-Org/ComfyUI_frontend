@@ -15,6 +15,7 @@ import type { SubscriptionCheckoutSelection } from '@/platform/workspace/composa
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useAuthStore } from '@/stores/authStore'
 import {
   clearPendingSubscriptionCheckout,
   getPendingSubscriptionCheckout
@@ -245,12 +246,13 @@ export const useSubscriptionDialog = () => {
 
     const {
       fetchPlans,
+      fetchStatus,
       teamCreditStops,
       currentTeamCreditStop,
       subscription,
       subscriptionStatus
     } = useBillingContext()
-    await fetchPlans()
+    await Promise.all([fetchPlans(), fetchStatus()])
     const stop = mapApiTeamCreditStops(teamCreditStops.value?.stops ?? []).find(
       ({ id }) => id === selection.teamCreditStopId
     )
@@ -278,7 +280,10 @@ export const useSubscriptionDialog = () => {
   async function resumePendingCheckout(
     pending: PendingSubscriptionCheckout
   ): Promise<void> {
-    if (pending.workspaceId !== workspaceStore.activeWorkspaceId) {
+    if (
+      pending.workspaceId !== workspaceStore.activeWorkspaceId ||
+      pending.ownerUid !== useAuthStore().userId
+    ) {
       clearPendingSubscriptionCheckout(pending.operationId)
       return
     }
@@ -297,7 +302,7 @@ export const useSubscriptionDialog = () => {
           attemptStartedAt: pending.attemptedAt
         }
       )
-      if (operation.status === 'succeeded') return
+      if (operation.status !== 'failed') return
 
       const initialCheckout = await restoreCheckoutSelection(pending)
       showPricingTable({

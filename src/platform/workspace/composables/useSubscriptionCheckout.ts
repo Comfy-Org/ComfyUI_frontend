@@ -17,6 +17,7 @@ import type {
   SubscriptionCheckoutType
 } from '@/platform/telemetry/types'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
+import { useAuthStore } from '@/stores/authStore'
 import type {
   Plan,
   PreviewSubscribeOptions,
@@ -1229,7 +1230,8 @@ export function useSubscriptionCheckout(
     context: SubscriptionOutcomeContext
   ): void {
     const workspaceId = workspaceStore.activeWorkspaceId
-    if (!workspaceId) return
+    const ownerUid = useAuthStore().userId
+    if (!workspaceId || !ownerUid) return
     const attemptedAt = context.attemptStartedAt ?? Date.now()
 
     if (context.tier === 'team') {
@@ -1238,6 +1240,7 @@ export function useSubscriptionCheckout(
       savePendingSubscriptionCheckout({
         operationId,
         workspaceId,
+        ownerUid,
         selection: {
           planMode: 'team',
           teamCreditStopId,
@@ -1251,6 +1254,7 @@ export function useSubscriptionCheckout(
     savePendingSubscriptionCheckout({
       operationId,
       workspaceId,
+      ownerUid,
       selection: {
         planMode: 'personal',
         tierKey: context.tier,

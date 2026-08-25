@@ -3038,6 +3038,7 @@ describe('useSubscriptionCheckout', () => {
         ).toMatchObject({
           operationId: 'op-legacy-alipay',
           workspaceId: 'workspace-1',
+          ownerUid: 'user-1',
           selection: {
             planMode: 'personal',
             tierKey: 'creator',
@@ -3049,6 +3050,10 @@ describe('useSubscriptionCheckout', () => {
 
       resolveOperation({ status: 'failed', workspaceId: 'workspace-1' })
       await payment
+
+      expect(
+        sessionStorage.getItem('comfy:pending-subscription-checkout')
+      ).toBeNull()
     })
 
     it('shows error toast on subscribe failure', async () => {

@@ -28,8 +28,10 @@ const mockCurrentPlanSlug = vi.hoisted(() => ({ value: null as string | null }))
 const mockCanManageSubscription = vi.hoisted(() => ({ value: true }))
 const mockEmbeddedCheckoutEnabled = vi.hoisted(() => ({ value: false }))
 const mockActiveWorkspaceId = vi.hoisted(() => ({ value: 'workspace-1' }))
+const mockUserId = vi.hoisted(() => ({ value: 'user-1' as string | undefined }))
 const mockStartOperation = vi.hoisted(() => vi.fn())
 const mockFetchPlans = vi.hoisted(() => vi.fn())
+const mockFetchStatus = vi.hoisted(() => vi.fn())
 const mockTeamCreditStops = vi.hoisted(() => ({
   value: null as TeamCreditStops | null
 }))
@@ -110,6 +112,14 @@ vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
   useBillingOperationStore: () => ({ startOperation: mockStartOperation })
 }))
 
+vi.mock('@/stores/authStore', () => ({
+  useAuthStore: () => ({
+    get userId() {
+      return mockUserId.value
+    }
+  })
+}))
+
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     isFreeTier: mockIsFreeTier,
@@ -118,6 +128,7 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     currentPlanSlug: mockCurrentPlanSlug,
     tier: mockTier,
     fetchPlans: mockFetchPlans,
+    fetchStatus: mockFetchStatus,
     teamCreditStops: mockTeamCreditStops,
     currentTeamCreditStop: mockCurrentTeamCreditStop,
     subscription: mockSubscription,
@@ -165,8 +176,10 @@ describe('useSubscriptionDialog', () => {
     mockCanManageSubscription.value = true
     mockEmbeddedCheckoutEnabled.value = false
     mockActiveWorkspaceId.value = 'workspace-1'
+    mockUserId.value = 'user-1'
     mockStartOperation.mockResolvedValue({ status: 'succeeded' })
     mockFetchPlans.mockResolvedValue(undefined)
+    mockFetchStatus.mockResolvedValue(undefined)
     mockTeamCreditStops.value = null
     mockCurrentTeamCreditStop.value = null
     mockSubscription.value = null
@@ -663,6 +676,7 @@ describe('useSubscriptionDialog', () => {
       savePendingSubscriptionCheckout({
         operationId: 'op-alipay',
         workspaceId: 'workspace-1',
+        ownerUid: 'user-1',
         selection: {
           planMode: 'personal',
           tierKey: 'creator',
@@ -700,10 +714,82 @@ describe('useSubscriptionDialog', () => {
       ).toBeNull()
     })
 
+    it('completes a succeeded redirect silently', async () => {
+      mockShouldUseWorkspaceBilling.value = true
+      savePendingSubscriptionCheckout({
+        operationId: 'op-succeeded',
+        workspaceId: 'workspace-1',
+        ownerUid: 'user-1',
+        selection: {
+          planMode: 'personal',
+          tierKey: 'creator',
+          billingCycle: 'monthly'
+        },
+        attemptedAt: Date.now()
+      })
+
+      const { resumePendingPricingFlow } = useSubscriptionDialog()
+      await resumePendingPricingFlow()
+
+      expect(mockStartOperation).toHaveBeenCalledOnce()
+      expect(mockShowLayoutDialog).not.toHaveBeenCalled()
+      expect(
+        sessionStorage.getItem('comfy:pending-subscription-checkout')
+      ).toBeNull()
+    })
+
+    it('does not reopen checkout when reconciliation times out', async () => {
+      mockShouldUseWorkspaceBilling.value = true
+      mockStartOperation.mockResolvedValueOnce({ status: 'timeout' })
+      savePendingSubscriptionCheckout({
+        operationId: 'op-timeout',
+        workspaceId: 'workspace-1',
+        ownerUid: 'user-1',
+        selection: {
+          planMode: 'personal',
+          tierKey: 'creator',
+          billingCycle: 'monthly'
+        },
+        attemptedAt: Date.now()
+      })
+
+      const { resumePendingPricingFlow } = useSubscriptionDialog()
+      await resumePendingPricingFlow()
+
+      expect(mockShowLayoutDialog).not.toHaveBeenCalled()
+      expect(
+        sessionStorage.getItem('comfy:pending-subscription-checkout')
+      ).toBeNull()
+    })
+
+    it('clears a checkout owned by another user without reconciling it', async () => {
+      savePendingSubscriptionCheckout({
+        operationId: 'op-other-user',
+        workspaceId: 'workspace-1',
+        ownerUid: 'user-2',
+        selection: {
+          planMode: 'personal',
+          tierKey: 'standard',
+          billingCycle: 'yearly'
+        },
+        attemptedAt: Date.now()
+      })
+
+      const { resumePendingPricingFlow } = useSubscriptionDialog()
+      await resumePendingPricingFlow()
+
+      expect(mockStartOperation).not.toHaveBeenCalled()
+      expect(mockShowLayoutDialog).not.toHaveBeenCalled()
+      expect(
+        sessionStorage.getItem('comfy:pending-subscription-checkout')
+      ).toBeNull()
+    })
+
     it('clears a checkout for another workspace without reconciling it', async () => {
       savePendingSubscriptionCheckout({
         operationId: 'op-other-workspace',
         workspaceId: 'workspace-2',
+        ownerUid: 'user-1',
         selection: {
           planMode: 'personal',
           tierKey: 'standard',
@@ -725,33 +811,38 @@ describe('useSubscriptionDialog', () => {
     it('restores a Team plan change from fresh catalog and subscription state', async () => {
       mockShouldUseWorkspaceBilling.value = true
       mockStartOperation.mockResolvedValueOnce({ status: 'failed' })
-      mockTeamCreditStops.value = {
-        default_stop_index: 0,
-        stops: [
-          {
-            id: 'team_700',
-            credits: 147_700,
-            monthly: {
-              list_price_cents: 70_000,
-              price_cents: 66_500
-            },
-            yearly: {
-              list_price_cents: 70_000,
-              price_cents: 63_000
+      mockFetchPlans.mockImplementationOnce(async () => {
+        mockTeamCreditStops.value = {
+          default_stop_index: 0,
+          stops: [
+            {
+              id: 'team_700',
+              credits: 147_700,
+              monthly: {
+                list_price_cents: 70_000,
+                price_cents: 66_500
+              },
+              yearly: {
+                list_price_cents: 70_000,
+                price_cents: 63_000
+              }
             }
-          }
-        ]
-      }
-      mockCurrentTeamCreditStop.value = {
-        id: 'team_400',
-        stop_usd: 400,
-        credits_monthly: 84_400
-      }
-      mockSubscription.value = { duration: 'MONTHLY' }
-      mockSubscriptionStatus.value = 'active'
+          ]
+        }
+      })
+      mockFetchStatus.mockImplementationOnce(async () => {
+        mockCurrentTeamCreditStop.value = {
+          id: 'team_400',
+          stop_usd: 400,
+          credits_monthly: 84_400
+        }
+        mockSubscription.value = { duration: 'MONTHLY' }
+        mockSubscriptionStatus.value = 'active'
+      })
       savePendingSubscriptionCheckout({
         operationId: 'op-team-change',
         workspaceId: 'workspace-1',
+        ownerUid: 'user-1',
         selection: {
           planMode: 'team',
           teamCreditStopId: 'team_700',
@@ -788,6 +879,7 @@ describe('useSubscriptionDialog', () => {
       savePendingSubscriptionCheckout({
         operationId: 'op-team-catalog-failure',
         workspaceId: 'workspace-1',
+        ownerUid: 'user-1',
         selection: {
           planMode: 'team',
           teamCreditStopId: 'team_700',
