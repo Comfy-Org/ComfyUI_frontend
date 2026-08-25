@@ -9,9 +9,11 @@ import {
 } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import { toNodeId } from '@/types/nodeId'
 
-function addedNode(graph: LGraph) {
+function addedNode(graph: LGraph, id?: number) {
   const node = new LGraphNode('widgets')
+  if (id !== undefined) node.id = toNodeId(id)
   node.addInput('image', 'IMAGE')
   node.addWidget('number', 'seed', 0, () => {})
   graph.add(node)
@@ -53,13 +55,15 @@ describe('arrangeForLegacyRender', () => {
 
   it('returns authoritative render order without changing graph membership', () => {
     const graph = new LGraph()
-    const first = addedNode(graph)
-    const second = addedNode(graph)
+    const first = addedNode(graph, 10)
+    const second = addedNode(graph, 2)
+    const third = addedNode(graph, 1)
     const mutations = useLayoutMutations(LayoutSource.Canvas)
     mutations.setNodeZIndex(graph.id, first.id, 2)
     mutations.setNodeZIndex(graph.id, second.id, 1)
+    mutations.setNodeZIndex(graph.id, third.id, 1)
 
-    expect(nodesInRenderOrder(graph)).toEqual([second, first])
-    expect(graph._nodes).toEqual([first, second])
+    expect(nodesInRenderOrder(graph)).toEqual([third, second, first])
+    expect(graph._nodes).toEqual([first, second, third])
   })
 })
