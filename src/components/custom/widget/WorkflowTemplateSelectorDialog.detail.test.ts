@@ -96,6 +96,8 @@ const mocks = vi.hoisted(() => ({
   rowDownloadDispose: vi.fn(),
   rowDownloadRequest: vi.fn(),
   rowDownloadStateFor: vi.fn(() => ({ status: 'idle' as const, attempt: 0 })),
+  getTemplateInputAssets: vi.fn(),
+  downloadTemplateInputAsset: vi.fn(),
   onClose: vi.fn(),
   openPreparedWorkflowTemplate: vi.fn(async () => true),
   prepareWorkflowTemplate: vi.fn(
@@ -316,6 +318,32 @@ describe('WorkflowTemplateSelectorDialog template detail navigation', () => {
         : fixtures.prepared
     )
     mocks.openPreparedWorkflowTemplate.mockResolvedValue(true)
+    mocks.getTemplateInputAssets.mockResolvedValue([
+      {
+        assetId: 'subject-asset',
+        filename: 'subject.png',
+        mediaType: 'image',
+        previewUrl: 'https://example.com/subject.png',
+        availability: 'missing'
+      }
+    ])
+    mocks.downloadTemplateInputAsset.mockResolvedValue({
+      status: 'accepted',
+      download: {
+        downloadId: 'input-download-1',
+        filename: 'subject.png',
+        progress: 0,
+        status: 'pending'
+      }
+    })
+    Object.defineProperty(window, '__comfyDesktop2', {
+      configurable: true,
+      value: {
+        isRemote: () => false,
+        getTemplateInputAssets: mocks.getTemplateInputAssets,
+        downloadTemplateInputAsset: mocks.downloadTemplateInputAsset
+      }
+    })
   })
 
   it('enriches Desktop model rows and keeps a row download inside the detail', async () => {
@@ -380,6 +408,10 @@ describe('WorkflowTemplateSelectorDialog template detail navigation', () => {
     expect(mocks.rowDownloadRequest).toHaveBeenCalledWith(
       fixtures.prepared.workflow.models[0]
     )
+    expect(mocks.downloadTemplateInputAsset).toHaveBeenCalledWith(
+      fixtures.template.name,
+      'subject-asset'
+    )
     expect(mocks.rowDownloadRequest.mock.invocationCallOrder[0]).toBeLessThan(
       mocks.openPreparedWorkflowTemplate.mock.invocationCallOrder[0]
     )
@@ -412,11 +444,37 @@ describe('WorkflowTemplateSelectorDialog template detail navigation', () => {
       fixtures.prepared,
       { closeDialog: false }
     )
+    expect(mocks.downloadTemplateInputAsset).toHaveBeenCalledWith(
+      fixtures.template.name,
+      'subject-asset'
+    )
+    expect(
+      mocks.downloadTemplateInputAsset.mock.invocationCallOrder[0]
+    ).toBeLessThan(
+      mocks.openPreparedWorkflowTemplate.mock.invocationCallOrder[0]
+    )
     expect(
       screen.queryByRole('article', { name: fixtures.template.title })
     ).not.toBeInTheDocument()
     expect(mocks.resolveModelMetadata).not.toHaveBeenCalled()
     expect(mocks.onClose).toHaveBeenCalledOnce()
+  })
+
+  it('starts no input download when opening missing-model Detail without downloading', async () => {
+    environment.isDesktop = true
+    const user = await openDetail()
+
+    await user.click(
+      await screen.findByRole('button', { name: 'Open without downloading' })
+    )
+
+    await waitFor(() => {
+      expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledOnce()
+    })
+    expect(mocks.getTemplateInputAssets).toHaveBeenCalledWith(
+      fixtures.template.name
+    )
+    expect(mocks.downloadTemplateInputAsset).not.toHaveBeenCalled()
   })
 
   it.for([
@@ -514,6 +572,8 @@ describe('WorkflowTemplateSelectorDialog template detail navigation', () => {
     ).not.toBeInTheDocument()
     expect(mocks.resolveModelAvailability).not.toHaveBeenCalled()
     expect(mocks.resolveModelMetadata).not.toHaveBeenCalled()
+    expect(mocks.getTemplateInputAssets).not.toHaveBeenCalled()
+    expect(mocks.downloadTemplateInputAsset).not.toHaveBeenCalled()
     expect(mocks.onClose).toHaveBeenCalledOnce()
   })
 
