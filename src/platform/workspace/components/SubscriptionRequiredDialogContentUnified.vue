@@ -12,17 +12,19 @@
         // panel stays fixed; below xl the whole dialog scrolls as before.
         isEmbeddedPaymentStep &&
           'xl:h-[min(740px,90vh)] xl:gap-0 xl:overflow-hidden xl:rounded-2xl xl:p-0',
-        (isEmbeddedSuccessStep || isEmbeddedConfirmStep) &&
+        (isEmbeddedSuccessStep || isEmbeddedConfirmStep || isVerifyingStep) &&
           'h-[min(740px,85vh)] overflow-hidden rounded-2xl bg-base-background xl:h-[min(740px,90vh)] xl:w-[512px]',
         (isEmbeddedPaymentStep ||
           isEmbeddedSuccessStep ||
-          isEmbeddedConfirmStep) &&
+          isEmbeddedConfirmStep ||
+          isVerifyingStep) &&
           'motion-safe:xl:transition-[width] motion-safe:xl:duration-300 motion-safe:xl:ease-in-out',
         // The w-fit shell hugs min-content on phones; give the embedded
         // steps a real width floor below xl.
         (isEmbeddedPaymentStep ||
           isEmbeddedSuccessStep ||
-          isEmbeddedConfirmStep) &&
+          isEmbeddedConfirmStep ||
+          isVerifyingStep) &&
           'max-xl:w-[min(430px,92vw)]',
         isEmbeddedPaymentStep && 'max-xl:h-[85vh]'
       )
@@ -61,7 +63,8 @@
       v-if="
         !isEmbeddedPaymentStep &&
         !isEmbeddedSuccessStep &&
-        !isEmbeddedConfirmStep
+        !isEmbeddedConfirmStep &&
+        !isVerifyingStep
       "
       class="flex flex-col items-center gap-3"
     >
@@ -109,9 +112,13 @@
         :quote-is-current="quoteIsCurrent"
         :is-applying-promotion-code
         :embedded-checkout-enabled
+        :cancel-unavailable="cancelUnavailable"
+        :is-canceling="isCancelingPayment"
+        :show-canceled-notice="canceledNoticeVisible"
         @confirm="handleTeamSubscribe"
         @apply-promotion-code="applyPromotionCode"
         @invalidate-quote="invalidateQuote"
+        @cancel-payment="handleCancelPendingPayment"
         @back="handleBackToPricing"
         @retry-authentication="retryPaymentAuthentication"
       />
@@ -134,12 +141,16 @@
         :quote-is-current="quoteIsCurrent"
         :is-applying-promotion-code
         :embedded-checkout-enabled
+        :cancel-unavailable="cancelUnavailable"
+        :is-canceling="isCancelingPayment"
+        :show-canceled-notice="canceledNoticeVisible"
         @update:selected-saved-method-id="selectSavedPaymentMethod"
         @add-credit-card="handleTeamSubscribe"
         @change-payment-method="selectSavedPaymentMethod(null)"
         @confirm-payment="handleTeamSubscriptionPayment"
         @apply-promotion-code="applyPromotionCode"
         @invalidate-quote="invalidateQuote"
+        @cancel-payment="handleCancelPendingPayment"
         @back="handleBackToPricing"
         @retry-authentication="retryPaymentAuthentication"
       />
@@ -162,12 +173,16 @@
         :quote-is-current="quoteIsCurrent"
         :is-applying-promotion-code
         :embedded-checkout-enabled
+        :cancel-unavailable="cancelUnavailable"
+        :is-canceling="isCancelingPayment"
+        :show-canceled-notice="canceledNoticeVisible"
         @update:selected-saved-method-id="selectSavedPaymentMethod"
         @add-credit-card="handleAddCreditCard"
         @change-payment-method="selectSavedPaymentMethod(null)"
         @confirm-payment="handleSubscriptionPayment"
         @apply-promotion-code="applyPromotionCode"
         @invalidate-quote="invalidateQuote"
+        @cancel-payment="handleCancelPendingPayment"
         @back="handleBackToPricing"
         @retry-authentication="retryPaymentAuthentication"
       />
@@ -186,13 +201,25 @@
         :quote-is-current="quoteIsCurrent"
         :is-applying-promotion-code
         :embedded-checkout-enabled
+        :cancel-unavailable="cancelUnavailable"
+        :is-canceling="isCancelingPayment"
+        :show-canceled-notice="canceledNoticeVisible"
         @confirm="handleConfirmTransition"
         @apply-promotion-code="applyPromotionCode"
         @invalidate-quote="invalidateQuote"
+        @cancel-payment="handleCancelPendingPayment"
         @back="handleBackToPricing"
         @retry-authentication="retryPaymentAuthentication"
       />
     </template>
+
+    <SubscriptionVerifyingWorkspace
+      v-if="checkoutStep === 'verifying'"
+      :action-url="activeCheckoutActionUrl"
+      :cancel-unavailable="cancelUnavailable"
+      :is-canceling="isCancelingPayment"
+      @cancel-payment="handleCancelPendingPayment"
+    />
 
     <!-- Success Step - "You're all set" -->
     <SubscriptionSuccessWorkspace
@@ -220,6 +247,7 @@ import { useSubscriptionCheckout } from '@/platform/workspace/composables/useSub
 import SubscriptionAddPaymentPreviewWorkspace from './SubscriptionAddPaymentPreviewWorkspace.vue'
 import SubscriptionSuccessWorkspace from './SubscriptionSuccessWorkspace.vue'
 import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPreviewWorkspace.vue'
+import SubscriptionVerifyingWorkspace from './SubscriptionVerifyingWorkspace.vue'
 import UnifiedPricingTable from './UnifiedPricingTable.vue'
 
 const {
@@ -251,6 +279,10 @@ const collectingNewPaymentMethod = ref(false)
 
 const {
   checkoutStep,
+  isCancelingPayment,
+  cancelUnavailable,
+  canceledNoticeVisible,
+  handleCancelPendingPayment,
   isLoadingPreview,
   loadingTier,
   isSubscribing,
@@ -332,6 +364,8 @@ function selectSavedPaymentMethod(id: string | null) {
   collectingNewPaymentMethod.value = false
   selectedSavedPaymentMethodId.value = id
 }
+
+const isVerifyingStep = computed(() => checkoutStep.value === 'verifying')
 
 onMounted(() => {
   if (!initialCheckout) return

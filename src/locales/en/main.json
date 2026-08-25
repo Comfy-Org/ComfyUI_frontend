@@ -3125,7 +3125,11 @@
         "plan": "Plan discount",
         "promotion": "Promo code"
       },
+      "cancelPayment": "Cancel payment",
+      "cancelUnavailable": "This payment is already processing and can't be canceled.",
       "changePaymentMethod": "Change",
+      "paymentCanceledNotice": "Payment canceled. Nothing was charged.",
+      "verifyOpenedBody": "Complete the verification in the new tab. This updates automatically.",
       "savedPaymentMethod": "Payment method",
       "addNewPaymentMethod": "Add new payment method",
       "alipay": "Alipay"
