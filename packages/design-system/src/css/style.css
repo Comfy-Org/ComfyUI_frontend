@@ -421,37 +421,37 @@
 
 :root.dark-theme[data-color-palette]:not([data-color-palette='dark']) {
   /* A palette counts as dark whenever it omits light_theme, but comfy-menu-bg
-     accepts any colour. Given a light menu colour every positive offset clamps
-     at l: 1, collapsing all five steps into white under a white foreground.
-     These two resolve to +1 and 1 for a dark base, leaving real palettes
-     untouched, and flip to -1 and a dark ink once the base crosses mid grey,
-     so the ladder keeps its five distinct steps and stays legible either way. */
-  --palette-depth: calc(1 - 2 * clamp(0, (l - 0.5) * 1000, 1));
-  --palette-ink: calc(1 - 0.85 * clamp(0, (l - 0.5) * 1000, 1));
+     accepts any colour, and a light one would push every offset up against
+     l: 1 and collapse the ladder into white under a white foreground. Capping
+     the lightness the ladder derives from keeps a dark palette dark. Every
+     shipped palette sits below the cap (solarized is the lightest at 0.309)
+     so their surfaces are untouched, the cap leaves the top step at 0.5554
+     where the white foreground still reads, and min() is monotonic, so there
+     is no threshold where the steps converge. */
+  --palette-l: min(l, 0.35);
+  --palette-base: oklch(from var(--comfy-menu-bg) var(--palette-l) c h);
 
   --palette-surface-700: oklch(
-    from var(--comfy-menu-bg) calc(l + 0.0417 * var(--palette-depth)) c h
+    from var(--comfy-menu-bg) calc(var(--palette-l) + 0.0417) c h
   );
   --palette-surface-600: oklch(
-    from var(--comfy-menu-bg) calc(l + 0.0675 * var(--palette-depth)) c h
+    from var(--comfy-menu-bg) calc(var(--palette-l) + 0.0675) c h
   );
   --palette-surface-400: oklch(
-    from var(--comfy-menu-bg) calc(l + 0.1123 * var(--palette-depth)) c h
+    from var(--comfy-menu-bg) calc(var(--palette-l) + 0.1123) c h
   );
   --palette-surface-300: oklch(
-    from var(--comfy-menu-bg) calc(l + 0.1559 * var(--palette-depth)) c h
+    from var(--comfy-menu-bg) calc(var(--palette-l) + 0.1559) c h
   );
   --palette-surface-200: oklch(
-    from var(--comfy-menu-bg) calc(l + 0.2054 * var(--palette-depth)) c h
+    from var(--comfy-menu-bg) calc(var(--palette-l) + 0.2054) c h
   );
 
-  --base-foreground: oklch(from var(--comfy-menu-bg) var(--palette-ink) 0 h);
-
-  --base-background: var(--comfy-menu-bg);
-  --nav-background: var(--comfy-menu-bg);
-  --interface-menu-surface: var(--comfy-menu-bg);
-  --node-component-tooltip-surface: var(--comfy-menu-bg);
-  --component-node-widget-background-disabled: var(--comfy-menu-bg);
+  --base-background: var(--palette-base);
+  --nav-background: var(--palette-base);
+  --interface-menu-surface: var(--palette-base);
+  --node-component-tooltip-surface: var(--palette-base);
+  --component-node-widget-background-disabled: var(--palette-base);
 
   --node-component-header-surface: var(--palette-surface-700);
 
