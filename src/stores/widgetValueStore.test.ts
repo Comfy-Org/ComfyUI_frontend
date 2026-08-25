@@ -143,6 +143,30 @@ describe('useWidgetValueStore', () => {
       expect(store.getWidget(seedA)?.type).toBe('string')
     })
 
+    it('does not accept caller-owned identity during re-registration', () => {
+      const store = useWidgetValueStore()
+      store.registerWidget(seedA, state('number', 5))
+      const stale = state('number', 10, { name: 'wrong' })
+      Object.assign(stale, { nodeId: toNodeId('wrong') })
+
+      const registered = store.registerWidget(seedA, stale)!
+
+      expect(registered.nodeId).toBe(toNodeId('node-1'))
+      expect(registered.name).toBe('wrong')
+    })
+
+    it('clears omitted render state when a widget id is recycled', () => {
+      const store = useWidgetValueStore()
+      store.registerWidget(seedA, state('number', 5), {
+        advanced: true,
+        tooltip: 'old'
+      })
+
+      store.registerWidget(seedA, state('string', 'new'))
+
+      expect(store.getWidgetRenderState(seedA)).toEqual({})
+    })
+
     it('registers a widget with all properties', () => {
       const store = useWidgetValueStore()
       const registered = store.registerWidget(

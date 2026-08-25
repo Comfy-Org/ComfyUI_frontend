@@ -4,9 +4,8 @@ type UUID = string
 
 /**
  * A widget's canonical identity: `graphId:nodeId:name`.
- * Because the key is derived, a widget renamed in a node
- * definition orphans its stored state, and two widgets
- * on one node cannot share a name.
+ * The storage name is allocated once and disambiguated from duplicate and
+ * literal suffixed display names.
  */
 export type WidgetId = string & { readonly __brand: 'WidgetId' }
 
@@ -23,6 +22,19 @@ export function widgetId(
     encodeURIComponent(String(localNodeId)),
     encodeURIComponent(name)
   ].join(SEPARATOR) as WidgetId
+}
+
+export function uniqueWidgetStorageName(
+  name: string,
+  used: ReadonlySet<string>,
+  reserved: ReadonlySet<string>
+): string {
+  if (!used.has(name)) return name
+  let index = 1
+  while (used.has(`${name}#${index}`) || reserved.has(`${name}#${index}`)) {
+    index++
+  }
+  return `${name}#${index}`
 }
 
 function decodeWidgetIdSegment(segment: string): string {

@@ -29,7 +29,11 @@ import { parseNodeLocatorId } from '@/types/nodeIdentification'
 import type { SerializedNodeId } from '@/types/nodeId'
 import { UNASSIGNED_NODE_ID, parseNodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
-import { widgetId } from '@/types/widgetId'
+import {
+  parseWidgetId,
+  uniqueWidgetStorageName,
+  widgetId
+} from '@/types/widgetId'
 
 type ImageNode = LGraphNode & { imgs: HTMLImageElement[] | undefined }
 type VideoNode = LGraphNode & {
@@ -324,6 +328,10 @@ export function getWidgetIdForNode(
   const graphId = node.graph?.rootGraph.id
   const nodeId = parseNodeId(node.id)
   if (!graphId || !nodeId || nodeId === UNASSIGNED_NODE_ID) return undefined
+  const liveEntry = [...mapLiveWidgetsById(node)].find(
+    ([, candidate]) => candidate === widget
+  )
+  if (liveEntry) return liveEntry[0]
   const name =
     duplicateIndex > 0 ? `${widget.name}#${duplicateIndex}` : widget.name
   return widgetId(graphId, nodeId, name)
@@ -338,11 +346,21 @@ export function mapLiveWidgetsById(
   node: LGraphNode
 ): Map<WidgetId, IBaseWidget> {
   const byId = new Map<WidgetId, IBaseWidget>()
-  const duplicateIndexByName = new Map<string, number>()
-  for (const widget of node.widgets ?? []) {
-    const duplicateIndex = duplicateIndexByName.get(widget.name) ?? 0
-    duplicateIndexByName.set(widget.name, duplicateIndex + 1)
-    const id = getWidgetIdForNode(node, widget, duplicateIndex)
+  const widgets = node.widgets ?? []
+  const reserved = new Set(widgets.map((widget) => widget.name))
+  const used = new Set<string>()
+  const graphId = node.graph?.rootGraph.id
+  const nodeId = parseNodeId(node.id)
+  for (const widget of widgets) {
+    const storageName = widget.widgetId
+      ? parseWidgetId(widget.widgetId).name
+      : uniqueWidgetStorageName(widget.name, used, reserved)
+    used.add(storageName)
+    const id =
+      widget.widgetId ??
+      (graphId && nodeId && nodeId !== UNASSIGNED_NODE_ID
+        ? widgetId(graphId, nodeId, storageName)
+        : undefined)
     if (id) byId.set(id, widget)
   }
   return byId

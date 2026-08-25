@@ -20,7 +20,7 @@ import type {
 import { deriveWidgetRenderState } from '@/lib/litegraph/src/utils/widget'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetId } from '@/types/widgetId'
-import { widgetId } from '@/types/widgetId'
+import { uniqueWidgetStorageName, widgetId } from '@/types/widgetId'
 import type { WidgetState } from '@/types/widgetState'
 
 export interface DrawWidgetOptions {
@@ -88,6 +88,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
 
   private _state: Omit<WidgetState, 'nodeId'> &
     Partial<Pick<WidgetState, 'nodeId'>>
+  private _storeName?: string
 
   get label(): string | undefined {
     return this._state.label
@@ -134,14 +135,26 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   }
 
   private get storeName(): string {
-    const index = this.node.widgets?.indexOf(this) ?? -1
-    const duplicateIndex =
-      index > 0
-        ? this.node.widgets
-            ?.slice(0, index)
-            .filter((widget) => widget.name === this.name).length
-        : 0
-    return duplicateIndex ? `${this.name}#${duplicateIndex}` : this.name
+    if (this._storeName) return this._storeName
+
+    const widgets = this.node.widgets ?? []
+    const reserved = new Set(widgets.map((widget) => widget.name))
+    reserved.add(this.name)
+    const used = new Set<string>()
+    for (const widget of widgets) {
+      if (widget instanceof BaseWidget) {
+        if (widget._storeName) {
+          used.add(widget._storeName)
+          continue
+        }
+        widget._storeName = uniqueWidgetStorageName(widget.name, used, reserved)
+        used.add(widget._storeName)
+      } else {
+        used.add(uniqueWidgetStorageName(widget.name, used, reserved))
+      }
+    }
+    this._storeName ??= uniqueWidgetStorageName(this.name, used, reserved)
+    return this._storeName
   }
 
   get widgetId(): WidgetId | undefined {
@@ -162,9 +175,14 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     const registered = useWidgetValueStore().registerWidget(
       widgetId(graphId, nodeId, this.storeName),
       {
-        ...this._state,
+        disabled: this.disabled,
+        label: this.label,
+        name: this.name,
+        options: this.options,
+        serialize: this.serialize,
         type: this.type,
-        value: this.value
+        value: this.value,
+        y: this.y
       },
       deriveWidgetRenderState(this)
     )

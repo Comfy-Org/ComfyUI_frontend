@@ -150,9 +150,12 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
       return undefined
     }
 
-    registerWidgetRenderState(widgetId, renderState)
-
     const existing = getWidget(widgetId)
+    const { graphId, nodeId, name: storageName } = parseWidgetId(widgetId)
+    if (existing && existing.type !== init.type) {
+      getGraphWidgetRenderStates(graphId).delete(widgetId)
+    }
+    registerWidgetRenderState(widgetId, renderState)
     // WidgetId is `graphId:nodeId:name`. A node replacement can reuse the same
     // numeric nodeId, so a stale entry from the previous occupant may survive in
     // the store under the same key. The type check distinguishes a live
@@ -162,6 +165,8 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     if (existing && existing.type === init.type) {
       const value = existing.value
       Object.assign(existing, init, {
+        name: init.name ?? storageName,
+        nodeId,
         value,
         y: init.y ?? existing.y
       })
@@ -169,11 +174,10 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
       return existing as WidgetState<TValue>
     }
 
-    const { graphId, nodeId, name } = parseWidgetId(widgetId)
     const state: WidgetState<TValue> = {
       ...init,
       nodeId,
-      name,
+      name: init.name ?? storageName,
       y: init.y ?? 0
     }
     const widgetStates = getGraphWidgetStates(graphId)

@@ -199,6 +199,24 @@ describe('getWidgetIdForNode', () => {
     ])
   })
 
+  it('avoids collisions with literal duplicate suffixes', () => {
+    const node = fakeNode(42)
+    node.widgets = [
+      { name: 'shared', type: 'number', value: 1, options: {}, y: 0 },
+      { name: 'shared', type: 'number', value: 2, options: {}, y: 0 },
+      { name: 'shared#1', type: 'number', value: 3, options: {}, y: 0 }
+    ]
+
+    expect([...mapLiveWidgetsById(node).keys()]).toEqual([
+      widgetId(graphId, toNodeId(42), 'shared'),
+      widgetId(graphId, toNodeId(42), 'shared#2'),
+      widgetId(graphId, toNodeId(42), 'shared#1')
+    ])
+    expect(getWidgetIdForNode(node, node.widgets[1])).toBe(
+      widgetId(graphId, toNodeId(42), 'shared#2')
+    )
+  })
+
   it('returns undefined when the node has no graph', () => {
     const node = fakeNode(1, { detached: true })
     expect(getWidgetIdForNode(node, { name: 'x' })).toBeUndefined()
