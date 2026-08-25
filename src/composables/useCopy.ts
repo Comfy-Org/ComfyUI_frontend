@@ -12,8 +12,8 @@ import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
  */
 export const LAST_COPY_ID_KEY = 'Comfy.Clipboard.LastCopyId'
 
-const clipboardHTMLWrapper = (id: string) => [
-  `<meta charset="utf-8"><div><span data-copy-id="${id}" data-metadata="`,
+const clipboardHTMLWrapper = (id: string | null) => [
+  `<meta charset="utf-8"><div>${id ? `<span data-copy-id="${id}" ` : '<span '}data-metadata="`,
   '"></span></div><span style="white-space:pre-wrap;">Text</span>'
 ]
 const clipboardByteChunkSize = 0x8000
@@ -55,15 +55,25 @@ export const useCopy = () => {
     const canvas = canvasStore.canvas
     if (canvas?.selectedItems) {
       const serializedData = canvas.copyToClipboard()
+      // Persist the id before it reaches the clipboard, so the two can only
+      // diverge in the safe direction: metadata without an id reads as
+      // stale, whereas an id the paste handler never learned about would
+      // make the user's own copy look stale.
+      let copyId: string | null = null
       try {
-        const copyId = crypto.randomUUID()
+        const id = crypto.randomUUID()
+        localStorage.setItem(LAST_COPY_ID_KEY, id)
+        copyId = id
+      } catch (error) {
+        console.error(error)
+      }
+      try {
         const base64Data = encodeClipboardData(serializedData)
         // clearData doesn't remove images from clipboard
         e.clipboardData?.setData(
           'text/html',
           clipboardHTMLWrapper(copyId).join(base64Data)
         )
-        localStorage.setItem(LAST_COPY_ID_KEY, copyId)
       } catch (error) {
         console.error(error)
       }

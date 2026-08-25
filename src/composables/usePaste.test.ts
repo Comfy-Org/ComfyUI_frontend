@@ -615,6 +615,20 @@ describe('usePaste', () => {
       })
     })
 
+    it('skips paste when the metadata carries a different copy id', async () => {
+      setupMediaNodeSelected()
+      localStorage.setItem(LAST_COPY_ID_KEY, 'copy-2')
+      dispatchMetadataPaste(
+        JSON.stringify({ nodes: [{ type: 'KSampler' }] }),
+        'copy-1'
+      )
+
+      await vi.waitFor(() => {
+        expect(mockCanvas._deserializeItems).not.toHaveBeenCalled()
+        expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
+      })
+    })
+
     it('pastes a freshly copied node', async () => {
       setupMediaNodeSelected()
       const serialized = JSON.stringify({ nodes: [{ type: 'LoadImage' }] })
