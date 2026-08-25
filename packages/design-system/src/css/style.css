@@ -420,11 +420,32 @@
 }
 
 :root.dark-theme[data-color-palette]:not([data-color-palette='dark']) {
-  --palette-surface-700: oklch(from var(--comfy-menu-bg) calc(l + 0.0417) c h);
-  --palette-surface-600: oklch(from var(--comfy-menu-bg) calc(l + 0.0675) c h);
-  --palette-surface-400: oklch(from var(--comfy-menu-bg) calc(l + 0.1123) c h);
-  --palette-surface-300: oklch(from var(--comfy-menu-bg) calc(l + 0.1559) c h);
-  --palette-surface-200: oklch(from var(--comfy-menu-bg) calc(l + 0.2054) c h);
+  /* A palette counts as dark whenever it omits light_theme, but comfy-menu-bg
+     accepts any colour. Given a light menu colour every positive offset clamps
+     at l: 1, collapsing all five steps into white under a white foreground.
+     These two resolve to +1 and 1 for a dark base, leaving real palettes
+     untouched, and flip to -1 and a dark ink once the base crosses mid grey,
+     so the ladder keeps its five distinct steps and stays legible either way. */
+  --palette-depth: calc(1 - 2 * clamp(0, (l - 0.5) * 1000, 1));
+  --palette-ink: calc(1 - 0.85 * clamp(0, (l - 0.5) * 1000, 1));
+
+  --palette-surface-700: oklch(
+    from var(--comfy-menu-bg) calc(l + 0.0417 * var(--palette-depth)) c h
+  );
+  --palette-surface-600: oklch(
+    from var(--comfy-menu-bg) calc(l + 0.0675 * var(--palette-depth)) c h
+  );
+  --palette-surface-400: oklch(
+    from var(--comfy-menu-bg) calc(l + 0.1123 * var(--palette-depth)) c h
+  );
+  --palette-surface-300: oklch(
+    from var(--comfy-menu-bg) calc(l + 0.1559 * var(--palette-depth)) c h
+  );
+  --palette-surface-200: oklch(
+    from var(--comfy-menu-bg) calc(l + 0.2054 * var(--palette-depth)) c h
+  );
+
+  --base-foreground: oklch(from var(--comfy-menu-bg) var(--palette-ink) 0 h);
 
   --base-background: var(--comfy-menu-bg);
   --nav-background: var(--comfy-menu-bg);
