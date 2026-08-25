@@ -1,6 +1,6 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { ModelMetadata } from '@/platform/missingModel/missingModelDownload'
+import type { ModelMetadataFetchOutcome } from '@/platform/missingModel/missingModelDownload'
 import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { resolveTemplateModelMetadata } from './templateModelMetadata'
 
@@ -9,9 +9,7 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('@/platform/missingModel/missingModelDownload', () => ({
-  fetchModelMetadataWithStatus: mocks.fetchModelMetadataWithStatus,
-  fetchModelMetadata: async (url: string) =>
-    (await mocks.fetchModelMetadataWithStatus(url)).metadata
+  fetchModelMetadataWithStatus: mocks.fetchModelMetadataWithStatus
 }))
 
 function model(name: string, url = `https://example.com/${name}`): ModelFile {
@@ -30,27 +28,40 @@ function deferred<T>() {
 }
 
 describe('resolveTemplateModelMetadata', () => {
+  beforeEach(() => {
+    mocks.fetchModelMetadataWithStatus.mockReset()
+  })
+
   it('fetches each URL once while preserving input order and repeated identity', async () => {
     const shared = model('shared.safetensors')
     const unique = model('unique.safetensors')
-    const fetchMetadata = vi.fn(
-      async (url: string): Promise<ModelMetadata> =>
+    mocks.fetchModelMetadataWithStatus.mockImplementation(
+      async (url: string) =>
         url === shared.url
-          ? { fileSize: 1024, gatedRepoUrl: null }
+          ? {
+              metadata: { fileSize: 1024, gatedRepoUrl: null },
+              resolution: 'resolved'
+            }
           : {
-              fileSize: null,
-              gatedRepoUrl: 'https://huggingface.co/org/gated-model'
+              metadata: {
+                fileSize: null,
+                gatedRepoUrl: 'https://huggingface.co/org/gated-model'
+              },
+              resolution: 'resolved'
             }
     )
 
-    const result = await resolveTemplateModelMetadata(
-      [shared, unique, shared],
-      { fetchMetadata }
-    )
+    const result = await resolveTemplateModelMetadata([shared, unique, shared])
 
-    expect(fetchMetadata).toHaveBeenCalledTimes(2)
-    expect(fetchMetadata).toHaveBeenNthCalledWith(1, shared.url)
-    expect(fetchMetadata).toHaveBeenNthCalledWith(2, unique.url)
+    expect(mocks.fetchModelMetadataWithStatus).toHaveBeenCalledTimes(2)
+    expect(mocks.fetchModelMetadataWithStatus).toHaveBeenNthCalledWith(
+      1,
+      shared.url
+    )
+    expect(mocks.fetchModelMetadataWithStatus).toHaveBeenNthCalledWith(
+      2,
+      unique.url
+    )
     expect(result).toEqual({
       status: 'completed',
       entries: [
@@ -81,20 +92,30 @@ describe('resolveTemplateModelMetadata', () => {
     expect(result.entries[2]?.model).toBe(shared)
   })
 
-  it('marks only a rejected URL as failed and resolves the remaining models', async () => {
+  it('preserves a failed URL outcome while resolving the remaining models', async () => {
     const first = model('first.safetensors')
     const failed = model('failed.safetensors')
     const last = model('last.safetensors')
-    const fetchMetadata = vi.fn(async (url: string): Promise<ModelMetadata> => {
-      if (url === failed.url) throw new Error('Metadata unavailable')
-      return {
-        fileSize: url === first.url ? 100 : 300,
-        gatedRepoUrl: null
+    mocks.fetchModelMetadataWithStatus.mockImplementation(
+      async (url: string) => {
+        if (url === failed.url) {
+          return {
+            metadata: { fileSize: null, gatedRepoUrl: null },
+            resolution: 'failed'
+          }
+        }
+        return {
+          metadata: {
+            fileSize: url === first.url ? 100 : 300,
+            gatedRepoUrl: null
+          },
+          resolution: 'resolved'
+        }
       }
-    })
+    )
 
     await expect(
-      resolveTemplateModelMetadata([first, failed, last], { fetchMetadata })
+      resolveTemplateModelMetadata([first, failed, last])
     ).resolves.toEqual({
       status: 'completed',
       entries: [
@@ -118,71 +139,46 @@ describe('resolveTemplateModelMetadata', () => {
         }
       ]
     })
-    expect(fetchMetadata).toHaveBeenCalledTimes(3)
-  })
-
-  it('marks a default production metadata failure as failed', async () => {
-    const failed = model(
-      'not-found.safetensors',
-      'https://huggingface.co/org/model/resolve/main/not-found.safetensors'
-    )
-    mocks.fetchModelMetadataWithStatus.mockResolvedValueOnce({
-      metadata: { fileSize: null, gatedRepoUrl: null },
-      resolution: 'failed'
-    })
-
-    await expect(resolveTemplateModelMetadata([failed])).resolves.toEqual({
-      status: 'completed',
-      entries: [
-        {
-          model: failed,
-          fileSize: null,
-          gatedRepoUrl: null,
-          resolution: 'failed'
-        }
-      ]
-    })
-    expect(mocks.fetchModelMetadataWithStatus).toHaveBeenCalledWith(failed.url)
+    expect(mocks.fetchModelMetadataWithStatus).toHaveBeenCalledTimes(3)
   })
 
   it('does not fetch metadata for an empty batch', async () => {
-    const fetchMetadata = vi.fn()
-
-    await expect(
-      resolveTemplateModelMetadata([], { fetchMetadata })
-    ).resolves.toEqual({ status: 'completed', entries: [] })
-    expect(fetchMetadata).not.toHaveBeenCalled()
+    await expect(resolveTemplateModelMetadata([])).resolves.toEqual({
+      status: 'completed',
+      entries: []
+    })
+    expect(mocks.fetchModelMetadataWithStatus).not.toHaveBeenCalled()
   })
 
   it('does not start an already-aborted batch', async () => {
     const controller = new AbortController()
-    const fetchMetadata = vi.fn()
     controller.abort()
 
     await expect(
       resolveTemplateModelMetadata([model('aborted.safetensors')], {
-        fetchMetadata,
         signal: controller.signal
       })
     ).resolves.toEqual({ status: 'aborted' })
-    expect(fetchMetadata).not.toHaveBeenCalled()
+    expect(mocks.fetchModelMetadataWithStatus).not.toHaveBeenCalled()
   })
 
   it('discards a completed batch when it is aborted while metadata is pending', async () => {
     const controller = new AbortController()
-    const pending = deferred<ModelMetadata>()
-    const fetchMetadata = vi.fn(() => pending.promise)
+    const pending = deferred<ModelMetadataFetchOutcome>()
+    mocks.fetchModelMetadataWithStatus.mockReturnValueOnce(pending.promise)
     const result = resolveTemplateModelMetadata(
       [model('pending.safetensors')],
       {
-        fetchMetadata,
         signal: controller.signal
       }
     )
 
-    expect(fetchMetadata).toHaveBeenCalledOnce()
+    expect(mocks.fetchModelMetadataWithStatus).toHaveBeenCalledOnce()
     controller.abort()
-    pending.resolve({ fileSize: 2048, gatedRepoUrl: null })
+    pending.resolve({
+      metadata: { fileSize: 2048, gatedRepoUrl: null },
+      resolution: 'resolved'
+    })
 
     await expect(result).resolves.toEqual({ status: 'aborted' })
   })
