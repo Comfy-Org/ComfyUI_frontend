@@ -17,15 +17,19 @@ export function runGuide(): void {
 
   header('The handoff — do this first')
   info([
-    'Immediately give them these three commands to paste into a NEW terminal:',
+    'Immediately give them these commands to paste into a NEW terminal:',
     '',
     pc.cyan('  cd <path to ComfyUI_frontend>'),
     pc.cyan('  nvm use'),
-    pc.cyan('  pnpm comfy-test record'),
+    pc.cyan(
+      '  pnpm comfy-test record --distribution <environment> --workflow <workflow> --tags <tags> --feature-flags <flags> --use-case test-plan-step --description "<test-plan step>" --name <short-name> [--pr <number>]'
+    ),
     '',
     'If they use fnm, the second command is `fnm use` instead.',
     'A new terminal window means opening the Terminal app and starting a',
     'fresh window. On macOS: open Terminal, then press Cmd+N.',
+    'Build the final line from the test plan so valid answers skip every setup',
+    'question. Omit only answers the test plan genuinely does not provide.',
     'Do not explain setup or servers first. The tool guides everything else.'
   ])
 
@@ -36,7 +40,7 @@ export function runGuide(): void {
     'Never say “fix node” or explain version-manager jargon. Give the command.',
     'Never mention branch names or say “switch back to <branch>.”',
     'Say: “You’re all done — the tool put things back.”',
-    'Show no shell commands beyond the three above unless the tool printed them.',
+    'Show no shell commands beyond those above unless the tool printed them.',
     'Use plain words and short sentences.'
   ])
 
@@ -53,12 +57,15 @@ export function runGuide(): void {
 
   header('What they will see')
   info([
-    'The tool asks guided questions. There are no wrong answers.',
+    'The tool confirms answers copied from the test plan, then asks only for',
+    'anything missing or invalid. There are no wrong answers.',
     'Then a browser opens with a small floating toolbar at the top middle.',
     'Nothing records until they press Record.',
     'Signing in and looking around before that is safe.',
     'They press Record, do the thing they are testing, add a proof step with',
-    'the toolbar, and close the window. The code saves automatically.'
+    'the toolbar, and close the window. The code saves automatically.',
+    'On cloud environments, feature-flag links apply only to that browser',
+    'tab and disappear when it closes.'
   ])
 
   header('Stay out of the way')

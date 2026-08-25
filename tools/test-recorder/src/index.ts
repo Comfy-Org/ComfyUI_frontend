@@ -11,8 +11,21 @@ intro(pc.bgCyan(pc.black(' 🎭 ComfyUI Test Recorder ')))
 try {
   switch (command) {
     case 'record': {
+      const { parseFlags } = await import('./cli/flags')
+      const { flags } = parseFlags(args.slice(1), [
+        'distribution',
+        'backend',
+        'workflow',
+        'tags',
+        'feature-flags',
+        'use-case',
+        'description',
+        'name',
+        'pr'
+      ])
+      const { resolveRecordPrefill } = await import('./commands/recordPrefill')
       const { runRecord } = await import('./commands/record')
-      await runRecord()
+      await runRecord(resolveRecordPrefill(flags))
       break
     }
     case 'add-workflow': {
@@ -190,7 +203,10 @@ try {
 Usage: comfy-test <command>
 
 Commands:
-  record      Record a new browser test interactively (needs a terminal)
+  record [--distribution <id>] [--backend <url>] [--workflow <name>]
+         [--tags <a,b>] [--feature-flags <specs>] [--use-case <id>]
+         [--description <text>] [--name <slug>] [--pr <number>]
+              Record a browser test; supplied answers skip setup prompts
   add-workflow <file> [--name <n>]
               Add and validate a workflow asset from disk
   plan        Print a test plan for an agent to hand to playwright-test-generator
