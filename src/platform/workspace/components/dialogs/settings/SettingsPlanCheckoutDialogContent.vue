@@ -1,6 +1,7 @@
 <template>
   <div
     class="relative flex max-h-[90vh] flex-col overflow-y-auto p-4 pt-10 md:px-8 md:pb-8"
+    data-testid="settings-plan-checkout"
   >
     <Button
       v-if="checkoutStep === 'preview'"

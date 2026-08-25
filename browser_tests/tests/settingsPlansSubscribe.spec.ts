@@ -7,6 +7,7 @@ import type {
   BillingPlansResponse,
   BillingStatusResponse,
   Plan,
+  PreviewSubscribeResponse,
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
 
@@ -22,12 +23,15 @@ interface ComfyUsersResponse {
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { CommandHelper } from '@e2e/fixtures/helpers/CommandHelper'
+import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
 /**
- * Off-cloud, the plan-card CTAs subscribe via the workspace rail on cloud
- * ingest (never the legacy checkout shortlink), open the returned Stripe page,
- * and flip the card to disabled "Current Plan" after op-polling. Mocks are
- * cross-origin, so fulfills carry CORS headers and answer OPTIONS preflights.
+ * Off-cloud, the plan-card CTAs run the shared checkout flow in a dialog: every
+ * pick is previewed by the server first, a fresh subscribe confirms then opens
+ * the returned Stripe page, and a plan change shows the server's proration and
+ * echoes it on subscribe. Requests go to the workspace rail on cloud ingest
+ * (never the legacy checkout shortlink). Mocks are cross-origin, so fulfills
+ * carry CORS headers and answer OPTIONS preflights.
  */
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
@@ -50,49 +54,121 @@ async function fulfillJson(route: Route, body: unknown) {
   })
 }
 
+// Distinct credits per tier so a confirm step that showed another tier's (or
+// a constant's) figure could not pass as the clicked card's.
 function makePlan(
   slug: string,
   tier: Plan['tier'],
   duration: Plan['duration'],
-  priceCents: number
+  priceCents: number,
+  creditsCents: number
 ): Plan {
   return {
     slug,
     tier,
     duration,
     price_cents: priceCents,
-    credits_cents: 4200,
+    credits_cents: creditsCents,
     max_seats: 1,
     availability: { available: true },
     seat_summary: {
       seat_count: 1,
       total_cost_cents: priceCents,
-      total_credits_cents: 4200
+      total_credits_cents: creditsCents
     }
   }
 }
 
+const standardYearly = makePlan(
+  'standard-yearly',
+  'STANDARD',
+  'ANNUAL',
+  1600,
+  50_400
+)
+const creatorYearly = makePlan(
+  'creator-yearly',
+  'CREATOR',
+  'ANNUAL',
+  2800,
+  88_800
+)
+
 const plansResponse: BillingPlansResponse = {
   plans: [
-    makePlan('standard-yearly', 'STANDARD', 'ANNUAL', 1600),
-    makePlan('creator-yearly', 'CREATOR', 'ANNUAL', 2800),
-    makePlan('pro-yearly', 'PRO', 'ANNUAL', 8000)
+    standardYearly,
+    creatorYearly,
+    makePlan('pro-yearly', 'PRO', 'ANNUAL', 8000, 253_200)
   ]
 }
 
-function billingStatus(planSlug?: string): BillingStatusResponse {
+function billingStatus(
+  planSlug?: string,
+  cancelAt?: string
+): BillingStatusResponse {
   return {
     is_active: planSlug !== undefined,
     has_funds: true,
-    subscription_status: planSlug ? 'active' : undefined,
+    subscription_status: planSlug
+      ? cancelAt
+        ? 'canceled'
+        : 'active'
+      : undefined,
     subscription_tier: planSlug ? 'STANDARD' : undefined,
     subscription_duration: planSlug ? 'ANNUAL' : undefined,
     billing_status: 'paid',
     plan_slug: planSlug,
+    cancel_at: cancelAt,
     max_seats: 1,
     occupied_seats: 1,
     team_credit_stop: null
   }
+}
+
+function previewPlan(
+  plan: Plan,
+  periodEnd?: string
+): PreviewSubscribeResponse['new_plan'] {
+  return {
+    slug: plan.slug,
+    tier: plan.tier,
+    duration: plan.duration,
+    price_cents: plan.price_cents,
+    credits_cents: plan.credits_cents,
+    seat_summary: plan.seat_summary,
+    period_end: periodEnd
+  }
+}
+
+const newSubscriptionPreview: PreviewSubscribeResponse = {
+  allowed: true,
+  transition_type: 'new_subscription',
+  is_immediate: true,
+  effective_at: '2026-08-25T10:00:00Z',
+  cost_today_cents: 1600,
+  cost_next_period_cents: 1600,
+  credits_today_cents: 50_400,
+  credits_next_period_cents: 50_400,
+  new_plan: previewPlan(standardYearly, '2027-08-25T00:00:00Z')
+}
+
+const PRORATION_AT = '2026-08-25T10:00:00Z'
+const CURRENT_PERIOD_END = '2026-09-30T00:00:00Z'
+
+// The server's word on a Standard -> Creator upgrade: what is charged today,
+// when it lands, and the instant the charge was priced at.
+const upgradePreview: PreviewSubscribeResponse = {
+  allowed: true,
+  transition_type: 'upgrade',
+  is_immediate: true,
+  effective_at: PRORATION_AT,
+  proration_at: PRORATION_AT,
+  cost_today_cents: 1234,
+  cost_next_period_cents: 2800,
+  credits_today_cents: 88_800,
+  credits_next_period_cents: 88_800,
+  current_plan: previewPlan(standardYearly, CURRENT_PERIOD_END),
+  new_plan: previewPlan(creatorYearly, '2027-08-25T00:00:00Z')
 }
 
 async function mockLegacyReads(page: Page) {
@@ -122,6 +198,31 @@ async function mockLegacyReads(page: Page) {
  * status guards so a server error surfaces here, not as a later opaque boot
  * hang).
  */
+// FE-1584: off-cloud billing reads carry the WORKSPACE token, so the boot must
+// hydrate a personal owner wallet the way localAuthFixture does. Cross-origin,
+// hence the CORS-aware fulfills instead of the same-origin workspaceMocks.
+async function mockWorkspaceBootstrap(page: Page) {
+  const personal = workspace('personal', 'owner')
+  await page.route('**/api/workspaces', (r) =>
+    fulfillJson(r, { workspaces: [personal] })
+  )
+  await page.route('**/api/auth/token', (r) =>
+    fulfillJson(r, {
+      token: 'mock-workspace-token',
+      expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+      workspace: { id: personal.id, name: personal.name, type: personal.type },
+      role: personal.role,
+      permissions: []
+    })
+  )
+  await page.route('**/api/workspace/members**', (r) =>
+    fulfillJson(r, {
+      members: [],
+      pagination: { offset: 0, limit: 50, total: 0 }
+    })
+  )
+}
+
 async function bootToPlansSection(page: Page, request: APIRequestContext) {
   const usersResponse = await request.get(`${APP_URL}/api/users`)
   if (!usersResponse.ok())
@@ -145,6 +246,7 @@ async function bootToPlansSection(page: Page, request: APIRequestContext) {
     }
   }, userId)
 
+  await mockWorkspaceBootstrap(page)
   const auth = new CloudAuthHelper(page)
   await auth.mockAuth()
 
@@ -177,8 +279,6 @@ test.describe('Local plans section subscribe', () => {
       }
     })
 
-    // The embedded credits tile reads the LEGACY rail off-cloud; flipping these
-    // with `subscribed` lets the test assert the tile reacts to the reconcile.
     await page.route('**/customers/**', (r) =>
       fulfillJson(
         r,
@@ -202,13 +302,23 @@ test.describe('Local plans section subscribe', () => {
     await page.route('**/api/billing/status', (r) =>
       fulfillJson(r, billingStatus(subscribed ? 'standard-yearly' : undefined))
     )
-    const balance: BillingBalanceResponse = {
-      amount_micros: 0,
-      currency: 'usd'
-    }
-    await page.route('**/api/billing/balance', (r) => fulfillJson(r, balance))
+    // With a hydrated wallet the credits tile reads the workspace rail, so its
+    // balance flips with `subscribed` to prove the reconcile reaches the tile.
+    await page.route('**/api/billing/balance', (r) => {
+      const balance: BillingBalanceResponse = {
+        amount_micros: subscribed ? 6000 : 0,
+        currency: 'usd'
+      }
+      return fulfillJson(r, balance)
+    })
+    const billingPosts: string[] = []
+    await page.route('**/api/billing/preview-subscribe', async (r) => {
+      if (r.request().method() === 'POST') billingPosts.push('preview')
+      await fulfillJson(r, newSubscriptionPreview)
+    })
     await page.route('**/api/billing/subscribe', async (r) => {
       if (r.request().method() === 'POST') {
+        billingPosts.push('subscribe')
         subscribed = true
         subscribeRequests.push({
           url: r.request().url(),
@@ -241,13 +351,25 @@ test.describe('Local plans section subscribe', () => {
     await expect(dialog.getByText('12,660')).toHaveCount(0)
     await chooseStandard.click()
 
+    // The server previews the pick first; the confirm step shows the credits
+    // the catalog card advertised, then the user subscribes from it.
+    const checkout = page.getByTestId('settings-plan-checkout')
+    await expect(checkout.getByText('Confirm your payment')).toBeVisible()
+    await expect(checkout.getByText('50,400')).toBeVisible()
+    expect(subscribeRequests).toEqual([])
+    await checkout
+      .getByRole('button', { name: 'Subscribe to Standard' })
+      .click()
+
     // The subscribe goes to the workspace rail on the ingest origin, never the
-    // legacy checkout shortlink.
+    // legacy checkout shortlink. The slug encodes the cadence, so the personal
+    // body carries no billing_cycle.
     await expect.poll(() => subscribeRequests.length).toBe(1)
+    expect(billingPosts).toEqual(['preview', 'subscribe'])
     expect(subscribeRequests[0].body).toMatchObject({
-      plan_slug: 'standard-yearly',
-      billing_cycle: 'yearly'
+      plan_slug: 'standard-yearly'
     })
+    expect(subscribeRequests[0].body).not.toHaveProperty('billing_cycle')
     expect(new URL(subscribeRequests[0].url).origin).not.toBe(
       new URL(APP_URL).origin
     )
@@ -259,7 +381,12 @@ test.describe('Local plans section subscribe', () => {
       )
       .toBe('https://checkout.stripe.com/c/pay/test-session')
 
-    // Op-polling reconciles and the subscribed card flips to disabled Current.
+    // Op-polling lands the success step; closing it reveals the section with
+    // the subscribed card flipped to disabled Current.
+    await expect(checkout.getByText("You're all set")).toBeVisible({
+      timeout: 30_000
+    })
+    await checkout.getByRole('button', { name: 'Close' }).last().click()
     const currentPlan = dialog.getByRole('button', { name: 'Current Plan' })
     await expect(currentPlan).toBeVisible({ timeout: 30_000 })
     await expect(currentPlan).toBeDisabled()
@@ -267,13 +394,157 @@ test.describe('Local plans section subscribe', () => {
       dialog.getByRole('button', { name: 'Choose Creator' })
     ).toBeEnabled()
 
-    // The embedded credits tile re-renders from the reconciled legacy balance
+    // The embedded credits tile re-renders from the reconciled balance
     // (6000 micros -> 12,660 credits), proving the reconcile reaches the tile.
     await expect(dialog.getByText('12,660').first()).toBeVisible({
       timeout: 15_000
     })
 
     expect(legacyCheckoutRequests).toEqual([])
+  })
+
+  test('previews a plan change and echoes the server proration on subscribe', async ({
+    page,
+    request
+  }) => {
+    test.setTimeout(90_000)
+
+    let subscribed = false
+    const billingPosts: string[] = []
+    const subscribeBodies: Record<string, unknown>[] = []
+
+    await mockLegacyReads(page)
+    await page.route('**/api/billing/plans', (r) =>
+      fulfillJson(r, plansResponse)
+    )
+    await page.route('**/api/billing/status', (r) =>
+      fulfillJson(
+        r,
+        billingStatus(subscribed ? 'creator-yearly' : 'standard-yearly')
+      )
+    )
+    await page.route('**/api/billing/preview-subscribe', async (r) => {
+      if (r.request().method() === 'POST') billingPosts.push('preview')
+      await fulfillJson(r, upgradePreview)
+    })
+    await page.route('**/api/billing/subscribe', async (r) => {
+      if (r.request().method() === 'POST') {
+        billingPosts.push('subscribe')
+        subscribed = true
+        subscribeBodies.push(r.request().postDataJSON())
+      }
+      const response: SubscribeResponse = {
+        status: 'subscribed',
+        billing_op_id: 'op-e2e-change'
+      }
+      await fulfillJson(r, response)
+    })
+
+    const dialog = await bootToPlansSection(page, request)
+
+    await expect(
+      dialog.getByRole('button', { name: 'Current Plan' })
+    ).toBeDisabled()
+    await dialog.getByRole('button', { name: 'Choose Creator' }).click()
+
+    // The transition step is the server's preview: today's charge, the
+    // effective instant, and the target plan's own credits.
+    const checkout = page.getByTestId('settings-plan-checkout')
+    await expect(checkout.getByText('Confirm your upgrade')).toBeVisible()
+    await expect(checkout.getByText('Total due today')).toBeVisible()
+    await expect(checkout.getByText('$12.34')).toBeVisible()
+    await expect(checkout.getByText('88,800')).toBeVisible()
+    expect(subscribeBodies).toEqual([])
+
+    await checkout.getByRole('button', { name: 'Confirm upgrade' }).click()
+
+    await expect.poll(() => subscribeBodies.length).toBe(1)
+    expect(billingPosts).toEqual(['preview', 'subscribe'])
+    expect(subscribeBodies[0]).toMatchObject({
+      plan_slug: 'creator-yearly',
+      proration_at: PRORATION_AT,
+      confirm_reactivation: false
+    })
+
+    await expect(checkout.getByText("You're all set")).toBeVisible({
+      timeout: 30_000
+    })
+    await checkout.getByRole('button', { name: 'Close' }).last().click()
+
+    await expect(
+      dialog.getByRole('button', { name: 'Current Plan' })
+    ).toBeDisabled({ timeout: 30_000 })
+    await expect(
+      dialog.getByRole('button', { name: 'Choose Standard' })
+    ).toBeEnabled()
+  })
+
+  test('requires reactivation consent before a cancelled subscriber changes plan', async ({
+    page,
+    request
+  }) => {
+    test.setTimeout(90_000)
+
+    let subscribed = false
+    const subscribeBodies: Record<string, unknown>[] = []
+
+    await mockLegacyReads(page)
+    await page.route('**/api/billing/plans', (r) =>
+      fulfillJson(r, plansResponse)
+    )
+    await page.route('**/api/billing/status', (r) =>
+      fulfillJson(
+        r,
+        subscribed
+          ? billingStatus('creator-yearly')
+          : billingStatus('standard-yearly', CURRENT_PERIOD_END)
+      )
+    )
+    await page.route('**/api/billing/preview-subscribe', (r) =>
+      fulfillJson(r, upgradePreview)
+    )
+    await page.route('**/api/billing/subscribe', async (r) => {
+      if (r.request().method() === 'POST') {
+        subscribed = true
+        subscribeBodies.push(r.request().postDataJSON())
+      }
+      const response: SubscribeResponse = {
+        status: 'subscribed',
+        billing_op_id: 'op-e2e-reactivate'
+      }
+      await fulfillJson(r, response)
+    })
+
+    const dialog = await bootToPlansSection(page, request)
+    await dialog.getByRole('button', { name: 'Choose Creator' }).click()
+
+    // A cancelled subscription is reactivated by the change, so the banner
+    // discloses the charge and the confirm stays locked until it is accepted.
+    const checkout = page.getByTestId('settings-plan-checkout')
+    await expect(
+      checkout.getByText('Reactivating your subscription')
+    ).toBeVisible()
+    const confirm = checkout.getByRole('button', {
+      name: 'Confirm & reactivate — $12.34 today'
+    })
+    await expect(confirm).toBeDisabled()
+    await checkout
+      .getByRole('checkbox', {
+        name: "I understand I'll be charged $12.34 today"
+      })
+      .check()
+    await expect(confirm).toBeEnabled()
+    await confirm.click()
+
+    await expect.poll(() => subscribeBodies.length).toBe(1)
+    expect(subscribeBodies[0]).toMatchObject({
+      plan_slug: 'creator-yearly',
+      confirm_reactivation: true,
+      proration_at: PRORATION_AT
+    })
+    await expect(checkout.getByText("You're all set")).toBeVisible({
+      timeout: 30_000
+    })
   })
 
   test('recovers from a failed plans fetch via retry', async ({
