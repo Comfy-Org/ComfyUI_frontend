@@ -60,12 +60,12 @@ Concretely:
    `linkStore.ts` registration.)
 2. The **current local-content boundary** is `LGraph.add` →
    `attachNodeToStores`. Workflow load, paste, and subgraph materialization
-   reach that path. Its `nodeShellLifecycle` loop detects the collision
-   _before_ store registration and mints a fresh id for the incoming local
-   copy. The warning required by D-gl-A2 — naming the old id, replacement id,
-   and root graph id — is pending in #15720; current `main` still remints
-   silently. This local adapter does not receive remote semantic operations
-   and does not emit a CRDT operation.
+   reach that path. Its `nodeShellLifecycle` loop attempts registration; after
+   the registry rejects a collision, the loop mints a fresh id for the
+   incoming local copy and retries. The warning required by D-gl-A2 — naming
+   the old id, replacement id, and root graph id — is pending in #15720;
+   current `main` still remints silently. This local adapter does not receive
+   remote semantic operations and does not emit a CRDT operation.
 3. The **future CRDT boundary** is the semantic-operation applier described by
    ADR-0003. Nodes, widgets, links, and reroutes are not yet CRDT-replicated.
    When they are, the applier must reconcile concurrent identity collisions
