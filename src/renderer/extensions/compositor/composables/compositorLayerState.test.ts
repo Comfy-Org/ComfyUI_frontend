@@ -474,6 +474,27 @@ describe('resolveInitialLayerState', () => {
     })
   })
 
+  it('carries the document canvas into the synthesized bbox layout', () => {
+    const resolved = resolveInitialLayerState(null, ['hash-a'], bboxes, {
+      w: 1280,
+      h: 1280
+    })
+    expect(resolved?.canvas).toEqual({ w: 1280, h: 1280 })
+  })
+
+  it('omits the canvas when the backend reports none', () => {
+    const resolved = resolveInitialLayerState(null, ['hash-a'], bboxes)
+    expect(resolved?.canvas).toBeUndefined()
+  })
+
+  it('ignores a malformed canvas', () => {
+    const resolved = resolveInitialLayerState(null, ['hash-a'], bboxes, {
+      w: Number.NaN,
+      h: 1280
+    } as { w: number; h: number })
+    expect(resolved?.canvas).toBeUndefined()
+  })
+
   it('returns null without a saved state or usable bboxes', () => {
     expect(resolveInitialLayerState(null, undefined, undefined)).toBeNull()
     expect(resolveInitialLayerState(null, undefined, [])).toBeNull()

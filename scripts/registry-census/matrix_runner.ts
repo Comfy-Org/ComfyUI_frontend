@@ -141,7 +141,7 @@ async function installGlobals() {
   const utilsMod = await import('@/scripts/utils')
   const domWidgetMod = await import('@/scripts/domWidget')
   lg.LiteGraph.alwaysRepeatWarnings = true
-  if (process.env.MATRIX_VUE) lg.LiteGraph.vueNodesMode = true
+  lg.LiteGraph.vueNodesMode = process.env.MATRIX_VUE === '1'
   lg.LiteGraph.onDeprecationWarning = [
     (m: string) => {
       const st = new Error().stack ?? ''
@@ -637,6 +637,7 @@ export async function runPack(
   row.ops = ops
   row.storeReadErrors = storeReadErrors
   row.hookErrors = [...new Set(hookErrors)].slice(0, 20)
+  row.vueNodesMode = LiteGraph.vueNodesMode
 
   fs.writeFileSync(rowPath, JSON.stringify(row))
 }

@@ -235,13 +235,15 @@
       "contactSupport": "Para eliminar tu cuenta, por favor contacta a {email}"
     },
     "errors": {
-      "auth/cancelled-popup-request": "El inicio de sesión fue cancelado. Por favor, inténtalo de nuevo.",
+      "auth/account-exists-with-different-credential": "Ya existe una cuenta con esta dirección de correo electrónico, pero utiliza un método de inicio de sesión diferente. Inicia sesión como lo hiciste originalmente.",
+      "auth/cancelled-popup-request": "Ya había otra ventana de inicio de sesión abierta, por lo que esta se canceló. Inténtalo de nuevo.",
       "auth/email-already-in-use": "Ya existe una cuenta con este correo electrónico. Intenta iniciar sesión en su lugar.",
       "auth/invalid-credential": "Credenciales de inicio de sesión inválidas. Por favor, verifica tu correo electrónico y contraseña.",
       "auth/invalid-email": "Por favor, ingresa una dirección de correo electrónico válida.",
       "auth/network-request-failed": "Error de red. Por favor, verifica tu conexión e inténtalo de nuevo.",
       "auth/operation-not-allowed": "Este método de inicio de sesión no está soportado actualmente.",
-      "auth/popup-closed-by-user": "El inicio de sesión fue cancelado. Por favor, inténtalo de nuevo.",
+      "auth/popup-blocked": "Tu navegador bloqueó la ventana de inicio de sesión. Permite las ventanas emergentes para este sitio e inténtalo de nuevo.",
+      "auth/popup-closed-by-user": "La ventana de inicio de sesión se cerró antes de finalizar el inicio de sesión. Inténtalo de nuevo.",
       "auth/too-many-requests": "Demasiados intentos de inicio de sesión. Por favor, espera un momento e inténtalo de nuevo.",
       "auth/user-disabled": "Esta cuenta ha sido deshabilitada. Por favor, contacta al soporte.",
       "auth/user-not-found": "No se encontró ninguna cuenta con este correo electrónico. ¿Te gustaría crear una nueva cuenta?",
@@ -845,6 +847,7 @@
       "message": "Los créditos han sido unificados",
       "tooltip": "Hemos unificado los pagos en Comfy. Ahora todo funciona con Comfy Credits:\n- Nodos de socios (antes nodos API)\n- Flujos de trabajo en la nube\n\nTu saldo existente de nodos de socios se ha convertido en créditos."
     },
+    "workspaceCredits": "Créditos del espacio de trabajo",
     "yourCreditBalance": "Tu saldo de créditos"
   },
   "curveWidget": {
@@ -894,6 +897,7 @@
     "FILE_3D_SPZ": "FILE_3D_SPZ",
     "FILE_3D_STL": "ARCHIVO_3D_STL",
     "FILE_3D_USDZ": "ARCHIVO_3D_USDZ",
+    "FISHAUDIO_VOICE": "FISHAUDIO_VOICE",
     "FLOAT": "FLOTANTE",
     "FLOATS": "FLOTANTES",
     "GEMINI_INPUT_FILES": "ARCHIVOS_ENTRADA_GEMINI",
@@ -907,6 +911,7 @@
     "IMAGECOMPARE": "COMPARARIMÁGENES",
     "INT": "ENTERO",
     "INTERP_MODEL": "MODELO_INTERP",
+    "KIMODO_POSE_DATA": "KIMODO_POSE_DATA",
     "KREA_STYLE_REF": "KREA_STYLE_REF",
     "LATENT": "LATENTE",
     "LATENT_OPERATION": "OPERACIÓN_LATENTE",
@@ -924,6 +929,7 @@
     "MESH": "MALLA",
     "MESHY_RIGGED_TASK_ID": "MESHY_RIGGED_TASK_ID",
     "MESHY_TASK_ID": "MESHY_TASK_ID",
+    "MHR_POSE_DATA": "MHR_POSE_DATA",
     "MODEL": "MODELO",
     "MODEL_PATCH": "PARCHE_MODELO",
     "MODEL_TASK_ID": "ID_TAREA_MODELO",
@@ -943,8 +949,10 @@
     "RIG_TASK_ID": "ID_TAREA_ARMADURA",
     "RUNWAY_ALEPH2_KEYFRAME": "RUNWAY_ALEPH2_KEYFRAME",
     "RUNWAY_ALEPH2_PROMPT_IMAGE": "RUNWAY_ALEPH2_PROMPT_IMAGE",
+    "SAM3D_BODY_MODEL": "SAM3D_BODY_MODEL",
     "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "MUESTREADOR",
+    "SHAPE_SUBDIVIDES": "SHAPE_SUBDIVIDES",
     "SIGMAS": "SIGMAS",
     "SPLAT": "SPLAT",
     "STRING": "CADENA",
@@ -960,12 +968,20 @@
     "WEBCAM": "WEBCAM"
   },
   "desktopDialogs": {
-    "": {
+    "invalidDialog": {
       "buttons": {
         "Close": "Cerrar"
       },
       "message": "Se proporcionó un ID de diálogo no válido.",
       "title": "Diálogo no válido"
+    },
+    "reinstallVenv": {
+      "buttons": {
+        "Learn More": "Más información",
+        "Reinstall": "Reinstalar"
+      },
+      "message": "Lo sentimos, no podemos iniciar ComfyUI porque algunos paquetes instalados no son compatibles.\n\nHaz clic en Reinstalar para restaurar ComfyUI y volver a ponerlo en funcionamiento.\n\nTen en cuenta que, si has añadido nodos personalizados, tendrás que reinstalarlos después de este proceso.",
+      "title": "¿Reinstalar ComfyUI (inicio desde cero)?"
     }
   },
   "desktopLogin": {
@@ -1409,7 +1425,8 @@
     "loadWorkflowTitle": "La carga se interrumpió debido a un error al recargar los datos del flujo de trabajo",
     "noStackTrace": "No hay seguimiento de pila disponible",
     "promptExecutionError": "La ejecución del prompt falló",
-    "queueOpenWorkflowFailedTitle": "No se pudo abrir el flujo de trabajo"
+    "queueOpenWorkflowFailedTitle": "No se pudo abrir el flujo de trabajo",
+    "workspaceChangedDuringExecution": "Tu espacio de trabajo activo cambió mientras se preparaba esta ejecución. Vuelve a ejecutar el flujo de trabajo para usar el espacio de trabajo actual."
   },
   "errorOverlay": {
     "missingMedia": "A algunos nodos les faltan entradas requeridas",
@@ -1564,7 +1581,7 @@
     "disableAll": "Deshabilitar todo",
     "disableSelected": "Deshabilitar seleccionados",
     "disableThirdParty": "Deshabilitar terceros",
-    "disabling": "Deshabilitando",
+    "disabling": "Desactivando {id}",
     "disconnectedFromBackend": "Desconectado del backend. Verifica si el servidor está en funcionamiento.",
     "dismiss": "Descartar",
     "download": "Descargar",
@@ -1584,7 +1601,7 @@
     "enableOrDisablePack": "Activar o desactivar paquete",
     "enableSelected": "Habilitar seleccionados",
     "enabled": "Habilitado",
-    "enabling": "Habilitando",
+    "enabling": "Activando {id}",
     "enter": "Entrar",
     "enterBaseName": "Introduce el nombre base",
     "enterNewName": "Introduce el nuevo nombre",
@@ -1638,13 +1655,14 @@
     "increment": "Incrementar",
     "info": "Información del Nodo",
     "input": "Entrada",
+    "inputTooltip": "Entrada: {name}",
     "insert": "Insertar",
     "install": "Instalar",
     "installed": "Instalado",
     "installing": "Instalando",
     "interrupted": "Interrumpido",
     "itemsCopiedToClipboard": "Elementos copiados al portapapeles",
-    "itemsSelected": "{selectedCount} elementos seleccionados",
+    "itemsSelected": "No hay elementos seleccionados | {count} elemento seleccionado | {count} elementos seleccionados",
     "job": "Tarea",
     "jobIdCopied": "ID de trabajo copiado al portapapeles",
     "keybinding": "Combinación de teclas",
@@ -1807,7 +1825,7 @@
     "searchKeybindings": "Buscar combinaciones de teclas",
     "searchModels": "Buscar modelos",
     "searchNodes": "Buscar nodos",
-    "searchPlaceholder": "Buscar...",
+    "searchPlaceholder": "Buscar {subject}...",
     "searchSettings": "Buscar configuraciones",
     "searchWorkflows": "Buscar flujos de trabajo",
     "seeTutorial": "Ver un tutorial",
@@ -1859,7 +1877,7 @@
     "updateAvailable": "Actualización Disponible",
     "updateFrontend": "Actualizar frontend",
     "updated": "Actualizado",
-    "updating": "Actualizando",
+    "updating": "Actualizando {id}",
     "upload": "Subir",
     "uploadAlreadyInProgress": "La carga ya está en curso",
     "uploadTimedOut": "La carga ha excedido el tiempo de espera. Por favor, inténtalo de nuevo.",
@@ -2226,7 +2244,7 @@
     },
     "cancelThisRun": "Cancelar esta ejecución",
     "deleteAllAssets": "Eliminar todos los recursos de esta ejecución",
-    "downloadAll": "Descargar todo",
+    "downloadAll": "Descargar {count} recursos de esta ejecución",
     "dragAndDropImage": "Arrastra y suelta una imagen",
     "emptyWorkflowExplanation": "Tu flujo de trabajo está vacío. Necesitas algunos nodos primero para empezar a construir una aplicación.",
     "enterNodeGraph": "Entrar al grafo de nodos",
@@ -2283,6 +2301,7 @@
     "clearRecording": "Borrar grabación",
     "dropToLoad": "Suelta el modelo 3D para cargar",
     "edgeThreshold": "Umbral de borde",
+    "exitLookThrough": "Salir de la vista de cámara",
     "export": "Exportar",
     "exportModel": "Exportar modelo",
     "exportRecording": "Exportar grabación",
@@ -2305,11 +2324,13 @@
       "showAsBackground": "Mostrar como fondo",
       "uploadFile": "Subir HDRI (.hdr, .exr)"
     },
+    "hideGizmos": "Ocultar controles",
     "light": "Luz",
     "lightIntensity": "Intensidad de luz",
     "loadingBackgroundImage": "Cargando imagen de fondo",
     "loadingHDRI": "Cargando HDRI...",
     "loadingModel": "Cargando modelo 3D...",
+    "lookThrough": "Vista de cámara",
     "materialMode": "Modo de material",
     "materialModes": {
       "clay": "Arcilla",
@@ -2350,6 +2371,7 @@
     "removeBackgroundImage": "Eliminar imagen de fondo",
     "resizeNodeMatchOutput": "Redimensionar nodo para coincidir con la salida",
     "scene": "Escena",
+    "showGizmos": "Mostrar controles",
     "showGrid": "Mostrar cuadrícula",
     "showSkeleton": "Mostrar esqueleto",
     "startRecording": "Iniciar grabación",
@@ -2357,6 +2379,13 @@
     "switchCamera": "Cambiar cámara",
     "switchingMaterialMode": "Cambiando modo de material...",
     "tiledMode": "Mosaico",
+    "transformGizmo": {
+      "cameraRotate": "Rot. cámara",
+      "cameraTranslate": "Pos. cámara",
+      "label": "Editar",
+      "none": "Ninguno",
+      "target": "Objetivo"
+    },
     "unsupportedFileType": "Tipo de archivo no compatible (admite .gltf, .glb, .obj, .fbx, .stl)",
     "upDirection": "Dirección hacia arriba",
     "upDirections": {
@@ -2365,6 +2394,8 @@
     "uploadBackgroundImage": "Subir imagen de fondo",
     "uploadTexture": "Subir textura",
     "uploadingModel": "Subiendo modelo 3D...",
+    "useCustomUp": "Restaurar la vertical de la cámara desde la entrada",
+    "useNaturalUp": "Restablecer la vertical de la cámara a Y",
     "viewer": {
       "apply": "Aplicar",
       "cameraSettings": "Configuración de Cámara",
@@ -2480,7 +2511,7 @@
     "enablePackToChangeVersion": "Habilita este paquete para cambiar versiones",
     "errorConnecting": "Error al conectar con el Registro de Nodos Comfy.",
     "extensionsSuccessfullyInstalled": "¡Extensión(es) instalada(s) exitosamente y lista(s) para usar!",
-    "failed": "Falló ({count})",
+    "failed": "Error",
     "failedToInstall": "Falló la Instalación",
     "filter": {
       "disabled": "Deshabilitado",
@@ -2569,7 +2600,7 @@
     "tryUpdateTooltip": "Obtén los últimos cambios del repositorio. Las versiones nocturnas pueden tener actualizaciones que no se detectan automáticamente.",
     "uninstall": "Desinstalar",
     "uninstallSelected": "Desinstalar Seleccionado",
-    "uninstalling": "Desinstalando",
+    "uninstalling": "Desinstalando {id}",
     "unresolvedNodes": {
       "message": "Los siguientes nodos no están instalados y no se pudieron encontrar en el registro.",
       "title": "Nodos faltantes no resueltos"
@@ -2898,6 +2929,9 @@
     "notNow": "Ahora no",
     "title": "Ayúdanos a mejorar"
   },
+  "nodeBadge": {
+    "partnerNodesCount": "Nodos asociados x {count}"
+  },
   "nodeCategories": {
     "": "",
     "3d": "3d",
@@ -2907,6 +2941,7 @@
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "ElevenLabs": "ElevenLabs",
+    "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
     "Grok": "Grok",
     "HeyGen": "HeyGen",
@@ -2996,7 +3031,9 @@
     "mage": "mage",
     "mask": "mask",
     "merging": "fusión",
+    "mesh": "malla",
     "minimax": "minimax",
+    "minimax music": "minimax music",
     "mochi": "mochi",
     "model": "modelo",
     "model specific": "específico del modelo",
@@ -3035,8 +3072,11 @@
     "supir": "supir",
     "sync_so": "sync.so",
     "text": "texto",
+    "texturing": "texturizado",
     "training": "entrenamiento",
     "transform": "transformar",
+    "trellis": "trellis",
+    "trellis2": "trellis2",
     "triposplat": "triposplat",
     "unet": "unet",
     "upscaling": "escalado",
@@ -3427,7 +3467,7 @@
       "expandNodes": "Mostrar nodos de referencia",
       "gatedModelDownloadTooltip": "La descarga puede requerir iniciar sesión primero en Hugging Face.",
       "gatedModelTooltip": "Este modelo está restringido y requiere que inicies sesión en Hugging Face y aceptes su acuerdo de licencia.",
-      "gatedModelsHint": "Algunos modelos están restringidos. Para descargarlos, inicia sesión en Hugging Face y acepta el acuerdo de licencia del modelo.",
+      "gatedModelsHint": "El modelo {count} tiene acceso restringido. Para descargarlo, inicia sesión en Hugging Face y acepta su acuerdo de licencia. | Los modelos {count} tienen acceso restringido. Para descargarlos, inicia sesión en Hugging Face y acepta sus acuerdos de licencia.",
       "gatedModelsHintLabel": "Nota:",
       "import": "Importar",
       "importNotSupported": "Importación no soportada",
@@ -4089,8 +4129,8 @@
     "contactUs": "Contáctanos",
     "creditSliderSave": "Ahorra {percent}% ({amount})",
     "creditsLeftOfTotal": "{remaining} de {total} restantes",
-    "creditsRemainingThisMonth": "Créditos restantes este mes",
-    "creditsRemainingThisYear": "Créditos restantes este año",
+    "creditsRemainingThisMonth": "Incluidos (Se repone el {date})",
+    "creditsRemainingThisYear": "Incluidos (Se repone el {date})",
     "creditsUsed": "{used} usados",
     "creditsYouveAdded": "Créditos que has agregado",
     "currentPlan": "Plan actual",
@@ -4128,6 +4168,7 @@
       "freeRuns": "{count} ejecución gratuita | {count} ejecuciones gratuitas",
       "maxRuntime": "{duration} de tiempo máximo de ejecución"
     },
+    "fullUsageActivity": "Actividad de uso completa",
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
     "haveQuestions": "¿Tienes preguntas o buscas soluciones empresariales?",
     "inactive": {
@@ -4201,6 +4242,7 @@
       "personal": "Para uso personal",
       "team": "Para equipos"
     },
+    "plansAndCredits": "Planes y créditos",
     "plansAndPricing": "Planes y precios",
     "plansForWorkspace": "Planes para {workspace}",
     "prepaidCreditsInfo": "Créditos comprados por separado que no expiran",
@@ -4499,6 +4541,7 @@
     "failedToFetchBalance": "No se pudo obtener el saldo: {error}",
     "failedToFetchLogs": "Error al obtener los registros del servidor",
     "failedToFetchSubscription": "Error al obtener el estado de suscripción: {error}",
+    "failedToInitializeCameraInfoViewer": "No se pudo inicializar el visor de información de la cámara. Intenta recargar la página.",
     "failedToInitializeLoad3dViewer": "Error al inicializar el visor 3D",
     "failedToInitiateCreditPurchase": "No se pudo iniciar la compra de créditos: {error}",
     "failedToInitiateSubscription": "Error al iniciar la suscripción: {error}",
@@ -4706,7 +4749,7 @@
     "savedAsWorkflow": "Convertido a flujo de trabajo solo de grafo de nodos"
   },
   "workspace": {
-    "addedToWorkspace": "Has sido añadido a {workspaceName}",
+    "addedToWorkspace": "Te han añadido a:",
     "inviteAccepted": "Invitación aceptada",
     "inviteFailed": "No se pudo aceptar la invitación",
     "switchFailed": "No se pudo cambiar de espacio de trabajo. Por favor, inténtalo de nuevo.",
@@ -4801,7 +4844,7 @@
       "title": "Editar detalles del espacio de trabajo"
     },
     "invite": "Invitar",
-    "inviteLimitReached": "Has alcanzado el máximo de 50 miembros",
+    "inviteLimitReached": "Has alcanzado el máximo de {count} miembros",
     "inviteMember": "Invitar miembro",
     "inviteMemberDialog": {
       "failedCount": "No se pudo enviar {count} invitación. Intenta de nuevo. | No se pudieron enviar {count} invitaciones. Intenta de nuevo.",
@@ -4854,7 +4897,7 @@
         "warning": "Este usuario ya ha gastado {credits} créditos. Establecer el límite en o por debajo de su uso actual impedirá más ejecuciones hasta el próximo mes."
       },
       "header": "Miembros",
-      "membersCount": "{count}/50 Miembros",
+      "membersCount": "{count} de {maxSeats} miembros",
       "needMoreMembers": "¿Necesitas más miembros?",
       "noInvites": "No hay invitaciones pendientes",
       "noMembers": "No hay miembros",
@@ -4978,6 +5021,8 @@
     "personal": "Personal",
     "roleMember": "Miembro",
     "roleOwner": "Propietario",
+    "scopeCaption": "Los espacios de trabajo solo afectan a los créditos que usas.",
+    "scopeTooltip": "Las ejecuciones que usan nodos asociados consumen créditos de este espacio de trabajo. A diferencia de Cloud, todos los espacios de trabajo guardan en tu carpeta de salida habitual.",
     "subscribe": "Suscribirse",
     "switchWorkspace": "Cambiar espacio de trabajo"
   },
