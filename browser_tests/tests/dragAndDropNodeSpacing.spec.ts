@@ -32,13 +32,49 @@ test.describe('Drag and drop node spacing', { tag: ['@ui'] }, () => {
     // 2x LoadImage + 1x BatchImagesNode + 1x LoadAudio
     await comfyPage.nodeOps.waitForGraphNodes(4)
 
+    // LoadImage nodes grow once their preview image loads, and that growth
+    // reaches the graph via a further DOM-measured layout sync (a
+    // microtask/rAF after the image finishes loading). `toPass()` below
+    // retries the geometry snapshot, but retrying alone doesn't guarantee
+    // any given attempt runs after that growth has actually landed - a fast
+    // first attempt can read the pre-growth ~102px height, report no
+    // overlap, and pass. Wait for the real readiness boundary first: every
+    // LoadImage preview has decoded, and its node height has stopped
+    // changing across consecutive samples.
+    let previousHeights: number[] | null = null
+    await expect
+      .poll(
+        async () => {
+          const state = await comfyPage.page.evaluate(() =>
+            window
+              .app!.graph.nodes.filter((node) => node.type === 'LoadImage')
+              .map((node) => {
+                const img = node.imgs?.[0]
+                return {
+                  loaded: !!img && img.complete && img.naturalWidth > 0,
+                  height: node.size[1]
+                }
+              })
+          )
+
+          const heights = state.map((s) => s.height)
+          const heightsSettled =
+            previousHeights !== null &&
+            heights.length === previousHeights.length &&
+            heights.every((h, i) => h === previousHeights![i])
+          previousHeights = heights
+
+          return state.every((s) => s.loaded) && heightsSettled
+        },
+        { timeout: 10_000 }
+      )
+      .toBe(true)
+
     // Node geometry is read twice below (once for the type-set check, once
     // for pairwise overlap) and both must agree on a single, settled
-    // snapshot. LoadImage nodes keep growing for a bit after creation (the
-    // preview image loads asynchronously), so a single non-retrying read
-    // can sample geometry mid-growth and miss overlaps that only appear
-    // once nodes reach their final size. Wrap the snapshot and the
-    // assertions in `toPass()` so it retries until nodes have settled.
+    // snapshot. Wrap the snapshot and the assertions in `toPass()` so it
+    // retries if anything else nudges geometry after the readiness wait
+    // above.
     await expect(async () => {
       const nodes = await comfyPage.page.evaluate<NodeBox[]>(() =>
         window.app!.graph.nodes.map((node) => ({
