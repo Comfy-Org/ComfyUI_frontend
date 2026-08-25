@@ -334,11 +334,6 @@ describe('fetchModelMetadataWithStatus', () => {
     const controller = new AbortController()
     const url =
       'https://huggingface.co/org/model/resolve/main/cancelled.safetensors'
-    const fetchWithSignal: (
-      url: string,
-      options?: { signal?: AbortSignal }
-    ) => ReturnType<typeof fetchModelMetadataWithStatus> =
-      fetchModelMetadataWithStatus
     fetchMock.mockImplementationOnce(
       (_url: string, options: RequestInit | undefined) =>
         new Promise<Response>((_resolve, reject) => {
@@ -348,7 +343,7 @@ describe('fetchModelMetadataWithStatus', () => {
         })
     )
 
-    const result = fetchWithSignal(url, {
+    const result = fetchModelMetadataWithStatus(url, {
       signal: controller.signal
     })
     await vi.waitFor(() => {

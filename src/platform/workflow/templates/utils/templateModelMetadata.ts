@@ -32,7 +32,9 @@ export async function resolveTemplateModelMetadata(
     models.map(async (model): Promise<TemplateModelMetadataEntry> => {
       let metadata = metadataByUrl.get(model.url)
       if (!metadata) {
-        metadata = fetchModelMetadataWithStatus(model.url)
+        metadata = signal
+          ? fetchModelMetadataWithStatus(model.url, { signal })
+          : fetchModelMetadataWithStatus(model.url)
         metadataByUrl.set(model.url, metadata)
       }
 
