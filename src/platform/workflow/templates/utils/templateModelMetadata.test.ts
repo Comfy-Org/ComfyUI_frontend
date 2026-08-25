@@ -16,15 +16,30 @@ function model(name: string, url = `https://example.com/${name}`): ModelFile {
   return { name, url, directory: 'checkpoints' }
 }
 
+function metadataOutcome(
+  fileSize: number | null,
+  gatedRepoUrl: string | null = null,
+  resolution: ModelMetadataFetchOutcome['resolution'] = 'resolved'
+): ModelMetadataFetchOutcome {
+  return { metadata: { fileSize, gatedRepoUrl }, resolution }
+}
+
+function metadataEntry(
+  model: ModelFile,
+  fileSize: number | null,
+  gatedRepoUrl: string | null = null,
+  resolution: ModelMetadataFetchOutcome['resolution'] = 'resolved'
+) {
+  return { model, fileSize, gatedRepoUrl, resolution }
+}
+
 function deferred<T>() {
   let resolve!: (value: T) => void
-  let reject!: (reason: unknown) => void
-  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+  const promise = new Promise<T>((resolvePromise) => {
     resolve = resolvePromise
-    reject = rejectPromise
   })
 
-  return { promise, reject, resolve }
+  return { promise, resolve }
 }
 
 describe('resolveTemplateModelMetadata', () => {
@@ -38,17 +53,8 @@ describe('resolveTemplateModelMetadata', () => {
     mocks.fetchModelMetadataWithStatus.mockImplementation(
       async (url: string) =>
         url === shared.url
-          ? {
-              metadata: { fileSize: 1024, gatedRepoUrl: null },
-              resolution: 'resolved'
-            }
-          : {
-              metadata: {
-                fileSize: null,
-                gatedRepoUrl: 'https://huggingface.co/org/gated-model'
-              },
-              resolution: 'resolved'
-            }
+          ? metadataOutcome(1024)
+          : metadataOutcome(null, 'https://huggingface.co/org/gated-model')
     )
 
     const result = await resolveTemplateModelMetadata([shared, unique, shared])
@@ -65,24 +71,9 @@ describe('resolveTemplateModelMetadata', () => {
     expect(result).toEqual({
       status: 'completed',
       entries: [
-        {
-          model: shared,
-          fileSize: 1024,
-          gatedRepoUrl: null,
-          resolution: 'resolved'
-        },
-        {
-          model: unique,
-          fileSize: null,
-          gatedRepoUrl: 'https://huggingface.co/org/gated-model',
-          resolution: 'resolved'
-        },
-        {
-          model: shared,
-          fileSize: 1024,
-          gatedRepoUrl: null,
-          resolution: 'resolved'
-        }
+        metadataEntry(shared, 1024),
+        metadataEntry(unique, null, 'https://huggingface.co/org/gated-model'),
+        metadataEntry(shared, 1024)
       ]
     })
     if (result.status !== 'completed') {
@@ -99,18 +90,9 @@ describe('resolveTemplateModelMetadata', () => {
     mocks.fetchModelMetadataWithStatus.mockImplementation(
       async (url: string) => {
         if (url === failed.url) {
-          return {
-            metadata: { fileSize: null, gatedRepoUrl: null },
-            resolution: 'failed'
-          }
+          return metadataOutcome(null, null, 'failed')
         }
-        return {
-          metadata: {
-            fileSize: url === first.url ? 100 : 300,
-            gatedRepoUrl: null
-          },
-          resolution: 'resolved'
-        }
+        return metadataOutcome(url === first.url ? 100 : 300)
       }
     )
 
@@ -119,24 +101,9 @@ describe('resolveTemplateModelMetadata', () => {
     ).resolves.toEqual({
       status: 'completed',
       entries: [
-        {
-          model: first,
-          fileSize: 100,
-          gatedRepoUrl: null,
-          resolution: 'resolved'
-        },
-        {
-          model: failed,
-          fileSize: null,
-          gatedRepoUrl: null,
-          resolution: 'failed'
-        },
-        {
-          model: last,
-          fileSize: 300,
-          gatedRepoUrl: null,
-          resolution: 'resolved'
-        }
+        metadataEntry(first, 100),
+        metadataEntry(failed, null, null, 'failed'),
+        metadataEntry(last, 300)
       ]
     })
     expect(mocks.fetchModelMetadataWithStatus).toHaveBeenCalledTimes(3)
@@ -175,10 +142,7 @@ describe('resolveTemplateModelMetadata', () => {
 
     expect(mocks.fetchModelMetadataWithStatus).toHaveBeenCalledOnce()
     controller.abort()
-    pending.resolve({
-      metadata: { fileSize: 2048, gatedRepoUrl: null },
-      resolution: 'resolved'
-    })
+    pending.resolve(metadataOutcome(2048))
 
     await expect(result).resolves.toEqual({ status: 'aborted' })
   })
