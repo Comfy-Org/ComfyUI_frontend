@@ -34,7 +34,8 @@ another merge-shaped operation inserts externally minted content.
 ### What a collision means
 
 Per the collision-contract taxonomy (D-gl-A4, with pending test coverage in
-#15720 and a pending ADR-0003/ADR-0008 documentation fold in #15761):
+pull request 15720 and a pending ADR-0003/ADR-0008 documentation fold in
+pull request 15761):
 
 - **Identity keys reject.** A collision on an identity key is two different
   entities claiming one name. They must never be merged; merging silently
@@ -78,7 +79,7 @@ Concretely:
 The two materialization paths do not share propagation semantics. Today's
 local adapter remints only the copy being inserted into one graph:
 
-```
+```text
 incoming local node id 7
           |
           v
@@ -100,7 +101,7 @@ belongs to that applier, but it must be deterministic and collision-free; for
 example, it can retain the raw id for the winning stamp and derive an
 actor-scoped replacement from the losing stamp:
 
-```
+```text
 Replica A operation                 Replica B operation
 add alpha, id 7, stamp A:1          add beta, id 7, stamp B:1
                  \                    /
@@ -203,7 +204,7 @@ Tag colliding entries with an epoch/namespace and reconcile lazily.
 - ADR-0017 — ID-Based Slot Records Are the Slot Destination (the same
   identity-vs-structural key taxonomy, applied to slots).
 - #15720 — pending collision-contract invariant test suite (registry rejection
-  + remint warning).
+  and remint warning).
 - #15761 — pending collision-contract documentation fold.
 - #15882 — pending serialized-reference remap after a local node-id remint.
 - Program decisions D-gl-A2 (no silent remints), D-gl-A4 (identity keys
