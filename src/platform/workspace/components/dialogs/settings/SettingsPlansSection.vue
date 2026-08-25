@@ -1,5 +1,8 @@
 <template>
-  <section class="flex shrink-0 flex-col gap-4">
+  <section
+    class="flex shrink-0 flex-col gap-4"
+    data-testid="settings-plans-section"
+  >
     <div class="flex flex-col gap-1">
       <h3 class="m-0 text-base font-semibold text-base-foreground">
         {{ t('settingsPlans.title') }}
