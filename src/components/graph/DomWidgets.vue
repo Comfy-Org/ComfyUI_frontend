@@ -17,6 +17,7 @@ import { computed } from 'vue'
 import DomWidget from '@/components/graph/widgets/DomWidget.vue'
 import { getDomWidgetZIndex } from '@/components/graph/widgets/domWidgetZIndex'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
+import { findFirstNode } from '@/lib/litegraph/src/utils/collections'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 
@@ -58,7 +59,7 @@ const updateWidgets = () => {
   lastViewport.offsetY = viewportOffsetY
   lastViewport.scale = viewportScale
 
-  const selectedNode = Object.values(lgCanvas.selected_nodes ?? {})[0]
+  const selectedNode = findFirstNode(lgCanvas.selectedItems)
   const selectedNodeId = selectedNode?.id
   const selectedArea = selectedNode?.renderArea
   const selectionChanged =

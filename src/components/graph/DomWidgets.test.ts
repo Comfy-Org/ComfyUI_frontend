@@ -50,7 +50,8 @@ function createCanvas(graph: LGraph): LGraphCanvas {
     read_only: false,
     isNodeVisible: vi.fn(() => true),
     ds: { offset: [0, 0], scale: 1 },
-    selected_nodes: {}
+    selected_nodes: {},
+    selectedItems: new Set()
   })
 }
 
@@ -206,6 +207,7 @@ describe('DomWidgets positioning', () => {
 
     const canvas = createCanvas(graph)
     canvas.selected_nodes = { 1: movingNode }
+    canvas.selectedItems = new Set([movingNode])
     canvasStore.canvas = canvas
 
     render(DomWidgets, {
