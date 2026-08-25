@@ -772,7 +772,7 @@ function createAssetService() {
       )
     }
 
-    invalidateInputAssets()
+    void useAssetsStore().inputAssets.invalidate([id])
   }
 
   /**

@@ -38,7 +38,7 @@ import { isResultItemType } from '@/utils/typeGuardUtil'
 
 import { useAssetExportStore } from '@/stores/assetExportStore'
 
-import type { AssetItem } from '../schemas/assetSchema'
+import type { AssetId, AssetItem } from '../schemas/assetSchema'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
 import { assetService } from '../services/assetService'
 
@@ -96,28 +96,19 @@ export function useMediaAssetActions() {
   const litegraphService = useLitegraphService()
   const nodeDefStore = useNodeDefStore()
 
-  /**
-   * Internal helper to perform the API deletion for an AssetItem
-   * @throws Error if deletion fails or is not allowed
-   */
-  const deleteAssetApi = async (asset: AssetItem): Promise<void> => {
-    const { jobId, outputCount, allOutputs } =
-      getOutputAssetMetadata(asset.user_metadata) ?? {}
-    if (flags.assetsEnabled && flags.assetDeletionEnabled) {
-      if (!jobId || !outputCount) {
-        await assetService.deleteAsset(asset.id)
-        return
+  function resolveChildItems(
+    asset: AssetItem
+  ): { name: string; id: AssetId }[] {
+    const { allOutputs } = getOutputAssetMetadata(asset.user_metadata) ?? {}
+    const allItems = (allOutputs ?? [])?.flatMap((output) => {
+      if (!output.assetId) return []
+      return {
+        name: output.display_name || output.filename,
+        id: output.assetId
       }
-      const allOutputIds = (allOutputs ?? [])?.flatMap((output) =>
-        output.assetId ? [output.assetId] : []
-      )
-      const toDelete = allOutputIds.length > 0 ? allOutputIds : [asset.id]
-      await Promise.all(toDelete.map((id) => assetService.deleteAsset(id)))
-    }
-    if (jobId) {
-      await api.deleteItem('history', jobId)
-      if (!flags.assetsEnabled) await useAssetsStore().outputAssets.invalidate()
-    }
+    })
+    if (allItems.length > 0) return allItems
+    return [{ name: getAssetDisplayName(asset), id: asset.id }]
   }
 
   /**
@@ -666,6 +657,7 @@ export function useMediaAssetActions() {
   ): Promise<boolean> => {
     const assetArray = Array.isArray(assets) ? assets : [assets]
     if (assetArray.length === 0) return false
+    const flatAssets = assetArray.flatMap(resolveChildItems)
 
     if (flags.assetsEnabled && !flags.assetDeletionEnabled) {
       toast.add({
@@ -677,7 +669,7 @@ export function useMediaAssetActions() {
     }
 
     const assetsStore = useAssetsStore()
-    const isSingle = assetArray.length === 1
+    const isSingle = flatAssets.length === 1
 
     return new Promise((resolve) => {
       dialogStore.showDialog({
@@ -690,29 +682,43 @@ export function useMediaAssetActions() {
           message: isSingle
             ? t('mediaAsset.deleteAssetDescription')
             : t('mediaAsset.deleteSelectedDescription', {
-                count: assetArray.length
+                count: flatAssets.length
               }),
           type: 'delete',
-          itemList: assetArray.map((asset) => getAssetDisplayName(asset)),
+          itemList: flatAssets.map((r) => r.name),
           onConfirm: async () => {
-            // Show loading overlay for all assets being deleted
             assetArray.forEach((asset) =>
               assetsStore.setAssetDeleting(asset.id, true)
             )
 
             try {
-              // Delete all assets using Promise.allSettled to track individual results
               const results = await Promise.allSettled(
-                assetArray.map(deleteAssetApi)
+                flatAssets.map((r) => r.id).map(assetService.deleteAsset)
+              )
+              const succeededIds = new Set(
+                flatAssets.flatMap(({ id }, idx) =>
+                  results[idx].status === 'fulfilled' ? [id] : []
+                )
               )
 
-              // Count successes and failures
+              await Promise.allSettled(
+                assetArray.flatMap((asset) => {
+                  const { jobId } =
+                    getOutputAssetMetadata(asset.user_metadata) ?? {}
+                  if (!jobId) return []
+
+                  for (const item of resolveChildItems(asset)) {
+                    if (!succeededIds.has(item.id)) return []
+                  }
+                  return api.deleteItem('history', jobId)
+                })
+              )
+
               const succeeded = results.filter(
                 (r) => r.status === 'fulfilled'
               ).length
               const failed = results.filter((r) => r.status === 'rejected')
 
-              // Log failed deletions for debugging
               results.forEach((result, index) => {
                 if (result.status !== 'rejected') return
                 console.warn(
