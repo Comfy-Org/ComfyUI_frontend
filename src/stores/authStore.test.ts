@@ -162,10 +162,11 @@ vi.mock('@/composables/useFeatureFlags', () => ({
 
 // Mock apiKeyAuthStore
 const mockApiKeyGetAuthHeader = vi.fn().mockReturnValue(null)
+const mockApiKeyGetApiKey = vi.fn()
 vi.mock('@/stores/apiKeyAuthStore', () => ({
   useApiKeyAuthStore: () => ({
     getAuthHeader: mockApiKeyGetAuthHeader,
-    getApiKey: vi.fn(),
+    getApiKey: mockApiKeyGetApiKey,
     currentUser: null,
     isAuthenticated: false,
     storeApiKey: vi.fn(),
@@ -240,6 +241,7 @@ describe('useAuthStore', () => {
 
     // Default: no API key auth
     mockApiKeyGetAuthHeader.mockReturnValue(null)
+    mockApiKeyGetApiKey.mockReturnValue(null)
     mockTeamWorkspaceStore.activeWorkspaceId = null
     mockTeamWorkspaceStore.resetForIdentityChange.mockReset()
   })
@@ -376,6 +378,7 @@ describe('useAuthStore', () => {
     beforeEach(() => {
       authStateCallback(null)
       mockApiKeyGetAuthHeader.mockReturnValue({ 'X-API-KEY': 'test-api-key' })
+      mockApiKeyGetApiKey.mockReturnValue('test-api-key')
     })
 
     it('fetchBalance sends the stored API key when no Firebase user exists', async () => {
@@ -398,6 +401,22 @@ describe('useAuthStore', () => {
         message: 'toastMessages.userNotAuthenticated'
       })
       expect(mockFetch).not.toHaveBeenCalled()
+    })
+
+    it('drops a late balance response after the API key changes mid-flight', async () => {
+      let resolveBalance!: (value: unknown) => void
+      mockFetch.mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveBalance = resolve
+        })
+      )
+
+      const request = store.fetchBalance()
+      mockApiKeyGetApiKey.mockReturnValue('another-api-key')
+      resolveBalance({ ok: true, json: () => Promise.resolve({ balance: 7 }) })
+
+      await expect(request).resolves.toBeNull()
+      expect(store.balance).toBeNull()
     })
 
     it('fetchBalance prefers the Firebase token over the API key when signed in', async () => {

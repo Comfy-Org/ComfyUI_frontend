@@ -296,6 +296,9 @@ export const useAuthStore = defineStore('auth', () => {
       ? useApiKeyAuthStore().getAuthHeader()
       : await getFirebaseAuthHeader()
 
+  const currentUserIdentity = (): string | null =>
+    currentUser.value?.uid ?? useApiKeyAuthStore().getApiKey()
+
   const getWorkspaceAuthHeader = async (): Promise<AuthHeader | null> => {
     if (flags.unifiedCloudAuthEnabled) {
       const token = useWorkspaceAuthStore().getUnifiedToken()
@@ -392,7 +395,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   const fetchBalance = async (): Promise<GetCustomerBalanceResponse | null> => {
     isFetchingBalance.value = true
-    const requestOwnerUid = currentUser.value?.uid ?? null
+    const requestOwner = currentUserIdentity()
     try {
       const authHeader = await getUserAuthHeader()
       if (!authHeader) {
@@ -423,9 +426,10 @@ export const useAuthStore = defineStore('auth', () => {
       }
 
       const balanceData = await response.json()
-      // A direct A->B account switch nulls balance in onAuthStateChanged; a
-      // late-resolving request from the previous identity must not repaint it.
-      if ((currentUser.value?.uid ?? null) !== requestOwnerUid) {
+      // A direct A->B switch (Firebase account or stored API key) leaves this
+      // request owned by the previous identity; its late-resolving response
+      // must not repaint the new session's balance.
+      if (currentUserIdentity() !== requestOwner) {
         return null
       }
       // Update the last balance update time
