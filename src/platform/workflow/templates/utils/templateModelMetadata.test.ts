@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import type { ModelMetadata } from '@/platform/missingModel/missingModelDownload'
 import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { resolveTemplateModelMetadata } from './templateModelMetadata'
 
 const mocks = vi.hoisted(() => ({
   fetchModelMetadataWithStatus: vi.fn()
@@ -11,52 +13,6 @@ vi.mock('@/platform/missingModel/missingModelDownload', () => ({
   fetchModelMetadata: async (url: string) =>
     (await mocks.fetchModelMetadataWithStatus(url)).metadata
 }))
-
-type ModelMetadata = {
-  fileSize: number | null
-  gatedRepoUrl: string | null
-}
-
-type TemplateModelMetadataEntry = ModelMetadata & {
-  model: ModelFile
-  resolution: 'resolved' | 'failed'
-}
-
-type TemplateModelMetadataBatchResult =
-  | {
-      status: 'completed'
-      entries: TemplateModelMetadataEntry[]
-    }
-  | { status: 'aborted' }
-
-type ResolveTemplateModelMetadata = (
-  models: readonly ModelFile[],
-  options?: {
-    fetchMetadata?: (url: string) => Promise<ModelMetadata>
-    signal?: AbortSignal
-  }
-) => Promise<TemplateModelMetadataBatchResult>
-
-function isMetadataModule(value: unknown): value is {
-  resolveTemplateModelMetadata: ResolveTemplateModelMetadata
-} {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'resolveTemplateModelMetadata' in value &&
-    typeof value.resolveTemplateModelMetadata === 'function'
-  )
-}
-
-async function loadResolver(): Promise<ResolveTemplateModelMetadata> {
-  const modulePath = './templateModelMetadata'
-  const value: unknown = await import(modulePath)
-  if (!isMetadataModule(value)) {
-    throw new Error('Expected resolveTemplateModelMetadata to be exported')
-  }
-
-  return value.resolveTemplateModelMetadata
-}
 
 function model(name: string, url = `https://example.com/${name}`): ModelFile {
   return { name, url, directory: 'checkpoints' }
@@ -75,7 +31,6 @@ function deferred<T>() {
 
 describe('resolveTemplateModelMetadata', () => {
   it('fetches each URL once while preserving input order and repeated identity', async () => {
-    const resolveTemplateModelMetadata = await loadResolver()
     const shared = model('shared.safetensors')
     const unique = model('unique.safetensors')
     const fetchMetadata = vi.fn(
@@ -127,7 +82,6 @@ describe('resolveTemplateModelMetadata', () => {
   })
 
   it('marks only a rejected URL as failed and resolves the remaining models', async () => {
-    const resolveTemplateModelMetadata = await loadResolver()
     const first = model('first.safetensors')
     const failed = model('failed.safetensors')
     const last = model('last.safetensors')
@@ -168,7 +122,6 @@ describe('resolveTemplateModelMetadata', () => {
   })
 
   it('marks a default production metadata failure as failed', async () => {
-    const resolveTemplateModelMetadata = await loadResolver()
     const failed = model(
       'not-found.safetensors',
       'https://huggingface.co/org/model/resolve/main/not-found.safetensors'
@@ -193,7 +146,6 @@ describe('resolveTemplateModelMetadata', () => {
   })
 
   it('does not fetch metadata for an empty batch', async () => {
-    const resolveTemplateModelMetadata = await loadResolver()
     const fetchMetadata = vi.fn()
 
     await expect(
@@ -203,7 +155,6 @@ describe('resolveTemplateModelMetadata', () => {
   })
 
   it('does not start an already-aborted batch', async () => {
-    const resolveTemplateModelMetadata = await loadResolver()
     const controller = new AbortController()
     const fetchMetadata = vi.fn()
     controller.abort()
@@ -218,7 +169,6 @@ describe('resolveTemplateModelMetadata', () => {
   })
 
   it('discards a completed batch when it is aborted while metadata is pending', async () => {
-    const resolveTemplateModelMetadata = await loadResolver()
     const controller = new AbortController()
     const pending = deferred<ModelMetadata>()
     const fetchMetadata = vi.fn(() => pending.promise)
