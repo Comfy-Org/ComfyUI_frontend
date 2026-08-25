@@ -98,20 +98,6 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
-const mockResumePendingPricingFlow = vi.fn()
-vi.mock(
-  '@/platform/cloud/subscription/composables/useSubscriptionDialog',
-  () => ({
-    useSubscriptionDialog: () => ({
-      show: vi.fn(),
-      showPricingTable: vi.fn(),
-      hide: vi.fn(),
-      startTeamWorkspaceUpgradeFlow: vi.fn(),
-      resumePendingPricingFlow: mockResumePendingPricingFlow
-    })
-  })
-)
-
 describe('WorkspaceAuthGate', () => {
   beforeEach(() => {
     mockIsCloud.value = true
@@ -309,17 +295,7 @@ describe('WorkspaceAuthGate', () => {
 
       expect(signal.aborted).toBe(true)
       expect(mockWorkspaceStoreInitialize).not.toHaveBeenCalled()
-      expect(mockResumePendingPricingFlow).not.toHaveBeenCalled()
       expect(mockReportError).not.toHaveBeenCalled()
-    })
-
-    it('calls resumePendingPricingFlow after successful workspace init', async () => {
-      mockWorkspaceStoreInitState.value = 'ready'
-
-      mountComponent()
-      await flushPromises()
-
-      expect(mockResumePendingPricingFlow).toHaveBeenCalled()
     })
 
     it('skips workspace init when store is already initialized', async () => {
@@ -546,7 +522,6 @@ describe('WorkspaceAuthGate', () => {
       expect(retrySignal.aborted).toBe(true)
       expect(mockLogout).toHaveBeenCalledOnce()
       expect(mockWorkspaceStoreInitialize).not.toHaveBeenCalled()
-      expect(mockResumePendingPricingFlow).not.toHaveBeenCalled()
     })
   })
 })

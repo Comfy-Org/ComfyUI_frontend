@@ -403,6 +403,34 @@ describe('SubgraphWidgetPromotion', () => {
       expect(promotedInputs(subgraphNode)).toHaveLength(0)
     })
 
+    it('keeps the host widget promoted while another interior widget is still connected', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'value', type: 'number' }]
+      })
+
+      const { node: first } = createNodeWithWidget('First', 'number', 42)
+      const { node: second } = createNodeWithWidget('Second', 'number', 42)
+      subgraph.add(first)
+      subgraph.add(second)
+      subgraph.inputNode.slots[0].connect(first.inputs[0], first)
+      subgraph.inputNode.slots[0].connect(second.inputs[0], second)
+
+      const subgraphNode = createTestSubgraphNode(subgraph)
+      expect(promotedInputs(subgraphNode)).toHaveLength(1)
+      expect(subgraph.inputNode.slots[0].linkIds).toHaveLength(2)
+
+      first.disconnectInput(0, true)
+
+      expect(subgraph.inputNode.slots[0].linkIds).toHaveLength(1)
+      expect(promotedInputs(subgraphNode)).toHaveLength(1)
+      expect(subgraphNode.widgets).toHaveLength(1)
+
+      second.disconnectInput(0, true)
+
+      expect(promotedInputs(subgraphNode)).toHaveLength(0)
+      expect(subgraphNode.widgets).toHaveLength(0)
+    })
+
     it('writes canvas edits back to the host widget store', () => {
       const subgraph = createTestSubgraph({
         inputs: [{ name: 'value', type: 'number' }]
@@ -420,6 +448,35 @@ describe('SubgraphWidgetPromotion', () => {
       concrete.setValue(99, { e: fromAny({}), node: subgraphNode, canvas })
 
       expect(promotedWidgetStateByName(subgraphNode, 'value').value).toBe(99)
+    })
+
+    it('keeps sibling hosts of one definition isolated across a rebind', async () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'value', type: 'STRING' }]
+      })
+      const {
+        node: interiorNode,
+        widget: interiorWidget,
+        input: interiorInput
+      } = createNodeWithWidget('Interior', 'text', 'seeded', 'STRING')
+      subgraph.add(interiorNode)
+      subgraph.inputNode.slots[0].connect(interiorNode.inputs[0], interiorNode)
+
+      const hostA = createTestSubgraphNode(subgraph, { id: 101 })
+      const hostB = createTestSubgraphNode(subgraph, { id: 102 })
+
+      hostA.widgets[0].value = 'a-edit'
+      hostB.widgets[0].value = 'b-edit'
+      expect(promotedWidgetStateByName(hostA, 'value').value).toBe('a-edit')
+      expect(promotedWidgetStateByName(hostB, 'value').value).toBe('b-edit')
+      expect(interiorWidget.value).toBe('seeded')
+
+      interiorNode.disconnectInput(0)
+      await Promise.resolve()
+      subgraph.inputNode.slots[0].connect(interiorInput, interiorNode)
+
+      expect(promotedWidgetStateByName(hostA, 'value').value).not.toBe('b-edit')
+      expect(promotedWidgetStateByName(hostB, 'value').value).not.toBe('a-edit')
     })
   })
 
