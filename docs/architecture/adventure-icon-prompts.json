@@ -42,7 +42,7 @@
       "prompt": "Vintage architectural blueprint schematic of a glowing crystalline orb containing tiny entity symbols, bright blue and white aura, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
     },
     "branded-ids": {
-      "name": "Branded Entity IDs",
+      "name": "Branded IDs (WidgetId, LinkId)",
       "type": "Type Safety",
       "prompt": "Vintage architectural blueprint schematic of a set of ID cards with distinct colored borders and brand stamps, green checkmark glow, drawn in luminous cyan-white linework with fine hatching on deep midnight-blue drafting paper, faint blueprint grid, glowing accents, bold readable silhouette, centered game icon composition"
     },

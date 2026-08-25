@@ -671,7 +671,7 @@
     Registry:      C (Last-wins)                 Debt +10 -> 100
     Mirrors:       C (Keep writing the mirror)   Debt +10 -> 100
 
-  Final: Debt 100 / Quality 0 / Morale 40 -> SPAGHETTI SINGULARITY
+  Final: Debt 100 / Quality 10 / Morale 65 -> SPAGHETTI SINGULARITY
 
   WARNING: Picking "all bad-rated answers" does NOT work! The bad
   answers for Litegraph (A: Rewrite, Debt -20) and Services (B: Big
