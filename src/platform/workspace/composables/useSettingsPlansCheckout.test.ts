@@ -407,10 +407,12 @@ describe('useSettingsPlansCheckout', () => {
     })
     await vi.waitFor(() => expect(mockShowLayoutDialog).toHaveBeenCalled())
 
-    // Dialog is open: the click must still be in flight and the section locked.
     await Promise.resolve()
-    expect(settled).toBe(false)
-    expect(checkout.isSubscribing.value).toBe(true)
+    expect(settled, 'promise pending while the dialog is open').toBe(false)
+    expect(
+      checkout.isSubscribing.value,
+      'section locked while the dialog is open'
+    ).toBe(true)
 
     setDialogOpen(false)
     lastDialogProps().props.onClose()
@@ -435,9 +437,13 @@ describe('useSettingsPlansCheckout', () => {
       await pending
     }
 
-    // A leaked watcher from cycle 0 would fire again on cycle 1's close and
-    // over-resolve; a re-entrancy leak would open a third dialog.
-    expect(resolutions).toBe(2)
-    expect(mockShowLayoutDialog).toHaveBeenCalledTimes(2)
+    expect(
+      resolutions,
+      'each cycle resolves once; a leaked watcher would over-resolve'
+    ).toBe(2)
+    expect(
+      mockShowLayoutDialog,
+      'no re-entrancy leak opening a third dialog'
+    ).toHaveBeenCalledTimes(2)
   })
 })
