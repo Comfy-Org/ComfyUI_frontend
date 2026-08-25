@@ -84,8 +84,11 @@ Design records that rely on this vocabulary:
   floating chain recording which side (input or output) the chain still
   faces.
 - **Topology** — which nodes exist and how their slots are connected.
-  Independent of the Values held in those nodes' Widgets: editing a Value never
-  changes Topology, and moving a node never changes either.
+  Moving a node never changes Topology or Values. Value and Topology are
+  generally separate, but the current dynamic-widget setter deliberately adds,
+  removes, reorders, and relinks inputs when its Value changes
+  (`src/core/graph/widgets/dynamicWidgets.ts`), so Value edits are not
+  universally topology-neutral on `main`.
 - **Subgraph definition** — the reusable graph body: the interior nodes, links,
   and the input/output slots it exposes to a parent graph.
 - **Subgraph instance** — a node in a parent graph that stands for a Subgraph
