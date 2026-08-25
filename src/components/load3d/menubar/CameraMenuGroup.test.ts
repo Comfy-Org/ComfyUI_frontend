@@ -13,7 +13,9 @@ const i18n = createI18n({
   messages: { en: enMessages }
 })
 
-function makeConfig(overrides: Partial<CameraConfig> = {}): CameraConfig {
+function makeConfig(
+  overrides: Partial<Pick<CameraConfig, 'cameraType' | 'fov'>> = {}
+): CameraConfig {
   return { cameraType: 'perspective', fov: 75, ...overrides }
 }
 

@@ -207,54 +207,6 @@ export function migrateWidgetsValues<TWidgetValue>(
 }
 
 /**
- * Fix link input slots after loading a graph. Because the node inputs follows
- * the node definition after 1.16, the node inputs array from previous versions,
- * might get added items in the middle, which can cause shift to link's slot index.
- * For example, the node inputs definition is:
- * "required": {
- *   "input1": ["INT", { forceInput: true }],
- *   "input2": ["MODEL", { forceInput: false }],
- *   "input3": ["MODEL", { forceInput: false }]
- * }
- *
- * previously node inputs array was:
- * [{name: 'input2'}, {name: 'input3'}, {name: 'input1'}]
- * because input1 is created as widget first, then convert to input socket after
- * input 2 and 3.
- *
- * Now, the node inputs array just follows the definition order:
- * [{name: 'input1'}, {name: 'input2'}, {name: 'input3'}]
- *
- * We need to update the slot index of corresponding links to match the new
- * node inputs array order.
- *
- * Ref: https://github.com/Comfy-Org/ComfyUI_frontend/issues/3348
- *
- * @param graph - The graph to fix links for.
- */
-export function fixLinkInputSlots(graph: LGraph) {
-  // Note: We can't use forEachNode here because we need access to the graph's
-  // links map at each level. Links are stored in their respective graph/subgraph.
-  for (const node of graph.nodes) {
-    // Fix links for the current node
-    for (const [inputIndex, input] of node.inputs.entries()) {
-      const linkId = input.link
-      if (!linkId) continue
-
-      const link = graph.links.get(linkId)
-      if (!link) continue
-
-      link.target_slot = inputIndex
-    }
-
-    // Recursively fix links in subgraphs
-    if (node.isSubgraphNode?.() && node.subgraph) {
-      fixLinkInputSlots(node.subgraph)
-    }
-  }
-}
-
-/**
  * Compress widget input slots by removing all unconnected widget input slots.
  * This should match the serialization format of legacy widget conversion.
  *
@@ -375,6 +327,26 @@ export function getWidgetIdForNode(
   const name =
     duplicateIndex > 0 ? `${widget.name}#${duplicateIndex}` : widget.name
   return widgetId(graphId, nodeId, name)
+}
+
+/**
+ * Maps a node's live widgets to their {@link WidgetId}, replicating the
+ * duplicate-name disambiguation used when the ids were minted. Building the map
+ * once lets callers resolve widgets by id in O(1) instead of rescanning.
+ */
+export function mapLiveWidgetsById(
+  node: LGraphNode
+): Map<WidgetId, IBaseWidget> {
+  const byId = new Map<WidgetId, IBaseWidget>()
+  const duplicateIndexByKey = new Map<string, number>()
+  for (const widget of node.widgets ?? []) {
+    const duplicateKey = `${widget.name}:${widget.type}`
+    const duplicateIndex = duplicateIndexByKey.get(duplicateKey) ?? 0
+    duplicateIndexByKey.set(duplicateKey, duplicateIndex + 1)
+    const id = getWidgetIdForNode(node, widget, duplicateIndex)
+    if (id) byId.set(id, widget)
+  }
+  return byId
 }
 
 export function isLoad3dNode(node: LGraphNode) {

@@ -72,6 +72,21 @@ const useVirtualListRestriction = {
     'useVirtualList requires uniform item heights. Use TanStack Virtual (via Reka UI virtualizer or @tanstack/vue-virtual) instead.'
 } as const
 
+const reportErrorRestrictions = [
+  {
+    name: '@sentry/vue',
+    importNames: ['captureException'],
+    message:
+      "Use reportError() from '@/platform/telemetry/reportError'. A raw captureException reaches Sentry only, so the failure stays invisible to every Datadog dashboard and alert."
+  },
+  {
+    name: '@datadog/browser-rum',
+    importNames: ['datadogRum'],
+    message:
+      "Use reportError() from '@/platform/telemetry/reportError'. A raw datadogRum.addError reaches Datadog only, and skips the pre-init buffer that keeps early-boot failures from being dropped."
+  }
+] as const
+
 const errorAssertionRestrictions = [
   {
     // Bans `value as Error` and `value as Error & { ... }`.
@@ -110,6 +125,8 @@ export default defineConfig([
       'dist/*',
       'packages/registry-types/src/comfyRegistryTypes.ts',
       'playwright-report/*',
+      'scripts/registry-census/detection-proof/**',
+      'src/__ecs_matrix__/**',
       'src/extensions/core/*',
       'src/scripts/*',
       'src/types/generatedManagerTypes.ts',
@@ -131,6 +148,7 @@ export default defineConfig([
             'packages/object-info-parser/vitest.config.ts',
             'vite.electron.config.mts',
             'vite.types.config.mts',
+            'vitest.matrix.config.mts',
             'vitest.timer.setup.ts'
           ]
         }
@@ -299,6 +317,34 @@ export default defineConfig([
         'error',
         ...errorAssertionRestrictions,
         noZodForRemoteApiTypes
+      ]
+    }
+  },
+  // A layout read inside a derivation runs on every recompute, and a derivation
+  // that measures the DOM cannot be tested without one. See
+  // docs/guidance/state-and-effects.md.
+  //
+  // 'warn' rather than 'error' because four pre-existing instances remain, in
+  // BrushCursor.vue, WorkflowTabs.vue and SubgraphBreadcrumb.vue. Promote to
+  // 'error' once those are derived from stores instead.
+  {
+    files: ['src/**/*.ts', 'src/**/*.vue'],
+    ignores: ['**/*.test.ts', '**/*.spec.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'warn',
+        {
+          selector:
+            "CallExpression[callee.name='computed'] CallExpression[callee.property.name='getBoundingClientRect']",
+          message:
+            'Do not measure the DOM inside a computed - every recompute becomes a layout read. Derive from a store instead. See docs/guidance/state-and-effects.md.'
+        },
+        {
+          selector:
+            "CallExpression[callee.name='computed'] CallExpression[callee.property.name=/^(getComputedStyle|querySelector|querySelectorAll)$/]",
+          message:
+            'Do not inspect the DOM inside a computed. Derive from a store instead. See docs/guidance/state-and-effects.md.'
+        }
       ]
     }
   },
@@ -517,7 +563,8 @@ export default defineConfig([
               message:
                 "In Vue components, use `const { t } = useI18n()` instead of importing from '@/i18n'."
             },
-            useVirtualListRestriction
+            useVirtualListRestriction,
+            ...reportErrorRestrictions
           ]
         }
       ]
@@ -538,7 +585,8 @@ export default defineConfig([
               message:
                 "useI18n() requires Vue setup context. Use `import { t } from '@/i18n'` instead."
             },
-            useVirtualListRestriction
+            useVirtualListRestriction,
+            ...reportErrorRestrictions
           ]
         }
       ]
@@ -551,7 +599,7 @@ export default defineConfig([
       'no-restricted-imports': [
         'error',
         {
-          paths: [useVirtualListRestriction]
+          paths: [useVirtualListRestriction, ...reportErrorRestrictions]
         }
       ]
     }
