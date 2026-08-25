@@ -39,7 +39,7 @@
             >•</span
           >
           <Button
-            class="close-button invisible w-auto p-0 hover:bg-transparent hover:text-base-foreground"
+            class="close-button invisible w-auto p-0 hover:bg-transparent hover:text-(--base-foreground)"
             variant="muted-textonly"
             size="icon-sm"
             :aria-label="t('g.close')"
