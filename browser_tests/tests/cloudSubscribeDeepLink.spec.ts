@@ -74,6 +74,20 @@ test.describe('Cloud subscribe deep link', { tag: '@cloud' }, () => {
       r.fulfill(jsonRoute(CREATOR_MONTHLY_PREVIEW))
     )
 
+    // The OSS server that hosts the built frontend in CI has no SPA fallback
+    // for /cloud/subscribe (Chromium treats its response as a download), so
+    // serve the app shell for the deep-link document request directly. The
+    // base tag keeps the shell's relative asset paths resolving from the root.
+    const appShell = await page.request
+      .get(APP_URL)
+      .then((response) => response.text())
+      .then((html) => html.replace('<head>', '<head><base href="/">'))
+    await page.route('**/cloud/subscribe*', (route) =>
+      route.request().resourceType() === 'document'
+        ? route.fulfill({ contentType: 'text/html', body: appShell })
+        : route.fallback()
+    )
+
     const legacyCheckoutRequests: string[] = []
     page.on('request', (request) => {
       if (request.url().includes('/customers/')) {

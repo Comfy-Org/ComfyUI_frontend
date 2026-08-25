@@ -141,12 +141,7 @@ const runRedirect = wrapWithErrorHandlingAsync(async () => {
   }
 
   if (!teamCreditStops.value) {
-    await fetchPlans().catch((error) => {
-      console.error(
-        '[CloudSubscriptionRedirectView] Failed to load Team pricing plans:',
-        error
-      )
-    })
+    await fetchPlans().catch(reportError)
   }
   const initialCheckout = getPricingCheckoutSelection(
     tierKeyParam,

@@ -233,13 +233,12 @@ describe('CloudSubscriptionRedirectView', () => {
 
   test('opens the generic team pricing table when plan loading fails', async () => {
     subscriptionMocks.teamCreditStops.value = null
-    subscriptionMocks.fetchPlans.mockRejectedValue(new Error('plans down'))
-    const consoleErrorSpy = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => {})
+    const plansError = new Error('plans down')
+    subscriptionMocks.fetchPlans.mockRejectedValue(plansError)
 
     await mountView({ tier: 'team', stop: 'team_700', cycle: 'yearly' })
 
+    expect(authActionMocks.reportError).toHaveBeenCalledWith(plansError)
     expect(mockShowPricingTable).toHaveBeenCalledWith({
       reason: 'deep_link',
       planMode: 'team',
@@ -249,8 +248,6 @@ describe('CloudSubscriptionRedirectView', () => {
     expect(
       legacyCheckoutMocks.performTeamSubscriptionCheckout
     ).not.toHaveBeenCalled()
-
-    consoleErrorSpy.mockRestore()
   })
 
   test('removes the pre-Vue splash loader on mount', async () => {
