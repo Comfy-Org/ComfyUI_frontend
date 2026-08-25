@@ -4422,15 +4422,23 @@ export class LGraphNode
 
   /**
    * @internal Projects input and output descriptors into concrete slot
-   * instances without modifying the descriptor arrays.
+   * instances, upgrading duck-typed entries in {@link inputs}/{@link outputs}
+   * in place so identity-based lookups (e.g. `indexOf(slot)`) keep working.
+   * Already-concrete entries are left untouched, so per-frame calls do not
+   * invalidate slot-array subscribers.
    */
   _setConcreteSlots(): void {
-    this._concreteInputs = this.inputs.map((slot) =>
-      toClass(NodeInputSlot, slot, this)
-    )
-    this._concreteOutputs = this.outputs.map((slot) =>
-      toClass(NodeOutputSlot, slot, this)
-    )
+    const { inputs, outputs } = this
+    this._concreteInputs = inputs.map((slot, i) => {
+      const concrete = toClass(NodeInputSlot, slot, this)
+      if (concrete !== slot) inputs[i] = concrete
+      return concrete
+    })
+    this._concreteOutputs = outputs.map((slot, i) => {
+      const concrete = toClass(NodeOutputSlot, slot, this)
+      if (concrete !== slot) outputs[i] = concrete
+      return concrete
+    })
   }
 
   /**

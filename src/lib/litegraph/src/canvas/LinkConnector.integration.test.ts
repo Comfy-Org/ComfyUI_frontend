@@ -595,7 +595,9 @@ describe('LinkConnector Integration', () => {
       connector.dropLinks(graph, floatingRerouteEvent)
       connector.reset()
 
-      expect(manyOutputsNode.outputs[0].links).toBeNull()
+      // Fixture declares explicit `links: [9,10,11,12]`; legacy link writes
+      // are removal-only, so the emptied array is preserved rather than null.
+      expect(manyOutputsNode.outputs[0].links).toEqual([])
       expect(floatingReroute.linkIds.size).toBe(4)
 
       validateIntegrityFloatingRemoved()

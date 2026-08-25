@@ -30,9 +30,15 @@ export function ensureUniqueWidgetNames(
   try {
     const reserved = new Set(widgets.map(({ name }) => name))
     const used = new Set<string>()
+    const seen = new Set<unknown>()
     const renames: { widget: { name: string }; name: string }[] = []
 
     for (const widget of widgets) {
+      // The same widget object may transiently occupy multiple array slots
+      // (e.g. during an index-assignment reorder). Identity duplicates are
+      // one widget, not a name collision — never rename them.
+      if (seen.has(widget)) continue
+      seen.add(widget)
       if (!used.has(widget.name)) {
         used.add(widget.name)
         continue

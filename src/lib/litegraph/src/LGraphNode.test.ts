@@ -164,7 +164,9 @@ describe('LGraphNode', () => {
     expect(node.outputs.length).toEqual(1)
     expect(node.outputs[0].name).toEqual('TestOutput')
     expect(node.outputs[0].type).toEqual('number')
-    expect(node.outputs[0].links).toBeNull()
+    // Serialized data declared an explicit `links: []`; legacy link writes
+    // are removal-only, so array presence is preserved.
+    expect(node.outputs[0].links).toEqual([])
     expect(node.outputs[0]).instanceOf(NodeOutputSlot)
 
     // Should not override existing outputs
