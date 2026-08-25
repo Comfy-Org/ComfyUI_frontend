@@ -4,10 +4,6 @@
  * Ground truth is the browser Performance API (marks/measures). Datadog RUM
  * and Sentry are secondary consumers so the data shows up in dashboards and
  * traces without requiring both tools to agree on the recording strategy.
- *
- * OSS safety: neither Datadog nor Sentry are imported here — they are accessed
- * via well-known globals (DD_RUM, __SENTRY__) so this file is tree-shaken
- * cleanly in non-cloud builds.
  */
 
 export interface PerfSpan {
@@ -104,7 +100,6 @@ function _emitToSentry(name: string, durationMs: number): void {
   try {
     // addBreadcrumb is a module-level function in @sentry/vue v10 — safe to
     // call even before Sentry.init() completes (it queues internally).
-    // Dynamic import keeps this out of OSS bundles via tree-shaking.
     void import('@sentry/vue')
       .then(({ addBreadcrumb }) => {
         addBreadcrumb({
