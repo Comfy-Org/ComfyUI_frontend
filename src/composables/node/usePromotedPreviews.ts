@@ -6,6 +6,7 @@ import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { UUID } from '@/utils/uuid'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import type { NodeId } from '@/types/nodeId'
 import {
   appendNodeExecutionId,
   createNodeLocatorId
@@ -13,7 +14,7 @@ import {
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 
 interface PromotedPreview {
-  sourceNodeId: string
+  sourceNodeId: NodeId
   sourceWidgetName: string
   type: 'image' | 'video' | 'audio'
   urls: string[]
@@ -41,7 +42,7 @@ export function usePromotedPreviews(
   /** Touches reactive sources for Vue tracking; `getNodeImageUrls` reads non-reactive app state. */
   function readReactivePreviewUrls(
     leafHost: SubgraphNode,
-    leafSourceNodeId: string,
+    leafSourceNodeId: NodeId,
     leafExecutionId: NodeExecutionId,
     interiorNode: LGraphNode
   ): string[] | undefined {
@@ -49,6 +50,8 @@ export function usePromotedPreviews(
       leafHost.subgraph.id,
       leafSourceNodeId
     )
+    if (!locatorId) return undefined
+
     const reactiveOutputs = nodeOutputStore.nodeOutputs[locatorId]
     const reactivePreviews = nodeOutputStore.nodePreviewImages[locatorId]
     const reactiveExecutionOutputs =
@@ -89,7 +92,7 @@ export function usePromotedPreviews(
     function resolveNestedHost(
       rootGraphId: UUID,
       currentHostLocator: string,
-      sourceNodeId: string
+      sourceNodeId: NodeId
     ) {
       const currentHost = hostNodesByLocator.get(currentHostLocator)
       const sourceNode = currentHost?.subgraph.getNodeById(sourceNodeId)
@@ -123,10 +126,16 @@ export function usePromotedPreviews(
       const interiorNode = leafHost.subgraph.getNodeById(leaf.sourceNodeId)
       if (!interiorNode) return []
 
+      const leafExecutionId = appendNodeExecutionId(
+        leafHostLocator,
+        leaf.sourceNodeId
+      )
+      if (!leafExecutionId) return []
+
       const urls = readReactivePreviewUrls(
         leafHost,
         leaf.sourceNodeId,
-        appendNodeExecutionId(leafHostLocator, leaf.sourceNodeId),
+        leafExecutionId,
         interiorNode
       )
       if (!urls?.length) return []

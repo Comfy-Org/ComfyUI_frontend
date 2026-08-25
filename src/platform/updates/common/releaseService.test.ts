@@ -30,7 +30,7 @@ describe('useReleaseService', () => {
   ]
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    vi.mocked(axios.isAxiosError).mockReturnValue(true)
     service = useReleaseService()
   })
 

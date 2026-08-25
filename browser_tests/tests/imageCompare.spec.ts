@@ -4,6 +4,9 @@ import { expect } from '@playwright/test'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { toNodeId } from '@/types/nodeId'
+
+const IMAGE_COMPARE_NODE_ID = toNodeId(1)
 
 test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -29,15 +32,15 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
     }
   ) {
     await comfyPage.page.evaluate(
-      ({ value }) => {
-        const node = window.app!.graph.getNodeById(1)
+      ({ nodeId, value }) => {
+        const node = window.app!.graph.getNodeById(nodeId)
         const widget = node?.widgets?.find((w) => w.type === 'imagecompare')
         if (widget) {
           widget.value = value
           widget.callback?.(value)
         }
       },
-      { value }
+      { nodeId: IMAGE_COMPARE_NODE_ID, value }
     )
     await comfyPage.nextFrame()
   }
@@ -450,11 +453,11 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
   test('ImageCompare node enforces minimum size', async ({ comfyPage }) => {
     const minWidth = 400
     const minHeight = 350
-    const size = await comfyPage.page.evaluate(() => {
-      const graphNode = window.app!.graph.getNodeById(1)
+    const size = await comfyPage.page.evaluate((nodeId) => {
+      const graphNode = window.app!.graph.getNodeById(nodeId)
       if (!graphNode?.size) return null
       return { width: graphNode.size[0], height: graphNode.size[1] }
-    })
+    }, IMAGE_COMPARE_NODE_ID)
     expect(
       size,
       'ImageCompare node id 1 must exist in loaded workflow graph'
@@ -600,15 +603,15 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
   }) => {
     const url = createTestImageDataUrl('Legacy', '#c00')
     await comfyPage.page.evaluate(
-      ({ url }) => {
-        const node = window.app!.graph.getNodeById(1)
+      ({ nodeId, url }) => {
+        const node = window.app!.graph.getNodeById(nodeId)
         const widget = node?.widgets?.find((w) => w.type === 'imagecompare')
         if (widget) {
           widget.value = url
           widget.callback?.(url)
         }
       },
-      { url }
+      { nodeId: IMAGE_COMPARE_NODE_ID, url }
     )
     await comfyPage.nextFrame()
 

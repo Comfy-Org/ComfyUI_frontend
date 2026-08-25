@@ -1,13 +1,10 @@
 import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
 
-import type {
-  LGraphGroup,
-  LGraphNode,
-  NodeId
-} from '@/lib/litegraph/src/litegraph'
+import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { getExtraOptionsForWidget } from '@/services/litegraphService'
+import type { SerializedNodeId } from '@/types/nodeId'
 import { isLGraphGroup } from '@/utils/litegraphUtil'
 
 import {
@@ -50,7 +47,7 @@ export enum BadgeVariant {
 // Global singleton for NodeOptions component reference
 let nodeOptionsInstance: null | NodeOptionsInstance = null
 
-const hoveredWidget = ref<[string, NodeId | undefined]>()
+const hoveredWidget = ref<[string, SerializedNodeId | undefined]>()
 
 /**
  * Toggle the node options popover
@@ -70,7 +67,7 @@ export function toggleNodeOptions(event: Event) {
 export function showNodeOptions(
   event: MouseEvent,
   widgetName?: string,
-  nodeId?: NodeId
+  nodeId?: SerializedNodeId
 ) {
   hoveredWidget.value = widgetName ? [widgetName, nodeId] : undefined
   if (nodeOptionsInstance?.show) {

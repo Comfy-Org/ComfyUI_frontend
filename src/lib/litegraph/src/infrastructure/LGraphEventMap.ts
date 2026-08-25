@@ -1,5 +1,6 @@
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { SerializedNodeId } from '@/types/nodeId'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LLink, ResolvedConnection } from '@/lib/litegraph/src/LLink'
 import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
@@ -52,28 +53,42 @@ export interface LGraphEventMap {
   }
 
   /**
+   * Fires on the owning graph once a node is attached and registered. Prefer
+   * this to wrapping {@link LGraph.onNodeAdded}, which has a single slot that
+   * concurrent subscribers clobber on restore.
+   */
+  'node:added': {
+    node: LGraphNode
+  }
+
+  /**
    * Fires on the owning graph before per-node teardown begins
    */
   'node:before-removed': {
     node: LGraphNode
   }
 
+  /**
+   * Fires on the owning graph once a node is detached. `node.graph` is already
+   * null; derive execution ids from the dispatching graph plus `node.id`.
+   * @see {@link 'node:added'} on why to prefer this to `onNodeRemoved`.
+   */
+  'node:removed': {
+    node: LGraphNode
+  }
+
   'node:property:changed': {
-    nodeId: NodeId
+    nodeId: SerializedNodeId
     property: string
     oldValue: unknown
     newValue: unknown
   }
-  'node:slot-errors:changed': { nodeId: NodeId }
-  'node:slot-links:changed': {
-    nodeId: NodeId
-    slotType: NodeSlotType
-    slotIndex: number
-    connected: boolean
-    linkId: number
-  }
   'node:slot-label:changed': {
-    nodeId: NodeId
+    nodeId: SerializedNodeId
     slotType?: NodeSlotType
   }
 }
+
+export type NodeLifecycleEvent = CustomEvent<
+  LGraphEventMap['node:added' | 'node:removed']
+>

@@ -1,13 +1,13 @@
 /* eslint-disable testing-library/no-container, testing-library/no-node-access, testing-library/prefer-user-event */
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { createPinia, setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import WidgetBoundingBoxes from './WidgetBoundingBoxes.vue'
 import boundingBoxes from '@/locales/en/main.json'
 import type { BoundingBox } from '@/types/boundingBoxes'
+import { toNodeId } from '@/types/nodeId'
 
 const { appState } = vi.hoisted(() => ({ appState: { node: null as unknown } }))
 
@@ -83,7 +83,7 @@ function prepCanvas(canvas: HTMLCanvasElement) {
 
 function renderWidget(modelValue: BoundingBox[]) {
   const result = render(WidgetBoundingBoxes, {
-    props: { nodeId: '1', modelValue },
+    props: { nodeId: toNodeId('1'), modelValue },
     global: { plugins: [i18n] }
   })
   const canvas = screen.getByTestId('bounding-boxes').querySelector('canvas')!
@@ -97,7 +97,6 @@ const lastBoxes = (emitted: () => Record<string, unknown[][]>) => {
 }
 
 beforeEach(() => {
-  setActivePinia(createPinia())
   appState.node = {
     widgets: [
       { name: 'width', value: 512 },
@@ -108,10 +107,6 @@ beforeEach(() => {
   }
   vi.stubGlobal('requestAnimationFrame', () => 1)
   vi.stubGlobal('cancelAnimationFrame', () => {})
-})
-
-afterEach(() => {
-  vi.unstubAllGlobals()
 })
 
 describe('WidgetBoundingBoxes', () => {

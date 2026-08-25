@@ -48,6 +48,7 @@
         v-model:visible="createDialogVisible"
         mode="create"
         :existing-providers="existingProviders"
+        :available-providers="availableProviders"
         @saved="fetchSecrets"
       />
 
@@ -56,6 +57,7 @@
         mode="edit"
         :secret="selectedSecret"
         :existing-providers="existingProviders"
+        :available-providers="availableProviders"
         @saved="fetchSecrets"
       />
     </div>
@@ -84,9 +86,11 @@ const dialogStore = useDialogStore()
 const {
   loading,
   secrets,
+  availableProviders,
   operatingSecretId,
   existingProviders,
   fetchSecrets,
+  fetchProviders,
   deleteSecret
 } = useSecrets()
 
@@ -122,4 +126,5 @@ function confirmDelete(secret: SecretMetadata) {
 }
 
 fetchSecrets()
+fetchProviders()
 </script>

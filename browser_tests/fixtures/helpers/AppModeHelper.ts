@@ -4,6 +4,7 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 
 import { OutputHistoryComponent } from '@e2e/fixtures/components/OutputHistory'
+import { WorkflowActionsDropdown } from '@e2e/fixtures/components/WorkflowActionsDropdown'
 import { AppModeWidgetHelper } from '@e2e/fixtures/helpers/AppModeWidgetHelper'
 import { BuilderFooterHelper } from '@e2e/fixtures/helpers/BuilderFooterHelper'
 import { BuilderSaveAsHelper } from '@e2e/fixtures/helpers/BuilderSaveAsHelper'
@@ -19,6 +20,7 @@ export class AppModeHelper {
   readonly outputHistory: OutputHistoryComponent
   readonly steps: BuilderStepsHelper
   readonly widgets: AppModeWidgetHelper
+  readonly workflowActions: WorkflowActionsDropdown
 
   /** The "Connect an output" popover shown when saving without outputs. */
   public readonly connectOutputPopover: Locator
@@ -34,6 +36,10 @@ export class AppModeHelper {
   public readonly outputPlaceholder: Locator
   /** The linear-mode widget list container (visible in app mode). */
   public readonly linearWidgets: Locator
+  /** The validation warning shown above the app mode run button. */
+  public readonly validationWarning: Locator
+  /** The action that opens graph mode errors from the validation warning. */
+  public readonly viewErrorsInGraphButton: Locator
   /** The PrimeVue Popover for the image picker (renders with role="dialog"). */
   public readonly imagePickerPopover: Locator
   /** The Run button in the app mode footer. */
@@ -73,6 +79,7 @@ export class AppModeHelper {
     this.outputHistory = new OutputHistoryComponent(comfyPage.page)
     this.steps = new BuilderStepsHelper(comfyPage)
     this.widgets = new AppModeWidgetHelper(comfyPage)
+    this.workflowActions = new WorkflowActionsDropdown(comfyPage.page)
 
     this.connectOutputPopover = this.page.getByTestId(
       TestIds.builder.connectOutputPopover
@@ -92,13 +99,19 @@ export class AppModeHelper {
     this.outputPlaceholder = this.page.getByTestId(
       TestIds.builder.outputPlaceholder
     )
-    this.linearWidgets = this.page.getByTestId('linear-widgets')
+    this.linearWidgets = this.page.getByTestId(TestIds.linear.widgetContainer)
+    this.validationWarning = this.page.getByTestId(
+      TestIds.linear.validationWarning
+    )
+    this.viewErrorsInGraphButton = this.validationWarning.getByTestId(
+      TestIds.linear.viewErrorsInGraph
+    )
     this.imagePickerPopover = this.page
       .getByRole('dialog')
       .filter({ has: this.page.getByRole('button', { name: 'All' }) })
       .first()
     this.runButton = this.page
-      .getByTestId('linear-run-button')
+      .getByTestId(TestIds.linear.runButton)
       .getByRole('button', { name: /run/i })
     this.welcome = this.page.getByTestId(TestIds.appMode.welcome)
     this.emptyWorkflowText = this.page.getByTestId(
@@ -175,10 +188,7 @@ export class AppModeHelper {
       .waitFor({ state: 'hidden', timeout: 5000 })
       .catch(() => {})
 
-    await this.page
-      .getByRole('button', { name: 'Workflow actions' })
-      .first()
-      .click()
+    await this.workflowActions.trigger.click()
     await this.page
       .getByRole('menuitem', { name: /Build app|Edit app/ })
       .click()

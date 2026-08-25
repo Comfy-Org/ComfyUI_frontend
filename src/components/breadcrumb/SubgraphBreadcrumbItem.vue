@@ -22,7 +22,7 @@
       data-testid="subgraph-breadcrumb-missing-nodes-icon"
       class="icon-[lucide--triangle-alert] text-warning-background"
     />
-    <span class="p-breadcrumb-item-label px-2">{{ item.label }}</span>
+    <span class="p-breadcrumb-item-label max-w-72 px-2">{{ item.label }}</span>
     <Tag
       v-if="item.isBlueprint"
       data-testid="subgraph-breadcrumb-blueprint-tag"

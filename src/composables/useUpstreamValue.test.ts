@@ -1,16 +1,16 @@
 import { describe, expect, it } from 'vitest'
 
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { toNodeId } from '@/types/nodeId'
 import type { WidgetState } from '@/types/widgetState'
 
 import { boundsExtractor, singleValueExtractor } from './useUpstreamValue'
 
-function widget(name: string, value: unknown): WidgetState {
+function widget(name: string, value: WidgetState['value']): WidgetState {
   return {
     name,
     type: 'INPUT',
     value,
-    nodeId: '1' as NodeId,
+    nodeId: toNodeId(1),
     options: {},
     y: 0
   }

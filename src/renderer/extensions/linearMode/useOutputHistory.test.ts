@@ -1,4 +1,5 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
@@ -7,6 +8,7 @@ import type { InProgressItem } from '@/renderer/extensions/linearMode/linearMode
 import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { ResultItemImpl } from '@/stores/queueStore'
+import { toNodeId } from '@/types/nodeId'
 
 const mediaRef = ref<AssetItem[]>([])
 const pendingResolveRef = ref(new Set<string>())
@@ -120,21 +122,21 @@ function makeAsset(
   jobId: string,
   opts?: { allOutputs?: ResultItemImpl[]; outputCount?: number }
 ): AssetItem {
-  return {
+  return fromPartial({
     id,
     name: `${id}.png`,
     tags: [],
     preview_url: `/view?filename=${id}.png`,
     user_metadata: {
       jobId,
-      nodeId: '1',
+      nodeId: toNodeId('1'),
       subfolder: '',
       ...(opts?.allOutputs ? { allOutputs: opts.allOutputs } : {}),
       ...(opts?.outputCount !== undefined
         ? { outputCount: opts.outputCount }
         : {})
     }
-  }
+  })
 }
 
 function makeResult(filename: string, nodeId: string = '1'): ResultItemImpl {
@@ -149,7 +151,6 @@ function makeResult(filename: string, nodeId: string = '1'): ResultItemImpl {
 
 describe(useOutputHistory, () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     mediaRef.value = []
     pendingResolveRef.value = new Set()
     inProgressItemsRef.value = []
@@ -162,8 +163,6 @@ describe(useOutputHistory, () => {
     pendingTasksRef.value = []
     resolvedOutputsCacheRef.clear()
     jobDetailResults.clear()
-    selectAsLatestFn.mockReset()
-    resolveIfReadyFn.mockReset()
   })
 
   describe('sessionMedia filtering', () => {
@@ -220,7 +219,7 @@ describe(useOutputHistory, () => {
     })
 
     it('returns outputs from metadata allOutputs when count matches', () => {
-      useAppModeStore().selectedOutputs.push('1')
+      useAppModeStore().selectedOutputs.push(toNodeId('1'))
       const results = [makeResult('a.png'), makeResult('b.png')]
       const asset = makeAsset('a1', 'job-1', {
         allOutputs: results,
@@ -248,7 +247,7 @@ describe(useOutputHistory, () => {
       })
 
       const appModeStore = useAppModeStore()
-      appModeStore.selectedOutputs.push('2')
+      appModeStore.selectedOutputs.push(toNodeId('2'))
 
       const { allOutputs } = useOutputHistory()
       const outputs = allOutputs(asset)
@@ -278,7 +277,7 @@ describe(useOutputHistory, () => {
       })
 
       const appModeStore = useAppModeStore()
-      appModeStore.selectedOutputs.push('2')
+      appModeStore.selectedOutputs.push(toNodeId('2'))
 
       const { allOutputs } = useOutputHistory()
       const first = allOutputs(asset)
@@ -290,7 +289,7 @@ describe(useOutputHistory, () => {
     })
 
     it('returns in-progress outputs for pending resolve jobs', () => {
-      useAppModeStore().selectedOutputs.push('1')
+      useAppModeStore().selectedOutputs.push(toNodeId('1'))
       pendingResolveRef.value = new Set(['job-1'])
       inProgressItemsRef.value = [
         {
@@ -317,7 +316,7 @@ describe(useOutputHistory, () => {
     })
 
     it('fetches full job detail for multi-output jobs', async () => {
-      useAppModeStore().selectedOutputs.push('1')
+      useAppModeStore().selectedOutputs.push(toNodeId('1'))
       jobDetailResults.set('job-1', {
         outputs: {
           '1': {
@@ -346,7 +345,7 @@ describe(useOutputHistory, () => {
 
   describe('watchEffect resolve loop', () => {
     it('resolves pending jobs when history outputs load', async () => {
-      useAppModeStore().selectedOutputs.push('1')
+      useAppModeStore().selectedOutputs.push(toNodeId('1'))
       const results = [makeResult('a.png')]
       const asset = makeAsset('a1', 'job-1', {
         allOutputs: results,
@@ -365,7 +364,7 @@ describe(useOutputHistory, () => {
     })
 
     it('does not select first history when a selection exists', async () => {
-      useAppModeStore().selectedOutputs.push('1')
+      useAppModeStore().selectedOutputs.push(toNodeId('1'))
       const results = [makeResult('a.png')]
       const asset = makeAsset('a1', 'job-1', {
         allOutputs: results,

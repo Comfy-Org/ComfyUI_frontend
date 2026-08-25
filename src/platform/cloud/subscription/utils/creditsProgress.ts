@@ -1,4 +1,4 @@
-export interface MonthlyCreditsUsage {
+interface MonthlyCreditsUsage {
   /** Credits consumed from the monthly allowance (never negative). */
   used: number
   /** Fraction (0–1) of the monthly allowance consumed — drives the bar fill. */

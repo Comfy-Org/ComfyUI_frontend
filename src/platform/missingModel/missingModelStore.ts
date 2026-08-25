@@ -37,7 +37,11 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     const ids = new Set<string>()
     if (!missingModelCandidates.value) return ids
     for (const m of missingModelCandidates.value) {
+      // Promoted-widget candidates are scoped to the subgraph host node
+      // (`nodeId`) but originate at an interior node (`sourceExecutionId`);
+      // both execution ids carry the missing model.
       if (m.nodeId != null) ids.add(String(m.nodeId))
+      if (m.sourceExecutionId != null) ids.add(String(m.sourceExecutionId))
     }
     return ids
   })
@@ -85,6 +89,7 @@ export const useMissingModelStore = defineStore('missingModel', () => {
   const importTaskIds = ref<Record<string, string>>({})
   const folderPaths = ref<Record<string, string[]>>({})
   const fileSizes = ref<Record<string, number>>({})
+  const gatedRepoUrls = ref<Record<string, string>>({})
 
   let _verificationAbortController: AbortController | null = null
 
@@ -245,6 +250,10 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     fileSizes.value[url] = size
   }
 
+  function setGatedRepoUrl(url: string, repoUrl: string) {
+    gatedRepoUrls.value[url] = repoUrl
+  }
+
   function clearMissingModels() {
     _verificationAbortController?.abort()
     _verificationAbortController = null
@@ -254,18 +263,22 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     importTaskIds.value = {}
     folderPaths.value = {}
     fileSizes.value = {}
+    gatedRepoUrls.value = {}
   }
 
   function isAbortError(error: unknown) {
     return error instanceof Error && error.name === 'AbortError'
   }
 
-  async function refreshMissingModels() {
+  async function refreshMissingModels(options: { reloadDefs?: boolean } = {}) {
     if (isRefreshingMissingModels.value) return
 
     isRefreshingMissingModels.value = true
     try {
-      await app.refreshMissingModels({ silent: true })
+      await app.refreshMissingModels({
+        silent: true,
+        reloadDefs: options.reloadDefs
+      })
     } catch (error) {
       if (isAbortError(error)) return
 
@@ -309,8 +322,10 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     importTaskIds,
     folderPaths,
     fileSizes,
+    gatedRepoUrls,
 
     setFolderPaths,
-    setFileSize
+    setFileSize,
+    setGatedRepoUrl
   }
 })

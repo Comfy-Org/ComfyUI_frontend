@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { toNodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 const i18n = createI18n({
@@ -239,7 +240,7 @@ describe('WidgetCurve', () => {
       renderWidget(
         makeWidget({
           options: { disabled: true },
-          linkedUpstream: { nodeId: 'n1' }
+          linkedUpstream: { nodeId: toNodeId('n1') }
         })
       )
       const parsed = JSON.parse(

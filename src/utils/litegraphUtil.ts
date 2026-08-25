@@ -1,4 +1,4 @@
-import _ from 'es-toolkit/compat'
+import { every, filter, head, isEmpty, isEqual, map } from 'es-toolkit/compat'
 
 import type { ColorOption, LGraph } from '@/lib/litegraph/src/litegraph'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
@@ -20,13 +20,14 @@ import type {
   IComboWidget,
   WidgetCallbackOptions
 } from '@/lib/litegraph/src/types/widgets'
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { app } from '@/scripts/app'
 import { t } from '@/i18n'
 import { parseNodeLocatorId } from '@/types/nodeIdentification'
+import type { SerializedNodeId } from '@/types/nodeId'
+import { UNASSIGNED_NODE_ID, parseNodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
 
@@ -150,15 +151,13 @@ export const isReroute = (item: unknown): item is Reroute => {
  * @returns The color option of the item.
  */
 export const getItemsColorOption = (items: unknown[]): ColorOption | null => {
-  const validItems = _.filter(items, isColorable)
-  if (_.isEmpty(validItems)) return null
+  const validItems = filter(items, isColorable)
+  if (isEmpty(validItems)) return null
 
-  const colorOptions = _.map(validItems, (item) => item.getColorOption())
+  const colorOptions = map(validItems, (item) => item.getColorOption())
 
-  return _.every(colorOptions, (option) =>
-    _.isEqual(option, _.head(colorOptions))
-  )
-    ? _.head(colorOptions)!
+  return every(colorOptions, (option) => isEqual(option, head(colorOptions)))
+    ? head(colorOptions)!
     : null
 }
 
@@ -205,54 +204,6 @@ export function migrateWidgetsValues<TWidgetValue>(
     return widgetsValues
 
   return widgetsValues.filter((_, index) => !widgetIndexHasForceInput[index])
-}
-
-/**
- * Fix link input slots after loading a graph. Because the node inputs follows
- * the node definition after 1.16, the node inputs array from previous versions,
- * might get added items in the middle, which can cause shift to link's slot index.
- * For example, the node inputs definition is:
- * "required": {
- *   "input1": ["INT", { forceInput: true }],
- *   "input2": ["MODEL", { forceInput: false }],
- *   "input3": ["MODEL", { forceInput: false }]
- * }
- *
- * previously node inputs array was:
- * [{name: 'input2'}, {name: 'input3'}, {name: 'input1'}]
- * because input1 is created as widget first, then convert to input socket after
- * input 2 and 3.
- *
- * Now, the node inputs array just follows the definition order:
- * [{name: 'input1'}, {name: 'input2'}, {name: 'input3'}]
- *
- * We need to update the slot index of corresponding links to match the new
- * node inputs array order.
- *
- * Ref: https://github.com/Comfy-Org/ComfyUI_frontend/issues/3348
- *
- * @param graph - The graph to fix links for.
- */
-export function fixLinkInputSlots(graph: LGraph) {
-  // Note: We can't use forEachNode here because we need access to the graph's
-  // links map at each level. Links are stored in their respective graph/subgraph.
-  for (const node of graph.nodes) {
-    // Fix links for the current node
-    for (const [inputIndex, input] of node.inputs.entries()) {
-      const linkId = input.link
-      if (!linkId) continue
-
-      const link = graph.links.get(linkId)
-      if (!link) continue
-
-      link.target_slot = inputIndex
-    }
-
-    // Recursively fix links in subgraphs
-    if (node.isSubgraphNode?.() && node.subgraph) {
-      fixLinkInputSlots(node.subgraph)
-    }
-  }
 }
 
 /**
@@ -322,20 +273,21 @@ export function getLinkTypeColor(typeName: string): string {
 }
 
 export function resolveNode(
-  nodeId: NodeId,
+  nodeId: SerializedNodeId,
   graph: LGraph | null | undefined = app.rootGraph
 ): LGraphNode | undefined {
-  if (!graph) return undefined
-  const found = graph.getNodeById(nodeId)
+  const parsedNodeId = parseNodeId(nodeId)
+  if (!graph || !parsedNodeId) return undefined
+  const found = graph.getNodeById(parsedNodeId)
   if (found) return found
   for (const sg of graph.subgraphs.values()) {
-    const node = sg.getNodeById(nodeId)
+    const node = sg.getNodeById(parsedNodeId)
     if (node) return node
   }
   return undefined
 }
 export function resolveNodeWidget(
-  nodeId: NodeId,
+  nodeId: SerializedNodeId,
   widgetName?: string,
   graph: LGraph = app.rootGraph
 ): [LGraphNode, IBaseWidget] | [LGraphNode] | [] {
@@ -350,7 +302,10 @@ export function resolveNodeWidget(
     }
   }
 
-  const node = graph.getNodeById(nodeId)
+  const parsedNodeId = parseNodeId(nodeId)
+  if (!parsedNodeId) return []
+
+  const node = graph.getNodeById(parsedNodeId)
   if (!widgetName) return node ? [node] : []
   if (node) {
     const widget = node.widgets?.find((w) => w.name === widgetName)
@@ -367,10 +322,31 @@ export function getWidgetIdForNode(
 ): WidgetId | undefined {
   if (widget.widgetId) return widget.widgetId
   const graphId = node.graph?.rootGraph.id
-  if (!graphId || node.id === -1) return undefined
+  const nodeId = parseNodeId(node.id)
+  if (!graphId || !nodeId || nodeId === UNASSIGNED_NODE_ID) return undefined
   const name =
     duplicateIndex > 0 ? `${widget.name}#${duplicateIndex}` : widget.name
-  return widgetId(graphId, node.id, name)
+  return widgetId(graphId, nodeId, name)
+}
+
+/**
+ * Maps a node's live widgets to their {@link WidgetId}, replicating the
+ * duplicate-name disambiguation used when the ids were minted. Building the map
+ * once lets callers resolve widgets by id in O(1) instead of rescanning.
+ */
+export function mapLiveWidgetsById(
+  node: LGraphNode
+): Map<WidgetId, IBaseWidget> {
+  const byId = new Map<WidgetId, IBaseWidget>()
+  const duplicateIndexByKey = new Map<string, number>()
+  for (const widget of node.widgets ?? []) {
+    const duplicateKey = `${widget.name}:${widget.type}`
+    const duplicateIndex = duplicateIndexByKey.get(duplicateKey) ?? 0
+    duplicateIndexByKey.set(duplicateKey, duplicateIndex + 1)
+    const id = getWidgetIdForNode(node, widget, duplicateIndex)
+    if (id) byId.set(id, widget)
+  }
+  return byId
 }
 
 export function isLoad3dNode(node: LGraphNode) {

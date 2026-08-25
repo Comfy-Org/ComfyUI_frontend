@@ -6,6 +6,7 @@ import { render, screen } from '@testing-library/vue'
 
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { toNodeId } from '@/types/nodeId'
 
 import OutputSlot from './OutputSlot.vue'
 
@@ -58,7 +59,7 @@ function renderOutputSlot(slotData: Partial<INodeSlot>, index = 0) {
     props: {
       slotData: { type: '*', ...slotData } as INodeSlot,
       index,
-      nodeId: 'test-node'
+      nodeId: toNodeId('test-node')
     },
     global: {
       plugins: [i18n],

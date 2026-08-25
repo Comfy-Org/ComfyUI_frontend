@@ -1,7 +1,5 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromAny } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import type {
   ISlotType,
@@ -9,7 +7,11 @@ import type {
   Subgraph,
   TWidgetType
 } from '@/lib/litegraph/src/litegraph'
-import { BaseWidget, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  BaseWidget,
+  LGraphNode,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
 import { NumberWidget } from '@/lib/litegraph/src/widgets/NumberWidget'
 import {
   appendQuarantine,
@@ -21,7 +23,9 @@ import type { SerializedProxyWidgetTuple } from '@/core/schemas/promotionSchema'
 import { IS_CONTROL_WIDGET } from '@/scripts/controlWidgetMarker'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { toNodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
+import type { WidgetState } from '@/types/widgetState'
 import { widgetId } from '@/types/widgetId'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { graphToPrompt } from '@/utils/executionUtil'
@@ -31,6 +35,7 @@ import {
   createTestRootGraph,
   createTestSubgraph,
   createTestSubgraphNode,
+  registerTestSubgraphNodeTypes,
   resetSubgraphFixtureState
 } from './__fixtures__/subgraphHelpers'
 
@@ -111,7 +116,7 @@ function promotedWidgetStateByName(
 function writePromotedWidgetValue(
   node: { inputs: Array<{ widgetId?: WidgetId; name: string }> },
   index: number,
-  value: unknown
+  value: WidgetState['value']
 ) {
   const input = promotedInputs(node)[index]
   if (!input) throw new Error(`Missing promoted input ${index}`)
@@ -119,7 +124,6 @@ function writePromotedWidgetValue(
 }
 
 beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   resetSubgraphFixtureState()
 })
 
@@ -168,6 +172,42 @@ describe('SubgraphWidgetPromotion', () => {
           value: 42
         }
       )
+    })
+
+    it('preserves the host value when its source is converted to a nested subgraph', async () => {
+      const rootGraph = createTestRootGraph()
+      const subgraph = createTestSubgraph({
+        rootGraph,
+        inputs: [{ name: 'value', type: 'STRING' }]
+      })
+      const sourceType = 'test/nested-conversion-source'
+
+      class SourceNode extends LGraphNode {
+        constructor() {
+          super('Source')
+          const input = this.addInput('value', 'STRING')
+          input.widget = { name: 'value' }
+          this.addWidget('text', 'value', 'source value', () => {})
+        }
+      }
+      LiteGraph.registerNodeType(sourceType, SourceNode)
+      onTestFinished(() => LiteGraph.unregisterNodeType(sourceType))
+      registerTestSubgraphNodeTypes(rootGraph)
+
+      const source = LiteGraph.createNode(sourceType)
+      if (!source) throw new Error('Failed to create source node')
+      subgraph.add(source)
+      const link = subgraph.inputNode.slots[0].connect(source.inputs[0], source)
+      if (!link) throw new Error('Failed to connect promoted input')
+
+      const host = createTestSubgraphNode(subgraph)
+      rootGraph.add(host)
+      writePromotedWidgetValue(host, 0, 'host value')
+
+      subgraph.convertToSubgraph(new Set([source]))
+      await Promise.resolve()
+
+      expect(promotedWidgetStateByName(host, 'value').value).toBe('host value')
     })
 
     it('should promote all widget types', () => {
@@ -361,6 +401,34 @@ describe('SubgraphWidgetPromotion', () => {
         promotedInputs(subgraphNode).length
       )
       expect(promotedInputs(subgraphNode)).toHaveLength(0)
+    })
+
+    it('keeps the host widget promoted while another interior widget is still connected', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'value', type: 'number' }]
+      })
+
+      const { node: first } = createNodeWithWidget('First', 'number', 42)
+      const { node: second } = createNodeWithWidget('Second', 'number', 42)
+      subgraph.add(first)
+      subgraph.add(second)
+      subgraph.inputNode.slots[0].connect(first.inputs[0], first)
+      subgraph.inputNode.slots[0].connect(second.inputs[0], second)
+
+      const subgraphNode = createTestSubgraphNode(subgraph)
+      expect(promotedInputs(subgraphNode)).toHaveLength(1)
+      expect(subgraph.inputNode.slots[0].linkIds).toHaveLength(2)
+
+      first.disconnectInput(0, true)
+
+      expect(subgraph.inputNode.slots[0].linkIds).toHaveLength(1)
+      expect(promotedInputs(subgraphNode)).toHaveLength(1)
+      expect(subgraphNode.widgets).toHaveLength(1)
+
+      second.disconnectInput(0, true)
+
+      expect(promotedInputs(subgraphNode)).toHaveLength(0)
+      expect(subgraphNode.widgets).toHaveLength(0)
     })
 
     it('writes canvas edits back to the host widget store', () => {
@@ -1091,6 +1159,49 @@ describe('SubgraphWidgetPromotion', () => {
           'second host value'
         ])
       })
+
+      it('preserves null promoted values through serialize and reload', () => {
+        const subgraph = createTestSubgraph()
+        buildSources(subgraph, TEXT_PAIR)
+
+        const host = createTestSubgraphNode(subgraph, { id: 101 })
+        writePromotedWidgetValue(host, 0, null)
+        writePromotedWidgetValue(host, 1, null)
+
+        const serialized = host.serialize()
+        expect(serialized.widgets_values).toEqual([null, null])
+
+        const widgetStore = useWidgetValueStore()
+        widgetStore.clearGraph(host.rootGraph.id)
+        const reloaded = createTestSubgraphNode(subgraph, { id: 101 })
+        reloaded.configure(serialized)
+
+        expect(
+          promotedWidgetStates(reloaded).map((state) => state.value)
+        ).toEqual([null, null])
+      })
+
+      it('reads a null store value back through the projected widget', () => {
+        const subgraph = createTestSubgraph()
+        buildSources(subgraph, TEXT_PAIR)
+        const host = createTestSubgraphNode(subgraph)
+
+        writePromotedWidgetValue(host, 0, null)
+
+        expect(host.widgets[0]?.value).toBeNull()
+      })
+
+      it('preserves a null promoted value across reorder', () => {
+        const subgraph = createTestSubgraph()
+        buildSources(subgraph, TEXT_PAIR)
+        const host = createTestSubgraphNode(subgraph)
+        writePromotedWidgetValue(host, 0, null)
+        writePromotedWidgetValue(host, 1, 'second value')
+
+        reorderSubgraphInputsByName(host, ['second', 'first'])
+
+        expect(host.serialize().widgets_values).toEqual(['second value', null])
+      })
     })
 
     describe('proxyWidgets is no longer re-emitted', () => {
@@ -1130,13 +1241,24 @@ describe('SubgraphWidgetPromotion', () => {
 
     describe('previewExposures round-trip', () => {
       const CANVAS = '$$canvas-image-preview'
-      const exposure12 = { sourceNodeId: '12', sourcePreviewName: CANVAS }
+      const exposure12 = {
+        sourceNodeId: toNodeId('12'),
+        sourcePreviewName: CANVAS
+      }
       const exposure14 = {
+        sourceNodeId: toNodeId('14'),
+        sourcePreviewName: 'videopreview'
+      }
+      const serializedExposure12 = {
+        sourceNodeId: '12',
+        sourcePreviewName: CANVAS
+      }
+      const serializedExposure14 = {
         sourceNodeId: '14',
         sourcePreviewName: 'videopreview'
       }
-      const named12 = { name: CANVAS, ...exposure12 }
-      const named14 = { name: 'videopreview', ...exposure14 }
+      const named12 = { name: CANVAS, ...serializedExposure12 }
+      const named14 = { name: 'videopreview', ...serializedExposure14 }
 
       it('hydrates previewExposures into the store during configure', () => {
         const hostNode = createTestSubgraphNode(createTestSubgraph())
@@ -1383,6 +1505,43 @@ describe('SubgraphWidgetPromotion', () => {
         expect(byName.get('unet_name')).toBe('z_image_turbo_bf16.safetensors')
         expect(byName.get('clip_name')).toBe('qwen_3_4b.safetensors')
         expect(byName.get('steps')).toBe(8)
+      })
+
+      it('applies a null quarantined host value instead of falling through to widgets_values', () => {
+        const subgraph = createTestSubgraph({
+          inputs: [{ name: 'value', type: 'STRING' }]
+        })
+        const { node: interiorNode } = createNodeWithWidget(
+          'Interior',
+          'text',
+          'interior default',
+          'STRING'
+        )
+        subgraph.add(interiorNode)
+        subgraph.inputNode.slots[0].connect(
+          interiorNode.inputs[0],
+          interiorNode
+        )
+
+        const hostNode = createTestSubgraphNode(subgraph)
+        const serialized = hostNode.serialize()
+        serialized.widgets_values = ['stale value']
+        serialized.properties = {
+          ...serialized.properties,
+          proxyWidgetErrorQuarantine: [
+            {
+              originalEntry: ['-1', 'value'] as SerializedProxyWidgetTuple,
+              reason: 'missingSourceNode',
+              hostValue: null,
+              attemptedAtVersion: 1
+            }
+          ]
+        }
+
+        const reloaded = createTestSubgraphNode(subgraph)
+        reloaded.configure(serialized)
+
+        expect(promotedWidgetStateByName(reloaded, 'value').value).toBeNull()
       })
     })
   })

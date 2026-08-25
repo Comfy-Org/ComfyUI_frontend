@@ -8,21 +8,18 @@ import {
 import type {
   ComboInputSpec,
   ComboInputSpecV2,
-  ComfyNodeDef,
-  InputSpec
+  InputSpec,
+  ObjectInfoResponse
 } from '@/schemas/nodeDefSchema'
-
-export type ObjectInfoResponse = Record<string, ComfyNodeDef>
 
 type ComboInput = ComboInputSpec | ComboInputSpecV2
 
 const OBJECT_INFO_ROUTE = '**/object_info'
 
-function getRequiredInput(
+function getRequiredInputs(
   objectInfo: ObjectInfoResponse,
-  nodeType: string,
-  inputName: string
-): InputSpec {
+  nodeType: string
+): Record<string, InputSpec> {
   const nodeInfo = objectInfo[nodeType]
   if (!nodeInfo) {
     throw new Error(`Missing object_info entry for ${nodeType}`)
@@ -33,12 +30,35 @@ function getRequiredInput(
     throw new Error(`Missing required inputs for ${nodeType}`)
   }
 
-  const input = requiredInputs[inputName]
+  return requiredInputs
+}
+
+function getRequiredInput(
+  objectInfo: ObjectInfoResponse,
+  nodeType: string,
+  inputName: string
+): InputSpec {
+  const input = getRequiredInputs(objectInfo, nodeType)[inputName]
   if (!input) {
     throw new Error(`Missing input ${nodeType}.${inputName}`)
   }
 
   return input
+}
+
+export function setStringInputTooltip(
+  objectInfo: ObjectInfoResponse,
+  nodeType: string,
+  inputName: string,
+  tooltip: string
+): void {
+  const requiredInputs = getRequiredInputs(objectInfo, nodeType)
+  if (!requiredInputs[inputName]) {
+    throw new Error(`Missing input ${nodeType}.${inputName}`)
+  }
+
+  const input: InputSpec = ['STRING', { tooltip }]
+  requiredInputs[inputName] = input
 }
 
 function getComboInput(

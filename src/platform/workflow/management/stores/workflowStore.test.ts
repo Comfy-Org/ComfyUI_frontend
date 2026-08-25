@@ -1,27 +1,30 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { nextTick } from 'vue'
 
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type {
-  ComfyWorkflow,
-  LoadedComfyWorkflow
-} from '@/platform/workflow/management/stores/workflowStore'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
+  ComfyWorkflow,
   useWorkflowBookmarkStore,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
+import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { defaultGraph, defaultGraphJSON } from '@/scripts/defaultGraph'
+import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
+import { isValidUuid } from '@/utils/formatUtil'
 import { isSubgraph } from '@/utils/typeGuardUtil'
 import {
   createMockCanvas,
-  createMockChangeTracker
+  createMockChangeTracker,
+  createMockLGraphNode
 } from '@/utils/__tests__/litegraphTestUtils'
 
 // Add mock for api at the top of the file
@@ -95,12 +98,8 @@ describe('useWorkflowStore', () => {
   }
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    localStorage.clear()
-    sessionStorage.clear()
     store = useWorkflowStore()
     bookmarkStore = useWorkflowBookmarkStore()
-    vi.clearAllMocks()
 
     // Add default mock implementations
     vi.mocked(api.getUserData).mockResolvedValue({
@@ -110,11 +109,6 @@ describe('useWorkflowStore', () => {
     vi.mocked(api.storeUserData).mockResolvedValue({
       status: 200
     } as Response)
-  })
-
-  afterEach(() => {
-    localStorage.clear()
-    sessionStorage.clear()
   })
 
   describe('syncWorkflows', () => {
@@ -220,28 +214,80 @@ describe('useWorkflowStore', () => {
 
     it('should assign a workflow id to newly created temporary workflows', () => {
       const workflow = store.createTemporary('id-test.json')
-      const state = JSON.parse(workflow.content!)
+      const state = zComfyWorkflow.parse(JSON.parse(workflow.content!))
 
-      expect(typeof state.id).toBe('string')
-      expect(state.id.length).toBeGreaterThan(0)
+      expect(isValidUuid(state.id)).toBe(true)
     })
 
-    it('should assign an id when temporary workflow data is missing one', () => {
-      const workflowDataWithoutId = {
+    it('migrates a legacy id without mutating the input', () => {
+      const workflowData = fromPartial<ComfyWorkflowJSON>({
         ...defaultGraph,
-        id: undefined
-      }
+        id: 'video-point-prompt-example'
+      })
+      const originalData = structuredClone(workflowData)
 
-      const workflow = store.createTemporary(
-        'missing-id.json',
-        workflowDataWithoutId
-      )
-      const state = JSON.parse(workflow.content!)
+      const workflow = store.createTemporary('legacy.json', workflowData)
+      const state = zComfyWorkflow.parse(JSON.parse(workflow.content!))
 
-      expect(typeof state.id).toBe('string')
-      expect(state.id.length).toBeGreaterThan(0)
-      expect(workflowDataWithoutId.id).toBeUndefined()
+      expect(isValidUuid(state.id)).toBe(true)
+      expect(workflow.legacyId).toBe('video-point-prompt-example')
+      expect(workflowData).toEqual(originalData)
     })
+
+    it.for([
+      {
+        label: 'the same legacy id',
+        existingId: '9cea40bb-b0cf-4b40-a758-8935cfe8d52f',
+        incomingId: 'legacy-a',
+        legacyId: 'legacy-a',
+        expectedPath: 'external/repeat.json',
+        expectedResetCount: 1
+      },
+      {
+        label: 'a different legacy id',
+        existingId: '9cea40bb-b0cf-4b40-a758-8935cfe8d52f',
+        incomingId: 'legacy-b',
+        legacyId: 'legacy-a',
+        expectedPath: 'workflows/repeat.json',
+        expectedResetCount: 0
+      },
+      {
+        label: 'equivalent UUID casing',
+        existingId: '9cea40bb-b0cf-4b40-a758-8935cfe8d52f',
+        incomingId: '9CEA40BB-B0CF-4B40-A758-8935CFE8D52F',
+        expectedPath: 'external/repeat.json',
+        expectedResetCount: 1
+      }
+    ])(
+      'returns $expectedPath for an external same-name workflow with $label',
+      ({
+        existingId,
+        incomingId,
+        legacyId,
+        expectedPath,
+        expectedResetCount
+      }) => {
+        const existingWorkflow = new ComfyWorkflow({
+          path: 'external/repeat.json',
+          modified: Date.now(),
+          size: -1
+        })
+        existingWorkflow.changeTracker = createMockChangeTracker()
+        existingWorkflow.changeTracker.activeState.id = existingId
+        existingWorkflow.legacyId = legacyId
+        store.attachWorkflow(existingWorkflow)
+
+        const result = store.createTemporary(
+          'repeat.json',
+          fromPartial<ComfyWorkflowJSON>({ ...defaultGraph, id: incomingId })
+        )
+
+        expect(result.path).toBe(expectedPath)
+        expect(existingWorkflow.changeTracker.reset).toHaveBeenCalledTimes(
+          expectedResetCount
+        )
+      }
+    )
   })
 
   describe('openWorkflow', () => {
@@ -697,9 +743,11 @@ describe('useWorkflowStore', () => {
   describe('Subgraphs', () => {
     beforeEach(async () => {
       // Ensure canvas exists for these tests
-      vi.mocked(comfyApp).canvas = createMockCanvas({
-        subgraph: undefined
-      }) as typeof comfyApp.canvas
+      vi.mocked(comfyApp).canvas = fromAny<typeof comfyApp.canvas, unknown>(
+        createMockCanvas({
+          subgraph: undefined
+        })
+      )
 
       // Setup an active workflow as updateActiveGraph depends on it
       const workflow = store.createTemporary('test-subgraph-workflow.json')
@@ -720,7 +768,7 @@ describe('useWorkflowStore', () => {
 
     it('should handle when comfyApp.canvas is not available', async () => {
       // Arrange
-      vi.mocked(comfyApp).canvas = null! as typeof comfyApp.canvas
+      vi.mocked(comfyApp).canvas = fromAny<typeof comfyApp.canvas, null>(null)
 
       // Act
       console.debug(store.isSubgraphActive)
@@ -748,7 +796,7 @@ describe('useWorkflowStore', () => {
 
     it('should correctly update state when a subgraph is active', async () => {
       // Arrange: Setup mock subgraph structure
-      const mockSubgraph = {
+      const mockSubgraph = fromAny<Subgraph, unknown>({
         name: 'Level 2 Subgraph',
         isRootGraph: false,
         pathToRootGraph: [
@@ -756,7 +804,7 @@ describe('useWorkflowStore', () => {
           { name: 'Level 1 Subgraph' },
           { name: 'Level 2 Subgraph' }
         ]
-      } as Partial<Subgraph> as Subgraph
+      })
       vi.mocked(comfyApp.canvas).subgraph = mockSubgraph
 
       // Mock isSubgraph to return true for our mockSubgraph
@@ -775,11 +823,11 @@ describe('useWorkflowStore', () => {
 
     it('should update automatically when activeWorkflow changes', async () => {
       // Arrange: Set initial canvas state (e.g., a subgraph)
-      const initialSubgraph = {
+      const initialSubgraph = fromAny<Subgraph, unknown>({
         name: 'Initial Subgraph',
         pathToRootGraph: [{ name: 'Root' }, { name: 'Initial Subgraph' }],
         isRootGraph: false
-      } as Partial<Subgraph> as Subgraph
+      })
       vi.mocked(comfyApp.canvas).subgraph = initialSubgraph
 
       // Mock isSubgraph to return true for our initialSubgraph
@@ -828,63 +876,68 @@ describe('useWorkflowStore', () => {
   describe('NodeLocatorId conversions', () => {
     beforeEach(() => {
       // Setup mock graph structure with subgraphs
-      const mockRootGraph = {
-        _nodes: [] as unknown[],
-        nodes: [] as unknown[],
-        subgraphs: new Map(),
-        getNodeById: (id: string | number) => {
-          if (String(id) === '123') return mockNode
+      const mockNodes: LGraph['nodes'] = []
+      const mockSubgraphs = new Map<string, Subgraph>()
+      const mockRootGraph = fromAny<LGraph, unknown>({
+        _nodes: mockNodes,
+        nodes: mockNodes,
+        subgraphs: mockSubgraphs,
+        getNodeById: (id: NodeId) => {
+          if (id === toNodeId(123)) return mockNode
           return null
         }
-      }
+      })
 
-      const mockSubgraph = {
+      const mockSubgraph = fromAny<Subgraph, unknown>({
         id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-        rootGraph: mockRootGraph as LGraph,
+        rootGraph: mockRootGraph,
         _nodes: [],
         nodes: [],
         clear() {
           return undefined
         }
-      } as Partial<Subgraph> as Subgraph
+      })
 
-      const mockNode = {
-        id: 123,
+      const mockNode = createMockLGraphNode({
+        id: toNodeId(123),
         isSubgraphNode: () => true,
         subgraph: mockSubgraph
-      }
+      })
 
-      mockRootGraph._nodes = [mockNode]
-      mockRootGraph.nodes = [mockNode]
-      mockRootGraph.subgraphs = new Map([[mockSubgraph.id, mockSubgraph]])
+      mockNodes.push(mockNode)
+      mockSubgraphs.set(mockSubgraph.id, mockSubgraph)
 
-      vi.mocked(comfyApp).rootGraph = mockRootGraph as LGraph
+      vi.mocked(comfyApp).rootGraph = mockRootGraph
       vi.mocked(comfyApp.canvas).subgraph = mockSubgraph
       store.activeSubgraph = mockSubgraph
     })
 
     describe('nodeIdToNodeLocatorId', () => {
       it('should convert node ID to NodeLocatorId for subgraph nodes', () => {
-        const result = store.nodeIdToNodeLocatorId(456)
+        const result = store.nodeIdToNodeLocatorId(toNodeId(456))
         expect(result).toBe('a1b2c3d4-e5f6-7890-abcd-ef1234567890:456')
       })
 
       it('should return simple node ID for root graph nodes', () => {
         store.activeSubgraph = undefined
-        const result = store.nodeIdToNodeLocatorId(123)
+        const result = store.nodeIdToNodeLocatorId(toNodeId(123))
         expect(result).toBe('123')
       })
 
       it('should use provided subgraph instead of active one', () => {
-        const customSubgraph = {
-          id: 'custom-uuid-1234-5678-90ab-cdef12345678',
-          rootGraph: undefined! as LGraph,
+        const customSubgraphId = '11111111-2222-4333-8444-555555555555'
+        const customSubgraph = fromPartial<Subgraph>({
+          id: customSubgraphId,
+          rootGraph: fromAny<LGraph, undefined>(undefined),
           _nodes: [],
           nodes: [],
           clear: vi.fn()
-        } as Partial<Subgraph> as Subgraph
-        const result = store.nodeIdToNodeLocatorId(789, customSubgraph)
-        expect(result).toBe('custom-uuid-1234-5678-90ab-cdef12345678:789')
+        })
+        const result = store.nodeIdToNodeLocatorId(
+          toNodeId(789),
+          customSubgraph
+        )
+        expect(result).toBe(`${customSubgraphId}:789`)
       })
     })
 
@@ -907,26 +960,32 @@ describe('useWorkflowStore', () => {
     describe('nodeLocatorIdToNodeId', () => {
       it('should extract node ID from NodeLocatorId', () => {
         const result = store.nodeLocatorIdToNodeId(
-          createNodeLocatorId('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 456)
+          createNodeLocatorId(
+            'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+            toNodeId(456)
+          )
         )
-        expect(result).toBe(456)
+        expect(result).toBe(toNodeId(456))
       })
 
       it('should handle string node IDs', () => {
         const result = store.nodeLocatorIdToNodeId(
-          createNodeLocatorId('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'node_1')
+          createNodeLocatorId(
+            'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+            toNodeId('node_1')
+          )
         )
         expect(result).toBe('node_1')
       })
 
       it('should handle simple node IDs (root graph)', () => {
         const result = store.nodeLocatorIdToNodeId(
-          createNodeLocatorId(null, 123)
+          createNodeLocatorId(null, toNodeId(123))
         )
-        expect(result).toBe(123)
+        expect(result).toBe(toNodeId(123))
 
         const stringResult = store.nodeLocatorIdToNodeId(
-          createNodeLocatorId(null, 'node_1')
+          createNodeLocatorId(null, toNodeId('node_1'))
         )
         expect(stringResult).toBe('node_1')
       })
@@ -939,21 +998,27 @@ describe('useWorkflowStore', () => {
         })
 
         const result = store.nodeLocatorIdToNodeExecutionId(
-          createNodeLocatorId('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 456)
+          createNodeLocatorId(
+            'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+            toNodeId(456)
+          )
         )
         expect(result).toBe('123:456')
       })
 
       it('should handle simple node IDs (root graph)', () => {
         const result = store.nodeLocatorIdToNodeExecutionId(
-          createNodeLocatorId(null, 123)
+          createNodeLocatorId(null, toNodeId(123))
         )
         expect(result).toBe('123')
       })
 
       it('should return null for unknown subgraph UUID', () => {
         const result = store.nodeLocatorIdToNodeExecutionId(
-          createNodeLocatorId('unknown-uuid-1234-5678-90ab-cdef12345678', 456)
+          createNodeLocatorId(
+            '99999999-8888-4777-8666-555555555555',
+            toNodeId(456)
+          )
         )
         expect(result).toBeNull()
       })

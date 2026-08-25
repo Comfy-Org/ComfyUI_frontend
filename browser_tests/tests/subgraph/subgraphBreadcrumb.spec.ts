@@ -3,6 +3,7 @@ import { expect, mergeTests } from '@playwright/test'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { subgraphBreadcrumbFixture } from '@e2e/fixtures/helpers/SubgraphBreadcrumbHelper'
+import { toNodeId } from '@/types/nodeId'
 
 const test = mergeTests(comfyPageFixture, subgraphBreadcrumbFixture)
 
@@ -198,7 +199,7 @@ test.describe('Subgraph Breadcrumb', { tag: ['@subgraph'] }, () => {
 
       const rootNodeTitle = await comfyPage.page.evaluate(
         (nodeId) => window.app!.graph!.getNodeById(nodeId)?.title ?? null,
-        OUTER_SUBGRAPH_NODE_ID_IN_NESTED
+        toNodeId(OUTER_SUBGRAPH_NODE_ID_IN_NESTED)
       )
       expect(rootNodeTitle).toBe(newName)
     })

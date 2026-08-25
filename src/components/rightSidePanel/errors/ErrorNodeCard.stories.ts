@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import ErrorNodeCard from './ErrorNodeCard.vue'
 import type { ErrorCardData } from './types'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
+import { toNodeId } from '@/types/nodeId'
 
 const meta: Meta<typeof ErrorNodeCard> = {
   title: 'RightSidePanel/Errors/ErrorNodeCard',
@@ -24,7 +25,7 @@ type Story = StoryObj<typeof meta>
 const singleErrorCard: ErrorCardData = {
   id: 'node-10',
   title: 'CLIPTextEncode',
-  nodeId: createNodeExecutionId([10]),
+  nodeId: createNodeExecutionId([toNodeId(10)]),
   nodeTitle: 'CLIP Text Encode (Prompt)',
   errors: [
     {
@@ -37,7 +38,7 @@ const singleErrorCard: ErrorCardData = {
 const multipleErrorsCard: ErrorCardData = {
   id: 'node-24',
   title: 'VAEDecode',
-  nodeId: createNodeExecutionId([24]),
+  nodeId: createNodeExecutionId([toNodeId(24)]),
   nodeTitle: 'VAE Decode',
   errors: [
     {
@@ -54,7 +55,7 @@ const multipleErrorsCard: ErrorCardData = {
 const runtimeErrorCard: ErrorCardData = {
   id: 'exec-45',
   title: 'KSampler',
-  nodeId: createNodeExecutionId([45]),
+  nodeId: createNodeExecutionId([toNodeId(45)]),
   nodeTitle: 'KSampler',
   errors: [
     {
@@ -66,6 +67,19 @@ const runtimeErrorCard: ErrorCardData = {
         'RuntimeError: CUDA out of memory.'
       ].join('\n'),
       isRuntimeError: true
+    }
+  ]
+}
+
+const subgraphErrorCard: ErrorCardData = {
+  id: 'node-3:15',
+  title: 'KSampler',
+  nodeId: createNodeExecutionId([toNodeId(3), toNodeId(15)]),
+  nodeTitle: 'Nested KSampler',
+  errors: [
+    {
+      message: 'Latent input is required.',
+      details: ''
     }
   ]
 }
@@ -84,6 +98,12 @@ const promptOnlyCard: ErrorCardData = {
 export const SingleValidationError: Story = {
   args: {
     card: singleErrorCard
+  }
+}
+
+export const NestedNodeError: Story = {
+  args: {
+    card: subgraphErrorCard
   }
 }
 

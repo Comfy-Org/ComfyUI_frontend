@@ -10,9 +10,10 @@ import {
   STABLE_CHECKPOINT_2
 } from '@e2e/fixtures/data/assetFixtures'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { toNodeId } from '@/types/nodeId'
 
 const WORKFLOW = 'missing/missing_model_promoted_widget'
-const HOST_NODE_ID = 2
+const HOST_NODE_ID = toNodeId(2)
 const WIDGET_NAME = 'ckpt_name'
 const SELECTED_MODEL = STABLE_CHECKPOINT_2.name
 

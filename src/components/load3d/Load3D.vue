@@ -15,25 +15,39 @@
       :is-preview="isPreview"
     />
     <div class="pointer-events-none absolute top-0 left-0 size-full">
-      <Load3DControls
+      <Load3DMenuBar
         v-model:scene-config="sceneConfig"
         v-model:model-config="modelConfig"
         v-model:camera-config="cameraConfig"
         v-model:light-config="lightConfig"
+        v-model:is-recording="isRecording"
+        v-model:has-recording="hasRecording"
+        v-model:recording-duration="recordingDuration"
         :can-use-gizmo="canUseGizmo"
         :can-use-lighting="canUseLighting"
         :can-export="canExport"
         :can-use-hdri="canUseHdri"
         :can-use-background-image="canUseBackgroundImage"
+        :can-fit-to-viewer="canFitToViewer"
+        :can-center-camera-on-model="canCenterCameraOnModel"
+        :node="node as LGraphNode"
+        :enable-viewer="enable3DViewer"
+        :can-use-recording="canUseRecording && !isPreview"
         :material-modes="materialModes"
         :has-skeleton="hasSkeleton"
         :source-format="sourceFormat"
         @update-background-image="handleBackgroundImageUpdate"
-        @export-model="handleExportModel"
         @update-hdri-file="handleHDRIFileUpdate"
+        @export-model="handleExportModel"
+        @fit-to-viewer="handleFitToViewer"
+        @center-camera="handleCenterCameraOnModel"
         @toggle-gizmo="handleToggleGizmo"
         @set-gizmo-mode="handleSetGizmoMode"
         @reset-gizmo-transform="handleResetGizmoTransform"
+        @start-recording="handleStartRecording"
+        @stop-recording="handleStopRecording"
+        @export-recording="handleExportRecording"
+        @clear-recording="handleClearRecording"
       />
       <AnimationControls
         v-if="animations && animations.length > 0"
@@ -46,59 +60,6 @@
         @seek="handleSeek"
       />
     </div>
-    <div
-      class="pointer-events-auto absolute top-12 right-2 z-20 flex flex-col gap-2"
-    >
-      <div
-        v-if="canFitToViewer || canCenterCameraOnModel"
-        class="flex flex-col rounded-lg bg-backdrop/30"
-      >
-        <Button
-          v-if="canFitToViewer"
-          v-tooltip.left="{
-            value: $t('load3d.fitToViewer'),
-            showDelay: 300
-          }"
-          size="icon"
-          variant="textonly"
-          class="rounded-full"
-          :aria-label="$t('load3d.fitToViewer')"
-          @click="handleFitToViewer"
-        >
-          <i class="pi pi-window-maximize text-lg text-base-foreground" />
-        </Button>
-        <Button
-          v-if="canCenterCameraOnModel"
-          v-tooltip.left="{
-            value: $t('load3d.centerCameraOnModel'),
-            showDelay: 300
-          }"
-          size="icon"
-          variant="textonly"
-          class="rounded-full"
-          :aria-label="$t('load3d.centerCameraOnModel')"
-          @click="handleCenterCameraOnModel"
-        >
-          <i class="pi pi-compass text-lg text-base-foreground" />
-        </Button>
-      </div>
-
-      <ViewerControls
-        v-if="enable3DViewer && node"
-        :node="node as LGraphNode"
-      />
-
-      <RecordingControls
-        v-if="canUseRecording && !isPreview"
-        v-model:is-recording="isRecording"
-        v-model:has-recording="hasRecording"
-        v-model:recording-duration="recordingDuration"
-        @start-recording="handleStartRecording"
-        @stop-recording="handleStopRecording"
-        @export-recording="handleExportRecording"
-        @clear-recording="handleClearRecording"
-      />
-    </div>
   </div>
 </template>
 
@@ -106,19 +67,16 @@
 import { computed, onMounted, ref } from 'vue'
 import type { Ref } from 'vue'
 
-import Load3DControls from '@/components/load3d/Load3DControls.vue'
+import Load3DMenuBar from '@/components/load3d/Load3DMenuBar.vue'
 import Load3DScene from '@/components/load3d/Load3DScene.vue'
 import AnimationControls from '@/components/load3d/controls/AnimationControls.vue'
-import RecordingControls from '@/components/load3d/controls/RecordingControls.vue'
-import ViewerControls from '@/components/load3d/controls/ViewerControls.vue'
-import Button from '@/components/ui/button/Button.vue'
 import { useLoad3d } from '@/composables/useLoad3d'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { resolveNode } from '@/utils/litegraphUtil'
 import type { ComponentWidget } from '@/scripts/domWidget'
+import type { NodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { resolveNode } from '@/utils/litegraphUtil'
 
 const {
   widget,
@@ -192,11 +150,11 @@ const {
   handleHDRIFileUpdate,
   handleExportModel,
   handleModelDrop,
+  handleFitToViewer,
+  handleCenterCameraOnModel,
   handleToggleGizmo,
   handleSetGizmoMode,
   handleResetGizmoTransform,
-  handleFitToViewer,
-  handleCenterCameraOnModel,
   cleanup
 } = useLoad3d(node as Ref<LGraphNode | null>)
 

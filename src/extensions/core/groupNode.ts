@@ -2,6 +2,8 @@ import { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
 import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
 import type { LGraphNodeConstructor } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { outputLinks } from '@/lib/litegraph/src/node/slotLinks'
+import { parseNodeId } from '@/types/nodeId'
 import type {
   ComfyNode,
   ComfyWorkflowJSON
@@ -565,7 +567,7 @@ export class GroupNodeConfig {
     node: GroupNodeData,
     slots: string[],
     linksTo: Record<number, GroupNodeLink>,
-    inputMap: Record<number, number>,
+    inputMap: Record<string, number>,
     seenInputs: Record<string, number>
   ) {
     const nodeIdx = node.index ?? -1
@@ -592,7 +594,7 @@ export class GroupNodeConfig {
         // @ts-expect-error legacy dynamic input assignment
         this.nodeDef.input.required[name] = config
       }
-      inputMap[i] = this.inputCount++
+      inputMap[inputName] = this.inputCount++
     }
   }
 
@@ -602,7 +604,7 @@ export class GroupNodeConfig {
     slots: string[],
     converted: Map<number, string>,
     linksTo: Record<number, GroupNodeLink>,
-    inputMap: Record<number, number>,
+    inputMap: Record<string, number>,
     seenInputs: Record<string, number>
   ) {
     // Add converted widgets sorted into their index order (ordered as they were converted) so link ids match up
@@ -644,7 +646,7 @@ export class GroupNodeConfig {
       }
       this.oldToNewWidgetMap[nodeIndex][inputName] = name
 
-      inputMap[slots.length + i] = this.inputCount++
+      inputMap[inputName] = this.inputCount++
     }
   }
 
@@ -667,7 +669,7 @@ export class GroupNodeConfig {
     )
     const nodeIndex = node.index ?? -1
     const linksTo = this.linksTo[nodeIndex] ?? {}
-    const inputMap: Record<number, number> = (this.oldToNewInputMap[nodeIndex] =
+    const inputMap: Record<string, number> = (this.oldToNewInputMap[nodeIndex] =
       {})
     this.processInputSlots(
       inputs as unknown as Record<string, unknown[]>,
@@ -814,8 +816,10 @@ export class GroupNodeConfig {
  * `configure`. The load-time migration unpacks each instance via
  * {@link convertToNodes} and {@link LGraph.convertToSubgraph} repackages the
  * result as a subgraph.
+ *
+ * @knipIgnoreUnusedButUsedByCustomNodes
  */
-class GroupNodeHandler {
+export class GroupNodeHandler {
   node: LGraphNode
   groupData: GroupNodeConfig
 
@@ -851,7 +855,10 @@ class GroupNodeHandler {
       const selectedIds = Object.keys(app.canvas.selected_nodes)
       const newNodes: LGraphNode[] = []
       for (let i = 0; i < selectedIds.length; i++) {
-        const newNode = app.rootGraph.getNodeById(selectedIds[i])
+        const selectedId = parseNodeId(selectedIds[i])
+        const newNode = selectedId
+          ? app.rootGraph.getNodeById(selectedId)
+          : null
         const innerNodeData = nodeData.nodes[i]
         if (!newNode) continue
         newNodes.push(newNode)
@@ -896,8 +903,10 @@ class GroupNodeHandler {
 
       // Shift each node so the unpacked group appears at the group node position
       for (const newNode of newNodes) {
-        newNode.pos[0] -= (left ?? 0) - x
-        newNode.pos[1] -= (top ?? 0) - y
+        newNode.pos = [
+          newNode.pos[0] - ((left ?? 0) - x),
+          newNode.pos[1] - ((top ?? 0) - y)
+        ]
       }
 
       return { newNodes, selectedIds }
@@ -905,20 +914,22 @@ class GroupNodeHandler {
 
     const reconnectInputs = (selectedIds: (string | number)[]) => {
       for (const innerNodeIndex in oldToNewInputMap) {
-        const newNode = app.rootGraph.getNodeById(
-          selectedIds[Number(innerNodeIndex)]
-        )
+        const selectedId = parseNodeId(selectedIds[Number(innerNodeIndex)])
+        const newNode = selectedId
+          ? app.rootGraph.getNodeById(selectedId)
+          : null
         if (!newNode) continue
         const map = oldToNewInputMap[Number(innerNodeIndex)]
-        for (const innerInputId in map) {
-          const groupSlotId = map[Number(innerInputId)]
+        for (const innerInputName in map) {
+          const groupSlotId = map[innerInputName]
           if (groupSlotId == null) continue
-          const slot = node.inputs[groupSlotId]
-          if (slot.link == null) continue
-          const link = app.rootGraph.links[slot.link]
+          const link = node.getInputLink(groupSlotId)
           if (!link) continue
           const originNode = app.rootGraph.getNodeById(link.origin_id)
-          originNode?.connect(link.origin_slot, newNode, +innerInputId)
+          const innerInputId = newNode.findInputSlot(innerInputName)
+          if (innerInputId !== -1) {
+            originNode?.connect(link.origin_slot, newNode, innerInputId)
+          }
         }
       }
     }
@@ -929,18 +940,15 @@ class GroupNodeHandler {
         groupOutputId < node.outputs?.length;
         groupOutputId++
       ) {
-        const output = node.outputs[groupOutputId]
-        if (!output.links) continue
-        const links = [...output.links]
-        for (const l of links) {
+        const links = outputLinks(app.rootGraph, node.id, groupOutputId)
+        for (const link of links) {
           const slot = newToOldOutputMap[groupOutputId]
           if (!slot) continue
-          const link = app.rootGraph.links[l]
-          if (!link) continue
           const targetNode = app.rootGraph.getNodeById(link.target_id)
-          const newNode = app.rootGraph.getNodeById(
-            selectedIds[slot.node.index ?? 0]
-          )
+          const selectedId = parseNodeId(selectedIds[slot.node.index ?? 0])
+          const newNode = selectedId
+            ? app.rootGraph.getNodeById(selectedId)
+            : null
           if (targetNode) {
             newNode?.connect(slot.slot, targetNode, link.target_slot)
           }

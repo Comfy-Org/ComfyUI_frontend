@@ -1,34 +1,6 @@
-import {
-  afterAll,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi
-} from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { GPUBrushRenderer } from './GPUBrushRenderer'
-
-// WebGPU globals are not available in happy-dom
-beforeAll(() => {
-  vi.stubGlobal('GPUBufferUsage', {
-    VERTEX: 0x0020,
-    INDEX: 0x0010,
-    COPY_DST: 0x0008,
-    UNIFORM: 0x0040
-  })
-  vi.stubGlobal('GPUTextureUsage', {
-    RENDER_ATTACHMENT: 0x0010,
-    TEXTURE_BINDING: 0x0004,
-    COPY_SRC: 0x0001
-  })
-  vi.stubGlobal('GPUShaderStage', { VERTEX: 0x1, FRAGMENT: 0x2 })
-})
-
-afterAll(() => {
-  vi.unstubAllGlobals()
-})
 
 vi.mock('typegpu', () => ({
   tgpu: { resolve: vi.fn(() => '/* mock wgsl */') }
@@ -143,7 +115,18 @@ describe('GPUBrushRenderer', () => {
   let renderer: GPUBrushRenderer
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    vi.stubGlobal('GPUBufferUsage', {
+      VERTEX: 0x0020,
+      INDEX: 0x0010,
+      COPY_DST: 0x0008,
+      UNIFORM: 0x0040
+    })
+    vi.stubGlobal('GPUTextureUsage', {
+      RENDER_ATTACHMENT: 0x0010,
+      TEXTURE_BINDING: 0x0004,
+      COPY_SRC: 0x0001
+    })
+    vi.stubGlobal('GPUShaderStage', { VERTEX: 0x1, FRAGMENT: 0x2 })
     pipelineCounter = 0
     device = createMockDevice()
     renderer = new GPUBrushRenderer(device)
@@ -170,6 +153,26 @@ describe('GPUBrushRenderer', () => {
       expect(device.createRenderPipeline).toHaveBeenCalledTimes(7)
       // readback = 1 compute pipeline
       expect(device.createComputePipeline).toHaveBeenCalledTimes(1)
+    })
+
+    it('uses maximum blending for accumulated stroke coverage', () => {
+      const accumulatePipeline = vi.mocked(device.createRenderPipeline).mock
+        .calls[1][0]
+      const blend = Array.from(accumulatePipeline.fragment?.targets ?? [])[0]
+        ?.blend
+
+      expect(blend).toEqual({
+        color: {
+          srcFactor: 'one',
+          dstFactor: 'one',
+          operation: 'max'
+        },
+        alpha: {
+          srcFactor: 'one',
+          dstFactor: 'one',
+          operation: 'max'
+        }
+      })
     })
   })
 
@@ -213,7 +216,7 @@ describe('GPUBrushRenderer', () => {
   describe('renderStrokeToAccumulator', () => {
     const settings = {
       size: 10,
-      opacity: 1,
+      coverage: 1,
       hardness: 0.5,
       color: [1, 1, 1] as [number, number, number],
       width: 256,
@@ -242,6 +245,10 @@ describe('GPUBrushRenderer', () => {
       // uniform + instance data = 2 writeBuffer calls
       expect(device.queue.writeBuffer).toHaveBeenCalledTimes(2)
       expect(device.queue.submit).toHaveBeenCalled()
+
+      const uniformData = vi.mocked(device.queue.writeBuffer).mock
+        .calls[0][2] as ArrayBuffer
+      expect(new Float32Array(uniformData)[3]).toBe(1)
     })
 
     it('does not render when points array is empty', () => {

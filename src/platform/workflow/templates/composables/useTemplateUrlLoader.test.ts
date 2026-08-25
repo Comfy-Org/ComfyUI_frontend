@@ -36,8 +36,8 @@ vi.mock(
 )
 
 // Mock template workflows composable
-const mockLoadTemplates = vi.fn().mockResolvedValue(true)
-const mockLoadWorkflowTemplate = vi.fn().mockResolvedValue(true)
+const mockLoadTemplates = vi.fn(async () => true)
+const mockLoadWorkflowTemplate = vi.fn(async () => true)
 
 vi.mock(
   '@/platform/workflow/templates/composables/useTemplateWorkflows',
@@ -82,7 +82,6 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
 
 describe('useTemplateUrlLoader', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockQueryParams = {}
     mockCanvasStore.linearMode = false
   })

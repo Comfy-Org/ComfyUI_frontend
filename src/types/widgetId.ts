@@ -1,6 +1,13 @@
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 type UUID = string
 
+/**
+ * A widget's canonical identity: `graphId:nodeId:name`.
+ * Because the key is derived, a widget renamed in a node
+ * definition orphans its stored state, and two widgets
+ * on one node cannot share a name.
+ */
 export type WidgetId = string & { readonly __brand: 'WidgetId' }
 
 const SEPARATOR = ':'
@@ -8,12 +15,12 @@ const WIDGET_ID_PATTERN = /^(?<graphId>[^:]+):(?<nodeId>[^:]+):(?<name>[^:]+)$/u
 
 export function widgetId(
   graphId: UUID,
-  nodeId: NodeId,
+  localNodeId: NodeId,
   name: string
 ): WidgetId {
   return [
     graphId,
-    encodeURIComponent(String(nodeId)),
+    encodeURIComponent(String(localNodeId)),
     encodeURIComponent(name)
   ].join(SEPARATOR) as WidgetId
 }
@@ -37,7 +44,7 @@ export function parseWidgetId(id: WidgetId): {
 
   return {
     graphId: groups.graphId,
-    nodeId: decodeWidgetIdSegment(groups.nodeId),
+    nodeId: toNodeId(decodeWidgetIdSegment(groups.nodeId)),
     name: decodeWidgetIdSegment(groups.name)
   }
 }
