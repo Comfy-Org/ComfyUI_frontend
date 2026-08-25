@@ -235,13 +235,15 @@
       "contactSupport": "Hesabınızı silmek için lütfen {email} adresiyle iletişime geçin"
     },
     "errors": {
-      "auth/cancelled-popup-request": "Giriş iptal edildi. Lütfen tekrar deneyin.",
+      "auth/account-exists-with-different-credential": "Bu e-posta adresiyle zaten bir hesap var, ancak farklı bir oturum açma yöntemi kullanıyor. Lütfen başlangıçta kullandığınız yöntemle oturum açın.",
+      "auth/cancelled-popup-request": "Başka bir oturum açma penceresi zaten açık olduğundan bu pencere iptal edildi. Lütfen tekrar deneyin.",
       "auth/email-already-in-use": "Bu e-posta ile zaten bir hesap mevcut. Bunun yerine giriş yapmayı deneyin.",
       "auth/invalid-credential": "Geçersiz giriş bilgileri. Lütfen e-posta adresinizi ve parolanızı kontrol edin.",
       "auth/invalid-email": "Lütfen geçerli bir e-posta adresi girin.",
       "auth/network-request-failed": "Ağ hatası. Lütfen bağlantınızı kontrol edip tekrar deneyin.",
       "auth/operation-not-allowed": "Bu giriş yöntemi şu anda desteklenmiyor.",
-      "auth/popup-closed-by-user": "Giriş iptal edildi. Lütfen tekrar deneyin.",
+      "auth/popup-blocked": "Tarayıcınız oturum açma penceresini engelledi. Lütfen bu site için açılır pencerelere izin verin ve tekrar deneyin.",
+      "auth/popup-closed-by-user": "Oturum açma tamamlanmadan oturum açma penceresi kapatıldı. Lütfen tekrar deneyin.",
       "auth/too-many-requests": "Çok fazla giriş denemesi. Lütfen bir süre bekleyip tekrar deneyin.",
       "auth/user-disabled": "Bu hesap devre dışı bırakıldı. Lütfen destek ekibiyle iletişime geçin.",
       "auth/user-not-found": "Bu e-posta ile ilişkili bir hesap bulunamadı. Yeni bir hesap oluşturmak ister misiniz?",
@@ -845,6 +847,7 @@
       "message": "Krediler birleştirildi",
       "tooltip": "Comfy genelinde ödemeleri birleştirdik. Artık her şey Comfy Kredileri ile çalışıyor:\n- Partner Düğümleri (eski adıyla API düğümleri)\n- Bulut iş akışları\n\nMevcut Partner düğümü bakiyeniz kredilere dönüştürüldü."
     },
+    "workspaceCredits": "Çalışma alanı kredileri",
     "yourCreditBalance": "Kredi bakiyeniz"
   },
   "curveWidget": {
@@ -894,6 +897,7 @@
     "FILE_3D_SPZ": "FILE_3D_SPZ",
     "FILE_3D_STL": "FILE_3D_STL",
     "FILE_3D_USDZ": "FILE_3D_USDZ",
+    "FISHAUDIO_VOICE": "FISHAUDIO_VOICE",
     "FLOAT": "FLOAT",
     "FLOATS": "FLOATS",
     "GEMINI_INPUT_FILES": "GEMINI_GİRİŞ_DOSYALARI",
@@ -907,6 +911,7 @@
     "IMAGECOMPARE": "GÖRSELKARŞILAŞTIR",
     "INT": "TAMSAYI",
     "INTERP_MODEL": "YORUMLAMA_MODELİ",
+    "KIMODO_POSE_DATA": "KIMODO_POSE_DATA",
     "KREA_STYLE_REF": "KREA_STYLE_REF",
     "LATENT": "GİZLİ",
     "LATENT_OPERATION": "GİZLİ_İŞLEM",
@@ -924,6 +929,7 @@
     "MESH": "MESH",
     "MESHY_RIGGED_TASK_ID": "MESHY_RIGGED_TASK_ID",
     "MESHY_TASK_ID": "MESHY_TASK_ID",
+    "MHR_POSE_DATA": "MHR_POSE_DATA",
     "MODEL": "MODEL",
     "MODEL_PATCH": "MODEL_YAMASI",
     "MODEL_TASK_ID": "MODEL_GÖREV_ID",
@@ -943,8 +949,10 @@
     "RIG_TASK_ID": "RİG_GÖREV_ID",
     "RUNWAY_ALEPH2_KEYFRAME": "RUNWAY_ALEPH2_KEYFRAME",
     "RUNWAY_ALEPH2_PROMPT_IMAGE": "RUNWAY_ALEPH2_PROMPT_IMAGE",
+    "SAM3D_BODY_MODEL": "SAM3D_BODY_MODEL",
     "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "ÖRNEKLEYİCİ",
+    "SHAPE_SUBDIVIDES": "SHAPE_SUBDIVIDES",
     "SIGMAS": "SİGMALAR",
     "SPLAT": "SPLAT",
     "STRING": "METİN",
@@ -960,12 +968,20 @@
     "WEBCAM": "WEBCAM"
   },
   "desktopDialogs": {
-    "": {
+    "invalidDialog": {
       "buttons": {
         "Close": "Kapat"
       },
       "message": "Geçersiz iletişim kutusu kimliği sağlandı.",
       "title": "Geçersiz İletişim Kutusu"
+    },
+    "reinstallVenv": {
+      "buttons": {
+        "Learn More": "Daha Fazla Bilgi",
+        "Reinstall": "Yeniden Yükle"
+      },
+      "message": "Üzgünüz, yüklü bazı paketler uyumlu olmadığı için ComfyUI'yi başlatamıyoruz.\n\nComfyUI'yi geri yüklemek ve tekrar çalışır duruma getirmek için Yeniden Yükle'ye tıklayın.\n\nLütfen dikkat: özel düğümler eklediyseniz, bu işlemden sonra onları yeniden yüklemeniz gerekir.",
+      "title": "ComfyUI yeniden yüklensin mi (Temiz Başlangıç)?"
     }
   },
   "desktopLogin": {
@@ -1409,7 +1425,8 @@
     "loadWorkflowTitle": "İş akışı verileri yeniden yüklenirken hata nedeniyle yükleme iptal edildi",
     "noStackTrace": "Yığın izi mevcut değil",
     "promptExecutionError": "İstem yürütmesi başarısız oldu",
-    "queueOpenWorkflowFailedTitle": "İş Akışı Açılamadı"
+    "queueOpenWorkflowFailedTitle": "İş Akışı Açılamadı",
+    "workspaceChangedDuringExecution": "Bu çalıştırma hazırlanırken etkin çalışma alanınız değişti. Geçerli çalışma alanını kullanmak için iş akışını yeniden çalıştırın."
   },
   "errorOverlay": {
     "missingMedia": "Bazı düğümler gerekli girdilerden yoksun",
@@ -1638,13 +1655,14 @@
     "increment": "Arttır",
     "info": "Düğüm Bilgisi",
     "input": "Girdi",
+    "inputTooltip": "Girdi: {name}",
     "insert": "Ekle",
     "install": "Yükle",
     "installed": "Yüklendi",
     "installing": "Yükleniyor",
     "interrupted": "Kesintiye uğradı",
     "itemsCopiedToClipboard": "Öğeler panoya kopyalandı",
-    "itemsSelected": "{selectedCount} öğe seçildi",
+    "itemsSelected": "Hiç öğe seçilmedi | {count} öğe seçildi | {count} öğe seçildi",
     "job": "Görev",
     "jobIdCopied": "İş kimliği panoya kopyalandı",
     "keybinding": "Tuş Ataması",
@@ -1807,7 +1825,7 @@
     "searchKeybindings": "Tuş Atamalarını Ara",
     "searchModels": "Modelleri Ara",
     "searchNodes": "Düğümleri Ara",
-    "searchPlaceholder": "Ara...",
+    "searchPlaceholder": "{subject} ara...",
     "searchSettings": "Ayarları Ara",
     "searchWorkflows": "İş Akışlarını Ara",
     "seeTutorial": "Bir eğitim görün",
@@ -2226,7 +2244,7 @@
     },
     "cancelThisRun": "Bu çalıştırmayı iptal et",
     "deleteAllAssets": "Bu çalışmadaki tüm varlıkları sil",
-    "downloadAll": "Tümünü İndir",
+    "downloadAll": "Bu çalıştırmadan {count} varlığı indir",
     "dragAndDropImage": "Bir görseli sürükleyip bırakın",
     "emptyWorkflowExplanation": "Çalışma akışınız boş. Bir uygulama oluşturmaya başlamak için önce bazı düğümler eklemelisiniz.",
     "enterNodeGraph": "Düğüm grafiğine gir",
@@ -2283,6 +2301,7 @@
     "clearRecording": "Kaydı Temizle",
     "dropToLoad": "Yüklemek için 3B modeli bırakın",
     "edgeThreshold": "Kenar Eşiği",
+    "exitLookThrough": "Kamera görünümünden çık",
     "export": "Dışa Aktar",
     "exportModel": "Modeli Dışa Aktar",
     "exportRecording": "Kaydı Dışa Aktar",
@@ -2305,11 +2324,13 @@
       "showAsBackground": "Arka Plan Olarak Göster",
       "uploadFile": "HDRI Yükle (.hdr, .exr)"
     },
+    "hideGizmos": "Gizmoları gizle",
     "light": "Işık",
     "lightIntensity": "Işık Yoğunluğu",
     "loadingBackgroundImage": "Arka Plan Resmi Yükleniyor",
     "loadingHDRI": "HDRI Yükleniyor...",
     "loadingModel": "3D Model Yükleniyor...",
+    "lookThrough": "Kamera görünümü",
     "materialMode": "Malzeme Modu",
     "materialModes": {
       "clay": "Kil",
@@ -2350,6 +2371,7 @@
     "removeBackgroundImage": "Arka Plan Resmini Kaldır",
     "resizeNodeMatchOutput": "Düğümü çıktıya uyacak şekilde yeniden boyutlandır",
     "scene": "Sahne",
+    "showGizmos": "Gizmoları göster",
     "showGrid": "Izgarayı Göster",
     "showSkeleton": "İskeleti Göster",
     "startRecording": "Kaydı Başlat",
@@ -2357,6 +2379,13 @@
     "switchCamera": "Kamerayı Değiştir",
     "switchingMaterialMode": "Malzeme Modu Değiştiriliyor...",
     "tiledMode": "Döşemeli",
+    "transformGizmo": {
+      "cameraRotate": "Kamera dönüşü",
+      "cameraTranslate": "Kamera konumu",
+      "label": "Düzenle",
+      "none": "Yok",
+      "target": "Hedef"
+    },
     "unsupportedFileType": "Desteklenmeyen dosya türü (.gltf, .glb, .obj, .fbx, .stl desteklenir)",
     "upDirection": "Yukarı Yön",
     "upDirections": {
@@ -2365,6 +2394,8 @@
     "uploadBackgroundImage": "Arka Plan Resmi Yükle",
     "uploadTexture": "Doku Yükle",
     "uploadingModel": "3B model yükleniyor...",
+    "useCustomUp": "Kamera yukarı yönünü girdiden geri yükle",
+    "useNaturalUp": "Kamera yukarı yönünü Y olarak sıfırla",
     "viewer": {
       "apply": "Uygula",
       "cameraSettings": "Kamera Ayarları",
@@ -2898,6 +2929,9 @@
     "notNow": "Şimdi değil",
     "title": "Bize Yardımcı Olun"
   },
+  "nodeBadge": {
+    "partnerNodesCount": "İş Ortağı Düğümler x {count}"
+  },
   "nodeCategories": {
     "": "",
     "3d": "3d",
@@ -2907,6 +2941,7 @@
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "ElevenLabs": "ElevenLabs",
+    "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
     "Grok": "Grok",
     "HeyGen": "HeyGen",
@@ -2996,7 +3031,9 @@
     "mage": "mage",
     "mask": "maske",
     "merging": "birleştirme",
+    "mesh": "mesh",
     "minimax": "minimax",
+    "minimax music": "minimax music",
     "mochi": "mochi",
     "model": "model",
     "model specific": "model özel",
@@ -3035,8 +3072,11 @@
     "supir": "supir",
     "sync_so": "sync.so",
     "text": "metin",
+    "texturing": "doku kaplama",
     "training": "eğitim",
     "transform": "dönüştür",
+    "trellis": "trellis",
+    "trellis2": "trellis2",
     "triposplat": "triposplat",
     "unet": "unet",
     "upscaling": "yükseltme",
@@ -3427,7 +3467,7 @@
       "expandNodes": "Referans veren node'ları göster",
       "gatedModelDownloadTooltip": "İndirme işlemi için önce Hugging Face'e giriş yapmanız gerekebilir.",
       "gatedModelTooltip": "Bu model kısıtlıdır ve Hugging Face'e giriş yapıp lisans sözleşmesini kabul etmeniz gerekir.",
-      "gatedModelsHint": "Bazı modeller kısıtlıdır. İndirmek için Hugging Face'e giriş yapıp model lisans sözleşmesini kabul etmelisiniz.",
+      "gatedModelsHint": "{count} model kısıtlıdır. İndirmek için Hugging Face'te oturum açın ve lisans sözleşmesini kabul edin. | {count} model kısıtlıdır. İndirmek için Hugging Face'te oturum açın ve lisans sözleşmelerini kabul edin.",
       "gatedModelsHintLabel": "Not:",
       "import": "İçe aktar",
       "importNotSupported": "İçe Aktarma Desteklenmiyor",
@@ -4089,8 +4129,8 @@
     "contactUs": "Bize ulaşın",
     "creditSliderSave": "%{percent} tasarruf et ({amount})",
     "creditsLeftOfTotal": "{total} üzerinden {remaining} kaldı",
-    "creditsRemainingThisMonth": "Bu ay kalan krediler",
-    "creditsRemainingThisYear": "Bu yıl kalan krediler",
+    "creditsRemainingThisMonth": "Dahil ({date} tarihinde yenilenir)",
+    "creditsRemainingThisYear": "Dahil ({date} tarihinde yenilenir)",
     "creditsUsed": "{used} kullanıldı",
     "creditsYouveAdded": "Eklediğiniz krediler",
     "currentPlan": "Mevcut Plan",
@@ -4128,6 +4168,7 @@
       "freeRuns": "{count} ücretsiz çalışma | {count} ücretsiz çalışma",
       "maxRuntime": "Maksimum çalışma süresi: {duration}"
     },
+    "fullUsageActivity": "Tüm kullanım etkinliği",
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
     "haveQuestions": "Sorularınız mı var veya kurumsal çözüm mü arıyorsunuz?",
     "inactive": {
@@ -4201,6 +4242,7 @@
       "personal": "Bireysel Kullanım İçin",
       "team": "Ekipler İçin"
     },
+    "plansAndCredits": "Planlar ve krediler",
     "plansAndPricing": "Planlar ve fiyatlandırma",
     "plansForWorkspace": "{workspace} için planlar",
     "prepaidCreditsInfo": "Ayrıca satın alınan ve son kullanma tarihi olmayan krediler",
@@ -4499,6 +4541,7 @@
     "failedToFetchBalance": "Bakiye alınamadı: {error}",
     "failedToFetchLogs": "Sunucu günlükleri alınamadı",
     "failedToFetchSubscription": "Abonelik durumu alınamadı: {error}",
+    "failedToInitializeCameraInfoViewer": "Kamera Bilgisi görüntüleyicisi başlatılamadı. Sayfayı yeniden yüklemeyi deneyin.",
     "failedToInitializeLoad3dViewer": "3D Görüntüleyici başlatılamadı",
     "failedToInitiateCreditPurchase": "Kredi satın alma başlatılamadı: {error}",
     "failedToInitiateSubscription": "Abonelik başlatılamadı: {error}",
@@ -4706,7 +4749,7 @@
     "savedAsWorkflow": "Yalnızca düğüm grafiği iş akışına dönüştürüldü"
   },
   "workspace": {
-    "addedToWorkspace": "{workspaceName} çalışma alanına eklendiniz",
+    "addedToWorkspace": "Şu çalışma alanına eklendiniz:",
     "inviteAccepted": "Davet kabul edildi",
     "inviteFailed": "Davet kabul edilemedi",
     "switchFailed": "Çalışma alanı değiştirilemedi. Lütfen tekrar deneyin.",
@@ -4801,7 +4844,7 @@
       "title": "Çalışma alanı detaylarını düzenle"
     },
     "invite": "Davet Et",
-    "inviteLimitReached": "Maksimum 50 üye sınırına ulaştınız",
+    "inviteLimitReached": "En fazla {count} üyeye ulaştınız",
     "inviteMember": "Üye Davet Et",
     "inviteMemberDialog": {
       "failedCount": "{count} davet gönderilemedi. Tekrar deneyin. | {count} davet gönderilemedi. Tekrar deneyin.",
@@ -4854,7 +4897,7 @@
         "warning": "Bu kullanıcı zaten {credits} kredi harcadı. Limiti mevcut kullanımına eşit veya daha düşük ayarlamak, bir sonraki aya kadar daha fazla çalıştırmayı engeller."
       },
       "header": "Üyeler",
-      "membersCount": "{count}/50 Üye",
+      "membersCount": "{maxSeats} üyeden {count} üye",
       "needMoreMembers": "Daha fazla üyeye mi ihtiyacınız var?",
       "noInvites": "Bekleyen davet yok",
       "noMembers": "Üye yok",
@@ -4978,6 +5021,8 @@
     "personal": "Kişisel",
     "roleMember": "Üye",
     "roleOwner": "Sahip",
+    "scopeCaption": "Çalışma alanları yalnızca hangi kredileri kullandığınızı etkiler.",
+    "scopeTooltip": "İş ortağı düğümlerini kullanan çalıştırmalar, bu çalışma alanındaki kredileri harcar. Cloud'un aksine, her çalışma alanı çıktıları her zamanki çıktı klasörünüze kaydeder.",
     "subscribe": "Abone Ol",
     "switchWorkspace": "Çalışma alanı değiştir"
   },

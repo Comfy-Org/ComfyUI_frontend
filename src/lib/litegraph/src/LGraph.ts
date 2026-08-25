@@ -2613,6 +2613,8 @@ export class LGraph
           useLinkStore().clearGraph(topologyScope.rootGraphId)
           useRerouteStore().clearGraph(topologyScope.rootGraphId)
           useNodeDataStore().clearGraph(this.id)
+          useWidgetValueStore().clearGraph(this.id)
+          usePreviewExposureStore().clearGraph(this.id)
         } else {
           useLinkStore().clearOwner(topologyScope)
           useRerouteStore().clearOwner(topologyScope)
