@@ -41,44 +41,47 @@
           {{ workspaceName }}
         </span>
       </div>
-      <button
-        v-else
-        ref="workspaceSwitcherTrigger"
-        v-tooltip="{ value: workspaceName, showDelay: 300 }"
-        type="button"
-        class="flex w-full cursor-pointer appearance-none items-center justify-between rounded-lg border-0 bg-transparent px-4 py-2 text-left hover:bg-secondary-background-hover"
-        :aria-expanded="isWorkspaceSwitcherOpen"
-        aria-haspopup="menu"
-        aria-controls="workspace-switcher-panel"
-        data-testid="workspace-switcher-trigger"
-        @click="toggleWorkspaceSwitcher"
-        @keydown.escape.stop="isWorkspaceSwitcherOpen = false"
-      >
-        <div class="flex w-0 flex-1 items-center gap-2">
-          <WorkspaceProfilePic
-            class="size-6 shrink-0 text-xs"
-            :workspace-name="workspaceName"
+      <template v-else>
+        <button
+          ref="workspaceSwitcherTrigger"
+          v-tooltip="{ value: workspaceName, showDelay: 300 }"
+          type="button"
+          class="flex w-full cursor-pointer appearance-none items-center justify-between rounded-lg border-0 bg-transparent px-4 py-2 text-left hover:bg-secondary-background-hover"
+          :aria-expanded="isWorkspaceSwitcherOpen"
+          aria-haspopup="menu"
+          aria-controls="workspace-switcher-panel"
+          data-testid="workspace-switcher-trigger"
+          @click="toggleWorkspaceSwitcher"
+          @keydown.escape.stop="isWorkspaceSwitcherOpen = false"
+        >
+          <div class="flex w-0 flex-1 items-center gap-2">
+            <WorkspaceProfilePic
+              class="size-6 shrink-0 text-xs"
+              :workspace-name="workspaceName"
+            />
+            <span class="truncate text-sm text-base-foreground">
+              {{ workspaceName }}
+            </span>
+          </div>
+          <i
+            class="pi pi-chevron-down shrink-0 text-sm text-muted-foreground"
           />
-          <span class="truncate text-sm text-base-foreground">
-            {{ workspaceName }}
-          </span>
-        </div>
-        <i class="pi pi-chevron-down shrink-0 text-sm text-muted-foreground" />
-      </button>
+        </button>
 
-      <div
-        v-if="isWorkspaceSwitcherOpen"
-        id="workspace-switcher-panel"
-        ref="workspaceSwitcherPanel"
-        role="menu"
-        class="absolute top-0 right-full z-10 mr-4 rounded-lg border border-border-default bg-base-background shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
-        data-testid="workspace-switcher-panel"
-      >
-        <WorkspaceSwitcherPopover
-          @select="isWorkspaceSwitcherOpen = false"
-          @create="handleCreateWorkspace"
-        />
-      </div>
+        <div
+          v-if="isWorkspaceSwitcherOpen"
+          id="workspace-switcher-panel"
+          ref="workspaceSwitcherPanel"
+          role="menu"
+          class="absolute top-0 right-full z-10 mr-4 rounded-lg border border-border-default bg-base-background shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
+          data-testid="workspace-switcher-panel"
+        >
+          <WorkspaceSwitcherPopover
+            @select="isWorkspaceSwitcherOpen = false"
+            @create="handleCreateWorkspace"
+          />
+        </div>
+      </template>
     </div>
 
     <!-- Credits Section -->
