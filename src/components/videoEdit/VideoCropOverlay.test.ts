@@ -77,6 +77,53 @@ describe('VideoCropOverlay', () => {
     }
   })
 
+  it('spans edge handles along the crop box edges', () => {
+    renderOverlay({ bounds: { x: 100, y: 200, width: 500, height: 250 } })
+
+    const north = screen.getByTestId('crop-handle-n')
+    expect(north.style.left).toBe('10%')
+    expect(north.style.top).toBe('20%')
+    expect(north.style.width).toBe('50%')
+
+    const east = screen.getByTestId('crop-handle-e')
+    expect(east.style.left).toBe('60%')
+    expect(east.style.top).toBe('20%')
+    expect(east.style.height).toBe('25%')
+  })
+
+  it('hides edge handles while the ratio is locked', () => {
+    renderOverlay({ lockedRatio: 1 })
+
+    for (const dir of ['n', 's', 'e', 'w']) {
+      expect(screen.queryByTestId(`crop-handle-${dir}`)).toBeNull()
+    }
+    for (const dir of ['ne', 'nw', 'se', 'sw']) {
+      expect(screen.getByTestId(`crop-handle-${dir}`)).toBeTruthy()
+    }
+  })
+
+  it('resizes the crop box from an edge handle', async () => {
+    const { model } = renderOverlay()
+
+    const handle = screen.getByTestId('crop-handle-e')
+    handle.setPointerCapture = vi.fn()
+
+    await fireEvent.pointerDown(handle, {
+      clientX: 0,
+      clientY: 0,
+      button: 0,
+      pointerId: 1
+    })
+    await fireEvent.pointerMove(handle, {
+      clientX: 10,
+      clientY: 5,
+      pointerId: 1
+    })
+    await fireEvent.pointerUp(handle, { pointerId: 1 })
+
+    expect(model.value).toEqual({ x: 100, y: 100, width: 300, height: 200 })
+  })
+
   it('moves the crop box by dragging it', async () => {
     const { model } = renderOverlay()
 

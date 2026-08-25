@@ -46,10 +46,6 @@ function mediaNode({
   })
 }
 
-function linkedWidget(name: string) {
-  return { name, slotMetadata: { index: 0, linked: true, type: 'STRING' } }
-}
-
 describe('linked core media loader matching', () => {
   it.for([
     { nodeClass: 'LoadImage', selector: 'image' },
@@ -59,20 +55,19 @@ describe('linked core media loader matching', () => {
   ] as const)(
     'matches core $nodeClass by its exact selector',
     ({ nodeClass, selector }) => {
-      const node = mediaNode({ nodeClass })
+      const node = mediaNode({ linkedInputName: selector, nodeClass })
 
-      expect(
-        shouldHideLinkedCoreMediaInputActions(node, [linkedWidget(selector)])
-      ).toBe(true)
+      expect(shouldHideLinkedCoreMediaInputActions(node)).toBe(true)
     }
   )
 
   it('matches core LoadAudio by its exact selector', () => {
-    const node = mediaNode({ nodeClass: 'LoadAudio' })
+    const node = mediaNode({
+      linkedInputName: 'audio',
+      nodeClass: 'LoadAudio'
+    })
 
-    expect(
-      shouldHideLinkedCoreLoadAudioPlayer(node, [linkedWidget('audio')])
-    ).toBe(true)
+    expect(shouldHideLinkedCoreLoadAudioPlayer(node)).toBe(true)
   })
 
   it('excludes a custom node with a core class name', () => {
@@ -184,14 +179,15 @@ describe(shouldHideLinkedCoreMediaInputPreview, () => {
   )
 
   it('keeps the preview for a linked non-selector widget', () => {
-    const node = mediaNode({ nodeClass: 'LoadImage' })
+    const node = mediaNode({
+      linkedInputName: 'seed',
+      nodeClass: 'LoadImage'
+    })
 
     expect(
-      shouldHideLinkedCoreMediaInputPreview(
-        node,
-        { images: [{ type: 'input' }] },
-        [linkedWidget('seed')]
-      )
+      shouldHideLinkedCoreMediaInputPreview(node, {
+        images: [{ type: 'input' }]
+      })
     ).toBe(false)
   })
 })

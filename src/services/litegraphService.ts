@@ -11,7 +11,7 @@ import {
   isPreviewPseudoWidget
 } from '@/core/graph/subgraph/promotionUtils'
 import { applyDynamicInputs } from '@/core/graph/widgets/dynamicWidgets'
-import { st, t } from '@/i18n'
+import { resolveNodeDefSlotText, st, t } from '@/i18n'
 import {
   LGraphCanvas,
   LGraphEventMode,
@@ -19,13 +19,16 @@ import {
   LiteGraph,
   RenderShape,
   SubgraphNode,
-  createBounds
+  createBounds,
+  outputAsSerialisable
 } from '@/lib/litegraph/src/litegraph'
 import type {
   CreateNodeOptions,
   GraphAddOptions,
   IContextMenuValue,
   INodeInputSlot,
+  INodeOutputSlot,
+  IWidget,
   Point,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
@@ -208,17 +211,16 @@ export const useLitegraphService = () => {
   }
 
   /**
-   * @internal The key for the node definition in the i18n file.
+   * @internal The node definition name used to resolve the node's i18n text.
    */
-  function nodeKey(node: LGraphNode): string {
-    return `nodeDefs.${normalizeI18nKey(node.constructor.nodeData?.name ?? '')}`
+  function nodeDefName(node: LGraphNode): string {
+    return node.constructor.nodeData?.name ?? ''
   }
   /**
    * @internal Add input sockets to the node. (No widget)
    */
   function addInputSocket(node: LGraphNode, inputSpec: InputSpec) {
     const inputName = inputSpec.name
-    const nameKey = `${nodeKey(node)}.inputs.${normalizeI18nKey(inputName)}.name`
     const widgetConstructor = widgetStore.widgets.get(
       inputSpec.widgetType ?? inputSpec.type
     )
@@ -228,11 +230,16 @@ export const useLitegraphService = () => {
     )
       return
 
-    const input = node.addInput(inputName, inputSpec.type, {
+    node.addInput(inputName, inputSpec.type, {
       shape: inputSpec.isOptional ? RenderShape.HollowCircle : undefined,
-      localized_name: st(nameKey, inputName)
+      localized_name: resolveNodeDefSlotText(
+        'name',
+        nodeDefName(node),
+        inputName,
+        inputSpec.display_name,
+        inputName
+      )
     })
-    input.label ??= inputSpec.display_name
   }
   /**
    * @internal Setup stroke styles for the node under various conditions.
@@ -280,7 +287,14 @@ export const useLitegraphService = () => {
       widgetInputSpec.type = inputSpec.widgetType
     }
     const inputName = inputSpec.name
-    const nameKey = `${nodeKey(node)}.inputs.${normalizeI18nKey(inputName)}.name`
+    const resolveLabel = (fallback: string) =>
+      resolveNodeDefSlotText(
+        'name',
+        nodeDefName(node),
+        inputName,
+        widgetInputSpec.display_name,
+        fallback
+      )
     const widgetConstructor = widgetStore.widgets.get(widgetInputSpec.type)
     if (!widgetConstructor || inputSpec.forceInput) return
 
@@ -296,8 +310,7 @@ export const useLitegraphService = () => {
     ) ?? {}
 
     if (widget) {
-      widget.label = st(
-        nameKey,
+      widget.label = resolveLabel(
         widget.label ?? widgetInputSpec.display_name ?? inputName
       )
       widget.options ??= {}
@@ -313,7 +326,7 @@ export const useLitegraphService = () => {
       const inputSpecV1 = transformInputSpecV2ToV1(widgetInputSpec)
       node.addInput(inputName, inputSpec.type, {
         shape: inputSpec.isOptional ? RenderShape.HollowCircle : undefined,
-        localized_name: st(nameKey, inputName),
+        localized_name: resolveLabel(inputName),
         widget: { name: inputName, [GET_CONFIG]: () => inputSpecV1 }
       })
     }
@@ -345,7 +358,6 @@ export const useLitegraphService = () => {
       // TODO: Fix the typing at the node spec level
       const type = output.type === 'COMFY_MATCHTYPE_V3' ? '*' : output.type
       const shapeOptions = is_list ? { shape: LiteGraph.GRID_SHAPE } : {}
-      const nameKey = `${nodeKey(node)}.outputs.${output.index}.name`
       const typeKey = `dataTypes.${normalizeI18nKey(type)}`
       const outputOptions = {
         ...shapeOptions,
@@ -353,7 +365,15 @@ export const useLitegraphService = () => {
         // e.g.
         // - type ("INT"); name ("Positive") => translate name
         // - type ("FLOAT"); name ("FLOAT") => translate type
-        localized_name: type !== name ? st(nameKey, name) : st(typeKey, name)
+        localized_name:
+          type !== name
+            ? resolveNodeDefSlotText(
+                'name',
+                nodeDefName(node),
+                output.index,
+                name
+              )
+            : st(typeKey, name)
       }
       node.addOutput(name, type, outputOptions)
     }
@@ -452,19 +472,23 @@ export const useLitegraphService = () => {
 
         // Note: output name is not unique, so we cannot lookup output by name.
         // Use index instead.
-        data.outputs = zip(this.outputs, data.outputs).map(
-          ([output, outputData]) => {
+        data.outputs = zip(this.outputs, data.outputs ?? []).map(
+          ([output, outputData], index) => {
             // If there are extra outputs in the serialised node, use them directly.
             // There are currently custom nodes that dynamically add outputs via
             // js logic.
             if (!output) return outputData as ISerialisableNodeOutput
 
             return outputData
-              ? {
+              ? ({
                   ...outputData,
                   ...pick(output, RESERVED_KEYS)
-                }
-              : output
+                } as ISerialisableNodeOutput)
+              : outputAsSerialisable(
+                  output as INodeOutputSlot & { widget?: IWidget },
+                  this,
+                  index
+                )
           }
         )
 
@@ -555,19 +579,23 @@ export const useLitegraphService = () => {
 
         // Note: output name is not unique, so we cannot lookup output by name.
         // Use index instead.
-        data.outputs = zip(this.outputs, data.outputs).map(
-          ([output, outputData]) => {
+        data.outputs = zip(this.outputs, data.outputs ?? []).map(
+          ([output, outputData], index) => {
             // If there are extra outputs in the serialised node, use them directly.
             // There are currently custom nodes that dynamically add outputs via
             // js logic.
             if (!output) return outputData as ISerialisableNodeOutput
 
             return outputData
-              ? {
+              ? ({
                   ...outputData,
                   ...pick(output, RESERVED_KEYS)
-                }
-              : output
+                } as ISerialisableNodeOutput)
+              : outputAsSerialisable(
+                  output as INodeOutputSlot & { widget?: IWidget },
+                  this,
+                  index
+                )
           }
         )
 

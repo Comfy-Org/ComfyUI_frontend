@@ -20,7 +20,7 @@ import { TestIds } from '@e2e/fixtures/selectors'
  * the default (local) `chromium` project instead.
  */
 test.describe('Local credits surfaces hide subscribe UI (non-cloud)', () => {
-  test('keeps "Add credits" working across the profile popover and Settings > Credits', async ({
+  test('opens Plan & Credits and keeps "Add credits" working', async ({
     comfyPage
   }) => {
     const page = comfyPage.page
@@ -41,36 +41,30 @@ test.describe('Local credits surfaces hide subscribe UI (non-cloud)', () => {
     await expect(topUpDialog.heading).toBeVisible()
     await topUpDialog.close()
 
-    // 2. Settings > Credits, reached the same way the reported bug did: the
-    //    popover's plan & credits entry, not a generic keyboard shortcut. This
-    //    must also hide the subscribe CTA and keep its own "Add credits"
-    //    button working, not just render a dead replacement for it.
     await page.getByTestId(TestIds.user.currentUserButton).click()
     popover = page.getByTestId(TestIds.user.currentUserPopover)
-    await popover.getByTestId('manage-plan-menu-item').click()
+    await popover.getByTestId('plans-credits-menu-item').click()
 
     const settingsDialog = comfyPage.settingDialog
     await settingsDialog.waitForVisible()
-    const creditsContent = settingsDialog.contentArea
+    const planCreditsContent = settingsDialog.contentArea
     await expect(
-      creditsContent.getByText('Upgrade to add credits')
-    ).toHaveCount(0)
-    await expect(
-      creditsContent.getByRole('button', { name: 'Manage subscription' })
-    ).toHaveCount(0)
-    await expect(
-      creditsContent.getByRole('button', { name: 'Billing & invoices' })
-    ).toHaveCount(0)
-    await expect(
-      creditsContent.getByRole('button', { name: 'Invoice history' })
+      planCreditsContent.getByRole('button', { name: 'Credits', exact: true })
     ).toBeVisible()
-    const invoiceRequest = page.waitForRequest('**/customers/billing')
-    await creditsContent
-      .getByRole('button', { name: 'Invoice history' })
-      .click()
-    expect((await invoiceRequest).method()).toBe('POST')
+    await expect(
+      planCreditsContent.getByRole('button', { name: 'Activity', exact: true })
+    ).toBeVisible()
+    await expect(
+      planCreditsContent.getByText('Upgrade to add credits')
+    ).toHaveCount(0)
+    await expect(
+      planCreditsContent.getByRole('button', { name: 'Manage subscription' })
+    ).toHaveCount(0)
+    await expect(
+      planCreditsContent.getByRole('button', { name: 'Billing & invoices' })
+    ).toHaveCount(0)
 
-    const settingsAddCredits = creditsContent.getByRole('button', {
+    const settingsAddCredits = planCreditsContent.getByRole('button', {
       name: 'Add credits'
     })
     await expect(settingsAddCredits).toBeVisible()
@@ -80,9 +74,6 @@ test.describe('Local credits surfaces hide subscribe UI (non-cloud)', () => {
 
     await settingsDialog.close()
 
-    // 3. Reopening the popover afterward must still work — regression check
-    //    for the stuck-trigger bug, where visiting Settings > Credits left
-    //    the popover's top-up button permanently dead.
     await page.getByTestId(TestIds.user.currentUserButton).click()
     popover = page.getByTestId(TestIds.user.currentUserPopover)
     await expect(
