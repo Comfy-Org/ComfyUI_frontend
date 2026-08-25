@@ -6,16 +6,15 @@ import { i18n } from '@/i18n'
 import AgentPaywallCard from './AgentPaywallCard.vue'
 
 describe('AgentPaywallCard visual contract', () => {
-  it('keeps the Figma card width and CTA treatments', () => {
+  it('fills the owning conversation column and keeps the CTA treatments', () => {
     render(AgentPaywallCard, {
       attrs: { 'aria-label': 'Usage limit card' },
       global: { plugins: [i18n] }
     })
 
-    expect(screen.getByLabelText('Usage limit card')).toHaveClass(
-      'w-full',
-      'max-w-[372px]'
-    )
+    const card = screen.getByLabelText('Usage limit card')
+    expect(card).toHaveClass('w-full')
+    expect(card).not.toHaveClass('max-w-[372px]')
     expect(screen.getByRole('button', { name: 'Add credits' })).toHaveClass(
       'bg-transparent',
       'text-base-foreground'
