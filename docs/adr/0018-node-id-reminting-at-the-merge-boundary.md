@@ -7,10 +7,11 @@ Date: 2026-08-25
 Proposed
 
 Derivation record for program decision D-gl-A6. The direction is already
-carried in practice by ADR-0003's merge-boundary reconciliation amendment
-(2026-08-23) and by the collision contracts pinned in the D-dq-04 bundle
-(#15720 tests + #15761 docs); this ADR models the reminting question in full
-so the reasoning is reviewable independently of those PRs.
+carried by ADR-0003's merge-boundary reconciliation amendment (2026-08-23).
+The current local-import behavior and the future CRDT behavior use different
+materialization paths; this ADR models both so the responsibility boundary is
+reviewable independently of the pending D-dq-04 bundle (#15720 tests + #15761
+docs).
 
 ## Context
 
@@ -25,9 +26,10 @@ only authority over it.
 The CRDT-based collaboration direction (ADR-0003) and the ECS store migration
 (ADR-0008) break that assumption. Two replicas can each independently mint
 node id `7` for two **different** entities. When one replica's content reaches
-the other — via CRDT sync, workflow import, subgraph paste, or any other
-merge-shaped operation — both entities claim the same key in every id-keyed
-registry.
+the other through a future semantic-operation applier, both entities would
+claim the same key in every id-keyed registry. The same collision already
+occurs locally when workflow import, paste, subgraph materialization, or
+another merge-shaped operation inserts externally minted content.
 
 ### What a collision means
 
@@ -56,16 +58,21 @@ Concretely:
    event: reject, never silently remap. (Same raw object re-registered under
    the same owner is idempotent and returns the incumbent — see
    `linkStore.ts` registration.)
-2. The **merge boundary** — the code path where external content enters a
-   replica (`nodeShellLifecycle` remint loop for node shells) — detects the
-   collision _before_ store registration, mints a fresh id for the incoming
-   copy, and emits a `console.warn` naming the old id, the replacement id,
-   and the root graph id. The warning is required by D-gl-A2: no silent
-   remints, ever — telemetry and debugging depend on collisions being
-   observable.
-3. The reminted id is drawn from a space that cannot re-collide (fresh with
-   respect to the local registry, and unique going forward), so reminting
-   terminates and never ping-pongs.
+2. The **current local-content boundary** is `LGraph.add` →
+   `attachNodeToStores`. Workflow load, paste, and subgraph materialization
+   reach that path. Its `nodeShellLifecycle` loop detects the collision
+   _before_ store registration and mints a fresh id for the incoming local
+   copy. The warning required by D-gl-A2 — naming the old id, replacement id,
+   and root graph id — is pending in #15720; current `main` still remints
+   silently. This local adapter does not receive remote semantic operations
+   and does not emit a CRDT operation.
+3. The **future CRDT boundary** is the semantic-operation applier described by
+   ADR-0003. Nodes, widgets, links, and reroutes are not yet CRDT-replicated.
+   When they are, the applier must reconcile concurrent identity collisions
+   deterministically before calling the registration layer. The current
+   `nodeShellLifecycle` loop is not that applier.
+4. A replacement id must come from a space that cannot re-collide, so
+   reconciliation terminates and never ping-pongs.
 
 ### Echo-back semantics (why this converges)
 
@@ -187,8 +194,10 @@ Tag colliding entries with an epoch/namespace and reconcile lazily.
 ## Glossary
 
 - **Merge boundary** — any code path where content minted outside the local
-  replica enters it: CRDT sync apply, workflow import, paste, subgraph
-  instantiation from a serialized payload.
+  authority is materialized: today, local workflow import, paste, and subgraph
+  instantiation reach `LGraph.add`; in the future, replicated semantic
+  operations will reach a separate CRDT applier. The current node-shell path
+  does not apply CRDT node operations.
 - **Remint** — assigning a fresh id to an _incoming copy_ of an entity whose
   claimed id is already registered locally. Never applied to the incumbent.
 - **Identity key** — a key whose collision means two different entities claim
