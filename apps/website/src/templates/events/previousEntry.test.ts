@@ -1,14 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-import { isWithin, previousEntryUrl } from './previousEntry'
+import { isUrlUnderPath, previousEntryUrl } from './previousEntry'
 
 function nav(
-  index: number | null | undefined,
+  index: number | null,
   urls: (string | undefined)[]
 ): NonNullable<Parameters<typeof previousEntryUrl>[0]> {
   return {
-    currentEntry:
-      index === undefined ? undefined : index === null ? null : { index },
+    currentEntry: index === null ? null : { index },
     entries: () => urls.map((url) => ({ url }))
   }
 }
@@ -44,17 +43,17 @@ describe('previousEntryUrl', () => {
   })
 })
 
-describe('isWithin', () => {
+describe('isUrlUnderPath', () => {
   it('accepts a same-origin url under the prefix', () => {
     expect(
-      isWithin('https://a.test/events/x', 'https://a.test', '/events')
+      isUrlUnderPath('https://a.test/events/x', 'https://a.test', '/events')
     ).toBe(true)
   })
 
   it('accepts the prefix itself', () => {
-    expect(isWithin('https://a.test/events', 'https://a.test', '/events')).toBe(
-      true
-    )
+    expect(
+      isUrlUnderPath('https://a.test/events', 'https://a.test', '/events')
+    ).toBe(true)
   })
 
   it.for([
@@ -67,6 +66,6 @@ describe('isWithin', () => {
     },
     { label: 'an unparseable url', url: 'not a url' }
   ])('rejects $label', ({ url }) => {
-    expect(isWithin(url, 'https://a.test', '/events')).toBe(false)
+    expect(isUrlUnderPath(url, 'https://a.test', '/events')).toBe(false)
   })
 })

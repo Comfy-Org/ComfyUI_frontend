@@ -14,7 +14,7 @@ import type { Locale } from '../../i18n/translations'
 import type { CalendarEvent } from '../../utils/calendar'
 
 import { t } from '../../i18n/translations'
-import { isWithin, previousEntryUrl } from './previousEntry'
+import { isUrlUnderPath, previousEntryUrl } from './previousEntry'
 
 const {
   title,
@@ -39,7 +39,7 @@ const embedUrl = computed(
 )
 
 const cameFromDirectory = () =>
-  isWithin(
+  isUrlUnderPath(
     previousEntryUrl(window.navigation, document.referrer),
     location.origin,
     localizeHref('/events', locale)

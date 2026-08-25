@@ -1,5 +1,5 @@
 interface NavigationLike {
-  currentEntry?: { index: number } | null
+  currentEntry: { index: number } | null
   entries: () => readonly { url?: string | null }[]
 }
 
@@ -20,7 +20,7 @@ export function previousEntryUrl(
 }
 
 /** Matches the prefix itself or a path below it, never a sibling like `/events-archive`. */
-export function isWithin(
+export function isUrlUnderPath(
   previousUrl: string | null,
   origin: string,
   pathPrefix: string
