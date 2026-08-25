@@ -1641,5 +1641,62 @@ describe('ComfyApp', () => {
         releaseOpenWorkflow()
       }
     })
+
+    it('excludes nodes detached by a mid-drop graph replacement from positioning', async () => {
+      const oldGraph = mockCanvas.graph
+      const newGraph = { change: vi.fn() } as unknown as LGraph
+
+      app.canvas = {
+        ...mockCanvas,
+        graph_mouse: [0, 0] as [number, number],
+        adjustMouseEvent: vi.fn()
+      } as unknown as LGraphCanvas
+
+      vi.mocked(extractFilesFromDragEvent).mockResolvedValue([
+        createTestFile('before.glb', ''),
+        createTestFile('workflow.json', 'application/json'),
+        createTestFile('after.glb', '')
+      ])
+      vi.mocked(Load3dUtils.uploadFile).mockResolvedValue('3d/model.glb')
+      vi.mocked(getWorkflowDataFromFile)
+        .mockResolvedValueOnce(undefined)
+        .mockResolvedValueOnce({ workflow: createWorkflowGraphData() })
+        .mockResolvedValueOnce(undefined)
+
+      const staleMeshNode = createMockNode({
+        id: 101,
+        type: 'Load3DAdvanced',
+        pos: [999, 999],
+        graph: oldGraph
+      })
+      const liveMeshNode = createMockNode({
+        id: 102,
+        type: 'Load3DAdvanced',
+        pos: [10, 20],
+        graph: newGraph
+      })
+      vi.mocked(createNode)
+        .mockResolvedValueOnce(staleMeshNode)
+        .mockResolvedValueOnce(liveMeshNode)
+
+      vi.spyOn(app, 'loadGraphData').mockImplementation(async () => {
+        ;(app.canvas as unknown as { graph: LGraph }).graph = newGraph
+      })
+
+      ;(app as unknown as { addDropHandler(): void }).addDropHandler()
+      document.dispatchEvent(new DragEvent('drop'))
+
+      await vi.waitFor(() => {
+        expect(mockWorkflowService.showPendingWarnings).toHaveBeenCalled()
+      })
+
+      // before.glb's node is detached once workflow.json replaces the
+      // graph: it must not be repositioned, and after.glb's live node
+      // must not be positioned off its stale coordinates or mark the
+      // newly loaded graph changed on its behalf.
+      expect(staleMeshNode.pos).toEqual([999, 999])
+      expect(liveMeshNode.pos).toEqual([10, 20])
+      expect(newGraph.change).not.toHaveBeenCalled()
+    })
   })
 })
