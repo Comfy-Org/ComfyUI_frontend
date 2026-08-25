@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import type Load3d from '@/extensions/core/load3d/Load3d'
 import Load3DConfiguration, {
@@ -14,7 +15,11 @@ import type {
 } from '@/extensions/core/load3d/interfaces'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { Dictionary } from '@/lib/litegraph/src/interfaces'
-import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode, NodeProperty } from '@/lib/litegraph/src/LGraphNode'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { toNodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 const { settingsGetMock } = vi.hoisted(() => ({
   settingsGetMock: vi.fn()
@@ -58,6 +63,36 @@ type WithPrivate = {
 function createConfig(properties?: Dictionary<NodeProperty | undefined>) {
   const load3d = {} as Load3d
   return new Load3DConfiguration(load3d, properties) as unknown as WithPrivate
+}
+
+const GRAPH_ID = 'load3d-config-test'
+let nodeSeq = 0
+
+function makeNode(): LGraphNode {
+  return createMockLGraphNode({
+    id: toNodeId(++nodeSeq),
+    graph: { rootGraph: { id: GRAPH_ID } }
+  })
+}
+
+function registerNodeWidget(
+  node: LGraphNode,
+  name: string,
+  value: string | number
+) {
+  useWidgetValueStore().registerWidget(widgetId(GRAPH_ID, node.id, name), {
+    type: typeof value === 'number' ? 'number' : 'string',
+    value,
+    options: {}
+  })
+}
+
+function setNodeWidgetValue(
+  node: LGraphNode,
+  name: string,
+  value: string | number
+) {
+  useWidgetValueStore().setValue(widgetId(GRAPH_ID, node.id, name), value)
 }
 
 function stubSettings(values: Record<string, unknown>) {
@@ -243,7 +278,11 @@ describe('Load3DConfiguration.silentOnNotFound propagation', () => {
   it('configure forwards silentOnNotFound: true from settings to loadModel', async () => {
     const config = new Load3DConfiguration(makeLoad3dMock())
     config.configure({
-      modelWidget: { value: 'model.glb' } as unknown as IBaseWidget,
+      node: makeNode(),
+      modelWidget: {
+        name: 'model_file',
+        value: 'model.glb'
+      } as unknown as IBaseWidget,
       loadFolder: 'output',
       silentOnNotFound: true
     })
@@ -256,7 +295,11 @@ describe('Load3DConfiguration.silentOnNotFound propagation', () => {
   it('configure uses silentOnNotFound: false when setting is omitted', async () => {
     const config = new Load3DConfiguration(makeLoad3dMock())
     config.configure({
-      modelWidget: { value: 'model.glb' } as unknown as IBaseWidget,
+      node: makeNode(),
+      modelWidget: {
+        name: 'model_file',
+        value: 'model.glb'
+      } as unknown as IBaseWidget,
       loadFolder: 'output'
     })
     await flush()
@@ -275,7 +318,11 @@ describe('Load3DConfiguration.silentOnNotFound propagation', () => {
       cameraType: 'perspective' as const
     }
     config.configure({
-      modelWidget: { value: 'model.glb' } as unknown as IBaseWidget,
+      node: makeNode(),
+      modelWidget: {
+        name: 'model_file',
+        value: 'model.glb'
+      } as unknown as IBaseWidget,
       loadFolder: 'output',
       cameraState: cameraState as unknown as Parameters<
         Load3DConfiguration['configure']
@@ -296,7 +343,11 @@ describe('Load3DConfiguration.silentOnNotFound propagation', () => {
     const load3d = makeLoad3dMock()
     const config = new Load3DConfiguration(load3d)
     config.configure({
-      modelWidget: { value: 'model.glb' } as unknown as IBaseWidget,
+      node: makeNode(),
+      modelWidget: {
+        name: 'model_file',
+        value: 'model.glb'
+      } as unknown as IBaseWidget,
       loadFolder: 'output'
     })
     await flush()
@@ -514,7 +565,11 @@ describe('Load3DConfiguration.configure forwards persisted + settings to load3d'
 
     const config = new Load3DConfiguration(load3d)
     config.configure({
-      modelWidget: { value: 'model.glb' } as unknown as IBaseWidget,
+      node: makeNode(),
+      modelWidget: {
+        name: 'model_file',
+        value: 'model.glb'
+      } as unknown as IBaseWidget,
       loadFolder: 'output'
     })
     await flush()
@@ -545,7 +600,11 @@ describe('Load3DConfiguration.configure forwards persisted + settings to load3d'
 
     const config = new Load3DConfiguration(load3d, properties)
     config.configure({
-      modelWidget: { value: 'model.glb' } as unknown as IBaseWidget,
+      node: makeNode(),
+      modelWidget: {
+        name: 'model_file',
+        value: 'model.glb'
+      } as unknown as IBaseWidget,
       loadFolder: 'output'
     })
     await flush()
@@ -600,7 +659,11 @@ describe('Load3DConfiguration "none" model handling', () => {
   it('does not load or clear a model when the initial widget value is "none"', async () => {
     const config = new Load3DConfiguration(load3d)
     config.configure({
-      modelWidget: { value: 'none' } as unknown as IBaseWidget,
+      node: makeNode(),
+      modelWidget: {
+        name: 'model_file',
+        value: 'none'
+      } as unknown as IBaseWidget,
       loadFolder: 'input'
     })
     await flush()
@@ -611,14 +674,20 @@ describe('Load3DConfiguration "none" model handling', () => {
 
   it('clears the model (and skips loadModel) when the widget value changes to "none"', async () => {
     const config = new Load3DConfiguration(load3d)
-    const widget = { value: 'model.glb' } as unknown as IBaseWidget
-    config.configure({ modelWidget: widget, loadFolder: 'input' })
+    const node = makeNode()
+    registerNodeWidget(node, 'model_file', 'model.glb')
+    const widget = {
+      name: 'model_file',
+      value: 'model.glb'
+    } as unknown as IBaseWidget
+    config.configure({ node, modelWidget: widget, loadFolder: 'input' })
     await flush()
 
     loadModelSpy.mockClear()
     clearModelSpy.mockClear()
 
-    widget.value = 'none'
+    setNodeWidgetValue(node, 'model_file', 'none')
+    await nextTick()
     await flush()
 
     expect(clearModelSpy).toHaveBeenCalledTimes(1)
@@ -627,13 +696,19 @@ describe('Load3DConfiguration "none" model handling', () => {
 
   it('loads a model when the widget value transitions from "none" to a real path', async () => {
     const config = new Load3DConfiguration(load3d)
-    const widget = { value: 'none' } as unknown as IBaseWidget
-    config.configure({ modelWidget: widget, loadFolder: 'input' })
+    const node = makeNode()
+    registerNodeWidget(node, 'model_file', 'none')
+    const widget = {
+      name: 'model_file',
+      value: 'none'
+    } as unknown as IBaseWidget
+    config.configure({ node, modelWidget: widget, loadFolder: 'input' })
     await flush()
 
     expect(loadModelSpy).not.toHaveBeenCalled()
 
-    widget.value = 'model.glb'
+    setNodeWidgetValue(node, 'model_file', 'model.glb')
+    await nextTick()
     await flush()
 
     expect(loadModelSpy).toHaveBeenCalledWith(expect.any(String), 'model.glb', {
@@ -674,14 +749,21 @@ describe('Load3DConfiguration.onSceneInvalidated', () => {
     vi.mocked(Load3dUtils.getResourceURL).mockReturnValue('/view')
   })
 
-  it('width.callback invokes onSceneInvalidated', async () => {
+  it('a width change via the store invokes onSceneInvalidated', async () => {
     const onSceneInvalidated = vi.fn()
-    const width = { value: 1024 } as unknown as IBaseWidget
-    const height = { value: 1024 } as unknown as IBaseWidget
+    const node = makeNode()
+    registerNodeWidget(node, 'width', 1024)
+    registerNodeWidget(node, 'height', 1024)
+    const width = { name: 'width', value: 1024 } as unknown as IBaseWidget
+    const height = { name: 'height', value: 1024 } as unknown as IBaseWidget
     const config = new Load3DConfiguration(makeLoad3dMock())
 
     config.configure({
-      modelWidget: { value: 'none' } as unknown as IBaseWidget,
+      node,
+      modelWidget: {
+        name: 'model_file',
+        value: 'none'
+      } as unknown as IBaseWidget,
       loadFolder: 'input',
       width,
       height,
@@ -689,19 +771,27 @@ describe('Load3DConfiguration.onSceneInvalidated', () => {
     })
     await flush()
 
-    width.callback!(2048)
+    setNodeWidgetValue(node, 'width', 2048)
+    await nextTick()
 
     expect(onSceneInvalidated).toHaveBeenCalledTimes(1)
   })
 
-  it('height.callback invokes onSceneInvalidated', async () => {
+  it('a height change via the store invokes onSceneInvalidated', async () => {
     const onSceneInvalidated = vi.fn()
-    const width = { value: 1024 } as unknown as IBaseWidget
-    const height = { value: 1024 } as unknown as IBaseWidget
+    const node = makeNode()
+    registerNodeWidget(node, 'width', 1024)
+    registerNodeWidget(node, 'height', 1024)
+    const width = { name: 'width', value: 1024 } as unknown as IBaseWidget
+    const height = { name: 'height', value: 1024 } as unknown as IBaseWidget
     const config = new Load3DConfiguration(makeLoad3dMock())
 
     config.configure({
-      modelWidget: { value: 'none' } as unknown as IBaseWidget,
+      node,
+      modelWidget: {
+        name: 'model_file',
+        value: 'none'
+      } as unknown as IBaseWidget,
       loadFolder: 'input',
       width,
       height,
@@ -709,59 +799,109 @@ describe('Load3DConfiguration.onSceneInvalidated', () => {
     })
     await flush()
 
-    height.callback!(2048)
+    setNodeWidgetValue(node, 'height', 2048)
+    await nextTick()
 
     expect(onSceneInvalidated).toHaveBeenCalledTimes(1)
   })
 
-  it('model_file widget callback invokes onSceneInvalidated after the model loads', async () => {
+  it('a same-value width write via the store does not invoke onSceneInvalidated', async () => {
     const onSceneInvalidated = vi.fn()
-    const modelWidget = { value: 'none' } as unknown as IBaseWidget
+    const node = makeNode()
+    registerNodeWidget(node, 'width', 1024)
+    registerNodeWidget(node, 'height', 1024)
+    const width = { name: 'width', value: 1024 } as unknown as IBaseWidget
+    const height = { name: 'height', value: 1024 } as unknown as IBaseWidget
     const config = new Load3DConfiguration(makeLoad3dMock())
 
     config.configure({
+      node,
+      modelWidget: {
+        name: 'model_file',
+        value: 'none'
+      } as unknown as IBaseWidget,
+      loadFolder: 'input',
+      width,
+      height,
+      onSceneInvalidated
+    })
+    await flush()
+
+    setNodeWidgetValue(node, 'width', 1024)
+    await nextTick()
+
+    expect(onSceneInvalidated).not.toHaveBeenCalled()
+  })
+
+  it('a model_file change via the store invokes onSceneInvalidated after the model loads', async () => {
+    const onSceneInvalidated = vi.fn()
+    const node = makeNode()
+    registerNodeWidget(node, 'model_file', 'none')
+    const modelWidget = {
+      name: 'model_file',
+      value: 'none'
+    } as unknown as IBaseWidget
+    const config = new Load3DConfiguration(makeLoad3dMock())
+
+    config.configure({
+      node,
       modelWidget,
       loadFolder: 'input',
       onSceneInvalidated
     })
     await flush()
 
-    modelWidget.value = 'model.glb'
+    setNodeWidgetValue(node, 'model_file', 'model.glb')
+    await nextTick()
     await flush()
 
     expect(onSceneInvalidated).toHaveBeenCalled()
   })
 
-  it('preserves any pre-existing model widget callback alongside the invalidation hook', async () => {
+  it('leaves any pre-existing model widget callback untouched', async () => {
     const onSceneInvalidated = vi.fn()
     const original = vi.fn()
+    const node = makeNode()
+    registerNodeWidget(node, 'model_file', 'none')
     const modelWidget = {
+      name: 'model_file',
       value: 'none',
       callback: original
     } as unknown as IBaseWidget
     const config = new Load3DConfiguration(makeLoad3dMock())
 
     config.configure({
+      node,
       modelWidget,
       loadFolder: 'input',
       onSceneInvalidated
     })
     await flush()
 
-    modelWidget.value = 'model.glb'
+    setNodeWidgetValue(node, 'model_file', 'model.glb')
+    await nextTick()
     await flush()
 
-    expect(original).toHaveBeenCalledWith('model.glb')
+    expect(modelWidget.callback).toBe(original)
     expect(onSceneInvalidated).toHaveBeenCalled()
   })
 
-  it('callbacks remain safe when onSceneInvalidated is omitted', async () => {
-    const width = { value: 1024 } as unknown as IBaseWidget
-    const height = { value: 1024 } as unknown as IBaseWidget
-    const modelWidget = { value: 'none' } as unknown as IBaseWidget
-    const config = new Load3DConfiguration(makeLoad3dMock())
+  it('store changes remain safe when onSceneInvalidated is omitted', async () => {
+    const node = makeNode()
+    registerNodeWidget(node, 'width', 1024)
+    registerNodeWidget(node, 'height', 1024)
+    registerNodeWidget(node, 'model_file', 'none')
+    const width = { name: 'width', value: 1024 } as unknown as IBaseWidget
+    const height = { name: 'height', value: 1024 } as unknown as IBaseWidget
+    const modelWidget = {
+      name: 'model_file',
+      value: 'none'
+    } as unknown as IBaseWidget
+    const load3d = makeLoad3dMock()
+    const config = new Load3DConfiguration(load3d)
 
     config.configure({
+      node,
       modelWidget,
       loadFolder: 'input',
       width,
@@ -769,10 +909,16 @@ describe('Load3DConfiguration.onSceneInvalidated', () => {
     })
     await flush()
 
-    expect(() => width.callback!(2048)).not.toThrow()
-    expect(() => height.callback!(2048)).not.toThrow()
-    expect(() => {
-      modelWidget.value = 'model.glb'
-    }).not.toThrow()
+    setNodeWidgetValue(node, 'width', 2048)
+    setNodeWidgetValue(node, 'model_file', 'model.glb')
+    await nextTick()
+    await flush()
+
+    expect(load3d.setTargetSize).toHaveBeenLastCalledWith(2048, 1024)
+    expect(load3d.loadModel).toHaveBeenCalledWith(
+      expect.any(String),
+      'model.glb',
+      { silentOnNotFound: false }
+    )
   })
 })

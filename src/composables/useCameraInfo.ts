@@ -1,61 +1,32 @@
-import { computed, ref, toRaw, toRef } from 'vue'
+import { isEqual } from 'es-toolkit'
+import { computed, toRaw, toValue, watch } from 'vue'
 import type { MaybeRef } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { CameraInfoViewport } from '@/extensions/core/cameraInfo/CameraInfoViewport'
 import type { TransformGizmoMode } from '@/extensions/core/cameraInfo/CameraInfoViewport'
-import { DEFAULT_CAMERA_INFO_STATE } from '@/extensions/core/cameraInfo/types'
-import type { CameraInfoState } from '@/extensions/core/cameraInfo/types'
 import {
-  readStateFromWidgets,
-  writeWidgetValue
+  readCameraInfoState,
+  writeCameraInfoValue
 } from '@/extensions/core/cameraInfo/widgetBridge'
-import type { NodeWithWidgets } from '@/extensions/core/cameraInfo/widgetBridge'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
-type WidgetCallback = (value: unknown, ...rest: unknown[]) => void
-interface MutableWidget {
-  name: string
-  value: unknown
-  callback?: WidgetCallback
-}
-
-const WIDGET_NAMES = [
-  'mode',
-  'camera_type',
-  'target_x',
-  'target_y',
-  'target_z',
-  'roll',
-  'fov',
-  'zoom',
-  'mode.yaw',
-  'mode.pitch',
-  'mode.distance',
-  'mode.position_x',
-  'mode.position_y',
-  'mode.position_z',
-  'mode.quat_x',
-  'mode.quat_y',
-  'mode.quat_z',
-  'mode.quat_w'
-] as const
-
 export function useCameraInfo(nodeRef: MaybeRef<LGraphNode | null>) {
-  const node = toRef(nodeRef)
+  const node = computed(() => toValue(nodeRef))
   let viewport: CameraInfoViewport | null = null
   let wiredNode: LGraphNode | null = null
   let originalOnMouseEnter: LGraphNode['onMouseEnter']
   let originalOnMouseLeave: LGraphNode['onMouseLeave']
 
-  const cameraState = ref<CameraInfoState>(DEFAULT_CAMERA_INFO_STATE)
+  const cameraState = computed(() => readCameraInfoState(toRaw(node.value)))
   const mode = computed(() => cameraState.value.mode)
 
-  const wrappedWidgets: { widget: MutableWidget; original?: WidgetCallback }[] =
-    []
-  const wrappedSet = new WeakSet<MutableWidget>()
+  watch(cameraState, (state) => {
+    if (!viewport || isEqual(state, viewport.overlay.getState())) return
+    viewport.applyState(state)
+  })
 
   const initialize = (container: HTMLElement): void => {
     const raw = toRaw(node.value)
@@ -63,15 +34,12 @@ export function useCameraInfo(nodeRef: MaybeRef<LGraphNode | null>) {
     if (viewport) cleanup()
 
     try {
-      const initialState = readStateFromWidgets(raw as NodeWithWidgets)
-      cameraState.value = initialState
-      viewport = new CameraInfoViewport(container, initialState, {
+      viewport = new CameraInfoViewport(container, cameraState.value, {
         onHandleDrag: (fieldName, value) => {
-          writeWidgetValue(raw as NodeWithWidgets, fieldName, value)
+          writeCameraInfoValue(toRaw(node.value), fieldName, value)
         }
       })
-      wireWidgetsToOverlay(raw as NodeWithWidgets)
-      wireNodeMouseStatus(raw as LGraphNode)
+      wireNodeMouseStatus(raw)
     } catch (error) {
       console.error('Failed to initialize CameraInfoViewport:', error)
       cleanup()
@@ -82,7 +50,6 @@ export function useCameraInfo(nodeRef: MaybeRef<LGraphNode | null>) {
   }
 
   const cleanup = (): void => {
-    unwireWidgets()
     unwireNodeMouseStatus()
     viewport?.remove()
     viewport = null
@@ -127,36 +94,6 @@ export function useCameraInfo(nodeRef: MaybeRef<LGraphNode | null>) {
     wiredNode.onMouseEnter = originalOnMouseEnter
     wiredNode.onMouseLeave = originalOnMouseLeave
     wiredNode = null
-  }
-
-  function wireWidgetsToOverlay(target: NodeWithWidgets): void {
-    if (!target.widgets) return
-    for (const name of WIDGET_NAMES) {
-      const widget = target.widgets.find(
-        (w): w is MutableWidget => w.name === name
-      )
-      if (!widget || wrappedSet.has(widget)) continue
-      wrappedSet.add(widget)
-      const original = widget.callback
-      const isModeWidget = widget.name === 'mode'
-      wrappedWidgets.push({ widget, original })
-      widget.callback = (value, ...rest) => {
-        original?.call(widget, value, ...rest)
-        if (isModeWidget) wireWidgetsToOverlay(target)
-        if (!viewport) return
-        const state = readStateFromWidgets(target)
-        cameraState.value = state
-        viewport.applyState(state)
-      }
-    }
-  }
-
-  function unwireWidgets(): void {
-    for (const { widget, original } of wrappedWidgets) {
-      widget.callback = original
-      wrappedSet.delete(widget)
-    }
-    wrappedWidgets.length = 0
   }
 
   return {

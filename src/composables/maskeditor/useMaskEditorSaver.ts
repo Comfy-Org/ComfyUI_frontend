@@ -3,6 +3,7 @@ import type { UploadImageResponse } from '@comfyorg/ingest-types'
 import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { setNodeWidgetValue } from '@/composables/node/widgetStoreSync'
 import type {
   EditorOutputData,
   EditorOutputLayer,
@@ -273,6 +274,14 @@ export function useMaskEditorSaver() {
     app.canvas.setDirty(true)
   }
 
+  function writeImageWidgetValue(node: LGraphNode, value: string): boolean {
+    if (setNodeWidgetValue(node, 'image', value)) return true
+    const imageWidget = node.widgets?.find((w) => w.name === 'image')
+    if (!imageWidget) return false
+    imageWidget.value = value
+    return true
+  }
+
   function updateNodeWithServerReferences(
     node: LGraphNode,
     outputData: EditorOutputData
@@ -281,23 +290,10 @@ export function useMaskEditorSaver() {
 
     node.images = [mainRef]
 
-    const imageWidget = node.widgets?.find((w) => w.name === 'image')
-    if (imageWidget) {
-      const widgetValue =
-        mainRef.filename + (mainRef.type ? ` [${mainRef.type}]` : '')
-
-      imageWidget.value = widgetValue
-
-      if (node.properties) {
-        node.properties['image'] = widgetValue
-      }
-
-      if (node.widgets_values && node.widgets) {
-        const widgetIndex = node.widgets.indexOf(imageWidget)
-        if (widgetIndex >= 0) {
-          node.widgets_values[widgetIndex] = widgetValue
-        }
-      }
+    const widgetValue =
+      mainRef.filename + (mainRef.type ? ` [${mainRef.type}]` : '')
+    if (writeImageWidgetValue(node, widgetValue) && node.properties) {
+      node.properties['image'] = widgetValue
     }
 
     node.imgs = undefined

@@ -4,8 +4,12 @@ import type { Ref, ShallowRef } from 'vue'
 import { defineComponent, h, nextTick, ref, shallowRef } from 'vue'
 
 import { useBoundingBoxes } from './useBoundingBoxes'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { BoundingBox } from '@/types/boundingBoxes'
 import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
+import type { WidgetValue } from '@/types/simplifiedWidget'
+import { widgetId } from '@/types/widgetId'
 
 const { appState, outputState } = vi.hoisted(() => ({
   appState: { node: null as unknown },
@@ -78,30 +82,45 @@ function makeCanvas(): HTMLCanvasElement {
   return el
 }
 
+const GRAPH_ID = 'bbox-test-graph'
+const NODE_ID = toNodeId('1')
+
 interface MockNode {
-  widgets: { name: string; value: unknown }[]
+  id: NodeId
+  graph: { rootGraph: { id: string } }
   findInputSlot: (name: string) => number
   getInputNode: () => null
   isInputConnected?: () => boolean
 }
 
 function makeNode(): MockNode {
+  const store = useWidgetValueStore()
+  const register = (name: string, type: string, value: WidgetValue) =>
+    store.registerWidget(widgetId(GRAPH_ID, NODE_ID, name), {
+      type,
+      value,
+      options: {}
+    })
+  register('width', 'number', 512)
+  register('height', 'number', 512)
+  register('last_incoming', 'custom', [])
   return {
-    widgets: [
-      { name: 'width', value: 512 },
-      { name: 'height', value: 512 },
-      { name: 'last_incoming', value: [] }
-    ],
+    id: NODE_ID,
+    graph: { rootGraph: { id: GRAPH_ID } },
     findInputSlot: () => -1,
     getInputNode: () => null
   }
 }
 
-const lastIncomingOf = (node: MockNode) =>
-  node.widgets.find((w) => w.name === 'last_incoming')!.value
+const lastIncomingOf = () =>
+  useWidgetValueStore().getWidget(widgetId(GRAPH_ID, NODE_ID, 'last_incoming'))
+    ?.value
 
-const setLastIncomingOf = (node: MockNode, value: BoundingBox[]) => {
-  node.widgets.find((w) => w.name === 'last_incoming')!.value = value
+const setLastIncomingOf = (value: BoundingBox[]) => {
+  useWidgetValueStore().setValue(
+    widgetId(GRAPH_ID, NODE_ID, 'last_incoming'),
+    value
+  )
 }
 
 const pe = (
@@ -252,13 +271,13 @@ describe('useBoundingBoxes region editing', () => {
 
   it('clears all regions and invalidates the applied upstream input', async () => {
     const node = makeNode()
-    setLastIncomingOf(node, [box()])
+    setLastIncomingOf([box()])
     appState.node = node
     const c = setup([box(), box({ x: 0 })])
     c.clearAll()
     await flush()
     expect(modelBoxes(c)).toHaveLength(0)
-    expect(lastIncomingOf(node)).toEqual([])
+    expect(lastIncomingOf()).toEqual([])
   })
 })
 
@@ -294,13 +313,13 @@ describe('useBoundingBoxes incoming bboxes input', () => {
     const c = setup([box({ x: 200, width: 300 })])
     expect(modelBoxes(c)).toHaveLength(1)
     expect(modelBoxes(c)[0].width).toBe(300)
-    expect(lastIncomingOf(node)).toEqual(incoming)
+    expect(lastIncomingOf()).toEqual(incoming)
   })
 
   it('does not re-apply an already applied output after a remount', async () => {
     const node = makeConnectedNode()
     const incoming = [box({ x: 0, width: 100 })]
-    setLastIncomingOf(node, incoming)
+    setLastIncomingOf(incoming)
     appState.node = node
     outputState.outputs = { input_bboxes: incoming }
     const c = setup([box({ x: 200, width: 300 })])
@@ -387,12 +406,12 @@ describe('useBoundingBoxes incoming bboxes input', () => {
 
     expect(modelBoxes(c)).toHaveLength(1)
     expect(modelBoxes(c)[0].width).toBe(100)
-    expect(lastIncomingOf(node)).toEqual(incoming)
+    expect(lastIncomingOf()).toEqual(incoming)
   })
 
   it('re-seeds the canvas over user edits when the upstream value changes', async () => {
     const node = makeConnectedNode()
-    setLastIncomingOf(node, [box({ x: 0, width: 100 })])
+    setLastIncomingOf([box({ x: 0, width: 100 })])
     appState.node = node
     const c = setup([box({ x: 200, width: 300 })])
 
@@ -402,7 +421,7 @@ describe('useBoundingBoxes incoming bboxes input', () => {
     await flush()
 
     expect(modelBoxes(c)[0].width).toBe(128)
-    expect(lastIncomingOf(node)).toEqual(changed)
+    expect(lastIncomingOf()).toEqual(changed)
   })
 })
 

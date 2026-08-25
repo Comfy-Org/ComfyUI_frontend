@@ -78,6 +78,7 @@ useExtensionService().registerExtension({
 
       const config = new Load3DConfiguration(load3d, node.properties)
       config.configure({
+        node,
         loadFolder: 'input',
         modelWidget,
         cameraState,

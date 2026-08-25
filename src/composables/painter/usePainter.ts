@@ -16,6 +16,10 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import {
+  nodeWidgetValue,
+  setNodeWidgetValue
+} from '@/composables/node/widgetStoreSync'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { NodeId } from '@/types/nodeId'
 
@@ -84,11 +88,10 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
     return app.canvas.graph.getNodeById(nodeId) as LGraphNode | null
   })
 
-  function getWidgetByName(name: string): IBaseWidget | undefined {
-    return litegraphNode.value?.widgets?.find(
-      (w: IBaseWidget) => w.name === name
-    )
-  }
+  const widgetValue = (name: string) =>
+    nodeWidgetValue(litegraphNode.value, name)
+  const setWidgetValue = (name: string, value: number | string) =>
+    setNodeWidgetValue(litegraphNode.value, name, value)
 
   const tool = ref<PainterTool>(PAINTER_TOOLS.BRUSH)
   const brushSize = ref(20)
@@ -112,8 +115,8 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
     if (props.painterBrushHardness != null)
       brushHardness.value = props.painterBrushHardness as number
 
-    const bgColorWidget = getWidgetByName('bg_color')
-    if (bgColorWidget) backgroundColor.value = bgColorWidget.value as string
+    const bgColor = widgetValue('bg_color')
+    if (typeof bgColor === 'string') backgroundColor.value = bgColor
   }
 
   function saveSettingsToProperties() {
@@ -128,25 +131,12 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
   }
 
   function syncCanvasSizeToWidgets() {
-    const widthWidget = getWidgetByName('width')
-    const heightWidget = getWidgetByName('height')
-
-    if (widthWidget && widthWidget.value !== canvasWidth.value) {
-      widthWidget.value = canvasWidth.value
-      widthWidget.callback?.(canvasWidth.value)
-    }
-    if (heightWidget && heightWidget.value !== canvasHeight.value) {
-      heightWidget.value = canvasHeight.value
-      heightWidget.callback?.(canvasHeight.value)
-    }
+    setWidgetValue('width', canvasWidth.value)
+    setWidgetValue('height', canvasHeight.value)
   }
 
   function syncBackgroundColorToWidget() {
-    const bgColorWidget = getWidgetByName('bg_color')
-    if (bgColorWidget && bgColorWidget.value !== backgroundColor.value) {
-      bgColorWidget.value = backgroundColor.value
-      bgColorWidget.callback?.(backgroundColor.value)
-    }
+    setWidgetValue('bg_color', backgroundColor.value)
   }
 
   function updateInputImageUrl() {
@@ -170,10 +160,10 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
   }
 
   function syncCanvasSizeFromWidgets() {
-    const w = getWidgetByName('width')
-    const h = getWidgetByName('height')
-    canvasWidth.value = (w?.value as number) ?? 512
-    canvasHeight.value = (h?.value as number) ?? 512
+    const w = widgetValue('width')
+    const h = widgetValue('height')
+    canvasWidth.value = typeof w === 'number' ? w : 512
+    canvasHeight.value = typeof h === 'number' ? h : 512
   }
 
   function activeHardness(): number {
@@ -584,16 +574,8 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
 
   function handleInputImageLoad(e: Event) {
     const img = e.target as HTMLImageElement
-    const widthWidget = getWidgetByName('width')
-    const heightWidget = getWidgetByName('height')
-    if (widthWidget) {
-      widthWidget.value = img.naturalWidth
-      widthWidget.callback?.(img.naturalWidth)
-    }
-    if (heightWidget) {
-      heightWidget.value = img.naturalHeight
-      heightWidget.callback?.(img.naturalHeight)
-    }
+    setWidgetValue('width', img.naturalWidth)
+    setWidgetValue('height', img.naturalHeight)
     canvasWidth.value = img.naturalWidth
     canvasHeight.value = img.naturalHeight
   }

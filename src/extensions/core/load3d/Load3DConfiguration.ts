@@ -9,13 +9,15 @@ import type {
   ModelConfig,
   SceneConfig
 } from '@/extensions/core/load3d/interfaces'
+import { watchNodeWidgetValues } from '@/composables/node/widgetStoreSync'
 import type { Dictionary } from '@/lib/litegraph/src/interfaces'
-import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode, NodeProperty } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 
 type Load3DConfigurationSettings = {
+  node: LGraphNode
   loadFolder: string
   modelWidget: IBaseWidget
   cameraState?: CameraState
@@ -34,6 +36,23 @@ type Load3DConfigurationSettings = {
 }
 
 const ANNOTATED_FILENAME_PATTERN = / \[(input|output|temp)\]$/
+
+export function wireTargetSizeSync(
+  node: LGraphNode,
+  resolveLoad3d: () => Load3d,
+  onSceneInvalidated?: () => void
+): void {
+  watchNodeWidgetValues(
+    node,
+    'load3d:target-size',
+    ['width', 'height'],
+    ([w, h]) => {
+      if (typeof w !== 'number' || typeof h !== 'number') return
+      resolveLoad3d().setTargetSize(w, h)
+      onSceneInvalidated?.()
+    }
+  )
+}
 
 export function parseAnnotatedFilename(
   rawValue: string,
@@ -68,6 +87,7 @@ class Load3DConfiguration {
 
   configure(setting: Load3DConfigurationSettings) {
     this.setupModelHandling(
+      setting.node,
       setting.modelWidget,
       setting.loadFolder,
       setting.cameraState,
@@ -75,6 +95,7 @@ class Load3DConfiguration {
       setting.onSceneInvalidated
     )
     this.setupTargetSize(
+      setting.node,
       setting.width,
       setting.height,
       setting.onSceneInvalidated
@@ -83,22 +104,14 @@ class Load3DConfiguration {
   }
 
   private setupTargetSize(
+    node: LGraphNode,
     width?: IBaseWidget,
     height?: IBaseWidget,
     onSceneInvalidated?: () => void
   ) {
     if (width && height) {
       this.load3d.setTargetSize(width.value as number, height.value as number)
-
-      width.callback = (value: number) => {
-        this.load3d.setTargetSize(value, height.value as number)
-        onSceneInvalidated?.()
-      }
-
-      height.callback = (value: number) => {
-        this.load3d.setTargetSize(width.value as number, value)
-        onSceneInvalidated?.()
-      }
+      wireTargetSizeSync(node, () => this.load3d, onSceneInvalidated)
     }
   }
 
@@ -119,6 +132,7 @@ class Load3DConfiguration {
   }
 
   private setupModelHandling(
+    node: LGraphNode,
     modelWidget: IBaseWidget,
     loadFolder: string,
     cameraState?: CameraState,
@@ -134,32 +148,16 @@ class Load3DConfiguration {
       void onModelWidgetUpdate(modelWidget.value)
     }
 
-    const originalCallback = modelWidget.callback
-
-    let currentValue = modelWidget.value
-    Object.defineProperty(modelWidget, 'value', {
-      get() {
-        return currentValue
-      },
-      set(newValue) {
-        currentValue = newValue
-        if (modelWidget.callback && newValue !== undefined && newValue !== '') {
-          modelWidget.callback(newValue)
-        }
-      },
-      enumerable: true,
-      configurable: true
-    })
-
-    modelWidget.callback = (value: string | number | boolean | object) => {
-      void onModelWidgetUpdate(value)
-
-      if (originalCallback) {
-        originalCallback(value)
+    watchNodeWidgetValues(
+      node,
+      'load3d:model-file',
+      [modelWidget.name],
+      ([value]) => {
+        if (value === undefined) return
+        void onModelWidgetUpdate(value)
+        onSceneInvalidated?.()
       }
-
-      onSceneInvalidated?.()
-    }
+    )
   }
 
   private setupDefaultProperties(bgImagePath?: string) {
@@ -302,7 +300,7 @@ class Load3DConfiguration {
     silentOnNotFound: boolean = false
   ) {
     let isFirstLoad = true
-    return async (value: string | number | boolean | object) => {
+    return async (value: unknown) => {
       if (!value || value === LOAD3D_NONE_MODEL) {
         this.load3d.clearModel()
         return

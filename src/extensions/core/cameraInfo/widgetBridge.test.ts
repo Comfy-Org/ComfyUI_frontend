@@ -1,24 +1,58 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
+
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { toNodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 import { DEFAULT_CAMERA_INFO_STATE } from './types'
-import { readStateFromWidgets, writeWidgetValue } from './widgetBridge'
-import type { NodeWithWidgets } from './widgetBridge'
+import { readCameraInfoState, writeCameraInfoValue } from './widgetBridge'
 
-function nodeWithWidgets(
+const GRAPH_ID = 'camera-info-test-graph'
+
+let nodeCounter = 0
+
+function makeScope(): LGraphNode {
+  nodeCounter += 1
+  return createMockLGraphNode({
+    id: toNodeId(nodeCounter),
+    graph: { rootGraph: { id: GRAPH_ID } }
+  })
+}
+
+function registerValues(
+  scope: LGraphNode,
   values: Record<string, unknown>
-): NodeWithWidgets & { widgets: { name: string; value: unknown }[] } {
-  return {
-    widgets: Object.entries(values).map(([name, value]) => ({ name, value }))
+): void {
+  const store = useWidgetValueStore()
+  for (const [name, value] of Object.entries(values)) {
+    store.registerWidget(widgetId(GRAPH_ID, scope.id, name), {
+      type: typeof value === 'number' ? 'number' : 'combo',
+      value: value as never,
+      options: {}
+    })
   }
 }
 
-describe('readStateFromWidgets', () => {
-  it('returns defaults when the node has no widgets at all', () => {
-    expect(readStateFromWidgets({})).toEqual(DEFAULT_CAMERA_INFO_STATE)
+function storedValue(scope: LGraphNode, name: string): unknown {
+  return useWidgetValueStore().getWidget(widgetId(GRAPH_ID, scope.id, name))
+    ?.value
+}
+
+let scope: LGraphNode
+
+beforeEach(() => {
+  scope = makeScope()
+})
+
+describe('readCameraInfoState', () => {
+  it('returns defaults when no widgets are registered for the node', () => {
+    expect(readCameraInfoState(scope)).toEqual(DEFAULT_CAMERA_INFO_STATE)
   })
 
   it('reads each widget by name (orbit-mode example)', () => {
-    const node = nodeWithWidgets({
+    registerValues(scope, {
       mode: 'orbit',
       target_x: 1,
       target_y: 2,
@@ -32,7 +66,7 @@ describe('readStateFromWidgets', () => {
       'mode.distance': 7
     })
 
-    const state = readStateFromWidgets(node)
+    const state = readCameraInfoState(scope)
 
     expect(state.mode).toBe('orbit')
     expect(state.target).toEqual({ x: 1, y: 2, z: 3 })
@@ -43,7 +77,7 @@ describe('readStateFromWidgets', () => {
   })
 
   it('reads the orthographic camera type and quaternion-mode fields', () => {
-    const node = nodeWithWidgets({
+    registerValues(scope, {
       mode: 'quaternion',
       camera_type: 'orthographic',
       'mode.position_x': 1,
@@ -55,7 +89,7 @@ describe('readStateFromWidgets', () => {
       'mode.quat_w': 1
     })
 
-    const state = readStateFromWidgets(node)
+    const state = readCameraInfoState(scope)
 
     expect(state.cameraType).toBe('orthographic')
     expect(state.mode).toBe('quaternion')
@@ -64,13 +98,13 @@ describe('readStateFromWidgets', () => {
   })
 
   it('falls back when a widget value has the wrong type', () => {
-    const node = nodeWithWidgets({
+    registerValues(scope, {
       fov: 'not-a-number',
       mode: 'invalid-mode',
       camera_type: 42
     })
 
-    const state = readStateFromWidgets(node)
+    const state = readCameraInfoState(scope)
 
     expect(state.fov).toBe(DEFAULT_CAMERA_INFO_STATE.fov)
     expect(state.mode).toBe(DEFAULT_CAMERA_INFO_STATE.mode)
@@ -78,54 +112,44 @@ describe('readStateFromWidgets', () => {
   })
 
   it('rejects non-finite numbers (NaN / Infinity)', () => {
-    const node = nodeWithWidgets({
+    registerValues(scope, {
       'mode.yaw': Number.NaN,
       'mode.distance': Number.POSITIVE_INFINITY
     })
 
-    const state = readStateFromWidgets(node)
+    const state = readCameraInfoState(scope)
 
     expect(state.orbit.yaw).toBe(DEFAULT_CAMERA_INFO_STATE.orbit.yaw)
     expect(state.orbit.distance).toBe(DEFAULT_CAMERA_INFO_STATE.orbit.distance)
   })
 
-  it('reads quaternion mode widgets', () => {
-    const node = nodeWithWidgets({
-      mode: 'quaternion',
-      'mode.position_x': 1,
-      'mode.position_y': 2,
-      'mode.position_z': 3,
-      'mode.quat_x': 0,
-      'mode.quat_y': 0,
-      'mode.quat_z': 0,
-      'mode.quat_w': 1
-    })
+  it('does not read a same-named widget from another node', () => {
+    const other = makeScope()
+    registerValues(other, { fov: 99 })
 
-    const state = readStateFromWidgets(node)
-
-    expect(state.mode).toBe('quaternion')
-    expect(state.quaternion.position).toEqual({ x: 1, y: 2, z: 3 })
-    expect(state.quaternion.quat).toEqual({ x: 0, y: 0, z: 0, w: 1 })
+    expect(readCameraInfoState(scope).fov).toBe(DEFAULT_CAMERA_INFO_STATE.fov)
   })
 })
 
-describe('writeWidgetValue', () => {
+describe('writeCameraInfoValue', () => {
   it('updates the named widget when the value differs', () => {
-    const node = nodeWithWidgets({ 'mode.yaw': 0 })
-    writeWidgetValue(node, 'mode.yaw', 45)
-    expect(node.widgets.find((w) => w.name === 'mode.yaw')!.value).toBe(45)
+    registerValues(scope, { 'mode.yaw': 0 })
+
+    writeCameraInfoValue(scope, 'mode.yaw', 45)
+
+    expect(storedValue(scope, 'mode.yaw')).toBe(45)
   })
 
   it('is a no-op when the value already matches', () => {
-    const node = nodeWithWidgets({ fov: 35 })
-    const before = node.widgets[0].value
-    writeWidgetValue(node, 'fov', 35)
-    expect(node.widgets[0].value).toBe(before)
+    registerValues(scope, { fov: 35 })
+
+    writeCameraInfoValue(scope, 'fov', 35)
+
+    expect(storedValue(scope, 'fov')).toBe(35)
   })
 
-  it('is a no-op when the widget does not exist', () => {
-    const node = nodeWithWidgets({ fov: 35 })
-    expect(() => writeWidgetValue(node, 'does_not_exist', 1)).not.toThrow()
-    expect(node.widgets).toHaveLength(1)
+  it('does not create state for an unregistered widget', () => {
+    expect(() => writeCameraInfoValue(scope, 'does_not_exist', 1)).not.toThrow()
+    expect(storedValue(scope, 'does_not_exist')).toBeUndefined()
   })
 })

@@ -348,6 +348,7 @@ describe('Comfy.Preview3D.nodeCreated', () => {
     await preview3DExt.nodeCreated(node)
 
     expect(configureMock).toHaveBeenCalledWith({
+      node,
       loadFolder: 'output',
       modelWidget: expect.objectContaining({ value: 'prev/model.glb' }),
       cameraState,

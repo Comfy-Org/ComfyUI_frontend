@@ -19,7 +19,9 @@ import type {
   Model3DInfo
 } from '@/extensions/core/load3d/interfaces'
 import type Load3d from '@/extensions/core/load3d/Load3d'
-import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
+import Load3DConfiguration, {
+  wireTargetSizeSync
+} from '@/extensions/core/load3d/Load3DConfiguration'
 import {
   LOAD3D_NONE_MODEL,
   SUPPORTED_EXTENSIONS_ACCEPT
@@ -395,6 +397,7 @@ useExtensionService().registerExtension({
 
       const config = new Load3DConfiguration(load3d, node.properties)
       config.configure({
+        node,
         loadFolder: 'input',
         modelWidget,
         cameraState,
@@ -498,6 +501,7 @@ function applyPreview3DOutput(
   useLoad3d(node).waitForLoad3d((load3d) => {
     const config = new Load3DConfiguration(load3d, node.properties)
     config.configure({
+      node,
       loadFolder: 'output',
       modelWidget,
       cameraState,
@@ -611,6 +615,7 @@ useExtensionService().registerExtension({
 
       const config = new Load3DConfiguration(load3d, node.properties)
       config.configure({
+        node,
         loadFolder: 'output',
         modelWidget,
         cameraState,
@@ -647,6 +652,7 @@ useExtensionService().registerExtension({
           node.properties['Last Time Model File'] = modelFilePath
 
           const settings = {
+            node,
             loadFolder: 'output',
             modelWidget: modelWidget,
             cameraState: cameraState,
@@ -823,12 +829,7 @@ function createPreview3DAdvancedExtension(
             widthWidget.value as number,
             heightWidget.value as number
           )
-          widthWidget.callback = (value: number) => {
-            resolveLoad3d().setTargetSize(value, heightWidget.value as number)
-          }
-          heightWidget.callback = (value: number) => {
-            resolveLoad3d().setTargetSize(widthWidget.value as number, value)
-          }
+          wireTargetSizeSync(node, resolveLoad3d)
         }
 
         sceneWidget.serializeValue = async () => {

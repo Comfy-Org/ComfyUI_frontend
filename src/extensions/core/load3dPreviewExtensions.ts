@@ -9,7 +9,9 @@ import type {
   Model3DInfo
 } from '@/extensions/core/load3d/interfaces'
 import type Load3d from '@/extensions/core/load3d/Load3d'
-import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
+import Load3DConfiguration, {
+  wireTargetSizeSync
+} from '@/extensions/core/load3d/Load3DConfiguration'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
@@ -162,12 +164,7 @@ function createPreview3DExtension(
             widthWidget.value as number,
             heightWidget.value as number
           )
-          widthWidget.callback = (value: number) => {
-            resolveLoad3d().setTargetSize(value, heightWidget.value as number)
-          }
-          heightWidget.callback = (value: number) => {
-            resolveLoad3d().setTargetSize(widthWidget.value as number, value)
-          }
+          wireTargetSizeSync(node, resolveLoad3d)
         }
 
         if (sceneWidget) {

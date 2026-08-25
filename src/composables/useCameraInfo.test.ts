@@ -1,8 +1,13 @@
-import { ref } from 'vue'
-import type { Ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick, shallowRef } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import { fromPartial } from '@total-typescript/shoehorn'
 
 interface ViewportInstance {
   ctorArgs: unknown[]
@@ -11,6 +16,7 @@ interface ViewportInstance {
   setTransformGizmoMode: ReturnType<typeof vi.fn>
   setLookThrough: ReturnType<typeof vi.fn>
   remove: ReturnType<typeof vi.fn>
+  overlay: { getState: ReturnType<typeof vi.fn> }
   viewport: {
     updateStatusMouseOnScene: ReturnType<typeof vi.fn>
     updateStatusMouseOnNode: ReturnType<typeof vi.fn>
@@ -28,6 +34,7 @@ const { ViewportMock, instances, addAlert } = vi.hoisted(() => {
       setTransformGizmoMode: vi.fn(),
       setLookThrough: vi.fn(),
       remove: vi.fn(),
+      overlay: { getState: vi.fn(() => null) },
       viewport: {
         updateStatusMouseOnScene: vi.fn(),
         updateStatusMouseOnNode: vi.fn(),
@@ -49,32 +56,36 @@ vi.mock('@/platform/updates/common/toastStore', () => ({
 
 import { useCameraInfo } from './useCameraInfo'
 
-interface FakeWidget {
-  name: string
-  value: unknown
-  callback?: (value: unknown, ...rest: unknown[]) => void
+const GRAPH_ID = 'use-camera-info-test-graph'
+
+let nodeCounter = 0
+
+function makeNode(values: Record<string, unknown> = {}): LGraphNode {
+  nodeCounter += 1
+  const nodeId = toNodeId(nodeCounter)
+  registerValues(nodeId, values)
+  return createMockLGraphNode({
+    id: nodeId,
+    graph: { rootGraph: { id: GRAPH_ID } }
+  })
 }
 
-interface FakeNode {
-  widgets: FakeWidget[]
-  onMouseEnter?: () => void
-  onMouseLeave?: () => void
-}
-
-function makeNode(values: Record<string, unknown>): FakeNode {
-  return {
-    widgets: Object.entries(values).map(([name, value]) => ({ name, value }))
+function registerValues(nodeId: NodeId, values: Record<string, unknown>): void {
+  const store = useWidgetValueStore()
+  for (const [name, value] of Object.entries(values)) {
+    store.registerWidget(widgetId(GRAPH_ID, nodeId, name), {
+      type: typeof value === 'number' ? 'number' : 'combo',
+      value: value as never,
+      options: {}
+    })
   }
 }
 
-function widget(node: FakeNode, name: string): FakeWidget {
-  const found = node.widgets.find((w) => w.name === name)
-  if (!found) throw new Error(`missing widget ${name}`)
-  return found
-}
-
-function nodeRef(node: FakeNode) {
-  return ref(node) as unknown as Ref<LGraphNode | null>
+function setValue(node: LGraphNode, name: string, value: unknown): void {
+  useWidgetValueStore().setValue(
+    widgetId(GRAPH_ID, node.id, name),
+    value as never
+  )
 }
 
 beforeEach(() => {
@@ -87,7 +98,7 @@ describe('useCameraInfo', () => {
   it('constructs the viewport from widget state and exposes the mode', () => {
     const node = makeNode({ mode: 'look_at', 'mode.distance': 7 })
     const container = document.createElement('div')
-    const camera = useCameraInfo(nodeRef(node))
+    const camera = useCameraInfo(shallowRef<LGraphNode | null>(node))
 
     camera.initialize(container)
 
@@ -103,7 +114,7 @@ describe('useCameraInfo', () => {
   })
 
   it('does nothing when the node is null', () => {
-    const camera = useCameraInfo(ref(null))
+    const camera = useCameraInfo(shallowRef<LGraphNode | null>(null))
     camera.initialize(document.createElement('div'))
 
     expect(ViewportMock).not.toHaveBeenCalled()
@@ -114,7 +125,9 @@ describe('useCameraInfo', () => {
       throw new Error('webgl unavailable')
     })
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
-    const camera = useCameraInfo(nodeRef(makeNode({ mode: 'orbit' })))
+    const camera = useCameraInfo(
+      shallowRef<LGraphNode | null>(makeNode({ mode: 'orbit' }))
+    )
 
     expect(() => camera.initialize(document.createElement('div'))).not.toThrow()
     expect(addAlert).toHaveBeenCalledOnce()
@@ -123,7 +136,9 @@ describe('useCameraInfo', () => {
   })
 
   it('forwards toolbar actions to the viewport', () => {
-    const camera = useCameraInfo(nodeRef(makeNode({ mode: 'orbit' })))
+    const camera = useCameraInfo(
+      shallowRef<LGraphNode | null>(makeNode({ mode: 'orbit' }))
+    )
     camera.initialize(document.createElement('div'))
 
     camera.setGizmosVisible(false)
@@ -137,44 +152,69 @@ describe('useCameraInfo', () => {
     expect(instances[0].setLookThrough).toHaveBeenCalledWith(true)
   })
 
-  it('re-applies state to the viewport when a widget changes, keeping the original callback', () => {
+  it('re-applies state to the viewport when a store value changes', async () => {
     const node = makeNode({ mode: 'orbit', target_x: 0 })
-    const original = vi.fn()
-    widget(node, 'target_x').callback = original
-    const camera = useCameraInfo(nodeRef(node))
+    const camera = useCameraInfo(shallowRef<LGraphNode | null>(node))
     camera.initialize(document.createElement('div'))
 
-    const targetX = widget(node, 'target_x')
-    targetX.value = 3
-    targetX.callback!(3)
+    setValue(node, 'target_x', 3)
+    await nextTick()
 
-    expect(original).toHaveBeenCalledWith(3)
     const applied = instances[0].applyState.mock.lastCall?.[0] as {
       target: { x: number }
     }
     expect(applied.target.x).toBe(3)
   })
 
-  it('updates the mode ref when the mode widget changes', () => {
+  it('skips re-applying state the viewport already holds', async () => {
+    const node = makeNode({ mode: 'orbit', target_x: 0 })
+    const camera = useCameraInfo(shallowRef<LGraphNode | null>(node))
+    camera.initialize(document.createElement('div'))
+    instances[0].overlay.getState.mockImplementation(() => ({
+      ...(instances[0].ctorArgs[1] as object),
+      target: { x: 3, y: 0, z: 0 }
+    }))
+
+    setValue(node, 'target_x', 3)
+    await nextTick()
+
+    expect(instances[0].applyState).not.toHaveBeenCalled()
+  })
+
+  it('updates the exposed mode when the mode widget changes', async () => {
     const node = makeNode({ mode: 'orbit' })
-    const camera = useCameraInfo(nodeRef(node))
+    const camera = useCameraInfo(shallowRef<LGraphNode | null>(node))
     camera.initialize(document.createElement('div'))
 
-    const modeWidget = widget(node, 'mode')
-    modeWidget.value = 'quaternion'
-    modeWidget.callback!('quaternion')
+    setValue(node, 'mode', 'quaternion')
+    await nextTick()
 
     expect(camera.mode.value).toBe('quaternion')
   })
 
+  it('picks up widgets registered after initialization (mode switch)', async () => {
+    const node = makeNode({ mode: 'orbit' })
+    const camera = useCameraInfo(shallowRef<LGraphNode | null>(node))
+    camera.initialize(document.createElement('div'))
+
+    setValue(node, 'mode', 'quaternion')
+    registerValues(node.id, { 'mode.quat_w': 0.5 })
+    await nextTick()
+
+    const applied = instances[0].applyState.mock.lastCall?.[0] as {
+      quaternion: { quat: { w: number } }
+    }
+    expect(applied.quaternion.quat.w).toBe(0.5)
+  })
+
   it('routes node hover into the viewport status flags', () => {
     const node = makeNode({ mode: 'orbit' })
-    const camera = useCameraInfo(nodeRef(node))
+    const camera = useCameraInfo(shallowRef<LGraphNode | null>(node))
     camera.initialize(document.createElement('div'))
 
     camera.handleMouseEnter()
     camera.handleMouseLeave()
-    node.onMouseEnter?.()
+    node.onMouseEnter?.(fromPartial({}))
 
     expect(instances[0].viewport.updateStatusMouseOnScene).toHaveBeenCalledWith(
       true
@@ -187,17 +227,17 @@ describe('useCameraInfo', () => {
     )
   })
 
-  it('removes the viewport and restores widget callbacks on cleanup', () => {
+  it('removes the viewport and stops applying store changes on cleanup', async () => {
     const node = makeNode({ mode: 'orbit', target_x: 0 })
-    const original = vi.fn()
-    widget(node, 'target_x').callback = original
-    const camera = useCameraInfo(nodeRef(node))
+    const camera = useCameraInfo(shallowRef<LGraphNode | null>(node))
     camera.initialize(document.createElement('div'))
 
     camera.cleanup()
+    setValue(node, 'target_x', 5)
+    await nextTick()
 
     expect(instances[0].remove).toHaveBeenCalledOnce()
-    expect(widget(node, 'target_x').callback).toBe(original)
+    expect(instances[0].applyState).not.toHaveBeenCalled()
   })
 
   it('restores the node mouse handlers on cleanup', () => {
@@ -206,7 +246,7 @@ describe('useCameraInfo', () => {
     const originalLeave = vi.fn()
     node.onMouseEnter = originalEnter
     node.onMouseLeave = originalLeave
-    const camera = useCameraInfo(nodeRef(node))
+    const camera = useCameraInfo(shallowRef<LGraphNode | null>(node))
     camera.initialize(document.createElement('div'))
 
     expect(node.onMouseEnter).not.toBe(originalEnter)
@@ -217,16 +257,15 @@ describe('useCameraInfo', () => {
     expect(node.onMouseLeave).toBe(originalLeave)
   })
 
-  it('re-wires widgets on a second initialize after cleanup', () => {
+  it('applies store changes to the new viewport after re-initialization', async () => {
     const node = makeNode({ mode: 'orbit', target_x: 0 })
-    const camera = useCameraInfo(nodeRef(node))
+    const camera = useCameraInfo(shallowRef<LGraphNode | null>(node))
     camera.initialize(document.createElement('div'))
     camera.cleanup()
     camera.initialize(document.createElement('div'))
 
-    const targetX = widget(node, 'target_x')
-    targetX.value = 5
-    targetX.callback!(5)
+    setValue(node, 'target_x', 5)
+    await nextTick()
 
     expect(instances).toHaveLength(2)
     expect(instances[1].applyState).toHaveBeenCalled()

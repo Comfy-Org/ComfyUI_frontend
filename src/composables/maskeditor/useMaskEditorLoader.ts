@@ -2,6 +2,7 @@ import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
 import type { ImageRef, ImageLayer } from '@/stores/maskEditorDataStore'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { nodeWidgetValue } from '@/composables/node/widgetStoreSync'
 import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -97,10 +98,10 @@ export function useMaskEditorLoader() {
 
       let nodeImageRef = parseImageRef(nodeImageUrl)
 
-      const imageWidget = node.widgets?.find((w) => w.name === 'image')
-      const widgetFilename = imageWidget
-        ? extractWidgetStringValue(imageWidget.value)
-        : undefined
+      const widgetFilename = extractWidgetStringValue(
+        nodeWidgetValue(node, 'image') ??
+          node.widgets?.find((w) => w.name === 'image')?.value
+      )
 
       // If we have a widget filename, we should prioritize it over the node image
       // because the node image might be stale (e.g. from a previous save)

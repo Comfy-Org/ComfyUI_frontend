@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { ComfyExtension } from '@/types/comfy'
+import { toNodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
 
 const {
   registerExtensionMock,
@@ -39,11 +43,21 @@ vi.mock('@/composables/useLoad3d', () => ({
   nodeToLoad3dMap: nodeToLoad3dMapMock
 }))
 
-vi.mock('@/extensions/core/load3d/Load3DConfiguration', () => ({
-  default: class {
-    configureForSaveMesh = configureForSaveMeshMock
+vi.mock(
+  '@/extensions/core/load3d/Load3DConfiguration',
+  async (importOriginal) => {
+    const actual =
+      await importOriginal<
+        typeof import('@/extensions/core/load3d/Load3DConfiguration')
+      >()
+    return {
+      wireTargetSizeSync: actual.wireTargetSizeSync,
+      default: class {
+        configureForSaveMesh = configureForSaveMeshMock
+      }
+    }
   }
-}))
+)
 
 vi.mock('@/extensions/core/load3d/exportMenuHelper', () => ({
   createExportMenuItems: vi.fn(() => [{ content: 'Export' }])
@@ -311,36 +325,43 @@ describe('Comfy.PreviewGaussianSplat.nodeCreated', () => {
     expect(load3d.applyModelTransform).toHaveBeenCalledWith(transform)
   })
 
-  it('syncs width/height widgets to load3d.setTargetSize and registers callbacks', async () => {
+  it('syncs width/height widgets to load3d.setTargetSize via the widget store', async () => {
     const { splatExt } = await loadExtensionsFresh()
     const load3d = makeLoad3dMock()
     waitForLoad3dMock.mockImplementation((cb: (l: FakeLoad3d) => void) =>
       cb(load3d)
     )
-    const widthWidget: FakeWidget & { callback?: (v: number) => void } = {
-      name: 'width',
-      value: 800
-    }
-    const heightWidget: FakeWidget & { callback?: (v: number) => void } = {
-      name: 'height',
-      value: 600
-    }
+    const graphId = 'preview-ext-test'
+    const nodeId = toNodeId(1)
     const node = makePreviewNode({
       widgets: [
         { name: 'model_file', value: '' },
         { name: 'viewport_state', value: '' },
-        widthWidget,
-        heightWidget
+        { name: 'width', value: 800 },
+        { name: 'height', value: 600 }
       ]
+    })
+    Object.assign(node, { id: nodeId, graph: { rootGraph: { id: graphId } } })
+
+    const store = useWidgetValueStore()
+    store.registerWidget(widgetId(graphId, nodeId, 'width'), {
+      type: 'number',
+      value: 800,
+      options: {}
+    })
+    store.registerWidget(widgetId(graphId, nodeId, 'height'), {
+      type: 'number',
+      value: 600,
+      options: {}
     })
 
     await splatExt.nodeCreated(node)
 
     expect(load3d.setTargetSize).toHaveBeenCalledWith(800, 600)
-    expect(typeof widthWidget.callback).toBe('function')
-    expect(typeof heightWidget.callback).toBe('function')
 
-    widthWidget.callback!(1024)
+    store.setValue(widgetId(graphId, nodeId, 'width'), 1024)
+    await nextTick()
+
     expect(load3d.setTargetSize).toHaveBeenLastCalledWith(1024, 600)
   })
 

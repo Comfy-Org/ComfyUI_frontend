@@ -3,8 +3,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defaultMode } from '@/renderer/extensions/layerEditor/engine/mode'
 import type { RasterData } from '@/renderer/extensions/layerEditor/engine/node'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 import type { CompositorLayerState } from './compositorLayerState'
 import {
@@ -48,23 +50,28 @@ function makeSession() {
   }
 }
 
-function makeNode() {
-  const compositorWidget = {
-    name: 'compositor',
-    value: {},
-    callback: vi.fn()
-  } as unknown as IBaseWidget
-  const node = {
-    id: toNodeId(7),
-    widgets: [compositorWidget],
-    widgets_values: [{}]
-  } as unknown as LGraphNode
-  return { node, compositorWidget }
+const GRAPH_ID = 'compositor-save-test'
+const NODE_ID = toNodeId(7)
+
+function makeNode(): { node: LGraphNode } {
+  useWidgetValueStore().registerWidget(
+    widgetId(GRAPH_ID, NODE_ID, 'compositor'),
+    { type: 'compositor', value: {}, options: {} }
+  )
+  const node = createMockLGraphNode({
+    id: NODE_ID,
+    graph: { rootGraph: { id: GRAPH_ID } }
+  })
+  return { node }
 }
 
-function widgetValue(widget: IBaseWidget): CompositorLayerState {
-  return widget.value as CompositorLayerState
+function storedValue(): CompositorLayerState {
+  return useWidgetValueStore().getWidget(
+    widgetId(GRAPH_ID, NODE_ID, 'compositor')
+  )?.value as CompositorLayerState
 }
+
+const setValueSpy = () => vi.mocked(useWidgetValueStore().setValue)
 
 const cacheNode = { id: toNodeId(7) } as unknown as LGraphNode
 
@@ -84,14 +91,11 @@ describe('saveCompositorLayerState', () => {
   it('writes the layer state recipe to the compositor widget', () => {
     cacheFingerprint()
     const session = makeSession()
-    const { node, compositorWidget } = makeNode()
+    const { node } = makeNode()
 
     expect(saveCompositorLayerState(session, node)).toBe(true)
 
-    const savedState = widgetValue(compositorWidget)
-    expect(compositorWidget.callback).toHaveBeenCalledWith(savedState)
-    expect(node.widgets_values?.[0]).toBe(compositorWidget.value)
-
+    const savedState = storedValue()
     expect(savedState.canvas).toEqual({ w: 64, h: 48 })
     expect(savedState.layers).toHaveLength(1)
     expect(savedState.layers[0]).toMatchObject({
@@ -109,20 +113,20 @@ describe('saveCompositorLayerState', () => {
       [{ filename: 'a.png', subfolder: '', type: 'temp' }],
       ['hash-a', 'hash-b']
     )
-    const { node, compositorWidget } = makeNode()
+    const { node } = makeNode()
 
     saveCompositorLayerState(makeSession(), node)
 
-    expect(widgetValue(compositorWidget).inputs).toEqual(['hash-a', 'hash-b'])
+    expect(storedValue().inputs).toEqual(['hash-a', 'hash-b'])
   })
 
   it('refuses to save when no fingerprint is cached', () => {
-    const { node, compositorWidget } = makeNode()
+    const { node } = makeNode()
 
     expect(saveCompositorLayerState(makeSession(), node)).toBe(false)
 
-    expect(compositorWidget.callback).not.toHaveBeenCalled()
-    expect(node.widgets_values).toEqual([{}])
+    expect(setValueSpy()).not.toHaveBeenCalled()
+    expect(storedValue()).toEqual({})
   })
 
   it('keeps widgets untouched when extraction fails', () => {
@@ -131,13 +135,12 @@ describe('saveCompositorLayerState', () => {
     session.layerFlips = () => {
       throw new Error('boom')
     }
-    const { node, compositorWidget } = makeNode()
+    const { node } = makeNode()
 
     expect(saveCompositorLayerState(session, node)).toBe(false)
 
-    expect(compositorWidget.callback).not.toHaveBeenCalled()
-    expect(compositorWidget.value).toEqual({})
-    expect(node.widgets_values).toEqual([{}])
+    expect(setValueSpy()).not.toHaveBeenCalled()
+    expect(storedValue()).toEqual({})
   })
 })
 

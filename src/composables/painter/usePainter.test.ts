@@ -1,21 +1,30 @@
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
+import type * as VueI18n from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { api } from '@/scripts/api'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
+import type { WidgetValue } from '@/types/simplifiedWidget'
+import { widgetId } from '@/types/widgetId'
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 import { usePainter } from './usePainter'
 
-vi.mock('vue-i18n', () => ({
-  useI18n: vi.fn(() => ({
-    t: (key: string, params?: Record<string, unknown>) =>
-      params ? `${key}:${JSON.stringify(params)}` : key
-  }))
-}))
+vi.mock('vue-i18n', async (importOriginal) => {
+  const actual = await importOriginal<typeof VueI18n>()
+  return {
+    ...actual,
+    useI18n: vi.fn(() => ({
+      t: (key: string, params?: Record<string, unknown>) =>
+        params ? `${key}:${JSON.stringify(params)}` : key
+    }))
+  }
+})
 
 vi.mock('@vueuse/core', () => ({
   useElementSize: vi.fn(() => ({
@@ -56,6 +65,8 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
+const GRAPH_ID = 'painter-test'
+
 const mockWidgets: IBaseWidget[] = []
 const mockProperties: Record<string, unknown> = {}
 const mockIsInputConnected = vi.fn(() => false)
@@ -65,16 +76,16 @@ vi.mock('@/scripts/app', () => ({
   app: {
     canvas: {
       graph: {
-        getNodeById: vi.fn(() => ({
-          get widgets() {
-            return mockWidgets
-          },
-          get properties() {
-            return mockProperties
-          },
-          isInputConnected: mockIsInputConnected,
-          getInputNode: mockGetInputNode
-        }))
+        getNodeById: vi.fn((id: NodeId) =>
+          createMockLGraphNode({
+            id,
+            graph: { rootGraph: { id: GRAPH_ID } },
+            widgets: mockWidgets,
+            properties: mockProperties,
+            isInputConnected: mockIsInputConnected,
+            getInputNode: mockGetInputNode
+          })
+        )
       }
     }
   }
@@ -86,9 +97,20 @@ function makeWidget(name: string, value: unknown = null): IBaseWidget {
   return {
     name,
     value,
-    callback: vi.fn(),
     serializeValue: undefined
   } as unknown as IBaseWidget
+}
+
+function painterWidgetId(name: string, nodeId: NodeId = toNodeId('test-node')) {
+  return widgetId(GRAPH_ID, nodeId, name)
+}
+
+function registerWidgetState(name: string, type: string, value: WidgetValue) {
+  useWidgetValueStore().registerWidget(painterWidgetId(name), {
+    type,
+    value,
+    options: {}
+  })
 }
 
 /**
@@ -133,7 +155,8 @@ describe('usePainter', () => {
 
   describe('syncCanvasSizeFromWidgets', () => {
     it('reads width/height from widget values on initialization', () => {
-      mockWidgets.push(makeWidget('width', 1024), makeWidget('height', 768))
+      registerWidgetState('width', 'number', 1024)
+      registerWidgetState('height', 'number', 768)
 
       const { painter } = mountPainter()
 
@@ -167,7 +190,7 @@ describe('usePainter', () => {
     })
 
     it('restores backgroundColor from bg_color widget', () => {
-      mockWidgets.push(makeWidget('bg_color', '#123456'))
+      registerWidgetState('bg_color', 'color', '#123456')
 
       const { painter } = mountPainter()
 
@@ -206,10 +229,10 @@ describe('usePainter', () => {
   })
 
   describe('syncCanvasSizeToWidgets', () => {
-    it('syncs canvas dimensions to widgets when size changes', async () => {
-      const widthWidget = makeWidget('width', 512)
-      const heightWidget = makeWidget('height', 512)
-      mockWidgets.push(widthWidget, heightWidget)
+    it('syncs canvas dimensions to widget store when size changes', async () => {
+      const store = useWidgetValueStore()
+      registerWidgetState('width', 'number', 512)
+      registerWidgetState('height', 'number', 512)
 
       const { painter } = mountPainter()
 
@@ -217,25 +240,24 @@ describe('usePainter', () => {
       painter.canvasHeight.value = 600
       await nextTick()
 
-      expect(widthWidget.value).toBe(800)
-      expect(heightWidget.value).toBe(600)
-      expect(widthWidget.callback).toHaveBeenCalledWith(800)
-      expect(heightWidget.callback).toHaveBeenCalledWith(600)
+      expect(store.getWidget(painterWidgetId('width'))?.value).toBe(800)
+      expect(store.getWidget(painterWidgetId('height'))?.value).toBe(600)
     })
   })
 
   describe('syncBackgroundColorToWidget', () => {
-    it('syncs background color to widget when color changes', async () => {
-      const bgWidget = makeWidget('bg_color', '#000000')
-      mockWidgets.push(bgWidget)
+    it('syncs background color to widget store when color changes', async () => {
+      const store = useWidgetValueStore()
+      registerWidgetState('bg_color', 'color', '#000000')
 
       const { painter } = mountPainter()
 
       painter.backgroundColor.value = '#ff00ff'
       await nextTick()
 
-      expect(bgWidget.value).toBe('#ff00ff')
-      expect(bgWidget.callback).toHaveBeenCalledWith('#ff00ff')
+      expect(store.getWidget(painterWidgetId('bg_color'))?.value).toBe(
+        '#ff00ff'
+      )
     })
   })
 
@@ -258,9 +280,9 @@ describe('usePainter', () => {
 
   describe('handleInputImageLoad', () => {
     it('updates canvas size and widgets from loaded image dimensions', () => {
-      const widthWidget = makeWidget('width', 512)
-      const heightWidget = makeWidget('height', 512)
-      mockWidgets.push(widthWidget, heightWidget)
+      const store = useWidgetValueStore()
+      registerWidgetState('width', 'number', 512)
+      registerWidgetState('height', 'number', 512)
 
       const { painter } = mountPainter()
 
@@ -275,8 +297,8 @@ describe('usePainter', () => {
 
       expect(painter.canvasWidth.value).toBe(1920)
       expect(painter.canvasHeight.value).toBe(1080)
-      expect(widthWidget.value).toBe(1920)
-      expect(heightWidget.value).toBe(1080)
+      expect(store.getWidget(painterWidgetId('width'))?.value).toBe(1920)
+      expect(store.getWidget(painterWidgetId('height'))?.value).toBe(1080)
     })
   })
 
