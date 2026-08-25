@@ -158,8 +158,7 @@ export const useColorPaletteService = () => {
       app.canvas.background_image = palette.BACKGROUND_IMAGE
       app.canvas.clear_background_color = palette.CLEAR_BACKGROUND_COLOR
     }
-    // Past 1.5x zoom LiteGraph stops filling its clear background and the
-    // body shows through, so the backdrop has to be this exact colour.
+    // Past 1.5x zoom LiteGraph stops filling its clear background.
     document.documentElement.style.setProperty(
       '--canvas-clear-background',
       palette.CLEAR_BACKGROUND_COLOR
@@ -270,9 +269,6 @@ export const useColorPaletteService = () => {
       completedPalette.colors.comfy_base,
       completedPalette.light_theme === true
     )
-    // Alongside the palette's other documentElement state: the token blocks
-    // and the body backdrop key off this, and they should not wait for a
-    // particular view to mount.
     document.documentElement.dataset.colorPalette = colorPaletteId
 
     app.canvas.setDirty(true, true)
