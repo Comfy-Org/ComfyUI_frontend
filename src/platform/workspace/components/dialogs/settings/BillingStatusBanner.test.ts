@@ -31,6 +31,7 @@ const state = vi.hoisted(() => ({
   workspaceType: 'team' as string,
   canManageSubscription: true,
   canManageSubscriptionLifecycle: true,
+  canReactivate: true,
   canTopUp: true,
   canSubscribeSelfServe: false,
   showTopUpCreditsDialog: vi.fn(),
@@ -80,7 +81,7 @@ vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
   useBillingCapabilities: () => ({
     canTopUp: computed(() => state.canTopUp),
     canSubscribeSelfServe: computed(() => state.canSubscribeSelfServe),
-    canReactivate: computed(() => state.canManageSubscriptionLifecycle)
+    canReactivate: computed(() => state.canReactivate)
   })
 }))
 
@@ -186,6 +187,7 @@ describe('BillingStatusBanner', () => {
     state.workspaceType = 'team'
     state.canManageSubscription = true
     state.canManageSubscriptionLifecycle = true
+    state.canReactivate = true
     state.canTopUp = true
     state.canSubscribeSelfServe = false
   })
@@ -359,9 +361,29 @@ describe('BillingStatusBanner', () => {
     }
     state.canManageSubscription = false
     state.canManageSubscriptionLifecycle = false
+    state.canReactivate = false
     renderBanner()
 
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Reactivate plan' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('hides reactivation when the server denies it to a client-side owner', () => {
+    state.subscription = {
+      hasFunds: true,
+      isCancelled: true,
+      endDate: '2026-08-01T00:00:00Z'
+    }
+    state.canManageSubscription = true
+    state.canManageSubscriptionLifecycle = true
+    state.canReactivate = false
+    renderBanner()
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Your team plan ends on'
+    )
     expect(
       screen.queryByRole('button', { name: 'Reactivate plan' })
     ).not.toBeInTheDocument()
