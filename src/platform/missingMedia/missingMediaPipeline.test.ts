@@ -46,6 +46,22 @@ async function startPendingWorkflowLoadMediaVerification(
 }
 
 describe('runMissingMediaPipeline', () => {
+  it('clears a stale missing-media snapshot after a synchronous rescan resolves it', async () => {
+    const {
+      rootGraph,
+      hosts: [host]
+    } = createPromotedMediaRuntime()
+    const staleCandidate = createPromotedMissingMediaCandidate(host)
+    vi.spyOn(missingMediaScan, 'scanAllMediaCandidates').mockReturnValue([
+      { ...staleCandidate, isMissing: false }
+    ])
+    useMissingMediaStore().setMissingMedia([staleCandidate])
+
+    await runMissingMediaPipeline({ rootGraph, silent: true })
+
+    expect(useMissingMediaStore().missingMediaCandidates).toBeNull()
+  })
+
   it('surfaces workflow-load media when another fanout consumer stays active during verification', async () => {
     const {
       rootGraph,

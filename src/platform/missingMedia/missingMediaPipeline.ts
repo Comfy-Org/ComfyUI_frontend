@@ -78,9 +78,7 @@ export async function runMissingMediaPipeline({
       })
   } else {
     const confirmed = candidates.filter((c) => c.isMissing === true)
-    if (confirmed.length) {
-      useExecutionErrorStore().surfaceMissingMedia(confirmed, { silent })
-    }
+    useExecutionErrorStore().surfaceMissingMedia(confirmed, { silent })
     cacheMediaCandidates(activeWf, confirmed)
   }
 }
