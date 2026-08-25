@@ -79,19 +79,12 @@ Concretely:
 The two materialization paths do not share propagation semantics. Today's
 local adapter remints only the copy being inserted into one graph:
 
-```text
-incoming local node id 7
-          |
-          v
-      LGraph.add
-          |
-          v
-registry rejects: local id 7 is occupied
-          |
-          v
-remint incoming copy to local id 8; retry succeeds
-          |
-          +---- no CRDT operation is emitted
+```mermaid
+flowchart TD
+  incoming["Incoming local node, id 7"] --> add[LGraph.add]
+  add --> rejected["Registry rejects: local id 7 is occupied"]
+  rejected --> remint["Remint incoming copy to local id 8; retry succeeds"]
+  remint --> local["No CRDT operation is emitted"]
 ```
 
 A future semantic-operation applier must instead derive one canonical mapping
@@ -101,24 +94,17 @@ belongs to that applier, but it must be deterministic and collision-free; for
 example, it can retain the raw id for the winning stamp and derive an
 actor-scoped replacement from the losing stamp:
 
-```text
-Replica A operation                 Replica B operation
-add alpha, id 7, stamp A:1          add beta, id 7, stamp B:1
-                 \                    /
-                  \                  /
-             same merged operation set
-                          |
-                          v
-               semantic-operation applier
-               order collision by op stamp
-               alpha -> 7
-               beta  -> replacement(B:1)
-                          |
-                          v
-             register collision-free entities
-                          |
-                          v
-        both replicas materialize the same two mappings
+```mermaid
+flowchart TD
+  replicaA["Replica A: add alpha, id 7, stamp A:1"]
+  replicaB["Replica B: add beta, id 7, stamp B:1"]
+  merged["Same merged operation set"]
+  replicaA --> merged
+  replicaB --> merged
+  merged --> applier["Semantic-operation applier orders collision by op stamp"]
+  applier --> mappings["alpha → 7; beta → replacement(B:1)"]
+  mappings --> register["Register collision-free entities"]
+  register --> replicas["Both replicas materialize the same two mappings"]
 ```
 
 This model has no replica-local echo-back step. Both original entities survive,
