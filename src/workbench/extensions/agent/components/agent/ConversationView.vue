@@ -27,6 +27,8 @@ const emit = defineEmits<{
   editPrompt: [text: string]
   answerAsk: [askId: string, selection: 'run' | 'cancel']
   openWorkflow: [workflowId: string, workflowName?: string]
+  addCredits: []
+  upgradeSubscription: []
 }>()
 
 const { t } = useI18n()
@@ -103,6 +105,8 @@ watch(
                 (workflowId: string, workflowName?: string) =>
                   emit('openWorkflow', workflowId, workflowName)
               "
+              @add-credits="emit('addCredits')"
+              @upgrade-subscription="emit('upgradeSubscription')"
             />
           </template>
           <div ref="bottom" />
