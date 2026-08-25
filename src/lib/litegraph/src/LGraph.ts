@@ -2898,8 +2898,8 @@ export class LGraph
       }
 
       let error = false
-      const nodeDataMap = new Map<SerializedNodeId, ISerialisedNode>()
-      const realignmentDataMap = new Map<SerializedNodeId, ISerialisedNode>()
+      const nodeDataMap = new Map<NodeId, ISerialisedNode>()
+      const realignmentDataMap = new Map<NodeId, ISerialisedNode>()
 
       /**
        * Requested (serialized) id → final id for nodes whose id was
@@ -2978,7 +2978,7 @@ export class LGraph
 
         // configure nodes afterwards so they can reach each other
         for (const [id, nodeData] of nodeDataMap) {
-          const node = this.getNodeById(toNodeId(id))
+          const node = this.getNodeById(id)
           node?.configure(nodeData)
 
           if (LiteGraph.alwaysSnapToGrid && node) {
@@ -3008,7 +3008,7 @@ export class LGraph
         }
       }
 
-      realignInputLinkSlots(this, realignmentDataMap.values())
+      realignInputLinkSlots(this, realignmentDataMap.entries())
 
       // Drop reroutes that no live link or floating link passes through
       for (const reroute of this.reroutes.values()) {
