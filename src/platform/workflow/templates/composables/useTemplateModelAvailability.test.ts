@@ -1,8 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
-
-const modulePath = './useTemplateModelAvailability'
+import { useTemplateModelAvailability } from './useTemplateModelAvailability'
 
 const ResourceState = {
   Uninitialized: 0,
@@ -20,44 +19,6 @@ vi.mock('@/stores/modelStore', () => ({
   ResourceState: { Uninitialized: 0, Loading: 1, Loaded: 2 },
   useModelStore: () => mockModelStore
 }))
-
-type ModelAvailability = {
-  model: ModelFile
-  status: 'installed' | 'missing' | 'unknown'
-}
-
-type TemplateModelAvailabilityApi = {
-  resolveAvailability: (
-    models: readonly ModelFile[]
-  ) => Promise<readonly ModelAvailability[]>
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === 'object'
-}
-
-function supportsTemplateModelAvailability(value: unknown): value is {
-  useTemplateModelAvailability: () => TemplateModelAvailabilityApi
-} {
-  return (
-    isRecord(value) && typeof value.useTemplateModelAvailability === 'function'
-  )
-}
-
-async function resolveAvailability(
-  models: readonly ModelFile[]
-): Promise<readonly ModelAvailability[]> {
-  try {
-    const module: unknown = await import(modulePath)
-    if (!supportsTemplateModelAvailability(module)) return []
-
-    return await module
-      .useTemplateModelAvailability()
-      .resolveAvailability(models)
-  } catch {
-    return []
-  }
-}
 
 function model(name: string, directory = 'checkpoints'): ModelFile {
   return {
@@ -88,7 +49,9 @@ describe('useTemplateModelAvailability', () => {
       return []
     })
 
-    await expect(resolveAvailability([installed, missing])).resolves.toEqual([
+    await expect(
+      useTemplateModelAvailability().resolveAvailability([installed, missing])
+    ).resolves.toEqual([
       { model: installed, status: 'installed' },
       { model: missing, status: 'missing' }
     ])
@@ -108,20 +71,23 @@ describe('useTemplateModelAvailability', () => {
       new Error('Inventory unavailable')
     )
 
-    await expect(resolveAvailability([installed, unresolved])).resolves.toEqual(
-      [
-        { model: installed, status: 'installed' },
-        { model: unresolved, status: 'unknown' }
-      ]
-    )
+    await expect(
+      useTemplateModelAvailability().resolveAvailability([
+        installed,
+        unresolved
+      ])
+    ).resolves.toEqual([
+      { model: installed, status: 'installed' },
+      { model: unresolved, status: 'unknown' }
+    ])
   })
 
   it('keeps absence unknown while a model folder is still loading', async () => {
     const unresolved = model('unresolved.safetensors')
     mockModelStore.modelFolders = [{ state: ResourceState.Loading }]
 
-    await expect(resolveAvailability([unresolved])).resolves.toEqual([
-      { model: unresolved, status: 'unknown' }
-    ])
+    await expect(
+      useTemplateModelAvailability().resolveAvailability([unresolved])
+    ).resolves.toEqual([{ model: unresolved, status: 'unknown' }])
   })
 })

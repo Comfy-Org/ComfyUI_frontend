@@ -7,14 +7,14 @@ import type { ResolvedTemplateModelAvailability } from '@/platform/workflow/temp
 import type { TemplateModelRequirementDetail } from '@/platform/workflow/templates/utils/templateModelRequirements'
 import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
 
-export type TemplateModelSetupStatus =
+type TemplateModelSetupStatus =
   | 'installed'
   | 'downloadable'
   | 'manual'
   | 'unavailable'
   | 'unknown'
 
-export type TemplateModelTypeKey =
+type TemplateModelTypeKey =
   | 'model'
   | 'checkpoint'
   | 'diffusionModel'
@@ -22,7 +22,7 @@ export type TemplateModelTypeKey =
   | 'vae'
   | 'lora'
 
-export type TemplateModelType =
+type TemplateModelType =
   | { kind: 'known'; key: TemplateModelTypeKey }
   | { kind: 'directory'; raw: string }
 
@@ -42,7 +42,7 @@ export type TemplateModelSetupRow =
       status: Exclude<TemplateModelSetupStatus, 'manual'>
     })
 
-export type TemplateModelSetupTotal = {
+type TemplateModelSetupTotal = {
   bytes: number
   isComplete: boolean
 }
