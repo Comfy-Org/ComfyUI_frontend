@@ -20,7 +20,7 @@ type TemplateDetailRowStatus =
       label: string
     }
 
-interface TemplateDetailRow {
+export interface TemplateDetailRow {
   id: string
   name: string
   description: string

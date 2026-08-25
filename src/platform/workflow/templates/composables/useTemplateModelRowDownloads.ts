@@ -29,7 +29,7 @@ type SubscribeLegacyProgress = (
   listener: (download: ElectronDownload) => void
 ) => () => void
 
-export type TemplateModelRowDownloadDependencies = {
+type TemplateModelRowDownloadDependencies = {
   loadFolderPaths: () => Promise<FolderPaths>
   dispatchDownload?: (
     model: ModelWithUrl,

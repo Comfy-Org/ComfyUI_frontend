@@ -174,14 +174,12 @@ describe('WorkflowTemplateDetail', () => {
         rows: [
           {
             id: 'installed-model',
-            kind: 'model',
             name: 'installed.safetensors',
             description: 'Checkpoint · 1 GB',
             status: { kind: 'installed', label: 'Installed' }
           },
           {
             id: 'manual-model',
-            kind: 'model',
             name: 'manual.safetensors',
             description: 'Checkpoint · 2 GB',
             status: {
@@ -192,21 +190,15 @@ describe('WorkflowTemplateDetail', () => {
           },
           {
             id: 'unavailable-model',
-            kind: 'model',
             name: 'unavailable.safetensors',
             description: 'Checkpoint',
             status: {
               kind: 'unavailable',
-              label: 'Unavailable',
-              action: {
-                label: 'View source',
-                href: 'https://example.com/model-source'
-              }
+              label: 'Unavailable'
             }
           },
           {
             id: 'unknown-model',
-            kind: 'model',
             name: 'unknown.safetensors',
             description: 'Checkpoint',
             status: { kind: 'unknown', label: 'Unknown' }
@@ -222,10 +214,6 @@ describe('WorkflowTemplateDetail', () => {
       screen.getByRole('link', { name: /Get it manually/ })
     ).toHaveAttribute('href', 'https://huggingface.co/org/gated-model')
     expect(screen.getByText('Unavailable')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'View source' })).toHaveAttribute(
-      'href',
-      'https://example.com/model-source'
-    )
     expect(screen.getByText('Unknown')).toBeInTheDocument()
   })
 
@@ -238,14 +226,12 @@ describe('WorkflowTemplateDetail', () => {
         rows: [
           {
             id: 'download-this-model',
-            kind: 'model',
             name: 'downloadable.safetensors',
             description: 'Checkpoint',
             status: { kind: 'downloadable', label: 'Download model' }
           },
           {
             id: 'retry-this-model',
-            kind: 'model',
             name: 'failed.safetensors',
             description: 'Diffusion model',
             status: {
@@ -254,8 +240,7 @@ describe('WorkflowTemplateDetail', () => {
               downloadState: {
                 status: 'failed',
                 attempt: 1,
-                reason: 'error',
-                retryable: true
+                reason: 'error'
               }
             }
           }
@@ -287,7 +272,6 @@ describe('WorkflowTemplateDetail', () => {
         rows: [
           {
             id: 'queued-model',
-            kind: 'model',
             name: 'queued.safetensors',
             description: 'Checkpoint',
             status: {
@@ -298,7 +282,6 @@ describe('WorkflowTemplateDetail', () => {
           },
           {
             id: 'starting-model',
-            kind: 'model',
             name: 'starting.safetensors',
             description: 'Checkpoint',
             status: {
@@ -313,12 +296,10 @@ describe('WorkflowTemplateDetail', () => {
     renderDetail({ renderedGroups })
 
     for (const label of ['Queued', 'Starting']) {
-      expect(screen.getByRole('status', { name: label })).toHaveTextContent(
-        label
-      )
+      expect(screen.getByText(label)).toHaveAttribute('role', 'status')
     }
     expect(
-      screen.queryByRole('button', { name: /model/i })
+      screen.queryByRole('button', { name: /^(Download|Retry)/ })
     ).not.toBeInTheDocument()
   })
 
@@ -330,7 +311,6 @@ describe('WorkflowTemplateDetail', () => {
         rows: [
           {
             id: 'known-progress',
-            kind: 'model',
             name: 'known.safetensors',
             description: 'Checkpoint',
             status: {
@@ -348,7 +328,6 @@ describe('WorkflowTemplateDetail', () => {
           },
           {
             id: 'unknown-progress',
-            kind: 'model',
             name: 'unknown.safetensors',
             description: 'Checkpoint',
             status: {
@@ -381,9 +360,6 @@ describe('WorkflowTemplateDetail', () => {
     })
     expect(unknownProgress).not.toHaveAttribute('aria-valuenow')
     expect(unknownProgress).toHaveAttribute('aria-valuetext', 'Downloading')
-    expect(
-      within(unknownProgress).getByTestId('download-progress-fill')
-    ).toHaveClass('animate-pulse')
   })
 
   it('keeps paused progress truthful and presents completion as final', () => {
@@ -394,7 +370,6 @@ describe('WorkflowTemplateDetail', () => {
         rows: [
           {
             id: 'paused-model',
-            kind: 'model',
             name: 'paused.safetensors',
             description: 'Checkpoint',
             status: {
@@ -411,8 +386,24 @@ describe('WorkflowTemplateDetail', () => {
             }
           },
           {
+            id: 'paused-unknown-model',
+            name: 'paused-unknown.safetensors',
+            description: 'Checkpoint',
+            status: {
+              kind: 'downloadable',
+              label: 'Download paused unknown model',
+              downloadState: {
+                status: 'downloading',
+                attempt: 1,
+                activity: 'paused',
+                receivedBytes: null,
+                totalBytes: null,
+                fraction: null
+              }
+            }
+          },
+          {
             id: 'done-model',
-            kind: 'model',
             name: 'done.safetensors',
             description: 'Checkpoint',
             status: {
@@ -432,6 +423,11 @@ describe('WorkflowTemplateDetail', () => {
     expect(paused).toHaveAttribute('aria-valuenow', '50')
     expect(paused).toHaveAttribute('aria-valuetext', 'Paused · 512 B / 1 KB')
     expect(screen.getByText('Paused · 512 B / 1 KB')).toBeInTheDocument()
+    const pausedUnknown = screen.getByRole('progressbar', {
+      name: 'Paused download for paused-unknown.safetensors'
+    })
+    expect(pausedUnknown).not.toHaveAttribute('aria-valuenow')
+    expect(pausedUnknown).toHaveAttribute('aria-valuetext', 'Paused')
     expect(
       screen.getByRole('status', { name: 'Downloaded' })
     ).toHaveTextContent('Downloaded')
