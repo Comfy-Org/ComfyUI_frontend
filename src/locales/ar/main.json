@@ -2601,6 +2601,7 @@
     "maskBlendingOptions": "خيارات دمج القناع",
     "maskLayer": "طبقة القناع",
     "maskOpacity": "شفافية القناع",
+    "maskOutputOpacity": "عتامة قناع الإخراج",
     "maskTolerance": "تسامح القناع",
     "method": "طريقة",
     "mirrorHorizontal": "انعكاس أفقي",

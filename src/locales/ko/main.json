@@ -2601,6 +2601,7 @@
     "maskBlendingOptions": "마스크 혼합 옵션",
     "maskLayer": "마스크 레이어",
     "maskOpacity": "마스크 불투명도",
+    "maskOutputOpacity": "출력 마스크 불투명도",
     "maskTolerance": "마스크 허용치",
     "method": "방법",
     "mirrorHorizontal": "수평 반전",

@@ -65,6 +65,7 @@ export const useMaskEditorStore = defineStore('maskEditor', () => {
   const image = ref<HTMLImageElement | null>(null)
 
   const maskOpacity = ref<number>(0.8)
+  const maskOutputOpacity = ref<number>(1)
 
   const brushVisible = ref<boolean>(true)
   const isPanning = ref<boolean>(false)
@@ -198,6 +199,10 @@ export const useMaskEditorStore = defineStore('maskEditor', () => {
     maskOpacity.value = clamp(opacity, 0, 1)
   }
 
+  function setMaskOutputOpacity(opacity: number): void {
+    maskOutputOpacity.value = clamp(opacity, 0, 1)
+  }
+
   function resetState(): void {
     brushSettings.value = {
       type: BrushShape.Arc,
@@ -224,6 +229,7 @@ export const useMaskEditorStore = defineStore('maskEditor', () => {
     panOffset.value = { x: 0, y: 0 }
     cursorPoint.value = { x: 0, y: 0 }
     maskOpacity.value = 0.8
+    maskOutputOpacity.value = 1
 
     // Reset GPU recreation flags
     gpuTexturesNeedRecreation.value = false
@@ -265,6 +271,7 @@ export const useMaskEditorStore = defineStore('maskEditor', () => {
     pointerZone,
     image,
     maskOpacity,
+    maskOutputOpacity,
     canUndo,
     canRedo,
     maskColor,
@@ -303,6 +310,7 @@ export const useMaskEditorStore = defineStore('maskEditor', () => {
     triggerClear,
     clearTrigger,
     setMaskOpacity,
+    setMaskOutputOpacity,
     resetState
   }
 })

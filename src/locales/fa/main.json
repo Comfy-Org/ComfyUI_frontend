@@ -2601,6 +2601,7 @@
     "maskBlendingOptions": "گزینه‌های ترکیب ماسک",
     "maskLayer": "لایه ماسک",
     "maskOpacity": "شفافیت ماسک",
+    "maskOutputOpacity": "شفافیت ماسک خروجی",
     "maskTolerance": "تلورانس ماسک",
     "method": "روش",
     "mirrorHorizontal": "آینه افقی",

@@ -2601,6 +2601,7 @@
     "maskBlendingOptions": "Maske Karıştırma Seçenekleri",
     "maskLayer": "Maske Katmanı",
     "maskOpacity": "Maske Opaklığı",
+    "maskOutputOpacity": "Çıkış maskesi opaklığı",
     "maskTolerance": "Maske Toleransı",
     "method": "Yöntem",
     "mirrorHorizontal": "Yatay ayna",

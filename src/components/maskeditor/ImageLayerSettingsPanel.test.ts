@@ -21,7 +21,9 @@ const initialMock = () =>
     maskCanvas: null as HTMLCanvasElement | null,
     rgbCanvas: null as HTMLCanvasElement | null,
     imgCanvas: null as HTMLCanvasElement | null,
-    setMaskOpacity: vi.fn()
+    setMaskOpacity: vi.fn(),
+    maskOutputOpacity: 1,
+    setMaskOutputOpacity: vi.fn()
   })
 
 let mockStore: ReturnType<typeof initialMock>
@@ -41,7 +43,7 @@ vi.mock('@/components/maskeditor/controls/SliderControl.vue', () => ({
     name: 'SliderControlStub',
     props: ['label', 'min', 'max', 'step', 'modelValue'],
     emits: ['update:modelValue'],
-    template: `<button data-slider="true" @click="$emit('update:modelValue', 0.3)">{{ modelValue }}</button>`
+    template: `<button :data-slider="label" @click="$emit('update:modelValue', 0.3)">{{ label }}: {{ modelValue }}</button>`
   }
 }))
 
@@ -53,6 +55,7 @@ const i18n = createI18n({
       maskEditor: {
         layers: 'Layers',
         maskOpacity: 'Mask Opacity',
+        maskOutputOpacity: 'Output Mask Opacity',
         maskBlendingOptions: 'Mask Blending Options',
         black: 'Black',
         white: 'White',
@@ -88,7 +91,7 @@ describe('ImageLayerSettingsPanel', () => {
       const { container } = renderPanel()
 
       await user.click(
-        container.querySelector('[data-slider="true"]') as HTMLElement
+        container.querySelector('[data-slider="Mask Opacity"]') as HTMLElement
       )
 
       expect(mockStore.setMaskOpacity).toHaveBeenCalledWith(0.3)
@@ -101,11 +104,30 @@ describe('ImageLayerSettingsPanel', () => {
 
       await expect(
         user.click(
-          container.querySelector('[data-slider="true"]') as HTMLElement
+          container.querySelector('[data-slider="Mask Opacity"]') as HTMLElement
         )
       ).resolves.not.toThrow()
 
       expect(mockStore.setMaskOpacity).toHaveBeenCalledWith(0.3)
+    })
+  })
+
+  describe('output mask opacity slider', () => {
+    it('should update output opacity without changing preview opacity', async () => {
+      const user = userEvent.setup()
+      const canvas = makeCanvas()
+      mockStore.maskCanvas = canvas
+      const { container } = renderPanel()
+
+      await user.click(
+        container.querySelector(
+          '[data-slider="Output Mask Opacity"]'
+        ) as HTMLElement
+      )
+
+      expect(mockStore.setMaskOutputOpacity).toHaveBeenCalledWith(0.3)
+      expect(mockStore.setMaskOpacity).not.toHaveBeenCalled()
+      expect(canvas.style.opacity).toBe('')
     })
   })
 

@@ -2601,6 +2601,7 @@
     "maskBlendingOptions": "אפשרויות מיזוג המסכה",
     "maskLayer": "שכבת המסכה",
     "maskOpacity": "אטימות המסכה",
+    "maskOutputOpacity": "אטימות מסכת הפלט",
     "maskTolerance": "סובלנות המסכה",
     "method": "שיטה",
     "mirrorHorizontal": "שיקוף אופקי",
