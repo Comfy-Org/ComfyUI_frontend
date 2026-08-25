@@ -49,6 +49,16 @@ describe('dialogService Reka renderer opt-in', () => {
     expect(args.dialogComponentProps.size).toBe('md')
   })
 
+  it('confirm() allows an isolated dialog key', () => {
+    void useDialogService().confirm({
+      key: 'desktop-login-redemption',
+      title: 'T',
+      message: 'M'
+    })
+    const [args] = showDialog.mock.calls[0]
+    expect(args.key).toBe('desktop-login-redemption')
+  })
+
   it("showBillingComingSoonDialog() sets renderer 'reka', size 'sm', and 360px contentClass", () => {
     useDialogService().showBillingComingSoonDialog()
     const [args] = showDialog.mock.calls[0]

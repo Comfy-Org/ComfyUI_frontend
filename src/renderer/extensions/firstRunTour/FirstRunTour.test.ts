@@ -4,6 +4,8 @@ import { nextTick } from 'vue'
 
 import { withDesktopLoginApproval } from '@/platform/cloud/onboarding/desktopLoginRedemptionState'
 
+import FirstRunTour from './FirstRunTour.vue'
+
 const mocks = vi.hoisted(() => ({
   gettingStartedVisible: false
 }))
@@ -31,35 +33,37 @@ vi.mock('./tour/useFirstRunTourController', () => ({
   useFirstRunTourController: vi.fn()
 }))
 
-async function renderFirstRunTour() {
-  const { default: FirstRunTour } = await import('./FirstRunTour.vue')
-  return render(FirstRunTour)
-}
-
 describe('FirstRunTour desktop sign-in arbitration', () => {
   beforeEach(() => {
     mocks.gettingStartedVisible = true
   })
 
-  it('suspends onboarding while desktop sign-in approval is pending', async () => {
-    await renderFirstRunTour()
-    expect(screen.getByTestId('getting-started-screen')).toBeInTheDocument()
+  it.for([
+    ['approved', true],
+    ['declined', false],
+    ['dismissed', null]
+  ] as const)(
+    'suspends onboarding until desktop sign-in is %s',
+    async ([_label, result]) => {
+      render(FirstRunTour)
+      expect(screen.getByTestId('getting-started-screen')).toBeInTheDocument()
 
-    let finishApproval!: () => void
-    const approval = withDesktopLoginApproval(
-      () =>
-        new Promise<void>((resolve) => {
-          finishApproval = resolve
-        })
-    )
-    await nextTick()
+      let finishApproval!: (result: boolean | null) => void
+      const approval = withDesktopLoginApproval(
+        () =>
+          new Promise<boolean | null>((resolve) => {
+            finishApproval = resolve
+          })
+      )
+      await nextTick()
 
-    expect(screen.queryByTestId('getting-started-screen')).toBeNull()
+      expect(screen.queryByTestId('getting-started-screen')).toBeNull()
 
-    finishApproval()
-    await approval
-    await nextTick()
+      finishApproval(result)
+      await approval
+      await nextTick()
 
-    expect(screen.getByTestId('getting-started-screen')).toBeInTheDocument()
-  })
+      expect(screen.getByTestId('getting-started-screen')).toBeInTheDocument()
+    }
+  )
 })

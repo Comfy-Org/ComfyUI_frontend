@@ -64,6 +64,8 @@ export type ConfirmationDialogType =
   | 'info'
 
 interface BaseConfirmOptions {
+  /** Override the shared prompt key when this confirmation has its own lifecycle. */
+  key?: string
   /** Dialog heading */
   title: string
   /** The main message body */
@@ -300,6 +302,7 @@ export const useDialogService = () => {
    * `null` if the dialog is cancelled or closed
    */
   async function confirm({
+    key = 'global-prompt',
     title,
     message,
     type = 'default',
@@ -309,7 +312,7 @@ export const useDialogService = () => {
   }: ConfirmOptions): Promise<boolean | null> {
     return new Promise((resolve) => {
       const options: ShowDialogOptions = {
-        key: 'global-prompt',
+        key,
         title,
         component: ConfirmationDialogContent,
         props: {

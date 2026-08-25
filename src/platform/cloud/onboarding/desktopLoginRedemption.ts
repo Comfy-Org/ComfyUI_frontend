@@ -119,6 +119,7 @@ async function confirmRedemption(
   if (state.approvedUserUid === uid) return true
   const confirmed = await withDesktopLoginApproval(() =>
     useDialogService().confirm({
+      key: 'desktop-login-redemption',
       title: t('desktopLogin.confirmSummary'),
       message: t('desktopLogin.confirmMessage')
     })

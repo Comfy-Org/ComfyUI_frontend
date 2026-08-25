@@ -161,6 +161,7 @@ describe('installDesktopLoginRedemption', () => {
 
     expect(mockConfirm).toHaveBeenCalledTimes(1)
     expect(mockConfirm).toHaveBeenCalledWith({
+      key: 'desktop-login-redemption',
       title: 'desktopLogin.confirmSummary',
       message: 'desktopLogin.confirmMessage'
     })
