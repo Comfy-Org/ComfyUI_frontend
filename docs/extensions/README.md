@@ -18,6 +18,7 @@ Extensions are the primary way to add functionality to ComfyUI. They can be cust
   - Best practices for extension development
 - **[Node ID Migration Notes](./node-id-migration.md)** - Compatibility guidance for branded node IDs and subgraph boundary sentinel values
 - **[Link Registration Migration Notes](./link-registration-migration.md)** - Guidance for handling defensive floating-link registration failures
+- **[Widget Value Recipe Book](./widget-value-recipe-book.md)** - Use-case -> pattern reference for reading/reacting to widget component values via `widgetValueStore`
 
 ## Quick Links
 
