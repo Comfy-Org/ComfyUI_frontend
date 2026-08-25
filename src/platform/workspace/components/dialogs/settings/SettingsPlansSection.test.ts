@@ -249,7 +249,6 @@ describe('SettingsPlansSection — API is the source of truth', () => {
     expect(
       screen.getByText('No plans are available right now. Check back soon.')
     ).toBeTruthy()
-    // The empty state must NOT tell the user to retry a load that succeeded.
     expect(screen.queryByText("We couldn't load your plan details.")).toBeNull()
     expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull()
   })
@@ -273,14 +272,12 @@ describe('SettingsPlansSection — API is the source of truth', () => {
     const { rerender } = renderSection()
     expect(screen.getByText('$20')).toBeTruthy()
 
-    // Parent flips isLoading true on a refetch while cards are already shown.
     await rerender({
       catalogPlans: CATALOG,
       teamCreditStops: TEAM_STOPS,
       isLoading: true
     })
 
-    // Cards stay; no full-section spinner replacement.
     expect(screen.getByText('$20')).toBeTruthy()
     expect(screen.queryByText('Loading')).toBeNull()
   })
