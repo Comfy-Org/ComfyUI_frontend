@@ -6,75 +6,14 @@ import type {
   ModelDownloadDispatchOutcome,
   ModelWithUrl
 } from '@/platform/missingModel/missingModelDownload'
+import { useTemplateModelRowDownloads } from '@/platform/workflow/templates/composables/useTemplateModelRowDownloads'
+import type { TemplateModelRowDownloadDependencies } from '@/platform/workflow/templates/composables/useTemplateModelRowDownloads'
 import type { ElectronDownload } from '@/stores/electronDownloadStore'
 
 type FolderPaths = Record<string, string[]>
-
-type TemplateModelDownloadState =
-  | { status: 'idle'; attempt: 0 }
-  | { status: 'queued'; attempt: number }
-  | { status: 'starting'; attempt: number }
-  | {
-      status: 'downloading'
-      attempt: number
-      activity: 'active' | 'paused'
-      receivedBytes: number | null
-      totalBytes: number | null
-      fraction: number | null
-    }
-  | { status: 'done'; attempt: number }
-  | {
-      status: 'failed'
-      attempt: number
-      reason: 'error' | 'cancelled'
-      retryable: true
-    }
-
-type TemplateModelRowDownloadDependencies = {
-  loadFolderPaths: () => Promise<FolderPaths>
-  dispatchDownload: (
-    model: ModelWithUrl,
-    paths: FolderPaths,
-    options: { revealLegacyDownload: false }
-  ) => ModelDownloadDispatchOutcome
-  subscribeDesktopProgress: (
-    listener: (progress: ComfyDownloadProgress) => void
-  ) => () => void
-  subscribeLegacyProgress: (
-    listener: (download: ElectronDownload) => void
-  ) => () => void
-}
-
-type TemplateModelRowDownloads = {
-  stateFor: (model: ModelWithUrl) => TemplateModelDownloadState
-  request: (model: ModelWithUrl) => void
-  dispose: () => void
-}
-
-type UseTemplateModelRowDownloads = (
-  dependencies: TemplateModelRowDownloadDependencies
-) => TemplateModelRowDownloads
-
-function isRowDownloadModule(value: unknown): value is {
-  useTemplateModelRowDownloads: UseTemplateModelRowDownloads
-} {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'useTemplateModelRowDownloads' in value &&
-    typeof value.useTemplateModelRowDownloads === 'function'
-  )
-}
-
-async function loadComposable(): Promise<UseTemplateModelRowDownloads> {
-  const modulePath = './useTemplateModelRowDownloads'
-  const value: unknown = await import(modulePath)
-  if (!isRowDownloadModule(value)) {
-    throw new Error('Expected useTemplateModelRowDownloads to be exported')
-  }
-
-  return value.useTemplateModelRowDownloads
-}
+type DispatchDownload = NonNullable<
+  TemplateModelRowDownloadDependencies['dispatchDownload']
+>
 
 function model(
   name: string,
@@ -104,7 +43,6 @@ function noLegacySubscription() {
 
 describe('useTemplateModelRowDownloads', () => {
   it('subscribes before direct host dispatch without loading folder paths', async () => {
-    const useTemplateModelRowDownloads = await loadComposable()
     const order: string[] = []
     const loadFolderPaths = vi.fn<() => Promise<FolderPaths>>()
     const request = model('desktop2.safetensors')
@@ -147,11 +85,10 @@ describe('useTemplateModelRowDownloads', () => {
   })
 
   it('queues a legacy row while paths load detached and retries without revealing the sidebar', async () => {
-    const useTemplateModelRowDownloads = await loadComposable()
     const paths = deferred<FolderPaths>()
     const hostResult = deferred<boolean>()
     const dispatchDownload = vi
-      .fn<TemplateModelRowDownloadDependencies['dispatchDownload']>()
+      .fn<DispatchDownload>()
       .mockReturnValueOnce({
         status: 'not-dispatched',
         reason: 'missing-directory-path'
@@ -198,7 +135,6 @@ describe('useTemplateModelRowDownloads', () => {
   })
 
   it('keeps resolved host booleans uninterpreted and makes rejection retryable', async () => {
-    const useTemplateModelRowDownloads = await loadComposable()
     const falseResult = deferred<boolean>()
     const trueResult = deferred<boolean>()
     const rejectedResult = deferred<boolean>()
@@ -252,7 +188,6 @@ describe('useTemplateModelRowDownloads', () => {
   })
 
   it('maps Desktop2 native events and derives fractions only from valid bytes', async () => {
-    const useTemplateModelRowDownloads = await loadComposable()
     let onDesktopProgress!: (progress: ComfyDownloadProgress) => void
     const downloads = useTemplateModelRowDownloads({
       loadFolderPaths: vi.fn(),
@@ -313,7 +248,6 @@ describe('useTemplateModelRowDownloads', () => {
   })
 
   it('correlates Desktop2 progress by URL, filename, and available directory', async () => {
-    const useTemplateModelRowDownloads = await loadComposable()
     let onDesktopProgress!: (progress: ComfyDownloadProgress) => void
     const sharedUrl =
       'https://huggingface.co/org/model/resolve/main/shared.safetensors'
@@ -357,7 +291,6 @@ describe('useTemplateModelRowDownloads', () => {
   })
 
   it('does not fan out directory-less progress across ambiguous model rows', async () => {
-    const useTemplateModelRowDownloads = await loadComposable()
     let onDesktopProgress!: (progress: ComfyDownloadProgress) => void
     const sharedUrl =
       'https://huggingface.co/org/model/resolve/main/shared.safetensors'
@@ -420,7 +353,6 @@ describe('useTemplateModelRowDownloads', () => {
   })
 
   it('maps and correlates legacy progress by URL and filename', async () => {
-    const useTemplateModelRowDownloads = await loadComposable()
     let onLegacyProgress!: (download: ElectronDownload) => void
     const sharedUrl = 'https://example.com/shared-download'
     const first = model('first.safetensors', sharedUrl)
@@ -475,11 +407,10 @@ describe('useTemplateModelRowDownloads', () => {
   })
 
   it('does not retry dispatch from an obsolete detached folder lookup', async () => {
-    const useTemplateModelRowDownloads = await loadComposable()
     const paths = deferred<FolderPaths>()
     let onDesktopProgress!: (progress: ComfyDownloadProgress) => void
     const dispatchDownload = vi
-      .fn<TemplateModelRowDownloadDependencies['dispatchDownload']>()
+      .fn<DispatchDownload>()
       .mockReturnValueOnce({
         status: 'not-dispatched',
         reason: 'missing-directory-path'
@@ -523,7 +454,6 @@ describe('useTemplateModelRowDownloads', () => {
   })
 
   it('requires retry activity before accepting an uncorrelated native terminal', async () => {
-    const useTemplateModelRowDownloads = await loadComposable()
     let onDesktopProgress!: (progress: ComfyDownloadProgress) => void
     const request = model('retry-terminal.safetensors')
     const downloads = useTemplateModelRowDownloads({
@@ -583,12 +513,11 @@ describe('useTemplateModelRowDownloads', () => {
   })
 
   it('disposes both observers without changing active download state', async () => {
-    const useTemplateModelRowDownloads = await loadComposable()
     const stopDesktop = vi.fn()
     const stopLegacy = vi.fn()
     const paths = deferred<FolderPaths>()
     const dispatchDownload = vi
-      .fn<TemplateModelRowDownloadDependencies['dispatchDownload']>()
+      .fn<DispatchDownload>()
       .mockReturnValueOnce({
         status: 'not-dispatched',
         reason: 'missing-directory-path'
