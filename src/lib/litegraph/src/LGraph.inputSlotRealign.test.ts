@@ -16,6 +16,7 @@ import type {
   ISerialisedNode,
   SerialisableGraph
 } from '@/lib/litegraph/src/types/serialisation'
+import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
@@ -594,6 +595,9 @@ describe('realignInputLinkSlots with a rejected batch (#15581)', () => {
     const squatter = source.connect(0, target, 0)!
     const blocked = source.connect(0, target, 1)!
     const free = source.connect(0, target, 2)!
+    source.onConnectionsChange = vi.fn()
+    target.onConnectionsChange = vi.fn()
+    const incrementVersion = vi.spyOn(graph, 'incrementVersion')
 
     const nodeData = target.serialize()
     nodeData.inputs = [
@@ -615,6 +619,21 @@ describe('realignInputLinkSlots with a rejected batch (#15581)', () => {
       graphLinkIds: [blocked.id, free.id],
       inputLinkIds: [blocked.id, free.id, undefined]
     })
+    expect(source.onConnectionsChange).toHaveBeenCalledWith(
+      NodeSlotType.OUTPUT,
+      0,
+      false,
+      squatter,
+      source.outputs[0]
+    )
+    expect(target.onConnectionsChange).toHaveBeenCalledWith(
+      NodeSlotType.INPUT,
+      0,
+      false,
+      squatter,
+      target.inputs[0]
+    )
+    expect(incrementVersion).toHaveBeenCalledOnce()
   })
 })
 

@@ -189,6 +189,10 @@ export function realignInputLinkSlots(
         topology: link._state,
         patch: { targetSlot: slot }
       }))
+      const removedConnections = removals.map((link) => ({
+        connection: link.resolve(graph),
+        link
+      }))
       const result = useLinkStore().updateEndpoints(
         graphScopeOf(graph),
         updates,
@@ -198,14 +202,55 @@ export function realignInputLinkSlots(
         console.error('Failed to realign input link slots', result.error)
         break
       }
+
+      for (const { connection, link } of removedConnections) {
+        link.disconnect(graph)
+        graph.incrementVersion()
+        if (connection.inputNode && connection.input) {
+          try {
+            connection.inputNode.onConnectionsChange?.(
+              NodeSlotType.INPUT,
+              link.target_slot,
+              false,
+              link,
+              connection.input
+            )
+          } catch (error) {
+            console.error(
+              `Failed to notify disconnected link ${link.id}`,
+              error
+            )
+          }
+        }
+        if (connection.outputNode && connection.output) {
+          try {
+            connection.outputNode.onConnectionsChange?.(
+              NodeSlotType.OUTPUT,
+              link.origin_slot,
+              false,
+              link,
+              connection.output
+            )
+          } catch (error) {
+            console.error(
+              `Failed to notify disconnected link ${link.id}`,
+              error
+            )
+          }
+        }
+      }
       for (const { link, slot } of moved) {
-        node.onConnectionsChange?.(
-          NodeSlotType.INPUT,
-          slot,
-          true,
-          link,
-          node.inputs[slot]
-        )
+        try {
+          node.onConnectionsChange?.(
+            NodeSlotType.INPUT,
+            slot,
+            true,
+            link,
+            node.inputs[slot]
+          )
+        } catch (error) {
+          console.error(`Failed to notify realigned link ${link.id}`, error)
+        }
       }
     }
   }

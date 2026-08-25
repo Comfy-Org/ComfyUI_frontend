@@ -2947,14 +2947,14 @@ export class LGraph
         }
       }
 
+      realignInputLinkSlots(this, realignmentDataMap.values())
+
       // Drop reroutes that no live link or floating link passes through
       for (const reroute of this.reroutes.values()) {
         if (reroute.totalLinks === 0) {
           this._removeReroute(reroute.id)
         }
       }
-
-      realignInputLinkSlots(this, realignmentDataMap.values())
 
       // groups
       this._groups.length = 0
