@@ -3,7 +3,12 @@ type JsonObject = { [key: string]: JsonValue }
 
 type ExtensionPayload = Record<string, JsonValue>
 
-const payloads = new WeakMap<object, ExtensionPayload>()
+interface ExtensionState {
+  legacy: ExtensionPayload
+  namespaced: ExtensionPayload
+}
+
+const payloads = new WeakMap<object, ExtensionState>()
 
 export const NODE_CANONICAL_FIELDS = new Set([
   'title',
@@ -52,18 +57,30 @@ export const GRAPH_CANONICAL_FIELDS = new Set([
   'widgets'
 ])
 
-const isJsonValue = (value: unknown): value is JsonValue => {
+const isJsonValue = (
+  value: unknown,
+  ancestors = new WeakSet<object>()
+): value is JsonValue => {
   if (value === null || typeof value === 'string' || typeof value === 'boolean')
     return true
   if (typeof value === 'number') return Number.isFinite(value)
-  if (Array.isArray(value)) return value.every(isJsonValue)
   if (typeof value !== 'object') return false
+  if (ancestors.has(value)) return false
 
   const prototype = Object.getPrototypeOf(value)
-  return (
-    (prototype === Object.prototype || prototype === null) &&
-    Object.values(value).every(isJsonValue)
+  if (
+    !Array.isArray(value) &&
+    prototype !== Object.prototype &&
+    prototype !== null
   )
+    return false
+
+  ancestors.add(value)
+  const isJson = Object.values(value).every((entry) =>
+    isJsonValue(entry, ancestors)
+  )
+  ancestors.delete(value)
+  return isJson
 }
 
 const isSafeExtensionKey = (key: string): boolean => key !== '__proto__'
@@ -74,17 +91,17 @@ const readPayload = (value: unknown): ExtensionPayload => {
     value === null ||
     typeof value !== 'object' ||
     Array.isArray(value)
-  )
+  ) {
+    if (value !== undefined)
+      console.warn('LiteGraph: ignoring non-serializable extension payload')
     return {}
+  }
   return Object.fromEntries(
     Object.entries(value)
       .filter(([key]) => isSafeExtensionKey(key))
       .map(([key, entry]) => [key, structuredClone(entry)])
   )
 }
-
-const cloneSerialisable = <T>(value: T): T =>
-  JSON.parse(JSON.stringify(value)) as T
 
 function copyExtensionFields(
   target: ExtensionPayload,
@@ -97,8 +114,15 @@ function copyExtensionFields(
       canonicalFields.has(key) ||
       key === 'extensions' ||
       !isJsonValue(value)
-    )
+    ) {
+      if (
+        isSafeExtensionKey(key) &&
+        !canonicalFields.has(key) &&
+        key !== 'extensions'
+      )
+        console.warn('LiteGraph: ignoring non-serializable extension payload')
       continue
+    }
     target[key] = structuredClone(value)
   }
 }
@@ -109,9 +133,16 @@ export const hydrateExtensionPayload = (
   canonicalFields: ReadonlySet<string>
 ): void => {
   const record = Object.fromEntries(Object.entries(data))
-  const payload = readPayload(record.extensions)
-  copyExtensionFields(payload, record, canonicalFields)
-  payloads.set(owner, payload)
+  const previous = payloads.get(owner)
+  for (const key of Object.keys(previous?.legacy ?? {}))
+    Reflect.deleteProperty(owner, key)
+
+  const namespaced = readPayload(record.extensions)
+  const legacyFields: ExtensionPayload = {}
+  copyExtensionFields(legacyFields, record, canonicalFields)
+  Object.assign(owner, structuredClone(legacyFields))
+  for (const key of Object.keys(legacyFields)) delete namespaced[key]
+  payloads.set(owner, { legacy: legacyFields, namespaced })
 }
 
 export const runExtensionSerializeHook = <T extends object>(
@@ -120,12 +151,17 @@ export const runExtensionSerializeHook = <T extends object>(
   canonicalFields: ReadonlySet<string>,
   hook?: (data: T) => unknown
 ): T => {
-  const payload = payloads.get(owner) ?? {}
-  if (!hook && Object.keys(payload).length === 0) return canonical
+  const state = payloads.get(owner) ?? { legacy: {}, namespaced: {} }
+  if (
+    !hook &&
+    Object.keys(state.legacy).length === 0 &&
+    Object.keys(state.namespaced).length === 0
+  )
+    return canonical
 
-  const view = cloneSerialisable(canonical)
-  Object.assign(view, {
-    extensions: structuredClone(payload)
+  const view = canonical
+  Object.assign(view, structuredClone(state.legacy), {
+    extensions: structuredClone({ ...state.namespaced, ...state.legacy })
   })
   hook?.(view)
 
@@ -138,13 +174,19 @@ export const runExtensionSerializeHook = <T extends object>(
   }
 
   const viewRecord = Object.fromEntries(Object.entries(view))
-  const result = readPayload(viewRecord.extensions)
-  copyExtensionFields(result, viewRecord, canonicalFields)
-  payloads.set(owner, result)
+  const namespaced = readPayload(viewRecord.extensions)
+  const legacy: ExtensionPayload = {}
+  copyExtensionFields(legacy, viewRecord, canonicalFields)
+  for (const key of Object.keys(legacy)) delete namespaced[key]
+  payloads.set(owner, { legacy, namespaced })
 
-  return Object.keys(result).length
-    ? Object.assign(canonical, { extensions: structuredClone(result) })
-    : canonical
+  const extensions = { ...namespaced, ...legacy }
+  if (Object.keys(extensions).length)
+    return Object.assign(canonical, {
+      extensions: structuredClone(extensions)
+    })
+  Reflect.deleteProperty(canonical, 'extensions')
+  return canonical
 }
 
 export const extensionConfigureView = <T extends object>(
@@ -152,6 +194,7 @@ export const extensionConfigureView = <T extends object>(
   canonical: T
 ): T =>
   Object.assign(
-    cloneSerialisable(canonical),
-    structuredClone(payloads.get(owner))
+    canonical,
+    structuredClone(payloads.get(owner)?.namespaced),
+    structuredClone(payloads.get(owner)?.legacy)
   )

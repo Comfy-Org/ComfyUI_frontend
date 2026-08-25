@@ -68,7 +68,6 @@ import {
   NODE_CANONICAL_FIELDS,
   runExtensionSerializeHook
 } from './extensionPersistence'
-import { inputSlotView, outputSlotView } from './node/slotDescriptorView'
 import { anchorRerouteChain } from './Reroute'
 import type { Reroute, RerouteId } from './Reroute'
 import { getNodeInputOnPos, getNodeOutputOnPos } from './canvas/measureSlots'
@@ -1007,8 +1006,8 @@ export class LGraphNode
   constructor(title: string, type?: string) {
     initializeWidgetsView(this)
     this._state = createNodeShellState(title, type, this.title_mode)
-    this._inputs = inputSlotView(this._state.inputs, this)
-    this._outputs = outputSlotView(this._state.outputs, this)
+    this._inputs = this._state.inputs
+    this._outputs = this._state.outputs
     for (const property of [
       'inputs',
       'outputs',

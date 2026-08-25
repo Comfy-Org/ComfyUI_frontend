@@ -82,6 +82,7 @@ export function usePromotedPreviews(
 
     const rootGraphId = node.rootGraph.id
     const hostLocator = getPreviewExposureHostLocator(node)
+    if (!hostLocator) return []
     const exposures = previewExposureStore.getExposures(
       rootGraphId,
       hostLocator
@@ -105,6 +106,7 @@ export function usePromotedPreviews(
       if (!(sourceNode instanceof SubgraphNode)) return undefined
 
       const nestedHostLocator = getPreviewExposureHostLocator(sourceNode)
+      if (!nestedHostLocator) return undefined
       const currentExecutionId = hostExecutionsByLocator.get(currentHostLocator)
       if (!currentExecutionId) return undefined
       hostNodesByLocator.set(nestedHostLocator, sourceNode)

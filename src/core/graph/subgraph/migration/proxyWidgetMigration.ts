@@ -728,6 +728,7 @@ function migratePreview(
   }
 
   const hostNodeLocator = getPreviewExposureHostLocator(hostNode)
+  if (!hostNodeLocator) return { ok: false, reason: 'missingSourceNode' }
   const existing = store
     .getExposures(hostNode.rootGraph.id, hostNodeLocator)
     .find(

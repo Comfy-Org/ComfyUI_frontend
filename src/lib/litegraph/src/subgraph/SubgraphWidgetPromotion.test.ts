@@ -1287,6 +1287,8 @@ describe('SubgraphWidgetPromotion', () => {
         const rootGraphId = hostNode.rootGraph.id
         const rawLocator = createNodeLocatorId(null, hostNode.id)
         const scopedLocator = getPreviewExposureHostLocator(hostNode)
+        expect(scopedLocator).not.toBeNull()
+        if (!scopedLocator) return
         const store = usePreviewExposureStore()
         store.setExposures(rootGraphId, rawLocator, [
           { name: 'preview', ...exposure12 }

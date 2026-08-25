@@ -532,6 +532,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const legacy = store.getExposures(rootGraphId, legacyKey)
     if (!legacy.length) return
     const hostLocator = getPreviewExposureHostLocator(this)
+    if (!hostLocator) return
     store.setExposures(rootGraphId, hostLocator, [...legacy])
     if (legacyKey !== hostLocator) {
       store.setExposures(rootGraphId, legacyKey, [])

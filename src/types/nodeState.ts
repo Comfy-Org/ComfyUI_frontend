@@ -1,8 +1,8 @@
-import type { INodeFlags } from '@/lib/litegraph/src/interfaces'
 import type {
-  InputSlotDescriptor,
-  OutputSlotDescriptor
-} from '@/lib/litegraph/src/node/slotDescriptorView'
+  INodeFlags,
+  INodeInputSlot,
+  INodeOutputSlot
+} from '@/lib/litegraph/src/interfaces'
 import type {
   LGraphEventMode,
   RenderShape,
@@ -23,10 +23,10 @@ export interface NodeState {
   /** Owning (sub)graph id — partitioning + locator ids. */
   graphId: UUID
   readonly id: NodeId
-  inputs: InputSlotDescriptor[]
+  inputs: INodeInputSlot[]
   lastSerialization?: ISerialisedNode
   mode: LGraphEventMode
-  outputs: OutputSlotDescriptor[]
+  outputs: INodeOutputSlot[]
   properties: Record<string, NodeProperty | undefined>
   title: string
   type: string

@@ -5,7 +5,6 @@ import { computed } from 'vue'
 
 import { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
-import { useLinkStateStore } from '@/stores/linkStateStore'
 import { graphScopeOf, toOwningGraphId } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
@@ -137,27 +136,7 @@ describe('LLink ↔ linkStore integration', () => {
     expect(store.isInputSlotConnected(graphScopeOf(graph), b.id, 0)).toBe(false)
   })
 
-  it('registers non-topological state and removes it with the link', () => {
-    const graph = new LGraph()
-    const a = new LGraphNode('A')
-    const b = new LGraphNode('B')
-    a.addOutput('out', 'INT')
-    b.addInput('in', 'INT')
-    graph.add(a)
-    graph.add(b)
-
-    const link = a.connect(0, b, 0)!
-    const scope = graphScopeOf(graph)
-    const state = useLinkStateStore().get(scope, link.id)
-    expect(state).toBe(link._linkState)
-
-    graph.removeLink(link.id)
-
-    expect(useLinkStateStore().get(scope, link.id)).toBeUndefined()
-    expect(link._linkState).not.toBe(state)
-  })
-
-  it('preserves extension-visible link fields through store-backed state', () => {
+  it('preserves extension-visible link fields on the link', () => {
     vi.stubGlobal('Path2D', class {})
     const graph = new LGraph()
     const link = new LLink(
@@ -180,17 +159,15 @@ describe('LLink ↔ linkStore integration', () => {
     link._dragging = true
     link.color = ''
 
-    const state = useLinkStateStore().get(graphScopeOf(graph), link.id)!
-    expect(state.runtime).toEqual({
+    expect(link).toMatchObject({
       data: 42,
-      outputData: { output: true },
-      position: [10, 20],
-      lastTime: 30,
+      _data: { output: true },
+      _pos: [10, 20],
+      _last_time: 30,
       path,
-      centreAngle: 0.5,
-      dragging: true
+      _centreAngle: 0.5,
+      _dragging: true
     })
-    expect(state.persistent.color).toBeNull()
     expect(link.color).toBeNull()
   })
 
@@ -530,7 +507,7 @@ describe('LLink ↔ linkStore integration', () => {
     )
   })
 
-  it('reports a rejected legacy endpoint mutation', () => {
+  it('reports a rejected legacy endpoint mutation without throwing', () => {
     const graph = new LGraph()
     const firstSource = new LGraphNode('First source')
     const secondSource = new LGraphNode('Second source')
@@ -545,9 +522,14 @@ describe('LLink ↔ linkStore integration', () => {
     const first = firstSource.connect(0, target, 0)!
     secondSource.connect(0, target, 1)
 
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     expect(() => {
       first.target_slot = 1
-    }).toThrow('Failed to update link endpoints (occupied-target)')
+    }).not.toThrow()
+    expect(error).toHaveBeenCalledWith(
+      'Failed to update link endpoints',
+      expect.objectContaining({ code: 'occupied-target' })
+    )
     expect(first.target_slot).toBe(0)
   })
 

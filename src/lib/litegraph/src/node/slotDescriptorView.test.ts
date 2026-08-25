@@ -5,8 +5,8 @@ import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
 import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
 
-describe('slot descriptor views', () => {
-  it('rebinds a transferred input to its new owner', () => {
+describe('slot identity', () => {
+  it('preserves a transferred input and its owner', () => {
     const source = new LGraphNode('Source')
     const target = new LGraphNode('Target')
     source.addInput('slot', 'INT')
@@ -19,11 +19,12 @@ describe('slot descriptor views', () => {
     expect(sourceSlot).toBeInstanceOf(NodeInputSlot)
     if (!(targetSlot instanceof NodeInputSlot)) throw new Error('Expected slot')
     if (!(sourceSlot instanceof NodeInputSlot)) throw new Error('Expected slot')
-    expect(targetSlot.node).toBe(target)
+    expect(targetSlot).toBe(sourceSlot)
+    expect(targetSlot.node).toBe(source)
     expect(sourceSlot.node).toBe(source)
   })
 
-  it('rebinds a transferred output to its new owner', () => {
+  it('preserves a transferred output and its owner', () => {
     const source = new LGraphNode('Source')
     const target = new LGraphNode('Target')
     source.addOutput('slot', 'INT')
@@ -38,18 +39,31 @@ describe('slot descriptor views', () => {
       throw new Error('Expected slot')
     if (!(sourceSlot instanceof NodeOutputSlot))
       throw new Error('Expected slot')
-    expect(targetSlot.node).toBe(target)
+    expect(targetSlot).toBe(sourceSlot)
+    expect(targetSlot.node).toBe(source)
     expect(sourceSlot.node).toBe(source)
   })
 
-  it('ignores invalid indexed assignments', () => {
+  it('preserves the identity of extension-assigned slots', () => {
     const node = new LGraphNode('Node')
-    node.addInput('slot', 'INT')
-    const slot = node.inputs[0]
+    const input = {
+      name: 'input',
+      type: 'INT',
+      link: null,
+      boundingRect: new Float64Array(4)
+    }
+    const output = {
+      name: 'output',
+      type: 'INT',
+      links: [],
+      boundingRect: new Float64Array(4)
+    }
 
-    expect(Reflect.set(node.inputs, '0', null)).toBe(true)
-    expect(Reflect.set(node.inputs, '0', {})).toBe(true)
-    expect(node.inputs[0]).toBe(slot)
+    node.inputs = [input]
+    node.outputs = [output]
+
+    expect(node.inputs[0]).toBe(input)
+    expect(node.outputs[0]).toBe(output)
   })
 
   it('preserves native indexOf behavior for arbitrary values', () => {

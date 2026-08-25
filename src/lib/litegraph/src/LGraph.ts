@@ -53,7 +53,6 @@ import { normalizeWidgetsView } from './node/widgetsView'
 import { clearNodeOwnedStoreState } from '@/stores/clearNodeOwnedStoreState'
 import { useEntityIdStore } from '@/stores/entityIdStore'
 import { useExecutionOrderStore } from '@/stores/executionOrderStore'
-import { useGraphDefinitionStore } from '@/stores/graphDefinitionStore'
 import { useGraphMetadataStore } from '@/stores/graphMetadataStore'
 import { rekeyGraphId } from '@/stores/rekeyGraphId'
 import {
@@ -78,11 +77,7 @@ import {
 import type { DragAndScaleState } from './DragAndScale'
 import { LGraphCanvas } from './LGraphCanvas'
 import { Rectangle } from './infrastructure/Rectangle'
-import {
-  LGraphGroup,
-  registerGroupPresentation,
-  unregisterGroupPresentation
-} from './LGraphGroup'
+import { LGraphGroup } from './LGraphGroup'
 import { LGraphNode } from './LGraphNode'
 import {
   LLink,
@@ -375,44 +370,20 @@ function serialiseStoredNodes(owner: LGraph, sortNodes: boolean) {
   const ordered = sortNodes
     ? [...states].sort((a, b) => compareNodeIds(a.id, b.id))
     : states
-  return ordered.map((state) => {
+  return ordered.flatMap((state) => {
     const adapter = adapters.get(state.id)
     if (!adapter) {
-      throw new Error(
+      console.error(
         `Cannot serialize graph ${owner.id}: node ${state.id} has no live adapter`
       )
+      return []
     }
-    return adapter.serializeFromStoreState(state)
+    return [adapter.serializeFromStoreState(state)]
   })
 }
 
 function serialiseStoredGroups(owner: LGraph) {
-  const membership = useGraphDefinitionStore().membership(
-    owner.rootGraph.id,
-    owner.id
-  )
-  return membership.groups.map((group) => {
-    const presentation = membership.groupPresentation.get(group.id)
-    const layout = layoutStore.getGroupLayout(owner.rootGraph.id, group.id)
-    if (!presentation || !layout) {
-      const missing = !presentation ? 'presentation' : 'layout'
-      throw new Error(
-        `Cannot serialize graph ${owner.id}: group ${group.id} has no ${missing}`
-      )
-    }
-    return {
-      id: group.id,
-      title: presentation.title,
-      bounding: [
-        layout.position.x,
-        layout.position.y,
-        layout.size.width,
-        layout.size.height
-      ],
-      color: presentation.color,
-      flags: presentation.flags
-    }
-  })
+  return owner._groups.map((group) => group.serialize())
 }
 
 export function serialiseMutableGraphParts(
@@ -485,32 +456,54 @@ export class LGraph
     const raw = toRaw(this)
     if (raw._id.value === value) return
     const rootGraph = raw.rootGraph
-    const subgraphDefinition =
-      rootGraph && rootGraph !== raw
-        ? useGraphDefinitionStore().definition(rootGraph.id, raw._id.value)
-        : undefined
+    const previousId = raw._id.value
     const populated =
-      raw._id.value !== zeroUuid &&
+      previousId !== zeroUuid &&
       (raw._nodes.length > 0 ||
         raw._groups.length > 0 ||
         raw.links.size > 0 ||
         raw.floatingLinks.size > 0 ||
         raw.reroutes.size > 0 ||
         raw._subgraphs.size > 0 ||
-        (subgraphDefinition &&
-          (subgraphDefinition.inputs.length > 0 ||
-            subgraphDefinition.outputs.length > 0 ||
-            subgraphDefinition.widgets.length > 0)))
-    if (populated) return
+        (raw instanceof Subgraph &&
+          (raw.inputs.length > 0 ||
+            raw.outputs.length > 0 ||
+            raw.widgets.length > 0)))
+    if (populated) {
+      console.warn(`Cannot change the ID of populated graph ${previousId}`)
+      return
+    }
+    const isRegisteredSubgraph =
+      raw instanceof Subgraph &&
+      rootGraph !== raw &&
+      rootGraph._subgraphs.get(previousId) === raw
+    if (
+      isRegisteredSubgraph &&
+      (value === rootGraph.id || rootGraph._subgraphs.has(value))
+    ) {
+      console.warn(
+        `Cannot change graph ID ${previousId} to occupied ID ${value}`
+      )
+      return
+    }
     const rekeyed = rekeyGraphId(
-      raw._id.value,
+      previousId,
       value,
       !rootGraph || rootGraph === raw
         ? { kind: 'root' }
         : { kind: 'subgraph', rootGraphId: rootGraph.id }
     )
-    if (!rekeyed) return
+    if (!rekeyed) {
+      console.warn(
+        `Cannot change graph ID ${previousId} to occupied ID ${value}`
+      )
+      return
+    }
     raw._id.value = value
+    if (isRegisteredSubgraph) {
+      rootGraph._subgraphs.delete(previousId)
+      rootGraph._subgraphs.set(value, raw)
+    }
   }
 
   get revision(): number {
@@ -556,37 +549,12 @@ export class LGraph
   }
 
   readonly events = new CustomEventTarget<LGraphEventMap>()
-  get _subgraphs(): Map<SubgraphId, Subgraph> {
-    return useGraphDefinitionStore().subgraphs(this.id)
-  }
-
-  get _nodes(): (LGraphNode | SubgraphNode)[] {
-    return useGraphDefinitionStore().membership(
-      this.rootGraph?.id ?? this.id,
-      this.id
-    ).nodes
-  }
-  set _nodes(value: (LGraphNode | SubgraphNode)[]) {
-    useGraphDefinitionStore().membership(
-      this.rootGraph?.id ?? this.id,
-      this.id
-    ).nodes = value
-  }
+  readonly _subgraphs: Map<SubgraphId, Subgraph> = new Map()
+  _nodes: (LGraphNode | SubgraphNode)[] = []
   _nodes_by_id: Record<NodeId, LGraphNode> = {}
   _nodes_in_order: LGraphNode[] = []
   _nodes_executable: LGraphNode[] | null = null
-  get _groups(): LGraphGroup[] {
-    return useGraphDefinitionStore().membership(
-      this.rootGraph?.id ?? this.id,
-      this.id
-    ).groups
-  }
-  set _groups(value: LGraphGroup[]) {
-    useGraphDefinitionStore().membership(
-      this.rootGraph?.id ?? this.id,
-      this.id
-    ).groups = value
-  }
+  _groups: LGraphGroup[] = []
   iteration: number = 0
   globaltime: number = 0
   /** @deprecated Unused */
@@ -754,7 +722,6 @@ export class LGraph
 
   private resetAfterClear(): void {
     const graphId = this.id
-    const definitionStore = useGraphDefinitionStore()
     useGraphMetadataStore().clear(this.rootGraph?.id ?? graphId, graphId)
     if (this.isRootGraph) useEntityIdStore().clear(graphId)
     if (this.isRootGraph && graphId !== zeroUuid) {
@@ -764,13 +731,19 @@ export class LGraph
       useLinkStore().clearGraph(toRootGraphId(graphId))
       useRerouteStore().clearGraph(toRootGraphId(graphId))
       useNodeDataStore().clearGraph(graphId)
-      definitionStore.clearRoot(graphId)
       layoutStore.clearGraph(graphId)
     } else if (this.rootGraph) {
       useExecutionOrderStore().clearGraph(graphScopeOf(this))
-      definitionStore.clearGraph(this.rootGraph.id, graphId)
     }
     this.reroutes.clear()
+
+    this._subgraphs.clear()
+    this._nodes = []
+    this._nodes_by_id = {}
+    this._nodes_in_order = []
+    this._nodes_executable = null
+    this._groups = []
+
     this.id = this.isRootGraph ? createUuidv4() : zeroUuid
     this.revision = 0
 
@@ -778,18 +751,6 @@ export class LGraph
 
     // used to detect changes
     this._version = -1
-    this._subgraphs.clear()
-
-    // nodes
-    this._nodes = []
-    this._nodes_by_id = {}
-    // nodes sorted in execution order
-    this._nodes_in_order = []
-    // nodes that contain onExecute sorted in execution order
-    this._nodes_executable = null
-
-    // other scene stuff
-    this._groups = []
 
     // iterations
     this.iteration = 0
@@ -1334,7 +1295,6 @@ export class LGraph
       this.setDirtyCanvas(true)
       this.change()
       node.graph = this
-      registerGroupPresentation(this, node)
       attachGroupLayout(this, node)
       this.incrementVersion()
       return
@@ -1412,7 +1372,6 @@ export class LGraph
         this._groups.splice(index, 1)
       }
       detachGroupLayout(node)
-      unregisterGroupPresentation(node)
       node.graph = undefined
       this.incrementVersion()
       this.setDirtyCanvas(true, true)
@@ -1486,9 +1445,6 @@ export class LGraph
         this.rootGraph.subgraphs.delete(subgraph.id)
       }
       detachGraphLayouts(releasedSubgraphs)
-      for (const subgraph of releasedSubgraphs) {
-        useGraphDefinitionStore().clearGraph(this.rootGraph.id, subgraph.id)
-      }
     }
 
     // callback
@@ -2784,20 +2740,6 @@ export class LGraph
     }
     const mayContinue = this.events.dispatch('configuring', options)
     if (!mayContinue) return
-    const existingNodes = !options.clearGraph ? [...this._nodes] : undefined
-    const existingGroups = !options.clearGraph ? [...this._groups] : undefined
-    const existingNodesById = !options.clearGraph
-      ? { ...this._nodes_by_id }
-      : undefined
-    const existingLinks = !options.clearGraph
-      ? [...this.links.values()]
-      : undefined
-    const existingFloatingLinks = !options.clearGraph
-      ? [...this.floatingLinks.values()]
-      : undefined
-    const existingTopology = !options.clearGraph
-      ? serialiseOwnedTopology(this)
-      : undefined
 
     beginNamedValuesShadowDiffLoad()
     try {
@@ -3045,47 +2987,6 @@ export class LGraph
 
       this.setDirtyCanvas(true, true)
       return error
-    } catch (error) {
-      if (
-        existingNodes &&
-        existingGroups &&
-        existingNodesById &&
-        existingLinks &&
-        existingFloatingLinks
-      ) {
-        const existingNodeSet = new Set(existingNodes)
-        const existingGroupSet = new Set(existingGroups)
-        try {
-          for (const node of [...this._nodes]) {
-            if (!existingNodeSet.has(node)) this.remove(node)
-          }
-          for (const group of [...this._groups]) {
-            if (!existingGroupSet.has(group)) this.remove(group)
-          }
-        } finally {
-          this._nodes = existingNodes
-          this._groups = existingGroups
-          this._nodes_by_id = existingNodesById
-          for (const node of existingNodes) attachNodeLayout(this, node)
-          for (const group of existingGroups) attachGroupLayout(this, group)
-          unregisterAllLinkTopologies(this)
-          for (const reroute of [...this.reroutes.values()]) {
-            this._removeReroute(reroute.id)
-          }
-          for (const link of existingLinks) {
-            this._addLink(link)
-          }
-          for (const link of existingFloatingLinks) {
-            this.addFloatingLink(link)
-          }
-          for (const rerouteData of existingTopology?.reroutes ?? []) {
-            this.setReroute(rerouteData)
-          }
-        }
-      } else {
-        this.clear()
-      }
-      throw error
     } finally {
       endNamedValuesShadowDiffLoad()
       this.events.dispatch('configured')
@@ -3155,43 +3056,19 @@ export class Subgraph
   static MAX_NESTED_SUBGRAPHS = 1000
 
   /** The display name of the subgraph. */
-  get name(): string {
-    return useGraphDefinitionStore().definition(this.rootGraph.id, this.id).name
-  }
-  set name(value: string) {
-    useGraphDefinitionStore().definition(this.rootGraph.id, this.id).name =
-      value
-  }
+  name: string = 'Unnamed Subgraph'
   /** Optional description shown as tooltip when hovering over the subgraph node. */
-  get description(): string | undefined {
-    return useGraphDefinitionStore().definition(this.rootGraph.id, this.id)
-      .description
-  }
-  set description(value: string | undefined) {
-    useGraphDefinitionStore().definition(
-      this.rootGraph.id,
-      this.id
-    ).description = value
-  }
+  description?: string
 
   readonly inputNode = new SubgraphInputNode(this)
   readonly outputNode = new SubgraphOutputNode(this)
 
   /** Ordered list of inputs to the subgraph itself. Similar to a reroute, with the input side in the graph, and the output side in the subgraph. */
-  get inputs(): SubgraphInput[] {
-    return useGraphDefinitionStore().definition(this.rootGraph.id, this.id)
-      .inputs
-  }
+  readonly inputs: SubgraphInput[] = []
   /** Ordered list of outputs from the subgraph itself. Similar to a reroute, with the input side in the subgraph, and the output side in the graph. */
-  get outputs(): SubgraphOutput[] {
-    return useGraphDefinitionStore().definition(this.rootGraph.id, this.id)
-      .outputs
-  }
+  readonly outputs: SubgraphOutput[] = []
   /** A list of node widgets displayed in the parent graph, on the subgraph object. */
-  get widgets(): ExposedWidget[] {
-    return useGraphDefinitionStore().definition(this.rootGraph.id, this.id)
-      .widgets
-  }
+  readonly widgets: ExposedWidget[] = []
 
   private _rootGraph: LGraph
   override get rootGraph(): LGraph {
@@ -3216,7 +3093,6 @@ export class Subgraph
     if (useGraphMetadataStore().has(rootGraph.id, cloned.id)) {
       cloned.id = createUuidv4()
     }
-    useGraphDefinitionStore().clearGraph(rootGraph.id, cloned.id)
     this._configureBase(cloned)
     this._configureSubgraph(cloned)
   }

@@ -6,7 +6,6 @@ import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLinkStore } from '@/stores/linkStore'
-import { createLinkState, useLinkStateStore } from '@/stores/linkStateStore'
 import { graphScopeOf, toOwningGraphId } from '@/types/graphScopeId'
 import type { GraphScope } from '@/types/graphScopeId'
 import { zeroUuid } from '@/utils/uuid'
@@ -15,7 +14,6 @@ import { UNASSIGNED_NODE_ID, toNodeId, serializeNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
 
 import type { EndpointPatch } from '@/stores/linkStore'
-import type { LinkExecutionData, LinkState } from '@/stores/linkStateStore'
 import type { LinkId } from '@/types/linkId'
 import type { LinkTopology } from '@/types/linkTopology'
 import type { RerouteId } from '@/types/rerouteId'
@@ -128,9 +126,7 @@ function applyEndpointPatch(link: LLink, patch: EndpointPatch): void {
       patch
     )
     if (!result.ok) {
-      throw new Error(
-        `Failed to update link endpoints (${result.error.code}): ${result.error.message}`
-      )
+      console.error('Failed to update link endpoints', result.error)
     }
   } else {
     Object.assign(link._state, patch)
@@ -217,76 +213,28 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
     this._state.parentId = value
   }
 
-  _linkState: LinkState
-
-  get data(): LinkExecutionData | undefined {
-    return this._linkState.runtime.data
-  }
-
-  set data(value: LinkExecutionData | undefined) {
-    this._linkState.runtime.data = value
-  }
-
-  get _data(): unknown {
-    return this._linkState.runtime.outputData
-  }
-
-  set _data(value: unknown) {
-    this._linkState.runtime.outputData = value
-  }
-
+  data?: number | string | boolean | { toToolTip?(): string }
+  _data?: unknown
   /** Centre point of the link, calculated during render only - can be inaccurate */
-  get _pos(): Point {
-    return this._linkState.runtime.position
-  }
-
-  set _pos(value: Point) {
-    this._linkState.runtime.position = value
-  }
-
+  _pos: Point
   /** @todo Clean up - never implemented in comfy. */
-  get _last_time(): number | undefined {
-    return this._linkState.runtime.lastTime
-  }
-
-  set _last_time(value: number | undefined) {
-    this._linkState.runtime.lastTime = value
-  }
-
+  _last_time?: number
   /** The last canvas 2D path that was used to render this link */
-  get path(): Path2D | undefined {
-    return this._linkState.runtime.path
-  }
-
-  set path(value: Path2D | undefined) {
-    this._linkState.runtime.path = value
-  }
+  path?: Path2D
+  /** @inheritdoc */
+  _centreAngle?: number
 
   /** @inheritdoc */
-  get _centreAngle(): number | undefined {
-    return this._linkState.runtime.centreAngle
-  }
+  _dragging?: boolean
 
-  set _centreAngle(value: number | undefined) {
-    this._linkState.runtime.centreAngle = value
-  }
-
-  /** @inheritdoc */
-  get _dragging(): boolean | undefined {
-    return this._linkState.runtime.dragging
-  }
-
-  set _dragging(value: boolean | undefined) {
-    this._linkState.runtime.dragging = value
-  }
-
+  private _color?: CanvasColour | null
   /** Custom colour for this link only */
   public get color(): CanvasColour | null | undefined {
-    return this._linkState.persistent.color
+    return this._color
   }
 
   public set color(value: CanvasColour) {
-    this._linkState.persistent.color = value === '' ? null : value
+    this._color = value === '' ? null : value
   }
 
   public get isFloatingOutput(): boolean {
@@ -320,7 +268,6 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
     target_slot: number,
     parentId?: RerouteId
   ) {
-    this._linkState = createLinkState()
     this._state = {
       id,
       graphId: toOwningGraphId(zeroUuid),
@@ -331,6 +278,8 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
       targetSlot: target_slot,
       parentId
     }
+    this._data = null
+    this._pos = [0, 0]
     defineEnumerableTopologyFacade(this)
   }
 
@@ -724,7 +673,6 @@ export function replaceLinkTopology(
   )
   if (!registered) return false
   if (incumbent) {
-    unregisterLinkState(incumbent)
     linkByTopology.delete(toRaw(incumbent._state))
     incumbent._graphScope = undefined
   }
@@ -739,11 +687,6 @@ function adoptLinkTopology(
 ): void {
   link._state = registered
   link._graphScope = scope
-  link._linkState = useLinkStateStore().register(
-    scope,
-    link.id,
-    link._linkState
-  )
   linkByTopology.set(toRaw(registered), link)
 }
 
@@ -755,24 +698,9 @@ function adoptLinkTopology(
  */
 export function unregisterLinkTopology(link: LLink): void {
   if (!link._graphScope) return
-  unregisterLinkState(link)
   useLinkStore().deleteLink(link._graphScope, link._state)
   linkByTopology.delete(toRaw(link._state))
   link._graphScope = undefined
-}
-
-function unregisterLinkState(link: LLink): void {
-  if (!link._graphScope) return
-  const registered = link._linkState
-  if (!useLinkStateStore().unregister(link._graphScope, link.id, registered))
-    return
-  link._linkState = {
-    persistent: { ...registered.persistent },
-    runtime: {
-      ...registered.runtime,
-      position: [...registered.runtime.position]
-    }
-  }
 }
 
 /**

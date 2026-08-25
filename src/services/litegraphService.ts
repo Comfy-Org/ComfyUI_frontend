@@ -198,6 +198,7 @@ export const useLitegraphService = () => {
 
   function getPseudoWidgetPreviewTargets(node: SubgraphNode): LGraphNode[] {
     const hostLocator = getPreviewExposureHostLocator(node)
+    if (!hostLocator) return []
     const promotions = usePreviewExposureStore().getExposuresAsPromotionShape(
       node.rootGraph.id,
       hostLocator

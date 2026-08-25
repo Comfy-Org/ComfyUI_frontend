@@ -94,9 +94,12 @@ function exposePreview(
   sourceNodeId: string,
   sourcePreviewName = CANVAS_IMAGE_PREVIEW_WIDGET
 ) {
+  const hostLocator = getPreviewExposureHostLocator(setup.subgraphNode)
+  expect(hostLocator).not.toBeNull()
+  if (!hostLocator) return
   usePreviewExposureStore().addExposure(
     setup.subgraphNode.rootGraph.id,
-    getPreviewExposureHostLocator(setup.subgraphNode),
+    hostLocator,
     { sourceNodeId, sourcePreviewName }
   )
 }
@@ -301,22 +304,21 @@ describe(usePromotedPreviews, () => {
     outerSetup.subgraph.add(innerHost)
 
     const store = usePreviewExposureStore()
-    store.addExposure(
-      outerSetup.subgraphNode.rootGraph.id,
-      getPreviewExposureHostLocator(innerHost),
-      {
-        sourceNodeId: String(leafNode.id),
-        sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
-      }
+    const innerHostLocator = getPreviewExposureHostLocator(innerHost)
+    const outerHostLocator = getPreviewExposureHostLocator(
+      outerSetup.subgraphNode
     )
-    store.addExposure(
-      outerSetup.subgraphNode.rootGraph.id,
-      getPreviewExposureHostLocator(outerSetup.subgraphNode),
-      {
-        sourceNodeId: String(innerHost.id),
-        sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
-      }
-    )
+    expect(innerHostLocator).not.toBeNull()
+    expect(outerHostLocator).not.toBeNull()
+    if (!innerHostLocator || !outerHostLocator) return
+    store.addExposure(outerSetup.subgraphNode.rootGraph.id, innerHostLocator, {
+      sourceNodeId: String(leafNode.id),
+      sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
+    })
+    store.addExposure(outerSetup.subgraphNode.rootGraph.id, outerHostLocator, {
+      sourceNodeId: String(innerHost.id),
+      sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
+    })
 
     const mockUrls = ['/view?filename=leaf.png']
     seedOutputs(innerSetup.subgraph.id, [leafNode.id])
@@ -352,6 +354,8 @@ describe(usePromotedPreviews, () => {
     const firstHostLocator = String(firstHost.id)
     const secondHostLocator = String(secondHost.id)
     const nestedLocator = getPreviewExposureHostLocator(innerHost)
+    expect(nestedLocator).not.toBeNull()
+    if (!nestedLocator) return
     const firstLeafExecutionId = `${firstHostLocator}:${innerHost.id}:${leafNode.id}`
     const secondLeafExecutionId = `${secondHostLocator}:${innerHost.id}:${leafNode.id}`
 

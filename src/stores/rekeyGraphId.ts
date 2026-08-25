@@ -1,7 +1,6 @@
 import type { UUID } from '@/utils/uuid'
 
 import { useEntityIdStore } from './entityIdStore'
-import { useGraphDefinitionStore } from './graphDefinitionStore'
 import { useGraphMetadataStore } from './graphMetadataStore'
 
 type GraphIdOwner = { kind: 'root' } | { kind: 'subgraph'; rootGraphId: UUID }
@@ -13,30 +12,22 @@ export function rekeyGraphId(
 ): boolean {
   if (previousId === nextId) return true
 
-  const definitions = useGraphDefinitionStore()
   const metadata = useGraphMetadataStore()
   const entityIds = useEntityIdStore()
-  const definitionOccupied =
-    owner.kind === 'root'
-      ? definitions.hasRoot(nextId)
-      : nextId === owner.rootGraphId ||
-        definitions.hasGraph(owner.rootGraphId, nextId)
   const metadataOccupied =
     owner.kind === 'root'
       ? metadata.hasRoot(nextId)
       : metadata.has(owner.rootGraphId, nextId)
   const entityIdsOccupied = owner.kind === 'root' && entityIds.has(nextId)
 
-  if (definitionOccupied || metadataOccupied || entityIdsOccupied) {
+  if (metadataOccupied || entityIdsOccupied) {
     return false
   }
 
   if (owner.kind === 'root') {
-    definitions.rekeyRoot(previousId, nextId)
     metadata.rekeyRoot(previousId, nextId)
     entityIds.rekey(previousId, nextId)
   } else {
-    definitions.rekeyGraph(owner.rootGraphId, previousId, nextId)
     metadata.rekeyGraph(owner.rootGraphId, previousId, nextId)
   }
   return true

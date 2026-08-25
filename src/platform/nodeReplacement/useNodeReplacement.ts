@@ -185,7 +185,7 @@ function replaceWithMapping(
   replacement: NodeReplacement,
   nodeGraph: LGraph,
   idx: number
-): void {
+): boolean {
   const order = node.order
   newNode.id = node.id
   newNode.pos = [...node.pos]
@@ -198,8 +198,10 @@ function replaceWithMapping(
     nodeGraph._nodes[idx] !== node ||
     nodeGraph._nodes_by_id[node.id] !== node ||
     !canTransferReplacementOwnership(node, newNode)
-  )
-    throw new Error(`Cannot replace node ${node.id}: ownership is invalid`)
+  ) {
+    console.error(`Cannot replace node ${node.id}: ownership is invalid`)
+    return false
+  }
 
   const serialized = node.last_serialization ?? node.serialize()
   if (serialized.title != null) newNode.title = serialized.title
@@ -237,16 +239,23 @@ function replaceWithMapping(
   )
   newNode.has_errors = false
 
-  node.onRemoved?.()
+  try {
+    node.onRemoved?.()
+  } catch (error) {
+    console.error(`Cannot replace node ${node.id}: removal failed`, error)
+    return false
+  }
   if (
     nodeGraph._nodes[idx] !== node ||
     nodeGraph._nodes_by_id[node.id] !== node ||
     !canTransferReplacementOwnership(node, newNode) ||
     !transferReplacementOwnership(node, newNode)
-  )
-    throw new Error(
+  ) {
+    console.error(
       `Cannot replace node ${node.id}: ownership changed during removal`
     )
+    return false
+  }
 
   const topologyResult = useLinkStore().updateEndpoints(
     graphScopeOf(nodeGraph),
@@ -255,9 +264,10 @@ function replaceWithMapping(
   )
   if (!topologyResult.ok) {
     transferReplacementOwnership(newNode, node)
-    throw new Error(
+    console.error(
       `Cannot replace node ${node.id}: ${topologyResult.error.message}`
     )
+    return false
   }
 
   clearNodeOwnedStoreState(node)
@@ -277,6 +287,7 @@ function replaceWithMapping(
   } catch (error) {
     console.error(`Failed to notify replacement node ${newNode.id}`, error)
   }
+  return true
 }
 
 export function useNodeReplacement() {
@@ -284,6 +295,7 @@ export function useNodeReplacement() {
 
   function replaceNodesInPlace(selectedTypes: MissingNodeType[]): string[] {
     const replacedTypes: string[] = []
+    let replacementFailed = false
     const graph = app.rootGraph
 
     const changeTracker =
@@ -342,7 +354,17 @@ export function useNodeReplacement() {
                 newNode
               )
             }
-        replaceWithMapping(node, newNode, effectiveReplacement, nodeGraph, idx)
+        const replaced = replaceWithMapping(
+          node,
+          newNode,
+          effectiveReplacement,
+          nodeGraph,
+          idx
+        )
+        if (!replaced) {
+          replacementFailed = true
+          continue
+        }
 
         if (!replacedTypes.includes(match.type)) {
           replacedTypes.push(match.type)
@@ -360,6 +382,13 @@ export function useNodeReplacement() {
             count: replacedTypes.length
           }),
           life: 3000
+        })
+      }
+      if (replacementFailed) {
+        toastStore.add({
+          severity: 'error',
+          summary: t('g.error', 'Error'),
+          detail: t('nodeReplacement.replaceFailed', 'Failed to replace nodes')
         })
       }
     } catch (error) {

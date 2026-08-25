@@ -225,6 +225,7 @@ function isPreviewExposed(
   source: PromotedWidgetSource
 ): boolean {
   const hostLocator = getPreviewExposureHostLocator(subgraphNode)
+  if (!hostLocator) return false
   return usePreviewExposureStore()
     .getExposures(subgraphNode.rootGraph.id, hostLocator)
     .some(
@@ -354,6 +355,7 @@ function promotePreviewViaExposure(
   const store = usePreviewExposureStore()
   const rootGraphId = subgraphNode.rootGraph.id
   const hostLocator = getPreviewExposureHostLocator(subgraphNode)
+  if (!hostLocator) return
   const existing = store
     .getExposures(rootGraphId, hostLocator)
     .some(
@@ -451,6 +453,7 @@ export function demoteWidget(
     if (isPreviewPseudoWidget(widget)) {
       const previewStore = usePreviewExposureStore()
       const hostLocator = getPreviewExposureHostLocator(parent)
+      if (!hostLocator) continue
       const exposure = previewStore
         .getExposures(parent.rootGraph.id, hostLocator)
         .find(

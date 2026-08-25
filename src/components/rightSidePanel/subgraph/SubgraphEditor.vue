@@ -118,6 +118,7 @@ const activePromotedRows = computed<PromotedRow[]>({
 
 function getActivePreviewRows(node: SubgraphNode): PreviewRow[] {
   const hostLocator = getPreviewExposureHostLocator(node)
+  if (!hostLocator) return []
   const rootGraphId = node.rootGraph.id
   const exposures = previewExposureStore.getExposures(rootGraphId, hostLocator)
   return exposures.flatMap((exposure): PreviewRow[] => {
@@ -284,9 +285,11 @@ function demoteRow(row: ActiveRow) {
     demoteWidget(row.node, row.realWidget, [subgraphNode])
     return
   }
+  const hostLocator = getPreviewExposureHostLocator(subgraphNode)
+  if (!hostLocator) return
   previewExposureStore.removeExposure(
     subgraphNode.rootGraph.id,
-    getPreviewExposureHostLocator(subgraphNode),
+    hostLocator,
     row.exposure.name
   )
   refreshActiveNodeRendering()

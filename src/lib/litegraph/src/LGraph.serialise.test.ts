@@ -118,6 +118,7 @@ describe('LGraph Serialisation', () => {
     const saved = node.serialize()
     expect(saved.pos).toEqual([999, 999])
     expect(saved.extensions).toEqual({ legacyData: { retained: true } })
+    expect(Reflect.get(saved, 'legacyData')).toEqual({ retained: true })
 
     let configuredLegacyData: unknown
     node.onConfigure = (data) => {
@@ -126,7 +127,25 @@ describe('LGraph Serialisation', () => {
     node.configure(Object.assign(saved, { legacyData: { retained: true } }))
 
     expect(configuredLegacyData).toEqual({ retained: true })
-    expect(Object.hasOwn(node, 'legacyData')).toBe(false)
+    expect(Reflect.get(node, 'legacyData')).toEqual({ retained: true })
+  })
+
+  test('passes the original serialized object to configure hooks', ({
+    expect
+  }) => {
+    const node = new LGraphNode('Extended')
+    const saved = Object.assign(node.serialize(), {
+      legacyData: { retained: true }
+    })
+    let configuredData: object | undefined
+    node.onConfigure = (data) => {
+      configuredData = data
+    }
+
+    node.configure(saved)
+
+    expect(configuredData).toBe(saved)
+    expect(Reflect.get(node, 'legacyData')).toEqual({ retained: true })
   })
 
   test('does not apply unsafe extension keys to the configure view', ({
@@ -171,10 +190,11 @@ describe('LGraph Serialisation', () => {
       legacyData: { retained: true }
     })
     expect(Object.hasOwn(graph, 'extensions')).toBe(false)
-    expect(Object.hasOwn(graph, 'legacyData')).toBe(false)
+    expect(Reflect.get(graph, 'legacyData')).toEqual({ retained: true })
 
     const clean = graph.asSerialisable()
     delete clean.extensions
+    Reflect.deleteProperty(clean, 'legacyData')
     graph.configure(clean)
     expect(configuredData).not.toHaveProperty('legacyData')
     expect(graph.asSerialisable().extensions).toBeUndefined()
@@ -230,5 +250,23 @@ describe('LGraph Serialisation', () => {
     expect(node.serialize().extensions).toEqual({
       legacyData: { version: 2 }
     })
+  })
+
+  test('drops cyclic extension payloads without aborting serialization', ({
+    expect
+  }) => {
+    const node = new LGraphNode('Extended')
+    const cyclic: Record<string, unknown> = {}
+    cyclic.self = cyclic
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    node.onSerialize = (data) => {
+      Object.assign(data, { cyclic })
+    }
+
+    expect(() => node.serialize()).not.toThrow()
+    expect(node.serialize()).not.toHaveProperty('extensions.cyclic')
+    expect(warn).toHaveBeenCalledWith(
+      'LiteGraph: ignoring non-serializable extension payload'
+    )
   })
 })

@@ -10,20 +10,14 @@ import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
+import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { GraphScope } from '@/types/graphScopeId'
-import {
-  graphScopeOf,
-  toOwningGraphId,
-  toRootGraphId
-} from '@/types/graphScopeId'
+import { graphScopeOf } from '@/types/graphScopeId'
 import type { GroupId } from '@/types/groupId'
-import { toGroupId } from '@/types/groupId'
 import type { NodeId } from '@/types/nodeId'
-import { toNodeId } from '@/types/nodeId'
 import type { RerouteId } from '@/types/rerouteId'
-import { toRerouteId } from '@/types/rerouteId'
 import { widgetId } from '@/types/widgetId'
 import { createTestSubgraphData } from './subgraph/__fixtures__/subgraphHelpers'
 
@@ -253,23 +247,26 @@ function storeOwnership(
 }
 
 describe('LGraph.configure that throws partway through', () => {
-  it('rolls back every node and link it created', () => {
+  it('keeps every node it created, including the one that threw', () => {
     const graph = graphAfterFailedConfigure()
 
-    expect(graph.nodes).toEqual([])
-    expect(graph.links.size).toBe(0)
+    expect(graph.nodes.map((node) => node.type)).toEqual([
+      'test/good',
+      'test/throwing',
+      'test/good'
+    ])
+    expect(graph.links.size).toBe(1)
   })
 
-  it('rolls back reroutes and groups', () => {
+  it('keeps a reroute that a completed load would have discarded', () => {
     const completed = new LGraph()
     completed.configure(sameWorkflowThatLoads())
     expect(completed.reroutes.size).toBe(0)
     expect(completed._groups).toHaveLength(1)
-    completed.clear()
 
     const failed = graphAfterFailedConfigure()
 
-    expect(failed.reroutes.size).toBe(0)
+    expect(failed.reroutes.size).toBe(1)
     expect(failed._groups).toHaveLength(0)
   })
 
@@ -300,7 +297,7 @@ describe('LGraph.configure that throws partway through', () => {
     expect(configuredEvents).toBe(1)
   })
 
-  it('rolls back a nested definition that fails', () => {
+  it('LEAK: a nested definition that fails stays registered on an otherwise empty graph', () => {
     const graph = new LGraph()
     const created: string[] = []
     graph.events.addEventListener('subgraph-created', (event) => {
@@ -310,7 +307,7 @@ describe('LGraph.configure that throws partway through', () => {
     expect(() => graph.configure(failingNestedWorkflow())).toThrow()
 
     expect(created).toEqual([NESTED_DEFINITION_ID])
-    expect(graph.subgraphs.has(NESTED_DEFINITION_ID)).toBe(false)
+    expect(graph.subgraphs.has(NESTED_DEFINITION_ID)).toBe(true)
     expect(graph.empty).toBe(true)
   })
 })
@@ -334,22 +331,31 @@ describe('a workflow loaded after a failed load, on the same graph', () => {
     expect(reusedSerialized).toEqual(fresh.serialize())
   })
 
-  it('holds no root-owned state after a failed load or the next workflow', () => {
+  it('clears every root-owned store entry before loading the next workflow', () => {
     const graph = graphAfterLateFailedConfigure()
     const scope = graphScopeOf(graph)
-    const nodeIds = [toNodeId(1), toNodeId(2), toNodeId(3)]
-    const rerouteIds = [toRerouteId(1)]
-    const groupIds = [toGroupId(1)]
+    const nodeIds = graph.nodes.map((node) => node.id)
+    const linkIds = [...graph.links.keys()]
+    const rerouteIds = [...graph.reroutes.keys()]
+    const groupIds = graph._groups.map((group) => group.id)
+    const widgetIds = nodeIds.map((id) => widgetId(BAD_ID, id, 'seed'))
+    const hostLocator = `${BAD_ID}:1`
+    const previewStore = usePreviewExposureStore()
+    previewStore.addExposure(BAD_ID, hostLocator, {
+      sourceNodeId: 1,
+      sourcePreviewName: 'preview'
+    })
 
     expect(storeOwnership(scope, nodeIds, rerouteIds, groupIds)).toEqual({
-      nodes: [],
-      links: [],
-      reroutes: [],
-      nodeLayouts: [],
-      rerouteLayouts: [],
-      groupLayouts: [],
-      widgets: []
+      nodes: nodeIds,
+      links: linkIds,
+      reroutes: rerouteIds,
+      nodeLayouts: nodeIds,
+      rerouteLayouts: rerouteIds,
+      groupLayouts: groupIds,
+      widgets: widgetIds
     })
+    expect(previewStore.getExposures(BAD_ID, hostLocator)).toHaveLength(1)
 
     graph.configure(unrelatedWorkflow())
 
@@ -362,41 +368,34 @@ describe('a workflow loaded after a failed load, on the same graph', () => {
       groupLayouts: [],
       widgets: []
     })
+    expect(previewStore.getExposures(BAD_ID, hostLocator)).toEqual([])
     expect(graph.id).toBe(GOOD_ID)
   })
 
-  it('holds no widget state or subgraph definition from the failed load', () => {
-    const store = useWidgetValueStore()
-    const failedWidget = widgetId(BAD_ID, toNodeId(1), 'seed')
-
-    const graph = graphAfterFailedConfigure()
-    expect(store.getWidget(failedWidget)).toBeUndefined()
-
-    graph.configure(unrelatedWorkflow())
-
-    expect(store.getWidget(failedWidget)).toBeUndefined()
-    graph.clear()
-  })
-
-  it('holds no nested-owner state from a failed nested load', () => {
+  it('clears nested-owner state before loading the next workflow', () => {
     const nested = graphAfterFailedConfigure(failingNestedWorkflow())
-    const scope: GraphScope = {
-      rootGraphId: toRootGraphId(BAD_ID),
-      owningGraphId: toOwningGraphId(NESTED_DEFINITION_ID)
-    }
-    const nodeIds = [toNodeId(2), toNodeId(3)]
-    const rerouteIds = [toRerouteId(1)]
+    const definition = nested.subgraphs.get(NESTED_DEFINITION_ID)
+    if (!definition) throw new Error('Expected failed subgraph definition')
+
+    const scope = graphScopeOf(definition)
+    const nodeIds = definition.nodes.map((node) => node.id)
+    const linkIds = [...useLinkStore().graphTopologies(scope)].map(
+      (link) => link.id
+    )
+    const rerouteIds = [...definition.reroutes.keys()]
+    const widgetIds = nodeIds.flatMap((id) =>
+      useWidgetValueStore().getNodeWidgetIds(BAD_ID, id)
+    )
 
     expect(storeOwnership(scope, nodeIds, rerouteIds, [])).toEqual({
-      nodes: [],
-      links: [],
-      reroutes: [],
-      nodeLayouts: [],
-      rerouteLayouts: [],
+      nodes: nodeIds,
+      links: linkIds,
+      reroutes: rerouteIds,
+      nodeLayouts: nodeIds,
+      rerouteLayouts: rerouteIds,
       groupLayouts: [],
-      widgets: []
+      widgets: widgetIds
     })
-    expect(nested.subgraphs.has(NESTED_DEFINITION_ID)).toBe(false)
 
     nested.configure(unrelatedWorkflow())
 

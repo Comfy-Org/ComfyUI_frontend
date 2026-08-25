@@ -1,7 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, toRaw } from 'vue'
+import { computed } from 'vue'
 
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { toNodeId } from '@/types/nodeId'
@@ -101,20 +101,24 @@ describe('LGraphNode node-data adoption', () => {
     expect(roundTrip.properties).not.toBe(node.properties)
   })
 
-  it('stores plain slot descriptors behind stable class projections', () => {
+  it('keeps extension-visible slot identity and serializes plain descriptors', () => {
     const { subgraph, node } = addNodeToSubgraph()
     const input = node.addInput('prompt', 'STRING')
     const output = node.addOutput('result', 'STRING')
     const [state] = statesIn(subgraph)
 
-    expect(Object.getPrototypeOf(toRaw(state.inputs[0]))).toBe(Object.prototype)
-    expect(Object.getPrototypeOf(toRaw(state.outputs[0]))).toBe(
-      Object.prototype
-    )
+    expect(state.inputs[0]).toBe(input)
+    expect(state.outputs[0]).toBe(output)
     expect(node.inputs[0]).toBe(input)
     expect(node.outputs[0]).toBe(output)
     expect(input).toBeInstanceOf(NodeInputSlot)
     expect(output).toBeInstanceOf(NodeOutputSlot)
+    expect(Object.getPrototypeOf(node.serialize().inputs![0])).toBe(
+      Object.prototype
+    )
+    expect(Object.getPrototypeOf(node.serialize().outputs![0])).toBe(
+      Object.prototype
+    )
 
     input.label = 'Prompt'
     output.label = 'Result'
