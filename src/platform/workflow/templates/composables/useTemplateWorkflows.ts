@@ -6,6 +6,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
+import { syncCompletedTemplateInputsWithCurrentGraph } from '@/platform/workflow/templates/composables/useTemplateInputDownloadGraphSync'
 import type {
   TemplateGroup,
   TemplateInfo,
@@ -198,6 +199,7 @@ export function useTemplateWorkflows() {
       await app.loadGraphData(workflow, true, true, workflowName, {
         openSource: 'template'
       })
+      await syncCompletedTemplateInputsWithCurrentGraph()
 
       return true
     } catch (error) {

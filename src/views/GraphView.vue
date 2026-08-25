@@ -63,6 +63,10 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh'
 import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
 import { useProgressFavicon } from '@/composables/useProgressFavicon'
+import { runMissingMediaPipeline } from '@/platform/missingMedia/missingMediaPipeline'
+import { scanAllMediaCandidates } from '@/platform/missingMedia/missingMediaScan'
+import { startTemplateInputDownloadGraphSync } from '@/platform/workflow/templates/composables/useTemplateInputDownloadGraphSync'
+import { refreshDownloadedTemplateInputBindings } from '@/platform/workflow/templates/utils/refreshDownloadedTemplateInputBindings'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import type { ServerConfig, ServerConfigValue } from '@/constants/serverConfig'
 import { setActiveLocale } from '@/i18n'
@@ -94,6 +98,7 @@ import {
   useQueueStore
 } from '@/stores/queueStore'
 import { useServerConfigStore } from '@/stores/serverConfigStore'
+import { useTemplateInputDownloadStore } from '@/stores/templateInputDownloadStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -118,6 +123,45 @@ const graphCanvasContainerRef = ref<HTMLDivElement | null>(null)
 const graphReady = ref(false)
 const { isBuilderMode, mode, isAppMode } = useAppMode()
 const { linearMode } = storeToRefs(useCanvasStore())
+const templateInputDownloadStore = useTemplateInputDownloadStore()
+const templateInputGraphSync = startTemplateInputDownloadGraphSync({
+  getReferencedInputNames: () =>
+    new Set(
+      scanAllMediaCandidates(app.rootGraph, isCloud).map(({ name }) => name)
+    ),
+  refreshGraphBindings: async (completedInputNames) => {
+    try {
+      await app.reloadNodeDefs()
+      refreshDownloadedTemplateInputBindings(
+        app.rootGraph,
+        scanAllMediaCandidates(app.rootGraph, isCloud),
+        new Set(completedInputNames)
+      )
+      await runMissingMediaPipeline({ rootGraph: app.rootGraph, silent: true })
+    } finally {
+      templateInputDownloadStore.completeGraphSync(completedInputNames)
+    }
+  },
+  reportError: (error) => {
+    console.warn(
+      '[Template Input Download] Failed to refresh graph inputs:',
+      error
+    )
+  }
+})
+const stopTemplateInputDownloadTracking =
+  (isDesktop &&
+    window.__comfyDesktop2?.onTemplateInputDownloadProgress?.((progress) => {
+      templateInputDownloadStore.updateProgress(progress)
+      templateInputGraphSync.handleProgress(progress)
+    })) ||
+  (() => undefined)
+
+onBeforeUnmount(() => {
+  stopTemplateInputDownloadTracking()
+  templateInputGraphSync.dispose()
+  templateInputDownloadStore.clear()
+})
 
 watch(linearMode, (isLinear) => {
   if (isLinear) {
