@@ -232,6 +232,7 @@
     "bookmarked": "Bookmarked",
     "essentials": "Essentials",
     "input": "Input",
+    "inputTooltip": "Input: {name}",
     "output": "Output",
     "community": "Community",
     "all": "All",
@@ -1862,6 +1863,7 @@
     "hunyhuan video": "hunyhuan video",
     "mochi": "mochi",
     "ltxv": "ltxv",
+    "minimax music": "minimax music",
     "minimax": "minimax",
     "preprocessors": "preprocessors",
     "video_models": "video_models",
@@ -1909,6 +1911,10 @@
     "kandinsky": "kandinsky",
     "autoregressive": "autoregressive",
     "shader": "shader",
+    "trellis2": "trellis2",
+    "trellis": "trellis",
+    "mesh": "mesh",
+    "texturing": "texturing",
     "detection": "detection",
     "background removal": "background removal",
     "scail": "scail",
@@ -1924,6 +1930,7 @@
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "ElevenLabs": "ElevenLabs",
+    "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
     "Grok": "Grok",
     "HeyGen": "HeyGen",
@@ -1999,6 +2006,7 @@
     "FILE_3D_SPZ": "FILE_3D_SPZ",
     "FILE_3D_STL": "FILE_3D_STL",
     "FILE_3D_USDZ": "FILE_3D_USDZ",
+    "FISHAUDIO_VOICE": "FISHAUDIO_VOICE",
     "FLOAT": "FLOAT",
     "FLOATS": "FLOATS",
     "GEMINI_INPUT_FILES": "GEMINI_INPUT_FILES",
@@ -2012,6 +2020,7 @@
     "IMAGECOMPARE": "IMAGECOMPARE",
     "INT": "INT",
     "INTERP_MODEL": "INTERP_MODEL",
+    "KIMODO_POSE_DATA": "KIMODO_POSE_DATA",
     "KREA_STYLE_REF": "KREA_STYLE_REF",
     "LATENT": "LATENT",
     "LATENT_OPERATION": "LATENT_OPERATION",
@@ -2029,6 +2038,7 @@
     "MESH": "MESH",
     "MESHY_RIGGED_TASK_ID": "MESHY_RIGGED_TASK_ID",
     "MESHY_TASK_ID": "MESHY_TASK_ID",
+    "MHR_POSE_DATA": "MHR_POSE_DATA",
     "MODEL": "MODEL",
     "MODEL_PATCH": "MODEL_PATCH",
     "MODEL_TASK_ID": "MODEL_TASK_ID",
@@ -2049,7 +2059,9 @@
     "RUNWAY_ALEPH2_KEYFRAME": "RUNWAY_ALEPH2_KEYFRAME",
     "RUNWAY_ALEPH2_PROMPT_IMAGE": "RUNWAY_ALEPH2_PROMPT_IMAGE",
     "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
+    "SAM3D_BODY_MODEL": "SAM3D_BODY_MODEL",
     "SAMPLER": "SAMPLER",
+    "SHAPE_SUBDIVIDES": "SHAPE_SUBDIVIDES",
     "SIGMAS": "SIGMAS",
     "SPLAT": "SPLAT",
     "STRING": "STRING",
@@ -2128,7 +2140,8 @@
     "extensionFileHint": "This may be due to the following script",
     "promptExecutionError": "Prompt execution failed",
     "accessRestrictedTitle": "Access Restricted",
-    "accessRestrictedMessage": "Your account is not authorized for this feature."
+    "accessRestrictedMessage": "Your account is not authorized for this feature.",
+    "workspaceChangedDuringExecution": "Your active workspace changed while preparing this execution. Run the workflow again to use the current workspace."
   },
   "apiNodesSignInDialog": {
     "title": "Sign In Required to Use API Nodes",
@@ -2164,6 +2177,19 @@
   },
   "load3d": {
     "switchCamera": "Switch Camera",
+    "useCustomUp": "Restore camera up from input",
+    "useNaturalUp": "Reset camera up to Y",
+    "showGizmos": "Show gizmos",
+    "hideGizmos": "Hide gizmos",
+    "lookThrough": "Camera view",
+    "exitLookThrough": "Exit camera view",
+    "transformGizmo": {
+      "label": "Edit",
+      "none": "None",
+      "target": "Target",
+      "cameraTranslate": "Cam pos",
+      "cameraRotate": "Cam rot"
+    },
     "showGrid": "Show Grid",
     "backgroundColor": "Background Color",
     "lightIntensity": "Light Intensity",
@@ -2363,6 +2389,7 @@
     "exportSuccess": "Successfully exported model as {format}",
     "fileLoadError": "Unable to find workflow in {fileName}",
     "a1111CoreNodesUnavailable": "Could not load the workflow because this ComfyUI installation is missing core nodes. Check that the backend started correctly.",
+    "a1111EmbeddingsUnavailable": "Embeddings could not be loaded from the server. The workflow was imported, but embedding names were left as plain text.",
     "dropFileError": "Unable to process dropped item: {error}",
     "missingMediaVerificationFailed": "Failed to verify missing media. Some inputs may not be shown in the Errors tab.",
     "missingModelVerificationFailed": "Failed to verify missing models. Some models may not be shown in the Errors tab.",
@@ -2403,6 +2430,7 @@
     "cannotCreateSubgraph": "Cannot create subgraph",
     "failedToConvertToSubgraph": "Failed to convert items to subgraph",
     "failedToInitializeLoad3dViewer": "Failed to initialize 3D Viewer",
+    "failedToInitializeCameraInfoViewer": "Failed to initialize Camera Info viewer. Try reloading the page.",
     "failedToLoadBackgroundImage": "Failed to load background image",
     "failedToLoadModel": "Failed to load 3D model",
     "modelLoadedSuccessfully": "3D model loaded successfully",
@@ -2421,6 +2449,9 @@
     "unsupportedHDRIFormat": "Unsupported file format. Please upload a .hdr or .exr file.",
     "failedToToggleGizmo": "Failed to toggle gizmo",
     "failedToSetGizmoMode": "Failed to set gizmo mode"
+  },
+  "nodeBadge": {
+    "partnerNodesCount": "Partner Nodes x {count}"
   },
   "nodeErrors": {
     "render": "Node Render Error",
@@ -2575,8 +2606,10 @@
       "auth/operation-not-allowed": "This sign-in method is not currently supported.",
       "auth/invalid-credential": "Invalid login credentials. Please check your email and password.",
       "auth/network-request-failed": "Network error. Please check your connection and try again.",
-      "auth/popup-closed-by-user": "Sign-in was cancelled. Please try again.",
-      "auth/cancelled-popup-request": "Sign-in was cancelled. Please try again.",
+      "auth/popup-closed-by-user": "The sign-in window closed before sign-in finished. Please try again.",
+      "auth/cancelled-popup-request": "Another sign-in window was already open, so this one was cancelled. Please try again.",
+      "auth/popup-blocked": "Your browser blocked the sign-in window. Please allow pop-ups for this site and try again.",
+      "auth/account-exists-with-different-credential": "An account already exists with this email address but uses a different sign-in method. Please sign in the way you did originally.",
       "generic": "Something went wrong while signing you in. Please try again.",
       "signupBlocked": "We couldn't create your account right now. Please try again later. If this keeps happening, email support@comfy.org."
     },
@@ -2625,6 +2658,7 @@
   },
   "credits": {
     "activity": "Activity",
+    "workspaceCredits": "Workspace credits",
     "insufficient": {
       "memberTitle": "This workspace is out of credits",
       "memberDescription": "Your team has used all its credits. Your workspace admins need to add more credits to run workflows.",
@@ -2864,6 +2898,9 @@
       "free": {
         "name": "Free"
       },
+      "enterprise": {
+        "name": "Enterprise"
+      },
       "founder": {
         "name": "Founder's Edition"
       },
@@ -2965,6 +3002,7 @@
     "partnerNodesCredits": "Partner nodes pricing",
     "partnerNodesPricingTable": "Partner Nodes pricing table",
     "plansAndPricing": "Plans & pricing",
+    "plansAndCredits": "Plans and credits",
     "managePlan": "Manage plan",
     "upgrade": "UPGRADE",
     "mostPopular": "Most popular",
@@ -3337,6 +3375,8 @@
     "nameValidationError": "Name must be 1–50 characters using letters, numbers, spaces, or common punctuation."
   },
   "workspaceSwitcher": {
+    "scopeCaption": "Workspaces only affect which credits you use.",
+    "scopeTooltip": "Runs that use partner nodes spend credits from this workspace. Unlike on Cloud, every workspace saves to your usual output folder.",
     "switchWorkspace": "Switch workspace",
     "subscribe": "Subscribe",
     "personal": "Personal",
@@ -3996,7 +4036,15 @@
     "uploadWorkflowButton": "Upload my workflow"
   },
   "desktopDialogs": {
-    "": {
+    "reinstallVenv": {
+      "title": "Reinstall ComfyUI (Fresh Start)?",
+      "message": "Sorry, we can't launch ComfyUI because some installed packages aren't compatible.\n\nClick Reinstall to restore ComfyUI and get back up and running.\n\nPlease note: if you've added custom nodes, you'll need to reinstall them after this process.",
+      "buttons": {
+        "Learn More": "Learn More",
+        "Reinstall": "Reinstall"
+      }
+    },
+    "invalidDialog": {
       "title": "Invalid Dialog",
       "message": "Invalid dialog ID was provided.",
       "buttons": {
@@ -4181,7 +4229,6 @@
     "settings": "Settings",
     "addFavorite": "Favorite",
     "removeFavorite": "Unfavorite",
-    "hideInput": "Hide input",
     "showInput": "Show input",
     "locateNode": "Locate node on canvas",
     "locateNodeFor": "Locate {item}",

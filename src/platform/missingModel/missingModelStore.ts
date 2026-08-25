@@ -37,7 +37,11 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     const ids = new Set<string>()
     if (!missingModelCandidates.value) return ids
     for (const m of missingModelCandidates.value) {
+      // Promoted-widget candidates are scoped to the subgraph host node
+      // (`nodeId`) but originate at an interior node (`sourceExecutionId`);
+      // both execution ids carry the missing model.
       if (m.nodeId != null) ids.add(String(m.nodeId))
+      if (m.sourceExecutionId != null) ids.add(String(m.sourceExecutionId))
     }
     return ids
   })
