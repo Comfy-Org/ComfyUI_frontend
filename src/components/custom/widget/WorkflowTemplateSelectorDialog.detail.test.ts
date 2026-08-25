@@ -3,6 +3,8 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+
 const fixtures = vi.hoisted(() => {
   const model = {
     name: 'wan2.2_i2v_high_noise_14B_fp16.safetensors',
@@ -173,57 +175,7 @@ import WorkflowTemplateSelectorDialog from './WorkflowTemplateSelectorDialog.vue
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
-  messages: {
-    en: {
-      g: {
-        all: 'All',
-        clearAll: 'Clear all',
-        closeDialog: 'Close dialog',
-        noResultsFound: 'No results found',
-        search: 'Search',
-        seeTutorial: 'See tutorial'
-      },
-      sideToolbar: { templates: 'Templates' },
-      builderToolbar: { app: 'App', nodeGraph: 'Node graph' },
-      templateWorkflows: {
-        allTemplates: 'All Templates',
-        title: 'Workflow Templates',
-        filtersButton: 'Filters',
-        filtersApplied: '{count} filters applied',
-        clearAllFilters: 'Clear all filters',
-        resultsCount: '{count} of {total}',
-        loadingMore: 'Loading more...',
-        modelFilter: 'Model Filter',
-        useCaseFilter: 'Use Case',
-        runsOnFilter: 'Runs On',
-        sorting: 'Sort by',
-        detail: {
-          cloudUpsellTitle: 'Run this template in Comfy Cloud',
-          cloudUpsellDescription:
-            'Run faster on Cloud GPUs. No local setup or downloads.',
-          partnerNodeTitle: 'This workflow uses Partner Nodes',
-          partnerNodeDescription:
-            'Run locally with Comfy Credits, or run in Comfy Cloud with a subscription.',
-          openInCloud: 'Open in Cloud',
-          requirements: 'Template requirements',
-          models: 'Models',
-          usedBy: 'Used by {nodes}',
-          openTemplate: 'Open template',
-          backToTemplates: 'Back to {category}',
-          breadcrumbLabel: 'Template navigation'
-        },
-        sort: {
-          relevance: 'Relevance',
-          default: 'Default',
-          recommended: 'Recommended',
-          popular: 'Popular',
-          newest: 'Newest',
-          modelSizeLowToHigh: 'Model Size (Low to High)',
-          alphabetical: 'Alphabetical'
-        }
-      }
-    }
-  }
+  messages: { en: enMessages }
 })
 
 function renderDialog() {
@@ -269,17 +221,14 @@ function renderDialog() {
   })
 }
 
-async function openDetail(templateName = fixtures.template.name) {
+async function openDetail() {
   const user = userEvent.setup()
   renderDialog()
   await user.click(
-    await screen.findByTestId(`template-workflow-${templateName}`)
+    await screen.findByTestId(`template-workflow-${fixtures.template.name}`)
   )
   await screen.findByRole('article', {
-    name:
-      templateName === fixtures.template.name
-        ? fixtures.template.title
-        : fixtures.secondTemplate.title
+    name: fixtures.template.title
   })
   return user
 }
