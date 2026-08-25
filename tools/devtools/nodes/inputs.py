@@ -389,27 +389,6 @@ class NodeWithDynamicCombo(IO.ComfyNode):
         return IO.NodeOutput()
 
 
-class NodeRuntimeReflow:
-    """Emulates the runtime node-growth idioms that several popular custom-node
-    packs use (rgthree Power Lora Loader, Impact-Pack image previews, ...).
-
-    The growth itself is performed on the client in ``web/runtimeReflow.js``:
-    the node keeps this Python surface minimal and exposes two triggers on the
-    client node instance (widget-count growth and image-preview growth).
-    """
-
-    @classmethod
-    def INPUT_TYPES(cls):
-        return {"required": {}}
-
-    RETURN_TYPES = ()
-    FUNCTION = "noop"
-    CATEGORY = "DevTools"
-    DESCRIPTION = "A node that emulates runtime reflow growth (rgthree widget growth and Impact-Pack image-preview growth)"
-
-    def noop(self):
-        return ()
-
 NODE_CLASS_MAPPINGS = {
     "DevToolsLongComboDropdown": LongComboDropdown,
     "DevToolsNodeWithOptionalInput": NodeWithOptionalInput,
@@ -429,7 +408,6 @@ NODE_CLASS_MAPPINGS = {
     "DevToolsNodeWithPriceBadge": NodeWithPriceBadge,
     "DevToolsNodeWithNumericCombo": NodeWithNumericCombo,
     "DevToolsNodeWithDynamicCombo": NodeWithDynamicCombo,
-    "DevToolsNodeRuntimeReflow": NodeRuntimeReflow,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -451,7 +429,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DevToolsNodeWithPriceBadge": "Node With Price Badge",
     "DevToolsNodeWithNumericCombo": "Node With Numeric Combo",
     "DevToolsNodeWithDynamicCombo": "Node With Dynamic Combo",
-    "DevToolsNodeRuntimeReflow": "Node Runtime Reflow",
 }
 
 __all__ = [
