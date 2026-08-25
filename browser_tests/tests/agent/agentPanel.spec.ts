@@ -170,6 +170,57 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(firstSummary).toHaveAttribute('aria-expanded', 'false')
   })
 
+  test.describe('composer sizing', () => {
+    test.use({ viewport: { width: 1920, height: 1080 } })
+
+    test('caps long text at 400px and scrolls internally', async ({
+      comfyPage
+    }) => {
+      const page = comfyPage.page
+      await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+
+      const panel = page.locator('#agent-panel-root')
+      const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
+
+      await composer.fill('A growing prompt line\n'.repeat(14))
+      await expect
+        .poll(() =>
+          composer.evaluate((element) =>
+            Math.round(element.getBoundingClientRect().height)
+          )
+        )
+        .toBeGreaterThan(200)
+
+      await composer.fill('An overflowing prompt line\n'.repeat(60))
+      await expect
+        .poll(() =>
+          composer.evaluate((element) => ({
+            height: Math.round(element.getBoundingClientRect().height),
+            scrolls: element.scrollHeight > element.clientHeight
+          }))
+        )
+        .toEqual({ height: 400, scrolls: true })
+      await expect(
+        panel.getByText('What do you want to make?')
+      ).toBeInViewport()
+
+      await panel
+        .getByRole('button', { name: enMessages.agent.maximize })
+        .click()
+      await expect
+        .poll(() =>
+          composer.evaluate((element) => ({
+            height: Math.round(element.getBoundingClientRect().height),
+            scrolls: element.scrollHeight > element.clientHeight
+          }))
+        )
+        .toEqual({ height: 400, scrolls: true })
+      await expect(
+        panel.getByText('What do you want to make?')
+      ).toBeInViewport()
+    })
+  })
+
   test('keeps the Agent scrollbar track transparent', async ({ comfyPage }) => {
     const page = comfyPage.page
     await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
@@ -190,6 +241,47 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     expect(track.backgroundColor).toBe('rgba(0, 0, 0, 0)')
     expect(track.backgroundImage).toBe('none')
     expect(track.scrollbarColor).toMatch(/rgba\(0, 0, 0, 0\)$/)
+  })
+
+  test('sizes the add-to-prompt menu around its longest item', async ({
+    comfyPage
+  }) => {
+    const page = comfyPage.page
+    await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+
+    const panel = page.locator('#agent-panel-root')
+    await panel
+      .getByRole('button', { name: enMessages.agent.addToPrompt })
+      .click()
+
+    const menu = page.getByRole('menu')
+    const longestItem = menu.getByRole('menuitem', {
+      name: enMessages.agent.addFromAssets
+    })
+    const icon = longestItem.locator('span').first()
+    const label = longestItem.getByText(enMessages.agent.addFromAssets, {
+      exact: true
+    })
+
+    await expect(longestItem).toBeVisible()
+    await expect
+      .poll(() => menu.boundingBox().then((box) => box?.width))
+      .toBeGreaterThan(186)
+    await expect
+      .poll(async () => {
+        const [itemBox, iconBox, labelBox] = await Promise.all([
+          longestItem.boundingBox(),
+          icon.boundingBox(),
+          label.boundingBox()
+        ])
+        if (!itemBox || !iconBox || !labelBox) return Number.POSITIVE_INFINITY
+
+        const leftInset = iconBox.x - itemBox.x
+        const rightInset =
+          itemBox.x + itemBox.width - (labelBox.x + labelBox.width)
+        return Math.abs(leftInset - rightInset)
+      })
+      .toBeLessThanOrEqual(1)
   })
 
   test('edits and resubmits the last prompt after stopping its turn', async ({

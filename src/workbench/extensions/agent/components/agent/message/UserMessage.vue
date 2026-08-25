@@ -1,10 +1,17 @@
 <script setup lang="ts">
 import { useClipboard } from '@vueuse/core'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
+import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
+import { api } from '@/scripts/api'
+import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+
 import type { UserAttachment } from '../../../stores/agent/agentConversationStore'
+import type { ReplyAsset } from '../../../utils/replyAssets'
 import AgentTooltip from '../AgentTooltip.vue'
+import ReplyAssetGroup from './ReplyAssetGroup.vue'
 
 const {
   text,
@@ -23,6 +30,43 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const { copy, copied } = useClipboard({ copiedDuring: 2000, legacy: true })
+
+/* The shared map's 'other' glyph is a checkmark, which reads as a status
+   rather than a file on this surface. */
+function attachmentIconClass(name: string): string {
+  const kind = getMediaTypeFromFilename(name)
+  return kind === 'other' ? 'icon-[lucide--file]' : iconForMediaType(kind)
+}
+
+/**
+ * Sent uploads reuse the reply asset grid (Uy, FE-1323): media attachments
+ * render as the DES-530 per-count grid with the same hover-play, inspect, and
+ * audio-card behavior as agent replies. A ref resolves to the uploaded input
+ * file; an image without one still has its local preview. Text and other
+ * kinds have no grid treatment and keep the compact tiles.
+ */
+const splitAttachments = computed(() => {
+  const grid: ReplyAsset[] = []
+  const plain: UserAttachment[] = []
+  for (const item of attachments) {
+    const kind = getMediaTypeFromFilename(item.name)
+    const url = item.ref
+      ? api.apiURL(`/view?filename=${encodeURIComponent(item.ref)}&type=input`)
+      : item.previewUrl
+    if (
+      url &&
+      (kind === 'image' ||
+        kind === 'video' ||
+        kind === 'audio' ||
+        kind === '3D')
+    ) {
+      grid.push({ url, filename: item.name, kind })
+    } else {
+      plain.push(item)
+    }
+  }
+  return { grid, plain }
+})
 </script>
 
 <template>
@@ -37,26 +81,26 @@ const { copy, copied } = useClipboard({ copiedDuring: 2000, legacy: true })
         <span class="max-w-40 truncate">{{ tag }}</span>
       </span>
     </div>
+    <div v-if="splitAttachments.grid.length" class="w-full">
+      <ReplyAssetGroup :assets="splitAttachments.grid" />
+    </div>
     <div
-      v-if="attachments.length"
+      v-if="splitAttachments.plain.length"
       class="grid w-56 max-w-full grid-cols-2 gap-1.5"
     >
       <figure
-        v-for="(item, index) in attachments"
+        v-for="(item, index) in splitAttachments.plain"
         :key="`${item.name}:${index}`"
         class="m-0"
       >
-        <img
-          v-if="item.previewUrl"
-          :src="item.previewUrl"
-          :alt="item.name"
-          class="aspect-square w-full rounded-lg object-cover"
-        />
         <div
-          v-else
           class="bg-agent-surface-raised flex aspect-square w-full items-center justify-center rounded-lg"
         >
-          <span class="text-agent-fg-subtle icon-[lucide--image] size-6" />
+          <span
+            :class="
+              cn(attachmentIconClass(item.name), 'text-agent-fg-subtle size-6')
+            "
+          />
         </div>
         <figcaption class="text-agent-fg-muted mt-0.5 truncate text-xs">
           {{ item.name }}
