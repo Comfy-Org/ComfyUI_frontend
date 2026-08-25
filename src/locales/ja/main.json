@@ -235,13 +235,15 @@
       "contactSupport": "アカウントを削除するには、{email} までご連絡ください"
     },
     "errors": {
-      "auth/cancelled-popup-request": "サインインがキャンセルされました。もう一度お試しください。",
+      "auth/account-exists-with-different-credential": "このメールアドレスのアカウントはすでに存在しますが、別のサインイン方法を使用しています。最初に使用した方法でサインインしてください。",
+      "auth/cancelled-popup-request": "別のサインインウィンドウがすでに開いていたため、このリクエストはキャンセルされました。もう一度お試しください。",
       "auth/email-already-in-use": "このメールアドレスのアカウントは既に存在します。代わりにサインインをお試しください。",
       "auth/invalid-credential": "ログイン認証情報が無効です。メールアドレスとパスワードを確認してください。",
       "auth/invalid-email": "有効なメールアドレスを入力してください。",
       "auth/network-request-failed": "ネットワークエラー。接続を確認してからもう一度お試しください。",
       "auth/operation-not-allowed": "このサインイン方法は現在サポートされていません。",
-      "auth/popup-closed-by-user": "サインインがキャンセルされました。もう一度お試しください。",
+      "auth/popup-blocked": "ブラウザによってサインインウィンドウがブロックされました。このサイトのポップアップを許可して、もう一度お試しください。",
+      "auth/popup-closed-by-user": "サインインが完了する前にサインインウィンドウが閉じられました。もう一度お試しください。",
       "auth/too-many-requests": "ログイン試行回数が多すぎます。しばらく待ってからもう一度お試しください。",
       "auth/user-disabled": "このアカウントは無効化されています。サポートまでご連絡ください。",
       "auth/user-not-found": "このメールアドレスに紐づくアカウントが見つかりません。新しいアカウントを作成しますか？",
@@ -845,6 +847,7 @@
       "message": "クレジットが統合されました",
       "tooltip": "Comfy全体で支払いが統一されました。すべてComfyクレジットで動作します：\n- パートナーノード（旧APIノード）\n- クラウドワークフロー\n\n既存のパートナーノード残高はクレジットに変換されました。"
     },
+    "workspaceCredits": "ワークスペースクレジット",
     "yourCreditBalance": "あなたのクレジット残高"
   },
   "curveWidget": {
@@ -894,6 +897,7 @@
     "FILE_3D_SPZ": "FILE_3D_SPZ",
     "FILE_3D_STL": "FILE_3D_STL",
     "FILE_3D_USDZ": "FILE_3D_USDZ",
+    "FISHAUDIO_VOICE": "FISHAUDIO_VOICE",
     "FLOAT": "浮動小数点",
     "FLOATS": "浮動小数点数",
     "GEMINI_INPUT_FILES": "GEMINI入力ファイル",
@@ -907,6 +911,7 @@
     "IMAGECOMPARE": "画像比較",
     "INT": "整数",
     "INTERP_MODEL": "補間モデル",
+    "KIMODO_POSE_DATA": "KIMODO_POSE_DATA",
     "KREA_STYLE_REF": "KREA_STYLE_REF",
     "LATENT": "潜在",
     "LATENT_OPERATION": "潜在操作",
@@ -924,6 +929,7 @@
     "MESH": "メッシュ",
     "MESHY_RIGGED_TASK_ID": "MESHY_RIGGED_TASK_ID",
     "MESHY_TASK_ID": "MESHY_TASK_ID",
+    "MHR_POSE_DATA": "MHR_POSE_DATA",
     "MODEL": "モデル",
     "MODEL_PATCH": "モデルパッチ",
     "MODEL_TASK_ID": "モデルタスクID",
@@ -943,8 +949,10 @@
     "RIG_TASK_ID": "リグタスクID",
     "RUNWAY_ALEPH2_KEYFRAME": "RUNWAY_ALEPH2_KEYFRAME",
     "RUNWAY_ALEPH2_PROMPT_IMAGE": "RUNWAY_ALEPH2_PROMPT_IMAGE",
+    "SAM3D_BODY_MODEL": "SAM3D_BODY_MODEL",
     "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "サンプラー",
+    "SHAPE_SUBDIVIDES": "SHAPE_SUBDIVIDES",
     "SIGMAS": "シグマ",
     "SPLAT": "スプラット",
     "STRING": "文字列",
@@ -960,12 +968,20 @@
     "WEBCAM": "ウェブカメラ"
   },
   "desktopDialogs": {
-    "": {
+    "invalidDialog": {
       "buttons": {
         "Close": "閉じる"
       },
       "message": "無効なダイアログIDが指定されました。",
       "title": "無効なダイアログ"
+    },
+    "reinstallVenv": {
+      "buttons": {
+        "Learn More": "詳細を見る",
+        "Reinstall": "再インストール"
+      },
+      "message": "一部のインストール済みパッケージに互換性がないため、ComfyUIを起動できません。\n\n「再インストール」をクリックすると、ComfyUIを復元して再び利用できるようになります。\n\n注意：カスタムノードを追加している場合は、この処理後に再インストールする必要があります。",
+      "title": "ComfyUIを再インストールしますか？（初期状態に戻す）"
     }
   },
   "desktopLogin": {
@@ -1409,7 +1425,8 @@
     "loadWorkflowTitle": "ワークフローデータの再読み込みエラーにより、読み込みが中止されました",
     "noStackTrace": "スタックトレースは利用できません",
     "promptExecutionError": "プロンプトの実行に失敗しました",
-    "queueOpenWorkflowFailedTitle": "ワークフローのオープンに失敗しました"
+    "queueOpenWorkflowFailedTitle": "ワークフローのオープンに失敗しました",
+    "workspaceChangedDuringExecution": "この実行の準備中にアクティブなワークスペースが変更されました。現在のワークスペースを使用するには、ワークフローをもう一度実行してください。"
   },
   "errorOverlay": {
     "missingMedia": "いくつかのノードに必要な入力が不足しています",
@@ -1564,7 +1581,7 @@
     "disableAll": "すべて無効にする",
     "disableSelected": "選択したものを無効化",
     "disableThirdParty": "サードパーティを無効化",
-    "disabling": "無効化",
+    "disabling": "{id}を無効化中",
     "disconnectedFromBackend": "バックエンドから切断されました。サーバーが稼働しているか確認してください。",
     "dismiss": "閉じる",
     "download": "ダウンロード",
@@ -1584,7 +1601,7 @@
     "enableOrDisablePack": "パックを有効/無効にする",
     "enableSelected": "選択したものを有効化",
     "enabled": "有効",
-    "enabling": "有効化",
+    "enabling": "{id}を有効化中",
     "enter": "入力",
     "enterBaseName": "ベース名を入力",
     "enterNewName": "新しい名前を入力",
@@ -1638,13 +1655,14 @@
     "increment": "増加",
     "info": "ノード情報",
     "input": "入力",
+    "inputTooltip": "入力: {name}",
     "insert": "挿入",
     "install": "インストール",
     "installed": "インストール済み",
     "installing": "インストール中",
     "interrupted": "中断されました",
     "itemsCopiedToClipboard": "項目をクリップボードにコピーしました",
-    "itemsSelected": "{selectedCount}件選択済み",
+    "itemsSelected": "選択された項目はありません | {count} 件の項目を選択 | {count} 件の項目を選択",
     "job": "ジョブ",
     "jobIdCopied": "ジョブIDがクリップボードにコピーされました",
     "keybinding": "キーバインディング",
@@ -1807,7 +1825,7 @@
     "searchKeybindings": "キーバインディングを検索",
     "searchModels": "モデルを検索",
     "searchNodes": "ノードを検索",
-    "searchPlaceholder": "検索...",
+    "searchPlaceholder": "{subject}を検索...",
     "searchSettings": "設定を検索",
     "searchWorkflows": "ワークフローを検索",
     "seeTutorial": "チュートリアルを見る",
@@ -1859,7 +1877,7 @@
     "updateAvailable": "更新が利用可能",
     "updateFrontend": "フロントエンドを更新",
     "updated": "更新済み",
-    "updating": "更新中",
+    "updating": "{id}を更新中",
     "upload": "アップロード",
     "uploadAlreadyInProgress": "アップロードはすでに進行中です",
     "uploadTimedOut": "アップロードがタイムアウトしました。もう一度お試しください。",
@@ -2226,7 +2244,7 @@
     },
     "cancelThisRun": "この実行をキャンセル",
     "deleteAllAssets": "この実行からすべてのアセットを削除",
-    "downloadAll": "すべてダウンロード",
+    "downloadAll": "この実行から{count}個のアセットをダウンロード",
     "dragAndDropImage": "画像をドラッグ＆ドロップ",
     "emptyWorkflowExplanation": "ワークフローが空です。アプリを作成するには、まずノードを追加してください。",
     "enterNodeGraph": "ノードグラフに入る",
@@ -2283,6 +2301,7 @@
     "clearRecording": "録画をクリア",
     "dropToLoad": "3Dモデルをドロップして読み込み",
     "edgeThreshold": "エッジしきい値",
+    "exitLookThrough": "カメラビューを終了",
     "export": "エクスポート",
     "exportModel": "モデルをエクスポート",
     "exportRecording": "録画をエクスポート",
@@ -2305,11 +2324,13 @@
       "showAsBackground": "背景として表示",
       "uploadFile": "HDRIをアップロード（.hdr、.exr）"
     },
+    "hideGizmos": "ギズモを非表示",
     "light": "ライト",
     "lightIntensity": "光の強度",
     "loadingBackgroundImage": "背景画像を読み込んでいます",
     "loadingHDRI": "HDRIを読み込み中...",
     "loadingModel": "3Dモデルを読み込んでいます...",
+    "lookThrough": "カメラビュー",
     "materialMode": "マテリアルモード",
     "materialModes": {
       "clay": "クレイ",
@@ -2350,6 +2371,7 @@
     "removeBackgroundImage": "背景画像を削除",
     "resizeNodeMatchOutput": "ノードを出力に合わせてリサイズ",
     "scene": "シーン",
+    "showGizmos": "ギズモを表示",
     "showGrid": "グリッドを表示",
     "showSkeleton": "スケルトンを表示",
     "startRecording": "録画開始",
@@ -2357,6 +2379,13 @@
     "switchCamera": "カメラを切り替える",
     "switchingMaterialMode": "マテリアルモードの切り替え中...",
     "tiledMode": "タイル",
+    "transformGizmo": {
+      "cameraRotate": "カメラ回転",
+      "cameraTranslate": "カメラ位置",
+      "label": "編集",
+      "none": "なし",
+      "target": "ターゲット"
+    },
     "unsupportedFileType": "サポートされていないファイル形式です（.gltf、.glb、.obj、.fbx、.stl をサポート）",
     "upDirection": "上方向",
     "upDirections": {
@@ -2365,6 +2394,8 @@
     "uploadBackgroundImage": "背景画像をアップロード",
     "uploadTexture": "テクスチャをアップロード",
     "uploadingModel": "3Dモデルをアップロード中...",
+    "useCustomUp": "入力からカメラの上方向を復元",
+    "useNaturalUp": "カメラの上方向をYにリセット",
     "viewer": {
       "apply": "適用",
       "cameraSettings": "カメラ設定",
@@ -2480,7 +2511,7 @@
     "enablePackToChangeVersion": "このパックを有効にしてバージョンを変更してください",
     "errorConnecting": "Comfy Node Registryへの接続エラー。",
     "extensionsSuccessfullyInstalled": "拡張機能のインストールが完了し、使用可能になりました！",
-    "failed": "失敗しました ({count})",
+    "failed": "失敗しました",
     "failedToInstall": "インストールに失敗しました",
     "filter": {
       "disabled": "無効",
@@ -2569,7 +2600,7 @@
     "tryUpdateTooltip": "リポジトリから最新の変更を取得します。ナイトリーバージョンでは自動検出できないアップデートがある場合があります。",
     "uninstall": "アンインストール",
     "uninstallSelected": "選択したものをアンインストール",
-    "uninstalling": "アンインストール中",
+    "uninstalling": "{id}をアンインストール中",
     "unresolvedNodes": {
       "message": "以下のノードがインストールされておらず、レジストリで見つかりませんでした。",
       "title": "未解決の欠落ノード"
@@ -2898,6 +2929,9 @@
     "notNow": "今はしない",
     "title": "改善にご協力ください"
   },
+  "nodeBadge": {
+    "partnerNodesCount": "パートナーノード x {count}"
+  },
   "nodeCategories": {
     "": "",
     "3d": "3d",
@@ -2907,6 +2941,7 @@
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "ElevenLabs": "ElevenLabs",
+    "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
     "Grok": "Grok",
     "HeyGen": "HeyGen",
@@ -2996,7 +3031,9 @@
     "mage": "mage",
     "mask": "マスク",
     "merging": "マージ",
+    "mesh": "メッシュ",
     "minimax": "minimax",
+    "minimax music": "minimax music",
     "mochi": "mochi",
     "model": "モデル",
     "model specific": "モデル固有",
@@ -3035,8 +3072,11 @@
     "supir": "supir",
     "sync_so": "sync.so",
     "text": "テキスト",
+    "texturing": "テクスチャリング",
     "training": "トレーニング",
     "transform": "変換",
+    "trellis": "trellis",
+    "trellis2": "trellis2",
     "triposplat": "triposplat",
     "unet": "U-Net",
     "upscaling": "アップスケーリング",
@@ -3427,7 +3467,7 @@
       "expandNodes": "参照ノードを表示",
       "gatedModelDownloadTooltip": "ダウンロードには先にHugging Faceへのサインインが必要な場合があります。",
       "gatedModelTooltip": "このモデルは制限されており、Hugging Faceにログインしライセンス契約に同意する必要があります。",
-      "gatedModelsHint": "一部のモデルは制限されています。ダウンロードするにはHugging Faceにサインインし、モデルのライセンス契約に同意してください。",
+      "gatedModelsHint": "{count}個のモデルはアクセス制限付きです。ダウンロードするには、Hugging Faceにサインインしてライセンス契約に同意してください。|{count}個のモデルはアクセス制限付きです。ダウンロードするには、Hugging Faceにサインインして各ライセンス契約に同意してください。",
       "gatedModelsHintLabel": "ご注意：",
       "import": "インポート",
       "importNotSupported": "インポートはサポートされていません",
@@ -4089,8 +4129,8 @@
     "contactUs": "お問い合わせ",
     "creditSliderSave": "{percent}%（{amount}）を節約",
     "creditsLeftOfTotal": "{total} 中 {remaining} 残り",
-    "creditsRemainingThisMonth": "今月残りのクレジット",
-    "creditsRemainingThisYear": "今年残りのクレジット",
+    "creditsRemainingThisMonth": "含まれる（{date}に補充）",
+    "creditsRemainingThisYear": "含まれています（{date}に補充）",
     "creditsUsed": "{used} 使用済み",
     "creditsYouveAdded": "追加したクレジット",
     "currentPlan": "現在のプラン",
@@ -4128,6 +4168,7 @@
       "freeRuns": "{count} 回の無料実行",
       "maxRuntime": "最大実行時間：{duration}"
     },
+    "fullUsageActivity": "使用状況の詳細",
     "gpuLabel": "RTX 6000 Pro（96GB VRAM）",
     "haveQuestions": "ご質問やエンタープライズについてのお問い合わせはこちら",
     "inactive": {
@@ -4140,7 +4181,7 @@
     "inactiveTeamDescription": "チームプランを再有効化して、メンバーを追加したりワークフローを実行したりできます",
     "inactiveTeamPlanIncludes": "有効なプランには{plan}のすべてに加えて、以下が含まれます：",
     "inactiveTeamTitle": "チームサブスクリプションが無効です",
-    "inviteUpTo": "最大 {count} 人を招待",
+    "inviteUpTo": "最大招待数",
     "invoiceHistory": "請求履歴",
     "learnMore": "詳細を見る",
     "manageBilling": "請求管理",
@@ -4201,6 +4242,7 @@
       "personal": "個人向け",
       "team": "チーム向け"
     },
+    "plansAndCredits": "プランとクレジット",
     "plansAndPricing": "プランと価格",
     "plansForWorkspace": "{workspace} のプラン",
     "prepaidCreditsInfo": "別途購入した有効期限のないクレジット",
@@ -4220,7 +4262,7 @@
       "confirmUpgradeCta": "アップグレードを確認",
       "confirmUpgradeTitle": "アップグレードの確認",
       "creditFromCurrent": "現在の{plan}からのクレジット",
-      "creditsRefillMonthlyTo": "クレジットは毎月{amount}に補充されます",
+      "creditsRefillMonthlyTo": "クレジットは毎月次の残高まで補充されます",
       "creditsRefillTo": "クレジットが補充されます：",
       "creditsYoullGetToday": "本日付与されるクレジット",
       "currentMonthly": "月間プラン",
@@ -4499,6 +4541,7 @@
     "failedToFetchBalance": "残高の取得に失敗しました: {error}",
     "failedToFetchLogs": "サーバーログの取得に失敗しました",
     "failedToFetchSubscription": "サブスクリプションステータスの取得に失敗しました: {error}",
+    "failedToInitializeCameraInfoViewer": "カメラ情報ビューアーの初期化に失敗しました。ページを再読み込みしてください。",
     "failedToInitializeLoad3dViewer": "3Dビューアの初期化に失敗しました",
     "failedToInitiateCreditPurchase": "クレジット購入の開始に失敗しました: {error}",
     "failedToInitiateSubscription": "サブスクリプションの開始に失敗しました: {error}",
@@ -4706,7 +4749,7 @@
     "savedAsWorkflow": "ノードグラフのみのワークフローに変換されました"
   },
   "workspace": {
-    "addedToWorkspace": "{workspaceName}に追加されました",
+    "addedToWorkspace": "次のワークスペースに追加されました：",
     "inviteAccepted": "招待を承諾しました",
     "inviteFailed": "招待の承諾に失敗しました",
     "switchFailed": "ワークスペースの切り替えに失敗しました。もう一度お試しください。",
@@ -4801,7 +4844,7 @@
       "title": "ワークスペースの詳細を編集"
     },
     "invite": "招待",
-    "inviteLimitReached": "メンバーの上限50人に達しました",
+    "inviteLimitReached": "メンバー数が上限の{count}人に達しました",
     "inviteMember": "メンバーを招待",
     "inviteMemberDialog": {
       "failedCount": "{count} 件の招待を送信できませんでした。再試行してください。",
@@ -4854,7 +4897,7 @@
         "warning": "このユーザーはすでに {credits} クレジットを使用しています。現在の使用量以下に上限を設定すると、来月まで実行できなくなります。"
       },
       "header": "メンバー",
-      "membersCount": "{count}/50人のメンバー",
+      "membersCount": "{maxSeats}人中{count}人のメンバー",
       "needMoreMembers": "さらにメンバーが必要ですか？",
       "noInvites": "保留中の招待はありません",
       "noMembers": "メンバーがいません",
@@ -4978,6 +5021,8 @@
     "personal": "個人用",
     "roleMember": "メンバー",
     "roleOwner": "オーナー",
+    "scopeCaption": "ワークスペースは、使用するクレジットにのみ影響します。",
+    "scopeTooltip": "パートナーノードを使用する実行では、このワークスペースのクレジットが消費されます。Cloudとは異なり、すべてのワークスペースは通常の出力フォルダーに保存されます。",
     "subscribe": "サブスクライブ",
     "switchWorkspace": "ワークスペースを切り替え"
   },
