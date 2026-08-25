@@ -147,7 +147,7 @@ describe('GroupNodeHandler.getGroupData', () => {
     setActivePinia(createPinia())
   })
 
-  it('returns the registered GroupNodeConfig for legacy custom-node callers (#15116)', async () => {
+  it('returns the registered GroupNodeConfig for legacy custom-node callers (#12931)', async () => {
     const [ext] = vi
       .mocked(app.registerExtension)
       .mock.calls.find(
@@ -185,8 +185,6 @@ describe('GroupNodeHandler.getGroupData', () => {
     const ctor = LiteGraph.registered_node_types['workflow>MyGroup']
     const node = { constructor: ctor } as unknown as LGraphNode
 
-    // Cast rather than call directly: the legacy static method this test
-    // reproduces (#15116) does not exist on the type until the fix lands.
     const { getGroupData } = GroupNodeHandler as unknown as {
       getGroupData: (
         node: LGraphNode | LGraphNodeConstructor
@@ -195,5 +193,59 @@ describe('GroupNodeHandler.getGroupData', () => {
 
     expect(getGroupData(node)).toBe(config)
     expect(getGroupData(ctor as LGraphNodeConstructor)).toBe(config)
+  })
+
+  it('checks the instance before falling back to the constructor', async () => {
+    const [ext] = vi
+      .mocked(app.registerExtension)
+      .mock.calls.find(
+        ([e]) => (e as ComfyExtension).name === 'Comfy.GroupNode'
+      ) as [ComfyExtension]
+    ext.addCustomNodeDefs?.(
+      {
+        KSampler: {
+          name: 'KSampler',
+          display_name: 'KSampler',
+          description: '',
+          category: 'sampling',
+          output_node: false,
+          python_module: 'nodes',
+          input: { required: {} },
+          output: [],
+          output_name: [],
+          output_is_list: []
+        }
+      },
+      app
+    )
+
+    class MarkedGroupCtor extends LGraphNode {}
+    MarkedGroupCtor.nodeData = {}
+    LiteGraph.registered_node_types['workflow>MyInstanceOwnedGroup'] =
+      MarkedGroupCtor
+
+    const config = new GroupNodeConfig('MyInstanceOwnedGroup', {
+      nodes: [{ index: 0, type: 'KSampler' }],
+      links: [],
+      external: []
+    })
+    await config.registerType()
+
+    // The marker now lives on MarkedGroupCtor.nodeData. Build a node whose
+    // own constructor carries no marker, but whose instance does -- the
+    // legacy shape this shim must still resolve.
+    class UnmarkedCtor extends LGraphNode {}
+    const node = {
+      constructor: UnmarkedCtor,
+      nodeData: MarkedGroupCtor.nodeData
+    } as unknown as LGraphNode
+
+    const { getGroupData } = GroupNodeHandler as unknown as {
+      getGroupData: (
+        node: LGraphNode | LGraphNodeConstructor
+      ) => GroupNodeConfig | undefined
+    }
+
+    expect(getGroupData(node)).toBe(config)
   })
 })

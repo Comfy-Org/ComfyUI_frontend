@@ -815,6 +815,8 @@ export class GroupNodeConfig {
  * `configure`. The load-time migration unpacks each instance via
  * {@link convertToNodes} and {@link LGraph.convertToSubgraph} repackages the
  * result as a subgraph.
+ *
+ * @knipIgnoreUnusedButUsedByCustomNodes
  */
 export class GroupNodeHandler {
   node: LGraphNode
@@ -970,7 +972,7 @@ export class GroupNodeHandler {
   }
 
   /**
-   * @deprecated Restored for custom-node backward compatibility (see #15116).
+   * @deprecated Restored for custom-node backward compatibility (see #12931).
    * Prefer {@link GroupNodeHandler.getHandler} and read `.groupData` off the
    * result instead.
    */
@@ -984,6 +986,13 @@ export class GroupNodeHandler {
     if (typeof node === 'function') {
       return node.nodeData?.[GROUP] as GroupNodeConfig | undefined
     }
+    // Check the instance before falling back to the constructor: some legacy
+    // callers stamp the marker directly on the node instance rather than on
+    // its constructor's `nodeData`.
+    const instanceData = (
+      node as LGraphNode & { nodeData?: LGraphNodeConstructor['nodeData'] }
+    ).nodeData
+    if (instanceData?.[GROUP]) return instanceData[GROUP] as GroupNodeConfig
     return node.constructor?.nodeData?.[GROUP] as GroupNodeConfig | undefined
   }
 
