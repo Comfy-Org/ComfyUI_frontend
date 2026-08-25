@@ -18015,6 +18015,11 @@ export interface components {
             amount_micros?: number;
             /** Format: double */
             cloud_credit_balance_micros?: number;
+            /**
+             * Format: double
+             * @description The original allocation of currently active cloud credit grants in microamount
+             */
+            cloud_credit_total_micros?: number;
             currency?: string;
             /** Format: double */
             prepaid_balance_micros?: number;
@@ -19591,6 +19596,11 @@ export interface operations {
                          * @description The remaining balance from cloud credits in microamount
                          */
                         cloud_credit_balance_micros?: number;
+                        /**
+                         * Format: double
+                         * @description The original allocation of currently active cloud credit grants in microamount
+                         */
+                        cloud_credit_total_micros?: number;
                         /** @description The currency code (e.g., "usd") */
                         currency: string;
                         /**

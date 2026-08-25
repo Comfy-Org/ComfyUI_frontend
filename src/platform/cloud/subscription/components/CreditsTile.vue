@@ -222,7 +222,7 @@ import Skeleton from 'primevue/skeleton'
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { formatCredits } from '@/base/credits/comfyCredits'
+import { centsToCredits, formatCredits } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -282,6 +282,9 @@ const tierKey = computed(() => {
 })
 
 const creditPoolTotalCredits = computed<number | null>(() => {
+  const apiTotal = balance.value?.cloudCreditTotalMicros
+  if (apiTotal != null) return centsToCredits(apiTotal)
+
   const monthlyCredits =
     currentTeamCreditStop.value?.credits_monthly ??
     getTierCredits(tierKey.value)

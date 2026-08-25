@@ -82,7 +82,8 @@ export function useLegacyBilling(): BillingState & BillingActions {
         legacyBalance.amount_micros ??
         0,
       prepaidBalanceMicros: legacyBalance.prepaid_balance_micros ?? 0,
-      cloudCreditBalanceMicros: legacyBalance.cloud_credit_balance_micros ?? 0
+      cloudCreditBalanceMicros: legacyBalance.cloud_credit_balance_micros ?? 0,
+      cloudCreditTotalMicros: legacyBalance.cloud_credit_total_micros
     }
   })
 
