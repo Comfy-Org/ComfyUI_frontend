@@ -196,7 +196,7 @@ describe('DomWidgets positioning', () => {
     expect(widgetState.pos).toBe(posAfterFirstFrame)
   })
 
-  it('forces pos reassignment for widgets when the selected node moves', () => {
+  it('forces pos reassignment when the selected node render area changes', () => {
     const canvasStore = useCanvasStore()
     const domWidgetStore = useDomWidgetStore()
 
@@ -207,8 +207,6 @@ describe('DomWidgets positioning', () => {
     domWidgetStore.registerWidget(widget)
 
     const canvas = createCanvas(graph)
-    // movingNode is the selected node — its renderArea drives clipping for
-    // widgets owned by other nodes.
     canvas.selected_nodes = { 1: movingNode }
     canvasStore.canvas = canvas
 
@@ -216,16 +214,16 @@ describe('DomWidgets positioning', () => {
       global: { stubs: { DomWidget: true } }
     })
 
+    movingNode.updateArea()
     drawFrame(canvas)
     const widgetState = domWidgetStore.widgetStates.get(widget.id)
     if (!widgetState) throw new Error('Widget state not registered')
     const posAfterFirstFrame = widgetState.pos
 
-    // Drag the selected node — otherNode (and its widget) hasn't moved, but
-    // the widget's clip-path depends on movingNode.renderArea, so the
-    // downstream pos watcher must re-fire.
-    movingNode.pos[0] = 150
+    movingNode.flags.collapsed = true
+    movingNode.updateArea()
     drawFrame(canvas)
+
     expect(widgetState.pos).not.toBe(posAfterFirstFrame)
   })
 })

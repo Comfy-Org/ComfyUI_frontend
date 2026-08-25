@@ -25,10 +25,8 @@ const domWidgetStore = useDomWidgetStore()
 const widgetStates = computed(() => [...domWidgetStore.widgetStates.values()])
 
 // Track canvas viewport and selected-node bounds between frames.
-// lgCanvas.ds.offset, ds.scale, and node.pos/size are non-reactive plain
-// props — Vue watchers in DomWidget won't fire unless widgetState.pos gets
-// a new array identity. We force reassignment whenever these change so the
-// downstream watcher re-runs updatePosition / updateDomClipping.
+// lgCanvas.ds.offset, ds.scale, and node.renderArea are non-reactive plain
+// values, so widgetState.pos needs a new identity to rerun downstream work.
 const lastViewport = {
   offsetX: Number.NaN,
   offsetY: Number.NaN,
@@ -36,8 +34,8 @@ const lastViewport = {
 }
 const lastSelected = {
   id: undefined as string | number | undefined,
-  posX: 0,
-  posY: 0,
+  x: 0,
+  y: 0,
   width: 0,
   height: 0
 }
@@ -62,22 +60,19 @@ const updateWidgets = () => {
 
   const selectedNode = Object.values(lgCanvas.selected_nodes ?? {})[0]
   const selectedNodeId = selectedNode?.id
-  const selectedPosX = selectedNode ? selectedNode.pos[0] : 0
-  const selectedPosY = selectedNode ? selectedNode.pos[1] : 0
-  const selectedWidth = selectedNode ? selectedNode.size[0] : 0
-  const selectedHeight = selectedNode ? selectedNode.size[1] : 0
+  const selectedArea = selectedNode?.renderArea
   const selectionChanged =
     lastSelected.id !== selectedNodeId ||
-    (!!selectedNode &&
-      (lastSelected.posX !== selectedPosX ||
-        lastSelected.posY !== selectedPosY ||
-        lastSelected.width !== selectedWidth ||
-        lastSelected.height !== selectedHeight))
+    (!!selectedArea &&
+      (lastSelected.x !== selectedArea[0] ||
+        lastSelected.y !== selectedArea[1] ||
+        lastSelected.width !== selectedArea[2] ||
+        lastSelected.height !== selectedArea[3]))
   lastSelected.id = selectedNodeId
-  lastSelected.posX = selectedPosX
-  lastSelected.posY = selectedPosY
-  lastSelected.width = selectedWidth
-  lastSelected.height = selectedHeight
+  lastSelected.x = selectedArea?.[0] ?? 0
+  lastSelected.y = selectedArea?.[1] ?? 0
+  lastSelected.width = selectedArea?.[2] ?? 0
+  lastSelected.height = selectedArea?.[3] ?? 0
 
   for (const widgetState of widgetStates.value) {
     const widget = widgetState.widget
