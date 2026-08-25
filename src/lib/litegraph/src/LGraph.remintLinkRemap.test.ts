@@ -258,6 +258,38 @@ describe('LGraph.configure remint link remap', () => {
     expect(floating?.origin_id).toBe(newcomer.id)
   })
 
+  it('keeps unassigned floating endpoints when a payload node requests -1', () => {
+    const graph = new LGraph()
+    graph.configure(incumbentGraph())
+
+    graph.configure(
+      baseGraph({
+        state: {
+          lastNodeId: 2,
+          lastLinkId: 400,
+          lastGroupId: 0,
+          lastRerouteId: 0
+        },
+        nodes: [serialisedNode(-1, 'unassigned-newcomer', 0)],
+        floatingLinks: [
+          {
+            id: 400,
+            origin_id: -1,
+            origin_slot: -1,
+            target_id: 2,
+            target_slot: 0,
+            type: 'number'
+          }
+        ]
+      }),
+      true
+    )
+
+    const floating = graph.floatingLinks.get(toLinkId(400))
+    expect(floating?.origin_id).toBe(toNodeId(-1))
+    expect(floating?.target_id).toBe(toNodeId(2))
+  })
+
   it('resolves chained remints once against each requested id', () => {
     const graph = new LGraph()
     graph.configure(incumbentGraph())
@@ -270,25 +302,24 @@ describe('LGraph.configure remint link remap', () => {
         lastRerouteId: 0
       },
       nodes: [
-        serialisedNode(1, 'first-remint', 0, { outputLinks: [500] }),
-        serialisedNode(3, 'second-remint', 1, { outputLinks: [501] }),
-        serialisedNode(5, 'first-sink', 2, { inputLink: 500 }),
-        serialisedNode(6, 'second-sink', 3, { inputLink: 501 })
+        serialisedNode(1, 'first-remint', 0, { inputLink: 500 }),
+        serialisedNode(3, 'second-remint', 1, { inputLink: 501 }),
+        serialisedNode(9, 'origin', 2, { outputLinks: [500, 501] })
       ],
       links: [
         {
           id: 500,
-          origin_id: 1,
+          origin_id: 9,
           origin_slot: 0,
-          target_id: 5,
+          target_id: 1,
           target_slot: 0,
           type: 'number'
         },
         {
           id: 501,
-          origin_id: 3,
+          origin_id: 9,
           origin_slot: 0,
-          target_id: 6,
+          target_id: 3,
           target_slot: 0,
           type: 'number'
         }
@@ -303,12 +334,12 @@ describe('LGraph.configure remint link remap', () => {
     expect(second.id).toBe(toNodeId(4))
 
     const firstLink = graph.links.get(toLinkId(500))
-    expect(firstLink?.origin_id).toBe(first.id)
-    expect(firstLink?.target_id).toBe(toNodeId(5))
+    expect(firstLink?.origin_id).toBe(toNodeId(9))
+    expect(firstLink?.target_id).toBe(first.id)
 
     const secondLink = graph.links.get(toLinkId(501))
-    expect(secondLink?.origin_id).toBe(second.id)
-    expect(secondLink?.target_id).toBe(toNodeId(6))
+    expect(secondLink?.origin_id).toBe(toNodeId(9))
+    expect(secondLink?.target_id).toBe(second.id)
   })
 
   it('does not remap links whose serialized id is claimed by two payload nodes', () => {
