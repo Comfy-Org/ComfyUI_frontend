@@ -30,8 +30,13 @@ user. `DATABASE_URL` in `.env` matches the Postgres service in
 - **Media** — uploads, with `alt` localized per locale.
 - **Creators**, **Teams**, **Tools** — name-only relationship targets for gallery
   items.
-- **Users** — admins. API-key auth is enabled so a low-privilege user can be
-  issued a key for authenticated draft reads from the preview deployment.
+- **Users** — every user carries a `role`. `admin` is the only role that can
+  create, update, or delete content, manage users, or reach the admin panel.
+  `website-preview` exists so the preview deployment can be issued an API key
+  for authenticated draft reads and nothing else, and it is the default for new
+  accounts — promote to `admin` deliberately. The one exception is the very
+  first user, which is forced to `admin` so a fresh install has someone who can
+  log in. Email/password login is unchanged.
 
 Locales are `en` (default) and `zh-CN`; a missing zh-CN value falls back to en.
 
@@ -46,7 +51,7 @@ each media doc's `url` becomes an absolute CDN url. See `.env.example`.
 The website is statically built, so published changes only go live on a redeploy.
 The admin dashboard's "Rebuild site" button POSTs `/api/rebuild-website`, which
 forwards to the Vercel deploy hook in `WEBSITE_DEPLOY_HOOK_URL`. The hook url stays
-server-side and the endpoint is admin-only.
+server-side and the endpoint requires the `admin` role.
 
 ## Workspace commands
 

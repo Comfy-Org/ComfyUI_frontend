@@ -239,6 +239,7 @@ export interface Event {
  */
 export interface User {
   id: number;
+  role: 'admin' | 'website-preview';
   updatedAt: string;
   createdAt: string;
   enableAPIKey?: boolean | null;
@@ -466,6 +467,7 @@ export interface ToolsSelect<T extends boolean = true> {
  * via the `definition` "users_select".
  */
 export interface UsersSelect<T extends boolean = true> {
+  role?: T;
   updatedAt?: T;
   createdAt?: T;
   enableAPIKey?: T;

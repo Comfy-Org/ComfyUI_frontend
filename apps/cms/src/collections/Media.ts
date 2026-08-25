@@ -1,15 +1,15 @@
 import type { CollectionConfig } from 'payload'
 
+import { adminOnly } from '../access/adminOnly'
 import { anyone } from '../access/anyone'
-import { authenticated } from '../access/authenticated'
 
 export const Media: CollectionConfig = {
   slug: 'media',
   access: {
     read: anyone,
-    create: authenticated,
-    update: authenticated,
-    delete: authenticated,
+    create: adminOnly,
+    update: adminOnly,
+    delete: adminOnly,
   },
   fields: [
     {

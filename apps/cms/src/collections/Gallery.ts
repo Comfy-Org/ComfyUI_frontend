@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 
-import { authenticated } from '../access/authenticated'
+import { adminOnly } from '../access/adminOnly'
 import { authenticatedOrPublished } from '../access/authenticatedOrPublished'
 import { slugField } from '../fields/slug'
 import { websitePreview } from './websitePreview'
@@ -9,9 +9,9 @@ export const Gallery: CollectionConfig = {
   slug: 'gallery',
   access: {
     read: authenticatedOrPublished,
-    create: authenticated,
-    update: authenticated,
-    delete: authenticated,
+    create: adminOnly,
+    update: adminOnly,
+    delete: adminOnly,
   },
   admin: {
     useAsTitle: 'title',

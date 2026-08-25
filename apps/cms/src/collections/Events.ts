@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 
-import { authenticated } from '../access/authenticated'
+import { adminOnly } from '../access/adminOnly'
 import { authenticatedOrPublished } from '../access/authenticatedOrPublished'
 import { slugField } from '../fields/slug'
 import { websitePreview } from './websitePreview'
@@ -19,9 +19,9 @@ export const Events: CollectionConfig = {
   slug: 'events',
   access: {
     read: authenticatedOrPublished,
-    create: authenticated,
-    update: authenticated,
-    delete: authenticated,
+    create: adminOnly,
+    update: adminOnly,
+    delete: adminOnly,
   },
   // There is no publishedAt on events: lists sort by startDateTime and the
   // carousel by featured.order, so the admin list mirrors the site's

@@ -3,9 +3,9 @@ import type { Endpoint, PayloadRequest } from 'payload'
 /**
  * `POST /api/rebuild-website` — triggers a production website redeploy by POSTing
  * the Vercel Deploy Hook. The hook URL is a secret held server-side
- * (`WEBSITE_DEPLOY_HOOK_URL`) and never reaches the browser. Gated to
- * authenticated admins (it lives behind the admin panel and re-checks
- * `req.user`). Backs the "Rebuild site" admin button.
+ * (`WEBSITE_DEPLOY_HOOK_URL`) and never reaches the browser. Gated to users with
+ * the `admin` role — a `website-preview` API key must not be able to trigger
+ * production deploys. Backs the "Rebuild site" admin button.
  */
 export const rebuildWebsiteEndpoint: Endpoint = {
   path: '/rebuild-website',
@@ -13,6 +13,10 @@ export const rebuildWebsiteEndpoint: Endpoint = {
   handler: async (req: PayloadRequest): Promise<Response> => {
     if (!req.user) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    if (req.user.role !== 'admin') {
+      return Response.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     const hookUrl = process.env.WEBSITE_DEPLOY_HOOK_URL

@@ -1,7 +1,7 @@
 import type { CollectionConfig } from 'payload'
 
+import { adminOnly } from '../access/adminOnly'
 import { anyone } from '../access/anyone'
-import { authenticated } from '../access/authenticated'
 
 // Creators, teams, and tools are identical name-bearing collections that gallery
 // items relate to. Public read lets ticket 05's depth-populated anonymous fetch
@@ -14,9 +14,9 @@ export const nameCollection = (
   labels,
   access: {
     read: anyone,
-    create: authenticated,
-    update: authenticated,
-    delete: authenticated,
+    create: adminOnly,
+    update: adminOnly,
+    delete: adminOnly,
   },
   admin: {
     useAsTitle: 'name',
