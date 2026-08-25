@@ -198,9 +198,13 @@ function getBranchVersion(branch: string, repoPath: string): string | null {
 
   try {
     const parsed: unknown = JSON.parse(raw)
-    if (typeof parsed === 'object' && parsed !== null && 'version' in parsed) {
-      const { version } = parsed as { version: unknown }
-      return typeof version === 'string' ? version : null
+    if (
+      typeof parsed === 'object' &&
+      parsed !== null &&
+      'version' in parsed &&
+      typeof parsed.version === 'string'
+    ) {
+      return parsed.version
     }
   } catch {
     console.error(`Could not parse package.json on ${branch}`)
