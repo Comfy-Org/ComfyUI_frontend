@@ -28,9 +28,6 @@ jobs:
         with:
           script: |
             const expectedShards = 16
-            const artifactCutoff = new Date(
-              Date.now() - 26 * 60 * 60 * 1000
-            ).toISOString()
             const runPages = github.paginate.iterator(
               github.rest.actions.listWorkflowRuns,
               {
@@ -40,7 +37,6 @@ jobs:
                 branch: 'main',
                 event: 'push',
                 status: 'completed',
-                created: `>=${artifactCutoff}`,
                 per_page: 100
               }
             )
