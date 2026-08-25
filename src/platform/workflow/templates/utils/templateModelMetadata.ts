@@ -1,5 +1,5 @@
-import { fetchModelMetadataWithStatus } from '@/platform/missingModel/missingModelDownload';
-import type { ModelMetadata } from '@/platform/missingModel/missingModelDownload';
+import { fetchModelMetadataWithStatus } from '@/platform/missingModel/missingModelDownload'
+import type { ModelMetadata } from '@/platform/missingModel/missingModelDownload'
 import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 export type TemplateModelMetadataEntry = ModelMetadata & {
