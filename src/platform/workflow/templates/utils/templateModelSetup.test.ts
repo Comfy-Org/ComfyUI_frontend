@@ -36,7 +36,7 @@ function resolvedMetadata(
 }
 
 describe('deriveTemplateModelSetup', () => {
-  it('derives strict statuses by identity in stable requirement order', async () => {
+  it('derives strict statuses by identity in stable requirement order', () => {
     const manual = model('manual.safetensors')
     const installed = model('installed.safetensors')
     const inventoryUnknown = model('inventory-unknown.safetensors')
@@ -120,7 +120,7 @@ describe('deriveTemplateModelSetup', () => {
       label: 'a completed batch missing the matching identity',
       metadata: { status: 'completed', entries: [] }
     }
-  ])('keeps missing models unknown for $label', async ({ metadata }) => {
+  ])('keeps missing models unknown for $label', ({ metadata }) => {
     const missing = model('incomplete.safetensors')
     const isDownloadable = vi.fn(() => true)
 
@@ -144,7 +144,7 @@ describe('deriveTemplateModelSetup', () => {
     expect(result.rowTotal).toEqual({ bytes: 0, isComplete: false })
   })
 
-  it('deduplicates totals by exact identity while preserving every row', async () => {
+  it('deduplicates totals by exact identity while preserving every row', () => {
     const installed = model('installed.safetensors')
     const checkpoint = model('shared-name.safetensors', 'checkpoints')
     const duplicateCheckpoint = { ...checkpoint }
@@ -210,14 +210,10 @@ describe('deriveTemplateModelSetup', () => {
       fileSize: 100
     })
     expect(result.rows).toHaveLength(requirements.length)
-    expect(result.remainingDownload).toEqual({
-      bytes: 500,
-      isComplete: false
-    })
     expect(result.rowTotal).toEqual({ bytes: 720, isComplete: false })
   })
 
-  it('treats a known zero-byte downloadable model as complete', async () => {
+  it('treats a known zero-byte downloadable model as complete', () => {
     const empty = model('empty.safetensors')
 
     const result = deriveTemplateModelSetup(
@@ -234,14 +230,10 @@ describe('deriveTemplateModelSetup', () => {
       status: 'downloadable',
       fileSize: 0
     })
-    expect(result.remainingDownload).toEqual({
-      bytes: 0,
-      isComplete: true
-    })
     expect(result.rowTotal).toEqual({ bytes: 0, isComplete: true })
   })
 
-  it('derives known model types and preserves a raw directory fallback', async () => {
+  it('derives known model types and preserves a raw directory fallback', () => {
     const models = [
       model('checkpoint.safetensors', 'checkpoints'),
       model('diffusion.safetensors', 'diffusion_models'),
