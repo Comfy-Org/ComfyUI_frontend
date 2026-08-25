@@ -1,7 +1,11 @@
+import { readFileSync } from 'node:fs'
+
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { getWav } from '@e2e/fixtures/components/AudioPreview'
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
+import { assetPath } from '@e2e/fixtures/utils/paths'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
@@ -220,7 +224,23 @@ test.describe('Image widget', { tag: ['@screenshot', '@widget'] }, () => {
   test('Can change image by changing the filename combo value', async ({
     comfyPage
   }) => {
+    const uploadResponse = await comfyPage.request.post(
+      `${comfyPage.apiUrl}/upload/image`,
+      {
+        multipart: {
+          image: {
+            name: 'image32x32.webp',
+            mimeType: 'image/webp',
+            buffer: readFileSync(assetPath('image32x32.webp'))
+          },
+          type: 'input'
+        }
+      }
+    )
+    await expect(uploadResponse).toBeOK()
     await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
+    await comfyPage.page.evaluate(() => window.app!.refreshComboInNodes())
+    await expect(comfyPage.toast.visibleToasts).toHaveCount(0)
     const nodes = await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
     const loadImageNode = nodes[0]
 
@@ -232,17 +252,7 @@ test.describe('Image widget', { tag: ['@screenshot', '@widget'] }, () => {
     const comboEntry = comfyPage.page.getByRole('menuitem', {
       name: 'image32x32.webp'
     })
-    const imageLoaded = comfyPage.page.waitForResponse(
-      (resp) =>
-        resp.url().includes('/view') &&
-        resp.url().includes('image32x32.webp') &&
-        resp.request().method() === 'GET' &&
-        resp.status() === 200
-    )
     await comboEntry.click()
-
-    // Wait for the image to load from the server
-    await imageLoaded
 
     // Wait for the image to decode and appear on the node
     await expect
@@ -400,9 +410,45 @@ test.describe(
 )
 
 test.describe('Load audio widget', { tag: ['@screenshot', '@widget'] }, () => {
-  test('Can load audio', async ({ comfyPage }) => {
+  test('Hides an empty preview and loads uploaded audio', async ({
+    comfyPage,
+    comfyFiles
+  }) => {
     await comfyPage.workflow.loadWorkflow('widgets/load_audio_widget')
-    await expect(comfyPage.page.locator('.comfy-audio')).toBeVisible()
+    const audioPreview = comfyPage.page.locator('.comfy-audio')
+    await expect(audioPreview).toBeHidden()
+
+    const [loadAudioNode] =
+      await comfyPage.nodeOps.getNodeRefsByType('LoadAudio')
+    if (!loadAudioNode) throw new Error('LoadAudio node not found')
+    const audioWidget = await loadAudioNode.getWidgetByName('audio')
+    const uploadWidget = await loadAudioNode.getWidgetByName('upload')
+    const filename = 'test-audio.wav'
+    const uploadResponse = comfyPage.page.waitForResponse((response) =>
+      response.url().includes('/upload/image')
+    )
+    const fileChooser = comfyPage.page.waitForEvent('filechooser')
+
+    await uploadWidget.click()
+    await (
+      await fileChooser
+    ).setFiles({
+      name: filename,
+      buffer: getWav(),
+      mimeType: 'audio/x-wav'
+    })
+    comfyFiles.deleteAfterTest({ filename, type: 'input' })
+    expect((await uploadResponse).status()).toBe(200)
+
+    await expect.poll(() => audioWidget.getValue()).toBe(filename)
+    await expect(audioPreview).toBeVisible()
+    await expect
+      .poll(() =>
+        audioPreview.evaluate((audio: HTMLAudioElement) =>
+          new URL(audio.src).searchParams.get('filename')
+        )
+      )
+      .toBe(filename)
     await expect(comfyPage.canvas).toHaveScreenshot('load_audio_widget.png')
   })
 })
