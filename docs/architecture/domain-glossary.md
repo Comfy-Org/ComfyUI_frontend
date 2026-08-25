@@ -25,9 +25,13 @@ Design records that rely on this vocabulary:
   display it assigns the new value back to the Value. Not a sidebar tab, menu
   item, or badge — those have no Value.
 - **Value** — the user-facing datum a Widget displays and writes back. Values
-  are persisted with the workflow. Not ephemeral display state (focus, hover,
-  an unblurred input buffer), which lives with the Widget instance and is never
-  serialized.
+  are persisted with the workflow when the Widget's workflow-serialization
+  contract permits it; `widget.serialize: false` excludes them
+  (`src/lib/litegraph/src/LGraphNode.ts`). This is distinct from prompt
+  serialization (`widget.options.serialize`) and from ephemeral display state
+  (focus, hover, an unblurred input buffer), which lives with the Widget
+  instance and is never serialized; see
+  [Widget Serialization](../WIDGET_SERIALIZATION.md).
 - **Widget id** — the string key a Value is stored under,
   `graphId:nodeId:name` (`src/types/widgetId.ts`). A Value is addressed by this
   key, not by an object reference to a widget instance.
