@@ -3,13 +3,7 @@ import { useEventListener } from '@vueuse/core'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
 
-/**
- * Identifies the copy that produced the clipboard's node metadata, so the
- * paste handler can tell an in-app copy from a payload left behind by an
- * earlier one. Only the id is stored, never the payload: a serialized
- * selection can run to megabytes against a ~5MB origin quota, and a failed
- * write would misclassify the user's own fresh copy as stale.
- */
+/** Identifies the last in-app copy. Only the id, never the payload. */
 export const LAST_COPY_ID_KEY = 'Comfy.Clipboard.LastCopyId'
 
 const clipboardHTMLWrapper = (id: string | null) => [
@@ -55,10 +49,7 @@ export const useCopy = () => {
     const canvas = canvasStore.canvas
     if (canvas?.selectedItems) {
       const serializedData = canvas.copyToClipboard()
-      // Persist the id before it reaches the clipboard, so the two can only
-      // diverge in the safe direction: metadata without an id reads as
-      // stale, whereas an id the paste handler never learned about would
-      // make the user's own copy look stale.
+      // Before the clipboard write, so the two can only diverge safely.
       let copyId: string | null = null
       try {
         const id = crypto.randomUUID()

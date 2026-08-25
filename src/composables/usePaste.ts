@@ -67,14 +67,7 @@ function pasteClipboardItems(data: DataTransfer): boolean {
   return false
 }
 
-/**
- * Node metadata is stale when the copy that produced it is not the last one
- * this profile made. useCopy stamps each copy with an id and remembers it;
- * metadata carrying a different id (or none) was left behind by an earlier
- * copy, a copy from another instance, or a page that happens to expose the
- * attribute. Comparing ids rather than payloads keeps this independent of
- * how either clipboard serializes.
- */
+/** Stale when the copy that produced it is not the last one made here. */
 function hasStaleNodeMetadata(rawHtml: string): boolean {
   if (decodeNodeMetadata(rawHtml) === null) return false
   const copyId = rawHtml.match(/data-copy-id="([^"]+)"/)?.[1]
@@ -287,10 +280,7 @@ export const usePaste = () => {
         return
       }
 
-      // Litegraph default paste. Skipped when a media node is selected and
-      // the clipboard carries stale node metadata: the user is targeting
-      // that node, and the leftover payload must not paste an old node
-      // (see the imagePastePriority e2e). A fresh in-app copy still pastes.
+      // Litegraph default paste.
       if (!staleMetadataOnMediaNode) canvas.pasteFromClipboard()
     }
   })
