@@ -236,8 +236,9 @@ describe('useWidgetSelectActions', () => {
       vi.mocked(api.fetchApi).mockImplementation(
         (_route: string, options?: RequestInit) =>
           new Promise<Response>((_resolve, reject) => {
-            options?.signal?.addEventListener('abort', () => {
-              reject((options.signal as AbortSignal).reason)
+            const signal = options?.signal
+            signal?.addEventListener('abort', () => {
+              reject(signal.reason)
             })
           })
       )

@@ -252,8 +252,9 @@ describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
     mockFetchApi.mockImplementationOnce(
       (_route: string, options: RequestInit) =>
         new Promise((_resolve, reject) => {
-          options.signal?.addEventListener('abort', () => {
-            reject((options.signal as AbortSignal).reason)
+          const signal = options.signal
+          signal?.addEventListener('abort', () => {
+            reject(signal.reason)
           })
         })
     )
