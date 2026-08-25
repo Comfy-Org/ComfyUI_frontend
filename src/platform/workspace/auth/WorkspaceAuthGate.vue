@@ -80,6 +80,7 @@ import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig
 import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -91,6 +92,7 @@ const initializationState = ref<
 >(isCloud ? 'initializing' : 'ready')
 const initializationRetryable = ref(true)
 const errorPanel = useTemplateRef<HTMLElement>('errorPanel')
+const billingCapabilities = useBillingCapabilities()
 let initializationGeneration = 0
 let initializationController: AbortController | null = null
 let backgroundInitialization: Promise<void> | null = null
@@ -166,6 +168,7 @@ async function initialize(): Promise<void> {
 
     await initializeWorkspaceMode()
     if (generation !== initializationGeneration) return
+    void billingCapabilities.initialize(controller.signal)
     if (
       flags.unifiedCloudAuthEnabled &&
       !workspaceAuthStore.getUnifiedToken()
