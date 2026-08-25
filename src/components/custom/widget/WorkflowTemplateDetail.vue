@@ -1,14 +1,9 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
 import Badge from '@/components/common/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
-import type {
-  TemplateDetailGroup,
-  TemplateDetailRow
-} from '@/platform/workflow/templates/types/templateDetail'
+import type { TemplateDetailGroup } from '@/platform/workflow/templates/types/templateDetail'
 
 const {
   title,
@@ -31,11 +26,6 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-
-const rowIconClasses: Record<TemplateDetailRow['kind'], string> = {
-  model: 'icon-[lucide--box]',
-  'custom-node': 'icon-[lucide--blocks]'
-}
 </script>
 
 <template>
@@ -150,10 +140,7 @@ const rowIconClasses: Record<TemplateDetailRow['kind'], string> = {
               <span
                 class="flex size-10 shrink-0 items-center justify-center rounded-md bg-secondary-background text-muted-foreground"
               >
-                <i
-                  aria-hidden="true"
-                  :class="cn(rowIconClasses[row.kind], 'size-4')"
-                />
+                <i aria-hidden="true" class="icon-[lucide--box] size-4" />
               </span>
 
               <span class="flex min-w-0 flex-1 flex-col gap-0.5">
