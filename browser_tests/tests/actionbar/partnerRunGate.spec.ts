@@ -3,6 +3,7 @@ import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { ApiSignin } from '@e2e/fixtures/components/ApiSignin'
 import { TestIds } from '@e2e/fixtures/selectors'
+import type { WorkspaceStore } from '@e2e/types/globals'
 
 /**
  * Asset contains a single FluxProUltraImageNode (api_node: true). The
@@ -49,5 +50,49 @@ test.describe('Partner nodes run gate (local, signed out)', () => {
     await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
     await expect(page.getByTestId(TestIds.topbar.queueButton)).toBeVisible()
     await expect(signInButton).toHaveCount(0)
+  })
+
+  test('does not auto-queue a gated graph when Run (on change) is already active', async ({
+    comfyPage
+  }) => {
+    const page = comfyPage.page
+
+    await page.evaluate(() => {
+      ;(window.app!.extensionManager as WorkspaceStore).queueSettings.mode =
+        'change'
+    })
+
+    let promptSubmitted = false
+    await page.route('**/api/prompt', async (route) => {
+      promptSubmitted = true
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ prompt_id: '1', node_errors: {}, error: '' })
+      })
+    })
+
+    await comfyPage.workflow.loadWorkflow(PARTNER_WORKFLOW)
+    await expect(
+      page.getByTestId(TestIds.partnerNodes.signInToRunButton)
+    ).toBeVisible()
+
+    const changed = await page.evaluate(() => {
+      const node = window.app!.graph!._nodes.find(
+        (n) => n.widgets && n.widgets.length > 0
+      )
+      const widget = node?.widgets?.[0]
+      if (!widget) return false
+      widget.value =
+        typeof widget.value === 'number' ? widget.value + 1 : 'gated-change'
+      ;(
+        window.app!.extensionManager as WorkspaceStore
+      ).workflow.activeWorkflow?.changeTracker.captureCanvasState()
+      return true
+    })
+    expect(changed, 'partner node must expose a widget to mutate').toBe(true)
+    await comfyPage.nextFrame()
+
+    expect(promptSubmitted).toBe(false)
   })
 })
