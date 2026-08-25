@@ -183,8 +183,7 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
         () => getComputedStyle(document.body).backgroundColor
       )
 
-    // obsidian and obsidian_dark share one menu colour but set different
-    // clear colours, so a menu-derived backdrop would collapse them together.
+    // Same menu colour, different clear colours.
     await comfyPage.settings.setSetting('Comfy.ColorPalette', 'obsidian')
     await expect.poll(backdrop).toBe('rgb(34, 34, 34)')
 
