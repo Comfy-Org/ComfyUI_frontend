@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
 
 import { useAutoAdvance } from './useAutoAdvance'
@@ -19,10 +19,6 @@ describe('useAutoAdvance', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     motion.reduced = false
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
   })
 
   it('advances on the dwell cadence while on screen', () => {
