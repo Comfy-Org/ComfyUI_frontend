@@ -7,6 +7,7 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { inputLinkId, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
+import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import { t } from '@/i18n'
@@ -43,8 +44,16 @@ function findMatchingType(
 }
 
 interface ReplacementTopologyPlan {
+  error?: string
   updates: EndpointUpdate[]
-  removals: { link: LLink; topology: LinkTopology }[]
+  removals: {
+    link: LLink
+    topology: LinkTopology
+    connection: Pick<
+      ReturnType<LLink['resolve']>,
+      'input' | 'inputNode' | 'output' | 'outputNode'
+    >
+  }[]
 }
 
 function planReplacementTopology(
@@ -89,16 +98,51 @@ function planReplacementTopology(
     }
   }
 
+  let error: string | undefined
   const removals = [...graph.links.values()].flatMap((link) => {
     if (
-      (link.origin_id !== oldNodeId && link.target_id !== oldNodeId) ||
-      updates.has(link.id)
-    )
-      return []
+      link.origin_id === oldNodeId &&
+      replacement.output_mapping == null &&
+      !newNode.outputs[link.origin_slot]
+    ) {
+      error ??= `output slot ${link.origin_slot} cannot preserve link ${link.id}`
+    }
+    if (
+      link.target_id === oldNodeId &&
+      replacement.input_mapping == null &&
+      !newNode.inputs[link.target_slot]
+    ) {
+      error ??= `input slot ${link.target_slot} cannot preserve link ${link.id}`
+    }
+    const update = updates.get(link.id)
+    const removesOrigin =
+      link.origin_id === oldNodeId &&
+      replacement.output_mapping != null &&
+      update?.patch.originSlot == null
+    const removesTarget =
+      link.target_id === oldNodeId &&
+      replacement.input_mapping != null &&
+      update?.patch.targetSlot == null
+    if (!removesOrigin && !removesTarget) return []
     const topology = linkStore.getTopology(scope.rootGraphId, link.id)
-    return topology ? [{ link, topology }] : []
+    const outputNode = graph.getNodeById(link.origin_id) ?? undefined
+    const inputNode = graph.getNodeById(link.target_id) ?? undefined
+    return topology
+      ? [
+          {
+            link,
+            topology,
+            connection: {
+              inputNode,
+              outputNode,
+              input: inputNode?.inputs[link.target_slot],
+              output: outputNode?.outputs[link.origin_slot]
+            }
+          }
+        ]
+      : []
   })
-  return { updates: [...updates.values()], removals }
+  return { error, updates: [...updates.values()], removals }
 }
 
 /** Uses old_widget_ids as name→index lookup into widgets_values. */
@@ -119,8 +163,12 @@ function transferWidgetValue(
 
   const newWidget = newNode.widgets?.find((w) => w.name === newInputName)
   if (newWidget) {
-    newWidget.value = oldValue
-    newWidget.callback?.(oldValue)
+    try {
+      newWidget.value = oldValue
+      newWidget.callback?.(oldValue)
+    } catch (error) {
+      console.error(`Failed to transfer widget ${newInputName}`, error)
+    }
   }
 }
 
@@ -131,8 +179,12 @@ function applySetValue(
 ): void {
   const widget = newNode.widgets?.find((w) => w.name === inputName)
   if (widget) {
-    widget.value = value as TWidgetValue
-    widget.callback?.(widget.value)
+    try {
+      widget.value = value as TWidgetValue
+      widget.callback?.(widget.value)
+    } catch (error) {
+      console.error(`Failed to set widget ${inputName}`, error)
+    }
   }
 }
 
@@ -212,26 +264,7 @@ function replaceWithMapping(
     }
   }
 
-  if (replacement.input_mapping) {
-    for (const inputMap of replacement.input_mapping) {
-      if ('old_id' in inputMap) {
-        if (isDotNotation(inputMap.new_id)) continue // Autogrow/DynamicCombo
-        transferWidgetValue(
-          serialized,
-          replacement.old_widget_ids,
-          inputMap.old_id,
-          newNode,
-          inputMap.new_id
-        )
-      } else {
-        if (!isDotNotation(inputMap.new_id)) {
-          applySetValue(newNode, inputMap.new_id, inputMap.set_value)
-        }
-      }
-    }
-  }
-
-  const topology = planReplacementTopology(
+  const topologyPlan = planReplacementTopology(
     node,
     newNode,
     replacement,
@@ -239,12 +272,26 @@ function replaceWithMapping(
   )
   newNode.has_errors = false
 
-  try {
-    node.onRemoved?.()
-  } catch (error) {
-    console.error(`Cannot replace node ${node.id}: removal failed`, error)
+  if (topologyPlan.error) {
+    console.error(`Cannot replace node ${node.id}: ${topologyPlan.error}`)
     return false
   }
+
+  const linkStore = useLinkStore()
+  const scope = graphScopeOf(nodeGraph)
+  const removalTopologies = topologyPlan.removals.map(
+    ({ topology }) => topology
+  )
+  const endpointError = linkStore.validateEndpointUpdates(
+    scope,
+    topologyPlan.updates,
+    removalTopologies
+  )
+  if (endpointError) {
+    console.error(`Cannot replace node ${node.id}: ${endpointError.message}`)
+    return false
+  }
+
   if (
     nodeGraph._nodes[idx] !== node ||
     nodeGraph._nodes_by_id[node.id] !== node ||
@@ -257,10 +304,10 @@ function replaceWithMapping(
     return false
   }
 
-  const topologyResult = useLinkStore().updateEndpoints(
-    graphScopeOf(nodeGraph),
-    topology.updates,
-    topology.removals.map(({ topology }) => topology)
+  const topologyResult = linkStore.updateEndpoints(
+    scope,
+    topologyPlan.updates,
+    removalTopologies
   )
   if (!topologyResult.ok) {
     transferReplacementOwnership(newNode, node)
@@ -270,22 +317,83 @@ function replaceWithMapping(
     return false
   }
 
+  for (const { connection, link, topology } of topologyPlan.removals) {
+    link.disconnect(nodeGraph)
+    nodeGraph.incrementVersion()
+    if (connection.inputNode && connection.input) {
+      try {
+        connection.inputNode.onConnectionsChange?.(
+          NodeSlotType.INPUT,
+          topology.targetSlot,
+          false,
+          link,
+          connection.input
+        )
+      } catch (error) {
+        console.error(`Failed to notify disconnected link ${link.id}`, error)
+      }
+    }
+    if (connection.outputNode && connection.output) {
+      try {
+        connection.outputNode.onConnectionsChange?.(
+          NodeSlotType.OUTPUT,
+          topology.originSlot,
+          false,
+          link,
+          connection.output
+        )
+      } catch (error) {
+        console.error(`Failed to notify disconnected link ${link.id}`, error)
+      }
+    }
+  }
+
+  try {
+    node.onRemoved?.()
+  } catch (error) {
+    console.error(`Failed to remove replaced node ${node.id}`, error)
+  }
   clearNodeOwnedStoreState(node)
+
   nodeGraph._nodes[idx] = newNode
   newNode.graph = nodeGraph
   node.graph = null
-  node.order = order
   nodeGraph._nodes_by_id[newNode.id] = newNode
-  for (const { link } of topology.removals) link.disconnect(nodeGraph)
+
+  if (replacement.input_mapping) {
+    for (const inputMap of replacement.input_mapping) {
+      if ('old_id' in inputMap) {
+        if (isDotNotation(inputMap.new_id)) continue
+        transferWidgetValue(
+          serialized,
+          replacement.old_widget_ids,
+          inputMap.old_id,
+          newNode,
+          inputMap.new_id
+        )
+      } else if (!isDotNotation(inputMap.new_id)) {
+        applySetValue(newNode, inputMap.new_id, inputMap.set_value)
+      }
+    }
+  }
   for (const widget of newNode.widgets ?? []) {
-    if (isNodeBindable(widget)) widget.setNodeId(newNode.id)
+    if (!isNodeBindable(widget)) continue
+    try {
+      widget.setNodeId(newNode.id)
+    } catch (error) {
+      console.error(`Failed to bind replacement widget ${widget.name}`, error)
+    }
   }
 
   try {
     nodeGraph.onNodeAdded?.(newNode)
-    nodeGraph.events.dispatch('node:added', { node: newNode })
   } catch (error) {
     console.error(`Failed to notify replacement node ${newNode.id}`, error)
+  }
+  try {
+    nodeGraph.events.dispatch('node:added', { node: newNode })
+  } catch (error) {
+    console.error(`Failed to dispatch replacement node ${newNode.id}`, error)
   }
   return true
 }

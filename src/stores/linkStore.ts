@@ -444,6 +444,7 @@ export const useLinkStore = defineStore('link', () => {
     replaceLink,
     updateEndpoint,
     updateEndpoints,
+    validateEndpointUpdates,
     deleteLink,
     isInputSlotConnected,
     getInputSlotLink,
