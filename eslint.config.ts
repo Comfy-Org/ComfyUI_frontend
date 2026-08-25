@@ -72,6 +72,21 @@ const useVirtualListRestriction = {
     'useVirtualList requires uniform item heights. Use TanStack Virtual (via Reka UI virtualizer or @tanstack/vue-virtual) instead.'
 } as const
 
+const reportErrorRestrictions = [
+  {
+    name: '@sentry/vue',
+    importNames: ['captureException'],
+    message:
+      "Use reportError() from '@/platform/telemetry/reportError'. A raw captureException reaches Sentry only, so the failure stays invisible to every Datadog dashboard and alert."
+  },
+  {
+    name: '@datadog/browser-rum',
+    importNames: ['datadogRum'],
+    message:
+      "Use reportError() from '@/platform/telemetry/reportError'. A raw datadogRum.addError reaches Datadog only, and skips the pre-init buffer that keeps early-boot failures from being dropped."
+  }
+] as const
+
 const errorAssertionRestrictions = [
   {
     // Bans `value as Error` and `value as Error & { ... }`.
@@ -548,7 +563,8 @@ export default defineConfig([
               message:
                 "In Vue components, use `const { t } = useI18n()` instead of importing from '@/i18n'."
             },
-            useVirtualListRestriction
+            useVirtualListRestriction,
+            ...reportErrorRestrictions
           ]
         }
       ]
@@ -569,7 +585,8 @@ export default defineConfig([
               message:
                 "useI18n() requires Vue setup context. Use `import { t } from '@/i18n'` instead."
             },
-            useVirtualListRestriction
+            useVirtualListRestriction,
+            ...reportErrorRestrictions
           ]
         }
       ]
@@ -582,7 +599,7 @@ export default defineConfig([
       'no-restricted-imports': [
         'error',
         {
-          paths: [useVirtualListRestriction]
+          paths: [useVirtualListRestriction, ...reportErrorRestrictions]
         }
       ]
     }

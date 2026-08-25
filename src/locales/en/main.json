@@ -1291,6 +1291,7 @@
     "title": "Compositor",
     "webglUnavailable": "WebGL is unavailable - the canvas cannot render",
     "loadFailed": "Failed to load layers",
+    "needsTwoImages": "The layer editor needs at least two output images",
     "layersFailedToLoad": "One layer failed to load | {count} layers failed to load",
     "selectTool": "Select",
     "handTool": "Hand",
@@ -1863,6 +1864,7 @@
     "hunyhuan video": "hunyhuan video",
     "mochi": "mochi",
     "ltxv": "ltxv",
+    "minimax music": "minimax music",
     "minimax": "minimax",
     "preprocessors": "preprocessors",
     "video_models": "video_models",
@@ -1910,6 +1912,10 @@
     "kandinsky": "kandinsky",
     "autoregressive": "autoregressive",
     "shader": "shader",
+    "trellis2": "trellis2",
+    "trellis": "trellis",
+    "mesh": "mesh",
+    "texturing": "texturing",
     "detection": "detection",
     "background removal": "background removal",
     "scail": "scail",
@@ -1925,6 +1931,7 @@
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "ElevenLabs": "ElevenLabs",
+    "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
     "Grok": "Grok",
     "HeyGen": "HeyGen",
@@ -2000,6 +2007,7 @@
     "FILE_3D_SPZ": "FILE_3D_SPZ",
     "FILE_3D_STL": "FILE_3D_STL",
     "FILE_3D_USDZ": "FILE_3D_USDZ",
+    "FISHAUDIO_VOICE": "FISHAUDIO_VOICE",
     "FLOAT": "FLOAT",
     "FLOATS": "FLOATS",
     "GEMINI_INPUT_FILES": "GEMINI_INPUT_FILES",
@@ -2013,6 +2021,7 @@
     "IMAGECOMPARE": "IMAGECOMPARE",
     "INT": "INT",
     "INTERP_MODEL": "INTERP_MODEL",
+    "KIMODO_POSE_DATA": "KIMODO_POSE_DATA",
     "KREA_STYLE_REF": "KREA_STYLE_REF",
     "LATENT": "LATENT",
     "LATENT_OPERATION": "LATENT_OPERATION",
@@ -2030,6 +2039,7 @@
     "MESH": "MESH",
     "MESHY_RIGGED_TASK_ID": "MESHY_RIGGED_TASK_ID",
     "MESHY_TASK_ID": "MESHY_TASK_ID",
+    "MHR_POSE_DATA": "MHR_POSE_DATA",
     "MODEL": "MODEL",
     "MODEL_PATCH": "MODEL_PATCH",
     "MODEL_TASK_ID": "MODEL_TASK_ID",
@@ -2050,7 +2060,9 @@
     "RUNWAY_ALEPH2_KEYFRAME": "RUNWAY_ALEPH2_KEYFRAME",
     "RUNWAY_ALEPH2_PROMPT_IMAGE": "RUNWAY_ALEPH2_PROMPT_IMAGE",
     "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
+    "SAM3D_BODY_MODEL": "SAM3D_BODY_MODEL",
     "SAMPLER": "SAMPLER",
+    "SHAPE_SUBDIVIDES": "SHAPE_SUBDIVIDES",
     "SIGMAS": "SIGMAS",
     "SPLAT": "SPLAT",
     "STRING": "STRING",
@@ -2129,7 +2141,8 @@
     "extensionFileHint": "This may be due to the following script",
     "promptExecutionError": "Prompt execution failed",
     "accessRestrictedTitle": "Access Restricted",
-    "accessRestrictedMessage": "Your account is not authorized for this feature."
+    "accessRestrictedMessage": "Your account is not authorized for this feature.",
+    "workspaceChangedDuringExecution": "Your active workspace changed while preparing this execution. Run the workflow again to use the current workspace."
   },
   "apiNodesSignInDialog": {
     "title": "Sign In Required to Use API Nodes",
@@ -2377,6 +2390,7 @@
     "exportSuccess": "Successfully exported model as {format}",
     "fileLoadError": "Unable to find workflow in {fileName}",
     "a1111CoreNodesUnavailable": "Could not load the workflow because this ComfyUI installation is missing core nodes. Check that the backend started correctly.",
+    "a1111EmbeddingsUnavailable": "Embeddings could not be loaded from the server. The workflow was imported, but embedding names were left as plain text.",
     "dropFileError": "Unable to process dropped item: {error}",
     "missingMediaVerificationFailed": "Failed to verify missing media. Some inputs may not be shown in the Errors tab.",
     "missingModelVerificationFailed": "Failed to verify missing models. Some models may not be shown in the Errors tab.",
@@ -2884,6 +2898,9 @@
     "tiers": {
       "free": {
         "name": "Free"
+      },
+      "enterprise": {
+        "name": "Enterprise"
       },
       "founder": {
         "name": "Founder's Edition"
@@ -4020,7 +4037,15 @@
     "uploadWorkflowButton": "Upload my workflow"
   },
   "desktopDialogs": {
-    "": {
+    "reinstallVenv": {
+      "title": "Reinstall ComfyUI (Fresh Start)?",
+      "message": "Sorry, we can't launch ComfyUI because some installed packages aren't compatible.\n\nClick Reinstall to restore ComfyUI and get back up and running.\n\nPlease note: if you've added custom nodes, you'll need to reinstall them after this process.",
+      "buttons": {
+        "Learn More": "Learn More",
+        "Reinstall": "Reinstall"
+      }
+    },
+    "invalidDialog": {
       "title": "Invalid Dialog",
       "message": "Invalid dialog ID was provided.",
       "buttons": {
