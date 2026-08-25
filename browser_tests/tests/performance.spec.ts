@@ -459,11 +459,6 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
       }
 
       const m = await comfyPage.perf.stopMeasuring('vue-zoom-out-idle')
-
-      // Zoom back in (outside the measured window).
-      for (let i = 0; i < 20; i++) {
-        await comfyPage.canvasOps.zoom(-100)
-      }
       recordMeasurement(m)
       console.log(
         `Vue zoom out idle: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, ${m.frameDurationMs.toFixed(1)}ms/frame`
