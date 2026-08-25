@@ -85,8 +85,8 @@ On macOS or Linux, install it if needed:
 curl -fsSL https://claude.ai/install.sh | bash
 ```
 
-This experimental branch includes a project-level `.mcp.json`. After cloning
-the repository, start Claude Code from the repository root and approve the
+The repository includes a project-level `.mcp.json`. After cloning it, start
+Claude Code from the repository root and approve the
 `comfy-marketing-storybook` server when prompted. Claude opens the Comfy sign-in
 flow the first time it connects.
 
@@ -124,7 +124,7 @@ repository root:
 
 ```bash
 pnpm install
-pnpm --filter @comfyorg/website storybook
+pnpm storybook
 ```
 
 Use `http://localhost:6008/mcp` as a separate local MCP server. The local server

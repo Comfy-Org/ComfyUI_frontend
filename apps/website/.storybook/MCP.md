@@ -10,7 +10,7 @@ root:
 
 ```bash
 pnpm install
-pnpm --filter @comfyorg/website storybook
+pnpm storybook
 ```
 
 The Storybook UI is available at `http://localhost:6008/` and its MCP endpoint

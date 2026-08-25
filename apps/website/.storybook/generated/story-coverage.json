@@ -1,14 +1,14 @@
 {
   "schemaVersion": 2,
-  "componentCount": 257,
-  "documentedComponentCount": 59,
-  "missingStoryCount": 198,
+  "componentCount": 263,
+  "documentedComponentCount": 61,
+  "missingStoryCount": 202,
   "dispositionCounts": {
     "compound-part": 28,
     "icon": 5,
     "integration": 2,
-    "page-local": 99,
-    "reusable-candidate": 13,
+    "page-local": 102,
+    "reusable-candidate": 14,
     "template-local": 51
   },
   "classifications": [
@@ -403,6 +403,21 @@
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
     {
+      "source": "src/components/models/explore/ModelCatalogExplorer.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/models/explore/ModelCategoryFilter.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/models/explore/ModelMediaPlaceholder.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
       "source": "src/components/payment/PaymentStatusSection.vue",
       "disposition": "page-local",
       "reason": "Feature or page-specific section; not an independent design-system primitive."
@@ -741,6 +756,11 @@
       "source": "src/components/ui/sheet/SheetTrigger.vue",
       "disposition": "compound-part",
       "reason": "Compound component part documented through its cataloged root composition."
+    },
+    {
+      "source": "src/components/ui/task-tile/TaskTile.vue",
+      "disposition": "reusable-candidate",
+      "reason": "Shared location indicates reuse potential; requires an explicit contract before promotion."
     },
     {
       "source": "src/components/ui/toggle-group/ToggleGroupItem.vue",
@@ -1082,6 +1102,9 @@
     "src/components/models/ModelCreationsSection.vue",
     "src/components/models/ModelHeroSection.vue",
     "src/components/models/ModelsHeroSection.vue",
+    "src/components/models/explore/ModelCatalogExplorer.vue",
+    "src/components/models/explore/ModelCategoryFilter.vue",
+    "src/components/models/explore/ModelMediaPlaceholder.vue",
     "src/components/payment/PaymentStatusSection.vue",
     "src/components/pricing/CloudPricingSection.vue",
     "src/components/pricing/PricingCard.vue",
@@ -1150,6 +1173,7 @@
     "src/components/ui/sheet/SheetOverlay.vue",
     "src/components/ui/sheet/SheetTitle.vue",
     "src/components/ui/sheet/SheetTrigger.vue",
+    "src/components/ui/task-tile/TaskTile.vue",
     "src/components/ui/toggle-group/ToggleGroupItem.vue",
     "src/templates/affiliate/AudienceSection.vue",
     "src/templates/affiliate/BenefitsSection.vue",

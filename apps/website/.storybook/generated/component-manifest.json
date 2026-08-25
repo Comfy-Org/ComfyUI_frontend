@@ -11,8 +11,8 @@
     ],
     "unknownPattern": "Treat as a gap; do not invent a local substitute."
   },
-  "componentCount": 60,
-  "storyCount": 200,
+  "componentCount": 62,
+  "storyCount": 203,
   "components": [
     {
       "component": "AddToCalendarButton",
@@ -2362,6 +2362,37 @@
       ]
     },
     {
+      "component": "HubFilterTabs",
+      "source": "src/components/ui/hub-filter-tabs/HubFilterTabs.vue",
+      "storyFile": "src/components/ui/hub-filter-tabs/HubFilterTabs.stories.ts",
+      "title": "Website/UI/HubFilterTabs",
+      "status": "stable",
+      "category": "ui",
+      "capabilities": [],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/ui/hub-filter-tabs/HubFilterTabs.vue"
+      },
+      "agent": {
+        "importPath": "@/components/ui/hub-filter-tabs/HubFilterTabs",
+        "storybookPath": "/?path=/story/website-ui-hubfiltertabs--default",
+        "docsPath": "/?path=/docs/website-ui-hubfiltertabs--docs",
+        "states": ["Default"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-ui-hubfiltertabs--default"
+        }
+      ]
+    },
+    {
       "component": "IconButton",
       "source": "src/components/ui/icon-button/IconButton.vue",
       "storyFile": "src/components/ui/icon-button/IconButton.stories.ts",
@@ -2440,6 +2471,41 @@
         {
           "exportName": "WithoutViewport",
           "storyId": "website-ui-navigationmenu--without-viewport"
+        }
+      ]
+    },
+    {
+      "component": "SearchField",
+      "source": "src/components/ui/search-field/SearchField.vue",
+      "storyFile": "src/components/ui/search-field/SearchField.stories.ts",
+      "title": "Website/UI/SearchField",
+      "status": "stable",
+      "category": "ui",
+      "capabilities": [],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/ui/search-field/SearchField.vue"
+      },
+      "agent": {
+        "importPath": "@/components/ui/search-field/SearchField",
+        "storybookPath": "/?path=/story/website-ui-searchfield--default",
+        "docsPath": "/?path=/docs/website-ui-searchfield--docs",
+        "states": ["Default", "WithStatus"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-ui-searchfield--default"
+        },
+        {
+          "exportName": "WithStatus",
+          "storyId": "website-ui-searchfield--with-status"
         }
       ]
     },

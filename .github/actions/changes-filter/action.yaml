@@ -36,7 +36,7 @@ outputs:
     description: 'Shared deps or `packages/**` changed.'
     value: ${{ github.event_name != 'pull_request' || steps.filter.outputs.deps == 'true' || steps.filter.outputs.packages == 'true' }}
   storybook-changes:
-    description: 'Shared deps or `.storybook/**` changed.'
+    description: 'Shared deps or marketing Storybook infrastructure changed.'
     value: ${{ github.event_name != 'pull_request' || steps.filter.outputs.deps == 'true' || steps.filter.outputs.storybook == 'true' }}
   docs-changes:
     description: '`docs/**` or any `**/*.md` changed (deps NOT folded in).'
@@ -63,7 +63,11 @@ runs:
           packages:
             - 'packages/**'
           storybook:
-            - '.storybook/**'
+            - 'apps/website/.storybook/**'
+            - 'apps/website-storybook-mcp/**'
+            - '.github/workflows/ci-tests-storybook.yaml'
+            - '.github/workflows/ci-tests-storybook-forks.yaml'
+            - 'scripts/cicd/pr-storybook-deploy-and-comment.sh'
           docs:
             - 'docs/**'
             - '**/*.md'

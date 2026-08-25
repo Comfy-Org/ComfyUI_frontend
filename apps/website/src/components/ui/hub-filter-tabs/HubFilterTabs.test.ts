@@ -28,13 +28,13 @@ describe('HubFilterTabs', () => {
   it('selects one website filter tab at a time', async () => {
     renderFilterTabs()
 
-    await userEvent.click(screen.getByRole('tab', { name: 'Video' }))
+    await userEvent.click(screen.getByRole('radio', { name: 'Video' }))
 
     expect(
-      screen.getByRole('tab', { name: 'Video' }).getAttribute('aria-selected')
+      screen.getByRole('radio', { name: 'Video' }).getAttribute('aria-checked')
     ).toBe('true')
     expect(
-      screen.getByRole('tab', { name: 'ALL' }).getAttribute('aria-selected')
+      screen.getByRole('radio', { name: 'ALL' }).getAttribute('aria-checked')
     ).toBe('false')
   })
 })

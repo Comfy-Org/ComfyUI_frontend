@@ -1,4 +1,4 @@
-# Description: Builds Storybook and runs visual regression testing via Chromatic, deploys previews to Cloudflare Pages
+# Description: Builds the marketing Storybook, runs visual regression testing, and deploys previews
 name: 'CI: Tests Storybook'
 
 on:
@@ -14,7 +14,6 @@ jobs:
       contents: read
     outputs:
       storybook-changes: ${{ steps.changes.outputs.storybook-changes }}
-      app-frontend-changes: ${{ steps.changes.outputs.app-frontend-changes }}
       app-website-changes: ${{ steps.changes.outputs.app-website-changes }}
       packages-changes: ${{ steps.changes.outputs.packages-changes }}
     steps:
@@ -30,7 +29,7 @@ jobs:
       github.event_name == 'pull_request'
       && github.event.pull_request.head.repo.fork == false
       && (needs.changes.outputs.storybook-changes == 'true'
-          || needs.changes.outputs.app-frontend-changes == 'true'
+          || needs.changes.outputs.app-website-changes == 'true'
           || needs.changes.outputs.packages-changes == 'true')
     permissions:
       pull-requests: write
@@ -47,55 +46,18 @@ jobs:
           comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
           token: ${{ github.token }}
 
-  # Build Storybook for all PRs (free Cloudflare deployment)
+  # Build the marketing Storybook once for previews and production deployment
   storybook-build:
     needs: changes
     runs-on: ubuntu-latest
     if: |
-      github.event_name == 'pull_request'
-      && (needs.changes.outputs.storybook-changes == 'true'
-          || needs.changes.outputs.app-frontend-changes == 'true'
-          || needs.changes.outputs.packages-changes == 'true')
+      github.event_name != 'pull_request'
+      || needs.changes.outputs.storybook-changes == 'true'
+      || needs.changes.outputs.app-website-changes == 'true'
+      || needs.changes.outputs.packages-changes == 'true'
     outputs:
       conclusion: ${{ steps.job-status.outputs.conclusion }}
       workflow-url: ${{ steps.workflow-url.outputs.url }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v7
-
-      - name: Setup frontend
-        uses: ./.github/actions/setup-frontend
-
-      - name: Build Storybook
-        run: pnpm build-storybook
-
-      - name: Set job status
-        id: job-status
-        if: always()
-        run: |
-          echo "conclusion=${{ job.status }}" >> $GITHUB_OUTPUT
-
-      - name: Get workflow URL
-        id: workflow-url
-        if: always()
-        run: |
-          echo "url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> $GITHUB_OUTPUT
-
-      - name: Upload Storybook build
-        if: success() && github.event.pull_request.head.repo.fork == false
-        uses: actions/upload-artifact@v6
-        with:
-          name: storybook-static
-          path: storybook-static/
-          retention-days: 7
-
-  website-storybook-build:
-    needs: changes
-    runs-on: ubuntu-latest
-    if: |
-      github.event_name != 'pull_request'
-      || needs.changes.outputs.app-website-changes == 'true'
-      || needs.changes.outputs.packages-changes == 'true'
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
@@ -120,14 +82,14 @@ jobs:
       - name: Verify responsive screenshot suite
         run: pnpm --filter @comfyorg/website exec playwright test --config .storybook/playwright.config.ts --list
 
-      - name: Build website Storybook
-        run: pnpm build-storybook:website
+      - name: Build marketing Storybook
+        run: pnpm build-storybook
 
-      - name: Upload website Storybook build
-        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false
+      - name: Upload Storybook build
+        if: success()
         uses: actions/upload-artifact@v6
         with:
-          name: website-storybook-static
+          name: storybook-static
           path: apps/website/dist/storybook/
           retention-days: 7
 
@@ -158,22 +120,17 @@ jobs:
           pnpm dlx vercel@latest deploy --prebuilt "${TARGET_FLAGS[@]}" \
             --token="$VERCEL_TOKEN"
 
-      - name: Deploy isolated website Storybook
-        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          HEAD_REF: ${{ github.head_ref || github.ref_name }}
+      - name: Set job status
+        id: job-status
+        if: always()
         run: |
-          BRANCH=$(echo "$HEAD_REF" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g;s/--*/-/g;s/^-\|-$//g')
-          if ! pnpm dlx wrangler@^4.0.0 pages project list --json | jq -e \
-            '.[] | select(.name == "comfy-website-storybook")' > /dev/null; then
-            pnpm dlx wrangler@^4.0.0 pages project create comfy-website-storybook \
-              --production-branch=main
-          fi
-          pnpm dlx wrangler@^4.0.0 pages deploy apps/website/dist/storybook \
-            --project-name=comfy-website-storybook \
-            --branch="$BRANCH"
+          echo "conclusion=${{ job.status }}" >> $GITHUB_OUTPUT
+
+      - name: Get workflow URL
+        id: workflow-url
+        if: always()
+        run: |
+          echo "url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> $GITHUB_OUTPUT
 
   # Chromatic deployment only for version-bump-* branches or manual triggers
   chromatic-deployment:
@@ -185,7 +142,7 @@ jobs:
           && github.event.pull_request.head.repo.fork == false
           && startsWith(github.head_ref, 'version-bump-')
           && (needs.changes.outputs.storybook-changes == 'true'
-              || needs.changes.outputs.app-frontend-changes == 'true'
+              || needs.changes.outputs.app-website-changes == 'true'
               || needs.changes.outputs.packages-changes == 'true'))
     outputs:
       conclusion: ${{ steps.job-status.outputs.conclusion }}
@@ -207,6 +164,7 @@ jobs:
         with:
           projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
           buildScriptName: build-storybook
+          storybookBuildDir: apps/website/dist/storybook
           autoAcceptChanges: 'main' # Auto-accept changes on main branch
           exitOnceUploaded: true # Don't wait for UI tests to complete
           onlyChanged: true # Only capture changed stories
@@ -232,7 +190,7 @@ jobs:
       && github.event_name == 'pull_request'
       && github.event.pull_request.head.repo.fork == false
       && (needs.changes.outputs.storybook-changes == 'true'
-          || needs.changes.outputs.app-frontend-changes == 'true'
+          || needs.changes.outputs.app-website-changes == 'true'
           || needs.changes.outputs.packages-changes == 'true')
     permissions:
       pull-requests: write
@@ -285,6 +243,7 @@ jobs:
 
   # Deploy Storybook to production URL on main branch push
   deploy-production:
+    needs: storybook-build
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
@@ -294,15 +253,18 @@ jobs:
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
 
-      - name: Build Storybook
-        run: pnpm build-storybook
+      - name: Download Storybook build
+        uses: actions/download-artifact@v8
+        with:
+          name: storybook-static
+          path: storybook-static
 
       - name: Deploy to Cloudflare Pages (production)
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          npx wrangler@^4.0.0 pages deploy storybook-static \
+          pnpm dlx wrangler@^4.0.0 pages deploy storybook-static \
             --project-name=comfy-storybook \
             --branch=main
 
