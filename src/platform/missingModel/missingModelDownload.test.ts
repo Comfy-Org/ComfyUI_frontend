@@ -297,83 +297,79 @@ describe('fetchModelMetadata', () => {
 })
 
 describe('fetchModelMetadataWithStatus', () => {
-  it('reports a non-OK allowed metadata response as failed', async () => {
-    const url =
-      'https://huggingface.co/org/model/resolve/main/not-found.safetensors'
-    fetchMock.mockResolvedValueOnce({
-      ok: false,
-      status: 404,
-      headers: new Headers()
-    })
+  const emptyMetadata = { fileSize: null, gatedRepoUrl: null }
 
-    await expect(fetchModelMetadataWithStatus(url)).resolves.toEqual({
-      metadata: { fileSize: null, gatedRepoUrl: null },
-      resolution: 'failed'
-    })
+  it.for([
+    {
+      name: 'a non-OK response',
+      slug: 'not-found',
+      prepare: () =>
+        fetchMock.mockResolvedValueOnce(new Response(null, { status: 404 }))
+    },
+    {
+      name: 'a network error',
+      slug: 'network',
+      prepare: () =>
+        fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+    }
+  ])('reports $name for an allowed URL as failed', async (testCase) => {
+    testCase.prepare()
+
+    await expect(
+      fetchModelMetadataWithStatus(
+        `https://huggingface.co/org/model/resolve/main/${testCase.slug}.safetensors`
+      )
+    ).resolves.toEqual({ metadata: emptyMetadata, resolution: 'failed' })
   })
 
-  it('reports an allowed metadata network error as failed', async () => {
-    const url =
-      'https://huggingface.co/org/model/resolve/main/network.safetensors'
-    fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'))
-
-    await expect(fetchModelMetadataWithStatus(url)).resolves.toEqual({
-      metadata: { fileSize: null, gatedRepoUrl: null },
-      resolution: 'failed'
-    })
-  })
-
-  it('reports gated HuggingFace proof as resolved manual metadata', async () => {
-    const url =
-      'https://huggingface.co/bfl/FLUX.1/resolve/main/gated.safetensors'
-    fetchMock.mockResolvedValueOnce({
-      ok: false,
-      status: 403,
-      headers: new Headers({ 'x-error-code': 'GatedRepo' })
-    })
-
-    await expect(fetchModelMetadataWithStatus(url)).resolves.toEqual({
+  it.for([
+    {
+      name: 'gated proof',
+      url: 'https://huggingface.co/bfl/FLUX.1/resolve/main/gated.safetensors',
+      response: () =>
+        new Response(null, {
+          status: 403,
+          headers: { 'x-error-code': 'GatedRepo' }
+        }),
       metadata: {
         fileSize: null,
         gatedRepoUrl: 'https://huggingface.co/bfl/FLUX.1'
-      },
+      }
+    },
+    {
+      name: 'a successful response without size',
+      url: 'https://huggingface.co/org/model/resolve/main/no-size.safetensors',
+      response: () => new Response(),
+      metadata: emptyMetadata
+    }
+  ])('reports $name as resolved', async (testCase) => {
+    fetchMock.mockResolvedValueOnce(testCase.response())
+
+    await expect(fetchModelMetadataWithStatus(testCase.url)).resolves.toEqual({
+      metadata: testCase.metadata,
       resolution: 'resolved'
     })
   })
 
-  it('reports a successful response without size as resolved', async () => {
-    const url =
-      'https://huggingface.co/org/model/resolve/main/no-size-outcome.safetensors'
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      headers: new Headers()
-    })
-
-    await expect(fetchModelMetadataWithStatus(url)).resolves.toEqual({
-      metadata: { fileSize: null, gatedRepoUrl: null },
+  it.for([
+    {
+      url: 'https://example.com/model.safetensors',
       resolution: 'resolved'
-    })
-  })
-
-  it('reports non-allowlisted URLs as resolved unsupported metadata', async () => {
-    await expect(
-      fetchModelMetadataWithStatus('https://example.com/model.safetensors')
-    ).resolves.toEqual({
-      metadata: { fileSize: null, gatedRepoUrl: null },
-      resolution: 'resolved'
-    })
-    expect(fetchMock).not.toHaveBeenCalled()
-  })
-
-  it('reports an unrecognized allowed Civitai URL as failed', async () => {
-    await expect(
-      fetchModelMetadataWithStatus('https://civitai.com/api/v1/models/123')
-    ).resolves.toEqual({
-      metadata: { fileSize: null, gatedRepoUrl: null },
+    },
+    {
+      url: 'https://civitai.com/api/v1/models/123',
       resolution: 'failed'
-    })
-    expect(fetchMock).not.toHaveBeenCalled()
-  })
+    }
+  ] as const)(
+    'reports $url as $resolution without a request',
+    async ({ url, resolution }) => {
+      await expect(fetchModelMetadataWithStatus(url)).resolves.toEqual({
+        metadata: emptyMetadata,
+        resolution
+      })
+      expect(fetchMock).not.toHaveBeenCalled()
+    }
+  )
 
   it('shares one inflight request and cache with the legacy metadata API', async () => {
     const url =
