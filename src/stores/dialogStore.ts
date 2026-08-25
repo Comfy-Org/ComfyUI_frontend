@@ -3,7 +3,7 @@
 import { merge } from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
 import type { DialogPassThroughOptions } from 'primevue/dialog'
-import { markRaw, ref } from 'vue'
+import { computed, markRaw, ref } from 'vue'
 import type { Component, HTMLAttributes, Ref } from 'vue'
 
 import type { DialogContentSize } from '@/components/ui/dialog/dialog.variants'
@@ -145,10 +145,10 @@ export const useDialogStore = defineStore('dialog', () => {
   const dialogStack: Ref<DialogInstance[]> = ref([])
 
   /**
-   * The key of the currently active (top-most) dialog.
-   * Only the active dialog can be closed with the ESC key.
+   * The key of the top dialog: highest priority, newest among equals. Only the
+   * top dialog can be closed with the ESC key or an outside pointer.
    */
-  const activeKey = ref<string | null>(null)
+  const activeKey = computed(() => dialogStack.value[0]?.key ?? null)
 
   const genDialogKey = () => `dialog-${Math.random().toString(36).slice(2, 9)}`
 
@@ -174,7 +174,6 @@ export const useDialogStore = defineStore('dialog', () => {
     if (index !== -1) {
       const [dialog] = dialogStack.value.splice(index, 1)
       insertDialogByPriority(dialog)
-      activeKey.value = dialogKey
       updateCloseOnEscapeStates()
     }
   }
@@ -192,16 +191,6 @@ export const useDialogStore = defineStore('dialog', () => {
     const index = dialogStack.value.findIndex((d) => d === targetDialog)
     const removed = index !== -1
     if (removed) dialogStack.value.splice(index, 1)
-
-    // A reentrant callback may have already activated a dialog of its own;
-    // only fall back to the stack tail when the active key named a dialog that
-    // is now gone.
-    if (!dialogStack.value.some((d) => d.key === activeKey.value)) {
-      activeKey.value =
-        dialogStack.value.length > 0
-          ? dialogStack.value[dialogStack.value.length - 1].key
-          : null
-    }
 
     updateCloseOnEscapeStates()
     if (removed) notifyRemoved(targetDialog)
@@ -259,7 +248,6 @@ export const useDialogStore = defineStore('dialog', () => {
     }
 
     insertDialogByPriority(dialog)
-    activeKey.value = options.key
     updateCloseOnEscapeStates()
     notifyRemoved(evicted)
 
