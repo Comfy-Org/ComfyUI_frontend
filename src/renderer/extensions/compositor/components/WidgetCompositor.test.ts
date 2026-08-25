@@ -73,7 +73,6 @@ function renderWidget() {
 
 describe('WidgetCompositor', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     clearCompositorLayers(graphNode)
     getNodeById.mockReturnValue(undefined)
   })
