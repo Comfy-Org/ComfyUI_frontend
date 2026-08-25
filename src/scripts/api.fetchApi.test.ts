@@ -1,6 +1,35 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+const { addBreadcrumb, trackFetchTimeout } = vi.hoisted(() => ({
+  addBreadcrumb: vi.fn(),
+  trackFetchTimeout: vi.fn()
+}))
+
+vi.mock('@sentry/vue', () => ({ addBreadcrumb }))
+
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () => ({ trackFetchTimeout })
+}))
 
 import { api } from '@/scripts/api'
+
+function mockPendingFetch() {
+  return vi.mocked(global.fetch).mockImplementation((_input, init) => {
+    return new Promise<Response>((_resolve, reject) => {
+      const signal = init?.signal
+      if (!signal) return
+
+      if (signal.aborted) {
+        reject(signal.reason)
+        return
+      }
+
+      signal.addEventListener('abort', () => reject(signal.reason), {
+        once: true
+      })
+    })
+  })
+}
 
 describe('api.fetchApi', () => {
   beforeEach(() => {
@@ -162,6 +191,114 @@ describe('api.fetchApi', () => {
         expect.stringContaining('/api/test/route'),
         expect.any(Object)
       )
+    })
+  })
+
+  describe('response header timeout', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('aborts with a TimeoutError and forwards normalized diagnostics', async () => {
+      mockPendingFetch()
+
+      const request = api.fetchApi(
+        '/userdata/private%20workflow.json?directory=secret',
+        { method: 'post' }
+      )
+      const rejection = expect(request).rejects.toMatchObject({
+        name: 'TimeoutError',
+        message: 'Fetch timeout'
+      })
+      await vi.advanceTimersByTimeAsync(60_000)
+
+      await rejection
+      expect(trackFetchTimeout).toHaveBeenCalledExactlyOnceWith({
+        route: '/userdata/:resource',
+        method: 'POST',
+        timeout_ms: 60_000
+      })
+      expect(addBreadcrumb).toHaveBeenCalledExactlyOnceWith({
+        category: 'fetch',
+        message: 'Timeout on POST /userdata/:resource',
+        level: 'warning',
+        data: { timeout_ms: 60_000 }
+      })
+    })
+
+    it('uses a bounded fallback for unknown routes', async () => {
+      mockPendingFetch()
+
+      const request = api.fetchApi('/private-name/secret-id')
+      const rejection = expect(request).rejects.toMatchObject({
+        name: 'TimeoutError'
+      })
+      await vi.advanceTimersByTimeAsync(60_000)
+
+      await rejection
+      expect(trackFetchTimeout).toHaveBeenCalledExactlyOnceWith({
+        route: '/other',
+        method: 'GET',
+        timeout_ms: 60_000
+      })
+    })
+
+    it('preserves a caller-owned 120 second timeout', async () => {
+      mockPendingFetch()
+      const controller = new AbortController()
+      setTimeout(
+        () =>
+          controller.abort(new DOMException('Upload timeout', 'TimeoutError')),
+        120_000
+      )
+
+      const request = api.fetchApi('/upload/image', {
+        signal: controller.signal
+      })
+      const rejection = expect(request).rejects.toMatchObject({
+        name: 'TimeoutError',
+        message: 'Upload timeout'
+      })
+      await vi.advanceTimersByTimeAsync(60_000)
+
+      expect(controller.signal.aborted).toBe(false)
+      expect(trackFetchTimeout).not.toHaveBeenCalled()
+
+      await vi.advanceTimersByTimeAsync(60_000)
+      await rejection
+      expect(trackFetchTimeout).not.toHaveBeenCalled()
+    })
+
+    it('preserves caller cancellation without timeout telemetry', async () => {
+      mockPendingFetch()
+      const controller = new AbortController()
+
+      const request = api.fetchApi('/assets', { signal: controller.signal })
+      controller.abort()
+
+      await expect(request).rejects.toMatchObject({ name: 'AbortError' })
+      expect(trackFetchTimeout).not.toHaveBeenCalled()
+      expect(addBreadcrumb).not.toHaveBeenCalled()
+    })
+
+    it('clears the timeout when fetch resolves', async () => {
+      vi.mocked(global.fetch).mockResolvedValue(new Response())
+
+      await api.fetchApi('/test')
+
+      expect(vi.getTimerCount()).toBe(0)
+    })
+
+    it('clears the timeout when fetch rejects', async () => {
+      vi.mocked(global.fetch).mockRejectedValue(new Error('Network error'))
+
+      await expect(api.fetchApi('/test')).rejects.toThrow('Network error')
+
+      expect(vi.getTimerCount()).toBe(0)
     })
   })
 })

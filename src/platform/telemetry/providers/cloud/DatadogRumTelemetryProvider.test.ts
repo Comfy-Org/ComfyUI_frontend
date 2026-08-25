@@ -19,6 +19,23 @@ const workflowExecutionIntent = {
 } as const
 
 describe('DatadogRumTelemetryProvider', () => {
+  it('records fetch timeouts as RUM actions', () => {
+    new DatadogRumTelemetryProvider().trackFetchTimeout({
+      route: '/userdata/:resource',
+      method: 'GET',
+      timeout_ms: 60_000
+    })
+
+    expect(addAction).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.FETCH_TIMEOUT,
+      {
+        route: '/userdata/:resource',
+        method: 'GET',
+        timeout_ms: 60_000
+      }
+    )
+  })
+
   it('records terminal unified auth retry outcomes without request data', () => {
     new DatadogRumTelemetryProvider().trackUnifiedAuthRetry({
       transport: 'axios',
