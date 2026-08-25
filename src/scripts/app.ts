@@ -4,6 +4,7 @@ import type { ToastMessageOptions } from 'primevue/toast'
 import { reactive, unref } from 'vue'
 import { shallowRef } from 'vue'
 
+import { partnerRunGateBlocksAutoQueue } from '@/composables/billing/usePartnerNodesRunGate'
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 
 import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
@@ -1646,6 +1647,12 @@ export class ComfyApp {
       ? { queueNodeIds: optionsOrQueueNodeIds }
       : optionsOrQueueNodeIds
     const { queueNodeIds, intent } = options
+    if (
+      intent?.trigger_source === 'auto_queue' &&
+      partnerRunGateBlocksAutoQueue()
+    ) {
+      return false
+    }
     const requestId = this.nextQueueRequestId++
     this.queueItems.push({
       number,

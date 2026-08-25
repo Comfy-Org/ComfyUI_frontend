@@ -4,7 +4,10 @@ import type { EffectScope, Ref } from 'vue'
 
 import * as currentUserModule from '@/composables/auth/useCurrentUser'
 
-import { usePartnerNodesRunGate } from './usePartnerNodesRunGate'
+import {
+  partnerRunGateBlocksAutoQueue,
+  usePartnerNodesRunGate
+} from './usePartnerNodesRunGate'
 
 const state = vi.hoisted(
   () =>
@@ -20,7 +23,8 @@ vi.mock('@/composables/node/usePartnerNodesInGraph', async () => {
     usePartnerNodesInGraph: () => ({
       partnerNodes: computed(() => state.partnerNodes.value),
       hasPartnerNodes: computed(() => state.hasPartnerNodes.value)
-    })
+    }),
+    scanPartnerNodesInGraph: () => state.partnerNodes.value
   }
 })
 
@@ -100,5 +104,27 @@ describe('usePartnerNodesRunGate', () => {
     __setLoggedIn(false)
     await nextTick()
     expect(gate.value).toBe('sign-in')
+  })
+})
+
+describe('partnerRunGateBlocksAutoQueue', () => {
+  beforeEach(() => {
+    state.partnerNodes = ref([])
+    __setLoggedIn(false)
+  })
+
+  it('blocks a signed-out local graph that contains partner nodes', () => {
+    state.partnerNodes.value = [{ nodeName: 'Kling', displayName: 'Kling' }]
+    expect(partnerRunGateBlocksAutoQueue()).toBe(true)
+  })
+
+  it('allows a signed-out graph with no partner nodes', () => {
+    expect(partnerRunGateBlocksAutoQueue()).toBe(false)
+  })
+
+  it('allows partner nodes once the user is signed in', () => {
+    state.partnerNodes.value = [{ nodeName: 'Kling', displayName: 'Kling' }]
+    __setLoggedIn(true)
+    expect(partnerRunGateBlocksAutoQueue()).toBe(false)
   })
 })

@@ -2,12 +2,27 @@ import { createSharedComposable } from '@vueuse/core'
 import { computed } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { usePartnerNodesInGraph } from '@/composables/node/usePartnerNodesInGraph'
+import {
+  scanPartnerNodesInGraph,
+  usePartnerNodesInGraph
+} from '@/composables/node/usePartnerNodesInGraph'
 import { isCloud } from '@/platform/distribution/types'
 
 import type { PartnerNodeInfo } from '@/composables/node/usePartnerNodesInGraph'
 
 type PartnerRunGate = 'sign-in' | 'none'
+
+/**
+ * Synchronous, unthrottled gate for the queue boundary: true when a local
+ * signed-out user's current graph contains partner nodes they cannot run.
+ * Every auto-queue path consults this before submitting, so no throttled
+ * reactive snapshot can let a gated graph slip through.
+ */
+export function partnerRunGateBlocksAutoQueue(): boolean {
+  if (isCloud) return false
+  const { isLoggedIn } = useCurrentUser()
+  return !isLoggedIn.value && scanPartnerNodesInGraph().length > 0
+}
 
 /**
  * Decides whether the local/desktop Run button must be replaced because the

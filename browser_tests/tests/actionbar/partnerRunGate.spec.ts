@@ -5,6 +5,12 @@ import { ApiSignin } from '@e2e/fixtures/components/ApiSignin'
 import { TestIds } from '@e2e/fixtures/selectors'
 import type { WorkspaceStore } from '@e2e/types/globals'
 
+declare global {
+  interface Window {
+    __promptQueueings?: number
+  }
+}
+
 /**
  * Asset contains a single FluxProUltraImageNode (api_node: true). The
  * display-name assertion tracks the live node def; update it if the backend
@@ -62,20 +68,21 @@ test.describe('Partner nodes run gate (local, signed out)', () => {
         'change'
     })
 
-    let promptSubmitted = false
-    await page.route('**/api/prompt', async (route) => {
-      promptSubmitted = true
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ prompt_id: '1', node_errors: {}, error: '' })
-      })
-    })
-
     await comfyPage.workflow.loadWorkflow(PARTNER_WORKFLOW)
     await expect(
       page.getByTestId(TestIds.partnerNodes.signInToRunButton)
     ).toBeVisible()
+
+    // `promptQueueing` dispatches synchronously inside app.queuePrompt, right
+    // after the partner-gate check. Counting it observes the queue-attempt
+    // boundary itself, so the assertion cannot pass while a regressed request
+    // is still in flight toward /api/prompt.
+    await page.evaluate(() => {
+      window.__promptQueueings = 0
+      window.app!.api.addEventListener('promptQueueing', () => {
+        window.__promptQueueings!++
+      })
+    })
 
     const changed = await page.evaluate(() => {
       const node = window.app!.graph!._nodes.find(
@@ -93,6 +100,7 @@ test.describe('Partner nodes run gate (local, signed out)', () => {
     expect(changed, 'partner node must expose a widget to mutate').toBe(true)
     await comfyPage.nextFrame()
 
-    expect(promptSubmitted).toBe(false)
+    const queueAttempts = await page.evaluate(() => window.__promptQueueings)
+    expect(queueAttempts).toBe(0)
   })
 })

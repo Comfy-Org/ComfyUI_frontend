@@ -17,11 +17,35 @@ export interface PartnerNodeInfo {
 }
 
 /**
+ * Scan the active graph (subgraphs included) for partner nodes right now,
+ * deduped by def name. Synchronous and unthrottled so callers that gate a
+ * queue decision see the current graph, not a throttled snapshot.
+ */
+export function scanPartnerNodesInGraph(): PartnerNodeInfo[] {
+  if (!app.isGraphReady) return []
+  const nodeDefStore = useNodeDefStore()
+  const partnerNodesByName = reduceAllNodes<Map<string, PartnerNodeInfo>>(
+    app.rootGraph,
+    (found, node) => {
+      const nodeDef = nodeDefStore.nodeDefsByName[node.type]
+      if (nodeDef?.api_node) {
+        found.set(nodeDef.name, {
+          nodeName: nodeDef.name,
+          displayName: nodeDef.display_name || nodeDef.name
+        })
+      }
+      return found
+    },
+    new Map()
+  )
+  return [...partnerNodesByName.values()]
+}
+
+/**
  * Reactive list of partner nodes (node defs with `api_node: true`) in the
  * active graph, including nodes nested in subgraphs, deduped by def name.
  */
 export const usePartnerNodesInGraph = createSharedComposable(() => {
-  const nodeDefStore = useNodeDefStore()
   const workflowStore = useWorkflowStore()
 
   const graphVersion = ref(0)
@@ -53,22 +77,7 @@ export const usePartnerNodesInGraph = createSharedComposable(() => {
   const partnerNodes = computed<PartnerNodeInfo[]>(() => {
     // Dependency on graphVersion: re-scan when the graph mutates.
     void graphVersion.value
-    if (!app.isGraphReady) return []
-    const partnerNodesByName = reduceAllNodes<Map<string, PartnerNodeInfo>>(
-      app.rootGraph,
-      (found, node) => {
-        const nodeDef = nodeDefStore.nodeDefsByName[node.type]
-        if (nodeDef?.api_node) {
-          found.set(nodeDef.name, {
-            nodeName: nodeDef.name,
-            displayName: nodeDef.display_name || nodeDef.name
-          })
-        }
-        return found
-      },
-      new Map()
-    )
-    return [...partnerNodesByName.values()]
+    return scanPartnerNodesInGraph()
   })
 
   const hasPartnerNodes = computed(() => partnerNodes.value.length > 0)
