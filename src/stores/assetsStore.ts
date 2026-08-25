@@ -263,7 +263,7 @@ export const useAssetsStore = defineStore('assets', () => {
     return {
       hasMore: hasMoreHistory,
       invalidate: updateHistory,
-      isLoading: historyLoading,
+      isLoading: computed(() => historyLoading.value || isLoadingMore.value),
       items: historyAssets,
       loadMore: loadMoreHistory,
       loadNew: updateHistory
