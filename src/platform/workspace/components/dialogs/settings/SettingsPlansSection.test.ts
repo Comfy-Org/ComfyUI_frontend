@@ -186,6 +186,12 @@ describe('SettingsPlansSection — API is the source of truth', () => {
     expect(screen.getByRole('button', { name: 'Contact us' })).toBeDisabled()
   })
 
+  it('exposes the billing switch by its accessible name', () => {
+    renderSection()
+
+    expect(screen.getByRole('switch', { name: 'Billed yearly' })).toBeTruthy()
+  })
+
   it('shows the default stop credits when live stops replace the seeded set', async () => {
     // Seed with one breakpoint set, then swap to a disjoint set: the previously
     // seeded USD matches no new stop, so the display falls back to the API

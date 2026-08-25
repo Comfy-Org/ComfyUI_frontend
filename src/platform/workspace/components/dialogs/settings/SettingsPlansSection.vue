@@ -20,7 +20,10 @@
       </ToggleGroup>
 
       <div class="flex items-center gap-2">
-        <Switch v-model="billedYearly" />
+        <Switch
+          v-model="billedYearly"
+          :aria-label="t('settingsPlans.billedYearlyToggle')"
+        />
         <span class="text-sm font-semibold text-base-foreground">
           {{ t('settingsPlans.billedYearlyToggle') }}
         </span>
