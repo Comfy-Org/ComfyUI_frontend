@@ -4,6 +4,7 @@ import type {
 } from '@/platform/workflow/core/utils/workflowFlattening'
 import { flattenWorkflowNodes } from '@/platform/workflow/core/utils/workflowFlattening'
 import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { zModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object'
@@ -43,26 +44,8 @@ function toFlattenableWorkflow(
 }
 
 function toModelFile(value: unknown): ModelFile | undefined {
-  if (!isRecord(value)) return
-  if (
-    typeof value.name !== 'string' ||
-    typeof value.url !== 'string' ||
-    typeof value.directory !== 'string'
-  ) {
-    return
-  }
-  if (value.hash !== undefined && typeof value.hash !== 'string') return
-  if (value.hash_type !== undefined && typeof value.hash_type !== 'string') {
-    return
-  }
-
-  return {
-    name: value.name,
-    url: value.url,
-    directory: value.directory,
-    ...(value.hash !== undefined && { hash: value.hash }),
-    ...(value.hash_type !== undefined && { hash_type: value.hash_type })
-  }
+  const result = zModelFile.safeParse(value)
+  return result.success ? result.data : undefined
 }
 
 function getDeclaredModels(value: unknown): ModelFile[] {
