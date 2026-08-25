@@ -67,14 +67,21 @@ in the node list, and its execution order. It's now always draw order. If
 your extension inferred stacking or hit-test order from execution order,
 switch to draw order.
 
-## Writes through removed node references don't propagate, but do land locally
+## Writes through removed node, group, or reroute references don't propagate, but do land locally
+
+The write API differs per entity: `LGraphNode` exposes `setPos()`/`setSize()`
+(backed by `pos`/`size` setters). `LGraphGroup` exposes `pos`/`size` setters
+only, with no separate methods. `Reroute` exposes a `pos` setter only; it has
+no `size` at all.
 
 If you hold a node, group, or reroute reference after it's removed from the
 graph (a detached clone, or a reference captured before an async callback
-resolves), calling `setPos()` or `setSize()` on it still updates that
-object's own local position/size fields — the setter writes them
-unconditionally before the missing-graph guard runs. What's guaranteed is
-narrower than a full no-op: the write never reaches the shared layout store
-and never affects whatever entity now owns that ID. It does not throw. Don't
-rely on a detached reference's `pos`/`size` staying unchanged after you write
-to it; only the live/shared state is protected.
+resolves), writing through one of these setters still updates that object's
+own local position/size fields — the write lands unconditionally before the
+missing-graph guard runs. What's guaranteed is narrower than a full no-op:
+the write never reaches the shared layout store and never affects whatever
+entity now owns that ID. Being detached does not make the write throw (a
+malformed value passed to `Reroute.pos` still throws, detached or not, but
+for that reason, not because of detachment). Don't rely on a detached
+reference's position/size staying unchanged after you write to it; only the
+live/shared state is protected.

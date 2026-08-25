@@ -21,11 +21,14 @@ Use `node.properties` for per-node extension data and `graph.extra` for
 per-graph extension data. These remain the stable, intended extension
 surfaces for persisted data.
 
-`onSerialize` and `onConfigure` still receive the live node/graph object, so
-a hook can mutate any field on it, including fields that are now
-store-backed. Don't use these hooks to overwrite core fields: a write from
-inside `onSerialize`/`onConfigure` goes straight through to the store, with
-no schema, ownership, or undo boundary of its own.
+`onSerialize` and `onConfigure` are called with `this` bound to the live
+node/graph object; the argument passed to the callback is the serialized
+data object (`ISerialisedNode`/`ISerialisedGraph`), not the live node/graph.
+Because `this` is still the live object, a hook can mutate any field on it,
+including fields that are now store-backed. Don't use these hooks to
+overwrite core fields: a write via `this` from inside
+`onSerialize`/`onConfigure` goes straight through to the store, with no
+schema, ownership, or undo boundary of its own.
 
 If you write graph-level extension data from `graph.onSerialize`, keep it
 under `graph.extra`. A custom top-level key added anywhere else survives

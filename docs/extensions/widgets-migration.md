@@ -57,12 +57,28 @@ automatically. A plain object literal is not registered and won't
 participate in the store:
 
 ```ts
+interface MyWidgetState extends IBaseWidget<string, 'custom'> {
+  value: string
+}
+
 class MyWidget extends BaseWidget<MyWidgetState> {
-  // draw, computeSize, etc.
+  override drawWidget(
+    ctx: CanvasRenderingContext2D,
+    options: DrawWidgetOptions
+  ) {
+    // draw
+  }
+
+  override onClick(options: WidgetEventOptions) {
+    // handle click
+  }
 }
 
 node.addCustomWidget(
-  new MyWidget({ name: 'my_widget', type: 'custom', value: '' }, node)
+  new MyWidget(
+    { name: 'my_widget', type: 'custom', value: '', options: {}, y: 0 },
+    node
+  )
 )
 ```
 
