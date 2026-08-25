@@ -28,13 +28,16 @@ type CapabilityReadState =
       authUid: string
       workspaceId: string
       response: BillingCapabilitiesResponse
+      refreshAt: number
     }
 
-// Clock skew can make a fresh snapshot look already expired, and setTimeout
-// overflows past ~24.8 days into firing immediately. Either would spin the
-// refetch into a loop, so the scheduled delay is clamped.
+// A remaining lifetime below the floor means the client clock disagrees with
+// the server's, so it cannot pace the refetch and the fixed interval is used
+// instead; clamping it would only slow the loop. The ceiling bounds the
+// opposite skew, where a lagging clock reads expires_at as far in the future.
 const MIN_REFRESH_DELAY_MS = 5_000
-const MAX_REFRESH_DELAY_MS = 24 * 60 * 60 * 1000
+const MAX_REFRESH_DELAY_MS = 60 * 60 * 1000
+const FALLBACK_REFRESH_DELAY_MS = 60_000
 
 interface ActiveCapabilityRequest {
   requestId: number
@@ -108,10 +111,19 @@ function useBillingCapabilitiesInternal() {
     refreshTimer = null
   }
 
-  function expiryOf(state: CapabilityReadState): number | null {
-    if (state.status !== 'resolved') return null
-    const expiresAt = Date.parse(state.response.expires_at)
-    return Number.isFinite(expiresAt) ? expiresAt : null
+  function scheduledRefreshAt(state: CapabilityReadState): number | null {
+    return state.status === 'resolved' ? state.refreshAt : null
+  }
+
+  // NaN from an unparseable timestamp fails the comparison and lands on the
+  // fixed interval.
+  function nextRefreshAt(response: BillingCapabilitiesResponse): number {
+    const now = Date.now()
+    const remaining = Date.parse(response.expires_at) - now
+    if (remaining >= MIN_REFRESH_DELAY_MS) {
+      return now + Math.min(remaining, MAX_REFRESH_DELAY_MS)
+    }
+    return now + FALLBACK_REFRESH_DELAY_MS
   }
 
   // `capabilities` is a computed, and wall-clock time is not a reactive
@@ -120,14 +132,11 @@ function useBillingCapabilitiesInternal() {
   // hidden tab, and returning to the tab is itself a visibility transition.
   function scheduleRefresh(): void {
     clearRefreshTimer()
-    const expiresAt = expiryOf(readState.value)
-    if (expiresAt === null) return
+    const refreshAt = scheduledRefreshAt(readState.value)
+    if (refreshAt === null) return
     if (defaultDocument?.visibilityState === 'hidden') return
 
-    const delay = Math.min(
-      MAX_REFRESH_DELAY_MS,
-      Math.max(MIN_REFRESH_DELAY_MS, expiresAt - Date.now())
-    )
+    const delay = Math.max(0, refreshAt - Date.now())
     refreshTimer = setTimeout(() => {
       refreshTimer = null
       void fetchCapabilities()
@@ -139,9 +148,9 @@ function useBillingCapabilitiesInternal() {
       clearRefreshTimer()
       return
     }
-    const expiresAt = expiryOf(readState.value)
-    if (expiresAt === null) return
-    if (expiresAt <= Date.now()) void fetchCapabilities()
+    const refreshAt = scheduledRefreshAt(readState.value)
+    if (refreshAt === null) return
+    if (refreshAt <= Date.now()) void fetchCapabilities()
     else scheduleRefresh()
   })
 
@@ -158,11 +167,16 @@ function useBillingCapabilitiesInternal() {
     stopRevisionListener()
   })
 
-  function resetRead(): void {
+  /** Cancels the in-flight read and its timer, leaving the snapshot in place. */
+  function cancelActiveRead(): void {
     clearRefreshTimer()
     latestRequestId++
     activeRequest?.controller.abort()
     activeRequest = null
+  }
+
+  function resetRead(): void {
+    cancelActiveRead()
     readState.value = { status: 'idle' }
   }
 
@@ -182,16 +196,31 @@ function useBillingCapabilitiesInternal() {
       return activeRequest.promise
     }
 
-    resetRead()
+    // Refetching the same scope revalidates in the background, keeping the
+    // resolved snapshot readable so its affordances do not blink out once per
+    // snapshot lifetime. A scope change makes it wrong, not stale, so it resets.
+    const currentState = readState.value
+    const priorSnapshot =
+      currentState.status === 'resolved' &&
+      currentState.authUid === userId &&
+      currentState.workspaceId === workspaceId
+        ? currentState
+        : null
+
+    if (priorSnapshot) cancelActiveRead()
+    else resetRead()
+
     const requestId = ++latestRequestId
     const controller = new AbortController()
     const abortRequest = () => controller.abort()
     if (signal?.aborted) controller.abort()
     else signal?.addEventListener('abort', abortRequest, { once: true })
-    readState.value = {
-      status: 'pending',
-      authUid: userId,
-      workspaceId
+    if (!priorSnapshot) {
+      readState.value = {
+        status: 'pending',
+        authUid: userId,
+        workspaceId
+      }
     }
 
     const promise = (async () => {
@@ -213,7 +242,8 @@ function useBillingCapabilitiesInternal() {
                 status: 'resolved',
                 authUid: userId,
                 workspaceId,
-                response
+                response,
+                refreshAt: nextRefreshAt(response)
               }
             : { status: 'unavailable', authUid: userId, workspaceId }
         scheduleRefresh()
@@ -226,7 +256,7 @@ function useBillingCapabilitiesInternal() {
           return
         }
         if (controller.signal.aborted) {
-          readState.value = { status: 'idle' }
+          if (!priorSnapshot) readState.value = { status: 'idle' }
           return
         }
 
@@ -234,10 +264,21 @@ function useBillingCapabilitiesInternal() {
           (error instanceof WorkspaceApiError &&
             (error.status === 401 || error.status === 403)) ||
           (error instanceof Error && error.name === 'AuthStoreError')
-        readState.value = {
-          status: denied ? 'denied' : 'unavailable',
-          authUid: userId,
-          workspaceId
+        // A transient failure keeps the last good snapshot - stale, not wrong -
+        // and retries. A denial is the server answering about this actor, so it
+        // replaces the snapshot even mid-revalidation.
+        if (priorSnapshot && !denied) {
+          readState.value = {
+            ...priorSnapshot,
+            refreshAt: Date.now() + FALLBACK_REFRESH_DELAY_MS
+          }
+          scheduleRefresh()
+        } else {
+          readState.value = {
+            status: denied ? 'denied' : 'unavailable',
+            authUid: userId,
+            workspaceId
+          }
         }
         reportError(error, {
           errorType: 'billing_capabilities_read_failure',
