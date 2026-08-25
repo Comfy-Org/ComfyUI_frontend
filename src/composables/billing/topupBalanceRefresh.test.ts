@@ -67,6 +67,36 @@ describe('watchForTopupBalanceUpdate', () => {
     expect(mockFetchBalance).toHaveBeenCalledTimes(1)
   })
 
+  it('stays armed when a bounce back to the app spends the schedule', async () => {
+    watchForTopupBalanceUpdate()
+
+    // The user glances at the app before paying: the whole schedule runs
+    // against the unchanged balance.
+    returnToApp()
+    await vi.advanceTimersByTimeAsync(60_000)
+    const spentOnBounce = mockFetchBalance.mock.calls.length
+    expect(spentOnBounce).toBeGreaterThan(1)
+
+    // The real return, after paying, must still refresh.
+    mockFetchBalance.mockResolvedValue({ amount_micros: 6_000 })
+    returnToApp()
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(mockFetchBalance.mock.calls.length).toBe(spentOnBounce + 1)
+  })
+
+  it('treats the first post-return read as the baseline when none was loaded', async () => {
+    mockBalance.value = null
+
+    watchForTopupBalanceUpdate()
+    returnToApp()
+    await vi.advanceTimersByTimeAsync(60_000)
+
+    // The pre-purchase balance is not the increase we are waiting for, so the
+    // schedule must not stop on the first read.
+    expect(mockFetchBalance.mock.calls.length).toBeGreaterThan(1)
+  })
+
   it('keeps polling when a refresh rejects', async () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {})
     mockFetchBalance.mockRejectedValue(new Error('network'))
