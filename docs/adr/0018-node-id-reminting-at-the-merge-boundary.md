@@ -6,11 +6,10 @@ Date: 2026-08-25
 
 Proposed
 
-This ADR records program decision D-gl-A6. ADR-0003's merge-boundary
-reconciliation amendment (2026-08-23) already carries the direction. This ADR
-separates the current local-import behavior from the future CRDT behavior so
-their different materialization paths and responsibilities are explicit.
-Formal sign-off remains pending.
+ADR-0003's merge-boundary reconciliation amendment (2026-08-23) already
+carries the direction. This ADR separates the current local-import behavior
+from the future CRDT behavior so their different materialization paths and
+responsibilities are explicit. Formal sign-off remains pending.
 
 ## Context
 
@@ -61,10 +60,11 @@ Concretely:
    `attachNodeToStores`. Workflow load, paste, and subgraph materialization
    reach that path. Its `nodeShellLifecycle` loop attempts registration; after
    the registry rejects a collision, the loop mints a fresh id for the
-   incoming local copy and retries. The warning required by D-gl-A2 — naming
-   the old id, replacement id, and root graph id — is pending in #15720;
-   current `main` still remints silently. This local adapter does not receive
-   remote semantic operations and does not emit a CRDT operation.
+   incoming local copy and retries. The warning required by the project's
+   no-silent-remint rule — naming the old id, replacement id, and root graph
+   id — is pending in #15720; current `main` still remints silently. This local
+   adapter does not receive remote semantic operations and does not emit a
+   CRDT operation.
 3. The **future CRDT boundary** is the semantic-operation applier described by
    ADR-0003. Nodes, widgets, links, and reroutes are not yet CRDT-replicated.
    When they are, the applier must reconcile concurrent identity collisions
@@ -140,8 +140,8 @@ eventually.
 
 Let stores absorb collisions by remapping ids internally on registration.
 
-- Violates D-gl-A2 directly: the remap is exactly the silent remint that
-  decision forbids.
+- Violates the no-silent-remint rule directly: the remap is exactly the silent
+  remint that rule forbids.
 - Smears merge logic across every store instead of one boundary; every
   future store must reimplement it.
 - Hides real data-model bugs behind auto-repair — a duplicate id caused by a
@@ -190,8 +190,10 @@ Tag colliding entries with an epoch/namespace and reconcile lazily.
   and remint warning).
 - #15761 — pending collision-contract documentation fold.
 - #15882 — serialized-reference remap after a local node-id remint (merged).
-- Program decisions D-gl-A2 (no silent remints), D-gl-A4 (identity keys
-  reject / structural keys resolve), D-gl-A6 (this decision).
+- Team decision log (internal, Comfy-Org only): D-gl-A2, D-gl-A4, D-gl-A6.
+  These ids are provenance pointers for maintainers with access to the
+  internal program log; the full content of each decision is restated in this
+  ADR, so external readers need nothing beyond this document.
 
 ## Glossary
 
