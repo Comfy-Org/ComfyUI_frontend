@@ -1,6 +1,8 @@
 // @vitest-environment happy-dom
+import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
+import { nextTick } from 'vue'
 
 import FAQSection from './FAQSection.vue'
 
@@ -22,7 +24,9 @@ describe('FAQSection', () => {
     expect(firstTrigger.closest('h3')).toBeTruthy()
     expect(firstTrigger.getAttribute('aria-expanded')).toBe('false')
 
-    await firstTrigger.click()
+    const user = userEvent.setup()
+    await user.click(firstTrigger)
+    await nextTick()
     expect(firstTrigger.getAttribute('aria-expanded')).toBe('true')
   })
 })
