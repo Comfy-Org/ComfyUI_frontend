@@ -60,12 +60,19 @@ vi.mock('@/platform/telemetry', () => ({
     mockIsCloud.value ? { trackTemplate: mockTrackTemplate } : null
 }))
 
-const { mockDistributionIsCloud, mockRequestCard, mockDismissCard } =
-  vi.hoisted(() => ({
-    mockDistributionIsCloud: { value: false },
-    mockRequestCard: vi.fn(),
-    mockDismissCard: vi.fn()
-  }))
+const {
+  mockDistributionIsCloud,
+  mockRequestCard,
+  mockDismissCard,
+  mockActiveWorkflow
+} = vi.hoisted(() => ({
+  mockDistributionIsCloud: { value: false },
+  mockRequestCard: vi.fn(),
+  mockDismissCard: vi.fn(),
+  mockActiveWorkflow: {
+    value: { key: 'loaded-template' } as { key: string } | null
+  }
+}))
 
 vi.mock('@/platform/distribution/types', () => ({
   get isCloud() {
@@ -84,7 +91,11 @@ vi.mock(
 )
 
 vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({ activeWorkflow: { key: 'loaded-template' } })
+  useWorkflowStore: () => ({
+    get activeWorkflow() {
+      return mockActiveWorkflow.value
+    }
+  })
 }))
 
 // Mock fetch
@@ -98,6 +109,7 @@ describe('useTemplateWorkflows', () => {
   beforeEach(() => {
     mockIsCloud.value = true
     mockDistributionIsCloud.value = false
+    mockActiveWorkflow.value = { key: 'loaded-template' }
 
     mockWorkflowTemplatesStore = {
       isLoaded: false,
@@ -369,6 +381,18 @@ describe('useTemplateWorkflows', () => {
     await loadWorkflowTemplate('template1', 'default')
 
     expect(mockRequestCard).toHaveBeenCalledWith('loaded-template')
+  })
+
+  it('retires the card instead of requesting it without a workflow key', async () => {
+    const { loadWorkflowTemplate } = useTemplateWorkflows()
+    mockWorkflowTemplatesStore.isLoaded = true
+    mockWorkflowTemplatesStore.enhancedTemplates.push(enhancedTemplate(true))
+    mockActiveWorkflow.value = null
+
+    await loadWorkflowTemplate('template1', 'default')
+
+    expect(mockRequestCard).not.toHaveBeenCalled()
+    expect(mockDismissCard).toHaveBeenCalled()
   })
 
   it('does not request the education card for open-source templates', async () => {
