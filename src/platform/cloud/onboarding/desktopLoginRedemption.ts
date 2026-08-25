@@ -8,6 +8,7 @@ import {
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { withDesktopLoginApproval } from '@/platform/cloud/onboarding/desktopLoginRedemptionState'
 import { api } from '@/scripts/api'
 import { useDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'
@@ -116,10 +117,12 @@ async function confirmRedemption(
   uid: string
 ): Promise<boolean> {
   if (state.approvedUserUid === uid) return true
-  const confirmed = await useDialogService().confirm({
-    title: t('desktopLogin.confirmSummary'),
-    message: t('desktopLogin.confirmMessage')
-  })
+  const confirmed = await withDesktopLoginApproval(() =>
+    useDialogService().confirm({
+      title: t('desktopLogin.confirmSummary'),
+      message: t('desktopLogin.confirmMessage')
+    })
+  )
   if (confirmed !== true) return false
   state.approvedUserUid = uid
   return true

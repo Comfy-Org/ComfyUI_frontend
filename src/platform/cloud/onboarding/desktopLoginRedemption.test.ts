@@ -180,6 +180,8 @@ describe('installDesktopLoginRedemption', () => {
 
   it('does not fetch before the user approves the confirmation dialog', async () => {
     const { trigger, seedStash } = await setup()
+    const { isDesktopLoginApprovalPending } =
+      await import('./desktopLoginRedemptionState')
     seedStash(VALID_CODE)
     let approve!: (value: boolean) => void
     mockConfirm.mockReturnValue(
@@ -191,11 +193,13 @@ describe('installDesktopLoginRedemption', () => {
 
     await trigger()
     await vi.waitFor(() => expect(mockConfirm).toHaveBeenCalledTimes(1))
+    expect(isDesktopLoginApprovalPending.value).toBe(true)
     expect(mockFetch).not.toHaveBeenCalled()
 
     approve(true)
     await flushRedemption()
 
+    expect(isDesktopLoginApprovalPending.value).toBe(false)
     expect(mockFetch).toHaveBeenCalledTimes(1)
   })
 
