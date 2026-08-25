@@ -100,7 +100,7 @@ const updateDomClipping = () => {
 const { left, top } = useElementBounding(canvasStore.getCanvas().canvas)
 
 function composeStyle() {
-  const isDisabled = widgetState.computedDisabled
+  const isDisabled = widget.computedDisabled
 
   style.value = {
     ...positionStyle.value,
@@ -137,12 +137,7 @@ watch(
 )
 
 watch(
-  [
-    () => widgetState.zIndex,
-    () => widgetState.readonly,
-    () => widgetState.computedDisabled,
-    enableDomClipping
-  ],
+  [() => widgetState.zIndex, () => widgetState.readonly, enableDomClipping],
   () => {
     if (enableDomClipping.value) {
       updateDomClipping()
