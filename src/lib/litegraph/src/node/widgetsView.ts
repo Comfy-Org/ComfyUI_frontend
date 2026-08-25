@@ -2,6 +2,7 @@ import { shallowReactive } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import { createArrayMutationView } from '../infrastructure/createMutationView'
@@ -24,6 +25,9 @@ function syncWidgetOrder(
   const graphId = node.graph?.rootGraph.id
   if (!graphId) return
 
+  for (const widget of widgets) {
+    if (isNodeBindable(widget)) widget.setNodeId(node.id)
+  }
   useWidgetValueStore().replaceNodeWidgetOrder(
     graphId,
     node.id,
