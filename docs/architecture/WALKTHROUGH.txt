@@ -9,14 +9,18 @@
 ===============================================================================
 
   Platform:     Web Browser (any modern browser)
-  Version:      1.1 (post-merge edition)
+  Version:      2.0 (post-merge edition)
   Author:       An Architect Who Has Seen Things
   Last Updated: 2026-08-25
   Spoilers:     YES. This guide contains ALL solutions and ALL endings.
 
-  v1.1: Updated after the ECS migration actually MERGED (PR #14246,
+  v2.0: Updated after the ECS migration actually MERGED (PR #14246,
   2026-08-24, 22 reviewed slices). The game no longer describes a plan -
   it describes what shipped, what got reversed, and what got deferred.
+  Two new rooms cover the areas that drew the heaviest review: the
+  Registry Office (identity and ownership) and the Hall of Mirrors
+  (mirror deletion and compatibility shims). All art regenerated in the
+  V2 blueprint theme. See CHANGELOG.md for the full history.
 
 ===============================================================================
                          TABLE OF CONTENTS
@@ -38,9 +42,9 @@
 
   Codebase Caverns is an interactive choose-your-own-adventure game that
   teaches you the architecture of the ComfyUI frontend codebase. You explore
-  10 rooms representing different architectural layers, face 9 real engineering
-  challenges, collect artifacts, and reach one of 4 endings based on your
-  decisions.
+  12 rooms representing different architectural layers, face 11 real
+  engineering challenges, collect artifacts, and reach one of 4 endings
+  based on your decisions.
 
   Every challenge in this game is based on REAL architectural problems
   documented in the ComfyUI frontend repo. The "correct" answers match
@@ -82,7 +86,7 @@
 
   CHALLENGES
   ==========
-  9 of the 10 rooms contain a one-time challenge - an architectural dilemma
+  11 of the 12 rooms contain a one-time challenge - an architectural dilemma
   with 2-3 options. Each option has a rating:
 
     [GOOD]   Best practice. Matches the real migration strategy.
@@ -105,7 +109,7 @@
 
   ENDINGS
   =======
-  After resolving all 9 challenges, you get one of 4 endings based on
+  After resolving all 11 challenges, you get one of 4 endings based on
   your accumulated stats. See Section VI for details.
 
   ACHIEVEMENTS
@@ -129,25 +133,29 @@
   |  COMPONENT   |  |    STORE     |  |    SERVICE     |
   |   GALLERY    |  |    VAULTS    |  |   CORRIDORS    |
   | [Challenge]  |  | [Challenge]  |  |  [Challenge]   |
-  +--+------+----+  +--+------+----+  +--------+-------+
-     |      |          |      |               |
-     |      |     +----v---+  |        +------v-------+
-     |      |     |  ECS   |  |        | COMPOSABLES  |
-     |      |     | CHAMB. |  |        |  WORKSHOP    |
-     |      |     | [Chal] |  |        | [Challenge]  |
-     |      |     +---+----+  |        +--------------+
-     |      |         |  +----v------+
-     |      |    +----v--+--+        |
-     |      |    |SUBGRAPH| RENDERER |
-     |      |    | DEPTHS | OVERLOOK |
-     |      |    | [Chal] |  [Chal]  |
-     |      |    +--------+----------+
-     |      |
-  +--v------v----+
-  |  LITEGRAPH   |
-  |   ENGINE     |
-  | [Challenge]  |
-  +------+-------+
+  +--+------+----+  +--+------+----+  +---+--------+---+
+     |      |          |      |           |        |
+     |      |     +----v---+  |    +------v-----+  |
+     |      |     |  ECS   |  |    | COMPOSABLES|  |
+     |      |     | CHAMB. |  |    |  WORKSHOP  |  |
+     |      |     | [Chal] |  |    | [Challenge]|  |
+     |      |     +-+---+--+  |    +------------+  |
+     |      |       |   |  +--v--------+           |
+     |      |       |   |  | RENDERER  |           |
+     |      |       |   |  | OVERLOOK  |           |
+     |      |       |   |  |  [Chal]   |           |
+     |      |       |   |  +-----------+           |
+     |      |  +----v-+ +----v-------+             |
+     |      |  |SUBGR.| | REGISTRY   |             |
+     |      |  |DEPTHS|-| OFFICE     |             |
+     |      |  |[Chal]| | [Challenge]|             |
+     |      |  +------+ +------------+             |
+     |      |                                      |
+  +--v------v----+       +--------------+         |
+  |  LITEGRAPH   |-------|   HALL OF    |---------+
+  |   ENGINE     |       |   MIRRORS    |
+  | [Challenge]  |       | [Challenge]  |
+  +------+-------+       +--------------+
          |
   +------v-------+
   | COMMAND      |
@@ -176,22 +184,22 @@
   4. THE SERVICE CORRIDORS [Services]
      Challenge: The Migration Question
      Artifacts: litegraphService.ts, Extension Migration Guide
-     Exits: Composables (1), Entry (2)
+     Exits: Composables (1), Hall of Mirrors (2), Entry (3)
 
   5. THE LITEGRAPH ENGINE ROOM [Graph Engine]
      Challenge: The God Object Dilemma
      Artifacts: LGraphCanvas.ts, LGraphNode.ts
-     Exits: ECS (1), Components (2), Entry (3)
+     Exits: ECS (1), Hall of Mirrors (2), Entry (3)
 
   6. THE ECS ARCHITECT'S CHAMBER [ECS]
      Challenge: The ID Crossroads
      Artifacts: The Unbuilt World, Branded IDs (WidgetId, LinkId)
-     Exits: Subgraph Depths (1), Renderer (2), Entry (3)
+     Exits: Subgraph Depths (1), Registry Office (2), Entry (3)
 
   7. THE SUBGRAPH DEPTHS [Graph Boundaries]
      Challenge: The Widget Promotion Decision
      Artifacts: Linked Subgraph Inputs, Typed Interface Contracts
-     Exits: ECS (1), Litegraph (2), Entry (3)
+     Exits: ECS (1), Registry Office (2), Entry (3)
 
   8. THE RENDERER OVERLOOK [Renderer]
      Challenge: The Render-Time Mutation
@@ -207,6 +215,16 @@
      Challenge: The Mutation Gateway
      Artifacts: ChangeTracker (Snapshot Undo), Command Layer (Deferred)
      Exits: Components (1), Stores (2), Entry (3)
+
+ 11. THE REGISTRY OFFICE [Identity & Ownership]
+     Challenge: The Clipboard Hijack
+     Artifacts: GraphScope (root + owner), Ownership Attachment
+     Exits: ECS (1), Subgraph Depths (2), Entry (3)
+
+ 12. THE HALL OF MIRRORS [Compatibility]
+     Challenge: The Mirror Deletion
+     Artifacts: Deprecation Telemetry, Serialization Goldens
+     Exits: Litegraph (1), Services (2), Entry (3)
 
 ===============================================================================
  IV.  CHALLENGE SOLUTIONS (SPOILERS)
@@ -424,12 +442,65 @@
   |     No single authority ever emerges. Mirror drift forever.       |
   '--------------------------------------------------------------------'
 
+  .--------------------------------------------------------------------.
+  | CHALLENGE 10: The Clipboard Hijack       | Room: Registry Office   |
+  |------------------------------------------------------------------  |
+  | Ctrl+C on a subgraph node produces a clone with reroute IDs        |
+  | identical to the originals'. What is the registration policy       |
+  | when two entities claim one ID?                                    |
+  |------------------------------------------------------------------  |
+  |                                                                    |
+  | >>> A. Refuse foreign overwrites; instance ownership  [GOOD] <<<   |
+  |     Debt -10, Quality +15, Morale +5, ECS +1                      |
+  |     What shipped: stores refuse and log collisions, load-time      |
+  |     dedup remaps IDs together, #15017 ties write access to an      |
+  |     instance-bound attachment, #15019 transfers state during       |
+  |     replacement. Registration policy was the migration's biggest   |
+  |     bug class (#13528).                                            |
+  |                                                                    |
+  |   B. First-wins, everywhere  [OK]                                  |
+  |     Debt +5, Quality +5                                           |
+  |     Right at load time (dedup depends on it), wrong as a           |
+  |     universal rule: scratch graphs absorb live state.              |
+  |                                                                    |
+  |   C. Last-wins: newest registration takes the slot  [BAD]          |
+  |     Debt +10, Quality -5, Morale -5                               |
+  |     The actual #13528 bug: clipboard clones hijacked live          |
+  |     reroute chains.                                                |
+  '--------------------------------------------------------------------'
+
+  .--------------------------------------------------------------------.
+  | CHALLENGE 11: The Mirror Deletion        | Room: Hall of Mirrors   |
+  |------------------------------------------------------------------  |
+  | output.links[] must go: ~200 read sites, 12 write sites, unknown   |
+  | extension usage. How does the deleted field behave for code that   |
+  | still touches it?                                                  |
+  |------------------------------------------------------------------  |
+  |                                                                    |
+  | >>> A. Warning facades: reads warn, writes ignored  [GOOD] <<<     |
+  |     Debt -10, Quality +15, Morale +5, ECS +1                      |
+  |     The reviewed design: store-derived getter + warnDeprecated,    |
+  |     frozen returned arrays so push() fails loudly, writes warn     |
+  |     and degrade gracefully. A zero-warning first-party test keeps  |
+  |     the telemetry honest.                                          |
+  |                                                                    |
+  |   B. Fail fast: throw on any write  [OK]                           |
+  |     Debt +5, Quality +5, Morale -5                                |
+  |     #13479's first version threw; review found strict-mode         |
+  |     TypeErrors inside callbacks could leave the graph half-wired.  |
+  |                                                                    |
+  |   C. Keep writing the mirror alongside the store  [BAD]            |
+  |     Debt +10, Quality -5                                          |
+  |     Two copies of the truth. The mirrors masked three real bugs    |
+  |     that only surfaced when they died.                             |
+  '--------------------------------------------------------------------'
+
 ===============================================================================
  V.  OPTIMAL ROUTE - "THE ECS ENLIGHTENMENT" SPEEDRUN
 ===============================================================================
 
-  This route hits all 8 challenges picking the GOOD answer, collecting
-  all 13 artifacts, visiting all 10 rooms. Order matters for efficiency
+  This route hits all 11 challenges picking the GOOD answer, collecting
+  all 22 artifacts, visiting all 12 rooms. Order matters for efficiency
   (fewest key presses).
 
   Starting stats: Debt 50, Quality 30, Morale 60, ECS 0/5
@@ -440,63 +511,69 @@
     COMPONENT GALLERY
       Challenge: The Circular Dependency -> Press A (Composition)
       [Debt 40, Quality 45, Morale 65, ECS 1/5]
-      Press 2 -> Command Forge
-
-    THE COMMAND FORGE
-      Challenge: The Mutation Gateway -> Press A (Data first)
-      [Debt 30, Quality 60, Morale 70, ECS 2/5]
-      Press 2 -> Store Vaults
-
-    STORE VAULTS
-      Challenge: The Scattered Mutations -> Press A (Centralize)
-      [Debt 15, Quality 75, Morale 70, ECS 3/5]
-      Press 1 -> ECS Chamber
-
-    ECS ARCHITECT'S CHAMBER
-      Challenge: The ID Crossroads -> Press A (Branded types)
-      [Debt 0, Quality 95, Morale 70, ECS 4/5]
-      Press 1 -> Subgraph Depths
-
-    SUBGRAPH DEPTHS
-      Challenge: The Widget Promotion Decision -> Press A (Connections-only)
-      [Debt 0, Quality 100, Morale 75, ECS 5/5]
-      Press 1 -> ECS Chamber
-      Press 2 -> Renderer
-
-    RENDERER OVERLOOK
-      Challenge: The Render-Time Mutation -> Press A (Separate phases)
-      [Debt 0, Quality 100, Morale 75, ECS 5/5]
-      Press 2 -> Entry Point
-
-    ENTRY POINT
-      Press 3 -> Services
-
-    SERVICE CORRIDORS
-      Challenge: The Migration Question -> Press A (Reviewed slices)
-      [Debt 0, Quality 100, Morale 85, ECS 5/5]
-      Press 1 -> Composables
-
-    COMPOSABLES WORKSHOP
-      Challenge: The Collaboration Protocol -> Press A (Y.js CRDTs)
-      [Debt 0, Quality 100, Morale 95, ECS 5/5]
-      Press 2 -> Entry Point
-
-    ENTRY POINT
-      Press 1 -> Components
       Press 1 -> Litegraph
 
     LITEGRAPH ENGINE ROOM
       Challenge: The God Object Dilemma -> Press B (Extract incrementally)
+      [Debt 30, Quality 60, Morale 70, ECS 2/5]
+      Press 2 -> Hall of Mirrors
+
+    HALL OF MIRRORS
+      Challenge: The Mirror Deletion -> Press A (Warning facades)
+      [Debt 20, Quality 75, Morale 75, ECS 3/5]
+      Press 2 -> Services
+
+    SERVICE CORRIDORS
+      Challenge: The Migration Question -> Press A (Reviewed slices)
+      [Debt 20, Quality 90, Morale 85, ECS 4/5]
+      Press 1 -> Composables
+
+    COMPOSABLES WORKSHOP
+      Challenge: The Collaboration Protocol -> Press A (Y.js CRDTs)
+      [Debt 10, Quality 100, Morale 95, ECS 4/5]
+      Press 1 -> Store Vaults
+
+    STORE VAULTS
+      Challenge: The Scattered Mutations -> Press A (Centralize)
+      [Debt 0, Quality 100, Morale 95, ECS 5/5]
+      Press 2 -> Renderer
+
+    RENDERER OVERLOOK
+      Challenge: The Render-Time Mutation -> Press A (Separate phases)
+      [Debt 0, Quality 100, Morale 95, ECS 5/5]
+      Press 1 -> ECS Chamber
+
+    ECS ARCHITECT'S CHAMBER
+      Challenge: The ID Crossroads -> Press A (Branded types)
+      [Debt 0, Quality 100, Morale 95, ECS 5/5]
+      Press 2 -> Registry Office
+
+    REGISTRY OFFICE
+      Challenge: The Clipboard Hijack -> Press A (Refuse overwrites)
+      [Debt 0, Quality 100, Morale 100, ECS 5/5]
+      Press 2 -> Subgraph Depths
+
+    SUBGRAPH DEPTHS
+      Challenge: The Widget Promotion Decision -> Press A (Connections-only)
+      [Debt 0, Quality 100, Morale 100, ECS 5/5]
+      Press 3 -> Entry Point
+
+    ENTRY POINT
+      Press 1 -> Components
+      Press 2 -> Command Forge
+
+    THE COMMAND FORGE
+      Challenge: The Mutation Gateway -> Press A (Data first)
       [Debt 0, Quality 100, Morale 100, ECS 5/5]
 
   FINAL STATS: Debt 0 | Quality 100 | Morale 100 | ECS 5/5
 
   *** ENDING: THE ECS ENLIGHTENMENT ***
 
-  Total key presses: 28 (including challenge answers)
-  Rooms visited: 10/10
-  Artifacts: 18/18
-  Challenges: 9/9 correct
+  Total key presses: 24 (including challenge answers)
+  Rooms visited: 12/12
+  Artifacts: 22/22
+  Challenges: 11/11 correct
 
 ===============================================================================
  VI.  ALL FOUR ENDINGS
@@ -511,10 +588,10 @@
   |   Requirements: Debt < 25 AND Quality >= 75 AND Morale >= 60       |
   |                                                                    |
   |   "The mirrors are gone. output.links[], input.link, VueNodeData,  |
-  |    all 439 lines of useGraphNodeManager - deleted, not             |
-  |    deprecated-forever. Five dedicated stores own node shell, link  |
-  |    topology, reroute chains, widget values, and geometry. The      |
-  |    wire format never changed - serialization goldens are           |
+  |    and all 439 lines of useGraphNodeManager were deleted rather    |
+  |    than deprecated forever. Five dedicated stores own node shell,  |
+  |    link topology, reroute chains, widget values, and geometry.     |
+  |    The wire format never changed; the serialization goldens are    |
   |    byte-identical."                                                |
   |                                                                    |
   |   HOW TO GET IT: Pick ALL good answers. Hard to miss if you        |
@@ -591,8 +668,10 @@
     Subgraph:      C (Keep three-layer system)   Debt +10 -> 100
     Renderer:      B (Dirty flags)               Debt  -5 -> 95
     Composables:   B (Polling-based sync)        Debt +10 -> 100
+    Registry:      C (Last-wins)                 Debt +10 -> 100
+    Mirrors:       C (Keep writing the mirror)   Debt +10 -> 100
 
-  Final: Debt 100 / Quality 10 / Morale 50 -> SPAGHETTI SINGULARITY
+  Final: Debt 100 / Quality 0 / Morale 40 -> SPAGHETTI SINGULARITY
 
   WARNING: Picking "all bad-rated answers" does NOT work! The bad
   answers for Litegraph (A: Rewrite, Debt -20) and Services (B: Big
@@ -623,8 +702,12 @@
   Composables       | useCoreCommands.ts           | Composable
   Command Forge     | ChangeTracker (Snapshot Undo)| Undo/Redo
   Command Forge     | Command Layer (Deferred)     | Design Pattern
+  Registry Office   | GraphScope (root + owner)    | Identity
+  Registry Office   | Ownership Attachment         | Identity
+  Hall of Mirrors   | Deprecation Telemetry        | Compatibility
+  Hall of Mirrors   | Serialization Goldens        | Testing
 
-  Total: 18 artifacts across 9 rooms.
+  Total: 22 artifacts across 11 rooms.
   Entry Point has no artifacts.
 
 ===============================================================================
@@ -660,13 +743,14 @@
 
   * The ECS Migration Progress stat maxes at 5, matching the five
     store authorities that shipped: node shell, link topology, reroute
-    chains, widget values, and layout. 8 of the 9 GOOD answers grant
-    +1 ECS; the Services challenge ("reviewed slices") gives +1 ECS
-    but no debt reduction - process enables progress, it isn't
-    progress itself.
+    chains, widget values, and layout. 10 of the 11 GOOD answers grant
+    +1 ECS (Composables is the exception), so the bar fills well
+    before the last challenge. The Services challenge gives +1 ECS but
+    no debt reduction - process enables progress, it isn't progress
+    itself.
 
   * There are between 2-3 choices per challenge, giving
-    3*3*3*3*3*3*2*3*3 = 13,122 possible playthroughs. But only 4
+    3^10 * 2 = 118,098 possible playthroughs. But only 4
     distinct endings. Most paths lead to "The Clean Architecture"
     or "The Eternal Refactor."
 
@@ -682,9 +766,10 @@
     8. src/composables/ (Vue logic hooks)
     9. src/lib/litegraph/src/ (the legacy engine, now a facade)
 
-  * The pixel art images were generated using the Z-Image Turbo
-    pipeline on the same ComfyUI that this frontend controls.
-    Meta, isn't it?
+  * The V2 art was generated with Krea 2 Turbo on Comfy Cloud, driven
+    by the same ComfyUI stack this frontend controls. The v1 pixel art
+    came from a local Z-Image Turbo pipeline. Either way: the game
+    about the graph engine was drawn by the graph engine.
 
 ===============================================================================
 
