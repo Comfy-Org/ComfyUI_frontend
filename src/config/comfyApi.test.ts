@@ -3,7 +3,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 
-import { getComfyApiBaseUrl, getComfyPlatformBaseUrl } from './comfyApi'
+import {
+  getComfyApiBaseUrl,
+  getComfyCloudBaseUrl,
+  getComfyPlatformBaseUrl
+} from './comfyApi'
 
 vi.mock('@/scripts/api', () => ({
   api: {
@@ -35,6 +39,12 @@ describe('getComfyApiBaseUrl', () => {
   it('falls back to the build-time default when the value is empty', () => {
     remoteConfig.value = { comfy_api_base_url: '' }
     expect(getComfyApiBaseUrl()).toBe('https://stagingapi.comfy.org')
+  })
+})
+
+describe('getComfyCloudBaseUrl', () => {
+  it('matches the non-production Firebase environment', () => {
+    expect(getComfyCloudBaseUrl()).toBe('https://testcloud.comfy.org')
   })
 })
 

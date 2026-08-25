@@ -27,7 +27,7 @@
         <i
           :class="
             cn(
-              'icon-[lucide--component] size-4 self-center',
+              'icon-[lucide--coins] size-4 self-center',
               !inactivePlan && 'text-credit'
             )
           "
@@ -93,7 +93,7 @@
             v-else
             class="flex items-center gap-1 font-bold text-text-primary"
           >
-            <i class="icon-[lucide--component] size-4 text-credit" />
+            <i class="icon-[lucide--coins] size-4 text-credit" />
             <span class="@max-[180px]:hidden">
               {{
                 $t('subscription.creditsLeftOfTotal', {
@@ -146,7 +146,7 @@
             v-else
             class="flex items-center gap-1 font-bold text-text-primary"
           >
-            <i class="icon-[lucide--component] size-4 text-credit" />
+            <i class="icon-[lucide--coins] size-4 text-credit" />
             {{ displayPrepaid }}
           </span>
         </div>
@@ -176,7 +176,7 @@
             </Button>
           </span>
           <span class="flex items-center gap-1 font-bold">
-            <i class="icon-[lucide--component] size-4" />
+            <i class="icon-[lucide--coins] size-4" />
             {{ displayPrepaid }}
           </span>
         </div>
@@ -231,10 +231,11 @@ import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables
 import { useBillingPolicyCapabilities } from '@/platform/cloud/subscription/composables/useBillingPolicyCapabilities'
 import {
   DEFAULT_TIER_KEY,
-  TIER_TO_KEY,
+  toTierKey,
   getTierCredits
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import { computeMonthlyUsage } from '@/platform/cloud/subscription/utils/creditsProgress'
+import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { pendingTopupNeedsRefresh } from '@/platform/telemetry/topupTracker'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
@@ -277,7 +278,7 @@ const telemetry = useTelemetry()
 const tierKey = computed(() => {
   const tier = subscription.value?.tier
   if (!tier) return DEFAULT_TIER_KEY
-  return TIER_TO_KEY[tier] ?? DEFAULT_TIER_KEY
+  return toTierKey(tier) ?? DEFAULT_TIER_KEY
 })
 
 const creditPoolTotalCredits = computed<number | null>(() => {
@@ -360,6 +361,7 @@ const showBreakdown = computed(
 )
 const showBar = computed(
   () =>
+    isCloud &&
     showBreakdown.value &&
     creditPoolTotalCredits.value !== null &&
     creditPoolTotalCredits.value > 0
@@ -368,7 +370,9 @@ const showBar = computed(
 // including local/desktop) accounts have no workspace concept to gate on.
 const showActionButton = computed(
   () =>
-    canAccessSubscriptionFeatures.value &&
+    (billingPolicyCapabilities.value.topUpAccess === 'allowed' ||
+      (billingPolicyCapabilities.value.showsSubscribeUpsellUI &&
+        canAccessSubscriptionFeatures.value)) &&
     !zeroState &&
     !inactivePlan &&
     (type.value !== 'workspace' || permissions.value.canTopUp)
