@@ -142,7 +142,7 @@ describe('useBillingCapabilities', () => {
     )
   })
 
-  it('keeps top-up available when the endpoint is unavailable', async () => {
+  it('keeps top-up available for owners when the endpoint is unavailable', async () => {
     mockGetBillingCapabilities.mockRejectedValueOnce(new Error('unavailable'))
 
     await billingCapabilities.initialize()
@@ -151,6 +151,17 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
     expect(billingCapabilities.isReady.value).toBe(true)
     expect(mockReportError).toHaveBeenCalledOnce()
+  })
+
+  it('withholds top-up from members when the endpoint is unavailable', async () => {
+    mockScope.role = 'member'
+    mockGetBillingCapabilities.mockRejectedValueOnce(new Error('unavailable'))
+
+    await billingCapabilities.initialize()
+
+    expect(billingCapabilities.canTopUp.value).toBe(false)
+    expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
+    expect(billingCapabilities.isReady.value).toBe(true)
   })
 
   it('fails closed when the endpoint denies the current actor', async () => {
