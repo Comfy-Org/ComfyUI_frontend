@@ -108,6 +108,21 @@ describe('pendingWarnings utils', () => {
       ])
     })
 
+    it('keeps string, node ID, and type-only identities separate', () => {
+      expect(
+        dedupeMissingNodeTypes([
+          '1',
+          { type: 'NodeA', nodeId: 1, isReplaceable: false },
+          { type: 'NodeA', nodeId: '1', isReplaceable: true },
+          { type: '1', isReplaceable: false }
+        ])
+      ).toStrictEqual([
+        '1',
+        { type: 'NodeA', nodeId: 1, isReplaceable: false },
+        { type: '1', isReplaceable: false }
+      ])
+    })
+
     describe('remove by type', () => {
       it('removes matching object types', () => {
         const remaining = removePendingMissingNodeTypesByType(
@@ -204,6 +219,14 @@ describe('pendingWarnings utils', () => {
         expect(removePendingMissingNodeTypesByNodeId(types, '4')).toStrictEqual(
           types
         )
+      })
+
+      it('preserves entries without a node ID', () => {
+        const types = [{ type: 'NoId', isReplaceable: false }]
+
+        expect(
+          removePendingMissingNodeTypesByNodeId(types, 'undefined')
+        ).toStrictEqual(types)
       })
 
       it('returns an empty list when every object entry matches', () => {

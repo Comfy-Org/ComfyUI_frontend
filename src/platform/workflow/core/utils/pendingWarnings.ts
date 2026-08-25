@@ -10,9 +10,9 @@ const emptyToUndefined = <T>(arr: T[] | undefined): T[] | undefined =>
   arr?.length ? arr : undefined
 
 function getMissingNodeKey(node: MissingNodeType): string {
-  if (typeof node === 'string') return node
-  if (node.nodeId != null) return String(node.nodeId)
-  return node.type
+  if (typeof node === 'string') return `string:${node}`
+  if (node.nodeId != null) return `nodeId:${String(node.nodeId)}`
+  return `type:${node.type}`
 }
 
 export function dedupeMissingNodeTypes(
@@ -41,7 +41,9 @@ export function removePendingMissingNodeTypesByNodeId(
   return dedupeMissingNodeTypes(
     (currentTypes ?? []).filter(
       (node) =>
-        typeof node === 'string' || String(node.nodeId) !== String(nodeId)
+        typeof node === 'string' ||
+        node.nodeId == null ||
+        String(node.nodeId) !== nodeId
     )
   )
 }
