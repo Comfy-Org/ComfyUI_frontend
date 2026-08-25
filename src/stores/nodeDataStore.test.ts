@@ -100,6 +100,20 @@ describe('useNodeDataStore', () => {
     expect(store.deleteNode(graphScope(rootA, rootA), impostor)).toBe(false)
     expect(store.getGraphNodesFor(rootA, rootA)).toEqual([registered])
   })
+
+  it('discards a deleted node when its id is reused', () => {
+    const store = useNodeDataStore()
+    const scope = graphScope(rootA, rootA)
+    const original = node(42)
+    store.registerNode(scope, original)
+    store.deleteNode(scope, original)
+
+    const replacement = node(42)
+    const registered = store.registerNode(scope, replacement)
+
+    expect(registered?.id).toBe(toNodeId(42))
+    expect(store.getGraphNodesFor(rootA, rootA)).toEqual([registered])
+  })
 })
 
 describe('nodeDataStore registration via LGraph', () => {
