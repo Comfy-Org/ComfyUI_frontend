@@ -370,14 +370,23 @@ function serialiseStoredNodes(owner: LGraph, sortNodes: boolean) {
   const ordered = sortNodes
     ? [...states].sort((a, b) => compareNodeIds(a.id, b.id))
     : states
-  return ordered.map((state) => {
+  const serialisers = ordered.flatMap((state) => {
     const adapter = adapters.get(state.id)
-    if (!adapter)
-      throw new Error(
-        `Cannot serialize graph ${owner.id}: node ${state.id} has no live adapter`
-      )
-    return adapter.serializeFromStoreState(state)
+    return adapter ? [{ adapter, state }] : []
   })
+  if (serialisers.length !== ordered.length) {
+    const missing = ordered.find((state) => !adapters.has(state.id))
+    console.error(
+      `Cannot serialize graph ${owner.id} from store: node ${missing?.id} has no live adapter; using live graph nodes`
+    )
+    const nodes = sortNodes
+      ? [...owner._nodes].sort((a, b) => compareNodeIds(a.id, b.id))
+      : owner._nodes
+    return nodes.map((node) => node.serialize())
+  }
+  return serialisers.map(({ adapter, state }) =>
+    adapter.serializeFromStoreState(state)
+  )
 }
 
 function serialiseStoredGroups(owner: LGraph) {
@@ -2746,8 +2755,10 @@ export class LGraph
         this.floatingLinks.size > 0 ||
         this.reroutes.size > 0 ||
         this._subgraphs.size > 0)
-    )
-      throw new Error('Cannot additively configure a populated graph')
+    ) {
+      console.error('Cannot additively configure a populated graph')
+      return false
+    }
 
     beginNamedValuesShadowDiffLoad()
     try {

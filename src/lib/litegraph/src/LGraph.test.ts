@@ -724,14 +724,18 @@ describe('Store-driven serialization parity', () => {
     }
   })
 
-  test('rejects serializing a stored node without a live adapter', ({
+  test('falls back safely when a stored node has no live adapter', ({
     expect
   }) => {
     const graph = createGraph(new DummyNode())
     graph._nodes = []
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-    expect(() => graph.asSerialisable()).toThrow(
-      /Cannot serialize graph .*: node .* has no live adapter/
+    expect(graph.asSerialisable().nodes).toEqual([])
+    expect(error).toHaveBeenCalledWith(
+      expect.stringMatching(
+        /Cannot serialize graph .* from store: node .* has no live adapter; using live graph nodes/
+      )
     )
   })
 
@@ -741,7 +745,10 @@ describe('Store-driven serialization parity', () => {
     const graph = createGraph(new DummyNode())
     const before = graph.asSerialisable()
 
-    expect(() => graph.configure(before, true)).toThrow(
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    expect(graph.configure(before, true)).toBe(false)
+    expect(error).toHaveBeenCalledWith(
       'Cannot additively configure a populated graph'
     )
     expect(graph.asSerialisable()).toEqual(before)
