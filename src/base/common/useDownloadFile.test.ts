@@ -1,5 +1,5 @@
 import { nextTick } from 'vue'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useDownloadFile } from '@/base/common/useDownloadFile'
 
@@ -14,10 +14,6 @@ vi.mock('@/base/common/downloadUtil', () => ({
 describe('useDownloadFile', () => {
   beforeEach(() => {
     mockDownloadFileAsync.mockReset()
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   it('starts with isLoading false and no error', () => {
