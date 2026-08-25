@@ -56,7 +56,10 @@ const fixtures = vi.hoisted(() => {
   return { prepared, secondPrepared, secondTemplate, template }
 })
 
-const environment = vi.hoisted(() => ({ isDesktop: false }))
+const environment = vi.hoisted(() => ({
+  isCloud: false,
+  isDesktop: false
+}))
 
 const mocks = vi.hoisted(() => ({
   filterTemplatesByCategory: vi.fn(() => [
@@ -108,7 +111,9 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('@/platform/distribution/types', () => ({
-  isCloud: false,
+  get isCloud() {
+    return environment.isCloud
+  },
   get isDesktop() {
     return environment.isDesktop
   }
@@ -302,6 +307,7 @@ async function openDetail(templateName = fixtures.template.name) {
 
 describe('WorkflowTemplateSelectorDialog template detail navigation', () => {
   beforeEach(() => {
+    environment.isCloud = false
     environment.isDesktop = false
     mocks.prepareWorkflowTemplate.mockImplementation(async (id: string) =>
       id === fixtures.secondTemplate.name
@@ -467,7 +473,31 @@ describe('WorkflowTemplateSelectorDialog template detail navigation', () => {
     expect(mocks.onClose).toHaveBeenCalledOnce()
   })
 
-  it('keeps non-Desktop detail behavior declaration-only', async () => {
+  it('opens Cloud templates directly without presenting Detail', async () => {
+    environment.isCloud = true
+    const user = userEvent.setup()
+    renderDialog()
+
+    await user.click(
+      await screen.findByTestId(`template-workflow-${fixtures.template.name}`)
+    )
+
+    await waitFor(() => {
+      expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledOnce()
+    })
+    expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledWith(
+      fixtures.prepared,
+      { closeDialog: false }
+    )
+    expect(
+      screen.queryByRole('article', { name: fixtures.template.title })
+    ).not.toBeInTheDocument()
+    expect(mocks.resolveModelAvailability).not.toHaveBeenCalled()
+    expect(mocks.resolveModelMetadata).not.toHaveBeenCalled()
+    expect(mocks.onClose).toHaveBeenCalledOnce()
+  })
+
+  it('keeps localhost detail behavior declaration-only', async () => {
     await openDetail()
 
     expect(mocks.resolveModelAvailability).not.toHaveBeenCalled()
