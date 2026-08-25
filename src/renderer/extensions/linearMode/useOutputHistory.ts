@@ -1,9 +1,10 @@
 import { useAsyncState } from '@vueuse/core'
 import type { ComputedRef } from 'vue'
-import { computed, ref, toValue, watchEffect } from 'vue'
+import { computed, toValue, watchEffect } from 'vue'
 
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { wrapPagedList } from '@/platform/remote/paged/pagedList'
 import type { PagedList } from '@/platform/remote/paged/pagedList'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { flattenNodeOutput } from '@/renderer/extensions/linearMode/flattenNodeOutput'
@@ -68,25 +69,17 @@ export function useOutputHistory(): {
     )
   }
 
-  const sessionMedia = computed(() => {
+  const outputs = wrapPagedList(assetsStore.outputAssets, (items) => {
     const path = workflowStore.activeWorkflow?.path
     if (!path) return []
 
     const pathMap = executionStore.jobIdToSessionWorkflowPath
 
-    return toValue(assetsStore.outputAssets.items).filter((asset) => {
+    return toValue(items).filter((asset) => {
       const m = getOutputAssetMetadata(asset?.user_metadata)
       return m ? pathMap.get(m.jobId) === path : false
     })
   })
-
-  const outputs: PagedList<AssetItem> = {
-    ...assetsStore.outputAssets,
-    items: sessionMedia,
-    hasMore: ref(false),
-    isLoading: ref(false),
-    loadMore: async () => {}
-  }
 
   const resolvedCache = linearStore.resolvedOutputsCache
   const asyncRefs = new Map<
