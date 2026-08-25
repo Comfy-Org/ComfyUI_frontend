@@ -1,4 +1,4 @@
-import { toNodeId } from '@/types/nodeId'
+import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 
 import type { LLink } from './LLink'
 import type { ISerialisedNode } from './types/serialisation'
@@ -47,6 +47,7 @@ export function recordUnambiguousRemint(
   requestedId: NodeId,
   finalId: NodeId
 ): void {
+  if (requestedId === UNASSIGNED_NODE_ID) return
   if (requestedIdCounts.get(requestedId) === 1) {
     remintedIds.set(requestedId, finalId)
   }
