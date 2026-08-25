@@ -2,7 +2,7 @@
   "meta": {
     "style": "Pixel art icon, 128x128, dark background, game UI button icon style, clean readable silhouette",
     "usage": "Each key is {room}-{choiceKey lowercase}. Used in challenge choice buttons in adventure.html.",
-    "model": "Z-Image Turbo (no LoRA)",
+    "model": "Z-Image Turbo (no LoRA); post-#14246 replacements: Krea 2 Turbo (services-a, sidepanel-a, sidepanel-b), generated at 1024 and downscaled to 128",
     "resolution": "128x128"
   },
   "choices": {
@@ -31,8 +31,8 @@
       "prompt": "Pixel art icon of a shrug gesture with cobwebs on old machinery, grey muted glow, dark background, game UI icon"
     },
     "services-a": {
-      "label": "5-phase incremental plan",
-      "prompt": "Pixel art icon of five stepping stones ascending in a staircase with checkmarks, green glow, dark background, game UI icon"
+      "label": "A feature branch of small reviewed slices",
+      "prompt": "Pixel art icon of many small glowing pull request cards with checkmarks merging one by one into a single growing git branch arrow, green glow, dark background, game UI button icon style, clean readable silhouette, centered composition"
     },
     "services-b": {
       "label": "Big bang rewrite",
@@ -55,7 +55,7 @@
       "prompt": "Pixel art icon of a decorative mask covering a cracked wall, yellow cosmetic glow, dark background, game UI icon"
     },
     "ecs-a": {
-      "label": "Branded types with cast helpers",
+      "label": "Branded types with scoped identity",
       "prompt": "Pixel art icon of ID badges with distinct colored stamps and a compiler checkmark, green type-safe glow, dark background, game UI icon"
     },
     "ecs-b": {
@@ -99,15 +99,15 @@
       "prompt": "Pixel art icon of three stacked translucent layers with proxy shadows underneath, red complex glow, dark background, game UI icon"
     },
     "sidepanel-a": {
-      "label": "Commands as intent; systems as handlers; World as store",
-      "prompt": "Pixel art icon of a layered architectural diagram with arrows flowing top-to-bottom through five labeled tiers, green glow, dark background, game UI icon"
+      "label": "Data first — commands when a consumer exists",
+      "prompt": "Pixel art icon of five glowing treasure chests neatly arranged on shelves beside a small cold unlit blacksmith anvil, green orderly glow, dark background, game UI button icon style, clean readable silhouette, centered composition"
     },
     "sidepanel-b": {
-      "label": "Make World.setComponent() itself serializable",
-      "prompt": "Pixel art icon of a database with every cell being logged into a scroll, amber overflow glow, dark background, game UI icon"
+      "label": "Build the full command bus now",
+      "prompt": "Pixel art icon of an elaborate overbuilt conveyor belt machine with gears and pipes running above a pile of scattered unsorted mechanical parts, amber warning glow, dark background, game UI button icon style, clean readable silhouette, centered composition"
     },
     "sidepanel-c": {
-      "label": "Skip commands — let callers mutate directly",
+      "label": "Skip it all — keep mutating classes directly",
       "prompt": "Pixel art icon of multiple hands reaching into a glowing orb simultaneously causing cracks, red chaos glow, dark background, game UI icon"
     }
   }

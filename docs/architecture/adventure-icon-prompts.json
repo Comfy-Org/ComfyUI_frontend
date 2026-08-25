@@ -2,7 +2,7 @@
   "meta": {
     "style": "Pixel art icon on transparent black background, 128x128, clean edges, glowing accent color, game inventory item style",
     "usage": "Each key is an artifact ID used in adventure.html. Generate one icon per artifact.",
-    "model": "Z-Image Turbo (no LoRA)",
+    "model": "Z-Image Turbo (no LoRA); post-#14246 additions: Krea 2 Turbo (linkstore) and Ideogram (nodedatastore, changetracker, linked-inputs), generated at 1024 and downscaled to 128",
     "resolution": "128x128"
   },
   "artifacts": {
@@ -37,8 +37,8 @@
       "prompt": "Pixel art icon of an oversized cube with tangled wires bursting from every face, red and amber glow, dark background, game inventory item"
     },
     "world-registry": {
-      "name": "World Registry",
-      "type": "ECS Core",
+      "name": "The Unbuilt World",
+      "type": "Historical Blueprint",
       "prompt": "Pixel art icon of a glowing crystalline orb containing tiny entity symbols, bright blue and white aura, dark background, game inventory item"
     },
     "branded-ids": {
@@ -85,6 +85,26 @@
       "name": "Extension Migration Guide",
       "type": "Design Pattern",
       "prompt": "Pixel art icon of a scroll with legacy code on left transforming via arrow to ECS code on right, green transition glow, dark background, game inventory item"
+    },
+    "linkstore": {
+      "name": "linkStore.ts",
+      "type": "Store Authority",
+      "prompt": "Pixel art icon of a round vault door with a glowing chain link embossed on it and a small index card drawer beside it, blue accent glow, dark background, game inventory item style, clean readable silhouette, centered composition"
+    },
+    "nodedatastore": {
+      "name": "nodeDataStore.ts",
+      "type": "Store Authority",
+      "prompt": "Pixel art icon of a round vault door with a glowing workflow node card embossed on it, teal accent glow, dark background, game inventory item style, clean readable silhouette, centered composition"
+    },
+    "changetracker": {
+      "name": "ChangeTracker (Snapshot Undo)",
+      "type": "Undo/Redo",
+      "prompt": "Pixel art icon of a neat stack of glowing photograph snapshots with a curved undo arrow circling back over them, purple accent glow, dark background, game inventory item style, clean readable silhouette, centered composition"
+    },
+    "linked-inputs": {
+      "name": "Linked Subgraph Inputs",
+      "type": "ADR 0009",
+      "prompt": "Pixel art icon of a typed input socket connected by a glowing wire to a small slider widget control, green and gold accents, dark background, game inventory item style, clean readable silhouette, centered composition"
     }
   }
 }
