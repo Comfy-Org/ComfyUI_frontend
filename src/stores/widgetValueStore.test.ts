@@ -264,6 +264,64 @@ describe('useWidgetValueStore', () => {
     })
   })
 
+  describe('widget rename', () => {
+    it('rejects an occupied destination without changing either widget', () => {
+      const store = useWidgetValueStore()
+      const nodeId = toNodeId('node-1')
+      const steps = widgetId(graphA, nodeId, 'steps')
+      const seedState = store.registerWidget(seedA, state('number', 1), {
+        tooltip: 'seed'
+      })
+      const stepsState = store.registerWidget(steps, state('number', 20), {
+        tooltip: 'steps'
+      })
+      const seedRenderState = store.getWidgetRenderState(seedA)
+      const stepsRenderState = store.getWidgetRenderState(steps)
+
+      expect(store.renameWidget(seedA, steps)).toBeUndefined()
+      expect(store.getWidget(seedA)).toBe(seedState)
+      expect(store.getWidget(steps)).toBe(stepsState)
+      expect(store.getWidgetRenderState(seedA)).toBe(seedRenderState)
+      expect(store.getWidgetRenderState(steps)).toBe(stepsRenderState)
+      expect(store.getNodeWidgetIds(graphA, nodeId)).toEqual([seedA, steps])
+    })
+
+    it.for([
+      {
+        name: 'an invalid destination',
+        oldId: seedA,
+        newId: widgetId('', toNodeId('node-1'), 'renamed')
+      },
+      {
+        name: 'a destination in another graph',
+        oldId: seedA,
+        newId: widgetId(graphB, toNodeId('node-1'), 'renamed')
+      },
+      {
+        name: 'a destination on another node',
+        oldId: seedA,
+        newId: widgetId(graphA, toNodeId('node-2'), 'renamed')
+      },
+      {
+        name: 'a missing source',
+        oldId: widgetId(graphA, toNodeId('node-1'), 'missing'),
+        newId: widgetId(graphA, toNodeId('node-1'), 'renamed')
+      }
+    ])('leaves sibling state unchanged for $name', ({ oldId, newId }) => {
+      const store = useWidgetValueStore()
+      const nodeId = toNodeId('node-1')
+      const seedState = store.registerWidget(seedA, state('number', 1), {
+        tooltip: 'seed'
+      })
+      const seedRenderState = store.getWidgetRenderState(seedA)
+
+      expect(store.renameWidget(oldId, newId)).toBeUndefined()
+      expect(store.getWidget(seedA)).toBe(seedState)
+      expect(store.getWidgetRenderState(seedA)).toBe(seedRenderState)
+      expect(store.getNodeWidgetIds(graphA, nodeId)).toEqual([seedA])
+    })
+  })
+
   describe('value mutation', () => {
     it('setValue updates registered widgets and reports missing widgets', () => {
       const store = useWidgetValueStore()

@@ -55,7 +55,7 @@ import type {
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { toNodeId } from '@/types/nodeId'
-import type { SerializedNodeId } from '@/types/nodeId'
+import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import {
   collectSubgraphDefinitions,
   buildSubgraphExecutionPaths
@@ -111,7 +111,7 @@ import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 import type { ExtensionManager } from '@/types/extensionTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { normalizePromptError } from '@/utils/executionErrorUtil'
-import { graphToPrompt } from '@/utils/executionUtil'
+import { graphToPrompt, unwrapExportedWidgetValue } from '@/utils/executionUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 import { getCnrIdFromProperties } from '@/platform/nodeReplacement/cnrIdUtil'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
@@ -2082,13 +2082,28 @@ export class ComfyApp {
         }
         this.canvas.setGraph(this.rootGraph)
       })
-      if (outcome === 'core-nodes-unavailable') {
-        useToastStore().addAlert(t('toastMessages.a1111CoreNodesUnavailable'))
-        return
-      }
-      if (outcome === 'not-a1111') {
-        this.showErrorOnFileLoad(file)
-        return
+      switch (outcome) {
+        case 'core-nodes-unavailable':
+          useToastStore().addAlert(t('toastMessages.a1111CoreNodesUnavailable'))
+          return
+        case 'not-a1111':
+          this.showErrorOnFileLoad(file)
+          return
+        case 'imported-without-embeddings':
+          useToastStore().add({
+            severity: 'warn',
+            summary: t('g.warning'),
+            detail: t('toastMessages.a1111EmbeddingsUnavailable')
+          })
+          break
+        case 'imported':
+          break
+        default: {
+          const unexpectedOutcome: never = outcome
+          throw new Error(
+            `Unhandled A1111 import outcome: ${unexpectedOutcome}`
+          )
+        }
       }
       await useWorkflowService().afterLoadNewGraph(
         fileName,
@@ -2232,12 +2247,31 @@ export class ComfyApp {
     this.clean()
 
     const ids = Object.keys(apiData)
+    // Export (API) flattens subgraph nodes to ids like "194:45". At the root
+    // graph a colon reads as an execution-id path: Locate walks into node
+    // 194's subgraph and finds nothing, and deleting an unrelated node 194
+    // retires every "194:"-prefixed missing report. Remap such ids to
+    // colon-free local ids before creating nodes.
+    const importedNodeIds = new Map<string, NodeId>()
+    {
+      const taken = new Set(ids.filter((id) => !id.includes(':')))
+      for (const id of ids) {
+        if (!id.includes(':')) {
+          importedNodeIds.set(id, toNodeId(isNaN(+id) ? id : +id))
+          continue
+        }
+        let candidate = id.replaceAll(':', '_')
+        while (taken.has(candidate)) candidate = `${candidate}_`
+        taken.add(candidate)
+        importedNodeIds.set(id, toNodeId(candidate))
+      }
+    }
     const missingNodeTypes: MissingNodeType[] = []
     const nodeReplacementStore = useNodeReplacementStore()
     await nodeReplacementStore.load()
     for (const id of ids) {
       const data = apiData[id]
-      const nodeId = toNodeId(isNaN(+id) ? id : +id)
+      const nodeId = importedNodeIds.get(id) ?? toNodeId(id)
       let node = LiteGraph.createNode(data.class_type)
       let placeholderEntry:
         | Extract<MissingNodeType, { type: string }>
@@ -2256,8 +2290,9 @@ export class ComfyApp {
           if (value instanceof Array) {
             node.addInput(input, '*')
           } else {
-            widgetValues.push(value)
-            widgetValuesNamed[input] = value
+            const widgetValue = unwrapExportedWidgetValue(value) as TWidgetValue
+            widgetValues.push(widgetValue)
+            widgetValuesNamed[input] = widgetValue
           }
         }
         node.last_serialization = {
@@ -2296,7 +2331,7 @@ export class ComfyApp {
 
     const processNodeInputs = (id: string) => {
       const data = apiData[id]
-      const currentNodeId = toNodeId(isNaN(+id) ? id : +id)
+      const currentNodeId = importedNodeIds.get(id) ?? toNodeId(id)
       const node = app.rootGraph.getNodeById(currentNodeId)
       if (!node) return
 
@@ -2304,7 +2339,9 @@ export class ComfyApp {
         const value = data.inputs[input]
         if (value instanceof Array) {
           const [fromId, fromSlot] = value
-          const fromNode = app.rootGraph.getNodeById(toNodeId(fromId))
+          const fromNode = app.rootGraph.getNodeById(
+            importedNodeIds.get(String(fromId)) ?? toNodeId(fromId)
+          )
           if (!fromNode) continue
 
           let toSlot = node.inputs?.findIndex((inp) => inp.name === input) ?? -1
@@ -2331,8 +2368,9 @@ export class ComfyApp {
         } else {
           const widget = node.widgets?.find((w) => w.name === input)
           if (widget) {
-            widget.value = value
-            widget.callback?.(value)
+            const widgetValue = unwrapExportedWidgetValue(value) as TWidgetValue
+            widget.value = widgetValue
+            widget.callback?.(widgetValue)
           }
         }
       }

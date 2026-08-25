@@ -11,11 +11,15 @@ import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import { t } from '@/i18n'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import type { NodeReplacement } from '@/platform/nodeReplacement/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import {
+  removePendingMissingNodeTypesByType,
+  updatePendingWarnings
+} from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app, sanitizeNodeName } from '@/scripts/app'
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { clearNodeOwnedStoreState } from '@/stores/clearNodeOwnedStoreState'
 import type { EndpointPatch, EndpointUpdate } from '@/stores/linkStore'
 import { useLinkStore } from '@/stores/linkStore'
@@ -398,6 +402,24 @@ function replaceWithMapping(
   return true
 }
 
+function removeReplacedMissingNodeTypes(types: string[]): void {
+  // Remove from the rendered store directly rather than re-projecting the
+  // cache into it: entries surfaced outside the load path (e.g. the
+  // missing_node_type rescan) exist only in the store, and a projection from
+  // a cache that never saw them would wipe them.
+  useMissingNodesErrorStore().removeMissingNodesByType(types)
+
+  const activeWorkflow = useWorkflowStore().activeWorkflow
+  if (!activeWorkflow) return
+
+  updatePendingWarnings(activeWorkflow, {
+    missingNodeTypes: removePendingMissingNodeTypesByType(
+      activeWorkflow.pendingWarnings?.missingNodeTypes,
+      types
+    )
+  })
+}
+
 export function useNodeReplacement() {
   const toastStore = useToastStore()
 
@@ -520,24 +542,24 @@ export function useNodeReplacement() {
 
   /**
    * Replaces all nodes in a single swap group and removes successfully
-   * replaced types from the missing nodes error store.
+   * replaced types from pending warnings and rendered state.
    */
   function replaceGroup(group: ReplacementGroup): void {
     const replaced = replaceNodesInPlace(group.nodeTypes)
     if (replaced.length > 0) {
-      useMissingNodesErrorStore().removeMissingNodesByType(replaced)
+      removeReplacedMissingNodeTypes(replaced)
     }
   }
 
   /**
    * Replaces every available node across all swap groups and removes
-   * the succeeded types from the missing nodes error store.
+   * the succeeded types from pending warnings and rendered state.
    */
   function replaceAllGroups(groups: ReplacementGroup[]): void {
     const allNodeTypes = groups.flatMap((g) => g.nodeTypes)
     const replaced = replaceNodesInPlace(allNodeTypes)
     if (replaced.length > 0) {
-      useMissingNodesErrorStore().removeMissingNodesByType(replaced)
+      removeReplacedMissingNodeTypes(replaced)
     }
   }
 

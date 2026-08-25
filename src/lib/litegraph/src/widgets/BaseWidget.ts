@@ -77,7 +77,35 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   }
 
   linkedWidgets?: IBaseWidget[]
-  name: string
+  private _name!: string
+  get name(): string {
+    return this._name
+  }
+
+  set name(value: string) {
+    const previous = this._name
+    if (previous === undefined || previous === value) {
+      this._name = value
+      return
+    }
+
+    const graphId = this.node.graph?.rootGraph.id
+    const nodeId = this._state.nodeId
+    if (!graphId || nodeId === undefined) {
+      this._name = value
+      return
+    }
+
+    const moved = useWidgetValueStore().renameWidget(
+      widgetId(graphId, nodeId, previous),
+      widgetId(graphId, nodeId, value)
+    )
+    if (!moved) return
+
+    this._name = value
+    this._state = moved
+  }
+
   options: TWidget['options']
   type: TWidget['type']
   y: number = 0
