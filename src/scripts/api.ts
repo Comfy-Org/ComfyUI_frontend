@@ -569,10 +569,8 @@ export class ComfyApi extends EventTarget {
     addHeaderEntry(headers, 'Comfy-User', this.user)
 
     const controller = options?.signal ? null : new AbortController()
-    const startTime = Date.now()
     const timeoutId = controller
       ? setTimeout(() => {
-          const duration_ms = Date.now() - startTime
           const method = (options?.method ?? 'GET').toUpperCase()
           const routeTemplate = getFetchRouteTemplate(route)
 
@@ -580,16 +578,12 @@ export class ComfyApi extends EventTarget {
             category: 'fetch',
             message: `Timeout on ${method} ${routeTemplate}`,
             level: 'warning',
-            data: {
-              duration_ms,
-              timeout_ms: FETCH_RESPONSE_HEADERS_TIMEOUT_MS
-            }
+            data: { timeout_ms: FETCH_RESPONSE_HEADERS_TIMEOUT_MS }
           })
 
           useTelemetry()?.trackFetchTimeout({
             route: routeTemplate,
             method,
-            duration_ms,
             timeout_ms: FETCH_RESPONSE_HEADERS_TIMEOUT_MS
           })
 
