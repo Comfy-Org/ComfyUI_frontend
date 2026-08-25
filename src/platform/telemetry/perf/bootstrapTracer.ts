@@ -86,15 +86,19 @@ class BootstrapTracer {
    * event to analytics.
    */
   summary(): { name: string; durationMs: number; startMs: number }[] {
-    return performance
-      .getEntriesByType('measure')
-      .filter((e) => e.name.startsWith('bootstrap/'))
-      .sort((a, b) => a.startTime - b.startTime)
-      .map((e) => ({
-        name: e.name.replace(/^bootstrap\//, ''),
-        durationMs: Math.round(e.duration),
-        startMs: Math.round(e.startTime)
-      }))
+    try {
+      return performance
+        .getEntriesByType('measure')
+        .filter((e) => e.name.startsWith('bootstrap/'))
+        .sort((a, b) => a.startTime - b.startTime)
+        .map((e) => ({
+          name: e.name.replace(/^bootstrap\//, ''),
+          durationMs: Math.round(e.duration),
+          startMs: Math.round(e.startTime)
+        }))
+    } catch {
+      return []
+    }
   }
 
   /**
@@ -102,7 +106,9 @@ class BootstrapTracer {
    * Only emits in dev or when DEBUG_PERF is set.
    */
   logSummary(): void {
-    if (import.meta.env.DEV || localStorage.getItem('DEBUG_PERF') === 'true') {
+    try {
+      if (!import.meta.env.DEV && localStorage.getItem('DEBUG_PERF') !== 'true')
+        return
       const rows = this.summary()
       if (rows.length === 0) return
       const total = rows.reduce((acc, r) => acc + r.durationMs, 0)
@@ -113,6 +119,8 @@ class BootstrapTracer {
             .join('\n') +
           `\n  Total instrumented: ${total}ms`
       )
+    } catch {
+      return
     }
   }
 }

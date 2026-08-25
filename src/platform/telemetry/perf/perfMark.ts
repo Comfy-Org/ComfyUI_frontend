@@ -17,6 +17,11 @@ export interface PerfSpan {
   stop(): number
 }
 
+const NOOP_PERF_SPAN: PerfSpan = {
+  startMs: 0,
+  stop: () => 0
+}
+
 /**
  * Begin a named performance span.
  *
@@ -34,18 +39,26 @@ export function perfMark(name: string): PerfSpan {
   const startName = `${name}:start`
   const endName = `${name}:end`
 
-  performance.mark(startName)
-  const startMs = performance.now()
+  try {
+    performance.mark(startName)
+    const startMs = performance.now()
 
-  return {
-    startMs,
-    stop(): number {
-      performance.mark(endName)
-      const durationMs = _measure(name, startName, endName, startMs)
-      _emitToDatadog(name, durationMs)
-      _emitToSentry(name, durationMs)
-      return durationMs
+    return {
+      startMs,
+      stop(): number {
+        try {
+          performance.mark(endName)
+          const durationMs = _measure(name, startName, endName, startMs)
+          _emitToDatadog(name, durationMs)
+          _emitToSentry(name, durationMs)
+          return durationMs
+        } catch {
+          return 0
+        }
+      }
     }
+  } catch {
+    return NOOP_PERF_SPAN
   }
 }
 
@@ -54,9 +67,13 @@ export function perfMark(name: string): PerfSpan {
  * Shows up in the Datadog RUM timeline as a custom action.
  */
 export function perfPoint(name: string): void {
-  performance.mark(name)
-  _emitToDatadog(name, 0)
-  _emitToSentry(name, 0)
+  try {
+    performance.mark(name)
+    _emitToDatadog(name, 0)
+    _emitToSentry(name, 0)
+  } catch {
+    return
+  }
 }
 
 function _measure(
@@ -88,14 +105,16 @@ function _emitToSentry(name: string, durationMs: number): void {
     // addBreadcrumb is a module-level function in @sentry/vue v10 — safe to
     // call even before Sentry.init() completes (it queues internally).
     // Dynamic import keeps this out of OSS bundles via tree-shaking.
-    void import('@sentry/vue').then(({ addBreadcrumb }) => {
-      addBreadcrumb({
-        category: 'perf',
-        message: name,
-        level: 'info',
-        data: { duration_ms: durationMs }
+    void import('@sentry/vue')
+      .then(({ addBreadcrumb }) => {
+        addBreadcrumb({
+          category: 'perf',
+          message: name,
+          level: 'info',
+          data: { duration_ms: durationMs }
+        })
       })
-    })
+      .catch(() => undefined)
   } catch {
     // never break the app for telemetry
   }
@@ -106,20 +125,28 @@ function _emitToSentry(name: string, durationMs: number): void {
  * Useful for debugging in DevTools or in unit tests.
  */
 export function getPerfEntries(prefix: string): PerformanceEntry[] {
-  return performance
-    .getEntriesByType('measure')
-    .filter((e) => e.name.startsWith(prefix))
-    .concat(
-      performance
-        .getEntriesByType('mark')
-        .filter((e) => e.name.startsWith(prefix))
-    )
+  try {
+    return performance
+      .getEntriesByType('measure')
+      .filter((e) => e.name.startsWith(prefix))
+      .concat(
+        performance
+          .getEntriesByType('mark')
+          .filter((e) => e.name.startsWith(prefix))
+      )
+  } catch {
+    return []
+  }
 }
 
 /** Clear all perf marks/measures with the given prefix (test cleanup). */
 export function clearPerfEntries(prefix: string): void {
-  for (const e of getPerfEntries(prefix)) {
-    if (e.entryType === 'mark') performance.clearMarks(e.name)
-    if (e.entryType === 'measure') performance.clearMeasures(e.name)
+  try {
+    for (const e of getPerfEntries(prefix)) {
+      if (e.entryType === 'mark') performance.clearMarks(e.name)
+      if (e.entryType === 'measure') performance.clearMeasures(e.name)
+    }
+  } catch {
+    return
   }
 }
