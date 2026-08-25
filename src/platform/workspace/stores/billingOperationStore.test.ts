@@ -19,7 +19,6 @@ const mockFetchStatus = vi.fn()
 const mockFetchBalance = vi.fn()
 const mockReconcileSubscriptionSuccess = vi.fn()
 const mockRefreshCapabilities = vi.fn()
-const mockCanSubscribeSelfServe = ref(true)
 const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
 
 vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
@@ -34,7 +33,6 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
 
 vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
   useBillingCapabilities: () => ({
-    canSubscribeSelfServe: mockCanSubscribeSelfServe,
     refresh: mockRefreshCapabilities
   })
 }))
@@ -113,7 +111,6 @@ describe('billingOperationStore', () => {
   beforeEach(() => {
     mockDistributionTypes.isCloud = true
     mockActiveWorkspaceId.value = 'workspace-1'
-    mockCanSubscribeSelfServe.value = true
     mockFeatureFlags.embeddedCheckoutEnabled = true
     vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_test_3ds')
     mockHandleNextAction.mockResolvedValue({})
@@ -361,10 +358,6 @@ describe('billingOperationStore', () => {
         started_at: new Date().toISOString(),
         completed_at: new Date().toISOString()
       })
-      mockRefreshCapabilities.mockImplementationOnce(async () => {
-        mockCanSubscribeSelfServe.value = false
-      })
-
       const store = useBillingOperationStore()
       void store.startOperation('op-1', 'subscription')
 
@@ -373,7 +366,7 @@ describe('billingOperationStore', () => {
       const operation = store.getOperation('op-1')
       expect(operation?.status).toBe('succeeded')
       expect(store.hasPendingOperations).toBe(false)
-      expect(mockCanSubscribeSelfServe.value).toBe(false)
+      expect(mockRefreshCapabilities).toHaveBeenCalledOnce()
 
       expect(mockReconcileSubscriptionSuccess).toHaveBeenCalledOnce()
       expect(mockFetchStatus).not.toHaveBeenCalled()
