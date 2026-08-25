@@ -4,6 +4,7 @@ import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type {
+  AgentCancelAccepted,
   AgentDraftSnapshot,
   AgentTurnAccepted,
   AgentWsEvent,
@@ -24,6 +25,8 @@ const TURN_ACCEPTED: AgentTurnAccepted = {
   thread_id: THREAD_ID,
   workflow_id: WORKFLOW_ID
 }
+
+const CANCEL_ACCEPTED: AgentCancelAccepted = { status: 'cancelling' }
 
 const DRAFT_GRAPH: ComfyWorkflowJSON = {
   version: 0.4,
@@ -262,14 +265,25 @@ async function mockAgentBoot(
     const request = route.request()
     if (request.method() === 'POST') {
       postedMessages.push(request.postData() ?? '')
+      const accepted: AgentTurnAccepted = {
+        ...TURN_ACCEPTED,
+        message_id:
+          postedMessages.length === 1
+            ? TURN_ID
+            : `${TURN_ID}-${postedMessages.length}`
+      }
       return route.fulfill({
         status: 202,
         contentType: 'application/json',
-        body: JSON.stringify(TURN_ACCEPTED)
+        body: JSON.stringify(accepted)
       })
     }
     return route.fulfill(jsonRoute([]))
   })
+
+  await page.route('**/api/agent/threads/*/messages/*/cancel', (route: Route) =>
+    route.fulfill(jsonRoute(CANCEL_ACCEPTED))
+  )
 
   await page.route('**/api/agent/draft**', (r) =>
     r.fulfill(jsonRoute(DRAFT_SNAPSHOT))

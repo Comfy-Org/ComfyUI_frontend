@@ -37,6 +37,7 @@ function renderMessage(props: {
   text: string
   attachments?: { name: string; previewUrl?: string; ref?: string }[]
   tags?: string[]
+  editable?: boolean
 }) {
   return render(UserMessage, {
     props,
@@ -136,6 +137,29 @@ describe('UserMessage', () => {
 
     await user.keyboard('{Enter}')
     expect(clipboard.copy).toHaveBeenCalledWith('make it cinematic')
+  })
+
+  it('offers an accessible edit action only when the prompt is editable', async () => {
+    const user = userEvent.setup()
+    const prompt = 'make it cinematic'
+    const { emitted } = renderMessage({ text: prompt, editable: true })
+
+    const editButton = screen.getByRole('button', { name: t('g.edit') })
+    await user.hover(editButton)
+    expect(
+      await screen.findByRole('tooltip', { hidden: true })
+    ).toHaveTextContent(t('g.edit'))
+    await user.click(editButton)
+
+    expect(emitted().edit).toEqual([[prompt]])
+  })
+
+  it('does not offer edit for a settled prompt without edit eligibility', () => {
+    renderMessage({ text: 'make it cinematic' })
+
+    expect(
+      screen.queryByRole('button', { name: t('g.edit') })
+    ).not.toBeInTheDocument()
   })
 
   it('offers no copy action on an attachment-only message', () => {
