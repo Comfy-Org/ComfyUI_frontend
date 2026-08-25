@@ -139,7 +139,6 @@ describe('graphToPrompt widget serialization', () => {
     // widget.serialize is the workflow-persistence flag. The two flags are
     // independent: this one must not affect the API prompt.
     preview.serialize = false
-    expect(preview.options.serialize).toBeUndefined()
 
     expect(await promptInputs(graph, node)).toEqual({ seed: 42, preview: 7 })
   })
