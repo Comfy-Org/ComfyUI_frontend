@@ -97,6 +97,33 @@ describe('watchForTopupBalanceUpdate', () => {
     expect(mockFetchBalance.mock.calls.length).toBeGreaterThan(1)
   })
 
+  it('refreshes when the window regains focus', async () => {
+    watchForTopupBalanceUpdate()
+
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible')
+    window.dispatchEvent(new Event('focus'))
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(mockFetchBalance).toHaveBeenCalledTimes(1)
+  })
+
+  it('still refreshes after payment when earlier returns spent the run cap', async () => {
+    watchForTopupBalanceUpdate()
+
+    // Five pre-payment glances consume every scheduled run.
+    for (let i = 0; i < 5; i++) {
+      returnToApp()
+      await vi.advanceTimersByTimeAsync(60_000)
+    }
+    mockFetchBalance.mockClear()
+    mockFetchBalance.mockResolvedValue({ amount_micros: 6_000 })
+
+    returnToApp()
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(mockFetchBalance).toHaveBeenCalledTimes(1)
+  })
+
   it('keeps polling when a refresh rejects', async () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {})
     mockFetchBalance.mockRejectedValue(new Error('network'))

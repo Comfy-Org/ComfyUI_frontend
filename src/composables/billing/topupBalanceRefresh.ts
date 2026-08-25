@@ -15,8 +15,8 @@ const RETRY_GAPS_MS = [0, 2_000, 5_000, 10_000, 20_000]
 /** Drop the watch if the user never returns, rather than leaking listeners. */
 const WATCH_LIFETIME_MS = 15 * 60_000
 
-/** Bounds the polling a tab-switching user can trigger by re-arming. */
-const MAX_RUNS = 5
+/** Full retry schedules a returning user can trigger; later returns get a single fetch. */
+const MAX_SCHEDULED_RUNS = 5
 
 let stopActiveWatch: (() => void) | null = null
 
@@ -79,14 +79,16 @@ export function watchForTopupBalanceUpdate(): void {
 
   async function onReturn() {
     if (running || stopped || document.visibilityState !== 'visible') return
-    if (runs >= MAX_RUNS) {
-      stop()
-      return
-    }
     running = true
     runs += 1
 
-    for (const gap of RETRY_GAPS_MS) {
+    // Past the run cap a return still refreshes once — the return after the
+    // actual payment must fetch no matter how often the user glanced back
+    // beforehand. Only the retry schedule is withheld; the lifetime timer is
+    // the sole terminal condition.
+    const gaps = runs > MAX_SCHEDULED_RUNS ? [0] : RETRY_GAPS_MS
+
+    for (const gap of gaps) {
       await wait(gap)
       if (stopped) return
       if (await refresh()) {
@@ -96,9 +98,6 @@ export function watchForTopupBalanceUpdate(): void {
       if (stopped) return
     }
 
-    // The schedule can be spent on a bounce back to the app *before* paying.
-    // Stay armed for the return that follows the actual payment; the watch
-    // lifetime is what bounds this, not the number of returns.
     running = false
   }
 
