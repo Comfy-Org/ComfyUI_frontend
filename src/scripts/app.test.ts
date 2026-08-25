@@ -68,10 +68,12 @@ const {
   mockWorkflowService
 } = vi.hoisted(() => ({
   mockApiKeyAuthStore: {
-    getApiKey: vi.fn()
+    getApiKey: vi.fn(),
+    isAuthenticated: false
   },
   mockAuthStore: {
-    getWorkspaceAuthToken: vi.fn()
+    getWorkspaceAuthToken: vi.fn(),
+    currentUser: null as { uid: string } | null
   },
   mockSettingStore: {
     get: vi.fn()
@@ -294,6 +296,8 @@ describe('ComfyApp', () => {
       return workflow
     })
     mockApiKeyAuthStore.getApiKey.mockReturnValue(undefined)
+    mockApiKeyAuthStore.isAuthenticated = false
+    mockAuthStore.currentUser = null
     mockAuthStore.getWorkspaceAuthToken.mockResolvedValue('workspace-token')
     mockTeamWorkspaceStore.activeWorkspaceId = 'workspace-a'
     mockTeamWorkspaceStore.workspaceTransitionGeneration = 0
@@ -500,6 +504,36 @@ describe('ComfyApp', () => {
       await expect(app.queuePrompt(0)).resolves.toBe(false)
       expect(queuePrompt).not.toHaveBeenCalled()
       expect(showDialog).toHaveBeenCalledOnce()
+    })
+
+    it('does not accept the API key when a Firebase session lost its workspace token', async () => {
+      prepareEmptyPromptQueue()
+      mockAuthStore.currentUser = { uid: 'firebase-user' }
+      mockApiKeyAuthStore.isAuthenticated = true
+      mockApiKeyAuthStore.getApiKey.mockReturnValue('api-key')
+      mockAuthStore.getWorkspaceAuthToken.mockResolvedValueOnce(undefined)
+      const queuePrompt = vi.spyOn(api, 'queuePrompt')
+      const showDialog = vi.spyOn(useDialogStore(), 'showDialog')
+
+      await expect(app.queuePrompt(0)).resolves.toBe(false)
+      expect(queuePrompt).not.toHaveBeenCalled()
+      expect(showDialog).toHaveBeenCalledOnce()
+    })
+
+    it('submits with the validated API key when the key session has a workspace', async () => {
+      prepareEmptyPromptQueue()
+      mockApiKeyAuthStore.isAuthenticated = true
+      mockApiKeyAuthStore.getApiKey.mockReturnValue('comfyui-valid-key')
+      mockAuthStore.getWorkspaceAuthToken.mockResolvedValueOnce(undefined)
+      const queuePrompt = vi
+        .spyOn(api, 'queuePrompt')
+        .mockImplementation(() => {
+          expect(api.apiKey).toBe('comfyui-valid-key')
+          return Promise.resolve({ prompt_id: 'job-1', error: '' })
+        })
+
+      await expect(app.queuePrompt(0)).resolves.toBe(true)
+      expect(queuePrompt).toHaveBeenCalledOnce()
     })
 
     it('does not submit after switching away and back to the same workspace', async () => {
