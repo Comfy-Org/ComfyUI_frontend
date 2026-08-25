@@ -6,22 +6,22 @@ Date: 2026-08-25
 
 Proposed
 
-Derivation record for program decision D-gl-A6. The direction is already
-carried by ADR-0003's merge-boundary reconciliation amendment (2026-08-23).
-The current local-import behavior and the future CRDT behavior use different
-materialization paths; this ADR models both so the responsibility boundary is
-reviewable independently of the pending D-dq-04 bundle (#15720 tests + #15761
-docs).
+This ADR records program decision D-gl-A6. ADR-0003's merge-boundary
+reconciliation amendment (2026-08-23) already carries the direction. This ADR
+separates the current local-import behavior from the future CRDT behavior so
+their different materialization paths and responsibilities are explicit.
+Formal sign-off remains pending.
 
 ## Context
 
 ### The id space is the problem, not the CRDT
 
-ComfyUI node ids (`NodeId`) are small bare integers assigned per graph and
-persisted in serialized workflows. They are **not actor-scoped**: nothing in
-the id encodes which client (or which historical workflow file) minted it. In
-a single-client world this is harmless — the graph that mints an id is the
-only authority over it.
+ComfyUI mints node ids (`NodeId`) from a graph-local numeric counter. The
+internal type is a branded string, while serialized workflows accept numbers
+or strings. Neither representation is **actor-scoped**: nothing in the id
+encodes which client or historical workflow file minted it. In a single-client
+world this is harmless because the graph that mints an id is its only
+authority.
 
 The CRDT-based collaboration direction (ADR-0003) and the ECS store migration
 (ADR-0008) break that assumption. Two replicas can each independently mint
@@ -33,15 +33,14 @@ another merge-shaped operation inserts externally minted content.
 
 ### What a collision means
 
-Per the collision-contract taxonomy (D-gl-A4, with pending test coverage in
-pull request 15720 and a pending ADR-0003/ADR-0008 documentation fold in
-pull request 15761):
+ADR-0008 defines two collision contracts:
 
 - **Identity keys reject.** A collision on an identity key is two different
   entities claiming one name. They must never be merged; merging silently
   destroys one entity's history.
-- **Structural keys resolve.** Same position + same type is the same logical
-  slot; carry the value.
+- **Structural keys resolve.** The same derived key and type identify the same
+  logical slot, so the registry carries the existing value forward. For
+  widgets, the key is `graphId:nodeId:name`.
 
 A duplicate `NodeId` is an identity-key collision. The question this ADR
 answers is _where_ the rejection-and-recovery happens.
@@ -71,8 +70,9 @@ Concretely:
    When they are, the applier must reconcile concurrent identity collisions
    deterministically before calling the registration layer. The current
    `nodeShellLifecycle` loop is not that applier.
-4. A replacement id must come from a space that cannot re-collide, so
-   reconciliation terminates and never ping-pongs.
+4. Future CRDT replacements must come from a globally collision-free space so
+   every replica derives the same mapping and reconciliation terminates. The
+   local path instead retries graph-local ids until registration succeeds.
 
 ### Local reminting and future CRDT convergence
 
@@ -182,13 +182,15 @@ Tag colliding entries with an epoch/namespace and reconcile lazily.
   warning is pending in #15720; current `main` does not yet emit it.
 - **Known deliberate gap (open at time of writing):** the remint loop does
   not yet record an old→new id map, and `LGraph.configure` restores links
-  before nodes are added — so serialized link endpoints referencing the old
-  id dangle after a remint. ADR-0008 (as amended in #15761) documents the gap
-  and its two candidate fixes: (a) record the map during the remint loop and
-  remap serialized link/reroute/group endpoints before `configure` restores
-  connections, or (b) reject ambiguous payloads outright. Pending #15882
-  implements option (a). Until it lands, reminting is correct for node
-  identity but incomplete for references.
+  before nodes are added. A serialized link endpoint that references the old
+  id can therefore remain attached to the incumbent node or dangle after a
+  remint. ADR-0008 (as amended in #15761) documents two candidate fixes:
+  (a) record the map and remap the payload's link endpoints before nodes
+  configure their connections, or (b) reject ambiguous payloads outright.
+  Pending #15882 implements option (a). Reroutes reference link ids, and
+  groups do not store node endpoints, so neither requires node-id remapping.
+  Until #15882 lands, reminting is correct for node identity but incomplete
+  for link references.
 - Imports/pastes of colliding content mutate the incoming copy's id. Any
   external system that memorized the old id (e.g. a URL fragment or a test
   fixture) will miss; this is inherent to any rejection-based scheme and is
@@ -221,12 +223,13 @@ Tag colliding entries with an epoch/namespace and reconcile lazily.
   claimed id is already registered locally. Never applied to the incumbent.
 - **Identity key** — a key whose collision means two different entities claim
   one name (e.g. `NodeId`). Contract: reject.
-- **Structural key** — a key derived from position/shape where collision
-  means "same logical slot" (e.g. widget slot index + type). Contract:
-  resolve.
+- **Structural key** — a key computed from an entity's context rather than
+  minted. A collision means "same logical slot." `WidgetId`, for example, is
+  derived from `graphId:nodeId:name`, with widget type used to choose the
+  resolution. Contract: resolve.
 - **Actor-scoped id** — an id embedding the minting client's identity
   (actor id + counter), collision-free by construction; the eventual
-  replacement for bare-integer node ids.
+  replacement for graph-local node ids.
 - **Operation stamp** — immutable actor and sequence metadata used to order
   concurrent semantic operations deterministically on every replica.
 - **Registry no-collision invariant** — a store never holds two different
