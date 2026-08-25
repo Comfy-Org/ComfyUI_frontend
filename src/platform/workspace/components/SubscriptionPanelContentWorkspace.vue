@@ -177,14 +177,7 @@
               </div>
               <div class="flex flex-wrap gap-2 md:ml-auto">
                 <Button
-                  v-if="
-                    isCloud &&
-                    permissions.canManageSubscription &&
-                    (billingType === 'workspace' ||
-                      (isSubscriptionEnded &&
-                        !isFreeTierPlan &&
-                        subscription !== null))
-                  "
+                  v-if="isCloud && permissions.canManageSubscription"
                   size="lg"
                   variant="secondary"
                   class="rounded-lg bg-interface-menu-component-surface-selected px-4 text-sm font-normal text-text-primary"
@@ -242,7 +235,10 @@
               </div>
 
               <div
-                v-if="canAccessSubscriptionFeatures"
+                v-if="
+                  canAccessSubscriptionFeatures ||
+                  (isCloud && permissions.canManageSubscription)
+                "
                 class="flex flex-wrap gap-2 md:ml-auto"
               >
                 <Button
@@ -279,6 +275,7 @@
                 <Button
                   v-else-if="
                     !isSubscriptionCancelled &&
+                    canAccessSubscriptionFeatures &&
                     permissions.canManageSubscription
                   "
                   size="lg"
@@ -399,6 +396,7 @@
       <SubscriptionFooterLinks
         class="mt-auto pt-6"
         :show-invoice-history="permissions.canManageSubscription"
+        :show-usage-activity="workspaceRole === 'owner'"
       />
     </template>
   </div>
@@ -435,7 +433,7 @@ import {
 const workspaceStore = useTeamWorkspaceStore()
 const { isWorkspaceSubscribed, isInPersonalWorkspace } =
   storeToRefs(workspaceStore)
-const { permissions, isSubscriptionCancelled } = useWorkspaceUI()
+const { permissions, isSubscriptionCancelled, workspaceRole } = useWorkspaceUI()
 const { maxAvailable: freeRunsAllowance, quotaEnabled: freeRunsQuotaEnabled } =
   useFreeTierQuota()
 const { t, n, locale } = useI18n()
@@ -452,7 +450,6 @@ function openSubscriptionVerification() {
 }
 
 const {
-  type: billingType,
   canAccessSubscriptionFeatures,
   isFreeTier: isFreeTierPlan,
   isTeamPlan,
@@ -473,19 +470,14 @@ const { isResubscribing, handleResubscribe } = useResubscribe()
 const { displayPrice, priceUnitLabel } = useWorkspacePlanPricing()
 const { menuEntries } = useWorkspaceMenuItems()
 
-const isTerminalPersonalSubscription = computed(
-  () =>
-    isInPersonalWorkspace.value &&
-    !canAccessSubscriptionFeatures.value &&
-    billingStatus.value === 'inactive'
-)
-
-const isSubscriptionEnded = computed(
-  () =>
-    subscriptionStatus.value === 'ended' ||
-    (isSubscriptionCancelled.value && !canAccessSubscriptionFeatures.value) ||
-    isTerminalPersonalSubscription.value
-)
+const isSubscriptionEnded = computed(() => {
+  if (subscriptionStatus.value === 'ended') return true
+  if (canAccessSubscriptionFeatures.value) return false
+  return (
+    isSubscriptionCancelled.value ||
+    (isInPersonalWorkspace.value && billingStatus.value === 'inactive')
+  )
+})
 
 // Show subscribe prompt to owners without active subscription. A cancelled plan
 // stays active until its end date, so it keeps the subscribed treatment.

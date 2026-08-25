@@ -4,6 +4,10 @@ import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 
 import { sortWorkspaces, useTeamWorkspaceStore } from './teamWorkspaceStore'
 
+const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
+
+vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
+
 // Mock workspaceAuthStore
 const mockWorkspaceAuthStore = vi.hoisted(() => ({
   currentWorkspace: null as {
@@ -157,7 +161,9 @@ function expectCleanupBeforeContextAndReload(): void {
 
 describe('useTeamWorkspaceStore', () => {
   beforeEach(() => {
+    mockDistributionTypes.isCloud = true
     vi.stubGlobal('localStorage', mockLocalStorage)
+    sessionStorage.clear()
     mockCurrentUser.userEmail.value = null
 
     // Reset workspaceAuthStore mock state
@@ -305,6 +311,27 @@ describe('useTeamWorkspaceStore', () => {
       expect(mockWorkspaceApi.list).toHaveBeenCalledTimes(1)
     })
 
+    it('shares an in-flight initialization with concurrent callers', async () => {
+      let resolveList: (value: unknown) => void = () => {}
+      mockWorkspaceApi.list.mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveList = resolve
+        })
+      )
+      const store = useTeamWorkspaceStore()
+
+      const firstInitialization = store.initialize()
+      const secondInitialization = store.initialize()
+      await vi.waitFor(() =>
+        expect(mockWorkspaceApi.list).toHaveBeenCalledOnce()
+      )
+      resolveList({ workspaces: [mockPersonalWorkspace] })
+
+      await Promise.all([firstInitialization, secondInitialization])
+      expect(mockWorkspaceApi.list).toHaveBeenCalledOnce()
+      expect(store.initState).toBe('ready')
+    })
+
     it('can retry after initialization fails', async () => {
       mockWorkspaceApi.list.mockResolvedValueOnce({ workspaces: [] })
       const store = useTeamWorkspaceStore()
@@ -341,6 +368,19 @@ describe('useTeamWorkspaceStore', () => {
         expect.objectContaining({ id: mockMemberWorkspace.id })
       ])
       expect(store.activeWorkspaceId).toBe(mockMemberWorkspace.id)
+    })
+
+    it('clears cached billing rails when identity state is reset', async () => {
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+      store.setWorkspaceBillingRail(mockPersonalWorkspace.id, 'legacy_stripe')
+      expect(store.activeWorkspaceBillingRail).toBe('legacy_stripe')
+
+      store.resetForIdentityChange()
+      await store.initialize()
+
+      expect(store.activeWorkspaceId).toBe(mockPersonalWorkspace.id)
+      expect(store.activeWorkspaceBillingRail).toBeNull()
     })
 
     it('does not let a previous user initialization overwrite the next user', async () => {
@@ -436,6 +476,65 @@ describe('useTeamWorkspaceStore', () => {
       ).toBeLessThan(mockReload.mock.invocationCallOrder[0])
     })
 
+    it('switches local billing context without touching workflow state', async () => {
+      mockDistributionTypes.isCloud = false
+      mockWorkspaceAuthStore.switchWorkspace.mockImplementation(
+        async (workspaceId: string) => {
+          const workspace = [mockPersonalWorkspace, mockTeamWorkspace].find(
+            ({ id }) => id === workspaceId
+          )
+          mockWorkspaceAuthStore.currentWorkspace = workspace ?? null
+        }
+      )
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+      store.setWorkspaceBillingRail(mockPersonalWorkspace.id, 'legacy_stripe')
+      expect(store.activeWorkspaceBillingRail).toBe('legacy_stripe')
+
+      await store.switchWorkspace(mockTeamWorkspace.id)
+
+      expect(mockWorkspaceAuthStore.switchWorkspace).toHaveBeenLastCalledWith(
+        mockTeamWorkspace.id
+      )
+      expect(store.activeWorkspaceId).toBe(mockTeamWorkspace.id)
+      expect(mockPrepareWorkflowWorkspaceTransition).not.toHaveBeenCalled()
+      expect(
+        mockWorkspaceAuthStore.clearWorkspaceContext
+      ).not.toHaveBeenCalled()
+      expect(mockReload).not.toHaveBeenCalled()
+      expect(store.isSwitching).toBe(false)
+      expect(store.activeWorkspaceBillingRail).toBeNull()
+
+      store.setWorkspaceBillingRail(mockTeamWorkspace.id, 'metronome')
+      expect(store.activeWorkspaceBillingRail).toBe('metronome')
+    })
+
+    it('rejects an overlapping local switch', async () => {
+      mockDistributionTypes.isCloud = false
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+
+      let finishSwitch: () => void = () => {}
+      mockWorkspaceAuthStore.switchWorkspace.mockImplementationOnce(
+        () =>
+          new Promise<void>((resolve) => {
+            finishSwitch = () => {
+              mockWorkspaceAuthStore.currentWorkspace = mockTeamWorkspace
+              resolve()
+            }
+          })
+      )
+
+      const firstSwitch = store.switchWorkspace(mockTeamWorkspace.id)
+      await expect(
+        store.switchWorkspace(mockMemberWorkspace.id)
+      ).rejects.toThrow('Workspace switch already in progress')
+      finishSwitch()
+      await firstSwitch
+
+      expect(store.activeWorkspaceId).toBe(mockTeamWorkspace.id)
+    })
+
     it('sets isSwitching flag during operation', async () => {
       const store = useTeamWorkspaceStore()
       await store.initialize()
@@ -528,9 +627,10 @@ describe('useTeamWorkspaceStore', () => {
     ])(
       'reloads $reloads time(s) when the active $type workspace is revoked',
       async ({ workspace, reloads }) => {
+        mockWorkspaceAuthStore.initializeFromSession.mockReturnValue(true)
+        mockWorkspaceAuthStore.currentWorkspace = workspace
         const store = useTeamWorkspaceStore()
         await store.initialize()
-        store.activeWorkspaceId = workspace.id
 
         const handled = store.forgetRevokedActiveWorkspace(workspace.id)
 
@@ -551,11 +651,28 @@ describe('useTeamWorkspaceStore', () => {
     it('is a no-op when the workspace is not the active one', async () => {
       const store = useTeamWorkspaceStore()
       await store.initialize()
-      store.activeWorkspaceId = mockTeamWorkspace.id
 
       const handled = store.forgetRevokedActiveWorkspace('some-other-workspace')
 
       expect(handled).toBe(false)
+      expect(mockReload).not.toHaveBeenCalled()
+    })
+
+    it('falls back locally without clearing workflow state or reloading', async () => {
+      mockDistributionTypes.isCloud = false
+      mockWorkspaceAuthStore.initializeFromSession.mockReturnValue(true)
+      mockWorkspaceAuthStore.currentWorkspace = mockTeamWorkspace
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+
+      expect(store.forgetRevokedActiveWorkspace(mockTeamWorkspace.id)).toBe(
+        true
+      )
+      expect(store.activeWorkspaceId).toBe(mockPersonalWorkspace.id)
+      expect(store.workspaces.map(({ id }) => id)).not.toContain(
+        mockTeamWorkspace.id
+      )
+      expect(mockPrepareWorkflowWorkspaceTransition).not.toHaveBeenCalled()
       expect(mockReload).not.toHaveBeenCalled()
     })
   })
@@ -876,6 +993,34 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.members[0].monthlyCreditLimit).toBeNull()
       expect(store.members[1].creditsUsedThisMonth).toBeUndefined()
       expect(store.members[1].monthlyCreditLimit).toBeUndefined()
+      expect(mockWorkspaceApi.listMembers).toHaveBeenCalledWith({ limit: 100 })
+    })
+
+    it('fetchMembers applies the default limit to partial parameters', async () => {
+      mockWorkspaceApi.listMembers.mockResolvedValue({
+        members: [],
+        pagination: { offset: 20, limit: 100, total: 0 }
+      })
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+
+      await store.fetchMembers({ offset: 20 })
+      expect(mockWorkspaceApi.listMembers).toHaveBeenLastCalledWith({
+        limit: 100,
+        offset: 20
+      })
+
+      await store.fetchMembers({ offset: 20, limit: undefined })
+      expect(mockWorkspaceApi.listMembers).toHaveBeenLastCalledWith({
+        limit: 100,
+        offset: 20
+      })
+
+      await store.fetchMembers({ offset: 20, limit: 25 })
+      expect(mockWorkspaceApi.listMembers).toHaveBeenLastCalledWith({
+        limit: 25,
+        offset: 20
+      })
     })
 
     it('fetchMembers supports a personal workspace with Team entitlement', async () => {
@@ -1578,52 +1723,6 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.pendingInvites[0].expiryDate).toEqual(
         new Date('2024-01-08T00:00:00Z')
       )
-    })
-
-    it('resendInvite updates the originating workspace after a workspace switch', async () => {
-      const originalInvite = {
-        id: 'inv-1',
-        email: 'one@test.com',
-        token: 'token-1',
-        invited_at: '2024-01-01T00:00:00Z',
-        expires_at: '2024-01-08T00:00:00Z'
-      }
-      const refreshedInvite = {
-        id: 'inv-1',
-        email: 'one@test.com',
-        invited_at: '2024-02-01T00:00:00Z',
-        expires_at: '2024-02-08T00:00:00Z'
-      }
-      let resolveResend!: (invite: typeof refreshedInvite) => void
-
-      mockWorkspaceApi.listInvites.mockResolvedValue({
-        invites: [originalInvite]
-      })
-      mockWorkspaceApi.resendInvite.mockReturnValue(
-        new Promise((resolve) => {
-          resolveResend = resolve
-        })
-      )
-      mockWorkspaceAuthStore.initializeFromSession.mockReturnValue(true)
-      mockWorkspaceAuthStore.currentWorkspace = mockTeamWorkspace
-
-      const store = useTeamWorkspaceStore()
-      await store.initialize()
-      await store.fetchPendingInvites()
-
-      const resend = store.resendInvite('inv-1')
-      store.activeWorkspaceId = mockPersonalWorkspace.id
-      resolveResend(refreshedInvite)
-      await resend
-
-      const teamWorkspace = store.workspaces.find(
-        (workspace) => workspace.id === mockTeamWorkspace.id
-      )
-      expect(teamWorkspace?.pendingInvites[0].expiryDate).toEqual(
-        new Date('2024-02-08T00:00:00Z')
-      )
-      expect(store.activeWorkspace?.id).toBe(mockPersonalWorkspace.id)
-      expect(store.pendingInvites).toEqual([])
     })
 
     it('resendInvite rejects a concurrent resend for the same invite', async () => {

@@ -1,5 +1,10 @@
+import {
+  canTransferReplacementOwnership,
+  transferReplacementOwnership
+} from '@/core/graph/nodeShell/nodeShellState'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { inputLinkId, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
@@ -46,7 +51,7 @@ function transferInputConnection(
   if (oldSlotIdx == null || oldSlotIdx === -1) return
   if (newSlotIdx == null || newSlotIdx === -1) return
 
-  const linkId = oldNode.inputs[oldSlotIdx].link
+  const linkId = inputLinkId(graph, oldNode.id, oldSlotIdx)
   if (linkId == null) return
 
   const link = graph.links.get(linkId)
@@ -54,8 +59,6 @@ function transferInputConnection(
 
   link.target_id = newNode.id
   link.target_slot = newSlotIdx
-  newNode.inputs[newSlotIdx].link = linkId
-  oldNode.inputs[oldSlotIdx].link = null
 }
 
 function transferOutputConnections(
@@ -65,18 +68,14 @@ function transferOutputConnections(
   newOutputIdx: number,
   graph: LGraph
 ): void {
-  const oldLinks = oldNode.outputs?.[oldOutputIdx]?.links
-  if (!oldLinks?.length) return
+  const links = outputLinks(graph, oldNode.id, oldOutputIdx)
+  if (!links.length) return
   if (!newNode.outputs?.[newOutputIdx]) return
 
-  for (const linkId of oldLinks) {
-    const link = graph.links.get(linkId)
-    if (!link) continue
+  for (const link of links) {
     link.origin_id = newNode.id
     link.origin_slot = newOutputIdx
   }
-  newNode.outputs[newOutputIdx].links = [...oldLinks]
-  oldNode.outputs[oldOutputIdx].links = []
 }
 
 /** Uses old_widget_ids as name→index lookup into widgets_values. */
@@ -164,7 +163,6 @@ function replaceWithMapping(
   nodeGraph: LGraph,
   idx: number
 ): void {
-  node.onRemoved?.()
   newNode.id = node.id
   newNode.pos = [...node.pos]
   newNode.size = [...node.size]
@@ -172,9 +170,27 @@ function replaceWithMapping(
   newNode.mode = node.mode
   if (node.flags) newNode.flags = { ...node.flags }
 
+  if (
+    nodeGraph._nodes[idx] !== node ||
+    nodeGraph._nodes_by_id[node.id] !== node ||
+    !canTransferReplacementOwnership(node, newNode)
+  )
+    throw new Error(`Cannot replace node ${node.id}: ownership is invalid`)
+
+  node.onRemoved?.()
+  if (
+    nodeGraph._nodes[idx] !== node ||
+    nodeGraph._nodes_by_id[node.id] !== node ||
+    !transferReplacementOwnership(node, newNode)
+  )
+    throw new Error(
+      `Cannot replace node ${node.id}: ownership changed during removal`
+    )
   nodeGraph._nodes[idx] = newNode
   newNode.graph = nodeGraph
+  node.graph = null
   nodeGraph._nodes_by_id[newNode.id] = newNode
+
   for (const widget of newNode.widgets ?? []) {
     if (isNodeBindable(widget)) widget.setNodeId(newNode.id)
   }
@@ -228,6 +244,9 @@ function replaceWithMapping(
   }
 
   newNode.has_errors = false
+
+  nodeGraph.onNodeAdded?.(newNode)
+  nodeGraph.events.dispatch('node:added', { node: newNode })
 }
 
 function removeReplacedMissingNodeTypes(types: string[]): void {
@@ -312,10 +331,6 @@ export function useNodeReplacement() {
               )
             }
         replaceWithMapping(node, newNode, effectiveReplacement, nodeGraph, idx)
-
-        // Refresh Vue node data — replaceWithMapping bypasses graph.add()
-        // so onNodeAdded must be called explicitly to update VueNodeData.
-        nodeGraph.onNodeAdded?.(newNode)
 
         if (!replacedTypes.includes(match.type)) {
           replacedTypes.push(match.type)
