@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
+  ISerialisedGraph,
   ISerialisedNode,
   SerialisableGraph
 } from '@/lib/litegraph/src/types/serialisation'
@@ -64,6 +65,22 @@ function baseGraph(
     version: 1,
     revision: 0,
     state: { lastNodeId: 0, lastLinkId: 0, lastGroupId: 0, lastRerouteId: 0 },
+    links: [],
+    groups: [],
+    extra: {},
+    ...overrides
+  }
+}
+
+function legacyGraph(
+  overrides: Partial<ISerialisedGraph> & Pick<ISerialisedGraph, 'nodes'>
+): ISerialisedGraph {
+  return {
+    id: GRAPH_ID,
+    version: 0.4,
+    revision: 0,
+    last_node_id: 0,
+    last_link_id: 0,
     links: [],
     groups: [],
     extra: {},
@@ -132,7 +149,7 @@ beforeEach(() => {
   LiteGraph.registerNodeType('dummy', DummyNode)
 })
 
-function findByTitle(graph: LGraph, title: string): LGraphNode {
+function getNodeByTitle(graph: LGraph, title: string): LGraphNode {
   const node = graph.nodes.find((n) => n.title === title)
   if (!node) throw new Error(`node titled ${title} not found`)
   return node
@@ -145,7 +162,7 @@ describe('LGraph.configure remint link remap', () => {
 
     graph.configure(mergePayload(), true)
 
-    const newcomer = findByTitle(graph, 'newcomer')
+    const newcomer = getNodeByTitle(graph, 'newcomer')
     // The collision itself: the payload's node 1 must have been reminted.
     expect(newcomer.id).not.toBe(toNodeId(1))
 
@@ -155,6 +172,44 @@ describe('LGraph.configure remint link remap', () => {
 
     const target = graph.links.get(toLinkId(201))
     expect(target?.origin_id).toBe(toNodeId(3))
+    expect(target?.target_id).toBe(newcomer.id)
+  })
+
+  it('remaps legacy array-link endpoints to follow a reminted node', () => {
+    const graph = new LGraph()
+    graph.configure(incumbentGraph())
+
+    graph.configure(
+      legacyGraph({
+        last_node_id: 4,
+        last_link_id: 201,
+        nodes: [
+          serialisedNode(1, 'legacy-newcomer', 0, {
+            outputLinks: [200],
+            inputLink: 201
+          }),
+          serialisedNode(4, 'legacy-sink', 1, {
+            inputLink: 200,
+            outputLinks: [201]
+          })
+        ],
+        links: [
+          [200, 1, 0, 4, 0, 'number'],
+          [201, 4, 0, 1, 0, 'number']
+        ]
+      }),
+      true
+    )
+
+    const newcomer = getNodeByTitle(graph, 'legacy-newcomer')
+    expect(newcomer.id).not.toBe(toNodeId(1))
+
+    const origin = graph.links.get(toLinkId(200))
+    expect(origin?.origin_id).toBe(newcomer.id)
+    expect(origin?.target_id).toBe(toNodeId(4))
+
+    const target = graph.links.get(toLinkId(201))
+    expect(target?.origin_id).toBe(toNodeId(4))
     expect(target?.target_id).toBe(newcomer.id)
   })
 
@@ -194,13 +249,66 @@ describe('LGraph.configure remint link remap', () => {
     })
     graph.configure(payload, true)
 
-    const newcomer = findByTitle(graph, 'newcomer')
+    const newcomer = getNodeByTitle(graph, 'newcomer')
     expect(newcomer.id).not.toBe(toNodeId(1))
 
     const floating = [...graph.floatingLinks.values()].find(
       (link) => link.id === toLinkId(400)
     )
     expect(floating?.origin_id).toBe(newcomer.id)
+  })
+
+  it('resolves chained remints once against each requested id', () => {
+    const graph = new LGraph()
+    graph.configure(incumbentGraph())
+
+    const payload = baseGraph({
+      state: {
+        lastNodeId: 2,
+        lastLinkId: 501,
+        lastGroupId: 0,
+        lastRerouteId: 0
+      },
+      nodes: [
+        serialisedNode(1, 'first-remint', 0, { outputLinks: [500] }),
+        serialisedNode(3, 'second-remint', 1, { outputLinks: [501] }),
+        serialisedNode(5, 'first-sink', 2, { inputLink: 500 }),
+        serialisedNode(6, 'second-sink', 3, { inputLink: 501 })
+      ],
+      links: [
+        {
+          id: 500,
+          origin_id: 1,
+          origin_slot: 0,
+          target_id: 5,
+          target_slot: 0,
+          type: 'number'
+        },
+        {
+          id: 501,
+          origin_id: 3,
+          origin_slot: 0,
+          target_id: 6,
+          target_slot: 0,
+          type: 'number'
+        }
+      ]
+    })
+
+    graph.configure(payload, true)
+
+    const first = getNodeByTitle(graph, 'first-remint')
+    const second = getNodeByTitle(graph, 'second-remint')
+    expect(first.id).toBe(toNodeId(3))
+    expect(second.id).toBe(toNodeId(4))
+
+    const firstLink = graph.links.get(toLinkId(500))
+    expect(firstLink?.origin_id).toBe(first.id)
+    expect(firstLink?.target_id).toBe(toNodeId(5))
+
+    const secondLink = graph.links.get(toLinkId(501))
+    expect(secondLink?.origin_id).toBe(second.id)
+    expect(secondLink?.target_id).toBe(toNodeId(6))
   })
 
   it('does not remap links whose serialized id is claimed by two payload nodes', () => {
@@ -231,8 +339,8 @@ describe('LGraph.configure remint link remap', () => {
 
     graph.configure(payload)
 
-    const first = findByTitle(graph, 'first-claimant')
-    const second = findByTitle(graph, 'second-claimant')
+    const first = getNodeByTitle(graph, 'first-claimant')
+    const second = getNodeByTitle(graph, 'second-claimant')
     expect(first.id).toBe(toNodeId(5))
     expect(second.id).not.toBe(toNodeId(5))
 
