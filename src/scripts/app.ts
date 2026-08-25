@@ -78,6 +78,7 @@ import {
 } from '@/scripts/domWidget'
 import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
 import { resolveAccountPrecondition } from '@/platform/errorCatalog/accountPreconditionRouting'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -1628,7 +1629,42 @@ export class ComfyApp {
     let queueResultOverride: boolean | null = null
 
     // Get auth token for backend nodes - uses workspace token if enabled, otherwise Firebase token
+    const teamWorkspaceStore = useTeamWorkspaceStore()
+    try {
+      await teamWorkspaceStore.waitForWorkspaceSwitch()
+    } catch (error) {
+      useDialogService().showErrorDialog(error, {
+        title: t('errorDialog.promptExecutionError'),
+        reportType: 'promptExecutionError'
+      })
+      this.queueItems.length = 0
+      this.processingQueue = false
+      return false
+    }
+    const workspaceIdBeforeAuthentication = teamWorkspaceStore.activeWorkspaceId
+    const workspaceGenerationBeforeAuthentication =
+      teamWorkspaceStore.workspaceTransitionGeneration
     const comfyOrgAuthToken = await useAuthStore().getWorkspaceAuthToken()
+    const executionWorkspaceId = teamWorkspaceStore.activeWorkspaceId
+    const executionWorkspaceGeneration =
+      teamWorkspaceStore.workspaceTransitionGeneration
+    const workspaceChangedWhileAuthenticating =
+      (workspaceIdBeforeAuthentication !== executionWorkspaceId ||
+        workspaceGenerationBeforeAuthentication !==
+          executionWorkspaceGeneration) &&
+      (isCloud || workspaceIdBeforeAuthentication !== null)
+    if (executionWorkspaceId && !comfyOrgAuthToken) {
+      useDialogService().showErrorDialog(
+        new Error(t('toastMessages.userNotAuthenticated')),
+        {
+          title: t('errorDialog.promptExecutionError'),
+          reportType: 'promptExecutionError'
+        }
+      )
+      this.queueItems.length = 0
+      this.processingQueue = false
+      return false
+    }
     const comfyOrgApiKey = useApiKeyAuthStore().getApiKey()
 
     try {
@@ -1700,6 +1736,22 @@ export class ComfyApp {
               executionScope: isPartialExecution ? 'partial' : 'full',
               viewMode: getWorkflowMode(queuedWorkflow)
             })
+          }
+          if (
+            workspaceChangedWhileAuthenticating ||
+            executionWorkspaceId !== teamWorkspaceStore.activeWorkspaceId ||
+            executionWorkspaceGeneration !==
+              teamWorkspaceStore.workspaceTransitionGeneration
+          ) {
+            useDialogService().showErrorDialog(
+              new Error(t('errorDialog.workspaceChangedDuringExecution')),
+              {
+                title: t('errorDialog.promptExecutionError'),
+                reportType: 'promptExecutionError'
+              }
+            )
+            queueResultOverride = false
+            break
           }
           try {
             api.authToken = comfyOrgAuthToken

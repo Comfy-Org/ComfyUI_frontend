@@ -2,6 +2,12 @@ import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 type UUID = string
 
+/**
+ * A widget's canonical identity: `graphId:nodeId:name`.
+ * Because the key is derived, a widget renamed in a node
+ * definition orphans its stored state, and two widgets
+ * on one node cannot share a name.
+ */
 export type WidgetId = string & { readonly __brand: 'WidgetId' }
 
 const SEPARATOR = ':'
