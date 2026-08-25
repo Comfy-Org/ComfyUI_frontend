@@ -67,6 +67,14 @@ global.fetch = vi.fn()
 
 type MockWorkflowTemplatesStore = ReturnType<typeof useWorkflowTemplatesStore>
 
+const mockWorkflow = {
+  version: 0.4,
+  last_node_id: 0,
+  last_link_id: 0,
+  nodes: [],
+  links: []
+}
+
 describe('useTemplateWorkflows', () => {
   let mockWorkflowTemplatesStore: MockWorkflowTemplatesStore
 
@@ -128,7 +136,8 @@ describe('useTemplateWorkflows', () => {
 
     // Mock fetch response
     vi.mocked(fetch).mockResolvedValue({
-      json: vi.fn().mockResolvedValue({ workflow: 'data' })
+      ok: true,
+      json: vi.fn().mockResolvedValue(mockWorkflow)
     } as Partial<Response> as Response)
   })
 
@@ -311,7 +320,7 @@ describe('useTemplateWorkflows', () => {
         id: 'template1',
         sourceModule: 'default',
         workflowName: 'template1',
-        workflow: { workflow: 'data' }
+        workflow: mockWorkflow
       })
       expect(mockTrackTemplate).not.toHaveBeenCalled()
       expect(mockCloseDialog).not.toHaveBeenCalled()
@@ -337,7 +346,7 @@ describe('useTemplateWorkflows', () => {
       expect(mockCloseDialog).toHaveBeenCalledOnce()
       expect(app.loadGraphData).toHaveBeenCalledOnce()
       expect(app.loadGraphData).toHaveBeenCalledWith(
-        { workflow: 'data' },
+        mockWorkflow,
         true,
         true,
         'template1',
@@ -373,6 +382,41 @@ describe('useTemplateWorkflows', () => {
       expect(mockTrackTemplate).toHaveBeenCalledOnce()
       expect(mockCloseDialog).toHaveBeenCalledOnce()
       expect(app.loadGraphData).toHaveBeenCalledOnce()
+    })
+
+    it('rejects non-successful workflow responses without opening', async () => {
+      mockWorkflowTemplatesStore.isLoaded = true
+      const { prepareWorkflowTemplate } = useTemplateWorkflows()
+      vi.mocked(fetch).mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        statusText: 'Not Found',
+        json: vi.fn()
+      } as Partial<Response> as Response)
+
+      await expect(
+        prepareWorkflowTemplate('missing-template', 'default')
+      ).rejects.toThrow()
+      expect(mockTrackTemplate).not.toHaveBeenCalled()
+      expect(mockCloseDialog).not.toHaveBeenCalled()
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+    })
+
+    it('rejects invalid workflow data without opening', async () => {
+      mockWorkflowTemplatesStore.isLoaded = true
+      const { prepareWorkflowTemplate } = useTemplateWorkflows()
+      vi.spyOn(console, 'warn').mockImplementation(() => {})
+      vi.mocked(fetch).mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValue({ workflow: 'invalid' })
+      } as Partial<Response> as Response)
+
+      await expect(
+        prepareWorkflowTemplate('invalid-template', 'default')
+      ).rejects.toThrow()
+      expect(mockTrackTemplate).not.toHaveBeenCalled()
+      expect(mockCloseDialog).not.toHaveBeenCalled()
+      expect(app.loadGraphData).not.toHaveBeenCalled()
     })
   })
 
