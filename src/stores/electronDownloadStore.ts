@@ -88,8 +88,14 @@ export const useElectronDownloadStore = defineStore('downloads', () => {
 
       for (const download of allDownloads) {
         const normalizedDownload = normalizeElectronDownloadState(download)
-        downloads.value.push(normalizedDownload)
-        notifyProgressListeners(normalizedDownload)
+        const existing = findByUrl(normalizedDownload.url)
+        if (existing) {
+          Object.assign(existing, normalizedDownload)
+          notifyProgressListeners(existing)
+        } else {
+          downloads.value.push(normalizedDownload)
+          notifyProgressListeners(normalizedDownload)
+        }
       }
     } catch {
       return
