@@ -1,7 +1,8 @@
 import { remove } from 'es-toolkit'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { LLink } from '@/lib/litegraph/src/LLink'
+import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
+import { inputLinkId, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
 import {
   SUBGRAPH_INPUT_ID,
@@ -135,6 +136,7 @@ export class LinkConnector {
   /** Drag an existing link to a different input. */
   moveInputLink(
     network: LinkNetwork,
+    node: LGraphNode,
     input: INodeInputSlot,
     opts?: { startPoint?: Point }
   ): void {
@@ -142,10 +144,17 @@ export class LinkConnector {
 
     const { state, inputLinks, renderLinks } = this
 
-    const linkId = input.link
+    const linkId = node.graph
+      ? (inputLinkId(node.graph, node.id, node.inputs.indexOf(input)) ?? null)
+      : null
     if (linkId == null) {
       // No link connected, check for a floating link
-      const floatingLink = input._floatingLinks?.values().next().value
+      const [floatingLink] = slotFloatingLinks(
+        network,
+        'input',
+        node.id,
+        node.inputs.indexOf(input)
+      )
       if (floatingLink?.parentId == null) return
 
       try {
@@ -270,51 +279,59 @@ export class LinkConnector {
   }
 
   /** Drag all links from an output to a new output. */
-  moveOutputLink(network: LinkNetwork, output: INodeOutputSlot): void {
+  moveOutputLink(
+    network: LinkNetwork,
+    node: LGraphNode,
+    output: INodeOutputSlot
+  ): void {
     if (this.isConnecting) throw new Error('Already dragging links.')
 
     const { state, renderLinks } = this
 
     // Floating links
-    if (output._floatingLinks?.size) {
-      for (const floatingLink of output._floatingLinks.values()) {
-        try {
-          const reroute = LLink.getFirstReroute(network, floatingLink)
-          if (!reroute)
-            throw new Error(
-              `Invalid reroute id: [${floatingLink.parentId}] for floating link id: [${floatingLink.id}].`
-            )
+    for (const floatingLink of slotFloatingLinks(
+      network,
+      'output',
+      node.id,
+      node.outputs.indexOf(output)
+    )) {
+      try {
+        const reroute = LLink.getFirstReroute(network, floatingLink)
+        if (!reroute)
+          throw new Error(
+            `Invalid reroute id: [${floatingLink.parentId}] for floating link id: [${floatingLink.id}].`
+          )
 
-          const renderLink = new FloatingRenderLink(
-            network,
-            floatingLink,
-            'output',
-            reroute
-          )
-          const mayContinue = this.events.dispatch(
-            'before-move-output',
-            renderLink
-          )
-          if (mayContinue === false) continue
+        const renderLink = new FloatingRenderLink(
+          network,
+          floatingLink,
+          'output',
+          reroute
+        )
+        const mayContinue = this.events.dispatch(
+          'before-move-output',
+          renderLink
+        )
+        if (mayContinue === false) continue
 
-          renderLinks.push(renderLink)
-          this.floatingLinks.push(floatingLink)
-        } catch (error) {
-          console.warn(
-            `Could not create render link for link id: [${floatingLink.id}].`,
-            floatingLink,
-            error
-          )
-        }
+        renderLinks.push(renderLink)
+        this.floatingLinks.push(floatingLink)
+      } catch (error) {
+        console.warn(
+          `Could not create render link for link id: [${floatingLink.id}].`,
+          floatingLink,
+          error
+        )
       }
     }
 
     // Normal links
-    if (output.links?.length) {
-      for (const linkId of output.links) {
-        const link = network.links.get(linkId)
-        if (!link) continue
-
+    if (node.graph) {
+      for (const link of outputLinks(
+        node.graph,
+        node.id,
+        node.outputs.indexOf(output)
+      )) {
         const firstReroute = LLink.getFirstReroute(network, link)
         if (firstReroute) {
           firstReroute._dragging = true
@@ -806,18 +823,28 @@ export class LinkConnector {
       return
     }
 
-    // Connecting to output
-    for (const link of this.renderLinks) {
-      if (link.toType !== 'output') continue
+    const drop = this._resolveOutputDrop(reroute)
+    if (!drop) return
 
-      const result = reroute.findSourceOutput()
-      if (!result) continue
-
-      const { node, output } = result
-      if (!link.canConnectToOutput(node, output)) continue
-
+    const { node, output, links } = drop
+    for (const link of links) {
       link.connectToRerouteOutput(reroute, node, output, this.events)
     }
+  }
+
+  /** Resolves once: connecting a link re-anchors its chain, changing membership. */
+  private _resolveOutputDrop(reroute: Reroute) {
+    const result = reroute.findSourceOutput()
+    if (!result) return
+
+    const { node, output } = result
+    const links = this.renderLinks.filter(
+      (link) =>
+        link.toType === 'output' &&
+        link.canConnectToReroute(reroute) &&
+        link.canConnectToOutput(node, output)
+    )
+    return { node, output, links }
   }
 
   /** @internal Temporary workaround - requires refactor. */
@@ -832,20 +859,9 @@ export class LinkConnector {
 
     // From reroute to reroute
     if (renderLink instanceof ToInputRenderLink) {
-      const { node, fromSlot, fromSlotIndex, fromReroute } = renderLink
+      const { node, fromSlotIndex } = renderLink
 
-      reroute.setFloatingLinkOrigin(node, fromSlot, fromSlotIndex)
-
-      // Clean floating link IDs from reroutes about to be removed from the chain
-      if (fromReroute != null) {
-        for (const originalReroute of originalReroutes) {
-          if (originalReroute.id === fromReroute.id) break
-
-          for (const linkId of reroute.floatingLinkIds) {
-            originalReroute.floatingLinkIds.delete(linkId)
-          }
-        }
-      }
+      reroute.setFloatingLinkOrigin(node, fromSlotIndex)
     }
 
     // Filter before any connections are re-created
@@ -1016,16 +1032,7 @@ export class LinkConnector {
         }
       }
     } else {
-      const result = reroute.findSourceOutput()
-      if (!result) return false
-
-      const { node, output } = result
-
-      for (const renderLink of this.renderLinks) {
-        if (renderLink.toType !== 'output') continue
-        if (!renderLink.canConnectToReroute(reroute)) continue
-        if (renderLink.canConnectToOutput(node, output)) return true
-      }
+      return !!this._resolveOutputDrop(reroute)?.links.length
     }
 
     return false

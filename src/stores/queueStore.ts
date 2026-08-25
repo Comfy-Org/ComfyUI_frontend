@@ -330,6 +330,11 @@ export class TaskItemImpl {
     return this.job.outputs_count ?? undefined
   }
 
+  /** Absent on backends or jobs that predate this field. */
+  get previewableOutputsCount(): number | undefined {
+    return this.job.previewable_outputs_count ?? undefined
+  }
+
   get status() {
     return this.job.status
   }
@@ -580,7 +585,11 @@ export const useQueueStore = defineStore('queue', () => {
           const existing = existingByJobId.get(job.id)
           if (!existing) return new TaskItemImpl(job)
           // Recreate if outputs_count changed to ensure lazy loading works
-          if (existing.outputsCount !== (job.outputs_count ?? undefined)) {
+          if (
+            existing.outputsCount !== (job.outputs_count ?? undefined) ||
+            existing.previewableOutputsCount !==
+              (job.previewable_outputs_count ?? undefined)
+          ) {
             return new TaskItemImpl(job)
           }
           return existing

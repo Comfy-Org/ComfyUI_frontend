@@ -7,6 +7,7 @@ import {
   escapeI18nMessage,
   formatLocalizedMediumDate,
   formatLocalizedNumber,
+  generateUUID,
   getFilePathSeparatorVariants,
   getFilenameDetails,
   getMediaTypeFromFilename,
@@ -15,6 +16,7 @@ import {
   isCivitaiModelUrl,
   isCivitaiUrl,
   isPreviewableMediaType,
+  isValidUuid,
   joinFilePath,
   truncateFilename
 } from './formatUtil'
@@ -511,6 +513,32 @@ describe('formatUtil', () => {
     it('returns an em-dash for undefined or unparseable input', () => {
       expect(formatLocalizedMediumDate(undefined, 'en')).toBe('—')
       expect(formatLocalizedMediumDate('not a date', 'en')).toBe('—')
+    })
+  })
+
+  describe('isValidUuid', () => {
+    it.for([
+      ['lowercase', '9cea40bb-b0cf-4b40-a758-8935cfe8d52f'],
+      ['uppercase', '9CEA40BB-B0CF-4B40-A758-8935CFE8D52F'],
+      ['nil', '00000000-0000-0000-0000-000000000000'],
+      ['arbitrary version and variant', 'ffffffff-ffff-7fff-ffff-ffffffffffff'],
+      ['generated', generateUUID()]
+    ])('accepts a %s UUID', ([, value]) => {
+      expect(isValidUuid(value)).toBe(true)
+    })
+
+    it.for([
+      ['legacy slug', 'video-point-prompt-example'],
+      ['missing value', undefined],
+      ['null', null],
+      ['empty string', ''],
+      ['non-string', 123],
+      ['wrong length', '9cea40bb-b0cf-4b40-a758-8935cfe8d52'],
+      ['missing separators', '9cea40bbb0cf4b40a7588935cfe8d52f'],
+      ['surrounding whitespace', ' 9cea40bb-b0cf-4b40-a758-8935cfe8d52f'],
+      ['non-hex character', 'gcea40bb-b0cf-4b40-a758-8935cfe8d52f']
+    ])('rejects a %s', ([, value]) => {
+      expect(isValidUuid(value)).toBe(false)
     })
   })
 

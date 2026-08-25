@@ -1,0 +1,434 @@
+{
+  "recordedAt": {
+    "core": "b08e6cf35fac50d3ca8470dffb3f9a1fbb7187d2",
+    "pin": "9d9f4bedfc9f0321c19faf71855e228c93bd0dc9"
+  },
+  "schema": 1,
+  "nodes": {
+    "ApplyCLIPSeg+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "BatchCount+": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "CLIPTextEncodeSDXL+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ConditioningCombineMultiple+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ConsoleDebug+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "DebugTensorShape+": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "DisplayAny": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "DrawText+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "FluxAttentionSeeker+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "FluxBlocksBuster+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "FluxSamplerParams+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "GetImageSize+": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "GuidanceTimestepping+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageApplyLUT+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageBatchMultiple+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageBatchToList+": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "ImageCASharpening+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageColorMatch+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageColorMatchAdobe+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageComposite+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageCompositeFromMaskBatch+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageCrop+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageDesaturate+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageEnhanceDifference+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageExpandBatch+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageFlip+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageFromBatch+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageHistogramMatch+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageListToBatch+": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "ImagePosterize+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImagePreviewFromLatent+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageRandomTransform+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageRemoveAlpha+": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "ImageRemoveBackground+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageResize+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageSeamCarving+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageSmartSharpen+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageTile+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageToDevice+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ImageUntile+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "InjectLatentNoise+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "KSamplerVariationsStochastic+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "KSamplerVariationsWithNoise+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "LoadCLIPSegModels+": {
+      "connectFirst": "NO_INPUTS",
+      "connectLast": "NO_INPUTS",
+      "disconnect": "NO_INPUTS"
+    },
+    "LorasForFluxParams+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "MaskBatch+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "MaskBlur+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "MaskBoundingBox+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "MaskExpandBatch+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "MaskFix+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "MaskFlip+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "MaskFromBatch+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "MaskFromColor+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "MaskFromList+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "MaskFromRGBCMYBW+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "MaskFromSegmentation+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "MaskPreview+": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "MaskSmooth+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ModelCompile+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "ModelSamplingSD3Advanced+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "NoiseFromImage+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "PixelOEPixelize+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "PlotParameters+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "RemBGSession+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "RemoveLatentMask+": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "SamplerSelectHelper+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SchedulerSelectHelper+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SD3AttentionSeekerLG+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SD3AttentionSeekerT5+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SD3NegativeConditioning+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SDXLEmptyLatentSizePicker+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SimpleComparison+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SimpleCondition+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SimpleMath+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SimpleMathBoolean+": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "SimpleMathCondition+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SimpleMathDual+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SimpleMathFloat+": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "SimpleMathInt+": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "SimpleMathPercent+": {
+      "connectFirst": [],
+      "connectLast": "SAME_AS_FIRST",
+      "disconnect": []
+    },
+    "SimpleMathSlider+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "SimpleMathSliderLowRes+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "TextEncodeForSamplerParams+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "TransitionMask+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    },
+    "TransparentBGSession+": {
+      "connectFirst": [],
+      "connectLast": [],
+      "disconnect": []
+    }
+  }
+}

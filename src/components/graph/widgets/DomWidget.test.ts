@@ -82,9 +82,20 @@ function createWidgetState(disabled: boolean): DomWidgetState {
   return reactive(state)
 }
 
-describe('DomWidget disabled style', () => {
+describe('DomWidget style', () => {
   afterEach(() => {
     useDomWidgetStore().clear()
+  })
+
+  it('positions a newly mounted widget', () => {
+    const widgetState = createWidgetState(false)
+    render(DomWidget, {
+      props: {
+        widgetState
+      }
+    })
+
+    expect(mockUpdatePosition).toHaveBeenCalledWith(widgetState)
   })
 
   it('uses disabled style when widget is computedDisabled', async () => {

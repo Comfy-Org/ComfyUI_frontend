@@ -1,3 +1,5 @@
+import { shallowReactive } from 'vue'
+
 import { MAX_MULTITYPE_SLICES } from '@/constants/slotColors'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LabelPosition, SlotShape, SlotType } from '@/lib/litegraph/src/draw'
@@ -91,6 +93,9 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
 
     Object.assign(this, rest)
     this._node = node
+
+    // Return the proxy so in-place field writes (rename, retype) reach Vue.
+    return shallowReactive(this)
   }
 
   /**

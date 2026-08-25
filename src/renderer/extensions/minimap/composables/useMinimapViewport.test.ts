@@ -19,7 +19,7 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
 
 vi.mock('@/stores/executionStore', () => ({
   useExecutionStore: vi.fn(() => ({
-    nodeProgressStates: {}
+    nodeLocationProgressStates: {}
   }))
 }))
 vi.mock('@/renderer/core/spatial/boundsCalculator', () => ({
@@ -49,8 +49,8 @@ describe('useMinimapViewport', () => {
 
     mockGraph = {
       _nodes: [
-        { pos: [100, 100], size: [150, 80] },
-        { pos: [300, 200], size: [120, 60] }
+        { pos: [100, 100], renderingSize: [150, 80] },
+        { pos: [300, 200], renderingSize: [120, 60] }
       ]
     } as Partial<LGraph> as LGraph
 
@@ -97,7 +97,10 @@ describe('useMinimapViewport', () => {
 
     viewport.updateBounds()
 
-    expect(calculateNodeBounds).toHaveBeenCalledWith(mockGraph._nodes)
+    expect(calculateNodeBounds).toHaveBeenCalledWith([
+      { pos: [100, 100], size: [150, 80] },
+      { pos: [300, 200], size: [120, 60] }
+    ])
     expect(enforceMinimumBounds).toHaveBeenCalled()
   })
 

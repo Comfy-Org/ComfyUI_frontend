@@ -1,7 +1,10 @@
 import { expect, mergeTests } from '@playwright/test'
 
 import type { Asset } from '@comfyorg/ingest-types'
-import { assetApiFixture } from '@e2e/fixtures/assetApiFixture'
+import {
+  assetApiFixture,
+  assetRequestIncludesTag
+} from '@e2e/fixtures/assetApiFixture'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import {
   MODEL_TYPE_CHECKPOINT_GGUF,
@@ -63,7 +66,16 @@ test.describe('Model library sidebar - asset mode', () => {
     await comfyPage.featureFlags.setServerFlagsPersistent({
       supports_model_type_tags: true
     })
+    const modelWalkResponse = comfyPage.page.waitForResponse(
+      (response) =>
+        response.request().method() === 'GET' &&
+        assetRequestIncludesTag(response.url(), 'models')
+    )
     await comfyPage.menu.modelLibraryTab.open()
+    await modelWalkResponse
+    await expect(
+      comfyPage.menu.modelLibraryTab.modelTree.locator('.pi-spinner')
+    ).toHaveCount(0)
   })
 
   test('Lists folders in backend registration order', async ({ comfyPage }) => {

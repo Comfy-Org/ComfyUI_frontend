@@ -12,9 +12,9 @@ async function flushPromises() {
   await new Promise((r) => setTimeout(r, 0))
 }
 
-const mockCaptureException = vi.hoisted(() => vi.fn())
-vi.mock('@sentry/vue', () => ({
-  captureException: mockCaptureException
+const mockReportError = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mockReportError
 }))
 
 const mockIsInitialized = ref(false)
@@ -154,6 +154,68 @@ describe('WorkspaceAuthGate', () => {
       expect(screen.getByTestId('slot-content')).toBeInTheDocument()
       expect(mockRefreshRemoteConfig).not.toHaveBeenCalled()
     })
+
+    it('initializes workspace context in the background for a signed-in user', async () => {
+      mockIsCloud.value = false
+      mockIsInitialized.value = true
+      mockCurrentUser.value = { uid: 'user-123' }
+
+      mountComponent()
+      await flushPromises()
+
+      expect(screen.getByTestId('slot-content')).toBeInTheDocument()
+      expect(mockWorkspaceStoreInitialize).toHaveBeenCalledOnce()
+      expect(mockRefreshRemoteConfig).not.toHaveBeenCalled()
+    })
+
+    it('initializes workspace context after a mid-session sign-in', async () => {
+      mockIsCloud.value = false
+      mockIsInitialized.value = true
+
+      mountComponent()
+      await flushPromises()
+      expect(mockWorkspaceStoreInitialize).not.toHaveBeenCalled()
+
+      mockCurrentUser.value = { uid: 'user-123' }
+      await flushPromises()
+
+      expect(mockWorkspaceStoreInitialize).toHaveBeenCalledOnce()
+    })
+
+    it('deduplicates mount and auth-hydration initialization', async () => {
+      mockIsCloud.value = false
+
+      mountComponent()
+      mockCurrentUser.value = { uid: 'user-123' }
+      mockIsInitialized.value = true
+      await flushPromises()
+
+      expect(mockWorkspaceStoreInitialize).toHaveBeenCalledOnce()
+    })
+
+    it('cancels pending initialization when unmounted', async () => {
+      mockIsCloud.value = false
+
+      const { unmount } = mountComponent()
+      unmount()
+      mockCurrentUser.value = { uid: 'user-123' }
+      mockIsInitialized.value = true
+      await flushPromises()
+
+      expect(mockWorkspaceStoreInitialize).not.toHaveBeenCalled()
+    })
+
+    it('cancels pending initialization on logout', async () => {
+      mockIsCloud.value = false
+      mockCurrentUser.value = { uid: 'user-123' }
+
+      mountComponent()
+      mockCurrentUser.value = null
+      mockIsInitialized.value = true
+      await flushPromises()
+
+      expect(mockWorkspaceStoreInitialize).not.toHaveBeenCalled()
+    })
   })
 
   describe('cloud builds - unauthenticated user', () => {
@@ -187,7 +249,7 @@ describe('WorkspaceAuthGate', () => {
       expect(
         screen.getByText("Couldn't load your workspace")
       ).toBeInTheDocument()
-      expect(mockCaptureException).toHaveBeenCalledOnce()
+      expect(mockReportError).toHaveBeenCalledOnce()
     })
   })
 
@@ -248,7 +310,7 @@ describe('WorkspaceAuthGate', () => {
       expect(signal.aborted).toBe(true)
       expect(mockWorkspaceStoreInitialize).not.toHaveBeenCalled()
       expect(mockResumePendingPricingFlow).not.toHaveBeenCalled()
-      expect(mockCaptureException).not.toHaveBeenCalled()
+      expect(mockReportError).not.toHaveBeenCalled()
     })
 
     it('calls resumePendingPricingFlow after successful workspace init', async () => {
@@ -295,10 +357,8 @@ describe('WorkspaceAuthGate', () => {
       ).toBeInTheDocument()
       expect(screen.getByRole('alert')).toHaveFocus()
       expect(splashLoader).not.toBeInTheDocument()
-      expect(mockCaptureException).toHaveBeenCalledWith(error, {
-        tags: {
-          error_type: 'workspace_auth_gate_initialization_failure'
-        }
+      expect(mockReportError).toHaveBeenCalledWith(error, {
+        errorType: 'workspace_auth_gate_initialization_failure'
       })
     })
 

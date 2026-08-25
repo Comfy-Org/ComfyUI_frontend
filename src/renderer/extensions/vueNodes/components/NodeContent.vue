@@ -32,7 +32,7 @@
 <script setup lang="ts">
 import { computed, onErrorCaptured, ref } from 'vue'
 
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import type { NodeState } from '@/types/nodeState'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
 
@@ -41,7 +41,7 @@ import AudioPreview from './AudioPreview.vue'
 import ImagePreview from './ImagePreview.vue'
 
 interface NodeContentProps {
-  nodeData?: VueNodeData
+  nodeData?: NodeState
   media?: {
     type: 'image' | 'video' | 'audio'
     urls: string[]

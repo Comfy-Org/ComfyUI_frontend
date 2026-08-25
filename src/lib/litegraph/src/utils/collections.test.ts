@@ -1,3 +1,5 @@
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -18,6 +20,7 @@ describe('getDraggedItems', () => {
   let selected: Set<Positionable>
 
   beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
     graph = new LGraph()
 
     group = new LGraphGroup('TestGroup')

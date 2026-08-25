@@ -42,6 +42,9 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
 
     const panel = page.getByTestId('workspace-switcher-panel')
     await expect(panel).toBeVisible()
+    await expect(
+      panel.getByText('Workspaces only affect which credits you use.')
+    ).toHaveCount(0)
 
     const profileMenu = page.locator('.current-user-popover')
     const panelBox = await panel.boundingBox()

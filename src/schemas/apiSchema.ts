@@ -195,7 +195,7 @@ export type NotificationWsMessage = z.infer<typeof zNotificationWsMessage>
 export const zTaskOutput = z.record(zNodeId, zOutputs)
 export type TaskOutput = z.infer<typeof zTaskOutput>
 
-const zEmbeddingsResponse = z.array(z.string())
+export const zEmbeddingsResponse = z.array(z.string())
 const zExtensionsResponse = z.array(z.string())
 const zError = z.object({
   type: z.string(),

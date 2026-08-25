@@ -1,5 +1,9 @@
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
+
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
+import { toNodeId } from '@/types/nodeId'
 import type {
   INodeInputSlot,
   IWidgetLocator
@@ -9,7 +13,15 @@ import {
   linkedWidgetedInputs,
   nonWidgetedInputs
 } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
-import { describe, it } from 'vitest'
+import { useLinkStore } from '@/stores/linkStore'
+import { beforeEach, describe, it } from 'vitest'
+
+const GRAPH_ID = 'graph-test'
+const GRAPH_SCOPE = {
+  rootGraphId: toRootGraphId(GRAPH_ID),
+  owningGraphId: toOwningGraphId(GRAPH_ID)
+}
+const NODE_ID = toNodeId(1)
 
 function makeFakeInputSlot(
   name: string,
@@ -26,18 +38,23 @@ function makeFakeInputSlot(
   }
 }
 
-function makeFakeNodeData(inputs: INodeInputSlot[]): VueNodeData {
-  const nodeData: Partial<VueNodeData> = { inputs }
-  return nodeData as VueNodeData
+function connectInputSlot(slot: number, linkId = slot + 1) {
+  useLinkStore().registerLink(GRAPH_SCOPE, {
+    id: toLinkId(linkId),
+    graphId: GRAPH_SCOPE.owningGraphId,
+    originNodeId: toNodeId(99),
+    originSlot: 0,
+    targetNodeId: NODE_ID,
+    targetSlot: slot,
+    type: 'FAKE'
+  })
 }
 
 describe('nodeDataUtils', () => {
   describe('nonWidgetedInputs', () => {
     it('should handle an empty inputs list', () => {
       const inputs: INodeInputSlot[] = []
-      const nodeData = makeFakeNodeData(inputs)
-
-      const actual = nonWidgetedInputs(nodeData)
+      const actual = nonWidgetedInputs(inputs)
 
       expect(actual.length).toBe(0)
     })
@@ -47,9 +64,7 @@ describe('nodeDataUtils', () => {
         makeFakeInputSlot('first', true),
         makeFakeInputSlot('second', true)
       ]
-      const nodeData = makeFakeNodeData(inputs)
-
-      const actual = nonWidgetedInputs(nodeData)
+      const actual = nonWidgetedInputs(inputs)
 
       expect(actual.length).toBe(0)
     })
@@ -59,9 +74,7 @@ describe('nodeDataUtils', () => {
         makeFakeInputSlot('first'),
         makeFakeInputSlot('second')
       ]
-      const nodeData = makeFakeNodeData(inputs)
-
-      const actual = nonWidgetedInputs(nodeData)
+      const actual = nonWidgetedInputs(inputs)
 
       expect(actual.length).toBe(2)
     })
@@ -73,56 +86,67 @@ describe('nodeDataUtils', () => {
         makeFakeInputSlot('third', true),
         makeFakeInputSlot('fourth', true)
       ]
-      const nodeData = makeFakeNodeData(inputs)
-
-      const actual = nonWidgetedInputs(nodeData)
+      const actual = nonWidgetedInputs(inputs)
 
       expect(actual.length).toBe(2)
     })
   })
 
   describe('linkedWidgetedInputs', () => {
-    it('should return input slots that are bound to widgets and are linked: none present', () => {
+    beforeEach(() => {
+      setActivePinia(createTestingPinia({ stubActions: false }))
+    })
+
+    it('returns nothing when no input slot is connected', () => {
       const inputs: INodeInputSlot[] = [
         makeFakeInputSlot('first'),
         makeFakeInputSlot('second'),
         makeFakeInputSlot('third', true),
         makeFakeInputSlot('fourth', true)
       ]
-      const nodeData = makeFakeNodeData(inputs)
-
-      const actual = linkedWidgetedInputs(nodeData)
+      const actual = linkedWidgetedInputs(NODE_ID, inputs, GRAPH_SCOPE)
 
       expect(actual.length).toBe(0)
     })
 
-    it('should return input slots that are bound to widgets and are linked: one present', () => {
+    it('returns the widgeted inputs whose slots are connected', () => {
       const inputs: INodeInputSlot[] = [
         makeFakeInputSlot('first'),
         makeFakeInputSlot('second'),
         makeFakeInputSlot('third', true),
-        makeFakeInputSlot('fourth', true, toLinkId(1))
+        makeFakeInputSlot('fourth', true),
+        makeFakeInputSlot('fifth', true)
       ]
-      const nodeData = makeFakeNodeData(inputs)
+      connectInputSlot(3)
+      connectInputSlot(4)
 
-      const actual = linkedWidgetedInputs(nodeData)
+      const actual = linkedWidgetedInputs(NODE_ID, inputs, GRAPH_SCOPE)
 
-      expect(actual.length).toBe(1)
+      expect(actual.map((slot) => slot.name)).toEqual(['fourth', 'fifth'])
     })
 
-    it('should return input slots that are bound to widgets and are linked: multiple present', () => {
+    it('excludes connected inputs that have no widget', () => {
       const inputs: INodeInputSlot[] = [
         makeFakeInputSlot('first'),
-        makeFakeInputSlot('second'),
-        makeFakeInputSlot('third', true),
-        makeFakeInputSlot('fourth', true, toLinkId(1)),
-        makeFakeInputSlot('fifth', true, toLinkId(2))
+        makeFakeInputSlot('second', true)
       ]
-      const nodeData = makeFakeNodeData(inputs)
+      connectInputSlot(0)
 
-      const actual = linkedWidgetedInputs(nodeData)
+      const actual = linkedWidgetedInputs(NODE_ID, inputs, GRAPH_SCOPE)
 
-      expect(actual.length).toBe(2)
+      expect(actual.length).toBe(0)
+    })
+
+    it('ignores the stale slot link mirror field', () => {
+      const inputs: INodeInputSlot[] = [
+        makeFakeInputSlot('first', true, toLinkId(1)),
+        makeFakeInputSlot('second', true)
+      ]
+      connectInputSlot(1)
+
+      const actual = linkedWidgetedInputs(NODE_ID, inputs, GRAPH_SCOPE)
+
+      expect(actual.map((slot) => slot.name)).toEqual(['second'])
     })
   })
 })

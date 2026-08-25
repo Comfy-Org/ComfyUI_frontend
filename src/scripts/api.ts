@@ -19,7 +19,10 @@ import type {
 import { isCloud } from '@/platform/distribution/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ShareableAssetsResponse } from '@/schemas/apiSchema'
-import { zShareableAssetsResponse } from '@/schemas/apiSchema'
+import {
+  zEmbeddingsResponse,
+  zShareableAssetsResponse
+} from '@/schemas/apiSchema'
 import type {
   TemplateIncludeOnDistributionEnum,
   WorkflowTemplates
@@ -1002,10 +1005,14 @@ export class ComfyApi extends EventTarget {
 
   /**
    * Gets a list of embedding names
+   * @throws When the request fails or the response does not match the schema
    */
   async getEmbeddings(): Promise<EmbeddingsResponse> {
     const resp = await this.fetchApi('/embeddings', { cache: 'no-store' })
-    return await resp.json()
+    if (!resp.ok) {
+      throw new Error(`Failed to fetch /embeddings: ${resp.status}`)
+    }
+    return zEmbeddingsResponse.parse(await resp.json())
   }
 
   /**

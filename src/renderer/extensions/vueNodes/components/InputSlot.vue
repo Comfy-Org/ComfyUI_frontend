@@ -57,6 +57,7 @@
 <script setup lang="ts">
 import { computed, onErrorCaptured, ref, watchEffect } from 'vue'
 import type { ComponentPublicInstance } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
@@ -83,6 +84,7 @@ interface InputSlotProps {
 }
 
 const props = defineProps<InputSlotProps>()
+const { t } = useI18n()
 
 const hasNoLabel = computed(
   () =>
@@ -100,9 +102,10 @@ const { getInputSlotTooltip, createTooltipConfig } = useNodeTooltips(
 )
 
 const tooltipConfig = computed(() => {
-  const slotName = props.slotData.localized_name || props.slotData.name || ''
-  const tooltipText = getInputSlotTooltip(slotName)
-  const fallbackText = tooltipText || `Input: ${slotName}`
+  const inputName = props.slotData.name || ''
+  const displayName = props.slotData.localized_name || inputName
+  const tooltipText = getInputSlotTooltip(inputName)
+  const fallbackText = tooltipText || t('g.inputTooltip', { name: displayName })
   return createTooltipConfig(fallbackText)
 })
 

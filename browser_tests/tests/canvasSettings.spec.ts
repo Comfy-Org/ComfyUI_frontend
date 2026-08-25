@@ -188,6 +188,138 @@ test.describe('Canvas settings', { tag: '@canvas' }, () => {
     })
   })
 
+  test.describe('Comfy.Canvas.NavigationMode', () => {
+    test('picking a preset never persists custom', async ({ comfyPage }) => {
+      const modeWrites: unknown[] = []
+      comfyPage.page.on('request', (request) => {
+        if (
+          request.method() === 'POST' &&
+          request.url().endsWith('/api/settings/Comfy.Canvas.NavigationMode')
+        ) {
+          modeWrites.push(request.postDataJSON())
+        }
+      })
+
+      await comfyPage.settings.setSetting(
+        'Comfy.Canvas.NavigationMode',
+        'standard'
+      )
+      await comfyPage.workflow.reloadAndWaitForApp()
+
+      // A preset also writes the two overrides it implies; those writes must
+      // not read back as the user hand-picking an override.
+      expect(modeWrites).toContain('standard')
+      expect(modeWrites).not.toContain('custom')
+      expect(
+        await comfyPage.settings.getSetting('Comfy.Canvas.NavigationMode')
+      ).toBe('standard')
+    })
+
+    test('picking custom leaves the overrides untouched', async ({
+      comfyPage
+    }) => {
+      // Arrive on the standard pair first, so both overrides differ from their
+      // defaults and a handler that rewrote them would be caught.
+      await comfyPage.settings.setSetting(
+        'Comfy.Canvas.NavigationMode',
+        'standard'
+      )
+
+      await comfyPage.settings.setSetting(
+        'Comfy.Canvas.NavigationMode',
+        'custom'
+      )
+      await comfyPage.workflow.reloadAndWaitForApp()
+
+      expect(
+        await comfyPage.settings.getSetting('Comfy.Canvas.NavigationMode')
+      ).toBe('custom')
+      expect(
+        await comfyPage.settings.getSetting(
+          'Comfy.Canvas.LeftMouseClickBehavior'
+        )
+      ).toBe('select')
+      expect(
+        await comfyPage.settings.getSetting('Comfy.Canvas.MouseWheelScroll')
+      ).toBe('panning')
+    })
+
+    // A mode stored before the overrides shipped in 1.27.4 is the only value on
+    // record, so they load as their defaults — which describe a different mode.
+    test.describe('stored without the override settings', () => {
+      test.use({
+        initialSettings: { 'Comfy.Canvas.NavigationMode': 'standard' }
+      })
+
+      test('keeps the stored preset through load', async ({ comfyPage }) => {
+        expect(
+          await comfyPage.settings.getSetting('Comfy.Canvas.NavigationMode')
+        ).toBe('standard')
+      })
+
+      // Reads the server, not the store: the migration is idempotent, so an
+      // in-memory read passes whether or not the write ever landed.
+      test('persists the stored preset to the overrides', async ({
+        comfyPage
+      }) => {
+        expect(
+          await comfyPage.settings.getPersistedSetting(
+            'Comfy.Canvas.LeftMouseClickBehavior'
+          )
+        ).toBe('select')
+        expect(
+          await comfyPage.settings.getPersistedSetting(
+            'Comfy.Canvas.MouseWheelScroll'
+          )
+        ).toBe('panning')
+      })
+    })
+
+    // Every profile that already loaded a 1.27.4+ build has the mode demoted to
+    // 'custom' with the overrides never written. The original choice is
+    // unrecoverable, so this pins the no-op as deliberate.
+    test.describe('already demoted to custom', () => {
+      test.use({
+        initialSettings: { 'Comfy.Canvas.NavigationMode': 'custom' }
+      })
+
+      test('is left as custom', async ({ comfyPage }) => {
+        expect(
+          await comfyPage.settings.getSetting('Comfy.Canvas.NavigationMode')
+        ).toBe('custom')
+      })
+    })
+
+    test.describe('stored with only one override', () => {
+      test.use({
+        initialSettings: {
+          'Comfy.Canvas.NavigationMode': 'standard',
+          'Comfy.Canvas.MouseWheelScroll': 'zoom'
+        }
+      })
+
+      test('fills the gap without overwriting the stored override', async ({
+        comfyPage
+      }) => {
+        expect(
+          await comfyPage.settings.getSetting(
+            'Comfy.Canvas.LeftMouseClickBehavior'
+          )
+        ).toBe('select')
+        expect(
+          await comfyPage.settings.getSetting('Comfy.Canvas.MouseWheelScroll')
+        ).toBe('zoom')
+
+        // select + zoom is no preset, so demoting the mode is correct here.
+        // Overwriting the stored 'zoom' to match the mode instead would
+        // discard a real preference, which is the bug this all started as.
+        expect(
+          await comfyPage.settings.getSetting('Comfy.Canvas.NavigationMode')
+        ).toBe('custom')
+      })
+    })
+  })
+
   test.describe('Comfy.Canvas.LeftMouseClickBehavior', () => {
     test('override to panning makes empty left-drag pan the canvas', async ({
       comfyPage

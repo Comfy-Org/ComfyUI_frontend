@@ -56,10 +56,16 @@
  * The splash loader in index.html (z-9999) covers the screen during this
  * phase, so no separate loading indicator is needed here.
  */
-import { captureException } from '@sentry/vue'
 import { until } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { nextTick, onMounted, onUnmounted, ref, useTemplateRef } from 'vue'
+import {
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref,
+  useTemplateRef,
+  watch
+} from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
@@ -71,6 +77,7 @@ import {
   remoteConfigState
 } from '@/platform/remoteConfig/remoteConfig'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -86,15 +93,22 @@ const errorPanel = useTemplateRef<HTMLElement>('errorPanel')
 const subscriptionDialog = useSubscriptionDialog()
 let initializationGeneration = 0
 let initializationController: AbortController | null = null
+let backgroundInitialization: Promise<void> | null = null
+let backgroundInitializationUserId: string | null | undefined
 
 function cancelInitialization(): void {
   initializationGeneration++
   initializationController?.abort()
   initializationController = null
+  backgroundInitialization = null
+  backgroundInitializationUserId = undefined
 }
 
 async function initialize(): Promise<void> {
-  if (!isCloud) return
+  if (!isCloud) {
+    void initializeWorkspacesInBackground()
+    return
+  }
 
   cancelInitialization()
   const generation = initializationGeneration
@@ -173,10 +187,8 @@ async function initialize(): Promise<void> {
   } catch (error) {
     if (generation !== initializationGeneration) return
     console.error('[WorkspaceAuthGate] Initialization failed:', error)
-    captureException(error, {
-      tags: {
-        error_type: 'workspace_auth_gate_initialization_failure'
-      }
+    reportError(error, {
+      errorType: 'workspace_auth_gate_initialization_failure'
     })
     initializationRetryable.value = isRetryableInitializationError(error)
     initializationState.value = 'error'
@@ -230,11 +242,66 @@ async function initializeWorkspaceMode(): Promise<void> {
   }
 }
 
+function initializeWorkspacesInBackground(): Promise<void> {
+  const { isInitialized, currentUser } = storeToRefs(useAuthStore())
+  const userId = currentUser.value?.uid ?? null
+  if (backgroundInitialization && backgroundInitializationUserId === userId) {
+    return backgroundInitialization
+  }
+
+  cancelInitialization()
+  const generation = initializationGeneration
+  backgroundInitializationUserId = userId
+
+  const operation = (async () => {
+    if (!isInitialized.value) {
+      await until(isInitialized).toBe(true, {
+        timeout: FIREBASE_INIT_TIMEOUT_MS,
+        throwOnTimeout: true
+      })
+    }
+    if (
+      generation !== initializationGeneration ||
+      currentUser.value?.uid !== userId
+    ) {
+      return
+    }
+    await initializeWorkspaceMode()
+  })().catch((error: unknown) => {
+    if (generation === initializationGeneration) {
+      console.warn(
+        '[WorkspaceAuthGate] Background workspace initialization failed:',
+        error
+      )
+    }
+  })
+
+  backgroundInitialization = operation
+  void operation.finally(() => {
+    if (backgroundInitialization === operation) {
+      backgroundInitialization = null
+      backgroundInitializationUserId = undefined
+    }
+  })
+  return operation
+}
+
 // Initialize on mount. This gate should be placed on the authenticated layout
 // (LayoutDefault) so it mounts fresh after login and unmounts on logout.
 // The router guard ensures only authenticated users reach this layout.
 onMounted(() => {
   void initialize()
 })
+
+if (!isCloud) {
+  const { currentUser } = storeToRefs(useAuthStore())
+  watch(currentUser, (user) => {
+    if (user) {
+      void initializeWorkspacesInBackground()
+    } else {
+      cancelInitialization()
+    }
+  })
+}
 onUnmounted(cancelInitialization)
 </script>

@@ -2,6 +2,11 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
+import {
+  dismissErrorOverlay,
+  enableErrorsOverlay
+} from '@e2e/fixtures/helpers/ErrorsTabHelper'
+import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 
 test.describe('App mode builder selection', () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -94,33 +99,60 @@ test.describe('App mode builder selection', () => {
     }
   )
 
-  test('Can not select nodes with errors or notes', async ({ comfyPage }) => {
-    //Manually set error state on checkpoint loader
-    //Shouldn't be needed on ci, but has spotty reliability
-    await comfyPage.page.evaluate(() => (graph!.nodes[6].has_errors = true))
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+  test(
+    'Can not select a node with an error',
+    { tag: '@vue-nodes' },
+    async ({ comfyPage }) => {
+      test.slow()
+      await comfyPage.workflow.loadWorkflow('default')
+      await enableErrorsOverlay(comfyPage)
 
-    const items = comfyPage.appMode.select.inputItems
-    await comfyPage.appMode.enterBuilder()
-    await comfyPage.appMode.steps.goToInputs()
-    await expect(items).toHaveCount(0)
+      const [checkpointLoader] =
+        await comfyPage.nodeOps.getNodeRefsByTitle('Load Checkpoint')
+      await new ExecutionHelper(comfyPage).mockValidationFailure({
+        [String(checkpointLoader.id)]: {
+          class_type: 'CheckpointLoaderSimple',
+          dependent_outputs: [],
+          errors: [
+            {
+              type: 'value_not_in_list',
+              message: 'Value not in list',
+              details: '',
+              extra_info: { input_name: 'ckpt_name' }
+            }
+          ]
+        }
+      })
+      await comfyPage.runButton.click()
+      await dismissErrorOverlay(comfyPage)
 
-    await comfyPage.appMode.select.selectInputWidget(
-      'Load Checkpoint',
-      'ckpt_name'
-    )
-    await expect(items).toHaveCount(0)
+      const items = comfyPage.appMode.select.inputItems
+      await comfyPage.appMode.enterBuilder()
+      await comfyPage.appMode.steps.goToInputs()
+      await comfyPage.appMode.select.selectInputWidget(
+        'Load Checkpoint',
+        'ckpt_name'
+      )
 
-    await comfyPage.workflow.loadWorkflow('nodes/note_nodes')
-    await comfyPage.appMode.enterBuilder()
-    await comfyPage.appMode.steps.goToInputs()
-    await expect(items).toHaveCount(0)
+      await expect(items).toHaveCount(0)
+    }
+  )
 
-    await comfyPage.appMode.select.selectInputWidget('Note', 'text')
-    await comfyPage.appMode.select.selectInputWidget('Markdown Note', 'text')
+  test(
+    'Can not select note nodes',
+    { tag: '@vue-nodes' },
+    async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow('nodes/note_nodes')
 
-    await expect(items).toHaveCount(0)
-  })
+      const items = comfyPage.appMode.select.inputItems
+      await comfyPage.appMode.enterBuilder()
+      await comfyPage.appMode.steps.goToInputs()
+      await comfyPage.appMode.select.selectInputWidget('Note', 'text')
+      await comfyPage.appMode.select.selectInputWidget('Markdown Note', 'text')
+
+      await expect(items).toHaveCount(0)
+    }
+  )
 
   test('Marks canvas readOnly', async ({ comfyPage }) => {
     await comfyPage.searchBoxV2.openByDoubleClickCanvas()

@@ -1,0 +1,22 @@
+{
+  "registry_version": "v0-frontend",
+  "runbooks": [
+    {
+      "id": "r0-locale-demo",
+      "why": "Controlled locale-update workflow used to verify the R0 lane before enrollment merges",
+      "identity": {
+        "logins": ["comfy-pr-bot"],
+        "head_ref_patterns": ["demo/risk-r0-locale-*"]
+      },
+      "permitted_paths": ["src/locales/**"],
+      "shape": {
+        "max_changed_files": 20,
+        "max_additions": 10000,
+        "max_deletions": 10000,
+        "title_regex": "^test: demonstrate automated R0 grading$"
+      },
+      "daily_cap": 1,
+      "lane": "r0-demo"
+    }
+  ]
+}

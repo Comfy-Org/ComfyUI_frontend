@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import FeatureRows01 from '../../components/blocks/FeatureRows01.vue'
 import type { FeatureRow } from '../../components/blocks/FeatureRows01.vue'
+import VideoPlayer from '../../components/common/VideoPlayer.vue'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
@@ -96,5 +97,17 @@ const rows: FeatureRow[] = tools.map(({ n, media, altKey }) => {
     :locale="locale"
     :heading="t('mcp.tools.heading', locale)"
     :rows="rows"
-  />
+  >
+    <template #media>
+      <VideoPlayer
+        :locale="locale"
+        :aria-label="t('mcp.tools.film.alt', locale)"
+        src="https://media.comfy.org/website/mcp/launch-film.mp4"
+        autoplay
+        lazy-autoplay
+        loop
+        mute-only
+      />
+    </template>
+  </FeatureRows01>
 </template>

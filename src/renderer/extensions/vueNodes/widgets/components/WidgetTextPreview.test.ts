@@ -1,3 +1,6 @@
+// @vitest-environment jsdom
+// dompurify is inert under happy-dom — see the tripwire note in
+// vitest.setup.ts (capricorn86/happy-dom#2182, FE-1189).
 import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -21,6 +24,16 @@ import WidgetTextPreview from './WidgetTextPreview.vue'
 const GRAPH_ID = 'graph-1'
 const NODE_ID = toNodeId('7')
 const LOCATOR = 'loc-1'
+
+// jsdom does not implement ResizeObserver (happy-dom does); stub it before
+// component modules construct their module-level observer at import time.
+vi.hoisted(() => {
+  globalThis.ResizeObserver ??= class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  } as unknown as typeof ResizeObserver
+})
 
 const { downloadFileMock, copyMock } = vi.hoisted(() => ({
   downloadFileMock: vi.fn(),

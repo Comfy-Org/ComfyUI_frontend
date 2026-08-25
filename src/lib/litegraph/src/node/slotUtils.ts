@@ -1,13 +1,13 @@
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type {
   IWidgetInputSlot,
   SharedIntersection
 } from '@/lib/litegraph/src/interfaces'
 import type {
   INodeInputSlot,
-  INodeOutputSlot,
-  INodeSlot,
-  IWidget
+  INodeOutputSlot
 } from '@/lib/litegraph/src/litegraph'
+import { inputLinkId, outputLinkIds } from '@/lib/litegraph/src/node/slotLinks'
 import type {
   ISerialisableNodeInput,
   ISerialisableNodeOutput
@@ -48,12 +48,16 @@ function shallowCloneCommonProps(slot: CommonIoSlotProps): CommonIoSlotProps {
 }
 
 export function inputAsSerialisable(
-  slot: INodeInputSlot
+  slot: INodeInputSlot,
+  node: LGraphNode,
+  slotIndex: number
 ): ISerialisableNodeInput {
-  const { link } = slot
   const widgetOrPos = slot.widget
     ? { widget: { name: slot.widget.name } }
     : { pos: slot.pos }
+  const link = node.graph
+    ? (inputLinkId(node.graph, node.id, slotIndex) ?? null)
+    : null
 
   return {
     ...shallowCloneCommonProps(slot),
@@ -63,23 +67,22 @@ export function inputAsSerialisable(
 }
 
 export function outputAsSerialisable(
-  slot: INodeOutputSlot & { widget?: IWidget }
+  slot: INodeOutputSlot,
+  node: LGraphNode,
+  slotIndex: number
 ): ISerialisableNodeOutput {
-  const { pos, slot_index, links, widget } = slot
+  const { pos, slot_index, widget } = slot
   // Output widgets do not exist in Litegraph; this is a temporary downstream workaround.
   const outputWidget = widget ? { widget: { name: widget.name } } : null
+  const ids = node.graph ? outputLinkIds(node.graph, node.id, slotIndex) : []
 
   return {
     ...shallowCloneCommonProps(slot),
     ...outputWidget,
     pos,
     slot_index,
-    links: links ? [...links] : links
+    links: ids.length ? ids : null
   }
-}
-
-export function isINodeInputSlot(slot: INodeSlot): slot is INodeInputSlot {
-  return 'link' in slot
 }
 
 /**

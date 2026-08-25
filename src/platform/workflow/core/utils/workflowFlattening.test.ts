@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { FlattenableWorkflowNode } from '@/platform/workflow/core/utils/workflowFlattening'
 import {
   buildSubgraphExecutionPaths,
+  collectSubgraphDefinitions,
   flattenWorkflowNodes
 } from '@/platform/workflow/core/utils/workflowFlattening'
 
@@ -24,6 +25,19 @@ function subgraphDef(
     outputNode: {}
   }
 }
+
+describe('collectSubgraphDefinitions', () => {
+  it('collects mutually cyclic definitions once', () => {
+    const defA = subgraphDef('def-A', [])
+    const defB = subgraphDef('def-B', [])
+    defA.definitions.subgraphs = [defB]
+    defB.definitions.subgraphs = [defA]
+
+    const ids = collectSubgraphDefinitions([defA]).map(({ id }) => id)
+    expect(ids).toHaveLength(2)
+    expect(new Set(ids)).toEqual(new Set(['def-A', 'def-B']))
+  })
+})
 
 describe('buildSubgraphExecutionPaths', () => {
   it('returns empty map when there are no subgraph definitions', () => {

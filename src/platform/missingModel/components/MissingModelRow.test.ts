@@ -195,11 +195,14 @@ describe('MissingModelRow', () => {
     })
   })
 
-  it('does not prefetch metadata for non-allowlisted URLs outside cloud', () => {
+  it('does not offer or probe arbitrary localhost URLs outside cloud', () => {
     mockIsCloud.value = false
+    const model = makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }])
+    model.representative.url = 'http://localhost:6379/model.safetensors'
 
-    renderRow(makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }]))
+    renderRow(model)
 
+    expect(screen.queryByTestId('missing-model-download')).toBeNull()
     expect(mockFetchModelMetadata).not.toHaveBeenCalled()
   })
 

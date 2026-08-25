@@ -4,6 +4,22 @@
 
 - User-friendly and actionable messages
 - Proper error propagation
+- Report failures with `reportError()` from `@/platform/telemetry/reportError` —
+  never `captureException` or `datadogRum.addError` directly. Each of those
+  reaches one sink, so the failure is invisible in the other console. Enforced
+  by `no-restricted-imports`; only `src/platform/telemetry/**` may import the
+  sinks, and it does so behind an explicit disable comment.
+
+  ```typescript
+  reportError(error, {
+    errorType: 'workspace_auth_gate_initialization_failure'
+  })
+  ```
+
+  `errorType` is a stable slug. It lands as the `error_type` Sentry tag and the
+  `error_type` RUM context field, so one query works against either console.
+  Pick a slug that names the failure, not the symptom, and reuse the existing
+  one if the failure already has a name.
 
 ## Security
 

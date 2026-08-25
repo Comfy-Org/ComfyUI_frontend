@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 /**
  * Guards the network block installed by `vitest.setup.ts`.
@@ -9,10 +9,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
  * explains. Keep this covered so the guard cannot be dropped silently.
  */
 describe('unit test network guard', () => {
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
-
   it('rejects absolute http requests instead of dialling out', async () => {
     await expect(fetch('https://example.com/thing')).rejects.toThrow(
       /Blocked a real network request/
@@ -62,5 +58,21 @@ describe('unit test network guard', () => {
     await expect(fetch('https://example.com/thing')).rejects.toThrow(
       /Blocked a real network request/
     )
+  })
+
+  it('errors a <script src> synchronously instead of fetching it', () => {
+    // Subresource loads bypass the fetch guard: happy-dom fetches them
+    // through its own pipeline. Disabled loading errors the element
+    // synchronously; anything async means scripts reach the network again.
+    const script = document.createElement('script')
+    const events: string[] = []
+    script.addEventListener('error', () => events.push('error'))
+    script.addEventListener('load', () => events.push('load'))
+    script.async = true
+    script.src = 'https://example.com/external.js'
+    document.head.appendChild(script)
+    script.remove()
+
+    expect(events).toEqual(['error'])
   })
 })

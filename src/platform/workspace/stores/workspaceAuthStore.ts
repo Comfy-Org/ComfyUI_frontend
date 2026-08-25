@@ -1,3 +1,4 @@
+import { zWorkspaceWithRole } from '@comfyorg/ingest-types/zod'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 import { z } from 'zod'
@@ -11,29 +12,28 @@ import {
 } from '@/platform/workspace/workspaceConstants'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import type { AuthHeader } from '@/types/authTypes'
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
-import type { WorkspaceWithRole } from '@/platform/workspace/workspaceTypes'
+import type { WorkspaceIdentity } from '@/platform/workspace/workspaceTypes'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { isCloud } from '@/platform/distribution/types'
+import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
 
-const WorkspaceWithRoleSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  type: z.enum(['personal', 'team']),
-  role: z.enum(['owner', 'member'])
+// Picked off the generated schema: a hand-written enum that lags the spec would
+// reject a valid persisted identity and silently clear the session.
+const WorkspaceIdentitySchema = zWorkspaceWithRole.pick({
+  id: true,
+  name: true,
+  type: true,
+  role: true
 })
 
 const WorkspaceTokenResponseSchema = z.object({
   token: z.string(),
   expires_at: z.string(),
-  workspace: z.object({
-    id: z.string(),
-    name: z.string(),
-    type: z.enum(['personal', 'team'])
-  }),
-  role: z.enum(['owner', 'member']),
+  workspace: zWorkspaceWithRole.pick({ id: true, name: true, type: true }),
+  role: zWorkspaceWithRole.shape.role,
   permissions: z.array(z.string())
 })
 
@@ -63,7 +63,7 @@ export class WorkspaceAuthError extends Error {
 interface MintedToken {
   token: string
   expiresAt: number
-  workspace: WorkspaceWithRole
+  workspace: WorkspaceIdentity
   ownerUid: string
 }
 
@@ -108,7 +108,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   const { flags } = useFeatureFlags()
 
   // State
-  const currentWorkspace = shallowRef<WorkspaceWithRole | null>(null)
+  const currentWorkspace = shallowRef<WorkspaceIdentity | null>(null)
   const workspaceToken = ref<string | null>(null)
   const workspaceTokenExpiresAt = ref<number | null>(null)
   const workspaceTokenOwnerUid = ref<string | null>(null)
@@ -231,7 +231,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     )
   }
 
-  function persistWorkspaceIdentity(workspace: WorkspaceWithRole): void {
+  function persistWorkspaceIdentity(workspace: WorkspaceIdentity): void {
     try {
       sessionStorage.setItem(
         WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
@@ -243,7 +243,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   }
 
   function persistToSession(
-    workspace: WorkspaceWithRole,
+    workspace: WorkspaceIdentity,
     token: string,
     expiresAt: number,
     ownerUid: string
@@ -309,7 +309,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
         return false
       }
 
-      const parseResult = WorkspaceWithRoleSchema.safeParse(
+      const parseResult = WorkspaceIdentitySchema.safeParse(
         JSON.parse(workspaceJson)
       )
 
@@ -357,7 +357,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       )
     }
 
-    const response = await fetch(api.apiURL('/auth/token'), {
+    const response = await fetch(workspaceApiUrl('/auth/token'), {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${firebaseToken}`,
@@ -534,9 +534,10 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     err: unknown,
     failedWorkspaceId?: string
   ): void {
+    let invalidSelectionHandled = false
     if (isPermanentRecoveryFailure(err)) {
       const hadContext = currentWorkspace.value !== null
-      endWorkspaceSession(
+      invalidSelectionHandled = endWorkspaceSession(
         failedWorkspaceId && isWorkspaceSelectionInvalid(err)
           ? failedWorkspaceId
           : undefined
@@ -545,7 +546,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
         surfacePermanentAuthError(err)
       }
     }
-    startRecoveryCooldown()
+    if (!invalidSelectionHandled) startRecoveryCooldown()
     console.warn('Workspace auth recovery failed:', err)
   }
 
@@ -571,10 +572,19 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       if (inFlightSwitchPromise) {
         await inFlightSwitchPromise.catch(() => {})
         if (!isCurrentUser(ownerUid)) return null
+        if (!isCloud && currentWorkspace.value?.id !== targetWorkspaceId) {
+          return null
+        }
         continue
       }
 
       if (!targetWorkspaceId || Date.now() < recoveryCooldownUntil) {
+        return null
+      }
+      if (
+        !isCloud &&
+        useTeamWorkspaceStore().activeWorkspaceId !== targetWorkspaceId
+      ) {
         return null
       }
 
@@ -966,9 +976,10 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     clearUnifiedContext()
   }
 
-  function endWorkspaceSession(revokedWorkspaceId?: string): void {
+  function endWorkspaceSession(revokedWorkspaceId?: string): boolean {
     const hadContext = currentWorkspace.value !== null
-    if (hadContext) prepareWorkflowWorkspaceTransition()
+    const cancelWorkflowTransition =
+      isCloud && hadContext ? prepareWorkflowWorkspaceTransition() : undefined
     const revokedWorkspaceHandled = revokedWorkspaceId
       ? useTeamWorkspaceStore().forgetRevokedActiveWorkspace(revokedWorkspaceId)
       : false
@@ -976,9 +987,12 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     const shouldReload = revokedWorkspaceId
       ? !revokedWorkspaceHandled
       : hadContext
-    if (shouldReload) {
+    if (isCloud && shouldReload) {
       window.location.reload()
+      return false
     }
+    cancelWorkflowTransition?.()
+    return !isCloud && revokedWorkspaceHandled
   }
 
   return {

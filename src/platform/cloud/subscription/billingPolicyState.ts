@@ -1,6 +1,7 @@
 export type BillingPolicyState =
   | { kind: 'LocalWithoutActiveSubscription' }
   | { kind: 'LocalTeamWithoutActiveSubscription' }
+  | { kind: 'LocalEnterpriseWithoutActiveSubscription' }
   | { kind: 'LocalAndUnknown' }
   | { kind: 'LocalAndFree' }
   | { kind: 'LocalAndStandard' }
@@ -10,6 +11,7 @@ export type BillingPolicyState =
   | { kind: 'LocalAndTeam' }
   | { kind: 'CloudWithoutActiveSubscription' }
   | { kind: 'CloudTeamWithoutActiveSubscription' }
+  | { kind: 'CloudEnterpriseWithoutActiveSubscription' }
   | { kind: 'CloudAndUnknown' }
   | { kind: 'CloudAndFree' }
   | { kind: 'CloudAndStandard' }

@@ -55,7 +55,7 @@ async function getPrimitiveFanoutSnapshot(
       []
     )
     const primitiveOriginLinkCount = [
-      ...hostNode.subgraph._links.values()
+      ...hostNode.subgraph.links.values()
     ].filter((link) => link.origin_id === primitiveNode?.id).length
     const serialized = window.app!.graph!.serialize()
     const serializedNode = serialized.nodes.find(
@@ -677,7 +677,7 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
         }
 
         return labeledGraphs.flatMap(([label, g]) =>
-          [...g._links.values()].flatMap((link) =>
+          [...g.links.values()].flatMap((link) =>
             [
               checkEndpoint(label, 'origin_id', link.origin_id, g),
               checkEndpoint(label, 'target_id', link.target_id, g)

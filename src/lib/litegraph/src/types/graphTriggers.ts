@@ -9,20 +9,6 @@ interface NodePropertyChangedEvent {
   newValue: unknown
 }
 
-interface NodeSlotErrorsChangedEvent {
-  type: 'node:slot-errors:changed'
-  nodeId: SerializedNodeId
-}
-
-interface NodeSlotLinksChangedEvent {
-  type: 'node:slot-links:changed'
-  nodeId: SerializedNodeId
-  slotType: NodeSlotType
-  slotIndex: number
-  connected: boolean
-  linkId: number
-}
-
 interface NodeSlotLabelChangedEvent {
   type: 'node:slot-label:changed'
   nodeId: SerializedNodeId
@@ -31,14 +17,10 @@ interface NodeSlotLabelChangedEvent {
 
 export type LGraphTriggerEvent =
   | NodePropertyChangedEvent
-  | NodeSlotErrorsChangedEvent
-  | NodeSlotLinksChangedEvent
   | NodeSlotLabelChangedEvent
 
 export const LGraphTriggerActions = [
   'node:property:changed',
-  'node:slot-errors:changed',
-  'node:slot-links:changed',
   'node:slot-label:changed'
 ] as const satisfies readonly LGraphTriggerEvent['type'][]
 

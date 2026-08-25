@@ -8,7 +8,7 @@ import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
 
-setActivePinia(createTestingPinia())
+setActivePinia(createTestingPinia({ stubActions: false }))
 
 const { addNodeInput } = useLitegraphService()
 

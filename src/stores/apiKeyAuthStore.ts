@@ -1,6 +1,6 @@
 import { useLocalStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
@@ -23,13 +23,14 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
   const currentUser = ref<ComfyApiUser | null>(null)
   const isAuthenticated = computed(() => !!currentUser.value)
 
-  const initializeUserFromApiKey = async () => {
+  const initializeUserFromApiKey = async (watchedApiKey: string) => {
     const createCustomerResponse = await authStore
       .createCustomer()
       .catch((err) => {
         console.error(err)
         return
       })
+    if (apiKey.value !== watchedApiKey) return
     if (!createCustomerResponse) {
       apiKey.value = null
       throw new Error(t('auth.login.noAssociatedUser'))
@@ -39,12 +40,12 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
 
   watch(
     apiKey,
-    () => {
-      if (apiKey.value) {
-        // IF API key is set, initialize user
-        void initializeUserFromApiKey()
+    async (watchedApiKey) => {
+      if (watchedApiKey) {
+        await nextTick()
+        if (apiKey.value !== watchedApiKey) return
+        void initializeUserFromApiKey(watchedApiKey)
       } else {
-        // IF API key is cleared, clear user
         currentUser.value = null
       }
     },

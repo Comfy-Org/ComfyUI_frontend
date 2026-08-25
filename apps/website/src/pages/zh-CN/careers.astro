@@ -27,7 +27,7 @@ if (outcome.status === 'failed') {
 
 const departments = outcome.snapshot.departments
 
-const { siteUrl, locale, url } = pageContext(
+const { locale, url } = pageContext(
   Astro.site,
   Astro.url.pathname,
   Astro.currentLocale,

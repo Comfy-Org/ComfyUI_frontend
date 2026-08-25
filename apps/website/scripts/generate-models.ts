@@ -22,12 +22,6 @@ const QUANT_SUFFIXES = [
   '_int8'
 ]
 
-interface RawModel {
-  name: string
-  url: string
-  directory: string
-}
-
 interface ModelData {
   url: string
   directory: string

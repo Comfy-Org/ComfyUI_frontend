@@ -41,6 +41,16 @@
       "permanent": true
     },
     {
+      "source": "/career",
+      "destination": "/careers",
+      "permanent": true
+    },
+    {
+      "source": "/privacy",
+      "destination": "/privacy-policy",
+      "permanent": true
+    },
+    {
       "source": "/minimax",
       "destination": "/minimax-h3/",
       "permanent": false

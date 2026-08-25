@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   createNestedSubgraphs,
@@ -157,8 +157,7 @@ async function createSubgraphState(
     subgraph.addOutput('output', '*')
     const host = createTestSubgraphNode(subgraph, { id: 100 + index })
     rootGraph.add(host)
-    const interior = new LGraphNode('InteriorNode')
-    interior.type = 'InteriorNode'
+    const interior = new LGraphNode('InteriorNode', 'InteriorNode')
     interior.pos = [0, 0]
     interior.setSize([100, 50])
     interior.addWidget('number', 'value', 1 + index, () => undefined)
@@ -226,11 +225,6 @@ describe('ChangeTracker', () => {
     useQueueSettingsStore().mode = 'change'
     app.ui.autoQueueEnabled = false
     app.ui.autoQueueMode = 'instant'
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
-    vi.clearAllTimers()
   })
 
   describe('captureCanvasState', () => {

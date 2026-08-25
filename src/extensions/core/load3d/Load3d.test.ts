@@ -136,7 +136,9 @@ function makeInstance() {
     eventManager,
     adapterRef: { current: null },
     forceRender: vi.fn(),
-    handleResize: vi.fn()
+    handleResize: vi.fn(),
+    preRenderCallbacks: [],
+    postRenderCallbacks: []
   })
 
   return {

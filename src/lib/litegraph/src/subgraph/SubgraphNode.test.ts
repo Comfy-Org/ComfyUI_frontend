@@ -4,7 +4,7 @@
  * Tests for SubgraphNode instances including construction,
  * IO synchronization, and edge cases.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import {
@@ -398,7 +398,7 @@ describe('SubgraphNode Synchronization', () => {
     )
   })
 
-  it('should preserve renamed label through serialize/configure round-trip', () => {
+  it('keeps the renamed label after an in-place reconfigure', () => {
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'seed', type: 'INT' }]
     })
@@ -439,6 +439,65 @@ describe('SubgraphNode Synchronization', () => {
     expect(useWidgetValueStore().getWidget(inputSlot.widgetId)?.label).toBe(
       'My Seed'
     )
+  })
+
+  it('preserves a renamed label across a real definition reload', () => {
+    const interiorNodeType = 'test/interior-label-reload'
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'seed', type: 'INT' }]
+    })
+
+    // A registered type: `configure` will not re-create an unregistered node,
+    // so an anonymous interior node makes the reload silently empty.
+    class InteriorNode extends LGraphNode {
+      static override title = 'Interior'
+      constructor() {
+        super('Interior')
+        const slot = this.addInput('value', 'INT')
+        slot.widget = { name: 'value' }
+        this.addOutput('out', 'INT')
+        this.addWidget('number', 'value', 0, () => {})
+      }
+    }
+    LiteGraph.registerNodeType(interiorNodeType, InteriorNode)
+    onTestFinished(() => {
+      delete LiteGraph.registered_node_types[interiorNodeType]
+    })
+
+    const interiorNode = LiteGraph.createNode(interiorNodeType)!
+    subgraph.add(interiorNode)
+    subgraph.inputNode.slots[0].connect(interiorNode.inputs[0], interiorNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 101 })
+    subgraph.inputs[0].label = 'My Seed'
+    subgraphNode.inputs[0].label = 'My Seed'
+    subgraph.events.dispatch('renaming-input', {
+      input: subgraph.inputs[0],
+      index: 0,
+      oldName: 'seed',
+      newName: 'My Seed'
+    })
+
+    const definition = JSON.parse(
+      JSON.stringify(subgraph.asSerialisable())
+    ) as ReturnType<typeof subgraph.asSerialisable>
+    const instance = JSON.parse(
+      JSON.stringify(subgraphNode.serialize())
+    ) as ExportedSubgraphInstance
+    useWidgetValueStore().clearGraph(subgraphNode.rootGraph.id)
+
+    const reloadedSubgraph = createTestSubgraph({
+      rootGraph: subgraphNode.rootGraph
+    })
+    reloadedSubgraph.configure(definition)
+
+    const reloadedHost = createTestSubgraphNode(reloadedSubgraph, { id: 101 })
+    reloadedHost.configure(instance)
+
+    expect(reloadedHost.widgets).toMatchObject([
+      { name: 'seed', label: 'My Seed' }
+    ])
+    expect(reloadedHost.inputs[0].label).toBe('My Seed')
   })
 })
 

@@ -12,20 +12,7 @@ import { LLink } from '@/lib/litegraph/src/LLink'
 import { toLinkId } from '@/types/linkId'
 import { createMockCanvas2DContext } from '@/utils/__tests__/litegraphTestUtils'
 
-vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
-  layoutStore: {
-    querySlotAtPoint: vi.fn(),
-    queryRerouteAtPoint: vi.fn(),
-    getNodeLayoutRef: vi.fn(() => ({ value: null })),
-    getSlotLayout: vi.fn(),
-    setSource: vi.fn(),
-    batchUpdateNodeBounds: vi.fn(),
-    getCurrentSource: vi.fn(() => 'test'),
-    getCurrentActor: vi.fn(() => 'test'),
-    applyOperation: vi.fn(),
-    pendingSlotSync: false
-  }
-}))
+vi.mock('@/renderer/core/layout/store/layoutStore')
 
 function createMockCtx(): CanvasRenderingContext2D {
   return createMockCanvas2DContext({
@@ -79,20 +66,17 @@ function createTestLink(
     targetNode.id,
     inputSlot
   )
-  graph._links.set(linkId, link)
-  sourceNode.outputs[outputSlot].links ??= []
-  sourceNode.outputs[outputSlot].links!.push(linkId)
-  targetNode.inputs[inputSlot].link = linkId
+  graph._addLink(link)
   return link
 }
 
-describe('drawConnections widget-input slot positioning', () => {
+describe('drawConnections', () => {
   let graph: LGraph
   let canvas: LGraphCanvas
   let canvasElement: HTMLCanvasElement
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
 
     canvasElement = document.createElement('canvas')
     canvasElement.width = 800
@@ -176,6 +160,65 @@ describe('drawConnections widget-input slot positioning', () => {
     expect(arrangeSpy).not.toHaveBeenCalled()
   })
 
+  it('renders links in target order instead of generated id order', () => {
+    const sourceNode = new LGraphNode('Source')
+    sourceNode.pos = [100, 100]
+    sourceNode.addOutput('out', 'STRING')
+    graph.add(sourceNode)
+
+    const firstTarget = new LGraphNode('First target')
+    firstTarget.pos = [300, 100]
+    firstTarget.addInput('in', 'STRING')
+    graph.add(firstTarget)
+
+    const secondTarget = new LGraphNode('Second target')
+    secondTarget.pos = [300, 200]
+    secondTarget.addInput('in', 'STRING')
+    graph.add(secondTarget)
+
+    const secondLink = createTestLink(graph, sourceNode, 0, secondTarget, 0)
+    const firstLink = createTestLink(graph, sourceNode, 0, firstTarget, 0)
+    canvas.visible_area[2] = 800
+    canvas.visible_area[3] = 600
+    vi.spyOn(canvas, 'renderLink').mockImplementation(() => {})
+
+    canvas.drawConnections(createMockCtx())
+
+    expect([...canvas.renderedPaths]).toEqual([firstLink, secondLink])
+  })
+
+  it('connects, draws, and serializes without deprecation warnings', () => {
+    const sourceNode = new LGraphNode('Source')
+    sourceNode.pos = [100, 100]
+    sourceNode.addOutput('out', 'STRING')
+    graph.add(sourceNode)
+
+    const targetNode = new LGraphNode('Target')
+    targetNode.pos = [300, 100]
+    targetNode.addInput('in', 'STRING')
+    graph.add(targetNode)
+
+    const onWarning = vi.fn()
+    const warningCallbacks = vi
+      .spyOn(LiteGraph, 'onDeprecationWarning', 'get')
+      .mockReturnValue([onWarning])
+
+    try {
+      const link = sourceNode.connect(0, targetNode, 0)
+      canvas.visible_area.set([0, 0, 800, 600])
+      vi.spyOn(canvas, 'renderLink').mockImplementation(() => {})
+
+      canvas.drawConnections(createMockCtx())
+      const serialized = graph.serialize()
+
+      expect(link).not.toBeNull()
+      expect([...canvas.renderedPaths]).toEqual([link])
+      expect(serialized.links).toHaveLength(1)
+      expect(onWarning).not.toHaveBeenCalled()
+    } finally {
+      warningCallbacks.mockRestore()
+    }
+  })
   it('positions widget-input slots when display name differs from slot.widget.name', () => {
     const sourceNode = new LGraphNode('Source')
     sourceNode.pos = [0, 100]

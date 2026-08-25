@@ -114,9 +114,10 @@ export {
   type SubgraphId
 } from './LGraph'
 export type { LGraphTriggerEvent } from './types/graphTriggers'
-export { BadgePosition, LGraphBadge } from './LGraphBadge'
+export { LGraphBadge } from './LGraphBadge'
 export { LGraphCanvas } from './LGraphCanvas'
-export { LGraphGroup, type GroupId } from './LGraphGroup'
+export { LGraphGroup } from './LGraphGroup'
+export type { GroupId } from '@/types/groupId'
 export { LGraphNode } from './LGraphNode'
 export { LLink } from './LLink'
 export { createBounds } from './measure'

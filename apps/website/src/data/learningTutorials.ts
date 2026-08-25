@@ -5,9 +5,10 @@ import type {
   TranslationKey
 } from '../i18n/translations'
 
+import { externalLinks } from '../config/routes'
 import { t } from '../i18n/translations'
 
-export type LearningCategory = 'vfx' | 'animations' | 'ads'
+export type LearningCategory = 'basics' | 'vfx' | 'animations' | 'ads'
 
 interface TutorialAuthor {
   name: LocalizedText
@@ -16,7 +17,7 @@ interface TutorialAuthor {
   avatar?: string
 }
 
-export interface LearningTutorial {
+interface LearningTutorialBase {
   id: string
   /** Kebab-case, human-readable — the SEO slug in /learning/<category>/<slug>. */
   slug: string
@@ -27,8 +28,9 @@ export interface LearningTutorial {
   title: LocalizedText
   /** Optional authored copy; when absent the detail page uses a template. */
   description?: LocalizedText
-  videoSrc: string
   href?: string
+  /** CTA button label; defaults to "Try Workflow" when omitted. */
+  ctaLabelKey?: TranslationKey
   /** Open the workflow link in a new tab (e.g. cloud.comfy.org). */
   newTab?: boolean
   poster: string
@@ -39,20 +41,35 @@ export interface LearningTutorial {
   author?: TutorialAuthor
 }
 
+/** Exactly one video source: a self-hosted MP4 or a YouTube embed, never both. */
+type LearningVideoSource =
+  | { videoSrc: string; youtubeId?: never }
+  | { youtubeId: string; videoSrc?: never }
+
+/**
+ * A tutorial plays from exactly one source. Self-hosted items set `videoSrc`
+ * (an MP4 rendered via `<video>`); YouTube items set `youtubeId` (embedded in
+ * an iframe on the watch page).
+ */
+export type LearningTutorial = LearningTutorialBase & LearningVideoSource
+
 /** Category slugs, in nav order — also drives the /learning/[slug] routes. */
 export const learningCategories: readonly LearningCategory[] = [
+  'basics',
   'vfx',
   'animations',
   'ads'
 ]
 
 export const categoryLabelKeys: Record<LearningCategory, TranslationKey> = {
+  basics: 'learning.categories.basics',
   vfx: 'learning.categories.vfx',
   animations: 'learning.categories.animations',
   ads: 'learning.categories.ads'
 }
 
 export const categoryBlurbKeys: Record<LearningCategory, TranslationKey> = {
+  basics: 'learning.categories.basics.blurb',
   vfx: 'learning.categories.vfx.blurb',
   animations: 'learning.categories.animations.blurb',
   ads: 'learning.categories.ads.blurb'
@@ -60,6 +77,7 @@ export const categoryBlurbKeys: Record<LearningCategory, TranslationKey> = {
 
 /** Per-vertical h1 (the "All" view falls back to the generic learning title). */
 const categoryHeadingKeys: Record<LearningCategory, TranslationKey> = {
+  basics: 'learning.categories.basics.heading',
   vfx: 'learning.categories.vfx.heading',
   animations: 'learning.categories.animations.heading',
   ads: 'learning.categories.ads.heading'
@@ -67,6 +85,7 @@ const categoryHeadingKeys: Record<LearningCategory, TranslationKey> = {
 
 /** Per-vertical lead-in, reused as the page description / meta description. */
 const categoryDescriptionKeys: Record<LearningCategory, TranslationKey> = {
+  basics: 'learning.categories.basics.description',
   vfx: 'learning.categories.vfx.description',
   animations: 'learning.categories.animations.description',
   ads: 'learning.categories.ads.description'
@@ -108,6 +127,10 @@ const backgroundsTag: TranslationKey = 'tags.backgrounds'
 const threeDTag: TranslationKey = 'tags.threeD'
 const inBetweeningTag: TranslationKey = 'tags.inBetweening'
 const compositingTag: TranslationKey = 'tags.compositing'
+const fundamentalsTag: TranslationKey = 'tags.fundamentals'
+const nodeGraphTag: TranslationKey = 'tags.nodeGraph'
+const loraTag: TranslationKey = 'tags.lora'
+const controlNetTag: TranslationKey = 'tags.controlNet'
 
 const dougHogan: TutorialAuthor = {
   name: { en: 'Doug Hogan', 'zh-CN': 'Doug Hogan' },
@@ -120,6 +143,52 @@ const shaneFu: TutorialAuthor = {
 }
 
 export const learningTutorials: readonly LearningTutorial[] = [
+  {
+    id: 'basics_node_graph',
+    publishedDate: '2026-07-31',
+    slug: 'full-node-graph-basics',
+    category: 'basics',
+    episode: 1,
+    author: dougHogan,
+    youtubeId: 'TQhIYT1ZYGQ',
+    title: {
+      en: 'ComfyUI Tutorial for Beginners: Full Node Graph Basics (2026)',
+      'zh-CN': 'ComfyUI 新手教程：完整节点图基础 (2026)'
+    },
+    description: {
+      en: "A beginner's tour of the ComfyUI node graph — how nodes, links, and the run queue fit together to build your first working pipeline.",
+      'zh-CN':
+        '面向初学者的 ComfyUI 节点图入门——了解节点、连线与运行队列如何协同，搭建你的第一条可用流程。'
+    },
+    poster: 'https://img.youtube.com/vi/TQhIYT1ZYGQ/maxresdefault.jpg',
+    href: externalLinks.cloudCta('learning_basics_node_graph'),
+    newTab: true,
+    ctaLabelKey: 'cta.tryForFree',
+    tags: [fundamentalsTag, nodeGraphTag]
+  },
+  {
+    id: 'basics_loras_style_controlnets',
+    publishedDate: '2026-08-17',
+    slug: 'loras-style-transfer-controlnets',
+    category: 'basics',
+    episode: 2,
+    author: dougHogan,
+    youtubeId: '-igiHGaxKek',
+    title: {
+      en: 'ComfyUI Tutorial for Beginners: LoRAs, Style Transfer & ControlNets (2026)',
+      'zh-CN': 'ComfyUI 新手教程：LoRA、风格迁移与 ControlNet (2026)'
+    },
+    description: {
+      en: 'Go further with LoRAs, style transfer, and ControlNets — what each one does and how to wire them into a ComfyUI workflow.',
+      'zh-CN':
+        '进阶了解 LoRA、风格迁移与 ControlNet——各自的作用，以及如何将它们接入 ComfyUI 工作流。'
+    },
+    poster: 'https://img.youtube.com/vi/-igiHGaxKek/maxresdefault.jpg',
+    href: externalLinks.cloudCta('learning_basics_loras'),
+    newTab: true,
+    ctaLabelKey: 'cta.tryForFree',
+    tags: [fundamentalsTag, loraTag, controlNetTag, styleTransferTag]
+  },
   {
     id: 'cleanplate_walkthrough_v03',
     publishedDate: '2026-05-26',
@@ -660,6 +729,10 @@ export const getTutorialByCategoryAndSlug = (
   learningTutorials.find(
     (tutorial) => tutorial.category === category && tutorial.slug === slug
   )
+
+/** Privacy-friendly embed URL for the watch-page iframe (YouTube items). */
+export const youtubeEmbedUrl = (id: string): string =>
+  `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&mute=1&rel=0`
 
 /** Canonical path for a category's directory page (wrap with localizeHref for zh-CN). */
 export const categoryPath = (category: LearningCategory): string =>

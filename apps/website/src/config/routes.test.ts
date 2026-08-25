@@ -48,6 +48,16 @@ describe('getRoutes ltx', () => {
   })
 })
 
+describe('getRoutes minimaxMusic3', () => {
+  it('serves the minimax music 3 page at its canonical path for en', () => {
+    expect(getRoutes('en').minimaxMusic3).toBe('/minimax-music-3')
+  })
+
+  it('serves a localized minimax music 3 path for zh-CN', () => {
+    expect(getRoutes('zh-CN').minimaxMusic3).toBe('/zh-CN/minimax-music-3')
+  })
+})
+
 describe('getRoutes minimax', () => {
   it('serves the minimax page at its canonical path for en', () => {
     expect(getRoutes('en').minimax).toBe('/minimax-h3')

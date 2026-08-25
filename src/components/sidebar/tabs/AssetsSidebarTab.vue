@@ -210,7 +210,10 @@ import Button from '@/components/ui/button/Button.vue'
 import MediaAssetContextMenu from '@/platform/assets/components/MediaAssetContextMenu.vue'
 import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBar.vue'
 import MediaAssetSelectionBar from '@/platform/assets/components/MediaAssetSelectionBar.vue'
-import { getMediaAssetGridColumns } from '@/platform/assets/components/mediaAssetViewOptions'
+import {
+  getMediaAssetGridColumns,
+  MEDIA_ASSET_VIEW_MODE
+} from '@/platform/assets/components/mediaAssetViewOptions'
 import type {
   MediaAssetGridMode,
   MediaAssetViewMode
@@ -226,7 +229,10 @@ import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadat
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
-import { getAssetUrl } from '@/platform/assets/utils/assetUrlUtil'
+import {
+  getAssetSubfolder,
+  getAssetUrl
+} from '@/platform/assets/utils/assetUrlUtil'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { isCloud } from '@/platform/distribution/types'
@@ -253,11 +259,13 @@ const expectedFolderCount = ref(0)
 const isInFolderView = computed(() => folderJobId.value !== null)
 const viewMode = useStorage<MediaAssetViewMode>(
   'Comfy.Assets.Sidebar.ViewMode',
-  'grid'
+  MEDIA_ASSET_VIEW_MODE.grid
 )
-const isListView = computed(() => viewMode.value === 'list')
+const isListView = computed(() => viewMode.value === MEDIA_ASSET_VIEW_MODE.list)
 const gridMode = computed<MediaAssetGridMode>(() =>
-  viewMode.value === 'grid-small' ? 'grid-small' : 'grid'
+  viewMode.value === MEDIA_ASSET_VIEW_MODE.gridSmall
+    ? MEDIA_ASSET_VIEW_MODE.gridSmall
+    : MEDIA_ASSET_VIEW_MODE.grid
 )
 const skeletonGridStyle = computed(() => ({
   gridTemplateColumns: getMediaAssetGridColumns(gridMode.value)
@@ -452,7 +460,7 @@ const galleryItems = computed(() => {
     const mediaType = getMediaTypeFromFilename(asset.name)
     const resultItem = new ResultItemImpl({
       filename: asset.name,
-      subfolder: '',
+      subfolder: getAssetSubfolder(asset),
       type: 'output',
       nodeId: '0',
       mediaType: mediaType === 'image' ? 'images' : mediaType

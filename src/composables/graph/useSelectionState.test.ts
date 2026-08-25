@@ -1,3 +1,4 @@
+import { toGroupId } from '@/types/groupId'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
@@ -26,12 +27,12 @@ vi.mock('@/utils/nodeFilterUtil', () => ({
 
 // Mock comment/connection objects with additional properties
 const mockComment = {
-  ...createMockPositionable({ id: 999 }),
+  ...createMockPositionable({ id: toGroupId(999) }),
   type: 'comment',
   isNode: false
 }
 const mockConnection = {
-  ...createMockPositionable({ id: 1000 }),
+  ...createMockPositionable({ id: toGroupId(1000) }),
   type: 'connection',
   isNode: false
 }
