@@ -1,4 +1,4 @@
-import * as Sentry from '@sentry/vue'
+import { addBreadcrumb } from '@sentry/vue'
 import { isEmpty } from 'es-toolkit/compat'
 
 import { reportError } from '@/platform/telemetry/reportError'
@@ -92,7 +92,7 @@ export async function getSurveyCompletedStatus(): Promise<boolean> {
     if (!response.ok) {
       // Other non-ok (401/403/5xx): treat as completed so a transient failure
       // never bounces a working user to /cloud/survey.
-      Sentry.addBreadcrumb({
+      addBreadcrumb({
         category: 'auth',
         message: 'Survey status check returned non-ok response',
         level: 'warning',
@@ -124,7 +124,7 @@ export async function submitSurvey(
   survey: Record<string, unknown>
 ): Promise<void> {
   try {
-    Sentry.addBreadcrumb({
+    addBreadcrumb({
       category: 'auth',
       message: 'Submitting survey',
       level: 'info',
@@ -160,7 +160,7 @@ export async function submitSurvey(
     }
 
     // Log successful survey submission
-    Sentry.addBreadcrumb({
+    addBreadcrumb({
       category: 'auth',
       message: 'Survey submitted successfully',
       level: 'info'
