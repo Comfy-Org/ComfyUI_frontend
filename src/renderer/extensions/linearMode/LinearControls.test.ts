@@ -26,6 +26,15 @@ const overlayMock = vi.hoisted(() => ({
   overlayTitle: 'Required input missing'
 }))
 
+const inputDownloadMock = vi.hoisted(() => ({
+  downloads: [] as Array<{
+    downloadId: string
+    filename: string
+    progress: number | null
+    status: 'pending' | 'downloading' | 'paused' | 'completed'
+  }>
+}))
+
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     canRunWorkflows: billingMock.canRunWorkflows
@@ -39,6 +48,10 @@ vi.mock('@/components/error/useErrorOverlayState', () => ({
   })
 }))
 
+vi.mock('@/stores/templateInputDownloadStore', () => ({
+  useTemplateInputDownloadStore: () => inputDownloadMock
+}))
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -49,6 +62,11 @@ const i18n = createI18n({
           goto: 'Show errors in graph'
         },
         mobileNoWorkflow: 'No workflow',
+        inputDownloads: {
+          downloading:
+            'Downloading {count} starter input | Downloading {count} starter inputs',
+          finalizing: 'Preparing downloaded starter inputs'
+        },
         runCount: 'Run count',
         viewJob: 'View job'
       },
@@ -171,6 +189,28 @@ describe('LinearControls', () => {
     billingMock.canRunWorkflows = true
     overlayMock.overlayMessage = 'KSampler is missing a required input: model'
     overlayMock.overlayTitle = 'Required input missing'
+    inputDownloadMock.downloads = []
+  })
+
+  it('shows required template input progress and blocks Run until graph hydration', () => {
+    inputDownloadMock.downloads = [
+      {
+        downloadId: 'download-1',
+        filename: missingMediaCandidate.name,
+        progress: 0.42,
+        status: 'downloading'
+      }
+    ]
+
+    renderControls({ missingResource: 'media' })
+
+    const status = screen.getByTestId('linear-input-download-status')
+    expect(status).toHaveTextContent('Downloading 1 starter input')
+    expect(within(status).getByRole('progressbar')).toHaveAttribute(
+      'aria-valuenow',
+      '42'
+    )
+    expect(screen.getByRole('button', { name: 'Run' })).toBeDisabled()
   })
 
   it.for([
