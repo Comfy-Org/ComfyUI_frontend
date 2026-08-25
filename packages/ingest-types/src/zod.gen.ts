@@ -11,7 +11,8 @@ export const zSubscriptionTier = z.enum([
   'CREATOR',
   'PRO',
   'FOUNDERS_EDITION',
-  'TEAM'
+  'TEAM',
+  'ENTERPRISE'
 ])
 
 /**
@@ -2268,6 +2269,54 @@ export const zBillingCompanyDetailsResponse = z.object({
   tax_id: zBillingTaxId.optional()
 })
 
+export const zBillingCapabilityScope = z.object({
+  user_id: z.string(),
+  workspace_id: z.string()
+})
+
+/**
+ * Identifies capability values currently using safe rollout defaults
+ * instead of deterministic policy results. A true value is UI guidance,
+ * not evidence that the corresponding write will succeed.
+ *
+ */
+export const zBillingCapabilityRolloutDefaults = z.object({
+  can_downgrade_to_personal: z.boolean(),
+  can_subscribe_self_serve: z.boolean(),
+  can_top_up: z.boolean()
+})
+
+/**
+ * Conservative UI guidance. These values do not authorize billing writes;
+ * each write endpoint independently enforces its permission policy.
+ *
+ */
+export const zBillingCapabilities = z.object({
+  can_cancel: z.boolean(),
+  can_change_seats: z.boolean(),
+  can_downgrade_to_personal: z.boolean(),
+  can_invite_members: z.boolean(),
+  can_reactivate: z.boolean(),
+  can_subscribe_self_serve: z.boolean(),
+  can_top_up: z.boolean()
+})
+
+/**
+ * Effective billing UI guidance for one authenticated user and workspace.
+ */
+export const zBillingCapabilitiesResponse = z.object({
+  capabilities: zBillingCapabilities,
+  expires_at: z.string().datetime(),
+  resolved_for: zBillingCapabilityScope,
+  revision: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .lte(BigInt(9007199254740991)),
+  rollout_defaults_applied: zBillingCapabilityRolloutDefaults
+})
+
 /**
  * Current credit balance and usage details for a workspace.
  */
@@ -2977,6 +3026,11 @@ export const zExchangeTokenResponse2 = zExchangeTokenResponse
  * Credit balance
  */
 export const zGetBillingBalanceResponse = zBillingBalanceResponse
+
+/**
+ * Effective billing capabilities
+ */
+export const zGetBillingCapabilitiesResponse = zBillingCapabilitiesResponse
 
 /**
  * Success
