@@ -12,7 +12,7 @@ function model(name: string, directory: string): ModelFile {
 }
 
 describe('resolveTemplateModelAvailability', () => {
-  it('matches an installed model by normalized filename and exact directory', async () => {
+  it('matches an installed model by normalized filename and exact directory', () => {
     const required = model('nested\\model.safetensors', 'checkpoints')
 
     expect(
@@ -26,7 +26,7 @@ describe('resolveTemplateModelAvailability', () => {
     ).toEqual([{ model: required, status: 'installed' }])
   })
 
-  it('classifies an absent model as missing only in a complete inventory', async () => {
+  it('classifies an absent model as missing only in a complete inventory', () => {
     const required = model('model.safetensors', 'checkpoints')
 
     expect(
@@ -37,7 +37,7 @@ describe('resolveTemplateModelAvailability', () => {
     ).toEqual([{ model: required, status: 'missing' }])
   })
 
-  it('keeps absence unknown while the inventory is incomplete', async () => {
+  it('keeps absence unknown while the inventory is incomplete', () => {
     const installed = model('installed.safetensors', 'checkpoints')
     const unresolved = model('unresolved.safetensors', 'checkpoints')
 

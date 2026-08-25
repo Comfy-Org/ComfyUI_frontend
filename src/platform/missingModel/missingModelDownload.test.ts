@@ -6,6 +6,7 @@ import {
   clearMetadataCache,
   downloadModel,
   fetchModelMetadata,
+  fetchModelMetadataWithStatus,
   isModelDownloadable,
   isTrustedHuggingFaceUrl,
   openGatedRepoPage,
@@ -26,42 +27,6 @@ vi.mock<unknown>(import('@/platform/distribution/types'), () => ({
   },
   isNightly: false
 }))
-
-type ModelMetadata = {
-  fileSize: number | null
-  gatedRepoUrl: string | null
-}
-
-type ModelMetadataFetchOutcome = {
-  metadata: ModelMetadata
-  resolution: 'resolved' | 'failed'
-}
-
-type FetchModelMetadataWithStatus = (
-  url: string
-) => Promise<ModelMetadataFetchOutcome>
-
-function isMetadataOutcomeModule(value: unknown): value is {
-  fetchModelMetadataWithStatus: FetchModelMetadataWithStatus
-} {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'fetchModelMetadataWithStatus' in value &&
-    typeof value.fetchModelMetadataWithStatus === 'function'
-  )
-}
-
-const modulePath = './missingModelDownload'
-const missingModelDownloadModule: unknown = await import(modulePath)
-
-function getFetchModelMetadataWithStatus(): FetchModelMetadataWithStatus {
-  if (!isMetadataOutcomeModule(missingModelDownloadModule)) {
-    throw new Error('Expected fetchModelMetadataWithStatus to be exported')
-  }
-
-  return missingModelDownloadModule.fetchModelMetadataWithStatus
-}
 
 beforeEach(() => {
   mockIsDesktop.value = false
@@ -334,7 +299,6 @@ describe('fetchModelMetadata', () => {
 
 describe('fetchModelMetadataWithStatus', () => {
   it('reports a non-OK allowed metadata response as failed', async () => {
-    const fetchModelMetadataWithStatus = getFetchModelMetadataWithStatus()
     const url =
       'https://huggingface.co/org/model/resolve/main/not-found.safetensors'
     fetchMock.mockResolvedValueOnce({
@@ -350,7 +314,6 @@ describe('fetchModelMetadataWithStatus', () => {
   })
 
   it('reports an allowed metadata network error as failed', async () => {
-    const fetchModelMetadataWithStatus = getFetchModelMetadataWithStatus()
     const url =
       'https://huggingface.co/org/model/resolve/main/network.safetensors'
     fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'))
@@ -362,7 +325,6 @@ describe('fetchModelMetadataWithStatus', () => {
   })
 
   it('reports gated HuggingFace proof as resolved manual metadata', async () => {
-    const fetchModelMetadataWithStatus = getFetchModelMetadataWithStatus()
     const url =
       'https://huggingface.co/bfl/FLUX.1/resolve/main/gated.safetensors'
     fetchMock.mockResolvedValueOnce({
@@ -381,7 +343,6 @@ describe('fetchModelMetadataWithStatus', () => {
   })
 
   it('reports a successful response without size as resolved', async () => {
-    const fetchModelMetadataWithStatus = getFetchModelMetadataWithStatus()
     const url =
       'https://huggingface.co/org/model/resolve/main/no-size-outcome.safetensors'
     fetchMock.mockResolvedValueOnce({
@@ -396,8 +357,6 @@ describe('fetchModelMetadataWithStatus', () => {
   })
 
   it('reports non-allowlisted URLs as resolved unsupported metadata', async () => {
-    const fetchModelMetadataWithStatus = getFetchModelMetadataWithStatus()
-
     await expect(
       fetchModelMetadataWithStatus('https://example.com/model.safetensors')
     ).resolves.toEqual({
@@ -408,8 +367,6 @@ describe('fetchModelMetadataWithStatus', () => {
   })
 
   it('reports an unrecognized allowed Civitai URL as failed', async () => {
-    const fetchModelMetadataWithStatus = getFetchModelMetadataWithStatus()
-
     await expect(
       fetchModelMetadataWithStatus('https://civitai.com/api/v1/models/123')
     ).resolves.toEqual({
@@ -420,7 +377,6 @@ describe('fetchModelMetadataWithStatus', () => {
   })
 
   it('shares one inflight request and cache with the legacy metadata API', async () => {
-    const fetchModelMetadataWithStatus = getFetchModelMetadataWithStatus()
     const url =
       'https://huggingface.co/org/model/resolve/main/shared-outcome.safetensors'
     fetchMock.mockResolvedValueOnce({
