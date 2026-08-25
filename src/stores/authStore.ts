@@ -286,6 +286,16 @@ export const useAuthStore = defineStore('auth', () => {
     return token ? { Authorization: `Bearer ${token}` } : null
   }
 
+  /**
+   * Returns the user-identity auth header for user-scoped endpoints
+   * (e.g., /customers/*): the Firebase token for signed-in sessions, the
+   * stored API key for API-key sessions. Never a workspace-scoped token.
+   */
+  const getUserAuthHeader = async (): Promise<AuthHeader | null> =>
+    currentUser.value === null
+      ? useApiKeyAuthStore().getAuthHeader()
+      : await getFirebaseAuthHeader()
+
   const getWorkspaceAuthHeader = async (): Promise<AuthHeader | null> => {
     if (flags.unifiedCloudAuthEnabled) {
       const token = useWorkspaceAuthStore().getUnifiedToken()
@@ -384,7 +394,7 @@ export const useAuthStore = defineStore('auth', () => {
     isFetchingBalance.value = true
     const requestOwnerUid = currentUser.value?.uid ?? null
     try {
-      const authHeader = await getFirebaseAuthHeader()
+      const authHeader = await getUserAuthHeader()
       if (!authHeader) {
         throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
       }
@@ -431,10 +441,7 @@ export const useAuthStore = defineStore('auth', () => {
     payload?: Omit<CreateCustomerPayload, 'signup_source'>
   ): Promise<CreateCustomerResponse> => {
     const sessionUserId = currentUser.value?.uid
-    const authHeader =
-      currentUser.value === null
-        ? useApiKeyAuthStore().getAuthHeader()
-        : await getFirebaseAuthHeader()
+    const authHeader = await getUserAuthHeader()
     if (!authHeader) {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
@@ -751,7 +758,7 @@ export const useAuthStore = defineStore('auth', () => {
   const addCredits = async (
     requestBodyContent: CreditPurchasePayload
   ): Promise<CreditPurchaseResponse> => {
-    const authHeader = await getFirebaseAuthHeader()
+    const authHeader = await getUserAuthHeader()
     if (!authHeader) {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
@@ -860,6 +867,7 @@ export const useAuthStore = defineStore('auth', () => {
     getAuthHeaderOrThrow,
     getFirebaseAuthHeader,
     getFirebaseAuthHeaderOrThrow,
+    getUserAuthHeader,
     getWorkspaceAuthHeader,
     getWorkspaceAuthHeaderOrThrow,
     getAuthToken,

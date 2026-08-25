@@ -372,6 +372,80 @@ describe('useAuthStore', () => {
     })
   })
 
+  describe('user-scoped billing endpoints with API-key sessions', () => {
+    beforeEach(() => {
+      authStateCallback(null)
+      mockApiKeyGetAuthHeader.mockReturnValue({ 'X-API-KEY': 'test-api-key' })
+    })
+
+    it('fetchBalance sends the stored API key when no Firebase user exists', async () => {
+      const result = await store.fetchBalance()
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/customers/balance'),
+        expect.objectContaining({
+          headers: expect.objectContaining({ 'X-API-KEY': 'test-api-key' })
+        })
+      )
+      expect(result).toEqual({ balance: 0 })
+    })
+
+    it('fetchBalance throws userNotAuthenticated when neither credential exists', async () => {
+      mockApiKeyGetAuthHeader.mockReturnValue(null)
+
+      await expect(store.fetchBalance()).rejects.toMatchObject({
+        name: 'AuthStoreError',
+        message: 'toastMessages.userNotAuthenticated'
+      })
+      expect(mockFetch).not.toHaveBeenCalled()
+    })
+
+    it('fetchBalance prefers the Firebase token over the API key when signed in', async () => {
+      authStateCallback(mockUser as User)
+
+      await store.fetchBalance()
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/customers/balance'),
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            Authorization: 'Bearer mock-id-token'
+          })
+        })
+      )
+      expect(mockApiKeyGetAuthHeader).not.toHaveBeenCalled()
+    })
+
+    it('initiateCreditPurchase sends the stored API key when no Firebase user exists', async () => {
+      mockFetch.mockImplementation((url: string) => {
+        if (url.endsWith('/customers')) {
+          return Promise.resolve(mockCreateCustomerResponse)
+        }
+        if (url.endsWith('/customers/credit')) {
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({ checkout_url: 'https://stripe.test/checkout' })
+          })
+        }
+        return Promise.reject(new Error('Unexpected API call'))
+      })
+
+      await store.initiateCreditPurchase({
+        amount_micros: 5_000_000,
+        currency: 'usd'
+      })
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/customers/credit'),
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({ 'X-API-KEY': 'test-api-key' })
+        })
+      )
+    })
+  })
+
   describe('login', () => {
     it('should login with valid credentials', async () => {
       const mockUserCredential = { user: mockUser }
