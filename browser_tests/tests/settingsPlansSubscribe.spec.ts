@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test'
-import type { Route } from '@playwright/test'
+import type { Page, Route } from '@playwright/test'
 
 import type {
   BillingBalanceResponse,
@@ -22,6 +22,7 @@ interface ComfyUsersResponse {
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { CommandHelper } from '@e2e/fixtures/helpers/CommandHelper'
+import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
 /**
  * Off-cloud, the plan-card CTAs subscribe via the workspace rail on cloud
@@ -95,6 +96,31 @@ function billingStatus(planSlug?: string): BillingStatusResponse {
   }
 }
 
+// FE-1584: off-cloud billing reads need a hydrated workspace wallet + token, so
+// the boot must mock the workspace list, token mint, and members (cross-origin,
+// hence CORS-aware fulfills) or the plans fetch 401s and the section never renders.
+async function mockWorkspaceBootstrap(page: Page) {
+  const personal = workspace('personal', 'owner')
+  await page.route('**/api/workspaces', (r) =>
+    fulfillJson(r, { workspaces: [personal] })
+  )
+  await page.route('**/api/auth/token', (r) =>
+    fulfillJson(r, {
+      token: 'mock-workspace-token',
+      expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+      workspace: { id: personal.id, name: personal.name, type: personal.type },
+      role: personal.role,
+      permissions: []
+    })
+  )
+  await page.route('**/api/workspace/members**', (r) =>
+    fulfillJson(r, {
+      members: [],
+      pagination: { offset: 0, limit: 50, total: 0 }
+    })
+  )
+}
+
 test.describe('Local plans section subscribe (FE-1600 S2)', () => {
   test('subscribes via the workspace rail and flips the card to Current', async ({
     page,
@@ -112,8 +138,6 @@ test.describe('Local plans section subscribe (FE-1600 S2)', () => {
       }
     })
 
-    // The embedded credits tile reads the LEGACY rail off-cloud; flipping these
-    // with `subscribed` lets the test assert the tile reacts to the reconcile.
     await page.route('**/customers/**', (r) =>
       fulfillJson(
         r,
@@ -137,11 +161,15 @@ test.describe('Local plans section subscribe (FE-1600 S2)', () => {
     await page.route('**/api/billing/status', (r) =>
       fulfillJson(r, billingStatus(subscribed ? 'standard-yearly' : undefined))
     )
-    const balance: BillingBalanceResponse = {
-      amount_micros: 0,
-      currency: 'usd'
-    }
-    await page.route('**/api/billing/balance', (r) => fulfillJson(r, balance))
+    // With a hydrated wallet the credits tile reads the workspace rail, so flip
+    // this with `subscribed` to prove the reconcile reaches the tile.
+    await page.route('**/api/billing/balance', (r) => {
+      const balance: BillingBalanceResponse = {
+        amount_micros: subscribed ? 6000 : 0,
+        currency: 'usd'
+      }
+      return fulfillJson(r, balance)
+    })
     await page.route('**/api/billing/subscribe', async (r) => {
       if (r.request().method() === 'POST') {
         subscribed = true
@@ -193,6 +221,8 @@ test.describe('Local plans section subscribe (FE-1600 S2)', () => {
         return window
       }
     }, userId)
+
+    await mockWorkspaceBootstrap(page)
 
     const auth = new CloudAuthHelper(page)
     await auth.mockAuth()
