@@ -310,7 +310,7 @@ describe('WidgetItem', () => {
       ])
     })
 
-    it('uses the bounded linked resolver for ordinary and upload combos', () => {
+    it('uses the bounded linked resolver for ordinary combos', () => {
       const widget = createMockWidget({ name: 'option', type: 'COMBO' })
       const node = createMockNode({
         inputs: [
@@ -323,20 +323,33 @@ describe('WidgetItem', () => {
           }
         ]
       })
-      const { container, unmount } = renderWidgetItem(widget, node)
+      const { container } = renderWidgetItem(widget, node)
 
       expect(getStubWidget(container).linkedDisplay).toBe('control')
-      unmount()
+    })
 
+    it('keeps upload combos on the disabled fallback', () => {
       mockGetInputSpecForWidget.mockReturnValue({
         type: 'COMBO',
         name: 'option',
         image_upload: true
       })
-      const upload = renderWidgetItem(widget, node)
+      const widget = createMockWidget({ name: 'option', type: 'COMBO' })
+      const node = createMockNode({
+        inputs: [
+          {
+            name: 'option',
+            type: 'COMBO',
+            link: toLinkId(1),
+            boundingRect: [0, 0, 0, 0],
+            widget: { name: 'option' }
+          }
+        ]
+      })
+      const { container } = renderWidgetItem(widget, node)
 
-      expect(getStubWidget(upload.container).linkedDisplay).toBeNull()
-      expect(getStubWidget(upload.container).options.disabled).toBe(true)
+      expect(getStubWidget(container).linkedDisplay).toBeNull()
+      expect(getStubWidget(container).options.disabled).toBe(true)
     })
 
     it.for(['LoadImage', 'LoadImageMask', 'LoadImageOutput'])(

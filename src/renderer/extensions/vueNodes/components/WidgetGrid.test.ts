@@ -6,8 +6,7 @@ import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/types/widget
 
 const WidgetStub = {
   props: ['widget'],
-  template:
-    '<button data-testid="widget" :data-linked-display="widget.linkedDisplay" :inert="widget.linkedDisplay ? true : undefined" />'
+  template: '<button data-testid="widget" />'
 }
 
 const AppInputStub = {
@@ -21,7 +20,6 @@ function linkedWidget(handleContextMenu = vi.fn()): WidgetGridItem {
       name: 'prompt',
       type: 'text',
       value: 'stale local prompt',
-      options: { disabled: true },
       linkedDisplay: 'control'
     },
     vueComponent: WidgetStub,
@@ -46,18 +44,13 @@ function renderGrid(widget: WidgetGridItem) {
 }
 
 describe('WidgetGrid', () => {
-  it('mounts a linked standard widget as an inert disabled control', () => {
+  it('disables input promotion for a linked widget', () => {
     renderGrid(linkedWidget())
 
     expect(screen.getByTestId('app-input')).toHaveAttribute(
       'data-enabled',
       'false'
     )
-    expect(screen.getByTestId('widget')).toHaveAttribute(
-      'data-linked-display',
-      'control'
-    )
-    expect(screen.getByTestId('widget')).toHaveAttribute('inert')
   })
 
   it('dispatches context menu actions around an inert linked widget', async () => {

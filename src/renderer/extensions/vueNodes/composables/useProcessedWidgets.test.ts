@@ -27,6 +27,7 @@ import {
 } from '@/types/nodeIdentification'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
+import type { LinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
@@ -167,7 +168,9 @@ function createLinkedWidgetFixture({
   nodeType = 'TestNode',
   value = 'local value',
   options = {},
-  renderState = {}
+  renderState = {},
+  linkId = toLinkId(1),
+  nodeId = NODE_ID
 }: {
   name?: string
   type?: string
@@ -175,16 +178,18 @@ function createLinkedWidgetFixture({
   value?: IBaseWidget['value']
   options?: IBaseWidget['options']
   renderState?: WidgetRenderState
+  linkId?: LinkId
+  nodeId?: NodeId
 } = {}) {
-  const id = widgetId(GRAPH_ID, NODE_ID, name)
+  const id = widgetId(GRAPH_ID, nodeId, name)
   const widget = createMockWidget({ name, type, widgetId: id })
-  const { graph, node } = createGraphWithNode([widget], NODE_ID, nodeType)
+  const { graph, node } = createGraphWithNode([widget], nodeId, nodeType)
   const originNode = createNode([], toNodeId(2), 'OriginNode')
   originNode.outputs = [
     {
       name: 'value',
       type: 'STRING',
-      links: [toLinkId(1)],
+      links: [linkId],
       boundingRect: [0, 0, 0, 0]
     }
   ]
@@ -193,7 +198,7 @@ function createLinkedWidgetFixture({
     {
       name,
       type: 'STRING',
-      link: toLinkId(1),
+      link: linkId,
       boundingRect: [0, 0, 0, 0],
       widget: { name }
     }
@@ -205,17 +210,17 @@ function createLinkedWidgetFixture({
     owningGraphId: toOwningGraphId(GRAPH_ID)
   }
   const topology = {
-    id: toLinkId(1),
+    id: linkId,
     graphId: scope.owningGraphId,
     originNodeId: originNode.id,
     originSlot: 0,
-    targetNodeId: NODE_ID,
+    targetNodeId: nodeId,
     targetSlot: 0,
     type: 'STRING'
   }
   useLinkStore().registerLink(scope, topology)
 
-  return { graph, id, scope, topology }
+  return { graph, id, nodeId, scope, topology }
 }
 
 describe('widget visibility', () => {
@@ -650,19 +655,22 @@ describe('computeProcessedWidgets linked presentation', () => {
     })
     const [linkedSwitch] = processWidgets({
       widgetIds: [switchFixture.id],
-      rootGraph: switchFixture.graph
+      rootGraph: switchFixture.graph,
+      nodeId: switchFixture.nodeId
     })
 
-    setActivePinia(createTestingPinia({ stubActions: false }))
     const toggleFixture = createLinkedWidgetFixture({
       name: 'mode',
       type: 'boolean',
       value: false,
-      options: { off: 'Disabled', on: 'Enabled' }
+      options: { off: 'Disabled', on: 'Enabled' },
+      linkId: toLinkId(2),
+      nodeId: toNodeId(3)
     })
     const [linkedToggle] = processWidgets({
       widgetIds: [toggleFixture.id],
-      rootGraph: toggleFixture.graph
+      rootGraph: toggleFixture.graph,
+      nodeId: toggleFixture.nodeId
     })
 
     expect(linkedSwitch.simplified.linkedDisplay).toBe('switch')

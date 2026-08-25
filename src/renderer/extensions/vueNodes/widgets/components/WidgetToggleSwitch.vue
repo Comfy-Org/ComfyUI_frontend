@@ -1,10 +1,5 @@
 <template>
-  <WidgetLayoutField
-    v-slot="{ borderStyle }"
-    :widget
-    :no-border="!hasLabels"
-    :show-linked-status="hasLabels"
-  >
+  <WidgetLayoutField v-slot="{ borderStyle }" :widget :no-border="!hasLabels">
     <ToggleGroup
       v-if="hasLabels"
       type="single"

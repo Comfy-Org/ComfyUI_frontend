@@ -197,4 +197,25 @@ describe('WidgetWithControl', () => {
     await user.keyboard('{Enter}')
     expect(update).not.toHaveBeenCalled()
   })
+
+  it('unmounts an open value-control portal when disabled', async () => {
+    const widget = makeControlWidget()
+    const { rerender } = mountWithPortal(widget)
+    const user = userEvent.setup()
+
+    await user.click(await screen.findByTestId('value-control'))
+    expect(await screen.findAllByRole('radio')).toHaveLength(4)
+
+    await rerender({
+      widget: {
+        ...widget,
+        options: { ...widget.options, disabled: true }
+      },
+      modelValue: 0,
+      component: RenderedComponent
+    })
+
+    await waitFor(() => expect(screen.queryAllByRole('radio')).toHaveLength(0))
+    expect(screen.getByTestId('value-control')).toBeDisabled()
+  })
 })

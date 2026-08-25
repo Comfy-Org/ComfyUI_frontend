@@ -10,8 +10,7 @@ import LinkedWidgetStatus from '../LinkedWidgetStatus.vue'
 const {
   widget,
   rootClass,
-  linkedStatusRounded = 'md',
-  showLinkedStatus = true
+  linkedStatusRounded = 'md'
 } = defineProps<{
   widget: Pick<
     SimplifiedWidget<string | number | undefined>,
@@ -20,7 +19,6 @@ const {
   rootClass?: string
   noBorder?: boolean
   linkedStatusRounded?: 'md' | 'lg'
-  showLinkedStatus?: boolean
 }>()
 
 const hideLayoutField = useHideLayoutField()
@@ -31,9 +29,7 @@ const borderStyle = computed(() =>
   )
 )
 const linkedDisplay = computed(() =>
-  showLinkedStatus && widget.linkedDisplay === 'control'
-    ? widget.linkedDisplay
-    : undefined
+  widget.linkedDisplay === 'control' ? widget.linkedDisplay : undefined
 )
 </script>
 
