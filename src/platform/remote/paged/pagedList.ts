@@ -89,8 +89,7 @@ export function usePreemptableQueue() {
   }
 
   function enqueue(kind: Kind, runner: Runner): Promise<void> {
-    if (queue[0]?.kind === kind || queue[0]?.kind === PREEMPT_KIND)
-      return queue[0].promise
+    if (queue[0]?.kind === PREEMPT_KIND) return queue[0].promise
 
     const existing = queue.find((task) => task.kind === kind)
     if (existing) return existing.promise

@@ -17,7 +17,8 @@ interface QueryOptions {
 }
 
 const BASE_PARAMS: ListAssetsData['query'] = {
-  sort: 'created_at'
+  sort: 'created_at',
+  tags_none: ['missing']
 }
 
 function assetsQueryInternal(
