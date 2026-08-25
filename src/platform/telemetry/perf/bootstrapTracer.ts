@@ -33,7 +33,7 @@ import type { PerfSpan } from './perfMark'
 
 /** All known startup phase names. Extending this list is the only change
  *  required to add a new tracked phase. */
-export type BootstrapPhase =
+type BootstrapPhase =
   | 'startup/remote-config'
   | 'startup/telemetry-init'
   | 'startup/firebase-init'
