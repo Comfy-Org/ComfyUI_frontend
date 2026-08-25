@@ -239,7 +239,7 @@ import type {
 } from '@/platform/assets/components/mediaAssetViewOptions'
 import { getAssetType } from '@/platform/assets/composables/media/assetMappers'
 import { useAssetsApi } from '@/platform/assets/composables/media/useAssetsApi'
-import { useFlatOutputAssets } from '@/platform/assets/composables/media/useFlatOutputAssets'
+import { useFlatOutputAssetsGrouped } from '@/platform/assets/composables/media/useFlatOutputAssetsGrouped'
 import { useAssetGridSelection } from '@/platform/assets/composables/useAssetGridSelection'
 import { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
@@ -257,7 +257,10 @@ import {
   getAssetUrl
 } from '@/platform/assets/utils/assetUrlUtil'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
-import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
+import {
+  getTotalAssetOutputCount,
+  resolveOutputAssetItems
+} from '@/platform/assets/utils/outputAssetUtil'
 import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -328,7 +331,7 @@ const toast = useToast()
 const inputAssets = useAssetsApi('input')
 const outputAssets =
   !isCloud && api.getServerFeature('assets', false)
-    ? useFlatOutputAssets()
+    ? useFlatOutputAssetsGrouped()
     : useAssetsApi('output')
 
 // Asset selection
@@ -392,14 +395,30 @@ const {
   { immediate: false, resetOnExecute: true }
 )
 
+function matchesGeneratedMediaKind(
+  asset: AssetItem,
+  mediaKind: Exclude<GeneratedMediaKind, 'all'>
+): boolean {
+  if (getAssetMediaKind(asset) === mediaKind) return true
+  const outputs = getOutputAssetMetadata(asset.user_metadata)?.allOutputs
+  return (
+    outputs?.some(
+      (output) =>
+        output.mediaType === mediaKind ||
+        (mediaKind === 'image' && output.mediaType === 'images')
+    ) ?? false
+  )
+}
+
 // Base assets before search filtering
 const baseAssets = computed(() => {
   if (isInFolderView.value) {
     return folderAssets.value
   }
-  if (activeTab.value === 'output' && generatedMediaKind.value !== 'all') {
-    return mediaAssets.value.filter(
-      (asset) => getAssetMediaKind(asset) === generatedMediaKind.value
+  const mediaKind = generatedMediaKind.value
+  if (activeTab.value === 'output' && mediaKind !== 'all') {
+    return mediaAssets.value.filter((asset) =>
+      matchesGeneratedMediaKind(asset, mediaKind)
     )
   }
   return mediaAssets.value
@@ -532,6 +551,15 @@ watch(
   { immediate: true }
 )
 
+let generatedMediaContextVersion = 0
+watch(
+  [activeTab, isInFolderView, generatedMediaKind],
+  () => {
+    generatedMediaContextVersion += 1
+  },
+  { flush: 'sync' }
+)
+
 async function ensureGeneratedMediaResults() {
   if (
     activeTab.value !== 'output' ||
@@ -543,10 +571,21 @@ async function ensureGeneratedMediaResults() {
     return
   }
 
-  while (baseAssets.value.length === 0 && outputAssets.hasMore.value) {
-    const previousCount = mediaAssets.value.length
+  const contextVersion = generatedMediaContextVersion
+  while (
+    contextVersion === generatedMediaContextVersion &&
+    baseAssets.value.length === 0 &&
+    outputAssets.hasMore.value
+  ) {
+    const previousCount = getTotalAssetOutputCount(mediaAssets.value)
     await outputAssets.loadMore()
-    if (error.value || mediaAssets.value.length === previousCount) break
+    if (
+      contextVersion !== generatedMediaContextVersion ||
+      error.value ||
+      getTotalAssetOutputCount(mediaAssets.value) === previousCount
+    ) {
+      break
+    }
   }
 }
 

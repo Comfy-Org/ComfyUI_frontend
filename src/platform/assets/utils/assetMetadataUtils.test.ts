@@ -157,7 +157,7 @@ describe('assetMetadataUtils', () => {
           ...mockAsset,
           name: 'blake3:abc',
           display_name: 'render.mp4',
-          mime_type: null
+          mime_type: undefined
         })
       ).toBe('video')
     })
