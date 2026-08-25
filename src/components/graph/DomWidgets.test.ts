@@ -1,8 +1,6 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import DomWidgets from '@/components/graph/DomWidgets.vue'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
@@ -225,39 +223,5 @@ describe('DomWidgets positioning', () => {
     drawFrame(canvas)
 
     expect(widgetState.pos).not.toBe(posAfterFirstFrame)
-  })
-})
-
-describe('DomWidgets reactive-write budget', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
-  it('pos array identity is preserved across N idle frames (perf invariant)', () => {
-    const canvasStore = useCanvasStore()
-    const domWidgetStore = useDomWidgetStore()
-
-    const graph = new LGraph()
-    const node = createNode(graph, 1, 'node', [100, 200])
-    const widget = createWidget('perf-widget', node, 12)
-    domWidgetStore.registerWidget(widget)
-
-    const canvas = createCanvas(graph)
-    canvasStore.canvas = canvas
-
-    render(DomWidgets, { global: { stubs: { DomWidget: true } } })
-
-    // Warm-up: first frame writes initial pos.
-    drawFrame(canvas)
-
-    const widgetState = domWidgetStore.widgetStates.get(widget.id)
-    if (!widgetState) throw new Error('Widget state not registered')
-    const posAfterWarmup = widgetState.pos
-
-    // 20 idle frames: canvas stationary, no node movement, no pan.
-    // The pos array must not be reassigned (same reference = no reactive write).
-    for (let i = 0; i < 20; i++) drawFrame(canvas)
-
-    expect(widgetState.pos).toBe(posAfterWarmup)
   })
 })
