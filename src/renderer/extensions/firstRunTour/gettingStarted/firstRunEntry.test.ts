@@ -1,3 +1,4 @@
+import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type * as VueUseCoreModule from '@vueuse/core'
@@ -74,6 +75,7 @@ vi.mock('../tour/useFirstRunTourController', () => ({
 // createSharedComposable caches across calls; each test needs its own instance.
 async function freshEntry() {
   vi.resetModules()
+  setActivePinia(createPinia())
   const { useFirstRunEntry } = await import('./firstRunEntry')
   return useFirstRunEntry()
 }
@@ -460,12 +462,27 @@ describe('useFirstRunEntry', () => {
       'Showing the screen must not persist completion; the user has not chosen anything yet'
     ).not.toHaveBeenCalled()
 
-    await entry.dismissGettingStarted()
+    entry.dismissGettingStarted()
 
     expect(entry.gettingStartedVisible.value).toBe(false)
     expect(mocks.setSetting).toHaveBeenCalledWith(
       'Comfy.TutorialCompleted',
       true
     )
+  })
+
+  it('marks the tutorial completed on any dialog-stack close path, not just its own button', async () => {
+    const entry = await freshEntry()
+    await entry.handleStartupOutcome('fresh')
+    const { GETTING_STARTED_DIALOG_KEY } = await import('./firstRunEntry')
+    const { useDialogStore } = await import('@/stores/dialogStore')
+
+    useDialogStore().closeDialog({ key: GETTING_STARTED_DIALOG_KEY })
+
+    expect(entry.gettingStartedVisible.value).toBe(false)
+    expect(
+      mocks.setSetting,
+      'Escape lands here via GlobalDialog closing the entry; skipping the write would reopen onboarding forever'
+    ).toHaveBeenCalledWith('Comfy.TutorialCompleted', true)
   })
 })

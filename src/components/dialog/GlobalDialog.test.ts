@@ -6,6 +6,7 @@ import { defineComponent, h, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
+import { BACKDROP_Z } from '@/components/dialog/vRekaZIndex'
 import {
   onRekaFocusOutside,
   onRekaPointerDownOutside
@@ -648,5 +649,50 @@ describe('shouldPreventRekaDismiss', () => {
 
     expect(event.defaultPrevented).toBe(true)
     portal.remove()
+  })
+})
+
+describe('GlobalDialog backdrop tier', () => {
+  it('keeps a priority-0 dialog below the modal band even when it mounts last', async () => {
+    mountDialog()
+    const store = useDialogStore()
+
+    store.showDialog({
+      key: 'backdrop-real-dialog',
+      title: 'Real dialog',
+      component: Body
+    })
+    await nextTick()
+
+    store.showDialog({
+      key: 'backdrop-takeover',
+      component: Body,
+      priority: 0,
+      dialogComponentProps: { headless: true, modal: false }
+    })
+    await nextTick()
+
+    const content = (key: string) =>
+      screen
+        .getAllByRole('dialog')
+        .find((el) => el.getAttribute('aria-labelledby') === key)
+    const contentZ = (key: string) => Number(content(key)?.style.zIndex)
+
+    expect(
+      contentZ('backdrop-takeover'),
+      'a takeover that mounts after an open dialog must still render under it'
+    ).toBe(BACKDROP_Z)
+    expect(contentZ('backdrop-real-dialog')).toBeGreaterThan(BACKDROP_Z)
+    expect(
+      store.activeKey,
+      'the real dialog keeps Escape and focus ownership'
+    ).toBe('backdrop-real-dialog')
+
+    await nextTick()
+    await nextTick()
+    expect(
+      content('backdrop-takeover'),
+      'a takeover mounting under an open dialog must not pull focus from it'
+    ).not.toHaveFocus()
   })
 })
