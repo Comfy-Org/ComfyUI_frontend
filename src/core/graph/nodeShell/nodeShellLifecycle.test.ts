@@ -40,6 +40,7 @@ describe('node shell registration', () => {
     expect(warn).toHaveBeenCalledOnce()
     expect(warn.mock.calls[0][0]).toContain(`Node id ${first.id} `)
     expect(warn.mock.calls[0][0]).toContain(`reminted as ${duplicate.id}`)
+    expect(warn.mock.calls[0][0]).toContain(`root graph ${graph.rootGraph.id}`)
   })
 })
 
