@@ -388,6 +388,42 @@ describe('useTemplateModelRowDownloads', () => {
     })
   })
 
+  it('resets a changed model URL only when a new download is requested', () => {
+    const initial = model(
+      'replaceable.safetensors',
+      'https://example.com/initial-download'
+    )
+    const replacement = {
+      ...initial,
+      url: 'https://example.com/replacement-download'
+    }
+    const { downloads, emitDesktop } = createDownloadHarness()
+    downloads.request(initial)
+    emitDesktop({
+      url: initial.url,
+      filename: initial.name,
+      directory: initial.directory,
+      progress: 1,
+      status: 'completed'
+    })
+
+    expect(downloads.stateFor(replacement)).toEqual({
+      status: 'idle',
+      attempt: 0
+    })
+    expect(downloads.stateFor(initial)).toEqual({
+      status: 'done',
+      attempt: 1
+    })
+
+    downloads.request(replacement)
+
+    expect(downloads.stateFor(replacement)).toEqual({
+      status: 'starting',
+      attempt: 1
+    })
+  })
+
   it('does not retry dispatch from an obsolete detached folder lookup', async () => {
     const paths = deferred<FolderPaths>()
     const dispatchDownload = vi
