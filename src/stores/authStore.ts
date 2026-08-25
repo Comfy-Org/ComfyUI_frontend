@@ -299,6 +299,20 @@ export const useAuthStore = defineStore('auth', () => {
   const currentUserIdentity = (): string | null =>
     currentUser.value?.uid ?? useApiKeyAuthStore().getApiKey()
 
+  /**
+   * Response data from a user-scoped endpoint belongs to the identity that
+   * asked for it. A 200 bypasses the recovery guards in
+   * fetchWithCustomerRecovery, which only fence the missing-customer retry, so
+   * a credential swap while the request was in flight would hand the previous
+   * account's data to the current session — a Stripe portal or checkout URL
+   * minted for A opening inside B.
+   */
+  const assertIdentityUnchanged = (requestOwner: string | null): void => {
+    if (currentUserIdentity() !== requestOwner) {
+      throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
+    }
+  }
+
   const getWorkspaceAuthHeader = async (): Promise<AuthHeader | null> => {
     if (flags.unifiedCloudAuthEnabled) {
       const token = useWorkspaceAuthStore().getUnifiedToken()
@@ -809,6 +823,7 @@ export const useAuthStore = defineStore('auth', () => {
       )
     }
 
+    assertIdentityUnchanged(requestOwner)
     return response.json()
   }
 
@@ -820,6 +835,7 @@ export const useAuthStore = defineStore('auth', () => {
   const accessBillingPortal = async (
     targetTier?: BillingPortalTargetTier
   ): Promise<AccessBillingPortalResponse> => {
+    const requestOwner = currentUserIdentity()
     const authHeader = await getUserAuthHeader()
     if (!authHeader) {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
@@ -848,6 +864,7 @@ export const useAuthStore = defineStore('auth', () => {
       )
     }
 
+    assertIdentityUnchanged(requestOwner)
     return response.json()
   }
 

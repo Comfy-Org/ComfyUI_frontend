@@ -592,6 +592,70 @@ describe('useAuthStore', () => {
         )
       ).toBe(false)
     })
+
+    it('withholds a portal URL that succeeds after an A->B API key switch', async () => {
+      let resolveBilling!: (value: unknown) => void
+      mockFetch.mockImplementation((url: string) => {
+        if (url.endsWith('/customers/billing')) {
+          return new Promise((resolve) => {
+            resolveBilling = resolve
+          })
+        }
+        return Promise.reject(new Error('Unexpected API call'))
+      })
+
+      const request = store.accessBillingPortal()
+      await new Promise<void>((resolve) => setTimeout(resolve, 0))
+      mockApiKeyGetApiKey.mockReturnValue('another-api-key')
+      mockApiKeyGetAuthHeader.mockReturnValue({
+        'X-API-KEY': 'another-api-key'
+      })
+      resolveBilling({
+        ok: true,
+        status: 200,
+        json: () =>
+          Promise.resolve({ billing_portal_url: 'https://stripe.test/portal' })
+      })
+
+      await expect(request).rejects.toMatchObject({
+        message: 'toastMessages.userNotAuthenticated'
+      })
+    })
+
+    it('withholds a checkout URL that succeeds after an A->B API key switch', async () => {
+      let resolveCredit!: (value: unknown) => void
+      mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+        if (url.endsWith('/customers') && init?.method === 'POST') {
+          return Promise.resolve(mockCreateCustomerResponse)
+        }
+        if (url.endsWith('/customers/credit')) {
+          return new Promise((resolve) => {
+            resolveCredit = resolve
+          })
+        }
+        return Promise.reject(new Error('Unexpected API call'))
+      })
+
+      const request = store.initiateCreditPurchase({
+        amount_micros: 5_000_000,
+        currency: 'usd'
+      })
+      await new Promise<void>((resolve) => setTimeout(resolve, 0))
+      mockApiKeyGetApiKey.mockReturnValue('another-api-key')
+      mockApiKeyGetAuthHeader.mockReturnValue({
+        'X-API-KEY': 'another-api-key'
+      })
+      resolveCredit({
+        ok: true,
+        status: 200,
+        json: () =>
+          Promise.resolve({ checkout_url: 'https://stripe.test/checkout' })
+      })
+
+      await expect(request).rejects.toMatchObject({
+        message: 'toastMessages.userNotAuthenticated'
+      })
+    })
   })
 
   describe('login', () => {
