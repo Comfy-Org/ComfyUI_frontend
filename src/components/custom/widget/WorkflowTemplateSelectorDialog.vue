@@ -445,6 +445,7 @@ import {
   watch
 } from 'vue'
 import { useI18n } from 'vue-i18n'
+import type { ComfyTemplateInputAsset } from '@comfyorg/comfyui-desktop-bridge-types'
 
 import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
@@ -500,6 +501,10 @@ import type {
   TemplateModelSetupResult,
   TemplateModelSetupRow
 } from '@/platform/workflow/templates/utils/templateModelSetup'
+import {
+  resolveTemplateInputAssets,
+  startMissingTemplateInputDownloads
+} from '@/platform/workflow/templates/utils/templateInputAssets'
 import { api } from '@/scripts/api'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
@@ -772,6 +777,7 @@ const activeDetail = ref<{
   template: TemplateInfo
   prepared: PreparedWorkflowTemplate
   modelSetup: ActiveTemplateModelSetup
+  inputAssets: readonly ComfyTemplateInputAsset[]
 } | null>(null)
 const openPending = ref(false)
 let detailGeneration = 0
@@ -1180,6 +1186,21 @@ async function openPreparedTemplate(
   }
 }
 
+function startTemplateInputDownloads(
+  templateId: string,
+  assets: readonly ComfyTemplateInputAsset[]
+): void {
+  startMissingTemplateInputDownloads(templateId, assets, {
+    getBridge: () => window.__comfyDesktop2,
+    reportError: (error) => {
+      reportError(error, {
+        errorType: 'workflow_template_input_download_failed',
+        level: 'warning'
+      })
+    }
+  })
+}
+
 const onLoadWorkflow = async (template: TemplateInfo, event: MouseEvent) => {
   if (openPending.value) return
 
@@ -1206,16 +1227,25 @@ const onLoadWorkflow = async (template: TemplateInfo, event: MouseEvent) => {
     const requirements = extractTemplateModelRequirementDetails(
       prepared.workflow
     )
+    const inputAssetsPromise = resolveTemplateInputAssets(
+      template.name,
+      () => window.__comfyDesktop2
+    )
     if (requirements.length === 0) {
+      const inputAssets = await inputAssetsPromise
+      if (generation !== detailGeneration) return
+      startTemplateInputDownloads(template.name, inputAssets)
       await openPreparedTemplate(prepared, generation)
       return
     }
 
-    const availability = await resolveModelAvailability(
-      requirements.map(({ model }) => model)
-    )
+    const [availability, inputAssets] = await Promise.all([
+      resolveModelAvailability(requirements.map(({ model }) => model)),
+      inputAssetsPromise
+    ])
     if (generation !== detailGeneration) return
     if (!availability.some(({ status }) => status === 'missing')) {
+      startTemplateInputDownloads(template.name, inputAssets)
       await openPreparedTemplate(prepared, generation)
       return
     }
@@ -1226,6 +1256,7 @@ const onLoadWorkflow = async (template: TemplateInfo, event: MouseEvent) => {
     activeDetail.value = {
       template,
       prepared: markRaw(prepared),
+      inputAssets,
       modelSetup: {
         result: deriveTemplateModelSetup(
           requirements,
@@ -1279,6 +1310,7 @@ const onOpenTemplate = async () => {
   const detail = activeDetail.value
   if (!detail || openPending.value) return
 
+  startTemplateInputDownloads(detail.template.name, detail.inputAssets)
   await openPreparedTemplate(detail.prepared, detailGeneration)
 }
 
@@ -1297,8 +1329,9 @@ function onDownloadModel(rowId: string) {
 }
 
 async function onDownloadModelsAndOpen() {
-  const setup = activeDetail.value?.modelSetup
-  if (!setup || setup.pending || openPending.value) return
+  const detail = activeDetail.value
+  const setup = detail?.modelSetup
+  if (!detail || !setup || setup.pending || openPending.value) return
 
   for (const row of setup.result.rows) {
     if (isModelDownloadCandidate(row, setup.rowDownloads)) {
