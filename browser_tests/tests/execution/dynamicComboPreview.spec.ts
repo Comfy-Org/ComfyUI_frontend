@@ -5,7 +5,7 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 const PREVIEW_TEXT_TIMEOUT_MS = 15_000
 
-const expectPreviewTextContains = async (page: Page, expected: string) => {
+async function expectPreviewTextContains(page: Page, expected: string) {
   const previewTextbox = page.getByRole('textbox', { name: 'preview_text' })
   await expect
     .poll(async () => previewTextbox.inputValue(), {
