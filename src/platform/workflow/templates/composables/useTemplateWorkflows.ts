@@ -9,6 +9,7 @@ import type {
   WorkflowTemplates
 } from '@/platform/workflow/templates/types/template'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -189,14 +190,19 @@ export function useTemplateWorkflows() {
    * Fetches template JSON from the appropriate endpoint
    */
   const fetchTemplateJson = async (id: string, sourceModule: string) => {
-    if (sourceModule === 'default') {
-      // Default templates provided by frontend are served on this separate endpoint
-      return fetch(api.fileURL(`/templates/${id}.json`)).then((r) => r.json())
-    } else {
-      return fetch(
-        api.apiURL(`/workflow_templates/${sourceModule}/${id}.json`)
-      ).then((r) => r.json())
+    const url =
+      sourceModule === 'default'
+        ? api.fileURL(`/templates/${id}.json`)
+        : api.apiURL(`/workflow_templates/${sourceModule}/${id}.json`)
+    const response = await fetch(url)
+    if (!response.ok) {
+      throw new Error(`Failed to fetch workflow template (${response.status})`)
     }
+
+    const workflow = await validateComfyWorkflow(await response.json())
+    if (!workflow) throw new Error('Invalid workflow template')
+
+    return workflow
   }
 
   return {
