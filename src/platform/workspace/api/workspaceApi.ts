@@ -517,22 +517,29 @@ export const workspaceApi = {
     planSlug: string,
     options: SubscribeOptions = {}
   ): Promise<SubscribeResponse> {
-    if (options.confirmationToken && options.savedPaymentMethodId) {
+    if (
+      options.confirmationToken !== undefined &&
+      options.savedPaymentMethodId !== undefined
+    ) {
       throw new TypeError(
         'confirmationToken and savedPaymentMethodId are mutually exclusive'
       )
     }
+    // JSON drops `undefined` but keeps `''`, so an empty credential would reach
+    // the API as a present-but-meaningless value.
+    const confirmationToken = options.confirmationToken || undefined
+    const savedPaymentMethodId = options.savedPaymentMethodId || undefined
     const headers = await getAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.post<SubscribeResponse>(
         workspaceApiUrl('/billing/subscribe'),
         {
           plan_slug: planSlug,
-          confirmation_token: options.confirmationToken,
+          confirmation_token: confirmationToken,
           promotion_code: options.promotionCode,
           quote_id: options.quoteId,
           quote_version: options.quoteVersion,
-          saved_payment_method_id: options.savedPaymentMethodId,
+          saved_payment_method_id: savedPaymentMethodId,
           return_url: options.returnUrl,
           cancel_url: options.cancelUrl,
           team_credit_stop_id: options.teamCreditStopId,
