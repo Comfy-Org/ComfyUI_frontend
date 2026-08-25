@@ -634,8 +634,12 @@ export const useWorkflowService = () => {
     const suffix = workflow.isPersisted ? ' (Copy)' : ''
     // Remove the suffix `(2)` or similar
     const filename = workflow.filename.replace(/\s*\(\d+\)$/, '') + suffix
+    const duplicate = workflowStore.createNewTemporary(
+      appendJsonExt(filename),
+      state
+    )
 
-    await app.loadGraphData(state, true, true, filename)
+    await app.loadGraphData(state, true, true, duplicate)
   }
 
   /**

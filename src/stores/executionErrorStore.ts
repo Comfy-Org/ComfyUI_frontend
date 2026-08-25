@@ -88,8 +88,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     () => activeRunErrors.value?.promptError ?? null
   )
 
-  function updateActiveRunErrors(patch: Partial<RunErrorState>) {
-    const key = activeRunErrorKey.value
+  function updateRunErrors(patch: Partial<RunErrorState>, key: string | null) {
     if (key === null) return
 
     const next: RunErrorState = {
@@ -107,16 +106,17 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     }
   }
 
+  function runErrorKey(graphId: UUID, workflowPath?: string) {
+    return `${workflowPath ?? workflowStore.activeWorkflow?.path ?? ''}:${graphId}`
+  }
+
   /**
    * Point the store at the run errors of `graphId`. `null` detaches it, so a
    * discarded graph shows nothing until the next one is loaded. The overlay is
    * dismissed on every move so it only ever reopens for the graph in front.
    */
   function setActiveGraph(graphId: UUID | null, workflowPath?: string) {
-    const key =
-      graphId === null
-        ? null
-        : `${workflowPath ?? workflowStore.activeWorkflow?.path ?? ''}:${graphId}`
+    const key = graphId === null ? null : runErrorKey(graphId, workflowPath)
     if (key === activeRunErrorKey.value) return
     activeRunErrorKey.value = key
     isErrorOverlayOpen.value = false
@@ -158,20 +158,39 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     return (pendingAddedNodeScans.get(rootGraph)?.get(executionId) ?? 0) > 0
   }
 
-  /** Replaces the full record; empty or null means the run produced no errors. */
-  function recordNodeErrors(nodeErrors: Record<string, NodeError> | null) {
-    updateActiveRunErrors({
-      nodeErrors:
-        nodeErrors && Object.keys(nodeErrors).length > 0 ? nodeErrors : null
-    })
+  /**
+   * Replaces the full record; empty or null means the run produced no errors.
+   *
+   * `key` files the errors against the workflow that produced them, which is
+   * not necessarily the one on screen. Build it with `runErrorKey`. It defaults
+   * to the visible workflow for callers that record synchronously while
+   * submitting it.
+   */
+  function recordNodeErrors(
+    nodeErrors: Record<string, NodeError> | null,
+    key: string | null = activeRunErrorKey.value
+  ) {
+    updateRunErrors(
+      {
+        nodeErrors:
+          nodeErrors && Object.keys(nodeErrors).length > 0 ? nodeErrors : null
+      },
+      key
+    )
   }
 
-  function recordExecutionError(detail: ExecutionErrorWsMessage) {
-    updateActiveRunErrors({ executionError: detail })
+  function recordExecutionError(
+    detail: ExecutionErrorWsMessage,
+    key: string | null = activeRunErrorKey.value
+  ) {
+    updateRunErrors({ executionError: detail }, key)
   }
 
-  function recordPromptError(promptError: PromptError) {
-    updateActiveRunErrors({ promptError })
+  function recordPromptError(
+    promptError: PromptError,
+    key: string | null = activeRunErrorKey.value
+  ) {
+    updateRunErrors({ promptError }, key)
   }
 
   function showErrorOverlay() {
@@ -193,7 +212,10 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   }
 
   function clearExecutionStartErrors() {
-    updateActiveRunErrors({ executionError: null, promptError: null })
+    updateRunErrors(
+      { executionError: null, promptError: null },
+      activeRunErrorKey.value
+    )
     if (!lastNodeErrors.value) {
       isErrorOverlayOpen.value = false
     }
@@ -201,7 +223,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
   /** Clear only prompt-level errors. Called during resetExecutionState. */
   function clearPromptError() {
-    updateActiveRunErrors({ promptError: null })
+    updateRunErrors({ promptError: null }, activeRunErrorKey.value)
   }
 
   function clearSimpleNodeErrorsFromRecord(
@@ -351,9 +373,10 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     }
 
     if (updated === lastNodeErrors.value) return
-    updateActiveRunErrors({
-      nodeErrors: Object.keys(updated).length > 0 ? updated : null
-    })
+    updateRunErrors(
+      { nodeErrors: Object.keys(updated).length > 0 ? updated : null },
+      activeRunErrorKey.value
+    )
   }
 
   /**
@@ -648,6 +671,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     recordPromptError,
 
     // Workflow scoping
+    runErrorKey,
     setActiveGraph,
 
     // Clearing

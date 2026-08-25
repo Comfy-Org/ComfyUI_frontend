@@ -636,8 +636,55 @@ export const useExecutionStore = defineStore('execution', () => {
     }
   }
 
+  /**
+   * Queue and history polling supply a workflow id but no path, so the open
+   * workflow carrying that root graph provides it. Two open workflows can share
+   * a root graph id — an imported copy of one already on screen — and those runs
+   * belong to different error buckets, so an ambiguous match resolves to
+   * nothing rather than the wrong workflow.
+   */
+  function openWorkflowPathForGraph(graphId: WorkflowId): string | undefined {
+    const matches = workflowStore.openWorkflows.filter(
+      (w) => (w.activeState?.id ?? w.initialState?.id) === graphId
+    )
+    return matches.length === 1 ? matches[0].path : undefined
+  }
+
+  /**
+   * Run-error key of the workflow that produced `jobId`, for filing its errors
+   * against that workflow rather than whichever one is currently on screen.
+   *
+   * `jobIdToWorkflow` only covers jobs queued by this browser session and is
+   * purged the moment a run ends, so `jobIdToWorkflowId` — also populated from
+   * queue and history polling — backs it up for jobs from a previous page load.
+   *
+   * `undefined` means the job cannot be attributed to any known workflow, which
+   * leaves the error on the visible one. With no evidence of another producer
+   * that is the best available guess, and dropping the error would hide a real
+   * failure.
+   */
+  function runErrorKeyForJob(jobId: string): string | undefined {
+    const workflow = jobIdToWorkflow.get(jobId)
+    const graphId =
+      workflow?.activeState?.id ??
+      workflow?.initialState?.id ??
+      jobIdToWorkflowId.value.get(jobId)
+    if (graphId === undefined) return undefined
+
+    const path =
+      workflow?.path ??
+      jobIdToSessionWorkflowPath.value.get(jobId) ??
+      openWorkflowPathForGraph(graphId)
+    if (path === undefined) return undefined
+
+    return executionErrorStore.runErrorKey(graphId, path)
+  }
+
   function handleExecutionError(e: CustomEvent<ExecutionErrorWsMessage>) {
     const endTime = performance.now()
+    // Resolved up front: resetExecutionState() drops the job's workflow entry
+    // before the handlers below record anything.
+    const runErrorKey = runErrorKeyForJob(e.detail.prompt_id)
     setWorkflowStatus(e.detail.prompt_id, {
       status: 'failed',
       endTime,
@@ -654,7 +701,7 @@ export const useExecutionStore = defineStore('execution', () => {
     if (isCloud) {
       // Cloud wraps validation errors (400) in exception_message as embedded JSON.
       // Pre-flight validation isn't a runtime failure — no badge.
-      if (handleCloudValidationError(e.detail)) {
+      if (handleCloudValidationError(e.detail, runErrorKey)) {
         return
       }
     }
@@ -664,7 +711,7 @@ export const useExecutionStore = defineStore('execution', () => {
     if (handleAccountPreconditionError(e.detail)) return
 
     // Service-level errors (e.g. "Job has stagnated") have no associated node.
-    if (handleServiceLevelError(e.detail)) {
+    if (handleServiceLevelError(e.detail, runErrorKey)) {
       return
     }
 
@@ -673,7 +720,7 @@ export const useExecutionStore = defineStore('execution', () => {
       endTime,
       failureReason: 'execution_failed'
     })
-    executionErrorStore.recordExecutionError(e.detail)
+    executionErrorStore.recordExecutionError(e.detail, runErrorKey)
     clearInitializationByJobId(e.detail.prompt_id)
     resetExecutionState(e.detail.prompt_id)
   }
@@ -694,25 +741,32 @@ export const useExecutionStore = defineStore('execution', () => {
     return true
   }
 
-  function handleServiceLevelError(detail: ExecutionErrorWsMessage): boolean {
+  function handleServiceLevelError(
+    detail: ExecutionErrorWsMessage,
+    runErrorKey: string | undefined
+  ): boolean {
     const nodeId = detail.node_id
     if (nodeId !== null && nodeId !== undefined && String(nodeId) !== '')
       return false
 
     clearInitializationByJobId(detail.prompt_id)
     resetExecutionState(detail.prompt_id)
-    executionErrorStore.recordPromptError({
-      type: detail.exception_type ?? 'error',
-      message: detail.exception_type
-        ? `${detail.exception_type}: ${detail.exception_message}`
-        : (detail.exception_message ?? ''),
-      details: detail.traceback?.join('\n') ?? ''
-    })
+    executionErrorStore.recordPromptError(
+      {
+        type: detail.exception_type ?? 'error',
+        message: detail.exception_type
+          ? `${detail.exception_type}: ${detail.exception_message}`
+          : (detail.exception_message ?? ''),
+        details: detail.traceback?.join('\n') ?? ''
+      },
+      runErrorKey
+    )
     return true
   }
 
   function handleCloudValidationError(
-    detail: ExecutionErrorWsMessage
+    detail: ExecutionErrorWsMessage,
+    runErrorKey: string | undefined
   ): boolean {
     const result = classifyCloudValidationError(detail.exception_message)
     if (!result) return false
@@ -721,9 +775,9 @@ export const useExecutionStore = defineStore('execution', () => {
     resetExecutionState(detail.prompt_id)
 
     if (result.kind === 'nodeErrors') {
-      executionErrorStore.recordNodeErrors(result.nodeErrors)
+      executionErrorStore.recordNodeErrors(result.nodeErrors, runErrorKey)
     } else {
-      executionErrorStore.recordPromptError(result.promptError)
+      executionErrorStore.recordPromptError(result.promptError, runErrorKey)
     }
     return true
   }
