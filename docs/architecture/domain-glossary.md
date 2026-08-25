@@ -120,20 +120,29 @@ the dedicated stores shipped in PR 12617. ADR 0008 is **Proposed**: these terms
 define the target the codebase is converging on, and existing stores vary in how
 closely they meet it.
 
-- **Entity** — a string id identifying a domain object (node, widget, slot,
-  link, reroute, group). An Entity is an id, not an object; behaviour never
-  hangs off it.
+- **Entity** — a stable id identifying a domain object (node, widget, slot,
+  link, reroute, group). Key types follow the concern: `NodeId`, `WidgetId`, and
+  graph-scope ids are branded strings, while `LinkId` and `RerouteId` are
+  branded numbers (`src/types/{nodeId,widgetId,graphScopeId,linkId,rerouteId}.ts`).
+  An Entity is an id, not an object; behaviour never hangs off it.
 - **Component** — a plain-data field stored against an Entity id. No methods, no
-  back-reference to a parent entity. Not a Vue component. `widgetValueStore` and
-  `previewExposureStore` hold true Components today; `domWidgetStore` and
-  `subgraphNavigationStore` still hold live entity objects.
+  back-reference to a parent entity. Not a Vue component. `widgetValueStore`,
+  `linkStore`, `rerouteStore`, and `previewExposureStore` hold Component data
+  today. `nodeDataStore` still includes slot class instances, while
+  `domWidgetStore` and `subgraphNavigationStore` hold live entity objects.
 - **System** — logic that reads and mutates Components. Systems are the place
   behaviour lives; they produce command batches rather than firing side effects
   directly.
-- **Store** — the concrete home of Components in this codebase, keyed by string
-  ids: `widgetValueStore`, `domWidgetStore`, `nodeOutputStore`,
-  `subgraphNavigationStore`, `previewExposureStore` (Pinia), and `layoutStore`
-  (a Yjs-backed singleton). There is no single global "World" object; see
+- **Store** — a concrete state owner keyed by the id type of its concern.
+  `nodeDataStore`, `linkStore`, and `rerouteStore` use `NodeId`, `LinkId`, and
+  `RerouteId` respectively; `widgetValueStore` uses `WidgetId`, partitioned by
+  root-graph UUID. `domWidgetStore` uses widget-instance strings,
+  `nodeOutputStore` uses node-locator strings, `subgraphNavigationStore` uses
+  graph-id strings, and `previewExposureStore` uses root UUID plus host-locator
+  strings (`src/stores/*Store.ts`). `layoutStore` is a Yjs-backed singleton with
+  scoped layout keys and concern-specific ids
+  (`src/renderer/core/layout/store/layoutStore.ts`). There is no single global
+  "World" object; see
   [ECS Pattern Survey](appendix-ecs-pattern-survey.md) for why that design was
   dropped.
 - **Command** — a serializable, idempotent, deterministic description of a state
