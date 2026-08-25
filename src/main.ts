@@ -1,6 +1,10 @@
 import { definePreset } from '@primevue/themes'
 import Aura from '@primevue/themes/aura'
-import * as Sentry from '@sentry/vue'
+import {
+  browserApiErrorsIntegration,
+  captureMessage,
+  init as sentryInit
+} from '@sentry/vue'
 import { initializeApp } from 'firebase/app'
 import { createPinia } from 'pinia'
 import 'primeicons/primeicons.css'
@@ -74,7 +78,7 @@ const sentryDsn = isCloud
 // runs without the env var, however valid the runtime DSN turns out to be.
 const sentryEnabled = !import.meta.env.DEV && !!sentryDsn
 
-Sentry.init({
+sentryInit({
   app,
   dsn: sentryDsn,
   enabled: sentryEnabled,
@@ -90,7 +94,7 @@ Sentry.init({
           // Disable event target wrapping to reduce overhead on high-frequency
           // DOM events (pointermove, mousemove, wheel). Sentry still captures
           // errors via window.onerror and unhandledrejection.
-          Sentry.browserApiErrorsIntegration({ eventTarget: false })
+          browserApiErrorsIntegration({ eventTarget: false })
         ]
       }
     : {
@@ -107,7 +111,7 @@ flushErrorReports()
 // not user-facing in stable releases.
 setAssertReporter((message) => {
   if (isDesktop) {
-    Sentry.captureMessage(message, { level: 'warning' })
+    captureMessage(message, { level: 'warning' })
   }
   if (isNightly) {
     useToastStore(pinia).add({
