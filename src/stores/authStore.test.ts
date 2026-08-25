@@ -595,17 +595,20 @@ describe('useAuthStore', () => {
 
     it('withholds a portal URL that succeeds after an A->B API key switch', async () => {
       let resolveBilling!: (value: unknown) => void
-      mockFetch.mockImplementation((url: string) => {
-        if (url.endsWith('/customers/billing')) {
-          return new Promise((resolve) => {
-            resolveBilling = resolve
-          })
-        }
-        return Promise.reject(new Error('Unexpected API call'))
+      const billingRequestStarted = new Promise<void>((requestStarted) => {
+        mockFetch.mockImplementation((url: string) => {
+          if (url.endsWith('/customers/billing')) {
+            requestStarted()
+            return new Promise((resolve) => {
+              resolveBilling = resolve
+            })
+          }
+          return Promise.reject(new Error('Unexpected API call'))
+        })
       })
 
       const request = store.accessBillingPortal()
-      await new Promise<void>((resolve) => setTimeout(resolve, 0))
+      await billingRequestStarted
       mockApiKeyGetApiKey.mockReturnValue('another-api-key')
       mockApiKeyGetAuthHeader.mockReturnValue({
         'X-API-KEY': 'another-api-key'
@@ -624,23 +627,26 @@ describe('useAuthStore', () => {
 
     it('withholds a checkout URL that succeeds after an A->B API key switch', async () => {
       let resolveCredit!: (value: unknown) => void
-      mockFetch.mockImplementation((url: string, init?: RequestInit) => {
-        if (url.endsWith('/customers') && init?.method === 'POST') {
-          return Promise.resolve(mockCreateCustomerResponse)
-        }
-        if (url.endsWith('/customers/credit')) {
-          return new Promise((resolve) => {
-            resolveCredit = resolve
-          })
-        }
-        return Promise.reject(new Error('Unexpected API call'))
+      const creditRequestStarted = new Promise<void>((requestStarted) => {
+        mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+          if (url.endsWith('/customers') && init?.method === 'POST') {
+            return Promise.resolve(mockCreateCustomerResponse)
+          }
+          if (url.endsWith('/customers/credit')) {
+            requestStarted()
+            return new Promise((resolve) => {
+              resolveCredit = resolve
+            })
+          }
+          return Promise.reject(new Error('Unexpected API call'))
+        })
       })
 
       const request = store.initiateCreditPurchase({
         amount_micros: 5_000_000,
         currency: 'usd'
       })
-      await new Promise<void>((resolve) => setTimeout(resolve, 0))
+      await creditRequestStarted
       mockApiKeyGetApiKey.mockReturnValue('another-api-key')
       mockApiKeyGetAuthHeader.mockReturnValue({
         'X-API-KEY': 'another-api-key'
@@ -653,6 +659,34 @@ describe('useAuthStore', () => {
       })
 
       await expect(request).rejects.toMatchObject({
+        message: 'toastMessages.userNotAuthenticated'
+      })
+    })
+
+    it('rejects a customer record created before an A->B API key switch', async () => {
+      let resolveCreate!: (value: unknown) => void
+      const createRequestStarted = new Promise<void>((requestStarted) => {
+        mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+          if (url.endsWith('/customers') && init?.method === 'POST') {
+            requestStarted()
+            return new Promise((resolve) => {
+              resolveCreate = resolve
+            })
+          }
+          return Promise.reject(new Error('Unexpected API call'))
+        })
+      })
+
+      const request = store.createCustomer()
+      await createRequestStarted
+      mockApiKeyGetApiKey.mockReturnValue('another-api-key')
+      mockApiKeyGetAuthHeader.mockReturnValue({
+        'X-API-KEY': 'another-api-key'
+      })
+      resolveCreate(mockCreateCustomerResponse)
+
+      await expect(request).rejects.toMatchObject({
+        name: 'AuthStoreError',
         message: 'toastMessages.userNotAuthenticated'
       })
     })

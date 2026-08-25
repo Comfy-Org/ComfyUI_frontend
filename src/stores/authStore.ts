@@ -500,7 +500,8 @@ export const useAuthStore = defineStore('auth', () => {
       )
     }
 
-    if (sessionIdentity !== null && currentUserIdentity() === sessionIdentity) {
+    assertIdentityUnchanged(sessionIdentity)
+    if (sessionIdentity !== null) {
       customerProvisionedIdentity.value = sessionIdentity
     }
     return createCustomerResJson
