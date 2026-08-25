@@ -86,10 +86,14 @@ export function outputAsSerialisable(
   // Output widgets do not exist in Litegraph; this is a temporary downstream workaround.
   const outputWidget = widget ? { widget: { name: widget.name } } : null
   const ids = node.graph ? outputLinkIds(node.graph, node.id, slotIndex) : []
-  const links = serialisesLegacyLinkPresence(slot)
-    ? slot._serialiseLinkIds(ids)
-    : ids.length
-      ? ids
+  const links = node.graph
+    ? serialisesLegacyLinkPresence(slot)
+      ? slot._serialiseLinkIds(ids)
+      : ids.length
+        ? ids
+        : null
+    : serialisesLegacyLinkPresence(slot)
+      ? slot._serialiseLinkIds([])
       : (slot.links ?? null)
 
   return {

@@ -11,7 +11,6 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { createArrayMutationView } from '@/lib/litegraph/src/infrastructure/createMutationView'
 import { NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
 import type { IDrawOptions } from '@/lib/litegraph/src/node/NodeSlot'
-import { restoreLegacyLink } from '@/lib/litegraph/src/node/restoreLegacyLink'
 import { outputHasLinks, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
@@ -22,21 +21,21 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
   _data?: unknown
   slot_index?: number
   private readonly legacyLinkIds!: LinkId[]
-  private readonly legacyLinks!: Map<LinkId, LLink>
   private readonly legacyLinksView!: LinkId[]
   private legacyLinksPresent!: boolean
 
   /**
    * @deprecated Reads return a stable store-derived view. Removing ids from the
-   * view disconnects them; adding a previously observed id restores its
-   * topology when it is still valid.
+   * view disconnects them; additions are ignored.
    */
   get links(): LinkId[] | null {
     warnDeprecated(
       'output.links is deprecated. Read connectivity via node.isOutputConnected(slot) / node.getOutputNodes(slot); mutate via node.connect() / node.disconnectOutput().'
     )
     this.synchronizeLegacyLinks()
-    return this.legacyLinksPresent ? this.legacyLinksView : null
+    return this.legacyLinkIds.length || this.legacyLinksPresent
+      ? this.legacyLinksView
+      : null
   }
 
   set links(value: readonly LinkId[] | null) {
@@ -49,11 +48,8 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
   }
 
   private synchronizeLegacyLinks(): void {
-    const links = linksOf(this)
-    for (const link of links) this.legacyLinks.set(link.id, link)
-    const ids = links.map((link) => link.id)
+    const ids = linkIdsOf(this)
     this.legacyLinkIds.splice(0, this.legacyLinkIds.length, ...ids)
-    if (ids.length) this.legacyLinksPresent = true
   }
 
   _setLegacyLinksPresent(present: boolean): void {
@@ -74,15 +70,9 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
 
     const desired = new Set(this.legacyLinkIds)
     const current = outputLinks(graph, this._node.id, slot)
-    for (const link of current) this.legacyLinks.set(link.id, link)
     for (const link of current) {
       if (desired.has(link.id)) continue
       graph.getNodeById(link.target_id)?.disconnectInput(link.target_slot)
-    }
-    for (const id of desired) {
-      if (graph.getLink(id)) continue
-      const link = this.legacyLinks.get(id)
-      if (link) restoreLegacyLink(link, this._node, slot, 'output')
     }
     this.synchronizeLegacyLinks()
   }
@@ -104,13 +94,12 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
   ) {
     // Serialized outputs carry a legacy links mirror; strip it so the base
     // ctor's Object.assign does not trip the deprecated setter above.
-    const { links: _legacyLinks, ...rest } = slot
+    const { links: legacyLinks, ...rest } = slot
     super(rest, node)
 
     const legacyLinkIds: LinkId[] = []
     Object.defineProperties(this, {
       legacyLinkIds: { value: legacyLinkIds },
-      legacyLinks: { value: new Map<LinkId, LLink>() },
       legacyLinksView: {
         value: createArrayMutationView(
           legacyLinkIds,
@@ -118,7 +107,10 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
           () => this.synchronizeLegacyLinks()
         )
       },
-      legacyLinksPresent: { value: false, writable: true }
+      legacyLinksPresent: {
+        value: Array.isArray(legacyLinks),
+        writable: true
+      }
     })
 
     this._data = slot._data

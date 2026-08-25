@@ -73,6 +73,19 @@ describe('outputAsSerialisable', () => {
     expect(serialised.links).toBeNull()
   })
 
+  it('ignores stale ids on a graph-bound plain-object slot', () => {
+    const { source } = createConnectedGraph([])
+    const output = {
+      ...source.outputs[0],
+      links: [toLinkId(404)]
+    } as OutputSlotParam
+    source.outputs[0] = output
+
+    const serialised = outputAsSerialisable(output, source, 0)
+
+    expect(serialised.links).toBeNull()
+  })
+
   it('serialises an empty array after a targeted disconnect', () => {
     const { source, targets } = createConnectedGraph([1])
     source.disconnectOutput(0, targets[0])

@@ -55,6 +55,19 @@ describe('NodeOutputSlot deprecated links getter', () => {
     expect(source.outputs[0].links).toBeNull()
   })
 
+  it('does not let a getter read change empty-link serialization', () => {
+    const { source, target } = createConnectedGraph()
+    source.connect(0, target, 0)
+
+    void source.outputs[0].links
+    target.disconnectInput(0)
+
+    const output = source.outputs[0]
+    expect(output).toBeInstanceOf(NodeOutputSlot)
+    if (!(output instanceof NodeOutputSlot)) throw new Error('Expected slot')
+    expect(output.toJSON().links).toBeNull()
+  })
+
   it('retains an empty array after disconnecting a specific target', () => {
     const { source, target } = createConnectedGraph()
     source.connect(0, target, 0)
@@ -159,5 +172,15 @@ describe('NodeOutputSlot construction', () => {
           node
         )
     ).not.toThrow()
+  })
+
+  it('preserves explicit empty legacy link presence', () => {
+    const node = new LGraphNode('Host')
+    const slot = new NodeOutputSlot(
+      fromAny({ name: 'out', type: 'INT', links: [] }),
+      node
+    )
+
+    expect(slot.toJSON().links).toEqual([])
   })
 })

@@ -10,7 +10,6 @@ import type {
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
 import { inputHasLink, inputLink } from '@/lib/litegraph/src/node/slotLinks'
-import { restoreLegacyLink } from '@/lib/litegraph/src/node/restoreLegacyLink'
 import { warnDeprecated } from '@/lib/litegraph/src/utils/feedback'
 import type { IDrawOptions } from '@/lib/litegraph/src/node/NodeSlot'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
@@ -20,20 +19,16 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
 export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
   alwaysVisible?: boolean
-  private legacyLink?: LLink
 
   /**
    * @deprecated Reads return the store-derived link id. Assigning null
-   * disconnects through the store; assigning that id again restores the
-   * observed topology when it is still valid.
+   * disconnects through the store; other assignments are ignored.
    */
   get link(): LinkId | null {
     warnDeprecated(
       'input.link is deprecated. Read connectivity via node.isInputConnected(slot) / node.getInputLink(slot); mutate via node.connect() / node.disconnectInput().'
     )
-    const link = linkOf(this)
-    if (link) this.legacyLink = link
-    return link?.id ?? null
+    return linkIdOf(this)
   }
 
   set link(value: LinkId | null) {
@@ -43,11 +38,7 @@ export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
     const slot = indexOf(this)
     if (slot === -1) return
     if (value === null) {
-      const link = linkOf(this)
-      if (link) this.legacyLink = link
       this._node.disconnectInput(slot)
-    } else if (this.legacyLink?.id === value) {
-      restoreLegacyLink(this.legacyLink, this._node, slot, 'input')
     }
   }
 

@@ -2,12 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type {
-  INodeInputSlot,
-  INodeOutputSlot
-} from '@/lib/litegraph/src/interfaces'
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
 
 function connectedPair() {
@@ -108,207 +103,33 @@ describe('legacy slot link removal', () => {
   })
 })
 
-describe('legacy slot link creation and plain-object slots (uncovered)', () => {
+describe('legacy slot link additions', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
-  it('restores a link from a saved id', () => {
-    const { graph, source, target } = connectedPair()
+  it('ignores assigning a disconnected id to an input', () => {
+    const { source, target } = connectedPair()
     const saved = target.inputs[0].link
 
     target.inputs[0].link = null
-    expect(source.isOutputConnected(0)).toBe(false)
-
-    target.inputs[0].link = saved
-    expect(target.inputs[0].link).toBe(saved)
-    expect(source.isOutputConnected(0)).toBe(true)
-    expect(saved && graph.getLink(saved)).toBeDefined()
-  })
-
-  it('does not restore a saved input link over a newer connection', () => {
-    const { graph, source, target } = connectedPair()
-    const saved = target.inputs[0].link
-    target.inputs[0].link = null
-
-    const replacementSource = new LGraphNode('Replacement source')
-    replacementSource.addOutput('out', 'INT')
-    graph.add(replacementSource)
-    const replacement = replacementSource.connect(0, target, 0)!
-
     target.inputs[0].link = saved
 
-    expect(target.inputs[0].link).toBe(replacement.id)
-    expect(source.isOutputConnected(0)).toBe(false)
-    expect(replacementSource.isOutputConnected(0)).toBe(true)
-  })
-
-  it('does not restore a saved input link after its source is removed', () => {
-    const { graph, source, target } = connectedPair()
-    const saved = target.inputs[0].link
-    target.inputs[0].link = null
-    graph.remove(source)
-
-    expect(() => {
-      target.inputs[0].link = saved
-    }).not.toThrow()
     expect(target.inputs[0].link).toBeNull()
+    expect(source.isOutputConnected(0)).toBe(false)
   })
 
-  it('does not restore an id copied from another input slot', () => {
-    const { graph, target } = connectedPair()
-    const saved = target.inputs[0].link
-    target.inputs[0].link = null
-
-    const otherTarget = new LGraphNode('Other target')
-    otherTarget.addInput('in', 'INT')
-    graph.add(otherTarget)
-    otherTarget.inputs[0].link = saved
-
-    expect(otherTarget.inputs[0].link).toBeNull()
-  })
-
-  it('reconnects a link pushed back onto the output view', () => {
+  it('ignores adding a disconnected id to an output view', () => {
     const { source, target } = connectedPair()
     const output = source.outputs[0]
     const [id] = output.links!
 
     output.links = []
-    expect(source.isOutputConnected(0)).toBe(false)
-
     output.links!.push(id)
-    expect(source.isOutputConnected(0)).toBe(true)
-    expect(target.isInputConnected(0)).toBe(true)
-    expect(target.inputs[0].link).toBe(id)
-  })
-
-  it('restores one removed fan-out link without disturbing its sibling', () => {
-    const { source, targets } = fanOut(2)
-    const view = source.outputs[0].links!
-    const removed = view.pop()!
-
-    expect(targets[0].isInputConnected(0)).toBe(true)
-    expect(targets[1].isInputConnected(0)).toBe(false)
-
-    view.push(removed)
-
-    expect(targets.every((target) => target.isInputConnected(0))).toBe(true)
-    expect(source.outputs[0].links).toHaveLength(2)
-  })
-
-  it('does not restore an output link after its target is removed', () => {
-    const { graph, source, target } = connectedPair()
-    const view = source.outputs[0].links!
-    const [id] = view
-    view.length = 0
-    graph.remove(target)
-
-    expect(() => view.push(id)).not.toThrow()
-    expect(source.outputs[0].links).toEqual([])
-  })
-
-  it('does not restore a second event output when fan-out is disabled', () => {
-    const { source, targets } = fanOut(2)
-    source.outputs[0].type = LiteGraph.EVENT
-    const saved = targets[0].inputs[0].link
-    targets[0].inputs[0].link = null
-
-    const previous = LiteGraph.allow_multi_output_for_events
-    LiteGraph.allow_multi_output_for_events = false
-    try {
-      targets[0].inputs[0].link = saved
-    } finally {
-      LiteGraph.allow_multi_output_for_events = previous
-    }
-
-    expect(targets[0].isInputConnected(0)).toBe(false)
-    expect(targets[1].isInputConnected(0)).toBe(true)
-    expect(source.outputs[0].links).toHaveLength(1)
-  })
-
-  it('fails safely when restoring from a subgraph input', () => {
-    const subgraph = createTestSubgraph({
-      inputs: [{ name: 'value', type: 'INT' }]
-    })
-    const target = new LGraphNode('Target')
-    target.addInput('in', 'INT')
-    subgraph.add(target)
-    const saved = subgraph.inputs[0].connect(target.inputs[0], target)!.id
-    target.inputs[0].link = null
-
-    expect(() => {
-      target.inputs[0].link = saved
-    }).not.toThrow()
-    expect(target.inputs[0].link).toBeNull()
-  })
-
-  it('fails safely when restoring to a subgraph output', () => {
-    const subgraph = createTestSubgraph({
-      outputs: [{ name: 'value', type: 'INT' }]
-    })
-    const source = new LGraphNode('Source')
-    source.addOutput('out', 'INT')
-    subgraph.add(source)
-    const saved = subgraph.outputs[0].connect(source.outputs[0], source)!.id
-    const view = source.outputs[0].links!
-    source.disconnectOutput(0)
-
-    expect(source.outputs[0].links).toBeNull()
-    expect(() => view.push(saved)).not.toThrow()
-    expect(source.outputs[0].links).toBeNull()
-  })
-
-  it('honors connection callback vetoes when restoring', () => {
-    for (const side of ['input', 'output'] as const) {
-      const { source, target } = connectedPair()
-      const saved = target.inputs[0].link
-      target.inputs[0].link = null
-      if (side === 'input') target.onConnectInput = () => false
-      else source.onConnectOutput = () => false
-
-      target.inputs[0].link = saved
-
-      expect(target.isInputConnected(0), side).toBe(false)
-      expect(source.isOutputConnected(0), side).toBe(false)
-    }
-  })
-
-  it('fails safely when a connection callback removes the restored link', () => {
-    const { source, target } = connectedPair()
-    const saved = target.inputs[0].link
-    target.inputs[0].link = null
-    source.onConnectionsChange = (_side, _slot, connected) => {
-      if (connected) target.disconnectInput(0)
-    }
-
-    expect(() => {
-      target.inputs[0].link = saved
-    }).not.toThrow()
-    expect(target.isInputConnected(0)).toBe(false)
-    expect(source.isOutputConnected(0)).toBe(false)
-  })
-
-  it('disconnects through a plain-object input slot', () => {
-    // The shape the one confirmed-broken pack uses: replace the slot with a
-    // spread copy, then mutate that. `link` is an accessor, so the copy carries
-    // neither the shim nor the current id.
-    const { source, target } = connectedPair()
-    const copy: INodeInputSlot = { ...target.inputs[0] }
-    target.inputs[0] = copy
-
-    target.inputs[0].link = null
 
     expect(source.isOutputConnected(0)).toBe(false)
-  })
-
-  it('disconnects through a plain-object output slot', () => {
-    const { source, target } = connectedPair()
-    const copy: INodeOutputSlot = { ...source.outputs[0] }
-    source.outputs[0] = copy
-
-    source.outputs[0].links = []
-
     expect(target.isInputConnected(0)).toBe(false)
+    expect(output.links).toEqual([])
   })
 })
 
@@ -404,25 +225,6 @@ describe('comfyui-promptchain indexed slot replacement', () => {
     expect(forced.target.inputs.map((input) => input.name)).toEqual(
       layoutBefore
     )
-  })
-
-  it('reads the live link id back through a spread copy', () => {
-    const { target } = autogrowChain(2, [0])
-    const linkId = target.getInputLink(0)!.id
-
-    const copy: INodeInputSlot = { ...target.inputs[0] }
-    target.inputs[0] = copy
-
-    expect(target.inputs[0].link).toBe(linkId)
-  })
-
-  it('keeps connected inputs when the pack re-reads slot.link', () => {
-    const { target } = autogrowChain(4, [0, 1, 2])
-
-    replaceSlotsWithLabelledCopies(target)
-    trimEmptyAutogrowSlots(target)
-
-    expect(target.inputs).toHaveLength(4)
   })
 
   it('retains every link in the serialized workflow after trimming slots', () => {
