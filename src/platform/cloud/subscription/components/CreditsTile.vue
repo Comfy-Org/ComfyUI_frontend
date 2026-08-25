@@ -234,6 +234,7 @@ import {
   getTierCredits
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import { computeMonthlyUsage } from '@/platform/cloud/subscription/utils/creditsProgress'
+import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { pendingTopupNeedsRefresh } from '@/platform/telemetry/topupTracker'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
@@ -355,8 +356,11 @@ const monthlyUsageLabel = computed(() =>
 const showBreakdown = computed(
   () => canAccessSubscriptionFeatures.value && !zeroState && !inactivePlan
 )
+// The monthly allowance bar is a Cloud-only presentation; Local/Desktop shows
+// only the total and additional-credit balances.
 const showBar = computed(
   () =>
+    isCloud &&
     showBreakdown.value &&
     creditPoolTotalCredits.value !== null &&
     creditPoolTotalCredits.value > 0

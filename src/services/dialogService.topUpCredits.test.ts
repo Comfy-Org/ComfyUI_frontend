@@ -10,7 +10,8 @@ const state = vi.hoisted(() => ({
   type: 'workspace' as 'workspace' | 'legacy',
   canTopUp: true,
   canSubscribeSelfServe: false,
-  isReady: true
+  isReady: true,
+  initialize: vi.fn()
 }))
 
 vi.mock('@/stores/dialogStore', () => ({
@@ -40,9 +41,23 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
 
 vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
   useBillingCapabilities: () => ({
-    canTopUp: { value: state.canTopUp },
-    canSubscribeSelfServe: { value: state.canSubscribeSelfServe },
-    isReady: { value: state.isReady }
+    // Getters, not snapshots: initialize() resolves capabilities mid-call.
+    canTopUp: {
+      get value() {
+        return state.canTopUp
+      }
+    },
+    canSubscribeSelfServe: {
+      get value() {
+        return state.canSubscribeSelfServe
+      }
+    },
+    isReady: {
+      get value() {
+        return state.isReady
+      }
+    },
+    initialize: () => state.initialize()
   })
 }))
 
@@ -67,6 +82,7 @@ describe('showTopUpCreditsDialog', () => {
     state.canTopUp = true
     state.canSubscribeSelfServe = false
     state.isReady = true
+    state.initialize = vi.fn()
     mockIsCloud.value = true
   })
 
@@ -77,6 +93,7 @@ describe('showTopUpCreditsDialog', () => {
 
     const [args] = showDialog.mock.calls[0]
     expect(args.key).toBe('top-up-credits')
+    expect(state.initialize).not.toHaveBeenCalled()
   })
 
   it('shows the contact-admin notice to team members instead of the purchase dialog', async () => {
@@ -120,12 +137,31 @@ describe('showTopUpCreditsDialog', () => {
     expect(showSubscriptionDialog).not.toHaveBeenCalled()
   })
 
-  it('does not route while capabilities are unresolved', async () => {
+  it('awaits an in-flight capability read instead of dropping the request', async () => {
+    state.canTopUp = false
+    state.isReady = false
+    state.initialize = vi.fn(() => {
+      state.canTopUp = true
+      state.isReady = true
+      return Promise.resolve()
+    })
+
+    await useDialogService().showTopUpCreditsDialog({
+      isInsufficientCredits: true
+    })
+
+    expect(state.initialize).toHaveBeenCalledOnce()
+    const [args] = showDialog.mock.calls[0]
+    expect(args.key).toBe('top-up-credits')
+  })
+
+  it('does not route when capabilities stay unresolved after initializing', async () => {
     state.canTopUp = false
     state.isReady = false
 
     await useDialogService().showTopUpCreditsDialog()
 
+    expect(state.initialize).toHaveBeenCalledOnce()
     expect(showDialog).not.toHaveBeenCalled()
     expect(showSubscriptionDialog).not.toHaveBeenCalled()
   })

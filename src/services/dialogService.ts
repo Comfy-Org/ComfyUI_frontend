@@ -70,6 +70,13 @@ interface BaseConfirmOptions {
   /** Displayed as an unordered list immediately below the message body */
   itemList?: string[]
   hint?: string
+  /**
+   * Dialog-stack key, defaulting to the shared `global-prompt`. `showDialog`
+   * reuses an existing entry with the same key and discards the new resolver,
+   * leaving the caller's promise pending forever — a flow whose confirmation
+   * must survive an already-open shared prompt passes its own key.
+   */
+  key?: string
 }
 
 type ConfirmOptions = BaseConfirmOptions &
@@ -304,11 +311,12 @@ export const useDialogService = () => {
     type = 'default',
     itemList = [],
     hint,
-    denyLabel
+    denyLabel,
+    key = 'global-prompt'
   }: ConfirmOptions): Promise<boolean | null> {
     return new Promise((resolve) => {
       const options: ShowDialogOptions = {
-        key: 'global-prompt',
+        key,
         title,
         component: ConfirmationDialogContent,
         props: {
@@ -334,8 +342,11 @@ export const useDialogService = () => {
     isInsufficientCredits?: boolean
   }) {
     const { type } = useBillingContext()
-    const { canTopUp, canSubscribeSelfServe, isReady } =
+    const { canTopUp, canSubscribeSelfServe, isReady, initialize } =
       useBillingCapabilities()
+    // A capability read still in flight has to be awaited here, or a top-up
+    // triggered during that window is silently dropped with no recovery UI.
+    if (!isReady.value) await initialize()
     if (!isReady.value) return
     if (!canTopUp.value && canSubscribeSelfServe.value) {
       await showSubscriptionRequiredDialog({

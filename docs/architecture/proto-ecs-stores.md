@@ -17,7 +17,7 @@ state, and promoted value data lives in `WidgetValueStore` keyed by the input's
 | WidgetValueStore        | `BaseWidget`                  | `graphId`                 | `WidgetId` (`graphId:nodeId:name`)                             | Plain `WidgetState` object    |
 | DomWidgetStore          | `BaseDOMWidget`               | Global                    | `widgetId` (UUID)                                              | Position, visibility, z-index |
 | LayoutStore             | Node, Group, Reroute geometry | Root workflow             | `makeScopedLayoutKey(rootGraphId, localId)`                    | Y.js CRDT maps (pos, size)    |
-| NodeOutputStore         | Execution results             | `nodeLocatorId`           | `"${subgraphId}:${nodeId}"`                                    | Output data, preview URLs     |
+| NodeOutputStore         | Execution results             | `nodeLocatorId`           | `"${subgraphUUID}:${nodeId}"`                                  | Output data, preview URLs     |
 | SubgraphNavigationStore | Canvas viewport               | `subgraphId`              | `subgraphId` or `'root'`                                       | LRU viewport cache            |
 | PreviewExposureStore    | Subgraph host node            | host node locator         | host locator + exposure name                                   | Display-only preview state    |
 | LinkStore               | `LLink`                       | Root and owning graph     | `LinkId` primary; owner-qualified target/origin indexes        | Plain `LinkTopology` object   |
@@ -269,7 +269,7 @@ Each store owns the identity scheme that fits its concern:
 | WidgetValueStore | `WidgetId` (`graphId:nodeId:name`)                                 | branded string   | Yes (`WidgetId`)  |
 | DomWidgetStore   | Widget UUID                                                        | UUID (string)    | No                |
 | LayoutStore      | `makeScopedLayoutKey(rootGraphId, localId)` for node/group/reroute | Composite string | Partially         |
-| NodeOutputStore  | `"${subgraphId}:${nodeId}"`                                        | Composite string | No                |
+| NodeOutputStore  | `"${subgraphUUID}:${nodeId}"`                                      | Composite string | No                |
 | LinkStore        | `LinkId` in root buckets; owner-qualified endpoint indexes         | Branded number   | Yes               |
 | RerouteStore     | `RerouteId` (root-scoped buckets)                                  | branded number   | Yes (`RerouteId`) |
 

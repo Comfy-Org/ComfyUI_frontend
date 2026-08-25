@@ -11,7 +11,8 @@ export const zSubscriptionTier = z.enum([
   'CREATOR',
   'PRO',
   'FOUNDERS_EDITION',
-  'TEAM'
+  'TEAM',
+  'ENTERPRISE'
 ])
 
 /**
@@ -2274,6 +2275,18 @@ export const zBillingCapabilityScope = z.object({
 })
 
 /**
+ * Identifies capability values currently using safe rollout defaults
+ * instead of deterministic policy results. A true value is UI guidance,
+ * not evidence that the corresponding write will succeed.
+ *
+ */
+export const zBillingCapabilityRolloutDefaults = z.object({
+  can_downgrade_to_personal: z.boolean(),
+  can_subscribe_self_serve: z.boolean(),
+  can_top_up: z.boolean()
+})
+
+/**
  * Conservative UI guidance. These values do not authorize billing writes;
  * each write endpoint independently enforces its permission policy.
  *
@@ -2293,7 +2306,15 @@ export const zBillingCapabilities = z.object({
  */
 export const zBillingCapabilitiesResponse = z.object({
   capabilities: zBillingCapabilities,
-  resolved_for: zBillingCapabilityScope
+  expires_at: z.string().datetime(),
+  resolved_for: zBillingCapabilityScope,
+  revision: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .lte(BigInt(9007199254740991)),
+  rollout_defaults_applied: zBillingCapabilityRolloutDefaults
 })
 
 /**
