@@ -1,7 +1,11 @@
 import type { BillingCapabilitiesResponse } from '@comfyorg/ingest-types'
+import type { AxiosResponse, InternalAxiosRequestConfig } from 'axios'
+import axios, { AxiosError, AxiosHeaders } from 'axios'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 import type { EffectScope } from 'vue'
+
+import { attachCapabilityRevisionInterceptor } from '@/platform/workspace/api/capabilityRevision'
 
 import { useBillingCapabilities } from './useBillingCapabilities'
 
@@ -61,7 +65,8 @@ vi.mock('@/stores/authStore', () => ({
 function capabilitiesResponse(
   canTopUp: boolean,
   workspaceId = 'workspace-1',
-  canSubscribeSelfServe = true
+  canSubscribeSelfServe = true,
+  freshness: { expiresAt?: string; revision?: number } = {}
 ): BillingCapabilitiesResponse {
   return {
     resolved_for: {
@@ -82,9 +87,46 @@ function capabilitiesResponse(
       can_subscribe_self_serve: false,
       can_top_up: false
     },
-    revision: 1,
-    expires_at: '2099-01-01T00:00:00Z'
+    revision: freshness.revision ?? 1,
+    expires_at: freshness.expiresAt ?? '2099-01-01T00:00:00Z'
   }
+}
+
+function expiresIn(ms: number): string {
+  return new Date(Date.now() + ms).toISOString()
+}
+
+/** Drives a mutation response through the shared capability-revision interceptor. */
+async function emitMutationRevision(
+  revision: string | undefined,
+  status = 200
+): Promise<void> {
+  const client = axios.create()
+  client.defaults.adapter = (config: InternalAxiosRequestConfig) => {
+    const response: AxiosResponse = {
+      data: {},
+      status,
+      statusText: '',
+      headers: new AxiosHeaders(
+        revision === undefined ? {} : { 'X-Capability-Revision': revision }
+      ),
+      config
+    }
+    return status >= 400
+      ? Promise.reject(
+          new AxiosError(
+            'Request failed',
+            'ERR_BAD_REQUEST',
+            config,
+            {},
+            response
+          )
+        )
+      : Promise.resolve(response)
+  }
+  attachCapabilityRevisionInterceptor(client)
+  await client.post('/api/billing/subscribe').catch(() => {})
+  await vi.advanceTimersByTimeAsync(0)
 }
 
 describe('useBillingCapabilities', () => {
@@ -279,5 +321,205 @@ describe('useBillingCapabilities', () => {
     await billingCapabilities.initialize()
 
     expect(billingCapabilities.canTopUp.value).toBe(false)
+  })
+
+  it('refetches the capability snapshot once the server snapshot expires', async () => {
+    mockGetBillingCapabilities
+      .mockResolvedValueOnce(
+        capabilitiesResponse(false, 'workspace-1', true, {
+          expiresAt: expiresIn(30_000)
+        })
+      )
+      .mockResolvedValueOnce(
+        capabilitiesResponse(true, 'workspace-1', true, {
+          expiresAt: expiresIn(90_000)
+        })
+      )
+
+    await billingCapabilities.initialize()
+    expect(billingCapabilities.canTopUp.value).toBe(false)
+
+    await vi.advanceTimersByTimeAsync(30_000)
+
+    expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(2)
+    expect(billingCapabilities.canTopUp.value).toBe(true)
+  })
+
+  it('defers the refresh until a hidden tab becomes visible again', async () => {
+    const visibility = vi
+      .spyOn(document, 'visibilityState', 'get')
+      .mockReturnValue('hidden')
+    mockGetBillingCapabilities
+      .mockResolvedValueOnce(
+        capabilitiesResponse(false, 'workspace-1', true, {
+          expiresAt: expiresIn(30_000)
+        })
+      )
+      .mockResolvedValueOnce(capabilitiesResponse(true))
+
+    await billingCapabilities.initialize()
+    await vi.advanceTimersByTimeAsync(120_000)
+    expect(mockGetBillingCapabilities).toHaveBeenCalledOnce()
+
+    visibility.mockReturnValue('visible')
+    document.dispatchEvent(new Event('visibilitychange'))
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(2)
+    expect(billingCapabilities.canTopUp.value).toBe(true)
+  })
+
+  it('reschedules for the remaining lifetime when the tab returns before expiry', async () => {
+    const visibility = vi
+      .spyOn(document, 'visibilityState', 'get')
+      .mockReturnValue('visible')
+    mockGetBillingCapabilities
+      .mockResolvedValueOnce(
+        capabilitiesResponse(false, 'workspace-1', true, {
+          expiresAt: expiresIn(30_000)
+        })
+      )
+      .mockResolvedValueOnce(capabilitiesResponse(true))
+
+    await billingCapabilities.initialize()
+
+    visibility.mockReturnValue('hidden')
+    document.dispatchEvent(new Event('visibilitychange'))
+    await vi.advanceTimersByTimeAsync(10_000)
+
+    visibility.mockReturnValue('visible')
+    document.dispatchEvent(new Event('visibilitychange'))
+
+    await vi.advanceTimersByTimeAsync(19_000)
+    expect(mockGetBillingCapabilities).toHaveBeenCalledOnce()
+
+    await vi.advanceTimersByTimeAsync(2_000)
+    expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(2)
+  })
+
+  it('retimes the refresh for the new workspace after a workspace switch', async () => {
+    mockGetBillingCapabilities
+      .mockResolvedValueOnce(
+        capabilitiesResponse(false, 'workspace-1', true, {
+          expiresAt: expiresIn(30_000)
+        })
+      )
+      .mockResolvedValueOnce(
+        capabilitiesResponse(false, 'workspace-2', true, {
+          expiresAt: expiresIn(120_000)
+        })
+      )
+      .mockResolvedValueOnce(
+        capabilitiesResponse(true, 'workspace-2', true, {
+          expiresAt: expiresIn(600_000)
+        })
+      )
+
+    await billingCapabilities.initialize()
+    mockScope.workspaceId = 'workspace-2'
+    await billingCapabilities.initialize()
+    expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(2)
+
+    await vi.advanceTimersByTimeAsync(60_000)
+    expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(2)
+
+    await vi.advanceTimersByTimeAsync(65_000)
+    expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(3)
+    expect(billingCapabilities.canTopUp.value).toBe(true)
+  })
+
+  it('stops refreshing once the shared composable scope is disposed', async () => {
+    mockGetBillingCapabilities
+      .mockResolvedValueOnce(
+        capabilitiesResponse(false, 'workspace-1', true, {
+          expiresAt: expiresIn(30_000)
+        })
+      )
+      .mockResolvedValueOnce(
+        capabilitiesResponse(true, 'workspace-1', true, {
+          expiresAt: expiresIn(90_000)
+        })
+      )
+
+    await billingCapabilities.initialize()
+    await vi.advanceTimersByTimeAsync(30_000)
+    expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(2)
+
+    scope.stop()
+    await vi.advanceTimersByTimeAsync(300_000)
+
+    expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(2)
+  })
+
+  it('refetches when a mutation reports a different capability revision', async () => {
+    mockGetBillingCapabilities
+      .mockResolvedValueOnce(
+        capabilitiesResponse(false, 'workspace-1', true, { revision: 4 })
+      )
+      .mockResolvedValueOnce(
+        capabilitiesResponse(true, 'workspace-1', true, { revision: 5 })
+      )
+
+    await billingCapabilities.initialize()
+    expect(billingCapabilities.canTopUp.value).toBe(false)
+
+    await emitMutationRevision('5')
+
+    expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(2)
+    expect(billingCapabilities.canTopUp.value).toBe(true)
+  })
+
+  it('refetches when a failed mutation reports a different capability revision', async () => {
+    mockGetBillingCapabilities
+      .mockResolvedValueOnce(
+        capabilitiesResponse(false, 'workspace-1', true, { revision: 4 })
+      )
+      .mockResolvedValueOnce(
+        capabilitiesResponse(true, 'workspace-1', true, { revision: 5 })
+      )
+
+    await billingCapabilities.initialize()
+
+    await emitMutationRevision('5', 402)
+
+    expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(2)
+    expect(billingCapabilities.canTopUp.value).toBe(true)
+  })
+
+  it('ignores a mutation that reports the cached capability revision', async () => {
+    mockGetBillingCapabilities
+      .mockResolvedValueOnce(
+        capabilitiesResponse(false, 'workspace-1', true, { revision: 4 })
+      )
+      .mockResolvedValueOnce(
+        capabilitiesResponse(true, 'workspace-1', true, { revision: 6 })
+      )
+
+    await billingCapabilities.initialize()
+
+    await emitMutationRevision('4')
+    expect(mockGetBillingCapabilities).toHaveBeenCalledOnce()
+
+    await emitMutationRevision('6')
+    expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(2)
+  })
+
+  it('ignores a mutation whose response omits the revision header', async () => {
+    mockGetBillingCapabilities
+      .mockResolvedValueOnce(
+        capabilitiesResponse(false, 'workspace-1', true, { revision: 4 })
+      )
+      .mockResolvedValueOnce(
+        capabilitiesResponse(true, 'workspace-1', true, { revision: 6 })
+      )
+
+    await billingCapabilities.initialize()
+
+    await emitMutationRevision(undefined)
+    expect(mockGetBillingCapabilities).toHaveBeenCalledOnce()
+    expect(billingCapabilities.canTopUp.value).toBe(false)
+
+    await emitMutationRevision('6')
+    expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(2)
   })
 })

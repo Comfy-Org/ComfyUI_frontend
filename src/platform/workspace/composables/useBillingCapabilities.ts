@@ -1,9 +1,14 @@
 import type { BillingCapabilitiesResponse } from '@comfyorg/ingest-types'
-import { createSharedComposable } from '@vueuse/core'
-import { computed, shallowRef, watch } from 'vue'
+import {
+  createSharedComposable,
+  defaultDocument,
+  useEventListener
+} from '@vueuse/core'
+import { computed, onScopeDispose, shallowRef, watch } from 'vue'
 
 import { isCloud } from '@/platform/distribution/types'
 import { reportError } from '@/platform/telemetry/reportError'
+import { onCapabilityRevision } from '@/platform/workspace/api/capabilityRevision'
 import {
   WorkspaceApiError,
   workspaceApi
@@ -25,6 +30,12 @@ type CapabilityReadState =
       response: BillingCapabilitiesResponse
     }
 
+// Clock skew can make a fresh snapshot look already expired, and setTimeout
+// overflows past ~24.8 days into firing immediately. Either would spin the
+// refetch into a loop, so the scheduled delay is clamped.
+const MIN_REFRESH_DELAY_MS = 5_000
+const MAX_REFRESH_DELAY_MS = 24 * 60 * 60 * 1000
+
 interface ActiveCapabilityRequest {
   requestId: number
   authUid: string
@@ -40,6 +51,7 @@ function useBillingCapabilitiesInternal() {
   let initialized = false
   let latestRequestId = 0
   let activeRequest: ActiveCapabilityRequest | null = null
+  let refreshTimer: ReturnType<typeof setTimeout> | null = null
 
   const capabilities = computed(() => {
     const userId = authStore.currentUser?.uid
@@ -90,7 +102,64 @@ function useBillingCapabilitiesInternal() {
     )
   })
 
+  function clearRefreshTimer(): void {
+    if (refreshTimer === null) return
+    clearTimeout(refreshTimer)
+    refreshTimer = null
+  }
+
+  function expiryOf(state: CapabilityReadState): number | null {
+    if (state.status !== 'resolved') return null
+    const expiresAt = Date.parse(state.response.expires_at)
+    return Number.isFinite(expiresAt) ? expiresAt : null
+  }
+
+  // `capabilities` is a computed, and wall-clock time is not a reactive
+  // dependency, so expiry has to be pushed rather than read lazily. The timer
+  // runs only while the document is visible: staleness is unobservable in a
+  // hidden tab, and returning to the tab is itself a visibility transition.
+  function scheduleRefresh(): void {
+    clearRefreshTimer()
+    const expiresAt = expiryOf(readState.value)
+    if (expiresAt === null) return
+    if (defaultDocument?.visibilityState === 'hidden') return
+
+    const delay = Math.min(
+      MAX_REFRESH_DELAY_MS,
+      Math.max(MIN_REFRESH_DELAY_MS, expiresAt - Date.now())
+    )
+    refreshTimer = setTimeout(() => {
+      refreshTimer = null
+      void fetchCapabilities()
+    }, delay)
+  }
+
+  useEventListener(defaultDocument, 'visibilitychange', () => {
+    if (defaultDocument?.visibilityState === 'hidden') {
+      clearRefreshTimer()
+      return
+    }
+    const expiresAt = expiryOf(readState.value)
+    if (expiresAt === null) return
+    if (expiresAt <= Date.now()) void fetchCapabilities()
+    else scheduleRefresh()
+  })
+
+  const stopRevisionListener = onCapabilityRevision((revision) => {
+    const state = readState.value
+    if (state.status !== 'resolved' || state.response.revision === revision) {
+      return
+    }
+    void fetchCapabilities()
+  })
+
+  onScopeDispose(() => {
+    clearRefreshTimer()
+    stopRevisionListener()
+  })
+
   function resetRead(): void {
+    clearRefreshTimer()
     latestRequestId++
     activeRequest?.controller.abort()
     activeRequest = null
@@ -147,6 +216,7 @@ function useBillingCapabilitiesInternal() {
                 response
               }
             : { status: 'unavailable', authUid: userId, workspaceId }
+        scheduleRefresh()
       } catch (error) {
         if (
           requestId !== latestRequestId ||
