@@ -522,4 +522,134 @@ describe('useBillingCapabilities', () => {
     await emitMutationRevision('6')
     expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(2)
   })
+
+  it('keeps the resolved snapshot readable while a background refresh is in flight', async () => {
+    let resolveRefresh!: (value: BillingCapabilitiesResponse) => void
+    mockGetBillingCapabilities
+      .mockResolvedValueOnce(
+        capabilitiesResponse(true, 'workspace-1', true, {
+          expiresAt: expiresIn(30_000)
+        })
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise<BillingCapabilitiesResponse>((resolve) => {
+            resolveRefresh = resolve
+          })
+      )
+
+    await billingCapabilities.initialize()
+    expect(billingCapabilities.canTopUp.value).toBe(true)
+
+    await vi.advanceTimersByTimeAsync(30_000)
+    expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(2)
+    expect(billingCapabilities.canTopUp.value).toBe(true)
+    expect(billingCapabilities.canSubscribeSelfServe.value).toBe(true)
+    expect(billingCapabilities.isReady.value).toBe(true)
+
+    resolveRefresh(
+      capabilitiesResponse(false, 'workspace-1', false, {
+        expiresAt: expiresIn(60_000)
+      })
+    )
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(billingCapabilities.canTopUp.value).toBe(false)
+    expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
+  })
+
+  it('keeps the last good snapshot when a background refresh fails', async () => {
+    mockGetBillingCapabilities
+      .mockResolvedValueOnce(
+        capabilitiesResponse(true, 'workspace-1', true, {
+          expiresAt: expiresIn(30_000)
+        })
+      )
+      .mockRejectedValueOnce(new Error('unavailable'))
+
+    await billingCapabilities.initialize()
+    await vi.advanceTimersByTimeAsync(30_000)
+
+    expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(2)
+    expect(billingCapabilities.canTopUp.value).toBe(true)
+    expect(billingCapabilities.canSubscribeSelfServe.value).toBe(true)
+    expect(billingCapabilities.isReady.value).toBe(true)
+    expect(mockReportError).toHaveBeenCalledOnce()
+  })
+
+  it('retries on a fixed interval after a background refresh fails', async () => {
+    mockGetBillingCapabilities
+      .mockResolvedValueOnce(
+        capabilitiesResponse(true, 'workspace-1', true, {
+          expiresAt: expiresIn(30_000)
+        })
+      )
+      .mockRejectedValueOnce(new Error('unavailable'))
+      .mockResolvedValueOnce(
+        capabilitiesResponse(false, 'workspace-1', false, {
+          expiresAt: expiresIn(180_000)
+        })
+      )
+
+    await billingCapabilities.initialize()
+    await vi.advanceTimersByTimeAsync(30_000)
+    expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(2)
+
+    await vi.advanceTimersByTimeAsync(59_000)
+    expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(2)
+
+    await vi.advanceTimersByTimeAsync(2_000)
+    expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(3)
+    expect(billingCapabilities.canTopUp.value).toBe(false)
+  })
+
+  it('replaces the snapshot when a background refresh is denied', async () => {
+    const { WorkspaceApiError } =
+      await import('@/platform/workspace/api/workspaceApi')
+    mockGetBillingCapabilities
+      .mockResolvedValueOnce(
+        capabilitiesResponse(true, 'workspace-1', true, {
+          expiresAt: expiresIn(30_000)
+        })
+      )
+      .mockRejectedValueOnce(new WorkspaceApiError('Forbidden', 403))
+
+    await billingCapabilities.initialize()
+    await vi.advanceTimersByTimeAsync(30_000)
+
+    expect(billingCapabilities.canTopUp.value).toBe(false)
+    expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
+    expect(billingCapabilities.isReady.value).toBe(true)
+  })
+
+  it('paces the refresh on a fixed interval when the snapshot arrives expired', async () => {
+    mockGetBillingCapabilities.mockResolvedValue(
+      capabilitiesResponse(true, 'workspace-1', true, {
+        expiresAt: expiresIn(-60_000)
+      })
+    )
+
+    await billingCapabilities.initialize()
+    expect(mockGetBillingCapabilities).toHaveBeenCalledOnce()
+
+    await vi.advanceTimersByTimeAsync(59_000)
+    expect(mockGetBillingCapabilities).toHaveBeenCalledOnce()
+
+    await vi.advanceTimersByTimeAsync(2_000)
+    expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(2)
+  })
+
+  it('bounds the refresh interval when the client clock lags the server', async () => {
+    mockGetBillingCapabilities.mockResolvedValue(
+      capabilitiesResponse(true, 'workspace-1', true, {
+        expiresAt: expiresIn(7 * 24 * 60 * 60 * 1000)
+      })
+    )
+
+    await billingCapabilities.initialize()
+
+    await vi.advanceTimersByTimeAsync(60 * 60 * 1000 + 1_000)
+
+    expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(2)
+  })
 })
