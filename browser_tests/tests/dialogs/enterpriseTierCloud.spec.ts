@@ -75,7 +75,7 @@ test.describe('Enterprise workspace billing', { tag: '@cloud' }, () => {
     page
   }) => {
     const workspace = await setupWorkspace(page, ACTIVE_ENTERPRISE_STATUS)
-    const content = await workspace.openWorkspaceSettings()
+    const content = await workspace.openPlanAndCreditsSettings()
 
     await expect(
       content.getByRole('heading', { name: 'Enterprise' })
@@ -90,7 +90,7 @@ test.describe('Enterprise workspace billing', { tag: '@cloud' }, () => {
   }) => {
     await captureOpenedUrls(page)
     const workspace = await setupWorkspace(page, ACTIVE_ENTERPRISE_STATUS)
-    const content = await workspace.openWorkspaceSettings()
+    const content = await workspace.openPlanAndCreditsSettings()
 
     await content.getByRole('button', { name: 'Billing & invoices' }).click()
     await expect
@@ -129,7 +129,7 @@ test.describe('Enterprise workspace billing', { tag: '@cloud' }, () => {
       page,
       CANCELLED_ACTIVE_ENTERPRISE_STATUS
     )
-    const content = await workspace.openWorkspaceSettings()
+    const content = await workspace.openPlanAndCreditsSettings()
 
     await expect(
       content.getByRole('heading', { name: 'Enterprise' })
@@ -153,7 +153,7 @@ test.describe('Enterprise workspace billing', { tag: '@cloud' }, () => {
     page
   }) => {
     const workspace = await setupWorkspace(page, ENDED_ENTERPRISE_STATUS)
-    const content = await workspace.openWorkspaceSettings()
+    const content = await workspace.openPlanAndCreditsSettings()
 
     await expect(content.getByText('Your subscription has ended')).toBeVisible()
     await expect(
@@ -186,7 +186,7 @@ test.describe('Non-Enterprise billing regression', { tag: '@cloud' }, () => {
     page
   }) => {
     const workspace = await setupWorkspace(page, TEAM_BILLING_STATUS)
-    const content = await workspace.openWorkspaceSettings()
+    const content = await workspace.openPlanAndCreditsSettings()
 
     await expect(
       content.getByRole('heading', { name: 'Team', exact: true })
@@ -236,7 +236,7 @@ test.describe('Unrecognized billing tier regression', { tag: '@cloud' }, () => {
         body: JSON.stringify(ACTIVE_UNRECOGNIZED_TIER_STATUS)
       })
     )
-    const content = await workspace.openWorkspaceSettings()
+    const content = await workspace.openPlanAndCreditsSettings()
 
     await expect(content.getByText('Total credits')).toBeVisible()
     await expect(

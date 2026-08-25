@@ -1,11 +1,7 @@
 import { useRoute, useRouter } from 'vue-router'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import {
-  isEnterprisePlanSlug,
-  isEnterpriseTier,
-  isUnknownTier
-} from '@/platform/cloud/subscription/constants/tierPricing'
+import { isUnknownTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import {
   clearPreservedQuery,
@@ -160,8 +156,7 @@ export function usePricingTableUrlLoader() {
       }
     }
     if (
-      isEnterpriseTier(subscription.value?.tier) ||
-      isEnterprisePlanSlug(subscription.value?.planSlug) ||
+      subscription.value?.tier === 'ENTERPRISE' ||
       isUnknownTier(subscription.value?.tier)
     ) {
       return

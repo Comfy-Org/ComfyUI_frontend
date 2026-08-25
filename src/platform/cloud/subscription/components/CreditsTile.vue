@@ -231,13 +231,12 @@ import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables
 import { useBillingPolicyCapabilities } from '@/platform/cloud/subscription/composables/useBillingPolicyCapabilities'
 import {
   DEFAULT_TIER_KEY,
-  isEnterprisePlanSlug,
-  isEnterpriseTier,
   isUnknownTier,
   toTierKey,
   getTierCredits
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import { computeMonthlyUsage } from '@/platform/cloud/subscription/utils/creditsProgress'
+import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { pendingTopupNeedsRefresh } from '@/platform/telemetry/topupTracker'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
@@ -286,8 +285,7 @@ const tierKey = computed(() => {
 const creditPoolTotalCredits = computed<number | null>(() => {
   const monthlyCredits =
     currentTeamCreditStop.value?.credits_monthly ??
-    (isEnterpriseTier(subscription.value?.tier) ||
-    isEnterprisePlanSlug(subscription.value?.planSlug) ||
+    (subscription.value?.tier === 'ENTERPRISE' ||
     isUnknownTier(subscription.value?.tier)
       ? null
       : getTierCredits(tierKey.value))
@@ -379,6 +377,7 @@ const showBreakdown = computed(
 )
 const showBar = computed(
   () =>
+    isCloud &&
     showBreakdown.value &&
     creditPoolTotalCredits.value !== null &&
     creditPoolTotalCredits.value > 0
@@ -388,7 +387,8 @@ const showBar = computed(
 const showActionButton = computed(
   () =>
     (billingPolicyCapabilities.value.topUpAccess === 'allowed' ||
-      billingPolicyCapabilities.value.showsSubscribeUpsellUI) &&
+      (billingPolicyCapabilities.value.showsSubscribeUpsellUI &&
+        canAccessSubscriptionFeatures.value)) &&
     !zeroState &&
     (type.value !== 'workspace' || permissions.value.canTopUp)
 )

@@ -2,10 +2,6 @@ import { computed } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import type { IngestSubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
-import {
-  isEnterprisePlanSlug,
-  isEnterpriseTier
-} from '@/platform/cloud/subscription/constants/tierPricing'
 import { isCloud } from '@/platform/distribution/types'
 
 import type { BillingPolicyState } from '../billingPolicyState'
@@ -19,16 +15,14 @@ export function deriveBillingPolicyState(input: {
   canAccessSubscriptionFeatures: boolean
   isTeamPlan: boolean
   tier: IngestSubscriptionTier | null
-  planSlug?: string | null
 }): BillingPolicyState {
   const distribution = input.isCloud ? 'Cloud' : 'Local'
 
-  // ENTERPRISE arrives as a runtime string before the generated enum carries
-  // it. It is a workspace-level plan and never self-serve, so it takes the
-  // team policy states in both the active and lapsed cases — classifying a
-  // lapsed enterprise as plain WithoutActiveSubscription would expose the
-  // personal subscribe upsell.
-  if (isEnterpriseTier(input.tier) || isEnterprisePlanSlug(input.planSlug)) {
+  // ENTERPRISE is a workspace-level, sales-managed plan and never self-serve.
+  // Active, it takes the team policy states; lapsed, it keeps its own state so
+  // it is never classified as plain WithoutActiveSubscription, which would
+  // expose the personal subscribe upsell to a sales-managed customer.
+  if (input.tier === 'ENTERPRISE') {
     return {
       kind: input.canAccessSubscriptionFeatures
         ? `${distribution}AndTeam`
@@ -61,10 +55,25 @@ export function deriveBillingPolicyState(input: {
       return { kind: `${distribution}AndFounders` }
     case null:
       return { kind: `${distribution}AndUnknown` }
-    default: {
-      input.tier satisfies never
-      return { kind: `${distribution}AndUnrecognizedTier` }
-    }
+    default:
+      // COMPATIBILITY FALLBACK, NOT A POLICY SIGNAL.
+      //
+      // The tier union is generated from the backend spec and can gain values
+      // without a frontend change, so this must not be a compile error. It
+      // resolves to the restrictive state rather than Unknown because Unknown
+      // grants topUpAccess 'allowed' — an unrecognised tier must not be handed
+      // paid-plan access for the sole reason that this build does not know it.
+      //
+      // It is deliberately NOT business-correct: a sales-managed tier that is
+      // genuinely active collapses to the same state as no subscription at all,
+      // so any UI keyed off this can offer subscribe/upgrade to someone who is
+      // already paying. Fail-closed on access, wrong on intent.
+      //
+      // Do not build cancellation, reactivation, pricing or upgrade decisions on
+      // this branch. Those need explicit server-sent capabilities (canOpenPricing,
+      // canChangePlan, canCancel, canReactivate) so a new tier cannot silently
+      // inherit a frontend-computed policy.
+      return { kind: `${distribution}WithoutActiveSubscription` }
   }
 }
 
@@ -74,7 +83,7 @@ export function deriveBillingPolicyState(input: {
  * and the local backend stay exactly as they are today.
  */
 export function useBillingPolicyState() {
-  const { canAccessSubscriptionFeatures, isTeamPlan, tier, subscription } =
+  const { canAccessSubscriptionFeatures, isTeamPlan, tier } =
     useBillingContext()
 
   const billingPolicyState = computed<BillingPolicyState>(() =>
@@ -82,8 +91,7 @@ export function useBillingPolicyState() {
       isCloud,
       canAccessSubscriptionFeatures: canAccessSubscriptionFeatures.value,
       isTeamPlan: isTeamPlan.value,
-      tier: tier.value,
-      planSlug: subscription.value?.planSlug
+      tier: tier.value
     })
   )
 

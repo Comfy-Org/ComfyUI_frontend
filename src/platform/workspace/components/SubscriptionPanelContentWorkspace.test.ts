@@ -396,6 +396,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
   it('renders Enterprise without price, benefits, or a plan-change action', () => {
     mockHasTeamPlan.value = false
     mockPlanSlug.value = 'enterprise_monthly'
+    mockSubscriptionTier.value = runtimeTier('ENTERPRISE')
     mockCurrentTeamCreditStop.value = null
     renderComponent()
 
@@ -416,6 +417,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
   it('hides Reactivate for a cancelled enterprise plan', () => {
     mockHasTeamPlan.value = false
     mockPlanSlug.value = 'enterprise_monthly'
+    mockSubscriptionTier.value = runtimeTier('ENTERPRISE')
     mockCurrentTeamCreditStop.value = null
     mockSubscriptionStatus.value = 'canceled'
     renderComponent()
@@ -428,6 +430,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
   it('offers no subscribe or reactivate path for an ended enterprise plan', () => {
     mockHasTeamPlan.value = false
     mockPlanSlug.value = 'enterprise_monthly'
+    mockSubscriptionTier.value = runtimeTier('ENTERPRISE')
     mockCurrentTeamCreditStop.value = null
     mockSubscriptionStatus.value = 'ended'
     mockIsActiveSubscription.value = false
@@ -872,6 +875,25 @@ describe('SubscriptionPanelContentWorkspace', () => {
 
     await user.click(screen.getByRole('button', { name: 'Billing & invoices' }))
     expect(mockManageSubscription).toHaveBeenCalledOnce()
+  })
+
+  it('lets a never-subscribed team workspace top up on Local instead of upselling', () => {
+    mockDistributionState.isCloud = false
+    mockIsActiveSubscription.value = false
+    mockIsWorkspaceSubscribed.value = false
+    mockHasSubscription.value = false
+    renderComponent()
+
+    expect(
+      screen.queryByText('This workspace is not on a subscription')
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Subscribe Now' })
+    ).not.toBeInTheDocument()
+    expect(screen.getByTestId('credits-tile')).toHaveAttribute(
+      'data-zero-state',
+      'false'
+    )
   })
 
   it('shows a loading indicator instead of a false Free plan while billing loads', () => {

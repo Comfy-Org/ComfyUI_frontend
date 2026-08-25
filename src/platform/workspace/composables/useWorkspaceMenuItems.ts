@@ -4,11 +4,7 @@ import { useI18n } from 'vue-i18n'
 import type { MenuItem } from 'primevue/menuitem'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import {
-  isEnterprisePlanSlug,
-  isEnterpriseTier,
-  isUnknownTier
-} from '@/platform/cloud/subscription/constants/tierPricing'
+import { isUnknownTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useDialogService } from '@/services/dialogService'
 
@@ -68,9 +64,7 @@ export function useWorkspaceMenuItems() {
   }
 
   const isEnterprisePlan = computed(
-    () =>
-      isEnterpriseTier(subscription.value?.tier) ||
-      isEnterprisePlanSlug(subscription.value?.planSlug)
+    () => subscription.value?.tier === 'ENTERPRISE'
   )
 
   const canCancelPlan = computed(

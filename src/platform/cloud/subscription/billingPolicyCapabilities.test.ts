@@ -74,25 +74,8 @@ describe('getBillingPolicyCapabilities', () => {
       'CloudAndFounders',
       { topUpAccess: 'allowed', showsSubscribeUpsellUI: false }
     ],
-    ['CloudAndTeam', { topUpAccess: 'allowed', showsSubscribeUpsellUI: false }],
-    [
-      'LocalAndUnrecognizedTier',
-      { topUpAccess: 'allowed', showsSubscribeUpsellUI: false }
-    ],
-    [
-      'CloudAndUnrecognizedTier',
-      { topUpAccess: 'subscription-required', showsSubscribeUpsellUI: false }
-    ]
+    ['CloudAndTeam', { topUpAccess: 'allowed', showsSubscribeUpsellUI: false }]
   ])('maps %s to %o', ([kind, expected]) => {
     expect(getBillingPolicyCapabilities({ kind })).toEqual(expected)
-  })
-
-  it('fails closed for a state kind that only exists at runtime', () => {
-    const capabilities = getBillingPolicyCapabilities({
-      kind: 'CloudAndSomethingNewFromTheBackend'
-    } as unknown as Parameters<typeof getBillingPolicyCapabilities>[0])
-
-    expect(capabilities.topUpAccess).toBe('subscription-required')
-    expect(capabilities.showsSubscribeUpsellUI).toBe(false)
   })
 })

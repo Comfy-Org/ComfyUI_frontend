@@ -36,8 +36,6 @@ export function getBillingPolicyCapabilities(
       return { topUpAccess: 'allowed', showsSubscribeUpsellUI: false }
     case 'LocalAndTeam':
       return { topUpAccess: 'allowed', showsSubscribeUpsellUI: false }
-    case 'LocalAndUnrecognizedTier':
-      return { topUpAccess: 'allowed', showsSubscribeUpsellUI: false }
     case 'CloudWithoutActiveSubscription':
       return {
         topUpAccess: 'subscription-required',
@@ -48,6 +46,8 @@ export function getBillingPolicyCapabilities(
         topUpAccess: 'subscription-required',
         showsSubscribeUpsellUI: false
       }
+    // Sales-managed: reactivation goes through sales, so unlike the lapsed
+    // self-serve Team state it neither withholds top-up nor upsells.
     case 'CloudEnterpriseWithoutActiveSubscription':
       return { topUpAccess: 'allowed', showsSubscribeUpsellUI: false }
     case 'CloudAndUnknown':
@@ -67,22 +67,5 @@ export function getBillingPolicyCapabilities(
       return { topUpAccess: 'allowed', showsSubscribeUpsellUI: false }
     case 'CloudAndTeam':
       return { topUpAccess: 'allowed', showsSubscribeUpsellUI: false }
-    // Cloud top-up always requires a subscription, and an unidentified tier is
-    // not evidence of one — it could be the next FREE. No upsell either: we
-    // cannot price a catalog entry this build does not know.
-    case 'CloudAndUnrecognizedTier':
-      return {
-        topUpAccess: 'subscription-required',
-        showsSubscribeUpsellUI: false
-      }
-    // A state kind that does not exist in this build at all. Nothing can be
-    // reasoned about it, so it fails closed rather than returning undefined.
-    default: {
-      state satisfies never
-      return {
-        topUpAccess: 'subscription-required',
-        showsSubscribeUpsellUI: false
-      }
-    }
   }
 }

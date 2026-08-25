@@ -56,32 +56,46 @@ const TIER_FEATURES: Record<TierKey, TierFeatures> = {
 
 export const DEFAULT_TIER_KEY: TierKey = 'standard'
 
-// TEAM is workspace-level, so it maps to no key in this personal plan catalog.
+// Membership is tested rather than listing the exclusions, so a tier added to
+// the ingest enum narrows to false and returns null instead of failing the
+// build. Two details are load-bearing:
+//   - `typeof`, because tier is unvalidated backend JSON and need not be a
+//     string; hasOwnProperty coerces its argument to a property key, so
+//     ['FREE'] would be accepted as FREE and a null toString would throw.
+//   - own-property rather than `in`, which walks the prototype chain and would
+//     return an inherited function for 'constructor' or 'toString'.
+function isRegistrySubscriptionTier(
+  tier: unknown
+): tier is RegistrySubscriptionTier {
+  return (
+    typeof tier === 'string' &&
+    Object.prototype.hasOwnProperty.call(TIER_TO_KEY, tier)
+  )
+}
+
+// Workspace-level tiers (TEAM, and any added later) map to no key in this
+// personal plan catalog.
 export function toTierKey(tier: IngestSubscriptionTier): TierKey | null {
-  return tier === 'TEAM' ? null : (TIER_TO_KEY[tier] ?? null)
+  return isRegistrySubscriptionTier(tier) ? TIER_TO_KEY[tier] : null
 }
 
-// ENTERPRISE is a sales-managed workspace tier: absent from the personal
-// catalog and (until the ingest enum ships it) from the generated types, so it
-// is matched as a runtime string. It never self-serves plan changes.
-const ENTERPRISE_TIER = 'ENTERPRISE'
-const ENTERPRISE_PLAN_SLUG_PREFIX = 'enterprise'
-
-export function isEnterpriseTier(tier: string | null | undefined): boolean {
-  return tier?.toUpperCase() === ENTERPRISE_TIER
-}
-
+// Enterprise plans are intentionally absent from the self-serve catalog, so a
+// scheduled change to one cannot be resolved through `plans` and has no tier to
+// read. The slug is the only signal available on that path; everywhere a tier
+// exists, compare it to 'ENTERPRISE' directly.
 export function isEnterprisePlanSlug(slug: string | null | undefined): boolean {
-  return slug?.toLowerCase().startsWith(ENTERPRISE_PLAN_SLUG_PREFIX) === true
+  return slug?.toLowerCase().startsWith('enterprise') === true
 }
 
-// A tier the FE cannot map to its catalog (and that isn't the workspace-level
-// TEAM or sales-managed ENTERPRISE). It renders as "Current plan" with no
-// catalog content and no self-serve plan actions: price and feature claims
-// must never be borrowed for a plan we cannot identify (FE-1662 story 6).
-export function isUnknownTier(tier: string | null | undefined): boolean {
-  if (tier == null || tier === 'TEAM' || isEnterpriseTier(tier)) return false
-  return toTierKey(tier as IngestSubscriptionTier) === null
+// A tier the frontend cannot map to its catalog, and that is not one of the
+// workspace-level tiers it knows about. It renders as "Current plan" with no
+// catalog content and no self-serve plan actions: price and feature claims must
+// never be borrowed for a plan we cannot identify (FE-1662 story 6).
+export function isUnknownTier(
+  tier: IngestSubscriptionTier | null | undefined
+): boolean {
+  if (tier == null || tier === 'TEAM' || tier === 'ENTERPRISE') return false
+  return toTierKey(tier) === null
 }
 
 // Includes the workspace-level TEAM, which toTierKey maps to null: a catalog

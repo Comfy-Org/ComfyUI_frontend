@@ -43,6 +43,8 @@ export function useWorkspaceTierLabel() {
 
     if (!workspace.subscriptionPlan) return null
 
+    // Plan identifiers arrive in both cases: comfy-api sends uppercase slugs,
+    // cloud sends lowercase ones (e.g. enterprise plan rows).
     const planSlug = workspace.subscriptionPlan.toUpperCase()
     const tierMatch = Object.keys(tierKeyMap)
       .sort((a, b) => b.length - a.length)

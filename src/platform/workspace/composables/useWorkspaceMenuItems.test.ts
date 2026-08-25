@@ -116,6 +116,7 @@ describe('useWorkspaceMenuItems', () => {
   it('withholds cancellation from an enterprise plan', () => {
     state.canManageSubscriptionLifecycle = true
     state.planSlug = 'enterprise_monthly'
+    state.tier = 'ENTERPRISE'
 
     const { menuItems } = useWorkspaceMenuItems()
 
@@ -289,6 +290,7 @@ describe('useWorkspaceMenuItems', () => {
   it('hides Delete for an enterprise workspace owner', () => {
     state.canManageSubscription = true
     state.planSlug = 'enterprise_monthly'
+    state.tier = 'ENTERPRISE'
 
     const { menuItems } = useWorkspaceMenuItems()
 
@@ -300,6 +302,7 @@ describe('useWorkspaceMenuItems', () => {
   it('keeps Leave available for an enterprise workspace member', () => {
     state.canLeaveWorkspace = true
     state.planSlug = 'enterprise_monthly'
+    state.tier = 'ENTERPRISE'
 
     const { menuItems } = useWorkspaceMenuItems()
 

@@ -428,7 +428,6 @@ import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useF
 import type { TierBenefit } from '@/platform/cloud/subscription/utils/tierBenefits'
 import {
   isEnterprisePlanSlug,
-  isEnterpriseTier,
   isUnknownTier
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import { getCommonTierBenefits } from '@/platform/cloud/subscription/utils/tierBenefits'
@@ -512,8 +511,14 @@ const showSubscribePrompt = computed(() => {
   return !isWorkspaceSubscribed.value
 })
 
+// The never-subscribed upsell is Cloud-only; on Local the policy table keeps
+// top-up available instead. An ended Team plan keeps its inactive treatment
+// everywhere so billing, invoices, and reactivation stay reachable.
 const showTeamSubscribePrompt = computed(
-  () => showSubscribePrompt.value && !isInPersonalWorkspace.value
+  () =>
+    showSubscribePrompt.value &&
+    !isInPersonalWorkspace.value &&
+    (isCloud || (isSubscriptionEnded.value && isTeamPlan.value))
 )
 
 const showInactiveTeamSubscription = computed(
@@ -587,7 +592,7 @@ const scheduledPlanName = computed(() => {
     (plan) => plan.slug === scheduledPlanSlug
   )
   if (!scheduledPlan) return ''
-  if (isEnterpriseTier(scheduledPlan.tier)) {
+  if (scheduledPlan.tier === 'ENTERPRISE') {
     return t('subscription.tiers.enterprise.name')
   }
   if (scheduledPlan.slug.startsWith('team')) {
@@ -655,9 +660,7 @@ const subscriptionTierName = computed(() => {
 })
 
 const isEnterprisePlan = computed(
-  () =>
-    isEnterpriseTier(subscription.value?.tier) ||
-    isEnterprisePlanSlug(subscription.value?.planSlug)
+  () => subscription.value?.tier === 'ENTERPRISE'
 )
 
 const isUnknownTierPlan = computed(() =>
