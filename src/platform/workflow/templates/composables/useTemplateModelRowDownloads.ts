@@ -149,7 +149,7 @@ export function useTemplateModelRowDownloads({
     return getTemplateModelDownloadIdentity(model)
   }
 
-  function stateFor(model: ModelWithUrl): TemplateModelDownloadState {
+  function initializeState(model: ModelWithUrl): TemplateModelDownloadState {
     const identity = identityFor(model)
     const previousModel = models.get(identity)
     if (previousModel && previousModel.url !== model.url) {
@@ -169,12 +169,20 @@ export function useTemplateModelRowDownloads({
     return initial
   }
 
+  function stateFor(model: ModelWithUrl): TemplateModelDownloadState {
+    const identity = identityFor(model)
+    if (models.get(identity)?.url !== model.url) {
+      return createTemplateModelDownloadState()
+    }
+    return states.get(identity) ?? createTemplateModelDownloadState()
+  }
+
   function applyEvent(
     model: ModelWithUrl,
     event: TemplateModelDownloadEvent
   ): void {
     const identity = identityFor(model)
-    let current = stateFor(model)
+    let current = initializeState(model)
     if (
       current.status === 'queued' &&
       event.type !== 'started' &&
@@ -328,7 +336,7 @@ export function useTemplateModelRowDownloads({
 
   function request(model: ModelWithUrl): void {
     const identity = identityFor(model)
-    const current = stateFor(model)
+    const current = initializeState(model)
     const queued = reduceTemplateModelDownloadState(current, {
       type: 'request'
     })
