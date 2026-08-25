@@ -18,6 +18,18 @@ export function deriveBillingPolicyState(input: {
 }): BillingPolicyState {
   const distribution = input.isCloud ? 'Cloud' : 'Local'
 
+  // ENTERPRISE is a workspace-level, sales-managed plan and never self-serve.
+  // Active, it takes the team policy states; lapsed, it keeps its own state so
+  // it is never classified as plain WithoutActiveSubscription, which would
+  // expose the personal subscribe upsell to a sales-managed customer.
+  if (input.tier === 'ENTERPRISE') {
+    return {
+      kind: input.canAccessSubscriptionFeatures
+        ? `${distribution}AndTeam`
+        : `${distribution}EnterpriseWithoutActiveSubscription`
+    }
+  }
+
   if (input.isTeamPlan || input.tier === 'TEAM') {
     return {
       kind: input.canAccessSubscriptionFeatures

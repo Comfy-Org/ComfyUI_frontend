@@ -14,6 +14,7 @@ describe('toTierKey', () => {
 
   it('returns null for workspace-level tiers', () => {
     expect(toTierKey('TEAM')).toBeNull()
+    expect(toTierKey('ENTERPRISE')).toBeNull()
   })
 
   // The tier arrives as unvalidated JSON from the backend, so a value outside
@@ -21,7 +22,7 @@ describe('toTierKey', () => {
   // return null rather than failing, which is what keeps a backend-side tier
   // addition from breaking the frontend.
   it('returns null for a tier the frontend does not know', () => {
-    expect(toTierKey('ENTERPRISE' as IngestSubscriptionTier)).toBeNull()
+    expect(toTierKey('SOME_FUTURE_TIER' as IngestSubscriptionTier)).toBeNull()
   })
 
   // hasOwnProperty rather than `in`: these are inherited from Object.prototype,
@@ -49,7 +50,7 @@ describe('hasActivePaidPlan', () => {
   it('treats catalog, workspace-level, and unrecognised tiers as paid', () => {
     expect(hasActivePaidPlan('PRO')).toBe(true)
     expect(hasActivePaidPlan('TEAM')).toBe(true)
-    expect(hasActivePaidPlan('ENTERPRISE' as IngestSubscriptionTier)).toBe(true)
+    expect(hasActivePaidPlan('ENTERPRISE')).toBe(true)
   })
 
   it('treats FREE and an absent tier as unpaid', () => {
