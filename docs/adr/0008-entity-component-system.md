@@ -81,6 +81,22 @@ overwriting is the correct resolution. Converging this store on rejection would
 break widget re-mint; converging the other three on overwrite would violate
 one-state-per-entity. **Neither direction is a safe unification.**
 
+**The load-time dedup pass — link deduplication — picks by boundary order.**
+A third collision answer lives outside the stores entirely. During graph
+configure, `linkDeduplication.ts` handles two live links from a serialized file
+claiming the same target input slot (the #15577 corruption family, fixed in
+#15689). The key here is identity-adjacent: the boundary slot's own ordered
+`linkIds` array, maintained per-slot by the writer — neither a minted counter
+nor a derived string. The survivor is the first live entry of that array;
+boundary order is the authority because it is the closest thing the format has
+to per-slot intent, while the global links array's order is a serialization
+accident (the two orders disagree on real files, e.g. the canonical LTX
+template). The loser is dropped and its ids are pruned from all other records
+(`pruneLinkReferences`). The drop is observable: a `console.warn` naming the
+slot and both link ids, plus telemetry event `app:link_dedup_drop` carrying the
+target, dropped/survivor link ids, and dropped/survivor origins. Same-origin
+duplicates are remapped to the survivor, not dropped, and emit nothing.
+
 **Production code does not see the store-level return shape.** Each minted-id
 store is fronted by a litegraph adapter that normalizes `T | undefined` to a
 boolean and adopts the store's reactive proxy on success: `registerNodeState`
