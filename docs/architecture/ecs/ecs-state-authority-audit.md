@@ -46,7 +46,7 @@ target.
 - **Compatibility view/mirror:** `LGraphNode`, `LGraphGroup`, and `Reroute`
   geometry accessors/views read and write the store; local tuple buffers and
   geometry versions support the legacy API and hot path.
-- **Reads:** `getNodeLayoutRef`, geometry queries, `createGeometryView`, canvas
+- **Reads:** `getNodeLayoutRef`, geometry queries, `createMutationView`, canvas
   rendering, hit testing, and class geometry accessors.
 - **Writes:** `LayoutOperation` through `applyOperation` / `applyOperations`,
   `useLayoutMutations`, and `graphLayoutAttachment` helpers.

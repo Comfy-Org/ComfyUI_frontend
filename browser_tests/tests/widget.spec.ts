@@ -1,8 +1,11 @@
+import { readFileSync } from 'node:fs'
+
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { getWav } from '@e2e/fixtures/components/AudioPreview'
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
+import { assetPath } from '@e2e/fixtures/utils/paths'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
@@ -221,7 +224,23 @@ test.describe('Image widget', { tag: ['@screenshot', '@widget'] }, () => {
   test('Can change image by changing the filename combo value', async ({
     comfyPage
   }) => {
+    const uploadResponse = await comfyPage.request.post(
+      `${comfyPage.apiUrl}/upload/image`,
+      {
+        multipart: {
+          image: {
+            name: 'image32x32.webp',
+            mimeType: 'image/webp',
+            buffer: readFileSync(assetPath('image32x32.webp'))
+          },
+          type: 'input'
+        }
+      }
+    )
+    await expect(uploadResponse).toBeOK()
     await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
+    await comfyPage.page.evaluate(() => window.app!.refreshComboInNodes())
+    await expect(comfyPage.toast.visibleToasts).toHaveCount(0)
     const nodes = await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
     const loadImageNode = nodes[0]
 
@@ -233,17 +252,7 @@ test.describe('Image widget', { tag: ['@screenshot', '@widget'] }, () => {
     const comboEntry = comfyPage.page.getByRole('menuitem', {
       name: 'image32x32.webp'
     })
-    const imageLoaded = comfyPage.page.waitForResponse(
-      (resp) =>
-        resp.url().includes('/view') &&
-        resp.url().includes('image32x32.webp') &&
-        resp.request().method() === 'GET' &&
-        resp.status() === 200
-    )
     await comboEntry.click()
-
-    // Wait for the image to load from the server
-    await imageLoaded
 
     // Wait for the image to decode and appear on the node
     await expect
