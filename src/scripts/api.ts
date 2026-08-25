@@ -134,6 +134,50 @@ interface QueuePromptRequestBody {
 }
 
 const FETCH_RESPONSE_HEADERS_TIMEOUT_MS = 60_000
+const FETCH_ROUTE_GROUPS = new Set([
+  'assets',
+  'embeddings',
+  'experiment',
+  'extensions',
+  'features',
+  'files',
+  'folder_paths',
+  'free',
+  'global_subgraphs',
+  'history',
+  'hub',
+  'internal',
+  'interrupt',
+  'jobs',
+  'logs',
+  'models',
+  'node_replacements',
+  'object_info',
+  'prompt',
+  'providers',
+  'queue',
+  'secrets',
+  'settings',
+  'system_stats',
+  'upload',
+  'user',
+  'userdata',
+  'users',
+  'view',
+  'view_metadata',
+  'workflow_templates',
+  'workflows',
+  'workspace'
+])
+
+function getFetchRouteTemplate(route: string): string {
+  const segments = (route.split(/[?#]/)[0] ?? '').split('/').filter(Boolean)
+  const routeSegments = segments[0] === 'api' ? segments.slice(1) : segments
+  const [routeGroup, ...resources] = routeSegments
+
+  if (!routeGroup || !FETCH_ROUTE_GROUPS.has(routeGroup)) return '/other'
+  return `/${routeGroup}${resources.length ? '/:resource' : ''}`
+}
 
 /**
  * Options for queuePrompt method
@@ -530,10 +574,11 @@ export class ComfyApi extends EventTarget {
       ? setTimeout(() => {
           const duration_ms = Date.now() - startTime
           const method = (options?.method ?? 'GET').toUpperCase()
+          const routeTemplate = getFetchRouteTemplate(route)
 
           Sentry.addBreadcrumb({
             category: 'fetch',
-            message: `Timeout on ${method} ${route}`,
+            message: `Timeout on ${method} ${routeTemplate}`,
             level: 'warning',
             data: {
               duration_ms,
@@ -542,7 +587,7 @@ export class ComfyApi extends EventTarget {
           })
 
           useTelemetry()?.trackFetchTimeout({
-            route,
+            route: routeTemplate,
             method,
             duration_ms,
             timeout_ms: FETCH_RESPONSE_HEADERS_TIMEOUT_MS
