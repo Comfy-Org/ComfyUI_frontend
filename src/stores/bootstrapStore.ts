@@ -95,15 +95,17 @@ export const useBootstrapStore = defineStore('bootstrap', () => {
 
   let storesLoaded = false
 
-  function loadAuthenticatedStores() {
-    if (storesLoaded) return
+  function loadAuthenticatedStores(): Promise<void>[] {
+    if (storesLoaded) return []
     storesLoaded = true
 
     const phaseSettings = bootstrapTracer.startPhase('bootstrap/settings')
-    void settingStore.load().then(() => phaseSettings.stop())
-
     const phaseWorkflows = bootstrapTracer.startPhase('bootstrap/workflows')
-    void workflowStore.loadWorkflows().then(() => phaseWorkflows.stop())
+
+    return [
+      settingStore.load().finally(() => phaseSettings.stop()),
+      workflowStore.loadWorkflows().finally(() => phaseWorkflows.stop())
+    ]
   }
 
   async function startStoreBootstrap() {
@@ -124,10 +126,10 @@ export const useBootstrapStore = defineStore('bootstrap', () => {
     phaseLogin.stop()
 
     void loadI18n()
-    loadAuthenticatedStores()
+    const storeLoads = loadAuthenticatedStores()
 
     bootstrapTracer.milestone('stores-ready')
-    bootstrapTracer.logSummary()
+    void Promise.allSettled(storeLoads).then(() => bootstrapTracer.logSummary())
   }
 
   return {
