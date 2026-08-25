@@ -8,15 +8,8 @@ active Pinia now fails outright instead of silently producing an empty
 graph. This is the same requirement documented in
 [Link registration migration](link-registration-migration.md).
 
-Vue applications can register Pinia with the application as usual. Standalone
-consumers must activate it before constructing or configuring a root graph:
-
-```ts
-import { createPinia, setActivePinia } from 'pinia'
-
-setActivePinia(createPinia())
-const graph = new LGraph(data)
-```
+Extensions running in ComfyUI use the application's active Pinia instance.
+Do not create or activate a separate Pinia instance from extension code.
 
 `node.onConfigure`, `node.onSerialize`, `graph.onConfigure`, and
 `graph.onSerialize` keep their existing signatures and firing order. For
