@@ -235,13 +235,15 @@
       "contactSupport": "لحذف حسابك، يرجى التواصل مع {email}"
     },
     "errors": {
-      "auth/cancelled-popup-request": "تم إلغاء تسجيل الدخول. يرجى المحاولة مرة أخرى.",
+      "auth/account-exists-with-different-credential": "يوجد حساب بالفعل بعنوان البريد الإلكتروني هذا، لكنه يستخدم طريقة تسجيل دخول مختلفة. يُرجى تسجيل الدخول بالطريقة التي استخدمتها في الأصل.",
+      "auth/cancelled-popup-request": "كانت نافذة تسجيل دخول أخرى مفتوحة بالفعل، لذا تم إلغاء هذه النافذة. يُرجى المحاولة مرة أخرى.",
       "auth/email-already-in-use": "يوجد حساب مسجل بهذا البريد الإلكتروني بالفعل. حاول تسجيل الدخول بدلاً من ذلك.",
       "auth/invalid-credential": "بيانات تسجيل الدخول غير صالحة. يرجى التحقق من بريدك الإلكتروني وكلمة المرور.",
       "auth/invalid-email": "يرجى إدخال عنوان بريد إلكتروني صالح.",
       "auth/network-request-failed": "خطأ في الشبكة. يرجى التحقق من اتصالك والمحاولة مرة أخرى.",
       "auth/operation-not-allowed": "طريقة تسجيل الدخول هذه غير مدعومة حالياً.",
-      "auth/popup-closed-by-user": "تم إلغاء تسجيل الدخول. يرجى المحاولة مرة أخرى.",
+      "auth/popup-blocked": "حظر متصفحك نافذة تسجيل الدخول. يُرجى السماح بالنوافذ المنبثقة لهذا الموقع ثم المحاولة مرة أخرى.",
+      "auth/popup-closed-by-user": "أُغلقت نافذة تسجيل الدخول قبل اكتمال تسجيل الدخول. يُرجى المحاولة مرة أخرى.",
       "auth/too-many-requests": "محاولات تسجيل دخول كثيرة جداً. يرجى الانتظار قليلاً والمحاولة مرة أخرى.",
       "auth/user-disabled": "تم تعطيل هذا الحساب. يرجى الاتصال بالدعم.",
       "auth/user-not-found": "لم يتم العثور على حساب بهذا البريد الإلكتروني. هل ترغب في إنشاء حساب جديد؟",
@@ -845,6 +847,7 @@
       "message": "تم توحيد الرصيد",
       "tooltip": "لقد قمنا بتوحيد المدفوعات عبر Comfy. كل شيء يعمل الآن على رصيد Comfy:\n- عقد الشركاء (كانت تُسمى سابقًا عقد API)\n- سير العمل السحابي\n\nتم تحويل رصيد عقد الشركاء الحالي إلى رصيد."
     },
+    "workspaceCredits": "أرصدة مساحة العمل",
     "yourCreditBalance": "رصيدك الحالي"
   },
   "curveWidget": {
@@ -894,6 +897,7 @@
     "FILE_3D_SPZ": "FILE_3D_SPZ",
     "FILE_3D_STL": "ملف STL ثلاثي الأبعاد",
     "FILE_3D_USDZ": "ملف USDZ ثلاثي الأبعاد",
+    "FISHAUDIO_VOICE": "FISHAUDIO_VOICE",
     "FLOAT": "رقم عشري",
     "FLOATS": "أرقام عشرية",
     "GEMINI_INPUT_FILES": "ملفات إدخال جيميني",
@@ -907,6 +911,7 @@
     "IMAGECOMPARE": "مقارنة الصور",
     "INT": "عدد صحيح",
     "INTERP_MODEL": "نموذج التفسير",
+    "KIMODO_POSE_DATA": "KIMODO_POSE_DATA",
     "KREA_STYLE_REF": "مرجع نمط KREA",
     "LATENT": "كامِن",
     "LATENT_OPERATION": "عملية كامنة",
@@ -924,6 +929,7 @@
     "MESH": "شبكة",
     "MESHY_RIGGED_TASK_ID": "MESHY_RIGGED_TASK_ID",
     "MESHY_TASK_ID": "MESHY_TASK_ID",
+    "MHR_POSE_DATA": "MHR_POSE_DATA",
     "MODEL": "نموذج",
     "MODEL_PATCH": "ترقيع النموذج",
     "MODEL_TASK_ID": "معرّف مهمة النموذج",
@@ -943,8 +949,10 @@
     "RIG_TASK_ID": "معرّف مهمة الهيكل",
     "RUNWAY_ALEPH2_KEYFRAME": "RUNWAY_ALEPH2_KEYFRAME",
     "RUNWAY_ALEPH2_PROMPT_IMAGE": "RUNWAY_ALEPH2_PROMPT_IMAGE",
+    "SAM3D_BODY_MODEL": "SAM3D_BODY_MODEL",
     "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "جهاز تجميع",
+    "SHAPE_SUBDIVIDES": "SHAPE_SUBDIVIDES",
     "SIGMAS": "سيجمات",
     "SPLAT": "SPLAT",
     "STRING": "نص",
@@ -960,12 +968,20 @@
     "WEBCAM": "كاميرا ويب"
   },
   "desktopDialogs": {
-    "": {
+    "invalidDialog": {
       "buttons": {
         "Close": "إغلاق"
       },
-      "message": "تم تقديم معرف حوار غير صالح.",
-      "title": "حوار غير صالح"
+      "message": "تم تقديم معرّف مربع حوار غير صالح.",
+      "title": "مربع حوار غير صالح"
+    },
+    "reinstallVenv": {
+      "buttons": {
+        "Learn More": "معرفة المزيد",
+        "Reinstall": "إعادة التثبيت"
+      },
+      "message": "نعتذر، لا يمكننا تشغيل ComfyUI لأن بعض الحزم المثبتة غير متوافقة.\n\nانقر على «إعادة التثبيت» لاستعادة ComfyUI والعودة إلى العمل.\n\nيرجى ملاحظة: إذا أضفت عقدًا مخصصة، فستحتاج إلى إعادة تثبيتها بعد هذه العملية.",
+      "title": "إعادة تثبيت ComfyUI (بداية جديدة)؟"
     }
   },
   "desktopLogin": {
@@ -1409,7 +1425,8 @@
     "loadWorkflowTitle": "تم إلغاء التحميل بسبب خطأ في إعادة تحميل بيانات سير العمل",
     "noStackTrace": "لا توجد تتبع للمكدس متاحة",
     "promptExecutionError": "فشل تنفيذ الطلب",
-    "queueOpenWorkflowFailedTitle": "فشل في فتح سير العمل"
+    "queueOpenWorkflowFailedTitle": "فشل في فتح سير العمل",
+    "workspaceChangedDuringExecution": "تغيّرت مساحة العمل النشطة أثناء إعداد هذا التنفيذ. شغّل سير العمل مجددًا لاستخدام مساحة العمل الحالية."
   },
   "errorOverlay": {
     "missingMedia": "بعض العقد تفتقد إلى مدخلات مطلوبة",
@@ -1564,7 +1581,7 @@
     "disableAll": "تعطيل الكل",
     "disableSelected": "تعطيل المحدد",
     "disableThirdParty": "تعطيل الطرف الثالث",
-    "disabling": "جارٍ التعطيل",
+    "disabling": "جارٍ تعطيل {id}",
     "disconnectedFromBackend": "تم قطع الاتصال بالخادم الخلفي. يرجى التحقق مما إذا كان الخادم يعمل.",
     "dismiss": "تجاهل",
     "download": "تنزيل",
@@ -1584,7 +1601,7 @@
     "enableOrDisablePack": "تفعيل أو تعطيل الحزمة",
     "enableSelected": "تفعيل المحدد",
     "enabled": "ممكّن",
-    "enabling": "جارٍ التمكين",
+    "enabling": "جارٍ تفعيل {id}",
     "enter": "إدخال",
     "enterBaseName": "أدخل الاسم الأساسي",
     "enterNewName": "أدخل الاسم الجديد",
@@ -1638,13 +1655,14 @@
     "increment": "زيادة",
     "info": "معلومات العقدة",
     "input": "إدخال",
+    "inputTooltip": "الإدخال: {name}",
     "insert": "إدراج",
     "install": "تثبيت",
     "installed": "مثبت",
     "installing": "جارٍ التثبيت",
     "interrupted": "تمت المقاطعة",
     "itemsCopiedToClipboard": "تم نسخ العناصر إلى الحافظة",
-    "itemsSelected": "تم تحديد {selectedCount} عناصر",
+    "itemsSelected": "لم يتم تحديد أي عناصر | تم تحديد عنصر واحد | تم تحديد {count} عناصر",
     "job": "مهمة",
     "jobIdCopied": "تم نسخ معرف المهمة إلى الحافظة",
     "keybinding": "اختصار لوحة المفاتيح",
@@ -1807,7 +1825,7 @@
     "searchKeybindings": "بحث في اختصارات المفاتيح",
     "searchModels": "بحث في النماذج",
     "searchNodes": "بحث في العقد",
-    "searchPlaceholder": "بحث...",
+    "searchPlaceholder": "البحث في {subject}...",
     "searchSettings": "بحث في الإعدادات",
     "searchWorkflows": "بحث في سير العمل",
     "seeTutorial": "شاهد الدليل",
@@ -1859,7 +1877,7 @@
     "updateAvailable": "تحديث متاح",
     "updateFrontend": "تحديث الواجهة الأمامية",
     "updated": "تم التحديث",
-    "updating": "جارٍ التحديث",
+    "updating": "جارٍ تحديث {id}",
     "upload": "رفع",
     "uploadAlreadyInProgress": "الرفع جارٍ بالفعل",
     "uploadTimedOut": "انتهت مهلة التحميل. يرجى المحاولة مرة أخرى.",
@@ -2226,7 +2244,7 @@
     },
     "cancelThisRun": "إلغاء هذا التشغيل",
     "deleteAllAssets": "حذف جميع الأصول من هذه الجلسة",
-    "downloadAll": "تنزيل الكل",
+    "downloadAll": "تنزيل {count} من الأصول من عملية التشغيل هذه",
     "dragAndDropImage": "اسحب وأسقط صورة",
     "emptyWorkflowExplanation": "سير العمل الخاص بك فارغ. تحتاج إلى بعض العقد أولاً لبدء بناء التطبيق.",
     "enterNodeGraph": "دخول مخطط العقد",
@@ -2283,6 +2301,7 @@
     "clearRecording": "مسح التسجيل",
     "dropToLoad": "أسقط نموذج ثلاثي الأبعاد للتحميل",
     "edgeThreshold": "عتبة الحافة",
+    "exitLookThrough": "الخروج من عرض الكاميرا",
     "export": "تصدير",
     "exportModel": "تصدير النموذج",
     "exportRecording": "تصدير التسجيل",
@@ -2305,11 +2324,13 @@
       "showAsBackground": "عرض كخلفية",
       "uploadFile": "رفع HDRI (.hdr, .exr)"
     },
+    "hideGizmos": "إخفاء أدوات التحكم",
     "light": "الإضاءة",
     "lightIntensity": "شدة الإضاءة",
     "loadingBackgroundImage": "جارٍ تحميل صورة الخلفية",
     "loadingHDRI": "جارٍ تحميل HDRI...",
     "loadingModel": "جارٍ تحميل النموذج ثلاثي الأبعاد...",
+    "lookThrough": "عرض الكاميرا",
     "materialMode": "وضع المادة",
     "materialModes": {
       "clay": "طين",
@@ -2350,6 +2371,7 @@
     "removeBackgroundImage": "إزالة صورة الخلفية",
     "resizeNodeMatchOutput": "تغيير حجم العقدة لتتناسب مع المخرج",
     "scene": "المشهد",
+    "showGizmos": "إظهار أدوات التحكم",
     "showGrid": "عرض الشبكة",
     "showSkeleton": "إظهار الهيكل العظمي",
     "startRecording": "بدء التسجيل",
@@ -2357,6 +2379,13 @@
     "switchCamera": "تبديل الكاميرا",
     "switchingMaterialMode": "جارٍ تبديل وضع المادة...",
     "tiledMode": "وضع التجانب",
+    "transformGizmo": {
+      "cameraRotate": "دوران الكاميرا",
+      "cameraTranslate": "موضع الكاميرا",
+      "label": "تحرير",
+      "none": "لا شيء",
+      "target": "الهدف"
+    },
     "unsupportedFileType": "نوع الملف غير مدعوم (يدعم .gltf و .glb و .obj و .fbx و .stl)",
     "upDirection": "اتجاه الأعلى",
     "upDirections": {
@@ -2365,6 +2394,8 @@
     "uploadBackgroundImage": "رفع صورة خلفية",
     "uploadTexture": "رفع الخامة",
     "uploadingModel": "جاري رفع النموذج ثلاثي الأبعاد...",
+    "useCustomUp": "استعادة اتجاه الأعلى للكاميرا من الإدخال",
+    "useNaturalUp": "إعادة تعيين اتجاه الأعلى للكاميرا إلى Y",
     "viewer": {
       "apply": "تطبيق",
       "cameraSettings": "إعدادات الكاميرا",
@@ -2480,7 +2511,7 @@
     "enablePackToChangeVersion": "فعّل هذه الحزمة لتغيير الإصدارات",
     "errorConnecting": "خطأ في الاتصال بسجل عقد Comfy.",
     "extensionsSuccessfullyInstalled": "تم تثبيت الإضافات بنجاح وهي جاهزة للاستخدام!",
-    "failed": "فشل ({count})",
+    "failed": "فشل",
     "failedToInstall": "فشل في التثبيت",
     "filter": {
       "disabled": "معطّل",
@@ -2569,7 +2600,7 @@
     "tryUpdateTooltip": "اسحب آخر التغييرات من المستودع. قد تحتوي الإصدارات الليلية على تحديثات لا يمكن اكتشافها تلقائيًا.",
     "uninstall": "إلغاء التثبيت",
     "uninstallSelected": "إلغاء تثبيت المحدد",
-    "uninstalling": "جاري إلغاء التثبيت",
+    "uninstalling": "جارٍ إلغاء تثبيت {id}",
     "unresolvedNodes": {
       "message": "العُقد التالية غير مثبتة ولم يتم العثور عليها في السجل.",
       "title": "العُقد المفقودة غير المحلولة"
@@ -2898,6 +2929,9 @@
     "notNow": "ليس الآن",
     "title": "ساعدنا في التحسين"
   },
+  "nodeBadge": {
+    "partnerNodesCount": "عُقد الشركاء × {count}"
+  },
   "nodeCategories": {
     "": "",
     "3d": "ثلاثي الأبعاد",
@@ -2907,6 +2941,7 @@
     "Bria": "Bria",
     "ByteDance": "بايت دانس",
     "ElevenLabs": "ElevenLabs",
+    "Fish Audio": "Fish Audio",
     "Gemini": "جيميني",
     "Grok": "Grok",
     "HeyGen": "HeyGen",
@@ -2996,7 +3031,9 @@
     "mage": "mage",
     "mask": "قناع",
     "merging": "دمج",
+    "mesh": "شبكة",
     "minimax": "minimax",
+    "minimax music": "موسيقى minimax",
     "mochi": "mochi",
     "model": "نموذج",
     "model specific": "نموذج محدد",
@@ -3035,8 +3072,11 @@
     "supir": "supir",
     "sync_so": "sync.so",
     "text": "نص",
+    "texturing": "إكساء",
     "training": "تدريب",
     "transform": "تحويل",
+    "trellis": "trellis",
+    "trellis2": "trellis2",
     "triposplat": "triposplat",
     "unet": "unet",
     "upscaling": "تكبير",
@@ -3427,7 +3467,7 @@
       "expandNodes": "عرض العُقد المرجعية",
       "gatedModelDownloadTooltip": "قد يتطلب التنزيل تسجيل الدخول إلى Hugging Face أولاً.",
       "gatedModelTooltip": "هذا النموذج مقيد ويتطلب تسجيل الدخول إلى Hugging Face والموافقة على اتفاقية الترخيص الخاصة به.",
-      "gatedModelsHint": "بعض النماذج مقيدة. لتنزيلها، قم بتسجيل الدخول إلى Hugging Face ووافق على اتفاقية ترخيص النموذج.",
+      "gatedModelsHint": "{count} نموذج مقيّد. لتنزيله، سجّل الدخول إلى Hugging Face واقبل اتفاقية الترخيص الخاصة به. | {count} نماذج مقيّدة. لتنزيلها، سجّل الدخول إلى Hugging Face واقبل اتفاقيات الترخيص الخاصة بها.",
       "gatedModelsHintLabel": "ملاحظة:",
       "import": "استيراد",
       "importNotSupported": "الاستيراد غير مدعوم",
@@ -4089,8 +4129,8 @@
     "contactUs": "تواصل معنا",
     "creditSliderSave": "وفر {percent}% ({amount})",
     "creditsLeftOfTotal": "{remaining} متبقية من أصل {total}",
-    "creditsRemainingThisMonth": "الرصيد المتبقي لهذا الشهر",
-    "creditsRemainingThisYear": "الرصيد المتبقي لهذا العام",
+    "creditsRemainingThisMonth": "مشمولة (إعادة التعبئة في {date})",
+    "creditsRemainingThisYear": "مشمولة (إعادة التعبئة في {date})",
     "creditsUsed": "{used} مستخدمة",
     "creditsYouveAdded": "الرصيد الذي أضفته",
     "currentPlan": "الخطة الحالية",
@@ -4128,6 +4168,7 @@
       "freeRuns": "{count} تشغيل مجاني | {count} تشغيلات مجانية",
       "maxRuntime": "مدة تشغيل قصوى {duration}"
     },
+    "fullUsageActivity": "سجل الاستخدام الكامل",
     "gpuLabel": "RTX 6000 Pro (ذاكرة 96GB VRAM)",
     "haveQuestions": "هل لديك أسئلة أو ترغب في معرفة المزيد عن المؤسسات؟",
     "inactive": {
@@ -4201,6 +4242,7 @@
       "personal": "للاستخدام الشخصي",
       "team": "للفرق"
     },
+    "plansAndCredits": "الخطط والأرصدة",
     "plansAndPricing": "الخطط والأسعار",
     "plansForWorkspace": "الخطط لمساحة العمل {workspace}",
     "prepaidCreditsInfo": "رصيد تم شراؤه بشكل منفصل ولا ينتهي صلاحيته",
@@ -4499,6 +4541,7 @@
     "failedToFetchBalance": "فشل في جلب الرصيد: {error}",
     "failedToFetchLogs": "فشل في جلب سجلات الخادم",
     "failedToFetchSubscription": "فشل في جلب حالة الاشتراك: {error}",
+    "failedToInitializeCameraInfoViewer": "تعذّر تهيئة عارض معلومات الكاميرا. حاول إعادة تحميل الصفحة.",
     "failedToInitializeLoad3dViewer": "فشل في تهيئة عارض ثلاثي الأبعاد",
     "failedToInitiateCreditPurchase": "فشل في بدء شراء الرصيد: {error}",
     "failedToInitiateSubscription": "فشل في بدء الاشتراك: {error}",
@@ -4706,7 +4749,7 @@
     "savedAsWorkflow": "تم التحويل إلى سير عمل مخطط العقد فقط"
   },
   "workspace": {
-    "addedToWorkspace": "تمت إضافتك إلى {workspaceName}",
+    "addedToWorkspace": "تمت إضافتك إلى:",
     "inviteAccepted": "تم قبول الدعوة",
     "inviteFailed": "فشل في قبول الدعوة",
     "switchFailed": "فشل في تبديل مساحة العمل. يرجى المحاولة مرة أخرى.",
@@ -4801,7 +4844,7 @@
       "title": "تعديل تفاصيل مساحة العمل"
     },
     "invite": "دعوة",
-    "inviteLimitReached": "لقد وصلت إلى الحد الأقصى وهو ٥٠ عضواً",
+    "inviteLimitReached": "لقد وصلت إلى الحد الأقصى البالغ {count} من الأعضاء",
     "inviteMember": "دعوة عضو",
     "inviteMemberDialog": {
       "failedCount": "تعذر إرسال {count} دعوة. حاول مرة أخرى. | تعذر إرسال {count} دعوات. حاول مرة أخرى.",
@@ -4854,7 +4897,7 @@
         "warning": "لقد أنفق هذا المستخدم بالفعل {credits} رصيد. تعيين الحد عند أو أقل من الاستخدام الحالي سيمنع المزيد من التشغيل حتى الشهر القادم."
       },
       "header": "الأعضاء",
-      "membersCount": "{count}/٥٠ عضواً",
+      "membersCount": "{count} من أصل {maxSeats} أعضاء",
       "needMoreMembers": "تحتاج إلى المزيد من الأعضاء؟",
       "noInvites": "لا توجد دعوات معلقة",
       "noMembers": "لا يوجد أعضاء",
@@ -4978,6 +5021,8 @@
     "personal": "شخصي",
     "roleMember": "عضو",
     "roleOwner": "المالك",
+    "scopeCaption": "تؤثر مساحات العمل فقط في الأرصدة التي تستخدمها.",
+    "scopeTooltip": "عمليات التشغيل التي تستخدم عقد الشركاء تنفق أرصدة من مساحة العمل هذه. بخلاف السحابة، تحفظ كل مساحة عمل في مجلد الإخراج المعتاد لديك.",
     "subscribe": "اشترك",
     "switchWorkspace": "تبديل مساحة العمل"
   },
