@@ -26,9 +26,9 @@ import type { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
-import type { PagedList } from '@/platform/remote/paged/pagedList'
 import type { AssetKind } from '@/types/widgetTypes'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import type { PagedList } from '@/utils/pagedList'
 
 function getDisplayLabel(
   value: string,

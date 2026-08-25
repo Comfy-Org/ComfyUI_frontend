@@ -4,12 +4,9 @@ import type { ListAssetsData } from '@comfyorg/ingest-types'
 
 import { assetResponseSchema } from '@/platform/assets/schemas/assetSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import {
-  createSharedPagedList,
-  usePreemptableQueue
-} from '@/platform/remote/paged/pagedList'
-import type { PagedList } from '@/platform/remote/paged/pagedList'
 import { api } from '@/scripts/api'
+import { createSharedPagedList, usePreemptableQueue } from '@/utils/pagedList'
+import type { PagedList } from '@/utils/pagedList'
 import { encodeParams, sortedParams } from '@/utils/requestUtil'
 
 interface QueryOptions {

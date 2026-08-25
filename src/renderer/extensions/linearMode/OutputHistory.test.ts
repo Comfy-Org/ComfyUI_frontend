@@ -8,12 +8,12 @@ import type { ComputedRef } from 'vue'
 import { computed, nextTick, ref } from 'vue'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import type { PagedList } from '@/platform/remote/paged/pagedList'
 import type {
   InProgressItem,
   OutputSelection
 } from '@/renderer/extensions/linearMode/linearModeTypes'
 import type { ResultItemImpl } from '@/stores/queueStore'
+import type { PagedList } from '@/utils/pagedList'
 
 import OutputHistory from './OutputHistory.vue'
 

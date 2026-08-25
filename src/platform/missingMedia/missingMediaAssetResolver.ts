@@ -1,10 +1,10 @@
 import { toValue } from 'vue'
 
+import { useAssetsQuery } from '@/platform/assets/composables/useAssetsQuery'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import { fetchHistoryPage } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
-import { useAssetsQuery } from '@/platform/remote/paged/assets'
 import { api } from '@/scripts/api'
 import { getFilePathSeparatorVariants, joinFilePath } from '@/utils/formatUtil'
 import { getMediaPathDetectionNames } from './mediaPathDetectionUtil'

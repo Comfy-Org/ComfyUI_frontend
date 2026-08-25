@@ -26,7 +26,7 @@ const { mockFetchHistoryPage } = vi.hoisted(() => ({
   mockFetchHistoryPage: vi.fn()
 }))
 
-vi.mock('@/platform/remote/paged/assets', () => ({
+vi.mock('@/platform/assets/composables/useAssetsQuery', () => ({
   useAssetsQuery: mockUseAssetsQuery
 }))
 

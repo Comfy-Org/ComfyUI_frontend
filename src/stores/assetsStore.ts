@@ -14,13 +14,13 @@ import type {
   AssetResponse,
   TagsOperationResult
 } from '@/platform/assets/schemas/assetSchema'
+import { useAssetsQuery } from '@/platform/assets/composables/useAssetsQuery'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { AssetPaginationOptions } from '@/platform/assets/services/assetService'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
-import { useAssetsQuery } from '@/platform/remote/paged/assets'
-import { wrapPagedList } from '@/platform/remote/paged/pagedList'
-import type { PagedList } from '@/platform/remote/paged/pagedList'
 import { api } from '@/scripts/api'
+import { wrapPagedList } from '@/utils/pagedList'
+import type { PagedList } from '@/utils/pagedList'
 
 import { TaskItemImpl } from './queueStore'
 import { useAssetDownloadStore } from './assetDownloadStore'
