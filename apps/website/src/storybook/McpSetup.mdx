@@ -4,13 +4,21 @@ import { Meta } from '@storybook/addon-docs/blocks'
 
 # Install the Storybook MCP
 
-Connect Codex or Claude Code to this Storybook to discover approved marketing
-components and stories from an agent conversation.
+Connect Codex, Claude Desktop, or Claude Code to this Storybook to discover
+approved marketing components and stories from an agent conversation.
 
 ## Before you start
 
 You need a verified `@comfy.org` Google account. You do not need to request or
 manage a shared token.
+
+The remote MCP endpoint is:
+
+```text
+https://comfy-website-storybook-mcp.vercel.app/mcp
+```
+
+## Codex
 
 Verify that the Codex CLI is available:
 
@@ -30,14 +38,6 @@ exec zsh
 
 If the link already exists, skip the `ln -s` command.
 
-The remote MCP endpoint is:
-
-```text
-https://comfy-website-storybook-mcp.vercel.app/mcp
-```
-
-## Codex
-
 Run:
 
 ```bash
@@ -53,7 +53,37 @@ configuration:
 codex mcp get comfy_marketing_storybook
 ```
 
+## Claude Desktop
+
+Remote MCP servers must be added through the connector interface, not
+`claude_desktop_config.json`:
+
+1. Open **Settings → Connectors**.
+2. For Team or Enterprise, an Owner or Primary Owner first opens
+   **Organization connectors**.
+3. Click **Add custom connector**.
+4. Name it `Comfy Marketing Storybook`.
+5. Enter `https://comfy-website-storybook-mcp.vercel.app/mcp` as the connector
+   URL and click **Add**.
+6. Click **Connect**, continue with Google, and use a verified `@comfy.org`
+   account.
+7. In a conversation, open **Search and tools** and enable the connector.
+
+Remote custom connectors require a Claude Pro, Max, Team, or Enterprise plan.
+
 ## Claude Code
+
+Verify Claude Code is installed:
+
+```bash
+claude --version
+```
+
+On macOS or Linux, install it if needed:
+
+```bash
+curl -fsSL https://claude.ai/install.sh | bash
+```
 
 This experimental branch includes a project-level `.mcp.json`. After cloning
 the repository, start Claude Code from the repository root and approve the
@@ -67,7 +97,8 @@ claude mcp add --scope user --transport http comfy-marketing-storybook \
   https://comfy-website-storybook-mcp.vercel.app/mcp
 ```
 
-Then verify it:
+Start Claude Code, enter `/mcp`, select `comfy-marketing-storybook`, and follow
+the browser sign-in flow. Then verify the saved configuration:
 
 ```bash
 claude mcp get comfy-marketing-storybook
@@ -97,7 +128,7 @@ pnpm --filter @comfyorg/website storybook
 ```
 
 Use `http://localhost:6008/mcp` as a separate local MCP server. The local server
-does not use the shared bearer token.
+does not use the remote OAuth flow.
 
 ## Troubleshooting
 
