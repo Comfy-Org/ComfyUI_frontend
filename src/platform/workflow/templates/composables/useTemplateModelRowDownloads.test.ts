@@ -35,8 +35,47 @@ function deferred<T>() {
   return { promise, reject, resolve }
 }
 
-function noProgressSubscription() {
-  return () => undefined
+function pendingHostRequest(
+  host: 'desktop2' | 'electron' = 'desktop2'
+): ModelDownloadDispatchOutcome {
+  return {
+    status: 'host-requested',
+    host,
+    hostResult: new Promise<boolean>(() => undefined)
+  }
+}
+
+function createDownloadHarness({
+  loadFolderPaths = vi.fn(async () => ({})),
+  dispatchDownload = () => pendingHostRequest()
+}: {
+  loadFolderPaths?: () => Promise<FolderPaths>
+  dispatchDownload?: DispatchDownload
+} = {}) {
+  let desktopProgress!: (progress: ComfyDownloadProgress) => void
+  let legacyProgress!: (download: ElectronDownload) => void
+  const stopDesktop = vi.fn()
+  const stopLegacy = vi.fn()
+  const downloads = useTemplateModelRowDownloads({
+    loadFolderPaths,
+    dispatchDownload,
+    subscribeDesktopProgress: (listener) => {
+      desktopProgress = listener
+      return stopDesktop
+    },
+    subscribeLegacyProgress: (listener) => {
+      legacyProgress = listener
+      return stopLegacy
+    }
+  })
+
+  return {
+    downloads,
+    emitDesktop: (progress: ComfyDownloadProgress) => desktopProgress(progress),
+    emitLegacy: (download: ElectronDownload) => legacyProgress(download),
+    stopDesktop,
+    stopLegacy
+  }
 }
 
 describe('useTemplateModelRowDownloads', () => {
@@ -97,11 +136,9 @@ describe('useTemplateModelRowDownloads', () => {
         hostResult: hostResult.promise
       })
     const request = model('legacy.safetensors')
-    const downloads = useTemplateModelRowDownloads({
+    const { downloads } = createDownloadHarness({
       loadFolderPaths: () => paths.promise,
-      dispatchDownload,
-      subscribeDesktopProgress: noProgressSubscription,
-      subscribeLegacyProgress: noProgressSubscription
+      dispatchDownload
     })
 
     downloads.request(request)
@@ -153,11 +190,9 @@ describe('useTemplateModelRowDownloads', () => {
               : rejectedResult.promise
       })
     )
-    const downloads = useTemplateModelRowDownloads({
+    const { downloads } = createDownloadHarness({
       loadFolderPaths: vi.fn(),
-      dispatchDownload,
-      subscribeDesktopProgress: noProgressSubscription,
-      subscribeLegacyProgress: noProgressSubscription
+      dispatchDownload
     })
 
     downloads.request(requests.false)
@@ -185,24 +220,11 @@ describe('useTemplateModelRowDownloads', () => {
   })
 
   it('maps Desktop2 native events and derives fractions only from valid bytes', async () => {
-    let onDesktopProgress!: (progress: ComfyDownloadProgress) => void
-    const downloads = useTemplateModelRowDownloads({
-      loadFolderPaths: vi.fn(),
-      dispatchDownload: () => ({
-        status: 'host-requested',
-        host: 'desktop2',
-        hostResult: new Promise<boolean>(() => undefined)
-      }),
-      subscribeDesktopProgress: (listener) => {
-        onDesktopProgress = listener
-        return () => undefined
-      },
-      subscribeLegacyProgress: noProgressSubscription
-    })
+    const { downloads, emitDesktop } = createDownloadHarness()
     const active = model('active.safetensors')
     downloads.request(active)
 
-    onDesktopProgress({
+    emitDesktop({
       url: active.url,
       filename: active.name,
       directory: active.directory,
@@ -220,7 +242,7 @@ describe('useTemplateModelRowDownloads', () => {
       fraction: 0.25
     })
 
-    onDesktopProgress({
+    emitDesktop({
       url: active.url,
       filename: active.name,
       progress: 0.75,
@@ -235,7 +257,7 @@ describe('useTemplateModelRowDownloads', () => {
       fraction: null
     })
 
-    onDesktopProgress({
+    emitDesktop({
       url: active.url,
       filename: active.name,
       progress: 1,
@@ -245,7 +267,6 @@ describe('useTemplateModelRowDownloads', () => {
   })
 
   it('correlates Desktop2 progress by URL, filename, and available directory', async () => {
-    let onDesktopProgress!: (progress: ComfyDownloadProgress) => void
     const sharedUrl =
       'https://huggingface.co/org/model/resolve/main/shared.safetensors'
     const checkpoint = model('checkpoint.safetensors', sharedUrl)
@@ -253,23 +274,11 @@ describe('useTemplateModelRowDownloads', () => {
       ...model('lora.safetensors', sharedUrl),
       directory: 'loras'
     }
-    const downloads = useTemplateModelRowDownloads({
-      loadFolderPaths: vi.fn(),
-      dispatchDownload: () => ({
-        status: 'host-requested',
-        host: 'desktop2',
-        hostResult: new Promise<boolean>(() => undefined)
-      }),
-      subscribeDesktopProgress: (listener) => {
-        onDesktopProgress = listener
-        return () => undefined
-      },
-      subscribeLegacyProgress: noProgressSubscription
-    })
+    const { downloads, emitDesktop } = createDownloadHarness()
     downloads.request(checkpoint)
     downloads.request(lora)
 
-    onDesktopProgress({
+    emitDesktop({
       url: sharedUrl,
       filename: checkpoint.name,
       directory: checkpoint.directory,
@@ -288,28 +297,15 @@ describe('useTemplateModelRowDownloads', () => {
   })
 
   it('does not fan out directory-less progress across ambiguous model rows', async () => {
-    let onDesktopProgress!: (progress: ComfyDownloadProgress) => void
     const sharedUrl =
       'https://huggingface.co/org/model/resolve/main/shared.safetensors'
     const checkpoint = model('shared.safetensors', sharedUrl)
     const lora = { ...checkpoint, directory: 'loras' }
-    const downloads = useTemplateModelRowDownloads({
-      loadFolderPaths: vi.fn(),
-      dispatchDownload: () => ({
-        status: 'host-requested',
-        host: 'desktop2',
-        hostResult: new Promise<boolean>(() => undefined)
-      }),
-      subscribeDesktopProgress: (listener) => {
-        onDesktopProgress = listener
-        return () => undefined
-      },
-      subscribeLegacyProgress: noProgressSubscription
-    })
+    const { downloads, emitDesktop } = createDownloadHarness()
     downloads.request(checkpoint)
     downloads.request(lora)
 
-    onDesktopProgress({
+    emitDesktop({
       url: sharedUrl,
       filename: checkpoint.name,
       progress: 1,
@@ -325,14 +321,14 @@ describe('useTemplateModelRowDownloads', () => {
       attempt: 1
     })
 
-    onDesktopProgress({
+    emitDesktop({
       url: sharedUrl,
       filename: lora.name,
       directory: lora.directory,
       progress: 1,
       status: 'completed'
     })
-    onDesktopProgress({
+    emitDesktop({
       url: sharedUrl,
       filename: checkpoint.name,
       progress: 1,
@@ -350,27 +346,16 @@ describe('useTemplateModelRowDownloads', () => {
   })
 
   it('maps and correlates legacy progress by URL and filename', async () => {
-    let onLegacyProgress!: (download: ElectronDownload) => void
     const sharedUrl = 'https://example.com/shared-download'
     const first = model('first.safetensors', sharedUrl)
     const second = model('second.safetensors', sharedUrl)
-    const downloads = useTemplateModelRowDownloads({
-      loadFolderPaths: vi.fn(),
-      dispatchDownload: () => ({
-        status: 'host-requested',
-        host: 'electron',
-        hostResult: new Promise<boolean>(() => undefined)
-      }),
-      subscribeDesktopProgress: noProgressSubscription,
-      subscribeLegacyProgress: (listener) => {
-        onLegacyProgress = listener
-        return () => undefined
-      }
+    const { downloads, emitLegacy } = createDownloadHarness({
+      dispatchDownload: () => pendingHostRequest('electron')
     })
     downloads.request(first)
     downloads.request(second)
 
-    onLegacyProgress({
+    emitLegacy({
       url: sharedUrl,
       filename: first.name,
       status: DownloadStatus.IN_PROGRESS,
@@ -391,7 +376,7 @@ describe('useTemplateModelRowDownloads', () => {
       attempt: 1
     })
 
-    onLegacyProgress({
+    emitLegacy({
       url: sharedUrl,
       filename: first.name,
       status: DownloadStatus.COMPLETED,
@@ -405,30 +390,20 @@ describe('useTemplateModelRowDownloads', () => {
 
   it('does not retry dispatch from an obsolete detached folder lookup', async () => {
     const paths = deferred<FolderPaths>()
-    let onDesktopProgress!: (progress: ComfyDownloadProgress) => void
     const dispatchDownload = vi
       .fn<DispatchDownload>()
       .mockReturnValueOnce({
         status: 'not-dispatched',
         reason: 'missing-directory-path'
       })
-      .mockReturnValue({
-        status: 'host-requested',
-        host: 'desktop2',
-        hostResult: new Promise<boolean>(() => undefined)
-      })
+      .mockReturnValue(pendingHostRequest())
     const request = model('obsolete-paths.safetensors')
-    const downloads = useTemplateModelRowDownloads({
+    const { downloads, emitDesktop } = createDownloadHarness({
       loadFolderPaths: () => paths.promise,
-      dispatchDownload,
-      subscribeDesktopProgress: (listener) => {
-        onDesktopProgress = listener
-        return () => undefined
-      },
-      subscribeLegacyProgress: noProgressSubscription
+      dispatchDownload
     })
     downloads.request(request)
-    onDesktopProgress({
+    emitDesktop({
       url: request.url,
       filename: request.name,
       directory: request.directory,
@@ -451,23 +426,10 @@ describe('useTemplateModelRowDownloads', () => {
   })
 
   it('requires retry activity before accepting an uncorrelated native terminal', async () => {
-    let onDesktopProgress!: (progress: ComfyDownloadProgress) => void
     const request = model('retry-terminal.safetensors')
-    const downloads = useTemplateModelRowDownloads({
-      loadFolderPaths: vi.fn(),
-      dispatchDownload: () => ({
-        status: 'host-requested',
-        host: 'desktop2',
-        hostResult: new Promise<boolean>(() => undefined)
-      }),
-      subscribeDesktopProgress: (listener) => {
-        onDesktopProgress = listener
-        return () => undefined
-      },
-      subscribeLegacyProgress: noProgressSubscription
-    })
+    const { downloads, emitDesktop } = createDownloadHarness()
     downloads.request(request)
-    onDesktopProgress({
+    emitDesktop({
       url: request.url,
       filename: request.name,
       directory: request.directory,
@@ -476,7 +438,7 @@ describe('useTemplateModelRowDownloads', () => {
     })
     downloads.request(request)
 
-    onDesktopProgress({
+    emitDesktop({
       url: request.url,
       filename: request.name,
       directory: request.directory,
@@ -488,14 +450,14 @@ describe('useTemplateModelRowDownloads', () => {
       attempt: 2
     })
 
-    onDesktopProgress({
+    emitDesktop({
       url: request.url,
       filename: request.name,
       directory: request.directory,
       progress: 0,
       status: 'pending'
     })
-    onDesktopProgress({
+    emitDesktop({
       url: request.url,
       filename: request.name,
       directory: request.directory,
@@ -510,8 +472,6 @@ describe('useTemplateModelRowDownloads', () => {
   })
 
   it('disposes both observers without changing active download state', async () => {
-    const stopDesktop = vi.fn()
-    const stopLegacy = vi.fn()
     const paths = deferred<FolderPaths>()
     const dispatchDownload = vi
       .fn<DispatchDownload>()
@@ -519,16 +479,10 @@ describe('useTemplateModelRowDownloads', () => {
         status: 'not-dispatched',
         reason: 'missing-directory-path'
       })
-      .mockReturnValueOnce({
-        status: 'host-requested',
-        host: 'electron',
-        hostResult: new Promise<boolean>(() => undefined)
-      })
-    const downloads = useTemplateModelRowDownloads({
+      .mockReturnValueOnce(pendingHostRequest('electron'))
+    const { downloads, stopDesktop, stopLegacy } = createDownloadHarness({
       loadFolderPaths: () => paths.promise,
-      dispatchDownload,
-      subscribeDesktopProgress: () => stopDesktop,
-      subscribeLegacyProgress: () => stopLegacy
+      dispatchDownload
     })
     const request = model('dispose.safetensors')
     downloads.request(request)
