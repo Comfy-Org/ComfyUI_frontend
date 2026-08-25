@@ -105,15 +105,16 @@ removed trigger strings require migration; there is no compatibility event.
 
 ### Node shell properties and enumeration
 
-`id`, `type`, `title`, `flags`, `mode`, `color`, `bgcolor`, `shape`,
-`showAdvanced`, `inputs`, and `outputs` are now accessors over `nodeDataStore`
-state rather than instrumented own data properties. Ordinary reads and writes
-remain, and tracked shell writes still emit `node:property:changed`. However,
-`Object.keys(node)`, `for...in`, own-property descriptors, and object spread no
-longer expose those fields exactly as before. Use named accessors and
-`serialize()` instead of generic object enumeration. Changing `node.type` after
-construction now warns and is deprecated; register/create the correct type or
-replace the node instead.
+`id`, `type`, `title`, `flags`, `mode`, `color`, `bgcolor`, `shape`, and
+`showAdvanced` are now prototype accessors over `nodeDataStore` state and are
+no longer own enumerable properties: `Object.keys(node)`, `for...in`, and
+object spread do not carry them. Use named accessors and `serialize()` instead
+of generic object enumeration. `inputs`, `outputs`, and `widgets` are
+reinstated as enumerable own accessors in the constructor, so they continue to
+appear in `Object.keys(node)` and object spread. Ordinary reads and writes for
+all of these fields remain, and tracked shell writes still emit
+`node:property:changed`. Changing `node.type` after construction now warns and
+is deprecated; register/create the correct type or replace the node instead.
 
 ### Badges
 

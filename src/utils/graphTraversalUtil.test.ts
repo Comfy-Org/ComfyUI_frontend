@@ -1028,7 +1028,7 @@ describe('graphTraversalUtil', () => {
         expect(found?.id).toBe('123')
       })
 
-      it('should find node in subgraph using UUID format', () => {
+      it('should find node in subgraph using subgraph locator format', () => {
         const targetUuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
         const targetNode = createMockNode('789')
         const subgraph = createMockSubgraph(targetUuid, [targetNode])
