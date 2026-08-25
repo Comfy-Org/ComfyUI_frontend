@@ -2886,6 +2886,9 @@
       "free": {
         "name": "Free"
       },
+      "enterprise": {
+        "name": "Enterprise"
+      },
       "founder": {
         "name": "Founder's Edition"
       },
