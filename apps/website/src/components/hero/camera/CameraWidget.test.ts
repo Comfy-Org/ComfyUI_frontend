@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { PerspectiveCamera, Vector3 } from 'three'
+import type * as ThreeModule from 'three'
 import type { Camera, Scene } from 'three'
 
 import { CameraWidget } from './CameraWidget'
@@ -11,7 +12,7 @@ import type { CameraState } from './types'
 // world matrices the way WebGLRenderer.render does, so raycasts see current
 // object positions.
 vi.mock('three', async (importOriginal) => {
-  const three = await importOriginal<typeof import('three')>()
+  const three = await importOriginal<typeof ThreeModule>()
   class FakeWebGLRenderer {
     domElement = document.createElement('canvas')
     outputColorSpace = ''

@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+/* eslint-disable testing-library/no-node-access */
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -63,7 +64,7 @@ const FIXTURE = {
       maskGroupOffset: [10, 10],
       videos: [
         {
-          src: 'a.webm',
+          src: 'https://media.comfy.org/website/clips/c.webm',
           ip: 0,
           op: 90,
           st: 0,
@@ -122,14 +123,15 @@ describe('VideoMaskScene', () => {
     expect(fetchMock).toHaveBeenCalledExactlyOnceWith(
       '/animations/x/scene.json'
     )
-    // Clips resolve against the descriptor's assets/ sibling directory.
+    // Relative clips resolve against the descriptor's assets/ sibling
+    // directory; absolute CDN URLs pass through unchanged.
     const sources = [...root.querySelectorAll('video')].map((v) =>
       v.getAttribute('src')
     )
     expect(sources).toEqual([
       '/animations/x/assets/a.webm',
       '/animations/x/assets/b.webm',
-      '/animations/x/assets/a.webm'
+      'https://media.comfy.org/website/clips/c.webm'
     ])
 
     // The second scene starts 10 frames later, so only scene one is live yet.

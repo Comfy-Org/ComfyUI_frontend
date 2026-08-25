@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+/* eslint-disable testing-library/no-node-access */
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
