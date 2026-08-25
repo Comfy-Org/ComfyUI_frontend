@@ -5,6 +5,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
+import { syncCompletedTemplateInputsWithCurrentGraph } from '@/platform/workflow/templates/composables/useTemplateInputDownloadGraphSync'
 import { usePartnerNodesEducationStore } from '@/platform/workflow/templates/stores/partnerNodesEducationStore'
 import type {
   TemplateGroup,
@@ -207,6 +208,7 @@ export function useTemplateWorkflows() {
       } else {
         educationStore.dismissCard()
       }
+      await syncCompletedTemplateInputsWithCurrentGraph()
 
       return true
     } catch (error) {
