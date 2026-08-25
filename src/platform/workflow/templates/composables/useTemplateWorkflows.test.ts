@@ -78,6 +78,12 @@ const mockWorkflow = {
 describe('useTemplateWorkflows', () => {
   let mockWorkflowTemplatesStore: MockWorkflowTemplatesStore
 
+  function expectNoOpeningSideEffects() {
+    expect(mockTrackTemplate).not.toHaveBeenCalled()
+    expect(mockCloseDialog).not.toHaveBeenCalled()
+    expect(app.loadGraphData).not.toHaveBeenCalled()
+  }
+
   beforeEach(() => {
     mockIsCloud.value = true
 
@@ -310,11 +316,19 @@ describe('useTemplateWorkflows', () => {
   })
 
   describe('prepared template workflow', () => {
-    it('prepares workflow data without opening it', async () => {
+    async function prepareTemplate() {
       mockWorkflowTemplatesStore.isLoaded = true
-      const { prepareWorkflowTemplate } = useTemplateWorkflows()
+      const workflows = useTemplateWorkflows()
+      const prepared = await workflows.prepareWorkflowTemplate(
+        'template1',
+        'default'
+      )
+      if (!prepared) throw new Error('Expected a prepared workflow')
+      return { prepared, workflows }
+    }
 
-      const prepared = await prepareWorkflowTemplate('template1', 'default')
+    it('prepares workflow data without opening it', async () => {
+      const { prepared } = await prepareTemplate()
 
       expect(prepared).toEqual({
         id: 'template1',
@@ -322,20 +336,13 @@ describe('useTemplateWorkflows', () => {
         workflowName: 'template1',
         workflow: mockWorkflow
       })
-      expect(mockTrackTemplate).not.toHaveBeenCalled()
-      expect(mockCloseDialog).not.toHaveBeenCalled()
-      expect(app.loadGraphData).not.toHaveBeenCalled()
+      expectNoOpeningSideEffects()
     })
 
     it('opens prepared workflow data exactly once', async () => {
-      mockWorkflowTemplatesStore.isLoaded = true
-      const { openPreparedWorkflowTemplate, prepareWorkflowTemplate } =
-        useTemplateWorkflows()
-      const prepared = await prepareWorkflowTemplate('template1', 'default')
-      expect(prepared).not.toBeNull()
-      if (!prepared) throw new Error('Expected a prepared workflow')
+      const { prepared, workflows } = await prepareTemplate()
 
-      const result = await openPreparedWorkflowTemplate(prepared)
+      const result = await workflows.openPreparedWorkflowTemplate(prepared)
 
       expect(result).toBe(true)
       expect(mockTrackTemplate).toHaveBeenCalledOnce()
@@ -355,14 +362,9 @@ describe('useTemplateWorkflows', () => {
     })
 
     it('can leave dialog closing to its caller', async () => {
-      mockWorkflowTemplatesStore.isLoaded = true
-      const { openPreparedWorkflowTemplate, prepareWorkflowTemplate } =
-        useTemplateWorkflows()
-      const prepared = await prepareWorkflowTemplate('template1', 'default')
-      expect(prepared).not.toBeNull()
-      if (!prepared) throw new Error('Expected a prepared workflow')
+      const { prepared, workflows } = await prepareTemplate()
 
-      const result = await openPreparedWorkflowTemplate(prepared, {
+      const result = await workflows.openPreparedWorkflowTemplate(prepared, {
         closeDialog: false
       })
 
@@ -384,36 +386,32 @@ describe('useTemplateWorkflows', () => {
       expect(app.loadGraphData).toHaveBeenCalledOnce()
     })
 
-    it('rejects non-successful workflow responses without opening', async () => {
-      mockWorkflowTemplatesStore.isLoaded = true
-      const { prepareWorkflowTemplate } = useTemplateWorkflows()
-      vi.mocked(fetch).mockResolvedValueOnce(
-        new Response(null, { status: 404, statusText: 'Not Found' })
-      )
+    it.for([
+      {
+        id: 'missing-template',
+        response: () =>
+          new Response(null, { status: 404, statusText: 'Not Found' })
+      },
+      {
+        id: 'invalid-template',
+        response: () => new Response(JSON.stringify({ workflow: 'invalid' })),
+        warns: true
+      }
+    ])(
+      'rejects invalid preparation for $id without opening',
+      async (testCase) => {
+        mockWorkflowTemplatesStore.isLoaded = true
+        const { prepareWorkflowTemplate } = useTemplateWorkflows()
+        if (testCase.warns)
+          vi.spyOn(console, 'warn').mockImplementation(() => {})
+        vi.mocked(fetch).mockResolvedValueOnce(testCase.response())
 
-      await expect(
-        prepareWorkflowTemplate('missing-template', 'default')
-      ).rejects.toThrow()
-      expect(mockTrackTemplate).not.toHaveBeenCalled()
-      expect(mockCloseDialog).not.toHaveBeenCalled()
-      expect(app.loadGraphData).not.toHaveBeenCalled()
-    })
-
-    it('rejects invalid workflow data without opening', async () => {
-      mockWorkflowTemplatesStore.isLoaded = true
-      const { prepareWorkflowTemplate } = useTemplateWorkflows()
-      vi.spyOn(console, 'warn').mockImplementation(() => {})
-      vi.mocked(fetch).mockResolvedValueOnce(
-        new Response(JSON.stringify({ workflow: 'invalid' }))
-      )
-
-      await expect(
-        prepareWorkflowTemplate('invalid-template', 'default')
-      ).rejects.toThrow()
-      expect(mockTrackTemplate).not.toHaveBeenCalled()
-      expect(mockCloseDialog).not.toHaveBeenCalled()
-      expect(app.loadGraphData).not.toHaveBeenCalled()
-    })
+        await expect(
+          prepareWorkflowTemplate(testCase.id, 'default')
+        ).rejects.toThrow()
+        expectNoOpeningSideEffects()
+      }
+    )
   })
 
   it('tracks template telemetry on load in cloud builds', async () => {
