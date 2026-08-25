@@ -14,7 +14,7 @@ import type { Locale } from '../../i18n/translations'
 import type { CalendarEvent } from '../../utils/calendar'
 
 import { t } from '../../i18n/translations'
-import { isUrlUnderPath, previousEntryUrl } from './previousEntry'
+import { isUrlUnderPath, previousEntryUrl } from '../../utils/previousEntry'
 
 const {
   title,
