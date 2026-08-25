@@ -972,6 +972,36 @@ describe('useFirstRunTourController', () => {
       }
     )
 
+    it('skips a preview output in favour of the saved result', async () => {
+      const { controller } = await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      await acceptRun(TOUR_WORKFLOW, 'tour-job')
+      const { api } = await import('@/scripts/api')
+      api.dispatchCustomEvent('execution_start', {
+        prompt_id: 'tour-job',
+        timestamp: 1
+      })
+      api.dispatchCustomEvent('executed', {
+        prompt_id: 'tour-job',
+        node: 1,
+        display_node: 1,
+        output: { images: [{ filename: 'preview.png', type: 'temp' }] }
+      })
+      api.dispatchCustomEvent('executed', {
+        prompt_id: 'tour-job',
+        node: 2,
+        display_node: 2,
+        output: { images: [{ filename: 'saved.png', type: 'output' }] }
+      })
+
+      await endTour(COMPLETED)
+
+      expect(
+        controller.nudgeOutput.value?.filename,
+        'a temp file is collected away, so continuing from it seeds a path the backend has forgotten'
+      ).toBe('saved.png')
+    })
+
     it('ignores image output from a different job', async () => {
       const { controller } = await tourOnRunStep()
       mountRunButton('queue-button', () => {}).click()
@@ -1055,28 +1085,6 @@ describe('useFirstRunTourController', () => {
       ).toBe(false)
     })
 
-    it('congratulates a tour the user walked to the end', async () => {
-      const { controller } = await tourOnRunStep()
-
-      await endTour(COMPLETED)
-
-      expect(controller.tourWasCompleted.value).toBe(true)
-    })
-
-    it.for(UNFINISHED_ENDINGS)(
-      'congratulates nobody for a tour $named',
-      async ({ ending }) => {
-        const { controller } = await tourOnRunStep()
-
-        await endTour(ending)
-
-        expect(
-          controller.tourWasCompleted.value,
-          'a tour the user never walked to the end made no first result to congratulate'
-        ).toBe(false)
-      }
-    )
-
     it('offers no continuation when the tour never appeared', async () => {
       mocks.steps = []
       mocks.activeWorkflow.value = TOUR_WORKFLOW
@@ -1096,10 +1104,6 @@ describe('useFirstRunTourController', () => {
       await starting
       await nextTick()
 
-      expect(
-        controller.tourWasCompleted.value,
-        'a tour that resolved no steps made nothing for the nudge to celebrate'
-      ).toBe(false)
       expect(
         controller.nudgeArmed.value,
         'there is no first output to seed into any suggestion'

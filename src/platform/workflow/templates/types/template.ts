@@ -5,11 +5,12 @@ export interface LogoInfo {
   position?: string
 }
 
-interface TemplateMediaInfo {
-  nodeId: string | number
-  nodeType: string
-  file: string
-  mediaType: string
+/** Served by an external `index.json`, so every field may be absent or stale. */
+export interface TemplateMediaInfo {
+  nodeId?: string | number
+  nodeType?: string
+  file?: string
+  mediaType?: string
 }
 
 interface TemplateIoInfo {

@@ -5078,15 +5078,6 @@
           "detail": "Partner model · Any paid plan"
         },
         "loadFailed": "That template couldn't be loaded. Please try again.",
-        "ran": {
-          "title": "That was one of hundreds",
-          "body": "You just made your first. Explore what else you can build."
-        },
-        "noTour": {
-          "title": "Hundreds more where that came from",
-          "body": "Browse the templates and pick something to build."
-        },
-        "dismiss": "Not now",
         "explore": "Browse all templates"
       }
     }
