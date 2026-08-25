@@ -23,6 +23,7 @@ import {
 } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLinkStore } from '@/stores/linkStore'
+import type { EndpointUpdate } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
@@ -71,8 +72,8 @@ import {
 } from './linkDeduplication'
 import {
   countRequestedNodeIds,
-  recordUnambiguousRemint,
-  remapRemintedEndpoints
+  getRemintedEndpointPatch,
+  recordUnambiguousRemint
 } from './remintLinkRemap'
 import {
   beginNamedValuesShadowDiffLoad,
@@ -2953,9 +2954,25 @@ export class LGraph
         // requested ids to the reminted ids before nodes configure their
         // slots against those links.
         if (remintedIds.size > 0) {
+          const endpointUpdates: EndpointUpdate[] = []
           for (const linkId of addedLinkIds) {
             const link = this.links.get(linkId)
-            if (link) remapRemintedEndpoints(link, remintedIds)
+            if (!link) continue
+            const patch = getRemintedEndpointPatch(link, remintedIds)
+            if (patch) endpointUpdates.push({ topology: link._state, patch })
+          }
+          if (endpointUpdates.length > 0) {
+            const result = useLinkStore().updateEndpoints(
+              graphScopeOf(this),
+              endpointUpdates
+            )
+            if (!result.ok) {
+              console.error(
+                'Failed to remap node-id link endpoints',
+                result.error
+              )
+              error = true
+            }
           }
         }
 
@@ -2979,7 +2996,8 @@ export class LGraph
       if (Array.isArray(data.floatingLinks)) {
         for (const linkData of data.floatingLinks) {
           const floatingLink = LLink.create(linkData)
-          remapRemintedEndpoints(floatingLink, remintedIds)
+          const patch = getRemintedEndpointPatch(floatingLink, remintedIds)
+          if (patch) Object.assign(floatingLink._state, patch)
           if (
             this.links.has(floatingLink.id) ||
             this.floatingLinks.has(floatingLink.id)

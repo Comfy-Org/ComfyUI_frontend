@@ -2,6 +2,7 @@ import { toNodeId } from '@/types/nodeId'
 
 import type { LLink } from './LLink'
 import type { ISerialisedNode } from './types/serialisation'
+import type { EndpointPatch } from '@/stores/linkStore'
 import type { NodeId } from '@/types/nodeId'
 
 /**
@@ -51,18 +52,16 @@ export function recordUnambiguousRemint(
   }
 }
 
-/**
- * Rewrites a link's endpoints through the remint map. Endpoints not present
- * in the map — sentinel ids, references to incumbent nodes, ambiguous ids —
- * are left untouched. Writes go through the `origin_id` / `target_id`
- * setters, so registered links patch their store state.
- */
-export function remapRemintedEndpoints(
+/** Returns the endpoint patch needed to follow unambiguous node-id remints. */
+export function getRemintedEndpointPatch(
   link: LLink,
   remintedIds: ReadonlyMap<NodeId, NodeId>
-): void {
-  const newOrigin = remintedIds.get(link.origin_id)
-  if (newOrigin !== undefined) link.origin_id = newOrigin
-  const newTarget = remintedIds.get(link.target_id)
-  if (newTarget !== undefined) link.target_id = newTarget
+): EndpointPatch | undefined {
+  const originNodeId = remintedIds.get(link.origin_id)
+  const targetNodeId = remintedIds.get(link.target_id)
+  if (originNodeId === undefined && targetNodeId === undefined) return
+  return {
+    ...(originNodeId === undefined ? {} : { originNodeId }),
+    ...(targetNodeId === undefined ? {} : { targetNodeId })
+  }
 }
