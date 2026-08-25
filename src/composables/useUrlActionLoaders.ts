@@ -96,16 +96,19 @@ export function useUrlActionLoaders() {
 
     // Reopen a checkout that was interrupted by a redirect payment. Runs here,
     // not during workspace init, so the first-run and Templates overlays are
-    // already settled and the recovered dialog is reachable.
+    // already settled and the recovered dialog is reachable. Deliberately not
+    // awaited: the resume only settles once the recovered operation reaches a
+    // terminal status, which for an abandoned checkout can take hours, and the
+    // boot chain (emit('ready'), the tour, telemetry) must not wait on it.
     if (subscriptionDialog) {
-      try {
-        await subscriptionDialog.resumePendingPricingFlow()
-      } catch (error) {
-        console.error(
-          '[UrlActionLoaders] Failed to resume pending billing flow:',
-          error
-        )
-      }
+      void (async () => subscriptionDialog.resumePendingPricingFlow())().catch(
+        (error) => {
+          console.error(
+            '[UrlActionLoaders] Failed to resume pending billing flow:',
+            error
+          )
+        }
+      )
     }
   }
 

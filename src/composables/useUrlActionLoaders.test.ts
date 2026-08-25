@@ -142,13 +142,35 @@ describe('useUrlActionLoaders', () => {
     ).toBeGreaterThan(mocks.loadPaymentReturn.mock.invocationCallOrder[0])
   })
 
-  it('isolates a checkout-recovery failure so it does not abort the boot chain', async () => {
-    mocks.resumePendingPricingFlow.mockRejectedValueOnce(new Error('boom'))
+  it('resolves without waiting for checkout recovery to settle', async () => {
+    mocks.resumePendingPricingFlow.mockImplementationOnce(
+      () => new Promise<undefined>(() => {})
+    )
+
+    const { runUrlActionLoaders } = useUrlActionLoaders()
+    await expect(runUrlActionLoaders()).resolves.toBeUndefined()
+
+    expect(mocks.resumePendingPricingFlow).toHaveBeenCalledOnce()
+  })
+
+  it('logs a checkout-recovery failure instead of rejecting unhandled', async () => {
+    const consoleErrorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {})
+    const failure = new Error('boom')
+    mocks.resumePendingPricingFlow.mockRejectedValueOnce(failure)
 
     const { runUrlActionLoaders } = useUrlActionLoaders()
     await expect(runUrlActionLoaders()).resolves.toBeUndefined()
 
     expect(mocks.loadPaymentReturn).toHaveBeenCalledOnce()
+    await vi.waitFor(() => {
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        '[UrlActionLoaders] Failed to resume pending billing flow:',
+        failure
+      )
+    })
+    consoleErrorSpy.mockRestore()
   })
 
   it('isolates a pricing-loader failure so it does not abort the boot chain', async () => {
