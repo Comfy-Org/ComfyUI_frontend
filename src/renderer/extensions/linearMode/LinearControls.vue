@@ -27,6 +27,8 @@ import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { useAppMode } from '@/composables/useAppMode'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+import { useTemplateInputDownloadStore } from '@/stores/templateInputDownloadStore'
 
 const { t } = useI18n()
 const commandStore = useCommandStore()
@@ -38,6 +40,8 @@ const { isBuilderMode } = useAppMode()
 const appModeStore = useAppModeStore()
 const { hasOutputs } = storeToRefs(appModeStore)
 const { hasAnyError, hasMissingError } = storeToRefs(useExecutionErrorStore())
+const missingMediaStore = useMissingMediaStore()
+const templateInputDownloadStore = useTemplateInputDownloadStore()
 const { overlayMessage } = useErrorOverlayState()
 
 const { toastTo, mobile } = defineProps<{
@@ -55,10 +59,47 @@ const { ready: jobToastTimeout, start: resetJobToastTimeout } = useTimeout(
 )
 const widgetListRef = useTemplateRef('widgetListRef')
 const linearRunButtonTestId = 'linear-run-button'
+const linearInputDownloadStatusId = 'linear-input-download-status'
+const requiredInputDownloads = computed(() => {
+  const requiredFilenames = new Set(
+    (missingMediaStore.missingMediaCandidates ?? []).map(({ name }) => name)
+  )
+  return templateInputDownloadStore.downloads.filter(({ filename }) =>
+    requiredFilenames.has(filename)
+  )
+})
+const isPreparingInputDownloads = computed(
+  () => requiredInputDownloads.value.length > 0
+)
+const isFinalizingInputDownloads = computed(() =>
+  requiredInputDownloads.value.every(({ status }) => status === 'completed')
+)
+const inputDownloadProgress = computed(() => {
+  const progress = requiredInputDownloads.value.map(
+    (download) => download.progress
+  )
+  if (!progress.length || progress.some((value) => value === null)) return null
+  return Math.round(
+    (progress.reduce<number>((sum, value) => sum + (value ?? 0), 0) /
+      progress.length) *
+      100
+  )
+})
+const inputDownloadLabel = computed(() =>
+  isFinalizingInputDownloads.value
+    ? t('linearMode.inputDownloads.finalizing')
+    : t(
+        'linearMode.inputDownloads.downloading',
+        { count: requiredInputDownloads.value.length },
+        requiredInputDownloads.value.length
+      )
+)
 const runButtonIconClass = computed(() =>
-  hasMissingError.value
-    ? 'icon-[lucide--triangle-alert]'
-    : 'icon-[lucide--play]'
+  isPreparingInputDownloads.value
+    ? 'icon-[lucide--loader-circle] animate-spin'
+    : hasMissingError.value
+      ? 'icon-[lucide--triangle-alert]'
+      : 'icon-[lucide--play]'
 )
 const showRunErrorWarning = computed(
   () =>
@@ -171,6 +212,41 @@ function replayAppModeTour() {
           </template>
         </div>
       </Teleport>
+      <section
+        v-if="isPreparingInputDownloads"
+        :id="linearInputDownloadStatusId"
+        role="status"
+        data-testid="linear-input-download-status"
+        class="mx-2 flex flex-col gap-2 rounded-lg border border-border-default bg-base-background p-3 text-sm"
+      >
+        <div class="flex items-center gap-2">
+          <Loader size="sm" />
+          <span class="min-w-0 flex-1" v-text="inputDownloadLabel" />
+          <span
+            v-if="inputDownloadProgress !== null"
+            class="text-muted-foreground tabular-nums"
+            v-text="`${inputDownloadProgress}%`"
+          />
+        </div>
+        <span
+          role="progressbar"
+          :aria-label="inputDownloadLabel"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          :aria-valuenow="inputDownloadProgress ?? undefined"
+          class="block h-1 overflow-hidden rounded-full bg-secondary-background"
+        >
+          <span
+            class="block h-full rounded-full bg-primary-background transition-[width]"
+            :class="inputDownloadProgress === null && 'w-1/3 animate-pulse'"
+            :style="
+              inputDownloadProgress === null
+                ? undefined
+                : { width: `${inputDownloadProgress}%` }
+            "
+          />
+        </span>
+      </section>
       <PartnerNodesList v-if="!mobile" />
       <section
         v-if="mobile"
@@ -212,10 +288,13 @@ function replayAppModeTour() {
               class="grow"
               size="lg"
               :aria-describedby="
-                showRunErrorWarning
-                  ? LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID
-                  : undefined
+                isPreparingInputDownloads
+                  ? linearInputDownloadStatusId
+                  : showRunErrorWarning
+                    ? LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID
+                    : undefined
               "
+              :disabled="isPreparingInputDownloads"
               @click="runButtonClick"
             >
               <i
@@ -256,10 +335,13 @@ function replayAppModeTour() {
             class="mt-4 w-full text-sm"
             size="lg"
             :aria-describedby="
-              showRunErrorWarning
-                ? LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID
-                : undefined
+              isPreparingInputDownloads
+                ? linearInputDownloadStatusId
+                : showRunErrorWarning
+                  ? LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID
+                  : undefined
             "
+            :disabled="isPreparingInputDownloads"
             @click="runButtonClick"
           >
             <i

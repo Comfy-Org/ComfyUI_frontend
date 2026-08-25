@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { createNodeExecutionId } from '@/types/nodeIdentification'
+import { useTemplateInputDownloadStore } from '@/stores/templateInputDownloadStore'
 
 import { useMissingMediaStore } from './missingMediaStore'
 import type { MissingMediaCandidate } from './types'
@@ -54,6 +55,22 @@ describe('useMissingMediaStore', () => {
     expect(store.missingMediaCandidates).toHaveLength(1)
     expect(store.hasMissingMedia).toBe(true)
     expect(store.missingMediaCount).toBe(1)
+  })
+
+  it('does not surface a template input while its managed download is active', () => {
+    useTemplateInputDownloadStore().updateProgress({
+      downloadId: 'download-1',
+      filename: 'photo.png',
+      progress: 0.25,
+      status: 'downloading',
+      templateInputs: [{ templateId: 'template-a', assetId: 'asset-a' }]
+    })
+    const store = useMissingMediaStore()
+    store.setMissingMedia([makeCandidate('1', 'photo.png')])
+
+    expect(store.missingMediaCandidates).toHaveLength(1)
+    expect(store.hasMissingMedia).toBe(false)
+    expect(store.missingMediaCount).toBe(0)
   })
 
   it('setMissingMedia with empty array clears state', () => {
