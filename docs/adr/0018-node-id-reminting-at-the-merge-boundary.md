@@ -41,7 +41,7 @@ and documented in the ADR-0003/ADR-0008 amendments of #15761):
   slot; carry the value.
 
 A duplicate `NodeId` is an identity-key collision. The question this ADR
-answers is *where* the rejection-and-recovery happens.
+answers is _where_ the rejection-and-recovery happens.
 
 ## Decision
 
@@ -52,13 +52,13 @@ Concretely:
 
 1. Stores and registries (nodeStore, linkStore, rerouteStore,
    widgetValueStore, and any future id-keyed registry) treat a second
-   *different* object claiming a registered id as a programming-error-grade
+   _different_ object claiming a registered id as a programming-error-grade
    event: reject, never silently remap. (Same raw object re-registered under
    the same owner is idempotent and returns the incumbent — see
    `linkStore.ts` registration.)
 2. The **merge boundary** — the code path where external content enters a
    replica (`nodeShellLifecycle` remint loop for node shells) — detects the
-   collision *before* store registration, mints a fresh id for the incoming
+   collision _before_ store registration, mints a fresh id for the incoming
    copy, and emits a `console.warn` naming the old id, the replacement id,
    and the root graph id. The warning is required by D-gl-A2: no silent
    remints, ever — telemetry and debugging depend on collisions being
@@ -189,7 +189,7 @@ Tag colliding entries with an epoch/namespace and reconcile lazily.
 - **Merge boundary** — any code path where content minted outside the local
   replica enters it: CRDT sync apply, workflow import, paste, subgraph
   instantiation from a serialized payload.
-- **Remint** — assigning a fresh id to an *incoming copy* of an entity whose
+- **Remint** — assigning a fresh id to an _incoming copy_ of an entity whose
   claimed id is already registered locally. Never applied to the incumbent.
 - **Identity key** — a key whose collision means two different entities claim
   one name (e.g. `NodeId`). Contract: reject.
