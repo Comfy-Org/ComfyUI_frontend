@@ -201,11 +201,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           v-tooltip.bottom="buildAgentTooltipConfig(t('agent.showChatHistory'))"
           type="button"
           :aria-label="t('agent.showChatHistory')"
-          :class="[
-            'text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg',
-            'focus-visible:ring-agent-accent focus-visible:ring-2 focus-visible:outline-none',
-            'flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm transition-colors'
-          ]"
+          class="text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg focus-visible:ring-agent-accent flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm transition-colors focus-visible:ring-2 focus-visible:outline-none"
           @click="onOpenHistory"
         >
           <span class="icon-[lucide--history] size-4 shrink-0" />
@@ -231,12 +227,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             ref="titleButton"
             type="button"
             :disabled="sessionId === null"
-            :class="[
-              'text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg disabled:hover:text-agent-fg-muted',
-              'focus-visible:ring-agent-accent focus-visible:ring-2 focus-visible:outline-none',
-              'flex h-6 min-w-0 cursor-pointer items-center rounded-sm px-2 py-1 text-left text-xs transition-colors',
-              'disabled:cursor-default disabled:hover:bg-transparent'
-            ]"
+            class="text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg disabled:hover:text-agent-fg-muted focus-visible:ring-agent-accent flex h-6 min-w-0 cursor-pointer items-center rounded-sm px-2 py-1 text-left text-xs transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:cursor-default disabled:hover:bg-transparent"
             @click="startRename"
           >
             <span class="min-w-0 truncate">{{
