@@ -177,9 +177,16 @@ export interface OnboardingTourStepMetadata {
   not_started_reason?: OnboardingTourNotStartedReason
 }
 
-/** The nudge is post-tour, so it reports no step and no count. */
+/** The nudge is post-tour, so it reports no step and no step count. */
 export interface OnboardingTourNudgeMetadata {
   tour: string
+  /**
+   * How many continuations the card could offer. Zero is the card falling back
+   * to the template browser — either the run produced no image, or the
+   * install's pinned template package serves none of them. Without it that
+   * case is indistinguishable from a nudge that never appeared.
+   */
+  suggestion_count: number
 }
 
 /**

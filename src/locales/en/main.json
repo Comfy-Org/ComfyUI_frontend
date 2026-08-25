@@ -5077,6 +5077,10 @@
           "title": "Restyle with Nano Banana",
           "detail": "Partner model · Any paid plan"
         },
+        "fallback": {
+          "title": "Hundreds more where that came from",
+          "body": "Browse the templates and pick something to build."
+        },
         "loadFailed": "That template couldn't be loaded. Please try again.",
         "explore": "Browse all templates"
       }

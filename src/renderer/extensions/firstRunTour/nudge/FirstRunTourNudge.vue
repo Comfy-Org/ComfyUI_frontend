@@ -11,10 +11,10 @@
       <div class="relative flex items-start justify-between overflow-hidden">
         <div class="flex min-w-0 flex-1 flex-col gap-1 pr-10">
           <p :id="titleId" class="m-0 text-lg font-medium text-base-foreground">
-            {{ t('onboardingCoachmarks.firstRun.nudge.title') }}
+            {{ t(`${copyKey}.title`) }}
           </p>
           <p :id="subtitleId" class="m-0 text-sm text-muted-foreground">
-            {{ t('onboardingCoachmarks.firstRun.nudge.body') }}
+            {{ t(`${copyKey}.body`) }}
           </p>
         </div>
         <Button
@@ -22,6 +22,7 @@
           variant="secondary"
           size="icon"
           :aria-label="t('g.close')"
+          :disabled="loadingSuggestionId !== null"
           @click="dismissNudge"
         >
           <i class="icon-[lucide--x] size-4" aria-hidden="true" />
@@ -60,13 +61,13 @@
                 {{ t(suggestion.titleKey) }}
               </span>
               <span
-                v-if="suggestion.id === 'upscale'"
+                v-if="suggestion.badgeKey"
                 class="shrink-0 rounded-sm border border-border-subtle px-1.25 py-0.25 text-[10px] text-muted-foreground"
               >
-                {{ t('onboardingCoachmarks.firstRun.nudge.upscale.badge') }}
+                {{ t(suggestion.badgeKey) }}
               </span>
               <i
-                v-if="suggestion.id === 'restyle'"
+                v-if="suggestion.paid"
                 class="icon-[tabler--crown-filled] size-4 shrink-0 text-brand-yellow"
                 aria-hidden="true"
               />
@@ -118,6 +119,10 @@ interface Suggestion {
   titleKey: string
   detailKey: string
   icon: string
+  /** A qualifier on the action itself, such as the upscale's multiplier. */
+  badgeKey?: string
+  /** Marks the action a paid plan is required to run, so the card says so. */
+  paid?: boolean
 }
 
 const suggestions: Suggestion[] = [
@@ -133,14 +138,16 @@ const suggestions: Suggestion[] = [
     templateId: 'utility_seedvr2_7b_int8_upscale_image',
     titleKey: 'onboardingCoachmarks.firstRun.nudge.upscale.title',
     detailKey: 'onboardingCoachmarks.firstRun.nudge.upscale.detail',
-    icon: 'icon-[lucide--maximize-2]'
+    icon: 'icon-[lucide--maximize-2]',
+    badgeKey: 'onboardingCoachmarks.firstRun.nudge.upscale.badge'
   },
   {
     id: 'restyle',
     templateId: 'api_google_nano_banana2_image_edit_continuation',
     titleKey: 'onboardingCoachmarks.firstRun.nudge.restyle.title',
     detailKey: 'onboardingCoachmarks.firstRun.nudge.restyle.detail',
-    icon: 'icon-[ph--swatches]'
+    icon: 'icon-[ph--swatches]',
+    paid: true
   }
 ]
 
@@ -155,6 +162,7 @@ const titleId = useId()
 const subtitleId = useId()
 const loadingSuggestionId = ref<SuggestionId | null>(null)
 const delayElapsed = ref(false)
+const catalogSettled = ref(false)
 let reported = false
 
 /**
@@ -164,24 +172,29 @@ let reported = false
  * dead end found by clicking it, seconds after the user's first success.
  */
 const availableSuggestions = computed(() =>
-  suggestions.filter(({ templateId }) => {
-    const template = templatesStore.getTemplateByName(templateId)
-    return (
-      template?.sourceModule === 'default' &&
-      acceptsTemplateImageInput(template)
-    )
-  })
+  nudgeOutput.value === null
+    ? []
+    : suggestions.filter(({ templateId }) => {
+        const template = templatesStore.getTemplateByName(templateId)
+        return (
+          template?.sourceModule === 'default' &&
+          acceptsTemplateImageInput(template)
+        )
+      })
+)
+
+// A run that produced no image, and an install serving none of the
+// continuations, both leave the card with nothing to continue from. Neither is
+// a reason to take away the way forward, so the card falls back to the browser.
+const copyKey = computed(
+  () =>
+    `onboardingCoachmarks.firstRun.nudge${availableSuggestions.value.length > 0 ? '' : '.fallback'}`
 )
 
 const screenIsClear = computed(
   () => nudgeArmed.value && dialogStore.dialogStack.length === 0
 )
-const onScreen = computed(
-  () =>
-    screenIsClear.value &&
-    delayElapsed.value &&
-    availableSuggestions.value.length > 0
-)
+const onScreen = computed(() => screenIsClear.value && delayElapsed.value)
 
 const { start: scheduleAppearance, stop: cancelAppearance } = useTimeoutFn(
   () => {
@@ -192,13 +205,17 @@ const { start: scheduleAppearance, stop: cancelAppearance } = useTimeoutFn(
 )
 
 useEventListener(document, 'keydown', (event: KeyboardEvent) => {
-  if (onScreen.value && event.key === 'Escape') dismissNudge()
+  if (onScreen.value && !loadingSuggestionId.value && event.key === 'Escape')
+    dismissNudge()
 })
 
 watch(
   nudgeArmed,
   (armed) => {
-    if (armed) void loadTemplates()
+    if (!armed) return
+    void loadTemplates().finally(() => {
+      catalogSettled.value = true
+    })
   },
   { immediate: true }
 )
@@ -213,10 +230,15 @@ watch(
   { immediate: true }
 )
 
-watch(onScreen, (visible) => {
-  if (!visible || reported) return
+// Reported once the catalog has settled, so a card that beat the fetch to the
+// screen does not report the empty case the fetch was about to fill.
+watch([onScreen, catalogSettled], ([visible, settled]) => {
+  if (!visible || !settled || reported) return
   reported = true
-  telemetry?.trackOnboardingTour('nudge_shown', { tour: 'firstRun' })
+  telemetry?.trackOnboardingTour('nudge_shown', {
+    tour: 'firstRun',
+    suggestion_count: availableSuggestions.value.length
+  })
 })
 
 async function onSuggestion(suggestion: Suggestion) {
@@ -234,6 +256,7 @@ async function onSuggestion(suggestion: Suggestion) {
     )
     telemetry?.trackOnboardingTour('nudge_suggestion_clicked', {
       tour: 'firstRun',
+      suggestion_count: availableSuggestions.value.length,
       suggestion: suggestion.id,
       loaded
     })
@@ -257,7 +280,8 @@ async function onSuggestion(suggestion: Suggestion) {
 function onExplore() {
   useWorkflowTemplateSelectorDialog().show('first_run_nudge')
   telemetry?.trackOnboardingTour('explore_templates_clicked', {
-    tour: 'firstRun'
+    tour: 'firstRun',
+    suggestion_count: availableSuggestions.value.length
   })
   dismissNudge()
 }

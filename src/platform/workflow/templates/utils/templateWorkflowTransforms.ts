@@ -18,40 +18,33 @@ interface NodeSelector {
   nodeType: string
 }
 
+/**
+ * Both serializations of `widgets_values` — the positional array and the
+ * name-keyed object — replace the one entry holding the template's declared
+ * file, so they differ only in how the entries are taken apart and put back.
+ */
 function replaceWidgetValue(
   widgetValues: unknown,
   currentValue: unknown,
   nextValue: unknown
 ): unknown {
-  if (Array.isArray(widgetValues)) {
-    const matchingIndexes = widgetValues.flatMap((value, index) =>
-      value === currentValue ? [index] : []
-    )
-    if (matchingIndexes.length !== 1)
-      throw new Error('Expected one matching template widget value')
+  const isArray = Array.isArray(widgetValues)
+  if (!isArray && (typeof widgetValues !== 'object' || widgetValues === null))
+    throw new Error('Template input node has no configurable widgets')
 
-    return widgetValues.map((value, index) =>
-      index === matchingIndexes[0] ? nextValue : value
-    )
-  }
+  const entries = Object.entries(widgetValues)
+  const matches = entries.filter(([, value]) => value === currentValue)
+  if (matches.length !== 1)
+    throw new Error('Expected one matching template widget value')
 
-  if (typeof widgetValues === 'object' && widgetValues !== null) {
-    const entries = Object.entries(widgetValues)
-    const matchingKeys = entries.flatMap(([key, value]) =>
-      value === currentValue ? [key] : []
-    )
-    if (matchingKeys.length !== 1)
-      throw new Error('Expected one matching template widget value')
-
-    return Object.fromEntries(
-      entries.map(([key, value]) => [
-        key,
-        key === matchingKeys[0] ? nextValue : value
-      ])
-    )
-  }
-
-  throw new Error('Template input node has no configurable widgets')
+  const [matchedKey] = matches[0]
+  const replaced = entries.map(([key, value]) => [
+    key,
+    key === matchedKey ? nextValue : value
+  ])
+  return isArray
+    ? replaced.map(([, value]) => value)
+    : Object.fromEntries(replaced)
 }
 
 function replaceNodeWidgetValue<T extends TransformableWorkflow>(
@@ -60,6 +53,11 @@ function replaceNodeWidgetValue<T extends TransformableWorkflow>(
   currentValue: unknown,
   nextValue: unknown
 ): T {
+  // The fetched JSON is unvalidated, so say what is wrong with it rather than
+  // letting a served error page reach `.filter` as an anonymous TypeError.
+  if (!Array.isArray(workflow.nodes))
+    throw new Error('Template workflow has no nodes')
+
   const matchingNodes = workflow.nodes.filter(
     (node) =>
       node.type === selector.nodeType &&

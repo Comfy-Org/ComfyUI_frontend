@@ -148,6 +148,7 @@ describe('useTemplateWorkflows', () => {
 
     // Mock fetch response
     vi.mocked(fetch).mockResolvedValue({
+      ok: true,
       json: vi.fn().mockResolvedValue({ workflow: 'data' })
     } as Partial<Response> as Response)
   })
@@ -324,6 +325,7 @@ describe('useTemplateWorkflows', () => {
     const { loadWorkflowTemplate } = useTemplateWorkflows()
     mockWorkflowTemplatesStore.isLoaded = true
     vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
       json: vi.fn().mockResolvedValue({
         nodes: [
           {
