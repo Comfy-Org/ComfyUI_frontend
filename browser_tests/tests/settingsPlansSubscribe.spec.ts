@@ -169,14 +169,20 @@ test.describe('Local plans section subscribe (FE-1600 S2)', () => {
 
     // A multi-user server boots to a user-selection screen unless a real user
     // id is seeded, and a fresh CI server has no users at all — find or create
-    // one, same approach as the ComfyPage fixture.
+    // one (this drives a raw page, so it cannot reuse ComfyPage.setupUser;
+    // mirror its status guards so a server error surfaces here, not as a later
+    // opaque boot hang).
     const usersResponse = await request.get(`${APP_URL}/api/users`)
+    if (!usersResponse.ok())
+      throw new Error(`GET /api/users failed: ${usersResponse.status()}`)
     const usersBody = (await usersResponse.json()) as ComfyUsersResponse
     let userId = Object.keys(usersBody.users ?? {})[0]
     if (!userId) {
       const created = await request.post(`${APP_URL}/api/users`, {
         data: { username: 'plans-subscribe-e2e' }
       })
+      if (!created.ok())
+        throw new Error(`POST /api/users failed: ${created.status()}`)
       userId = (await created.json()) as string
     }
 

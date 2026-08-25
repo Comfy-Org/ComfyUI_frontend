@@ -308,13 +308,19 @@ describe('SettingsPlansSection — checkout uses API plan identity', () => {
     expect(mockSubscribeToPersonal).not.toHaveBeenCalled()
   })
 
-  it('disables every CTA while a checkout is in flight', () => {
+  it('disables every CTA while a checkout is in flight', async () => {
     mockIsSubscribing.current = ref(true)
     renderSection()
 
     for (const name of ['Choose Standard', 'Choose Creator', 'Choose Pro']) {
       expect(screen.getByRole('button', { name })).toBeDisabled()
     }
+
+    // The team CTA must be locked too, or a second click could double-submit.
+    await userEvent.click(screen.getByRole('button', { name: 'Teams' }))
+    expect(
+      screen.getByRole('button', { name: 'Subscribe to Team Yearly' })
+    ).toBeDisabled()
   })
 
   it('marks no card current for an enterprise/founder/legacy slug', () => {
