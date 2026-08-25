@@ -4,6 +4,7 @@ import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables
 import { useTopUpUrlLoader } from '@/platform/cloud/subscription/composables/useTopUpUrlLoader'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingsUrlLoader } from '@/platform/settings/composables/useSettingsUrlLoader'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useCreateWorkspaceUrlLoader } from '@/platform/workspace/composables/useCreateWorkspaceUrlLoader'
 import { useInviteUrlLoader } from '@/platform/workspace/composables/useInviteUrlLoader'
 
@@ -103,10 +104,9 @@ export function useUrlActionLoaders() {
     if (subscriptionDialog) {
       void (async () => subscriptionDialog.resumePendingPricingFlow())().catch(
         (error) => {
-          console.error(
-            '[UrlActionLoaders] Failed to resume pending billing flow:',
-            error
-          )
+          reportError(error, {
+            errorType: 'billing_pending_checkout_resume_failure'
+          })
         }
       )
     }
