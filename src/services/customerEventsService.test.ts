@@ -170,6 +170,30 @@ describe('useCustomerEventsService', () => {
       await expect(request).resolves.toBeNull()
     })
 
+    it('never exposes a stale error after an A->B API key switch', async () => {
+      let rejectEvents!: (reason: unknown) => void
+      const eventsRequestStarted = new Promise<void>((requestStarted) => {
+        mockAxiosInstance.get.mockImplementation(() => {
+          requestStarted()
+          return new Promise((_resolve, reject) => {
+            rejectEvents = reject
+          })
+        })
+      })
+      vi.mocked(axios.isAxiosError).mockReturnValue(true)
+
+      const request = service.getMyEvents()
+      await eventsRequestStarted
+      mockAuthStore.currentUserIdentity.mockReturnValue('api-key-b')
+      rejectEvents({
+        response: { status: 400, data: { message: 'account A backend error' } }
+      })
+
+      await expect(request).resolves.toBeNull()
+      expect(service.error.value).toBeNull()
+      expect(service.isLoading.value).toBe(false)
+    })
+
     it('should handle 400 errors', async () => {
       const errorResponse = {
         response: {
