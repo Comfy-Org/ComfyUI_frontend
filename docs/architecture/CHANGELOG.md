@@ -37,7 +37,8 @@ PR #14246's constituent PRs get the most game depth.
 - All art regenerated in the V2 theme: vintage architectural blueprint,
   luminous cyan linework on midnight-blue drafting paper, generated with
   Krea 2 Turbo on Comfy Cloud. The v1 art was pixel art from a local Z-Image
-  Turbo pipeline.
+  Turbo pipeline. Room images ship as WebP (~140KB each) to stay under the
+  repository's 1 MiB binary cap.
 - A prose pass over the room and challenge text against AI-writing checklists
   (unslop / humanizer): repeated stock openers varied, dash clusters and
   negative parallelisms rewritten.

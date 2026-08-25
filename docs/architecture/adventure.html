@@ -21,7 +21,7 @@
     />
     <meta
       property="og:image"
-      content="https://raw.githubusercontent.com/Comfy-Org/ComfyUI_frontend/claude/game-paths-lessons-update-e0xqo3/docs/architecture/images/entry.png"
+      content="https://raw.githubusercontent.com/Comfy-Org/ComfyUI_frontend/claude/game-paths-lessons-update-e0xqo3/docs/architecture/images/entry.webp"
     />
     <meta property="og:image:width" content="1344" />
     <meta property="og:image:height" content="576" />
@@ -42,7 +42,7 @@
     />
     <meta
       name="twitter:image"
-      content="https://raw.githubusercontent.com/Comfy-Org/ComfyUI_frontend/claude/game-paths-lessons-update-e0xqo3/docs/architecture/images/entry.png"
+      content="https://raw.githubusercontent.com/Comfy-Org/ComfyUI_frontend/claude/game-paths-lessons-update-e0xqo3/docs/architecture/images/entry.webp"
     />
 
     <link
@@ -3003,7 +3003,7 @@
         els.roomImage.style.display = ''
         els.roomImage.classList.remove('placeholder')
         const img = new Image()
-        img.src = `images/${roomId}.png`
+        img.src = `images/${roomId}.webp`
         img.alt = `Illustration of ${room.title}`
         img.onload = () => {
           els.roomImage.innerHTML = ''
@@ -3091,7 +3091,7 @@
         for (const c of room.choices) {
           const target = rooms[c.room]
           if (!target) continue
-          preloadImage(`images/${c.room}.png`)
+          preloadImage(`images/${c.room}.webp`)
           if (target.challenge) {
             for (const ch of target.challenge.choices) {
               if (ch.icon) preloadImage(`icons/${ch.icon}.png`)
