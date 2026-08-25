@@ -523,7 +523,10 @@ describe('SubgraphWidgetPromotion', () => {
 
       // Must observe the fresh 99, not the stale 42 the widget started with.
       expect(observedDuringCallback).toBe(99)
-      expect(widget.value).toBe(99)
+      // The interior widget is shared across every host of this subgraph
+      // definition, so its value must not persist the edit once the callback
+      // returns — only the host's own widgetValueStore entry does.
+      expect(widget.value).toBe(42)
     })
   })
 

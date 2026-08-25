@@ -215,7 +215,6 @@ test.describe(
         }
       )
 
-      // Open bug #14495 — drop `test.fail` when the fix lands.
       test('Promoted STRING widget edit survives a rebind of the interior link', async ({
         comfyPage
       }) => {
@@ -248,7 +247,6 @@ test.describe(
         await comfyPage.subgraph.exitViaBreadcrumb()
         await comfyPage.vueNodes.waitForNodes()
 
-        test.fail()
         await expect(promotedTextarea).toHaveValue(hostValue)
       })
     })

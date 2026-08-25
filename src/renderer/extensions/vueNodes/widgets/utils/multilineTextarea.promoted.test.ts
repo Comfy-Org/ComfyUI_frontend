@@ -126,6 +126,7 @@ describe('createPromotedMultilineWidget', () => {
   })
 
   it('forwards edits to the interior source widget callback with the fresh value', () => {
+    let observedDuringCallback: unknown
     const sourceWidget = fromAny<
       IBaseWidget & { callback: (...args: unknown[]) => void },
       unknown
@@ -133,7 +134,9 @@ describe('createPromotedMultilineWidget', () => {
       name: 'prompt',
       type: 'string',
       value: 'stale',
-      callback: vi.fn()
+      callback: vi.fn(() => {
+        observedDuringCallback = sourceWidget.value
+      })
     })
     const host = linkedSubgraphNode(sourceWidget)
 
@@ -152,7 +155,7 @@ describe('createPromotedMultilineWidget', () => {
 
     // The interior widget's own `.value` must be fresh by the time its
     // callback observes it, not the stale value from before the edit.
-    expect(sourceWidget.value).toBe('fresh-value')
+    expect(observedDuringCallback).toBe('fresh-value')
     expect(sourceWidget.callback).toHaveBeenCalledTimes(1)
     expect(sourceWidget.callback).toHaveBeenCalledWith(
       'fresh-value',
@@ -161,6 +164,10 @@ describe('createPromotedMultilineWidget', () => {
       undefined,
       undefined
     )
+    // The interior widget is shared across every host of a subgraph
+    // definition, so its `.value` must not persist the edit once the
+    // callback returns — only the host's own widgetValueStore entry does.
+    expect(sourceWidget.value).toBe('stale')
   })
 
   it('falls back to the canvas projection for non-DOM widgets', () => {

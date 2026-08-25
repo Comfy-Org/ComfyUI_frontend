@@ -53,12 +53,15 @@ export function inputForWidget(
  * value — this is the bridge that keeps that contract intact.
  *
  * The host {@link useWidgetValueStore} entry stays the sole authoritative
- * value (ADR-0009) — callers write it before reaching here. Writing
- * `sourceWidget.value` below only mirrors that value onto the interior widget
- * instance, the same way {@link BaseWidget.setValue} writes `this.value`
- * before invoking `this.callback`. Without it, first-party callbacks that
- * ignore their callback args and read their captured widget's own `.value`
- * (e.g. `useImageUploadWidget`) would observe a stale value.
+ * value (ADR-0009). `sourceWidget` is resolved by definition, not by host
+ * instance — every host of a shared subgraph definition resolves to the same
+ * interior widget object — so writing to it must not outlive this call, or a
+ * host's edit leaks into every sibling host of that definition. The value is
+ * written immediately before invoking the callback, mirroring the
+ * write-then-invoke order of {@link BaseWidget.setValue} so first-party
+ * callbacks that ignore their callback args and read their captured widget's
+ * own `.value` (e.g. `useImageUploadWidget`) observe the fresh value, then
+ * restored to its prior value once the callback returns.
  */
 export function invokePromotedWidgetSourceCallback(
   node: LGraphNode,
@@ -79,8 +82,13 @@ export function invokePromotedWidgetSourceCallback(
   if (resolution.status !== 'resolved') return
 
   const { node: sourceNode, widget: sourceWidget } = resolution.resolved
+  const priorValue = sourceWidget.value
   sourceWidget.value = value
-  sourceWidget.callback?.(value, canvas, sourceNode, pos, e)
+  try {
+    sourceWidget.callback?.(value, canvas, sourceNode, pos, e)
+  } finally {
+    sourceWidget.value = priorValue
+  }
 }
 
 /**
