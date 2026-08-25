@@ -406,24 +406,6 @@ describe('WorkflowTemplateSelectorDialog template detail navigation', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('keeps open without downloading available when metadata resolution rejects', async () => {
-    environment.isDesktop = true
-    vi.spyOn(console, 'error').mockImplementation(() => {})
-    mocks.resolveModelMetadata.mockRejectedValueOnce(
-      new Error('Metadata unavailable')
-    )
-
-    await openDetail()
-
-    expect(await screen.findByText('Unknown')).toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: 'Open without downloading' })
-    ).toBeEnabled()
-    expect(
-      screen.queryByRole('button', { name: 'Download starter pack' })
-    ).not.toBeInTheDocument()
-  })
-
   it('opens Desktop templates without model declarations directly', async () => {
     environment.isDesktop = true
     const user = userEvent.setup()

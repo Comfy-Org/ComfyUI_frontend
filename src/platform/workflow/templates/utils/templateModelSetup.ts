@@ -33,7 +33,7 @@ type TemplateModelSetupRowBase = {
   modelType: TemplateModelType
 }
 
-type TemplateModelSetupRow =
+export type TemplateModelSetupRow =
   | (TemplateModelSetupRowBase & {
       status: 'manual'
       href: string
