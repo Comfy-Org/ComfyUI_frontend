@@ -21,43 +21,18 @@
 </template>
 
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
-import { computed, nextTick, useTemplateRef, watch } from 'vue'
+import { nextTick, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ComfyQueueButton from '@/components/actionbar/ComfyRunButton/ComfyQueueButton.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { usePartnerNodesRunGate } from '@/composables/billing/usePartnerNodesRunGate'
 import { useDialogService } from '@/services/dialogService'
-import type { AutoQueueMode } from '@/stores/queueSettingsStore'
-import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 
 const { t } = useI18n()
 const { gate, partnerNodes } = usePartnerNodesRunGate()
 const dialogService = useDialogService()
-const { mode: queueMode } = storeToRefs(useQueueSettingsStore())
 const root = useTemplateRef<HTMLElement>('root')
-
-// Auto-queue would keep submitting (and failing server-side) behind a gated
-// button. While gated, force the mode to disabled and remember what to restore
-// — including a mode the user picks mid-gate — then reinstate it on lift.
-const isGated = computed(() => gate.value !== 'none')
-let modeToRestore: AutoQueueMode | null = null
-watch(
-  [isGated, queueMode],
-  ([gated, mode]) => {
-    if (gated) {
-      if (mode !== 'disabled') {
-        modeToRestore = mode
-        queueMode.value = 'disabled'
-      }
-    } else if (modeToRestore !== null) {
-      queueMode.value = modeToRestore
-      modeToRestore = null
-    }
-  },
-  { immediate: true }
-)
 
 // Signing in swaps the focused gated button for the queue button, which would
 // otherwise drop keyboard focus to <body>.

@@ -1,10 +1,7 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
-
-import type { AutoQueueMode } from '@/stores/queueSettingsStore'
 
 import LocalRunButtonWrapper from './LocalRunButtonWrapper.vue'
 
@@ -42,26 +39,6 @@ vi.mock('@/components/actionbar/ComfyRunButton/ComfyQueueButton.vue', () => ({
   }
 }))
 
-vi.mock('@/stores/queueSettingsStore', async () => {
-  const { reactive, ref } = await import('vue')
-  const mode = ref<AutoQueueMode>('instant-idle')
-  const store = reactive({ mode })
-  return {
-    useQueueSettingsStore: () => store,
-    __setQueueMode: (value: AutoQueueMode) => {
-      mode.value = value
-    },
-    __getQueueMode: () => mode.value
-  }
-})
-
-const queueSettingsModule = await import('@/stores/queueSettingsStore')
-const { __setQueueMode, __getQueueMode } =
-  queueSettingsModule as typeof queueSettingsModule & {
-    __setQueueMode: (value: AutoQueueMode) => void
-    __getQueueMode: () => AutoQueueMode
-  }
-
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -87,26 +64,23 @@ describe('LocalRunButtonWrapper', () => {
   beforeEach(() => {
     gateState.gate.value = 'none'
     gateState.partnerNodes.value = []
-    __setQueueMode('instant-idle')
   })
 
-  it('renders the normal queue button when not gated, leaving queue mode alone', () => {
+  it('renders the normal queue button when not gated', () => {
     renderWrapper()
     expect(screen.getByTestId('queue-button')).toBeInTheDocument()
     expect(
       screen.queryByTestId('partner-sign-in-to-run-button')
     ).not.toBeInTheDocument()
-    expect(__getQueueMode()).toBe('instant-idle')
   })
 
-  it('replaces the queue button and disables auto-queue when gated', () => {
+  it('replaces the queue button with a sign-in button when gated', () => {
     gateState.gate.value = 'sign-in'
     renderWrapper()
     expect(screen.queryByTestId('queue-button')).not.toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: 'Sign in to run' })
     ).toBeInTheDocument()
-    expect(__getQueueMode()).toBe('disabled')
   })
 
   it('points the gated button at the caption explaining why it is gated', () => {
@@ -149,30 +123,5 @@ describe('LocalRunButtonWrapper', () => {
       'Partner A',
       'Partner B'
     ])
-  })
-
-  it('restores the prior queue mode when the gate lifts', async () => {
-    __setQueueMode('instant-idle')
-    gateState.gate.value = 'sign-in'
-    renderWrapper()
-    expect(__getQueueMode()).toBe('disabled')
-
-    gateState.gate.value = 'none'
-    await nextTick()
-    expect(__getQueueMode()).toBe('instant-idle')
-  })
-
-  it('overrides a mid-gate auto-queue selection until the gate lifts', async () => {
-    gateState.gate.value = 'sign-in'
-    renderWrapper()
-    expect(__getQueueMode()).toBe('disabled')
-
-    __setQueueMode('instant-running')
-    await nextTick()
-    expect(__getQueueMode()).toBe('disabled')
-
-    gateState.gate.value = 'none'
-    await nextTick()
-    expect(__getQueueMode()).toBe('instant-running')
   })
 })

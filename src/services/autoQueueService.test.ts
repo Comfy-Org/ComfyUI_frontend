@@ -9,8 +9,18 @@ const mocks = vi.hoisted(() => ({
   addEventListener:
     vi.fn<(event: string, listener: (event: Event) => void) => void>(),
   queuePrompt: vi.fn(() => Promise.resolve(true)),
-  lastExecutionError: null as object | null
+  lastExecutionError: null as object | null,
+  gate: 'none' as 'sign-in' | 'none'
 }))
+
+vi.mock('@/composables/billing/usePartnerNodesRunGate', async () => {
+  const { computed } = await import('vue')
+  return {
+    usePartnerNodesRunGate: () => ({
+      gate: computed(() => mocks.gate)
+    })
+  }
+})
 
 vi.mock('@/scripts/api', () => ({
   api: {
@@ -53,6 +63,7 @@ describe('setupAutoQueueHandler', () => {
     queueSettingsStore.batchCount = 2
     useQueuePendingTaskCountStore().count = 0
     mocks.lastExecutionError = null
+    mocks.gate = 'none'
   })
 
   it('queues on autoQueueGraphChanged instead of graphChanged', () => {
@@ -103,5 +114,29 @@ describe('setupAutoQueueHandler', () => {
     await nextTick()
 
     expect(mocks.queuePrompt).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not auto-submit while the partner run gate is active', () => {
+    mocks.gate = 'sign-in'
+    const listener = setupAndGetAutoQueueGraphChangedListener()
+
+    listener(new Event('autoQueueGraphChanged'))
+    listener(new Event('autoQueueGraphChanged'))
+
+    expect(mocks.queuePrompt).not.toHaveBeenCalled()
+  })
+
+  it('does not re-queue when the queue drains while gated', async () => {
+    mocks.gate = 'sign-in'
+    setupAutoQueueHandler()
+    const queueCountStore = useQueuePendingTaskCountStore()
+    useQueueSettingsStore().mode = 'instant-running'
+
+    queueCountStore.count = 1
+    await nextTick()
+    queueCountStore.count = 0
+    await nextTick()
+
+    expect(mocks.queuePrompt).not.toHaveBeenCalled()
   })
 })
