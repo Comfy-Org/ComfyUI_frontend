@@ -724,17 +724,27 @@ describe('Store-driven serialization parity', () => {
     }
   })
 
-  test('skips a stored node without a live adapter', ({ expect }) => {
+  test('rejects serializing a stored node without a live adapter', ({
+    expect
+  }) => {
     const graph = createGraph(new DummyNode())
     graph._nodes = []
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-    expect(graph.asSerialisable().nodes).toEqual([])
-    expect(error).toHaveBeenCalledWith(
-      expect.stringMatching(
-        /Cannot serialize graph .*: node .* has no live adapter/
-      )
+    expect(() => graph.asSerialisable()).toThrow(
+      /Cannot serialize graph .*: node .* has no live adapter/
     )
+  })
+
+  test('rejects additive configuration before mutating a populated graph', ({
+    expect
+  }) => {
+    const graph = createGraph(new DummyNode())
+    const before = graph.asSerialisable()
+
+    expect(() => graph.configure(before, true)).toThrow(
+      'Cannot additively configure a populated graph'
+    )
+    expect(graph.asSerialisable()).toEqual(before)
   })
 
   test('serializes a reroute from its detached position', ({

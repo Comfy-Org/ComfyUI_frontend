@@ -370,15 +370,13 @@ function serialiseStoredNodes(owner: LGraph, sortNodes: boolean) {
   const ordered = sortNodes
     ? [...states].sort((a, b) => compareNodeIds(a.id, b.id))
     : states
-  return ordered.flatMap((state) => {
+  return ordered.map((state) => {
     const adapter = adapters.get(state.id)
-    if (!adapter) {
-      console.error(
+    if (!adapter)
+      throw new Error(
         `Cannot serialize graph ${owner.id}: node ${state.id} has no live adapter`
       )
-      return []
-    }
-    return [adapter.serializeFromStoreState(state)]
+    return adapter.serializeFromStoreState(state)
   })
 }
 
@@ -2740,6 +2738,16 @@ export class LGraph
     }
     const mayContinue = this.events.dispatch('configuring', options)
     if (!mayContinue) return
+    if (
+      !options.clearGraph &&
+      (this._nodes.length > 0 ||
+        this._groups.length > 0 ||
+        this.links.size > 0 ||
+        this.floatingLinks.size > 0 ||
+        this.reroutes.size > 0 ||
+        this._subgraphs.size > 0)
+    )
+      throw new Error('Cannot additively configure a populated graph')
 
     beginNamedValuesShadowDiffLoad()
     try {
