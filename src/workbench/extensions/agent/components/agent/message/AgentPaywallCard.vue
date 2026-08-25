@@ -9,7 +9,7 @@ const emit = defineEmits<{
 
 <template>
   <div
-    class="border-agent-border flex w-full max-w-[372px] flex-col justify-center gap-2 overflow-hidden rounded-lg border bg-modal-card-background p-4 shadow-sm"
+    class="border-agent-border flex w-full flex-col justify-center gap-2 overflow-hidden rounded-lg border bg-modal-card-background p-4 shadow-sm"
   >
     <div class="flex w-full items-start gap-2">
       <span
