@@ -5,6 +5,7 @@ import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import type { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { parseWidgetId } from '@/types/widgetId'
 import type { WidgetId } from '@/types/widgetId'
 import { parseImageWidgetValue } from '@/utils/imageUtil'
 
@@ -81,6 +82,7 @@ export function getLoaderDropIndicator(
 ): LoaderDropIndicator | undefined {
   const config = LOADER_MEDIA_CONFIG[node.type ?? '']
   if (!config) return undefined
+  if (parseWidgetId(id).name !== config.widgetName) return undefined
 
   const stringValue = extractWidgetStringValue(
     options.widgetValueStore.getWidget(id)?.value

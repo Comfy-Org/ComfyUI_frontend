@@ -38,7 +38,10 @@ function makeWidgetValueStore(value: unknown) {
   return { getWidget: vi.fn(() => fromAny<WidgetState, unknown>({ value })) }
 }
 
-const id = widgetId('graph-test', toNodeId(1), 'image')
+const imageId = widgetId('graph-test', toNodeId(1), 'image')
+const videoId = widgetId('graph-test', toNodeId(1), 'file')
+const audioId = widgetId('graph-test', toNodeId(1), 'audio')
+const audioUIId = widgetId('graph-test', toNodeId(1), 'audioUI')
 
 const options = {
   mobile: false,
@@ -50,13 +53,13 @@ const options = {
 describe('getLoaderDropIndicator', () => {
   it('returns undefined for node types with no loader preview', () => {
     const node = makeNode('KSampler', [])
-    expect(getLoaderDropIndicator(node, id, options)).toBeUndefined()
+    expect(getLoaderDropIndicator(node, imageId, options)).toBeUndefined()
   })
 
   it('builds an image preview for LoadImage with a selected file', () => {
     const node = makeNode('LoadImage', [makeWidget('image')])
 
-    const indicator = getLoaderDropIndicator(node, id, {
+    const indicator = getLoaderDropIndicator(node, imageId, {
       ...options,
       widgetValueStore: makeWidgetValueStore('photo.png')
     })
@@ -72,7 +75,7 @@ describe('getLoaderDropIndicator', () => {
   it('builds a video preview for LoadVideo without appending the image preview format param', () => {
     const node = makeNode('LoadVideo', [makeWidget('file')])
 
-    const indicator = getLoaderDropIndicator(node, id, {
+    const indicator = getLoaderDropIndicator(node, videoId, {
       ...options,
       widgetValueStore: makeWidgetValueStore('clip.mp4')
     })
@@ -88,7 +91,7 @@ describe('getLoaderDropIndicator', () => {
   it('builds an audio preview for LoadAudio', () => {
     const node = makeNode('LoadAudio', [makeWidget('audio')])
 
-    const indicator = getLoaderDropIndicator(node, id, {
+    const indicator = getLoaderDropIndicator(node, audioId, {
       ...options,
       widgetValueStore: makeWidgetValueStore('voice.mp3')
     })
@@ -101,10 +104,26 @@ describe('getLoaderDropIndicator', () => {
     expect(indicator?.onMaskEdit).toBeUndefined()
   })
 
+  it('returns undefined for LoadAudio when the selected widget is audioUI, not audio', () => {
+    const node = makeNode('LoadAudio', [
+      makeWidget('audio'),
+      makeWidget('audioUI')
+    ])
+
+    const indicator = getLoaderDropIndicator(node, audioUIId, {
+      ...options,
+      widgetValueStore: makeWidgetValueStore(
+        'http://localhost:8188/api/view?filename=voice.mp3&subfolder=&type=input'
+      )
+    })
+
+    expect(indicator).toBeUndefined()
+  })
+
   it('parses subfolder and type annotations out of the widget value', () => {
     const node = makeNode('LoadVideo', [makeWidget('file')])
 
-    const indicator = getLoaderDropIndicator(node, id, {
+    const indicator = getLoaderDropIndicator(node, videoId, {
       ...options,
       widgetValueStore: makeWidgetValueStore('sub/dir/clip.mp4 [output]')
     })
@@ -117,7 +136,7 @@ describe('getLoaderDropIndicator', () => {
   it('returns no mediaUrl when no file has been selected yet', () => {
     const node = makeNode('LoadVideo', [makeWidget('file')])
 
-    const indicator = getLoaderDropIndicator(node, id, {
+    const indicator = getLoaderDropIndicator(node, videoId, {
       ...options,
       widgetValueStore: makeWidgetValueStore('')
     })
@@ -129,7 +148,7 @@ describe('getLoaderDropIndicator', () => {
   it('omits the label on mobile', () => {
     const node = makeNode('LoadVideo', [makeWidget('file')])
 
-    const indicator = getLoaderDropIndicator(node, id, {
+    const indicator = getLoaderDropIndicator(node, videoId, {
       ...options,
       mobile: true,
       widgetValueStore: makeWidgetValueStore('clip.mp4')
@@ -145,7 +164,7 @@ describe('getLoaderDropIndicator', () => {
       makeWidget('upload', uploadCallback)
     ])
 
-    const indicator = getLoaderDropIndicator(node, id, {
+    const indicator = getLoaderDropIndicator(node, videoId, {
       ...options,
       widgetValueStore: makeWidgetValueStore('clip.mp4')
     })
@@ -158,12 +177,12 @@ describe('getLoaderDropIndicator', () => {
     const node = makeNode('LoadImage', [makeWidget('image')])
     const widgetValueStore = makeWidgetValueStore('from-store.png')
 
-    const indicator = getLoaderDropIndicator(node, id, {
+    const indicator = getLoaderDropIndicator(node, imageId, {
       ...options,
       widgetValueStore
     })
 
-    expect(widgetValueStore.getWidget).toHaveBeenCalledWith(id)
+    expect(widgetValueStore.getWidget).toHaveBeenCalledWith(imageId)
     expect(indicator?.mediaUrl).toContain('from-store.png')
   })
 })
