@@ -18,15 +18,9 @@ export default async function HomePage() {
   return (
     <div className="home">
       <div className="content">
-        <picture>
-          <source srcSet="https://raw.githubusercontent.com/payloadcms/payload/3.x/packages/ui/src/assets/payload-favicon.svg" />
-          <Image
-            alt="Payload Logo"
-            height={65}
-            src="https://raw.githubusercontent.com/payloadcms/payload/3.x/packages/ui/src/assets/payload-favicon.svg"
-            width={65}
-          />
-        </picture>
+        {/* Served from public/ and left unoptimized: the image optimizer rejects
+            SVG unless dangerouslyAllowSVG is on, which we don't want app-wide. */}
+        <Image alt="Payload Logo" height={65} src="/payload-favicon.svg" unoptimized width={65} />
         {!user && <h1>Welcome to your new project.</h1>}
         {user && <h1>Welcome back, {user.email}</h1>}
         <div className="links">
