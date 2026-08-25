@@ -14,6 +14,7 @@ import type {
   CreateTopupRequest,
   CreateTopupResponse,
   CreateWorkspaceRequest,
+  CurrentWorkspaceResponse,
   ListInvitesResponse,
   ListMembersResponse,
   ListWorkspacesResponse,
@@ -76,6 +77,7 @@ export type { SubscriptionTier }
 export type { SubscriptionDuration }
 export type { WorkspaceWithRole }
 export type { ListWorkspacesResponse }
+export type { CurrentWorkspaceResponse }
 export type { Plan }
 export type { BillingPlansResponse }
 export type { TeamCreditStops }
@@ -183,6 +185,23 @@ export const workspaceApi = {
     try {
       const response = await workspaceApiClient.get<ListWorkspacesResponse>(
         workspaceApiUrl('/workspaces'),
+        { headers }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  /**
+   * Get the workspace bound to the current credential
+   * GET /api/workspaces/current
+   */
+  async getCurrentWorkspace(): Promise<CurrentWorkspaceResponse> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.get<CurrentWorkspaceResponse>(
+        workspaceApiUrl('/workspaces/current'),
         { headers }
       )
       return response.data
