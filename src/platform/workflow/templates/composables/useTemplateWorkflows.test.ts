@@ -387,12 +387,9 @@ describe('useTemplateWorkflows', () => {
     it('rejects non-successful workflow responses without opening', async () => {
       mockWorkflowTemplatesStore.isLoaded = true
       const { prepareWorkflowTemplate } = useTemplateWorkflows()
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: false,
-        status: 404,
-        statusText: 'Not Found',
-        json: vi.fn()
-      } as Partial<Response> as Response)
+      vi.mocked(fetch).mockResolvedValueOnce(
+        new Response(null, { status: 404, statusText: 'Not Found' })
+      )
 
       await expect(
         prepareWorkflowTemplate('missing-template', 'default')
@@ -406,10 +403,9 @@ describe('useTemplateWorkflows', () => {
       mockWorkflowTemplatesStore.isLoaded = true
       const { prepareWorkflowTemplate } = useTemplateWorkflows()
       vi.spyOn(console, 'warn').mockImplementation(() => {})
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: true,
-        json: vi.fn().mockResolvedValue({ workflow: 'invalid' })
-      } as Partial<Response> as Response)
+      vi.mocked(fetch).mockResolvedValueOnce(
+        new Response(JSON.stringify({ workflow: 'invalid' }))
+      )
 
       await expect(
         prepareWorkflowTemplate('invalid-template', 'default')

@@ -109,33 +109,32 @@ export function useTemplateWorkflows() {
   ): Promise<PreparedWorkflowTemplate | null> => {
     if (!isTemplatesLoaded.value) return null
 
-    if (sourceModule === 'all') {
-      const comfyExamplesGroup = allTemplateGroups.value.find(
-        (group) =>
-          group.label ===
-          t('templateWorkflows.category.ComfyUI Examples', 'ComfyUI Examples')
-      )
-      const allCategory = comfyExamplesGroup?.modules.find(
-        (module) => module.moduleName === 'all'
-      )
-      const template = allCategory?.templates.find(
-        (template) => template.name === id
-      )
-
-      if (!template?.sourceModule) return null
-      sourceModule = template.sourceModule
-    }
+    const resolvedSourceModule =
+      sourceModule === 'all'
+        ? allTemplateGroups.value
+            .find(
+              (group) =>
+                group.label ===
+                t(
+                  'templateWorkflows.category.ComfyUI Examples',
+                  'ComfyUI Examples'
+                )
+            )
+            ?.modules.find((module) => module.moduleName === 'all')
+            ?.templates.find((template) => template.name === id)?.sourceModule
+        : sourceModule
+    if (!resolvedSourceModule) return null
 
     const workflow: ComfyWorkflowJSON = await fetchTemplateJson(
       id,
-      sourceModule
+      resolvedSourceModule
     )
 
     return {
       id,
-      sourceModule,
+      sourceModule: resolvedSourceModule,
       workflowName:
-        sourceModule === 'default'
+        resolvedSourceModule === 'default'
           ? t(`templateWorkflows.template.${id}`, id)
           : id,
       workflow

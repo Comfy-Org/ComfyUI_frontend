@@ -1,10 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
-import {
-  extractTemplateModelRequirementDetails,
-  extractTemplateModelRequirements
-} from './templateModelRequirements'
+import { extractTemplateModelRequirementDetails } from './templateModelRequirements'
 
 function model(name: string, directory: string, urlSuffix = name): ModelFile {
   return {
@@ -47,7 +44,7 @@ function subgraphDefinition(
   }
 }
 
-describe('extractTemplateModelRequirements', () => {
+describe('extractTemplateModelRequirementDetails', () => {
   it('extracts selected node declarations before top-level declarations', () => {
     const nodeModel = model('shared.safetensors', 'checkpoints', 'node-version')
     const topLevelDuplicate = model(
@@ -58,11 +55,14 @@ describe('extractTemplateModelRequirements', () => {
     const topLevelModel = model('top-level.safetensors', 'loras')
 
     expect(
-      extractTemplateModelRequirements({
+      extractTemplateModelRequirementDetails({
         nodes: [node(1, [nodeModel], [nodeModel.name])],
         models: [topLevelDuplicate, topLevelModel]
       })
-    ).toEqual([nodeModel, topLevelModel])
+    ).toEqual([
+      { model: nodeModel, usedBy: ['CheckpointLoaderSimple'] },
+      { model: topLevelModel, usedBy: [] }
+    ])
   })
 
   it('only extracts node declarations selected by serialized widget values', () => {
@@ -71,7 +71,7 @@ describe('extractTemplateModelRequirements', () => {
     const stale = model('stale.safetensors', 'checkpoints')
 
     expect(
-      extractTemplateModelRequirements({
+      extractTemplateModelRequirementDetails({
         nodes: [
           node(1, [selected, stale], [selected.name]),
           node(2, [selectedByName, stale], {
@@ -79,7 +79,10 @@ describe('extractTemplateModelRequirements', () => {
           })
         ]
       })
-    ).toEqual([selected, selectedByName])
+    ).toEqual([
+      { model: selected, usedBy: ['CheckpointLoaderSimple'] },
+      { model: selectedByName, usedBy: ['CheckpointLoaderSimple'] }
+    ])
   })
 
   it('extracts declarations from instantiated nested subgraphs', () => {
@@ -94,18 +97,18 @@ describe('extractTemplateModelRequirements', () => {
     )
 
     expect(
-      extractTemplateModelRequirements({
+      extractTemplateModelRequirementDetails({
         nodes: [{ id: 1, type: 'outer' }],
         definitions: { subgraphs: [outerDefinition] }
       })
-    ).toEqual([nestedModel])
+    ).toEqual([{ model: nestedModel, usedBy: ['CheckpointLoaderSimple'] }])
   })
 
   it('does not extract declarations from uninstantiated subgraph definitions', () => {
     const unusedModel = model('unused.safetensors', 'checkpoints')
 
     expect(
-      extractTemplateModelRequirements({
+      extractTemplateModelRequirementDetails({
         nodes: [],
         definitions: {
           subgraphs: [
@@ -123,8 +126,11 @@ describe('extractTemplateModelRequirements', () => {
     const lora = model('shared.safetensors', 'loras')
 
     expect(
-      extractTemplateModelRequirements({ models: [checkpoint, lora] })
-    ).toEqual([checkpoint, lora])
+      extractTemplateModelRequirementDetails({ models: [checkpoint, lora] })
+    ).toEqual([
+      { model: checkpoint, usedBy: [] },
+      { model: lora, usedBy: [] }
+    ])
   })
 
   it.for([
@@ -143,7 +149,7 @@ describe('extractTemplateModelRequirements', () => {
     },
     { models: [null, {}, { name: 'incomplete.safetensors' }] }
   ])('ignores absent or malformed model declarations in %j', (workflow) => {
-    expect(extractTemplateModelRequirements(workflow)).toEqual([])
+    expect(extractTemplateModelRequirementDetails(workflow)).toEqual([])
   })
 
   it.for([
@@ -176,11 +182,9 @@ describe('extractTemplateModelRequirements', () => {
       }
     }
   ])('ignores $name declarations with invalid URLs', ({ workflow }) => {
-    expect(extractTemplateModelRequirements(workflow)).toEqual([])
+    expect(extractTemplateModelRequirementDetails(workflow)).toEqual([])
   })
-})
 
-describe('extractTemplateModelRequirementDetails', () => {
   it('keeps first model metadata while merging stable flattened-node usage', () => {
     const first = model('shared.safetensors', 'checkpoints', 'first-version')
     const later = model('shared.safetensors', 'checkpoints', 'later-version')
@@ -222,7 +226,6 @@ describe('extractTemplateModelRequirementDetails', () => {
         ]
       }
     ])
-    expect(extractTemplateModelRequirements(workflow)).toEqual([first])
   })
 
   it('keeps top-level-only same-name models in separate directories', () => {
