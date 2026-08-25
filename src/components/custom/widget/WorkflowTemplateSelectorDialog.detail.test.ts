@@ -70,7 +70,7 @@ const mocks = vi.hoisted(() => ({
   resolveModelAvailability: vi.fn(async (models: readonly unknown[]) =>
     models.map((model) => ({
       model,
-      status: 'missing' as 'missing' | 'installed'
+      status: 'missing' as 'missing' | 'installed' | 'unknown'
     }))
   ),
   resolveModelMetadata: vi.fn(async (models: readonly unknown[]) => ({
@@ -384,6 +384,44 @@ describe('WorkflowTemplateSelectorDialog template detail navigation', () => {
     ).not.toBeInTheDocument()
     expect(mocks.resolveModelMetadata).not.toHaveBeenCalled()
     expect(mocks.onClose).toHaveBeenCalledOnce()
+  })
+
+  it('keeps Desktop detail usable when model availability is unknown', async () => {
+    environment.isDesktop = true
+    mocks.resolveModelAvailability.mockResolvedValueOnce([
+      {
+        model: fixtures.prepared.workflow.models[0],
+        status: 'unknown'
+      }
+    ])
+
+    await openDetail()
+
+    expect(await screen.findByText('Unknown')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Open without downloading' })
+    ).toBeEnabled()
+    expect(
+      screen.queryByRole('button', { name: 'Download starter pack' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('keeps open without downloading available when metadata resolution rejects', async () => {
+    environment.isDesktop = true
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    mocks.resolveModelMetadata.mockRejectedValueOnce(
+      new Error('Metadata unavailable')
+    )
+
+    await openDetail()
+
+    expect(await screen.findByText('Unknown')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Open without downloading' })
+    ).toBeEnabled()
+    expect(
+      screen.queryByRole('button', { name: 'Download starter pack' })
+    ).not.toBeInTheDocument()
   })
 
   it('opens Desktop templates without model declarations directly', async () => {
