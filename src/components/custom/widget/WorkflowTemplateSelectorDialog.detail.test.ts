@@ -551,45 +551,37 @@ describe('WorkflowTemplateSelectorDialog template detail navigation', () => {
     expect(mocks.onClose).toHaveBeenCalledOnce()
   })
 
-  it('opens Cloud templates directly without presenting Detail', async () => {
-    environment.isCloud = true
-    const user = userEvent.setup()
-    renderDialog()
+  it.for([
+    { distribution: 'Cloud', isCloud: true },
+    { distribution: 'Local/Web', isCloud: false }
+  ])(
+    'opens $distribution templates directly without presenting Detail',
+    async ({ isCloud }) => {
+      environment.isCloud = isCloud
+      const user = userEvent.setup()
+      renderDialog()
 
-    await user.click(
-      await screen.findByTestId(`template-workflow-${fixtures.template.name}`)
-    )
+      await user.click(
+        await screen.findByTestId(`template-workflow-${fixtures.template.name}`)
+      )
 
-    await waitFor(() => {
-      expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledOnce()
-    })
-    expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledWith(
-      fixtures.prepared,
-      { closeDialog: false }
-    )
-    expect(
-      screen.queryByRole('article', { name: fixtures.template.title })
-    ).not.toBeInTheDocument()
-    expect(mocks.resolveModelAvailability).not.toHaveBeenCalled()
-    expect(mocks.resolveModelMetadata).not.toHaveBeenCalled()
-    expect(mocks.getTemplateInputAssets).not.toHaveBeenCalled()
-    expect(mocks.downloadTemplateInputAsset).not.toHaveBeenCalled()
-    expect(mocks.onClose).toHaveBeenCalledOnce()
-  })
-
-  it('keeps localhost detail behavior declaration-only', async () => {
-    await openDetail()
-
-    expect(mocks.resolveModelAvailability).not.toHaveBeenCalled()
-    expect(mocks.resolveModelMetadata).not.toHaveBeenCalled()
-    expect(mocks.rowDownloadStateFor).not.toHaveBeenCalled()
-    expect(
-      screen.getByRole('button', { name: 'Open template' })
-    ).toBeInTheDocument()
-    expect(
-      screen.queryByRole('button', { name: 'Download starter pack' })
-    ).not.toBeInTheDocument()
-  })
+      await waitFor(() => {
+        expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledOnce()
+      })
+      expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledWith(
+        fixtures.prepared,
+        { closeDialog: false }
+      )
+      expect(
+        screen.queryByRole('article', { name: fixtures.template.title })
+      ).not.toBeInTheDocument()
+      expect(mocks.resolveModelAvailability).not.toHaveBeenCalled()
+      expect(mocks.resolveModelMetadata).not.toHaveBeenCalled()
+      expect(mocks.getTemplateInputAssets).not.toHaveBeenCalled()
+      expect(mocks.downloadTemplateInputAsset).not.toHaveBeenCalled()
+      expect(mocks.onClose).toHaveBeenCalledOnce()
+    }
+  )
 
   it('prepares a clicked template and presents its declarations before opening', async () => {
     await openDetail()
