@@ -128,11 +128,6 @@ const updateWidgets = () => {
       if (widgetState.readonly !== newReadonly) {
         widgetState.readonly = newReadonly
       }
-
-      const newComputedDisabled = widget.computedDisabled ?? false
-      if (widgetState.computedDisabled !== newComputedDisabled) {
-        widgetState.computedDisabled = newComputedDisabled
-      }
     }
   }
 }

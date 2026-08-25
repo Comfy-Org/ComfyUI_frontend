@@ -196,34 +196,6 @@ describe('DomWidgets positioning', () => {
     expect(widgetState.pos).toBe(posAfterFirstFrame)
   })
 
-  it('mirrors widget.computedDisabled into widgetState each frame', () => {
-    const canvasStore = useCanvasStore()
-    const domWidgetStore = useDomWidgetStore()
-
-    const graph = new LGraph()
-    const node = createNode(graph, 1, 'node', [100, 200])
-    const widget = createWidget('disabled-widget', node, 12)
-    Object.assign(widget, { computedDisabled: false })
-    domWidgetStore.registerWidget(widget)
-
-    const canvas = createCanvas(graph)
-    canvasStore.canvas = canvas
-
-    render(DomWidgets, {
-      global: { stubs: { DomWidget: true } }
-    })
-
-    drawFrame(canvas)
-    const widgetState = domWidgetStore.widgetStates.get(widget.id)
-    if (!widgetState) throw new Error('Widget state not registered')
-    expect(widgetState.computedDisabled).toBe(false)
-
-    // Simulate litegraph connecting an input -> widget.computedDisabled flips.
-    Object.assign(widget, { computedDisabled: true })
-    drawFrame(canvas)
-    expect(widgetState.computedDisabled).toBe(true)
-  })
-
   it('forces pos reassignment for widgets when the selected node moves', () => {
     const canvasStore = useCanvasStore()
     const domWidgetStore = useDomWidgetStore()
