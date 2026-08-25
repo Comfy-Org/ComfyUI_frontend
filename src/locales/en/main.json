@@ -2658,6 +2658,7 @@
     "comingProjects": "Projects",
     "enterpriseCopy": "Need more members? Looking for more flexibility or custom features?",
     "contactUs": "Contact us",
+    "ownerOnly": "Only the workspace owner can change the plan.",
     "checkoutCaption": "Checkout happens right here: payment details handled securely by Stripe. Prefer no plan? Keep topping up, anytime."
   },
   "credits": {

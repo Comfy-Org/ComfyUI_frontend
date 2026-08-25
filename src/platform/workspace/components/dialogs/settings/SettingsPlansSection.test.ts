@@ -265,17 +265,19 @@ describe('SettingsPlansSection — checkout uses API plan identity', () => {
     await userEvent.click(
       screen.getByRole('button', { name: 'Choose Standard' })
     )
-    expect(mockSubscribeToPersonal).toHaveBeenCalledWith(
-      'standard-annual-v2',
-      'yearly'
-    )
+    expect(mockSubscribeToPersonal).toHaveBeenCalledWith({
+      slug: 'standard-annual-v2',
+      tierKey: 'standard',
+      billingCycle: 'yearly'
+    })
 
     await userEvent.click(screen.getByRole('switch'))
     await userEvent.click(screen.getByRole('button', { name: 'Choose Pro' }))
-    expect(mockSubscribeToPersonal).toHaveBeenCalledWith(
-      'pro-monthly',
-      'monthly'
-    )
+    expect(mockSubscribeToPersonal).toHaveBeenCalledWith({
+      slug: 'pro-monthly',
+      tierKey: 'pro',
+      billingCycle: 'monthly'
+    })
   })
 
   it('disables only the current personal card, by exact API slug', async () => {
@@ -339,11 +341,11 @@ describe('SettingsPlansSection — checkout uses API plan identity', () => {
       screen.getByRole('button', { name: 'Subscribe to Team Yearly' })
     )
 
-    expect(mockSubscribeToTeam).toHaveBeenCalledWith(
-      'team-annual-catalog',
-      expect.objectContaining({ id: 'team_900' }),
-      'yearly'
-    )
+    expect(mockSubscribeToTeam).toHaveBeenCalledWith({
+      slug: 'team-annual-catalog',
+      stop: expect.objectContaining({ id: 'team_900' }),
+      billingCycle: 'yearly'
+    })
   })
 
   it('disables the team CTA only for the current stop, not every stop in the cycle', async () => {

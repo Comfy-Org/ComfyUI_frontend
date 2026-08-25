@@ -132,7 +132,13 @@
           :disabled="
             isCurrentSlug(plan.slug) || !plan.available || isSubscribing
           "
-          @click="subscribeToPersonal(plan.slug, selectedCycle)"
+          @click="
+            subscribeToPersonal({
+              slug: plan.slug,
+              tierKey: plan.key,
+              billingCycle: selectedCycle
+            })
+          "
         >
           {{
             isCurrentSlug(plan.slug)
@@ -293,6 +299,7 @@ import type {
   TeamCreditStopSummary
 } from '@/platform/workspace/api/workspaceApi'
 import { useSettingsPlansCheckout } from '@/platform/workspace/composables/useSettingsPlansCheckout'
+import type { CheckoutTierKey } from '@/platform/workspace/composables/useSubscriptionCheckout'
 
 import PlansUnavailable from './PlansUnavailable.vue'
 
@@ -332,7 +339,7 @@ const audienceModel = computed({
 const billedYearly = ref(true)
 
 interface PersonalTier {
-  key: string
+  key: CheckoutTierKey
   tier: Plan['tier']
   name: string
   benefits: string[]
@@ -463,7 +470,11 @@ const isTeamStopCurrent = computed(
 function onSubscribeTeam() {
   const slug = teamPlanSlug.value
   if (!slug) return
-  void subscribeToTeam(slug, selectedTeamStop.value, selectedCycle.value)
+  void subscribeToTeam({
+    slug,
+    stop: selectedTeamStop.value,
+    billingCycle: selectedCycle.value
+  })
 }
 
 const teamPerks = computed(() => [
