@@ -1,4 +1,6 @@
+import { usePaymentReturnUrlLoader } from '@/platform/cloud/subscription/composables/usePaymentReturnUrlLoader'
 import { usePricingTableUrlLoader } from '@/platform/cloud/subscription/composables/usePricingTableUrlLoader'
+import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useTopUpUrlLoader } from '@/platform/cloud/subscription/composables/useTopUpUrlLoader'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingsUrlLoader } from '@/platform/settings/composables/useSettingsUrlLoader'
@@ -7,9 +9,10 @@ import { useInviteUrlLoader } from '@/platform/workspace/composables/useInviteUr
 
 /**
  * Aggregates the query-param "deep link" loaders the cloud app checks on mount
- * (`?invite`, `?create_workspace`, `?pricing`, `?topup`, `?settings`). The
- * loaders are instantiated in setup so their `useRoute`/`useRouter` resolve;
- * call `runUrlActionLoaders()` from `onMounted` once the app is ready.
+ * (`?invite`, `?create_workspace`, `?pricing`, `?topup`, `?settings`), then
+ * recovers an interrupted checkout. The loaders are instantiated in setup so
+ * their `useRoute`/`useRouter` resolve; call `runUrlActionLoaders()` from
+ * `onMounted` once the app is ready.
  */
 export function useUrlActionLoaders() {
   const inviteUrlLoader = isCloud ? useInviteUrlLoader() : null
@@ -19,6 +22,8 @@ export function useUrlActionLoaders() {
   const pricingTableUrlLoader = isCloud ? usePricingTableUrlLoader() : null
   const topUpUrlLoader = isCloud ? useTopUpUrlLoader() : null
   const settingsUrlLoader = isCloud ? useSettingsUrlLoader() : null
+  const paymentReturnUrlLoader = isCloud ? usePaymentReturnUrlLoader() : null
+  const subscriptionDialog = isCloud ? useSubscriptionDialog() : null
 
   async function runUrlActionLoaders() {
     // Accept workspace invite from URL if present (e.g., ?invite=TOKEN).
@@ -70,6 +75,34 @@ export function useUrlActionLoaders() {
       } catch (error) {
         console.error(
           '[UrlActionLoaders] Failed to load settings panel from URL:',
+          error
+        )
+      }
+    }
+
+    // Handle the return leg of a redirect payment (Stripe appends
+    // payment_intent/redirect_status params): strip the params and refresh
+    // billing status so the pending checkout resumes polling immediately.
+    if (paymentReturnUrlLoader) {
+      try {
+        await paymentReturnUrlLoader.loadPaymentReturnFromUrl()
+      } catch (error) {
+        console.error(
+          '[UrlActionLoaders] Failed to handle payment return from URL:',
+          error
+        )
+      }
+    }
+
+    // Reopen a checkout that was interrupted by a redirect payment. Runs here,
+    // not during workspace init, so the first-run and Templates overlays are
+    // already settled and the recovered dialog is reachable.
+    if (subscriptionDialog) {
+      try {
+        await subscriptionDialog.resumePendingPricingFlow()
+      } catch (error) {
+        console.error(
+          '[UrlActionLoaders] Failed to resume pending billing flow:',
           error
         )
       }

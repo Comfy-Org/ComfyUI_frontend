@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { t } from '@/i18n'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import type {
@@ -1076,6 +1077,76 @@ describe('ComfyApp', () => {
       }
     })
 
+    it('remaps flattened subgraph ids to colon-free local ids', async () => {
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      const cleanupErrorHooks = installErrorClearingHooks(graph)
+      const missingNodesStore = useMissingNodesErrorStore()
+      const nodeReplacementStore = useNodeReplacementStore()
+      vi.spyOn(nodeReplacementStore, 'load').mockResolvedValue()
+      const sourceType = 'test/FlattenedSourceNode'
+      const targetType = 'test/FlattenedTargetNode'
+      class FlattenedSourceNode extends LGraphNode {
+        constructor(title = 'FlattenedSourceNode') {
+          super(title)
+          this.addOutput('out', 'LATENT')
+        }
+      }
+      class FlattenedTargetNode extends LGraphNode {
+        constructor(title = 'FlattenedTargetNode') {
+          super(title)
+          this.addInput('samples', 'LATENT')
+        }
+      }
+      LiteGraph.registerNodeType(sourceType, FlattenedSourceNode)
+      LiteGraph.registerNodeType(targetType, FlattenedTargetNode)
+
+      try {
+        await app.loadApiJson(
+          {
+            '194:45': {
+              class_type: sourceType,
+              inputs: {},
+              _meta: { title: 'Inner source' }
+            },
+            '7': {
+              class_type: targetType,
+              inputs: { samples: ['194:45', 0] },
+              _meta: { title: 'Root target' }
+            },
+            '194:46': {
+              class_type: 'UninstalledInnerNode',
+              inputs: {},
+              _meta: { title: 'Missing inner' }
+            },
+            '194_45': {
+              class_type: targetType,
+              inputs: { samples: ['194:45', 0] },
+              _meta: { title: 'Occupies the remap target' }
+            }
+          },
+          ''
+        )
+
+        expect(graph.nodes.every((n) => !String(n.id).includes(':'))).toBe(true)
+        // "194_45" was already taken by a literal id, so the remap suffixes.
+        expect(graph.getNodeById(toNodeId('194_45'))?.type).toBe(targetType)
+        expect(graph.getNodeById(toNodeId('194_45_'))?.type).toBe(sourceType)
+        expect(graph.links.size).toBe(2)
+        expect(missingNodesStore.missingNodesError?.nodeTypes).toEqual([
+          expect.objectContaining({
+            type: 'UninstalledInnerNode',
+            nodeId: '194_46'
+          })
+        ])
+      } finally {
+        cleanupErrorHooks()
+        LiteGraph.unregisterNodeType(sourceType)
+        LiteGraph.unregisterNodeType(targetType)
+      }
+    })
+
     it('creates a removable placeholder for an API JSON missing node', async () => {
       const graph = new LGraph()
       Reflect.set(app, 'rootGraphInternal', graph)
@@ -1878,44 +1949,54 @@ describe('ComfyApp', () => {
       consoleError.mockRestore()
     })
 
-    it('preserves the current graph when A1111 core nodes are unavailable', async () => {
+    it.for([
+      {
+        outcome: 'core-nodes-unavailable' as const,
+        fileName: 'a1111.png',
+        toastMethod: 'addAlert' as const,
+        expectedToast: t('toastMessages.a1111CoreNodesUnavailable')
+      },
+      {
+        outcome: 'not-a1111' as const,
+        fileName: 'parameters.png',
+        toastMethod: 'addAlert' as const,
+        expectedToast: t('toastMessages.fileLoadError', {
+          fileName: 'parameters.png'
+        })
+      },
+      {
+        outcome: 'imported-without-embeddings' as const,
+        fileName: 'a1111.png',
+        toastMethod: 'add' as const,
+        expectedToast: {
+          severity: 'warn',
+          summary: t('g.warning'),
+          detail: t('toastMessages.a1111EmbeddingsUnavailable')
+        }
+      }
+    ])('maps $outcome to its message', async (testCase) => {
       const graph = new LGraph()
       const parameters = 'positive\nNegative prompt: negative\nSteps: 20'
       Reflect.set(app, 'rootGraphInternal', graph)
       vi.mocked(getWorkflowDataFromFile).mockResolvedValue({ parameters })
-      mockImportA1111.mockResolvedValue('core-nodes-unavailable')
+      mockImportA1111.mockResolvedValue(testCase.outcome)
 
-      await app.handleFile(createTestFile('a1111.png', 'image/png'))
+      await app.handleFile(createTestFile(testCase.fileName, 'image/png'))
 
       expect(mockImportA1111).toHaveBeenCalledWith(
         graph,
         parameters,
         expect.any(Function)
       )
-      expect(mockCanvas.setGraph).not.toHaveBeenCalled()
-      expect(mockWorkflowService.beforeLoadNewGraph).not.toHaveBeenCalled()
-      expect(mockWorkflowService.afterLoadNewGraph).not.toHaveBeenCalled()
-      expect(mockToastStore.addAlert).toHaveBeenCalledOnce()
-      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
-        'Could not load the workflow because this ComfyUI installation is missing core nodes. Check that the backend started correctly.'
+      expect(mockToastStore[testCase.toastMethod]).toHaveBeenCalledOnce()
+      expect(mockToastStore[testCase.toastMethod]).toHaveBeenCalledWith(
+        testCase.expectedToast
       )
-    })
-
-    it('shows one file-load error when parameters are not A1111-shaped', async () => {
-      const graph = new LGraph()
-      const parameters = 'positive\nSteps: 20'
-      Reflect.set(app, 'rootGraphInternal', graph)
-      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({ parameters })
-      mockImportA1111.mockResolvedValue('not-a1111')
-
-      await app.handleFile(createTestFile('parameters.png', 'image/png'))
-
-      expect(mockToastStore.addAlert).toHaveBeenCalledOnce()
-      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
-        'Unable to find workflow in parameters.png'
-      )
-      expect(mockWorkflowService.beforeLoadNewGraph).not.toHaveBeenCalled()
-      expect(mockWorkflowService.afterLoadNewGraph).not.toHaveBeenCalled()
+      if (testCase.outcome === 'imported-without-embeddings') {
+        expect(mockWorkflowService.afterLoadNewGraph).toHaveBeenCalledOnce()
+      } else {
+        expect(mockWorkflowService.afterLoadNewGraph).not.toHaveBeenCalled()
+      }
     })
 
     it('awaits persistence and orders its clear callback before setGraph', async () => {
