@@ -1,9 +1,12 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
+import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useDialogStore } from '@/stores/dialogStore'
 
 import { CURATED_TEMPLATE_IDS, FALLBACK_TEMPLATE_IDS } from './tutorialCards'
 
@@ -69,10 +72,23 @@ const i18n = createI18n({
   messages: { en: enMessages }
 })
 
-async function renderScreen() {
+const FocusScopeStub = {
+  props: ['trapped', 'asChild', 'loop'],
+  template:
+    '<div data-testid="focus-scope-stub" :data-trapped="trapped"><slot /></div>'
+}
+
+async function renderScreen({ stubFocusScope = false } = {}) {
+  const pinia = createPinia()
+  setActivePinia(pinia)
   const { default: GettingStartedScreen } =
     await import('./GettingStartedScreen.vue')
-  return render(GettingStartedScreen, { global: { plugins: [i18n] } })
+  return render(GettingStartedScreen, {
+    global: {
+      plugins: [i18n, pinia],
+      stubs: stubFocusScope ? { FocusScope: FocusScopeStub } : {}
+    }
+  })
 }
 
 describe('GettingStartedScreen', () => {
@@ -216,6 +232,33 @@ describe('GettingStartedScreen', () => {
         mocks.dismiss,
         'Escape must follow the same safe dismissal path as the blank-canvas action'
       ).toHaveBeenCalled()
+    })
+  })
+
+  describe('dialog arbitration', () => {
+    it('releases its focus trap while a dialog is open and re-arms after', async () => {
+      await renderScreen({ stubFocusScope: true })
+      const dialogStore = useDialogStore()
+      const trapped = () =>
+        screen.getByTestId('focus-scope-stub').getAttribute('data-trapped')
+
+      expect(trapped()).toBe('true')
+
+      const dialog = dialogStore.showDialog({
+        component: { template: '<div />' }
+      })
+      await nextTick()
+      expect(
+        trapped(),
+        'a trapped takeover under an open dialog (desktop sign-in approval, invite links) makes the dialog unreachable'
+      ).toBe('false')
+
+      dialogStore.closeDialog({ key: dialog.key })
+      await nextTick()
+      expect(
+        trapped(),
+        'the takeover must re-arm once the dialog stack empties'
+      ).toBe('true')
     })
   })
 

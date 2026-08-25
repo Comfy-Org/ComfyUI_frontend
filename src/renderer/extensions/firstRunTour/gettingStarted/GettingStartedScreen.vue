@@ -1,9 +1,9 @@
 <template>
   <Teleport to="body">
-    <FocusScope as-child trapped loop>
+    <FocusScope as-child :trapped="!dialogOpen" loop>
       <div
         ref="screenRef"
-        class="fixed inset-0 z-2000 flex overflow-y-auto bg-base-background focus:outline-none"
+        class="fixed inset-0 z-1600 flex overflow-y-auto bg-base-background focus:outline-none"
         role="dialog"
         aria-modal="true"
         :aria-label="t('gettingStarted.title')"
@@ -134,6 +134,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
+import { useDialogStore } from '@/stores/dialogStore'
 
 import GettingStartedCard from './GettingStartedCard.vue'
 import GettingStartedTemplateCard from './GettingStartedTemplateCard.vue'
@@ -167,6 +168,10 @@ const { t } = useI18n()
 const { dismissGettingStarted } = useFirstRunEntry()
 const { beginTour } = useFirstRunTourController()
 const templatesStore = useWorkflowTemplatesStore()
+const dialogStore = useDialogStore()
+
+/** The dialog layer starts at z-1700; sitting below it and releasing the trap keeps any dialog (desktop sign-in approval, invite links) reachable. */
+const dialogOpen = computed(() => dialogStore.dialogStack.length > 0)
 const { loadWorkflowTemplate, getTemplateThumbnailUrl, loadingTemplateId } =
   useTemplateWorkflows()
 
