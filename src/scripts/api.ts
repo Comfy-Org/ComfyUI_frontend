@@ -133,7 +133,7 @@ interface QueuePromptRequestBody {
   number?: number
 }
 
-const FETCH_TIMEOUT_MS = 60_000
+const FETCH_RESPONSE_HEADERS_TIMEOUT_MS = 60_000
 
 /**
  * Options for queuePrompt method
@@ -535,18 +535,21 @@ export class ComfyApi extends EventTarget {
             category: 'fetch',
             message: `Timeout on ${method} ${route}`,
             level: 'warning',
-            data: { duration_ms, timeout_ms: FETCH_TIMEOUT_MS }
+            data: {
+              duration_ms,
+              timeout_ms: FETCH_RESPONSE_HEADERS_TIMEOUT_MS
+            }
           })
 
           useTelemetry()?.trackFetchTimeout({
             route,
             method,
             duration_ms,
-            timeout_ms: FETCH_TIMEOUT_MS
+            timeout_ms: FETCH_RESPONSE_HEADERS_TIMEOUT_MS
           })
 
           controller.abort(new DOMException('Fetch timeout', 'TimeoutError'))
-        }, FETCH_TIMEOUT_MS)
+        }, FETCH_RESPONSE_HEADERS_TIMEOUT_MS)
       : undefined
 
     return fetchWithUnifiedRemint(
