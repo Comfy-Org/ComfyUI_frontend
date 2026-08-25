@@ -1,20 +1,28 @@
 <script setup lang="ts">
 defineProps<{
+  href: string
   title: string
   description: string
   meta: string
+  mediaSrc: string
 }>()
 </script>
 
 <template>
-  <article
+  <a
+    :href="href"
     class="bg-transparency-white-t4 rounded-5xl flex h-full flex-col overflow-hidden p-2"
   >
     <div
-      v-if="$slots.media"
       class="bg-transparency-white-t4 aspect-video overflow-hidden rounded-4.5xl"
     >
-      <slot name="media" />
+      <img
+        :src="mediaSrc"
+        alt=""
+        class="size-full object-cover"
+        loading="lazy"
+        decoding="async"
+      />
     </div>
     <div class="flex grow flex-col gap-2.5 p-3">
       <h3
@@ -31,5 +39,5 @@ defineProps<{
         {{ meta }}
       </p>
     </div>
-  </article>
+  </a>
 </template>

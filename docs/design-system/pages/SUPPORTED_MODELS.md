@@ -46,8 +46,9 @@ as implementation constraints.
    the plum slanted `callout` badge. Day Zero remains an editorial section
    label, not a card or hero badge. Status badges use `md`; descriptive badges
    use `card`.
-8. Task discovery cards gained a governed 16:9 media slot above their content.
-   The current imagery remains the approved design-only placeholder treatment.
+8. Task discovery cards use a governed 16:9 image above their content. Each
+   image is a Comfy-owned asset selected from the exact destination linked by
+   that card; the full card is the link.
 9. Access cards reuse `ProductCard`. Open Weights uses deep plum; Partner APIs
    uses the same cool-gray semantic surface as Comfy Enterprise, not green.
 10. The conversion banner is the exact `/cloud/pricing`
@@ -72,7 +73,7 @@ as implementation constraints.
 | Featured carousel rotation   | intentionally absent | Approve content ownership and carousel behavior before adding state       |
 | Search suggestion chips      | blocked gap          | Approve a reusable suggestion-chip component and keyboard behavior        |
 | Inline collection actions    | integrated           | Approved `BrandButton` links reveal the complete generated catalog        |
-| Task-card actions            | blocked gap          | Approve destinations and linked-card interaction states                   |
+| Task-card actions            | integrated           | Full-card links use reviewed Comfy use-case or category destinations      |
 | Production model media       | preview-integrated   | Six exact owned stills plus two governed source-gap fallbacks             |
 | Production catalog data      | build-integrated     | Generated routes, summary, categories, ItemList, and search records       |
 | Search and filter behavior   | integrated           | Query and categories filter the generated route-backed catalog            |
@@ -91,7 +92,7 @@ as implementation constraints.
 | Trending label            | `SectionLabel.vue`                  | Default label treatment                                       |
 | Day-zero model cards      | `CardWorkflow01.vue`                | Reuses the approved compact collection anatomy                |
 | Collection actions        | `BrandButton.vue`                   | Existing outline CTA links reveal the complete model catalog  |
-| Task discovery tiles      | `TaskTile.vue`                      | Governed non-interactive card with 16:9 placeholder media     |
+| Task discovery tiles      | `TaskTile.vue`                      | Governed full-card link with destination-owned 16:9 media      |
 | Access and run-path cards | `ProductCard.vue`                   | Existing website destination-card anatomy                     |
 | Free-runs banner          | `PricingFreeBanner.vue`             | Exact shipped `/cloud/pricing` banner anatomy                 |
 | Family variant actions    | `IconButton.vue`                    | Solid small arrow links to canonical model information pages  |
@@ -110,7 +111,7 @@ the appearance or states of the approved components above.
 | `ModelCategoryFilter.vue`      | catalog-integrated | Controlled wrapper around the approved website tabs            |
 | `ModelCollectionSection.astro` | media-integrated   | Approved cards with governed owned stills or explicit fallback |
 | `ModelMediaPlaceholder.vue`    | approved-fallback  | Shared decorative fallback for catalog entries without a still |
-| `ModelTaskSection.astro`       | design-only        | Task-tile layout and governed placeholder-media composition    |
+| `ModelTaskSection.astro`       | media-integrated   | Reviewed routes, destination-owned media, and collection action |
 | `ModelAccessSection.astro`     | design-only        | Two-column layout around approved destination cards            |
 | `ModelFamilySection.astro`     | design-only        | Linked family hierarchy with approved placeholder media        |
 | `ModelConversionSection.astro` | design-only        | Approved banner action and product-card layout                 |
@@ -120,7 +121,7 @@ the appearance or states of the approved components above.
 | Needed pattern          | Status              | Current implementation                                           |
 | ----------------------- | ------------------- | ---------------------------------------------------------------- |
 | Search suggestion chip  | `blocked-gap`       | Omitted; not substituted with a raw button                       |
-| Task tile action        | `blocked-gap`       | Count remains metadata; linked state and action icon are omitted |
+| Task tile action        | `integrated`        | The complete tile links to its reviewed Comfy destination       |
 | Featured-model carousel | `blocked-gap`       | Static card only; invented pagination indicators removed         |
 | Model media             | `approved-fallback` | `ModelMediaPlaceholder.vue` where no exact owned still exists    |
 
@@ -166,9 +167,10 @@ and then restore the page element.
 - The reviewed editorial destination map is stored directly with
   `modelExploreFixtures.ts`. Changing a promoted model requires an explicit
   canonical destination and link target in the same change.
-- Editorial stills must come from the promoted model's existing Comfy launch
-  page configuration or the exact supported-model catalog record. The page
-  must not scrape a destination or substitute a visually similar model.
+- Editorial model stills must come from the promoted model's existing Comfy
+  launch page configuration or exact supported-model catalog record. Task-tile
+  stills must be Comfy-owned assets published by the exact linked use-case or
+  category destination. Neither may substitute visually similar media.
 - The shared workflow card owns the 4:3 crop, lazy loading, asynchronous image
   decoding, and decorative alt treatment. Page compositions may not override
   these media rules.
@@ -178,11 +180,13 @@ and then restore the page element.
 
 ## Remaining prototype boundaries
 
-- Static fixtures exercise text lengths and existing badge variants.
+- Static fixtures exercise text lengths, existing badge variants, reviewed
+  task destinations, and their exact Comfy-owned media.
 - Six reviewed remote still URLs are connected through existing launch-page or
   catalog ownership; source gaps retain the governed fallback.
 - Search and category selection query the build-generated catalog in-browser.
-- Placeholder media is decorative and hidden from assistive technology.
+- Task-tile media is decorative and hidden from assistive technology because
+  the adjacent linked title supplies its accessible name.
 - Access, conversion, and FAQ actions use destinations and behavior already
   owned by existing website components.
 - Family-row icon links use reviewed canonical Comfy destinations. They are the

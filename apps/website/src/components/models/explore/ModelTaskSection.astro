@@ -2,7 +2,6 @@
 import SectionLabel from '../../common/SectionLabel.vue'
 import TaskTile from '../../ui/task-tile/TaskTile.vue'
 
-import ModelMediaPlaceholder from './ModelMediaPlaceholder.vue'
 import type { ExploreTaskFixture } from './modelExploreFixtures'
 
 interface Props {
@@ -26,12 +25,12 @@ const { label, description, tasks } = Astro.props
     {
       tasks.map((task) => (
         <TaskTile
+          href={task.href}
           title={task.title}
           description={task.description}
           meta={task.meta}
-        >
-          <ModelMediaPlaceholder slot="media" tone={task.mediaTone} />
-        </TaskTile>
+          mediaSrc={task.mediaSrc}
+        />
       ))
     }
   </div>

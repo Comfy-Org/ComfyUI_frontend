@@ -113,6 +113,6 @@ inventory proves that code exists, but approval rules and permitted variants liv
 | SheetTitle | `apps/website/src/components/ui/sheet/SheetTitle.vue` | sheet | no | no |
 | SheetTrigger | `apps/website/src/components/ui/sheet/SheetTrigger.vue` | sheet | no | no |
 | Slider | `apps/website/src/components/ui/slider/Slider.vue` | slider | yes | no |
-| TaskTile | `apps/website/src/components/ui/task-tile/TaskTile.vue` | task-tile | no | no |
+| TaskTile | `apps/website/src/components/ui/task-tile/TaskTile.vue` | task-tile | no | yes |
 | ToggleGroup | `apps/website/src/components/ui/toggle-group/ToggleGroup.vue` | toggle-group | yes | no |
 | ToggleGroupItem | `apps/website/src/components/ui/toggle-group/ToggleGroupItem.vue` | toggle-group | no | no |
