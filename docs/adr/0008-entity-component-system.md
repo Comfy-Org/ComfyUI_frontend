@@ -107,9 +107,10 @@ presentation change must not trigger the overwrite path.)
 **The load-time dedup pass — link deduplication — picks by boundary order.**
 A third collision answer lives outside the stores entirely. During graph
 configure, `linkDeduplication.ts` handles two live links from a serialized file
-claiming the same target input slot (the #15577 corruption family, fixed in
-#15689). The key here is identity-adjacent: the boundary slot's own ordered
-`linkIds` array, maintained per-slot by the writer — neither a minted counter
+claiming the same target input slot (the issue 15577 corruption family, fixed
+in issue 15689). The key here is identity-adjacent: the boundary slot's own
+ordered `linkIds` array, maintained per-slot by the writer — neither a minted
+counter
 nor a derived string. The survivor is the first live entry of that array;
 boundary order is the authority because it is the closest thing the format has
 to per-slot intent, while the global links array's order is a serialization
@@ -132,7 +133,14 @@ on normal loads (subgraphs share the root id counter; configure and paste ids
 are observed, not minted), and error-level noise on an expected path would
 pollute error-rate monitoring during exactly the windows that need it.
 Serialized references keyed on the old id (for example links restored in
-`configure`) do not follow the node to its reminted id.
+`configure`) do not follow the node to its reminted id. This is a known,
+deliberate gap in the current remint contract, not an endorsed end state:
+closing it means either recording the old→new remint mapping and remapping
+serialized link endpoints before `configure` restores connections, or
+rejecting ambiguous payloads outright. That work is tracked as a follow-up in
+the migration workspace (xc-99) and belongs with the merge-boundary
+reconciliation direction recorded in ADR 0003, which owns cross-client
+duplicate-id resolution.
 
 **Why there is no explicit `replace` verb.** An explicit
 `store.replace(id, entity)` would not unify the contract — it would add a

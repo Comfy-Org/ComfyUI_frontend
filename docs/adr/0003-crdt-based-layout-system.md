@@ -244,7 +244,10 @@ its own collision contract at registration time:
   overwrites, keeping the newcomer (the widget has changed kind). Its
   `console.warn` fires only on an un-keyable id, never on this path.
 - `linkStore.registerLink` rejects a duplicate **link id** first
-  (`console.error`, `undefined` return). The per-target-slot rule is
+  (`console.error`, `undefined` return). The rejection applies to a
+  _different_ topology object claiming an already-registered id;
+  re-registering the same raw topology object under the same owning graph is
+  idempotent and returns the incumbent. The per-target-slot rule is
   secondary and applies only to non-floating topologies: a second non-floating
   topology claiming an occupied target input slot is rejected
   (`console.error`), while floating links (either endpoint unassigned) may
