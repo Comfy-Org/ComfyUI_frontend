@@ -55,6 +55,7 @@ import { getSubscriptionCancellationMetadata } from '@/platform/cloud/subscripti
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useDialogStore } from '@/stores/dialogStore'
 import { parseIsoDateSafe } from '@/utils/dateTimeUtil'
 import { getErrorMessage } from '@/utils/errorUtil'
@@ -71,6 +72,7 @@ const { cancelSubscription, fetchStatus, subscription, tier } =
   useBillingContext()
 const { shouldUseWorkspaceBilling } = useBillingRouting()
 const { canCancel } = useBillingCapabilities()
+const { permissions } = useWorkspaceUI()
 const telemetry = useTelemetry()
 
 const isLoading = ref(false)
@@ -118,7 +120,12 @@ function onClose() {
 }
 
 async function onConfirmCancel() {
-  if (isCloud && shouldUseWorkspaceBilling.value && !canCancel.value) {
+  if (
+    shouldUseWorkspaceBilling.value &&
+    !(isCloud
+      ? canCancel.value
+      : permissions.value.canManageSubscriptionLifecycle)
+  ) {
     return
   }
 

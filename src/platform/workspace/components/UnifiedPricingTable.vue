@@ -434,8 +434,10 @@ import {
 } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
+import { isCloud } from '@/platform/distribution/types'
 import type { Plan } from '@/platform/workspace/api/workspaceApi'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 
@@ -466,12 +468,29 @@ const emit = defineEmits<{
 }>()
 
 const { t, n } = useI18n()
-const {
-  canSubscribeSelfServe,
-  canReactivate,
-  canChangeSeats,
-  canDowngradeToPersonal
-} = useBillingCapabilities()
+const capabilities = useBillingCapabilities()
+const { permissions } = useWorkspaceUI()
+
+const canSubscribeSelfServe = computed(() =>
+  isCloud
+    ? capabilities.canSubscribeSelfServe.value
+    : permissions.value.canManageSubscription
+)
+const canReactivate = computed(() =>
+  isCloud
+    ? capabilities.canReactivate.value
+    : permissions.value.canManageSubscriptionLifecycle
+)
+const canChangeSeats = computed(() =>
+  isCloud
+    ? capabilities.canChangeSeats.value
+    : permissions.value.canManageSubscription
+)
+const canDowngradeToPersonal = computed(() =>
+  isCloud
+    ? capabilities.canDowngradeToPersonal.value
+    : permissions.value.canDowngradeToPersonal
+)
 
 const planMode = ref<'personal' | 'team'>(initialPlanMode)
 
