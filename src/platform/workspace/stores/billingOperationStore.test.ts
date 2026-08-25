@@ -65,11 +65,15 @@ vi.mock('@/platform/telemetry', () => ({
 
 const mockUpdateActiveWorkspace = vi.fn()
 const mockActiveWorkspaceId = ref('workspace-1')
+const mockWorkspaceTransitionGeneration = ref(0)
 
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   useTeamWorkspaceStore: () => ({
     get activeWorkspaceId() {
       return mockActiveWorkspaceId.value
+    },
+    get workspaceTransitionGeneration() {
+      return mockWorkspaceTransitionGeneration.value
     },
     updateActiveWorkspace: mockUpdateActiveWorkspace
   })
@@ -82,7 +86,13 @@ import { useBillingOperationStore } from './billingOperationStore'
 describe('billingOperationStore', () => {
   beforeEach(() => {
     mockActiveWorkspaceId.value = 'workspace-1'
+    mockWorkspaceTransitionGeneration.value = 0
   })
+
+  function switchWorkspace(workspaceId: string) {
+    mockWorkspaceTransitionGeneration.value++
+    mockActiveWorkspaceId.value = workspaceId
+  }
 
   describe('startOperation', () => {
     it('creates a pending operation', () => {
@@ -362,6 +372,37 @@ describe('billingOperationStore', () => {
 
       expect(mockCloseDialog).toHaveBeenCalledWith({ key: 'top-up-credits' })
       expect(mockSettingsDialogShow).toHaveBeenCalledWith('workspace')
+    })
+
+    it('does not refresh the new workspace when switching during reconciliation', async () => {
+      let finishStatusRefresh: () => void = () => {}
+      mockFetchStatus.mockImplementationOnce(
+        () =>
+          new Promise<void>((resolve) => {
+            finishStatusRefresh = resolve
+          })
+      )
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-1', 'topup')
+      await vi.advanceTimersByTimeAsync(0)
+      expect(mockFetchStatus).toHaveBeenCalledOnce()
+
+      switchWorkspace('workspace-2')
+      finishStatusRefresh()
+      await terminal
+
+      expect(mockFetchBalance).not.toHaveBeenCalled()
+      expect(mockCloseDialog).not.toHaveBeenCalled()
+      expect(mockSettingsDialogShow).not.toHaveBeenCalled()
+      expect(mockToastAdd).not.toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'success' })
+      )
     })
 
     it('fires purchase telemetry on subscription success', async () => {
@@ -935,8 +976,8 @@ describe('billingOperationStore', () => {
     })
   })
 
-  describe('polling timeout', () => {
-    it('times out a subscription while its workspace is inactive', async () => {
+  describe('stale operations', () => {
+    it('silently finalizes a subscription once its workspace goes inactive', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-1',
         status: 'pending',
@@ -944,14 +985,129 @@ describe('billingOperationStore', () => {
       })
 
       const store = useBillingOperationStore()
-      void store.startOperation('op-1', 'subscription')
-      mockActiveWorkspaceId.value = 'workspace-2'
+      const terminal = store.startOperation('op-1', 'subscription')
+      await vi.advanceTimersByTimeAsync(0)
+      switchWorkspace('workspace-2')
 
-      await vi.advanceTimersByTimeAsync(5 * 60_000 + 8001)
+      await vi.advanceTimersByTimeAsync(1501)
 
-      expect(store.getOperation('op-1')?.status).toBe('timeout')
+      await expect(terminal).resolves.toMatchObject({ status: 'stale' })
+      expect(workspaceApi.getBillingOpStatus).toHaveBeenCalledOnce()
+      expect(store.getOperation('op-1')).toBeUndefined()
+      expect(mockToastAdd).not.toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
+      expect(vi.getTimerCount()).toBe(0)
     })
 
+    it('silently finalizes after an in-flight poll rejects in another workspace', async () => {
+      let rejectStatus!: (error: Error) => void
+      vi.mocked(workspaceApi.getBillingOpStatus).mockImplementationOnce(
+        () =>
+          new Promise((_, reject) => {
+            rejectStatus = reject
+          })
+      )
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-1', 'subscription')
+      switchWorkspace('workspace-2')
+
+      rejectStatus(new Error('Network error'))
+      await vi.advanceTimersByTimeAsync(0)
+
+      await expect(terminal).resolves.toMatchObject({ status: 'stale' })
+      expect(store.getOperation('op-1')).toBeUndefined()
+      expect(mockToastAdd).not.toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
+      expect(vi.getTimerCount()).toBe(0)
+    })
+
+    it('does not reconcile a success that resolves during an in-progress switch', async () => {
+      let resolveStatus!: (response: BillingOpStatusResponse) => void
+      vi.mocked(workspaceApi.getBillingOpStatus).mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveStatus = resolve
+          })
+      )
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-1', 'subscription')
+      mockWorkspaceTransitionGeneration.value++
+
+      resolveStatus({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+      await vi.advanceTimersByTimeAsync(0)
+
+      await expect(terminal).resolves.toMatchObject({ status: 'stale' })
+      expect(mockReconcileSubscriptionSuccess).not.toHaveBeenCalled()
+      expect(mockToastAdd).not.toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'success' })
+      )
+      expect(store.getOperation('op-1')).toBeUndefined()
+    })
+
+    it('finalizes an operation from a prior visit after returning to its workspace', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'pending',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-1', 'subscription')
+      await vi.advanceTimersByTimeAsync(0)
+      switchWorkspace('workspace-2')
+      switchWorkspace('workspace-1')
+
+      await vi.advanceTimersByTimeAsync(1501)
+
+      await expect(terminal).resolves.toMatchObject({ status: 'stale' })
+      expect(store.getOperation('op-1')).toBeUndefined()
+
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+      const readopted = store.startOperation('op-1', 'subscription')
+      await vi.advanceTimersByTimeAsync(0)
+
+      await expect(readopted).resolves.toMatchObject({ status: 'succeeded' })
+      expect(mockReconcileSubscriptionSuccess).toHaveBeenCalledOnce()
+    })
+
+    it('emits stale failure telemetry instead of a poll timeout', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'pending',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-1', 'topup')
+      await vi.advanceTimersByTimeAsync(0)
+      switchWorkspace('workspace-2')
+      await vi.advanceTimersByTimeAsync(1501)
+      await terminal
+
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          operation: 'operation',
+          stage: 'failed',
+          operation_type: 'topup',
+          failure_category: 'stale_operation'
+        })
+      )
+    })
+  })
+
+  describe('polling timeout', () => {
     it('restarts a subscription operation after a polling timeout', async () => {
       let status: 'pending' | 'succeeded' = 'pending'
       vi.mocked(workspaceApi.getBillingOpStatus).mockImplementation(
@@ -1278,7 +1434,7 @@ describe('billingOperationStore', () => {
       expect(store.topupActionOperation?.actionUrl).toBe(actionUrl)
       expect(store.isAddingCredits).toBe(true)
 
-      mockActiveWorkspaceId.value = 'workspace-2'
+      switchWorkspace('workspace-2')
 
       expect(store.topupActionOperation).toBeUndefined()
       expect(store.isAddingCredits).toBe(false)
@@ -1300,7 +1456,7 @@ describe('billingOperationStore', () => {
       expect(store.subscriptionActionOperation?.actionUrl).toBe(actionUrl)
       expect(store.isSettingUp).toBe(true)
 
-      mockActiveWorkspaceId.value = 'workspace-2'
+      switchWorkspace('workspace-2')
 
       expect(store.subscriptionActionOperation).toBeUndefined()
       expect(store.isSettingUp).toBe(false)
@@ -1318,7 +1474,7 @@ describe('billingOperationStore', () => {
 
       const store = useBillingOperationStore()
       void store.startOperation('op-1', 'subscription')
-      mockActiveWorkspaceId.value = 'workspace-2'
+      switchWorkspace('workspace-2')
 
       resolveStatus({
         id: 'op-1',
@@ -1328,10 +1484,7 @@ describe('billingOperationStore', () => {
       })
       await vi.advanceTimersByTimeAsync(0)
 
-      expect(store.getOperation('op-1')).toMatchObject({
-        status: 'pending',
-        actionUrl: null
-      })
+      expect(store.getOperation('op-1')).toBeUndefined()
       expect(store.subscriptionActionOperation).toBeUndefined()
     })
 
@@ -1426,6 +1579,32 @@ describe('billingOperationStore', () => {
         operation_type: 'cancel',
         duration_ms: expect.any(Number)
       })
+    })
+
+    it('does not update a new workspace after cancellation completes', async () => {
+      let finishRefresh: () => void = () => {}
+      mockFetchStatus.mockImplementationOnce(
+        () =>
+          new Promise<void>((resolve) => {
+            finishRefresh = resolve
+          })
+      )
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-1', 'cancel')
+      await vi.advanceTimersByTimeAsync(0)
+      expect(mockFetchStatus).toHaveBeenCalledOnce()
+
+      switchWorkspace('workspace-2')
+      finishRefresh()
+      await terminal
+
+      expect(mockUpdateActiveWorkspace).not.toHaveBeenCalled()
     })
 
     it('resolves the terminal outcome even when the post-success refresh fails', async () => {

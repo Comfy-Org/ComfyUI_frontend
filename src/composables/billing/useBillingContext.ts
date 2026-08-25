@@ -285,11 +285,27 @@ function useBillingContextInternal(): BillingContext {
   }
 
   async function reconcileSubscriptionSuccess(): Promise<void> {
+    const workspaceId = store.activeWorkspaceId
+    const workspaceTransitionGeneration = store.workspaceTransitionGeneration
     const checkout = checkoutContext.value
     await checkout.fetchStatus()
+    if (
+      workspaceId !== store.activeWorkspaceId ||
+      workspaceTransitionGeneration !== store.workspaceTransitionGeneration
+    ) {
+      return
+    }
 
     const account = activeContext.value
-    if (account !== checkout) await account.fetchStatus()
+    if (account !== checkout) {
+      await account.fetchStatus()
+      if (
+        workspaceId !== store.activeWorkspaceId ||
+        workspaceTransitionGeneration !== store.workspaceTransitionGeneration
+      ) {
+        return
+      }
+    }
     await account.fetchBalance()
   }
 

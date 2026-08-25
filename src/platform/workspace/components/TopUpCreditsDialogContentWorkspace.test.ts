@@ -23,6 +23,11 @@ const mockPermissions = vi.hoisted(() => ({
   ref: undefined as { value: { canTopUp: boolean } } | undefined
 }))
 const mockShouldUseWorkspaceBilling = vi.hoisted(() => ({ value: true }))
+const mockWorkspace = vi.hoisted(() => ({
+  activeWorkspaceId: 'workspace-1' as string | null,
+  workspaceTransitionGeneration: 0
+}))
+
 const mockBillingOperationState = vi.hoisted(() => ({
   isAddingCredits: undefined as { value: boolean } | undefined,
   topupActionOperation: undefined as
@@ -55,6 +60,10 @@ vi.mock('@/platform/workspace/stores/billingOperationStore', async () => {
     })
   }
 })
+
+vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
+  useTeamWorkspaceStore: () => mockWorkspace
+}))
 
 vi.mock('@/platform/workspace/composables/useWorkspaceUI', async () => {
   const { ref } = await import('vue')
@@ -208,6 +217,8 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
   beforeEach(() => {
     setCanTopUp(true)
     mockShouldUseWorkspaceBilling.value = true
+    mockWorkspace.activeWorkspaceId = 'workspace-1'
+    mockWorkspace.workspaceTransitionGeneration = 0
     setIsAddingCredits(false)
     setTopupActionOperation(undefined)
     mockFetchBalance.mockResolvedValue(undefined)
@@ -418,6 +429,50 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       billing_op_id: 'op-1',
       duration_ms: expect.any(Number)
     })
+  })
+
+  it('does not close the dialog or open settings when the workspace changes during the completion refresh', async () => {
+    mockTopup.mockResolvedValue(topupResponse('completed'))
+    mockFetchBalance.mockImplementationOnce(async () => {
+      mockWorkspace.workspaceTransitionGeneration++
+      mockWorkspace.activeWorkspaceId = 'workspace-2'
+    })
+
+    renderDialog()
+    await clickAddCredits()
+    await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
+
+    expect(mockCloseDialog).not.toHaveBeenCalled()
+    expect(mockShowSettings).not.toHaveBeenCalled()
+  })
+
+  it('ignores a completed top-up after switching away and back', async () => {
+    let resolveTopup!: (response: CreateTopupResponse) => void
+    mockTopup.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveTopup = resolve
+      })
+    )
+
+    renderDialog()
+    await clickAddCredits()
+    await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
+    await waitFor(() => expect(mockTopup).toHaveBeenCalledOnce())
+
+    mockWorkspace.activeWorkspaceId = 'workspace-2'
+    mockWorkspace.workspaceTransitionGeneration++
+    mockWorkspace.activeWorkspaceId = 'workspace-1'
+    mockWorkspace.workspaceTransitionGeneration++
+    resolveTopup(topupResponse('completed'))
+    await nextTick()
+
+    expect(mockFetchBalance).not.toHaveBeenCalled()
+    expect(mockFetchStatus).not.toHaveBeenCalled()
+    expect(mockToastAdd).not.toHaveBeenCalledWith(
+      expect.objectContaining({ severity: 'success' })
+    )
+    expect(mockCloseDialog).not.toHaveBeenCalled()
+    expect(mockShowSettings).not.toHaveBeenCalled()
   })
 
   it('keeps completed top-up telemetry successful when refresh fails', async () => {

@@ -118,6 +118,23 @@ export function useSubscriptionCheckout(
   const billingOperationStore = useBillingOperationStore()
   const workspaceStore = useTeamWorkspaceStore()
 
+  function captureWorkspaceIdentity() {
+    return {
+      id: workspaceStore.activeWorkspaceId,
+      transitionGeneration: workspaceStore.workspaceTransitionGeneration
+    }
+  }
+
+  function isCurrentWorkspaceIdentity(
+    identity: ReturnType<typeof captureWorkspaceIdentity>
+  ): boolean {
+    return (
+      identity.id === workspaceStore.activeWorkspaceId &&
+      identity.transitionGeneration ===
+        workspaceStore.workspaceTransitionGeneration
+    )
+  }
+
   const checkoutStep = ref<CheckoutStep>('pricing')
   const isLoadingPreview = ref(false)
   const loadingTier = ref<CheckoutTierKey | null>(null)
@@ -148,7 +165,9 @@ export function useSubscriptionCheckout(
     const operation = billingOperationStore.getOperation(
       activeCheckoutOperationId.value
     )
-    return operation?.workspaceId === workspaceStore.activeWorkspaceId
+    return operation?.workspaceId === workspaceStore.activeWorkspaceId &&
+      operation.transitionGeneration ===
+        workspaceStore.workspaceTransitionGeneration
       ? operation
       : undefined
   })
@@ -670,9 +689,11 @@ export function useSubscriptionCheckout(
         : 'new'
 
     isSubscribing.value = true
+    const workspaceIdentity = captureWorkspaceIdentity()
     try {
       if (await showTeamToPersonalDowngrade(planSlug, tierKey)) return
       await fetchStatus()
+      if (!isCurrentWorkspaceIdentity(workspaceIdentity)) return
       if (
         !confirmReactivation &&
         (isCancelled.value || reactivationRequired.value)
@@ -690,6 +711,10 @@ export function useSubscriptionCheckout(
         (isCancelled.value || reactivationRequired.value)
       ) {
         await assertReactivationAmountUnchanged(planSlug)
+        if (!isCurrentWorkspaceIdentity(workspaceIdentity)) {
+          activeCheckoutAttemptStartedAt = undefined
+          return
+        }
       }
       const response = await subscribe(planSlug, {
         returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
@@ -699,6 +724,10 @@ export function useSubscriptionCheckout(
           ? previewData.value.proration_at
           : undefined
       })
+      if (!isCurrentWorkspaceIdentity(workspaceIdentity)) {
+        activeCheckoutAttemptStartedAt = undefined
+        return
+      }
 
       if (response) {
         trackWorkspaceCheckoutStarted({
@@ -929,7 +958,9 @@ export function useSubscriptionCheckout(
     if (
       operation.status === 'succeeded' &&
       activeCheckoutOperationId.value === opId &&
-      operation.workspaceId === workspaceStore.activeWorkspaceId
+      operation.workspaceId === workspaceStore.activeWorkspaceId &&
+      operation.transitionGeneration ===
+        workspaceStore.workspaceTransitionGeneration
     ) {
       checkoutStep.value = 'success'
     }
@@ -959,8 +990,13 @@ export function useSubscriptionCheckout(
     const planSlug = getTeamPlanSlug(billingCycle)
 
     isSubscribing.value = true
+    // Captured before any await so preflight reads and the subscribe mutation
+    // are all bound to the workspace the user acted in; a switch during any of
+    // them abandons the attempt instead of subscribing the new workspace.
+    const workspaceIdentity = captureWorkspaceIdentity()
     try {
       await fetchStatus()
+      if (!isCurrentWorkspaceIdentity(workspaceIdentity)) return
       if (
         !confirmReactivation &&
         (isCancelled.value || reactivationRequired.value)
@@ -982,6 +1018,10 @@ export function useSubscriptionCheckout(
         await assertReactivationAmountUnchanged(planSlug, {
           teamCreditStopId: stop.id
         })
+        if (!isCurrentWorkspaceIdentity(workspaceIdentity)) {
+          activeCheckoutAttemptStartedAt = undefined
+          return
+        }
       }
       const response = await subscribe(planSlug, {
         teamCreditStopId: stop.id,
@@ -993,6 +1033,10 @@ export function useSubscriptionCheckout(
           ? previewData.value.proration_at
           : undefined
       })
+      if (!isCurrentWorkspaceIdentity(workspaceIdentity)) {
+        activeCheckoutAttemptStartedAt = undefined
+        return
+      }
 
       if (response) {
         trackWorkspaceCheckoutStarted({

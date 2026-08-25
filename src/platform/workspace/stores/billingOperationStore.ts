@@ -32,7 +32,7 @@ const AUTHENTICATION_TIMEOUT_MS = 23 * 60 * 60_000
 const CHECKOUT_SUPERSEDED_REASON = 'checkout_superseded'
 
 type OperationType = 'subscription' | 'topup' | 'cancel'
-type OperationStatus = 'pending' | 'succeeded' | 'failed' | 'timeout'
+type OperationStatus = 'pending' | 'succeeded' | 'failed' | 'timeout' | 'stale'
 
 export interface StartOperationMetadata {
   tier?: SubscriptionCheckoutTier
@@ -67,6 +67,7 @@ interface BillingOperation {
   actionUrl: string | null
   authenticationRequiredSeen: boolean
   workspaceId: string | null
+  transitionGeneration: number
   tier?: SubscriptionCheckoutTier
   cycle?: BillingCycle
   checkoutType?: SubscriptionCheckoutType
@@ -85,6 +86,19 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   const terminalResolvers = new Map<string, TerminalResolver>()
   const terminalPromises = new Map<string, Promise<BillingOperation>>()
 
+  // Ownership requires the transition generation captured at start, not just
+  // the workspace ID: the ID only changes once a switch completes, so an
+  // ID-only check accepts completions during an in-progress switch (when the
+  // auth context may already belong to the target workspace) and after an
+  // A→B→A round trip. The generation increments the moment a switch begins.
+  function isOwnedByActiveWorkspace(operation: BillingOperation): boolean {
+    return (
+      operation.workspaceId === workspaceStore.activeWorkspaceId &&
+      operation.transitionGeneration ===
+        workspaceStore.workspaceTransitionGeneration
+    )
+  }
+
   const hasPendingOperations = computed(() =>
     [...operations.value.values()].some((op) => op.status === 'pending')
   )
@@ -94,7 +108,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       (op) =>
         op.status === 'pending' &&
         op.type === 'subscription' &&
-        op.workspaceId === workspaceStore.activeWorkspaceId
+        isOwnedByActiveWorkspace(op)
     )
   )
 
@@ -103,7 +117,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       (op) =>
         op.status === 'pending' &&
         op.type === 'topup' &&
-        op.workspaceId === workspaceStore.activeWorkspaceId
+        isOwnedByActiveWorkspace(op)
     )
   )
 
@@ -112,7 +126,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       (op) =>
         op.status === 'pending' &&
         op.type === 'subscription' &&
-        op.workspaceId === workspaceStore.activeWorkspaceId &&
+        isOwnedByActiveWorkspace(op) &&
         op.actionUrl !== null
     )
   )
@@ -122,7 +136,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       (op) =>
         op.status === 'pending' &&
         op.type === 'topup' &&
-        op.workspaceId === workspaceStore.activeWorkspaceId &&
+        isOwnedByActiveWorkspace(op) &&
         op.actionUrl !== null
     )
   )
@@ -187,6 +201,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       actionUrl,
       authenticationRequiredSeen: actionUrl !== null,
       workspaceId: workspaceStore.activeWorkspaceId,
+      transitionGeneration: workspaceStore.workspaceTransitionGeneration,
       tier: metadata?.tier,
       cycle: metadata?.cycle,
       checkoutType: metadata?.checkoutType,
@@ -224,22 +239,14 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     const operation = operations.value.get(opId)
     if (!operation || operation.status !== 'pending') return
 
+    if (finalizeIfStale(opId, operation)) return
     if (stopIfTimedOut(opId, operation)) return
-
-    if (operation.workspaceId !== workspaceStore.activeWorkspaceId) {
-      scheduleNextPoll(opId)
-      return
-    }
 
     try {
       const response = await workspaceApi.getBillingOpStatus(opId)
       const currentOperation = operations.value.get(opId)
       if (currentOperation !== operation) return
-      if (operation.workspaceId !== workspaceStore.activeWorkspaceId) {
-        if (stopIfTimedOut(opId, operation)) return
-        scheduleNextPoll(opId)
-        return
-      }
+      if (finalizeIfStale(opId, operation)) return
 
       if (response.status === 'succeeded') {
         await handleSuccess(opId)
@@ -258,9 +265,89 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     } catch {
       const currentOperation = operations.value.get(opId)
       if (currentOperation !== operation) return
+      if (finalizeIfStale(opId, operation)) return
       if (stopIfTimedOut(opId, currentOperation)) return
       scheduleNextPoll(opId)
     }
+  }
+
+  // A workspace transition can never be undone (the generation only grows), so
+  // an operation that has fallen out of its workspace context is finished as
+  // far as this client is concerned: resolve it silently and drop it so the
+  // server's own pending_billing_op_id recovery re-adopts it — with completion
+  // UI — once its workspace is active again. Keeping it polling or parked
+  // would both leak the setTimeout chain and block that recovery, which is
+  // gated on the operation being absent from the store.
+  function finalizeIfStale(opId: string, operation: BillingOperation): boolean {
+    if (isOwnedByActiveWorkspace(operation)) return false
+    finalizeStaleOperation(opId, operation)
+    return true
+  }
+
+  function finalizeStaleOperation(opId: string, operation: BillingOperation) {
+    updateOperationStatus(opId, 'stale', null)
+    cleanup(opId)
+
+    const telemetry = useTelemetry()
+    const now = Date.now()
+    telemetry?.trackBillingEvent({
+      operation: 'operation',
+      stage: 'failed',
+      outcome: 'failure',
+      billing_op_id: opId,
+      operation_type: operation.type,
+      tier: operation.tier,
+      cycle: operation.cycle,
+      checkout_type: operation.checkoutType,
+      payment_intent_source: operation.paymentIntentSource,
+      failure_category: 'stale_operation',
+      duration_ms: now - operation.operationStartedAt
+    })
+    if (
+      operation.type === 'subscription' &&
+      operation.businessAttemptStartedAt !== undefined
+    ) {
+      telemetry?.trackBillingEvent({
+        operation: 'subscription_checkout',
+        stage: 'failed',
+        outcome: 'failure',
+        tier: operation.tier,
+        cycle: operation.cycle,
+        checkout_type: operation.checkoutType,
+        payment_intent_source: operation.paymentIntentSource,
+        billing_op_id: opId,
+        failure_category: 'stale_operation',
+        duration_ms: now - operation.businessAttemptStartedAt
+      })
+    } else if (
+      operation.type === 'topup' &&
+      operation.businessAttemptStartedAt !== undefined
+    ) {
+      telemetry?.trackBillingEvent({
+        operation: 'topup',
+        stage: 'failed',
+        outcome: 'failure',
+        billing_op_id: opId,
+        failure_category: 'stale_operation',
+        duration_ms: now - operation.businessAttemptStartedAt
+      })
+    }
+    if (operation.downgradeToPersonal) {
+      telemetry?.trackBillingEvent({
+        operation: 'downgrade_to_personal',
+        stage: 'failed',
+        outcome: 'failure',
+        member_removal_count: operation.downgradeToPersonal.memberRemovalCount,
+        member_removal_failures:
+          operation.downgradeToPersonal.memberRemovalFailures,
+        target_tier: operation.downgradeToPersonal.targetTier,
+        failure_category: 'stale_operation',
+        duration_ms: now - operation.downgradeToPersonal.startedAt
+      })
+    }
+
+    resolveTerminal(opId)
+    clearOperation(opId)
   }
 
   function scheduleNextPoll(opId: string) {
@@ -403,14 +490,26 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       })
     }
 
+    if (!isOwnedByActiveWorkspace(operation)) {
+      resolveTerminal(opId)
+      return
+    }
+
     const billingContext = useBillingContext()
     if (operation.type === 'subscription') {
       await Promise.allSettled([billingContext.reconcileSubscriptionSuccess()])
     } else {
-      await Promise.allSettled([
-        billingContext.fetchStatus(),
-        billingContext.fetchBalance()
-      ])
+      await Promise.allSettled([billingContext.fetchStatus()])
+      if (!isOwnedByActiveWorkspace(operation)) {
+        resolveTerminal(opId)
+        return
+      }
+      await Promise.allSettled([billingContext.fetchBalance()])
+    }
+
+    if (!isOwnedByActiveWorkspace(operation)) {
+      resolveTerminal(opId)
+      return
     }
 
     if (operation.type === 'cancel') {
@@ -598,7 +697,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       })
     }
 
-    if (operation.type !== 'cancel') {
+    if (operation.type !== 'cancel' && isOwnedByActiveWorkspace(operation)) {
       useToastStore().add({
         severity: 'error',
         summary: message

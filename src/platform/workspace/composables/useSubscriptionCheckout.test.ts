@@ -161,6 +161,8 @@ const {
   mockShouldUseWorkspaceBilling,
   mockSetActiveWorkspaceIdImpl,
   mockSetActiveWorkspaceId,
+  mockResetWorkspaceIdentityImpl,
+  mockResetWorkspaceIdentity,
   mockPermissions,
   mockSubscription
 } = vi.hoisted(() => ({
@@ -200,6 +202,12 @@ const {
       mockSetActiveWorkspaceIdImpl.value?.(workspaceId)
     }
   ),
+  mockResetWorkspaceIdentityImpl: {
+    value: undefined as (() => void) | undefined
+  },
+  mockResetWorkspaceIdentity: vi.fn<() => void>(() => {
+    mockResetWorkspaceIdentityImpl.value?.()
+  }),
   mockPermissions: {
     value: {
       canManageSubscription: true,
@@ -280,13 +288,24 @@ vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', async () => {
   const { ref } = await import('vue')
   const activeWorkspaceId = ref('workspace-1')
+  const workspaceTransitionGeneration = ref(0)
   mockSetActiveWorkspaceIdImpl.value = (workspaceId) => {
+    if (activeWorkspaceId.value !== workspaceId) {
+      workspaceTransitionGeneration.value++
+    }
     activeWorkspaceId.value = workspaceId
+  }
+  mockResetWorkspaceIdentityImpl.value = () => {
+    activeWorkspaceId.value = 'workspace-1'
+    workspaceTransitionGeneration.value = 0
   }
   return {
     useTeamWorkspaceStore: () => ({
       get activeWorkspaceId() {
         return activeWorkspaceId.value
+      },
+      get workspaceTransitionGeneration() {
+        return workspaceTransitionGeneration.value
       }
     })
   }
@@ -369,7 +388,8 @@ describe('useSubscriptionCheckout', () => {
     mockFetchPlans.mockResolvedValue(undefined)
     mockStartOperation.mockResolvedValue({
       status: 'succeeded',
-      workspaceId: 'workspace-1'
+      workspaceId: 'workspace-1',
+      transitionGeneration: 0
     })
     mockGetOperation.mockReturnValue(undefined)
     mockShowDowngradeToPersonalDialog.mockResolvedValue(null)
@@ -387,7 +407,7 @@ describe('useSubscriptionCheckout', () => {
     })
     vi.stubGlobal('open', mockOpen)
     mockShouldUseWorkspaceBilling.value = true
-    mockSetActiveWorkspaceId('workspace-1')
+    mockResetWorkspaceIdentity()
     mockPermissions.value = {
       canManageSubscription: true,
       canManageSubscriptionLifecycle: true,
@@ -1339,6 +1359,85 @@ describe('useSubscriptionCheckout', () => {
       )
     })
 
+    it('does not show synchronous success after switching away and back', async () => {
+      const checkout = await setup()
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_700',
+          usd: 700,
+          credits: 147_700,
+          discountedUsd: 665
+        },
+        billingCycle: 'monthly'
+      })
+      let resolveSubscribe!: (response: {
+        status: 'subscribed'
+        billing_op_id: string
+      }) => void
+      mockSubscribe.mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveSubscribe = resolve
+        })
+      )
+
+      const subscription = checkout.handleTeamSubscribe()
+      await vi.waitFor(() => expect(mockSubscribe).toHaveBeenCalledOnce())
+      mockSetActiveWorkspaceId('workspace-2')
+      mockSetActiveWorkspaceId('workspace-1')
+      resolveSubscribe({
+        status: 'subscribed',
+        billing_op_id: 'op-team-1'
+      })
+      await subscription
+
+      expect(checkout.checkoutStep.value).not.toBe('success')
+      expect(mockTrackBillingEvent).not.toHaveBeenCalledWith(
+        expect.objectContaining({ stage: 'succeeded' })
+      )
+    })
+
+    it('does not subscribe when the workspace changes during the status preflight', async () => {
+      const checkout = await setup()
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_700',
+          usd: 700,
+          credits: 147_700,
+          discountedUsd: 665
+        },
+        billingCycle: 'monthly'
+      })
+      mockFetchStatus.mockImplementationOnce(async () => {
+        mockSetActiveWorkspaceId('workspace-2')
+      })
+
+      await checkout.handleTeamSubscribe()
+
+      expect(mockSubscribe).not.toHaveBeenCalled()
+      expect(checkout.isSubscribing.value).toBe(false)
+    })
+
+    it('does not subscribe when the workspace switches away and back during the status preflight', async () => {
+      const checkout = await setup()
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_700',
+          usd: 700,
+          credits: 147_700,
+          discountedUsd: 665
+        },
+        billingCycle: 'monthly'
+      })
+      mockFetchStatus.mockImplementationOnce(async () => {
+        mockSetActiveWorkspaceId('workspace-2')
+        mockSetActiveWorkspaceId('workspace-1')
+      })
+
+      await checkout.handleTeamSubscribe()
+
+      expect(mockSubscribe).not.toHaveBeenCalled()
+    })
+
     it('forwards confirmReactivation true when the disclosure banner reports consent', async () => {
       const checkout = await setup()
       await checkout.handleSubscribeTeamClick({
@@ -2103,6 +2202,7 @@ describe('useSubscriptionCheckout', () => {
       mockGetOperation.mockReturnValue({
         status: 'pending',
         workspaceId: 'workspace-1',
+        transitionGeneration: 0,
         actionUrl: 'https://verify.example/sensitive-token'
       })
       let resolveOperation!: (operation: {
@@ -2137,6 +2237,36 @@ describe('useSubscriptionCheckout', () => {
   })
 
   describe('handleAddCreditCard', () => {
+    it('does not subscribe when the workspace changes during the status preflight', async () => {
+      const checkout = await setup()
+      checkout.selectedTierKey.value = 'standard'
+      mockFetchStatus.mockImplementationOnce(async () => {
+        mockSetActiveWorkspaceId('workspace-2')
+      })
+
+      await checkout.handleAddCreditCard()
+
+      expect(mockSubscribe).not.toHaveBeenCalled()
+      expect(checkout.isSubscribing.value).toBe(false)
+    })
+
+    it('does not advance to success when the workspace switches away and back during subscribe', async () => {
+      const checkout = await setup()
+      checkout.selectedTierKey.value = 'standard'
+      mockSubscribe.mockImplementationOnce(async () => {
+        mockSetActiveWorkspaceId('workspace-2')
+        mockSetActiveWorkspaceId('workspace-1')
+        return { status: 'subscribed', billing_op_id: 'op-1' }
+      })
+
+      await checkout.handleAddCreditCard()
+
+      expect(checkout.checkoutStep.value).not.toBe('success')
+      expect(mockTrackBillingEvent).not.toHaveBeenCalledWith(
+        expect.objectContaining({ stage: 'succeeded' })
+      )
+    })
+
     it('fires a started event before subscribing', async () => {
       const checkout = await setup()
       checkout.selectedTierKey.value = 'standard'
@@ -2300,7 +2430,8 @@ describe('useSubscriptionCheckout', () => {
       })
       mockStartOperation.mockResolvedValueOnce({
         status: 'succeeded',
-        workspaceId: 'workspace-1'
+        workspaceId: 'workspace-1',
+        transitionGeneration: 0
       })
       const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
 
@@ -2333,7 +2464,8 @@ describe('useSubscriptionCheckout', () => {
       })
       mockStartOperation.mockResolvedValueOnce({
         status: 'succeeded',
-        workspaceId: 'workspace-1'
+        workspaceId: 'workspace-1',
+        transitionGeneration: 0
       })
       const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
 

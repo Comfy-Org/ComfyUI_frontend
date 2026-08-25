@@ -32,6 +32,7 @@ const mockGetOperation = vi.hoisted(() => vi.fn())
 const mockSetWorkspaceBillingRail = vi.hoisted(() => vi.fn())
 const mockReportError = vi.hoisted(() => vi.fn())
 const mockActiveWorkspaceId = vi.hoisted(() => ({ value: 'workspace-1' }))
+const mockWorkspaceTransitionGeneration = vi.hoisted(() => ({ value: 0 }))
 
 // Hoisted so the vi.mock factory below can reference it: a plain top-level
 // const is in its temporal dead zone when the hoisted factory runs under
@@ -83,6 +84,9 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   useTeamWorkspaceStore: () => ({
     get activeWorkspace() {
       return { id: mockActiveWorkspaceId.value }
+    },
+    get workspaceTransitionGeneration() {
+      return mockWorkspaceTransitionGeneration.value
     },
     setWorkspaceBillingRail: mockSetWorkspaceBillingRail
   })
@@ -173,6 +177,7 @@ const subscribeResponses = [
 describe('useWorkspaceBilling', () => {
   beforeEach(() => {
     mockActiveWorkspaceId.value = 'workspace-1'
+    mockWorkspaceTransitionGeneration.value = 0
     mockBillingPlans.plans.value = []
     mockBillingPlans.currentPlanSlug.value = null
     mockBillingPlans.error.value = null
@@ -541,6 +546,22 @@ describe('useWorkspaceBilling', () => {
 
       expect(billing.currentTeamCreditStop.value).toBeNull()
     })
+
+    it('discards a status returned during an in-progress workspace switch', async () => {
+      const pendingStatus = createDeferred<BillingStatusResponse>()
+      mockWorkspaceApi.getBillingStatus.mockReturnValueOnce(
+        pendingStatus.promise
+      )
+      const billing = setupBilling()
+
+      const request = billing.fetchStatus()
+      mockWorkspaceTransitionGeneration.value++
+      pendingStatus.resolve({ ...activeStatus, billing_rail: 'metronome' })
+      await request
+
+      expect(billing.subscription.value).toBeNull()
+      expect(mockSetWorkspaceBillingRail).not.toHaveBeenCalled()
+    })
   })
 
   describe('fetchBalance / computed balance', () => {
@@ -584,6 +605,21 @@ describe('useWorkspaceBilling', () => {
 
       expect(billing.balance.value?.amountMicros).toBe(5_000_000)
     })
+
+    it('discards a balance returned during an in-progress workspace switch', async () => {
+      const pendingBalance = createDeferred<typeof positiveBalance>()
+      mockWorkspaceApi.getBillingBalance.mockReturnValueOnce(
+        pendingBalance.promise
+      )
+      const billing = setupBilling()
+
+      const request = billing.fetchBalance()
+      mockWorkspaceTransitionGeneration.value++
+      pendingBalance.resolve(positiveBalance)
+      await request
+
+      expect(billing.balance.value).toBeNull()
+    })
   })
 
   describe('subscribe', () => {
@@ -614,6 +650,26 @@ describe('useWorkspaceBilling', () => {
         expect(billing.isLoading.value).toBe(true)
       }
     )
+
+    it('skips reconciliation when the workspace transitions during subscribe', async () => {
+      const pendingSubscribe = createDeferred<{
+        billing_op_id: string
+        status: 'subscribed'
+      }>()
+      mockWorkspaceApi.subscribe.mockReturnValueOnce(pendingSubscribe.promise)
+      const billing = setupBilling()
+
+      const request = billing.subscribe('pro')
+      mockWorkspaceTransitionGeneration.value++
+      pendingSubscribe.resolve({ billing_op_id: 'op-1', status: 'subscribed' })
+
+      await expect(request).resolves.toStrictEqual({
+        billing_op_id: 'op-1',
+        status: 'subscribed'
+      })
+      expect(mockWorkspaceApi.getBillingStatus).not.toHaveBeenCalled()
+      expect(mockWorkspaceApi.getBillingBalance).not.toHaveBeenCalled()
+    })
 
     it.for(['status', 'balance'] as const)(
       'retries only the rejected %s reconciliation once',
