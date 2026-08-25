@@ -16,7 +16,9 @@ const { workspaceName } = defineProps<{
   workspaceName: string
 }>()
 
-const letter = computed(() => workspaceName?.charAt(0)?.toUpperCase() ?? '?')
+const letter = computed(
+  () => Array.from(workspaceName ?? '')[0]?.toUpperCase() ?? '?'
+)
 
 const backgroundColor = computed(() => workspaceAvatarColor(workspaceName))
 </script>
