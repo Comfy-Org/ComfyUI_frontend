@@ -177,18 +177,18 @@ describe('ComboWidget', () => {
       expect(widget.canDecrement()).toBe(false)
     })
 
-    it('should allow increment/decrement when duplicate values exist at different indices', () => {
+    it('uses the first exact duplicate when determining arrow state', () => {
       widget = new ComboWidget(
         createMockWidgetConfig({
           name: 'mode',
-          value: 'duplicate',
-          options: { values: ['duplicate', 'other', 'duplicate'] }
+          value: 1,
+          options: { values: [1, 'other', 1] }
         }),
         node
       )
 
       expect(widget.canIncrement()).toBe(true)
-      expect(widget.canDecrement()).toBe(true)
+      expect(widget.canDecrement()).toBe(false)
     })
 
     it('should return false for function values (DEPRECATED - legacy duck-typed behavior)', () => {
@@ -268,9 +268,14 @@ describe('ComboWidget', () => {
 
       const { mockCanvas, mockEvent } = setupIncrementDecrementTest()
 
+      expect(widget.canIncrement()).toBe(true)
+      expect(widget.canDecrement()).toBe(true)
+
       widget.incrementValue({ e: mockEvent, node, canvas: mockCanvas })
 
       expect(widget.value).toBe('3')
+      expect(widget.canIncrement()).toBe(false)
+      expect(widget.canDecrement()).toBe(true)
     })
 
     it('increments numeric options when the current value drifted to a string', () => {
@@ -284,9 +289,35 @@ describe('ComboWidget', () => {
 
       const { mockCanvas, mockEvent } = setupIncrementDecrementTest()
 
+      expect(widget.canIncrement()).toBe(true)
+      expect(widget.canDecrement()).toBe(true)
+
       widget.incrementValue({ e: mockEvent, node, canvas: mockCanvas })
 
       expect(widget.value).toBe(10)
+      expect(widget.canIncrement()).toBe(false)
+      expect(widget.canDecrement()).toBe(true)
+    })
+
+    it('prefers an exact option over a string-equivalent option', () => {
+      widget = new ComboWidget(
+        createMockWidgetConfig({
+          value: '1',
+          options: { values: [1, '1', 2] }
+        }),
+        node
+      )
+
+      const { mockCanvas, mockEvent } = setupIncrementDecrementTest()
+
+      expect(widget.canIncrement()).toBe(true)
+      expect(widget.canDecrement()).toBe(true)
+
+      widget.incrementValue({ e: mockEvent, node, canvas: mockCanvas })
+
+      expect(widget.value).toBe(2)
+      expect(widget.canIncrement()).toBe(false)
+      expect(widget.canDecrement()).toBe(true)
     })
 
     it('should increment value to next in list', () => {

@@ -108,6 +108,27 @@ describe('computeNextControlledValue (combo)', () => {
     expect(result).toBe(10)
   })
 
+  it('increments numeric options when the persisted value is a string', () => {
+    const widget = makeComboWidget('8', [6, 8, 10])
+    const result = computeNextControlledValue(widget, 'increment')
+
+    expect(result).toBe(10)
+  })
+
+  it('increments string options when the persisted value is a number', () => {
+    const widget = makeComboWidget(8, ['6', '8', '10'])
+    const result = computeNextControlledValue(widget, 'increment')
+
+    expect(result).toBe('10')
+  })
+
+  it('prefers an exact option over a string-equivalent option', () => {
+    const widget = makeComboWidget('1', [1, '1', 2])
+    const result = computeNextControlledValue(widget, 'increment')
+
+    expect(result).toBe(2)
+  })
+
   it('wraps a numeric combo past the end on increment-wrap', () => {
     const widget = makeComboWidget(10, [6, 8, 10])
     const result = computeNextControlledValue(widget, 'increment-wrap')

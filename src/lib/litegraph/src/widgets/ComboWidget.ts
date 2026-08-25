@@ -9,6 +9,7 @@ import type {
   IStringComboWidget
 } from '@/lib/litegraph/src/types/widgets'
 import { warnDeprecated } from '@/lib/litegraph/src/utils/feedback'
+import { findComboValueIndex } from '@/lib/litegraph/src/utils/widget'
 
 import { BaseSteppedWidget } from './BaseSteppedWidget'
 import type { WidgetEventOptions } from './BaseWidget'
@@ -89,18 +90,14 @@ export class ComboWidget
     const valuesArray = toArray(values)
     if (!(valuesArray.length > 1)) return false
 
-    // Edge case where the value is both the first and last item in the list
-    const firstValue = valuesArray.at(0)
-    const lastValue = valuesArray.at(-1)
-    if (firstValue === lastValue) return true
-
-    const currentValue = Array.isArray(values) ? this.value : String(this.value)
-    return currentValue !== (increment ? lastValue : firstValue)
+    const currentIndex = Array.isArray(values)
+      ? findComboValueIndex(valuesArray, this.value)
+      : valuesArray.indexOf(String(this.value))
+    return currentIndex !== (increment ? valuesArray.length - 1 : 0)
   }
 
   /**
    * Returns `true` if the current value is not the last value in the list.
-   * Handles edge case where the value is both the first and last item in the list.
    */
   override canIncrement(): boolean {
     return this.canUseButton(true)
@@ -125,11 +122,10 @@ export class ComboWidget
     // avoids double click event
     options.canvas.last_mouseclick = 0
 
-    const foundIndex = Array.isArray(values)
-      ? indexedValues.findIndex(
-          (value) => String(value) === String(this.value)
-        ) + delta
-      : indexedValues.indexOf(String(this.value)) + delta
+    const currentIndex = Array.isArray(values)
+      ? findComboValueIndex(indexedValues, this.value)
+      : indexedValues.indexOf(String(this.value))
+    const foundIndex = currentIndex + delta
 
     const index = clamp(foundIndex, 0, indexedValues.length - 1)
 

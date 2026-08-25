@@ -1,5 +1,9 @@
 import { isComboWidget } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type {
+  IBaseWidget,
+  IComboWidget
+} from '@/lib/litegraph/src/types/widgets'
+import { findComboValueIndex } from '@/lib/litegraph/src/utils/widget'
 
 import { IS_CONTROL_WIDGET } from './controlWidgetMarker'
 
@@ -85,7 +89,7 @@ export function computeNextControlledValue(
 }
 
 function computeNextComboValue(
-  target: IBaseWidget,
+  target: IComboWidget,
   mode: ValueControlMode,
   { comboFilter, nodeId }: { comboFilter?: string; nodeId?: unknown }
 ): IBaseWidget['value'] | undefined {
@@ -111,7 +115,7 @@ function computeNextComboValue(
     return undefined
   }
 
-  let currentIndex = values.findIndex((value) => value === target.value)
+  let currentIndex = findComboValueIndex(values, target.value)
   const length = values.length
 
   switch (mode) {
