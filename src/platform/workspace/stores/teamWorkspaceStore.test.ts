@@ -455,6 +455,7 @@ describe('useTeamWorkspaceStore', () => {
       await store.switchWorkspace(currentId!)
 
       expect(mockReload).not.toHaveBeenCalled()
+      expect(store.workspaceTransitionGeneration).toBe(0)
     })
 
     it('clears workflow restore state before switching workspaces', async () => {
@@ -504,6 +505,7 @@ describe('useTeamWorkspaceStore', () => {
       expect(mockReload).not.toHaveBeenCalled()
       expect(store.isSwitching).toBe(false)
       expect(store.activeWorkspaceBillingRail).toBeNull()
+      expect(store.workspaceTransitionGeneration).toBe(1)
 
       store.setWorkspaceBillingRail(mockTeamWorkspace.id, 'metronome')
       expect(store.activeWorkspaceBillingRail).toBe('metronome')
@@ -533,6 +535,81 @@ describe('useTeamWorkspaceStore', () => {
       await firstSwitch
 
       expect(store.activeWorkspaceId).toBe(mockTeamWorkspace.id)
+    })
+
+    it('waits for an in-progress local workspace switch', async () => {
+      mockDistributionTypes.isCloud = false
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+
+      let finishSwitch: () => void = () => {}
+      mockWorkspaceAuthStore.switchWorkspace.mockImplementationOnce(
+        () =>
+          new Promise<void>((resolve) => {
+            finishSwitch = () => {
+              mockWorkspaceAuthStore.currentWorkspace = mockTeamWorkspace
+              resolve()
+            }
+          })
+      )
+
+      const workspaceSwitch = store.switchWorkspace(mockTeamWorkspace.id)
+      const switchBarrier = store.waitForWorkspaceSwitch()
+      let barrierResolved = false
+      void switchBarrier.then(() => {
+        barrierResolved = true
+      })
+
+      await Promise.resolve()
+      expect(barrierResolved).toBe(false)
+      expect(store.activeWorkspaceId).toBe(mockPersonalWorkspace.id)
+
+      finishSwitch()
+      await switchBarrier
+
+      expect(store.activeWorkspaceId).toBe(mockTeamWorkspace.id)
+      await workspaceSwitch
+    })
+
+    it('does not wait for a previous identity workspace switch', async () => {
+      mockDistributionTypes.isCloud = false
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+
+      let finishSwitch: () => void = () => {}
+      mockWorkspaceAuthStore.switchWorkspace.mockImplementationOnce(
+        () =>
+          new Promise<void>((resolve) => {
+            finishSwitch = resolve
+          })
+      )
+
+      const previousIdentitySwitch = store.switchWorkspace(mockTeamWorkspace.id)
+      store.resetForIdentityChange()
+
+      await expect(store.waitForWorkspaceSwitch()).resolves.toBeUndefined()
+
+      finishSwitch()
+      await previousIdentitySwitch
+    })
+
+    it('propagates a failed local workspace switch to waiters', async () => {
+      mockDistributionTypes.isCloud = false
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+      mockWorkspaceAuthStore.switchWorkspace.mockRejectedValueOnce(
+        new Error('Token exchange failed')
+      )
+
+      const workspaceSwitch = store.switchWorkspace(mockTeamWorkspace.id)
+
+      await Promise.all([
+        expect(workspaceSwitch).rejects.toThrow('Token exchange failed'),
+        expect(store.waitForWorkspaceSwitch()).rejects.toThrow(
+          'Token exchange failed'
+        )
+      ])
+      expect(store.activeWorkspaceId).toBe(mockPersonalWorkspace.id)
     })
 
     it('sets isSwitching flag during operation', async () => {

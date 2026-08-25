@@ -132,7 +132,8 @@ watch(
       updateDomClipping()
     }
     composeStyle()
-  }
+  },
+  { immediate: true }
 )
 
 watch(
