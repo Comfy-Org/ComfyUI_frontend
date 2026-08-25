@@ -145,6 +145,39 @@ describe('extractTemplateModelRequirements', () => {
   ])('ignores absent or malformed model declarations in %j', (workflow) => {
     expect(extractTemplateModelRequirements(workflow)).toEqual([])
   })
+
+  it.for([
+    {
+      name: 'top-level',
+      workflow: {
+        models: [
+          {
+            ...model('invalid-top-level.safetensors', 'checkpoints'),
+            url: 'not-a-url'
+          }
+        ]
+      }
+    },
+    {
+      name: 'node',
+      workflow: {
+        nodes: [
+          node(
+            1,
+            [
+              {
+                ...model('invalid-node.safetensors', 'checkpoints'),
+                url: 'not-a-url'
+              }
+            ],
+            ['invalid-node.safetensors']
+          )
+        ]
+      }
+    }
+  ])('ignores $name declarations with invalid URLs', ({ workflow }) => {
+    expect(extractTemplateModelRequirements(workflow)).toEqual([])
+  })
 })
 
 describe('extractTemplateModelRequirementDetails', () => {
