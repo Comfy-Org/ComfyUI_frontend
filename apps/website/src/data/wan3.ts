@@ -11,9 +11,11 @@ const wan3Links = {
   hubModel: `${externalLinks.workflows}/model/wan`
 } as const
 
-// The hero clip is ~25 MB, so phones get this still instead and never fetch it
-// — ModelLaunchHeroSection only swaps the video in once mounted at >=768px, and
-// only when a fallback is set. The poster doubles as that still.
+// The hero clip is ~10 MB, so below 768px ModelLaunchHeroSection plays this
+// ~4 MB encode instead and phones never fetch the full clip. The poster still
+// doubles as the mobile fallback, covering SSR until the player mounts.
+const wan3HeroMobileVideoSrc =
+  'https://media.comfy.org/website/models/wan_3-0_mobile.mp4'
 const wan3HeroStillSrc = 'https://media.comfy.org/website/models/wan_3-0.jpeg'
 
 export const wan3Page: ModelLaunchPage = {
@@ -23,9 +25,10 @@ export const wan3Page: ModelLaunchPage = {
   breadcrumbUpdatedKey: 'wan3.breadcrumb.updated',
   hero: {
     layout: 'content-first',
-    videoSrc: 'https://media.comfy.org/website/models/wan_3.mp4',
+    videoSrc: 'https://media.comfy.org/website/models/wan_3-0_v2.mp4',
     posterSrc: wan3HeroStillSrc,
     mobileFallbackImageSrc: wan3HeroStillSrc,
+    mobileVideoSrc: wan3HeroMobileVideoSrc,
     logoSrc: '/icons/ai-models/wan.svg',
     titleKey: 'wan3.hero.title',
     descriptionKey: 'wan3.hero.description',
