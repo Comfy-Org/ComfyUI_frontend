@@ -502,7 +502,7 @@ defineExpose({
               side="top"
               align="start"
               :side-offset="4"
-              class="agent-scope bg-agent-surface-raised z-1100 box-border w-[186px] rounded-[10px] border border-white/10 p-1 font-inter shadow-lg"
+              class="agent-scope bg-agent-surface-raised z-1100 box-border w-max min-w-[186px] rounded-[10px] border border-white/10 p-1 font-inter shadow-lg"
             >
               <DropdownMenuItem
                 class="text-agent-fg data-highlighted:bg-agent-surface-hover mb-0.5 box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal outline-none"
