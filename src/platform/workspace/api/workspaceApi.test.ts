@@ -538,6 +538,13 @@ describe('workspaceApi', () => {
       const body = mockAxiosInstance.post.mock.calls[0][1]
       expect(body).not.toHaveProperty('confirmation_token', '')
       expect(body.confirmation_token).toBeUndefined()
+
+      mockAxiosInstance.post.mockResolvedValueOnce({ data: {} })
+      await workspaceApi.subscribe('pro-monthly', { savedPaymentMethodId: '' })
+
+      const savedBody = mockAxiosInstance.post.mock.calls[1][1]
+      expect(savedBody).not.toHaveProperty('saved_payment_method_id', '')
+      expect(savedBody.saved_payment_method_id).toBeUndefined()
     })
 
     it('subscribe() rejects an empty credential alongside a saved one', async () => {
