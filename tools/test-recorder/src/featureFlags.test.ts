@@ -1,10 +1,36 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  buildFfQuery,
   extractEnumValues,
   formatInitialFeatureFlags,
   parseFeatureFlagSpecs
 } from './featureFlags'
+
+describe('buildFfQuery', () => {
+  it('encodes repeatable ff parameters with JSON-typed values', () => {
+    const query = buildFfQuery({
+      enabled: true,
+      disabled: false,
+      count: 12,
+      label: '12',
+      mode: 'enforce'
+    })
+    const params = new URLSearchParams(query)
+
+    expect(params.getAll('ff')).toEqual([
+      'enabled',
+      'disabled:false',
+      'count:12',
+      'label:"12"',
+      'mode:"enforce"'
+    ])
+  })
+
+  it('returns no query for no flags', () => {
+    expect(buildFfQuery({})).toBe('')
+  })
+})
 
 describe('parseFeatureFlagSpecs', () => {
   it('parses bare and JSON values while preserving colons', () => {

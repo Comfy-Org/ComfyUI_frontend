@@ -19,6 +19,32 @@ pnpm comfy-test list        # List available workflows
 
 See the [Browser Tests README](../../browser_tests/README.md) for full setup instructions.
 
+A test plan can prefill every setup answer in one copy-pastable command:
+
+```bash
+pnpm comfy-test record --distribution cloud --workflow default --tags @canvas,@widget --feature-flags linear_toggle_enabled:true --use-case test-plan-step --description "seed stays fixed across runs" --name fixed-seed
+```
+
+Supplied answers are confirmed and their prompts are skipped. Invalid values
+show a warning and return to the corresponding prompt.
+
+Record flags:
+
+- `--distribution <cloud|cloud-staging|cloud-prod|local>` selects the backend environment.
+- `--backend <url>` connects to a custom backend and implies a custom distribution.
+- `--workflow <name>`, `--tags <a,b>`, and `--feature-flags <key:value,...>` configure the recording.
+- `--use-case <reproduce-bug|verify-change|test-plan-step|contribute>`, `--description <text>`, and `--name <slug>` describe and name it.
+- `--pr <number>` checks whether the checkout matches a PR and offers to switch safely. It never switches a checkout with uncommitted changes.
+
+The distribution selector fetches and displays the currently deployed backend
+version for each cloud environment. `comfy-test check --distribution <id>`
+prints the same backend, ComfyUI, and deployment-environment information.
+
+Cloud recordings pass feature flags as repeatable `?ff=name:value` URL
+parameters. These overrides are scoped to the opened browser tab and disappear
+when it closes. Local recordings continue to seed the existing `ff:<name>`
+local-storage overrides through the test fixture.
+
 ## For Agents
 
 `record` requires an interactive terminal and a human clicking a real
