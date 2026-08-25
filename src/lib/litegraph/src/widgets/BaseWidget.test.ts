@@ -227,6 +227,10 @@ describe('BaseWidget store integration', () => {
       expect(second.widgetId).toBe(
         widgetId(graph.id, toNodeId(1), 'duplicate#1')
       )
+      expect(node.widgets.map(({ name }) => name)).toEqual([
+        'duplicate',
+        'duplicate#1'
+      ])
       expect(store.getNodeWidgetIds(graph.id, toNodeId(1))).toEqual([
         first.widgetId,
         second.widgetId
@@ -255,7 +259,12 @@ describe('BaseWidget store integration', () => {
       )
       expect(
         ids.map((id) => (id ? store.getWidget(id)?.name : undefined))
-      ).toEqual(['duplicate', 'duplicate', 'duplicate#1'])
+      ).toEqual(['duplicate', 'duplicate#2', 'duplicate#1'])
+      expect(node.widgets.map(({ name }) => name).reverse()).toEqual([
+        'duplicate',
+        'duplicate#2',
+        'duplicate#1'
+      ])
     })
 
     it('stores explicit isDOMWidget false over component presence', () => {

@@ -179,13 +179,6 @@ describe('getWidgetIdForNode', () => {
     )
   })
 
-  it('can distinguish duplicate widget names on one node without changing the displayed name', () => {
-    const node = fakeNode(42)
-    expect(getWidgetIdForNode(node, { name: 'UNKNOWN' }, 1)).toBe(
-      widgetId(graphId, toNodeId(42), 'UNKNOWN#1')
-    )
-  })
-
   it('distinguishes duplicate names across widget types', () => {
     const node = fakeNode(42)
     node.widgets = [
@@ -197,6 +190,7 @@ describe('getWidgetIdForNode', () => {
       widgetId(graphId, toNodeId(42), 'shared'),
       widgetId(graphId, toNodeId(42), 'shared#1')
     ])
+    expect(node.widgets.map(({ name }) => name)).toEqual(['shared', 'shared#1'])
   })
 
   it('avoids collisions with literal duplicate suffixes', () => {
@@ -215,6 +209,11 @@ describe('getWidgetIdForNode', () => {
     expect(getWidgetIdForNode(node, node.widgets[1])).toBe(
       widgetId(graphId, toNodeId(42), 'shared#2')
     )
+    expect(node.widgets.map(({ name }) => name)).toEqual([
+      'shared',
+      'shared#2',
+      'shared#1'
+    ])
   })
 
   it('returns undefined when the node has no graph', () => {

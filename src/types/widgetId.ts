@@ -4,8 +4,8 @@ type UUID = string
 
 /**
  * A widget's canonical identity: `graphId:nodeId:name`.
- * The storage name is allocated once and disambiguated from duplicate and
- * literal suffixed display names.
+ * Duplicate widget names must be normalized before deriving this ID.
+ * See ADR 0008's "Widget identity keys on name" section.
  */
 export type WidgetId = string & { readonly __brand: 'WidgetId' }
 
@@ -24,17 +24,52 @@ export function widgetId(
   ].join(SEPARATOR) as WidgetId
 }
 
-export function uniqueWidgetStorageName(
-  name: string,
-  used: ReadonlySet<string>,
-  reserved: ReadonlySet<string>
-): string {
-  if (!used.has(name)) return name
-  let index = 1
-  while (used.has(`${name}#${index}`) || reserved.has(`${name}#${index}`)) {
-    index++
+export function ensureUniqueWidgetNames(
+  widgets: readonly { name: string }[]
+): boolean {
+  try {
+    const reserved = new Set(widgets.map(({ name }) => name))
+    const used = new Set<string>()
+    const renames: { widget: { name: string }; name: string }[] = []
+
+    for (const widget of widgets) {
+      if (!used.has(widget.name)) {
+        used.add(widget.name)
+        continue
+      }
+
+      let index = 1
+      while (
+        used.has(`${widget.name}#${index}`) ||
+        reserved.has(`${widget.name}#${index}`)
+      ) {
+        index++
+      }
+      const name = `${widget.name}#${index}`
+      used.add(name)
+      renames.push({ widget, name })
+    }
+
+    if (
+      renames.some(({ widget }) => {
+        const descriptor = Object.getOwnPropertyDescriptor(widget, 'name')
+        return descriptor
+          ? 'writable' in descriptor
+            ? !descriptor.writable
+            : !descriptor.set
+          : !Object.isExtensible(widget)
+      })
+    ) {
+      console.warn('Cannot safely rename duplicate widgets')
+      return false
+    }
+
+    for (const { widget, name } of renames) widget.name = name
+    return true
+  } catch (error) {
+    console.warn('Failed to rename duplicate widgets', error)
+    return false
   }
-  return `${name}#${index}`
 }
 
 function decodeWidgetIdSegment(segment: string): string {
