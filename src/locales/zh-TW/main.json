@@ -235,13 +235,15 @@
       "contactSupport": "若要刪除你的帳號，請聯絡 {email}"
     },
     "errors": {
-      "auth/cancelled-popup-request": "登入已取消。請再試一次。",
+      "auth/account-exists-with-different-credential": "此電子郵件地址已有帳戶，但使用不同的登入方式。請使用您原先的方式登入。",
+      "auth/cancelled-popup-request": "另一個登入視窗已開啟，因此此視窗已取消。請再試一次。",
       "auth/email-already-in-use": "此電子郵件已有帳戶存在。請嘗試登入。",
       "auth/invalid-credential": "登入憑證無效。請檢查您的電子郵件和密碼。",
       "auth/invalid-email": "請輸入有效的電子郵件地址。",
       "auth/network-request-failed": "網路錯誤。請檢查您的連線並再試一次。",
       "auth/operation-not-allowed": "目前不支援此登入方式。",
-      "auth/popup-closed-by-user": "登入已取消。請再試一次。",
+      "auth/popup-blocked": "您的瀏覽器封鎖了登入視窗。請允許此網站的彈出式視窗後再試一次。",
+      "auth/popup-closed-by-user": "登入完成前，登入視窗已關閉。請再試一次。",
       "auth/too-many-requests": "登入嘗試次數過多。請稍候再試。",
       "auth/user-disabled": "此帳戶已被停用。請聯絡支援團隊。",
       "auth/user-not-found": "找不到使用此電子郵件的帳戶。您要建立新帳戶嗎？",
@@ -845,6 +847,7 @@
       "message": "點數已統一",
       "tooltip": "我們已統一 Comfy 的付款系統。現在一切都以 Comfy 點數運作：\n- 合作夥伴節點（原 API 節點）\n- 雲端工作流程\n\n您原有的合作夥伴節點餘額已轉換為點數。"
     },
+    "workspaceCredits": "工作區點數",
     "yourCreditBalance": "您的點數餘額"
   },
   "curveWidget": {
@@ -894,6 +897,7 @@
     "FILE_3D_SPZ": "FILE_3D_SPZ",
     "FILE_3D_STL": "FILE_3D_STL",
     "FILE_3D_USDZ": "FILE_3D_USDZ",
+    "FISHAUDIO_VOICE": "FISHAUDIO_VOICE",
     "FLOAT": "浮點數",
     "FLOATS": "浮點數組",
     "GEMINI_INPUT_FILES": "Gemini輸入檔案",
@@ -907,6 +911,7 @@
     "IMAGECOMPARE": "圖像比較",
     "INT": "整數",
     "INTERP_MODEL": "INTERP_MODEL",
+    "KIMODO_POSE_DATA": "KIMODO_POSE_DATA",
     "KREA_STYLE_REF": "KREA_STYLE_REF",
     "LATENT": "latent (潛空間)",
     "LATENT_OPERATION": "latent 操作",
@@ -924,6 +929,7 @@
     "MESH": "網格",
     "MESHY_RIGGED_TASK_ID": "MESHY_RIGGED_TASK_ID",
     "MESHY_TASK_ID": "MESHY_TASK_ID",
+    "MHR_POSE_DATA": "MHR_POSE_DATA",
     "MODEL": "模型",
     "MODEL_PATCH": "模型修補",
     "MODEL_TASK_ID": "模型任務ID",
@@ -943,8 +949,10 @@
     "RIG_TASK_ID": "綁定任務ID",
     "RUNWAY_ALEPH2_KEYFRAME": "RUNWAY_ALEPH2_KEYFRAME",
     "RUNWAY_ALEPH2_PROMPT_IMAGE": "RUNWAY_ALEPH2_PROMPT_IMAGE",
+    "SAM3D_BODY_MODEL": "SAM3D_BODY_MODEL",
     "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "取樣器",
+    "SHAPE_SUBDIVIDES": "SHAPE_SUBDIVIDES",
     "SIGMAS": "Sigma 值",
     "SPLAT": "SPLAT",
     "STRING": "字串",
@@ -960,12 +968,20 @@
     "WEBCAM": "網路攝影機"
   },
   "desktopDialogs": {
-    "": {
+    "invalidDialog": {
       "buttons": {
         "Close": "關閉"
       },
-      "message": "提供的對話框 ID 無效。",
-      "title": "無效對話框"
+      "message": "提供的對話方塊 ID 無效。",
+      "title": "無效的對話方塊"
+    },
+    "reinstallVenv": {
+      "buttons": {
+        "Learn More": "深入瞭解",
+        "Reinstall": "重新安裝"
+      },
+      "message": "很抱歉，由於某些已安裝的套件不相容，我們無法啟動 ComfyUI。\n\n按一下「重新安裝」以還原 ComfyUI，讓您重新開始使用。\n\n請注意：如果您已新增自訂節點，完成此程序後需要重新安裝它們。",
+      "title": "重新安裝 ComfyUI（全新開始）？"
     }
   },
   "desktopLogin": {
@@ -1409,7 +1425,8 @@
     "loadWorkflowTitle": "由於重新載入工作流程資料時發生錯誤，已中止載入",
     "noStackTrace": "沒有可用的堆疊追蹤",
     "promptExecutionError": "提示執行失敗",
-    "queueOpenWorkflowFailedTitle": "開啟工作流程失敗"
+    "queueOpenWorkflowFailedTitle": "開啟工作流程失敗",
+    "workspaceChangedDuringExecution": "準備此次執行時，您目前使用的工作區已變更。請再次執行工作流程，以使用目前的工作區。"
   },
   "errorOverlay": {
     "missingMedia": "有些節點缺少必要的輸入",
@@ -1564,7 +1581,7 @@
     "disableAll": "全部停用",
     "disableSelected": "停用所選",
     "disableThirdParty": "停用第三方",
-    "disabling": "停用中",
+    "disabling": "正在停用 {id}",
     "disconnectedFromBackend": "已與後端斷線。請檢查伺服器是否正在運行。",
     "dismiss": "關閉",
     "download": "下載",
@@ -1584,7 +1601,7 @@
     "enableOrDisablePack": "啟用或停用套件",
     "enableSelected": "啟用所選",
     "enabled": "已啟用",
-    "enabling": "啟用中",
+    "enabling": "正在啟用 {id}",
     "enter": "輸入",
     "enterBaseName": "輸入基礎名稱",
     "enterNewName": "輸入新名稱",
@@ -1638,13 +1655,14 @@
     "increment": "增加",
     "info": "節點資訊",
     "input": "輸入",
+    "inputTooltip": "輸入：{name}",
     "insert": "插入",
     "install": "安裝",
     "installed": "已安裝",
     "installing": "安裝中",
     "interrupted": "已中斷",
     "itemsCopiedToClipboard": "已複製項目到剪貼簿",
-    "itemsSelected": "已選取 {selectedCount} 項",
+    "itemsSelected": "未選取任何項目 | 已選取 {count} 個項目 | 已選取 {count} 個項目",
     "job": "工作",
     "jobIdCopied": "工作 ID 已複製到剪貼簿",
     "keybinding": "快捷鍵",
@@ -1807,7 +1825,7 @@
     "searchKeybindings": "搜尋快捷鍵",
     "searchModels": "搜尋模型",
     "searchNodes": "搜尋節點",
-    "searchPlaceholder": "搜尋...",
+    "searchPlaceholder": "搜尋 {subject}...",
     "searchSettings": "搜尋設定",
     "searchWorkflows": "搜尋工作流程",
     "seeTutorial": "查看教學",
@@ -1859,7 +1877,7 @@
     "updateAvailable": "有可用更新",
     "updateFrontend": "更新前端",
     "updated": "已更新",
-    "updating": "更新中",
+    "updating": "正在更新 {id}",
     "upload": "上傳",
     "uploadAlreadyInProgress": "上傳已在進行中",
     "uploadTimedOut": "上傳逾時。請再試一次。",
@@ -2226,7 +2244,7 @@
     },
     "cancelThisRun": "取消本次執行",
     "deleteAllAssets": "刪除本次運行的所有資產",
-    "downloadAll": "全部下載",
+    "downloadAll": "從此次執行下載 {count} 個資產",
     "dragAndDropImage": "拖曳圖片到此",
     "emptyWorkflowExplanation": "您的工作流程目前是空的。您需要先新增一些節點，才能開始建立應用程式。",
     "enterNodeGraph": "進入節點圖",
@@ -2283,6 +2301,7 @@
     "clearRecording": "清除錄影",
     "dropToLoad": "拖放3D模型以載入",
     "edgeThreshold": "邊緣閾值",
+    "exitLookThrough": "退出相機視角",
     "export": "匯出",
     "exportModel": "匯出模型",
     "exportRecording": "匯出錄影",
@@ -2305,11 +2324,13 @@
       "showAsBackground": "作為背景顯示",
       "uploadFile": "上傳 HDRI（.hdr, .exr）"
     },
+    "hideGizmos": "隱藏操作工具",
     "light": "光源",
     "lightIntensity": "光源強度",
     "loadingBackgroundImage": "正在載入背景圖片",
     "loadingHDRI": "正在載入 HDRI...",
     "loadingModel": "正在載入 3D 模型...",
+    "lookThrough": "相機視角",
     "materialMode": "材質模式",
     "materialModes": {
       "clay": "陶土",
@@ -2350,6 +2371,7 @@
     "removeBackgroundImage": "移除背景圖片",
     "resizeNodeMatchOutput": "調整節點以符合輸出",
     "scene": "場景",
+    "showGizmos": "顯示操作工具",
     "showGrid": "顯示格線",
     "showSkeleton": "顯示骨架",
     "startRecording": "開始錄影",
@@ -2357,6 +2379,13 @@
     "switchCamera": "切換相機",
     "switchingMaterialMode": "正在切換材質模式...",
     "tiledMode": "平鋪",
+    "transformGizmo": {
+      "cameraRotate": "相機旋轉",
+      "cameraTranslate": "相機位置",
+      "label": "編輯",
+      "none": "無",
+      "target": "目標"
+    },
     "unsupportedFileType": "不支援的檔案類型（支援 .gltf、.glb、.obj、.fbx、.stl）",
     "upDirection": "上方方向",
     "upDirections": {
@@ -2365,6 +2394,8 @@
     "uploadBackgroundImage": "上傳背景圖片",
     "uploadTexture": "上傳材質貼圖",
     "uploadingModel": "正在上傳 3D 模型...",
+    "useCustomUp": "從輸入還原相機上方向",
+    "useNaturalUp": "將相機上方向重設為 Y",
     "viewer": {
       "apply": "套用",
       "cameraSettings": "相機設定",
@@ -2480,7 +2511,7 @@
     "enablePackToChangeVersion": "啟用此套件以變更版本",
     "errorConnecting": "連線至 Comfy Node Registry 時發生錯誤。",
     "extensionsSuccessfullyInstalled": "擴充功能已成功安裝並可使用！",
-    "failed": "失敗（{count}）",
+    "failed": "失敗",
     "failedToInstall": "安裝失敗",
     "filter": {
       "disabled": "已停用",
@@ -2569,7 +2600,7 @@
     "tryUpdateTooltip": "從儲存庫拉取最新變更。Nightly 版本可能有無法自動偵測的更新。",
     "uninstall": "解除安裝",
     "uninstallSelected": "解除安裝所選項目",
-    "uninstalling": "正在解除安裝",
+    "uninstalling": "正在解除安裝 {id}",
     "unresolvedNodes": {
       "message": "以下節點尚未安裝，且在註冊表中找不到。",
       "title": "未解決的缺失節點"
@@ -2898,6 +2929,9 @@
     "notNow": "暫時不要",
     "title": "協助我們改進"
   },
+  "nodeBadge": {
+    "partnerNodesCount": "合作夥伴節點 x {count}"
+  },
   "nodeCategories": {
     "": "",
     "3d": "3D",
@@ -2907,6 +2941,7 @@
     "Bria": "Bria",
     "ByteDance": "字節跳動",
     "ElevenLabs": "ElevenLabs",
+    "Fish Audio": "Fish Audio",
     "Gemini": "雙子星",
     "Grok": "Grok",
     "HeyGen": "HeyGen",
@@ -2996,7 +3031,9 @@
     "mage": "mage",
     "mask": "遮罩",
     "merging": "合併",
+    "mesh": "網格",
     "minimax": "minimax",
+    "minimax music": "minimax 音樂",
     "mochi": "mochi",
     "model": "模型",
     "model specific": "模型專用",
@@ -3035,8 +3072,11 @@
     "supir": "supir",
     "sync_so": "sync.so",
     "text": "文字",
+    "texturing": "貼圖",
     "training": "訓練",
     "transform": "轉換",
+    "trellis": "trellis",
+    "trellis2": "trellis2",
     "triposplat": "triposplat",
     "unet": "UNet",
     "upscaling": "放大",
@@ -3427,7 +3467,7 @@
       "expandNodes": "顯示參照節點",
       "gatedModelDownloadTooltip": "下載前可能需要先登入 Hugging Face。",
       "gatedModelTooltip": "此模型為受限模型，需登入 Hugging Face 並同意其授權協議。",
-      "gatedModelsHint": "部分模型為受限模型。下載前請登入 Hugging Face 並同意模型授權協議。",
+      "gatedModelsHint": "{count} 個模型受限。若要下載，請登入 Hugging Face 並接受其授權條款。 | {count} 個模型受限。若要下載，請登入 Hugging Face 並接受其授權條款。",
       "gatedModelsHintLabel": "注意：",
       "import": "匯入",
       "importNotSupported": "不支援匯入",
@@ -4089,8 +4129,8 @@
     "contactUs": "聯絡我們",
     "creditSliderSave": "節省 {percent}%（{amount}）",
     "creditsLeftOfTotal": "剩餘 {remaining} / 共 {total}",
-    "creditsRemainingThisMonth": "本月剩餘點數",
-    "creditsRemainingThisYear": "本年剩餘點數",
+    "creditsRemainingThisMonth": "已包含（於 {date} 補充）",
+    "creditsRemainingThisYear": "已包含（於 {date} 補充額度）",
     "creditsUsed": "已用 {used}",
     "creditsYouveAdded": "您已儲值的點數",
     "currentPlan": "目前方案",
@@ -4128,6 +4168,7 @@
       "freeRuns": "{count} 次免費運行",
       "maxRuntime": "最長執行時間 {duration}"
     },
+    "fullUsageActivity": "完整使用紀錄",
     "gpuLabel": "RTX 6000 Pro（96GB VRAM）",
     "haveQuestions": "有疑問或想了解企業方案？",
     "inactive": {
@@ -4201,6 +4242,7 @@
       "personal": "個人使用",
       "team": "團隊使用"
     },
+    "plansAndCredits": "方案與額度",
     "plansAndPricing": "方案與價格",
     "plansForWorkspace": "{workspace} 的方案",
     "prepaidCreditsInfo": "單獨購買且不會過期的點數",
@@ -4490,7 +4532,7 @@
     "errorSaveSetting": "儲存設定 {id} 時發生錯誤：{err}",
     "exportSuccess": "已成功將模型匯出為 {format}",
     "failedExecutionPathResolution": "無法解析所選節點的路徑",
-    "failedToAccessBillingPortal": "無法存取帳單入口",
+    "failedToAccessBillingPortal": "無法存取帳務入口：{error}",
     "failedToApplyTexture": "套用材質失敗",
     "failedToConvertToSubgraph": "轉換項目為子圖失敗",
     "failedToCreateCustomer": "建立客戶失敗：{error}",
@@ -4499,6 +4541,7 @@
     "failedToFetchBalance": "取得餘額失敗：{error}",
     "failedToFetchLogs": "無法取得伺服器日誌",
     "failedToFetchSubscription": "無法取得訂閱狀態：{error}",
+    "failedToInitializeCameraInfoViewer": "無法初始化相機資訊檢視器。請嘗試重新載入頁面。",
     "failedToInitializeLoad3dViewer": "無法初始化 3D 檢視器",
     "failedToInitiateCreditPurchase": "啟動點數購買失敗：{error}",
     "failedToInitiateSubscription": "無法啟用訂閱：{error}",
@@ -4706,7 +4749,7 @@
     "savedAsWorkflow": "已轉換為僅節點圖工作流程"
   },
   "workspace": {
-    "addedToWorkspace": "你已被加入 {workspaceName}",
+    "addedToWorkspace": "您已加入：",
     "inviteAccepted": "已接受邀請",
     "inviteFailed": "接受邀請失敗",
     "switchFailed": "切換工作區失敗。請再試一次。",
@@ -4801,7 +4844,7 @@
       "title": "編輯工作區詳細資料"
     },
     "invite": "邀請",
-    "inviteLimitReached": "你已達到最多 50 位成員的上限",
+    "inviteLimitReached": "您已達到 {count} 位成員的上限",
     "inviteMember": "邀請成員",
     "inviteMemberDialog": {
       "failedCount": "無法發送 {count} 封邀請，請再試一次。",
@@ -4854,7 +4897,7 @@
         "warning": "此使用者已花費 {credits} 點數。若將上限設於目前用量或更低，將會阻止其本月進一步運行。"
       },
       "header": "成員",
-      "membersCount": "{count}/50 位成員",
+      "membersCount": "{count} / {maxSeats} 位成員",
       "needMoreMembers": "需要更多成員？",
       "noInvites": "沒有待處理邀請",
       "noMembers": "沒有成員",
@@ -4978,6 +5021,8 @@
     "personal": "個人",
     "roleMember": "成員",
     "roleOwner": "擁有者",
+    "scopeCaption": "工作區只會影響您使用的額度。",
+    "scopeTooltip": "使用合作夥伴節點的執行會從此工作區扣除額度。與雲端不同，每個工作區都會儲存至您慣用的輸出資料夾。",
     "subscribe": "訂閱",
     "switchWorkspace": "切換工作區"
   },

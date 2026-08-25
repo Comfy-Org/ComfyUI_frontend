@@ -16,6 +16,8 @@ const mockHandleAddCreditCard = vi.fn()
 const mockHandleConfirmTransition = vi.fn()
 const mockHandleResubscribe = vi.fn()
 const mockHandleSuccessClose = vi.fn()
+const mockApplyPromotionCode = vi.fn()
+const mockInvalidateQuote = vi.fn()
 const mockCheckoutStep = ref<'pricing' | 'preview' | 'success'>('pricing')
 const mockPreviewData = ref<{ transition_type: string } | null>(null)
 const mockUseSubscriptionCheckout = vi.hoisted(() => vi.fn())
@@ -55,8 +57,12 @@ const PricingTableStub = {
 
 const AddPaymentPreviewStub = {
   name: 'SubscriptionAddPaymentPreviewWorkspace',
+  props: ['quoteIsCurrent'],
   template: `<div data-testid="add-payment-preview">
+    <span data-testid="quote-current">{{ quoteIsCurrent }}</span>
     <button data-testid="add-card-btn" @click="$emit('addCreditCard')">Add Card</button>
+    <button data-testid="apply-promo-btn" @click="$emit('applyPromotionCode', 'SAVE20')">Apply promo</button>
+    <button data-testid="invalidate-quote-btn" @click="$emit('invalidateQuote')">Invalidate quote</button>
   </div>`
 }
 
@@ -117,6 +123,8 @@ describe('SubscriptionRequiredDialogContentWorkspace', () => {
       isSubscribing: ref(false),
       isResubscribing: ref(false),
       previewData: mockPreviewData,
+      quoteIsCurrent: ref(true),
+      isApplyingPromotionCode: ref(false),
       selectedTierKey: ref('standard'),
       selectedBillingCycle: ref('yearly'),
       activeCheckoutActionUrl: ref(null),
@@ -125,6 +133,8 @@ describe('SubscriptionRequiredDialogContentWorkspace', () => {
       handleBackToPricing: mockHandleBackToPricing,
       handleAddCreditCard: mockHandleAddCreditCard,
       handleConfirmTransition: mockHandleConfirmTransition,
+      applyPromotionCode: mockApplyPromotionCode,
+      invalidateQuote: mockInvalidateQuote,
       handleResubscribe: mockHandleResubscribe,
       handleSuccessClose: mockHandleSuccessClose
     })
@@ -223,6 +233,19 @@ describe('SubscriptionRequiredDialogContentWorkspace', () => {
     renderComponent()
     expect(screen.getByTestId('add-payment-preview')).toBeInTheDocument()
     expect(screen.queryByTestId('transition-preview')).not.toBeInTheDocument()
+  })
+
+  it('keeps the legacy checkout current and wires promotion controls', async () => {
+    mockCheckoutStep.value = 'preview'
+    mockPreviewData.value = { transition_type: 'new_subscription' }
+    renderComponent()
+
+    expect(screen.getByTestId('quote-current')).toHaveTextContent('true')
+    await userEvent.click(screen.getByTestId('apply-promo-btn'))
+    await userEvent.click(screen.getByTestId('invalidate-quote-btn'))
+
+    expect(mockApplyPromotionCode).toHaveBeenCalledWith('SAVE20')
+    expect(mockInvalidateQuote).toHaveBeenCalledOnce()
   })
 
   it('shows transition preview when transition_type is upgrade', () => {
