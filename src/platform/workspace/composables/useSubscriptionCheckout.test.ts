@@ -427,6 +427,56 @@ describe('useSubscriptionCheckout', () => {
       expect(mockSubscribe).not.toHaveBeenCalled()
     })
 
+    it('previews and subscribes the caller-supplied plan slug instead of resolving it from the catalog', async () => {
+      const checkout = await setup()
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'new_subscription' as const,
+        effective_at: '2025-01-01',
+        is_immediate: true,
+        cost_today_cents: 1600,
+        cost_next_period_cents: 1600,
+        credits_today_cents: 4200,
+        credits_next_period_cents: 4200,
+        new_plan: makeStandardYearly().seat_summary
+      })
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly',
+        planSlug: 'standard-annual-v2'
+      })
+      expect(mockPreviewSubscribe).toHaveBeenCalledWith('standard-annual-v2')
+
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'subscribed',
+        billing_op_id: 'op-slug-1'
+      })
+      mockFetchStatus.mockResolvedValueOnce(undefined)
+      await checkout.handleAddCreditCard()
+
+      expect(mockSubscribe).toHaveBeenCalledWith(
+        'standard-annual-v2',
+        expect.objectContaining({
+          returnUrl: 'https://platform.comfy.org/payment/success'
+        })
+      )
+    })
+
+    it('falls back to the catalog slug when the supplied slug is empty', async () => {
+      const checkout = await setup()
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly',
+        planSlug: ''
+      })
+
+      expect(mockPreviewSubscribe).toHaveBeenCalledWith(
+        findPlanSlug(mockPlans.value, 'standard', 'yearly')
+      )
+    })
+
     it('shows error toast when preview is disallowed', async () => {
       const checkout = await setup()
       mockPreviewSubscribe.mockResolvedValueOnce({
@@ -1300,6 +1350,41 @@ describe('useSubscriptionCheckout', () => {
         checkout_type: 'new',
         payment_intent_source: undefined
       })
+    })
+
+    it('previews and subscribes the caller-supplied team slug instead of the cadence slug', async () => {
+      const checkout = await setup()
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_700',
+          usd: 700,
+          credits: 147_700,
+          discountedUsd: 665
+        },
+        billingCycle: 'monthly',
+        planSlug: 'team-monthly-catalog',
+        isChange: true
+      })
+      expect(mockPreviewSubscribe).toHaveBeenCalledWith(
+        'team-monthly-catalog',
+        { teamCreditStopId: 'team_700' }
+      )
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'subscribed',
+        billing_op_id: 'op-team-slug'
+      })
+      mockFetchStatus.mockResolvedValueOnce(undefined)
+      mockFetchBalance.mockResolvedValueOnce(undefined)
+
+      await checkout.handleTeamSubscribe()
+
+      expect(mockSubscribe).toHaveBeenCalledWith(
+        'team-monthly-catalog',
+        expect.objectContaining({
+          teamCreditStopId: 'team_700',
+          billingCycle: 'monthly'
+        })
+      )
     })
 
     it('subscribes with the team plan slug, stop id and billing cycle', async () => {

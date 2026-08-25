@@ -36,15 +36,22 @@ export type SubscriptionCheckoutSelection =
       planMode: 'personal'
       tierKey: CheckoutTierKey
       billingCycle: BillingCycle
+      /** Exact catalog slug the caller rendered; absent => catalog lookup by tier and cycle. */
+      planSlug?: string
     }
   | {
       planMode: 'team'
       stop: TeamPlanSelection
       billingCycle: BillingCycle
+      /** Exact catalog TEAM slug the caller rendered; absent => the cadence slug. */
+      planSlug?: string
+      /** See `UnifiedPricingTable`'s `isTeamPlanChange`. */
+      isChange?: boolean
     }
 
 interface SelectedTeamCheckout {
   stop: TeamPlanSelection
+  planSlug: string
   checkoutType: SubscriptionCheckoutType
 }
 
@@ -125,6 +132,7 @@ export function useSubscriptionCheckout(
   const isResubscribing = ref(false)
   const previewData = ref<PreviewSubscribeResponse | null>(null)
   const selectedTierKey = ref<CheckoutTierKey | null>(null)
+  const selectedPlanSlug = ref<string | null>(null)
   const selectedTeamCheckout = ref<SelectedTeamCheckout | null>(null)
   let teamPreviewRequestId = 0
   let refreshStatusOnFocus = false
@@ -487,6 +495,7 @@ export function useSubscriptionCheckout(
   async function handleSubscribeClick(payload: {
     tierKey: CheckoutTierKey
     billingCycle: BillingCycle
+    planSlug?: string
   }) {
     if (
       isSubscribing.value ||
@@ -502,10 +511,11 @@ export function useSubscriptionCheckout(
     isLoadingPreview.value = true
     loadingTier.value = tierKey
     selectedTierKey.value = tierKey
+    selectedPlanSlug.value = null
     selectedBillingCycle.value = billingCycle
 
     try {
-      let planSlug = getApiPlanSlug(tierKey, billingCycle)
+      let planSlug = payload.planSlug || getApiPlanSlug(tierKey, billingCycle)
       if (!planSlug) {
         await fetchPlans()
         planSlug = getApiPlanSlug(tierKey, billingCycle)
@@ -518,6 +528,7 @@ export function useSubscriptionCheckout(
         })
         return
       }
+      selectedPlanSlug.value = planSlug
       if (await showTeamToPersonalDowngrade(planSlug, tierKey)) return
       const response = await previewSubscribe(planSlug)
 
@@ -559,18 +570,22 @@ export function useSubscriptionCheckout(
   async function handleSubscribeTeamClick(payload: {
     stop: TeamPlanSelection
     billingCycle: BillingCycle
+    planSlug?: string
     isChange?: boolean
   }) {
     if (isSubscribing.value || !permissions.value.canManageSubscription) return
 
     const previewRequestId = ++teamPreviewRequestId
+    const planSlug = payload.planSlug || getTeamPlanSlug(payload.billingCycle)
     reactivationRequired.value = false
     selectedTeamCheckout.value = {
       stop: payload.stop,
+      planSlug,
       checkoutType: payload.isChange ? 'change' : 'new'
     }
     selectedBillingCycle.value = payload.billingCycle
     selectedTierKey.value = null
+    selectedPlanSlug.value = null
     previewData.value = null
     checkoutStep.value = 'preview'
 
@@ -586,7 +601,6 @@ export function useSubscriptionCheckout(
     let response: PreviewSubscribeResponse | null = null
     let previewError: unknown
     try {
-      const planSlug = getTeamPlanSlug(payload.billingCycle)
       response = await previewSubscribe(planSlug, {
         teamCreditStopId: payload.stop.id
       })
@@ -661,7 +675,8 @@ export function useSubscriptionCheckout(
     if (!tierKey) return
 
     const billingCycle = selectedBillingCycle.value
-    const planSlug = getApiPlanSlug(tierKey, billingCycle)
+    const planSlug =
+      selectedPlanSlug.value ?? getApiPlanSlug(tierKey, billingCycle)
     if (!planSlug) return
     const checkoutType =
       previewData.value &&
@@ -954,9 +969,8 @@ export function useSubscriptionCheckout(
       return
     }
 
-    const { stop, checkoutType } = teamCheckout
+    const { stop, planSlug, checkoutType } = teamCheckout
     const billingCycle = selectedBillingCycle.value
-    const planSlug = getTeamPlanSlug(billingCycle)
 
     isSubscribing.value = true
     try {
