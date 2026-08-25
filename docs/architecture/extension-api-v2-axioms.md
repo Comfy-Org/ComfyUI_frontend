@@ -67,11 +67,16 @@ widget object.
 
 _(Source: A4, A5.)_
 
-### B3 — No inter-instance coordination protocol exists, and none should be added
+### B3 — Widget surfaces converge through shared store state
 
-There is no subscribe/broadcast channel between widget surfaces — no
-`$subscribe` on `widgetValueStore`, no widget-value event bus. Convergence is
-Vue reactivity over one shared entry.
+The current widget surfaces converge through Vue reactivity over one shared
+`widgetValueStore` entry: `useProcessedWidgets.ts` reads with `getWidget` and
+writes with `setValue`; `rightSidePanel/parameters/WidgetItem.vue` resolves the
+same entry; and `AppModeWidgetList.vue` registers or reads that entry. Those
+paths contain no separate subscribe/broadcast coordination step
+(`src/renderer/extensions/vueNodes/composables/useProcessedWidgets.ts`,
+`src/components/rightSidePanel/parameters/WidgetItem.vue`,
+`src/components/builder/AppModeWidgetList.vue`).
 
 **Obligation**: a widget surface may not hold state whose correctness depends on
 it being the only live view of a value. If two surfaces appear to race, that is a
