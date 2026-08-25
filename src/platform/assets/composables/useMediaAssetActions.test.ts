@@ -18,8 +18,10 @@ import { useMediaAssetActions } from './useMediaAssetActions'
 const mockIsCloud = vi.hoisted(() => ({ value: false }))
 
 const mockDownloadFile = vi.hoisted(() => vi.fn())
+const mockDownloadFileAsync = vi.hoisted(() => vi.fn(() => Promise.resolve()))
 vi.mock('@/base/common/downloadUtil', () => ({
-  downloadFile: mockDownloadFile
+  downloadFile: mockDownloadFile,
+  downloadFileAsync: mockDownloadFileAsync
 }))
 
 vi.mock('@/platform/distribution/types', () => ({
@@ -554,11 +556,12 @@ describe('useMediaAssetActions', () => {
       const { actions, unmount } = mountMediaActions(mediaAsset)
       actions.downloadAssets()
 
-      expect(mockDownloadFile).toHaveBeenCalledOnce()
-      expect(mockDownloadFile).toHaveBeenCalledWith(
+      expect(mockDownloadFileAsync).toHaveBeenCalledOnce()
+      expect(mockDownloadFileAsync).toHaveBeenCalledWith(
         'https://example.com/context-preview.png',
         'Context image.png'
       )
+      expect(mockDownloadFile).not.toHaveBeenCalled()
       expect(mockCreateAssetExport).not.toHaveBeenCalled()
       expect(mockTrackExport).not.toHaveBeenCalled()
 
@@ -570,6 +573,7 @@ describe('useMediaAssetActions', () => {
       actions.downloadAssets()
 
       expect(mockDownloadFile).not.toHaveBeenCalled()
+      expect(mockDownloadFileAsync).not.toHaveBeenCalled()
       expect(mockCreateAssetExport).not.toHaveBeenCalled()
       expect(mockTrackExport).not.toHaveBeenCalled()
 
@@ -594,11 +598,12 @@ describe('useMediaAssetActions', () => {
       const actions = useMediaAssetActions()
       actions.downloadAssets([asset])
 
-      expect(mockDownloadFile).toHaveBeenCalledOnce()
-      expect(mockDownloadFile).toHaveBeenCalledWith(
+      expect(mockDownloadFileAsync).toHaveBeenCalledOnce()
+      expect(mockDownloadFileAsync).toHaveBeenCalledWith(
         'https://example.com/single-output.png',
         'single-output.png'
       )
+      expect(mockDownloadFile).not.toHaveBeenCalled()
       expect(mockCreateAssetExport).not.toHaveBeenCalled()
       expect(mockTrackExport).not.toHaveBeenCalled()
     })
@@ -627,6 +632,7 @@ describe('useMediaAssetActions', () => {
       })
 
       expect(mockDownloadFile).not.toHaveBeenCalled()
+      expect(mockDownloadFileAsync).not.toHaveBeenCalled()
       expect(mockCreateAssetExport).toHaveBeenCalledWith({
         job_ids: ['job1'],
         naming_strategy: 'preserve',
