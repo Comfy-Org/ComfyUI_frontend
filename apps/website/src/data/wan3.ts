@@ -25,7 +25,7 @@ export const wan3Page: ModelLaunchPage = {
   breadcrumbUpdatedKey: 'wan3.breadcrumb.updated',
   hero: {
     layout: 'content-first',
-    videoSrc: 'https://media.comfy.org/website/models/wan_3-0_v2.mp4',
+    videoSrc: 'https://media.comfy.org/website/models/wan_3-0_v3.mp4',
     posterSrc: wan3HeroStillSrc,
     mobileFallbackImageSrc: wan3HeroStillSrc,
     mobileVideoSrc: wan3HeroMobileVideoSrc,
