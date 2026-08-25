@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
 import type { TemplateInfo } from '../types/template'
-import { replaceTemplateImageInput } from './templateWorkflowTransforms'
+import {
+  acceptsTemplateImageInput,
+  replaceTemplateImageInput
+} from './templateWorkflowTransforms'
 
 const template: TemplateInfo = {
   name: 'image-template',
@@ -63,13 +66,30 @@ describe('template workflow transforms', () => {
     ).toThrow('Expected one matching template widget value')
   })
 
+  it('rejects an output with no filename', () => {
+    const workflow = {
+      nodes: [
+        {
+          id: 2,
+          type: 'LoadImage',
+          widgets_values: ['starter.png', 'image']
+        }
+      ]
+    }
+
+    expect(() =>
+      replaceTemplateImageInput(workflow, template, { type: 'output' })
+    ).toThrow('Image output has no filename')
+    expect(workflow.nodes[0].widgets_values).toEqual(['starter.png', 'image'])
+  })
+
   it.for(['nodeId', 'nodeType', 'file'] as const)(
     'rejects an image input without %s',
     (field) => {
       const incompleteTemplate = structuredClone(template)
       const input = incompleteTemplate.io?.inputs?.[0]
       if (!input) throw new Error('Expected template image input')
-      Object.defineProperty(input, field, { value: undefined })
+      input[field] = undefined
       const workflow = {
         nodes: [
           {
@@ -80,6 +100,7 @@ describe('template workflow transforms', () => {
         ]
       }
 
+      expect(acceptsTemplateImageInput(incompleteTemplate)).toBe(false)
       expect(() =>
         replaceTemplateImageInput(workflow, incompleteTemplate, {
           filename: 'first-output.png'
@@ -88,4 +109,11 @@ describe('template workflow transforms', () => {
       expect(workflow.nodes[0].widgets_values).toEqual(['starter.png', 'image'])
     }
   )
+
+  it('reports a template with no declared image input as unusable', () => {
+    expect(acceptsTemplateImageInput(template)).toBe(true)
+    expect(acceptsTemplateImageInput({ ...template, io: undefined })).toBe(
+      false
+    )
+  })
 })

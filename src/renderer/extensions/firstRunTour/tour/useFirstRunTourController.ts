@@ -52,8 +52,24 @@ function useFirstRunTourControllerInternal() {
   const firstRunOutput = shallowRef<ResultItem | null>(null)
   const tourJobId = ref<string | null>(null)
   const runCorrelationActive = ref(false)
-  let queuedJobIdsBeforeRun = new Set<string>()
+  const queuedJobIdsBeforeRun = shallowRef(new Set<string>())
   const pendingRunOutputs = new Map<string, ResultItem>()
+
+  /**
+   * The state that ties an accepted job back to this tour's run, reset as a
+   * unit so the three callers cannot drift apart. Starting a run is the one
+   * difference: it snapshots the queue the new job has to be absent from, and
+   * keeps the image an earlier run in the same tour already produced.
+   */
+  function resetRunCorrelation({ forNewRun = false } = {}) {
+    queuedJobIdsBeforeRun.value = new Set(
+      forNewRun ? Object.keys(executionStore.queuedJobs) : []
+    )
+    pendingRunOutputs.clear()
+    tourJobId.value = null
+    runCorrelationActive.value = forNewRun
+    if (!forNewRun) firstRunOutput.value = null
+  }
 
   /**
    * The half of the tour's context that exists before the tour does: a canvas
@@ -126,7 +142,7 @@ function useFirstRunTourControllerInternal() {
       (runCorrelationActive.value
         ? Object.entries(executionStore.queuedJobs).find(
             ([jobId, job]) =>
-              !queuedJobIdsBeforeRun.has(jobId) &&
+              !queuedJobIdsBeforeRun.value.has(jobId) &&
               job.workflow === tourWorkflow.value
           )?.[0]
         : undefined) ?? null
@@ -226,10 +242,15 @@ function useFirstRunTourControllerInternal() {
     if (
       engine.activeTour !== 'firstRun' ||
       runState.value !== 'generating' ||
-      queuedJobIdsBeforeRun.has(detail.prompt_id)
+      queuedJobIdsBeforeRun.value.has(detail.prompt_id)
     )
       return
-    const image = detail.output.images?.find(({ filename }) => filename)
+    // A preview node ahead of the save node emits first, and its item is
+    // garbage-collected rather than kept — seeding it would hand the
+    // continuation a path the backend has already forgotten.
+    const image = detail.output.images?.find(
+      ({ filename, type }) => filename && type !== 'temp'
+    )
     if (!image) return
     const output = { ...image, type: image.type ?? 'output' }
     if (detail.prompt_id === tourJobId.value) {
@@ -258,10 +279,7 @@ function useFirstRunTourControllerInternal() {
         return
       }
 
-      queuedJobIdsBeforeRun = new Set(Object.keys(executionStore.queuedJobs))
-      pendingRunOutputs.clear()
-      tourJobId.value = null
-      runCorrelationActive.value = true
+      resetRunCorrelation({ forNewRun: true })
       runState.value = 'generating'
       startAcceptDeadline()
       engine.next()
@@ -282,11 +300,7 @@ function useFirstRunTourControllerInternal() {
       stopAcceptDeadline()
       releaseFirstRunTargets()
       tourWorkflow.value = null
-      firstRunOutput.value = null
-      pendingRunOutputs.clear()
-      queuedJobIdsBeforeRun.clear()
-      runCorrelationActive.value = false
-      tourJobId.value = null
+      resetRunCorrelation()
       runState.value = 'idle'
     }
   )
@@ -311,11 +325,7 @@ function useFirstRunTourControllerInternal() {
     runState.value = 'idle'
     nudgeArmed.value = false
     nudgeOutput.value = null
-    firstRunOutput.value = null
-    pendingRunOutputs.clear()
-    queuedJobIdsBeforeRun.clear()
-    runCorrelationActive.value = false
-    tourJobId.value = null
+    resetRunCorrelation()
     registerTour(
       'firstRun',
       () => firstRunTourSteps(templateId, runState),
@@ -339,7 +349,6 @@ function useFirstRunTourControllerInternal() {
     beginTour,
     nudgeArmed: readonly(nudgeArmed),
     nudgeOutput: readonly(nudgeOutput),
-    tourWasCompleted: readonly(tourWasCompleted),
     dismissNudge
   }
 }

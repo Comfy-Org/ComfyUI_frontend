@@ -30,7 +30,7 @@
 
       <div class="flex flex-col gap-1.5">
         <button
-          v-for="suggestion in suggestions"
+          v-for="suggestion in availableSuggestions"
           :key="suggestion.id"
           type="button"
           :data-testid="`first-run-nudge-${suggestion.id}`"
@@ -44,7 +44,7 @@
           >
             <i
               v-if="loadingSuggestionId === suggestion.id"
-              class="pi pi-spin pi-spinner size-4.5"
+              class="icon-[lucide--loader-circle] size-4.5 animate-spin"
               aria-hidden="true"
             />
             <i
@@ -95,13 +95,15 @@
 <script setup lang="ts">
 import { useEventListener, useTimeoutFn } from '@vueuse/core'
 import { useToast } from 'primevue/usetoast'
-import { ref, useId, watch } from 'vue'
+import { computed, ref, useId, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
 import { useTelemetry } from '@/platform/telemetry'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
+import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
+import { acceptsTemplateImageInput } from '@/platform/workflow/templates/utils/templateWorkflowTransforms'
 import { useDialogStore } from '@/stores/dialogStore'
 
 import { useFirstRunTourController } from '../tour/useFirstRunTourController'
@@ -128,7 +130,7 @@ const suggestions: Suggestion[] = [
   },
   {
     id: 'upscale',
-    templateId: 'utility_interpolation_image_upscale_4x',
+    templateId: 'utility_seedvr2_7b_int8_upscale_image',
     titleKey: 'onboardingCoachmarks.firstRun.nudge.upscale.title',
     detailKey: 'onboardingCoachmarks.firstRun.nudge.upscale.detail',
     icon: 'icon-[lucide--maximize-2]'
@@ -144,26 +146,46 @@ const suggestions: Suggestion[] = [
 
 const { t } = useI18n()
 const toast = useToast()
-const { nudgeArmed, nudgeOutput, tourWasCompleted, dismissNudge } =
-  useFirstRunTourController()
+const { nudgeArmed, nudgeOutput, dismissNudge } = useFirstRunTourController()
 const { loadTemplates, loadWorkflowTemplate } = useTemplateWorkflows()
+const templatesStore = useWorkflowTemplatesStore()
 const dialogStore = useDialogStore()
 const telemetry = useTelemetry()
 const titleId = useId()
 const subtitleId = useId()
 const loadingSuggestionId = ref<SuggestionId | null>(null)
-const onScreen = ref(false)
+const delayElapsed = ref(false)
 let reported = false
+
+/**
+ * The template package is pinned by the install, not by this build, so an id
+ * this card knows can be absent from the served catalog — or present without
+ * the `io` metadata the continuation needs. Either way the button would be a
+ * dead end found by clicking it, seconds after the user's first success.
+ */
+const availableSuggestions = computed(() =>
+  suggestions.filter(({ templateId }) => {
+    const template = templatesStore.getTemplateByName(templateId)
+    return (
+      template?.sourceModule === 'default' &&
+      acceptsTemplateImageInput(template)
+    )
+  })
+)
+
+const screenIsClear = computed(
+  () => nudgeArmed.value && dialogStore.dialogStack.length === 0
+)
+const onScreen = computed(
+  () =>
+    screenIsClear.value &&
+    delayElapsed.value &&
+    availableSuggestions.value.length > 0
+)
 
 const { start: scheduleAppearance, stop: cancelAppearance } = useTimeoutFn(
   () => {
-    onScreen.value = true
-    if (reported) return
-    reported = true
-    telemetry?.trackOnboardingTour('nudge_shown', {
-      tour: 'firstRun',
-      tour_completed: tourWasCompleted.value
-    })
+    delayElapsed.value = true
   },
   APPEAR_DELAY_MS,
   { immediate: false }
@@ -174,17 +196,28 @@ useEventListener(document, 'keydown', (event: KeyboardEvent) => {
 })
 
 watch(
-  () => nudgeArmed.value && dialogStore.dialogStack.length === 0,
-  (screenIsClear) => {
-    cancelAppearance()
-    if (!screenIsClear) {
-      onScreen.value = false
-      return
-    }
-    scheduleAppearance()
+  nudgeArmed,
+  (armed) => {
+    if (armed) void loadTemplates()
   },
   { immediate: true }
 )
+
+watch(
+  screenIsClear,
+  (clear) => {
+    cancelAppearance()
+    delayElapsed.value = false
+    if (clear) scheduleAppearance()
+  },
+  { immediate: true }
+)
+
+watch(onScreen, (visible) => {
+  if (!visible || reported) return
+  reported = true
+  telemetry?.trackOnboardingTour('nudge_shown', { tour: 'firstRun' })
+})
 
 async function onSuggestion(suggestion: Suggestion) {
   const input = nudgeOutput.value
@@ -192,14 +225,20 @@ async function onSuggestion(suggestion: Suggestion) {
 
   loadingSuggestionId.value = suggestion.id
   try {
-    const templatesLoaded = await loadTemplates()
-    const workflowLoaded =
-      templatesLoaded &&
-      (await loadWorkflowTemplate(suggestion.templateId, 'default', {
+    const loaded = await loadWorkflowTemplate(
+      suggestion.templateId,
+      'default',
+      {
         input
-      }))
+      }
+    )
+    telemetry?.trackOnboardingTour('nudge_suggestion_clicked', {
+      tour: 'firstRun',
+      suggestion: suggestion.id,
+      loaded
+    })
 
-    if (workflowLoaded) {
+    if (loaded) {
       dismissNudge()
       return
     }
@@ -218,8 +257,7 @@ async function onSuggestion(suggestion: Suggestion) {
 function onExplore() {
   useWorkflowTemplateSelectorDialog().show('first_run_nudge')
   telemetry?.trackOnboardingTour('explore_templates_clicked', {
-    tour: 'firstRun',
-    tour_completed: tourWasCompleted.value
+    tour: 'firstRun'
   })
   dismissNudge()
 }

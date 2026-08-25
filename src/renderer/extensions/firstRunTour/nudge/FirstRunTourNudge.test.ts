@@ -34,6 +34,32 @@ function createDeferred<T>(): Deferred<T> {
   return { promise, resolve }
 }
 
+const CATALOG_TEMPLATE_IDS = [
+  'video_minimax_h3_i2v_continuation',
+  'utility_seedvr2_7b_int8_upscale_image',
+  'api_google_nano_banana2_image_edit_continuation'
+]
+
+/** Stands in for what the install's template package actually serves. */
+function catalogEntry(name: string, withIo: boolean) {
+  return {
+    name,
+    sourceModule: 'default',
+    io: withIo
+      ? {
+          inputs: [
+            {
+              nodeId: 1,
+              nodeType: 'LoadImage',
+              file: 'starter.png',
+              mediaType: 'image'
+            }
+          ]
+        }
+      : undefined
+  }
+}
+
 const mocks = await vi.hoisted(async () => {
   const { ref, shallowRef } = await import('vue')
   return {
@@ -43,8 +69,9 @@ const mocks = await vi.hoisted(async () => {
       subfolder: 'tour',
       type: 'output' as const
     }),
-    tourWasCompleted: ref(true),
     openDialogs: ref<string[]>([]),
+    catalog: ref<string[]>([]),
+    catalogHasIo: ref(true),
     dismissNudge: vi.fn(() => {
       mocks.nudgeArmed.value = false
     }),
@@ -60,10 +87,21 @@ vi.mock('../tour/useFirstRunTourController', () => ({
   useFirstRunTourController: () => ({
     nudgeArmed: mocks.nudgeArmed,
     nudgeOutput: mocks.nudgeOutput,
-    tourWasCompleted: mocks.tourWasCompleted,
     dismissNudge: mocks.dismissNudge
   })
 }))
+
+vi.mock(
+  '@/platform/workflow/templates/repositories/workflowTemplatesStore',
+  () => ({
+    useWorkflowTemplatesStore: () => ({
+      getTemplateByName: (name: string) =>
+        mocks.catalog.value.includes(name)
+          ? catalogEntry(name, mocks.catalogHasIo.value)
+          : undefined
+    })
+  })
+)
 
 vi.mock('@/stores/dialogStore', () => ({
   useDialogStore: () => ({
@@ -125,8 +163,9 @@ describe('FirstRunTourNudge', () => {
   beforeEach(() => {
     mocks.nudgeArmed.value = false
     mocks.nudgeOutput.value = FIRST_OUTPUT
-    mocks.tourWasCompleted.value = true
     mocks.openDialogs.value = []
+    mocks.catalog.value = CATALOG_TEMPLATE_IDS
+    mocks.catalogHasIo.value = true
     mocks.loadTemplates.mockResolvedValue(true)
     mocks.loadWorkflowTemplate.mockResolvedValue(true)
   })
@@ -144,8 +183,7 @@ describe('FirstRunTourNudge', () => {
       screen.getByText(enMessages.onboardingCoachmarks.firstRun.nudge.title)
     ).toBeTruthy()
     expect(mocks.trackOnboardingTour).toHaveBeenCalledWith('nudge_shown', {
-      tour: 'firstRun',
-      tour_completed: true
+      tour: 'firstRun'
     })
   })
 
@@ -183,7 +221,7 @@ describe('FirstRunTourNudge', () => {
     },
     {
       id: 'upscale',
-      templateId: 'utility_interpolation_image_upscale_4x'
+      templateId: 'utility_seedvr2_7b_int8_upscale_image'
     },
     {
       id: 'restyle',
@@ -197,20 +235,54 @@ describe('FirstRunTourNudge', () => {
 
       await user.click(suggestionButton(id))
 
-      expect(mocks.loadTemplates).toHaveBeenCalled()
       expect(mocks.loadWorkflowTemplate).toHaveBeenCalledWith(
         templateId,
         'default',
         { input: FIRST_OUTPUT }
       )
+      expect(mocks.trackOnboardingTour).toHaveBeenCalledWith(
+        'nudge_suggestion_clicked',
+        { tour: 'firstRun', suggestion: id, loaded: true }
+      )
       expect(mocks.dismissNudge).toHaveBeenCalled()
     }
   )
 
+  it('offers only the continuations the install actually serves', async () => {
+    mocks.catalog.value = ['utility_seedvr2_7b_int8_upscale_image']
+    await showNudge()
+
+    expect(suggestionButton('upscale')).toBeTruthy()
+    expect(
+      screen.queryByRole('button', {
+        name: new RegExp(SUGGESTION_TITLES.animate, 'i')
+      }),
+      'this build knows the id, but the pinned template package does not serve it'
+    ).toBeNull()
+  })
+
+  it.for([
+    { named: 'serves none of them', catalog: [] as string[] },
+    {
+      named: 'serves them without the metadata to seed them',
+      catalog: CATALOG_TEMPLATE_IDS,
+      stripIo: true
+    }
+  ])('shows nothing when the install $named', async ({ catalog, stripIo }) => {
+    mocks.catalog.value = catalog
+    mocks.catalogHasIo.value = !stripIo
+    await showNudge()
+
+    expect(
+      nudge(),
+      'every action would be a dead end found by clicking it'
+    ).toBeNull()
+  })
+
   it('exposes the pending continuation and blocks competing actions', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-    const templatesLoaded = createDeferred<boolean>()
-    mocks.loadTemplates.mockReturnValueOnce(templatesLoaded.promise)
+    const workflowLoaded = createDeferred<boolean>()
+    mocks.loadWorkflowTemplate.mockReturnValueOnce(workflowLoaded.promise)
     await showNudge()
 
     const animate = suggestionButton('animate')
@@ -226,25 +298,10 @@ describe('FirstRunTourNudge', () => {
       })
     ).toBeDisabled()
 
-    templatesLoaded.resolve(true)
+    workflowLoaded.resolve(true)
     await vi.waitFor(() => {
-      expect(mocks.loadWorkflowTemplate).toHaveBeenCalled()
       expect(mocks.dismissNudge).toHaveBeenCalled()
     })
-  })
-
-  it('keeps the card open when the template catalog fails to load', async () => {
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-    mocks.loadTemplates.mockResolvedValue(false)
-    await showNudge()
-
-    await user.click(suggestionButton('animate'))
-
-    expect(mocks.loadWorkflowTemplate).not.toHaveBeenCalled()
-    expect(mocks.dismissNudge).not.toHaveBeenCalled()
-    expect(mocks.addToast).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'error' })
-    )
   })
 
   it('keeps the card open and reports a template load failure', async () => {
@@ -257,6 +314,10 @@ describe('FirstRunTourNudge', () => {
     expect(mocks.dismissNudge).not.toHaveBeenCalled()
     expect(mocks.addToast).toHaveBeenCalledWith(
       expect.objectContaining({ severity: 'error' })
+    )
+    expect(mocks.trackOnboardingTour).toHaveBeenCalledWith(
+      'nudge_suggestion_clicked',
+      { tour: 'firstRun', suggestion: 'animate', loaded: false }
     )
   })
 
@@ -273,7 +334,7 @@ describe('FirstRunTourNudge', () => {
     expect(mocks.showTemplates).toHaveBeenCalledWith('first_run_nudge')
     expect(mocks.trackOnboardingTour).toHaveBeenCalledWith(
       'explore_templates_clicked',
-      { tour: 'firstRun', tour_completed: true }
+      { tour: 'firstRun' }
     )
     expect(mocks.dismissNudge).toHaveBeenCalled()
   })
