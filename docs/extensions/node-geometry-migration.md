@@ -10,8 +10,10 @@
    requested value.
 4. Use the node/group geometry APIs, not the backing store; don't import
    `layoutStore` or depend on its internal format.
-5. Writes through a removed node reference are ignored, not an error: expect
-   a silent no-op, not a throw or a clobbered live node.
+5. Writes through a removed node reference update only that detached
+   object's own fields, not an error and not a clobbered live node: expect
+   the live/shared layout state to stay untouched, not the detached
+   object itself to be a no-op.
 
 ## What changed
 
@@ -65,9 +67,14 @@ in the node list, and its execution order. It's now always draw order. If
 your extension inferred stacking or hit-test order from execution order,
 switch to draw order.
 
-## Writes through removed node references are ignored
+## Writes through removed node references don't propagate, but do land locally
 
 If you hold a node, group, or reroute reference after it's removed from the
 graph (a detached clone, or a reference captured before an async callback
-resolves), calling `setPos()` or `setSize()` on it is a no-op. It does not
-throw, and it does not affect whatever entity now owns that ID.
+resolves), calling `setPos()` or `setSize()` on it still updates that
+object's own local position/size fields — the setter writes them
+unconditionally before the missing-graph guard runs. What's guaranteed is
+narrower than a full no-op: the write never reaches the shared layout store
+and never affects whatever entity now owns that ID. It does not throw. Don't
+rely on a detached reference's `pos`/`size` staying unchanged after you write
+to it; only the live/shared state is protected.

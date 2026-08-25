@@ -44,7 +44,7 @@ mutate during add/remove. There's no multi-subscriber equivalent for
 connect/disconnect; `onConnectionsChange` is still the only per-connection
 hook.
 
-## Node removal fires callbacks in a fixed, tested order
+## Node removal fires callbacks in this order (partially tested)
 
 Removing a node fires, in order:
 
@@ -56,6 +56,15 @@ Removing a node fires, in order:
    `null`.
 5. `onNodeRemoved(node)`, then `node:removed`, both seeing an already-detached
    node.
+
+Test coverage backs this only in pieces: one test asserts the
+`before-removed → onRemoved → onNodeRemoved` order (steps 1, 3, 5's first
+half); a separate test asserts `node:removed` fires with the node already
+detached (step 4 relative to step 5's second half). The placement of
+`onConnectionsChange` (step 2) relative to the rest of the sequence, and the
+full five-step order end to end, are observed from source, not exercised by
+a single test. Treat step 2's position as documented-but-not-test-guaranteed
+until a discriminating test exists.
 
 To resolve the removed node from a peer's `onConnectionsChange` handler, do it
 at step 2 via `graph.getNodeById()`. By `node:removed`, the node is gone.
@@ -92,16 +101,22 @@ exercises the skip path.
 `node:slot-links:changed` and `node:slot-errors:changed` were removed, with
 no replacement event of the same name. Migrate to:
 
-- `inputHasLink()`, `outputHasLinks()`, or `outputLinkIds()` for a reactive
-  read of connectivity state, or
+- `node.isInputConnected()`, `node.isOutputConnected()`, or
+  `node.getOutputNodes()` for a reactive read of connectivity state, or
 - `onConnectionsChange` when you need to run code at the exact moment a slot
   connects or disconnects.
 
-## Read connection state from callback arguments or slotLinks helpers
+## Read connection state from callback arguments or node methods
 
 `input.link` and `output.links` are deprecated: writes through them no
 longer drive topology, and reads can drift from the current graph. Use the
-`link_info` argument your callback already receives, or the public helpers
-exported from `slotLinks.ts` (`inputHasLink`, `outputHasLinks`,
-`outputLinkIds`, `inputLink`, `outputLinks`), not the link store directly,
-and not `input.link`/`output.links`.
+`link_info` argument your callback already receives, or the `LGraphNode`
+instance methods that read the link store directly —
+`node.isInputConnected()`, `node.getInputLink()`, `node.isOutputConnected()`,
+`node.getOutputNodes()` — not `input.link`/`output.links`.
+
+These methods are backed by `inputHasLink()`, `outputHasLinks()`,
+`outputLinkIds()`, `inputLink()`, and `outputLinks()` in `slotLinks.ts`, but
+that module is internal: it isn't re-exported from `litegraph.ts`, so import
+it directly at your own risk rather than treating it as supported extension
+API. Prefer the node methods above.
