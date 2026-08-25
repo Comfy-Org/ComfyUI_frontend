@@ -52,23 +52,38 @@ interface SetOutputOptions {
 export const useNodeOutputStore = defineStore('nodeOutput', () => {
   const { nodeIdToNodeLocatorId, nodeToNodeLocatorId } = useWorkflowStore()
   const scheduledRevoke: Record<NodeLocatorId, { stop: () => void }> = {}
+  const scheduledRevokeByExecutionId: Record<string, { stop: () => void }> = {}
   const latestPreview = ref<string[]>([])
 
-  function scheduleRevoke(locator: NodeLocatorId, cb: () => void) {
-    scheduledRevoke[locator]?.stop()
+  function scheduleRevoke(
+    tracker: Record<string, { stop: () => void }>,
+    key: string,
+    cb: () => void
+  ) {
+    tracker[key]?.stop()
 
     const { stop } = useTimeoutFn(() => {
-      delete scheduledRevoke[locator]
+      delete tracker[key]
       cb()
     }, PREVIEW_REVOKE_DELAY_MS)
 
-    scheduledRevoke[locator] = { stop }
+    tracker[key] = { stop }
   }
 
   const nodeOutputs = ref<Record<string, ExecutedWsMessage['output']>>({})
   const nodePreviewImages = ref<Record<string, string[]>>(
     app.nodePreviewImages || {}
   )
+  /**
+   * Preview frames keyed by the writer's own `NodeExecutionId`, distinct from
+   * `nodePreviewImages`'s `NodeLocatorId` keying: `NodeLocatorId` is
+   * definition-scoped by design, so multiple instances of one subgraph
+   * definition collapse to the same key there. Live preview frames are
+   * instance-scoped — two instances executing concurrently must not overwrite
+   * each other's frame — so `getNodePreviewImagesByExecutionId` reads this
+   * map instead.
+   */
+  const nodePreviewImagesByExecutionId = ref<Record<string, string[]>>({})
 
   function getNodeOutputs(
     node: LGraphNode
@@ -139,9 +154,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   function getNodePreviewImagesByExecutionId(
     executionId: NodeExecutionId
   ): string[] | undefined {
-    const locatorId = executionIdToNodeLocatorId(app.rootGraph, executionId)
-    if (!locatorId) return undefined
-    return nodePreviewImages.value[locatorId]
+    return nodePreviewImagesByExecutionId.value[executionId]
   }
 
   function getNodeImageUrlsByExecutionId(
@@ -250,7 +263,32 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     const nodeLocatorId = executionIdToNodeLocatorId(app.rootGraph, executionId)
     if (!nodeLocatorId) return
     setNodePreviewsByLocatorId(nodeLocatorId, previewImages)
+    setInstancePreviewImages(executionId, previewImages)
     latestPreview.value = previewImages
+  }
+
+  function setInstancePreviewImages(
+    executionId: NodeExecutionId,
+    previewImages: string[]
+  ) {
+    const existing = nodePreviewImagesByExecutionId.value[executionId]
+    if (scheduledRevokeByExecutionId[executionId]) {
+      scheduledRevokeByExecutionId[executionId].stop()
+      delete scheduledRevokeByExecutionId[executionId]
+    }
+    if (existing?.[Symbol.iterator]) {
+      for (const url of existing) releaseSharedObjectUrl(url)
+    }
+    for (const url of previewImages) retainSharedObjectUrl(url)
+    nodePreviewImagesByExecutionId.value[executionId] = previewImages
+  }
+
+  function revokeInstancePreviewImages(executionId: NodeExecutionId) {
+    const previews = nodePreviewImagesByExecutionId.value[executionId]
+    if (!previews?.[Symbol.iterator]) return
+
+    for (const url of previews) releaseSharedObjectUrl(url)
+    delete nodePreviewImagesByExecutionId.value[executionId]
   }
 
   function setNodePreviewsByLocatorId(
@@ -280,9 +318,13 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
   function revokePreviewsByExecutionId(executionId: NodeExecutionId) {
     const nodeLocatorId = executionIdToNodeLocatorId(app.rootGraph, executionId)
-    if (!nodeLocatorId) return
-    scheduleRevoke(nodeLocatorId, () =>
-      revokePreviewsByLocatorId(nodeLocatorId)
+    if (nodeLocatorId) {
+      scheduleRevoke(scheduledRevoke, nodeLocatorId, () =>
+        revokePreviewsByLocatorId(nodeLocatorId)
+      )
+    }
+    scheduleRevoke(scheduledRevokeByExecutionId, executionId, () =>
+      revokeInstancePreviewImages(executionId)
     )
   }
 
@@ -309,6 +351,14 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     }
     app.nodePreviewImages = {}
     nodePreviewImages.value = {}
+
+    for (const executionId of Object.keys(
+      nodePreviewImagesByExecutionId.value
+    )) {
+      const previews = nodePreviewImagesByExecutionId.value[executionId]
+      for (const url of previews) releaseSharedObjectUrl(url)
+    }
+    nodePreviewImagesByExecutionId.value = {}
   }
 
   function revokeSubgraphPreviews(subgraphNode: SubgraphNode) {

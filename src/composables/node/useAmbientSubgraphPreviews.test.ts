@@ -9,7 +9,6 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 
 import { getPreviewMediaType } from './usePromotedPreviews'
@@ -17,14 +16,29 @@ import { useAmbientSubgraphPreviews } from './useAmbientSubgraphPreviews'
 
 type MockNodeOutputStore = Pick<
   ReturnType<typeof useNodeOutputStore>,
-  'nodeOutputs' | 'nodePreviewImages' | 'getNodeImageUrls'
+  | 'nodeOutputs'
+  | 'nodePreviewImages'
+  | 'getNodeImageUrls'
+  | 'getNodePreviewImagesByExecutionId'
+  | 'getNodeImageUrlsByExecutionId'
 >
 
 vi.mock('@/stores/nodeOutputStore', () => {
+  // Reused (keyed by `NodeExecutionId` strings, not `NodeLocatorId`s) as the
+  // backing store for `getNodePreviewImagesByExecutionId` below, so seeding
+  // it stays a plain reactive write — see "Mocking Composables with Reactive
+  // State" in docs/testing/unit-testing.md.
+  const nodePreviewImages = reactive<MockNodeOutputStore['nodePreviewImages']>(
+    {}
+  )
   const store: MockNodeOutputStore = {
     nodeOutputs: reactive<MockNodeOutputStore['nodeOutputs']>({}),
-    nodePreviewImages: reactive<MockNodeOutputStore['nodePreviewImages']>({}),
-    getNodeImageUrls: vi.fn()
+    nodePreviewImages,
+    getNodeImageUrls: vi.fn(),
+    getNodePreviewImagesByExecutionId: vi.fn(
+      (executionId: string) => nodePreviewImages[executionId]
+    ),
+    getNodeImageUrlsByExecutionId: vi.fn()
   }
   return { useNodeOutputStore: () => store }
 })
@@ -58,11 +72,14 @@ function addInteriorNode(
   return node
 }
 
-function seedOutputs(subgraphId: string, nodeIds: Array<number | string>) {
-  const store = useNodeOutputStore()
+/**
+ * Seeds a live preview frame for an interior node, keyed the same way
+ * production writes it: `<host id>:<interior node id>`.
+ */
+function seedOutputs(hostId: number | string, nodeIds: Array<number | string>) {
+  const { nodePreviewImages } = useNodeOutputStore()
   for (const nodeId of nodeIds) {
-    const locatorId = createNodeLocatorId(subgraphId, toNodeId(nodeId))
-    store.nodePreviewImages[locatorId] = ['seeded-preview-url']
+    nodePreviewImages[`${hostId}:${nodeId}`] = ['seeded-preview-url']
   }
 }
 
@@ -87,10 +104,10 @@ describe(useAmbientSubgraphPreviews, () => {
   it('returns empty array (does not throw) when SubgraphNode is detached', () => {
     const setup = createSetup()
     addInteriorNode(setup, { id: 10, previewMediaType: 'image' })
-    seedOutputs(setup.subgraph.id, [10])
-    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([
-      '/view?filename=output.png'
-    ])
+    seedOutputs(setup.subgraphNode.id, [10])
+    vi.mocked(
+      useNodeOutputStore().getNodeImageUrlsByExecutionId
+    ).mockReturnValue(['/view?filename=output.png'])
 
     const parentGraph = setup.subgraphNode.graph!
     parentGraph.add(setup.subgraphNode)
@@ -117,11 +134,12 @@ describe(useAmbientSubgraphPreviews, () => {
   it('returns a preview for an interior node with live output, without any exposure', () => {
     const setup = createSetup()
     const node = addInteriorNode(setup, { id: 10, previewMediaType: 'image' })
-    seedOutputs(setup.subgraph.id, [10])
+    seedOutputs(setup.subgraphNode.id, [10])
     const urls = ['/view?filename=output.png']
-    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockImplementation((n) =>
-      n === node ? urls : undefined
-    )
+    const executionId = `${setup.subgraphNode.id}:10`
+    vi.mocked(
+      useNodeOutputStore().getNodeImageUrlsByExecutionId
+    ).mockImplementation((id) => (id === executionId ? urls : undefined))
 
     const { ambientPreviews } = useAmbientSubgraphPreviews(
       () => setup.subgraphNode
@@ -142,14 +160,15 @@ describe(useAmbientSubgraphPreviews, () => {
     'derives %s type from previewMediaType, same as the promoted path',
     ([mediaType, url]) => {
       const setup = createSetup()
-      const node = addInteriorNode(setup, {
+      addInteriorNode(setup, {
         id: 10,
         previewMediaType: mediaType
       })
-      seedOutputs(setup.subgraph.id, [10])
-      vi.mocked(useNodeOutputStore().getNodeImageUrls).mockImplementation(
-        (n) => (n === node ? [url] : undefined)
-      )
+      seedOutputs(setup.subgraphNode.id, [10])
+      const executionId = `${setup.subgraphNode.id}:10`
+      vi.mocked(
+        useNodeOutputStore().getNodeImageUrlsByExecutionId
+      ).mockImplementation((id) => (id === executionId ? [url] : undefined))
 
       const { ambientPreviews } = useAmbientSubgraphPreviews(
         () => setup.subgraphNode
@@ -162,22 +181,23 @@ describe(useAmbientSubgraphPreviews, () => {
 
   it('returns separate entries for two concurrently-executing interior nodes', () => {
     const setup = createSetup()
-    const node10 = addInteriorNode(setup, {
+    addInteriorNode(setup, {
       id: 10,
       previewMediaType: 'image'
     })
-    const node20 = addInteriorNode(setup, {
+    addInteriorNode(setup, {
       id: 20,
       previewMediaType: 'image'
     })
-    seedOutputs(setup.subgraph.id, [10, 20])
-    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockImplementation(
-      (node) => {
-        if (node === node10) return ['/view?a=1']
-        if (node === node20) return ['/view?b=2']
-        return undefined
-      }
-    )
+    seedOutputs(setup.subgraphNode.id, [10, 20])
+    const hostId = setup.subgraphNode.id
+    vi.mocked(
+      useNodeOutputStore().getNodeImageUrlsByExecutionId
+    ).mockImplementation((executionId) => {
+      if (executionId === `${hostId}:10`) return ['/view?a=1']
+      if (executionId === `${hostId}:20`) return ['/view?b=2']
+      return undefined
+    })
 
     const { ambientPreviews } = useAmbientSubgraphPreviews(
       () => setup.subgraphNode
@@ -190,11 +210,13 @@ describe(useAmbientSubgraphPreviews, () => {
     expect(urlsBySourceNodeId.get(toNodeId(20))).toEqual(['/view?b=2'])
   })
 
-  it('skips interior nodes when getNodeImageUrls returns no urls despite a preview entry', () => {
+  it('skips interior nodes when getNodeImageUrlsByExecutionId returns no urls despite a preview entry', () => {
     const setup = createSetup()
     addInteriorNode(setup, { id: 10, previewMediaType: 'image' })
-    seedOutputs(setup.subgraph.id, [10])
-    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue(undefined)
+    seedOutputs(setup.subgraphNode.id, [10])
+    vi.mocked(
+      useNodeOutputStore().getNodeImageUrlsByExecutionId
+    ).mockReturnValue(undefined)
 
     const { ambientPreviews } = useAmbientSubgraphPreviews(
       () => setup.subgraphNode
@@ -202,21 +224,17 @@ describe(useAmbientSubgraphPreviews, () => {
     expect(ambientPreviews.value).toEqual([])
   })
 
-  // Regression coverage for narrowing the gate to `nodePreviewImages` only:
-  // a committed output (as opposed to a streaming preview frame) must never
-  // surface ambiently, even when it looks like a valid image output —
-  // otherwise demoting an exposure becomes a no-op and every interior output
-  // node stacks a permanent preview on the host after every run.
+  // Regression coverage for narrowing the gate to a live streaming preview
+  // frame only: a committed output must never surface ambiently, even when
+  // an image url is otherwise resolvable — otherwise demoting an exposure
+  // becomes a no-op and every interior output node stacks a permanent
+  // preview on the host after every run.
   it('does not surface a committed output that was never a streaming preview', () => {
     const setup = createSetup()
-    const node = addInteriorNode(setup, { id: 10, previewMediaType: 'image' })
-    const locatorId = createNodeLocatorId(setup.subgraph.id, toNodeId(10))!
-    useNodeOutputStore().nodeOutputs[locatorId] = {
-      images: [{ filename: 'output.png' }]
-    }
-    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockImplementation((n) =>
-      n === node ? ['/view?filename=output.png'] : undefined
-    )
+    addInteriorNode(setup, { id: 10, previewMediaType: 'image' })
+    vi.mocked(
+      useNodeOutputStore().getNodeImageUrlsByExecutionId
+    ).mockReturnValue(['/view?filename=output.png'])
 
     const { ambientPreviews } = useAmbientSubgraphPreviews(
       () => setup.subgraphNode
@@ -226,18 +244,19 @@ describe(useAmbientSubgraphPreviews, () => {
 
   it('recomputes when outputs are populated after first evaluation', () => {
     const setup = createSetup()
-    const node = addInteriorNode(setup, { id: 10, previewMediaType: 'image' })
+    addInteriorNode(setup, { id: 10, previewMediaType: 'image' })
 
     const { ambientPreviews } = useAmbientSubgraphPreviews(
       () => setup.subgraphNode
     )
     expect(ambientPreviews.value).toEqual([])
 
-    seedOutputs(setup.subgraph.id, [10])
+    seedOutputs(setup.subgraphNode.id, [10])
     const urls = ['/view?filename=output.png']
-    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockImplementation((n) =>
-      n === node ? urls : undefined
-    )
+    const executionId = `${setup.subgraphNode.id}:10`
+    vi.mocked(
+      useNodeOutputStore().getNodeImageUrlsByExecutionId
+    ).mockImplementation((id) => (id === executionId ? urls : undefined))
 
     expect(ambientPreviews.value).toEqual([
       expect.objectContaining({ sourceNodeId: '10', urls })
@@ -252,12 +271,13 @@ describe(useAmbientSubgraphPreviews, () => {
     )
     expect(ambientPreviews.value).toEqual([])
 
-    const node = addInteriorNode(setup, { id: 10, previewMediaType: 'image' })
-    seedOutputs(setup.subgraph.id, [10])
+    addInteriorNode(setup, { id: 10, previewMediaType: 'image' })
+    seedOutputs(setup.subgraphNode.id, [10])
     const urls = ['/view?filename=output.png']
-    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockImplementation((n) =>
-      n === node ? urls : undefined
-    )
+    const executionId = `${setup.subgraphNode.id}:10`
+    vi.mocked(
+      useNodeOutputStore().getNodeImageUrlsByExecutionId
+    ).mockImplementation((id) => (id === executionId ? urls : undefined))
 
     expect(ambientPreviews.value).toEqual([
       expect.objectContaining({ sourceNodeId: '10', urls })
@@ -269,10 +289,10 @@ describe(useAmbientSubgraphPreviews, () => {
     const nestedSubgraph = createTestSubgraph()
     const nestedHost = createTestSubgraphNode(nestedSubgraph, { id: 30 })
     setup.subgraph.add(nestedHost)
-    seedOutputs(setup.subgraph.id, [30])
-    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([
-      '/view?filename=output.png'
-    ])
+    seedOutputs(setup.subgraphNode.id, [30])
+    vi.mocked(
+      useNodeOutputStore().getNodeImageUrlsByExecutionId
+    ).mockReturnValue(['/view?filename=output.png'])
 
     const { ambientPreviews } = useAmbientSubgraphPreviews(
       () => setup.subgraphNode
@@ -284,10 +304,10 @@ describe(useAmbientSubgraphPreviews, () => {
     const setup = createSetup()
     const node = addInteriorNode(setup, { id: 10, previewMediaType: 'image' })
     node.hideOutputImages = true
-    seedOutputs(setup.subgraph.id, [10])
-    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([
-      '/view?filename=output.png'
-    ])
+    seedOutputs(setup.subgraphNode.id, [10])
+    vi.mocked(
+      useNodeOutputStore().getNodeImageUrlsByExecutionId
+    ).mockReturnValue(['/view?filename=output.png'])
 
     const { ambientPreviews } = useAmbientSubgraphPreviews(
       () => setup.subgraphNode
