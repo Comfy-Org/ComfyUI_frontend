@@ -509,8 +509,14 @@ const canChangePlan = computed(() =>
   isCloud ? canChangeSeats.value : permissions.value.canManageSubscription
 )
 
+// The never-subscribed upsell is Cloud-only; on Local the policy table keeps
+// top-up available instead. An ended Team plan keeps its inactive treatment
+// everywhere so billing, invoices, and reactivation stay reachable.
 const showTeamSubscribePrompt = computed(
-  () => showSubscribePrompt.value && !isInPersonalWorkspace.value
+  () =>
+    showSubscribePrompt.value &&
+    !isInPersonalWorkspace.value &&
+    (isCloud || (isSubscriptionEnded.value && isTeamPlan.value))
 )
 
 const showInactiveTeamSubscription = computed(

@@ -90,6 +90,7 @@ export type {
   BillingBalanceResponse,
   BillingCapabilities,
   BillingCapabilitiesResponse,
+  BillingCapabilityRolloutDefaults,
   BillingCapabilityScope,
   BillingCompanyDetailsResponse,
   BillingCompanyDetailsUpdateRequest,

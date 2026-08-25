@@ -7,6 +7,7 @@ import {
   EMPTY_BILLING_PLANS,
   ENDED_STANDARD_BILLING_STATUS
 } from '@e2e/fixtures/data/cloudWorkspace'
+import { makeWorkspaceTokenResponse } from '@e2e/fixtures/data/workspaceAuthFixtures'
 import {
   WORKSPACE_SWITCHER_REMOTE_CONFIG,
   WORKSPACE_SWITCHER_WORKSPACES
@@ -19,7 +20,14 @@ import { mockWorkspaceList } from '@e2e/fixtures/utils/workspaceMocks'
  * (team workspaces enabled), the workspace list, workspace-token minting and
  * billing capabilities for the selected workspace, and a no-op session refresh.
  */
-export const workspaceSwitcherTest = comfyPageFixture.extend({
+interface WorkspaceSwitchTokenGate {
+  requestReceived: Promise<void>
+  release: () => void
+}
+
+export const workspaceSwitcherTest = comfyPageFixture.extend<{
+  workspaceSwitchTokenGate: WorkspaceSwitchTokenGate
+}>({
   page: async ({ page }, use) => {
     await page.route('**/api/features', (route) =>
       route.fulfill(jsonRoute(WORKSPACE_SWITCHER_REMOTE_CONFIG))
@@ -76,7 +84,6 @@ export const workspaceSwitcherTest = comfyPageFixture.extend({
       await route.fulfill(
         jsonRoute(
           createBillingCapabilities(workspaceId, {
-            can_subscribe_self_serve: workspaceId !== 'ws-team-long',
             can_top_up: workspaceId !== 'ws-team-long'
           })
         )
@@ -84,5 +91,51 @@ export const workspaceSwitcherTest = comfyPageFixture.extend({
     })
 
     await use(page)
+  },
+  workspaceSwitchTokenGate: async ({ page }, use) => {
+    let markRequestReceived: () => void = () => {}
+    const requestReceived = new Promise<void>((resolve) => {
+      markRequestReceived = resolve
+    })
+    let releaseToken: () => void = () => {}
+    const tokenRelease = new Promise<void>((resolve) => {
+      releaseToken = resolve
+    })
+    await page.route('**/api/auth/token', async (route) => {
+      const requestBody = route.request().postDataJSON() as {
+        workspace_id?: string
+      }
+      if (requestBody.workspace_id !== 'ws-team') {
+        await route.fallback()
+        return
+      }
+
+      markRequestReceived()
+      await tokenRelease
+      const workspace = WORKSPACE_SWITCHER_WORKSPACES.find(
+        ({ id }) => id === requestBody.workspace_id
+      )
+      if (!workspace) {
+        await route.fulfill({ status: 404 })
+        return
+      }
+      await route.fulfill(
+        jsonRoute(
+          makeWorkspaceTokenResponse(
+            workspace,
+            `mock-workspace-token-${workspace.id}`
+          )
+        )
+      )
+    })
+
+    try {
+      await use({
+        requestReceived,
+        release: releaseToken
+      })
+    } finally {
+      releaseToken()
+    }
   }
 })

@@ -33,6 +33,7 @@ export type SubscriptionTier =
   | 'PRO'
   | 'FOUNDERS_EDITION'
   | 'TEAM'
+  | 'ENTERPRISE'
 
 /**
  * Abbreviated workspace metadata used in list responses.
@@ -3865,11 +3866,36 @@ export type BillingCapabilityScope = {
 }
 
 /**
+ * Identifies capability values currently using safe rollout defaults
+ * instead of deterministic policy results. A true value is UI guidance,
+ * not evidence that the corresponding write will succeed.
+ *
+ */
+export type BillingCapabilityRolloutDefaults = {
+  can_downgrade_to_personal: boolean
+  can_subscribe_self_serve: boolean
+  can_top_up: boolean
+}
+
+/**
  * Effective billing UI guidance for one authenticated user and workspace.
  */
 export type BillingCapabilitiesResponse = {
   capabilities: BillingCapabilities
+  /**
+   * Time after which the client must refetch this snapshot.
+   */
+  expires_at: string
   resolved_for: BillingCapabilityScope
+  /**
+   * JavaScript-safe, time-sortable revision for this snapshot. It
+   * increases monotonically within a serving process. Clients should
+   * invalidate on a different X-Capability-Revision value and use
+   * expires_at as the cross-instance freshness bound.
+   *
+   */
+  revision: number
+  rollout_defaults_applied: BillingCapabilityRolloutDefaults
 }
 
 /**

@@ -23,7 +23,15 @@ export function createBillingCapabilities(
       can_subscribe_self_serve: true,
       can_top_up: true,
       ...overrides
-    }
+    },
+    rollout_defaults_applied: {
+      can_downgrade_to_personal: false,
+      can_subscribe_self_serve: false,
+      can_top_up: false
+    },
+    revision: 1,
+    // Far-future expiry so the snapshot never goes stale mid-test.
+    expires_at: '2099-01-01T00:00:00Z'
   }
 }
 
