@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { TemplateDetailGroup } from '@/platform/workflow/templates/types/templateDetail'
 
 import WorkflowTemplateDetail from './WorkflowTemplateDetail.vue'
@@ -10,23 +11,7 @@ import WorkflowTemplateDetail from './WorkflowTemplateDetail.vue'
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
-  messages: {
-    en: {
-      templateWorkflows: {
-        detail: {
-          cloudUpsellTitle: 'Run this template in Comfy Cloud',
-          cloudUpsellDescription:
-            'Run faster on Cloud GPUs. No local setup or downloads.',
-          partnerNodeTitle: 'This workflow uses Partner Nodes',
-          partnerNodeDescription:
-            'Run locally with Comfy Credits, or run in Comfy Cloud with a subscription.',
-          openInCloud: 'Open in Cloud',
-          requirements: 'Template requirements',
-          openTemplate: 'Open template'
-        }
-      }
-    }
-  }
+  messages: { en: enMessages }
 })
 
 const groups = [
