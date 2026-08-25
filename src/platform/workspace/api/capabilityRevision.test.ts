@@ -75,6 +75,29 @@ describe('capabilityRevision', () => {
     expect(listener).toHaveBeenCalledExactlyOnceWith(43)
   })
 
+  it.for(['put', 'patch', 'delete'])(
+    'publishes the revision reported by a %s mutation',
+    async (method) => {
+      const listener = subscribe()
+
+      await clientRespondingWith(200, {
+        'X-Capability-Revision': '11'
+      }).request({ method, url: '/api/workspaces/workspace-1' })
+
+      expect(listener).toHaveBeenCalledExactlyOnceWith(11)
+    }
+  )
+
+  it('publishes nothing for a read that reports its own revision', async () => {
+    const listener = subscribe()
+
+    await clientRespondingWith(200, { 'X-Capability-Revision': '44' }).get(
+      '/api/billing/capabilities'
+    )
+
+    expect(listener).not.toHaveBeenCalled()
+  })
+
   it('reads the revision header case-insensitively', async () => {
     const listener = subscribe()
 
