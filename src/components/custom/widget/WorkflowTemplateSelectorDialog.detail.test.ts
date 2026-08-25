@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { TemplateModelMetadataBatchResult } from '@/platform/workflow/templates/utils/templateModelMetadata'
+import type { ResolvedTemplateModelAvailability } from '@/platform/workflow/templates/utils/templateModelAvailability'
 
 const fixtures = vi.hoisted(() => {
   const model = {
@@ -67,21 +69,26 @@ const mocks = vi.hoisted(() => ({
   getTemplateThumbnailUrl: vi.fn(() => '/thumbnail.webp'),
   getTemplateTitle: vi.fn((template: { title: string }) => template.title),
   loadTemplates: vi.fn(async () => true),
-  resolveModelAvailability: vi.fn(async (models: readonly unknown[]) =>
-    models.map((model) => ({
-      model,
-      status: 'missing' as 'missing' | 'installed' | 'unknown'
-    }))
+  isModelDownloadable: vi.fn(() => true),
+  resolveModelAvailability: vi.fn(
+    async (
+      models: readonly (typeof fixtures.prepared.workflow.models)[number][]
+    ): Promise<ResolvedTemplateModelAvailability[]> =>
+      models.map((model) => ({ model, status: 'missing' }))
   ),
-  resolveModelMetadata: vi.fn(async (models: readonly unknown[]) => ({
-    status: 'completed' as const,
-    entries: models.map((model) => ({
-      model,
-      resolution: 'resolved' as const,
-      fileSize: 2048,
-      gatedRepoUrl: null
-    }))
-  })),
+  resolveModelMetadata: vi.fn(
+    async (
+      models: readonly (typeof fixtures.prepared.workflow.models)[number][]
+    ): Promise<TemplateModelMetadataBatchResult> => ({
+      status: 'completed',
+      entries: models.map((model) => ({
+        model,
+        resolution: 'resolved',
+        fileSize: 2048,
+        gatedRepoUrl: null
+      }))
+    })
+  ),
   rowDownloadDispose: vi.fn(),
   rowDownloadRequest: vi.fn(),
   rowDownloadStateFor: vi.fn(() => ({ status: 'idle' as const, attempt: 0 })),
@@ -132,7 +139,7 @@ vi.mock('@/platform/workflow/templates/utils/templateModelMetadata', () => ({
 }))
 
 vi.mock('@/platform/missingModel/missingModelDownload', () => ({
-  isModelDownloadable: vi.fn(() => true)
+  isModelDownloadable: mocks.isModelDownloadable
 }))
 
 vi.mock('@/scripts/api', () => ({
@@ -386,25 +393,56 @@ describe('WorkflowTemplateSelectorDialog template detail navigation', () => {
     expect(mocks.onClose).toHaveBeenCalledOnce()
   })
 
-  it('keeps Desktop detail usable when model availability is unknown', async () => {
-    environment.isDesktop = true
-    mocks.resolveModelAvailability.mockResolvedValueOnce([
-      {
-        model: fixtures.prepared.workflow.models[0],
-        status: 'unknown'
-      }
-    ])
+  it.for([
+    {
+      scenario: 'model availability is unknown',
+      expectedStatus: 'Unknown',
+      arrange: () =>
+        mocks.resolveModelAvailability.mockResolvedValueOnce([
+          {
+            model: fixtures.prepared.workflow.models[0],
+            status: 'unknown'
+          }
+        ])
+    },
+    {
+      scenario: 'the host cannot download the model',
+      expectedStatus: 'Unavailable',
+      arrange: () => mocks.isModelDownloadable.mockReturnValueOnce(false)
+    },
+    {
+      scenario: 'model metadata resolution fails',
+      expectedStatus: 'Unknown',
+      arrange: () =>
+        mocks.resolveModelMetadata.mockResolvedValueOnce({
+          status: 'completed',
+          entries: [
+            {
+              model: fixtures.prepared.workflow.models[0],
+              resolution: 'failed',
+              fileSize: null,
+              gatedRepoUrl: null
+            }
+          ]
+        })
+    }
+  ])(
+    'keeps Desktop detail usable when $scenario',
+    async ({ arrange, expectedStatus }) => {
+      environment.isDesktop = true
+      arrange()
 
-    await openDetail()
+      await openDetail()
 
-    expect(await screen.findByText('Unknown')).toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: 'Open without downloading' })
-    ).toBeEnabled()
-    expect(
-      screen.queryByRole('button', { name: 'Download starter pack' })
-    ).not.toBeInTheDocument()
-  })
+      expect(await screen.findByText(expectedStatus)).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'Open without downloading' })
+      ).toBeEnabled()
+      expect(
+        screen.queryByRole('button', { name: 'Download starter pack' })
+      ).not.toBeInTheDocument()
+    }
+  )
 
   it('opens Desktop templates without model declarations directly', async () => {
     environment.isDesktop = true
