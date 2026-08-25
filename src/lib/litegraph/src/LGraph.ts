@@ -58,6 +58,7 @@ import { useGraphMetadataStore } from '@/stores/graphMetadataStore'
 import { rekeyGraphId } from '@/stores/rekeyGraphId'
 import {
   UNASSIGNED_NODE_ID,
+  compareNodeIds,
   parseNodeId,
   serializeNodeId,
   toNodeId
@@ -383,19 +384,6 @@ function serialiseStoredNodes(owner: LGraph, sortNodes: boolean) {
     }
     return adapter.serializeFromStoreState(state)
   })
-}
-
-function compareNodeIds(left: NodeId, right: NodeId): number {
-  const leftNumber = Number(left)
-  const rightNumber = Number(right)
-  const leftIsNumber = Number.isFinite(leftNumber)
-  const rightIsNumber = Number.isFinite(rightNumber)
-  if (leftIsNumber && rightIsNumber) {
-    return leftNumber - rightNumber || left.localeCompare(right)
-  }
-  if (leftIsNumber) return -1
-  if (rightIsNumber) return 1
-  return left.localeCompare(right)
 }
 
 function serialiseStoredGroups(owner: LGraph) {

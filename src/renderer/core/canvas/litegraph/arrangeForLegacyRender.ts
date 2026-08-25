@@ -2,16 +2,19 @@ import log from 'loglevel'
 
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { compareNodeIds } from '@/types/nodeId'
 
 const logger = log.getLogger('arrangeForLegacyRender')
 
 export function nodesInRenderOrder(graph: LGraph): LGraphNode[] {
   const rootGraphId = graph.rootGraph.id
-  return [...graph._nodes].sort(
-    (a, b) =>
-      (layoutStore.getNodeLayout(rootGraphId, a.id)?.zIndex ?? 0) -
-      (layoutStore.getNodeLayout(rootGraphId, b.id)?.zIndex ?? 0)
-  )
+  return graph._nodes
+    .map((node) => ({
+      node,
+      zIndex: layoutStore.getNodeLayout(rootGraphId, node.id)?.zIndex ?? 0
+    }))
+    .sort((a, b) => a.zIndex - b.zIndex || compareNodeIds(a.node.id, b.node.id))
+    .map(({ node }) => node)
 }
 
 /**
