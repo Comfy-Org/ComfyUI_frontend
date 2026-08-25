@@ -67,6 +67,7 @@ function consumerInputNames(nodes: LGraphNode[]): Map<LGraphNode, string[]> {
   const names = new Map<LGraphNode, string[]>()
 
   for (const consumer of nodes) {
+    if (consumer.isVirtualNode) continue
     const inputs = consumer.inputs ?? []
     inputs.forEach((input, slot) => {
       const producer = consumer.getInputNode(slot)

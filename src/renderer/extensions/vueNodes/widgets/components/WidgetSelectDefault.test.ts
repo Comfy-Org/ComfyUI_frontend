@@ -356,6 +356,51 @@ describe('WidgetSelectDefault', () => {
       ).toHaveAttribute('data-capture-wheel', 'true')
     })
 
+    it('treats a null value like no selection instead of an invalid value', () => {
+      renderComponent(createWidget(['a', 'b']), null)
+
+      const trigger = screen.getByTestId('widget-select-default-trigger')
+      expect(trigger).not.toHaveAttribute('aria-invalid')
+      expect(trigger.textContent?.trim()).toBe('')
+    })
+
+    it('selects the first option when the value is undefined', () => {
+      renderComponent(createWidget(['a', 'b']))
+
+      expect(
+        screen.getByTestId('widget-select-default-trigger')
+      ).toHaveTextContent('a')
+    })
+
+    it('marks only a matching value as selected in the dropdown', async () => {
+      const first = renderComponent(createWidget(['a', 'b']), null)
+
+      await openDropdown(first.user)
+
+      const options = screen.getAllByRole('option')
+      expect(options).toHaveLength(2)
+      expect(options.map((option) => option.textContent?.trim())).toEqual(
+        expect.arrayContaining(['a', 'b'])
+      )
+      for (const option of options) {
+        expect(option).not.toHaveAttribute('aria-selected', 'true')
+      }
+      first.unmount()
+
+      const second = renderComponent(createWidget(['a', 'b']), 'a')
+
+      await openDropdown(second.user)
+
+      expect(screen.getByRole('option', { name: 'a' })).toHaveAttribute(
+        'aria-selected',
+        'true'
+      )
+      expect(screen.getByRole('option', { name: 'b' })).not.toHaveAttribute(
+        'aria-selected',
+        'true'
+      )
+    })
+
     it('shows invalid current values as the trigger label', () => {
       renderComponent(createWidget(['a', 'b']), 'missing')
 

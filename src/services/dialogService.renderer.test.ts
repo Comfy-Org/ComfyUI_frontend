@@ -49,6 +49,20 @@ describe('dialogService Reka renderer opt-in', () => {
     expect(args.dialogComponentProps.size).toBe('md')
   })
 
+  it('confirm() opens under its own stack key when the caller passes one', () => {
+    void useDialogService().confirm({ title: 'T', message: 'M' })
+    void useDialogService().confirm({
+      key: 'global-desktop-login-confirm',
+      title: 'T2',
+      message: 'M2'
+    })
+    const keys = showDialog.mock.calls.slice(-2).map(([args]) => args.key)
+    expect(
+      keys,
+      'a shared key would make showDialog reuse the open prompt and drop the second resolver, leaving its promise pending forever'
+    ).toEqual(['global-prompt', 'global-desktop-login-confirm'])
+  })
+
   it("showBillingComingSoonDialog() sets renderer 'reka', size 'sm', and 360px contentClass", () => {
     useDialogService().showBillingComingSoonDialog()
     const [args] = showDialog.mock.calls[0]

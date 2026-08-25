@@ -1,10 +1,11 @@
-import { computed, onUnmounted, toValue } from 'vue'
-import type { MaybeRefOrGetter } from 'vue'
+import { computed, shallowRef, toValue, watch } from 'vue'
+import type { ComputedRef, MaybeRefOrGetter } from 'vue'
 
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import type { Point } from '@/renderer/core/layout/types'
+import type { NodeLayout, Point } from '@/renderer/core/layout/types'
 import type { NodeId } from '@/types/nodeId'
 
 /**
@@ -13,34 +14,39 @@ import type { NodeId } from '@/types/nodeId'
  */
 export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<NodeId>) {
   const nodeId = toValue(nodeIdMaybe)
-  const mutations = useLayoutMutations()
+  const mutations = useLayoutMutations(LayoutSource.Vue)
+  const canvasStore = useCanvasStore()
 
-  // Get the customRef for this node (shared write access)
-  const layoutRef = layoutStore.getNodeLayoutRef(nodeId)
+  const layoutRef = shallowRef<ComputedRef<NodeLayout | null> | null>(null)
+  watch(
+    () => canvasStore.rootGraphId,
+    (rootGraphId) => {
+      if (!rootGraphId) {
+        layoutRef.value = null
+        return
+      }
 
-  // Clean up refs and triggers when Vue component unmounts
-  onUnmounted(() => {
-    layoutStore.cleanupNodeRef(nodeId)
-  })
-
-  // Computed properties for easy access
-  const position = computed(() => {
-    const layout = layoutRef.value
-    const pos = layout?.position ?? { x: 0, y: 0 }
-    return pos
-  })
-  const size = computed(
-    () => layoutRef.value?.size ?? { width: 200, height: 100 }
+      layoutRef.value = layoutStore.getNodeLayoutRef(rootGraphId, nodeId)
+    },
+    { immediate: true }
   )
 
-  const zIndex = computed(() => layoutRef.value?.zIndex ?? 0)
+  const layout = computed(() => layoutRef.value?.value ?? null)
+
+  // Computed properties for easy access
+  const position = computed(() => layout.value?.position ?? { x: 0, y: 0 })
+  const size = computed(() => layout.value?.size ?? { width: 200, height: 100 })
+
+  const zIndex = computed(() => layout.value?.zIndex ?? 0)
 
   /**
    * Update node position directly (without drag)
    */
   function moveNodeTo(position: Point) {
-    mutations.setSource(LayoutSource.Vue)
-    mutations.moveNode(nodeId, position)
+    const { rootGraphId } = canvasStore
+    if (!rootGraphId) return
+
+    mutations.moveNode(rootGraphId, nodeId, position)
   }
 
   return {

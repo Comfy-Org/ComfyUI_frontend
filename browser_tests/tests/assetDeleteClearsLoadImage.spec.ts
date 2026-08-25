@@ -144,11 +144,14 @@ baseTest.describe(
 
         // Re-baseline the change tracker so the deletion-side mutation is the
         // only thing that can flip `isModified` later.
+        // `reset()` re-baselines `initialState`; only `updateModified()`
+        // recomputes `isModified` from it.
         await comfyPage.page.evaluate(() => {
           const tracker =
             window.app?.extensionManager?.workflow?.activeWorkflow
               ?.changeTracker
           tracker?.reset?.()
+          tracker?.updateModified?.()
         })
         await expect
           .poll(() => comfyPage.workflow.isCurrentWorkflowModified())

@@ -2,6 +2,7 @@
 import Badge from '../ui/badge/Badge.vue'
 
 import { resolveRel } from '../../utils/cta'
+import CardArrow from '../common/CardArrow.vue'
 import ButtonPill from '../ui/button-pill/ButtonPill.vue'
 import Card from '../ui/card/Card.vue'
 import CardContent from '../ui/card/CardContent.vue'
@@ -24,6 +25,7 @@ export type CardArticleItem = {
   title: string
   description?: string
   media: CardArticleMedia
+  author?: { name: string; avatarSrc: string }
   cta: { label: string; href: string; newTab?: boolean }
 }
 
@@ -34,7 +36,7 @@ const { item, titleClamp = false } = defineProps<{
 </script>
 
 <template>
-  <Card class="group/pill-trigger relative h-full overflow-hidden">
+  <Card class="group group/pill-trigger relative h-full overflow-hidden">
     <a
       :href="item.cta.href"
       :target="item.cta.newTab ? '_blank' : undefined"
@@ -93,7 +95,28 @@ const { item, titleClamp = false } = defineProps<{
       </CardContent>
     </div>
 
-    <CardFooter class="mt-auto px-6 pb-6">
+    <CardFooter
+      v-if="item.author"
+      class="mt-auto items-center justify-between gap-4 px-6 pb-6"
+    >
+      <span class="flex min-w-0 items-center gap-3">
+        <img
+          :src="item.author.avatarSrc"
+          alt=""
+          loading="lazy"
+          decoding="async"
+          class="size-8 shrink-0 rounded-full object-cover"
+        />
+        <span class="truncate text-sm font-semibold text-primary-warm-white">
+          {{ item.author.name }}
+        </span>
+      </span>
+      <CardArrow
+        hover="group"
+        class="size-8 shrink-0 rounded-xl bg-primary-warm-gray text-primary-warm-white"
+      />
+    </CardFooter>
+    <CardFooter v-else class="mt-auto px-6 pb-6">
       <ButtonPill as="span" variant="ghost" icon-position="left">
         {{ item.cta.label }}
       </ButtonPill>

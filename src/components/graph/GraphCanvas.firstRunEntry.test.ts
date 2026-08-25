@@ -16,7 +16,9 @@ import GraphCanvas from './GraphCanvas.vue'
  * feeds the startup outcome to `handleStartupOutcome`, and the URL workflow
  * results to `handleUrlWorkflow`. Both composables are unit-tested on their
  * own; this file covers the seam, so deleting either call from the startup
- * sequence fails a test instead of silently disconnecting the feature.
+ * sequence fails a test instead of silently disconnecting the feature. It also
+ * pins the order the deep-link loaders depend on: dialogs they open must land
+ * on top of the overlays `handleStartupOutcome` establishes.
  */
 const mocks = vi.hoisted(() => ({
   handleStartupOutcome: vi.fn(),
@@ -24,6 +26,7 @@ const mocks = vi.hoisted(() => ({
   initializeWorkflow: vi.fn(),
   loadTemplateFromUrlIfPresent: vi.fn(),
   loadSharedWorkflowFromUrlIfPresent: vi.fn(),
+  runUrlActionLoaders: vi.fn(),
   workspaceStore: {
     spinner: false,
     focusMode: false,
@@ -88,7 +91,9 @@ vi.mock('@/services/useNewUserService', () => ({
 }))
 
 vi.mock('@/composables/useUrlActionLoaders', () => ({
-  useUrlActionLoaders: () => ({ runUrlActionLoaders: vi.fn() })
+  useUrlActionLoaders: () => ({
+    runUrlActionLoaders: mocks.runUrlActionLoaders
+  })
 }))
 
 vi.mock('@/platform/updates/common/releaseStore', () => ({
@@ -191,6 +196,14 @@ describe('GraphCanvas first-run tour wiring', () => {
     await mountGraphCanvas()
 
     expect(mocks.handleStartupOutcome).toHaveBeenCalledWith('url-intent')
+  })
+
+  it('settles the startup outcome before running the URL action loaders', async () => {
+    await mountGraphCanvas()
+
+    expect(
+      mocks.runUrlActionLoaders.mock.invocationCallOrder[0]
+    ).toBeGreaterThan(mocks.handleStartupOutcome.mock.invocationCallOrder[0])
   })
 
   it('offers the tour over a workflow that arrived from the URL', async () => {

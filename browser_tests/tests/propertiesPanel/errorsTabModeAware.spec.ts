@@ -628,9 +628,8 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
 
     promotedModelTest(
       'Refreshing a resolved promoted missing model clears the combo invalid state',
-      { tag: ['@widget', '@subgraph'] },
+      { tag: ['@widget', '@subgraph', '@vue-nodes'] },
       async ({ comfyPage }) => {
-        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
         await loadWorkflowAndOpenErrorsTab(
           comfyPage,
           NESTED_PROMOTED_MISSING_MODEL_WORKFLOW.workflowName
@@ -865,10 +864,10 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
     test('Entering a bypassed subgraph does not resurface interior missing model error', async ({
       comfyPage
     }) => {
-      // Regression: useGraphNodeManager replays graph.onNodeAdded for
-      // each interior node on subgraph entry; without an ancestor-aware
-      // guard in scanSingleNodeErrors, that re-scan reintroduced the
-      // error that the initial pipeline had correctly suppressed.
+      // Regression: entering a bypassed subgraph re-scans its interior
+      // nodes; without an ancestor-aware guard in scanSingleNodeErrors,
+      // that re-scan reintroduced the error the initial pipeline had
+      // correctly suppressed.
       await comfyPage.workflow.loadWorkflow(
         'missing/missing_models_in_bypassed_subgraph'
       )

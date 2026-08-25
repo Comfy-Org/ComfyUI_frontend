@@ -644,7 +644,7 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
     await expect.poll(() => operationPollRequests.length).toBeGreaterThan(0)
     await expect(backButton).toBeDisabled()
 
-    await page.clock.fastForward(5 * 60_000 + 1)
+    await page.clock.fastForward(23 * 60 * 60_000 + 1)
 
     await expect(backButton).toBeEnabled()
     await expect(

@@ -231,6 +231,16 @@ describe('CreditsTile', () => {
     expect(container.textContent).toContain('Used after monthly runs out')
   })
 
+  it('hides the monthly usage bar on Local', () => {
+    mockIsCloud.value = false
+    activeProSubscription()
+    renderTile()
+
+    expect(screen.queryByRole('progressbar')).toBeNull()
+    expect(screen.queryByText('Monthly')).toBeNull()
+    expect(screen.getByText('Additional credits')).toBeTruthy()
+  })
+
   it('renders a compact monthly summary for narrow containers', () => {
     activeProSubscription()
     const { container } = renderTile()
@@ -355,6 +365,27 @@ describe('CreditsTile', () => {
     expect(container.textContent).not.toContain('left of')
     expect(container.textContent).not.toContain('Additional credits')
     expect(screen.queryByText('Add credits')).toBeNull()
+  })
+
+  it('keeps add-credits available on local without an active subscription', async () => {
+    mockIsCloud.value = false
+    state.canAccessSubscriptionFeatures = false
+    state.balance = { amountMicros: 500 }
+    renderTile()
+    expect(screen.queryByText('Upgrade to add credits')).toBeNull()
+    await userEvent.click(screen.getByText('Add credits'))
+    expect(state.showTopUpCreditsDialog).toHaveBeenCalledOnce()
+  })
+
+  it('keeps add-credits available on local for an unsubscribed team workspace', async () => {
+    mockIsCloud.value = false
+    state.canAccessSubscriptionFeatures = false
+    state.isTeamPlan = true
+    state.balance = { amountMicros: 500 }
+    renderTile()
+    expect(screen.queryByText('Upgrade to add credits')).toBeNull()
+    await userEvent.click(screen.getByText('Add credits'))
+    expect(state.showTopUpCreditsDialog).toHaveBeenCalledOnce()
   })
 
   it('shows no depletion notice or in-use badge while monthly credits remain', () => {

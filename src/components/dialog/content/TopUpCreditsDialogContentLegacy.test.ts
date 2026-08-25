@@ -129,7 +129,7 @@ describe('TopUpCreditsDialogContentLegacy', () => {
     mockShouldUseWorkspaceBilling.value = false
   })
 
-  it('shows the subscription settings panel after a successful purchase', async () => {
+  it('shows Plan & Credits after a successful Cloud purchase', async () => {
     mockPurchaseCreditsDirect.mockResolvedValue(undefined)
 
     renderDialog()
@@ -137,7 +137,7 @@ describe('TopUpCreditsDialogContentLegacy', () => {
 
     expect(mockPurchaseCreditsDirect).toHaveBeenCalledWith(50)
     expect(mockCloseDialog).toHaveBeenCalled()
-    expect(mockShowSettings).toHaveBeenCalledWith('subscription')
+    expect(mockShowSettings).toHaveBeenCalledWith('workspace')
   })
 
   it('shows the credits settings panel when subscriptions are disabled', async () => {

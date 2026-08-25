@@ -5,6 +5,7 @@ import { defineStore } from 'pinia'
 import { compare, valid } from 'semver'
 import { ref } from 'vue'
 
+import { CANVAS_NAVIGATION_PRESETS } from '@/platform/settings/constants/canvasNavigation'
 import type { SettingParams } from '@/platform/settings/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { SettingChangedMetadata } from '@/platform/telemetry/types'
@@ -37,18 +38,61 @@ function tryMigrateDeprecatedValue(
   return setting?.migrateDeprecatedValue?.(value) ?? value
 }
 
-function onChange(
+/**
+ * Runs the handler, absorbing both a synchronous throw and a rejected promise.
+ * `SettingParams.onChange` is extension-facing public API and its caller
+ * persists the setting only after awaiting it, so letting a third-party
+ * failure escape would discard the user's own change without saving it.
+ *
+ * Logged at `warn` for the same reason {@link ComfyApi.wrapListener} is: RUM
+ * collects `console.error`, so reporting third-party faults there would just
+ * relocate the noise this guard exists to remove.
+ */
+async function callHandler(
   setting: SettingParams | undefined,
   newValue: unknown,
   oldValue: unknown
 ) {
-  if (setting?.onChange) {
-    setting.onChange(newValue, oldValue)
+  try {
+    await setting?.onChange?.(newValue, oldValue)
+  } catch (error) {
+    console.warn(`[settings] onChange handler for ${setting?.id} failed`, error)
   }
+}
+
+async function onChange(
+  setting: SettingParams | undefined,
+  newValue: unknown,
+  oldValue: unknown
+) {
+  // Started before dispatchChange so extensions keep observing the change at
+  // the same point, but awaited afterwards: a handler that cascades into other
+  // settings must finish writing them before the caller writes this one, or
+  // the two requests race in the backend's read-modify-write.
+  const handled = callHandler(setting, newValue, oldValue)
   // Backward compatibility with old settings dialog.
   // Some extensions still listens event emitted by the old settings dialog.
   if (setting) {
     app.ui.settings.dispatchChange(setting.id, newValue, oldValue)
+  }
+  await handled
+}
+
+/**
+ * Migrations run inside the boot-critical settings loader, where a rejection
+ * becomes `settingStore.error` and GraphCanvas rethrows it before any core
+ * setting registers — turning a failed write into an app that will not start.
+ * The migrated value is already in memory and the server still holds the
+ * un-migrated state, so swallowing the failure leaves the next load to retry.
+ */
+async function persistMigration(write: () => Promise<unknown>) {
+  try {
+    await write()
+  } catch (error) {
+    console.warn(
+      '[settings] Failed to persist migration; retrying on next load',
+      error
+    )
   }
 }
 
@@ -77,6 +121,7 @@ function settingChangedEvent<K extends keyof Settings>(
 export const useSettingStore = defineStore('setting', () => {
   const settingValues = ref<Partial<Settings>>({})
   const settingsById = ref<Record<string, SettingParams>>({})
+  const latestWrite = new Map<keyof Settings, number>()
 
   const {
     isReady,
@@ -95,6 +140,7 @@ export const useSettingStore = defineStore('setting', () => {
         delay: (attempt) => Math.min(1000 * Math.pow(2, attempt), 8000)
       })
       await migrateZoomThresholdToFontSize()
+      await migrateCanvasNavigationOverrides()
     },
     undefined,
     { immediate: false }
@@ -121,14 +167,18 @@ export const useSettingStore = defineStore('setting', () => {
   }
 
   /**
-   * Apply a setting value locally: clone, migrate, fire onChange, and
-   * update the in-memory store. Returns the migrated value, or
-   * `undefined` when the value is unchanged and was skipped.
+   * Apply a setting value locally: clone, migrate, update the in-memory
+   * store, and fire onChange. Returns the migrated value, or `undefined`
+   * when the value is unchanged and was skipped.
+   *
+   * The store is updated before `onChange` runs so that handlers reading
+   * this setting — including handlers of other settings this one cascades
+   * into — observe the new value rather than the one it replaced.
    */
-  function applySettingLocally<K extends keyof Settings>(
+  async function applySettingLocally<K extends keyof Settings>(
     key: K,
     value: Settings[K]
-  ): AppliedSetting<Settings[K]> | undefined {
+  ): Promise<AppliedSetting<Settings[K]> | undefined> {
     const clonedValue = cloneDeep(value)
     const newValue = tryMigrateDeprecatedValue(
       settingsById.value[key],
@@ -137,9 +187,16 @@ export const useSettingStore = defineStore('setting', () => {
     const oldValue = get(key)
     if (newValue === oldValue) return undefined
 
-    onChange(settingsById.value[key], newValue, oldValue)
     const typedNewValue = newValue as Settings[K]
     settingValues.value[key] = typedNewValue
+    const write = (latestWrite.get(key) ?? 0) + 1
+    latestWrite.set(key, write)
+
+    await onChange(settingsById.value[key], newValue, oldValue)
+
+    // Handlers are awaited, so a slow one lets a later change to this key land
+    // first. That change owns the value now; persisting ours would revert it.
+    if (latestWrite.get(key) !== write) return undefined
     return {
       previousValue: oldValue,
       newValue: typedNewValue
@@ -152,7 +209,7 @@ export const useSettingStore = defineStore('setting', () => {
    * @param value - The value to set.
    */
   async function set<K extends keyof Settings>(key: K, value: Settings[K]) {
-    const applied = applySettingLocally(key, value)
+    const applied = await applySettingLocally(key, value)
     if (applied === undefined) return
     await api.storeSetting(key, applied.newValue)
 
@@ -169,7 +226,7 @@ export const useSettingStore = defineStore('setting', () => {
     const telemetryEvents: SettingChangedMetadata[] = []
 
     for (const key of Object.keys(settings) as (keyof Settings)[]) {
-      const applied = applySettingLocally(
+      const applied = await applySettingLocally(
         key,
         settings[key] as Settings[typeof key]
       )
@@ -298,7 +355,38 @@ export const useSettingStore = defineStore('setting', () => {
         settingValues.value[setting.id]
       )
     }
-    onChange(setting, get(setting.id), undefined)
+    void onChange(setting, get(setting.id), undefined)
+  }
+
+  /**
+   * A Navigation Mode preset stored before the Left Mouse Click Behavior and
+   * Mouse Wheel Scroll settings shipped in 1.27.4 is the only record of that
+   * choice. Materialise the overrides it implies before anything can read
+   * their defaults, which describe a different preset and would otherwise
+   * demote the stored mode to 'custom'.
+   *
+   * Runs from `load()` rather than the settings' own `onChange` so it is
+   * awaited, and so it does not depend on the order `CORE_SETTINGS` happens
+   * to register these three settings in.
+   */
+  async function migrateCanvasNavigationOverrides() {
+    const storedMode = settingValues.value['Comfy.Canvas.NavigationMode']
+    const preset =
+      typeof storedMode === 'string'
+        ? CANVAS_NAVIGATION_PRESETS[storedMode]
+        : undefined
+    if (!preset) return
+
+    const unset: Partial<Settings> = {}
+    for (const id of Object.keys(preset) as (keyof Settings)[]) {
+      if (settingValues.value[id] === undefined) {
+        Object.assign(unset, { [id]: preset[id] })
+      }
+    }
+    if (!Object.keys(unset).length) return
+
+    Object.assign(settingValues.value, unset)
+    await persistMigration(() => api.storeSettings(unset))
   }
 
   /**
@@ -335,8 +423,10 @@ export const useSettingStore = defineStore('setting', () => {
       delete settingValues.value[oldKey]
 
       // Store the migrated setting
-      await api.storeSetting(newKey, clampedFontSize)
-      await api.storeSetting(oldKey, undefined)
+      await persistMigration(async () => {
+        await api.storeSetting(newKey, clampedFontSize)
+        await api.storeSetting(oldKey, undefined)
+      })
     }
   }
 

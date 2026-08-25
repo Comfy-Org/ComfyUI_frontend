@@ -1,10 +1,10 @@
-import { captureException } from '@sentry/vue'
 import { computed, ref, shallowRef, watch } from 'vue'
 
 import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import type {
   BillingBalanceResponse,
@@ -52,11 +52,11 @@ function resumeModeFor(
       // callable toString/valueOf, and throwing out of the branch that exists
       // to absorb a bad value would abort recovery entirely. The value came
       // from a parsed response, so it cannot be circular.
-      captureException(
+      reportError(
         new Error(
           `Unknown pending billing op type: ${JSON.stringify(unexpected)}`
         ),
-        { tags: { error_type: 'billing_unknown_resume_mode' } }
+        { errorType: 'billing_unknown_resume_mode' }
       )
       // Reachable only against a newer server. Dropping recovery strands a
       // customer who cannot reach the payment page; a wrong panel clears on
@@ -140,8 +140,6 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
       tier: status.subscription_tier ?? null,
       duration: status.subscription_duration ?? null,
       planSlug: status.plan_slug ?? null,
-      scheduledPlanSlug: status.scheduled_plan_slug ?? null,
-      changeAt: status.change_at ?? null,
       renewalDate: status.renewal_date ?? null,
       endDate: status.cancel_at ?? null,
       isCancelled: status.subscription_status === 'canceled',

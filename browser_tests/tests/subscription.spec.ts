@@ -126,6 +126,31 @@ unsubscribedTest.describe(
     )
 
     unsubscribedTest(
+      'App focus refreshes stale subscription state and restores Run',
+      async ({ comfyPage, subscriptionHelper }) => {
+        await expect(
+          comfyPage.page.getByTestId(TestIds.topbar.subscribeToRunButton)
+        ).toBeVisible()
+
+        subscriptionHelper.setStatus({
+          is_active: true,
+          subscription_tier: 'STANDARD',
+          subscription_duration: 'MONTHLY'
+        })
+        await comfyPage.page.evaluate(() => {
+          window.dispatchEvent(new Event('focus'))
+        })
+
+        await expect(
+          comfyPage.page.getByTestId(TestIds.topbar.queueButton)
+        ).toBeVisible()
+        await expect(
+          comfyPage.page.getByTestId(TestIds.topbar.subscribeToRunButton)
+        ).toBeHidden()
+      }
+    )
+
+    unsubscribedTest(
       'Cleanup prevents stale subscription state after dialog close',
       async ({ comfyPage, subscriptionHelper }) => {
         await subscriptionHelper.clickPopoverSubscribe()

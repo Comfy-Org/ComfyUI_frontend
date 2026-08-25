@@ -46,7 +46,7 @@ const jsonRoute = (body: unknown) => ({
 export class CloudWorkspaceMockHelper {
   constructor(private readonly page: Page) {}
 
-  async openWorkspaceSettings(): Promise<Locator> {
+  async openPlanAndCreditsSettings(): Promise<Locator> {
     await this.page.goto(
       process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
     )
@@ -65,7 +65,7 @@ export class CloudWorkspaceMockHelper {
     await dialog.waitFor({ state: 'visible' })
     await dialog
       .locator('nav')
-      .getByRole('button', { name: 'Workspace', exact: true })
+      .getByRole('button', { name: 'Plan & Credits', exact: true })
       .click()
     return dialog.getByRole('main')
   }

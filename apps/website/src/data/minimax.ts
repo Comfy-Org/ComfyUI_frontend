@@ -11,7 +11,7 @@ import { externalLinks } from '../config/routes'
 const media = {
   hero: {
     kind: 'video',
-    src: 'https://media.comfy.org/website/minimax/hero.mp4',
+    src: 'https://media.comfy.org/website/minimax/hero-sizzle.mp4',
     posterSrc: 'https://media.comfy.org/website/minimax/hero-poster.webp'
   },
   iceRider: {
@@ -48,6 +48,13 @@ const media = {
   }
 } as const satisfies Record<string, ModelLaunchMedia>
 
+// Not part of `media` above: it is a plain still, not a `ModelLaunchMedia`
+// video/image the gallery renders, so keeping it out of that record avoids
+// widening the `satisfies` shape for a value only the hero's mobile branch
+// consumes.
+const heroFallbackSrc =
+  'https://media.comfy.org/website/minimax/hero-fallback.jpg'
+
 export const minimaxLinks = {
   cloudRun: 'https://cloud.comfy.org/?share=a781503cf508',
   textToVideo: 'https://comfy.org/workflows/e8099b642c9f-e8099b642c9f/',
@@ -66,6 +73,7 @@ export const minimaxPage: ModelLaunchPage = {
   hero: {
     videoSrc: media.hero.src,
     posterSrc: media.hero.posterSrc,
+    mobileFallbackImageSrc: heroFallbackSrc,
     logoSrc: '/icons/ai-models/minimax.svg',
     titleKey: 'minimax.hero.titleModel',
     titleRestKey: 'minimax.hero.titleRest',

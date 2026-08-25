@@ -87,7 +87,7 @@ const i18n = createI18n({
 function makePreview(
   overrides: Partial<PreviewSubscribeResponse>
 ): PreviewSubscribeResponse {
-  return {
+  const result: PreviewSubscribeResponse = {
     allowed: true,
     transition_type: 'upgrade',
     effective_at: '2026-08-01T00:00:00Z',
@@ -123,14 +123,25 @@ function makePreview(
     },
     ...overrides
   }
+  return {
+    ...result,
+    quote_id: 'quote_123',
+    quote_version: 1,
+    amount_due_cents: result.cost_today_cents,
+    currency: 'usd',
+    renewal_amount_cents: result.new_plan.price_cents,
+    renewal_at: result.new_plan.period_end ?? '2026-09-01T00:00:00Z',
+    ...overrides
+  }
 }
 
 function renderComponent(
   previewData: PreviewSubscribeResponse,
-  forceReactivation = false
+  forceReactivation = false,
+  quoteIsCurrent = true
 ) {
   return render(SubscriptionTransitionPreviewWorkspace, {
-    props: { previewData, forceReactivation },
+    props: { previewData, forceReactivation, quoteIsCurrent },
     global: { plugins: [i18n] }
   })
 }
@@ -534,6 +545,45 @@ describe('SubscriptionTransitionPreviewWorkspace reactivation disclosure', () =>
   })
 
   describe('confirm gating on load state', () => {
+    it('shows unavailable exact quote fields', () => {
+      mockSubscription.value = { isCancelled: false, endDate: null }
+      renderComponent(
+        makePreview({
+          quote_id: undefined,
+          quote_version: undefined,
+          amount_due_cents: undefined,
+          currency: undefined,
+          renewal_amount_cents: undefined,
+          renewal_at: undefined
+        })
+      )
+
+      expect(
+        screen.getAllByText('subscription.preview.quoteUnavailable')
+      ).toHaveLength(2)
+    })
+
+    it('does not confirm without a current quote', async () => {
+      const user = userEvent.setup()
+      mockSubscription.value = { isCancelled: false, endDate: null }
+      const { emitted } = render(SubscriptionTransitionPreviewWorkspace, {
+        props: {
+          previewData: makePreview({}),
+          forceReactivation: false,
+          quoteIsCurrent: false,
+          embeddedCheckoutEnabled: true
+        },
+        global: { plugins: [i18n] }
+      })
+      const confirmButton = screen.getByRole('button', {
+        name: 'Confirm upgrade'
+      })
+
+      expect(confirmButton).toBeDisabled()
+      await user.click(confirmButton)
+      expect(emitted().confirm).toBeUndefined()
+    })
+
     it('disables confirm while subscription status has not loaded yet, even below the charge threshold', () => {
       mockSubscription.value = null
       renderComponent(

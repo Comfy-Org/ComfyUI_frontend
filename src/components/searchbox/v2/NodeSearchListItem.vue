@@ -51,7 +51,7 @@
             >
               <i
                 aria-hidden="true"
-                class="icon-[lucide--component] size-3 text-amber-400"
+                class="icon-[lucide--coins] size-3 text-amber-400"
               />
               <i
                 aria-hidden="true"

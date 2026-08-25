@@ -1271,7 +1271,9 @@ describe('useErrorGroups', () => {
       // A container selection matches interior errors by execution-id prefix,
       // even when the interior node does not resolve at the current level.
       const containerNode = fromAny<SubgraphNode, unknown>(
-        Object.assign(Object.create(SubgraphNode.prototype), { id: '2' })
+        Object.assign(Object.create(SubgraphNode.prototype), {
+          _state: { id: '2' }
+        })
       )
       vi.mocked(getNodeByExecutionId).mockReturnValue(null)
       vi.mocked(getExecutionIdByNode).mockReturnValue(

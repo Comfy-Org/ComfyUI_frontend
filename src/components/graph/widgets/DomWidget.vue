@@ -123,7 +123,7 @@ watch(
     }
     composeStyle()
   },
-  { deep: true }
+  { deep: true, immediate: true }
 )
 
 // Recompose style when clippingStyle updates asynchronously via RAF.

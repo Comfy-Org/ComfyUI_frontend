@@ -4,14 +4,14 @@ import { nextTick } from 'vue'
 
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type {
-  ComfyWorkflow,
-  LoadedComfyWorkflow
-} from '@/platform/workflow/management/stores/workflowStore'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
+  ComfyWorkflow,
   useWorkflowBookmarkStore,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
+import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
@@ -19,6 +19,7 @@ import { defaultGraph, defaultGraphJSON } from '@/scripts/defaultGraph'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
+import { isValidUuid } from '@/utils/formatUtil'
 import { isSubgraph } from '@/utils/typeGuardUtil'
 import {
   createMockCanvas,
@@ -213,28 +214,80 @@ describe('useWorkflowStore', () => {
 
     it('should assign a workflow id to newly created temporary workflows', () => {
       const workflow = store.createTemporary('id-test.json')
-      const state = JSON.parse(workflow.content!)
+      const state = zComfyWorkflow.parse(JSON.parse(workflow.content!))
 
-      expect(typeof state.id).toBe('string')
-      expect(state.id.length).toBeGreaterThan(0)
+      expect(isValidUuid(state.id)).toBe(true)
     })
 
-    it('should assign an id when temporary workflow data is missing one', () => {
-      const workflowDataWithoutId = {
+    it('migrates a legacy id without mutating the input', () => {
+      const workflowData = fromPartial<ComfyWorkflowJSON>({
         ...defaultGraph,
-        id: undefined
-      }
+        id: 'video-point-prompt-example'
+      })
+      const originalData = structuredClone(workflowData)
 
-      const workflow = store.createTemporary(
-        'missing-id.json',
-        workflowDataWithoutId
-      )
-      const state = JSON.parse(workflow.content!)
+      const workflow = store.createTemporary('legacy.json', workflowData)
+      const state = zComfyWorkflow.parse(JSON.parse(workflow.content!))
 
-      expect(typeof state.id).toBe('string')
-      expect(state.id.length).toBeGreaterThan(0)
-      expect(workflowDataWithoutId.id).toBeUndefined()
+      expect(isValidUuid(state.id)).toBe(true)
+      expect(workflow.legacyId).toBe('video-point-prompt-example')
+      expect(workflowData).toEqual(originalData)
     })
+
+    it.for([
+      {
+        label: 'the same legacy id',
+        existingId: '9cea40bb-b0cf-4b40-a758-8935cfe8d52f',
+        incomingId: 'legacy-a',
+        legacyId: 'legacy-a',
+        expectedPath: 'external/repeat.json',
+        expectedResetCount: 1
+      },
+      {
+        label: 'a different legacy id',
+        existingId: '9cea40bb-b0cf-4b40-a758-8935cfe8d52f',
+        incomingId: 'legacy-b',
+        legacyId: 'legacy-a',
+        expectedPath: 'workflows/repeat.json',
+        expectedResetCount: 0
+      },
+      {
+        label: 'equivalent UUID casing',
+        existingId: '9cea40bb-b0cf-4b40-a758-8935cfe8d52f',
+        incomingId: '9CEA40BB-B0CF-4B40-A758-8935CFE8D52F',
+        expectedPath: 'external/repeat.json',
+        expectedResetCount: 1
+      }
+    ])(
+      'returns $expectedPath for an external same-name workflow with $label',
+      ({
+        existingId,
+        incomingId,
+        legacyId,
+        expectedPath,
+        expectedResetCount
+      }) => {
+        const existingWorkflow = new ComfyWorkflow({
+          path: 'external/repeat.json',
+          modified: Date.now(),
+          size: -1
+        })
+        existingWorkflow.changeTracker = createMockChangeTracker()
+        existingWorkflow.changeTracker.activeState.id = existingId
+        existingWorkflow.legacyId = legacyId
+        store.attachWorkflow(existingWorkflow)
+
+        const result = store.createTemporary(
+          'repeat.json',
+          fromPartial<ComfyWorkflowJSON>({ ...defaultGraph, id: incomingId })
+        )
+
+        expect(result.path).toBe(expectedPath)
+        expect(existingWorkflow.changeTracker.reset).toHaveBeenCalledTimes(
+          expectedResetCount
+        )
+      }
+    )
   })
 
   describe('openWorkflow', () => {

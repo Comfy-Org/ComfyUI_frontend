@@ -1,6 +1,8 @@
 import { createI18n } from 'vue-i18n'
 import { describe, expect, it } from 'vitest'
 
+import { transformNodeDefV1ToV2 } from '@/schemas/nodeDef/migration'
+import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { escapeI18nMessage } from '@/utils/formatUtil'
 
 import { serializeNodeDefLocales } from './nodeDefLocaleSerializer'
@@ -15,6 +17,41 @@ function render(message: string): string {
 }
 
 describe('serializeNodeDefLocales', () => {
+  it('preserves raw backend text across the collector boundary', () => {
+    const backendNodeDef: ComfyNodeDefV1 = {
+      name: 'SerializationProbe',
+      display_name: 'Live Display Name',
+      description: 'Live description',
+      category: 'testing',
+      python_module: 'nodes',
+      input: {
+        required: {
+          seed: ['INT', { tooltip: 'Live input tooltip' }]
+        }
+      },
+      output: ['IMAGE'],
+      output_name: ['image'],
+      output_tooltips: ['Live output tooltip'],
+      output_node: false
+    }
+
+    const crossedBoundary = structuredClone(
+      transformNodeDefV1ToV2(backendNodeDef)
+    )
+    const { nodeDefinitions } = serializeNodeDefLocales([crossedBoundary])
+
+    expect(nodeDefinitions.SerializationProbe).toEqual({
+      display_name: 'Live Display Name',
+      description: 'Live description',
+      inputs: {
+        seed: { name: 'seed', tooltip: 'Live input tooltip' }
+      },
+      outputs: {
+        0: { name: 'image', tooltip: 'Live output tooltip' }
+      }
+    })
+  })
+
   it('escapes compiled fields and preserves raw tooltips', () => {
     const syntax = '@ $ {value} | 50%{done}'
     const inputName = `Input ${syntax}`
@@ -49,17 +86,30 @@ describe('serializeNodeDefLocales', () => {
         }
       })
     const serializedNode = nodeDefinitions.Test_Node
+    if (
+      !serializedNode.inputs ||
+      !serializedNode.outputs ||
+      !serializedNode.description
+    ) {
+      throw new Error('Expected serialized node labels')
+    }
     const serializedInput =
       serializedNode.inputs['Input @ $ {value} | 50%{done}']
     const serializedOutput = serializedNode.outputs['0']
+    const serializedWidget = serializedNode.inputs.Runtime_Widget
+    if (
+      !serializedInput.name ||
+      !serializedOutput.name ||
+      !serializedWidget.name
+    ) {
+      throw new Error('Expected serialized field names')
+    }
 
     expect(render(serializedNode.display_name)).toBe(nodeDef.display_name)
     expect(render(serializedNode.description)).toBe(nodeDef.description)
     expect(render(serializedInput.name)).toBe(inputName)
     expect(render(serializedOutput.name)).toBe(outputName)
-    expect(render(serializedNode.inputs.Runtime_Widget.name)).toBe(
-      `Widget ${syntax}`
-    )
+    expect(render(serializedWidget.name)).toBe(`Widget ${syntax}`)
     expect(render(dataTypes[dataType])).toBe(dataType)
     expect(render(nodeCategories[category])).toBe(category)
     expect(serializedInput.tooltip).toBe(nodeDef.inputs.input.tooltip)

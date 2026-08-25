@@ -1,9 +1,20 @@
 import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
+import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
+import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
+import {
+  canTransferReplacementOwnership,
+  transferReplacementOwnership
+} from '@/core/graph/nodeShell/nodeShellState'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { useLinkStore } from '@/stores/linkStore'
 import type { MissingNodeType } from '@/types/comfy'
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
+import { toLinkId } from '@/types/linkId'
+import { toNodeId } from '@/types/nodeId'
+import type { UUID } from '@/utils/uuid'
 import type { NodeReplacement } from './types'
 
 vi.mock('@/lib/litegraph/src/litegraph', () => ({
@@ -11,6 +22,11 @@ vi.mock('@/lib/litegraph/src/litegraph', () => ({
     createNode: vi.fn(),
     registered_node_types: {}
   }
+}))
+
+vi.mock('@/core/graph/nodeShell/nodeShellState', () => ({
+  canTransferReplacementOwnership: vi.fn(() => true),
+  transferReplacementOwnership: vi.fn(() => true)
 }))
 
 vi.mock('@/scripts/app', () => ({
@@ -22,9 +38,14 @@ vi.mock('@/utils/graphTraversalUtil', () => ({
   collectAllNodes: vi.fn()
 }))
 
+const { mockRemoveMissingNodesByType, mockToastAdd } = vi.hoisted(() => ({
+  mockRemoveMissingNodesByType: vi.fn(),
+  mockToastAdd: vi.fn()
+}))
+
 vi.mock('@/platform/updates/common/toastStore', () => ({
   useToastStore: vi.fn(() => ({
-    add: vi.fn()
+    add: mockToastAdd
   }))
 }))
 
@@ -44,9 +65,6 @@ vi.mock('@/i18n', () => ({
     params ? `${key}:${JSON.stringify(params)}` : key
 }))
 
-const { mockRemoveMissingNodesByType } = vi.hoisted(() => ({
-  mockRemoveMissingNodesByType: vi.fn()
-}))
 vi.mock('@/platform/nodeReplacement/missingNodesErrorStore', () => ({
   useMissingNodesErrorStore: vi.fn(() => ({
     removeMissingNodesByType: mockRemoveMissingNodesByType
@@ -74,15 +92,36 @@ function createMockLink(
   }
 }
 
+const GRAPH_ID: UUID = 'node-replacement-graph'
+const GRAPH_SCOPE = {
+  rootGraphId: toRootGraphId(GRAPH_ID),
+  owningGraphId: toOwningGraphId(GRAPH_ID)
+}
+
 function createMockGraph(
   nodes: LGraphNode[],
   links: ReturnType<typeof createMockLink>[] = []
 ): LGraph {
   const linksMap = new Map(links.map((l) => [l.id, l]))
+  for (const l of links) {
+    useLinkStore().registerLink(GRAPH_SCOPE, {
+      id: toLinkId(l.id),
+      graphId: GRAPH_SCOPE.owningGraphId,
+      originNodeId: toNodeId(l.origin_id),
+      originSlot: l.origin_slot,
+      targetNodeId: toNodeId(l.target_id),
+      targetSlot: l.target_slot,
+      type: l.type
+    })
+  }
   return fromAny<LGraph, unknown>({
     _nodes: nodes,
     _nodes_by_id: Object.fromEntries(nodes.map((n) => [n.id, n])),
     links: linksMap,
+    getLink: (id: number) => linksMap.get(id),
+    id: GRAPH_ID,
+    rootGraph: { id: GRAPH_ID },
+    events: new CustomEventTarget<LGraphEventMap>(),
     updateExecutionOrder: vi.fn(),
     setDirtyCanvas: vi.fn()
   })
@@ -245,7 +284,6 @@ describe('useNodeReplacement', () => {
       // Link should be updated to point at new node's input
       expect(link.target_id).toBe(1)
       expect(link.target_slot).toBe(0)
-      expect(newNode.inputs[0].link).toBe(10)
     })
 
     it('should transfer output connections using output_mapping', () => {
@@ -286,7 +324,6 @@ describe('useNodeReplacement', () => {
       // Output link should be remapped
       expect(link.origin_id).toBe(1)
       expect(link.origin_slot).toBe(0)
-      expect(newNode.outputs[0].links).toEqual([20])
     })
 
     it('should apply set_value to widget', () => {
@@ -400,6 +437,42 @@ describe('useNodeReplacement', () => {
       expect(result).toEqual([])
     })
 
+    it.for([
+      ['preflight', false, true, false],
+      ['transfer', true, false, true]
+    ] as const)(
+      'reports an ownership %s refusal',
+      ([_stage, canTransfer, didTransfer, removed]) => {
+        const placeholder = createPlaceholderNode(1, 'OldNode')
+        placeholder.onRemoved = vi.fn()
+        const graph = createMockGraph([placeholder])
+        placeholder.graph = graph
+        Object.assign(app, { rootGraph: graph })
+        vi.mocked(collectAllNodes).mockReturnValue([placeholder])
+        vi.mocked(LiteGraph.createNode).mockReturnValue(createNewNode())
+        vi.mocked(canTransferReplacementOwnership).mockReturnValue(canTransfer)
+        vi.mocked(transferReplacementOwnership).mockReturnValue(didTransfer)
+        vi.spyOn(console, 'error').mockImplementation(() => {})
+
+        const result = useNodeReplacement().replaceNodesInPlace([
+          makeMissingNodeType('OldNode', {
+            new_node_id: 'NewNode',
+            old_node_id: 'OldNode',
+            old_widget_ids: null,
+            input_mapping: null,
+            output_mapping: null
+          })
+        ])
+
+        expect(result).toEqual([])
+        expect(graph._nodes[0]).toBe(placeholder)
+        expect(placeholder.onRemoved).toHaveBeenCalledTimes(removed ? 1 : 0)
+        expect(mockToastAdd).toHaveBeenCalledWith(
+          expect.objectContaining({ severity: 'error' })
+        )
+      }
+    )
+
     it('should replace multiple different node types at once', () => {
       const placeholder1 = createPlaceholderNode(1, 'Load3DAnimation')
       const placeholder2 = createPlaceholderNode(
@@ -408,8 +481,6 @@ describe('useNodeReplacement', () => {
         [],
         []
       )
-      // sanitizeNodeName strips & from type names (HTML entity chars)
-      placeholder2.type = 'ConditioningAverage'
 
       const graph = createMockGraph([placeholder1, placeholder2])
       placeholder1.graph = graph
@@ -457,6 +528,7 @@ describe('useNodeReplacement', () => {
       )
       placeholder.pos = [300, 400]
       placeholder.size = [250, 150]
+      placeholder.onRemoved = vi.fn()
 
       const graph = createMockGraph([placeholder], [link])
       placeholder.graph = graph
@@ -487,6 +559,7 @@ describe('useNodeReplacement', () => {
       expect(newNode.pos).toEqual([300, 400])
       expect(newNode.size).toEqual([250, 150])
       expect(graph._nodes[0]).toBe(newNode)
+      expect(placeholder.onRemoved).toHaveBeenCalledOnce()
     })
 
     it('should transfer all widget values for ImageScaleBy with real workflow data', () => {
@@ -590,6 +663,7 @@ describe('useNodeReplacement', () => {
 
     it('should transfer ConditioningAverage widget value with real workflow data', () => {
       const link = createMockLink(4, 7, 0, 13, 0)
+      const outLink = createMockLink(6, 13, 0, 20, 0)
       // sanitizeNodeName doesn't strip spaces, so placeholder keeps trailing space
       const placeholder = createPlaceholderNode(
         13,
@@ -602,7 +676,7 @@ describe('useNodeReplacement', () => {
       )
       placeholder.last_serialization!.widgets_values = [0.75]
 
-      const graph = createMockGraph([placeholder], [link])
+      const graph = createMockGraph([placeholder], [link, outLink])
       placeholder.graph = graph
       Object.assign(app, { rootGraph: graph })
 
@@ -631,8 +705,10 @@ describe('useNodeReplacement', () => {
 
       // Default mapping transfers connections and widget values by name
       expect(newNode.id).toBe(13)
-      expect(newNode.inputs[0].link).toBe(4)
-      expect(newNode.outputs[0].links).toEqual([6])
+      expect(link.target_id).toBe(13)
+      expect(link.target_slot).toBe(0)
+      expect(outLink.origin_id).toBe(13)
+      expect(outLink.origin_slot).toBe(0)
       expect(newNode.widgets![0].value).toBe(0.75)
     })
 
@@ -788,7 +864,6 @@ describe('useNodeReplacement', () => {
     it('should fall back to node.type when last_serialization.type is undefined', () => {
       const node = createPlaceholderNode(1, 'FallbackType')
       node.last_serialization!.type = fromAny<string, unknown>(undefined)
-      node.type = 'FallbackType'
       const graph = createMockGraph([node])
       Object.assign(app, { rootGraph: graph })
 
@@ -817,8 +892,6 @@ describe('useNodeReplacement', () => {
       // so the predicate must fall back to checking sanitizeNodeName(originalType).
       const node = createPlaceholderNode(1, 'OldNodeSpecial')
       node.last_serialization!.type = fromAny<string, unknown>(undefined)
-      // Simulate what sanitizeNodeName does to '&' in the live type
-      node.type = 'OldNodeSpecial' // '&' already stripped by sanitizeNodeName
       const graph = createMockGraph([node])
       Object.assign(app, { rootGraph: graph })
 

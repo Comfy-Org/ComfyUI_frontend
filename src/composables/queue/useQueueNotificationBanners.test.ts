@@ -346,4 +346,134 @@ describe(useQueueNotificationBanners, () => {
       unmount()
     }
   })
+
+  it('acknowledges a new run over an outcome notification still on screen', async () => {
+    const { unmount, composable } = mountComposable()
+
+    try {
+      await runBatch({
+        start: 5_000,
+        finish: 5_100,
+        tasks: [createTask({ state: 'Failed', ts: 5_050 })]
+      })
+
+      expect(composable.currentNotification.value).toEqual({
+        type: 'failed',
+        count: 1
+      })
+
+      mockApi.dispatchEvent(
+        new CustomEvent('promptQueueing', {
+          detail: { requestId: 7, batchCount: 1 }
+        })
+      )
+      await nextTick()
+
+      expect(composable.currentNotification.value).toEqual({
+        type: 'queuedPending',
+        count: 1,
+        requestId: 7
+      })
+    } finally {
+      unmount()
+    }
+  })
+
+  it('acknowledges a new run ahead of outcome notifications still waiting', async () => {
+    const { unmount, composable } = mountComposable()
+
+    try {
+      await runBatch({
+        start: 6_000,
+        finish: 6_100,
+        tasks: [
+          createTask({ ts: 6_050 }),
+          createTask({ state: 'Failed', ts: 6_060 })
+        ]
+      })
+
+      expect(composable.currentNotification.value).toEqual({
+        type: 'completed',
+        count: 1,
+        thumbnailUrls: []
+      })
+
+      mockApi.dispatchEvent(
+        new CustomEvent('promptQueueing', {
+          detail: { requestId: 8, batchCount: 1 }
+        })
+      )
+      await nextTick()
+
+      expect(composable.currentNotification.value).toEqual({
+        type: 'queuedPending',
+        count: 1,
+        requestId: 8
+      })
+
+      await vi.advanceTimersByTimeAsync(4000)
+      await nextTick()
+
+      expect(composable.currentNotification.value).toEqual({
+        type: 'failed',
+        count: 1
+      })
+    } finally {
+      unmount()
+    }
+  })
+
+  it('keeps a later run ahead of outcomes while an acknowledgement shows', async () => {
+    const { unmount, composable } = mountComposable()
+
+    try {
+      await runBatch({
+        start: 7_000,
+        finish: 7_100,
+        tasks: [
+          createTask({ ts: 7_050 }),
+          createTask({ state: 'Failed', ts: 7_060 })
+        ]
+      })
+
+      mockApi.dispatchEvent(
+        new CustomEvent('promptQueueing', {
+          detail: { requestId: 9, batchCount: 1 }
+        })
+      )
+      await nextTick()
+
+      expect(composable.currentNotification.value).toEqual({
+        type: 'queuedPending',
+        count: 1,
+        requestId: 9
+      })
+
+      mockApi.dispatchEvent(
+        new CustomEvent('promptQueueing', {
+          detail: { requestId: 10, batchCount: 1 }
+        })
+      )
+      await nextTick()
+
+      await vi.advanceTimersByTimeAsync(4000)
+      await nextTick()
+
+      expect(composable.currentNotification.value).toEqual({
+        type: 'queuedPending',
+        count: 1,
+        requestId: 10
+      })
+
+      await vi.advanceTimersByTimeAsync(4000)
+      await nextTick()
+
+      expect(composable.currentNotification.value).toEqual({
+        type: 'failed',
+        count: 1
+      })
+    } finally {
+      unmount()
+    }
+  })
 })

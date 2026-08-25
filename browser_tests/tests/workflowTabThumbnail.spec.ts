@@ -99,9 +99,11 @@ test.describe('Workflow Tab Thumbnails', { tag: '@workflow' }, () => {
     await comfyPage.canvasOps.rightClick(200, 200)
     await comfyPage.page.getByText('Add Node').click()
     await comfyPage.nextFrame()
+    await comfyPage.page.getByText('model', { exact: true }).click()
+    await comfyPage.nextFrame()
     await comfyPage.page.getByText(category).click()
     await comfyPage.nextFrame()
-    await comfyPage.page.getByText(node).click()
+    await comfyPage.page.getByText(node, { exact: true }).click()
     await comfyPage.nextFrame()
   }
 

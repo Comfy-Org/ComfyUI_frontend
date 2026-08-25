@@ -13,6 +13,7 @@ type ImageCompositorOutput = NodeOutputWith<{
   compositor_layers?: Record<string, string>[]
   compositor_inputs?: string[]
   compositor_bboxes?: (CompositorBBox | null)[]
+  compositor_canvas?: { w: number; h: number }[]
   compositor_state_stale?: boolean[]
 }>
 
@@ -44,7 +45,13 @@ useExtensionService().registerExtension({
         ? kept.map(([, index]) => rawBboxes[index] ?? null)
         : undefined
       if (layers.length)
-        setCompositorLayers(node, layers, output.compositor_inputs, bboxes)
+        setCompositorLayers(
+          node,
+          layers,
+          output.compositor_inputs,
+          bboxes,
+          output.compositor_canvas?.[0]
+        )
       clearCompositorPreviewOverride(node)
 
       if (output.compositor_state_stale?.[0]) {

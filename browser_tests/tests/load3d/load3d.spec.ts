@@ -136,14 +136,15 @@ test.describe('Load3D', () => {
 
       await comfyPage.dragDrop.dragAndDropFile('cube.obj', {
         dropPosition,
+        preserveNativePropagation: true,
         waitForUpload: true
       })
 
+      await load3d.waitForModelLoaded()
       const node = await comfyPage.nodeOps.getNodeRefById(1)
       const modelFileWidget = await node.getWidget(0)
       await expect.poll(() => modelFileWidget.getValue()).toContain('cube.obj')
 
-      await load3d.waitForModelLoaded()
       await comfyPage.expectScreenshot(
         load3d.node,
         'load3d-dropped-cube-obj.png',

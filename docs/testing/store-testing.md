@@ -20,7 +20,7 @@ Basic setup for testing Pinia stores:
 // Example from a colocated store unit test
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 import { useWorkflowStore } from '@/domains/workflow/ui/stores/workflowStore'
 
@@ -33,9 +33,6 @@ describe('useWorkflowStore', () => {
 
     // Initialize the store
     store = useWorkflowStore()
-
-    // Clear any mocks
-    vi.clearAllMocks()
   })
 
   it('should initialize with default state', () => {
