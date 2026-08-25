@@ -37,7 +37,7 @@ const liveMessage = computed(() =>
     <SectionHeader align="start" max-width="xl">
       {{ t('brand.colors.heading', locale) }}
       <template #subtitle>
-        <p class="text-primary-warm-gray mt-4 max-w-2xl text-sm leading-[1.45]">
+        <p class="mt-4 max-w-2xl text-sm leading-[1.45] text-primary-warm-gray">
           {{ t('brand.colors.subheading', locale) }}
         </p>
       </template>
@@ -55,7 +55,7 @@ const liveMessage = computed(() =>
             color.swatchClass,
             color.textClass,
             color.wide && 'lg:col-span-2',
-            color.border && 'border-primary-warm-gray border-[0.783px]'
+            color.border && 'border-[0.783px] border-primary-warm-gray'
           )
         "
         @click="copyValue(color.hex, color.hex)"
