@@ -545,7 +545,7 @@ export class ComfyApi extends EventTarget {
             timeout_ms: FETCH_TIMEOUT_MS
           })
 
-          controller.abort()
+          controller.abort(new DOMException('Fetch timeout', 'TimeoutError'))
         }, FETCH_TIMEOUT_MS)
       : undefined
 
