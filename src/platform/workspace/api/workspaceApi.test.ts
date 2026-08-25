@@ -530,6 +530,16 @@ describe('workspaceApi', () => {
       expect(mockAxiosInstance.post).not.toHaveBeenCalled()
     })
 
+    it('subscribe() omits an empty credential from the request', async () => {
+      mockAxiosInstance.post.mockResolvedValueOnce({ data: {} })
+
+      await workspaceApi.subscribe('pro-monthly', { confirmationToken: '' })
+
+      const body = mockAxiosInstance.post.mock.calls[0][1]
+      expect(body).not.toHaveProperty('confirmation_token', '')
+      expect(body.confirmation_token).toBeUndefined()
+    })
+
     it('subscribe() rejects an empty credential alongside a saved one', async () => {
       await expect(
         workspaceApi.subscribe('pro-monthly', {
