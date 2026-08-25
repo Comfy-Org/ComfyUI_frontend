@@ -24,6 +24,14 @@ const WAN3_TEMPLATE = 'https://cloud.comfy.org/?template=api_wan3_0_t2v'
 const REQUIRED_BADGES = 3
 const REQUIRED_STEPS = 3
 const REQUIRED_FAQS = 6
+// The three modalities the launch ships with, in render order. Listing them
+// exactly means a duplicate, dropped or off-brief badge (e.g. an open-weights
+// claim) fails rather than slipping past a bare count.
+const REQUIRED_BADGE_LABELS = [
+  t('wan3.hero.tagImageToVideo'),
+  t('wan3.hero.tagTextToVideo'),
+  t('wan3.hero.tagReferenceToVideo')
+]
 
 const FAQ_SECTION = wan3Page.faq
 if (!FAQ_SECTION) throw new Error('wan3Page must configure a FAQ section')
@@ -52,9 +60,7 @@ test.describe('Wan 3.0 launch page @smoke', () => {
     })
     const badges = hero.getByTestId('model-launch-hero-badge')
     await expect(badges).toHaveCount(REQUIRED_BADGES)
-    for (const text of await badges.allInnerTexts()) {
-      expect(text).not.toMatch(/open (source|weight)/i)
-    }
+    await expect(badges).toHaveText(REQUIRED_BADGE_LABELS)
   })
 
   test('hero CTAs open the cloud and the workflow hub in new tabs', async ({
