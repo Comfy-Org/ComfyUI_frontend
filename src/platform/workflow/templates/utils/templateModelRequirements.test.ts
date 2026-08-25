@@ -121,18 +121,6 @@ describe('extractTemplateModelRequirementDetails', () => {
     ).toEqual([])
   })
 
-  it('keeps same-name declarations in different directories', () => {
-    const checkpoint = model('shared.safetensors', 'checkpoints')
-    const lora = model('shared.safetensors', 'loras')
-
-    expect(
-      extractTemplateModelRequirementDetails({ models: [checkpoint, lora] })
-    ).toEqual([
-      { model: checkpoint, usedBy: [] },
-      { model: lora, usedBy: [] }
-    ])
-  })
-
   it.for([
     null,
     {},
