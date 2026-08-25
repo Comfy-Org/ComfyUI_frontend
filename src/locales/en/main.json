@@ -5252,6 +5252,12 @@
     "runModeTriggerAutoLimit": "Auto (limited)",
     "runModeTriggerAutoLimitTooltip": "Ask when credit limit is reached",
     "showMore": "Show more",
-    "showLess": "Show less"
+    "showLess": "Show less",
+    "paywall": {
+      "title": "Usage limit reached",
+      "body": "You are out of monthly free usage and Comfy Credit balance now. Please top up or subscribe to get additional credits.",
+      "addCredits": "Add credits",
+      "upgradeSubscription": "Upgrade subscription"
+    }
   }
 }

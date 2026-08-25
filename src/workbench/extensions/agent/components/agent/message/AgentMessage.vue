@@ -5,6 +5,7 @@ import type {
   ActivityPart,
   AssistantMessage,
   NoticePart,
+  PaywallPart,
   RunApprovalPart,
   TabLinkPart,
   TextPart
@@ -14,6 +15,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
 import MarkdownStream from './MarkdownStream.vue'
+import AgentPaywallCard from './AgentPaywallCard.vue'
 import MessageFeedback from './MessageFeedback.vue'
 import RunApprovalCard from './RunApprovalCard.vue'
 import TabLinkCard from './TabLinkCard.vue'
@@ -27,11 +29,14 @@ const emit = defineEmits<{
   feedback: [vote: 'up' | 'down' | null]
   answerAsk: [askId: string, selection: 'run' | 'cancel']
   openWorkflow: [workflowId: string, workflowName?: string]
+  addCredits: []
+  upgradeSubscription: []
 }>()
 
 type Group =
   | { kind: 'text'; part: TextPart }
   | { kind: 'notice'; part: NoticePart }
+  | { kind: 'paywall'; part: PaywallPart }
   | { kind: 'activity'; parts: ActivityPart[] }
   | { kind: 'tabLinks'; parts: TabLinkPart[] }
   | { kind: 'runApproval'; part: RunApprovalPart }
@@ -53,6 +58,8 @@ const groups = computed<Group[]>(() => {
       else out.push({ kind: 'tabLinks', parts: [part] })
     } else if (part.type === 'runApproval') {
       out.push({ kind: 'runApproval', part })
+    } else if (part.type === 'paywall') {
+      out.push({ kind: 'paywall', part })
     } else {
       out.push({ kind: 'notice', part })
     }
@@ -111,6 +118,11 @@ const hasTools = computed(() =>
           (workflowId, workflowName) =>
             emit('openWorkflow', workflowId, workflowName)
         "
+      />
+      <AgentPaywallCard
+        v-else-if="group.kind === 'paywall'"
+        @add-credits="emit('addCredits')"
+        @upgrade-subscription="emit('upgradeSubscription')"
       />
       <div
         v-else
