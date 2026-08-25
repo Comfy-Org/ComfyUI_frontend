@@ -57,8 +57,7 @@ const fixtures = vi.hoisted(() => {
 })
 
 const environment = vi.hoisted(() => ({
-  isCloud: false,
-  isDesktop: false
+  isDesktop: true
 }))
 
 const mocks = vi.hoisted(() => ({
@@ -114,9 +113,6 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('@/platform/distribution/types', () => ({
-  get isCloud() {
-    return environment.isCloud
-  },
   get isDesktop() {
     return environment.isDesktop
   }
@@ -310,8 +306,7 @@ async function openDetail(templateName = fixtures.template.name) {
 
 describe('WorkflowTemplateSelectorDialog template detail navigation', () => {
   beforeEach(() => {
-    environment.isCloud = false
-    environment.isDesktop = false
+    environment.isDesktop = true
     mocks.prepareWorkflowTemplate.mockImplementation(async (id: string) =>
       id === fixtures.secondTemplate.name
         ? fixtures.secondPrepared
@@ -460,7 +455,7 @@ describe('WorkflowTemplateSelectorDialog template detail navigation', () => {
     expect(mocks.onClose).toHaveBeenCalledOnce()
   })
 
-  it('starts no input download when opening missing-model Detail without downloading', async () => {
+  it('opens missing-model Detail without starting input downloads', async () => {
     environment.isDesktop = true
     const user = await openDetail()
 
@@ -471,10 +466,16 @@ describe('WorkflowTemplateSelectorDialog template detail navigation', () => {
     await waitFor(() => {
       expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledOnce()
     })
+    expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledWith(
+      fixtures.prepared,
+      { closeDialog: false }
+    )
+    expect(mocks.prepareWorkflowTemplate).toHaveBeenCalledOnce()
     expect(mocks.getTemplateInputAssets).toHaveBeenCalledWith(
       fixtures.template.name
     )
     expect(mocks.downloadTemplateInputAsset).not.toHaveBeenCalled()
+    expect(mocks.onClose).toHaveBeenCalledOnce()
   })
 
   it.for([
@@ -551,37 +552,31 @@ describe('WorkflowTemplateSelectorDialog template detail navigation', () => {
     expect(mocks.onClose).toHaveBeenCalledOnce()
   })
 
-  it.for([
-    { distribution: 'Cloud', isCloud: true },
-    { distribution: 'Local/Web', isCloud: false }
-  ])(
-    'opens $distribution templates directly without presenting Detail',
-    async ({ isCloud }) => {
-      environment.isCloud = isCloud
-      const user = userEvent.setup()
-      renderDialog()
+  it('opens non-Desktop templates directly without presenting Detail', async () => {
+    environment.isDesktop = false
+    const user = userEvent.setup()
+    renderDialog()
 
-      await user.click(
-        await screen.findByTestId(`template-workflow-${fixtures.template.name}`)
-      )
+    await user.click(
+      await screen.findByTestId(`template-workflow-${fixtures.template.name}`)
+    )
 
-      await waitFor(() => {
-        expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledOnce()
-      })
-      expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledWith(
-        fixtures.prepared,
-        { closeDialog: false }
-      )
-      expect(
-        screen.queryByRole('article', { name: fixtures.template.title })
-      ).not.toBeInTheDocument()
-      expect(mocks.resolveModelAvailability).not.toHaveBeenCalled()
-      expect(mocks.resolveModelMetadata).not.toHaveBeenCalled()
-      expect(mocks.getTemplateInputAssets).not.toHaveBeenCalled()
-      expect(mocks.downloadTemplateInputAsset).not.toHaveBeenCalled()
-      expect(mocks.onClose).toHaveBeenCalledOnce()
-    }
-  )
+    await waitFor(() => {
+      expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledOnce()
+    })
+    expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledWith(
+      fixtures.prepared,
+      { closeDialog: false }
+    )
+    expect(
+      screen.queryByRole('article', { name: fixtures.template.title })
+    ).not.toBeInTheDocument()
+    expect(mocks.resolveModelAvailability).not.toHaveBeenCalled()
+    expect(mocks.resolveModelMetadata).not.toHaveBeenCalled()
+    expect(mocks.getTemplateInputAssets).not.toHaveBeenCalled()
+    expect(mocks.downloadTemplateInputAsset).not.toHaveBeenCalled()
+    expect(mocks.onClose).toHaveBeenCalledOnce()
+  })
 
   it('prepares a clicked template and presents its declarations before opening', async () => {
     await openDetail()
@@ -602,10 +597,6 @@ describe('WorkflowTemplateSelectorDialog template detail navigation', () => {
         'wan2.2_i2v_high_noise_14B_fp16.safetensors'
       )
     ).toBeInTheDocument()
-    expect(
-      within(requirements).getByText('Checkpoints · Used by Starter Loader')
-    ).toBeInTheDocument()
-    expect(within(requirements).getByText('1 KB')).toBeInTheDocument()
   })
 
   it('uses one combined category/back button and keeps the sidebar navigable', async () => {
@@ -638,22 +629,6 @@ describe('WorkflowTemplateSelectorDialog template detail navigation', () => {
     expect(mocks.filterTemplatesByCategory).toHaveBeenLastCalledWith('popular')
   })
 
-  it('opens the stored preparation once and closes only after success', async () => {
-    const user = await openDetail()
-
-    await user.click(screen.getByRole('button', { name: 'Open template' }))
-
-    await waitFor(() => {
-      expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledOnce()
-    })
-    expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledWith(
-      fixtures.prepared,
-      { closeDialog: false }
-    )
-    expect(mocks.prepareWorkflowTemplate).toHaveBeenCalledOnce()
-    expect(mocks.onClose).toHaveBeenCalledOnce()
-  })
-
   it('keeps the detail open when preparation or graph opening fails', async () => {
     mocks.prepareWorkflowTemplate.mockResolvedValueOnce(null)
     const user = userEvent.setup()
@@ -673,7 +648,9 @@ describe('WorkflowTemplateSelectorDialog template detail navigation', () => {
     mocks.openPreparedWorkflowTemplate.mockResolvedValueOnce(false)
     await user.click(card)
     await screen.findByRole('article', { name: fixtures.template.title })
-    await user.click(screen.getByRole('button', { name: 'Open template' }))
+    await user.click(
+      screen.getByRole('button', { name: 'Open without downloading' })
+    )
     await waitFor(() => {
       expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledOnce()
     })
@@ -705,16 +682,19 @@ describe('WorkflowTemplateSelectorDialog template detail navigation', () => {
       screen.getByTestId(`template-workflow-${fixtures.secondTemplate.name}`)
     )
     resolveSecond?.(fixtures.secondPrepared)
-    await screen.findByRole('article', { name: fixtures.secondTemplate.title })
+    await waitFor(() => {
+      expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledWith(
+        fixtures.secondPrepared,
+        { closeDialog: false }
+      )
+    })
 
     resolveFirst?.(fixtures.prepared)
     await waitFor(() => {
       expect(
-        screen.getByRole('article', { name: fixtures.secondTemplate.title })
-      ).toBeInTheDocument()
+        screen.queryByRole('article', { name: fixtures.template.title })
+      ).not.toBeInTheDocument()
     })
-    expect(
-      screen.queryByRole('article', { name: fixtures.template.title })
-    ).not.toBeInTheDocument()
+    expect(mocks.openPreparedWorkflowTemplate).toHaveBeenCalledOnce()
   })
 })

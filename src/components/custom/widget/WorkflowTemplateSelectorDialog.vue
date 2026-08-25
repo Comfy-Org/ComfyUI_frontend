@@ -453,7 +453,7 @@ import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
 import { useLazyPagination } from '@/composables/useLazyPagination'
 import { useTemplateFiltering } from '@/composables/useTemplateFiltering'
 import type { TemplateSortMode } from '@/composables/useTemplateFiltering'
-import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { isDesktop } from '@/platform/distribution/types'
 import { isModelDownloadable } from '@/platform/missingModel/missingModelDownload'
 import { useTelemetry } from '@/platform/telemetry'
 import { useTemplateModelAvailability } from '@/platform/workflow/templates/composables/useTemplateModelAvailability'
@@ -1272,17 +1272,12 @@ const onLoadWorkflow = async (template: TemplateInfo) => {
     )
     if (!prepared || generation !== detailGeneration) return
 
-    const groups = buildTemplateDetailGroups(template, prepared)
-    if (isCloud) {
+    if (!isDesktop) {
       await openPreparedTemplate(prepared, generation)
       return
     }
 
-    if (!isDesktop) {
-      activeDetail.value = { template, prepared, groups, inputAssets: [] }
-      return
-    }
-
+    const groups = buildTemplateDetailGroups(template, prepared)
     const inputAssetsPromise = resolveTemplateInputAssets(
       template.name,
       () => window.__comfyDesktop2
@@ -1432,7 +1427,7 @@ const activeDetailTitle = computed(() => {
 
 const activeDetailCloudUrl = computed(() => {
   const detail = activeDetail.value
-  if (isCloud || !detail || !isTemplateAvailableOnCloud(detail.template)) {
+  if (!detail || !isTemplateAvailableOnCloud(detail.template)) {
     return undefined
   }
 
