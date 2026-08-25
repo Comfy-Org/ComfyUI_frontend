@@ -270,6 +270,11 @@ export const useColorPaletteService = () => {
       completedPalette.colors.comfy_base,
       completedPalette.light_theme === true
     )
+    // Alongside the palette's other documentElement state: the token blocks
+    // and the body backdrop key off this, and they should not wait for a
+    // particular view to mount.
+    document.documentElement.dataset.colorPalette = colorPaletteId
+
     app.canvas.setDirty(true, true)
 
     colorPaletteStore.activePaletteId = colorPaletteId
