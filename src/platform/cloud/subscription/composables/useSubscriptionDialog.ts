@@ -3,12 +3,24 @@ import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import {
+  getStopDiscountedMonthlyUsd,
+  mapApiTeamCreditStops
+} from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import type { SubscriptionCheckoutSelection } from '@/platform/workspace/composables/useSubscriptionCheckout'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useAuthStore } from '@/stores/authStore'
+import {
+  clearPendingSubscriptionCheckout,
+  getPendingSubscriptionCheckout
+} from '@/platform/workspace/utils/pendingSubscriptionCheckout'
+import type { PendingSubscriptionCheckout } from '@/platform/workspace/utils/pendingSubscriptionCheckout'
 
 const DIALOG_KEY = 'subscription-required'
 const RESUME_PRICING_KEY = 'comfy:resume-team-pricing'
@@ -43,6 +55,7 @@ export const useSubscriptionDialog = () => {
   const dialogService = useDialogService()
   const dialogStore = useDialogStore()
   const workspaceStore = useTeamWorkspaceStore()
+  const { flags } = useFeatureFlags()
 
   function hide() {
     dialogStore.closeDialog({ key: DIALOG_KEY })
@@ -148,6 +161,7 @@ export const useSubscriptionDialog = () => {
         props: {
           onClose: hide,
           reason: options?.reason,
+          embeddedCheckoutEnabled: flags.embeddedCheckoutEnabled,
           initialCheckout: options?.initialCheckout,
           initialPlanMode: getInitialPlanMode(
             options?.planMode,
@@ -164,6 +178,8 @@ export const useSubscriptionDialog = () => {
           // steps shrink (the content root sets its own width per checkoutStep).
           renderer: 'reka',
           size: 'full',
+          // A scrim click mid-checkout would silently discard typed card
+          // details and any pending 3DS state; the X is the only close.
           dismissableMask: false,
           contentClass:
             'w-fit max-w-[min(1280px,95vw)] sm:max-w-[min(1280px,95vw)] max-h-[90vh] rounded-2xl border border-border-default bg-secondary-background shadow-[0_25px_80px_rgba(5,6,12,0.45)]'
@@ -222,11 +238,86 @@ export const useSubscriptionDialog = () => {
       })
   }
 
-  /**
-   * Check for and consume a pending team pricing resume intent.
-   * Call once after workspace initialization on app boot.
-   */
-  function resumePendingPricingFlow() {
+  async function restoreCheckoutSelection(
+    pending: PendingSubscriptionCheckout
+  ): Promise<SubscriptionCheckoutSelection | null> {
+    const selection = pending.selection
+    if (selection.planMode === 'personal') return selection
+
+    const {
+      fetchPlans,
+      fetchStatus,
+      teamCreditStops,
+      currentTeamCreditStop,
+      subscription,
+      subscriptionStatus
+    } = useBillingContext()
+    await Promise.all([fetchPlans(), fetchStatus()])
+    const stop = mapApiTeamCreditStops(teamCreditStops.value?.stops ?? []).find(
+      ({ id }) => id === selection.teamCreditStopId
+    )
+    if (!stop?.id) return null
+
+    return {
+      planMode: 'team',
+      stop: {
+        id: stop.id,
+        usd: stop.usd,
+        credits: stop.credits,
+        discountedUsd: getStopDiscountedMonthlyUsd(stop, selection.billingCycle)
+      },
+      billingCycle: selection.billingCycle,
+      isChange:
+        currentTeamCreditStop.value !== null &&
+        subscriptionStatus.value !== 'ended' &&
+        (currentTeamCreditStop.value.id !== stop.id ||
+          (subscription.value?.duration === 'MONTHLY'
+            ? 'monthly'
+            : 'yearly') !== selection.billingCycle)
+    }
+  }
+
+  async function resumePendingCheckout(
+    pending: PendingSubscriptionCheckout
+  ): Promise<void> {
+    if (
+      pending.workspaceId !== workspaceStore.activeWorkspaceId ||
+      pending.ownerUid !== useAuthStore().userId
+    ) {
+      clearPendingSubscriptionCheckout(pending.operationId)
+      return
+    }
+
+    const billingOperationStore = useBillingOperationStore()
+    try {
+      const operation = await billingOperationStore.startOperation(
+        pending.operationId,
+        'subscription',
+        {
+          tier:
+            pending.selection.planMode === 'personal'
+              ? pending.selection.tierKey
+              : 'team',
+          cycle: pending.selection.billingCycle,
+          attemptStartedAt: pending.attemptedAt
+        }
+      )
+      if (operation.status !== 'failed') return
+
+      const initialCheckout = await restoreCheckoutSelection(pending)
+      showPricingTable({
+        planMode: pending.selection.planMode,
+        ...(initialCheckout && { initialCheckout })
+      })
+    } finally {
+      clearPendingSubscriptionCheckout(pending.operationId)
+    }
+  }
+
+  function resumePendingPricingFlow(): Promise<void> | void {
+    const pendingCheckout = getPendingSubscriptionCheckout()
+    if (pendingCheckout) return resumePendingCheckout(pendingCheckout)
+
     try {
       const pending = sessionStorage.getItem(RESUME_PRICING_KEY)
       if (!pending) return
