@@ -652,4 +652,199 @@ describe('useBillingCapabilities', () => {
 
     expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(2)
   })
+
+  it('paces the refresh on a fixed interval when the snapshot expiry is unparseable', async () => {
+    mockGetBillingCapabilities.mockResolvedValue(
+      capabilitiesResponse(true, 'workspace-1', true, {
+        expiresAt: 'not-a-timestamp'
+      })
+    )
+
+    await billingCapabilities.initialize()
+    expect(mockGetBillingCapabilities).toHaveBeenCalledOnce()
+
+    await vi.advanceTimersByTimeAsync(59_000)
+    expect(mockGetBillingCapabilities).toHaveBeenCalledOnce()
+
+    await vi.advanceTimersByTimeAsync(2_000)
+    expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(2)
+  })
+
+  it('refetches a read that a mutation invalidated while it was in flight', async () => {
+    let resolveRefresh!: (value: BillingCapabilitiesResponse) => void
+    mockGetBillingCapabilities
+      .mockResolvedValueOnce(
+        capabilitiesResponse(false, 'workspace-1', true, {
+          revision: 4,
+          expiresAt: expiresIn(30_000)
+        })
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise<BillingCapabilitiesResponse>((resolve) => {
+            resolveRefresh = resolve
+          })
+      )
+      .mockResolvedValue(
+        capabilitiesResponse(true, 'workspace-1', true, {
+          revision: 8,
+          expiresAt: expiresIn(3_600_000)
+        })
+      )
+
+    await billingCapabilities.initialize()
+    await vi.advanceTimersByTimeAsync(30_000)
+    expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(2)
+
+    await emitMutationRevision('5')
+    expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(2)
+
+    // Serialized after the mutation stamped its header, so it carries a higher
+    // revision than the mutation despite having read pre-mutation data.
+    resolveRefresh(
+      capabilitiesResponse(false, 'workspace-1', true, {
+        revision: 7,
+        expiresAt: expiresIn(3_600_000)
+      })
+    )
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(3)
+    expect(billingCapabilities.canTopUp.value).toBe(true)
+
+    await vi.advanceTimersByTimeAsync(600_000)
+    expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(3)
+  })
+
+  it('refetches when a mutation invalidates the initial read', async () => {
+    let resolveInitial!: (value: BillingCapabilitiesResponse) => void
+    mockGetBillingCapabilities
+      .mockImplementationOnce(
+        () =>
+          new Promise<BillingCapabilitiesResponse>((resolve) => {
+            resolveInitial = resolve
+          })
+      )
+      .mockResolvedValueOnce(
+        capabilitiesResponse(true, 'workspace-1', true, { revision: 9 })
+      )
+
+    const initialization = billingCapabilities.initialize()
+    await emitMutationRevision('5')
+    expect(mockGetBillingCapabilities).toHaveBeenCalledOnce()
+
+    resolveInitial(
+      capabilitiesResponse(false, 'workspace-1', true, { revision: 7 })
+    )
+    await initialization
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(2)
+    expect(billingCapabilities.canTopUp.value).toBe(true)
+  })
+
+  it('retries an unreadable endpoint until the read succeeds', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0)
+    mockGetBillingCapabilities
+      .mockRejectedValueOnce(new Error('unavailable'))
+      .mockResolvedValueOnce(capabilitiesResponse(true))
+
+    await billingCapabilities.initialize()
+    expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
+
+    await vi.advanceTimersByTimeAsync(31_000)
+
+    expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(2)
+    expect(billingCapabilities.canSubscribeSelfServe.value).toBe(true)
+  })
+
+  it('backs off between retries and reports the outage once', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0)
+    mockGetBillingCapabilities.mockRejectedValue(new Error('unavailable'))
+
+    await billingCapabilities.initialize()
+    expect(mockGetBillingCapabilities).toHaveBeenCalledOnce()
+
+    await vi.advanceTimersByTimeAsync(29_000)
+    expect(mockGetBillingCapabilities).toHaveBeenCalledOnce()
+
+    await vi.advanceTimersByTimeAsync(2_000)
+    expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(2)
+
+    await vi.advanceTimersByTimeAsync(58_000)
+    expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(2)
+
+    await vi.advanceTimersByTimeAsync(2_000)
+    expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(3)
+
+    await vi.advanceTimersByTimeAsync(118_000)
+    expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(3)
+
+    await vi.advanceTimersByTimeAsync(2_000)
+    expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(4)
+
+    expect(mockReportError).toHaveBeenCalledOnce()
+  })
+
+  it('keeps the owner top-up fallback readable while a retry is in flight', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0)
+    let resolveRetry!: (value: BillingCapabilitiesResponse) => void
+    mockGetBillingCapabilities
+      .mockRejectedValueOnce(new Error('unavailable'))
+      .mockImplementationOnce(
+        () =>
+          new Promise<BillingCapabilitiesResponse>((resolve) => {
+            resolveRetry = resolve
+          })
+      )
+
+    await billingCapabilities.initialize()
+    expect(billingCapabilities.canTopUp.value).toBe(true)
+
+    await vi.advanceTimersByTimeAsync(31_000)
+    expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(2)
+    expect(billingCapabilities.canTopUp.value).toBe(true)
+    expect(billingCapabilities.isReady.value).toBe(true)
+
+    resolveRetry(capabilitiesResponse(true))
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(billingCapabilities.canSubscribeSelfServe.value).toBe(true)
+  })
+
+  it('retries as soon as a hidden tab with an unreadable endpoint returns', async () => {
+    const visibility = vi
+      .spyOn(document, 'visibilityState', 'get')
+      .mockReturnValue('hidden')
+    mockGetBillingCapabilities
+      .mockRejectedValueOnce(new Error('unavailable'))
+      .mockResolvedValueOnce(capabilitiesResponse(true))
+
+    await billingCapabilities.initialize()
+    await vi.advanceTimersByTimeAsync(600_000)
+    expect(mockGetBillingCapabilities).toHaveBeenCalledOnce()
+
+    visibility.mockReturnValue('visible')
+    document.dispatchEvent(new Event('visibilitychange'))
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(2)
+    expect(billingCapabilities.canSubscribeSelfServe.value).toBe(true)
+  })
+
+  it('does not retry a denial', async () => {
+    const { WorkspaceApiError } =
+      await import('@/platform/workspace/api/workspaceApi')
+    mockGetBillingCapabilities.mockRejectedValue(
+      new WorkspaceApiError('Forbidden', 403)
+    )
+
+    await billingCapabilities.initialize()
+    expect(mockGetBillingCapabilities).toHaveBeenCalledOnce()
+
+    await vi.advanceTimersByTimeAsync(600_000)
+
+    expect(mockGetBillingCapabilities).toHaveBeenCalledOnce()
+    expect(billingCapabilities.canTopUp.value).toBe(false)
+  })
 })
