@@ -192,6 +192,47 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     expect(track.scrollbarColor).toMatch(/rgba\(0, 0, 0, 0\)$/)
   })
 
+  test('sizes the add-to-prompt menu around its longest item', async ({
+    comfyPage
+  }) => {
+    const page = comfyPage.page
+    await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+
+    const panel = page.locator('#agent-panel-root')
+    await panel
+      .getByRole('button', { name: enMessages.agent.addToPrompt })
+      .click()
+
+    const menu = page.getByRole('menu')
+    const longestItem = menu.getByRole('menuitem', {
+      name: enMessages.agent.addFromAssets
+    })
+    const icon = longestItem.locator('span').first()
+    const label = longestItem.getByText(enMessages.agent.addFromAssets, {
+      exact: true
+    })
+
+    await expect(longestItem).toBeVisible()
+    await expect
+      .poll(() => menu.boundingBox().then((box) => box?.width))
+      .toBeGreaterThan(186)
+    await expect
+      .poll(async () => {
+        const [itemBox, iconBox, labelBox] = await Promise.all([
+          longestItem.boundingBox(),
+          icon.boundingBox(),
+          label.boundingBox()
+        ])
+        if (!itemBox || !iconBox || !labelBox) return Number.POSITIVE_INFINITY
+
+        const leftInset = iconBox.x - itemBox.x
+        const rightInset =
+          itemBox.x + itemBox.width - (labelBox.x + labelBox.width)
+        return Math.abs(leftInset - rightInset)
+      })
+      .toBeLessThanOrEqual(1)
+  })
+
   test('applies a draft_patch graph to the canvas', async ({
     comfyPage,
     postedMessages,
