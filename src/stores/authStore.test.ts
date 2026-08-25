@@ -11,9 +11,16 @@ import {
   clearPreservedQuery
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import {
+  cachedLegacyBillingMigrationEnabled,
+  remoteConfig,
+  remoteConfigState
+} from '@/platform/remoteConfig/remoteConfig'
+import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { useDialogService } from '@/services/dialogService'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import type * as ApiModule from '@/scripts/api'
+import { api } from '@/scripts/api'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { createTestingPinia } from '@pinia/testing'
 
@@ -1185,7 +1192,7 @@ describe('useAuthStore', () => {
       })
     })
 
-    it('should succeed with API key auth when no Firebase user is present', async () => {
+    it('should use API key auth when no Firebase user is present', async () => {
       authStateCallback(null)
       mockApiKeyGetAuthHeader.mockReturnValue({ 'X-API-KEY': 'test-api-key' })
 
@@ -1218,11 +1225,21 @@ describe('useAuthStore', () => {
       expect(result).toEqual({ id: 'test-customer-id' })
     })
 
+    it('should not fall back to API key when Firebase token retrieval fails', async () => {
+      mockUser.getIdToken.mockResolvedValue(undefined)
+      mockApiKeyGetAuthHeader.mockReturnValue({ 'X-API-KEY': 'test-api-key' })
+
+      await expect(store.createCustomer()).rejects.toThrow()
+      expect(mockApiKeyGetAuthHeader).not.toHaveBeenCalled()
+      expect(mockFetch).not.toHaveBeenCalled()
+    })
+
     it('should throw when no auth method is available', async () => {
       authStateCallback(null)
       mockApiKeyGetAuthHeader.mockReturnValue(null)
 
       await expect(store.createCustomer()).rejects.toThrow()
+      expect(mockFetch).not.toHaveBeenCalled()
     })
 
     it('carries the HTTP status on a non-ok response', async () => {
@@ -1627,6 +1644,45 @@ describe('useAuthStore', () => {
       authStateCallback(accountB)
 
       expect(mockResetSocket).toHaveBeenCalledTimes(1)
+    })
+
+    it('discards a remote config response from the previous account', async () => {
+      let resolveAccountA: ((response: Response) => void) | undefined
+      let accountASignal: AbortSignal | undefined
+      vi.spyOn(api, 'fetchApi')
+        .mockImplementationOnce(
+          (_route, options) =>
+            new Promise<Response>((resolve) => {
+              accountASignal = options?.signal ?? undefined
+              resolveAccountA = resolve
+            })
+        )
+        .mockResolvedValueOnce(
+          new Response(
+            JSON.stringify({ legacy_billing_migration_enabled: false }),
+            { status: 200 }
+          )
+        )
+
+      const accountARefresh = refreshRemoteConfig()
+      await vi.waitFor(() => expect(api.fetchApi).toHaveBeenCalledTimes(1))
+
+      authStateCallback(accountB)
+      expect(accountASignal?.aborted).toBe(true)
+      expect(remoteConfigState.value).toBe('unloaded')
+      expect(cachedLegacyBillingMigrationEnabled.value).toBeUndefined()
+
+      await refreshRemoteConfig()
+      resolveAccountA?.(
+        new Response(
+          JSON.stringify({ legacy_billing_migration_enabled: true }),
+          { status: 200 }
+        )
+      )
+      await accountARefresh
+
+      expect(remoteConfig.value.legacy_billing_migration_enabled).toBe(false)
+      expect(cachedLegacyBillingMigrationEnabled.value).toBe(false)
     })
 
     it('does not reconnect on a same-account token refresh', () => {

@@ -8,6 +8,7 @@
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import { createPromotionErrorReconciler } from '@/core/graph/subgraph/createPromotionErrorReconciler'
+import type { NodeLifecycleEvent } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import { LiteGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
@@ -88,13 +89,7 @@ function installNodeHooks(node: LGraphNode): void {
       if (isConnected) {
         useExecutionErrorStore().clearSimpleNodeErrors(execId, slotName)
       }
-      // Linking hands value ownership to the upstream node and unlinking hands
-      // it back, so the media error surface follows the same way it follows
-      // promotion.
       queueMicrotask(() => {
-        // LGraphNode.configure fires this for every input slot while a
-        // workflow loads, so a load would prune candidates against a graph
-        // that is still being wired.
         if (!app.rootGraph || ChangeTracker.isLoadingGraph) return
         dropOutOfScopeMissingMedia()
         if (!isConnected) scanSingleNodeMedia(node)
@@ -184,11 +179,10 @@ function scanNodeErrorTargets(
 function getActiveExecutionId(node: LGraphNode): string | null {
   if (!app.rootGraph) return null
   // Skip when any enclosing subgraph is muted/bypassed. Callers only
-  // verify each node's own mode; entering a bypassed subgraph (via
-  // useGraphNodeManager replaying onNodeAdded for existing interior
-  // nodes) reaches this point without the ancestor check. A null
-  // execId means the node has no current graph (e.g. detached mid
-  // lifecycle) — also skip, since we cannot verify its scope.
+  // verify each node's own mode, so an active node added inside a
+  // bypassed subgraph reaches this point without the ancestor check.
+  // A null execId means the node has no current graph (e.g. detached
+  // mid lifecycle) — also skip, since we cannot verify its scope.
   const execId = getExecutionIdByNode(app.rootGraph, node)
   if (!execId || !isExecutionPathActive(app.rootGraph, execId)) return null
   return execId
@@ -488,6 +482,7 @@ function handleNodeModeChange(
 
   if (isNowInactive) {
     removeNodeErrors(node, execId)
+    dropOutOfScopeMissingMedia()
   } else {
     scanAndAddNodeErrors(node)
     scanAncestorSubgraphHosts(execId)
@@ -528,13 +523,10 @@ function removeNodeErrors(node: LGraphNode, execId: string): void {
     mediaStore.removeMissingMediaByPrefix(prefix)
     nodesStore.removeMissingNodesByPrefix(prefix)
   }
-
-  dropOutOfScopeMissingMedia()
 }
 
+/** Removes candidates whose widget is no longer the editable value owner. */
 function dropOutOfScopeMissingMedia(): void {
-  // No root graph means every candidate reads out of scope, which would empty
-  // the store rather than no-op.
   if (!app.rootGraph || ChangeTracker.isLoadingGraph) return
 
   const mediaStore = useMissingMediaStore()
@@ -550,8 +542,24 @@ function dropOutOfScopeMissingMedia(): void {
 export function installErrorClearingHooks(graph: LGraph): () => void {
   const pendingScans = new Map<LGraphNode, Set<PendingScanControl>>()
   let disposed = false
+  let pendingOutOfScopeDrop = false
+
+  /**
+   * Coalesces `dropOutOfScopeMissingMedia` across a burst of removals, which
+   * would otherwise re-walk every candidate's topology once per removed node.
+   */
+  const scheduleDropOutOfScopeMissingMedia = (): void => {
+    if (pendingOutOfScopeDrop) return
+    pendingOutOfScopeDrop = true
+    queueMicrotask(() => {
+      pendingOutOfScopeDrop = false
+      if (disposed) return
+      dropOutOfScopeMissingMedia()
+    })
+  }
+
   const promotionErrors = createPromotionErrorReconciler({
-    pruneOutOfScope: dropOutOfScopeMissingMedia,
+    dropOutOfScope: dropOutOfScopeMissingMedia,
     rescanHost: (subgraphNode) =>
       scanNodeErrorTargets(subgraphNode, scanSingleNodeMedia),
     removeHostWidgetCandidate: (subgraphNode, widgetName) => {
@@ -568,39 +576,32 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
     promotionErrors.attachNode(node)
   }
 
-  const originalOnNodeAdded = graph.onNodeAdded
-  graph.onNodeAdded = function (node: LGraphNode) {
-    if (disposed) {
-      originalOnNodeAdded?.call(this, node)
-      return
-    }
+  const onNodeAdded = ({ detail: { node } }: NodeLifecycleEvent) => {
+    if (disposed) return
     installNodeHooksRecursive(node)
     promotionErrors.attachNode(node)
-
     scheduleAddedNodeScan(node, pendingScans)
-
-    originalOnNodeAdded?.call(this, node)
   }
 
-  const originalOnNodeRemoved = graph.onNodeRemoved
-  graph.onNodeRemoved = function (node: LGraphNode) {
-    if (disposed) {
-      originalOnNodeRemoved?.call(this, node)
-      return
-    }
+  // `node:before-removed` covers both single removals and graph.clear();
+  // `node:removed` fires only from LGraph.remove.
+  const onNodeRemoved = ({ detail: { node } }: NodeLifecycleEvent) => {
+    if (disposed) return
     for (const scan of pendingScans.get(node) ?? []) scan.cancel()
-    // node.graph is already null by the time onNodeRemoved fires, so
-    // derive the execution ID from the graph the hook is installed on
-    // plus node.id. For subgraph interior nodes this yields the full
-    // "parentId:...:nodeId" path that matches how missing asset errors
-    // are keyed; without this, removal falls back to the local ID and
-    // misses subgraph entries.
+    // Derive the execution ID from the graph the hook is installed on plus
+    // node.id. For subgraph interior nodes this yields the full
+    // "parentId:...:nodeId" path that matches how missing asset errors are
+    // keyed; without this, removal falls back to the local ID and misses
+    // subgraph entries.
     const execId = getRemovedNodeExecutionId(graph, node.id)
     removeNodeErrors(node, execId)
+    scheduleDropOutOfScopeMissingMedia()
     restoreNodeHooksRecursive(node)
     promotionErrors.detachNode(node)
-    originalOnNodeRemoved?.call(this, node)
   }
+
+  graph.events.addEventListener('node:added', onNodeAdded)
+  graph.events.addEventListener('node:before-removed', onNodeRemoved)
 
   const originalOnTrigger = graph.onTrigger
   graph.onTrigger = (event: LGraphTriggerEvent) => {
@@ -628,8 +629,8 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
     for (const node of graph._nodes ?? []) {
       restoreNodeHooksRecursive(node)
     }
-    graph.onNodeAdded = originalOnNodeAdded || undefined
-    graph.onNodeRemoved = originalOnNodeRemoved || undefined
+    graph.events.removeEventListener('node:added', onNodeAdded)
+    graph.events.removeEventListener('node:before-removed', onNodeRemoved)
     graph.onTrigger = originalOnTrigger || undefined
     promotionErrors.dispose()
   }
