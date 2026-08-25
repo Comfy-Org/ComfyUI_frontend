@@ -1,7 +1,12 @@
 <template>
   <div
     ref="root"
-    class="relative touch-none overflow-hidden select-none"
+    :class="
+      cn(
+        'relative touch-none overflow-hidden select-none',
+        isDragging ? 'cursor-grabbing' : 'cursor-grab'
+      )
+    "
     role="group"
     :aria-label="label"
   >
@@ -62,6 +67,8 @@
 <script setup lang="ts">
 import { usePreferredReducedMotion, useEventListener } from '@vueuse/core'
 import { computed, ref, useTemplateRef, watchEffect } from 'vue'
+
+import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   baseSrc,
