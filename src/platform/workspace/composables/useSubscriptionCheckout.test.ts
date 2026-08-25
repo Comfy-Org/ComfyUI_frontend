@@ -1468,9 +1468,7 @@ describe('useSubscriptionCheckout', () => {
 
       expect(mockPreviewSubscribe).toHaveBeenCalledWith(
         'team_per_credit_monthly',
-        {
-          teamCreditStopId: 'team_700'
-        }
+        { teamCreditStopId: 'team_700', billingCycle: 'monthly' }
       )
       expect(checkout.previewData.value?.transition_type).toBe(
         'new_subscription'
