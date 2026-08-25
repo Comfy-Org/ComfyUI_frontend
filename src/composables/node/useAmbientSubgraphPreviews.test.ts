@@ -244,6 +244,26 @@ describe(useAmbientSubgraphPreviews, () => {
     ])
   })
 
+  it('self-heals once an interior node added after the first evaluation gets its first preview frame', () => {
+    const setup = createSetup()
+
+    const { ambientPreviews } = useAmbientSubgraphPreviews(
+      () => setup.subgraphNode
+    )
+    expect(ambientPreviews.value).toEqual([])
+
+    const node = addInteriorNode(setup, { id: 10, previewMediaType: 'image' })
+    seedOutputs(setup.subgraph.id, [10])
+    const urls = ['/view?filename=output.png']
+    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockImplementation((n) =>
+      n === node ? urls : undefined
+    )
+
+    expect(ambientPreviews.value).toEqual([
+      expect.objectContaining({ sourceNodeId: '10', urls })
+    ])
+  })
+
   it('skips nested SubgraphNode interior nodes (they derive their own previews)', () => {
     const setup = createSetup()
     const nestedSubgraph = createTestSubgraph()
