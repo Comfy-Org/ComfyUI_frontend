@@ -104,4 +104,20 @@ describe('setupAutoQueueHandler', () => {
 
     expect(mocks.queuePrompt).toHaveBeenCalledTimes(1)
   })
+
+  it('recovers after a rejected attempt so the next change still queues', async () => {
+    const listener = setupAndGetAutoQueueGraphChangedListener()
+
+    mocks.queuePrompt.mockResolvedValueOnce(false)
+    listener(new Event('autoQueueGraphChanged'))
+    await nextTick()
+    expect(mocks.queuePrompt).toHaveBeenCalledTimes(1)
+
+    listener(new Event('autoQueueGraphChanged'))
+    await nextTick()
+    expect(
+      mocks.queuePrompt,
+      'a rejected attempt must not leave auto-queue stuck as busy'
+    ).toHaveBeenCalledTimes(2)
+  })
 })
