@@ -1,4 +1,4 @@
-# 18. Unified Recoverable Diagnostics
+# 19. Unified Recoverable Diagnostics
 
 Date: 2026-08-25
 
