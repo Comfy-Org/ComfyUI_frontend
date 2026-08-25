@@ -29,7 +29,8 @@ const billing = vi.hoisted(() => ({
 const billingState = {
   plans: ref<unknown[]>([]),
   teamCreditStops: ref<unknown>(null),
-  isLoading: ref(false)
+  isLoading: ref(false),
+  error: ref<string | null>(null)
 }
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
@@ -213,6 +214,7 @@ describe('PlanCreditsPanelContent — the fetch drives the rendered offer', () =
     billingState.plans.value = []
     billingState.teamCreditStops.value = null
     billingState.isLoading.value = false
+    billingState.error.value = null
     billing.fetchPlans.mockReset()
     // fetchPlans populates the singleton the section reads — the real wire.
     billing.fetchPlans.mockImplementation(async () => {
@@ -241,16 +243,35 @@ describe('PlanCreditsPanelContent — the fetch drives the rendered offer', () =
     expect(screen.queryByText('$20')).toBeNull()
   })
 
-  it('renders the unavailable state when the fetch yields no catalog', async () => {
+  it('renders the empty state when the fetch yields no catalog', async () => {
     billing.fetchPlans.mockImplementation(async () => {
       billingState.plans.value = []
     })
     renderWired({ cloud: false })
 
     expect(
+      await screen.findByText(
+        'No plans are available right now. Check back soon.'
+      )
+    ).toBeTruthy()
+    expect(screen.queryByText("We couldn't load your plan details.")).toBeNull()
+    expect(screen.queryByText(/\$\d+ Billed yearly/)).toBeNull()
+  })
+
+  it('renders the error state when the fetch fails', async () => {
+    billing.fetchPlans.mockImplementation(async () => {
+      billingState.plans.value = []
+      billingState.error.value = 'network down'
+    })
+    renderWired({ cloud: false })
+
+    expect(
       await screen.findByText("We couldn't load your plan details.")
     ).toBeTruthy()
-    expect(screen.queryByText(/\$\d+ Billed yearly/)).toBeNull()
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy()
+    expect(
+      screen.queryByText('No plans are available right now. Check back soon.')
+    ).toBeNull()
   })
 
   it('does not fetch or mount the section on cloud', () => {
