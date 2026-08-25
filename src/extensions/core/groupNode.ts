@@ -816,7 +816,10 @@ export class GroupNodeConfig {
  * {@link convertToNodes} and {@link LGraph.convertToSubgraph} repackages the
  * result as a subgraph.
  *
- * @knipIgnoreUnusedButUsedByCustomNodes
+ * Consumed directly by external custom nodes (e.g. cg-use-everywhere) via
+ * `window.comfyAPI.groupNode.GroupNodeHandler` — that consumption is invisible
+ * to Knip, so this class stays part of the public API regardless of whether
+ * anything in this repo still imports it.
  */
 export class GroupNodeHandler {
   node: LGraphNode
