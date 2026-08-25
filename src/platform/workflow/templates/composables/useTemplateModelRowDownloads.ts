@@ -252,12 +252,15 @@ export function useTemplateModelRowDownloads({
       applyNativeEvent(model, desktopProgressEvent(progress, attempt))
     })
   })
-  const stopLegacyProgress = subscribeLegacyProgress((download) => {
-    forMatchingModels(download, (model, attempt) => {
-      const event = legacyProgressEvent(download, attempt)
-      if (event) applyNativeEvent(model, event)
+  let stopLegacyProgress: (() => void) | undefined
+  function ensureLegacyProgress(): void {
+    stopLegacyProgress ??= subscribeLegacyProgress((download) => {
+      forMatchingModels(download, (model, attempt) => {
+        const event = legacyProgressEvent(download, attempt)
+        if (event) applyNativeEvent(model, event)
+      })
     })
-  })
+  }
 
   function isCurrentQueuedAttempt(
     model: ModelWithUrl,
@@ -285,6 +288,7 @@ export function useTemplateModelRowDownloads({
   ): void {
     switch (outcome.status) {
       case 'host-requested':
+        if (outcome.host === 'electron') ensureLegacyProgress()
         applyEvent(model, { type: 'started', attempt })
         void outcome.hostResult.catch(() => fail(model, attempt))
         return
@@ -300,6 +304,7 @@ export function useTemplateModelRowDownloads({
           fail(model, attempt)
           return
         }
+        ensureLegacyProgress()
         void loadFolderPaths().then(
           (paths) => {
             if (isCurrentQueuedAttempt(model, attempt)) {
@@ -351,7 +356,7 @@ export function useTemplateModelRowDownloads({
     if (disposed) return
     disposed = true
     stopDesktopProgress()
-    stopLegacyProgress()
+    stopLegacyProgress?.()
   }
 
   return { stateFor, request, dispose }
