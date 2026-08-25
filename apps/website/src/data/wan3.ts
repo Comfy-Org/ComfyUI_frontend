@@ -133,41 +133,6 @@ export const wan3Page: ModelLaunchPage = {
       }
     ]
   },
-  steps: {
-    headingKey: 'wan3.steps.heading',
-    stepLabelKey: 'wan3.steps.step',
-    items: [
-      {
-        id: 'write-the-shot',
-        title: { en: 'Write the shot', 'zh-CN': '写下你的镜头' },
-        description: {
-          en: 'Camera, subject, framing',
-          'zh-CN': '镜头、主体、构图'
-        }
-      },
-      {
-        id: 'add-your-references',
-        title: { en: 'Add your references', 'zh-CN': '添加你的参考素材' },
-        description: {
-          en: 'An image, a video or an audio clip to steer it',
-          'zh-CN': '用图像、视频或音频片段来引导生成'
-        }
-      },
-      {
-        id: 'run-wan-3',
-        title: { en: 'Run Wan 3.0', 'zh-CN': '运行 Wan 3.0' },
-        description: {
-          en: 'Up to 30 seconds, up to 1080p',
-          'zh-CN': '最长 30 秒，最高 1080p'
-        }
-      }
-    ],
-    primaryCta: {
-      labelKey: 'wan3.steps.primaryCta',
-      href: wan3Links.cloudRunTextToVideo,
-      target: '_blank'
-    }
-  },
   runOptions: {
     headingKey: 'wan3.runOptions.heading',
     subtitleKey: 'wan3.runOptions.subtitle',

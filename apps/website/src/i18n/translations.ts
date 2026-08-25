@@ -5646,12 +5646,6 @@ const translations = {
   },
   'wan3.pricing.banner.cta': { en: 'TRY FREE', 'zh-CN': '免费试用' },
   'wan3.faq.heading': { en: 'Q&A', 'zh-CN': '问答' },
-  'wan3.steps.heading': {
-    en: 'How to direct your first shot',
-    'zh-CN': '如何执导你的第一个镜头'
-  },
-  'wan3.steps.step': { en: 'Step', 'zh-CN': '步骤' },
-  'wan3.steps.primaryCta': { en: 'RUN WAN 3.0', 'zh-CN': '运行 Wan 3.0' },
   'wan3.runOptions.heading': {
     en: 'One engine, every way to run it',
     'zh-CN': '同一引擎，多种运行方式'

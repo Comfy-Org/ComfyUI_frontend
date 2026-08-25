@@ -12,17 +12,15 @@ const HERO_TITLE = t('wan3.hero.title')
 const HERO_CTA = t('wan3.hero.primaryCta')
 const HERO_SECONDARY_CTA = t('wan3.hero.secondaryCta')
 const FAQ_HEADING = t('wan3.faq.heading')
-const STEPS_HEADING = t('wan3.steps.heading')
 const RUN_OPTIONS_HEADING = t('wan3.runOptions.heading')
 const REVIEWS_HEADING = t('wan3.reviews.heading')
 const MODELS_ROUTE = getRoutes('en').models
 const WAN3_TEMPLATE = 'https://cloud.comfy.org/?template=api_wan3_0_t2v'
 
 // Counts are the launch requirement rather than a snapshot of the config:
-// deriving them from `wan3Page` would let a dropped badge, step or Q&A entry
-// pass, because both sides of the assertion would move together.
+// deriving them from `wan3Page` would let a dropped badge or Q&A entry pass,
+// because both sides of the assertion would move together.
 const REQUIRED_BADGES = 3
-const REQUIRED_STEPS = 3
 const REQUIRED_FAQS = 6
 // The three modalities the launch ships with, in render order. Listing them
 // exactly means a duplicate, dropped or off-brief badge (e.g. an open-weights
@@ -95,16 +93,6 @@ test.describe('Wan 3.0 launch page @smoke', () => {
     await expect(footerLink).toHaveAttribute('href', getRoutes('en').wan3)
   })
 
-  test('renders one card per configured step', async ({ page }) => {
-    const heading = page.getByRole('heading', { level: 2, name: STEPS_HEADING })
-    await heading.scrollIntoViewIfNeeded()
-    const steps = page
-      .locator('section')
-      .filter({ has: heading })
-      .locator('ol > li')
-    await expect(steps).toHaveCount(REQUIRED_STEPS)
-  })
-
   test('emits FAQPage structured data with one entry per Q&A', async ({
     page
   }) => {
@@ -154,15 +142,10 @@ test.describe('Wan 3.0 launch page @smoke', () => {
     expect(body).not.toMatch(/(?<![\d.])4k\b/i)
   })
 
-  test('renders the Q&A, steps, run options and reviews headings', async ({
+  test('renders the Q&A, run options and reviews headings', async ({
     page
   }) => {
-    for (const name of [
-      FAQ_HEADING,
-      STEPS_HEADING,
-      RUN_OPTIONS_HEADING,
-      REVIEWS_HEADING
-    ]) {
+    for (const name of [FAQ_HEADING, RUN_OPTIONS_HEADING, REVIEWS_HEADING]) {
       const heading = page.getByRole('heading', { level: 2, name })
       await heading.scrollIntoViewIfNeeded()
       await expect(heading).toBeVisible()
@@ -175,7 +158,7 @@ test.describe('Wan 3.0 launch page — zh-CN', () => {
     await page.goto(ZH_PATH)
   })
 
-  test('renders the localized hero and steps', async ({ page }) => {
+  test('renders the localized hero and Q&A', async ({ page }) => {
     const hero = page.locator('section').filter({
       has: page.getByRole('heading', {
         level: 1,
@@ -184,12 +167,12 @@ test.describe('Wan 3.0 launch page — zh-CN', () => {
     })
     await expect(hero.getByRole('link').first()).toContainText(/[一-鿿]/)
 
-    const steps = page.getByRole('heading', {
+    const faq = page.getByRole('heading', {
       level: 2,
-      name: t('wan3.steps.heading', 'zh-CN')
+      name: t('wan3.faq.heading', 'zh-CN')
     })
-    await steps.scrollIntoViewIfNeeded()
-    await expect(steps).toBeVisible()
+    await faq.scrollIntoViewIfNeeded()
+    await expect(faq).toBeVisible()
   })
 
   test('breadcrumb and footer keep visitors inside the locale', async ({
