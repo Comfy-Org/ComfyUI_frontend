@@ -91,7 +91,9 @@
       <!-- Upgrade to add credits (free tier) -->
       <Button
         v-if="
-          canAccessSubscriptionFeatures && permissions.canTopUp && isFreeTier
+          billingPolicyCapabilities.showsSubscribeUpsellUI &&
+          permissions.canTopUp &&
+          isFreeTier
         "
         variant="subscribe"
         size="sm"
@@ -101,7 +103,10 @@
         {{ $t('subscription.upgradeToAddCredits') }}
       </Button>
       <Button
-        v-else-if="canAccessSubscriptionFeatures && permissions.canTopUp"
+        v-else-if="
+          billingPolicyCapabilities.topUpAccess === 'allowed' &&
+          permissions.canTopUp
+        "
         variant="secondary"
         size="sm"
         class="text-base-foreground"
@@ -139,7 +144,7 @@
     <Divider v-if="!accountActionsOnly" class="mx-0 my-2" />
 
     <div
-      v-if="!accountActionsOnly && showPlansAndPricing"
+      v-if="!accountActionsOnly && isCloud && showPlansAndPricing"
       class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="plans-pricing-menu-item"
       @click="handleOpenPlansAndPricing"
@@ -151,15 +156,28 @@
     </div>
 
     <button
-      v-if="!accountActionsOnly && showManagePlan"
+      v-if="!accountActionsOnly && isCloud && showManagePlan"
       type="button"
       class="flex w-full cursor-pointer appearance-none items-center gap-2 border-0 bg-transparent px-4 py-2 text-left hover:bg-secondary-background-hover focus-visible:bg-secondary-background-hover focus-visible:outline-none"
       data-testid="manage-plan-menu-item"
-      @click="handleOpenPlanAndCreditsSettings"
+      @click="handleOpenManagePlanSettings"
     >
       <i class="icon-[lucide--credit-card] size-4 text-muted-foreground" />
       <span class="flex-1 text-sm text-base-foreground">{{
         $t('subscription.managePlan')
+      }}</span>
+    </button>
+
+    <button
+      v-if="!accountActionsOnly && showLocalPlansAndCredits"
+      type="button"
+      class="flex w-full cursor-pointer appearance-none items-center gap-2 border-0 bg-transparent px-4 py-2 text-left hover:bg-secondary-background-hover focus-visible:bg-secondary-background-hover focus-visible:outline-none"
+      data-testid="plans-credits-menu-item"
+      @click="handleOpenPlanCreditsSettings"
+    >
+      <i class="icon-[lucide--coins] size-4 text-muted-foreground" />
+      <span class="flex-1 text-sm text-base-foreground">{{
+        $t('subscription.plansAndCredits')
       }}</span>
     </button>
 
@@ -237,6 +255,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
+import { useBillingPolicyCapabilities } from '@/platform/cloud/subscription/composables/useBillingPolicyCapabilities'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
@@ -288,6 +307,8 @@ const {
   fetchBalance
 } = useBillingContext()
 
+const { billingPolicyCapabilities } = useBillingPolicyCapabilities()
+
 const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
 const subscriptionDialog = useSubscriptionDialog()
 
@@ -313,6 +334,9 @@ const displayedCredits = computed(() => {
 const showPlansAndPricing = computed(
   () => permissions.value.canManageSubscription
 )
+const showLocalPlansAndCredits = computed(
+  () => !isCloud && permissions.value.canManageSubscription
+)
 const hasDelinquentSubscription = computed(
   () =>
     (billingStatus.value === 'payment_failed' ||
@@ -326,10 +350,11 @@ const showManagePlan = computed(
 )
 const showSubscribeAction = computed(
   () =>
-    (isCancelled.value && permissions.value.canManageSubscriptionLifecycle) ||
-    (!canAccessSubscriptionFeatures.value &&
-      !hasDelinquentSubscription.value &&
-      permissions.value.canManageSubscription)
+    isCloud &&
+    ((isCancelled.value && permissions.value.canManageSubscriptionLifecycle) ||
+      (!canAccessSubscriptionFeatures.value &&
+        !hasDelinquentSubscription.value &&
+        permissions.value.canManageSubscription))
 )
 
 const handleOpenUserSettings = () => {
@@ -347,13 +372,13 @@ const handleOpenPlansAndPricing = () => {
   emit('close')
 }
 
-const handleOpenPlanAndCreditsSettings = () => {
-  if (isCloud) {
-    settingsDialog.show('workspace')
-  } else {
-    settingsDialog.show('credits')
-  }
+const handleOpenManagePlanSettings = () => {
+  settingsDialog.show('workspace')
+  emit('close')
+}
 
+const handleOpenPlanCreditsSettings = () => {
+  settingsDialog.show('workspace')
   emit('close')
 }
 
