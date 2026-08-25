@@ -1,6 +1,6 @@
-export type TemplateModelDownloadActivity = 'active' | 'paused'
+type TemplateModelDownloadActivity = 'active' | 'paused'
 
-export type TemplateModelDownloadFailureReason = 'error' | 'cancelled'
+type TemplateModelDownloadFailureReason = 'error' | 'cancelled'
 
 export type TemplateModelDownloadState =
   | { status: 'idle'; attempt: 0 }

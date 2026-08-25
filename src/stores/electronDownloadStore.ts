@@ -17,7 +17,7 @@ export interface ElectronDownload extends Pick<
   totalBytes?: number
 }
 
-export function normalizeElectronDownloadState({
+function normalizeElectronDownloadState({
   url,
   filename,
   state,
