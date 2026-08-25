@@ -14,6 +14,7 @@ import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuth
 
 import type {
   BillingRail,
+  CurrentWorkspaceResponse,
   ListMembersParams,
   Member,
   PendingInvite as ApiPendingInvite,
@@ -87,6 +88,26 @@ function createWorkspaceState(workspace: WorkspaceWithRole): WorkspaceState {
     members: [],
     pendingInvites: []
   }
+}
+
+/**
+ * Builds workspace state from GET /api/workspaces/current — the single
+ * workspace bound to an API-key credential. The response carries no
+ * membership timestamps (only sortWorkspaces reads them, and a one-entry list
+ * never sorts) and may omit role, which fails closed to member so owner-only
+ * billing actions stay hidden rather than 403 on click.
+ */
+function createWorkspaceStateFromCredential(
+  current: CurrentWorkspaceResponse
+): WorkspaceState {
+  return createWorkspaceState({
+    id: current.id,
+    name: current.name,
+    type: current.type,
+    role: current.role ?? 'member',
+    created_at: '',
+    joined_at: ''
+  })
 }
 
 export function sortWorkspaces<T extends WorkspaceWithRole>(list: T[]): T[] {
@@ -277,9 +298,24 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     error.value = null
 
     const workspaceAuthStore = useWorkspaceAuthStore()
+    const isApiKeySession = useCurrentUser().isApiKeyLogin.value
 
     for (let attempt = 0; attempt <= MAX_INIT_RETRIES; attempt++) {
       try {
+        // An API-key credential is bound to exactly one workspace on the
+        // server. There is no discovery, switching, or token exchange for it:
+        // the server echoes the binding back and the key itself authenticates
+        // workspace-scoped calls.
+        if (isApiKeySession) {
+          const current = await workspaceApi.getCurrentWorkspace()
+          if (isStaleIdentity(generation)) return
+          workspaces.value = [createWorkspaceStateFromCredential(current)]
+          mutableActiveWorkspaceId.value = current.id
+          initState.value = 'ready'
+          isFetchingWorkspaces.value = false
+          return
+        }
+
         const { useSessionCookie } =
           await import('@/platform/auth/session/useSessionCookie')
         await useSessionCookie().ensureSessionCookie()

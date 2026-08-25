@@ -26,7 +26,23 @@
 
     <!-- Workspace Selector -->
     <div v-if="!accountActionsOnly" class="relative">
+      <!-- An API-key session is bound to one server-resolved workspace and
+           exposes no discovery or switching -->
+      <div
+        v-if="isApiKeyLogin"
+        class="flex w-full items-center gap-2 rounded-lg px-4 py-2"
+        data-testid="workspace-context-row"
+      >
+        <WorkspaceProfilePic
+          class="size-6 shrink-0 text-xs"
+          :workspace-name="workspaceName"
+        />
+        <span class="truncate text-sm text-base-foreground">
+          {{ workspaceName }}
+        </span>
+      </div>
       <button
+        v-else
         ref="workspaceSwitcherTrigger"
         v-tooltip="{ value: workspaceName, showDelay: 300 }"
         type="button"
@@ -293,8 +309,13 @@ const { accountActionsOnly = false } = defineProps<{
 
 const { buildDocsUrl, docsPaths } = useExternalLink()
 
-const { userDisplayName, userEmail, userPhotoUrl, handleSignOut } =
-  useCurrentUser()
+const {
+  userDisplayName,
+  userEmail,
+  userPhotoUrl,
+  handleSignOut,
+  isApiKeyLogin
+} = useCurrentUser()
 const settingsDialog = useSettingsDialog()
 const dialogService = useDialogService()
 const {
