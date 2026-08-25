@@ -1,12 +1,12 @@
 {
   "schemaVersion": 2,
-  "componentCount": 263,
-  "documentedComponentCount": 61,
-  "missingStoryCount": 202,
+  "componentCount": 265,
+  "documentedComponentCount": 62,
+  "missingStoryCount": 203,
   "dispositionCounts": {
     "compound-part": 28,
     "icon": 5,
-    "integration": 2,
+    "integration": 3,
     "page-local": 102,
     "reusable-candidate": 14,
     "template-local": 51
@@ -366,6 +366,11 @@
       "source": "src/components/learning/LearningDirectorySection.vue",
       "disposition": "page-local",
       "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/learning/LearningVideoEmbed.vue",
+      "disposition": "integration",
+      "reason": "External integration boundary; verify in its owning page or integration test."
     },
     {
       "source": "src/components/learning/LearningWatchPage.vue",
@@ -1095,6 +1100,7 @@
     "src/components/learning/FeaturedTutorialCard.vue",
     "src/components/learning/LearningCategoryNav.vue",
     "src/components/learning/LearningDirectorySection.vue",
+    "src/components/learning/LearningVideoEmbed.vue",
     "src/components/learning/LearningWatchPage.vue",
     "src/components/learning/TutorialRow.vue",
     "src/components/legal/HeroSection.vue",

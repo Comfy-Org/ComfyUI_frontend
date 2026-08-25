@@ -11,8 +11,8 @@
     ],
     "unknownPattern": "Treat as a gap; do not invent a local substitute."
   },
-  "componentCount": 62,
-  "storyCount": 203,
+  "componentCount": 63,
+  "storyCount": 206,
   "components": [
     {
       "component": "AddToCalendarButton",
@@ -636,6 +636,45 @@
         {
           "exportName": "Mobile",
           "storyId": "website-blocks-featuredcarousel01--mobile"
+        }
+      ]
+    },
+    {
+      "component": "FeaturedCarousel02",
+      "source": "src/components/blocks/FeaturedCarousel02.vue",
+      "storyFile": "src/components/blocks/FeaturedCarousel02.stories.ts",
+      "title": "Website/Blocks/FeaturedCarousel02",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": ["carousel-navigation", "responsive-layout"],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/blocks/FeaturedCarousel02.vue"
+      },
+      "agent": {
+        "importPath": "@/components/blocks/FeaturedCarousel02",
+        "storybookPath": "/?path=/story/website-blocks-featuredcarousel02--default",
+        "docsPath": "/?path=/docs/website-blocks-featuredcarousel02--docs",
+        "states": ["Default", "SingleSlide", "ImageSlides"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-featuredcarousel02--default"
+        },
+        {
+          "exportName": "SingleSlide",
+          "storyId": "website-blocks-featuredcarousel02--single-slide"
+        },
+        {
+          "exportName": "ImageSlides",
+          "storyId": "website-blocks-featuredcarousel02--image-slides"
         }
       ]
     },

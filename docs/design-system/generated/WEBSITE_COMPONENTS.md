@@ -25,6 +25,7 @@ inventory proves that code exists, but approval rules and permitted variants liv
 | FeatureGrid02 | `apps/website/src/components/blocks/FeatureGrid02.vue` | blocks | yes | no |
 | FeatureRows01 | `apps/website/src/components/blocks/FeatureRows01.vue` | blocks | yes | no |
 | FeaturedCarousel01 | `apps/website/src/components/blocks/FeaturedCarousel01.vue` | blocks | yes | no |
+| FeaturedCarousel02 | `apps/website/src/components/blocks/FeaturedCarousel02.vue` | blocks | yes | yes |
 | HeroBackdrop01 | `apps/website/src/components/blocks/HeroBackdrop01.vue` | blocks | yes | no |
 | HeroCentered01 | `apps/website/src/components/blocks/HeroCentered01.vue` | blocks | yes | no |
 | HeroLivestream01 | `apps/website/src/components/blocks/HeroLivestream01.vue` | blocks | no | no |
@@ -67,7 +68,7 @@ inventory proves that code exists, but approval rules and permitted variants liv
 | SiteFooter | `apps/website/src/components/common/SiteFooter.vue` | common | yes | no |
 | SiteVideo | `apps/website/src/components/common/SiteVideo.vue` | common | yes | no |
 | SocialProofBarSection | `apps/website/src/components/common/SocialProofBarSection.vue` | common | yes | no |
-| VideoPlayer | `apps/website/src/components/common/VideoPlayer.vue` | common | yes | no |
+| VideoPlayer | `apps/website/src/components/common/VideoPlayer.vue` | common | yes | yes |
 | WireNodeLayout | `apps/website/src/components/common/WireNodeLayout.vue` | common | no | no |
 | Accordion | `apps/website/src/components/ui/accordion/Accordion.vue` | accordion | yes | no |
 | AccordionContent | `apps/website/src/components/ui/accordion/AccordionContent.vue` | accordion | no | no |

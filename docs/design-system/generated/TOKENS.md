@@ -104,6 +104,7 @@ this table.
 | `--color-gold-500` | #fdab34 | `packages/design-system/src/css/style.css` |
 | `--color-gold-600` | #fd9903 | `packages/design-system/src/css/style.css` |
 | `--color-gold-700` | #c77700 | `packages/design-system/src/css/style.css` |
+| `--color-gold-800` | #8c6a38 | `packages/design-system/src/css/style.css` |
 | `--color-highlight` | var(--p-primary-color) | `packages/design-system/src/css/style.css` |
 | `--color-ink-100` | #5c5362 | `packages/design-system/src/css/_palette.css` |
 | `--color-ink-200` | #4f4754 | `packages/design-system/src/css/_palette.css` |
@@ -224,6 +225,8 @@ this table.
 | `--color-video-trim-selection-background` | var( --video-trim-selection-background ) | `packages/design-system/src/css/style.css` |
 | `--color-warning-background` | var(--warning-background) | `packages/design-system/src/css/style.css` |
 | `--color-warning-background-hover` | var(--warning-background-hover) | `packages/design-system/src/css/style.css` |
+| `--color-warning-foreground` | var(--warning-foreground) | `packages/design-system/src/css/style.css` |
+| `--color-warning-on-background` | var(--warning-on-background) | `packages/design-system/src/css/style.css` |
 | `--color-white` | #ffffff | `packages/design-system/src/css/_palette.css` |
 | `--comfy-input-bg` | #222 | `packages/design-system/src/css/style.css` |
 | `--comfy-menu-bg` | #353535 | `packages/design-system/src/css/style.css` |
@@ -346,4 +349,6 @@ this table.
 | `--video-trim-selection-background` | var(--color-datatype-CLIP, #ffd500) | `packages/design-system/src/css/style.css` |
 | `--warning-background` | var(--color-gold-400)<br>var(--color-gold-600) | `packages/design-system/src/css/style.css` |
 | `--warning-background-hover` | var(--color-gold-500) | `packages/design-system/src/css/style.css` |
+| `--warning-foreground` | var(--color-gold-800)<br>var(--color-gold-600) | `packages/design-system/src/css/style.css` |
+| `--warning-on-background` | var(--color-charcoal-800) | `packages/design-system/src/css/style.css` |
 | `--workflow-tabs-height` | 2.375rem | `packages/design-system/src/css/style.css` |
