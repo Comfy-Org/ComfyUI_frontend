@@ -2,7 +2,7 @@ import type { Mock } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick } from 'vue'
 
-import { api } from '@/scripts/api'
+import { api, ComfyApi } from '@/scripts/api'
 
 interface MockWebSocket {
   readyState: number
@@ -17,9 +17,6 @@ describe('API Feature Flags', () => {
   const wsEventHandlers: { [key: string]: (event: unknown) => void } = {}
 
   beforeEach(() => {
-    // Use fake timers
-    vi.useFakeTimers()
-
     // Mock WebSocket
     mockWebSocket = {
       readyState: 1, // WebSocket.OPEN
@@ -47,11 +44,6 @@ describe('API Feature Flags', () => {
       api_version: '1.0.0',
       capabilities: ['bulk_operations', 'async_nodes']
     })
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
-    vi.restoreAllMocks()
   })
 
   describe('Feature flags negotiation', () => {
@@ -393,11 +385,96 @@ describe('API Feature Flags', () => {
     })
   })
 
-  describe('Dev override via localStorage', () => {
-    afterEach(() => {
-      localStorage.clear()
+  it('preserves server-pushed graph change signals', async () => {
+    const socketApi = new ComfyApi()
+    const graphChanged = vi.fn()
+    const autoQueueGraphChanged = vi.fn()
+    socketApi.addEventListener('graphChanged', graphChanged)
+    socketApi.addEventListener('autoQueueGraphChanged', autoQueueGraphChanged)
+    const initPromise = socketApi.init()
+    wsEventHandlers['open'](new Event('open'))
+    wsEventHandlers['message']({
+      data: JSON.stringify({
+        type: 'status',
+        data: {
+          status: { exec_info: { queue_remaining: 0 } },
+          sid: 'test-sid'
+        }
+      })
+    })
+    await initPromise
+
+    const workflow = { nodes: [], links: [] }
+    wsEventHandlers['message']({
+      data: JSON.stringify({ type: 'graphChanged', data: workflow })
     })
 
+    expect(graphChanged).toHaveBeenCalledOnce()
+    expect(graphChanged.mock.calls[0][0].detail).toEqual(workflow)
+    expect(autoQueueGraphChanged).toHaveBeenCalledOnce()
+
+    wsEventHandlers['message']({
+      data: JSON.stringify({ type: 'autoQueueGraphChanged', data: null })
+    })
+
+    expect(autoQueueGraphChanged).toHaveBeenCalledTimes(2)
+  })
+
+  /**
+   * Pins the resolution behaviour `getServerFeature` had before any override
+   * layer was placed in front of it, so a future layer cannot quietly change
+   * how server values, falsy values, nested paths or defaults resolve.
+   */
+  describe('characterization: resolution with no override present', () => {
+    it('returns the server value verbatim', () => {
+      api.serverFeatureFlags.value = { some_flag: 'server_value' }
+
+      expect(api.getServerFeature('some_flag')).toBe('server_value')
+    })
+
+    it.for([
+      ['false', false],
+      ['zero', 0],
+      ['empty string', '']
+    ] as [label: string, serverValue: unknown][])(
+      'keeps a server value of %s instead of falling back to the default',
+      ([, serverValue]) => {
+        api.serverFeatureFlags.value = { some_flag: serverValue }
+
+        expect(api.getServerFeature('some_flag', 'DEFAULT')).toBe(serverValue)
+      }
+    )
+
+    it('returns the default when the flag is absent', () => {
+      api.serverFeatureFlags.value = {}
+
+      expect(api.getServerFeature('missing_flag', 'DEFAULT')).toBe('DEFAULT')
+    })
+
+    it('returns undefined when the flag is absent and no default is given', () => {
+      api.serverFeatureFlags.value = {}
+
+      expect(api.getServerFeature('missing_flag')).toBeUndefined()
+    })
+
+    it('resolves a nested flag through dot notation', () => {
+      api.serverFeatureFlags.value = {
+        extension: { manager: { supports_v4: true } }
+      }
+
+      expect(api.getServerFeature('extension.manager.supports_v4')).toBe(true)
+    })
+
+    it('returns the default for a nested path that does not exist', () => {
+      api.serverFeatureFlags.value = { extension: {} }
+
+      expect(
+        api.getServerFeature('extension.manager.supports_v4', 'DEFAULT')
+      ).toBe('DEFAULT')
+    })
+  })
+
+  describe('Dev override via localStorage', () => {
     it('getServerFeature returns localStorage override over server value', () => {
       api.serverFeatureFlags.value = { some_flag: false }
       localStorage.setItem('ff:some_flag', 'true')

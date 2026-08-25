@@ -19,10 +19,15 @@ defineOptions({
   inheritAttrs: false
 })
 
-const { itemClass: itemProp, contentClass: contentProp } = defineProps<{
+const {
+  itemClass: itemProp,
+  contentClass: contentProp,
+  modal = true
+} = defineProps<{
   entries?: MenuItem[]
   icon?: string
   to?: string | HTMLElement
+  modal?: boolean
   itemClass?: string
   contentClass?: string
   buttonSize?: ButtonVariants['size']
@@ -48,7 +53,7 @@ const contentStyle = useModalLiftedZIndex(open)
 </script>
 
 <template>
-  <DropdownMenuRoot v-model:open="open">
+  <DropdownMenuRoot v-model:open="open" :modal>
     <DropdownMenuTrigger as-child>
       <slot name="button">
         <Button :size="buttonSize ?? 'icon'" :class="buttonClass">

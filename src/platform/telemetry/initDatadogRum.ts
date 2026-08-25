@@ -43,7 +43,7 @@ async function initializeDatadogRum(env: string): Promise<void> {
     site: 'us5.datadoghq.com',
     service: 'comfy-cloud-frontend',
     env,
-    version: __COMFYUI_FRONTEND_VERSION__,
+    version: __COMFYUI_FRONTEND_COMMIT__,
     beforeSend: rumBeforeSend,
     sessionSampleRate: 100,
     sessionReplaySampleRate: 0,

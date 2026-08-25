@@ -13,6 +13,7 @@
     "downloadAudio": "Download audio",
     "editOrMaskImage": "Edit or mask image",
     "editImage": "Edit image",
+    "openLayerEditor": "Open layer editor",
     "decrement": "Decrement",
     "deleteImage": "Delete image",
     "deleteAudioFile": "Delete audio file",
@@ -140,6 +141,7 @@
     "disconnectedFromBackend": "Disconnected from backend. Check if the server is running.",
     "delete": "Delete",
     "rename": "Rename",
+    "restore": "Restore",
     "save": "Save",
     "saveAnyway": "Save Anyway",
     "saving": "Saving",
@@ -230,6 +232,7 @@
     "bookmarked": "Bookmarked",
     "essentials": "Essentials",
     "input": "Input",
+    "inputTooltip": "Input: {name}",
     "output": "Output",
     "community": "Community",
     "all": "All",
@@ -902,6 +905,18 @@
       "filterAudio": "Audio",
       "filter3D": "3D",
       "filterText": "Text",
+      "filterMediaType": "Media type",
+      "filterDate": "Date",
+      "filterGroupAttribute": "Attribute",
+      "filterBy": "Filter by...",
+      "filterNoMatches": "No matches",
+      "dateAll": "All time",
+      "dateToday": "Today",
+      "datePastWeek": "Past 7 days",
+      "datePastMonth": "Past 30 days",
+      "dateThisYear": "This year",
+      "clearFilters": "Clear all",
+      "removeFilter": "Remove {label} filter",
       "viewGridSmall": "Grid (small)",
       "viewGridLarge": "Grid (large)",
       "viewSettings": "View settings"
@@ -1057,6 +1072,7 @@
     "docs": "Docs",
     "github": "Github",
     "help": "Help & Support",
+    "systemStatus": "System Status",
     "managerExtension": "Manager Extension",
     "more": "More...",
     "whatsNew": "What's New?",
@@ -1271,6 +1287,78 @@
     "cancel": "Cancel Download",
     "cancelled": "Cancelled"
   },
+  "layerEditor": {
+    "title": "Compositor",
+    "webglUnavailable": "WebGL is unavailable - the canvas cannot render",
+    "loadFailed": "Failed to load layers",
+    "layersFailedToLoad": "One layer failed to load | {count} layers failed to load",
+    "selectTool": "Select",
+    "handTool": "Hand",
+    "zoom": "Zoom",
+    "undo": "Undo",
+    "redo": "Redo",
+    "fitView": "Fit",
+    "exportPsd": "Export PSD",
+    "exportPsdFailed": "Failed to export PSD",
+    "layers": "Layers",
+    "background": "Background",
+    "backgroundColor": "Background color",
+    "fill": "Fill",
+    "position": "Position",
+    "dimensions": "Dimensions",
+    "alignment": "Alignment",
+    "rotation": "Rotation",
+    "flip": "Flip",
+    "flipHorizontal": "Flip horizontal",
+    "flipVertical": "Flip vertical",
+    "alignLeft": "Align left",
+    "alignCenterHorizontal": "Align horizontal center",
+    "alignRight": "Align right",
+    "alignTop": "Align top",
+    "alignCenterVertical": "Align vertical center",
+    "alignBottom": "Align bottom",
+    "opacity": "Opacity",
+    "blendMode": "Blend mode",
+    "toggleVisibility": "Toggle visibility",
+    "moveUp": "Move layer up",
+    "moveDown": "Move layer down",
+    "layerN": "Layer {n}",
+    "blend": {
+      "normal": "Normal",
+      "multiply": "Multiply",
+      "screen": "Screen",
+      "overlay": "Overlay",
+      "darken": "Darken",
+      "lighten": "Lighten",
+      "colorDodge": "Color Dodge",
+      "colorBurn": "Color Burn",
+      "hardLight": "Hard Light",
+      "softLight": "Soft Light",
+      "difference": "Difference",
+      "exclusion": "Exclusion",
+      "linearDodge": "Linear Dodge",
+      "linearBurn": "Linear Burn",
+      "vividLight": "Vivid Light",
+      "pinLight": "Pin Light",
+      "linearLight": "Linear Light",
+      "hardMix": "Hard Mix",
+      "subtract": "Subtract",
+      "divide": "Divide",
+      "grainExtract": "Grain Extract",
+      "grainMerge": "Grain Merge",
+      "hue": "Hue",
+      "saturation": "Saturation",
+      "color": "Color",
+      "luminosity": "Luminosity"
+    }
+  },
+  "compositor": {
+    "open": "Open Compositor",
+    "empty": "Run the workflow to generate a composite",
+    "runWorkflowFirst": "Run the workflow once to load input images",
+    "saveFailed": "Failed to save composite",
+    "downloadPsd": "Download PSD"
+  },
   "maskEditor": {
     "title": "Mask Editor",
     "openMaskEditor": "Open in Mask Editor",
@@ -1451,6 +1539,7 @@
     "ComfyUI Forum": "ComfyUI Forum",
     "ComfyUI Issues": "ComfyUI Issues",
     "Interrupt": "Interrupt",
+    "Open Layer Editor for Selected Node": "Open Layer Editor for Selected Node",
     "Load Default Workflow": "Load Default Workflow",
     "Custom Nodes Manager": "Custom Nodes Manager",
     "Custom Nodes (Legacy)": "Custom Nodes (Legacy)",
@@ -1572,7 +1661,7 @@
     "Canvas Navigation": "Canvas Navigation",
     "PlanCredits": "Plan & Credits",
     "Members": "Members",
-    "Allowlist": "Allowlist",
+    "Allowlist": "Partner Models",
     "Vue Nodes": "Nodes 2.0",
     "VueNodes": "Nodes 2.0",
     "Nodes 2_0": "Nodes 2.0",
@@ -1774,7 +1863,9 @@
     "hunyhuan video": "hunyhuan video",
     "mochi": "mochi",
     "ltxv": "ltxv",
+    "minimax": "minimax",
     "preprocessors": "preprocessors",
+    "video_models": "video_models",
     "hooks": "hooks",
     "create": "create",
     "scheduling": "scheduling",
@@ -1851,6 +1942,7 @@
     "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
+    "Qwen": "Qwen",
     "Recraft": "Recraft",
     "Reve": "Reve",
     "Rodin": "Rodin",
@@ -1876,7 +1968,6 @@
     "BOOLEAN": "BOOLEAN",
     "BOUNDING_BOX": "BOUNDING_BOX",
     "BOUNDING_BOXES": "BOUNDING_BOXES",
-    "CAMERA_CONTROL": "CAMERA_CONTROL",
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
     "CLIP_VISION_OUTPUT": "CLIP_VISION_OUTPUT",
@@ -1886,6 +1977,7 @@
     "COMFY_AUTOGROW_V3": "COMFY_AUTOGROW_V3",
     "COMFY_DYNAMICCOMBO_V3": "COMFY_DYNAMICCOMBO_V3",
     "COMFY_MATCHTYPE_V3": "COMFY_MATCHTYPE_V3",
+    "COMPOSITOR": "COMPOSITOR",
     "CONDITIONING": "CONDITIONING",
     "CONTROL_NET": "CONTROL_NET",
     "CURVE": "CURVE",
@@ -1925,6 +2017,7 @@
     "LATENT": "LATENT",
     "LATENT_OPERATION": "LATENT_OPERATION",
     "LATENT_UPSCALE_MODEL": "LATENT_UPSCALE_MODEL",
+    "LAYERS": "LAYERS",
     "LOAD_3D": "LOAD_3D",
     "LOAD3D_CAMERA": "LOAD3D_CAMERA",
     "LOAD3D_MODEL_INFO": "LOAD3D_MODEL_INFO",
@@ -1968,7 +2061,6 @@
     "UPSCALE_MODEL": "UPSCALE_MODEL",
     "VAE": "VAE",
     "VIDEO": "VIDEO",
-    "VIDEO_EDIT": "VIDEO_EDIT",
     "VOXEL": "VOXEL",
     "WAN_CAMERA_EMBEDDING": "WAN_CAMERA_EMBEDDING",
     "WEBCAM": "WEBCAM"
@@ -2037,7 +2129,8 @@
     "extensionFileHint": "This may be due to the following script",
     "promptExecutionError": "Prompt execution failed",
     "accessRestrictedTitle": "Access Restricted",
-    "accessRestrictedMessage": "Your account is not authorized for this feature."
+    "accessRestrictedMessage": "Your account is not authorized for this feature.",
+    "workspaceChangedDuringExecution": "Your active workspace changed while preparing this execution. Run the workflow again to use the current workspace."
   },
   "apiNodesSignInDialog": {
     "title": "Sign In Required to Use API Nodes",
@@ -2073,6 +2166,19 @@
   },
   "load3d": {
     "switchCamera": "Switch Camera",
+    "useCustomUp": "Restore camera up from input",
+    "useNaturalUp": "Reset camera up to Y",
+    "showGizmos": "Show gizmos",
+    "hideGizmos": "Hide gizmos",
+    "lookThrough": "Camera view",
+    "exitLookThrough": "Exit camera view",
+    "transformGizmo": {
+      "label": "Edit",
+      "none": "None",
+      "target": "Target",
+      "cameraTranslate": "Cam pos",
+      "cameraRotate": "Cam rot"
+    },
     "showGrid": "Show Grid",
     "backgroundColor": "Background Color",
     "lightIntensity": "Light Intensity",
@@ -2226,24 +2332,30 @@
     "swatchTitle": "Click edit · drag reorder · right-click remove"
   },
   "videoEdit": {
-    "trimVideo": "Trim Video",
-    "cropVideo": "Crop Video",
     "startFrame": "Start Frame",
     "endFrame": "End Frame",
     "duration": "Duration",
+    "dimensions": "Dimensions",
+    "frameRate": "Frame Rate",
+    "frameRateValue": "{count} fps",
     "frames": "Number of Frames",
     "fileSize": "File Size",
     "resolution": "{width} × {height}",
+    "timecode": "{current} / {total}",
     "play": "Play",
     "pause": "Pause",
+    "mute": "Mute",
+    "unmute": "Unmute",
+    "fullscreen": "Full screen",
     "loadingVideo": "Loading video preview",
     "loadingFilmstrip": "Loading filmstrip…",
+    "loadFailed": "Failed to load video",
+    "canvasUnavailable": "Failed to render video preview",
+    "retry": "Retry",
     "seekVideo": "Seek video",
     "adjustStartFrame": "Adjust start frame",
     "adjustEndFrame": "Adjust end frame",
     "adjustCrop": "Adjust crop region",
-    "setStartFrame": "Reset start frame",
-    "setEndFrame": "Reset end frame",
     "durationZero": "0s",
     "durationSeconds": "{count}s",
     "selectedOfTotal": "{selected} / {total}",
@@ -2265,7 +2377,9 @@
     "failedToExportModel": "Failed to export model as {format}",
     "exportSuccess": "Successfully exported model as {format}",
     "fileLoadError": "Unable to find workflow in {fileName}",
+    "a1111CoreNodesUnavailable": "Could not load the workflow because this ComfyUI installation is missing core nodes. Check that the backend started correctly.",
     "dropFileError": "Unable to process dropped item: {error}",
+    "missingMediaVerificationFailed": "Failed to verify missing media. Some inputs may not be shown in the Errors tab.",
     "missingModelVerificationFailed": "Failed to verify missing models. Some models may not be shown in the Errors tab.",
     "interrupted": "Execution has been interrupted",
     "pendingTasksDeleted": "Pending tasks deleted",
@@ -2294,6 +2408,7 @@
     "failedToCreateCustomer": "Failed to create customer: {error}",
     "failedToInitiateCreditPurchase": "Failed to initiate credit purchase: {error}",
     "failedToAccessBillingPortal": "Failed to access billing portal: {error}",
+    "invalidBillingPortalUrl": "Invalid portal URL",
     "failedToPurchaseCredits": "Failed to purchase credits: {error}",
     "failedToFetchSubscription": "Failed to fetch subscription status: {error}",
     "failedToInitiateSubscription": "Failed to initiate subscription: {error}",
@@ -2303,6 +2418,7 @@
     "cannotCreateSubgraph": "Cannot create subgraph",
     "failedToConvertToSubgraph": "Failed to convert items to subgraph",
     "failedToInitializeLoad3dViewer": "Failed to initialize 3D Viewer",
+    "failedToInitializeCameraInfoViewer": "Failed to initialize Camera Info viewer. Try reloading the page.",
     "failedToLoadBackgroundImage": "Failed to load background image",
     "failedToLoadModel": "Failed to load 3D model",
     "modelLoadedSuccessfully": "3D model loaded successfully",
@@ -2321,6 +2437,9 @@
     "unsupportedHDRIFormat": "Unsupported file format. Please upload a .hdr or .exr file.",
     "failedToToggleGizmo": "Failed to toggle gizmo",
     "failedToSetGizmoMode": "Failed to set gizmo mode"
+  },
+  "nodeBadge": {
+    "partnerNodesCount": "Partner Nodes x {count}"
   },
   "nodeErrors": {
     "render": "Node Render Error",
@@ -2395,7 +2514,9 @@
       "newUser": "New here?",
       "userAvatar": "User Avatar",
       "signUp": "Sign up",
-      "signUpFreeTierPromo": "New here? {signUp} with Google to get {credits} free credits every month.",
+      "cloudNewUser": "New to Comfy?",
+      "cloudSignUp": "Sign up here",
+      "freeRunsSuffix": "to get {count} free run. | to get {count} free runs.",
       "emailLabel": "Email",
       "emailPlaceholder": "Enter your email",
       "passwordLabel": "Password",
@@ -2473,8 +2594,10 @@
       "auth/operation-not-allowed": "This sign-in method is not currently supported.",
       "auth/invalid-credential": "Invalid login credentials. Please check your email and password.",
       "auth/network-request-failed": "Network error. Please check your connection and try again.",
-      "auth/popup-closed-by-user": "Sign-in was cancelled. Please try again.",
-      "auth/cancelled-popup-request": "Sign-in was cancelled. Please try again.",
+      "auth/popup-closed-by-user": "The sign-in window closed before sign-in finished. Please try again.",
+      "auth/cancelled-popup-request": "Another sign-in window was already open, so this one was cancelled. Please try again.",
+      "auth/popup-blocked": "Your browser blocked the sign-in window. Please allow pop-ups for this site and try again.",
+      "auth/account-exists-with-different-credential": "An account already exists with this email address but uses a different sign-in method. Please sign in the way you did originally.",
       "generic": "Something went wrong while signing you in. Please try again.",
       "signupBlocked": "We couldn't create your account right now. Please try again later. If this keeps happening, email support@comfy.org."
     },
@@ -2523,6 +2646,7 @@
   },
   "credits": {
     "activity": "Activity",
+    "workspaceCredits": "Workspace credits",
     "insufficient": {
       "memberTitle": "This workspace is out of credits",
       "memberDescription": "Your team has used all its credits. Your workspace admins need to add more credits to run workflows.",
@@ -2548,6 +2672,9 @@
       "addMoreCreditsToRun": "Add more credits to run",
       "insufficientWorkflowMessage": "You don't have enough credits to run this workflow.",
       "creditsDescription": "Credits are used to run workflows or partner nodes.",
+      "chargedImmediatelyNote": "Your saved card is charged immediately.",
+      "confirmSubtitle": "Credits are added to this workspace as soon as payment completes.",
+      "confirmTitle": "Confirm",
       "howManyCredits": "How many credits would you like to add?",
       "usdAmount": "${amount}",
       "videosEstimate": "~{count} videos*",
@@ -2556,7 +2683,10 @@
       "purchaseSuccess": "Credits added successfully!",
       "purchaseError": "Purchase Failed",
       "purchaseErrorDetail": "Failed to purchase credits: {error}",
+      "payAmount": "Pay {amount}",
       "unknownError": "An unknown error occurred",
+      "verifyBody": "Your bank requires additional verification to complete this payment.",
+      "verifyTitle": "Verify your payment",
       "viewPricing": "View pricing details",
       "youPay": "Amount (USD)",
       "youGet": "Credits",
@@ -2597,11 +2727,13 @@
   },
   "billingOperation": {
     "subscriptionProcessing": "Processing payment — setting up your workspace...",
+    "subscriptionActionRequired": "Verify your payment to finish setting up your workspace",
     "subscriptionSuccess": "Subscription updated successfully",
     "subscriptionFailed": "Subscription update failed",
     "subscriptionFailedDetail": "We couldn't update your subscription. Please try again.",
     "subscriptionTimeout": "Subscription verification timed out",
     "topupProcessing": "Processing payment — adding credits...",
+    "topupActionRequired": "Verify your payment to add your credits",
     "topupSuccess": "Credits added successfully",
     "topupFailed": "Top-up failed",
     "topupTimeout": "Top-up verification timed out",
@@ -2621,15 +2753,19 @@
     "comfyCloudLogo": "Comfy Cloud Logo",
     "beta": "BETA",
     "perMonth": "/ month",
+    "perYear": "/ year",
     "member": "member",
     "usdPerMonth": "USD / mo",
+    "usdPerYear": "USD / year",
     "usdPerMonthPerMember": "USD / mo / member",
     "creditSliderSave": "Save {percent}% ({amount})",
     "renewsDate": "Renews {date}",
     "expiresDate": "Expires {date}",
     "renewsOnDate": "Renews on {date}",
     "endsOnDate": "Ends on {date}",
+    "changesToPlanOnDate": "Changes to {plan} on {date}",
     "manageSubscription": "Manage subscription",
+    "billingAndInvoices": "Billing & invoices",
     "manageBilling": "Manage billing",
     "changePlan": "Change plan",
     "cancelPlan": "Cancel plan",
@@ -2654,7 +2790,9 @@
       "endOfBillingPeriod": "end of billing period",
       "keepSubscription": "Keep subscription",
       "confirmCancel": "Cancel subscription",
-      "failed": "Failed to cancel subscription"
+      "failed": "Failed to cancel subscription",
+      "workspaceChanged": "Your active workspace changed. Switch back and try again.",
+      "offerUnavailable": "This option isn't available. Please choose another option."
     },
     "downgrade": {
       "title": "Change to {plan} plan?",
@@ -2712,6 +2850,10 @@
     "planLoadErrorRetry": "Try again",
     "teamPlanName": "Team",
     "teamPlanIncludes": "Your plan includes everything in {plan}, plus:",
+    "inactiveTeamTitle": "Inactive team subscription",
+    "inactiveTeamDescription": "Reactivate your team plan to add more members and run workflows",
+    "inactiveTeamPlanIncludes": "An active plan features everything in {plan}, plus:",
+    "reactivateToUseCredits": "Reactivate your plan to use these credits",
     "teamPerks": {
       "inviteMembers": "Invite members",
       "concurrentRuns": "Members can run workflows concurrently",
@@ -2732,6 +2874,7 @@
     "tierNameYearly": "{name} Yearly",
     "messageSupport": "Message support",
     "invoiceHistory": "Invoice history",
+    "fullUsageActivity": "Full usage activity",
     "refreshCredits": "Refresh credits",
     "benefits": {
       "benefit1": "Monthly credits for Partner Nodes — top up when needed",
@@ -2774,6 +2917,17 @@
       "memberCta": "Ok, got it",
       "memberRunTooltip": "Contact your workspace owner to resubscribe",
       "runLabel": "Run"
+    },
+    "paymentRecovery": {
+      "title": "Subscription paused",
+      "ownerDescription": "Update your payment method to restore the workspace's subscription and run workflows.",
+      "memberDescription": "Ask your workspace owner to restore the workspace's subscription.",
+      "ownerCta": "Update payment",
+      "memberCta": "Ok, got it",
+      "ownerRunLabel": "Update payment to run",
+      "memberRunLabel": "Run",
+      "ownerRunTooltip": "Update payment to restore this subscription",
+      "memberRunTooltip": "Ask your workspace owner to restore this subscription"
     },
     "subscribeToRun": "Subscribe",
     "subscribeToRunFull": "Subscribe to Run",
@@ -2833,6 +2987,7 @@
     "partnerNodesCredits": "Partner nodes pricing",
     "partnerNodesPricingTable": "Partner Nodes pricing table",
     "plansAndPricing": "Plans & pricing",
+    "plansAndCredits": "Plans and credits",
     "managePlan": "Manage plan",
     "upgrade": "UPGRADE",
     "mostPopular": "Most popular",
@@ -2965,14 +3120,13 @@
     },
     "billingStatus": {
       "warning": {
-        "title": "Payment declined",
-        "body": "Your last payment didn't go through. Your subscription will pause on {date} unless payment is updated.",
-        "bodyNoDate": "Your last payment didn't go through. Update payment to avoid a pause."
+        "title": "Payment failed",
+        "bodyNoDate": "Your payment failed to process. Update payment to avoid a pause."
       },
       "paused": {
         "title": "Subscription paused",
         "body": "This workspace's subscription is paused. Update payment to resume.",
-        "memberBody": "This workspace's subscription is paused. Your workspace admins need to update the payment method."
+        "memberBody": "Ask your workspace owner to restore the workspace's subscription."
       },
       "outOfCredits": {
         "title": "Out of credits",
@@ -3053,37 +3207,49 @@
       "searchPlaceholder": "Search..."
     },
     "partnerNodes": {
-      "title": "Partner node access",
-      "unrestricted": "Unrestricted",
-      "restricted": "Restricted",
-      "accessMode": "Partner node access mode",
-      "unrestrictedDescription": "Partner nodes from every provider are available to everyone. Disabling providers will set this to Restricted.",
-      "restrictedDescription": "Only partner nodes from enabled providers are available. Changes can take up to 10 minutes to apply.",
-      "searchPlaceholder": "Search providers and partner nodes...",
-      "tableLabel": "Partner node providers",
+      "title": "Partner models",
+      "allowAll": "Allow all partner models",
+      "allowAllOnHint": "Turn off to choose which partner models users can run.",
+      "allowAllOffHint": "Users can only run the models allowed below. New models are disabled by default.",
+      "enterpriseBadge": "Enterprise",
+      "gatedHint": "Restricting partner models is an Enterprise plan feature.",
+      "contactUs": "Contact us",
+      "gatedDialogTitle": "Restricting partner models is an Enterprise feature",
+      "gatedDialogMessage": "Your workspace is on the Team plan. To choose which partner models members can use, talk to us about Enterprise.",
+      "notNow": "Not now",
+      "accessMode": "Allow all partner models",
+      "searchPlaceholder": "Search providers and partner models...",
+      "tableLabel": "Partner model providers",
       "columns": {
         "provider": "Provider",
-        "nodes": "Nodes"
+        "models": "Models",
+        "state": "State"
       },
-      "nodeCount": "{count} enabled",
-      "enableAll": "Enable all",
+      "modelCount": "{count} model | {count} models",
+      "matchedModelCount": "{matched} of {total} matches | {matched} of {total} match",
       "disableAll": "Disable all",
+      "disableAllCount": "Disable all {count} provider | Disable all {count} providers",
+      "enableAllCount": "Enable all {count} provider | Enable all {count} providers",
+      "disableMatchingCount": "Disable {count} matching provider | Disable {count} matching providers",
+      "enableMatchingCount": "Enable {count} matching provider | Enable {count} matching providers",
+      "allowedSummary": "{count} partner models allowed",
+      "allowedSummaryAll": "All",
       "toggleProvider": "Set access for {provider}",
       "disableAllTitle": "Disable all providers?",
-      "disableAllMessage": "All providers will be turned off. Partner nodes will be unavailable while access is restricted.",
-      "restrictAccessTitle": "Restrict access to partner nodes?",
-      "restrictAccessMessage": "Workspace members will only be able to use partner nodes from providers that you enable.",
+      "disableAllMessage": "All providers will be turned off. Partner models will be unavailable while access is restricted.",
+      "restrictAccessTitle": "Restrict access to partner models?",
+      "restrictAccessMessage": "Workspace members will only be able to use partner models from providers that you enable.",
       "restrictAccessHint": "This can take up to 10 minutes to apply across your workspace.",
-      "allowAllAccessTitle": "Allow access to all partner nodes?",
-      "allowAllAccessMessage": "Partner nodes from every provider will become available to every workspace member.",
+      "allowAllAccessTitle": "Allow access to all partner models?",
+      "allowAllAccessMessage": "Partner models from every provider will become available to every workspace member.",
       "allowAllAccessHint": "This can take up to 10 minutes to apply across your workspace.",
-      "saveError": "Partner node access couldn't be updated. Try again.",
-      "loading": "Loading partner node access",
-      "loadError": "Partner node access couldn't be loaded.",
-      "unavailable": "Partner node access is unavailable for this workspace.",
+      "saveError": "Partner model access couldn't be updated. Try again.",
+      "loading": "Loading partner model access",
+      "loadError": "Partner model access couldn't be loaded.",
+      "unavailable": "Partner model access is unavailable for this workspace.",
       "retry": "Try again",
-      "ownerOnly": "Only workspace owners can update partner node access.",
-      "noResults": "No providers or partner nodes found"
+      "ownerOnly": "Only workspace owners can update partner model access.",
+      "noResults": "No providers or partner models found"
     },
     "menu": {
       "editWorkspace": "Edit workspace details",
@@ -3194,6 +3360,8 @@
     "nameValidationError": "Name must be 1–50 characters using letters, numbers, spaces, or common punctuation."
   },
   "workspaceSwitcher": {
+    "scopeCaption": "Workspaces only affect which credits you use.",
+    "scopeTooltip": "Runs that use partner nodes spend credits from this workspace. Unlike on Cloud, every workspace saves to your usual output folder.",
     "switchWorkspace": "Switch workspace",
     "subscribe": "Subscribe",
     "personal": "Personal",
@@ -3427,30 +3595,13 @@
   "cloudStart_desc": "Zero setup required. Works on any device.",
   "cloudStart_explain": "Generate multiple outputs at once. Share workflows with ease.",
   "cloudStart_learnAboutButton": "Learn about Cloud",
-  "cloudStart_wantToRun": "Want to run ComfyUI locally instead?",
-  "cloudStart_download": "Download ComfyUI",
   "cloudHero": {
     "previousSlide": "Previous slide",
     "nextSlide": "Next slide",
-    "slidePagerLabel": "Go to slide {index}",
-    "slides": {
-      "cloud": {
-        "title": "Cloud",
-        "description": "Best for most users who want to work from anywhere with models verified for commercial license."
-      },
-      "workflows": {
-        "title": "Workflows",
-        "description": "From idea to output in minutes. Generate multiple variations side by side."
-      },
-      "team": {
-        "title": "Team",
-        "description": "Onboard your team today. Share workflows and assets across your organization."
-      },
-      "models": {
-        "title": "Models",
-        "description": "Curated, commercially licensed models ready to run with zero setup."
-      }
-    }
+    "slideRoleDescription": "slide",
+    "carouselRoleDescription": "carousel",
+    "carouselLabel": "Featured models",
+    "slideStatus": "{title}, slide {current} of {total}"
   },
   "cloudWaitlist_questionsText": "Questions? Contact us",
   "cloudWaitlist_contactLink": "here",
@@ -3834,6 +3985,7 @@
     "createProfileCta": "Create a profile",
     "publishFailedTitle": "Publish failed",
     "publishFailedDescription": "Something went wrong while publishing your workflow. Please try again.",
+    "publishFailedDescriptionWithReason": "Something went wrong while publishing your workflow: {reason}",
     "publishSuccessTitle": "Published successfully",
     "publishSuccessDescription": "Your workflow is now live on Comfy Workflows."
   },
@@ -4054,7 +4206,6 @@
     "settings": "Settings",
     "addFavorite": "Favorite",
     "removeFavorite": "Unfavorite",
-    "hideInput": "Hide input",
     "showInput": "Show input",
     "locateNode": "Locate node on canvas",
     "locateNodeFor": "Locate {item}",
@@ -4129,15 +4280,19 @@
       "importNotSupported": "Import Not Supported",
       "copyModelName": "Copy model name",
       "copyUrl": "Copy URL",
-      "gatedModelsHint": "Some models are gated. To download them, sign in to Hugging Face and accept the model license agreement.",
-      "gatedModelTooltip": "This model is gated and requires you to be logged in to Hugging Face and to accept its license agreement.",
-      "gatedModelDownloadTooltip": "Download may require signing in to Hugging Face first.",
+      "gatedModelsHintLabel": "Note:",
+      "gatedModelsHint": "{count} model is gated. To download it, sign in to Hugging Face and accept its license agreement. | {count} models are gated. To download them, sign in to Hugging Face and accept their license agreements.",
+      "gatedModelTooltip": "This model is gated. Sign in to Hugging Face and accept its license agreement to access it.",
+      "gatedModelDownloadTooltip": "To download this gated model, sign in to Hugging Face and accept its license agreement.",
       "locateNode": "Locate node on canvas",
-      "openHuggingFaceRepo": "Open Hugging Face repo",
+      "openHuggingFaceRepo": "Open Hugging Face repository for {model}",
+      "openHuggingFaceRepoNewTab": "Open Hugging Face repository for {model} in a new tab",
+      "openHuggingFaceRepoDesktop": "Open Hugging Face repository for {model} in the desktop app; may open in a new tab",
       "expandNodes": "Show referencing nodes",
       "collapseNodes": "Hide referencing nodes",
       "unknownCategory": "Unknown",
       "missingModelsTitle": "Missing Models",
+      "downloadModel": "Download {model}",
       "downloadAll": "Download all",
       "refresh": "Refresh",
       "refreshing": "Refreshing missing models.",
@@ -4585,6 +4740,10 @@
     "switchFailed": "Failed to switch workspace. Please try again."
   },
   "workspaceAuth": {
+    "initializationFailed": "Couldn't load your workspace",
+    "initializationFailedDetail": "Check your connection and try again.",
+    "initializationFailedSignOutDetail": "Sign out and log in again to continue.",
+    "retry": "Try again",
     "errors": {
       "notAuthenticated": "You must be logged in to access workspaces",
       "invalidFirebaseToken": "Authentication failed. Please try logging in again.",
@@ -4621,6 +4780,8 @@
     "namePlaceholder": "e.g., My API Key",
     "provider": "Provider",
     "providerHint": "Select a provider to enable automatic token usage.",
+    "credentialType": "Credential Type",
+    "credentialTypeHint": "Choose how you will provide this credential.",
     "providerHelp": {
       "runway": "Enter your Runway API key. You can find it in your Runway account settings under API keys.",
       "gemini": "Enter your Google Gemini API key. You can generate one in Google AI Studio."
@@ -4732,6 +4893,26 @@
     "processingVideo": "Processing video…",
     "running": "Running…"
   },
+  "gettingStarted": {
+    "title": "Let's make something",
+    "subtitle": "Pick a ready-made workflow to start from, or begin with a blank canvas.",
+    "tabsLabel": "Getting started options",
+    "startBlank": "Start with a blank canvas",
+    "retry": "Try again",
+    "loadFailed": "We couldn't load the templates.",
+    "templateFailed": "We couldn't open this template.",
+    "retryTemplate": "Retry {title}",
+    "tabs": {
+      "templates": "Templates",
+      "tutorials": "Tutorials"
+    },
+    "tutorials": {
+      "interfaceOverview": "Interface overview",
+      "textToImage": "Text to image",
+      "imageToImage": "Image to image",
+      "inpaint": "Inpainting"
+    }
+  },
   "onboardingCoachmarks": {
     "stepLabel": "Step {current} of {total}",
     "skip": "Skip",
@@ -4761,6 +4942,74 @@
       "assets": {
         "title": "Find all your assets",
         "body": "Every generation and import lives in Media Assets. Open it anytime to browse, download, or reuse past work."
+      }
+    },
+    "firstRun": {
+      "upload": {
+        "i2v": {
+          "title": "Start with an image",
+          "body": "This picture is your first frame. Swap in your own whenever you like."
+        },
+        "image-edit": {
+          "title": "Start with an image",
+          "body": "This is the picture you'll edit. Swap in your own whenever you like."
+        },
+        "other": {
+          "title": "Start with an image",
+          "body": "This image feeds the workflow. Swap in your own whenever you like."
+        }
+      },
+      "prompt": {
+        "t2i": {
+          "title": "Describe what you want",
+          "body": "Your image gets built from this description. Try anything you like."
+        },
+        "i2v": {
+          "title": "Describe how it should move",
+          "body": "The image sets the scene. This tells it what happens next."
+        },
+        "image-edit": {
+          "title": "Say what to change",
+          "body": "Your image stays as it is. Describe what you want different."
+        },
+        "other": {
+          "title": "Tell it what to make",
+          "body": "This is your prompt. Change it to change your result."
+        }
+      },
+      "run": {
+        "title": "Run your workflow",
+        "body": "Press Run to start generating your result."
+      },
+      "result": {
+        "generating": {
+          "title": "Hang tight",
+          "body": "Your result lands right here the moment it's ready."
+        },
+        "failed": {
+          "title": "That run didn't finish",
+          "body": "Nothing landed here. Close the tour and try running again."
+        },
+        "image": {
+          "title": "And there it is",
+          "body": "Your new image lands right here — ready to download or share."
+        },
+        "video": {
+          "title": "And there it is",
+          "body": "Your new video lands right here — ready to download or share."
+        }
+      },
+      "nudge": {
+        "ran": {
+          "title": "That was one of hundreds",
+          "body": "You just made your first. Explore what else you can build."
+        },
+        "noTour": {
+          "title": "Hundreds more where that came from",
+          "body": "Browse the templates and pick something to build."
+        },
+        "dismiss": "Not now",
+        "explore": "Explore templates"
       }
     }
   }

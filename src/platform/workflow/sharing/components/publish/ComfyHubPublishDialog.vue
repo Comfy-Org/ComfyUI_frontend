@@ -103,6 +103,7 @@ import { useWorkflowShareService } from '@/platform/workflow/sharing/services/wo
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyHubPublishFormData } from '@/platform/workflow/sharing/types/comfyHubTypes'
+import { getErrorMessage } from '@/utils/errorUtil'
 import { appendJsonExt } from '@/utils/formatUtil'
 import { OnCloseKey } from '@/types/widgetTypes'
 
@@ -228,10 +229,13 @@ async function handlePublish(): Promise<void> {
     onClose()
   } catch (error) {
     console.error('Failed to publish workflow:', error)
+    const reason = getErrorMessage(error)
     toast.add({
       severity: 'error',
       summary: t('comfyHubPublish.publishFailedTitle'),
-      detail: t('comfyHubPublish.publishFailedDescription')
+      detail: reason
+        ? t('comfyHubPublish.publishFailedDescriptionWithReason', { reason })
+        : t('comfyHubPublish.publishFailedDescription')
     })
   } finally {
     isPublishing.value = false

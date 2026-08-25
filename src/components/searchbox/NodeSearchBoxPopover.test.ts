@@ -127,7 +127,6 @@ describe('NodeSearchBoxPopover', () => {
   }
 
   beforeEach(() => {
-    addNodeOnGraph.mockReset()
     addNodeOnGraph.mockReturnValue(null)
   })
 

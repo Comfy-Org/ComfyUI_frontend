@@ -66,6 +66,27 @@ describe('TelemetryRegistry', () => {
     expect(b.trackAuthFailed).toHaveBeenCalledExactlyOnceWith(payload)
   })
 
+  it('dispatches unified auth retry outcomes to supporting providers', () => {
+    const trackUnifiedAuthRetry = vi.fn()
+    const registry = new TelemetryRegistry()
+    registry.registerProvider({ trackUnifiedAuthRetry })
+    registry.registerProvider({})
+
+    registry.trackUnifiedAuthRetry({
+      transport: 'fetch',
+      outcome: 'failed',
+      final_status: 401,
+      failure_reason: 'retry_rejected'
+    })
+
+    expect(trackUnifiedAuthRetry).toHaveBeenCalledExactlyOnceWith({
+      transport: 'fetch',
+      outcome: 'failed',
+      final_status: 401,
+      failure_reason: 'retry_rejected'
+    })
+  })
+
   it('dispatches trackAddApiCreditButtonClicked with its source', () => {
     const provider: TelemetryProvider = {
       trackAddApiCreditButtonClicked: vi.fn()
