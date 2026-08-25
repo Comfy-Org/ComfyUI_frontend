@@ -121,6 +121,7 @@ const isContentFirst = hero.layout === 'content-first'
           <Badge
             v-for="badgeKey in hero.badgeKeys"
             :key="badgeKey"
+            data-testid="model-launch-hero-badge"
             variant="subtle"
           >
             {{ t(badgeKey, locale) }}
@@ -210,6 +211,7 @@ const isContentFirst = hero.layout === 'content-first'
         <Badge
           v-for="badgeKey in hero.badgeKeys"
           :key="badgeKey"
+          data-testid="model-launch-hero-badge"
           variant="subtle"
         >
           {{ t(badgeKey, locale) }}
