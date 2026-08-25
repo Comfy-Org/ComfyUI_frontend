@@ -19,7 +19,6 @@ export type TemplateModelDownloadState =
       status: 'failed'
       attempt: number
       reason: TemplateModelDownloadFailureReason
-      retryable: true
     }
 
 export type TemplateModelDownloadEvent =
@@ -92,8 +91,7 @@ export function reduceTemplateModelDownloadState(
         ? {
             status: 'failed',
             attempt: state.attempt,
-            reason: event.type,
-            retryable: true
+            reason: event.type
           }
         : state
     default:

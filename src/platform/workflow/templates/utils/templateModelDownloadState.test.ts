@@ -109,8 +109,7 @@ describe('template model download state', () => {
       expect(failed).toEqual({
         status: 'failed',
         attempt: 1,
-        reason: type,
-        retryable: true
+        reason: type
       })
       const retried = reduceTemplateModelDownloadState(failed, {
         type: 'request'

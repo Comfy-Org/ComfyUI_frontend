@@ -7,10 +7,12 @@ import type {
   ModelWithUrl
 } from '@/platform/missingModel/missingModelDownload'
 import { useTemplateModelRowDownloads } from '@/platform/workflow/templates/composables/useTemplateModelRowDownloads'
-import type { TemplateModelRowDownloadDependencies } from '@/platform/workflow/templates/composables/useTemplateModelRowDownloads'
 import type { ElectronDownload } from '@/stores/electronDownloadStore'
 
 type FolderPaths = Record<string, string[]>
+type TemplateModelRowDownloadDependencies = Parameters<
+  typeof useTemplateModelRowDownloads
+>[0]
 type DispatchDownload = NonNullable<
   TemplateModelRowDownloadDependencies['dispatchDownload']
 >
@@ -33,11 +35,7 @@ function deferred<T>() {
   return { promise, reject, resolve }
 }
 
-function noDesktopSubscription() {
-  return () => undefined
-}
-
-function noLegacySubscription() {
+function noProgressSubscription() {
   return () => undefined
 }
 
@@ -102,8 +100,8 @@ describe('useTemplateModelRowDownloads', () => {
     const downloads = useTemplateModelRowDownloads({
       loadFolderPaths: () => paths.promise,
       dispatchDownload,
-      subscribeDesktopProgress: noDesktopSubscription,
-      subscribeLegacyProgress: noLegacySubscription
+      subscribeDesktopProgress: noProgressSubscription,
+      subscribeLegacyProgress: noProgressSubscription
     })
 
     downloads.request(request)
@@ -158,8 +156,8 @@ describe('useTemplateModelRowDownloads', () => {
     const downloads = useTemplateModelRowDownloads({
       loadFolderPaths: vi.fn(),
       dispatchDownload,
-      subscribeDesktopProgress: noDesktopSubscription,
-      subscribeLegacyProgress: noLegacySubscription
+      subscribeDesktopProgress: noProgressSubscription,
+      subscribeLegacyProgress: noProgressSubscription
     })
 
     downloads.request(requests.false)
@@ -173,8 +171,7 @@ describe('useTemplateModelRowDownloads', () => {
       expect(downloads.stateFor(requests.rejected)).toEqual({
         status: 'failed',
         attempt: 1,
-        reason: 'error',
-        retryable: true
+        reason: 'error'
       })
     )
     expect(downloads.stateFor(requests.false)).toEqual({
@@ -200,7 +197,7 @@ describe('useTemplateModelRowDownloads', () => {
         onDesktopProgress = listener
         return () => undefined
       },
-      subscribeLegacyProgress: noLegacySubscription
+      subscribeLegacyProgress: noProgressSubscription
     })
     const active = model('active.safetensors')
     downloads.request(active)
@@ -267,7 +264,7 @@ describe('useTemplateModelRowDownloads', () => {
         onDesktopProgress = listener
         return () => undefined
       },
-      subscribeLegacyProgress: noLegacySubscription
+      subscribeLegacyProgress: noProgressSubscription
     })
     downloads.request(checkpoint)
     downloads.request(lora)
@@ -307,7 +304,7 @@ describe('useTemplateModelRowDownloads', () => {
         onDesktopProgress = listener
         return () => undefined
       },
-      subscribeLegacyProgress: noLegacySubscription
+      subscribeLegacyProgress: noProgressSubscription
     })
     downloads.request(checkpoint)
     downloads.request(lora)
@@ -364,7 +361,7 @@ describe('useTemplateModelRowDownloads', () => {
         host: 'electron',
         hostResult: new Promise<boolean>(() => undefined)
       }),
-      subscribeDesktopProgress: noDesktopSubscription,
+      subscribeDesktopProgress: noProgressSubscription,
       subscribeLegacyProgress: (listener) => {
         onLegacyProgress = listener
         return () => undefined
@@ -428,7 +425,7 @@ describe('useTemplateModelRowDownloads', () => {
         onDesktopProgress = listener
         return () => undefined
       },
-      subscribeLegacyProgress: noLegacySubscription
+      subscribeLegacyProgress: noProgressSubscription
     })
     downloads.request(request)
     onDesktopProgress({
@@ -467,7 +464,7 @@ describe('useTemplateModelRowDownloads', () => {
         onDesktopProgress = listener
         return () => undefined
       },
-      subscribeLegacyProgress: noLegacySubscription
+      subscribeLegacyProgress: noProgressSubscription
     })
     downloads.request(request)
     onDesktopProgress({

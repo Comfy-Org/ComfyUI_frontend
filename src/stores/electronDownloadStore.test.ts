@@ -103,6 +103,19 @@ describe('useElectronDownloadStore progress observation', () => {
     })
   })
 
+  it('deduplicates restored downloads by URL across initialization', async () => {
+    downloadManager.getAllDownloads.mockResolvedValue([
+      downloadState({ state: DownloadStatus.PAUSED })
+    ])
+    const store = useElectronDownloadStore()
+
+    await vi.waitFor(() => expect(store.downloads).toHaveLength(1))
+    await store.initialize()
+
+    expect(store.downloads).toHaveLength(1)
+    expect(store.inProgressDownloads).toHaveLength(1)
+  })
+
   it('installs the live listener before awaiting the restored snapshot', () => {
     downloadManager.getAllDownloads.mockReturnValueOnce(
       deferred<DownloadState[]>().promise
