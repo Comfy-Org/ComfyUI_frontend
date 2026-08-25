@@ -64,7 +64,11 @@ export function useWorkspaceMenuItems() {
   }
 
   const canCancelPlan = computed(() => {
-    if (isCloud && shouldUseWorkspaceBilling.value) return canCancel.value
+    // can_cancel already encodes role, subscription presence/status and a
+    // scheduled cancellation, but not tier: it stays true for an active FREE
+    // plan, so the free-tier guard has to remain client-side.
+    if (isCloud && shouldUseWorkspaceBilling.value)
+      return canCancel.value && !isFreeTier.value
     return (
       permissions.value.canManageSubscriptionLifecycle &&
       (isActiveSubscription.value ||
