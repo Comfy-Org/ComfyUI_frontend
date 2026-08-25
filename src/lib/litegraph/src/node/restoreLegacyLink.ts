@@ -1,7 +1,10 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import { registerLinkTopology } from '@/lib/litegraph/src/LLink'
-import { inputHasLink } from '@/lib/litegraph/src/node/slotLinks'
+import {
+  inputHasLink,
+  outputHasLinks
+} from '@/lib/litegraph/src/node/slotLinks'
 import { anchorRerouteChain } from '@/lib/litegraph/src/Reroute'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
@@ -14,6 +17,7 @@ export function restoreLegacyLink(
 ): boolean {
   const { graph } = node
   if (!graph || graph.getLink(link.id)) return false
+  if (link.originIsIoNode || link.targetIsIoNode) return false
   if (
     side === 'input'
       ? !link.hasTarget(node.id, slot)
@@ -27,6 +31,12 @@ export function restoreLegacyLink(
   const input = inputNode?.inputs[link.target_slot]
   if (!outputNode || !inputNode || !output || !input) return false
   if (inputHasLink(graph, inputNode.id, link.target_slot)) return false
+  if (
+    output.type === LiteGraph.EVENT &&
+    !LiteGraph.allow_multi_output_for_events &&
+    outputHasLinks(graph, outputNode.id, link.origin_slot)
+  )
+    return false
   if (!LiteGraph.isValidConnection(output.type, input.type)) return false
   if (
     inputNode.onConnectInput?.(
