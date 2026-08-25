@@ -370,7 +370,9 @@ const showBar = computed(
 // including local/desktop) accounts have no workspace concept to gate on.
 const showActionButton = computed(
   () =>
-    canAccessSubscriptionFeatures.value &&
+    (billingPolicyCapabilities.value.topUpAccess === 'allowed' ||
+      (billingPolicyCapabilities.value.showsSubscribeUpsellUI &&
+        canAccessSubscriptionFeatures.value)) &&
     !zeroState &&
     !inactivePlan &&
     (type.value !== 'workspace' || permissions.value.canTopUp)
