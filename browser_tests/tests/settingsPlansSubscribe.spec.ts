@@ -176,7 +176,7 @@ async function mockLegacyReads(page: Page) {
   )
 }
 
-// FE-1584: off-cloud billing reads need a hydrated workspace wallet + token.
+// FE-1584: off-cloud billing reads need a hydrated wallet + token.
 async function mockWorkspaceBootstrap(page: Page) {
   const personal = workspace('personal', 'owner')
   await page.route('**/api/workspaces', (r) =>

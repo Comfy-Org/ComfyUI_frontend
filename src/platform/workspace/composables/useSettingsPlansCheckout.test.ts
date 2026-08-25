@@ -54,7 +54,7 @@ vi.mock('@/services/dialogService', () => ({
 
 vi.mock('@/stores/dialogStore', async () => {
   const { ref } = await import('vue')
-  // A real ref so the composable's flush:sync watch on isDialogOpen reacts.
+  // A real ref: the composable's sync watch on isDialogOpen needs reactivity.
   const open = ref(false)
   mockSetDialogOpen.impl = (value: boolean) => {
     open.value = value
