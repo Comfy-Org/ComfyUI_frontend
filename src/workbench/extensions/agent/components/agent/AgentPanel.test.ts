@@ -4,6 +4,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { i18n } from '@/i18n'
+import type { TurnId } from '../../schemas/agentApiSchema'
 
 import AgentPanel from './AgentPanel.vue'
 
@@ -122,5 +123,37 @@ describe('AgentPanel', () => {
     await user.click(screen.getByRole('button', { name: 'New chat' }))
 
     expect(textarea).not.toHaveFocus()
+  })
+
+  it('replaces and focuses the composer draft when editing the eligible prompt', async () => {
+    const user = userEvent.setup()
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const prompt = 'Generate a yellow duck with a hockey mask'
+    const { emitted } = render(AgentPanel, {
+      props: {
+        editableTurnId: 'msg-1' as TurnId,
+        entries: [{ id: 'msg-1' as TurnId, role: 'user', text: prompt }],
+        historyGroups
+      },
+      global: {
+        plugins: [pinia, i18n],
+        directives: { tooltip: {} },
+        stubs: { WorkflowSelectorChip: true }
+      }
+    })
+    const textarea = screen.getByRole('textbox')
+    await user.type(textarea, 'unfinished draft')
+
+    await user.click(screen.getByRole('button', { name: 'Edit' }))
+
+    expect(textarea).toHaveValue(prompt)
+    expect(textarea).toHaveFocus()
+
+    await user.clear(textarea)
+    await user.type(textarea, 'Generate a yellow duck at sunrise')
+    await user.click(screen.getByRole('button', { name: 'Send' }))
+
+    expect(emitted().send[0]).toEqual(['Generate a yellow duck at sunrise', []])
   })
 })
