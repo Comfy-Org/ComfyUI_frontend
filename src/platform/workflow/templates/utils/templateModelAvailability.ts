@@ -1,11 +1,8 @@
 import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
 
-export type TemplateModelAvailabilityStatus =
-  | 'installed'
-  | 'missing'
-  | 'unknown'
+type TemplateModelAvailabilityStatus = 'installed' | 'missing' | 'unknown'
 
-export type TemplateModelInventoryEntry = {
+type TemplateModelInventoryEntry = {
   directory: string
   name: string
 }
