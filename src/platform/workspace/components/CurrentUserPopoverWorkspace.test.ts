@@ -131,6 +131,13 @@ const WorkspaceSwitcherPopoverStub = defineComponent({
   `
 })
 
+const SubscribeButtonStub = defineComponent({
+  props: {
+    label: { type: String, required: true }
+  },
+  template: '<button type="button">{{ label }}</button>'
+})
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -159,7 +166,7 @@ function renderComponent(
       },
       stubs: {
         WorkspaceSwitcherPopover: WorkspaceSwitcherPopoverStub,
-        SubscribeButton: true,
+        SubscribeButton: SubscribeButtonStub,
         UserAvatar: true,
         WorkspaceProfilePic: true,
         Skeleton: true,
@@ -351,6 +358,63 @@ describe('CurrentUserPopoverWorkspace', () => {
     expect(
       screen.queryByRole('button', { name: 'Subscribe' })
     ).not.toBeInTheDocument()
+  })
+
+  it('lets an owner add credits on Local without an active subscription', async () => {
+    const user = userEvent.setup()
+    state.isCloud = false
+    state.canAccessSubscriptionFeatures = false
+    state.canTopUp = true
+
+    renderComponent('personal')
+
+    expect(
+      screen.queryByTestId('upgrade-to-add-credits-button')
+    ).not.toBeInTheDocument()
+    await user.click(screen.getByTestId('add-credits-button'))
+
+    expect(state.showTopUpCreditsDialog).toHaveBeenCalledOnce()
+  })
+
+  it('offers add-credits alongside Subscribe for an unsubscribed Cloud owner', () => {
+    state.canAccessSubscriptionFeatures = false
+    state.canTopUp = true
+    state.canSubscribeSelfServe = true
+    state.canManageSubscription = true
+
+    renderComponent('personal')
+
+    expect(screen.getByTestId('add-credits-button')).toBeInTheDocument()
+    expect(
+      screen.queryByTestId('upgrade-to-add-credits-button')
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Subscribe' })
+    ).toBeInTheDocument()
+  })
+
+  it('offers add-credits instead of the upgrade upsell on the Local free tier', () => {
+    state.isCloud = false
+    state.canTopUp = true
+
+    renderComponent('personal')
+
+    expect(
+      screen.queryByTestId('upgrade-to-add-credits-button')
+    ).not.toBeInTheDocument()
+    expect(screen.getByTestId('add-credits-button')).toBeInTheDocument()
+  })
+
+  it('keeps the upgrade upsell for the Cloud free tier', () => {
+    state.canTopUp = false
+    state.canSubscribeSelfServe = true
+
+    renderComponent('personal')
+
+    expect(
+      screen.getByTestId('upgrade-to-add-credits-button')
+    ).toBeInTheDocument()
+    expect(screen.queryByTestId('add-credits-button')).not.toBeInTheDocument()
   })
 
   it('keeps Resubscribe hidden on Local for a cancelled plan', () => {

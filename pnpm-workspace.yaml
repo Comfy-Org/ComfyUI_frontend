@@ -1,6 +1,7 @@
 packages:
   - apps/**
   - packages/**
+  - tools/**
 
 nodeOptions: '${NODE_OPTIONS:- } --no-experimental-webstorage --max-old-space-size=8192'
 

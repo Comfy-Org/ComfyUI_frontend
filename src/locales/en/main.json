@@ -2129,7 +2129,8 @@
     "extensionFileHint": "This may be due to the following script",
     "promptExecutionError": "Prompt execution failed",
     "accessRestrictedTitle": "Access Restricted",
-    "accessRestrictedMessage": "Your account is not authorized for this feature."
+    "accessRestrictedMessage": "Your account is not authorized for this feature.",
+    "workspaceChangedDuringExecution": "Your active workspace changed while preparing this execution. Run the workflow again to use the current workspace."
   },
   "apiNodesSignInDialog": {
     "title": "Sign In Required to Use API Nodes",
@@ -2884,6 +2885,9 @@
     "tiers": {
       "free": {
         "name": "Free"
+      },
+      "enterprise": {
+        "name": "Enterprise"
       },
       "founder": {
         "name": "Founder's Edition"

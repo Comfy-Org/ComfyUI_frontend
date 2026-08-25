@@ -222,17 +222,19 @@ extension authors:
   accessors, not own properties, so for a non-instrumented node
   `Object.keys(node)`, `{ ...node }`, `Object.assign({}, node)`, and
   `JSON.stringify(node)` do not include them. To snapshot shell state, read
-  the node's accessors or the registered `NodeState` from
-  `useNodeDataStore().getNode(rootGraphId, id)`, not a spread of the node.
+  the node's accessors or the registered `NodeState` via `node._state` (the
+  reactive proxy the node already holds), not a spread of the node.
 - **`type` mutation is deprecated.** The compatibility setter warns and updates
   the store-backed state. New code should treat type as fixed at construction
   (`LiteGraph.createNode` / `LGraphNode(title, type)`) and create the correct
   node instead of mutating an existing one.
 
-`inputs` and `outputs` became prototype accessors in the same way
-(Decision 3), with the same enumeration consequence: they are absent from
-`Object.keys(node)` and `{ ...node }`, but `serialize()` reads them
-explicitly so the wire format is unchanged. Assigning
+`inputs` and `outputs` are reinstated as enumerable own accessors in the
+constructor (`LGraphNode.ts:1003-1011`), while `initializeWidgetsView` installs
+the equivalent `widgets` accessor (`widgetsView.ts:45-65`). They therefore
+appear in `Object.keys(node)` and `{ ...node }` — unlike the eight shell-state
+fields above. `serialize()` also reads them explicitly so the wire format is
+unchanged. Assigning
 `node.inputs = [...]` still works and now replaces the array contents in
 place rather than swapping the array.
 
@@ -247,7 +249,7 @@ or prefer `addWidget` / `addCustomWidget` / `removeWidget` for lifecycle-aware
 changes.
 
 Extension migration map: read a field → `node.<field>` (reactive) or
-`useNodeDataStore().getNode(rootGraphId, node.id)`; snapshot all shell
+`node._state` (the reactive proxy the node already holds); snapshot all shell
 state → read that `NodeState`, not `{ ...node }`; set `title` / `mode` /
 colours / `flags` / `shape` / `showAdvanced` → assign the accessor (writes
 through to the store); set `type` → construct the intended node type;

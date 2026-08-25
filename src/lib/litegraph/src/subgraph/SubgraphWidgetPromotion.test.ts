@@ -403,6 +403,34 @@ describe('SubgraphWidgetPromotion', () => {
       expect(promotedInputs(subgraphNode)).toHaveLength(0)
     })
 
+    it('keeps the host widget promoted while another interior widget is still connected', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'value', type: 'number' }]
+      })
+
+      const { node: first } = createNodeWithWidget('First', 'number', 42)
+      const { node: second } = createNodeWithWidget('Second', 'number', 42)
+      subgraph.add(first)
+      subgraph.add(second)
+      subgraph.inputNode.slots[0].connect(first.inputs[0], first)
+      subgraph.inputNode.slots[0].connect(second.inputs[0], second)
+
+      const subgraphNode = createTestSubgraphNode(subgraph)
+      expect(promotedInputs(subgraphNode)).toHaveLength(1)
+      expect(subgraph.inputNode.slots[0].linkIds).toHaveLength(2)
+
+      first.disconnectInput(0, true)
+
+      expect(subgraph.inputNode.slots[0].linkIds).toHaveLength(1)
+      expect(promotedInputs(subgraphNode)).toHaveLength(1)
+      expect(subgraphNode.widgets).toHaveLength(1)
+
+      second.disconnectInput(0, true)
+
+      expect(promotedInputs(subgraphNode)).toHaveLength(0)
+      expect(subgraphNode.widgets).toHaveLength(0)
+    })
+
     it('writes canvas edits back to the host widget store', () => {
       const subgraph = createTestSubgraph({
         inputs: [{ name: 'value', type: 'number' }]

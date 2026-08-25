@@ -76,7 +76,14 @@ function capabilitiesResponse(
       can_change_seats: true,
       can_invite_members: true,
       can_downgrade_to_personal: false
-    }
+    },
+    rollout_defaults_applied: {
+      can_downgrade_to_personal: false,
+      can_subscribe_self_serve: false,
+      can_top_up: false
+    },
+    revision: 1,
+    expires_at: '2099-01-01T00:00:00Z'
   }
 }
 
