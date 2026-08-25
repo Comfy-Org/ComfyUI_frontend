@@ -420,14 +420,7 @@
 }
 
 :root.dark-theme[data-color-palette]:not([data-color-palette='dark']) {
-  /* A palette counts as dark whenever it omits light_theme, but comfy-menu-bg
-     accepts any colour, and a light one would push every offset up against
-     l: 1 and collapse the ladder into white under a white foreground. Capping
-     the lightness the ladder derives from keeps a dark palette dark. Every
-     shipped palette sits below the cap (solarized is the lightest at 0.309)
-     so their surfaces are untouched, the cap leaves the top step at 0.5554
-     where the white foreground still reads, and min() is monotonic, so there
-     is no threshold where the steps converge. */
+  /* Capped so a light comfy-menu-bg cannot flatten the ladder into white. */
   --palette-l: min(l, 0.35);
   --palette-base: oklch(from var(--comfy-menu-bg) var(--palette-l) c h);
 
