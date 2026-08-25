@@ -1,5 +1,5 @@
-import { render } from '@testing-library/vue'
-import { describe, expect, it, vi } from 'vitest'
+import { render, waitFor } from '@testing-library/vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import type * as VueUseCore from '@vueuse/core'
@@ -9,12 +9,33 @@ import type * as DistTypes from '@/platform/distribution/types'
 import type * as I18nModule from '@/i18n'
 
 const apiMock = vi.hoisted(() => new EventTarget())
+const distributionMock = vi.hoisted(() => ({ isDesktop: false }))
+const templateInputMock = vi.hoisted(() => ({
+  clear: vi.fn(),
+  completeGraphSync: vi.fn(),
+  refreshBindings: vi.fn(),
+  runMissingMediaPipeline: vi.fn(async () => undefined),
+  scanCandidates: vi.fn(() => [
+    {
+      nodeId: '2',
+      nodeType: 'LoadImage',
+      widgetName: 'image',
+      mediaType: 'image',
+      name: 'subject.png',
+      isMissing: true
+    }
+  ]),
+  stopProgress: vi.fn(),
+  subscribeProgress: vi.fn(),
+  updateProgress: vi.fn()
+}))
 
 vi.mock('@/scripts/api', () => ({ api: apiMock }))
 
 vi.mock('@/scripts/app', () => ({
   app: {
     rootGraph: { getNodeById: vi.fn(), nodes: [] },
+    reloadNodeDefs: vi.fn(async () => undefined),
     ui: {
       menuContainer: { style: { setProperty: vi.fn() } },
       restoreMenuPosition: vi.fn()
@@ -63,8 +84,33 @@ vi.mock('@/i18n', async (importOriginal) => {
 })
 vi.mock('@/platform/distribution/types', async (importOriginal) => {
   const actual = await importOriginal<typeof DistTypes>()
-  return { ...actual, isCloud: false, isDesktop: false }
+  return {
+    ...actual,
+    isCloud: false,
+    get isDesktop() {
+      return distributionMock.isDesktop
+    }
+  }
 })
+vi.mock('@/platform/missingMedia/missingMediaPipeline', () => ({
+  runMissingMediaPipeline: templateInputMock.runMissingMediaPipeline
+}))
+vi.mock('@/platform/missingMedia/missingMediaScan', () => ({
+  scanAllMediaCandidates: templateInputMock.scanCandidates
+}))
+vi.mock(
+  '@/platform/workflow/templates/utils/refreshDownloadedTemplateInputBindings',
+  () => ({
+    refreshDownloadedTemplateInputBindings: templateInputMock.refreshBindings
+  })
+)
+vi.mock('@/stores/templateInputDownloadStore', () => ({
+  useTemplateInputDownloadStore: () => ({
+    clear: templateInputMock.clear,
+    completeGraphSync: templateInputMock.completeGraphSync,
+    updateProgress: templateInputMock.updateProgress
+  })
+}))
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({ get: vi.fn(() => undefined), set: vi.fn() })
 }))
@@ -199,6 +245,14 @@ vi.mock('@/renderer/extensions/firstRunTour/FirstRunTour.vue', () => stubModule)
 const { default: GraphView } = await import('./GraphView.vue')
 
 describe('GraphView - reconnect wiring', () => {
+  beforeEach(() => {
+    distributionMock.isDesktop = false
+    templateInputMock.subscribeProgress.mockReturnValue(
+      templateInputMock.stopProgress
+    )
+    delete window.__comfyDesktop2
+  })
+
   it('wires the reconnected event to the toast and queue refresh', () => {
     render(GraphView)
 
@@ -211,5 +265,37 @@ describe('GraphView - reconnect wiring', () => {
     const refreshOnReconnect = useReconnectQueueRefresh()
     expect(onReconnected).toHaveBeenCalledTimes(1)
     expect(refreshOnReconnect).toHaveBeenCalledTimes(1)
+  })
+
+  it('reconciles a completed template input without a page refresh', async () => {
+    distributionMock.isDesktop = true
+    Object.defineProperty(window, '__comfyDesktop2', {
+      configurable: true,
+      value: {
+        isRemote: () => false,
+        onTemplateInputDownloadProgress: templateInputMock.subscribeProgress
+      }
+    })
+    render(GraphView)
+
+    const listener = templateInputMock.subscribeProgress.mock.calls[0]?.[0]
+    expect(listener).toBeTypeOf('function')
+
+    listener({
+      downloadId: 'download-1',
+      filename: 'subject.png',
+      progress: 1,
+      status: 'completed',
+      templateInputs: [{ templateId: 'starter-detail', assetId: 'subject' }]
+    })
+
+    await waitFor(() => {
+      expect(templateInputMock.runMissingMediaPipeline).toHaveBeenCalledOnce()
+    })
+    expect(templateInputMock.updateProgress).toHaveBeenCalledOnce()
+    expect(templateInputMock.refreshBindings).toHaveBeenCalledOnce()
+    expect(templateInputMock.completeGraphSync).toHaveBeenCalledWith([
+      'subject.png'
+    ])
   })
 })
