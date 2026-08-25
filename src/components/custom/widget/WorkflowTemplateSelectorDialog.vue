@@ -1217,6 +1217,30 @@ function isTemplateAvailableOnCloud(template: TemplateInfo): boolean {
   )
 }
 
+async function openPreparedTemplate(
+  prepared: PreparedWorkflowTemplate,
+  generation: number
+): Promise<void> {
+  if (openPending.value) return
+
+  openPending.value = true
+  try {
+    const didOpen = await openPreparedWorkflowTemplate(prepared, {
+      closeDialog: false
+    })
+    if (didOpen && generation === detailGeneration) {
+      templateWasSelected.value = true
+      onClose()
+    }
+  } catch (error) {
+    if (generation === detailGeneration) {
+      console.error('Error opening workflow template:', error)
+    }
+  } finally {
+    if (generation === detailGeneration) openPending.value = false
+  }
+}
+
 const onLoadWorkflow = async (template: TemplateInfo) => {
   if (openPending.value) return
 
@@ -1241,13 +1265,17 @@ const onLoadWorkflow = async (template: TemplateInfo) => {
       prepared.workflow
     )
     if (modelRequirements.length === 0) {
-      activeDetail.value = { template, prepared, groups }
+      await openPreparedTemplate(prepared, generation)
       return
     }
 
     const models = modelRequirements.map(({ model }) => model)
     const modelAvailability = await resolveModelAvailability(models)
     if (generation !== detailGeneration) return
+    if (modelAvailability.every(({ status }) => status === 'installed')) {
+      await openPreparedTemplate(prepared, generation)
+      return
+    }
 
     const rowDownloads = useTemplateModelRowDownloads({
       loadFolderPaths: () => api.getFolderPaths()
@@ -1309,23 +1337,7 @@ const onOpenTemplate = async () => {
   const detail = activeDetail.value
   if (!detail || openPending.value) return
 
-  const generation = detailGeneration
-  openPending.value = true
-  try {
-    const didOpen = await openPreparedWorkflowTemplate(detail.prepared, {
-      closeDialog: false
-    })
-    if (didOpen && generation === detailGeneration) {
-      templateWasSelected.value = true
-      onClose()
-    }
-  } catch (error) {
-    if (generation === detailGeneration) {
-      console.error('Error opening workflow template:', error)
-    }
-  } finally {
-    if (generation === detailGeneration) openPending.value = false
-  }
+  await openPreparedTemplate(detail.prepared, detailGeneration)
 }
 
 function onDownloadModel(rowId: string) {
