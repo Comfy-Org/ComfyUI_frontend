@@ -1,5 +1,7 @@
 import path from 'node:path'
 
+const isCms = (fileName: string) => fileName.startsWith('apps/cms/')
+
 export default function lintStaged(stagedFiles: string[]) {
   const relativePaths = stagedFiles.map(toRelativePath)
 
@@ -7,15 +9,21 @@ export default function lintStaged(stagedFiles: string[]) {
     return 'echo "Files in tests-ui/ are deprecated. Colocate tests with source files." && exit 1'
   }
 
-  const formattableFiles = relativePaths.filter(
+  // apps/cms is a Payload app with its own Prettier, ESLint and tsconfig; it is
+  // excluded from the repo-wide oxfmt/oxlint/stylelint/typecheck gates and runs
+  // its own instead.
+  const cmsPaths = relativePaths.filter(isCms)
+  const repoPaths = relativePaths.filter((fileName) => !isCms(fileName))
+
+  const formattableFiles = repoPaths.filter(
     (fileName) =>
       /\.(js|ts|tsx|vue|mts|json|yaml|md)$/.test(fileName) &&
       !fileName.endsWith('pnpm-lock.yaml')
   )
-  const codeFiles = relativePaths.filter((fileName) =>
+  const codeFiles = repoPaths.filter((fileName) =>
     /\.(js|ts|tsx|vue|mts)$/.test(fileName)
   )
-  const styleFiles = relativePaths.filter((fileName) =>
+  const styleFiles = repoPaths.filter((fileName) =>
     /\.(css|vue)$/.test(fileName)
   )
   const typecheckFiles = formattableFiles.filter((fileName) =>
@@ -23,6 +31,7 @@ export default function lintStaged(stagedFiles: string[]) {
   )
 
   return [
+    ...cmsCommands(cmsPaths),
     ...commandsWithFiles(
       formattableFiles,
       'pnpm exec oxfmt --write --no-error-on-unmatched-pattern'
@@ -30,6 +39,18 @@ export default function lintStaged(stagedFiles: string[]) {
     ...lintCommands(codeFiles, styleFiles),
     ...typecheckCommands(typecheckFiles)
   ]
+}
+
+function cmsCommands(cmsPaths: string[]) {
+  if (cmsPaths.length === 0) {
+    return []
+  }
+
+  const commands = ['pnpm --filter @comfyorg/cms exec prettier --check .']
+  if (cmsPaths.some((fileName) => /\.(ts|tsx|mjs|js)$/.test(fileName))) {
+    commands.push('pnpm lint:cms', 'pnpm typecheck:cms')
+  }
+  return commands
 }
 
 function lintCommands(codeFiles: string[], styleFiles: string[]) {

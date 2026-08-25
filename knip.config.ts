@@ -4,6 +4,9 @@ const config: KnipConfig = {
   treatConfigHintsAsErrors: true,
   treatTagHintsAsErrors: true,
   workspaces: {
+    'apps/cms': {
+      project: ['src/**/*.{ts,tsx}']
+    },
     '.': {
       entry: [
         '{build,scripts}/**/*.{js,ts}',

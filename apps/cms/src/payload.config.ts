@@ -1,0 +1,107 @@
+import { postgresAdapter } from '@payloadcms/db-postgres'
+import { lexicalEditor } from '@payloadcms/richtext-lexical'
+import { gcsStorage } from '@payloadcms/storage-gcs'
+import path from 'path'
+import { buildConfig } from 'payload'
+import { fileURLToPath } from 'url'
+import sharp from 'sharp'
+
+import { Users } from './collections/Users'
+import { Media } from './collections/Media'
+import { Gallery } from './collections/Gallery'
+import { Events } from './collections/Events'
+import { Creators } from './collections/Creators'
+import { Teams } from './collections/Teams'
+import { Tools } from './collections/Tools'
+import { rebuildWebsiteEndpoint } from './endpoints/rebuildWebsite'
+
+const filename = fileURLToPath(import.meta.url)
+const dirname = path.dirname(filename)
+
+// Media is served from the GCS bucket behind the media.comfy.org CDN, not the
+// Next server's local disk — so autoplay hero videos range-serve from a fast
+// origin. Gated on GCS_BUCKET: unset (local dev without creds) leaves media on
+// local disk at /api/media/file/<filename>, exactly as before.
+const gcsBucket = process.env.GCS_BUCKET
+const gcsMediaPrefix = process.env.GCS_MEDIA_PREFIX || 'website/cms'
+const gcsPublicBase = (process.env.GCS_PUBLIC_BASE_URL || 'https://media.comfy.org').replace(
+  /\/+$/,
+  '',
+)
+const gcsCredentials = process.env.GCS_CREDENTIALS_JSON
+  ? JSON.parse(process.env.GCS_CREDENTIALS_JSON)
+  : undefined
+
+export default buildConfig({
+  admin: {
+    user: Users.slug,
+    importMap: {
+      baseDir: path.resolve(dirname),
+    },
+    components: {
+      beforeDashboard: ['/components/RebuildSiteButton#RebuildSiteButton'],
+    },
+    // Prefill the login form with the seeded admin credentials in local dev only
+    // (`prefillOnly` fills the fields without auto-submitting). Never in
+    // production — that would ship credentials into the login page.
+    autoLogin:
+      process.env.NODE_ENV !== 'production' &&
+      process.env.PAYLOAD_ADMIN_EMAIL &&
+      process.env.PAYLOAD_ADMIN_PASSWORD
+        ? {
+            email: process.env.PAYLOAD_ADMIN_EMAIL,
+            password: process.env.PAYLOAD_ADMIN_PASSWORD,
+            prefillOnly: true,
+          }
+        : false,
+  },
+  collections: [Gallery, Events, Media, Creators, Teams, Tools, Users],
+  endpoints: [rebuildWebsiteEndpoint],
+  // Field-level localization for content (not admin chrome). Only fields marked
+  // `localized` carry a per-locale value; everything else stays single-value.
+  // Fallback is on by default, so a missing `zh-CN` value reads through to `en`.
+  localization: {
+    locales: [
+      { code: 'en', label: 'English' },
+      { code: 'zh-CN', label: '中文' },
+    ],
+    defaultLocale: 'en',
+  },
+  editor: lexicalEditor(),
+  secret: process.env.PAYLOAD_SECRET || '',
+  typescript: {
+    outputFile: path.resolve(dirname, 'payload-types.ts'),
+  },
+  db: postgresAdapter({
+    pool: {
+      connectionString: process.env.DATABASE_URL || '',
+    },
+  }),
+  sharp,
+  plugins: [
+    gcsStorage({
+      enabled: Boolean(gcsBucket),
+      bucket: gcsBucket || '',
+      acl: 'Public',
+      options: {
+        projectId: process.env.GCS_PROJECT_ID,
+        credentials: gcsCredentials,
+      },
+      collections: {
+        media: {
+          prefix: gcsMediaPrefix,
+          // Store the raw CDN url on the doc instead of routing bytes back
+          // through Payload's access-controlled /api/media/file proxy. Media is
+          // already `read: anyone`, so the gate protects nothing.
+          disablePayloadAccessControl: true,
+          // Absolute CDN url, so the website's `new URL(doc.url, base)` uses it
+          // verbatim (base ignored). Media has no imageSizes, so `size` is unused.
+          generateFileURL: ({ filename, prefix }) => {
+            const key = [prefix ?? gcsMediaPrefix, filename].filter(Boolean).join('/')
+            return `${gcsPublicBase}/${key}`
+          },
+        },
+      },
+    }),
+  ],
+})
