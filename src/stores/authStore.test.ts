@@ -690,6 +690,78 @@ describe('useAuthStore', () => {
         message: 'toastMessages.userNotAuthenticated'
       })
     })
+
+    it('withholds a portal URL when the API key changes while the body parses', async () => {
+      let resolvePortalBody!: (value: unknown) => void
+      const bodyParsingStarted = new Promise<void>((parsingStarted) => {
+        mockFetch.mockImplementation((url: string) => {
+          if (url.endsWith('/customers/billing')) {
+            return Promise.resolve({
+              ok: true,
+              status: 200,
+              json: () => {
+                parsingStarted()
+                return new Promise((resolve) => {
+                  resolvePortalBody = resolve
+                })
+              }
+            })
+          }
+          return Promise.reject(new Error('Unexpected API call'))
+        })
+      })
+
+      const request = store.accessBillingPortal()
+      await bodyParsingStarted
+      mockApiKeyGetApiKey.mockReturnValue('another-api-key')
+      mockApiKeyGetAuthHeader.mockReturnValue({
+        'X-API-KEY': 'another-api-key'
+      })
+      resolvePortalBody({ billing_portal_url: 'https://stripe.test/portal' })
+
+      await expect(request).rejects.toMatchObject({
+        message: 'toastMessages.userNotAuthenticated'
+      })
+    })
+
+    it('withholds a checkout URL when the API key changes while the body parses', async () => {
+      let resolveCreditBody!: (value: unknown) => void
+      const bodyParsingStarted = new Promise<void>((parsingStarted) => {
+        mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+          if (url.endsWith('/customers') && init?.method === 'POST') {
+            return Promise.resolve(mockCreateCustomerResponse)
+          }
+          if (url.endsWith('/customers/credit')) {
+            return Promise.resolve({
+              ok: true,
+              status: 200,
+              json: () => {
+                parsingStarted()
+                return new Promise((resolve) => {
+                  resolveCreditBody = resolve
+                })
+              }
+            })
+          }
+          return Promise.reject(new Error('Unexpected API call'))
+        })
+      })
+
+      const request = store.initiateCreditPurchase({
+        amount_micros: 5_000_000,
+        currency: 'usd'
+      })
+      await bodyParsingStarted
+      mockApiKeyGetApiKey.mockReturnValue('another-api-key')
+      mockApiKeyGetAuthHeader.mockReturnValue({
+        'X-API-KEY': 'another-api-key'
+      })
+      resolveCreditBody({ checkout_url: 'https://stripe.test/checkout' })
+
+      await expect(request).rejects.toMatchObject({
+        message: 'toastMessages.userNotAuthenticated'
+      })
+    })
   })
 
   describe('login', () => {

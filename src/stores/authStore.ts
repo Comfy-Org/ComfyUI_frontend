@@ -824,8 +824,9 @@ export const useAuthStore = defineStore('auth', () => {
       )
     }
 
+    const creditPurchase: CreditPurchaseResponse = await response.json()
     assertIdentityUnchanged(requestOwner)
-    return response.json()
+    return creditPurchase
   }
 
   const initiateCreditPurchase = async (
@@ -865,8 +866,9 @@ export const useAuthStore = defineStore('auth', () => {
       )
     }
 
+    const billingPortal: AccessBillingPortalResponse = await response.json()
     assertIdentityUnchanged(requestOwner)
-    return response.json()
+    return billingPortal
   }
 
   return {
@@ -903,6 +905,7 @@ export const useAuthStore = defineStore('auth', () => {
     getFirebaseAuthHeader,
     getFirebaseAuthHeaderOrThrow,
     getUserAuthHeader,
+    currentUserIdentity,
     getWorkspaceAuthHeader,
     getWorkspaceAuthHeaderOrThrow,
     getAuthToken,

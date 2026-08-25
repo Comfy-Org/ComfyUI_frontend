@@ -190,7 +190,9 @@ export const useCustomerEventsService = () => {
       404: 'Not found'
     }
 
-    const authHeaders = await useAuthStore().getUserAuthHeader()
+    const authStore = useAuthStore()
+    const requestOwner = authStore.currentUserIdentity()
+    const authHeaders = await authStore.getUserAuthHeader()
     if (!authHeaders) {
       error.value = 'Authentication header is missing'
       return null
@@ -205,6 +207,9 @@ export const useCustomerEventsService = () => {
       { errorContext, routeSpecificErrors }
     )
 
+    if (authStore.currentUserIdentity() !== requestOwner) {
+      return null
+    }
     return result
   }
 

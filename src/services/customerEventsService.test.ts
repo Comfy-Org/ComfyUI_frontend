@@ -13,7 +13,8 @@ const mockAxiosInstance = vi.hoisted(() => ({
 }))
 
 const mockAuthStore = vi.hoisted(() => ({
-  getUserAuthHeader: vi.fn()
+  getUserAuthHeader: vi.fn(),
+  currentUserIdentity: vi.fn()
 }))
 
 const mockI18n = vi.hoisted(() => ({
@@ -81,6 +82,7 @@ describe('useCustomerEventsService', () => {
 
   beforeEach(() => {
     mockAuthStore.getUserAuthHeader.mockResolvedValue(mockAuthHeaders)
+    mockAuthStore.currentUserIdentity.mockReturnValue('api-key-a')
     mockI18n.d.mockImplementation((date, options) => {
       // Mock i18n date formatting
       if (options?.month === 'short') {
@@ -147,6 +149,25 @@ describe('useCustomerEventsService', () => {
       expect(result).toBeNull()
       expect(service.error.value).toBe('Authentication header is missing')
       expect(mockAxiosInstance.get).not.toHaveBeenCalled()
+    })
+
+    it('discards events that resolve after an A->B API key switch', async () => {
+      let resolveEvents!: (value: unknown) => void
+      const eventsRequestStarted = new Promise<void>((requestStarted) => {
+        mockAxiosInstance.get.mockImplementation(() => {
+          requestStarted()
+          return new Promise((resolve) => {
+            resolveEvents = resolve
+          })
+        })
+      })
+
+      const request = service.getMyEvents()
+      await eventsRequestStarted
+      mockAuthStore.currentUserIdentity.mockReturnValue('api-key-b')
+      resolveEvents({ data: mockEventsResponse })
+
+      await expect(request).resolves.toBeNull()
     })
 
     it('should handle 400 errors', async () => {
