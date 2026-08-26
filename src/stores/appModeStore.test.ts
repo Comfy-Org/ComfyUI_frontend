@@ -1112,7 +1112,7 @@ describe('appModeStore', () => {
       const hostState = createNodeState({ id: toNodeId(hostId) })
       const hostNode = Object.assign(Object.create(SubgraphNode.prototype), {
         _state: hostState,
-        inputs: [{ name: 'Prompt', _widget: hostWidget }],
+        _inputs: [{ name: 'Prompt', _widget: hostWidget }],
         widgets: [hostWidget],
         isSubgraphNode: () => true
       }) as SubgraphNode

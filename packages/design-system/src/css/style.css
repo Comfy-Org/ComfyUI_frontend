@@ -52,6 +52,7 @@
   --color-gold-500: #fdab34;
   --color-gold-600: #fd9903;
   --color-gold-700: #c77700;
+  --color-gold-800: #8c6a38;
 
   --color-credit: #ddbd31;
 
@@ -235,6 +236,8 @@
   --inverted-background-hover: var(--color-charcoal-600);
   --warning-background: var(--color-gold-400);
   --warning-background-hover: var(--color-gold-500);
+  --warning-foreground: var(--color-gold-800);
+  --warning-on-background: var(--color-charcoal-800);
   --success-background: var(--color-jade-600);
   --border-default: var(--color-smoke-600);
   --border-subtle: var(--color-smoke-400);
@@ -388,6 +391,8 @@
   --inverted-background-hover: var(--color-smoke-200);
   --warning-background: var(--color-gold-600);
   --warning-background-hover: var(--color-gold-500);
+  --warning-foreground: var(--color-gold-600);
+  --warning-on-background: var(--color-charcoal-800);
   --success-background: var(--color-jade-600);
   --border-default: var(--color-charcoal-200);
   --border-subtle: var(--color-charcoal-300);
@@ -563,6 +568,8 @@
   --color-inverted-background-hover: var(--inverted-background-hover);
   --color-warning-background: var(--warning-background);
   --color-warning-background-hover: var(--warning-background-hover);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning-on-background: var(--warning-on-background);
   --color-success-background: var(--success-background);
   --color-border-default: var(--border-default);
   --color-border-subtle: var(--border-subtle);

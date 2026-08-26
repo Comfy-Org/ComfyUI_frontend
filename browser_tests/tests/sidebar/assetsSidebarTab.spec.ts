@@ -10,6 +10,7 @@ import {
   routeMockJobTimestamp
 } from '@e2e/fixtures/jobsRouteFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
 import type {
   JobDetail,
@@ -17,18 +18,6 @@ import type {
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 
 const test = mergeTests(comfyPageFixture, jobsRouteFixture)
-
-interface ViewFile {
-  body?: Buffer | string
-  contentType?: string
-}
-
-type ViewFilesByName = Readonly<Record<string, ViewFile>>
-
-const transparentPng = Buffer.from(
-  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAFgwJ/lwPIRwAAAABJRU5ErkJggg==',
-  'base64'
-)
 
 const alphaJob = createRouteMockJob({
   id: 'alpha',
@@ -158,41 +147,6 @@ async function mockInputFiles(page: Page, files: readonly string[]) {
     }
 
     await route.fulfill({ json: [...files] })
-  })
-}
-
-async function mockViewFiles(page: Page, filesByName: ViewFilesByName) {
-  await page.route('**/api/view**', async (route) => {
-    if (route.request().method().toUpperCase() !== 'GET') {
-      await route.fallback()
-      return
-    }
-
-    const url = new URL(route.request().url())
-    const filename = url.searchParams.get('filename')
-    if (!filename) {
-      await route.fulfill({
-        status: 400,
-        json: { error: 'Missing filename' } satisfies { error: string }
-      })
-      return
-    }
-
-    const file = filesByName[filename]
-    if (!file) {
-      await route.fulfill({
-        status: 404,
-        json: {
-          error: `Unknown filename: ${filename}`
-        } satisfies { error: string }
-      })
-      return
-    }
-
-    await route.fulfill({
-      body: file.body ?? transparentPng,
-      contentType: file.contentType ?? 'image/png'
-    })
   })
 }
 
