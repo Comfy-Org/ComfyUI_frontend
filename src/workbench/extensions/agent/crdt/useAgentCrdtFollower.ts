@@ -91,6 +91,7 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
   // The ws path has no ceiling gate; this only feeds LWW stamps, so a slightly
   // stale value is safe (ties break by [base_version, actor, op_id]).
   let lastSeq = 0
+  let lastOpsResult: unknown = null
   // Post-ECS main removed the global layout source scope
   // (`LayoutSource.External` / `layoutStore.setSource`), so remote batches
   // apply directly. Echo suppression becomes load-bearing only when the
@@ -125,6 +126,7 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
   }
   const onOpsResult: EventListener = (event) => {
     lastFrameType.value = event.type
+    if (event instanceof CustomEvent) lastOpsResult = event.detail ?? null
   }
   const onDocReset: EventListener = (event) => {
     // Lineage break: the bridge already dropped its doc and resubscribed with
@@ -240,6 +242,32 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
           lgNode.id = nodeId as unknown as typeof lgNode.id
           lgNode.pos = [...pos]
           serialized = lgNode.serialize() as unknown as Record<string, unknown>
+          // The doc host name-keys widgets via the pinned catalog's
+          // widget_order; litegraph's positional serialize() can emit MORE
+          // entries than the catalog names (e.g. LoadImage's upload-button
+          // slot), which the host rejects (invalid_node_payload). Name-keyed
+          // objects are accepted as-is (widgetsToYMap), and this litegraph
+          // already emits widgets_values_named alongside the positional
+          // array — send the named form and drop the extra key.
+          if (serialized.widgets_values_named != null) {
+            // Filter to real value-bearing widgets: the host's projection
+            // throws (opaque 500) on ANY key outside the pinned catalog's
+            // widget_order, and control widgets (e.g. LoadImage's `upload`
+            // button) serialize a named entry but are not in widget_order.
+            const named = serialized.widgets_values_named as Record<
+              string,
+              unknown
+            >
+            const filtered: Record<string, unknown> = {}
+            for (const [name, value] of Object.entries(named)) {
+              const w = lgNode.widgets?.find((x) => x.name === name)
+              if (w && w.type !== 'button' && w.serialize !== false) {
+                filtered[name] = value
+              }
+            }
+            serialized.widgets_values = filtered
+            delete serialized.widgets_values_named
+          }
         }
       } catch {
         serialized = null
@@ -263,13 +291,49 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     bridge.sendHumanOps(tabId, [op])
     return op
   }
+  // Same envelope/actor path as pocAddNode, for the delete_node op. The host
+  // rejects actors whose userId doesn't match the authenticated session, so
+  // this must mint from useAuthStore() exactly like pocAddNode does.
+  const pocDeleteNode = (nodeId: number, removedLinks: number[] = []): DocOp => {
+    const userId = useAuthStore().userId ?? 'anonymous'
+    const actor = `human:${userId}:${tabId}`
+    const baseVersion = lastSeq
+    const op: DocOp = {
+      op: 'delete_node',
+      op_id: mintOpId(),
+      actor,
+      base_version: baseVersion,
+      stamp: [baseVersion, actor],
+      node_id: nodeId,
+      removed_links: removedLinks
+    }
+    bridge.sendHumanOps(tabId, [op])
+    return op
+  }
   const pocGlobal = window as unknown as Record<string, unknown>
   pocGlobal.__agentCrdtPoc = {
     addNode: pocAddNode,
+    deleteNode: pocDeleteNode,
     sendOps: (ops: DocOp[]) => bridge.sendHumanOps(tabId, ops),
+    resubscribe: () => bridge.resubscribe(),
+    reconcile: () => bridge.reconcile(),
+    project: () => projector.project(bridge.follower.doc),
     tabId,
     get lastSeq() {
       return lastSeq
+    },
+    get lastOpsResult() {
+      return lastOpsResult
+    },
+    docNodes: () => {
+      const doc = bridge.follower.doc as unknown as {
+        getMap: (k: string) => { toJSON: () => Record<string, unknown> }
+      }
+      try {
+        return doc.getMap('nodes').toJSON()
+      } catch {
+        return null
+      }
     },
     get status() {
       return {

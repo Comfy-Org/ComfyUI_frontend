@@ -29,6 +29,11 @@ interface DocOpsResult {
   skipped: string[]
   code?: string
   message?: string
+  /**
+   * PoC diagnostics: the batch's failure, forwarded verbatim. The wire type is
+   * a single object (`DocOpFailure {op_id, code, message}`), not an array.
+   */
+  failed?: unknown
 }
 
 interface DocAwareness {
@@ -169,7 +174,9 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
           : [],
         ...(typeof data.seq === 'number' && { seq: data.seq }),
         ...(typeof data.code === 'string' && { code: data.code }),
-        ...(typeof data.message === 'string' && { message: data.message })
+        ...(typeof data.message === 'string' && { message: data.message }),
+        // PoC diagnostics: surface the failure verbatim (object, not array).
+        ...(data.failed != null && { failed: data.failed })
       }
     }
   }
