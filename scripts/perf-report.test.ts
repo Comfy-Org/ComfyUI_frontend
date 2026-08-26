@@ -1,3 +1,16 @@
+import { spawnSync } from 'node:child_process'
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync
+} from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
 import { describe, expect, it } from 'vitest'
 
 import type {
@@ -109,5 +122,67 @@ describe('performance report', () => {
         measurements: [{ kind: 'accepted', measurement: { name: 'sample' } }]
       }).success
     ).toBe(false)
+  })
+})
+
+describe('performance report CLI gate', () => {
+  const cliPath = fileURLToPath(import.meta.resolve('tsx/cli'))
+  const reportPath = join(process.cwd(), 'scripts/perf-report.ts')
+
+  it.for([
+    {
+      name: 'missing metrics with the flag',
+      args: ['--fail-on-fps-budget'],
+      rafIntervalP95Ms: null,
+      expectedStatus: 1,
+      expectedPassed: false
+    },
+    {
+      name: 'below-budget metrics with the flag',
+      args: ['--fail-on-fps-budget'],
+      rafIntervalP95Ms: 25,
+      expectedStatus: 1,
+      expectedPassed: false
+    },
+    {
+      name: 'passing metrics with the flag',
+      args: ['--fail-on-fps-budget'],
+      rafIntervalP95Ms: 16,
+      expectedStatus: 0,
+      expectedPassed: true
+    },
+    {
+      name: 'below-budget metrics without the flag',
+      args: [],
+      rafIntervalP95Ms: 25,
+      expectedStatus: 0,
+      expectedPassed: false
+    }
+  ])('$name', ({ args, rafIntervalP95Ms, expectedStatus, expectedPassed }) => {
+    const cwd = mkdtempSync(join(tmpdir(), 'perf-report-cli-'))
+    try {
+      if (rafIntervalP95Ms !== null) {
+        mkdirSync(join(cwd, 'test-results'))
+        writeFileSync(
+          join(cwd, 'test-results/perf-metrics.json'),
+          JSON.stringify(report([accepted(rafIntervalP95Ms)]))
+        )
+      }
+
+      const result = spawnSync(
+        process.execPath,
+        [cliPath, reportPath, ...args],
+        { cwd, encoding: 'utf8' }
+      )
+
+      expect(result.status).toBe(expectedStatus)
+      const artifactPath = join(cwd, 'test-results/perf-gate.json')
+      expect(existsSync(artifactPath)).toBe(true)
+      expect(JSON.parse(readFileSync(artifactPath, 'utf8')).passed).toBe(
+        expectedPassed
+      )
+    } finally {
+      rmSync(cwd, { recursive: true, force: true })
+    }
   })
 })
