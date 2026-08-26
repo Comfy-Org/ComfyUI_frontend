@@ -83,6 +83,21 @@
   --color-transparency-white-t8: rgb(255 255 255 / 0.08);
   --color-transparency-white-t20: rgb(255 255 255 / 0.2);
   --color-transparency-ink-t80: rgb(33 25 39 / 0.8);
+  /* Semantic nav/page tokens. Defaults reproduce the dark site exactly;
+     a [data-page-theme] scope (stamped by BaseLayout's `theme` prop)
+     overrides them for themed pages. Values are literals, not var() refs,
+     because @theme variables cannot reference sibling theme variables. */
+  --color-nav-bg: #211927;
+  --color-nav-fg: #c2bfb9;
+  --color-nav-fg-strong: #f0efed;
+  --color-nav-fg-hover: #ffffff;
+  --color-nav-fg-muted: #7e7c78;
+  --color-nav-surface: #2a2330;
+  --color-nav-hover: rgb(255 255 255 / 0.04);
+  --color-nav-accent: #f2ff59;
+  --color-nav-cta: #f2ff59;
+  --color-page-bg: #211927;
+  --color-page-fg: #ffffff;
   --font-formula: 'PP Formula', sans-serif;
   --font-formula-narrow: 'PP Formula Narrow', sans-serif;
   --text-2xs: 0.6875rem;
@@ -279,4 +294,26 @@ video::-webkit-media-controls-panel {
   --site-bg: var(--color-primary-comfy-ink);
   --site-bg-soft: var(--color-site-bg-soft);
   --site-border-subtle: rgb(255 255 255 / 0.1);
+}
+
+/* Subbrand pages (e.g. /developers): warm-white surface with ink text.
+   BaseLayout stamps data-page-theme="subbrand" via its `theme` prop; every
+   descendant utility built on the nav/page tokens recolors through the
+   cascade. Sections that must stay dark (pricing, footer) use explicit
+   palette colors and are unaffected. */
+[data-page-theme='subbrand'] {
+  --color-nav-bg: var(--color-primary-warm-white);
+  --color-nav-fg: var(--color-primary-comfy-ink);
+  --color-nav-fg-strong: var(--color-primary-comfy-ink);
+  --color-nav-fg-hover: var(--color-primary-comfy-ink);
+  --color-nav-surface: color-mix(
+    in srgb,
+    var(--color-primary-comfy-ink) 6%,
+    var(--color-primary-warm-white)
+  );
+  --color-nav-hover: rgb(33 25 39 / 0.06);
+  --color-nav-accent: var(--color-primary-comfy-plum);
+  --color-nav-cta: var(--color-primary-comfy-ink);
+  --color-page-bg: var(--color-primary-warm-white);
+  --color-page-fg: var(--color-primary-comfy-ink);
 }

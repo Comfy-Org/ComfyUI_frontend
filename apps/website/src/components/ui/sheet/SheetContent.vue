@@ -35,7 +35,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
       data-slot="sheet-content"
       :class="
         cn(
-          'fixed z-50 flex flex-col gap-4 bg-primary-comfy-ink transition ease-in-out data-[state=closed]:animate-out data-[state=closed]:duration-300 data-[state=open]:animate-in data-[state=open]:duration-500',
+          'fixed z-50 flex flex-col gap-4 bg-nav-bg transition ease-in-out data-[state=closed]:animate-out data-[state=closed]:duration-300 data-[state=open]:animate-in data-[state=open]:duration-500',
           side === 'right' &&
             'inset-y-0 right-0 h-full w-3/4 data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-sm',
           side === 'left' &&
@@ -52,7 +52,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
       <slot />
 
       <SheetClose
-        class="focus:ring-primary-comfy-yellow/50 text-primary-comfy-yellow border-primary-comfy-yellow absolute top-4 right-4 rounded-xl border p-2 ring-offset-primary-comfy-ink transition-opacity focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none"
+        class="focus:ring-nav-accent/50 text-nav-accent border-nav-accent absolute top-4 right-4 rounded-xl border p-2 ring-offset-nav-bg transition-opacity focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none"
       >
         <X class="size-6" />
         <span class="sr-only">{{ closeLabel }}</span>

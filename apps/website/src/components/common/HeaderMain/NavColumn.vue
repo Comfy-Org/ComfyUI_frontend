@@ -11,7 +11,7 @@ defineProps<{ column: NavColumn; locale: Locale; currentPath: string }>()
 
 <template>
   <li class="flex flex-col space-y-4">
-    <p class="font-formula text-primary-warm-gray pl-2 text-sm font-medium">
+    <p class="font-formula text-nav-fg-muted pl-2 text-sm font-medium">
       {{ column.header }}
     </p>
     <ul class="flex flex-col">
@@ -19,7 +19,7 @@ defineProps<{ column: NavColumn; locale: Locale; currentPath: string }>()
         <NavigationMenuLink
           as-child
           :active="isHrefActive(item.href, currentPath)"
-          class="hover:bg-transparency-white-t4"
+          class="hover:bg-nav-hover"
         >
           <a
             :href="item.href"
