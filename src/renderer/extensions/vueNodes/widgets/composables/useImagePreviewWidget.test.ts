@@ -250,6 +250,29 @@ describe('useImagePreviewWidget', () => {
       })
     })
 
+    it('does not draw an image that breaks before deferred rendering', async () => {
+      const constructor = useImagePreviewWidget()
+      const img = createMockImage(200, 100)
+      const node = createMockNode({
+        imgs: [img],
+        imageIndex: 0
+      })
+      constructor(node, defaultInputSpec)
+
+      const widget = getWidget(node)
+      widget.computedHeight = 220
+      const ctx = createMockCtx()
+
+      widget.drawWidget(ctx, { width: 300 })
+      Object.defineProperties(img, {
+        naturalHeight: { value: 0 },
+        naturalWidth: { value: 0 }
+      })
+      await Promise.resolve()
+
+      expect(ctx.drawImage).not.toHaveBeenCalled()
+    })
+
     it('auto-sets imageIndex to 0 for single image with null index', () => {
       const constructor = useImagePreviewWidget()
       const img = createMockImage(200, 100)
