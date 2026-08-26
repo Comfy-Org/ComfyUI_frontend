@@ -3,8 +3,10 @@ import { ref } from 'vue'
 
 import { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'
 
-vi.mock('@/platform/distribution/types', () => ({
-  isCloud: false
+vi.mock('@/platform/assets/services/assetService', () => ({
+  assetService: {
+    isAssetAPIEnabled: () => false
+  }
 }))
 
 const mockUpdateModelsForNodeType = vi.fn()
@@ -26,7 +28,7 @@ vi.mock('@/stores/modelToNodeStore', () => ({
   })
 }))
 
-describe('useAssetWidgetData (desktop/isCloud=false)', () => {
+describe('useAssetWidgetData (asset API disabled)', () => {
   it('returns empty/default values without calling stores', () => {
     const nodeType = ref('CheckpointLoaderSimple')
     const { category, assets, isLoading, error } = useAssetWidgetData(nodeType)

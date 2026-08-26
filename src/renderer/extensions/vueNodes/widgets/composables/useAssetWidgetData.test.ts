@@ -6,8 +6,10 @@ import { nextTick, ref } from 'vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'
 
-vi.mock('@/platform/distribution/types', () => ({
-  isCloud: true
+vi.mock('@/platform/assets/services/assetService', () => ({
+  assetService: {
+    isAssetAPIEnabled: () => true
+  }
 }))
 
 const mockAssetsByKey = new Map<string, AssetItem[]>()
@@ -33,7 +35,7 @@ vi.mock('@/stores/modelToNodeStore', () => ({
   })
 }))
 
-describe('useAssetWidgetData (cloud mode, isCloud=true)', () => {
+describe('useAssetWidgetData (asset API enabled)', () => {
   beforeEach(() => {
     mockAssetsByKey.clear()
     mockLoadingByKey.clear()

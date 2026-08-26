@@ -2,7 +2,7 @@ import { computed, toValue, watch } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { isCloud } from '@/platform/distribution/types'
+import { assetService } from '@/platform/assets/services/assetService'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
@@ -11,7 +11,7 @@ import { useModelToNodeStore } from '@/stores/modelToNodeStore'
  * Provides reactive asset data based on node type with automatic category detection.
  * Uses store-based caching to avoid duplicate fetches across multiple instances.
  *
- * Cloud-only composable - returns empty data when not in cloud environment.
+ * Returns empty data when the asset API is not enabled.
  *
  * @param nodeType - ComfyUI node type (ref, getter, or plain value). Can be undefined.
  *   Accepts: ref('CheckpointLoaderSimple'), () => 'CheckpointLoaderSimple', or 'CheckpointLoaderSimple'
@@ -20,7 +20,7 @@ import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 export function useAssetWidgetData(
   nodeType: MaybeRefOrGetter<string | undefined>
 ) {
-  if (isCloud) {
+  if (assetService.isAssetAPIEnabled()) {
     const assetsStore = useAssetsStore()
     const modelToNodeStore = useModelToNodeStore()
 
