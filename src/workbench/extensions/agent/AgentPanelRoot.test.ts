@@ -316,6 +316,9 @@ const paywallPermissions = vi.hoisted(() => ({
   canTopUp: true,
   canManageSubscription: true
 }))
+const paywallPolicy = vi.hoisted(() => ({
+  topUpAccess: 'allowed' as 'allowed' | 'subscription-required'
+}))
 const paywallBilling = vi.hoisted(() => ({
   tier: 'STANDARD' as string | null,
   plans: [
@@ -346,6 +349,18 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', async () => {
     })
   }
 })
+
+vi.mock(
+  '@/platform/cloud/subscription/composables/useBillingPolicyCapabilities',
+  async () => {
+    const { computed } = await import('vue')
+    return {
+      useBillingPolicyCapabilities: () => ({
+        billingPolicyCapabilities: computed(() => paywallPolicy)
+      })
+    }
+  }
+)
 
 vi.mock('@/composables/billing/useBillingContext', async () => {
   const { computed } = await import('vue')
@@ -398,6 +413,7 @@ beforeEach(() => {
   socketSend.mockReset()
   paywallPermissions.canTopUp = true
   paywallPermissions.canManageSubscription = true
+  paywallPolicy.topUpAccess = 'allowed'
   paywallBilling.tier = 'STANDARD'
   paywallBilling.plans[0]!.tier = 'CREATOR'
   paywallBilling.plans[0]!.availability.available = true
@@ -520,6 +536,26 @@ describe('AgentPanelRoot paywall actions', () => {
     ).toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: 'Upgrade subscription' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('hides Add credits but keeps Upgrade when Cloud Free requires a subscription', async () => {
+    paywallBilling.tier = 'FREE'
+    paywallPolicy.topUpAccess = 'subscription-required'
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentConversationStore().messages.push({
+      id: 'msg-paywall' as TurnId,
+      role: 'assistant',
+      parts: [{ type: 'paywall' }],
+      streaming: false,
+      thinking: false
+    })
+
+    expect(
+      await screen.findByRole('button', { name: 'Upgrade subscription' })
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Add credits' })
     ).not.toBeInTheDocument()
   })
 })
