@@ -1191,6 +1191,78 @@ describe('ChangeTracker', () => {
         expectAutoQueueGraphChangedNotDispatched()
       })
 
+      it('ignores root links incident to a layout-only node type', () => {
+        useNodeDefStore().addNodeDef(
+          createTestNodeDef('StickyNote', { layout_only: true })
+        )
+        const initial = createState(2)
+        initial.nodes[1].type = 'StickyNote'
+        const tracker = createTracker(initial)
+        const changed = structuredClone(initial)
+        changed.links = [
+          [1, changed.nodes[0].id, 0, changed.nodes[1].id, 0, '*']
+        ]
+        mockCanvasState(changed)
+
+        tracker.captureCanvasState()
+
+        expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+          'graphChanged',
+          changed
+        )
+        expectAutoQueueGraphChangedNotDispatched()
+      })
+
+      it('ignores incident links inside nested subgraph definitions', () => {
+        useNodeDefStore().addNodeDef(
+          createTestNodeDef('StickyNote', { layout_only: true })
+        )
+        const initial = createState()
+        Reflect.set(initial, 'definitions', {
+          subgraphs: [
+            {
+              id: 'parent',
+              nodes: [],
+              definitions: {
+                subgraphs: [
+                  {
+                    id: 'leaf',
+                    nodes: [
+                      { id: 1, type: 'TestNode' },
+                      { id: 2, type: 'StickyNote' }
+                    ],
+                    links: [
+                      {
+                        id: 1,
+                        origin_id: 1,
+                        origin_slot: 0,
+                        target_id: 2,
+                        target_slot: 0,
+                        type: '*'
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
+        })
+        const tracker = createTracker(initial)
+        const changed = structuredClone(initial)
+        const leaf = findSubgraphDefinition(changed, 'leaf')
+        if (!leaf) throw new Error('nested leaf definition missing')
+        leaf.links = []
+        mockCanvasState(changed)
+
+        tracker.captureCanvasState()
+
+        expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+          'graphChanged',
+          changed
+        )
+        expectAutoQueueGraphChangedNotDispatched()
+      })
+
       it('treats node types without a def as execution-relevant', () => {
         const initial = createState(1)
         initial.nodes[0].type = 'UnknownStickyNote'

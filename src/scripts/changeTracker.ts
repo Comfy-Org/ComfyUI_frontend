@@ -16,6 +16,7 @@ import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { serializeNodeId } from '@/types/nodeId'
+import type { SerializedNodeId } from '@/types/nodeId'
 import { isModalOpen } from '@/utils/modalUtil'
 
 import { api } from './api'
@@ -177,6 +178,37 @@ function isExecutableNodeState(value: unknown): boolean {
   )
 }
 
+function getLayoutOnlyNodeIds(nodes: unknown[]): Set<SerializedNodeId> {
+  return new Set(
+    nodes.flatMap((value): SerializedNodeId[] => {
+      const node = asRecord(value)
+      if (
+        !node ||
+        typeof node.type !== 'string' ||
+        !isLayoutOnlyNodeType(node.type) ||
+        (typeof node.id !== 'number' && typeof node.id !== 'string')
+      ) {
+        return []
+      }
+      return [serializeNodeId(node.id)]
+    })
+  )
+}
+
+function isIncidentToLayoutOnlyNode(
+  value: unknown,
+  layoutOnlyNodeIds: ReadonlySet<SerializedNodeId>
+): boolean {
+  const link = asRecord(value)
+  const originId = Array.isArray(value) ? value[1] : link?.origin_id
+  const targetId = Array.isArray(value) ? value[3] : link?.target_id
+  return [originId, targetId].some(
+    (nodeId) =>
+      (typeof nodeId === 'number' || typeof nodeId === 'string') &&
+      layoutOnlyNodeIds.has(serializeNodeId(nodeId))
+  )
+}
+
 function getExecutionDefinitionsState(value: unknown): unknown {
   const definitions = asRecord(value)
   if (!definitions || !Array.isArray(definitions.subgraphs)) return value
@@ -195,6 +227,9 @@ function getExecutionGraphState(value: unknown): unknown {
   if (!graph) return value
 
   const executionGraph = omitProperties(graph, nonExecutionGraphProperties)
+  const layoutOnlyNodeIds = Array.isArray(graph.nodes)
+    ? getLayoutOnlyNodeIds(graph.nodes)
+    : new Set<SerializedNodeId>()
   if (Array.isArray(graph.nodes)) {
     executionGraph.nodes = _.sortBy(
       graph.nodes.filter(isExecutableNodeState).map(getExecutionNodeState),
@@ -203,7 +238,9 @@ function getExecutionGraphState(value: unknown): unknown {
   }
   if (Array.isArray(graph.links)) {
     executionGraph.links = _.sortBy(
-      graph.links.map(getExecutionLinkState),
+      graph.links
+        .filter((link) => !isIncidentToLayoutOnlyNode(link, layoutOnlyNodeIds))
+        .map(getExecutionLinkState),
       (link) => JSON.stringify(link)
     )
   } else if (!('links' in graph)) {

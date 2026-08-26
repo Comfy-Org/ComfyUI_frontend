@@ -12,7 +12,10 @@ import {
 } from '@/platform/workflow/management/stores/workflowStore'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
-import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
+import {
+  createMockChangeTracker,
+  createTestNodeDef
+} from '@/utils/__tests__/litegraphTestUtils'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
 import type { NodeReplacement } from '@/platform/nodeReplacement/types'
 import { ComfyApp, app as singletonApp } from './app'
@@ -40,6 +43,10 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import type { NodeError } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import {
+  declareLayoutOnlyNodeTypes,
+  isLayoutOnlyNodeType
+} from '@/services/layoutOnlyNodeTypes'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 import {
@@ -1192,6 +1199,37 @@ describe('ComfyApp', () => {
   })
 
   describe('reloadNodeDefs', () => {
+    it('validates layout-only declarations after definition hooks', async () => {
+      const nodeType = 'HookedLayoutNode'
+      const defs = { [nodeType]: createTestNodeDef(nodeType) }
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const rootGraph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', rootGraph)
+      app.vueAppReady = true
+      declareLayoutOnlyNodeTypes([nodeType])
+      vi.spyOn(app, 'getNodeDefs').mockResolvedValue(defs)
+      vi.spyOn(app, 'registerNodeDef').mockResolvedValue(undefined)
+      mockExtensionService.invokeExtensions.mockImplementation(
+        (method: string, nodeDefs: ComfyNodeDef[]) => {
+          if (method === 'beforeRegisterVueAppNodeDefs') {
+            const nodeDef = nodeDefs.find((def) => def.name === nodeType)
+            if (!nodeDef) throw new Error('Expected hooked node definition')
+            nodeDef.output = ['IMAGE']
+          }
+          return []
+        }
+      )
+
+      await app.reloadNodeDefs()
+
+      expect(isLayoutOnlyNodeType(nodeType)).toBe(false)
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining(
+          `Ignoring layout-only declaration for "${nodeType}"`
+        )
+      )
+    })
+
     it('syncs refreshed combo options into promoted combo host state', async () => {
       const initialOptions = ['missing.safetensors']
       const refreshedOptions = ['missing.safetensors', 'present.safetensors']

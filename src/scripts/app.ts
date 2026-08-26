@@ -1089,13 +1089,14 @@ export class ComfyApp {
       ...SYSTEM_NODE_DEFS
     }
 
-    applyLayoutOnlyDeclarations(allNodeDefs)
-
     const nodeDefStore = useNodeDefStore()
     const nodeDefArray: ComfyNodeDefV1[] = Object.values(allNodeDefs)
     useExtensionService().invokeExtensions(
       'beforeRegisterVueAppNodeDefs',
       nodeDefArray
+    )
+    applyLayoutOnlyDeclarations(
+      Object.fromEntries(nodeDefArray.map((nodeDef) => [nodeDef.name, nodeDef]))
     )
     nodeDefStore.updateNodeDefs(nodeDefArray)
   }

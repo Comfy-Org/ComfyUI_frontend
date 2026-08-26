@@ -144,9 +144,10 @@ const entityPrompt = `${rootGraphId}:1:prompt` as WidgetId
 const entitySeed = `${rootGraphId}:1:seed` as WidgetId
 const entitySteps = `${rootGraphId}:1:steps` as WidgetId
 
-function nodeWithWidgets(id: number, widgetNames: string[]) {
+function nodeWithWidgets(id: number, widgetNames: string[], type = 'TestNode') {
   return fromAny<LGraphNode, unknown>({
     id,
+    type,
     widgets: widgetNames.map((name) => ({
       name,
       widgetId: `${rootGraphId}:${id}:${name}` as WidgetId
@@ -365,12 +366,29 @@ describe('appModeStore', () => {
     it('passes through entries already in canonical entity-id form', () => {
       const node1 = nodeWithWidgets(1, ['prompt'])
       vi.mocked(app.rootGraph).nodes = [node1]
+      vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
+        id === toNodeId(1) ? node1 : null
+      )
 
       store.loadSelections({
         inputs: [[entityPrompt, 'prompt']]
       })
 
       expect(store.selectedInputs).toEqual([[entityPrompt, 'prompt']])
+    })
+
+    it('drops canonical entries whose widget no longer exists', () => {
+      const node1 = nodeWithWidgets(1, ['prompt'])
+      vi.mocked(app.rootGraph).nodes = [node1]
+      vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
+        id === toNodeId(1) ? node1 : null
+      )
+
+      store.loadSelections({
+        inputs: [[entitySteps, 'steps']]
+      })
+
+      expect(store.selectedInputs).toEqual([])
     })
 
     it('drops legacy entries whose widget no longer exists', () => {
@@ -409,16 +427,23 @@ describe('appModeStore', () => {
 
     it('reloads selections on configured event', async () => {
       const node1 = nodeWithWidgets(1, ['seed'])
+      const layoutOnlyNode = nodeWithWidgets(2, ['content'], 'StickyNote')
+      useNodeDefStore().updateNodeDefs([
+        ...Object.values(SYSTEM_NODE_DEFS),
+        createTestNodeDef('StickyNote', { layout_only: true })
+      ])
 
-      // Initially nodes are not resolvable — pruning removes them
       vi.mocked(app.rootGraph).nodes = []
       vi.mocked(app.rootGraph).getNodeById = vi.fn(() => null)
       mockResolveNode.mockReturnValue(undefined)
-      const inputs: [number, string][] = [[1, 'seed']]
+      const inputs: [number, string][] = [
+        [1, 'seed'],
+        [2, 'content']
+      ]
       workflowStore.activeWorkflow = createWorkflowWithLinearData(
         'app',
         inputs,
-        [1]
+        [1, 2]
       )
       store.loadSelections({ inputs })
       await nextTick()
@@ -426,17 +451,22 @@ describe('appModeStore', () => {
       expect(store.selectedInputs).toEqual([])
       expect(store.selectedOutputs).toEqual([])
 
-      // After graph configures, nodes become resolvable
-      vi.mocked(app.rootGraph).nodes = [node1]
+      vi.mocked(app.rootGraph).nodes = [node1, layoutOnlyNode]
       vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
-        id === toNodeId(1) ? node1 : null
+        id === toNodeId(1) ? node1 : id === toNodeId(2) ? layoutOnlyNode : null
       )
       mockResolveNode.mockImplementation((id) =>
-        id === toNodeId(1) ? node1 : undefined
+        id === toNodeId(1)
+          ? node1
+          : id === toNodeId(2)
+            ? layoutOnlyNode
+            : undefined
       )
+      ChangeTracker.isLoadingGraph = true
       ;(app.rootGraph.events as EventTarget).dispatchEvent(
         new Event('configured')
       )
+      ChangeTracker.isLoadingGraph = false
       await nextTick()
 
       expect(store.selectedInputs).toEqual([[entitySeed, 'seed']])

@@ -18,7 +18,6 @@ import { isLayoutOnlyNodeType } from '@/services/layoutOnlyNodeTypes'
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import {
   getWidgetIdForNode,
@@ -30,19 +29,6 @@ import type { NodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
 import { isWidgetId, parseWidgetId } from '@/types/widgetId'
 import type { ViewMode } from '@/utils/appMode'
-
-function findWidgetByEntityId(
-  rootGraph: LGraph,
-  widgetId: WidgetId
-): IBaseWidget | undefined {
-  for (const node of rootGraph.nodes) {
-    const widget = node.widgets?.find(
-      (w) => getWidgetIdForNode(node, w) === widgetId
-    )
-    if (widget) return widget
-  }
-  return undefined
-}
 
 export function nodeTypeValidForApp(type: string) {
   return !isLayoutOnlyNodeType(type)
@@ -111,9 +97,9 @@ export const useAppModeStore = defineStore('appMode', () => {
       outputs: rawOutputs.flatMap((nodeId) => {
         const parsedNodeId = parseNodeId(nodeId)
         if (!parsedNodeId) return []
-        return ChangeTracker.isLoadingGraph || resolveNode(parsedNodeId)
-          ? [parsedNodeId]
-          : []
+        const node = resolveNode(parsedNodeId)
+        if (node && !nodeTypeValidForApp(node.type)) return []
+        return ChangeTracker.isLoadingGraph || node ? [parsedNodeId] : []
       })
     }
   }
@@ -133,18 +119,21 @@ export const useAppModeStore = defineStore('appMode', () => {
     const [storedId, widgetName, config] = input
 
     if (typeof storedId === 'string' && isWidgetId(storedId)) {
-      const widget = findWidgetByEntityId(rootGraph, storedId)
-      if (widget) return buildEntry(storedId, widgetName, config)
       const { nodeId } = parseWidgetId(storedId)
-      if (rootGraph.getNodeById?.(nodeId)) {
-        return buildEntry(storedId, widgetName, config)
-      }
-      return null
+      const node = rootGraph.getNodeById?.(nodeId)
+      if (!node || !nodeTypeValidForApp(node.type)) return null
+      const widget = node.widgets?.find(
+        (candidate) => getWidgetIdForNode(node, candidate) === storedId
+      )
+      if (!widget) return null
+      return buildEntry(storedId, widgetName, config)
     }
 
     if (typeof storedId === 'string' && storedId.includes(':')) {
-      const [, widget] = resolveNodeWidget(storedId, widgetName)
-      if (!widget?.widgetId) return null
+      const [node, widget] = resolveNodeWidget(storedId, widgetName)
+      if (!node || !nodeTypeValidForApp(node.type) || !widget?.widgetId) {
+        return null
+      }
       return buildEntry(widget.widgetId, widgetName, config)
     }
 
@@ -152,6 +141,7 @@ export const useAppModeStore = defineStore('appMode', () => {
     const directNode = directNodeId
       ? rootGraph.getNodeById?.(directNodeId)
       : null
+    if (directNode && !nodeTypeValidForApp(directNode.type)) return null
     const directWidget = directNode?.widgets?.find((w) => w.name === widgetName)
     if (directNode && directWidget) {
       const derivedId = getWidgetIdForNode(directNode, directWidget)
@@ -159,7 +149,9 @@ export const useAppModeStore = defineStore('appMode', () => {
     }
 
     const matches: LinearInput[] = rootGraph.nodes.flatMap((node) => {
-      if (!(node instanceof SubgraphNode)) return []
+      if (!(node instanceof SubgraphNode) || !nodeTypeValidForApp(node.type)) {
+        return []
+      }
       return node.inputs.flatMap((inputSlot): LinearInput[] => {
         if (!inputSlot.widgetId) return []
         const target = resolveSubgraphInputTarget(node, inputSlot.name)
