@@ -3,13 +3,23 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { HTMLAttributes } from 'vue'
 
-import BrandButton from '../common/BrandButton.vue'
+import Button from '../ui/button/Button.vue'
+import { resolveRel } from '../../utils/cta'
 
 type Cta = {
   label: string
   href: string
   target?: '_blank' | '_self' | '_parent' | '_top'
 }
+
+/*
+ * The subbrand hero inverts the site's yellow buttons: ink fill with yellow
+ * text, and an ink outline beside it. `buttonVariants` carries no such pair,
+ * so the palette is set here and `cn` merges it over the variant.
+ */
+const CTA_BASE = 'h-16 rounded-3xl px-8 text-sm'
+const CTA_PRIMARY = `${CTA_BASE} bg-primary-comfy-ink text-primary-comfy-yellow hover:bg-primary-comfy-ink/90`
+const CTA_SECONDARY = `${CTA_BASE} border-2 border-primary-comfy-ink text-primary-comfy-ink hover:bg-primary-comfy-ink hover:text-primary-comfy-yellow`
 
 const {
   title,
@@ -54,23 +64,28 @@ const {
       </p>
 
       <div class="mt-8 flex flex-col gap-5 sm:flex-row">
-        <BrandButton
+        <!-- Button does not derive rel from target the way BrandButton did,
+             so external CTAs get their safe rel here. -->
+        <Button
           :href="primaryCta.href"
           :target="primaryCta.target"
-          variant="inverse"
-          class="h-16 rounded-3xl px-8 text-sm uppercase"
+          :rel="resolveRel({ target: primaryCta.target })"
+          size="lg"
+          :class="CTA_PRIMARY"
         >
           {{ primaryCta.label }}
-        </BrandButton>
-        <BrandButton
+        </Button>
+        <Button
           v-if="secondaryCta"
           :href="secondaryCta.href"
           :target="secondaryCta.target"
-          variant="outline-dark"
-          class="h-16 rounded-3xl px-8 text-sm"
+          :rel="resolveRel({ target: secondaryCta.target })"
+          variant="outline"
+          size="lg"
+          :class="CTA_SECONDARY"
         >
           {{ secondaryCta.label }}
-        </BrandButton>
+        </Button>
       </div>
 
       <p v-if="footnote" class="text-page-fg mt-6 text-xs leading-[1.45]">
