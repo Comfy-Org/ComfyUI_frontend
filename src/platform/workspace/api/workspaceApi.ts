@@ -4,6 +4,7 @@ import type {
   BillingStatusResponse as GeneratedBillingStatusResponse,
   ChurnkeyAuthResponse
 } from '@comfyorg/ingest-types'
+export type { BillingEventsResponse } from '@comfyorg/ingest-types'
 import axios from 'axios'
 
 import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
@@ -149,7 +150,7 @@ export interface TeamCreditStops {
   stops: TeamCreditStop[]
 }
 
-interface BillingPlansResponse {
+export interface BillingPlansResponse {
   current_plan_slug?: string
   plans: Plan[]
   team_credit_stops?: TeamCreditStops
