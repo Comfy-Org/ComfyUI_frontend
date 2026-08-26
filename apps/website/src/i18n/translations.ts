@@ -2326,6 +2326,33 @@ const translations = {
       '无服务器 API 随流量自动扩缩。你可以设置对冷启动的容忍度，并选择所用的 GPU。'
   },
 
+  // Developers page – Built with SDK showcase
+  'developers.showcase.eyebrow': {
+    en: 'Built with SDK',
+    'zh-CN': '基于 SDK 构建'
+  },
+  'developers.showcase.slide1.title': {
+    en: 'See it running in a real store',
+    'zh-CN': '看看它在真实门店中的运行'
+  },
+  'developers.showcase.slide1.body': {
+    en: 'A creative technologist wired a Shopify catalog to a ComfyUI workflow. Product images and video generated per item, published straight back to the store. The workflow runs as an endpoint and the app calls it — a few hundred lines against the SDK.',
+    'zh-CN':
+      '一位创意技术专家把 Shopify 商品目录接到了 ComfyUI 工作流上：为每件商品生成产品图和视频，并直接回传到店铺。工作流作为端点运行，应用直接调用它——只用了几百行基于 SDK 的代码。'
+  },
+  'developers.showcase.slide1.mediaAlt': {
+    en: 'Screen recording of a Shopify catalog generating product media through a ComfyUI workflow',
+    'zh-CN': '屏幕录像：Shopify 商品目录通过 ComfyUI 工作流生成产品素材'
+  },
+  'developers.showcase.ctaPrimary': {
+    en: 'Try SDK',
+    'zh-CN': '试用 SDK'
+  },
+  'developers.showcase.ctaSecondary': {
+    en: 'Read the doc',
+    'zh-CN': '阅读文档'
+  },
+
   // Developers page – PricingSection
   'developers.pricing.title': {
     en: 'Pricing Plan',

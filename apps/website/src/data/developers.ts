@@ -109,3 +109,33 @@ export const productCards = [
   { key: 'sdk', href: developersCtas.sdkDocs },
   { key: 'router', href: developersCtas.platform }
 ] as const satisfies readonly { key: ProductCardKey; href: string }[]
+
+export type ShowcaseSlide = {
+  id: string
+  media: { type: 'image' | 'video'; src: string; poster?: string }
+  /** The clip's real duration, so the carousel advances as it ends. */
+  autoplayMs?: number
+}
+
+/**
+ * "Built with SDK" showcase. One slide until more case studies exist — the
+ * carousel hides its dots below two slides, so the design's four dots appear
+ * only once the content does.
+ *
+ * MISSING ASSET: both URLs 404 today. The clip has to be encoded to the site's
+ * web video profile, faststart (moov atom at the front), and uploaded to
+ * media.comfy.org before this section renders anything but an empty media box
+ * (developers-page issue 10).
+ */
+export const showcaseSlides: ShowcaseSlide[] = [
+  {
+    id: 'store',
+    media: {
+      type: 'video',
+      src: 'https://media.comfy.org/website/developers/store-demo.mp4',
+      poster:
+        'https://media.comfy.org/website/developers/store-demo-poster.webp'
+    },
+    autoplayMs: 30000
+  }
+]

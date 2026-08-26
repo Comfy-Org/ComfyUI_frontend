@@ -8,6 +8,7 @@ import PlaceholderSection from './PlaceholderSection.vue'
 import PricingSection from './PricingSection.vue'
 import ProblemSection from './ProblemSection.astro'
 import ProductCardsSection from './ProductCardsSection.astro'
+import ShowcaseSection from './ShowcaseSection.astro'
 import { t } from '../../i18n/translations'
 import { absoluteUrl } from '../../utils/jsonLd'
 
@@ -31,13 +32,10 @@ const { locale } = Astro.props
   <ProductCardsSection locale={locale} />
   <ProblemSection locale={locale} />
   <HowItWorksSection locale={locale} />
-  {/* Walking skeleton: each placeholder is replaced by its section ticket
-      (developers-page issues 07-09). */}
-  <PlaceholderSection
-    name="Built with SDK showcase"
-    block="FeaturedCarousel02 (dark panel)"
-  />
+  <ShowcaseSection locale={locale} />
   <BuildAnywhereSection locale={locale} />
+  {/* Walking skeleton: each placeholder is replaced by its section ticket
+      (developers-page issues 08-09). */}
   <PlaceholderSection name="Observe and manage" block="FeatureSplit01" />
   <PlaceholderSection name="Q&As" block="FAQSplit01" />
   <PricingSection locale={locale} client:load />
