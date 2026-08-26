@@ -30,7 +30,11 @@ import { app } from '@/scripts/app'
 import { DOMWidgetImpl } from '@/scripts/domWidget'
 import { renameWidget } from '@/utils/widgetUtil'
 import { useAppMode } from '@/composables/useAppMode'
-import { nodeTypeValidForApp, useAppModeStore } from '@/stores/appModeStore'
+import {
+  nodeInputValidForApp,
+  nodeTypeValidForApp,
+  useAppModeStore
+} from '@/stores/appModeStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
 type BoundStyle = { top: string; left: string; width: string; height: string }
@@ -122,9 +126,12 @@ function handleDown(e: MouseEvent) {
 }
 function handleClick(e: MouseEvent) {
   const [node, widget] = getHovered(e) ?? []
+  const inputName = node?.inputs?.find(
+    (input) => input.widgetId === widget?.widgetId
+  )?.name
   if (
     node?.mode !== LGraphEventMode.ALWAYS ||
-    !nodeTypeValidForApp(node.type) ||
+    !nodeInputValidForApp(node, inputName) ||
     node.has_errors
   )
     return canvasInteractions.forwardEventToCanvas(e)

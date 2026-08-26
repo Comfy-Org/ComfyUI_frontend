@@ -377,7 +377,7 @@ describe('appModeStore', () => {
       expect(store.selectedInputs).toEqual([[entityPrompt, 'prompt']])
     })
 
-    it('drops canonical entries whose widget no longer exists', () => {
+    it('keeps canonical entries for dynamic widgets while the node exists', () => {
       const node1 = nodeWithWidgets(1, ['prompt'])
       vi.mocked(app.rootGraph).nodes = [node1]
       vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
@@ -386,6 +386,25 @@ describe('appModeStore', () => {
 
       store.loadSelections({
         inputs: [[entitySteps, 'steps']]
+      })
+
+      expect(store.selectedInputs).toEqual([[entitySteps, 'steps']])
+    })
+
+    it('drops canonical entries owned by another graph', () => {
+      const node1 = nodeWithWidgets(1, ['seed'])
+      const otherGraphSeed = widgetId(
+        '22222222-2222-4222-8222-222222222222',
+        toNodeId(1),
+        'seed'
+      )
+      vi.mocked(app.rootGraph).nodes = [node1]
+      vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
+        id === toNodeId(1) ? node1 : null
+      )
+
+      store.loadSelections({
+        inputs: [[otherGraphSeed, 'seed']]
       })
 
       expect(store.selectedInputs).toEqual([])
@@ -1134,6 +1153,50 @@ describe('appModeStore', () => {
       expect(result.inputs).toEqual([
         [promotedEntityId, subgraphInputName, { height: 120 }]
       ])
+    })
+
+    it('drops promoted inputs sourced from a layout-only interior node', () => {
+      const subgraphInputName = 'Content'
+      const sourceWidgetName = 'content'
+      useNodeDefStore().updateNodeDefs([
+        ...Object.values(SYSTEM_NODE_DEFS),
+        createTestNodeDef('StickyNote', { layout_only: true })
+      ])
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: subgraphInputName, type: 'STRING' }]
+      })
+      const interior = new LGraphNodeClass('Layout-only')
+      interior.type = 'StickyNote'
+      const interiorInput = interior.addInput(subgraphInputName, 'STRING')
+      interior.addWidget('string', sourceWidgetName, '', () => undefined)
+      interiorInput.widget = { name: sourceWidgetName }
+      subgraph.add(interior)
+      subgraph.inputNode.slots[0].connect(interiorInput, interior)
+
+      const host = createTestSubgraphNode(subgraph, { id: 5 })
+      const rootGraph = host.graph as LGraph
+      rootGraph.add(host)
+      host._internalConfigureAfterSlots()
+      const promotedEntityId = widgetId(
+        rootGraph.id,
+        host.id,
+        subgraphInputName
+      )
+      vi.mocked(app.rootGraph).id = rootGraph.id
+      vi.mocked(app.rootGraph).nodes = rootGraph.nodes
+      vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
+        rootGraph.getNodeById(id)
+      )
+
+      expect(
+        store.pruneLinearData({
+          inputs: [
+            [promotedEntityId, subgraphInputName],
+            [host.id, subgraphInputName],
+            [interior.id, sourceWidgetName]
+          ]
+        }).inputs
+      ).toEqual([])
     })
 
     it('keeps a direct root-node widget when its id and name collide with a promoted source', () => {

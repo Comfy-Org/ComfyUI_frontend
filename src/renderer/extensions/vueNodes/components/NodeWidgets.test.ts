@@ -2,9 +2,10 @@
 /* eslint-disable testing-library/no-node-access */
 import { createTestingPinia } from '@pinia/testing'
 import { render } from '@testing-library/vue'
+import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
@@ -13,6 +14,8 @@ import type {
   SafeWidgetData,
   VueNodeData
 } from '@/composables/graph/useGraphNodeManager'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
@@ -20,10 +23,21 @@ import { widgetId } from '@/types/widgetId'
 
 const GRAPH_ID = 'graph-test'
 
+const appModeMocks = vi.hoisted(() => ({
+  liveNode: undefined as LGraphNode | undefined,
+  nodeInputValidForApp: vi.fn(() => true)
+}))
+
+vi.mock('@/stores/appModeStore', async (importOriginal) => ({
+  ...(await importOriginal()),
+  nodeInputValidForApp: appModeMocks.nodeInputValidForApp
+}))
+
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({
     canvas: {
       graph: {
+        getNodeById: () => appModeMocks.liveNode,
         rootGraph: {
           id: GRAPH_ID
         }
@@ -51,6 +65,11 @@ vi.mock(
 )
 
 describe('NodeWidgets', () => {
+  beforeEach(() => {
+    appModeMocks.liveNode = undefined
+    appModeMocks.nodeInputValidForApp.mockReturnValue(true)
+  })
+
   const createMockWidget = (
     overrides: Partial<SafeWidgetData> = {}
   ): SafeWidgetData => ({
@@ -337,7 +356,7 @@ describe('NodeWidgets', () => {
           AppInput: {
             props: ['widgetId', 'name', 'enable'],
             template:
-              '<div class="app-input-stub" :data-entity-id="widgetId"><slot /></div>'
+              '<div class="app-input-stub" :data-entity-id="widgetId" :data-enabled="String(enable)"><slot /></div>'
           }
         },
         mocks: {
@@ -351,5 +370,56 @@ describe('NodeWidgets', () => {
     )
 
     expect(ids).toStrictEqual([seedAEntityId, seedBEntityId])
+  })
+
+  it('disables selection when the promoted source is invalid for app mode', () => {
+    const promotedEntityId = widgetId(
+      GRAPH_ID,
+      toNodeId('test_node'),
+      'Content'
+    )
+    const nodeData = createMockNodeData('SubgraphNode', [
+      createMockWidget({
+        name: 'Content',
+        type: 'text',
+        widgetId: promotedEntityId
+      })
+    ])
+    appModeMocks.liveNode = fromAny<LGraphNode, unknown>({
+      id: nodeData.id,
+      inputs: [{ name: 'Content', widgetId: promotedEntityId }]
+    })
+    appModeMocks.nodeInputValidForApp.mockReturnValue(false)
+
+    const pinia = createTestingPinia({ stubActions: false })
+    setActivePinia(pinia)
+    useWorkflowStore().activeWorkflow = fromAny({
+      activeMode: 'builder:inputs'
+    })
+    const { container } = render(NodeWidgets, {
+      props: { nodeData },
+      global: {
+        plugins: [pinia],
+        stubs: {
+          InputSlot: true,
+          AppInput: {
+            props: ['widgetId', 'name', 'enable'],
+            template:
+              '<div class="app-input-stub" :data-enabled="String(enable)"><slot /></div>'
+          }
+        },
+        mocks: {
+          $t: (key: string) => key
+        }
+      }
+    })
+
+    expect(
+      container.querySelector('.app-input-stub')?.getAttribute('data-enabled')
+    ).toBe('false')
+    expect(appModeMocks.nodeInputValidForApp).toHaveBeenCalledWith(
+      appModeMocks.liveNode,
+      'Content'
+    )
   })
 })

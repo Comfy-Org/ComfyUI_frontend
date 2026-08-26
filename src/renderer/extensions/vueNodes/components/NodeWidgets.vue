@@ -56,7 +56,9 @@
         <AppInput
           :widget-id="widget.widgetId"
           :name="widget.name"
-          :enable="canSelectInputs && !widget.simplified.options?.disabled"
+          :enable="
+            canSelectInput(widget) && !widget.simplified.options?.disabled
+          "
         >
           <component
             :is="widget.vueComponent"
@@ -128,7 +130,7 @@ onErrorCaptured((error) => {
   return false
 })
 
-const { canSelectInputs, gridTemplateRows, nodeType, processedWidgets } =
+const { canSelectInput, gridTemplateRows, nodeType, processedWidgets } =
   useProcessedWidgets(() => nodeData)
 
 // Tracks widget-row growth that the node-level RO can't see

@@ -24,7 +24,10 @@ import {
   shouldExpand,
   shouldRenderAsVue
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
-import { nodeTypeValidForApp } from '@/stores/appModeStore'
+import {
+  nodeInputValidForApp,
+  nodeTypeValidForApp
+} from '@/stores/appModeStore'
 import {
   stripGraphPrefix,
   useWidgetValueStore
@@ -460,6 +463,19 @@ export function useProcessedWidgets(
     )
   })
 
+  const canSelectInput = (widget: ProcessedWidget): boolean => {
+    if (!canSelectInputs.value) return false
+    const nodeData = nodeDataGetter()
+    const node = nodeData
+      ? canvasStore.canvas?.graph?.getNodeById(nodeData.id)
+      : undefined
+    if (!node) return true
+    const inputName = node.inputs?.find(
+      (input) => input.widgetId === widget.widgetId
+    )?.name
+    return nodeInputValidForApp(node, inputName)
+  }
+
   const processedWidgets = computed((): ProcessedWidget[] =>
     computeProcessedWidgets({
       nodeData: nodeDataGetter(),
@@ -484,6 +500,7 @@ export function useProcessedWidgets(
   )
 
   return {
+    canSelectInput,
     canSelectInputs,
     gridTemplateRows,
     nodeType,

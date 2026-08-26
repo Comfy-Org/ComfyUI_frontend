@@ -4,6 +4,7 @@ import { useEventListener } from '@vueuse/core'
 
 import { useEmptyWorkflowDialog } from '@/components/builder/useEmptyWorkflowDialog'
 import { useAppMode } from '@/composables/useAppMode'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type {
   InputWidgetConfig,
@@ -17,7 +18,10 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { isLayoutOnlyNodeType } from '@/services/layoutOnlyNodeTypes'
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
-import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
+import {
+  resolveSubgraphInputSourceNode,
+  resolveSubgraphInputTarget
+} from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import {
   getWidgetIdForNode,
@@ -32,6 +36,17 @@ import type { ViewMode } from '@/utils/appMode'
 
 export function nodeTypeValidForApp(type: string) {
   return !isLayoutOnlyNodeType(type)
+}
+
+export function nodeInputValidForApp(
+  node: LGraphNode,
+  inputName?: string
+): boolean {
+  if (!nodeTypeValidForApp(node.type)) return false
+  if (!inputName || !node.isSubgraphNode()) return true
+
+  const sourceNode = resolveSubgraphInputSourceNode(node, inputName)
+  return !sourceNode || nodeTypeValidForApp(sourceNode.type)
 }
 
 export const useAppModeStore = defineStore('appMode', () => {
@@ -119,19 +134,26 @@ export const useAppModeStore = defineStore('appMode', () => {
     const [storedId, widgetName, config] = input
 
     if (typeof storedId === 'string' && isWidgetId(storedId)) {
-      const { nodeId } = parseWidgetId(storedId)
+      const { graphId, nodeId } = parseWidgetId(storedId)
+      if (graphId !== rootGraph.id) return null
       const node = rootGraph.getNodeById?.(nodeId)
-      if (!node || !nodeTypeValidForApp(node.type)) return null
-      const widget = node.widgets?.find(
-        (candidate) => getWidgetIdForNode(node, candidate) === storedId
-      )
-      if (!widget) return null
+      const inputName = node?.inputs?.find(
+        (input) => input.widgetId === storedId
+      )?.name
+      if (!node || !nodeInputValidForApp(node, inputName)) return null
       return buildEntry(storedId, widgetName, config)
     }
 
     if (typeof storedId === 'string' && storedId.includes(':')) {
       const [node, widget] = resolveNodeWidget(storedId, widgetName)
-      if (!node || !nodeTypeValidForApp(node.type) || !widget?.widgetId) {
+      const inputName = node?.inputs?.find(
+        (input) => input.widgetId === widget?.widgetId
+      )?.name
+      if (
+        !node ||
+        !nodeInputValidForApp(node, inputName) ||
+        !widget?.widgetId
+      ) {
         return null
       }
       return buildEntry(widget.widgetId, widgetName, config)
@@ -141,19 +163,29 @@ export const useAppModeStore = defineStore('appMode', () => {
     const directNode = directNodeId
       ? rootGraph.getNodeById?.(directNodeId)
       : null
-    if (directNode && !nodeTypeValidForApp(directNode.type)) return null
     const directWidget = directNode?.widgets?.find((w) => w.name === widgetName)
+    const directInputName = directNode?.inputs?.find(
+      (input) => input.widgetId === directWidget?.widgetId
+    )?.name
+    if (directNode && !nodeInputValidForApp(directNode, directInputName)) {
+      return null
+    }
     if (directNode && directWidget) {
       const derivedId = getWidgetIdForNode(directNode, directWidget)
       if (derivedId) return buildEntry(derivedId, widgetName, config)
     }
 
     const matches: LinearInput[] = rootGraph.nodes.flatMap((node) => {
-      if (!(node instanceof SubgraphNode) || !nodeTypeValidForApp(node.type)) {
+      if (!(node instanceof SubgraphNode)) {
         return []
       }
       return node.inputs.flatMap((inputSlot): LinearInput[] => {
-        if (!inputSlot.widgetId) return []
+        if (
+          !inputSlot.widgetId ||
+          !nodeInputValidForApp(node, inputSlot.name)
+        ) {
+          return []
+        }
         const target = resolveSubgraphInputTarget(node, inputSlot.name)
         if (
           target?.nodeId !== String(storedId) ||

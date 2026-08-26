@@ -33,3 +33,37 @@ export function resolveSubgraphInputTarget(
     }
   )
 }
+
+export function resolveSubgraphInputSourceNode(
+  node: LGraphNode,
+  inputName: string
+): LGraphNode | undefined {
+  if (!node.isSubgraphNode()) return undefined
+
+  const visitedInputs = new WeakMap<LGraphNode, Set<string>>()
+  let currentNode = node
+  let currentInputName = inputName
+
+  for (let depth = 0; depth < 100; depth++) {
+    const visited = visitedInputs.get(currentNode) ?? new Set<string>()
+    if (visited.has(currentInputName)) return undefined
+    visited.add(currentInputName)
+    visitedInputs.set(currentNode, visited)
+
+    const target = resolveSubgraphInputLink(
+      currentNode,
+      currentInputName,
+      ({ inputNode, targetInput }) => ({
+        inputName: targetInput.name,
+        node: inputNode
+      })
+    )
+    if (!target) return undefined
+    if (!target.node.isSubgraphNode()) return target.node
+
+    currentNode = target.node
+    currentInputName = target.inputName
+  }
+
+  return undefined
+}
