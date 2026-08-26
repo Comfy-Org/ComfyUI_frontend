@@ -10,7 +10,7 @@ test.describe('Performance measurement controls', { tag: ['@perf'] }, () => {
     await comfyPage.page.evaluate(
       () =>
         new Promise<void>((resolve) => {
-          let remaining = 10
+          let remaining = 30
           function tick() {
             remaining--
             if (remaining === 0) resolve()
@@ -26,9 +26,8 @@ test.describe('Performance measurement controls', { tag: ['@perf'] }, () => {
 
     expect(result.kind).toBe('accepted')
     expect(measurement.rafIntervalCount).toBeGreaterThanOrEqual(10)
-    expect(measurement.rafIntervalsMs).toHaveLength(
-      measurement.rafIntervalCount
-    )
+    expect(measurement.rafIntervalMaxMs).toBeGreaterThan(0)
+    expect(measurement.rafIntervalP50Ms).toBeGreaterThan(0)
   })
 
   test('records a blocked main-thread gap before stop', async ({
