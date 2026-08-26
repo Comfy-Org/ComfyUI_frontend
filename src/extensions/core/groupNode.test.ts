@@ -1,28 +1,46 @@
+import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
+import { getActivePinia, setActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 
 import { t } from '@/i18n'
 
 import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNode } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 
 import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 
 import type { GroupNodeWorkflowData } from './groupNode'
 
-const extensionHolder = vi.hoisted(() => ({
-  ext: undefined as ComfyExtension | undefined
+const extensionState = vi.hoisted(() => ({
+  ext: undefined as ComfyExtension | undefined,
+  configuringGraph: false,
+  rootGraph: {
+    extra: {} as Record<string, unknown>,
+    nodes: [] as { id: string | number }[]
+  }
 }))
 
 vi.mock('@/scripts/app', () => ({
   app: {
+    get configuringGraph() {
+      return extensionState.configuringGraph
+    },
+    rootGraph: extensionState.rootGraph,
     registerExtension: (ext: ComfyExtension) => {
-      extensionHolder.ext = ext
+      extensionState.ext = ext
     }
   }
 }))
 
-import { GroupNodeConfig, replaceLegacySeparators } from './groupNode'
+import {
+  GroupNodeConfig,
+  GroupNodeHandler,
+  replaceLegacySeparators
+} from './groupNode'
 
 function makeNode(type: string): ComfyNode {
   return {
@@ -143,10 +161,12 @@ describe('GroupNodeConfig.processInputSlots', () => {
 })
 
 describe('GroupNodeConfig.registerFromWorkflow', () => {
-  function groupWithMissingInnerNode(): Record<string, GroupNodeWorkflowData> {
+  function groupWithMissingInnerNodes(
+    types: string[] = ['NotInstalledNode']
+  ): Record<string, GroupNodeWorkflowData> {
     return fromPartial({
       MyGroup: {
-        nodes: [{ index: 0, type: 'NotInstalledNode' }],
+        nodes: types.map((type, index) => ({ index, type })),
         links: [],
         external: []
       }
@@ -157,7 +177,7 @@ describe('GroupNodeConfig.registerFromWorkflow', () => {
     const missing: MissingNodeType[] = []
 
     await GroupNodeConfig.registerFromWorkflow(
-      groupWithMissingInnerNode(),
+      groupWithMissingInnerNodes(),
       missing,
       new Map([['MyGroup', [7, 9]]])
     )
@@ -176,11 +196,35 @@ describe('GroupNodeConfig.registerFromWorkflow', () => {
     ])
   })
 
+  it('deduplicates repeated missing inner types in each report', async () => {
+    const missing: MissingNodeType[] = []
+
+    await GroupNodeConfig.registerFromWorkflow(
+      groupWithMissingInnerNodes([
+        'NotInstalledNode',
+        'AnotherMissingNode',
+        'NotInstalledNode'
+      ]),
+      missing,
+      new Map([['MyGroup', [7]]])
+    )
+
+    expect(missing).toStrictEqual([
+      expect.objectContaining({
+        type: 'workflow>MyGroup',
+        nodeId: '7',
+        hint: t('g.missingNodeTypesInGroup', {
+          types: 'NotInstalledNode, AnotherMissingNode'
+        })
+      })
+    ])
+  })
+
   it('emits nothing for a missing group with no canvas instances when the map is provided', async () => {
     const missing: MissingNodeType[] = []
 
     await GroupNodeConfig.registerFromWorkflow(
-      groupWithMissingInnerNode(),
+      groupWithMissingInnerNodes(),
       missing,
       new Map()
     )
@@ -192,7 +236,7 @@ describe('GroupNodeConfig.registerFromWorkflow', () => {
     const missing: MissingNodeType[] = []
 
     await GroupNodeConfig.registerFromWorkflow(
-      groupWithMissingInnerNode(),
+      groupWithMissingInnerNodes(),
       missing
     )
 
@@ -210,8 +254,8 @@ describe('GroupNodeConfig.registerFromWorkflow', () => {
 })
 
 describe('group node extension beforeConfigureGraph', () => {
-  it('wires canvas instance ids per group into registerFromWorkflow', async () => {
-    const ext = extensionHolder.ext
+  it('wires serialized instance positions per group into registerFromWorkflow', async () => {
+    const ext = extensionState.ext
     if (!ext?.beforeConfigureGraph) throw new Error('extension not registered')
     const spy = vi
       .spyOn(GroupNodeConfig, 'registerFromWorkflow')
@@ -240,10 +284,149 @@ describe('group node extension beforeConfigureGraph', () => {
       expect(spy).toHaveBeenCalledWith(
         groupNodes,
         [],
-        new Map([['MyGroup', [7, 9]]])
+        new Map([['MyGroup', [0, 1]]])
       )
     } finally {
       spy.mockRestore()
+    }
+  })
+
+  it('binds duplicate serialized ids to distinct configured graph ids', async () => {
+    const ext = extensionState.ext
+    if (!ext?.beforeConfigureGraph || !ext.afterConfigureGraph) {
+      throw new Error('extension not registered')
+    }
+    const groupNodes = {
+      MyGroup: fromPartial<GroupNodeWorkflowData>({
+        nodes: [{ index: 0, type: 'NotInstalledNode' }],
+        links: [],
+        external: []
+      })
+    }
+    const graphData = fromPartial<
+      Parameters<typeof ext.beforeConfigureGraph>[0]
+    >({
+      nodes: [
+        { id: 7, type: 'workflow>MyGroup' },
+        { id: 7, type: 'workflow>MyGroup' }
+      ],
+      extra: { groupNodes }
+    })
+    const missingNodeTypes: MissingNodeType[] = []
+    extensionState.rootGraph.nodes = [{ id: 7 }, { id: 8 }]
+
+    try {
+      await ext.beforeConfigureGraph(
+        graphData,
+        missingNodeTypes,
+        fromPartial({})
+      )
+      await ext.afterConfigureGraph(missingNodeTypes, fromPartial({}))
+
+      expect(missingNodeTypes).toStrictEqual([
+        expect.objectContaining({ nodeId: '7', type: 'workflow>MyGroup' }),
+        expect.objectContaining({ nodeId: '8', type: 'workflow>MyGroup' })
+      ])
+
+      const previousPinia = getActivePinia()
+      setActivePinia(createTestingPinia({ stubActions: false }))
+      try {
+        const store = useMissingNodesErrorStore()
+        store.setMissingNodeTypes(missingNodeTypes)
+        store.removeMissingNodesByNodeId('7')
+
+        expect(store.missingNodesError?.nodeTypes).toStrictEqual([
+          expect.objectContaining({ nodeId: '8', type: 'workflow>MyGroup' })
+        ])
+      } finally {
+        setActivePinia(previousPinia)
+      }
+    } finally {
+      extensionState.rootGraph.nodes = []
+    }
+  })
+
+  it('does not reinterpret reports appended by concurrent extensions', async () => {
+    const ext = extensionState.ext
+    if (!ext?.beforeConfigureGraph || !ext.afterConfigureGraph) {
+      throw new Error('extension not registered')
+    }
+    const missingNodeTypes: MissingNodeType[] = []
+    const unrelatedReport = { type: 'OtherMissingNode', nodeId: '99' }
+    const spy = vi
+      .spyOn(GroupNodeConfig, 'registerFromWorkflow')
+      .mockImplementation(async (_groupNodes, groupNodeReports) => {
+        groupNodeReports.push({
+          type: 'workflow>MyGroup',
+          nodeId: '0'
+        })
+        missingNodeTypes.push(unrelatedReport)
+      })
+    const graphData = fromPartial<
+      Parameters<typeof ext.beforeConfigureGraph>[0]
+    >({
+      nodes: [{ id: 7, type: 'workflow>MyGroup' }],
+      extra: {
+        groupNodes: {
+          MyGroup: fromPartial<GroupNodeWorkflowData>({
+            nodes: [{ index: 0, type: 'NotInstalledNode' }],
+            links: [],
+            external: []
+          })
+        }
+      }
+    })
+    extensionState.rootGraph.nodes = [{ id: 7 }]
+
+    try {
+      await ext.beforeConfigureGraph(
+        graphData,
+        missingNodeTypes,
+        fromPartial({})
+      )
+      await ext.afterConfigureGraph(missingNodeTypes, fromPartial({}))
+
+      expect(missingNodeTypes).toStrictEqual([
+        unrelatedReport,
+        expect.objectContaining({
+          type: 'workflow>MyGroup',
+          nodeId: '7'
+        })
+      ])
+    } finally {
+      extensionState.rootGraph.nodes = []
+      spy.mockRestore()
+    }
+  })
+
+  it('does not retain loading state after graph configuration fails', async () => {
+    const ext = extensionState.ext
+    if (!ext?.nodeCreated) throw new Error('extension not registered')
+    const convertToNodes = vi.fn(() => [])
+    const isGroupNode = vi
+      .spyOn(GroupNodeHandler, 'isGroupNode')
+      .mockReturnValue(true)
+    const getHandler = vi
+      .spyOn(GroupNodeHandler, 'getHandler')
+      .mockReturnValue(fromPartial({ convertToNodes }))
+    const graph = fromPartial<LGraph>({ convertToSubgraph: vi.fn() })
+    const failedLoadNode = new LGraphNode('Failed load')
+    const pastedNode = new LGraphNode('Pasted')
+    failedLoadNode.graph = graph
+    pastedNode.graph = graph
+
+    try {
+      extensionState.configuringGraph = true
+      ext.nodeCreated(failedLoadNode, fromPartial({}))
+      extensionState.configuringGraph = false
+      ext.nodeCreated(pastedNode, fromPartial({}))
+      await Promise.resolve()
+
+      expect(convertToNodes).toHaveBeenCalledOnce()
+    } finally {
+      extensionState.configuringGraph = false
+      isGroupNode.mockRestore()
+      getHandler.mockRestore()
     }
   })
 })
