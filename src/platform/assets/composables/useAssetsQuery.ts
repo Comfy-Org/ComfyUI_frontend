@@ -25,19 +25,17 @@ function assetsQueryInternal(
   const onError = options.onError ?? console.error
 
   let nextCursor: string | undefined
-  const seenCursors = new Set<string | undefined>()
+  let loadGeneration = 0
+  const seenCursors = new Set(
+    params.after === undefined ? [] : [params.after]
+  )
   const hasMore = ref(true)
   const items = ref<AssetItem[]>([])
 
   const { enqueue, preempt, running: isLoading } = usePreemptableQueue()
   async function doLoadMore(signal?: AbortSignal) {
-    if (!hasMore.value || seenCursors.has(nextCursor)) return
-    if (seenCursors.has(nextCursor)) {
-      hasMore.value = false
-      return
-    }
-    seenCursors.add(nextCursor)
-
+    if (!hasMore.value) return
+    const previousCursor = nextCursor
     const assetResponse = await doQuery(
       {
         after: nextCursor ?? params.after
@@ -45,13 +43,34 @@ function assetsQueryInternal(
       signal
     )
     if (!assetResponse) return
+
+    const knownIds = new Set(items.value.map(({ id }) => id))
+    const newItems = assetResponse.assets.filter(({ id }) => {
+      if (knownIds.has(id)) return false
+      knownIds.add(id)
+      return true
+    })
     nextCursor = assetResponse.next_cursor
-    hasMore.value = assetResponse.has_more
-    items.value.push(...assetResponse.assets)
+    hasMore.value =
+      assetResponse.has_more &&
+      nextCursor !== undefined &&
+      nextCursor !== previousCursor &&
+      !seenCursors.has(nextCursor)
+    if (nextCursor !== undefined) seenCursors.add(nextCursor)
+    items.value.push(...newItems)
+    loadGeneration++
   }
 
-  function loadMore() {
-    return enqueue('loadMore', doLoadMore)
+  async function loadMoreWithProgress() {
+    const startingGeneration = loadGeneration
+    await enqueue('loadMore', async (signal) => {
+      await doLoadMore(signal)
+    })
+    return loadGeneration > startingGeneration
+  }
+
+  async function loadMore() {
+    await loadMoreWithProgress()
   }
 
   function loadNew() {
@@ -103,6 +122,7 @@ function assetsQueryInternal(
       hasMore.value = true
       nextCursor = undefined
       seenCursors.clear()
+      if (params.after !== undefined) seenCursors.add(params.after)
       items.value = []
       await doLoadMore()
     })
@@ -138,7 +158,15 @@ function assetsQueryInternal(
   }
 
   void loadMore()
-  return { hasMore, invalidate, isLoading, items, loadMore, loadNew }
+  return {
+    hasMore,
+    invalidate,
+    isLoading,
+    items,
+    loadMore,
+    loadMoreWithProgress,
+    loadNew
+  }
 }
 
 export const { constructor: useAssetsQuery, invalidateAll } =
