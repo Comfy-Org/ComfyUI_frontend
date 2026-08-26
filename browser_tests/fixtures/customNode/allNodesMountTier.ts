@@ -59,6 +59,29 @@ const MOUNT_WIDGET_DUPLICATE_EXPECTATIONS: Record<
       restore:
         'remove this expectation when the pack stops creating the duplicate widgets'
     }
+  },
+  comfyui_layerstyle: {
+    'LayerMask: MaskByColor': {
+      counts: { color: 2 },
+      reason:
+        "the pinned pack's COLOR compatibility hook compares the native lowercase color type to uppercase COLOR and adds a second widget with the same name; Vue renders one row per unique widget identity",
+      restore:
+        'fix FE-1865, pin the corrected pack, and remove this expectation'
+    },
+    'LayerUtility: ColorPicker': {
+      counts: { color: 2 },
+      reason:
+        "the pinned pack's COLOR compatibility hook compares the native lowercase color type to uppercase COLOR and adds a second widget with the same name; Vue renders one row per unique widget identity",
+      restore:
+        'fix FE-1865, pin the corrected pack, and remove this expectation'
+    },
+    'LayerUtility: ExtendCanvas': {
+      counts: { color: 2 },
+      reason:
+        "the pinned pack's COLOR compatibility hook compares the native lowercase color type to uppercase COLOR and adds a second widget with the same name; Vue renders one row per unique widget identity",
+      restore:
+        'fix FE-1865, pin the corrected pack, and remove this expectation'
+    }
   }
 }
 

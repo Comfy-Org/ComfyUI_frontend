@@ -147,10 +147,6 @@ describe('consoleErrorLedger', () => {
         'Failed to load resource: 404 [http://localhost:8188/api/view?filename=_cn&type=input]'
       ],
       [
-        'ComfyUI_Fill-Nodes',
-        'Failed to load resource: 404 [https://api.comfy.org/comfy-nodes//node]'
-      ],
-      [
         'comfyui-impact-pack',
         'Failed to load resource: 404 [http://localhost:8188/beach.jpg]'
       ]
