@@ -400,7 +400,6 @@ jobs:
       - name: Comment on failures
         if: steps.filter-targets.outputs.skip != 'true' && failure() && steps.backport.outputs.failed
         env:
-          GH_TOKEN: ${{ github.token }}
           BACKPORT_AGENT_PROMPT_TEMPLATE: |
             Backport PR #${PR_NUMBER} (${PR_URL}) to ${target}.
             Cherry-pick merge commit ${MERGE_COMMIT} onto new branch
