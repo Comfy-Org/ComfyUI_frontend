@@ -10,6 +10,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import { LLink } from '@/lib/litegraph/src/LLink'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useLinkStore } from '@/stores/linkStore'
 import { toLinkId } from '@/types/linkId'
 import { createMockCanvas2DContext } from '@/utils/__tests__/litegraphTestUtils'
 
@@ -197,6 +198,40 @@ describe('drawConnections', () => {
     canvas.drawConnections(createMockCtx())
 
     expect([...canvas.renderedPaths]).toEqual([secondLink, firstLink])
+  })
+
+  it('looks up each input and preserves rendered link identity', () => {
+    const source = new LGraphNode('Source')
+    source.addOutput('out', 'INT')
+    graph.add(source)
+
+    const targets = Array.from({ length: 2 }, (_, index) => {
+      const target = new LGraphNode(`Target ${index}`)
+      target.addInput('connected', 'INT')
+      target.addInput('unconnected', 'INT')
+      graph.add(target)
+      return target
+    })
+    const expectedLinks = targets.map((target) =>
+      createTestLink(graph, source, 0, target, 0)
+    )
+    const inputLookup = vi.spyOn(useLinkStore(), 'getInputSlotLink')
+    const resolveLink = vi.spyOn(graph, 'getLink')
+    canvas.visible_area.set([0, 0, 800, 600])
+    vi.spyOn(canvas, 'renderLink').mockImplementation(() => {})
+
+    canvas.drawConnections(createMockCtx())
+
+    expect(inputLookup).toHaveBeenCalledTimes(4)
+    expect(resolveLink).toHaveBeenCalledTimes(2)
+    const renderedLinks = [...canvas.renderedPaths]
+    expect(renderedLinks).toHaveLength(expectedLinks.length)
+    for (const [index, expectedLink] of expectedLinks.entries()) {
+      expect(renderedLinks[index]).toBe(expectedLink)
+    }
+
+    const scopes = inputLookup.mock.calls.map(([scope]) => scope)
+    expect(new Set(scopes).size).toBe(4)
   })
 
   it.for([245, 500, 1_000])(
