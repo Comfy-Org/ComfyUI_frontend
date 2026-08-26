@@ -12,6 +12,7 @@ import { LayoutSource } from '@/renderer/core/layout/types'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { useAuthStore } from '@/stores/authStore'
 
 import type { DocFrameTransport, DocOp } from './docFrameClient'
 import { DocFrameClient } from './docFrameClient'
@@ -86,6 +87,15 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
   const client = new DocFrameClient(apiTransport)
   const bridge = new LayoutFollowerBridge(client)
   const tabId = crypto.randomUUID()
+  // Highest doc_update seq seen — used as base_version for human-minted ops.
+  // The ws path has no ceiling gate; this only feeds LWW stamps, so a slightly
+  // stale value is safe (ties break by [base_version, actor, op_id]).
+  let lastSeq = 0
+  // Post-ECS main removed the global layout source scope
+  // (`LayoutSource.External` / `layoutStore.setSource`), so remote batches
+  // apply directly. Echo suppression becomes load-bearing only when the
+  // human-op sender lands (KA-6: the follower itself never writes); it must
+  // then be rebuilt against per-mutation ECS command sources.
   const mutator = new LitegraphMutator({
     getGraph: () => app.graph ?? null,
     createNode: (type) => LiteGraph.createNode(type),
@@ -109,6 +119,8 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
   const onUpdate: EventListener = (event) => {
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
+    if (event instanceof CustomEvent && typeof event.detail?.seq === 'number')
+      lastSeq = Math.max(lastSeq, event.detail.seq)
     projector.project(bridge.follower.doc)
   }
   const onOpsResult: EventListener = (event) => {
@@ -180,6 +192,7 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     // failure-tolerant by construction now, but the try/finally makes the
     // "client.destroy() always runs" guarantee local and readable.
     try {
+      delete (window as unknown as Record<string, unknown>).__agentCrdtPoc
       api.removeEventListener('reconnected', onReconnected)
       api.removeEventListener('status', onSocketActivity)
       bridge.removeEventListener('doc_subscribed', onSubscribed)
@@ -192,6 +205,83 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
       client.destroy()
     }
   })
+
+  // ── PoC-only console helper (branch poc/fe-crdt-follower-e2e) ────────────
+  // Lets the e2e proof mint a REAL human add_node op from the devtools console
+  // / Playwright without waiting for the canvas-command adapter. Mints the
+  // exact envelope the doc-host validates: op_id 32-hex, actor
+  // `human:<firebase-uid>:<tab>` (server recomputes and rejects mismatches),
+  // base_version = last doc_update seq, stamp [base_version, actor], and the
+  // full save-format node payload (inserted verbatim by the host applier).
+  // The sender tab does NOT apply locally — the doc_update echo is the only
+  // application, so there is no double-apply on this path.
+  const mintOpId = (): string => {
+    const bytes = crypto.getRandomValues(new Uint8Array(16))
+    return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
+  }
+  const mintNodeId = (): number =>
+    2 ** 40 + Math.floor(Math.random() * (2 ** 52 - 2 ** 40))
+  const pocAddNode = (
+    classType: string,
+    pos: [number, number] = [100, 100],
+    nodeOverride?: Record<string, unknown>
+  ): DocOp => {
+    const userId = useAuthStore().userId ?? 'anonymous'
+    const actor = `human:${userId}:${tabId}`
+    const nodeId = mintNodeId()
+    let node: Record<string, unknown>
+    if (nodeOverride) {
+      node = { ...nodeOverride, id: nodeId, type: classType, pos }
+    } else {
+      let serialized: Record<string, unknown> | null = null
+      try {
+        const lgNode = LiteGraph.createNode(classType)
+        if (lgNode) {
+          lgNode.id = nodeId as unknown as typeof lgNode.id
+          lgNode.pos = [...pos]
+          serialized = lgNode.serialize() as unknown as Record<string, unknown>
+        }
+      } catch {
+        serialized = null
+      }
+      node = serialized
+        ? { ...serialized, id: nodeId, type: classType, pos }
+        : { id: nodeId, type: classType, pos, size: [270, 100] }
+    }
+    const baseVersion = lastSeq
+    const op: DocOp = {
+      op: 'add_node',
+      op_id: mintOpId(),
+      actor,
+      base_version: baseVersion,
+      stamp: [baseVersion, actor],
+      node_id: nodeId,
+      class_type: classType,
+      pos,
+      node
+    }
+    bridge.sendHumanOps(tabId, [op])
+    return op
+  }
+  const pocGlobal = window as unknown as Record<string, unknown>
+  pocGlobal.__agentCrdtPoc = {
+    addNode: pocAddNode,
+    sendOps: (ops: DocOp[]) => bridge.sendHumanOps(tabId, ops),
+    tabId,
+    get lastSeq() {
+      return lastSeq
+    },
+    get status() {
+      return {
+        enabled: true,
+        connected: connected.value,
+        workflowId: subscribedWorkflowId.value,
+        updatesApplied: updatesApplied.value,
+        lastFrameType: lastFrameType.value
+      }
+    }
+  }
+  // ──────────────────────────────────────────────────────────────────────────
 
   const status = computed<AgentCrdtStatus>(() => ({
     enabled: true,
