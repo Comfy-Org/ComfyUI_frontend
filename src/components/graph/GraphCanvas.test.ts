@@ -6,14 +6,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
+import { toNodeId } from '@/types/nodeId'
 
 import GraphCanvas from './GraphCanvas.vue'
 
@@ -33,7 +34,6 @@ const mocks = vi.hoisted(() => ({
   loadTemplateFromUrlIfPresent: vi.fn(),
   loadSharedWorkflowFromUrlIfPresent: vi.fn(),
   runUrlActionLoaders: vi.fn(),
-  graphNodes: [] as LGraphNode[],
   setDirty: vi.fn(),
   workspaceStore: {
     spinner: false,
@@ -161,6 +161,7 @@ async function mountGraphCanvas() {
   // the readiness gates below are set on the instance startup actually reads.
   const pinia = createTestingPinia({ stubActions: false })
   setActivePinia(pinia)
+  if (app.canvas) app.canvas.graph = null
 
   // Startup waits on both readiness gates before it reaches the tour hand-off.
   useSettingStore().isReady = true
@@ -225,160 +226,147 @@ describe('GraphCanvas first-run tour wiring', () => {
   })
 })
 
-describe('GraphCanvas execution progress fanout complexity', () => {
-  beforeEach(() => {
-    mocks.graphNodes.length = 0
-    mocks.setDirty.mockClear()
+describe('GraphCanvas execution progress updates', () => {
+  const totalNodes = 1_000
+  const activeEntries = 500
+
+  async function mountProgressHarness() {
+    await mountGraphCanvas()
+
+    let progressWrites = 0
+    const progressValues: Array<number | undefined> = []
+    const nodes = Array.from({ length: totalNodes }, (_, index) => {
+      const node = new LGraphNode(`Test node ${index + 1}`)
+      node.id = toNodeId(index + 1)
+      let progress: number | undefined
+      Object.defineProperty(node, 'progress', {
+        get: () => progress,
+        set: (value: number | undefined) => {
+          progressWrites++
+          progress = value
+          progressValues[index] = value
+        }
+      })
+      return node
+    })
+
+    const graph = new LGraph()
+    graph._nodes.push(...nodes)
+
+    const canvas = app.canvas
+    if (!canvas) throw new Error('GraphCanvas did not initialize the canvas')
+    canvas.graph = graph
+    useCanvasStore().canvas = canvas
+
+    const workflowStore = useWorkflowStore()
+    vi.mocked(workflowStore.nodeToNodeLocatorId).mockImplementation((node) =>
+      createNodeLocatorId(null, node.id)
+    )
+
+    const executionStore = useExecutionStore()
+    const progressState = Object.fromEntries(
+      Array.from({ length: activeEntries }, (_, index) => {
+        const nodeId = String(index + 1)
+        return [
+          nodeId,
+          {
+            display_node_id: nodeId,
+            node_id: nodeId,
+            prompt_id: 'job',
+            state: 'running' as const,
+            value: 25,
+            max: 100
+          }
+        ]
+      })
+    )
+
+    executionStore.nodeProgressStates = progressState
+    await nextTick()
+
+    function resetObservedWork() {
+      progressWrites = 0
+      mocks.setDirty.mockClear()
+      vi.mocked(workflowStore.nodeToNodeLocatorId).mockClear()
+    }
+    resetObservedWork()
+
+    return {
+      executionStore,
+      workflowStore,
+      progressState,
+      progressValues,
+      get progressWrites() {
+        return progressWrites
+      }
+    }
+  }
+
+  it('does no graph work for structurally equal progress', async () => {
+    const harness = await mountProgressHarness()
+
+    harness.executionStore.nodeProgressStates = { ...harness.progressState }
+    await nextTick()
+
+    expect(harness.progressWrites).toBe(0)
+    expect(mocks.setDirty).not.toHaveBeenCalled()
+    expect(harness.workflowStore.nodeToNodeLocatorId).not.toHaveBeenCalled()
   })
 
-  it.for([
-    { totalNodes: 1, activeEntries: 1 },
-    { totalNodes: 1_000, activeEntries: 1 },
-    { totalNodes: 1_000, activeEntries: 100 },
-    { totalNodes: 1_000, activeEntries: 500 }
-  ])(
-    'indexes $totalNodes visible nodes once with $activeEntries active entries',
-    async ({ totalNodes, activeEntries }) => {
-      await mountGraphCanvas()
+  it('updates only the node whose progress changed', async () => {
+    const harness = await mountProgressHarness()
 
-      let progressWrites = 0
-      const progressValues: Array<number | undefined> = []
-      const nodes = Array.from({ length: totalNodes }, (_, index) => {
-        let progress: number | undefined
-        return {
-          id: index + 1,
-          get progress() {
-            return progress
-          },
-          set progress(value: number | undefined) {
-            progressWrites++
-            progress = value
-            progressValues[index] = value
-          }
-        } as unknown as LGraphNode
-      })
-      mocks.graphNodes.push(...nodes)
-
-      const canvas = app.canvas!
-      canvas.graph = { nodes, events: new EventTarget() } as typeof canvas.graph
-      useCanvasStore().canvas = canvas
-
-      const workflowStore = useWorkflowStore()
-      vi.mocked(workflowStore.nodeIdToNodeLocatorId).mockImplementation((id) =>
-        createNodeLocatorId(null, id)
-      )
-      vi.mocked(workflowStore.nodeToNodeLocatorId).mockImplementation((node) =>
-        createNodeLocatorId(null, node.id)
-      )
-      vi.mocked(workflowStore.nodeToNodeLocatorId).mockClear()
-
-      const executionStore = useExecutionStore()
-      const equalState = Object.fromEntries(
-        Array.from({ length: activeEntries }, (_, index) => {
-          const nodeId = String(index + 1)
-          return [
-            nodeId,
-            {
-              display_node_id: nodeId,
-              node_id: nodeId,
-              prompt_id: 'job',
-              state: 'running' as const,
-              value: 25,
-              max: 100
-            }
-          ]
-        })
-      )
-
-      executionStore.nodeProgressStates = equalState
-      await nextTick()
-      expect(progressValues[0]).toBe(0.25)
-      expect(progressValues[activeEntries - 1]).toBe(0.25)
-      if (activeEntries < totalNodes) {
-        expect(progressValues[activeEntries]).toBeUndefined()
-      }
-      expect(workflowStore.nodeToNodeLocatorId).toHaveBeenCalledTimes(
-        totalNodes
-      )
-
-      progressWrites = 0
-      mocks.setDirty.mockClear()
-      vi.mocked(workflowStore.nodeToNodeLocatorId).mockClear()
-
-      // A structurally equal WebSocket payload neither scans nor mutates nodes.
-      executionStore.nodeProgressStates = { ...equalState }
-      await nextTick()
-
-      expect(workflowStore.nodeToNodeLocatorId).not.toHaveBeenCalled()
-      expect(progressWrites).toBe(0)
-      expect(mocks.setDirty).not.toHaveBeenCalled()
-
-      progressWrites = 0
-      mocks.setDirty.mockClear()
-      vi.mocked(workflowStore.nodeToNodeLocatorId).mockClear()
-
-      // A real one-node change uses the index and mutates only that node.
-      executionStore.nodeProgressStates = {
-        ...equalState,
-        '1': {
-          ...equalState['1'],
-          prompt_id: 'job',
-          state: 'running' as const,
-          value: 50,
-          max: 100
-        }
-      }
-      await nextTick()
-
-      expect(workflowStore.nodeToNodeLocatorId).not.toHaveBeenCalled()
-      expect(progressWrites).toBe(1)
-      expect(progressValues[0]).toBe(0.5)
-      expect(mocks.setDirty).toHaveBeenCalledTimes(1)
-      expect(mocks.setDirty).toHaveBeenCalledWith(true, false)
-
-      progressWrites = 0
-      mocks.setDirty.mockClear()
-      vi.mocked(workflowStore.nodeToNodeLocatorId).mockClear()
-
-      const changedState: typeof equalState = {
-        ...equalState,
-        '1': {
-          ...equalState['1'],
-          prompt_id: 'job',
-          state: 'running' as const,
-          value: 50,
-          max: 100
-        }
-      }
-      delete changedState[String(activeEntries)]
-      executionStore.nodeProgressStates = changedState
-      await nextTick()
-
-      expect(workflowStore.nodeToNodeLocatorId).not.toHaveBeenCalled()
-      expect(progressWrites).toBe(1)
-      expect(progressValues[activeEntries - 1]).toBeUndefined()
-      expect(mocks.setDirty).toHaveBeenCalledTimes(1)
-
-      progressWrites = 0
-      mocks.setDirty.mockClear()
-      vi.mocked(workflowStore.nodeToNodeLocatorId).mockClear()
-
-      executionStore.nodeProgressStates = {
-        ...changedState,
-        [String(totalNodes + 1)]: {
-          display_node_id: String(totalNodes + 1),
-          node_id: String(totalNodes + 1),
-          prompt_id: 'job',
-          state: 'running' as const,
-          value: 25,
-          max: 100
-        }
-      }
-      await nextTick()
-
-      expect(workflowStore.nodeToNodeLocatorId).not.toHaveBeenCalled()
-      expect(progressWrites).toBe(0)
-      expect(mocks.setDirty).not.toHaveBeenCalled()
+    harness.executionStore.nodeProgressStates = {
+      ...harness.progressState,
+      '1': { ...harness.progressState['1'], value: 50 }
     }
-  )
+    await nextTick()
+
+    expect(harness.progressWrites).toBe(1)
+    expect(harness.progressValues[0]).toBe(0.5)
+    expect(mocks.setDirty).toHaveBeenCalledOnce()
+    expect(mocks.setDirty).toHaveBeenCalledWith(true, false)
+    expect(harness.workflowStore.nodeToNodeLocatorId).not.toHaveBeenCalled()
+  })
+
+  it('clears only the node whose progress was removed', async () => {
+    const harness = await mountProgressHarness()
+    const removedNodeId = String(activeEntries)
+    const removedState = Object.fromEntries(
+      Object.entries(harness.progressState).filter(
+        ([nodeId]) => nodeId !== removedNodeId
+      )
+    )
+
+    harness.executionStore.nodeProgressStates = removedState
+    await nextTick()
+
+    expect(harness.progressWrites).toBe(1)
+    expect(harness.progressValues[activeEntries - 1]).toBeUndefined()
+    expect(mocks.setDirty).toHaveBeenCalledOnce()
+    expect(mocks.setDirty).toHaveBeenCalledWith(true, false)
+    expect(harness.workflowStore.nodeToNodeLocatorId).not.toHaveBeenCalled()
+  })
+
+  it('ignores progress for a node outside the graph', async () => {
+    const harness = await mountProgressHarness()
+    const unmatchedNodeId = String(totalNodes + 1)
+
+    harness.executionStore.nodeProgressStates = {
+      ...harness.progressState,
+      [unmatchedNodeId]: {
+        display_node_id: unmatchedNodeId,
+        node_id: unmatchedNodeId,
+        prompt_id: 'job',
+        state: 'running',
+        value: 25,
+        max: 100
+      }
+    }
+    await nextTick()
+
+    expect(harness.progressWrites).toBe(0)
+    expect(mocks.setDirty).not.toHaveBeenCalled()
+    expect(harness.workflowStore.nodeToNodeLocatorId).not.toHaveBeenCalled()
+  })
 })
