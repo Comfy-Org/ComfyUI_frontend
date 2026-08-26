@@ -4,10 +4,10 @@
 # skipped, the job goes red - a suite that let a broken pack through as a
 # "skip" would be pointless.
 #
-# Required gate: every pull request and merge-queue candidate runs its exact
-# declared pack population. Jobs have read-only permissions and neither
-# checkout persists a repository credential while third-party setup and
-# runtime code executes.
+# Required gate: every relevant PR and every merge-queue candidate runs the
+# exact pack population; every pull request still receives the aggregate.
+# Jobs have read-only permissions, and neither checkout persists credentials
+# while third-party setup and runtime code executes.
 #
 # The matrix keeps the six-pack Core depth suite intact and adds the pinned
 # Cloud snapshot as five breadth shards. The Cloud snapshot produces 87
@@ -20,7 +20,7 @@
 # Cloud snapshot declares - a commit for git-sourced packs, or a registry
 # version's CDN artifact - so no source surface moves underneath a run. Python
 # dependencies still resolve fresh, and the runner image updates independently.
-name: 'E2E Custom Nodes Test'
+name: 'CI: Tests Custom Nodes'
 
 on:
   pull_request:
@@ -69,10 +69,29 @@ env:
   COMFYUI_PIN: b08e6cf35fac50d3ca8470dffb3f9a1fbb7187d2
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      should-run: ${{ github.event_name == 'pull_request' && github.event.pull_request.changed_files >= 3000 || steps.changes.outputs.should-run }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Detect relevant changes
+        id: changes
+        uses: ./.github/actions/changes-filter
+
   # Each job is intentionally one worker: the auto-run tier needs exclusive
   # access to its backend's queue. Parallelism comes from the shard matrix
   # instead, and every job owns a separate backend.
   custom_nodes_e2e:
+    needs: changes
+    if: needs.changes.outputs.should-run == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -408,13 +427,29 @@ jobs:
   custom-nodes-e2e-status:
     name: E2E Custom Nodes Test
     if: always()
-    needs: custom_nodes_e2e
+    needs: [changes, custom_nodes_e2e]
     runs-on: ubuntu-latest
     steps:
       - name: Enforce suite result
         shell: bash
         env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          EVENT_NAME: ${{ github.event_name }}
+          SHOULD_RUN: ${{ needs.changes.outputs.should-run }}
           E2E_RESULT: ${{ needs.custom_nodes_e2e.result }}
         run: |
           set -euo pipefail
+          [ "$CHANGES_RESULT" = success ] || { echo "::error::change detection ended with $CHANGES_RESULT"; exit 1; }
+          case "$SHOULD_RUN" in
+            true) ;;
+            false)
+              [ "$EVENT_NAME" = pull_request ] || { echo "::error::change detection returned false for $EVENT_NAME"; exit 1; }
+              ;;
+            *) echo "::error::change detection returned invalid value '$SHOULD_RUN'"; exit 1 ;;
+          esac
+          if [ "$SHOULD_RUN" = false ]; then
+            [ "$E2E_RESULT" = skipped ] || { echo "::error::irrelevant-change matrix ended with $E2E_RESULT"; exit 1; }
+            echo 'custom-node matrix not applicable to this pull request'
+            exit 0
+          fi
           [ "$E2E_RESULT" = success ] || { echo "::error::custom-node matrix ended with $E2E_RESULT"; exit 1; }

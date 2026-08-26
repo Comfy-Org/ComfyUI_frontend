@@ -1,9 +1,10 @@
 # Registry corpus & ecosystem matrix
 
 A required PR and merge-queue gate that mirrors every registry pack (~5,100)
-and executes the
-frontend JS of the ~1,900 that ship any, against the commit under review, and
-reports a population verdict.
+and executes the frontend JS of the ~1,900 that ship any against relevant
+commits under review, then reports a population verdict. The aggregate check
+still appears on docs- and site-only pull requests after verifying that every
+expensive matrix dependency was skipped.
 
 **The corpus size and the executed count are different numbers, and the verdict
 is against the executed count.** Roughly 3,100 packs ship no extension-shaped JS
@@ -272,8 +273,9 @@ The required gate is red. In order:
 **Blast radius:** the workflow reports one aggregate check named
 `Custom Nodes Ecosystem Matrix test` for every pull request and merge-queue
 candidate. Branch protection should require that aggregate, not the internal
-legacy and Vue `matrix-verdict` jobs. A red, skipped, or cancelled dependency
-makes the aggregate red.
+legacy and Vue `matrix-verdict` jobs. On a relevant change, a red, skipped, or
+cancelled dependency makes the aggregate red. On an irrelevant pull request,
+the aggregate passes only after all expensive dependencies report skipped.
 
 ## Detection proof (counter-evidence)
 

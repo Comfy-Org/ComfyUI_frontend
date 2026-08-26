@@ -147,10 +147,7 @@ function vueMountProblems(
           problems.push(
             `${node.type}: Vue mounts ${domWidgets} of ${widgets.length} widgets`
           )
-        const slots =
-          (node.inputs ?? []).filter(
-            (input) => !(input as { widget?: unknown }).widget
-          ).length + (node.outputs ?? []).length
+        const slots = (node.inputs ?? []).length + (node.outputs ?? []).length
         const domSlots = root.querySelectorAll(
           '[data-testid="slot-connection-dot"]'
         ).length

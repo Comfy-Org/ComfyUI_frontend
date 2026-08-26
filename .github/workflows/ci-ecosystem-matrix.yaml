@@ -1,5 +1,5 @@
-# Required gate: execute every registry pack's frontend JS against this
-# commit's frontend runtime in both supported renderers.
+# Required gate: on relevant PRs and every merge candidate, execute every
+# registry pack's frontend JS in both supported renderers.
 #
 # The corpus is a mirror of the frontend JS of EVERY registry pack (~5,100
 # packs). Only the executable surface is kept - .js/.mjs plus the text assets
@@ -22,7 +22,7 @@
 # Provenance: scripts/registry-census/ is vendored from
 # Comfy-Org/ComfyUI_ECS_Compat_Check (private, migration-phase instrument
 # slated for archival) - see scripts/registry-census/README.md.
-name: 'Custom Nodes Ecosystem Matrix test'
+name: 'CI: Custom Nodes Ecosystem Matrix'
 
 on:
   # Required workflows must emit their aggregate check for every candidate.
@@ -30,7 +30,7 @@ on:
   # forever for a check GitHub never creates.
   pull_request:
   merge_group:
-  # Refreshes the corpus and writes the baseline every PR is measured against.
+  # Refreshes the corpus and writes the baseline every relevant PR measures.
   # Actions cache scoping means only a default-branch run can produce an entry
   # that other branches restore.
   push:
@@ -57,12 +57,30 @@ env:
   CORPUS_CACHE_PREFIX: registry-corpus-v6-
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      should-run: ${{ github.event_name == 'pull_request' && github.event.pull_request.changed_files >= 3000 || steps.changes.outputs.should-run }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Detect relevant changes
+        id: changes
+        uses: ./.github/actions/changes-filter
+
   # First job in the run, and deliberately dependency-free so its annotation
   # and step summary land at the top. Stale pins are the one failure mode this
   # instrument cannot detect from the inside: everything stays green while the
   # ecosystem it claims to measure moves on without it.
   pin-status:
-    if: github.repository == 'Comfy-Org/ComfyUI_frontend'
+    needs: changes
+    if: needs.changes.outputs.should-run == 'true' && github.repository == 'Comfy-Org/ComfyUI_frontend'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -80,7 +98,8 @@ jobs:
         run: python3 scripts/registry-census/pins.py
 
   corpus:
-    if: github.repository == 'Comfy-Org/ComfyUI_frontend'
+    needs: changes
+    if: needs.changes.outputs.should-run == 'true' && github.repository == 'Comfy-Org/ComfyUI_frontend'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     # contents: read only. The fetch step below holds a token (for the
@@ -353,13 +372,14 @@ jobs:
   # baseline the next run is measured against.
   matrix-verdict:
     name: matrix-verdict (${{ matrix.renderer }})
-    needs: [corpus, ecosystem-matrix]
+    needs: [changes, corpus, ecosystem-matrix]
     # A single failed shard must degrade to a withheld verdict over the rows
     # that exist, not to a skipped check that reads as nothing happened. Not
     # always(): a cancelled run would find no rows, exit 2, and manufacture a
     # red out of someone pressing the stop button.
     if: |
       !cancelled()
+      && needs.changes.outputs.should-run == 'true'
       && github.repository == 'Comfy-Org/ComfyUI_frontend'
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -458,11 +478,12 @@ jobs:
   # (verify_detection.py). A green matrix is only meaningful while this stays
   # green: a runner or frontend change that blinds a channel reds THIS job
   # instead of silently hollowing out the check. No corpus/cache dependency -
-  # the poison fixture is checked in, so this runs for every candidate even
-  # when the corpus is cold.
+  # the poison fixture is checked in, so this runs for every relevant
+  # candidate even when the corpus is cold.
   matrix-detection-proof:
     name: matrix-detection-proof (${{ matrix.renderer }})
-    if: github.repository == 'Comfy-Org/ComfyUI_frontend'
+    needs: changes
+    if: needs.changes.outputs.should-run == 'true' && github.repository == 'Comfy-Org/ComfyUI_frontend'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
@@ -526,6 +547,7 @@ jobs:
     name: Custom Nodes Ecosystem Matrix test
     if: always()
     needs:
+      - changes
       - pin-status
       - corpus
       - ecosystem-matrix
@@ -537,6 +559,9 @@ jobs:
       - name: Enforce complete matrix result
         shell: bash
         env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          EVENT_NAME: ${{ github.event_name }}
+          SHOULD_RUN: ${{ needs.changes.outputs.should-run }}
           PIN_STATUS_RESULT: ${{ needs.pin-status.result }}
           CORPUS_RESULT: ${{ needs.corpus.result }}
           SHARDS_RESULT: ${{ needs.ecosystem-matrix.result }}
@@ -544,6 +569,21 @@ jobs:
           PROOFS_RESULT: ${{ needs.matrix-detection-proof.result }}
         run: |
           set -euo pipefail
+          [ "$CHANGES_RESULT" = success ] || { echo "::error::change detection ended with $CHANGES_RESULT"; exit 1; }
+          case "$SHOULD_RUN" in
+            true) ;;
+            false)
+              [ "$EVENT_NAME" = pull_request ] || { echo "::error::change detection returned false for $EVENT_NAME"; exit 1; }
+              ;;
+            *) echo "::error::change detection returned invalid value '$SHOULD_RUN'"; exit 1 ;;
+          esac
+          if [ "$SHOULD_RUN" = false ]; then
+            for result in "$PIN_STATUS_RESULT" "$CORPUS_RESULT" "$SHARDS_RESULT" "$VERDICTS_RESULT" "$PROOFS_RESULT"; do
+              [ "$result" = skipped ] || { echo "::error::irrelevant-change dependency ended with $result"; exit 1; }
+            done
+            echo 'ecosystem matrix not applicable to this pull request'
+            exit 0
+          fi
           failures=()
           for check in \
             "pin-status:$PIN_STATUS_RESULT" \
