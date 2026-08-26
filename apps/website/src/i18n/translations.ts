@@ -2217,6 +2217,35 @@ const translations = {
     'zh-CN': '立即试用'
   },
 
+  // Developers page – The problem this solves
+  'developers.problem.title': {
+    en: 'The problem this solves',
+    'zh-CN': '这解决了什么问题'
+  },
+  'developers.problem.lead': {
+    en: 'Custom nodes installed in the right order. Checkpoints in the right folders. Python dependencies that only work on one machine. A box someone keeps warm.',
+    'zh-CN':
+      '自定义节点要按正确顺序安装，检查点要放在正确的目录，Python 依赖只在某一台机器上跑得通，还得有人一直让那台机器开着。'
+  },
+  'developers.problem.today.label': {
+    en: 'Today',
+    'zh-CN': '现状'
+  },
+  'developers.problem.today.body': {
+    en: 'A workflow that runs on one workstation. Custom nodes installed by hand, checkpoints in folders someone remembers, Python dependencies that break when anything moves. To run it anywhere else, you rebuild it — and to keep it available, someone keeps a box warm.',
+    'zh-CN':
+      '工作流只能在一台工作站上跑：自定义节点靠手工安装，检查点放在某个人记得的目录里，Python 依赖只要有任何变动就会失效。想换个地方运行，就得重新搭一遍；想让它随时可用，就得有人一直让机器开着。'
+  },
+  'developers.problem.platform.label': {
+    en: 'With the platform',
+    'zh-CN': '使用开发者平台'
+  },
+  'developers.problem.platform.body': {
+    en: 'The same build, deployed. Nodes, models, and dependencies resolved once and carried with it. Run it locally, on a server, or as a serverless endpoint that scales with traffic and drops to zero when nothing is running.',
+    'zh-CN':
+      '同一套构建，直接部署。节点、模型和依赖只解析一次，并随构建一起带走。可以在本地、服务器上运行，也可以作为无服务器端点运行——随流量伸缩，闲时降到零。'
+  },
+
   // Developers page – PricingSection
   'developers.pricing.title': {
     en: 'Pricing Plan',
