@@ -178,6 +178,20 @@ const historyRow = (
   content: { text }
 })
 
+function admissionError(
+  reason: 'no_funds' | 'manual_block' | 'funds_unavailable',
+  message: string
+): AgentApiError {
+  const serviceUnavailable = reason === 'funds_unavailable'
+  return new AgentApiError(message, serviceUnavailable ? 503 : 402, {
+    error: {
+      message,
+      type: serviceUnavailable ? 'SERVICE_UNAVAILABLE' : 'PAYMENT_REQUIRED',
+      reason
+    }
+  })
+}
+
 describe('useAgentSession (v1 composition root)', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -501,6 +515,113 @@ describe('useAgentSession (v1 composition root)', () => {
         (part) => part.type === 'runApproval'
       )
     ).toBe(true)
+  })
+
+  it('renders no_funds as the paywall reply while keeping the rejected prompt', async () => {
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockRejectedValue(
+        admissionError(
+          'no_funds',
+          "You're out of credits. Add credits to keep running the agent."
+        )
+      )
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    expect(await session.sendMessage('make a cat')).toBe(false)
+    expect(session.entries.value).toMatchObject([
+      { role: 'user', text: 'make a cat' },
+      {
+        role: 'assistant',
+        streaming: false,
+        parts: [{ type: 'paywall' }]
+      }
+    ])
+    expect(session.threadId.value).toBeNull()
+    expect(session.isStreaming.value).toBe(false)
+  })
+
+  it('renders manual_block as its contact-support error instead of a paywall', async () => {
+    const message =
+      'This workspace is blocked. Contact support to restore access.'
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockRejectedValue(admissionError('manual_block', message))
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    expect(await session.sendMessage('make a cat')).toBe(false)
+    const assistant = session.entries.value.at(-1)
+    expect(assistant).toMatchObject({
+      role: 'assistant',
+      parts: [{ type: 'notice', level: 'error', text: message }]
+    })
+  })
+
+  it('does not retry funds_unavailable as a draft-upload failure', async () => {
+    const message = 'Billing status is temporarily unavailable; please retry.'
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockRejectedValue(admissionError('funds_unavailable', message))
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source,
+      workflow: {
+        current: () => undefined,
+        adopted: () => {},
+        snapshot: () => ({ content: { nodes: [] }, version: 1 })
+      }
+    })
+    session.start()
+
+    expect(await session.sendMessage('make a cat')).toBe(false)
+    expect(postMessage).toHaveBeenCalledOnce()
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [{ type: 'notice', level: 'error', text: message }]
+    })
+  })
+
+  it('does not infer no_funds from a 402 without an admission reason', async () => {
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockRejectedValue(
+        new AgentApiError('payment required', 402, {
+          error: { message: 'payment required', type: 'PAYMENT_REQUIRED' }
+        })
+      )
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    await session.sendMessage('make a cat')
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [
+        {
+          type: 'notice',
+          level: 'error',
+          text: 'Message failed to send: payment required'
+        }
+      ]
+    })
   })
 
   it('(d) stopTurn cancels the active turn; a 409 is swallowed and the socket settles it', async () => {

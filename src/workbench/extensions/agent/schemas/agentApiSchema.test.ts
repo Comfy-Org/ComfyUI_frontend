@@ -193,6 +193,30 @@ describe('agentApiSchema contract subtleties', () => {
     ).toBe(false)
   })
 
+  it.for([
+    ['no_funds', 'PAYMENT_REQUIRED'],
+    ['manual_block', 'PAYMENT_REQUIRED'],
+    ['funds_unavailable', 'SERVICE_UNAVAILABLE']
+  ] as const)('accepts the Agent admission reason %s', ([reason, type]) => {
+    expect(
+      zAgentError.safeParse({
+        error: { message: 'actionable message', type, reason }
+      }).success
+    ).toBe(true)
+  })
+
+  it('rejects an unknown Agent admission reason', () => {
+    expect(
+      zAgentError.safeParse({
+        error: {
+          message: 'unknown denial',
+          type: 'PAYMENT_REQUIRED',
+          reason: 'subscription_inactive'
+        }
+      }).success
+    ).toBe(false)
+  })
+
   it('exposes the Agent event types, including the ask lifecycle', () => {
     expect([...AGENT_WS_EVENT_TYPES].sort()).toEqual(
       [
