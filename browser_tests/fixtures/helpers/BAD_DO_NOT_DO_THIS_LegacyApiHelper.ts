@@ -138,6 +138,78 @@ export class BAD_DO_NOT_DO_THIS_LegacyApiHelper {
     )
   }
 
+  replaceAndTrimInputsLikePromptChain(nodeType: string) {
+    return this.page.evaluate((nodeType) => {
+      const graph = window.app!.graph
+      const node = graph.nodes.find((node) => node.type === nodeType)
+      if (!node) throw new Error(`${nodeType} not found`)
+
+      const originalLinks = node.inputs.map((input) => input.link)
+      for (const [index, input] of node.inputs.entries()) {
+        input.name = `inputs.in_${index}`
+      }
+      const lastInput = node.inputs.at(-1)
+      if (!lastInput) throw new Error(`${nodeType} has no inputs`)
+      node.inputs.push({
+        ...lastInput,
+        name: `inputs.in_${node.inputs.length}`,
+        link: null
+      })
+
+      for (const [index, input] of node.inputs.entries()) {
+        input.label = input.link == null ? 'in' : 'PromptChain'
+        node.inputs[index] = { ...input }
+      }
+
+      const autogrowInputs = node.inputs.filter((input) =>
+        input.name.startsWith('inputs.in_')
+      )
+      const lastConnected = autogrowInputs.findLastIndex(
+        (input) => input.link != null
+      )
+      const keepCount = Math.max(1, lastConnected + 2)
+      for (const input of autogrowInputs.slice(keepCount)) {
+        const index = node.inputs.indexOf(input)
+        if (index !== -1) node.inputs.splice(index, 1)
+      }
+
+      return {
+        inputCount: node.inputs.length,
+        preservedLinks: originalLinks.filter(
+          (link, index) =>
+            link != null &&
+            node.inputs[index]?.link === link &&
+            graph.links.has(link)
+        ).length
+      }
+    }, nodeType)
+  }
+
+  replaceInputsWithMappedCopiesLikeGjjVideoCombine(nodeType: string) {
+    return this.page.evaluate((nodeType) => {
+      const graph = window.app!.graph
+      const node = graph.nodes.find((node) => node.type === nodeType)
+      if (!node) throw new Error(`${nodeType} not found`)
+
+      const originalLinks = node.inputs.map((input) => input.link)
+      const originalInputCount = node.inputs.length
+      node.inputs = node.inputs.map((input, index) => ({
+        ...input,
+        slot_index: index
+      }))
+
+      return {
+        inputCountPreserved: node.inputs.length === originalInputCount,
+        preservedLinks: originalLinks.filter(
+          (link, index) =>
+            link != null &&
+            node.inputs[index]?.link === link &&
+            graph.links.has(link)
+        ).length
+      }
+    }, nodeType)
+  }
+
   moveFirstNodeByMutatingPositionX(nodeId: NodeId, offset: number) {
     return this.page.evaluate(
       ([nodeId, offset]) => {
