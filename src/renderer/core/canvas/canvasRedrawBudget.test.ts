@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
 
 import {
@@ -74,9 +74,11 @@ function addWidgetInputNode(graph: LGraph, x: number, y: number): LGraphNode {
 describe('canvas redraw budget while progress events stream in', () => {
   let graph: LGraph
   let canvas: LGraphCanvas
+  let previousVueNodesMode: boolean
 
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
+    previousVueNodesMode = LiteGraph.vueNodesMode
     LiteGraph.vueNodesMode = false
 
     const canvasElement = document.createElement('canvas')
@@ -105,6 +107,10 @@ describe('canvas redraw budget while progress events stream in', () => {
     useCanvasStore().canvas = canvas
   })
 
+  afterEach(() => {
+    LiteGraph.vueNodesMode = previousVueNodesMode
+  })
+
   it('draws the foreground once per progress event and never the background', async () => {
     const scope = effectScope()
     scope.run(() => useLitegraphSettings())
@@ -114,7 +120,10 @@ describe('canvas redraw budget while progress events stream in', () => {
     const foreground = vi.spyOn(canvas, 'drawFrontCanvas')
     const background = vi.spyOn(canvas, 'drawBackCanvas')
 
+    const nodes = graph.nodes
     for (let i = 0; i < PROGRESS_EVENTS; i++) {
+      const executingNode = nodes[i % nodes.length]
+      executingNode.progress = (i % 10) / 10
       canvas.setDirty(true)
       canvas.draw()
       await nextTick()
