@@ -5,11 +5,11 @@
         class="relative h-2 w-full overflow-hidden rounded-full border border-interface-stroke bg-interface-panel-surface"
       >
         <div
-          class="absolute inset-0 h-full rounded-full transition-[width]"
+          class="absolute inset-0 h-full origin-left rounded-full will-change-transform motion-safe:transition-transform"
           :style="totalProgressStyle"
         />
         <div
-          class="absolute inset-0 h-full rounded-full transition-[width]"
+          class="absolute inset-0 h-full origin-left rounded-full will-change-transform motion-safe:transition-transform"
           :style="currentNodeProgressStyle"
         />
       </div>

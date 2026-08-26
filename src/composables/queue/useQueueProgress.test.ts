@@ -134,11 +134,11 @@ describe('useQueueProgress', () => {
     const { composable } = mountUseQueueProgress()
 
     expect(composable.totalProgressStyle.value).toEqual({
-      width: '10%',
+      transform: 'scaleX(0.1)',
       background: 'var(--color-interface-panel-job-progress-primary)'
     })
     expect(composable.currentNodeProgressStyle.value).toEqual({
-      width: '25%',
+      transform: 'scaleX(0.25)',
       background: 'var(--color-interface-panel-job-progress-secondary)'
     })
 
@@ -146,7 +146,27 @@ describe('useQueueProgress', () => {
     setExecutingNodeProgress(0.02)
     await nextTick()
 
-    expect(composable.totalProgressStyle.value.width).toBe('76%')
-    expect(composable.currentNodeProgressStyle.value.width).toBe('2%')
+    expect(composable.totalProgressStyle.value.transform).toBe('scaleX(0.76)')
+    expect(composable.currentNodeProgressStyle.value.transform).toBe(
+      'scaleX(0.02)'
+    )
+  })
+
+  it('maps progress endpoints exactly to hidden and full-width transforms', async () => {
+    const { composable } = mountUseQueueProgress()
+
+    expect(composable.totalProgressStyle.value.transform).toBe('scaleX(0)')
+    expect(composable.currentNodeProgressStyle.value.transform).toBe(
+      'scaleX(0)'
+    )
+
+    setExecutionProgress(1)
+    setExecutingNodeProgress(1)
+    await nextTick()
+
+    expect(composable.totalProgressStyle.value.transform).toBe('scaleX(1)')
+    expect(composable.currentNodeProgressStyle.value.transform).toBe(
+      'scaleX(1)'
+    )
   })
 })
