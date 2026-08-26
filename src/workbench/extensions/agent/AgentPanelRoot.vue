@@ -57,6 +57,7 @@ import { isLGraphNode } from '@/utils/litegraphUtil'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
+import { useBillingPolicyCapabilities } from '@/platform/cloud/subscription/composables/useBillingPolicyCapabilities'
 import { hasEligibleSubscriptionUpgrade } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
@@ -109,6 +110,7 @@ const { t } = useI18n()
 const toast = useToastStore()
 const { open: openAccountPrecondition } = useAccountPreconditionDialog()
 const { permissions } = useWorkspaceUI()
+const { billingPolicyCapabilities } = useBillingPolicyCapabilities()
 const { tier, plans, teamCreditStops, currentTeamCreditStop } =
   useBillingContext()
 const hasEligibleUpgrade = computed(() =>
@@ -119,7 +121,11 @@ const hasEligibleUpgrade = computed(() =>
     currentTeamCreditStop: currentTeamCreditStop.value
   })
 )
-const showPaywallAddCredits = computed(() => permissions.value.canTopUp)
+const showPaywallAddCredits = computed(
+  () =>
+    permissions.value.canTopUp &&
+    billingPolicyCapabilities.value.topUpAccess === 'allowed'
+)
 const showPaywallUpgrade = computed(
   () => permissions.value.canManageSubscription && hasEligibleUpgrade.value
 )
