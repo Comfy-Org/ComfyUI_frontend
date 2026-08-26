@@ -137,13 +137,9 @@ export function useSubscriptionCheckout(
     subscription
   } = useBillingContext()
   const { shouldUseWorkspaceBilling } = useBillingRouting()
-  const {
-    canSubscribeSelfServe,
-    canReactivate,
-    canChangeSeats,
-    canDowngradeToPersonal
-  } = useBillingCapabilities()
-  const { permissions } = useWorkspaceUI()
+  const { canSubscribeSelfServe, canChangeSeats, canDowngradeToPersonal } =
+    useBillingCapabilities()
+  const { permissions, canReactivatePlan } = useWorkspaceUI()
   const telemetry = useTelemetry()
   const billingOperationStore = useBillingOperationStore()
   const workspaceStore = useTeamWorkspaceStore()
@@ -1459,12 +1455,7 @@ export function useSubscriptionCheckout(
   }
 
   async function handleResubscribe() {
-    if (
-      !(isCloud
-        ? canReactivate.value
-        : permissions.value.canManageSubscriptionLifecycle)
-    )
-      return
+    if (!canReactivatePlan.value) return
 
     const source = 'pricing_dialog' as const
 

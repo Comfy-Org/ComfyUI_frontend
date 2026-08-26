@@ -29,6 +29,10 @@ const mockCurrentTeamCreditStop = ref<MockTeamStop | null>(null)
 const mockIsTeamPlan = ref(false)
 const mockCanManageSubscription = ref(true)
 const mockCanDowngradeToPersonal = ref(true)
+const mockCanReactivatePlan = ref(true)
+// the raw server capability, kept separate so a test can prove the component
+// follows the derived policy rather than this value
+const mockRawCanReactivate = ref(true)
 const mockPermissions = ref({
   canManageSubscription: true,
   canManageSubscriptionLifecycle: true,
@@ -53,7 +57,7 @@ vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
 vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
   useBillingCapabilities: () => ({
     canSubscribeSelfServe: computed(() => mockCanManageSubscription.value),
-    canReactivate: computed(() => mockCanManageSubscription.value),
+    canReactivate: computed(() => mockRawCanReactivate.value),
     canChangeSeats: computed(() => mockCanManageSubscription.value),
     canDowngradeToPersonal: computed(() => mockCanDowngradeToPersonal.value)
   })
@@ -61,7 +65,8 @@ vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
 
 vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   useWorkspaceUI: () => ({
-    permissions: computed(() => mockPermissions.value)
+    permissions: computed(() => mockPermissions.value),
+    canReactivatePlan: computed(() => mockCanReactivatePlan.value)
   })
 }))
 
@@ -93,6 +98,8 @@ function renderComponent(props: Record<string, unknown> = {}) {
 
 describe('UnifiedPricingTable plan CTA labels', () => {
   beforeEach(() => {
+    mockCanReactivatePlan.value = true
+    mockRawCanReactivate.value = true
     mockSubscription.value = null
     mockSubscriptionStatus.value = null
     mockCurrentPlanSlug.value = null
@@ -222,6 +229,8 @@ describe('UnifiedPricingTable team plan CTA', () => {
   }
 
   beforeEach(() => {
+    mockCanReactivatePlan.value = true
+    mockRawCanReactivate.value = true
     mockSubscription.value = null
     mockSubscriptionStatus.value = null
     mockCurrentPlanSlug.value = null
@@ -309,6 +318,20 @@ describe('UnifiedPricingTable team plan CTA', () => {
     expect(emitted().resubscribe).toBeTruthy()
   })
 
+  it('disables Resubscribe when the workspace may not reactivate', () => {
+    mockSubscription.value = {
+      tier: 'TEAM',
+      duration: 'ANNUAL',
+      isCancelled: true
+    }
+    mockCurrentTeamCreditStop.value = TEAM_STOP
+    mockCanReactivatePlan.value = false
+
+    renderComponent({ initialPlanMode: 'team' })
+
+    expect(screen.getByRole('button', { name: 'Resubscribe' })).toBeDisabled()
+  })
+
   it('lets a cancelled sub change to a different stop (not re-subscribe)', async () => {
     const user = userEvent.setup()
     mockSubscription.value = {
@@ -368,6 +391,8 @@ describe('UnifiedPricingTable outside Cloud', () => {
   }
 
   beforeEach(() => {
+    mockCanReactivatePlan.value = true
+    mockRawCanReactivate.value = true
     mockSubscription.value = null
     mockSubscriptionStatus.value = null
     mockCurrentPlanSlug.value = null
