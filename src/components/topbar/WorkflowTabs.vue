@@ -165,6 +165,7 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { useTelemetry } from '@/platform/telemetry'
+import { useAgentConsent } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { whileMouseDown } from '@/utils/mouseDownUtil'
@@ -186,15 +187,24 @@ const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const commandStore = useCommandStore()
 const agentPanelStore = useAgentPanelStore()
+const { withConsent } = useAgentConsent()
 const tabActivity = useWorkflowTabActivityStore()
 const { isOpen: isAgentPanelOpen, enabled: agentPanelEnabled } =
   storeToRefs(agentPanelStore)
 
 function onAgentEntryClick(): void {
-  useTelemetry()?.trackAgentEntryButtonClicked({
-    resulting_state: isAgentPanelOpen.value ? 'closed' : 'opened'
+  // Closing never needs consent; opening does, the first time. Report the
+  // click only once it has an outcome, so a declined consent is not counted
+  // as an open.
+  if (isAgentPanelOpen.value) {
+    useTelemetry()?.trackAgentEntryButtonClicked({ resulting_state: 'closed' })
+    agentPanelStore.toggle()
+    return
+  }
+  withConsent(() => {
+    useTelemetry()?.trackAgentEntryButtonClicked({ resulting_state: 'opened' })
+    agentPanelStore.open()
   })
-  agentPanelStore.toggle()
 }
 const { isLoggedIn } = useCurrentUser()
 
