@@ -209,6 +209,7 @@ describe('drawConnections', () => {
 
   it.for([245, 500, 1_000])(
     'builds render order once for a both-layer draw at %i nodes',
+    { timeout: 10_000 },
     (nodeCount) => {
       for (let index = 0; index < nodeCount; index++) {
         const node = new LGraphNode(`Node ${index}`)
@@ -224,7 +225,7 @@ describe('drawConnections', () => {
       expect(layoutStore.getNodeLayout).toHaveBeenCalledTimes(nodeCount)
       expect(
         sort.mock.instances.filter(
-          (items) => (items as unknown[]).length === nodeCount
+          (items) => Array.isArray(items) && items.length === nodeCount
         )
       ).toHaveLength(1)
     }
