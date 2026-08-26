@@ -194,4 +194,33 @@ describe('useComfyRegistryService', () => {
       expect(service.error.value).toBe('Failed to perform search: boom')
     })
   })
+
+  describe('inferPackFromNodeName guard', () => {
+    it.for([null, undefined, '', 'undefined'])(
+      'does not query for node name %s',
+      async (nodeName) => {
+        const result = await Reflect.apply(
+          service.inferPackFromNodeName,
+          undefined,
+          [nodeName]
+        )
+
+        expect(result).toBeNull()
+        expect(mockAxiosInstance.get).not.toHaveBeenCalled()
+      }
+    )
+
+    it('returns registry data for a valid node name', async () => {
+      const expected = { id: 'pack-id' }
+      mockAxiosInstance.get.mockResolvedValueOnce({ data: expected })
+
+      const result = await service.inferPackFromNodeName('KSampler')
+
+      expect(result).toEqual(expected)
+      expect(mockAxiosInstance.get).toHaveBeenCalledExactlyOnceWith(
+        '/comfy-nodes/KSampler/node',
+        expect.any(Object)
+      )
+    })
+  })
 })
