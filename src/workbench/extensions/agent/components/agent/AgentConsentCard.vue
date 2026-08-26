@@ -32,7 +32,7 @@ function openDocs(): void {
         <video
           v-if="videoSrc"
           :src="videoSrc"
-          class="aspect-video w-full rounded-xl object-cover @2xl:aspect-auto @2xl:size-full"
+          class="aspect-362/262 w-full rounded-xl object-cover @2xl:aspect-auto @2xl:size-full"
           autoplay
           muted
           loop
@@ -40,15 +40,13 @@ function openDocs(): void {
         />
         <div
           v-else
-          class="text-agent-fg-muted bg-agent-surface-raised grid aspect-video w-full place-items-center rounded-xl text-xs @2xl:aspect-auto @2xl:size-full"
+          class="text-agent-fg-muted bg-agent-surface-raised grid aspect-362/262 w-full place-items-center rounded-xl text-xs @2xl:aspect-auto @2xl:size-full"
         >
           {{ $t('agent.consent.videoPlaceholder') }}
         </div>
       </div>
 
-      <section
-        class="flex min-h-0 flex-col gap-6 overflow-y-auto p-6 @2xl:gap-9 @2xl:p-9"
-      >
+      <section class="flex min-h-0 flex-col gap-9 overflow-y-auto p-6 @2xl:p-9">
         <div class="hidden flex-1 @2xl:block" />
 
         <div class="flex flex-col gap-4">
@@ -62,27 +60,39 @@ function openDocs(): void {
           >
             {{ paragraph }}
           </p>
-        </div>
 
-        <footer class="flex flex-wrap items-center justify-between gap-2.5">
           <Button
+            v-if="docsUrl"
             variant="textonly"
             size="md"
-            class="-ml-2 gap-1"
+            class="text-agent-fg-muted w-fit gap-1 px-0"
             @click="openDocs"
           >
             {{ $t('agent.consent.readDocs') }}
             <span class="icon-[lucide--square-arrow-out-up-right] size-4" />
           </Button>
+        </div>
 
-          <div class="ml-auto flex items-center gap-2.5">
-            <Button variant="secondary" size="md" @click="emit('reject')">
-              {{ $t('agent.consent.reject') }}
-            </Button>
-            <Button variant="inverted" size="md" @click="emit('accept')">
-              {{ $t('agent.consent.accept') }}
-            </Button>
-          </div>
+        <!-- Reversed so the primary sits on top when the actions stack. -->
+        <footer
+          class="flex flex-col-reverse gap-2.5 @2xl:flex-row @2xl:justify-end"
+        >
+          <Button
+            variant="secondary"
+            size="md"
+            class="w-full @2xl:w-auto"
+            @click="emit('reject')"
+          >
+            {{ $t('agent.consent.reject') }}
+          </Button>
+          <Button
+            variant="inverted"
+            size="md"
+            class="w-full @2xl:w-auto"
+            @click="emit('accept')"
+          >
+            {{ $t('agent.consent.accept') }}
+          </Button>
         </footer>
       </section>
     </div>
