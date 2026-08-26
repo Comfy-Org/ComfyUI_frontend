@@ -64,13 +64,15 @@ function createAssetWidgetPath(asset: AssetItem): string {
  * annotation. The content `hash` is included whenever present, since
  * cloud-stored assets can be referenced by hash.
  */
-function widgetValueVariantsForAsset(asset: AssetItem): string[] {
+function widgetValueVariants(
+  name: string | undefined,
+  type: string,
+  subfolder?: string,
+  hash?: string
+): string[] {
   const variants: string[] = []
-  const type = getAssetType(asset, 'input')
-  const name = asset.name
   if (name) {
     if (type === 'output') {
-      const subfolder = getOutputAssetMetadata(asset.user_metadata)?.subfolder
       const path = subfolder ? `${subfolder}/${name}` : name
       variants.push(`${path} [output]`)
     } else if (type === 'temp') {
@@ -80,7 +82,6 @@ function widgetValueVariantsForAsset(asset: AssetItem): string[] {
       variants.push(`${name} [input]`)
     }
   }
-  const hash = asset.hash
   if (hash) variants.push(hash)
   return variants
 }
@@ -98,17 +99,27 @@ export function useMediaAssetActions() {
 
   function resolveChildItems(
     asset: AssetItem
-  ): { name: string; id: AssetId }[] {
+  ): { name: string; id: AssetId; variants: string[] }[] {
     const { allOutputs } = getOutputAssetMetadata(asset.user_metadata) ?? {}
     const allItems = (allOutputs ?? [])?.flatMap((output) => {
       if (!output.assetId) return []
-      return {
-        name: output.display_name || output.filename,
-        id: output.assetId
-      }
+      const name = output.display_name || output.filename
+      const variants = widgetValueVariants(
+        output.filename,
+        output.type,
+        output.subfolder
+      )
+      return { name, id: output.assetId, variants }
     })
     if (allItems.length > 0) return allItems
-    return [{ name: getAssetDisplayName(asset), id: asset.id }]
+
+    const variants = widgetValueVariants(
+      asset.name,
+      getAssetType(asset, 'input'),
+      getOutputAssetMetadata(asset.user_metadata)?.subfolder,
+      asset.hash
+    )
+    return [{ name: getAssetDisplayName(asset), id: asset.id, variants }]
   }
 
   /**
@@ -692,7 +703,7 @@ export function useMediaAssetActions() {
 
             try {
               const results = await Promise.allSettled(
-                flatAssets.map((r) => r.id).map(assetService.deleteAsset)
+                flatAssets.map((r) => assetService.deleteAsset(r.id))
               )
               const succeededIds = new Set(
                 flatAssets.flatMap(({ id }, idx) =>
@@ -723,7 +734,7 @@ export function useMediaAssetActions() {
               results.forEach((result, index) => {
                 if (result.status !== 'rejected') return
                 console.warn(
-                  `Failed to delete asset ${assetArray[index].name}:`,
+                  `Failed to delete asset ${flatAssets[index].name}:`,
                   result.reason
                 )
               })
@@ -731,9 +742,9 @@ export function useMediaAssetActions() {
               const rootGraph = app.rootGraph
               if (rootGraph) {
                 const deletedValues = new Set<string>()
-                assetArray.forEach((asset, index) => {
+                flatAssets.forEach((item, index) => {
                   if (results[index].status !== 'fulfilled') return
-                  for (const value of widgetValueVariantsForAsset(asset)) {
+                  for (const value of item.variants) {
                     deletedValues.add(value)
                   }
                 })
