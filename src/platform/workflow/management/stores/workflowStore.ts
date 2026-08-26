@@ -494,7 +494,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
       const wasBookmarked = bookmarkStore.isBookmarked(oldPath)
       const draftStore = useWorkflowDraftStoreV2()
 
-      await workflow.rename(newPath)
+      if (!(await workflow.rename(newPath))) return
       useExecutionStore().rewriteSessionWorkflowPaths(
         workflow.instanceId,
         workflow.path
@@ -527,7 +527,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
   const deleteWorkflow = async (workflow: ComfyWorkflow) => {
     isBusy.value = true
     try {
-      await workflow.delete()
+      if (!(await workflow.delete())) return
       useWorkflowDraftStoreV2().removeDraft(workflow.path)
       if (bookmarkStore.isBookmarked(workflow.path)) {
         await bookmarkStore.setBookmarked(workflow.path, false)

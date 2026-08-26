@@ -160,28 +160,35 @@ export class UserFile {
     return this
   }
 
-  async delete(): Promise<void> {
-    if (this.isTemporary) return
+  async delete(): Promise<boolean> {
+    if (this.isTemporary) return true
 
     const resp = await api.deleteUserData(this.path)
     if (resp.status !== 204) {
-      throw new Error(
-        `Failed to delete file '${this.path}': ${resp.status} ${resp.statusText}`
+      console.error(
+        new Error(
+          `Failed to delete file '${this.path}': ${resp.status} ${resp.statusText}`
+        )
       )
+      return false
     }
+    return true
   }
 
-  async rename(newPath: string): Promise<UserFile> {
+  async rename(newPath: string): Promise<boolean> {
     if (this.isTemporary) {
       this.updatePath(newPath)
-      return this
+      return true
     }
 
     const resp = await api.moveUserData(this.path, newPath)
     if (resp.status !== 200) {
-      throw new Error(
-        `Failed to rename file '${this.path}': ${resp.status} ${resp.statusText}`
+      console.error(
+        new Error(
+          `Failed to rename file '${this.path}': ${resp.status} ${resp.statusText}`
+        )
       )
+      return false
     }
     this.updatePath(newPath)
     // Note: Backend supports full_info=true feature after
@@ -191,7 +198,7 @@ export class UserFile {
       this.lastModified = normalizeTimestamp(updatedFile.modified)
       this.size = updatedFile.size
     }
-    return this
+    return true
   }
 }
 

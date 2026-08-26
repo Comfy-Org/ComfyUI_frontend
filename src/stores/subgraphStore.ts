@@ -428,7 +428,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     )
       return false
 
-    await blueprint.delete()
+    if (!(await blueprint.delete())) return false
     delete subgraphCache[name]
     subgraphDefCache.value.delete(name)
     return true
