@@ -9,7 +9,6 @@ import {
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
-import { useDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'
 
 const NAMESPACE = PRESERVED_QUERY_NAMESPACES.DESKTOP_LOGIN
@@ -116,6 +115,7 @@ async function confirmRedemption(
   uid: string
 ): Promise<boolean> {
   if (state.approvedUserUid === uid) return true
+  const { useDialogService } = await import('@/services/dialogService')
   const confirmed = await useDialogService().confirm({
     key: 'global-desktop-login-confirm',
     title: t('desktopLogin.confirmSummary'),

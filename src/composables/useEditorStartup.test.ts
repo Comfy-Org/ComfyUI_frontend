@@ -43,7 +43,7 @@ vi.mock(
 import { useEditorStartup } from './useEditorStartup'
 
 describe('useEditorStartup', () => {
-  it('installs legacy bridges and starts Editor-owned work once', () => {
+  it('installs legacy bridges and starts Editor-owned work once', async () => {
     const TestComponent = defineComponent(() => {
       useEditorStartup()
       return () => h('div')
@@ -55,14 +55,18 @@ describe('useEditorStartup', () => {
 
     expect(mocks.app.extensionManager).toBe(mocks.workspaceStore)
     expect(mocks.startStoreBootstrap).toHaveBeenCalledOnce()
-    expect(mocks.initializeConflictDetection).toHaveBeenCalledOnce()
+    await vi.waitFor(() => {
+      expect(mocks.initializeConflictDetection).toHaveBeenCalledOnce()
+    })
 
     const hostNode = {}
-    const nodeData = { widgets_values: ['value'] }
+    const nodeData: { widgets_values: string[] } = {
+      widgets_values: ['value']
+    }
     const proxyWidgetMigrationFlush = mocks.lGraph
       .proxyWidgetMigrationFlush as (
       hostNode: object,
-      nodeData: typeof nodeData
+      nodeData: { widgets_values: string[] }
     ) => void
     proxyWidgetMigrationFlush(hostNode, nodeData)
     expect(mocks.flushProxyWidgetMigration).toHaveBeenCalledWith({

@@ -1,7 +1,16 @@
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import path from 'node:path'
 
-import ts from 'typescript'
+import {
+  ScriptKind,
+  ScriptTarget,
+  createSourceFile,
+  isExportDeclaration,
+  isImportDeclaration,
+  isNamespaceImport,
+  isStringLiteral
+} from 'typescript'
+import type { ImportDeclaration } from 'typescript'
 import { parse } from 'vue/compiler-sfc'
 
 const SOURCE_EXTENSIONS = ['.ts', '.tsx', '.js', '.mjs', '.vue', '.css']
@@ -16,7 +25,7 @@ export type StartupBoundaryViolation = {
   importChain: string[]
 }
 
-function isRuntimeImport(node: ts.ImportDeclaration): boolean {
+function isRuntimeImport(node: ImportDeclaration): boolean {
   const clause = node.importClause
   if (!clause) return true
   if (clause.isTypeOnly) return false
@@ -24,32 +33,32 @@ function isRuntimeImport(node: ts.ImportDeclaration): boolean {
 
   const bindings = clause.namedBindings
   if (!bindings) return true
-  if (ts.isNamespaceImport(bindings)) return true
+  if (isNamespaceImport(bindings)) return true
   return bindings.elements.some((element) => !element.isTypeOnly)
 }
 
 function getTypeScriptImports(source: string, filename: string): string[] {
-  const sourceFile = ts.createSourceFile(
+  const sourceFile = createSourceFile(
     filename,
     source,
-    ts.ScriptTarget.Latest,
+    ScriptTarget.Latest,
     true,
-    filename.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS
+    filename.endsWith('.tsx') ? ScriptKind.TSX : ScriptKind.TS
   )
   const imports: string[] = []
 
   for (const statement of sourceFile.statements) {
     if (
-      ts.isImportDeclaration(statement) &&
+      isImportDeclaration(statement) &&
       isRuntimeImport(statement) &&
-      ts.isStringLiteral(statement.moduleSpecifier)
+      isStringLiteral(statement.moduleSpecifier)
     ) {
       imports.push(statement.moduleSpecifier.text)
     } else if (
-      ts.isExportDeclaration(statement) &&
+      isExportDeclaration(statement) &&
       !statement.isTypeOnly &&
       statement.moduleSpecifier &&
-      ts.isStringLiteral(statement.moduleSpecifier)
+      isStringLiteral(statement.moduleSpecifier)
     ) {
       imports.push(statement.moduleSpecifier.text)
     }

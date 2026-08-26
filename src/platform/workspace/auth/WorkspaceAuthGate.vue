@@ -69,7 +69,6 @@ import {
 } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import {
@@ -213,6 +212,7 @@ async function retryInitialization(): Promise<void> {
 
 async function handleSignOut(): Promise<void> {
   cancelInitialization()
+  const { useAuthActions } = await import('@/composables/auth/useAuthActions')
   await useAuthActions().logout()
 }
 

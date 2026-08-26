@@ -1,38 +1,17 @@
 <template>
   <router-view />
   <GlobalDialog />
-  <BlockUI full-screen :blocked="isLoading" />
 </template>
 
 <script setup lang="ts">
-import BlockUI from 'primevue/blockui'
-import { computed, onMounted, watch } from 'vue'
+import { onMounted } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import config from '@/config'
 import { isDesktop } from '@/platform/distribution/types'
 import { reportError } from '@/platform/telemetry/reportError'
-import { app } from '@/scripts/app'
-import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI } from '@/utils/envUtil'
 import { parsePreloadError } from '@/utils/preloadErrorUtil'
-import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
-
-const workspaceStore = useWorkspaceStore()
-app.extensionManager = useWorkspaceStore()
-
-const conflictDetection = useConflictDetection()
-const isLoading = computed<boolean>(() => workspaceStore.spinner)
-
-watch(
-  isLoading,
-  (loading, prevLoading) => {
-    if (prevLoading && !loading) {
-      document.getElementById('splash-loader')?.remove()
-    }
-  },
-  { flush: 'post' }
-)
 
 const showContextMenu = (event: MouseEvent) => {
   const { target } = event
@@ -119,9 +98,5 @@ onMounted(() => {
       true
     )
   }
-
-  // Initialize conflict detection in background
-  // This runs async and doesn't block UI setup
-  void conflictDetection.initializeConflictDetection()
 })
 </script>

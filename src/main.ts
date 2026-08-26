@@ -16,24 +16,17 @@ import { VueFire, VueFireAuth } from 'vuefire'
 
 import { setAssertReporter } from '@/base/assert'
 import { getFirebaseConfig } from '@/config/firebase'
-import { flushProxyWidgetMigration } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
-import { autoExposeKnownPreviewNodes } from '@/core/graph/subgraph/promotionUtils'
-import { LGraph } from '@/lib/litegraph/src/litegraph'
 import {
   configValueOrDefault,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
-import { syncHostUserIdWithFirebaseAuth } from '@/platform/telemetry/hostUserIdSync'
 import { flushErrorReports } from '@/platform/telemetry/reportError'
-import '@/lib/litegraph/public/css/litegraph.css'
 import router from '@/router'
 import { isDesktop, isNightly } from '@/platform/distribution/types'
 import { stripPaymentReturnParams } from '@/platform/cloud/subscription/utils/paymentReturnUrl'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { useBootstrapStore } from '@/stores/bootstrapStore'
 
 import App from './App.vue'
-// Intentionally relative import to ensure the CSS is loaded in the right order (after litegraph.css)
 import './assets/css/style.css'
 import { i18n } from './i18n'
 
@@ -160,19 +153,9 @@ app
   })
 
 if (isCloud && hasHostTelemetryBridge) {
+  const { syncHostUserIdWithFirebaseAuth } =
+    await import('@/platform/telemetry/hostUserIdSync')
   syncHostUserIdWithFirebaseAuth()
 }
-
-LGraph.proxyWidgetMigrationFlush = (hostNode, nodeData) =>
-  flushProxyWidgetMigration({
-    hostNode,
-    hostWidgetValues: nodeData?.widgets_values
-  })
-
-LGraph.autoExposePreviewNodes = (hostNode) =>
-  autoExposeKnownPreviewNodes(hostNode)
-
-const bootstrapStore = useBootstrapStore(pinia)
-void bootstrapStore.startStoreBootstrap()
 
 app.mount('#vue-app')

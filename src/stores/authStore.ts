@@ -32,7 +32,6 @@ import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQuery
 import { invalidateRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { useTelemetry } from '@/platform/telemetry'
 import { api } from '@/scripts/api'
-import { useDialogService } from '@/services/dialogService'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
@@ -226,6 +225,7 @@ export const useAuthStore = defineStore('auth', () => {
         return
       }
 
+      const { useDialogService } = await import('@/services/dialogService')
       useDialogService().showErrorDialog(error, {
         title: t('errorDialog.defaultTitle'),
         reportType: 'authenticationError'

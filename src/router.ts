@@ -10,7 +10,6 @@ import type { RouteLocationNormalized } from 'vue-router'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
-import { useDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'
 import { useUserStore } from '@/stores/userStore'
 import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
@@ -229,6 +228,7 @@ if (isCloud) {
     if (!isLoggedIn) {
       // For Electron, use dialog
       if (isDesktop) {
+        const { useDialogService } = await import('@/services/dialogService')
         const dialogService = useDialogService()
         const loginSuccess = await dialogService.showSignInDialog()
         return loginSuccess ? next() : next(false)
