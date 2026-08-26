@@ -222,6 +222,29 @@ describe('PlanCreditsPanelContent — workspace bootstrap drives the plans state
     )
   })
 
+  it('retries the bootstrap when the wallet resolved to no workspace at all', async () => {
+    // initState says 'ready' but no workspace landed, so routing is still
+    // 'legacy' and a plain refetch would hit the no-op forever.
+    state.initState.value = 'ready'
+    state.active.value = null
+
+    renderPanel()
+
+    expect((await screen.findAllByText(ERROR_COPY)).length).toBeGreaterThan(0)
+
+    workspace.initialize.mockImplementation(async () => {
+      state.active.value = { id: 'ws-1', type: 'personal' }
+    })
+    await userEvent.click(
+      screen.getAllByRole('button', { name: 'Try again' })[0]
+    )
+
+    expect(workspace.initialize).toHaveBeenCalledOnce()
+    await waitFor(() =>
+      expect(screen.getAllByText('$20').length).toBeGreaterThan(0)
+    )
+  })
+
   it('shows the empty state without a retry for a successful but empty catalog', async () => {
     api.getBillingPlans.mockResolvedValue({ plans: [] })
 
