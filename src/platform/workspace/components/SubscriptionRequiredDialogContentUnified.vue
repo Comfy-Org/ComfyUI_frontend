@@ -31,7 +31,7 @@
           isVerifyingStep ||
           isDeclinedStep) &&
           'max-xl:w-[min(430px,92vw)]',
-        isEmbeddedPaymentStep && 'max-xl:h-[85vh]'
+        isEmbeddedPaymentStep && 'max-xl:h-[min(740px,85vh)]'
       )
     "
   >
