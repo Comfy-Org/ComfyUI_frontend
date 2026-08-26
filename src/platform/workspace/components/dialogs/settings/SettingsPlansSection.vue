@@ -150,7 +150,10 @@
           size="lg"
           class="mt-auto w-full"
           :disabled="
-            isCurrentSlug(plan.slug) || !plan.available || isSubscribing
+            isCurrentSlug(plan.slug) ||
+            !plan.available ||
+            !canStartCheckout ||
+            isSubscribing
           "
           @click="subscribeToPersonal(plan.slug, selectedCycle)"
         >
@@ -224,7 +227,13 @@
             variant="secondary"
             size="lg"
             class="mt-auto w-full"
-            :disabled="isTeamStopCurrent || !teamPlanSlug || isSubscribing"
+            :disabled="
+              isTeamStopCurrent ||
+              !teamPlanSlug ||
+              !isTeamPlanAvailable ||
+              !canStartCheckout ||
+              isSubscribing
+            "
             @click="onSubscribeTeam"
           >
             {{
@@ -347,8 +356,12 @@ const {
 
 const emit = defineEmits<{ retry: [] }>()
 
-const { isSubscribing, subscribeToPersonal, subscribeToTeam } =
-  useSettingsPlansCheckout()
+const {
+  isSubscribing,
+  canStartCheckout,
+  subscribeToPersonal,
+  subscribeToTeam
+} = useSettingsPlansCheckout()
 
 // A load failure is retryable ('error'); a catalog that loaded with no plans is
 // a successful empty result ('empty', no retry).
@@ -490,6 +503,12 @@ const teamVideoEstimate = computed(() =>
 // The team plan slug is the API TEAM row for the selected cycle — never
 // synthesized. Absent from the catalog => no offer, CTA disabled (D3).
 const teamPlanSlug = computed(() => findApiPlan('TEAM')?.slug ?? null)
+
+// The personal cards already honour availability; the team CTA must too. The
+// server's `reason` has no copy to surface yet, so this only gates the CTA.
+const isTeamPlanAvailable = computed(
+  () => findApiPlan('TEAM')?.availability.available ?? false
+)
 
 // "Current" is the exact subscribed stop (status.team_credit_stop.id), not the
 // cycle: other stops stay actionable so a subscriber can change commitment.

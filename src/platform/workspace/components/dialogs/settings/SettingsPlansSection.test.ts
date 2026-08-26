@@ -14,18 +14,24 @@ import type {
 
 import SettingsPlansSection from './SettingsPlansSection.vue'
 
-const { mockIsSubscribing, mockSubscribeToPersonal, mockSubscribeToTeam } =
-  vi.hoisted(() => ({
-    // A real ref so the template unwraps it; a plain object reads truthy and
-    // would disable every CTA.
-    mockIsSubscribing: { current: null as ReturnType<typeof ref> | null },
-    mockSubscribeToPersonal: vi.fn(),
-    mockSubscribeToTeam: vi.fn()
-  }))
+const {
+  mockIsSubscribing,
+  mockCanStartCheckout,
+  mockSubscribeToPersonal,
+  mockSubscribeToTeam
+} = vi.hoisted(() => ({
+  // A real ref so the template unwraps it; a plain object reads truthy and
+  // would disable every CTA.
+  mockIsSubscribing: { current: null as ReturnType<typeof ref> | null },
+  mockCanStartCheckout: { current: null as ReturnType<typeof ref> | null },
+  mockSubscribeToPersonal: vi.fn(),
+  mockSubscribeToTeam: vi.fn()
+}))
 
 vi.mock('@/platform/workspace/composables/useSettingsPlansCheckout', () => ({
   useSettingsPlansCheckout: () => ({
     isSubscribing: mockIsSubscribing.current,
+    canStartCheckout: mockCanStartCheckout.current,
     subscribeToPersonal: mockSubscribeToPersonal,
     subscribeToTeam: mockSubscribeToTeam
   })
@@ -111,6 +117,7 @@ function renderSection(
 describe('SettingsPlansSection — API is the source of truth', () => {
   beforeEach(() => {
     mockIsSubscribing.current = ref(false)
+    mockCanStartCheckout.current = ref(true)
     mockSubscribeToPersonal.mockReset()
     mockSubscribeToTeam.mockReset()
   })
@@ -483,5 +490,59 @@ describe('SettingsPlansSection — checkout uses API plan identity', () => {
     expect(cta).toBeDisabled()
     await userEvent.click(cta)
     expect(mockSubscribeToTeam).not.toHaveBeenCalled()
+  })
+
+  it('disables the team CTA when the API TEAM row is unavailable', async () => {
+    const catalog = CATALOG.map((p) =>
+      p.tier === 'TEAM' && p.duration === 'ANNUAL'
+        ? { ...p, availability: { available: false } }
+        : p
+    )
+    renderSection({ catalogPlans: catalog })
+    await userEvent.click(screen.getByRole('button', { name: 'Teams' }))
+
+    const cta = screen.getByRole('button', { name: 'Subscribe to Team Yearly' })
+    expect(cta).toBeDisabled()
+    await userEvent.click(cta)
+    expect(mockSubscribeToTeam).not.toHaveBeenCalled()
+  })
+
+  // Until #15898 lands the preview/consent dialog, a subscriber must not be
+  // able to start an unpreviewed prorated plan change from this section.
+  describe('when checkout cannot be started', () => {
+    beforeEach(() => {
+      mockCanStartCheckout.current = ref(false)
+    })
+
+    it('disables every non-current personal CTA and blocks its checkout', async () => {
+      renderSection({ currentPlanSlug: 'standard-annual' })
+
+      for (const name of ['Choose Creator', 'Choose Pro']) {
+        const cta = screen.getByRole('button', { name })
+        expect(cta).toBeDisabled()
+        await userEvent.click(cta)
+      }
+      expect(mockSubscribeToPersonal).not.toHaveBeenCalled()
+    })
+
+    it('still labels the subscribed card as the current plan', () => {
+      renderSection({ currentPlanSlug: 'standard-annual' })
+
+      expect(
+        screen.getByRole('button', { name: 'Current Plan' })
+      ).toBeInTheDocument()
+    })
+
+    it('disables the team CTA and blocks its checkout', async () => {
+      renderSection({ currentPlanSlug: 'standard-annual' })
+      await userEvent.click(screen.getByRole('button', { name: 'Teams' }))
+
+      const cta = screen.getByRole('button', {
+        name: 'Subscribe to Team Yearly'
+      })
+      expect(cta).toBeDisabled()
+      await userEvent.click(cta)
+      expect(mockSubscribeToTeam).not.toHaveBeenCalled()
+    })
   })
 })

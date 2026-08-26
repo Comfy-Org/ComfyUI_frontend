@@ -1,5 +1,5 @@
 import { useToast } from 'primevue/usetoast'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
@@ -10,7 +10,9 @@ import type {
   SubscribeOptions,
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -21,16 +23,34 @@ import { useAuthStore } from '@/stores/authStore'
  * the sign-in-first gate for API-key-only users, POSTs the subscribe, and hands
  * async outcomes to the billing-op poller, which owns progress toasts,
  * timeouts, and the success-side billing refresh.
+ *
+ * This subscribes without a preview, so it only ever sells a *first* paid
+ * subscription: `canStartCheckout` withholds every CTA from an existing paid
+ * subscriber, for whom the same POST would be an unpreviewed prorated plan
+ * change. Plan changes arrive with the preview/consent dialog (#15898), which
+ * lifts this one gate.
  */
 export function useSettingsPlansCheckout() {
   const { t } = useI18n()
   const toast = useToast()
   const authStore = useAuthStore()
   const dialogService = useDialogService()
+  const workspaceStore = useTeamWorkspaceStore()
   const billingOperationStore = useBillingOperationStore()
-  const { subscribe, reconcileSubscriptionSuccess } = useBillingContext()
+  const { permissions } = useWorkspaceUI()
+  const {
+    subscribe,
+    reconcileSubscriptionSuccess,
+    isActiveSubscription,
+    isFreeTier
+  } = useBillingContext()
 
   const isSubscribing = ref(false)
+
+  // Free tier is not a paid subscription, so those users can still subscribe.
+  const canStartCheckout = computed(
+    () => !isActiveSubscription.value || isFreeTier.value
+  )
 
   async function subscribeToPersonal(
     planSlug: string,
@@ -69,6 +89,19 @@ export function useSettingsPlansCheckout() {
     }
     // Without a Firebase session, require sign-in before checkout.
     if (!authStore.currentUser && !(await dialogService.showSignInDialog())) {
+      return
+    }
+    // Off-cloud the wallet hydrates in the background only once a session
+    // exists, so a user who just signed in waits for it here.
+    await workspaceStore.initialize().catch(() => undefined)
+    if (!workspaceStore.activeWorkspace) {
+      showError(
+        workspaceStore.error?.message ?? t('subscription.subscribeFailed')
+      )
+      return
+    }
+    if (!permissions.value.canManageSubscription) {
+      showError(t('settingsPlans.ownerOnly'))
       return
     }
 
@@ -130,15 +163,19 @@ export function useSettingsPlansCheckout() {
   }
 
   function showSubscribeError(error?: unknown) {
-    toast.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail:
-        error instanceof Error
-          ? error.message
-          : t('subscription.subscribeFailed')
-    })
+    showError(
+      error instanceof Error ? error.message : t('subscription.subscribeFailed')
+    )
   }
 
-  return { isSubscribing, subscribeToPersonal, subscribeToTeam }
+  function showError(detail: string) {
+    toast.add({ severity: 'error', summary: t('g.error'), detail })
+  }
+
+  return {
+    isSubscribing,
+    canStartCheckout,
+    subscribeToPersonal,
+    subscribeToTeam
+  }
 }
