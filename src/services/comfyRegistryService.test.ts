@@ -28,4 +28,18 @@ describe('useComfyRegistryService', () => {
       expect(mockRegistryApiClient.get).not.toHaveBeenCalled()
     }
   )
+
+  it('returns registry data for a valid node name', async () => {
+    const expected = { id: 'pack-id' }
+    mockRegistryApiClient.get.mockResolvedValueOnce({ data: expected })
+
+    const result =
+      await useComfyRegistryService().inferPackFromNodeName('KSampler')
+
+    expect(result).toEqual(expected)
+    expect(mockRegistryApiClient.get).toHaveBeenCalledExactlyOnceWith(
+      '/comfy-nodes/KSampler/node',
+      { signal: undefined }
+    )
+  })
 })
