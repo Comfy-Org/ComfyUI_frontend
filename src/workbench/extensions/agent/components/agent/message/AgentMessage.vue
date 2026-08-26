@@ -21,9 +21,16 @@ import RunApprovalCard from './RunApprovalCard.vue'
 import TabLinkCard from './TabLinkCard.vue'
 import ToolCallGroup from './ToolCallGroup.vue'
 
-const { message, answeringAskIds = new Set<string>() } = defineProps<{
+const {
+  message,
+  answeringAskIds = new Set<string>(),
+  showAddCredits = true,
+  showUpgrade = true
+} = defineProps<{
   message: AssistantMessage
   answeringAskIds?: ReadonlySet<string>
+  showAddCredits?: boolean
+  showUpgrade?: boolean
 }>()
 const emit = defineEmits<{
   feedback: [vote: 'up' | 'down' | null]
@@ -121,6 +128,8 @@ const hasTools = computed(() =>
       />
       <AgentPaywallCard
         v-else-if="group.kind === 'paywall'"
+        :show-add-credits="showAddCredits"
+        :show-upgrade="showUpgrade"
         @add-credits="emit('addCredits')"
         @upgrade-subscription="emit('upgradeSubscription')"
       />

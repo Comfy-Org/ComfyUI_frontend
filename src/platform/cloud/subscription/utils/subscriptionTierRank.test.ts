@@ -7,28 +7,11 @@ import type {
   TeamCreditStops
 } from '@/platform/workspace/api/workspaceApi'
 
-import * as subscriptionTierRank from './subscriptionTierRank'
-
-const { getPlanRank, isPlanDowngrade } = subscriptionTierRank
-
-interface UpgradeEligibilityInput {
-  currentTier: SubscriptionTier | null
-  plans: Plan[]
-  teamCreditStops: TeamCreditStops | null
-  currentTeamCreditStop: TeamCreditStopSummary | null
-}
-
-function hasEligibleSubscriptionUpgrade(
-  input: UpgradeEligibilityInput
-): boolean {
-  const candidate: unknown = Reflect.get(
-    subscriptionTierRank,
-    'hasEligibleSubscriptionUpgrade'
-  )
-  if (typeof candidate !== 'function') return false
-  const check = candidate as (value: UpgradeEligibilityInput) => unknown
-  return check(input) === true
-}
+import {
+  getPlanRank,
+  hasEligibleSubscriptionUpgrade,
+  isPlanDowngrade
+} from './subscriptionTierRank'
 
 function plan(
   tier: SubscriptionTier,

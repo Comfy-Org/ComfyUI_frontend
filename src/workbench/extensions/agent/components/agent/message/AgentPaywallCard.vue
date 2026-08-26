@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import Button from '@/components/ui/button/Button.vue'
 
+const { showAddCredits = true, showUpgrade = true } = defineProps<{
+  showAddCredits?: boolean
+  showUpgrade?: boolean
+}>()
 const emit = defineEmits<{
   addCredits: []
   upgradeSubscription: []
@@ -26,11 +30,24 @@ const emit = defineEmits<{
       </div>
     </div>
 
-    <div class="flex w-full justify-end gap-2">
-      <Button variant="textonly" size="sm" @click="emit('addCredits')">
+    <div
+      v-if="showAddCredits || showUpgrade"
+      class="flex w-full justify-end gap-2"
+    >
+      <Button
+        v-if="showAddCredits"
+        variant="textonly"
+        size="sm"
+        @click="emit('addCredits')"
+      >
         {{ $t('agent.paywall.addCredits') }}
       </Button>
-      <Button variant="inverted" size="sm" @click="emit('upgradeSubscription')">
+      <Button
+        v-if="showUpgrade"
+        variant="inverted"
+        size="sm"
+        @click="emit('upgradeSubscription')"
+      >
         {{ $t('agent.paywall.upgradeSubscription') }}
       </Button>
     </div>

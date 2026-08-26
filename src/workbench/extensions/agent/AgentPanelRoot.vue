@@ -16,6 +16,7 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFocusNode } from '@/composables/canvas/useFocusNode'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -55,6 +56,8 @@ import { isLGraphNode } from '@/utils/litegraphUtil'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
+import { hasEligibleSubscriptionUpgrade } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 import AgentPanel from './components/agent/AgentPanel.vue'
 import OnboardingCoach from './components/agent/OnboardingCoach.vue'
@@ -104,6 +107,21 @@ const CrdtDevPanel = defineAsyncComponent(
 const { t } = useI18n()
 const toast = useToastStore()
 const { open: openAccountPrecondition } = useAccountPreconditionDialog()
+const { permissions } = useWorkspaceUI()
+const { tier, plans, teamCreditStops, currentTeamCreditStop } =
+  useBillingContext()
+const hasEligibleUpgrade = computed(() =>
+  hasEligibleSubscriptionUpgrade({
+    currentTier: tier.value,
+    plans: plans.value,
+    teamCreditStops: teamCreditStops.value,
+    currentTeamCreditStop: currentTeamCreditStop.value
+  })
+)
+const showPaywallAddCredits = computed(() => permissions.value.canTopUp)
+const showPaywallUpgrade = computed(
+  () => permissions.value.canManageSubscription && hasEligibleUpgrade.value
+)
 const sidebarTabStore = useSidebarTabStore()
 const { isBuilderMode } = useAppMode()
 
@@ -1072,6 +1090,8 @@ function onPanelDrop(event: DragEvent): void {
       :workflow-detached="workflowDetached"
       :get-mention-nodes="mentionableNodes"
       :get-mention-assets="mentionableAssets"
+      :show-paywall-add-credits="showPaywallAddCredits"
+      :show-paywall-upgrade="showPaywallUpgrade"
       @select-tab="onSelectTab"
       @clear-workflow="onClearWorkflow"
       @send="onSend"

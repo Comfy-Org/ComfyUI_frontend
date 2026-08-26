@@ -16,9 +16,13 @@ import UserMessage from './message/UserMessage.vue'
 const {
   entries,
   editableTurnId = null,
-  answeringAskIds = new Set<string>()
+  answeringAskIds = new Set<string>(),
+  showPaywallAddCredits = true,
+  showPaywallUpgrade = true
 } = defineProps<{
   entries: ConversationEntry[]
+  showPaywallAddCredits?: boolean
+  showPaywallUpgrade?: boolean
   editableTurnId?: TurnId | null
   answeringAskIds?: ReadonlySet<string>
 }>()
@@ -96,6 +100,8 @@ watch(
               v-else
               :message="entry"
               :answering-ask-ids="answeringAskIds"
+              :show-add-credits="showPaywallAddCredits"
+              :show-upgrade="showPaywallUpgrade"
               @feedback="emit('feedback', entry.id, $event)"
               @answer-ask="
                 (askId: string, selection: 'run' | 'cancel') =>
