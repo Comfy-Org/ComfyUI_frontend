@@ -2,7 +2,7 @@ import { shallowReactive } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
+import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import { createArrayMutationView } from '../infrastructure/createMutationView'
@@ -12,22 +12,22 @@ interface WidgetsViewState {
   target: IBaseWidget[]
   view: IBaseWidget[]
   present: boolean
-  commit: (widgets: readonly IBaseWidget[]) => void
+  commit: (widgets: IBaseWidget[]) => void
 }
 
 const states = new WeakMap<LGraphNode, WidgetsViewState>()
 
-function syncWidgetOrder(
-  node: LGraphNode,
-  widgets: readonly IBaseWidget[]
-): void {
+function syncWidgetOrder(node: LGraphNode, widgets: IBaseWidget[]): void {
   node._widgetSlotsDirty = true
   const graphId = node.graph?.rootGraph.id
-  if (!graphId) return
 
-  for (const widget of widgets) {
-    if (isNodeBindable(widget)) widget.setNodeId(node.id)
+  for (const [index, widget] of widgets.entries()) {
+    const concreteWidget = toConcreteWidget(widget, node)
+    widgets[index] = concreteWidget
+    if (graphId) concreteWidget.setNodeId(node.id)
   }
+
+  if (!graphId) return
   useWidgetValueStore().replaceNodeWidgetOrder(
     graphId,
     node.id,
@@ -57,8 +57,7 @@ function defineWidgetsView(node: LGraphNode, state: WidgetsViewState): void {
 
 export function initializeWidgetsView(node: LGraphNode): void {
   const target = shallowReactive<IBaseWidget[]>([])
-  const commit = (widgets: readonly IBaseWidget[]) =>
-    syncWidgetOrder(node, widgets)
+  const commit = (widgets: IBaseWidget[]) => syncWidgetOrder(node, widgets)
   const state: WidgetsViewState = {
     target,
     view: createArrayMutationView(target, () => commit(target)),
@@ -72,7 +71,12 @@ export function initializeWidgetsView(node: LGraphNode): void {
 export function normalizeWidgetsView(node: LGraphNode): void {
   const descriptor = Object.getOwnPropertyDescriptor(node, 'widgets')
   const state = states.get(node)
-  if (!state || !descriptor || !('value' in descriptor)) return
+  if (!state || !descriptor) return
+
+  if (!('value' in descriptor)) {
+    state.commit(state.target)
+    return
+  }
 
   const widgets = node.widgets
   defineWidgetsView(node, state)
