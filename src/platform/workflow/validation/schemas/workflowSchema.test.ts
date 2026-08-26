@@ -203,6 +203,23 @@ describe('parseComfyWorkflow', () => {
     expect(validatedWorkflow!.nodes[0].widgets_values).toEqual({ foo: 'bar' })
   })
 
+  it('workflow.nodes.widgets_values preserves null entries', async () => {
+    // LGraphNode.serialize writes `val ?? null`, so null reaches the schema on
+    // ordinary saves. Validation must let it through unchanged, in both the
+    // array and the object form.
+    const workflow = JSON.parse(JSON.stringify(defaultGraph))
+
+    workflow.nodes[0].widgets_values = ['foo', null]
+    const arrayForm = await validateComfyWorkflow(workflow)
+    expect(arrayForm).not.toBeNull()
+    expect(arrayForm!.nodes[0].widgets_values).toEqual(['foo', null])
+
+    workflow.nodes[0].widgets_values = { foo: null }
+    const objectForm = await validateComfyWorkflow(workflow)
+    expect(objectForm).not.toBeNull()
+    expect(objectForm!.nodes[0].widgets_values).toEqual({ foo: null })
+  })
+
   it('workflow.links', async () => {
     const workflow = JSON.parse(JSON.stringify(defaultGraph))
 

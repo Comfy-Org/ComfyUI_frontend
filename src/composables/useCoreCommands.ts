@@ -506,7 +506,7 @@ export function useCoreCommands(): ComfyCommand[] {
         trigger_source?: ExecutionTriggerSource
       }) => {
         trackRunButton(metadata)
-        if (!canAccessSubscriptionFeatures.value) {
+        if (isCloud && !canAccessSubscriptionFeatures.value) {
           showSubscriptionDialog({ reason: 'subscribe_to_run' })
           return
         }
@@ -529,7 +529,7 @@ export function useCoreCommands(): ComfyCommand[] {
         trigger_source?: ExecutionTriggerSource
       }) => {
         trackRunButton(metadata)
-        if (!canAccessSubscriptionFeatures.value) {
+        if (isCloud && !canAccessSubscriptionFeatures.value) {
           showSubscriptionDialog({ reason: 'subscribe_to_run' })
           return
         }
@@ -551,7 +551,7 @@ export function useCoreCommands(): ComfyCommand[] {
         trigger_source?: ExecutionTriggerSource
       }) => {
         trackRunButton(metadata)
-        if (!canAccessSubscriptionFeatures.value) {
+        if (isCloud && !canAccessSubscriptionFeatures.value) {
           showSubscriptionDialog({ reason: 'subscribe_to_run' })
           return
         }

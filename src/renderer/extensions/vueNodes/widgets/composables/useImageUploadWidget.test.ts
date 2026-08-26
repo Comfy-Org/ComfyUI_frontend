@@ -67,8 +67,7 @@ vi.mock('@/utils/litegraphUtil', () => ({
 
 function createUploadNode(initialValue: string = 'missing.png') {
   const onWidgetChanged = vi.fn()
-  const node = new LGraphNode('LoadImage')
-  node.type = 'LoadImage'
+  const node = new LGraphNode('LoadImage', 'LoadImage')
   node.onWidgetChanged = onWidgetChanged
   const fileComboWidget = node.addWidget(
     'combo',
