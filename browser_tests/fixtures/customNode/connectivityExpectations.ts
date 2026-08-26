@@ -62,13 +62,14 @@ export const pairEndpointPacks: Readonly<Record<string, string>> = {
 export function pairEndpointOwnershipIssues(
   requiredNodeTypes: string[],
   nodes: Array<{ type: string; pack: string }>,
-  installedPacks: ReadonlySet<string>
+  installedPacks: ReadonlySet<string>,
+  endpointPacks: Readonly<Record<string, string>> = pairEndpointPacks
 ): string[] {
   const installed = new Set(
     [...installedPacks].map((pack) => pack.toLowerCase())
   )
   return requiredNodeTypes.flatMap((nodeType) => {
-    const expectedPack = pairEndpointPacks[nodeType]
+    const expectedPack = endpointPacks[nodeType]
     if (!expectedPack)
       return [`${nodeType}: no endpoint pack attribution exists`]
     if (expectedPack !== 'core' && !installed.has(expectedPack.toLowerCase()))

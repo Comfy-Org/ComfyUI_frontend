@@ -4,6 +4,8 @@ import {
   buildCloudManifest,
   sourceFromSupportedNodesHeader,
   validateCuratedCloudOverlay,
+  validateCloudExtensionSentinels,
+  validateObjectInfoSnapshot,
   validateSupportedNodesDoc
 } from './cloud-manifest'
 
@@ -88,5 +90,55 @@ describe('cloud run overlay', () => {
         }
       })
     ).toThrow(/inside browser_tests/)
+  })
+})
+
+describe('cloud manifest boundaries', () => {
+  const node = {
+    input: { required: {} },
+    output: [],
+    name: 'ExampleNode',
+    display_name: 'Example Node',
+    description: '',
+    category: 'example',
+    output_node: false,
+    python_module: 'custom_nodes.example-pack'
+  }
+
+  it('rejects malformed nested object_info fields', () => {
+    expect(() =>
+      validateObjectInfoSnapshot({
+        ExampleNode: { ...node, input: { required: [] } }
+      })
+    ).toThrow(/ExampleNode\.input\.required/)
+  })
+
+  it('constructs canonical object_info entries from validated input', () => {
+    expect(
+      validateObjectInfoSnapshot({
+        ExampleNode: { ...node, untrusted_extra: true }
+      })
+    ).toEqual({ ExampleNode: node })
+  })
+
+  it('rejects duplicate extension sentinels', () => {
+    expect(() =>
+      validateCloudExtensionSentinels({ pack: ['Extension', 'Extension'] })
+    ).toThrow(/unique/)
+  })
+
+  it('rejects extension sentinels without a generated pack row', () => {
+    expect(() =>
+      buildCloudManifest(
+        {
+          labels: [],
+          node_packs: [{ name: 'example-pack', version: '1.2.3' }]
+        },
+        { ExampleNode: node },
+        sourceFromSupportedNodesHeader(sourceHeader),
+        {},
+        { 'missing-pack': ['MissingExtension'] }
+      )
+    ).toThrow(/cloudExtensionSentinels pack\(s\).*missing-pack/)
   })
 })

@@ -38,9 +38,12 @@ export const CUSTOM_NODE_TIER_NODE_EXCLUSIONS: readonly TierNodeExclusion[] = [
   }
 ]
 
-function exclusionsForPack(pack: string): readonly TierNodeExclusion[] {
+function exclusionsForPack(
+  pack: string,
+  exclusions: readonly TierNodeExclusion[]
+): readonly TierNodeExclusion[] {
   const folded = pack.toLowerCase()
-  return CUSTOM_NODE_TIER_NODE_EXCLUSIONS.filter(
+  return exclusions.filter(
     (exclusion) => exclusion.pack.toLowerCase() === folded
   )
 }
@@ -48,9 +51,10 @@ function exclusionsForPack(pack: string): readonly TierNodeExclusion[] {
 export function eligibleNodeTypesForTier(
   target: TierNodeExclusionTarget,
   tier: CustomNodeNodeExclusionTier,
-  nodeTypes: readonly string[]
+  nodeTypes: readonly string[],
+  exclusions: readonly TierNodeExclusion[] = CUSTOM_NODE_TIER_NODE_EXCLUSIONS
 ): string[] {
-  const packExclusions = exclusionsForPack(target.pack)
+  const packExclusions = exclusionsForPack(target.pack, exclusions)
   for (const exclusion of packExclusions) {
     if (exclusion.identity !== target.identity)
       throw new Error(
@@ -71,7 +75,8 @@ export function eligibleNodeTypesForTier(
 }
 
 export function tierNodeExclusionProblems(
-  targets: readonly TierNodeExclusionTarget[]
+  targets: readonly TierNodeExclusionTarget[],
+  exclusions: readonly TierNodeExclusion[] = CUSTOM_NODE_TIER_NODE_EXCLUSIONS
 ): string[] {
   const targetsByPack = new Map(
     targets.map((target) => [target.pack.toLowerCase(), target])
@@ -79,7 +84,7 @@ export function tierNodeExclusionProblems(
   const seen = new Set<string>()
   const problems: string[] = []
 
-  for (const exclusion of CUSTOM_NODE_TIER_NODE_EXCLUSIONS) {
+  for (const exclusion of exclusions) {
     const target = targetsByPack.get(exclusion.pack.toLowerCase())
     if (!target) {
       problems.push(

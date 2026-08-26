@@ -1,11 +1,6 @@
-import {
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  readdirSync,
-  writeFileSync
-} from 'node:fs'
-import { fileURLToPath } from 'node:url'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
+import { join } from 'node:path'
 
 // S13 differential interaction profiles: the def-driven tiers are
 // structurally blind to what pack JS does IN RESPONSE to an interaction,
@@ -17,9 +12,7 @@ import { fileURLToPath } from 'node:url'
 // it reds against the committed delta. Deltas (not absolute shapes) keep
 // baselines invariant to def changes a pin bump legitimately makes.
 
-const PROFILE_DIR = fileURLToPath(
-  new URL('./interactionProfiles/', import.meta.url)
-)
+const PROFILE_DIR = join(import.meta.dirname, 'interactionProfiles')
 
 // One facet entry per slot/widget: `kind:name:type`, model order ignored
 // (entries are sorted) so reordering alone is not drift.
@@ -48,10 +41,15 @@ export interface NodeInteractionProfile {
   disconnect: ProbeResult
 }
 
+export type SparseNodeInteractionProfile = Partial<
+  Record<(typeof PROBES)[number], ShapeDelta>
+>
+
 export interface PackInteractionProfileFile {
   recordedAt: { core: string; pin: string }
-  schema: 1
-  nodes: Record<string, NodeInteractionProfile>
+  schema: 2
+  corpus: { count: number; nodeTypesSha256: string }
+  nodes: Record<string, SparseNodeInteractionProfile>
 }
 
 // Nodes whose interaction deltas are not reproducible run-to-run, keyed by
@@ -81,35 +79,7 @@ export function diffShapes(
 }
 
 function profilePath(pack: string): string {
-  return `${PROFILE_DIR}${pack}.json`
-}
-
-/**
- * A recorded baseline exists for this pack AND was recorded at this ref.
- *
- * S13 diffs a pack's live interaction shape against a committed recording, so
- * it can only cover packs that have one. Recording is a real artifact - the six
- * committed here run 1.7KB to 27KB each - and the cloud pack set deliberately
- * has none, so those packs sit outside S13 rather than being skipped inside it.
- *
- * The ref check is what stops a core recording being reused for the same pack
- * at a different cloud pin, where the baseline describes different code and
- * every legitimate version difference would read as drift.
- *
- * Directory listing rather than existsSync: the filenames are mixed-case and
- * the cloud rows are lowercase registry dirnames, so a case-insensitive
- * filesystem (macOS) matched five packs that Linux CI would match two of.
- */
-export function hasCommittedProfile(pack: string, ref: string): boolean {
-  const match = readdirSync(PROFILE_DIR).find(
-    (name) => name.toLowerCase() === `${pack.toLowerCase()}.json`
-  )
-  if (!match) return false
-  const parsed: unknown = JSON.parse(
-    readFileSync(`${PROFILE_DIR}${match}`, 'utf-8')
-  )
-  assertProfileFile(parsed, `${PROFILE_DIR}${match}`)
-  return parsed.recordedAt.pin === ref
+  return join(PROFILE_DIR, `${pack}.json`)
 }
 
 const PROBES = ['connectFirst', 'connectLast', 'disconnect'] as const
@@ -122,11 +92,28 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-function isProbeResult(value: unknown): value is ProbeResult {
-  if (value === 'NO_PRODUCER' || value === 'NO_INPUTS') return true
-  return (
-    Array.isArray(value) && value.every((entry) => typeof entry === 'string')
+function sparseProfile(
+  profile: NodeInteractionProfile
+): SparseNodeInteractionProfile {
+  return Object.fromEntries(
+    PROBES.flatMap((probe) => {
+      const result = profile[probe]
+      return Array.isArray(result) && result.length > 0 ? [[probe, result]] : []
+    })
   )
+}
+
+export function interactionCorpusIdentity(nodeTypes: string[]): {
+  count: number
+  nodeTypesSha256: string
+} {
+  const sorted = [...nodeTypes].sort()
+  return {
+    count: sorted.length,
+    nodeTypesSha256: createHash('sha256')
+      .update(sorted.join('\n'))
+      .digest('hex')
+  }
 }
 
 // The offending field path, or null when the file is a valid profile set.
@@ -134,28 +121,43 @@ function isProbeResult(value: unknown): value is ProbeResult {
 // an unrelated TypeError deep inside comparePackProfiles.
 function invalidProfileField(parsed: unknown): string | null {
   if (!isPlainObject(parsed)) return 'root (expected a JSON object)'
-  if (parsed.schema !== 1) return 'schema (expected 1)'
+  if (parsed.schema !== 2) return 'schema (expected 2)'
   if (!isPlainObject(parsed.recordedAt))
     return 'recordedAt (expected { core, pin })'
   if (!isNonEmptyString(parsed.recordedAt.core))
     return 'recordedAt.core (expected a non-empty string)'
   if (!isNonEmptyString(parsed.recordedAt.pin))
     return 'recordedAt.pin (expected a non-empty string)'
+  if (!isPlainObject(parsed.corpus))
+    return 'corpus (expected { count, nodeTypesSha256 })'
+  if (
+    !Number.isInteger(parsed.corpus.count) ||
+    (parsed.corpus.count as number) < 0
+  )
+    return 'corpus.count (expected a non-negative integer)'
+  if (
+    typeof parsed.corpus.nodeTypesSha256 !== 'string' ||
+    !/^[0-9a-f]{64}$/.test(parsed.corpus.nodeTypesSha256)
+  )
+    return 'corpus.nodeTypesSha256 (expected a sha256 digest)'
   if (!isPlainObject(parsed.nodes))
     return 'nodes (expected an object keyed by node type)'
   for (const [node, profile] of Object.entries(parsed.nodes)) {
     if (!isPlainObject(profile))
       return `nodes.${node} (expected a profile object)`
-    for (const probe of PROBES) {
-      const value = profile[probe]
-      if (isProbeResult(value)) continue
-      if (probe === 'connectLast' && value === 'SAME_AS_FIRST') continue
-      const markers =
-        probe === 'connectLast'
-          ? "'NO_PRODUCER', 'NO_INPUTS', or 'SAME_AS_FIRST'"
-          : "'NO_PRODUCER' or 'NO_INPUTS'"
-      return `nodes.${node}.${probe} (expected a string[] delta, ${markers})`
-    }
+    const unknown = Object.keys(profile).filter(
+      (key) => !PROBES.includes(key as (typeof PROBES)[number])
+    )
+    if (unknown.length > 0)
+      return `nodes.${node} (unknown probe ${unknown.join(', ')})`
+    for (const probe of PROBES)
+      if (
+        profile[probe] !== undefined &&
+        (!Array.isArray(profile[probe]) ||
+          profile[probe].length === 0 ||
+          !profile[probe].every(isNonEmptyString))
+      )
+        return `nodes.${node}.${probe} (expected a non-empty string[] delta)`
   }
   return null
 }
@@ -189,23 +191,31 @@ export function recordPackProfiles(
   recordedAt: { core: string; pin: string }
 ): void {
   mkdirSync(PROFILE_DIR, { recursive: true })
-  const file: PackInteractionProfileFile = { recordedAt, schema: 1, nodes }
+  const file: PackInteractionProfileFile = {
+    recordedAt,
+    schema: 2,
+    corpus: interactionCorpusIdentity(Object.keys(nodes)),
+    nodes: Object.fromEntries(
+      Object.entries(nodes).flatMap(([node, profile]) => {
+        const sparse = sparseProfile(profile)
+        return Object.keys(sparse).length > 0 ? [[node, sparse]] : []
+      })
+    )
+  }
   writeFileSync(profilePath(pack), JSON.stringify(file, null, 2) + '\n')
 }
 
 function probesEqual(
-  a: NodeInteractionProfile,
-  b: NodeInteractionProfile
+  a: SparseNodeInteractionProfile,
+  b: SparseNodeInteractionProfile
 ): string[] {
   const problems: string[] = []
   for (const probe of PROBES) {
-    const expected = a[probe]
-    const actual = b[probe]
+    const expected = a[probe] ?? []
+    const actual = b[probe] ?? []
     const same =
-      typeof expected === 'string' || typeof actual === 'string'
-        ? expected === actual
-        : expected.length === actual.length &&
-          expected.every((entry, i) => entry === actual[i])
+      expected.length === actual.length &&
+      expected.every((entry, i) => entry === actual[i])
     if (!same)
       problems.push(
         `${probe}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`
@@ -219,37 +229,50 @@ function probesEqual(
 // gone from the live corpus (stale baseline), or any probe delta drifting.
 export function comparePackProfiles(input: {
   pack: string
+  expectedPin: string
   observed: Record<string, NodeInteractionProfile>
   committed: PackInteractionProfileFile | null
 }): string[] {
-  const { pack, observed, committed } = input
+  const { pack, expectedPin, observed, committed } = input
   if (committed === null)
     return [
       `S13: no committed interaction profiles for '${pack}' - record them ` +
         `(CN_INTERACTION=record run, commit the fixture; docs/custom-node-regression-suite.md Step 5d)`
     ]
+  if (committed.recordedAt.pin !== expectedPin)
+    return [
+      `S13: ${pack} profile pin is '${committed.recordedAt.pin}', expected '${expectedPin}' - re-record it`
+    ]
   const provenance = `(baseline recorded at core ${committed.recordedAt.core}, pin ${committed.recordedAt.pin})`
   const unstable = INTERACTION_UNSTABLE_NODES[pack] ?? {}
   const problems: string[] = []
-  for (const [node, expected] of Object.entries(committed.nodes)) {
+  const observedCorpus = interactionCorpusIdentity(Object.keys(observed))
+  if (
+    observedCorpus.count !== committed.corpus.count ||
+    observedCorpus.nodeTypesSha256 !== committed.corpus.nodeTypesSha256
+  )
+    problems.push(
+      `${pack}: interaction corpus changed from ${committed.corpus.count}/${committed.corpus.nodeTypesSha256} to ${observedCorpus.count}/${observedCorpus.nodeTypesSha256} - re-record ${provenance}`
+    )
+  const sparseObserved = Object.fromEntries(
+    Object.entries(observed).map(([node, profile]) => [
+      node,
+      sparseProfile(profile)
+    ])
+  )
+  const nodes = new Set([
+    ...Object.keys(committed.nodes),
+    ...Object.keys(sparseObserved)
+  ])
+  for (const node of nodes) {
     if (node in unstable) continue
-    const actual = observed[node]
-    if (actual === undefined) {
-      problems.push(
-        `${pack}/${node}: baseline entry but the node was not probed - stale baseline, re-record ${provenance}`
-      )
-      continue
-    }
+    const expected = committed.nodes[node] ?? {}
+    const actual = sparseObserved[node] ?? {}
     for (const problem of probesEqual(expected, actual))
       problems.push(
         `${pack}/${node}: interaction delta drifted - ${problem}. A frontend ` +
           `change altered what this node's JS does on interaction ${provenance}`
       )
   }
-  for (const node of Object.keys(observed))
-    if (!(node in committed.nodes) && !(node in unstable))
-      problems.push(
-        `${pack}/${node}: probed but no baseline entry - new node, re-record ${provenance}`
-      )
   return problems
 }
