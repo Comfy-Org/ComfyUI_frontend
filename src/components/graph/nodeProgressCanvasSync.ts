@@ -17,12 +17,15 @@ export interface NodeProgressCanvasSync {
 
 type ProgressStates = Parameters<NodeProgressCanvasSync['sync']>[0]
 
-const progressValue = (state: NodeProgressState | undefined) =>
-  state?.state === 'running' ? state.value / state.max : undefined
+function progressValue(state: NodeProgressState | undefined) {
+  return state?.state === 'running' ? state.value / state.max : undefined
+}
+
+function noOp() {}
 
 export function createNodeProgressCanvasSync(
   nodeToLocator: (node: LGraphNode) => NodeLocatorId,
-  onIndexLookup: () => void = () => {}
+  onIndexLookup: () => void = noOp
 ): NodeProgressCanvasSync {
   let activeCanvas: LGraphCanvas | null = null
   let activeGraph: LGraph | null = null
@@ -30,18 +33,17 @@ export function createNodeProgressCanvasSync(
   let nodeLocators = new WeakMap<LGraphNode, NodeLocatorId>()
   const nodesByLocator = new Map<NodeLocatorId, LGraphNode[]>()
 
-  const markDirty = () => activeCanvas?.setDirty(true, false)
+  function markDirty() {
+    activeCanvas?.setDirty(true, false)
+  }
 
-  const setNodeProgress = (
-    node: LGraphNode,
-    nextProgress: number | undefined
-  ) => {
+  function setNodeProgress(node: LGraphNode, nextProgress: number | undefined) {
     if (Object.is(node.progress, nextProgress)) return false
     node.progress = nextProgress
     return true
   }
 
-  const addNode = (node: LGraphNode) => {
+  function addNode(node: LGraphNode) {
     const locator = nodeToLocator(node)
     nodeLocators.set(node, locator)
     const nodes = nodesByLocator.get(locator)
@@ -50,7 +52,7 @@ export function createNodeProgressCanvasSync(
     return locator
   }
 
-  const removeNode = (node: LGraphNode) => {
+  function removeNode(node: LGraphNode) {
     const locator = nodeLocators.get(node)
     if (!locator) return
     const nodes = nodesByLocator.get(locator)
@@ -61,17 +63,17 @@ export function createNodeProgressCanvasSync(
     nodeLocators.delete(node)
   }
 
-  const onNodeAdded = (event: CustomEvent<{ node: LGraphNode }>) => {
+  function onNodeAdded(event: CustomEvent<{ node: LGraphNode }>) {
     const node = event.detail.node
     const locator = addNode(node)
     if (setNodeProgress(node, progressValue(activeStates[locator]))) markDirty()
   }
 
-  const onNodeRemoved = (event: CustomEvent<{ node: LGraphNode }>) => {
+  function onNodeRemoved(event: CustomEvent<{ node: LGraphNode }>) {
     removeNode(event.detail.node)
   }
 
-  const detachGraph = () => {
+  function detachGraph() {
     activeGraph?.events.removeEventListener('node:added', onNodeAdded)
     activeGraph?.events.removeEventListener(
       'node:before-removed',
@@ -79,7 +81,7 @@ export function createNodeProgressCanvasSync(
     )
   }
 
-  const replaceGraph = (graph: LGraph | null) => {
+  function replaceGraph(graph: LGraph | null) {
     detachGraph()
     activeGraph = graph
     nodesByLocator.clear()
@@ -98,11 +100,11 @@ export function createNodeProgressCanvasSync(
     return progressChanged
   }
 
-  const sync = (
+  function sync(
     states: ProgressStates,
     canvas: LGraphCanvas | null,
     graph: LGraph | null
-  ) => {
+  ) {
     const previousStates = activeStates
     activeCanvas = canvas
     activeStates = states
@@ -129,7 +131,7 @@ export function createNodeProgressCanvasSync(
     if (progressChanged) markDirty()
   }
 
-  const dispose = () => {
+  function dispose() {
     detachGraph()
     activeCanvas = null
     activeGraph = null

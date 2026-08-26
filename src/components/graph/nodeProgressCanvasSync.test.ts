@@ -40,7 +40,14 @@ function createNode(id: number) {
       progress = value
     }
   } as unknown as LGraphNode
-  return { node, reads, writes, value: () => progress }
+  return {
+    node,
+    reads,
+    writes,
+    value() {
+      return progress
+    }
+  }
 }
 
 function createGraph(nodes: LGraphNode[], subgraphId?: string) {
@@ -69,13 +76,16 @@ function createGraph(nodes: LGraphNode[], subgraphId?: string) {
   }
 }
 
-const createCanvas = () => ({ setDirty: vi.fn() }) as unknown as LGraphCanvas
+function createCanvas() {
+  return { setDirty: vi.fn() } as unknown as LGraphCanvas
+}
 
-const locatorForNode = (node: LGraphNode): NodeLocatorId =>
-  createNodeLocatorId(
+function locatorForNode(node: LGraphNode): NodeLocatorId {
+  return createNodeLocatorId(
     node.graph?.id === SUBGRAPH_ID ? SUBGRAPH_ID : null,
     node.id
   )
+}
 
 it('does one graph build, then only looks up changed and removed keys', () => {
   const nodes = Array.from({ length: 1_000 }, (_, index) =>
