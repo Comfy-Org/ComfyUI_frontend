@@ -11,6 +11,14 @@ import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import type { ReleaseNote } from '../common/releaseService'
 import ReleaseNotificationToast from './ReleaseNotificationToast.vue'
 
+vi.hoisted(() => {
+  globalThis.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+})
+
 const mockData = vi.hoisted(() => ({ isDesktop: false }))
 
 const { commandExecuteMock } = vi.hoisted(() => ({
