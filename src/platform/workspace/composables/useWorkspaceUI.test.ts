@@ -122,8 +122,7 @@ describe('useWorkspaceUI', () => {
       expect(ui.permissions.value).toMatchObject({
         canManageSubscription: false,
         canManageSubscriptionLifecycle: false,
-        canDowngradeToPersonal: false,
-        canTopUp: false
+        canDowngradeToPersonal: false
       })
       expect(ui.permissions.value.canViewOtherMembers).toBe(false)
       expect(ui.permissions.value.canLeaveWorkspace).toBe(false)
@@ -137,7 +136,7 @@ describe('useWorkspaceUI', () => {
       mockStore.activeWorkspace = personalWorkspace
     })
 
-    it('grants billing access but disables team management', async () => {
+    it('grants billing access with personal workspace visibility', async () => {
       const ui = await loadComposable()
 
       expect(ui.workspaceType.value).toBe('personal')
@@ -145,12 +144,8 @@ describe('useWorkspaceUI', () => {
         canManageSubscription: true,
         canManageSubscriptionLifecycle: true,
         canDowngradeToPersonal: false,
-        canTopUp: true,
         canViewOtherMembers: false,
         canViewPendingInvites: false,
-        canInviteMembers: false,
-        canManageInvites: false,
-        canManageMembers: false,
         canLeaveWorkspace: false,
         canAccessWorkspaceMenu: false
       })
@@ -164,15 +159,11 @@ describe('useWorkspaceUI', () => {
       expect(ui.permissions.value).toMatchObject({
         canViewOtherMembers: true,
         canViewPendingInvites: false,
-        canInviteMembers: false,
-        canManageInvites: false,
-        canManageMembers: false,
         canLeaveWorkspace: true,
         canAccessWorkspaceMenu: true,
         canManageSubscription: false,
         canManageSubscriptionLifecycle: false,
-        canDowngradeToPersonal: false,
-        canTopUp: false
+        canDowngradeToPersonal: false
       })
       expect(ui.uiConfig.value).toMatchObject({
         showEditWorkspaceMenuItem: false,
@@ -253,15 +244,11 @@ describe('useWorkspaceUI', () => {
       expect(ui.permissions.value).toMatchObject({
         canViewOtherMembers: true,
         canViewPendingInvites: true,
-        canInviteMembers: true,
-        canManageInvites: true,
-        canManageMembers: true,
         canLeaveWorkspace: true,
         canAccessWorkspaceMenu: true,
         canManageSubscription: true,
         canManageSubscriptionLifecycle: true,
-        canDowngradeToPersonal: false,
-        canTopUp: true
+        canDowngradeToPersonal: false
       })
     })
 
@@ -309,15 +296,11 @@ describe('useWorkspaceUI', () => {
       expect(ui.permissions.value).toMatchObject({
         canViewOtherMembers: true,
         canViewPendingInvites: false,
-        canInviteMembers: false,
-        canManageInvites: false,
-        canManageMembers: false,
         canLeaveWorkspace: true,
         canAccessWorkspaceMenu: true,
         canManageSubscription: false,
         canManageSubscriptionLifecycle: false,
-        canDowngradeToPersonal: false,
-        canTopUp: false
+        canDowngradeToPersonal: false
       })
     })
 
