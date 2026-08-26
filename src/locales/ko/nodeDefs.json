@@ -16596,6 +16596,238 @@
       }
     }
   },
+  "PixverseV6ExtendVideoNode": {
+    "description": "PixVerse로 기존 비디오를 이어서 생성하며, 필요에 따라 네이티브 오디오를 포함할 수 있습니다. 소스는 40초 미만이어야 하며 어느 한 변도 1920px 이하여야 합니다. 출력은 소스의 해상도를 유지하므로, quality는 프레임 크기가 아니라 이어지는 부분의 렌더링 품질을 설정합니다.",
+    "display_name": "PixVerse V6 비디오 확장",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "모델 및 생성 설정입니다."
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_style": {
+        "name": "style"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "이어서 생성할 비디오입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6FirstLastFrameNode": {
+    "description": "PixVerse를 사용하여 첫 프레임에서 마지막 프레임으로 전환되는 비디오를 생성하며, 필요에 따라 네이티브 오디오를 포함할 수 있습니다. 출력은 첫 프레임의 가로세로 비율을 유지합니다.",
+    "display_name": "PixVerse V6 첫-마지막 프레임에서 비디오",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "모델 및 생성 설정입니다."
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_style": {
+        "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6FusionVideoNode": {
+    "description": "PixVerse를 사용하여 참조 피사체, 배경 및 비디오로 비디오를 구성합니다. 프롬프트에서 이름을 지정하여 참조를 장면에 배치합니다. 예: '{'@'}Subject1이 {'@'}Background1을 가로질러 걷습니다'. 참조 비디오를 연결하면 모델이 Omni 모드로 전환되며, 출력 길이는 가장 긴 참조 비디오와 일치합니다.",
+    "display_name": "PixVerse V6 퓨전(참조에서 비디오)",
+    "inputs": {
+      "backgrounds": {
+        "name": "배경",
+        "tooltip": "피사체가 배치될 장면의 참조 이미지입니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "모델 및 생성 설정입니다."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration_seconds": {
+        "name": "길이(초)"
+      },
+      "model_generate_audio": {
+        "name": "오디오 생성"
+      },
+      "model_negative_prompt": {
+        "name": "네거티브 프롬프트"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_quality": {
+        "name": "품질"
+      },
+      "model_seed": {
+        "name": "시드"
+      },
+      "model_style": {
+        "name": "스타일"
+      },
+      "subjects": {
+        "name": "피사체",
+        "tooltip": "장면에 배치할 피사체의 참조 이미지입니다."
+      },
+      "videos": {
+        "name": "비디오",
+        "tooltip": "피사체, 움직임, 구도 또는 스타일을 참조할 비디오입니다. 최대 2개까지 가능하며, 총 길이는 최대 15초입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6ImageToVideoNode": {
+    "description": "PixVerse를 사용해 이미지에 애니메이션을 적용하며, 선택적으로 네이티브 오디오를 포함할 수 있습니다. 출력은 입력 이미지의 종횡비를 유지합니다.",
+    "display_name": "PixVerse V6 이미지-비디오",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "모델 및 생성 설정입니다."
+      },
+      "model_duration_seconds": {
+        "name": "길이(초)"
+      },
+      "model_generate_audio": {
+        "name": "오디오 생성"
+      },
+      "model_multi_clip": {
+        "name": "멀티 클립"
+      },
+      "model_negative_prompt": {
+        "name": "네거티브 프롬프트"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_quality": {
+        "name": "품질"
+      },
+      "model_seed": {
+        "name": "시드"
+      },
+      "model_style": {
+        "name": "스타일"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6TextToVideoNode": {
+    "description": "PixVerse를 사용해 텍스트 프롬프트에서 비디오를 생성하며, 선택적으로 네이티브 오디오를 포함할 수 있습니다.",
+    "display_name": "PixVerse V6 텍스트-비디오",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "모델 및 생성 설정입니다."
+      },
+      "model_aspect_ratio": {
+        "name": "종횡비"
+      },
+      "model_duration_seconds": {
+        "name": "길이(초)"
+      },
+      "model_generate_audio": {
+        "name": "오디오 생성"
+      },
+      "model_multi_clip": {
+        "name": "멀티 클립"
+      },
+      "model_negative_prompt": {
+        "name": "네거티브 프롬프트"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_quality": {
+        "name": "품질"
+      },
+      "model_seed": {
+        "name": "시드"
+      },
+      "model_style": {
+        "name": "스타일"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PolyexponentialScheduler": {
     "display_name": "다항 지수 스케줄러",
     "inputs": {
@@ -23435,30 +23667,6 @@
       "prompt": {
         "name": "프롬프트",
         "tooltip": "최대 1024자까지 입력 가능합니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "모델 파일",
-        "tooltip": null
-      },
-      "1": {
-        "name": "모델 task_id",
-        "tooltip": null
-      },
-      "2": {
-        "name": "GLB",
-        "tooltip": null
-      }
-    }
-  },
-  "TripoRefineNode": {
-    "description": "v1.4 Tripo 모델로 생성된 드래프트 모델만 정제합니다.",
-    "display_name": "Tripo: 드래프트 모델 정제",
-    "inputs": {
-      "model_task_id": {
-        "name": "모델 작업 ID",
-        "tooltip": "v1.4 Tripo 모델이어야 합니다"
       }
     },
     "outputs": {
