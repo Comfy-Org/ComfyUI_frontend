@@ -277,9 +277,21 @@ describe('CameraManager', () => {
         target: new THREE.Vector3(0, 0, 0),
         zoom: 1,
         cameraType: 'perspective',
-        quaternion: { x: q.x, y: q.y, z: q.z, w: q.w }
+        quaternion: { x: q.x, y: q.y, z: q.z, w: q.w },
+        useCustomUp: true
       }
     }
+
+    it('keeps the world up when the state does not request a custom up', () => {
+      const { useCustomUp: _useCustomUp, ...plainState } = rolledState()
+      manager.setCameraState(plainState)
+
+      expect(manager.activeCamera.up.toArray()).toEqual([0, 1, 0])
+      expect(events.emitEvent).not.toHaveBeenCalledWith(
+        'cameraUpStateChange',
+        expect.anything()
+      )
+    })
 
     it('derives the camera up from an incoming quaternion and flags custom up', () => {
       manager.setCameraState(rolledState())
@@ -348,18 +360,28 @@ describe('CameraManager', () => {
       expect(manager.activeCamera.up.toArray()).toEqual([0, 1, 0])
     })
 
-    it('does not re-enable custom up on a later state restore after toggling it off', () => {
+    it('restores a state saved after toggling custom up off with it still off', () => {
       manager.setCameraState(rolledState())
       manager.setUseCustomUp(false)
+      const saved = manager.getCameraState()
       events.emitEvent.mockClear()
 
-      manager.setCameraState(rolledState())
+      manager.setCameraState(saved)
 
+      expect(saved.useCustomUp).toBe(false)
       expect(manager.activeCamera.up.toArray()).toEqual([0, 1, 0])
       expect(events.emitEvent).toHaveBeenCalledWith('cameraUpStateChange', {
         hasCustomUp: true,
         usingCustomUp: false
       })
+    })
+
+    it('omits useCustomUp from the state until a custom up is captured', () => {
+      expect(manager.getCameraState().useCustomUp).toBeUndefined()
+
+      manager.setCameraState(rolledState())
+
+      expect(manager.getCameraState().useCustomUp).toBe(true)
     })
   })
 })

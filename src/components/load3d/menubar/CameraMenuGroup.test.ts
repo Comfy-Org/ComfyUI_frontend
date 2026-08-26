@@ -46,4 +46,27 @@ describe('CameraMenuGroup', () => {
       screen.getByRole('button', { name: 'Orthographic' })
     ).toBeInTheDocument()
   })
+
+  it('hides the up toggle when the camera has no custom up', () => {
+    renderGroup()
+
+    expect(
+      screen.queryByRole('button', { name: /custom up|natural up/i })
+    ).not.toBeInTheDocument()
+  })
+
+  it('toggles between the custom and natural up', async () => {
+    const config: CameraConfig = {
+      ...makeConfig(),
+      hasCustomUp: true,
+      useCustomUp: true
+    }
+    const { user } = renderGroup(config)
+
+    await user.click(screen.getByRole('button', { name: 'Custom up' }))
+    expect(config.useCustomUp).toBe(false)
+
+    await user.click(screen.getByRole('button', { name: 'Natural up' }))
+    expect(config.useCustomUp).toBe(true)
+  })
 })

@@ -10,6 +10,27 @@
     <span v-if="!compact">{{ cameraTypeLabel }}</span>
   </button>
 
+  <button
+    v-if="hasCustomUp"
+    v-tooltip.bottom="
+      tip(useCustomUp ? t('load3d.useNaturalUp') : t('load3d.useCustomUp'))
+    "
+    :class="actionClass(false)"
+    type="button"
+    :aria-label="compact ? upLabel : undefined"
+    @click="toggleUp"
+  >
+    <i
+      :class="
+        cn(
+          useCustomUp ? 'icon-[lucide--compass]' : 'icon-[lucide--rotate-ccw]',
+          'size-4'
+        )
+      "
+    />
+    <span v-if="!compact">{{ upLabel }}</span>
+  </button>
+
   <Popover v-if="isPerspective" v-model:open="fovOpen">
     <PopoverTrigger as-child>
       <button
@@ -76,6 +97,21 @@ const cameraTypeLabel = computed(() =>
   cameraType.value ? t(`load3d.cameraType.${cameraType.value}`) : ''
 )
 const fov = computed(() => config.value?.fov ?? 0)
+const hasCustomUp = computed(() => config.value?.hasCustomUp === true)
+const useCustomUp = computed(
+  () => config.value?.hasCustomUp === true && config.value.useCustomUp
+)
+const upLabel = computed(() =>
+  useCustomUp.value
+    ? t('load3d.menuBar.customUp')
+    : t('load3d.menuBar.naturalUp')
+)
+
+function toggleUp() {
+  const current = config.value
+  if (!current?.hasCustomUp) return
+  current.useCustomUp = !current.useCustomUp
+}
 
 function switchCamera() {
   if (!config.value) return

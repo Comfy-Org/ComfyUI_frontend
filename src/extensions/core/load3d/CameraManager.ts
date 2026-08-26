@@ -162,6 +162,7 @@ export class CameraManager implements CameraManagerInterface {
           : (this.activeCamera as THREE.PerspectiveCamera).zoom,
       cameraType: this.getCurrentCameraType(),
       quaternion: { x, y, z, w },
+      ...(this.customUp !== null && { useCustomUp: this.usingCustomUp }),
       fov: this.perspectiveCamera.fov,
       aspect: this.perspectiveCamera.aspect,
       near: activeCamera.near,
@@ -199,7 +200,7 @@ export class CameraManager implements CameraManagerInterface {
       this.activeCamera.updateProjectionMatrix()
     }
 
-    if (state.quaternion) {
+    if (state.quaternion && state.useCustomUp !== undefined) {
       const q = new THREE.Quaternion(
         state.quaternion.x,
         state.quaternion.y,
@@ -208,10 +209,11 @@ export class CameraManager implements CameraManagerInterface {
       )
       if (q.lengthSq() === 0) q.identity()
       const appliedUp = new THREE.Vector3(0, 1, 0).applyQuaternion(q)
-      const isFirstDerivation = this.customUp === null
       this.customUp = appliedUp.clone()
-      if (isFirstDerivation) this.usingCustomUp = true
-      if (this.usingCustomUp) this.activeCamera.up.copy(appliedUp)
+      this.usingCustomUp = state.useCustomUp
+      this.activeCamera.up.copy(
+        this.usingCustomUp ? appliedUp : new THREE.Vector3(0, 1, 0)
+      )
       this.eventManager.emitEvent('cameraUpStateChange', {
         hasCustomUp: true,
         usingCustomUp: this.usingCustomUp
