@@ -981,6 +981,10 @@ export function createDefRegistry(): {
     // it from the executable output. Note there is no applyToGraph here.
     if (definition.execution === 'frontend') {
       Defined.prototype.isVirtualNode = true
+      // With a resolver, the resolution pass owns the outputs — execution-time
+      // link walking stops at the node instead of guessing with the legacy
+      // virtual shapes, which cannot express a computed source like Get/Set.
+      if (definition.resolve) Defined.prototype.resolutionOwned = true
     }
 
     // Hooks route through the same registration path as extend(), so they
@@ -1211,10 +1215,15 @@ export function createDefRegistry(): {
       // type saw nothing happen. The legacy hook this replaces modifies the
       // same object in place, so doing likewise keeps one contract, not two.
       if (frontendOnly) {
-        // The same flag `defs.define` sets for a pack-declared frontend node.
-        // `graphToPrompt` skips it, which is the whole point.
+        // The same flags `defs.define` sets for a pack-declared frontend
+        // node. `graphToPrompt` skips it, which is the whole point; with a
+        // resolver, execution-time link walking stops at the node and the
+        // resolution pass substitutes.
         ;(nodeType.prototype as Partial<LGraphNode>).isVirtualNode = true
-        if (declaredResolver) frontendResolvers.set(def.type, declaredResolver)
+        if (declaredResolver) {
+          frontendResolvers.set(def.type, declaredResolver)
+          ;(nodeType.prototype as Partial<LGraphNode>).resolutionOwned = true
+        }
       }
 
       // Outside the `frontendOnly` branch deliberately: broadcasting is about
