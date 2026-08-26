@@ -47,14 +47,7 @@ export function useSettingsPlansCheckout() {
   const workspaceStore = useTeamWorkspaceStore()
   const billingOperationStore = useBillingOperationStore()
   const { permissions } = useWorkspaceUI()
-  const { currentTeamCreditStop, isActiveSubscription, isFreeTier } =
-    useBillingContext()
-
-  // Any paid subscription — personal or team — moving to a team stop is a plan
-  // change to the backend, so it must be previewed and consented to.
-  const hasPaidSubscription = computed(
-    () => isActiveSubscription.value && !isFreeTier.value
-  )
+  const { currentTeamCreditStop, hasPaidCheckoutPlan } = useBillingContext()
 
   const isStarting = ref(false)
   // Locked from the click through sign-in, hydration and the open dialog, and
@@ -99,8 +92,12 @@ export function useSettingsPlansCheckout() {
         credits: stop.credits,
         discountedUsd: getStopDiscountedMonthlyUsd(stop, billingCycle)
       },
+      // Any paid plan on the checkout rail — personal or team — moving to a
+      // team stop is a plan change to the backend, so it must be previewed and
+      // consented to. The account rail cannot answer this off Cloud, where it
+      // reports every user as entitled.
       isChange:
-        currentTeamCreditStop.value !== null || hasPaidSubscription.value
+        currentTeamCreditStop.value !== null || hasPaidCheckoutPlan.value
     })
   }
 

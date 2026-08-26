@@ -12,8 +12,7 @@ const {
   mockCanManageSubscription,
   mockIsSettingUp,
   mockCurrentTeamCreditStop,
-  mockIsActiveSubscription,
-  mockIsFreeTier,
+  mockHasPaidCheckoutPlan,
   mockSetDialogOpen
 } = vi.hoisted(() => ({
   mockShowSignInDialog: vi.fn(),
@@ -26,8 +25,7 @@ const {
   mockCanManageSubscription: { value: true },
   mockIsSettingUp: { value: false },
   mockCurrentTeamCreditStop: { value: null as { id: string } | null },
-  mockIsActiveSubscription: { value: false },
-  mockIsFreeTier: { value: false },
+  mockHasPaidCheckoutPlan: { value: false },
   mockSetDialogOpen: { impl: (_value: boolean) => {} }
 }))
 
@@ -38,14 +36,9 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
         return mockCurrentTeamCreditStop.value
       }
     },
-    isActiveSubscription: {
+    hasPaidCheckoutPlan: {
       get value() {
-        return mockIsActiveSubscription.value
-      }
-    },
-    isFreeTier: {
-      get value() {
-        return mockIsFreeTier.value
+        return mockHasPaidCheckoutPlan.value
       }
     }
   })
@@ -166,8 +159,7 @@ describe('useSettingsPlansCheckout', () => {
     mockCanManageSubscription.value = true
     mockIsSettingUp.value = false
     mockCurrentTeamCreditStop.value = null
-    mockIsActiveSubscription.value = false
-    mockIsFreeTier.value = false
+    mockHasPaidCheckoutPlan.value = false
     mockShowSignInDialog.mockResolvedValue(true)
     mockInitialize.mockResolvedValue(undefined)
     mockShowLayoutDialog.mockReset()
@@ -247,7 +239,7 @@ describe('useSettingsPlansCheckout', () => {
   // backend, so it has to be previewed like any other change.
   it('marks a paid personal subscriber choosing a team stop as a change', async () => {
     const checkout = await setup()
-    mockIsActiveSubscription.value = true
+    mockHasPaidCheckoutPlan.value = true
 
     const { props } = await openAndClose(() =>
       checkout.subscribeToTeam({
@@ -260,10 +252,11 @@ describe('useSettingsPlansCheckout', () => {
     expect(props.initialCheckout).toMatchObject({ isChange: true })
   })
 
-  it('marks a free-tier user choosing a team stop as a fresh subscribe', async () => {
+  // Off Cloud the account rail reports every user entitled, so an unsubscribed
+  // legacy-Stripe workspace must read its "no paid plan" from the checkout rail
+  // or its first team subscribe would be previewed as a plan change.
+  it('marks an unsubscribed user choosing a team stop as a fresh subscribe', async () => {
     const checkout = await setup()
-    mockIsActiveSubscription.value = true
-    mockIsFreeTier.value = true
 
     const { props } = await openAndClose(() =>
       checkout.subscribeToTeam({
