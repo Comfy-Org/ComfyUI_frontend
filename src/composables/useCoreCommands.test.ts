@@ -697,17 +697,35 @@ describe('useCoreCommands', () => {
       }
     )
 
-    it('Comfy.QueuePrompt shows the subscription dialog on Cloud without an active subscription', async () => {
-      mockDistributionState.isCloud = true
+    it('Comfy.QueueSelectedOutputNodes passes the gate on Local without subscription features', async () => {
       mockBillingState.canAccessSubscriptionFeatures = false
 
-      await findCmd('Comfy.QueuePrompt').function()
+      await findCmd('Comfy.QueueSelectedOutputNodes').function()
 
-      expect(app.queuePrompt).not.toHaveBeenCalled()
-      expect(mockBillingState.showSubscriptionDialog).toHaveBeenCalledWith({
-        reason: 'subscribe_to_run'
-      })
+      expect(mockBillingState.showSubscriptionDialog).not.toHaveBeenCalled()
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
     })
+
+    it.for([
+      'Comfy.QueuePrompt',
+      'Comfy.QueuePromptFront',
+      'Comfy.QueueSelectedOutputNodes'
+    ] as const)(
+      '%s shows the subscription dialog on Cloud without an active subscription',
+      async (id) => {
+        mockDistributionState.isCloud = true
+        mockBillingState.canAccessSubscriptionFeatures = false
+
+        await findCmd(id).function()
+
+        expect(app.queuePrompt).not.toHaveBeenCalled()
+        expect(mockBillingState.showSubscriptionDialog).toHaveBeenCalledWith({
+          reason: 'subscribe_to_run'
+        })
+      }
+    )
 
     it('Comfy.QueuePrompt queues on Cloud with an active subscription', async () => {
       mockDistributionState.isCloud = true
