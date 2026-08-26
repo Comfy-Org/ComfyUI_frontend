@@ -21,7 +21,7 @@ it('reports only exclusions applicable to the Core manifest', () => {
   expect(result.status, output).toBe(0)
   expect(output).toContain('Pack-level coverage exclusions - **0 of 6 packs**')
   expect(output).toContain(
-    'S2 - SKIP - NODE NOT EXERCISED - ComfyUI-VideoHelperSuite / VHS_BatchManager'
+    'Tier-scoped node coverage exclusions - **0 node, 0 S-tier surfaces**'
   )
   expect(output).not.toContain('ComfyUI-LivePortraitKJ')
   expect(output).not.toContain('**PROBLEM**')

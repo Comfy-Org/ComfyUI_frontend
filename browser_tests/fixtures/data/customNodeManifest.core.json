@@ -26,8 +26,8 @@
   {
     "pack": "ComfyUI-VideoHelperSuite",
     "repo": "https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite",
-    "pin": "4ee72c065db22c9d96c2427954dc69e7b908444b",
-    "pinnedAt": "2026-08-14",
+    "pin": "115de7a9d9e34410cffb9ecfd268e993b11a50fb",
+    "pinnedAt": "2026-08-26",
     "tiers": ["load", "connectivity", "run"],
     "workflow": "assets/customNodes/vhs_video_pipeline_run.json",
     "expectedNodes": ["VHS_LoadVideoPath", "VHS_VideoInfo"],

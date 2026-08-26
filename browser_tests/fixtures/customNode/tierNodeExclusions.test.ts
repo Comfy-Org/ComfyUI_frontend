@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 
 import type { TierNodeExclusion } from '@e2e/fixtures/customNode/tierNodeExclusions'
 import {
-  CUSTOM_NODE_TIER_NODE_EXCLUSIONS,
   eligibleNodeTypesForTier,
   tierNodeExclusionProblems
 } from '@e2e/fixtures/customNode/tierNodeExclusions'
@@ -81,23 +80,5 @@ describe('tier node exclusions', () => {
         [exclusion]
       )
     ).toEqual([])
-  })
-
-  it('excludes only the two pinned VHS nodes from S2', () => {
-    const target = {
-      identity: '4ee72c065db22c9d96c2427954dc69e7b908444b',
-      pack: 'ComfyUI-VideoHelperSuite'
-    }
-    const nodes = ['VHS_BatchManager', 'VHS_LoadVideo', 'VHS_VideoInfo']
-
-    expect(eligibleNodeTypesForTier(target, 'S2', nodes)).toEqual([
-      'VHS_VideoInfo'
-    ])
-    expect(eligibleNodeTypesForTier(target, 'S1', nodes)).toEqual(nodes)
-    expect(
-      CUSTOM_NODE_TIER_NODE_EXCLUSIONS.filter(
-        ({ pack }) => pack === target.pack
-      ).every(({ ticket }) => ticket.includes('FE-1869'))
-    ).toBe(true)
   })
 })

@@ -27,30 +27,6 @@ export interface TierNodeExclusion {
 
 export const CUSTOM_NODE_TIER_NODE_EXCLUSIONS: readonly TierNodeExclusion[] = [
   {
-    identity: '4ee72c065db22c9d96c2427954dc69e7b908444b',
-    nodeType: 'VHS_BatchManager',
-    pack: 'ComfyUI-VideoHelperSuite',
-    reason:
-      'the pinned VHSINT displayValue returns a number and fitText calls slice when Nodes 2.0 truncates it, so the node throws before its two widgets mount',
-    restore:
-      'merge Kosinkadink/ComfyUI-VideoHelperSuite#709, pin that commit, and remove this entry',
-    ticket:
-      'https://linear.app/comfyorg/issue/FE-1869/e2e-nodes-tests-restore-vhs-nodes-20-widget-mounting',
-    tiers: ['S2']
-  },
-  {
-    identity: '4ee72c065db22c9d96c2427954dc69e7b908444b',
-    nodeType: 'VHS_LoadVideo',
-    pack: 'ComfyUI-VideoHelperSuite',
-    reason:
-      'the pinned VHSINT displayValue returns a number and fitText calls slice when Nodes 2.0 truncates it, so the node throws before its ten widgets mount',
-    restore:
-      'merge Kosinkadink/ComfyUI-VideoHelperSuite#709, pin that commit, and remove this entry',
-    ticket:
-      'https://linear.app/comfyorg/issue/FE-1869/e2e-nodes-tests-restore-vhs-nodes-20-widget-mounting',
-    tiers: ['S2']
-  },
-  {
     identity: 'comfyui-itools@0.6.8',
     nodeType: 'iToolsCropImage',
     pack: 'comfyui-itools',
