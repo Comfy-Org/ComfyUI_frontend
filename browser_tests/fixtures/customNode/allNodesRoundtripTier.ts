@@ -131,14 +131,6 @@ const WIDGET_SET_ALLOWLIST_BY_IDENTITY: Record<
 
 const ROUNDTRIP_VALUE_ALLOWLIST: Record<string, Record<string, string>> = {
   'ComfyUI-VideoHelperSuite': {
-    VHS_LoadVideo:
-      'upload-button widget serializes a placeholder value fresh but is rebuilt valueless by pack JS on configure',
-    VHS_LoadVideoFFmpeg:
-      'upload-button widget serializes a placeholder value fresh but is rebuilt valueless by pack JS on configure',
-    VHS_LoadImages:
-      'upload-button widget serializes a placeholder value fresh but is rebuilt valueless by pack JS on configure',
-    VHS_LoadAudioUpload:
-      'upload-button widget serializes a placeholder value fresh but is rebuilt valueless by pack JS on configure',
     VHS_VAEDecodeBatched:
       'per_batch serializes null after configure (VHS ANNOTATED widget deserialization gap) - upstream-report candidate',
     VHS_VAEEncodeBatched:
