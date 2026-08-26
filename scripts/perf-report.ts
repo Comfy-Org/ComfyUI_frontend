@@ -21,6 +21,15 @@ interface PerfMeasurement {
   layouts: number
   layoutDurationMs: number
   taskDurationMs: number
+  taskOtherDurationMs?: number | null
+  v8CompileDurationMs?: number | null
+  devToolsCommandDurationMs?: number | null
+  threadTimeMs?: number | null
+  processTimeMs?: number | null
+  accountedTaskDurationMs?: number | null
+  taskAccountingResidualMs?: number | null
+  missingCdpMetrics?: string[]
+  nonMonotonicCdpMetrics?: string[]
   heapDeltaBytes: number
   heapUsedBytes: number
   domNodes: number
@@ -64,6 +73,12 @@ type MetricKey =
   | 'layouts'
   | 'layoutDurationMs'
   | 'taskDurationMs'
+  | 'taskOtherDurationMs'
+  | 'v8CompileDurationMs'
+  | 'devToolsCommandDurationMs'
+  | 'threadTimeMs'
+  | 'processTimeMs'
+  | 'taskAccountingResidualMs'
   | 'domNodes'
   | 'scriptDurationMs'
   | 'eventListeners'
@@ -121,6 +136,20 @@ const REPORTED_METRICS: MetricDef[] = [
     minAbsDelta: 5
   },
   { key: 'taskDurationMs', label: 'task duration', unit: 'ms' },
+  { key: 'taskOtherDurationMs', label: 'task other', unit: 'ms' },
+  { key: 'v8CompileDurationMs', label: 'V8 compile', unit: 'ms' },
+  {
+    key: 'devToolsCommandDurationMs',
+    label: 'DevTools command',
+    unit: 'ms'
+  },
+  { key: 'threadTimeMs', label: 'renderer main-thread CPU', unit: 'ms' },
+  { key: 'processTimeMs', label: 'renderer process CPU', unit: 'ms' },
+  {
+    key: 'taskAccountingResidualMs',
+    label: 'task accounting drift',
+    unit: 'ms'
+  },
   { key: 'scriptDurationMs', label: 'script duration', unit: 'ms' },
   { key: 'totalBlockingTimeMs', label: 'TBT', unit: 'ms' },
   { key: 'heapUsedBytes', label: 'heap used', unit: 'bytes' },
@@ -267,6 +296,14 @@ function renderHeadlineSummary(
     const over16 = medianMetric(prSamples, 'rafIntervalsOver16_67Ms')
     const tbt = medianMetric(prSamples, 'totalBlockingTimeMs')
     const heap = medianMetric(prSamples, 'heapUsedBytes')
+    const missingCdpMetrics = [
+      ...new Set(prSamples.flatMap((sample) => sample.missingCdpMetrics ?? []))
+    ]
+    const nonMonotonicCdpMetrics = [
+      ...new Set(
+        prSamples.flatMap((sample) => sample.nonMonotonicCdpMetrics ?? [])
+      )
+    ]
 
     const parts: string[] = [`**${testName}**:`]
     if (rejectedReasons.length > 0) {
@@ -277,6 +314,14 @@ function renderHeadlineSummary(
     if (over16 !== null) parts.push(`${over16.toFixed(0)} intervals >16.67ms`)
     if (tbt !== null) parts.push(`${tbt.toFixed(0)}ms TBT`)
     if (heap !== null) parts.push(`${formatBytes(heap)} heap`)
+    if (missingCdpMetrics.length > 0) {
+      parts.push(`missing CDP metrics: ${missingCdpMetrics.join(', ')}`)
+    }
+    if (nonMonotonicCdpMetrics.length > 0) {
+      parts.push(
+        `non-monotonic CDP metrics: ${nonMonotonicCdpMetrics.join(', ')}`
+      )
+    }
 
     if (parts.length > 1) {
       summaries.push(`${parts[0]} ${parts.slice(1).join(' · ')}`)

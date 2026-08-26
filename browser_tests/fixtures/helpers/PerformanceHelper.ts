@@ -1,5 +1,12 @@
 import type { CDPSession, Page } from '@playwright/test'
 
+import type { CdpMetricSnapshot } from '@/utils/cdpPerformanceMetrics'
+import {
+  computeCdpTaskAccounting,
+  parseCdpMetrics,
+  requireCdpMetric
+} from '@/utils/cdpPerformanceMetrics'
+
 interface PerfSnapshot {
   RecalcStyleCount: number
   RecalcStyleDuration: number
@@ -12,6 +19,7 @@ interface PerfSnapshot {
   JSHeapTotalSize: number
   ScriptDuration: number
   JSEventListeners: number
+  cdpMetrics: CdpMetricSnapshot
 }
 
 interface RafCollectorState {
@@ -48,6 +56,19 @@ export interface PerfMeasurement extends RafIntervalMetrics {
   layouts: number
   layoutDurationMs: number
   taskDurationMs: number
+  /** Chromium's residual task bucket; not proof of native execution. */
+  taskOtherDurationMs: number | null
+  v8CompileDurationMs: number | null
+  devToolsCommandDurationMs: number | null
+  /** Renderer main-thread CPU time, when Chromium exposes it. */
+  threadTimeMs: number | null
+  /** CPU time across the renderer process, not just this page or thread. */
+  processTimeMs: number | null
+  accountedTaskDurationMs: number | null
+  /** Arithmetic drift after all Chromium task buckets, not work attribution. */
+  taskAccountingResidualMs: number | null
+  missingCdpMetrics: string[]
+  nonMonotonicCdpMetrics: string[]
   heapDeltaBytes: number
   heapUsedBytes: number
   domNodes: number
@@ -92,7 +113,7 @@ export class PerformanceHelper {
 
   async init(): Promise<void> {
     this.cdp = await this.page.context().newCDPSession(this.page)
-    await this.cdp.send('Performance.enable')
+    await this.cdp.send('Performance.enable', { timeDomain: 'timeTicks' })
   }
 
   async dispose(): Promise<void> {
@@ -113,9 +134,8 @@ export class PerformanceHelper {
     const { metrics } = (await this.cdp.send('Performance.getMetrics')) as {
       metrics: { name: string; value: number }[]
     }
-    function get(name: string): number {
-      return metrics.find((m) => m.name === name)?.value ?? 0
-    }
+    const cdpMetrics = parseCdpMetrics(metrics)
+    const get = (name: string) => requireCdpMetric(cdpMetrics, name)
     return {
       RecalcStyleCount: get('RecalcStyleCount'),
       RecalcStyleDuration: get('RecalcStyleDuration'),
@@ -127,7 +147,8 @@ export class PerformanceHelper {
       Nodes: get('Nodes'),
       JSHeapTotalSize: get('JSHeapTotalSize'),
       ScriptDuration: get('ScriptDuration'),
-      JSEventListeners: get('JSEventListeners')
+      JSEventListeners: get('JSEventListeners'),
+      cdpMetrics
     }
   }
 
@@ -246,11 +267,15 @@ export class PerformanceHelper {
     const before = this.snapshot
     this.snapshot = null
 
-    function delta(key: keyof PerfSnapshot): number {
+    function delta(key: Exclude<keyof PerfSnapshot, 'cdpMetrics'>): number {
       return after[key] - before[key]
     }
 
     const totalBlockingTimeMs = await this.collectTBT()
+    const taskAccounting = computeCdpTaskAccounting(
+      before.cdpMetrics,
+      after.cdpMetrics
+    )
     const rafIntervalsMs = rafCollection?.intervalsMs ?? []
     const nonMonotonicInterval = rafIntervalsMs.some(
       (duration) => !Number.isFinite(duration) || duration <= 0
@@ -276,6 +301,7 @@ export class PerformanceHelper {
       layouts: delta('LayoutCount'),
       layoutDurationMs: delta('LayoutDuration') * 1000,
       taskDurationMs: delta('TaskDuration') * 1000,
+      ...taskAccounting,
       heapDeltaBytes: delta('JSHeapUsedSize'),
       heapUsedBytes: after.JSHeapUsedSize,
       domNodes: delta('Nodes'),

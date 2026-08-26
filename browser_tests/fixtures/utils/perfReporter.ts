@@ -4,7 +4,7 @@ import { join } from 'path'
 import type { PerfMeasurement } from '@e2e/fixtures/helpers/PerformanceHelper'
 
 interface PerfReport {
-  schemaVersion: 2
+  schemaVersion: 3
   timestamp: string
   gitSha: string
   branch: string
@@ -78,7 +78,7 @@ export function writePerfReport(
   )
 
   const report: PerfReport = {
-    schemaVersion: 2,
+    schemaVersion: 3,
     timestamp: new Date().toISOString(),
     gitSha,
     branch,
