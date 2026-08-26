@@ -36,12 +36,11 @@ on:
   push:
     branches: [main]
     paths:
-      - 'src/**'
-      - 'scripts/registry-census/**'
-      - 'browser_tests/assets/default.json'
-      - 'vitest.matrix.config.mts'
-      - 'vitest.setup.ts'
-      - '.github/workflows/ci-ecosystem-matrix.yaml'
+      - '**'
+      - '!apps/**'
+      - '!docs/**'
+      - '!.storybook/**'
+      - '!**/*.md'
   workflow_dispatch:
 
 permissions:
