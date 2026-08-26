@@ -11,7 +11,8 @@ import {
   createRgthreeLifecycleInstaller,
   getRgthreePrototypeWrapperDepth,
   installRgthreeLifecycleFixture,
-  RGTHREE_LIFECYCLE_FIXTURE_IDENTITY
+  RGTHREE_LIFECYCLE_FIXTURE_IDENTITY,
+  RgthreeLabelFixtureNode
 } from '@/lib/litegraph/test/fixtures/rgthreeLifecycleCompatFixture'
 import type {
   RgthreeLifecycleCanvas,
@@ -64,7 +65,7 @@ function createScaleSetup(scale: number): ScaleSetup {
   const nodes = [source]
 
   for (let index = 0; index < scale; index++) {
-    const label = new LGraphNode(`Label ${index}\nSecond line`)
+    const label = new RgthreeLabelFixtureNode(`Label ${index}\nSecond line`)
     label.type = 'fixture/label'
     graph.add(label)
     nodes.push(label)
@@ -206,6 +207,24 @@ describe('rgthree clean-room lifecycle compatibility fixture', () => {
     }
 
     expect(setup.canvas.coreDraws).toHaveBeenCalledTimes(4)
+  })
+
+  it('uses label constructor identity instead of the node type string', () => {
+    const setup = createScaleSetup(1)
+    const installation = installRgthreeLifecycleFixture(
+      TestCanvas.prototype,
+      setup.host,
+      setup.scheduler
+    )
+    const typeOnlyImpostor = new LGraphNode('Type-only impostor')
+    typeOnlyImpostor.type = 'fixture/label'
+
+    setup.canvas.drawNode(setup.nodes[1], setup.context)
+    setup.canvas.drawNode(typeOnlyImpostor, setup.context)
+
+    expect(installation.counters.labelActivations).toBe(1)
+    expect(installation.counters.labelMeasurements).toBe(2)
+    installation.dispose()
   })
 
   it('preserves wrappers installed later by another extension', () => {

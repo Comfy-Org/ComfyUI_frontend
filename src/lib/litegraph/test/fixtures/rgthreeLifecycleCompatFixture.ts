@@ -1,5 +1,5 @@
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 
 import { CLEAN_EXTENSION_FIXTURE_IDENTITY } from './cleanExtensionCompatFixture'
 import type {
@@ -50,6 +50,8 @@ export interface RgthreeLifecycleHost {
 }
 
 type CanvasPrototype = Pick<RgthreeLifecycleCanvas, 'drawNode'>
+
+export class RgthreeLabelFixtureNode extends LGraphNode {}
 
 export interface RgthreeLifecycleInstallation {
   readonly counters: RgthreeLifecycleCounters
@@ -114,7 +116,7 @@ export function createRgthreeLifecycleInstaller() {
 
       counters.wrapperCalls++
       counters.forwardedCoreDraws++
-      if (node.type === 'fixture/label') {
+      if (node.constructor === RgthreeLabelFixtureNode.prototype.constructor) {
         counters.labelActivations++
         for (const line of node.title.split('\n')) {
           context.measureText(line)
