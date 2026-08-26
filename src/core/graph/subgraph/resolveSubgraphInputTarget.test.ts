@@ -1,6 +1,9 @@
 import { describe, expect, test, vi } from 'vitest'
 
-import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
+import {
+  resolveSubgraphInputSourceNode,
+  resolveSubgraphInputTarget
+} from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraph,
@@ -212,7 +215,7 @@ describe('resolveSubgraphInputTarget', () => {
     })
   })
 
-  test('three-level nesting returns immediate child target, not deepest', () => {
+  test('three-level nesting distinguishes immediate target from source', () => {
     // outer → middle → inner (concrete)
     const innerSubgraph = createTestSubgraph({
       inputs: [{ name: 'seed', type: '*' }]
@@ -256,5 +259,8 @@ describe('resolveSubgraphInputTarget', () => {
       nodeId: '902',
       widgetName: 'seed'
     })
+    expect(resolveSubgraphInputSourceNode(outerSubgraphNode, 'seed')).toBe(
+      concreteNode
+    )
   })
 })
