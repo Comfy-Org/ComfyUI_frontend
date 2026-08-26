@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as VueUseCoreModule from '@vueuse/core'
 
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
+import type { SharedWorkflowUrlLoadStatus } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
 
 type VueUseCore = typeof VueUseCoreModule
 
@@ -77,6 +78,8 @@ async function freshEntry() {
   return useFirstRunEntry()
 }
 
+type FirstRunEntry = Awaited<ReturnType<typeof freshEntry>>
+
 describe('useFirstRunEntry', () => {
   beforeEach(() => {
     mocks.isCloud = true
@@ -88,7 +91,22 @@ describe('useFirstRunEntry', () => {
     mocks.setSetting.mockImplementation((key: string, value: unknown) => {
       mocks.settings[key] = value
     })
+    // beginTour reports whether a tour actually started; default to the
+    // ordinary case so only tests about a refused start have to say so.
+    mocks.beginTour.mockResolvedValue(true)
   })
+
+  const permanentDisqualifiers = [
+    ['not on cloud', () => void (mocks.isCloud = false)],
+    ['a returning user', () => void (mocks.isNewUser = false)]
+  ] as const
+
+  const transientDisqualifiers = [
+    ['below the md breakpoint', () => void (mocks.isDesktopWidth = false)],
+    ['subscription disabled', () => void (mocks.subscriptionEnabled = false)],
+    ['new-user state undetermined', () => void (mocks.isNewUser = null)],
+    ['the tour flag off', () => void (mocks.tourFlag = false)]
+  ] as const
 
   describe('what a fresh user sees', () => {
     it('shows Getting Started to a candidate', async () => {
@@ -99,18 +117,6 @@ describe('useFirstRunEntry', () => {
       expect(entry.gettingStartedVisible.value).toBe(true)
       expect(mocks.execute).not.toHaveBeenCalled()
     })
-
-    const permanentDisqualifiers: [string, () => void][] = [
-      ['not on cloud', () => void (mocks.isCloud = false)],
-      ['a returning user', () => void (mocks.isNewUser = false)]
-    ]
-
-    const transientDisqualifiers: [string, () => void][] = [
-      ['below the md breakpoint', () => void (mocks.isDesktopWidth = false)],
-      ['subscription disabled', () => void (mocks.subscriptionEnabled = false)],
-      ['new-user state undetermined', () => void (mocks.isNewUser = null)],
-      ['the tour flag off', () => void (mocks.tourFlag = false)]
-    ]
 
     it.for([...permanentDisqualifiers, ...transientDisqualifiers])(
       'opens the template browser instead, with %s',
@@ -174,7 +180,7 @@ describe('useFirstRunEntry', () => {
     })
   })
 
-  it('marks a url-intent startup completed without taking over the screen', async () => {
+  it('marks a url-intent startup completed once its tour starts, without taking over the screen', async () => {
     const entry = await freshEntry()
 
     await entry.handleStartupOutcome('url-intent')
@@ -184,10 +190,84 @@ describe('useFirstRunEntry', () => {
       'A share or template link is the user’s choice; onboarding must not cover it'
     ).toBe(false)
     expect(mocks.execute).not.toHaveBeenCalled()
+
+    await entry.handleUrlWorkflow('url-intent', 'image_z_image_turbo')
+
     expect(
       mocks.setSetting,
       'Without this the template browser reopens on every launch, as it did before this flow existed'
     ).toHaveBeenCalledWith('Comfy.TutorialCompleted', true)
+  })
+
+  /** Both shapes of URL a first-run boot can arrive on. */
+  const urlArrivals = [
+    ['a template link', 'image_z_image_turbo', undefined],
+    ['a share link', undefined, 'loaded']
+  ] as const satisfies readonly [
+    string,
+    string | undefined,
+    SharedWorkflowUrlLoadStatus | undefined
+  ][]
+
+  const deferredUrlBoots = transientDisqualifiers.flatMap(([why, disqualify]) =>
+    urlArrivals.map(
+      ([arrival, templateId, sharedStatus]) =>
+        [
+          `${arrival} with ${why}`,
+          disqualify,
+          templateId,
+          sharedStatus
+        ] as const
+    )
+  )
+
+  it.for(deferredUrlBoots)(
+    'runs a url-intent boot to the end for %s, offering no tour and keeping eligibility',
+    async ([, disqualify, templateId, sharedStatus]) => {
+      disqualify()
+      const entry = await freshEntry()
+
+      await entry.handleStartupOutcome('url-intent')
+      await entry.handleUrlWorkflow('url-intent', templateId, sharedStatus)
+
+      expect(
+        mocks.beginTour,
+        'an ineligible boot has no tour to give'
+      ).not.toHaveBeenCalled()
+      expect(
+        entry.gettingStartedVisible.value,
+        'the link is the user’s choice; onboarding must not cover it'
+      ).toBe(false)
+      expect(
+        mocks.setSetting,
+        'no tour ran, so the write-once flag that pays for one must stay unspent for the boot that can lift this'
+      ).not.toHaveBeenCalled()
+    }
+  )
+
+  it('tours a template link on the boot after one that only deferred', async () => {
+    mocks.isDesktopWidth = false
+    const phone = await freshEntry()
+    await phone.handleStartupOutcome('url-intent')
+    await phone.handleUrlWorkflow('url-intent', 'image_z_image_turbo')
+
+    expect(mocks.beginTour).not.toHaveBeenCalled()
+
+    mocks.isDesktopWidth = true
+    // What `checkIsNewUser()` reads on the next launch.
+    mocks.isNewUser = !mocks.settings['Comfy.TutorialCompleted']
+    const laptop = await freshEntry()
+    await laptop.handleStartupOutcome('url-intent')
+    await laptop.handleUrlWorkflow('url-intent', 'image_z_image_turbo')
+
+    expect(
+      mocks.beginTour,
+      'opening a template link on a phone and returning on a laptop is ordinary behaviour'
+    ).toHaveBeenCalledWith('image_z_image_turbo')
+    expect(
+      mocks.settings['Comfy.TutorialCompleted'],
+      'the flag is spent on the boot that finally delivered the tour, not before'
+    ).toBe(true)
   })
 
   it('never onboards over restored work, even for an apparent new user', async () => {
@@ -205,18 +285,34 @@ describe('useFirstRunEntry', () => {
     ).not.toHaveBeenCalled()
   })
 
-  it.for(['fresh', 'url-intent'] as const)(
+  /**
+   * A `url-intent` boot only settles once `handleUrlWorkflow` has seen what the
+   * link loaded, so the invariant is asserted over the pair of handlers that
+   * GraphCanvas awaits in turn, not over the first one alone.
+   */
+  const startups: [StartupOutcome, (entry: FirstRunEntry) => Promise<void>][] =
+    [
+      ['fresh', async () => {}],
+      [
+        'url-intent',
+        (entry) => entry.handleUrlWorkflow('url-intent', 'image_z_image_turbo')
+      ]
+    ]
+
+  it.for(startups)(
     'settles the first-run decision on a %s startup rather than leaving it pending',
-    async (outcome: StartupOutcome) => {
+    async ([outcome, finishBoot]) => {
       const entry = await freshEntry()
 
       await entry.handleStartupOutcome(outcome)
+      await finishBoot(entry)
 
       expect(
         entry.gettingStartedVisible.value ||
+          mocks.beginTour.mock.calls.length > 0 ||
           mocks.setSetting.mock.calls.length > 0 ||
           mocks.execute.mock.calls.length > 0,
-        'a startup that opened a blank canvas must offer onboarding, record that it is done, or open the template browser; anything else strands the user with an empty screen'
+        'a startup that opened a blank canvas must offer onboarding, tour what the link loaded, record that it is done, or open the template browser; anything else strands the user with an empty screen'
       ).toBe(true)
     }
   )
@@ -259,7 +355,7 @@ describe('useFirstRunEntry', () => {
       ).toHaveBeenCalledWith(undefined)
     })
 
-    it('leaves the completion flag to the startup handler that already settled it', async () => {
+    it('leaves the completion flag alone when the engine refused to start', async () => {
       const entry = await freshEntry()
       await entry.handleStartupOutcome('url-intent')
       mocks.setSetting.mockClear()
@@ -269,7 +365,23 @@ describe('useFirstRunEntry', () => {
 
       expect(
         mocks.setSetting,
-        'writing it again here would mark onboarding done for a user whose tour never started, and postpone() exists to offer that user the tour again'
+        'writing it here would mark onboarding done for a user whose tour never started, and postpone() exists to offer that user the tour again'
+      ).not.toHaveBeenCalled()
+    })
+
+    it('keeps the account eligible when the link loaded nothing to tour', async () => {
+      const entry = await freshEntry()
+
+      await entry.handleStartupOutcome('url-intent')
+      await entry.handleUrlWorkflow('url-intent', undefined, 'failed')
+
+      expect(
+        mocks.beginTour,
+        'there is no workflow on the canvas to tour'
+      ).not.toHaveBeenCalled()
+      expect(
+        mocks.setSetting,
+        'a dead link must not spend the one tour the account gets; the next boot has no URL to honour and offers Getting Started instead'
       ).not.toHaveBeenCalled()
     })
 

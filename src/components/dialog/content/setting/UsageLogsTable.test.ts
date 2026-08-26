@@ -35,10 +35,17 @@ vi.mock('@/services/customerEventsService', () => ({
 }))
 
 const mockTelemetry = vi.hoisted(() => ({
-  checkForCompletedTopup: vi.fn()
+  trackApiCreditTopupSucceeded: vi.fn()
 }))
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => mockTelemetry
+}))
+
+const mockPendingTopup = vi.hoisted(() => ({
+  isPendingTopupCompleted: vi.fn().mockReturnValue(true)
+}))
+vi.mock('@/composables/billing/usePendingTopup', () => ({
+  usePendingTopup: () => mockPendingTopup
 }))
 
 const mockBillingRouting = vi.hoisted(() => ({
@@ -412,6 +419,7 @@ describe('UsageLogsTable', () => {
     })
 
     it('runs top-up completion telemetry for a superseded response', async () => {
+      mockPendingTopup.isPendingTopupCompleted.mockReturnValue(true)
       let resolveLegacy!: (value: ReturnType<typeof makeEventsResponse>) => void
       mockCustomerEventsService.getMyEvents.mockReturnValue(
         new Promise((resolve) => {
@@ -447,10 +455,22 @@ describe('UsageLogsTable', () => {
       resolveLegacy(legacyResponse)
 
       await waitFor(() => {
-        expect(mockTelemetry.checkForCompletedTopup).toHaveBeenCalledWith(
+        expect(mockPendingTopup.isPendingTopupCompleted).toHaveBeenCalledWith(
           legacyResponse.events
         )
+        expect(mockTelemetry.trackApiCreditTopupSucceeded).toHaveBeenCalled()
       })
+    })
+
+    it('skips top-up telemetry when no completion is pending', async () => {
+      mockPendingTopup.isPendingTopupCompleted.mockReturnValue(false)
+
+      await renderLoaded()
+
+      expect(mockPendingTopup.isPendingTopupCompleted).toHaveBeenCalledWith(
+        mockEventsResponse.events
+      )
+      expect(mockTelemetry.trackApiCreditTopupSucceeded).not.toHaveBeenCalled()
     })
   })
 

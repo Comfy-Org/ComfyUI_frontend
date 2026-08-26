@@ -21,6 +21,10 @@ const LOCALES: ReadonlyArray<readonly [string, Locale]> = [
   [PATH_ZH, 'zh-CN']
 ]
 
+const pastCardEvents = pastEvents.filter(
+  (event) => event.media ?? event.featured?.media
+)
+
 function heroSection(page: Page, locale: Locale) {
   return page.locator('section').filter({
     has: page.getByRole('heading', {
@@ -124,10 +128,10 @@ test.describe('Events page — desktop @smoke', () => {
   test('a video slide that ends while hovered advances once the pointer leaves', async ({
     page
   }) => {
-    const firstVideoIndex = featuredEvents.findIndex(
-      (event) => event.media.type === 'video'
-    )
-    test.skip(firstVideoIndex < 0, 'needs a featured video slide')
+    const videoSlideTitles = featuredEvents
+      .filter((event) => event.media.type === 'video')
+      .map((event) => event.title.en)
+    test.skip(videoSlideTitles.length === 0, 'needs a featured video slide')
 
     await page.goto(PATH_EN)
     const hero = heroSection(page, 'en')
@@ -141,19 +145,27 @@ test.describe('Events page — desktop @smoke', () => {
 
     const activeSlide = hero.locator('[aria-hidden="false"]')
 
-    // The first featured slide is an image; advance to the first video slide.
-    // Retry to wait out island hydration, but click only while the active slide
-    // is not yet the video slide so a slow render never overshoots past it.
-    const videoSlideTitle = featuredEvents[firstVideoIndex].title.en
-    await expect(async () => {
-      const activeLabel = await activeSlide
-        .locator('a')
-        .getAttribute('aria-label')
-      if (activeLabel !== videoSlideTitle) await nextSlide.click()
-      await expect(activeSlide.locator('a')).toHaveAccessibleName(
-        videoSlideTitle
-      )
-    }).toPass({ timeout: 15_000 })
+    // Advance to whichever video slide comes next. A click before the island
+    // hydrates is a no-op, so each advance retries until the slide changes.
+    await expect(activeSlide.locator('a')).toHaveCount(1)
+    const activeLabel = async () => {
+      const label = await activeSlide.locator('a').getAttribute('aria-label')
+      if (label === null) throw new Error('active slide link has no aria-label')
+      return label
+    }
+
+    for (let step = 0; step < featuredEvents.length; step++) {
+      const label = await activeLabel()
+      if (videoSlideTitles.includes(label)) break
+      await expect(async () => {
+        await nextSlide.click()
+        await expect(activeSlide.locator('a')).not.toHaveAttribute(
+          'aria-label',
+          label
+        )
+      }).toPass()
+    }
+    expect(videoSlideTitles).toContain(await activeLabel())
     // Clicking left the button focused; drop that focus so only the hover holds
     // the slide, letting the pointer leaving be what releases the advance.
     await nextSlide.blur()
@@ -168,14 +180,13 @@ test.describe('Events page — desktop @smoke', () => {
           .catch(() => false)
       )
       .toBe(true)
-    const heldLabel = await activeSlide.locator('a').getAttribute('aria-label')
-    expect(heldLabel).toBeTruthy()
+    const heldLabel = await activeLabel()
 
     // Leaving the carousel releases the held advance.
     await page.mouse.move(0, 0)
     await expect(activeSlide.locator('a')).not.toHaveAttribute(
       'aria-label',
-      heldLabel!
+      heldLabel
     )
   })
 
@@ -185,6 +196,9 @@ test.describe('Events page — desktop @smoke', () => {
     for (const [path, locale] of LOCALES) {
       await page.goto(path)
       const section = upcomingSection(page, locale)
+      // Every configured event ages out eventually, so the row assertions
+      // scale to zero — the list itself has to render either way.
+      await expect(section.getByRole('list')).toBeAttached()
       const rows = section.locator('li')
       await expect(rows).toHaveCount(upcomingEvents.length)
 
@@ -287,7 +301,7 @@ test.describe('Events page — desktop @smoke', () => {
     }
   })
 
-  test('past events gallery renders one card per event with WATCH NOW links', async ({
+  test('past events gallery renders one card per renderable event with WATCH NOW links', async ({
     page
   }) => {
     for (const [path, locale] of LOCALES) {
@@ -296,9 +310,9 @@ test.describe('Events page — desktop @smoke', () => {
       await section.scrollIntoViewIfNeeded()
 
       const cards = section.locator('[data-slot="card"]')
-      await expect(cards).toHaveCount(pastEvents.length)
+      await expect(cards).toHaveCount(pastCardEvents.length)
 
-      for (const [i, event] of pastEvents.entries()) {
+      for (const [i, event] of pastCardEvents.entries()) {
         const card = cards.nth(i)
         await expect(card).toContainText(event.title[locale])
         const watch = card.getByRole('link', {
@@ -323,7 +337,7 @@ test.describe('Events page — mobile @mobile', () => {
     const section = pastSection(page, 'en')
     await section.scrollIntoViewIfNeeded()
     const cards = section.locator('[data-slot="card"]')
-    await expect(cards).toHaveCount(pastEvents.length)
+    await expect(cards).toHaveCount(pastCardEvents.length)
 
     const viewport = page.viewportSize()
     expect(viewport, 'viewport size').not.toBeNull()

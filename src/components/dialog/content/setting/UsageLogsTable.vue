@@ -101,6 +101,7 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
+import { usePendingTopup } from '@/composables/billing/usePendingTopup'
 import { usePaginatedQuery } from '@/composables/usePaginatedQuery'
 import { useTelemetry } from '@/platform/telemetry'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
@@ -145,7 +146,9 @@ const {
     // supersedes this load, since legacy and workspace backends emit
     // different top-up events and the winning fetch may not carry the
     // completion yet.
-    useTelemetry()?.checkForCompletedTopup(response?.events)
+    if (usePendingTopup().isPendingTopupCompleted(response?.events)) {
+      useTelemetry()?.trackApiCreditTopupSucceeded()
+    }
 
     if (!response) {
       const legacyError = shouldUseWorkspaceBilling.value

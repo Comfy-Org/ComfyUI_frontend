@@ -978,7 +978,8 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
 
   function endWorkspaceSession(revokedWorkspaceId?: string): boolean {
     const hadContext = currentWorkspace.value !== null
-    if (isCloud && hadContext) prepareWorkflowWorkspaceTransition()
+    const cancelWorkflowTransition =
+      isCloud && hadContext ? prepareWorkflowWorkspaceTransition() : undefined
     const revokedWorkspaceHandled = revokedWorkspaceId
       ? useTeamWorkspaceStore().forgetRevokedActiveWorkspace(revokedWorkspaceId)
       : false
@@ -988,7 +989,9 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       : hadContext
     if (isCloud && shouldReload) {
       window.location.reload()
+      return false
     }
+    cancelWorkflowTransition?.()
     return !isCloud && revokedWorkspaceHandled
   }
 
