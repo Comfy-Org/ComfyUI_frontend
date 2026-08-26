@@ -5093,11 +5093,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       (this.graph?._last_trigger_time &&
         now - this.graph._last_trigger_time < 1000)
     ) {
-      this.drawBackCanvas(getCurrentGraphNodesInFrameOrder())
+      this.drawBackCanvas(getCurrentGraphNodesInFrameOrder(), graphAtFrameStart)
     }
 
     if (this.dirty_canvas || force_canvas) {
-      this.drawFrontCanvas(getCurrentGraphNodesInFrameOrder())
+      this.drawFrontCanvas(
+        getCurrentGraphNodesInFrameOrder(),
+        graphAtFrameStart
+      )
     }
 
     this.fps = this.render_time ? 1.0 / this.render_time : 0
@@ -5107,7 +5110,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   /**
    * draws the front canvas (the one containing all the nodes)
    */
-  drawFrontCanvas(nodesInFrameOrder?: LGraphNode[]): void {
+  drawFrontCanvas(
+    nodesInFrameOrder?: LGraphNode[],
+    nodesGraph: LGraph | Subgraph | null = this.graph
+  ): void {
     clearTextMeasureCache()
     this.dirty_canvas = false
 
@@ -5146,7 +5152,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // draw bg canvas
     if (this.bgcanvas == this.canvas) {
       nodesInFrameOrder ??= graph ? nodesInRenderOrder(graph) : undefined
-      this.drawBackCanvas(nodesInFrameOrder)
+      this.drawBackCanvas(nodesInFrameOrder, nodesGraph)
     } else {
       const scale = window.devicePixelRatio
       ctx.drawImage(
@@ -5210,7 +5216,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       // connections ontop?
       if (graph.config.links_ontop) {
         nodesInFrameOrder ??= nodesInRenderOrder(graph)
-        this.drawConnections(ctx, nodesInFrameOrder)
+        this.drawConnections(ctx, nodesInFrameOrder, nodesGraph)
       }
 
       if (!LiteGraph.vueNodesMode || !this.overlayCtx) {
@@ -5517,7 +5523,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   /**
    * draws the back canvas (the one containing the background and the connections)
    */
-  drawBackCanvas(nodesInFrameOrder?: LGraphNode[]): void {
+  drawBackCanvas(
+    nodesInFrameOrder?: LGraphNode[],
+    nodesGraph: LGraph | Subgraph | null = this.graph
+  ): void {
     const canvas = this.bgcanvas
     if (
       canvas.width != this.canvas.width ||
@@ -5652,7 +5661,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
 
       // draw connections
-      this.drawConnections(ctx, nodesInFrameOrder)
+      this.drawConnections(ctx, nodesInFrameOrder, nodesGraph)
 
       ctx.shadowColor = 'rgba(0,0,0,0)'
 
@@ -6043,7 +6052,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
   drawConnections(
     ctx: CanvasRenderingContext2D,
-    nodesInFrameOrder?: LGraphNode[]
+    nodesInFrameOrder?: LGraphNode[],
+    nodesGraph: LGraph | Subgraph | null = this.graph
   ): void {
     this.renderedPaths.clear()
     if (this.links_render_mode === LinkRenderType.HIDDEN_LINK) return
@@ -6073,7 +6083,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     ctx.strokeStyle = '#AAA'
     ctx.globalAlpha = this.editor_alpha
     // for every node
-    const nodes = nodesInFrameOrder ?? nodesInRenderOrder(graph)
+    const nodes =
+      graph === nodesGraph && nodesInFrameOrder
+        ? nodesInFrameOrder
+        : nodesInRenderOrder(graph)
 
     // Ensure widget-input slot positions are computed before rendering links.
     // arrange() sets input.pos for widget-backed slots, but is normally called
