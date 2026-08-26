@@ -237,7 +237,7 @@ describe('GraphCanvas execution progress fanout complexity', () => {
     { totalNodes: 1_000, activeEntries: 100 },
     { totalNodes: 1_000, activeEntries: 500 }
   ])(
-    'scans all $totalNodes visible nodes with $activeEntries active entries for equal and changed events',
+    'scans all $totalNodes visible nodes with $activeEntries active entries for equal, changed, removed, and unmatched events',
     async ({ totalNodes, activeEntries }) => {
       await mountGraphCanvas()
 
@@ -332,6 +332,54 @@ describe('GraphCanvas execution progress fanout complexity', () => {
       expect(progressValues[0]).toBe(0.5)
       expect(mocks.setDirty).toHaveBeenCalledTimes(1)
       expect(mocks.setDirty).toHaveBeenCalledWith(true, false)
+
+      progressWrites = 0
+      mocks.setDirty.mockClear()
+      vi.mocked(workflowStore.nodeIdToNodeLocatorId).mockClear()
+
+      const changedState: typeof equalState = {
+        ...equalState,
+        '1': {
+          ...equalState['1'],
+          prompt_id: 'job',
+          state: 'running' as const,
+          value: 50,
+          max: 100
+        }
+      }
+      delete changedState[String(activeEntries)]
+      executionStore.nodeProgressStates = changedState
+      await nextTick()
+
+      expect(workflowStore.nodeIdToNodeLocatorId).toHaveBeenCalledTimes(
+        totalNodes
+      )
+      expect(progressWrites).toBe(1)
+      expect(progressValues[activeEntries - 1]).toBeUndefined()
+      expect(mocks.setDirty).toHaveBeenCalledTimes(1)
+
+      progressWrites = 0
+      mocks.setDirty.mockClear()
+      vi.mocked(workflowStore.nodeIdToNodeLocatorId).mockClear()
+
+      executionStore.nodeProgressStates = {
+        ...changedState,
+        [String(totalNodes + 1)]: {
+          display_node_id: String(totalNodes + 1),
+          node_id: String(totalNodes + 1),
+          prompt_id: 'job',
+          state: 'running' as const,
+          value: 25,
+          max: 100
+        }
+      }
+      await nextTick()
+
+      expect(workflowStore.nodeIdToNodeLocatorId).toHaveBeenCalledTimes(
+        totalNodes
+      )
+      expect(progressWrites).toBe(0)
+      expect(mocks.setDirty).not.toHaveBeenCalled()
     }
   )
 })
