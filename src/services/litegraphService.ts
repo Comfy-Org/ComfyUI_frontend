@@ -303,6 +303,7 @@ export const useLitegraphService = () => {
     const widgetConstructor = widgetStore.widgets.get(widgetInputSpec.type)
     if (!widgetConstructor || inputSpec.forceInput) return
 
+    const widgetsBefore = new Set(node.widgets ?? [])
     const result =
       widgetConstructor(
         node,
@@ -311,12 +312,16 @@ export const useLitegraphService = () => {
         app
       ) ?? {}
     const { minWidth = 1, minHeight = 1 } = result
-    const widget = result.widget && toConcreteWidget(result.widget, node)
-
-    if (result.widget && widget !== result.widget) {
-      const index = node.widgets?.indexOf(result.widget) ?? -1
-      if (index !== -1) node.widgets![index] = widget
-    }
+    const returnedWidget = result.widget
+    const widget =
+      returnedWidget &&
+      (node.widgets?.find(
+        (candidate) =>
+          candidate === returnedWidget ||
+          (!widgetsBefore.has(candidate) &&
+            candidate.name === returnedWidget.name)
+      ) ??
+        toConcreteWidget(returnedWidget, node))
 
     if (widget) {
       widget.label = resolveLabel(
