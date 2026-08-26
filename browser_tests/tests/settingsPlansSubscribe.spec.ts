@@ -92,6 +92,56 @@ const plansResponse: BillingPlansResponse = {
   ]
 }
 
+const teamAnnual = makePlan(
+  'team_per_credit_annual',
+  'TEAM',
+  'ANNUAL',
+  240_000,
+  506_400
+)
+const teamMonthly = makePlan(
+  'team_per_credit_monthly',
+  'TEAM',
+  'MONTHLY',
+  20_000,
+  42_200
+)
+
+function teamStop(id: string, usd: number, credits: number) {
+  return {
+    id,
+    credits,
+    monthly: { list_price_cents: usd * 100, price_cents: usd * 100 },
+    yearly: { list_price_cents: usd * 100, price_cents: usd * 100 }
+  }
+}
+
+const teamPlansResponse: BillingPlansResponse = {
+  plans: [...plansResponse.plans, teamAnnual, teamMonthly],
+  team_credit_stops: {
+    default_stop_index: 1,
+    stops: [
+      teamStop('team_200', 200, 42_200),
+      teamStop('team_700', 700, 147_700)
+    ]
+  }
+}
+
+function teamBillingStatus(): BillingStatusResponse {
+  return {
+    is_active: true,
+    has_funds: true,
+    subscription_status: 'active',
+    subscription_tier: 'TEAM',
+    subscription_duration: 'ANNUAL',
+    billing_status: 'paid',
+    plan_slug: 'team_per_credit_annual',
+    max_seats: 5,
+    occupied_seats: 1,
+    team_credit_stop: { id: 'team_200', stop_usd: 200, credits_monthly: 42_200 }
+  }
+}
+
 function billingStatus(
   planSlug?: string,
   cancelAt?: string
@@ -307,8 +357,12 @@ test.describe('Local plans section subscribe', () => {
       return fulfillJson(r, balance)
     })
     const billingPosts: string[] = []
+    const previewBodies: Record<string, unknown>[] = []
     await page.route('**/api/billing/preview-subscribe', async (r) => {
-      if (r.request().method() === 'POST') billingPosts.push('preview')
+      if (r.request().method() === 'POST') {
+        billingPosts.push('preview')
+        previewBodies.push(r.request().postDataJSON())
+      }
       await fulfillJson(r, newSubscriptionPreview)
     })
     await page.route('**/api/billing/subscribe', async (r) => {
@@ -356,6 +410,8 @@ test.describe('Local plans section subscribe', () => {
 
     await expect.poll(() => subscribeRequests.length).toBe(1)
     expect(billingPosts).toEqual(['preview', 'subscribe'])
+    // What was quoted has to be what is charged.
+    expect(previewBodies).toEqual([{ plan_slug: 'standard-yearly' }])
     expect(subscribeRequests[0].body).toMatchObject({
       plan_slug: 'standard-yearly'
     })
@@ -397,6 +453,7 @@ test.describe('Local plans section subscribe', () => {
 
     let subscribed = false
     const billingPosts: string[] = []
+    const previewBodies: Record<string, unknown>[] = []
     const subscribeBodies: Record<string, unknown>[] = []
 
     await mockLegacyReads(page)
@@ -410,7 +467,10 @@ test.describe('Local plans section subscribe', () => {
       )
     )
     await page.route('**/api/billing/preview-subscribe', async (r) => {
-      if (r.request().method() === 'POST') billingPosts.push('preview')
+      if (r.request().method() === 'POST') {
+        billingPosts.push('preview')
+        previewBodies.push(r.request().postDataJSON())
+      }
       await fulfillJson(r, upgradePreview)
     })
     await page.route('**/api/billing/subscribe', async (r) => {
@@ -444,6 +504,7 @@ test.describe('Local plans section subscribe', () => {
 
     await expect.poll(() => subscribeBodies.length).toBe(1)
     expect(billingPosts).toEqual(['preview', 'subscribe'])
+    expect(previewBodies).toEqual([{ plan_slug: 'creator-yearly' }])
     expect(subscribeBodies[0]).toMatchObject({
       plan_slug: 'creator-yearly',
       proration_at: PRORATION_AT,
@@ -484,9 +545,12 @@ test.describe('Local plans section subscribe', () => {
           : billingStatus('standard-yearly', CURRENT_PERIOD_END)
       )
     )
-    await page.route('**/api/billing/preview-subscribe', (r) =>
-      fulfillJson(r, upgradePreview)
-    )
+    const previewBodies: Record<string, unknown>[] = []
+    await page.route('**/api/billing/preview-subscribe', async (r) => {
+      if (r.request().method() === 'POST')
+        previewBodies.push(r.request().postDataJSON())
+      await fulfillJson(r, upgradePreview)
+    })
     await page.route('**/api/billing/subscribe', async (r) => {
       if (r.request().method() === 'POST') {
         subscribed = true
@@ -519,6 +583,7 @@ test.describe('Local plans section subscribe', () => {
     await confirm.click()
 
     await expect.poll(() => subscribeBodies.length).toBe(1)
+    expect(previewBodies[0]).toMatchObject({ plan_slug: 'creator-yearly' })
     expect(subscribeBodies[0]).toMatchObject({
       plan_slug: 'creator-yearly',
       confirm_reactivation: true,
@@ -606,6 +671,135 @@ test.describe('Local plans section subscribe', () => {
         )
       )
       .toBeLessThanOrEqual(1)
+  })
+
+  test('previews a team credit-stop change and subscribes the previewed plan', async ({
+    page,
+    request
+  }) => {
+    test.setTimeout(90_000)
+
+    const previewBodies: Record<string, unknown>[] = []
+    const subscribeBodies: Record<string, unknown>[] = []
+
+    await mockLegacyReads(page)
+    await page.route('**/api/billing/plans', (r) =>
+      fulfillJson(r, teamPlansResponse)
+    )
+    await page.route('**/api/billing/status', (r) =>
+      fulfillJson(r, teamBillingStatus())
+    )
+    await page.route('**/api/billing/preview-subscribe', async (r) => {
+      if (r.request().method() === 'POST')
+        previewBodies.push(r.request().postDataJSON())
+      await fulfillJson(r, {
+        ...upgradePreview,
+        proration_at: PRORATION_AT,
+        new_plan: previewPlan(teamAnnual, '2027-08-25T00:00:00Z')
+      })
+    })
+    await page.route('**/api/billing/subscribe', async (r) => {
+      if (r.request().method() === 'POST')
+        subscribeBodies.push(r.request().postDataJSON())
+      const response: SubscribeResponse = {
+        status: 'subscribed',
+        billing_op_id: 'op-e2e-team-change'
+      }
+      await fulfillJson(r, response)
+    })
+
+    const dialog = await bootToPlansSection(page, request)
+    await dialog.getByRole('button', { name: 'Teams' }).click()
+
+    // Move off the subscribed stop; the other stop is the actionable one.
+    const slider = dialog.getByRole('slider')
+    await slider.focus()
+    await slider.press('ArrowRight')
+
+    const teamCta = dialog.getByRole('button', {
+      name: 'Subscribe to Team Yearly'
+    })
+    await expect(teamCta).toBeEnabled()
+    await teamCta.click()
+
+    // The change must be quoted by the server before anything is charged.
+    const checkout = page.getByTestId('settings-plan-checkout')
+    await expect(checkout.getByText('Total due today')).toBeVisible({
+      timeout: 30_000
+    })
+    await expect(checkout.getByText('$12.34')).toBeVisible()
+    expect(subscribeBodies).toEqual([])
+
+    expect(previewBodies).toEqual([
+      { plan_slug: 'team_per_credit_annual', team_credit_stop_id: 'team_700' }
+    ])
+
+    await checkout.getByRole('button', { name: 'Confirm upgrade' }).click()
+
+    await expect.poll(() => subscribeBodies.length).toBe(1)
+    // Same plan the preview quoted, plus the instant it was quoted at.
+    expect(subscribeBodies[0]).toMatchObject({
+      plan_slug: 'team_per_credit_annual',
+      team_credit_stop_id: 'team_700',
+      proration_at: PRORATION_AT
+    })
+  })
+
+  test('previews a team stop chosen by an existing personal subscriber', async ({
+    page,
+    request
+  }) => {
+    test.setTimeout(90_000)
+
+    const previewBodies: Record<string, unknown>[] = []
+    const subscribeBodies: Record<string, unknown>[] = []
+
+    await mockLegacyReads(page)
+    await page.route('**/api/billing/plans', (r) =>
+      fulfillJson(r, teamPlansResponse)
+    )
+    // A personal subscriber: no team_credit_stop, but a live paid plan.
+    await page.route('**/api/billing/status', (r) =>
+      fulfillJson(r, billingStatus('standard-yearly'))
+    )
+    await page.route('**/api/billing/preview-subscribe', async (r) => {
+      if (r.request().method() === 'POST')
+        previewBodies.push(r.request().postDataJSON())
+      await fulfillJson(r, {
+        ...upgradePreview,
+        proration_at: PRORATION_AT,
+        new_plan: previewPlan(teamAnnual, '2027-08-25T00:00:00Z')
+      })
+    })
+    await page.route('**/api/billing/subscribe', async (r) => {
+      if (r.request().method() === 'POST')
+        subscribeBodies.push(r.request().postDataJSON())
+      const response: SubscribeResponse = {
+        status: 'subscribed',
+        billing_op_id: 'op-e2e-personal-team'
+      }
+      await fulfillJson(r, response)
+    })
+
+    const dialog = await bootToPlansSection(page, request)
+    await dialog.getByRole('button', { name: 'Teams' }).click()
+
+    await dialog
+      .getByRole('button', { name: 'Subscribe to Team Yearly' })
+      .click()
+
+    // Moving a paid personal plan onto a team stop is a plan change, so it is
+    // quoted and consented to rather than charged through the fresh-subscribe
+    // screen.
+    const checkout = page.getByTestId('settings-plan-checkout')
+    await expect(checkout.getByText('Total due today')).toBeVisible({
+      timeout: 30_000
+    })
+    await expect.poll(() => previewBodies.length).toBe(1)
+    expect(previewBodies[0]).toMatchObject({
+      plan_slug: 'team_per_credit_annual'
+    })
+    expect(subscribeBodies).toEqual([])
   })
 
   test('requests the plan catalog when the Plan & Credits tab opens', async ({
