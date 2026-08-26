@@ -44,10 +44,10 @@ export function planInteractionProbes(
     .sort((a, b) => a.type.localeCompare(b.type))
 }
 
-export function runInteractionProbeChunk(input: {
+export async function runInteractionProbeChunk(input: {
   probePlans: InteractionProbePlan[]
   producers: typeof SYNTH_PRODUCERS
-}): InteractionProbeChunkResult {
+}): Promise<InteractionProbeChunkResult> {
   const { probePlans, producers } = input
   const shapeOf = (node: LGraphNode): LogicalShape => ({
     inputs: (node.inputs ?? []).map(
@@ -72,6 +72,29 @@ export function runInteractionProbeChunk(input: {
     }
     return delta.sort()
   }
+  const shapesEqual = (left: LogicalShape, right: LogicalShape) =>
+    JSON.stringify(left) === JSON.stringify(right)
+  const nextTask = () => new Promise<void>((resolve) => setTimeout(resolve, 0))
+  const stableShapeOf = async (node: LGraphNode): Promise<LogicalShape> => {
+    let previous = shapeOf(node)
+    let stableSamples = 0
+    for (let attempt = 0; attempt < 50; attempt++) {
+      await nextTask()
+      const current = shapeOf(node)
+      if (shapesEqual(previous, current)) {
+        stableSamples++
+        if (stableSamples === 2) return current
+      } else {
+        previous = current
+        stableSamples = 0
+      }
+    }
+    throw new Error('node topology did not stabilize after 50 event-loop turns')
+  }
+  const settleRemoval = async () => {
+    await nextTask()
+    await nextTask()
+  }
   const graph = window.app!.graph
   window.__cnIdBase = Math.max(window.__cnIdBase ?? 0, graph.last_node_id)
   const created: string[] = []
@@ -87,11 +110,12 @@ export function runInteractionProbeChunk(input: {
     try {
       graph.last_node_id = ++window.__cnIdBase!
       graph.add(node)
-      const probeConnect = (
+      await stableShapeOf(node)
+      const probeConnect = async (
         targetNode: LGraphNode,
         spec: InteractionProbeEndpoint
       ) => {
-        const fresh = shapeOf(targetNode)
+        const fresh = await stableShapeOf(targetNode)
         const inputIndex = (targetNode.inputs ?? []).findIndex(
           (slot) => slot.name === spec.inputName
         )
@@ -123,11 +147,13 @@ export function runInteractionProbeChunk(input: {
             throw new Error(
               `${producer.nodeType}[${producer.outputIndex}] could not connect to ${plan.type}.${spec.inputName}`
             )
-          const connected = shapeOf(targetNode)
+          const connected = await stableShapeOf(targetNode)
           targetNode.disconnectInput(inputIndex)
-          return { fresh, connected, disconnected: shapeOf(targetNode) }
+          const disconnected = await stableShapeOf(targetNode)
+          return { fresh, connected, disconnected }
         } finally {
           if (producerNode.graph) graph.remove(producerNode)
+          await settleRemoval()
         }
       }
       if ((node.inputs ?? []).length === 0) {
@@ -137,19 +163,25 @@ export function runInteractionProbeChunk(input: {
           disconnect: 'NO_INPUTS'
         }
       } else {
-        const first = plan.first ? probeConnect(node, plan.first) : null
-        if (plan.last && node.graph) graph.remove(node)
-        const last = plan.last
-          ? (() => {
+        const first = plan.first ? await probeConnect(node, plan.first) : null
+        if (plan.last && node.graph) {
+          graph.remove(node)
+          await settleRemoval()
+        }
+        const lastSpec = plan.last
+        const last = lastSpec
+          ? await (async () => {
               const lastNode = window.LiteGraph!.createNode(plan.type)
               if (!lastNode)
                 throw new Error(`${plan.type} did not instantiate for last`)
               try {
                 graph.last_node_id = ++window.__cnIdBase!
                 graph.add(lastNode)
-                return probeConnect(lastNode, plan.last)
+                await stableShapeOf(lastNode)
+                return await probeConnect(lastNode, lastSpec)
               } finally {
                 if (lastNode.graph) graph.remove(lastNode)
+                await settleRemoval()
               }
             })()
           : null
@@ -172,6 +204,7 @@ export function runInteractionProbeChunk(input: {
       threw[plan.type] = String(error)
     } finally {
       if (node.graph) graph.remove(node)
+      await settleRemoval()
     }
   }
   return { created, results, threw }

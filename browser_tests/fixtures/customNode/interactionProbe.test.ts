@@ -1,4 +1,6 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
+
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 import {
   planInteractionProbes,
@@ -52,22 +54,71 @@ describe('planInteractionProbes', () => {
     ).toEqual([{ type: 'ModelNode', first: { inputName: 'model' } }])
   })
 
-  it('records a planned node type that cannot instantiate', () => {
+  it('records a planned node type that cannot instantiate', async () => {
     vi.stubGlobal('window', {
       __cnIdBase: 0,
       app: { graph: { last_node_id: 0 } },
       LiteGraph: { createNode: () => null }
     })
 
-    expect(
+    await expect(
       runInteractionProbeChunk({
         probePlans: [{ type: 'MissingNode' }],
         producers: {}
       })
-    ).toEqual({
+    ).resolves.toEqual({
       created: [],
       results: {},
       threw: { MissingNode: 'MissingNode did not instantiate' }
+    })
+  })
+
+  it('waits for deferred node topology before probing', async () => {
+    class DeferredTarget extends LGraphNode {
+      override onAdded() {
+        setTimeout(() => this.addInput('value', 'INT'), 0)
+      }
+    }
+    class IntProducer extends LGraphNode {
+      constructor() {
+        super('IntProducer')
+        this.addOutput('value', 'INT')
+      }
+    }
+    LiteGraph.registerNodeType('test/DeferredTarget', DeferredTarget)
+    LiteGraph.registerNodeType('test/IntProducer', IntProducer)
+    onTestFinished(() => {
+      LiteGraph.unregisterNodeType('test/DeferredTarget')
+      LiteGraph.unregisterNodeType('test/IntProducer')
+    })
+    vi.stubGlobal('window', {
+      __cnIdBase: 0,
+      app: { graph: new LGraph() },
+      LiteGraph
+    })
+
+    await expect(
+      runInteractionProbeChunk({
+        probePlans: [
+          {
+            type: 'test/DeferredTarget',
+            first: { inputName: 'value' }
+          }
+        ],
+        producers: {
+          INT: { nodeType: 'test/IntProducer', outputIndex: 0 }
+        }
+      })
+    ).resolves.toMatchObject({
+      created: ['test/DeferredTarget'],
+      results: {
+        'test/DeferredTarget': {
+          connectFirst: [],
+          connectLast: 'SAME_AS_FIRST',
+          disconnect: []
+        }
+      },
+      threw: {}
     })
   })
 })

@@ -167,6 +167,7 @@ interface CuratedCloudWorkflow {
   tiers: CloudManifestEntry['tiers']
   expectedNodes?: string[]
   expectedRunnableCount?: number
+  expectedRunnableNodeTypesSha256?: string
   timeoutMs?: number
 }
 
@@ -177,6 +178,7 @@ const OVERLAY_KEYS = [
   'tiers',
   'expectedNodes',
   'expectedRunnableCount',
+  'expectedRunnableNodeTypesSha256',
   'timeoutMs'
 ]
 
@@ -232,6 +234,10 @@ export function validateCuratedCloudOverlay(
       throw new Error(
         `curated overlay: ${pack} expectedRunnableCount must be a positive integer`
       )
+    if (!/^[0-9a-f]{64}$/.test(String(entry.expectedRunnableNodeTypesSha256)))
+      throw new Error(
+        `curated overlay: ${pack} expectedRunnableNodeTypesSha256 must be a sha256 digest`
+      )
     if (
       entry.timeoutMs !== undefined &&
       (typeof entry.timeoutMs !== 'number' ||
@@ -248,6 +254,8 @@ export function validateCuratedCloudOverlay(
         ? { expectedNodes: entry.expectedNodes }
         : {}),
       expectedRunnableCount: entry.expectedRunnableCount as number,
+      expectedRunnableNodeTypesSha256:
+        entry.expectedRunnableNodeTypesSha256 as string,
       ...(entry.timeoutMs !== undefined ? { timeoutMs: entry.timeoutMs } : {})
     }
   }
@@ -414,7 +422,11 @@ export function buildCloudManifest(
       workflow: curated?.workflow ?? '',
       expectedNodes: curated?.expectedNodes ?? enabled.slice(0, 2),
       ...(curated
-        ? { expectedRunnableCount: curated.expectedRunnableCount }
+        ? {
+            expectedRunnableCount: curated.expectedRunnableCount,
+            expectedRunnableNodeTypesSha256:
+              curated.expectedRunnableNodeTypesSha256
+          }
         : {}),
       expectedNodeCount: enabled.length,
       expectedExtensions: sentinels[dirname] ?? [],

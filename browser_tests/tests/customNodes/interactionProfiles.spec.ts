@@ -89,7 +89,7 @@ for (const entry of interactionProfileEntries) {
         `${entry.pack}/${node} is ledgered unstable but no longer in the corpus - stale ledger entry`
       ).toBe(true)
 
-    const recordMode = process.env.CN_INTERACTION
+    const recordMode = process.env.CN_INTERACTION || undefined
     if (recordMode !== undefined && recordMode !== 'record')
       throw new Error(
         `unrecognized CN_INTERACTION value '${recordMode}' - the only mode is 'record'`

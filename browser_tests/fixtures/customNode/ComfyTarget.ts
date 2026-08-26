@@ -107,48 +107,30 @@ export class LocalDesktopTarget {
       }
     )
 
-    // app.queuePrompt (NOT api.queuePrompt: that submits an empty prompt).
-    // false = validation reject (emits no events), but pack JS hooking the
-    // queue can refuse transiently - retry once; real rejects fail twice.
-    // Pack JS can also THROW mid-graphToPrompt on a graph shape it does not
-    // expect; catch in-page so one bad node classifies as VALIDATION_FAIL
-    // (with the exception text) instead of aborting the whole tier.
-    const queueOnce = () =>
-      page.evaluate(async () => {
-        try {
-          return await window.app!.queuePrompt(0)
-        } catch (error) {
-          // Never an empty string: an empty __cnThrew would nullish-coalesce
-          // wrong downstream and blank the VALIDATION_FAIL message.
-          return { __cnThrew: String(error) || 'pack threw an empty error' }
-        }
-      })
+    const queued = await page.evaluate(async () => {
+      try {
+        return await window.app!.queuePrompt(0)
+      } catch (error) {
+        return { __cnThrew: String(error) || 'pack threw an empty error' }
+      }
+    })
     const refused = (
       result: unknown
     ): result is false | { __cnThrew: string } =>
       result === false ||
       (typeof result === 'object' && result !== null && '__cnThrew' in result)
-    let queued = await queueOnce()
     if (refused(queued)) {
-      await new Promise((resolve) => setTimeout(resolve, 250))
-      queued = await queueOnce()
-      if (refused(queued)) {
-        await captureSettled()
-        stopCapture()
-        // A captured 5xx outranks a client-side throw: the backend
-        // demonstrably failed this submission server-side.
-        if (capture.rejection !== undefined && capture.rejection.status >= 500)
-          throw serverSideFault(capture.rejection)
-        return {
-          outcome: 'VALIDATION_FAIL',
-          executedNodes: [],
-          outputsByNode: {},
-          // A throw carries its own text; a bare `false` reject leaves only
-          // the backend's node_errors captured off the /prompt response.
-          clientError:
-            (typeof queued === 'object' ? queued.__cnThrew : undefined) ??
-            (capture.rejection && describePromptRejection(capture.rejection))
-        }
+      await captureSettled()
+      stopCapture()
+      if (capture.rejection !== undefined && capture.rejection.status >= 500)
+        throw serverSideFault(capture.rejection)
+      return {
+        outcome: 'VALIDATION_FAIL',
+        executedNodes: [],
+        outputsByNode: {},
+        clientError:
+          (typeof queued === 'object' ? queued.__cnThrew : undefined) ??
+          (capture.rejection && describePromptRejection(capture.rejection))
       }
     }
 

@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test'
+import { createHash } from 'node:crypto'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
@@ -51,17 +52,9 @@ const AUTO_RUN_EXCLUDE: Record<string, Record<string, string>> = {
     ImpactQueueTrigger:
       'queue-control node: backend execution emits impact-add-queue whenever its mode widget is on (the default), and the pack JS answers with a background app.queuePrompt whose re-entrancy refusal (app.processingQueue) then pins a bare VALIDATION_FAIL on whichever node the harness submits next',
     ImpactQueueTriggerCountdown:
-      'queue-control node: backend execution emits impact-add-queue while counting, and the pack JS answers with a background app.queuePrompt whose re-entrancy refusal poisons the next harness submission (same emitter chain as ImpactQueueTrigger; the pack installs no submit-time queue hook)',
-    ImageReceiver:
-      'environment-variable execution: av.error.InvalidDataError decoding its default image on macOS, clean on Linux CI'
+      'queue-control node: backend execution emits impact-add-queue while counting, and the pack JS answers with a background app.queuePrompt whose re-entrancy refusal poisons the next harness submission (same emitter chain as ImpactQueueTrigger; the pack installs no submit-time queue hook)'
   },
   'ComfyUI-KJNodes': {
-    CreateMagicMask:
-      'environment-variable execution: RuntimeError on the macOS CPU stack, clean on Linux CI',
-    CreateVoronoiMask:
-      'environment-variable execution: RuntimeError on the macOS CPU stack, clean on Linux CI',
-    GenerateNoise:
-      'environment-variable execution: rejected at validation locally, clean on Linux CI',
     Screencap_mss:
       'captures the screen; no X display on CI runners, real display locally',
     ImageGrabPIL: 'grabs the screen via PIL; OSError on headless CI runners',
@@ -93,8 +86,6 @@ const AUTO_RUN_EXCLUDE: Record<string, Record<string, string>> = {
       'invokes ffmpeg on a filesystem path; FileNotFoundError on CI runners, environment-variable',
     'Create Grid Image':
       'scans the input dir for images; ValueError when only non-image media is present - content-variable',
-    'Random Number':
-      'environment-variable execution: TypeError locally, clean on Linux CI',
     'Image History Loader':
       'reads WAS run history; state-dependent (KeyError on a fresh CI backend)',
     'Image Nova Filter':
@@ -111,12 +102,8 @@ const AUTO_RUN_EXCLUDE: Record<string, Record<string, string>> = {
       'loads MiDaS via torch.hub inside execute when no model is wired; downloads non-interruptibly on a networked runner (hung CI), runs clean only where the hub cache is warm',
     CLIPSEG2:
       'calls transformers from_pretrained(CIDAS/clipseg-rd64-refined) inside execute when no model is wired; downloads from HuggingFace on a networked runner - same class as BLIP/SAM',
-    'Image Analyze':
-      'environment-variable execution: RuntimeError on the macOS CPU stack, clean on Linux CI',
     'Image Crop Face':
-      'environment-variable execution: clean on macOS, AttributeError on Linux CI (OpenCV cascade lookup differs)',
-    'Text Parse A1111 Embeddings':
-      'environment-variable execution: FileNotFoundError on macOS, clean on Linux CI (embeddings dir handling differs)'
+      'environment-variable execution: clean on macOS, AttributeError on Linux CI (OpenCV cascade lookup differs)'
   },
   'ComfyUI-Custom-Scripts': {
     'LoadText|pysssss':
@@ -198,6 +185,17 @@ export async function assertExecutionTier({
   )
 
   const batches = batchAutoRunnable(verdicts, AUTO_RUN_BATCH)
+  const runnableNodeTypesSha256 = createHash('sha256')
+    .update(
+      batches
+        .flatMap((batch) => batch.map(({ key }) => key))
+        .sort()
+        .join('\n')
+    )
+    .digest('hex')
+  console.warn(
+    `${entry.pack} runnable corpus: count=${batches.flat().length} sha256=${runnableNodeTypesSha256}`
+  )
   const expectedRunnableCount = entry.expectedRunnableCount
   if (expectedRunnableCount === undefined)
     throw new Error(`${entry.pack} run tier has no runnable corpus`)
@@ -205,6 +203,10 @@ export async function assertExecutionTier({
     batches.flat(),
     `${entry.pack} runnable corpus changed - inspect classifier or object_info drift before recalibrating`
   ).toHaveLength(expectedRunnableCount)
+  expect(
+    runnableNodeTypesSha256,
+    `${entry.pack} runnable node identities changed - inspect classifier or object_info drift before recalibrating`
+  ).toBe(entry.expectedRunnableNodeTypesSha256)
   const hardFailures: string[] = []
   const cannotRun = new Map<string, string>()
   const ranClean = new Set<string>()

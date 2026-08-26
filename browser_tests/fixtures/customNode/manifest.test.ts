@@ -20,6 +20,7 @@ function validEntry(): CoreManifestEntry {
     workflow: 'assets/customNodes/vhs_video_pipeline_run.json',
     expectedNodes: ['ExampleNode'],
     expectedRunnableCount: 1,
+    expectedRunnableNodeTypesSha256: 'a'.repeat(64),
     expectedNodeCount: 1,
     expectedExtensions: ['Example.Extension'],
     requiresGpu: false,
@@ -209,6 +210,32 @@ describe('customNode manifest', () => {
         0
       )
     ).toThrow(/model-free CPU gate/)
+  })
+
+  it('run tiers require an exact runnable identity digest', () => {
+    const { expectedRunnableNodeTypesSha256: _omitted, ...withoutField } =
+      validEntry()
+    expect(() => assertCoreEntry(withoutField as CoreManifestEntry, 0)).toThrow(
+      /expectedRunnableNodeTypesSha256/
+    )
+    expect(() =>
+      assertCoreEntry(
+        { ...validEntry(), expectedRunnableNodeTypesSha256: 'not-a-digest' },
+        0
+      )
+    ).toThrow(/expectedRunnableNodeTypesSha256/)
+    expect(() =>
+      assertCoreEntry(
+        {
+          ...validEntry(),
+          tiers: ['load'],
+          workflow: '',
+          expectedRunnableCount: undefined,
+          expectedRunnableNodeTypesSha256: 'a'.repeat(64)
+        },
+        0
+      )
+    ).toThrow(/expectedRunnableNodeTypesSha256/)
   })
 
   it('pack must be a plain path segment (it becomes the install dirname)', () => {

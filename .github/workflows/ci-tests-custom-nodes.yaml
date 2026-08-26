@@ -50,6 +50,11 @@ on:
         required: false
         type: string
         default: ''
+      record_interactions:
+        description: 'Record Core S13 interaction profiles as an artifact'
+        required: false
+        type: boolean
+        default: false
 
 concurrency:
   # Dispatches get a per-run group: two manual runs (e.g. comparing branches)
@@ -76,7 +81,7 @@ jobs:
         # cannot drift out of step with a separate total. Slices are balanced
         # by expectedNodeCount (see shardOf), not by pack count: node counts
         # run 1..285 with a median of 6, and a matrix costs its slowest shard.
-        shard: ['core', '1/5', '2/5', '3/5', '4/5', '5/5']
+        shard: ${{ fromJSON(inputs.record_interactions && '["core"]' || '["core","1/5","2/5","3/5","4/5","5/5"]') }}
         proof_row: >-
           ${{ fromJSON(github.event_name == 'schedule' && '["0","1","2","3","9","15"]' || github.event_name == 'workflow_dispatch' && inputs.detection_proof_row == 'all' && '["1","2","3","9","15"]' || format('["{0}"]', inputs.detection_proof_row || '0')) }}
         exclude:
@@ -328,11 +333,13 @@ jobs:
         env:
           CN_ENABLE_S15: ${{ env.CUSTOM_NODES_MANIFEST == 'core' && '1' || '0' }}
           CN_OUTPUT_HASHES_CORE: ${{ env.COMFYUI_PIN }}
+          CN_INTERACTION: ${{ inputs.record_interactions && 'record' || '' }}
+          CN_INTERACTION_CORE: ${{ env.COMFYUI_PIN }}
           PLAYWRIGHT_JSON_OUTPUT_NAME: custom-nodes-results.json
           PROOF_ROW: ${{ matrix.proof_row }}
           # Through env, not inline interpolation: dispatch input must never
           # be shell-parsed.
-          GREP_FILTER: ${{ inputs.grep }}
+          GREP_FILTER: ${{ inputs.record_interactions && 'interaction profiles' || inputs.grep }}
         run: |
           set -o pipefail
           # workers=1: the auto-run tier needs exclusive backend-queue access;
@@ -392,6 +399,7 @@ jobs:
             playwright-report/
             custom-nodes-results.json
             custom-nodes.log
+            browser_tests/fixtures/customNode/interactionProfiles/
             tier-isolation-proof-evidence.txt
             tier-isolation-proof-identity.txt
           retention-days: 7

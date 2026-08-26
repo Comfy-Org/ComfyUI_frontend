@@ -87,14 +87,14 @@ describe('capturePromptResponse', () => {
     expect(isServerSideFault(new Error('VALIDATION_FAIL'))).toBe(false)
   })
 
-  it('preserves a newer successful retry when an older body parses last', () => {
+  it('preserves a newer successful response when an older body parses last', () => {
     const success = capturePromptResponse(
       { sequence: 0 },
       {
         sequence: 2,
         status: 200,
-        body: { prompt_id: 'successful-retry' },
-        promptId: 'successful-retry'
+        body: { prompt_id: 'newer-success' },
+        promptId: 'newer-success'
       }
     )
     expect(

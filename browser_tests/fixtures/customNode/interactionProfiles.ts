@@ -41,15 +41,11 @@ export interface NodeInteractionProfile {
   disconnect: ProbeResult
 }
 
-export type SparseNodeInteractionProfile = Partial<
-  Record<(typeof PROBES)[number], ShapeDelta>
->
-
 export interface PackInteractionProfileFile {
   recordedAt: { core: string; pin: string }
-  schema: 2
+  schema: 3
   corpus: { count: number; nodeTypesSha256: string }
-  nodes: Record<string, SparseNodeInteractionProfile>
+  nodes: Record<string, NodeInteractionProfile>
 }
 
 // Nodes whose interaction deltas are not reproducible run-to-run, keyed by
@@ -92,17 +88,6 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-function sparseProfile(
-  profile: NodeInteractionProfile
-): SparseNodeInteractionProfile {
-  return Object.fromEntries(
-    PROBES.flatMap((probe) => {
-      const result = profile[probe]
-      return Array.isArray(result) && result.length > 0 ? [[probe, result]] : []
-    })
-  )
-}
-
 export function interactionCorpusIdentity(nodeTypes: string[]): {
   count: number
   nodeTypesSha256: string
@@ -121,7 +106,7 @@ export function interactionCorpusIdentity(nodeTypes: string[]): {
 // an unrelated TypeError deep inside comparePackProfiles.
 function invalidProfileField(parsed: unknown): string | null {
   if (!isPlainObject(parsed)) return 'root (expected a JSON object)'
-  if (parsed.schema !== 2) return 'schema (expected 2)'
+  if (parsed.schema !== 3) return 'schema (expected 3)'
   if (!isPlainObject(parsed.recordedAt))
     return 'recordedAt (expected { core, pin })'
   if (!isNonEmptyString(parsed.recordedAt.core))
@@ -150,14 +135,19 @@ function invalidProfileField(parsed: unknown): string | null {
     )
     if (unknown.length > 0)
       return `nodes.${node} (unknown probe ${unknown.join(', ')})`
-    for (const probe of PROBES)
+    for (const probe of PROBES) {
+      const result = profile[probe]
+      if (result === undefined) return `nodes.${node}.${probe} (missing)`
+      const validMarker =
+        result === 'NO_PRODUCER' ||
+        result === 'NO_INPUTS' ||
+        (probe === 'connectLast' && result === 'SAME_AS_FIRST')
       if (
-        profile[probe] !== undefined &&
-        (!Array.isArray(profile[probe]) ||
-          profile[probe].length === 0 ||
-          !profile[probe].every(isNonEmptyString))
+        !validMarker &&
+        (!Array.isArray(result) || !result.every(isNonEmptyString))
       )
-        return `nodes.${node}.${probe} (expected a non-empty string[] delta)`
+        return `nodes.${node}.${probe} (expected a delta or probe marker)`
+    }
   }
   return null
 }
@@ -193,29 +183,26 @@ export function recordPackProfiles(
   mkdirSync(PROFILE_DIR, { recursive: true })
   const file: PackInteractionProfileFile = {
     recordedAt,
-    schema: 2,
+    schema: 3,
     corpus: interactionCorpusIdentity(Object.keys(nodes)),
-    nodes: Object.fromEntries(
-      Object.entries(nodes).flatMap(([node, profile]) => {
-        const sparse = sparseProfile(profile)
-        return Object.keys(sparse).length > 0 ? [[node, sparse]] : []
-      })
-    )
+    nodes
   }
   writeFileSync(profilePath(pack), JSON.stringify(file, null, 2) + '\n')
 }
 
 function probesEqual(
-  a: SparseNodeInteractionProfile,
-  b: SparseNodeInteractionProfile
+  a: NodeInteractionProfile,
+  b: NodeInteractionProfile
 ): string[] {
   const problems: string[] = []
   for (const probe of PROBES) {
-    const expected = a[probe] ?? []
-    const actual = b[probe] ?? []
+    const expected = a[probe]
+    const actual = b[probe]
     const same =
-      expected.length === actual.length &&
-      expected.every((entry, i) => entry === actual[i])
+      typeof expected === 'string' || typeof actual === 'string'
+        ? expected === actual
+        : expected.length === actual.length &&
+          expected.every((entry, i) => entry === actual[i])
     if (!same)
       problems.push(
         `${probe}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`
@@ -254,20 +241,20 @@ export function comparePackProfiles(input: {
     problems.push(
       `${pack}: interaction corpus changed from ${committed.corpus.count}/${committed.corpus.nodeTypesSha256} to ${observedCorpus.count}/${observedCorpus.nodeTypesSha256} - re-record ${provenance}`
     )
-  const sparseObserved = Object.fromEntries(
-    Object.entries(observed).map(([node, profile]) => [
-      node,
-      sparseProfile(profile)
-    ])
-  )
   const nodes = new Set([
     ...Object.keys(committed.nodes),
-    ...Object.keys(sparseObserved)
+    ...Object.keys(observed)
   ])
   for (const node of nodes) {
     if (node in unstable) continue
-    const expected = committed.nodes[node] ?? {}
-    const actual = sparseObserved[node] ?? {}
+    const expected = committed.nodes[node]
+    const actual = observed[node]
+    if (expected === undefined || actual === undefined) {
+      problems.push(
+        `${pack}/${node}: interaction profile is ${expected === undefined ? 'missing from the baseline' : 'missing from the live probe'} ${provenance}`
+      )
+      continue
+    }
     for (const problem of probesEqual(expected, actual))
       problems.push(
         `${pack}/${node}: interaction delta drifted - ${problem}. A frontend ` +

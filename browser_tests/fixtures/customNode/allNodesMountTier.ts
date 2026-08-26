@@ -69,6 +69,102 @@ interface MountedShape {
   outputCount: number
 }
 
+function vueMountProblems(
+  page: Page,
+  mounted: Array<{ id: string; type: string }>,
+  expectedDuplicatesByNode: Record<string, DuplicateWidgetExpectation>
+): Promise<string[]> {
+  return page.evaluate(
+    ([mountedNodes, duplicateExpectations]) => {
+      const problems: string[] = []
+      for (const { id, type } of mountedNodes) {
+        const node = window.app!.graph.nodes.find(
+          (candidate) => String(candidate.id) === id
+        )
+        const root = document.querySelector(`[data-node-id="${id}"]`)
+        if (!node) {
+          problems.push(`${type}: graph node is missing`)
+          continue
+        }
+        if (!root) {
+          problems.push(`${type}: no Vue mount`)
+          continue
+        }
+        const widgets = (
+          (node.widgets ?? []) as Array<{
+            advanced?: boolean
+            name?: string
+            type?: string
+            options?: {
+              advanced?: boolean
+              canvasOnly?: boolean
+              hidden?: boolean
+            }
+          }>
+        ).filter(
+          (widget) =>
+            !!widget.type &&
+            widget.type !== 'converted-widget' &&
+            !widget.options?.canvasOnly &&
+            !(widget.options?.advanced ?? widget.advanced) &&
+            !widget.options?.hidden &&
+            widget.name !== 'control_after_generate'
+        )
+        const domWidgets = root.querySelectorAll(
+          '[data-testid="node-widget"]'
+        ).length
+        const expectedDuplicates = duplicateExpectations[node.type!]
+        if (expectedDuplicates) {
+          const widgetNameCounts: Record<string, number> = {}
+          for (const widget of widgets)
+            widgetNameCounts[widget.name ?? ''] =
+              (widgetNameCounts[widget.name ?? ''] ?? 0) + 1
+          const observedDuplicates = Object.fromEntries(
+            Object.entries(widgetNameCounts)
+              .filter(([, count]) => count > 1)
+              .sort(([left], [right]) => left.localeCompare(right))
+          )
+          const expectedDuplicateCounts = Object.fromEntries(
+            Object.entries(expectedDuplicates.counts).sort(([left], [right]) =>
+              left.localeCompare(right)
+            )
+          )
+          if (
+            JSON.stringify(observedDuplicates) !==
+            JSON.stringify(expectedDuplicateCounts)
+          )
+            problems.push(
+              `${node.type}: duplicate widget identities ${JSON.stringify(observedDuplicates)} do not match ${JSON.stringify(expectedDuplicateCounts)}; ${expectedDuplicates.reason}; ${expectedDuplicates.restore}`
+            )
+          const uniqueWidgetCount = new Set(
+            widgets.map((widget) => widget.name)
+          ).size
+          if (domWidgets !== uniqueWidgetCount)
+            problems.push(
+              `${node.type}: Vue mounts ${domWidgets} rows for ${uniqueWidgetCount} unique widget identities; ${expectedDuplicates.reason}; ${expectedDuplicates.restore}`
+            )
+        } else if (domWidgets !== widgets.length)
+          problems.push(
+            `${node.type}: Vue mounts ${domWidgets} of ${widgets.length} widgets`
+          )
+        const slots =
+          (node.inputs ?? []).filter(
+            (input) => !(input as { widget?: unknown }).widget
+          ).length + (node.outputs ?? []).length
+        const domSlots = root.querySelectorAll(
+          '[data-testid="slot-connection-dot"]'
+        ).length
+        if (domSlots !== slots)
+          problems.push(
+            `${node.type}: Vue mounts ${domSlots} of ${slots} slots`
+          )
+      }
+      return problems
+    },
+    [mounted, expectedDuplicatesByNode] as const
+  )
+}
+
 function addChunk(
   page: Page,
   types: string[]
@@ -257,103 +353,21 @@ export async function assertMountTier({
               `${key}: instance has ${shape.outputCount} of ${declared.outputCount} declared outputs (${renderer})`
             )
         }
-        if (!vueNodesEnabled) continue
-        const visible = await comfyPage.page
-          .locator(`[data-node-id="${shape.id}"]`)
-          .waitFor({ state: 'visible', timeout: 2_000 })
-          .then(() => true)
-          .catch(() => false)
-        if (!visible) failures.push(`${key}: no Vue mount`)
       }
       if (vueNodesEnabled)
-        failures.push(
-          ...(await comfyPage.page.evaluate(
-            ([chunkIds, expectedDuplicatesByNode]) => {
-              const problems: string[] = []
-              for (const id of chunkIds) {
-                if (id === null) continue
-                const node = window.app!.graph.nodes.find(
-                  (candidate) => String(candidate.id) === id
-                )
-                const root = document.querySelector(`[data-node-id="${id}"]`)
-                if (!node || !root) continue
-                const widgets = (
-                  (node.widgets ?? []) as Array<{
-                    advanced?: boolean
-                    name?: string
-                    type?: string
-                    options?: {
-                      advanced?: boolean
-                      canvasOnly?: boolean
-                      hidden?: boolean
-                    }
-                  }>
-                ).filter(
-                  (widget) =>
-                    !!widget.type &&
-                    widget.type !== 'converted-widget' &&
-                    !widget.options?.canvasOnly &&
-                    !(widget.options?.advanced ?? widget.advanced) &&
-                    !widget.options?.hidden &&
-                    widget.name !== 'control_after_generate'
-                )
-                const domWidgets = root.querySelectorAll(
-                  '[data-testid="node-widget"]'
-                ).length
-                const expectedDuplicates = expectedDuplicatesByNode[node.type!]
-                if (expectedDuplicates) {
-                  const widgetNameCounts: Record<string, number> = {}
-                  for (const widget of widgets)
-                    widgetNameCounts[widget.name ?? ''] =
-                      (widgetNameCounts[widget.name ?? ''] ?? 0) + 1
-                  const observedDuplicates = Object.fromEntries(
-                    Object.entries(widgetNameCounts)
-                      .filter(([, count]) => count > 1)
-                      .sort(([left], [right]) => left.localeCompare(right))
-                  )
-                  const expectedDuplicateCounts = Object.fromEntries(
-                    Object.entries(expectedDuplicates.counts).sort(
-                      ([left], [right]) => left.localeCompare(right)
-                    )
-                  )
-                  if (
-                    JSON.stringify(observedDuplicates) !==
-                    JSON.stringify(expectedDuplicateCounts)
-                  )
-                    problems.push(
-                      `${node.type}: duplicate widget identities ${JSON.stringify(observedDuplicates)} do not match ${JSON.stringify(expectedDuplicateCounts)}; ${expectedDuplicates.reason}; ${expectedDuplicates.restore}`
-                    )
-                  const uniqueWidgetCount = new Set(
-                    widgets.map((widget) => widget.name)
-                  ).size
-                  if (domWidgets !== uniqueWidgetCount)
-                    problems.push(
-                      `${node.type}: Vue mounts ${domWidgets} rows for ${uniqueWidgetCount} unique widget identities; ${expectedDuplicates.reason}; ${expectedDuplicates.restore}`
-                    )
-                } else if (domWidgets < widgets.length)
-                  problems.push(
-                    `${node.type}: Vue mounts ${domWidgets} of ${widgets.length} widgets`
-                  )
-                const slots =
-                  (node.inputs ?? []).filter(
-                    (input) => !(input as { widget?: unknown }).widget
-                  ).length + (node.outputs ?? []).length
-                const domSlots = root.querySelectorAll(
-                  '[data-testid="slot-connection-dot"]'
-                ).length
-                if (domSlots < slots)
-                  problems.push(
-                    `${node.type}: Vue mounts ${domSlots} of ${slots} slots`
-                  )
-              }
-              return problems
-            },
-            [
-              shapes.map((shape) => shape?.id ?? null),
-              duplicateWidgetExpectations
-            ] as const
-          ))
-        )
+        await expect
+          .poll(
+            () =>
+              vueMountProblems(
+                comfyPage.page,
+                shapes.flatMap((shape, index) =>
+                  shape === null ? [] : [{ id: shape.id, type: chunk[index] }]
+                ),
+                duplicateWidgetExpectations
+              ),
+            { timeout: 10_000 }
+          )
+          .toEqual([])
     }
     expect(
       failures,

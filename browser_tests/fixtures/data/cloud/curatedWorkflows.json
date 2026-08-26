@@ -4,6 +4,7 @@
     "tiers": ["load", "connectivity", "run"],
     "expectedNodes": ["VHS_LoadVideo", "VHS_VideoInfo"],
     "expectedRunnableCount": 31,
+    "expectedRunnableNodeTypesSha256": "0000000000000000000000000000000000000000000000000000000000000000",
     "timeoutMs": 90000
   }
 }

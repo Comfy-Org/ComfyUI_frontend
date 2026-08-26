@@ -72,6 +72,15 @@ describe('cloud run overlay', () => {
         }
       })
     ).toThrow(/expectedRunnableCount/)
+    expect(() =>
+      validateCuratedCloudOverlay({
+        pack: {
+          workflow: 'assets/customNodes/example.json',
+          tiers: ['load', 'run'],
+          expectedRunnableCount: 1
+        }
+      })
+    ).toThrow(/expectedRunnableNodeTypesSha256/)
   })
 
   it.each([
@@ -86,7 +95,8 @@ describe('cloud run overlay', () => {
         pack: {
           workflow,
           tiers: ['load', 'run'],
-          expectedRunnableCount: 1
+          expectedRunnableCount: 1,
+          expectedRunnableNodeTypesSha256: 'a'.repeat(64)
         }
       })
     ).toThrow(/inside browser_tests/)

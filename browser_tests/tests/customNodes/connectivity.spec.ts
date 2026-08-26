@@ -49,32 +49,11 @@ import {
 } from '@e2e/fixtures/utils/errorSurfaces'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 
-// Budget the sweep per pair instead of flat: the corpus grows with every pack
-// added, and a flat cap silently becomes a hang the day it stops fitting. Run
-// 30961895204 swept 16832 pairs and did not finish inside a flat 120s cap, so
-// the real rate is above 6.5ms/pair; the multiplier below carries margin over
-// that floor and the sweep logs its actual rate so it can be tightened.
 const PLAN_SETUP_MS = 120_000
-// Measured per-pair sweep cost across the cloud shards is 31-53ms: the rate
-// tracks how much DOM and media a shard's nodes build, not the pair count.
-// A flat 40ms sat below the slowest shard's own standalone rate, so the
-// media-heavy shard could exhaust its budget while doing correct work. 70ms
-// covers the observed maximum with headroom; a genuine hang is caught far
-// sooner by BATCH_STALL_MS rather than by this budget.
 const SWEEP_MS_PER_PAIR = 70
 const ISOLATED_MS_PER_PAIR = PLAN_SETUP_MS
 const DYNAMIC_CLEANUP_SETTLE_MS = 50
-// Per-pair cost is not uniform: a batch landing on a cluster of nodes that
-// rebuild their whole dynamic widget set per connection measured 42.5s while
-// the median batch was 2.4s. At 100 pairs that outlier sat 2.5s under the
-// stall deadline, so ordinary variance decided pass or fail. Smaller batches
-// divide the worst cluster across several evaluates, which restores a wide
-// margin without widening the deadline or changing what is swept.
 const PAIRS_PER_BATCH = 25
-// Healthy batches finish in ~3s and the slowest observed legitimate batch was
-// 30s, so 45s is past any real batch. It must also fire before the test
-// budget runs out: the stall begins ~178s into a 244s sweep, so a longer
-// deadline loses the race to the test timeout and reports nothing.
 const BATCH_STALL_MS = 45_000
 const PAIRS_PER_PAGE = 1_000
 // Same discipline for the drag pass, whose edge list grows with every
@@ -540,37 +519,28 @@ async function runPairsAcrossPages(
   return { results, errors }
 }
 
-// A batch that never returns otherwise fails as a bare test timeout naming
-// only the 100-pair window. Racing the batch against a deadline and reading
-// the in-page cursor tells us the exact pair, and whether the renderer is
-// still responsive (an unresolved await) or wedged (a synchronous loop).
 async function evaluatePairs(
   page: Page,
   pairs: PlannedPair[],
   options: { resetAfter?: boolean; stalledCleanupKeys?: string[] } = {}
 ): Promise<PairResult[]> {
   const stall = Symbol('stall')
-  const timer = new Promise<typeof stall>((resolve) =>
-    setTimeout(() => resolve(stall), BATCH_STALL_MS)
-  )
+  let timerId: ReturnType<typeof setTimeout> | undefined
+  const timer = new Promise<typeof stall>((resolve) => {
+    timerId = setTimeout(() => resolve(stall), BATCH_STALL_MS)
+  })
   const batch = evaluatePairsInPage(page, pairs, options)
-  const outcome = await Promise.race([batch, timer])
+  let outcome: PairResult[] | typeof stall
+  try {
+    outcome = await Promise.race([batch, timer])
+  } finally {
+    if (timerId !== undefined) clearTimeout(timerId)
+  }
   if (outcome !== stall) return outcome
-  // Sampled twice: a live graph whose slot counts keep climbing between reads
-  // is a pack growing its own dynamic inputs without converging, which is not
-  // distinguishable from a hang by the cursor alone.
   const probe = async () =>
     page
       .evaluate(
-        () => ({
-          cursor: (window as unknown as { __cnPairCursor?: string })
-            .__cnPairCursor,
-          nodes: window.app?.graph.nodes.length ?? -1,
-          slots: (window.app?.graph.nodes ?? []).map(
-            (node) =>
-              `${node.type}:${node.inputs?.length ?? 0}/${node.widgets?.length ?? 0}`
-          )
-        }),
+        () => (window as unknown as { __cnPairCursor?: string }).__cnPairCursor,
         { timeout: 10_000 }
       )
       .catch(() => null)
@@ -581,14 +551,11 @@ async function evaluatePairs(
     throw new Error(
       `connectivity batch wedged the renderer after ${BATCH_STALL_MS}ms; the page stopped answering, so a pack ran a synchronous loop. Batch started at ${pairs[0] ? `${pairs[0].producer.nodeType}.${pairs[0].producer.slotName}` : 'unknown'}`
     )
-  // The cursor, not the graph, is the progress signal: every pair resets to
-  // exactly two nodes, so node counts look identical whether the sweep is
-  // wedged on one pair or running normally.
-  const advanced = first.cursor !== second.cursor
+  const advanced = first !== second
   throw new Error(
     advanced
-      ? `connectivity batch is progressing but too slow for ${BATCH_STALL_MS}ms: the cursor moved '${first.cursor}' -> '${second.cursor}' during a 2s sample, so no single pair is stuck and the batch simply needs longer than the budget allows`
-      : `connectivity batch stalled after ${BATCH_STALL_MS}ms on pair '${second.cursor ?? 'none recorded'}' - the page answers and the cursor did not move across a 2s sample, so that one pair is awaiting something that never settles. Graph at stall: nodes ${second.nodes}, slots ${JSON.stringify(second.slots)}`
+      ? `connectivity batch is progressing but too slow for ${BATCH_STALL_MS}ms: the cursor moved '${first}' -> '${second}' during a 2s sample, so no single pair is stuck and the batch simply needs longer than the budget allows`
+      : `connectivity batch stalled after ${BATCH_STALL_MS}ms on pair '${second ?? 'none recorded'}' - the page answers and the cursor did not move across a 2s sample, so that one pair is awaiting something that never settles`
   )
 }
 

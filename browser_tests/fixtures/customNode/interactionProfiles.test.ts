@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type {
-  NodeInteractionProfile,
-  SparseNodeInteractionProfile
-} from '@e2e/fixtures/customNode/interactionProfiles'
+import type { NodeInteractionProfile } from '@e2e/fixtures/customNode/interactionProfiles'
 import {
   comparePackProfiles,
   diffShapes,
@@ -18,13 +15,24 @@ const GROWS: NodeInteractionProfile = {
   disconnect: DISCONNECT
 }
 
+const MARKER_TRANSITIONS: Array<
+  [
+    NodeInteractionProfile['connectFirst'],
+    NodeInteractionProfile['connectFirst']
+  ]
+> = [
+  ['NO_PRODUCER', []],
+  [[], 'NO_PRODUCER'],
+  ['NO_INPUTS', 'NO_PRODUCER']
+]
+
 function committedWith(
   nodeTypes: string[],
-  nodes: Record<string, SparseNodeInteractionProfile>
+  nodes: Record<string, NodeInteractionProfile>
 ) {
   return {
     recordedAt: { core: 'abc123', pin: 'def456' },
-    schema: 2 as const,
+    schema: 3 as const,
     corpus: interactionCorpusIdentity(nodeTypes),
     nodes
   }
@@ -64,10 +72,7 @@ describe('S13 interaction profiles', () => {
 
   it('compare fails closed on every drift class', () => {
     const committed = committedWith(['NodeA'], {
-      NodeA: {
-        connectFirst: CONNECT_FIRST,
-        disconnect: DISCONNECT
-      }
+      NodeA: GROWS
     })
     expect(
       compareWithPin({
@@ -118,7 +123,7 @@ describe('S13 interaction profiles', () => {
         pack: 'p',
         expectedPin: 'new-pin',
         observed: { NodeA: GROWS },
-        committed: committedWith(['NodeA'], { NodeA: {} })
+        committed: committedWith(['NodeA'], { NodeA: GROWS })
       })
     ).toEqual([
       "S13: p profile pin is 'def456', expected 'new-pin' - re-record it"
@@ -126,9 +131,7 @@ describe('S13 interaction profiles', () => {
   })
 
   it('a marker replacing a recorded delta is drift', () => {
-    const committed = committedWith(['NodeA'], {
-      NodeA: { connectFirst: CONNECT_FIRST }
-    })
+    const committed = committedWith(['NodeA'], { NodeA: GROWS })
     expect(
       compareWithPin({
         pack: 'p',
@@ -138,4 +141,26 @@ describe('S13 interaction profiles', () => {
       })[0]
     ).toContain('connectFirst')
   })
+
+  it.for(MARKER_TRANSITIONS)(
+    'treats %j changing to %j as drift',
+    ([expected, actual]) => {
+      const baseline: NodeInteractionProfile = {
+        ...GROWS,
+        connectFirst: expected
+      }
+      const observed: NodeInteractionProfile = {
+        ...GROWS,
+        connectFirst: actual
+      }
+      expect(
+        compareWithPin({
+          pack: 'p',
+          expectedPin: 'def456',
+          observed: { NodeA: observed },
+          committed: committedWith(['NodeA'], { NodeA: baseline })
+        })[0]
+      ).toContain('connectFirst')
+    }
+  )
 })

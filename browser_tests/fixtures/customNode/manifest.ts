@@ -32,6 +32,7 @@ interface SharedNodeExpectations {
   // registers "Power Primitive (rgthree)", not RgthreePowerPrimitive).
   expectedNodes: string[]
   expectedRunnableCount?: number
+  expectedRunnableNodeTypesSha256?: string
   timeoutMs: number
 }
 
@@ -217,10 +218,20 @@ function sharedIssues(entry: SharedNodeExpectations): string[] {
   )
     missing.push('expectedRunnableCount (positive integer for run tier)')
   else if (
+    entry.tiers.includes('run') &&
+    !/^[0-9a-f]{64}$/.test(entry.expectedRunnableNodeTypesSha256 ?? '')
+  )
+    missing.push('expectedRunnableNodeTypesSha256 (sha256 for run tier)')
+  else if (
     !entry.tiers.includes('run') &&
     entry.expectedRunnableCount !== undefined
   )
     missing.push('expectedRunnableCount (only valid for run tier)')
+  else if (
+    !entry.tiers.includes('run') &&
+    entry.expectedRunnableNodeTypesSha256 !== undefined
+  )
+    missing.push('expectedRunnableNodeTypesSha256 (only valid for run tier)')
   if (!Number.isFinite(entry.timeoutMs) || entry.timeoutMs <= 0)
     missing.push('timeoutMs')
   return missing
@@ -630,6 +641,8 @@ function canonicalCloudEntry(
     typeof value.timeoutMs !== 'number' ||
     (value.expectedRunnableCount !== undefined &&
       typeof value.expectedRunnableCount !== 'number') ||
+    (value.expectedRunnableNodeTypesSha256 !== undefined &&
+      typeof value.expectedRunnableNodeTypesSha256 !== 'string') ||
     (value.webDirectory !== undefined &&
       typeof value.webDirectory !== 'string') ||
     (value.cannotRunAlone !== undefined && cannotRunAlone === undefined)
@@ -648,6 +661,11 @@ function canonicalCloudEntry(
     ...(value.expectedRunnableCount === undefined
       ? {}
       : { expectedRunnableCount: value.expectedRunnableCount }),
+    ...(value.expectedRunnableNodeTypesSha256 === undefined
+      ? {}
+      : {
+          expectedRunnableNodeTypesSha256: value.expectedRunnableNodeTypesSha256
+        }),
     ...(value.webDirectory === undefined
       ? {}
       : { webDirectory: value.webDirectory }),
@@ -710,6 +728,8 @@ function canonicalCoreEntry(value: unknown, index: number): CoreManifestEntry {
     requiresModels === undefined ||
     (value.expectedRunnableCount !== undefined &&
       typeof value.expectedRunnableCount !== 'number') ||
+    (value.expectedRunnableNodeTypesSha256 !== undefined &&
+      typeof value.expectedRunnableNodeTypesSha256 !== 'string') ||
     (value.cannotRunAlone !== undefined && cannotRunAlone === undefined)
   )
     throw new Error(`custom-node manifest entry ${index} is malformed`)
@@ -728,6 +748,11 @@ function canonicalCoreEntry(value: unknown, index: number): CoreManifestEntry {
     ...(value.expectedRunnableCount === undefined
       ? {}
       : { expectedRunnableCount: value.expectedRunnableCount }),
+    ...(value.expectedRunnableNodeTypesSha256 === undefined
+      ? {}
+      : {
+          expectedRunnableNodeTypesSha256: value.expectedRunnableNodeTypesSha256
+        }),
     ...(cannotRunAlone === undefined ? {} : { cannotRunAlone })
   }
   assertCoreEntry(entry, index)

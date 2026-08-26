@@ -76,7 +76,7 @@ vi.mock('@/platform/workflow/persistence/stores/workflowDraftStoreV2', () => ({
 }))
 
 vi.mock('@/stores/domWidgetStore', () => ({
-  useDomWidgetStore: () => ({ clear: vi.fn(), clearGraph: vi.fn() })
+  useDomWidgetStore: () => ({ clear: vi.fn() })
 }))
 
 vi.mock('@/stores/subgraphNavigationStore', () => ({
