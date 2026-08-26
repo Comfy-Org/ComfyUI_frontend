@@ -347,7 +347,7 @@ export const useComfyRegistryService = () => {
       | undefined,
     signal?: AbortSignal
   ) => {
-    if (!nodeName) return null
+    if (!nodeName || nodeName === 'undefined') return null
 
     const endpoint = `/comfy-nodes/${nodeName}/node`
     const errorContext = 'Failed to infer pack from comfy node name'
