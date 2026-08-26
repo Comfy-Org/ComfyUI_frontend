@@ -1,3 +1,4 @@
+import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -68,6 +69,7 @@ const mockTier = ref<SubscriptionInfo['tier']>('CREATOR')
 const mockSubscription = ref<SubscriptionInfo | null>(makeSubscription())
 const mockBalance = ref<BalanceInfo | null>(null)
 const mockIsLoading = ref(false)
+const mockIsTeamPlan = ref(false)
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: vi.fn(() => ({
@@ -76,6 +78,7 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     subscription: mockSubscription,
     balance: mockBalance,
     isLoading: mockIsLoading,
+    isTeamPlan: mockIsTeamPlan,
     fetchBalance: mockFetchBalance
   }))
 }))
@@ -121,7 +124,7 @@ describe('CurrentUserPopoverLegacy', () => {
     mockIsLoading.value = false
   })
 
-  function renderComponent() {
+  function renderComponent(teamWorkspaceState?: Record<string, unknown>) {
     const i18n = createI18n({
       legacy: false,
       locale: 'en',
@@ -132,7 +135,15 @@ describe('CurrentUserPopoverLegacy', () => {
 
     render(CurrentUserPopoverLegacy, {
       global: {
-        plugins: [i18n],
+        plugins: [
+          i18n,
+          createTestingPinia({
+            createSpy: vi.fn,
+            initialState: teamWorkspaceState
+              ? { teamWorkspace: teamWorkspaceState }
+              : {}
+          })
+        ],
         stubs: {
           Divider: true
         }
@@ -380,6 +391,103 @@ describe('CurrentUserPopoverLegacy', () => {
         }
       })
       expect(screen.getByText('0')).toBeInTheDocument()
+    })
+  })
+  describe('workspace selector (non-cloud)', () => {
+    const workspace = (overrides: Record<string, unknown>) => ({
+      isSubscribed: false,
+      subscriptionPlan: null,
+      subscriptionTier: null,
+      members: [],
+      pendingInvites: [],
+      ...overrides
+    })
+
+    const readyWorkspaceState = {
+      initState: 'ready',
+      activeWorkspaceId: 'ws-personal',
+      isFetchingWorkspaces: false,
+      workspaces: [
+        workspace({
+          id: 'ws-personal',
+          name: 'Personal Workspace',
+          type: 'personal',
+          role: 'owner'
+        }),
+        workspace({
+          id: 'ws-team',
+          name: 'Team Comfy',
+          type: 'team',
+          role: 'member'
+        })
+      ]
+    }
+
+    it('stays hidden while the workspace store is not hydrated', () => {
+      renderComponent()
+
+      expect(screen.queryByTestId('workspace-switcher-trigger')).toBeNull()
+    })
+
+    it.for(['ready', 'error'])(
+      'stays hidden when workspace initialization is %s without workspaces',
+      (initState) => {
+        renderComponent({
+          initState,
+          activeWorkspaceId: null,
+          isFetchingWorkspaces: false,
+          workspaces: []
+        })
+
+        expect(screen.queryByTestId('workspace-switcher-trigger')).toBeNull()
+      }
+    )
+
+    it('shows the trigger and opens the switcher once the store is ready', async () => {
+      const { user } = renderComponent(readyWorkspaceState)
+
+      const trigger = screen.getByTestId('workspace-switcher-trigger')
+      expect(trigger).toHaveAttribute('aria-expanded', 'false')
+      expect(trigger).toHaveAttribute('aria-haspopup', 'menu')
+      expect(trigger).toHaveAttribute(
+        'aria-controls',
+        'workspace-switcher-panel'
+      )
+      expect(screen.queryByTestId('workspace-switcher-panel')).toBeNull()
+
+      await user.click(trigger)
+
+      const panel = screen.getByTestId('workspace-switcher-panel')
+      expect(panel).toBeInTheDocument()
+      expect(panel).toHaveAttribute('id', 'workspace-switcher-panel')
+      expect(panel).toHaveAttribute('role', 'menu')
+      expect(trigger).toHaveAttribute('aria-expanded', 'true')
+    })
+
+    it('closes the switcher on Escape or a click elsewhere', async () => {
+      const { user } = renderComponent(readyWorkspaceState)
+      const trigger = screen.getByTestId('workspace-switcher-trigger')
+
+      await user.click(trigger)
+      await user.keyboard('{Escape}')
+      expect(screen.queryByTestId('workspace-switcher-panel')).toBeNull()
+
+      await user.click(trigger)
+      await user.click(screen.getByText('Test User'))
+      expect(screen.queryByTestId('workspace-switcher-panel')).toBeNull()
+    })
+
+    it('keeps credits visible but hides top-up for workspace members', () => {
+      mockCanAccessSubscriptionFeatures.value = false
+      renderComponent({
+        ...readyWorkspaceState,
+        activeWorkspaceId: 'ws-team'
+      })
+
+      expect(screen.getByTestId('manage-plan-menu-item')).toHaveTextContent(
+        enMessages.credits.credits
+      )
+      expect(screen.queryByTestId('add-credits-button')).toBeNull()
     })
   })
 })

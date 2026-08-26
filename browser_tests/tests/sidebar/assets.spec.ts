@@ -1123,21 +1123,22 @@ test.describe('Assets sidebar - drag and drop', () => {
 
     await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
 
-    await comfyPage.canvas.focus()
-    await comfyPage.page.keyboard.press('.')
+    const [loadImage] = await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
+    if (!loadImage) throw new Error('Load Image node not found')
+    await loadImage.centerOnNode()
+
     const { assetsTab } = comfyPage.menu
     await assetsTab.open()
     await assetsTab.waitForAssets()
     await expect(assetsTab.assetCards).toHaveCount(1)
 
     const targetPosition =
-      (await comfyPage.canvasOps.getNodeCenterByTitle('Load Image')) ??
-      undefined
+      await comfyPage.canvasOps.getNodeCenterByTitle('Load Image')
+    if (!targetPosition) throw new Error('Load Image node center not found')
 
     await assetsTab.assetCards.dragTo(comfyPage.canvas, { targetPosition })
 
-    const nodes = await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
-    const fileComboWidget = await nodes[0].getWidget(0)
+    const fileComboWidget = await loadImage.getWidget(0)
     await expect.poll(() => fileComboWidget.getValue()).toBe('test.png [temp]')
   })
 
