@@ -46,7 +46,11 @@ export type PerfMeasurementResult = z.infer<typeof perfMeasurementResultSchema>
 export function requireAcceptedMeasurement(
   result: PerfMeasurementResult
 ): PerfMeasurement {
-  if (result.kind === 'rejected') throw new Error(result.reason)
+  if (result.kind === 'rejected') {
+    throw new Error(
+      `Rejected measurement "${result.measurement.name}": ${result.reason}`
+    )
+  }
   return result.measurement
 }
 
