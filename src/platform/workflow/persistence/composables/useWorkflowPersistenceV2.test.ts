@@ -704,6 +704,8 @@ describe('useWorkflowPersistenceV2', () => {
   it('flushes a pending workflow edit when the page is unloaded', async () => {
     const workflowStore = useWorkflowStore()
     const workflow = await workflowStore.createTemporary('Draft.json').load()
+    expect(workflow).toBeDefined()
+    if (!workflow) return
     workflowStore.activeWorkflow = workflow
     mountWorkflowPersistence()
     await nextTick()
@@ -729,6 +731,8 @@ describe('useWorkflowPersistenceV2', () => {
   it('does not flush a pending workflow edit after disposal', async () => {
     const workflowStore = useWorkflowStore()
     const workflow = await workflowStore.createTemporary('Draft.json').load()
+    expect(workflow).toBeDefined()
+    if (!workflow) return
     workflowStore.activeWorkflow = workflow
     mountWorkflowPersistence()
 
@@ -765,6 +769,8 @@ describe('useWorkflowPersistenceV2', () => {
     const workflow = await workflowStore
       .createTemporary('WorkspaceA.json')
       .load()
+    expect(workflow).toBeDefined()
+    if (!workflow) return
     workflowStore.activeWorkflow = workflow
     mountWorkflowPersistence()
 
@@ -909,6 +915,8 @@ describe('useWorkflowPersistenceV2', () => {
     const workflow = await workflowStore
       .createTemporary('LogoutRecovery.json')
       .load()
+    expect(workflow).toBeDefined()
+    if (!workflow) return
     workflowStore.activeWorkflow = workflow
     mountWorkflowPersistence()
     mocks.state.currentGraph = { marker: 'stale-source-edit' }
