@@ -38,7 +38,7 @@ export default defineConfig({
       '/customers/moment-factory/',
     '/cloud/enterprise-case-studies/how-series-entertainment-rebuilt-game-and-video-production-with-comfyui':
       '/customers/series-entertainment/',
-    '/zh-CN/terms-of-service': '/terms-of-service',
+    '/zh-CN/terms-of-service': '/terms-of-service/',
     '/minimax': { status: 307, destination: '/minimax-h3/' },
     '/zh-CN/minimax': { status: 307, destination: '/zh-CN/minimax-h3/' }
   },
