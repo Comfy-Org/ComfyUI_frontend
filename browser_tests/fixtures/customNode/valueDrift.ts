@@ -54,6 +54,7 @@ export const ROUNDTRIP_VALUE_ALLOWED_KEYS_VUE = {
 export type RoundtripInitializationSignal =
   | { property: string; predicate: 'defined' }
   | { property: string; predicate: 'equals'; value: unknown }
+  | { inputs: string[]; predicate: 'inputs-absent' }
   | { predicate: 'widget-value'; value: unknown; widget: string }
   | { predicate: 'widget-count'; value: number }
   | { predicate: 'minimum-widget-count'; value: number }
@@ -78,8 +79,13 @@ export const ROUNDTRIP_INITIALIZATION_SIGNALS: Record<
   },
   'comfyui-sam3': {
     SAM3VideoSegmentation: {
-      property: '_hiddenInputs',
-      predicate: 'defined'
+      inputs: [
+        'positive_points',
+        'negative_points',
+        'positive_boxes',
+        'negative_boxes'
+      ],
+      predicate: 'inputs-absent'
     }
   },
   'comfyui-itools': {
@@ -104,6 +110,8 @@ function expectedInitializationValue(
   signal: RoundtripInitializationSignal
 ): string {
   if (signal.predicate === 'defined') return 'defined'
+  if (signal.predicate === 'inputs-absent')
+    return `inputs absent [${signal.inputs.join(',')}]`
   if (signal.predicate === 'minimum-widget-count')
     return `>= ${signal.value} widgets`
   if (signal.predicate === 'widget-count') return `${signal.value} widgets`
@@ -124,6 +132,13 @@ export function pendingRoundtripInitializations(
   return Object.entries(signals)
     .filter(([node, signal]) => {
       if (signal.predicate === 'defined') return values[node] === undefined
+      if (signal.predicate === 'inputs-absent') {
+        const observed = values[node]
+        return (
+          !Array.isArray(observed) ||
+          signal.inputs.some((input) => observed.includes(input))
+        )
+      }
       if (signal.predicate === 'minimum-widget-count')
         return typeof values[node] !== 'number' || values[node] < signal.value
       if (signal.predicate === 'widget-count')

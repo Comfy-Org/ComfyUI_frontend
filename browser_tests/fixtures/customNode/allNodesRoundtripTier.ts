@@ -756,35 +756,22 @@ export async function assertRoundtripTier({
                 for (const [type, signal] of Object.entries(signals)) {
                   const node = window.app!.graph.nodes.find(
                     (candidate) => candidate.type === type
-                  ) as unknown as Record<string, unknown> | undefined
+                  )
                   if (
                     signal.predicate === 'widget-count' ||
                     signal.predicate === 'minimum-widget-count'
                   ) {
-                    const widgets = (
-                      node as unknown as
-                        | {
-                            widgets?: unknown[]
-                          }
-                        | undefined
-                    )?.widgets
-                    values[type] = (widgets ?? []).length
+                    values[type] = (node?.widgets ?? []).length
                   } else if (signal.predicate === 'widget-value') {
-                    const widgets = (
-                      node as unknown as
-                        | {
-                            widgets?: Array<{
-                              name: string
-                              value: unknown
-                            }>
-                          }
-                        | undefined
-                    )?.widgets
-                    values[type] = widgets?.find(
+                    values[type] = node?.widgets?.find(
                       (widget) => widget.name === signal.widget
                     )?.value
+                  } else if (signal.predicate === 'inputs-absent') {
+                    values[type] = node?.inputs?.map((input) => input.name)
                   } else {
-                    values[type] = node?.[signal.property]
+                    values[type] = node
+                      ? Reflect.get(node, signal.property)
+                      : undefined
                   }
                 }
                 return values
