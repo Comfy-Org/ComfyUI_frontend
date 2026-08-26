@@ -1085,6 +1085,10 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
   function clearOperation(opId: string) {
     cleanup(opId)
+    // Settle before dropping: anything awaiting this operation's terminal
+    // promise would otherwise hang forever, leaving the checkout mutation
+    // locked after a successful cancel.
+    resolveTerminal(opId)
     const newMap = new Map(operations.value)
     newMap.delete(opId)
     operations.value = newMap

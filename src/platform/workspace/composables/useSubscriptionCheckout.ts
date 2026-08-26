@@ -143,8 +143,15 @@ export function useSubscriptionCheckout(
   // Re-entry: a pending 3DS charge owns the dialog. Opening with one lands
   // on the verifying step — the plan steps stay unreachable until the
   // operation resolves, is canceled, or its 24h link expires.
+  // Only a still-pending charge owns the dialog. `reconciliation_needed` also
+  // matches subscriptionActionOperation, but it cannot be verified or canceled
+  // — landing it here would strand the customer on a step whose only two
+  // controls both refuse. It keeps the pricing entry and its existing
+  // reconciliation banner.
   const checkoutStep = ref<CheckoutStep>(
-    billingOperationStore.subscriptionActionOperation ? 'verifying' : 'pricing'
+    billingOperationStore.subscriptionActionOperation?.status === 'pending'
+      ? 'verifying'
+      : 'pricing'
   )
   const checkoutDeclineReason = ref<string | null>(null)
   const isCancelingPayment = ref(false)

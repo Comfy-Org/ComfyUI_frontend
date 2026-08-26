@@ -2490,6 +2490,31 @@ describe('billingOperationStore', () => {
       expect(store.subscriptionActionOperation).toBeUndefined()
     })
 
+    it('settles anything awaiting the operation so the flow is not left hanging', async () => {
+      vi.mocked(workspaceApi.cancelBillingOp).mockResolvedValue(undefined)
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'pending',
+        started_at: new Date().toISOString()
+      })
+      const store = useBillingOperationStore()
+
+      let settled = false
+      const awaiting = store
+        .startOperation('op-1', 'subscription')
+        .then(() => {
+          settled = true
+        })
+        .catch(() => {
+          settled = true
+        })
+
+      await store.cancelOperation('op-1')
+      await awaiting
+
+      expect(settled).toBe(true)
+    })
+
     it('reports unavailable and keeps the operation when the backend refuses', async () => {
       vi.mocked(workspaceApi.cancelBillingOp).mockRejectedValue(
         new Error('already processing')
