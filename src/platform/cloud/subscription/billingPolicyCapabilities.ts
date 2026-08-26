@@ -20,6 +20,8 @@ export function getBillingPolicyCapabilities(
       return { topUpAccess: 'allowed', showsSubscribeUpsellUI: false }
     case 'LocalTeamWithoutActiveSubscription':
       return { topUpAccess: 'allowed', showsSubscribeUpsellUI: false }
+    case 'LocalEnterpriseWithoutActiveSubscription':
+      return { topUpAccess: 'allowed', showsSubscribeUpsellUI: false }
     case 'LocalAndUnknown':
       return { topUpAccess: 'allowed', showsSubscribeUpsellUI: false }
     case 'LocalAndFree':
@@ -44,6 +46,10 @@ export function getBillingPolicyCapabilities(
         topUpAccess: 'subscription-required',
         showsSubscribeUpsellUI: false
       }
+    // Sales-managed: reactivation goes through sales, so unlike the lapsed
+    // self-serve Team state it neither withholds top-up nor upsells.
+    case 'CloudEnterpriseWithoutActiveSubscription':
+      return { topUpAccess: 'allowed', showsSubscribeUpsellUI: false }
     case 'CloudAndUnknown':
       return { topUpAccess: 'allowed', showsSubscribeUpsellUI: false }
     case 'CloudAndFree':

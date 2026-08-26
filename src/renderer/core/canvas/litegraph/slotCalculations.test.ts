@@ -136,6 +136,27 @@ describe('calculateInputSlotPosFromSlot', () => {
       expect(yRegular).toBeCloseTo(200 + 0.7 * SLOT_HEIGHT)
     })
 
+    it('uses the legacy fallback position for a widget input itself', () => {
+      const widget = makeInput({ name: 'widget', widget: { name: 'widget' } })
+      const ctx = makeContext({
+        inputs: [makeInput(), widget],
+        widgets: [{ name: 'widget' }]
+      })
+
+      const [, y] = calculateInputSlotPosFromSlot(ctx, widget)
+
+      expect(y).toBeCloseTo(200 - 0.3 * SLOT_HEIGHT)
+    })
+
+    it('uses the legacy fallback position for a detached input', () => {
+      const detached = makeInput()
+      const ctx = makeContext({ inputs: [makeInput(), makeInput()] })
+
+      const [, y] = calculateInputSlotPosFromSlot(ctx, detached)
+
+      expect(y).toBeCloseTo(200 - 0.3 * SLOT_HEIGHT)
+    })
+
     it('excludes slots with hard-coded positions from vertical ordering', () => {
       const fixed = makeInput({ name: 'fixed', pos: [0, 50] })
       const regular = makeInput({ name: 'regular' })
