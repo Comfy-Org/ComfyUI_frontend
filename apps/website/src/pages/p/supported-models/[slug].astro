@@ -11,6 +11,11 @@ import {
   pageContext,
   softwareApplicationNode,
 } from '../../../utils/jsonLd'
+import {
+  getWhatIsDescription,
+  getPageDescription,
+  getFaqPricingAnswer,
+} from '../../../utils/modelSeoCopy'
 
 export const getStaticPaths: GetStaticPaths = () => {
   return models.map((model) => ({
@@ -44,10 +49,10 @@ const dirDescriptions: Record<string, string> = {
 }
 
 const dirDesc = dirDescriptions[model.directory] ?? 'an AI model'
-const whatIsDescription = `${displayName} is ${dirDesc}. You can run it locally in ComfyUI with full control over every parameter, or access it through Comfy Cloud. ComfyUI's node-based workflow editor lets you connect ${displayName} with ControlNets, LoRAs, upscalers, and custom nodes to build any pipeline you need. There are ${model.workflowCount} community workflow templates using ${displayName} on Comfy Workflows, ready to load and customize.`
+const whatIsDescription = getWhatIsDescription(model, dirDesc)
 
 const pageTitle = `${displayName} in ComfyUI`
-const pageDescription = `Run ${displayName} in ComfyUI with full parameter control. ${model.workflowCount} community workflow templates, step-by-step tutorials, and free local inference.`
+const pageDescription = getPageDescription(model)
 
 const { siteUrl, locale, url } = pageContext(
   Astro.site,
@@ -95,7 +100,7 @@ const faqPage: JsonLdNode = {
       name: `Is ${displayName} free to use in ComfyUI?`,
       acceptedAnswer: {
         '@type': 'Answer',
-        text: `ComfyUI is free and open source. ${model.huggingFaceUrl ? `${displayName} weights are available to download from Hugging Face.` : `${displayName} is available as a cloud API through Comfy Cloud.`} You only pay for compute when running on Comfy Cloud; local inference on your own hardware is always free.`,
+        text: getFaqPricingAnswer(model),
       },
     },
   ],
