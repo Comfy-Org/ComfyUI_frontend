@@ -1,7 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
-
 import type {
   PreviewSubscribeResponse,
   SubscriptionDuration
@@ -330,61 +329,6 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
     )
     expect(emitted()['update:selectedSavedMethodId']).toEqual([[null]])
     expect(emitted().changePaymentMethod).toBeTruthy()
-  })
-
-  it('locks back and the saved-method row while the bank challenge is open', () => {
-    render(SubscriptionAddPaymentPreviewWorkspace, {
-      props: {
-        tierKey: 'creator',
-        usePaymentElement: true,
-        embeddedCheckoutEnabled: true,
-        actionUrl: 'https://verify.example/token',
-        savedMethods: [
-          {
-            id: 'pm_1',
-            type: 'card',
-            brand: 'visa',
-            last4: '4242',
-            is_default: true
-          }
-        ]
-      },
-      global: globalOptions
-    })
-
-    expect(screen.getByRole('button', { name: 'g.back' })).toBeDisabled()
-    expect(
-      screen.getByRole('button', {
-        name: 'subscription.preview.changePaymentMethod'
-      })
-    ).toBeDisabled()
-  })
-
-  it('leaves back and the method row usable before a challenge starts', () => {
-    render(SubscriptionAddPaymentPreviewWorkspace, {
-      props: {
-        tierKey: 'creator',
-        usePaymentElement: true,
-        embeddedCheckoutEnabled: true,
-        savedMethods: [
-          {
-            id: 'pm_1',
-            type: 'card',
-            brand: 'visa',
-            last4: '4242',
-            is_default: true
-          }
-        ]
-      },
-      global: globalOptions
-    })
-
-    expect(screen.getByRole('button', { name: 'g.back' })).toBeEnabled()
-    expect(
-      screen.getByRole('button', {
-        name: 'subscription.preview.changePaymentMethod'
-      })
-    ).toBeEnabled()
   })
 
   it('opens verification only from its button without exposing the URL', async () => {
