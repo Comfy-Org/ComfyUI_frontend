@@ -43,7 +43,7 @@ export function createSharedPagedList<TParams, TItem>(
     )
   }
 
-  return function (params: TParams): PagedList<TItem> {
+  function constructor(params: TParams): PagedList<TItem> {
     const key = paramKeyFn(params)
     const entry = cache.get(key) ?? { list: factory(params), refCount: 0 }
     cache.set(key, entry)
@@ -60,6 +60,10 @@ export function createSharedPagedList<TParams, TItem>(
     }
     return { ...entry.list, invalidate, loadNew }
   }
+  async function invalidateAll() {
+    await Promise.all([...cache.values()].map((e) => e.list.invalidate()))
+  }
+  return { constructor, invalidateAll }
 }
 
 type Runner = (signal: AbortSignal) => Promise<void>

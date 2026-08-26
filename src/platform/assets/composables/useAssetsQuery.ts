@@ -112,8 +112,9 @@ function assetsQueryInternal(
   return { hasMore, invalidate, isLoading, items, loadMore, loadNew }
 }
 
-export const useAssetsQuery = createSharedPagedList(
-  assetsQueryInternal,
-  (p) => JSON.stringify(sortedParams(p)),
-  (item) => item.id
-)
+export const { constructor: useAssetsQuery, invalidateAll } =
+  createSharedPagedList(
+    assetsQueryInternal,
+    (p) => JSON.stringify(sortedParams(p)),
+    (item) => item.id
+  )

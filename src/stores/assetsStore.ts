@@ -14,7 +14,10 @@ import type {
   AssetResponse,
   TagsOperationResult
 } from '@/platform/assets/schemas/assetSchema'
-import { useAssetsQuery } from '@/platform/assets/composables/useAssetsQuery'
+import {
+  useAssetsQuery,
+  invalidateAll
+} from '@/platform/assets/composables/useAssetsQuery'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { AssetPaginationOptions } from '@/platform/assets/services/assetService'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
@@ -889,6 +892,7 @@ export const useAssetsStore = defineStore('assets', () => {
     // States
     inputAssets,
     outputAssets,
+    invalidateAll,
 
     // Deletion tracking
     deletingAssetIds,
