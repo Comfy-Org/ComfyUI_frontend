@@ -6,7 +6,16 @@ import type {
 import type { NodeProgressState } from '@/schemas/apiSchema'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 
-type ProgressStates = Readonly<Record<NodeLocatorId, NodeProgressState>>
+export interface NodeProgressCanvasSync {
+  dispose: () => void
+  sync: (
+    states: Readonly<Record<NodeLocatorId, NodeProgressState>>,
+    canvas: LGraphCanvas | null,
+    graph: LGraph | null
+  ) => void
+}
+
+type ProgressStates = Parameters<NodeProgressCanvasSync['sync']>[0]
 
 const progressValue = (state: NodeProgressState | undefined) =>
   state?.state === 'running' ? state.value / state.max : undefined
@@ -14,7 +23,7 @@ const progressValue = (state: NodeProgressState | undefined) =>
 export function createNodeProgressCanvasSync(
   nodeToLocator: (node: LGraphNode) => NodeLocatorId,
   onIndexLookup: () => void = () => {}
-) {
+): NodeProgressCanvasSync {
   let activeCanvas: LGraphCanvas | null = null
   let activeGraph: LGraph | null = null
   let activeStates: ProgressStates = {}
