@@ -21,6 +21,7 @@ type WidgetUpdateCounters = {
   sizeChanges: number
   visibleChanges: number
   zIndexChanges: number
+  zIndexOrderBuilds: number
   zIndexLookups: number
 }
 
@@ -119,6 +120,51 @@ describe('DomWidgets positioning', () => {
     const widgetState = domWidgetStore.widgetStates.get(widget.id)
     if (!widgetState) throw new Error('Widget state not registered')
     expect(widgetState.visible).toBe(false)
+  })
+
+  it('rebuilds widget order after the canvas graph is replaced', () => {
+    const canvasStore = useCanvasStore()
+    const domWidgetStore = useDomWidgetStore()
+
+    const firstGraph = new LGraph()
+    const firstNode = createNode(firstGraph, 1, 'first', [100, 200])
+    const secondGraph = new LGraph()
+    createNode(secondGraph, 1, 'before-second', [0, 0])
+    const secondNode = createNode(secondGraph, 2, 'second', [300, 400])
+    const firstWidget = createWidget('first-widget', firstNode)
+    const secondWidget = createWidget('second-widget', secondNode)
+    domWidgetStore.registerWidget(firstWidget)
+    domWidgetStore.registerWidget(secondWidget)
+
+    const firstOrderBuild = vi.spyOn(firstGraph.nodes, 'forEach')
+    const secondOrderBuild = vi.spyOn(secondGraph.nodes, 'forEach')
+    const canvas = createCanvas(firstGraph)
+    canvasStore.canvas = canvas
+
+    render(DomWidgets, {
+      global: { stubs: { DomWidget: true } }
+    })
+
+    drawFrame(canvas)
+    const firstState = domWidgetStore.widgetStates.get(firstWidget.id)
+    const secondState = domWidgetStore.widgetStates.get(secondWidget.id)
+    if (!firstState || !secondState) {
+      throw new Error('Widget states not registered')
+    }
+    expect(firstState.visible).toBe(true)
+    expect(firstState.zIndex).toBe(0)
+    expect(secondState.visible).toBe(false)
+    expect(firstOrderBuild).toHaveBeenCalledOnce()
+    expect(secondOrderBuild).not.toHaveBeenCalled()
+
+    canvas.graph = secondGraph
+    drawFrame(canvas)
+
+    expect(firstState.visible).toBe(false)
+    expect(secondState.visible).toBe(true)
+    expect(secondState.zIndex).toBe(1)
+    expect(firstOrderBuild).toHaveBeenCalledOnce()
+    expect(secondOrderBuild).toHaveBeenCalledOnce()
   })
 
   it('hides an inactive widget', () => {
@@ -265,6 +311,7 @@ describe('DomWidgets deterministic update matrix', () => {
 
     const canvas = createCanvas(graph)
     const nodeVisibility = vi.mocked(canvas.isNodeVisible)
+    const zIndexOrderBuild = vi.spyOn(graph.nodes, 'forEach')
     const zIndexLookup = vi.spyOn(graph.nodes, 'indexOf')
     canvasStore.canvas = canvas
 
@@ -304,6 +351,7 @@ describe('DomWidgets deterministic update matrix', () => {
 
     isVisible.mockClear()
     nodeVisibility.mockClear()
+    zIndexOrderBuild.mockClear()
     zIndexLookup.mockClear()
 
     if (update === 'node-geometry') {
@@ -325,6 +373,7 @@ describe('DomWidgets deterministic update matrix', () => {
       sizeChanges: changes.size,
       visibleChanges: changes.visible,
       zIndexChanges: changes.zIndex,
+      zIndexOrderBuilds: zIndexOrderBuild.mock.calls.length,
       zIndexLookups: zIndexLookup.mock.calls.length
     }
 
@@ -351,7 +400,8 @@ describe('DomWidgets deterministic update matrix', () => {
         sizeChanges: 0,
         visibleChanges: 0,
         zIndexChanges: 0,
-        zIndexLookups: count
+        zIndexOrderBuilds: count === 0 ? 0 : 1,
+        zIndexLookups: 0
       })
     }
   )
@@ -372,6 +422,7 @@ describe('DomWidgets deterministic update matrix', () => {
         sizeChanges: 0,
         visibleChanges: 0,
         zIndexChanges: 0,
+        zIndexOrderBuilds: 0,
         zIndexLookups: 0
       })
     }
@@ -402,7 +453,8 @@ describe('DomWidgets deterministic update matrix', () => {
 
       expect(result.positionChanges).toBe(count)
       expect(result.sizeChanges).toBe(0)
-      expect(result.zIndexLookups).toBe(count)
+      expect(result.zIndexOrderBuilds).toBe(count === 0 ? 0 : 1)
+      expect(result.zIndexLookups).toBe(0)
     }
   )
 
