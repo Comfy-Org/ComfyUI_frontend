@@ -30,9 +30,7 @@
       </div>
     </div>
 
-    <!-- A refetch that failed leaves the previous catalog on screen; keep it
-         (re-rendering into an empty section would be worse) but say so and
-         offer the retry, or the failure is invisible. -->
+    <!-- Cached cards stay on a failed refetch, so the failure needs its own say. -->
     <div
       v-if="hasStaleError"
       class="flex flex-wrap items-center gap-3 rounded-2xl border border-interface-stroke px-4 py-3"
@@ -408,9 +406,7 @@ const personalCards = computed<PersonalCard[]>(() =>
   })
 )
 
-// An error alongside a non-empty catalog means a refetch failed over cached
-// rows; the unavailable block never renders then, so the banner is the only
-// place that failure can surface.
+// The unavailable block only renders with zero cards, so this is the other half.
 const hasStaleError = computed(
   () => Boolean(error) && personalCards.value.length > 0
 )

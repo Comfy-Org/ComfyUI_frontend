@@ -195,6 +195,31 @@ describe('PlanCreditsPanelContent — workspace bootstrap drives the plans state
     expect(api.getBillingPlans).toHaveBeenCalledOnce()
   })
 
+  it('treats the pre-boot uninitialized window as loading, not failure', async () => {
+    // WorkspaceAuthGate awaits Firebase before it calls initialize(), so a panel
+    // mounted in that window sees 'uninitialized' with no workspace.
+    state.initState.value = 'uninitialized'
+    state.active.value = null
+
+    renderPanel()
+
+    expect(await screen.findByText('Loading')).toBeTruthy()
+    expect(screen.queryAllByText(ERROR_COPY)).toHaveLength(0)
+    expect(screen.queryAllByText(EMPTY_COPY)).toHaveLength(0)
+    expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull()
+    expect(api.getBillingPlans).not.toHaveBeenCalled()
+
+    state.initState.value = 'loading'
+    expect(await screen.findByText('Loading')).toBeTruthy()
+    expect(api.getBillingPlans).not.toHaveBeenCalled()
+
+    state.initState.value = 'ready'
+    state.active.value = { id: 'ws-1', type: 'personal' }
+
+    expect(await screen.findByText('$20')).toBeTruthy()
+    expect(api.getBillingPlans).toHaveBeenCalledOnce()
+  })
+
   it('shows a retryable error when the workspace bootstrap failed, and recovers', async () => {
     state.initState.value = 'error'
     state.error.value = new Error('workspaces unavailable')
@@ -223,8 +248,8 @@ describe('PlanCreditsPanelContent — workspace bootstrap drives the plans state
   })
 
   it('retries the bootstrap when the wallet resolved to no workspace at all', async () => {
-    // initState says 'ready' but no workspace landed, so routing is still
-    // 'legacy' and a plain refetch would hit the no-op forever.
+    // 'ready' with no workspace should be impossible, but it must surface as a
+    // retryable error rather than spinning forever.
     state.initState.value = 'ready'
     state.active.value = null
 
