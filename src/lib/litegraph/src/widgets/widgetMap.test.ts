@@ -40,4 +40,39 @@ describe('toConcreteWidget', () => {
     expect(result).toBeInstanceOf(LegacyWidget)
     expect(toConcreteWidget(result, node, false)).toBeUndefined()
   })
+
+  it('returns a concrete replacement for a non-extensible widget', () => {
+    const node = new LGraphNode('test')
+    const widget: IBaseWidget = Object.preventExtensions({
+      name: 'custom',
+      type: 'legacy_test',
+      value: 0,
+      options: {},
+      y: 0
+    })
+
+    const result = toConcreteWidget(widget, node)
+
+    expect(result).not.toBe(widget)
+    expect(result).toBeInstanceOf(LegacyWidget)
+    expect(result.name).toBe('custom')
+  })
+
+  it('returns a concrete replacement when adoption would overwrite a fixed property', () => {
+    const node = new LGraphNode('test')
+    const widget: IBaseWidget = {
+      name: 'custom',
+      type: 'legacy_test',
+      value: 0,
+      options: {},
+      y: 0
+    }
+    Object.defineProperty(widget, 'name', { configurable: false })
+
+    const result = toConcreteWidget(widget, node)
+
+    expect(result).not.toBe(widget)
+    expect(result).toBeInstanceOf(LegacyWidget)
+    expect(result.name).toBe('custom')
+  })
 })
