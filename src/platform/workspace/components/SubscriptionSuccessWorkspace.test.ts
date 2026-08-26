@@ -196,13 +196,24 @@ describe('SubscriptionSuccessWorkspace', () => {
     expect(screen.getByText(/1772400 subscription\.perYear/)).toBeTruthy()
   })
 
-  it('prefers the fetched preview price over the client-computed team total for a team plan change', () => {
+  it('takes both the price and the credits from the selected stop when a team preview disagrees', () => {
     renderTeamCard({
       billingCycle: 'yearly',
       previewData: makePreviewData(7_580 * 100, 'ANNUAL')
     })
+    expect(screen.getByText('$7560')).toBeTruthy()
+    expect(screen.queryByText('$7580')).toBeNull()
+    expect(screen.getByText(/1772400 subscription\.perYear/)).toBeTruthy()
+    expect(screen.queryByText(/88800 subscription\.perYear/)).toBeNull()
+  })
+
+  it('takes both the price and the credits from the preview when there is no team stop', () => {
+    renderCard({
+      billingCycle: 'yearly',
+      previewData: makePreviewData(7_580 * 100, 'ANNUAL')
+    })
     expect(screen.getByText('$7580')).toBeTruthy()
-    expect(screen.queryByText('$7560')).toBeNull()
+    expect(screen.getByText(/88800 subscription\.perYear/)).toBeTruthy()
   })
 
   it('emits close when the close button is clicked', async () => {
