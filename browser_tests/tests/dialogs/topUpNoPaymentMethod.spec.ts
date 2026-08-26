@@ -1,6 +1,11 @@
 import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
+import type {
+  PaymentPortalResponse,
+  SavedPaymentMethod
+} from '@comfyorg/ingest-types'
+
 import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { workspaceRailAuthFixture as test } from '@e2e/fixtures/workspaceRailAuthFixture'
@@ -32,8 +37,20 @@ test.describe('Top-up without a saved payment method', () => {
   }) => {
     const page = comfyPage.page
     await page.route('**/api/billing/payment-methods', (route) =>
-      route.fulfill({ json: [] })
+      route.fulfill({ json: [] satisfies SavedPaymentMethod[] })
     )
+    await page.route('**/api/billing/payment-portal', (route) =>
+      route.fulfill({
+        json: {
+          url: 'https://billing.example/portal'
+        } satisfies PaymentPortalResponse
+      })
+    )
+    await page
+      .context()
+      .route('https://billing.example/**', (route) =>
+        route.fulfill({ contentType: 'text/html', body: 'portal stub' })
+      )
     await page.route('**/api/billing/topup', (route) =>
       route.fulfill({
         status: 400,
@@ -56,9 +73,12 @@ test.describe('Top-up without a saved payment method', () => {
         "You'll be asked to add a payment method to complete this purchase."
       )
     ).toBeVisible()
-    await expect(
-      topUpDialog.root.getByRole('button', { name: 'Manage billing' })
-    ).toBeVisible()
+    const [portalPage] = await Promise.all([
+      page.context().waitForEvent('page'),
+      topUpDialog.root.getByRole('button', { name: 'Manage billing' }).click()
+    ])
+    expect(portalPage.url()).toBe('https://billing.example/portal')
+    await portalPage.close()
 
     await topUpDialog.root.getByRole('button', { name: 'Pay $50.00' }).click()
 
@@ -75,7 +95,15 @@ test.describe('Top-up without a saved payment method', () => {
     const page = comfyPage.page
     await page.route('**/api/billing/payment-methods', (route) =>
       route.fulfill({
-        json: [{ id: 'pm-1', brand: 'visa', last4: '4242', is_default: true }]
+        json: [
+          {
+            id: 'pm-1',
+            type: 'card',
+            brand: 'visa',
+            last4: '4242',
+            is_default: true
+          }
+        ] satisfies SavedPaymentMethod[]
       })
     )
 

@@ -168,7 +168,7 @@ const i18n = createI18n({
           paymentDetailsRequiredNote:
             "You'll be asked to add a payment method to complete this purchase.",
           noPaymentMethodError:
-            'No payment method is saved for this workspace. Add one via Manage billing, then retry.',
+            'No payment method is saved for this workspace. Add one via Settings → Plan & Credits → Manage billing, then retry the top-up.',
           confirmSubtitle:
             'Credits are added to this workspace as soon as payment completes.',
           confirmTitle: 'Confirm',
@@ -373,7 +373,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       expect(mockToastAdd).toHaveBeenCalledWith(
         expect.objectContaining({
           detail:
-            'No payment method is saved for this workspace. Add one via Manage billing, then retry.'
+            'No payment method is saved for this workspace. Add one via Settings → Plan & Credits → Manage billing, then retry the top-up.'
         })
       )
     )

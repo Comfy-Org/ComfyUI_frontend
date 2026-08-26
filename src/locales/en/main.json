@@ -2689,6 +2689,7 @@
       "chargedImmediatelyNote": "Your saved payment method is charged immediately.",
       "paymentDetailsRequiredNote": "You'll be asked to add a payment method to complete this purchase.",
       "noPaymentMethodError": "No payment method is saved for this workspace. Add one via Settings → Plan & Credits → Manage billing, then retry the top-up.",
+      "manageBillingError": "Failed to open the billing portal. Please try again.",
       "confirmSubtitle": "Credits are added to this workspace as soon as payment completes.",
       "confirmTitle": "Confirm",
       "howManyCredits": "How many credits would you like to add?",

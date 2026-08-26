@@ -1,16 +1,23 @@
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import type { SavedPaymentMethod } from '@/platform/workspace/api/workspaceApi'
+
 import { useHasSavedPaymentMethod } from './useHasSavedPaymentMethod'
 
 const mockListSavedPaymentMethods = vi.hoisted(() =>
-  vi.fn<() => Promise<{ id: string }[]>>()
+  vi.fn<() => Promise<SavedPaymentMethod[]>>()
 )
+const mockReportError = vi.hoisted(() => vi.fn())
 
 vi.mock('@/platform/workspace/api/workspaceApi', () => ({
   workspaceApi: {
     listSavedPaymentMethods: mockListSavedPaymentMethods
   }
+}))
+
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mockReportError
 }))
 
 async function flushLookup() {
@@ -28,7 +35,9 @@ describe('useHasSavedPaymentMethod', () => {
   })
 
   it('resolves true when a payment method is on file', async () => {
-    mockListSavedPaymentMethods.mockResolvedValue([{ id: 'pm-1' }])
+    mockListSavedPaymentMethods.mockResolvedValue([
+      { id: 'pm-1', type: 'card', is_default: true }
+    ])
 
     const { hasSavedPaymentMethod } = useHasSavedPaymentMethod()
     await flushLookup()
@@ -45,12 +54,16 @@ describe('useHasSavedPaymentMethod', () => {
     expect(hasSavedPaymentMethod.value).toBe(false)
   })
 
-  it('stays unknown when the lookup fails', async () => {
-    mockListSavedPaymentMethods.mockRejectedValue(new Error('network'))
+  it('stays unknown and reports when the lookup fails', async () => {
+    const failure = new Error('network')
+    mockListSavedPaymentMethods.mockRejectedValue(failure)
 
     const { hasSavedPaymentMethod } = useHasSavedPaymentMethod()
     await flushLookup()
 
     expect(hasSavedPaymentMethod.value).toBeNull()
+    expect(mockReportError).toHaveBeenCalledWith(failure, {
+      errorType: 'saved_payment_methods_read_failure'
+    })
   })
 })

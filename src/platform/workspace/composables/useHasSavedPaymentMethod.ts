@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { reportError } from '@/platform/telemetry/reportError'
 
 /**
  * Reports whether the active workspace has a saved payment method.
@@ -14,7 +15,10 @@ export function useHasSavedPaymentMethod() {
     .then((methods) => {
       hasSavedPaymentMethod.value = methods.length > 0
     })
-    .catch(() => {
+    .catch((error) => {
+      reportError(error, {
+        errorType: 'saved_payment_methods_read_failure'
+      })
       hasSavedPaymentMethod.value = null
     })
   return { hasSavedPaymentMethod }

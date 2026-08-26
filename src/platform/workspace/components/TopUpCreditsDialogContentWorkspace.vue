@@ -287,6 +287,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { clearTopupTracking } from '@/platform/telemetry/topupTracker'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { reportError } from '@/platform/telemetry/reportError'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useHasSavedPaymentMethod } from '@/platform/workspace/composables/useHasSavedPaymentMethod'
@@ -443,7 +444,14 @@ function handlePrimaryAction() {
 }
 
 function openManageBilling() {
-  void manageSubscription().catch(() => {})
+  void manageSubscription().catch((error) => {
+    reportError(error, { errorType: 'billing_portal_open_failure' })
+    toast.add({
+      severity: 'error',
+      summary: t('credits.topUp.manageBillingError'),
+      life: 5000
+    })
+  })
 }
 
 function openTopupVerification() {
