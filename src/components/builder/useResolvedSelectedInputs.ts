@@ -62,7 +62,9 @@ export function useResolvedSelectedInputs() {
         const widgets = node?.isSubgraphNode()
           ? promotedInputWidgets(node)
           : node?.widgets
-        const widget = widgets?.find((w) => w.name === name)
+        const widget =
+          widgets?.find((w) => w.widgetId === widgetId) ??
+          widgets?.find((w) => w.name === name)
         if (!node || !widget) {
           return [{ status: 'unknown', widgetId, displayName, config }]
         }
