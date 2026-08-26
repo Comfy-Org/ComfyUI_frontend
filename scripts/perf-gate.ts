@@ -29,7 +29,6 @@ export interface PerfGateInput {
   fpsSamples: FpsSample[]
   /** Rows the report classified as regressions. Recorded, never gated on. */
   regressionCount: number
-  targetP5Fps?: number
 }
 
 export type PerfGateFailure =
@@ -57,7 +56,7 @@ export interface PerfGateResult {
  * the exact failure mode it exists to catch.
  */
 export function evaluatePerfGate(input: PerfGateInput): PerfGateResult {
-  const target = input.targetP5Fps ?? TARGET_P5_FPS
+  const target = TARGET_P5_FPS
 
   if (!input.metricsPresent) {
     return {

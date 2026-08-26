@@ -129,17 +129,6 @@ describe('evaluatePerfGate', () => {
     expect(gate.regressionCount).toBe(4)
     expect(gate.passed).toBe(true)
   })
-
-  it('honours an overridden target', () => {
-    const gate = evaluatePerfGate({
-      metricsPresent: true,
-      fpsSamples: [{ testName: 'canvas-idle', p5Fps: 59.7 }],
-      regressionCount: 0,
-      targetP5Fps: 60
-    })
-    expect(gate.passed).toBe(false)
-    expect(gate.target).toBe(60)
-  })
 })
 
 describe('formatGateFailure', () => {
