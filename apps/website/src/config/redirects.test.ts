@@ -64,3 +64,38 @@ describe('legacy MiniMax H3 redirects', () => {
     expect(findRedirect(canonicalPath)).toBeUndefined()
   })
 })
+
+/**
+ * Astro renders a stub page for each entry in its redirect map, and that stub's
+ * canonical is the destination string verbatim. Every real page self-canonicalizes
+ * with a trailing slash via `absoluteUrl()`, so a slash-less destination points
+ * the stub's canonical one hop short of the page it redirects to.
+ *
+ * #14390 fixed exactly this once already and it regressed, which is why it is a
+ * test now rather than a convention.
+ */
+describe('astro redirect destinations', () => {
+  const source = readFileSync(join(appDir, 'astro.config.ts'), 'utf-8')
+  const block = /redirects:\s*\{([\s\S]*?)\n {2}\},/.exec(source)?.[1]
+
+  const destinations = [
+    // `'/from': { status: 307, destination: '/to/' }`
+    ...[...(block ?? '').matchAll(/destination:\s*'([^']+)'/g)],
+    // `'/from': '/to/'`, value sometimes wrapped onto the next line
+    ...[...(block ?? '').matchAll(/^\s*'[^']+':\s*\n?\s*'([^']+)',?\s*$/gm)]
+  ].map((match) => match[1])
+
+  it('finds the redirect map', () => {
+    // A regex that silently matches nothing would make every assertion vacuous.
+    expect(block).toBeDefined()
+    expect(destinations.length).toBeGreaterThanOrEqual(7)
+  })
+
+  it('every destination ends with a trailing slash', () => {
+    const slashless = destinations.filter((d) => !d.endsWith('/'))
+    expect(
+      slashless,
+      'these canonicalize one hop short of their target'
+    ).toEqual([])
+  })
+})

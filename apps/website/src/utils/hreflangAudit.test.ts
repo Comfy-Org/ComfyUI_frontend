@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { Alternate } from './hreflang'
 
-import { auditBuiltSite } from './hreflangAudit'
+import { auditBuiltSite, sitemapChunkNames } from './hreflangAudit'
 
 const ORIGIN = 'https://comfy.org'
 
@@ -168,5 +168,42 @@ describe('auditBuiltSite', () => {
       '/about/: sitemap expects x-default -> https://comfy.org/about/, but does not declare it',
       '/about/: page advertises x-default that the sitemap does not'
     ])
+  })
+})
+
+describe('sitemapChunkNames', () => {
+  const index = (locs: string[]) =>
+    `<?xml version="1.0" encoding="UTF-8"?><sitemapindex>${locs
+      .map((loc) => `<sitemap><loc>${loc}</loc></sitemap>`)
+      .join('')}</sitemapindex>`
+
+  it('returns every chunk the index names', () => {
+    expect(
+      sitemapChunkNames(
+        index([
+          'https://comfy.org/sitemap-0.xml',
+          'https://comfy.org/sitemap-1.xml',
+          'https://comfy.org/sitemap-2.xml'
+        ])
+      )
+    ).toEqual(['sitemap-0.xml', 'sitemap-1.xml', 'sitemap-2.xml'])
+  })
+
+  it('ignores sitemaps another app builds', () => {
+    // The published index also lists the hub's sitemap. It is not in this dist,
+    // so counting it would report every hub URL as a page we failed to build.
+    expect(
+      sitemapChunkNames(
+        index([
+          'https://comfy.org/sitemap-0.xml',
+          'https://comfy.org/sitemap-workflows-0.xml'
+        ])
+      )
+    ).toEqual(['sitemap-0.xml'])
+  })
+
+  it('returns nothing for an empty or unparseable index', () => {
+    expect(sitemapChunkNames('')).toEqual([])
+    expect(sitemapChunkNames('<sitemapindex></sitemapindex>')).toEqual([])
   })
 })

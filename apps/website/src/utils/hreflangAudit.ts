@@ -169,3 +169,22 @@ export function auditBuiltSite({
 
   return errors
 }
+
+/**
+ * The sitemap chunk filenames a sitemap index names.
+ *
+ * `@astrojs/sitemap` chunks at 45k URLs. Reading only `sitemap-0.xml` is correct
+ * at today's ~600 pages, but the moment a second chunk exists every route inside
+ * it would be reported as "advertises alternates but the sitemap omits it", which
+ * names the wrong problem entirely. The index is the only thing that knows how
+ * many chunks there are.
+ *
+ * Only this site's own chunks are returned. The published index also lists
+ * `sitemap-workflows-0.xml`, which a different app builds and which is not in
+ * this dist, so counting it would report every hub URL as an unbuilt page.
+ */
+export function sitemapChunkNames(indexXml: string): string[] {
+  return [...indexXml.matchAll(/<loc>([^<]+)<\/loc>/g)]
+    .map((match) => match[1].trim().split('/').pop() ?? '')
+    .filter((name) => /^sitemap-\d+\.xml$/.test(name))
+}

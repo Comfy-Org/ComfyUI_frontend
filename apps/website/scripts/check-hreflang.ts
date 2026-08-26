@@ -13,7 +13,7 @@ import type { Alternate } from '../src/utils/hreflang'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
 
-import { auditBuiltSite } from '../src/utils/hreflangAudit'
+import { auditBuiltSite, sitemapChunkNames } from '../src/utils/hreflangAudit'
 
 const DIST = join(process.cwd(), 'dist')
 const ORIGIN = 'https://comfy.org'
@@ -41,12 +41,25 @@ function alternatesIn(html: string): Alternate[] {
   return out
 }
 
+/** Every sitemap chunk in this build, via the index so later chunks are not missed. */
+function sitemapFiles(): string[] {
+  const indexPath = join(DIST, 'sitemap-index.xml')
+  if (existsSync(indexPath)) {
+    const named = sitemapChunkNames(readFileSync(indexPath, 'utf-8'))
+      .map((name) => join(DIST, name))
+      .filter((path) => existsSync(path))
+    if (named.length) return named
+  }
+  const single = join(DIST, 'sitemap-0.xml')
+  return existsSync(single) ? [single] : []
+}
+
 function sitemapAlternates(): Map<string, Alternate[]> | null {
-  const sitemapPath = join(DIST, 'sitemap-0.xml')
-  if (!existsSync(sitemapPath)) return null
+  const files = sitemapFiles()
+  if (!files.length) return null
 
   const entries = new Map<string, Alternate[]>()
-  const xml = readFileSync(sitemapPath, 'utf-8')
+  const xml = files.map((file) => readFileSync(file, 'utf-8')).join('')
   for (const entry of xml.matchAll(/<url>(.*?)<\/url>/gs)) {
     const block = entry[1]
     const loc = /<loc>([^<]+)<\/loc>/.exec(block)?.[1]
