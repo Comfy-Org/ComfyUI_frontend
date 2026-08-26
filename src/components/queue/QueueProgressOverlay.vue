@@ -53,7 +53,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, ref, toValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import QueueOverlayActive from '@/components/queue/QueueOverlayActive.vue'
@@ -71,6 +71,7 @@ import { api } from '@/scripts/api'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
+import { useAssetsStore } from '@/stores/assetsStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 type OverlayState = 'hidden' | 'active' | 'expanded'
@@ -88,6 +89,7 @@ const { t, n } = useI18n()
 const queueStore = useQueueStore()
 const commandStore = useCommandStore()
 const executionStore = useExecutionStore()
+const assetsStore = useAssetsStore()
 const sidebarTabStore = useSidebarTabStore()
 const assetSelectionStore = useAssetSelectionStore()
 const { showQueueClearHistoryDialog } = useQueueClearHistoryDialog()
@@ -243,6 +245,28 @@ const focusAssetInSidebar = async (item: JobListItem) => {
   const assetId = String(jobId)
   openAssetsSidebar()
   await nextTick()
+
+  const outputAssets = toValue(assetsStore.outputAssets)
+  const hasTarget = () =>
+    toValue(outputAssets.items).some(({ id }) => id === assetId)
+  while (!hasTarget() && toValue(outputAssets.hasMore)) {
+    const previousSize = toValue(outputAssets.items).length
+    let advanced: boolean | undefined
+    if (outputAssets.loadMoreWithProgress) {
+      advanced = await outputAssets.loadMoreWithProgress()
+    } else {
+      await outputAssets.loadMore()
+    }
+    if (
+      advanced === false ||
+      (advanced === undefined &&
+        toValue(outputAssets.items).length === previousSize)
+    ) {
+      break
+    }
+  }
+  if (!hasTarget()) return
+
   assetSelectionStore.setSelection([assetId])
   assetSelectionStore.setLastSelectedAssetId(assetId)
 }

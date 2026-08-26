@@ -25,12 +25,17 @@ function assetsQueryInternal(
   const onError = options.onError ?? console.error
 
   let next_cursor: string | undefined
+  let loadGeneration = 0
+  const seenTailCursors = new Set(
+    params.after === undefined ? [] : [params.after]
+  )
   const hasMore = ref(true)
   const items = ref<AssetItem[]>([])
 
   const { enqueue, preempt, running: isLoading } = usePreemptableQueue()
   async function doLoadMore(signal?: AbortSignal) {
     if (!hasMore.value) return
+    const previousCursor = next_cursor
     const assetResponse = await doQuery(
       {
         after: next_cursor ?? params.after
@@ -38,13 +43,34 @@ function assetsQueryInternal(
       signal
     )
     if (!assetResponse) return
+
+    const knownIds = new Set(items.value.map(({ id }) => id))
+    const newItems = assetResponse.assets.filter(({ id }) => {
+      if (knownIds.has(id)) return false
+      knownIds.add(id)
+      return true
+    })
     next_cursor = assetResponse.next_cursor
-    hasMore.value = assetResponse.has_more
-    items.value.push(...assetResponse.assets)
+    hasMore.value =
+      assetResponse.has_more &&
+      next_cursor !== undefined &&
+      next_cursor !== previousCursor &&
+      !seenTailCursors.has(next_cursor)
+    if (next_cursor !== undefined) seenTailCursors.add(next_cursor)
+    items.value.push(...newItems)
+    loadGeneration++
   }
 
-  function loadMore() {
-    return enqueue('loadMore', doLoadMore)
+  async function loadMoreWithProgress() {
+    const startingGeneration = loadGeneration
+    await enqueue('loadMore', async (signal) => {
+      await doLoadMore(signal)
+    })
+    return loadGeneration > startingGeneration
+  }
+
+  async function loadMore() {
+    await loadMoreWithProgress()
   }
 
   function loadNew() {
@@ -95,6 +121,8 @@ function assetsQueryInternal(
     await preempt(async () => {
       hasMore.value = true
       next_cursor = undefined
+      seenTailCursors.clear()
+      if (params.after !== undefined) seenTailCursors.add(params.after)
       items.value = []
       await doLoadMore()
     })
@@ -130,7 +158,15 @@ function assetsQueryInternal(
   }
 
   void loadMore()
-  return { hasMore, invalidate, isLoading, items, loadMore, loadNew }
+  return {
+    hasMore,
+    invalidate,
+    isLoading,
+    items,
+    loadMore,
+    loadMoreWithProgress,
+    loadNew
+  }
 }
 
 export const useAssetsQuery = createSharedPagedList(

@@ -44,8 +44,12 @@ function response(
   } as unknown as Response
 }
 
-async function createList(key: string, initialIds: string[]) {
-  fetchApiMock.mockResolvedValueOnce(response(initialIds))
+async function createList(
+  key: string,
+  initialIds: string[],
+  options: { hasMore?: boolean; nextCursor?: string } = {}
+) {
+  fetchApiMock.mockResolvedValueOnce(response(initialIds, options))
   const scope = effectScope()
   const list = scope.run(() => useAssetsQuery({ name_contains: key }))!
   onTestFinished(() => scope.stop())
@@ -155,5 +159,75 @@ describe('useAssetsQuery loadNew pagination', () => {
       'known'
     ])
     expect(requestedAfterCursors()).toEqual([null, 'A', 'B'])
+  })
+})
+
+describe('useAssetsQuery loadMore pagination', () => {
+  it('deduplicates overlapping pages and reports successful progress', async () => {
+    const list = await createList('load-more', ['newest', 'overlap'], {
+      hasMore: true,
+      nextCursor: 'page-2'
+    })
+    fetchApiMock.mockResolvedValueOnce(
+      response(['overlap', 'older'], { hasMore: false })
+    )
+
+    await expect(list.loadMoreWithProgress?.()).resolves.toBe(true)
+
+    expect(toValue(list.items).map(({ id }) => id)).toEqual([
+      'newest',
+      'overlap',
+      'older'
+    ])
+  })
+
+  it('stops pagination when a cursor does not advance', async () => {
+    const list = await createList('stuck-load-more', ['newest'], {
+      hasMore: true,
+      nextCursor: 'stuck'
+    })
+    fetchApiMock.mockResolvedValueOnce(
+      response(['older'], { hasMore: true, nextCursor: 'stuck' })
+    )
+
+    await expect(list.loadMoreWithProgress?.()).resolves.toBe(true)
+
+    expect(toValue(list.hasMore)).toBe(false)
+    await expect(list.loadMoreWithProgress?.()).resolves.toBe(false)
+    expect(fetchApiMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('stops pagination when cursors cycle across calls', async () => {
+    const list = await createList('cycling-load-more', ['newest'], {
+      hasMore: true,
+      nextCursor: 'A'
+    })
+    fetchApiMock
+      .mockResolvedValueOnce(
+        response(['older'], { hasMore: true, nextCursor: 'B' })
+      )
+      .mockResolvedValueOnce(
+        response(['oldest'], { hasMore: true, nextCursor: 'A' })
+      )
+
+    await expect(list.loadMoreWithProgress?.()).resolves.toBe(true)
+    await expect(list.loadMoreWithProgress?.()).resolves.toBe(true)
+
+    expect(toValue(list.hasMore)).toBe(false)
+    await expect(list.loadMoreWithProgress?.()).resolves.toBe(false)
+    expect(fetchApiMock).toHaveBeenCalledTimes(3)
+  })
+
+  it('reports a request failure without consuming pagination state', async () => {
+    const list = await createList('failed-load-more', ['newest'], {
+      hasMore: true,
+      nextCursor: 'page-2'
+    })
+    fetchApiMock.mockRejectedValueOnce(new Error('network failed'))
+
+    await expect(list.loadMoreWithProgress?.()).resolves.toBe(false)
+
+    expect(toValue(list.hasMore)).toBe(true)
+    expect(toValue(list.items).map(({ id }) => id)).toEqual(['newest'])
   })
 })
