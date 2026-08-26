@@ -378,8 +378,8 @@ const canReactivatePlan = computed(() =>
 
 const showSubscribeAction = computed(
   () =>
-    // Subscribing is Cloud-only, so the whole action stays gated on isCloud;
-    // inside it the server-resolved capabilities are authoritative.
+    // Subscribing is Cloud-only, so the whole action stays gated on isCloud.
+    // Self-serve subscribe is server-authoritative; reactivation is not.
     isCloud &&
     ((isCancelled.value && canReactivatePlan.value) ||
       (!canAccessSubscriptionFeatures.value &&
