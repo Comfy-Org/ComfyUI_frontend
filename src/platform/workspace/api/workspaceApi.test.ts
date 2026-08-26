@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, test, vi } from 'vitest'
 
 import type {
   BillingOpStatusResponse,
@@ -97,6 +97,38 @@ describe('workspaceApi', () => {
         message: 'Forbidden'
       })
     })
+
+    test.for([
+      { status: 429, header: '30', expected: 30 },
+      { status: 429, header: '2.5', expected: undefined },
+      { status: 429, header: '1e2', expected: undefined },
+      { status: 429, header: '0x10', expected: undefined },
+      {
+        status: 429,
+        header: 'Wed, 21 Oct 2015 07:28:00 GMT',
+        expected: undefined
+      },
+      { status: 500, header: '30', expected: undefined }
+    ])(
+      'exposes retryAfter=$expected for status $status and Retry-After $header',
+      async ({ status, header, expected }) => {
+        mockAxiosInstance.post.mockRejectedValue({
+          isAxiosError: true,
+          response: {
+            status,
+            data: { message: 'Request failed' },
+            headers: { 'retry-after': header }
+          },
+          message: 'Request failed'
+        })
+
+        await expect(workspaceApi.resendInvite('inv-1')).rejects.toMatchObject({
+          name: 'WorkspaceApiError',
+          status,
+          retryAfter: expected
+        })
+      }
+    )
 
     it('falls back to err.message when response data has no message', async () => {
       const axiosErr = {
