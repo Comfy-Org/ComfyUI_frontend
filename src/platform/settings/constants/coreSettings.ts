@@ -1207,6 +1207,18 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.27.1'
   },
   {
+    id: 'Comfy.VueNodes.ViewportKeepAlive',
+    category: ['Comfy', 'Nodes 2.0', 'ViewportKeepAlive'],
+    name: 'Detach offscreen nodes in large graphs',
+    type: 'boolean',
+    tooltip:
+      'On large graphs, nodes outside the viewport are detached from the page and reattached when they return, keeping their state. Turn off to keep every node attached, at the cost of large-graph performance.',
+    defaultValue: true,
+    sortOrder: 101,
+    experimental: true,
+    versionAdded: '1.52.0'
+  },
+  {
     id: 'Comfy.AppBuilder.VueNodeSwitchDismissed',
     name: 'App Builder Vue Node switch dismissed',
     type: 'hidden',

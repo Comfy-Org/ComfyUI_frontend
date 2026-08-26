@@ -8,7 +8,14 @@
  * Supports different element types (nodes, slots, widgets, etc.) with
  * customizable data attributes and update handlers.
  */
-import { getCurrentInstance, onMounted, onUnmounted, watch } from 'vue'
+import {
+  getCurrentInstance,
+  onActivated,
+  onDeactivated,
+  onMounted,
+  onUnmounted,
+  watch
+} from 'vue'
 
 import { useDocumentVisibility } from '@vueuse/core'
 
@@ -124,6 +131,10 @@ const resizeObserver = new ResizeObserver((entries) => {
     if (!(entry.target instanceof HTMLElement)) continue
     const element = entry.target
 
+    if (!element.isConnected) {
+      markElementForFreshMeasurement(element)
+      continue
+    }
     // Find which type this element belongs to
     let elementType: string | undefined
     let elementId: string | undefined
@@ -268,31 +279,49 @@ export function useVueElementTracking(
   appIdentifier: string,
   trackingType: string
 ) {
+  const instance = getCurrentInstance()
+  let trackedElement: HTMLElement | null = null
+  let dataAttribute: string | null = null
+  let isDeactivated = false
+
   onMounted(() => {
-    const element = getCurrentInstance()?.proxy?.$el
+    const element = instance?.proxy?.$el
     if (!(element instanceof HTMLElement) || !appIdentifier) return
 
     const config = trackingConfigs.get(trackingType)
     if (!config) return
 
+    trackedElement = element
+    dataAttribute = config.dataAttribute
     // Set the data attribute expected by the RO pipeline for this type
     element.dataset[config.dataAttribute] = appIdentifier
     markElementForFreshMeasurement(element)
     resizeObserver.observe(element)
   })
 
-  onUnmounted(() => {
-    const element = getCurrentInstance()?.proxy?.$el
-    if (!(element instanceof HTMLElement)) return
+  onDeactivated(() => {
+    if (!trackedElement) return
+    isDeactivated = true
+    markElementForFreshMeasurement(trackedElement)
+    deferredElements.delete(trackedElement)
+    resizeObserver.unobserve(trackedElement)
+  })
 
-    const config = trackingConfigs.get(trackingType)
-    if (!config) return
+  onActivated(() => {
+    if (!trackedElement || !isDeactivated) return
+    isDeactivated = false
+    markElementForFreshMeasurement(trackedElement)
+    resizeObserver.observe(trackedElement)
+  })
+
+  onUnmounted(() => {
+    if (!trackedElement || !dataAttribute) return
 
     // Remove the data attribute and observer
-    delete element.dataset[config.dataAttribute]
-    cachedNodeMeasurements.delete(element)
-    elementsNeedingFreshMeasurement.delete(element)
-    deferredElements.delete(element)
-    resizeObserver.unobserve(element)
+    delete trackedElement.dataset[dataAttribute]
+    cachedNodeMeasurements.delete(trackedElement)
+    elementsNeedingFreshMeasurement.delete(trackedElement)
+    deferredElements.delete(trackedElement)
+    resizeObserver.unobserve(trackedElement)
   })
 }

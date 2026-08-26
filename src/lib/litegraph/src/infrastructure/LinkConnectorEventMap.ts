@@ -14,6 +14,7 @@ import type { IWidget } from '@/lib/litegraph/src/types/widgets'
 
 export interface LinkConnectorEventMap {
   reset: boolean
+  'drag-started': undefined
 
   'before-drop-links': {
     renderLinks: RenderLink[]

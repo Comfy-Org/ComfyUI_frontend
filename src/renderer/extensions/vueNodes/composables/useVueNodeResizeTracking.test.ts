@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { render, screen } from '@testing-library/vue'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, nextTick, ref } from 'vue'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { NodeLayout } from '@/renderer/core/layout/types'
@@ -75,7 +76,7 @@ vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   }
 }))
 
-import './useVueNodeResizeTracking'
+import { useVueElementTracking } from './useVueNodeResizeTracking'
 
 function createResizeEntry(options?: {
   nodeId?: NodeId
@@ -96,6 +97,7 @@ function createResizeEntry(options?: {
 
   const element = document.createElement('div')
   element.dataset.nodeId = String(nodeId)
+  document.body.appendChild(element)
   if (collapsed) {
     element.dataset.collapsed = ''
   }
@@ -155,6 +157,56 @@ describe('useVueNodeResizeTracking', () => {
   beforeEach(() => {
     testState.linearMode = false
     testState.nodeLayouts.clear()
+  })
+
+  afterEach(() => {
+    document.body.replaceChildren()
+  })
+
+  it('ignores resize entries emitted after a node is detached', () => {
+    const nodeId = toNodeId('test-node')
+    const { entry } = createResizeEntry({ nodeId, width: 0, height: 0 })
+    seedNodeLayout({
+      nodeId,
+      left: 100,
+      top: 200,
+      width: 240,
+      height: 180
+    })
+    entry.target.remove()
+
+    resizeObserverState.callback?.([entry], createObserverMock())
+
+    expect(testState.reportContentSize).not.toHaveBeenCalled()
+    expect(testState.updateNodeSlotOffsets).not.toHaveBeenCalled()
+  })
+
+  it('observes only while a KeepAlive node is active', async () => {
+    const active = ref(true)
+    const TrackedNode = defineComponent({
+      setup() {
+        useVueElementTracking('tracked-node', 'node')
+      },
+      template: '<div data-testid="tracked-node" />'
+    })
+    const Parent = defineComponent({
+      components: { TrackedNode },
+      setup: () => ({ active }),
+      template: '<KeepAlive><TrackedNode v-if="active" /></KeepAlive>'
+    })
+    render(Parent)
+    const element = screen.getByTestId('tracked-node')
+    await nextTick()
+
+    expect(resizeObserverState.observe).toHaveBeenCalledWith(element)
+
+    active.value = false
+    await nextTick()
+    expect(resizeObserverState.unobserve).toHaveBeenCalledWith(element)
+
+    active.value = true
+    await nextTick()
+    expect(resizeObserverState.observe).toHaveBeenCalledTimes(2)
   })
 
   it('reports the first measurement and skips repeated entries', () => {
