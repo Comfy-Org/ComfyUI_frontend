@@ -118,7 +118,7 @@ it('roundtrip initialization waits for pack-owned ready values', () => {
 
   const unavailableValues: Record<string, unknown> | undefined = undefined
   expect(
-    pendingRoundtripInitializations(signals, unavailableValues!, false)
+    pendingRoundtripInitializations(signals, unavailableValues, false)
   ).toEqual([
     'LoadAudioUI (litegraph: expected false, observed undefined)',
     'SAM3VideoSegmentation (litegraph: expected defined, observed undefined)',
