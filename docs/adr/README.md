@@ -28,6 +28,8 @@ An Architecture Decision Record captures an important architectural decision mad
 | [0016](0016-entity-registration-collision-and-recovery-boundaries.md)       | Entity Registration Collision and Recovery Boundaries       | Proposed | 2026-08-24 |
 | [0017](0017-id-based-slot-records-are-the-slot-destination.md)              | ID-Based Slot Records Own Slot State                        | Accepted | 2026-08-24 |
 | [0018](0018-node-id-reminting-at-the-merge-boundary.md)                     | Node-ID Reminting at the Merge Boundary                     | Proposed | 2026-08-25 |
+| [0019](0019-bound-renderer-reactivity.md)                                   | Bound Renderer Reactivity                                   | Proposed | 2026-08-26 |
+| [0020](0020-classify-and-coalesce-canvas-invalidation.md)                   | Classify and Coalesce Canvas Invalidation                   | Proposed | 2026-08-26 |
 
 ## Creating a New ADR
 
