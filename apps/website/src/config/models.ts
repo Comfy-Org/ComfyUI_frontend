@@ -21,7 +21,7 @@ type ModelDirectory =
   | 'optical_flow'
   | 'partner_nodes'
 
-interface Model {
+export interface Model {
   readonly slug: string
   readonly canonicalSlug?: string
   readonly name: string

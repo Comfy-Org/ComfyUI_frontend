@@ -1,18 +1,19 @@
 ---
 import type { GetStaticPaths } from 'astro'
 import BaseLayout from '../../../layouts/BaseLayout.astro'
+import FAQSplit01 from '../../../components/blocks/FAQSplit01.vue'
 import ModelHeroSection from '../../../components/models/ModelHeroSection.vue'
 import { models, getModelBySlug } from '../../../config/models'
-import { buildWhatIsDescription } from '../../../config/model-descriptions'
 import { buildModelLlmsLinks } from '../../../config/model-llms'
 import { t } from '../../../i18n/translations'
-import type { JsonLdNode } from '../../../utils/jsonLd'
 import {
   absoluteUrl,
   jsonLdId,
   pageContext,
   softwareApplicationNode,
 } from '../../../utils/jsonLd'
+import { buildModelFaqs, modelFaqJsonLd } from '../../../utils/modelFaq'
+import { getPageDescription } from '../../../utils/modelSeoCopy'
 
 export const getStaticPaths: GetStaticPaths = () => {
   return models.map((model) => ({
@@ -24,18 +25,16 @@ const { slug } = Astro.params
 const model = getModelBySlug(slug as string)!
 
 if (model.canonicalSlug) {
-  return Astro.redirect(`/p/supported-models/${model.canonicalSlug}`, 301)
+  return Astro.redirect(`/p/supported-models/${model.canonicalSlug}/`, 301)
 }
 
 const { displayName } = model
-
-const whatIsDescription = buildWhatIsDescription(model)
 
 // fal-style LLMs surface: markdown twin + agent handoff links.
 const llms = buildModelLlmsLinks(model.slug, displayName, Astro.site)
 
 const pageTitle = `${displayName} in ComfyUI`
-const pageDescription = `Run ${displayName} in ComfyUI with full parameter control. ${model.workflowCount} community workflow templates, step-by-step tutorials, and free local inference.`
+const pageDescription = getPageDescription(model)
 
 const { siteUrl, locale, url } = pageContext(
   Astro.site,
@@ -51,43 +50,9 @@ const software = softwareApplicationNode({
   applicationCategory: 'MultimediaApplication',
   operatingSystem: 'Any',
 })
-const faqPage: JsonLdNode = {
-  '@type': 'FAQPage',
-  '@id': jsonLdId(url, 'faq'),
-  mainEntity: [
-    {
-      '@type': 'Question',
-      name: `What is ${displayName}?`,
-      acceptedAnswer: { '@type': 'Answer', text: whatIsDescription },
-    },
-    {
-      '@type': 'Question',
-      name: `How do I use ${displayName} in ComfyUI?`,
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: model.docsUrl
-          ? `Follow the step-by-step tutorial at ${model.docsUrl}. You can also load any of the ${model.workflowCount} community workflow templates that use ${displayName} directly in ComfyUI.`
-          : `Open ComfyUI and browse the ${model.workflowCount} community workflow templates that use ${displayName}. Load one as a starting point, then customize the nodes and parameters to fit your use case.`,
-      },
-    },
-    {
-      '@type': 'Question',
-      name: `How many ComfyUI workflows use ${displayName}?`,
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: `There are ${model.workflowCount} community workflow templates that use ${displayName} on Comfy Workflows. Each template is ready to run in ComfyUI and can be customized to suit your project.`,
-      },
-    },
-    {
-      '@type': 'Question',
-      name: `Is ${displayName} free to use in ComfyUI?`,
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: `ComfyUI is free and open source. ${model.huggingFaceUrl ? `${displayName} weights are available to download from Hugging Face.` : `${displayName} is available as a cloud API through Comfy Cloud.`} You only pay for compute when running on Comfy Cloud; local inference on your own hardware is always free.`,
-      },
-    },
-  ],
-}
+const faqs = buildModelFaqs(model, locale)
+const whatIsDescription = faqs[0].answer
+const faqPage = modelFaqJsonLd(faqs, jsonLdId(url, 'faq'))
 ---
 
 <BaseLayout
@@ -192,6 +157,12 @@ const faqPage: JsonLdNode = {
   <section>
     {/* TODO: shared HowComfyWorks component */}
   </section>
+
+  <FAQSplit01
+    heading={t('models.faq.heading', locale)}
+    faqs={faqs}
+    client:visible
+  />
 </BaseLayout>
 
 <script>

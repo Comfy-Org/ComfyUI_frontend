@@ -56,9 +56,27 @@ const TIER_FEATURES: Record<TierKey, TierFeatures> = {
 
 export const DEFAULT_TIER_KEY: TierKey = 'standard'
 
-// TEAM is workspace-level, so it maps to no key in this personal plan catalog.
+// Membership is tested rather than listing the exclusions, so a tier added to
+// the ingest enum narrows to false and returns null instead of failing the
+// build. Two details are load-bearing:
+//   - `typeof`, because tier is unvalidated backend JSON and need not be a
+//     string; hasOwnProperty coerces its argument to a property key, so
+//     ['FREE'] would be accepted as FREE and a null toString would throw.
+//   - own-property rather than `in`, which walks the prototype chain and would
+//     return an inherited function for 'constructor' or 'toString'.
+function isRegistrySubscriptionTier(
+  tier: unknown
+): tier is RegistrySubscriptionTier {
+  return (
+    typeof tier === 'string' &&
+    Object.prototype.hasOwnProperty.call(TIER_TO_KEY, tier)
+  )
+}
+
+// Workspace-level tiers (TEAM, and any added later) map to no key in this
+// personal plan catalog.
 export function toTierKey(tier: IngestSubscriptionTier): TierKey | null {
-  return tier === 'TEAM' ? null : TIER_TO_KEY[tier]
+  return isRegistrySubscriptionTier(tier) ? TIER_TO_KEY[tier] : null
 }
 
 // Includes the workspace-level TEAM, which toTierKey maps to null: a catalog
