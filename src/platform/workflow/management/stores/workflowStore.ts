@@ -57,7 +57,9 @@ interface WorkflowStore {
   openWorkflows: ComfyWorkflow[]
   openedWorkflowIndexShift: (shift: number) => ComfyWorkflow | null
   getMostRecentWorkflow: () => ComfyWorkflow | null
-  openWorkflow: (workflow: ComfyWorkflow) => Promise<LoadedComfyWorkflow>
+  openWorkflow: (
+    workflow: ComfyWorkflow
+  ) => Promise<LoadedComfyWorkflow | undefined>
   openWorkflowsInBackground: (paths: {
     left?: string[]
     right?: string[]
@@ -208,13 +210,15 @@ export const useWorkflowStore = defineStore('workflow', () => {
    */
   const openWorkflow = async (
     workflow: ComfyWorkflow
-  ): Promise<LoadedComfyWorkflow> => {
+  ): Promise<LoadedComfyWorkflow | undefined> => {
     if (isActive(workflow)) return workflow as LoadedComfyWorkflow
+
+    const loadedWorkflow = await workflow.load()
+    if (!loadedWorkflow) return
 
     if (!openWorkflowPaths.value.includes(workflow.path)) {
       openWorkflowPaths.value.push(workflow.path)
     }
-    const loadedWorkflow = await workflow.load()
     activeWorkflow.value = loadedWorkflow
     comfyApp.canvas.bg_tint = loadedWorkflow.tintCanvasBg
 
