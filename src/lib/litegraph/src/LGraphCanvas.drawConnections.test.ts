@@ -19,6 +19,7 @@ function createMockCtx(): CanvasRenderingContext2D {
   return createMockCanvas2DContext({
     translate: vi.fn(),
     scale: vi.fn(),
+    drawImage: vi.fn(),
     fillText: vi.fn(),
     measureText: vi.fn().mockReturnValue({ width: 50 }),
     closePath: vi.fn(),
@@ -94,6 +95,9 @@ describe('drawConnections', () => {
     canvas = new LGraphCanvas(canvasElement, graph, {
       skip_render: true
     })
+    Object.defineProperty(canvas.ctx, 'canvas', { value: canvasElement })
+    canvas.bgctx = createMockCtx()
+    Object.defineProperty(canvas.bgctx, 'canvas', { value: canvas.bgcanvas })
 
     LiteGraph.vueNodesMode = false
     vi.mocked(layoutStore.getNodeLayout).mockReturnValue(null)
@@ -162,7 +166,7 @@ describe('drawConnections', () => {
     expect(arrangeSpy).not.toHaveBeenCalled()
   })
 
-  it('renders links in target z-order instead of generated id order', () => {
+  it('preserves target z-order for standalone and both-layer draws', () => {
     const sourceNode = new LGraphNode('Source')
     sourceNode.pos = [100, 100]
     sourceNode.addOutput('out', 'STRING')
@@ -197,10 +201,14 @@ describe('drawConnections', () => {
     canvas.drawConnections(createMockCtx())
 
     expect([...canvas.renderedPaths]).toEqual([secondLink, firstLink])
+
+    canvas.draw(true, true)
+
+    expect([...canvas.renderedPaths]).toEqual([secondLink, firstLink])
   })
 
   it.for([245, 500, 1_000])(
-    'rebuilds render order independently for both passes at %i nodes',
+    'builds render order once for a both-layer draw at %i nodes',
     (nodeCount) => {
       for (let index = 0; index < nodeCount; index++) {
         const node = new LGraphNode(`Node ${index}`)
@@ -211,25 +219,33 @@ describe('drawConnections', () => {
       vi.mocked(layoutStore.getNodeLayout).mockClear()
       const sort = vi.spyOn(Array.prototype, 'sort')
 
-      canvas.computeVisibleNodes()
-      const foregroundLayoutReads = vi.mocked(layoutStore.getNodeLayout).mock
-        .calls.length
-      const foregroundSorts = sort.mock.calls.length
+      canvas.draw(true, true)
 
-      canvas.drawConnections(createMockCtx())
-      const totalLayoutReads = vi.mocked(layoutStore.getNodeLayout).mock.calls
-        .length
-
-      expect(foregroundLayoutReads).toBe(nodeCount)
-      expect(totalLayoutReads - foregroundLayoutReads).toBe(nodeCount)
-      expect(foregroundSorts).toBe(1)
+      expect(layoutStore.getNodeLayout).toHaveBeenCalledTimes(nodeCount)
       expect(
         sort.mock.instances.filter(
           (items) => (items as unknown[]).length === nodeCount
         )
-      ).toHaveLength(2)
+      ).toHaveLength(1)
     }
   )
+
+  it('shares render order with same-canvas and links-on-top passes', () => {
+    for (let index = 0; index < 3; index++) {
+      const node = new LGraphNode(`Node ${index}`)
+      vi.spyOn(node, 'updateArea').mockImplementation(() => {})
+      graph.add(node)
+    }
+    canvas.bgcanvas = canvas.canvas
+    canvas.bgctx = canvas.ctx
+    graph.config.links_ontop = true
+    canvas.visible_area.set([0, 0, 800, 600])
+    vi.mocked(layoutStore.getNodeLayout).mockClear()
+
+    canvas.draw(true, true)
+
+    expect(layoutStore.getNodeLayout).toHaveBeenCalledTimes(3)
+  })
 
   it('connects, draws, and serializes without deprecation warnings', () => {
     const sourceNode = new LGraphNode('Source')
