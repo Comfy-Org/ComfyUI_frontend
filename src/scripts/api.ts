@@ -134,6 +134,11 @@ interface QueuePromptRequestBody {
 }
 
 const FETCH_RESPONSE_HEADERS_TIMEOUT_MS = 60_000
+
+interface FetchApiOptions extends RequestInit {
+  timeoutMs?: number | null
+}
+
 const FETCH_ROUTE_GROUPS = new Set([
   'assets',
   'embeddings',
@@ -538,8 +543,10 @@ export class ComfyApi extends EventTarget {
     }
   }
 
-  async fetchApi(route: string, options?: RequestInit) {
-    const headers: HeadersInit = options?.headers ?? {}
+  async fetchApi(route: string, options?: FetchApiOptions) {
+    const { timeoutMs = FETCH_RESPONSE_HEADERS_TIMEOUT_MS, ...requestOptions } =
+      options ?? {}
+    const headers: HeadersInit = requestOptions.headers ?? {}
     let unifiedRetryOn401 = false
 
     if (isCloud) {
@@ -568,36 +575,45 @@ export class ComfyApi extends EventTarget {
 
     addHeaderEntry(headers, 'Comfy-User', this.user)
 
-    const controller = options?.signal ? null : new AbortController()
-    const timeoutId = controller
+    const timeout =
+      timeoutMs === null
+        ? null
+        : { controller: new AbortController(), duration: timeoutMs }
+    const timeoutId = timeout
       ? setTimeout(() => {
-          const method = (options?.method ?? 'GET').toUpperCase()
+          const method = (requestOptions.method ?? 'GET').toUpperCase()
           const routeTemplate = getFetchRouteTemplate(route)
 
           Sentry.addBreadcrumb({
             category: 'fetch',
             message: `Timeout on ${method} ${routeTemplate}`,
             level: 'warning',
-            data: { timeout_ms: FETCH_RESPONSE_HEADERS_TIMEOUT_MS }
+            data: { timeout_ms: timeout.duration }
           })
 
           useTelemetry()?.trackFetchTimeout({
             route: routeTemplate,
             method,
-            timeout_ms: FETCH_RESPONSE_HEADERS_TIMEOUT_MS
+            timeout_ms: timeout.duration
           })
 
-          controller.abort(new DOMException('Fetch timeout', 'TimeoutError'))
-        }, FETCH_RESPONSE_HEADERS_TIMEOUT_MS)
+          timeout.controller.abort(
+            new DOMException('Fetch timeout', 'TimeoutError')
+          )
+        }, timeout.duration)
       : undefined
+    const signal =
+      requestOptions.signal && timeout
+        ? AbortSignal.any([requestOptions.signal, timeout.controller.signal])
+        : (requestOptions.signal ?? timeout?.controller.signal)
 
     return fetchWithUnifiedRemint(
       this.apiURL(route),
       {
         cache: 'no-cache',
-        ...options,
+        ...requestOptions,
         headers,
-        signal: options?.signal ?? controller?.signal
+        signal
       },
       unifiedRetryOn401
     ).finally(() => {

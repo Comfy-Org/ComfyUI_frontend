@@ -243,30 +243,45 @@ describe('api.fetchApi', () => {
       })
     })
 
-    it('preserves a caller-owned 120 second timeout', async () => {
+    it('uses a caller-owned 120 second timeout', async () => {
       mockPendingFetch()
-      const controller = new AbortController()
-      setTimeout(
-        () =>
-          controller.abort(new DOMException('Upload timeout', 'TimeoutError')),
-        120_000
-      )
 
       const request = api.fetchApi('/upload/image', {
-        signal: controller.signal
+        timeoutMs: 120_000
       })
       const rejection = expect(request).rejects.toMatchObject({
         name: 'TimeoutError',
-        message: 'Upload timeout'
+        message: 'Fetch timeout'
       })
       await vi.advanceTimersByTimeAsync(60_000)
 
-      expect(controller.signal.aborted).toBe(false)
       expect(trackFetchTimeout).not.toHaveBeenCalled()
 
       await vi.advanceTimersByTimeAsync(60_000)
       await rejection
-      expect(trackFetchTimeout).not.toHaveBeenCalled()
+      expect(trackFetchTimeout).toHaveBeenCalledExactlyOnceWith({
+        route: '/upload/:resource',
+        method: 'GET',
+        timeout_ms: 120_000
+      })
+    })
+
+    it('applies the default timeout alongside caller cancellation', async () => {
+      mockPendingFetch()
+      const controller = new AbortController()
+
+      const request = api.fetchApi('/assets', { signal: controller.signal })
+      const rejection = expect(request).rejects.toMatchObject({
+        name: 'TimeoutError'
+      })
+      await vi.advanceTimersByTimeAsync(60_000)
+
+      await rejection
+      expect(trackFetchTimeout).toHaveBeenCalledExactlyOnceWith({
+        route: '/assets',
+        method: 'GET',
+        timeout_ms: 60_000
+      })
     })
 
     it('preserves caller cancellation without timeout telemetry', async () => {

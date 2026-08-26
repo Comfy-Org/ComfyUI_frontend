@@ -132,6 +132,10 @@ describe('useNodeImageUpload', () => {
 
     await capturedDragOnDrop([createFile()])
     expect(onUploadComplete).toHaveBeenCalledWith(['test.png'])
+    expect(mockFetchApi).toHaveBeenCalledWith(
+      '/upload/image',
+      expect.objectContaining({ timeoutMs: 120_000 })
+    )
   })
 
   it('includes subfolder in returned path', async () => {
