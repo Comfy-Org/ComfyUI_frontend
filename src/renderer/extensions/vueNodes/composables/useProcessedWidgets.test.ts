@@ -229,6 +229,19 @@ describe('widget visibility', () => {
     expect(visibilityOf({})).toBe(true)
   })
 
+  it('removes widgets whose type is hidden at runtime', () => {
+    const nodeId = toNodeId(1)
+    const id = widgetId(GRAPH_ID, nodeId, 'runtime-hidden')
+    const state = registerWidgetState(id, { type: 'number' })
+    if (!state) throw new Error('Expected widget registration to succeed')
+
+    expect(processWidgets({ widgetIds: [id] })).toHaveLength(1)
+
+    state.type = 'converted-widget'
+
+    expect(processWidgets({ widgetIds: [id] })).toHaveLength(0)
+  })
+
   it('hides hidden widgets', () => {
     expect(visibilityOf({ hidden: true })).toBe(false)
   })

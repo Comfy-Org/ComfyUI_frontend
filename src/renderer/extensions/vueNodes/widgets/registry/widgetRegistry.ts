@@ -313,11 +313,17 @@ export const isEssential = (type: string): boolean => {
   return widgets.get(canonicalType)?.essential || false
 }
 
+const HIDDEN_WIDGET_TYPES = new Set(['converted-widget', 'hidden'])
+
 export const shouldRenderAsVue = (widget: {
   options?: Pick<IWidgetOptions, 'canvasOnly'>
   type?: string
 }): boolean => {
-  return !widget.options?.canvasOnly && !!widget.type
+  return (
+    !widget.options?.canvasOnly &&
+    !!widget.type &&
+    !HIDDEN_WIDGET_TYPES.has(widget.type)
+  )
 }
 
 const EXPANDING_TYPES = [
