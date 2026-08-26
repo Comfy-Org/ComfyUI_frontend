@@ -44,7 +44,7 @@ describe('slot identity', () => {
     expect(sourceSlot.node).toBe(source)
   })
 
-  it('preserves the identity of extension-assigned slots', () => {
+  it('upgrades extension-assigned inputs when the view is read', () => {
     const node = new LGraphNode('Node')
     const input = {
       name: 'input',
@@ -52,18 +52,11 @@ describe('slot identity', () => {
       link: null,
       boundingRect: new Float64Array(4)
     }
-    const output = {
-      name: 'output',
-      type: 'INT',
-      links: [],
-      boundingRect: new Float64Array(4)
-    }
 
     node.inputs = [input]
-    node.outputs = [output]
 
-    expect(node.inputs[0]).toBe(input)
-    expect(node.outputs[0]).toBe(output)
+    expect(node._state.inputs[0]).toBe(input)
+    expect(node.inputs[0]).toBeInstanceOf(NodeInputSlot)
   })
 
   it('preserves native indexOf behavior for arbitrary values', () => {

@@ -381,6 +381,10 @@ export class LGraphNode
 
   /** Assignment splices in place: the `shallowReactive` array identity is what the renderer tracks. */
   get inputs(): INodeInputSlot[] {
+    for (const [index, slot] of this._inputs.entries()) {
+      const concrete = toClass(NodeInputSlot, slot, this)
+      if (concrete !== slot) this._inputs[index] = concrete
+    }
     return this._inputs
   }
 
