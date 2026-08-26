@@ -176,7 +176,7 @@ export const AUTO_RUN_WIDGET_INPUTS: Record<
   Record<string, Record<string, string>>
 > = {
   'ComfyUI-Impact-Pack': {
-    ImageReceiver: { image: 'test_upload_image.webp' }
+    ImageReceiver: { image: '000_custom_node_probe.webp' }
   },
   'ComfyUI-VideoHelperSuite': {
     VHS_LoadAudio: { audio_file: 'input/plain_audio.wav' },

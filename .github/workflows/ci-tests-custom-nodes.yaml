@@ -312,6 +312,7 @@ jobs:
           set -euo pipefail
           mkdir -p ComfyUI/input
           cp browser_tests/assets/test_upload_image.png ComfyUI/input/000_custom_node_probe.png
+          cp browser_tests/assets/image32x32.webp ComfyUI/input/000_custom_node_probe.webp
           python - <<'PY'
           import wave
 
