@@ -55,7 +55,13 @@ import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 // the real rate is above 6.5ms/pair; the multiplier below carries margin over
 // that floor and the sweep logs its actual rate so it can be tightened.
 const PLAN_SETUP_MS = 120_000
-const SWEEP_MS_PER_PAIR = 40
+// Measured per-pair sweep cost across the cloud shards is 31-53ms: the rate
+// tracks how much DOM and media a shard's nodes build, not the pair count.
+// A flat 40ms sat below the slowest shard's own standalone rate, so the
+// media-heavy shard could exhaust its budget while doing correct work. 70ms
+// covers the observed maximum with headroom; a genuine hang is caught far
+// sooner by BATCH_STALL_MS rather than by this budget.
+const SWEEP_MS_PER_PAIR = 70
 const ISOLATED_MS_PER_PAIR = PLAN_SETUP_MS
 const DYNAMIC_CLEANUP_SETTLE_MS = 50
 const PAIRS_PER_BATCH = 100
