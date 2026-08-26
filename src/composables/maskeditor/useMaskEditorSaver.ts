@@ -279,8 +279,6 @@ export function useMaskEditorSaver() {
   ): void {
     const mainRef = outputData.paintedMaskedImage.ref
 
-    node.images = [mainRef]
-
     const imageWidget = node.widgets?.find((w) => w.name === 'image')
     if (imageWidget) {
       const widgetValue =

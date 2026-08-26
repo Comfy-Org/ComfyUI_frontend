@@ -298,9 +298,6 @@ describe('useMinimap', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     registerMockLink(1, 'node2')
 
-    mockPause.mockClear()
-    mockResume.mockClear()
-
     mockContext2D = createMockCanvas2DContext()
 
     moduleMockCanvasElement = createMockMinimapCanvas({

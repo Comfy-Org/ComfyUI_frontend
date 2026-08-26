@@ -38,6 +38,7 @@ function renderedWidgetNames(graph: LGraph, node: LGraphNode): string[] {
       title: 'Test',
       mode: 0,
       flags: {},
+      properties: {},
       inputs: [],
       outputs: []
     },
@@ -162,6 +163,7 @@ describe('widget rename after registration (#15600)', () => {
         title: 'Test',
         mode: 0,
         flags: {},
+        properties: {},
         inputs: [],
         outputs: []
       },
