@@ -10,10 +10,8 @@
    requested value.
 4. Use the node/group geometry APIs, not the backing store; don't import
    `layoutStore` or depend on its internal format.
-5. Writes through a removed node reference update only that detached
-   object's own fields, not an error and not a clobbered live node: expect
-   the live/shared layout state to stay untouched, not the detached
-   object itself to be a no-op.
+5. Writes through a removed reference update the detached object, not shared
+   layout state.
 
 ## What changed
 
@@ -67,21 +65,8 @@ in the node list, and its execution order. It's now always draw order. If
 your extension inferred stacking or hit-test order from execution order,
 switch to draw order.
 
-## Writes through removed node, group, or reroute references don't propagate, but do land locally
+## Writes through removed references stay local
 
-The write API differs per entity: `LGraphNode` exposes `setPos()`/`setSize()`
-(backed by `pos`/`size` setters). `LGraphGroup` exposes `pos`/`size` setters
-only, with no separate methods. `Reroute` exposes a `pos` setter only; it has
-no `size` at all.
-
-If you hold a node, group, or reroute reference after it's removed from the
-graph (a detached clone, or a reference captured before an async callback
-resolves), writing through one of these setters still updates that object's
-own local position/size fields — the write lands unconditionally before the
-missing-graph guard runs. What's guaranteed is narrower than a full no-op:
-the write never reaches the shared layout store and never affects whatever
-entity now owns that ID. Being detached does not make the write throw (a
-malformed value passed to `Reroute.pos` still throws, detached or not, but
-for that reason, not because of detachment). Don't rely on a detached
-reference's position/size staying unchanged after you write to it; only the
-live/shared state is protected.
+After removal, geometry setters update only the detached node, group, or
+reroute object. They do not update shared layout state or another entity that
+now owns the same ID.

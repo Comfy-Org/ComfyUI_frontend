@@ -57,14 +57,10 @@ Removing a node fires, in order:
 5. `onNodeRemoved(node)`, then `node:removed`, both seeing an already-detached
    node.
 
-Test coverage backs this only in pieces: one test asserts the
-`before-removed → onRemoved → onNodeRemoved` order (steps 1, 3, 5's first
-half); a separate test asserts `node:removed` fires with the node already
-detached (step 4 relative to step 5's second half). The placement of
-`onConnectionsChange` (step 2) relative to the rest of the sequence, and the
-full five-step order end to end, are observed from source, not exercised by
-a single test. Treat step 2's position as documented-but-not-test-guaranteed
-until a discriminating test exists.
+Tests cover `node:before-removed → node.onRemoved() → onNodeRemoved(node)` and
+separately verify that `node:removed` sees a detached node. The complete
+sequence, including step 2, is observed from source rather than guaranteed by
+one end-to-end test.
 
 To resolve the removed node from a peer's `onConnectionsChange` handler, do it
 at step 2 via `graph.getNodeById()`. By `node:removed`, the node is gone.

@@ -1007,7 +1007,12 @@ function convertLoadedGroupNodes(): number {
     if (!node) return converted
     try {
       const handler = GroupNodeHandler.getHandler(node)
-      if (!handler) throw new Error('Missing handler for group node')
+      if (!handler) {
+        console.error('Missing handler for group node')
+        failed.add(node)
+        app.rootGraph.remove(node)
+        continue
+      }
       const innerNodes = handler.convertToNodes()
       for (const inner of innerNodes) inner.updateArea()
       app.rootGraph.convertToSubgraph(new Set(innerNodes))
