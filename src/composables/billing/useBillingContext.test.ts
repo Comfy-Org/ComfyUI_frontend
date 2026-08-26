@@ -25,6 +25,7 @@ const DEFAULT_BILLING_STATUS: BillingStatusResponse = {
 }
 
 const {
+  mockIsCloud,
   mockIsPersonal,
   mockBillingRail,
   mockPlans,
@@ -38,6 +39,7 @@ const {
   mockLegacyStatus,
   mockBillingStatus
 } = vi.hoisted(() => ({
+  mockIsCloud: { value: true },
   mockIsPersonal: { value: true },
   mockBillingRail: { value: undefined as BillingRail | undefined },
   mockPlans: { value: [] as Plan[] },
@@ -73,7 +75,11 @@ vi.mock('@vueuse/core', async (importOriginal) => {
   }
 })
 
-vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
+vi.mock('@/platform/distribution/types', () => ({
+  get isCloud() {
+    return mockIsCloud.value
+  }
+}))
 
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', async () => {
   const { ref } = await import('vue')
@@ -180,6 +186,7 @@ describe('useBillingContext', () => {
   beforeEach(() => {
     remoteConfig.value = {}
     remoteConfigState.value = 'unloaded'
+    mockIsCloud.value = true
     mockIsPersonal.value = true
     mockBillingRail.value = undefined
     mockSetWorkspaceBillingRail.mockImplementation(
@@ -349,6 +356,40 @@ describe('useBillingContext', () => {
     )
     expect(mockLegacySubscribe).not.toHaveBeenCalled()
     expect(mockPurchaseCredits).toHaveBeenCalledWith(5)
+  })
+
+  // Off-Cloud the migration flag is unreadable (Cloud remote config), so a
+  // legacy Stripe personal workspace stays `legacy` forever; checkout still has
+  // to reach the workspace rail or the local plans section can sell nothing.
+  it('uses workspace checkout for a legacy Stripe workspace off Cloud', async () => {
+    mockIsCloud.value = false
+    mockBillingRail.value = 'legacy_stripe'
+
+    const context = useBillingContext()
+    vi.clearAllMocks()
+
+    expect(context.type.value).toBe('legacy')
+
+    await context.previewSubscribe('creator-annual')
+    await context.subscribe('creator-annual')
+
+    expect(workspaceApi.previewSubscribe).toHaveBeenCalledWith(
+      'creator-annual',
+      undefined
+    )
+    expect(workspaceApi.subscribe).toHaveBeenCalledWith(
+      'creator-annual',
+      undefined
+    )
+    expect(mockLegacySubscribe).not.toHaveBeenCalled()
+
+    await context.fetchPlans()
+    expect(mockFetchPlans).toHaveBeenCalledOnce()
+
+    // Account operations stay on the account's own rail.
+    await context.topup(500)
+    expect(mockPurchaseCredits).toHaveBeenCalledWith(5)
+    expect(workspaceApi.createTopup).not.toHaveBeenCalled()
   })
 
   it('routes migrated legacy Stripe topups through workspace billing', async () => {

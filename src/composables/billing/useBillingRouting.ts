@@ -1,7 +1,6 @@
 import { computed } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { isCloud } from '@/platform/distribution/types'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import type { BillingType } from './types'
@@ -13,13 +12,25 @@ import type { BillingType } from './types'
  * account operations and its migration flag is off. An unloaded workspace
  * remains legacy during bootstrap; Local/Desktop uses workspace billing after
  * its Cloud-backed workspace context loads.
+ *
+ * `type` selects the *account* operations — status, balance, top-up — which
+ * must stay on the rail the account actually bills on: the backend rejects a
+ * workspace-rail top-up for a legacy Stripe account. `shouldUseUnifiedPricing`
+ * selects *checkout* — catalog, preview, subscribe — which is always the
+ * workspace rail once a workspace exists, on every distribution. A legacy
+ * Stripe workspace therefore runs the documented mixed state, and it has to
+ * hold off Cloud too: the migration flag comes from Cloud remote config, so
+ * Local/Desktop reads it as permanently off and would otherwise strand every
+ * legacy Stripe personal workspace on the legacy adapter, whose `subscribe`
+ * launches the account-scoped Stripe shortlink and whose `previewSubscribe`
+ * returns null.
  */
 export function useBillingRouting() {
   const { flags } = useFeatureFlags()
   const workspaceStore = useTeamWorkspaceStore()
 
   const shouldUseUnifiedPricing = computed(() => {
-    return isCloud && workspaceStore.activeWorkspace?.type !== undefined
+    return workspaceStore.activeWorkspace?.type !== undefined
   })
 
   const type = computed<BillingType>(() => {
