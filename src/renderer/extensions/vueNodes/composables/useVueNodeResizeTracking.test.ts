@@ -109,6 +109,7 @@ vi.mock('./useSlotElementTracking', () => ({
 import { useVueElementTracking } from './useVueNodeResizeTracking'
 
 function createResizeEntry(options?: {
+  element?: HTMLElement
   nodeId?: NodeId
   width?: number
   height?: number
@@ -117,6 +118,7 @@ function createResizeEntry(options?: {
   collapsed?: boolean
 }) {
   const {
+    element = document.createElement('div'),
     nodeId = toNodeId('test-node'),
     width = 240,
     height = 180,
@@ -125,7 +127,6 @@ function createResizeEntry(options?: {
     collapsed = false
   } = options ?? {}
 
-  const element = document.createElement('div')
   element.dataset.nodeId = String(nodeId)
   if (collapsed) {
     element.dataset.collapsed = ''
@@ -211,6 +212,64 @@ describe('useVueNodeResizeTracking', () => {
       }
     )
     expect(testState.syncNodeSlotLayoutsFromDOM).toHaveBeenCalledWith(nodeId)
+  })
+
+  it('remounts root-flat node identities during same-root subgraph navigation', async () => {
+    const rootNodeId = toNodeId('root-node')
+    const subgraphNodeId = toNodeId('subgraph-node')
+    const activeNodeId = ref(rootNodeId)
+    const TrackedNode = defineComponent({
+      props: { nodeId: { type: String, required: true } },
+      setup(props) {
+        useVueElementTracking(props.nodeId, 'node')
+        return () => h('div', { 'data-testid': 'tracked-node' })
+      }
+    })
+    const GraphView = defineComponent({
+      setup() {
+        return () =>
+          h(TrackedNode, {
+            key: activeNodeId.value,
+            nodeId: activeNodeId.value
+          })
+      }
+    })
+    const view = render(GraphView)
+    const rootElement = screen.getByTestId('tracked-node')
+
+    vi.clearAllMocks()
+    testState.contentSizes.clear()
+    activeNodeId.value = subgraphNodeId
+    await nextTick()
+
+    const subgraphElement = screen.getByTestId('tracked-node')
+    expect(subgraphElement).not.toBe(rootElement)
+    expect(resizeObserverState.unobserve).toHaveBeenCalledWith(rootElement)
+    expect(resizeObserverState.observe).toHaveBeenCalledWith(subgraphElement)
+
+    seedNodeLayout({
+      nodeId: subgraphNodeId,
+      left: 100,
+      top: 200,
+      width: 240,
+      height: 180
+    })
+    const { entry } = createResizeEntry({
+      element: subgraphElement,
+      nodeId: subgraphNodeId
+    })
+    resizeObserverState.callback?.([entry], createObserverMock())
+
+    expect(testState.rootGraphId).toBe(ROOT_GRAPH_ID)
+    expect(testState.reportContentSize).toHaveBeenCalledWith(
+      ROOT_GRAPH_ID,
+      subgraphNodeId,
+      {
+        width: 240,
+        height: 180 - LiteGraph.NODE_TITLE_HEIGHT
+      }
+    )
+    view.unmount()
   })
 
   it('reports a fresh measurement after same-root graph reconfiguration', () => {
