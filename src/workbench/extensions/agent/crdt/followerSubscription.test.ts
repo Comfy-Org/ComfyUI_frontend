@@ -174,7 +174,7 @@ describe('FE-TEARDOWN-1 — teardown completes with a dead socket', () => {
     const { transport, client, bridge, projected } = wire()
     transport.open = true
     bridge.subscribe(WORKFLOW_ID)
-    expect(transport.listenerCount).toBe(4)
+    expect(transport.listenerCount).toBe(5)
 
     // Backend restarts, then the user closes the agent panel.
     transport.open = false
@@ -215,6 +215,90 @@ describe('FE-TEARDOWN-1 — teardown completes with a dead socket', () => {
 
     expect(projected).toHaveLength(0)
     expect(second.projected).toHaveLength(1)
+    warn.mockRestore()
+  })
+})
+
+describe('doc_reset — a lineage break drops the doc and resubscribes from zero', () => {
+  it('replaces the follower doc and resubscribes with an empty state vector', () => {
+    const { transport, bridge, projected } = wire()
+    const resets: unknown[] = []
+    bridge.addEventListener('doc_reset', (event) => {
+      if (event instanceof CustomEvent) resets.push(event.detail)
+    })
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver('doc_update', docUpdateFrame(hostDocUpdate()))
+    const oldDoc = bridge.follower
+    expect(oldDoc.updatesApplied).toBe(1)
+
+    transport.deliver('doc_reset', { v: 1, workflow_id: WORKFLOW_ID, seq: 43 })
+
+    // The old lineage is dropped wholesale, never folded into.
+    expect(bridge.follower).not.toBe(oldDoc)
+    expect(bridge.follower.updatesApplied).toBe(0)
+    expect(bridge.follower.doc.getMap('nodes').size).toBe(0)
+    expect(resets).toEqual([{ workflowId: WORKFLOW_ID, seq: 43 }])
+
+    // The resubscribe carries the FRESH doc's state vector — the empty one —
+    // so the server's ordinary catch-up path returns the full folded state.
+    const subscribes = transport.framesOfType('doc_subscribe') as {
+      data: { state_vector_b64: string }
+    }[]
+    expect(subscribes).toHaveLength(2)
+    expect(subscribes[1].data.state_vector_b64).toBe(
+      encodeBase64(Y.encodeStateVector(new Y.Doc()))
+    )
+    expect(bridge.subscribedWorkflowId).toBe(WORKFLOW_ID)
+
+    // The next update lands on the fresh lineage and is projected.
+    transport.deliver('doc_update', docUpdateFrame(hostDocUpdate()))
+    expect(bridge.follower.updatesApplied).toBe(1)
+    expect(projected).toHaveLength(2)
+
+    // KA-6: a reset provokes nothing but subscription frames from the follower.
+    const writes = transport.sent
+      .map((frame) => JSON.parse(frame) as { type: string })
+      .filter(
+        (frame) =>
+          frame.type !== 'doc_subscribe' && frame.type !== 'doc_unsubscribe'
+      )
+    expect(writes).toEqual([])
+  })
+
+  it('ignores a reset for a workflow it does not follow', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver('doc_update', docUpdateFrame(hostDocUpdate()))
+    const oldDoc = bridge.follower
+
+    transport.deliver('doc_reset', { v: 1, workflow_id: 'wf-other', seq: 9 })
+
+    expect(bridge.follower).toBe(oldDoc)
+    expect(bridge.follower.updatesApplied).toBe(1)
+    expect(transport.framesOfType('doc_subscribe')).toHaveLength(1)
+  })
+
+  it('a reset on a dead socket still drops the doc; the resubscribe lands on the next reconcile', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver('doc_update', docUpdateFrame(hostDocUpdate()))
+
+    transport.open = false
+    transport.deliver('doc_reset', { v: 1, workflow_id: WORKFLOW_ID, seq: 43 })
+
+    // The lineage break is honoured even though the resubscribe cannot leave.
+    expect(bridge.follower.updatesApplied).toBe(0)
+    expect(bridge.subscribedWorkflowId).toBeNull()
+    expect(bridge.hasPendingSubscribe).toBe(true)
+
+    transport.open = true
+    bridge.reconcile()
+    expect(bridge.subscribedWorkflowId).toBe(WORKFLOW_ID)
+    expect(transport.framesOfType('doc_subscribe')).toHaveLength(2)
     warn.mockRestore()
   })
 })

@@ -38,10 +38,23 @@ interface DocAwareness {
   expiresAt?: number
 }
 
+/**
+ * Host→follower lineage break: the document was re-minted, so updates from
+ * before this frame do NOT compose with what comes after. Deliberately
+ * payload-less — the fresh state arrives through the ordinary subscribe
+ * catch-up path, never a second snapshot channel.
+ */
+export interface DocReset {
+  workflowId: string
+  seq: number
+  actor?: string
+}
+
 export type ServerDocFrame =
   | { type: 'doc_update'; data: DocUpdate }
   | { type: 'doc_subscribed'; data: DocSubscribed }
   | { type: 'doc_ops_result'; data: DocOpsResult }
+  | { type: 'doc_reset'; data: DocReset }
   | { type: 'awareness'; data: DocAwareness }
 
 export interface DocFrameTransport {
@@ -161,6 +174,17 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
     }
   }
 
+  if (frame.type === 'doc_reset' && typeof data.seq === 'number') {
+    return {
+      type: frame.type,
+      data: {
+        workflowId: data.workflow_id,
+        seq: data.seq,
+        ...(typeof data.actor === 'string' && { actor: data.actor })
+      }
+    }
+  }
+
   if (frame.type === 'awareness' && typeof data.actor === 'string') {
     const state = parseRecord(data.state)
     return {
@@ -188,6 +212,7 @@ export class DocFrameClient extends EventTarget {
       'doc_update',
       'doc_subscribed',
       'doc_ops_result',
+      'doc_reset',
       'awareness'
     ]) {
       const listener: EventListener = (event) => {

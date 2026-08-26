@@ -114,6 +114,16 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
   const onOpsResult: EventListener = (event) => {
     lastFrameType.value = event.type
   }
+  const onDocReset: EventListener = (event) => {
+    // Lineage break: the bridge already dropped its doc and resubscribed with
+    // an empty state vector. Forget the projected snapshot so the fresh folded
+    // state re-materializes from zero instead of diffing against a canvas
+    // seeded by the dead lineage.
+    connected.value = false
+    updatesApplied.value = 0
+    lastFrameType.value = event.type
+    projector.reset()
+  }
   const onSchemaError: EventListener = (event) => {
     // KA-11 fail-closed: the bridge refused to propagate an unreadable doc, so
     // nothing was projected. Surface it as its own status rather than as a
@@ -146,6 +156,7 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
   bridge.addEventListener('doc_subscribed', onSubscribed)
   bridge.addEventListener('doc_update', onUpdate)
   bridge.addEventListener('doc_ops_result', onOpsResult)
+  bridge.addEventListener('doc_reset', onDocReset)
   bridge.addEventListener('schema_error', onSchemaError)
   api.addEventListener('reconnected', onReconnected)
   api.addEventListener('status', onSocketActivity)
@@ -174,6 +185,7 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
       bridge.removeEventListener('doc_subscribed', onSubscribed)
       bridge.removeEventListener('doc_update', onUpdate)
       bridge.removeEventListener('doc_ops_result', onOpsResult)
+      bridge.removeEventListener('doc_reset', onDocReset)
       bridge.removeEventListener('schema_error', onSchemaError)
       bridge.destroy()
     } finally {
