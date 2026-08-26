@@ -4,6 +4,9 @@ import { useI18n } from 'vue-i18n'
 import type { MenuItem } from 'primevue/menuitem'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingRouting } from '@/composables/billing/useBillingRouting'
+import { isCloud } from '@/platform/distribution/types'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useDialogService } from '@/services/dialogService'
 
@@ -16,6 +19,8 @@ import { useDialogService } from '@/services/dialogService'
 export function useWorkspaceMenuItems() {
   const { t } = useI18n()
   const { billingStatus, isFreeTier, subscription } = useBillingContext()
+  const { shouldUseWorkspaceBilling } = useBillingRouting()
+  const { canCancel } = useBillingCapabilities()
   const {
     permissions,
     uiConfig,
@@ -37,12 +42,8 @@ export function useWorkspaceMenuItems() {
   }
 
   function cancelSubscription() {
-    if (
-      !permissions.value.canManageSubscriptionLifecycle ||
-      !canCancelPlan.value
-    ) {
-      return
-    }
+    if (isCloud && shouldUseWorkspaceBilling.value && !canCancel.value) return
+    if (!canCancelPlan.value) return
     void showCancelSubscriptionFlow(subscription.value?.endDate ?? undefined)
   }
 
@@ -62,8 +63,13 @@ export function useWorkspaceMenuItems() {
     void showLeaveWorkspaceDialog()
   }
 
-  const canCancelPlan = computed(
-    () =>
+  const canCancelPlan = computed(() => {
+    // can_cancel already encodes role, subscription presence/status and a
+    // scheduled cancellation, but not tier: it stays true for an active FREE
+    // plan, so the free-tier guard has to remain client-side.
+    if (isCloud && shouldUseWorkspaceBilling.value)
+      return canCancel.value && !isFreeTier.value
+    return (
       permissions.value.canManageSubscriptionLifecycle &&
       (isActiveSubscription.value ||
         ((billingStatus.value === 'payment_failed' ||
@@ -71,7 +77,8 @@ export function useWorkspaceMenuItems() {
           Boolean(subscription.value?.planSlug))) &&
       !isSubscriptionCancelled.value &&
       !isFreeTier.value
-  )
+    )
+  })
 
   const canDeleteWorkspace = computed(
     () =>

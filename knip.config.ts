@@ -19,6 +19,7 @@ const config: KnipConfig = {
         '**/*.{js,ts,vue}',
         '*.{js,ts,mts}',
         '!.claude/**',
+        '!worktrees/**',
         '!src/__ecs_matrix__/**'
       ],
       ignore: ['scripts/registry-census/detection-proof/**']
@@ -44,8 +45,15 @@ const config: KnipConfig = {
     },
     'apps/website': {
       entry: ['src/scripts/**/*.ts']
+    },
+    'tools/test-recorder': {
+      project: ['src/**/*.ts']
     }
   },
+  ignoreBinaries: [
+    // Optional host tool the recorder probes for and degrades without
+    'xcode-select'
+  ],
   ignoreDependencies: [
     // Weird importmap things
     '@iconify/json'

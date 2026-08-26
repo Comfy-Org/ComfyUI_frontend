@@ -13,6 +13,7 @@ interface CompositorNodeCache {
   layers: ImageFileRef[]
   inputsFingerprint?: string[]
   bboxes?: (CompositorBBox | null)[]
+  canvas?: { w: number; h: number }
 }
 
 const cacheByNode = reactive(new Map<NodeLocatorId, CompositorNodeCache>())
@@ -29,12 +30,14 @@ export function setCompositorLayers(
   node: CompositorNodeRef,
   refs: ImageFileRef[],
   inputsFingerprint?: string[],
-  bboxes?: (CompositorBBox | null)[]
+  bboxes?: (CompositorBBox | null)[],
+  canvas?: { w: number; h: number }
 ): void {
   cacheByNode.set(cacheKey(node), {
     layers: refs,
     ...(inputsFingerprint ? { inputsFingerprint } : {}),
-    ...(bboxes ? { bboxes } : {})
+    ...(bboxes ? { bboxes } : {}),
+    ...(canvas ? { canvas } : {})
   })
 }
 
@@ -54,6 +57,12 @@ export function getCompositorBBoxes(
   node: CompositorNodeRef
 ): (CompositorBBox | null)[] | undefined {
   return cacheByNode.get(cacheKey(node))?.bboxes
+}
+
+export function getCompositorCanvas(
+  node: CompositorNodeRef
+): { w: number; h: number } | undefined {
+  return cacheByNode.get(cacheKey(node))?.canvas
 }
 
 export function clearCompositorLayers(node: CompositorNodeRef): void {

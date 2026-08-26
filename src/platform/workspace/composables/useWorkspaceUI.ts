@@ -11,15 +11,11 @@ import { useTeamWorkspaceStore } from '../stores/teamWorkspaceStore'
 interface WorkspacePermissions {
   canViewOtherMembers: boolean
   canViewPendingInvites: boolean
-  canInviteMembers: boolean
-  canManageInvites: boolean
-  canManageMembers: boolean
   canLeaveWorkspace: boolean
   canAccessWorkspaceMenu: boolean
   canManageSubscription: boolean
   canManageSubscriptionLifecycle: boolean
   canDowngradeToPersonal: boolean
-  canTopUp: boolean
 }
 
 /** UI configuration for workspace role */
@@ -56,17 +52,13 @@ function getPermissions(
   const billingPermissions = {
     canManageSubscription: canManageBilling,
     canManageSubscriptionLifecycle: canManageBilling,
-    canDowngradeToPersonal: canManageBilling && isTeamPlan && isOriginalOwner,
-    canTopUp: canManageBilling
+    canDowngradeToPersonal: canManageBilling && isTeamPlan && isOriginalOwner
   }
 
   if (role === 'member') {
     return {
       canViewOtherMembers: true,
       canViewPendingInvites: false,
-      canInviteMembers: false,
-      canManageInvites: false,
-      canManageMembers: false,
       canLeaveWorkspace,
       canAccessWorkspaceMenu: canLeaveWorkspace,
       ...billingPermissions
@@ -77,9 +69,6 @@ function getPermissions(
     return {
       canViewOtherMembers: false,
       canViewPendingInvites: false,
-      canInviteMembers: false,
-      canManageInvites: false,
-      canManageMembers: false,
       canLeaveWorkspace,
       canAccessWorkspaceMenu: canLeaveWorkspace,
       ...billingPermissions
@@ -89,9 +78,6 @@ function getPermissions(
   return {
     canViewOtherMembers: true,
     canViewPendingInvites: true,
-    canInviteMembers: true,
-    canManageInvites: true,
-    canManageMembers: true,
     canLeaveWorkspace,
     canAccessWorkspaceMenu: true,
     ...billingPermissions
