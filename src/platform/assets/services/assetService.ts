@@ -28,6 +28,7 @@ import {
 } from '@/platform/assets/utils/assetMetadataUtils'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
@@ -833,21 +834,28 @@ function createAssetService() {
    * Only available in cloud environment
    *
    * @param id - The asset ID (UUID)
-   * @returns Promise<void>
-   * @throws Error if deletion fails
+   * @returns Whether the asset was deleted
+   * @throws Error if the request fails
    */
-  async function deleteAsset(id: AssetId): Promise<void> {
+  async function deleteAsset(id: AssetId): Promise<boolean> {
     const res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}`, {
       method: 'DELETE'
     })
 
     if (!res.ok) {
-      throw new Error(
+      const error = new Error(
         `Unable to delete asset ${id}: Server returned ${res.status}`
       )
+      console.error(error)
+      reportError(error, {
+        errorType: 'asset_deletion_http_failure',
+        tags: { status: res.status }
+      })
+      return false
     }
 
     invalidateInputAssetsIncludingPublic()
+    return true
   }
 
   /**

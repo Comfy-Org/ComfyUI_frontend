@@ -115,17 +115,65 @@ describe('useNodeHelpContent', () => {
     expect(renderedHelpHtml.value).toContain('This is test help content')
   })
 
-  it('should handle fetch errors and fall back to description', async () => {
+  it('should show the unavailable state when core help is absent', async () => {
     const nodeRef = ref(mockCoreNode)
     mockFetch.mockResolvedValueOnce({
       ok: false,
+      status: 404,
       statusText: 'Not Found'
     })
 
     const { error, renderedHelpHtml } = useNodeHelpContent(nodeRef)
     await flushPromises()
 
-    expect(error.value).toBe('Not Found')
+    expect(error.value).toBe('Help not found')
+    expect(renderedHelpHtml.value).toContain(mockCoreNode.description)
+  })
+
+  it('should show the unavailable state when custom help is absent', async () => {
+    const nodeRef = ref(mockCustomNode)
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 404,
+      statusText: 'Not Found'
+    })
+
+    const { error, renderedHelpHtml } = useNodeHelpContent(nodeRef)
+    await flushPromises()
+
+    expect(error.value).toBe('Help not found')
+    expect(renderedHelpHtml.value).toContain(mockCustomNode.description)
+  })
+
+  it('should show the unavailable state for an invalid custom module', async () => {
+    const nodeRef = ref(
+      createMockNode({
+        description: 'Malformed custom node',
+        python_module: 'custom_nodes.'
+      })
+    )
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    const { error, renderedHelpHtml } = useNodeHelpContent(nodeRef)
+    await flushPromises()
+
+    expect(error.value).toBe('Help not found')
+    expect(renderedHelpHtml.value).toContain('Malformed custom node')
+    expect(warning).toHaveBeenCalledWith(
+      'Invalid custom node module:',
+      'custom_nodes.'
+    )
+    expect(mockFetch).not.toHaveBeenCalled()
+  })
+
+  it('should expose infrastructure failures', async () => {
+    const nodeRef = ref(mockCoreNode)
+    mockFetch.mockRejectedValueOnce(new Error('Network unavailable'))
+
+    const { error, renderedHelpHtml } = useNodeHelpContent(nodeRef)
+    await flushPromises()
+
+    expect(error.value).toBe('Network unavailable')
     expect(renderedHelpHtml.value).toContain(mockCoreNode.description)
   })
 
@@ -187,6 +235,7 @@ describe('useNodeHelpContent', () => {
     mockFetch
       .mockResolvedValueOnce({
         ok: false,
+        status: 404,
         statusText: 'Not Found'
       })
       .mockResolvedValueOnce({

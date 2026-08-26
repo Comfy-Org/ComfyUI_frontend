@@ -91,11 +91,13 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
     newName: string
   ) => {
     if (!folderNode.isDummyFolder) {
-      throw new Error('Cannot rename non-folder node')
+      console.warn('Cannot rename non-folder node')
+      return false
     }
 
     if (newName.includes('/')) {
-      throw new Error('Folder name cannot contain "/"')
+      console.warn('Folder name cannot contain "/"')
+      return false
     }
 
     const newNodePath =
@@ -103,11 +105,12 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
       '/'
 
     if (newNodePath === folderNode.nodePath) {
-      return
+      return false
     }
 
     if (bookmarks.value.some((b: string) => b.startsWith(newNodePath))) {
-      throw new Error(`Folder name "${newNodePath}" already exists`)
+      console.warn(`Folder name "${newNodePath}" already exists`)
+      return false
     }
 
     await settingStore.set(
@@ -119,11 +122,13 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
       )
     )
     await renameBookmarkCustomization(folderNode.nodePath, newNodePath)
+    return true
   }
 
   const deleteBookmarkFolder = async (folderNode: ComfyNodeDefImpl) => {
     if (!folderNode.isDummyFolder) {
-      throw new Error('Cannot delete non-folder node')
+      console.warn('Cannot delete non-folder node')
+      return false
     }
     await settingStore.set(
       BOOKMARK_SETTING_ID,
@@ -133,6 +138,7 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
       )
     )
     await deleteBookmarkCustomization(folderNode.nodePath)
+    return true
   }
 
   const bookmarksCustomization = computed<

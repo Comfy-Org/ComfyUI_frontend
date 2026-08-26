@@ -6,7 +6,8 @@ import {
   describe,
   expect,
   it,
-  onTestFinished
+  onTestFinished,
+  vi
 } from 'vitest'
 
 import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
@@ -35,6 +36,32 @@ beforeEach(() => {
 })
 
 describe('SubgraphConversion', () => {
+  it('returns empty-selection without mutating the graph', () => {
+    const rootGraph = createTestRootGraph()
+    const before = rootGraph.serialize()
+    const beforeChange = vi.spyOn(rootGraph, 'beforeChange')
+
+    expect(rootGraph.convertToSubgraph(new Set())).toEqual({
+      kind: 'empty-selection'
+    })
+    expect(beforeChange).not.toHaveBeenCalled()
+    expect(rootGraph.serialize()).toEqual(before)
+  })
+
+  it('returns the converted subgraph and node on success', () => {
+    const rootGraph = createTestRootGraph()
+    onTestFinished(enableSubgraphNodeCreation(rootGraph))
+    const source = createTestNode(rootGraph)
+
+    const result = rootGraph.convertToSubgraph(new Set([source]))
+
+    assert(result.kind === 'success')
+    expect(result.value.subgraph).toBe(
+      rootGraph.subgraphs.values().next().value
+    )
+    expect(result.value.node.subgraph).toBe(result.value.subgraph)
+  })
+
   describe('Convert to Subgraph store integrity', () => {
     it('keeps interior and boundary-derived input links registered in the link store', () => {
       const rootGraph = createTestRootGraph()
@@ -46,9 +73,11 @@ describe('SubgraphConversion', () => {
       exterior.connect(0, origin, 0)
       origin.connect(0, target, 0)
 
-      const { subgraph, node: subgraphNode } = rootGraph.convertToSubgraph(
+      const result = rootGraph.convertToSubgraph(
         new Set<Positionable>([target, origin])
       )
+      assert(result.kind === 'success')
+      const { subgraph, node: subgraphNode } = result.value
 
       const linkStore = useLinkStore()
 
@@ -91,9 +120,11 @@ describe('SubgraphConversion', () => {
       const reroute = rootGraph.createReroute([50, 50], link)
       assert(reroute)
 
-      const { subgraph } = rootGraph.convertToSubgraph(
+      const result = rootGraph.convertToSubgraph(
         new Set<Positionable>([target, origin, reroute])
       )
+      assert(result.kind === 'success')
+      const { subgraph } = result.value
 
       const clonedReroute = subgraph.reroutes.get(reroute.id)
       expect(clonedReroute).toBeDefined()
@@ -116,9 +147,9 @@ describe('SubgraphConversion', () => {
       const output = subgraph.outputNode.slots[0]
       output.connect(origin.outputs[0], origin)
 
-      const { node: subgraphNode } = subgraph.convertToSubgraph(
-        new Set<Positionable>([origin])
-      )
+      const result = subgraph.convertToSubgraph(new Set<Positionable>([origin]))
+      assert(result.kind === 'success')
+      const { node: subgraphNode } = result.value
 
       const links = output.getLinks()
       expect(links).toHaveLength(1)
@@ -137,9 +168,11 @@ describe('SubgraphConversion', () => {
       origin.connect(0, target, 0)
       target.widgets![0].value = 'converted value'
 
-      const { subgraph } = rootGraph.convertToSubgraph(
+      const result = rootGraph.convertToSubgraph(
         new Set<Positionable>([target, origin])
       )
+      assert(result.kind === 'success')
+      const { subgraph } = result.value
 
       const innerTarget = subgraph.nodes.find((node) => node.id === target.id)
       expect(innerTarget).toBeDefined()

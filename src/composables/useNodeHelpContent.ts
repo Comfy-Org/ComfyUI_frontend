@@ -24,7 +24,7 @@ export function useNodeHelpContent(
   const isLoading = ref<boolean>(false)
   const error = ref<string | null>(null)
 
-  let currentRequest: Promise<string> | null = null
+  let currentRequest: Promise<string | undefined> | null = null
 
   const baseUrl = computed(() => {
     const node = toValue(nodeRef)
@@ -53,7 +53,12 @@ export function useNodeHelpContent(
         try {
           const content = await request
           if (currentRequest !== request) return
-          helpContent.value = content
+          if (content === undefined) {
+            error.value = 'Help not found'
+            helpContent.value = node.description || ''
+          } else {
+            helpContent.value = content
+          }
         } catch (e: unknown) {
           if (currentRequest !== request) return
           error.value = e instanceof Error ? e.message : String(e)

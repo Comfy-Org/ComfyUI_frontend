@@ -1,5 +1,13 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 
 import type {
   ISlotType,
@@ -208,7 +216,8 @@ describe('SubgraphWidgetPromotion', () => {
       rootGraph.add(host)
       writePromotedWidgetValue(host, 0, 'host value')
 
-      subgraph.convertToSubgraph(new Set([source]))
+      const result = subgraph.convertToSubgraph(new Set([source]))
+      assert(result.kind === 'success')
       await Promise.resolve()
 
       expect(promotedWidgetStateByName(host, 'value').value).toBe('host value')

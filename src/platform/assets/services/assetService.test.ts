@@ -404,18 +404,18 @@ describe(assetService.uploadAssetAsync, () => {
 })
 
 describe(assetService.deleteAsset, () => {
-  it('throws an error containing the status code when the response is not ok', async () => {
+  it('returns false when the response is not ok', async () => {
     fetchApiMock.mockResolvedValueOnce(
       buildResponse(null, { ok: false, status: 503 })
     )
 
-    await expect(assetService.deleteAsset('asset-1')).rejects.toThrow(/503/)
+    await expect(assetService.deleteAsset('asset-1')).resolves.toBe(false)
   })
 
   it('issues a DELETE to the asset endpoint when the response is ok', async () => {
     fetchApiMock.mockResolvedValueOnce(buildResponse(null))
 
-    await assetService.deleteAsset('asset-1')
+    await expect(assetService.deleteAsset('asset-1')).resolves.toBe(true)
 
     expect(fetchApiMock).toHaveBeenCalledWith(
       '/assets/asset-1',

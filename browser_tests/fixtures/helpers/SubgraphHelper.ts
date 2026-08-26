@@ -662,7 +662,8 @@ export class SubgraphHelper {
     await this.comfyPage.nextFrame()
     await this.page.evaluate(() => {
       const canvas = window.app!.canvas
-      canvas.graph!.convertToSubgraph(canvas.selectedItems)
+      const result = canvas.graph!.convertToSubgraph(canvas.selectedItems)
+      if (result.kind === 'empty-selection') return
     })
     await this.comfyPage.nextFrame()
     await this.exitViaBreadcrumb()

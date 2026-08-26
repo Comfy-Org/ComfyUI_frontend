@@ -1064,7 +1064,7 @@ export function useCoreCommands(): ComfyCommand[] {
         if (!graph) throw new TypeError('Canvas has no graph or subgraph set.')
 
         const res = graph.convertToSubgraph(canvas.selectedItems)
-        if (!res) {
+        if (res.kind === 'empty-selection') {
           toastStore.add({
             severity: 'error',
             summary: t('toastMessages.cannotCreateSubgraph'),
@@ -1073,7 +1073,7 @@ export function useCoreCommands(): ComfyCommand[] {
           return
         }
 
-        const { node } = res
+        const { node } = res.value
         canvas.select(node)
         canvasStore.updateSelectedItems()
       }

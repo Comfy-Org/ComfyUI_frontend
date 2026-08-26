@@ -148,17 +148,24 @@ export function useKeybindingPresetService() {
     })
   }
 
-  async function deletePreset(name: string) {
+  async function deletePreset(name: string): Promise<boolean> {
     const confirmed = await dialogService.confirm({
       title: t('g.keybindingPresets.deletePresetTitle'),
       message: t('g.keybindingPresets.deletePresetWarning'),
       type: 'delete'
     })
-    if (!confirmed) return
+    if (!confirmed) return false
 
     const resp = await api.deleteUserData(presetFilePath(name))
     if (!resp.ok) {
-      throw new Error(t('g.keybindingPresets.deletePresetFailed', { name }))
+      const message = t('g.keybindingPresets.deletePresetFailed', { name })
+      console.error(message)
+      toast.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: message
+      })
+      return false
     }
 
     if (keybindingStore.currentPresetName === name) {
@@ -170,6 +177,7 @@ export function useKeybindingPresetService() {
       summary: t('g.keybindingPresets.presetDeleted', { name }),
       life: 3000
     })
+    return true
   }
 
   function exportPreset() {

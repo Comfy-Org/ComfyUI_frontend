@@ -1147,7 +1147,7 @@ describe('useMediaAssetActions', () => {
     beforeEach(() => {
       mockIsCloud.value = true
       mockGetAssetType.mockReturnValue('input')
-      mockDeleteAsset.mockResolvedValue(undefined)
+      mockDeleteAsset.mockResolvedValue(true)
       // By default, hasCategory returns true for model categories
       mockHasCategory.mockImplementation(
         (tag: string) => tag === 'checkpoints' || tag === 'loras'
@@ -1350,7 +1350,7 @@ describe('useMediaAssetActions', () => {
     })
 
     it('invokes clearNodePreviewCacheForValues with canonical widget-value variants', async () => {
-      mockDeleteAsset.mockResolvedValue(undefined)
+      mockDeleteAsset.mockResolvedValue(true)
       const actions = useMediaAssetActions()
       const asset = createMockAsset({
         id: 'asset-match',
@@ -1404,7 +1404,7 @@ describe('useMediaAssetActions', () => {
     })
 
     it('emits the [output]-annotated variant for output assets, including subfolder', async () => {
-      mockDeleteAsset.mockResolvedValue(undefined)
+      mockDeleteAsset.mockResolvedValue(true)
       mockGetAssetType.mockReturnValue('output')
       mockGetOutputAssetMetadata.mockReturnValue({
         subfolder: 'outputs/2025'
@@ -1445,6 +1445,23 @@ describe('useMediaAssetActions', () => {
       expect(mockClearWidgetValues).not.toHaveBeenCalled()
       expect(mockMarkMissingMedia).not.toHaveBeenCalled()
       expect(mockCaptureCanvasState).not.toHaveBeenCalled()
+    })
+
+    it('does not mutate local state or show success when deletion returns false', async () => {
+      mockDeleteAsset.mockResolvedValue(false)
+      const actions = useMediaAssetActions()
+      const asset = createMockAsset({ id: 'asset-failed', name: 'failed.png' })
+
+      await actions.deleteAssets(asset)
+
+      await vi.waitFor(() => expect(mockDeleteAsset).toHaveBeenCalled())
+      expect(mockUpdateInputs).not.toHaveBeenCalled()
+      expect(mockClearNodePreviewCache).not.toHaveBeenCalled()
+      expect(mockClearWidgetValues).not.toHaveBeenCalled()
+      expect(mockInvalidateModelsForCategory).not.toHaveBeenCalled()
+      expect(useToast().add).not.toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'success' })
+      )
     })
   })
 })

@@ -332,7 +332,9 @@ describe('Reroute ↔ rerouteStore integration', () => {
 
     onTestFinished(enableSubgraphNodeCreation(graph))
 
-    const { subgraph } = graph.convertToSubgraph(new Set([a, b, reroute]))
+    const result = graph.convertToSubgraph(new Set([a, b, reroute]))
+    assert(result.kind === 'success')
+    const { subgraph } = result.value
 
     expect(graph.reroutes.size).toBe(0)
     const converted = subgraph.reroutes.get(reroute.id)

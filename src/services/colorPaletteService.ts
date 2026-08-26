@@ -246,10 +246,11 @@ export const useColorPaletteService = () => {
    *
    * @param colorPaletteId - The ID of the color palette to load.
    */
-  const loadColorPalette = async (colorPaletteId: string) => {
+  const loadColorPalette = async (colorPaletteId: string): Promise<boolean> => {
     const colorPalette = colorPaletteStore.palettesLookup[colorPaletteId]
     if (!colorPalette) {
-      throw new Error(`Color palette ${colorPaletteId} not found`)
+      console.warn(`Color palette ${colorPaletteId} not found`)
+      return false
     }
 
     const completedPalette = colorPaletteStore.completePalette(colorPalette)
@@ -267,6 +268,7 @@ export const useColorPaletteService = () => {
     app.canvas.setDirty(true, true)
 
     colorPaletteStore.activePaletteId = colorPaletteId
+    return true
   }
 
   /**
@@ -274,10 +276,11 @@ export const useColorPaletteService = () => {
    *
    * @param colorPaletteId - The ID of the color palette to export.
    */
-  const exportColorPalette = (colorPaletteId: string) => {
+  const exportColorPalette = (colorPaletteId: string): boolean => {
     const colorPalette = colorPaletteStore.palettesLookup[colorPaletteId]
     if (!colorPalette) {
-      throw new Error(`Color palette ${colorPaletteId} not found`)
+      console.warn(`Color palette ${colorPaletteId} not found`)
+      return false
     }
     downloadBlob(
       colorPalette.id + '.json',
@@ -285,6 +288,7 @@ export const useColorPaletteService = () => {
         type: 'application/json'
       })
     )
+    return true
   }
 
   /**

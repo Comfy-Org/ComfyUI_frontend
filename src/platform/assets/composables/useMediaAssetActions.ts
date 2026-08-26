@@ -102,7 +102,7 @@ export function useMediaAssetActions() {
   const deleteAssetApi = async (
     asset: AssetItem,
     assetType: string
-  ): Promise<void> => {
+  ): Promise<boolean> => {
     // Temp files (e.g. preview-node outputs) are history-backed outputs that
     // happen to live in the temp dir, so they delete via the history API too.
     if (assetType === 'output' || assetType === 'temp') {
@@ -112,12 +112,13 @@ export function useMediaAssetActions() {
         throw new Error('Unable to extract job ID from asset')
       }
       await api.deleteItem('history', jobId)
+      return true
     } else {
       // Input assets can only be deleted in cloud environment
       if (!isCloud) {
         throw new Error(t('mediaAsset.deletingImportedFilesCloudOnly'))
       }
-      await assetService.deleteAsset(asset.id)
+      return await assetService.deleteAsset(asset.id)
     }
   }
 
@@ -698,12 +699,15 @@ export function useMediaAssetActions() {
 
               // Count successes and failures
               const succeeded = results.filter(
-                (r) => r.status === 'fulfilled'
+                (result) => result.status === 'fulfilled' && result.value
               ).length
-              const failed = results.filter((r) => r.status === 'rejected')
+              const failed = results.filter(
+                (result) => result.status === 'rejected' || !result.value
+              )
 
               // Log failed deletions for debugging
-              failed.forEach((result, index) => {
+              results.forEach((result, index) => {
+                if (result.status === 'fulfilled') return
                 console.warn(
                   `Failed to delete asset ${assetArray[index].name}:`,
                   result.reason
@@ -711,12 +715,16 @@ export function useMediaAssetActions() {
               })
 
               // Update stores after deletions
-              const hasOutputAssets = assetArray.some((a) => {
-                const type = getAssetType(a)
+              const deletedAssets = assetArray.filter(
+                (_, index) =>
+                  results[index].status === 'fulfilled' && results[index].value
+              )
+              const hasOutputAssets = deletedAssets.some((asset) => {
+                const type = getAssetType(asset)
                 return type === 'output' || type === 'temp'
               })
-              const hasInputAssets = assetArray.some(
-                (a) => getAssetType(a) === 'input'
+              const hasInputAssets = deletedAssets.some(
+                (asset) => getAssetType(asset) === 'input'
               )
 
               if (hasOutputAssets) {
@@ -730,7 +738,11 @@ export function useMediaAssetActions() {
               if (rootGraph) {
                 const deletedValues = new Set<string>()
                 assetArray.forEach((asset, index) => {
-                  if (results[index].status !== 'fulfilled') return
+                  if (
+                    results[index].status !== 'fulfilled' ||
+                    !results[index].value
+                  )
+                    return
                   for (const value of widgetValueVariantsForAsset(asset)) {
                     deletedValues.add(value)
                   }
@@ -754,7 +766,7 @@ export function useMediaAssetActions() {
               // Invalidate model caches for affected categories
               const modelCategories = new Set<string>()
 
-              for (const asset of assetArray) {
+              for (const asset of deletedAssets) {
                 for (const tag of asset.tags ?? []) {
                   if (EXCLUDED_TAGS.has(tag)) continue
                   if (assetsStore.hasCategory(tag)) {

@@ -214,6 +214,19 @@ describe('useAssetDownloadStore', () => {
 
       expect(store.activeDownloads).toHaveLength(1)
     })
+
+    it('marks a missing task as failed and stops polling it', async () => {
+      const store = useAssetDownloadStore()
+
+      vi.mocked(taskService.getTask).mockResolvedValue(undefined)
+      dispatch(createDownloadMessage({ status: 'running' }))
+
+      await vi.advanceTimersByTimeAsync(45_000)
+
+      expect(store.activeDownloads).toHaveLength(0)
+      expect(store.finishedDownloads[0].status).toBe('failed')
+      expect(taskService.getTask).toHaveBeenCalledTimes(1)
+    })
   })
 
   describe('clearFinishedDownloads', () => {

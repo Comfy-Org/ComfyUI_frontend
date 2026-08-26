@@ -1,11 +1,15 @@
 import { fromPartial } from '@total-typescript/shoehorn'
+import userEvent from '@testing-library/user-event'
 
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
+import { defineComponent, h } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import AssetCard from '@/platform/assets/components/AssetCard.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
+import { assetService } from '@/platform/assets/services/assetService'
+import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
@@ -79,8 +83,13 @@ function renderCard(asset: AssetDisplayItem) {
       plugins: [i18n],
       stubs: {
         AssetBadgeGroup: true,
-        IconGroup: true,
-        MoreButton: true,
+        IconGroup: { template: '<div><slot /></div>' },
+        MoreButton: defineComponent({
+          setup(_, { expose, slots }) {
+            expose({ hide: vi.fn() })
+            return () => h('div', slots.default?.())
+          }
+        }),
         StatusBadge: true,
         Button: { template: '<button><slot /></button>' }
       },
@@ -153,5 +162,24 @@ describe('AssetCard', () => {
       expect(heading).toHaveTextContent(ORIGINAL_FILENAME)
       expect(heading).not.toHaveTextContent(HASH)
     })
+  })
+
+  it('does not emit deleted when deletion returns false', async () => {
+    vi.mocked(assetService.deleteAsset).mockResolvedValue(false)
+    const asset = createDisplayAsset({ is_immutable: false })
+    const result = renderCard(asset)
+    const user = userEvent.setup()
+
+    await user.click(screen.getByText('g.delete'))
+    const dialogOptions = vi.mocked(showConfirmDialog).mock.calls[0][0]
+    const onConfirm = dialogOptions?.footerProps?.onConfirm
+    expect(onConfirm).toBeTypeOf('function')
+    if (typeof onConfirm !== 'function') throw new Error('Missing confirmation')
+    void onConfirm()
+
+    await vi.waitFor(() =>
+      expect(assetService.deleteAsset).toHaveBeenCalledWith(asset.id)
+    )
+    expect(result.emitted('deleted')).toBeUndefined()
   })
 })

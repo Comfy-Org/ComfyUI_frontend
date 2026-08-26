@@ -4,7 +4,10 @@ import { NodeSourceType, getNodeSource } from '@/types/nodeSource'
 import { extractCustomNodeName } from '@/workbench/utils/nodeHelpUtil'
 
 class NodeHelpService {
-  async fetchNodeHelp(node: ComfyNodeDefImpl, locale: string): Promise<string> {
+  async fetchNodeHelp(
+    node: ComfyNodeDefImpl,
+    locale: string
+  ): Promise<string | undefined> {
     const nodeSource = getNodeSource(node.python_module)
 
     if (nodeSource.type === NodeSourceType.Blueprint) {
@@ -21,62 +24,52 @@ class NodeHelpService {
   private async fetchCustomNodeHelp(
     node: ComfyNodeDefImpl,
     locale: string
-  ): Promise<string> {
+  ): Promise<string | undefined> {
     const customNodeName = extractCustomNodeName(node.python_module)
-    let lastError: string | undefined
     if (!customNodeName) {
-      throw new Error('Invalid custom node module')
+      console.warn('Invalid custom node module:', node.python_module)
+      return undefined
     }
 
     // Try locale-specific path first
     const localePath = `/extensions/${customNodeName}/docs/${node.name}/${locale}.md`
     const localeDoc = await this.tryFetchMarkdown(localePath)
-    if (localeDoc.text) return localeDoc.text
-    lastError = localeDoc.errorText
+    if (localeDoc) return localeDoc
 
     // Fall back to non-locale path
     const fallbackPath = `/extensions/${customNodeName}/docs/${node.name}.md`
     const fallbackDoc = await this.tryFetchMarkdown(fallbackPath)
-    if (fallbackDoc.text) return fallbackDoc.text
-    lastError = fallbackDoc.errorText ?? lastError
-
-    throw new Error(lastError ?? 'Help not found')
+    return fallbackDoc || undefined
   }
 
   private async fetchCoreNodeHelp(
     node: ComfyNodeDefImpl,
     locale: string
-  ): Promise<string> {
+  ): Promise<string | undefined> {
     const mdUrl = `/docs/${node.name}/${locale}.md`
-    const doc = await this.tryFetchMarkdown(mdUrl)
-    if (!doc.text) {
-      throw new Error(doc.errorText ?? 'Help not found')
-    }
-
-    return doc.text
+    return (await this.tryFetchMarkdown(mdUrl)) || undefined
   }
 
   /**
    * Fetch a markdown file and return its text, guarding against HTML/SPA fallbacks.
-   * Returns null when not OK or when the content type indicates HTML.
+   * Returns undefined when the file is absent or the response is HTML.
    */
-  private async tryFetchMarkdown(
-    path: string
-  ): Promise<{ text: string | null; errorText?: string }> {
+  private async tryFetchMarkdown(path: string): Promise<string | undefined> {
     const res = await fetch(api.fileURL(path))
 
-    if (!res.ok) {
-      return { text: null, errorText: res.statusText }
+    if (res.status === 404) {
+      return undefined
     }
+    if (!res.ok) throw new Error(res.statusText || `HTTP ${res.status}`)
 
     const contentType = res.headers?.get?.('content-type') ?? ''
     const text = await res.text()
 
     const isHtmlContentType = contentType.includes('text/html')
 
-    if (isHtmlContentType) return { text: null, errorText: res.statusText }
+    if (isHtmlContentType) return undefined
 
-    return { text }
+    return text
   }
 }
 

@@ -927,6 +927,7 @@ export const useLitegraphService = () => {
     if (isBlueprintType(nodeDef.name)) {
       const canvas = canvasStore.getCanvas()
       const bp = useSubgraphStore().getBlueprint(nodeDef.name)
+      if (!bp) return null
       const items: object = {
         nodes: bp.nodes,
         subgraphs: bp.definitions?.subgraphs

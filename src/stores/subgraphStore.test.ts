@@ -145,9 +145,22 @@ describe('useSubgraphStore', () => {
   })
   it('should allow subgraphs to be edited', async () => {
     await mockFetch({ 'test.json': mockGraph })
-    await store.editBlueprint(BLUEPRINT_TYPE_PREFIX + 'test')
+    expect(await store.editBlueprint(BLUEPRINT_TYPE_PREFIX + 'test')).toBe(true)
     //check active graph
     expect(comfyApp.loadGraphData).toHaveBeenCalled()
+  })
+  it('should reject stale edit and delete requests without mutating', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    expect(await store.editBlueprint(BLUEPRINT_TYPE_PREFIX + 'missing')).toBe(
+      false
+    )
+    expect(await store.deleteBlueprint(BLUEPRINT_TYPE_PREFIX + 'missing')).toBe(
+      false
+    )
+    expect(comfyApp.loadGraphData).not.toHaveBeenCalled()
+    expect(api.storeUserData).not.toHaveBeenCalled()
+    expect(error).toHaveBeenCalledTimes(2)
   })
   it('should allow subgraphs to be added to graph', async () => {
     //mock
@@ -160,12 +173,26 @@ describe('useSubgraphStore', () => {
   it('should return a deep copy from getBlueprint so mutations do not corrupt the cache', async () => {
     await mockFetch({ 'test.json': mockGraph })
     const first = store.getBlueprint(BLUEPRINT_TYPE_PREFIX + 'test')
+    expect(first).toBeDefined()
+    if (!first) return
     first.nodes[0].id = -1
     first.definitions!.subgraphs![0].id = 'corrupted'
 
     const second = store.getBlueprint(BLUEPRINT_TYPE_PREFIX + 'test')
+    expect(second).toBeDefined()
+    if (!second) return
     expect(second.nodes[0].id).not.toBe(-1)
     expect(second.definitions!.subgraphs![0].id).toBe('123')
+  })
+  it('should return undefined and log a stale blueprint lookup', () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    expect(
+      store.getBlueprint(BLUEPRINT_TYPE_PREFIX + 'missing')
+    ).toBeUndefined()
+    expect(error).toHaveBeenCalledWith(
+      'Cannot find subgraph blueprint: SubgraphBlueprint.missing'
+    )
   })
   it('should identify user blueprints as non-global', async () => {
     await mockFetch({ 'test.json': mockGraph })
