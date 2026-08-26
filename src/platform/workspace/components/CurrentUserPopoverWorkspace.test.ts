@@ -22,6 +22,7 @@ const state = vi.hoisted(() => ({
   canManageSubscription: false,
   canManageSubscriptionLifecycle: false,
   canReactivate: false,
+  shouldUseWorkspaceBilling: true,
   showCreateWorkspaceDialog: vi.fn(),
   showTopUpCreditsDialog: vi.fn(),
   showPricingTable: vi.fn(),
@@ -85,6 +86,12 @@ vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
     canTopUp: computed(() => state.canTopUp),
     canSubscribeSelfServe: computed(() => state.canSubscribeSelfServe),
     canReactivate: computed(() => state.canReactivate)
+  })
+}))
+
+vi.mock('@/composables/billing/useBillingRouting', () => ({
+  useBillingRouting: () => ({
+    shouldUseWorkspaceBilling: computed(() => state.shouldUseWorkspaceBilling)
   })
 }))
 
@@ -190,6 +197,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.canManageSubscription = false
     state.canManageSubscriptionLifecycle = false
     state.canReactivate = false
+    state.shouldUseWorkspaceBilling = true
   })
 
   it('toggles the workspace switcher panel from the selector row', async () => {
@@ -536,6 +544,21 @@ describe('CurrentUserPopoverWorkspace', () => {
     await user.click(screen.getByRole('button', { name: 'Resubscribe' }))
 
     expect(state.showPricingTable).toHaveBeenCalledOnce()
+  })
+
+  it('keeps Resubscribe available on the legacy rail when the server withholds can_reactivate', () => {
+    state.isCancelled = true
+    state.canManageSubscriptionLifecycle = true
+    // legacy_stripe workspaces have no capability projection row, so the
+    // server-resolved can_reactivate stays false and must not gate the button.
+    state.canReactivate = false
+    state.shouldUseWorkspaceBilling = false
+
+    renderComponent('personal')
+
+    expect(
+      screen.getByRole('button', { name: 'Resubscribe' })
+    ).toBeInTheDocument()
   })
 
   for (const workspaceType of ['personal', 'team'] as const) {
