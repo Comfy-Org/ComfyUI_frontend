@@ -20,7 +20,7 @@ runs:
       id: cache-playwright-browsers
       with:
         path: '~/.cache/ms-playwright'
-        key: ${{ runner.os }}-playwright-browsers-${{ steps.detect-version.outputs.playwright-version }}
+        key: ${{ runner.os }}-playwright-browsers-v2-${{ steps.detect-version.outputs.playwright-version }}
 
     - name: Bound Playwright dependency downloads
       if: inputs.install_deps == 'true'
@@ -58,4 +58,4 @@ runs:
       uses: actions/cache/save@v5 # v5.0.2
       with:
         path: '~/.cache/ms-playwright'
-        key: ${{ runner.os }}-playwright-browsers-${{ steps.detect-version.outputs.playwright-version }}
+        key: ${{ runner.os }}-playwright-browsers-v2-${{ steps.detect-version.outputs.playwright-version }}

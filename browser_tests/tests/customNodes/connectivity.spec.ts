@@ -8,6 +8,8 @@ import {
 import {
   customNodeSuiteSettings,
   drainBackendToIdle,
+  runWithCollectedCleanup,
+  submittedPromptCount,
   trackSubmittedPrompts
 } from '@e2e/fixtures/utils/customNodeSuite'
 import {
@@ -115,10 +117,19 @@ test.beforeEach(async ({ comfyPage }) => {
 // round-trip; it stays as the guard for pack JS that queues one behind our
 // back, which would otherwise run on into the next test.
 test.afterEach(async ({ comfyPage }) => {
-  expect(
-    await drainBackendToIdle(comfyPage.page, 10_000),
-    'connectivity probe left test-owned backend work running'
-  ).toBe(0)
+  await runWithCollectedCleanup(async () => {
+    expect(
+      await submittedPromptCount(comfyPage.page),
+      'connectivity probe submitted a prompt'
+    ).toBe(0)
+  }, [
+    async () => {
+      expect(
+        await drainBackendToIdle(comfyPage.page, 10_000),
+        'connectivity probe left test-owned backend work running'
+      ).toBe(0)
+    }
+  ])
 })
 
 function isEntryInstalled(
@@ -459,17 +470,32 @@ function firstMaterializedPair(
   page: Page,
   pairs: PlannedPair[]
 ): Promise<PlannedPair | null> {
-  return page.evaluate((pairsInPage) => {
+  return page.evaluate(async (pairsInPage) => {
+    const graph = window.app!.graph
+    const settle = async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    }
     for (const pair of pairsInPage) {
-      const producer = window.LiteGraph!.createNode(pair.producer.nodeType)
-      const consumer = window.LiteGraph!.createNode(pair.consumer.nodeType)
-      const outFound = producer?.outputs.some(
-        (slot) => slot.name === pair.producer.slotName
-      )
-      const inFound = consumer?.inputs.some(
-        (slot) => slot.name === pair.consumer.slotName
-      )
-      if (outFound && inFound) return pair
+      graph.clear()
+      try {
+        const producer = window.LiteGraph!.createNode(pair.producer.nodeType)
+        const consumer = window.LiteGraph!.createNode(pair.consumer.nodeType)
+        if (!producer || !consumer) continue
+        graph.add(producer)
+        graph.add(consumer)
+        await settle()
+        const outFound = producer.outputs.some(
+          (slot) => slot.name === pair.producer.slotName
+        )
+        const inFound = consumer.inputs.some(
+          (slot) => slot.name === pair.consumer.slotName
+        )
+        if (outFound && inFound) return pair
+      } finally {
+        graph.clear()
+        await settle()
+      }
     }
     return null
   }, pairs)

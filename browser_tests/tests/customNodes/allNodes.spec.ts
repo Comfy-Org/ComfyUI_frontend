@@ -21,6 +21,7 @@ import {
   customNodeSuiteSettings,
   drainBackendToIdle,
   runWithCollectedCleanup,
+  submittedPromptCount,
   trackSubmittedPrompts
 } from '@e2e/fixtures/utils/customNodeSuite'
 
@@ -138,6 +139,11 @@ test.describe('all nodes by tier @custom-nodes', () => {
           `[tier-pack] tier=${tier} pack=${entry.pack} result=${result}`
         )
       }
+      if (tier !== 'S9')
+        expect(
+          await submittedPromptCount(comfyPage.page),
+          `${tier} is a non-execution tier but submitted a prompt`
+        ).toBe(0)
       const attachment = `${tier.toLowerCase()}-failures.json`
       if (failures.length > 0)
         await attachPageDiagnosticEvidence(test.info(), attachment, failures)

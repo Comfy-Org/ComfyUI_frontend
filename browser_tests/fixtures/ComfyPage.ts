@@ -37,7 +37,6 @@ import { assetPath } from '@e2e/fixtures/utils/paths'
 import { nextFrame, sleep } from '@e2e/fixtures/utils/timing'
 import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
-import { createdUserId, testUsername } from '@e2e/fixtures/userIdentity'
 import { BottomPanel } from '@e2e/fixtures/components/BottomPanel'
 import { ComfyNodeSearchBox } from '@e2e/fixtures/components/ComfyNodeSearchBox'
 import { ComfyNodeSearchBoxV2 } from '@e2e/fixtures/components/ComfyNodeSearchBoxV2'
@@ -295,17 +294,23 @@ export class ComfyPage {
     return id ? id : await this.createUser(username)
   }
 
-  async createUser(username: string): Promise<string> {
+  async createUser(username: string) {
     const resp = await this.request.post(`${this.apiUrl}/api/users`, {
       data: { username }
     })
 
     if (resp.status() !== 200) {
       const body = await resp.text()
+      // Persistent backends (Comfy Desktop server user storage) keep the user
+      // across runs and do not list it via GET /api/users, so a duplicate means
+      // it already exists. Returns the username since the generated id is not
+      // retrievable here; only reached on single-user / default-resolving backends.
+      if (resp.status() === 400 && body.includes('Duplicate username.'))
+        return username
       throw new Error(`Failed to create user: ${body}`)
     }
 
-    return createdUserId(await resp.json())
+    return await resp.json()
   }
 
   async setupSettings(settings: Record<string, unknown>) {
@@ -591,7 +596,7 @@ export const comfyPageFixture = base.extend<{
     const comfyPage = new ComfyPage(page, request)
 
     const { parallelIndex } = testInfo
-    const username = testUsername('pw', parallelIndex)
+    const username = `playwright-test-${parallelIndex}`
     const isCustomNodes = testInfo.project.name === 'custom-nodes'
     const needsPerf =
       testInfo.tags.includes('@perf') || testInfo.tags.includes('@audit')

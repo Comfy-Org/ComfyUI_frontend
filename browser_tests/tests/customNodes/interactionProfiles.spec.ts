@@ -24,6 +24,7 @@ import type { RawNodeDef } from '@e2e/fixtures/customNode/typePairing'
 import {
   customNodeSuiteSettings,
   drainBackendToIdle,
+  submittedPromptCount,
   trackSubmittedPrompts
 } from '@e2e/fixtures/utils/customNodeSuite'
 
@@ -80,6 +81,10 @@ for (const entry of interactionProfileEntries) {
       ),
       'nodes that threw while being probed'
     ).toEqual([])
+    expect(
+      await submittedPromptCount(comfyPage.page),
+      'interaction probe submitted a prompt'
+    ).toBe(0)
 
     for (const node of Object.keys(
       INTERACTION_UNSTABLE_NODES[entry.pack] ?? {}

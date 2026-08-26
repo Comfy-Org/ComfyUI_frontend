@@ -6,7 +6,6 @@ import {
   createSubscriptionHelper,
   withUnsubscribed
 } from '@e2e/fixtures/helpers/SubscriptionHelper'
-import { testUsername } from '@e2e/fixtures/userIdentity'
 import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
 const LOCAL_AUTH_BOOT_TIMEOUT = 45_000
@@ -29,7 +28,7 @@ export const localAuthFixture = base.extend<{ comfyPage: ComfyPage }>({
 
     const comfyPage = new ComfyPage(page, request)
     const userId = await comfyPage.setupUser(
-      testUsername('pw-auth', testInfo.parallelIndex)
+      `playwright-local-auth-${testInfo.parallelIndex}`
     )
     await comfyPage.setupSettings({
       'Comfy.TutorialCompleted': true,
