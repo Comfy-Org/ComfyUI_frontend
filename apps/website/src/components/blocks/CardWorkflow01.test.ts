@@ -94,6 +94,24 @@ describe('CardWorkflow01 links', () => {
 
     expect(screen.getByText('ComfyUI')).toBeTruthy()
     expect(screen.getByText('Video')).toBeTruthy()
+    expect(screen.getByTestId('workflow-source-avatar')).toBeTruthy()
+  })
+
+  it('omits the ComfyUI avatar for a company source', () => {
+    render(CardWorkflow01, {
+      props: {
+        variant: 'feature',
+        item: {
+          id: 'company-workflow',
+          title: 'Company workflow',
+          sourceLabel: 'Alibaba',
+          media: { type: 'placeholder', alt: '' }
+        }
+      }
+    })
+
+    expect(screen.getByText('Alibaba')).toBeTruthy()
+    expect(screen.queryByTestId('workflow-source-avatar')).toBeNull()
   })
 
   it('renders provider branding in the featured workflow card', () => {

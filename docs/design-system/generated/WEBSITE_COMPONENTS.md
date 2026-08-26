@@ -65,7 +65,7 @@ inventory proves that code exists, but approval rules and permitted variants liv
 | ProductHeroBadge | `apps/website/src/components/common/ProductHeroBadge.vue` | common | yes | no |
 | SectionHeader | `apps/website/src/components/common/SectionHeader.vue` | common | yes | no |
 | SectionLabel | `apps/website/src/components/common/SectionLabel.vue` | common | yes | no |
-| SiteFooter | `apps/website/src/components/common/SiteFooter.vue` | common | yes | no |
+| SiteFooter | `apps/website/src/components/common/SiteFooter.vue` | common | yes | yes |
 | SiteVideo | `apps/website/src/components/common/SiteVideo.vue` | common | yes | no |
 | SocialProofBarSection | `apps/website/src/components/common/SocialProofBarSection.vue` | common | yes | no |
 | VideoPlayer | `apps/website/src/components/common/VideoPlayer.vue` | common | yes | yes |

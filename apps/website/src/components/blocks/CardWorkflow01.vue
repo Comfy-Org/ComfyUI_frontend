@@ -199,6 +199,8 @@ function linkTarget(item: CardWorkflowItem): AnchorHTMLAttributes['target'] {
       >
         <span class="flex min-w-0 items-center gap-2.5">
           <img
+            v-if="item.sourceLabel === 'ComfyUI'"
+            data-testid="workflow-source-avatar"
             src="/icons/comfyicon.svg"
             alt=""
             class="size-7 shrink-0 rounded-full"
