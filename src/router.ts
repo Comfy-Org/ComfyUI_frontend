@@ -83,7 +83,11 @@ const router = createRouter({
           component: () => import('@/views/UserSelectView.vue')
         }
       ]
-    }
+    },
+    // Catch-all: unknown paths redirect to root rather than hanging on the
+    // splash screen with no route match. The global auth guard then routes
+    // unauthenticated users to /cloud/login as normal.
+    { path: '/:pathMatch(.*)*', redirect: '/' }
   ],
 
   scrollBehavior(_to, _from, savedPosition) {
@@ -118,7 +122,16 @@ installPreservedQueryTracker(router, [
   },
   {
     namespace: PRESERVED_QUERY_NAMESPACES.PRICING,
-    keys: ['pricing']
+    keys: ['pricing', 'stop', 'cycle'],
+    requiredKey: 'pricing'
+  },
+  {
+    namespace: PRESERVED_QUERY_NAMESPACES.TOPUP,
+    keys: ['topup']
+  },
+  {
+    namespace: PRESERVED_QUERY_NAMESPACES.SETTINGS,
+    keys: ['settings']
   },
   {
     namespace: PRESERVED_QUERY_NAMESPACES.DESKTOP_LOGIN,
@@ -149,7 +162,7 @@ if (isCloud) {
     '/cloud/login',
     '/cloud/signup',
     '/cloud/forgot-password',
-    '/cloud/oauth/consent',
+    '/oauth/consent',
     '/cloud/sorry-contact-support'
   ])
 

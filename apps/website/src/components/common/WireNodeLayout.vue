@@ -5,7 +5,7 @@ import type { Ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 import { useResizeObserver, useTemplateRefsList } from '@vueuse/core'
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref, useSlots } from 'vue'
 
 import { t } from '../../i18n/translations'
 
@@ -15,12 +15,29 @@ type Point = { x: number; y: number }
 const {
   reasons,
   rightCardPadding = 'p-6',
+  titleBeforeKey = 'about.careers.whyTitleBefore',
+  titleAfterKey = 'about.careers.whyTitleAfter',
+  labelKey = 'about.careers.whyLabel',
+  variant = 'split',
   locale = 'en'
 } = defineProps<{
   reasons: TranslationKey[]
   rightCardPadding?: string
+  titleBeforeKey?: TranslationKey
+  titleAfterKey?: TranslationKey
+  labelKey?: TranslationKey
+  /**
+   * 'split' — title card + label pill on the left, wired to the reasons and
+   * on to the right card (/careers, /about). 'node' — a single label card
+   * wired to the reasons only (/forward-deployed-creatives).
+   */
+  variant?: 'split' | 'node'
   locale?: Locale
 }>()
+
+const slots = useSlots()
+const hasRightCard = computed(() => !!slots['right-card'])
+const hasMobileRightCard = computed(() => !!slots['right-card-mobile'])
 
 const containerRef = ref<HTMLElement>()
 const ifYouDotRef = ref<HTMLElement>()
@@ -147,26 +164,33 @@ onMounted(() => {
       />
     </svg>
 
-    <div class="flex items-start gap-8">
-      <!-- Left column: Why + IF YOU -->
-      <div class="flex w-64 shrink-0 flex-col gap-3">
+    <div
+      :class="
+        cn(
+          'flex gap-8',
+          variant === 'node' ? 'items-center xl:gap-30' : 'items-start'
+        )
+      "
+    >
+      <!-- Left column: title + label (split) or single node card (node) -->
+      <div v-if="variant === 'split'" class="flex w-64 shrink-0 flex-col gap-3">
         <div class="rounded-2xl border border-white/10 bg-white/5 px-6 py-5">
-          <p class="text-primary-comfy-canvas text-2xl font-light">
-            {{ t('about.careers.whyTitleBefore', locale) }}
+          <p class="text-2xl font-light text-primary-comfy-canvas">
+            {{ t(titleBeforeKey, locale) }}
             <br />
             <span
               class="bg-primary-comfy-yellow mb-0.5 inline-block h-5 w-16 align-middle"
               style="mask: url(/icons/logo.svg) no-repeat center / contain"
-            />{{ t('about.careers.whyTitleAfter', locale) }}
+            />{{ t(titleAfterKey, locale) }}
           </p>
         </div>
         <div
           class="flex items-center justify-end rounded-xl bg-white/5 px-5 py-3"
         >
           <span
-            class="text-primary-comfy-canvas text-xs font-bold tracking-wider"
+            class="text-xs font-bold tracking-wider text-primary-comfy-canvas"
           >
-            {{ t('about.careers.whyLabel', locale) }}
+            {{ t(labelKey, locale) }}
           </span>
           <span
             ref="ifYouDotRef"
@@ -174,15 +198,39 @@ onMounted(() => {
           />
         </div>
       </div>
+      <div
+        v-else
+        class="flex w-72 shrink-0 items-center justify-between gap-3 rounded-[40px] border border-white/10 bg-white/5 p-8"
+      >
+        <span class="text-2xl font-light text-primary-warm-white">
+          {{ t(labelKey, locale) }}
+        </span>
+        <span
+          ref="ifYouDotRef"
+          class="bg-primary-comfy-yellow size-3 shrink-0 rounded-full"
+        />
+      </div>
 
       <!-- Center column: Reasons card -->
       <div class="relative flex-1">
         <span
+          v-if="hasRightCard"
           ref="reasonOutputDotRef"
           class="bg-primary-comfy-yellow absolute top-1/3 right-0 z-20 size-3 translate-x-1/2 -translate-y-1/2 rounded-full"
         />
-        <div class="rounded-3xl border border-white/10 bg-white/5 px-10 py-8">
-          <div class="flex flex-col gap-6">
+        <div
+          :class="
+            cn(
+              'border border-white/10 bg-white/5',
+              variant === 'node'
+                ? 'rounded-[40px] px-12 py-9 xl:px-34'
+                : 'rounded-3xl px-10 py-8'
+            )
+          "
+        >
+          <div
+            :class="cn('flex flex-col', variant === 'node' ? 'gap-8' : 'gap-6')"
+          >
             <div
               v-for="reason in reasons"
               :key="reason"
@@ -192,7 +240,7 @@ onMounted(() => {
                 :ref="reasonDots.set"
                 class="bg-primary-comfy-yellow mt-1.5 size-2.5 shrink-0 rounded-full"
               />
-              <p class="text-primary-comfy-canvas text-base">
+              <p class="text-base text-primary-comfy-canvas">
                 {{ t(reason, locale) }}
               </p>
             </div>
@@ -202,6 +250,7 @@ onMounted(() => {
 
       <!-- Right column: slot for card content -->
       <div
+        v-if="hasRightCard"
         :class="
           cn(
             'w-64 shrink-0 rounded-3xl border border-white/10 bg-white/5',
@@ -214,10 +263,10 @@ onMounted(() => {
         >
           <span
             ref="comfyDotRef"
-            class="bg-primary-comfy-ink relative z-10 size-1.5 rounded-full"
+            class="relative z-10 size-1.5 rounded-full bg-primary-comfy-ink"
           />
           <span
-            class="bg-primary-comfy-ink h-4 w-20"
+            class="h-4 w-20 bg-primary-comfy-ink"
             style="mask: url(/icons/logo.svg) no-repeat center / contain"
           />
         </span>
@@ -251,33 +300,63 @@ onMounted(() => {
       />
     </svg>
 
-    <div class="rounded-2xl border border-white/10 bg-white/5 px-6 py-5">
-      <p class="text-primary-comfy-canvas text-2xl font-light">
-        {{ t('about.careers.whyTitleBefore', locale) }}
-        <br />
-        <span
-          class="bg-primary-comfy-yellow mb-0.5 inline-block h-5 w-16 align-middle"
-          style="mask: url(/icons/logo.svg) no-repeat center / contain"
-        />{{ t('about.careers.whyTitleAfter', locale) }}
-      </p>
-    </div>
+    <template v-if="variant === 'split'">
+      <div class="rounded-2xl border border-white/10 bg-white/5 px-6 py-5">
+        <p class="text-2xl font-light text-primary-comfy-canvas">
+          {{ t(titleBeforeKey, locale) }}
+          <br />
+          <span
+            class="bg-primary-comfy-yellow mb-0.5 inline-block h-5 w-16 align-middle"
+            style="mask: url(/icons/logo.svg) no-repeat center / contain"
+          />{{ t(titleAfterKey, locale) }}
+        </p>
+      </div>
 
+      <div
+        class="mt-3 flex items-center justify-end rounded-xl bg-white/5 px-5 py-3"
+      >
+        <span
+          class="text-xs font-bold tracking-wider text-primary-comfy-canvas"
+        >
+          {{ t(labelKey, locale) }}
+        </span>
+        <span
+          ref="mobileIfYouDotRef"
+          class="bg-primary-comfy-yellow ml-3 size-3 shrink-0 rounded-full"
+        />
+      </div>
+    </template>
     <div
-      class="mt-3 flex items-center justify-end rounded-xl bg-white/5 px-5 py-3"
+      v-else
+      class="relative rounded-[40px] border border-white/10 bg-white/5 px-8 py-7"
     >
-      <span class="text-primary-comfy-canvas text-xs font-bold tracking-wider">
-        {{ t('about.careers.whyLabel', locale) }}
+      <span class="text-2xl font-light text-primary-warm-white">
+        {{ t(labelKey, locale) }}
       </span>
       <span
-        ref="mobileIfYouDotRef"
-        class="bg-primary-comfy-yellow ml-3 size-3 shrink-0 rounded-full"
+        class="bg-primary-comfy-yellow absolute bottom-0 left-1/2 z-20 size-3 -translate-x-1/2 translate-y-1/2 rounded-full"
       />
     </div>
 
+    <span
+      v-if="variant === 'node'"
+      class="bg-primary-comfy-yellow mx-auto block h-12 w-px"
+    />
+
     <div
-      class="relative mt-12 rounded-3xl border border-white/10 bg-white/5 p-8"
+      :class="
+        cn(
+          'relative border border-white/10 bg-white/5 p-8',
+          variant === 'node' ? 'rounded-[40px]' : 'mt-12 rounded-3xl'
+        )
+      "
     >
       <span
+        v-if="variant === 'node'"
+        class="bg-primary-comfy-yellow absolute top-0 left-1/2 z-20 size-3 -translate-1/2 rounded-full"
+      />
+      <span
+        v-if="hasMobileRightCard"
         ref="mobileOutputDotRef"
         class="bg-primary-comfy-yellow absolute right-1/3 bottom-0 z-20 size-3 translate-y-1/2 rounded-full"
       />
@@ -285,12 +364,22 @@ onMounted(() => {
         <div
           v-for="reason in reasons"
           :key="reason"
-          class="flex items-start justify-between gap-4"
+          :class="
+            cn(
+              'flex items-start',
+              variant === 'node' ? 'gap-3' : 'justify-between gap-4'
+            )
+          "
         >
-          <p class="text-primary-comfy-canvas text-base">
+          <span
+            v-if="variant === 'node'"
+            class="bg-primary-comfy-yellow mt-1.5 size-2.5 shrink-0 rounded-full"
+          />
+          <p class="text-base text-primary-comfy-canvas">
             {{ t(reason, locale) }}
           </p>
           <span
+            v-if="variant === 'split'"
             :ref="mobileReasonDots.set"
             class="bg-primary-comfy-yellow mt-1.5 size-2.5 shrink-0 rounded-full"
           />
@@ -299,6 +388,7 @@ onMounted(() => {
     </div>
 
     <div
+      v-if="hasMobileRightCard"
       :class="
         cn(
           'mt-12 rounded-3xl border border-white/10 bg-white/5',
@@ -311,10 +401,10 @@ onMounted(() => {
       >
         <span
           ref="mobileComfyDotRef"
-          class="bg-primary-comfy-ink size-1.5 rounded-full"
+          class="size-1.5 rounded-full bg-primary-comfy-ink"
         />
         <span
-          class="bg-primary-comfy-ink h-4 w-20"
+          class="h-4 w-20 bg-primary-comfy-ink"
           style="mask: url(/icons/logo.svg) no-repeat center / contain"
         />
       </span>

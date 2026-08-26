@@ -62,13 +62,13 @@ test.describe('Sign In dialog', { tag: '@ui' }, () => {
     await expect(dialog.termsLink).toBeVisible()
     await expect(dialog.termsLink).toHaveAttribute(
       'href',
-      'https://www.comfy.org/terms-of-service'
+      'https://comfy.org/terms-of-service/'
     )
 
     await expect(dialog.privacyLink).toBeVisible()
     await expect(dialog.privacyLink).toHaveAttribute(
       'href',
-      'https://www.comfy.org/privacy'
+      'https://comfy.org/privacy-policy/'
     )
   })
 

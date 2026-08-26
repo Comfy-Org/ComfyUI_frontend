@@ -77,8 +77,6 @@ describe('ActiveJobCard', () => {
   beforeEach(() => {
     mockCanCancelJob.value = false
     mockCanDeleteJob.value = false
-    mockRunCancelJob.mockReset()
-    mockRunDeleteJob.mockReset()
   })
 
   it('displays percentage and progress bar when job is running', () => {

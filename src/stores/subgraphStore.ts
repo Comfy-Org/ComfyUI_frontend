@@ -80,7 +80,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
           dependent_outputs: []
         }
       }
-      useExecutionErrorStore().lastNodeErrors = errors
+      useExecutionErrorStore().recordNodeErrors(errors)
       useCanvasStore().getCanvas().draw(true, true)
       throw new Error(
         'The root graph of a subgraph blueprint must consist of only a single subgraph node'

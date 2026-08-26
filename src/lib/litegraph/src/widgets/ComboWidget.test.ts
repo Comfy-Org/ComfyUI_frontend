@@ -42,7 +42,6 @@ describe('ComboWidget', () => {
   let widget: ComboWidget
 
   beforeEach(() => {
-    vi.clearAllMocks()
     node = new LGraphNode('TestNode')
   })
 

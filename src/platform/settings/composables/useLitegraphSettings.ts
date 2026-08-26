@@ -170,6 +170,11 @@ export const useLitegraphSettings = () => {
       'Comfy.EnableWorkflowViewRestore'
     )
   })
+  watchEffect(() => {
+    LiteGraph.namedValuesRestore = settingStore.get(
+      'Comfy.Workflow.NamedValuesRestore'
+    )
+  })
 
   watchEffect(() => {
     const selectChildren = settingStore.get(

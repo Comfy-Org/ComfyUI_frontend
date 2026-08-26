@@ -9,6 +9,7 @@ const baseRoutes = {
   api: '/api',
   gallery: '/gallery',
   launches: '/launches',
+  events: '/events',
   about: '/about',
   careers: '/careers',
   customers: '/customers',
@@ -21,7 +22,16 @@ const baseRoutes = {
   affiliateTerms: '/affiliates/terms',
   contact: '/contact',
   models: '/p/supported-models',
+  modelsShowcase: '/models',
   mcp: '/mcp',
+  minimax: '/minimax-h3',
+  minimaxMusic3: '/minimax-music-3',
+  flux3: '/flux-3',
+  seedance: '/seedance-2.5',
+  fdct: '/forward-deployed-creatives',
+  ltx: '/ltx-2.5',
+  wanAnimate2: '/wan-animate-2',
+  wan3: '/wan-3.0',
   brand: '/brand'
 } as const
 
@@ -41,11 +51,15 @@ type Routes = typeof baseRoutes
 // enterpriseMsa: legal-reviewed English-only document (Comfy Enterprise
 // Customer Agreement template), same reasoning. See the comment header
 // in src/pages/enterprise-msa.astro.
+//
+// models: the supported-models catalog only exists at /p/supported-models;
+// there is no /<locale>/p/supported-models page, so a prefixed link 404s.
 const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'affiliates',
   'affiliateTerms',
   'termsOfService',
-  'enterpriseMsa'
+  'enterpriseMsa',
+  'models'
 ])
 
 const LOCALE_INVARIANT_PATHS = new Set<string>(
@@ -77,11 +91,22 @@ export const externalLinks = {
   apiKeys: 'https://platform.comfy.org/profile/api-keys',
   blog: 'https://blog.comfy.org/',
   cloud: 'https://cloud.comfy.org',
+  cloudCta: (content: string) =>
+    `https://cloud.comfy.org/?utm_source=comfy_org&utm_medium=website&utm_campaign=free_tier&utm_content=${content}`,
   cloudStatus: 'https://status.comfy.org',
   discord: 'https://discord.com/invite/comfyorg',
   docs: 'https://docs.comfy.org/',
   docsApi: 'https://docs.comfy.org/development/cloud/overview#quick-start',
-  docsMcp: 'https://docs.comfy.org/agent-tools/cloud',
+  comfyMcpRepo: 'https://github.com/Comfy-Org/comfy-mcp',
+  docsMcp: 'https://docs.comfy.org/agent-tools/mcp',
+  docsMcpLocal:
+    'https://docs.comfy.org/agent-tools/mcp#local-comfy-mcp-connection',
+  // Markdown variants handed to agents in the "ask your agent" cards: agents
+  // fetch the .md URL and get readable markdown instead of the HTML shell.
+  docsMcpMd: 'https://docs.comfy.org/agent-tools/mcp.md',
+  docsMcpLocalMd:
+    'https://docs.comfy.org/agent-tools/mcp.md#local-comfy-mcp-connection',
+  docsSdk: 'https://docs.comfy.org/development/api-development/sdks',
   docsSubscription: 'https://docs.comfy.org/support/subscription/subscribing',
   g2ComfyUi: 'https://www.g2.com/products/comfyui',
   github: 'https://github.com/Comfy-Org/ComfyUI',
@@ -94,6 +119,7 @@ export const externalLinks = {
   platformUsage: 'https://platform.comfy.org/profile/usage',
   reddit: 'https://www.reddit.com/r/comfyui/',
   support: 'https://support.comfy.org/hc/en-us',
+  trustCenter: 'https://app.vanta.com/comfy.org/trust/o6nu46b16iu3e7fhc41hnz',
   wikidataComfyOrg: 'https://www.wikidata.org/wiki/Q130598554',
   wikidataComfyUi: 'https://www.wikidata.org/wiki/Q127798647',
   wikipediaComfyUi: 'https://en.wikipedia.org/wiki/ComfyUI',

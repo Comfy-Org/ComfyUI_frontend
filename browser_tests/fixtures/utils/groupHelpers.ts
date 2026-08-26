@@ -32,3 +32,22 @@ export async function getGroupTitlePosition(
   if (!pos) throw new Error(`Group "${title}" not found`)
   return pos
 }
+
+/**
+ * Sets a group's color via its real context menu: right-click the title bar,
+ * open "Edit Group" > "Color", then pick the named color option.
+ */
+export async function setGroupColor(
+  comfyPage: ComfyPage,
+  title: string,
+  colorName: string
+): Promise<void> {
+  const titlePos = await getGroupTitlePosition(comfyPage, title)
+  await comfyPage.page.mouse.click(titlePos.x, titlePos.y, {
+    button: 'right'
+  })
+  await comfyPage.contextMenu.clickLitegraphMenuItem('Edit Group')
+  await comfyPage.contextMenu.clickLitegraphMenuItem('Color')
+  await comfyPage.contextMenu.clickLitegraphMenuItem(colorName)
+  await comfyPage.contextMenu.waitForHidden()
+}

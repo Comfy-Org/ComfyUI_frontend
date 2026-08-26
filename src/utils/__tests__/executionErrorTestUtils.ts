@@ -9,10 +9,10 @@ export function seedRequiredInputMissingNodeError(
   executionId: NodeExecutionId,
   inputName: string
 ): void {
-  store.lastNodeErrors = {
+  store.recordNodeErrors({
     [executionId]: nodeError(
       [validationError('required_input_missing', inputName, {}, 'Missing', '')],
       'TestNode'
     )
-  }
+  })
 }

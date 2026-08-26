@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { useMounted, watchDebounced } from '@vueuse/core'
+import { watchDebounced } from '@vueuse/core'
 import {
   computed,
   inject,
   onBeforeUnmount,
+  onMounted,
   provide,
   ref,
   shallowRef,
@@ -12,12 +13,11 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { widgetPromotedSource } from '@/core/graph/subgraph/promotedInputWidget'
-import { isWidgetPromotedOnSubgraphNode } from '@/core/graph/subgraph/promotionUtils'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { DraggableList } from '@/scripts/ui/draggableList'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -45,12 +45,12 @@ const {
   isDraggable = false,
   hiddenFavoriteIndicator = false,
   showNodeName = false,
-  parents = [],
+  host,
   enableEmptyState = false,
   tooltip
 } = defineProps<{
   label?: string
-  parents?: SubgraphNode[]
+  host?: SubgraphNode
   node?: LGraphNode
   widgets: { widget: IBaseWidget; node: LGraphNode }[]
   showLocateButton?: boolean
@@ -77,13 +77,12 @@ const widgets = shallowRef(widgetsProp)
 watchEffect(() => (widgets.value = widgetsProp))
 
 const draggableList = ref<DraggableList | undefined>()
-const isMounted = useMounted()
 
 function setDraggableState() {
   draggableList.value?.dispose()
   draggableList.value = undefined
 
-  if (!isMounted.value || !isDraggable || collapse.value) return
+  if (!isDraggable || collapse.value) return
   const container = widgetsContainer.value
   if (!container?.children?.length) return
 
@@ -130,8 +129,9 @@ function setDraggableState() {
 watchDebounced(
   [widgets, () => isDraggable, collapse],
   () => setDraggableState(),
-  { debounce: 100, immediate: true }
+  { debounce: 100 }
 )
+onMounted(setDraggableState)
 onBeforeUnmount(() => draggableList.value?.dispose())
 
 provide(HideLayoutFieldKey, true)
@@ -144,31 +144,6 @@ const nodeDefStore = useNodeDefStore()
 const { t } = useI18n()
 
 const getNodeParentGroup = inject(GetNodeParentGroupKey, null)
-
-function isWidgetShownOnParents(
-  widgetNode: LGraphNode,
-  widget: IBaseWidget
-): boolean {
-  const source = widgetPromotedSource(widgetNode, widget)
-  return parents.some((parent) => {
-    if (source) {
-      const widgetNodeId = widgetNode.id
-      const interiorNodeId =
-        String(widgetNode.id) === String(parent.id)
-          ? source.nodeId
-          : widgetNodeId
-
-      return isWidgetPromotedOnSubgraphNode(parent, {
-        sourceNodeId: interiorNodeId,
-        sourceWidgetName: source.widgetName
-      })
-    }
-    return isWidgetPromotedOnSubgraphNode(parent, {
-      sourceNodeId: widgetNode.id,
-      sourceWidgetName: widget.name
-    })
-  })
-}
 
 const isEmpty = computed(() => widgets.value.length === 0)
 
@@ -224,6 +199,11 @@ const canShowLocateButton = computed(
 function handleLocateNode() {
   if (!targetNode.value || !canvasStore.canvas) return
 
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'right_side_panel_locate_node_clicked',
+    element_group: 'right_side_panel_nodes'
+  })
+
   const graphNode = canvasStore.canvas.graph?.getNodeById(targetNode.value.id)
   if (graphNode) {
     canvasStore.canvas.animateToBounds(graphNode.boundingRect)
@@ -256,7 +236,10 @@ function clearWidgetErrors(
       source.sourceWidgetName,
       source.sourceWidgetName,
       value,
-      options
+      {
+        min: source.sourceWidget.options?.min,
+        max: source.sourceWidget.options?.max
+      }
     )
   }
 
@@ -284,6 +267,11 @@ function setWidgetValue(
 }
 
 function handleResetAllWidgets() {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'right_side_panel_reset_all_parameters_clicked',
+    element_group: 'right_side_panel_nodes'
+  })
+
   for (const { widget, node: widgetNode } of widgetsProp) {
     const spec = nodeDefStore.getInputSpecForWidget(widgetNode, widget.name)
     const defaultValue = getWidgetDefaultValue(spec)
@@ -390,23 +378,22 @@ defineExpose({
 
       <div
         ref="widgetsContainer"
+        data-testid="section-widgets-list"
+        :data-draggable-ready="draggableList ? 'true' : undefined"
         class="relative space-y-2 rounded-lg px-4 pt-1"
       >
-        <TransitionGroup name="list-scale">
-          <WidgetItem
-            v-for="{ widget, node } in widgets"
-            :key="getStableWidgetRenderKey(widget)"
-            :widget="widget"
-            :node="node"
-            :is-draggable="isDraggable"
-            :hidden-favorite-indicator="hiddenFavoriteIndicator"
-            :show-node-name="showNodeName"
-            :parents="parents"
-            :is-shown-on-parents="isWidgetShownOnParents(node, widget)"
-            @update:widget-value="handleWidgetValueUpdate(node, widget, $event)"
-            @reset-to-default="handleWidgetReset(node, widget, $event)"
-          />
-        </TransitionGroup>
+        <WidgetItem
+          v-for="{ widget, node } in widgets"
+          :key="getStableWidgetRenderKey(widget)"
+          :widget
+          :node
+          :is-draggable
+          :hidden-favorite-indicator
+          :show-node-name
+          :host
+          @update:widget-value="handleWidgetValueUpdate(node, widget, $event)"
+          @reset-to-default="handleWidgetReset(node, widget, $event)"
+        />
       </div>
     </PropertiesAccordionItem>
   </div>

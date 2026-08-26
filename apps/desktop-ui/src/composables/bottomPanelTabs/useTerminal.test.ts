@@ -41,7 +41,6 @@ function getKeyHandler(): (event: KeyboardEvent) => boolean {
 
 describe('useTerminal key event handler', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockTerminal.hasSelection.mockReturnValue(false)
 
     const element = ref<HTMLElement | undefined>(undefined)

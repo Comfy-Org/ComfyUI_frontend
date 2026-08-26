@@ -1,5 +1,5 @@
 <template>
-  <Popover v-if="isOriginalMaterial">
+  <Popover v-if="isOriginalMaterial" v-model:open="intensityOpen">
     <PopoverTrigger as-child>
       <button
         v-tooltip.bottom="tip(t('load3d.menuBar.intensity'))"
@@ -46,6 +46,7 @@ import {
   panelClass,
   tip
 } from '@/components/load3d/menubar/menuBarStyles'
+import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExclusivity'
 import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import Slider from '@/components/ui/slider/Slider.vue'
@@ -62,6 +63,8 @@ const { compact = false, isOriginalMaterial = false } = defineProps<{
 const config = defineModel<LightConfig>('config')
 
 const { t } = useI18n()
+
+const intensityOpen = usePopoverExclusivity()('light-intensity')
 
 const settingStore = useSettingStore()
 const lightIntensityMinimum = settingStore.get(

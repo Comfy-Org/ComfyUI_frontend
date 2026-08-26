@@ -7,7 +7,7 @@ import {
   liftNodeErrorsToBoundary,
   resolveLiftChain
 } from '@/core/graph/subgraph/liftNodeErrorsToBoundary'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode, LGraph } from '@/lib/litegraph/src/litegraph'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
@@ -33,7 +33,9 @@ import {
 } from '@/utils/graphTraversalUtil'
 import {
   SIMPLE_ERROR_TYPES,
+  errorsForSlot,
   getInputConfigBounds,
+  hasErrorForSlot,
   isValueStillOutOfRange
 } from '@/utils/executionErrorUtil'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
@@ -58,6 +60,55 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   const lastPromptError = ref<PromptError | null>(null)
 
   const isErrorOverlayOpen = ref(false)
+  const pendingAddedNodeScans = new WeakMap<
+    LGraph,
+    Map<NodeExecutionId, number>
+  >()
+  const pendingAddedNodeScanRevision = ref(0)
+
+  function beginAddedNodeErrorScan(
+    rootGraph: LGraph,
+    executionId: NodeExecutionId
+  ): () => void {
+    const scansForGraph = pendingAddedNodeScans.get(rootGraph) ?? new Map()
+    scansForGraph.set(executionId, (scansForGraph.get(executionId) ?? 0) + 1)
+    pendingAddedNodeScans.set(rootGraph, scansForGraph)
+    pendingAddedNodeScanRevision.value++
+
+    let finished = false
+    return () => {
+      if (finished) return
+      finished = true
+
+      const remaining = (scansForGraph.get(executionId) ?? 1) - 1
+      if (remaining > 0) scansForGraph.set(executionId, remaining)
+      else scansForGraph.delete(executionId)
+      pendingAddedNodeScanRevision.value++
+    }
+  }
+
+  function hasPendingAddedNodeErrorScan(
+    rootGraph: LGraph,
+    executionId: NodeExecutionId
+  ): boolean {
+    // Subscribe callers to changes in the non-reactive WeakMap.
+    void pendingAddedNodeScanRevision.value
+    return (pendingAddedNodeScans.get(rootGraph)?.get(executionId) ?? 0) > 0
+  }
+
+  /** Replaces the full record; empty or null means the run produced no errors. */
+  function recordNodeErrors(nodeErrors: Record<string, NodeError> | null) {
+    lastNodeErrors.value =
+      nodeErrors && Object.keys(nodeErrors).length > 0 ? nodeErrors : null
+  }
+
+  function recordExecutionError(detail: ExecutionErrorWsMessage) {
+    lastExecutionError.value = detail
+  }
+
+  function recordPromptError(promptError: PromptError) {
+    lastPromptError.value = promptError
+  }
 
   function showErrorOverlay() {
     isErrorOverlayOpen.value = true
@@ -67,25 +118,20 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     isErrorOverlayOpen.value = false
   }
 
-  /** Clear all error state.
-   *  Missing model state is intentionally preserved here to avoid wiping
-   *  in-progress model repairs (importTaskIds, URL inputs, etc.).
-   *  Missing models are cleared separately during workflow load/clean paths. */
-  function clearAllErrors() {
+  /** Clear error state produced by a run. Missing-resource state describes the
+   *  loaded graph rather than the run, so only replacing or discarding the
+   *  graph invalidates it. */
+  function clearRunErrors() {
     lastExecutionError.value = null
     lastPromptError.value = null
     lastNodeErrors.value = null
-    missingNodesStore.setMissingNodeTypes([])
     isErrorOverlayOpen.value = false
   }
 
   function clearExecutionStartErrors() {
     lastExecutionError.value = null
     lastPromptError.value = null
-    if (
-      !lastNodeErrors.value ||
-      Object.keys(lastNodeErrors.value).length === 0
-    ) {
+    if (!lastNodeErrors.value) {
       isErrorOverlayOpen.value = false
     }
   }
@@ -105,7 +151,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
     const isSlotScoped = slotName !== undefined
     const relevantErrors = isSlotScoped
-      ? nodeError.errors.filter((e) => e.extra_info?.input_name === slotName)
+      ? errorsForSlot(nodeError.errors, slotName)
       : nodeError.errors
 
     if (relevantErrors.length === 0) return null
@@ -117,7 +163,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
     if (isSlotScoped) {
       const remainingErrors = nodeError.errors.filter(
-        (e) => e.extra_info?.input_name !== slotName
+        (error) => !relevantErrors.includes(error)
       )
       if (remainingErrors.length === 0) {
         delete updated[executionId]
@@ -218,9 +264,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     const nodeError = nodeErrors[target.executionId]
     if (!nodeError) return false
 
-    const errors = nodeError.errors.filter(
-      (error) => error.extra_info?.input_name === target.slotName
-    )
+    const errors = errorsForSlot(nodeError.errors, target.slotName)
     const options = target.useRecordedBounds
       ? getTargetRangeOptions(errors, callerOptions)
       : callerOptions
@@ -374,9 +418,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
   const hasPromptError = computed(() => !!lastPromptError.value)
 
-  const hasNodeError = computed(
-    () => !!lastNodeErrors.value && Object.keys(lastNodeErrors.value).length > 0
-  )
+  const hasNodeError = computed(() => lastNodeErrors.value !== null)
 
   // Re-lifts only when the record changes; topology is assumed stable while errors are displayed.
   const surfacedNodeErrors = computed(() =>
@@ -385,14 +427,19 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
       : lastNodeErrors.value
   )
 
+  const hasMissingError = computed(
+    () =>
+      missingNodesStore.hasMissingNodes ||
+      missingModelStore.hasMissingModels ||
+      missingMediaStore.hasMissingMedia
+  )
+
   const hasAnyError = computed(
     () =>
       hasExecutionError.value ||
       hasPromptError.value ||
       hasNodeError.value ||
-      missingNodesStore.hasMissingNodes ||
-      missingModelStore.hasMissingModels ||
-      missingMediaStore.hasMissingMedia
+      hasMissingError.value
   )
 
   const allErrorExecutionIds = computed<string[]>(() => {
@@ -495,7 +542,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     const nodeError = getNodeErrors(nodeLocatorId)
     if (!nodeError) return false
 
-    return nodeError.errors.some((e) => e.extra_info?.input_name === slotName)
+    return hasErrorForSlot(nodeError.errors, slotName)
   }
 
   /**
@@ -525,13 +572,18 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   useNodeErrorFlagSync(surfacedNodeErrors, missingModelStore, missingMediaStore)
 
   return {
-    // Raw state
-    lastNodeErrors,
-    lastExecutionError,
-    lastPromptError,
+    // Read-only state
+    lastNodeErrors: computed(() => lastNodeErrors.value),
+    lastExecutionError: computed(() => lastExecutionError.value),
+    lastPromptError: computed(() => lastPromptError.value),
+
+    // Recording
+    recordNodeErrors,
+    recordExecutionError,
+    recordPromptError,
 
     // Clearing
-    clearAllErrors,
+    clearRunErrors,
     clearExecutionStartErrors,
     clearPromptError,
 
@@ -545,11 +597,16 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     hasExecutionError,
     hasPromptError,
     hasNodeError,
+    hasMissingError,
     hasAnyError,
     allErrorExecutionIds,
     totalErrorCount,
     lastExecutionErrorNodeId,
     activeGraphErrorNodeIds,
+
+    // Added-node scan coordination
+    beginAddedNodeErrorScan,
+    hasPendingAddedNodeErrorScan,
 
     // Clearing (targeted)
     clearSimpleNodeErrors,
