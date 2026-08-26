@@ -1114,14 +1114,12 @@ describe('Load3d', () => {
       return { cameraStub, sceneCaptureMock }
     }
 
-    it('returns an empty thumbnail when no model is loaded', async () => {
+    it('rejects thumbnail capture when no model is loaded', async () => {
       Object.assign(ctx.load3d, {
         modelManager: { ...ctx.modelManager, currentModel: null }
       })
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-      await expect(ctx.load3d.captureThumbnail()).resolves.toBe('')
-      expect(consoleSpy).toHaveBeenCalledWith(
+      await expect(ctx.load3d.captureThumbnail()).rejects.toThrow(
         'No model loaded for thumbnail capture'
       )
     })
@@ -1166,12 +1164,12 @@ describe('Load3d', () => {
       })
     }
 
-    it('does not export when no model is loaded', async () => {
+    it('rejects export when no model is loaded', async () => {
       setupForExport({ currentModel: null })
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-      await expect(ctx.load3d.exportModel('fbx')).resolves.toBeUndefined()
-      expect(consoleSpy).toHaveBeenCalledWith('No model to export')
+      await expect(ctx.load3d.exportModel('fbx')).rejects.toThrow(
+        'No model to export'
+      )
     })
 
     it('zeroes the source transform during export, then restores it', async () => {
@@ -1314,13 +1312,14 @@ describe('Load3d', () => {
       )
     })
 
-    it('does not export an unsupported format', async () => {
+    it('rejects an unsupported format', async () => {
       const model = new THREE.Object3D()
       setupForExport({ currentModel: model })
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      vi.spyOn(console, 'error').mockImplementation(() => {})
 
-      await expect(ctx.load3d.exportModel('xyz')).resolves.toBeUndefined()
-      expect(consoleSpy).toHaveBeenCalledWith('Unsupported export format: xyz')
+      await expect(ctx.load3d.exportModel('xyz')).rejects.toThrow(
+        'Unsupported export format: xyz'
+      )
     })
 
     it('downloads the source file directly for direct-export formats', async () => {
@@ -1345,18 +1344,17 @@ describe('Load3d', () => {
       expect(cloneSkinnedMock).not.toHaveBeenCalled()
     })
 
-    it('does not directly export when the requested format differs from the source', async () => {
+    it('rejects direct export when the requested format differs from the source', async () => {
       exportDirectMock.mockReset()
       detectFormatFromURLMock.mockReturnValue('spz')
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      vi.spyOn(console, 'error').mockImplementation(() => {})
       setupForExport({
         currentModel: new THREE.Object3D(),
         originalFileName: 'scene',
         originalURL: 'http://example.com/api/view?filename=scene.spz'
       })
 
-      await expect(ctx.load3d.exportModel('ply')).resolves.toBeUndefined()
-      expect(consoleSpy).toHaveBeenCalledWith(
+      await expect(ctx.load3d.exportModel('ply')).rejects.toThrow(
         'Cannot export ply without converting from the loaded spz source'
       )
       expect(exportDirectMock).not.toHaveBeenCalled()
