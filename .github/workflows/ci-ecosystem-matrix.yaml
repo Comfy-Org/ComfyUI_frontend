@@ -22,7 +22,7 @@
 # Provenance: scripts/registry-census/ is vendored from
 # Comfy-Org/ComfyUI_ECS_Compat_Check (private, migration-phase instrument
 # slated for archival) - see scripts/registry-census/README.md.
-name: 'CI: Ecosystem Matrix'
+name: 'Custom Nodes Ecosystem Matrix test'
 
 on:
   # Required workflows must emit their aggregate check for every candidate.
@@ -523,7 +523,7 @@ jobs:
           echo "verdict correctly FAILED on the poison corpus"
 
   ecosystem-matrix-status:
-    name: ecosystem-matrix-status
+    name: Custom Nodes Ecosystem Matrix test
     if: always()
     needs:
       - pin-status

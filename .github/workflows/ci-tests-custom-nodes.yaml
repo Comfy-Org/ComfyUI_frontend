@@ -20,7 +20,7 @@
 # Cloud snapshot declares - a commit for git-sourced packs, or a registry
 # version's CDN artifact - so no source surface moves underneath a run. Python
 # dependencies still resolve fresh, and the runner image updates independently.
-name: 'CI: Tests Custom Nodes'
+name: 'E2E Custom Nodes Test'
 
 on:
   pull_request:
@@ -397,7 +397,7 @@ jobs:
           if-no-files-found: error
 
   custom-nodes-e2e-status:
-    name: custom-nodes-e2e-status
+    name: E2E Custom Nodes Test
     if: always()
     needs: custom_nodes_e2e
     runs-on: ubuntu-latest
