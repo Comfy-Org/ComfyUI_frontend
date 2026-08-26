@@ -18,6 +18,12 @@ export class VueNodeFixture {
   public readonly imagePreview: Locator
   public readonly imageGrid: Locator
   public readonly content: Locator
+  public readonly priceBadge: {
+    required: Locator
+    requiredText: Locator
+    rest: Locator
+    restText: Locator
+  }
   public readonly resize: { bottomRight: Locator }
 
   constructor(private readonly locator: Locator) {
@@ -33,6 +39,14 @@ export class VueNodeFixture {
     this.imagePreview = locator.locator('.image-preview')
     this.imageGrid = locator.getByTestId(TestIds.node.imageGrid)
     this.content = locator.locator('.lg-node-content')
+    const required = locator.getByTestId('credit-badge-required')
+    const rest = locator.getByTestId('credit-badge-rest')
+    this.priceBadge = {
+      required,
+      requiredText: required.locator('span'),
+      rest,
+      restText: rest.locator('span')
+    }
     const bottomRight = locator.getByRole('button', { name: 'bottom-right' })
     this.resize = { bottomRight }
   }

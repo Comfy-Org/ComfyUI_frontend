@@ -71,7 +71,7 @@
         </span>
       </template>
       <ModelInfoField :label="t('assetBrowser.modelInfo.modelType')">
-        <Select v-if="!isImmutable" v-model="selectedModelType">
+        <Select v-if="isModelTypeEditable" v-model="selectedModelType">
           <SelectTrigger class="w-full">
             <SelectValue
               :placeholder="t('assetBrowser.modelInfo.selectModelType')"
@@ -87,12 +87,21 @@
             </SelectItem>
           </SelectContent>
         </Select>
-        <div v-else class="p-2 text-sm text-muted-foreground">
-          {{
-            modelTypes.find((o) => o.value === selectedModelType)?.name ??
-            t('assetBrowser.unknown')
-          }}
-        </div>
+        <template v-else>
+          <div
+            aria-disabled="true"
+            :aria-describedby="modelTypeReadonlyReasonId"
+            class="cursor-not-allowed p-2 text-sm text-muted-foreground"
+          >
+            {{
+              modelTypes.find((o) => o.value === selectedModelType)?.name ??
+              t('assetBrowser.unknown')
+            }}
+          </div>
+          <span :id="modelTypeReadonlyReasonId" class="sr-only">
+            {{ modelTypeReadonlyReason }}
+          </span>
+        </template>
       </ModelInfoField>
       <ModelInfoField :label="t('assetBrowser.modelInfo.compatibleBaseModels')">
         <TagsInput
@@ -209,7 +218,7 @@
 
 <script setup lang="ts">
 import { useDebounceFn } from '@vueuse/core'
-import { computed, ref, useTemplateRef, watch } from 'vue'
+import { computed, ref, useId, useTemplateRef, watch } from 'vue'
 import type { StyleValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -230,9 +239,9 @@ import TagsInputItemDelete from '@/components/ui/tags-input/TagsInputItemDelete.
 import TagsInputItemText from '@/components/ui/tags-input/TagsInputItemText.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
+import { isCloud } from '@/platform/distribution/types'
 import type { AssetUserMetadata } from '@/platform/assets/schemas/assetSchema'
 import {
-  buildModelTypeTagUpdate,
   getAssetAdditionalTags,
   getAssetBaseModels,
   getAssetDescription,
@@ -242,7 +251,8 @@ import {
   getAssetTriggerPhrases,
   getAssetUserDescription,
   getEditableModelType,
-  getSourceName
+  getSourceName,
+  resolveModelTypeTagUpdate
 } from '@/platform/assets/utils/assetMetadataUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -275,6 +285,18 @@ const pendingModelType = ref<string | undefined>(undefined)
 const isEditingDisplayName = ref(false)
 
 const isImmutable = computed(() => asset.is_immutable ?? true)
+// Retagging a model rewrites its asset tags; core is filesystem-backed and does
+// not yet move the file to match, so the model type is read-only off-cloud.
+const isModelTypeEditable = computed(() => !isImmutable.value && isCloud)
+// The read-only field is reached for an immutable asset (even on cloud) or on
+// core. Immutability is the more specific, actionable reason, so it wins when
+// both hold rather than blaming "core" on a cloud deployment.
+const modelTypeReadonlyReason = computed(() =>
+  isImmutable.value
+    ? t('assetBrowser.modelInfo.modelTypeImmutableReadonly')
+    : t('assetBrowser.modelInfo.modelTypeCoreReadonly')
+)
+const modelTypeReadonlyReasonId = useId()
 const displayName = computed(
   () => pendingUpdates.value.name ?? getAssetDisplayName(asset)
 )
@@ -321,18 +343,13 @@ function handleDisplayNameEdit(newName: string) {
 }
 
 const debouncedSaveModelType = useDebounceFn((newModelType: string) => {
-  if (isImmutable.value) return
-  const currentModelType = getEditableModelType(
-    asset,
-    flags.supportsModelTypeTags
-  )
-  if (currentModelType === newModelType) return
-  const newTags = buildModelTypeTagUpdate(
+  const newTags = resolveModelTypeTagUpdate(
     asset,
     newModelType,
+    isModelTypeEditable.value,
     flags.supportsModelTypeTags
   )
-  assetsStore.updateAssetTags(asset, newTags, cacheKey)
+  if (newTags) assetsStore.updateAssetTags(asset, newTags, cacheKey)
 }, 500)
 
 const baseModels = computed({

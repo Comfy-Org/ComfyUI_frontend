@@ -1,8 +1,8 @@
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { app } from '@/scripts/app'
+import { api } from '@/scripts/api'
 import { MAX_PROGRESS_JOBS, useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
@@ -45,6 +45,10 @@ const mockAppModeState = vi.hoisted(() => ({
   isAppMode: { value: false }
 }))
 
+const defaultWorkflowExecutionIntent = {
+  trigger_source: 'unknown'
+} as const
+
 vi.mock('@/composables/useAppMode', async (importOriginal) => {
   const actual = (await importOriginal()) as Record<string, unknown>
   return {
@@ -58,7 +62,6 @@ beforeEach(() => {
   mockAppModeState.isAppMode.value = false
 })
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
-import { createTestingPinia } from '@pinia/testing'
 import { toNodeId } from '@/types/nodeId'
 
 // Mock the workflowStore
@@ -183,13 +186,8 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
   let store: ReturnType<typeof useExecutionStore>
 
   beforeEach(() => {
-    vi.clearAllMocks()
     // Reset mock implementations
-    mockNodeIdToNodeLocatorId.mockReset()
-    mockNodeLocatorIdToNodeExecutionId.mockReset()
-    mockExecutionIdToCurrentId.mockReset()
 
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
   })
 
@@ -271,12 +269,6 @@ describe('useExecutionStore - nodeLocationProgressStates caching', () => {
   let store: ReturnType<typeof useExecutionStore>
 
   beforeEach(() => {
-    vi.clearAllMocks()
-    mockNodeIdToNodeLocatorId.mockReset()
-    mockNodeLocatorIdToNodeExecutionId.mockReset()
-    mockExecutionIdToCurrentId.mockReset()
-
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
   })
 
@@ -456,12 +448,12 @@ describe('useExecutionStore - nodeProgressStatesByJob eviction', () => {
     handler(
       new CustomEvent('progress_state', { detail: { nodes, prompt_id: jobId } })
     )
+    // Flush the RAF so the batched update is applied immediately
+    vi.advanceTimersToNextFrame()
   }
 
   beforeEach(() => {
-    vi.clearAllMocks()
     apiEventHandlers.clear()
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
     store.bindExecutionEvents()
   })
@@ -518,8 +510,6 @@ describe('useExecutionStore - reconcileInitializingJobs', () => {
   let store: ReturnType<typeof useExecutionStore>
 
   beforeEach(() => {
-    vi.clearAllMocks()
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
   })
 
@@ -618,15 +608,14 @@ describe('useExecutionStore - workflowStatus', () => {
       id: jobId,
       promptOutput: { '1': createPromptNode('Node', 'TestNode') },
       startTime: 42,
+      submissionAcceptedAt: 62,
       workflow
     })
   }
 
   beforeEach(() => {
-    vi.clearAllMocks()
     apiEventHandlers.clear()
     mockOpenWorkflows.value = [workflowA, workflowB]
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
     store.bindExecutionEvents()
   })
@@ -648,30 +637,49 @@ describe('useExecutionStore - workflowStatus', () => {
   })
 
   it('flushes terminal completed when WS finishes before storeJob', () => {
-    // Instant-finish race: WS fires start+success before HTTP response.
-    fireExecutionStart('job-1')
-    fireExecutionSuccess('job-1')
+    const now = vi.spyOn(performance, 'now').mockReturnValue(92)
 
-    callStoreJob('job-1', workflowA)
-    expect(mockTrackExecutionOutcome).toHaveBeenCalledOnce()
-    expect(mockTrackExecutionOutcome).toHaveBeenCalledWith({
-      startTime: 42,
-      outcome: 'success'
-    })
-    expect(store.getWorkflowStatus(workflowA)).toBe('completed')
-    expect(store.queuedJobs['job-1']).toBeUndefined()
+    try {
+      fireExecutionStart('job-1')
+      now.mockReturnValue(142)
+      fireExecutionSuccess('job-1')
+
+      callStoreJob('job-1', workflowA)
+      expect(mockTrackExecutionOutcome).toHaveBeenCalledExactlyOnceWith({
+        startTime: 42,
+        ...defaultWorkflowExecutionIntent,
+        submissionAcceptedAt: 62,
+        executionStartedAt: 92,
+        endTime: 142,
+        success: true,
+        failureReason: ''
+      })
+      expect(store.getWorkflowStatus(workflowA)).toBe('completed')
+      expect(store.queuedJobs['job-1']).toBeUndefined()
+    } finally {
+      now.mockRestore()
+    }
   })
 
   it('flushes terminal failed when WS errors before storeJob', () => {
-    // Invalid-workflow path: execution_error fires before HTTP response.
-    fireExecutionError('job-1')
+    const now = vi.spyOn(performance, 'now').mockReturnValue(82)
 
-    callStoreJob('job-1', workflowA)
-    expect(mockTrackExecutionOutcome).toHaveBeenCalledWith({
-      startTime: 42,
-      outcome: 'failure'
-    })
-    expect(store.getWorkflowStatus(workflowA)).toBe('failed')
+    try {
+      fireExecutionError('job-1')
+
+      callStoreJob('job-1', workflowA)
+      expect(mockTrackExecutionOutcome).toHaveBeenCalledExactlyOnceWith({
+        startTime: 42,
+        ...defaultWorkflowExecutionIntent,
+        submissionAcceptedAt: 62,
+        endTime: 82,
+        success: false,
+        failureReason: 'execution_failed'
+      })
+      expect(store.getWorkflowStatus(workflowA)).toBe('failed')
+    } finally {
+      now.mockRestore()
+    }
   })
 
   it('drops pending status on interrupt before storeJob', () => {
@@ -682,32 +690,154 @@ describe('useExecutionStore - workflowStatus', () => {
     expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
   })
 
-  it('sets completed on execution_success', () => {
-    callStoreJob('job-1', workflowA)
-    fireExecutionStart('job-1')
+  it('tracks every stage when execution succeeds', () => {
+    const now = vi.spyOn(performance, 'now').mockReturnValue(92)
+
+    try {
+      callStoreJob('job-1', workflowA)
+      fireExecutionStart('job-1')
+      now.mockReturnValue(142)
+      fireExecutionSuccess('job-1')
+
+      expect(mockTrackExecutionOutcome).toHaveBeenCalledExactlyOnceWith({
+        startTime: 42,
+        ...defaultWorkflowExecutionIntent,
+        submissionAcceptedAt: 62,
+        executionStartedAt: 92,
+        endTime: 142,
+        success: true,
+        failureReason: ''
+      })
+      expect(store.getWorkflowStatus(workflowA)).toBe('completed')
+    } finally {
+      now.mockRestore()
+    }
+  })
+
+  it('tracks a workflow outcome only once for duplicate terminal events', () => {
+    const now = vi.spyOn(performance, 'now').mockReturnValue(92)
+
+    try {
+      callStoreJob('job-1', workflowA)
+      fireExecutionStart('job-1')
+      now.mockReturnValue(142)
+      fireExecutionSuccess('job-1')
+      fireExecutionSuccess('job-1')
+
+      expect(mockTrackExecutionOutcome).toHaveBeenCalledOnce()
+    } finally {
+      now.mockRestore()
+    }
+  })
+
+  it('keeps timing metadata until success after executing clears', () => {
+    const now = vi.spyOn(performance, 'now').mockReturnValue(92)
+
+    try {
+      callStoreJob('job-1', workflowA)
+      fireExecutionStart('job-1')
+      apiEventHandlers.get('executing')!(
+        new CustomEvent('executing', { detail: null })
+      )
+      now.mockReturnValue(142)
+      fireExecutionSuccess('job-1')
+
+      expect(mockTrackExecutionOutcome).toHaveBeenCalledExactlyOnceWith({
+        startTime: 42,
+        ...defaultWorkflowExecutionIntent,
+        submissionAcceptedAt: 62,
+        executionStartedAt: 92,
+        endTime: 142,
+        success: true,
+        failureReason: ''
+      })
+    } finally {
+      now.mockRestore()
+    }
+  })
+
+  it('tracks completion with the workflow context captured for the job', () => {
+    const workflowContext = {
+      workflow_type: 'custom',
+      view_mode: 'graph',
+      execution_scope: 'partial',
+      total_node_count: 42,
+      executable_node_count: 12,
+      custom_node_count: 3,
+      api_node_count: 1,
+      subgraph_count: 2
+    } as const
+
+    store.storeJob({
+      nodes: ['1'],
+      id: 'job-1',
+      promptOutput: { '1': createPromptNode('Node', 'TestNode') },
+      startTime: 42,
+      workflow: workflowA,
+      workflowContext,
+      workflowExecutionIntent: {
+        trigger_source: 'button'
+      }
+    })
     fireExecutionSuccess('job-1')
 
-    expect(mockTrackExecutionOutcome).toHaveBeenCalledWith({
-      startTime: 42,
-      outcome: 'success'
-    })
-    expect(store.getWorkflowStatus(workflowA)).toBe('completed')
+    expect(mockTrackExecutionOutcome).toHaveBeenCalledWith(
+      expect.objectContaining({
+        startTime: 42,
+        success: true,
+        failureReason: '',
+        trigger_source: 'button',
+        workflowContext
+      })
+    )
   })
 
-  it('sets failed on execution_error', () => {
-    callStoreJob('job-1', workflowA)
-    fireExecutionStart('job-1')
-    fireExecutionError('job-1')
+  it('tracks the execution stage when execution fails', () => {
+    const now = vi.spyOn(performance, 'now').mockReturnValue(92)
 
-    expect(store.getWorkflowStatus(workflowA)).toBe('failed')
+    try {
+      callStoreJob('job-1', workflowA)
+      fireExecutionStart('job-1')
+      now.mockReturnValue(142)
+      fireExecutionError('job-1')
+
+      expect(mockTrackExecutionOutcome).toHaveBeenCalledExactlyOnceWith({
+        startTime: 42,
+        ...defaultWorkflowExecutionIntent,
+        submissionAcceptedAt: 62,
+        executionStartedAt: 92,
+        endTime: 142,
+        success: false,
+        failureReason: 'execution_failed'
+      })
+      expect(store.getWorkflowStatus(workflowA)).toBe('failed')
+    } finally {
+      now.mockRestore()
+    }
   })
 
-  it('skips status badge on user-initiated interrupt', () => {
-    callStoreJob('job-1', workflowA)
-    fireExecutionStart('job-1')
-    fireExecutionInterrupted('job-1')
+  it('tracks an interrupted execution without showing a failed badge', () => {
+    const now = vi.spyOn(performance, 'now').mockReturnValue(92)
 
-    expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
+    try {
+      callStoreJob('job-1', workflowA)
+      fireExecutionStart('job-1')
+      now.mockReturnValue(142)
+      fireExecutionInterrupted('job-1')
+
+      expect(mockTrackExecutionOutcome).toHaveBeenCalledExactlyOnceWith({
+        startTime: 42,
+        ...defaultWorkflowExecutionIntent,
+        submissionAcceptedAt: 62,
+        executionStartedAt: 92,
+        endTime: 142,
+        success: false,
+        failureReason: 'execution_interrupted'
+      })
+      expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
+    } finally {
+      now.mockRestore()
+    }
   })
 
   it('evicts the oldest pending status once the buffer cap is exceeded', () => {
@@ -768,27 +898,64 @@ describe('useExecutionStore - workflowStatus', () => {
     expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
   })
 
-  it('drops service-level errors without writing failed', () => {
+  it('tracks service-level failures without writing failed', () => {
+    const now = vi.spyOn(performance, 'now').mockReturnValue(92)
+
+    try {
+      callStoreJob('job-1', workflowA)
+      fireExecutionStart('job-1')
+      expect(store.getWorkflowStatus(workflowA)).toBe('running')
+
+      now.mockReturnValue(142)
+      const handler = apiEventHandlers.get('execution_error')
+      handler!(
+        new CustomEvent('execution_error', {
+          detail: {
+            prompt_id: 'job-1',
+            node_id: '',
+            node_type: '',
+            exception_message: 'Job has stagnated',
+            exception_type: 'StagnationError',
+            traceback: []
+          }
+        })
+      )
+
+      expect(mockTrackExecutionOutcome).toHaveBeenCalledExactlyOnceWith({
+        startTime: 42,
+        ...defaultWorkflowExecutionIntent,
+        submissionAcceptedAt: 62,
+        executionStartedAt: 92,
+        endTime: 142,
+        success: false,
+        failureReason: 'execution_failed'
+      })
+      expect(store.getWorkflowStatus(workflowA)).toBe('running')
+    } finally {
+      now.mockRestore()
+    }
+  })
+
+  it('clears running when an account precondition error ends the run', () => {
     callStoreJob('job-1', workflowA)
     fireExecutionStart('job-1')
     expect(store.getWorkflowStatus(workflowA)).toBe('running')
 
-    // Service-level error: empty node_id triggers the short-circuit branch.
-    const handler = apiEventHandlers.get('execution_error')
-    handler!(
+    apiEventHandlers.get('execution_error')!(
       new CustomEvent('execution_error', {
         detail: {
           prompt_id: 'job-1',
-          node_id: '',
-          node_type: '',
-          exception_message: 'Job has stagnated',
-          exception_type: 'StagnationError',
+          node_id: '1',
+          node_type: 'TestNode',
+          exception_message:
+            'Payment Required: Please add credits to your account to use this node.',
+          exception_type: 'InsufficientFundsError',
           traceback: []
         }
       })
     )
 
-    expect(store.getWorkflowStatus(workflowA)).toBe('running')
+    expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
   })
 
   it('drops pending failed when service-level error fires before storeJob', () => {
@@ -824,8 +991,6 @@ describe('useExecutionStore - clearActiveJobIfStale', () => {
   let store: ReturnType<typeof useExecutionStore>
 
   beforeEach(() => {
-    vi.clearAllMocks()
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
   })
 
@@ -885,9 +1050,7 @@ describe('useExecutionStore - progress_text startup guard', () => {
   }
 
   beforeEach(() => {
-    vi.clearAllMocks()
     apiEventHandlers.clear()
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
     store.bindExecutionEvents()
   })
@@ -940,8 +1103,6 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
   let store: ReturnType<typeof useExecutionErrorStore>
 
   beforeEach(() => {
-    vi.clearAllMocks()
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionErrorStore()
   })
 
@@ -1127,8 +1288,6 @@ describe('useExecutionStore - executingNode with subgraphs', () => {
   let store: ReturnType<typeof useExecutionStore>
 
   beforeEach(() => {
-    vi.clearAllMocks()
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
   })
 
@@ -1224,8 +1383,6 @@ describe('useMissingNodesErrorStore - setMissingNodeTypes', () => {
   let store: ReturnType<typeof useMissingNodesErrorStore>
 
   beforeEach(() => {
-    vi.clearAllMocks()
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useMissingNodesErrorStore()
   })
 
@@ -1317,6 +1474,421 @@ describe('useMissingNodesErrorStore - setMissingNodeTypes', () => {
   })
 })
 
+describe('useExecutionStore - RAF batching', () => {
+  let store: ReturnType<typeof useExecutionStore>
+
+  function getRegisteredHandler(eventName: string) {
+    const calls = vi.mocked(api.addEventListener).mock.calls
+    const call = calls.find(([name]) => name === eventName)
+    return call![1]!
+  }
+
+  beforeEach(() => {
+    store = useExecutionStore()
+    store.bindExecutionEvents()
+  })
+
+  describe('handleProgress', () => {
+    function makeProgressEvent(value: number, max: number): CustomEvent {
+      return new CustomEvent('progress', {
+        detail: { value, max, prompt_id: 'job-1', node: '1' }
+      })
+    }
+
+    it('batches multiple progress events into one reactive update per frame', () => {
+      const handler = getRegisteredHandler('progress')
+
+      handler(makeProgressEvent(1, 10))
+      handler(makeProgressEvent(5, 10))
+      handler(makeProgressEvent(9, 10))
+
+      expect(store._executingNodeProgress).toBeNull()
+
+      vi.advanceTimersToNextFrame()
+
+      expect(store._executingNodeProgress).toEqual({
+        value: 9,
+        max: 10,
+        prompt_id: 'job-1',
+        node: '1'
+      })
+    })
+
+    it('does not update reactive state before RAF fires', () => {
+      expect.assertions(1)
+      const handler = getRegisteredHandler('progress')
+
+      handler(makeProgressEvent(3, 10))
+
+      expect(store._executingNodeProgress).toBeNull()
+    })
+
+    it('allows a new batch after the previous RAF fires', () => {
+      const handler = getRegisteredHandler('progress')
+
+      handler(makeProgressEvent(1, 10))
+      vi.advanceTimersToNextFrame()
+
+      expect(store._executingNodeProgress).toEqual(
+        expect.objectContaining({ value: 1 })
+      )
+
+      handler(makeProgressEvent(7, 10))
+      vi.advanceTimersToNextFrame()
+
+      expect(store._executingNodeProgress).toEqual(
+        expect.objectContaining({ value: 7 })
+      )
+    })
+  })
+
+  describe('handleProgressState', () => {
+    function makeProgressStateEvent(
+      nodeId: string,
+      state: string,
+      value = 0,
+      max = 10
+    ): CustomEvent {
+      return new CustomEvent('progress_state', {
+        detail: {
+          prompt_id: 'job-1',
+          nodes: {
+            [nodeId]: {
+              value,
+              max,
+              state,
+              node_id: nodeId,
+              prompt_id: 'job-1',
+              display_node_id: nodeId
+            }
+          }
+        }
+      })
+    }
+
+    it('batches multiple progress_state events into one reactive update per frame', () => {
+      const handler = getRegisteredHandler('progress_state')
+
+      handler(makeProgressStateEvent('1', 'running', 1))
+      handler(makeProgressStateEvent('1', 'running', 5))
+      handler(makeProgressStateEvent('1', 'running', 9))
+
+      expect(Object.keys(store.nodeProgressStates)).toHaveLength(0)
+
+      vi.advanceTimersToNextFrame()
+
+      expect(store.nodeProgressStates['1']).toEqual(
+        expect.objectContaining({ value: 9, state: 'running' })
+      )
+    })
+
+    it('does not update reactive state before RAF fires', () => {
+      expect.assertions(1)
+      const handler = getRegisteredHandler('progress_state')
+
+      handler(makeProgressStateEvent('1', 'running'))
+
+      expect(Object.keys(store.nodeProgressStates)).toHaveLength(0)
+    })
+  })
+
+  describe('pending RAF is discarded when execution completes', () => {
+    it('discards pending progress RAF on execution_success', () => {
+      expect.assertions(1)
+      const progressHandler = getRegisteredHandler('progress')
+      const startHandler = getRegisteredHandler('execution_start')
+      const successHandler = getRegisteredHandler('execution_success')
+
+      startHandler(
+        new CustomEvent('execution_start', {
+          detail: { prompt_id: 'job-1', timestamp: 0 }
+        })
+      )
+
+      progressHandler(
+        new CustomEvent('progress', {
+          detail: { value: 5, max: 10, prompt_id: 'job-1', node: '1' }
+        })
+      )
+
+      successHandler(
+        new CustomEvent('execution_success', {
+          detail: { prompt_id: 'job-1', timestamp: 0 }
+        })
+      )
+
+      vi.advanceTimersToNextFrame()
+
+      expect(store._executingNodeProgress).toBeNull()
+    })
+
+    it('discards pending progress_state RAF on execution_success', () => {
+      expect.assertions(1)
+      const progressStateHandler = getRegisteredHandler('progress_state')
+      const startHandler = getRegisteredHandler('execution_start')
+      const successHandler = getRegisteredHandler('execution_success')
+
+      startHandler(
+        new CustomEvent('execution_start', {
+          detail: { prompt_id: 'job-1', timestamp: 0 }
+        })
+      )
+
+      progressStateHandler(
+        new CustomEvent('progress_state', {
+          detail: {
+            prompt_id: 'job-1',
+            nodes: {
+              '1': {
+                value: 5,
+                max: 10,
+                state: 'running',
+                node_id: '1',
+                prompt_id: 'job-1',
+                display_node_id: '1'
+              }
+            }
+          }
+        })
+      )
+
+      successHandler(
+        new CustomEvent('execution_success', {
+          detail: { prompt_id: 'job-1', timestamp: 0 }
+        })
+      )
+
+      vi.advanceTimersToNextFrame()
+
+      expect(Object.keys(store.nodeProgressStates)).toHaveLength(0)
+    })
+
+    it('discards pending progress RAF on execution_error', () => {
+      expect.assertions(1)
+      const progressHandler = getRegisteredHandler('progress')
+      const startHandler = getRegisteredHandler('execution_start')
+      const errorHandler = getRegisteredHandler('execution_error')
+
+      startHandler(
+        new CustomEvent('execution_start', {
+          detail: { prompt_id: 'job-1', timestamp: 0 }
+        })
+      )
+
+      progressHandler(
+        new CustomEvent('progress', {
+          detail: { value: 5, max: 10, prompt_id: 'job-1', node: '1' }
+        })
+      )
+
+      errorHandler(
+        new CustomEvent('execution_error', {
+          detail: {
+            prompt_id: 'job-1',
+            node_id: '1',
+            node_type: 'TestNode',
+            exception_message: 'error',
+            exception_type: 'RuntimeError',
+            traceback: []
+          }
+        })
+      )
+
+      vi.advanceTimersToNextFrame()
+
+      expect(store._executingNodeProgress).toBeNull()
+    })
+
+    it('discards pending progress RAF on execution_interrupted', () => {
+      expect.assertions(1)
+      const progressHandler = getRegisteredHandler('progress')
+      const startHandler = getRegisteredHandler('execution_start')
+      const interruptedHandler = getRegisteredHandler('execution_interrupted')
+
+      startHandler(
+        new CustomEvent('execution_start', {
+          detail: { prompt_id: 'job-1', timestamp: 0 }
+        })
+      )
+
+      progressHandler(
+        new CustomEvent('progress', {
+          detail: { value: 5, max: 10, prompt_id: 'job-1', node: '1' }
+        })
+      )
+
+      interruptedHandler(
+        new CustomEvent('execution_interrupted', {
+          detail: {
+            prompt_id: 'job-1',
+            node_id: '1',
+            node_type: 'TestNode',
+            executed: []
+          }
+        })
+      )
+
+      vi.advanceTimersToNextFrame()
+
+      expect(store._executingNodeProgress).toBeNull()
+    })
+  })
+
+  describe('unbindExecutionEvents cancels pending RAFs', () => {
+    it('cancels pending progress RAF on unbind', () => {
+      expect.assertions(1)
+      const handler = getRegisteredHandler('progress')
+
+      handler(
+        new CustomEvent('progress', {
+          detail: { value: 5, max: 10, prompt_id: 'job-1', node: '1' }
+        })
+      )
+
+      store.unbindExecutionEvents()
+      vi.advanceTimersToNextFrame()
+
+      expect(store._executingNodeProgress).toBeNull()
+    })
+
+    it('cancels pending progress_state RAF on unbind', () => {
+      expect.assertions(1)
+      const handler = getRegisteredHandler('progress_state')
+
+      handler(
+        new CustomEvent('progress_state', {
+          detail: {
+            prompt_id: 'job-1',
+            nodes: {
+              '1': {
+                value: 0,
+                max: 10,
+                state: 'running',
+                node_id: '1',
+                prompt_id: 'job-1',
+                display_node_id: '1'
+              }
+            }
+          }
+        })
+      )
+
+      store.unbindExecutionEvents()
+      vi.advanceTimersToNextFrame()
+
+      expect(Object.keys(store.nodeProgressStates)).toHaveLength(0)
+    })
+  })
+
+  describe('executing preserves node progress state', () => {
+    it('applies the initial running state when executing follows in the same frame', () => {
+      expect.assertions(1)
+      const startHandler = getRegisteredHandler('execution_start')
+      const progressStateHandler = getRegisteredHandler('progress_state')
+      const executingHandler = getRegisteredHandler('executing')
+
+      startHandler(
+        new CustomEvent('execution_start', {
+          detail: { prompt_id: 'job-1', timestamp: 0 }
+        })
+      )
+      progressStateHandler(
+        new CustomEvent('progress_state', {
+          detail: {
+            prompt_id: 'job-1',
+            nodes: {
+              '1': {
+                value: 0,
+                max: 10,
+                state: 'running',
+                node_id: '1',
+                prompt_id: 'job-1',
+                display_node_id: '1'
+              }
+            }
+          }
+        })
+      )
+
+      executingHandler(new CustomEvent('executing', { detail: '1' }))
+      vi.advanceTimersToNextFrame()
+
+      expect(store.nodeProgressStates['1']).toEqual(
+        expect.objectContaining({ state: 'running' })
+      )
+    })
+
+    it('discards a pending node progress state when execution stops', () => {
+      expect.assertions(1)
+      const progressStateHandler = getRegisteredHandler('progress_state')
+      const executingHandler = apiEventHandlers.get('executing')!
+
+      progressStateHandler(
+        new CustomEvent('progress_state', {
+          detail: {
+            prompt_id: 'job-1',
+            nodes: {
+              '1': {
+                value: 0,
+                max: 10,
+                state: 'running',
+                node_id: '1',
+                prompt_id: 'job-1',
+                display_node_id: '1'
+              }
+            }
+          }
+        })
+      )
+
+      executingHandler(new CustomEvent('executing', { detail: null }))
+      vi.advanceTimersToNextFrame()
+
+      expect(Object.keys(store.nodeProgressStates)).toHaveLength(0)
+    })
+  })
+
+  describe('concurrent progress and progress_state in the same frame', () => {
+    it('applies both coalesced updates when RAFs fire in the same tick', () => {
+      expect.assertions(2)
+      const progressHandler = getRegisteredHandler('progress')
+      const progressStateHandler = getRegisteredHandler('progress_state')
+
+      progressHandler(
+        new CustomEvent('progress', {
+          detail: { value: 7, max: 10, prompt_id: 'job-1', node: '1' }
+        })
+      )
+      progressStateHandler(
+        new CustomEvent('progress_state', {
+          detail: {
+            prompt_id: 'job-1',
+            nodes: {
+              '1': {
+                value: 7,
+                max: 10,
+                state: 'running',
+                node_id: '1',
+                prompt_id: 'job-1',
+                display_node_id: '1'
+              }
+            }
+          }
+        })
+      )
+
+      vi.advanceTimersToNextFrame()
+
+      expect(store._executingNodeProgress).toEqual(
+        expect.objectContaining({ value: 7 })
+      )
+      expect(store.nodeProgressStates['1']).toEqual(
+        expect.objectContaining({ value: 7, state: 'running' })
+      )
+    })
+  })
+})
+
 describe('useExecutionStore - WebSocket event handlers', () => {
   let store: ReturnType<typeof useExecutionStore>
 
@@ -1327,9 +1899,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
   }
 
   beforeEach(() => {
-    vi.clearAllMocks()
     apiEventHandlers.clear()
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
     store.bindExecutionEvents()
   })
@@ -1339,7 +1909,10 @@ describe('useExecutionStore - WebSocket event handlers', () => {
       fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
 
       expect(store.activeJobId).toBe('job-1')
-      expect(store.queuedJobs['job-1']).toEqual({ nodes: {} })
+      expect(store.queuedJobs['job-1']).toEqual({
+        nodes: {},
+        executionStartedAt: expect.any(Number)
+      })
     })
 
     it('clears transient errors while preserving validation errors', () => {
@@ -1607,13 +2180,26 @@ describe('useExecutionStore - WebSocket event handlers', () => {
       expect(store.activeJobId).toBe('job-1')
       expect(store.queuedJobs['job-1']).toBeDefined()
     })
+
+    it('discards a progress update still queued when the next node starts', () => {
+      fire('progress', { value: 3, max: 10, prompt_id: 'job-1', node: 'n1' })
+
+      fire('executing', 'n2')
+      vi.advanceTimersToNextFrame()
+
+      expect(store._executingNodeProgress).toBeNull()
+    })
   })
 
   describe('progress', () => {
-    it('sets _executingNodeProgress from the event payload', () => {
+    it('sets _executingNodeProgress from the event payload (RAF-batched)', () => {
       const payload = { value: 3, max: 10, prompt_id: 'job-1', node: 'n1' }
 
       fire('progress', payload)
+      // RAF-batched: not applied synchronously
+      expect(store._executingNodeProgress).toBeNull()
+
+      vi.advanceTimersToNextFrame()
 
       expect(store._executingNodeProgress).toEqual(payload)
     })
@@ -1796,9 +2382,7 @@ describe('useExecutionStore - storeJob and workflow path tracking', () => {
   let store: ReturnType<typeof useExecutionStore>
 
   beforeEach(() => {
-    vi.clearAllMocks()
     apiEventHandlers.clear()
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
   })
 

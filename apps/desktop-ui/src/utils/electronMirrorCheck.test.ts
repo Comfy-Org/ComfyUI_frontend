@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 const { mockElectron } = vi.hoisted(() => ({
   mockElectron: {
@@ -15,10 +15,6 @@ vi.mock('@/utils/envUtil', () => ({
 import { checkMirrorReachable } from '@/utils/electronMirrorCheck'
 
 describe('checkMirrorReachable', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('returns false for an invalid URL without calling canAccessUrl', async () => {
     const result = await checkMirrorReachable('not-a-url')
     expect(result).toBe(false)

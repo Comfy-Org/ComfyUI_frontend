@@ -7,13 +7,12 @@ import DraggableList from '@/components/common/DraggableList.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import {
-  demotePromotedInput,
   demoteWidget,
   getPromotableWidgets,
-  isLinkedPromotion,
   isRecommendedWidget,
   promoteWidget,
   pruneDisconnected,
+  refreshPromotedWidgetRendering,
   reorderSubgraphInputsByWidgetOrder
 } from '@/core/graph/subgraph/promotionUtils'
 import {
@@ -23,16 +22,21 @@ import {
 import type { PromotedSource } from '@/core/graph/subgraph/promotedInputWidget'
 import type { WidgetItem } from '@/core/graph/subgraph/promotionUtils'
 import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'
-import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
+import type {
+  INodeInputSlot,
+  ISubgraphInput
+} from '@/lib/litegraph/src/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import { useLitegraphService } from '@/services/litegraphService'
-import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import {
+  getPreviewExposureHostLocator,
+  usePreviewExposureStore
+} from '@/stores/previewExposureStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
-import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import SubgraphNodeWidget from './SubgraphNodeWidget.vue'
@@ -40,7 +44,7 @@ import SubgraphNodeWidget from './SubgraphNodeWidget.vue'
 type PromotedRow = {
   kind: 'promoted'
   node: LGraphNode
-  input: INodeInputSlot
+  input: INodeInputSlot & Partial<ISubgraphInput>
   widget: IBaseWidget
 }
 type PreviewRow = {
@@ -113,7 +117,8 @@ const activePromotedRows = computed<PromotedRow[]>({
 })
 
 function getActivePreviewRows(node: SubgraphNode): PreviewRow[] {
-  const hostLocator = String(node.id)
+  const hostLocator = getPreviewExposureHostLocator(node)
+  if (!hostLocator) return []
   const rootGraphId = node.rootGraph.id
   const exposures = previewExposureStore.getExposures(rootGraphId, hostLocator)
   return exposures.flatMap((exposure): PreviewRow[] => {
@@ -149,7 +154,7 @@ function updateActivePromotedRows(
       value.map((row) => ({ widgetId: row.widget.widgetId }))
     )
   }
-  refreshPromotedWidgetRendering()
+  refreshActiveNodeRendering()
 }
 
 const interiorWidgets = computed<WidgetItem[]>(() => {
@@ -227,13 +232,11 @@ const filteredActivePreviews = computed<PreviewRow[]>(() =>
   )
 )
 
-function refreshPromotedWidgetRendering() {
+function refreshActiveNodeRendering() {
   const node = activeNode.value
   if (!node) return
 
-  node.computeSize(node.size)
-  node.setDirtyCanvas(true, true)
-  canvasStore.canvas?.setDirty(true, true)
+  refreshPromotedWidgetRendering([node])
 }
 
 function rowDisplayName(row: ActiveRow): string {
@@ -248,14 +251,7 @@ function rowDisplayName(row: ActiveRow): string {
 }
 
 function isRowLinked(row: ActiveRow): boolean {
-  if (row.kind !== 'promoted') return false
-  if (row.node.id === UNASSIGNED_NODE_ID) return true
-  const source = promotedRowSource(row)
-  return (
-    !!activeNode.value &&
-    !!source &&
-    isLinkedPromotion(activeNode.value, String(row.node.id), source.widgetName)
-  )
+  return row.kind === 'promoted'
 }
 
 function promotedRowKey(row: PromotedRow): string {
@@ -276,26 +272,27 @@ function demoteRow(row: ActiveRow) {
   const subgraphNode = activeNode.value
   if (!subgraphNode) return
   if (row.kind === 'promoted') {
-    const source = promotedRowSource(row)
-    if (source) {
-      demotePromotedInput(subgraphNode, {
-        sourceNodeId: source.nodeId,
-        sourceWidgetName: source.widgetName
-      })
+    const subgraphSlot = row.input._subgraphSlot
+    if (subgraphSlot) {
+      const inputIndex = subgraphNode.inputs.indexOf(row.input)
+      if (subgraphNode.isInputConnected(inputIndex)) subgraphSlot.disconnect()
+      else subgraphNode.subgraph.removeInput(subgraphSlot)
     }
-    refreshPromotedWidgetRendering()
+    refreshActiveNodeRendering()
     return
   }
   if (row.realWidget) {
     demoteWidget(row.node, row.realWidget, [subgraphNode])
     return
   }
+  const hostLocator = getPreviewExposureHostLocator(subgraphNode)
+  if (!hostLocator) return
   previewExposureStore.removeExposure(
     subgraphNode.rootGraph.id,
-    String(subgraphNode.id),
+    hostLocator,
     row.exposure.name
   )
-  refreshPromotedWidgetRendering()
+  refreshActiveNodeRendering()
 }
 
 function promotePromotedRow(row: PromotedRow) {

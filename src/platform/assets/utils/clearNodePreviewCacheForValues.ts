@@ -42,8 +42,8 @@ export function clearNodePreviewCacheForValues(
 
 /**
  * Walk the graph hierarchy and yield each leaf node whose widget value matches
- * one of `deletedValues`. Used by both the preview-clearing path and the
- * missing-media-marking path so the two stay in lockstep.
+ * one of `deletedValues`. Shared by the preview-clearing and value-clearing
+ * paths.
  *
  * Skips subgraph wrapper nodes — only their interior nodes are inspected.
  */

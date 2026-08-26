@@ -44,8 +44,6 @@ describe('useKeyboard', () => {
   let keyboard: ReturnType<typeof useKeyboard>
 
   beforeEach(() => {
-    vi.clearAllMocks()
-    document.body.innerHTML = ''
     keyboard = useKeyboard()
     keyboard.addListeners()
   })

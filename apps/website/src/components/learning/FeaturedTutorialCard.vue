@@ -9,7 +9,7 @@ import { localizeHref } from '../../config/routes'
 import { t } from '../../i18n/translations'
 import Badge from '../ui/badge/Badge.vue'
 import ButtonPill from '../ui/button-pill/ButtonPill.vue'
-import PlayOverlay from './PlayOverlay.vue'
+import PlayOverlay from '../blocks/PlayOverlay.vue'
 
 const { tutorial, locale = 'en' } = defineProps<{
   tutorial: LearningTutorial
@@ -37,7 +37,6 @@ const { tutorial, locale = 'en' } = defineProps<{
           :href="localizeHref(tutorialPath(tutorial), locale)"
           class="text-left hover:underline"
         >
-          {{ t('learning.tutorials.titlePrefix', locale) }}
           {{ tutorial.title[locale] }}
         </a>
       </h2>
@@ -57,7 +56,7 @@ const { tutorial, locale = 'en' } = defineProps<{
           size="default"
           class="ps-0"
         >
-          {{ t('cta.tryWorkflow', locale) }}
+          {{ t(tutorial.ctaLabelKey ?? 'cta.tryWorkflow', locale) }}
         </ButtonPill>
       </div>
     </div>

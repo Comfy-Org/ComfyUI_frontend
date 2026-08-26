@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromAny } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -8,7 +6,10 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
+import {
+  createNodeExecutionId,
+  createNodeLocatorId
+} from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 import * as litegraphUtil from '@/utils/litegraphUtil'
 
@@ -61,8 +62,6 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
 
 describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     app.nodeOutputs = {}
     app.nodePreviewImages = {}
   })
@@ -141,6 +140,20 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
     ).toEqual(['blob:second'])
   })
 
+  it('owns preview arrays after setting them', () => {
+    const store = useNodeOutputStore()
+    const executionId = createNodeExecutionId([toNodeId(11)])
+    const previews = ['blob:first']
+
+    store.setNodePreviewsByExecutionId(executionId, previews)
+    previews.push('blob:caller-mutation')
+
+    expect(store.getNodePreviewImagesByExecutionId(executionId)).toEqual([
+      'blob:first'
+    ])
+    expect(store.latestPreview).toEqual(['blob:first'])
+  })
+
   it('should update reactive nodeOutputs.value when merging outputs', () => {
     const store = useNodeOutputStore()
     const executionId = createNodeExecutionId([toNodeId(1)])
@@ -192,12 +205,33 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
     expect(refAfter).not.toBe(refBefore)
     expect(refAfter?.images).toHaveLength(2)
   })
+
+  it('replaces outputs written through the legacy map', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5 })
+
+    store.setNodeOutputs(node, 'canonical.png')
+    const legacyOutput = createMockOutputs([{ filename: 'legacy.png' }])
+    store.replaceOutputsFromLegacy({ '5': legacyOutput })
+
+    expect(store.getNodeOutputs(node)).toEqual(legacyOutput)
+  })
+
+  it('projects previews without reading legacy map mutations back', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5 })
+
+    store.setNodePreviewsByLocatorId(createNodeLocatorId(null, node.id), [
+      'blob:canonical'
+    ])
+    app.nodePreviewImages['5'] = ['blob:legacy']
+
+    expect(store.getNodePreviews(node)).toEqual(['blob:canonical'])
+  })
 })
 
 describe('nodeOutputStore restoreOutputs', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     app.nodeOutputs = {}
     app.nodePreviewImages = {}
   })
@@ -240,8 +274,6 @@ describe('nodeOutputStore restoreOutputs', () => {
 
 describe('nodeOutputStore input preview preservation', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     app.nodeOutputs = {}
     app.nodePreviewImages = {}
   })
@@ -344,8 +376,6 @@ describe('nodeOutputStore input preview preservation', () => {
 
 describe('nodeOutputStore getPreviewParam', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     vi.mocked(litegraphUtil.isAnimatedOutput).mockReturnValue(false)
     vi.mocked(litegraphUtil.isVideoNode).mockReturnValue(false)
   })
@@ -422,8 +452,6 @@ describe('nodeOutputStore getPreviewParam', () => {
 
 describe('nodeOutputStore snapshotOutputs / restoreOutputs', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     app.nodeOutputs = {}
     app.nodePreviewImages = {}
   })
@@ -578,8 +606,6 @@ describe('nodeOutputStore snapshotOutputs / restoreOutputs', () => {
 
 describe('nodeOutputStore resetAllOutputsAndPreviews', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     app.nodeOutputs = {}
     app.nodePreviewImages = {}
   })
@@ -613,8 +639,6 @@ describe('nodeOutputStore resetAllOutputsAndPreviews', () => {
 
 describe('nodeOutputStore restoreOutputs + execution interaction', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     app.nodeOutputs = {}
     app.nodePreviewImages = {}
   })
@@ -675,8 +699,6 @@ describe('nodeOutputStore restoreOutputs + execution interaction', () => {
 
 describe('nodeOutputStore merge mode interactions', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     app.nodeOutputs = {}
     app.nodePreviewImages = {}
   })
@@ -744,8 +766,6 @@ describe('nodeOutputStore merge mode interactions', () => {
 
 describe('nodeOutputStore setNodeOutputs (widget path)', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     app.nodeOutputs = {}
     app.nodePreviewImages = {}
   })
@@ -780,6 +800,17 @@ describe('nodeOutputStore setNodeOutputs (widget path)', () => {
     expect(store.nodeOutputs['5']?.images?.[0]?.type).toBe('input')
   })
 
+  it('leaves node images unchanged for preview change detection', () => {
+    const store = useNodeOutputStore()
+    const images = [{ filename: 'previous.png' }]
+    const node = createMockNode({ id: 5, images })
+
+    store.setNodeOutputs(node, 'test.png')
+
+    expect(node.images).toBe(images)
+    expect(node.images).not.toBe(store.nodeOutputs['5']?.images)
+  })
+
   it('should skip empty array of filenames after createOutputs', () => {
     const store = useNodeOutputStore()
     const node = createMockNode({ id: 5 })
@@ -793,8 +824,6 @@ describe('nodeOutputStore setNodeOutputs (widget path)', () => {
 
 describe('nodeOutputStore syncLegacyNodeImgs', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
     LiteGraph.vueNodesMode = false
   })
 

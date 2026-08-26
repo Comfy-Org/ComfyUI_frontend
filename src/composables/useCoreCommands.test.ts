@@ -1,4 +1,3 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
@@ -56,6 +55,7 @@ vi.mock('@/scripts/app', () => {
         }
       }),
       openClipspace: vi.fn(),
+      queuePrompt: vi.fn().mockResolvedValue(true),
       refreshComboInNodes: vi.fn().mockResolvedValue(undefined),
       canvas: mockCanvas,
       rootGraph: {
@@ -104,10 +104,6 @@ vi.mock('@/stores/authStore', () => ({
   useAuthStore: vi.fn(() => ({}))
 }))
 
-vi.mock('@/composables/auth/useFirebaseAuth', () => ({
-  useFirebaseAuth: vi.fn(() => null)
-}))
-
 vi.mock('firebase/auth', () => ({
   setPersistence: vi.fn(),
   browserLocalPersistence: {},
@@ -135,7 +131,9 @@ vi.mock('@/services/litegraphService', () => ({
 const mockTrackHelpResourceClicked = vi.hoisted(() => vi.fn())
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: vi.fn(() => ({
-    trackHelpResourceClicked: mockTrackHelpResourceClicked
+    trackHelpResourceClicked: mockTrackHelpResourceClicked,
+    trackRunButton: vi.fn(),
+    trackWorkflowExecution: vi.fn()
   }))
 }))
 
@@ -150,10 +148,6 @@ vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
 
 vi.mock('@/stores/executionStore', () => ({
   useExecutionStore: vi.fn(() => ({}))
-}))
-
-vi.mock('@/stores/toastStore', () => ({
-  useToastStore: vi.fn(() => ({}))
 }))
 
 const mockToastAdd = vi.hoisted(() => vi.fn())
@@ -209,16 +203,28 @@ vi.mock('@/composables/auth/useAuthActions', () => ({
 
 vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   useSubscription: vi.fn(() => ({
-    isActiveSubscription: vi.fn().mockReturnValue(true),
+    canAccessSubscriptionFeatures: vi.fn().mockReturnValue(true),
     showSubscriptionDialog: vi.fn()
   }))
 }))
 
+const mockBillingState = vi.hoisted(() => ({
+  canAccessSubscriptionFeatures: true,
+  showSubscriptionDialog: vi.fn()
+}))
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: vi.fn(() => ({
-    isActiveSubscription: { value: true },
-    showSubscriptionDialog: vi.fn()
+    canAccessSubscriptionFeatures: {
+      get value() {
+        return mockBillingState.canAccessSubscriptionFeatures
+      }
+    },
+    showSubscriptionDialog: mockBillingState.showSubscriptionDialog
   }))
+}))
+
+vi.mock('@/stores/queueSettingsStore', () => ({
+  useQueueSettingsStore: vi.fn(() => ({ batchCount: 1 }))
 }))
 
 describe('useCoreCommands', () => {
@@ -310,14 +316,11 @@ describe('useCoreCommands', () => {
   }
 
   beforeEach(() => {
-    vi.clearAllMocks()
     mockDistributionState.isCloud = false
+    mockBillingState.canAccessSubscriptionFeatures = true
     vi.mocked(app.refreshComboInNodes).mockResolvedValue(undefined)
     mockModelStoreRefresh.mockResolvedValue(undefined)
     mockMissingModelStoreRefresh.mockResolvedValue(undefined)
-
-    // Set up Pinia
-    setActivePinia(createPinia())
 
     // Reset app state
     app.canvas.subgraph = undefined
@@ -398,9 +401,6 @@ describe('useCoreCommands', () => {
 
     beforeEach(() => {
       app.canvas.selectedItems = new Set()
-      vi.mocked(app.canvas.copyToClipboard).mockClear()
-      vi.mocked(app.canvas.pasteFromClipboard).mockClear()
-      vi.mocked(app.canvas.selectItems).mockClear()
     })
 
     it('should copy selected items when selection exists', async () => {
@@ -436,7 +436,6 @@ describe('useCoreCommands', () => {
   describe('Subgraph metadata commands', () => {
     beforeEach(() => {
       mockSubgraph.extra = {}
-      vi.clearAllMocks()
     })
 
     describe('SetDescription command', () => {
@@ -676,6 +675,64 @@ describe('useCoreCommands', () => {
       expect(app.refreshComboInNodes).toHaveBeenCalled()
       expect(mockModelStoreRefresh).toHaveBeenCalled()
       expect(mockMissingModelStoreRefresh).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('Queue commands subscription gate', () => {
+    const findCmd = (id: string) =>
+      useCoreCommands().find((cmd) => cmd.id === id)!
+
+    it.for([
+      ['Comfy.QueuePrompt', 0],
+      ['Comfy.QueuePromptFront', -1]
+    ] as const)(
+      '%s queues on Local without subscription features',
+      async ([id, num]) => {
+        mockBillingState.canAccessSubscriptionFeatures = false
+
+        await findCmd(id).function()
+
+        expect(app.queuePrompt).toHaveBeenCalledWith(num, 1, expect.anything())
+        expect(mockBillingState.showSubscriptionDialog).not.toHaveBeenCalled()
+      }
+    )
+
+    it('Comfy.QueueSelectedOutputNodes passes the gate on Local without subscription features', async () => {
+      mockBillingState.canAccessSubscriptionFeatures = false
+
+      await findCmd('Comfy.QueueSelectedOutputNodes').function()
+
+      expect(mockBillingState.showSubscriptionDialog).not.toHaveBeenCalled()
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
+    })
+
+    it.for([
+      'Comfy.QueuePrompt',
+      'Comfy.QueuePromptFront',
+      'Comfy.QueueSelectedOutputNodes'
+    ] as const)(
+      '%s shows the subscription dialog on Cloud without an active subscription',
+      async (id) => {
+        mockDistributionState.isCloud = true
+        mockBillingState.canAccessSubscriptionFeatures = false
+
+        await findCmd(id).function()
+
+        expect(app.queuePrompt).not.toHaveBeenCalled()
+        expect(mockBillingState.showSubscriptionDialog).toHaveBeenCalledWith({
+          reason: 'subscribe_to_run'
+        })
+      }
+    )
+
+    it('Comfy.QueuePrompt queues on Cloud with an active subscription', async () => {
+      mockDistributionState.isCloud = true
+
+      await findCmd('Comfy.QueuePrompt').function()
+
+      expect(app.queuePrompt).toHaveBeenCalledWith(0, 1, expect.anything())
     })
   })
 

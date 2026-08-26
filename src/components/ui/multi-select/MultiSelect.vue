@@ -56,79 +56,99 @@
         @keydown="onContentKeydown"
         @focus-outside="preventFocusDismiss"
       >
-        <div v-if="showSearchBox" class="px-2 pt-2 pb-0">
-          <div
-            class="flex items-center gap-2 rounded-lg border border-solid border-border-default px-3 py-1.5"
-          >
-            <i
-              class="icon-[lucide--search] shrink-0 text-sm text-muted-foreground"
-            />
-            <ComboboxInput
-              v-model="searchQuery"
-              :placeholder="searchPlaceholder ?? t('g.search')"
-              class="w-full border-none bg-transparent text-sm outline-none"
-            />
-          </div>
-        </div>
-
-        <div
-          v-if="hasActions"
-          :class="
-            cn(
-              'flex shrink-0 items-center justify-between px-2',
-              actionsPlacement === 'header'
-                ? 'mt-2 border-b border-border-default pb-4'
-                : 'order-last mt-2 border-t border-border-default pt-3 pb-1'
-            )
-          "
-        >
-          <span
-            v-if="showSelectedCount"
-            class="px-1 text-sm text-muted-foreground"
-          >
-            {{ $t('g.itemsSelected', { count: selectedCount }) }}
-          </span>
-          <Button
-            v-if="showClearButton"
-            variant="textonly"
-            size="md"
-            @click.stop="selectedItems = []"
-          >
-            {{ $t('g.clearAll') }}
-          </Button>
-        </div>
-
-        <ComboboxViewport
-          :class="
-            cn(
-              'flex flex-col gap-0 p-0 text-sm',
-              'scrollbar-custom overflow-y-auto',
-              'min-w-(--reka-combobox-trigger-width)'
-            )
-          "
-          :style="{ maxHeight: `min(${listMaxHeight}, 50vh)` }"
-        >
-          <ComboboxItem
-            v-for="opt in filteredOptions"
-            :key="opt.value"
-            :value="opt"
-            :class="cn('group', selectItemVariants({ layout: 'multi' }))"
-          >
+        <FocusScope class="contents" @mount-auto-focus.prevent>
+          <div v-if="showSearchBox" class="px-2 pt-2 pb-0">
             <div
-              class="flex size-4 shrink-0 items-center justify-center rounded-sm transition-all duration-200 group-data-[state=checked]:bg-primary-background group-data-[state=unchecked]:bg-secondary-background [&>span]:flex"
+              class="flex items-center gap-2 rounded-lg border border-solid border-border-default px-3 py-1.5"
             >
-              <ComboboxItemIndicator>
-                <i
-                  class="icon-[lucide--check] text-xs font-bold text-base-foreground"
-                />
-              </ComboboxItemIndicator>
+              <i
+                class="icon-[lucide--search] shrink-0 text-sm text-muted-foreground"
+              />
+              <ComboboxInput
+                v-model="searchQuery"
+                :placeholder="searchPlaceholder ?? t('g.search')"
+                class="w-full border-none bg-transparent text-sm outline-none"
+              />
             </div>
-            <span>{{ opt.name }}</span>
-          </ComboboxItem>
-          <ComboboxEmpty :class="selectEmptyMessageClass">
-            {{ $t('g.noResultsFound') }}
-          </ComboboxEmpty>
-        </ComboboxViewport>
+          </div>
+
+          <!-- The actions row is rendered on the side of the viewport it
+               belongs to rather than repositioned with CSS: keyboard and
+               screen-reader order follows the DOM, so a footer row hoisted
+               visually with `order-last` would still announce "Clear all"
+               before the options. -->
+          <div
+            v-if="hasActions && actionsPlacement === 'header'"
+            :class="actionsClass"
+          >
+            <span
+              v-if="showSelectedCount"
+              class="px-1 text-sm text-muted-foreground"
+            >
+              {{ $t('g.itemsSelected', { count: selectedCount }) }}
+            </span>
+            <Button
+              v-if="showClearButton"
+              variant="textonly"
+              size="md"
+              @click.stop="selectedItems = []"
+            >
+              {{ $t('g.clearAll') }}
+            </Button>
+          </div>
+
+          <ComboboxViewport
+            :class="
+              cn(
+                'flex flex-col gap-0 p-0 text-sm',
+                'scrollbar-custom overflow-y-auto',
+                'min-w-(--reka-combobox-trigger-width)'
+              )
+            "
+            :style="{ maxHeight: `min(${listMaxHeight}, 50vh)` }"
+          >
+            <ComboboxItem
+              v-for="opt in filteredOptions"
+              :key="opt.value"
+              :value="opt"
+              :class="cn('group', selectItemVariants({ layout: 'multi' }))"
+            >
+              <div
+                class="flex size-4 shrink-0 items-center justify-center rounded-sm transition-all duration-200 group-data-[state=checked]:bg-primary-background group-data-[state=unchecked]:bg-secondary-background [&>span]:flex"
+              >
+                <ComboboxItemIndicator>
+                  <i
+                    class="icon-[lucide--check] text-xs font-bold text-base-foreground"
+                  />
+                </ComboboxItemIndicator>
+              </div>
+              <span>{{ opt.name }}</span>
+            </ComboboxItem>
+            <ComboboxEmpty :class="selectEmptyMessageClass">
+              {{ $t('g.noResultsFound') }}
+            </ComboboxEmpty>
+          </ComboboxViewport>
+
+          <div
+            v-if="hasActions && actionsPlacement === 'footer'"
+            :class="actionsClass"
+          >
+            <span
+              v-if="showSelectedCount"
+              class="px-1 text-sm text-muted-foreground"
+            >
+              {{ $t('g.itemsSelected', { count: selectedCount }) }}
+            </span>
+            <Button
+              v-if="showClearButton"
+              variant="textonly"
+              size="md"
+              @click.stop="selectedItems = []"
+            >
+              {{ $t('g.clearAll') }}
+            </Button>
+          </div>
+        </FocusScope>
       </ComboboxContent>
     </ComboboxPortal>
   </ComboboxRoot>
@@ -148,7 +168,8 @@ import {
   ComboboxPortal,
   ComboboxRoot,
   ComboboxTrigger,
-  ComboboxViewport
+  ComboboxViewport,
+  FocusScope
 } from 'reka-ui'
 import { computed, ref } from 'vue'
 import type { StyleValue } from 'vue'
@@ -228,6 +249,15 @@ const isOpen = ref(false)
 const liftedContentStyle = useModalLiftedZIndex(isOpen)
 const selectedCount = computed(() => selectedItems.value.length)
 const hasActions = computed(() => showSelectedCount || showClearButton)
+
+const actionsClass = computed(() =>
+  cn(
+    'flex shrink-0 items-center justify-between',
+    actionsPlacement === 'header'
+      ? 'mt-2 border-b border-border-default px-2 pb-4'
+      : '-mx-2 mt-2 border-t border-border-default px-4 pt-3 pb-1'
+  )
+)
 
 function onContentKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape') {

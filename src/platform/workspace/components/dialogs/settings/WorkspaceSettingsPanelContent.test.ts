@@ -40,13 +40,13 @@ const BillingStatusBanner = defineComponent({
 const stubs = {
   BillingStatusBanner,
   MembersPanelContent: { template: '<div data-testid="members-body" />' },
+  PartnerNodeAccessPanel: { template: '<div data-testid="allowlist-body" />' },
   PlanCreditsPanelContent: { template: '<div data-testid="plan-body" />' },
   WorkspaceProfilePic: { template: '<div />' }
 }
 
 describe('WorkspaceSettingsPanelContent', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockFetchMembers.mockResolvedValue(undefined)
     mockFetchPendingInvites.mockResolvedValue(undefined)
   })
@@ -69,6 +69,15 @@ describe('WorkspaceSettingsPanelContent', () => {
 
     expect(screen.queryByTestId('plan-body')).not.toBeInTheDocument()
     expect(screen.getByTestId('members-body')).toBeInTheDocument()
+    expect(mockFetchMembers).toHaveBeenCalledTimes(1)
+    expect(mockFetchPendingInvites).toHaveBeenCalledTimes(1)
+    expect(mockBannerMounted).toHaveBeenCalledTimes(1)
+    expect(mockBannerUnmounted).not.toHaveBeenCalled()
+
+    await rerender({ section: 'allowlist' })
+
+    expect(screen.queryByTestId('members-body')).not.toBeInTheDocument()
+    expect(screen.getByTestId('allowlist-body')).toBeInTheDocument()
     expect(mockFetchMembers).toHaveBeenCalledTimes(1)
     expect(mockFetchPendingInvites).toHaveBeenCalledTimes(1)
     expect(mockBannerMounted).toHaveBeenCalledTimes(1)

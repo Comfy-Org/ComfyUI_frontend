@@ -5,21 +5,21 @@ function isUsableFps(fps: number | undefined): fps is number {
 export function frameToTime(
   frame: number,
   duration: number,
-  frameMax: number,
+  totalFrames: number,
   fallbackFps?: number
 ): number {
-  if (duration > 0 && frameMax > 0) return (frame / frameMax) * duration
+  if (duration > 0 && totalFrames > 0) return (frame / totalFrames) * duration
   return isUsableFps(fallbackFps) ? frame / fallbackFps : 0
 }
 
 export function timeToFrame(
   time: number,
   duration: number,
-  frameMax: number,
+  totalFrames: number,
   fallbackFps?: number
 ): number {
-  if (duration > 0 && frameMax > 0) {
-    return Math.round((time / duration) * frameMax)
+  if (duration > 0 && totalFrames > 0) {
+    return Math.round((time / duration) * totalFrames)
   }
   return isUsableFps(fallbackFps) ? Math.round(time * fallbackFps) : 0
 }
