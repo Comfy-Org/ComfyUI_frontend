@@ -73,6 +73,7 @@ vi.mock('@/platform/workspace/stores/workspaceAuthStore', () => ({
 }))
 
 const mockWorkspaceStoreInitialize = vi.fn()
+const mockWorkspaceStoreReset = vi.fn()
 const mockWorkspaceStoreInitState = vi.hoisted(() => ({
   value: 'uninitialized' as string
 }))
@@ -87,7 +88,18 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
     get activeWorkspaceId() {
       return mockActiveWorkspaceId.value
     },
-    initialize: mockWorkspaceStoreInitialize
+    initialize: mockWorkspaceStoreInitialize,
+    resetForIdentityChange: mockWorkspaceStoreReset
+  })
+}))
+
+const mockApiKeyAuthenticated = ref(false)
+vi.mock('@/stores/apiKeyAuthStore', () => ({
+  useApiKeyAuthStore: () => ({
+    get isAuthenticated() {
+      return mockApiKeyAuthenticated.value
+    },
+    getApiKey: () => (mockApiKeyAuthenticated.value ? 'comfyui-test-key' : null)
   })
 }))
 
@@ -117,6 +129,7 @@ describe('WorkspaceAuthGate', () => {
     mockIsCloud.value = true
     mockIsInitialized.value = false
     mockCurrentUser.value = null
+    mockApiKeyAuthenticated.value = false
     mockUnifiedCloudAuthEnabled.value = false
     mockRemoteConfigState.value = 'authenticated'
     mockRemoteConfigErrorStatus.value = null
@@ -125,6 +138,9 @@ describe('WorkspaceAuthGate', () => {
     mockRefreshRemoteConfig.mockResolvedValue(undefined)
     mockWorkspaceStoreInitialize.mockImplementation(async () => {
       mockWorkspaceStoreInitState.value = 'ready'
+    })
+    mockWorkspaceStoreReset.mockImplementation(() => {
+      mockWorkspaceStoreInitState.value = 'uninitialized'
     })
     mockMintAtLogin.mockResolvedValue(true)
     mockGetUnifiedToken.mockReturnValue('cloud-jwt')
@@ -215,6 +231,48 @@ describe('WorkspaceAuthGate', () => {
       await flushPromises()
 
       expect(mockWorkspaceStoreInitialize).not.toHaveBeenCalled()
+    })
+
+    it('initializes workspace context after an API-key sign-in', async () => {
+      mockIsCloud.value = false
+      mockIsInitialized.value = true
+
+      mountComponent()
+      await flushPromises()
+      expect(mockWorkspaceStoreInitialize).not.toHaveBeenCalled()
+
+      mockApiKeyAuthenticated.value = true
+      await flushPromises()
+
+      expect(mockWorkspaceStoreInitialize).toHaveBeenCalledOnce()
+    })
+
+    it('cancels pending initialization on API-key sign-out', async () => {
+      mockIsCloud.value = false
+      mockApiKeyAuthenticated.value = true
+
+      mountComponent()
+      mockApiKeyAuthenticated.value = false
+      mockIsInitialized.value = true
+      await flushPromises()
+
+      expect(mockWorkspaceStoreInitialize).not.toHaveBeenCalled()
+    })
+
+    it('resets workspace state when the session identity changes', async () => {
+      mockIsCloud.value = false
+      mockIsInitialized.value = true
+      mockApiKeyAuthenticated.value = true
+
+      mountComponent()
+      await flushPromises()
+
+      mockApiKeyAuthenticated.value = false
+      mockCurrentUser.value = { uid: 'user-123' }
+      await flushPromises()
+
+      expect(mockWorkspaceStoreReset).toHaveBeenCalled()
+      expect(mockWorkspaceStoreInitialize).toHaveBeenCalledTimes(2)
     })
   })
 
