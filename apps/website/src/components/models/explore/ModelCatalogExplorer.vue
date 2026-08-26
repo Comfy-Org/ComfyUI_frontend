@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 
 import CardWorkflow01 from '../../blocks/CardWorkflow01.vue'
 import type { CardWorkflowItem } from '../../blocks/CardWorkflow01.vue'
@@ -122,6 +122,14 @@ onMounted(() => {
       : 'components'
 })
 
+watch(catalogMode, (mode) => {
+  if (!releaseCatalog) return
+  const url = new URL(window.location.href)
+  if (mode === 'components') url.searchParams.set('view', 'components')
+  else url.searchParams.delete('view')
+  window.history.replaceState({}, '', url)
+})
+
 function workflowDescription(workflowCount: number): string {
   return (workflowCount === 1 ? workflowCountOne : workflowCountMany).replace(
     '{count}',
@@ -139,6 +147,8 @@ function toWorkflowItem(model: ModelExploreCatalogItem): CardWorkflowItem {
     .slice(0, 2)
     .map((modelCategory) => categoryLabels.value.get(modelCategory))
     .filter((label): label is string => label !== undefined)
+  const publisherTags =
+    model.kind === 'release' && model.publisher ? [model.publisher] : []
 
   return {
     id: model.slug,
@@ -149,11 +159,14 @@ function toWorkflowItem(model: ModelExploreCatalogItem): CardWorkflowItem {
       model.kind === 'release' && model.componentCount
         ? `${workflowDescription(model.workflowCount)} ${componentDescription(model.componentCount)}`
         : workflowDescription(model.workflowCount),
+    ...(model.kind === 'release' && model.publisher
+      ? { sourceLabel: model.publisher }
+      : {}),
     tags:
       model.access === 'partner'
-        ? [partnerLabel, ...categoryTags]
+        ? [partnerLabel, ...publisherTags, ...categoryTags]
         : model.kind === 'release' && openLabel
-          ? [openLabel, ...categoryTags]
+          ? [openLabel, ...publisherTags, ...categoryTags]
           : categoryTags,
     media: model.thumbnailUrl
       ? { type: 'image', src: model.thumbnailUrl, alt: '' }

@@ -4714,7 +4714,7 @@ const translations = {
     'zh-CN': '费用说明'
   },
   'models.pricing.subtitle': {
-    en: 'Credits before you commit. No surprises after the wall.',
+    en: 'Credits before you commit. No surprises after the run.',
     'zh-CN': '运行前即可了解点数费用，运行后没有意外。'
   },
   'models.pricing.cloud': { en: 'Comfy Cloud', 'zh-CN': 'Comfy Cloud' },

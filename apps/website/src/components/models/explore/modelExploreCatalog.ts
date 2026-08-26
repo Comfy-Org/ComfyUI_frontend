@@ -77,32 +77,36 @@ export function createModelExploreCatalog(
 export function createModelReleaseExploreCatalog(
   releases: readonly ModelRelease[]
 ): ModelExploreCatalogItem[] {
-  return releases.map((release) => ({
-    kind: 'release',
-    slug: release.slug,
-    title: release.displayName,
-    href: `/p/supported-models/${release.slug}`,
-    directory:
-      release.access === 'partner'
-        ? 'partner_nodes'
-        : (release.components[0]?.directory ?? 'diffusion_models'),
-    workflowCount: release.workflows.length,
-    componentCount: release.components.length,
-    publisher: release.publisher,
-    access: release.access,
-    categories: release.categories,
-    ...(release.thumbnailUrl ? { thumbnailUrl: release.thumbnailUrl } : {}),
-    mediaTone: resolveMediaTone(release.categories[0]),
-    searchText: [
-      release.displayName,
-      release.publisher,
-      release.familySlug,
-      ...release.categories,
-      ...release.components.map(({ displayName }) => displayName)
-    ]
-      .join(' ')
-      .toLowerCase()
-  }))
+  return releases
+    .filter(({ workflows, thumbnailUrl }) =>
+      Boolean(workflows.length && thumbnailUrl)
+    )
+    .map((release) => ({
+      kind: 'release',
+      slug: release.slug,
+      title: release.displayName,
+      href: `/p/supported-models/${release.slug}`,
+      directory:
+        release.access === 'partner'
+          ? 'partner_nodes'
+          : (release.components[0]?.directory ?? 'diffusion_models'),
+      workflowCount: release.workflows.length,
+      componentCount: release.components.length,
+      publisher: release.publisher,
+      access: release.access,
+      categories: release.categories,
+      ...(release.thumbnailUrl ? { thumbnailUrl: release.thumbnailUrl } : {}),
+      mediaTone: resolveMediaTone(release.categories[0]),
+      searchText: [
+        release.displayName,
+        release.publisher,
+        release.familySlug,
+        ...release.categories,
+        ...release.components.map(({ displayName }) => displayName)
+      ]
+        .join(' ')
+        .toLowerCase()
+    }))
 }
 
 export function filterModelExploreCatalog(

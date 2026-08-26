@@ -162,6 +162,7 @@ describe('ModelCatalogExplorer', () => {
             directory: 'diffusion_models',
             workflowCount: 3,
             componentCount: 4,
+            publisher: 'Alibaba',
             access: 'open',
             categories: ['video'],
             mediaTone: 'plum',
@@ -174,11 +175,13 @@ describe('ModelCatalogExplorer', () => {
     expect(screen.getByRole('link', { name: 'Wan 2.2' })).toBeTruthy()
     expect(screen.queryByRole('link', { name: 'Wan Video' })).toBeNull()
     expect(screen.getByText(/4 components/)).toBeTruthy()
+    expect(screen.getByText('Alibaba')).toBeTruthy()
 
     await userEvent.click(screen.getByRole('radio', { name: 'Components' }))
 
     expect(screen.getByRole('link', { name: 'Wan Video' })).toBeTruthy()
     expect(screen.queryByRole('link', { name: 'Wan 2.2' })).toBeNull()
+    expect(window.location.search).toBe('?view=components')
   })
 
   it.for([

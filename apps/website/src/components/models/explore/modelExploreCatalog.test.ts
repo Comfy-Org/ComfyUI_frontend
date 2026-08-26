@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
 import type { Model } from '../../../config/models'
+import type { ModelRelease } from '../../../config/modelReleases'
 import {
   createModelExploreCatalog,
+  createModelReleaseExploreCatalog,
   filterModelExploreCatalog,
   summarizeModelExploreCatalog
 } from './modelExploreCatalog'
@@ -94,5 +96,37 @@ describe('model explore catalog presentation', () => {
         ({ slug }) => slug
       )
     ).toEqual(['partner-image'])
+  })
+})
+
+describe('model release catalog presentation', () => {
+  const release = {
+    slug: 'wan-3',
+    familySlug: 'wan',
+    displayName: 'Wan 3.0',
+    publisher: 'Alibaba',
+    access: 'open',
+    categories: ['video'],
+    workflows: [],
+    components: []
+  } satisfies ModelRelease
+
+  it('only discovers releases with workflow-derived preview images', () => {
+    expect(
+      createModelReleaseExploreCatalog([
+        release,
+        {
+          ...release,
+          workflows: [
+            {
+              id: 'wan-3-video',
+              title: 'Wan 3.0 video',
+              thumbnailUrl: '/wan-3.webp'
+            }
+          ],
+          thumbnailUrl: '/wan-3.webp'
+        }
+      ]).map(({ slug }) => slug)
+    ).toEqual(['wan-3'])
   })
 })
