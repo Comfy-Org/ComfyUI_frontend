@@ -216,6 +216,11 @@ describe('SubscriptionSuccessWorkspace', () => {
     expect(screen.getByText(/88800 subscription\.perYear/)).toBeTruthy()
   })
 
+  it('falls back to the tier constant for the credits when there is no preview', () => {
+    renderCard({ billingCycle: 'yearly', previewData: null })
+    expect(screen.getByText(/88800 subscription\.perYear/)).toBeTruthy()
+  })
+
   it('emits close when the close button is clicked', async () => {
     mockMaxSeats.value = 1
     const { emitted } = renderCard()
