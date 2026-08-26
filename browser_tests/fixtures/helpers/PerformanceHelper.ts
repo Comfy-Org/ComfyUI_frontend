@@ -109,6 +109,7 @@ export class PerformanceHelper {
       if (win[stateKey]) throw new Error('rAF measurement already in progress')
 
       return new Promise<void>((resolve) => {
+        const startTimeoutId = setTimeout(resolve, 1_000)
         const state: RafCollectorState = {
           intervalsMs: [],
           lastTimestamp: null,
@@ -118,6 +119,7 @@ export class PerformanceHelper {
           visibilityChanged: false,
           onVisibilityChange: () => {
             state.visibilityChanged = true
+            clearTimeout(startTimeoutId)
             resolve()
           }
         }
@@ -125,6 +127,7 @@ export class PerformanceHelper {
         document.addEventListener('visibilitychange', state.onVisibilityChange)
 
         if (document.visibilityState !== 'visible') {
+          clearTimeout(startTimeoutId)
           resolve()
           return
         }
@@ -136,6 +139,7 @@ export class PerformanceHelper {
           }
           state.lastTimestamp = timestamp
           state.requestId = requestAnimationFrame(tick)
+          clearTimeout(startTimeoutId)
           resolve()
         }
         state.requestId = requestAnimationFrame(tick)
