@@ -44,7 +44,7 @@ vi.mock('@/platform/telemetry', () => ({
 const mockPendingTopup = vi.hoisted(() => ({
   isPendingTopupCompleted: vi.fn().mockReturnValue(true)
 }))
-vi.mock('@/platform/workspace/composables/usePendingTopup', () => ({
+vi.mock('@/composables/billing/usePendingTopup', () => ({
   usePendingTopup: () => mockPendingTopup
 }))
 
