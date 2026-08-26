@@ -82,6 +82,7 @@ export const API_MEMBERS: ReadonlySet<string> = new Set([
   'disabled',
   'disconnect',
   'display_name',
+  'documentId',
   'draw',
   'duplicate',
   'end',

@@ -11,11 +11,27 @@ export interface WorkflowHandle {
   open(data: WorkflowData): Promise<void>
   /** Expands the active document's `%date:...%` and `%Node.widget%` tokens. */
   applyTextReplacements(value: string): string
+  /**
+   * The active document's identity: a process-local id minted fresh each time
+   * a workflow finishes loading — including a second load of the same file,
+   * which gets a different id from the first. `undefined` before the first
+   * workflow has loaded this page load.
+   *
+   * Distinct from the workflow's own saved identity (its file path, or the
+   * `id` written into the workflow JSON): that one is meant to survive a
+   * reload and compare equal across sessions. This one is the opposite by
+   * design — it exists so a pack can tell "the document I was looking at got
+   * replaced" from "the document I was looking at got edited", which
+   * comparing graph contents cannot do, since editing IS mutating the graph
+   * contents of the very document that is still current.
+   */
+  documentId(): string | undefined
 }
 
 export function createWorkflowApi(
   getGraph: () => LGraph | null | undefined,
-  openWorkflow?: (data: WorkflowData) => Promise<void>
+  openWorkflow?: (data: WorkflowData) => Promise<void>,
+  getDocumentId?: () => string | undefined
 ): WorkflowHandle {
   return Object.freeze({
     async open(data: WorkflowData) {
@@ -37,6 +53,9 @@ export function createWorkflowApi(
         )
       }
       return applyTextReplacements(graph, value)
+    },
+    documentId() {
+      return getDocumentId?.()
     }
   })
 }
