@@ -7,7 +7,13 @@ import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { app } from '@/scripts/app'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
+import { useExecutionStore } from '@/stores/executionStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 import GraphCanvas from './GraphCanvas.vue'
 
@@ -27,6 +33,8 @@ const mocks = vi.hoisted(() => ({
   loadTemplateFromUrlIfPresent: vi.fn(),
   loadSharedWorkflowFromUrlIfPresent: vi.fn(),
   runUrlActionLoaders: vi.fn(),
+  graphNodes: [] as LGraphNode[],
+  setDirty: vi.fn(),
   workspaceStore: {
     spinner: false,
     focusMode: false,
@@ -64,7 +72,7 @@ vi.mock('@/scripts/app', () => {
     render_canvas_border: false,
     graph: null,
     onSelectionChange: null,
-    setDirty: vi.fn(),
+    setDirty: mocks.setDirty,
     canvas: document.createElement('canvas')
   }
   return {
@@ -215,4 +223,116 @@ describe('GraphCanvas first-run tour wiring', () => {
       undefined
     )
   })
+})
+
+describe('GraphCanvas execution progress fanout complexity', () => {
+  beforeEach(() => {
+    mocks.graphNodes.length = 0
+    mocks.setDirty.mockClear()
+  })
+
+  it.for([
+    { totalNodes: 1, activeEntries: 1 },
+    { totalNodes: 1_000, activeEntries: 1 },
+    { totalNodes: 1_000, activeEntries: 100 },
+    { totalNodes: 1_000, activeEntries: 500 }
+  ])(
+    'scans all $totalNodes visible nodes with $activeEntries active entries for equal and changed events',
+    async ({ totalNodes, activeEntries }) => {
+      await mountGraphCanvas()
+
+      let progressWrites = 0
+      const progressValues: Array<number | undefined> = []
+      const nodes = Array.from({ length: totalNodes }, (_, index) => {
+        let progress: number | undefined
+        return {
+          id: index + 1,
+          get progress() {
+            return progress
+          },
+          set progress(value: number | undefined) {
+            progressWrites++
+            progress = value
+            progressValues[index] = value
+          }
+        } as unknown as LGraphNode
+      })
+      mocks.graphNodes.push(...nodes)
+
+      const canvas = app.canvas!
+      canvas.graph = { nodes } as typeof canvas.graph
+      useCanvasStore().canvas = canvas
+
+      const workflowStore = useWorkflowStore()
+      vi.mocked(workflowStore.nodeIdToNodeLocatorId).mockImplementation((id) =>
+        createNodeLocatorId(null, id)
+      )
+
+      const executionStore = useExecutionStore()
+      const equalState = Object.fromEntries(
+        Array.from({ length: activeEntries }, (_, index) => {
+          const nodeId = String(index + 1)
+          return [
+            nodeId,
+            {
+              display_node_id: nodeId,
+              node_id: nodeId,
+              prompt_id: 'job',
+              state: 'running' as const,
+              value: 25,
+              max: 100
+            }
+          ]
+        })
+      )
+
+      executionStore.nodeProgressStates = equalState
+      await nextTick()
+      expect(progressValues[0]).toBe(0.25)
+      expect(progressValues[activeEntries - 1]).toBe(0.25)
+      if (activeEntries < totalNodes) {
+        expect(progressValues[activeEntries]).toBeUndefined()
+      }
+
+      progressWrites = 0
+      mocks.setDirty.mockClear()
+      vi.mocked(workflowStore.nodeIdToNodeLocatorId).mockClear()
+
+      // A structurally equal WebSocket payload still fans out to every node.
+      executionStore.nodeProgressStates = { ...equalState }
+      await nextTick()
+
+      expect(workflowStore.nodeIdToNodeLocatorId).toHaveBeenCalledTimes(
+        totalNodes
+      )
+      expect(progressWrites).toBe(totalNodes)
+      expect(mocks.setDirty).toHaveBeenCalledTimes(1)
+      expect(mocks.setDirty).toHaveBeenCalledWith(true, false)
+
+      progressWrites = 0
+      mocks.setDirty.mockClear()
+      vi.mocked(workflowStore.nodeIdToNodeLocatorId).mockClear()
+
+      // A real one-node change has the same total-node operation count.
+      executionStore.nodeProgressStates = {
+        ...equalState,
+        '1': {
+          ...equalState['1'],
+          prompt_id: 'job',
+          state: 'running' as const,
+          value: 50,
+          max: 100
+        }
+      }
+      await nextTick()
+
+      expect(workflowStore.nodeIdToNodeLocatorId).toHaveBeenCalledTimes(
+        totalNodes
+      )
+      expect(progressWrites).toBe(totalNodes)
+      expect(progressValues[0]).toBe(0.5)
+      expect(mocks.setDirty).toHaveBeenCalledTimes(1)
+      expect(mocks.setDirty).toHaveBeenCalledWith(true, false)
+    }
+  )
 })
