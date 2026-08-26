@@ -22,7 +22,11 @@ const InputSlotStub = defineComponent({
 })
 
 const AppInputStub = defineComponent({
-  template: '<div data-testid="app-input"><slot /></div>'
+  props: {
+    name: { type: String, required: true }
+  },
+  template:
+    '<div data-testid="app-input" :data-widget-name="name"><slot /></div>'
 })
 
 function widget(name: string, type: string, index: number): WidgetGridItem {
@@ -69,6 +73,11 @@ describe('WidgetGrid', () => {
       screen.getAllByTestId('input-slot').map((element) => element.dataset.name)
     ).toEqual(['seed', 'replacement', 'converted-widget-picker'])
     expect(screen.getAllByTestId('node-widget')).toHaveLength(2)
+    expect(
+      screen
+        .getAllByTestId('app-input')
+        .map((element) => element.dataset.widgetName)
+    ).toEqual(['replacement', 'converted-widget-picker'])
     expect(screen.getAllByTestId('widget-control')).toHaveLength(2)
   })
 })
