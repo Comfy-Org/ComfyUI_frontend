@@ -175,6 +175,7 @@ const {
   mockSetActiveWorkspaceIdImpl,
   mockSetActiveWorkspaceId,
   mockPermissions,
+  mockCanReactivatePlan,
   mockCapabilities,
   mockSubscription
 } = vi.hoisted(() => ({
@@ -218,6 +219,7 @@ const {
       canDowngradeToPersonal: true
     }
   },
+  mockCanReactivatePlan: { value: true },
   mockCapabilities: {
     value: {
       canSubscribeSelfServe: true,
@@ -281,6 +283,11 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
     permissions: {
       get value() {
         return mockPermissions.value
+      }
+    },
+    canReactivatePlan: {
+      get value() {
+        return mockCanReactivatePlan.value
       }
     }
   })
@@ -503,6 +510,7 @@ describe('useSubscriptionCheckout', () => {
       canChangeSeats: true,
       canDowngradeToPersonal: true
     }
+    mockCanReactivatePlan.value = true
     mockSubscription.value = null
     sessionStorage.clear()
     emit = vi.fn()
@@ -3876,9 +3884,22 @@ describe('useSubscriptionCheckout', () => {
       })
     })
 
+    it('resubscribes on the legacy rail even though the server withholds can_reactivate', async () => {
+      // legacy_stripe workspaces have no capability projection row, so the
+      // raw capability is false while the workspace may still reactivate.
+      mockCapabilities.value.canReactivate = false
+      mockCanReactivatePlan.value = true
+      const checkout = await setup()
+
+      await checkout.handleResubscribe()
+
+      expect(mockResubscribe).toHaveBeenCalled()
+    })
+
     it('does not resubscribe for a member', async () => {
       mockPermissions.value.canManageSubscriptionLifecycle = false
       mockCapabilities.value.canReactivate = false
+      mockCanReactivatePlan.value = false
       const checkout = await setup()
 
       await checkout.handleResubscribe()
@@ -3889,6 +3910,7 @@ describe('useSubscriptionCheckout', () => {
 
     it('does not resubscribe when the server denies reactivation to a client-side owner', async () => {
       mockCapabilities.value.canReactivate = false
+      mockCanReactivatePlan.value = false
       const checkout = await setup()
 
       await checkout.handleResubscribe()
