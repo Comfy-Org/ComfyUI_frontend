@@ -61,6 +61,7 @@ import {
   outputHasLinks,
   outputLinks
 } from './node/slotLinks'
+import { createInputSlotView } from './node/slotDescriptorView'
 import { initializeWidgetsView } from './node/widgetsView'
 import {
   extensionConfigureView,
@@ -381,10 +382,6 @@ export class LGraphNode
 
   /** Assignment splices in place: the `shallowReactive` array identity is what the renderer tracks. */
   get inputs(): INodeInputSlot[] {
-    for (const [index, slot] of this._inputs.entries()) {
-      const concrete = toClass(NodeInputSlot, slot, this)
-      if (concrete !== slot) this._inputs[index] = concrete
-    }
     return this._inputs
   }
 
@@ -1010,7 +1007,8 @@ export class LGraphNode
   constructor(title: string, type?: string) {
     initializeWidgetsView(this)
     this._state = createNodeShellState(title, type, this.title_mode)
-    this._inputs = this._state.inputs
+    this._inputs = createInputSlotView(this, this._state.inputs)
+    this._state.inputs = this._inputs
     this._outputs = this._state.outputs
     for (const property of [
       'inputs',

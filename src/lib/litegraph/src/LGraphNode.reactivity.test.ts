@@ -46,6 +46,29 @@ describe('_setConcreteSlots', () => {
 
     expect(onChange).toHaveBeenCalledTimes(1)
   })
+
+  test('reading an upgraded slot does not notify again', async () => {
+    const node = new LGraphNode('test')
+    const slots = computed(() => [...node.inputs])
+    const onChange = vi.fn()
+    watch(slots, onChange)
+    expect(slots.value).toEqual([])
+
+    node.inputs[0] = {
+      name: 'input',
+      type: 'INT',
+      link: null,
+      boundingRect: new Float64Array(4)
+    }
+    await nextTick()
+    expect(onChange).toHaveBeenCalledOnce()
+
+    void node.inputs
+    void node.inputs
+    await nextTick()
+
+    expect(onChange).toHaveBeenCalledOnce()
+  })
 })
 
 describe('widgets array reactivity', () => {
