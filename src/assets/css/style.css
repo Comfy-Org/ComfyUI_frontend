@@ -1,4 +1,14 @@
 @import '@comfyorg/design-system/css/style.css';
+@import '../../workbench/extensions/agent/agentTheme.css';
+
+/* Node selection mode clears the canvas of everything but the graph and its own
+   banner. PrimeVue teleports every `<Toast>` container to <body>, out of reach
+   of any wrapper element, and several components mount their own groups, so the
+   whole toast layer is hidden from the root. The mode's banner is not a toast
+   and is unaffected. Toggled by agentNodeSelectionStore. */
+.node-selection-active .p-toast {
+  display: none;
+}
 
 /* Toasts teleport to <body>. Reka's modal mode sets pointer-events: none on
    the body, which left toast close buttons painted above dialogs but

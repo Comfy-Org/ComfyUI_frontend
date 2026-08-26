@@ -5,6 +5,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import type {
   ProcessedWidget,
   WidgetUiCallbacks
@@ -39,6 +40,7 @@ export function useProcessedWidgets(
   const settingStore = useSettingStore()
   const { isSelectInputsMode } = useAppMode()
   const { handleNodeRightClick } = useNodeEventHandlers()
+  const agentNodeSelectionStore = useAgentNodeSelectionStore()
 
   const nodeType = computed(() => nodeDataGetter()?.type || '')
   const { getWidgetTooltip, createTooltipConfig } = useNodeTooltips(nodeType)
@@ -76,7 +78,8 @@ export function useProcessedWidgets(
       showAdvanced: showAdvanced.value,
       isGraphReady: app.isGraphReady,
       rootGraph: app.isGraphReady ? app.rootGraph : null,
-      ui
+      ui,
+      forceDisabled: agentNodeSelectionStore.isActive
     })
   )
 

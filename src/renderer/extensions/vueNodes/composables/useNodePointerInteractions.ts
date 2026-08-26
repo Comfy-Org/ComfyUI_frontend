@@ -9,6 +9,7 @@ import {
 import { useClickDragGuard } from '@/composables/useClickDragGuard'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import type { NodeId } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
@@ -24,6 +25,7 @@ export function useNodePointerInteractions(
     useCanvasInteractions()
   const { handleNodeSelect, toggleNodeSelectionAfterPointerUp } =
     useNodeEventHandlers()
+  const agentNodeSelectionStore = useAgentNodeSelectionStore()
   const isPinned = () => !!toValue(nodeStateRef).flags.pinned
 
   const forwardMiddlePointerIfNeeded = (
@@ -51,7 +53,7 @@ export function useNodePointerInteractions(
       return
     }
 
-    if (isPinned()) return
+    if (isPinned() || agentNodeSelectionStore.isActive) return
 
     const nodeId = toValue(nodeStateRef).id
 
@@ -66,7 +68,7 @@ export function useNodePointerInteractions(
     // Don't activate drag while resizing
     if (layoutStore.isResizingVueNodes.value) return
 
-    if (isPinned()) return
+    if (isPinned() || agentNodeSelectionStore.isActive) return
 
     const nodeId = toValue(nodeStateRef).id
 
@@ -144,7 +146,8 @@ export function useNodePointerInteractions(
     // Skip selection handling for right-click (button 2) - context menu handles its own selection
     if (event.button === 2) return
 
-    const multiSelect = isMultiSelectKey(event)
+    const multiSelect =
+      isMultiSelectKey(event) || agentNodeSelectionStore.isActive
 
     toggleNodeSelectionAfterPointerUp(toValue(nodeStateRef).id, multiSelect)
   }

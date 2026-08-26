@@ -12,6 +12,13 @@ import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionCont
 
 import type {
   AddCreditsClickMetadata,
+  AgentEntryButtonClickedMetadata,
+  AgentMessageFeedbackMetadata,
+  AgentMessageSentMetadata,
+  AgentNodeTaggedMetadata,
+  AgentPanelClosedMetadata,
+  AgentPanelOpenedMetadata,
+  AgentWorkflowAppliedMetadata,
   AuthErrorMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
@@ -139,7 +146,9 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
       { immediate: true }
     )
 
-    const apiKey = window.__CONFIG__?.posthog_project_token
+    const apiKey =
+      window.__CONFIG__?.posthog_project_token ??
+      import.meta.env.VITE_POSTHOG_PROJECT_TOKEN
     if (apiKey) {
       try {
         void import('posthog-js')
@@ -155,8 +164,8 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
               capture_pageleave: false,
               persistence: 'localStorage+cookie',
               debug: import.meta.env.VITE_POSTHOG_DEBUG === 'true',
-              ...serverConfig,
               person_profiles: 'identified_only',
+              ...serverConfig,
               // cookie_domain omitted: posthog-js sets a first-party cross-subdomain cookie
               // automatically when persistence includes 'cookie' (the default).
               // Explicit override interacts badly with posthog-js#3578 where reset() fails
@@ -629,6 +638,44 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackUiButtonClicked(metadata: UiButtonClickMetadata): void {
     this.trackEvent(TelemetryEvents.UI_BUTTON_CLICKED, metadata)
+  }
+
+  trackAgentMessageFeedback(metadata: AgentMessageFeedbackMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_MESSAGE_FEEDBACK, metadata)
+  }
+
+  trackAgentPanelOpened(metadata: AgentPanelOpenedMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_PANEL_OPENED, metadata)
+  }
+
+  trackAgentPanelClosed(metadata: AgentPanelClosedMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_PANEL_CLOSED, metadata)
+  }
+
+  trackAgentEntryButtonClicked(
+    metadata: AgentEntryButtonClickedMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.AGENT_ENTRY_BUTTON_CLICKED, metadata)
+  }
+
+  trackAgentCloseButtonClicked(): void {
+    this.trackEvent(TelemetryEvents.AGENT_CLOSE_BUTTON_CLICKED)
+  }
+
+  trackAgentMessageSent(metadata: AgentMessageSentMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_MESSAGE_SENT, metadata)
+  }
+
+  trackAgentNodeTagged(metadata: AgentNodeTaggedMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_NODE_TAGGED, metadata)
+  }
+
+  trackAgentAttachButtonClicked(): void {
+    this.trackEvent(TelemetryEvents.AGENT_ATTACH_BUTTON_CLICKED)
+  }
+
+  trackAgentWorkflowApplied(metadata: AgentWorkflowAppliedMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_WORKFLOW_APPLIED, metadata)
   }
 
   trackWidgetFavoriteToggled(metadata: WidgetFavoriteToggledMetadata): void {
