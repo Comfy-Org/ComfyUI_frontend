@@ -30,14 +30,12 @@ describe('runAddWorkflow', () => {
     writeFileSync(sourcePath, '{"nodes":[]}')
     findProjectRoot.mockReturnValue(projectRoot)
     const log = vi.spyOn(console, 'log').mockImplementation(() => undefined)
+    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined)
 
     runAddWorkflow(sourcePath)
 
-    expect(log).toHaveBeenNthCalledWith(1, 'example')
-    expect(log).toHaveBeenNthCalledWith(
-      2,
-      'This workflow is copied into shared test assets so automated runs on other machines can use it. Personal files that are not added this way will not work there.'
-    )
-    expect(log).toHaveBeenNthCalledWith(2, WORKFLOW_ASSET_EXPLANATION)
+    expect(log).toHaveBeenCalledOnce()
+    expect(log).toHaveBeenCalledWith('example')
+    expect(error).toHaveBeenCalledWith(WORKFLOW_ASSET_EXPLANATION)
   })
 })

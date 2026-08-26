@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { resolveDistribution } from '../devserver/distributions'
 import { USE_CASES } from '../useCases'
+import { WORKFLOW_ASSET_EXPLANATION } from '../workflows/add'
 import { runRecord } from './record'
 
 const { autocomplete, info, path, runChecks, runCommand } = vi.hoisted(() => ({
@@ -46,8 +47,13 @@ vi.mock('../ui/logger', () => ({
 }))
 vi.mock('../ui/steps', () => ({ stepHeader: vi.fn() }))
 
+const originalIsTTY = process.stdin.isTTY
+
 afterEach(() => {
-  Reflect.deleteProperty(process.stdin, 'isTTY')
+  Object.defineProperty(process.stdin, 'isTTY', {
+    configurable: true,
+    value: originalIsTTY
+  })
 })
 
 describe('runRecord', () => {
@@ -55,6 +61,13 @@ describe('runRecord', () => {
     Object.defineProperty(process.stdin, 'isTTY', {
       configurable: true,
       value: true
+    })
+    const exit = vi
+      .spyOn(process, 'exit')
+      .mockImplementation(() => undefined as never)
+    path.mockImplementationOnce(async () => {
+      expect(info).toHaveBeenCalledWith([WORKFLOW_ASSET_EXPLANATION])
+      throw new Error('stop after file picker')
     })
 
     await expect(
@@ -68,11 +81,7 @@ describe('runRecord', () => {
       })
     ).rejects.toThrow('stop after file picker')
 
-    expect(info).toHaveBeenCalledWith([
-      'This workflow is copied into shared test assets so automated runs on other machines can use it. Personal files that are not added this way will not work there.'
-    ])
-    expect(info.mock.invocationCallOrder.at(-1)).toBeLessThan(
-      path.mock.invocationCallOrder[0]
-    )
+    expect(info).toHaveBeenCalledWith([WORKFLOW_ASSET_EXPLANATION])
+    expect(exit).not.toHaveBeenCalled()
   })
 })
