@@ -1953,11 +1953,11 @@ export class ComfyApp {
             })
           }
           useFreeTierQuota().trackRun()
-          this.canvas.draw(true, true)
-          void this.ui.queue.update()
         }
 
         if (queuedCount > 0) {
+          this.canvas.draw(true, true)
+          await this.ui.queue.update()
           api.dispatchCustomEvent('promptQueued', {
             number,
             batchCount: queuedCount,

@@ -755,6 +755,25 @@ describe('ComfyApp', () => {
       }
     })
 
+    it('redraws and refreshes the queue UI once after submitting a batch', async () => {
+      prepareEmptyPromptQueue()
+      const queuePrompt = vi
+        .spyOn(api, 'queuePrompt')
+        .mockResolvedValueOnce({ prompt_id: 'job-1', error: '' })
+        .mockResolvedValueOnce({ prompt_id: 'job-2', error: '' })
+      const updateQueue = vi
+        .spyOn(app.ui.queue, 'update')
+        .mockImplementation(async () => {
+          expect(queuePrompt).toHaveBeenCalledTimes(2)
+          expect(mockCanvas.draw).toHaveBeenCalledOnce()
+        })
+
+      await app.queuePrompt(0, 2)
+
+      expect(mockCanvas.draw).toHaveBeenCalledOnce()
+      expect(updateQueue).toHaveBeenCalledOnce()
+    })
+
     it('tracks a resolved prompt rejection at the submission stage', async () => {
       prepareEmptyPromptQueue()
       const trackExecutionOutcome = vi.fn()
