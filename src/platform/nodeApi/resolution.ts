@@ -228,7 +228,7 @@ function callResolver(
  * against plain values. One call per resolver-bearing node, same as the
  * memoised path.
  */
-export async function prebuildResolverAnswers(
+async function prebuildResolverAnswers(
   graph: LGraph,
   resolvers: ReadonlyMap<string, Resolver>
 ): Promise<ReadonlyMap<string, Record<string, OutputResolution>>> {
@@ -684,7 +684,7 @@ export function resolveSuppliedInputs(
  * `prebuildResolverAnswers`, sharing its view construction with
  * `resolveSupplies` by running it once per supplying node.
  */
-export async function prebuildSupplierEdges(
+async function prebuildSupplierEdges(
   graph: LGraph,
   suppliers: ReadonlyMap<string, Supplier>
 ): Promise<ReadonlyMap<string, readonly SuppliedEdge[]>> {
