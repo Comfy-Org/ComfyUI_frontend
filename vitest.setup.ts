@@ -3,6 +3,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, vi } from 'vitest'
 import 'vue'
+import DOMPurify from 'dompurify'
 
 beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
@@ -145,3 +146,29 @@ globalThis.Worker = vi.fn(function () {
     dispatchEvent: vi.fn()
   }
 })
+
+// Tripwire: dompurify >= 3.4.8 is inert under happy-dom.
+// Root cause (capricorn86/happy-dom#2182, FE-1189): happy-dom's
+// Node.prototype.nodeName getter returns '' when invoked directly on an
+// element. dompurify 3.4.8 started reading tag names through that
+// prototype getter as a DOM-clobbering defense, so under happy-dom every
+// node gets an empty tag name and the ALLOWED_TAGS logic misfires in both
+// directions: allowed wrappers are dropped and disallowed content
+// (<script>, javascript: URLs) survives. jsdom implements the getter
+// correctly; dompurify output there matches the pre-3.4.8 control.
+// Sanitizer tests therefore run under jsdom (per-file pragma), and this
+// wrapper makes it impossible to assert against the inert sanitizer
+// silently: throwing on call (not on load) leaves the ~16k tests that
+// never sanitize unaffected.
+if (
+  typeof DOMPurify?.sanitize === 'function' &&
+  DOMPurify.sanitize('<h1>x</h1>') !== '<h1>x</h1>'
+) {
+  DOMPurify.sanitize = (() => {
+    throw new Error(
+      'DOMPurify.sanitize is inert in this test environment (happy-dom ' +
+        'Node.prototype.nodeName bug — see vitest.setup.ts). Add ' +
+        '`// @vitest-environment jsdom` to this test file.'
+    )
+  }) as typeof DOMPurify.sanitize
+}

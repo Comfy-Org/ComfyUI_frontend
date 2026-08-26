@@ -115,6 +115,7 @@ describe('useErrorOverlayState', () => {
     mockAllErrorGroups.value = [
       {
         type: 'execution',
+        severity: 'error',
         groupKey: 'execution:KSampler',
         displayTitle: 'Execution failed',
         count: 1,
@@ -146,6 +147,7 @@ describe('useErrorOverlayState', () => {
     mockAllErrorGroups.value = [
       {
         type: 'execution',
+        severity: 'error',
         groupKey: 'execution:KSampler',
         displayTitle: 'Required input is missing',
         count: 1,
@@ -186,6 +188,7 @@ describe('useErrorOverlayState', () => {
     mockAllErrorGroups.value = [
       {
         type: 'execution',
+        severity: 'error',
         groupKey: 'execution:KSampler',
         displayTitle: 'Friendly validation title',
         count: 1,
@@ -225,6 +228,7 @@ describe('useErrorOverlayState', () => {
     mockAllErrorGroups.value = [
       {
         type: 'execution',
+        severity: 'error',
         groupKey: 'execution:KSampler',
         displayTitle: 'Generation failed',
         count: 1,
@@ -297,6 +301,7 @@ describe('useErrorOverlayState', () => {
     mockAllErrorGroups.value = [
       {
         type: 'missing_media',
+        severity: 'missing',
         groupKey: 'missing_media',
         displayTitle: 'Media input missing',
         displayMessage: 'A required media input has no file selected.',
@@ -357,6 +362,7 @@ describe('useErrorOverlayState', () => {
     mockAllErrorGroups.value = [
       {
         type: 'missing_model',
+        severity: 'missing',
         groupKey: 'missing_model',
         displayTitle: 'Missing Models',
         displayMessage: 'Import a model, or open the node to replace it.',
@@ -382,6 +388,7 @@ describe('useErrorOverlayState', () => {
     mockAllErrorGroups.value = [
       {
         type: 'execution',
+        severity: 'error',
         groupKey: 'execution:required_input_missing',
         displayTitle: 'Missing connection',
         displayMessage: 'Required input slots have no connection feeding them.',
@@ -449,6 +456,7 @@ describe('useErrorOverlayState', () => {
     mockAllErrorGroups.value = [
       {
         type: 'missing_model',
+        severity: 'missing',
         groupKey: 'missing_model',
         displayTitle: 'Missing Models',
         displayMessage: 'Import a model, or open the node to replace it.',
@@ -488,6 +496,7 @@ describe('useErrorOverlayState', () => {
     mockAllErrorGroups.value = [
       {
         type: 'execution',
+        severity: 'error',
         groupKey: 'execution:KSampler',
         displayTitle: 'Execution failed',
         displayMessage: 'First group message',
@@ -503,6 +512,7 @@ describe('useErrorOverlayState', () => {
       },
       {
         type: 'execution',
+        severity: 'error',
         groupKey: 'execution:CLIPTextEncode',
         displayTitle: 'Invalid CLIP input',
         displayMessage: 'Second group message',
