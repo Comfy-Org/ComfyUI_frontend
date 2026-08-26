@@ -115,6 +115,16 @@ it('roundtrip initialization waits for pack-owned ready values', () => {
       false
     )
   ).toEqual([])
+
+  const unavailableValues: Record<string, unknown> | undefined = undefined
+  expect(
+    pendingRoundtripInitializations(signals, unavailableValues!, false)
+  ).toEqual([
+    'LoadAudioUI (litegraph: expected false, observed undefined)',
+    'SAM3VideoSegmentation (litegraph: expected defined, observed undefined)',
+    'iToolsPaintNode (litegraph: expected 33 widgets, observed undefined)',
+    'ImageTransformKJ (litegraph: expected bboxes = "{\\"fillColor\\":\\"#000000\\"}", observed undefined)'
+  ])
 })
 
 it('roundtrip initialization signals apply only to their node batch', () => {
