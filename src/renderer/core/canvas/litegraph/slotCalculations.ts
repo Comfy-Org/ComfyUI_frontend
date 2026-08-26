@@ -80,8 +80,21 @@ export function calculateInputSlotPosFromSlot(
   // Default vertical slots
   const offsetX = LiteGraph.NODE_SLOT_HEIGHT * 0.5
   const nodeOffsetY = context.slotStartY || 0
-  const defaultVerticalInputs = getDefaultVerticalInputs(context)
-  const slotIndex = defaultVerticalInputs.indexOf(input)
+  let slotIndex = -1
+  const inputIndex = context.inputs.indexOf(input)
+  if (
+    inputIndex !== -1 &&
+    !input.pos &&
+    !(context.widgets?.length && isWidgetInputSlot(input))
+  ) {
+    slotIndex = 0
+    for (const [index, slot] of context.inputs.entries()) {
+      if (index >= inputIndex) break
+      if (!slot.pos && !(context.widgets?.length && isWidgetInputSlot(slot))) {
+        slotIndex++
+      }
+    }
+  }
   const slotY = (slotIndex + 0.7) * LiteGraph.NODE_SLOT_HEIGHT
 
   return [nodeX + offsetX, nodeY + slotY + nodeOffsetY]
@@ -149,7 +162,10 @@ export function getSlotPosition(
     }
 
     // Fallback: derive position from node layout tree and slot model
-    const nodeLayout = layoutStore.getNodeLayoutRef(nodeId).value
+    const rootGraphId = node.graph?.rootGraph.id
+    const nodeLayout = rootGraphId
+      ? layoutStore.getNodeLayout(rootGraphId, nodeId)
+      : null
 
     if (nodeLayout) {
       // Create context from layout tree data
@@ -190,17 +206,6 @@ export function getSlotPosition(
   return isInput
     ? calculateInputSlotPos(context, slotIndex)
     : calculateOutputSlotPos(context, slotIndex)
-}
-
-/**
- * Get the inputs that are not positioned with absolute coordinates
- */
-function getDefaultVerticalInputs(
-  context: SlotPositionContext
-): INodeInputSlot[] {
-  return context.inputs.filter(
-    (slot) => !slot.pos && !(context.widgets?.length && isWidgetInputSlot(slot))
-  )
 }
 
 /**

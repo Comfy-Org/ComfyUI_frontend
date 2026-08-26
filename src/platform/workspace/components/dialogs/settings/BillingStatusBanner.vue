@@ -38,7 +38,11 @@
           size="lg"
           @click="handleAddCredits"
         >
-          {{ $t('workspacePanel.billingStatus.outOfCredits.addCredits') }}
+          {{
+            canTopUp
+              ? $t('workspacePanel.billingStatus.outOfCredits.addCredits')
+              : $t('subscription.upgradeToAddCredits')
+          }}
         </Button>
         <Button
           v-else-if="banner.action === 'reactivate'"
@@ -70,6 +74,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingBanner } from '@/platform/workspace/composables/useBillingBanner'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useDialogService } from '@/services/dialogService'
@@ -79,6 +84,7 @@ type BannerAction = 'addCredits' | 'reactivate' | 'updatePayment'
 const { t, d } = useI18n()
 const { renewalDate, subscription, manageSubscription } = useBillingContext()
 const { permissions } = useWorkspaceUI()
+const { canTopUp, canSubscribeSelfServe } = useBillingCapabilities()
 const { kind, dismiss } = useBillingBanner()
 const { isResubscribing, handleResubscribe } = useResubscribe()
 const dialogService = useDialogService()
@@ -87,8 +93,6 @@ const canManage = computed(() => permissions.value.canManageSubscription)
 const canManageLifecycle = computed(
   () => permissions.value.canManageSubscriptionLifecycle
 )
-const canTopUp = computed(() => permissions.value.canTopUp)
-
 const cycleResetDate = computed(() => {
   const raw = renewalDate.value
   return raw ? d(new Date(raw), { month: 'short', day: 'numeric' }) : ''
@@ -137,8 +141,11 @@ const banner = computed<BannerView | null>(() => {
           ? cycleResetDate.value
             ? t(`${bs}.outOfCredits.body`, { date: cycleResetDate.value })
             : t(`${bs}.outOfCredits.bodyNoDate`)
-          : t(`${bs}.outOfCredits.memberBody`),
-        action: canTopUp.value ? 'addCredits' : null,
+          : canSubscribeSelfServe.value
+            ? t(`${bs}.outOfCredits.upgradeBody`)
+            : t(`${bs}.outOfCredits.memberBody`),
+        action:
+          canTopUp.value || canSubscribeSelfServe.value ? 'addCredits' : null,
         dismissible: true
       }
     case 'ending':

@@ -392,7 +392,7 @@
   --warning-background: var(--color-gold-600);
   --warning-background-hover: var(--color-gold-500);
   --warning-foreground: var(--color-gold-600);
-  --warning-on-background: var(--color-white);
+  --warning-on-background: var(--color-charcoal-800);
   --success-background: var(--color-jade-600);
   --border-default: var(--color-charcoal-200);
   --border-subtle: var(--color-charcoal-300);

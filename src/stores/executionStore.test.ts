@@ -1780,19 +1780,25 @@ describe('useExecutionStore - RAF batching', () => {
     })
   })
 
-  describe('executing cancels both coalescers', () => {
-    it('discards pending progress_state RAF when a new node starts executing', () => {
+  describe('executing preserves node progress state', () => {
+    it('applies the initial running state when executing follows in the same frame', () => {
       expect.assertions(1)
+      const startHandler = getRegisteredHandler('execution_start')
       const progressStateHandler = getRegisteredHandler('progress_state')
       const executingHandler = getRegisteredHandler('executing')
 
+      startHandler(
+        new CustomEvent('execution_start', {
+          detail: { prompt_id: 'job-1', timestamp: 0 }
+        })
+      )
       progressStateHandler(
         new CustomEvent('progress_state', {
           detail: {
             prompt_id: 'job-1',
             nodes: {
               '1': {
-                value: 5,
+                value: 0,
                 max: 10,
                 state: 'running',
                 node_id: '1',
@@ -1804,7 +1810,38 @@ describe('useExecutionStore - RAF batching', () => {
         })
       )
 
-      executingHandler(new CustomEvent('executing', { detail: '2' }))
+      executingHandler(new CustomEvent('executing', { detail: '1' }))
+      vi.advanceTimersToNextFrame()
+
+      expect(store.nodeProgressStates['1']).toEqual(
+        expect.objectContaining({ state: 'running' })
+      )
+    })
+
+    it('discards a pending node progress state when execution stops', () => {
+      expect.assertions(1)
+      const progressStateHandler = getRegisteredHandler('progress_state')
+      const executingHandler = apiEventHandlers.get('executing')!
+
+      progressStateHandler(
+        new CustomEvent('progress_state', {
+          detail: {
+            prompt_id: 'job-1',
+            nodes: {
+              '1': {
+                value: 0,
+                max: 10,
+                state: 'running',
+                node_id: '1',
+                prompt_id: 'job-1',
+                display_node_id: '1'
+              }
+            }
+          }
+        })
+      )
+
+      executingHandler(new CustomEvent('executing', { detail: null }))
       vi.advanceTimersToNextFrame()
 
       expect(Object.keys(store.nodeProgressStates)).toHaveLength(0)

@@ -1,24 +1,17 @@
 /**
- * showTopUpCreditsDialog must route team members (who cannot top up) to the
- * read-only contact-admin notice instead of the purchase dialog, while
- * owners/personal/legacy users keep the purchase flow.
+ * showTopUpCreditsDialog routes the paired server capabilities to purchase,
+ * subscription, or read-only contact-admin UI.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const showDialog = vi.hoisted(() => vi.fn())
 const closeDialog = vi.hoisted(() => vi.fn())
 const state = vi.hoisted(() => ({
-  canAccessSubscriptionFeatures: true,
-  isTeamPlan: false,
-  tier: 'STANDARD' as
-    | 'FREE'
-    | 'STANDARD'
-    | 'CREATOR'
-    | 'PRO'
-    | 'FOUNDERS_EDITION'
-    | null,
   type: 'workspace' as 'workspace' | 'legacy',
-  canTopUp: true
+  canTopUp: true,
+  canSubscribeSelfServe: false,
+  isReady: true,
+  initialize: vi.fn()
 }))
 
 vi.mock('@/stores/dialogStore', () => ({
@@ -42,18 +35,29 @@ vi.mock('@/platform/distribution/types', () => ({
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
-    canAccessSubscriptionFeatures: {
-      value: state.canAccessSubscriptionFeatures
-    },
-    isTeamPlan: { value: state.isTeamPlan },
-    tier: { value: state.tier },
     type: { value: state.type }
   })
 }))
 
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
-  useWorkspaceUI: () => ({
-    permissions: { value: { canTopUp: state.canTopUp } }
+vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
+  useBillingCapabilities: () => ({
+    // Getters, not snapshots: initialize() resolves capabilities mid-call.
+    canTopUp: {
+      get value() {
+        return state.canTopUp
+      }
+    },
+    canSubscribeSelfServe: {
+      get value() {
+        return state.canSubscribeSelfServe
+      }
+    },
+    isReady: {
+      get value() {
+        return state.isReady
+      }
+    },
+    initialize: () => state.initialize()
   })
 }))
 
@@ -74,11 +78,11 @@ import { useDialogService } from '@/services/dialogService'
 
 describe('showTopUpCreditsDialog', () => {
   beforeEach(() => {
-    state.canAccessSubscriptionFeatures = true
-    state.isTeamPlan = false
-    state.tier = 'STANDARD'
     state.type = 'workspace'
     state.canTopUp = true
+    state.canSubscribeSelfServe = false
+    state.isReady = true
+    state.initialize = vi.fn()
     mockIsCloud.value = true
   })
 
@@ -89,11 +93,12 @@ describe('showTopUpCreditsDialog', () => {
 
     const [args] = showDialog.mock.calls[0]
     expect(args.key).toBe('top-up-credits')
+    expect(state.initialize).not.toHaveBeenCalled()
   })
 
   it('shows the contact-admin notice to team members instead of the purchase dialog', async () => {
-    state.isTeamPlan = true
     state.canTopUp = false
+    state.canSubscribeSelfServe = false
 
     await useDialogService().showTopUpCreditsDialog({
       isInsufficientCredits: true
@@ -112,9 +117,9 @@ describe('showTopUpCreditsDialog', () => {
     })
   })
 
-  it('ignores workspace permissions on legacy billing', async () => {
+  it('uses the server capability on legacy billing', async () => {
     state.type = 'legacy'
-    state.canTopUp = false
+    state.canTopUp = true
 
     await useDialogService().showTopUpCreditsDialog()
 
@@ -122,28 +127,53 @@ describe('showTopUpCreditsDialog', () => {
     expect(args.key).toBe('top-up-credits')
   })
 
-  it('routes an active Cloud free-tier user to the subscription-required flow', async () => {
-    state.tier = 'FREE'
+  it('does not show workspace-admin copy for denied legacy billing', async () => {
+    state.type = 'legacy'
+    state.canTopUp = false
 
     await useDialogService().showTopUpCreditsDialog()
 
-    expect(showSubscriptionDialog).toHaveBeenCalledWith({
-      reason: 'top_up_blocked'
-    })
     expect(showDialog).not.toHaveBeenCalled()
+    expect(showSubscriptionDialog).not.toHaveBeenCalled()
   })
 
-  it('routes a member of an inactive team to the subscription-required flow, not the credits notice', async () => {
-    state.canAccessSubscriptionFeatures = false
-    state.isTeamPlan = true
+  it('awaits an in-flight capability read instead of dropping the request', async () => {
     state.canTopUp = false
+    state.isReady = false
+    state.initialize = vi.fn(() => {
+      state.canTopUp = true
+      state.isReady = true
+      return Promise.resolve()
+    })
 
     await useDialogService().showTopUpCreditsDialog({
       isInsufficientCredits: true
     })
 
+    expect(state.initialize).toHaveBeenCalledOnce()
+    const [args] = showDialog.mock.calls[0]
+    expect(args.key).toBe('top-up-credits')
+  })
+
+  it('does not route when capabilities stay unresolved after initializing', async () => {
+    state.canTopUp = false
+    state.isReady = false
+
+    await useDialogService().showTopUpCreditsDialog()
+
+    expect(state.initialize).toHaveBeenCalledOnce()
+    expect(showDialog).not.toHaveBeenCalled()
+    expect(showSubscriptionDialog).not.toHaveBeenCalled()
+  })
+
+  it('routes self-serve subscribers to the subscription-required flow', async () => {
+    state.canTopUp = false
+    state.canSubscribeSelfServe = true
+
+    await useDialogService().showTopUpCreditsDialog()
+
     expect(showSubscriptionDialog).toHaveBeenCalledWith({
-      reason: 'out_of_credits'
+      reason: 'top_up_blocked'
     })
     expect(showDialog).not.toHaveBeenCalled()
   })
@@ -154,19 +184,7 @@ describe('showTopUpCreditsDialog', () => {
       state.type = 'legacy'
     })
 
-    it('opens the purchase dialog directly on the free tier instead of the subscription-required flow', async () => {
-      state.tier = 'FREE'
-
-      await useDialogService().showTopUpCreditsDialog()
-
-      expect(showSubscriptionDialog).not.toHaveBeenCalled()
-      const [args] = showDialog.mock.calls[0]
-      expect(args.key).toBe('top-up-credits')
-    })
-
-    it('opens the purchase dialog even when the facade reports no active subscription', async () => {
-      state.canAccessSubscriptionFeatures = false
-
+    it('opens the purchase dialog when the capability endpoint defaults open', async () => {
       await useDialogService().showTopUpCreditsDialog()
 
       expect(showSubscriptionDialog).not.toHaveBeenCalled()
