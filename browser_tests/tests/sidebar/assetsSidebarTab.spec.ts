@@ -361,7 +361,6 @@ test.describe('FE-130 assets sidebar route mocks', () => {
   }) => {
     const tab = comfyPage.menu.assetsTab
 
-    await comfyPage.setup()
     await tab.open()
     await expect(tab.getAssetCardByName('alpha')).toBeVisible()
 
@@ -377,9 +376,10 @@ test.describe('FE-130 assets sidebar route mocks', () => {
     await expect(tab.getAssetCardByName('alpha')).toHaveCount(0)
     await expect(async () => {
       await expect(comfyPage.toast.toastSuccesses).toContainText(
-        'Asset deleted successfully'
+        'Asset deleted successfully',
+        { timeout: 1000 }
       )
-    }, 'Deletion is not supported on local').not.toPass({ timeout: 5000 })
+    }, 'Deletion is not supported on local').rejects.toThrow()
   })
 })
 

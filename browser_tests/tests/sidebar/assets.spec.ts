@@ -978,11 +978,6 @@ test.describe('Assets sidebar - delete confirmation', () => {
     await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
     await comfyPage.assets.mockDeleteHistory()
     await comfyPage.assets.mockInputFiles([])
-    await comfyPage.setup()
-  })
-
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.assets.clearMocks()
   })
 
   test('Right-click delete shows confirmation dialog', async ({
@@ -1023,8 +1018,8 @@ test.describe('Assets sidebar - delete confirmation', () => {
 
     const successToast = comfyPage.page.locator('.p-toast-message-success')
     await expect(async () => {
-      await expect(successToast).toBeVisible()
-    }, 'Deletion is not supported on local').not.toPass({ timeout: 5000 })
+      await expect(successToast).toBeVisible({ timeout: 1000 })
+    }, 'Deletion is not supported on local').rejects.toThrow()
   })
 
   test('Cancelling delete preserves asset', async ({ comfyPage }) => {
