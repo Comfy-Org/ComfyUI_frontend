@@ -2,6 +2,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
+import { filterComparableWorkloads } from '../browser_tests/fixtures/helpers/perfWorkloadIdentity'
 import type {
   PerfMeasurement,
   PerfReport,
@@ -138,12 +139,16 @@ function loadHistoricalReports(): PerfReport[] {
 function getHistoricalStats(
   reports: PerfReportV2[],
   testName: string,
-  metric: MetricKey
+  metric: MetricKey,
+  reference: PerfMeasurement
 ): MetricStats {
   const values: number[] = []
   for (const r of reports) {
     const group = groupByName(acceptedMeasurements(r))
-    const samples = group.get(testName)
+    const samples = filterComparableWorkloads(
+      reference,
+      group.get(testName) ?? []
+    )
     if (samples) {
       const mean = meanMetric(samples, metric)
       if (mean !== null) values.push(mean)
@@ -155,7 +160,8 @@ function getHistoricalStats(
 function getHistoricalTimeSeries(
   reports: PerfReportV2[],
   testName: string,
-  metric: MetricKey
+  metric: MetricKey,
+  reference: PerfMeasurement
 ): number[] {
   const sorted = [...reports].sort(
     (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
@@ -163,7 +169,10 @@ function getHistoricalTimeSeries(
   const values: number[] = []
   for (const r of sorted) {
     const group = groupByName(acceptedMeasurements(r))
-    const samples = group.get(testName)
+    const samples = filterComparableWorkloads(
+      reference,
+      group.get(testName) ?? []
+    )
     if (samples) {
       const mean = meanMetric(samples, metric)
       if (mean !== null) values.push(mean)
@@ -273,13 +282,17 @@ function renderFullReport(
   const allRows: string[] = []
 
   for (const [testName, prSamples] of prGroups) {
-    const baseSamples = baselineGroups.get(testName)
+    const reference = prSamples[0]
+    const baseSamples = filterComparableWorkloads(
+      reference,
+      baselineGroups.get(testName) ?? []
+    )
 
     for (const { key, label, unit, minAbsDelta } of REPORTED_METRICS) {
       // Use median for PR values — robust to outlier runs in CI
       const prVal = medianMetric(prSamples, key)
       if (prVal === null) continue
-      const histStats = getHistoricalStats(historical, testName, key)
+      const histStats = getHistoricalStats(historical, testName, key, reference)
       const cv = computeCV(histStats)
 
       if (!baseSamples?.length) {
@@ -346,9 +359,10 @@ function renderFullReport(
     '| Metric | μ | σ | CV |',
     '|--------|---|---|-----|'
   )
-  for (const [testName] of prGroups) {
+  for (const [testName, prSamples] of prGroups) {
+    const reference = prSamples[0]
     for (const { key, label, unit } of REPORTED_METRICS) {
-      const stats = getHistoricalStats(historical, testName, key)
+      const stats = getHistoricalStats(historical, testName, key, reference)
       if (stats.n < 2) continue
       const cv = computeCV(stats)
       lines.push(
@@ -359,9 +373,15 @@ function renderFullReport(
   lines.push('', '</details>')
 
   const trendRows: string[] = []
-  for (const [testName] of prGroups) {
+  for (const [testName, prSamples] of prGroups) {
+    const reference = prSamples[0]
     for (const { key, label, unit } of REPORTED_METRICS) {
-      const series = getHistoricalTimeSeries(historical, testName, key)
+      const series = getHistoricalTimeSeries(
+        historical,
+        testName,
+        key,
+        reference
+      )
       if (series.length < 3) continue
       const dir = trendDirection(series)
       const arrow = trendArrow(dir)
@@ -406,7 +426,10 @@ function renderColdStartReport(
   )
 
   for (const [testName, prSamples] of prGroups) {
-    const baseSamples = baselineGroups.get(testName)
+    const baseSamples = filterComparableWorkloads(
+      prSamples[0],
+      baselineGroups.get(testName) ?? []
+    )
 
     for (const { key, label, unit } of REPORTED_METRICS) {
       const prVal = medianMetric(prSamples, key)
@@ -538,9 +561,31 @@ export function renderPerfReport(
       return { ...result, measurement }
     })
   }
+  const serializedCommentData = JSON.stringify(commentData, null, 2)
+  const boundedCommentData =
+    serializedCommentData.length <= 48_000
+      ? serializedCommentData
+      : JSON.stringify(
+          {
+            schemaVersion: current.schemaVersion,
+            timestamp: current.timestamp,
+            gitSha: current.gitSha,
+            branch: current.branch,
+            summaryTruncated: true,
+            fullArtifact: CURRENT_PATH,
+            measurementIdentities: current.measurements.map((result) => ({
+              name: result.measurement.name,
+              rejectedRunReason:
+                result.kind === 'rejected' ? result.reason : null,
+              workloadIdentity: result.measurement.workloadIdentity
+            }))
+          },
+          null,
+          2
+        )
   lines.push('\n<details><summary>Summary data</summary>\n')
   lines.push('```json')
-  lines.push(JSON.stringify(commentData, null, 2))
+  lines.push(boundedCommentData)
   lines.push('```')
   lines.push('\n</details>')
 

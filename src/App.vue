@@ -58,6 +58,11 @@ function handleResourceError(url: string, tagName: string) {
 
 onMounted(() => {
   window['__COMFYUI_FRONTEND_VERSION__'] = config.app_version
+  window['__COMFYUI_FRONTEND_COMMIT__'] = __COMFYUI_FRONTEND_COMMIT__
+  window['__COMFYUI_BUILD_MODE__'] = import.meta.env.MODE as
+    | 'development'
+    | 'production'
+    | 'test'
 
   if (isDesktop) {
     document.addEventListener('contextmenu', showContextMenu)
