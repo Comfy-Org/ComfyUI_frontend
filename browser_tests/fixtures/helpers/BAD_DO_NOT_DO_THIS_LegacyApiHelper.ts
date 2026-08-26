@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { NodeId } from '@/types/nodeId'
 
 export class BAD_DO_NOT_DO_THIS_LegacyApiHelper {
@@ -255,6 +256,55 @@ export class BAD_DO_NOT_DO_THIS_LegacyApiHelper {
       node.size[1] += 80
       node.setDirtyCanvas(true, true)
     }, nodeId)
+  }
+
+  spreadCopyLinkTopology(nodeType: string, outputIndex: number) {
+    return this.page.evaluate(
+      ([nodeType, outputIndex]) => {
+        const graph = window.app!.graph
+        const node = graph.nodes.find((node) => node.type === nodeType)
+        if (!node) throw new Error(`${nodeType} not found`)
+
+        const linkId = node.outputs[outputIndex].links?.[0]
+        if (linkId == null) {
+          throw new Error(`${nodeType} output ${outputIndex} has no link`)
+        }
+        const link = graph.links.get(linkId)
+        if (!link) throw new Error(`Link ${linkId} not found`)
+
+        // oxlint-disable-next-line no-misused-spread -- spreading an LLink is what this legacy pattern reproduces
+        const copy: Partial<LLink> = { ...link }
+        return {
+          ownKeys: Object.keys(copy).sort(),
+          id: copy.id,
+          type: copy.type,
+          origin_id: copy.origin_id,
+          origin_slot: copy.origin_slot,
+          target_id: copy.target_id,
+          target_slot: copy.target_slot,
+          parentId: copy.parentId
+        }
+      },
+      [nodeType, outputIndex] as const
+    )
+  }
+
+  getOwnEnumerableShellKeys(nodeType: string) {
+    return this.page.evaluate((nodeType) => {
+      const node = window.app!.graph.nodes.find(
+        (node) => node.type === nodeType
+      )
+      if (!node) throw new Error(`${nodeType} not found`)
+
+      return {
+        ownKeys: Object.keys(node).sort(),
+        hasOwnInputs: Object.hasOwn(node, 'inputs'),
+        hasOwnOutputs: Object.hasOwn(node, 'outputs'),
+        hasOwnWidgets: Object.hasOwn(node, 'widgets'),
+        hasOwnProperties: Object.hasOwn(node, 'properties'),
+        hasOwnBoxcolor: Object.hasOwn(node, 'boxcolor')
+      }
+    }, nodeType)
   }
 
   growNodeByMutatingSizeAfterLoadingPreview(nodeId: NodeId) {
