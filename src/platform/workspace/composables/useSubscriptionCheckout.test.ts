@@ -4073,7 +4073,7 @@ describe('useSubscriptionCheckout', () => {
       openSpy.mockRestore()
     })
 
-    it('persists the operation when its payment URL is missing', async () => {
+    it('does not persist needs_payment_method without a payment URL', async () => {
       const checkout = await setupWithApprovedPreview()
       checkout.selectedTierKey.value = 'standard'
       checkout.selectedBillingCycle.value = 'yearly'
@@ -4088,11 +4088,8 @@ describe('useSubscriptionCheckout', () => {
       expect(openSpy).not.toHaveBeenCalled()
       expect(useBillingOperationStore().startOperation).not.toHaveBeenCalled()
       expect(
-        JSON.parse(
-          sessionStorage.getItem('comfy:pending-subscription-checkout') ??
-            'null'
-        )
-      ).toMatchObject({ operationId: 'op-no-url' })
+        sessionStorage.getItem('comfy:pending-subscription-checkout')
+      ).toBeNull()
       expect(mockToastAdd).toHaveBeenCalledWith(
         expect.objectContaining({
           severity: 'error',

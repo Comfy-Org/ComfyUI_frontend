@@ -660,7 +660,10 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
         ...original,
         user_metadata: { note: 'server-confirmed' }
       }
-      vi.mocked(assetService.updateAsset).mockResolvedValueOnce(serverResponse)
+      vi.mocked(assetService.updateAsset).mockResolvedValueOnce({
+        kind: 'updated',
+        asset: serverResponse
+      })
 
       await store.updateAssetMetadata(
         original,
@@ -672,7 +675,7 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       expect(cached.user_metadata).toEqual({ note: 'server-confirmed' })
     })
 
-    it('rolls back cached metadata when the update request fails', async () => {
+    it('invalidates cached metadata when the server outcome is unknown', async () => {
       const store = useAssetsStore()
       const original = {
         ...createMockAsset('opt-2'),
@@ -695,36 +698,11 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
         'CheckpointLoaderSimple'
       )
 
-      expect(
-        store.getAssets('CheckpointLoaderSimple')[0].user_metadata
-      ).toEqual({ note: 'before' })
+      expect(store.getAssets('CheckpointLoaderSimple')).toEqual([])
       consoleSpy.mockRestore()
     })
 
-    it.fails('rolls back cached metadata when the server outcome is unknown', async () => {
-      const store = useAssetsStore()
-      const original = {
-        ...createMockAsset('opt-unknown'),
-        user_metadata: { note: 'before' } as Record<string, unknown>
-      }
-
-      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValueOnce(
-        makePage([original])
-      )
-      await store.updateModelsForNodeType('CheckpointLoaderSimple')
-      mockFailedUpdate('unknown')
-
-      await store.updateAssetMetadata(
-        original,
-        { note: 'optimistic' },
-        'CheckpointLoaderSimple'
-      )
-
-      const cached = store.getAssets('CheckpointLoaderSimple')[0]
-      expect(cached.user_metadata).toEqual({ note: 'before' })
-    })
-
-    it.fails('rolls back when the server confirms the update was rejected', async () => {
+    it('rolls back when the server confirms the update was rejected', async () => {
       const store = useAssetsStore()
       const original = {
         ...createMockAsset('opt-3'),
