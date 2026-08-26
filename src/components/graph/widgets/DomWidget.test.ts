@@ -9,9 +9,7 @@ import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import DomWidget from './DomWidget.vue'
 
-const mockUpdatePosition = vi.fn()
 const mockUpdateClipPath = vi.fn()
-const mockPositionStyle = ref<Record<string, string>>({})
 const mockClippingStyle = ref<Record<string, string>>({})
 const mockDomClippingEnabled = ref(false)
 const mockCanvasElement = document.createElement('canvas')
@@ -29,16 +27,12 @@ const mockCanvasStore = {
     selectNode: vi.fn(),
     bringToFront: vi.fn()
   },
-  getCanvas: () => ({ canvas: mockCanvasElement }),
+  getCanvas: () => ({
+    canvas: mockCanvasElement,
+    ds: mockCanvasStore.canvas.ds
+  }),
   linearMode: false
 }
-
-vi.mock('@/composables/element/useAbsolutePosition', () => ({
-  useAbsolutePosition: () => ({
-    style: mockPositionStyle,
-    updatePosition: mockUpdatePosition
-  })
-}))
 
 vi.mock('@/composables/element/useDomClipping', () => ({
   useDomClipping: () => ({
@@ -96,19 +90,24 @@ describe('DomWidget style', () => {
   afterEach(() => {
     useDomWidgetStore().clear()
     mockDomClippingEnabled.value = false
-    mockPositionStyle.value = {}
     mockClippingStyle.value = {}
   })
 
   it('positions a newly mounted widget', () => {
     const widgetState = createWidgetState(false)
-    render(DomWidget, {
+    const { container } = render(DomWidget, {
       props: {
         widgetState
       }
     })
 
-    expect(mockUpdatePosition).toHaveBeenCalledWith(widgetState)
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    const root = container.querySelector('.dom-widget') as HTMLElement
+    expect(root.style.left).toBe('0px')
+    expect(root.style.top).toBe('0px')
+    expect(root.style.width).toBe('100px')
+    expect(root.style.height).toBe('40px')
+    expect(root.style.transform).toBe('scale(1)')
   })
 
   it('uses disabled style when widget is computedDisabled', async () => {
@@ -202,7 +201,7 @@ describe('DomWidget position update matrix', () => {
   })
 
   it.for(widgetCounts)(
-    'requests no style writes at steady state and one per changed position for %i widgets',
+    'keeps stable styles and writes changed positions for %i widgets',
     async (count) => {
       const states = Array.from({ length: count }, (_, index) =>
         createWidgetState(false, `position-widget-${index}`)
@@ -210,16 +209,24 @@ describe('DomWidget position update matrix', () => {
       const rendered = states.map((widgetState) =>
         render(DomWidget, { props: { widgetState } })
       )
-      mockUpdatePosition.mockClear()
+      const roots = rendered.map(({ container }) => {
+        // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+        return container.querySelector('.dom-widget') as HTMLElement
+      })
+      const initialStyles = roots.map((root) => root.getAttribute('style'))
 
       await nextTick()
-      expect(mockUpdatePosition).not.toHaveBeenCalled()
+      expect(roots.map((root) => root.getAttribute('style'))).toEqual(
+        initialStyles
+      )
 
       for (const state of states) {
         state.pos = [state.pos[0] + 1, state.pos[1]]
       }
       await nextTick()
-      expect(mockUpdatePosition).toHaveBeenCalledTimes(count)
+      expect(roots.map((root) => root.style.left)).toEqual(
+        Array.from({ length: count }, () => '1px')
+      )
 
       for (const result of rendered) result.unmount()
     }
