@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import { userEvent, within } from 'storybook/test'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import ButtonPill from './ButtonPill.vue'
@@ -119,7 +120,18 @@ export const WorkflowsPageReference: Story = {
         </span>
       </a>
     `
-  })
+  }),
+  play: async ({ canvasElement, step }) => {
+    const canvas = within(canvasElement)
+    const button = canvas.getByRole('link', { name: 'Example workflow' })
+
+    await step('Reveal label', async () => {
+      await userEvent.hover(button)
+    })
+    await step('Reset button', async () => {
+      await userEvent.unhover(button)
+    })
+  }
 }
 
 export const LargeSolid: Story = {
