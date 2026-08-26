@@ -158,14 +158,15 @@ export function getSlotPosition(
 ): Point {
   if (LiteGraph.vueNodesMode) {
     const [nodeX, nodeY] = node.pos
-    const offset = node.graph
-      ? layoutStore.getSlotOffset(
-          node.graph.rootGraph.id,
-          node.id,
-          slotIndex,
-          isInput ? 'input' : 'output'
-        )
-      : null
+    const offset =
+      !node.flags.collapsed && node.graph
+        ? layoutStore.getSlotOffset(
+            node.graph.rootGraph.id,
+            node.id,
+            slotIndex,
+            isInput ? 'input' : 'output'
+          )
+        : null
     if (offset) return [nodeX + offset.x, nodeY + offset.y]
 
     const nodeWidth = node.flags.collapsed
@@ -311,16 +312,8 @@ export function getSlotLayoutAtPoint(
   node?: LGraphNode
 ): SlotLayout | null {
   if (node) return getNodeSlotLayoutAtPoint(node, point)
-  const tolerance = LiteGraph.NODE_SLOT_HEIGHT
-  const candidates = new Set(
-    [
-      graph.getNodeOnPos(point.x, point.y),
-      graph.getNodeOnPos(point.x - tolerance, point.y),
-      graph.getNodeOnPos(point.x + tolerance, point.y)
-    ].filter((candidate): candidate is LGraphNode => candidate !== null)
-  )
-  for (const candidateNode of candidates) {
-    const layout = getNodeSlotLayoutAtPoint(candidateNode, point)
+  for (let index = graph.nodes.length - 1; index >= 0; index--) {
+    const layout = getNodeSlotLayoutAtPoint(graph.nodes[index], point)
     if (layout) return layout
   }
   return null

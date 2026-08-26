@@ -780,6 +780,9 @@ class LayoutStoreImpl {
     for (const key of this.contentSizes.keys()) {
       if (key.startsWith(prefix)) this.contentSizes.delete(key)
     }
+    for (const key of this.slotOffsets.keys()) {
+      if (key.startsWith(prefix)) this.slotOffsets.delete(key)
+    }
     for (const key of [...this.ygroups.keys()]) {
       if (!key.startsWith(prefix)) continue
       this.ygroups.delete(key)

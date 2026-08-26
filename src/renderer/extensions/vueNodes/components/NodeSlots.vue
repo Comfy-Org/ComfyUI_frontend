@@ -119,7 +119,7 @@ const layoutKey = computed(() =>
 )
 
 watch(
-  layoutKey,
+  [layoutKey, slots, () => canvasStore.rootGraphId],
   () => {
     const rootGraphId = canvasStore.rootGraphId
     if (slots.value && rootGraphId) {

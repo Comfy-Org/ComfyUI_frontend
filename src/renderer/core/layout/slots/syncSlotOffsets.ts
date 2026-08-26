@@ -35,7 +35,7 @@ export function syncSlotOffsets(
       index: slotId.index,
       type: slotId.direction,
       position: {
-        x: (slotRect.left + slotRect.width / 2 - nodeRect.left) / scale,
+        x: slotId.direction === 'input' ? 0 : nodeElement.offsetWidth,
         y:
           (slotRect.top + slotRect.height / 2 - nodeRect.top) / scale -
           LiteGraph.NODE_TITLE_HEIGHT

@@ -16,7 +16,7 @@
     </div>
     <!-- Connection Dot -->
     <SlotConnectionDot
-      :data-slot-key="slotKey"
+      :slot-key
       class="w-3 translate-x-1/2"
       :slot-data
       @pointerdown="onPointerDown"
@@ -87,11 +87,11 @@ onErrorCaptured((error) => {
 
 const { state: dragState } = useSlotLinkDragUIState()
 const slotKey = computed(() =>
-  props.nodeId ? getSlotKey(props.nodeId, props.index, false) : ''
+  props.nodeId ? getSlotKey(props.nodeId, props.index, false) : undefined
 )
 const shouldDim = computed(() => {
   if (!dragState.active) return false
-  return !dragState.compatible.get(slotKey.value)
+  return !slotKey.value || !dragState.compatible.get(slotKey.value)
 })
 
 const slotWrapperClass = computed(() =>

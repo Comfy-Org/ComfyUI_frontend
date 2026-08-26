@@ -19,7 +19,7 @@
   >
     <!-- Connection Dot -->
     <SlotConnectionDot
-      :data-slot-key="slotKey"
+      :slot-key
       :class="
         cn(
           'w-3 -translate-x-1/2',
@@ -115,11 +115,11 @@ onErrorCaptured((error) => {
 
 const { state: dragState } = useSlotLinkDragUIState()
 const slotKey = computed(() =>
-  props.nodeId ? getSlotKey(props.nodeId, props.index, true) : ''
+  props.nodeId ? getSlotKey(props.nodeId, props.index, true) : undefined
 )
 const shouldDim = computed(() => {
   if (!dragState.active) return false
-  return !dragState.compatible.get(slotKey.value)
+  return !slotKey.value || !dragState.compatible.get(slotKey.value)
 })
 
 const { onClick, onDoubleClick, onPointerDown } = useSlotLinkInteraction({

@@ -44,4 +44,34 @@ describe('syncSlotOffsets', () => {
       y: 24
     })
   })
+
+  it('clears stored offsets when the node has no rendered slots', () => {
+    const nodeId = toNodeId('empty')
+    const node = document.createElement('div')
+    layoutStore.updateNodeSlotOffsets(GRAPH_ID, nodeId, [
+      { index: 0, type: 'input', position: { x: 1, y: 2 } }
+    ])
+
+    syncSlotOffsets(node, GRAPH_ID, nodeId)
+
+    expect(layoutStore.getSlotOffset(GRAPH_ID, nodeId, 0, 'input')).toBeNull()
+  })
+
+  it('preserves stored offsets when the node has no measurable scale', () => {
+    const nodeId = toNodeId('hidden')
+    const node = document.createElement('div')
+    const input = document.createElement('div')
+    input.dataset.slotKey = slotId(nodeId, 'input', 0)
+    node.append(input)
+    layoutStore.updateNodeSlotOffsets(GRAPH_ID, nodeId, [
+      { index: 0, type: 'input', position: { x: 1, y: 2 } }
+    ])
+
+    syncSlotOffsets(node, GRAPH_ID, nodeId)
+
+    expect(layoutStore.getSlotOffset(GRAPH_ID, nodeId, 0, 'input')).toEqual({
+      x: 1,
+      y: 2
+    })
+  })
 })

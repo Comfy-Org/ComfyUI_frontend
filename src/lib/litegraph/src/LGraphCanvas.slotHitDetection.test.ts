@@ -115,15 +115,15 @@ describe('LGraphCanvas slot hit detection', () => {
         bounds: { x: 246, y: 110, width: 20, height: 20 }
       })
 
-      // Call processMouseDown - this should trigger the slot fallback
       canvas.processMouseDown(
         new MouseEvent('pointerdown', {
-          button: 1, // Middle button
+          button: 2,
           clientX: clickX,
           clientY: clickY
         })
       )
 
+      expect(node.selected).toBe(true)
       expect(getSlotLayoutAtPoint).toHaveBeenCalledWith(graph, {
         x: clickX,
         y: clickY
@@ -145,16 +145,15 @@ describe('LGraphCanvas slot hit detection', () => {
       expect(node.isPointInside(clickX, clickY)).toBe(true)
       expect(graph.getNodeOnPos(clickX, clickY)).toBe(node)
 
-      // Call processMouseDown
       canvas.processMouseDown(
         new MouseEvent('pointerdown', {
-          button: 1,
+          button: 2,
           clientX: clickX,
           clientY: clickY
         })
       )
 
-      // Should NOT query the layout store since node was found directly
+      expect(node.selected).toBe(true)
       expect(getSlotLayoutAtPoint).not.toHaveBeenCalled()
     })
 
@@ -164,16 +163,15 @@ describe('LGraphCanvas slot hit detection', () => {
       const clickX = 255
       const clickY = 120
 
-      // Call processMouseDown
       canvas.processMouseDown(
         new MouseEvent('pointerdown', {
-          button: 1,
+          button: 2,
           clientX: clickX,
           clientY: clickY
         })
       )
 
-      // Should NOT query Vue slot geometry in non-Vue mode
+      expect(node.selected).not.toBe(true)
       expect(getSlotLayoutAtPoint).not.toHaveBeenCalled()
     })
 
@@ -197,12 +195,13 @@ describe('LGraphCanvas slot hit detection', () => {
 
       canvas.processMouseDown(
         new MouseEvent('pointerdown', {
-          button: 1,
+          button: 2,
           clientX: clickX,
           clientY: clickY
         })
       )
 
+      expect(node.selected).toBe(true)
       expect(getSlotLayoutAtPoint).toHaveBeenCalledWith(graph, {
         x: clickX,
         y: clickY

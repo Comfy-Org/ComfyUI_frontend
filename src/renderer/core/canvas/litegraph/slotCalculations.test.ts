@@ -273,9 +273,21 @@ describe('Vue slot geometry', () => {
     layoutStore.updateNodeSlotOffsets(node.graph.rootGraph.id, node.id, [
       { index: 0, type: 'input', position: { x: -6, y: 14 } }
     ])
-    const graph = fromPartial<LGraph>({
-      getNodeOnPos: vi.fn((x: number) => (x >= 300 ? node : null))
-    })
+    const graph = fromPartial<LGraph>({ nodes: [node] })
+
+    expect(getSlotLayoutAtPoint(graph, { x: 284, y: 414 })).toEqual(
+      getSlotLayout(node, 0, true)
+    )
+  })
+
+  it('finds protruding slots without relying on nearby node bounds', () => {
+    const node = makeNode({ inputs: [makeInput()], position: [300, 400] })
+    if (!node.graph) throw new Error('Expected node graph')
+    layoutStore.updateNodeSlotOffsets(node.graph.rootGraph.id, node.id, [
+      { index: 0, type: 'input', position: { x: -6, y: 14 } }
+    ])
+    const overlappingNode = makeNode({ position: [280, 390] })
+    const graph = fromPartial<LGraph>({ nodes: [node, overlappingNode] })
 
     expect(getSlotLayoutAtPoint(graph, { x: 284, y: 414 })).toEqual(
       getSlotLayout(node, 0, true)
@@ -307,6 +319,23 @@ describe('Vue slot geometry', () => {
       collapsed: true,
       position: [300, 400]
     })
+
+    expect(getSlotPosition(node, 0, true)).toEqual([300, 385])
+    expect(getSlotPosition(node, 0, false)).toEqual([380, 385])
+  })
+
+  it('ignores expanded slot offsets after the node collapses', () => {
+    const node = makeNode({
+      inputs: [makeInput()],
+      outputs: [makeOutput()],
+      collapsed: true,
+      position: [300, 400]
+    })
+    if (!node.graph) throw new Error('Expected node graph')
+    layoutStore.updateNodeSlotOffsets(node.graph.rootGraph.id, node.id, [
+      { index: 0, type: 'input', position: { x: 0, y: 73 } },
+      { index: 0, type: 'output', position: { x: 180, y: 73 } }
+    ])
 
     expect(getSlotPosition(node, 0, true)).toEqual([300, 385])
     expect(getSlotPosition(node, 0, false)).toEqual([380, 385])

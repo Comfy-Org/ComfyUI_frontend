@@ -4,6 +4,7 @@ import { computed } from 'vue'
 import { getSlotColor, MAX_MULTITYPE_SLICES } from '@/constants/slotColors'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
+import type { SlotId } from '@/types/slotId'
 import { cn } from '@comfyorg/tailwind-utils'
 import type { ClassValue } from '@comfyorg/tailwind-utils'
 
@@ -12,6 +13,7 @@ const props = defineProps<{
   class?: ClassValue
   hasError?: boolean
   multi?: boolean
+  slotKey?: SlotId
 }>()
 
 const clipPath = computed(() => {
@@ -56,19 +58,21 @@ const slotClass = computed(() =>
     data-testid="slot-connection-dot"
     :class="
       cn(
-        'group/slot relative flex h-5 w-6 items-center justify-center after:absolute after:inset-y-0 after:w-5/2',
+        'group/slot relative flex size-6 items-center justify-center after:absolute after:inset-y-0 after:w-5/2',
         props.class
       )
     "
   >
     <div
       v-if="types.length === 1 && (slotData?.shape == undefined || isListShape)"
+      :data-slot-key="slotKey"
       :style="{ backgroundColor: types.length === 1 ? types[0] : undefined }"
       :class="slotClass"
       data-testid="slot-dot"
     />
     <svg
       v-else
+      :data-slot-key="slotKey"
       :class="slotClass"
       data-testid="slot-dot"
       viewBox="0 0 100 100"

@@ -14,6 +14,7 @@ import type { NodeState } from '@/types/nodeState'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
 import {
   createTestSubgraph,
   createTestSubgraphNode
@@ -31,6 +32,10 @@ import {
 } from '@/utils/__tests__/litegraphTestUtils'
 
 import NodeSlots from './NodeSlots.vue'
+
+vi.mock('@/renderer/core/layout/slots/syncSlotOffsets', () => ({
+  syncSlotOffsets: vi.fn()
+}))
 
 const toVueNodeId = (id: string | number): VueNodeId => toNodeId(id)
 
@@ -224,6 +229,27 @@ function expectSlotError(
 }
 
 describe('NodeSlots.vue', () => {
+  it('synchronizes slot offsets when the rendered element mounts', async () => {
+    const pinia = createTestingPinia({ stubActions: false })
+    setActivePinia(pinia)
+    const graph = new LGraph()
+    const canvasStore = useCanvasStore()
+    canvasStore.canvas = fromPartial<LGraphCanvas>({ graph })
+    canvasStore.currentGraph = graph
+    vi.mocked(syncSlotOffsets).mockClear()
+
+    renderSlots(
+      makeNodeData({
+        inputs: [createMockNodeInputSlot({ name: 'model', type: 'MODEL' })]
+      }),
+      defaultSlotStubs,
+      pinia
+    )
+    await nextTick()
+
+    expect(syncSlotOffsets).toHaveBeenCalledOnce()
+  })
+
   it('renders slots from nodeDataStore without resolving the live node', async () => {
     const pinia = createTestingPinia({ stubActions: false })
     setActivePinia(pinia)
