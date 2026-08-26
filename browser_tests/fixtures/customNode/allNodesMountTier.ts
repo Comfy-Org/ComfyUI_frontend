@@ -147,13 +147,32 @@ function vueMountProblems(
           problems.push(
             `${node.type}: Vue mounts ${domWidgets} of ${widgets.length} widgets`
           )
-        const slots = (node.inputs ?? []).length + (node.outputs ?? []).length
-        const domSlots = root.querySelectorAll(
-          '[data-testid="slot-connection-dot"]'
-        ).length
-        if (domSlots !== slots)
+        const visibleWidgetNames = new Set(
+          widgets.map((widget) => widget.name).filter(Boolean)
+        )
+        const expectedSlotKeys = [
+          ...(node.inputs ?? []).flatMap((input, index) => {
+            const { name: widgetName } =
+              (input as { widget?: { name?: string } }).widget ?? {}
+            return widgetName &&
+              !visibleWidgetNames.has(widgetName) &&
+              !visibleWidgetNames.has(input.name)
+              ? []
+              : [`${id}-in-${index}`]
+          }),
+          ...(node.outputs ?? []).map((_, index) => `${id}-out-${index}`)
+        ].sort()
+        const mountedSlotKeys = [
+          ...root.querySelectorAll<HTMLElement>('[data-slot-key]')
+        ]
+          .map((element) => element.dataset.slotKey)
+          .filter((key): key is string => key !== undefined)
+          .sort()
+        if (
+          JSON.stringify(mountedSlotKeys) !== JSON.stringify(expectedSlotKeys)
+        )
           problems.push(
-            `${node.type}: Vue mounts ${domSlots} of ${slots} slots`
+            `${node.type}: Vue slot keys ${JSON.stringify(mountedSlotKeys)} do not match ${JSON.stringify(expectedSlotKeys)}`
           )
       }
       return problems
@@ -189,6 +208,7 @@ function addChunk(
           continue
         }
         window.app!.graph.add(node)
+        if (node.flags.collapsed) node.collapse(true)
         shapes.push({
           id: String(node.id),
           widgetNames: (node.widgets ?? []).map((widget) => widget.name),
