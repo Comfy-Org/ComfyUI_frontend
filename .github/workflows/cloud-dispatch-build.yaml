@@ -94,16 +94,23 @@ jobs:
                 "repos/${GITHUB_REPOSITORY}/pulls" \
                 -f "head=Comfy-Org:${BRANCH}" \
                 -f "state=open" \
-                -F "per_page=1")"
-              PR_NUMBER="$(echo "${PR_JSON}" | jq -r '.[0].number // empty')"
-              LABELS_JSON="$(echo "${PR_JSON}" | jq -c '[.[0].labels[]?.name]')"
+                -F "per_page=100")"
+              # Pick the first open PR for this head that actually carries a
+              # preview label (not just PR[0], which may be unlabeled).
+              SELECTED="$(echo "${PR_JSON}" | jq -c '
+                map(select(any(.labels[]?.name;
+                  . == "preview" or . == "preview-cpu" or . == "preview-gpu")))
+                | .[0] // empty')"
 
-              if [ -z "${PR_NUMBER}" ] || ! echo "${LABELS_JSON}" | grep -qE '"preview(-cpu|-gpu)?"'; then
+              if [ -z "${SELECTED}" ]; then
                 echo "No open PR with a preview label for branch '${BRANCH}'; skipping dispatch."
                 SHOULD_DISPATCH=false
               else
+                PR_NUMBER="$(echo "${SELECTED}" | jq -r '.number')"
                 VARIANT="cpu"
-                if echo "${LABELS_JSON}" | grep -q '"preview-gpu"'; then VARIANT="gpu"; fi
+                if echo "${SELECTED}" | jq -e 'any(.labels[]?.name; . == "preview-gpu")' >/dev/null; then
+                  VARIANT="gpu"
+                fi
               fi
             fi
           fi
