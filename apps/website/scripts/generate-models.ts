@@ -56,6 +56,7 @@ const API_PROVIDER_MAP: Record<string, { name: string; slug: string }> = {
   stability: { name: 'Stability AI', slug: 'stability-ai' },
   bytedance: { name: 'Seedance (ByteDance)', slug: 'seedance-bytedance' },
   bytedace: { name: 'Seedance (ByteDance)', slug: 'seedance-bytedance' },
+  seedance2: { name: 'Seedance (ByteDance)', slug: 'seedance-bytedance' },
   google: { name: 'Gemini Image', slug: 'gemini-image' },
   hailuo: { name: 'Hailuo MiniMax', slug: 'hailuo-minimax' },
   ideogram: { name: 'Ideogram', slug: 'ideogram' },
@@ -79,6 +80,26 @@ const API_PROVIDER_MAP: Record<string, { name: string; slug: string }> = {
   wavespeed: { name: 'Wavespeed', slug: 'wavespeed' },
   wavespped: { name: 'Wavespeed', slug: 'wavespeed' }
 }
+
+// Matched against the whole filename before the prefix lookup, for providers
+// that ship distinct products under one prefix (ByteDance: Seedance video,
+// Seedream image, Seed Audio).
+const API_PRODUCT_OVERRIDES: {
+  pattern: RegExp
+  name: string
+  slug: string
+}[] = [
+  {
+    pattern: /^api_bytedance_seedream/,
+    name: 'Seedream (ByteDance)',
+    slug: 'seedream-bytedance'
+  },
+  {
+    pattern: /^api_bytedance_seed_audio/,
+    name: 'Seed Audio (ByteDance)',
+    slug: 'seed-audio-bytedance'
+  }
+]
 
 // Stub entries that exist only to issue 301 redirects from old slugs to
 // their new canonical slugs. Keeps renames reproducible across regenerations.
@@ -176,20 +197,28 @@ interface ApiModelData {
   templateCount: number
 }
 
+function providerFor(file: string): { name: string; slug: string } | undefined {
+  const override = API_PRODUCT_OVERRIDES.find((entry) =>
+    entry.pattern.test(file)
+  )
+  if (override) return override
+  return API_PROVIDER_MAP[file.slice(4).split('_')[0]]
+}
+
 function extractApiModels(files: string[]): ApiModelData[] {
   const counts = new Map<string, number>()
+  const names = new Map<string, string>()
   for (const file of files) {
     if (!file.startsWith('api_')) continue
-    const prefix = file.slice(4).split('_')[0]
-    const entry = API_PROVIDER_MAP[prefix]
+    const entry = providerFor(file)
     if (!entry) continue
     counts.set(entry.slug, (counts.get(entry.slug) ?? 0) + 1)
+    names.set(entry.slug, entry.name)
   }
   return [...counts.entries()].map(([slug, count]) => {
-    const found = Object.values(API_PROVIDER_MAP).find((e) => e.slug === slug)!
     return {
       slug,
-      name: found.name,
+      name: names.get(slug)!,
       directory: 'partner_nodes' as const,
       templateCount: count
     }
