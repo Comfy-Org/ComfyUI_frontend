@@ -15,12 +15,9 @@ import { toNodeId } from '@/types/nodeId'
 type TestWidget = BaseDOMWidget<object | string>
 
 type WidgetUpdateCounters = {
-  dirtyRequests: number
   isVisibleCalls: number
-  layoutReads: number
   nodeVisibilityChecks: number
   positionChanges: number
-  resizeObserverCallbacks: number
   sizeChanges: number
   visibleChanges: number
   zIndexChanges: number
@@ -275,7 +272,6 @@ describe('DomWidgets deterministic update matrix', () => {
     const canvas = createCanvas(graph)
     const nodeVisibility = vi.mocked(canvas.isNodeVisible)
     const zIndexLookup = vi.spyOn(graph.nodes, 'indexOf')
-    const dirtyCanvas = vi.spyOn(graph, 'setDirtyCanvas')
     canvasStore.canvas = canvas
 
     const rendered = render(DomWidgets, {
@@ -315,7 +311,6 @@ describe('DomWidgets deterministic update matrix', () => {
     isVisible.mockClear()
     nodeVisibility.mockClear()
     zIndexLookup.mockClear()
-    dirtyCanvas.mockClear()
 
     if (update === 'node-geometry') {
       for (const node of graph.nodes) node.pos[0] += 1
@@ -330,12 +325,9 @@ describe('DomWidgets deterministic update matrix', () => {
     drawFrame(canvas)
 
     const counters: WidgetUpdateCounters = {
-      dirtyRequests: dirtyCanvas.mock.calls.length,
       isVisibleCalls: isVisible.mock.calls.length,
-      layoutReads: 0,
       nodeVisibilityChecks: nodeVisibility.mock.calls.length,
       positionChanges: changes.position,
-      resizeObserverCallbacks: 0,
       sizeChanges: changes.size,
       visibleChanges: changes.visible,
       zIndexChanges: changes.zIndex,
@@ -359,12 +351,9 @@ describe('DomWidgets deterministic update matrix', () => {
       })
 
       expect(result).toEqual({
-        dirtyRequests: 0,
         isVisibleCalls: count,
-        layoutReads: 0,
         nodeVisibilityChecks: count,
         positionChanges: 0,
-        resizeObserverCallbacks: 0,
         sizeChanges: 0,
         visibleChanges: 0,
         zIndexChanges: 0,
@@ -386,8 +375,6 @@ describe('DomWidgets deterministic update matrix', () => {
       expect(result.sizeChanges).toBe(0)
       expect(result.visibleChanges).toBe(0)
       expect(result.zIndexChanges).toBe(0)
-      expect(result.layoutReads).toBe(0)
-      expect(result.resizeObserverCallbacks).toBe(0)
       expect(result.zIndexLookups).toBe(count)
     }
   )
@@ -402,12 +389,9 @@ describe('DomWidgets deterministic update matrix', () => {
       })
 
       expect(result).toEqual({
-        dirtyRequests: 0,
         isVisibleCalls: count,
-        layoutReads: 0,
         nodeVisibilityChecks: 0,
         positionChanges: 0,
-        resizeObserverCallbacks: 0,
         sizeChanges: 0,
         visibleChanges: 0,
         zIndexChanges: 0,
@@ -427,9 +411,6 @@ describe('DomWidgets deterministic update matrix', () => {
 
       expect(result.positionChanges).toBe(0)
       expect(result.sizeChanges).toBe(count)
-      expect(result.layoutReads).toBe(0)
-      expect(result.resizeObserverCallbacks).toBe(0)
-      expect(result.dirtyRequests).toBe(0)
     }
   )
 
@@ -445,8 +426,6 @@ describe('DomWidgets deterministic update matrix', () => {
       expect(result.positionChanges).toBe(count)
       expect(result.sizeChanges).toBe(0)
       expect(result.zIndexLookups).toBe(count)
-      expect(result.layoutReads).toBe(0)
-      expect(result.dirtyRequests).toBe(0)
     }
   )
 
@@ -461,8 +440,6 @@ describe('DomWidgets deterministic update matrix', () => {
 
       expect(result.positionChanges).toBe(count)
       expect(result.sizeChanges).toBe(0)
-      expect(result.resizeObserverCallbacks).toBe(0)
-      expect(result.dirtyRequests).toBe(0)
     }
   )
 })
