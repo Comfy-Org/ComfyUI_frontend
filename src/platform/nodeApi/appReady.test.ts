@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  currentDocumentId,
   markAppReady,
   notifyWorkflowLoaded,
   onAppReady,
@@ -30,6 +31,46 @@ describe('onWorkflowLoaded', () => {
     notifyWorkflowLoaded()
 
     expect(listener).not.toHaveBeenCalled()
+  })
+})
+
+describe('currentDocumentId', () => {
+  beforeEach(resetAppReadyForTest)
+
+  it('is undefined before any workflow has loaded', () => {
+    // Not a sentinel a pack has to special-case forever — just the honest
+    // state before the first `notifyWorkflowLoaded()`.
+    expect(currentDocumentId()).toBeUndefined()
+  })
+
+  it('mints a fresh id each time a workflow finishes loading', () => {
+    notifyWorkflowLoaded()
+    const first = currentDocumentId()
+    expect(first).toBeDefined()
+
+    notifyWorkflowLoaded()
+    const second = currentDocumentId()
+
+    // Two loads of the SAME file must still mint two different ids — this is
+    // a load-session identity, not the file's own saved `graph.id` (which
+    // round-trips through the workflow JSON and is deliberately excluded from
+    // deciding this).
+    expect(second).toBeDefined()
+    expect(second).not.toBe(first)
+  })
+
+  it('is visible to a listener registered before the load it describes', () => {
+    // The id must be current by the time onWorkflowLoaded listeners run, not
+    // settled a tick later — a listener reading it during its own callback is
+    // the whole point of pairing the two.
+    let seenDuringCallback: string | undefined
+    onWorkflowLoaded(() => {
+      seenDuringCallback = currentDocumentId()
+    })
+
+    notifyWorkflowLoaded()
+
+    expect(seenDuringCallback).toBe(currentDocumentId())
   })
 })
 

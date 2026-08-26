@@ -31,7 +31,7 @@ import { watch } from 'vue'
 
 import { useExecutionStore } from '@/stores/executionStore'
 
-import { onAppReady, onWorkflowLoaded } from './appReady'
+import { currentDocumentId, onAppReady, onWorkflowLoaded } from './appReady'
 import { createNodeChangeObserver } from './nodeChanges'
 import type { NodeChangeEvent, NodeChangeOptions } from './nodeChanges'
 import { createQueueApi } from './queueHandle'
@@ -349,7 +349,7 @@ function buildMajor(
   const ui = createUiHandle()
   const commands = createCommandsApi()
   const backend = createBackendApi()
-  const workflow = createWorkflowApi(getGraph, openWorkflow)
+  const workflow = createWorkflowApi(getGraph, openWorkflow, currentDocumentId)
   const definitionScopes = new WeakMap<LGraph, GraphHandle>()
 
   function handleForDefinitionNode(node: LGraphNode): NodeHandle {
