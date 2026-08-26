@@ -6,6 +6,12 @@ import {
   parseCdpMetrics,
   requireCdpMetric
 } from '@/utils/cdpPerformanceMetrics'
+import type {
+  PerfActivityIdentity,
+  PerfIdentitySource,
+  PerfWorkloadIdentity
+} from '@e2e/fixtures/helpers/perfWorkloadIdentity'
+import { buildPerfWorkloadIdentity } from '@e2e/fixtures/helpers/perfWorkloadIdentity'
 
 interface PerfSnapshot {
   RecalcStyleCount: number
@@ -78,6 +84,7 @@ export interface PerfMeasurement extends RafIntervalMetrics {
   totalBlockingTimeMs: number
   rafIntervalsMs: number[]
   rejectedRunReason: string | null
+  workloadIdentity: PerfWorkloadIdentity
 }
 
 const RAF_STATE_KEY = '__perfRafCollectorState'
@@ -272,6 +279,7 @@ export class PerformanceHelper {
     }
 
     const totalBlockingTimeMs = await this.collectTBT()
+    const workloadIdentity = await this.collectWorkloadIdentity()
     const taskAccounting = computeCdpTaskAccounting(
       before.cdpMetrics,
       after.cdpMetrics
@@ -311,7 +319,74 @@ export class PerformanceHelper {
       totalBlockingTimeMs,
       rafIntervalsMs,
       rejectedRunReason,
+      workloadIdentity,
       ...summarizeRafIntervals(rafIntervalsMs)
     }
+  }
+
+  private async collectWorkloadIdentity(): Promise<PerfWorkloadIdentity> {
+    const browserVersion =
+      this.page.context().browser()?.version() ?? 'unavailable'
+    const source = await this.page.evaluate(() => {
+      const app = window.app
+      if (!app) throw new Error('window.app is unavailable for perf identity')
+      const graph = app.canvas.graph ?? app.graph
+      const nodes = graph.nodes.map((node) => ({
+        id: String(node.id),
+        inputCount: node.inputs?.length ?? 0,
+        outputCount: node.outputs?.length ?? 0,
+        widgetCount: node.widgets?.length ?? 0
+      }))
+      const links = [...graph.links.values()].map((link) => ({
+        originId: String(link.origin_id),
+        originSlot: link.origin_slot,
+        targetId: String(link.target_id),
+        targetSlot: link.target_slot
+      }))
+      const setting = app.extensionManager?.setting
+      const vueNodesEnabled =
+        setting?.get<boolean>('Comfy.VueNodes.Enabled') ?? false
+      const canvasInfoSetting = setting?.get<boolean>('Comfy.Graph.CanvasInfo')
+      const canvasInfoEnabled =
+        typeof canvasInfoSetting === 'boolean' ? canvasInfoSetting : null
+      const renderer: PerfIdentitySource['renderer'] = vueNodesEnabled
+        ? 'vue'
+        : 'legacy'
+
+      let gpuClass: PerfIdentitySource['gpuClass'] = 'unknown'
+      const canvas = document.createElement('canvas')
+      const gl = canvas.getContext('webgl')
+      if (gl) {
+        const extension = gl.getExtension('WEBGL_debug_renderer_info')
+        const renderer = extension
+          ? String(gl.getParameter(extension.UNMASKED_RENDERER_WEBGL))
+          : ''
+        if (/swiftshader/i.test(renderer)) gpuClass = 'swiftshader'
+        else if (/software|llvmpipe/i.test(renderer)) gpuClass = 'software'
+        else if (renderer) gpuClass = 'hardware'
+        gl.getExtension('WEBGL_lose_context')?.loseContext()
+      }
+
+      return {
+        nodes,
+        links,
+        visibleNodes: app.canvas.visible_nodes.length,
+        renderer,
+        canvasInfoEnabled,
+        viewportWidth: window.innerWidth,
+        viewportHeight: window.innerHeight,
+        devicePixelRatio: window.devicePixelRatio,
+        frontendVersion: __COMFYUI_FRONTEND_VERSION__,
+        frontendCommit: __COMFYUI_FRONTEND_COMMIT__,
+        buildMode: import.meta.env.MODE as PerfIdentitySource['buildMode'],
+        gpuClass
+      }
+    })
+    const activity = await this.page.evaluate(() => {
+      const value = (window as unknown as Record<string, unknown>)
+        .__perfActivityIdentity
+      return (value ?? {}) as Partial<PerfActivityIdentity>
+    })
+    return buildPerfWorkloadIdentity({ ...source, browserVersion }, activity)
   }
 }

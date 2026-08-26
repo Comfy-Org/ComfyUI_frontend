@@ -53,6 +53,13 @@ interface PerfMeasurement {
   rafIntervalsOver33_3Ms?: number
   rafIntervalsOver50Ms?: number
   rejectedRunReason?: string | null
+  workloadIdentity?: {
+    schemaVersion: number
+    topology: Record<string, number | string>
+    activity: Record<string, number | Record<string, number> | null>
+    environment: Record<string, boolean | number | string | null>
+    missingOptionalFields: string[]
+  }
 }
 
 interface PerfReport {
@@ -603,9 +610,30 @@ function main() {
         measurement
     )
   }
+  const serializedCommentData = JSON.stringify(commentData, null, 2)
+  const boundedCommentData =
+    serializedCommentData.length <= 48_000
+      ? serializedCommentData
+      : JSON.stringify(
+          {
+            schemaVersion: current.schemaVersion,
+            timestamp: current.timestamp,
+            gitSha: current.gitSha,
+            branch: current.branch,
+            summaryTruncated: true,
+            fullArtifact: CURRENT_PATH,
+            measurementIdentities: current.measurements.map((measurement) => ({
+              name: measurement.name,
+              rejectedRunReason: measurement.rejectedRunReason,
+              workloadIdentity: measurement.workloadIdentity
+            }))
+          },
+          null,
+          2
+        )
   lines.push('\n<details><summary>Summary data</summary>\n')
   lines.push('```json')
-  lines.push(JSON.stringify(commentData, null, 2))
+  lines.push(boundedCommentData)
   lines.push('```')
   lines.push('\n</details>')
 
