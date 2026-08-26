@@ -7,6 +7,7 @@ import {
 } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLitegraphService } from '@/services/litegraphService'
+import { useLinkStore } from '@/stores/linkStore'
 
 setActivePinia(createTestingPinia({ stubActions: false }))
 beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
@@ -237,6 +238,36 @@ describe('Autogrow', () => {
     )
     expect(inputCalls.every(([, slot]) => slot >= 0)).toBe(true)
     expect(inputCalls.filter(([, , connected]) => !connected)).toHaveLength(1)
+  })
+  test('Rejected autogrow compaction preserves its input layout', async () => {
+    const graph = new LGraph()
+    const node = testNode()
+    const onConnectionsChange = vi.fn()
+    node.onConnectionsChange = onConnectionsChange
+    graph.add(node)
+    addAutogrow(node, { min: 1, input: inputsSpec, prefix: 'test' })
+    connectInput(node, 0, graph)
+    connectInput(node, 1, graph)
+    connectInput(node, 2, graph)
+    const updateEndpoints = vi
+      .spyOn(useLinkStore(), 'updateEndpoints')
+      .mockReturnValue({
+        ok: false,
+        error: { code: 'occupied-target', message: 'Target is occupied' }
+      })
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    node.disconnectInput(1)
+    const inputNames = node.inputs.map(({ name }) => name)
+    const widgetNames = node.widgets.map(({ name }) => name)
+    onConnectionsChange.mockClear()
+    await nextTick()
+
+    expect(updateEndpoints).toHaveBeenCalled()
+    expect(node.inputs.map(({ name }) => name)).toEqual(inputNames)
+    expect(node.widgets.map(({ name }) => name)).toEqual(widgetNames)
+    expect(onConnectionsChange).not.toHaveBeenCalled()
+    consoleError.mockRestore()
   })
   test('Removing a connection ignores stale autogrow callbacks after group removal', () => {
     const graph = new LGraph()
