@@ -13,7 +13,7 @@ export interface DocUpdate {
   actor?: string
 }
 
-interface DocSubscribed {
+export interface DocSubscribed {
   workflowId: string
   ok: boolean
   seq?: number

@@ -85,11 +85,11 @@ function hostDocUpdate(mutate?: (doc: Y.Doc) => void): Uint8Array {
   return Y.encodeStateAsUpdate(doc)
 }
 
-function docUpdateFrame(update: Uint8Array, workflowId = WORKFLOW_ID) {
+function docUpdateFrame(update: Uint8Array, workflowId = WORKFLOW_ID, seq = 1) {
   return {
     v: 1,
     workflow_id: workflowId,
-    seq: 1,
+    seq,
     update_b64: encodeBase64(update)
   }
 }
@@ -300,6 +300,102 @@ describe('doc_reset — a lineage break drops the doc and resubscribes from zero
     expect(bridge.subscribedWorkflowId).toBe(WORKFLOW_ID)
     expect(transport.framesOfType('doc_subscribe')).toHaveLength(2)
     warn.mockRestore()
+  })
+})
+
+describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', () => {
+  it('applies contiguous seqs without resubscribing', () => {
+    const { transport, bridge, projected } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 1
+    })
+
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 2)
+    )
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 3)
+    )
+
+    expect(projected).toHaveLength(2)
+    expect(transport.framesOfType('doc_subscribe')).toHaveLength(1)
+  })
+
+  it('does not apply the gapped frame — the dropped one may have been a doc_reset — and resubscribes', () => {
+    const { transport, bridge, projected } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 1
+    })
+
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 3)
+    )
+
+    expect(projected).toHaveLength(0)
+    expect(bridge.follower.updatesApplied).toBe(0)
+    expect(transport.framesOfType('doc_subscribe')).toHaveLength(2)
+    expect(bridge.subscribedWorkflowId).toBe(WORKFLOW_ID)
+
+    // The resubscribe re-baselined: the catch-up frame lands whatever its seq.
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 3)
+    )
+    expect(projected).toHaveLength(1)
+    expect(transport.framesOfType('doc_subscribe')).toHaveLength(2)
+  })
+
+  it('a duplicate or stale seq is still applied and provokes no resubscribe', () => {
+    const { transport, bridge, projected } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 2)
+    )
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 2)
+    )
+
+    expect(projected).toHaveLength(2)
+    expect(transport.framesOfType('doc_subscribe')).toHaveLength(1)
+  })
+
+  it('a refused subscribe re-opens intent so the next reconcile retries', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    expect(bridge.subscribedWorkflowId).toBe(WORKFLOW_ID)
+
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: false,
+      code: 'not_found'
+    })
+
+    expect(bridge.subscribedWorkflowId).toBeNull()
+    expect(bridge.hasPendingSubscribe).toBe(true)
+
+    // The composition root drives reconcile on every status frame.
+    bridge.reconcile()
+    expect(bridge.subscribedWorkflowId).toBe(WORKFLOW_ID)
+    expect(transport.framesOfType('doc_subscribe')).toHaveLength(2)
   })
 })
 
