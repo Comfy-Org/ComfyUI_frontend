@@ -2,9 +2,16 @@ import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
+import { createMutationView } from '@/lib/litegraph/src/infrastructure/createMutationView'
+import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
+import type {
+  Point as LegacyPoint,
+  Size as LegacySize
+} from '@/lib/litegraph/src/interfaces'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { LayoutOperation, Point, Size } from '@/renderer/core/layout/types'
+import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
 
 type GraphLayoutOwner = Pick<
@@ -22,6 +29,182 @@ const nodeAttachments = new WeakMap<
   LGraphNode,
   LayoutAttachment<LGraphNode['id']>
 >()
+const nodeAttachmentOwners = new Map<
+  UUID,
+  Map<LGraphNode['id'], WeakRef<LGraphNode>>
+>()
+
+function nodeAttachmentOwner(
+  graphId: UUID,
+  nodeId: LGraphNode['id']
+): LGraphNode | undefined {
+  return nodeAttachmentOwners.get(graphId)?.get(nodeId)?.deref()
+}
+
+function setNodeAttachmentOwner(graphId: UUID, node: LGraphNode): void {
+  let owners = nodeAttachmentOwners.get(graphId)
+  if (!owners) {
+    owners = new Map()
+    nodeAttachmentOwners.set(graphId, owners)
+  }
+  owners.set(node.id, new WeakRef(node))
+}
+
+function deleteNodeAttachmentOwner(graphId: UUID, node: LGraphNode): boolean {
+  const owners = nodeAttachmentOwners.get(graphId)
+  if (owners?.get(node.id)?.deref() !== node) return false
+  owners.delete(node.id)
+  if (owners.size === 0) nodeAttachmentOwners.delete(graphId)
+  return true
+}
+interface NodeGeometryProjection {
+  buffer: Rectangle
+  geometryVersion: number
+  position: LegacyPoint
+  positionView: LegacyPoint
+  renderedSize: LegacySize
+  size: LegacySize
+  sizeView: LegacySize
+}
+
+const nodeGeometryProjections = new WeakMap<
+  LGraphNode,
+  NodeGeometryProjection
+>()
+const storedRectScratch = new Float64Array(4)
+
+function nodeGeometryProjection(node: LGraphNode): NodeGeometryProjection {
+  const existing = nodeGeometryProjections.get(node)
+  if (existing) return existing
+
+  const buffer = new Rectangle()
+  const position = buffer.pos
+  const size = buffer.size
+  const projection: NodeGeometryProjection = {
+    buffer,
+    geometryVersion: -1,
+    position,
+    positionView: createMutationView(position, {
+      commit: () => commitNodePosition(node),
+      synchronize: () => refreshNodeGeometry(node)
+    }),
+    renderedSize: [0, 0],
+    size,
+    sizeView: createMutationView(size, {
+      commit: () => commitNodeSize(node),
+      synchronize: () => refreshNodeGeometry(node)
+    })
+  }
+  nodeGeometryProjections.set(node, projection)
+  return projection
+}
+
+export function nodeGeometryBuffer(node: LGraphNode): Rectangle {
+  return nodeGeometryProjection(node).buffer
+}
+
+export function nodePositionBuffer(node: LGraphNode): LegacyPoint {
+  return nodeGeometryProjection(node).position
+}
+
+export function nodeSizeBuffer(node: LGraphNode): LegacySize {
+  return nodeGeometryProjection(node).size
+}
+
+export function nodePositionView(node: LGraphNode): LegacyPoint {
+  return nodeGeometryProjection(node).positionView
+}
+
+export function nodeSizeView(node: LGraphNode): LegacySize {
+  return nodeGeometryProjection(node).sizeView
+}
+
+export function refreshNodeGeometry(node: LGraphNode): LegacySize {
+  const projection = nodeGeometryProjection(node)
+  const attachment = nodeAttachments.get(node)
+  if (
+    attachment &&
+    projection.geometryVersion !== layoutStore.geometryVersion
+  ) {
+    projection.geometryVersion = layoutStore.geometryVersion
+    layoutStore.readNodeRect(
+      attachment.graphId,
+      attachment.id,
+      projection.buffer
+    )
+  }
+
+  const contentSize = attachment
+    ? layoutStore.contentSizeOf(attachment.graphId, attachment.id)
+    : undefined
+  projection.renderedSize[0] = Math.max(
+    projection.size[0],
+    contentSize?.width ?? 0
+  )
+  projection.renderedSize[1] = Math.max(
+    projection.size[1],
+    contentSize?.height ?? 0
+  )
+  return projection.renderedSize
+}
+
+export function setNodePosition(node: LGraphNode, value: LegacyPoint): void {
+  const position = nodeGeometryProjection(node).position
+  position[0] = value[0]
+  position[1] = value[1]
+  commitNodePosition(node)
+}
+
+function commitNodePosition(node: LGraphNode): void {
+  const attachment = nodeAttachments.get(node)
+  if (node.id === UNASSIGNED_NODE_ID || !attachment) return
+  const projection = nodeGeometryProjection(node)
+  const position = { x: projection.position[0], y: projection.position[1] }
+  if (
+    layoutStore.readNodeRect(
+      attachment.graphId,
+      attachment.id,
+      storedRectScratch
+    ) &&
+    storedRectScratch[0] === position.x &&
+    storedRectScratch[1] === position.y
+  )
+    return
+
+  moveNodeLayout(node, position)
+  projection.geometryVersion = -1
+  refreshNodeGeometry(node)
+}
+
+export function setNodeSize(node: LGraphNode, value: LegacySize): void {
+  const size = nodeGeometryProjection(node).size
+  size[0] = value[0]
+  size[1] = value[1]
+  commitNodeSize(node)
+}
+
+function commitNodeSize(node: LGraphNode): void {
+  const attachment = nodeAttachments.get(node)
+  if (node.id === UNASSIGNED_NODE_ID || !attachment) return
+  const projection = nodeGeometryProjection(node)
+  if (
+    layoutStore.readNodeRect(
+      attachment.graphId,
+      attachment.id,
+      storedRectScratch
+    ) &&
+    storedRectScratch[2] === projection.size[0] &&
+    storedRectScratch[3] === projection.size[1]
+  )
+    return
+
+  resizeNodeLayout(node, {
+    width: projection.size[0],
+    height: projection.size[1]
+  })
+  projection.geometryVersion = -1
+  refreshNodeGeometry(node)
+}
 const groupAttachments = new WeakMap<
   LGraphGroup,
   LayoutAttachment<LGraphGroup['id']>
@@ -69,15 +252,16 @@ export function attachNodeLayout(graph: LayoutGraph, node: LGraphNode): void {
 }
 
 function adoptNodeAttachment(graphId: UUID, node: LGraphNode): void {
+  const projection = nodeGeometryProjection(node)
   const geometrySynchronized = layoutStore.readNodeRect(
     graphId,
     node.id,
-    node._posSize
+    projection.buffer
   )
   nodeAttachments.set(node, { graphId, id: node.id })
-  node._layoutRegistered = true
+  setNodeAttachmentOwner(graphId, node)
   if (geometrySynchronized) {
-    node._geometryVersion = layoutStore.geometryVersion
+    projection.geometryVersion = layoutStore.geometryVersion
   }
 }
 
@@ -90,6 +274,7 @@ function transferableNodeAttachment(
     !attachment ||
     nodeAttachments.has(replacement) ||
     attachment.id !== replacement.id ||
+    nodeAttachmentOwner(attachment.graphId, attachment.id) !== node ||
     !layoutStore.getNodeLayout(attachment.graphId, attachment.id)
   )
     return
@@ -113,15 +298,15 @@ export function transferLayoutAttachment(
   const geometrySynchronized = layoutStore.readNodeRect(
     attachment.graphId,
     attachment.id,
-    replacement._posSize
+    nodeGeometryProjection(replacement).buffer
   )
 
   nodeAttachments.delete(node)
-  node._layoutRegistered = false
   nodeAttachments.set(replacement, attachment)
-  replacement._layoutRegistered = true
+  setNodeAttachmentOwner(attachment.graphId, replacement)
   if (geometrySynchronized) {
-    replacement._geometryVersion = layoutStore.geometryVersion
+    nodeGeometryProjection(replacement).geometryVersion =
+      layoutStore.geometryVersion
   }
   return true
 }
@@ -131,9 +316,9 @@ export function detachNodeLayout(node: LGraphNode): void {
   if (!attachment) return
   const { graphId, id: nodeId } = attachment
 
-  layoutStore.readNodeRect(graphId, nodeId, node._posSize)
+  layoutStore.readNodeRect(graphId, nodeId, nodeGeometryProjection(node).buffer)
   nodeAttachments.delete(node)
-  node._layoutRegistered = false
+  if (!deleteNodeAttachmentOwner(graphId, node)) return
   layoutStore.applyOperation({
     ...canvasOperationMeta(),
     graphId,
@@ -214,7 +399,7 @@ export function detachRerouteLayout(reroute: Reroute): void {
   })
 }
 
-export function moveNodeLayout(node: LGraphNode, position: Point): void {
+function moveNodeLayout(node: LGraphNode, position: Point): void {
   const attachment = nodeAttachments.get(node)
   if (!attachment) return
   layoutStore.applyOperation({
@@ -307,10 +492,14 @@ export function detachGraphLayouts(
     for (const node of owner._nodes) {
       const attachment = nodeAttachments.get(node)
       if (!attachment) continue
-      layoutStore.readNodeRect(attachment.graphId, attachment.id, node._posSize)
+      layoutStore.readNodeRect(
+        attachment.graphId,
+        attachment.id,
+        nodeGeometryProjection(node).buffer
+      )
       nodeAttachments.delete(node)
-      node._layoutRegistered = false
-      if (meta) {
+      const owned = deleteNodeAttachmentOwner(attachment.graphId, node)
+      if (meta && owned) {
         operations.push({
           ...meta,
           graphId: attachment.graphId,

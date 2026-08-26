@@ -8,6 +8,21 @@ export function toNodeId(value: ToNodeIdInput): NodeId {
   return String(value) as NodeId
 }
 
+export function compareNodeIds(left: NodeId, right: NodeId): number {
+  const leftNumber = Number(left)
+  const rightNumber = Number(right)
+  const leftIsNumber = Number.isFinite(leftNumber)
+  const rightIsNumber = Number.isFinite(rightNumber)
+  const lexicalOrder = left < right ? -1 : left > right ? 1 : 0
+
+  if (leftIsNumber && rightIsNumber) {
+    return leftNumber - rightNumber || lexicalOrder
+  }
+  if (leftIsNumber) return -1
+  if (rightIsNumber) return 1
+  return lexicalOrder
+}
+
 export const UNASSIGNED_NODE_ID = toNodeId(-1)
 
 export function serializeNodeId(value: SerializedNodeId): SerializedNodeId {
