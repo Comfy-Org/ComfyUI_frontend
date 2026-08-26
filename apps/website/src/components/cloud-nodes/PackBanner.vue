@@ -49,6 +49,7 @@ watch(imgSrc, () => {
     <div v-else class="relative size-full">
       <div
         v-if="imgSrc && !isImageError && bannerLoaded"
+        data-testid="banner-backdrop"
         class="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-30"
         :style="{ backgroundImage: `url(${imgSrc})`, filter: 'blur(10px)' }"
       />
