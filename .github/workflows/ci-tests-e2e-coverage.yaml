@@ -49,7 +49,7 @@ jobs:
       - name: Checkout sources for genhtml
         uses: actions/checkout@v7
         with:
-          ref: ${{ inputs.source_sha || github.event.workflow_run.head_sha }}
+          ref: ${{ inputs.source_sha || (github.event.workflow_run.head_repository.full_name == github.repository && github.event.workflow_run.head_sha) || github.event.repository.default_branch }}
           sparse-checkout: |
             src
             packages
