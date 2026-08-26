@@ -244,6 +244,29 @@ describe('LGraphCanvas invalidation scheduling baseline', () => {
     expect(canvas.dirty_bgcanvas).toBe(false)
   })
 
+  it('preserves background invalidation requested during a shared draw', () => {
+    canvas.bgcanvas = canvas.canvas
+    let invalidateDuringDraw = true
+    canvas.onDrawBackground = () => {
+      if (!invalidateDuringDraw) return
+      invalidateDuringDraw = false
+      canvas.setDirty(false, true)
+    }
+    canvas.setDirty(false, true)
+
+    canvas.draw()
+
+    expect(canvas.dirty_canvas).toBe(false)
+    expect(canvas.dirty_bgcanvas).toBe(true)
+
+    canvas.draw()
+
+    expect(probe.foregroundDraw).toHaveBeenCalledTimes(2)
+    expect(probe.backgroundDraw).toHaveBeenCalledTimes(2)
+    expect(canvas.dirty_canvas).toBe(false)
+    expect(canvas.dirty_bgcanvas).toBe(false)
+  })
+
   it('forces both layers once when both layers use the same canvas', () => {
     canvas.bgcanvas = canvas.canvas
 

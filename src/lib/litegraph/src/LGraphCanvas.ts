@@ -5519,6 +5519,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const ctx = this.bgctx
     if (!ctx) throw new TypeError('Background canvas context was null.')
 
+    this.dirty_bgcanvas = false
+
     const viewport = this.viewport || [
       0,
       0,
@@ -5646,7 +5648,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       ctx.restore()
     }
 
-    this.dirty_bgcanvas = false
     if (redrawFrontCanvas) this.dirty_canvas = true
   }
 
