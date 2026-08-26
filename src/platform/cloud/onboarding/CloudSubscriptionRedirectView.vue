@@ -12,6 +12,7 @@ import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricin
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { getPricingCheckoutSelection } from '@/platform/cloud/subscription/composables/usePricingTableUrlLoader'
 import type { CheckoutTierKey } from '@/platform/workspace/composables/useSubscriptionCheckout'
+import { hideSplashScreen } from '@/services/splashScreenService'
 
 import type { BillingCycle } from '../subscription/utils/subscriptionTierRank'
 
@@ -157,7 +158,7 @@ const runRedirect = wrapWithErrorHandlingAsync(async () => {
 }, reportError)
 
 onMounted(() => {
-  document.getElementById('splash-loader')?.remove()
+  hideSplashScreen()
   void runRedirect()
 })
 </script>

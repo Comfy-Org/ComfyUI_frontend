@@ -80,6 +80,7 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { hideSplashScreen } from '@/services/splashScreenService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -186,7 +187,7 @@ async function initialize(): Promise<void> {
     })
     initializationRetryable.value = isRetryableInitializationError(error)
     initializationState.value = 'error'
-    document.getElementById('splash-loader')?.remove()
+    hideSplashScreen()
     await nextTick()
     if (generation !== initializationGeneration) return
     errorPanel.value?.focus()

@@ -4,6 +4,7 @@ import { flushProxyWidgetMigration } from '@/core/graph/subgraph/migration/proxy
 import { autoExposeKnownPreviewNodes } from '@/core/graph/subgraph/promotionUtils'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
+import { hideSplashScreen } from '@/services/splashScreenService'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
@@ -47,9 +48,7 @@ export function useEditorStartup() {
   watch(
     isLoading,
     (loading, previousLoading) => {
-      if (previousLoading && !loading) {
-        document.getElementById('splash-loader')?.remove()
-      }
+      if (previousLoading && !loading) hideSplashScreen()
     },
     { flush: 'post' }
   )
