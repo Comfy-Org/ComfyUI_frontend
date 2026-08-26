@@ -23,9 +23,9 @@
         <SettingsPlansSection
           :catalog-plans="catalogPlans"
           :team-credit-stops="teamCreditStops"
-          :is-loading="isLoadingPlans"
-          :error="plansError"
-          @retry="loadPlans"
+          :is-loading="isCatalogLoading"
+          :error="catalogError"
+          @retry="retry"
         />
         <SubscriptionFooterLinks
           class="mt-auto shrink-0"
@@ -64,6 +64,7 @@ import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBi
 import { isCloud } from '@/platform/distribution/types'
 import SubscriptionPanelContentWorkspace from '@/platform/workspace/components/SubscriptionPanelContentWorkspace.vue'
 import SettingsPlansSection from '@/platform/workspace/components/dialogs/settings/SettingsPlansSection.vue'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 type View = 'overview' | 'activity'
 
@@ -88,14 +89,42 @@ const {
   error: plansError
 } = useBillingPlans()
 
-function loadPlans() {
+// Off-cloud the catalog is unreachable until the workspace hydrates: fetchPlans
+// routes to the legacy no-op while activeWorkspace is absent, so it writes
+// neither plans nor error. The bootstrap is therefore a precondition of the
+// catalog, and its state has to drive this section or a pending/failed wallet
+// reads as a successful empty catalog.
+const workspaceStore = useTeamWorkspaceStore()
+const isWorkspacePending = computed(
+  () => !isCloud && workspaceStore.initState !== 'ready'
+)
+const workspaceError = computed(() =>
+  !isCloud && workspaceStore.initState === 'error'
+    ? (workspaceStore.error?.message ?? t('subscription.planLoadError'))
+    : null
+)
+
+const isCatalogLoading = computed(
+  () =>
+    isLoadingPlans.value || (isWorkspacePending.value && !workspaceError.value)
+)
+const catalogError = computed(() => workspaceError.value ?? plansError.value)
+
+function retry() {
+  if (workspaceError.value) {
+    // The context's workspace watch initializes billing and fetches the
+    // catalog once a workspace appears. A repeat failure is already reported
+    // by the store and re-renders this same error state.
+    void workspaceStore.initialize().catch(() => undefined)
+    return
+  }
   void fetchPlans()
 }
 
 // Off-cloud only: on cloud the local plans section never mounts, so no extra
 // local fetch fires. Deduped across re-mounts by useBillingPlans.fetchPromise.
 onMounted(() => {
-  if (!isCloud) loadPlans()
+  if (!isCloud) void fetchPlans()
 })
 
 function openFullActivity() {
