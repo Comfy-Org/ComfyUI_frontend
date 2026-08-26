@@ -16596,6 +16596,238 @@
       }
     }
   },
+  "PixverseV6ExtendVideoNode": {
+    "description": "يتابع فيديو موجودًا باستخدام PixVerse، مع صوت أصلي اختياريًا. يجب أن تكون مدة المصدر أقل من 40 ثانية وألا يتجاوز 1920px في أي من البعدين. يحافظ الناتج على دقة المصدر، لذا تحدد الجودة مدى جودة عرض المتابعة بدلًا من حجم الإطار.",
+    "display_name": "PixVerse V6 تمديد الفيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "إعدادات النموذج والتوليد."
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_style": {
+        "name": "style"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "الفيديو المراد متابعته."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6FirstLastFrameNode": {
+    "description": "ينشئ فيديو ينتقل من إطار أول إلى إطار أخير باستخدام PixVerse، مع صوت أصلي اختياريًا. يحافظ الناتج على نسبة أبعاد الإطار الأول.",
+    "display_name": "PixVerse V6 من الإطار الأول والأخير إلى الفيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "إعدادات النموذج والتوليد."
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_style": {
+        "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6FusionVideoNode": {
+    "description": "يؤلف فيديو من عناصر وخلفيات ومقاطع فيديو مرجعية باستخدام PixVerse. ضع مرجعًا في المشهد بتسميته في الموجّه، مثل: '{'@'}Subject1 يمشي عبر {'@'}Background1'. يؤدي توصيل فيديو مرجعي إلى تحويل النموذج إلى وضع Omni، حيث يطابق طول الناتج أطول فيديو مرجعي.",
+    "display_name": "PixVerse V6 دمج (مرجع إلى فيديو)",
+    "inputs": {
+      "backgrounds": {
+        "name": "backgrounds",
+        "tooltip": "صور مرجعية للمشهد الذي توضع فيه العناصر."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "إعدادات النموذج والتوليد."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration_seconds": {
+        "name": "المدة_بالثواني"
+      },
+      "model_generate_audio": {
+        "name": "إنشاء_الصوت"
+      },
+      "model_negative_prompt": {
+        "name": "الموجّه_السلبي"
+      },
+      "model_prompt": {
+        "name": "الموجّه"
+      },
+      "model_quality": {
+        "name": "الجودة"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      },
+      "model_style": {
+        "name": "النمط"
+      },
+      "subjects": {
+        "name": "subjects",
+        "tooltip": "صور مرجعية للعناصر المراد وضعها في المشهد."
+      },
+      "videos": {
+        "name": "videos",
+        "tooltip": "مقاطع فيديو مرجعية لاستعارة العناصر أو الحركة أو التأطير أو النمط منها. بحد أقصى اثنان، وبإجمالي لا يتجاوز 15 ثانية."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6ImageToVideoNode": {
+    "description": "يُحرّك صورة باستخدام PixVerse، مع صوت أصلي اختياريًا. يحافظ الإخراج على نسبة أبعاد صورة الإدخال.",
+    "display_name": "PixVerse V6 من صورة إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد الإنشاء"
+      },
+      "image": {
+        "name": "الصورة"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "إعدادات النموذج والإنشاء."
+      },
+      "model_duration_seconds": {
+        "name": "المدة_بالثواني"
+      },
+      "model_generate_audio": {
+        "name": "إنشاء_الصوت"
+      },
+      "model_multi_clip": {
+        "name": "مقاطع_متعددة"
+      },
+      "model_negative_prompt": {
+        "name": "الموجّه_السلبي"
+      },
+      "model_prompt": {
+        "name": "الموجّه"
+      },
+      "model_quality": {
+        "name": "الجودة"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      },
+      "model_style": {
+        "name": "النمط"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6TextToVideoNode": {
+    "description": "ينشئ فيديو من موجّه نصي باستخدام PixVerse، مع صوت أصلي اختياريًا.",
+    "display_name": "PixVerse V6 من نص إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد الإنشاء"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "إعدادات النموذج والإنشاء."
+      },
+      "model_aspect_ratio": {
+        "name": "نسبة_الأبعاد"
+      },
+      "model_duration_seconds": {
+        "name": "المدة_بالثواني"
+      },
+      "model_generate_audio": {
+        "name": "إنشاء_الصوت"
+      },
+      "model_multi_clip": {
+        "name": "مقاطع_متعددة"
+      },
+      "model_negative_prompt": {
+        "name": "الموجّه_السلبي"
+      },
+      "model_prompt": {
+        "name": "الموجّه"
+      },
+      "model_quality": {
+        "name": "الجودة"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      },
+      "model_style": {
+        "name": "النمط"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PolyexponentialScheduler": {
     "display_name": "جدولة متعددة الأسية",
     "inputs": {

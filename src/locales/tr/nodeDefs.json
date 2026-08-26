@@ -16596,6 +16596,238 @@
       }
     }
   },
+  "PixverseV6ExtendVideoNode": {
+    "description": "PixVerse ile mevcut bir videoyu isteğe bağlı yerleşik sesle sürdürür. Kaynak 40 saniyeden kısa olmalı ve herhangi bir kenarı en fazla 1920 px olmalıdır. Çıktı kaynak çözünürlüğünü korur; bu nedenle kalite, kare boyutu yerine devamın ne kadar iyi işleneceğini belirler.",
+    "display_name": "PixVerse V6 Videoyu Uzat",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturmadan sonra denetle"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model ve oluşturma ayarları."
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_quality": {
+        "name": "kalite"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_style": {
+        "name": "stil"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Sürdürülecek video."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6FirstLastFrameNode": {
+    "description": "PixVerse ile ilk kareden son kareye geçiş yapan, isteğe bağlı yerleşik sesli bir video oluşturur. Çıktı, ilk karenin en-boy oranını korur.",
+    "display_name": "PixVerse V6 İlk-Son-Kareden Videoya",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturmadan sonra denetle"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model ve oluşturma ayarları."
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_quality": {
+        "name": "kalite"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_style": {
+        "name": "stil"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6FusionVideoNode": {
+    "description": "PixVerse ile referans öznelerden, arka planlardan ve videolardan bir video oluşturur. Bir referansı istemde adıyla belirterek sahneye yerleştirin; örneğin, '{'@'}Subject1 {'@'}Background1 içinde yürür'. Bir referans video bağlamak modeli Omni moduna geçirir; bu modda çıktı süresi en uzun referans videoyla eşleşir.",
+    "display_name": "PixVerse V6 Fusion (Referanstan Videoya)",
+    "inputs": {
+      "backgrounds": {
+        "name": "arka planlar",
+        "tooltip": "Öznelerin yerleştirildiği sahnenin referans görselleri."
+      },
+      "control_after_generate": {
+        "name": "oluşturmadan sonra denetle"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model ve oluşturma ayarları."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration_seconds": {
+        "name": "süre (saniye)"
+      },
+      "model_generate_audio": {
+        "name": "ses oluştur"
+      },
+      "model_negative_prompt": {
+        "name": "negatif istem"
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_quality": {
+        "name": "kalite"
+      },
+      "model_seed": {
+        "name": "tohum"
+      },
+      "model_style": {
+        "name": "stil"
+      },
+      "subjects": {
+        "name": "özneler",
+        "tooltip": "Sahneye yerleştirilecek öznelerin referans görselleri."
+      },
+      "videos": {
+        "name": "videolar",
+        "tooltip": "Özneleri, hareketi, kadrajı veya stili ödünç almak için referans videolar. En fazla iki adet ve toplamda en fazla 15 saniye."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6ImageToVideoNode": {
+    "description": "Bir görüntüyü PixVerse ile, isteğe bağlı olarak yerel sesle canlandırır. Çıktı, giriş görüntüsünün en-boy oranını korur.",
+    "display_name": "PixVerse V6 Görüntüden Videoya",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "image": {
+        "name": "görüntü"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model ve oluşturma ayarları."
+      },
+      "model_duration_seconds": {
+        "name": "süre (saniye)"
+      },
+      "model_generate_audio": {
+        "name": "ses oluştur"
+      },
+      "model_multi_clip": {
+        "name": "çoklu klip"
+      },
+      "model_negative_prompt": {
+        "name": "negatif istem"
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_quality": {
+        "name": "kalite"
+      },
+      "model_seed": {
+        "name": "tohum"
+      },
+      "model_style": {
+        "name": "stil"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6TextToVideoNode": {
+    "description": "PixVerse ile bir metin isteminden, isteğe bağlı olarak yerel ses içeren bir video oluşturur.",
+    "display_name": "PixVerse V6 Metinden Videoya",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model ve oluşturma ayarları."
+      },
+      "model_aspect_ratio": {
+        "name": "en-boy oranı"
+      },
+      "model_duration_seconds": {
+        "name": "süre (saniye)"
+      },
+      "model_generate_audio": {
+        "name": "ses oluştur"
+      },
+      "model_multi_clip": {
+        "name": "çoklu klip"
+      },
+      "model_negative_prompt": {
+        "name": "negatif istem"
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_quality": {
+        "name": "kalite"
+      },
+      "model_seed": {
+        "name": "tohum"
+      },
+      "model_style": {
+        "name": "stil"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PolyexponentialScheduler": {
     "display_name": "ÇokÜstelZamanlayıcı",
     "inputs": {
