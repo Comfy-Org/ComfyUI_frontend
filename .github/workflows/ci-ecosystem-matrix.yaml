@@ -32,7 +32,9 @@ on:
     paths:
       - 'src/**'
       - 'scripts/registry-census/**'
+      - 'browser_tests/assets/default.json'
       - 'vitest.matrix.config.mts'
+      - 'vitest.setup.ts'
       - '.github/workflows/ci-ecosystem-matrix.yaml'
   # Refreshes the corpus and writes the baseline every PR is measured against.
   # Actions cache scoping means only a default-branch run can produce an entry
@@ -42,7 +44,9 @@ on:
     paths:
       - 'src/**'
       - 'scripts/registry-census/**'
+      - 'browser_tests/assets/default.json'
       - 'vitest.matrix.config.mts'
+      - 'vitest.setup.ts'
       - '.github/workflows/ci-ecosystem-matrix.yaml'
   workflow_dispatch:
 
@@ -217,9 +221,10 @@ jobs:
   #
   # A shard checks harness integrity only: every built spec must write its
   # per-pack row. vitest's own exit code is ignored here because pack code
-  # leaks unhandled rejections. The ecosystem PASS/FAIL verdict is applied
-  # once, over all shards combined, by matrix-verdict below.
+  # leaks unhandled rejections. Each renderer gets an independent ecosystem
+  # PASS/FAIL verdict over its four shards.
   ecosystem-matrix:
+    name: ecosystem-matrix (${{ matrix.renderer }}, shard ${{ matrix.shard }})
     needs: corpus
     if: github.repository == 'Comfy-Org/ComfyUI_frontend'
     runs-on: ubuntu-latest
@@ -227,7 +232,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        renderer: [legacy, vue]
         shard: [1, 2, 3, 4]
+    env:
+      MATRIX_RENDERER: ${{ matrix.renderer }}
+      MATRIX_VUE: ${{ matrix.renderer == 'vue' && '1' || '' }}
     steps:
       # This job EXECUTES unreviewed third-party pack code under vitest;
       # the checkout must not leave a usable git credential behind for it.
@@ -332,20 +341,20 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: ecosystem-matrix-shard-${{ matrix.shard }}
+          name: ecosystem-matrix-${{ matrix.renderer }}-shard-${{ matrix.shard }}
           path: matrix-rows/
           retention-days: 30
           if-no-files-found: warn
 
-  # The single combined result: all four shards' rows merge into one table
-  # and one combined verdict - this job's exit code IS the ecosystem verdict
-  # (0 PASS, 1 FAIL, 2 harness failure / no rows / short population).
+  # Each renderer's four shards merge into their own table and verdict. A
+  # failure on one renderer cannot hide inside the other renderer's population.
   #
   # MATRIX_EXPECT_SHARDS makes a dead shard withhold rather than PASS. Every
   # criterion is a ratio, so three shards produce a perfectly plausible
   # number, and on PASS that partial population would be saved as the
   # baseline the next run is measured against.
   matrix-verdict:
+    name: matrix-verdict (${{ matrix.renderer }})
     needs: [corpus, ecosystem-matrix]
     # A single failed shard must degrade to a withheld verdict over the rows
     # that exist, not to a skipped check that reads as nothing happened. Not
@@ -356,6 +365,12 @@ jobs:
       && github.repository == 'Comfy-Org/ComfyUI_frontend'
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        renderer: [legacy, vue]
+    env:
+      MATRIX_RENDERER: ${{ matrix.renderer }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -373,7 +388,7 @@ jobs:
         continue-on-error: true
         uses: actions/download-artifact@v8
         with:
-          pattern: ecosystem-matrix-shard-*
+          pattern: ecosystem-matrix-${{ matrix.renderer }}-shard-*
           path: matrix-rows
           merge-multiple: true
 
@@ -397,8 +412,8 @@ jobs:
         uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: matrix-metrics
-          key: matrix-metrics-${{ github.run_id }}
-          restore-keys: matrix-metrics-
+          key: matrix-metrics-${{ matrix.renderer }}-${{ github.run_id }}
+          restore-keys: matrix-metrics-${{ matrix.renderer }}-
 
       - name: Verdict
         id: verdict
@@ -425,13 +440,13 @@ jobs:
         uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: matrix-metrics
-          key: matrix-metrics-${{ github.run_id }}-${{ github.run_attempt }}
+          key: matrix-metrics-${{ matrix.renderer }}-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Upload combined result
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: ecosystem-matrix-combined
+          name: ecosystem-matrix-${{ matrix.renderer }}-combined
           path: matrix-rows/
           retention-days: 30
           if-no-files-found: warn
@@ -446,9 +461,17 @@ jobs:
   # the poison fixture is checked in, so this runs on every PR that touches
   # src/** even when the corpus is cold.
   matrix-detection-proof:
+    name: matrix-detection-proof (${{ matrix.renderer }})
     if: github.repository == 'Comfy-Org/ComfyUI_frontend'
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        renderer: [legacy, vue]
+    env:
+      MATRIX_RENDERER: ${{ matrix.renderer }}
+      MATRIX_VUE: ${{ matrix.renderer == 'vue' && '1' || '' }}
     steps:
       # Runs the poison packs (and the same harness that runs real pack
       # code); same rule as the shard jobs - no persisted credential.

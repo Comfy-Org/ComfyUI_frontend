@@ -42,6 +42,8 @@ defineEmits<{ click: [] }>()
         v-else
         :src="item.image"
         :alt="item.title"
+        loading="lazy"
+        decoding="async"
         class="size-full transition-transform duration-300 group-hover:scale-105"
         :style="{ objectPosition, objectFit }"
       />
