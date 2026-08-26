@@ -59,7 +59,8 @@ function createMockNodeData(
     mode: 0,
     flags: {},
     inputs: [],
-    outputs: []
+    outputs: [],
+    properties: {}
   }
 }
 
@@ -262,8 +263,9 @@ describe('NodeWidgets', () => {
       }
     })
 
-    expect(container.querySelector('.widget-stub')?.className).toContain(
-      'text-node-stroke-error'
+    expect(container.querySelector('.widget-stub')).toHaveAttribute(
+      'aria-invalid',
+      'true'
     )
   })
 })

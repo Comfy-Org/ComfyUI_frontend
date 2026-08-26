@@ -136,6 +136,41 @@ describe('LLink ↔ linkStore integration', () => {
     expect(store.isInputSlotConnected(graphScopeOf(graph), b.id, 0)).toBe(false)
   })
 
+  it('preserves extension-visible link fields on the link', () => {
+    vi.stubGlobal('Path2D', class {})
+    const graph = new LGraph()
+    const link = new LLink(
+      toLinkId(1),
+      '*',
+      UNASSIGNED_NODE_ID,
+      -1,
+      UNASSIGNED_NODE_ID,
+      -1
+    )
+    graph.addFloatingLink(link)
+    const path = new Path2D()
+
+    link.data = 42
+    link._data = { output: true }
+    link._pos = [10, 20]
+    link._last_time = 30
+    link.path = path
+    link._centreAngle = 0.5
+    link._dragging = true
+    link.color = ''
+
+    expect(link).toMatchObject({
+      data: 42,
+      _data: { output: true },
+      _pos: [10, 20],
+      _last_time: 30,
+      path,
+      _centreAngle: 0.5,
+      _dragging: true
+    })
+    expect(link.color).toBeNull()
+  })
+
   it('commits a replacement before disconnect callbacks run', () => {
     const graph = new LGraph()
     const first = new LGraphNode('first')
@@ -470,6 +505,32 @@ describe('LLink ↔ linkStore integration', () => {
     expect(store.isInputSlotConnected(graphScopeOf(graph), nodeId, 1)).toBe(
       true
     )
+  })
+
+  it('reports a rejected legacy endpoint mutation without throwing', () => {
+    const graph = new LGraph()
+    const firstSource = new LGraphNode('First source')
+    const secondSource = new LGraphNode('Second source')
+    const target = new LGraphNode('Target')
+    firstSource.addOutput('out', 'INT')
+    secondSource.addOutput('out', 'INT')
+    target.addInput('first', 'INT')
+    target.addInput('second', 'INT')
+    graph.add(firstSource)
+    graph.add(secondSource)
+    graph.add(target)
+    const first = firstSource.connect(0, target, 0)!
+    secondSource.connect(0, target, 1)
+
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    expect(() => {
+      first.target_slot = 1
+    }).not.toThrow()
+    expect(error).toHaveBeenCalledWith(
+      'Failed to update link endpoints',
+      expect.objectContaining({ code: 'occupied-target' })
+    )
+    expect(first.target_slot).toBe(0)
   })
 
   it('updates regular and floating views after endpoint changes', () => {

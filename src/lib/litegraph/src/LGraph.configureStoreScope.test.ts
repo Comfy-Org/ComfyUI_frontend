@@ -3,6 +3,8 @@ import { describe, expect, test } from 'vitest'
 import type { ISerialisedGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { widgetId } from '@/types/widgetId'
 import { renameWidget } from '@/utils/widgetUtil'
 
 class LabelledWidgetNode extends LGraphNode {
@@ -32,12 +34,6 @@ describe('LGraph.configure clears graph-scoped stores for the incoming id', () =
     return node
   }
 
-  function createSourceGraph() {
-    const graph = new LGraph()
-    const node = addLabelledNode(graph, 'Live Label')
-    return { graph, node }
-  }
-
   function serializeToJson(graph: LGraph): ISerialisedGraph {
     return JSON.parse(JSON.stringify(graph.serialize())) as ISerialisedGraph
   }
@@ -46,6 +42,7 @@ describe('LGraph.configure clears graph-scoped stores for the incoming id', () =
     const graph = new LGraph()
     const dropped = addLabelledNode(graph, 'Dropped Label')
     const kept = addLabelledNode(graph, 'Kept Label')
+    const incomingId = graph.id
 
     const payload = serializeToJson(graph)
     const droppedData = payload.nodes.find(
@@ -53,27 +50,37 @@ describe('LGraph.configure clears graph-scoped stores for the incoming id', () =
     )!
     delete droppedData.inputs![0].label
 
-    const restored = new LGraph()
-    restored.configure(payload)
+    graph.clear()
+    useWidgetValueStore().registerWidget(
+      widgetId(incomingId, dropped.id, 'text'),
+      {
+        type: 'text',
+        value: 'a cat',
+        options: {},
+        label: 'Dropped Label'
+      }
+    )
+    graph.configure(payload)
 
-    expect(restored.id).toBe(graph.id)
-    expect(restored.getNodeById(dropped.id)!.widgets![0].label).toBeUndefined()
-    expect(restored.getNodeById(kept.id)!.widgets![0].label).toBe('Kept Label')
+    expect(graph.id).toBe(incomingId)
+    expect(graph.getNodeById(dropped.id)!.widgets![0].label).toBeUndefined()
+    expect(graph.getNodeById(kept.id)!.widgets![0].label).toBe('Kept Label')
   })
 
   test('preview exposures held for the incoming id do not survive the reload', () => {
-    const { graph } = createSourceGraph()
+    const graph = new LGraph()
+    addLabelledNode(graph, 'Live Label')
+    const incomingId = graph.id
     const store = usePreviewExposureStore()
-    store.setExposures(graph.id, '99', [
-      { sourceNodeId: '1', sourcePreviewName: 'preview', name: 'preview' }
-    ])
-
     const payload = serializeToJson(graph)
 
-    const restored = new LGraph()
-    restored.configure(payload)
+    graph.clear()
+    store.setExposures(incomingId, '99', [
+      { sourceNodeId: '1', sourcePreviewName: 'preview', name: 'preview' }
+    ])
+    graph.configure(payload)
 
-    expect(restored.id).toBe(graph.id)
-    expect(store.getExposures(restored.id, '99')).toEqual([])
+    expect(graph.id).toBe(incomingId)
+    expect(store.getExposures(graph.id, '99')).toEqual([])
   })
 })

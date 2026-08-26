@@ -3185,7 +3185,8 @@
         "bodyNoDate": "Your team has used all its credits. Add more credits to continue generating.",
         "memberBody": "Your team has used all its credits. Your workspace admins need to add more credits to continue generating.",
         "addCredits": "Add credits",
-        "dismiss": "Dismiss"
+        "dismiss": "Dismiss",
+        "upgradeBody": "Upgrade your plan to add credits and continue generating."
       },
       "ending": {
         "title": "Your team plan ends on {date}",

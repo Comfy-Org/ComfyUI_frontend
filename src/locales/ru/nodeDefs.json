@@ -16596,6 +16596,238 @@
       }
     }
   },
+  "PixverseV6ExtendVideoNode": {
+    "description": "Продолжает существующее видео с помощью PixVerse, при необходимости с нативным звуком. Исходное видео должно быть короче 40 секунд и не более 1920 px по любой стороне. Выходное видео сохраняет разрешение исходного, поэтому качество определяет, насколько хорошо отрисовывается продолжение, а не размер кадра.",
+    "display_name": "PixVerse V6: продление видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Настройки модели и генерации."
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_style": {
+        "name": "style"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Видео для продолжения."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6FirstLastFrameNode": {
+    "description": "Создаёт видео с переходом от первого кадра к последнему с помощью PixVerse, при необходимости с нативным звуком. Выходное видео сохраняет соотношение сторон первого кадра.",
+    "display_name": "PixVerse V6: из первого и последнего кадра в видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Настройки модели и генерации."
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_style": {
+        "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6FusionVideoNode": {
+    "description": "Создаёт видео из референсных персонажей, фонов и видео с помощью PixVerse. Поместите референс в сцену, указав его в prompt, например: '{'@'}Subject1 проходит через {'@'}Background1'. При подключении референсного видео модель переключается в режим Omni, в котором длительность результата соответствует самому длинному референсному видео.",
+    "display_name": "PixVerse V6 Fusion (референсы в видео)",
+    "inputs": {
+      "backgrounds": {
+        "name": "backgrounds",
+        "tooltip": "Референсные изображения сцены, в которую будут помещены персонажи."
+      },
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Настройки модели и генерации."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration_seconds": {
+        "name": "длительность_в_секундах"
+      },
+      "model_generate_audio": {
+        "name": "генерировать_аудио"
+      },
+      "model_negative_prompt": {
+        "name": "негативный_запрос"
+      },
+      "model_prompt": {
+        "name": "запрос"
+      },
+      "model_quality": {
+        "name": "качество"
+      },
+      "model_seed": {
+        "name": "сид"
+      },
+      "model_style": {
+        "name": "стиль"
+      },
+      "subjects": {
+        "name": "subjects",
+        "tooltip": "Референсные изображения персонажей, которые будут размещены в сцене."
+      },
+      "videos": {
+        "name": "videos",
+        "tooltip": "Референсные видео, из которых можно взять персонажей, движение, кадрирование или стиль. Не более двух, общей длительностью не более 15 секунд."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6ImageToVideoNode": {
+    "description": "Анимирует изображение с помощью PixVerse, при необходимости добавляя нативное аудио. Выходное видео сохраняет соотношение сторон входного изображения.",
+    "display_name": "PixVerse V6: из изображения в видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "image": {
+        "name": "изображение"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Настройки модели и генерации."
+      },
+      "model_duration_seconds": {
+        "name": "длительность_в_секундах"
+      },
+      "model_generate_audio": {
+        "name": "генерировать_аудио"
+      },
+      "model_multi_clip": {
+        "name": "несколько_клипов"
+      },
+      "model_negative_prompt": {
+        "name": "негативный_запрос"
+      },
+      "model_prompt": {
+        "name": "запрос"
+      },
+      "model_quality": {
+        "name": "качество"
+      },
+      "model_seed": {
+        "name": "сид"
+      },
+      "model_style": {
+        "name": "стиль"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6TextToVideoNode": {
+    "description": "Генерирует видео из текстового запроса с помощью PixVerse, при необходимости добавляя нативное аудио.",
+    "display_name": "PixVerse V6: из текста в видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Настройки модели и генерации."
+      },
+      "model_aspect_ratio": {
+        "name": "соотношение_сторон"
+      },
+      "model_duration_seconds": {
+        "name": "длительность_в_секундах"
+      },
+      "model_generate_audio": {
+        "name": "генерировать_аудио"
+      },
+      "model_multi_clip": {
+        "name": "несколько_клипов"
+      },
+      "model_negative_prompt": {
+        "name": "негативный_запрос"
+      },
+      "model_prompt": {
+        "name": "запрос"
+      },
+      "model_quality": {
+        "name": "качество"
+      },
+      "model_seed": {
+        "name": "сид"
+      },
+      "model_style": {
+        "name": "стиль"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PolyexponentialScheduler": {
     "display_name": "Полиэкспоненциальный scheduler",
     "inputs": {
@@ -23444,30 +23676,6 @@
       },
       "1": {
         "name": "model task_id",
-        "tooltip": null
-      },
-      "2": {
-        "name": "GLB",
-        "tooltip": null
-      }
-    }
-  },
-  "TripoRefineNode": {
-    "description": "Уточнение черновой модели, созданной только моделями Tripo v1.4.",
-    "display_name": "Tripo: Уточнение черновой модели",
-    "inputs": {
-      "model_task_id": {
-        "name": "идентификатор_задачи_модели",
-        "tooltip": "Должна быть модель Tripo v1.4"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "файл модели",
-        "tooltip": null
-      },
-      "1": {
-        "name": "task_id модели",
         "tooltip": null
       },
       "2": {
