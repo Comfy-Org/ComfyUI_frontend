@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { PerfIdentitySource } from '../browser_tests/fixtures/helpers/perfWorkloadIdentity'
 import {
   buildPerfWorkloadIdentity,
+  filterComparableWorkloads,
   hashTopology,
   stableSerialize
 } from '../browser_tests/fixtures/helpers/perfWorkloadIdentity'
@@ -72,5 +73,37 @@ describe('perf workload identity', () => {
     )
     expect(identity.activity.dirtyReasons).toEqual({ progress: 3 })
     expect(JSON.stringify(identity)).not.toContain('workflow secret')
+  })
+
+  it('filters samples by topology and execution environment', () => {
+    const reference = { workloadIdentity: buildPerfWorkloadIdentity(source) }
+    const sameWorkloadNewBuild = {
+      workloadIdentity: buildPerfWorkloadIdentity({
+        ...source,
+        frontendVersion: '9.9.9',
+        frontendCommit: 'different-commit'
+      })
+    }
+    const differentTopology = {
+      workloadIdentity: buildPerfWorkloadIdentity({
+        ...source,
+        links: []
+      })
+    }
+    const differentEnvironment = {
+      workloadIdentity: buildPerfWorkloadIdentity({
+        ...source,
+        devicePixelRatio: 2
+      })
+    }
+
+    expect(
+      filterComparableWorkloads(reference, [
+        sameWorkloadNewBuild,
+        differentTopology,
+        differentEnvironment,
+        {}
+      ])
+    ).toEqual([sameWorkloadNewBuild])
   })
 })

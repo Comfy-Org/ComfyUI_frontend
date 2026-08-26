@@ -174,3 +174,33 @@ export function buildPerfWorkloadIdentity(
       .sort()
   }
 }
+
+function comparisonIdentity(identity: PerfWorkloadIdentity): string {
+  const { topology, environment } = identity
+  return stableSerialize({
+    schemaVersion: identity.schemaVersion,
+    topology,
+    environment: {
+      renderer: environment.renderer,
+      canvasInfoEnabled: environment.canvasInfoEnabled,
+      viewportWidth: environment.viewportWidth,
+      viewportHeight: environment.viewportHeight,
+      devicePixelRatio: environment.devicePixelRatio,
+      buildMode: environment.buildMode,
+      browserVersion: environment.browserVersion,
+      gpuClass: environment.gpuClass
+    }
+  })
+}
+
+export function filterComparableWorkloads<
+  T extends { workloadIdentity?: PerfWorkloadIdentity }
+>(reference: T, candidates: T[]): T[] {
+  if (!reference.workloadIdentity) return []
+  const referenceIdentity = comparisonIdentity(reference.workloadIdentity)
+  return candidates.filter(
+    ({ workloadIdentity }) =>
+      workloadIdentity &&
+      comparisonIdentity(workloadIdentity) === referenceIdentity
+  )
+}

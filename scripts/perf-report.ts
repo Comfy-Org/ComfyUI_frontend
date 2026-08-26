@@ -1,6 +1,8 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 
+import type { PerfWorkloadIdentity } from '../browser_tests/fixtures/helpers/perfWorkloadIdentity'
+import { filterComparableWorkloads } from '../browser_tests/fixtures/helpers/perfWorkloadIdentity'
 import type { MetricStats } from './perf-stats'
 import {
   classifyChange,
@@ -53,13 +55,7 @@ interface PerfMeasurement {
   rafIntervalsOver33_3Ms?: number
   rafIntervalsOver50Ms?: number
   rejectedRunReason?: string | null
-  workloadIdentity?: {
-    schemaVersion: number
-    topology: Record<string, number | string>
-    activity: Record<string, number | Record<string, number> | null>
-    environment: Record<string, boolean | number | string | null>
-    missingOptionalFields: string[]
-  }
+  workloadIdentity?: PerfWorkloadIdentity
 }
 
 interface PerfReport {
@@ -197,12 +193,16 @@ function loadHistoricalReports(): PerfReport[] {
 function getHistoricalStats(
   reports: PerfReport[],
   testName: string,
-  metric: MetricKey
+  metric: MetricKey,
+  reference: PerfMeasurement
 ): MetricStats {
   const values: number[] = []
   for (const r of reports) {
     const group = groupByName(r.measurements)
-    const samples = group.get(testName)
+    const samples = filterComparableWorkloads(
+      reference,
+      group.get(testName) ?? []
+    )
     if (samples) {
       const mean = meanMetric(samples, metric)
       if (mean !== null) values.push(mean)
@@ -214,7 +214,8 @@ function getHistoricalStats(
 function getHistoricalTimeSeries(
   reports: PerfReport[],
   testName: string,
-  metric: MetricKey
+  metric: MetricKey,
+  reference: PerfMeasurement
 ): number[] {
   const sorted = [...reports].sort(
     (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
@@ -222,7 +223,10 @@ function getHistoricalTimeSeries(
   const values: number[] = []
   for (const r of sorted) {
     const group = groupByName(r.measurements)
-    const samples = group.get(testName)
+    const samples = filterComparableWorkloads(
+      reference,
+      group.get(testName) ?? []
+    )
     if (samples) {
       const mean = meanMetric(samples, metric)
       if (mean !== null) values.push(mean)
@@ -358,13 +362,17 @@ function renderFullReport(
   const allRows: string[] = []
 
   for (const [testName, prSamples] of prGroups) {
-    const baseSamples = baselineGroups.get(testName)
+    const reference = prSamples[0]
+    const baseSamples = filterComparableWorkloads(
+      reference,
+      baselineGroups.get(testName) ?? []
+    )
 
     for (const { key, label, unit, minAbsDelta } of REPORTED_METRICS) {
       // Use median for PR values — robust to outlier runs in CI
       const prVal = medianMetric(prSamples, key)
       if (prVal === null) continue
-      const histStats = getHistoricalStats(historical, testName, key)
+      const histStats = getHistoricalStats(historical, testName, key, reference)
       const cv = computeCV(histStats)
 
       if (!baseSamples?.length) {
@@ -431,9 +439,10 @@ function renderFullReport(
     '| Metric | μ | σ | CV |',
     '|--------|---|---|-----|'
   )
-  for (const [testName] of prGroups) {
+  for (const [testName, prSamples] of prGroups) {
+    const reference = prSamples[0]
     for (const { key, label, unit } of REPORTED_METRICS) {
-      const stats = getHistoricalStats(historical, testName, key)
+      const stats = getHistoricalStats(historical, testName, key, reference)
       if (stats.n < 2) continue
       const cv = computeCV(stats)
       lines.push(
@@ -444,9 +453,15 @@ function renderFullReport(
   lines.push('', '</details>')
 
   const trendRows: string[] = []
-  for (const [testName] of prGroups) {
+  for (const [testName, prSamples] of prGroups) {
+    const reference = prSamples[0]
     for (const { key, label, unit } of REPORTED_METRICS) {
-      const series = getHistoricalTimeSeries(historical, testName, key)
+      const series = getHistoricalTimeSeries(
+        historical,
+        testName,
+        key,
+        reference
+      )
       if (series.length < 3) continue
       const dir = trendDirection(series)
       const arrow = trendArrow(dir)
@@ -491,7 +506,10 @@ function renderColdStartReport(
   )
 
   for (const [testName, prSamples] of prGroups) {
-    const baseSamples = baselineGroups.get(testName)
+    const baseSamples = filterComparableWorkloads(
+      prSamples[0],
+      baselineGroups.get(testName) ?? []
+    )
 
     for (const { key, label, unit } of REPORTED_METRICS) {
       const prVal = medianMetric(prSamples, key)
