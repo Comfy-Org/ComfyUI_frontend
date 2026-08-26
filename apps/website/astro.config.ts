@@ -3,44 +3,10 @@ import mdx from '@astrojs/mdx'
 import sitemap from '@astrojs/sitemap'
 import vue from '@astrojs/vue'
 import tailwindcss from '@tailwindcss/vite'
+import { isExcludedFromSitemap } from './src/config/indexing'
 
 const LOCALES = ['en', 'zh-CN'] as const
 const DEFAULT_LOCALE = 'en'
-const PAYMENT_STATUSES = ['success', 'failed'] as const
-const LOCALE_PREFIXES = LOCALES.map((locale) =>
-  locale === DEFAULT_LOCALE ? '' : `/${locale}`
-)
-const EXCLUDED_MODELS = [
-  'qwen-3-8b',
-  'mistral-3-small-flux2-fp8',
-  'gemma-2-2b-it-elm-fp8-scaled',
-  'gemma-3-12b-it-fp8-scaled',
-  'gemma-3-12b-it',
-  'grok-image',
-  'qwen-2-5-vl-7b',
-  'umt5-xxl-fp16',
-  'qwen-image-2512-bf16',
-  't5xxl-fp8-e4m3fn-scaled'
-]
-
-const SITEMAP_EXCLUDED_PATHNAMES = new Set([
-  ...LOCALE_PREFIXES.flatMap((prefix) =>
-    PAYMENT_STATUSES.map((status) => `${prefix}/payment/${status}`)
-  ),
-  ...LOCALE_PREFIXES.map((prefix) => `${prefix}/individual-submission`),
-  ...LOCALE_PREFIXES.map((prefix) => `${prefix}/booking-confirmation`),
-  ...LOCALE_PREFIXES.map((prefix) => `${prefix}/privacy-policy`),
-  ...LOCALE_PREFIXES.map((prefix) => `${prefix}/terms-of-service`),
-  ...EXCLUDED_MODELS.flatMap((model) =>
-    LOCALE_PREFIXES.map((prefix) => `${prefix}/p/supported-models/${model}`)
-  )
-])
-
-function isExcludedFromSitemap(page: string): boolean {
-  const pathname = new URL(page).pathname.replace(/\/$/, '')
-  return SITEMAP_EXCLUDED_PATHNAMES.has(pathname)
-}
-
 export default defineConfig({
   site: 'https://comfy.org',
   output: 'static',
