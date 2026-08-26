@@ -25,7 +25,9 @@ const mockCanvasStore = {
       scale: 1
     },
     canvas: mockCanvasElement,
-    selected_nodes: {}
+    selected_nodes: {},
+    selectNode: vi.fn(),
+    bringToFront: vi.fn()
   },
   getCanvas: () => ({ canvas: mockCanvasElement }),
   linearMode: false
@@ -57,7 +59,10 @@ vi.mock('@/platform/settings/settingStore', () => ({
   })
 }))
 
-function createWidgetState(disabled: boolean): DomWidgetState {
+function createWidgetState(
+  disabled: boolean,
+  id = 'dom-widget-id'
+): DomWidgetState {
   const domWidgetStore = useDomWidgetStore()
   const node = createMockLGraphNode({
     id: 1,
@@ -67,7 +72,7 @@ function createWidgetState(disabled: boolean): DomWidgetState {
   })
 
   const widget = fromPartial<BaseDOMWidget<object | string>>({
-    id: 'dom-widget-id',
+    id,
     name: 'test_widget',
     type: 'custom',
     value: '',
@@ -181,6 +186,94 @@ describe('DomWidget style', () => {
     })
 
     widgetState.zIndex = 3
+    await nextTick()
+
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    const root = container.querySelector('.dom-widget') as HTMLElement
+    expect(root.style.pointerEvents).toBe('none')
+  })
+})
+
+describe('DomWidget position update matrix', () => {
+  const widgetCounts = [0, 10, 100] as const
+
+  afterEach(() => {
+    useDomWidgetStore().clear()
+  })
+
+  it.for(widgetCounts)(
+    'requests no style writes at steady state and one per changed position for %i widgets',
+    async (count) => {
+      const states = Array.from({ length: count }, (_, index) =>
+        createWidgetState(false, `position-widget-${index}`)
+      )
+      const rendered = states.map((widgetState) =>
+        render(DomWidget, { props: { widgetState } })
+      )
+      mockUpdatePosition.mockClear()
+
+      await nextTick()
+      expect(mockUpdatePosition).not.toHaveBeenCalled()
+
+      for (const state of states) {
+        state.pos = [state.pos[0] + 1, state.pos[1]]
+      }
+      await nextTick()
+      expect(mockUpdatePosition).toHaveBeenCalledTimes(count)
+
+      for (const result of rendered) result.unmount()
+    }
+  )
+})
+
+describe('native DOM widget interaction lifecycle', () => {
+  afterEach(() => {
+    useDomWidgetStore().clear()
+  })
+
+  it('preserves selection and outside-click focus behavior, then removes listeners', async () => {
+    const widgetState = createWidgetState(false)
+    const input = document.createElement('input')
+    const blur = vi.spyOn(input, 'blur')
+    Object.assign(widgetState.widget, { element: input })
+
+    const rendered = render(DomWidget, {
+      props: {
+        widgetState
+      }
+    })
+    await nextTick()
+    await nextTick()
+
+    input.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    expect(mockCanvasStore.canvas.selectNode).toHaveBeenCalledWith(
+      widgetState.widget.node
+    )
+    expect(mockCanvasStore.canvas.bringToFront).toHaveBeenCalledWith(
+      widgetState.widget.node
+    )
+
+    document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
+    expect(blur).toHaveBeenCalledOnce()
+
+    rendered.unmount()
+    vi.mocked(mockCanvasStore.canvas.selectNode).mockClear()
+    blur.mockClear()
+
+    input.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
+    expect(mockCanvasStore.canvas.selectNode).not.toHaveBeenCalled()
+    expect(blur).not.toHaveBeenCalled()
+  })
+
+  it('removes hit testing in read-only mode', async () => {
+    const widgetState = createWidgetState(false)
+    widgetState.readonly = true
+    const { container } = render(DomWidget, {
+      props: {
+        widgetState
+      }
+    })
     await nextTick()
 
     // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
