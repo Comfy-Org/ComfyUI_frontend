@@ -180,13 +180,14 @@ export function createModelReleases(catalog: readonly Model[]): ModelRelease[] {
         primarySlugs.has(model.slug) ||
         model.workflowPreviews.some(({ id }) => workflowIds.has(id))
     )
-    const slug =
-      primaryModels.length === 1
-        ? primary.slug
-        : `${identity.familySlug}-${releaseDisplayName(primary.displayName)
-            .toLowerCase()
-            .replace(/[^a-z\d]+/g, '-')
-            .replace(/^-|-$/g, '')}`
+    const releaseNameSlug = releaseDisplayName(primary.displayName)
+      .toLowerCase()
+      .replace(/[^a-z\d]+/g, '-')
+      .replace(/^-|-$/g, '')
+    const groupedSlug = releaseNameSlug.startsWith(identity.familySlug)
+      ? releaseNameSlug
+      : `${identity.familySlug}-${releaseNameSlug}`
+    const slug = primaryModels.length === 1 ? primary.slug : groupedSlug
 
     return {
       slug,
@@ -234,4 +235,11 @@ export function createModelReleases(catalog: readonly Model[]): ModelRelease[] {
   return [...partnerReleases, ...localReleases].sort((a, b) =>
     (b.releaseDate ?? '').localeCompare(a.releaseDate ?? '')
   )
+}
+
+export function getModelReleaseBySlug(
+  releases: readonly ModelRelease[],
+  slug: string
+): ModelRelease | undefined {
+  return releases.find((release) => release.slug === slug)
 }
