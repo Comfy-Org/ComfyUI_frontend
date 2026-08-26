@@ -73,11 +73,15 @@ export function writePerfReport(
   }
   if (tempFiles.length === 0) return
 
-  const measurements = tempFiles.map((file) => {
-    const value: unknown = JSON.parse(
-      readFileSync(join(TEMP_DIR, file), 'utf-8')
-    )
-    return perfMeasurementResultSchema.parse(value)
+  const measurements = tempFiles.flatMap((file) => {
+    try {
+      const value: unknown = JSON.parse(
+        readFileSync(join(TEMP_DIR, file), 'utf-8')
+      )
+      return [perfMeasurementResultSchema.parse(value)]
+    } catch {
+      return []
+    }
   })
 
   const report: PerfReportV2 = {
