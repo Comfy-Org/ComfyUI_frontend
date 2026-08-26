@@ -2246,6 +2246,86 @@ const translations = {
       '同一套构建，直接部署。节点、模型和依赖只解析一次，并随构建一起带走。可以在本地、服务器上运行，也可以作为无服务器端点运行——随流量伸缩，闲时降到零。'
   },
 
+  // Developers page – How it works
+  'developers.how.title': {
+    en: 'How it works',
+    'zh-CN': '它是如何运作的'
+  },
+  'developers.how.lead': {
+    en: 'Four moving parts. A Distribution freezes your environment. A Deployment runs it on serverless GPUs and gives you a URL. The SDK is how your app calls that URL.',
+    'zh-CN':
+      '四个组成部分。Distribution 冻结你的运行环境，Deployment 把它跑在无服务器 GPU 上并给你一个 URL，SDK 则是你的应用调用这个 URL 的方式。'
+  },
+  'developers.how.step1.title': {
+    en: 'Workflow',
+    'zh-CN': '工作流'
+  },
+  'developers.how.step1.description': {
+    en: 'Your ComfyUI graph, exported in API format',
+    'zh-CN': '你的 ComfyUI 图，以 API 格式导出'
+  },
+  'developers.how.step2.title': {
+    en: 'Managed Builds',
+    'zh-CN': '托管构建'
+  },
+  'developers.how.step2.description': {
+    en: 'A reproducible environment: version + models + nodes.',
+    'zh-CN': '一个可复现的环境：版本 + 模型 + 节点。'
+  },
+  'developers.how.step3.title': {
+    en: 'Deployment',
+    'zh-CN': '部署'
+  },
+  'developers.how.step3.description': {
+    en: 'That environment on autoscaling GPUs, with a URL.',
+    'zh-CN': '把该环境跑在自动伸缩的 GPU 上，并提供一个 URL。'
+  },
+  'developers.how.step4.title': {
+    en: 'Comfy SDK',
+    'zh-CN': 'Comfy SDK'
+  },
+  'developers.how.step4.description': {
+    en: 'Your app submits, polls, and gets outputs.',
+    'zh-CN': '你的应用提交任务、轮询状态并获取输出。'
+  },
+  'developers.how.step4.linkLabel': {
+    en: 'Try SDK',
+    'zh-CN': '试用 SDK'
+  },
+
+  // Developers page – Same build, anywhere
+  'developers.build.title': {
+    en: 'Same build, anywhere',
+    'zh-CN': '同一套构建，随处可用'
+  },
+  'developers.build.item1.term': {
+    en: 'Stop managing builds',
+    'zh-CN': '不必再操心构建'
+  },
+  'developers.build.item1.description': {
+    en: 'Custom nodes installed correctly, checkpoints in the right place, Python dependencies you can still customize. The Builder Agent fixes builds that break.',
+    'zh-CN':
+      '自定义节点正确安装，检查点放在该放的位置，Python 依赖仍然可以自定义。构建出问题时，Builder Agent 会负责修复。'
+  },
+  'developers.build.item2.term': {
+    en: 'Build once, deploy anywhere',
+    'zh-CN': '一次构建，随处部署'
+  },
+  'developers.build.item2.description': {
+    en: 'Local GPU workstations, server deployments, the serverless API. One build, different targets.',
+    'zh-CN':
+      '本地 GPU 工作站、服务器部署、无服务器 API——同一套构建，面向不同的运行目标。'
+  },
+  'developers.build.item3.term': {
+    en: 'Scale from zero',
+    'zh-CN': '从零开始伸缩'
+  },
+  'developers.build.item3.description': {
+    en: 'The serverless API scales up and down with traffic. Configure your tolerance for cold starts and pick your GPU.',
+    'zh-CN':
+      '无服务器 API 随流量自动扩缩。你可以设置对冷启动的容忍度，并选择所用的 GPU。'
+  },
+
   // Developers page – PricingSection
   'developers.pricing.title': {
     en: 'Pricing Plan',

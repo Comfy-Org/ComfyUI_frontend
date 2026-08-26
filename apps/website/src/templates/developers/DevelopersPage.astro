@@ -1,11 +1,13 @@
 ---
 import type { Locale } from '../../i18n/translations'
 import BaseLayout from '../../layouts/BaseLayout.astro'
+import BuildAnywhereSection from './BuildAnywhereSection.astro'
 import HeroSection from './HeroSection.astro'
+import HowItWorksSection from './HowItWorksSection.astro'
 import PlaceholderSection from './PlaceholderSection.vue'
+import PricingSection from './PricingSection.vue'
 import ProblemSection from './ProblemSection.astro'
 import ProductCardsSection from './ProductCardsSection.astro'
-import PricingSection from './PricingSection.vue'
 import { t } from '../../i18n/translations'
 import { absoluteUrl } from '../../utils/jsonLd'
 
@@ -14,16 +16,6 @@ interface Props {
 }
 
 const { locale } = Astro.props
-
-/* Walking skeleton: each placeholder is replaced by its section ticket
-   (developers-page issues 03–09). */
-const placeholders = [
-  { name: 'How it works', block: 'ReasonsSplit01 (numbered)' },
-  { name: 'Built with SDK showcase', block: 'FeaturedCarousel02 (dark panel)' },
-  { name: 'Same build, anywhere', block: 'ReasonsSplit01 (heading top)' },
-  { name: 'Observe and manage', block: 'FeatureSplit01' },
-  { name: 'Q&As', block: 'FAQSplit01' },
-]
 ---
 
 <BaseLayout
@@ -38,6 +30,15 @@ const placeholders = [
   <HeroSection locale={locale} />
   <ProductCardsSection locale={locale} />
   <ProblemSection locale={locale} />
-  {placeholders.map((section) => <PlaceholderSection {...section} />)}
+  <HowItWorksSection locale={locale} />
+  {/* Walking skeleton: each placeholder is replaced by its section ticket
+      (developers-page issues 07-09). */}
+  <PlaceholderSection
+    name="Built with SDK showcase"
+    block="FeaturedCarousel02 (dark panel)"
+  />
+  <BuildAnywhereSection locale={locale} />
+  <PlaceholderSection name="Observe and manage" block="FeatureSplit01" />
+  <PlaceholderSection name="Q&As" block="FAQSplit01" />
   <PricingSection locale={locale} client:load />
 </BaseLayout>
