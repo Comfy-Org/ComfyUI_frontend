@@ -29,7 +29,6 @@ function renderToast() {
 describe('GlobalToast', () => {
   afterEach(() => {
     cleanup()
-    vi.clearAllMocks()
   })
 
   it('forwards queued messages and clears the queue', async () => {

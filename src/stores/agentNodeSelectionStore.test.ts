@@ -46,11 +46,11 @@ function stubCanvas(nodes: unknown[], selected: unknown[] = []) {
   const selectedItems = new Set(selected)
   const deselectAll = vi.fn(() => selectedItems.clear())
   useCanvasStore().canvas = {
-    graph: { nodes },
+    graph: { nodes, events: new EventTarget() },
     selectedItems,
     deselectAll,
     animateToBounds,
-    canvas: { width: 1600, height: 900 }
+    canvas: Object.assign(new EventTarget(), { width: 1600, height: 900 })
   } as never
   return { animateToBounds, deselectAll, selectedItems }
 }
@@ -65,7 +65,6 @@ describe('agentNodeSelectionStore', () => {
   })
 
   afterEach(() => {
-    vi.useRealTimers()
     document.body.classList.remove('node-selection-active')
   })
 

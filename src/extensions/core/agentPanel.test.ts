@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComfyExtension } from '@/types/comfy'
 
@@ -109,10 +109,6 @@ describe('AgentPanel extension flag gate', () => {
     mocks.nodeSelectionStore.isLoadingWorkflow = false
     mocks.workflowStore.activeWorkflow = { path: 'workflows/first.json' }
     vi.resetModules()
-  })
-
-  afterEach(() => {
-    vi.unstubAllEnvs()
   })
 
   it('forces the panel on in development even while the flag is false', async () => {

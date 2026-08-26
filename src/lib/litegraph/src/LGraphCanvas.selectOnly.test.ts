@@ -8,19 +8,10 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
-vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
-  layoutStore: {
-    querySlotAtPoint: vi.fn(),
-    queryRerouteAtPoint: vi.fn(),
-    queryLinkSegmentAtPoint: vi.fn(),
-    getNodeLayoutRef: vi.fn(() => ({ value: null })),
-    getSlotLayout: vi.fn(),
-    setSource: vi.fn(),
-    batchUpdateNodeBounds: vi.fn()
-  }
-}))
+vi.mock('@/renderer/core/layout/store/layoutStore')
 
 function createHarness() {
   const canvasElement = document.createElement('canvas')
@@ -55,7 +46,10 @@ function createHarness() {
 
 describe('LGraphCanvas selectOnly', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    vi.mocked(layoutStore.getNodeLayout).mockReturnValue(null)
+    vi.mocked(layoutStore.getNodeLayoutRef).mockReturnValue({
+      value: null
+    } as never)
     LiteGraph.vueNodesMode = false
     LiteGraph.middle_click_slot_add_default_node = false
   })

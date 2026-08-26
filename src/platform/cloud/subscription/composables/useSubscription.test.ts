@@ -164,7 +164,7 @@ vi.mock('@/services/dialogService', () => ({
 
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: vi.fn(() => ({
-    getAuthHeader: mockGetAuthHeader,
+    getFirebaseAuthHeader: mockGetAuthHeader,
     fetchWithCustomerRecovery: (input: string, init?: RequestInit) =>
       fetch(input, init),
     get isInitialized() {

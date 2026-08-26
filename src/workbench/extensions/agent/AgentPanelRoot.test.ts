@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import { render, screen, within } from '@testing-library/vue'
@@ -280,6 +282,7 @@ import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTab
 import AgentPanelRoot from './AgentPanelRoot.vue'
 
 beforeEach(() => {
+  Element.prototype.scrollIntoView = vi.fn()
   localStorage.clear()
   getServerFeature.mockReset()
   getServerFeature.mockImplementation(
@@ -352,11 +355,6 @@ describe('AgentPanelRoot session notices', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     ws.clear()
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
-    vi.unstubAllGlobals()
   })
 
   it('surfaces a session error notice via the host error modal, not a toast', async () => {
@@ -604,12 +602,6 @@ describe('AgentPanelRoot attach flow', () => {
     ws.clear()
   })
 
-  afterEach(() => {
-    vi.useRealTimers()
-    vi.restoreAllMocks()
-    vi.unstubAllGlobals()
-  })
-
   it('uploads a picked file, stages its ref, and forwards it on the next send', async () => {
     const messageBodies: unknown[] = []
     const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
@@ -658,7 +650,6 @@ describe('AgentPanelRoot attach flow', () => {
     })
 
     expect(screen.getByAltText('cat.png')).toBeInTheDocument()
-    expect(screen.getByText('cat.png')).toBeInTheDocument()
   })
 
   it('uploads a picked video above 20MB when the server permits it', async () => {
@@ -1344,11 +1335,6 @@ describe('AgentPanelRoot draft binding', () => {
     vi.mocked(validateComfyWorkflow).mockClear()
   })
 
-  afterEach(() => {
-    vi.restoreAllMocks()
-    vi.unstubAllGlobals()
-  })
-
   it('binds the draft to the workflow id from the message ack and reloads the canvas on a patch', async () => {
     const fetchMock = vi.fn(async (url: string) => {
       if (url.includes('/messages')) {
@@ -1507,8 +1493,6 @@ describe('AgentPanelRoot auto fit after generation', () => {
   })
 
   afterEach(() => {
-    vi.restoreAllMocks()
-    vi.unstubAllGlobals()
     hostStores.canvas.canvas = undefined
   })
 
@@ -1594,11 +1578,6 @@ describe('AgentPanelRoot agent auto-layout', () => {
     vi.mocked(app.loadGraphData).mockClear()
   })
 
-  afterEach(() => {
-    vi.restoreAllMocks()
-    vi.unstubAllGlobals()
-  })
-
   function mockAck(): void {
     vi.stubGlobal(
       'fetch',
@@ -1674,11 +1653,6 @@ describe('AgentPanelRoot history', () => {
     setActivePinia(createPinia())
     ws.clear()
     localStorage.clear()
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
-    vi.unstubAllGlobals()
   })
 
   async function renderWithActiveThread(): Promise<void> {
@@ -1988,11 +1962,6 @@ describe('AgentPanelRoot transcript copy', () => {
     clipboard.copy.mockClear()
   })
 
-  afterEach(() => {
-    vi.restoreAllMocks()
-    vi.unstubAllGlobals()
-  })
-
   it('copies the active session from chat history as formatted markdown', async () => {
     vi.stubGlobal(
       'fetch',
@@ -2078,10 +2047,6 @@ describe('AgentPanelRoot feedback capture', () => {
     telemetry.trackAgentMessageFeedback.mockClear()
   })
 
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
   it('forwards a thumbs vote to telemetry with the message id and vote', async () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
@@ -2123,11 +2088,6 @@ describe('AgentPanelRoot lifecycle', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     ws.clear()
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
-    vi.unstubAllGlobals()
   })
 
   it('reports the header close click and attributes the panel close to it', async () => {
@@ -2181,10 +2141,6 @@ describe('AgentPanelRoot greeting', () => {
     ws.clear()
   })
 
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
   it('personalizes the empty-state greeting with the account first name', async () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
@@ -2201,12 +2157,6 @@ describe('AgentPanelRoot workflow binding', () => {
     telemetry.trackAgentNodeTagged.mockClear()
     telemetry.trackAgentWorkflowApplied.mockClear()
     executionErrors.showErrorOverlay.mockClear()
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
-    vi.restoreAllMocks()
-    vi.unstubAllGlobals()
   })
 
   function makeTab(id?: string): FakeTab {

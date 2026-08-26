@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useLoad3dViewer } from '@/composables/useLoad3dViewer'
@@ -772,10 +772,6 @@ describe('useLoad3dViewer', () => {
         'fetch',
         vi.fn().mockResolvedValue({ blob: () => Promise.resolve(new Blob()) })
       )
-    })
-
-    afterEach(() => {
-      vi.unstubAllGlobals()
     })
 
     it('captures and persists a thumbnail after a standalone model loads', async () => {

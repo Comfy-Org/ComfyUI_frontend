@@ -8,12 +8,11 @@ import PromptDialogContent from '@/components/dialog/content/PromptDialogContent
 import TopUpCreditsDialogContentLegacy from '@/components/dialog/content/TopUpCreditsDialogContentLegacy.vue'
 import InsufficientCreditsMemberDialog from '@/platform/workspace/components/InsufficientCreditsMemberDialog.vue'
 import TopUpCreditsDialogContentWorkspace from '@/platform/workspace/components/TopUpCreditsDialogContentWorkspace.vue'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 import { isCloud } from '@/platform/distribution/types'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useBillingPolicyCapabilities } from '@/platform/cloud/subscription/composables/useBillingPolicyCapabilities'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import type {
@@ -71,6 +70,13 @@ interface BaseConfirmOptions {
   /** Displayed as an unordered list immediately below the message body */
   itemList?: string[]
   hint?: string
+  /**
+   * Dialog-stack key, defaulting to the shared `global-prompt`. `showDialog`
+   * reuses an existing entry with the same key and discards the new resolver,
+   * leaving the caller's promise pending forever — a flow whose confirmation
+   * must survive an already-open shared prompt passes its own key.
+   */
+  key?: string
 }
 
 type ConfirmOptions = BaseConfirmOptions &
@@ -305,11 +311,12 @@ export const useDialogService = () => {
     type = 'default',
     itemList = [],
     hint,
-    denyLabel
+    denyLabel,
+    key = 'global-prompt'
   }: ConfirmOptions): Promise<boolean | null> {
     return new Promise((resolve) => {
       const options: ShowDialogOptions = {
-        key: 'global-prompt',
+        key,
         title,
         component: ConfirmationDialogContent,
         props: {
@@ -335,10 +342,13 @@ export const useDialogService = () => {
     isInsufficientCredits?: boolean
   }) {
     const { type } = useBillingContext()
-    const { billingPolicyCapabilities } = useBillingPolicyCapabilities()
-    if (
-      billingPolicyCapabilities.value.topUpAccess === 'subscription-required'
-    ) {
+    const { canTopUp, canSubscribeSelfServe, isReady, initialize } =
+      useBillingCapabilities()
+    // A capability read still in flight has to be awaited here, or a top-up
+    // triggered during that window is silently dropped with no recovery UI.
+    if (!isReady.value) await initialize()
+    if (!isReady.value) return
+    if (!canTopUp.value && canSubscribeSelfServe.value) {
       await showSubscriptionRequiredDialog({
         reason: options?.isInsufficientCredits
           ? 'out_of_credits'
@@ -347,12 +357,7 @@ export const useDialogService = () => {
       return
     }
 
-    // Members can't top up a team workspace, so they get a read-only
-    // "ask your workspace admins" notice instead of the purchase dialog.
-    if (
-      type.value === 'workspace' &&
-      !useWorkspaceUI().permissions.value.canTopUp
-    ) {
+    if (!canTopUp.value && type.value === 'workspace') {
       return dialogStore.showDialog({
         key: 'insufficient-credits-member',
         component: InsufficientCreditsMemberDialog,
@@ -368,6 +373,7 @@ export const useDialogService = () => {
         }
       })
     }
+    if (!canTopUp.value) return
 
     const component =
       type.value === 'workspace'

@@ -1,7 +1,6 @@
 import { cloneDeep } from 'es-toolkit'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
 import { i18n, mergeCustomNodesI18n } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { Settings } from '@/schemas/apiSchema'
@@ -14,9 +13,8 @@ const enMessages = cloneDeep(i18n.global.getLocaleMessage('en'))
 const jsonTooltip =
   'Positive point prompts as JSON [{"x": int, "y": int}, ...] (pixel coords)'
 
-const positiveCoordsWidget: SafeWidgetData = {
-  name: 'positive_coords',
-  type: 'STRING'
+const positiveCoordsWidget: { name: string; tooltip?: string } = {
+  name: 'positive_coords'
 }
 
 function mergeOutputTooltipMessage(tooltip: string | null) {

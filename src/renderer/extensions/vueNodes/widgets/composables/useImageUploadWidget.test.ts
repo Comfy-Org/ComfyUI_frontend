@@ -65,20 +65,31 @@ vi.mock('@/utils/litegraphUtil', () => ({
   }
 }))
 
-function createUploadNode() {
+function createUploadNode(initialValue: string = 'missing.png') {
   const onWidgetChanged = vi.fn()
-  const node = new LGraphNode('LoadImage')
-  node.type = 'LoadImage'
+  const node = new LGraphNode('LoadImage', 'LoadImage')
   node.onWidgetChanged = onWidgetChanged
   const fileComboWidget = node.addWidget(
     'combo',
     'image',
-    'missing.png',
+    initialValue,
     () => undefined,
     { values: ['missing.png'] }
   ) as IComboWidget
 
   return { fileComboWidget, node, onWidgetChanged }
+}
+
+function construct(node: LGraphNode) {
+  useImageUploadWidget()(
+    node,
+    'upload',
+    [
+      'IMAGEUPLOAD',
+      { imageInputName: 'image', image_upload: true }
+    ] as InputSpec,
+    fromPartial({})
+  )
 }
 
 const outputFolderCases: {
@@ -111,17 +122,8 @@ describe('useImageUploadWidget', () => {
 
   it('emits onWidgetChanged after upload changes the combo widget value', () => {
     const { fileComboWidget, node, onWidgetChanged } = createUploadNode()
-    const constructor = useImageUploadWidget()
 
-    constructor(
-      node,
-      'upload',
-      [
-        'IMAGEUPLOAD',
-        { imageInputName: 'image', image_upload: true }
-      ] as InputSpec,
-      fromPartial({})
-    )
+    construct(node)
 
     mocks.capturedUploadOptions?.onUploadComplete(['uploaded.png'])
 
@@ -135,6 +137,32 @@ describe('useImageUploadWidget', () => {
       'missing.png',
       fileComboWidget
     )
+  })
+
+  it('previews the combo value once the initial frame runs', () => {
+    const { node } = createUploadNode('beach.jpg')
+    const frame = vi.fn()
+    vi.stubGlobal('requestAnimationFrame', frame)
+
+    construct(node)
+    frame.mock.calls[0][0]()
+
+    expect(mocks.setNodeOutputs).toHaveBeenCalledWith(node, 'beach.jpg', {
+      isAnimated: false
+    })
+  })
+
+  it('does not preview a combo whose value is still unset', () => {
+    const { fileComboWidget, node } = createUploadNode()
+    Object.assign(fileComboWidget, { value: undefined })
+    const frame = vi.fn()
+    vi.stubGlobal('requestAnimationFrame', frame)
+
+    construct(node)
+    frame.mock.calls[0][0]()
+
+    expect(mocks.setNodeOutputs).not.toHaveBeenCalled()
+    expect(mocks.showPreview).toHaveBeenCalled()
   })
 
   it.for(outputFolderCases)('$name', ({ value, expected }) => {
