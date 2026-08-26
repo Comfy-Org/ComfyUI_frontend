@@ -9,7 +9,7 @@ test.describe(
   'Plain legacy widgets',
   { tag: ['@vue-nodes', '@widget'] },
   () => {
-    test('renders widgets added before and after graph attachment', async ({
+    test('renders widgets added through legacy APIs and direct mutation', async ({
       comfyPage
     }) => {
       await comfyPage.nodeOps.clearGraph()
@@ -29,6 +29,14 @@ test.describe(
             y: 0,
             draw() {}
           })
+          node.widgets!.push({
+            name: 'direct_push',
+            type: 'legacy_test',
+            value: 0,
+            options: {},
+            y: 0,
+            draw() {}
+          })
           return String(node.id)
         })
       )
@@ -39,17 +47,19 @@ test.describe(
             const node = window.app!.graph.getNodeById(id)
             return (
               node?.widgets?.filter((widget) =>
-                ['legacy_widget', 'after_attach'].includes(widget.name)
+                ['legacy_widget', 'after_attach', 'direct_push'].includes(
+                  widget.name
+                )
               ).length ?? 0
             )
           }, nodeId)
         )
-        .toBe(2)
+        .toBe(3)
 
       const node = comfyPage.vueNodes.getNodeLocator(nodeId)
       await expect(
         node.getByTestId(TestIds.widgets.widget).locator('canvas')
-      ).toHaveCount(2)
+      ).toHaveCount(3)
     })
   }
 )
