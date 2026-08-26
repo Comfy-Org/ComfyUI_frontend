@@ -63,9 +63,9 @@ function openDocs(): void {
 
           <Button
             v-if="docsUrl"
-            variant="textonly"
-            size="md"
-            class="text-agent-fg-muted w-fit gap-1 px-0"
+            variant="link"
+            size="unset"
+            class="w-fit gap-1 py-2 text-sm hover:underline"
             @click="openDocs"
           >
             {{ $t('agent.consent.readDocs') }}
@@ -78,7 +78,7 @@ function openDocs(): void {
           class="flex flex-col-reverse gap-2.5 @2xl:flex-row @2xl:justify-end"
         >
           <Button
-            variant="secondary"
+            variant="textonly"
             size="md"
             class="w-full @2xl:w-auto"
             @click="emit('reject')"
