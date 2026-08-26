@@ -1,5 +1,6 @@
 import type { Model } from '../../../config/models'
 import type { ModelCategory } from '../../../config/modelCategories'
+import type { ModelRelease } from '../../../config/modelReleases'
 
 import type { ModelMediaTone } from './modelExploreFixtures'
 
@@ -10,11 +11,15 @@ export interface ModelExploreCatalogSummary {
 }
 
 export interface ModelExploreCatalogItem {
+  kind: 'release' | 'component'
   slug: string
   title: string
   href: string
   directory: Model['directory']
   workflowCount: number
+  componentCount?: number
+  publisher?: string
+  access: ModelAccessFilter
   categories: readonly ModelCategory[]
   thumbnailUrl?: string
   mediaTone: ModelMediaTone
@@ -45,11 +50,16 @@ export function createModelExploreCatalog(
   return catalog
     .filter(({ canonicalSlug }) => canonicalSlug === undefined)
     .map((model) => ({
+      kind: 'component' as const,
       slug: model.slug,
       title: model.displayName,
       href: `/p/supported-models/${model.slug}`,
       directory: model.directory,
       workflowCount: model.workflowCount,
+      access:
+        model.directory === 'partner_nodes'
+          ? ('partner' as const)
+          : ('open' as const),
       categories: model.categories,
       ...(model.thumbnailUrl ? { thumbnailUrl: model.thumbnailUrl } : {}),
       mediaTone: resolveMediaTone(model.categories[0]),
@@ -64,6 +74,37 @@ export function createModelExploreCatalog(
     }))
 }
 
+export function createModelReleaseExploreCatalog(
+  releases: readonly ModelRelease[]
+): ModelExploreCatalogItem[] {
+  return releases.map((release) => ({
+    kind: 'release',
+    slug: release.slug,
+    title: release.displayName,
+    href: `/p/supported-models/${release.slug}`,
+    directory:
+      release.access === 'partner'
+        ? 'partner_nodes'
+        : (release.components[0]?.directory ?? 'diffusion_models'),
+    workflowCount: release.workflows.length,
+    componentCount: release.components.length,
+    publisher: release.publisher,
+    access: release.access,
+    categories: release.categories,
+    ...(release.thumbnailUrl ? { thumbnailUrl: release.thumbnailUrl } : {}),
+    mediaTone: resolveMediaTone(release.categories[0]),
+    searchText: [
+      release.displayName,
+      release.publisher,
+      release.familySlug,
+      ...release.categories,
+      ...release.components.map(({ displayName }) => displayName)
+    ]
+      .join(' ')
+      .toLowerCase()
+  }))
+}
+
 export function filterModelExploreCatalog(
   catalog: readonly ModelExploreCatalogItem[],
   query: string,
@@ -75,8 +116,7 @@ export function filterModelExploreCatalog(
   return catalog.filter(
     (model) =>
       (category === 'all' || model.categories.includes(category)) &&
-      (access === 'all' ||
-        (access === 'partner') === (model.directory === 'partner_nodes')) &&
+      (access === 'all' || model.access === access) &&
       queryTerms.every((term) => model.searchText.includes(term))
   )
 }

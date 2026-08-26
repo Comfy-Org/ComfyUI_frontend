@@ -1,9 +1,13 @@
 ---
 import type { ModelCategoryOption } from '../../../components/models/explore/ModelCategoryFilter.vue'
 import ModelCatalogExplorer from '../../../components/models/explore/ModelCatalogExplorer.vue'
-import { createModelExploreCatalog } from '../../../components/models/explore/modelExploreCatalog'
+import {
+  createModelExploreCatalog,
+  createModelReleaseExploreCatalog,
+} from '../../../components/models/explore/modelExploreCatalog'
 import SectionHeader from '../../../components/common/SectionHeader.vue'
 import { models } from '../../../config/models'
+import { createModelReleases } from '../../../config/modelReleases'
 import { MODEL_FILTER_CATEGORIES } from '../../../config/modelCategories'
 import { t } from '../../../i18n/translations'
 import BaseLayout from '../../../layouts/BaseLayout.astro'
@@ -38,6 +42,9 @@ const categoryOptions: ModelCategoryOption[] = [
   },
 ]
 const catalog = createModelExploreCatalog(models)
+const releaseCatalog = createModelReleaseExploreCatalog(
+  createModelReleases(models),
+)
 const modelList = itemListNode(
   url,
   title,
@@ -83,6 +90,7 @@ const modelList = itemListNode(
     client:load
     showCatalogByDefault
     {catalog}
+    {releaseCatalog}
     {categoryOptions}
     categoryLabel={t('models.explore.categories.label', locale)}
     searchLabel={t('models.explore.search.label', locale)}
@@ -90,6 +98,18 @@ const modelList = itemListNode(
     workflowCountOne={t('models.explore.catalog.workflowCountOne', locale)}
     workflowCountMany={t('models.explore.catalog.workflowCountMany', locale)}
     partnerLabel={t('models.explore.catalog.partner', locale)}
+    openLabel={t('models.explore.filters.openSource', locale)}
+    viewLabel={t('models.explore.catalog.viewLabel', locale)}
+    releasesLabel={t('models.explore.catalog.releases', locale)}
+    componentsLabel={t('models.explore.catalog.components', locale)}
+    componentCountOne={t(
+      'models.explore.catalog.componentCountOne',
+      locale,
+    )}
+    componentCountMany={t(
+      'models.explore.catalog.componentCountMany',
+      locale,
+    )}
     resultCountLabel={t('models.explore.catalog.resultCount', locale)}
     emptyLabel={t('models.explore.catalog.empty', locale)}
   />

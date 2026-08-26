@@ -4960,6 +4960,26 @@ const translations = {
     en: 'Partner API',
     'zh-CN': '合作伙伴 API'
   },
+  'models.explore.catalog.viewLabel': {
+    en: 'Catalog view',
+    'zh-CN': '目录视图'
+  },
+  'models.explore.catalog.releases': {
+    en: 'Models',
+    'zh-CN': '模型'
+  },
+  'models.explore.catalog.components': {
+    en: 'Components',
+    'zh-CN': '组件'
+  },
+  'models.explore.catalog.componentCountOne': {
+    en: '{count} component.',
+    'zh-CN': '{count} 个组件。'
+  },
+  'models.explore.catalog.componentCountMany': {
+    en: '{count} components.',
+    'zh-CN': '{count} 个组件。'
+  },
   'models.explore.catalog.resultCount': {
     en: '{count} matching models',
     'zh-CN': '{count} 个匹配模型'

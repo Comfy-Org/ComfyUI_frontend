@@ -57,6 +57,7 @@ interface WorkflowPreview {
   id: string
   title: string
   thumbnailUrl: string
+  publishedAt?: string
 }
 
 // Maps api_*.json filename prefix to a canonical display name and slug.
@@ -489,11 +490,18 @@ function buildWorkflowPreviews(
         aRecency.index - bRecency.index
       )
     })
-    .map((templateName) => ({
-      id: templateName,
-      title: templateTitles.get(templateName) ?? makeDisplayName(templateName),
-      thumbnailUrl: `${WORKFLOW_TEMPLATES_BASE}/${encodeURIComponent(templateName)}-1.webp`
-    }))
+    .map((templateName) => {
+      const timestamp = templateRecencies.get(templateName)?.timestamp
+      return {
+        id: templateName,
+        title:
+          templateTitles.get(templateName) ?? makeDisplayName(templateName),
+        thumbnailUrl: `${WORKFLOW_TEMPLATES_BASE}/${encodeURIComponent(templateName)}-1.webp`,
+        ...(timestamp !== undefined && Number.isFinite(timestamp)
+          ? { publishedAt: new Date(timestamp).toISOString() }
+          : {})
+      }
+    })
 }
 
 function previewRecency(
