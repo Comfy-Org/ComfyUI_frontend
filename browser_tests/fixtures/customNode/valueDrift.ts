@@ -10,7 +10,6 @@ export const ROUNDTRIP_VALUE_ALLOWED_INDICES_LITEGRAPH: Record<
     LTXVSparseTrackEditor: '1'
   },
   'WhatDreamsCost-ComfyUI': {
-    LoadAudioUI: '5',
     LTXDirector: '3,4,5,7'
   },
   'comfyui-sam3': {
@@ -34,21 +33,24 @@ export const ROUNDTRIP_VALUE_ALLOWED_INDICES_VUE: Record<
   }
 }
 
-const VHS_ROUNDTRIP_VALUE_KEYS = {
-  VHS_LoadAudioUpload: 'choose audio to upload',
-  VHS_LoadImages: 'choose folder to upload',
-  VHS_LoadVideo: 'choose video to upload',
-  VHS_LoadVideoFFmpeg: 'choose video to upload',
+const VHS_ROUNDTRIP_VALUE_KEYS_LITEGRAPH = {
   VHS_VAEDecodeBatched: 'per_batch',
   VHS_VAEEncodeBatched: 'per_batch'
 }
 
 export const ROUNDTRIP_VALUE_ALLOWED_KEYS_LITEGRAPH = {
-  'ComfyUI-VideoHelperSuite': VHS_ROUNDTRIP_VALUE_KEYS
+  'ComfyUI-VideoHelperSuite': VHS_ROUNDTRIP_VALUE_KEYS_LITEGRAPH
 }
 
 export const ROUNDTRIP_VALUE_ALLOWED_KEYS_VUE = {
-  'ComfyUI-VideoHelperSuite': VHS_ROUNDTRIP_VALUE_KEYS
+  'ComfyUI-VideoHelperSuite': {
+    VHS_LoadAudioUpload: 'choose audio to upload',
+    VHS_LoadImages: 'choose folder to upload',
+    VHS_LoadVideo: 'choose video to upload',
+    VHS_LoadVideoFFmpeg: 'choose video to upload',
+    VHS_VAEDecodeBatched: 'per_batch',
+    VHS_VAEEncodeBatched: 'per_batch'
+  }
 }
 
 export type RoundtripInitializationSignal =
@@ -79,12 +81,7 @@ export const ROUNDTRIP_INITIALIZATION_SIGNALS: Record<
   },
   'comfyui-sam3': {
     SAM3VideoSegmentation: {
-      inputs: [
-        'positive_points',
-        'negative_points',
-        'positive_boxes',
-        'negative_boxes'
-      ],
+      inputs: ['positive_boxes', 'negative_boxes'],
       predicate: 'inputs-absent'
     }
   },
@@ -190,9 +187,7 @@ const FL_TIMELINE_NODE_LOSS: RoundtripNodeLossExpectation = {
 export const ROUNDTRIP_NODE_LOSS_EXPECTATIONS_LITEGRAPH: Record<
   string,
   Record<string, RoundtripNodeLossExpectation>
-> = {
-  'ComfyUI_Fill-Nodes': { FL_TimeLine: FL_TIMELINE_NODE_LOSS }
-}
+> = {}
 
 export const ROUNDTRIP_NODE_LOSS_EXPECTATIONS_VUE: Record<
   string,

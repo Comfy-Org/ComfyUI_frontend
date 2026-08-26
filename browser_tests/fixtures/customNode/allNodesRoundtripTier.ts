@@ -149,8 +149,6 @@ const ROUNDTRIP_VALUE_ALLOWLIST: Record<string, Record<string, string>> = {
       'the sparse-track editor regenerates its derived integer coordinates from the preserved source points on configure'
   },
   'WhatDreamsCost-ComfyUI': {
-    LoadAudioUI:
-      'custom audio UI clamps end and duration to the loaded file duration and normalizes absent player state on configure',
     LTXDirector:
       'director UI canonicalizes timeline JSON and its derived prompt fields on configure'
   },

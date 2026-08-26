@@ -68,12 +68,7 @@ it('roundtrip initialization waits for pack-owned ready values', () => {
       value: false
     },
     SAM3VideoSegmentation: {
-      inputs: [
-        'positive_points',
-        'negative_points',
-        'positive_boxes',
-        'negative_boxes'
-      ],
+      inputs: ['positive_boxes', 'negative_boxes'],
       predicate: 'inputs-absent' as const
     },
     iToolsPaintNode: {
@@ -91,7 +86,7 @@ it('roundtrip initialization waits for pack-owned ready values', () => {
       signals,
       {
         LoadAudioUI: true,
-        SAM3VideoSegmentation: ['positive_points', 'video_frames'],
+        SAM3VideoSegmentation: ['positive_boxes', 'video_frames'],
         iToolsPaintNode: 32,
         ImageTransformKJ: ''
       },
@@ -99,7 +94,7 @@ it('roundtrip initialization waits for pack-owned ready values', () => {
     )
   ).toEqual([
     'LoadAudioUI (litegraph: expected false, observed true)',
-    'SAM3VideoSegmentation (litegraph: expected inputs absent [positive_points,negative_points,positive_boxes,negative_boxes], observed ["positive_points","video_frames"])',
+    'SAM3VideoSegmentation (litegraph: expected inputs absent [positive_boxes,negative_boxes], observed ["positive_boxes","video_frames"])',
     'iToolsPaintNode (litegraph: expected 33 widgets, observed 32)',
     'ImageTransformKJ (litegraph: expected bboxes = "{\\"fillColor\\":\\"#000000\\"}", observed "")'
   ])
@@ -108,7 +103,7 @@ it('roundtrip initialization waits for pack-owned ready values', () => {
       signals,
       {
         LoadAudioUI: false,
-        SAM3VideoSegmentation: ['video_frames'],
+        SAM3VideoSegmentation: ['positive_points', 'video_frames'],
         iToolsPaintNode: 33,
         ImageTransformKJ: '{"fillColor":"#000000"}'
       },
@@ -121,7 +116,7 @@ it('roundtrip initialization waits for pack-owned ready values', () => {
     pendingRoundtripInitializations(signals, unavailableValues, false)
   ).toEqual([
     'LoadAudioUI (litegraph: expected false, observed undefined)',
-    'SAM3VideoSegmentation (litegraph: expected inputs absent [positive_points,negative_points,positive_boxes,negative_boxes], observed undefined)',
+    'SAM3VideoSegmentation (litegraph: expected inputs absent [positive_boxes,negative_boxes], observed undefined)',
     'iToolsPaintNode (litegraph: expected 33 widgets, observed undefined)',
     'ImageTransformKJ (litegraph: expected bboxes = "{\\"fillColor\\":\\"#000000\\"}", observed undefined)'
   ])
