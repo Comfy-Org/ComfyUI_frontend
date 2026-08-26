@@ -5096,11 +5096,24 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       this.drawBackCanvas(getCurrentGraphNodesInFrameOrder(), graphAtFrameStart)
     }
 
+    let graphForFrontPass = graphAtFrameStart
+    let nodesForFrontPass = getCurrentGraphNodesInFrameOrder()
+    if (this.graph !== graphAtFrameStart) {
+      graphForFrontPass = this.graph
+      nodesForFrontPass = graphForFrontPass
+        ? nodesInRenderOrder(graphForFrontPass)
+        : undefined
+      if (graphForFrontPass) {
+        this.ds.computeVisibleArea(this.viewport)
+        this.computeVisibleNodes(nodesForFrontPass, this.visible_nodes)
+        this._visible_node_ids = new Set(
+          this.visible_nodes.map((node) => node.id)
+        )
+      }
+    }
+
     if (this.dirty_canvas || force_canvas) {
-      this.drawFrontCanvas(
-        getCurrentGraphNodesInFrameOrder(),
-        graphAtFrameStart
-      )
+      this.drawFrontCanvas(nodesForFrontPass, graphForFrontPass)
     }
 
     this.fps = this.render_time ? 1.0 / this.render_time : 0

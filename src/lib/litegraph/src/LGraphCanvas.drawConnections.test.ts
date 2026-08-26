@@ -228,6 +228,7 @@ describe('drawConnections', () => {
     const oldTargetPosition = vi.spyOn(oldTarget, 'getInputPos')
     const newTargetPosition = vi.spyOn(newTarget, 'getInputPos')
     vi.spyOn(canvas, 'renderLink').mockImplementation(() => {})
+    const drawNode = vi.spyOn(canvas, 'drawNode').mockImplementation(() => {})
     canvas.visible_area.set([0, 0, 800, 600])
     canvas.onRenderBackground = () => {
       canvas.setGraph(newGraph)
@@ -238,6 +239,10 @@ describe('drawConnections', () => {
 
     expect(oldTargetPosition).not.toHaveBeenCalled()
     expect(newTargetPosition).toHaveBeenCalled()
+    expect(drawNode.mock.calls.map(([node]) => node)).toEqual([
+      newSource,
+      newTarget
+    ])
   })
 
   it.for([245, 500, 1_000])(
