@@ -43,9 +43,11 @@ jobs:
             exit 1
           fi
 
-          # Validate PR exists and is merged
-          if ! gh pr view "${{ inputs.pr_number }}" --json merged >/dev/null 2>&1; then
-            echo "::error::PR #${{ inputs.pr_number }} not found or inaccessible."
+          # Validate PR exists and is merged. The gh error is surfaced rather
+          # than discarded: an auth failure and a genuinely missing PR are
+          # indistinguishable once it is swallowed.
+          if ! PR_VIEW_ERR=$(gh pr view "${{ inputs.pr_number }}" --json merged 2>&1 >/dev/null); then
+            echo "::error::PR #${{ inputs.pr_number }} not found or inaccessible: ${PR_VIEW_ERR}"
             exit 1
           fi
 
@@ -61,7 +63,9 @@ jobs:
             exit 1
           fi
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Same token the PR-creation step uses; GITHUB_TOKEN was not able to
+          # read the PR here even with pull-requests: write.
+          GH_TOKEN: ${{ secrets.PR_GH_TOKEN || secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
 
       - name: Checkout repository
