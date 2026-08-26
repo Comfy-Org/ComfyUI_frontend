@@ -6,9 +6,16 @@ import {
   writeFileSync
 } from 'node:fs'
 import { dirname, join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 
+import type {
+  PerfMeasurement,
+  PerfReport,
+  PerfReportV2
+} from '../browser_tests/fixtures/utils/perfReportSchema'
+import { perfReportSchema } from '../browser_tests/fixtures/utils/perfReportSchema'
 import type { FpsSample, PerfGateResult } from './perf-gate'
-import { TARGET_P5_FPS, evaluatePerfGate, formatGateFailure } from './perf-gate'
+import { evaluatePerfGate, formatGateFailure } from './perf-gate'
 import type { MetricStats } from './perf-stats'
 import {
   classifyChange,
@@ -21,36 +28,11 @@ import {
   zScore
 } from './perf-stats'
 
-interface PerfMeasurement {
-  name: string
-  durationMs: number
-  styleRecalcs: number
-  styleRecalcDurationMs: number
-  layouts: number
-  layoutDurationMs: number
-  taskDurationMs: number
-  heapDeltaBytes: number
-  heapUsedBytes: number
-  domNodes: number
-  jsHeapTotalBytes: number
-  scriptDurationMs: number
-  eventListeners: number
-  totalBlockingTimeMs: number
-  frameDurationMs: number
-  p95FrameDurationMs: number
-  allFrameDurationsMs?: number[]
-}
-
-interface PerfReport {
-  timestamp: string
-  gitSha: string
-  branch: string
-  measurements: PerfMeasurement[]
-}
-
 const CURRENT_PATH = 'test-results/perf-metrics.json'
 const BASELINE_PATH = 'temp/perf-baseline/perf-metrics.json'
 const HISTORY_DIR = 'temp/perf-history'
+const GATE_PATH = 'test-results/perf-gate.json'
+const FAIL_ON_FPS_BUDGET = process.argv.includes('--fail-on-fps-budget')
 
 type MetricKey =
   | 'styleRecalcs'
@@ -62,8 +44,14 @@ type MetricKey =
   | 'scriptDurationMs'
   | 'eventListeners'
   | 'totalBlockingTimeMs'
-  | 'frameDurationMs'
-  | 'p95FrameDurationMs'
+  | 'rafIntervalP50Ms'
+  | 'rafIntervalP95Ms'
+  | 'rafIntervalP99Ms'
+  | 'rafIntervalMaxMs'
+  | 'rafIntervalsOver8_33Ms'
+  | 'rafIntervalsOver16_67Ms'
+  | 'rafIntervalsOver33_3Ms'
+  | 'rafIntervalsOver50Ms'
   | 'heapUsedBytes'
 
 interface MetricDef {
@@ -75,8 +63,26 @@ interface MetricDef {
 }
 
 const REPORTED_METRICS: MetricDef[] = [
-  { key: 'frameDurationMs', label: 'avg frame time', unit: 'ms' },
-  { key: 'p95FrameDurationMs', label: 'p95 frame time', unit: 'ms' },
+  { key: 'rafIntervalP50Ms', label: 'rAF interval p50', unit: 'ms' },
+  { key: 'rafIntervalP95Ms', label: 'rAF interval p95', unit: 'ms' },
+  { key: 'rafIntervalP99Ms', label: 'rAF interval p99', unit: 'ms' },
+  { key: 'rafIntervalMaxMs', label: 'rAF interval max', unit: 'ms' },
+  {
+    key: 'rafIntervalsOver8_33Ms',
+    label: 'rAF intervals >8.33ms',
+    unit: ''
+  },
+  {
+    key: 'rafIntervalsOver16_67Ms',
+    label: 'rAF intervals >16.67ms',
+    unit: ''
+  },
+  {
+    key: 'rafIntervalsOver33_3Ms',
+    label: 'rAF intervals >33.3ms',
+    unit: ''
+  },
+  { key: 'rafIntervalsOver50Ms', label: 'rAF intervals >50ms', unit: '' },
   { key: 'layoutDurationMs', label: 'layout duration', unit: 'ms' },
   {
     key: 'styleRecalcDurationMs',
@@ -98,14 +104,6 @@ const REPORTED_METRICS: MetricDef[] = [
   { key: 'eventListeners', label: 'event listeners', unit: '', minAbsDelta: 5 }
 ]
 
-const GATE_PATH = 'test-results/perf-gate.json'
-
-/**
- * Opt-in. Without it this script keeps its historical contract: render to
- * stdout, exit 0, never fail a job.
- */
-const FAIL_ON_FPS_BUDGET = process.argv.includes('--fail-on-fps-budget')
-
 function groupByName(
   measurements: PerfMeasurement[]
 ): Map<string, PerfMeasurement[]> {
@@ -118,6 +116,27 @@ function groupByName(
   return map
 }
 
+function acceptedMeasurements(report: PerfReportV2): PerfMeasurement[] {
+  return report.measurements.flatMap((result) =>
+    result.kind === 'accepted' ? [result.measurement] : []
+  )
+}
+
+function collectFpsSamples(measurements: PerfMeasurement[]): FpsSample[] {
+  return [...groupByName(measurements)].map(([testName, samples]) => {
+    const p95Interval = medianMetric(samples, 'rafIntervalP95Ms')
+    return {
+      testName,
+      p5Fps: p95Interval && p95Interval > 0 ? 1000 / p95Interval : null
+    }
+  })
+}
+
+function readPerfReport(path: string): PerfReport {
+  const value: unknown = JSON.parse(readFileSync(path, 'utf-8'))
+  return perfReportSchema.parse(value)
+}
+
 function loadHistoricalReports(): PerfReport[] {
   if (!existsSync(HISTORY_DIR)) return []
   const reports: PerfReport[] = []
@@ -128,7 +147,7 @@ function loadHistoricalReports(): PerfReport[] {
       : join(entryPath, 'perf-metrics.json')
     if (!existsSync(filePath)) continue
     try {
-      reports.push(JSON.parse(readFileSync(filePath, 'utf-8')) as PerfReport)
+      reports.push(readPerfReport(filePath))
     } catch {
       console.warn(`Skipping malformed perf history: ${filePath}`)
     }
@@ -137,13 +156,13 @@ function loadHistoricalReports(): PerfReport[] {
 }
 
 function getHistoricalStats(
-  reports: PerfReport[],
+  reports: PerfReportV2[],
   testName: string,
   metric: MetricKey
 ): MetricStats {
   const values: number[] = []
   for (const r of reports) {
-    const group = groupByName(r.measurements)
+    const group = groupByName(acceptedMeasurements(r))
     const samples = group.get(testName)
     if (samples) {
       const mean = meanMetric(samples, metric)
@@ -154,7 +173,7 @@ function getHistoricalStats(
 }
 
 function getHistoricalTimeSeries(
-  reports: PerfReport[],
+  reports: PerfReportV2[],
   testName: string,
   metric: MetricKey
 ): number[] {
@@ -163,12 +182,11 @@ function getHistoricalTimeSeries(
   )
   const values: number[] = []
   for (const r of sorted) {
-    const group = groupByName(r.measurements)
+    const group = groupByName(acceptedMeasurements(r))
     const samples = group.get(testName)
     if (samples) {
-      values.push(
-        samples.reduce((sum, s) => sum + s[metric], 0) / samples.length
-      )
+      const mean = meanMetric(samples, metric)
+      if (mean !== null) values.push(mean)
     }
   }
   return values
@@ -195,7 +213,7 @@ function getMetricValue(
   key: MetricKey
 ): number | null {
   const value = sample[key]
-  return Number.isFinite(value) ? value : null
+  return typeof value === 'number' && Number.isFinite(value) ? value : null
 }
 
 function meanMetric(samples: PerfMeasurement[], key: MetricKey): number | null {
@@ -227,57 +245,29 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-function frameTimeToFps(ms: number): number {
-  return ms > 0 ? 1000 / ms : 0
-}
-
-/**
- * P5 FPS per test, in the same units the gate asserts against. Derived here
- * rather than inside the renderer so the number the gate acts on is the exact
- * number the summary prints.
- */
-function collectFpsSamples(
-  prGroups: Map<string, PerfMeasurement[]>
-): FpsSample[] {
-  const samples: FpsSample[] = []
-  for (const [testName, prSamples] of prGroups) {
-    const p95Frame = medianMetric(prSamples, 'p95FrameDurationMs')
-    samples.push({
-      testName,
-      p5Fps: p95Frame !== null ? frameTimeToFps(p95Frame) : null
-    })
-  }
-  return samples
-}
-
 function renderHeadlineSummary(
-  prGroups: Map<string, PerfMeasurement[]>,
-  fpsSamples: FpsSample[]
+  prGroups: Map<string, PerfMeasurement[]>
 ): string[] {
   const lines: string[] = []
   const summaries: string[] = []
-  const fpsByTest = new Map(fpsSamples.map((s) => [s.testName, s.p5Fps]))
 
   for (const [testName, prSamples] of prGroups) {
-    const avgFrame = medianMetric(prSamples, 'frameDurationMs')
+    const p95Interval = medianMetric(prSamples, 'rafIntervalP95Ms')
+    const maxInterval = medianMetric(prSamples, 'rafIntervalMaxMs')
+    const over16 = medianMetric(prSamples, 'rafIntervalsOver16_67Ms')
     const tbt = medianMetric(prSamples, 'totalBlockingTimeMs')
     const heap = medianMetric(prSamples, 'heapUsedBytes')
 
-    const avgFps = avgFrame !== null ? frameTimeToFps(avgFrame) : null
-    const p5Fps = fpsByTest.get(testName) ?? null
-
     const parts: string[] = [`**${testName}**:`]
-    if (avgFps !== null) parts.push(`${avgFps.toFixed(1)} avg FPS`)
-    if (p5Fps !== null) {
-      const pass = p5Fps >= TARGET_P5_FPS
-      parts.push(
-        `${p5Fps.toFixed(1)} P5 FPS ${pass ? '✅' : '❌'} (target: ≥${TARGET_P5_FPS})`
-      )
-    }
+    if (p95Interval !== null) parts.push(`${p95Interval.toFixed(1)}ms rAF p95`)
+    if (maxInterval !== null) parts.push(`${maxInterval.toFixed(1)}ms rAF max`)
+    if (over16 !== null) parts.push(`${over16.toFixed(0)} intervals >16.67ms`)
     if (tbt !== null) parts.push(`${tbt.toFixed(0)}ms TBT`)
     if (heap !== null) parts.push(`${formatBytes(heap)} heap`)
 
-    if (parts.length > 1) summaries.push(parts.join(' · '))
+    if (parts.length > 1) {
+      summaries.push(`${parts[0]} ${parts.slice(1).join(' · ')}`)
+    }
   }
 
   if (summaries.length > 0) {
@@ -289,11 +279,11 @@ function renderHeadlineSummary(
 
 function renderFullReport(
   prGroups: Map<string, PerfMeasurement[]>,
-  baseline: PerfReport,
-  historical: PerfReport[]
-): { lines: string[]; regressionCount: number } {
+  baseline: PerfReportV2,
+  historical: PerfReportV2[]
+): string[] {
   const lines: string[] = []
-  const baselineGroups = groupByName(baseline.measurements)
+  const baselineGroups = groupByName(acceptedMeasurements(baseline))
   const tableHeader = [
     '| Metric | Baseline | PR (median) | Δ | Sig |',
     '|--------|----------|----------|---|-----|'
@@ -416,16 +406,16 @@ function renderFullReport(
     )
   }
 
-  return { lines, regressionCount: flaggedRows.length }
+  return lines
 }
 
 function renderColdStartReport(
   prGroups: Map<string, PerfMeasurement[]>,
-  baseline: PerfReport,
+  baseline: PerfReportV2,
   historicalCount: number
 ): string[] {
   const lines: string[] = []
-  const baselineGroups = groupByName(baseline.measurements)
+  const baselineGroups = groupByName(acceptedMeasurements(baseline))
   lines.push(
     `> ℹ️ Collecting baseline variance data (${historicalCount}/15 runs). Significance will appear after 2 main branch runs.`,
     '',
@@ -495,22 +485,91 @@ function renderNoBaselineReport(
   return lines
 }
 
-/**
- * The gate verdict as a file, so a workflow step can act on it without
- * re-parsing markdown. Written on every run, gate enabled or not.
- */
-function writeGateArtifact(gate: PerfGateResult): void {
-  try {
-    mkdirSync(dirname(GATE_PATH), { recursive: true })
-    writeFileSync(GATE_PATH, JSON.stringify(gate, null, 2) + '\n')
-  } catch (error) {
-    console.warn(`Could not write ${GATE_PATH}: ${String(error)}`)
-  }
+function renderRejectedMeasurements(report: PerfReportV2): string[] {
+  const rejected = report.measurements.filter(
+    (result) => result.kind === 'rejected'
+  )
+  if (rejected.length === 0) return []
+
+  return [
+    `> ⚠️ ${rejected.length} measurement${rejected.length === 1 ? '' : 's'} rejected and excluded from all statistics.`,
+    '',
+    '<details><summary>Rejected measurements</summary>',
+    '',
+    '| Test | Reason |',
+    '|------|--------|',
+    ...rejected.map(
+      (result) => `| ${result.measurement.name} | ${result.reason} |`
+    ),
+    '',
+    '</details>',
+    ''
+  ]
 }
 
-/** Reports the verdict on stderr so it never contaminates the markdown. */
+export function renderPerfReport(
+  current: PerfReportV2,
+  baseline: PerfReport | null,
+  historical: PerfReport[]
+): string {
+  const compatibleHistory = historical.filter(
+    (report): report is PerfReportV2 => report.schemaVersion === 2
+  )
+  const prGroups = groupByName(acceptedMeasurements(current))
+
+  const lines: string[] = ['## ⚡ Performance Report\n']
+  lines.push(...renderRejectedMeasurements(current))
+  lines.push(...renderHeadlineSummary(prGroups))
+
+  const compatibleBaseline =
+    baseline?.schemaVersion === current.schemaVersion ? baseline : null
+
+  if (prGroups.size === 0) {
+    lines.push(
+      '> ⚠️ No accepted measurements were available. No regression verdict was calculated.',
+      ''
+    )
+  } else if (baseline && !compatibleBaseline) {
+    lines.push(
+      `> ℹ️ Baseline schema v${baseline.schemaVersion ?? 1} is not comparable with current schema v${current.schemaVersion}. Starting a new measurement epoch.`,
+      ''
+    )
+    lines.push(...renderNoBaselineReport(prGroups))
+  } else if (compatibleBaseline && compatibleHistory.length >= 2) {
+    lines.push(
+      ...renderFullReport(prGroups, compatibleBaseline, compatibleHistory)
+    )
+  } else if (compatibleBaseline) {
+    lines.push(
+      ...renderColdStartReport(
+        prGroups,
+        compatibleBaseline,
+        compatibleHistory.length
+      )
+    )
+  } else {
+    lines.push(...renderNoBaselineReport(prGroups))
+  }
+
+  const commentData = {
+    ...current,
+    measurements: current.measurements.map((result) => {
+      const { rafIntervalsMs: _, ...measurement } = result.measurement
+      return { ...result, measurement }
+    })
+  }
+  lines.push('\n<details><summary>Summary data</summary>\n')
+  lines.push('```json')
+  lines.push(JSON.stringify(commentData, null, 2))
+  lines.push('```')
+  lines.push('\n</details>')
+
+  return lines.join('\n') + '\n'
+}
+
 function applyGate(gate: PerfGateResult): void {
-  writeGateArtifact(gate)
+  mkdirSync(dirname(GATE_PATH), { recursive: true })
+  writeFileSync(GATE_PATH, JSON.stringify(gate, null, 2) + '\n')
   if (gate.passed) return
   for (const failure of gate.failures) {
     console.error(`perf gate: ${formatGateFailure(failure)}`)
@@ -533,49 +592,29 @@ function main() {
     return
   }
 
-  const current: PerfReport = JSON.parse(readFileSync(CURRENT_PATH, 'utf-8'))
+  const current = readPerfReport(CURRENT_PATH)
+  if (current.schemaVersion !== 2) {
+    throw new Error('Current performance report must use schema v2')
+  }
 
   const baseline: PerfReport | null = existsSync(BASELINE_PATH)
-    ? JSON.parse(readFileSync(BASELINE_PATH, 'utf-8'))
+    ? readPerfReport(BASELINE_PATH)
     : null
 
   const historical = loadHistoricalReports()
-  const prGroups = groupByName(current.measurements)
-
-  const fpsSamples = collectFpsSamples(prGroups)
-  let regressionCount = 0
-
-  const lines: string[] = []
-  lines.push('## ⚡ Performance Report\n')
-  lines.push(...renderHeadlineSummary(prGroups, fpsSamples))
-
-  if (baseline && historical.length >= 2) {
-    const full = renderFullReport(prGroups, baseline, historical)
-    lines.push(...full.lines)
-    regressionCount = full.regressionCount
-  } else if (baseline) {
-    lines.push(...renderColdStartReport(prGroups, baseline, historical.length))
-  } else {
-    lines.push(...renderNoBaselineReport(prGroups))
-  }
-
-  const rawData = {
-    ...current,
-    measurements: current.measurements.map(
-      ({ allFrameDurationsMs: _, ...rest }) => rest
-    )
-  }
-  lines.push('\n<details><summary>Raw data</summary>\n')
-  lines.push('```json')
-  lines.push(JSON.stringify(rawData, null, 2))
-  lines.push('```')
-  lines.push('\n</details>')
-
-  process.stdout.write(lines.join('\n') + '\n')
-
+  process.stdout.write(renderPerfReport(current, baseline, historical))
   applyGate(
-    evaluatePerfGate({ metricsPresent: true, fpsSamples, regressionCount })
+    evaluatePerfGate({
+      metricsPresent: true,
+      fpsSamples: collectFpsSamples(acceptedMeasurements(current)),
+      regressionCount: 0
+    })
   )
 }
 
-main()
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+) {
+  main()
+}

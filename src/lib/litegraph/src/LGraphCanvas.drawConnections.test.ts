@@ -9,6 +9,7 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import { LLink } from '@/lib/litegraph/src/LLink'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { toLinkId } from '@/types/linkId'
 import { createMockCanvas2DContext } from '@/utils/__tests__/litegraphTestUtils'
 
@@ -95,6 +96,7 @@ describe('drawConnections', () => {
     })
 
     LiteGraph.vueNodesMode = false
+    vi.mocked(layoutStore.getNodeLayout).mockReturnValue(null)
   })
 
   afterEach(() => {
@@ -160,7 +162,7 @@ describe('drawConnections', () => {
     expect(arrangeSpy).not.toHaveBeenCalled()
   })
 
-  it('renders links in target order instead of generated id order', () => {
+  it('renders links in target z-order instead of generated id order', () => {
     const sourceNode = new LGraphNode('Source')
     sourceNode.pos = [100, 100]
     sourceNode.addOutput('out', 'STRING')
@@ -178,13 +180,23 @@ describe('drawConnections', () => {
 
     const secondLink = createTestLink(graph, sourceNode, 0, secondTarget, 0)
     const firstLink = createTestLink(graph, sourceNode, 0, firstTarget, 0)
+    vi.mocked(layoutStore.getNodeLayout).mockImplementation(
+      (_graphId, nodeId) => ({
+        id: nodeId,
+        position: { x: 0, y: 0 },
+        size: { width: 100, height: 100 },
+        zIndex: nodeId === firstTarget.id ? 2 : 1,
+        visible: true,
+        bounds: { x: 0, y: 0, width: 100, height: 100 }
+      })
+    )
     canvas.visible_area[2] = 800
     canvas.visible_area[3] = 600
     vi.spyOn(canvas, 'renderLink').mockImplementation(() => {})
 
     canvas.drawConnections(createMockCtx())
 
-    expect([...canvas.renderedPaths]).toEqual([firstLink, secondLink])
+    expect([...canvas.renderedPaths]).toEqual([secondLink, firstLink])
   })
 
   it('connects, draws, and serializes without deprecation warnings', () => {

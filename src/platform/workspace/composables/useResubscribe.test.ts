@@ -7,6 +7,7 @@ import { useResubscribe } from './useResubscribe'
 const state = vi.hoisted(() => ({
   shouldUseWorkspaceBilling: true,
   canManageSubscriptionLifecycle: true,
+  canReactivate: true,
   resubscribe: vi.fn(),
   toastAdd: vi.fn(),
   trackResubscribeClicked: vi.fn(),
@@ -22,6 +23,18 @@ vi.mock('@/composables/billing/useBillingRouting', () => ({
     shouldUseWorkspaceBilling: {
       get value() {
         return state.shouldUseWorkspaceBilling
+      }
+    }
+  })
+}))
+
+vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
+
+vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
+  useBillingCapabilities: () => ({
+    canReactivate: {
+      get value() {
+        return state.canReactivate
       }
     }
   })
@@ -69,12 +82,27 @@ describe('useResubscribe', () => {
   beforeEach(() => {
     state.shouldUseWorkspaceBilling = true
     state.canManageSubscriptionLifecycle = true
+    state.canReactivate = true
     state.resubscribe.mockResolvedValue(undefined)
   })
 
   it('does not resubscribe after the workspace role loses permission', async () => {
     const { handleResubscribe, isResubscribing } = useResubscribe()
     state.canManageSubscriptionLifecycle = false
+    state.canReactivate = false
+
+    await handleResubscribe()
+
+    expect(state.resubscribe).not.toHaveBeenCalled()
+    expect(state.trackResubscribeClicked).not.toHaveBeenCalled()
+    expect(state.toastAdd).not.toHaveBeenCalled()
+    expect(isResubscribing.value).toBe(false)
+  })
+
+  it('does not resubscribe when the server denies reactivation to a client-side owner', async () => {
+    state.canManageSubscriptionLifecycle = true
+    state.canReactivate = false
+    const { handleResubscribe, isResubscribing } = useResubscribe()
 
     await handleResubscribe()
 

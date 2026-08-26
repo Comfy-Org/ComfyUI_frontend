@@ -29,7 +29,7 @@ describe('node shell teardown', () => {
     return getWidgetIds(node.widgets ?? [])
   }
 
-  it('drops the widget order a removed node registered, keeping its values', () => {
+  it('releases widget state owned by a removed node', () => {
     const subgraph = createTestSubgraph()
     const rootGraphId = subgraph.rootGraph.id
     const node = addWidgetedNode(subgraph)
@@ -43,7 +43,7 @@ describe('node shell teardown', () => {
     subgraph.remove(node)
 
     expect(widgetValueStore.getNodeWidgetIds(rootGraphId, node.id)).toEqual([])
-    expect(widgetValueStore.getWidget(widgetId)?.value).toBe('a value')
+    expect(widgetValueStore.getWidget(widgetId)).toBeUndefined()
   })
 
   it('drops the preview exposures a removed host node owned', () => {
