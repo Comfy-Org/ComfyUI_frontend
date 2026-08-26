@@ -248,7 +248,7 @@ jobs:
           restore-keys: cn-packs-v3-${{ env.SHARD_SLUG }}-
 
       - name: Report excluded packs
-        if: always() && env.CUSTOM_NODES_MANIFEST == 'cloud' && matrix.shard == '1/5'
+        if: always() && (matrix.shard == 'core' || (env.CUSTOM_NODES_MANIFEST == 'cloud' && matrix.shard == '1/5'))
         run: pnpm custom-node-quarantine
 
       - name: Prepare manifest custom node sources

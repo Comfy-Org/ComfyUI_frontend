@@ -18,6 +18,7 @@ import { promisify } from 'node:util'
 import type { QuarantinedPack } from '../browser_tests/fixtures/customNode/manifest'
 import { connectivityExpectations } from '../browser_tests/fixtures/customNode/connectivityExpectations'
 import {
+  customNodesManifest,
   FRONTEND_ASSET_EXCLUSIONS,
   loadAllManifestTargets,
   loadFullManifest,
@@ -165,7 +166,7 @@ async function stillBroken(
   }
 }
 
-const quarantine = loadPackQuarantine()
+const quarantine = customNodesManifest() === 'cloud' ? loadPackQuarantine() : {}
 const manifest = new Map(loadFullManifest().map((e) => [e.pack, e]))
 const unjoinedYamlPacks = loadUnjoinedYamlPacks()
 const manifestPackByFoldedName = new Map(
@@ -310,8 +311,9 @@ for (const exclusion of applicableTierNodeExclusions) {
 }
 
 const nodeExclusions = [
-  ...Object.entries(ROUNDTRIP_NODE_LOSS_EXPECTATIONS_LITEGRAPH).flatMap(
-    ([pack, nodes]) =>
+  ...Object.entries(ROUNDTRIP_NODE_LOSS_EXPECTATIONS_LITEGRAPH)
+    .filter(([pack]) => manifest.has(pack))
+    .flatMap(([pack, nodes]) =>
       Object.entries(nodes).map(([nodeType, exclusion]) => ({
         label: `${nodeType} save/reload`,
         pack,
@@ -320,16 +322,18 @@ const nodeExclusions = [
         tier: 'S3' as const,
         mode: 'expected-failure' as const
       }))
-  ),
-  ...Object.entries(FRONTEND_ASSET_EXCLUSIONS).map(([pack, exclusion]) => ({
-    label: `${pack} frontend assets`,
-    pack,
-    reason: exclusion.reason,
-    restore: exclusion.restore,
-    scope: 'frontend asset registration',
-    tier: 'S11' as const,
-    mode: 'expected-failure' as const
-  })),
+    ),
+  ...Object.entries(FRONTEND_ASSET_EXCLUSIONS)
+    .filter(([pack]) => manifest.has(pack))
+    .map(([pack, exclusion]) => ({
+      label: `${pack} frontend assets`,
+      pack,
+      reason: exclusion.reason,
+      restore: exclusion.restore,
+      scope: 'frontend asset registration',
+      tier: 'S11' as const,
+      mode: 'expected-failure' as const
+    })),
   ...consoleErrorExclusionsForPacks([...manifest.keys()]),
   ...connectivityExclusions
 ].sort(
