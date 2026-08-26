@@ -417,7 +417,6 @@ import type { TierBenefit } from '@/platform/cloud/subscription/utils/tierBenefi
 import { getCommonTierBenefits } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { isCloud } from '@/platform/distribution/types'
 import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
-import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceMenuItems } from '@/platform/workspace/composables/useWorkspaceMenuItems'
 import { useWorkspacePlanPricing } from '@/platform/workspace/composables/useWorkspacePlanPricing'
@@ -432,10 +431,13 @@ import {
 const workspaceStore = useTeamWorkspaceStore()
 const { isWorkspaceSubscribed, isInPersonalWorkspace } =
   storeToRefs(workspaceStore)
-const { permissions, isSubscriptionCancelled, workspaceRole } = useWorkspaceUI()
-const { shouldUseWorkspaceBilling } = useBillingRouting()
-const { canReactivate, canChangeSeats, canSubscribeSelfServe } =
-  useBillingCapabilities()
+const {
+  permissions,
+  isSubscriptionCancelled,
+  workspaceRole,
+  canReactivatePlan
+} = useWorkspaceUI()
+const { canChangeSeats, canSubscribeSelfServe } = useBillingCapabilities()
 const { maxAvailable: freeRunsAllowance, quotaEnabled: freeRunsQuotaEnabled } =
   useFreeTierQuota()
 const { t, n, locale } = useI18n()
@@ -502,14 +504,6 @@ const showSubscribePrompt = computed(() => {
   return !isWorkspaceSubscribed.value
 })
 
-// The legacy rail keeps lifecycle authorization on the client, and
-// handleResubscribe() skips its capability guard there, so the affordance has
-// to follow the same three-way condition or it hides a working action.
-const canReactivatePlan = computed(() =>
-  isCloud && shouldUseWorkspaceBilling.value
-    ? canReactivate.value
-    : permissions.value.canManageSubscriptionLifecycle
-)
 const canChangePlan = computed(() =>
   isCloud ? canChangeSeats.value : permissions.value.canManageSubscription
 )
@@ -563,7 +557,7 @@ function handleUpgrade() {
 }
 
 function handleViewMoreDetails() {
-  window.open('https://www.comfy.org/cloud/pricing', '_blank')
+  window.open('https://comfy.org/cloud/pricing/', '_blank')
 }
 
 async function handleRetry() {
