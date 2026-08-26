@@ -53,6 +53,55 @@ The admin dashboard's "Rebuild site" button POSTs `/api/rebuild-website`, which
 forwards to the Vercel deploy hook in `WEBSITE_DEPLOY_HOOK_URL`. The hook url stays
 server-side and the endpoint requires the `admin` role.
 
+## Migrations
+
+The Postgres adapter only pushes schema automatically when `NODE_ENV !== 'production'`,
+so production schema comes from the committed migrations in `src/migrations`. The
+Vercel build runs `pnpm run ci` — `payload migrate && next build` — so a deploy
+applies pending migrations before it builds.
+
+After changing a collection:
+
+```bash
+# 1. Generate against an EMPTY database — diffing against your dev database
+#    (already dev-pushed) would emit an empty migration.
+docker exec cms-postgres-1 psql -U payload -d postgres -c 'CREATE DATABASE payload_migrate;'
+DATABASE_URL=postgres://payload:payload@localhost:5433/payload_migrate \
+  pnpm --filter @comfyorg/cms migrate:create <name>
+
+# 2. Verify it applies cleanly, then drop the scratch database
+DATABASE_URL=postgres://payload:payload@localhost:5433/payload_migrate \
+  pnpm --filter @comfyorg/cms migrate
+docker exec cms-postgres-1 psql -U payload -d postgres -c 'DROP DATABASE payload_migrate;'
+```
+
+Keep `GCS_BUCKET` set while generating — the storage plugin adds a `prefix` field
+to `media`, and a migration generated without it is missing that column.
+
+## Deploying
+
+Its own Vercel project, root directory `apps/cms`. `vercel.json` pins the
+framework preset, the workspace install/build commands, and an `ignoreCommand` so
+pushes that don't touch `apps/cms` skip the build. The admin panel is `noindex`.
+
+Environment variables to set on the Vercel project (Production + Preview):
+
+| Key                                                    | Notes                                                                                                                                                              |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `DATABASE_URL`                                         | Supabase **session pooler** URI (port 5432 on `*.pooler.supabase.com`). The direct `db.<ref>.supabase.co` host is IPv6-only and unreachable from Vercel Functions. |
+| `PAYLOAD_SECRET`                                       | Fresh `openssl rand -hex 24` — do not reuse the local dev value.                                                                                                   |
+| `GCS_BUCKET`, `GCS_PROJECT_ID`, `GCS_CREDENTIALS_JSON` | Required in production: Vercel's filesystem is read-only, so local-disk media storage cannot work.                                                                 |
+| `GCS_MEDIA_PREFIX`, `GCS_PUBLIC_BASE_URL`              | Optional; defaults are `website/cms` and `https://media.comfy.org`.                                                                                                |
+| `WEBSITE_DEPLOY_HOOK_URL`                              | Vercel deploy hook on the website project; powers "Rebuild site".                                                                                                  |
+| `WEBSITE_PREVIEW_URL`                                  | Optional; enables the admin "Preview" link.                                                                                                                        |
+
+Do **not** set `PAYLOAD_ADMIN_EMAIL` / `PAYLOAD_ADMIN_PASSWORD` on Vercel. They only
+drive the local login prefill, which is disabled when `NODE_ENV === 'production'`.
+
+On a fresh database `/admin` serves an unauthenticated "create first user" screen,
+and the first account is forced to `admin` — create it immediately after the first
+deploy.
+
 ## Workspace commands
 
 - `pnpm dev:cms` — dev server (from repo root)

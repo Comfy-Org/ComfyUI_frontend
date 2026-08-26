@@ -7,6 +7,7 @@ export default tseslint.config(
       '.next/**',
       'src/payload-types.ts',
       'src/payload-generated-schema.ts',
+      'src/migrations/**',
       'src/app/(payload)/**',
     ],
   },
