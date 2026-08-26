@@ -1,5 +1,6 @@
 import type { UploadImageResponse } from '@comfyorg/ingest-types'
 
+import { writeImageWidgetValue } from '@/composables/maskeditor/imageWidgetAdapter'
 import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -279,24 +280,10 @@ export function useMaskEditorSaver() {
   ): void {
     const mainRef = outputData.paintedMaskedImage.ref
 
-    const imageWidget = node.widgets?.find((w) => w.name === 'image')
-    if (imageWidget) {
-      const widgetValue =
-        mainRef.filename + (mainRef.type ? ` [${mainRef.type}]` : '')
-
-      imageWidget.value = widgetValue
-
-      if (node.properties) {
-        node.properties['image'] = widgetValue
-      }
-
-      if (node.widgets_values && node.widgets) {
-        const widgetIndex = node.widgets.indexOf(imageWidget)
-        if (widgetIndex >= 0) {
-          node.widgets_values[widgetIndex] = widgetValue
-        }
-      }
-    }
+    writeImageWidgetValue(
+      node,
+      mainRef.filename + (mainRef.type ? ` [${mainRef.type}]` : '')
+    )
 
     node.imgs = undefined
     const annotatedPath = createAnnotatedPath(mainRef.filename, {
