@@ -363,21 +363,30 @@ export const useLitegraphService = () => {
       const type = output.type === 'COMFY_MATCHTYPE_V3' ? '*' : output.type
       const shapeOptions = is_list ? { shape: LiteGraph.GRID_SHAPE } : {}
       const typeKey = `dataTypes.${normalizeI18nKey(type)}`
+      const localizedSlotName =
+        type !== name
+          ? resolveNodeDefSlotText(
+              'name',
+              nodeDefName(node),
+              output.index,
+              name
+            )
+          : resolveNodeDefSlotText(
+              'name',
+              nodeDefName(node),
+              output.index,
+              undefined,
+              ''
+            ) || st(typeKey, name)
       const outputOptions = {
         ...shapeOptions,
         // If the output name is different from the output type, use the output name.
         // e.g.
         // - type ("INT"); name ("Positive") => translate name
-        // - type ("FLOAT"); name ("FLOAT") => translate type
-        localized_name:
-          type !== name
-            ? resolveNodeDefSlotText(
-                'name',
-                nodeDefName(node),
-                output.index,
-                name
-              )
-            : st(typeKey, name)
+        // - type ("FLOAT"); name ("FLOAT") => prefer a slot translation, then
+        //   translate the type. Custom-node translations are still slot-specific
+        //   even when the slot's source name equals its data type.
+        localized_name: localizedSlotName
       }
       node.addOutput(name, type, outputOptions)
     }
