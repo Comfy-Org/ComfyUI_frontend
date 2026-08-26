@@ -620,6 +620,18 @@ export const pastEvents = derivePastEvents(events, NOW)
 
 export const featuredEvents = deriveFeaturedEvents(events, NOW)
 
+// The gallery cannot render a card without media, so a past event without it
+// contributes no card. Exported so the gallery and its tests count the same
+// thing — asserting against every past event breaks the moment one without
+// media ages into the section.
+export function eventCardMedia(event: ComfyEvent) {
+  return event.media ?? event.featured?.media
+}
+
+export const pastEventCards: readonly ComfyEvent[] = pastEvents.filter(
+  (event) => Boolean(eventCardMedia(event))
+)
+
 export const watchablePastEvents: readonly ComfyEvent[] = pastEvents.filter(
   (event) => eventVideoId(event)
 )

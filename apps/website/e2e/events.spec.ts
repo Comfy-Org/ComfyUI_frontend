@@ -6,7 +6,7 @@ import {
   eventPath,
   eventVideoId,
   featuredEvents,
-  pastEvents,
+  pastEventCards,
   upcomingEvents
 } from '../src/data/events'
 import type { Locale } from '../src/i18n/translations'
@@ -306,9 +306,9 @@ test.describe('Events page — desktop @smoke', () => {
       await section.scrollIntoViewIfNeeded()
 
       const cards = section.locator('[data-slot="card"]')
-      await expect(cards).toHaveCount(pastEvents.length)
+      await expect(cards).toHaveCount(pastEventCards.length)
 
-      for (const [i, event] of pastEvents.entries()) {
+      for (const [i, event] of pastEventCards.entries()) {
         const card = cards.nth(i)
         await expect(card).toContainText(event.title[locale])
         const watch = card.getByRole('link', {
@@ -333,7 +333,7 @@ test.describe('Events page — mobile @mobile', () => {
     const section = pastSection(page, 'en')
     await section.scrollIntoViewIfNeeded()
     const cards = section.locator('[data-slot="card"]')
-    await expect(cards).toHaveCount(pastEvents.length)
+    await expect(cards).toHaveCount(pastEventCards.length)
 
     const viewport = page.viewportSize()
     expect(viewport, 'viewport size').not.toBeNull()

@@ -6,16 +6,21 @@ import type { Locale } from '../../i18n/translations'
 import CardArticleGallery01 from '../../components/blocks/CardArticleGallery01.vue'
 import type { CardArticleGalleryItem } from '../../components/blocks/CardArticleGallery01.vue'
 import { localizeHref } from '../../config/routes'
-import { eventPath, eventVideoId, pastEvents } from '../../data/events'
+import {
+  eventCardMedia,
+  eventPath,
+  eventVideoId,
+  pastEventCards
+} from '../../data/events'
 import { t } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const items = computed<CardArticleGalleryItem[]>(() =>
-  pastEvents.flatMap((event) => {
+  pastEventCards.flatMap((event) => {
     // Card art falls back to the carousel art for events that became past
     // before dedicated card art was added; a card cannot render without media.
-    const media = event.media ?? event.featured?.media
+    const media = eventCardMedia(event)
     if (!media) return []
     // Events with a recording open their own page (dialog over the directory);
     // the rest link out to the event's external page in a new tab.
