@@ -686,7 +686,7 @@
     },
     "LoadAndResizeImage": {
       "connectFirst": "NO_PRODUCER",
-      "connectLast": [],
+      "connectLast": ["+widget:$$canvas-image-preview:custom"],
       "disconnect": []
     },
     "LoadImagesFromFolderKJ": {
