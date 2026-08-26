@@ -128,17 +128,27 @@ describe('LGraphCanvas invalidation scheduling baseline', () => {
     probe.reset()
   })
 
-  it('coalesces a burst of equal foreground requests into one layer draw', () => {
+  it('coalesces a burst of foreground requests in the render loop', () => {
+    const frames: FrameRequestCallback[] = []
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      frames.push(callback)
+      return frames.length
+    })
+    canvas.startRendering()
+
     probe.run('progress', () => {
       for (let i = 0; i < 100; i++) canvas.setDirty(true, false)
     })
 
-    canvas.draw()
+    expect(frames).toHaveLength(1)
+    frames.shift()!(16)
+    canvas.stopRendering()
 
     expect(probe.requests).toHaveLength(100)
     expect(
       probe.requests.filter((request) => request.changedForeground)
     ).toHaveLength(1)
+    expect(frames).toHaveLength(1)
     expect(probe.foregroundDraw).toHaveBeenCalledTimes(1)
     expect(probe.backgroundDraw).not.toHaveBeenCalled()
   })
