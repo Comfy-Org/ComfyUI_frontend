@@ -5,6 +5,7 @@ import { nextTick } from 'vue'
 
 import GlobalToast from '@/components/toast/GlobalToast.vue'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 
 const toastService = vi.hoisted(() => ({
   add: vi.fn(),
@@ -63,5 +64,83 @@ describe('GlobalToast', () => {
 
     expect(toastService.removeAllGroups).toHaveBeenCalledOnce()
     expect(toastStore.removeAllRequested).toBe(false)
+  })
+
+  it('holds messages raised during node selection mode until it exits', async () => {
+    renderToast()
+    const toastStore = useToastStore()
+    const nodeSelectionStore = useAgentNodeSelectionStore()
+    const message = { severity: 'error' as const, summary: 'Failed' }
+
+    nodeSelectionStore.isActive = true
+    await nextTick()
+
+    toastStore.messagesToAdd = [message]
+    await nextTick()
+
+    // Held back rather than added to a hidden layer, where a message carrying
+    // a `life` would expire unseen.
+    expect(toastService.add).not.toHaveBeenCalled()
+    expect(toastStore.messagesToAdd).toEqual([])
+
+    nodeSelectionStore.isActive = false
+    await nextTick()
+
+    expect(toastService.add).toHaveBeenCalledWith(message)
+  })
+
+  it('replays held messages in the order they were raised', async () => {
+    renderToast()
+    const toastStore = useToastStore()
+    const nodeSelectionStore = useAgentNodeSelectionStore()
+    const first = { severity: 'error' as const, summary: 'First' }
+    const second = { severity: 'error' as const, summary: 'Second' }
+
+    nodeSelectionStore.isActive = true
+    await nextTick()
+
+    toastStore.messagesToAdd = [first]
+    await nextTick()
+    toastStore.messagesToAdd = [second]
+    await nextTick()
+
+    nodeSelectionStore.isActive = false
+    await nextTick()
+
+    expect(toastService.add.mock.calls).toEqual([[first], [second]])
+  })
+
+  it('does not replay anything when nothing was raised during the mode', async () => {
+    renderToast()
+    const nodeSelectionStore = useAgentNodeSelectionStore()
+
+    nodeSelectionStore.isActive = true
+    await nextTick()
+    nodeSelectionStore.isActive = false
+    await nextTick()
+
+    expect(toastService.add).not.toHaveBeenCalled()
+  })
+
+  it('drops held messages when everything is dismissed mid-mode', async () => {
+    renderToast()
+    const toastStore = useToastStore()
+    const nodeSelectionStore = useAgentNodeSelectionStore()
+
+    nodeSelectionStore.isActive = true
+    await nextTick()
+
+    toastStore.messagesToAdd = [{ severity: 'error' as const, summary: 'Old' }]
+    await nextTick()
+
+    // A dismiss-everything clears the hidden queue too, or exiting would
+    // resurrect exactly what the caller just cleared.
+    toastStore.removeAllRequested = true
+    await nextTick()
+
+    nodeSelectionStore.isActive = false
+    await nextTick()
+
+    expect(toastService.add).not.toHaveBeenCalled()
   })
 })

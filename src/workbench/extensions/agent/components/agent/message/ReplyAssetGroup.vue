@@ -1,13 +1,18 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, ref } from 'vue'
+import { computed, defineAsyncComponent, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import WaveAudioPlayer from '@/components/common/WaveAudioPlayer.vue'
+import {
+  findOutputAsset,
+  findServerPreviewUrl,
+  isAssetPreviewSupported
+} from '@/platform/assets/utils/assetPreviewUtil'
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { ReplyAsset } from '../../../utils/replyAssets'
 import { replyAssetResultItem } from '../../../utils/replyAssets'
+import ReplyAudioCard from './ReplyAudioCard.vue'
 
 const { assets } = defineProps<{ assets: ReplyAsset[] }>()
 
@@ -29,6 +34,18 @@ const visibleVisual = computed(() =>
 
 const multi = computed(() => visual.value.length > 1)
 
+const AUDIO_COLLAPSED_COUNT = 5
+
+const audioExpanded = ref(false)
+const audioCollapsible = computed(
+  () => audio.value.length > AUDIO_COLLAPSED_COUNT
+)
+const visibleAudio = computed(() =>
+  audioExpanded.value || !audioCollapsible.value
+    ? audio.value
+    : audio.value.slice(0, AUDIO_COLLAPSED_COUNT)
+)
+
 const gridColsClass = computed(() => {
   const count = visual.value.length
   if (count <= 1) return 'grid-cols-1'
@@ -45,6 +62,42 @@ const galleryItems = computed(() =>
 )
 const galleryIndex = ref(-1)
 
+const modelThumbnails = ref<Record<string, string>>({})
+const assetNames = ref<Record<string, string>>({})
+
+watch(
+  () => assets.filter((asset) => asset.kind === '3D' || asset.kind === 'audio'),
+  (lookups) => {
+    if (!isAssetPreviewSupported()) return
+    for (const { url, filename, kind } of lookups) {
+      if (kind === '3D' && !(url in modelThumbnails.value)) {
+        modelThumbnails.value[url] = ''
+        void findServerPreviewUrl(filename)
+          .then(async (preview) => {
+            if (preview) {
+              modelThumbnails.value[url] = preview
+              return
+            }
+            const { generateModelThumbnail } =
+              await import('@/components/load3d/modelThumbnail')
+            const generated = await generateModelThumbnail(url, filename)
+            if (generated) modelThumbnails.value[url] = generated
+          })
+          .catch(() => {})
+      }
+      if (!(url in assetNames.value)) {
+        assetNames.value[url] = ''
+        void findOutputAsset(filename)
+          .then((record) => {
+            if (record?.name) assetNames.value[url] = record.name
+          })
+          .catch(() => {})
+      }
+    }
+  },
+  { immediate: true }
+)
+
 const Load3dViewerContent = defineAsyncComponent(
   () => import('@/components/load3d/Load3dViewerContent.vue')
 )
@@ -52,18 +105,30 @@ const MediaLightbox = defineAsyncComponent(
   () => import('@/components/sidebar/tabs/queue/MediaLightbox.vue')
 )
 
+function refreshModelThumbnail(asset: ReplyAsset, retry = true): void {
+  if (!isAssetPreviewSupported() || modelThumbnails.value[asset.url]) return
+  void findServerPreviewUrl(asset.filename).then((preview) => {
+    if (preview) {
+      modelThumbnails.value[asset.url] = preview
+    } else if (retry) {
+      setTimeout(() => refreshModelThumbnail(asset, false), 2000)
+    }
+  })
+}
+
 function inspect(asset: ReplyAsset): void {
   if (asset.kind === '3D') {
     useDialogStore().showDialog({
       key: 'asset-3d-viewer',
-      title: asset.filename,
+      title: assetNames.value[asset.url] || asset.filename,
       component: Load3dViewerContent,
       props: { modelUrl: asset.url },
       dialogComponentProps: {
         renderer: 'reka',
         size: 'full',
-        contentClass: 'w-[80vw] h-[80vh] max-h-[80vh]',
-        maximizable: true
+        contentClass: 'left-1/2 w-[80vw] sm:max-w-[80vw] h-[80vh] max-h-[80vh]',
+        maximizable: true,
+        onClose: () => refreshModelThumbnail(asset)
       }
     })
     return
@@ -93,7 +158,8 @@ function stopPreview(event: Event): void {
         :class="
           cn(
             'relative cursor-pointer overflow-hidden rounded-lg border-none p-0',
-            multi && 'bg-agent-surface-hover aspect-square'
+            multi && 'bg-agent-surface-hover aspect-square',
+            !multi && asset.kind === '3D' && 'justify-self-end'
           )
         "
         @click="inspect(asset)"
@@ -116,6 +182,13 @@ function stopPreview(event: Event): void {
           :class="multi ? 'size-full object-cover' : 'block h-auto max-w-full'"
           @mouseenter="playPreview"
           @mouseleave="stopPreview"
+        />
+        <img
+          v-else-if="modelThumbnails[asset.url]"
+          :src="modelThumbnails[asset.url]"
+          :alt="asset.label ?? asset.filename"
+          loading="lazy"
+          :class="multi ? 'size-full object-cover' : 'block h-auto max-w-full'"
         />
         <span
           v-else
@@ -146,16 +219,28 @@ function stopPreview(event: Event): void {
     </button>
 
     <div v-if="audio.length" class="flex flex-col gap-1">
-      <div
-        v-for="asset in audio"
+      <ReplyAudioCard
+        v-for="asset in visibleAudio"
         :key="asset.url"
-        class="border-agent-border rounded-lg border px-3 py-2"
+        :asset
+        :title="assetNames[asset.url] || asset.filename"
+      />
+      <button
+        v-if="audioCollapsible"
+        type="button"
+        class="border-agent-border text-agent-fg hover:bg-agent-surface-hover flex cursor-pointer items-center gap-1 self-center rounded-full border px-3 py-1 text-xs"
+        @click="audioExpanded = !audioExpanded"
       >
-        <div class="text-agent-fg mb-1 truncate text-xs">
-          {{ asset.filename }}
-        </div>
-        <WaveAudioPlayer :src="asset.url" />
-      </div>
+        {{ audioExpanded ? t('agent.showLess') : t('agent.showMore') }}
+        <span
+          :class="
+            cn(
+              'icon-[lucide--chevron-down] size-3',
+              audioExpanded && 'rotate-180'
+            )
+          "
+        />
+      </button>
     </div>
 
     <MediaLightbox

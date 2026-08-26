@@ -52,13 +52,13 @@
         v-if="canvasMenuEnabled && !isBuilderMode"
         class="pointer-events-auto"
       />
+      <!-- No node-selection condition here on purpose: entering the mode turns
+           the minimap setting off, so this reacts the same way it does to the
+           user's own toggle - and leaves them free to switch it back on while
+           they pick. -->
       <MiniMap
         v-if="
-          comfyAppReady &&
-          minimapEnabled &&
-          betaMenuEnabled &&
-          !isBuilderMode &&
-          !agentNodeSelectionStore.isActive
+          comfyAppReady && minimapEnabled && betaMenuEnabled && !isBuilderMode
         "
         class="pointer-events-auto"
       />

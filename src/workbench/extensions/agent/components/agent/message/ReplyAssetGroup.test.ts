@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -10,6 +10,26 @@ import ReplyAssetGroup from './ReplyAssetGroup.vue'
 const showDialog = vi.hoisted(() => vi.fn())
 vi.mock('@/stores/dialogStore', () => ({
   useDialogStore: () => ({ showDialog })
+}))
+
+const isAssetPreviewSupported = vi.hoisted(() => vi.fn(() => false))
+const findServerPreviewUrl = vi.hoisted(() =>
+  vi.fn(async (): Promise<string | null> => null)
+)
+const findOutputAsset = vi.hoisted(() =>
+  vi.fn(async (): Promise<{ name: string } | undefined> => undefined)
+)
+vi.mock('@/platform/assets/utils/assetPreviewUtil', () => ({
+  isAssetPreviewSupported,
+  findServerPreviewUrl,
+  findOutputAsset
+}))
+
+const generateModelThumbnail = vi.hoisted(() =>
+  vi.fn(async (): Promise<string | null> => null)
+)
+vi.mock('@/components/load3d/modelThumbnail', () => ({
+  generateModelThumbnail
 }))
 
 const image = (n: number): ReplyAsset => ({
@@ -44,9 +64,10 @@ function renderGroup(assets: ReplyAsset[]) {
           template:
             '<div data-testid="lightbox" :data-active="activeIndex" :data-count="allGalleryItems.length" />'
         },
-        WaveAudioPlayer: {
-          props: ['src'],
-          template: '<div data-testid="audio-player" :data-src="src" />'
+        ReplyAudioCard: {
+          props: ['asset', 'title'],
+          template:
+            '<div data-testid="audio-card" :data-title="title" :data-src="asset.url" />'
         }
       }
     }
@@ -61,6 +82,10 @@ const toggle = () =>
 describe('ReplyAssetGroup', () => {
   beforeEach(() => {
     showDialog.mockClear()
+    isAssetPreviewSupported.mockReset().mockReturnValue(false)
+    findServerPreviewUrl.mockReset().mockResolvedValue(null)
+    findOutputAsset.mockReset().mockResolvedValue(undefined)
+    generateModelThumbnail.mockReset().mockResolvedValue(null)
   })
 
   it('renders image and video previews inline', () => {
@@ -100,14 +125,28 @@ describe('ReplyAssetGroup', () => {
     pause.mockRestore()
   })
 
-  it('renders audio as non-clickable rows with file name and player', () => {
+  it('renders an audio card per audio asset outside the visual grid', () => {
     renderGroup([audio])
 
-    expect(screen.getByText('song.mp3')).toBeInTheDocument()
-    expect(screen.getByTestId('audio-player').dataset.src).toBe(
-      'https://x/song.mp3'
-    )
+    const card = screen.getByTestId('audio-card')
+    expect(card.dataset.src).toBe('https://x/song.mp3')
+    expect(card.dataset.title).toBe('song.mp3')
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  })
+
+  it('collapses long audio lists behind Show more', async () => {
+    renderGroup(
+      Array.from({ length: 6 }, (_, n) => ({
+        ...audio,
+        url: `https://x/song${n}.mp3`,
+        filename: `song${n}.mp3`
+      }))
+    )
+
+    expect(screen.getAllByTestId('audio-card')).toHaveLength(5)
+
+    await userEvent.click(screen.getByRole('button'))
+    expect(screen.getAllByTestId('audio-card')).toHaveLength(6)
   })
 
   it('opens the 3D viewer dialog instead of the lightbox', async () => {
@@ -123,6 +162,89 @@ describe('ReplyAssetGroup', () => {
       })
     )
     expect(screen.queryByTestId('lightbox')).not.toBeInTheDocument()
+  })
+
+  it('renders the server preview image on a 3D tile when one exists', async () => {
+    isAssetPreviewSupported.mockReturnValue(true)
+    findServerPreviewUrl.mockResolvedValue('https://x/mesh_preview.png')
+    renderGroup([model])
+
+    const thumb = await screen.findByRole('img', { name: 'mesh.glb' })
+    expect(thumb).toHaveAttribute('src', 'https://x/mesh_preview.png')
+    expect(findServerPreviewUrl).toHaveBeenCalledWith('mesh.glb')
+  })
+
+  it('keeps the 3D icon tile when no server preview exists', async () => {
+    isAssetPreviewSupported.mockReturnValue(true)
+    renderGroup([model])
+
+    await waitFor(() =>
+      expect(findServerPreviewUrl).toHaveBeenCalledWith('mesh.glb')
+    )
+    expect(screen.queryByRole('img')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'mesh.glb' })).toBeInTheDocument()
+  })
+
+  it('skips preview lookups when the asset API is unavailable', () => {
+    renderGroup([model, audio])
+
+    expect(findServerPreviewUrl).not.toHaveBeenCalled()
+    expect(findOutputAsset).not.toHaveBeenCalled()
+  })
+
+  it('titles audio cards with the resolved asset name, falling back to filename', async () => {
+    isAssetPreviewSupported.mockReturnValue(true)
+    findOutputAsset.mockResolvedValue({ name: 'qa_audio_opus_00001' })
+    renderGroup([audio])
+
+    await waitFor(() =>
+      expect(screen.getByTestId('audio-card').dataset.title).toBe(
+        'qa_audio_opus_00001'
+      )
+    )
+    expect(findOutputAsset).toHaveBeenCalledWith('song.mp3')
+  })
+
+  it('generates a thumbnail offscreen when the server has none', async () => {
+    isAssetPreviewSupported.mockReturnValue(true)
+    generateModelThumbnail.mockResolvedValue('data:image/png;base64,gen')
+    renderGroup([model])
+
+    const thumb = await screen.findByRole('img', { name: 'mesh.glb' })
+    expect(thumb).toHaveAttribute('src', 'data:image/png;base64,gen')
+    expect(generateModelThumbnail).toHaveBeenCalledWith(
+      'https://x/mesh.glb',
+      'mesh.glb'
+    )
+  })
+
+  it('refreshes the tile thumbnail after the viewer closes', async () => {
+    isAssetPreviewSupported.mockReturnValue(true)
+    renderGroup([model])
+    await waitFor(() => expect(findServerPreviewUrl).toHaveBeenCalled())
+    await userEvent.click(screen.getByRole('button', { name: 'mesh.glb' }))
+
+    findServerPreviewUrl.mockResolvedValue('https://x/mesh_preview.png')
+    const dialog = showDialog.mock.calls.at(-1)?.[0]
+    dialog.dialogComponentProps.onClose()
+
+    const thumb = await screen.findByRole('img', { name: 'mesh.glb' })
+    expect(thumb).toHaveAttribute('src', 'https://x/mesh_preview.png')
+  })
+
+  it('titles the 3D viewer with the resolved asset name', async () => {
+    isAssetPreviewSupported.mockReturnValue(true)
+    findOutputAsset.mockResolvedValue({ name: '3d/ComfyUI_00001_.glb' })
+    renderGroup([model])
+
+    await waitFor(() =>
+      expect(findOutputAsset).toHaveBeenCalledWith('mesh.glb')
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'mesh.glb' }))
+
+    expect(showDialog).toHaveBeenCalledWith(
+      expect.objectContaining({ title: '3d/ComfyUI_00001_.glb' })
+    )
   })
 
   it('collapses past three rows behind Show more and returns with Show less', async () => {

@@ -15,6 +15,7 @@ import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useAssetsStore } from '@/stores/assetsStore'
 
 const getServerFeature = vi.hoisted(() =>
   vi.fn((_name: string, defaultValue?: unknown) => defaultValue)
@@ -790,6 +791,91 @@ describe('AgentPanelRoot attach flow', () => {
 
     expect(await screen.findByText('movie.mp4')).toBeInTheDocument()
     await vi.waitFor(() => expect(uploaded).toEqual(['movie.mp4']))
+  })
+
+  // Jo's FE-1323 expansion: every approved format attaches through drag-drop.
+  // The MIME column mirrors what browsers actually report - glb, md, and wav
+  // drops often carry no type at all, so claiming must go by file name.
+  it.for([
+    ['clip.mp4', 'video/mp4'],
+    ['voice.m4a', ''],
+    ['movie.mov', 'video/quicktime'],
+    ['song.mp3', 'audio/mpeg'],
+    ['sound.wav', ''],
+    ['mesh.glb', ''],
+    ['notes.md', ''],
+    ['prompt.txt', 'text/plain']
+  ])('attaches a dropped %s and uploads it', async ([name, type]) => {
+    const uploaded = stubUploadFetch()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await nextTick()
+
+    expect(
+      dispatchDrag(screen.getByRole('textbox'), 'drop', {
+        files: [new File(['x'], name, { type })]
+      })
+    ).toBe(true)
+
+    expect(await screen.findByText(name)).toBeInTheDocument()
+    await vi.waitFor(() => expect(uploaded).toEqual([name]))
+  })
+
+  it('names every approved format in the picker accept list', async () => {
+    stubUploadFetch()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await nextTick()
+
+    const accept =
+      screen
+        .getByTestId<HTMLInputElement>('agent-file-input')
+        .getAttribute('accept') ?? ''
+    for (const extension of [
+      '.mp4',
+      '.m4a',
+      '.mov',
+      '.mp3',
+      '.wav',
+      '.glb',
+      '.md',
+      '.txt'
+    ]) {
+      expect(accept).toContain(extension)
+    }
+  })
+
+  it('refreshes the input asset library after an upload', async () => {
+    const uploaded = stubUploadFetch()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await nextTick()
+    const refresh = vi
+      .spyOn(useAssetsStore(), 'updateInputs')
+      .mockResolvedValue(undefined as never)
+
+    dispatchDrag(screen.getByRole('textbox'), 'drop', {
+      files: [new File(['x'], 'cat.png', { type: 'image/png' })]
+    })
+
+    await vi.waitFor(() => expect(uploaded).toEqual(['cat.png']))
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalled())
+  })
+
+  it('keeps the 20MB limit for an oversize audio file', async () => {
+    getServerFeature.mockReturnValue(100 * 1024 * 1024)
+    const uploaded = stubUploadFetch()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await nextTick()
+
+    const song = fileOfSize('big.mp3', MAX_ATTACHMENT_BYTES + 1, 'audio/mpeg')
+    dispatchDrag(screen.getByRole('textbox'), 'drop', { files: [song] })
+    await nextTick()
+
+    expect(uploaded).toEqual([])
+    expect(useToastStore().messagesToAdd).toContainEqual(
+      expect.objectContaining({
+        severity: 'warn',
+        detail: 'big.mp3 is larger than 20MB'
+      })
+    )
   })
 
   it('claims a dragover carrying files so a drop can reach the panel', async () => {
@@ -1658,6 +1744,50 @@ describe('AgentPanelRoot history', () => {
     )
   })
 
+  it('starts renaming from a single click on the current title', async () => {
+    await renderWithActiveThread()
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.newChatTitle')
+      })
+    )
+
+    const input = await screen.findByRole<HTMLInputElement>('textbox', {
+      name: i18n.global.t('g.rename')
+    })
+    expect(input).toHaveFocus()
+    expect(input.selectionStart).toBe(0)
+    expect(input.selectionEnd).toBe(input.value.length)
+    expect(
+      screen.queryByRole('button', { name: i18n.global.t('agent.history') })
+    ).toBeNull()
+  })
+
+  it('opens Chat History from its dedicated control', async () => {
+    await renderWithActiveThread()
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+
+    expect(
+      await screen.findByRole('heading', {
+        name: i18n.global.t('agent.history')
+      })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.backToPreviousChat')
+      })
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('textbox', { name: i18n.global.t('g.rename') })
+    ).toBeNull()
+  })
+
   it('abandons a rename on Escape', async () => {
     await renderWithActiveThread()
 
@@ -1684,7 +1814,9 @@ describe('AgentPanelRoot history', () => {
     await renderWithActiveThread()
 
     await userEvent.click(
-      screen.getByRole('button', { name: i18n.global.t('agent.newChatTitle') })
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
     )
     await userEvent.click(
       screen.getByRole('button', {
@@ -1895,7 +2027,11 @@ describe('AgentPanelRoot transcript copy', () => {
     )
     await nextTick()
 
-    await userEvent.click(screen.getByRole('button', { name: 'make a cat' }))
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
     await userEvent.click(
       await screen.findByRole('button', {
         name: i18n.global.t('agent.copyMarkdown')
@@ -2112,7 +2248,9 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(await screen.findAllByText('current')).not.toHaveLength(0)
 
     await userEvent.click(
-      screen.getByRole('button', { name: i18n.global.t('agent.newChatTitle') })
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
     )
     expect(
       await screen.findByText(i18n.global.t('agent.historyEmpty'))
@@ -2120,7 +2258,9 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(screen.queryByText('current')).not.toBeInTheDocument()
 
     await userEvent.click(
-      screen.getByRole('button', { name: i18n.global.t('agent.history') })
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.backToPreviousChat')
+      })
     )
     expect(await screen.findAllByText('current')).not.toHaveLength(0)
   })

@@ -375,12 +375,18 @@ describe('useAgentSession (v1 composition root)', () => {
   })
 
   it('(d) stopTurn cancels the active turn; a 409 is swallowed and the socket settles it', async () => {
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
+      .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-2' })
     const cancelMessage = vi
       .fn<
         (threadId: string, messageId: string) => Promise<AgentCancelAccepted>
       >()
       .mockRejectedValue(new AgentApiError('already done', 409, undefined))
-    const rest = fakeRest({ cancelMessage })
+    const rest = fakeRest({ cancelMessage, postMessage })
     const { source, emit } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
     session.start()
@@ -388,15 +394,41 @@ describe('useAgentSession (v1 composition root)', () => {
     await session.sendMessage('go')
     emit(delta('msg-1', 'working'))
     expect(session.isStreaming.value).toBe(true)
+    expect(session.editableTurnId.value).toBeNull()
 
     await session.stopTurn()
     expect(cancelMessage).toHaveBeenCalledWith('th-1', 'msg-1')
     expect(session.notices.value).toHaveLength(0)
     expect(session.isStreaming.value).toBe(true)
+    expect(session.editableTurnId.value).toBeNull()
 
     emit(delta('msg-1', ' Stopped at your request.'))
     emit(done('msg-1'))
     expect(session.isStreaming.value).toBe(false)
+    expect(session.editableTurnId.value).toBe('msg-1')
+
+    await session.sendMessage('go revised')
+    expect(session.editableTurnId.value).toBeNull()
+    expect(
+      session.entries.value
+        .filter((entry) => entry.role === 'user')
+        .map((entry) => entry.text)
+    ).toEqual(['go', 'go revised'])
+
+    session.newChat()
+    expect(session.editableTurnId.value).toBeNull()
+  })
+
+  it('(d1) a normally completed turn is not editable', async () => {
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest: fakeRest(), events: source })
+    session.start()
+
+    await session.sendMessage('go')
+    emit(done('msg-1'))
+
+    expect(session.isStreaming.value).toBe(false)
+    expect(session.editableTurnId.value).toBeNull()
   })
 
   it('(d2) stopTurn rejecting with a network TypeError surfaces a notice, not an unhandled rejection', async () => {
@@ -419,6 +451,7 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(session.notices.value).toEqual([
       { level: 'error', text: 'fetch failed' }
     ])
+    expect(session.editableTurnId.value).toBeNull()
   })
 
   it('(d3) stopTurn before the POST acknowledgement cancels the acknowledged turn once', async () => {

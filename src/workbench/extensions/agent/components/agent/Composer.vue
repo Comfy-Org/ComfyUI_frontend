@@ -98,6 +98,19 @@ type MentionMatch =
   | { kind: 'node'; id: string; label: string; node: SelectedNode }
   | { kind: 'asset'; id: string; label: string; asset: AssetItem }
 
+/**
+ * Nodes already in the basket, hidden from the picker - re-picking one is a
+ * no-op and only makes the list harder to scan.
+ *
+ * Filtered here rather than out of `mentionNodes`, because that list also
+ * feeds `graphDupes`: dropping a staged node from it would stop its chip
+ * showing the `#id` that disambiguates it from a same-titled node still in
+ * the graph.
+ */
+const stagedKeys = computed(
+  () => new Set(selectionTags.map((tag) => selectedNodeKey(tag)))
+)
+
 const mentionMatches = computed<MentionMatch[]>(() => {
   if (!mentionOpen.value) return []
   const query = mentionQuery.value.toLowerCase()
@@ -105,7 +118,8 @@ const mentionMatches = computed<MentionMatch[]>(() => {
     ...mentionNodes.value
       .filter(
         (node) =>
-          node.title.toLowerCase().includes(query) || node.id.includes(query)
+          !stagedKeys.value.has(selectedNodeKey(node)) &&
+          (node.title.toLowerCase().includes(query) || node.id.includes(query))
       )
       .map(
         (node): MentionMatch => ({
@@ -296,8 +310,14 @@ function insert(text: string): void {
   textareaRef.value?.focus()
 }
 
+function replaceDraft(text: string): void {
+  composer.draft.value = text
+  textareaRef.value?.focus()
+}
+
 defineExpose({
   insert,
+  replaceDraft,
   addAttachment: composer.addAttachment,
   updateAttachment: composer.updateAttachment,
   removeAttachment: composer.removeAttachment
@@ -387,7 +407,7 @@ defineExpose({
         <span
           v-for="tag in selectionTags"
           :key="selectedNodeKey(tag)"
-          class="bg-agent-surface-hover text-agent-fg inline-flex h-7 items-center gap-1 rounded-lg border border-neutral-200 px-2.5 text-xs/4 font-medium"
+          class="bg-agent-surface-hover text-agent-fg inline-flex h-7 items-center gap-1 rounded-lg border border-border-default px-2.5 text-xs/4 font-medium transition-colors hover:bg-tertiary-background-hover"
         >
           <button
             v-tooltip.top="buildAgentTooltipConfig(t('agent.focusNode'))"
@@ -395,10 +415,10 @@ defineExpose({
             :aria-label="
               t('agent.focusNodeLabel', { node: `${tag.title} #${tag.id}` })
             "
-            class="flex cursor-pointer items-center gap-1"
+            class="flex cursor-pointer items-center gap-1 p-0 transition-colors"
             @click="emit('focusTag', selectedNodeKey(tag))"
           >
-            <span class="icon-[comfy--node] size-3.5" />
+            <span class="text-agent-fg-muted icon-[comfy--node] size-3.5" />
             <span class="max-w-40 truncate">{{ tag.title }}</span>
             <span
               v-if="graphDupes.has(tag.title) || tagDupes.has(tag.title)"
@@ -440,7 +460,7 @@ defineExpose({
           v-model="composer.draft.value"
           :aria-label="t('agent.placeholder')"
           rows="1"
-          class="text-agent-fg field-sizing-content max-h-50 min-h-16 w-full min-w-0 resize-none overflow-x-hidden overflow-y-auto rounded-none bg-transparent px-3 py-2 font-inter text-[14px]/5 font-normal wrap-break-word whitespace-pre-wrap focus-visible:ring-0"
+          class="text-agent-fg field-sizing-content max-h-100 min-h-16 w-full min-w-0 resize-none overflow-x-hidden overflow-y-auto rounded-none bg-transparent px-3 py-2 font-inter text-[14px]/5 font-normal wrap-break-word whitespace-pre-wrap focus-visible:ring-0"
           :aria-expanded="mentionVisible"
           aria-controls="agent-mention-listbox"
           :aria-activedescendant="
@@ -466,7 +486,9 @@ defineExpose({
             <span
               class="icon-[lucide--mouse-pointer-click] size-[14px] shrink-0"
             />
-            <span>{{ placeholderHint.addNodes }},</span>
+            <span class="underline decoration-dashed underline-offset-2"
+              >{{ placeholderHint.addNodes }},</span
+            >
           </button>
           <span>{{ placeholderHint.dragAssets }}</span>
         </div>
@@ -486,7 +508,7 @@ defineExpose({
               side="top"
               align="start"
               :side-offset="4"
-              class="agent-scope bg-agent-surface-raised z-1100 box-border w-[186px] rounded-[10px] border border-white/10 p-1 font-inter shadow-lg"
+              class="agent-scope bg-agent-surface-raised z-1100 box-border w-max min-w-[186px] rounded-[10px] border border-white/10 p-1 font-inter shadow-lg"
             >
               <DropdownMenuItem
                 class="text-agent-fg data-highlighted:bg-agent-surface-hover mb-0.5 box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal outline-none"

@@ -29,9 +29,10 @@ import { assetService } from '@/platform/assets/services/assetService'
 import {
   fetchDroppedAsset,
   getDroppedAsset,
-  hasImageType,
   hasVideoType
 } from '@/utils/eventUtils'
+import { useAssetsStore } from '@/stores/assetsStore'
+import { AGENT_ATTACH_ACCEPT, isAgentAttachable } from './utils/attachableFiles'
 import { appendWorkflowJsonExt } from '@/utils/formatUtil'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 // eslint-disable-next-line import-x/no-restricted-paths
@@ -343,6 +344,7 @@ const {
   start,
   stop,
   entries,
+  editableTurnId,
   isStreaming,
   status,
   notices,
@@ -980,10 +982,16 @@ function onSelectNodes(): void {
   })
 }
 
+const assetsStore = useAssetsStore()
+
 const attachment = useAttachment({
-  upload: async (file) => ({
-    ref: (await rest.uploadImage(file, file.name)).name
-  }),
+  upload: async (file) => {
+    const uploaded = await rest.uploadImage(file, file.name)
+    // The library caches input assets; without this refresh a just-uploaded
+    // file is neither listed in the Assets tab nor mentionable this session.
+    void assetsStore.updateInputs()
+    return { ref: uploaded.name }
+  },
   maxBytes: (file) => {
     const serverLimit = api.getServerFeature(
       'max_upload_size',
@@ -1097,7 +1105,7 @@ async function attachDroppedAsset(event: DragEvent): Promise<void> {
     return
   }
 
-  if (asset.ref && (asset.kind === 'image' || asset.kind === 'video')) {
+  if (asset.ref && asset.kind !== 'other') {
     panelRef.value?.addAttachment({
       id: `asset:${asset.ref}`,
       name: asset.name,
@@ -1109,7 +1117,7 @@ async function attachDroppedAsset(event: DragEvent): Promise<void> {
 
   const file = await attachment.addDeferredFile(asset.name, async () => {
     const file = await fetchDroppedAsset(asset)
-    return file && (hasImageType(file) || hasVideoType(file)) ? file : undefined
+    return file && isAgentAttachable(file) ? file : undefined
   })
   if (!file)
     toast.add({
@@ -1135,7 +1143,7 @@ function onPanelDrop(event: DragEvent): void {
   // Anything the composer cannot attach still belongs to the graph loader, which
   // only runs while the drop is unclaimed, so claim the attachable files alone.
   const files = Array.from(event.dataTransfer?.files ?? []).filter(
-    (file) => hasImageType(file) || hasVideoType(file)
+    isAgentAttachable
   )
   if (files.length === 0) return
   event.preventDefault()
@@ -1155,7 +1163,7 @@ function onPanelDrop(event: DragEvent): void {
     <input
       ref="fileInput"
       type="file"
-      accept="image/*,video/*"
+      :accept="AGENT_ATTACH_ACCEPT"
       multiple
       class="hidden"
       data-testid="agent-file-input"
@@ -1180,6 +1188,7 @@ function onPanelDrop(event: DragEvent): void {
     <AgentPanel
       ref="panelRef"
       :entries
+      :editable-turn-id="editableTurnId"
       :user-name="userName"
       :streaming="isStreaming"
       :submitting="isSending || status === 'thinking'"
