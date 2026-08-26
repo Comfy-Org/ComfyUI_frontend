@@ -656,7 +656,7 @@ describe('AgentPanelRoot attach flow', () => {
     })
 
     expect(screen.getByAltText('cat.png')).toBeInTheDocument()
-    expect(screen.getByText('cat.png')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'cat.png' })).toBeInTheDocument()
   })
 
   it('uploads a picked video above 20MB when the server permits it', async () => {
