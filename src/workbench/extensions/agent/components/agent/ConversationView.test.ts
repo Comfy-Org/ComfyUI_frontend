@@ -1,8 +1,18 @@
+// @vitest-environment jsdom
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createPinia, setActivePinia } from 'pinia'
 import { defineComponent, nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+// jsdom lacks ResizeObserver, which the asset-preview import chain references.
+vi.hoisted(() => {
+  globalThis.ResizeObserver = class {
+    observe(): void {}
+    unobserve(): void {}
+    disconnect(): void {}
+  }
+})
 
 import type * as VueUse from '@vueuse/core'
 
@@ -71,6 +81,7 @@ function mountHarness() {
 
 describe('ConversationView', () => {
   beforeEach(() => {
+    Element.prototype.scrollIntoView = vi.fn()
     setActivePinia(createPinia())
     intersectionCallbacks.length = 0
   })
