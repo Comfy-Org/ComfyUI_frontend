@@ -12,7 +12,6 @@ export interface WorkspaceUIMockState {
   canManageSubscription: boolean
   canManageSubscriptionLifecycle: boolean
   canDowngradeToPersonal: boolean
-  canTopUp: boolean
   isSubscriptionCancelled: boolean
 }
 
@@ -22,7 +21,6 @@ const defaultState: WorkspaceUIMockState = {
   canManageSubscription: true,
   canManageSubscriptionLifecycle: true,
   canDowngradeToPersonal: true,
-  canTopUp: true,
   isSubscriptionCancelled: false
 }
 
@@ -42,8 +40,7 @@ export function useWorkspaceUI() {
       canManageSubscription: state.value.canManageSubscription,
       canManageSubscriptionLifecycle:
         state.value.canManageSubscriptionLifecycle,
-      canDowngradeToPersonal: state.value.canDowngradeToPersonal,
-      canTopUp: state.value.canTopUp
+      canDowngradeToPersonal: state.value.canDowngradeToPersonal
     })),
     isSubscriptionCancelled: computed(() => state.value.isSubscriptionCancelled)
   }

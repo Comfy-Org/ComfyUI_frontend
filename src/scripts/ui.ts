@@ -8,6 +8,7 @@ import { WORKFLOW_ACCEPT_STRING } from '@/platform/workflow/core/types/formats'
 import { type StatusWsMessageStatus } from '@/schemas/apiSchema'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useCommandStore } from '@/stores/commandStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 import { api } from './api'
@@ -308,10 +309,7 @@ class ComfyList {
                     const workflow = await extractWorkflow(job)
                     await app.loadGraphData(workflow, true, false)
                     if ('outputs' in job && job.outputs) {
-                      app.nodeOutputs = {}
-                      for (const [key, value] of Object.entries(job.outputs)) {
-                        app.nodeOutputs[key] = value
-                      }
+                      useNodeOutputStore().restoreOutputs(job.outputs)
                     }
                   }
                 }),

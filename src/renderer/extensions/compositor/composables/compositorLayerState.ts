@@ -282,10 +282,13 @@ export function layerStateInputsMatch(
 }
 
 function bboxLayerState(
-  bboxes: ReadonlyArray<CompositorBBox | null> | undefined
+  bboxes: ReadonlyArray<CompositorBBox | null> | undefined,
+  canvas?: { w: number; h: number }
 ): CompositorLayerStateInit | null {
   if (!bboxes?.some((bbox) => bbox !== null)) return null
+  const canvasSize = parseCanvasSize(canvas)
   return {
+    ...(canvasSize ? { canvas: canvasSize } : {}),
     layers: bboxes.map((bbox) =>
       bbox
         ? {
@@ -315,11 +318,12 @@ function bboxLayerState(
 export function resolveInitialLayerState(
   savedState: CompositorLayerState | null,
   currentInputs: readonly string[] | undefined,
-  bboxes: ReadonlyArray<CompositorBBox | null> | undefined
+  bboxes: ReadonlyArray<CompositorBBox | null> | undefined,
+  canvas?: { w: number; h: number }
 ): CompositorLayerStateInit | null {
   if (savedState && layerStateInputsMatch(savedState.inputs, currentInputs))
     return savedState
-  return bboxLayerState(bboxes)
+  return bboxLayerState(bboxes, canvas)
 }
 
 export function applyLayerState(

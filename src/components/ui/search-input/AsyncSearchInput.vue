@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { refDebounced } from '@vueuse/core'
-import { ref, toRef, toValue, watch } from 'vue'
+import { nextTick, onMounted, ref, toRef, toValue, watch } from 'vue'
 import type { HTMLAttributes, MaybeRefOrGetter } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -28,6 +28,18 @@ const emit = defineEmits<{
 }>()
 
 const searchQuery = defineModel<string>({ default: '' })
+
+// The native `autofocus` attribute only fires on initial page load, not when the
+// input is mounted dynamically (e.g. inside a modal), so focus it explicitly.
+const inputRef = ref<HTMLInputElement>()
+onMounted(() => {
+  if (!autofocus) return
+  void nextTick(() => inputRef.value?.focus())
+})
+
+defineExpose({
+  focus: () => inputRef.value?.focus()
+})
 
 const isQuerying = ref(false)
 const debouncedSearchQuery = refDebounced(searchQuery, debounceMs, {
@@ -99,6 +111,7 @@ function handleKeydownEnter(event: KeyboardEvent) {
       "
     />
     <input
+      ref="inputRef"
       v-model="searchQuery"
       type="text"
       class="mx-2 my-1.5 h-5 w-full min-w-0 border-0 bg-transparent ring-0 outline-0"

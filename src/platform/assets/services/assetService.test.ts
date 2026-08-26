@@ -424,6 +424,25 @@ describe(assetService.deleteAsset, () => {
   })
 })
 
+describe('assetResponseSchema accepts real API shapes', () => {
+  it("parses an asset that doesn't satisfy cloud schema", async () => {
+    const asset = {
+      id: 'real-api-shape',
+      created_at: '2025-06-15T09:30:00',
+      updated_at: '2025-06-15T10:00:00',
+      hash: 'badhash'
+    }
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([validAsset(asset)])
+    )
+
+    const assets = await assetService.getAssetsByTag('models')
+
+    expect(assets).toHaveLength(1)
+    expect(assets[0]).toMatchObject(asset)
+  })
+})
+
 describe(assetService.getAssetModels, () => {
   beforeEach(() => {
     assetService.invalidateModelBuckets()

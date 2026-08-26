@@ -1,9 +1,8 @@
 import type { INodeInputSlot, INodeSlot } from '@/lib/litegraph/src/interfaces'
+import { useLinkStore } from '@/stores/linkStore'
+import type { GraphScope } from '@/types/graphScopeId'
+import type { NodeId } from '@/types/nodeId'
 import { isSlotObject } from '@/utils/typeGuardUtil'
-
-interface NodeInputData {
-  inputs?: INodeInputSlot[]
-}
 
 function coerceINodeSlot(input: INodeInputSlot): INodeSlot {
   return isSlotObject(input)
@@ -18,22 +17,28 @@ function coerceINodeSlot(input: INodeInputSlot): INodeSlot {
 function inputHasWidget(input: INodeInputSlot) {
   return isSlotObject(input) && 'widget' in input && input.widget
 }
-export function nonWidgetedInputs(
-  nodeData: NodeInputData | undefined
-): INodeSlot[] {
-  if (!nodeData?.inputs) return []
 
-  return nodeData.inputs
-    .filter((input) => !inputHasWidget(input))
-    .map(coerceINodeSlot)
+export function nonWidgetedInputs(
+  inputs: INodeInputSlot[] | undefined
+): INodeSlot[] {
+  if (!inputs) return []
+
+  return inputs.filter((input) => !inputHasWidget(input)).map(coerceINodeSlot)
 }
 
 export function linkedWidgetedInputs(
-  nodeData: NodeInputData | undefined
+  nodeId: NodeId,
+  inputs: INodeInputSlot[] | undefined,
+  scope: GraphScope
 ): INodeSlot[] {
-  if (!nodeData?.inputs) return []
+  if (!inputs) return []
 
-  return nodeData.inputs
-    .filter((input) => inputHasWidget(input) && !!input.link)
+  const linkStore = useLinkStore()
+  return inputs
+    .filter(
+      (input, index) =>
+        inputHasWidget(input) &&
+        linkStore.isInputSlotConnected(scope, nodeId, index)
+    )
     .map(coerceINodeSlot)
 }

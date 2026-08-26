@@ -10,7 +10,7 @@
 
 import { debounce } from 'es-toolkit'
 import { useToast } from 'primevue'
-import { tryOnScopeDispose } from '@vueuse/core'
+import { tryOnScopeDispose, whenever } from '@vueuse/core'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
@@ -23,6 +23,7 @@ import {
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
   ComfyWorkflow,
@@ -32,6 +33,8 @@ import { PERSIST_DEBOUNCE_MS } from '../base/draftTypes'
 import type { StartupOutcome } from '../base/draftTypes'
 import {
   clearAllWorkflowStorage,
+  completeWorkflowLogoutTransition,
+  prepareWorkflowLogoutTransition,
   registerWorkflowPersistenceFlush
 } from '../base/storageIO'
 import { migrateV1toV2 } from '../migration/migrateV1toV2'
@@ -55,17 +58,17 @@ export function useWorkflowPersistenceV2() {
   const draftStore = useWorkflowDraftStoreV2()
   const tabState = useWorkflowTabState()
   const toast = useToast()
-  const { onUserLogout } = useCurrentUser()
+  const { onUserLogout, onUserResolved } = useCurrentUser()
+  const teamWorkspaceStore = useTeamWorkspaceStore()
+  let stopWorkspaceReadinessWatcher: (() => void) | undefined
+
+  function stopPendingWorkspaceReadinessWatcher(): void {
+    stopWorkspaceReadinessWatcher?.()
+    stopWorkspaceReadinessWatcher = undefined
+  }
 
   // Run migration on module load, passing clientId for tab state migration
   migrateV1toV2(undefined, api.clientId ?? api.initialClientId ?? undefined)
-
-  // Clear workflow persistence storage when user signs out (cloud only)
-  onUserLogout(() => {
-    if (isCloud) {
-      clearAllWorkflowStorage()
-    }
-  })
 
   const ensureTemplateQueryFromIntent = async () => {
     hydratePreservedQuery(TEMPLATE_NAMESPACE)
@@ -143,6 +146,40 @@ export function useWorkflowPersistenceV2() {
     flushPendingPersistence
   )
   window.addEventListener('pagehide', flushPendingPersistence)
+
+  onUserLogout(() => {
+    if (!isCloud) return
+    stopPendingWorkspaceReadinessWatcher()
+    debouncedPersist.cancel()
+    prepareWorkflowLogoutTransition()
+    clearAllWorkflowStorage()
+  })
+  onUserResolved(() => {
+    if (!isCloud) return
+    stopPendingWorkspaceReadinessWatcher()
+
+    // Release the fence once initialization concludes either way: a resolved
+    // workspace, or a permanent init failure. Waiting on 'ready' alone would
+    // leave writes blocked for the rest of the session if init settles on
+    // 'error' (e.g. no workspaces available, retries exhausted).
+    const isWorkspaceInitConcluded = () =>
+      (teamWorkspaceStore.initState === 'ready' &&
+        teamWorkspaceStore.activeWorkspaceId !== null) ||
+      teamWorkspaceStore.initState === 'error'
+    if (isWorkspaceInitConcluded()) {
+      completeWorkflowLogoutTransition()
+      return
+    }
+
+    stopWorkspaceReadinessWatcher = whenever(
+      isWorkspaceInitConcluded,
+      () => {
+        stopWorkspaceReadinessWatcher = undefined
+        completeWorkflowLogoutTransition()
+      },
+      { once: true }
+    )
+  })
 
   const loadPreviousWorkflowFromStorage = async () => {
     const sessionPath = tabState.getActivePath()
@@ -282,6 +319,7 @@ export function useWorkflowPersistenceV2() {
     window.removeEventListener('pagehide', flushPendingPersistence)
     unregisterPersistenceFlush()
     debouncedPersist.cancel()
+    stopPendingWorkspaceReadinessWatcher()
   })
 
   // Restore workflow tabs states

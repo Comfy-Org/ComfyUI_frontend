@@ -1,4 +1,5 @@
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
+import { isCloud } from '@/platform/distribution/types'
 
 import { hashPath } from './hashUtil'
 
@@ -11,6 +12,8 @@ import { hashPath } from './hashUtil'
  * when this module is first imported.
  */
 export function getWorkspaceId(): string {
+  if (!isCloud) return 'personal'
+
   try {
     const json = sessionStorage.getItem(
       WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE

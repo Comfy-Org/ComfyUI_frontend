@@ -793,6 +793,25 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(mockManageSubscription).toHaveBeenCalledOnce()
   })
 
+  it('lets a never-subscribed team workspace top up on Local instead of upselling', () => {
+    mockDistributionState.isCloud = false
+    mockIsActiveSubscription.value = false
+    mockIsWorkspaceSubscribed.value = false
+    mockHasSubscription.value = false
+    renderComponent()
+
+    expect(
+      screen.queryByText('This workspace is not on a subscription')
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Subscribe Now' })
+    ).not.toBeInTheDocument()
+    expect(screen.getByTestId('credits-tile')).toHaveAttribute(
+      'data-zero-state',
+      'false'
+    )
+  })
+
   it('shows a loading indicator instead of a false Free plan while billing loads', () => {
     mockHasSubscription.value = false
     mockIsLoading.value = true

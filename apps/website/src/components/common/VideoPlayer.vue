@@ -83,6 +83,21 @@ const {
 const { isSupported: fullscreenSupported, toggle: toggleFs } =
   useFullscreen(playerEl)
 
+// A server-rendered `autoplay` video can start playing before hydration
+// attaches useMediaControls' listeners, so its play/volumechange events are
+// missed and the controls render stale state (e.g. a play icon over a
+// playing video). Sync the refs from the element once it binds; the
+// assignments are no-ops when the element already matches.
+watch(
+  videoEl,
+  (el) => {
+    if (!el) return
+    playing.value = !el.paused
+    muted.value = el.muted
+  },
+  { flush: 'post' }
+)
+
 // Controls fade
 const hovering = useElementHover(playerEl)
 const recentActivity = refAutoReset(false, 800)

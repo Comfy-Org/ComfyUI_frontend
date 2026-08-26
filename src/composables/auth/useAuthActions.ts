@@ -10,13 +10,23 @@ import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { AuthFlowAction } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { clearAllWorkflowStorage } from '@/platform/workflow/persistence/base/storageIO'
+import {
+  clearAllWorkflowStorage,
+  prepareWorkflowLogoutTransition
+} from '@/platform/workflow/persistence/base/storageIO'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'
 import type { BillingPortalTargetTier } from '@/stores/authStore'
 import { usdToMicros } from '@/utils/formatUtil'
+
+/** Popup outcomes the user or their browser caused, not app faults. */
+const POPUP_PERMISSION_ERROR_CODES: readonly string[] = [
+  AuthErrorCodes.POPUP_CLOSED_BY_USER,
+  AuthErrorCodes.EXPIRED_POPUP_REQUEST,
+  AuthErrorCodes.POPUP_BLOCKED
+]
 
 /**
  * Service for Firebase Auth actions.
@@ -71,6 +81,15 @@ export const useAuthActions = () => {
         summary: t('g.error'),
         detail: t('auth.errors.signupBlocked')
       })
+    } else if (
+      error instanceof FirebaseError &&
+      POPUP_PERMISSION_ERROR_CODES.includes(error.code)
+    ) {
+      toastStore.add({
+        severity: 'warn',
+        summary: t('g.warning'),
+        detail: st(`auth.errors.${error.code}`, t('auth.errors.generic'))
+      })
     } else if (error instanceof FirebaseError) {
       toastStore.add({
         severity: 'error',
@@ -113,7 +132,10 @@ export const useAuthActions = () => {
     }
 
     await authStore.logout()
-    if (isCloud) clearAllWorkflowStorage({ blockWrites: true })
+    if (isCloud) {
+      prepareWorkflowLogoutTransition()
+      clearAllWorkflowStorage()
+    }
 
     toastStore.add({
       severity: 'success',

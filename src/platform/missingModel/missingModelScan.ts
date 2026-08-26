@@ -197,7 +197,7 @@ function getModelWidgetScanTarget(
   executionId: NodeExecutionId
 ): ModelWidgetScanTarget | null {
   const input = getInputForWidget(node, widget)
-  if (input?.link != null) return null
+  if (input && node.isInputConnected(node.inputs.indexOf(input))) return null
 
   if (!node.isSubgraphNode?.()) {
     return {

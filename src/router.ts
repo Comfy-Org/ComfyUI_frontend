@@ -130,6 +130,10 @@ installPreservedQueryTracker(router, [
     keys: ['topup']
   },
   {
+    namespace: PRESERVED_QUERY_NAMESPACES.SETTINGS,
+    keys: ['settings']
+  },
+  {
     namespace: PRESERVED_QUERY_NAMESPACES.DESKTOP_LOGIN,
     keys: ['desktop_login_code'],
     stripAfterCapture: true

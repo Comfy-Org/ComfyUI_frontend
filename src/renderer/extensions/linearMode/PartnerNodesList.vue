@@ -4,17 +4,24 @@ import {
   CollapsibleRoot,
   CollapsibleTrigger
 } from 'reka-ui'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import Popover from '@/components/ui/Popover.vue'
-import { useCreditsBadgesInGraph } from '@/composables/node/usePriceBadge'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import PartnerNodeItem from '@/renderer/extensions/linearMode/PartnerNodeItem.vue'
+import { graphCreditsBadges } from '@/systems/badgeSystem'
 
 defineProps<{ mobile?: boolean }>()
 
-const creditsBadges = useCreditsBadgesInGraph()
 const { t } = useI18n()
+const canvasStore = useCanvasStore()
+
+const creditsBadges = computed(() => {
+  const rootGraph = canvasStore.currentGraph?.rootGraph
+  return rootGraph ? graphCreditsBadges(rootGraph) : []
+})
 </script>
 <template>
   <Popover v-if="mobile && creditsBadges.length" side="top">
@@ -27,8 +34,8 @@ const { t } = useI18n()
       class="max-h-(--reka-popover-content-available-height) scroll-shadows-comfy-menu-bg overflow-y-auto"
     >
       <PartnerNodeItem
-        v-for="[title, price, key] in creditsBadges"
-        :key
+        v-for="{ nodeId, title, price } in creditsBadges"
+        :key="nodeId"
         :title
         :price
       />
@@ -36,8 +43,8 @@ const { t } = useI18n()
   </Popover>
   <div v-else-if="creditsBadges.length === 1">
     <PartnerNodeItem
-      v-for="[title, price, key] in creditsBadges"
-      :key
+      v-for="{ nodeId, title, price } in creditsBadges"
+      :key="nodeId"
       :title
       :price
       class="border-t border-border-subtle pt-2"
@@ -59,8 +66,8 @@ const { t } = useI18n()
     </CollapsibleTrigger>
     <CollapsibleContent class="scroll-shadows-comfy-menu-bg overflow-y-auto">
       <PartnerNodeItem
-        v-for="[title, price, key] in creditsBadges"
-        :key
+        v-for="{ nodeId, title, price } in creditsBadges"
+        :key="nodeId"
         :title
         :price
       />

@@ -139,12 +139,24 @@ test.describe(
         await setCanvasOffsetX(comfyPage.page, -100_000)
 
         await expect
+          .poll(() => comfyPage.vueNodes.getNodeCount())
+          .toBeLessThan(245)
+        await expect
           .poll(() => sourceElement.evaluate((element) => element.isConnected))
           .toBe(true)
+
+        await comfyPage.page.locator('#graph-canvas').press('Escape')
       } finally {
         await comfyPage.page.mouse.up()
       }
 
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(
+            () => window.app!.canvas.linkConnector.isConnecting
+          )
+        )
+        .toBe(false)
       await expect
         .poll(() => sourceElement.evaluate((element) => element.isConnected))
         .toBe(false)

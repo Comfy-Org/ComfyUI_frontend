@@ -734,6 +734,7 @@ type BillingFailureCategory =
   | 'provider_decline'
   | 'redirect'
   | 'poll_timeout'
+  | 'reconciliation_needed'
   | 'stale_operation'
   | 'rendering'
   | 'unknown'

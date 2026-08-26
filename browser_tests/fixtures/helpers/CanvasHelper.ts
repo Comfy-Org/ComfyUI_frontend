@@ -121,7 +121,7 @@ export class CanvasHelper {
    */
   async mouseDblclickAt(position: Position): Promise<void> {
     const abs = await this.toAbsolute(position)
-    await this.page.mouse.dblclick(abs.x, abs.y)
+    await this.page.mouse.dblclick(abs.x, abs.y, { delay: 5 })
     await nextFrame(this.page)
   }
 
@@ -133,7 +133,7 @@ export class CanvasHelper {
   async dragAndDrop(source: Position, target: Position): Promise<void> {
     await this.page.mouse.move(source.x, source.y)
     await this.page.mouse.down()
-    await this.page.mouse.move(target.x, target.y, { steps: 100 })
+    await this.page.mouse.move(target.x, target.y, { steps: 20 })
     await this.page.mouse.up()
     await nextFrame(this.page)
   }

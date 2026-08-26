@@ -38,6 +38,11 @@ export interface ModelLaunchHero {
   // never fetch videoSrc. Opt-in: pages that omit it keep playing the video
   // at every viewport size, as they did before this field existed.
   mobileFallbackImageSrc?: string
+  // Lightweight encode played below the 768px breakpoint in place of videoSrc,
+  // for pages whose full clip is too heavy for phones. Once the client mounts
+  // it wins over mobileFallbackImageSrc, which keeps covering SSR and the
+  // first client tick.
+  mobileVideoSrc?: string
   // 'content-first' puts the badges, heading, CTAs and prompt bar above the
   // video. 'media-first' leads with the video, which is how /minimax reads.
   // 'overlay' centres the eyebrow, heading and CTAs on top of the media behind

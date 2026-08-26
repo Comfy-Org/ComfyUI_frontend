@@ -3,7 +3,7 @@
     ref="viewportRef"
     tabindex="0"
     data-testid="layer-editor-viewport"
-    class="relative min-h-0 min-w-0 flex-1 touch-none overflow-hidden bg-base-background outline-none"
+    class="focus-visible:ring-ring relative min-h-0 min-w-0 flex-1 touch-none overflow-hidden bg-base-background outline-none focus-visible:ring-1"
     :style="{ cursor: viewportCursor }"
     @pointerdown="session.onPointerDown"
     @pointermove="session.onPointerMove"
@@ -67,7 +67,9 @@ const checkerboardStyle = {
 }
 
 let firstLayout = true
-useResizeObserver(viewportRef, () => {
+useResizeObserver(viewportRef, (entries) => {
+  const rect = entries[0]?.contentRect
+  if (!rect?.width || !rect?.height) return
   if (firstLayout) {
     firstLayout = false
     session.fitView()

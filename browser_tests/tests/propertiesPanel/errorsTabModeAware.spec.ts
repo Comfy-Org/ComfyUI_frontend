@@ -313,13 +313,13 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       await expect(
         strip,
         'The strip count is scoped to the selection, diverging from the global reference badge'
-      ).toContainText('1 error')
+      ).toContainText('1 issue')
 
       await comfyPage.canvas.click()
       await expect(
         strip,
         'Deselecting swaps the always-visible strip back to the summary'
-      ).toContainText('2 nodes — 1 error')
+      ).toContainText('2 nodes — 1 item')
       await expectReferenceBadge(missingModelGroup, 2)
     })
   })
@@ -421,12 +421,12 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
         TestIds.propertiesPanel.selectionContextStrip
       )
       await expect(strip).toBeVisible()
-      await expect(strip).toContainText('1 error')
+      await expect(strip).toContainText('1 issue')
       await expect(mediaRows).toHaveCount(2)
 
       await comfyPage.canvas.click({ position: { x: 400, y: 600 } })
       // Deselecting swaps the always-visible strip back to the summary
-      await expect(strip).toContainText('2 nodes — 2 errors')
+      await expect(strip).toContainText('2 nodes — 2 items')
       await expect(mediaRows).toHaveCount(2)
     })
   })
@@ -451,7 +451,7 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       )
       await expect(missingNodeCard).toBeVisible()
       await expect(mediaRow).toBeVisible()
-      await expect(strip).toContainText('2 nodes — 2 errors')
+      await expect(strip).toContainText('2 nodes — 2 items')
 
       const mediaNode = await comfyPage.nodeOps.getNodeRefById('10')
       // The node sits near the canvas top where overlays intercept clicks
@@ -463,14 +463,14 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       await expect(missingNodeCard).toBeHidden()
       await expect(mediaRow).toBeVisible()
       await expect(mediaRow).toHaveAttribute('aria-current', 'true')
-      await expect(strip).toContainText('1 error')
+      await expect(strip).toContainText('1 issue')
 
       await comfyPage.canvas.click({ position: { x: 400, y: 600 } })
       // Emphasis ends: the collapsed group re-expands and the strip
       // returns to the workflow summary
       await expect(missingNodeCard).toBeVisible()
       await expect(mediaRow).not.toHaveAttribute('aria-current', 'true')
-      await expect(strip).toContainText('2 nodes — 2 errors')
+      await expect(strip).toContainText('2 nodes — 2 items')
     })
   })
 
@@ -628,9 +628,8 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
 
     promotedModelTest(
       'Refreshing a resolved promoted missing model clears the combo invalid state',
-      { tag: ['@widget', '@subgraph'] },
+      { tag: ['@widget', '@subgraph', '@vue-nodes'] },
       async ({ comfyPage }) => {
-        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
         await loadWorkflowAndOpenErrorsTab(
           comfyPage,
           NESTED_PROMOTED_MISSING_MODEL_WORKFLOW.workflowName
@@ -865,10 +864,10 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
     test('Entering a bypassed subgraph does not resurface interior missing model error', async ({
       comfyPage
     }) => {
-      // Regression: useGraphNodeManager replays graph.onNodeAdded for
-      // each interior node on subgraph entry; without an ancestor-aware
-      // guard in scanSingleNodeErrors, that re-scan reintroduced the
-      // error that the initial pipeline had correctly suppressed.
+      // Regression: entering a bypassed subgraph re-scans its interior
+      // nodes; without an ancestor-aware guard in scanSingleNodeErrors,
+      // that re-scan reintroduced the error the initial pipeline had
+      // correctly suppressed.
       await comfyPage.workflow.loadWorkflow(
         'missing/missing_models_in_bypassed_subgraph'
       )

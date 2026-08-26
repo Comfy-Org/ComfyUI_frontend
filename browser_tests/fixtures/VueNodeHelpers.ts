@@ -58,6 +58,22 @@ export class VueNodeHelpers {
     )
   }
 
+  getOutputSlotRow(nodeId: string, slotIndex: number): Locator {
+    return this.getNodeLocator(nodeId)
+      .locator('.lg-slot--output')
+      .filter({
+        has: this.page.locator(
+          `[data-slot-key="${getSlotKey(toNodeId(nodeId), slotIndex, false)}"]`
+        )
+      })
+  }
+
+  getOutputSlotConnectionDot(nodeId: string, slotIndex: number): Locator {
+    return this.getOutputSlotRow(nodeId, slotIndex).getByTestId(
+      TestIds.node.slotConnectionDot
+    )
+  }
+
   /**
    * Get locator for Vue nodes by the node's title (displayed name in the header).
    * Matches against the actual title element, not the full node body.
@@ -97,7 +113,10 @@ export class VueNodeHelpers {
         const node = window.app?.canvas.graph?.getNodeById(id)
         if (!node) throw new Error(`Node ${id} not found`)
 
-        node.setSize([node.size[0] + growth[0], node.size[1] + growth[1]])
+        node.setSize([
+          node.renderingSize[0] + growth[0],
+          node.renderingSize[1] + growth[1]
+        ])
         return window.app!.canvas.ds.scale
       },
       { id: toNodeId(nodeId), growth: GRAPH_SIZE_GROWTH }

@@ -6,6 +6,7 @@ import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { testI18n } from '@/components/searchbox/v2/__test__/testUtils'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
@@ -220,7 +221,7 @@ describe('ErrorGroupList selection emphasis', () => {
       unknown
     >([SAMPLER_NODE])
     await waitFor(() => {
-      expect(strip).toHaveTextContent('SamplerNode — 1 error')
+      expect(strip).toHaveTextContent('SamplerNode — 1 issue')
     })
 
     canvasStore.selectedItems = fromAny<
@@ -228,13 +229,40 @@ describe('ErrorGroupList selection emphasis', () => {
       unknown
     >([SAMPLER_NODE, LOADER_NODE])
     await waitFor(() => {
-      expect(strip).toHaveTextContent('2 nodes selected — 2 errors')
+      expect(strip).toHaveTextContent('2 nodes selected — 2 issues')
     })
 
     canvasStore.selectedItems = []
     await waitFor(() => {
       expect(strip).toHaveTextContent('2 nodes — 2 errors')
     })
+  })
+
+  it('labels a missing-only selection as an issue', async () => {
+    const pinia = createPinia()
+    useMissingModelStore(pinia).setMissingModels([
+      {
+        nodeId: '1',
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: 'ckpt_name',
+        name: 'missing.safetensors',
+        isMissing: true,
+        isAssetSupported: false
+      }
+    ])
+    renderList(pinia)
+    const canvasStore = useCanvasStore(pinia)
+
+    canvasStore.selectedItems = fromAny<
+      typeof canvasStore.selectedItems,
+      unknown
+    >([SAMPLER_NODE])
+
+    const strip = screen.getByTestId('selection-context-strip')
+    await waitFor(() => {
+      expect(strip).toHaveTextContent('SamplerNode — 1 issue')
+    })
+    expect(strip).not.toHaveTextContent(/\berrors?\b/i)
   })
 
   it('preserves special characters in execution item accessible names', () => {

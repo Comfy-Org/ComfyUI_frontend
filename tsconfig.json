@@ -54,5 +54,6 @@
     "vite.config.mts",
     "vitest.config.ts"
     // "vitest.setup.ts",
-  ]
+  ],
+  "exclude": ["src/__ecs_matrix__"]
 }

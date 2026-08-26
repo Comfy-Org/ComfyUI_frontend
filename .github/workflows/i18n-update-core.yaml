@@ -4,11 +4,6 @@ name: 'i18n: Update Core'
 on:
   # Manual dispatch for urgent translation updates
   workflow_dispatch:
-    inputs:
-      allow_prune:
-        description: 'Confirm deletions larger than the prune threshold'
-        type: boolean
-        default: false
   # Trigger on PRs to main and to release branches (core/x.y, cloud/x.y).
   # Release branches need this so translations for backported locale keys are
   # regenerated and baked into the version-bump PR, mirroring main. Additional
@@ -60,7 +55,7 @@ jobs:
         # the manifest even when another file fails) still get committed; the
         # final step re-surfaces the failure
         continue-on-error: true
-        run: pnpm locale ${{ inputs.allow_prune == true && '--allow-prune' || '' }} && pnpm format
+        run: pnpm locale && pnpm format
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       - name: Commit updated locales

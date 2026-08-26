@@ -1,6 +1,5 @@
 import { useRoute, useRouter } from 'vue-router'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
 import {
   clearPreservedQuery,
   hydratePreservedQuery,
@@ -8,7 +7,7 @@ import {
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useTelemetry } from '@/platform/telemetry'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useDialogService } from '@/services/dialogService'
 
 const NAMESPACE = PRESERVED_QUERY_NAMESPACES.TOPUP
@@ -17,18 +16,16 @@ const NAMESPACE = PRESERVED_QUERY_NAMESPACES.TOPUP
  * Opens the credit top-up dialog from a `?topup=1` deep link, to send existing
  * paid users straight to buying more credits (lifecycle emails).
  *
- * Gated to users who can top up (`canTopUp`: personal users and team owners);
- * a team member is a silent no-op with the param stripped. A lapsed or
- * free-tier user falls through to the subscription-required paywall inside
- * `showTopUpCreditsDialog`, keeping them in the purchase funnel. Survives the
- * login redirect via the preserved-query system, like the pricing URL loader.
+ * Gated to users who can top up; an ineligible user is a silent no-op with the
+ * param stripped. Survives the login redirect via the preserved-query system,
+ * like the pricing URL loader.
  */
 export function useTopUpUrlLoader() {
   const route = useRoute()
   const router = useRouter()
   const dialogService = useDialogService()
-  const billingContext = useBillingContext()
-  const { permissions } = useWorkspaceUI()
+  const { canTopUp, canSubscribeSelfServe, initialize } =
+    useBillingCapabilities()
   const telemetry = useTelemetry()
 
   /** Reads `?topup=`, strips it, and opens the dialog when the gate allows. */
@@ -39,9 +36,11 @@ export function useTopUpUrlLoader() {
     const param = query.topup
     if (param === undefined) return
 
+    const shouldOpen = typeof param === 'string' && param.length > 0
+    if (shouldOpen) await initialize()
+
     // Strip any present topup param (even ineligible or malformed values) and
-    // write the clean URL in a single replace before any await, so a clean URL
-    // is guaranteed even if the replace rejects or the gate later denies.
+    // write the clean URL in a single replace once capability loading settles.
     const cleanQuery = { ...query }
     delete cleanQuery.topup
     router.replace({ query: cleanQuery }).catch((error) => {
@@ -51,36 +50,11 @@ export function useTopUpUrlLoader() {
 
     // Only a non-empty string value opens the dialog; an empty/array param
     // just gets stripped above.
-    if (typeof param !== 'string' || !param) return
+    if (!shouldOpen) return
 
-    // canTopUp derives from workspace type/role, which WorkspaceAuthGate
-    // resolves before the app mounts, so it is readable synchronously here.
-    if (!permissions.value.canTopUp) return
+    if (!canTopUp.value && !canSubscribeSelfServe.value) return
 
-    // showTopUpCreditsDialog reads isActiveSubscription synchronously to pick
-    // between the top-up dialog and the paywall; billing init on boot is
-    // fire-and-forget, so await a status fetch to make that read reflect the
-    // server before deciding.
-    await billingContext.fetchStatus()
-
-    // A null subscription means the status fetch did not resolve the state:
-    // the legacy adapter swallows fetch failures instead of rejecting, leaving
-    // a possibly-subscribed user indistinguishable from an unknown one. Bail
-    // rather than route them to the paywall on that ambiguity. A definitively
-    // free or lapsed user keeps a non-null subscription (tier 'FREE' on legacy,
-    // a populated status object on workspace), so they still fall through to
-    // the paywall below; only a never-subscribed legacy user with no tier at
-    // all overlaps with the swallowed-failure case guarded here.
-    if (!billingContext.subscription.value) return
-
-    // Emit deep_link only for opens of the real top-up dialog, matching the
-    // other sources whose buttons render only for active paid users. This is
-    // the negation of the paywall gate in showTopUpCreditsDialog
-    // (dialogService.ts); keep the two in sync.
-    const willOpenTopUpMode =
-      billingContext.isActiveSubscription.value &&
-      !billingContext.isFreeTier.value
-    if (willOpenTopUpMode) {
+    if (canTopUp.value) {
       telemetry?.trackAddApiCreditButtonClicked({ source: 'deep_link' })
     }
 

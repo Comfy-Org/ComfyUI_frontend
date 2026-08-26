@@ -49,6 +49,9 @@ const TOUR_FEATURE_FLAGS: RemoteConfig = {
 
 const ACTIVE_SUBSCRIPTION: BillingStatusResponse = {
   is_active: true,
+  max_seats: 1,
+  occupied_seats: 1,
+  team_credit_stop: null,
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY',
   renewal_date: '2099-01-01',
@@ -57,6 +60,9 @@ const ACTIVE_SUBSCRIPTION: BillingStatusResponse = {
 
 const INACTIVE_SUBSCRIPTION: BillingStatusResponse = {
   is_active: false,
+  max_seats: 1,
+  occupied_seats: 1,
+  team_credit_stop: null,
   subscription_tier: 'FREE',
   subscription_duration: 'MONTHLY',
   has_funds: false

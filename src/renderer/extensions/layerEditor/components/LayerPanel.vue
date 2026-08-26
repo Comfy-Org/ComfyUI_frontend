@@ -8,13 +8,18 @@
       </span>
     </div>
 
-    <div class="min-h-0 flex-1 overflow-y-auto">
+    <div class="min-h-0 flex-1 overflow-y-auto" @dragleave="onListDragLeave">
       <div
         v-for="node in rows"
         :key="node.id"
-        :class="rowClass(isRowSelected(node.id))"
+        :class="cn(rowClass(isRowSelected(node.id)), dropHintClass(node.id))"
         data-testid="layer-panel-row"
+        :draggable="renamingId !== node.id"
         @click="onRowClick(node.id, $event)"
+        @dragstart="onRowDragStart(node.id, $event)"
+        @dragover="onRowDragOver(node.id, $event)"
+        @drop="onRowDrop(node.id, $event)"
+        @dragend="endDrag"
       >
         <button
           :class="eyeButtonClass(node.visible)"
@@ -34,7 +39,7 @@
           <input
             v-if="renamingId === node.id"
             :ref="focusInput"
-            class="min-w-0 rounded-sm border border-border-default bg-base-background px-1 text-xs text-base-foreground"
+            class="min-w-0 rounded-sm border border-border-default bg-base-background px-1 text-xs text-base-foreground select-text"
             :value="node.name"
             @blur="commitRename(node.id, $event)"
             @keydown.enter="commitRename(node.id, $event)"
@@ -115,6 +120,11 @@ import { computed, ref, watch } from 'vue'
 import type { ComponentPublicInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import type { LayerDropPos } from '@/renderer/extensions/layerEditor/composables/layerPanelDnd'
+import {
+  dropPositionFor,
+  reorderDropIndex
+} from '@/renderer/extensions/layerEditor/composables/layerPanelDnd'
 import { DEFAULT_BACKGROUND_COLOR } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
 import type { LayerEditorSession } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
 import type {
@@ -167,7 +177,7 @@ function isRowSelected(id: string): boolean {
 
 function rowClass(selected: boolean, extra?: string): string {
   return cn(
-    'group flex cursor-pointer items-center gap-2 border-border-default px-2 py-1.5',
+    'group relative flex cursor-pointer items-center gap-2 border-border-default px-2 py-1.5 select-none',
     'hover:bg-secondary-background-hover',
     selected && 'bg-secondary-background-selected',
     extra
@@ -186,6 +196,66 @@ function eyeIconClass(visible: boolean): string {
     'size-4',
     visible ? 'icon-[lucide--eye]' : 'icon-[lucide--eye-off] opacity-50'
   )
+}
+
+const dragId = ref<string | null>(null)
+const dropHint = ref<{ id: string; pos: LayerDropPos } | null>(null)
+
+function endDrag(): void {
+  dragId.value = null
+  dropHint.value = null
+}
+
+function dropHintClass(id: string): string {
+  const hint = dropHint.value
+  if (hint?.id !== id) return ''
+  return hint.pos === 'above'
+    ? "before:absolute before:inset-x-0 before:top-0 before:h-0.5 before:bg-base-foreground before:content-['']"
+    : "after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-base-foreground after:content-['']"
+}
+
+function onRowDragStart(id: string, e: DragEvent): void {
+  dragId.value = id
+  if (e.dataTransfer) {
+    e.dataTransfer.effectAllowed = 'move'
+    // Firefox refuses to start the drag without data; empty keeps text
+    // inputs from receiving the layer id on a stray drop.
+    e.dataTransfer.setData('text/plain', '')
+  }
+}
+
+function onRowDragOver(id: string, e: DragEvent): void {
+  if (!dragId.value || dragId.value === id) return
+  e.preventDefault()
+  if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'
+  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+  const ratio = rect.height > 0 ? (e.clientY - rect.top) / rect.height : 0.5
+  const pos = dropPositionFor(ratio)
+  if (dropHint.value?.id !== id || dropHint.value?.pos !== pos)
+    dropHint.value = { id, pos }
+}
+
+function onRowDrop(id: string, e: DragEvent): void {
+  const dragged = dragId.value
+  const hint = dropHint.value
+  if (!dragged || hint?.id !== id) {
+    endDrag()
+    return
+  }
+  e.preventDefault()
+  const toIndex = reorderDropIndex(
+    imageLayers.value.map((n) => n.id),
+    id,
+    hint.pos,
+    backgroundLayer.value ? 1 : 0
+  )
+  if (toIndex !== null) session.moveLayerTo(dragged, toIndex)
+  endDrag()
+}
+
+function onListDragLeave(e: DragEvent): void {
+  const container = e.currentTarget as HTMLElement
+  if (!container.contains(e.relatedTarget as Node | null)) dropHint.value = null
 }
 
 function onRowClick(id: string, e: MouseEvent): void {

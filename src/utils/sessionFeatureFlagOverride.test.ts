@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 
@@ -28,10 +28,6 @@ describe('getSessionOverride', () => {
   beforeEach(() => {
     mockDistribution.isCloud = true
     mockCurrentUser.value = COMFY_EMPLOYEE
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   it('reads a bare flag as boolean true', () => {

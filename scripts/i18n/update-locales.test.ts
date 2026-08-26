@@ -25,7 +25,7 @@ import {
 import {
   assembleLeafTranslations,
   buildTranslationItems,
-  exceedsPruneThreshold
+  formatPruneSummary
 } from './update-locales'
 
 const locale: OutputLocale = { code: 'xx', name: 'Test Language' }
@@ -486,13 +486,15 @@ describe('validateLocale', () => {
   })
 })
 
-describe('exceedsPruneThreshold', () => {
-  it('permits small cleanups and refuses large shrinks', () => {
-    expect(exceedsPruneThreshold(0, 0)).toBe(false)
-    expect(exceedsPruneThreshold(79, 13557)).toBe(false)
-    expect(exceedsPruneThreshold(25, 100)).toBe(false)
-    expect(exceedsPruneThreshold(62, 124)).toBe(true)
-    expect(exceedsPruneThreshold(500, 9082)).toBe(true)
+describe('formatPruneSummary', () => {
+  it('reports all source deletions without blocking on their size', () => {
+    expect(formatPruneSummary('main.json', 0, 100)).toBeUndefined()
+    expect(formatPruneSummary('main.json', 1, 100)).toBe(
+      'WARNING: main.json: 1 of 100 English keys deleted; matching locale keys will be pruned.'
+    )
+    expect(formatPruneSummary('nodeDefs.json', 387, 9082)).toBe(
+      'WARNING: nodeDefs.json: 387 of 9082 English keys deleted; matching locale keys will be pruned.'
+    )
   })
 })
 

@@ -299,6 +299,27 @@ describe('heuristicRoles', () => {
     ).toBeNull()
   })
 
+  it('ignores input-name evidence from a virtual consumer', () => {
+    const graph = createTestRootGraph()
+    addWiredSink(graph)
+    const candidate = addNode(graph, 'PrimitiveStringMultiline', {
+      prompts: ['value'],
+      outputs: ['STRING']
+    })
+    const virtualConsumer = addNode(graph, 'Reroute', {
+      inputs: ['positive'],
+      inputType: 'STRING',
+      virtual: true
+    })
+    addNode(graph, 'PrimitiveStringMultiline', { prompts: ['value'] })
+    candidate.connect(0, virtualConsumer, 0)
+
+    expect(
+      heuristicRoles(graph)?.prompt,
+      'a virtual consumer cannot turn an otherwise ambiguous text node into the positive prompt'
+    ).toBeNull()
+  })
+
   it('ignores a system prompt the same way it ignores a negative one', () => {
     const graph = createTestRootGraph()
     addWiredSink(graph)

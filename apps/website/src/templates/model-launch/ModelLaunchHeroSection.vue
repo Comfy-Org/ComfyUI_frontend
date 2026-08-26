@@ -20,12 +20,19 @@ const { locale = 'en', hero } = defineProps<{
 // SSR (and the first client tick, before onMounted) has no reliable viewport
 // to check, so it renders as if mobile: no <video> tag reaches the page at
 // all, meaning phones never start fetching hero.videoSrc. Only once mounted
-// on a >=768px viewport does the video swap in for the still.
+// on a >=768px viewport does the full video swap in; below that, phones play
+// hero.mobileVideoSrc when the page ships one, or keep the still when not.
 const isMounted = useMounted()
 const isDesktopViewport = useMediaQuery('(min-width: 768px)')
+const hasMobileMedia = Boolean(
+  hero.mobileVideoSrc || hero.mobileFallbackImageSrc
+)
 const showVideo = computed(
+  () => !hasMobileMedia || (isMounted.value && isDesktopViewport.value)
+)
+const showMobileVideo = computed(
   () =>
-    !hero.mobileFallbackImageSrc || (isMounted.value && isDesktopViewport.value)
+    Boolean(hero.mobileVideoSrc) && isMounted.value && !isDesktopViewport.value
 )
 
 // 'overlay' is the announcement treatment: media, scrim and content stacked in
@@ -56,6 +63,13 @@ const isContentFirst = hero.layout === 'content-first'
           v-if="showVideo"
           :locale
           :src="hero.videoSrc"
+          autoplay
+          loop
+        />
+        <VideoPlayer
+          v-else-if="showMobileVideo"
+          :locale
+          :src="hero.mobileVideoSrc"
           autoplay
           loop
         />
@@ -121,6 +135,7 @@ const isContentFirst = hero.layout === 'content-first'
           <Badge
             v-for="badgeKey in hero.badgeKeys"
             :key="badgeKey"
+            data-testid="model-launch-hero-badge"
             variant="subtle"
           >
             {{ t(badgeKey, locale) }}
@@ -142,6 +157,14 @@ const isContentFirst = hero.layout === 'content-first'
         v-if="showVideo"
         :locale
         :src="hero.videoSrc"
+        :poster="hero.posterSrc"
+        autoplay
+        loop
+      />
+      <VideoPlayer
+        v-else-if="showMobileVideo"
+        :locale
+        :src="hero.mobileVideoSrc"
         :poster="hero.posterSrc"
         autoplay
         loop
@@ -210,6 +233,7 @@ const isContentFirst = hero.layout === 'content-first'
         <Badge
           v-for="badgeKey in hero.badgeKeys"
           :key="badgeKey"
+          data-testid="model-launch-hero-badge"
           variant="subtle"
         >
           {{ t(badgeKey, locale) }}

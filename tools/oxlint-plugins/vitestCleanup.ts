@@ -5,8 +5,13 @@ const REDUNDANT_CLEANUP_METHODS = new Set([
   'unstubAllEnvs',
   'unstubAllGlobals'
 ])
+const REDUNDANT_TIMER_CLEANUP_METHODS = new Set([
+  'clearAllTimers',
+  'useRealTimers'
+])
 
 const MODULE_SCOPE_MOCK_METHODS = new Set(['spyOn', 'stubGlobal'])
+const AFTER_EACH_IMPORTS = new Set(['afterEach'])
 const BEFORE_ALL_IMPORTS = new Set(['beforeAll'])
 const HOOK_IMPORTS = new Set([
   'afterAll',
@@ -265,14 +270,18 @@ export const noRedundantVitestCleanup = {
         const methodName = vitestMethodName(context, node)
         if (
           !methodName ||
-          !REDUNDANT_CLEANUP_METHODS.has(methodName) ||
-          !runsDirectlyInHook(context, node)
+          !(
+            (REDUNDANT_CLEANUP_METHODS.has(methodName) &&
+              runsDirectlyInHook(context, node)) ||
+            (REDUNDANT_TIMER_CLEANUP_METHODS.has(methodName) &&
+              runsDirectlyInHook(context, node, AFTER_EACH_IMPORTS))
+          )
         ) {
           return
         }
         context.report({
           node,
-          message: `vi.${methodName}() is redundant in a Vitest hook because Vitest performs this cleanup automatically.`
+          message: `vi.${methodName}() is redundant in a Vitest hook because the project test setup performs this cleanup automatically.`
         })
       }
     }

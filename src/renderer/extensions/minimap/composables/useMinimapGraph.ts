@@ -12,8 +12,6 @@ import { useExecutionStore } from '@/stores/executionStore'
 import type { UpdateFlags } from '../types'
 
 interface GraphCallbacks {
-  onNodeAdded?: (node: LGraphNode) => void
-  onNodeRemoved?: (node: LGraphNode) => void
   onConnectionChange?: (node: LGraphNode) => void
 }
 
@@ -74,7 +72,7 @@ function computeGraphDigests(graph: LGraph): GraphDigests {
 
   for (const node of graph._nodes) {
     const [x, y] = node.pos
-    const [width, height] = node.size
+    const [width, height] = node.renderingSize
     geometry = mixIn(geometry, quantise(x))
     geometry = mixIn(geometry, quantise(y))
     geometry = mixIn(geometry, quantise(width))
@@ -153,9 +151,7 @@ export function useMinimapGraph(
     originals: GraphCallbacks
     wrappers: GraphCallbacks
     live: boolean
-    onPropertyChanged: (
-      e: CustomEvent<LGraphEventMap['node:property:changed']>
-    ) => void
+    disposeListeners: () => void
   }
   const hooksMap = new Map<string, InstalledHooks>()
 
@@ -168,11 +164,23 @@ export function useMinimapGraph(
     if (!g || hooksMap.has(g.id)) return
 
     const originals: GraphCallbacks = {
-      onNodeAdded: g.onNodeAdded,
-      onNodeRemoved: g.onNodeRemoved,
       onConnectionChange: g.onConnectionChange
     }
     const wrappers: GraphCallbacks = {}
+
+    const onNodeAdded = () => void handleGraphChangedThrottled()
+
+    const onNodeRemoved = () => {
+      void handleGraphChangedThrottled()
+    }
+
+    // A reload of the same workflow leaves the node count and every geometry
+    // string identical, so change detection alone cannot tell that `bounds` was
+    // last derived mid-configure, from a partially built graph.
+    const onConfigured = () => {
+      clearCache()
+      void handleGraphChangedThrottled()
+    }
 
     const onPropertyChanged = (
       e: CustomEvent<LGraphEventMap['node:property:changed']>
@@ -191,24 +199,14 @@ export function useMinimapGraph(
       originals,
       wrappers,
       live: true,
-      onPropertyChanged
+      disposeListeners: () => {
+        g.events.removeEventListener('node:added', onNodeAdded)
+        g.events.removeEventListener('node:removed', onNodeRemoved)
+        g.events.removeEventListener('configured', onConfigured)
+        g.events.removeEventListener('node:property:changed', onPropertyChanged)
+      }
     }
     hooksMap.set(g.id, entry)
-
-    wrappers.onNodeAdded = useChainCallback(originals.onNodeAdded, function () {
-      if (!entry.live) return
-      void handleGraphChangedThrottled()
-    })
-    g.onNodeAdded = wrappers.onNodeAdded
-
-    wrappers.onNodeRemoved = useChainCallback(
-      originals.onNodeRemoved,
-      function () {
-        if (!entry.live) return
-        void handleGraphChangedThrottled()
-      }
-    )
-    g.onNodeRemoved = wrappers.onNodeRemoved
 
     wrappers.onConnectionChange = useChainCallback(
       originals.onConnectionChange,
@@ -219,6 +217,9 @@ export function useMinimapGraph(
     )
     g.onConnectionChange = wrappers.onConnectionChange
 
+    g.events.addEventListener('node:added', onNodeAdded)
+    g.events.addEventListener('node:removed', onNodeRemoved)
+    g.events.addEventListener('configured', onConfigured)
     g.events.addEventListener('node:property:changed', onPropertyChanged)
   }
 
@@ -229,16 +230,9 @@ export function useMinimapGraph(
     if (!entry) return
     const { originals, wrappers } = entry
 
-    if (g.onNodeAdded === wrappers.onNodeAdded)
-      g.onNodeAdded = originals.onNodeAdded
-    if (g.onNodeRemoved === wrappers.onNodeRemoved)
-      g.onNodeRemoved = originals.onNodeRemoved
     if (g.onConnectionChange === wrappers.onConnectionChange)
       g.onConnectionChange = originals.onConnectionChange
-    g.events.removeEventListener(
-      'node:property:changed',
-      entry.onPropertyChanged
-    )
+    entry.disposeListeners()
 
     entry.live = false
     hooksMap.delete(g.id)

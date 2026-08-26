@@ -209,8 +209,7 @@ describe('scanNodeMediaCandidates', () => {
     upstream.addOutput('image', 'COMBO')
     graph.add(upstream)
 
-    const node = new LGraphNode('LoadImage')
-    node.type = 'LoadImage'
+    const node = new LGraphNode('LoadImage', 'LoadImage')
     const input = node.addInput('image', 'COMBO')
     const widget = node.addWidget(
       'combo',
@@ -467,8 +466,7 @@ describe('scanNodeMediaCandidates', () => {
 describe('isMissingMediaCandidateScopeActive', () => {
   function createLoadImageGraph() {
     const graph = new LGraph()
-    const node = new LGraphNode('LoadImage')
-    node.type = 'LoadImage'
+    const node = new LGraphNode('LoadImage', 'LoadImage')
     const widget = node.addWidget(
       'combo',
       'image',

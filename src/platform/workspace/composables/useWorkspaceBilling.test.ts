@@ -123,6 +123,7 @@ const activeStatus = {
   max_seats: 73,
   occupied_seats: 72,
   has_funds: true,
+  team_credit_stop: null,
   subscription_status: 'active' as const,
   subscription_tier: 'CREATOR' as const,
   subscription_duration: 'MONTHLY' as const,
@@ -135,6 +136,7 @@ const freeStatus = {
   max_seats: 0,
   occupied_seats: 100,
   has_funds: true,
+  team_credit_stop: null,
   subscription_tier: 'FREE' as const,
   plan_slug: 'free'
 }
@@ -253,9 +255,7 @@ describe('useWorkspaceBilling', () => {
         ...activeStatus,
         billing_rail: 'stripe',
         subscription_status: 'canceled',
-        cancel_at: '2026-06-01T00:00:00Z',
-        scheduled_plan_slug: 'pro-annual',
-        change_at: '2026-07-01T00:00:00Z'
+        cancel_at: '2026-06-01T00:00:00Z'
       })
 
       const billing = setupBilling()
@@ -266,8 +266,6 @@ describe('useWorkspaceBilling', () => {
         tier: 'CREATOR',
         duration: 'MONTHLY',
         planSlug: 'creator-monthly',
-        scheduledPlanSlug: 'pro-annual',
-        changeAt: '2026-07-01T00:00:00Z',
         renewalDate: '2026-05-01T00:00:00Z',
         endDate: '2026-06-01T00:00:00Z',
         isCancelled: true,

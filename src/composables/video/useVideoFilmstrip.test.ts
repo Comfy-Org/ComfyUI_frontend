@@ -188,7 +188,6 @@ describe('useVideoFilmstrip', () => {
     vi.mocked(fetchVideoMetadata).mockResolvedValueOnce({
       fps: 24,
       duration: 10,
-      frame_count: 240,
       width: 512,
       height: 512,
       size: 5 * 1024 * 1024
@@ -219,7 +218,6 @@ describe('useVideoFilmstrip', () => {
     vi.mocked(fetchVideoMetadata).mockResolvedValueOnce({
       fps: 24,
       duration: 8,
-      frame_count: null,
       width: 640,
       height: 360,
       size: 1024

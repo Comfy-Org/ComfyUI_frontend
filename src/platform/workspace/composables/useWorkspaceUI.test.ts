@@ -122,8 +122,7 @@ describe('useWorkspaceUI', () => {
       expect(ui.permissions.value).toMatchObject({
         canManageSubscription: false,
         canManageSubscriptionLifecycle: false,
-        canDowngradeToPersonal: false,
-        canTopUp: false
+        canDowngradeToPersonal: false
       })
       expect(ui.permissions.value.canViewOtherMembers).toBe(false)
       expect(ui.permissions.value.canLeaveWorkspace).toBe(false)
@@ -145,7 +144,6 @@ describe('useWorkspaceUI', () => {
         canManageSubscription: true,
         canManageSubscriptionLifecycle: true,
         canDowngradeToPersonal: false,
-        canTopUp: true,
         canViewOtherMembers: false,
         canViewPendingInvites: false,
         canInviteMembers: false,
@@ -171,8 +169,7 @@ describe('useWorkspaceUI', () => {
         canAccessWorkspaceMenu: true,
         canManageSubscription: false,
         canManageSubscriptionLifecycle: false,
-        canDowngradeToPersonal: false,
-        canTopUp: false
+        canDowngradeToPersonal: false
       })
       expect(ui.uiConfig.value).toMatchObject({
         showEditWorkspaceMenuItem: false,
@@ -260,8 +257,7 @@ describe('useWorkspaceUI', () => {
         canAccessWorkspaceMenu: true,
         canManageSubscription: true,
         canManageSubscriptionLifecycle: true,
-        canDowngradeToPersonal: false,
-        canTopUp: true
+        canDowngradeToPersonal: false
       })
     })
 
@@ -316,8 +312,7 @@ describe('useWorkspaceUI', () => {
         canAccessWorkspaceMenu: true,
         canManageSubscription: false,
         canManageSubscriptionLifecycle: false,
-        canDowngradeToPersonal: false,
-        canTopUp: false
+        canDowngradeToPersonal: false
       })
     })
 

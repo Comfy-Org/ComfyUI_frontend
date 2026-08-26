@@ -41,7 +41,7 @@ interface UseViewportKeepAliveOptions {
   isEnabled?: () => boolean
   getNodeBounds: (nodeId: NodeId) => Bounds | null
   getViewportSize: () => Size
-  getNodeGeometryVersion: () => number
+  getGeometryVersion: () => number
 }
 
 export function getKeepAliveBounds(camera: Camera, viewport: Size): Bounds {
@@ -87,7 +87,7 @@ export function useViewportKeepAlive({
   isEnabled = () => true,
   getNodeBounds,
   getViewportSize,
-  getNodeGeometryVersion
+  getGeometryVersion
 }: UseViewportKeepAliveOptions) {
   const { camera } = useTransformState()
   const activeNodeIds = shallowRef<Set<NodeId>>(new Set())
@@ -166,7 +166,7 @@ export function useViewportKeepAlive({
   // registered nodes must attach on registration, not on the next pan.
   watch(getCullingOptOutVersion, () => void refreshThrottled())
 
-  watch(getNodeGeometryVersion, () => void refreshThrottled())
+  watch(getGeometryVersion, () => void refreshThrottled())
 
   return { activeNodeIds }
 }
