@@ -14,6 +14,7 @@ import { setBackendNodeText, st, t } from '@/i18n'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
+import { createMutationView } from '@/lib/litegraph/src/infrastructure/createMutationView'
 import {
   inputAsSerialisable,
   LGraph,
@@ -54,7 +55,7 @@ import type {
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { toNodeId } from '@/types/nodeId'
-import type { SerializedNodeId } from '@/types/nodeId'
+import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import {
   collectSubgraphDefinitions,
   buildSubgraphExecutionPaths
@@ -110,7 +111,7 @@ import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 import type { ExtensionManager } from '@/types/extensionTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { normalizePromptError } from '@/utils/executionErrorUtil'
-import { graphToPrompt } from '@/utils/executionUtil'
+import { graphToPrompt, unwrapExportedWidgetValue } from '@/utils/executionUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 import { getCnrIdFromProperties } from '@/platform/nodeReplacement/cnrIdUtil'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
@@ -247,6 +248,25 @@ export interface QueuePromptOptions {
   intent?: WorkflowQueueIntent
 }
 
+function createNodeOutputsMutationView(
+  outputs: Record<string, NodeExecutionOutput>,
+  commit: () => void
+): Record<string, NodeExecutionOutput> {
+  const views = new WeakMap<object, object>()
+  const mapNestedValue = (_property: PropertyKey, value: unknown): unknown => {
+    if (value === null || typeof value !== 'object') return value
+    const existing = views.get(value)
+    if (existing) return existing
+    const view = createMutationView(value, {
+      commit,
+      mapValue: mapNestedValue
+    })
+    views.set(value, view)
+    return view
+  }
+  return createMutationView(outputs, { commit, mapValue: mapNestedValue })
+}
+
 export class ComfyApp {
   /**
    * List of entries to queue
@@ -278,7 +298,14 @@ export class ComfyApp {
   api: ComfyApi
   ui: ComfyUI
   extensionManager!: ExtensionManager
-  private _nodeOutputs!: Record<string, NodeExecutionOutput>
+  private readonly nodeOutputsData: Record<string, NodeExecutionOutput> = {}
+  private readonly _nodeOutputs = createNodeOutputsMutationView(
+    this.nodeOutputsData,
+    () => {
+      if (this.vueAppReady)
+        useNodeOutputStore().replaceOutputsFromLegacy(this.nodeOutputsData)
+    }
+  )
   nodePreviewImages: Record<string, string[]>
 
   private rootGraphInternal: LGraph | undefined
@@ -443,9 +470,15 @@ export class ComfyApp {
   }
 
   set nodeOutputs(value) {
-    this._nodeOutputs = value
-    if (this.vueAppReady)
+    if (value !== this._nodeOutputs) {
+      for (const key of Object.keys(this.nodeOutputsData))
+        delete this.nodeOutputsData[key]
+      Object.assign(this.nodeOutputsData, value)
+    }
+    if (this.vueAppReady) {
+      useNodeOutputStore().replaceOutputsFromLegacy(this.nodeOutputsData)
       useExtensionService().invokeExtensions('onNodeOutputsUpdated', value)
+    }
   }
 
   /**
@@ -507,8 +540,7 @@ export class ComfyApp {
     const combinedIndex = imgs ? imgs.length + 2 : 2
 
     // for vueNodes mode
-    const images =
-      node.images ?? useNodeOutputStore().getNodeOutputs(node)?.images
+    const images = useNodeOutputStore().getNodeOutputs(node)?.images
 
     ComfyApp.clipspace = {
       widgets: widgets,
@@ -543,16 +575,11 @@ export class ComfyApp {
       if (ComfyApp.clipspace.imgs && node.imgs) {
         // Update node.images even if it's initially undefined (vueNodes mode)
         if (ComfyApp.clipspace.images) {
-          if (ComfyApp.clipspace['img_paste_mode'] == 'selected') {
-            node.images = [
-              ComfyApp.clipspace.images[ComfyApp.clipspace['selectedIndex']]
-            ]
-          } else {
-            node.images = ComfyApp.clipspace.images
-          }
-
-          if (app.nodeOutputs[node.id + ''])
-            app.nodeOutputs[node.id + ''].images = node.images
+          const images =
+            ComfyApp.clipspace['img_paste_mode'] == 'selected'
+              ? [ComfyApp.clipspace.images[ComfyApp.clipspace['selectedIndex']]]
+              : ComfyApp.clipspace.images
+          useNodeOutputStore().setNodeOutputImages(node, images)
         }
 
         if (ComfyApp.clipspace.imgs) {
@@ -643,8 +670,6 @@ export class ComfyApp {
       }
 
       app.canvas.setDirty(true)
-
-      useNodeOutputStore().updateNodeImages(node)
     }
   }
 
@@ -1653,7 +1678,19 @@ export class ComfyApp {
         workspaceGenerationBeforeAuthentication !==
           executionWorkspaceGeneration) &&
       (isCloud || workspaceIdBeforeAuthentication !== null)
-    if (executionWorkspaceId && !comfyOrgAuthToken) {
+    const comfyOrgApiKey = useApiKeyAuthStore().getApiKey()
+    // An API-key session mints no workspace JWT: the key itself is the
+    // execution credential and the server resolves its bound workspace. Only a
+    // key-authenticated session may pass without a token — a Firebase session
+    // whose token mint failed must still fail closed rather than fall back to
+    // a stored key and charge the key's workspace.
+    const isApiKeySessionExecution =
+      !useAuthStore().currentUser && useApiKeyAuthStore().isAuthenticated
+    if (
+      executionWorkspaceId &&
+      !comfyOrgAuthToken &&
+      !isApiKeySessionExecution
+    ) {
       useDialogService().showErrorDialog(
         new Error(t('toastMessages.userNotAuthenticated')),
         {
@@ -1665,7 +1702,6 @@ export class ComfyApp {
       this.processingQueue = false
       return false
     }
-    const comfyOrgApiKey = useApiKeyAuthStore().getApiKey()
 
     try {
       while (this.queueItems.length) {
@@ -2057,13 +2093,28 @@ export class ComfyApp {
         }
         this.canvas.setGraph(this.rootGraph)
       })
-      if (outcome === 'core-nodes-unavailable') {
-        useToastStore().addAlert(t('toastMessages.a1111CoreNodesUnavailable'))
-        return
-      }
-      if (outcome === 'not-a1111') {
-        this.showErrorOnFileLoad(file)
-        return
+      switch (outcome) {
+        case 'core-nodes-unavailable':
+          useToastStore().addAlert(t('toastMessages.a1111CoreNodesUnavailable'))
+          return
+        case 'not-a1111':
+          this.showErrorOnFileLoad(file)
+          return
+        case 'imported-without-embeddings':
+          useToastStore().add({
+            severity: 'warn',
+            summary: t('g.warning'),
+            detail: t('toastMessages.a1111EmbeddingsUnavailable')
+          })
+          break
+        case 'imported':
+          break
+        default: {
+          const unexpectedOutcome: never = outcome
+          throw new Error(
+            `Unhandled A1111 import outcome: ${unexpectedOutcome}`
+          )
+        }
       }
       await useWorkflowService().afterLoadNewGraph(
         fileName,
@@ -2207,12 +2258,31 @@ export class ComfyApp {
     this.clean()
 
     const ids = Object.keys(apiData)
+    // Export (API) flattens subgraph nodes to ids like "194:45". At the root
+    // graph a colon reads as an execution-id path: Locate walks into node
+    // 194's subgraph and finds nothing, and deleting an unrelated node 194
+    // retires every "194:"-prefixed missing report. Remap such ids to
+    // colon-free local ids before creating nodes.
+    const importedNodeIds = new Map<string, NodeId>()
+    {
+      const taken = new Set(ids.filter((id) => !id.includes(':')))
+      for (const id of ids) {
+        if (!id.includes(':')) {
+          importedNodeIds.set(id, toNodeId(isNaN(+id) ? id : +id))
+          continue
+        }
+        let candidate = id.replaceAll(':', '_')
+        while (taken.has(candidate)) candidate = `${candidate}_`
+        taken.add(candidate)
+        importedNodeIds.set(id, toNodeId(candidate))
+      }
+    }
     const missingNodeTypes: MissingNodeType[] = []
     const nodeReplacementStore = useNodeReplacementStore()
     await nodeReplacementStore.load()
     for (const id of ids) {
       const data = apiData[id]
-      const nodeId = toNodeId(isNaN(+id) ? id : +id)
+      const nodeId = importedNodeIds.get(id) ?? toNodeId(id)
       let node = LiteGraph.createNode(data.class_type)
       let placeholderEntry:
         | Extract<MissingNodeType, { type: string }>
@@ -2231,8 +2301,9 @@ export class ComfyApp {
           if (value instanceof Array) {
             node.addInput(input, '*')
           } else {
-            widgetValues.push(value)
-            widgetValuesNamed[input] = value
+            const widgetValue = unwrapExportedWidgetValue(value) as TWidgetValue
+            widgetValues.push(widgetValue)
+            widgetValuesNamed[input] = widgetValue
           }
         }
         node.last_serialization = {
@@ -2271,7 +2342,7 @@ export class ComfyApp {
 
     const processNodeInputs = (id: string) => {
       const data = apiData[id]
-      const currentNodeId = toNodeId(isNaN(+id) ? id : +id)
+      const currentNodeId = importedNodeIds.get(id) ?? toNodeId(id)
       const node = app.rootGraph.getNodeById(currentNodeId)
       if (!node) return
 
@@ -2279,7 +2350,9 @@ export class ComfyApp {
         const value = data.inputs[input]
         if (value instanceof Array) {
           const [fromId, fromSlot] = value
-          const fromNode = app.rootGraph.getNodeById(toNodeId(fromId))
+          const fromNode = app.rootGraph.getNodeById(
+            importedNodeIds.get(String(fromId)) ?? toNodeId(fromId)
+          )
           if (!fromNode) continue
 
           let toSlot = node.inputs?.findIndex((inp) => inp.name === input) ?? -1
@@ -2306,8 +2379,9 @@ export class ComfyApp {
         } else {
           const widget = node.widgets?.find((w) => w.name === input)
           if (widget) {
-            widget.value = value
-            widget.callback?.(value)
+            const widgetValue = unwrapExportedWidgetValue(value) as TWidgetValue
+            widget.value = widgetValue
+            widget.callback?.(widgetValue)
           }
         }
       }

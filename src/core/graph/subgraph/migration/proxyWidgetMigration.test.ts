@@ -747,6 +747,7 @@ describe('flushProxyWidgetMigration', () => {
         })
 
       const reloadedGraph = new LGraph()
+      serialized.id = reloadedGraph.id
       const subgraph = host.subgraph
       const instanceData = host.serialize()
       LiteGraph.registerNodeType(
@@ -767,7 +768,7 @@ describe('flushProxyWidgetMigration', () => {
       expect(reloadedHost?.properties.proxyWidgets).toBeUndefined()
       expect(
         usePreviewExposureStore().getExposures(
-          host.rootGraph.id,
+          reloadedGraph.id,
           String(host.id)
         )
       ).toEqual([
