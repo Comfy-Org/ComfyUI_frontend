@@ -2,7 +2,11 @@
 import type { GetStaticPaths } from 'astro'
 import BaseLayout from '../../../layouts/BaseLayout.astro'
 import FAQSplit01 from '../../../components/blocks/FAQSplit01.vue'
+import CardWorkflow01 from '../../../components/blocks/CardWorkflow01.vue'
+import BrandButton from '../../../components/common/BrandButton.vue'
+import SectionHeader from '../../../components/common/SectionHeader.vue'
 import ModelHeroSection from '../../../components/models/ModelHeroSection.vue'
+import type { CardWorkflowItem } from '../../../components/blocks/CardWorkflow01.vue'
 import { models, getModelBySlug } from '../../../config/models'
 import { t } from '../../../i18n/translations'
 import {
@@ -28,6 +32,23 @@ if (model.canonicalSlug) {
 }
 
 const { displayName } = model
+const workflowSearchUrl = `https://comfy.org/workflows/?search=${encodeURIComponent(model.name)}`
+const workflowPreview: CardWorkflowItem | undefined = model.thumbnailUrl
+  ? {
+      id: `${model.slug}-workflow`,
+      title: t('models.workflowGallery.cardTitle').replace(
+        '{name}',
+        displayName,
+      ),
+      href: workflowSearchUrl,
+      media: {
+        type: 'image',
+        src: model.thumbnailUrl,
+        alt: `${displayName} workflow preview`,
+      },
+      tags: model.categories,
+    }
+  : undefined
 
 const pageTitle = `${displayName} in ComfyUI`
 const pageDescription = getPageDescription(model)
@@ -69,13 +90,32 @@ const faqPage = modelFaqJsonLd(faqs, jsonLdId(url, 'faq'))
 
   <ModelHeroSection
     displayName={displayName}
-    huggingFaceUrl={model.huggingFaceUrl}
     docsUrl={model.docsUrl}
     blogUrl={model.blogUrl}
     hubSlug={model.hubSlug}
     workflowCount={model.workflowCount}
     directory={model.directory}
   />
+
+  {workflowPreview && (
+    <section class="mx-auto max-w-7xl px-6 py-16 lg:px-8">
+      <div class="flex flex-wrap items-end justify-between gap-6">
+        <SectionHeader
+          label={t('models.workflowGallery.eyebrow')}
+          align="start"
+          maxWidth="xl"
+        >
+          {t('models.workflowGallery.heading').replace('{name}', displayName)}
+        </SectionHeader>
+        <BrandButton href={workflowSearchUrl} variant="outline" size="nav">
+          {t('models.workflowGallery.viewAll')}
+        </BrandButton>
+      </div>
+      <div class="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <CardWorkflow01 item={workflowPreview} variant="compact" />
+      </div>
+    </section>
+  )}
 
   <section class="mx-auto max-w-7xl px-6 py-16 lg:px-8">
     <h2 class="text-2xl font-bold text-primary-comfy-canvas lg:text-3xl">
@@ -94,10 +134,6 @@ const faqPage = modelFaqJsonLd(faqs, jsonLdId(url, 'faq'))
         {t('models.whatIs.tutorialLink')}
       </a>
     )}
-  </section>
-
-  <section>
-    {/* TODO: workflow gallery — pulls from hub API */}
   </section>
 
   <section>

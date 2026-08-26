@@ -4697,6 +4697,22 @@ const translations = {
     en: '{count} workflows use this model',
     'zh-CN': '{count} 个工作流使用此模型'
   },
+  'models.workflowGallery.eyebrow': {
+    en: 'WORKFLOWS',
+    'zh-CN': '工作流'
+  },
+  'models.workflowGallery.heading': {
+    en: 'Workflows using {name}',
+    'zh-CN': '使用 {name} 的工作流'
+  },
+  'models.workflowGallery.cardTitle': {
+    en: '{name} workflow',
+    'zh-CN': '{name} 工作流'
+  },
+  'models.workflowGallery.viewAll': {
+    en: 'VIEW ALL WORKFLOWS',
+    'zh-CN': '查看全部工作流'
+  },
   'models.whatIs.heading': {
     en: 'What is {name}?',
     'zh-CN': '什么是 {name}？'
