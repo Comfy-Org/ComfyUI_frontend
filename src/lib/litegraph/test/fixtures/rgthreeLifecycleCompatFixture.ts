@@ -62,77 +62,103 @@ interface ActiveInstallation extends RgthreeLifecycleInstallation {
   disposed: boolean
 }
 
-const activeInstallations = new WeakMap<CanvasPrototype, ActiveInstallation>()
-const wrapperDepths = new WeakMap<CanvasPrototype, number>()
+interface RgthreeLifecycleRegistry {
+  activeInstallations: WeakMap<CanvasPrototype, ActiveInstallation>
+  wrapperDepths: WeakMap<CanvasPrototype, number>
+}
+
+const registryKey = Symbol.for('comfy.rgthree-lifecycle-compat.registry')
+
+function getRegistry(): RgthreeLifecycleRegistry {
+  const scope = globalThis as typeof globalThis & Record<symbol, unknown>
+  const existing = scope[registryKey]
+  if (existing) return existing as RgthreeLifecycleRegistry
+
+  const registry = {
+    activeInstallations: new WeakMap<CanvasPrototype, ActiveInstallation>(),
+    wrapperDepths: new WeakMap<CanvasPrototype, number>()
+  }
+  scope[registryKey] = registry
+  return registry
+}
 
 export function getRgthreePrototypeWrapperDepth(
   prototype: CanvasPrototype
 ): number {
-  return wrapperDepths.get(prototype) ?? 0
+  return getRegistry().wrapperDepths.get(prototype) ?? 0
 }
 
-export function installRgthreeLifecycleFixture(
-  prototype: CanvasPrototype,
-  host: RgthreeLifecycleHost,
-  scheduler: CleanExtensionScheduler
-): RgthreeLifecycleInstallation {
-  const active = activeInstallations.get(prototype)
-  if (active && !active.disposed) return active
+export function createRgthreeLifecycleInstaller() {
+  return (
+    prototype: CanvasPrototype,
+    host: RgthreeLifecycleHost,
+    scheduler: CleanExtensionScheduler
+  ): RgthreeLifecycleInstallation => {
+    const registry = getRegistry()
+    const active = registry.activeInstallations.get(prototype)
+    if (active && !active.disposed) return active
 
-  const counters = createCounters()
-  counters.registrations++
-  const originalDrawNode = prototype.drawNode
-  const depth = getRgthreePrototypeWrapperDepth(prototype) + 1
-  wrapperDepths.set(prototype, depth)
+    const counters = createCounters()
+    counters.registrations++
+    const originalDrawNode = prototype.drawNode
+    const depth = getRgthreePrototypeWrapperDepth(prototype) + 1
+    registry.wrapperDepths.set(prototype, depth)
 
-  prototype.drawNode = function rgthreeLifecycleDrawNode(node, context) {
-    counters.wrapperCalls++
-    const result = originalDrawNode.call(this, node, context)
-    counters.forwardedCoreDraws++
-
-    if (node.type === 'fixture/label') {
-      counters.labelActivations++
-      for (const line of node.title.split('\n')) {
-        context.measureText(line)
-        counters.labelMeasurements++
+    const wrapper: RgthreeLifecycleCanvas['drawNode'] = function (
+      this: RgthreeLifecycleCanvas,
+      node,
+      context
+    ) {
+      const result = originalDrawNode.call(this, node, context)
+      counters.wrapperCalls++
+      counters.forwardedCoreDraws++
+      if (node.type === 'fixture/label') {
+        counters.labelActivations++
+        for (const line of node.title.split('\n')) {
+          context.measureText(line)
+          counters.labelMeasurements++
+        }
+      } else if (node.type === 'fixture/reroute') {
+        counters.rerouteActivations++
+        readRerouteFacades(node, node.graph, counters)
       }
-    } else if (node.type === 'fixture/reroute') {
-      counters.rerouteActivations++
-      readRerouteFacades(node, node.graph, counters)
+      return result
     }
-    return result
-  }
+    prototype.drawNode = wrapper
 
-  const onRefresh = () => counters.listenerCalls++
-  host.events.addEventListener('fixture:refresh', onRefresh)
-  counters.listenerRegistrations++
-  const cancelTimer = scheduler.setInterval(() => {
-    counters.timerTicks++
-    host.setDirty(true, true)
-    counters.dirtyRequests++
-  }, 250)
-  counters.timerRegistrations++
+    const onRefresh = () => counters.listenerCalls++
+    host.events.addEventListener('fixture:refresh', onRefresh)
+    counters.listenerRegistrations++
+    const cancelTimer = scheduler.setInterval(() => {
+      counters.timerTicks++
+      host.setDirty(true, true)
+      counters.dirtyRequests++
+    }, 250)
+    counters.timerRegistrations++
 
-  const installation: ActiveInstallation = {
-    counters,
-    identity: RGTHREE_LIFECYCLE_FIXTURE_IDENTITY,
-    wrapperDepth: depth,
-    disposed: false,
-    dispose() {
-      if (installation.disposed) return
-      installation.disposed = true
-      prototype.drawNode = originalDrawNode
-      wrapperDepths.set(prototype, depth - 1)
-      host.events.removeEventListener('fixture:refresh', onRefresh)
-      counters.listenerRemovals++
-      cancelTimer()
-      counters.timerCancellations++
-      activeInstallations.delete(prototype)
+    const installation: ActiveInstallation = {
+      counters,
+      identity: RGTHREE_LIFECYCLE_FIXTURE_IDENTITY,
+      wrapperDepth: depth,
+      disposed: false,
+      dispose() {
+        if (installation.disposed) return
+        installation.disposed = true
+        prototype.drawNode = originalDrawNode
+        registry.wrapperDepths.set(prototype, depth - 1)
+        host.events.removeEventListener('fixture:refresh', onRefresh)
+        counters.listenerRemovals++
+        cancelTimer()
+        counters.timerCancellations++
+        registry.activeInstallations.delete(prototype)
+      }
     }
+    registry.activeInstallations.set(prototype, installation)
+    return installation
   }
-  activeInstallations.set(prototype, installation)
-  return installation
 }
+
+export const installRgthreeLifecycleFixture = createRgthreeLifecycleInstaller()
 
 function readRerouteFacades(
   node: LGraphNode,

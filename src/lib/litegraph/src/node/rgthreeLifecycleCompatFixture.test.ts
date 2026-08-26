@@ -8,6 +8,7 @@ import type {
   CleanExtensionScheduler
 } from '@/lib/litegraph/test/fixtures/cleanExtensionCompatFixture'
 import {
+  createRgthreeLifecycleInstaller,
   getRgthreePrototypeWrapperDepth,
   installRgthreeLifecycleFixture,
   RGTHREE_LIFECYCLE_FIXTURE_IDENTITY
@@ -151,14 +152,16 @@ describe('rgthree clean-room lifecycle compatibility fixture', () => {
   it('makes reload idempotent and install/dispose cycles leak-free', () => {
     const setup = createScaleSetup(1)
     const originalDrawNode = TestCanvas.prototype.drawNode
+    const firstModuleInstaller = createRgthreeLifecycleInstaller()
+    const reloadedModuleInstaller = createRgthreeLifecycleInstaller()
 
     for (let cycle = 0; cycle < 4; cycle++) {
-      const installation = installRgthreeLifecycleFixture(
+      const installation = firstModuleInstaller(
         TestCanvas.prototype,
         setup.host,
         setup.scheduler
       )
-      const reload = installRgthreeLifecycleFixture(
+      const reload = reloadedModuleInstaller(
         TestCanvas.prototype,
         setup.host,
         setup.scheduler
