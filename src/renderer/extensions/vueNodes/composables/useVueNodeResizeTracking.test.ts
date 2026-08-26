@@ -192,6 +192,29 @@ describe('useVueNodeResizeTracking', () => {
     testState.contentSizes.clear()
   })
 
+  it('skips repeated changed-size deliveries after reporting the change', () => {
+    const nodeId = toNodeId('changed-size-node')
+    const element = document.createElement('div')
+    seedNodeLayout({ nodeId, left: 100, top: 200, width: 240, height: 180 })
+
+    const initial = createResizeEntry({ element, nodeId }).entry
+    resizeObserverState.callback?.([initial], createObserverMock())
+
+    const changed = createResizeEntry({
+      element,
+      nodeId,
+      width: 241,
+      height: 181
+    }).entry
+    resizeObserverState.callback?.([changed], createObserverMock())
+    vi.clearAllMocks()
+
+    resizeObserverState.callback?.([changed], createObserverMock())
+
+    expect(testState.reportContentSize).not.toHaveBeenCalled()
+    expect(testState.syncNodeSlotLayoutsFromDOM).not.toHaveBeenCalled()
+  })
+
   it('reports a fresh measurement after root workflow replacement', () => {
     const nodeId = toNodeId('same-local-node-id')
     const { entry } = createResizeEntry({ nodeId })
