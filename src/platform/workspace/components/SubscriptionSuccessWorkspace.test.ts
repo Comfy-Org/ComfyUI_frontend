@@ -46,7 +46,8 @@ vi.mock('./InviteMembersForm.vue', () => ({
 
 function makePreviewData(
   priceCents: number,
-  duration: 'MONTHLY' | 'ANNUAL' = 'MONTHLY'
+  duration: 'MONTHLY' | 'ANNUAL' = 'MONTHLY',
+  creditsCents = duration === 'ANNUAL' ? 88_800 : 7_400
 ): PreviewSubscribeResponse {
   return {
     allowed: true,
@@ -62,11 +63,11 @@ function makePreviewData(
       tier: 'STANDARD',
       duration,
       price_cents: priceCents,
-      credits_cents: 0,
+      credits_cents: creditsCents,
       seat_summary: {
         seat_count: 1,
         total_cost_cents: priceCents,
-        total_credits_cents: 0
+        total_credits_cents: creditsCents
       }
     }
   }
@@ -83,9 +84,7 @@ function renderCard(props: Record<string, unknown> = {}) {
   return render(SubscriptionSuccessWorkspace, {
     props: {
       tierKey: 'creator',
-      previewData: {
-        new_plan: { price_cents: 1600 }
-      } as unknown as PreviewSubscribeResponse,
+      previewData: makePreviewData(1_600),
       ...props
     },
     global: {
@@ -150,6 +149,25 @@ describe('SubscriptionSuccessWorkspace', () => {
     expect(screen.getByText(/88800 subscription\.perYear/)).toBeTruthy()
   })
 
+  it('shows the credits from the preview, not the tier constant', () => {
+    render(SubscriptionSuccessWorkspace, {
+      props: {
+        tierKey: 'creator',
+        previewData: makePreviewData(3_500, 'MONTHLY', 9_900)
+      },
+      global: {
+        mocks: { $t: (key: string) => key },
+        stubs: {
+          Button: {
+            template: '<button @click="$emit(\'click\')"><slot /></button>'
+          }
+        }
+      }
+    })
+    expect(screen.getByText(/9900 subscription\.perMonth/)).toBeTruthy()
+    expect(screen.queryByText(/7400 subscription\.perMonth/)).toBeNull()
+  })
+
   it('shows the monthly price and monthly credits for a monthly personal plan', () => {
     render(SubscriptionSuccessWorkspace, {
       props: {
@@ -178,13 +196,29 @@ describe('SubscriptionSuccessWorkspace', () => {
     expect(screen.getByText(/1772400 subscription\.perYear/)).toBeTruthy()
   })
 
-  it('prefers the fetched preview price over the client-computed team total for a team plan change', () => {
+  it('takes both the price and the credits from the selected stop when a team preview disagrees', () => {
     renderTeamCard({
       billingCycle: 'yearly',
       previewData: makePreviewData(7_580 * 100, 'ANNUAL')
     })
+    expect(screen.getByText('$7560')).toBeTruthy()
+    expect(screen.queryByText('$7580')).toBeNull()
+    expect(screen.getByText(/1772400 subscription\.perYear/)).toBeTruthy()
+    expect(screen.queryByText(/88800 subscription\.perYear/)).toBeNull()
+  })
+
+  it('takes both the price and the credits from the preview when there is no team stop', () => {
+    renderCard({
+      billingCycle: 'yearly',
+      previewData: makePreviewData(7_580 * 100, 'ANNUAL')
+    })
     expect(screen.getByText('$7580')).toBeTruthy()
-    expect(screen.queryByText('$7560')).toBeNull()
+    expect(screen.getByText(/88800 subscription\.perYear/)).toBeTruthy()
+  })
+
+  it('falls back to the tier constant for the credits when there is no preview', () => {
+    renderCard({ billingCycle: 'yearly', previewData: null })
+    expect(screen.getByText(/88800 subscription\.perYear/)).toBeTruthy()
   })
 
   it('emits close when the close button is clicked', async () => {

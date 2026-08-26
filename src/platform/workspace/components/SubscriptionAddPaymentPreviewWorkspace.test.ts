@@ -11,7 +11,8 @@ import SubscriptionAddPaymentPreviewWorkspace from './SubscriptionAddPaymentPrev
 
 function previewFixture(
   duration: SubscriptionDuration,
-  priceCents: number
+  priceCents: number,
+  creditsCents = duration === 'ANNUAL' ? 88_800 : 7_400
 ): PreviewSubscribeResponse {
   return {
     allowed: true,
@@ -33,11 +34,11 @@ function previewFixture(
       tier: 'CREATOR',
       duration,
       price_cents: priceCents,
-      credits_cents: 0,
+      credits_cents: creditsCents,
       seat_summary: {
         seat_count: 1,
         total_cost_cents: priceCents,
-        total_credits_cents: 0
+        total_credits_cents: creditsCents
       },
       period_end: '2027-06-19T00:00:00Z'
     }
@@ -208,6 +209,19 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
       screen.getByText('subscription.preview.eachYearCreditsRefill')
     ).toBeTruthy()
     expect(screen.getByText('88,800')).toBeTruthy()
+  })
+
+  it('renders the refill credits from the preview, not the tier constant', () => {
+    render(SubscriptionAddPaymentPreviewWorkspace, {
+      props: {
+        tierKey: 'creator',
+        billingCycle: 'monthly',
+        previewData: previewFixture('MONTHLY', 3_500, 9_900)
+      },
+      global: globalOptions
+    })
+    expect(screen.getByText('9,900')).toBeTruthy()
+    expect(screen.queryByText('7,400')).toBeNull()
   })
 
   it('divides the yearly price by twelve in the fallback path', () => {

@@ -317,7 +317,6 @@ import { formatUsdFromCents } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
-import { getTierCredits } from '@/platform/cloud/subscription/constants/tierPricing'
 import { isAnnualDuration } from '@/platform/cloud/subscription/utils/planDuration'
 import { formatQuoteMoney } from '@/platform/cloud/subscription/utils/subscriptionQuoteFormatting'
 import type {
@@ -326,8 +325,6 @@ import type {
 } from '@/platform/workspace/api/workspaceApi'
 
 import SubscriptionTermsNote from './SubscriptionTermsNote.vue'
-
-type PersonalTierKey = 'standard' | 'creator' | 'pro'
 
 const {
   previewData,
@@ -423,10 +420,6 @@ function formatDate(date: string | Date): string {
 
 function moneyShort(usd: number): string {
   return `$${n(usd)}`
-}
-
-function tierMonthlyCredits(tier: string): number {
-  return getTierCredits(tier.toLowerCase() as PersonalTierKey) ?? 0
 }
 
 const isImmediate = computed(() => previewData.is_immediate)
@@ -572,12 +565,15 @@ const annualTotalFormatted = computed(
 
 const newMonthlyChargeUsd = computed(() => newMonthlyUsd.value)
 
-const refillCredits = computed(() => {
-  const monthly = teamPlan
-    ? teamPlan.credits
-    : tierMonthlyCredits(previewData.new_plan.tier)
-  return n(newIsYearly.value ? monthly * 12 : monthly)
-})
+const refillCredits = computed(() =>
+  n(
+    teamPlan
+      ? newIsYearly.value
+        ? teamPlan.credits * 12
+        : teamPlan.credits
+      : previewData.new_plan.credits_cents
+  )
+)
 const refillLabel = computed(() =>
   newIsYearly.value
     ? t('subscription.preview.creditsYoullGetToday')

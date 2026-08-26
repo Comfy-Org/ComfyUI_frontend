@@ -58,13 +58,15 @@ const CREATOR_ANNUAL_PLAN = {
   tier: 'CREATOR',
   duration: 'ANNUAL',
   price_cents: 33_600,
-  credits_cents: 7_400,
+  // Annual grant: the full-year total, consistent with the annual price_cents
+  // above (the confirm screens read credits_cents per period, no x12).
+  credits_cents: 88_800,
   max_seats: 5,
   availability: { available: true },
   seat_summary: {
     seat_count: 1,
     total_cost_cents: 33_600,
-    total_credits_cents: 7_400
+    total_credits_cents: 88_800
   }
 } satisfies Plan
 
@@ -73,13 +75,13 @@ const STANDARD_ANNUAL_PLAN = {
   tier: 'STANDARD',
   duration: 'ANNUAL',
   price_cents: 19_200,
-  credits_cents: 4_200,
+  credits_cents: 50_400,
   max_seats: 1,
   availability: { available: true },
   seat_summary: {
     seat_count: 1,
     total_cost_cents: 19_200,
-    total_credits_cents: 4_200
+    total_credits_cents: 50_400
   }
 } satisfies Plan
 
@@ -200,8 +202,8 @@ const NEW_CREATOR_SUBSCRIPTION = {
   is_immediate: true,
   cost_today_cents: 33_600,
   cost_next_period_cents: 33_600,
-  credits_today_cents: 7_400,
-  credits_next_period_cents: 7_400,
+  credits_today_cents: 88_800,
+  credits_next_period_cents: 88_800,
   new_plan: CREATOR_ANNUAL_PLAN
 } satisfies PreviewSubscribeResponse
 
@@ -213,7 +215,7 @@ const SCHEDULED_CREATOR_DOWNGRADE = {
   cost_today_cents: 0,
   cost_next_period_cents: 33_600,
   credits_today_cents: 0,
-  credits_next_period_cents: 7_400,
+  credits_next_period_cents: 88_800,
   new_plan: {
     ...CREATOR_ANNUAL_PLAN,
     seat_summary: CREATOR_ANNUAL_PLAN.seat_summary
@@ -233,8 +235,8 @@ const IMMEDIATE_CREATOR_UPGRADE = {
   is_immediate: true,
   cost_today_cents: 14_400,
   cost_next_period_cents: 33_600,
-  credits_today_cents: 3_200,
-  credits_next_period_cents: 7_400,
+  credits_today_cents: 38_400,
+  credits_next_period_cents: 88_800,
   current_plan: {
     slug: STANDARD_ANNUAL_PLAN.slug,
     tier: STANDARD_ANNUAL_PLAN.tier,

@@ -33,21 +33,28 @@ const globalOptions = {
   }
 }
 
+const MONTHLY_CREDITS: Partial<Record<SubscriptionTier, number>> = {
+  STANDARD: 4_200,
+  CREATOR: 7_400,
+  PRO: 21_100
+}
+
 function plan(
   tier: SubscriptionTier,
   duration: SubscriptionDuration,
-  priceCents: number
+  priceCents: number,
+  creditsCents = (MONTHLY_CREDITS[tier] ?? 0) * (duration === 'ANNUAL' ? 12 : 1)
 ) {
   return {
     slug: `${tier.toLowerCase()}-${duration.toLowerCase()}`,
     tier,
     duration,
     price_cents: priceCents,
-    credits_cents: 0,
+    credits_cents: creditsCents,
     seat_summary: {
       seat_count: 1,
       total_cost_cents: priceCents,
-      total_credits_cents: 0
+      total_credits_cents: creditsCents
     },
     period_end: '2027-06-28T00:00:00Z'
   }
@@ -106,6 +113,23 @@ describe('SubscriptionTransitionPreviewWorkspace', () => {
       screen.getByText('subscription.preview.confirmUpgradeCta')
     ).toBeTruthy()
     expect(screen.queryByText('subscription.preview.startsOn')).toBeNull()
+  })
+
+  it('renders the refill credits from the preview, not the tier constant', () => {
+    render(SubscriptionTransitionPreviewWorkspace, {
+      props: {
+        previewData: preview({
+          transition_type: 'upgrade',
+          is_immediate: true,
+          cost_today_cents: 3500,
+          current_plan: plan('STANDARD', 'MONTHLY', 2000),
+          new_plan: plan('CREATOR', 'MONTHLY', 3500, 9_900)
+        })
+      },
+      global: globalOptions
+    })
+    expect(screen.getByText('9,900')).toBeTruthy()
+    expect(screen.queryByText('7,400')).toBeNull()
   })
 
   it('renders an immediate monthly tier upgrade with monthly refill', () => {

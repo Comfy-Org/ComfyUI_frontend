@@ -545,13 +545,18 @@ const annualTotalUsd = computed(() => {
 
 const annualTotalFormatted = computed(() => `$${n(annualTotalUsd.value)}`)
 
-const monthlyCredits = computed(() =>
-  teamPlan ? teamPlan.credits : tierKey ? (getTierCredits(tierKey) ?? 0) : 0
-)
+// The server preview carries the period's credit grant; the tier constant is
+// only the preview-less fallback.
+const periodCredits = computed(() => {
+  if (teamPlan) {
+    return isYearly.value ? teamPlan.credits * 12 : teamPlan.credits
+  }
+  if (previewData) return previewData.new_plan.credits_cents
+  const monthly = tierKey ? (getTierCredits(tierKey) ?? 0) : 0
+  return isYearly.value ? monthly * 12 : monthly
+})
 
-const refillCredits = computed(() =>
-  n(isYearly.value ? monthlyCredits.value * 12 : monthlyCredits.value)
-)
+const refillCredits = computed(() => n(periodCredits.value))
 
 const creditsRefillLabelKey = computed(() =>
   isYearly.value

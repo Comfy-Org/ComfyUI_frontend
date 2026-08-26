@@ -185,15 +185,17 @@ const isYearly = computed(() =>
   isYearlyCheckout(previewData?.new_plan?.duration, billingCycle)
 )
 
+// Price and credits describe one plan, so both resolve teamPlan before
+// previewData, matching the AddPayment and Transition screens.
 const displayPrice = computed(() => {
-  if (previewData?.new_plan) {
-    return (previewData.new_plan.price_cents / 100).toFixed(0)
-  }
   if (teamPlan) {
     const usd = isYearly.value
       ? teamPlan.discountedUsd * 12
       : teamPlan.discountedUsd
     return String(usd)
+  }
+  if (previewData?.new_plan) {
+    return (previewData.new_plan.price_cents / 100).toFixed(0)
   }
   return '0'
 })
@@ -203,12 +205,12 @@ const priceUnitLabel = computed(() =>
 )
 
 const displayCredits = computed(() => {
-  const monthlyCredits = teamPlan
-    ? teamPlan.credits
-    : tierKey
-      ? (getTierCredits(tierKey) ?? 0)
-      : 0
-  return n(isYearly.value ? monthlyCredits * 12 : monthlyCredits)
+  if (teamPlan) {
+    return n(isYearly.value ? teamPlan.credits * 12 : teamPlan.credits)
+  }
+  if (previewData) return n(previewData.new_plan.credits_cents)
+  const monthly = tierKey ? (getTierCredits(tierKey) ?? 0) : 0
+  return n(isYearly.value ? monthly * 12 : monthly)
 })
 
 const creditsUnitLabel = computed(() =>
