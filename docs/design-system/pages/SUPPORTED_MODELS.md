@@ -175,9 +175,10 @@ and then restore the page element.
   centered catalog action follows the cards and links to `/workflows/`.
 - Detail workflow sections use the existing `SectionLabel` without repeating
   the model name in a second display heading.
-- Detail pricing reuses the three-row “What it costs” structure reviewed on
-  the model preview. Values are limited to catalog-known access facts; pages
-  must not invent per-run credit or dollar estimates.
+- Detail pricing reuses the exact nested-card, heading, subtitle, and compact
+  three-row anatomy from the reviewed model preview. Values are limited to
+  catalog-known access facts; pages must not invent per-run credit or dollar
+  estimates.
 - `workflowCount` values are references per catalog entry. Their sum is not a
   verified unique-workflow count and must not be presented as one.
 - Editorial cards remain fixtures until a reviewed mapping exists between each

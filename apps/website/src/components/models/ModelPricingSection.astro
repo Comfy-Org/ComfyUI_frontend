@@ -1,5 +1,6 @@
 ---
-import SectionHeader from '../common/SectionHeader.vue'
+import { Coins as CreditsIcon } from '@lucide/vue'
+
 import { t } from '../../i18n/translations'
 
 interface Props {
@@ -9,40 +10,53 @@ interface Props {
 
 const { isPartnerNode, locale = 'en' } = Astro.props
 const openRows = [
-  ['models.pricing.cloud', 'models.pricing.usageBased'],
-  ['models.pricing.localGpu', 'models.pricing.yourHardware'],
-  ['models.pricing.weights', 'models.pricing.openDownload'],
+  ['models.pricing.cloud', 'models.pricing.usageBased', true],
+  ['models.pricing.localGpu', 'models.pricing.yourHardware', false],
+  ['models.pricing.weights', 'models.pricing.openDownload', false],
 ] as const
 const partnerRows = [
-  ['models.pricing.cloud', 'models.pricing.usageBased'],
-  ['models.pricing.localGpu', 'models.pricing.partnerOnly'],
-  ['models.pricing.access', 'models.pricing.includedInWorkflow'],
+  ['models.pricing.cloud', 'models.pricing.usageBased', true],
+  ['models.pricing.localGpu', 'models.pricing.partnerOnly', false],
+  ['models.pricing.access', 'models.pricing.includedInWorkflow', false],
 ] as const
 const rows = isPartnerNode ? partnerRows : openRows
 ---
 
-<section class="mx-auto max-w-7xl px-6 py-16 lg:px-8">
-  <SectionHeader align="start" maxWidth="xl">
-    {t('models.pricing.heading', locale)}
-    <p
-      slot="subtitle"
-      class="mt-4 text-base font-light text-primary-comfy-canvas/60 lg:text-lg"
-    >
-      {t('models.pricing.subtitle', locale)}
-    </p>
-  </SectionHeader>
-  <dl class="mt-10 divide-y divide-primary-comfy-canvas/15 border-y border-primary-comfy-canvas/15">
-    {
-      rows.map(([labelKey, valueKey]) => (
-        <div class="grid gap-2 py-5 sm:grid-cols-2 sm:items-center">
-          <dt class="text-sm text-primary-comfy-canvas/60">
-            {t(labelKey, locale)}
-          </dt>
-          <dd class="text-base text-primary-comfy-canvas sm:text-right">
-            {t(valueKey, locale)}
-          </dd>
+<section class="pb-12 lg:pb-16">
+  <div class="mx-auto max-w-9xl px-5 sm:px-6 lg:px-20">
+    <div class="bg-transparency-white-t4 rounded-5xl p-2">
+      <div class="grid gap-2 lg:grid-cols-2">
+        <div class="rounded-4xl bg-primary-comfy-ink p-6 sm:p-7">
+          <h2
+            class="text-sm font-bold tracking-widest text-primary-comfy-yellow uppercase"
+          >
+            {t('models.pricing.heading', locale)}
+          </h2>
+          <p class="mt-2 text-sm font-light text-primary-warm-gray">
+            {t('models.pricing.subtitle', locale)}
+          </p>
+          <dl class="mt-4 divide-y divide-white/10 border-t border-white/10">
+            {
+              rows.map(([labelKey, valueKey, showCreditsIcon]) => (
+                <div class="flex items-center justify-between gap-4 py-3">
+                  <dt class="text-sm text-primary-warm-white">
+                    {t(labelKey, locale)}
+                  </dt>
+                  <dd class="flex items-center gap-1.5 text-right text-xs font-semibold text-primary-comfy-canvas">
+                    {showCreditsIcon && (
+                      <CreditsIcon
+                        class="size-3.5 shrink-0 text-primary-comfy-orange"
+                        aria-hidden="true"
+                      />
+                    )}
+                    {t(valueKey, locale)}
+                  </dd>
+                </div>
+              ))
+            }
+          </dl>
         </div>
-      ))
-    }
-  </dl>
+      </div>
+    </div>
+  </div>
 </section>
