@@ -225,7 +225,7 @@ describe('drawConnections', () => {
       expect(foregroundSorts).toBe(1)
       expect(
         sort.mock.instances.filter(
-          (items) => (items as unknown[]).length === nodeCount
+          (items) => Array.isArray(items) && items.length === nodeCount
         )
       ).toHaveLength(2)
     }
