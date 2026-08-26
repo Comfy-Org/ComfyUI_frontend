@@ -2,7 +2,6 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import { TestIds } from '@e2e/fixtures/selectors'
 import {
   clickExactMenuItem,
   getNodeRef,
@@ -15,17 +14,6 @@ test.describe(
   { tag: '@vue-nodes' },
   () => {
     test.describe('Single Node Actions', () => {
-      test.fixme('should open node info via context menu', async ({
-        comfyPage
-      }) => {
-        await openContextMenu(comfyPage, 'KSampler')
-        await clickExactMenuItem(comfyPage, 'Node Info')
-
-        await expect(
-          comfyPage.page.getByTestId(TestIds.propertiesPanel.root)
-        ).toBeVisible()
-      })
-
       test('should change node color via Color submenu', async ({
         comfyPage
       }) => {
@@ -89,23 +77,6 @@ test.describe(
             exact: true
           })
         ).toBeHidden()
-      })
-
-      test.fixme('should show Run Branch for output nodes', async ({
-        comfyPage
-      }) => {
-        await expect(
-          comfyPage.vueNodes.getNodeByTitle('Save Image'),
-          'Default workflow must contain Save Image node'
-        ).toBeVisible()
-
-        await openContextMenu(comfyPage, 'Save Image')
-        await expect(
-          comfyPage.contextMenu.primeVueMenu.getByRole('menuitem', {
-            name: 'Run Branch',
-            exact: true
-          })
-        ).toBeVisible()
       })
     })
 
