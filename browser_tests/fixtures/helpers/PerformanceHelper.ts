@@ -48,6 +48,8 @@ export class PerformanceHelper {
     this.measurementState = { kind: 'idle' }
     try {
       await this.stopRafCollectorIfRunning()
+    } catch (error) {
+      if (!this.page.isClosed()) throw error
     } finally {
       if (this.cdp) {
         const cdp = this.cdp
