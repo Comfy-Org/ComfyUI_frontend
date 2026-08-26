@@ -26,7 +26,8 @@ const cloudOnboardingRoutes = isCloud
       .cloudOnboardingRoutes
   : []
 
-const isFileProtocol = window.location.protocol === 'file:'
+const isFileProtocol =
+  typeof window !== 'undefined' && window.location.protocol === 'file:'
 
 /**
  * Determine base path for the router.
