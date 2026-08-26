@@ -16596,6 +16596,238 @@
       }
     }
   },
+  "PixverseV6ExtendVideoNode": {
+    "description": "ממשיך וידאו קיים באמצעות PixVerse, עם שמע מקורי לפי בחירה. המקור חייב להיות באורך של פחות מ-40 שניות ובגודל מרבי של 1920px בכל אחד מהצדדים. הפלט שומר על רזולוציית המקור, לכן האיכות קובעת עד כמה ההמשך יעובד היטב ולא את גודל הפריים.",
+    "display_name": "PixVerse V6 הרחבת וידאו",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "הגדרות המודל והיצירה."
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_quality": {
+        "name": "איכות"
+      },
+      "model_seed": {
+        "name": "זרע"
+      },
+      "model_style": {
+        "name": "סגנון"
+      },
+      "video": {
+        "name": "וידאו",
+        "tooltip": "הווידאו להמשך."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6FirstLastFrameNode": {
+    "description": "יוצר וידאו העובר מהפריים הראשון לפריים האחרון באמצעות PixVerse, עם שמע מקורי לפי בחירה. הפלט שומר על יחס הממדים של הפריים הראשון.",
+    "display_name": "PixVerse V6 מהפריים הראשון והאחרון לווידאו",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "הגדרות המודל והיצירה."
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_quality": {
+        "name": "איכות"
+      },
+      "model_seed": {
+        "name": "זרע"
+      },
+      "model_style": {
+        "name": "סגנון"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6FusionVideoNode": {
+    "description": "מרכיב וידאו מנושאים, רקעים וסרטוני הפניה באמצעות PixVerse. הצב הפניה בסצנה באמצעות אזכור שמה בפרומפט, לדוגמה '{'@'}Subject1 הולך דרך {'@'}Background1'. חיבור וידאו הפניה מעביר את המודל למצב Omni, שבו אורך הפלט תואם לווידאו ההפניה הארוך ביותר.",
+    "display_name": "PixVerse V6 Fusion (הפניה לווידאו)",
+    "inputs": {
+      "backgrounds": {
+        "name": "רקעים",
+        "tooltip": "תמונות הפניה של הסצנה שבה מוצבים הנושאים."
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "הגדרות המודל והיצירה."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration_seconds": {
+        "name": "משך_בשניות"
+      },
+      "model_generate_audio": {
+        "name": "יצירת_שמע"
+      },
+      "model_negative_prompt": {
+        "name": "פרומפט_שלילי"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_quality": {
+        "name": "איכות"
+      },
+      "model_seed": {
+        "name": "זרע"
+      },
+      "model_style": {
+        "name": "סגנון"
+      },
+      "subjects": {
+        "name": "נושאים",
+        "tooltip": "תמונות הפניה של הנושאים להצבה בסצנה."
+      },
+      "videos": {
+        "name": "סרטונים",
+        "tooltip": "סרטוני הפניה שמהם ניתן לשאול נושאים, תנועה, מסגור או סגנון. עד שניים, ועד 15 שניות בסך הכול."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6ImageToVideoNode": {
+    "description": "מנפיש תמונה באמצעות PixVerse, עם שמע מובנה באופן אופציונלי. הפלט שומר על יחס הממדים של תמונת הקלט.",
+    "display_name": "PixVerse V6 תמונה לווידאו",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "image": {
+        "name": "תמונה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "הגדרות המודל והיצירה."
+      },
+      "model_duration_seconds": {
+        "name": "משך_בשניות"
+      },
+      "model_generate_audio": {
+        "name": "יצירת_שמע"
+      },
+      "model_multi_clip": {
+        "name": "ריבוי_קליפים"
+      },
+      "model_negative_prompt": {
+        "name": "פרומפט_שלילי"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_quality": {
+        "name": "איכות"
+      },
+      "model_seed": {
+        "name": "זרע"
+      },
+      "model_style": {
+        "name": "סגנון"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6TextToVideoNode": {
+    "description": "יוצר וידאו מפרומפט טקסט באמצעות PixVerse, עם שמע מובנה באופן אופציונלי.",
+    "display_name": "PixVerse V6 טקסט לווידאו",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "הגדרות המודל והיצירה."
+      },
+      "model_aspect_ratio": {
+        "name": "יחס_ממדים"
+      },
+      "model_duration_seconds": {
+        "name": "משך_בשניות"
+      },
+      "model_generate_audio": {
+        "name": "יצירת_שמע"
+      },
+      "model_multi_clip": {
+        "name": "ריבוי_קליפים"
+      },
+      "model_negative_prompt": {
+        "name": "פרומפט_שלילי"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_quality": {
+        "name": "איכות"
+      },
+      "model_seed": {
+        "name": "זרע"
+      },
+      "model_style": {
+        "name": "סגנון"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PolyexponentialScheduler": {
     "display_name": "PolyexponentialScheduler",
     "inputs": {
