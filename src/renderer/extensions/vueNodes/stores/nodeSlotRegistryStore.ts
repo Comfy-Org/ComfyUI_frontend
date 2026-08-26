@@ -14,6 +14,9 @@ type SlotEntry = {
 type NodeEntry = {
   nodeId: NodeId
   slots: Map<SlotId, SlotEntry>
+  active: boolean
+  registrationComplete: boolean
+  hasNodeOwner: boolean
   stopWatch?: () => void
 }
 
@@ -29,7 +32,10 @@ export const useNodeSlotRegistryStore = defineStore('nodeSlotRegistry', () => {
     if (!node) {
       node = {
         nodeId,
-        slots: markRaw(new Map<SlotId, SlotEntry>())
+        slots: markRaw(new Map<SlotId, SlotEntry>()),
+        active: true,
+        registrationComplete: true,
+        hasNodeOwner: false
       }
       registry.set(nodeId, node)
     }

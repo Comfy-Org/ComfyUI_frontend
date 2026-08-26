@@ -67,6 +67,14 @@ vi.mock(
   })
 )
 
+vi.mock(
+  '@/renderer/extensions/vueNodes/composables/useSlotElementTracking',
+  async (importOriginal) => ({
+    ...(await importOriginal()),
+    useNodeSlotRegistration: vi.fn()
+  })
+)
+
 vi.mock('@/scripts/app', () => ({
   app: {
     rootGraph: { id: 'graph-test', getNodeById: vi.fn() },

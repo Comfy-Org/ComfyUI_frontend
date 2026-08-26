@@ -1,4 +1,4 @@
-import { render } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -16,6 +16,7 @@ import type { SlotLayout } from '@/renderer/core/layout/types'
 import { useNodeSlotRegistryStore } from '@/renderer/extensions/vueNodes/stores/nodeSlotRegistryStore'
 
 import {
+  setExpectedRenderedNodeIds,
   syncNodeSlotLayoutsFromDOM,
   flushScheduledSlotLayoutSync,
   requestSlotLayoutSyncForAllNodes,
@@ -123,6 +124,7 @@ async function mountAndRegisterSlot(type: 'input' | 'output') {
 
 describe('useSlotElementTracking', () => {
   beforeEach(() => {
+    setExpectedRenderedNodeIds(undefined)
     setActivePinia(createTestingPinia({ stubActions: false }))
     document.body.innerHTML = ''
     layoutStore.resetForTests()
@@ -221,6 +223,17 @@ describe('useSlotElementTracking', () => {
     expect(layoutStore.pendingSlotSync).toBe(true)
   })
 
+  it('completes when every rendered node has registered its slots', async () => {
+    const { unmount } = await mountAndRegisterSlot('input')
+
+    layoutStore.setPendingSlotSync(true)
+    setExpectedRenderedNodeIds(new Set([NODE_ID]))
+    flushScheduledSlotLayoutSync()
+
+    expect(layoutStore.pendingSlotSync).toBe(false)
+    unmount()
+  })
+
   it('keeps pendingSlotSync when all registered slots are hidden', () => {
     const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
     const hiddenSlot = document.createElement('div')
@@ -266,6 +279,30 @@ describe('useSlotElementTracking', () => {
     expect(layoutStore.getSlotLayout(slotKey)).toBeNull()
   })
 
+  it('preserves slot layouts while their KeepAlive node is inactive', () => {
+    const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
+    const staleLayout: SlotLayout = {
+      nodeId: NODE_ID,
+      index: SLOT_INDEX,
+      type: 'input',
+      position: { x: 10, y: 20 },
+      bounds: { x: 6, y: 16, width: 8, height: 8 }
+    }
+    layoutStore.batchUpdateSlotLayouts([{ key: slotKey, layout: staleLayout }])
+
+    const node = useNodeSlotRegistryStore().ensureNode(NODE_ID)
+    node.active = false
+    node.slots.set(slotKey, {
+      el: document.createElement('div'),
+      index: SLOT_INDEX,
+      type: 'input'
+    })
+
+    syncNodeSlotLayoutsFromDOM(NODE_ID)
+
+    expect(layoutStore.getSlotLayout(slotKey)).toEqual(staleLayout)
+  })
+
   it('skips slot layout writeback when measured slot geometry is unchanged', () => {
     const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
     const slotEl = createSlotElement()
@@ -306,6 +343,51 @@ describe('useSlotElementTracking', () => {
     syncNodeSlotLayoutsFromDOM(NODE_ID)
 
     expect(batchUpdateSpy).not.toHaveBeenCalled()
+  })
+
+  it('remeasures a cached slot after KeepAlive activation', async () => {
+    let slotLeft = 10
+    const active = ref(true)
+    const TrackedSlot = defineComponent({
+      setup() {
+        const element = ref<HTMLElement | null>(null)
+        useSlotElementTracking({
+          nodeId: NODE_ID,
+          index: SLOT_INDEX,
+          type: 'input',
+          element
+        })
+        return { element }
+      },
+      template:
+        '<div data-testid="tracked-node" data-node-id="test-node"><div ref="element" data-testid="tracked-slot" /></div>'
+    })
+    const Parent = defineComponent({
+      components: { TrackedSlot },
+      setup: () => ({ active }),
+      template: '<KeepAlive><TrackedSlot v-if="active" /></KeepAlive>'
+    })
+    const { unmount } = render(Parent)
+    const nodeElement = screen.getByTestId('tracked-node')
+    const slotElement = screen.getByTestId('tracked-slot')
+    Object.defineProperty(nodeElement, 'offsetWidth', { value: 200 })
+    nodeElement.getBoundingClientRect = () => new DOMRect(0, 0, 200, 100)
+    slotElement.getBoundingClientRect = () => new DOMRect(slotLeft, 30, 10, 10)
+
+    await nextTick()
+    flushScheduledSlotLayoutSync()
+    const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, true)
+    expect(layoutStore.getSlotLayout(slotKey)?.position.x).toBe(15)
+
+    active.value = false
+    await nextTick()
+    slotLeft = 110
+    active.value = true
+    await nextTick()
+    flushScheduledSlotLayoutSync()
+
+    expect(layoutStore.getSlotLayout(slotKey)?.position.x).toBe(115)
+    unmount()
   })
 
   it('measures slot offsets from rendered size rather than requested size', () => {
