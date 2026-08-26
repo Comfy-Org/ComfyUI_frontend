@@ -22,6 +22,7 @@ const state = vi.hoisted(() => ({
   canManageSubscription: false,
   canManageSubscriptionLifecycle: false,
   canReactivate: false,
+  canReactivatePlan: false,
   shouldUseWorkspaceBilling: true,
   showCreateWorkspaceDialog: vi.fn(),
   showTopUpCreditsDialog: vi.fn(),
@@ -78,11 +79,7 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
       canManageSubscription: state.canManageSubscription,
       canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
     })),
-    canReactivatePlan: computed(() =>
-      state.isCloud && state.shouldUseWorkspaceBilling
-        ? state.canReactivate
-        : state.canManageSubscriptionLifecycle
-    )
+    canReactivatePlan: computed(() => state.canReactivatePlan)
   })
 }))
 
@@ -519,7 +516,7 @@ describe('CurrentUserPopoverWorkspace', () => {
       state.isCancelled = isCancelled
       state.canManageSubscription = canManageSubscription
       state.canManageSubscriptionLifecycle = canManageSubscriptionLifecycle
-      state.canReactivate = canReactivate
+      state.canReactivatePlan = canReactivate
       state.canSubscribeSelfServe = canSubscribeSelfServe
 
       renderComponent('team')
@@ -539,7 +536,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.canTopUp = true
     state.canManageSubscription = true
     state.canManageSubscriptionLifecycle = true
-    state.canReactivate = true
+    state.canReactivatePlan = true
     renderComponent('team')
 
     expect(screen.getByTestId('add-credits-button')).toBeInTheDocument()
@@ -551,13 +548,14 @@ describe('CurrentUserPopoverWorkspace', () => {
     expect(state.showPricingTable).toHaveBeenCalledOnce()
   })
 
-  it('keeps Resubscribe available on the legacy rail when the server withholds can_reactivate', () => {
+  it('reads the derived reactivate policy, not the raw server capability', () => {
     state.isCancelled = true
     state.canManageSubscriptionLifecycle = true
-    // legacy_stripe workspaces have no capability projection row, so the
-    // server-resolved can_reactivate stays false and must not gate the button.
+    // The legacy rail resolves can_reactivate false but still permits
+    // reactivation, so the button must follow canReactivatePlan. Rail
+    // selection itself is covered in useWorkspaceUI.test.ts.
     state.canReactivate = false
-    state.shouldUseWorkspaceBilling = false
+    state.canReactivatePlan = true
 
     renderComponent('personal')
 
