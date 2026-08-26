@@ -175,6 +175,7 @@ const {
   mockSetActiveWorkspaceIdImpl,
   mockSetActiveWorkspaceId,
   mockPermissions,
+  mockCapabilities,
   mockSubscription
 } = vi.hoisted(() => ({
   mockSubscribe: vi.fn(),
@@ -214,6 +215,14 @@ const {
     value: {
       canManageSubscription: true,
       canManageSubscriptionLifecycle: true,
+      canDowngradeToPersonal: true
+    }
+  },
+  mockCapabilities: {
+    value: {
+      canSubscribeSelfServe: true,
+      canReactivate: true,
+      canChangeSeats: true,
       canDowngradeToPersonal: true
     }
   },
@@ -272,6 +281,33 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
     permissions: {
       get value() {
         return mockPermissions.value
+      }
+    }
+  })
+}))
+
+vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
+
+vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
+  useBillingCapabilities: () => ({
+    canSubscribeSelfServe: {
+      get value() {
+        return mockCapabilities.value.canSubscribeSelfServe
+      }
+    },
+    canReactivate: {
+      get value() {
+        return mockCapabilities.value.canReactivate
+      }
+    },
+    canChangeSeats: {
+      get value() {
+        return mockCapabilities.value.canChangeSeats
+      }
+    },
+    canDowngradeToPersonal: {
+      get value() {
+        return mockCapabilities.value.canDowngradeToPersonal
       }
     }
   })
@@ -459,6 +495,12 @@ describe('useSubscriptionCheckout', () => {
     mockPermissions.value = {
       canManageSubscription: true,
       canManageSubscriptionLifecycle: true,
+      canDowngradeToPersonal: true
+    }
+    mockCapabilities.value = {
+      canSubscribeSelfServe: true,
+      canReactivate: true,
+      canChangeSeats: true,
       canDowngradeToPersonal: true
     }
     mockSubscription.value = null
@@ -1057,6 +1099,26 @@ describe('useSubscriptionCheckout', () => {
         canManageSubscriptionLifecycle: false,
         canDowngradeToPersonal: false
       }
+      mockCapabilities.value = {
+        canSubscribeSelfServe: false,
+        canReactivate: false,
+        canChangeSeats: false,
+        canDowngradeToPersonal: false
+      }
+      const checkout = await setup()
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+
+      expect(mockPreviewSubscribe).not.toHaveBeenCalled()
+      expect(checkout.checkoutStep.value).toBe('pricing')
+    })
+
+    it('does not preview a plan when the server denies checkout to a client-side owner', async () => {
+      mockCapabilities.value.canSubscribeSelfServe = false
+      mockCapabilities.value.canChangeSeats = false
       const checkout = await setup()
 
       await checkout.handleSubscribeClick({
@@ -1071,6 +1133,7 @@ describe('useSubscriptionCheckout', () => {
     it('does not preview a personal plan for a promoted owner on a team plan', async () => {
       mockIsTeamPlan.value = true
       mockPermissions.value.canDowngradeToPersonal = false
+      mockCapabilities.value.canDowngradeToPersonal = false
       const checkout = await setup()
 
       await checkout.handleSubscribeClick({
@@ -1078,6 +1141,22 @@ describe('useSubscriptionCheckout', () => {
         billingCycle: 'yearly'
       })
 
+      expect(mockShowDowngradeToPersonalDialog).not.toHaveBeenCalled()
+      expect(mockPreviewSubscribe).not.toHaveBeenCalled()
+      expect(checkout.checkoutStep.value).toBe('pricing')
+    })
+
+    it('does not start the Team-to-personal downgrade when the server denies it to a client-side owner', async () => {
+      mockIsTeamPlan.value = true
+      mockCapabilities.value.canDowngradeToPersonal = false
+      const checkout = await setup()
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+
+      expect(mockShowDowngradeToPersonalDialog).not.toHaveBeenCalled()
       expect(mockPreviewSubscribe).not.toHaveBeenCalled()
       expect(checkout.checkoutStep.value).toBe('pricing')
     })
@@ -1085,6 +1164,7 @@ describe('useSubscriptionCheckout', () => {
     it('allows a promoted owner to preview a legacy Team-plan change', async () => {
       mockIsTeamPlan.value = true
       mockPermissions.value.canDowngradeToPersonal = false
+      mockCapabilities.value.canDowngradeToPersonal = false
       mockPreviewSubscribe.mockResolvedValueOnce({
         allowed: true,
         transition_type: 'upgrade'
@@ -1641,6 +1721,28 @@ describe('useSubscriptionCheckout', () => {
 
     it('does not prepare a team checkout for a member', async () => {
       mockPermissions.value.canManageSubscription = false
+      mockCapabilities.value.canChangeSeats = false
+      mockCapabilities.value.canSubscribeSelfServe = false
+      const checkout = await setup()
+
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_700',
+          usd: 700,
+          credits: 147_700,
+          discountedUsd: 665
+        },
+        billingCycle: 'monthly',
+        isChange: true
+      })
+
+      expect(mockPreviewSubscribe).not.toHaveBeenCalled()
+      expect(checkout.selectedTeamStop.value).toBeNull()
+      expect(checkout.checkoutStep.value).toBe('pricing')
+    })
+
+    it('does not prepare a team checkout when the server denies seat changes to a client-side owner', async () => {
+      mockCapabilities.value.canChangeSeats = false
       const checkout = await setup()
 
       await checkout.handleSubscribeTeamClick({
@@ -3123,6 +3225,8 @@ describe('useSubscriptionCheckout', () => {
       checkout.selectedTierKey.value = 'standard'
       checkout.selectedBillingCycle.value = 'yearly'
       mockPermissions.value.canManageSubscription = false
+      mockCapabilities.value.canChangeSeats = false
+      mockCapabilities.value.canSubscribeSelfServe = false
 
       await checkout.handleAddCreditCard()
 
@@ -3592,6 +3696,8 @@ describe('useSubscriptionCheckout', () => {
       })
       expect(checkout.checkoutStep.value).toBe('preview')
       mockPermissions.value.canManageSubscription = false
+      mockCapabilities.value.canChangeSeats = false
+      mockCapabilities.value.canSubscribeSelfServe = false
 
       await checkout.handleConfirmTransition()
 
@@ -3772,6 +3878,17 @@ describe('useSubscriptionCheckout', () => {
 
     it('does not resubscribe for a member', async () => {
       mockPermissions.value.canManageSubscriptionLifecycle = false
+      mockCapabilities.value.canReactivate = false
+      const checkout = await setup()
+
+      await checkout.handleResubscribe()
+
+      expect(mockResubscribe).not.toHaveBeenCalled()
+      expect(mockTrackResubscribeClicked).not.toHaveBeenCalled()
+    })
+
+    it('does not resubscribe when the server denies reactivation to a client-side owner', async () => {
+      mockCapabilities.value.canReactivate = false
       const checkout = await setup()
 
       await checkout.handleResubscribe()

@@ -7,6 +7,7 @@ import type {
   WorkspaceWithRole
 } from '@/platform/workspace/api/workspaceApi'
 
+import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import {
   CLOUD_REMOTE_CONFIG,
@@ -163,6 +164,12 @@ export class CloudWorkspaceMockHelper {
     await page.route('**/api/billing/status', (r) =>
       r.fulfill(jsonRoute(billingStatus))
     )
+    await page.route('**/api/billing/capabilities', (r) => {
+      if (r.request().method() !== 'GET') return r.fallback()
+      return r.fulfill(
+        jsonRoute(createWorkspaceBillingCapabilities(activeWorkspace))
+      )
+    })
     await page.route('**/api/billing/payment-portal', (r) =>
       r.fulfill(jsonRoute({ url: 'https://billing.example/portal' }))
     )
