@@ -69,7 +69,10 @@ test.describe(
 
       // "Delete" is the last item in the More Options menu.
       // It must become reachable by scrolling the bounded menu list.
-      const deleteItem = menu.getByText('Delete', { exact: true })
+      const deleteItem = menu.getByRole('menuitem', {
+        name: 'Delete',
+        exact: true
+      })
       const didScroll = await rootList.evaluate((el) => {
         const previousScrollTop = el.scrollTop
         el.scrollTo({ top: el.scrollHeight })
@@ -84,7 +87,10 @@ test.describe(
     }) => {
       const menu = await openMoreOptions(comfyPage)
 
-      const deleteItem = menu.getByText('Delete', { exact: true })
+      const deleteItem = menu.getByRole('menuitem', {
+        name: 'Delete',
+        exact: true
+      })
       await deleteItem.scrollIntoViewIfNeeded()
       await deleteItem.click()
       await comfyPage.nextFrame()
