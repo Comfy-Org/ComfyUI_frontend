@@ -23,6 +23,8 @@
         <SettingsPlansSection
           :catalog-plans="catalogPlans"
           :team-credit-stops="teamCreditStops"
+          :current-plan-slug="currentPlanSlug"
+          :current-team-credit-stop="currentTeamCreditStop"
           :is-loading="isCatalogLoading"
           :error="catalogError"
           @retry="retry"
@@ -57,6 +59,7 @@ import { useI18n } from 'vue-i18n'
 import CreditsPanel from '@/components/dialog/content/setting/CreditsPanel.vue'
 import UsageLogsTable from '@/components/dialog/content/setting/UsageLogsTable.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import SubscriptionFooterLinks from '@/platform/cloud/subscription/components/SubscriptionFooterLinks.vue'
 import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
@@ -75,6 +78,8 @@ const tabs = computed<{ key: View; label: string }[]>(() => [
 ])
 
 const activeView = ref<View>('overview')
+
+const { currentPlanSlug, currentTeamCreditStop } = useBillingContext()
 
 // Read from the singleton, so fetch through it: the rail-routed context lands
 // on useLegacyBilling's no-op off-cloud.

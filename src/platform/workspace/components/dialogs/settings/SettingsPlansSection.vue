@@ -145,8 +145,23 @@
           </div>
         </div>
 
-        <Button variant="secondary" size="lg" disabled class="mt-auto w-full">
-          {{ t('settingsPlans.choosePlan', { tier: plan.name }) }}
+        <Button
+          variant="secondary"
+          size="lg"
+          class="mt-auto w-full"
+          :disabled="
+            isCurrentSlug(plan.slug) ||
+            !plan.available ||
+            !canStartCheckout ||
+            isSubscribing
+          "
+          @click="subscribeToPersonal(plan.slug, selectedCycle)"
+        >
+          {{
+            isCurrentSlug(plan.slug)
+              ? t('subscription.currentPlan')
+              : t('settingsPlans.choosePlan', { tier: plan.name })
+          }}
         </Button>
       </div>
 
@@ -208,11 +223,25 @@
             </span>
           </div>
 
-          <Button variant="secondary" size="lg" disabled class="mt-auto w-full">
+          <Button
+            variant="secondary"
+            size="lg"
+            class="mt-auto w-full"
+            :disabled="
+              isTeamStopCurrent ||
+              !teamPlanSlug ||
+              !isTeamPlanAvailable ||
+              !canStartCheckout ||
+              isSubscribing
+            "
+            @click="onSubscribeTeam"
+          >
             {{
-              billedYearly
-                ? t('subscription.teamPlan.cta')
-                : t('subscription.teamPlan.ctaMonthly')
+              isTeamStopCurrent
+                ? t('subscription.teamPlan.currentPlan')
+                : billedYearly
+                  ? t('subscription.teamPlan.cta')
+                  : t('subscription.teamPlan.ctaMonthly')
             }}
           </Button>
         </div>
@@ -294,29 +323,45 @@ import ToggleGroup from '@/components/ui/toggle-group/ToggleGroup.vue'
 import ToggleGroupItem from '@/components/ui/toggle-group/ToggleGroupItem.vue'
 import { mapApiTeamCreditStops } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import { VIDEO_PER_CREDIT } from '@/platform/cloud/subscription/constants/tierPricing'
+import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type {
   Plan,
-  TeamCreditStops
+  TeamCreditStops,
+  TeamCreditStopSummary
 } from '@/platform/workspace/api/workspaceApi'
+import { useSettingsPlansCheckout } from '@/platform/workspace/composables/useSettingsPlansCheckout'
 
 import PlansUnavailable from './PlansUnavailable.vue'
 
 // The API catalog is the source of truth for every rendered price, credit,
 // slug, and stop; the frontend holds only presentation copy. A missing or
-// incomplete catalog renders the unavailable state, never a constant.
+// incomplete catalog renders the unavailable state, never a constant. Checkout
+// submits the exact API slug/stop rendered here, so render and checkout can
+// never disagree on identity.
 const {
   catalogPlans = [],
   teamCreditStops = null,
+  currentPlanSlug = null,
+  currentTeamCreditStop = null,
   isLoading = false,
   error = null
 } = defineProps<{
   catalogPlans?: Plan[]
   teamCreditStops?: TeamCreditStops | null
+  currentPlanSlug?: string | null
+  currentTeamCreditStop?: TeamCreditStopSummary | null
   isLoading?: boolean
   error?: string | null
 }>()
 
 const emit = defineEmits<{ retry: [] }>()
+
+const {
+  isSubscribing,
+  canStartCheckout,
+  subscribeToPersonal,
+  subscribeToTeam
+} = useSettingsPlansCheckout()
 
 // A load failure is retryable ('error'); a catalog that loaded with no plans is
 // a successful empty result ('empty', no retry).
@@ -384,6 +429,10 @@ function findApiPlan(tier: Plan['tier']): Plan | undefined {
   return catalogPlans.find((p) => p.tier === tier && p.duration === duration)
 }
 
+const selectedCycle = computed<BillingCycle>(() =>
+  billedYearly.value ? 'yearly' : 'monthly'
+)
+
 const personalCards = computed<PersonalCard[]>(() =>
   personalTiers.value.flatMap((tier) => {
     const plan = findApiPlan(tier.tier)
@@ -405,6 +454,13 @@ const personalCards = computed<PersonalCard[]>(() =>
     ]
   })
 )
+
+// The current plan is matched by the exact API slug rendered on the card, so a
+// founder/legacy/enterprise slug outside the catalog matches nothing and leaves
+// every card actionable — the inherited behavior Dante asked us to preserve.
+function isCurrentSlug(slug: string): boolean {
+  return currentPlanSlug !== null && slug === currentPlanSlug
+}
 
 // The unavailable block only renders with zero cards, so this is the other half.
 const hasStaleError = computed(
@@ -443,6 +499,28 @@ const selectedTeamStop = computed(
 const teamVideoEstimate = computed(() =>
   Math.round(selectedTeamStop.value.credits * VIDEO_PER_CREDIT)
 )
+
+// The team plan slug is the API TEAM row for the selected cycle — never
+// synthesized. Absent from the catalog => no offer, CTA disabled (D3).
+const teamPlanSlug = computed(() => findApiPlan('TEAM')?.slug ?? null)
+
+const isTeamPlanAvailable = computed(
+  () => findApiPlan('TEAM')?.availability.available ?? false
+)
+
+// "Current" is the exact subscribed stop (status.team_credit_stop.id), not the
+// cycle: other stops stay actionable so a subscriber can change commitment.
+const isTeamStopCurrent = computed(
+  () =>
+    currentTeamCreditStop !== null &&
+    selectedTeamStop.value.id === currentTeamCreditStop.id
+)
+
+function onSubscribeTeam() {
+  const slug = teamPlanSlug.value
+  if (!slug) return
+  void subscribeToTeam(slug, selectedTeamStop.value, selectedCycle.value)
+}
 
 const teamPerks = computed(() => [
   t('subscription.teamPlan.perkInviteMembers'),

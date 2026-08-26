@@ -90,6 +90,16 @@ vi.mock('@/composables/auth/useAuthActions', () => ({
   useAuthActions: () => ({ purchaseCredits: vi.fn(), fetchBalance: vi.fn() })
 }))
 
+// The checkout launcher is a different concern (and needs a Toast provider);
+// these tests are about how the catalog is fetched, not how it is bought.
+vi.mock('@/platform/workspace/composables/useSettingsPlansCheckout', () => ({
+  useSettingsPlansCheckout: () => ({
+    isSubscribing: ref(false),
+    subscribeToPersonal: vi.fn(),
+    subscribeToTeam: vi.fn()
+  })
+}))
+
 vi.mock('@/platform/workspace/api/workspaceApi', () => ({
   workspaceApi: api,
   WorkspaceApiError: class extends Error {}

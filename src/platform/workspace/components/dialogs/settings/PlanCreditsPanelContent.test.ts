@@ -33,11 +33,26 @@ const billingState = {
 }
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
-  useBillingContext: () => ({ fetchPlans: billing.fetchPlans })
+  useBillingContext: () => ({
+    fetchPlans: billing.fetchPlans,
+    currentPlanSlug: ref(null),
+    currentTeamCreditStop: ref(null)
+  })
 }))
 
 vi.mock('@/platform/cloud/subscription/composables/useBillingPlans', () => ({
   useBillingPlans: () => billingState
+}))
+
+// The wired tests render the real SettingsPlansSection to prove the fetch→render
+// wire; stub its checkout composable so it needs no Toast/dialog provider here
+// (checkout behavior is covered in the section's own test).
+vi.mock('@/platform/workspace/composables/useSettingsPlansCheckout', () => ({
+  useSettingsPlansCheckout: () => ({
+    isSubscribing: ref(false),
+    subscribeToPersonal: vi.fn(),
+    subscribeToTeam: vi.fn()
+  })
 }))
 
 const stubs = {

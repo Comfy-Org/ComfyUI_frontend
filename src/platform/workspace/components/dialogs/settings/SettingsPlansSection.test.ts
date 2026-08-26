@@ -1,6 +1,6 @@
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
-import { nextTick } from 'vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { render, screen } from '@testing-library/vue'
@@ -8,10 +8,34 @@ import { render, screen } from '@testing-library/vue'
 import enMessages from '@/locales/en/main.json'
 import type {
   Plan,
-  TeamCreditStops
+  TeamCreditStops,
+  TeamCreditStopSummary
 } from '@/platform/workspace/api/workspaceApi'
 
 import SettingsPlansSection from './SettingsPlansSection.vue'
+
+const {
+  mockIsSubscribing,
+  mockCanStartCheckout,
+  mockSubscribeToPersonal,
+  mockSubscribeToTeam
+} = vi.hoisted(() => ({
+  // A real ref so the template unwraps it; a plain object reads truthy and
+  // would disable every CTA.
+  mockIsSubscribing: { current: null as ReturnType<typeof ref> | null },
+  mockCanStartCheckout: { current: null as ReturnType<typeof ref> | null },
+  mockSubscribeToPersonal: vi.fn(),
+  mockSubscribeToTeam: vi.fn()
+}))
+
+vi.mock('@/platform/workspace/composables/useSettingsPlansCheckout', () => ({
+  useSettingsPlansCheckout: () => ({
+    isSubscribing: mockIsSubscribing.current,
+    canStartCheckout: mockCanStartCheckout.current,
+    subscribeToPersonal: mockSubscribeToPersonal,
+    subscribeToTeam: mockSubscribeToTeam
+  })
+}))
 
 const i18n = createI18n({
   legacy: false,
@@ -23,10 +47,11 @@ function makePlan(
   tier: Plan['tier'],
   duration: Plan['duration'],
   price_cents: number,
-  credits_cents: number
+  credits_cents: number,
+  slug = `${tier.toLowerCase()}-${duration.toLowerCase()}`
 ): Plan {
   return {
-    slug: `${tier.toLowerCase()}-${duration.toLowerCase()}`,
+    slug,
     tier,
     duration,
     price_cents,
@@ -47,7 +72,10 @@ const CATALOG: Plan[] = [
   makePlan('CREATOR', 'ANNUAL', 42000, 88800),
   makePlan('CREATOR', 'MONTHLY', 3500, 7400),
   makePlan('PRO', 'ANNUAL', 120000, 253200),
-  makePlan('PRO', 'MONTHLY', 10000, 21100)
+  makePlan('PRO', 'MONTHLY', 10000, 21100),
+  // TEAM rows carry the checkout slug per cycle; stops carry the id.
+  makePlan('TEAM', 'ANNUAL', 0, 0, 'team-annual-catalog'),
+  makePlan('TEAM', 'MONTHLY', 0, 0, 'team-monthly-catalog')
 ]
 
 // Distinct from any frontend constant so a render that ignored the prop would
@@ -74,6 +102,8 @@ function renderSection(
   props: {
     catalogPlans?: Plan[]
     teamCreditStops?: TeamCreditStops | null
+    currentPlanSlug?: string | null
+    currentTeamCreditStop?: TeamCreditStopSummary | null
     isLoading?: boolean
     error?: string | null
   } = {}
@@ -85,6 +115,13 @@ function renderSection(
 }
 
 describe('SettingsPlansSection — API is the source of truth', () => {
+  beforeEach(() => {
+    mockIsSubscribing.current = ref(false)
+    mockCanStartCheckout.current = ref(true)
+    mockSubscribeToPersonal.mockReset()
+    mockSubscribeToTeam.mockReset()
+  })
+
   it('renders personal prices and credits from the catalog (yearly)', () => {
     renderSection()
 
@@ -148,7 +185,6 @@ describe('SettingsPlansSection — API is the source of truth', () => {
 
     // default_stop_index 1 => the $900 / 189,900 stop.
     expect(screen.getByText('189,900')).toBeTruthy()
-    // The old constant stop must never appear.
     expect(screen.queryByText('147,700')).toBeNull()
   })
 
@@ -188,7 +224,6 @@ describe('SettingsPlansSection — API is the source of truth', () => {
     expect(
       screen.getByText('No plans are available right now. Check back soon.')
     ).toBeTruthy()
-    // No constant-seeded slider stop.
     expect(screen.queryByText('147,700')).toBeNull()
   })
 
@@ -227,19 +262,6 @@ describe('SettingsPlansSection — API is the source of truth', () => {
     expect(screen.queryByText(/\$\d+ Billed yearly/)).toBeNull()
   })
 
-  it('keeps every CTA disabled (checkout is a later slice)', async () => {
-    renderSection()
-
-    for (const name of ['Choose Standard', 'Choose Creator', 'Choose Pro']) {
-      expect(screen.getByRole('button', { name })).toBeDisabled()
-    }
-    await userEvent.click(screen.getByRole('button', { name: 'Teams' }))
-    expect(
-      screen.getByRole('button', { name: 'Subscribe to Team Yearly' })
-    ).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Contact us' })).toBeDisabled()
-  })
-
   it('exposes the billing switch by its accessible name', () => {
     renderSection()
 
@@ -247,9 +269,6 @@ describe('SettingsPlansSection — API is the source of truth', () => {
   })
 
   it('shows the default stop credits when live stops replace the seeded set', async () => {
-    // Seed with one breakpoint set, then swap to a disjoint set: the previously
-    // seeded USD matches no new stop, so the display falls back to the API
-    // default stop (no stale/blank credits).
     const { rerender } = renderSection({
       teamCreditStops: {
         default_stop_index: 0,
@@ -328,5 +347,202 @@ describe('SettingsPlansSection — API is the source of truth', () => {
 
     expect(screen.getByText('$20')).toBeTruthy()
     expect(screen.queryByText('Loading')).toBeNull()
+  })
+})
+
+describe('SettingsPlansSection — checkout uses API plan identity', () => {
+  beforeEach(() => {
+    mockIsSubscribing.current = ref(false)
+    mockSubscribeToPersonal.mockReset()
+    mockSubscribeToTeam.mockReset()
+  })
+
+  it('submits the exact rendered API slug for the chosen card and cycle', async () => {
+    // The slug is sourced from the rendered Plan, so mutating the fixture slug
+    // must change the submitted slug — render and checkout share one identity.
+    const catalog = CATALOG.map((p) =>
+      p.tier === 'STANDARD' && p.duration === 'ANNUAL'
+        ? makePlan('STANDARD', 'ANNUAL', 24000, 50400, 'standard-annual-v2')
+        : p
+    )
+    renderSection({ catalogPlans: catalog })
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Choose Standard' })
+    )
+    expect(mockSubscribeToPersonal).toHaveBeenCalledWith(
+      'standard-annual-v2',
+      'yearly'
+    )
+
+    await userEvent.click(screen.getByRole('switch'))
+    await userEvent.click(screen.getByRole('button', { name: 'Choose Pro' }))
+    expect(mockSubscribeToPersonal).toHaveBeenCalledWith(
+      'pro-monthly',
+      'monthly'
+    )
+  })
+
+  it('disables only the current personal card, by exact API slug', async () => {
+    renderSection({ currentPlanSlug: 'creator-annual' })
+
+    const current = screen.getByRole('button', { name: 'Current Plan' })
+    expect(current).toBeDisabled()
+    expect(
+      screen.getByRole('button', { name: 'Choose Standard' })
+    ).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Choose Pro' })).toBeEnabled()
+
+    await userEvent.click(current)
+    expect(mockSubscribeToPersonal).not.toHaveBeenCalled()
+  })
+
+  it('disables a card whose API plan is unavailable and blocks its checkout', async () => {
+    const catalog = CATALOG.map((p) =>
+      p.tier === 'STANDARD' && p.duration === 'ANNUAL'
+        ? { ...p, availability: { available: false } }
+        : p
+    )
+    renderSection({ catalogPlans: catalog })
+
+    const standard = screen.getByRole('button', { name: 'Choose Standard' })
+    expect(standard).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Choose Pro' })).toBeEnabled()
+
+    await userEvent.click(standard)
+    expect(mockSubscribeToPersonal).not.toHaveBeenCalled()
+  })
+
+  it('disables every CTA while a checkout is in flight', async () => {
+    mockIsSubscribing.current = ref(true)
+    renderSection()
+
+    for (const name of ['Choose Standard', 'Choose Creator', 'Choose Pro']) {
+      expect(screen.getByRole('button', { name })).toBeDisabled()
+    }
+
+    // The team CTA must be locked too, or a second click could double-submit.
+    await userEvent.click(screen.getByRole('button', { name: 'Teams' }))
+    expect(
+      screen.getByRole('button', { name: 'Subscribe to Team Yearly' })
+    ).toBeDisabled()
+  })
+
+  it('marks no card current for an enterprise/founder/legacy slug', () => {
+    renderSection({ currentPlanSlug: 'enterprise-annual' })
+
+    expect(screen.queryByRole('button', { name: 'Current Plan' })).toBeNull()
+    for (const name of ['Choose Standard', 'Choose Creator', 'Choose Pro']) {
+      expect(screen.getByRole('button', { name })).toBeEnabled()
+    }
+  })
+
+  it('submits the team API slug and the selected stop id', async () => {
+    renderSection()
+    await userEvent.click(screen.getByRole('button', { name: 'Teams' }))
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Subscribe to Team Yearly' })
+    )
+
+    expect(mockSubscribeToTeam).toHaveBeenCalledWith(
+      'team-annual-catalog',
+      expect.objectContaining({ id: 'team_900' }),
+      'yearly'
+    )
+  })
+
+  it('disables the team CTA only for the current stop, not every stop in the cycle', async () => {
+    // default stop is team_900; the current stop is team_300, a DIFFERENT stop.
+    renderSection({
+      currentTeamCreditStop: {
+        id: 'team_300',
+        stop_usd: 300,
+        credits_monthly: 63_300
+      }
+    })
+    await userEvent.click(screen.getByRole('button', { name: 'Teams' }))
+
+    // Selected default (team_900) is not the current stop => actionable.
+    expect(
+      screen.getByRole('button', { name: 'Subscribe to Team Yearly' })
+    ).toBeEnabled()
+  })
+
+  it('disables the team CTA when the selected stop is the current stop', async () => {
+    renderSection({
+      currentTeamCreditStop: {
+        id: 'team_900',
+        stop_usd: 900,
+        credits_monthly: 189_900
+      }
+    })
+    await userEvent.click(screen.getByRole('button', { name: 'Teams' }))
+
+    expect(screen.getByRole('button', { name: 'Current plan' })).toBeDisabled()
+  })
+
+  it('does not submit a synthesized team slug when the catalog has no TEAM row', async () => {
+    const noTeam = CATALOG.filter((p) => p.tier !== 'TEAM')
+    renderSection({ catalogPlans: noTeam })
+    await userEvent.click(screen.getByRole('button', { name: 'Teams' }))
+
+    const cta = screen.getByRole('button', { name: 'Subscribe to Team Yearly' })
+    expect(cta).toBeDisabled()
+    await userEvent.click(cta)
+    expect(mockSubscribeToTeam).not.toHaveBeenCalled()
+  })
+
+  it('disables the team CTA when the API TEAM row is unavailable', async () => {
+    const catalog = CATALOG.map((p) =>
+      p.tier === 'TEAM' && p.duration === 'ANNUAL'
+        ? { ...p, availability: { available: false } }
+        : p
+    )
+    renderSection({ catalogPlans: catalog })
+    await userEvent.click(screen.getByRole('button', { name: 'Teams' }))
+
+    const cta = screen.getByRole('button', { name: 'Subscribe to Team Yearly' })
+    expect(cta).toBeDisabled()
+    await userEvent.click(cta)
+    expect(mockSubscribeToTeam).not.toHaveBeenCalled()
+  })
+
+  // Until #15898 lands the preview/consent dialog, a subscriber must not be
+  // able to start an unpreviewed prorated plan change from this section.
+  describe('when checkout cannot be started', () => {
+    beforeEach(() => {
+      mockCanStartCheckout.current = ref(false)
+    })
+
+    it('disables every non-current personal CTA and blocks its checkout', async () => {
+      renderSection({ currentPlanSlug: 'standard-annual' })
+
+      for (const name of ['Choose Creator', 'Choose Pro']) {
+        const cta = screen.getByRole('button', { name })
+        expect(cta).toBeDisabled()
+        await userEvent.click(cta)
+      }
+      expect(mockSubscribeToPersonal).not.toHaveBeenCalled()
+    })
+
+    it('still labels the subscribed card as the current plan', () => {
+      renderSection({ currentPlanSlug: 'standard-annual' })
+
+      expect(
+        screen.getByRole('button', { name: 'Current Plan' })
+      ).toBeInTheDocument()
+    })
+
+    it('disables the team CTA and blocks its checkout', async () => {
+      renderSection({ currentPlanSlug: 'standard-annual' })
+      await userEvent.click(screen.getByRole('button', { name: 'Teams' }))
+
+      const cta = screen.getByRole('button', {
+        name: 'Subscribe to Team Yearly'
+      })
+      expect(cta).toBeDisabled()
+      await userEvent.click(cta)
+      expect(mockSubscribeToTeam).not.toHaveBeenCalled()
+    })
   })
 })

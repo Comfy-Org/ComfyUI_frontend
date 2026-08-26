@@ -61,6 +61,7 @@ export function useBillingContext(): BillingContext {
     isLoading: ref(false),
     error: ref<string | null>(null),
     isActiveSubscription: computed(() => state.value.isActiveSubscription),
+    hasPaidCheckoutPlan: computed(() => state.value.isActiveSubscription),
     canRunWorkflows: computed(() => state.value.isActiveSubscription),
     showsSubscribeToRunPrompt: computed(
       () => !state.value.isActiveSubscription
