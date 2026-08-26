@@ -16,6 +16,7 @@ interface WidgetsViewState {
 }
 
 const states = new WeakMap<LGraphNode, WidgetsViewState>()
+const widgetsViewGetters = new WeakSet<() => IBaseWidget[] | undefined>()
 
 function syncWidgetOrder(node: LGraphNode, widgets: IBaseWidget[]): void {
   node._widgetSlotsDirty = true
@@ -36,8 +37,10 @@ function syncWidgetOrder(node: LGraphNode, widgets: IBaseWidget[]): void {
 }
 
 function defineWidgetsView(node: LGraphNode, state: WidgetsViewState): void {
+  const getWidgets = () => (state.present ? state.view : undefined)
+  widgetsViewGetters.add(getWidgets)
   Object.defineProperty(node, 'widgets', {
-    get: () => (state.present ? state.view : undefined),
+    get: getWidgets,
     set: (value: IBaseWidget[] | undefined) => {
       if (value === undefined) {
         if (!state.present) return
@@ -74,6 +77,7 @@ export function normalizeWidgetsView(node: LGraphNode): void {
   if (!state || !descriptor) return
 
   if (!('value' in descriptor)) {
+    if (!descriptor.get || !widgetsViewGetters.has(descriptor.get)) return
     state.commit(state.target)
     return
   }
