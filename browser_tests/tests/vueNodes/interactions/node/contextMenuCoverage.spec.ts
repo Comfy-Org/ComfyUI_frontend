@@ -228,16 +228,23 @@ test.describe(
     })
 
     test.describe('Menu Visibility Invariants', () => {
-      test('should show Delete menu item for any node', async ({
+      test('should disable Delete for a non-removable node', async ({
         comfyPage
       }) => {
+        const node = await getNodeRef(comfyPage, 'KSampler')
+        await comfyPage.page.evaluate((nodeId) => {
+          const graphNode = window.app!.graph.getNodeById(nodeId)
+          if (!graphNode) throw new Error(`Node ${nodeId} not found`)
+          graphNode.removable = false
+        }, node.id)
+
         await openContextMenu(comfyPage, 'KSampler')
         await expect(
           comfyPage.contextMenu.primeVueMenu.getByRole('menuitem', {
             name: 'Delete',
             exact: true
           })
-        ).toBeVisible()
+        ).toBeDisabled()
       })
     })
 

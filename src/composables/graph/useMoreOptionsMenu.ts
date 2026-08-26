@@ -156,8 +156,7 @@ export function useMoreOptionsMenu() {
     getBasicSelectionOptions,
     getMultipleNodesOptions,
     getSubgraphOptions,
-    getDeleteOption,
-    getAlignmentOptions
+    getDeleteOption
   } = useSelectionMenuOptions()
 
   const hasSubgraphs = hasSubgraphsComputed
@@ -184,7 +183,7 @@ export function useMoreOptionsMenu() {
         : null
     const hasSubgraphsSelected = hasSubgraphs.value
 
-    // For single node selection, also get LiteGraph menu items to merge
+    // For node selection, also get LiteGraph menu items to merge
     const litegraphOptions: MenuOption[] = []
     const node: LGraphNode | undefined = selectedNodes.value[0]
     const hideLinkedInputActions = node
@@ -199,11 +198,7 @@ export function useMoreOptionsMenu() {
     const unavailableCoreMediaActionKinds = new Set<CoreMediaMenuActionKind>()
     if (hideLinkedInputActions) unavailableCoreMediaActionKinds.add('input')
     if (hideLinkedInputPreview) unavailableCoreMediaActionKinds.add('preview')
-    if (
-      selectedNodes.value.length === 1 &&
-      !groupContext &&
-      canvasStore.canvas
-    ) {
+    if (selectedNodes.value.length > 0 && !groupContext && canvasStore.canvas) {
       try {
         const rawItems = canvasStore.canvas.getNodeMenuOptions(node)
         // Don't apply structuring yet - we'll do it after merging with Vue options
@@ -255,7 +250,6 @@ export function useMoreOptionsMenu() {
     )
     if (hasMultipleNodes.value) {
       options.push(...getMultipleNodesOptions())
-      options.push(...getAlignmentOptions())
     }
     if (groupContext) {
       options.push(getFitGroupToNodesOption(groupContext))
@@ -308,7 +302,14 @@ export function useMoreOptionsMenu() {
       }
     }
 
-    options.push(getDeleteOption())
+    const deleteOption = getDeleteOption()
+    const litegraphDeleteOption = litegraphOptions.find(
+      (option) => option.label === 'Delete' || option.label === 'Remove'
+    )
+    if (litegraphDeleteOption) {
+      deleteOption.disabled = litegraphDeleteOption.disabled
+    }
+    options.push(deleteOption)
 
     // Section 6 & 7: Extensions and Delete are handled by buildStructuredMenu
 
