@@ -1222,9 +1222,15 @@ export function createDefRegistry(): {
       if (declaredSuppliers.length === 1) {
         frontendSuppliers.set(def.type, declaredSuppliers[0])
       } else if (declaredSuppliers.length > 1) {
-        frontendSuppliers.set(def.type, (view) =>
-          declaredSuppliers.flatMap((supplier) => supplier(view))
-        )
+        frontendSuppliers.set(def.type, (view) => {
+          // Composition stays synchronous unless a part is asynchronous —
+          // otherwise composing two ordinary suppliers would trip the
+          // sync-path degradation neither of them deserves.
+          const parts = declaredSuppliers.map((supplier) => supplier(view))
+          return parts.some((p) => p instanceof Promise)
+            ? Promise.all(parts).then((edges) => edges.flat())
+            : parts.flatMap((p) => (p instanceof Promise ? [] : p))
+        })
       }
 
       const rawDef = raw as RawNodeDef

@@ -85,7 +85,17 @@ export interface ResolveView {
   nodesOfType(type: string): readonly ResolvedNodeView[]
 }
 
-export type Resolver = (view: ResolveView) => Record<string, OutputResolution>
+/**
+ * May answer asynchronously: a sandboxed pack's resolver runs in a worker, so
+ * its answer can only arrive as a promise. The prompt path awaits it; the
+ * synchronous entry points (`input.resolvedSource()`, `resolvedSupplies()`)
+ * treat a promise as unresolved and say so — see `resolution.async.test.ts`.
+ */
+export type Resolver = (
+  view: ResolveView
+) =>
+  | Record<string, OutputResolution>
+  | Promise<Record<string, OutputResolution>>
 
 /** Where an output ends up after every frontend node in the chain resolves. */
 export type ResolvedSource =
@@ -190,30 +200,90 @@ function viewOf(
  * Pure over the graph: the result is a map, the graph is never written. The
  * caller (the prompt builder) substitutes sources while it serializes.
  */
-export function resolveFrontendNodes(
+const isThenable = (v: unknown): v is Promise<unknown> =>
+  !!v && typeof (v as { then?: unknown }).then === 'function'
+
+function callResolver(
+  graph: LGraph,
+  resolvers: ReadonlyMap<string, Resolver>,
+  nodeId: string,
+  type: string
+):
+  | Record<string, OutputResolution>
+  | Promise<Record<string, OutputResolution>> {
+  const resolver = resolvers.get(type)
+  const self = viewOf(graph, nodeId)
+  if (!resolver || !self) return {}
+  return resolver({
+    self,
+    nodesOfType: (wanted) =>
+      (graph.nodes ?? [])
+        .filter((n) => n.type === wanted)
+        .map((n) => viewOf(graph, String(n.id)))
+        .filter((v): v is ResolvedNodeView => v !== undefined)
+  })
+}
+
+/**
+ * Awaits every resolver up front, so the synchronous algorithm below can run
+ * against plain values. One call per resolver-bearing node, same as the
+ * memoised path.
+ */
+export async function prebuildResolverAnswers(
   graph: LGraph,
   resolvers: ReadonlyMap<string, Resolver>
+): Promise<ReadonlyMap<string, Record<string, OutputResolution>>> {
+  const prebuilt = new Map<string, Record<string, OutputResolution>>()
+  for (const node of graph.nodes ?? []) {
+    const type = node.type ?? ''
+    if (!resolvers.has(type)) continue
+    const nodeId = String(node.id)
+    prebuilt.set(nodeId, await callResolver(graph, resolvers, nodeId, type))
+  }
+  return prebuilt
+}
+
+/** The prompt path's entry: awaits async resolvers, then resolves as usual. */
+export async function resolveFrontendNodesAsync(
+  graph: LGraph,
+  resolvers: ReadonlyMap<string, Resolver>
+): Promise<ReadonlyMap<string, ResolvedSource>> {
+  return resolveFrontendNodes(
+    graph,
+    resolvers,
+    await prebuildResolverAnswers(graph, resolvers)
+  )
+}
+
+export function resolveFrontendNodes(
+  graph: LGraph,
+  resolvers: ReadonlyMap<string, Resolver>,
+  /**
+   * Answers computed ahead of time — `prebuildResolverAnswers` awaited each
+   * resolver, so an async resolver's answer is here as a plain value. Without
+   * this, a promise-returning resolver on this synchronous path counts as
+   * unresolved, loudly.
+   */
+  prebuilt?: ReadonlyMap<string, Record<string, OutputResolution>>
 ): ReadonlyMap<string, ResolvedSource> {
   const resolved = new Map<string, ResolvedSource>()
 
   /** One resolver call per node, memoised — resolvers must be pure anyway. */
   const answers = new Map<string, Record<string, OutputResolution>>()
   const answersFor = (nodeId: string, type: string) => {
-    let answer = answers.get(nodeId)
+    let answer = answers.get(nodeId) ?? prebuilt?.get(nodeId)
     if (!answer) {
-      const resolver = resolvers.get(type)
-      const self = viewOf(graph, nodeId)
-      answer =
-        resolver && self
-          ? resolver({
-              self,
-              nodesOfType: (wanted) =>
-                (graph.nodes ?? [])
-                  .filter((n) => n.type === wanted)
-                  .map((n) => viewOf(graph, String(n.id)))
-                  .filter((v): v is ResolvedNodeView => v !== undefined)
-            })
-          : {}
+      const raw = callResolver(graph, resolvers, nodeId, type)
+      if (isThenable(raw)) {
+        console.warn(
+          `[nodeApi] '${type}' resolves asynchronously, which this ` +
+            `synchronous read cannot await — treating node ${nodeId} as ` +
+            `unresolved. The prompt path awaits it correctly.`
+        )
+        answer = {}
+      } else {
+        answer = raw
+      }
       answers.set(nodeId, answer)
     }
     return answer
@@ -431,7 +501,10 @@ export interface SupplyView {
  * discovered rather than declared. Hence a second, supply-side pass.
  *
  */
-export type Supplier = (view: SupplyView) => readonly SuppliedEdge[]
+/** May answer asynchronously, under the same rules as {@link Resolver}. */
+export type Supplier = (
+  view: SupplyView
+) => readonly SuppliedEdge[] | Promise<readonly SuppliedEdge[]>
 
 /**
  * One winning supply after priority arbitration and source resolution.
@@ -496,7 +569,9 @@ function sourceFor(
 export function resolveSupplies(
   graph: LGraph,
   suppliers: ReadonlyMap<string, Supplier>,
-  resolved: ReadonlyMap<string, ResolvedSource>
+  resolved: ReadonlyMap<string, ResolvedSource>,
+  /** Awaited edges from `prebuildSupplierEdges`; same contract as resolvers. */
+  prebuiltEdges?: ReadonlyMap<string, readonly SuppliedEdge[]>
 ): readonly ResolvedSupply[] {
   const supplied: ResolvedSupply[] = []
   if (!suppliers.size) return Object.freeze(supplied)
@@ -533,15 +608,28 @@ export function resolveSupplies(
     const self = supplier ? viewOf(graph, String(node.id), groups) : undefined
     if (!supplier || !self) continue
 
-    const edges = supplier({
-      self,
-      nodesOfType: (wanted) =>
-        (graph.nodes ?? [])
-          .filter((n) => n.type === wanted)
-          .map((n) => viewOf(graph, String(n.id), groups))
-          .filter((v): v is ResolvedNodeView => v !== undefined),
-      unconnectedInputs: () => unconnected
-    })
+    const raw =
+      prebuiltEdges?.get(String(node.id)) ??
+      supplier({
+        self,
+        nodesOfType: (wanted) =>
+          (graph.nodes ?? [])
+            .filter((n) => n.type === wanted)
+            .map((n) => viewOf(graph, String(n.id), groups))
+            .filter((v): v is ResolvedNodeView => v !== undefined),
+        unconnectedInputs: () => unconnected
+      })
+    let edges: readonly SuppliedEdge[]
+    if (isThenable(raw)) {
+      console.warn(
+        `[nodeApi] '${node.type}' supplies asynchronously, which this ` +
+          `synchronous read cannot await — treating node ${node.id} as ` +
+          `supplying nothing. The prompt path awaits it correctly.`
+      )
+      edges = []
+    } else {
+      edges = raw
+    }
 
     for (const edge of edges) {
       const target = `${edge.to.nodeId}:${edge.to.input}`
@@ -584,12 +672,80 @@ export function resolveSupplies(
 export function resolveSuppliedInputs(
   graph: LGraph,
   suppliers: ReadonlyMap<string, Supplier>,
-  resolved: ReadonlyMap<string, ResolvedSource>
+  resolved: ReadonlyMap<string, ResolvedSource>,
+  prebuiltEdges?: ReadonlyMap<string, readonly SuppliedEdge[]>
 ): ReadonlyMap<string, ResolvedSource> {
   return new Map(
-    resolveSupplies(graph, suppliers, resolved).map(({ to, from }) => [
-      key(to.nodeId, to.input),
-      from
-    ])
+    resolveSupplies(graph, suppliers, resolved, prebuiltEdges).map(
+      ({ to, from }) => [key(to.nodeId, to.input), from]
+    )
+  )
+}
+
+/**
+ * Awaits every supplier up front — the supplier-side twin of
+ * `prebuildResolverAnswers`, sharing its view construction with
+ * `resolveSupplies` by running it once per supplying node.
+ */
+export async function prebuildSupplierEdges(
+  graph: LGraph,
+  suppliers: ReadonlyMap<string, Supplier>
+): Promise<ReadonlyMap<string, readonly SuppliedEdge[]>> {
+  const prebuilt = new Map<string, readonly SuppliedEdge[]>()
+  if (!suppliers.size) return prebuilt
+
+  const groups = groupsByNodeId(graph)
+  const unconnected: UnconnectedInput[] = []
+  for (const node of graph.nodes ?? []) {
+    for (const [index, input] of (node.inputs ?? []).entries()) {
+      if (input.link != null) continue
+      unconnected.push({
+        nodeId: String(node.id),
+        nodeType: node.type ?? '',
+        input: index,
+        name: input.name ?? '',
+        type: typeof input.type === 'string' ? input.type : String(input.type),
+        label: input.label ?? input.localized_name ?? input.name ?? '',
+        isWidgetInput: input.widget != null,
+        nodeTitle: node.title ?? '',
+        nodeMode: node.mode ?? 0,
+        nodeColor: node.color,
+        nodeProperties: Object.freeze({ ...(node.properties ?? {}) }),
+        nodeGroups: Object.freeze(groups.get(String(node.id)) ?? [])
+      })
+    }
+  }
+
+  for (const node of graph.nodes ?? []) {
+    const supplier = suppliers.get(node.type ?? '')
+    const self = supplier ? viewOf(graph, String(node.id), groups) : undefined
+    if (!supplier || !self) continue
+    prebuilt.set(
+      String(node.id),
+      await supplier({
+        self,
+        nodesOfType: (wanted) =>
+          (graph.nodes ?? [])
+            .filter((n) => n.type === wanted)
+            .map((n) => viewOf(graph, String(n.id), groups))
+            .filter((v): v is ResolvedNodeView => v !== undefined),
+        unconnectedInputs: () => unconnected
+      })
+    )
+  }
+  return prebuilt
+}
+
+/** The prompt path's supplier entry: awaits, then arbitrates as usual. */
+export async function resolveSuppliedInputsAsync(
+  graph: LGraph,
+  suppliers: ReadonlyMap<string, Supplier>,
+  resolved: ReadonlyMap<string, ResolvedSource>
+): Promise<ReadonlyMap<string, ResolvedSource>> {
+  return resolveSuppliedInputs(
+    graph,
+    suppliers,
+    resolved,
+    await prebuildSupplierEdges(graph, suppliers)
   )
 }
