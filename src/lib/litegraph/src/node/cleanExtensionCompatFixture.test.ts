@@ -3,10 +3,7 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import {
-  CLEAN_EXTENSION_FIXTURE_IDENTITY,
-  installCleanExtensionFixture
-} from '@/lib/litegraph/test/fixtures/cleanExtensionCompatFixture'
+import { installCleanExtensionFixture } from '@/lib/litegraph/test/fixtures/cleanExtensionCompatFixture'
 import type {
   CleanExtensionCounters,
   CleanExtensionDrawContext,
@@ -161,7 +158,20 @@ describe('clean extension compatibility fixture', () => {
       })
       expect(result.coreDraws).toHaveBeenCalledTimes(result.nodes.length)
       expect(result.after).toEqual(result.before)
-      expect(result.fixture.identity).toBe(CLEAN_EXTENSION_FIXTURE_IDENTITY)
+      expect(result.fixture.identity).toEqual({
+        fixture: 'comfy.clean-extension-compat.v1',
+        emulationPatternSha256:
+          'a8603d20ae82775a902553058e1cea4e72ea10c0ab1664cd57ab6b5fc573a719',
+        labelPatternSource:
+          'rgthree-comfy@13b4399c00b5ef5a97b1b6800fc1185874740f5d',
+        labelPatternSha256:
+          '5a0f8d72d0be3c6573477943a18295310f82dd4b1d99a506517bb6956af1790d',
+        reroutePatternSource: 'rgthree-comfy@629c514a',
+        reroutePatternSha256:
+          'fea80b78a4e055446ad69628c2ea436f06eda52a31382e005a5476f1a6e65b24',
+        compatibilityPatternSource:
+          'ComfyUI-KJNodes@3f20054214fec9f9234fd3841ae6f1e4287948f6'
+      })
 
       if (mode === 'loaded-inactive') {
         expect(result.fixture.counters).toMatchObject({

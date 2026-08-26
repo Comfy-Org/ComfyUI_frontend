@@ -1,7 +1,7 @@
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 
-export const CLEAN_EXTENSION_FIXTURE_IDENTITY = Object.freeze({
+const CLEAN_EXTENSION_FIXTURE_IDENTITY = Object.freeze({
   fixture: 'comfy.clean-extension-compat.v1',
   emulationPatternSha256:
     'a8603d20ae82775a902553058e1cea4e72ea10c0ab1664cd57ab6b5fc573a719',
