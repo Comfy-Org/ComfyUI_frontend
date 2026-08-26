@@ -2105,6 +2105,31 @@ const translations = {
       '我们尽力为经历面试流程的候选人提供有意义的反馈。由于申请量较大，在简历筛选阶段可能无法提供详细反馈。'
   },
 
+  // Developers page – Meta
+  'developers.meta.title': {
+    en: 'Comfy Developer Platform - Run ComfyUI Workflows as APIs',
+    'zh-CN': 'Comfy 开发者平台 - 将 ComfyUI 工作流作为 API 运行'
+  },
+  'developers.meta.description': {
+    en: 'Turn the ComfyUI workflow that works on your machine into an API that scales. Deploy on Comfy Cloud or serverless GPUs, call it from the Python or TypeScript SDK, and keep builds reproducible.',
+    'zh-CN':
+      '把在你机器上已经跑通的 ComfyUI 工作流变成可扩展的 API。部署到 Comfy Cloud 或无服务器 GPU，通过 Python 或 TypeScript SDK 调用，并保持构建可复现。'
+  },
+  'developers.breadcrumb': {
+    en: 'Developer platform',
+    'zh-CN': '开发者平台'
+  },
+
+  // Developers page – PricingSection
+  'developers.pricing.title': {
+    en: 'Pricing Plan',
+    'zh-CN': '价格方案'
+  },
+  'developers.pricing.lead': {
+    en: 'Access cloud-powered ComfyUI workflows with straightforward, usage-based pricing.',
+    'zh-CN': '通过简单透明、按使用量计费的方式，访问云端 ComfyUI 工作流。'
+  },
+
   // MCP – Meta
   'mcp.meta.title': {
     en: 'Comfy MCP - Drive ComfyUI from any AI agent',
