@@ -107,8 +107,10 @@ stacks. “Did not reproduce” is a result, not permission to record indefinite
 - Disconnect observers and restore wrapped methods/listeners in `finally`.
 - Stop tracing and verify no CDP/native recording remains active.
 - Close the disposable browser profile and stop investigation servers.
-- Keep raw metrics and identity manifests for 90 days; keep bounded regression
-  traces for 14–30 days unless policy requires less.
+- Treat CI raw metrics as available for 30 days and `perf-data` history as the
+  latest 20 baselines. Export approved incident evidence before those limits
+  when a longer investigation requires it. Keep bounded regression traces for
+  14–30 days unless policy requires less.
 - Keep restricted native evidence only until hash/import confirmation and the
   approved retention deadline. Never delete the only accepted copy before the
   recipient confirms it opens.

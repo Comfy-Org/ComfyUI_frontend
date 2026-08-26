@@ -186,10 +186,14 @@ data. Use opaque graph and capture identifiers. Native traces may contain paths,
 process metadata, window titles, and sampled stacks and therefore remain in an
 approved restricted channel.
 
-Small raw metric artifacts and their identity manifests are retained for 90
-days. Regression-only bounded browser traces are retained for 14–30 days. A
-longer-lived report may retain aggregates, hashes, decisions, and links, but not
-sensitive raw captures. Organization retention policy overrides these maxima.
+The live CI guarantee is 30 days for uploaded raw metric artifacts and the
+latest 20 snapshots on the `perf-data` branch. This ADR does not extend either
+guarantee. Identity-complete scheduled and release lanes target 90-day raw
+metric retention, but that requirement takes effect only after their workflow
+uses date-based retention and storage sized for that window. Regression-only
+bounded browser traces are retained for 14–30 days. A longer-lived report may
+retain aggregates, hashes, decisions, and links, but not sensitive raw captures.
+Organization retention policy overrides these maxima.
 
 ## Alternatives Considered
 
