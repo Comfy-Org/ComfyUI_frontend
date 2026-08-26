@@ -534,6 +534,42 @@ test.describe('Workflow Persistence', () => {
     await expect(comfyPage.toast.toastErrors).toHaveCount(0)
   })
 
+  test('Flushes a pending draft edit before an immediate reload', async ({
+    comfyPage
+  }) => {
+    test.info().annotations.push({
+      type: 'regression',
+      description:
+        'FE-1484 — refreshing inside the persistence debounce window lost the latest workflow edit'
+    })
+
+    await comfyPage.settings.setSetting('Comfy.Workflow.Persist', true)
+    await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
+    await fitToViewInstant(comfyPage)
+
+    const firstNode = await getRequiredFirstNodeRef(
+      comfyPage,
+      'First node should be available after loading single_ksampler'
+    )
+    await firstNode.centerOnNode()
+
+    const baselineSaveStartedAt = Date.now()
+    await firstNode.toggleCollapse()
+    await expect.poll(() => firstNode.isCollapsed()).toBe(true)
+    await comfyPage.workflow.waitForDraftIndexUpdatedSince(
+      baselineSaveStartedAt
+    )
+
+    await firstNode.toggleCollapse()
+    await comfyPage.workflow.reloadAndWaitForApp()
+
+    const restoredNode = await getRequiredFirstNodeRef(
+      comfyPage,
+      'First node should be restored after the immediate reload'
+    )
+    await expect.poll(() => restoredNode.isCollapsed()).toBe(false)
+  })
+
   test('Closing an inactive tab with save preserves its own content', async ({
     comfyPage
   }) => {
