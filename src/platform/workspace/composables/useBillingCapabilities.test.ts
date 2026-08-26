@@ -66,7 +66,8 @@ function capabilitiesResponse(
   canTopUp: boolean,
   workspaceId = 'workspace-1',
   canSubscribeSelfServe = true,
-  freshness: { expiresAt?: string; revision?: number } = {}
+  freshness: { expiresAt?: string; revision?: number } = {},
+  overrides: Partial<BillingCapabilitiesResponse['capabilities']> = {}
 ): BillingCapabilitiesResponse {
   return {
     resolved_for: {
@@ -80,7 +81,8 @@ function capabilitiesResponse(
       can_reactivate: true,
       can_change_seats: true,
       can_invite_members: true,
-      can_downgrade_to_personal: false
+      can_downgrade_to_personal: true,
+      ...overrides
     },
     rollout_defaults_applied: {
       can_downgrade_to_personal: false,
@@ -196,6 +198,11 @@ describe('useBillingCapabilities', () => {
 
     expect(billingCapabilities.canTopUp.value).toBe(false)
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
+    expect(billingCapabilities.canCancel.value).toBe(false)
+    expect(billingCapabilities.canReactivate.value).toBe(false)
+    expect(billingCapabilities.canChangeSeats.value).toBe(false)
+    expect(billingCapabilities.canInviteMembers.value).toBe(false)
+    expect(billingCapabilities.canDowngradeToPersonal.value).toBe(false)
 
     const initialization = billingCapabilities.initialize()
     expect(billingCapabilities.canTopUp.value).toBe(false)
@@ -205,6 +212,37 @@ describe('useBillingCapabilities', () => {
     await initialization
     expect(billingCapabilities.canTopUp.value).toBe(true)
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(true)
+    expect(billingCapabilities.canCancel.value).toBe(true)
+    expect(billingCapabilities.canReactivate.value).toBe(true)
+    expect(billingCapabilities.canChangeSeats.value).toBe(true)
+    expect(billingCapabilities.canInviteMembers.value).toBe(true)
+    expect(billingCapabilities.canDowngradeToPersonal.value).toBe(true)
+  })
+
+  it('applies denied server capabilities without client-side inference', async () => {
+    mockGetBillingCapabilities.mockResolvedValueOnce(
+      capabilitiesResponse(
+        true,
+        'workspace-1',
+        false,
+        {},
+        {
+          can_cancel: false,
+          can_reactivate: false,
+          can_change_seats: false,
+          can_invite_members: false,
+          can_downgrade_to_personal: false
+        }
+      )
+    )
+
+    await billingCapabilities.initialize()
+
+    expect(billingCapabilities.canCancel.value).toBe(false)
+    expect(billingCapabilities.canReactivate.value).toBe(false)
+    expect(billingCapabilities.canChangeSeats.value).toBe(false)
+    expect(billingCapabilities.canInviteMembers.value).toBe(false)
+    expect(billingCapabilities.canDowngradeToPersonal.value).toBe(false)
   })
 
   it('applies changed capabilities when the current scope is refreshed', async () => {
@@ -239,6 +277,11 @@ describe('useBillingCapabilities', () => {
 
     expect(billingCapabilities.canTopUp.value).toBe(true)
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
+    expect(billingCapabilities.canCancel.value).toBe(false)
+    expect(billingCapabilities.canReactivate.value).toBe(false)
+    expect(billingCapabilities.canChangeSeats.value).toBe(false)
+    expect(billingCapabilities.canInviteMembers.value).toBe(false)
+    expect(billingCapabilities.canDowngradeToPersonal.value).toBe(false)
     expect(billingCapabilities.isReady.value).toBe(true)
     expect(mockReportError).toHaveBeenCalledOnce()
   })
@@ -298,6 +341,11 @@ describe('useBillingCapabilities', () => {
     expect(mockGetBillingCapabilities).toHaveBeenCalledOnce()
     expect(billingCapabilities.canTopUp.value).toBe(true)
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
+    expect(billingCapabilities.canCancel.value).toBe(false)
+    expect(billingCapabilities.canReactivate.value).toBe(false)
+    expect(billingCapabilities.canChangeSeats.value).toBe(false)
+    expect(billingCapabilities.canInviteMembers.value).toBe(false)
+    expect(billingCapabilities.canDowngradeToPersonal.value).toBe(false)
   })
 
   it('discards a stale response after the active workspace changes', async () => {

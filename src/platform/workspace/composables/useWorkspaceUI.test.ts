@@ -136,7 +136,7 @@ describe('useWorkspaceUI', () => {
       mockStore.activeWorkspace = personalWorkspace
     })
 
-    it('grants billing access but disables team management', async () => {
+    it('grants billing access with personal workspace visibility', async () => {
       const ui = await loadComposable()
 
       expect(ui.workspaceType.value).toBe('personal')
@@ -146,9 +146,6 @@ describe('useWorkspaceUI', () => {
         canDowngradeToPersonal: false,
         canViewOtherMembers: false,
         canViewPendingInvites: false,
-        canInviteMembers: false,
-        canManageInvites: false,
-        canManageMembers: false,
         canLeaveWorkspace: false,
         canAccessWorkspaceMenu: false
       })
@@ -162,9 +159,6 @@ describe('useWorkspaceUI', () => {
       expect(ui.permissions.value).toMatchObject({
         canViewOtherMembers: true,
         canViewPendingInvites: false,
-        canInviteMembers: false,
-        canManageInvites: false,
-        canManageMembers: false,
         canLeaveWorkspace: true,
         canAccessWorkspaceMenu: true,
         canManageSubscription: false,
@@ -250,9 +244,6 @@ describe('useWorkspaceUI', () => {
       expect(ui.permissions.value).toMatchObject({
         canViewOtherMembers: true,
         canViewPendingInvites: true,
-        canInviteMembers: true,
-        canManageInvites: true,
-        canManageMembers: true,
         canLeaveWorkspace: true,
         canAccessWorkspaceMenu: true,
         canManageSubscription: true,
@@ -305,9 +296,6 @@ describe('useWorkspaceUI', () => {
       expect(ui.permissions.value).toMatchObject({
         canViewOtherMembers: true,
         canViewPendingInvites: false,
-        canInviteMembers: false,
-        canManageInvites: false,
-        canManageMembers: false,
         canLeaveWorkspace: true,
         canAccessWorkspaceMenu: true,
         canManageSubscription: false,

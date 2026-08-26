@@ -21,6 +21,7 @@ const state = vi.hoisted(() => ({
   canSubscribeSelfServe: false,
   canManageSubscription: false,
   canManageSubscriptionLifecycle: false,
+  canReactivate: false,
   showCreateWorkspaceDialog: vi.fn(),
   showTopUpCreditsDialog: vi.fn(),
   showPricingTable: vi.fn(),
@@ -82,7 +83,8 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
 vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
   useBillingCapabilities: () => ({
     canTopUp: computed(() => state.canTopUp),
-    canSubscribeSelfServe: computed(() => state.canSubscribeSelfServe)
+    canSubscribeSelfServe: computed(() => state.canSubscribeSelfServe),
+    canReactivate: computed(() => state.canReactivate)
   })
 }))
 
@@ -187,6 +189,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.canSubscribeSelfServe = false
     state.canManageSubscription = false
     state.canManageSubscriptionLifecycle = false
+    state.canReactivate = false
   })
 
   it('toggles the workspace switcher panel from the selector row', async () => {
@@ -325,6 +328,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.billingStatus = 'payment_failed'
     state.canAccessSubscriptionFeatures = false
     state.canManageSubscription = true
+    state.canSubscribeSelfServe = true
     state.planSlug = null
 
     renderComponent('team')
@@ -421,6 +425,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.isCloud = false
     state.isCancelled = true
     state.canManageSubscriptionLifecycle = true
+    state.canReactivate = true
 
     renderComponent('team')
 
@@ -436,6 +441,8 @@ describe('CurrentUserPopoverWorkspace', () => {
       isCancelled: true,
       canManageSubscription: false,
       canManageSubscriptionLifecycle: true,
+      canReactivate: true,
+      canSubscribeSelfServe: false,
       action: 'Resubscribe',
       visible: true
     },
@@ -445,6 +452,19 @@ describe('CurrentUserPopoverWorkspace', () => {
       isCancelled: true,
       canManageSubscription: true,
       canManageSubscriptionLifecycle: false,
+      canReactivate: false,
+      canSubscribeSelfServe: false,
+      action: 'Resubscribe',
+      visible: false
+    },
+    {
+      name: 'does not resubscribe a cancelled plan when the server denies reactivation to a client-side owner',
+      canAccessSubscriptionFeatures: true,
+      isCancelled: true,
+      canManageSubscription: true,
+      canManageSubscriptionLifecycle: true,
+      canReactivate: false,
+      canSubscribeSelfServe: false,
       action: 'Resubscribe',
       visible: false
     },
@@ -454,6 +474,8 @@ describe('CurrentUserPopoverWorkspace', () => {
       isCancelled: false,
       canManageSubscription: true,
       canManageSubscriptionLifecycle: false,
+      canReactivate: false,
+      canSubscribeSelfServe: true,
       action: 'Subscribe',
       visible: true
     },
@@ -463,6 +485,8 @@ describe('CurrentUserPopoverWorkspace', () => {
       isCancelled: false,
       canManageSubscription: false,
       canManageSubscriptionLifecycle: true,
+      canReactivate: true,
+      canSubscribeSelfServe: false,
       action: 'Subscribe',
       visible: false
     }
@@ -473,6 +497,8 @@ describe('CurrentUserPopoverWorkspace', () => {
       isCancelled,
       canManageSubscription,
       canManageSubscriptionLifecycle,
+      canReactivate,
+      canSubscribeSelfServe,
       action,
       visible
     }) => {
@@ -480,6 +506,8 @@ describe('CurrentUserPopoverWorkspace', () => {
       state.isCancelled = isCancelled
       state.canManageSubscription = canManageSubscription
       state.canManageSubscriptionLifecycle = canManageSubscriptionLifecycle
+      state.canReactivate = canReactivate
+      state.canSubscribeSelfServe = canSubscribeSelfServe
 
       renderComponent('team')
 
@@ -498,6 +526,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.canTopUp = true
     state.canManageSubscription = true
     state.canManageSubscriptionLifecycle = true
+    state.canReactivate = true
     renderComponent('team')
 
     expect(screen.getByTestId('add-credits-button')).toBeInTheDocument()

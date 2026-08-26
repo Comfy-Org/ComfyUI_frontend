@@ -282,7 +282,8 @@ const {
   isInPersonalWorkspace: isPersonalWorkspace
 } = storeToRefs(workspaceStore)
 const { permissions } = useWorkspaceUI()
-const { canTopUp, canSubscribeSelfServe } = useBillingCapabilities()
+const { canTopUp, canSubscribeSelfServe, canReactivate } =
+  useBillingCapabilities()
 const isWorkspaceSwitcherOpen = ref(false)
 const workspaceSwitcherTrigger = useTemplateRef('workspaceSwitcherTrigger')
 const workspaceSwitcherPanel = useTemplateRef('workspaceSwitcherPanel')
@@ -367,11 +368,13 @@ const showManagePlan = computed(
 )
 const showSubscribeAction = computed(
   () =>
+    // Subscribing is Cloud-only, so the whole action stays gated on isCloud;
+    // inside it the server-resolved capabilities are authoritative.
     isCloud &&
-    ((isCancelled.value && permissions.value.canManageSubscriptionLifecycle) ||
+    ((isCancelled.value && canReactivate.value) ||
       (!canAccessSubscriptionFeatures.value &&
         !hasDelinquentSubscription.value &&
-        permissions.value.canManageSubscription))
+        canSubscribeSelfServe.value))
 )
 
 const handleOpenUserSettings = () => {

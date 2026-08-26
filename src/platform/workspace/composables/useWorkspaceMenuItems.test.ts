@@ -5,6 +5,7 @@ import { useWorkspaceMenuItems } from './useWorkspaceMenuItems'
 
 const state = vi.hoisted(() => ({
   billingStatus: 'paid',
+  canCancel: false,
   canLeaveWorkspace: false,
   canManageSubscription: false,
   canManageSubscriptionLifecycle: false,
@@ -13,6 +14,7 @@ const state = vi.hoisted(() => ({
   isFreeTier: false,
   isInPersonalWorkspace: false,
   planSlug: 'pro-monthly' as string | null,
+  shouldUseWorkspaceBilling: true,
   isSubscriptionCancelled: false
 }))
 
@@ -35,6 +37,24 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
       endDate: '2026-08-01T00:00:00Z',
       planSlug: state.planSlug
     }))
+  })
+}))
+
+vi.mock('@/composables/billing/useBillingRouting', () => ({
+  useBillingRouting: () => ({
+    shouldUseWorkspaceBilling: computed(() => state.shouldUseWorkspaceBilling)
+  })
+}))
+
+vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
+
+vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
+  useBillingCapabilities: () => ({
+    canCancel: {
+      get value() {
+        return state.canCancel
+      }
+    }
   })
 }))
 
@@ -73,6 +93,7 @@ vi.mock('@/services/dialogService', () => ({
 describe('useWorkspaceMenuItems', () => {
   beforeEach(() => {
     state.billingStatus = 'paid'
+    state.canCancel = false
     state.canLeaveWorkspace = false
     state.canManageSubscription = false
     state.canManageSubscriptionLifecycle = false
@@ -81,11 +102,12 @@ describe('useWorkspaceMenuItems', () => {
     state.isFreeTier = false
     state.isInPersonalWorkspace = false
     state.planSlug = 'pro-monthly'
+    state.shouldUseWorkspaceBilling = true
     state.isSubscriptionCancelled = false
   })
 
   it('allows a promoted owner to cancel an active plan', () => {
-    state.canManageSubscriptionLifecycle = true
+    state.canCancel = true
 
     const { menuItems } = useWorkspaceMenuItems()
     const cancelItem = menuItems.value.find(
@@ -110,7 +132,32 @@ describe('useWorkspaceMenuItems', () => {
     )
   })
 
+  it('withholds cancellation for a free plan the capability still allows', () => {
+    state.canCancel = true
+    state.isFreeTier = true
+
+    const { menuItems } = useWorkspaceMenuItems()
+
+    expect(menuItems.value.map((item) => item.label)).not.toContain(
+      'subscription.cancelPlan'
+    )
+  })
+
+  it('defers to the capability for subscription state it already encodes', () => {
+    state.canCancel = true
+    state.isSubscriptionCancelled = true
+    state.isActiveSubscription = false
+    state.planSlug = null
+
+    const { menuItems } = useWorkspaceMenuItems()
+
+    expect(menuItems.value.map((item) => item.label)).toContain(
+      'subscription.cancelPlan'
+    )
+  })
+
   it('withholds cancellation for an already-cancelled plan', () => {
+    state.shouldUseWorkspaceBilling = false
     state.canManageSubscriptionLifecycle = true
     state.isSubscriptionCancelled = true
 
@@ -122,6 +169,7 @@ describe('useWorkspaceMenuItems', () => {
   })
 
   it('allows cancellation while a payment_failed plan needs payment recovery', () => {
+    state.shouldUseWorkspaceBilling = false
     state.billingStatus = 'payment_failed'
     state.canManageSubscriptionLifecycle = true
     state.isActiveSubscription = false
@@ -134,6 +182,7 @@ describe('useWorkspaceMenuItems', () => {
   })
 
   it('allows cancellation while an existing plan is paused', () => {
+    state.shouldUseWorkspaceBilling = false
     state.billingStatus = 'paused'
     state.canManageSubscriptionLifecycle = true
     state.isActiveSubscription = false
@@ -146,6 +195,7 @@ describe('useWorkspaceMenuItems', () => {
   })
 
   it('withholds cancellation when payment_failed has no subscription plan', () => {
+    state.shouldUseWorkspaceBilling = false
     state.billingStatus = 'payment_failed'
     state.canManageSubscriptionLifecycle = true
     state.isActiveSubscription = false
@@ -159,6 +209,7 @@ describe('useWorkspaceMenuItems', () => {
   })
 
   it('withholds cancellation for payment_failed without lifecycle permission', () => {
+    state.shouldUseWorkspaceBilling = false
     state.billingStatus = 'payment_failed'
     state.canManageSubscriptionLifecycle = false
     state.isActiveSubscription = false
@@ -170,14 +221,26 @@ describe('useWorkspaceMenuItems', () => {
     )
   })
 
-  it('rechecks eligibility before opening the cancellation dialog', () => {
+  it('withholds cancellation for a free plan on the legacy path', () => {
+    state.shouldUseWorkspaceBilling = false
     state.canManageSubscriptionLifecycle = true
+    state.isFreeTier = true
+
+    const { menuItems } = useWorkspaceMenuItems()
+
+    expect(menuItems.value.map((item) => item.label)).not.toContain(
+      'subscription.cancelPlan'
+    )
+  })
+
+  it('rechecks eligibility before opening the cancellation dialog', () => {
+    state.canCancel = true
     const { menuItems } = useWorkspaceMenuItems()
     const cancelItem = menuItems.value.find(
       (item) => item.label === 'subscription.cancelPlan'
     )
 
-    state.canManageSubscriptionLifecycle = false
+    state.canCancel = false
     cancelItem?.command?.({
       originalEvent: new Event('click'),
       item: cancelItem

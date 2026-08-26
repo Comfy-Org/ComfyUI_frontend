@@ -11,9 +11,6 @@ import { useTeamWorkspaceStore } from '../stores/teamWorkspaceStore'
 interface WorkspacePermissions {
   canViewOtherMembers: boolean
   canViewPendingInvites: boolean
-  canInviteMembers: boolean
-  canManageInvites: boolean
-  canManageMembers: boolean
   canLeaveWorkspace: boolean
   canAccessWorkspaceMenu: boolean
   canManageSubscription: boolean
@@ -62,9 +59,6 @@ function getPermissions(
     return {
       canViewOtherMembers: true,
       canViewPendingInvites: false,
-      canInviteMembers: false,
-      canManageInvites: false,
-      canManageMembers: false,
       canLeaveWorkspace,
       canAccessWorkspaceMenu: canLeaveWorkspace,
       ...billingPermissions
@@ -75,9 +69,6 @@ function getPermissions(
     return {
       canViewOtherMembers: false,
       canViewPendingInvites: false,
-      canInviteMembers: false,
-      canManageInvites: false,
-      canManageMembers: false,
       canLeaveWorkspace,
       canAccessWorkspaceMenu: canLeaveWorkspace,
       ...billingPermissions
@@ -87,9 +78,6 @@ function getPermissions(
   return {
     canViewOtherMembers: true,
     canViewPendingInvites: true,
-    canInviteMembers: true,
-    canManageInvites: true,
-    canManageMembers: true,
     canLeaveWorkspace,
     canAccessWorkspaceMenu: true,
     ...billingPermissions
