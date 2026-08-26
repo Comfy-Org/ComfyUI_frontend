@@ -719,6 +719,7 @@ export const useWorkflowService = () => {
         ) {
           const loadedWorkflow =
             await workflowStore.openWorkflow(existingWorkflow)
+          if (!loadedWorkflow) return
           activateRunErrors(loadedWorkflow)
           if (loadedWorkflow.initialMode === undefined) {
             // Prefer the file's linearMode over the draft's since the file
@@ -756,6 +757,7 @@ export const useWorkflowService = () => {
     }
 
     const loadedWorkflow = await workflowStore.openWorkflow(value)
+    if (!loadedWorkflow) return
     activateRunErrors(loadedWorkflow)
     if (shareId) {
       loadedWorkflow.shareId = shareId
@@ -779,6 +781,7 @@ export const useWorkflowService = () => {
     options: { position?: Point } = {}
   ) => {
     const loadedWorkflow = await workflow.load()
+    if (!loadedWorkflow) return
     const workflowJSON = toRaw(loadedWorkflow.initialState)
     // unknown conversion: ComfyWorkflowJSON is stricter than LiteGraph's
     // serialisation schema.
