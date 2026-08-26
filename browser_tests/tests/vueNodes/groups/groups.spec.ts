@@ -201,6 +201,32 @@ test.describe('Vue Node Groups', { tag: ['@screenshot', '@vue-nodes'] }, () => {
     expect(await ksampler.boundingBox()).toEqual(initialNodeBounds)
   })
 
+  test('does not drag contents when meta (Cmd) is held', async ({
+    comfyPage
+  }) => {
+    await comfyPage.keyboard.selectAll()
+    await comfyPage.page.keyboard.press(CREATE_GROUP_HOTKEY)
+    const groupCount = () => comfyPage.page.evaluate(() => graph!.groups.length)
+    await expect.poll(groupCount, 'create group').toBe(1)
+    await comfyPage.page.mouse.click(100, 100)
+
+    const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+    const initialNodeBounds = await ksampler.boundingBox()
+    expect(initialNodeBounds).toBeTruthy()
+
+    const groupPos = await getGroupTitlePosition(comfyPage, 'Group')
+    await comfyPage.page.mouse.move(groupPos.x, groupPos.y)
+    await comfyPage.page.mouse.down()
+    await comfyPage.page.keyboard.down('Meta')
+    await comfyPage.page.mouse.move(groupPos.x + 100, groupPos.y)
+    await comfyPage.page.mouse.up()
+    await comfyPage.page.keyboard.up('Meta')
+    await expect
+      .poll(() => getGroupTitlePosition(comfyPage, 'Group'))
+      .not.toEqual(groupPos)
+    expect(await ksampler.boundingBox()).toEqual(initialNodeBounds)
+  })
+
   test('should keep groups aligned after loading legacy Vue workflows', async ({
     comfyPage
   }) => {

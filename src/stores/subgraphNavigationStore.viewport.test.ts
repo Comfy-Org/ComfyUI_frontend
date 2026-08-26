@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
@@ -82,7 +80,6 @@ let rafCallbacks: FrameRequestCallback[] = []
 
 describe('useSubgraphNavigationStore - Viewport Persistence', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     rafCallbacks = []
     vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
       rafCallbacks.push(cb)
@@ -94,13 +91,6 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
     mockCanvas.ds.offset = [0, 0]
     mockCanvas.ds.state.scale = 1
     mockCanvas.ds.state.offset = [0, 0]
-    mockSetDirty.mockClear()
-    mockFitView.mockClear()
-    mockRequestSlotSyncAll.mockClear()
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
   })
 
   describe('cache key isolation', () => {

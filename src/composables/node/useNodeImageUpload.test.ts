@@ -80,7 +80,6 @@ describe('useNodeImageUpload', () => {
 
   beforeEach(async () => {
     vi.resetModules()
-    vi.clearAllMocks()
     node = createMockNode()
     onUploadComplete = vi.fn()
     onUploadStart = vi.fn()

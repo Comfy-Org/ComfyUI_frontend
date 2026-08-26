@@ -4,9 +4,12 @@ name: 'i18n: Update Core'
 on:
   # Manual dispatch for urgent translation updates
   workflow_dispatch:
-  # Only trigger on PRs to main/master - additional branch filtering in job condition
+  # Trigger on PRs to main and to release branches (core/x.y, cloud/x.y).
+  # Release branches need this so translations for backported locale keys are
+  # regenerated and baked into the version-bump PR, mirroring main. Additional
+  # branch filtering (version-bump-* head) is in the job condition below.
   pull_request:
-    branches: [main]
+    branches: [main, 'core/**', 'cloud/**']
     types: [opened, synchronize, reopened]
 
 jobs:
@@ -16,9 +19,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           token: ${{ secrets.PR_GH_TOKEN }}
+          # Blobless full history: the locale pipeline lazily fetches the
+          # English source blobs recorded in src/locales/.source-manifest.json
+          fetch-depth: 0
+          filter: blob:none
 
       # Setup playwright environment
       - name: Setup ComfyUI Frontend
@@ -43,6 +50,11 @@ jobs:
         env:
           PLAYWRIGHT_TEST_URL: http://localhost:5173
       - name: Update translations
+        id: translate
+        # continue-on-error so completed entry files (written and recorded in
+        # the manifest even when another file fails) still get committed; the
+        # final step re-surfaces the failure
+        continue-on-error: true
         run: pnpm locale && pnpm format
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -59,3 +71,8 @@ jobs:
           git add src/locales/
           git diff --staged --quiet || git commit -m "Update locales"
           git push origin HEAD:${{ github.head_ref }}
+      - name: Fail if translation did not complete
+        if: steps.translate.outcome == 'failure'
+        run: |
+          echo "::error::pnpm locale failed; completed entry files were committed, the rest retry on the next run"
+          exit 1

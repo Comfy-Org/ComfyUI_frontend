@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
@@ -29,6 +29,7 @@ vi.mock('@/extensions/core/load3d', () => ({}))
 vi.mock('@/extensions/core/load3dAdvanced', () => ({}))
 vi.mock('@/extensions/core/load3dPreviewExtensions', () => ({}))
 vi.mock('@/extensions/core/saveMesh', () => ({}))
+vi.mock('@/extensions/core/cameraInfo', () => ({}))
 
 type Hook = (
   nodeType: typeof LGraphNode,
@@ -63,10 +64,6 @@ function makeNodeDef(
 }
 
 describe('load3dLazy', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('registers a single Comfy.Load3DLazy extension on import', async () => {
     await loadLazyExtensionFresh()
 
@@ -90,7 +87,10 @@ describe('load3dLazy', () => {
     'Preview3D',
     'PreviewGaussianSplat',
     'PreviewPointCloud',
-    'SaveGLB'
+    'SaveGLB',
+    'Save3DAdvanced',
+    'SaveGaussianSplat',
+    'SavePointCloud'
   ])(
     'recognizes %s as a 3D node type and triggers the lazy-load path',
     async (nodeType) => {

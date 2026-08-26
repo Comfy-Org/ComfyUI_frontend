@@ -10,7 +10,9 @@ import './electronAdapter'
 import './groupNode'
 import './groupOptions'
 import './imageCompare'
+import './imageCompositor'
 import './imageCrop'
+import './layerEditor'
 // load3d and saveMesh are loaded on-demand to defer THREE.js (~1.8MB)
 // The lazy loader triggers loading when a 3D node is used
 import './load3dLazy'
@@ -21,6 +23,7 @@ if (!isCloud) {
 import './noteNode'
 import './painter'
 import './previewAny'
+import './saveText'
 import './rerouteNode'
 import './saveImageExtraOutput'
 // saveMesh is loaded on-demand with load3d (see load3dLazy.ts)

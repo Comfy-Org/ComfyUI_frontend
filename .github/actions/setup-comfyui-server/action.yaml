@@ -9,6 +9,10 @@ inputs:
     description: 'Whether to launch the server after setup'
     required: false
     default: 'false'
+  comfyui_ref:
+    description: 'ComfyUI git ref to check out (tag/branch/SHA). Empty = default branch (master).'
+    required: false
+    default: ''
 runs:
   using: 'composite'
   steps:
@@ -16,9 +20,10 @@ runs:
 
     # Checkout ComfyUI repo, install the dev_tools node and start server
     - name: Checkout ComfyUI
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
       with:
         repository: 'comfyanonymous/ComfyUI'
+        ref: ${{ inputs.comfyui_ref }}
         path: 'ComfyUI'
 
     - name: Install ComfyUI_devtools from frontend repo
@@ -28,7 +33,7 @@ runs:
         if ! cp -r ./tools/devtools/* ComfyUI/custom_nodes/ComfyUI_devtools/; then
           echo "::error::Failed to copy ComfyUI_devtools from ./tools/devtools/"
           echo "::error::This action assumes the ComfyUI_frontend repository is checked out in the current working directory."
-          echo "::error::Please ensure you have run 'actions/checkout@v5' before calling this action."
+          echo "::error::Please ensure you have run 'actions/checkout@v7' before calling this action."
           exit 1
         fi
 

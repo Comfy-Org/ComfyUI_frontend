@@ -119,6 +119,31 @@ describe('parseComfyWorkflow', () => {
       const result = await validateComfyWorkflow(workflow)
       expect(result).toBeNull()
     })
+
+    it('accepts mixed int/string node ids and preserves linearMode', async () => {
+      const workflow = JSON.parse(JSON.stringify(defaultGraph))
+      workflow.extra = {
+        linearMode: true,
+        linearData: {
+          inputs: [
+            [3, 'file'],
+            [5, 'upscaler_model'],
+            [5, 'upscaler_resolution'],
+            ['5', 'upscaler_creativity']
+          ],
+          outputs: [4]
+        }
+      }
+      const result = await validateComfyWorkflow(workflow)
+      expect(result).not.toBeNull()
+      expect(result!.extra!.linearMode).toBe(true)
+      expect(result!.extra!.linearData!.inputs).toEqual([
+        [3, 'file'],
+        [5, 'upscaler_model'],
+        [5, 'upscaler_resolution'],
+        ['5', 'upscaler_creativity']
+      ])
+    })
   })
 
   it('workflow.nodes.pos', async () => {
@@ -176,6 +201,23 @@ describe('parseComfyWorkflow', () => {
     const validatedWorkflow = await validateComfyWorkflow(workflow)
     expect(validatedWorkflow).not.toBeNull()
     expect(validatedWorkflow!.nodes[0].widgets_values).toEqual({ foo: 'bar' })
+  })
+
+  it('workflow.nodes.widgets_values preserves null entries', async () => {
+    // LGraphNode.serialize writes `val ?? null`, so null reaches the schema on
+    // ordinary saves. Validation must let it through unchanged, in both the
+    // array and the object form.
+    const workflow = JSON.parse(JSON.stringify(defaultGraph))
+
+    workflow.nodes[0].widgets_values = ['foo', null]
+    const arrayForm = await validateComfyWorkflow(workflow)
+    expect(arrayForm).not.toBeNull()
+    expect(arrayForm!.nodes[0].widgets_values).toEqual(['foo', null])
+
+    workflow.nodes[0].widgets_values = { foo: null }
+    const objectForm = await validateComfyWorkflow(workflow)
+    expect(objectForm).not.toBeNull()
+    expect(objectForm!.nodes[0].widgets_values).toEqual({ foo: null })
   })
 
   it('workflow.links', async () => {

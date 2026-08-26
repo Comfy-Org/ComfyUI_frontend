@@ -14,9 +14,14 @@ export default defineConfig({
     }
   },
   test: {
+    mockReset: true,
+    restoreMocks: true,
+    unstubEnvs: true,
+    unstubGlobals: true,
+    fakeTimers: { shouldAdvanceTime: true },
     globals: true,
     environment: 'happy-dom',
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
-    setupFiles: ['./src/test/setup.ts']
+    setupFiles: ['../../vitest.timer.setup.ts', './src/test/setup.ts']
   }
 })

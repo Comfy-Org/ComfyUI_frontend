@@ -1,6 +1,14 @@
 <template>
   <div class="mb-1 flex w-full flex-col gap-0.5 last:mb-0">
-    <div class="flex min-h-8 w-full items-center gap-1">
+    <div
+      :aria-current="highlighted ? 'true' : undefined"
+      :class="
+        cn(
+          'flex min-h-8 items-center gap-1',
+          selectionEmphasisClass(highlighted)
+        )
+      "
+    >
       <Button
         v-if="hasMultipleNodeTypes"
         data-testid="swap-node-group-expand"
@@ -153,14 +161,18 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
+
+import { selectionEmphasisClass } from '@/components/rightSidePanel/errors/selectionEmphasis'
 import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import TransitionCollapse from '@/components/rightSidePanel/layout/TransitionCollapse.vue'
 import type { MissingNodeType } from '@/types/comfy'
 import type { SwapNodeGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
 
-const { group } = defineProps<{
+const { group, highlighted } = defineProps<{
   group: SwapNodeGroup
+  /** Emphasize the header row (group containing the canvas selection). */
+  highlighted?: boolean
 }>()
 
 const emit = defineEmits<{

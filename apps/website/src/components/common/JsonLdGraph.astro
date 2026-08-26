@@ -1,0 +1,12 @@
+---
+import type { JsonLdGraph } from '../../utils/jsonLd'
+import { escapeJsonLd } from '../../utils/escapeJsonLd'
+
+interface Props {
+  graph: JsonLdGraph
+}
+
+const { graph } = Astro.props
+---
+
+<script is:inline type="application/ld+json" set:html={escapeJsonLd(graph)} />

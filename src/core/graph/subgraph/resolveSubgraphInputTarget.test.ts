@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -63,11 +61,6 @@ function addLinkedNestedSubgraphNode(
 
   return { innerSubgraphNode }
 }
-
-beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
-  vi.clearAllMocks()
-})
 
 describe('resolveSubgraphInputTarget', () => {
   test('returns target for widget-backed input on nested SubgraphNode', () => {

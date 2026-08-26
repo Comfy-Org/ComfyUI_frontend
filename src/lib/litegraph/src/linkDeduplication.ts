@@ -1,83 +1,258 @@
-import type { LGraphNode } from './LGraphNode'
-import type { SerializedNodeId } from '@/types/nodeId'
-import type { LLink, LinkId } from './LLink'
+import { useLinkStore } from '@/stores/linkStore'
+import { graphScopeOf } from '@/types/graphScopeId'
+import type { EndpointUpdate } from '@/stores/linkStore'
+import { toLinkId } from '@/types/linkId'
+import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
+import cloneDeep from 'es-toolkit/compat/cloneDeep'
+import type { LGraph } from './LGraph'
+import type { LinkId, LLink, SerialisedLLinkArray } from './LLink'
+import type {
+  ExportedSubgraph,
+  ISerialisedGraph,
+  ISerialisedNode,
+  SerialisableGraph,
+  SerialisableLLink
+} from './types/serialisation'
+import { NodeSlotType } from './types/globalEnums'
 
-/** Generates a unique string key for a link's connection tuple. */
-function linkTupleKey(link: LLink): string {
-  return `${link.origin_id}\0${link.origin_slot}\0${link.target_id}\0${link.target_slot}`
+type ConfiguredGraph = (ISerialisedGraph | SerialisableGraph) &
+  Partial<Pick<ExportedSubgraph, 'inputs' | 'outputs' | 'reroutes'>>
+
+type ConfiguredLink = SerialisedLLinkArray | SerialisableLLink
+
+function linkFields(link: ConfiguredLink) {
+  if (!Array.isArray(link)) return link
+  const [id, origin_id, origin_slot, target_id, target_slot] = link
+  return { id, origin_id, origin_slot, target_id, target_slot }
 }
 
-/** Groups all link IDs by their connection tuple key. */
-export function groupLinksByTuple(
-  links: Map<LinkId, LLink>
-): Map<string, LinkId[]> {
-  const groups = new Map<string, LinkId[]>()
-  for (const [id, link] of links) {
-    const key = linkTupleKey(link)
-    if (!groups.has(key)) groups.set(key, [])
-    groups.get(key)!.push(id)
+export function remapLinkReferences(
+  data: ConfiguredGraph,
+  remapped: ReadonlyMap<number, number>
+): void {
+  const remap = (id: number) => remapped.get(id) ?? id
+  const nodes = data.nodes ?? []
+
+  for (const input of nodes.flatMap((node) => node.inputs ?? [])) {
+    if (input.link != null) input.link = remap(input.link)
   }
-  return groups
+
+  const linkIdLists = [
+    ...nodes.flatMap((node) =>
+      (node.outputs ?? []).map((output) => output.links)
+    ),
+    ...(data.inputs ?? []).map((slot) => slot.linkIds),
+    ...(data.outputs ?? []).map((slot) => slot.linkIds),
+    ...(data.reroutes ?? []).map((reroute) => reroute.linkIds)
+  ]
+  for (const ids of linkIdLists) {
+    if (ids) ids.splice(0, ids.length, ...new Set(ids.map(remap)))
+  }
+
+  for (const extension of data.extra?.linkExtensions ?? []) {
+    extension.id = toLinkId(remap(extension.id))
+  }
+}
+
+export function normalizeConfiguredTopology<T extends ConfiguredGraph>(
+  data: T
+): T {
+  if (!data.links?.length) return data
+
+  const referencedInputLinks = new Set(
+    (data.nodes ?? []).flatMap((node) =>
+      (node.inputs ?? []).flatMap((input) =>
+        input.link == null ? [] : [input.link]
+      )
+    )
+  )
+  const survivorIndexByTarget = new Map<string, number>()
+  const survivorByDuplicateId = new Map<number, number>()
+  const links: ConfiguredLink[] = []
+  for (const link of data.links) {
+    const fields = linkFields(link)
+    const key = `${toNodeId(fields.target_id)}:${fields.target_slot}`
+    const survivorIndex = survivorIndexByTarget.get(key)
+    if (survivorIndex === undefined) {
+      survivorIndexByTarget.set(key, links.length)
+      links.push(link)
+      continue
+    }
+    const survivor = linkFields(links[survivorIndex])
+    const isExactDuplicate =
+      toNodeId(survivor.origin_id) === toNodeId(fields.origin_id) &&
+      survivor.origin_slot === fields.origin_slot
+    if (!isExactDuplicate) {
+      console.warn(
+        `Dropping competing link to occupied input ${fields.target_id}:${fields.target_slot}`,
+        {
+          droppedLinkId: fields.id,
+          survivorLinkId: survivor.id,
+          targetNodeId: fields.target_id,
+          targetSlot: fields.target_slot
+        }
+      )
+    }
+
+    if (
+      !isExactDuplicate &&
+      referencedInputLinks.has(fields.id) &&
+      !referencedInputLinks.has(survivor.id)
+    ) {
+      links[survivorIndex] = link
+      for (const [id, survivorId] of survivorByDuplicateId) {
+        if (survivorId === survivor.id) survivorByDuplicateId.set(id, fields.id)
+      }
+      survivorByDuplicateId.set(survivor.id, fields.id)
+    } else {
+      survivorByDuplicateId.set(fields.id, survivor.id)
+    }
+  }
+  if (links.length === data.links.length) return data
+
+  const normalized = Object.assign({}, data, { links })
+  const cloned = cloneDeep(normalized)
+  remapLinkReferences(cloned, survivorByDuplicateId)
+  return cloned
 }
 
 /**
- * Finds the link ID actually referenced by an input on the target node.
- * Cannot rely on target_slot index because widget-to-input conversions
- * during configure() can shift slot indices.
+ * Removes serialized link ids from a node's slots, returning the id each input
+ * referenced keyed by input name. Node `configure()` resolves those ids against
+ * the destination graph's link map, which may hold unrelated links with the
+ * same numeric ids.
  */
-export function selectSurvivorLink(
-  ids: LinkId[],
-  node: LGraphNode | null
-): LinkId {
-  if (!node) return ids[0]
-
-  for (const input of node.inputs ?? []) {
-    if (!input) continue
-    const match = ids.find((id) => input.link === id)
-    if (match != null) return match
+export function detachSerialisedLinks(
+  nodeData: ISerialisedNode
+): Map<string, LinkId> {
+  const linkByInputName = new Map<string, LinkId>()
+  for (const input of nodeData.inputs ?? []) {
+    if (input.link != null)
+      linkByInputName.set(input.name, toLinkId(input.link))
+    input.link = null
   }
-  return ids[0]
+  for (const output of nodeData.outputs ?? []) output.links = []
+  return linkByInputName
 }
 
-/** Removes duplicate links from origin outputs and the graph's link map. */
-export function purgeOrphanedLinks(
-  ids: LinkId[],
-  keepId: LinkId,
-  links: Map<LinkId, LLink>,
-  getNodeById: (id: SerializedNodeId) => LGraphNode | null
+/**
+ * Re-points each link's `target_slot` at the configured input with the same
+ * name as the serialized input that references it. Replays moved connections
+ * because dynamic inputs may grow additional named slots in response.
+ *
+ * @param graph The graph whose links to realign
+ * @param nodesData The final node id paired with the serialized data that
+ * configured it
+ */
+export function realignInputLinkSlots(
+  graph: LGraph,
+  nodesData: Iterable<readonly [NodeId, ISerialisedNode]>
 ): void {
-  for (const id of ids) {
-    if (id === keepId) continue
+  for (const [nodeId, nodeData] of nodesData) {
+    const node = graph.getNodeById(nodeId)
+    if (!node) continue
 
-    const link = links.get(id)
-    if (!link) continue
-
-    const originNode = getNodeById(link.origin_id)
-    const output = originNode?.outputs?.[link.origin_slot]
-    if (output?.links) {
-      for (let i = output.links.length - 1; i >= 0; i--) {
-        if (output.links[i] === id) output.links.splice(i, 1)
-      }
+    const referencedNames = new Map<LLink, string[]>()
+    for (const input of nodeData.inputs ?? []) {
+      if (input.link == null) continue
+      const link = graph.links.get(toLinkId(input.link))
+      if (!link || link.target_id !== nodeId) continue
+      const names = referencedNames.get(link) ?? []
+      names.push(input.name)
+      referencedNames.set(link, names)
     }
 
-    links.delete(id)
-  }
-}
+    for (let pass = 0; pass < Math.max(1, referencedNames.size); pass++) {
+      const moved: { link: LLink; slot: number }[] = []
+      for (const [link, names] of referencedNames) {
+        const slots = node.inputs.flatMap((input, slot) =>
+          names.includes(input.name) ? [slot] : []
+        )
+        if (!slots.length) continue
+        const slot = slots.includes(link.target_slot)
+          ? link.target_slot
+          : slots[0]
+        if (link.target_slot !== slot) moved.push({ link, slot })
+      }
+      if (!moved.length) break
 
-/** Ensures input.link on the target node points to the surviving link. */
-export function repairInputLinks(
-  ids: LinkId[],
-  keepId: LinkId,
-  node: LGraphNode | null
-): void {
-  if (!node) return
+      const unmatched = [...referencedNames].flatMap(([link, names]) =>
+        node.inputs.some((input) => names.includes(input.name)) ? [] : [link]
+      )
+      const destinationSlots = new Set(moved.map(({ slot }) => slot))
+      const removals = unmatched.filter(
+        (link) =>
+          graph.links.has(link.id) && destinationSlots.has(link.target_slot)
+      )
 
-  const duplicateIds = new Set(ids)
+      const updates: EndpointUpdate[] = moved.map(({ link, slot }) => ({
+        topology: link._state,
+        patch: { targetSlot: slot }
+      }))
+      const removedConnections = removals.map((link) => ({
+        connection: link.resolve(graph),
+        link
+      }))
+      const result = useLinkStore().updateEndpoints(
+        graphScopeOf(graph),
+        updates,
+        removals.map((link) => link._state)
+      )
+      if (!result.ok) {
+        console.error('Failed to realign input link slots', result.error)
+        break
+      }
 
-  for (const input of node.inputs ?? []) {
-    if (input?.link == null || input.link === keepId) continue
-    if (duplicateIds.has(input.link)) {
-      input.link = keepId
+      for (const { connection, link } of removedConnections) {
+        link.disconnect(graph)
+        graph.incrementVersion()
+        if (connection.inputNode && connection.input) {
+          try {
+            connection.inputNode.onConnectionsChange?.(
+              NodeSlotType.INPUT,
+              link.target_slot,
+              false,
+              link,
+              connection.input
+            )
+          } catch (error) {
+            console.error(
+              `Failed to notify disconnected link ${link.id}`,
+              error
+            )
+          }
+        }
+        if (connection.outputNode && connection.output) {
+          try {
+            connection.outputNode.onConnectionsChange?.(
+              NodeSlotType.OUTPUT,
+              link.origin_slot,
+              false,
+              link,
+              connection.output
+            )
+          } catch (error) {
+            console.error(
+              `Failed to notify disconnected link ${link.id}`,
+              error
+            )
+          }
+        }
+      }
+      for (const { link, slot } of moved) {
+        try {
+          node.onConnectionsChange?.(
+            NodeSlotType.INPUT,
+            slot,
+            true,
+            link,
+            node.inputs[slot]
+          )
+        } catch (error) {
+          console.error(`Failed to notify realigned link ${link.id}`, error)
+        }
+      }
     }
   }
 }

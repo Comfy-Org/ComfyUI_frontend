@@ -3,6 +3,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper'
 
 import {
+  type CameraState,
   type EventManagerInterface,
   type ViewHelperManagerInterface
 } from './interfaces'
@@ -13,20 +14,48 @@ export class ViewHelperManager implements ViewHelperManagerInterface {
 
   private getActiveCamera: () => THREE.Camera
   private getControls: () => OrbitControls
+  private getCameraState: () => CameraState
   private eventManager: EventManagerInterface
+
+  private readonly helperCamera = new THREE.OrthographicCamera(
+    -2,
+    2,
+    2,
+    -2,
+    0,
+    4
+  )
+  private readonly savedViewport = new THREE.Vector4()
 
   constructor(
     _renderer: THREE.WebGLRenderer,
     getActiveCamera: () => THREE.Camera,
     getControls: () => OrbitControls,
+    getCameraState: () => CameraState,
     eventManager: EventManagerInterface
   ) {
     this.getActiveCamera = getActiveCamera
     this.getControls = getControls
+    this.getCameraState = getCameraState
     this.eventManager = eventManager
+    this.helperCamera.position.set(0, 0, 2)
   }
 
   init(): void {}
+
+  render(renderer: THREE.WebGLRenderer, size: number): void {
+    const helper = this.viewHelper
+    if (!helper.isViewHelper) return
+
+    helper.quaternion.copy(this.getActiveCamera().quaternion).invert()
+    helper.updateMatrixWorld()
+
+    renderer.clearDepth()
+    renderer.getViewport(this.savedViewport)
+    renderer.setViewport(0, 0, size, size)
+    renderer.render(helper, this.helperCamera)
+    renderer.setViewport(this.savedViewport)
+  }
 
   dispose(): void {
     if (this.viewHelper) {
@@ -71,20 +100,7 @@ export class ViewHelperManager implements ViewHelperManagerInterface {
       this.viewHelper.update(delta)
 
       if (!this.viewHelper.animating) {
-        const cameraState = {
-          position: this.getActiveCamera().position.clone(),
-          target: this.getControls().target.clone(),
-          zoom:
-            this.getActiveCamera() instanceof THREE.OrthographicCamera
-              ? (this.getActiveCamera() as THREE.OrthographicCamera).zoom
-              : (this.getActiveCamera() as THREE.PerspectiveCamera).zoom,
-          cameraType:
-            this.getActiveCamera() instanceof THREE.PerspectiveCamera
-              ? 'perspective'
-              : 'orthographic'
-        }
-
-        this.eventManager.emitEvent('cameraChanged', cameraState)
+        this.eventManager.emitEvent('cameraChanged', this.getCameraState())
       }
     }
   }
