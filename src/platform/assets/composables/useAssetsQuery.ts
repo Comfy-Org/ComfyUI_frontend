@@ -58,8 +58,9 @@ function assetsQueryInternal(
 
         const { assets, has_more, next_cursor } = assetResponse
         headCursor = next_cursor
-        newItems.push(...assets.filter(({ id }) => !knownIds.has(id)))
-        if (newItems.length !== assets.length || !has_more) break
+        const newFromPage = assets.filter(({ id }) => !knownIds.has(id))
+        newItems.push(...newFromPage)
+        if (newFromPage.length !== assets.length || !has_more) break
       }
       items.value.splice(0, 0, ...newItems)
     })
