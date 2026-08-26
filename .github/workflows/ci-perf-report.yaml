@@ -58,19 +58,15 @@ jobs:
       # baseline saved to perf-data has enough samples to median over noise.
       - name: Run performance tests
         id: perf
-        continue-on-error: true
         env:
           PERF_REPEAT: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && '3' || '2' }}
         run: pnpm exec playwright test --project=performance --workers=1 --repeat-each=$PERF_REPEAT
 
-      # `continue-on-error` above keeps a failed spec from blocking the artifact
-      # upload, which also means nothing in this workflow could go red on a perf
-      # result: the job was green by construction. This step is the gate.
-      #
       # It asserts the absolute P5 FPS budget only. It needs no baseline, so it
       # is unaffected by the dead perf-data pipeline (#15545); the report's
       # z-score regression rows stay advisory until that history is alive again.
       - name: Enforce P5 FPS budget
+        if: always()
         run: pnpm exec tsx scripts/perf-report.ts --fail-on-fps-budget > /dev/null
 
       - name: Upload perf metrics
