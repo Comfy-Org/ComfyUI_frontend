@@ -267,11 +267,7 @@ describe('migrateWidgetsValues', () => {
   })
 
   it('migrates a sparse value array with a non-trailing skipped widget', () => {
-    const widgets = [
-      makeWidget('forced'),
-      makeWidget('preview', false),
-      makeWidget('steps')
-    ]
+    const widgets = [makeWidget('preview', false), makeWidget('steps')]
 
     expect(migrateWidgetsValues(inputDefs, widgets, [1, null, 20])).toEqual([
       20
@@ -279,7 +275,7 @@ describe('migrateWidgetsValues', () => {
   })
 
   it('continues to migrate a value array without skipped widgets', () => {
-    const widgets = [makeWidget('forced'), makeWidget('steps')]
+    const widgets = [makeWidget('steps')]
 
     expect(migrateWidgetsValues(inputDefs, widgets, [1, 20])).toEqual([20])
   })
