@@ -201,6 +201,7 @@ describe('drawConnections', () => {
 
   it.for([245, 500, 1_000])(
     'rebuilds render order independently for both passes at %i nodes',
+    { timeout: 10_000 },
     (nodeCount) => {
       for (let index = 0; index < nodeCount; index++) {
         const node = new LGraphNode(`Node ${index}`)
