@@ -241,6 +241,12 @@ describe('migrateWidgetsValues', () => {
     return fromPartial<IBaseWidget>({ name, serialize })
   }
 
+  it('migrates a legacy force-input array with a trailing skipped widget', () => {
+    const widgets = [makeWidget('steps'), makeWidget('preview', false)]
+
+    expect(migrateWidgetsValues(inputDefs, widgets, [1, 20])).toEqual([20])
+  })
+
   it('migrates a sparse value array with a non-trailing skipped widget', () => {
     const widgets = [
       makeWidget('forced'),

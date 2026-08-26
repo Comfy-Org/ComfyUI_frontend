@@ -207,16 +207,21 @@ export function migrateWidgetsValues<TWidgetValue>(
       : [!!input.forceInput]
   })
 
-  const normalizedWidgetValues =
-    widgetsValues.length === widgets.length
-      ? filter(widgetsValues, (_, index) => widgets[index]?.serialize !== false)
-      : widgetsValues
+  const compactedWidgetValues = filter(
+    widgetsValues,
+    (_, index) => widgets[index]?.serialize !== false
+  )
+  const alignedWidgetValues =
+    compactedWidgetValues.length === widgetIndexHasForceInput.length
+      ? compactedWidgetValues
+      : widgetsValues.length === widgetIndexHasForceInput.length
+        ? widgetsValues
+        : undefined
 
-  if (widgetIndexHasForceInput.length !== normalizedWidgetValues.length)
-    return widgetsValues
+  if (!alignedWidgetValues) return widgetsValues
 
   return filter(
-    normalizedWidgetValues,
+    alignedWidgetValues,
     (_, index) => !widgetIndexHasForceInput[index]
   )
 }
