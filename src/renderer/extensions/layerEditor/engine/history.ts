@@ -58,6 +58,7 @@ export class History {
   private groupStack: CommandGroup[] = []
   private dirtyCount = 0
   private cleanReachable = true
+  private mergeBarrier: Command | null = null
   private readonly byteBudget: number
   private readonly minSteps: number
   private listeners = new Set<(mask: number) => void>()
@@ -96,10 +97,15 @@ export class History {
     }
 
     const top = this.undoStack[this.undoStack.length - 1]
-    if (top && this.redoStack.length === 0 && cmd.tryMerge?.(top)) {
+    if (
+      top &&
+      top !== this.mergeBarrier &&
+      this.redoStack.length === 0 &&
+      cmd.tryMerge?.(top)
+    ) {
       this.undoBytes += top.sizeBytes() - (this.sizes.get(top) ?? 0)
       this.sizes.set(top, top.sizeBytes())
-      this.bumpDirty()
+      // Merged edits share the first commit's dirty step - no bumpDirty() here.
       this.emit(cmd.dirtyMask)
       return
     }
@@ -110,6 +116,9 @@ export class History {
     this.undoStack.push(cmd)
     this.sizes.set(cmd, cmd.sizeBytes())
     this.undoBytes += this.sizes.get(cmd) ?? 0
+    if (this.redoStack.length > 0 && this.dirtyCount < 0) {
+      this.cleanReachable = false
+    }
     this.redoStack = []
     this.bumpDirty()
     this.evict()
@@ -147,6 +156,7 @@ export class History {
     this.dirtyCount = 0
     this.undoBytes = 0
     this.cleanReachable = true
+    this.mergeBarrier = null
     this.emit(DIRTY_ALL)
   }
 
@@ -171,6 +181,7 @@ export class History {
   markSaved(): void {
     this.dirtyCount = 0
     this.cleanReachable = true
+    this.mergeBarrier = this.undoStack[this.undoStack.length - 1] ?? null
   }
 
   private bumpDirty(): void {
@@ -184,6 +195,7 @@ export class History {
     ) {
       const dropped = this.undoStack.shift()
       if (!dropped) break
+      if (dropped === this.mergeBarrier) this.mergeBarrier = null
       this.undoBytes -= this.sizes.get(dropped) ?? 0
       this.cleanReachable = false
     }

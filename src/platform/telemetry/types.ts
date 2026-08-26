@@ -14,7 +14,6 @@
 
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
-import type { AuditLog } from '@/services/customerEventsService'
 import type { AppMode } from '@/utils/appMode'
 
 export type AuthMethod = 'email' | 'google' | 'github'
@@ -734,6 +733,7 @@ type BillingFailureCategory =
   | 'provider_decline'
   | 'redirect'
   | 'poll_timeout'
+  | 'reconciliation_needed'
   | 'stale_operation'
   | 'rendering'
   | 'unknown'
@@ -930,11 +930,6 @@ export interface TelemetryProvider {
   trackRunButton?(properties: RunButtonProperties): void
 
   trackBillingEvent?(event: BillingTelemetryEvent): void
-
-  // Credit top-up tracking (composition with internal utilities)
-  startTopupTracking?(): void
-  checkForCompletedTopup?(events: AuditLog[] | undefined | null): boolean
-  clearTopupTracking?(): void
 
   // Survey flow events
   trackSurvey?(stage: 'opened' | 'submitted', responses?: SurveyResponses): void
