@@ -264,27 +264,6 @@ function getExecutionGraphState(value: unknown): unknown {
   return executionGraph
 }
 
-const lastProjectionByTracker = new WeakMap<
-  ChangeTracker,
-  { state: ComfyWorkflowJSON; projection: unknown }
->()
-
-/**
- * Memoizes by snapshot identity after synchronous graphChanged listeners run.
- * Mutating a snapshot after dispatch returns was already racy and is unsupported.
- */
-function executionStateOf(
-  tracker: ChangeTracker,
-  state: ComfyWorkflowJSON
-): unknown {
-  const lastProjection = lastProjectionByTracker.get(tracker)
-  if (lastProjection?.state === state) return lastProjection.projection
-
-  const projection = getExecutionGraphState(state)
-  lastProjectionByTracker.set(tracker, { state, projection })
-  return projection
-}
-
 const reportedInactiveCalls = new Set<string>()
 
 /**
@@ -438,18 +417,15 @@ export class ChangeTracker {
       )
     }
 
-    api.dispatchCustomEvent('graphChanged', this.activeState)
-
-    const shouldCompareExecutionState = !!previousState && isAutoQueueOnChange()
-    if (!shouldCompareExecutionState) lastProjectionByTracker.delete(this)
-
     const autoQueueGraphChanged =
-      shouldCompareExecutionState &&
+      !!previousState &&
+      isAutoQueueOnChange() &&
       !_.isEqual(
-        executionStateOf(this, previousState),
-        executionStateOf(this, this.activeState)
+        getExecutionGraphState(previousState),
+        getExecutionGraphState(this.activeState)
       )
 
+    api.dispatchCustomEvent('graphChanged', this.activeState)
     if (autoQueueGraphChanged) {
       api.dispatchCustomEvent('autoQueueGraphChanged')
     }
