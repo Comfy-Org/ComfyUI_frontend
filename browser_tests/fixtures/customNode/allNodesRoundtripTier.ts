@@ -382,9 +382,13 @@ export async function assertRoundtripTier({
             canvasPreviewImagePathPattern.source,
             canvasPreviewImagePathPattern.flags
           )
+          const uninstantiated: string[] = []
           for (const type of types) {
             const node = window.LiteGraph!.createNode(type)
-            if (!node) continue
+            if (!node) {
+              uninstantiated.push(type)
+              continue
+            }
             window.app!.graph.add(node)
             const widgets = node.widgets ?? []
             const uploadWidget = widgets.find(
@@ -406,7 +410,10 @@ export async function assertRoundtripTier({
             })
           }
           window.__cnIdBase = window.app!.graph.last_node_id
-          const problems: string[] = []
+          const problems: string[] = uninstantiated.map(
+            (type) =>
+              `${type}: createNode returned null, so this registered type was never exercised by the save/reload tier`
+          )
           const topologyDrifts: RoundtripTopologyDrift[] = []
           const dynamicTopologyChanges: DynamicTopologyChange[] = []
           const valueDrifts = new Map<string, Set<number>>()

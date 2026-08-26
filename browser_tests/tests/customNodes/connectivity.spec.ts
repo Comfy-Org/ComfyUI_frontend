@@ -59,10 +59,11 @@ const SWEEP_MS_PER_PAIR = 40
 const ISOLATED_MS_PER_PAIR = PLAN_SETUP_MS
 const DYNAMIC_CLEANUP_SETTLE_MS = 50
 const PAIRS_PER_BATCH = 100
-// Healthy batches finish in ~3s; the slowest observed legitimate batch was
-// 30s. 90s is past any real batch and still well inside the sweep budget, so
-// a stalled batch reports its pair instead of consuming the whole test.
-const BATCH_STALL_MS = 90_000
+// Healthy batches finish in ~3s and the slowest observed legitimate batch was
+// 30s, so 45s is past any real batch. It must also fire before the test
+// budget runs out: the stall begins ~178s into a 244s sweep, so a longer
+// deadline loses the race to the test timeout and reports nothing.
+const BATCH_STALL_MS = 45_000
 const PAIRS_PER_PAGE = 1_000
 // Same discipline for the drag pass, whose edge list grows with every
 // connectivity pack: one drag per edge per renderer. This test carried a flat
