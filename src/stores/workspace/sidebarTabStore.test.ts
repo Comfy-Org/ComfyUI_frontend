@@ -5,6 +5,7 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 const {
   mockGetSetting,
+  mockAssetsEnabled,
   mockRegisterCommand,
   mockRegisterCommands,
   mockBrowseModelAssets,
@@ -14,6 +15,7 @@ const {
   const registeredCommands: { id: string; function: () => unknown }[] = []
   return {
     mockGetSetting: vi.fn(),
+    mockAssetsEnabled: { value: false },
     mockRegisterCommand: vi.fn((command) => registeredCommands.push(command)),
     mockRegisterCommands: vi.fn(),
     mockBrowseModelAssets: vi.fn(),
@@ -25,6 +27,16 @@ const {
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
     get: mockGetSetting
+  })
+}))
+
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({
+    flags: {
+      get assetsEnabled() {
+        return mockAssetsEnabled.value
+      }
+    }
   })
 }))
 
@@ -107,6 +119,7 @@ describe('useSidebarTabStore', () => {
   beforeEach(() => {
     registeredCommands.length = 0
     commandStoreCommands.length = 0
+    mockAssetsEnabled.value = false
   })
 
   const toggleModelLibrary = async () => {
@@ -197,11 +210,9 @@ describe('useSidebarTabStore', () => {
 
     it('opens the asset browser when the browser and asset API are enabled', async () => {
       mockGetSetting.mockImplementation((key: string) =>
-        key === 'Comfy.ModelLibrary.UseAssetBrowser' ||
-        key === 'Comfy.Assets.UseAssetAPI'
-          ? true
-          : undefined
+        key === 'Comfy.ModelLibrary.UseAssetBrowser' ? true : undefined
       )
+      mockAssetsEnabled.value = true
       commandStoreCommands.push({
         id: 'Comfy.BrowseModelAssets',
         function: mockBrowseModelAssets

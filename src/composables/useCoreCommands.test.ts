@@ -97,6 +97,17 @@ vi.mock('@/platform/missingModel/missingModelStore', () => ({
   })
 }))
 
+const mockInvalidateAllAssets = vi.hoisted(() =>
+  vi.fn().mockResolvedValue(undefined)
+)
+vi.mock('@/stores/assetsStore', () => ({
+  useAssetsStore: () => ({ invalidateAll: mockInvalidateAllAssets })
+}))
+
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({ flags: { assetsEnabled: true } })
+}))
+
 vi.mock('@/platform/settings/settingStore')
 
 vi.mock('@/stores/authStore', () => ({

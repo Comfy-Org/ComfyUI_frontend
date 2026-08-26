@@ -1,9 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { assetService } from '@/platform/assets/services/assetService'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import {
   ResourceState,
@@ -13,7 +12,10 @@ import {
   useModelStore
 } from '@/stores/modelStore'
 
-const { isCloudRef } = vi.hoisted(() => ({ isCloudRef: { value: false } }))
+const { isCloudRef, assetsFlagRef } = vi.hoisted(() => ({
+  isCloudRef: { value: false },
+  assetsFlagRef: { value: false }
+}))
 
 vi.mock('@/platform/distribution/types', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
@@ -27,8 +29,8 @@ vi.mock('@/scripts/api', () => ({
   api: {
     getModels: vi.fn(),
     getModelFolders: vi.fn(),
-    getServerFeature: vi.fn(
-      (_path: string, defaultValue?: unknown) => defaultValue
+    getServerFeature: vi.fn((path: string, defaultValue?: unknown) =>
+      path === 'assets' ? assetsFlagRef.value : defaultValue
     ),
     viewMetadata: vi.fn(),
     apiURL: vi.fn((path: string) => `http://localhost:8188${path}`),
@@ -48,24 +50,8 @@ vi.mock('@/platform/assets/services/assetService', () => ({
   }
 }))
 
-// Mock the settingStore
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: vi.fn()
-}))
-
 function enableMocks(useAssetAPI = false) {
-  // Mock settingStore to return the useAssetAPI setting
-  const mockSettingStore = {
-    get: vi.fn().mockImplementation((key: string) => {
-      if (key === 'Comfy.Assets.UseAssetAPI') {
-        return useAssetAPI
-      }
-      return false
-    })
-  }
-  vi.mocked(useSettingStore, { partial: true }).mockReturnValue(
-    mockSettingStore
-  )
+  assetsFlagRef.value = useAssetAPI
 
   // Mock experimental API - returns objects with name and folders properties
   vi.mocked(api.getModels).mockResolvedValue([
@@ -111,7 +97,12 @@ describe('useModelStore', () => {
 
   beforeEach(async () => {
     isCloudRef.value = false
+    assetsFlagRef.value = false
     remoteConfig.value = {}
+  })
+
+  afterEach(() => {
+    store?.$dispose()
   })
 
   it('should load models', async () => {
@@ -714,7 +705,7 @@ describe('useModelStore', () => {
   })
 
   describe('API switching functionality', () => {
-    it('should use experimental API for complete workflow when UseAssetAPI setting is false', async () => {
+    it('should use experimental API for complete workflow when the asset API is disabled', async () => {
       enableMocks(false) // useAssetAPI = false
       store = useModelStore()
       await store.loadModelFolders()
@@ -728,7 +719,7 @@ describe('useModelStore', () => {
       expect(Object.keys(folderStore!.models)).toHaveLength(3)
     })
 
-    it('should use asset API for model contents but /experiment/models for folders when UseAssetAPI is true', async () => {
+    it('should use asset API for model contents but /experiment/models for folders when the asset API is enabled', async () => {
       enableMocks(true) // useAssetAPI = true
       store = useModelStore()
       await store.loadModelFolders()

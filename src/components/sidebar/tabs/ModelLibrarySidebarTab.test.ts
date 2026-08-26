@@ -126,12 +126,21 @@ vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
     get: vi.fn((key: string) => {
       if (key === 'Comfy.ModelLibrary.NameFormat') return 'filename'
-      if (key === 'Comfy.Assets.UseAssetAPI') return settingState.useAssetAPI
       if (key === 'Comfy.ModelLibrary.AutoLoadAll') {
         return settingState.autoLoadAll
       }
       return false
     })
+  })
+}))
+
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({
+    flags: {
+      get assetsEnabled() {
+        return settingState.useAssetAPI
+      }
+    }
   })
 }))
 

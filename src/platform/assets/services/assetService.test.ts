@@ -10,30 +10,20 @@ import {
 } from '@/platform/assets/services/assetService'
 import { api } from '@/scripts/api'
 
-const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
-const mockSettingStoreGet = vi.hoisted(() => vi.fn(() => false))
+const mockAssetsEnabled = vi.hoisted(() => ({ value: false }))
 const mockSupportsModelTypeTags = vi.hoisted(() => ({ value: true }))
-
-vi.mock('@/platform/distribution/types', () => ({
-  get isCloud() {
-    return mockDistributionState.isCloud
-  }
-}))
 
 vi.mock('@/composables/useFeatureFlags', () => ({
   useFeatureFlags: () => ({
     flags: {
       get supportsModelTypeTags() {
         return mockSupportsModelTypeTags.value
+      },
+      get assetsEnabled() {
+        return mockAssetsEnabled.value
       }
     }
   })
-}))
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: vi.fn(() => ({
-    get: mockSettingStoreGet
-  }))
 }))
 
 vi.mock('@/stores/modelToNodeStore', () => {
@@ -124,22 +114,11 @@ function validAsset(overrides: Partial<AssetItem> = {}): AssetItem {
 
 describe(assetService.shouldUseAssetBrowser, () => {
   beforeEach(() => {
-    mockDistributionState.isCloud = false
-    mockSettingStoreGet.mockReturnValue(false)
+    mockAssetsEnabled.value = false
   })
 
-  it('returns false when not on cloud', () => {
-    mockDistributionState.isCloud = false
-    mockSettingStoreGet.mockReturnValue(true)
-
-    expect(
-      assetService.shouldUseAssetBrowser('CheckpointLoaderSimple', 'ckpt_name')
-    ).toBe(false)
-  })
-
-  it('returns false when asset API setting is disabled', () => {
-    mockDistributionState.isCloud = true
-    mockSettingStoreGet.mockReturnValue(false)
+  it('returns false when assets are not enabled', () => {
+    mockAssetsEnabled.value = false
 
     expect(
       assetService.shouldUseAssetBrowser('CheckpointLoaderSimple', 'ckpt_name')
@@ -147,17 +126,15 @@ describe(assetService.shouldUseAssetBrowser, () => {
   })
 
   it('returns false when node type is not eligible', () => {
-    mockDistributionState.isCloud = true
-    mockSettingStoreGet.mockReturnValue(true)
+    mockAssetsEnabled.value = true
 
     expect(
       assetService.shouldUseAssetBrowser('UnknownNode', 'some_input')
     ).toBe(false)
   })
 
-  it('returns true when cloud, setting enabled, and node is eligible', () => {
-    mockDistributionState.isCloud = true
-    mockSettingStoreGet.mockReturnValue(true)
+  it('returns true when assets are enabled and the node is eligible', () => {
+    mockAssetsEnabled.value = true
 
     expect(
       assetService.shouldUseAssetBrowser('CheckpointLoaderSimple', 'ckpt_name')
@@ -165,8 +142,7 @@ describe(assetService.shouldUseAssetBrowser, () => {
   })
 
   it('returns false when nodeType is undefined', () => {
-    mockDistributionState.isCloud = true
-    mockSettingStoreGet.mockReturnValue(true)
+    mockAssetsEnabled.value = true
 
     expect(assetService.shouldUseAssetBrowser(undefined, 'ckpt_name')).toBe(
       false
@@ -174,8 +150,7 @@ describe(assetService.shouldUseAssetBrowser, () => {
   })
 
   it('returns false when widget name does not match registered input', () => {
-    mockDistributionState.isCloud = true
-    mockSettingStoreGet.mockReturnValue(true)
+    mockAssetsEnabled.value = true
 
     expect(
       assetService.shouldUseAssetBrowser(
