@@ -94,8 +94,9 @@ vi.mock('@/platform/telemetry', () => ({
   })
 }))
 
-vi.mock('@/platform/telemetry/topupTracker', () => ({
-  clearTopupTracking: vi.fn()
+const mockClearPendingTopup = vi.hoisted(() => vi.fn())
+vi.mock('@/composables/billing/usePendingTopup', () => ({
+  usePendingTopup: () => ({ clearPendingTopup: mockClearPendingTopup })
 }))
 
 vi.mock('@/composables/useExternalLink', () => ({
@@ -487,6 +488,15 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       billing_op_id: 'op-1',
       duration_ms: expect.any(Number)
     })
+    expect(mockClearPendingTopup).not.toHaveBeenCalled()
+  })
+
+  it('clears the pending top-up marker when the user closes the dialog', async () => {
+    renderDialog()
+    await userEvent.click(screen.getByRole('button', { name: 'Close' }))
+
+    expect(mockClearPendingTopup).toHaveBeenCalled()
+    expect(mockCloseDialog).toHaveBeenCalled()
   })
 
   it('opens Credits settings after a completed local top-up', async () => {

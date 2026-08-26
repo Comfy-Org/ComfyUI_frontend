@@ -16596,6 +16596,238 @@
       }
     }
   },
+  "PixverseV6ExtendVideoNode": {
+    "description": "Prolonge une vidéo existante avec PixVerse, éventuellement avec de l’audio natif. La source doit durer moins de 40 secondes et ne pas dépasser 1920 px dans aucune dimension. La sortie conserve la résolution de la source ; la qualité détermine donc le niveau de rendu de la continuation plutôt que la taille des images.",
+    "display_name": "PixVerse V6 Prolonger la vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Paramètres du modèle et de génération."
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_style": {
+        "name": "style"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Vidéo à prolonger."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6FirstLastFrameNode": {
+    "description": "Génère avec PixVerse une vidéo effectuant une transition entre une première image et une dernière image, éventuellement avec de l’audio natif. La sortie conserve le format d’image de la première image.",
+    "display_name": "PixVerse V6 Vidéo à partir de la première et de la dernière image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Paramètres du modèle et de génération."
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_style": {
+        "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6FusionVideoNode": {
+    "description": "Compose une vidéo à partir de sujets, d’arrière-plans et de vidéos de référence avec PixVerse. Placez une référence dans la scène en la nommant dans le prompt, par exemple « {'@'}Subject1 traverse {'@'}Background1 ». La connexion d’une vidéo de référence fait passer le modèle en mode Omni, où la durée de sortie correspond à celle de la vidéo de référence la plus longue.",
+    "display_name": "PixVerse V6 Fusion (références vers vidéo)",
+    "inputs": {
+      "backgrounds": {
+        "name": "backgrounds",
+        "tooltip": "Images de référence de la scène dans laquelle les sujets sont placés."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Paramètres du modèle et de génération."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration_seconds": {
+        "name": "durée en secondes"
+      },
+      "model_generate_audio": {
+        "name": "générer l’audio"
+      },
+      "model_negative_prompt": {
+        "name": "prompt négatif"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "qualité"
+      },
+      "model_seed": {
+        "name": "graine"
+      },
+      "model_style": {
+        "name": "style"
+      },
+      "subjects": {
+        "name": "subjects",
+        "tooltip": "Images de référence des sujets à placer dans la scène."
+      },
+      "videos": {
+        "name": "videos",
+        "tooltip": "Vidéos de référence dont reprendre les sujets, le mouvement, le cadrage ou le style. Deux au maximum, pour un total de 15 secondes au maximum."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6ImageToVideoNode": {
+    "description": "Anime une image avec PixVerse, éventuellement avec de l’audio natif. La sortie conserve le rapport d’aspect de l’image d’entrée.",
+    "display_name": "PixVerse V6 Image en vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après la génération"
+      },
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Paramètres du modèle et de génération."
+      },
+      "model_duration_seconds": {
+        "name": "durée en secondes"
+      },
+      "model_generate_audio": {
+        "name": "générer l’audio"
+      },
+      "model_multi_clip": {
+        "name": "multi-clip"
+      },
+      "model_negative_prompt": {
+        "name": "prompt négatif"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "qualité"
+      },
+      "model_seed": {
+        "name": "graine"
+      },
+      "model_style": {
+        "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6TextToVideoNode": {
+    "description": "Génère une vidéo à partir d’un prompt textuel avec PixVerse, éventuellement avec de l’audio natif.",
+    "display_name": "PixVerse V6 Texte en vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après la génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Paramètres du modèle et de génération."
+      },
+      "model_aspect_ratio": {
+        "name": "rapport d’aspect"
+      },
+      "model_duration_seconds": {
+        "name": "durée en secondes"
+      },
+      "model_generate_audio": {
+        "name": "générer l’audio"
+      },
+      "model_multi_clip": {
+        "name": "multi-clip"
+      },
+      "model_negative_prompt": {
+        "name": "prompt négatif"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "qualité"
+      },
+      "model_seed": {
+        "name": "graine"
+      },
+      "model_style": {
+        "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PolyexponentialScheduler": {
     "display_name": "PolyexponentialScheduler",
     "inputs": {
@@ -23444,30 +23676,6 @@
       },
       "1": {
         "name": "ID de tâche modèle",
-        "tooltip": null
-      },
-      "2": {
-        "name": "GLB",
-        "tooltip": null
-      }
-    }
-  },
-  "TripoRefineNode": {
-    "description": "Affinez un modèle d'ébauche créé uniquement par les modèles Tripo v1.4.",
-    "display_name": "Tripo : Modèle de raffinement d'ébauche",
-    "inputs": {
-      "model_task_id": {
-        "name": "ID_tâche_modèle",
-        "tooltip": "Doit être un modèle Tripo v1.4"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "fichier_modèle",
-        "tooltip": null
-      },
-      "1": {
-        "name": "modèle task_id",
         "tooltip": null
       },
       "2": {
