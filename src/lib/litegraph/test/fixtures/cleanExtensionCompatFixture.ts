@@ -179,7 +179,7 @@ function sweepNodeFacades(
   for (const input of node.inputs) {
     const linkId = input.link
     counters.inputLinkReads++
-    if (linkId != null && graph?.links.get(linkId)) counters.graphLinkReads++
+    if (linkId != null && graph?.links[linkId]) counters.graphLinkReads++
   }
   for (const output of node.outputs) {
     const linkIds = output.links
@@ -189,7 +189,7 @@ function sweepNodeFacades(
       counters.outputLinkViewAllocations++
     }
     for (const linkId of linkIds ?? []) {
-      if (graph?.links.get(linkId)) counters.graphLinkReads++
+      if (graph?.links[linkId]) counters.graphLinkReads++
     }
   }
 }
