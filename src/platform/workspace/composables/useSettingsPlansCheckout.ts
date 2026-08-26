@@ -47,7 +47,14 @@ export function useSettingsPlansCheckout() {
   const workspaceStore = useTeamWorkspaceStore()
   const billingOperationStore = useBillingOperationStore()
   const { permissions } = useWorkspaceUI()
-  const { currentTeamCreditStop } = useBillingContext()
+  const { currentTeamCreditStop, isActiveSubscription, isFreeTier } =
+    useBillingContext()
+
+  // Any paid subscription — personal or team — moving to a team stop is a plan
+  // change to the backend, so it must be previewed and consented to.
+  const hasPaidSubscription = computed(
+    () => isActiveSubscription.value && !isFreeTier.value
+  )
 
   const isStarting = ref(false)
   // Locked from the click through sign-in, hydration and the open dialog, and
@@ -92,7 +99,8 @@ export function useSettingsPlansCheckout() {
         credits: stop.credits,
         discountedUsd: getStopDiscountedMonthlyUsd(stop, billingCycle)
       },
-      isChange: currentTeamCreditStop.value !== null
+      isChange:
+        currentTeamCreditStop.value !== null || hasPaidSubscription.value
     })
   }
 
@@ -100,7 +108,8 @@ export function useSettingsPlansCheckout() {
     if (isSubscribing.value) return
     isStarting.value = true
     try {
-      // Without a Firebase session, require sign-in before checkout.
+      // A paid obligation is attributed to a full account, so an API-key
+      // session signs in first even though it now carries a workspace.
       if (!authStore.currentUser && !(await dialogService.showSignInDialog())) {
         return
       }
@@ -138,10 +147,11 @@ export function useSettingsPlansCheckout() {
       )
       dialogService.showLayoutDialog({
         key: CHECKOUT_DIALOG_KEY,
-        component: defineAsyncComponent(
-          () =>
-            import('@/platform/workspace/components/dialogs/settings/SettingsPlanCheckoutDialogContent.vue')
-        ),
+        component: defineAsyncComponent({
+          loader: () =>
+            import('@/platform/workspace/components/dialogs/settings/SettingsPlanCheckoutDialogContent.vue'),
+          onError: failCheckoutDialogLoad
+        }),
         props: {
           initialCheckout,
           onClose: () => dialogStore.closeDialog({ key: CHECKOUT_DIALOG_KEY })
@@ -154,6 +164,18 @@ export function useSettingsPlansCheckout() {
         }
       })
     })
+  }
+
+  // The dialog is already on the stack when the chunk resolves, so a load
+  // failure would otherwise leave an empty modal holding the checkout lock.
+  function failCheckoutDialogLoad(
+    _error: Error,
+    _retry: () => void,
+    fail: () => void
+  ) {
+    fail()
+    showError(t('settingsPlans.checkoutUnavailable'))
+    dialogStore.closeDialog({ key: CHECKOUT_DIALOG_KEY })
   }
 
   function showError(detail: string) {

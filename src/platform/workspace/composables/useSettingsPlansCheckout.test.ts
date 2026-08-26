@@ -12,6 +12,8 @@ const {
   mockCanManageSubscription,
   mockIsSettingUp,
   mockCurrentTeamCreditStop,
+  mockIsActiveSubscription,
+  mockIsFreeTier,
   mockSetDialogOpen
 } = vi.hoisted(() => ({
   mockShowSignInDialog: vi.fn(),
@@ -24,6 +26,8 @@ const {
   mockCanManageSubscription: { value: true },
   mockIsSettingUp: { value: false },
   mockCurrentTeamCreditStop: { value: null as { id: string } | null },
+  mockIsActiveSubscription: { value: false },
+  mockIsFreeTier: { value: false },
   mockSetDialogOpen: { impl: (_value: boolean) => {} }
 }))
 
@@ -32,6 +36,16 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     currentTeamCreditStop: {
       get value() {
         return mockCurrentTeamCreditStop.value
+      }
+    },
+    isActiveSubscription: {
+      get value() {
+        return mockIsActiveSubscription.value
+      }
+    },
+    isFreeTier: {
+      get value() {
+        return mockIsFreeTier.value
       }
     }
   })
@@ -152,6 +166,8 @@ describe('useSettingsPlansCheckout', () => {
     mockCanManageSubscription.value = true
     mockIsSettingUp.value = false
     mockCurrentTeamCreditStop.value = null
+    mockIsActiveSubscription.value = false
+    mockIsFreeTier.value = false
     mockShowSignInDialog.mockResolvedValue(true)
     mockInitialize.mockResolvedValue(undefined)
     mockShowLayoutDialog.mockReset()
@@ -225,6 +241,39 @@ describe('useSettingsPlansCheckout', () => {
       stop: expect.objectContaining({ discountedUsd: 855 }),
       isChange: false
     })
+  })
+
+  // A paid personal subscriber picking a Team stop is a plan change to the
+  // backend, so it has to be previewed like any other change.
+  it('marks a paid personal subscriber choosing a team stop as a change', async () => {
+    const checkout = await setup()
+    mockIsActiveSubscription.value = true
+
+    const { props } = await openAndClose(() =>
+      checkout.subscribeToTeam({
+        slug: 'team-annual-catalog',
+        stop: TEAM_STOP,
+        billingCycle: 'yearly'
+      })
+    )
+
+    expect(props.initialCheckout).toMatchObject({ isChange: true })
+  })
+
+  it('marks a free-tier user choosing a team stop as a fresh subscribe', async () => {
+    const checkout = await setup()
+    mockIsActiveSubscription.value = true
+    mockIsFreeTier.value = true
+
+    const { props } = await openAndClose(() =>
+      checkout.subscribeToTeam({
+        slug: 'team-annual-catalog',
+        stop: TEAM_STOP,
+        billingCycle: 'yearly'
+      })
+    )
+
+    expect(props.initialCheckout).toMatchObject({ isChange: false })
   })
 
   it('refuses a team subscribe on a stop without a backend id', async () => {

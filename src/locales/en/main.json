@@ -2675,6 +2675,7 @@
     "enterpriseCopy": "Need more members? Looking for more flexibility or custom features?",
     "contactUs": "Contact us",
     "ownerOnly": "Only the workspace owner can change the plan.",
+    "checkoutUnavailable": "Checkout could not be opened. Please reload and try again.",
     "checkoutCaption": "Checkout happens right here: payment details handled securely by Stripe. Prefer no plan? Keep topping up, anytime."
   },
   "credits": {
