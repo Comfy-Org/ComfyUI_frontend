@@ -27,6 +27,23 @@ const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
 
 vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
 
+const mockHasSavedPaymentMethod = vi.hoisted(() => ({
+  ref: undefined as { value: boolean | null } | undefined
+}))
+
+vi.mock(
+  '@/platform/workspace/composables/useHasSavedPaymentMethod',
+  async () => {
+    const { ref } = await import('vue')
+    mockHasSavedPaymentMethod.ref = ref<boolean | null>(null)
+    return {
+      useHasSavedPaymentMethod: () => ({
+        hasSavedPaymentMethod: mockHasSavedPaymentMethod.ref
+      })
+    }
+  }
+)
+
 interface MockTopupOperation {
   opId: string
   status: 'pending' | 'reconciliation_needed'
@@ -145,6 +162,8 @@ const i18n = createI18n({
           viewPricing: 'View pricing',
           insufficientWorkflowMessage: 'Insufficient credits',
           chargedImmediatelyNote: 'Your saved card is charged immediately.',
+          paymentDetailsRequiredNote:
+            "You'll be asked to add a payment method to complete this purchase.",
           confirmSubtitle:
             'Credits are added to this workspace as soon as payment completes.',
           confirmTitle: 'Confirm',
@@ -209,6 +228,13 @@ function setTopupActionOperation(operation: MockTopupOperation | undefined) {
   mockBillingOperationState.topupActionOperation.value = operation
 }
 
+function setHasSavedPaymentMethod(value: boolean | null) {
+  if (!mockHasSavedPaymentMethod.ref) {
+    throw new Error('Payment method mock not initialized')
+  }
+  mockHasSavedPaymentMethod.ref.value = value
+}
+
 async function clickAddCredits() {
   const user = userEvent.setup()
   await user.click(screen.getByRole('button', { name: 'Add credits' }))
@@ -222,6 +248,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     setTopupActionOperation(undefined)
     mockFetchBalance.mockResolvedValue(undefined)
     mockFetchStatus.mockResolvedValue(undefined)
+    setHasSavedPaymentMethod(true)
     mockStartOperation.mockImplementation(() => {
       setIsAddingCredits(true)
       return new Promise(() => {})
@@ -284,6 +311,40 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(screen.getByText('$50.00')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Pay $50.00' })).toBeEnabled()
     expect(mockTopup).not.toHaveBeenCalled()
+  })
+
+  it('shows the saved-card note when a payment method is on file', async () => {
+    renderDialog()
+
+    await clickAddCredits()
+
+    expect(
+      await screen.findByText('Your saved card is charged immediately.')
+    ).toBeInTheDocument()
+  })
+
+  it('asks for payment details when no payment method is saved', async () => {
+    setHasSavedPaymentMethod(false)
+
+    renderDialog()
+    await clickAddCredits()
+
+    expect(
+      await screen.findByText(
+        "You'll be asked to add a payment method to complete this purchase."
+      )
+    ).toBeInTheDocument()
+  })
+
+  it('keeps the saved-card note when the payment method lookup fails', async () => {
+    setHasSavedPaymentMethod(null)
+
+    renderDialog()
+    await clickAddCredits()
+
+    expect(
+      await screen.findByText('Your saved card is charged immediately.')
+    ).toBeInTheDocument()
   })
 
   it('allows returning to amount selection before payment', async () => {

@@ -66,7 +66,7 @@
           </span>
         </div>
         <p class="m-0 text-xs text-muted-foreground">
-          {{ $t('credits.topUp.chargedImmediatelyNote') }}
+          {{ paymentNote }}
         </p>
       </div>
     </template>
@@ -281,6 +281,7 @@ import { clearTopupTracking } from '@/platform/telemetry/topupTracker'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useHasSavedPaymentMethod } from '@/platform/workspace/composables/useHasSavedPaymentMethod'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -334,9 +335,17 @@ const step = ref<'amount' | 'confirm' | 'verifying'>(
   topupOperation.value && canTopUp.value ? 'verifying' : 'amount'
 )
 
+const { hasSavedPaymentMethod } = useHasSavedPaymentMethod()
+
 // Computed
 const pricingUrl = computed(() =>
   buildDocsUrl(docsPaths.partnerNodesPricing, { includeLocale: true })
+)
+
+const paymentNote = computed(() =>
+  hasSavedPaymentMethod.value === false
+    ? t('credits.topUp.paymentDetailsRequiredNote')
+    : t('credits.topUp.chargedImmediatelyNote')
 )
 
 const creditsModel = computed({
