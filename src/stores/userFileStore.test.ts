@@ -101,16 +101,22 @@ describe('useUserFileStore', () => {
         expect(file.isLoaded).toBe(true)
       })
 
-      it('should throw error on failed load', async () => {
+      it('returns undefined and clears loading state on failed load', async () => {
         const file = new UserFile('file1.txt', 123, 100)
         vi.mocked(api.getUserData).mockResolvedValue({
           status: 404,
           statusText: 'Not Found'
         } as Response)
+        const consoleSpy = vi
+          .spyOn(console, 'error')
+          .mockImplementation(() => {})
 
-        await expect(file.load()).rejects.toThrow(
-          "Failed to load file 'file1.txt': 404 Not Found"
-        )
+        await expect(file.load()).resolves.toBeUndefined()
+
+        expect(file.isLoading).toBe(false)
+        expect(file.isLoaded).toBe(false)
+        expect(consoleSpy).toHaveBeenCalledOnce()
+        consoleSpy.mockRestore()
       })
     })
 
