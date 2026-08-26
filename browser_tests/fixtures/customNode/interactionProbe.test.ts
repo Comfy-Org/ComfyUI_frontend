@@ -121,4 +121,67 @@ describe('planInteractionProbes', () => {
       threw: {}
     })
   })
+
+  it('excludes frontend-owned image previews from interaction deltas', async () => {
+    class PreviewTarget extends LGraphNode {
+      constructor() {
+        super('PreviewTarget')
+        this.addInput('value', 'INT')
+        this.onConnectionsChange = (type, _index, connected) => {
+          if (type !== LiteGraph.INPUT || !connected) return
+          setTimeout(
+            () =>
+              this.addWidget(
+                'custom',
+                '$$canvas-image-preview',
+                null,
+                () => {}
+              ),
+            0
+          )
+        }
+      }
+    }
+    class IntProducer extends LGraphNode {
+      constructor() {
+        super('IntProducer')
+        this.addOutput('value', 'INT')
+      }
+    }
+    LiteGraph.registerNodeType('test/PreviewTarget', PreviewTarget)
+    LiteGraph.registerNodeType('test/PreviewIntProducer', IntProducer)
+    onTestFinished(() => {
+      LiteGraph.unregisterNodeType('test/PreviewTarget')
+      LiteGraph.unregisterNodeType('test/PreviewIntProducer')
+    })
+    vi.stubGlobal('window', {
+      __cnIdBase: 0,
+      app: { graph: new LGraph() },
+      LiteGraph
+    })
+
+    await expect(
+      runInteractionProbeChunk({
+        probePlans: [
+          {
+            type: 'test/PreviewTarget',
+            first: { inputName: 'value' }
+          }
+        ],
+        producers: {
+          INT: { nodeType: 'test/PreviewIntProducer', outputIndex: 0 }
+        }
+      })
+    ).resolves.toMatchObject({
+      created: ['test/PreviewTarget'],
+      results: {
+        'test/PreviewTarget': {
+          connectFirst: [],
+          connectLast: 'SAME_AS_FIRST',
+          disconnect: []
+        }
+      },
+      threw: {}
+    })
+  })
 })
