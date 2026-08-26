@@ -65,6 +65,19 @@ export const useDomWidgetStore = defineStore('domWidget', () => {
     widgetStates.value.clear()
   }
 
+  // Widgets are keyed by widget id alone, so a graph teardown has to resolve
+  // each one's owning root before deciding. Subgraph widgets resolve to the
+  // same root as their parent, so clearing a root releases those too, while
+  // any other live root keeps its widgets.
+  function clearGraph(rootGraphId: string) {
+    for (const [widgetId, state] of widgetStates.value) {
+      const graph = state.widget.node?.graph
+      if (!graph) continue
+      if ((graph.rootGraph?.id ?? graph.id) === rootGraphId)
+        widgetStates.value.delete(widgetId)
+    }
+  }
+
   return {
     widgetStates,
     activeWidgetStates,
@@ -74,6 +87,7 @@ export const useDomWidgetStore = defineStore('domWidget', () => {
     activateWidget,
     deactivateWidget,
     setWidget,
-    clear
+    clear,
+    clearGraph
   }
 })

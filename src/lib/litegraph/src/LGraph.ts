@@ -745,7 +745,7 @@ export class LGraph
       useLinkStore().clearGraph(toRootGraphId(graphId))
       useRerouteStore().clearGraph(toRootGraphId(graphId))
       useNodeDataStore().clearGraph(graphId)
-      useDomWidgetStore().clear()
+      useDomWidgetStore().clearGraph(graphId)
       layoutStore.clearGraph(graphId)
     } else if (this.rootGraph) {
       useExecutionOrderStore().clearGraph(graphScopeOf(this))

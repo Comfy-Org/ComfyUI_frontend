@@ -6,15 +6,16 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 
-function domWidget(id: string) {
+function domWidgetOn(graph: LGraph, id: string) {
   return {
     id,
     element: document.createElement('video'),
     node: {
-      id: 'node-1',
+      id: `node-${id}`,
       title: 'n',
       pos: [0, 0],
-      size: [1, 1]
+      size: [1, 1],
+      graph
     } as Partial<LGraphNode> as LGraphNode,
     name: 'media',
     type: 'text' as const,
@@ -27,20 +28,35 @@ function domWidget(id: string) {
   }
 }
 
+const registered = (store: ReturnType<typeof useDomWidgetStore>) =>
+  [...store.widgetStates.keys()].sort()
+
 describe('graph clear releases DOM widgets', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
-  it('drops registered DOM widgets when the root graph is cleared', () => {
+  it('drops the cleared graph its own DOM widgets', () => {
     const store = useDomWidgetStore()
     const graph = new LGraph()
-    store.registerWidget(domWidget('widget-1'))
-    store.registerWidget(domWidget('widget-2'))
-    expect(store.widgetStates.size).toBe(2)
+    store.registerWidget(domWidgetOn(graph, 'a1'))
+    store.registerWidget(domWidgetOn(graph, 'a2'))
 
     graph.clear()
 
-    expect(store.widgetStates.size).toBe(0)
+    expect(registered(store)).toEqual([])
+  })
+
+  it('leaves another live root graph its DOM widgets', () => {
+    const store = useDomWidgetStore()
+    const cleared = new LGraph()
+    const untouched = new LGraph()
+    store.registerWidget(domWidgetOn(cleared, 'a1'))
+    store.registerWidget(domWidgetOn(untouched, 'b1'))
+    store.registerWidget(domWidgetOn(untouched, 'b2'))
+
+    cleared.clear()
+
+    expect(registered(store)).toEqual(['b1', 'b2'])
   })
 })
