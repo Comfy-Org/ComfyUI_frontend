@@ -79,7 +79,11 @@ export function useWaveAudioPlayer(options: UseWaveAudioPlayerOptions) {
       const response = await api.fetchApi(route)
       if (requestId !== decodeRequestId) return
       if (!response.ok) {
-        throw new Error(`Failed to fetch audio (${response.status})`)
+        console.error(`Failed to fetch audio (${response.status})`)
+        if (requestId === decodeRequestId) {
+          bars.value = generatePlaceholderBars()
+        }
+        return
       }
       const arrayBuffer = await response.arrayBuffer()
 
