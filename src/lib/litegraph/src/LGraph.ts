@@ -24,6 +24,7 @@ import {
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLinkStore } from '@/stores/linkStore'
 import type { EndpointUpdate } from '@/stores/linkStore'
+import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
@@ -744,6 +745,7 @@ export class LGraph
       useLinkStore().clearGraph(toRootGraphId(graphId))
       useRerouteStore().clearGraph(toRootGraphId(graphId))
       useNodeDataStore().clearGraph(graphId)
+      useDomWidgetStore().clear()
       layoutStore.clearGraph(graphId)
     } else if (this.rootGraph) {
       useExecutionOrderStore().clearGraph(graphScopeOf(this))
