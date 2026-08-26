@@ -1,3 +1,4 @@
+import { partnerRunGateBlocksAutoQueue } from '@/composables/billing/usePartnerNodesRunGate'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import {
@@ -12,29 +13,21 @@ export function setupAutoQueueHandler() {
 
   let graphHasChanged = false
   let internalCount = 0 // Use an internal counter here so it is instantly updated when re-queuing
-
-  const queueChange = () => {
-    graphHasChanged = false
-    // Claim the slot synchronously so a burst coalesces instead of double-queuing.
-    internalCount++
-    void app
-      .queuePrompt(0, queueSettingsStore.batchCount, {
-        intent: { trigger_source: 'auto_queue' }
-      })
-      .then((queued) => {
-        if (queued) return
-        // Nothing enqueued (e.g. gate rejected): release the slot or it stays stuck.
-        internalCount--
-        if (graphHasChanged && !internalCount) queueChange()
-      })
-  }
-
   api.addEventListener('autoQueueGraphChanged', () => {
+    // Skip the whole submission while gated: never enqueue a prompt the gate
+    // would drop, and never treat queuePrompt's false as gate rejection — it
+    // also means the item was queued behind an active processor.
+    if (partnerRunGateBlocksAutoQueue()) return
     if (queueSettingsStore.mode === 'change') {
       if (internalCount) {
         graphHasChanged = true
       } else {
-        queueChange()
+        graphHasChanged = false
+        // Queue the prompt in the background
+        void app.queuePrompt(0, queueSettingsStore.batchCount, {
+          intent: { trigger_source: 'auto_queue' }
+        })
+        internalCount++
       }
     }
   })
@@ -42,7 +35,11 @@ export function setupAutoQueueHandler() {
   queueCountStore.$subscribe(
     async () => {
       internalCount = queueCountStore.count
-      if (!internalCount && !app.lastExecutionError) {
+      if (
+        !internalCount &&
+        !app.lastExecutionError &&
+        !partnerRunGateBlocksAutoQueue()
+      ) {
         if (
           isInstantRunningMode(queueSettingsStore.mode) ||
           (queueSettingsStore.mode === 'change' && graphHasChanged)

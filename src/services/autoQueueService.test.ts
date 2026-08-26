@@ -9,7 +9,12 @@ const mocks = vi.hoisted(() => ({
   addEventListener:
     vi.fn<(event: string, listener: (event: Event) => void) => void>(),
   queuePrompt: vi.fn(() => Promise.resolve(true)),
-  lastExecutionError: null as object | null
+  lastExecutionError: null as object | null,
+  gateBlocks: false
+}))
+
+vi.mock('@/composables/billing/usePartnerNodesRunGate', () => ({
+  partnerRunGateBlocksAutoQueue: () => mocks.gateBlocks
 }))
 
 vi.mock('@/scripts/api', () => ({
@@ -53,6 +58,7 @@ describe('setupAutoQueueHandler', () => {
     queueSettingsStore.batchCount = 2
     useQueuePendingTaskCountStore().count = 0
     mocks.lastExecutionError = null
+    mocks.gateBlocks = false
   })
 
   it('queues on autoQueueGraphChanged instead of graphChanged', () => {
@@ -105,19 +111,38 @@ describe('setupAutoQueueHandler', () => {
     expect(mocks.queuePrompt).toHaveBeenCalledTimes(1)
   })
 
-  it('recovers after a rejected attempt so the next change still queues', async () => {
+  it('does not queue while the partner run gate blocks auto-queue', () => {
+    mocks.gateBlocks = true
+    const listener = setupAndGetAutoQueueGraphChangedListener()
+
+    listener(new Event('autoQueueGraphChanged'))
+
+    expect(mocks.queuePrompt).not.toHaveBeenCalled()
+  })
+
+  it('queues again once the gate clears rather than staying stuck', () => {
+    mocks.gateBlocks = true
+    const listener = setupAndGetAutoQueueGraphChangedListener()
+    listener(new Event('autoQueueGraphChanged'))
+    expect(mocks.queuePrompt).not.toHaveBeenCalled()
+
+    mocks.gateBlocks = false
+    listener(new Event('autoQueueGraphChanged'))
+    expect(mocks.queuePrompt).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not re-queue when a busy processor reports the item as not run yet', async () => {
     const listener = setupAndGetAutoQueueGraphChangedListener()
 
     mocks.queuePrompt.mockResolvedValueOnce(false)
     listener(new Event('autoQueueGraphChanged'))
     await nextTick()
-    expect(mocks.queuePrompt).toHaveBeenCalledTimes(1)
-
     listener(new Event('autoQueueGraphChanged'))
     await nextTick()
+
     expect(
       mocks.queuePrompt,
-      'a rejected attempt must not leave auto-queue stuck as busy'
-    ).toHaveBeenCalledTimes(2)
+      'a false from a busy processor already enqueued the item; do not queue it again'
+    ).toHaveBeenCalledTimes(1)
   })
 })
