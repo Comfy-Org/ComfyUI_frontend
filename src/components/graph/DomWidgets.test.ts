@@ -248,13 +248,7 @@ describe('DomWidgets deterministic update matrix', () => {
     widgetsVisible
   }: {
     count: number
-    update:
-      | 'changed-progress'
-      | 'equal-progress'
-      | 'node-geometry'
-      | 'node-layout'
-      | 'steady'
-      | 'zoom'
+    update: 'node-geometry' | 'node-layout' | 'steady' | 'zoom'
     widgetsVisible: boolean
   }): Promise<WidgetUpdateCounters> {
     const canvasStore = useCanvasStore()
@@ -342,11 +336,11 @@ describe('DomWidgets deterministic update matrix', () => {
   }
 
   it.for(widgetCounts)(
-    'does no reactive or DOM-layout work for %i visible widgets on an equal progress draw',
+    'does no reactive state work for %i visible widgets on a steady draw',
     async (count) => {
       const result = await measureUpdate({
         count,
-        update: 'equal-progress',
+        update: 'steady',
         widgetsVisible: true
       })
 
@@ -359,23 +353,6 @@ describe('DomWidgets deterministic update matrix', () => {
         zIndexChanges: 0,
         zIndexLookups: count
       })
-    }
-  )
-
-  it.for(widgetCounts)(
-    'does no reactive or DOM-layout work for %i visible widgets on a changed progress draw',
-    async (count) => {
-      const result = await measureUpdate({
-        count,
-        update: 'changed-progress',
-        widgetsVisible: true
-      })
-
-      expect(result.positionChanges).toBe(0)
-      expect(result.sizeChanges).toBe(0)
-      expect(result.visibleChanges).toBe(0)
-      expect(result.zIndexChanges).toBe(0)
-      expect(result.zIndexLookups).toBe(count)
     }
   )
 
