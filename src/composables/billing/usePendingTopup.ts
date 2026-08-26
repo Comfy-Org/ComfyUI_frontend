@@ -5,7 +5,7 @@ const MAX_AGE_MS = 24 * 60 * 60 * 1000 // 24 hours
 
 function getPendingTopupTimestamp(): number | null {
   const timestampStr = localStorage.getItem(STORAGE_KEY)
-  if (!timestampStr) return null
+  if (timestampStr === null) return null
 
   const timestamp = Number(timestampStr)
   const age = Date.now() - timestamp

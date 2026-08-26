@@ -46,6 +46,13 @@ describe('usePendingTopup', () => {
     expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
   })
 
+  it('pendingTopupNeedsRefresh clears an empty marker', () => {
+    const { pendingTopupNeedsRefresh } = usePendingTopup()
+    localStorage.setItem(STORAGE_KEY, '')
+    expect(pendingTopupNeedsRefresh()).toBe(false)
+    expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
+  })
+
   describe('isPendingTopupCompleted', () => {
     it('is false when no marker is set', () => {
       const { isPendingTopupCompleted } = usePendingTopup()

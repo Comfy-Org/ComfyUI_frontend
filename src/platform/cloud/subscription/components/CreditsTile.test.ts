@@ -36,6 +36,7 @@ const state = vi.hoisted(() => ({
   showTopUpCreditsDialog: vi.fn(),
   trackAddApiCreditButtonClicked: vi.fn(),
   trackApiCreditTopupSucceeded: vi.fn(),
+  telemetryUnavailable: false,
   getMyEvents: vi.fn(
     async (): Promise<CustomerEventsResult> => ({ events: [] })
   ),
@@ -98,10 +99,13 @@ vi.mock('@/services/dialogService', () => ({
 }))
 
 vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: () => ({
-    trackAddApiCreditButtonClicked: state.trackAddApiCreditButtonClicked,
-    trackApiCreditTopupSucceeded: state.trackApiCreditTopupSucceeded
-  })
+  useTelemetry: () =>
+    state.telemetryUnavailable
+      ? null
+      : {
+          trackAddApiCreditButtonClicked: state.trackAddApiCreditButtonClicked,
+          trackApiCreditTopupSucceeded: state.trackApiCreditTopupSucceeded
+        }
 }))
 
 vi.mock('@/services/customerEventsService', () => ({
@@ -211,6 +215,7 @@ describe('CreditsTile', () => {
     state.canSubscribeSelfServe = false
     state.type = 'workspace'
     state.customerEventsError = null
+    state.telemetryUnavailable = false
     mockIsCloud.value = true
   })
 
@@ -592,6 +597,28 @@ describe('CreditsTile', () => {
 
     await waitFor(() => expect(state.fetchBalance).not.toHaveBeenCalled())
     expect(state.getMyEvents).not.toHaveBeenCalled()
+  })
+
+  it('refreshes and reconciles a pending legacy top-up when telemetry is unavailable', async () => {
+    activeProSubscription()
+    state.type = 'legacy'
+    state.telemetryUnavailable = true
+    localStorage.setItem('pending_topup_timestamp', Date.now().toString())
+    const events = [
+      {
+        event_type: 'credit_added',
+        createdAt: new Date(Date.now() + 1000).toISOString()
+      }
+    ]
+    state.getMyEvents.mockResolvedValueOnce({ events })
+
+    renderTile()
+
+    await waitFor(() =>
+      expect(localStorage.getItem('pending_topup_timestamp')).toBeNull()
+    )
+    expect(state.fetchBalance).toHaveBeenCalled()
+    expect(state.trackApiCreditTopupSucceeded).not.toHaveBeenCalled()
   })
 
   it('retries legacy completion reconciliation after a request failure', async () => {
