@@ -27,6 +27,7 @@ function assetsQueryInternal(
 
   let nextCursor: string | undefined
   const seenCursors = new Set<string | undefined>()
+  let loadGeneration = 0
   const morePages = ref(true)
   const backingOff = refAutoReset(false, 2000)
   const hasMore = computed(() => morePages.value && !backingOff.value)
@@ -35,26 +36,41 @@ function assetsQueryInternal(
   const { enqueue, preempt, running: isLoading } = usePreemptableQueue()
   async function doLoadMore(signal?: AbortSignal) {
     if (!hasMore.value) return
-    if (seenCursors.has(nextCursor)) {
-      morePages.value = false
-      return
-    }
+    const requestedCursor = nextCursor ?? params.after
+    if (seenCursors.has(requestedCursor)) return
 
     const assetResponse = await doQuery(
       {
-        after: nextCursor ?? params.after
+        after: requestedCursor
       },
       signal
     )
     if (!assetResponse) return
-    seenCursors.add(nextCursor)
+
+    const knownIds = new Set(items.value.map(({ id }) => id))
+    const newItems = assetResponse.assets.filter(({ id }) => {
+      if (knownIds.has(id)) return false
+      knownIds.add(id)
+      return true
+    })
+    seenCursors.add(requestedCursor)
     nextCursor = assetResponse.next_cursor
-    morePages.value = assetResponse.has_more
-    items.value.push(...assetResponse.assets)
+    morePages.value =
+      assetResponse.has_more &&
+      nextCursor !== undefined &&
+      !seenCursors.has(nextCursor)
+    items.value.push(...newItems)
+    loadGeneration++
   }
 
-  function loadMore() {
-    return enqueue('loadMore', doLoadMore)
+  async function loadMoreWithProgress() {
+    const startingGeneration = loadGeneration
+    await enqueue('loadMore', doLoadMore)
+    return loadGeneration > startingGeneration
+  }
+
+  async function loadMore() {
+    await loadMoreWithProgress()
   }
 
   function loadNew() {
@@ -140,7 +156,15 @@ function assetsQueryInternal(
   }
 
   void loadMore()
-  return { hasMore, invalidate, isLoading, items, loadMore, loadNew }
+  return {
+    hasMore,
+    invalidate,
+    isLoading,
+    items,
+    loadMore,
+    loadMoreWithProgress,
+    loadNew
+  }
 }
 
 const sharedState: SharedPagedListState<ListAssetsData['query'], AssetItem> = {
