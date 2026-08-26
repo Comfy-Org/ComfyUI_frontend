@@ -140,4 +140,10 @@ export interface BillingContext extends BillingState, BillingActions {
   showsSubscribeToRunPrompt: ComputedRef<boolean>
   /** @deprecated Use canAccessSubscriptionFeatures instead */
   isActiveSubscription: ComputedRef<boolean>
+  /**
+   * Does the account already hold a paid plan on the rail checkout bills?
+   * The only sound "is this a plan change?" test: canAccessSubscriptionFeatures
+   * answers entitlement, not billing, and is unconditionally true off Cloud.
+   */
+  hasPaidCheckoutPlan: ComputedRef<boolean>
 }

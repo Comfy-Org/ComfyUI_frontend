@@ -38,19 +38,15 @@ export function useSettingsPlansCheckout() {
   const workspaceStore = useTeamWorkspaceStore()
   const billingOperationStore = useBillingOperationStore()
   const { permissions } = useWorkspaceUI()
-  const {
-    subscribe,
-    reconcileSubscriptionSuccess,
-    isActiveSubscription,
-    isFreeTier
-  } = useBillingContext()
+  const { subscribe, reconcileSubscriptionSuccess, hasPaidCheckoutPlan } =
+    useBillingContext()
 
   const isSubscribing = ref(false)
 
-  // Free tier is not a paid subscription, so those users can still subscribe.
-  const canStartCheckout = computed(
-    () => !isActiveSubscription.value || isFreeTier.value
-  )
+  // Read off the checkout rail, not the account rail: off Cloud the account
+  // rail reports everyone entitled, which closed every CTA. Free tier is not a
+  // paid plan, so those users can still subscribe.
+  const canStartCheckout = computed(() => !hasPaidCheckoutPlan.value)
 
   async function subscribeToPersonal(
     planSlug: string,

@@ -9,8 +9,7 @@ const {
   mockShowSignInDialog,
   mockFirebaseUser,
   mockOpen,
-  mockIsActiveSubscription,
-  mockIsFreeTier,
+  mockHasPaidCheckoutPlan,
   mockCanManageSubscription,
   mockInitialize,
   mockActiveWorkspace,
@@ -23,8 +22,7 @@ const {
   mockShowSignInDialog: vi.fn(),
   mockFirebaseUser: { value: null as { uid: string } | null },
   mockOpen: vi.fn(),
-  mockIsActiveSubscription: { value: false },
-  mockIsFreeTier: { value: false },
+  mockHasPaidCheckoutPlan: { value: false },
   mockCanManageSubscription: { value: true },
   mockInitialize: vi.fn(),
   mockActiveWorkspace: { value: null as { id: string } | null },
@@ -35,8 +33,7 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     subscribe: mockSubscribe,
     reconcileSubscriptionSuccess: mockReconcile,
-    isActiveSubscription: computedFlag(mockIsActiveSubscription),
-    isFreeTier: computedFlag(mockIsFreeTier)
+    hasPaidCheckoutPlan: computedFlag(mockHasPaidCheckoutPlan)
   })
 }))
 
@@ -131,8 +128,7 @@ describe('useSettingsPlansCheckout', () => {
     mockStartOperation.mockResolvedValue({ status: 'succeeded' })
     mockReconcile.mockResolvedValue(undefined)
     mockOpen.mockReturnValue({} as Window)
-    mockIsActiveSubscription.value = false
-    mockIsFreeTier.value = false
+    mockHasPaidCheckoutPlan.value = false
     mockCanManageSubscription.value = true
     mockInitialize.mockReset()
     mockInitialize.mockResolvedValue(undefined)
@@ -388,8 +384,7 @@ describe('useSettingsPlansCheckout', () => {
   // unpreviewed prorated plan change.
   describe('canStartCheckout', () => {
     it('withholds checkout from an active paid subscriber', async () => {
-      mockIsActiveSubscription.value = true
-      mockIsFreeTier.value = false
+      mockHasPaidCheckoutPlan.value = true
 
       const checkout = await setup()
 
@@ -397,8 +392,9 @@ describe('useSettingsPlansCheckout', () => {
     })
 
     it('allows checkout on the free tier, which is not a paid subscription', async () => {
-      mockIsActiveSubscription.value = true
-      mockIsFreeTier.value = true
+      // The free tier is active but unpaid, so the checkout-rail signal is
+      // false and the CTA stays open.
+      mockHasPaidCheckoutPlan.value = false
 
       const checkout = await setup()
 

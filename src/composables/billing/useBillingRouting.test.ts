@@ -96,6 +96,30 @@ describe('useBillingRouting', () => {
     expect(shouldUseUnifiedPricing.value).toBe(true)
   })
 
+  // The migration flag is Cloud remote config, so it reads as off off-Cloud;
+  // gating unified pricing on `isCloud` stranded these workspaces on the legacy
+  // adapter, which cannot sell a plan from the local plans section.
+  it('uses unified pricing for a legacy Stripe workspace off Cloud', () => {
+    mockIsCloud.value = false
+    mockActiveWorkspaceBillingRail.value = 'legacy_stripe'
+
+    const { type, shouldUseWorkspaceBilling, shouldUseUnifiedPricing } =
+      useBillingRouting()
+
+    expect(type.value).toBe('legacy')
+    expect(shouldUseWorkspaceBilling.value).toBe(false)
+    expect(shouldUseUnifiedPricing.value).toBe(true)
+  })
+
+  it('withholds unified pricing until a workspace loads off Cloud', () => {
+    mockIsCloud.value = false
+    mockActiveWorkspace.value = null
+
+    const { shouldUseUnifiedPricing } = useBillingRouting()
+
+    expect(shouldUseUnifiedPricing.value).toBe(false)
+  })
+
   it('migrates legacy Stripe personal workspaces behind the rollout flag', () => {
     mockLegacyBillingMigrationEnabled.value = true
     mockActiveWorkspaceBillingRail.value = 'legacy_stripe'
