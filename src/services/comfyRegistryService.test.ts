@@ -15,7 +15,7 @@ vi.mock('axios', () => ({
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
 
 describe('useComfyRegistryService', () => {
-  it.for([undefined, ''])(
+  it.for([null, undefined, '', 'undefined'])(
     'does not query for node name %s',
     async (nodeName) => {
       const result = await Reflect.apply(
