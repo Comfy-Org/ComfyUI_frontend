@@ -1,0 +1,65 @@
+name: CI - PR Risk Grade
+
+# Thin caller for the shared ADVISORY PR risk grader (shadow check). Grades
+# every PR R0 (safest) .. R3 (riskiest) against .github/risk.json (read from
+# the BASE ref) and syncs exactly one `risk:*` label — nothing gates, routes,
+# or merges on it. Disagree with a grade by adding the human-owned
+# `risk-dispute` label plus a comment saying why.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: Grade ONE pr by number (enrollment backfill, or a manual re-grade).
+        required: false
+      pr_numbers:
+        description: Grade several, comma-separated (12,15,20). Wins over pr_number.
+        required: false
+
+concurrency:
+  # Must carry the resolved target: on workflow_dispatch the event PR number is
+  # empty, and on pull_request the inputs are empty — one expression serves
+  # both. Trailing run_id keeps two no-input dispatches from cancelling each
+  # other. Keep a dispatched batch under ~40 numbers (255-char group cap).
+  group: ${{ github.workflow }}-${{ inputs.pr_numbers || inputs.pr_number || github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  pr-risk:
+    # Token guards, not risk judgements: fork and Dependabot pull_request runs
+    # get a read-only GITHUB_TOKEN, so the label write would 403. Scoped to the
+    # pull_request event — an unscoped head.repo check makes workflow_dispatch
+    # skip silently. Fork PRs can still be graded on demand via pr_number.
+    if: >-
+      github.event_name != 'pull_request' ||
+      (github.actor != 'dependabot[bot]' &&
+       github.event.pull_request.head.repo.full_name == github.repository)
+    permissions:
+      contents: read # the .github/risk.json override, read from the BASE ref
+      issues: write # create the risk:* labels repo-side on first use
+      pull-requests: write # the label write rides pull-requests, not issues
+      # write, not read: newer upstream pins declare `checks: write` on their
+      # opt-in publish-check job, and GitHub validates every nested job's
+      # declaration against this block at startup — even jobs an `if:` skips.
+      # A read grant startup-fails every run the moment the pin moves forward.
+      checks: write # the rollup read + the opt-in Check Run publish
+      actions: read # CheckRun -> checkSuite -> workflowRun for self-exclusion
+      statuses: read
+    # Pinned to github-workflows main (e4a8f7c); keep workflows_ref in
+    # lock-step so the grader + risk map schema load from the same commit.
+    # This permissions block must stay a superset of the UNION of every job
+    # the reusable workflow declares, including jobs whose `if:` skips them.
+    uses: Comfy-Org/github-workflows/.github/workflows/pr-risk.yml@e4a8f7cd4a073da082b03950136530d4df50738f # github-workflows main (e4a8f7c)
+    with:
+      workflows_ref: e4a8f7cd4a073da082b03950136530d4df50738f
+      # Required: upstream defaults enabled to FALSE. The repository variable
+      # RISK_CONFIG outranks this in both directions ({"enabled": false} is a
+      # kill switch that needs no PR).
+      enabled: true
+      pr_number: ${{ inputs.pr_number }}
+      pr_numbers: ${{ inputs.pr_numbers }}

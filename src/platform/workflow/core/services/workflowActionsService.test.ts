@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useWorkflowActionsService } from './workflowActionsService'
@@ -35,10 +35,6 @@ const minimalWorkflow: ComfyWorkflowJSON = {
 }
 
 describe('workflowActionsService.exportWorkflowAction', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('returns { cancelled: true } when the user dismisses the filename prompt', async () => {
     mockGetSetting.mockReturnValue(true)
     mockPrompt.mockResolvedValue(null)

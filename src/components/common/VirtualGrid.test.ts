@@ -268,4 +268,53 @@ describe('VirtualGrid', () => {
     expect(renderedItems.length).toBeGreaterThan(0)
     expect(renderedItems.length % 4).toBe(0)
   })
+
+  it('remeasures items when the grid style changes', async () => {
+    const items = createItems(20)
+    let itemWidth = 200
+    const widthSpy = vi
+      .spyOn(HTMLElement.prototype, 'clientWidth', 'get')
+      .mockImplementation(function (this: HTMLElement) {
+        return this.hasAttribute('data-virtual-grid-item') ? itemWidth : 0
+      })
+    const heightSpy = vi
+      .spyOn(HTMLElement.prototype, 'clientHeight', 'get')
+      .mockImplementation(function (this: HTMLElement) {
+        return this.hasAttribute('data-virtual-grid-item') ? 100 : 0
+      })
+
+    try {
+      const { rerender } = render(VirtualGrid, {
+        props: {
+          items,
+          gridStyle: defaultGridStyle,
+          defaultItemHeight: 100,
+          defaultItemWidth: 200,
+          bufferRows: 0
+        },
+        slots: {
+          item: `<template #item="{ item }">
+            <div>{{ item.name }}</div>
+          </template>`
+        }
+      })
+
+      await nextTick()
+      expect(screen.getAllByText(/^Item \d+$/)).toHaveLength(4)
+
+      itemWidth = 100
+      await rerender({
+        gridStyle: {
+          ...defaultGridStyle,
+          gridTemplateColumns: 'repeat(4, 1fr)'
+        }
+      })
+      await nextTick()
+
+      expect(screen.getAllByText(/^Item \d+$/)).toHaveLength(8)
+    } finally {
+      widthSpy.mockRestore()
+      heightSpy.mockRestore()
+    }
+  })
 })

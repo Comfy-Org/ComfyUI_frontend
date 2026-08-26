@@ -2,7 +2,8 @@
   <div
     :class="
       cn(
-        'group relative rounded-lg transition-all focus-within:ring focus-within:ring-component-node-widget-background-highlighted hover:bg-component-node-widget-background-hovered',
+        'group relative rounded-lg transition-all focus-within:ring focus-within:ring-component-node-widget-background-highlighted',
+        !isReadOnly && 'hover:bg-component-node-widget-background-hovered',
         widget.borderStyle
       )
     "

@@ -176,6 +176,9 @@
   "Comfy_Interrupt": {
     "label": "중단"
   },
+  "Comfy_LayerEditor_OpenLayerEditor": {
+    "label": "선택한 노드의 레이어 에디터 열기"
+  },
   "Comfy_LoadDefaultWorkflow": {
     "label": "기본 워크플로 로드"
   },

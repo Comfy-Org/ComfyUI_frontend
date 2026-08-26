@@ -105,3 +105,28 @@ describe('GroupNodeConfig.getLinks', () => {
     expect(config.externalFrom[0][1]).toBe('IMAGE')
   })
 })
+
+describe('GroupNodeConfig.processInputSlots', () => {
+  it('maps exposed inputs by name instead of definition index', () => {
+    const config = new GroupNodeConfig('group', {
+      nodes: [{ index: 0, type: 'KSampler' }],
+      links: [],
+      external: []
+    })
+    const inputMap: Record<string, number> = {}
+
+    config.processInputSlots(
+      {
+        model: ['MODEL'],
+        latent_image: ['LATENT']
+      },
+      { index: 0, type: 'KSampler' },
+      ['model', 'latent_image'],
+      {},
+      inputMap,
+      {}
+    )
+
+    expect(inputMap).toEqual({ model: 0, latent_image: 1 })
+  })
+})

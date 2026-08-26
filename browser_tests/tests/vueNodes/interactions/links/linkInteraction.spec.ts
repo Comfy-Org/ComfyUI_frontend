@@ -1238,7 +1238,7 @@ test(
   { tag: '@vue-nodes' },
   async ({ comfyMouse, comfyPage }) => {
     async function performDisconnect(slot: Locator, isFast: boolean) {
-      await comfyMouse.dragElementBy(slot, { x: isFast ? -25 : -80 })
+      await comfyMouse.dragElementBy(slot, { x: isFast ? -30 : -80 })
 
       if (!isFast) {
         await expect(comfyPage.contextMenu.litegraphContextMenu).toBeVisible()
@@ -1251,7 +1251,7 @@ test(
 
     const ksamplerLocator = comfyPage.vueNodes.getNodeByTitle('KSampler')
     const ksampler = new VueNodeFixture(ksamplerLocator)
-    await comfyMouse.dragElementBy(ksamplerLocator, { x: 100 })
+    await comfyMouse.dragElementBy(ksampler.title, { x: 100 })
 
     await test.step('Disconnection with normal links', async () => {
       await performDisconnect(ksampler.getSlot('model'), true)
@@ -1270,3 +1270,103 @@ test(
     })
   }
 )
+
+test.describe('Vue link drag panning', { tag: '@vue-nodes' }, () => {
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'default')
+    await comfyPage.workflow.loadWorkflow('vueNodes/simple-triple')
+    await fitToViewInstant(comfyPage)
+  })
+
+  test('spacebar pans during link drag', async ({ comfyPage }) => {
+    const initialOffset = await comfyPage.canvasOps.getOffset()
+
+    await test.step('Setup link drag', async () => {
+      await comfyPage.searchBoxV2.addNode('Load Diffusion')
+      const loadNode = await comfyPage.vueNodes.getFixtureByTitle('Load Diff')
+      const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+
+      await loadNode.getSlot('MODEL').hover()
+      await comfyPage.page.mouse.down()
+      await ksampler.getSlot('model').hover()
+      expect(
+        await comfyPage.canvasOps.getOffset(),
+        'starting the link drag should not pan the canvas'
+      ).toEqual(initialOffset)
+    })
+
+    await test.step('Holding space initiates a pan', async () => {
+      await comfyPage.page.keyboard.down(' ')
+      await comfyPage.page.mouse.move(100, 100)
+      await comfyPage.page.keyboard.up(' ')
+      await expect
+        .poll(() => comfyPage.canvasOps.getOffset())
+        .not.toEqual(initialOffset)
+    })
+
+    await test.step('Mouse remains over model after pan', async () => {
+      await comfyPage.page.mouse.up()
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(
+            () => graph?.nodes?.at(-1)?.getOutputNodes(0)?.length === 1
+          )
+        )
+        .toBe(true)
+    })
+  })
+})
+
+test('Floating reroutes', { tag: '@vue-nodes' }, async ({ comfyPage }) => {
+  await comfyPage.nodeOps.clearGraph()
+  const previewNodePos = { position: { x: 800, y: 200 } }
+  await comfyPage.searchBoxV2.addNode('Preview Image', previewNodePos)
+  const previewNode =
+    await comfyPage.vueNodes.getFixtureByTitle('Preview Image')
+
+  await test.step('Create floating reroute', async () => {
+    const reroutePos = { targetPosition: { x: 700, y: 400 } }
+    await previewNode
+      .getSlot('images')
+      .first()
+      .dragTo(comfyPage.canvas, reroutePos)
+    await comfyPage.contextMenu.clickLitegraphMenuItem('Add Reroute')
+    await comfyPage.searchBoxV2.addNode('Load Image')
+  })
+
+  await test.step('Connect node on top of floating link', async () => {
+    const loadNode = await comfyPage.vueNodes.getFixtureByTitle('Load Image')
+    await loadNode
+      .getSlot('IMAGE')
+      .first()
+      .dragTo(previewNode.getSlot('images').first())
+  })
+
+  await test.step('Create node from floating reroute', async () => {
+    await comfyPage.canvas.dragTo(comfyPage.canvas, {
+      sourcePosition: { x: 680, y: 400 },
+      targetPosition: { x: 500, y: 500 }
+    })
+    await comfyPage.contextMenu.clickLitegraphMenuItem('LoadImage')
+  })
+
+  await expect
+    .poll(
+      () =>
+        comfyPage.page.evaluate(() => {
+          if (!graph || graph.links.size !== 1) return 'invalid link count'
+          if (graph.reroutes.size !== 1) return 'invalid reroutes count'
+
+          const linkId = graph.nodes.find((n) => n.title === 'Preview Image')
+            ?.inputs[0].link
+          if (!linkId) return 'failed to resolve link id'
+
+          const rerouteId = graph.getLink(linkId)?.parentId
+          if (!rerouteId) return 'failed to resolve reroute id'
+
+          return !graph.reroutes.has(rerouteId) && 'reroute does not exist'
+        }),
+      'old link is disconnected, reroute is part of new connection'
+    )
+    .toBe(false)
+})

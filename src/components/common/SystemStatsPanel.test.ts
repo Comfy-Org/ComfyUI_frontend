@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
@@ -51,10 +51,6 @@ function renderPanel(stats: SystemStats) {
 }
 
 describe('SystemStatsPanel', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('renders localized headers with corrected PyTorch casing', () => {
     renderPanel(createStats())
 

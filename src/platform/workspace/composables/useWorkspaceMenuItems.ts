@@ -4,6 +4,9 @@ import { useI18n } from 'vue-i18n'
 import type { MenuItem } from 'primevue/menuitem'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingRouting } from '@/composables/billing/useBillingRouting'
+import { isCloud } from '@/platform/distribution/types'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useDialogService } from '@/services/dialogService'
 
@@ -11,22 +14,24 @@ import { useDialogService } from '@/services/dialogService'
  * Builds the Plan & Credits overflow-menu model for the workspace subscription
  * panel. Visibility and the Delete enable/disable policy are derived from the
  * shared useWorkspaceUI state so this menu can't desync with the sibling
- * WorkspacePanelContent menu.
+ * Plan & Credits panel menu.
  */
 export function useWorkspaceMenuItems() {
   const { t } = useI18n()
-  const { isFreeTier, subscription } = useBillingContext()
+  const { billingStatus, isFreeTier, subscription } = useBillingContext()
+  const { shouldUseWorkspaceBilling } = useBillingRouting()
+  const { canCancel } = useBillingCapabilities()
   const {
+    permissions,
     uiConfig,
     isInPersonalWorkspace,
     isActiveSubscription,
-    isOriginalOwner,
-    isTeamPlanCancelled,
+    isSubscriptionCancelled,
     isDeleteDisabled,
     deleteDisabledTooltipKey
   } = useWorkspaceUI()
   const {
-    showCancelSubscriptionDialog,
+    showCancelSubscriptionFlow,
     showEditWorkspaceDialog,
     showDeleteWorkspaceDialog,
     showLeaveWorkspaceDialog
@@ -37,33 +42,47 @@ export function useWorkspaceMenuItems() {
   }
 
   function cancelSubscription() {
-    void showCancelSubscriptionDialog(subscription.value?.endDate ?? undefined)
+    if (isCloud && shouldUseWorkspaceBilling.value && !canCancel.value) return
+    if (!canCancelPlan.value) return
+    void showCancelSubscriptionFlow(subscription.value?.endDate ?? undefined)
   }
 
   function deleteWorkspace() {
+    if (
+      !permissions.value.canManageSubscription ||
+      isInPersonalWorkspace.value ||
+      isDeleteDisabled.value
+    ) {
+      return
+    }
     void showDeleteWorkspaceDialog()
   }
 
   function leaveWorkspace() {
+    if (!permissions.value.canLeaveWorkspace) return
     void showLeaveWorkspaceDialog()
   }
 
-  const canCancelPlan = computed(
-    () =>
-      isOriginalOwner.value &&
-      isActiveSubscription.value &&
-      !isTeamPlanCancelled.value &&
+  const canCancelPlan = computed(() => {
+    // can_cancel already encodes role, subscription presence/status and a
+    // scheduled cancellation, but not tier: it stays true for an active FREE
+    // plan, so the free-tier guard has to remain client-side.
+    if (isCloud && shouldUseWorkspaceBilling.value)
+      return canCancel.value && !isFreeTier.value
+    return (
+      permissions.value.canManageSubscriptionLifecycle &&
+      (isActiveSubscription.value ||
+        ((billingStatus.value === 'payment_failed' ||
+          billingStatus.value === 'paused') &&
+          Boolean(subscription.value?.planSlug))) &&
+      !isSubscriptionCancelled.value &&
       !isFreeTier.value
-  )
+    )
+  })
 
   const canDeleteWorkspace = computed(
     () =>
-      isOriginalOwner.value &&
-      (!isInPersonalWorkspace.value || isActiveSubscription.value)
-  )
-
-  const canLeaveWorkspace = computed(
-    () => !isInPersonalWorkspace.value && !isOriginalOwner.value
+      permissions.value.canManageSubscription && !isInPersonalWorkspace.value
   )
 
   const deleteTooltip = computed(() => {
@@ -92,15 +111,15 @@ export function useWorkspaceMenuItems() {
       items.push({
         label: t('workspacePanel.menu.deleteWorkspace'),
         class: isDeleteDisabled.value
-          ? 'data-disabled:cursor-not-allowed data-disabled:text-danger/50 data-disabled:pointer-events-auto'
-          : 'text-danger',
+          ? 'data-disabled:cursor-not-allowed data-disabled:text-destructive-background/50 data-disabled:pointer-events-auto'
+          : 'text-destructive-background',
         disabled: isDeleteDisabled.value,
         tooltip: deleteTooltip.value,
         command: isDeleteDisabled.value ? undefined : deleteWorkspace
       })
     }
 
-    if (canLeaveWorkspace.value) {
+    if (permissions.value.canLeaveWorkspace) {
       items.push({
         label: t('workspacePanel.menu.leaveWorkspace'),
         command: leaveWorkspace

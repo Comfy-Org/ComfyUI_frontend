@@ -1,3 +1,8 @@
+import type {
+  OAuthConsentChallenge as GeneratedOAuthConsentChallenge,
+  OAuthConsentChallengeWorkspace
+} from '@comfyorg/ingest-types'
+
 // All OAuth calls are relative-URL (same-origin) on purpose. useSessionCookie
 // POSTs /api/auth/session through the Vite dev-server proxy (or the production
 // same-host ingress), so the Set-Cookie response lands on the FE origin. A
@@ -7,33 +12,28 @@
 // initiated from /oauth/authorize). The Vite proxy / production ingress is
 // the single point of routing.
 
-export type OAuthWorkspace = {
-  id: string
-  name: string
-  type: 'personal' | 'team'
-  role: 'owner' | 'member'
-}
+export type OAuthWorkspace = OAuthConsentChallengeWorkspace
 
-export type OAuthConsentChallenge = {
-  oauth_request_id: string
-  csrf_token: string
-  client_display_name: string
-  resource_display_name?: string
-  /**
-   * Exact registered redirect URI the OAuth client will be sent to on
-   * success/deny. Surfaced verbatim so users can verify the destination
-   * (RFC 8252 loopback for CLIs, HTTPS for web clients).
-   */
-  redirect_uri?: string
-  /**
-   * RFC 7591 application_type — "native" (CLI/desktop, loopback redirect)
-   * or "web" (HTTPS-hosted). Absent for legacy seeded clients. Used to render
-   * a Native / Web badge so users know what kind of app they're authorizing.
-   */
-  client_application_type?: 'native' | 'web'
-  scopes: string[]
-  workspaces: OAuthWorkspace[]
-}
+/**
+ * The spec marks these required, but backends predating them omit both, so the
+ * consent screen degrades instead of rejecting the challenge. Presence is all
+ * that deviates — the field types still come from the generated contract.
+ */
+type SurfacedOnlyByNewerBackends = 'resource_display_name' | 'redirect_uri'
+
+export type OAuthConsentChallenge = Omit<
+  GeneratedOAuthConsentChallenge,
+  SurfacedOnlyByNewerBackends
+> &
+  Partial<Pick<GeneratedOAuthConsentChallenge, SurfacedOnlyByNewerBackends>> & {
+    /**
+     * RFC 7591 application_type — "native" (CLI/desktop, loopback redirect)
+     * or "web" (HTTPS-hosted). Absent for legacy seeded clients. Used to render
+     * a Native / Web badge so users know what kind of app they're authorizing.
+     * Not in the spec yet.
+     */
+    client_application_type?: 'native' | 'web'
+  }
 
 export type OAuthConsentDecisionParams = {
   oauthRequestId: string
@@ -50,10 +50,6 @@ export type OAuthConsentDecisionParams = {
    */
   expectedRedirectUri?: string
 }
-
-export type OAuthConsentDecision = (
-  params: OAuthConsentDecisionParams
-) => Promise<void>
 
 // Schemes that execute in our origin if navigated. Never navigable,
 // regardless of what the backend returns. Everything else is governed

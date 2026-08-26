@@ -18,10 +18,6 @@ Object.defineProperty(window, 'localStorage', {
   writable: true
 })
 
-vi.mock('@/config/version', () => ({
-  __COMFYUI_FRONTEND_VERSION__: '1.24.0'
-}))
-
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => mockSettingStore
 }))
@@ -32,10 +28,7 @@ describe('useNewUserService', () => {
   let service: ReturnType<typeof useNewUserService>
 
   beforeEach(() => {
-    vi.clearAllMocks()
     mockSettingStore.settingValues = {}
-    mockSettingStore.get.mockReset()
-    mockSettingStore.set.mockReset()
 
     service = useNewUserService()
     service.reset()

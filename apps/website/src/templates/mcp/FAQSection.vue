@@ -5,7 +5,7 @@ import { t } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-const faqNumbers = [1, 2, 3, 4, 5, 6, 7, 8] as const
+const faqNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const
 
 const faqs = faqNumbers.map((n) => ({
   id: String(n),

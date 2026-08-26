@@ -1,6 +1,6 @@
 import type { AxiosError } from 'axios'
 import axios from 'axios'
-import { watch } from 'vue'
+import { ref, watch } from 'vue'
 
 import { useApiRequest } from '@/composables/useApiRequest'
 import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
@@ -34,6 +34,9 @@ const customerApiClient = axios.create({
 attachUnifiedRemintInterceptor(customerApiClient)
 
 export const useCustomerEventsService = () => {
+  const isLoading = ref(false)
+  let latestRequestId = 0
+
   watch(
     () => getComfyApiBaseUrl(),
     (url) => {
@@ -51,18 +54,22 @@ export const useCustomerEventsService = () => {
     }
 
     const axiosError = err as AxiosError<{ message: string }>
-    const status = axiosError.response?.status
-    if (status && routeSpecificErrors?.[status]) {
+    if (!axiosError.response) {
+      return `${context} failed: ${axiosError.message}`
+    }
+
+    const status = axiosError.response.status
+    if (routeSpecificErrors?.[status]) {
       return routeSpecificErrors[status]
     }
 
     return (
-      axiosError.response?.data?.message ??
+      axiosError.response.data?.message ??
       `${context} failed with status ${status}`
     )
   }
 
-  const { isLoading, error, executeRequest } = useApiRequest({
+  const { error, executeRequest } = useApiRequest({
     client: customerApiClient,
     mapError
   })
@@ -164,9 +171,22 @@ export const useCustomerEventsService = () => {
       404: 'Not found'
     }
 
-    // Get auth headers
-    const authHeaders = await useAuthStore().getAuthHeader()
+    const authStore = useAuthStore()
+    const requestOwner = authStore.currentUserIdentity()
+    const requestId = ++latestRequestId
+    isLoading.value = true
+    error.value = null
+
+    const authHeaders = await authStore.getUserAuthHeader()
+    if (requestId !== latestRequestId) {
+      return null
+    }
+    if (authStore.currentUserIdentity() !== requestOwner) {
+      isLoading.value = false
+      return null
+    }
     if (!authHeaders) {
+      isLoading.value = false
       error.value = 'Authentication header is missing'
       return null
     }
@@ -180,6 +200,14 @@ export const useCustomerEventsService = () => {
       { errorContext, routeSpecificErrors }
     )
 
+    if (requestId !== latestRequestId) {
+      return null
+    }
+    isLoading.value = false
+    if (authStore.currentUserIdentity() !== requestOwner) {
+      error.value = null
+      return null
+    }
     return result
   }
 
