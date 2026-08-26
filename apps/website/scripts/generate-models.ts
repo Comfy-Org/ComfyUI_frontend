@@ -209,11 +209,11 @@ interface ApiModelData {
   previewTemplate?: string
 }
 
-function extractApiModels(
+export function extractApiModels(
   files: string[],
-  templateCategories: ReadonlyMap<string, readonly ModelCategory[]>,
-  templateRecencies: ReadonlyMap<string, TemplateRecency>,
-  templatesDir: string
+  templateCategories: ReadonlyMap<string, readonly ModelCategory[]> = new Map(),
+  templateRecencies: ReadonlyMap<string, TemplateRecency> = new Map(),
+  templatesDir = ''
 ): ApiModelData[] {
   const providers = new Map<
     string,
@@ -225,12 +225,31 @@ function extractApiModels(
       previewRecency?: TemplateRecency
     }
   >()
+  const unmapped = new Set<string>()
+  const sortedKeys = Object.keys(API_PROVIDER_MAP).sort(
+    (a, b) => b.length - a.length
+  )
+
   for (const file of files) {
     if (!file.startsWith('api_')) continue
     const templateName = stripJsonExtension(file)
-    const prefix = file.slice(4).split('_')[0]
-    const entry = API_PROVIDER_MAP[prefix]
-    if (!entry) continue
+    const baseName = stripJsonExtension(file.slice(4)).toLowerCase()
+    if (
+      baseName === 'king' ||
+      baseName.startsWith('king_') ||
+      baseName === 'from' ||
+      baseName.startsWith('from_')
+    ) {
+      continue
+    }
+    const matchedKey = sortedKeys.find(
+      (key) => baseName === key || baseName.startsWith(`${key}_`)
+    )
+    if (!matchedKey) {
+      unmapped.add(`- ${baseName} (from ${file})`)
+      continue
+    }
+    const entry = API_PROVIDER_MAP[matchedKey]
     const provider = providers.get(entry.slug) ?? {
       count: 0,
       categories: new Set<ModelCategory>(),
@@ -241,15 +260,18 @@ function extractApiModels(
     for (const category of templateCategories.get(templateName) ?? []) {
       provider.categories.add(category)
     }
-    const templateRecency = previewRecency(
-      templateName,
-      templateRecencies,
-      templatesDir
-    )
+    const templateRecency = templatesDir
+      ? previewRecency(templateName, templateRecencies, templatesDir)
+      : undefined
     if (templateRecency) {
       setNewestPreview(provider, templateName, templateRecency)
     }
     providers.set(entry.slug, provider)
+  }
+  if (unmapped.size > 0) {
+    throw new Error(
+      `Unmapped API provider prefixes found in template files:\n${[...unmapped].join('\n')}\nYou MUST add them to API_PROVIDER_MAP in generate-models.ts.`
+    )
   }
   return [...providers.entries()].map(([slug, provider]) => {
     const found = Object.values(API_PROVIDER_MAP).find((e) => e.slug === slug)!
@@ -268,7 +290,7 @@ function extractApiModels(
 }
 
 function stripJsonExtension(file: string): string {
-  return file.replace(/\.json$/, '')
+  return file.replace(/\.json$/i, '')
 }
 
 function buildTemplateCategoryMap(
