@@ -1,5 +1,11 @@
 import type { CDPSession, Page } from '@playwright/test'
 
+import type { CdpMetricSnapshot } from '@/utils/cdpPerformanceMetrics'
+import {
+  computeCdpTaskAccounting,
+  parseCdpMetrics,
+  requireCdpMetric
+} from '@/utils/cdpPerformanceMetrics'
 import type {
   RafCollection,
   RafCollectorState
@@ -25,6 +31,7 @@ interface PerfSnapshot {
   JSHeapTotalSize: number
   ScriptDuration: number
   JSEventListeners: number
+  cdpMetrics: CdpMetricSnapshot
 }
 
 const RAF_STATE_KEY = '__perfRafCollectorState'
@@ -41,7 +48,7 @@ export class PerformanceHelper {
 
   async init(): Promise<void> {
     this.cdp = await this.page.context().newCDPSession(this.page)
-    await this.cdp.send('Performance.enable')
+    await this.cdp.send('Performance.enable', { timeDomain: 'timeTicks' })
   }
 
   async dispose(): Promise<void> {
@@ -68,9 +75,8 @@ export class PerformanceHelper {
     const { metrics } = (await this.cdp.send('Performance.getMetrics')) as {
       metrics: { name: string; value: number }[]
     }
-    function get(name: string): number {
-      return metrics.find((m) => m.name === name)?.value ?? 0
-    }
+    const cdpMetrics = parseCdpMetrics(metrics)
+    const get = (name: string) => requireCdpMetric(cdpMetrics, name)
     return {
       RecalcStyleCount: get('RecalcStyleCount'),
       RecalcStyleDuration: get('RecalcStyleDuration'),
@@ -82,7 +88,8 @@ export class PerformanceHelper {
       Nodes: get('Nodes'),
       JSHeapTotalSize: get('JSHeapTotalSize'),
       ScriptDuration: get('ScriptDuration'),
-      JSEventListeners: get('JSEventListeners')
+      JSEventListeners: get('JSEventListeners'),
+      cdpMetrics
     }
   }
 
@@ -253,11 +260,15 @@ export class PerformanceHelper {
     const rafCollection = await this.stopRafCollectorIfRunning()
     const after = await this.getSnapshot()
 
-    function delta(key: keyof PerfSnapshot): number {
+    function delta(key: Exclude<keyof PerfSnapshot, 'cdpMetrics'>): number {
       return after[key] - before[key]
     }
 
     const totalBlockingTimeMs = await this.collectTBT()
+    const taskAccounting = computeCdpTaskAccounting(
+      before.cdpMetrics,
+      after.cdpMetrics
+    )
     const rafIntervalsMs = rafCollection?.intervalsMs ?? []
     const measurement: PerfMeasurement = {
       name,
@@ -267,6 +278,7 @@ export class PerformanceHelper {
       layouts: delta('LayoutCount'),
       layoutDurationMs: delta('LayoutDuration') * 1000,
       taskDurationMs: delta('TaskDuration') * 1000,
+      ...taskAccounting,
       heapDeltaBytes: delta('JSHeapUsedSize'),
       heapUsedBytes: after.JSHeapUsedSize,
       domNodes: delta('Nodes'),
