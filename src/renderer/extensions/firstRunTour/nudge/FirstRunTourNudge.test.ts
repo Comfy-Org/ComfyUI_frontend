@@ -1,6 +1,7 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -8,6 +9,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import FirstRunTourNudge from './FirstRunTourNudge.vue'
 
 const APPEAR_DELAY_MS = 1500
+const CATALOG_WAIT_MS = 3000
 const FIRST_OUTPUT = {
   filename: 'first-output.png',
   subfolder: 'tour',
@@ -257,6 +259,80 @@ describe('FirstRunTourNudge', () => {
       expect(mocks.dismissNudge).toHaveBeenCalled()
     }
   )
+
+  it('waits for the catalog rather than rewriting itself under the user', async () => {
+    const catalogLoaded = createDeferred<boolean>()
+    mocks.catalog.value = []
+    mocks.loadTemplates.mockReturnValueOnce(catalogLoaded.promise)
+    mocks.nudgeArmed.value = true
+    renderNudge()
+
+    await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
+    expect(
+      nudge(),
+      'the fallback copy would be shown, then rewritten into the continuations'
+    ).toBeNull()
+
+    mocks.catalog.value = CATALOG_TEMPLATE_IDS
+    catalogLoaded.resolve(true)
+    await vi.waitFor(() => {
+      expect(nudge()).not.toBeNull()
+    })
+
+    expect(suggestionButton('animate')).toBeTruthy()
+    expect(mocks.trackOnboardingTour).toHaveBeenCalledWith('nudge_shown', {
+      tour: 'firstRun',
+      suggestion_count: 3
+    })
+  })
+
+  it('gives up on a stalled catalog rather than withholding the card', async () => {
+    mocks.catalog.value = []
+    mocks.loadTemplates.mockReturnValueOnce(createDeferred<boolean>().promise)
+    mocks.nudgeArmed.value = true
+    renderNudge()
+
+    await vi.advanceTimersByTimeAsync(CATALOG_WAIT_MS)
+
+    expect(
+      screen.getByText(
+        enMessages.onboardingCoachmarks.firstRun.nudge.fallback.title
+      ),
+      'the way forward is what the card is for (#14144)'
+    ).toBeTruthy()
+    expect(mocks.trackOnboardingTour).toHaveBeenCalledWith('nudge_shown', {
+      tour: 'firstRun',
+      suggestion_count: 0
+    })
+  })
+
+  it('reports one nudge per tour, however often it comes and goes', async () => {
+    await showNudge()
+
+    mocks.openDialogs.value = ['some-dialog']
+    await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
+    mocks.openDialogs.value = []
+    await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
+
+    const shown = () =>
+      mocks.trackOnboardingTour.mock.calls.filter(
+        ([stage]) => stage === 'nudge_shown'
+      )
+    expect(
+      shown(),
+      'the funnel counts nudges, so a reappearance is not a second one'
+    ).toHaveLength(1)
+
+    mocks.nudgeArmed.value = false
+    await nextTick()
+    mocks.nudgeArmed.value = true
+    await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
+
+    expect(
+      shown(),
+      'a second tour ends in a second nudge, which the funnel has to see'
+    ).toHaveLength(2)
+  })
 
   it('offers only the continuations the install actually serves', async () => {
     mocks.catalog.value = ['utility_seedvr2_7b_int8_upscale_image']

@@ -62,7 +62,7 @@
               </span>
               <span
                 v-if="suggestion.badgeKey"
-                class="shrink-0 rounded-sm border border-border-subtle px-1.25 py-0.25 text-[10px] text-muted-foreground"
+                class="shrink-0 rounded-sm border border-border-subtle px-1.25 py-0.25 text-2xs/5 text-muted-foreground"
               >
                 {{ t(suggestion.badgeKey) }}
               </span>
@@ -111,6 +111,13 @@ import { useFirstRunTourController } from '../tour/useFirstRunTourController'
 
 const APPEAR_DELAY_MS = 1500
 
+/**
+ * How long the card waits on the catalog before showing what it already knows.
+ * Capped, because a stalled fetch must not take the card away from the user it
+ * is for (#14144).
+ */
+const CATALOG_WAIT_MS = 3000
+
 type SuggestionId = 'animate' | 'upscale' | 'restyle'
 
 interface Suggestion {
@@ -125,7 +132,7 @@ interface Suggestion {
   paid?: boolean
 }
 
-const suggestions: Suggestion[] = [
+const SUGGESTIONS: Suggestion[] = [
   {
     id: 'animate',
     templateId: 'video_minimax_h3_i2v_continuation',
@@ -162,7 +169,7 @@ const titleId = useId()
 const subtitleId = useId()
 const loadingSuggestionId = ref<SuggestionId | null>(null)
 const delayElapsed = ref(false)
-const catalogSettled = ref(false)
+const catalogDecided = ref(false)
 let reported = false
 
 /**
@@ -174,7 +181,7 @@ let reported = false
 const availableSuggestions = computed(() =>
   nudgeOutput.value === null
     ? []
-    : suggestions.filter(({ templateId }) => {
+    : SUGGESTIONS.filter(({ templateId }) => {
         const template = templatesStore.getTemplateByName(templateId)
         return (
           template?.sourceModule === 'default' &&
@@ -194,7 +201,14 @@ const copyKey = computed(
 const screenIsClear = computed(
   () => nudgeArmed.value && dialogStore.dialogStack.length === 0
 )
-const onScreen = computed(() => screenIsClear.value && delayElapsed.value)
+/**
+ * The catalog decides what the card can offer, so the card cannot render before
+ * it. Without this the card paints the fallback, then rewrites itself into the
+ * continuations under the user — and reports a count it never showed.
+ */
+const onScreen = computed(
+  () => screenIsClear.value && delayElapsed.value && catalogDecided.value
+)
 
 const { start: scheduleAppearance, stop: cancelAppearance } = useTimeoutFn(
   () => {
@@ -204,17 +218,32 @@ const { start: scheduleAppearance, stop: cancelAppearance } = useTimeoutFn(
   { immediate: false }
 )
 
+const { start: startCatalogWait, stop: stopCatalogWait } = useTimeoutFn(
+  () => {
+    catalogDecided.value = true
+  },
+  CATALOG_WAIT_MS,
+  { immediate: false }
+)
+
 useEventListener(document, 'keydown', (event: KeyboardEvent) => {
   if (onScreen.value && !loadingSuggestionId.value && event.key === 'Escape')
     dismissNudge()
 })
 
+// Each nudge is a fresh one: a second tour asks the catalog again and reports
+// its own impression, rather than inheriting the first tour's answers.
 watch(
   nudgeArmed,
   (armed) => {
+    stopCatalogWait()
+    catalogDecided.value = false
+    reported = false
     if (!armed) return
+    startCatalogWait()
     void loadTemplates().finally(() => {
-      catalogSettled.value = true
+      stopCatalogWait()
+      catalogDecided.value = true
     })
   },
   { immediate: true }
@@ -230,10 +259,8 @@ watch(
   { immediate: true }
 )
 
-// Reported once the catalog has settled, so a card that beat the fetch to the
-// screen does not report the empty case the fetch was about to fill.
-watch([onScreen, catalogSettled], ([visible, settled]) => {
-  if (!visible || !settled || reported) return
+watch(onScreen, (visible) => {
+  if (!visible || reported) return
   reported = true
   telemetry?.trackOnboardingTour('nudge_shown', {
     tour: 'firstRun',

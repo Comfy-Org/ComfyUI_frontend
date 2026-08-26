@@ -258,7 +258,8 @@ function useFirstRunTourControllerInternal() {
     if (
       !runCorrelationActive.value ||
       !awaitingSavedOutput.value ||
-      queuedJobIdsBeforeRun.value.has(detail.prompt_id)
+      queuedJobIdsBeforeRun.value.has(detail.prompt_id) ||
+      (tourJobId.value !== null && detail.prompt_id !== tourJobId.value)
     )
       return
     // Every media key, not just `images`: a template can save under `video` or
@@ -275,11 +276,14 @@ function useFirstRunTourControllerInternal() {
       subfolder: image.subfolder,
       type: parsedType.success ? parsedType.data : 'output'
     }
-    if (detail.prompt_id === tourJobId.value) {
+    if (tourJobId.value !== null) {
       firstRunOutput.value = output
       return
     }
-    if (tourJobId.value === null && !pendingRunOutputs.has(detail.prompt_id))
+    // Buffered under the same preference as the direct branch: a preview that
+    // beat the queue metadata must not lock out the saved result behind it.
+    const buffered = pendingRunOutputs.get(detail.prompt_id)
+    if (!buffered || buffered.type === 'temp')
       pendingRunOutputs.set(detail.prompt_id, output)
   })
 

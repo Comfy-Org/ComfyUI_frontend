@@ -1039,6 +1039,32 @@ describe('useFirstRunTourController', () => {
       ).toEqual({ filename: 'preview.png', subfolder: '', type: 'temp' })
     })
 
+    it('replaces a buffered preview when the saved result also beats the queue', async () => {
+      const { controller } = await tourOnRunStep()
+      mountRunButton('queue-button', () => {}).click()
+      const { api } = await import('@/scripts/api')
+      api.dispatchCustomEvent('executed', {
+        prompt_id: 'tour-job',
+        node: 1,
+        display_node: 1,
+        output: { images: [{ filename: 'preview.png', type: 'temp' }] }
+      })
+      api.dispatchCustomEvent('executed', {
+        prompt_id: 'tour-job',
+        node: 2,
+        display_node: 2,
+        output: { images: [{ filename: 'saved.png', type: 'output' }] }
+      })
+
+      await acceptRun(TOUR_WORKFLOW, 'tour-job')
+      await endTour(COMPLETED)
+
+      expect(
+        controller.nudgeOutput.value?.filename,
+        'a preview that beat the queue metadata must not lock out the saved result'
+      ).toBe('saved.png')
+    })
+
     it('replaces a preview output with the saved result', async () => {
       const { controller } = await tourOnRunStep()
       mountRunButton('queue-button', () => {}).click()
