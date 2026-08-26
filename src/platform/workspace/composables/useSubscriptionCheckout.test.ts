@@ -3890,9 +3890,16 @@ describe('useSubscriptionCheckout', () => {
       mockCapabilities.value.canReactivate = false
       mockCanReactivatePlan.value = true
       const checkout = await setup()
+      mockResubscribe.mockResolvedValueOnce({
+        billing_op_id: 'op-legacy-rail',
+        status: 'active'
+      })
+      mockFetchStatus.mockResolvedValueOnce(undefined)
+      mockFetchBalance.mockResolvedValueOnce(undefined)
 
       await checkout.handleResubscribe()
 
+      expect(emit).toHaveBeenCalledWith('close', true)
       expect(mockResubscribe).toHaveBeenCalled()
     })
 
