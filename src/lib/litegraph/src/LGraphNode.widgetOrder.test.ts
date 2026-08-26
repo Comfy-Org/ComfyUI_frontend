@@ -139,6 +139,10 @@ describe('LGraphNode widget ordering', () => {
       // which JSON renders as null on disk.
       const sparseWidgetsValues: TWidgetValue[] = [30]
       sparseWidgetsValues[2] = 12345
+      const nullPaddedWidgetsValues: TWidgetValue[] = [30, null, 12345]
+      expect(JSON.stringify(sparseWidgetsValues)).toBe(
+        JSON.stringify(nullPaddedWidgetsValues)
+      )
 
       const legacyInfo: ISerialisedNode = {
         id: 1,
@@ -148,10 +152,8 @@ describe('LGraphNode widget ordering', () => {
         flags: {},
         order: 0,
         mode: 0,
-        widgets_values: JSON.parse(JSON.stringify(sparseWidgetsValues))
+        widgets_values: nullPaddedWidgetsValues
       }
-
-      expect(legacyInfo.widgets_values).toEqual([30, null, 12345])
 
       node.configure(legacyInfo)
 
@@ -166,7 +168,16 @@ describe('LGraphNode widget ordering', () => {
       node.addWidget('number', 'seed', 12345, null, {})
       delete node.widgets![0]
 
-      expect(node.serialize().widgets_values).toEqual([12345])
+      const serialized = node.serialize()
+      expect(serialized.widgets_values).toEqual([12345])
+
+      const roundTripNode = new LGraphNode('TestNode')
+      roundTripNode.addWidget('number', 'steps', 0, null, {})
+      roundTripNode.addWidget('number', 'seed', 0, null, {})
+      delete roundTripNode.widgets![0]
+
+      expect(() => roundTripNode.configure(serialized)).not.toThrow()
+      expect(roundTripNode.widgets![1].value).toBe(12345)
     })
 
     it('restores positional values for widgets created after configure', () => {
