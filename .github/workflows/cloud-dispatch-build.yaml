@@ -1,20 +1,30 @@
 ---
-# Dispatches a frontend-asset-build event to the cloud repo on push to
-# cloud/* branches and main. The cloud repo handles the actual build,
-# GCS upload, and secret management (Sentry, Algolia, GCS creds).
+# Dispatches a frontend-asset-build event to the cloud repo so the cloud repo
+# can build the frontend, upload assets to GCS, and deploy/update environments
+# (preview envs, testcloud, staging). The cloud repo owns the actual build and
+# secret management (Sentry, Algolia, GCS creds).
 #
-# This is fire-and-forget — it does NOT wait for the cloud workflow to
-# complete. Status is visible in the cloud repo's Actions tab.
+# Triggers:
+#   push (any branch): keeps environments fresh on every code push. For
+#     cloud/* and main this drives the testcloud/staging/release paths. For any
+#     other branch it dispatches only when the branch has an open PR carrying a
+#     preview label, and includes that PR number so the cloud repo redeploys the
+#     preview env. Push is used (rather than the pull_request "synchronize"
+#     event) because GitHub does not fire pull_request events while a PR has
+#     merge conflicts, which would silently freeze that PR's preview.
+#   pull_request (labeled): kicks off the first build when a preview label is
+#     added, even without a new push.
+#   workflow_dispatch: manual trigger.
+#
+# This is fire-and-forget: it does NOT wait for the cloud workflow to complete.
+# Status is visible in the cloud repo's Actions tab.
 
 name: Cloud Frontend Build Dispatch
 
 on:
   push:
-    branches:
-      - 'cloud/*'
-      - 'main'
   pull_request:
-    types: [labeled, synchronize]
+    types: [labeled]
   workflow_dispatch:
 
 permissions: {}
@@ -25,21 +35,20 @@ concurrency:
 
 jobs:
   dispatch:
-    # Fork guard: prevent forks from dispatching to the cloud repo.
-    # For pull_request events, only dispatch for preview labels.
-    # - labeled: fires when a label is added; check the added label name.
-    # - synchronize: fires on push; check existing labels on the PR.
+    # Fork guard: prevent forks from dispatching to the cloud repo. Forked PRs
+    # push to their own repo, so the push trigger never fires here for them; the
+    # pull_request path is additionally guarded below.
+    # For pull_request events, only run when a preview label is added.
     if: >
       github.repository == 'Comfy-Org/ComfyUI_frontend' &&
       (github.event_name != 'pull_request' ||
        (github.event.pull_request.head.repo.fork == false &&
-        ((github.event.action == 'labeled' &&
-          contains(fromJSON('["preview","preview-cpu","preview-gpu"]'), github.event.label.name)) ||
-         (github.event.action == 'synchronize' &&
-          (contains(github.event.pull_request.labels.*.name, 'preview') ||
-           contains(github.event.pull_request.labels.*.name, 'preview-cpu') ||
-           contains(github.event.pull_request.labels.*.name, 'preview-gpu'))))))
+        github.event.action == 'labeled' &&
+        contains(fromJSON('["preview","preview-cpu","preview-gpu"]'), github.event.label.name)))
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - name: Build client payload
         id: payload
@@ -47,33 +56,79 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          ACTION: ${{ github.event.action }}
-          LABEL_NAME: ${{ github.event.label.name }}
+          PR_EVENT_NUMBER: ${{ github.event.pull_request.number }}
           PR_LABELS: ${{ toJson(github.event.pull_request.labels.*.name) }}
+          GH_TOKEN: ${{ github.token }}
         run: |
+          set -euo pipefail
+
+          SHOULD_DISPATCH=true
+          PR_NUMBER=""
+          VARIANT=""
+
           if [ "${EVENT_NAME}" = "pull_request" ]; then
+            # Preview label just added (gated by the job `if:` above).
             REF="${PR_HEAD_SHA}"
             BRANCH="${PR_HEAD_REF}"
-
-            # Derive variant from all PR labels (default to cpu for frontend-only previews)
+            PR_NUMBER="${PR_EVENT_NUMBER}"
             VARIANT="cpu"
-            echo "${PR_LABELS}" | grep -q '"preview-gpu"' && VARIANT="gpu"
+            if echo "${PR_LABELS}" | grep -q '"preview-gpu"'; then VARIANT="gpu"; fi
           else
+            # push or workflow_dispatch
             REF="${GITHUB_SHA}"
             BRANCH="${GITHUB_REF_NAME}"
-            PR_NUMBER=""
-            VARIANT=""
+
+            if [ "${BRANCH}" = "main" ] || [[ "${BRANCH}" == cloud/* ]]; then
+              # Existing testcloud/staging/release path: no PR context.
+              PR_NUMBER=""
+              VARIANT=""
+            else
+              # Feature-branch push: dispatch only when the branch has an open PR
+              # carrying a preview label, so we keep that PR's preview env fresh
+              # on every push regardless of the PR's merge-conflict state.
+              # Pass query values as explicit fields so gh URL-encodes them
+              # (branch names may contain '/', '#', '&', ...). A failed lookup
+              # fails the job (set -e); a successful empty result is treated as
+              # "no matching PR" below.
+              PR_JSON="$(gh api --method GET \
+                "repos/${GITHUB_REPOSITORY}/pulls" \
+                -f "head=Comfy-Org:${BRANCH}" \
+                -f "state=open" \
+                -F "per_page=100")"
+              # Pick the first open PR for this head that actually carries a
+              # preview label (not just PR[0], which may be unlabeled).
+              SELECTED="$(echo "${PR_JSON}" | jq -c '
+                map(select(any(.labels[]?.name;
+                  . == "preview" or . == "preview-cpu" or . == "preview-gpu")))
+                | .[0] // empty')"
+
+              if [ -z "${SELECTED}" ]; then
+                echo "No open PR with a preview label for branch '${BRANCH}'; skipping dispatch."
+                SHOULD_DISPATCH=false
+              else
+                PR_NUMBER="$(echo "${SELECTED}" | jq -r '.number')"
+                VARIANT="cpu"
+                if echo "${SELECTED}" | jq -e 'any(.labels[]?.name; . == "preview-gpu")' >/dev/null; then
+                  VARIANT="gpu"
+                fi
+              fi
+            fi
           fi
-          payload="$(jq -nc \
-            --arg ref "${REF}" \
-            --arg branch "${BRANCH}" \
-            --arg pr_number "${PR_NUMBER}" \
-            --arg variant "${VARIANT}" \
-            '{ref: $ref, branch: $branch, pr_number: $pr_number, variant: $variant}')"
-          echo "json=${payload}" >> "${GITHUB_OUTPUT}"
+
+          echo "should_dispatch=${SHOULD_DISPATCH}" >> "${GITHUB_OUTPUT}"
+
+          if [ "${SHOULD_DISPATCH}" = "true" ]; then
+            payload="$(jq -nc \
+              --arg ref "${REF}" \
+              --arg branch "${BRANCH}" \
+              --arg pr_number "${PR_NUMBER}" \
+              --arg variant "${VARIANT}" \
+              '{ref: $ref, branch: $branch, pr_number: $pr_number, variant: $variant}')"
+            echo "json=${payload}" >> "${GITHUB_OUTPUT}"
+          fi
 
       - name: Dispatch to cloud repo
+        if: steps.payload.outputs.should_dispatch == 'true'
         uses: peter-evans/repository-dispatch@28959ce8df70de7be546dd1250a005dd32156697 # v4.0.1
         with:
           token: ${{ secrets.CLOUD_DISPATCH_TOKEN }}
