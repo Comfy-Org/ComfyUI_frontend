@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-08-15T00:35:53.352Z",
+  "fetchedAt": "2026-08-22T04:58:39.078Z",
   "packs": [
     {
       "id": "basic_data_handling",
@@ -12,7 +12,7 @@
         "id": "stablellama",
         "name": "StableLlama"
       },
-      "downloads": 220203,
+      "downloads": 224009,
       "githubStars": 47,
       "latestVersion": "1.6.0",
       "license": "{\"file\": \"LICENSE\"}",
@@ -1752,8 +1752,8 @@
         "id": "matteo",
         "name": "Matteo"
       },
-      "downloads": 2843350,
-      "githubStars": 1158,
+      "downloads": 2871923,
+      "githubStars": 1161,
       "latestVersion": "1.1.0",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2024-08-07T19:06:12.812021Z",
@@ -2206,7 +2206,7 @@
         "id": "ryuukeisyou",
         "name": "Ryuukeisyou"
       },
-      "downloads": 82781,
+      "downloads": 83433,
       "githubStars": 194,
       "latestVersion": "1.0.5",
       "license": "{\"file\": \"LICENSE\"}",
@@ -2554,12 +2554,6 @@
           "category": "🏵️Fill Nodes/Utility"
         },
         {
-          "name": "FL_PathAnimator",
-          "displayName": "FL Path Animator",
-          "category": "🎨 FL Path Animator",
-          "description": "\nCreates animated shapes that follow user-drawn paths.\nOpen the path editor to draw trajectories on a reference image, then shapes will follow these paths over time.\nOutputs WAN ATI-compatible coordinate strings with proper 121-point resampling for stable video generation.\n"
-        },
-        {
           "name": "FL_PathTypeChecker",
           "displayName": "FL Path Type Checker",
           "category": "🏵️Fill Nodes/Utility"
@@ -2663,8 +2657,8 @@
         "id": "matteo",
         "name": "Matteo"
       },
-      "downloads": 1457662,
-      "githubStars": 6097,
+      "downloads": 1472655,
+      "githubStars": 6106,
       "latestVersion": "2.0.0",
       "license": "GPL-3.0 license",
       "lastUpdated": "2024-06-05T06:57:13.485481Z",
@@ -2892,8 +2886,8 @@
         "id": "chflame163",
         "name": "chflame163"
       },
-      "downloads": 2027873,
-      "githubStars": 3123,
+      "downloads": 2051122,
+      "githubStars": 3127,
       "latestVersion": "2.0.40",
       "license": "{\"text\": \"MIT License\"}",
       "lastUpdated": "2026-08-01T03:16:40.664133Z",
@@ -3008,8 +3002,8 @@
         "id": "chflame163",
         "name": "chflame163"
       },
-      "downloads": 173135,
-      "githubStars": 697,
+      "downloads": 177132,
+      "githubStars": 700,
       "latestVersion": "2.0.38",
       "license": "{\"text\": \"MIT License\"}",
       "lastUpdated": "2026-04-08T04:28:28.060712Z",
@@ -3614,7 +3608,7 @@
         "id": "steudio",
         "name": ""
       },
-      "downloads": 71415,
+      "downloads": 72907,
       "githubStars": 147,
       "latestVersion": "2.0.5",
       "license": "{\"file\": \"LICENSE.txt\"}",
@@ -3706,8 +3700,8 @@
         "id": "ssit",
         "name": "ssit"
       },
-      "downloads": 1732848,
-      "githubStars": 1534,
+      "downloads": 1749981,
+      "githubStars": 1539,
       "latestVersion": "1.7.2",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2026-03-28T03:04:53.321587Z",
@@ -3750,8 +3744,8 @@
         "id": "kosinkadink",
         "name": "Kosinkadink"
       },
-      "downloads": 685104,
-      "githubStars": 994,
+      "downloads": 690603,
+      "githubStars": 1001,
       "latestVersion": "1.6.0",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2026-07-28T11:39:49.072754Z",
@@ -3780,8 +3774,8 @@
         "id": "kosinkadink",
         "name": "Kosinkadink"
       },
-      "downloads": 590572,
-      "githubStars": 3519,
+      "downloads": 596060,
+      "githubStars": 3524,
       "latestVersion": "1.5.7",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2026-03-30T01:39:45.498846Z",
@@ -3857,8 +3851,8 @@
         "id": "kijai",
         "name": "Kijai"
       },
-      "downloads": 132541,
-      "githubStars": 1548,
+      "downloads": 133259,
+      "githubStars": 1549,
       "latestVersion": "1.5.1",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2025-01-14T12:40:17.490211Z",
@@ -4105,7 +4099,7 @@
         "id": "erosdiffusion",
         "name": "ErosDiffusion"
       },
-      "downloads": 146074,
+      "downloads": 147665,
       "githubStars": 634,
       "latestVersion": "4.0.3",
       "license": "{\"text\": \"MIT License\"}",
@@ -4133,6 +4127,35 @@
           "name": "CompositorTransformsOutV3",
           "displayName": "💜 Compositor Transforms Output (V3)",
           "category": "image"
+        }
+      ]
+    },
+    {
+      "id": "comfyui-fl-path-animator",
+      "registryId": "comfyui-fl-path-animator",
+      "displayName": "FL Path Animator",
+      "description": "Interactive path animator with visual editor for creating animated shapes that follow user-drawn paths. WAN ATI compatible for stable video generation.",
+      "iconUrl": "https://avatars.githubusercontent.com/u/55672949",
+      "repoUrl": "https://github.com/filliptm/ComfyUI_FL-Path-Animator.git",
+      "publisher": {
+        "id": "machinedelusions",
+        "name": "Machine Delusions"
+      },
+      "downloads": 8580,
+      "githubStars": 12,
+      "latestVersion": "1.0.7",
+      "license": "{\"file\": \"LICENSE.txt\"}",
+      "lastUpdated": "2026-04-25T22:42:44.490697Z",
+      "supportedOs": [],
+      "supportedAccelerators": [],
+      "nodes": [
+        {
+          "name": "FL_PathAnimator",
+          "displayName": "FL_PathAnimator",
+          "category": "🎨 FL Path Animator",
+          "description": "\nCreates animated shapes that follow user-drawn paths.\nOpen the path editor to draw trajectories on a reference image, then shapes will follow these paths over time.\nOutputs WAN ATI-compatible coordinate strings with proper 121-point resampling for stable video generation.\n",
+          "deprecated": false,
+          "experimental": false
         }
       ]
     },
@@ -4205,8 +4228,8 @@
         "id": "fannovel16",
         "name": "Fannovel16"
       },
-      "downloads": 1785410,
-      "githubStars": 1061,
+      "downloads": 1805726,
+      "githubStars": 1065,
       "latestVersion": "1.0.11",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2026-03-22T18:01:45.009428Z",
@@ -4358,8 +4381,8 @@
         "id": "drltdata",
         "name": "Dr.Lt.Data"
       },
-      "downloads": 3203657,
-      "githubStars": 3252,
+      "downloads": 3240548,
+      "githubStars": 3261,
       "latestVersion": "8.28.3",
       "license": "{\"file\": \"LICENSE.txt\"}",
       "lastUpdated": "2026-04-19T17:08:04.993918Z",
@@ -5757,7 +5780,7 @@
         "id": "makadi",
         "name": "Makadi"
       },
-      "downloads": 107498,
+      "downloads": 108942,
       "githubStars": 237,
       "latestVersion": "0.6.5",
       "license": "{\"file\": \"LICENSE\"}",
@@ -6129,7 +6152,7 @@
         "id": "theupsider",
         "name": "theupsider"
       },
-      "downloads": 313055,
+      "downloads": 316300,
       "githubStars": 234,
       "latestVersion": "1.0.0",
       "license": "MIT",
@@ -6313,8 +6336,8 @@
         "id": "kijai",
         "name": "Kijai"
       },
-      "downloads": 401637,
-      "githubStars": 242,
+      "downloads": 407499,
+      "githubStars": 246,
       "latestVersion": "1.0.2",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2026-01-30T22:11:43.194459Z",
@@ -6347,7 +6370,7 @@
         "id": "xuanyu",
         "name": "XuanYu"
       },
-      "downloads": 2517,
+      "downloads": 2690,
       "githubStars": 6,
       "latestVersion": "1.1.0",
       "license": "{\"file\": \"LICENSE\"}",
@@ -6406,7 +6429,7 @@
         "id": "meet-ai",
         "name": "遇见AI"
       },
-      "downloads": 5105,
+      "downloads": 5171,
       "githubStars": 5,
       "latestVersion": "1.0.4",
       "license": "{\"file\": \"LICENSE\"}",
@@ -6441,14 +6464,14 @@
       "id": "ComfyUI-QwenVL",
       "registryId": "ComfyUI-QwenVL",
       "displayName": "ComfyUI-QwenVL",
-      "description": "ComfyUI-QwenVL custom node: Integrates the Qwen-VL series, including Qwen2.5-VL and the latest Qwen3-VL, with GGUF support for advanced multimodal AI in text generation, image understanding, and video analysis.",
+      "description": "ComfyUI-QwenVL custom node: Integrates the Qwen-VL series, including Qwen2.5-VL, Qwen3-VL, Qwen3.5-VL, Qwen3.6-VL (MoE), and Qwen3.8-VL, with GGUF support for advanced multimodal AI in text generation, image understanding, and video analysis.",
       "repoUrl": "https://github.com/1038lab/ComfyUI-QwenVL",
       "publisher": {
         "id": "ailab",
         "name": "AILab"
       },
-      "downloads": 397100,
-      "githubStars": 834,
+      "downloads": 405637,
+      "githubStars": 842,
       "latestVersion": "2.1.1",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2026-02-08T22:53:46.099968Z",
@@ -6502,8 +6525,8 @@
         "id": "ailab",
         "name": "AILab"
       },
-      "downloads": 830015,
-      "githubStars": 2066,
+      "downloads": 841986,
+      "githubStars": 2081,
       "latestVersion": "3.1.0",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2026-07-21T22:33:58.273141Z",
@@ -6568,8 +6591,8 @@
         "id": "pznodes",
         "name": "pozzettiandrea"
       },
-      "downloads": 65558,
-      "githubStars": 563,
+      "downloads": 67217,
+      "githubStars": 564,
       "latestVersion": "0.1.21",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2026-05-19T10:39:52.517642Z",
@@ -6658,7 +6681,7 @@
         "id": "kijai",
         "name": "Kijai"
       },
-      "downloads": 79835,
+      "downloads": 81177,
       "githubStars": 322,
       "latestVersion": "1.0.2",
       "license": "{\"file\": \"LICENSE\"}",
@@ -6765,7 +6788,7 @@
         "id": "systms-ai",
         "name": "systms"
       },
-      "downloads": 1225,
+      "downloads": 1387,
       "githubStars": 0,
       "latestVersion": "1.0.0",
       "license": "{\"file\": \"LICENSE\"}",
@@ -6966,8 +6989,8 @@
         "id": "kosinkadink",
         "name": "Kosinkadink"
       },
-      "downloads": 3260051,
-      "githubStars": 1760,
+      "downloads": 3303697,
+      "githubStars": 1775,
       "latestVersion": "1.7.9",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2025-12-17T22:23:57.624918Z",
@@ -7306,8 +7329,8 @@
         "id": "kijai",
         "name": "Kijai"
       },
-      "downloads": 237949,
-      "githubStars": 545,
+      "downloads": 240839,
+      "githubStars": 544,
       "latestVersion": "1.0.3",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2026-05-27T16:01:00.024325Z",
@@ -7332,8 +7355,8 @@
         "id": "kijai",
         "name": "Kijai"
       },
-      "downloads": 1900814,
-      "githubStars": 6660,
+      "downloads": 1914819,
+      "githubStars": 6667,
       "latestVersion": "1.4.7",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2026-02-01T23:44:07.720927Z",
@@ -7776,7 +7799,7 @@
         "id": "hellorob",
         "name": "hellorob"
       },
-      "downloads": 1628,
+      "downloads": 1784,
       "githubStars": 1,
       "latestVersion": "1.0.1",
       "license": "{\"file\": \"LICENSE\"}",
@@ -7871,7 +7894,7 @@
         "id": "fxtdstudios",
         "name": "FXTD STUDIOS"
       },
-      "downloads": 5814,
+      "downloads": 6008,
       "githubStars": 240,
       "latestVersion": "2.3.3",
       "license": "{\"file\": \"LICENSE\"}",
@@ -8914,6 +8937,44 @@
       ]
     },
     {
+      "id": "timeslice-nodes",
+      "registryId": "timeslice-nodes",
+      "displayName": "TimeSlice Nodes",
+      "description": "Temporal slit-scan / time-displacement effects for ComfyUI — angled, animated and dual-source slicing on a shared engine.",
+      "repoUrl": "https://github.com/systms-ai/TimeSlice-Nodes",
+      "publisher": {
+        "id": "systms-ai",
+        "name": "systms"
+      },
+      "downloads": 475,
+      "githubStars": 65,
+      "latestVersion": "1.0.0",
+      "license": "{\"file\": \"LICENSE\"}",
+      "lastUpdated": "2026-06-15T18:46:25.452477Z",
+      "supportedOs": [],
+      "supportedAccelerators": [],
+      "nodes": [
+        {
+          "name": "TimeSliceDual",
+          "displayName": "TimeSlice Dual",
+          "category": "Systms/effects",
+          "description": "Dual-source angled slit-scan. Interleaves slices from two clips, each with its own time offset. Great for transitions and split-reality looks."
+        },
+        {
+          "name": "TimeSliceEffect",
+          "displayName": "TimeSlice Effect",
+          "category": "Systms/effects",
+          "description": "Angled temporal slit-scan. Splits frames into slices offset in time, with cascade shaping and start->end animation."
+        },
+        {
+          "name": "TimeSliceWave",
+          "displayName": "TimeSlice Wave",
+          "category": "Systms/effects",
+          "description": "Angled animated slit-scan with sinusoidal time displacement that ripples across the frame, creating an undulating temporal wave."
+        }
+      ]
+    },
+    {
       "id": "wanvaceadvanced",
       "registryId": "wanvaceadvanced",
       "displayName": "ComfyUI-WanVaceAdvanced",
@@ -8923,8 +8984,8 @@
         "id": "drozbay",
         "name": "drozbay"
       },
-      "downloads": 27062,
-      "githubStars": 93,
+      "downloads": 27582,
+      "githubStars": 94,
       "latestVersion": "1.5.1",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2026-02-10T15:55:08.222036Z",
@@ -8953,7 +9014,7 @@
         "id": "was",
         "name": "WAS"
       },
-      "downloads": 1106665,
+      "downloads": 1115630,
       "githubStars": 1814,
       "latestVersion": "1.0.1",
       "license": "{\"file\": \"LICENSE\"}",
@@ -10491,8 +10552,8 @@
         "id": "whatdreamscost",
         "name": "WhatDreamsCost"
       },
-      "downloads": 77280,
-      "githubStars": 1951,
+      "downloads": 81975,
+      "githubStars": 1980,
       "latestVersion": "2.0.5",
       "license": "{\"file\": \"LICENSE\"}",
       "lastUpdated": "2026-07-13T01:47:52.785041Z",

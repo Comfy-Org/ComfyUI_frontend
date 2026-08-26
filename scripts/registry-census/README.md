@@ -107,8 +107,10 @@ agree. A cache without its provenance cannot produce a verdict.
 `build_matrix.py` + `matrix_runner.ts` generate one vitest spec per
 JS-shipping pack and execute its real extension code against the real
 frontend runtime (registration lifecycle, a user-operation battery,
-serialize/reload), one JSON row per pack, sharded 4 ways. Packs with no
-extension JS are skipped and reported only as a count.
+serialize/reload), one JSON row per pack. The workflow runs four shards under
+the legacy renderer and four under Nodes 2.0, with independent artifacts,
+baselines, and verdicts. Packs with no extension JS are skipped and reported
+only as a count.
 
 ### What the harness drives, and what it does not
 
@@ -137,8 +139,9 @@ row. A green matrix did not catch a `setup`-dispatch regression, and cannot.
 
 ### PASS criteria
 
-Applied once by the `matrix-verdict` job over all four shards combined
-(`summarize_matrix.py`; exit 0 PASS, 1 FAIL, 2 harness/withheld):
+Applied independently by the legacy and Vue `matrix-verdict` jobs over each
+renderer arm's four shards (`summarize_matrix.py`; exit 0 PASS, 1 FAIL, 2
+harness/withheld):
 
 | criterion                                 | floor     | measured baseline |
 | ----------------------------------------- | --------- | ----------------- |
@@ -195,6 +198,8 @@ array-concatenation would otherwise smuggle in.
 | `MATRIX_RUN_ID`        | summarizer         | skips the delta when the baseline is this same run |
 | `MATRIX_EXPECT_SHARDS` | summarizer         | required manifest count; unset disables the check  |
 | `MATRIX_STALE_MARKER`  | summarizer         | path to `registry-stale.json`, if present          |
+| `MATRIX_RENDERER`      | summarizer         | expected `legacy` or `vue` renderer arm            |
+| `MATRIX_VUE`           | runner             | enables Nodes 2.0 when set to `1`                  |
 
 ## Security posture
 
@@ -256,9 +261,9 @@ The advisory is red. In order:
 **Blast radius:** the matrix is an advisory PR check, not a required check.
 `ProtectMain` requires `test`, `lint-and-format`, `e2e-status` and
 `website-e2e`, so a red matrix informs but does not block. Promotion requires
-both adding `matrix-verdict` to required checks and adding a `merge_group`
-trigger; doing only the first leaves merge groups waiting for a check this
-workflow never reports.
+both adding the legacy and Vue `matrix-verdict` checks to required checks and
+adding a `merge_group` trigger; doing only the first leaves merge groups
+waiting for checks this workflow never reports.
 
 ## Detection proof (counter-evidence)
 
