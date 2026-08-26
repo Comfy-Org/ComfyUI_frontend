@@ -9,6 +9,7 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import { LLink } from '@/lib/litegraph/src/LLink'
+import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { toLinkId } from '@/types/linkId'
@@ -231,7 +232,7 @@ describe('drawConnections', () => {
     }
 
     const scopes = inputLookup.mock.calls.map(([scope]) => scope)
-    expect(new Set(scopes).size).toBe(4)
+    expect(new Set(scopes).size).toBe(1)
   })
 
   it.for([245, 500, 1_000])(
@@ -338,7 +339,7 @@ describe('drawConnections', () => {
       expect(inputLookup).toHaveBeenCalledTimes(scannedInputs)
       expect(resolveLink).toHaveBeenCalledTimes(connectedCount)
       expect([...canvas.renderedPaths]).toEqual(expectedLinks)
-      expect(scopes.size).toBe(scannedInputs)
+      expect(scopes.size).toBe(1)
       expect(new Set(expectedLinks.map((link) => link.origin_id)).size).toBe(
         connectedCount ? Math.ceil(connectedCount / fanOut) : 0
       )
@@ -383,6 +384,33 @@ describe('drawConnections', () => {
     } finally {
       warningCallbacks.mockRestore()
     }
+  })
+
+  it('isolates subgraph rendering from root-graph topology', () => {
+    const subgraph = createTestSubgraph({ nodeCount: 2 })
+    const [subgraphSource, subgraphTarget] = subgraph.nodes
+    const subgraphLink = subgraphSource.connect(0, subgraphTarget, 0)!
+
+    const rootSource = new LGraphNode('Root source')
+    rootSource.addOutput('out', '*')
+    subgraph.rootGraph.add(rootSource)
+    const rootTarget = new LGraphNode('Root target')
+    rootTarget.addInput('in', '*')
+    subgraph.rootGraph.add(rootTarget)
+    const rootLink = rootSource.connect(0, rootTarget, 0)!
+    canvas.setGraph(subgraph)
+    canvas.visible_area.set([0, 0, 800, 600])
+    const inputLookup = vi.spyOn(useLinkStore(), 'getInputSlotLink')
+    vi.spyOn(canvas, 'renderLink').mockImplementation(() => {})
+    inputLookup.mockClear()
+
+    canvas.drawConnections(createMockCtx())
+
+    expect([...canvas.renderedPaths]).toEqual([subgraphLink])
+    expect(canvas.renderedPaths).not.toContain(rootLink)
+    expect(
+      new Set(inputLookup.mock.calls.map(([scope]) => scope.owningGraphId))
+    ).toEqual(new Set([subgraph.id]))
   })
   it('positions widget-input slots when display name differs from slot.widget.name', () => {
     const sourceNode = new LGraphNode('Source')
