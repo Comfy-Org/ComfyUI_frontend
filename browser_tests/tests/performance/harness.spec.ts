@@ -50,6 +50,15 @@ test.describe('Performance measurement controls', { tag: ['@perf'] }, () => {
     expect(measurement.rafIntervalsMs).toHaveLength(
       measurement.rafIntervalCount
     )
+    expect(measurement.workloadIdentity).toMatchObject({
+      schemaVersion: 1,
+      environment: {
+        frontendVersion: expect.any(String),
+        frontendCommit: expect.any(String),
+        buildMode: expect.stringMatching(/^(development|production|test)$/)
+      }
+    })
+    expect(measurement.workloadIdentity.topology.hash).toMatch(/^sha256:/)
   })
 
   test('records a blocked main-thread gap before stop', async ({

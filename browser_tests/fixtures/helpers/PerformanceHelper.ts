@@ -376,9 +376,9 @@ export class PerformanceHelper {
         viewportWidth: window.innerWidth,
         viewportHeight: window.innerHeight,
         devicePixelRatio: window.devicePixelRatio,
-        frontendVersion: __COMFYUI_FRONTEND_VERSION__,
-        frontendCommit: __COMFYUI_FRONTEND_COMMIT__,
-        buildMode: import.meta.env.MODE as PerfIdentitySource['buildMode'],
+        frontendVersion: window.__COMFYUI_FRONTEND_VERSION__,
+        frontendCommit: window.__COMFYUI_FRONTEND_COMMIT__,
+        buildMode: window.__COMFYUI_BUILD_MODE__,
         gpuClass
       }
     })
