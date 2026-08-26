@@ -80,7 +80,6 @@ export const DefaultSolid: Story = {
 }
 
 export const WorkflowsPageReference: Story = {
-  tags: ['experimental'],
   parameters: {
     controls: { disable: true },
     docs: {
