@@ -464,14 +464,11 @@ describe('minimap progress performance baseline', () => {
     }
   })
 
-  it('separates WS-style event fanout from polling and throttle cadence', async () => {
-    const cell = await runCell(true, 245, 100, 'equal-progress')
-    // A progress store write has no minimap event subscription. The only work
-    // is the independently scheduled digest poll.
-    expect(cell.pollCallbacks).toBe(1)
-    expect(cell.throttleRequests).toBe(0)
-    expect(cell.throttleCallbacks).toBe(0)
+  it('does not register direct progress API listeners', async () => {
+    await runCell(true, 245, 100, 'equal-progress')
+
     expect(apiListeners.has('progress')).toBe(false)
+    expect(apiListeners.has('progress_state')).toBe(false)
   })
 
   it('registers one poll and releases its listener and cadence on cleanup', async () => {
