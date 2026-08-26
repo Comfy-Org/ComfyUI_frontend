@@ -57,21 +57,37 @@ function assetsQueryInternal(
   function loadNew() {
     return enqueue('loadNew', async function (signal: AbortSignal) {
       const knownIds = new Set(items.value.map((item) => item.id))
+      const seenIds = new Set(knownIds)
+      const seenHeadCursors = new Set<string>()
       const newItems: AssetItem[] = []
       let headCursor: string | undefined
-      const seenHeadCursors = new Set<string | undefined>()
       while (true) {
-        if (seenHeadCursors.has(headCursor)) break
-        seenHeadCursors.add(headCursor)
-
         const assetResponse = await doQuery({ after: headCursor }, signal)
         if (!assetResponse) return
 
         const { assets, has_more, next_cursor } = assetResponse
+        let reachedKnownId = false
+        for (const asset of assets) {
+          if (knownIds.has(asset.id)) {
+            reachedKnownId = true
+            break
+          }
+          if (seenIds.has(asset.id)) {
+            continue
+          }
+          seenIds.add(asset.id)
+          newItems.push(asset)
+        }
+        if (
+          reachedKnownId ||
+          !has_more ||
+          next_cursor === undefined ||
+          seenHeadCursors.has(next_cursor)
+        ) {
+          break
+        }
+        seenHeadCursors.add(next_cursor)
         headCursor = next_cursor
-        const newFromPage = assets.filter(({ id }) => !knownIds.has(id))
-        newItems.push(...newFromPage)
-        if (newFromPage.length !== assets.length || !has_more) break
       }
       items.value.splice(0, 0, ...newItems)
     })
