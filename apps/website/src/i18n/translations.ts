@@ -5000,6 +5000,46 @@ const translations = {
     en: 'AI MODEL',
     'zh-CN': 'AI 模型'
   },
+  'models.releaseDetails.eyebrow': {
+    en: 'MODEL RELEASE',
+    'zh-CN': '模型版本'
+  },
+  'models.releaseDetails.heading': {
+    en: 'Release details',
+    'zh-CN': '版本详情'
+  },
+  'models.releaseDetails.publisher': {
+    en: 'Publisher',
+    'zh-CN': '发布者'
+  },
+  'models.releaseDetails.access': {
+    en: 'Access',
+    'zh-CN': '访问方式'
+  },
+  'models.releaseDetails.family': {
+    en: 'Model family',
+    'zh-CN': '模型系列'
+  },
+  'models.releaseDetails.formats': {
+    en: 'Available formats',
+    'zh-CN': '可用格式'
+  },
+  'models.releaseDetails.openAccess': {
+    en: 'Open weights',
+    'zh-CN': '开放权重'
+  },
+  'models.releaseDetails.partnerAccess': {
+    en: 'Partner API',
+    'zh-CN': '合作伙伴 API'
+  },
+  'models.releaseDetails.cloudFormat': {
+    en: 'Cloud API',
+    'zh-CN': '云端 API'
+  },
+  'models.releaseDetails.components': {
+    en: 'Components in this release',
+    'zh-CN': '此版本中的组件'
+  },
   'models.explore.trending.label': {
     en: 'TRENDING',
     'zh-CN': '热门'

@@ -8,6 +8,11 @@ import ModelWorkflowGallery from '../../../components/models/ModelWorkflowGaller
 import SectionLabel from '../../../components/common/SectionLabel.vue'
 import type { CardWorkflowItem } from '../../../components/blocks/CardWorkflow01.vue'
 import { models, getModelBySlug } from '../../../config/models'
+import type { Model } from '../../../config/models'
+import {
+  createModelReleases,
+  getModelReleaseBySlug,
+} from '../../../config/modelReleases'
 import { t } from '../../../i18n/translations'
 import {
   absoluteUrl,
@@ -19,19 +24,73 @@ import { buildModelFaqs, modelFaqJsonLd } from '../../../utils/modelFaq'
 import { getPageDescription } from '../../../utils/modelSeoCopy'
 
 export const getStaticPaths: GetStaticPaths = () => {
-  return models.map((model) => ({
-    params: { slug: model.slug }
-  }))
+  const slugs = new Set([
+    ...models.map(({ slug }) => slug),
+    ...createModelReleases(models).map(({ slug }) => slug),
+  ])
+  return [...slugs].map((modelSlug) => ({ params: { slug: modelSlug } }))
 }
 
 const { slug } = Astro.params
-const model = getModelBySlug(slug as string)!
+const componentModel = getModelBySlug(slug as string)
+const release = getModelReleaseBySlug(
+  createModelReleases(models),
+  slug as string,
+)
 
-if (model.canonicalSlug) {
-  return Astro.redirect(`/p/supported-models/${model.canonicalSlug}/`, 301)
+if (componentModel?.canonicalSlug) {
+  return Astro.redirect(
+    `/p/supported-models/${componentModel.canonicalSlug}/`,
+    301,
+  )
 }
 
+if (!release && !componentModel) {
+  return Astro.redirect('/p/supported-models/all/', 302)
+}
+
+const releaseModels = release
+  ? release.components
+      .map(({ slug: componentSlug }) => getModelBySlug(componentSlug))
+      .filter((candidate) => candidate !== undefined)
+  : []
+const metadataModel =
+  releaseModels.find(({ hubSlug, docsUrl }) => hubSlug || docsUrl) ??
+  componentModel
+const releaseDirectory =
+  release?.access === 'partner'
+    ? 'partner_nodes'
+    : release?.components[0]?.directory
+const model: Model = release
+  ? {
+      slug: release.slug,
+      name: release.displayName,
+      displayName: release.displayName,
+      directory: releaseDirectory ?? 'diffusion_models',
+      huggingFaceUrl:
+        release.components.find(({ downloadUrl }) => downloadUrl)?.downloadUrl ??
+        '',
+      featured: false,
+      workflowCount: release.workflows.length,
+      categories: release.categories,
+      workflowPreviews: release.workflows,
+      ...(release.thumbnailUrl ? { thumbnailUrl: release.thumbnailUrl } : {}),
+      ...(metadataModel?.docsUrl ? { docsUrl: metadataModel.docsUrl } : {}),
+      ...(metadataModel?.blogUrl ? { blogUrl: metadataModel.blogUrl } : {}),
+      ...(metadataModel?.hubSlug ? { hubSlug: metadataModel.hubSlug } : {}),
+    }
+  : componentModel!
+
 const { displayName } = model
+const releaseFormats = release
+  ? [
+      ...new Set(
+        release.components
+          .map(({ format }) => format)
+          .filter((format): format is string => format !== undefined),
+      ),
+    ]
+  : []
 const workflowsUrl = 'https://comfy.org/workflows/'
 const providerIcons: readonly [RegExp, string][] = [
   [/wan/i, '/icons/ai-models/wan.svg'],
@@ -49,7 +108,7 @@ const workflowPreviews: CardWorkflowItem[] = model.workflowPreviews.map(
   (workflow) => ({
     id: workflow.id,
     title: workflow.title,
-    href: workflowsUrl,
+    href: `${workflowsUrl}${workflow.id}`,
     sourceLabel: 'ComfyUI',
     brandIconSrc,
     media: {
@@ -140,6 +199,51 @@ const faqPage = modelFaqJsonLd(faqs, jsonLdId(url, 'faq'))
       </a>
     )}
   </section>
+
+  {release && (
+    <section class="mx-auto max-w-7xl px-6 py-16 lg:px-8">
+      <SectionLabel>{t('models.releaseDetails.eyebrow', locale)}</SectionLabel>
+      <h2 class="mt-4 text-3xl font-light text-primary-comfy-canvas lg:text-5xl">
+        {t('models.releaseDetails.heading', locale)}
+      </h2>
+      <div class="mt-10 overflow-hidden rounded-5xl border border-transparency-white-t15 bg-transparency-white-t4">
+        {[
+          [t('models.releaseDetails.publisher', locale), release.publisher],
+          [
+            t('models.releaseDetails.access', locale),
+            release.access === 'partner'
+              ? t('models.releaseDetails.partnerAccess', locale)
+              : t('models.releaseDetails.openAccess', locale),
+          ],
+          [t('models.releaseDetails.family', locale), release.familySlug],
+          [
+            t('models.releaseDetails.formats', locale),
+            releaseFormats.join(', ') ||
+              t('models.releaseDetails.cloudFormat', locale),
+          ],
+        ].map(([label, value]) => (
+          <div class="flex flex-col gap-2 border-b border-transparency-white-t15 px-6 py-5 last:border-b-0 sm:flex-row sm:items-center sm:justify-between">
+            <span class="text-content-secondary">{label}</span>
+            <span class="text-primary-comfy-canvas sm:text-right">{value}</span>
+          </div>
+        ))}
+      </div>
+
+      <h3 class="mt-12 text-2xl font-light text-primary-comfy-canvas">
+        {t('models.releaseDetails.components', locale)}
+      </h3>
+      <div class="mt-6 grid gap-3 md:grid-cols-2">
+        {release.components.map((component) => (
+          <div class="rounded-3xl bg-transparency-white-t4 px-5 py-4">
+            <p class="text-primary-comfy-canvas">{component.displayName}</p>
+            <p class="text-content-secondary mt-2 text-sm uppercase">
+              {[component.role, component.format].filter(Boolean).join(' · ')}
+            </p>
+          </div>
+        ))}
+      </div>
+    </section>
+  )}
 
   <ModelPricingSection
     isPartnerNode={model.directory === 'partner_nodes'}

@@ -1,13 +1,13 @@
 {
   "schemaVersion": 2,
-  "componentCount": 265,
+  "componentCount": 266,
   "documentedComponentCount": 62,
-  "missingStoryCount": 203,
+  "missingStoryCount": 204,
   "dispositionCounts": {
     "compound-part": 28,
     "icon": 5,
     "integration": 3,
-    "page-local": 102,
+    "page-local": 103,
     "reusable-candidate": 14,
     "template-local": 51
   },
@@ -399,6 +399,11 @@
     },
     {
       "source": "src/components/models/ModelHeroSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/models/ModelWorkflowGallery.vue",
       "disposition": "page-local",
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
@@ -1107,6 +1112,7 @@
     "src/components/legal/LegalContentSection.vue",
     "src/components/models/ModelCreationsSection.vue",
     "src/components/models/ModelHeroSection.vue",
+    "src/components/models/ModelWorkflowGallery.vue",
     "src/components/models/ModelsHeroSection.vue",
     "src/components/models/explore/ModelCatalogExplorer.vue",
     "src/components/models/explore/ModelCategoryFilter.vue",
