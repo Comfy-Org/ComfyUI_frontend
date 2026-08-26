@@ -19,7 +19,6 @@ interface WorkspacePermissions {
   canManageSubscription: boolean
   canManageSubscriptionLifecycle: boolean
   canDowngradeToPersonal: boolean
-  canTopUp: boolean
 }
 
 /** UI configuration for workspace role */
@@ -56,8 +55,7 @@ function getPermissions(
   const billingPermissions = {
     canManageSubscription: canManageBilling,
     canManageSubscriptionLifecycle: canManageBilling,
-    canDowngradeToPersonal: canManageBilling && isTeamPlan && isOriginalOwner,
-    canTopUp: canManageBilling
+    canDowngradeToPersonal: canManageBilling && isTeamPlan && isOriginalOwner
   }
 
   if (role === 'member') {
