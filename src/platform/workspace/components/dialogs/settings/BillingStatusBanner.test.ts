@@ -32,11 +32,18 @@ const state = vi.hoisted(() => ({
   canManageSubscription: true,
   canManageSubscriptionLifecycle: true,
   canReactivate: true,
+  shouldUseWorkspaceBilling: true,
   canTopUp: true,
   canSubscribeSelfServe: false,
   showTopUpCreditsDialog: vi.fn(),
   manageSubscription: vi.fn(),
   handleResubscribe: vi.fn()
+}))
+
+vi.mock('@/composables/billing/useBillingRouting', () => ({
+  useBillingRouting: () => ({
+    shouldUseWorkspaceBilling: computed(() => state.shouldUseWorkspaceBilling)
+  })
 }))
 
 vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
@@ -188,6 +195,7 @@ describe('BillingStatusBanner', () => {
     state.canManageSubscription = true
     state.canManageSubscriptionLifecycle = true
     state.canReactivate = true
+    state.shouldUseWorkspaceBilling = true
     state.canTopUp = true
     state.canSubscribeSelfServe = false
   })
@@ -347,6 +355,25 @@ describe('BillingStatusBanner', () => {
     expect(screen.getByRole('status')).toHaveTextContent(
       'Your team plan ends on'
     )
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Reactivate plan' })
+    )
+    expect(state.handleResubscribe).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps reactivation on the legacy rail where the capability does not apply', async () => {
+    // Cloud personal on legacy_stripe: handleResubscribe skips its capability
+    // guard, so the affordance must follow the client permission instead.
+    state.shouldUseWorkspaceBilling = false
+    state.canReactivate = false
+    state.canManageSubscriptionLifecycle = true
+    state.subscription = {
+      hasFunds: true,
+      isCancelled: true,
+      endDate: '2026-08-01T00:00:00Z'
+    }
+    renderBanner()
+
     await userEvent.click(
       screen.getByRole('button', { name: 'Reactivate plan' })
     )

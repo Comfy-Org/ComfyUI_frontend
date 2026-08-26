@@ -26,6 +26,12 @@ const { mockIsSettingUp, mockSubscriptionActionOperation } = vi.hoisted(() => ({
 }))
 const mockDistributionState = vi.hoisted(() => ({ isCloud: true }))
 
+vi.mock('@/composables/billing/useBillingRouting', () => ({
+  useBillingRouting: () => ({
+    shouldUseWorkspaceBilling: mockShouldUseWorkspaceBilling
+  })
+}))
+
 vi.mock('@/platform/distribution/types', () => ({
   get isCloud() {
     return mockDistributionState.isCloud
@@ -79,6 +85,7 @@ const mockCanManageSubscription = ref(true)
 const mockCanManageSubscriptionLifecycle = ref(true)
 const mockCanCancel = ref(true)
 const mockCanReactivate = ref(true)
+const mockShouldUseWorkspaceBilling = ref(true)
 const mockCanChangeSeats = ref(true)
 const mockCanSubscribeSelfServe = ref(true)
 const mockCanLeaveWorkspace = ref(true)
@@ -337,6 +344,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     mockCanManageSubscriptionLifecycle.value = true
     mockCanCancel.value = true
     mockCanReactivate.value = true
+    mockShouldUseWorkspaceBilling.value = true
     mockCanChangeSeats.value = true
     mockCanSubscribeSelfServe.value = true
     mockCanLeaveWorkspace.value = true
@@ -986,6 +994,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
   it('lets a Free personal workspace only rename itself (no Cancel or Delete)', async () => {
     const user = userEvent.setup()
     mockIsInPersonalWorkspace.value = true
+    // A Free personal workspace routes to legacy billing, where lifecycle
+    // authorization stays on the client.
+    mockShouldUseWorkspaceBilling.value = false
     mockIsActiveSubscription.value = false
     mockHasSubscription.value = false
     mockIsWorkspaceSubscribed.value = false
