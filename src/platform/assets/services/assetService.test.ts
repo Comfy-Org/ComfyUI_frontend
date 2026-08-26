@@ -1059,7 +1059,8 @@ describe(assetService.getAssetsPageForNodeType, () => {
     expect(fetchApiMock).not.toHaveBeenCalled()
   })
 
-  it('requests the models and category tags and returns the page envelope', async () => {
+  it('namespaces the category tag in model_type mode and returns the page envelope', async () => {
+    mockSupportsModelTypeTags.value = true
     fetchApiMock.mockResolvedValueOnce(
       buildAssetListResponse([validAsset({ id: 'ckpt-1' })], {
         hasMore: true,
@@ -1079,11 +1080,24 @@ describe(assetService.getAssetsPageForNodeType, () => {
 
     const requestedUrl = fetchApiMock.mock.calls[0]?.[0] as string
     const params = new URL(requestedUrl, 'http://localhost').searchParams
-    expect(params.get('include_tags')).toBe('models,checkpoints')
+    expect(params.get('include_tags')).toBe('models,model_type:checkpoints')
     expect(params.get('exclude_tags')).toBe(MISSING_TAG)
     // First page carries neither a cursor nor an offset.
     expect(params.has('after')).toBe(false)
     expect(params.has('offset')).toBe(false)
+  })
+
+  it('requests the bare category tag when model_type tags are unsupported', async () => {
+    mockSupportsModelTypeTags.value = false
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([validAsset({ id: 'ckpt-1' })])
+    )
+
+    await assetService.getAssetsPageForNodeType('CheckpointLoaderSimple')
+
+    const requestedUrl = fetchApiMock.mock.calls[0]?.[0] as string
+    const params = new URL(requestedUrl, 'http://localhost').searchParams
+    expect(params.get('include_tags')).toBe('models,checkpoints')
   })
 
   it('sends after instead of offset when a cursor is provided', async () => {

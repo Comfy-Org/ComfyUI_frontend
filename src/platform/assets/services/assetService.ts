@@ -24,7 +24,8 @@ import type {
 } from '@/platform/assets/schemas/assetSchema'
 import {
   getAssetCategories,
-  getAssetFilename
+  getAssetFilename,
+  toModelTypeTag
 } from '@/platform/assets/utils/assetMetadataUtils'
 import { api } from '@/scripts/api'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
@@ -603,9 +604,13 @@ function createAssetService() {
       return EMPTY_PAGE
     }
 
+    const categoryTag = flags.supportsModelTypeTags
+      ? toModelTypeTag(category)
+      : category
+
     // Fetch assets for this category using same API pattern as getAssetModels
     return await handleAssetRequest(
-      { includeTags: [MODELS_TAG, category], limit, offset, after, signal },
+      { includeTags: [MODELS_TAG, categoryTag], limit, offset, after, signal },
       `assets for ${nodeType}`
     )
   }
