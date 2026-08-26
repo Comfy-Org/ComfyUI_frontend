@@ -16,17 +16,24 @@ export const ZH_PREFIX = '/zh-CN'
 /**
  * Routes kept out of the cluster even when both locales have them.
  *
- * These are the transactional pages the sitemap already excludes. Telling a
- * search engine that two pages are translations of each other, while telling it
- * elsewhere not to index either, is a contradiction; keeping one list means the
- * markup and the sitemap cannot drift apart on it.
+ * Telling a search engine that two pages are translations of each other, while
+ * telling it elsewhere not to index either, is a contradiction.
+ *
+ * The list was first derived from the pages the sitemap excludes, which turned
+ * out to be the wrong proxy: `noindex` is set per page and is a separate signal
+ * from sitemap membership. `/privacy-policy/` is noindex in both locales without
+ * being sitemap-excluded, so it was clustered anyway, and neither this rule nor
+ * `check:hreflang` could see it because the markup and the sitemap agreed with
+ * each other. The membership test in hreflang.test.ts now reads `noindex` off the
+ * real page tree, so a new both-noindex pair fails rather than leaking.
  */
 const NON_CLUSTERED_ROUTES: ReadonlySet<string> = new Set([
   '/404/',
   '/payment/success/',
   '/payment/failed/',
   '/individual-submission/',
-  '/booking-confirmation/'
+  '/booking-confirmation/',
+  '/privacy-policy/'
 ])
 
 /** `/src/pages/cloud/pricing.astro` -> `/cloud/pricing/`, index files -> their directory. */

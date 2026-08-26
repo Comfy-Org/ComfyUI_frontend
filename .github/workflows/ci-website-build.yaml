@@ -43,3 +43,9 @@ jobs:
 
       - name: Validate JSON-LD structured data
         run: pnpm --filter @comfyorg/website validate:jsonld
+
+      # Same shape as validate:jsonld: reads the built dist/ and exits non-zero.
+      # The pages and the sitemap each render their own cluster, and this is the
+      # only thing that can catch them disagreeing, so it has to run on its own.
+      - name: Check hreflang clusters
+        run: pnpm --filter @comfyorg/website check:hreflang

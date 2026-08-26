@@ -1,3 +1,7 @@
+import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
 import { describe, expect, it } from 'vitest'
 
 import { alternatesFor, ogLocale, ogLocaleAlternate } from './hreflang'
@@ -151,5 +155,70 @@ describe('clusterAlternates', () => {
       'https://comfy.org/zh-CN/',
       'https://comfy.org/'
     ])
+  })
+})
+
+describe('the cluster against the real page tree', () => {
+  const PAGES_DIR = fileURLToPath(new URL('../pages', import.meta.url))
+
+  /** `noindex` is passed as a bare layout prop, occasionally as `noindex={...}`. */
+  const DECLARES_NOINDEX = /^\s*noindex\s*(=|$)/m
+
+  function astroFiles(dir: string, prefix = '/src/pages'): string[] {
+    return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+      const full = path.join(dir, entry.name)
+      if (entry.isDirectory())
+        return astroFiles(full, `${prefix}/${entry.name}`)
+      return entry.name.endsWith('.astro') ? [`${prefix}/${entry.name}`] : []
+    })
+  }
+
+  function sourceOf(file: string): string {
+    return fs.readFileSync(
+      path.join(PAGES_DIR, file.replace('/src/pages/', '')),
+      'utf-8'
+    )
+  }
+
+  const files = astroFiles(PAGES_DIR)
+  const cluster = mirroredRoutes(files)
+
+  it('finds the routes it is meant to be describing', () => {
+    // A wrong PAGES_DIR would make every assertion below vacuously pass.
+    expect(files.length).toBeGreaterThan(20)
+    expect(cluster.size).toBeGreaterThan(10)
+  })
+
+  it('never clusters a pair that is noindex in both locales', () => {
+    // The rule stated above, checked against the pages rather than against a
+    // hand-kept list derived from sitemap membership. /privacy-policy/ is noindex
+    // in both locales without being sitemap-excluded, so the proxy missed it and
+    // it was advertised as a translation pair while asking for neither to be
+    // indexed. check:hreflang cannot see this: the markup and the sitemap agree.
+    const bothNoindex = files
+      .filter(
+        (file) => file.startsWith('/src/pages/zh-CN/') && !file.includes('[')
+      )
+      .map((file) => file.replace('/src/pages/zh-CN', '/src/pages'))
+      .filter((english) => files.includes(english))
+      .filter((english) => {
+        const chinese = english.replace('/src/pages', '/src/pages/zh-CN')
+        return (
+          DECLARES_NOINDEX.test(sourceOf(english)) &&
+          DECLARES_NOINDEX.test(sourceOf(chinese))
+        )
+      })
+      .map(
+        (english) =>
+          english.replace(/^\/src\/pages/, '').replace(/\.astro$/, '') + '/'
+      )
+
+    expect(bothNoindex.length).toBeGreaterThan(0)
+    for (const route of bothNoindex) {
+      expect(
+        cluster.has(route),
+        `${route} is noindex in both locales but clustered`
+      ).toBe(false)
+    }
   })
 })
