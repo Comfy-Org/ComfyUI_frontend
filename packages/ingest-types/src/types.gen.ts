@@ -746,6 +746,22 @@ export type SystemStatsResponse = {
  */
 export type SubscriptionDuration = 'MONTHLY' | 'ANNUAL'
 
+export type SubscriptionDiscount = {
+  /**
+   * What this discount removed from the amount due today.
+   */
+  amount_off_cents?: number
+  code: string
+  kind: 'plan' | 'promotion'
+  /**
+   * Customer-facing display name of the underlying coupon. `code` can
+   * be an internal identifier (e.g. team_commitment_7_5); render this
+   * when present.
+   *
+   */
+  name?: string
+}
+
 /**
  * Response after successfully subscribing to a billing plan.
  */
@@ -800,6 +816,13 @@ export type SubscribeRequest = {
    */
   confirm_reactivation?: boolean
   /**
+   * Stripe ConfirmationToken created from deferred Payment Element
+   * details. For an initial subscription, the backend creates the exact
+   * invoice PaymentIntent and confirms it with this token.
+   *
+   */
+  confirmation_token?: string
+  /**
    * Client-provided key to prevent duplicate operations.
    * If a billing op with this key already exists, returns the existing op instead of creating a new one.
    *
@@ -809,6 +832,12 @@ export type SubscribeRequest = {
    * Target plan slug to subscribe to
    */
   plan_slug: string
+  /**
+   * Optional customer-facing Stripe promotion code. The backend
+   * resolves and validates it, then stacks it with plan discounts.
+   *
+   */
+  promotion_code?: string
   /**
    * Echoes PreviewSubscribeResponse.proration_at from the preview the
    * caller consented to. When present, the charge is prorated to this
@@ -822,11 +851,30 @@ export type SubscribeRequest = {
    */
   proration_at?: string
   /**
+   * Opaque quote id returned by PreviewSubscribeResponse.
+   */
+  quote_id?: string
+  /**
+   * Quote version returned by PreviewSubscribeResponse.
+   */
+  quote_version?: number
+  /**
    * URL to redirect after payment method is added successfully.
-   * Required if workspace has no payment method on file.
+   * Required if the workspace has no payment method on file, when
+   * confirmation_token is provided, or when a selected saved payment
+   * method is redirect-based (any non-card type). Redirect-based flows
+   * require an absolute HTTPS URL; plain HTTP is accepted only for
+   * loopback hosts during local development.
    *
    */
   return_url?: string
+  /**
+   * Optional saved payment method selected for this subscription. It
+   * must be attached to the current workspace's Stripe customer.
+   * Mutually exclusive with confirmation_token.
+   *
+   */
+  saved_payment_method_id?: string
   /**
    * Selected team credit-stop preset id (e.g. "team_700") for the
    * per-credit Team plan. Required when subscribing to a per-credit Team
@@ -919,6 +967,23 @@ export type SecretProvider = {
  */
 export type SecretListResponse = {
   data: Array<SecretResponse>
+}
+
+export type SavedPaymentMethod = {
+  /**
+   * Card brand. Present only for card payment methods.
+   */
+  brand?: string
+  id: string
+  /**
+   * Exactly one item is the default when the returned list is non-empty.
+   */
+  is_default: boolean
+  /**
+   * Masked card suffix. Present only for card payment methods.
+   */
+  last4?: string
+  type: string
 }
 
 /**
@@ -1232,6 +1297,7 @@ export type PreviewSubscribeResponse = {
    * Whether this subscription change is allowed
    */
   allowed: boolean
+  amount_due_cents?: number
   /**
    * Amount that will be charged at next billing period in cents
    */
@@ -1248,7 +1314,9 @@ export type PreviewSubscribeResponse = {
    * Credits granted today in cents (prorated for mid-period upgrades)
    */
   credits_today_cents: number
+  currency?: string
   current_plan?: PreviewPlanInfo
+  discounts?: Array<SubscriptionDiscount>
   /**
    * When the change takes effect
    */
@@ -1259,6 +1327,20 @@ export type PreviewSubscribeResponse = {
   is_immediate: boolean
   new_plan: PreviewPlanInfo
   /**
+   * The Stripe payment method configuration governing which payment
+   * methods the embedded checkout offers for this environment. Mount
+   * Stripe Elements with `paymentMethodConfiguration` set to this id
+   * instead of hardcoding payment method types. Present on every
+   * successful preview while embedded checkout is enabled and absent
+   * from legacy previews.
+   *
+   */
+  payment_method_configuration_id?: string
+  /**
+   * Normalized promotion code accepted by Stripe.
+   */
+  promotion_code?: string
+  /**
    * The instant cost_today_cents was priced at (Stripe-native transitions
    * only; absent for other billing rails). Echo this back as proration_at
    * on POST /billing/subscribe to have the subscribe charge exactly this
@@ -1268,9 +1350,33 @@ export type PreviewSubscribeResponse = {
    */
   proration_at?: string
   /**
+   * Opaque short-lived quote identifier to echo on Subscribe.
+   */
+  quote_id?: string
+  /**
+   * Quote contract version to echo on Subscribe.
+   */
+  quote_version?: number
+  /**
    * Reason why the change is not allowed (only present if allowed=false)
    */
   reason?: string
+  renewal_amount_cents?: number
+  /**
+   * The next recurring charge and target-plan period end. Current servers
+   * always return this later than effective_at and following the target
+   * plan's billing interval. Optional in the schema for older clients.
+   *
+   */
+  renewal_at?: string
+  /**
+   * Whether this previewed change requires explicit reactivation
+   * consent. Computed from the persisted subscription and a short-lived
+   * cache of Stripe lifecycle state. The subscribe enforcement path
+   * performs its own uncached Stripe lifecycle read.
+   *
+   */
+  requires_reactivation_confirmation?: boolean
   /**
    * Type of subscription transition
    */
@@ -1336,6 +1442,10 @@ export type PreviewSubscribeRequest = {
    * Target plan slug to preview subscribing to
    */
   plan_slug: string
+  /**
+   * Optional Stripe promotion code to validate and include in the exact quote.
+   */
+  promotion_code?: string
   /**
    * Selected per-credit Team plan stop to preview.
    */
@@ -3147,6 +3257,23 @@ export type DeleteSessionResponse = {
 }
 
 /**
+ * The workspace bound to the presented credential, plus how that credential authenticated. Same shape as Workspace with the caller's role and the auth method added, and without created_at (callers of this endpoint want identity, not provenance).
+ */
+export type CurrentWorkspaceResponse = {
+  /**
+   * How this request authenticated. Known values are firebase, cookie, comfy_api_key, comfy_admin_key, cloud_api_key and cloud_jwt; treat it as an open string so a new auth method is not a breaking change.
+   */
+  auth_method: string
+  id: string
+  name: string
+  /**
+   * The requesting user's role in this workspace. Omitted (absent from the object, never an explicit null) when the credential carries no resolvable user membership.
+   */
+  role?: 'owner' | 'member'
+  type: 'personal' | 'team'
+}
+
+/**
  * Request body for creating a new workspace.
  */
 export type CurrentWorkspaceResponse = {
@@ -3446,7 +3573,8 @@ export type BillingStatusResponse = {
    * customer. Today this is a Stripe-hosted payment page for an invoice
    * needing authentication (SCA/3DS);
    * send the customer there to complete payment. Mirrors the field of
-   * the same name on BillingOpStatusResponse.
+   * the same name on BillingOpStatusResponse. This bearer capability is
+   * returned only to workspace billing managers.
    *
    */
   action_url?: string
@@ -3475,6 +3603,16 @@ export type BillingStatusResponse = {
    * Current workspace members plus non-expired pending invites, used against max_seats. 0 when billing is disabled.
    */
   occupied_seats: number
+  /**
+   * Present when a pending operation supports embedded Stripe
+   * authentication. It may be returned alongside a hosted payment page
+   * when both recovery methods are available. This bearer
+   * capability is returned only to workspace billing managers. Pass
+   * directly to Stripe.js; do not log or
+   * persist it in client storage.
+   *
+   */
+  payment_intent_client_secret?: string
   /**
    * The workspace's in-flight billing operation, when one exists. Lets a
    * client recover a payment it has lost the local reference to — a
@@ -3546,16 +3684,49 @@ export type BillingOpStatusResponse = {
    * Present while status is "pending" and the operation cannot proceed
    * without the customer. Today this is a Stripe-hosted payment page for
    * a subscription whose first invoice needs authentication (SCA/3DS);
-   * send the customer there to complete payment. Absent otherwise.
+   * send the customer there to complete payment. This bearer capability is
+   * returned only to workspace billing managers. Absent otherwise.
    *
    */
   action_url?: string
+  /**
+   * State derived from the PaymentIntent attached to this operation's
+   * exact stored Stripe invoice. Absent when the operation has no
+   * correlated PaymentIntent.
+   *
+   */
+  authentication_state?:
+    | 'requires_action'
+    | 'processing'
+    | 'failed_retryable'
+    | 'succeeded'
+    | 'reconciliation_needed'
   /**
    * When the operation completed (success or failure)
    */
   completed_at?: string
   /**
-   * Error message if status is failed
+   * Coarse classification of why the correlated PaymentIntent's last
+   * payment attempt failed, derived at read time from the provider's
+   * machine-readable error and decline codes — never from provider
+   * message text or payment-method details. Present only when the
+   * intent has recorded a failed attempt and the operation is either
+   * still pending with authentication_state failed_retryable or has
+   * terminally failed. generic means the attempt failed for a reason
+   * outside this vocabulary.
+   *
+   */
+  decline_reason?:
+    | 'card_declined'
+    | 'insufficient_funds'
+    | 'expired_card'
+    | 'incorrect_cvc'
+    | 'authentication_required'
+    | 'authentication_failed'
+    | 'processing_error'
+    | 'generic'
+  /**
+   * PII-safe failure code or generic failure message
    */
   error_message?: string
   /**
@@ -3563,13 +3734,34 @@ export type BillingOpStatusResponse = {
    */
   id: string
   /**
+   * Stripe PaymentIntent client secret for completing requires_action.
+   * This bearer capability is returned only to workspace billing managers
+   * and is absent otherwise.
+   *
+   */
+  payment_intent_client_secret?: string
+  /**
+   * Typed next action for a failed operation. Absent for pending and succeeded operations.
+   */
+  recovery_action?:
+    | 'retry'
+    | 'replace_payment_method'
+    | 'authenticate_payment'
+    | 'contact_support'
+  /**
+   * Whether the customer can recover by starting a new billing operation after performing recovery_action.
+   */
+  retryable?: boolean
+  /**
    * When the operation was initiated
    */
   started_at: string
   /**
-   * Current status of the operation
+   * Current status of the operation. reconciliation_needed is terminal
+   * for client polling but requires support reconciliation.
+   *
    */
-  status: 'pending' | 'succeeded' | 'failed'
+  status: 'pending' | 'succeeded' | 'failed' | 'reconciliation_needed'
 }
 
 /**
@@ -6114,6 +6306,45 @@ export type GetBillingOpStatusResponses = {
 export type GetBillingOpStatusResponse =
   GetBillingOpStatusResponses[keyof GetBillingOpStatusResponses]
 
+export type ListSavedPaymentMethodsData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/billing/payment-methods'
+}
+
+export type ListSavedPaymentMethodsErrors = {
+  /**
+   * Billing is disabled
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Workspace owner role required
+   */
+  403: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type ListSavedPaymentMethodsError =
+  ListSavedPaymentMethodsErrors[keyof ListSavedPaymentMethodsErrors]
+
+export type ListSavedPaymentMethodsResponses = {
+  /**
+   * Saved payment methods
+   */
+  200: Array<SavedPaymentMethod>
+}
+
+export type ListSavedPaymentMethodsResponse =
+  ListSavedPaymentMethodsResponses[keyof ListSavedPaymentMethodsResponses]
+
 export type GetPaymentPortalData = {
   body?: PaymentPortalRequest
   path?: never
@@ -6196,6 +6427,10 @@ export type PreviewSubscribeErrors = {
    * Unauthorized
    */
   401: ErrorResponse
+  /**
+   * Workspace owner role required
+   */
+  403: ErrorResponse
   /**
    * Internal server error
    */
@@ -10914,6 +11149,41 @@ export type UpdateWorkspaceResponses = {
 
 export type UpdateWorkspaceResponse =
   UpdateWorkspaceResponses[keyof UpdateWorkspaceResponses]
+
+export type GetCurrentWorkspaceData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/workspaces/current'
+}
+
+export type GetCurrentWorkspaceErrors = {
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * No workspace resolves for this credential — it carries no workspace binding, the workspace was deleted, or the credential's user is no longer a member. Deliberately not 401: the credential itself is valid, so clients must not discard it or re-authenticate.
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type GetCurrentWorkspaceError =
+  GetCurrentWorkspaceErrors[keyof GetCurrentWorkspaceErrors]
+
+export type GetCurrentWorkspaceResponses = {
+  /**
+   * The credential's workspace
+   */
+  200: CurrentWorkspaceResponse
+}
+
+export type GetCurrentWorkspaceResponse =
+  GetCurrentWorkspaceResponses[keyof GetCurrentWorkspaceResponses]
 
 export type GetStaticExtensionsData = {
   body?: never

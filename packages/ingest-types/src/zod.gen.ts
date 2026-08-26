@@ -480,6 +480,21 @@ export const zSystemStatsResponse = z.object({
  */
 export const zSubscriptionDuration = z.enum(['MONTHLY', 'ANNUAL'])
 
+export const zSubscriptionDiscount = z.object({
+  amount_off_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  code: z.string(),
+  kind: z.enum(['plan', 'promotion']),
+  name: z.string().optional()
+})
+
 /**
  * Response after successfully subscribing to a billing plan.
  */
@@ -497,10 +512,15 @@ export const zSubscribeRequest = z.object({
   billing_cycle: z.enum(['monthly', 'yearly']).optional(),
   cancel_url: z.string().optional(),
   confirm_reactivation: z.boolean().optional(),
+  confirmation_token: z.string().optional(),
   idempotency_key: z.string().optional(),
   plan_slug: z.string(),
+  promotion_code: z.string().optional(),
   proration_at: z.string().datetime().optional(),
+  quote_id: z.string().optional(),
+  quote_version: z.number().int().optional(),
   return_url: z.string().optional(),
+  saved_payment_method_id: z.string().regex(/^pm_/).optional(),
   team_credit_stop_id: z.string().optional()
 })
 
@@ -547,6 +567,17 @@ export const zSecretProvidersResponse = z.object({
  */
 export const zSecretListResponse = z.object({
   data: z.array(zSecretResponse)
+})
+
+export const zSavedPaymentMethod = z.object({
+  brand: z.string().optional(),
+  id: z.string().regex(/^pm_/),
+  is_default: z.boolean(),
+  last4: z
+    .string()
+    .regex(/^[0-9]{4}$/)
+    .optional(),
+  type: z.string()
 })
 
 /**
@@ -763,6 +794,15 @@ export const zPreviewPlanInfo = z.object({
  */
 export const zPreviewSubscribeResponse = z.object({
   allowed: z.boolean(),
+  amount_due_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
   cost_next_period_cents: z.coerce
     .bigint()
     .min(BigInt('-9223372036854775808'), {
@@ -795,12 +835,29 @@ export const zPreviewSubscribeResponse = z.object({
     .max(BigInt('9223372036854775807'), {
       message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
     }),
+  currency: z.string().optional(),
   current_plan: zPreviewPlanInfo.optional(),
+  discounts: z.array(zSubscriptionDiscount).optional(),
   effective_at: z.string().datetime(),
   is_immediate: z.boolean(),
   new_plan: zPreviewPlanInfo,
+  payment_method_configuration_id: z.string().optional(),
+  promotion_code: z.string().optional(),
   proration_at: z.string().datetime().optional(),
+  quote_id: z.string().optional(),
+  quote_version: z.number().int().optional(),
   reason: z.string().optional(),
+  renewal_amount_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  renewal_at: z.string().datetime().optional(),
+  requires_reactivation_confirmation: z.boolean().optional(),
   transition_type: z.enum([
     'new_subscription',
     'upgrade',
@@ -814,6 +871,7 @@ export const zPreviewSubscribeResponse = z.object({
  */
 export const zPreviewSubscribeRequest = z.object({
   plan_slug: z.string(),
+  promotion_code: z.string().optional(),
   team_credit_stop_id: z.string().optional()
 })
 
@@ -1888,6 +1946,17 @@ export const zDeleteSessionResponse = z.object({
 })
 
 /**
+ * The workspace bound to the presented credential, plus how that credential authenticated. Same shape as Workspace with the caller's role and the auth method added, and without created_at (callers of this endpoint want identity, not provenance).
+ */
+export const zCurrentWorkspaceResponse = z.object({
+  auth_method: z.string(),
+  id: z.string(),
+  name: z.string(),
+  role: z.enum(['owner', 'member']).optional(),
+  type: z.enum(['personal', 'team'])
+})
+
+/**
  * Request body for creating a new workspace.
  */
 export const zCreateWorkspaceRequest = z.object({
@@ -2062,6 +2131,7 @@ export const zBillingStatusResponse = z.object({
   is_active: z.boolean(),
   max_seats: z.number().int(),
   occupied_seats: z.number().int(),
+  payment_intent_client_secret: z.string().optional(),
   pending_billing_op_id: z.string().optional(),
   pending_billing_op_type: z.enum(['subscription', 'topup']).optional(),
   plan_slug: z.string().optional(),
@@ -2086,11 +2156,42 @@ export const zBillingPlansResponse = z.object({
  */
 export const zBillingOpStatusResponse = z.object({
   action_url: z.string().optional(),
+  authentication_state: z
+    .enum([
+      'requires_action',
+      'processing',
+      'failed_retryable',
+      'succeeded',
+      'reconciliation_needed'
+    ])
+    .optional(),
   completed_at: z.string().datetime().optional(),
+  decline_reason: z
+    .enum([
+      'card_declined',
+      'insufficient_funds',
+      'expired_card',
+      'incorrect_cvc',
+      'authentication_required',
+      'authentication_failed',
+      'processing_error',
+      'generic'
+    ])
+    .optional(),
   error_message: z.string().optional(),
   id: z.string(),
+  payment_intent_client_secret: z.string().optional(),
+  recovery_action: z
+    .enum([
+      'retry',
+      'replace_payment_method',
+      'authenticate_payment',
+      'contact_support'
+    ])
+    .optional(),
+  retryable: z.boolean().optional(),
   started_at: z.string().datetime(),
-  status: z.enum(['pending', 'succeeded', 'failed'])
+  status: z.enum(['pending', 'succeeded', 'failed', 'reconciliation_needed'])
 })
 
 /**
@@ -2989,6 +3090,17 @@ export const zGetBillingOpStatusData = z.object({
  * Billing operation status
  */
 export const zGetBillingOpStatusResponse = zBillingOpStatusResponse
+
+export const zListSavedPaymentMethodsData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * Saved payment methods
+ */
+export const zListSavedPaymentMethodsResponse = z.array(zSavedPaymentMethod)
 
 export const zGetPaymentPortalData = z.object({
   body: zPaymentPortalRequest.optional(),
@@ -4555,6 +4667,17 @@ export const zUpdateWorkspaceData = z.object({
  * Workspace updated
  */
 export const zUpdateWorkspaceResponse = zWorkspace
+
+export const zGetCurrentWorkspaceData = z.object({
+  body: z.never().optional(),
+  path: z.never().optional(),
+  query: z.never().optional()
+})
+
+/**
+ * The credential's workspace
+ */
+export const zGetCurrentWorkspaceResponse = zCurrentWorkspaceResponse
 
 export const zGetStaticExtensionsData = z.object({
   body: z.never().optional(),
