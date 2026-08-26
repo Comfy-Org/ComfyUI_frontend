@@ -327,6 +327,8 @@ describe('useWorkflowStore', () => {
 
     it('should not reload an already active workflow', async () => {
       const workflow = await store.createTemporary('test.json').load()
+      expect(workflow).toBeDefined()
+      if (!workflow) return
       vi.spyOn(workflow, 'load')
 
       // Set as active workflow
@@ -357,6 +359,46 @@ describe('useWorkflowStore', () => {
       expect(workflow.activeState).toEqual(defaultGraph)
       expect(workflow.initialState).toEqual(defaultGraph)
       expect(workflow.isModified).toBe(false)
+    })
+
+    it('does not open a workflow when loading fails', async () => {
+      await syncRemoteWorkflows(['a.json'])
+      const workflow = store.getWorkflowByPath('workflows/a.json')!
+      vi.mocked(api.getUserData).mockResolvedValue({
+        status: 404,
+        statusText: 'Not Found'
+      } as Response)
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      await expect(store.openWorkflow(workflow)).resolves.toBeUndefined()
+
+      expect(store.activeWorkflow).toBeNull()
+      expect(store.isOpen(workflow)).toBe(false)
+      expect(consoleSpy).toHaveBeenCalledOnce()
+      consoleSpy.mockRestore()
+    })
+
+    it('preserves the loaded workflow when a forced refresh is invalid', async () => {
+      await syncRemoteWorkflows(['a.json'])
+      const workflow = store.getWorkflowByPath('workflows/a.json')!
+      vi.mocked(api.getUserData).mockResolvedValueOnce({
+        status: 200,
+        text: () => Promise.resolve(defaultGraphJSON)
+      } as Response)
+      await workflow.load()
+      const initialState = workflow.initialState
+      vi.mocked(api.getUserData).mockResolvedValueOnce({
+        status: 200,
+        text: () => Promise.resolve('{invalid')
+      } as Response)
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      await expect(workflow.load({ force: true })).resolves.toBeUndefined()
+
+      expect(workflow.initialState).toBe(initialState)
+      expect(workflow.originalContent).toBe(defaultGraphJSON)
+      expect(consoleSpy).toHaveBeenCalledOnce()
+      consoleSpy.mockRestore()
     })
 
     it('should prefer a persisted V2 draft when loading a remote workflow', async () => {
@@ -435,6 +477,7 @@ describe('useWorkflowStore', () => {
       const loadedWorkflow = await store.openWorkflow(workflow)
 
       expect(loadedWorkflow).toBe(workflow)
+      if (!loadedWorkflow) return
       expect(loadedWorkflow.path).toBe('workflows/a.json')
       expect(store.activeWorkflow?.path).toBe('workflows/a.json')
       expect(store.isOpen(loadedWorkflow)).toBe(true)

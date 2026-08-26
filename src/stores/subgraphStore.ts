@@ -100,9 +100,12 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       this.extractMetadataToWorkflowExtra()
       const ret = await super.save()
       // Force reload to update initialState with saved metadata
-      registerNodeDef(await this.load({ force: true }), {
-        category: 'Subgraph Blueprints/User'
-      })
+      const loaded = await this.load({ force: true })
+      if (loaded) {
+        registerNodeDef(loaded, {
+          category: 'Subgraph Blueprints/User'
+        })
+      }
       return ret
     }
 
@@ -135,24 +138,36 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       this.extractMetadataToWorkflowExtra()
       const ret = await super.saveAs(path)
       // Force reload to update initialState with saved metadata
-      registerNodeDef(await this.load({ force: true }), {
-        category: 'Subgraph Blueprints/User'
-      })
+      const loaded = await this.load({ force: true })
+      if (loaded) {
+        registerNodeDef(loaded, {
+          category: 'Subgraph Blueprints/User'
+        })
+      }
       return ret
     }
     override async load({ force = false }: { force?: boolean } = {}): Promise<
-      this & LoadedComfyWorkflow
+      (this & LoadedComfyWorkflow) | undefined
     > {
       if (!force && this.isLoaded) return await super.load({ force })
+      const previousChangeTracker = this.changeTracker
+      const previousContent = this.content
+      const previousOriginalContent = this.originalContent
       const loaded = await super.load({ force })
+      if (!loaded) return
       const st = loaded.activeState
       const sg = (st.definitions?.subgraphs ?? []).find(
         (sg) => sg.id == st.nodes[0].type
       )
-      if (!sg)
-        throw new Error(
-          'Loaded subgraph blueprint does not contain valid subgraph'
+      if (!sg) {
+        console.error(
+          new Error('Loaded subgraph blueprint does not contain valid subgraph')
         )
+        this.changeTracker = previousChangeTracker
+        this.content = previousContent
+        this.originalContent = previousOriginalContent
+        return
+      }
       sg.name = st.nodes[0].title = this.filename
 
       // Copy blueprint metadata from workflow extra to subgraph extra
@@ -193,6 +208,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     }): Promise<void> {
       options.path = SubgraphBlueprint.basePath + options.path
       const bp = await new SubgraphBlueprint(options, true).load()
+      if (!bp) return
       useWorkflowStore().attachWorkflow(bp)
       registerNodeDef(bp, { category: 'Subgraph Blueprints/User' })
     }
@@ -200,9 +216,13 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       async function loadGlobalBlueprint([k, v]: [string, GlobalSubgraphData]) {
         const data = await v.data
         if (typeof data !== 'string' || data.trim().length === 0) {
-          throw new Error(
-            `Global blueprint '${v.name}' (${k}) returned empty content`
+          console.error(
+            'Failed to load subgraph blueprint',
+            new Error(
+              `Global blueprint '${v.name}' (${k}) returned empty content`
+            )
           )
+          return
         }
         const path = SubgraphBlueprint.basePath + v.name + '.json'
         const blueprint = new SubgraphBlueprint({
@@ -214,6 +234,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
         blueprint.filename = v.name
         useWorkflowStore().attachWorkflow(blueprint)
         const loaded = await blueprint.load()
+        if (!loaded) return
         const category = v.info.category
           ? `Subgraph Blueprints/${v.info.category}`
           : undefined
@@ -366,6 +387,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     })
     workflow.originalContent = JSON.stringify(workflowData)
     const loadedWorkflow = await workflow.load()
+    if (!loadedWorkflow) return
     //Mark non-temporary
     workflow.size = 1
     await workflow.save()
