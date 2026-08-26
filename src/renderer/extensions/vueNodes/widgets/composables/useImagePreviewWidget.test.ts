@@ -413,6 +413,28 @@ describe('useImagePreviewWidget', () => {
       expect(node.imageRects).toHaveLength(2)
     })
 
+    it('does not draw thumbnails that break before deferred rendering', async () => {
+      const constructor = useImagePreviewWidget()
+      const imgs = [createMockImage(100, 100), createMockImage(100, 100)]
+      const node = createMockNode({ imgs, imageIndex: null })
+      constructor(node, defaultInputSpec)
+
+      const widget = getWidget(node)
+      widget.computedHeight = 220
+      const ctx = createMockCtx()
+
+      widget.drawWidget(ctx, { width: 300 })
+      for (const img of imgs) {
+        Object.defineProperties(img, {
+          naturalHeight: { value: 0 },
+          naturalWidth: { value: 0 }
+        })
+      }
+      await Promise.resolve()
+
+      expect(ctx.drawImage).not.toHaveBeenCalled()
+    })
+
     it('uses non-compact mode for mixed aspect ratios', () => {
       vi.mocked(is_all_same_aspect_ratio).mockReturnValue(false)
 
