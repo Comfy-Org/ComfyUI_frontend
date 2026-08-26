@@ -1,7 +1,7 @@
 import { render } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, reactive } from 'vue'
+import { nextTick, reactive, ref } from 'vue'
 
 import type { BaseDOMWidget } from '@/scripts/domWidget'
 import type { DomWidgetState } from '@/stores/domWidgetStore'
@@ -11,6 +11,9 @@ import DomWidget from './DomWidget.vue'
 
 const mockUpdatePosition = vi.fn()
 const mockUpdateClipPath = vi.fn()
+const mockPositionStyle = ref<Record<string, string>>({})
+const mockClippingStyle = ref<Record<string, string>>({})
+const mockDomClippingEnabled = ref(false)
 const mockCanvasElement = document.createElement('canvas')
 const mockCanvasStore = {
   canvas: {
@@ -30,14 +33,14 @@ const mockCanvasStore = {
 
 vi.mock('@/composables/element/useAbsolutePosition', () => ({
   useAbsolutePosition: () => ({
-    style: reactive<Record<string, string>>({}),
+    style: mockPositionStyle,
     updatePosition: mockUpdatePosition
   })
 }))
 
 vi.mock('@/composables/element/useDomClipping', () => ({
   useDomClipping: () => ({
-    style: reactive<Record<string, string>>({}),
+    style: mockClippingStyle,
     updateClipPath: mockUpdateClipPath
   })
 }))
@@ -48,7 +51,9 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
-    get: vi.fn(() => false)
+    get: vi.fn((key: string) =>
+      key === 'Comfy.DOMClippingEnabled' ? mockDomClippingEnabled.value : false
+    )
   })
 }))
 
@@ -85,6 +90,9 @@ function createWidgetState(disabled: boolean): DomWidgetState {
 describe('DomWidget style', () => {
   afterEach(() => {
     useDomWidgetStore().clear()
+    mockDomClippingEnabled.value = false
+    mockPositionStyle.value = {}
+    mockClippingStyle.value = {}
   })
 
   it('positions a newly mounted widget', () => {
@@ -113,6 +121,54 @@ describe('DomWidget style', () => {
     const root = container.querySelector('.dom-widget') as HTMLElement
     expect(root.style.pointerEvents).toBe('none')
     expect(root.style.opacity).toBe('0.5')
+  })
+
+  it('applies clipping style when DOM clipping is enabled', async () => {
+    mockDomClippingEnabled.value = true
+    const widgetState = createWidgetState(false)
+    const { container } = render(DomWidget, {
+      props: {
+        widgetState
+      }
+    })
+
+    mockClippingStyle.value = { clipPath: 'inset(1px)' }
+    await nextTick()
+
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    const root = container.querySelector('.dom-widget') as HTMLElement
+    expect(root.style.clipPath).toBe('inset(1px)')
+  })
+
+  it('updates clipping when DOM clipping is enabled', async () => {
+    const widgetState = createWidgetState(false)
+    render(DomWidget, {
+      props: {
+        widgetState
+      }
+    })
+    mockUpdateClipPath.mockClear()
+
+    mockDomClippingEnabled.value = true
+    await nextTick()
+
+    expect(mockUpdateClipPath).toHaveBeenCalled()
+  })
+
+  it('ignores clipping style when DOM clipping is disabled', async () => {
+    const widgetState = createWidgetState(false)
+    const { container } = render(DomWidget, {
+      props: {
+        widgetState
+      }
+    })
+
+    mockClippingStyle.value = { clipPath: 'inset(1px)' }
+    await nextTick()
+
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    const root = container.querySelector('.dom-widget') as HTMLElement
+    expect(root.style.clipPath).toBe('')
   })
 
   it('disables pointer events when widget is not visible', async () => {
