@@ -22,7 +22,7 @@ const reasons: TranslationKey[] = [
           alt="Comfy logo"
           loading="lazy"
           decoding="async"
-          class="mt-6 w-full"
+          class="mt-6 aspect-square w-full object-contain"
         />
       </template>
       <template #right-card-mobile>
@@ -31,7 +31,7 @@ const reasons: TranslationKey[] = [
           alt="Comfy logo"
           loading="lazy"
           decoding="async"
-          class="mt-6 w-full max-w-xs"
+          class="mt-6 aspect-square w-full max-w-xs object-contain"
         />
       </template>
     </WireNodeLayout>

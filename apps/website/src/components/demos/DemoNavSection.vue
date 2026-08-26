@@ -34,7 +34,7 @@ const nextHref = localizeHref(`/demos/${nextSlug}`, locale)
           :alt="nextTitle"
           loading="lazy"
           decoding="async"
-          class="w-full rounded-4xl object-cover"
+          class="aspect-video w-full rounded-4xl object-cover"
         />
       </a>
 

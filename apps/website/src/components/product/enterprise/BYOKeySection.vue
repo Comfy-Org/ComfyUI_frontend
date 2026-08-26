@@ -36,7 +36,7 @@ const cards = [
         :alt="t(card.titleKey, locale)"
         loading="lazy"
         decoding="async"
-        class="w-full rounded-t-3xl object-contain p-8"
+        class="aspect-4/3 w-full rounded-t-3xl object-contain p-8"
       />
       <div class="p-6 pt-0">
         <h3 class="text-3xl font-medium text-primary-comfy-canvas">
