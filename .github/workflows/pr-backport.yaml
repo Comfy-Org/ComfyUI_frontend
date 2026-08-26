@@ -33,6 +33,12 @@ jobs:
       pull-requests: write
       issues: write
 
+    # `gh pr view <n>` fails with the auto-provided GITHUB_TOKEN even with
+    # pull-requests: write, which is what silently broke manual dispatch.
+    # Steps needing a different token still set GH_TOKEN themselves.
+    env:
+      GH_TOKEN: ${{ secrets.PR_GH_TOKEN || secrets.GH_TOKEN }}
+
     steps:
       - name: Validate inputs for manual triggers
         if: github.event_name == 'workflow_dispatch'
@@ -63,11 +69,6 @@ jobs:
             exit 1
           fi
         env:
-          # PR_GH_TOKEN is what the PR-creation step below already uses, and
-          # GH_TOKEN is the repo's other configured PAT. The auto-provided
-          # GITHUB_TOKEN could not read the PR here even with
-          # pull-requests: write, so it is not used as a fallback.
-          GH_TOKEN: ${{ secrets.PR_GH_TOKEN || secrets.GH_TOKEN }}
           GH_REPO: ${{ github.repository }}
 
       - name: Checkout repository
@@ -88,7 +89,6 @@ jobs:
       - name: Collect backport targets
         id: targets
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
         run: |
           TARGETS=()
@@ -157,7 +157,6 @@ jobs:
           FORCE_RERUN_INPUT: >-
             ${{ github.event_name == 'workflow_dispatch' && inputs.force_rerun
             || 'false' }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: >-
             ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number
             || github.event.pull_request.number }}
@@ -240,7 +239,6 @@ jobs:
         id: backport
         env:
           PR_NUMBER: ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
         run: |
           FAILED=""
@@ -545,5 +543,3 @@ jobs:
       - name: Remove needs-backport label
         if: steps.filter-targets.outputs.skip != 'true' && success()
         run: gh pr edit ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }} --remove-label "needs-backport"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
