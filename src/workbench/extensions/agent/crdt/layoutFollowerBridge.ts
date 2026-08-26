@@ -2,6 +2,7 @@ import type {
   DocFrameClient,
   DocOp,
   DocReset,
+  DocSubscribed,
   DocUpdate
 } from './docFrameClient'
 import { FollowerDoc } from './followerDoc'
@@ -61,12 +62,19 @@ export class LayoutFollowerBridge extends EventTarget {
   private sentWorkflowId: string | null = null
   /** Set once a merged doc failed the KA-11 read gate; never rendered after. */
   private schemaError: FollowerSchemaError | null = null
+  /**
+   * Highest doc seq seen since the last subscribe left the transport; `null`
+   * until the first post-subscribe frame, so catch-up re-baselines instead of
+   * being compared across a resubscribe. See the gap detector in
+   * {@link onDocUpdate}.
+   */
+  private lastSeq: number | null = null
 
   constructor(private readonly client: DocFrameClient) {
     super()
     client.addEventListener('doc_update', this.onDocUpdate)
     client.addEventListener('doc_reset', this.onDocReset)
-    client.addEventListener('doc_subscribed', this.forwardFrame)
+    client.addEventListener('doc_subscribed', this.onDocSubscribed)
     client.addEventListener('doc_ops_result', this.forwardFrame)
   }
 
@@ -117,8 +125,10 @@ export class LayoutFollowerBridge extends EventTarget {
     if (desired === null || this.sentWorkflowId === desired) return
     if (
       trySend(() => this.client.subscribe(desired, this.follower.stateVector()))
-    )
+    ) {
       this.sentWorkflowId = desired
+      this.lastSeq = null
+    }
   }
 
   resubscribe(): void {
@@ -149,7 +159,7 @@ export class LayoutFollowerBridge extends EventTarget {
     } finally {
       this.client.removeEventListener('doc_update', this.onDocUpdate)
       this.client.removeEventListener('doc_reset', this.onDocReset)
-      this.client.removeEventListener('doc_subscribed', this.forwardFrame)
+      this.client.removeEventListener('doc_subscribed', this.onDocSubscribed)
       this.client.removeEventListener('doc_ops_result', this.forwardFrame)
       this.desiredWorkflowId = null
       this.sentWorkflowId = null
@@ -161,6 +171,18 @@ export class LayoutFollowerBridge extends EventTarget {
     if (!(event instanceof CustomEvent)) return
     const update = event.detail as DocUpdate
     if (update.workflowId !== this.sentWorkflowId) return
+
+    // Seq is the contract's gap detector (crdt.go): the pub/sub relay is
+    // best-effort, so a jump means a frame was dropped — possibly a
+    // `doc_reset`, in which case these bytes belong to a NEW lineage and
+    // folding them in duplicates the canvas. The frame is therefore NOT
+    // applied; the resubscribe's ordinary catch-up delivers everything missed.
+    if (this.lastSeq !== null && update.seq > this.lastSeq + 1) {
+      this.resubscribe()
+      return
+    }
+    if (this.lastSeq === null || update.seq > this.lastSeq)
+      this.lastSeq = update.seq
     this.follower.applyRemoteUpdate(update.update)
 
     // KA-11 read-time gate. The merge itself is unconditional — Yjs bytes are
@@ -202,6 +224,23 @@ export class LayoutFollowerBridge extends EventTarget {
     this.schemaError = null
     this.resubscribe()
     this.dispatchEvent(new CustomEvent('doc_reset', { detail: reset }))
+  }
+
+  /**
+   * `ok: true` carries the seq of the catch-up snapshot — the gap detector's
+   * baseline. `ok: false` means the server refused: clearing REALITY re-opens
+   * the intent/reality disagreement so the next `reconcile()` (any status
+   * frame) retries, instead of the bridge holding a subscription that does not
+   * exist server-side and going silently deaf.
+   */
+  private readonly onDocSubscribed: EventListener = (event) => {
+    if (!(event instanceof CustomEvent)) return
+    const subscribed = event.detail as DocSubscribed
+    if (subscribed.workflowId === this.sentWorkflowId) {
+      if (subscribed.ok) this.lastSeq = subscribed.seq ?? null
+      else this.sentWorkflowId = null
+    }
+    this.dispatchEvent(new CustomEvent(event.type, { detail: event.detail }))
   }
 
   private readonly forwardFrame: EventListener = (event) => {
