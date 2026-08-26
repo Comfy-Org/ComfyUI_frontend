@@ -101,9 +101,14 @@ async function bootWorkspace(page: Page) {
 }
 
 function assertBillingEventsRequest(request: Request) {
+  const url = new URL(request.url())
   expect(request.method()).toBe('GET')
-  expect(new URL(request.url()).pathname).toBe('/api/billing/events')
-  expect(new URL(request.url()).search).toBe('')
+  expect(url.pathname).toBe('/api/billing/events')
+  expect(Object.fromEntries(url.searchParams)).toEqual({
+    page: '1',
+    limit: '100',
+    scope: 'workspace'
+  })
   expect(request.headers().authorization).toBe('Bearer mock-workspace-token')
 }
 
@@ -115,13 +120,13 @@ test.describe('Workspace Activity usage feed', { tag: '@cloud' }, () => {
     const requests: Request[] = []
     const initialEvents = eventsResponse([
       {
-        event_type: 'gpu_usage',
+        event_type: 'cloud_workflow_executed',
         event_id: 'gpu-event-unique-1',
         params: { user_id: 'user-alice' },
         createdAt: '2026-07-20T10:00:00Z'
       },
       {
-        event_type: 'api_node_usage',
+        event_type: 'api_usage_completed',
         event_id: 'api-event-unique-2',
         params: { user_id: 'user-bob', partner_node: 'Acme Upscaler' },
         createdAt: '2026-07-20T11:00:00Z'
@@ -130,13 +135,13 @@ test.describe('Workspace Activity usage feed', { tag: '@cloud' }, () => {
     const refreshedEvents = eventsResponse([
       ...initialEvents.events,
       {
-        event_type: 'gpu_usage',
+        event_type: 'cloud_workflow_executed',
         event_id: 'gpu-event-unique-3',
         params: { user_id: 'user-bob' },
         createdAt: '2026-07-20T12:00:00Z'
       }
     ])
-    await page.route('**/api/billing/events', async (route) => {
+    await page.route('**/api/billing/events?*', async (route) => {
       requests.push(route.request())
       await route.fulfill(
         jsonRoute(requests.length === 1 ? initialEvents : refreshedEvents)
@@ -169,7 +174,7 @@ test.describe('Workspace Activity usage feed', { tag: '@cloud' }, () => {
 
   test('renders the empty response', async ({ page }) => {
     test.setTimeout(60_000)
-    await page.route('**/api/billing/events', (route) =>
+    await page.route('**/api/billing/events?*', (route) =>
       route.fulfill(jsonRoute(eventsResponse([])))
     )
 
@@ -185,13 +190,13 @@ test.describe('Workspace Activity usage feed', { tag: '@cloud' }, () => {
     let requestCount = 0
     const recovered = eventsResponse([
       {
-        event_type: 'gpu_usage',
+        event_type: 'cloud_workflow_executed',
         event_id: 'retry-event-unique-1',
         params: { user_id: 'user-alice' },
         createdAt: '2026-07-20T13:00:00Z'
       }
     ])
-    await page.route('**/api/billing/events', async (route) => {
+    await page.route('**/api/billing/events?*', async (route) => {
       requestCount += 1
       if (requestCount === 1) {
         await route.fulfill({ status: 503 })
