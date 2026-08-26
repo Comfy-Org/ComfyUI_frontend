@@ -86,9 +86,15 @@ jobs:
               # Feature-branch push: dispatch only when the branch has an open PR
               # carrying a preview label, so we keep that PR's preview env fresh
               # on every push regardless of the PR's merge-conflict state.
-              PR_JSON="$(gh api \
-                "repos/${GITHUB_REPOSITORY}/pulls?head=Comfy-Org:${BRANCH}&state=open&per_page=1" \
-                2>/dev/null || echo '[]')"
+              # Pass query values as explicit fields so gh URL-encodes them
+              # (branch names may contain '/', '#', '&', ...). A failed lookup
+              # fails the job (set -e); a successful empty result is treated as
+              # "no matching PR" below.
+              PR_JSON="$(gh api --method GET \
+                "repos/${GITHUB_REPOSITORY}/pulls" \
+                -f "head=Comfy-Org:${BRANCH}" \
+                -f "state=open" \
+                -F "per_page=1")"
               PR_NUMBER="$(echo "${PR_JSON}" | jq -r '.[0].number // empty')"
               LABELS_JSON="$(echo "${PR_JSON}" | jq -c '[.[0].labels[]?.name]')"
 
