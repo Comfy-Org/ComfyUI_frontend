@@ -262,6 +262,7 @@ const renderPreview = (
   // Defer image rendering to work around Chrome GPU bug
   const transform = ctx.getTransform()
   deferredImageRenders.push(() => {
+    if (!img.naturalWidth || !img.naturalHeight) return
     ctx.save()
     ctx.setTransform(transform)
     ctx.drawImage(img, x, y, w, h)
