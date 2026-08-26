@@ -23,6 +23,7 @@ vi.mock('@/platform/telemetry/reportError', () => ({
 
 async function flushLookup() {
   await Promise.resolve()
+  await Promise.resolve()
   await nextTick()
 }
 

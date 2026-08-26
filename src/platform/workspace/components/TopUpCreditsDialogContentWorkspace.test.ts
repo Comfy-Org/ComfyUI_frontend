@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import type { CreateTopupResponse } from '@/platform/workspace/api/workspaceApi'
 
@@ -141,58 +143,7 @@ vi.mock('@/base/credits/comfyCredits', () => ({
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
-  messages: {
-    en: {
-      g: { back: 'Back', close: 'Close' },
-      subscription: {
-        addCredits: 'Add credits',
-        manageBilling: 'Manage billing',
-        preview: {
-          completeVerification: 'Complete verification',
-          totalDueToday: 'Total due today'
-        }
-      },
-      credits: {
-        topUp: {
-          addMoreCredits: 'Add more credits',
-          addMoreCreditsToRun: 'Add more credits to run',
-          selectAmount: 'Select amount',
-          youPay: 'You pay',
-          youGet: 'You get',
-          purchaseSuccess: 'Credits added successfully!',
-          purchaseError: 'Purchase Failed',
-          purchaseErrorDetail: 'Failed to purchase credits: {error}',
-          unknownError: 'An unknown error occurred',
-          minRequired: 'Minimum required',
-          maxAllowed: 'Maximum allowed',
-          needMore: 'Need more?',
-          contactUs: 'Contact us',
-          viewPricing: 'View pricing',
-          insufficientWorkflowMessage: 'Insufficient credits',
-          chargedImmediatelyNote: 'Your saved card is charged immediately.',
-          paymentDetailsRequiredNote:
-            "You'll be asked to add a payment method to complete this purchase.",
-          noPaymentMethodError:
-            'No payment method is saved for this workspace. Add one via Settings → Plan & Credits → Manage billing, then retry the top-up.',
-          manageBillingError:
-            'Failed to open the billing portal. Please try again.',
-          confirmSubtitle:
-            'Credits are added to this workspace as soon as payment completes.',
-          confirmTitle: 'Confirm',
-          payAmount: 'Pay {amount}',
-          verifyBody:
-            'Your bank requires additional verification to complete this payment.',
-          verifyTitle: 'Verify your payment'
-        }
-      },
-      billingOperation: {
-        authenticationFailedDetail: 'Verification failed.',
-        authenticationManagerRequired: 'Ask a workspace manager for help.',
-        retryVerification: 'Try verification again',
-        reconciliationDetail: 'Contact support with operation ID'
-      }
-    }
-  }
+  messages: { en: enMessages }
 })
 
 function topupResponse(
@@ -331,7 +282,9 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     await clickAddCredits()
 
     expect(
-      await screen.findByText('Your saved card is charged immediately.')
+      await screen.findByText(
+        'Your saved payment method is charged immediately.'
+      )
     ).toBeInTheDocument()
   })
 
@@ -417,7 +370,9 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     await clickAddCredits()
 
     expect(
-      await screen.findByText('Your saved card is charged immediately.')
+      await screen.findByText(
+        'Your saved payment method is charged immediately.'
+      )
     ).toBeInTheDocument()
   })
 
@@ -524,7 +479,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       screen.getByText('Your bank rejected the verification.')
     ).toBeInTheDocument()
     await userEvent.click(
-      screen.getByRole('button', { name: 'Try verification again' })
+      screen.getByRole('button', { name: 'Retry verification' })
     )
     expect(mockRetryPaymentAuthentication).toHaveBeenCalledWith('op-retry')
   })
@@ -539,7 +494,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     renderDialog()
 
     expect(
-      screen.getByText('Contact support with operation ID')
+      screen.getByText(/Contact support and include this operation ID/)
     ).toBeInTheDocument()
     expect(screen.getByText('op-reconcile')).toBeInTheDocument()
     expect(
