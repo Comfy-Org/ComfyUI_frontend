@@ -247,6 +247,25 @@ describe('migrateWidgetsValues', () => {
     expect(migrateWidgetsValues(inputDefs, widgets, [1, 20])).toEqual([20])
   })
 
+  it('compacts a mid-list hole with a trailing skipped widget', () => {
+    const holeInputDefs = {
+      a: fromPartial<InputSpec>({ name: 'a' }),
+      ui1: fromPartial<InputSpec>({ name: 'ui1' }),
+      b: fromPartial<InputSpec>({ name: 'b' }),
+      ui2: fromPartial<InputSpec>({ name: 'ui2' })
+    }
+    const widgets = [
+      makeWidget('a'),
+      makeWidget('ui1', false),
+      makeWidget('b'),
+      makeWidget('ui2', false)
+    ]
+
+    expect(
+      migrateWidgetsValues(holeInputDefs, widgets, ['av', null, 'bv'])
+    ).toEqual(['av', 'bv'])
+  })
+
   it('migrates a sparse value array with a non-trailing skipped widget', () => {
     const widgets = [
       makeWidget('forced'),
