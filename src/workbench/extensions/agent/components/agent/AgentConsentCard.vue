@@ -65,7 +65,7 @@ function openDocs(): void {
             v-if="docsUrl"
             variant="link"
             size="unset"
-            class="w-fit gap-1 py-2 text-sm hover:underline"
+            class="w-fit gap-1 px-0 py-2 text-sm/5 font-normal hover:underline"
             @click="openDocs"
           >
             {{ $t('agent.consent.readDocs') }}
