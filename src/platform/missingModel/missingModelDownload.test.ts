@@ -37,6 +37,7 @@ vi.mock('@/stores/workspace/sidebarTabStore', () => ({
 beforeEach(() => {
   vi.stubGlobal('fetch', fetchMock)
   clearMetadataCache()
+  delete window.__comfyDesktop2Remote
   delete window.__comfyDesktop2
 })
 
@@ -595,6 +596,38 @@ describe('downloadModel', () => {
     expect(anchorClick).not.toHaveBeenCalled()
     expect(mockStartDownload).not.toHaveBeenCalled()
   })
+
+  it.for([
+    { isRemote: false, expectedDesktopCalls: 1, expectedBrowserCalls: 0 },
+    { isRemote: true, expectedDesktopCalls: 0, expectedBrowserCalls: 1 }
+  ])(
+    'uses the legacy remote flag when isRemote is unavailable ($isRemote)',
+    ({ isRemote, expectedDesktopCalls, expectedBrowserCalls }) => {
+      const anchorClick = vi
+        .spyOn(HTMLAnchorElement.prototype, 'click')
+        .mockImplementation(() => {})
+      const desktopDownloadModel = vi
+        .fn<
+          (url: string, filename: string, directory: string) => Promise<boolean>
+        >()
+        .mockResolvedValue(true)
+      window.__comfyDesktop2Remote = isRemote
+      window.__comfyDesktop2 = { downloadModel: desktopDownloadModel }
+
+      downloadModel(
+        {
+          name: 'model.safetensors',
+          url: 'https://huggingface.co/org/model/resolve/main/model.safetensors',
+          directory: 'checkpoints'
+        },
+        { checkpoints: ['/models/checkpoints'] }
+      )
+
+      expect(desktopDownloadModel).toHaveBeenCalledTimes(expectedDesktopCalls)
+      expect(anchorClick).toHaveBeenCalledTimes(expectedBrowserCalls)
+      expect(mockStartDownload).not.toHaveBeenCalled()
+    }
+  )
 
   it('logs Desktop2 bridge failures without falling back to browser download', async () => {
     const anchorClick = vi

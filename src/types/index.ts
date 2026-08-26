@@ -99,6 +99,7 @@ declare global {
     /** For use in tests to track app initialization state */
     __appReadiness?: AppReadiness
 
+    __comfyDesktop2Remote?: boolean
     __comfyDesktop2?: ComfyDesktop2Bridge
   }
 }

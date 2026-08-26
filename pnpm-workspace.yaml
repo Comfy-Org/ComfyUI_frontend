@@ -191,3 +191,6 @@ overrides:
   brace-expansion@^4.0.0: ^5.0.9
   brace-expansion@^5.0.0: ^5.0.9
   sharp@^0.34.0: ^0.35.0
+
+minimumReleaseAgeExclude:
+  - '@comfyorg/comfyui-desktop-bridge-types@0.2.0'
