@@ -519,7 +519,7 @@ describe('ComfyNodeDefImpl', () => {
     expect(result.inputs['floatInput']).toBeDefined()
   })
 
-  it.each([
+  it.for([
     { api_node: true, expected: true },
     { api_node: false, expected: false },
     { api_node: undefined, expected: false }

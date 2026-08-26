@@ -112,7 +112,10 @@
         </template>
 
         <template v-if="dialogState === 'shared' && publishResult">
-          <ShareUrlCopyField :url="publishResult.shareUrl" />
+          <ShareUrlCopyField
+            :url="publishResult.shareUrl"
+            :share-id="publishResult.shareId"
+          />
           <div class="flex flex-col gap-1">
             <p
               v-if="publishResult.publishedAt"
@@ -173,6 +176,7 @@
         <ComfyHubPublishIntroPanel
           v-else
           data-testid="publish-intro"
+          :is-update="!!publishResult"
           :on-create-profile="handleOpenPublishDialog"
           :on-close="onClose"
           :show-close-button="false"
@@ -203,11 +207,11 @@ import type {
 import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
-import { useAppMode } from '@/composables/useAppMode'
+import { useShareFlowContext } from '@/platform/workflow/sharing/composables/useShareFlowContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@/platform/telemetry'
 import { appendJsonExt } from '@/utils/formatUtil'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { onClose } = defineProps<{
   onClose: () => void
@@ -220,11 +224,7 @@ const publishDialog = useComfyHubPublishDialog()
 const shareService = useWorkflowShareService()
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
-const { isAppMode } = useAppMode()
-
-function getShareSource() {
-  return isAppMode.value ? 'app_mode' : ('graph_mode' as const)
-}
+const shareFlowContext = useShareFlowContext()
 
 type DialogState = 'loading' | 'unsaved' | 'ready' | 'shared' | 'stale'
 type DialogMode = 'shareLink' | 'publishToHub'
@@ -352,7 +352,7 @@ async function refreshDialogState() {
     dialogState.value = 'unsaved'
     useTelemetry()?.trackShareFlow({
       step: 'save_prompted',
-      source: getShareSource()
+      ...shareFlowContext.value
     })
     if (workflow) {
       workflowName.value = stripJsonExtension(workflow.filename)
@@ -437,7 +437,8 @@ const {
     acknowledged.value = false
     useTelemetry()?.trackShareFlow({
       step: 'link_created',
-      source: getShareSource()
+      ...shareFlowContext.value,
+      share_id: result.shareId
     })
 
     return result

@@ -3,6 +3,10 @@ import { computed, ref } from 'vue'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useAssetSelectionStore } from '@/platform/assets/composables/useAssetSelectionStore'
+import {
+  getAssetOutputCount,
+  getTotalAssetOutputCount
+} from '@/platform/assets/utils/outputAssetUtil'
 
 export function useAssetSelection() {
   const selectionStore = useAssetSelectionStore()
@@ -40,6 +44,20 @@ export function useAssetSelection() {
     setAnchor(-1, null)
   }
 
+  function toggleAssetSelection(
+    asset: AssetItem,
+    index: number,
+    allAssets: AssetItem[]
+  ) {
+    if (!asset?.id || index < 0 || index >= allAssets.length) {
+      console.warn('Invalid asset selection parameters')
+      return
+    }
+
+    selectionStore.toggleSelection(asset.id)
+    setAnchor(index, asset.id)
+  }
+
   /**
    * Handle asset click with modifier keys for selection
    * @param asset The clicked asset
@@ -74,12 +92,19 @@ export function useAssetSelection() {
 
     // Ctrl/Cmd + Click: Toggle individual selection
     if (cmdOrCtrlKey.value) {
-      selectionStore.toggleSelection(assetId)
-      setAnchor(index, assetId)
+      toggleAssetSelection(asset, index, allAssets)
       return
     }
 
-    // Normal Click: Single selection
+    // Clicking the only selected asset does not clear the selection
+    if (
+      selectionStore.isSelected(assetId) &&
+      selectionStore.selectedCount === 1
+    ) {
+      return
+    }
+
+    // Otherwise, a normal click collapses the selection to this asset
     selectionStore.clearSelection()
     selectionStore.addToSelection(assetId)
     setAnchor(index, assetId)
@@ -95,6 +120,19 @@ export function useAssetSelection() {
       const lastIndex = allAssets.length - 1
       setAnchor(lastIndex, allAssets[lastIndex].id)
     }
+  }
+
+  /**
+   * Replace the selection (e.g. from a marquee) and keep the shift-range anchor
+   * on the last selected asset, the same way selectAll maintains it.
+   */
+  function setSelectedIds(ids: string[], allAssets: AssetItem[]) {
+    selectionStore.setSelection(ids)
+    const selected = new Set(ids)
+    const anchorIndex = allAssets.findLastIndex((asset) =>
+      selected.has(asset.id)
+    )
+    setAnchor(anchorIndex, anchorIndex >= 0 ? allAssets[anchorIndex].id : null)
   }
 
   /**
@@ -142,15 +180,14 @@ export function useAssetSelection() {
    * Same logic as in AssetsSidebarTab.vue
    */
   function getOutputCount(item: AssetItem): number {
-    const count = item.user_metadata?.outputCount
-    return typeof count === 'number' && count > 0 ? count : 1
+    return getAssetOutputCount(item)
   }
 
   /**
    * Get the total output count for given assets
    */
   function getTotalOutputCount(assets: AssetItem[]): number {
-    return assets.reduce((sum, asset) => sum + getOutputCount(asset), 0)
+    return getTotalAssetOutputCount(assets)
   }
 
   /**
@@ -178,7 +215,9 @@ export function useAssetSelection() {
 
     // Selection actions
     handleAssetClick,
+    toggleAssetSelection,
     selectAll,
+    setSelectedIds,
     clearSelection: () => selectionStore.clearSelection(),
     getSelectedAssets,
     reconcileSelection,

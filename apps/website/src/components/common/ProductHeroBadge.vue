@@ -2,7 +2,7 @@
 const {
   logoSrc = '/icons/logo.svg',
   logoAlt = 'Comfy',
-  text = 'LOCAL'
+  text = 'DESKTOP'
 } = defineProps<{
   logoSrc?: string
   logoAlt?: string
@@ -11,7 +11,7 @@ const {
 </script>
 
 <template>
-  <div class="font-formula-condensed flex items-stretch font-semibold">
+  <div class="font-formula-narrow flex items-stretch font-semibold">
     <img
       src="/icons/node-left.svg"
       alt=""
@@ -20,7 +20,7 @@ const {
     />
 
     <span
-      class="bg-primary-comfy-yellow text-primary-comfy-ink my-auto flex h-12 items-center justify-center lg:my-0 lg:h-auto lg:p-8"
+      class="bg-primary-comfy-yellow my-auto flex h-12 items-center justify-center text-primary-comfy-ink lg:my-0 lg:h-auto lg:p-8"
     >
       <img
         :src="logoSrc"
@@ -37,7 +37,7 @@ const {
     />
 
     <span
-      class="bg-primary-comfy-yellow text-primary-comfy-ink my-auto flex h-7.25 items-center justify-center lg:h-15.5 lg:px-6"
+      class="bg-primary-comfy-yellow my-auto flex h-7.25 items-center justify-center text-primary-comfy-ink lg:h-15.5 lg:px-6"
     >
       <span
         class="inline-block translate-y-0.5 text-2xl leading-none font-bold lg:text-3xl"

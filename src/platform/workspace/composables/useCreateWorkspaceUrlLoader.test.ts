@@ -1,5 +1,5 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCreateWorkspaceUrlLoader } from './useCreateWorkspaceUrlLoader'
 
@@ -17,7 +17,7 @@ vi.mock(
 const mockRouteQuery = vi.hoisted(() => ({
   value: {} as Record<string, string>
 }))
-const mockRouterReplace = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
+const mockRouterReplace = vi.hoisted(() => vi.fn(async () => undefined))
 
 vi.mock('vue-router', () => ({
   useRoute: () => ({
@@ -29,7 +29,7 @@ vi.mock('vue-router', () => ({
 }))
 
 const mockShowTeamWorkspacesDialog = vi.hoisted(() =>
-  vi.fn().mockResolvedValue(undefined)
+  vi.fn(async () => undefined)
 )
 
 vi.mock('@/services/dialogService', () => ({
@@ -40,13 +40,8 @@ vi.mock('@/services/dialogService', () => ({
 
 describe('useCreateWorkspaceUrlLoader', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockRouteQuery.value = {}
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue(null)
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   describe('loadCreateWorkspaceFromUrl', () => {

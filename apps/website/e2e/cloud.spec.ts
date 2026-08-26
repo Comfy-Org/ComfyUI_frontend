@@ -1,4 +1,6 @@
-import { expect, test } from '@playwright/test'
+import { expect } from '@playwright/test'
+
+import { test } from './fixtures/blockExternalMedia'
 
 test.describe('Cloud page @smoke', () => {
   test.beforeEach(async ({ page }) => {
@@ -6,7 +8,7 @@ test.describe('Cloud page @smoke', () => {
   })
 
   test('has correct title', async ({ page }) => {
-    await expect(page).toHaveTitle('Comfy Cloud — AI in the Cloud')
+    await expect(page).toHaveTitle('Comfy Cloud - AI in the Cloud')
   })
 
   test('HeroSection heading and subtitle are visible', async ({ page }) => {
@@ -38,18 +40,16 @@ test.describe('Cloud page @smoke', () => {
     }
   })
 
-  test('AIModelsSection heading and 5 model cards are visible', async ({
+  test('AIModelsSection heading and 6 model cards are visible', async ({
     page
   }) => {
-    await expect(
-      page.getByRole('heading', { name: /leading AI models/i })
-    ).toBeVisible()
+    const heading = page.getByRole('heading', { name: /leading AI models/i })
+    await expect(heading).toBeVisible()
 
-    const grid = page.locator('.grid', {
-      has: page.getByText('Grok Imagine')
-    })
+    const section = heading.locator('xpath=ancestor::section')
+    const grid = section.locator('.grid')
     const modelCards = grid.locator('a[href="https://comfy.org/workflows"]')
-    await expect(modelCards).toHaveCount(5)
+    await expect(modelCards).toHaveCount(6)
   })
 
   test('AIModelsSection CTA links to workflows', async ({ page }) => {
@@ -86,13 +86,6 @@ test.describe('Cloud page @smoke', () => {
     const cards = section.locator('a[href]')
     await expect(cards).toHaveCount(3)
   })
-
-  test('FAQSection heading is visible with 15 items', async ({ page }) => {
-    await expect(page.getByRole('heading', { name: /FAQ/i })).toBeVisible()
-
-    const faqButtons = page.locator('button[aria-controls^="faq-panel-"]')
-    await expect(faqButtons).toHaveCount(15)
-  })
 })
 
 test.describe('Cloud FAQ accordion @interaction', () => {
@@ -100,38 +93,42 @@ test.describe('Cloud FAQ accordion @interaction', () => {
     await page.goto('/cloud')
   })
 
-  test('all FAQs are expanded by default', async ({ page }) => {
-    await expect(
-      page.getByText(/Comfy Cloud is a version of ComfyUI/i)
-    ).toBeVisible()
-  })
-
-  test('clicking an expanded FAQ collapses it', async ({ page }) => {
-    const firstQuestion = page.getByRole('button', {
-      name: /What is Comfy Cloud/i
-    })
-    await firstQuestion.scrollIntoViewIfNeeded()
-    await firstQuestion.click()
-
+  test('all FAQs are collapsed by default', async ({ page }) => {
     await expect(
       page.getByText(/Comfy Cloud is a version of ComfyUI/i)
     ).toBeHidden()
   })
 
-  test('clicking a collapsed FAQ expands it again', async ({ page }) => {
+  test('clicking a collapsed FAQ expands it', async ({ page }) => {
     const firstQuestion = page.getByRole('button', {
       name: /What is Comfy Cloud/i
     })
     await firstQuestion.scrollIntoViewIfNeeded()
-
+    await expect(firstQuestion).toHaveAttribute('aria-expanded', 'false')
     await firstQuestion.click()
-    await expect(
-      page.getByText(/Comfy Cloud is a version of ComfyUI/i)
-    ).toBeHidden()
 
-    await firstQuestion.click()
     await expect(
       page.getByText(/Comfy Cloud is a version of ComfyUI/i)
     ).toBeVisible()
+  })
+
+  test('clicking an expanded FAQ collapses it again', async ({ page }) => {
+    const firstQuestion = page.getByRole('button', {
+      name: /What is Comfy Cloud/i
+    })
+    await firstQuestion.scrollIntoViewIfNeeded()
+    await expect(firstQuestion).toHaveAttribute('aria-expanded', 'false')
+
+    await firstQuestion.click()
+    await expect(firstQuestion).toHaveAttribute('aria-expanded', 'true')
+    await expect(
+      page.getByText(/Comfy Cloud is a version of ComfyUI/i)
+    ).toBeVisible()
+
+    await firstQuestion.click()
+    await expect(firstQuestion).toHaveAttribute('aria-expanded', 'false')
+    await expect(
+      page.getByText(/Comfy Cloud is a version of ComfyUI/i)
+    ).toBeHidden()
   })
 })

@@ -1,5 +1,3 @@
-/* eslint-disable vue/one-component-per-file */
-
 import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -11,7 +9,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import WidgetImageCrop from '@/components/imagecrop/WidgetImageCrop.vue'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import {
   createMockLGraphNode,
@@ -85,7 +84,7 @@ const ImageCropHarness = defineComponent({
       modelValue,
       imageEl,
       containerEl,
-      ...useImageCrop(props.nodeId as NodeId, {
+      ...useImageCrop(toNodeId(props.nodeId), {
         imageEl,
         containerEl,
         modelValue
@@ -185,7 +184,7 @@ function setupImageLayout(vm: CropVm, nw: number, nh: number) {
 
 const harnessCleanups: Array<() => void> = []
 
-async function mountHarness(nodeId: NodeId = 2 as NodeId) {
+async function mountHarness(nodeId: NodeId = toNodeId(2)) {
   const el = document.createElement('div')
   document.body.appendChild(el)
   const app = createApp(ImageCropHarness, { nodeId: Number(nodeId) })
@@ -233,7 +232,6 @@ describe('useImageCrop', () => {
 
   beforeEach(() => {
     resizeObserverCallbacks.length = 0
-    vi.clearAllMocks()
     outputStore = {
       nodeOutputs: reactive<Record<string, unknown>>({}),
       nodePreviewImages: reactive<Record<string, unknown>>({}),
@@ -483,6 +481,30 @@ describe('useImageCrop', () => {
     expect(vm.modelValue.x).toBe(50)
   })
 
+  it('resizes from the top edge, moving y and shrinking height', async () => {
+    const vm = await mountHarness()
+    setupImageLayout(vm, 500, 500)
+    vm.modelValue = { x: 50, y: 100, width: 120, height: 200 }
+
+    const captureEl = document.createElement('div')
+    captureEl.setPointerCapture = vi.fn()
+    captureEl.releasePointerCapture = vi.fn()
+
+    const resizeStart = vm.handleResizeStart as (
+      e: PointerEvent,
+      dir: string
+    ) => void
+    const resizeMove = vm.handleResizeMove as (e: PointerEvent) => void
+    const resizeEnd = vm.handleResizeEnd as (e: PointerEvent) => void
+
+    resizeStart(makePointerEvent('pointerdown', captureEl, 100, 100), 'top')
+    resizeMove(makePointerEvent('pointermove', captureEl, 100, 150))
+    resizeEnd(makePointerEvent('pointerup', captureEl, 100, 150))
+
+    expect(vm.modelValue.y).toBeGreaterThan(100)
+    expect(vm.modelValue.height).toBeLessThan(200)
+  })
+
   it('applies a preset aspect ratio and clamps height to the image', async () => {
     const vm = await mountHarness()
     setupImageLayout(vm, 800, 500)
@@ -602,7 +624,6 @@ describe('WidgetImageCrop', () => {
 
   beforeEach(() => {
     resizeObserverCallbacks.length = 0
-    vi.clearAllMocks()
     const outputStore: MockOutputStore = {
       nodeOutputs: reactive<Record<string, unknown>>({}),
       nodePreviewImages: reactive<Record<string, unknown>>({}),
@@ -635,7 +656,7 @@ describe('WidgetImageCrop', () => {
       container: attach,
       props: {
         widget,
-        nodeId: 2 as NodeId,
+        nodeId: toNodeId(2),
         modelValue: { x: 0, y: 0, width: 100, height: 100 }
       },
       global: {
@@ -667,7 +688,7 @@ describe('WidgetImageCrop', () => {
       container: attach,
       props: {
         widget,
-        nodeId: 2 as NodeId,
+        nodeId: toNodeId(2),
         modelValue: { x: 0, y: 0, width: 200, height: 200 }
       },
       global: {
@@ -711,7 +732,7 @@ describe('WidgetImageCrop', () => {
       container: attach,
       props: {
         widget,
-        nodeId: 2 as NodeId,
+        nodeId: toNodeId(2),
         modelValue: { x: 0, y: 0, width: 200, height: 200 }
       },
       global: {
@@ -757,7 +778,7 @@ describe('WidgetImageCrop', () => {
       container: attach,
       props: {
         widget,
-        nodeId: 2 as NodeId,
+        nodeId: toNodeId(2),
         modelValue: { x: 0, y: 0, width: 100, height: 100 }
       },
       global: {

@@ -1,7 +1,7 @@
-import { pull } from 'es-toolkit/compat'
-
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { LLink } from '@/lib/litegraph/src/LLink'
+import { LLink, replaceLinkTopology } from '@/lib/litegraph/src/LLink'
+import { mintLinkId } from '../idAllocation'
+import { anchorRerouteChain } from '@/lib/litegraph/src/Reroute'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
 import type {
   INodeInputSlot,
@@ -56,15 +56,12 @@ export class SubgraphOutput extends SubgraphSlot {
     const existingLink = this.getLinks().at(0)
     if (existingLink != null) {
       subgraph.beforeChange()
-
-      existingLink.disconnect(subgraph, 'input')
-      const resolved = existingLink.resolve(subgraph)
-      const links = resolved.output?.links
-      if (links) pull(links, existingLink.id)
     }
 
+    const linkId = mintLinkId(subgraph.state)
+
     const link = new LLink(
-      ++subgraph.state.lastLinkId,
+      linkId,
       slot.type,
       node.id,
       outputIndex,
@@ -73,33 +70,18 @@ export class SubgraphOutput extends SubgraphSlot {
       afterRerouteId
     )
 
-    // Add to graph links list
-    subgraph._links.set(link.id, link)
+    if (!replaceLinkTopology(subgraph, existingLink, link)) {
+      if (existingLink) subgraph.afterChange()
+      return
+    }
+
+    existingLink?.disconnect(subgraph, 'input')
 
     // Set link ID in each slot
     this.linkIds[0] = link.id
-    slot.links ??= []
-    slot.links.push(link.id)
 
-    // Reroutes
-    const reroutes = LLink.getReroutes(subgraph, link)
-    for (const reroute of reroutes) {
-      reroute.linkIds.add(link.id)
-      if (reroute.floating) delete reroute.floating
-      reroute._dragging = undefined
-    }
-
-    // If this is the terminus of a floating link, remove it
-    const lastReroute = reroutes.at(-1)
-    if (lastReroute) {
-      for (const linkId of lastReroute.floatingLinkIds) {
-        const link = subgraph.floatingLinks.get(linkId)
-        if (link?.parentId === lastReroute.id) {
-          subgraph.removeFloatingLink(link)
-        }
-      }
-    }
-    subgraph._version++
+    anchorRerouteChain(subgraph, link)
+    subgraph.incrementVersion()
 
     node.onConnectionsChange?.(
       NodeSlotType.OUTPUT,
@@ -108,6 +90,10 @@ export class SubgraphOutput extends SubgraphSlot {
       link,
       slot
     )
+    if (subgraph.getLink(link.id) !== link) {
+      subgraph.afterChange()
+      return
+    }
 
     subgraph.afterChange()
 
@@ -140,11 +126,8 @@ export class SubgraphOutput extends SubgraphSlot {
   override isValidTarget(
     fromSlot: INodeInputSlot | INodeOutputSlot | SubgraphInput | SubgraphOutput
   ): boolean {
-    if (isNodeSlot(fromSlot)) {
-      return (
-        'links' in fromSlot &&
-        LiteGraph.isValidConnection(fromSlot.type, this.type)
-      )
+    if (isNodeSlot(fromSlot) && 'links' in fromSlot) {
+      return LiteGraph.isValidConnection(fromSlot.type, this.type)
     }
 
     if (isSubgraphInput(fromSlot)) {
@@ -160,9 +143,7 @@ export class SubgraphOutput extends SubgraphSlot {
       const link = subgraph.links[linkId]
       if (!link) continue
       subgraph.removeLink(linkId)
-      const { output, outputNode } = link.resolve(subgraph)
-      if (output)
-        output.links = output.links?.filter((id) => id !== linkId) ?? null
+      const { outputNode } = link.resolve(subgraph)
       outputNode?.onConnectionsChange?.(
         NodeSlotType.OUTPUT,
         link.origin_slot,

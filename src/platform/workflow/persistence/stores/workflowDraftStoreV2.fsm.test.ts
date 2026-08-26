@@ -3,7 +3,7 @@ import type { Command } from 'fast-check'
 
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { MAX_DRAFTS } from '../base/draftTypes'
 import { useWorkflowDraftStoreV2 } from './workflowDraftStoreV2'
@@ -301,18 +301,6 @@ class StoreResetCommand implements Command<PersistenceModel, PersistenceReal> {
 // ── Test Suite ──────────────────────────────────────────────────────
 
 describe('workflowDraftStoreV2 FSM', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    localStorage.clear()
-    sessionStorage.clear()
-    vi.clearAllMocks()
-  })
-
-  afterEach(() => {
-    localStorage.clear()
-    sessionStorage.clear()
-  })
-
   // 33+ unique paths to exceed MAX_DRAFTS (32) and exercise LRU eviction
   const pathPool = fc.constantFrom(
     ...Array.from({ length: 35 }, (_, i) => `workflows/${i}.json`)

@@ -1,6 +1,9 @@
 import { defineStore } from 'pinia'
 import { markRaw } from 'vue'
 
+import type { NodeId } from '@/types/nodeId'
+import type { SlotId } from '@/types/slotId'
+
 type SlotEntry = {
   el: HTMLElement
   index: number
@@ -9,31 +12,31 @@ type SlotEntry = {
 }
 
 type NodeEntry = {
-  nodeId: string
-  slots: Map<string, SlotEntry>
+  nodeId: NodeId
+  slots: Map<SlotId, SlotEntry>
   stopWatch?: () => void
 }
 
 export const useNodeSlotRegistryStore = defineStore('nodeSlotRegistry', () => {
-  const registry = markRaw(new Map<string, NodeEntry>())
+  const registry = markRaw(new Map<NodeId, NodeEntry>())
 
-  function getNode(nodeId: string) {
+  function getNode(nodeId: NodeId) {
     return registry.get(nodeId)
   }
 
-  function ensureNode(nodeId: string) {
+  function ensureNode(nodeId: NodeId) {
     let node = registry.get(nodeId)
     if (!node) {
       node = {
         nodeId,
-        slots: markRaw(new Map<string, SlotEntry>())
+        slots: markRaw(new Map<SlotId, SlotEntry>())
       }
       registry.set(nodeId, node)
     }
     return node
   }
 
-  function deleteNode(nodeId: string) {
+  function deleteNode(nodeId: NodeId) {
     registry.delete(nodeId)
   }
 
@@ -41,7 +44,7 @@ export const useNodeSlotRegistryStore = defineStore('nodeSlotRegistry', () => {
     registry.clear()
   }
 
-  function getNodeIds(): string[] {
+  function getNodeIds(): NodeId[] {
     return Array.from(registry.keys())
   }
 

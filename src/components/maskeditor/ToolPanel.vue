@@ -4,16 +4,19 @@
       <div
         v-for="tool in allTools"
         :key="tool"
-        :class="[
-          'maskEditor_toolPanelContainer hover:bg-secondary-background-hover',
-          { maskEditor_toolPanelContainerSelected: currentTool === tool }
-        ]"
+        data-testid="tool-button"
+        :data-tool="tool"
+        :class="
+          cn(
+            'maskEditor_toolPanelContainer text-base-foreground hover:bg-secondary-background-hover',
+            currentTool === tool && 'maskEditor_toolPanelContainerSelected'
+          )
+        "
         @click="onToolSelect(tool)"
       >
-        <div
-          class="flex items-center justify-center"
-          v-html="iconsHtml[tool]"
-        ></div>
+        <div class="flex items-center justify-center">
+          <MaskEditorToolIcon :tool="tool" />
+        </div>
         <div class="maskEditor_toolPanelIndicator"></div>
       </div>
     </div>
@@ -23,8 +26,12 @@
       :title="t('maskEditor.clickToResetZoom')"
       @click="onResetZoom"
     >
-      <span class="text-sm text-text-secondary">{{ zoomText }}</span>
-      <span class="text-xs text-text-secondary">{{ dimensionsText }}</span>
+      <span data-testid="zoom-percentage" class="text-sm text-text-secondary">{{
+        zoomText
+      }}</span>
+      <span data-testid="zoom-dimensions" class="text-xs text-text-secondary">{{
+        dimensionsText
+      }}</span>
     </div>
   </div>
 </template>
@@ -33,8 +40,10 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
+import MaskEditorToolIcon from '@/components/maskeditor/MaskEditorToolIcon.vue'
 import type { useToolManager } from '@/composables/maskeditor/useToolManager'
-import { iconsHtml } from '@/extensions/core/maskeditor/constants'
 import type { Tools } from '@/extensions/core/maskeditor/types'
 import { allTools } from '@/extensions/core/maskeditor/types'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'

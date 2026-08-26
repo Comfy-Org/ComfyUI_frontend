@@ -1,9 +1,22 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch, nextTick } from 'vue'
+import { useTemplateRefsList, useTimeoutFn } from '@vueuse/core'
+import {
+  computed,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref,
+  shallowRef,
+  watch
+} from 'vue'
 
+import { lockScroll, unlockScroll } from '../../composables/scrollLock'
+import { prefersReducedMotion } from '../../composables/useReducedMotion'
+import type { GalleryItem } from '../../data/gallery'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import type { GalleryItem } from './GallerySection.vue'
+import BrandButton from '../common/BrandButton.vue'
+import GalleryItemAttribution from './GalleryItemAttribution.vue'
 
 const {
   items,
@@ -19,14 +32,14 @@ const emit = defineEmits<{ close: [] }>()
 
 const activeIndex = ref(initialIndex)
 const transitioning = ref(false)
-const thumbnailRefs = ref<HTMLButtonElement[]>([])
+const thumbnailRefs = useTemplateRefsList<HTMLButtonElement>()
 
 const activeItem = computed(() => items[activeIndex.value])
 
 function scrollToActiveThumbnail() {
   void nextTick(() => {
     thumbnailRefs.value[activeIndex.value]?.scrollIntoView({
-      behavior: 'smooth',
+      behavior: prefersReducedMotion() ? 'instant' : 'smooth',
       block: 'nearest',
       inline: 'center'
     })
@@ -35,15 +48,32 @@ function scrollToActiveThumbnail() {
 
 watch(activeIndex, scrollToActiveThumbnail)
 
+const pendingIndex = shallowRef(-1)
+
+const { start: startFadeIn, stop: stopFadeIn } = useTimeoutFn(
+  () => {
+    transitioning.value = false
+  },
+  50,
+  { immediate: false }
+)
+
+const { start: startFadeOut, stop: stopFadeOut } = useTimeoutFn(
+  () => {
+    activeIndex.value = pendingIndex.value
+    startFadeIn()
+  },
+  200,
+  { immediate: false }
+)
+
 function selectThumbnail(index: number) {
   if (index === activeIndex.value || transitioning.value) return
+  stopFadeOut()
+  stopFadeIn()
+  pendingIndex.value = index
   transitioning.value = true
-  setTimeout(() => {
-    activeIndex.value = index
-    setTimeout(() => {
-      transitioning.value = false
-    }, 50)
-  }, 200)
+  startFadeOut()
 }
 
 function handleBackdropClick(e: MouseEvent) {
@@ -70,13 +100,13 @@ watch(
 const dialogRef = ref<HTMLDialogElement>()
 
 onMounted(() => {
-  document.body.style.overflow = 'hidden'
+  lockScroll()
   dialogRef.value?.showModal()
   scrollToActiveThumbnail()
 })
 
 onUnmounted(() => {
-  document.body.style.overflow = ''
+  unlockScroll()
 })
 </script>
 
@@ -92,21 +122,21 @@ onUnmounted(() => {
     >
       <!-- Close button -->
       <button
-        aria-label="Close"
-        class="border-primary-comfy-yellow bg-primary-comfy-ink hover:bg-primary-comfy-yellow group absolute right-10 z-10 flex size-10 cursor-pointer items-center justify-center rounded-2xl border-2 transition-colors lg:top-8 lg:right-26"
+        :aria-label="t('gallery.detail.close', locale)"
+        class="border-primary-comfy-yellow hover:bg-primary-comfy-yellow group absolute right-10 z-10 flex size-10 cursor-pointer items-center justify-center rounded-2xl border-2 bg-primary-comfy-ink transition-colors lg:top-8 lg:right-26"
         @click="emit('close')"
       >
         <span
-          class="bg-primary-comfy-yellow group-hover:bg-primary-comfy-ink size-5 transition-colors"
+          class="bg-primary-comfy-yellow size-5 transition-colors group-hover:bg-primary-comfy-ink"
           style="mask: url('/icons/close.svg') center / contain no-repeat"
         />
       </button>
 
       <!-- Desktop layout -->
-      <div class="relative hidden w-full items-start pt-12 lg:flex">
+      <div class="relative hidden min-h-0 w-full flex-1 pt-12 lg:flex">
         <!-- Left: info card -->
         <div
-          class="bg-primary-comfy-yellow text-primary-comfy-ink rounded-5xl relative z-10 flex w-80 shrink-0 flex-col justify-between self-start p-8"
+          class="bg-primary-comfy-yellow rounded-5xl relative z-10 flex w-80 shrink-0 flex-col justify-between self-start p-8 text-primary-comfy-ink"
         >
           <div
             :class="transitioning ? 'opacity-0' : 'opacity-100'"
@@ -114,20 +144,21 @@ onUnmounted(() => {
           >
             <h2 class="text-2xl font-bold">{{ activeItem.title }}</h2>
             <p class="mt-2 text-xs">
-              {{ t('gallery.card.by', locale) }}
-              <span class="font-bold">{{ activeItem.userAlias }}</span>
-              {{ t('gallery.card.and', locale) }}
-              <span class="font-bold">{{ activeItem.teamAlias }}</span>
-              {{ t('gallery.card.teamUsing', locale) }}
-              <span class="font-bold">{{ activeItem.tool }}</span>
+              <GalleryItemAttribution
+                :item="activeItem"
+                highlight-class="font-bold"
+                :locale
+              />
             </p>
           </div>
-          <a
+          <BrandButton
             :href="activeItem.href"
-            class="border-primary-comfy-ink hover:bg-primary-comfy-ink hover:text-primary-comfy-yellow mt-24 inline-flex items-center justify-center rounded-full border-2 px-6 py-3 text-sm font-bold tracking-wider uppercase transition-colors"
+            variant="outline-dark"
+            size="lg"
+            class="mt-24"
           >
             {{ t('gallery.detail.visitHub', locale) }}
-          </a>
+          </BrandButton>
         </div>
 
         <!-- Node link connector (horizontal) -->
@@ -139,13 +170,20 @@ onUnmounted(() => {
 
         <!-- Right: large image -->
         <div
-          class="border-primary-comfy-yellow bg-primary-comfy-ink rounded-5xl flex-1 overflow-hidden border-2 p-4"
+          class="border-primary-comfy-yellow rounded-5xl flex max-h-full min-h-0 flex-1 items-center justify-center overflow-hidden border-2 bg-primary-comfy-ink p-4"
         >
-          <img
-            :src="activeItem.image"
-            :alt="activeItem.title"
+          <component
+            :is="activeItem.video ? 'video' : 'img'"
+            :key="activeItem.video ?? activeItem.image"
+            :src="activeItem.video ?? activeItem.image"
+            :alt="activeItem.video ? undefined : activeItem.title"
+            v-bind="
+              activeItem.video
+                ? { autoplay: true, loop: true, muted: true, playsinline: true }
+                : {}
+            "
             :class="transitioning ? 'opacity-0' : 'opacity-100'"
-            class="size-full rounded-4xl object-cover transition-opacity duration-200"
+            class="mx-auto max-h-full max-w-full rounded-4xl object-contain transition-opacity duration-200"
           />
         </div>
       </div>
@@ -153,16 +191,26 @@ onUnmounted(() => {
       <!-- Mobile layout -->
       <div
         class="flex w-full flex-1 flex-col items-center justify-between pt-12 lg:hidden"
+        style="
+          max-height: calc(100vh - 9.5rem); /* nav 5rem + padding 4.5rem */
+        "
       >
         <!-- Image -->
         <div
-          class="border-primary-comfy-yellow bg-primary-comfy-ink flex w-full flex-1 items-center overflow-hidden rounded-4xl border-2 p-3"
+          class="border-primary-comfy-yellow flex w-full flex-1 items-center overflow-hidden rounded-4xl border-2 bg-primary-comfy-ink p-3"
         >
-          <img
-            :src="activeItem.image"
-            :alt="activeItem.title"
+          <component
+            :is="activeItem.video ? 'video' : 'img'"
+            :key="activeItem.video ?? activeItem.image"
+            :src="activeItem.video ?? activeItem.image"
+            :alt="activeItem.video ? undefined : activeItem.title"
+            v-bind="
+              activeItem.video
+                ? { autoplay: true, loop: true, muted: true, playsinline: true }
+                : {}
+            "
             :class="transitioning ? 'opacity-0' : 'opacity-100'"
-            class="w-full rounded-3xl object-cover transition-opacity duration-200"
+            class="mx-auto max-h-full max-w-full rounded-3xl object-contain transition-opacity duration-200"
           />
         </div>
 
@@ -175,7 +223,7 @@ onUnmounted(() => {
 
         <!-- Info card -->
         <div
-          class="bg-primary-comfy-yellow text-primary-comfy-ink w-full rounded-4xl p-6"
+          class="bg-primary-comfy-yellow w-full rounded-4xl p-6 text-primary-comfy-ink"
         >
           <div
             :class="transitioning ? 'opacity-0' : 'opacity-100'"
@@ -183,34 +231,34 @@ onUnmounted(() => {
           >
             <h2 class="text-xl font-bold">{{ activeItem.title }}</h2>
             <p class="mt-2 text-xs">
-              {{ t('gallery.card.by', locale) }}
-              <span class="font-bold">{{ activeItem.userAlias }}</span>
-              {{ t('gallery.card.and', locale) }}
-              <span class="font-bold">{{ activeItem.teamAlias }}</span>
-              {{ t('gallery.card.teamUsing', locale) }}
-              <span class="font-bold">{{ activeItem.tool }}</span>
+              <GalleryItemAttribution
+                :item="activeItem"
+                highlight-class="font-bold"
+                :locale
+              />
             </p>
           </div>
-          <a
+          <BrandButton
             :href="activeItem.href"
-            class="border-primary-comfy-ink hover:bg-primary-comfy-ink hover:text-primary-comfy-yellow mt-6 inline-flex w-full items-center justify-center rounded-full border-2 px-6 py-3 text-sm font-bold tracking-wider uppercase transition-colors"
+            variant="outline-dark"
+            size="lg"
+            class="mt-6 w-full"
           >
             {{ t('gallery.detail.visitHub', locale) }}
-          </a>
+          </BrandButton>
         </div>
       </div>
 
       <!-- Thumbnail strip -->
-      <div class="mx-auto mt-6 max-w-full overflow-x-auto px-6">
+      <div
+        class="mx-auto mt-6 h-16 max-w-full scrollbar-none overflow-x-auto px-6 lg:h-30"
+      >
         <div class="flex items-end gap-3">
           <button
             v-for="(item, i) in items"
-            :ref="
-              (el: any) => {
-                if (el) thumbnailRefs[i] = el
-              }
-            "
+            :ref="thumbnailRefs.set"
             :key="i"
+            :aria-label="item.title"
             class="shrink-0 cursor-pointer overflow-hidden rounded-xl border-0 bg-transparent p-0 transition-all duration-200"
             :class="
               i === activeIndex
@@ -219,9 +267,19 @@ onUnmounted(() => {
             "
             @click="selectThumbnail(i)"
           >
+            <video
+              v-if="item.video"
+              :src="item.video"
+              muted
+              playsinline
+              class="size-full object-cover"
+            />
             <img
+              v-else
               :src="item.image"
               :alt="item.title"
+              loading="lazy"
+              decoding="async"
               class="size-full object-cover"
             />
           </button>

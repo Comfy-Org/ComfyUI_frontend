@@ -1,13 +1,20 @@
 import { createI18n } from 'vue-i18n'
 
-// ESLint cannot statically resolve dynamic imports with relative paths in template strings,
-// but these are valid ES module imports that Vite processes correctly at build time.
+import {
+  getDefaultLocale,
+  localeDefinitions,
+  resolveSupportedLocale
+} from '@/locales/localeConfig'
+import type { SupportedLocale } from '@/locales/localeConfig'
+import { normalizeI18nKey } from '@/utils/formatUtil'
 
 // Import only English locale eagerly as the default/fallback
 import enCommands from './locales/en/commands.json' with { type: 'json' }
 import en from './locales/en/main.json' with { type: 'json' }
 import enNodes from './locales/en/nodeDefs.json' with { type: 'json' }
 import enSettings from './locales/en/settings.json' with { type: 'json' }
+
+export { resolveSupportedLocale }
 
 function buildLocale<
   M extends Record<string, unknown>,
@@ -23,75 +30,6 @@ function buildLocale<
   } as M & { nodeDefs: N; commands: C; settings: S }
 }
 
-// Locale loader map - dynamically import locales only when needed
-const localeLoaders: Record<
-  string,
-  () => Promise<{ default: Record<string, unknown> }>
-> = {
-  ar: () => import('./locales/ar/main.json'),
-  es: () => import('./locales/es/main.json'),
-  fa: () => import('./locales/fa/main.json'),
-  fr: () => import('./locales/fr/main.json'),
-  ja: () => import('./locales/ja/main.json'),
-  ko: () => import('./locales/ko/main.json'),
-  ru: () => import('./locales/ru/main.json'),
-  tr: () => import('./locales/tr/main.json'),
-  zh: () => import('./locales/zh/main.json'),
-  'zh-TW': () => import('./locales/zh-TW/main.json'),
-  'pt-BR': () => import('./locales/pt-BR/main.json')
-}
-
-const nodeDefsLoaders: Record<
-  string,
-  () => Promise<{ default: Record<string, unknown> }>
-> = {
-  ar: () => import('./locales/ar/nodeDefs.json'),
-  es: () => import('./locales/es/nodeDefs.json'),
-  fa: () => import('./locales/fa/nodeDefs.json'),
-  fr: () => import('./locales/fr/nodeDefs.json'),
-  ja: () => import('./locales/ja/nodeDefs.json'),
-  ko: () => import('./locales/ko/nodeDefs.json'),
-  ru: () => import('./locales/ru/nodeDefs.json'),
-  tr: () => import('./locales/tr/nodeDefs.json'),
-  zh: () => import('./locales/zh/nodeDefs.json'),
-  'zh-TW': () => import('./locales/zh-TW/nodeDefs.json'),
-  'pt-BR': () => import('./locales/pt-BR/nodeDefs.json')
-}
-
-const commandsLoaders: Record<
-  string,
-  () => Promise<{ default: Record<string, unknown> }>
-> = {
-  ar: () => import('./locales/ar/commands.json'),
-  es: () => import('./locales/es/commands.json'),
-  fa: () => import('./locales/fa/commands.json'),
-  fr: () => import('./locales/fr/commands.json'),
-  ja: () => import('./locales/ja/commands.json'),
-  ko: () => import('./locales/ko/commands.json'),
-  ru: () => import('./locales/ru/commands.json'),
-  tr: () => import('./locales/tr/commands.json'),
-  zh: () => import('./locales/zh/commands.json'),
-  'zh-TW': () => import('./locales/zh-TW/commands.json'),
-  'pt-BR': () => import('./locales/pt-BR/commands.json')
-}
-
-const settingsLoaders: Record<
-  string,
-  () => Promise<{ default: Record<string, unknown> }>
-> = {
-  ar: () => import('./locales/ar/settings.json'),
-  es: () => import('./locales/es/settings.json'),
-  fa: () => import('./locales/fa/settings.json'),
-  fr: () => import('./locales/fr/settings.json'),
-  ja: () => import('./locales/ja/settings.json'),
-  ko: () => import('./locales/ko/settings.json'),
-  ru: () => import('./locales/ru/settings.json'),
-  tr: () => import('./locales/tr/settings.json'),
-  zh: () => import('./locales/zh/settings.json'),
-  'zh-TW': () => import('./locales/zh-TW/settings.json'),
-  'pt-BR': () => import('./locales/pt-BR/settings.json')
-}
-
 // Track which locales have been loaded
 const loadedLocales = new Set<string>(['en'])
 
@@ -102,37 +40,33 @@ const loadingLocales = new Map<string, Promise<void>>()
 const customNodesI18nData: Record<string, unknown> = {}
 
 /**
- * Dynamically load a locale and its associated files (nodeDefs, commands, settings)
+ * Dynamically load a shipped locale's bundles (nodeDefs, commands, settings).
+ * Callers must pre-resolve untrusted input via `resolveSupportedLocale` or
+ * `setActiveLocale`, which is the boundary helper for arbitrary input.
  */
-export async function loadLocale(locale: string): Promise<void> {
+export async function loadLocale(locale: SupportedLocale): Promise<void> {
   if (loadedLocales.has(locale)) {
     return
   }
 
-  // If already loading, return the existing promise to prevent duplicate loads
   const existingLoad = loadingLocales.get(locale)
   if (existingLoad) {
-    return existingLoad
-  }
-
-  const loader = localeLoaders[locale]
-  const nodeDefsLoader = nodeDefsLoaders[locale]
-  const commandsLoader = commandsLoaders[locale]
-  const settingsLoader = settingsLoaders[locale]
-
-  if (!loader || !nodeDefsLoader || !commandsLoader || !settingsLoader) {
-    console.warn(`Locale "${locale}" is not supported`)
+    await existingLoad
     return
   }
 
-  // Create and track the loading promise
+  const loaders = localeDefinitions[locale].loaders
+  if (!loaders) {
+    return
+  }
+
   const loadPromise = (async () => {
     try {
       const [main, nodes, commands, settings] = await Promise.all([
-        loader(),
-        nodeDefsLoader(),
-        commandsLoader(),
-        settingsLoader()
+        loaders.main(),
+        loaders.nodeDefs(),
+        loaders.commands(),
+        loaders.settings()
       ])
 
       const messages = buildLocale(
@@ -152,13 +86,33 @@ export async function loadLocale(locale: string): Promise<void> {
       console.error(`Failed to load locale "${locale}":`, error)
       throw error
     } finally {
-      // Clean up the loading promise once complete
       loadingLocales.delete(locale)
     }
   })()
 
   loadingLocales.set(locale, loadPromise)
-  return loadPromise
+  await loadPromise
+}
+
+/**
+ * Boundary helper for arbitrary locale input (settings, browser preferences):
+ * resolves to a shipped tag, loads it, and updates the active locale.
+ *
+ * Returns the resolved tag so callers can detect a clamp (e.g. a stale stored
+ * `Comfy.Locale` from an older build) and self-heal persisted state.
+ */
+export async function setActiveLocale(
+  input: string | readonly string[] | null | undefined
+): Promise<SupportedLocale> {
+  const resolved = resolveSupportedLocale(input)
+  if (typeof input === 'string' && input && input !== resolved) {
+    // Single warn — gated on a real clamp event, never per missing key — so
+    // stale stored locales surface in logs without re-introducing #1867's spam.
+    console.warn(`Locale "${input}" not shipped; using "${resolved}"`)
+  }
+  await loadLocale(resolved)
+  i18n.global.locale.value = resolved
+  return resolved
 }
 
 /**
@@ -179,18 +133,169 @@ export function mergeCustomNodesI18n(i18nData: Record<string, unknown>): void {
   }
 }
 
-// Only include English in the initial bundle
-const messages = {
-  en: buildLocale(en, enNodes, enCommands, enSettings)
+export type NodeDefTextField = 'display_name' | 'description'
+
+/**
+ * Raw `/object_info` text, kept out of the vue-i18n message tree so English
+ * never reaches the message compiler. Rebuilt on every fetch, so a def that
+ * stops sending a field stops resolving to the previous value.
+ */
+const backendNodeText = new Map<
+  string,
+  Partial<Record<NodeDefTextField, string>>
+>()
+
+export function setBackendNodeText(
+  defs: Iterable<{
+    name?: unknown
+    display_name?: unknown
+    description?: unknown
+  }>
+): void {
+  backendNodeText.clear()
+  for (const def of defs) {
+    if (typeof def?.name !== 'string') continue
+    const entry: Partial<Record<NodeDefTextField, string>> = {}
+    if (typeof def.display_name === 'string' && def.display_name) {
+      entry.display_name = def.display_name
+    }
+    if (typeof def.description === 'string' && def.description) {
+      entry.description = def.description
+    }
+    if (entry.display_name ?? entry.description)
+      backendNodeText.set(def.name, entry)
+  }
 }
 
-// Type for locale messages - inferred from the English locale structure
-type LocaleMessages = typeof messages.en
+function customNodesProvide(nodeName: string, path: string): boolean {
+  const data = customNodesI18nData[i18n.global.locale.value]
+  if (typeof data !== 'object' || data === null) return false
+  const nodeDefs = (data as Record<string, unknown>)['nodeDefs']
+  if (typeof nodeDefs !== 'object' || nodeDefs === null) return false
+
+  for (const candidate of nodeDefKeyCandidates(nodeName)) {
+    let cursor: unknown = nodeDefs
+    for (const segment of `${candidate}.${path}`.split('.')) {
+      if (typeof cursor !== 'object' || cursor === null) {
+        cursor = undefined
+        break
+      }
+      cursor = (cursor as Record<string, unknown>)[segment]
+    }
+    if (typeof cursor === 'string') return true
+  }
+  return false
+}
+
+/**
+ * Generated locales key dotted node ids flat (`my_node`). Locales written by
+ * hand before that convention nest them (`my.node`), which vue-i18n resolves by
+ * path traversal, so both are tried.
+ */
+function nodeDefKeyCandidates(nodeName: string): string[] {
+  const normalized = normalizeI18nKey(nodeName)
+  return normalized === nodeName ? [normalized] : [normalized, nodeName]
+}
+
+/**
+ * Reads a resolved locale message. `st` compiles it; `stRaw` does not.
+ */
+type MessageReader = (key: string, fallbackMessage: string) => string
+
+function translateNodeDefText(
+  nodeName: string,
+  path: string,
+  fallback: string,
+  read: MessageReader
+): string {
+  for (const candidate of nodeDefKeyCandidates(nodeName)) {
+    const key = `nodeDefs.${candidate}.${path}`
+    if (te(key)) return read(key, fallback)
+  }
+  return fallback
+}
+
+/**
+ * Resolves node text in priority order.
+ *
+ * `en`: custom-node `/api/i18n` translations, then the live backend value, then
+ * the bundled snapshot. English is the source language, so a backend value is
+ * data rather than a translation and is returned without being compiled.
+ *
+ * Other locales: translations stay authoritative, falling back to the live
+ * backend value rather than the stale English snapshot.
+ */
+function resolveNodeDefPath(
+  nodeName: string,
+  path: string,
+  backend: string | undefined,
+  fallback: string,
+  read: MessageReader
+): string {
+  if (customNodesProvide(nodeName, path)) {
+    return translateNodeDefText(nodeName, path, fallback, read)
+  }
+  if (i18n.global.locale.value === 'en' && backend !== undefined) return backend
+
+  return translateNodeDefText(nodeName, path, fallback, read)
+}
+
+export function resolveNodeDefText(
+  field: NodeDefTextField,
+  nodeName: string,
+  backendValue?: string
+): string {
+  const backend = backendValue ?? backendNodeText.get(nodeName)?.[field]
+  const fallback = backend ?? (field === 'display_name' ? nodeName : '')
+
+  return resolveNodeDefPath(nodeName, field, backend, fallback, st)
+}
+
+/** Slot fields the generated locales carry text for. */
+export type NodeDefSlotTextField = 'name' | 'tooltip'
+
+/**
+ * `name` is escaped by `scripts/nodeDefLocaleSerializer.ts` and has to be
+ * compiled back; `tooltip` is stored verbatim and must never reach the message
+ * compiler, or a literal `{'@'}` would render to the user.
+ */
+function slotMessageReader(field: NodeDefSlotTextField): MessageReader {
+  return field === 'tooltip' ? stRaw : st
+}
+
+export function resolveNodeDefSlotText(
+  field: NodeDefSlotTextField,
+  nodeName: string,
+  slot: string | number,
+  backendValue?: string,
+  fallbackValue = ''
+): string {
+  const slotPath =
+    typeof slot === 'string'
+      ? `inputs.${normalizeI18nKey(slot)}`
+      : `outputs.${slot}`
+
+  return resolveNodeDefPath(
+    nodeName,
+    `${slotPath}.${field}`,
+    backendValue,
+    backendValue ?? fallbackValue,
+    slotMessageReader(field)
+  )
+}
+
+// Only include English in the initial bundle; other locales lazy-load.
+const enMessages = buildLocale(en, enNodes, enCommands, enSettings)
+type LocaleMessages = typeof enMessages
+
+const messages: Partial<Record<SupportedLocale, LocaleMessages>> = {
+  en: enMessages
+}
 
 export const i18n = createI18n({
   // Must set `false`, as Vue I18n Legacy API is for Vue 2
   legacy: false,
-  locale: navigator.language.split('-')[0] || 'en',
+  locale: getDefaultLocale(),
   fallbackLocale: 'en',
   escapeParameter: true,
   messages,
@@ -201,15 +306,47 @@ export const i18n = createI18n({
 })
 
 /** Convenience shorthand: i18n.global */
-export const { t, te, d } = i18n.global
+export const t: (typeof i18n.global)['t'] = i18n.global.t
+// vue-i18n 11's te() consults the fallback locale; default to the active
+// locale to preserve the v9 behavior our fallback paths rely on.
+export const te: (typeof i18n.global)['te'] = (key, locale) =>
+  i18n.global.te(key, locale ?? i18n.global.locale.value)
+export const d: (typeof i18n.global)['d'] = i18n.global.d
+const tm = i18n.global.tm
+
+function rawTranslationOrFallback(key: string, fallbackMessage: string) {
+  const message = tm(key)
+  return typeof message === 'string' ? message : fallbackMessage
+}
 
 /**
  * Safe translation function that returns the fallback message if the key is not found.
+ * Invalid message syntax falls back to the raw locale message instead of crashing.
  *
  * @param key - The key to translate.
  * @param fallbackMessage - The fallback message to use if the key is not found.
  */
 export function st(key: string, fallbackMessage: string) {
-  // The normal defaultMsg overload fails in some cases for custom nodes
-  return te(key) ? t(key) : fallbackMessage
+  if (!te(key)) return fallbackMessage
+
+  try {
+    // The normal defaultMsg overload fails in some cases for custom nodes
+    return t(key)
+  } catch (error) {
+    if (!(error instanceof SyntaxError)) throw error
+    return rawTranslationOrFallback(key, fallbackMessage)
+  }
+}
+
+/**
+ * Safe raw translation function for strings that may contain i18n syntax.
+ *
+ * @param key - The key for the raw locale message.
+ * @param fallbackMessage - The fallback message to use if the key is not found
+ * or the locale message is not a string.
+ */
+export function stRaw(key: string, fallbackMessage: string) {
+  if (!te(key)) return fallbackMessage
+
+  return rawTranslationOrFallback(key, fallbackMessage)
 }

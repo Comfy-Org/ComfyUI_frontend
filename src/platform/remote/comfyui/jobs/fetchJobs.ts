@@ -11,17 +11,34 @@ import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/wo
 import type { JobId } from '@/schemas/apiSchema'
 
 import type {
+  JobAssetsResult,
   JobDetail,
   JobListItem,
+  JobOutputAsset,
   JobStatus,
   RawJobListItem
 } from './jobTypes'
-import { zJobDetail, zJobsListResponse, zWorkflowContainer } from './jobTypes'
+import {
+  zJobAssetsResponse,
+  zJobDetail,
+  zJobsListResponse,
+  zWorkflowContainer
+} from './jobTypes'
 
 interface FetchJobsRawResult {
   jobs: RawJobListItem[]
   total: number
   offset: number
+  limit: number
+  hasMore: boolean
+}
+
+export interface FetchHistoryPageResult {
+  jobs: JobListItem[]
+  total: number
+  offset: number
+  limit: number
+  hasMore: boolean
 }
 
 /**
@@ -40,13 +57,25 @@ async function fetchJobsRaw(
     const res = await fetchApi(url)
     if (!res.ok) {
       console.error(`[Jobs API] Failed to fetch jobs: ${res.status}`)
-      return { jobs: [], total: 0, offset: 0 }
+      return {
+        jobs: [],
+        total: 0,
+        offset,
+        limit: maxItems,
+        hasMore: false
+      }
     }
     const data = zJobsListResponse.parse(await res.json())
-    return { jobs: data.jobs, total: data.pagination.total, offset }
+    return {
+      jobs: data.jobs,
+      total: data.pagination.total,
+      offset: data.pagination.offset,
+      limit: data.pagination.limit,
+      hasMore: data.pagination.has_more
+    }
   } catch (error) {
     console.error('[Jobs API] Error fetching jobs:', error)
-    return { jobs: [], total: 0, offset: 0 }
+    return { jobs: [], total: 0, offset, limit: maxItems, hasMore: false }
   }
 }
 
@@ -76,14 +105,33 @@ export async function fetchHistory(
   maxItems: number = 200,
   offset: number = 0
 ): Promise<JobListItem[]> {
-  const { jobs, total } = await fetchJobsRaw(
+  const { jobs } = await fetchHistoryPage(fetchApi, maxItems, offset)
+  return jobs
+}
+
+/**
+ * Fetches one page of history with server-provided pagination metadata.
+ */
+export async function fetchHistoryPage(
+  fetchApi: (url: string) => Promise<Response>,
+  maxItems: number = 200,
+  offset: number = 0
+): Promise<FetchHistoryPageResult> {
+  const result = await fetchJobsRaw(
     fetchApi,
     ['completed', 'failed', 'cancelled'],
     maxItems,
     offset
   )
+
   // History gets priority based on total count (lower than queue)
-  return assignPriority(jobs, total - offset)
+  return {
+    jobs: assignPriority(result.jobs, result.total - result.offset),
+    total: result.total,
+    offset: result.offset,
+    limit: result.limit,
+    hasMore: result.hasMore
+  }
 }
 
 /**
@@ -134,6 +182,65 @@ export async function fetchJobDetail(
     console.error(`Failed to fetch job detail for job ${jobId}:`, error)
     return undefined
   }
+}
+
+// Server caps the page size at 500; a single job's outputs fit well within a
+// few pages, so this bound also guards against a runaway pagination loop.
+const JOB_ASSETS_PAGE_SIZE = 500
+const JOB_ASSETS_MAX_PAGES = 20
+
+/**
+ * Fetches all output assets for a job from GET /api/jobs/{job_id}/assets,
+ * paginating internally. Each asset carries a real asset id plus per-output
+ * node context (node_id, output_key, output_index) resolved server-side by
+ * content hash. Degrades to whatever was accumulated on any failure (e.g. the
+ * endpoint is unavailable on non-cloud distributions) so callers can still
+ * render; `complete` is false whenever pages are known to be missing, so a
+ * truncated list is distinguishable from a full one and callers can decline to
+ * cache it.
+ */
+export async function fetchJobAssets(
+  fetchApi: (url: string) => Promise<Response>,
+  jobId: JobId
+): Promise<JobAssetsResult> {
+  const assets: JobOutputAsset[] = []
+  let offset = 0
+
+  try {
+    for (let page = 0; page < JOB_ASSETS_MAX_PAGES; page++) {
+      const url = `/jobs/${encodeURIComponent(jobId)}/assets?limit=${JOB_ASSETS_PAGE_SIZE}&offset=${offset}`
+      const res = await fetchApi(url)
+      if (!res.ok) {
+        console.warn(
+          `[Jobs API] Failed to fetch assets for job ${jobId}: ${res.status}`
+        )
+        return { assets, complete: false }
+      }
+
+      const data = zJobAssetsResponse.parse(await res.json())
+      assets.push(...data.assets)
+
+      const hasMore = data.pagination?.has_more ?? false
+      if (!hasMore) return { assets, complete: true }
+
+      if (data.assets.length === 0) {
+        console.warn(
+          `[Jobs API] Job ${jobId} assets page reported has_more with an empty page; stopping pagination`
+        )
+        return { assets, complete: false }
+      }
+
+      offset += data.assets.length
+    }
+  } catch (error) {
+    console.error(`Failed to fetch assets for job ${jobId}:`, error)
+    return { assets, complete: false }
+  }
+
+  console.warn(
+    `[Jobs API] Job ${jobId} assets pagination hit the ${JOB_ASSETS_MAX_PAGES}-page cap; returning a truncated list`
+  )
+  return { assets, complete: false }
 }
 
 /**

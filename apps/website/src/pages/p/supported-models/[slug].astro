@@ -1,0 +1,112 @@
+---
+import type { GetStaticPaths } from 'astro'
+import BaseLayout from '../../../layouts/BaseLayout.astro'
+import FAQSplit01 from '../../../components/blocks/FAQSplit01.vue'
+import ModelHeroSection from '../../../components/models/ModelHeroSection.vue'
+import { models, getModelBySlug } from '../../../config/models'
+import { t } from '../../../i18n/translations'
+import {
+  absoluteUrl,
+  jsonLdId,
+  pageContext,
+  softwareApplicationNode,
+} from '../../../utils/jsonLd'
+import { buildModelFaqs, modelFaqJsonLd } from '../../../utils/modelFaq'
+import { getPageDescription } from '../../../utils/modelSeoCopy'
+
+export const getStaticPaths: GetStaticPaths = () => {
+  return models.map((model) => ({
+    params: { slug: model.slug }
+  }))
+}
+
+const { slug } = Astro.params
+const model = getModelBySlug(slug as string)!
+
+if (model.canonicalSlug) {
+  return Astro.redirect(`/p/supported-models/${model.canonicalSlug}/`, 301)
+}
+
+const { displayName } = model
+
+const pageTitle = `${displayName} in ComfyUI`
+const pageDescription = getPageDescription(model)
+
+const { siteUrl, locale, url } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+const softwareId = jsonLdId(url, 'software')
+const software = softwareApplicationNode({
+  siteUrl,
+  id: softwareId,
+  name: displayName,
+  url,
+  applicationCategory: 'MultimediaApplication',
+  operatingSystem: 'Any',
+})
+const faqs = buildModelFaqs(model, locale)
+const whatIsDescription = faqs[0].answer
+const faqPage = modelFaqJsonLd(faqs, jsonLdId(url, 'faq'))
+---
+
+<BaseLayout
+  title={`${pageTitle} - Comfy`}
+  description={pageDescription}
+  ogImage={model.thumbnailUrl}
+  mainEntityId={softwareId}
+  breadcrumbs={[
+    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
+    {
+      name: t('models.breadcrumb.models', locale),
+      url: absoluteUrl(Astro.site, '/p/supported-models'),
+    },
+    { name: displayName },
+  ]}
+  extraJsonLd={[software, faqPage]}
+>
+
+  <ModelHeroSection
+    displayName={displayName}
+    huggingFaceUrl={model.huggingFaceUrl}
+    docsUrl={model.docsUrl}
+    blogUrl={model.blogUrl}
+    hubSlug={model.hubSlug}
+    workflowCount={model.workflowCount}
+    directory={model.directory}
+  />
+
+  <section class="mx-auto max-w-7xl px-6 py-16 lg:px-8">
+    <h2 class="text-2xl font-bold text-primary-comfy-canvas lg:text-3xl">
+      {t('models.whatIs.heading').replace('{name}', displayName)}
+    </h2>
+    <p class="mt-4 max-w-3xl text-base/relaxed text-primary-comfy-canvas/70 lg:text-lg/relaxed">
+      {whatIsDescription}
+    </p>
+    {model.docsUrl && (
+      <a
+        href={model.docsUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="mt-6 inline-block text-primary-comfy-yellow hover:underline"
+      >
+        {t('models.whatIs.tutorialLink')}
+      </a>
+    )}
+  </section>
+
+  <section>
+    {/* TODO: workflow gallery — pulls from hub API */}
+  </section>
+
+  <section>
+    {/* TODO: shared HowComfyWorks component */}
+  </section>
+
+  <FAQSplit01
+    heading={t('models.faq.heading', locale)}
+    faqs={faqs}
+    client:visible
+  />
+</BaseLayout>

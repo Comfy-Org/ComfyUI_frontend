@@ -9,6 +9,7 @@ import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataS
 import { getAssetUrl } from '@/platform/assets/utils/assetUrlUtil'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
 import { getJobWorkflow } from '@/services/jobOutputCache'
+import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 
 /**
  * Extract workflow from AssetItem using jobs API
@@ -51,11 +52,11 @@ export async function extractWorkflowFromAsset(asset: AssetItem): Promise<{
       // Handle both string and object workflow data
       const workflow =
         typeof workflowData.workflow === 'string'
-          ? JSON.parse(workflowData.workflow)
-          : workflowData.workflow
+          ? parseJsonWithNonFinite<ComfyWorkflowJSON>(workflowData.workflow)
+          : (workflowData.workflow as ComfyWorkflowJSON)
 
       return {
-        workflow: workflow as ComfyWorkflowJSON,
+        workflow,
         filename: baseFilename
       }
     }

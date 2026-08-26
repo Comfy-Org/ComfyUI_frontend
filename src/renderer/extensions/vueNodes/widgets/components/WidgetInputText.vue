@@ -12,7 +12,8 @@
         :class="
           cn(
             WidgetInputBaseClass,
-            'w-full px-4 hover:bg-component-node-widget-background-hovered',
+            'w-full px-4',
+            !isReadOnly && 'hover:bg-component-node-widget-background-hovered',
             size === 'large' ? 'py-3 text-sm' : 'py-2 text-xs',
             loading && 'pl-9'
           )
@@ -32,7 +33,7 @@ import { computed } from 'vue'
 
 import Loader from '@/components/loader/Loader.vue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 import {
   INPUT_EXCLUDED_PROPS,
   filterWidgetProps

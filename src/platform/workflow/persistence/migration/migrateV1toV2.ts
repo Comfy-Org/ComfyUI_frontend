@@ -18,7 +18,7 @@ import {
 } from '../base/storageIO'
 
 /**
- * V1 draft snapshot structure (from draftCache.ts)
+ * Legacy V1 draft snapshot structure.
  */
 interface V1DraftSnapshot {
   data: string
@@ -176,6 +176,8 @@ export function cleanupV1Data(workspaceId: string = getWorkspaceId()): void {
   try {
     localStorage.removeItem(V1_KEYS.drafts(workspaceId))
     localStorage.removeItem(V1_KEYS.order(workspaceId))
+    localStorage.removeItem(V1_KEYS.openPaths)
+    localStorage.removeItem(V1_KEYS.activeIndex)
     console.warn('[V2 Migration] Cleaned up V1 data')
   } catch {
     // Ignore cleanup errors

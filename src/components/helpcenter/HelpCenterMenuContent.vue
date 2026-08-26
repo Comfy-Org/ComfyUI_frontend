@@ -14,6 +14,7 @@
           type="button"
           class="help-menu-item"
           :class="{ 'more-item': menuItem.key === 'more' }"
+          :data-testid="`help-menu-item-${menuItem.key}`"
           role="menuitem"
           @click="menuItem.action"
           @mouseenter="onMenuItemHover(menuItem.key, $event)"
@@ -103,6 +104,7 @@
           v-for="release in releaseStore.recentReleases"
           :key="release.id || release.version"
           class="release-menu-item flex h-12 min-h-6 cursor-pointer items-center gap-2 self-stretch rounded-sm p-2 transition-colors hover:bg-interface-menu-component-surface-hovered"
+          :data-testid="`help-release-item-${release.version}`"
           role="button"
           tabindex="0"
           @click="onReleaseClick(release)"
@@ -161,6 +163,7 @@ import PuzzleIcon from '@/components/icons/PuzzleIcon.vue'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { buildFeedbackTypeformUrl } from '@/platform/support/config'
 import { useTelemetry } from '@/platform/telemetry'
 import type { ReleaseNote } from '@/platform/updates/common/releaseService'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
@@ -304,7 +307,7 @@ const menuItems = computed<MenuItem[]>(() => {
         trackResourceClick('help_feedback', isCloud || isNightly)
         if (isCloud || isNightly) {
           window.open(
-            'https://form.typeform.com/to/q7azbWPi',
+            buildFeedbackTypeformUrl('help-center'),
             '_blank',
             'noopener,noreferrer'
           )
@@ -364,6 +367,22 @@ const menuItems = computed<MenuItem[]>(() => {
     }
   ]
 
+  // System status page - only in cloud distributions
+  if (isCloud) {
+    items.push({
+      key: 'status',
+      type: 'item',
+      icon: 'icon-[lucide--activity]',
+      label: t('helpCenter.systemStatus'),
+      showExternalIcon: true,
+      action: () => {
+        trackResourceClick('status', true)
+        openExternalLink(staticUrls.status)
+        emit('close')
+      }
+    })
+  }
+
   // Extension manager - only in non-cloud distributions
   if (!isCloud) {
     items.push({
@@ -417,7 +436,8 @@ const trackResourceClick = (
     | 'github'
     | 'help_feedback'
     | 'manager'
-    | 'release_notes',
+    | 'release_notes'
+    | 'status',
   isExternal: boolean
 ): void => {
   telemetry?.trackHelpResourceClicked({

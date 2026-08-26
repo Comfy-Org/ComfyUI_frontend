@@ -7,7 +7,8 @@ import type {
   INodeInputSlot,
   INodeOutputSlot,
   LinkNetwork,
-  Point
+  Point,
+  SlotIndex
 } from '@/lib/litegraph/src/interfaces'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
 import type { NodeLike } from '@/lib/litegraph/src/types/NodeLike'
@@ -20,7 +21,7 @@ import type { RenderLink } from './RenderLink'
 export class ToInputRenderLink implements RenderLink {
   readonly toType = 'input'
   readonly fromPos: Point
-  readonly fromSlotIndex: number
+  readonly fromSlotIndex: SlotIndex
   fromDirection: LinkDirection = LinkDirection.RIGHT
 
   constructor(
@@ -111,7 +112,6 @@ export class ToInputRenderLink implements RenderLink {
     for (const reroute of originalReroutes) {
       if (reroute.id === fromReroute?.id) break
 
-      reroute.removeLink(link)
       if (reroute.totalLinks === 0) {
         if (link.isFloating) {
           // Cannot float from both sides - remove

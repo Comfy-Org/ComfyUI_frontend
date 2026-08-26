@@ -65,52 +65,57 @@
       />
     </ComboboxAnchor>
 
-    <ComboboxContent
-      v-if="suggestions.length > 0"
-      position="popper"
-      :side-offset="4"
-      :class="
-        cn(
-          'z-50 max-h-60 w-(--reka-combobox-trigger-width) overflow-y-auto',
-          'rounded-lg border border-border-default bg-base-background p-1 shadow-lg'
-        )
-      "
-    >
-      <ComboboxItem
-        v-for="(suggestion, index) in suggestions"
-        :key="suggestionKey(suggestion, index)"
-        :value="suggestionValue(suggestion)"
+    <ComboboxPortal>
+      <ComboboxContent
+        v-if="suggestions.length > 0"
+        position="popper"
+        :side-offset="4"
+        :style="[contentStyle, liftedContentStyle]"
         :class="
           cn(
-            'cursor-pointer rounded-sm px-3 py-2 text-sm outline-none',
-            'data-highlighted:bg-secondary-background-hover'
+            'z-3000 max-h-60 w-(--reka-combobox-trigger-width) overflow-y-auto',
+            'rounded-lg border border-border-default bg-base-background p-1 shadow-lg'
           )
         "
-        @select.prevent="onSelectSuggestion(suggestion)"
       >
-        <slot name="suggestion" :suggestion>
-          {{ suggestionLabel(suggestion) }}
-        </slot>
-      </ComboboxItem>
-    </ComboboxContent>
+        <ComboboxItem
+          v-for="(suggestion, index) in suggestions"
+          :key="suggestionKey(suggestion, index)"
+          :value="suggestionValue(suggestion)"
+          :class="
+            cn(
+              'cursor-pointer rounded-sm px-3 py-2 text-sm outline-none',
+              'data-highlighted:bg-secondary-background-hover'
+            )
+          "
+          @select.prevent="onSelectSuggestion(suggestion)"
+        >
+          <slot name="suggestion" :suggestion>
+            {{ suggestionLabel(suggestion) }}
+          </slot>
+        </ComboboxItem>
+      </ComboboxContent>
+    </ComboboxPortal>
   </ComboboxRoot>
 </template>
 
 <script setup lang="ts" generic="T">
-import type { HTMLAttributes } from 'vue'
+import type { HTMLAttributes, StyleValue } from 'vue'
 
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 import {
   ComboboxAnchor,
   ComboboxContent,
   ComboboxInput,
   ComboboxItem,
+  ComboboxPortal,
   ComboboxRoot
 } from 'reka-ui'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 import type { SearchInputVariants } from './searchInput.variants'
 import {
   searchInputSizeConfig,
@@ -129,7 +134,8 @@ const {
   suggestions = [],
   optionLabel,
   optionKey,
-  class: className
+  class: className,
+  contentStyle
 } = defineProps<{
   placeholder?: string
   icon?: string
@@ -141,6 +147,7 @@ const {
   optionLabel?: keyof T & string
   optionKey?: keyof T & string
   class?: HTMLAttributes['class']
+  contentStyle?: StyleValue
 }>()
 
 const emit = defineEmits<{
@@ -154,6 +161,7 @@ const modelValue = defineModel<string>({ required: true })
 const inputRef = ref<InstanceType<typeof ComboboxInput> | null>(null)
 const isOpen = ref(false)
 const isComposing = ref(false)
+const liftedContentStyle = useModalLiftedZIndex(isOpen)
 
 function focus() {
   inputRef.value?.$el?.focus()

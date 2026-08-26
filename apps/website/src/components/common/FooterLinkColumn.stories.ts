@@ -21,7 +21,7 @@ export const Default: Story = {
   args: {
     title: 'Product',
     links: [
-      { label: 'Local', href: '/local' },
+      { label: 'Desktop', href: '/download' },
       { label: 'Cloud', href: '/cloud' },
       { label: 'API', href: '/api' },
       { label: 'Enterprise', href: '/enterprise' }

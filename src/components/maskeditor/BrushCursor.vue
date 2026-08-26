@@ -1,6 +1,7 @@
 <template>
   <div
     id="maskEditor_brush"
+    data-testid="brush-cursor"
     :style="{
       position: 'absolute',
       opacity: brushOpacity,
@@ -15,6 +16,7 @@
   >
     <div
       id="maskEditor_brushPreviewGradient"
+      data-testid="brush-cursor-gradient"
       :style="{
         display: gradientVisible ? 'block' : 'none',
         background: gradientBackground
@@ -24,6 +26,7 @@
 </template>
 
 <script setup lang="ts">
+import { useElementBounding } from '@vueuse/core'
 import { computed } from 'vue'
 
 import {
@@ -38,6 +41,8 @@ const { containerRef } = defineProps<{
 }>()
 
 const store = useMaskEditorStore()
+const { left: containerOffsetLeft, top: containerOffsetTop } =
+  useElementBounding(() => containerRef)
 
 const brushOpacity = computed(() => {
   return store.brushVisible ? 1 : 0
@@ -55,24 +60,20 @@ const brushSize = computed(() => {
 })
 
 const brushLeft = computed(() => {
-  const dialogRect = containerRef?.getBoundingClientRect()
-  const dialogOffsetLeft = dialogRect?.left || 0
   return (
     store.cursorPoint.x +
     store.panOffset.x -
     brushRadius.value -
-    dialogOffsetLeft
+    containerOffsetLeft.value
   )
 })
 
 const brushTop = computed(() => {
-  const dialogRect = containerRef?.getBoundingClientRect()
-  const dialogOffsetTop = dialogRect?.top || 0
   return (
     store.cursorPoint.y +
     store.panOffset.y -
     brushRadius.value -
-    dialogOffsetTop
+    containerOffsetTop.value
   )
 })
 

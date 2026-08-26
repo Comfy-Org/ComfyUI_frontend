@@ -12,6 +12,7 @@
       :style="{ width: `${totalPercent}%` }"
     />
     <div
+      data-testid="queue-inline-progress-node-fill"
       class="pointer-events-none absolute bottom-0 left-0 h-[3px] bg-interface-panel-job-progress-secondary transition-[width]"
       :style="{ width: `${currentNodePercent}%` }"
     />
@@ -22,7 +23,7 @@
 import { computed } from 'vue'
 
 import { useQueueProgress } from '@/composables/queue/useQueueProgress'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { hidden = false, radiusClass = 'rounded-[7px]' } = defineProps<{
   hidden?: boolean

@@ -2,12 +2,13 @@ import { debounce } from 'es-toolkit/compat'
 import { computed, effectScope, onScopeDispose, ref, toValue, watch } from 'vue'
 
 import type { ComputedRef, EffectScope, MaybeRefOrGetter, Ref } from 'vue'
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
-import type { UUID } from '@/lib/litegraph/src/utils/uuid'
+import type { UUID } from '@/utils/uuid'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { widgetId } from '@/types/widgetId'
 
 import { curveDataToFloatLUT } from '@/components/curve/curveUtils'
 import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
@@ -46,6 +47,7 @@ export function useGLSLPreview(
   nodeMaybe: MaybeRefOrGetter<LGraphNode | null | undefined>
 ) {
   const lastError = ref<string | null>(null)
+  const hideExecutedOutput = ref(false)
 
   const nodeRef = computed(() => toValue(nodeMaybe) ?? null)
 
@@ -77,7 +79,8 @@ export function useGLSLPreview(
             isGLSLNode,
             isGLSLSubgraphNode,
             lastError,
-            isActive
+            isActive,
+            hideExecutedOutput
           )
         )!
       } else if (!related && innerScope) {
@@ -98,6 +101,7 @@ export function useGLSLPreview(
 
   return {
     isActive: computed(() => isActive.value),
+    hideExecutedOutput: computed(() => hideExecutedOutput.value),
     lastError,
     dispose() {
       innerDispose?.()
@@ -114,12 +118,24 @@ export function useGLSLPreview(
  * independently of the component lifecycle.
  * Returns a dispose function.
  */
+type InputImage = HTMLImageElement | ImageBitmap
+
+function loadImageFromUrl(url: string): Promise<HTMLImageElement | null> {
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.onload = () => resolve(img)
+    img.onerror = () => resolve(null)
+    img.src = url
+  })
+}
+
 function createInnerPreview(
   nodeRef: ComputedRef<LGraphNode | null>,
   isGLSLNode: ComputedRef<boolean>,
   isGLSLSubgraphNode: ComputedRef<boolean>,
   lastError: Ref<string | null>,
-  isActiveOut: Ref<boolean>
+  isActiveOut: Ref<boolean>,
+  hideExecutedOutput: Ref<boolean>
 ): () => void {
   const widgetValueStore = useWidgetValueStore()
   const nodeOutputStore = useNodeOutputStore()
@@ -133,7 +149,9 @@ function createInnerPreview(
     const node = nodeRef.value
     if (!node?.isSubgraphNode()) return null
     const subgraph = node.subgraph as Subgraph | undefined
-    return subgraph?.nodes.find((n) => n.type === GLSL_NODE_TYPE) ?? null
+    const shaders =
+      subgraph?.nodes.filter((n) => n.type === GLSL_NODE_TYPE) ?? []
+    return shaders.length === 1 ? shaders[0] : null
   })()
 
   const ownerSubgraphNode = (() => {
@@ -154,7 +172,10 @@ function createInnerPreview(
     () => nodeRef.value?.graph?.rootGraph?.id as UUID | undefined
   )
 
-  const nodeId = computed(() => nodeRef.value?.id as NodeId | undefined)
+  const nodeId = computed(() => {
+    const id = nodeRef.value?.id
+    return id == null ? undefined : id
+  })
 
   const hasExecutionOutput = computed(() => {
     const node = nodeRef.value
@@ -194,17 +215,14 @@ function createInnerPreview(
     if (isGLSLNode.value) {
       const nId = nodeId.value
       if (nId == null) return undefined
-      return widgetValueStore.getWidget(gId, nId, 'fragment_shader')?.value as
-        | string
-        | undefined
+      return widgetValueStore.getWidget(widgetId(gId, nId, 'fragment_shader'))
+        ?.value as string | undefined
     }
 
     const inner = innerGLSLNode
     if (inner) {
       return widgetValueStore.getWidget(
-        gId,
-        inner.id as NodeId,
-        'fragment_shader'
+        widgetId(gId, inner.id, 'fragment_shader')
       )?.value as string | undefined
     }
 
@@ -231,7 +249,7 @@ function createInnerPreview(
     const node = nodeRef.value
     const inner = innerGLSLNode
     if (!node?.isSubgraphNode() || !inner) return null
-    return extractUniformSources(inner, node.subgraph as Subgraph)
+    return extractUniformSources(inner, node.subgraph as Subgraph, node)
   })
 
   const { floatValues, intValues, boolValues, curveValues } = useGLSLUniforms(
@@ -242,71 +260,63 @@ function createInnerPreview(
     rendererConfig
   )
 
-  function loadInputImages(): void {
-    const node = nodeRef.value
-    if (!node?.inputs || !renderer) return
+  async function resolveSlotImage(
+    node: LGraphNode,
+    slot: number
+  ): Promise<InputImage | null> {
+    const upstreamNode = node.getInputNode(slot)
+    if (upstreamNode?.imgs?.length) return upstreamNode.imgs[0]
 
-    if (isGLSLSubgraphNode.value) {
-      let imageSlotIndex = 0
-      for (let slot = 0; slot < node.inputs.length; slot++) {
-        if (node.inputs[slot].type !== 'IMAGE') continue
-        const upstreamNode = node.getInputNode(slot)
-        if (upstreamNode?.imgs?.length) {
-          renderer.bindInputImage(imageSlotIndex, upstreamNode.imgs[0])
-        }
-        imageSlotIndex++
-      }
-      return
+    if (upstreamNode) {
+      const url = nodeOutputStore.getNodeImageUrls(upstreamNode)?.[0]
+      if (url) return await loadImageFromUrl(url)
     }
 
-    let imageSlotIndex = 0
-    for (let slot = 0; slot < node.inputs.length; slot++) {
-      const input = node.inputs[slot]
-      if (!input.name.startsWith('images.image')) continue
+    const owner = ownerSubgraphNode
+    if (owner) return getImageThroughSubgraphBoundary(node, slot, owner) ?? null
 
-      const upstreamNode = node.getInputNode(slot)
-      if (upstreamNode?.imgs?.length) {
-        renderer.bindInputImage(imageSlotIndex, upstreamNode.imgs[0])
-        imageSlotIndex++
-        continue
-      }
-
-      const owner = ownerSubgraphNode
-      if (owner) {
-        const img = getImageThroughSubgraphBoundary(node, slot, owner)
-        if (img) {
-          renderer.bindInputImage(imageSlotIndex, img)
-        }
-      }
-      imageSlotIndex++
-    }
+    return null
   }
 
-  function getCustomResolution(): [number, number] | null {
+  async function resolveInputImages(): Promise<{
+    images: (InputImage | null)[]
+    expected: number
+  }> {
+    const node = nodeRef.value
+    if (!node?.inputs) return { images: [], expected: 0 }
+
+    const images: (InputImage | null)[] = []
+    let expected = 0
+    for (let slot = 0; slot < node.inputs.length; slot++) {
+      const input = node.inputs[slot]
+      const isImageInput = isGLSLSubgraphNode.value
+        ? input.type === 'IMAGE'
+        : input.name.startsWith('images.image')
+      if (!isImageInput) continue
+      if (input.link != null) expected++
+
+      images.push(await resolveSlotImage(node, slot))
+    }
+    return { images, expected }
+  }
+
+  const customResolution = computed((): [number, number] | null => {
     const gId = graphId.value
     if (!gId) return null
 
-    const sizeModeNodeId = innerGLSLNode
-      ? (innerGLSLNode.id as NodeId)
-      : nodeId.value
+    const sizeModeNodeId = innerGLSLNode ? innerGLSLNode.id : nodeId.value
     if (sizeModeNodeId == null) return null
 
     const sizeMode = widgetValueStore.getWidget(
-      gId,
-      sizeModeNodeId,
-      'size_mode'
+      widgetId(gId, sizeModeNodeId, 'size_mode')
     )
     if (sizeMode?.value !== 'custom') return null
 
     const widthWidget = widgetValueStore.getWidget(
-      gId,
-      sizeModeNodeId,
-      'size_mode.width'
+      widgetId(gId, sizeModeNodeId, 'size_mode.width')
     )
     const heightWidget = widgetValueStore.getWidget(
-      gId,
-      sizeModeNodeId,
-      'size_mode.height'
+      widgetId(gId, sizeModeNodeId, 'size_mode.height')
     )
     if (!widthWidget || !heightWidget) return null
 
@@ -314,52 +324,17 @@ function createInnerPreview(
       normalizeDimension(widthWidget.value),
       normalizeDimension(heightWidget.value)
     )
-  }
+  })
 
-  function getResolution(): [number, number] {
-    const custom = getCustomResolution()
+  function getResolution(images: InputImage[]): [number, number] {
+    const custom = customResolution.value
     if (custom) return custom
 
-    const node = nodeRef.value
-    if (!node?.inputs) return [DEFAULT_SIZE, DEFAULT_SIZE]
-
-    if (isGLSLSubgraphNode.value) {
-      for (let slot = 0; slot < node.inputs.length; slot++) {
-        if (node.inputs[slot].type !== 'IMAGE') continue
-        const upstreamNode = node.getInputNode(slot)
-        if (!upstreamNode?.imgs?.length) continue
-        const img = upstreamNode.imgs[0]
-        return clampResolution(
-          img.naturalWidth || DEFAULT_SIZE,
-          img.naturalHeight || DEFAULT_SIZE
-        )
-      }
-      return [DEFAULT_SIZE, DEFAULT_SIZE]
-    }
-
-    for (let slot = 0; slot < node.inputs.length; slot++) {
-      const input = node.inputs[slot]
-      if (!input.name.startsWith('images.image')) continue
-
-      const upstreamNode = node.getInputNode(slot)
-      if (upstreamNode?.imgs?.length) {
-        const img = upstreamNode.imgs[0]
-        return clampResolution(
-          img.naturalWidth || DEFAULT_SIZE,
-          img.naturalHeight || DEFAULT_SIZE
-        )
-      }
-
-      const owner = ownerSubgraphNode
-      if (owner) {
-        const img = getImageThroughSubgraphBoundary(node, slot, owner)
-        if (img) {
-          return clampResolution(
-            img.naturalWidth || DEFAULT_SIZE,
-            img.naturalHeight || DEFAULT_SIZE
-          )
-        }
-      }
+    const img = images[0]
+    if (img) {
+      const w = img instanceof ImageBitmap ? img.width : img.naturalWidth
+      const h = img instanceof ImageBitmap ? img.height : img.naturalHeight
+      return clampResolution(w || DEFAULT_SIZE, h || DEFAULT_SIZE)
     }
 
     return [DEFAULT_SIZE, DEFAULT_SIZE]
@@ -368,8 +343,24 @@ function createInnerPreview(
   let disposed = false
   let lastRendererConfig: GLSLRendererConfig | null = null
 
+  function revokePreview(): void {
+    const inner = innerGLSLNode
+    if (inner) {
+      nodeOutputStore.revokePreviewsByLocatorId(nodeToNodeLocatorId(inner))
+      return
+    }
+    const node = nodeRef.value
+    if (node)
+      nodeOutputStore.revokePreviewsByLocatorId(nodeToNodeLocatorId(node))
+  }
+
   function ensureRenderer(): ReturnType<typeof useGLSLRenderer> {
     const config = rendererConfig.value
+    if (renderer?.isContextLost()) {
+      renderer.dispose()
+      renderer = null
+      rendererReady = false
+    }
     if (renderer && lastRendererConfig) {
       const changed =
         config.maxInputs !== lastRendererConfig.maxInputs ||
@@ -395,11 +386,22 @@ function createInnerPreview(
     const source = shaderSource.value
     if (!source || !shouldRender.value) return
 
+    const { images, expected } = await resolveInputImages()
+    if (requestId !== renderRequestId || disposed) return
+
+    const resolved = images.filter((img): img is InputImage => img != null)
+    if (expected > 0 && resolved.length === 0) {
+      revokePreview()
+      if (isGLSLNode.value) hideExecutedOutput.value = false
+      return
+    }
+
     const r = ensureRenderer()
 
     try {
+      const [w, h] = getResolution(resolved)
+
       if (!rendererReady) {
-        const [w, h] = getResolution()
         if (!r.init(w, h)) {
           lastError.value = 'WebGL2 not available'
           return
@@ -410,14 +412,18 @@ function createInnerPreview(
       const result = r.compileFragment(source)
       if (!result.success) {
         lastError.value = result.log
+        console.warn('[GLSL] shader compilation failed:', result.log)
         return
       }
       lastError.value = null
 
-      const [w, h] = getResolution()
       r.setResolution(w, h)
 
-      loadInputImages()
+      for (let i = 0; i < images.length; i++) {
+        const img = images[i]
+        if (img) r.bindInputImage(i, img)
+        else r.clearInputImage(i)
+      }
 
       for (let i = 0; i < floatValues.value.length; i++) {
         r.setFloatUniform(i, floatValues.value[i])
@@ -452,6 +458,7 @@ function createInnerPreview(
       } finally {
         releaseSharedObjectUrl(blobUrl)
       }
+      if (isGLSLNode.value) hideExecutedOutput.value = true
     } catch (error) {
       if (requestId !== renderRequestId) return
       lastError.value =
@@ -466,10 +473,7 @@ function createInnerPreview(
   watch(
     shouldRender,
     (active) => {
-      if (isGLSLNode.value) {
-        const node = nodeRef.value
-        if (node) node.hideOutputImages = active
-      }
+      if (isGLSLNode.value) hideExecutedOutput.value = active
       if (active) debouncedRender()
     },
     { immediate: true }
@@ -481,7 +485,8 @@ function createInnerPreview(
         floatValues.value,
         intValues.value,
         boolValues.value,
-        curveValues.value
+        curveValues.value,
+        customResolution.value
       ] as const,
     () => {
       if (shouldRender.value) debouncedRender()
@@ -496,21 +501,11 @@ function createInnerPreview(
   // Return dispose function for the inner tier
   return () => {
     disposed = true
+    hideExecutedOutput.value = false
     debouncedRender.cancel()
     renderer?.dispose()
     renderer = null
 
-    // Revoke preview blob URLs to avoid memory leaks
-    const inner = innerGLSLNode
-    if (inner) {
-      const locatorId = nodeToNodeLocatorId(inner)
-      nodeOutputStore.revokePreviewsByLocatorId(locatorId)
-    } else {
-      const nId = nodeId.value
-      if (nId != null) {
-        const locatorId = nodeToNodeLocatorId(nodeRef.value!)
-        nodeOutputStore.revokePreviewsByLocatorId(locatorId)
-      }
-    }
+    revokePreview()
   }
 }

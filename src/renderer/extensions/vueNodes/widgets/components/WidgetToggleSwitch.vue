@@ -1,6 +1,5 @@
 <template>
   <WidgetLayoutField v-slot="{ borderStyle }" :widget :no-border="!hasLabels">
-    <!-- Use ToggleGroup when explicit labels are provided -->
     <ToggleGroup
       v-if="hasLabels"
       type="single"
@@ -22,7 +21,6 @@
       </ToggleGroupItem>
     </ToggleGroup>
 
-    <!-- Use ToggleSwitch for implicit boolean states -->
     <div
       v-else
       :class="
@@ -33,9 +31,10 @@
         )
       "
     >
-      <ToggleSwitch
+      <Switch
         v-model="modelValue"
-        v-bind="filteredProps"
+        :disabled="Boolean(widget.options?.disabled)"
+        :readonly="Boolean(widget.options?.read_only)"
         :aria-label="widget.name"
       />
     </div>
@@ -43,19 +42,15 @@
 </template>
 
 <script setup lang="ts">
-import ToggleSwitch from 'primevue/toggleswitch'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Switch from '@/components/ui/switch/Switch.vue'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useHideLayoutField } from '@/types/widgetTypes'
-import { cn } from '@/utils/tailwindUtil'
-import {
-  STANDARD_EXCLUDED_PROPS,
-  filterWidgetProps
-} from '@/utils/widgetPropFilter'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
@@ -68,10 +63,6 @@ const modelValue = defineModel<boolean>()
 
 const hideLayoutField = useHideLayoutField()
 const { t } = useI18n()
-
-const filteredProps = computed(() =>
-  filterWidgetProps(widget.options, STANDARD_EXCLUDED_PROPS)
-)
 
 const hasLabels = computed(() => {
   return widget.options?.on != null || widget.options?.off != null

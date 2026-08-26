@@ -7,12 +7,7 @@ import type {
   LGraphNode,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
-import {
-  getNodeByExecutionId,
-  getRootParentNode
-} from '@/utils/graphTraversalUtil'
-import { isGroupNode } from '@/utils/executableGroupNodeDto'
-import { useLitegraphService } from '@/services/litegraphService'
+import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 
 async function navigateToGraph(targetGraph: LGraph) {
   const canvasStore = useCanvasStore()
@@ -44,15 +39,6 @@ export function useFocusNode() {
   ) {
     if (!canvasStore.canvas) return
 
-    // For group node internals, locate the root parent group node instead
-    const parentNode = getRootParentNode(app.rootGraph, nodeId)
-
-    if (parentNode && isGroupNode(parentNode) && parentNode.graph) {
-      await navigateToGraph(parentNode.graph as LGraph)
-      canvasStore.canvas?.animateToBounds(parentNode.boundingRect)
-      return
-    }
-
     const graphNode = executionIdMap
       ? executionIdMap.get(nodeId)
       : getNodeByExecutionId(app.rootGraph, nodeId)
@@ -62,23 +48,7 @@ export function useFocusNode() {
     canvasStore.canvas?.animateToBounds(graphNode.boundingRect)
   }
 
-  async function enterSubgraph(
-    nodeId: string,
-    executionIdMap?: Map<string, LGraphNode>
-  ) {
-    if (!canvasStore.canvas) return
-
-    const graphNode = executionIdMap
-      ? executionIdMap.get(nodeId)
-      : getNodeByExecutionId(app.rootGraph, nodeId)
-    if (!graphNode?.graph) return
-
-    await navigateToGraph(graphNode.graph as LGraph)
-    useLitegraphService().fitView()
-  }
-
   return {
-    focusNode,
-    enterSubgraph
+    focusNode
   }
 }

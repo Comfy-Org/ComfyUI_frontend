@@ -1,10 +1,18 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { RenderShape } from '@/lib/litegraph/src/litegraph'
 import NodeFooter from '@/renderer/extensions/vueNodes/components/NodeFooter.vue'
+
+vi.mock('@/renderer/core/layout/store/layoutStore', () => {
+  const isDraggingVueNodes = ref(false)
+  return { layoutStore: { isDraggingVueNodes } }
+})
+
+const { layoutStore } = await import('@/renderer/core/layout/store/layoutStore')
 
 const i18n = createI18n({
   legacy: false,
@@ -143,6 +151,33 @@ describe('NodeFooter', () => {
       await user.click(screen.getByText('Show Advanced Inputs'))
       expect(emitted()).toHaveProperty('toggleAdvanced')
     })
+
+    describe('drag-then-click suppression', () => {
+      beforeEach(() => {
+        layoutStore.isDraggingVueNodes.value = false
+      })
+
+      it('does not emit enterSubgraph when a node drag is in progress at pointerup', async () => {
+        const { emitted } = renderFooter({ isSubgraph: true })
+        layoutStore.isDraggingVueNodes.value = true
+        await user.click(screen.getByTestId('subgraph-enter-button'))
+
+        expect(emitted().enterSubgraph).toBeUndefined()
+      })
+
+      it('only suppresses the immediately following click, not later ones', async () => {
+        const { emitted } = renderFooter({ isSubgraph: true })
+        const button = screen.getByTestId('subgraph-enter-button')
+
+        layoutStore.isDraggingVueNodes.value = true
+        await user.click(button)
+        expect(emitted().enterSubgraph).toBeUndefined()
+
+        layoutStore.isDraggingVueNodes.value = false
+        await user.click(button)
+        expect(emitted()).toHaveProperty('enterSubgraph')
+      })
+    })
   })
 
   describe('shape-based radius classes (getBottomRadius)', () => {
@@ -154,18 +189,13 @@ describe('NodeFooter', () => {
     it('CARD shape emits rounded-br variant on the single-tab footer', () => {
       renderFooter({ isSubgraph: true, shape: RenderShape.CARD })
       const classes = allButtonClasses()
-      expect(classes).toMatch(/rounded-br-\[17px\]/)
-      expect(classes).not.toMatch(/rounded-b-\[/)
+      expect(classes).toMatch(/rounded-br-xl/)
+      expect(classes).not.toMatch(/\srounded-b-\w/)
     })
 
     it('default shape emits rounded-b variant on the single-tab footer', () => {
       renderFooter({ isSubgraph: true })
-      expect(allButtonClasses()).toMatch(/rounded-b-\[17px\]/)
-    })
-
-    it('upgrades to 20px radius when the error tab is present', () => {
-      renderFooter({ hasAnyError: true, showErrorsTabEnabled: true })
-      expect(allButtonClasses()).toMatch(/rounded-b-\[20px\]/)
+      expect(allButtonClasses()).toMatch(/rounded-b-xl/)
     })
 
     it('enter tab uses right-only rounding in dual-tab mode (Case 1)', () => {
@@ -175,7 +205,7 @@ describe('NodeFooter', () => {
         showErrorsTabEnabled: true
       })
       const enterBtn = screen.getByTestId('subgraph-enter-button')
-      expect(enterBtn.className).toMatch(/rounded-br-\[20px\]/)
+      expect(enterBtn.className).toMatch(/rounded-br-xl/)
     })
   })
 

@@ -36,19 +36,33 @@ export function mapTaskOutputToAssetItem(
     create_time: taskItem.createTime
   }
 
+  const executionTime = taskItem.executionStartTimestamp
+    ? new Date(taskItem.executionStartTimestamp).toISOString()
+    : new Date().toISOString()
+
   return {
     id: taskItem.jobId,
     name: output.filename,
     display_name: output.display_name,
     size: 0,
-    created_at: taskItem.executionStartTimestamp
-      ? new Date(taskItem.executionStartTimestamp).toISOString()
-      : new Date().toISOString(),
+    created_at: executionTime,
+    updated_at: executionTime,
     tags: ['output'],
     thumbnail_url: output.previewUrl,
     preview_url: output.url,
     user_metadata: metadata
   }
+}
+
+/**
+ * Strips ComfyUI's trailing directory-type annotation (e.g. ` [input]`,
+ * ` [output]`, `[temp]`) from a filename returned by the OSS internal
+ * `/internal/files/{type}` endpoint. The annotation is part of the wire
+ * format LoadImage-style widgets expect, but for the assets sidebar we
+ * want the canonical on-disk filename so type detection / titles work.
+ */
+function stripDirectoryAnnotation(filename: string): string {
+  return filename.replace(/\s*\[(?:input|output|temp)\]\s*$/i, '')
 }
 
 /**
@@ -63,15 +77,19 @@ export function mapInputFileToAssetItem(
   index: number,
   directory: 'input' | 'output' = 'input'
 ): AssetItem {
-  const params = new URLSearchParams({ filename, type: directory })
+  const cleanName = stripDirectoryAnnotation(filename)
+  const params = new URLSearchParams({ filename: cleanName, type: directory })
   const preview_url = api.apiURL(`/view?${params}`)
-  appendCloudResParam(params, filename)
+  appendCloudResParam(params, cleanName)
+
+  const created_at = new Date().toISOString()
 
   return {
-    id: `${directory}-${index}-${filename}`,
-    name: filename,
+    id: `${directory}-${index}-${cleanName}`,
+    name: cleanName,
     size: 0,
-    created_at: new Date().toISOString(),
+    created_at,
+    updated_at: created_at,
     tags: [directory],
     thumbnail_url: api.apiURL(`/view?${params}`),
     preview_url

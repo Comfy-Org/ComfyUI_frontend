@@ -7,11 +7,68 @@
   "github": {
     "enabled": false
   },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "has": [
+        { "type": "host", "value": "website-frontend-comfyui.vercel.app" }
+      ],
+      "headers": [{ "key": "X-Robots-Tag", "value": "index, follow" }]
+    },
+    {
+      "source": "/payment/(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex"
+        }
+      ]
+    },
+    {
+      "source": "/:locale/payment/(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex"
+        }
+      ]
+    }
+  ],
   "redirects": [
     {
       "source": "/pricing",
       "destination": "/cloud/pricing",
       "permanent": true
+    },
+    {
+      "source": "/career",
+      "destination": "/careers",
+      "permanent": true
+    },
+    {
+      "source": "/privacy",
+      "destination": "/privacy-policy",
+      "permanent": true
+    },
+    {
+      "source": "/minimax",
+      "destination": "/minimax-h3/",
+      "permanent": false
+    },
+    {
+      "source": "/minimax/",
+      "destination": "/minimax-h3/",
+      "permanent": false
+    },
+    {
+      "source": "/zh-CN/minimax",
+      "destination": "/zh-CN/minimax-h3/",
+      "permanent": false
+    },
+    {
+      "source": "/zh-CN/minimax/",
+      "destination": "/zh-CN/minimax-h3/",
+      "permanent": false
     },
     {
       "source": "/enterprise",
@@ -23,6 +80,20 @@
       "destination": "https://blog.comfy.org/",
       "permanent": true
     },
-    { "source": "/press", "destination": "/about", "permanent": true }
+    {
+      "source": "/discord",
+      "destination": "https://discord.com/invite/comfyorg",
+      "permanent": true
+    },
+    {
+      "source": "/press",
+      "destination": "/about",
+      "permanent": true
+    },
+    {
+      "source": "/login",
+      "destination": "https://cloud.comfy.org/cloud/login",
+      "permanent": false
+    }
   ]
 }

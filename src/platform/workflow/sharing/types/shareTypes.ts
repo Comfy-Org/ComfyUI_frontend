@@ -1,5 +1,8 @@
 import type { AssetInfo } from '@/schemas/apiSchema'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type {
+  ComfyWorkflowJSON,
+  WorkflowId
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ThumbnailType } from '@/platform/workflow/sharing/types/comfyHubTypes'
 
 export interface WorkflowPublishResult {
@@ -9,9 +12,12 @@ export interface WorkflowPublishResult {
 }
 
 export interface PublishPrefill {
+  name?: string
   description?: string
   tags?: string[]
   thumbnailType?: ThumbnailType
+  thumbnailUrl?: string
+  thumbnailComparisonUrl?: string
   sampleImageUrls?: string[]
 }
 
@@ -37,6 +43,6 @@ export interface SharedWorkflowPayload {
   name: string
   publishedAt: Date | null
   shareId: string
-  workflowId: string
+  workflowId: WorkflowId
   workflowJson: ComfyWorkflowJSON
 }

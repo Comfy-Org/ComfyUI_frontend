@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
@@ -45,10 +45,6 @@ function createImageNode(
 }
 
 describe('useImageMenuOptions', () => {
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
   describe('getImageMenuOptions', () => {
     it('includes Paste Image option when node supports paste', () => {
       const node = createImageNode()
@@ -100,6 +96,36 @@ describe('useImageMenuOptions', () => {
 
       expect(copyIdx).toBeLessThan(pasteIdx)
       expect(pasteIdx).toBeLessThan(saveIdx)
+    })
+
+    it('gives the Open in Mask Editor option the mask icon', () => {
+      const node = createImageNode()
+      const { getImageMenuOptions } = useImageMenuOptions()
+      const options = getImageMenuOptions(node)
+      const maskOption = options.find((o) => o.label === 'Open in Mask Editor')
+
+      expect(maskOption?.icon).toBe('icon-[comfy--mask]')
+    })
+
+    it('gives every image action option an icon so labels stay aligned', () => {
+      const node = createImageNode()
+      const { getImageMenuOptions } = useImageMenuOptions()
+      const options = getImageMenuOptions(node)
+
+      expect(options.every((o) => !!o.icon)).toBe(true)
+    })
+
+    it('keeps output preview actions when the local image input is unavailable', () => {
+      const node = createImageNode()
+      const { getImageMenuOptions } = useImageMenuOptions()
+      const labels = getImageMenuOptions(node, {
+        input: false,
+        preview: true
+      }).map((option) => option.label)
+
+      expect(labels).toContain('Open Image')
+      expect(labels).toContain('Save Image')
+      expect(labels).not.toContain('Paste Image')
     })
   })
 

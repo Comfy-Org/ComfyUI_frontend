@@ -9,8 +9,8 @@
     :tabindex="isActive ? 0 : -1"
     :class="
       cn(
-        'flex shrink-0 items-center justify-center',
-        'cursor-pointer rounded-lg border-none px-2.5 py-2 text-sm transition-all duration-200',
+        'flex h-8 shrink-0 items-center justify-center',
+        'cursor-pointer rounded-lg border-none px-2.5 text-sm transition-all duration-200',
         'focus-visible:ring-ring/20 outline-hidden focus-visible:ring-1',
         isActive
           ? 'bg-interface-menu-component-surface-hovered text-text-primary'
@@ -30,7 +30,7 @@ import type { HTMLAttributes } from 'vue'
 
 import { computed, inject } from 'vue'
 
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import { TAB_LIST_INJECTION_KEY } from './tabKeys'
 

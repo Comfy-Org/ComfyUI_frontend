@@ -14,10 +14,14 @@
       '--p-breadcrumb-icon-width': `${ICON_WIDTH}px`
     }"
   >
-    <WorkflowActionsDropdown source="breadcrumb_subgraph_menu_selected" />
+    <WorkflowActionsDropdown
+      v-if="!canvasStore.linearMode"
+      source="breadcrumb_subgraph_menu_selected"
+    />
     <Button
       v-if="isInSubgraph"
       class="back-button pointer-events-auto ml-1.5 size-8 shrink-0 border border-transparent bg-transparent p-0 transition-all hover:rounded-lg hover:border-interface-stroke hover:bg-comfy-menu-bg"
+      data-testid="subgraph-breadcrumb-back"
       text
       severity="secondary"
       size="small"
@@ -50,7 +54,7 @@
 import Breadcrumb from 'primevue/breadcrumb'
 import Button from 'primevue/button'
 import type { MenuItem } from 'primevue/menuitem'
-import { computed, onUpdated, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, onUpdated, ref } from 'vue'
 
 import SubgraphBreadcrumbItem from '@/components/breadcrumb/SubgraphBreadcrumbItem.vue'
 import WorkflowActionsDropdown from '@/components/common/WorkflowActionsDropdown.vue'
@@ -70,6 +74,7 @@ const ICON_WIDTH = 20
 
 const workflowStore = useWorkflowStore()
 const navigationStore = useSubgraphNavigationStore()
+const canvasStore = useCanvasStore()
 const breadcrumbRef = ref<InstanceType<typeof Breadcrumb>>()
 const workflowName = computed(() => workflowStore.activeWorkflow?.filename)
 const isBlueprint = computed(() =>
@@ -87,9 +92,10 @@ const home = computed(() => ({
   isBlueprint: isBlueprint.value,
   command: () => {
     useTelemetry()?.trackUiButtonClicked({
-      button_id: 'breadcrumb_subgraph_root_selected'
+      button_id: 'breadcrumb_subgraph_root_selected',
+      element_group: 'breadcrumb'
     })
-    const canvas = useCanvasStore().getCanvas()
+    const canvas = canvasStore.getCanvas()
     if (!canvas.graph) throw new TypeError('Canvas has no graph')
 
     canvas.setGraph(canvas.graph.rootGraph)
@@ -102,15 +108,16 @@ const items = computed(() => {
     key: `subgraph-${subgraph.id}`,
     command: () => {
       useTelemetry()?.trackUiButtonClicked({
-        button_id: 'breadcrumb_subgraph_item_selected'
+        button_id: 'breadcrumb_subgraph_item_selected',
+        element_group: 'breadcrumb'
       })
-      const canvas = useCanvasStore().getCanvas()
+      const canvas = canvasStore.getCanvas()
       if (!canvas.graph) throw new TypeError('Canvas has no graph')
 
       canvas.setGraph(subgraph)
     },
     updateTitle: (title: string) => {
-      const rootGraph = useCanvasStore().getCanvas().graph?.rootGraph
+      const rootGraph = canvasStore.getCanvas().graph?.rootGraph
       if (!rootGraph) return
 
       forEachSubgraphNode(rootGraph, subgraph.id, (node) => {
@@ -128,20 +135,14 @@ const handleBackClick = () => {
   void useCommandStore().execute('Comfy.Graph.ExitSubgraph')
 }
 
-const breadcrumbElement = computed(() => {
-  if (!breadcrumbRef.value) return null
-
-  const el = (breadcrumbRef.value as unknown as { $el: HTMLElement }).$el
-  const list = el?.querySelector('.p-breadcrumb-list') as HTMLElement
-  return list
-})
-
 // Check for overflow on breadcrumb items and collapse/expand the breadcrumb to fit
 let overflowObserver: ReturnType<typeof useOverflowObserver> | undefined
-watch(breadcrumbElement, (el) => {
-  overflowObserver?.dispose()
-  overflowObserver = undefined
+onMounted(() => {
+  const breadcrumb = breadcrumbRef.value
+  if (!breadcrumb) return
 
+  const root = (breadcrumb as unknown as { $el: HTMLElement }).$el
+  const el = root.querySelector<HTMLElement>('.p-breadcrumb-list')
   if (!el) return
 
   overflowObserver = useOverflowObserver(el, {
@@ -185,6 +186,8 @@ watch(breadcrumbElement, (el) => {
     }
   })
 })
+
+onBeforeUnmount(() => overflowObserver?.dispose())
 
 // If e.g. the workflow name changes, we need to check the overflow again
 onUpdated(() => {

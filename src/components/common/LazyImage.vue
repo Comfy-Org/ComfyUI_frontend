@@ -42,7 +42,8 @@ import type { StyleValue } from 'vue'
 
 import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
 import { useMediaCache } from '@/services/mediaCacheService'
-import type { ClassValue } from '@/utils/tailwindUtil'
+
+type ClassValue = string | Record<string, boolean> | ClassValue[]
 
 const {
   src,

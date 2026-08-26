@@ -10,7 +10,6 @@ import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 import { api } from '../../scripts/api'
 import { app } from '../../scripts/app'
 import { $el, ComfyDialog } from '../../scripts/ui'
-import { GroupNodeConfig, GroupNodeHandler } from './groupNode'
 
 // Adds the ability to save and add multiple nodes as a template
 // To save:
@@ -51,6 +50,7 @@ class ManageTemplates extends ComfyDialog {
     })
 
     this.element.classList.add('comfy-manage-templates')
+    this.element.dataset.testid = 'manage-node-templates-dialog'
     this.draggedEl = null
     this.saveVisualCue = null
     this.emptyImg = new Image()
@@ -367,33 +367,11 @@ const ext: ComfyExtension = {
 
         clipboardAction(() => {
           app.canvas.copyToClipboard()
-          let data = localStorage.getItem('litegrapheditor_clipboard')
-          data = JSON.parse(data || '{}')
-          const nodeIds = Object.keys(app.canvas.selected_nodes)
-          for (let i = 0; i < nodeIds.length; i++) {
-            const node = app.canvas.graph?.getNodeById(nodeIds[i])
-            const nodeData = node?.constructor.nodeData
-
-            if (!node) continue
-            const groupConfig = GroupNodeHandler.getGroupData(node)
-            if (groupConfig) {
-              const groupData = groupConfig.nodeData
-              // @ts-expect-error
-              if (!data.groupNodes) {
-                // @ts-expect-error
-                data.groupNodes = {}
-              }
-              if (nodeData == null) throw new TypeError('nodeData is not set')
-              // @ts-expect-error
-              data.groupNodes[nodeData.name] = groupData
-              // @ts-expect-error
-              data.nodes[i].type = nodeData.name
-            }
-          }
+          const data = localStorage.getItem('litegrapheditor_clipboard')
 
           manage.templates.push({
             name,
-            data: JSON.stringify(data)
+            data: data || '{}'
           })
           manage.store()
         })
@@ -401,22 +379,25 @@ const ext: ComfyExtension = {
     })
 
     // Map each template to a menu item
-    const subItems = manage.templates.map((t) => {
+    const subItems = manage.templates.map((template) => {
       return {
-        content: t.name,
+        content: template.name,
         callback: () => {
-          clipboardAction(async () => {
-            const data = JSON.parse(t.data)
-            await GroupNodeConfig.registerFromWorkflow(
-              data.groupNodes ?? {},
-              []
-            )
+          clipboardAction(() => {
+            let data: { reroutes?: unknown }
+            try {
+              data = JSON.parse(template.data)
+            } catch (error) {
+              console.error('Failed to parse node template data', error)
+              useToastStore().addAlert(t('toastMessages.invalidTemplateData'))
+              return
+            }
 
             // Check for old clipboard format
             if (!data.reroutes) {
-              deserialiseAndCreate(t.data, app.canvas)
+              deserialiseAndCreate(template.data, app.canvas)
             } else {
-              localStorage.setItem('litegrapheditor_clipboard', t.data)
+              localStorage.setItem('litegrapheditor_clipboard', template.data)
               app.canvas.pasteFromClipboard()
             }
           })

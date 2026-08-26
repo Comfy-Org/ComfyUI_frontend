@@ -4,8 +4,8 @@ import { computed, useTemplateRef } from 'vue'
 import { getSlotColor, MAX_MULTITYPE_SLICES } from '@/constants/slotColors'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
-import { cn } from '@/utils/tailwindUtil'
-import type { ClassValue } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
+import type { ClassValue } from '@comfyorg/tailwind-utils'
 
 const props = defineProps<{
   slotData?: INodeSlot
@@ -46,19 +46,20 @@ const isListShape = computed(() => props.slotData?.shape === RenderShape.GRID)
 
 const slotClass = computed(() =>
   cn(
-    'slot-dot bg-slate-300',
+    'slot-dot bg-ink-100',
     isListShape.value ? 'rounded-[1px]' : 'rounded-full',
     'transition-all duration-150',
     'border border-solid border-node-component-slot-dot-outline',
     props.multi
-      ? 'h-6 w-3'
-      : 'size-3 cursor-crosshair group-hover/slot:scale-125 group-hover/slot:[--node-component-slot-dot-outline-opacity-mult:5]'
+      ? 'h-5 w-2'
+      : 'size-2 cursor-crosshair group-hover/slot:scale-125 group-hover/slot:[--node-component-slot-dot-outline-opacity-mult:5]'
   )
 )
 </script>
 
 <template>
   <div
+    data-testid="slot-connection-dot"
     :class="
       cn(
         'group/slot relative flex size-6 items-center justify-center after:absolute after:inset-y-0 after:w-5/2',
