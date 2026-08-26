@@ -1,5 +1,5 @@
-# PR advisory: execute every registry pack's frontend JS against this commit's
-# frontend runtime and report the population result.
+# Required gate: execute every registry pack's frontend JS against this
+# commit's frontend runtime in both supported renderers.
 #
 # The corpus is a mirror of the frontend JS of EVERY registry pack (~5,100
 # packs). Only the executable surface is kept - .js/.mjs plus the text assets
@@ -25,17 +25,11 @@
 name: 'CI: Ecosystem Matrix'
 
 on:
-  # A frontend change is the thing this advisory exists to catch, so src/** runs
-  # it. The corpus is restored, not refetched, so a PR run is bounded by
-  # execution rather than by the network.
+  # Required workflows must emit their aggregate check for every candidate.
+  # A paths filter would leave unrelated PRs and merge-queue commits waiting
+  # forever for a check GitHub never creates.
   pull_request:
-    paths:
-      - 'src/**'
-      - 'scripts/registry-census/**'
-      - 'browser_tests/assets/default.json'
-      - 'vitest.matrix.config.mts'
-      - 'vitest.setup.ts'
-      - '.github/workflows/ci-ecosystem-matrix.yaml'
+  merge_group:
   # Refreshes the corpus and writes the baseline every PR is measured against.
   # Actions cache scoping means only a default-branch run can produce an entry
   # that other branches restore.
@@ -55,7 +49,7 @@ permissions:
 
 concurrency:
   group: ecosystem-matrix-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || github.event_name == 'merge_group' }}
 
 env:
   PYTHON_VERSION: '3.11'
@@ -74,6 +68,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Setup Python
         uses: actions/setup-python@v6
@@ -95,6 +91,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       # An ubuntu-latest image bump must not silently change the interpreter
       # under a verdict whose whole value is run-to-run comparability.
@@ -374,6 +372,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Setup Python
         uses: actions/setup-python@v6
@@ -458,8 +458,8 @@ jobs:
   # (verify_detection.py). A green matrix is only meaningful while this stays
   # green: a runner or frontend change that blinds a channel reds THIS job
   # instead of silently hollowing out the check. No corpus/cache dependency -
-  # the poison fixture is checked in, so this runs on every PR that touches
-  # src/** even when the corpus is cold.
+  # the poison fixture is checked in, so this runs for every candidate even
+  # when the corpus is cold.
   matrix-detection-proof:
     name: matrix-detection-proof (${{ matrix.renderer }})
     if: github.repository == 'Comfy-Org/ComfyUI_frontend'
@@ -521,3 +521,42 @@ jobs:
             exit 1
           fi
           echo "verdict correctly FAILED on the poison corpus"
+
+  ecosystem-matrix-status:
+    name: ecosystem-matrix-status
+    if: always()
+    needs:
+      - pin-status
+      - corpus
+      - ecosystem-matrix
+      - matrix-verdict
+      - matrix-detection-proof
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Enforce complete matrix result
+        shell: bash
+        env:
+          PIN_STATUS_RESULT: ${{ needs.pin-status.result }}
+          CORPUS_RESULT: ${{ needs.corpus.result }}
+          SHARDS_RESULT: ${{ needs.ecosystem-matrix.result }}
+          VERDICTS_RESULT: ${{ needs.matrix-verdict.result }}
+          PROOFS_RESULT: ${{ needs.matrix-detection-proof.result }}
+        run: |
+          set -euo pipefail
+          failures=()
+          for check in \
+            "pin-status:$PIN_STATUS_RESULT" \
+            "corpus:$CORPUS_RESULT" \
+            "shards:$SHARDS_RESULT" \
+            "verdicts:$VERDICTS_RESULT" \
+            "detection-proofs:$PROOFS_RESULT"; do
+            if [ "${check#*:}" != success ]; then
+              failures+=("$check")
+            fi
+          done
+          if [ "${#failures[@]}" -ne 0 ]; then
+            echo "::error::ecosystem matrix did not pass completely: ${failures[*]}"
+            exit 1
+          fi
+          echo 'ecosystem matrix passed in both renderers with both detection proofs'
