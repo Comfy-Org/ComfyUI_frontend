@@ -422,6 +422,7 @@ describe('GraphCanvas execution progress updates', () => {
     }
     await nextTick()
 
+    expect(harness.workflowStore.nodeIdToNodeLocatorId).toHaveBeenCalledOnce()
     expect(harness.progressWrites).toBe(1)
     expect(harness.progressValues[0]).toBe(0.5)
     expect(mocks.setDirty).toHaveBeenCalledOnce()
