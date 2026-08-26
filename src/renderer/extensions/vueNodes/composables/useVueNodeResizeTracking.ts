@@ -173,13 +173,19 @@ const resizeObserver = new ResizeObserver((entries) => {
     const normalizedHeight = removeNodeTitleHeight(height)
     const measuredSize = { width, height: normalizedHeight }
     const previousMeasurement = cachedNodeMeasurements.get(element)
+    const reportedContentSize =
+      nodeId && rootGraphId
+        ? layoutStore.contentSizeOf(rootGraphId, nodeId)
+        : undefined
     const hasFreshMeasurementPending =
       elementsNeedingFreshMeasurement.has(element)
     const hasMatchingCachedNodeMeasurement =
       previousMeasurement != null &&
       previousMeasurement.rootGraphId === rootGraphId &&
       previousMeasurement.nodeId === nodeId &&
-      isSizeEqual(previousMeasurement.size, measuredSize)
+      isSizeEqual(previousMeasurement.size, measuredSize) &&
+      reportedContentSize != null &&
+      isSizeEqual(reportedContentSize, measuredSize)
 
     // ResizeObserver can repeat an unchanged entry (for example after an
     // initial or changed-size delivery). Skip downstream work only when this

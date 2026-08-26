@@ -44,16 +44,29 @@ const resizeObserverState = vi.hoisted(() => {
 const ROOT_GRAPH_ID = vi.hoisted<UUID>(() => 'root-graph')
 const SECOND_GRAPH_ID = vi.hoisted<UUID>(() => 'second-graph')
 
-const testState = vi.hoisted(() => ({
-  linearMode: false,
-  rootGraphId: ROOT_GRAPH_ID,
-  visibility: null as { value: 'visible' | 'hidden' } | null,
-  nodeLayouts: new Map<NodeId, NodeLayout>(),
-  reportContentSize: vi.fn(),
-  syncNodeSlotLayoutsFromDOM: vi.fn(),
-  scheduleSlotLayoutSync: vi.fn(),
-  setDirty: vi.fn()
-}))
+const testState = vi.hoisted(() => {
+  const contentSizes = new Map<string, { width: number; height: number }>()
+
+  return {
+    linearMode: false,
+    rootGraphId: ROOT_GRAPH_ID,
+    visibility: null as { value: 'visible' | 'hidden' } | null,
+    nodeLayouts: new Map<NodeId, NodeLayout>(),
+    contentSizes,
+    reportContentSize: vi.fn(
+      (
+        rootGraphId: UUID,
+        nodeId: NodeId,
+        size: { width: number; height: number }
+      ) => {
+        contentSizes.set(`${rootGraphId}:${nodeId}`, size)
+      }
+    ),
+    syncNodeSlotLayoutsFromDOM: vi.fn(),
+    scheduleSlotLayoutSync: vi.fn(),
+    setDirty: vi.fn()
+  }
+})
 
 vi.mock('@vueuse/core', () => ({
   useDocumentVisibility: () => {
@@ -81,6 +94,8 @@ vi.mock('@/composables/element/useCanvasPositionConversion', () => ({
 vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   layoutStore: {
     reportContentSize: testState.reportContentSize,
+    contentSizeOf: (rootGraphId: UUID, nodeId: NodeId) =>
+      testState.contentSizes.get(`${rootGraphId}:${nodeId}`),
     getNodeLayout: (_rootGraphId: UUID, rawNodeId: NodeId): NodeLayout | null =>
       testState.nodeLayouts.get(rawNodeId) ?? null
   }
@@ -173,6 +188,7 @@ describe('useVueNodeResizeTracking', () => {
     testState.rootGraphId = ROOT_GRAPH_ID
     if (testState.visibility) testState.visibility.value = 'visible'
     testState.nodeLayouts.clear()
+    testState.contentSizes.clear()
   })
 
   describe('deterministic resize workload baseline', () => {
@@ -345,6 +361,28 @@ describe('useVueNodeResizeTracking', () => {
 
     expect(testState.reportContentSize).toHaveBeenCalledWith(
       SECOND_GRAPH_ID,
+      nodeId,
+      {
+        width: 240,
+        height: 180 - LiteGraph.NODE_TITLE_HEIGHT
+      }
+    )
+    expect(testState.syncNodeSlotLayoutsFromDOM).toHaveBeenCalledWith(nodeId)
+  })
+
+  it('reports a fresh measurement after same-root graph reconfiguration', () => {
+    const nodeId = toNodeId('undo-redo-node')
+    const { entry } = createResizeEntry({ nodeId })
+    seedNodeLayout({ nodeId, left: 100, top: 200, width: 240, height: 180 })
+
+    resizeObserverState.callback?.([entry], createObserverMock())
+    vi.clearAllMocks()
+    testState.contentSizes.clear()
+
+    resizeObserverState.callback?.([entry], createObserverMock())
+
+    expect(testState.reportContentSize).toHaveBeenCalledWith(
+      ROOT_GRAPH_ID,
       nodeId,
       {
         width: 240,
