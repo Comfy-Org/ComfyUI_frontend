@@ -199,6 +199,38 @@ describe('drawConnections', () => {
     expect([...canvas.renderedPaths]).toEqual([secondLink, firstLink])
   })
 
+  it.for([245, 500, 1_000])(
+    'rebuilds render order independently for both passes at %i nodes',
+    (nodeCount) => {
+      for (let index = 0; index < nodeCount; index++) {
+        const node = new LGraphNode(`Node ${index}`)
+        vi.spyOn(node, 'updateArea').mockImplementation(() => {})
+        graph.add(node)
+      }
+      canvas.visible_area.set([0, 0, 800, 600])
+      vi.mocked(layoutStore.getNodeLayout).mockClear()
+      const sort = vi.spyOn(Array.prototype, 'sort')
+
+      canvas.computeVisibleNodes()
+      const foregroundLayoutReads = vi.mocked(layoutStore.getNodeLayout).mock
+        .calls.length
+      const foregroundSorts = sort.mock.calls.length
+
+      canvas.drawConnections(createMockCtx())
+      const totalLayoutReads = vi.mocked(layoutStore.getNodeLayout).mock.calls
+        .length
+
+      expect(foregroundLayoutReads).toBe(nodeCount)
+      expect(totalLayoutReads - foregroundLayoutReads).toBe(nodeCount)
+      expect(foregroundSorts).toBe(1)
+      expect(
+        sort.mock.instances.filter(
+          (items) => (items as unknown[]).length === nodeCount
+        )
+      ).toHaveLength(2)
+    }
+  )
+
   it('connects, draws, and serializes without deprecation warnings', () => {
     const sourceNode = new LGraphNode('Source')
     sourceNode.pos = [100, 100]
