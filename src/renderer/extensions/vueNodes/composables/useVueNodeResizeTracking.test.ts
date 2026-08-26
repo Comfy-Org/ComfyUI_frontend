@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
+
+import { render, screen } from '@testing-library/vue'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { NodeLayout } from '@/renderer/core/layout/types'
@@ -40,24 +42,33 @@ const resizeObserverState = vi.hoisted(() => {
 })
 
 const ROOT_GRAPH_ID = vi.hoisted<UUID>(() => 'root-graph')
+const SECOND_GRAPH_ID = vi.hoisted<UUID>(() => 'second-graph')
 
 const testState = vi.hoisted(() => ({
   linearMode: false,
+  rootGraphId: ROOT_GRAPH_ID,
+  visibility: null as { value: 'visible' | 'hidden' } | null,
   nodeLayouts: new Map<NodeId, NodeLayout>(),
   reportContentSize: vi.fn(),
   syncNodeSlotLayoutsFromDOM: vi.fn(),
-  scheduleSlotLayoutSync: vi.fn()
+  scheduleSlotLayoutSync: vi.fn(),
+  setDirty: vi.fn()
 }))
 
 vi.mock('@vueuse/core', () => ({
-  useDocumentVisibility: () => ref<'visible' | 'hidden'>('visible'),
+  useDocumentVisibility: () => {
+    const visibility = ref<'visible' | 'hidden'>('visible')
+    testState.visibility = visibility
+    return visibility
+  },
   createSharedComposable: <T>(fn: T) => fn
 }))
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({
     linearMode: testState.linearMode,
-    rootGraphId: ROOT_GRAPH_ID
+    rootGraphId: testState.rootGraphId,
+    canvas: { setDirty: testState.setDirty }
   })
 }))
 
@@ -80,7 +91,7 @@ vi.mock('./useSlotElementTracking', () => ({
   syncNodeSlotLayoutsFromDOM: testState.syncNodeSlotLayoutsFromDOM
 }))
 
-import './useVueNodeResizeTracking'
+import { useVueElementTracking } from './useVueNodeResizeTracking'
 
 function createResizeEntry(options?: {
   nodeId?: NodeId
@@ -159,7 +170,250 @@ function seedNodeLayout(options: {
 describe('useVueNodeResizeTracking', () => {
   beforeEach(() => {
     testState.linearMode = false
+    testState.rootGraphId = ROOT_GRAPH_ID
+    if (testState.visibility) testState.visibility.value = 'visible'
     testState.nodeLayouts.clear()
+  })
+
+  describe('deterministic resize workload baseline', () => {
+    const scales = [1, 100, 500] as const
+
+    function createSeededEntries(count: number) {
+      return Array.from({ length: count }, (_, index) => {
+        const nodeId = toNodeId(`matrix-node-${count}-${index}`)
+        seedNodeLayout({
+          nodeId,
+          left: index * 4,
+          top: index * 2,
+          width: 240,
+          height: 180
+        })
+        return createResizeEntry({
+          nodeId,
+          left: index * 4,
+          top: index * 2,
+          width: 240,
+          height: 180
+        }).entry
+      })
+    }
+
+    it.for(scales)(
+      'suppresses a second equal Vue-node batch at %i nodes',
+      (count) => {
+        const entries = createSeededEntries(count)
+
+        resizeObserverState.callback?.(entries, createObserverMock())
+        expect(testState.reportContentSize).toHaveBeenCalledTimes(count)
+        expect(testState.syncNodeSlotLayoutsFromDOM).toHaveBeenCalledTimes(
+          count
+        )
+
+        vi.clearAllMocks()
+        resizeObserverState.callback?.(entries, createObserverMock())
+
+        expect(testState.reportContentSize).not.toHaveBeenCalled()
+        expect(testState.syncNodeSlotLayoutsFromDOM).not.toHaveBeenCalled()
+        expect(testState.scheduleSlotLayoutSync).not.toHaveBeenCalled()
+        expect(testState.setDirty).not.toHaveBeenCalled()
+      }
+    )
+
+    it.for(scales)(
+      'repeats store and slot work for stable changed-size entries at %i nodes',
+      (count) => {
+        const entries = createSeededEntries(count)
+        resizeObserverState.callback?.(entries, createObserverMock())
+        vi.clearAllMocks()
+
+        const changedEntries = entries.map((entry) => ({
+          ...entry,
+          borderBoxSize: [{ inlineSize: 241, blockSize: 181 }],
+          contentRect: new DOMRect(0, 0, 241, 181)
+        })) satisfies ResizeEntryLike[]
+
+        resizeObserverState.callback?.(changedEntries, createObserverMock())
+        expect(testState.reportContentSize).toHaveBeenCalledTimes(count)
+        expect(testState.syncNodeSlotLayoutsFromDOM).toHaveBeenCalledTimes(
+          count
+        )
+        expect(testState.setDirty).not.toHaveBeenCalled()
+
+        vi.clearAllMocks()
+        resizeObserverState.callback?.(changedEntries, createObserverMock())
+
+        // reportContentSize stores collapsed content dimensions; it does not
+        // advance node geometry. Consequently the cache never reaches its
+        // nodeLayout-matching condition and identical follow-up entries repeat
+        // all downstream work.
+        expect(testState.reportContentSize).toHaveBeenCalledTimes(count)
+        expect(testState.syncNodeSlotLayoutsFromDOM).toHaveBeenCalledTimes(
+          count
+        )
+      }
+    )
+
+    it.for(scales)(
+      'does no resize work for untracked legacy elements at %i nodes',
+      (count) => {
+        const entries = Array.from({ length: count }, () => {
+          const element = document.createElement('canvas')
+          const boxSizes = [{ inlineSize: 240, blockSize: 180 }]
+          return {
+            target: element,
+            borderBoxSize: boxSizes,
+            contentBoxSize: boxSizes,
+            devicePixelContentBoxSize: boxSizes,
+            contentRect: new DOMRect(0, 0, 240, 180)
+          } satisfies ResizeEntryLike
+        })
+
+        resizeObserverState.callback?.(entries, createObserverMock())
+
+        expect(testState.reportContentSize).not.toHaveBeenCalled()
+        expect(testState.syncNodeSlotLayoutsFromDOM).not.toHaveBeenCalled()
+        expect(testState.scheduleSlotLayoutSync).not.toHaveBeenCalled()
+        expect(testState.setDirty).not.toHaveBeenCalled()
+      }
+    )
+
+    it.for(scales)(
+      'schedules every equal widgets-grid signal at %i nodes',
+      (count) => {
+        const entries = Array.from({ length: count }, (_, index) => {
+          const element = document.createElement('div')
+          element.dataset.widgetsGridNodeId = `grid-node-${count}-${index}`
+          const boxSizes = [{ inlineSize: 200, blockSize: 80 }]
+          return {
+            target: element,
+            borderBoxSize: boxSizes,
+            contentBoxSize: boxSizes,
+            devicePixelContentBoxSize: boxSizes,
+            contentRect: new DOMRect(0, 0, 200, 80)
+          } satisfies ResizeEntryLike
+        })
+
+        resizeObserverState.callback?.(entries, createObserverMock())
+        resizeObserverState.callback?.(entries, createObserverMock())
+
+        expect(testState.scheduleSlotLayoutSync).toHaveBeenCalledTimes(
+          count * 2
+        )
+        expect(testState.reportContentSize).not.toHaveBeenCalled()
+        expect(testState.setDirty).not.toHaveBeenCalled()
+      }
+    )
+
+    it.for(scales)(
+      'registers and releases %i mounted Vue node components',
+      (count) => {
+        const TrackedNode = defineComponent({
+          props: { nodeId: { type: String, required: true } },
+          setup(props) {
+            useVueElementTracking(props.nodeId, 'node')
+            return () => h('div')
+          }
+        })
+        const Matrix = defineComponent({
+          setup() {
+            return () =>
+              h(
+                'section',
+                Array.from({ length: count }, (_, index) =>
+                  h(TrackedNode, {
+                    nodeId: `mounted-matrix-${count}-${index}`,
+                    key: index
+                  })
+                )
+              )
+          }
+        })
+
+        const view = render(Matrix)
+        expect(resizeObserverState.observe).toHaveBeenCalledTimes(count)
+
+        view.unmount()
+        expect(resizeObserverState.unobserve).toHaveBeenCalledTimes(count)
+      }
+    )
+  })
+
+  it('currently carries a cached measurement across root graph/subgraph replacement', () => {
+    const nodeId = toNodeId('same-local-node-id')
+    const { entry } = createResizeEntry({ nodeId })
+    seedNodeLayout({ nodeId, left: 100, top: 200, width: 240, height: 180 })
+
+    resizeObserverState.callback?.([entry], createObserverMock())
+    vi.clearAllMocks()
+    testState.rootGraphId = SECOND_GRAPH_ID
+
+    resizeObserverState.callback?.([entry], createObserverMock())
+
+    // The current cache is scoped to element + local node ID, not root graph.
+    // Identical geometry therefore suppresses the new graph's initial content
+    // report when a DOM element survives graph replacement.
+    expect(testState.reportContentSize).not.toHaveBeenCalled()
+    expect(testState.syncNodeSlotLayoutsFromDOM).not.toHaveBeenCalled()
+  })
+
+  it('defers hidden entries and re-observes connected elements when visible', async () => {
+    const nodeId = toNodeId('hidden-node')
+    const { entry } = createResizeEntry({ nodeId })
+    document.body.append(entry.target)
+    seedNodeLayout({ nodeId, left: 100, top: 200, width: 240, height: 180 })
+    if (!testState.visibility) throw new Error('visibility ref not initialized')
+
+    testState.visibility.value = 'hidden'
+    await nextTick()
+    resizeObserverState.callback?.([entry], createObserverMock())
+
+    expect(resizeObserverState.unobserve).toHaveBeenCalledWith(entry.target)
+    expect(testState.reportContentSize).not.toHaveBeenCalled()
+    expect(testState.syncNodeSlotLayoutsFromDOM).not.toHaveBeenCalled()
+
+    vi.clearAllMocks()
+    testState.visibility.value = 'visible'
+    await nextTick()
+
+    expect(resizeObserverState.observe).toHaveBeenCalledWith(entry.target)
+    entry.target.remove()
+  })
+
+  it('observes on mount and removes identity before unobserving on unmount', () => {
+    const nodeId = toNodeId('mounted-node')
+    const Component = defineComponent({
+      setup() {
+        useVueElementTracking(nodeId, 'node')
+        return () => h('div', { 'data-testid': 'tracked-node' })
+      }
+    })
+
+    const view = render(Component)
+    const element = screen.getByTestId('tracked-node')
+
+    expect(element.dataset.nodeId).toBe(nodeId)
+    expect(resizeObserverState.observe).toHaveBeenCalledWith(element)
+
+    view.unmount()
+
+    expect(element.dataset.nodeId).toBeUndefined()
+    expect(resizeObserverState.unobserve).toHaveBeenCalledWith(element)
+
+    vi.clearAllMocks()
+    const boxSizes = [{ inlineSize: 240, blockSize: 180 }]
+    resizeObserverState.callback?.(
+      [
+        {
+          target: element,
+          borderBoxSize: boxSizes,
+          contentBoxSize: boxSizes,
+          devicePixelContentBoxSize: boxSizes,
+          contentRect: new DOMRect(0, 0, 240, 180)
+        }
+      ],
+      createObserverMock()
+    )
+    expect(testState.reportContentSize).not.toHaveBeenCalled()
   })
 
   it('reports the first measurement and skips repeated entries', () => {
