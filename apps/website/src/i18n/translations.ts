@@ -2163,6 +2163,60 @@ const translations = {
     'zh-CN': '无服务器'
   },
 
+  // Developers page – Product cards
+  'developers.cards.cloudApi.title': {
+    en: 'Cloud\nAPI',
+    'zh-CN': '云端\nAPI'
+  },
+  'developers.cards.cloudApi.description': {
+    en: 'Turn any workflow into a production endpoint. Trigger generation from code, inject inputs at runtime, and scale on Comfy Cloud.',
+    'zh-CN':
+      '把任意工作流变成生产级 API 端点。用代码触发生成，在运行时注入输入，并在 Comfy Cloud 上弹性扩展。'
+  },
+  'developers.cards.cloudApi.cta': {
+    en: 'Try now',
+    'zh-CN': '立即试用'
+  },
+  'developers.cards.serverlessApi.title': {
+    en: 'Serverless\nAPI',
+    'zh-CN': '无服务器\nAPI'
+  },
+  'developers.cards.serverlessApi.description': {
+    en: 'Deploy a ComfyUI build with your own custom nodes and models, then run any workflow on it. Scales with traffic, down to zero. In limited beta.',
+    'zh-CN':
+      '部署包含你自己的自定义节点和模型的 ComfyUI 构建，然后在上面运行任意工作流。随流量弹性伸缩，闲时可降到零。目前为限量内测。'
+  },
+  'developers.cards.serverlessApi.cta': {
+    en: 'Join beta',
+    'zh-CN': '加入内测'
+  },
+  'developers.cards.sdk.title': {
+    en: 'SDK',
+    'zh-CN': 'SDK'
+  },
+  'developers.cards.sdk.description': {
+    en: 'Call ComfyUI workflows from your own code in Python or TypeScript. Running on Comfy Cloud today.',
+    'zh-CN':
+      '用 Python 或 TypeScript 在你自己的代码中调用 ComfyUI 工作流。现已可在 Comfy Cloud 上运行。'
+  },
+  'developers.cards.sdk.cta': {
+    en: 'Try now',
+    'zh-CN': '立即试用'
+  },
+  'developers.cards.router.title': {
+    en: 'Comfy\nRouter',
+    'zh-CN': 'Comfy\nRouter'
+  },
+  'developers.cards.router.description': {
+    en: 'Call every partner model in ComfyUI by ID. Veo, Kling, Nano Banana, Flux. One API key, one credit balance, no per-provider accounts.',
+    'zh-CN':
+      '在 ComfyUI 中通过 ID 调用每一个合作伙伴模型：Veo、Kling、Nano Banana、Flux。一个 API 密钥、一份点数余额，无需为每家服务商单独开户。'
+  },
+  'developers.cards.router.cta': {
+    en: 'Try now',
+    'zh-CN': '立即试用'
+  },
+
   // Developers page – PricingSection
   'developers.pricing.title': {
     en: 'Pricing Plan',

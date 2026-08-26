@@ -95,3 +95,17 @@ export const heroSnippets: Record<
     curl: curl(BASE_URLS.serverless)
   }
 }
+
+export type ProductCardKey = 'cloudApi' | 'serverlessApi' | 'sdk' | 'router'
+
+/**
+ * The four product cards under the hero, in design order. Copy comes from
+ * `developers.cards.<key>.*`; `router` shares the platform CTA until Comfy
+ * Router has a destination of its own (developers-page issue 10).
+ */
+export const productCards = [
+  { key: 'cloudApi', href: developersCtas.platform },
+  { key: 'serverlessApi', href: developersCtas.joinBeta },
+  { key: 'sdk', href: developersCtas.sdkDocs },
+  { key: 'router', href: developersCtas.platform }
+] as const satisfies readonly { key: ProductCardKey; href: string }[]

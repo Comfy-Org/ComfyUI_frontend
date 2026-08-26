@@ -3,6 +3,7 @@ import type { Locale } from '../../i18n/translations'
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import HeroSection from './HeroSection.astro'
 import PlaceholderSection from './PlaceholderSection.vue'
+import ProductCardsSection from './ProductCardsSection.astro'
 import PricingSection from './PricingSection.vue'
 import { t } from '../../i18n/translations'
 import { absoluteUrl } from '../../utils/jsonLd'
@@ -16,7 +17,6 @@ const { locale } = Astro.props
 /* Walking skeleton: each placeholder is replaced by its section ticket
    (developers-page issues 03–09). */
 const placeholders = [
-  { name: 'Product card row', block: 'ProductCard tone="light" ×4' },
   { name: 'The problem this solves', block: 'CompareCards01' },
   { name: 'How it works', block: 'ReasonsSplit01 (numbered)' },
   { name: 'Built with SDK showcase', block: 'FeaturedCarousel02 (dark panel)' },
@@ -36,6 +36,7 @@ const placeholders = [
   ]}
 >
   <HeroSection locale={locale} />
+  <ProductCardsSection locale={locale} />
   {placeholders.map((section) => <PlaceholderSection {...section} />)}
   <PricingSection locale={locale} client:load />
 </BaseLayout>
