@@ -52,6 +52,9 @@ export class CanvasHelper {
     safeSpot?: Position,
     steps: number = 1
   ): Promise<void> {
+    if (!Number.isInteger(steps) || steps <= 0) {
+      throw new RangeError('steps must be a finite positive integer')
+    }
     safeSpot = safeSpot || { x: 10, y: 10 }
     const client = await this.page.context().newCDPSession(this.page)
     await client.send('Input.dispatchTouchEvent', {
