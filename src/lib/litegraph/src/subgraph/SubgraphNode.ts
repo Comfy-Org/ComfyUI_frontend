@@ -680,7 +680,13 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       },
       deriveWidgetRenderState(interiorWidget)
     )
-    if (!registered) return
+    if (!registered) {
+      delete input.pos
+      delete input.widget
+      delete input.widgetId
+      input._widget = undefined
+      return
+    }
 
     input.widgetId = id
     input._widget =
