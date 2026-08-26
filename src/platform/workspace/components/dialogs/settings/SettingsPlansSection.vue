@@ -504,8 +504,6 @@ const teamVideoEstimate = computed(() =>
 // synthesized. Absent from the catalog => no offer, CTA disabled (D3).
 const teamPlanSlug = computed(() => findApiPlan('TEAM')?.slug ?? null)
 
-// The personal cards already honour availability; the team CTA must too. The
-// server's `reason` has no copy to surface yet, so this only gates the CTA.
 const isTeamPlanAvailable = computed(
   () => findApiPlan('TEAM')?.availability.available ?? false
 )
