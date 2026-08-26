@@ -166,17 +166,12 @@ Tag colliding entries with an epoch/namespace and reconcile lazily.
 - Every local remint must be observable so telemetry can count real-world
   collision frequency and inform the actor-scoped refactor's priority. That
   warning is pending in #15720; current `main` does not yet emit it.
-- **Known deliberate gap (open at time of writing):** the remint loop does
-  not yet record an old→new id map, and `LGraph.configure` restores links
-  before nodes are added. A serialized link endpoint that references the old
-  id can therefore remain attached to the incumbent node or dangle after a
-  remint. ADR-0008 (as amended in #15761) documents two candidate fixes:
-  (a) record the map and remap the payload's link endpoints before nodes
-  configure their connections, or (b) reject ambiguous payloads outright.
-  Pending #15882 implements option (a). Reroutes reference link ids, and
-  groups do not store node endpoints, so neither requires node-id remapping.
-  Until #15882 lands, reminting is correct for node identity but incomplete
-  for link references.
+- `LGraph.configure` records each unambiguous requested→final node-id remint
+  and repoints link endpoints added by that payload before nodes configure
+  their connections (#15882). If multiple payload nodes request the same id,
+  there is no unambiguous mapping and the first claimant keeps the links.
+  Reroutes reference link ids, and groups do not store node endpoints, so
+  neither requires node-id remapping.
 - Imports/pastes of colliding content mutate the incoming copy's id. Any
   external system that memorized the old id (e.g. a URL fragment or a test
   fixture) will miss; this is inherent to any rejection-based scheme and is
@@ -187,14 +182,14 @@ Tag colliding entries with an epoch/namespace and reconcile lazily.
 - ADR-0003 — Centralized Layout Management with CRDT (merge-boundary
   reconciliation amendment, 2026-08-23). Cite ADR-0003 externally; this ADR
   is the derivation record.
-- ADR-0008 — Entity Component System (collision-contract and remint-gap
-  amendments via #15761).
-- ADR-0017 — ID-Based Slot Records Are the Slot Destination (the same
+- ADR-0008 — Entity Component System (identity and structural collision
+  contracts).
+- ADR-0017 — ID-Based Slot Records Own Slot State (the same
   identity-vs-structural key taxonomy, applied to slots).
 - #15720 — pending collision-contract invariant test suite (registry rejection
   and remint warning).
 - #15761 — pending collision-contract documentation fold.
-- #15882 — pending serialized-reference remap after a local node-id remint.
+- #15882 — serialized-reference remap after a local node-id remint (merged).
 - Program decisions D-gl-A2 (no silent remints), D-gl-A4 (identity keys
   reject / structural keys resolve), D-gl-A6 (this decision).
 
