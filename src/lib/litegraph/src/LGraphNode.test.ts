@@ -686,8 +686,9 @@ describe('LGraphNode', () => {
     })
     test('should return position based on title height when collapsed', () => {
       node.flags.collapsed = true
+      node.inputs = [inputSlot]
       const expectedPos: Point = [100, 200 - LiteGraph.NODE_TITLE_HEIGHT * 0.5]
-      expect(node.getInputSlotPos(inputSlot)).toEqual(expectedPos)
+      expect(node.getInputSlotPos(node.inputs[0])).toEqual(expectedPos)
     })
 
     test('should return position based on input.pos when defined and not collapsed', () => {
@@ -695,7 +696,7 @@ describe('LGraphNode', () => {
       inputSlot.pos = [10, 50]
       node.inputs = [inputSlot]
       const expectedPos: Point = [100 + 10, 200 + 50]
-      expect(node.getInputSlotPos(inputSlot)).toEqual(expectedPos)
+      expect(node.getInputSlotPos(node.inputs[0])).toEqual(expectedPos)
     })
 
     test('should return default vertical position when input.pos is undefined and not collapsed', () => {
@@ -713,11 +714,17 @@ describe('LGraphNode', () => {
       const expectedY =
         200 + (slotIndex + 0.7) * LiteGraph.NODE_SLOT_HEIGHT + nodeOffsetY
       const expectedX = 100 + LiteGraph.NODE_SLOT_HEIGHT * 0.5
-      expect(node.getInputSlotPos(inputSlot)).toEqual([expectedX, expectedY])
+      expect(node.getInputSlotPos(node.inputs[slotIndex])).toEqual([
+        expectedX,
+        expectedY
+      ])
       const slotIndex2 = 1
       const expectedY2 =
         200 + (slotIndex2 + 0.7) * LiteGraph.NODE_SLOT_HEIGHT + nodeOffsetY
-      expect(node.getInputSlotPos(inputSlot2)).toEqual([expectedX, expectedY2])
+      expect(node.getInputSlotPos(node.inputs[slotIndex2])).toEqual([
+        expectedX,
+        expectedY2
+      ])
     })
 
     test('should return default vertical position including slot_start_y when defined', () => {
@@ -729,7 +736,10 @@ describe('LGraphNode', () => {
       const expectedY =
         200 + (slotIndex + 0.7) * LiteGraph.NODE_SLOT_HEIGHT + nodeOffsetY
       const expectedX = 100 + LiteGraph.NODE_SLOT_HEIGHT * 0.5
-      expect(node.getInputSlotPos(inputSlot)).toEqual([expectedX, expectedY])
+      expect(node.getInputSlotPos(node.inputs[slotIndex])).toEqual([
+        expectedX,
+        expectedY
+      ])
       delete (node.constructor as NodeConstructorWithSlotOffset).slot_start_y
     })
     test('should not overwrite onMouseDown prototype', () => {
