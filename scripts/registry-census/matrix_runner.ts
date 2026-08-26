@@ -5,6 +5,7 @@
  * $MATRIX_OUT/<pack>.json for cross-branch diffing.
  */
 import { createTestingPinia } from '@pinia/testing'
+import { isEqual } from 'es-toolkit'
 import { setActivePinia } from 'pinia'
 import fs from 'node:fs'
 import { vi } from 'vitest'
@@ -17,6 +18,7 @@ import type {
   Point
 } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { useWidgetValueStore } from '@/stores/widgetValueStore'
 
@@ -72,36 +74,20 @@ interface OpRecord {
   note: string
 }
 
-interface SerializedNodeWithNamedWidgetValues {
-  id?: unknown
-  widgets_values_named?: Record<string, unknown>
-}
-
-interface SerializedGraphWithNodes {
-  nodes?: SerializedNodeWithNamedWidgetValues[]
-}
-
-const canonicalize = (value: unknown): unknown => {
-  if (Array.isArray(value)) return value.map(canonicalize)
-  if (value === null || typeof value !== 'object') return value
-  return Object.fromEntries(
-    Object.entries(value)
-      .sort(([left], [right]) => left.localeCompare(right))
-      .map(([key, entry]) => [key, canonicalize(entry)])
-  )
-}
-
-const reloadSignature = (serialized: unknown, mangled: Set<string>) => {
-  const graph = structuredClone(serialized) as SerializedGraphWithNodes
-  for (const node of graph.nodes ?? []) {
-    for (const name of Object.keys(node.widgets_values_named ?? {})) {
-      if (mangled.has(`${node.id}:${name}`)) {
-        delete node.widgets_values_named?.[name]
-      }
-    }
-  }
-  return S(canonicalize(graph))
-}
+const normalizeReloadGraph = (
+  serialized: ISerialisedGraph,
+  mangled: Set<string>
+): ISerialisedGraph => ({
+  ...serialized,
+  nodes: serialized.nodes.map((node) => ({
+    ...node,
+    widgets_values_named: Object.fromEntries(
+      Object.entries(node.widgets_values_named ?? {}).filter(
+        ([name]) => !mangled.has(`${node.id}:${name}`)
+      )
+    )
+  }))
+})
 
 const COMBO = (o: string[]) => [o, {}]
 const DEFS: Record<string, unknown> = {
@@ -697,12 +683,17 @@ export async function runPack(
       const g2 = new LGraph()
       const serialized = JSON.parse(
         String(row.serialized ?? '{}')
-      ) as Parameters<typeof g2.configure>[0]
+      ) as ISerialisedGraph
       g2.configure(structuredClone(serialized))
       row.reloadedSerialized = S(g2.serialize())
       if (
-        reloadSignature(serialized, mangled) !==
-        reloadSignature(JSON.parse(String(row.reloadedSerialized)), mangled)
+        !isEqual(
+          normalizeReloadGraph(serialized, mangled),
+          normalizeReloadGraph(
+            JSON.parse(String(row.reloadedSerialized)) as ISerialisedGraph,
+            mangled
+          )
+        )
       ) {
         throw new Error('serialized graph changed after reload')
       }
