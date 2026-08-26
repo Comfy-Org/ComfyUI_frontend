@@ -121,10 +121,10 @@ describe('useResubscribe', () => {
     expect(isResubscribing.value).toBe(false)
   })
 
-  it('resubscribes on the legacy rail when the workspace may reactivate', async () => {
-    // legacy_stripe has no capability projection row, so the raw capability is
-    // false while the membership check still permits reactivation.
-    state.shouldUseWorkspaceBilling = false
+  it('resubscribes when the policy permits it, whatever the raw capability says', async () => {
+    // The legacy rail resolves can_reactivate false while the workspace may
+    // still reactivate; this composable must follow the derived policy. Which
+    // rail produces which value is covered in useWorkspaceUI.test.ts.
     state.canReactivate = false
     state.canReactivatePlan = true
     const { handleResubscribe } = useResubscribe()
@@ -134,11 +134,9 @@ describe('useResubscribe', () => {
     expect(state.resubscribe).toHaveBeenCalled()
   })
 
-  it('refuses on the legacy rail when membership does not permit reactivation', async () => {
-    // Behaviour change: this gate previously short-circuited on the legacy rail
-    // and ran no membership check at all.
-    state.shouldUseWorkspaceBilling = false
-    state.canManageSubscriptionLifecycle = false
+  it('refuses whenever the policy denies it', async () => {
+    // Behaviour change: the old gate short-circuited on the legacy rail and ran
+    // no membership check, so a denial there never reached this branch.
     state.canReactivate = false
     state.canReactivatePlan = false
     const { handleResubscribe } = useResubscribe()
