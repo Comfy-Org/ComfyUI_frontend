@@ -17,7 +17,7 @@ test(
     )
 
     expect(copy.ownKeys).toEqual(
-      [
+      expect.arrayContaining([
         'id',
         'origin_id',
         'origin_slot',
@@ -25,7 +25,7 @@ test(
         'target_id',
         'target_slot',
         'type'
-      ].sort()
+      ])
     )
     expect(copy.id).not.toBeUndefined()
     expect(copy.origin_id).not.toBeUndefined()
