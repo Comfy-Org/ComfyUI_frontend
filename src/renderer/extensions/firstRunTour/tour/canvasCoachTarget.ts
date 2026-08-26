@@ -6,12 +6,14 @@ import type { RectTarget } from '@/platform/onboarding/coachmarkRegistry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
+import { registerNodeCullingOptOut } from '@/services/vueNodeCullingService'
 import type { NodeId } from '@/types/nodeId'
 
 /** A canvas node as a coachmark target, derived from its layout and the camera. */
 export function canvasNodeTarget(nodeId: NodeId): RectTarget {
   const { camera } = useTransformState()
   const canvasStore = useCanvasStore()
+  const releaseCullingOptOut = registerNodeCullingOptOut(nodeId)
   const resolvedGraph = canvasStore.currentGraph
   const scope = effectScope(true)
   const layout = resolvedGraph
@@ -55,6 +57,9 @@ export function canvasNodeTarget(nodeId: NodeId): RectTarget {
         stopResize()
       }
     },
-    dispose: () => scope.stop()
+    dispose: () => {
+      releaseCullingOptOut()
+      scope.stop()
+    }
   }
 }

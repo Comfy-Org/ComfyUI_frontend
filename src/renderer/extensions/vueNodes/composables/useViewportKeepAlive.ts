@@ -8,7 +8,7 @@ import { boundsIntersect } from '@/renderer/core/layout/utils/layoutMath'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import {
   getCullingOptOutVersion,
-  isNodeTypeExcludedFromCulling
+  isNodeExcludedFromCulling
 } from '@/services/vueNodeCullingService'
 
 const MIN_NODES_FOR_KEEP_ALIVE = 150
@@ -95,7 +95,7 @@ export function useViewportKeepAlive({
 
   function shouldAttachNode(nodeId: NodeId, viewportBounds: Bounds): boolean {
     const nodeType = getNodeType(nodeId)
-    if (nodeType && isNodeTypeExcludedFromCulling(nodeType)) return true
+    if (isNodeExcludedFromCulling(nodeId, nodeType)) return true
 
     const bounds = getNodeBounds(nodeId)
     return (

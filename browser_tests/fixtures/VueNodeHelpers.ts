@@ -251,10 +251,33 @@ export class VueNodeHelpers {
         window.app!.extensionManager.setting.get('Comfy.VueNodes.Enabled') &&
         window.app!.canvas.graph!.nodes.length > 0
     )
-    if (expectsNodes) {
-      await expect(this.nodes.first()).toBeVisible()
-    } else {
-      await expect(this.nodes).toHaveCount(0)
+    try {
+      if (expectsNodes) {
+        await expect(this.nodes.first()).toBeVisible()
+      } else {
+        await expect(this.nodes).toHaveCount(0)
+      }
+    } catch (error) {
+      const belowLod = await this.page.evaluate(() => {
+        const canvas = window.app?.canvas
+        const minFontSize = canvas?.min_font_size_for_lod ?? 0
+        if (!canvas || minFontSize <= 0) return null
+
+        const textSize = window.LiteGraph?.NODE_TEXT_SIZE ?? 14
+        const threshold =
+          minFontSize / (textSize * Math.sqrt(window.devicePixelRatio || 1))
+        return canvas.ds.scale < threshold
+          ? { scale: canvas.ds.scale, threshold }
+          : null
+      })
+
+      if (belowLod) {
+        throw new Error(
+          `No Vue nodes are addressable: canvas zoom ${belowLod.scale.toFixed(3)} is below the level-of-detail threshold ${belowLod.threshold.toFixed(3)}, so nodes render as canvas boxes with no [data-node-id] element. Call ensureNodesAddressable(comfyPage) after loading, or set a zoom above the threshold.`,
+          { cause: error }
+        )
+      }
+      throw error
     }
   }
 
