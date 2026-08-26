@@ -1,6 +1,7 @@
 import type {
   AcceptInviteResponse,
   BillingBalanceResponse,
+  BillingCapabilitiesResponse,
   BillingEventsResponse,
   BillingOpStatusResponse,
   BillingPlansResponse,
@@ -13,6 +14,7 @@ import type {
   CreateTopupRequest,
   CreateTopupResponse,
   CreateWorkspaceRequest,
+  CurrentWorkspaceResponse,
   ListInvitesResponse,
   ListMembersResponse,
   ListWorkspacesResponse,
@@ -25,6 +27,7 @@ import type {
   PreviewSubscribeResponse,
   ResubscribeRequest,
   ResubscribeResponse,
+  SavedPaymentMethod,
   SubscribeRequest,
   SubscribeResponse,
   SubscriptionDuration,
@@ -42,6 +45,7 @@ import {
   UNKNOWN_ERROR_CODE,
   errorResponseFromBody
 } from '@/platform/remote/comfyui/errors'
+import { attachCapabilityRevisionInterceptor } from '@/platform/workspace/api/capabilityRevision'
 import type {
   WorkspaceId,
   WorkspaceInviteId
@@ -73,6 +77,7 @@ export type { SubscriptionTier }
 export type { SubscriptionDuration }
 export type { WorkspaceWithRole }
 export type { ListWorkspacesResponse }
+export type { CurrentWorkspaceResponse }
 export type { Plan }
 export type { BillingPlansResponse }
 export type { TeamCreditStops }
@@ -81,6 +86,11 @@ export type { TeamCreditStopSummary }
 type SubscribeBillingCycle = 'monthly' | 'yearly'
 
 export interface SubscribeOptions {
+  confirmationToken?: string
+  promotionCode?: string
+  quoteId?: string
+  quoteVersion?: number
+  savedPaymentMethodId?: string
   returnUrl?: string
   cancelUrl?: string
   teamCreditStopId?: string
@@ -91,6 +101,7 @@ export interface SubscribeOptions {
 
 export interface PreviewSubscribeOptions {
   teamCreditStopId?: string
+  promotionCode?: string
 }
 
 export type { SubscribeResponse }
@@ -105,8 +116,16 @@ export type { BillingStatus }
 export type { BillingStatusResponse }
 
 export type { BillingBalanceResponse }
+export type { BillingCapabilitiesResponse }
 export type { CreateTopupResponse }
 export type { BillingOpStatusResponse }
+export type { SavedPaymentMethod }
+export type BillingAuthenticationState = NonNullable<
+  BillingOpStatusResponse['authentication_state']
+>
+export type BillingDeclineReason = NonNullable<
+  BillingOpStatusResponse['decline_reason']
+>
 
 interface GetBillingEventsParams {
   page?: number
@@ -132,6 +151,7 @@ const workspaceApiClient = axios.create({
 
 // acceptInvite opts out via __skipUnifiedRemint (it is deliberately Firebase-authed).
 attachUnifiedRemintInterceptor(workspaceApiClient)
+attachCapabilityRevisionInterceptor(workspaceApiClient)
 
 async function getAuthHeaderOrThrow() {
   return useAuthStore().getWorkspaceAuthHeaderOrThrow()
@@ -165,6 +185,23 @@ export const workspaceApi = {
     try {
       const response = await workspaceApiClient.get<ListWorkspacesResponse>(
         workspaceApiUrl('/workspaces'),
+        { headers }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  /**
+   * Get the workspace bound to the current credential
+   * GET /api/workspaces/current
+   */
+  async getCurrentWorkspace(): Promise<CurrentWorkspaceResponse> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.get<CurrentWorkspaceResponse>(
+        workspaceApiUrl('/workspaces/current'),
         { headers }
       )
       return response.data
@@ -417,6 +454,26 @@ export const workspaceApi = {
   },
 
   /**
+   * Get billing capabilities for the current workspace
+   * GET /api/billing/capabilities
+   */
+  async getBillingCapabilities(
+    signal?: AbortSignal
+  ): Promise<BillingCapabilitiesResponse> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response =
+        await workspaceApiClient.get<BillingCapabilitiesResponse>(
+          workspaceApiUrl('/billing/capabilities'),
+          { headers, timeout: 10_000, signal }
+        )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  /**
    * Get available subscription plans
    * GET /api/billing/plans
    */
@@ -425,6 +482,19 @@ export const workspaceApi = {
     try {
       const response = await workspaceApiClient.get<BillingPlansResponse>(
         workspaceApiUrl('/billing/plans'),
+        { headers }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  async listSavedPaymentMethods(): Promise<SavedPaymentMethod[]> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.get<SavedPaymentMethod[]>(
+        workspaceApiUrl('/billing/payment-methods'),
         { headers }
       )
       return response.data
@@ -447,7 +517,8 @@ export const workspaceApi = {
         workspaceApiUrl('/billing/preview-subscribe'),
         {
           plan_slug: planSlug,
-          team_credit_stop_id: options.teamCreditStopId
+          team_credit_stop_id: options.teamCreditStopId,
+          promotion_code: options.promotionCode
         } satisfies PreviewSubscribeRequest,
         { headers }
       )
@@ -465,12 +536,29 @@ export const workspaceApi = {
     planSlug: string,
     options: SubscribeOptions = {}
   ): Promise<SubscribeResponse> {
+    if (
+      options.confirmationToken !== undefined &&
+      options.savedPaymentMethodId !== undefined
+    ) {
+      throw new TypeError(
+        'confirmationToken and savedPaymentMethodId are mutually exclusive'
+      )
+    }
+    // JSON drops `undefined` but keeps `''`, so an empty credential would reach
+    // the API as a present-but-meaningless value.
+    const confirmationToken = options.confirmationToken || undefined
+    const savedPaymentMethodId = options.savedPaymentMethodId || undefined
     const headers = await getAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.post<SubscribeResponse>(
         workspaceApiUrl('/billing/subscribe'),
         {
           plan_slug: planSlug,
+          confirmation_token: confirmationToken,
+          promotion_code: options.promotionCode,
+          quote_id: options.quoteId,
+          quote_version: options.quoteVersion,
+          saved_payment_method_id: savedPaymentMethodId,
           return_url: options.returnUrl,
           cancel_url: options.cancelUrl,
           team_credit_stop_id: options.teamCreditStopId,
@@ -611,7 +699,7 @@ export const workspaceApi = {
     const headers = await getAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.get<BillingOpStatusResponse>(
-        workspaceApiUrl(`/billing/ops/${opId}`),
+        workspaceApiUrl(`/billing/ops/${encodeURIComponent(opId)}`),
         { headers, timeout: 30_000 }
       )
       return response.data
