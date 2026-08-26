@@ -262,8 +262,8 @@ describe('GraphCanvas execution progress updates', () => {
     useCanvasStore().canvas = canvas
 
     const workflowStore = useWorkflowStore()
-    vi.mocked(workflowStore.nodeIdToNodeLocatorId).mockImplementation((id) =>
-      createNodeLocatorId(null, id)
+    vi.mocked(workflowStore.nodeToNodeLocatorId).mockImplementation((node) =>
+      createNodeLocatorId(null, node.id)
     )
 
     const executionStore = useExecutionStore()
@@ -288,7 +288,7 @@ describe('GraphCanvas execution progress updates', () => {
     await nextTick()
     progressWrites = 0
     mocks.setDirty.mockClear()
-    vi.mocked(workflowStore.nodeIdToNodeLocatorId).mockClear()
+    vi.mocked(workflowStore.nodeToNodeLocatorId).mockClear()
 
     return {
       executionStore,
@@ -391,7 +391,7 @@ describe('GraphCanvas execution progress updates', () => {
     expect(mocks.setDirty).toHaveBeenCalledWith(true, false)
   })
 
-  it.fails('does no node work for structurally equal progress', async () => {
+  it('does no node work for structurally equal progress', async () => {
     const harness = await mountProgressHarness()
 
     harness.executionStore.nodeProgressStates = Object.fromEntries(
@@ -402,12 +402,12 @@ describe('GraphCanvas execution progress updates', () => {
     )
     await nextTick()
 
-    expect(harness.workflowStore.nodeIdToNodeLocatorId).not.toHaveBeenCalled()
+    expect(harness.workflowStore.nodeToNodeLocatorId).not.toHaveBeenCalled()
     expect(harness.progressWrites).toBe(0)
     expect(mocks.setDirty).not.toHaveBeenCalled()
   })
 
-  it.fails('updates only the node whose progress changed', async () => {
+  it('updates only the node whose progress changed', async () => {
     const harness = await mountProgressHarness()
 
     const clonedProgressState = Object.fromEntries(
@@ -422,7 +422,7 @@ describe('GraphCanvas execution progress updates', () => {
     }
     await nextTick()
 
-    expect(harness.workflowStore.nodeIdToNodeLocatorId).toHaveBeenCalledOnce()
+    expect(harness.workflowStore.nodeToNodeLocatorId).not.toHaveBeenCalled()
     expect(harness.progressWrites).toBe(1)
     expect(harness.progressValues[0]).toBe(0.5)
     expect(mocks.setDirty).toHaveBeenCalledOnce()
