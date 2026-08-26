@@ -28,9 +28,34 @@ const gcsPublicBase = (process.env.GCS_PUBLIC_BASE_URL || 'https://media.comfy.o
   /\/+$/,
   '',
 )
-const gcsCredentials = process.env.GCS_CREDENTIALS_JSON
-  ? JSON.parse(process.env.GCS_CREDENTIALS_JSON)
-  : undefined
+// Parsed defensively rather than with a bare `JSON.parse`: a malformed value
+// would otherwise throw a raw SyntaxError during module init — whose message
+// echoes a slice of the credential — and `JSON.parse` returns `any`, letting an
+// arbitrary shape reach `new Storage(...)` unchecked. Errors here name the
+// variable and nothing else.
+const parseGcsCredentials = (raw: string | undefined) => {
+  if (!raw) return undefined
+
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw)
+  } catch {
+    throw new Error('GCS_CREDENTIALS_JSON is not valid JSON')
+  }
+
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    throw new Error('GCS_CREDENTIALS_JSON must be a JSON object')
+  }
+
+  const { client_email: clientEmail, private_key: privateKey } = parsed as Record<string, unknown>
+  if (typeof clientEmail !== 'string' || typeof privateKey !== 'string') {
+    throw new Error('GCS_CREDENTIALS_JSON must be a service-account key')
+  }
+
+  return { client_email: clientEmail, private_key: privateKey }
+}
+
+const gcsCredentials = parseGcsCredentials(process.env.GCS_CREDENTIALS_JSON)
 
 export default buildConfig({
   admin: {

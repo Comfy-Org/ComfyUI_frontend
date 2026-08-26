@@ -24,15 +24,9 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  webpack: (webpackConfig) => {
-    webpackConfig.resolve.extensionAlias = {
-      '.cjs': ['.cts', '.cjs'],
-      '.js': ['.ts', '.tsx', '.js', '.jsx'],
-      '.mjs': ['.mts', '.mjs'],
-    }
-
-    return webpackConfig
-  },
+  // Next 16 bundles with Turbopack, which resolves TypeScript sources natively —
+  // the Payload template's `webpack.resolve.extensionAlias` hook is not applied
+  // and is not needed. Re-add it only alongside a `next build --webpack`.
   turbopack: {
     root: path.resolve(dirname, '../..'),
   },

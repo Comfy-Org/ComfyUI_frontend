@@ -1,7 +1,8 @@
 # @comfyorg/cms
 
 Payload CMS backing the Comfy website. Payload 3 on Postgres, deployed as its own
-Next app and consumed by `apps/website` at build time over the REST API.
+Next app. `apps/website` will consume it at build time over the REST API; that
+integration lands in a follow-up change and no website code reads from it yet.
 
 ## Start locally
 

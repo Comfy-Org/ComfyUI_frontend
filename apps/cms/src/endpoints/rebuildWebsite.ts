@@ -33,7 +33,12 @@ export const rebuildWebsiteEndpoint: Endpoint = {
       req.payload.logger.info({ user: req.user.id }, 'Website rebuild triggered via deploy hook')
       return Response.json({ ok: true })
     } catch (error) {
-      req.payload.logger.error({ error }, 'Failed to reach the deploy hook')
+      // Log a classification, never the error object: fetch failures carry the
+      // request url on `cause`, which would put the secret deploy hook in logs.
+      req.payload.logger.error(
+        { reason: error instanceof Error ? error.name : 'UnknownError' },
+        'Failed to reach the deploy hook',
+      )
       return Response.json({ error: 'Failed to reach the deploy hook' }, { status: 502 })
     }
   },
