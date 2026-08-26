@@ -16,7 +16,7 @@ const meta: Meta<typeof AgentConsentCard> = {
   // The card is designed on a dark surface; default the theme toolbar to dark.
   globals: { theme: 'dark' },
   args: {
-    title: 'Let Comfy Agent work in your workflow',
+    title: 'Meet Comfy Agent',
     paragraphs,
     videoSrc: VIDEO_SRC,
     docsUrl: 'https://docs.comfy.org/agent-tools/in-app-agent'
