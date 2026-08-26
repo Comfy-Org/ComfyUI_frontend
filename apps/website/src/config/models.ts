@@ -31,6 +31,13 @@ export interface Model {
   readonly featured: boolean
   readonly workflowCount: number
   readonly categories: readonly ModelCategory[]
+  readonly workflowPreviews: readonly ModelWorkflowPreview[]
+}
+
+interface ModelWorkflowPreview {
+  readonly id: string
+  readonly title: string
+  readonly thumbnailUrl: string
 }
 
 export const models: readonly Model[] = (
@@ -45,6 +52,7 @@ export const models: readonly Model[] = (
     thumbnailUrl?: string
     workflowCount: number
     categories?: ModelCategory[]
+    workflowPreviews?: ModelWorkflowPreview[]
   }>
 ).map((m) => ({
   slug: m.slug,
@@ -58,6 +66,7 @@ export const models: readonly Model[] = (
   featured: false,
   workflowCount: m.workflowCount,
   categories: m.categories ?? [],
+  workflowPreviews: m.workflowPreviews ?? [],
   ...modelMetadata[m.slug]
 }))
 

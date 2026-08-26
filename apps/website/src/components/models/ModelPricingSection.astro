@@ -1,0 +1,48 @@
+---
+import SectionHeader from '../common/SectionHeader.vue'
+import { t } from '../../i18n/translations'
+
+interface Props {
+  isPartnerNode: boolean
+  locale?: 'en' | 'zh-CN'
+}
+
+const { isPartnerNode, locale = 'en' } = Astro.props
+const openRows = [
+  ['models.pricing.cloud', 'models.pricing.usageBased'],
+  ['models.pricing.localGpu', 'models.pricing.yourHardware'],
+  ['models.pricing.weights', 'models.pricing.openDownload'],
+] as const
+const partnerRows = [
+  ['models.pricing.cloud', 'models.pricing.usageBased'],
+  ['models.pricing.localGpu', 'models.pricing.partnerOnly'],
+  ['models.pricing.access', 'models.pricing.includedInWorkflow'],
+] as const
+const rows = isPartnerNode ? partnerRows : openRows
+---
+
+<section class="mx-auto max-w-7xl px-6 py-16 lg:px-8">
+  <SectionHeader align="start" maxWidth="xl">
+    {t('models.pricing.heading', locale)}
+    <p
+      slot="subtitle"
+      class="mt-4 text-base font-light text-primary-comfy-canvas/60 lg:text-lg"
+    >
+      {t('models.pricing.subtitle', locale)}
+    </p>
+  </SectionHeader>
+  <dl class="mt-10 divide-y divide-primary-comfy-canvas/15 border-y border-primary-comfy-canvas/15">
+    {
+      rows.map(([labelKey, valueKey]) => (
+        <div class="grid gap-2 py-5 sm:grid-cols-2 sm:items-center">
+          <dt class="text-sm text-primary-comfy-canvas/60">
+            {t(labelKey, locale)}
+          </dt>
+          <dd class="text-base text-primary-comfy-canvas sm:text-right">
+            {t(valueKey, locale)}
+          </dd>
+        </div>
+      ))
+    }
+  </dl>
+</section>

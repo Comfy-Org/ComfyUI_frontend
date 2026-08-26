@@ -118,6 +118,8 @@ the appearance or states of the approved components above.
 | `ModelAccessSection.astro`     | design-only        | Two-column layout around approved destination cards             |
 | `ModelFamilySection.astro`     | design-only        | Linked family hierarchy with approved placeholder media         |
 | `ModelConversionSection.astro` | design-only        | Approved banner action and product-card layout                  |
+| `ModelWorkflowGallery.vue`     | catalog-integrated | Workflow cards, eight-item reveal, and centered catalog action  |
+| `ModelPricingSection.astro`    | catalog-integrated | Three-row access-cost summary using only known catalog facts    |
 
 ## Remaining component gaps for lint enforcement
 
@@ -167,6 +169,15 @@ and then restore the page element.
   governed search and category filters, and uses the owned card preview from
   the newest dated workflow associated with each model in the workflow index.
   The entire card links to its dedicated model route.
+- Generated model detail pages reuse `CardWorkflow01` for workflow previews.
+  They show at most eight cards initially; an existing outline `BrandButton`
+  reveals subsequent groups of eight only when more are available. The
+  centered catalog action follows the cards and links to `/workflows/`.
+- Detail workflow sections use the existing `SectionLabel` without repeating
+  the model name in a second display heading.
+- Detail pricing reuses the three-row “What it costs” structure reviewed on
+  the model preview. Values are limited to catalog-known access facts; pages
+  must not invent per-run credit or dollar estimates.
 - `workflowCount` values are references per catalog entry. Their sum is not a
   verified unique-workflow count and must not be presented as one.
 - Editorial cards remain fixtures until a reviewed mapping exists between each

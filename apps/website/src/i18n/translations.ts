@@ -4701,17 +4701,45 @@ const translations = {
     en: 'WORKFLOWS',
     'zh-CN': '工作流'
   },
-  'models.workflowGallery.heading': {
-    en: 'Workflows using {name}',
-    'zh-CN': '使用 {name} 的工作流'
-  },
-  'models.workflowGallery.cardTitle': {
-    en: '{name} workflow',
-    'zh-CN': '{name} 工作流'
-  },
   'models.workflowGallery.viewAll': {
     en: 'VIEW ALL WORKFLOWS',
     'zh-CN': '查看全部工作流'
+  },
+  'models.workflowGallery.loadMore': {
+    en: 'LOAD MORE',
+    'zh-CN': '加载更多'
+  },
+  'models.pricing.heading': {
+    en: 'What it costs',
+    'zh-CN': '费用说明'
+  },
+  'models.pricing.subtitle': {
+    en: 'Credits before you commit. No surprises after the run.',
+    'zh-CN': '运行前即可了解点数费用，运行后没有意外。'
+  },
+  'models.pricing.cloud': { en: 'Comfy Cloud', 'zh-CN': 'Comfy Cloud' },
+  'models.pricing.usageBased': {
+    en: 'Usage-based credits',
+    'zh-CN': '按使用量计费的点数'
+  },
+  'models.pricing.localGpu': { en: 'Local GPU', 'zh-CN': '本地 GPU' },
+  'models.pricing.yourHardware': {
+    en: 'Your hardware',
+    'zh-CN': '使用您的硬件'
+  },
+  'models.pricing.partnerOnly': {
+    en: 'Partner API only',
+    'zh-CN': '仅限合作伙伴 API'
+  },
+  'models.pricing.access': { en: 'Model access', 'zh-CN': '模型访问' },
+  'models.pricing.includedInWorkflow': {
+    en: 'Included in the workflow',
+    'zh-CN': '包含在工作流中'
+  },
+  'models.pricing.weights': { en: 'Model weights', 'zh-CN': '模型权重' },
+  'models.pricing.openDownload': {
+    en: 'Open download',
+    'zh-CN': '开放下载'
   },
   'models.whatIs.heading': {
     en: 'What is {name}?',

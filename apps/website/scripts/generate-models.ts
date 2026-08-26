@@ -47,9 +47,16 @@ interface OutputModel {
   workflowCount: number
   displayName: string
   categories: ModelCategory[]
+  workflowPreviews: WorkflowPreview[]
   docsUrl?: string
   thumbnailUrl?: string
   canonicalSlug?: string
+}
+
+interface WorkflowPreview {
+  id: string
+  title: string
+  thumbnailUrl: string
 }
 
 // Maps api_*.json filename prefix to a canonical display name and slug.
@@ -102,7 +109,8 @@ const LEGACY_SLUG_REDIRECTS: OutputModel[] = [
     directory: 'partner_nodes',
     huggingFaceUrl: '',
     workflowCount: 0,
-    categories: []
+    categories: [],
+    workflowPreviews: []
   }
 ]
 
@@ -196,6 +204,7 @@ interface ApiModelData {
   directory: 'partner_nodes'
   templateCount: number
   categories: ModelCategory[]
+  templates: string[]
   previewTemplate?: string
 }
 
@@ -210,6 +219,7 @@ function extractApiModels(
     {
       count: number
       categories: Set<ModelCategory>
+      templates: Set<string>
       previewTemplate?: string
       previewRecency?: TemplateRecency
     }
@@ -222,9 +232,11 @@ function extractApiModels(
     if (!entry) continue
     const provider = providers.get(entry.slug) ?? {
       count: 0,
-      categories: new Set<ModelCategory>()
+      categories: new Set<ModelCategory>(),
+      templates: new Set<string>()
     }
     provider.count += 1
+    provider.templates.add(templateName)
     for (const category of templateCategories.get(templateName) ?? []) {
       provider.categories.add(category)
     }
@@ -246,6 +258,7 @@ function extractApiModels(
       directory: 'partner_nodes' as const,
       templateCount: provider.count,
       categories: [...provider.categories],
+      templates: [...provider.templates],
       ...(provider.previewTemplate
         ? { previewTemplate: provider.previewTemplate }
         : {})
@@ -330,6 +343,32 @@ function buildTemplateRecencyMap(
         })
       }
       index += 1
+    }
+  }
+
+  return map
+}
+
+function buildTemplateTitleMap(templatesDir: string): Map<string, string> {
+  const map = new Map<string, string>()
+  const data: unknown = JSON.parse(
+    readFileSync(join(templatesDir, 'index.json'), 'utf8')
+  )
+  if (!Array.isArray(data)) return map
+
+  for (const category of data) {
+    if (typeof category !== 'object' || category === null) continue
+    const templates = (category as Record<string, unknown>)['templates']
+    if (!Array.isArray(templates)) continue
+
+    for (const template of templates) {
+      if (typeof template !== 'object' || template === null) continue
+      const record = template as Record<string, unknown>
+      const name = record['name']
+      const title = record['title']
+      if (typeof name === 'string' && typeof title === 'string') {
+        map.set(name, title)
+      }
     }
   }
 
@@ -432,6 +471,31 @@ function templateThumbnailUrl(
   return `${WORKFLOW_TEMPLATES_BASE}/${encodeURIComponent(base)}-1.webp`
 }
 
+function buildWorkflowPreviews(
+  templateNames: Iterable<string>,
+  templateTitles: ReadonlyMap<string, string>,
+  templateRecencies: ReadonlyMap<string, TemplateRecency>,
+  templatesDir: string
+): WorkflowPreview[] {
+  return [...templateNames]
+    .filter((templateName) =>
+      existsSync(join(templatesDir, `${templateName}-1.webp`))
+    )
+    .sort((a, b) => {
+      const aRecency = templateRecencies.get(a) ?? fallbackRecency()
+      const bRecency = templateRecencies.get(b) ?? fallbackRecency()
+      return (
+        bRecency.timestamp - aRecency.timestamp ||
+        aRecency.index - bRecency.index
+      )
+    })
+    .map((templateName) => ({
+      id: templateName,
+      title: templateTitles.get(templateName) ?? makeDisplayName(templateName),
+      thumbnailUrl: `${WORKFLOW_TEMPLATES_BASE}/${encodeURIComponent(templateName)}-1.webp`
+    }))
+}
+
 function previewRecency(
   templateName: string,
   templateRecencies: ReadonlyMap<string, TemplateRecency>,
@@ -450,6 +514,7 @@ function run(): void {
     .sort()
   const templateCategories = buildTemplateCategoryMap(TEMPLATES_DIR)
   const templateRecencies = buildTemplateRecencyMap(TEMPLATES_DIR)
+  const templateTitles = buildTemplateTitleMap(TEMPLATES_DIR)
 
   for (const file of files) {
     const filePath = join(TEMPLATES_DIR, file)
@@ -520,7 +585,13 @@ function run(): void {
       directory: data.directory,
       workflowCount: data.templates.size,
       displayName: makeDisplayName(name),
-      categories: [...data.categories]
+      categories: [...data.categories],
+      workflowPreviews: buildWorkflowPreviews(
+        data.templates,
+        templateTitles,
+        templateRecencies,
+        TEMPLATES_DIR
+      )
     }
     const docsUrl = tutorialUrlMap.get(name)
     if (docsUrl) result.docsUrl = docsUrl
@@ -542,7 +613,13 @@ function run(): void {
         directory: m.directory,
         workflowCount: m.templateCount,
         displayName: m.name,
-        categories: m.categories
+        categories: m.categories,
+        workflowPreviews: buildWorkflowPreviews(
+          m.templates,
+          templateTitles,
+          templateRecencies,
+          TEMPLATES_DIR
+        )
       }
       const thumb = templateThumbnailUrl(m.previewTemplate, TEMPLATES_DIR)
       if (thumb) result.thumbnailUrl = thumb

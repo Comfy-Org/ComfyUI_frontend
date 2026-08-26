@@ -33,7 +33,8 @@ describe('model explore catalog presentation', () => {
       huggingFaceUrl: '',
       featured: false,
       workflowCount: 4,
-      categories: ['video']
+      categories: ['video'],
+      workflowPreviews: []
     },
     {
       slug: 'partner-image',
@@ -43,7 +44,8 @@ describe('model explore catalog presentation', () => {
       huggingFaceUrl: '',
       featured: false,
       workflowCount: 2,
-      categories: ['image']
+      categories: ['image'],
+      workflowPreviews: []
     },
     {
       slug: 'old-wan-video',
@@ -54,7 +56,8 @@ describe('model explore catalog presentation', () => {
       huggingFaceUrl: '',
       featured: false,
       workflowCount: 0,
-      categories: ['video']
+      categories: ['video'],
+      workflowPreviews: []
     }
   ])
 
