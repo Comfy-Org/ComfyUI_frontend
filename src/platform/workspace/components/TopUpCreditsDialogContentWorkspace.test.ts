@@ -11,6 +11,7 @@ import TopUpCreditsDialogContentWorkspace from './TopUpCreditsDialogContentWorks
 
 const mockFetchBalance = vi.fn()
 const mockFetchStatus = vi.fn()
+const mockManageSubscription = vi.fn()
 const mockTopup =
   vi.fn<(amountCents: number) => Promise<CreateTopupResponse | void>>()
 const mockStartOperation = vi.fn()
@@ -65,6 +66,7 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     fetchBalance: mockFetchBalance,
     fetchStatus: mockFetchStatus,
+    manageSubscription: mockManageSubscription,
     topup: (amountCents: number) => mockTopup(amountCents)
   })
 }))
@@ -139,6 +141,7 @@ const i18n = createI18n({
       g: { back: 'Back', close: 'Close' },
       subscription: {
         addCredits: 'Add credits',
+        manageBilling: 'Manage billing',
         preview: {
           completeVerification: 'Complete verification',
           totalDueToday: 'Total due today'
@@ -164,6 +167,8 @@ const i18n = createI18n({
           chargedImmediatelyNote: 'Your saved card is charged immediately.',
           paymentDetailsRequiredNote:
             "You'll be asked to add a payment method to complete this purchase.",
+          noPaymentMethodError:
+            'No payment method is saved for this workspace. Add one via Manage billing, then retry.',
           confirmSubtitle:
             'Credits are added to this workspace as soon as payment completes.',
           confirmTitle: 'Confirm',
@@ -334,6 +339,44 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         "You'll be asked to add a payment method to complete this purchase."
       )
     ).toBeInTheDocument()
+  })
+
+  it('opens the billing portal from the no-payment-method note', async () => {
+    setHasSavedPaymentMethod(false)
+    mockManageSubscription.mockResolvedValue(undefined)
+
+    renderDialog()
+    await clickAddCredits()
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Manage billing' })
+    )
+
+    expect(mockManageSubscription).toHaveBeenCalledTimes(1)
+  })
+
+  it('explains how to add a payment method when the purchase is refused', async () => {
+    setHasSavedPaymentMethod(false)
+    mockTopup.mockRejectedValue(
+      new WorkspaceApiError(
+        'No default payment method is selected.',
+        400,
+        'NO_PAYMENT_METHOD'
+      )
+    )
+
+    renderDialog()
+    await clickAddCredits()
+    await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
+
+    await waitFor(() =>
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          detail:
+            'No payment method is saved for this workspace. Add one via Manage billing, then retry.'
+        })
+      )
+    )
   })
 
   it('keeps the saved-card note when the payment method lookup fails', async () => {

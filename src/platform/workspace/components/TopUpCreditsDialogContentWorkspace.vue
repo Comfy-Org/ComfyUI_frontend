@@ -67,6 +67,13 @@
         </div>
         <p class="m-0 text-xs text-muted-foreground">
           {{ paymentNote }}
+          <button
+            v-if="hasSavedPaymentMethod === false"
+            class="cursor-pointer border-none bg-transparent p-0 text-xs text-base-foreground underline"
+            @click="openManageBilling"
+          >
+            {{ $t('subscription.manageBilling') }}
+          </button>
         </p>
       </div>
     </template>
@@ -280,6 +287,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { clearTopupTracking } from '@/platform/telemetry/topupTracker'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useHasSavedPaymentMethod } from '@/platform/workspace/composables/useHasSavedPaymentMethod'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
@@ -296,7 +304,8 @@ const settingsDialog = useSettingsDialog()
 const telemetry = useTelemetry()
 const toast = useToast()
 const { buildDocsUrl, docsPaths } = useExternalLink()
-const { fetchBalance, fetchStatus, topup } = useBillingContext()
+const { fetchBalance, fetchStatus, manageSubscription, topup } =
+  useBillingContext()
 const { canTopUp } = useBillingCapabilities()
 
 const billingOperationStore = useBillingOperationStore()
@@ -431,6 +440,10 @@ function handlePrimaryAction() {
     return
   }
   void handleBuy()
+}
+
+function openManageBilling() {
+  void manageSubscription().catch(() => {})
 }
 
 function openTopupVerification() {
@@ -591,13 +604,19 @@ function reportPurchaseError(
       error === undefined ? 'unknown' : categorizeBillingApiError(error),
     duration_ms: Date.now() - attemptStartedAt
   })
+  const missingPaymentMethod =
+    error instanceof WorkspaceApiError && error.code === 'NO_PAYMENT_METHOD'
   toast.add({
     severity: 'error',
     summary: t('credits.topUp.purchaseError'),
-    detail: t('credits.topUp.purchaseErrorDetail', {
-      error:
-        error instanceof Error ? error.message : t('credits.topUp.unknownError')
-    })
+    detail: missingPaymentMethod
+      ? t('credits.topUp.noPaymentMethodError')
+      : t('credits.topUp.purchaseErrorDetail', {
+          error:
+            error instanceof Error
+              ? error.message
+              : t('credits.topUp.unknownError')
+        })
   })
 }
 </script>
