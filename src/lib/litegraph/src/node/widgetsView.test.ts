@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { LegacyWidget } from '@/lib/litegraph/src/widgets/LegacyWidget'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 function createNodeWithWidgets(values: Record<string, number>) {
@@ -78,5 +79,26 @@ describe('widgets view', () => {
     node.widgets = [widgets[1], widgets[0]]
 
     expect(storedOrder(node)).toEqual(['b', 'a'])
+  })
+
+  it('normalizes a plain widget pushed into the live array', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    const widget: IBaseWidget = {
+      name: 'custom',
+      type: 'legacy_test',
+      value: 10,
+      options: {},
+      y: 0
+    }
+
+    node.widgets ||= []
+    node.widgets!.push(widget)
+
+    expect(node.widgets![0]).toBe(widget)
+    expect(widget).toBeInstanceOf(LegacyWidget)
+    expect(storedOrder(node)).toEqual(['custom'])
+    expect(storedValue(widget)).toBe(10)
   })
 })
