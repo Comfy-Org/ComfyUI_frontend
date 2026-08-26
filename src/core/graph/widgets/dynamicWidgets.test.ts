@@ -1,14 +1,16 @@
 import { setActivePinia } from 'pinia'
 import { createTestingPinia } from '@pinia/testing'
-import { describe, expect, test, vi } from 'vitest'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
 import {
   addAutogrow,
   addDynamicCombo
 } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLitegraphService } from '@/services/litegraphService'
+import { useLinkStore } from '@/stores/linkStore'
 
-setActivePinia(createTestingPinia())
+setActivePinia(createTestingPinia({ stubActions: false }))
+beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
 type TestAutogrowNode = LGraphNode & {
   comfyDynamic: { autogrow: Record<string, unknown> }
 }
@@ -23,7 +25,9 @@ function connectInput(node: LGraphNode, inputIndex: number, graph: LGraph) {
   const node2 = testNode()
   node2.addOutput('out', '*')
   graph.add(node2)
-  node2.connect(0, node, inputIndex)
+  const link = node2.connect(0, node, inputIndex)
+  if (!link) throw new Error(`failed to connect input ${inputIndex}`)
+  return link
 }
 function testNode() {
   const node = new LGraphNode('test')
@@ -67,6 +71,76 @@ describe('Dynamic Combos', () => {
     expect(node.inputs.length).toBe(4)
     expect(node.inputs[1].name).toBe('0.0.0.0')
     expect(node.inputs[3].name).toBe('2.2.0.0')
+  })
+  test('Shrinking dynamic inputs preserves remaining connections and disconnects removed links', () => {
+    const graph = new LGraph()
+    const node = testNode()
+    addDynamicCombo(node, [[], ['IMAGE', 'IMAGE', 'IMAGE'], ['IMAGE']])
+    graph.add(node)
+    addNodeInput(node, { name: 'other', isOptional: false, type: 'IMAGE' })
+    node.widgets[0].value = '1'
+    const retained = connectInput(node, 1, graph)
+    const removed = [connectInput(node, 2, graph), connectInput(node, 3, graph)]
+    const removedSources = removed.map((link) =>
+      graph.getNodeById(link.origin_id)
+    )
+    const unrelated = connectInput(node, 4, graph)
+    const onConnectionsChange =
+      vi.fn<NonNullable<LGraphNode['onConnectionsChange']>>()
+    node.onConnectionsChange = onConnectionsChange
+
+    node.widgets[0].value = '2'
+
+    expect(node.getInputLink(1)).toBe(retained)
+    expect(node.getInputLink(2)).toBe(unrelated)
+    for (const link of removed) {
+      expect(graph.getLink(link.id)).toBeUndefined()
+    }
+    for (const source of removedSources) {
+      if (!source) throw new Error('Removed link source node not found')
+      expect(source.isOutputConnected(0)).toBe(false)
+    }
+    const disconnectedLinks = onConnectionsChange.mock.calls
+      .filter(([, , connected]) => !connected)
+      .map(([, , , link]) => link)
+    expect(disconnectedLinks).toHaveLength(2)
+    expect(new Set(disconnectedLinks)).toEqual(new Set(removed))
+  })
+  test('Growing rebuild preserves retained connections', () => {
+    const graph = new LGraph()
+    const node = testNode()
+    addDynamicCombo(node, [[], ['IMAGE'], ['IMAGE', 'IMAGE']])
+    graph.add(node)
+    addNodeInput(node, { name: 'other', isOptional: false, type: 'IMAGE' })
+    node.widgets[0].value = '1'
+    const retained = connectInput(node, 1, graph)
+    const unrelated = connectInput(node, 2, graph)
+
+    node.widgets[0].value = '2'
+
+    expect(node.getInputLink(1)).toBe(retained)
+    expect(node.getInputLink(3)).toBe(unrelated)
+  })
+  test('Replacing a linked input emits one connected callback', () => {
+    const graph = new LGraph()
+    const node = testNode()
+    addDynamicCombo(node, [[], ['IMAGE'], ['IMAGE']])
+    graph.add(node)
+    node.widgets[0].value = '1'
+    const link = connectInput(node, 1, graph)
+    const onConnectionsChange = vi.fn()
+    node.onConnectionsChange = onConnectionsChange
+
+    node.widgets[0].value = '2'
+
+    expect(onConnectionsChange).toHaveBeenCalledOnce()
+    expect(onConnectionsChange).toHaveBeenCalledWith(
+      LiteGraph.INPUT,
+      1,
+      true,
+      link,
+      node.inputs[1]
+    )
   })
   test('Dynamically added widgets have tooltips', () => {
     const node = testNode()
@@ -143,6 +217,57 @@ describe('Autogrow', () => {
     node.disconnectInput(0)
     await nextTick()
     expect(node.inputs.length).toBe(5)
+  })
+  test('Autogrow compaction never emits a negative input slot', async () => {
+    const graph = new LGraph()
+    const node = testNode()
+    const onConnectionsChange = vi.fn()
+    node.onConnectionsChange = onConnectionsChange
+    graph.add(node)
+    addAutogrow(node, { min: 4, input: inputsSpec, prefix: 'test' })
+    connectInput(node, 3, graph)
+    connectInput(node, 4, graph)
+    connectInput(node, 5, graph)
+    onConnectionsChange.mockClear()
+
+    node.disconnectInput(4)
+    await nextTick()
+
+    const inputCalls = onConnectionsChange.mock.calls.filter(
+      ([type]) => type === LiteGraph.INPUT
+    )
+    expect(inputCalls.every(([, slot]) => slot >= 0)).toBe(true)
+    expect(inputCalls.filter(([, , connected]) => !connected)).toHaveLength(1)
+  })
+  test('Rejected autogrow compaction preserves its input layout', async () => {
+    const graph = new LGraph()
+    const node = testNode()
+    const onConnectionsChange = vi.fn()
+    node.onConnectionsChange = onConnectionsChange
+    graph.add(node)
+    addAutogrow(node, { min: 1, input: inputsSpec, prefix: 'test' })
+    connectInput(node, 0, graph)
+    connectInput(node, 1, graph)
+    connectInput(node, 2, graph)
+    const updateEndpoints = vi
+      .spyOn(useLinkStore(), 'updateEndpoints')
+      .mockReturnValue({
+        ok: false,
+        error: { code: 'occupied-target', message: 'Target is occupied' }
+      })
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    node.disconnectInput(1)
+    const inputNames = node.inputs.map(({ name }) => name)
+    const widgetNames = node.widgets.map(({ name }) => name)
+    onConnectionsChange.mockClear()
+    await nextTick()
+
+    expect(updateEndpoints).toHaveBeenCalled()
+    expect(node.inputs.map(({ name }) => name)).toEqual(inputNames)
+    expect(node.widgets.map(({ name }) => name)).toEqual(widgetNames)
+    expect(onConnectionsChange).not.toHaveBeenCalled()
+    consoleError.mockRestore()
   })
   test('Removing a connection ignores stale autogrow callbacks after group removal', () => {
     const graph = new LGraph()
@@ -244,5 +369,12 @@ describe('Autogrow', () => {
       '2.b2',
       'aa'
     ])
+    for (const slot of [0, 1, 3, 4]) {
+      expect.soft(newNode.isInputConnected(slot)).toBe(true)
+      expect.soft(newNode.getInputLink(slot)?.target_slot).toBe(slot)
+    }
+    for (const slot of [2, 5, 6]) {
+      expect.soft(newNode.isInputConnected(slot)).toBe(false)
+    }
   })
 })

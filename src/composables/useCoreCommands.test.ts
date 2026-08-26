@@ -1,4 +1,3 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
@@ -307,9 +306,6 @@ describe('useCoreCommands', () => {
     mockModelStoreRefresh.mockResolvedValue(undefined)
     mockMissingModelStoreRefresh.mockResolvedValue(undefined)
 
-    // Set up Pinia
-    setActivePinia(createPinia())
-
     // Reset app state
     app.canvas.subgraph = undefined
 
@@ -389,9 +385,6 @@ describe('useCoreCommands', () => {
 
     beforeEach(() => {
       app.canvas.selectedItems = new Set()
-      vi.mocked(app.canvas.copyToClipboard).mockClear()
-      vi.mocked(app.canvas.pasteFromClipboard).mockClear()
-      vi.mocked(app.canvas.selectItems).mockClear()
     })
 
     it('should copy selected items when selection exists', async () => {

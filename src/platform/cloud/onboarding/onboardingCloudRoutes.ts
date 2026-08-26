@@ -119,13 +119,19 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
         component: () =>
           import('@/platform/cloud/onboarding/CloudAuthTimeoutView.vue'),
         props: true
-      },
+      }
+    ]
+  },
+  {
+    path: '/cloud/subscribe',
+    component: () => import('@/views/layouts/LayoutDefault.vue'),
+    meta: { requiresAuth: true },
+    children: [
       {
-        path: 'subscribe',
+        path: '',
         name: 'cloud-subscribe',
         component: () =>
-          import('@/platform/cloud/onboarding/CloudSubscriptionRedirectView.vue'),
-        meta: { requiresAuth: true }
+          import('@/platform/cloud/onboarding/CloudSubscriptionRedirectView.vue')
       }
     ]
   },
@@ -149,5 +155,11 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
     // Remove once BE-4146 lands the backend path change.
     path: '/cloud/oauth/consent',
     redirect: (to) => ({ path: '/oauth/consent', query: to.query })
+  },
+  {
+    // Legacy sign-in URL still reached by bookmarks and external links. It was
+    // unregistered, so the SPA matched nothing and sat on the splash screen.
+    path: '/login',
+    redirect: (to) => ({ name: 'cloud-login', query: to.query, hash: to.hash })
   }
 ]

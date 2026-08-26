@@ -1,6 +1,5 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -87,7 +86,6 @@ const i18n = createI18n({
 })
 
 function renderPanel() {
-  setActivePinia(createPinia())
   return render(SecretsPanel, {
     global: {
       plugins: [i18n],

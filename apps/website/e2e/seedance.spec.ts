@@ -1,9 +1,10 @@
 import { expect } from '@playwright/test'
 
-import { externalLinks, getRoutes } from '../src/config/routes'
+import { getRoutes } from '../src/config/routes'
 import { creatorReviews } from '../src/data/creatorReviews'
 import { seedancePage } from '../src/data/seedance'
 import { t } from '../src/i18n/translations'
+import type { ModelLaunchCta } from '../src/templates/model-launch/types'
 import { test } from './fixtures/blockExternalMedia'
 import { waitForIsland } from './fixtures/islands'
 
@@ -14,8 +15,15 @@ const MODELS_ROUTE = getRoutes('en').models
 const STEPS_HEADING = t('seedance.steps.heading', 'en')
 const STEPS_SECONDARY = t('seedance.steps.secondaryCta', 'en')
 const STEPS_PRIMARY = t('seedance.steps.primaryCta', 'en')
-const SEEDANCE_RUN = seedancePage.hero.primaryCta.href
-const CLOUD_WORKFLOWS_HUB = externalLinks.workflows
+const HERO_PRIMARY_CTA: ModelLaunchCta | undefined =
+  seedancePage.hero.primaryCta
+if (!HERO_PRIMARY_CTA)
+  throw new Error('seedancePage must configure a hero primary CTA')
+const SEEDANCE_RUN: string = HERO_PRIMARY_CTA.href
+// The hub's Seedance family page, which lists the shipped 2.5 workflows. The
+// CTA used to open the hub root, leaving the reader to find the model they had
+// just read about.
+const SEEDANCE_HUB_PAGE: string = seedancePage.hero.secondaryCta?.href ?? ''
 const PROMPT_CTA = t('seedance.hero.promptCta', 'en')
 const COPY_PROMPT = t('modelLaunch.copyPrompt', 'en')
 // `faq` is optional on the template (Wan Animate 2 ships without one), but
@@ -101,7 +109,9 @@ test.describe('Seedance 2.5 page — link targets', () => {
     await expect(primary).toHaveAttribute('href', /video_wan2_2/)
   })
 
-  test('the hero run CTA opens the same Cloud workflow', async ({ page }) => {
+  test('the hero CTAs open Cloud to run and the hub to browse', async ({
+    page
+  }) => {
     const hero = page.locator('section').filter({
       has: page.getByRole('heading', { level: 1, name: HERO_TITLE })
     })
@@ -111,7 +121,10 @@ test.describe('Seedance 2.5 page — link targets', () => {
 
     await expect(
       hero.getByRole('link', { name: t('seedance.hero.secondaryCta', 'en') })
-    ).toHaveAttribute('href', CLOUD_WORKFLOWS_HUB)
+    ).toHaveAttribute('href', SEEDANCE_HUB_PAGE)
+    await expect(
+      hero.getByRole('link', { name: t('seedance.hero.secondaryCta', 'en') })
+    ).toHaveAttribute('href', /\/workflows\/model\/seedance$/)
   })
 
   test('renders one step card per configured step', async ({ page }) => {
@@ -139,6 +152,27 @@ test.describe('Seedance 2.5 page — link targets', () => {
     const buttons = page.getByRole('button', { name: COPY_PROMPT })
     await buttons.first().scrollIntoViewIfNeeded()
     await expect(buttons).toHaveCount(withPrompt.length)
+  })
+
+  // Seedance 2.5 does not render 4K, and a prompt is copyable text that would
+  // re-publish the claim the rest of this page had it removed for. Scoped to the
+  // prompt boxes rather than every paragraph, so a card description can neither
+  // satisfy nor trip this.
+  test('no rendered gallery prompt advertises 4K', async ({ page }) => {
+    const gallery = page.locator('section').filter({
+      has: page.getByRole('heading', { level: 2, name: MODELS_HEADING })
+    })
+    await gallery.scrollIntoViewIfNeeded()
+
+    // All six cards carry a prompt.
+    const EXPECTED_PROMPTS = 6
+
+    const prompts = gallery.getByTestId('gallery-card-prompt')
+    await expect(prompts).toHaveCount(EXPECTED_PROMPTS)
+
+    for (const text of await prompts.allInnerTexts()) {
+      expect(text).not.toMatch(/\b4k\b/i)
+    }
   })
 
   test('MCP highlight card CTA links to the MCP page', async ({ page }) => {

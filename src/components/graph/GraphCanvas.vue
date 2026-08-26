@@ -70,17 +70,13 @@
     @pointerdown.capture="forwardPointerDownPanEvent"
     @pointerup.capture="forwardPointerUpPanEvent"
     @pointermove.capture="forwardPointerMovePanEvent"
+    @keydown.space="forwardSpaceKeyEvent"
   >
     <!-- Vue nodes rendered based on graph nodes -->
     <LGraphNode
       v-for="nodeData in allNodes"
       :key="nodeData.id"
-      :node-data="nodeData"
-      :error="
-        executionErrorStore.lastExecutionErrorNodeId === nodeData.id
-          ? 'Execution error'
-          : null
-      "
+      :node-data
       :data-node-id="nodeData.id"
     />
   </TransformPane>
@@ -157,8 +153,7 @@ import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useGroupContextMenu } from '@/composables/graph/useGroupContextMenu'
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
-import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
+import type { NodeState } from '@/types/nodeState'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
 import { useContextMenuTranslation } from '@/composables/useContextMenuTranslation'
@@ -166,6 +161,7 @@ import { useCopy } from '@/composables/useCopy'
 import { useGlobalLitegraph } from '@/composables/useGlobalLitegraph'
 import { usePaste } from '@/composables/usePaste'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLitegraphSettings } from '@/platform/settings/composables/useLitegraphSettings'
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
@@ -175,8 +171,11 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowAutoSave } from '@/platform/workflow/persistence/composables/useWorkflowAutoSave'
 import { useWorkflowPersistenceV2 as useWorkflowPersistence } from '@/platform/workflow/persistence/composables/useWorkflowPersistenceV2'
+import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
+import { arrangeForLegacyRender } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
+import { notifyLayoutChanges } from '@/renderer/core/canvas/litegraph/notifyLayoutChanges'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
@@ -259,9 +258,6 @@ const minimapEnabled = computed(() => settingStore.get('Comfy.Minimap.Visible'))
 // Feature flags
 const { shouldRenderVueNodes } = useVueFeatureFlags()
 
-// Vue node system
-const vueNodeLifecycle = useVueNodeLifecycle()
-
 // Error-clearing hooks run regardless of rendering mode (Vue or legacy canvas).
 let cleanupErrorHooks: (() => void) | null = null
 watch(
@@ -272,29 +268,45 @@ watch(
   }
 )
 
-const handleVueNodeLifecycleReset = async () => {
-  if (shouldRenderVueNodes.value) {
-    vueNodeLifecycle.disposeNodeManagerAndSyncs()
-    await nextTick()
-    vueNodeLifecycle.initializeNodeManager()
-  }
+function exitToLegacyRendering(graph: LGraph | null) {
+  layoutStore.clearViewGeometry()
+  if (graph) arrangeForLegacyRender(graph)
+  canvasStore.canvas?.setDirty(true, true)
 }
 
-watch(() => canvasStore.currentGraph, handleVueNodeLifecycleReset)
+watch(
+  [shouldRenderVueNodes, () => canvasStore.currentGraph],
+  ([enabled, graph], previous) => {
+    if (enabled) {
+      layoutStore.clearViewGeometry()
+    } else if (previous?.[0]) {
+      exitToLegacyRendering(graph)
+    }
+  },
+  { immediate: true }
+)
+
+watchEffect((onCleanup) => {
+  const canvas = canvasStore.canvas
+  if (canvas) onCleanup(notifyLayoutChanges(canvas))
+})
 
 watch(
   () => canvasStore.isInSubgraph,
-  async (newValue, oldValue) => {
+  (newValue, oldValue) => {
     if (oldValue && !newValue) {
       useWorkflowStore().updateActiveGraph()
     }
-    await handleVueNodeLifecycleReset()
   }
 )
 
-const allNodes = computed((): VueNodeData[] =>
-  Array.from(vueNodeLifecycle.nodeManager.value?.vueNodeData?.values() ?? [])
-)
+const nodeDataStore = useNodeDataStore()
+const allNodes = computed((): NodeState[] => {
+  const { rootGraphId } = canvasStore
+  const graphId = canvasStore.currentGraph?.id
+  if (!rootGraphId || graphId === undefined) return []
+  return nodeDataStore.getGraphNodesFor(rootGraphId, graphId)
+})
 watch(
   () => linearMode.value,
   (isLinearMode) => {
@@ -555,8 +567,6 @@ onMounted(async () => {
       cleanupErrorHooks = installErrorClearingHooks(comfyApp.canvas.graph)
     }
 
-    vueNodeLifecycle.setupEmptyGraphListener()
-
     // Load color palette
     colorPaletteStore.customPalettes = settingStore.get(
       'Comfy.CustomColorPalettes'
@@ -605,7 +615,6 @@ onMounted(async () => {
 onUnmounted(() => {
   cleanupErrorHooks?.()
   cleanupErrorHooks = null
-  vueNodeLifecycle.cleanup()
 })
 function forwardPointerDownPanEvent(e: PointerEvent) {
   forwardPanEvent(e, isMiddlePointerInput)
@@ -617,6 +626,21 @@ function forwardPointerMovePanEvent(e: PointerEvent) {
 
 function forwardPointerUpPanEvent(e: PointerEvent) {
   forwardPanEvent(e, isMiddleButtonEvent)
+}
+
+function forwardSpaceKeyEvent(e: KeyboardEvent) {
+  const target = e.target
+  if (
+    !layoutStore.isDraggingVueNodes.value ||
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement ||
+    target instanceof HTMLSelectElement ||
+    target instanceof HTMLButtonElement ||
+    (target instanceof HTMLElement && target.isContentEditable)
+  )
+    return
+
+  comfyApp.canvas?.processKey(e)
 }
 
 function forwardPanEvent(

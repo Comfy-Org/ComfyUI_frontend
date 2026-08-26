@@ -152,7 +152,7 @@ describe('DatadogRumTelemetryProvider', () => {
         ...workflowExecutionIntent
       },
       duration: 20,
-      context: {
+      context: () => ({
         success: false,
         failure_reason: 'submission_rejected',
         terminal_stage: 'submission',
@@ -160,7 +160,7 @@ describe('DatadogRumTelemetryProvider', () => {
         workflow_ended_at_unix_ms: performance.timeOrigin + 62,
         submission_duration_ms: 20,
         trigger_source: 'keybinding'
-      }
+      })
     },
     {
       name: 'queue wait',
@@ -173,7 +173,7 @@ describe('DatadogRumTelemetryProvider', () => {
         ...workflowExecutionIntent
       },
       duration: 40,
-      context: {
+      context: () => ({
         success: false,
         failure_reason: 'execution_failed',
         terminal_stage: 'queue_wait',
@@ -183,7 +183,7 @@ describe('DatadogRumTelemetryProvider', () => {
         submission_duration_ms: 20,
         queue_wait_duration_ms: 20,
         trigger_source: 'keybinding'
-      }
+      })
     },
     {
       name: 'execution',
@@ -197,7 +197,7 @@ describe('DatadogRumTelemetryProvider', () => {
         ...workflowExecutionIntent
       },
       duration: 100,
-      context: {
+      context: () => ({
         success: false,
         failure_reason: 'execution_failed',
         terminal_stage: 'execution',
@@ -209,7 +209,7 @@ describe('DatadogRumTelemetryProvider', () => {
         queue_wait_duration_ms: 30,
         execution_duration_ms: 50,
         trigger_source: 'keybinding'
-      }
+      })
     }
   ] as const)(
     'records a failed workflow vital ending during $name',
@@ -221,7 +221,7 @@ describe('DatadogRumTelemetryProvider', () => {
       expect(addDurationVital).toHaveBeenCalledWith('workflow_execution', {
         startTime: performance.timeOrigin + 42,
         duration,
-        context
+        context: context()
       })
     }
   )

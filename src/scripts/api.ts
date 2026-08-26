@@ -11,6 +11,7 @@ import {
   shouldRemintCloudRequest
 } from '@/platform/auth/unified/remintRetry'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
+import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 import type {
   ModelFile,
   ModelFolderInfo
@@ -18,7 +19,10 @@ import type {
 import { isCloud } from '@/platform/distribution/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ShareableAssetsResponse } from '@/schemas/apiSchema'
-import { zShareableAssetsResponse } from '@/schemas/apiSchema'
+import {
+  zEmbeddingsResponse,
+  zShareableAssetsResponse
+} from '@/schemas/apiSchema'
 import type {
   TemplateIncludeOnDistributionEnum,
   WorkflowTemplates
@@ -1001,10 +1005,14 @@ export class ComfyApi extends EventTarget {
 
   /**
    * Gets a list of embedding names
+   * @throws When the request fails or the response does not match the schema
    */
   async getEmbeddings(): Promise<EmbeddingsResponse> {
     const resp = await this.fetchApi('/embeddings', { cache: 'no-store' })
-    return await resp.json()
+    if (!resp.ok) {
+      throw new Error(`Failed to fetch /embeddings: ${resp.status}`)
+    }
+    return zEmbeddingsResponse.parse(await resp.json())
   }
 
   /**
@@ -1606,6 +1614,9 @@ export class ComfyApi extends EventTarget {
    * @returns true if the feature is supported, false otherwise
    */
   serverSupportsFeature(featureName: string): boolean {
+    const sessionOverride = getSessionOverride(featureName)
+    if (sessionOverride !== undefined) return sessionOverride === true
+
     const override = getDevOverride<boolean>(featureName)
     if (override !== undefined) return override
     return get(this.serverFeatureFlags.value, featureName) === true
@@ -1618,6 +1629,9 @@ export class ComfyApi extends EventTarget {
    * @returns The feature value or default
    */
   getServerFeature<T = unknown>(featureName: string, defaultValue?: T): T {
+    const sessionOverride = getSessionOverride<T>(featureName)
+    if (sessionOverride !== undefined) return sessionOverride
+
     const override = getDevOverride<T>(featureName)
     if (override !== undefined) return override
     return get(this.serverFeatureFlags.value, featureName, defaultValue) as T
