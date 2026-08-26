@@ -59,6 +59,10 @@ const SWEEP_MS_PER_PAIR = 40
 const ISOLATED_MS_PER_PAIR = PLAN_SETUP_MS
 const DYNAMIC_CLEANUP_SETTLE_MS = 50
 const PAIRS_PER_BATCH = 100
+// Healthy batches finish in ~3s; the slowest observed legitimate batch was
+// 30s. 90s is past any real batch and still well inside the sweep budget, so
+// a stalled batch reports its pair instead of consuming the whole test.
+const BATCH_STALL_MS = 90_000
 const PAIRS_PER_PAGE = 1_000
 // Same discipline for the drag pass, whose edge list grows with every
 // connectivity pack: one drag per edge per renderer. This test carried a flat
@@ -523,7 +527,36 @@ async function runPairsAcrossPages(
   return { results, errors }
 }
 
-function evaluatePairs(
+// A batch that never returns otherwise fails as a bare test timeout naming
+// only the 100-pair window. Racing the batch against a deadline and reading
+// the in-page cursor tells us the exact pair, and whether the renderer is
+// still responsive (an unresolved await) or wedged (a synchronous loop).
+async function evaluatePairs(
+  page: Page,
+  pairs: PlannedPair[],
+  options: { resetAfter?: boolean; stalledCleanupKeys?: string[] } = {}
+): Promise<PairResult[]> {
+  const stall = Symbol('stall')
+  const timer = new Promise<typeof stall>((resolve) =>
+    setTimeout(() => resolve(stall), BATCH_STALL_MS)
+  )
+  const batch = evaluatePairsInPage(page, pairs, options)
+  const outcome = await Promise.race([batch, timer])
+  if (outcome !== stall) return outcome
+  const cursor = await page
+    .evaluate(
+      () => (window as unknown as { __cnPairCursor?: string }).__cnPairCursor,
+      { timeout: 10_000 }
+    )
+    .catch(() => null)
+  throw new Error(
+    cursor === null
+      ? `connectivity batch wedged the renderer after ${BATCH_STALL_MS}ms; the page stopped answering, so a pack ran a synchronous loop. Batch started at ${pairs[0] ? `${pairs[0].producer.nodeType}.${pairs[0].producer.slotName}` : 'unknown'}`
+      : `connectivity batch stalled after ${BATCH_STALL_MS}ms on pair '${cursor ?? 'none recorded'}' - the page still answers, so that pair is awaiting something that never settles`
+  )
+}
+
+function evaluatePairsInPage(
   page: Page,
   pairs: PlannedPair[],
   {
@@ -554,6 +587,7 @@ function evaluatePairs(
     }> = []
     for (const pair of pairsInPage) {
       const key = `${pair.producer.nodeType}.${pair.producer.slotName} -> ${pair.consumer.nodeType}.${pair.consumer.slotName}`
+      Object.assign(window, { __cnPairCursor: key })
       try {
         resetGraph()
         const producer = window.LiteGraph!.createNode(pair.producer.nodeType)
