@@ -8,5 +8,10 @@
     "count": 40,
     "nodeTypesSha256": "1e652681b9d77e556c25fd7eb1b6850416622ef68a4635db4d471971aecda9fb"
   },
-  "nodes": {}
+  "nodes": {
+    "VHS_Unbatch": {
+      "connectFirst": ["+output:unbatched:INT", "-output:unbatched:*"],
+      "disconnect": ["+output:unbatched:*", "-output:unbatched:INT"]
+    }
+  }
 }

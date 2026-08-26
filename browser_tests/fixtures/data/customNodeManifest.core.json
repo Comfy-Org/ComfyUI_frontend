@@ -32,7 +32,7 @@
     "workflow": "assets/customNodes/vhs_video_pipeline_run.json",
     "expectedNodes": ["VHS_LoadVideoPath", "VHS_VideoInfo"],
     "expectedNodeCount": 40,
-    "expectedRunnableCount": 31,
+    "expectedRunnableCount": 30,
     "expectedExtensions": ["VideoHelperSuite.Core"],
     "requiresGpu": false,
     "requiresModels": [],
