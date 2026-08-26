@@ -575,11 +575,14 @@ async function evaluatePairs(
     throw new Error(
       `connectivity batch wedged the renderer after ${BATCH_STALL_MS}ms; the page stopped answering, so a pack ran a synchronous loop. Batch started at ${pairs[0] ? `${pairs[0].producer.nodeType}.${pairs[0].producer.slotName}` : 'unknown'}`
     )
-  const growing =
-    JSON.stringify(first.slots) !== JSON.stringify(second.slots) ||
-    first.nodes !== second.nodes
+  // The cursor, not the graph, is the progress signal: every pair resets to
+  // exactly two nodes, so node counts look identical whether the sweep is
+  // wedged on one pair or running normally.
+  const advanced = first.cursor !== second.cursor
   throw new Error(
-    `connectivity batch stalled after ${BATCH_STALL_MS}ms on pair '${second.cursor ?? 'none recorded'}' - the page still answers. Graph ${growing ? 'IS STILL CHANGING' : 'is static'} across a 2s sample: nodes ${first.nodes} -> ${second.nodes}, slots ${JSON.stringify(first.slots)} -> ${JSON.stringify(second.slots)}`
+    advanced
+      ? `connectivity batch is progressing but too slow for ${BATCH_STALL_MS}ms: the cursor moved '${first.cursor}' -> '${second.cursor}' during a 2s sample, so no single pair is stuck and the batch simply needs longer than the budget allows`
+      : `connectivity batch stalled after ${BATCH_STALL_MS}ms on pair '${second.cursor ?? 'none recorded'}' - the page answers and the cursor did not move across a 2s sample, so that one pair is awaiting something that never settles. Graph at stall: nodes ${second.nodes}, slots ${JSON.stringify(second.slots)}`
   )
 }
 
