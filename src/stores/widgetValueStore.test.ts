@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { UUID } from '@/utils/uuid'
 import { toNodeId } from '@/types/nodeId'
@@ -26,6 +26,18 @@ describe('useWidgetValueStore', () => {
     it('getWidget returns undefined for unregistered widget', () => {
       const store = useWidgetValueStore()
       expect(store.getWidget(seedA)).toBeUndefined()
+    })
+
+    it('does not create state while reading missing widgets', () => {
+      const store = useWidgetValueStore()
+      const onMutation = vi.fn()
+      store.$subscribe(onMutation, { flush: 'sync' })
+
+      expect(store.getWidget(seedA)).toBeUndefined()
+      expect(store.getWidgetRenderState(seedA)).toBeUndefined()
+      expect(store.getNodeWidgetIds(graphA, toNodeId('node-1'))).toEqual([])
+
+      expect(onMutation).not.toHaveBeenCalled()
     })
 
     it('widgetState.value can be read and written directly', () => {
@@ -96,14 +108,24 @@ describe('useWidgetValueStore', () => {
       expect(registered.y).toBe(42)
     })
 
-    it('registerWidget is idempotent and does not overwrite existing state', () => {
+    it('refreshes metadata without overwriting the current value', () => {
       const store = useWidgetValueStore()
       const first = store.registerWidget(seedA, state('number', 11))!
       first.value = 99
 
-      const second = store.registerWidget(seedA, state('number', 11))!
+      const second = store.registerWidget(
+        seedA,
+        state('number', 11, {
+          label: 'Updated seed',
+          options: { min: 4 },
+          disabled: true
+        })
+      )!
       expect(second).toBe(first)
       expect(second.value).toBe(99)
+      expect(second.label).toBe('Updated seed')
+      expect(second.options).toEqual({ min: 4 })
+      expect(second.disabled).toBe(true)
     })
 
     it('replaces a stale entry when the widget type changes', () => {
@@ -119,6 +141,30 @@ describe('useWidgetValueStore', () => {
       expect(reconciled.type).toBe('string')
       expect(reconciled.value).toBe('hello')
       expect(store.getWidget(seedA)?.type).toBe('string')
+    })
+
+    it('does not accept caller-owned identity during re-registration', () => {
+      const store = useWidgetValueStore()
+      store.registerWidget(seedA, state('number', 5))
+      const stale = state('number', 10, { name: 'wrong' })
+      Object.assign(stale, { nodeId: toNodeId('wrong') })
+
+      const registered = store.registerWidget(seedA, stale)!
+
+      expect(registered.nodeId).toBe(toNodeId('node-1'))
+      expect(registered.name).toBe('wrong')
+    })
+
+    it('clears omitted render state when a widget id is recycled', () => {
+      const store = useWidgetValueStore()
+      store.registerWidget(seedA, state('number', 5), {
+        advanced: true,
+        tooltip: 'old'
+      })
+
+      store.registerWidget(seedA, state('string', 'new'))
+
+      expect(store.getWidgetRenderState(seedA)).toEqual({})
     })
 
     it('registers a widget with all properties', () => {
@@ -376,6 +422,20 @@ describe('useWidgetValueStore', () => {
       expect(store.getWidget(seedA)).toBeUndefined()
       expect(store.getWidget(seedB)?.value).toBe(2)
     })
+
+    it('clearNode removes only the target node values, render state, and order', () => {
+      const store = useWidgetValueStore()
+      const sibling = widgetId(graphA, toNodeId('node-2'), 'seed')
+      store.registerWidget(seedA, state('number', 1), { advanced: true })
+      store.registerWidget(sibling, state('number', 2))
+
+      store.clearNode(graphA, toNodeId('node-1'))
+
+      expect(store.getWidget(seedA)).toBeUndefined()
+      expect(store.getWidgetRenderState(seedA)).toBeUndefined()
+      expect(store.getNodeWidgetIds(graphA, toNodeId('node-1'))).toEqual([])
+      expect(store.getWidget(sibling)?.value).toBe(2)
+    })
   })
 
   describe('un-keyable widget ids', () => {
@@ -401,10 +461,11 @@ describe('useWidgetValueStore', () => {
       }
     })
 
-    it('getWidget / setValue / deleteWidget tolerate un-keyable ids', () => {
+    it('read, update, and delete operations tolerate un-keyable ids', () => {
       const store = useWidgetValueStore()
       for (const id of malformedIds) {
         expect(store.getWidget(id)).toBeUndefined()
+        expect(store.getWidgetRenderState(id)).toBeUndefined()
         expect(store.setValue(id, 1)).toBe(false)
         expect(store.deleteWidget(id)).toBe(false)
       }

@@ -485,6 +485,7 @@ describe('SubgraphNode Synchronization', () => {
       JSON.stringify(subgraphNode.serialize())
     ) as ExportedSubgraphInstance
     useWidgetValueStore().clearGraph(subgraphNode.rootGraph.id)
+    subgraph.clear()
 
     const reloadedSubgraph = createTestSubgraph({
       rootGraph: subgraphNode.rootGraph
