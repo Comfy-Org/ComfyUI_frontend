@@ -47,6 +47,10 @@ export interface AssetPaginationOptions extends PaginationOptions {
   signal?: AbortSignal
 }
 
+export type AssetUpdateResult =
+  | { kind: 'updated'; asset: AssetItem }
+  | { kind: 'failed'; serverState: 'unchanged' | 'unknown' }
+
 interface AssetRequestOptions extends PaginationOptions {
   includeTags: string[]
   excludeTags?: string[]
@@ -876,7 +880,7 @@ function createAssetService() {
   async function updateAsset(
     id: AssetId,
     newData: AssetUpdatePayload
-  ): Promise<AssetItem> {
+  ): Promise<AssetUpdateResult> {
     const res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}`, {
       method: 'PUT',
       headers: {
@@ -886,19 +890,34 @@ function createAssetService() {
     })
 
     if (!res.ok) {
-      throw new Error(
-        `Unable to update asset ${id}: Server returned ${res.status}`
+      console.error(
+        new Error(`Unable to update asset ${id}: Server returned ${res.status}`)
       )
+      return { kind: 'failed', serverState: 'unchanged' }
     }
 
-    const newAsset = assetItemSchema.safeParse(await res.json())
+    let response: unknown
+    try {
+      response = await res.json()
+    } catch (error) {
+      console.error(
+        `Unable to update asset ${id}: Invalid JSON response`,
+        error
+      )
+      return { kind: 'failed', serverState: 'unknown' }
+    }
+
+    const newAsset = assetItemSchema.safeParse(response)
     if (newAsset.success) {
-      return newAsset.data
+      return { kind: 'updated', asset: newAsset.data }
     }
 
-    throw new Error(
-      `Unable to update asset ${id}: Invalid response - ${newAsset.error}`
+    console.error(
+      new Error(
+        `Unable to update asset ${id}: Invalid response - ${newAsset.error}`
+      )
     )
+    return { kind: 'failed', serverState: 'unknown' }
   }
 
   /**

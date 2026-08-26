@@ -731,6 +731,17 @@ export const useAssetsStore = defineStore('assets', () => {
       }
     }
 
+    function invalidateAssetInCache(assetId: string, cacheKey?: string): void {
+      const categories = new Set<string>()
+      const resolved = cacheKey ? resolveCategory(cacheKey) : undefined
+      if (resolved) categories.add(resolved)
+
+      for (const [category, state] of modelStateByCategory.value.entries()) {
+        if (state.assets?.has(assetId)) categories.add(category)
+      }
+      for (const category of categories) invalidateCategory(category)
+    }
+
     /**
      * Update asset metadata with optimistic cache update
      * @param asset The asset to update
@@ -746,17 +757,23 @@ export const useAssetsStore = defineStore('assets', () => {
       updateAssetInCache(asset.id, { user_metadata: userMetadata }, cacheKey)
 
       try {
-        const updatedAsset = await assetService.updateAsset(asset.id, {
+        const result = await assetService.updateAsset(asset.id, {
           user_metadata: userMetadata
         })
-        updateAssetInCache(asset.id, updatedAsset, cacheKey)
+        if (result.kind === 'updated') {
+          updateAssetInCache(asset.id, result.asset, cacheKey)
+        } else if (result.serverState === 'unchanged') {
+          updateAssetInCache(
+            asset.id,
+            { user_metadata: originalMetadata },
+            cacheKey
+          )
+        } else {
+          invalidateAssetInCache(asset.id, cacheKey)
+        }
       } catch (error) {
         console.error('Failed to update asset metadata:', error)
-        updateAssetInCache(
-          asset.id,
-          { user_metadata: originalMetadata },
-          cacheKey
-        )
+        invalidateAssetInCache(asset.id, cacheKey)
       }
     }
 
