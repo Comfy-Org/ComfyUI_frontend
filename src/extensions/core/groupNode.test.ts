@@ -7,9 +7,11 @@ import { t } from '@/i18n'
 
 import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNode } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 
@@ -21,7 +23,9 @@ const extensionState = vi.hoisted(() => ({
   rootGraph: {
     extra: {} as Record<string, unknown>,
     nodes: [] as { id: string | number }[]
-  }
+  },
+  registerNodeDef:
+    vi.fn<(typeName: string, nodeDef: ComfyNodeDef) => Promise<void>>()
 }))
 
 vi.mock('@/scripts/app', () => ({
@@ -30,6 +34,7 @@ vi.mock('@/scripts/app', () => ({
       return extensionState.configuringGraph
     },
     rootGraph: extensionState.rootGraph,
+    registerNodeDef: extensionState.registerNodeDef,
     registerExtension: (ext: ComfyExtension) => {
       extensionState.ext = ext
     }
@@ -232,6 +237,56 @@ describe('GroupNodeConfig.registerFromWorkflow', () => {
     expect(missing).toStrictEqual([])
   })
 
+  it('removes a prior same-name group type before reporting missing nodes', async () => {
+    const groupType = 'workflow>MyGroup'
+    const missing: MissingNodeType[] = []
+    const previousPinia = getActivePinia()
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    extensionState.registerNodeDef.mockImplementation(
+      async (typeName, nodeDef) => {
+        class PreviousGroupNode extends LGraphNode {
+          static override nodeData = nodeDef
+        }
+        LiteGraph.registerNodeType(typeName, PreviousGroupNode)
+      }
+    )
+
+    try {
+      await GroupNodeConfig.registerFromWorkflow(
+        {
+          MyGroup: {
+            nodes: [],
+            links: [],
+            external: []
+          }
+        },
+        []
+      )
+      const previousGroupNode = LiteGraph.createNode(groupType)
+      if (!previousGroupNode) throw new Error('group type not registered')
+      expect(GroupNodeHandler.isGroupNode(previousGroupNode)).toBe(true)
+      expect(useNodeDefStore().nodeDefsByName[groupType]).toBeDefined()
+
+      await GroupNodeConfig.registerFromWorkflow(
+        groupWithMissingInnerNodes(),
+        missing,
+        new Map([['MyGroup', [7]]])
+      )
+
+      expect(LiteGraph.registered_node_types[groupType]).toBeUndefined()
+      expect(useNodeDefStore().nodeDefsByName[groupType]).toBeUndefined()
+      expect(missing).toStrictEqual([
+        expect.objectContaining({ type: groupType, nodeId: '7' })
+      ])
+    } finally {
+      extensionState.registerNodeDef.mockReset()
+      setActivePinia(previousPinia)
+      if (groupType in LiteGraph.registered_node_types) {
+        LiteGraph.unregisterNodeType(groupType)
+      }
+    }
+  })
+
   it('keeps the legacy unbacked entries when no instance map is given', async () => {
     const missing: MissingNodeType[] = []
 
@@ -399,7 +454,7 @@ describe('group node extension beforeConfigureGraph', () => {
     }
   })
 
-  it('does not retain loading state after graph configuration fails', async () => {
+  it('skips stray conversion while configuring and converts afterwards', async () => {
     const ext = extensionState.ext
     if (!ext?.nodeCreated) throw new Error('extension not registered')
     const convertToNodes = vi.fn(() => [])

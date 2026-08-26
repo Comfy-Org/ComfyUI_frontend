@@ -790,6 +790,13 @@ export class GroupNodeConfig {
 
       if (missingInnerTypes.length) {
         const groupType = `${PREFIX}${SEPARATOR}${g}`
+        const registeredGroupType = LiteGraph.registered_node_types[
+          groupType
+        ] as LGraphNodeConstructor | undefined
+        if (registeredGroupType?.nodeData?.[GROUP]) {
+          LiteGraph.unregisterNodeType(groupType)
+          useNodeDefStore().removeNodeDef(groupType)
+        }
         const removeAction = {
           text: 'Remove from workflow',
           callback: (e?: MouseEvent) => {
