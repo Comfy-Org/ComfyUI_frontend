@@ -73,7 +73,10 @@ export function createNodeProgressCanvasSync(
 
   const detachGraph = () => {
     activeGraph?.events.removeEventListener('node:added', onNodeAdded)
-    activeGraph?.events.removeEventListener('node:removed', onNodeRemoved)
+    activeGraph?.events.removeEventListener(
+      'node:before-removed',
+      onNodeRemoved
+    )
   }
 
   const replaceGraph = (graph: LGraph | null) => {
@@ -91,7 +94,7 @@ export function createNodeProgressCanvasSync(
         progressChanged
     }
     graph.events.addEventListener('node:added', onNodeAdded)
-    graph.events.addEventListener('node:removed', onNodeRemoved)
+    graph.events.addEventListener('node:before-removed', onNodeRemoved)
     return progressChanged
   }
 

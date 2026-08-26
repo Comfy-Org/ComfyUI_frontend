@@ -1,10 +1,9 @@
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { expect, it, vi } from 'vitest'
 
-import type {
-  LGraph,
-  LGraphCanvas,
-  LGraphNode
-} from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import type { NodeProgressState } from '@/schemas/apiSchema'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
@@ -60,12 +59,12 @@ function createGraph(nodes: LGraphNode[], subgraphId?: string) {
       events.dispatchEvent(new CustomEvent('node:added', { detail: { node } }))
     },
     remove(node: LGraphNode) {
+      events.dispatchEvent(
+        new CustomEvent('node:before-removed', { detail: { node } })
+      )
       const index = nodes.indexOf(node)
       if (index !== -1) nodes.splice(index, 1)
       node.graph = null
-      events.dispatchEvent(
-        new CustomEvent('node:removed', { detail: { node } })
-      )
     }
   }
 }
@@ -164,6 +163,29 @@ it('keeps duplicate locator entries and node add/remove lifecycle in sync', () =
   sync.sync({ [locator]: runningState('1', 75) }, canvas, graphFixture.graph)
   expect(first.writes).not.toHaveBeenCalled()
   expect(duplicate.writes).toHaveBeenCalledExactlyOnceWith(0.75)
+})
+
+it('evicts detached nodes when a real graph is cleared and reused', () => {
+  setActivePinia(createTestingPinia({ stubActions: false }))
+  const graph = new LGraph()
+  const staleNode = new LGraphNode('stale')
+  staleNode.id = toNodeId(1)
+  graph.add(staleNode)
+  const canvas = createCanvas()
+  const sync = createNodeProgressCanvasSync(locatorForNode)
+  const locator = createNodeLocatorId(null, staleNode.id)
+
+  sync.sync({ [locator]: runningState('1', 25) }, canvas, graph)
+  expect(staleNode.progress).toBe(0.25)
+
+  graph.clear()
+  const replacementNode = new LGraphNode('replacement')
+  replacementNode.id = toNodeId(1)
+  graph.add(replacementNode)
+  sync.sync({ [locator]: runningState('1', 50) }, canvas, graph)
+
+  expect(staleNode.progress).toBe(0.25)
+  expect(replacementNode.progress).toBe(0.5)
 })
 
 it('rebuilds scope on graph replacement and detaches old graph listeners', () => {
