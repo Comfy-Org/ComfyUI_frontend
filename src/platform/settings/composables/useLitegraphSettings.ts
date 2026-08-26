@@ -1,4 +1,4 @@
-import { watchEffect } from 'vue'
+import { watch, watchEffect } from 'vue'
 
 import {
   CanvasPointer,
@@ -16,13 +16,21 @@ export const useLitegraphSettings = () => {
   const settingStore = useSettingStore()
   const canvasStore = useCanvasStore()
 
-  watchEffect(() => {
-    const canvasInfoEnabled = settingStore.get('Comfy.Graph.CanvasInfo')
-    if (canvasStore.canvas) {
-      canvasStore.canvas.show_info = canvasInfoEnabled
-      canvasStore.canvas.draw(false, true)
-    }
-  })
+  // Must stay an explicit `watch`: rendering reads reactive slot state, so a
+  // `watchEffect` wrapping draw() adopts every slot it touches as a dependency
+  // and each per-frame slot write then forces another draw.
+  watch(
+    [
+      () => settingStore.get('Comfy.Graph.CanvasInfo'),
+      () => canvasStore.canvas
+    ],
+    ([canvasInfoEnabled, canvas]) => {
+      if (!canvas) return
+      canvas.show_info = canvasInfoEnabled
+      canvas.draw(false, true)
+    },
+    { immediate: true }
+  )
 
   watchEffect(() => {
     const zoomSpeed = settingStore.get('Comfy.Graph.ZoomSpeed')
