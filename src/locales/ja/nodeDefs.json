@@ -16596,6 +16596,238 @@
       }
     }
   },
+  "PixverseV6ExtendVideoNode": {
+    "description": "PixVerseで既存の動画を延長します。必要に応じてネイティブ音声も使用できます。元動画は40秒未満かつ、いずれの辺も最大1920pxである必要があります。出力は元動画の解像度を維持するため、品質はフレームサイズではなく延長部分の描画品質を設定します。",
+    "display_name": "PixVerse V6 動画延長",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "モデルと生成設定。"
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_style": {
+        "name": "style"
+      },
+      "video": {
+        "name": "動画",
+        "tooltip": "延長する動画。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6FirstLastFrameNode": {
+    "description": "PixVerseで最初のフレームから最後のフレームへ遷移する動画を生成します。必要に応じてネイティブ音声も使用できます。出力は最初のフレームのアスペクト比を維持します。",
+    "display_name": "PixVerse V6 最初・最後のフレームから動画",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "モデルと生成設定。"
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_style": {
+        "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6FusionVideoNode": {
+    "description": "PixVerseで参照用の被写体、背景、動画から動画を合成します。プロンプト内で名前を指定して参照をシーンに配置します。例: 「{'@'}Subject1 が {'@'}Background1 を歩く」。参照動画を接続するとモデルはOmniモードに切り替わり、出力の長さは最も長い参照動画に合わせられます。",
+    "display_name": "PixVerse V6 融合（参照から動画）",
+    "inputs": {
+      "backgrounds": {
+        "name": "背景",
+        "tooltip": "被写体を配置するシーンの参照画像。"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "モデルと生成設定。"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_quality": {
+        "name": "品質"
+      },
+      "model_seed": {
+        "name": "シード"
+      },
+      "model_style": {
+        "name": "スタイル"
+      },
+      "subjects": {
+        "name": "被写体",
+        "tooltip": "シーンに配置する被写体の参照画像。"
+      },
+      "videos": {
+        "name": "動画",
+        "tooltip": "被写体、動き、フレーミング、スタイルを参照するための動画。最大2本、合計最大15秒。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6ImageToVideoNode": {
+    "description": "PixVerseで画像をアニメーション化します。必要に応じてネイティブ音声も追加できます。出力は入力画像のアスペクト比を維持します。",
+    "display_name": "PixVerse V6 画像から動画",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "モデルと生成の設定。"
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_multi_clip": {
+        "name": "multi_clip"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_quality": {
+        "name": "品質"
+      },
+      "model_seed": {
+        "name": "シード"
+      },
+      "model_style": {
+        "name": "スタイル"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6TextToVideoNode": {
+    "description": "PixVerseでテキストプロンプトから動画を生成します。必要に応じてネイティブ音声も追加できます。",
+    "display_name": "PixVerse V6 テキストから動画",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "モデルと生成の設定。"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_multi_clip": {
+        "name": "multi_clip"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_quality": {
+        "name": "品質"
+      },
+      "model_seed": {
+        "name": "シード"
+      },
+      "model_style": {
+        "name": "スタイル"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PolyexponentialScheduler": {
     "display_name": "ポリ指数スケジューラー",
     "inputs": {
@@ -23435,30 +23667,6 @@
       "prompt": {
         "name": "プロンプト",
         "tooltip": "最大1024文字まで。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "モデルファイル",
-        "tooltip": null
-      },
-      "1": {
-        "name": "モデルタスクID",
-        "tooltip": null
-      },
-      "2": {
-        "name": "GLB",
-        "tooltip": null
-      }
-    }
-  },
-  "TripoRefineNode": {
-    "description": "v1.4 Tripoモデルでのみ作成されたドラフトモデルをリファインします。",
-    "display_name": "Tripo: ドラフトモデルのリファイン",
-    "inputs": {
-      "model_task_id": {
-        "name": "model_task_id",
-        "tooltip": "v1.4 Tripoモデルである必要があります"
       }
     },
     "outputs": {

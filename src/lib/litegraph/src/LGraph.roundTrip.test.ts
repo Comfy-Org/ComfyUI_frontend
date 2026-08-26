@@ -117,7 +117,9 @@ const fixtures: RoundTripFixture[] = [
 function roundTrip(source: ISerialisedGraph) {
   const loaded = new LGraph(structuredClone(source))
   expect(loaded.nodes.filter((n) => n.has_errors)).toEqual([])
-  return loaded.serialize()
+  const serialized = loaded.serialize()
+  loaded.clear()
+  return serialized
 }
 
 /**

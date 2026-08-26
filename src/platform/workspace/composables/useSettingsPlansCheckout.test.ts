@@ -8,7 +8,13 @@ const {
   mockStartOperation,
   mockShowSignInDialog,
   mockFirebaseUser,
-  mockOpen
+  mockOpen,
+  mockIsActiveSubscription,
+  mockIsFreeTier,
+  mockCanManageSubscription,
+  mockInitialize,
+  mockActiveWorkspace,
+  mockWorkspaceError
 } = vi.hoisted(() => ({
   mockSubscribe: vi.fn(),
   mockReconcile: vi.fn(),
@@ -16,13 +22,39 @@ const {
   mockStartOperation: vi.fn(),
   mockShowSignInDialog: vi.fn(),
   mockFirebaseUser: { value: null as { uid: string } | null },
-  mockOpen: vi.fn()
+  mockOpen: vi.fn(),
+  mockIsActiveSubscription: { value: false },
+  mockIsFreeTier: { value: false },
+  mockCanManageSubscription: { value: true },
+  mockInitialize: vi.fn(),
+  mockActiveWorkspace: { value: null as { id: string } | null },
+  mockWorkspaceError: { value: null as Error | null }
 }))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     subscribe: mockSubscribe,
-    reconcileSubscriptionSuccess: mockReconcile
+    reconcileSubscriptionSuccess: mockReconcile,
+    isActiveSubscription: computedFlag(mockIsActiveSubscription),
+    isFreeTier: computedFlag(mockIsFreeTier)
+  })
+}))
+
+vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
+  useWorkspaceUI: () => ({
+    permissions: computedFlagObject(mockCanManageSubscription)
+  })
+}))
+
+vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
+  useTeamWorkspaceStore: () => ({
+    initialize: mockInitialize,
+    get activeWorkspace() {
+      return mockActiveWorkspace.value
+    },
+    get error() {
+      return mockWorkspaceError.value
+    }
   })
 }))
 
@@ -54,6 +86,24 @@ vi.mock('primevue/usetoast', () => ({
   useToast: () => ({ add: mockToastAdd })
 }))
 
+// The hoisted holders are plain objects; the composable reads .value, so wrap
+// them in refs whose getter tracks the holder.
+function computedFlag(holder: { value: boolean }) {
+  return {
+    get value() {
+      return holder.value
+    }
+  }
+}
+
+function computedFlagObject(holder: { value: boolean }) {
+  return {
+    get value() {
+      return { canManageSubscription: holder.value }
+    }
+  }
+}
+
 vi.mock('vue-i18n', async (importOriginal) => {
   const actual = await importOriginal()
   return {
@@ -81,6 +131,13 @@ describe('useSettingsPlansCheckout', () => {
     mockStartOperation.mockResolvedValue({ status: 'succeeded' })
     mockReconcile.mockResolvedValue(undefined)
     mockOpen.mockReturnValue({} as Window)
+    mockIsActiveSubscription.value = false
+    mockIsFreeTier.value = false
+    mockCanManageSubscription.value = true
+    mockInitialize.mockReset()
+    mockInitialize.mockResolvedValue(undefined)
+    mockActiveWorkspace.value = { id: 'ws-1' }
+    mockWorkspaceError.value = null
     vi.stubGlobal('open', mockOpen)
   })
 
@@ -323,6 +380,95 @@ describe('useSettingsPlansCheckout', () => {
       severity: 'error',
       summary: 'subscription.teamPlan.name',
       detail: 'subscription.teamPlan.unavailable'
+    })
+  })
+
+  // Until the preview/consent dialog lands, this launcher can only sell a first
+  // paid subscription: the same POST from an existing subscriber would be an
+  // unpreviewed prorated plan change.
+  describe('canStartCheckout', () => {
+    it('withholds checkout from an active paid subscriber', async () => {
+      mockIsActiveSubscription.value = true
+      mockIsFreeTier.value = false
+
+      const checkout = await setup()
+
+      expect(checkout.canStartCheckout.value).toBe(false)
+    })
+
+    it('allows checkout on the free tier, which is not a paid subscription', async () => {
+      mockIsActiveSubscription.value = true
+      mockIsFreeTier.value = true
+
+      const checkout = await setup()
+
+      expect(checkout.canStartCheckout.value).toBe(true)
+    })
+
+    it('allows checkout for a user with no subscription at all', async () => {
+      const checkout = await setup()
+
+      expect(checkout.canStartCheckout.value).toBe(true)
+    })
+  })
+
+  it('refuses to subscribe for a member who cannot manage the subscription', async () => {
+    mockCanManageSubscription.value = false
+    const checkout = await setup()
+
+    await checkout.subscribeToPersonal('standard-yearly', 'yearly')
+
+    expect(mockSubscribe).not.toHaveBeenCalled()
+    expect(mockToastAdd).toHaveBeenCalledWith({
+      severity: 'error',
+      summary: 'g.error',
+      detail: 'settingsPlans.ownerOnly'
+    })
+  })
+
+  it('waits for the wallet to hydrate before subscribing', async () => {
+    mockActiveWorkspace.value = null
+    mockInitialize.mockImplementation(async () => {
+      mockActiveWorkspace.value = { id: 'ws-1' }
+    })
+    mockSubscribe.mockResolvedValueOnce({
+      status: 'subscribed',
+      billing_op_id: 'op-1'
+    })
+
+    const checkout = await setup()
+    await checkout.subscribeToPersonal('standard-yearly', 'yearly')
+
+    expect(mockInitialize).toHaveBeenCalled()
+    expect(mockSubscribe).toHaveBeenCalled()
+  })
+
+  it('reports the bootstrap failure instead of subscribing without a workspace', async () => {
+    mockActiveWorkspace.value = null
+    mockWorkspaceError.value = new Error('workspaces unavailable')
+
+    const checkout = await setup()
+    await checkout.subscribeToPersonal('standard-yearly', 'yearly')
+
+    expect(mockSubscribe).not.toHaveBeenCalled()
+    expect(mockToastAdd).toHaveBeenCalledWith({
+      severity: 'error',
+      summary: 'g.error',
+      detail: 'workspaces unavailable'
+    })
+  })
+
+  it('falls back to the generic failure when the bootstrap left no error', async () => {
+    mockActiveWorkspace.value = null
+
+    const checkout = await setup()
+    await checkout.subscribeToPersonal('standard-yearly', 'yearly')
+
+    expect(mockSubscribe).not.toHaveBeenCalled()
+    expect(mockToastAdd).toHaveBeenCalledWith({
+      severity: 'error',
+      summary: 'g.error',
+      detail: 'subscription.subscribeFailed'
     })
   })
 })

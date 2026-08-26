@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test'
-import type { Page, Route } from '@playwright/test'
+import type { APIRequestContext, Page, Route } from '@playwright/test'
 
 import type {
   BillingBalanceResponse,
@@ -99,8 +99,11 @@ function billingStatus(planSlug?: string): BillingStatusResponse {
 // FE-1584: off-cloud billing reads need a hydrated workspace wallet + token, so
 // the boot must mock the workspace list, token mint, and members (cross-origin,
 // hence CORS-aware fulfills) or the plans fetch 401s and the section never renders.
-async function mockWorkspaceBootstrap(page: Page) {
-  const personal = workspace('personal', 'owner')
+async function mockWorkspaceBootstrap(
+  page: Page,
+  role: 'owner' | 'member' = 'owner'
+) {
+  const personal = workspace('personal', role)
   await page.route('**/api/workspaces', (r) =>
     fulfillJson(r, { workspaces: [personal] })
   )
@@ -119,6 +122,48 @@ async function mockWorkspaceBootstrap(page: Page) {
       pagination: { offset: 0, limit: 50, total: 0 }
     })
   )
+}
+
+// A multi-user server boots to a user-selection screen unless a real user id is
+// seeded, and a fresh CI server has no users at all — find or create one (this
+// drives a raw page, so it cannot reuse ComfyPage.setupUser; mirror its status
+// guards so a server error surfaces here, not as a later opaque boot hang).
+async function seedComfyUser(
+  request: APIRequestContext
+): Promise<string | undefined> {
+  const usersResponse = await request.get(`${APP_URL}/api/users`)
+  if (!usersResponse.ok())
+    throw new Error(`GET /api/users failed: ${usersResponse.status()}`)
+  const usersBody = (await usersResponse.json()) as ComfyUsersResponse
+  const existing = Object.keys(usersBody.users ?? {})[0]
+  if (existing) return existing
+  const created = await request.post(`${APP_URL}/api/users`, {
+    data: { username: 'plans-subscribe-e2e' }
+  })
+  if (!created.ok())
+    throw new Error(`POST /api/users failed: ${created.status()}`)
+  return (await created.json()) as string
+}
+
+async function openPlanCredits(page: Page, userId: string | undefined) {
+  await page.addInitScript((id) => {
+    if (id) localStorage.setItem('Comfy.userId', id)
+    window.open = (url) => {
+      document.documentElement.dataset.openedUrl = String(url)
+      return window
+    }
+  }, userId)
+
+  await page.goto(APP_URL)
+  await page.waitForFunction(() => !!window.app?.extensionManager, null, {
+    timeout: 45_000
+  })
+
+  await new CommandHelper(page).executeCommand('Comfy.ShowSettingsDialog')
+  const dialog = page.getByTestId('settings-dialog')
+  await expect(dialog).toBeVisible()
+  await dialog.getByRole('button', { name: 'Plan & Credits' }).click()
+  return dialog
 }
 
 test.describe('Local plans section subscribe (FE-1600 S2)', () => {
@@ -195,47 +240,11 @@ test.describe('Local plans section subscribe (FE-1600 S2)', () => {
     }
     await page.route('**/api/billing/ops/**', (r) => fulfillJson(r, opStatus))
 
-    // A multi-user server boots to a user-selection screen unless a real user
-    // id is seeded, and a fresh CI server has no users at all — find or create
-    // one (this drives a raw page, so it cannot reuse ComfyPage.setupUser;
-    // mirror its status guards so a server error surfaces here, not as a later
-    // opaque boot hang).
-    const usersResponse = await request.get(`${APP_URL}/api/users`)
-    if (!usersResponse.ok())
-      throw new Error(`GET /api/users failed: ${usersResponse.status()}`)
-    const usersBody = (await usersResponse.json()) as ComfyUsersResponse
-    let userId = Object.keys(usersBody.users ?? {})[0]
-    if (!userId) {
-      const created = await request.post(`${APP_URL}/api/users`, {
-        data: { username: 'plans-subscribe-e2e' }
-      })
-      if (!created.ok())
-        throw new Error(`POST /api/users failed: ${created.status()}`)
-      userId = (await created.json()) as string
-    }
-
-    await page.addInitScript((id) => {
-      if (id) localStorage.setItem('Comfy.userId', id)
-      window.open = (url) => {
-        document.documentElement.dataset.openedUrl = String(url)
-        return window
-      }
-    }, userId)
-
+    const userId = await seedComfyUser(request)
     await mockWorkspaceBootstrap(page)
+    await new CloudAuthHelper(page).mockAuth()
 
-    const auth = new CloudAuthHelper(page)
-    await auth.mockAuth()
-
-    await page.goto(APP_URL)
-    await page.waitForFunction(() => !!window.app?.extensionManager, null, {
-      timeout: 45_000
-    })
-
-    await new CommandHelper(page).executeCommand('Comfy.ShowSettingsDialog')
-    const dialog = page.getByTestId('settings-dialog')
-    await expect(dialog).toBeVisible()
-    await dialog.getByRole('button', { name: 'Plan & Credits' }).click()
+    const dialog = await openPlanCredits(page, userId)
 
     const chooseStandard = dialog.getByRole('button', {
       name: 'Choose Standard'
@@ -266,9 +275,11 @@ test.describe('Local plans section subscribe (FE-1600 S2)', () => {
     const currentPlan = dialog.getByRole('button', { name: 'Current Plan' })
     await expect(currentPlan).toBeVisible({ timeout: 30_000 })
     await expect(currentPlan).toBeDisabled()
+    // Now a subscriber, so the other tiers close: a plan change from here would
+    // be an unpreviewed prorated charge until #15898 adds preview/consent.
     await expect(
       dialog.getByRole('button', { name: 'Choose Creator' })
-    ).toBeEnabled()
+    ).toBeDisabled()
 
     // The embedded credits tile re-renders from the reconciled legacy balance
     // (6000 micros -> 12,660 credits), proving the reconcile reaches the tile.
@@ -277,5 +288,183 @@ test.describe('Local plans section subscribe (FE-1600 S2)', () => {
     })
 
     expect(legacyCheckoutRequests).toEqual([])
+  })
+
+  test('requests the plan catalog when the Plan & Credits tab opens', async ({
+    page,
+    request
+  }) => {
+    test.setTimeout(90_000)
+
+    let planRequests = 0
+    await page.route('**/customers/**', (r) =>
+      fulfillJson(r, { is_active: false })
+    )
+    await page.route('**/api/billing/plans', (r) => {
+      if (r.request().method() !== 'OPTIONS') planRequests += 1
+      return fulfillJson(r, plansResponse)
+    })
+    await page.route('**/api/billing/status', (r) =>
+      fulfillJson(r, billingStatus())
+    )
+    await page.route('**/api/billing/balance', (r) =>
+      fulfillJson(r, { amount_micros: 0, currency: 'usd' })
+    )
+
+    const userId = await seedComfyUser(request)
+    await mockWorkspaceBootstrap(page)
+    await new CloudAuthHelper(page).mockAuth()
+
+    const dialog = await openPlanCredits(page, userId)
+
+    // The cards can only be right if they came from the catalog, so prove the
+    // fetch actually fired rather than trusting the render.
+    await expect(
+      dialog.getByRole('button', { name: 'Choose Standard' })
+    ).toBeEnabled()
+    await expect.poll(() => planRequests).toBeGreaterThan(0)
+  })
+
+  // Until #15898 lands the preview/consent dialog, a plan change would be an
+  // unpreviewed prorated charge, so a subscriber cannot start one here.
+  test('offers no plan change to an existing subscriber', async ({
+    page,
+    request
+  }) => {
+    test.setTimeout(90_000)
+
+    const subscribeRequests: unknown[] = []
+    await page.route('**/customers/**', (r) =>
+      fulfillJson(
+        r,
+        r.request().url().includes('balance')
+          ? { amount_micros: 0, currency: 'usd' }
+          : {
+              is_active: true,
+              subscription_status: 'active',
+              subscription_tier: 'STANDARD',
+              subscription_duration: 'ANNUAL',
+              renewal_date: '2099-01-01T00:00:00Z',
+              has_funds: true
+            }
+      )
+    )
+    await page.route('**/api/billing/plans', (r) =>
+      fulfillJson(r, plansResponse)
+    )
+    await page.route('**/api/billing/status', (r) =>
+      fulfillJson(r, billingStatus('standard-yearly'))
+    )
+    await page.route('**/api/billing/balance', (r) =>
+      fulfillJson(r, { amount_micros: 0, currency: 'usd' })
+    )
+    await page.route('**/api/billing/subscribe', (r) => {
+      if (r.request().method() === 'POST')
+        subscribeRequests.push(r.request().postDataJSON())
+      return fulfillJson(r, { status: 'subscribed', billing_op_id: 'op-none' })
+    })
+
+    const userId = await seedComfyUser(request)
+    await mockWorkspaceBootstrap(page)
+    await new CloudAuthHelper(page).mockAuth()
+
+    const dialog = await openPlanCredits(page, userId)
+
+    const currentPlan = dialog.getByRole('button', { name: 'Current Plan' })
+    await expect(currentPlan).toBeVisible({ timeout: 30_000 })
+    await expect(currentPlan).toBeDisabled()
+
+    for (const name of ['Choose Creator', 'Choose Pro']) {
+      await expect(dialog.getByRole('button', { name })).toBeDisabled()
+    }
+
+    expect(subscribeRequests).toEqual([])
+  })
+
+  test('refuses checkout for a workspace member who cannot manage billing', async ({
+    page,
+    request
+  }) => {
+    test.setTimeout(90_000)
+
+    const subscribeRequests: unknown[] = []
+    await page.route('**/customers/**', (r) =>
+      fulfillJson(r, { is_active: false })
+    )
+    await page.route('**/api/billing/plans', (r) =>
+      fulfillJson(r, plansResponse)
+    )
+    await page.route('**/api/billing/status', (r) =>
+      fulfillJson(r, billingStatus())
+    )
+    await page.route('**/api/billing/balance', (r) =>
+      fulfillJson(r, { amount_micros: 0, currency: 'usd' })
+    )
+    await page.route('**/api/billing/subscribe', (r) => {
+      if (r.request().method() === 'POST')
+        subscribeRequests.push(r.request().postDataJSON())
+      return fulfillJson(r, { status: 'subscribed', billing_op_id: 'op-none' })
+    })
+
+    const userId = await seedComfyUser(request)
+    await mockWorkspaceBootstrap(page, 'member')
+    await new CloudAuthHelper(page).mockAuth()
+
+    const dialog = await openPlanCredits(page, userId)
+
+    const chooseStandard = dialog.getByRole('button', {
+      name: 'Choose Standard'
+    })
+    await expect(chooseStandard).toBeEnabled()
+    await chooseStandard.click()
+
+    await expect(
+      page.getByText('Only the workspace owner can change the plan.')
+    ).toBeVisible({ timeout: 15_000 })
+    expect(subscribeRequests).toEqual([])
+  })
+
+  test('does not offer the plans section without a signed-in session', async ({
+    page,
+    request
+  }) => {
+    test.setTimeout(90_000)
+
+    await page.route('**/customers/**', (r) =>
+      fulfillJson(r, { is_active: false })
+    )
+    await page.route('**/api/billing/plans', (r) =>
+      fulfillJson(r, plansResponse)
+    )
+    await page.route('**/api/billing/status', (r) =>
+      fulfillJson(r, billingStatus())
+    )
+    await page.route('**/api/billing/balance', (r) =>
+      fulfillJson(r, { amount_micros: 0, currency: 'usd' })
+    )
+
+    const userId = await seedComfyUser(request)
+    await mockWorkspaceBootstrap(page)
+    // No CloudAuthHelper.mockAuth(): there is no Firebase session at all.
+
+    await page.addInitScript((id) => {
+      if (id) localStorage.setItem('Comfy.userId', id)
+    }, userId)
+    await page.goto(APP_URL)
+    await page.waitForFunction(() => !!window.app?.extensionManager, null, {
+      timeout: 45_000
+    })
+    await new CommandHelper(page).executeCommand('Comfy.ShowSettingsDialog')
+    const dialog = page.getByTestId('settings-dialog')
+    await expect(dialog).toBeVisible()
+
+    // Signed out, the whole Plan & Credits entry is absent, so the sign-in-first
+    // gate inside the launcher is unreachable from here — the section is the
+    // gate. The launcher's own gate is unit-covered
+    // (useSettingsPlansCheckout.test.ts, 'routes an api-key-only user through
+    // sign-in before subscribing').
+    await expect(
+      dialog.getByRole('button', { name: 'Plan & Credits' })
+    ).toHaveCount(0)
   })
 })

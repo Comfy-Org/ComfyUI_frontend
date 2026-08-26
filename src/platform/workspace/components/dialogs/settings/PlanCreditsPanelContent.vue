@@ -25,9 +25,9 @@
           :team-credit-stops="teamCreditStops"
           :current-plan-slug="currentPlanSlug"
           :current-team-credit-stop="currentTeamCreditStop"
-          :is-loading="isLoadingPlans"
-          :error="plansError"
-          @retry="loadPlans"
+          :is-loading="isCatalogLoading"
+          :error="catalogError"
+          @retry="retry"
         />
         <SubscriptionFooterLinks
           class="mt-auto shrink-0"
@@ -53,19 +53,20 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, useTemplateRef, watch } from 'vue'
+import { computed, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import CreditsPanel from '@/components/dialog/content/setting/CreditsPanel.vue'
 import UsageLogsTable from '@/components/dialog/content/setting/UsageLogsTable.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import SubscriptionFooterLinks from '@/platform/cloud/subscription/components/SubscriptionFooterLinks.vue'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
 import { isCloud } from '@/platform/distribution/types'
 import SubscriptionPanelContentWorkspace from '@/platform/workspace/components/SubscriptionPanelContentWorkspace.vue'
 import SettingsPlansSection from '@/platform/workspace/components/dialogs/settings/SettingsPlansSection.vue'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 type View = 'overview' | 'activity'
 
@@ -78,28 +79,60 @@ const tabs = computed<{ key: View; label: string }[]>(() => [
 
 const activeView = ref<View>('overview')
 
-// The panel owns the catalog fetch. useBillingContext().fetchPlans routes the
-// read (to cloud ingest off-cloud, per FE-1584's workspaceApiUrl); the
-// observable state is read from the useBillingPlans singleton the fetch writes
-// (context.error/isLoading only reflect initialize(), never fetchPlans).
-const { fetchPlans, currentPlanSlug, currentTeamCreditStop } =
-  useBillingContext()
+const { currentPlanSlug, currentTeamCreditStop } = useBillingContext()
+
+// Read from the singleton, so fetch through it: the rail-routed context lands
+// on useLegacyBilling's no-op off-cloud.
 const {
   plans: catalogPlans,
   teamCreditStops,
   isLoading: isLoadingPlans,
-  error: plansError
+  error: plansError,
+  fetchPlans
 } = useBillingPlans()
 
-function loadPlans() {
+// The catalog is workspace-scoped, so the wallet bootstrap is its precondition.
+const workspaceStore = useTeamWorkspaceStore()
+const hasWorkspace = computed(
+  () => workspaceStore.activeWorkspace?.type !== undefined
+)
+// 'uninitialized' is the pre-boot window before WorkspaceAuthGate calls
+// initialize(), not a failure; 'ready' with no workspace would hang otherwise.
+const workspaceFailed = computed(
+  () =>
+    workspaceStore.initState === 'error' ||
+    (workspaceStore.initState === 'ready' && !hasWorkspace.value)
+)
+
+const isCatalogLoading = computed(() =>
+  isCloud
+    ? isLoadingPlans.value
+    : isLoadingPlans.value || (!hasWorkspace.value && !workspaceFailed.value)
+)
+const catalogError = computed(() => {
+  if (!isCloud && workspaceFailed.value) {
+    return workspaceStore.error?.message ?? t('subscription.planLoadError')
+  }
+  return plansError.value
+})
+
+function retry() {
+  if (!isCloud && !hasWorkspace.value) {
+    // No workspace yet: re-run the bootstrap; the watch fetches once it lands.
+    void workspaceStore.initialize().catch(() => undefined)
+    return
+  }
   void fetchPlans()
 }
 
-// Off-cloud only: on cloud the local plans section never mounts, so no extra
-// local fetch fires. Deduped across re-mounts by useBillingPlans.fetchPromise.
-onMounted(() => {
-  if (!isCloud) loadPlans()
-})
+// Off-cloud only; on cloud this section never mounts.
+watch(
+  hasWorkspace,
+  (ready) => {
+    if (!isCloud && ready) void fetchPlans()
+  },
+  { immediate: true }
+)
 
 function openFullActivity() {
   window.open(
