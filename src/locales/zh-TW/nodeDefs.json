@@ -16596,6 +16596,238 @@
       }
     }
   },
+  "PixverseV6ExtendVideoNode": {
+    "description": "使用 PixVerse 延續既有影片，亦可選擇使用原生音訊。來源影片須少於 40 秒，且任一邊不得超過 1920px。輸出會保留來源的解析度，因此品質設定影響的是延續內容的渲染效果，而非影格尺寸。",
+    "display_name": "PixVerse V6 延伸影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "模型與生成設定。"
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_quality": {
+        "name": "品質"
+      },
+      "model_seed": {
+        "name": "種子"
+      },
+      "model_style": {
+        "name": "風格"
+      },
+      "video": {
+        "name": "影片",
+        "tooltip": "要延續的影片。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6FirstLastFrameNode": {
+    "description": "使用 PixVerse 生成從第一影格轉換至最後影格的影片，亦可選擇使用原生音訊。輸出會保留第一影格的長寬比。",
+    "display_name": "PixVerse V6 首尾影格轉影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "模型與生成設定。"
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_quality": {
+        "name": "品質"
+      },
+      "model_seed": {
+        "name": "種子"
+      },
+      "model_style": {
+        "name": "風格"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6FusionVideoNode": {
+    "description": "使用 PixVerse 將參考主體、背景與影片合成為影片。請在提示詞中以名稱指定要放入場景的參考資料，例如「{'@'}Subject1 穿越 {'@'}Background1」。連接參考影片會將模型切換為 Omni 模式，輸出長度會與最長的參考影片相同。",
+    "display_name": "PixVerse V6 融合（參考資料轉影片）",
+    "inputs": {
+      "backgrounds": {
+        "name": "背景",
+        "tooltip": "主體要放入其中的場景參考圖片。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "模型與生成設定。"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration_seconds": {
+        "name": "持續時間（秒）"
+      },
+      "model_generate_audio": {
+        "name": "產生音訊"
+      },
+      "model_negative_prompt": {
+        "name": "負面提示詞"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_quality": {
+        "name": "品質"
+      },
+      "model_seed": {
+        "name": "種子"
+      },
+      "model_style": {
+        "name": "風格"
+      },
+      "subjects": {
+        "name": "主體",
+        "tooltip": "要放入場景中的主體參考圖片。"
+      },
+      "videos": {
+        "name": "影片",
+        "tooltip": "用於借用主體、動作、構圖或風格的參考影片。最多兩部，總長度最多 15 秒。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6ImageToVideoNode": {
+    "description": "使用 PixVerse 將圖像製作成動畫，可選擇加入原生音訊。輸出會保留輸入圖像的長寬比。",
+    "display_name": "PixVerse V6 圖像轉影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "image": {
+        "name": "圖像"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "模型與生成設定。"
+      },
+      "model_duration_seconds": {
+        "name": "持續時間（秒）"
+      },
+      "model_generate_audio": {
+        "name": "產生音訊"
+      },
+      "model_multi_clip": {
+        "name": "多片段"
+      },
+      "model_negative_prompt": {
+        "name": "負面提示詞"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_quality": {
+        "name": "品質"
+      },
+      "model_seed": {
+        "name": "種子"
+      },
+      "model_style": {
+        "name": "風格"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6TextToVideoNode": {
+    "description": "使用 PixVerse 根據文字提示詞生成影片，可選擇加入原生音訊。",
+    "display_name": "PixVerse V6 文字轉影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "模型與生成設定。"
+      },
+      "model_aspect_ratio": {
+        "name": "長寬比"
+      },
+      "model_duration_seconds": {
+        "name": "持續時間（秒）"
+      },
+      "model_generate_audio": {
+        "name": "產生音訊"
+      },
+      "model_multi_clip": {
+        "name": "多片段"
+      },
+      "model_negative_prompt": {
+        "name": "負面提示詞"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_quality": {
+        "name": "品質"
+      },
+      "model_seed": {
+        "name": "種子"
+      },
+      "model_style": {
+        "name": "風格"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PolyexponentialScheduler": {
     "display_name": "多指數排程器",
     "inputs": {
@@ -23435,30 +23667,6 @@
       "prompt": {
         "name": "提示詞",
         "tooltip": "最多 1024 字元。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "模型檔案",
-        "tooltip": null
-      },
-      "1": {
-        "name": "模型任務 ID",
-        "tooltip": null
-      },
-      "2": {
-        "name": "GLB",
-        "tooltip": null
-      }
-    }
-  },
-  "TripoRefineNode": {
-    "description": "僅精修由 v1.4 Tripo 模型建立的草稿模型。",
-    "display_name": "Tripo: 精修草稿模型",
-    "inputs": {
-      "model_task_id": {
-        "name": "model_task_id",
-        "tooltip": "必須是 v1.4 Tripo 模型"
       }
     },
     "outputs": {
