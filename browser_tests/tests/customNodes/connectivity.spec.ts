@@ -314,7 +314,6 @@ test('connectivity: representative edges cover every enrolled pairable slot thro
   // serialize/configure survival - all renderer-independent paths (widget
   // values and links flow through the same stores in both renderers). The
   // curated drag test below covers real pointer wiring under BOTH renderers.
-  const consoleErrors = collectConsoleErrors(comfyPage.page)
   test.setTimeout(
     PLAN_SETUP_MS +
       sharedPairs.length * SWEEP_MS_PER_PAIR +
@@ -322,14 +321,13 @@ test('connectivity: representative edges cover every enrolled pairable slot thro
   )
   const sweepStart = Date.now()
   const sharedStart = Date.now()
-  const sharedResults = await runPairsAcrossPages(comfyPage, sharedPairs)
+  const shared = await runPairsAcrossPages(comfyPage, sharedPairs)
   console.log(
     `connectivity shared sweep: ${sharedPairs.length} pairs in ${Date.now() - sharedStart}ms`
   )
   const isolated = await runPairsInIsolatedPages(comfyPage.page, isolatedPairs)
-  const results = [...sharedResults, ...isolated.results]
+  const results = [...shared.results, ...isolated.results]
   const sweepMs = Date.now() - sweepStart
-  consoleErrors.stop()
   expect(
     results,
     'the executor must return one outcome for every planned pair'
@@ -374,7 +372,7 @@ test('connectivity: representative edges cover every enrolled pairable slot thro
   // wiring sweep queues no prompts, so a prompt-execution error here is a
   // prior tier's async stray, not this test's (isForeignExecutionNoise;
   // ARCHITECTURE section 9 principle).
-  const sweepErrors = [...consoleErrors.errors, ...isolated.errors].filter(
+  const sweepErrors = [...shared.errors, ...isolated.errors].filter(
     (error) => !isForeignExecutionNoise(error)
   )
   const unledgered = unallowlistedConnectivityErrorsForPacks(
@@ -502,8 +500,9 @@ async function runPairsInPage(
 async function runPairsAcrossPages(
   comfyPage: ComfyPage,
   pairs: PlannedPair[]
-): Promise<PairResult[]> {
+): Promise<{ results: PairResult[]; errors: string[] }> {
   const results: PairResult[] = []
+  const errors: string[] = []
   for (let start = 0; start < pairs.length; start += PAIRS_PER_PAGE) {
     if (start > 0) {
       await comfyPage.page.reload({ waitUntil: 'domcontentloaded' })
@@ -513,9 +512,15 @@ async function runPairsAcrossPages(
     console.log(
       `connectivity shared page: ${start + 1}-${start + pagePairs.length}/${pairs.length}`
     )
-    results.push(...(await runPairsInPage(comfyPage.page, pagePairs)))
+    const consoleErrors = collectConsoleErrors(comfyPage.page)
+    try {
+      results.push(...(await runPairsInPage(comfyPage.page, pagePairs)))
+    } finally {
+      consoleErrors.stop()
+      errors.push(...consoleErrors.errors)
+    }
   }
-  return results
+  return { results, errors }
 }
 
 function evaluatePairs(
