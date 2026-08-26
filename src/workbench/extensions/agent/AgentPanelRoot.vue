@@ -82,6 +82,7 @@ import type {
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
+import CrdtDevPanel from './crdt/CrdtDevPanel.vue'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
 
 const { t } = useI18n()
@@ -697,6 +698,13 @@ async function loadDraft(
 }
 
 async function applyDraft(): Promise<void> {
+  // PoC (FE-1903): when the CRDT follower owns the canvas, the legacy
+  // whole-draft apply must not also run — it re-loads the entire graph via
+  // app.loadGraphData, then arranges + auto-fits, which relayouts every node
+  // (including human-placed ones) each time the agent adds something. The
+  // follower projects semantic ops incrementally instead. The snapshot /
+  // tab-adoption flow (onWorkflowAdopted → adoptDraftBase) stays active.
+  if (crdtStatus.value.enabled) return
   if (applying) {
     reapplyQueued = true
     return
@@ -1182,6 +1190,7 @@ function onPanelDrop(event: DragEvent): void {
         })
       }}
     </div>
+    <CrdtDevPanel v-if="crdtStatus.enabled" :status="crdtStatus" />
     <AgentPanel
       ref="panelRef"
       :entries
