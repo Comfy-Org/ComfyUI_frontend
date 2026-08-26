@@ -151,22 +151,4 @@ describe('useQueueProgress', () => {
       'scaleX(0.02)'
     )
   })
-
-  it('maps progress endpoints exactly to hidden and full-width transforms', async () => {
-    const { composable } = mountUseQueueProgress()
-
-    expect(composable.totalProgressStyle.value.transform).toBe('scaleX(0)')
-    expect(composable.currentNodeProgressStyle.value.transform).toBe(
-      'scaleX(0)'
-    )
-
-    setExecutionProgress(1)
-    setExecutingNodeProgress(1)
-    await nextTick()
-
-    expect(composable.totalProgressStyle.value.transform).toBe('scaleX(1)')
-    expect(composable.currentNodeProgressStyle.value.transform).toBe(
-      'scaleX(1)'
-    )
-  })
 })

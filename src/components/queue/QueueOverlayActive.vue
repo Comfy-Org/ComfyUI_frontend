@@ -9,6 +9,7 @@
           :style="totalProgressStyle"
         />
         <div
+          data-testid="queue-progress-node-fill"
           class="absolute inset-0 h-full origin-left rounded-full will-change-transform motion-safe:transition-transform"
           :style="currentNodeProgressStyle"
         />
