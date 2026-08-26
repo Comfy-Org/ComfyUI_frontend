@@ -1,5 +1,8 @@
 <template>
-  <section class="flex shrink-0 flex-col gap-4">
+  <section
+    class="flex shrink-0 flex-col gap-4"
+    data-testid="settings-plans-section"
+  >
     <div class="flex flex-col gap-1">
       <h3 class="m-0 text-base font-semibold text-base-foreground">
         {{ t('settingsPlans.title') }}
@@ -150,12 +153,15 @@
           size="lg"
           class="mt-auto w-full"
           :disabled="
-            isCurrentSlug(plan.slug) ||
-            !plan.available ||
-            !canStartCheckout ||
-            isSubscribing
+            isCurrentSlug(plan.slug) || !plan.available || isSubscribing
           "
-          @click="subscribeToPersonal(plan.slug, selectedCycle)"
+          @click="
+            subscribeToPersonal({
+              slug: plan.slug,
+              tierKey: plan.key,
+              billingCycle: selectedCycle
+            })
+          "
         >
           {{
             isCurrentSlug(plan.slug)
@@ -231,7 +237,6 @@
               isTeamStopCurrent ||
               !teamPlanSlug ||
               !isTeamPlanAvailable ||
-              !canStartCheckout ||
               isSubscribing
             "
             @click="onSubscribeTeam"
@@ -330,6 +335,7 @@ import type {
   TeamCreditStopSummary
 } from '@/platform/workspace/api/workspaceApi'
 import { useSettingsPlansCheckout } from '@/platform/workspace/composables/useSettingsPlansCheckout'
+import type { CheckoutTierKey } from '@/platform/workspace/composables/useSubscriptionCheckout'
 
 import PlansUnavailable from './PlansUnavailable.vue'
 
@@ -356,12 +362,8 @@ const {
 
 const emit = defineEmits<{ retry: [] }>()
 
-const {
-  isSubscribing,
-  canStartCheckout,
-  subscribeToPersonal,
-  subscribeToTeam
-} = useSettingsPlansCheckout()
+const { isSubscribing, subscribeToPersonal, subscribeToTeam } =
+  useSettingsPlansCheckout()
 
 // A load failure is retryable ('error'); a catalog that loaded with no plans is
 // a successful empty result ('empty', no retry).
@@ -381,7 +383,7 @@ const audienceModel = computed({
 const billedYearly = ref(true)
 
 interface PersonalTier {
-  key: string
+  key: CheckoutTierKey
   tier: Plan['tier']
   name: string
   benefits: string[]
@@ -519,7 +521,11 @@ const isTeamStopCurrent = computed(
 function onSubscribeTeam() {
   const slug = teamPlanSlug.value
   if (!slug) return
-  void subscribeToTeam(slug, selectedTeamStop.value, selectedCycle.value)
+  void subscribeToTeam({
+    slug,
+    stop: selectedTeamStop.value,
+    billingCycle: selectedCycle.value
+  })
 }
 
 const teamPerks = computed(() => [

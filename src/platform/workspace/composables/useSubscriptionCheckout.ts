@@ -46,16 +46,22 @@ export type SubscriptionCheckoutSelection =
       planMode: 'personal'
       tierKey: CheckoutTierKey
       billingCycle: BillingCycle
+      /** Exact catalog slug the caller rendered; absent => catalog lookup by tier and cycle. */
+      planSlug?: string
     }
   | {
       planMode: 'team'
       stop: TeamPlanSelection
       billingCycle: BillingCycle
+      /** Exact catalog TEAM slug the caller rendered; absent => the cadence slug. */
+      planSlug?: string
+      /** See `UnifiedPricingTable`'s `isTeamPlanChange`. */
       isChange?: boolean
     }
 
 interface SelectedTeamCheckout {
   stop: TeamPlanSelection
+  planSlug: string
   checkoutType: SubscriptionCheckoutType
 }
 
@@ -159,6 +165,7 @@ export function useSubscriptionCheckout(
   const savedPaymentMethods = ref<SavedPaymentMethod[]>([])
   const selectedSavedPaymentMethodId = ref<string | null>(null)
   const selectedTierKey = ref<CheckoutTierKey | null>(null)
+  const selectedPlanSlug = ref<string | null>(null)
   const selectedTeamCheckout = ref<SelectedTeamCheckout | null>(null)
   let teamPreviewRequestId = 0
   let promotionPreviewRequestId = 0
@@ -641,9 +648,15 @@ export function useSubscriptionCheckout(
 
   const previewVariant = computed<PreviewVariant>(() => {
     if (selectedTeamCheckout.value) {
+      // The transition screen dereferences the preview during setup, so a
+      // change may only claim its variant once that preview has installed.
+      if (!previewData.value) {
+        return selectedTeamCheckout.value.checkoutType === 'change'
+          ? null
+          : 'team-new'
+      }
       return selectedTeamCheckout.value.checkoutType === 'change' ||
-        (previewData.value &&
-          previewData.value.transition_type !== 'new_subscription')
+        previewData.value.transition_type !== 'new_subscription'
         ? 'team-change'
         : 'team-new'
     }
@@ -665,6 +678,7 @@ export function useSubscriptionCheckout(
   async function handleSubscribeClick(payload: {
     tierKey: CheckoutTierKey
     billingCycle: BillingCycle
+    planSlug?: string
   }) {
     if (
       isSubscribing.value ||
@@ -685,10 +699,11 @@ export function useSubscriptionCheckout(
     isLoadingPreview.value = true
     loadingTier.value = tierKey
     selectedTierKey.value = tierKey
+    selectedPlanSlug.value = null
     selectedBillingCycle.value = billingCycle
 
     try {
-      let planSlug = getApiPlanSlug(tierKey, billingCycle)
+      let planSlug = payload.planSlug || getApiPlanSlug(tierKey, billingCycle)
       if (!planSlug) {
         await fetchPlans()
         planSlug = getApiPlanSlug(tierKey, billingCycle)
@@ -701,6 +716,7 @@ export function useSubscriptionCheckout(
         })
         return
       }
+      selectedPlanSlug.value = planSlug
       if (await showTeamToPersonalDowngrade(planSlug, tierKey)) return
       const response = embeddedCheckoutEnabled
         ? (
@@ -752,20 +768,24 @@ export function useSubscriptionCheckout(
   async function handleSubscribeTeamClick(payload: {
     stop: TeamPlanSelection
     billingCycle: BillingCycle
+    planSlug?: string
     isChange?: boolean
   }) {
     const checkoutType = payload.isChange ? 'change' : 'new'
     if (isSubscribing.value || !canPerformCheckout(checkoutType)) return
 
     const previewRequestId = ++teamPreviewRequestId
+    const planSlug = payload.planSlug || getTeamPlanSlug(payload.billingCycle)
     promotionPreviewRequestId += 1
     reactivationRequired.value = false
     selectedTeamCheckout.value = {
       stop: payload.stop,
+      planSlug,
       checkoutType
     }
     selectedBillingCycle.value = payload.billingCycle
     selectedTierKey.value = null
+    selectedPlanSlug.value = null
     previewData.value = null
     quoteIsCurrent.value = false
 
@@ -778,12 +798,9 @@ export function useSubscriptionCheckout(
       let response: PreviewSubscribeResponse | null = null
       let previewError: unknown
       try {
-        response = await previewSubscribe(
-          getTeamPlanSlug(payload.billingCycle),
-          {
-            teamCreditStopId: payload.stop.id
-          }
-        )
+        response = await previewSubscribe(planSlug, {
+          teamCreditStopId: payload.stop.id
+        })
       } catch (error) {
         previewError = error
         const recovery = await recoverOutstandingPayment(
@@ -809,7 +826,6 @@ export function useSubscriptionCheckout(
         if (response) installPreview(response)
         return
       }
-      if (!isSubscriptionCancelled()) return
       toast.add({
         severity: 'error',
         summary: t('subscription.teamPlan.name'),
@@ -829,7 +845,6 @@ export function useSubscriptionCheckout(
     let response: PreviewSubscribeResponse | null = null
     let previewError: unknown
     try {
-      const planSlug = getTeamPlanSlug(payload.billingCycle)
       ;[response] = await Promise.all([
         previewSubscribe(planSlug, {
           teamCreditStopId: payload.stop.id
@@ -885,6 +900,8 @@ export function useSubscriptionCheckout(
     previewData.value = null
     quoteIsCurrent.value = false
     selectedTeamCheckout.value = null
+    selectedPlanSlug.value = null
+    selectedTierKey.value = null
     activeCheckoutOperationId.value = null
     activeCheckoutAttemptStartedAt = undefined
   }
@@ -913,7 +930,8 @@ export function useSubscriptionCheckout(
     }
 
     const billingCycle = selectedBillingCycle.value
-    const planSlug = getApiPlanSlug(tierKey, billingCycle)
+    const planSlug =
+      selectedPlanSlug.value ?? getApiPlanSlug(tierKey, billingCycle)
     if (!planSlug) {
       finishCheckoutMutation()
       return
@@ -1051,16 +1069,17 @@ export function useSubscriptionCheckout(
     let planSlug: string | null
     let options: PreviewSubscribeOptions
     if (selectedTeamCheckout.value?.stop.id) {
-      planSlug = getTeamPlanSlug(selectedBillingCycle.value)
+      // Re-quote the plan the eventual subscribe will charge, never a
+      // synthesized one, or the promo price and the charge diverge.
+      planSlug = selectedTeamCheckout.value.planSlug
       options = {
         teamCreditStopId: selectedTeamCheckout.value.stop.id,
         ...(normalizedInput && { promotionCode: normalizedInput })
       }
     } else if (selectedTierKey.value) {
-      planSlug = getApiPlanSlug(
-        selectedTierKey.value,
-        selectedBillingCycle.value
-      )
+      planSlug =
+        selectedPlanSlug.value ??
+        getApiPlanSlug(selectedTierKey.value, selectedBillingCycle.value)
       options = normalizedInput ? { promotionCode: normalizedInput } : {}
     } else {
       if (lockMutation) finishCheckoutMutation()
@@ -1368,9 +1387,8 @@ export function useSubscriptionCheckout(
       return
     }
 
-    const { stop, checkoutType } = teamCheckout
+    const { stop, planSlug, checkoutType } = teamCheckout
     const billingCycle = selectedBillingCycle.value
-    const planSlug = getTeamPlanSlug(billingCycle)
 
     isSubscribing.value = true
     try {

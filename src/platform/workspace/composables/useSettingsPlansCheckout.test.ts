@@ -2,55 +2,44 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 
 const {
-  mockSubscribe,
-  mockReconcile,
-  mockToastAdd,
-  mockStartOperation,
   mockShowSignInDialog,
-  mockFirebaseUser,
-  mockOpen,
-  mockHasPaidCheckoutPlan,
-  mockCanManageSubscription,
+  mockShowLayoutDialog,
+  mockToastAdd,
   mockInitialize,
+  mockFirebaseUser,
   mockActiveWorkspace,
-  mockWorkspaceError
+  mockWorkspaceError,
+  mockCanManageSubscription,
+  mockIsSettingUp,
+  mockCurrentTeamCreditStop,
+  mockHasPaidCheckoutPlan,
+  mockSetDialogOpen
 } = vi.hoisted(() => ({
-  mockSubscribe: vi.fn(),
-  mockReconcile: vi.fn(),
-  mockToastAdd: vi.fn(),
-  mockStartOperation: vi.fn(),
   mockShowSignInDialog: vi.fn(),
-  mockFirebaseUser: { value: null as { uid: string } | null },
-  mockOpen: vi.fn(),
-  mockHasPaidCheckoutPlan: { value: false },
-  mockCanManageSubscription: { value: true },
+  mockShowLayoutDialog: vi.fn(),
+  mockToastAdd: vi.fn(),
   mockInitialize: vi.fn(),
+  mockFirebaseUser: { value: null as { uid: string } | null },
   mockActiveWorkspace: { value: null as { id: string } | null },
-  mockWorkspaceError: { value: null as Error | null }
+  mockWorkspaceError: { value: null as Error | null },
+  mockCanManageSubscription: { value: true },
+  mockIsSettingUp: { value: false },
+  mockCurrentTeamCreditStop: { value: null as { id: string } | null },
+  mockHasPaidCheckoutPlan: { value: false },
+  mockSetDialogOpen: { impl: (_value: boolean) => {} }
 }))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
-    subscribe: mockSubscribe,
-    reconcileSubscriptionSuccess: mockReconcile,
-    hasPaidCheckoutPlan: computedFlag(mockHasPaidCheckoutPlan)
-  })
-}))
-
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
-  useWorkspaceUI: () => ({
-    permissions: computedFlagObject(mockCanManageSubscription)
-  })
-}))
-
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    initialize: mockInitialize,
-    get activeWorkspace() {
-      return mockActiveWorkspace.value
+    currentTeamCreditStop: {
+      get value() {
+        return mockCurrentTeamCreditStop.value
+      }
     },
-    get error() {
-      return mockWorkspaceError.value
+    hasPaidCheckoutPlan: {
+      get value() {
+        return mockHasPaidCheckoutPlan.value
+      }
     }
   })
 }))
@@ -65,41 +54,62 @@ vi.mock('@/stores/authStore', () => ({
 
 vi.mock('@/services/dialogService', () => ({
   useDialogService: () => ({
-    showSignInDialog: mockShowSignInDialog
+    showSignInDialog: mockShowSignInDialog,
+    showLayoutDialog: mockShowLayoutDialog
+  })
+}))
+
+vi.mock('@/stores/dialogStore', async () => {
+  const { ref } = await import('vue')
+  // A real ref: the composable's sync watch on isDialogOpen needs reactivity.
+  const open = ref(false)
+  mockSetDialogOpen.impl = (value: boolean) => {
+    open.value = value
+  }
+  return {
+    useDialogStore: () => ({
+      isDialogOpen: (key: string) =>
+        key === 'settings-plan-checkout' && open.value,
+      closeDialog: () => {
+        open.value = false
+      }
+    })
+  }
+})
+
+vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
+  useTeamWorkspaceStore: () => ({
+    initialize: mockInitialize,
+    get activeWorkspace() {
+      return mockActiveWorkspace.value
+    },
+    get error() {
+      return mockWorkspaceError.value
+    }
   })
 }))
 
 vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
   useBillingOperationStore: () => ({
-    startOperation: mockStartOperation
+    get isSettingUp() {
+      return mockIsSettingUp.value
+    }
   })
 }))
 
-vi.mock('@/config/comfyApi', () => ({
-  getComfyPlatformBaseUrl: () => 'https://platform.comfy.org'
+vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
+  useWorkspaceUI: () => ({
+    permissions: {
+      get value() {
+        return { canManageSubscription: mockCanManageSubscription.value }
+      }
+    }
+  })
 }))
 
 vi.mock('primevue/usetoast', () => ({
   useToast: () => ({ add: mockToastAdd })
 }))
-
-// The hoisted holders are plain objects; the composable reads .value, so wrap
-// them in refs whose getter tracks the holder.
-function computedFlag(holder: { value: boolean }) {
-  return {
-    get value() {
-      return holder.value
-    }
-  }
-}
-
-function computedFlagObject(holder: { value: boolean }) {
-  return {
-    get value() {
-      return { canManageSubscription: holder.value }
-    }
-  }
-}
 
 vi.mock('vue-i18n', async (importOriginal) => {
   const actual = await importOriginal()
@@ -111,9 +121,21 @@ vi.mock('vue-i18n', async (importOriginal) => {
   }
 })
 
+const PERSONAL = {
+  slug: 'standard-annual-v2',
+  tierKey: 'standard' as const,
+  billingCycle: 'yearly' as const
+}
+
+const TEAM_STOP = {
+  id: 'team_900',
+  usd: 900,
+  credits: 189_900,
+  discountPercentYearly: 10
+}
+
 describe('useSettingsPlansCheckout', () => {
   const scopes: ReturnType<typeof effectScope>[] = []
-
   async function setup() {
     const { useSettingsPlansCheckout } =
       await import('./useSettingsPlansCheckout')
@@ -122,256 +144,141 @@ describe('useSettingsPlansCheckout', () => {
     return scope.run(() => useSettingsPlansCheckout())!
   }
 
+  function lastDialogProps() {
+    const options = mockShowLayoutDialog.mock.lastCall?.[0] as {
+      key: string
+      props: { initialCheckout: unknown; onClose: () => void }
+    }
+    return options
+  }
+
   beforeEach(() => {
     mockFirebaseUser.value = { uid: 'user-1' }
-    mockShowSignInDialog.mockResolvedValue(true)
-    mockStartOperation.mockResolvedValue({ status: 'succeeded' })
-    mockReconcile.mockResolvedValue(undefined)
-    mockOpen.mockReturnValue({} as Window)
-    mockHasPaidCheckoutPlan.value = false
-    mockCanManageSubscription.value = true
-    mockInitialize.mockReset()
-    mockInitialize.mockResolvedValue(undefined)
     mockActiveWorkspace.value = { id: 'ws-1' }
     mockWorkspaceError.value = null
-    vi.stubGlobal('open', mockOpen)
+    mockCanManageSubscription.value = true
+    mockIsSettingUp.value = false
+    mockCurrentTeamCreditStop.value = null
+    mockHasPaidCheckoutPlan.value = false
+    mockShowSignInDialog.mockResolvedValue(true)
+    mockInitialize.mockResolvedValue(undefined)
+    mockShowLayoutDialog.mockReset()
+    mockShowLayoutDialog.mockImplementation(() => mockSetDialogOpen.impl(true))
+    mockToastAdd.mockReset()
   })
 
   afterEach(() => {
     scopes.splice(0).forEach((scope) => scope.stop())
   })
 
-  it('subscribes with the catalog slug, platform return URLs, and cycle', async () => {
+  async function openAndClose(run: () => Promise<void>) {
+    const pending = run()
+    await vi.waitFor(() => expect(mockShowLayoutDialog).toHaveBeenCalled())
+    const { props } = lastDialogProps()
+    mockSetDialogOpen.impl(false)
+    props.onClose()
+    await pending
+    return lastDialogProps()
+  }
+
+  it('opens the checkout dialog with the exact personal selection', async () => {
     const checkout = await setup()
-    mockSubscribe.mockResolvedValueOnce({
-      status: 'subscribed',
-      billing_op_id: 'op-1'
-    })
 
-    await checkout.subscribeToPersonal('standard-yearly', 'yearly')
-
-    expect(mockSubscribe).toHaveBeenCalledWith('standard-yearly', {
-      billingCycle: 'yearly',
-      returnUrl: 'https://platform.comfy.org/payment/success',
-      cancelUrl: 'https://platform.comfy.org/payment/failed'
-    })
-  })
-
-  it('reconciles both billing contexts on an immediate subscribed outcome', async () => {
-    const checkout = await setup()
-    mockSubscribe.mockResolvedValueOnce({
-      status: 'subscribed',
-      billing_op_id: 'op-1'
-    })
-
-    await checkout.subscribeToPersonal('standard-yearly', 'yearly')
-
-    expect(mockReconcile).toHaveBeenCalledTimes(1)
-    expect(mockStartOperation).not.toHaveBeenCalled()
-    expect(mockOpen).not.toHaveBeenCalled()
-  })
-
-  it('does not surface a reconcile failure as a failed subscribe', async () => {
-    const checkout = await setup()
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
-    mockSubscribe.mockResolvedValueOnce({
-      status: 'subscribed',
-      billing_op_id: 'op-1'
-    })
-    mockReconcile.mockRejectedValueOnce(new Error('refresh failed'))
-
-    await checkout.subscribeToPersonal('standard-yearly', 'yearly')
-
-    expect(mockToastAdd).not.toHaveBeenCalled()
-    expect(consoleError).toHaveBeenCalled()
-  })
-
-  it('opens the payment page and polls the billing op on needs_payment_method', async () => {
-    const checkout = await setup()
-    mockSubscribe.mockResolvedValueOnce({
-      status: 'needs_payment_method',
-      payment_method_url: 'https://checkout.stripe.com/pay',
-      billing_op_id: 'op-2'
-    })
-
-    await checkout.subscribeToPersonal('standard-yearly', 'yearly')
-
-    expect(mockOpen).toHaveBeenCalledWith(
-      'https://checkout.stripe.com/pay',
-      '_blank'
+    const { key, props } = await openAndClose(() =>
+      checkout.subscribeToPersonal(PERSONAL)
     )
-    expect(mockStartOperation).toHaveBeenCalledWith('op-2', 'subscription')
-  })
 
-  it('still polls the billing op when payment_method_url is missing', async () => {
-    const checkout = await setup()
-    mockSubscribe.mockResolvedValueOnce({
-      status: 'needs_payment_method',
-      billing_op_id: 'op-3'
+    expect(key).toBe('settings-plan-checkout')
+    expect(props.initialCheckout).toEqual({
+      planMode: 'personal',
+      planSlug: 'standard-annual-v2',
+      tierKey: 'standard',
+      billingCycle: 'yearly'
     })
-
-    await checkout.subscribeToPersonal('standard-yearly', 'yearly')
-
-    expect(mockOpen).not.toHaveBeenCalled()
-    expect(mockStartOperation).toHaveBeenCalledWith('op-3', 'subscription')
   })
 
-  it('keeps the checkout locked until the billing op reaches a terminal state', async () => {
+  it('opens the team dialog with the API slug, stop id, discounted price and change flag', async () => {
     const checkout = await setup()
-    let resolveOperation!: (value: { status: string }) => void
-    mockStartOperation.mockReturnValueOnce(
-      new Promise((resolve) => {
-        resolveOperation = resolve
+    mockCurrentTeamCreditStop.value = { id: 'team_300' }
+
+    const { props } = await openAndClose(() =>
+      checkout.subscribeToTeam({
+        slug: 'team-annual-catalog',
+        stop: TEAM_STOP,
+        billingCycle: 'yearly'
       })
     )
-    mockSubscribe.mockResolvedValue({
-      status: 'needs_payment_method',
-      payment_method_url: 'https://checkout.stripe.com/pay',
-      billing_op_id: 'op-lock'
-    })
 
-    const firstClick = checkout.subscribeToPersonal('standard-yearly', 'yearly')
-    await vi.waitFor(() => expect(mockStartOperation).toHaveBeenCalledTimes(1))
-    expect(checkout.isSubscribing.value).toBe(true)
-
-    await checkout.subscribeToPersonal('standard-yearly', 'yearly')
-    expect(mockSubscribe).toHaveBeenCalledTimes(1)
-
-    resolveOperation({ status: 'succeeded' })
-    await firstClick
-    expect(checkout.isSubscribing.value).toBe(false)
-  })
-
-  it('warns about a blocked popup and keeps polling', async () => {
-    const checkout = await setup()
-    mockOpen.mockReturnValueOnce(null)
-    mockSubscribe.mockResolvedValueOnce({
-      status: 'needs_payment_method',
-      payment_method_url: 'https://checkout.stripe.com/pay',
-      billing_op_id: 'op-4'
-    })
-
-    await checkout.subscribeToPersonal('standard-yearly', 'yearly')
-
-    expect(mockToastAdd).toHaveBeenCalledWith({
-      severity: 'warn',
-      summary: 'g.warning',
-      detail: 'subscription.preview.paymentPopupBlocked'
-    })
-    expect(mockStartOperation).toHaveBeenCalledWith('op-4', 'subscription')
-  })
-
-  it('routes an api-key-only user through sign-in before subscribing', async () => {
-    const checkout = await setup()
-    mockFirebaseUser.value = null
-    mockSubscribe.mockResolvedValueOnce({
-      status: 'subscribed',
-      billing_op_id: 'op-5'
-    })
-
-    await checkout.subscribeToPersonal('standard-yearly', 'yearly')
-
-    expect(mockShowSignInDialog).toHaveBeenCalledTimes(1)
-    expect(mockSubscribe).toHaveBeenCalledTimes(1)
-    expect(mockShowSignInDialog.mock.invocationCallOrder[0]).toBeLessThan(
-      mockSubscribe.mock.invocationCallOrder[0]
-    )
-  })
-
-  it('issues no request when the api-key-only user declines sign-in', async () => {
-    const checkout = await setup()
-    mockFirebaseUser.value = null
-    mockShowSignInDialog.mockResolvedValueOnce(false)
-
-    await checkout.subscribeToPersonal('standard-yearly', 'yearly')
-
-    expect(mockSubscribe).not.toHaveBeenCalled()
-  })
-
-  it('skips the sign-in dialog for a Firebase user', async () => {
-    const checkout = await setup()
-    mockSubscribe.mockResolvedValueOnce({
-      status: 'subscribed',
-      billing_op_id: 'op-6'
-    })
-
-    await checkout.subscribeToPersonal('standard-yearly', 'yearly')
-
-    expect(mockShowSignInDialog).not.toHaveBeenCalled()
-  })
-
-  it('shows the subscribe-failed toast when the slug is missing', async () => {
-    const checkout = await setup()
-
-    await checkout.subscribeToPersonal('', 'yearly')
-
-    expect(mockSubscribe).not.toHaveBeenCalled()
-    expect(mockToastAdd).toHaveBeenCalledWith({
-      severity: 'error',
-      summary: 'g.error',
-      detail: 'subscription.subscribeFailed'
+    expect(props.initialCheckout).toEqual({
+      planMode: 'team',
+      planSlug: 'team-annual-catalog',
+      billingCycle: 'yearly',
+      stop: { id: 'team_900', usd: 900, credits: 189_900, discountedUsd: 810 },
+      isChange: true
     })
   })
 
-  it('does not toast a failure when the rail drove its own checkout (void response)', async () => {
+  it('halves the yearly discount for a monthly team stop and marks a fresh team subscribe as new', async () => {
     const checkout = await setup()
-    // The legacy adapter returns void after launching Stripe itself.
-    mockSubscribe.mockResolvedValueOnce(undefined)
 
-    await checkout.subscribeToPersonal('standard-yearly', 'yearly')
-
-    expect(mockToastAdd).not.toHaveBeenCalled()
-    expect(mockStartOperation).not.toHaveBeenCalled()
-  })
-
-  it('surfaces a rejected subscribe through the error toast', async () => {
-    const checkout = await setup()
-    mockSubscribe.mockRejectedValueOnce(new Error('card declined'))
-
-    await checkout.subscribeToPersonal('standard-yearly', 'yearly')
-
-    expect(mockToastAdd).toHaveBeenCalledWith({
-      severity: 'error',
-      summary: 'g.error',
-      detail: 'card declined'
-    })
-    expect(mockStartOperation).not.toHaveBeenCalled()
-    expect(checkout.isSubscribing.value).toBe(false)
-  })
-
-  it('submits the caller-supplied team API slug verbatim with the stop id', async () => {
-    const checkout = await setup()
-    mockSubscribe.mockResolvedValueOnce({
-      status: 'subscribed',
-      billing_op_id: 'op-7'
-    })
-
-    // The slug is the API TEAM row passed by the caller — never synthesized
-    // here, so the submitted slug is exactly what was rendered.
-    await checkout.subscribeToTeam(
-      'team-monthly-catalog',
-      { id: 'team_700', usd: 700, credits: 147_700, discountPercentYearly: 10 },
-      'monthly'
+    const { props } = await openAndClose(() =>
+      checkout.subscribeToTeam({
+        slug: 'team-monthly-catalog',
+        stop: TEAM_STOP,
+        billingCycle: 'monthly'
+      })
     )
 
-    expect(mockSubscribe).toHaveBeenCalledWith('team-monthly-catalog', {
-      billingCycle: 'monthly',
-      teamCreditStopId: 'team_700',
-      returnUrl: 'https://platform.comfy.org/payment/success',
-      cancelUrl: 'https://platform.comfy.org/payment/failed'
+    expect(props.initialCheckout).toMatchObject({
+      stop: expect.objectContaining({ discountedUsd: 855 }),
+      isChange: false
     })
+  })
+
+  // A paid personal subscriber picking a Team stop is a plan change to the
+  // backend, so it has to be previewed like any other change.
+  it('marks a paid personal subscriber choosing a team stop as a change', async () => {
+    const checkout = await setup()
+    mockHasPaidCheckoutPlan.value = true
+
+    const { props } = await openAndClose(() =>
+      checkout.subscribeToTeam({
+        slug: 'team-annual-catalog',
+        stop: TEAM_STOP,
+        billingCycle: 'yearly'
+      })
+    )
+
+    expect(props.initialCheckout).toMatchObject({ isChange: true })
+  })
+
+  // Off Cloud the account rail reports every user entitled, so an unsubscribed
+  // legacy-Stripe workspace must read its "no paid plan" from the checkout rail
+  // or its first team subscribe would be previewed as a plan change.
+  it('marks an unsubscribed user choosing a team stop as a fresh subscribe', async () => {
+    const checkout = await setup()
+
+    const { props } = await openAndClose(() =>
+      checkout.subscribeToTeam({
+        slug: 'team-annual-catalog',
+        stop: TEAM_STOP,
+        billingCycle: 'yearly'
+      })
+    )
+
+    expect(props.initialCheckout).toMatchObject({ isChange: false })
   })
 
   it('refuses a team subscribe on a stop without a backend id', async () => {
     const checkout = await setup()
 
-    await checkout.subscribeToTeam(
-      'team-monthly-catalog',
-      { usd: 700, credits: 147_700, discountPercentYearly: 10 },
-      'monthly'
-    )
+    await checkout.subscribeToTeam({
+      slug: 'team-monthly-catalog',
+      stop: { usd: 700, credits: 147_700, discountPercentYearly: 10 },
+      billingCycle: 'monthly'
+    })
 
-    expect(mockSubscribe).not.toHaveBeenCalled()
+    expect(mockShowLayoutDialog).not.toHaveBeenCalled()
     expect(mockToastAdd).toHaveBeenCalledWith({
       severity: 'error',
       summary: 'subscription.teamPlan.name',
@@ -379,42 +286,95 @@ describe('useSettingsPlansCheckout', () => {
     })
   })
 
-  // Until the preview/consent dialog lands, this launcher can only sell a first
-  // paid subscription: the same POST from an existing subscriber would be an
-  // unpreviewed prorated plan change.
-  describe('canStartCheckout', () => {
-    it('withholds checkout from an active paid subscriber', async () => {
-      mockHasPaidCheckoutPlan.value = true
+  it('routes an api-key-only user through sign-in before opening', async () => {
+    const checkout = await setup()
+    mockFirebaseUser.value = null
 
-      const checkout = await setup()
+    await openAndClose(() => checkout.subscribeToPersonal(PERSONAL))
 
-      expect(checkout.canStartCheckout.value).toBe(false)
+    expect(mockShowSignInDialog).toHaveBeenCalledTimes(1)
+    expect(mockShowSignInDialog.mock.invocationCallOrder[0]).toBeLessThan(
+      mockShowLayoutDialog.mock.invocationCallOrder[0]
+    )
+  })
+
+  it('opens nothing when the api-key-only user declines sign-in', async () => {
+    const checkout = await setup()
+    mockFirebaseUser.value = null
+    mockShowSignInDialog.mockResolvedValueOnce(false)
+
+    await checkout.subscribeToPersonal(PERSONAL)
+
+    expect(mockShowLayoutDialog).not.toHaveBeenCalled()
+    expect(checkout.isSubscribing.value).toBe(false)
+  })
+
+  it('skips the sign-in dialog for a Firebase user', async () => {
+    const checkout = await setup()
+
+    await openAndClose(() => checkout.subscribeToPersonal(PERSONAL))
+
+    expect(mockShowSignInDialog).not.toHaveBeenCalled()
+  })
+
+  it('waits for the workspace to hydrate before opening', async () => {
+    const checkout = await setup()
+    let hydrate!: () => void
+    mockInitialize.mockReturnValueOnce(
+      new Promise<void>((resolve) => {
+        hydrate = resolve
+      })
+    )
+
+    const pending = checkout.subscribeToPersonal(PERSONAL)
+    await vi.waitFor(() => expect(mockInitialize).toHaveBeenCalledTimes(1))
+    expect(mockShowLayoutDialog).not.toHaveBeenCalled()
+    expect(checkout.isSubscribing.value).toBe(true)
+
+    hydrate()
+    await vi.waitFor(() => expect(mockShowLayoutDialog).toHaveBeenCalled())
+    mockSetDialogOpen.impl(false)
+    lastDialogProps().props.onClose()
+    await pending
+  })
+
+  it('shows the workspace error and opens nothing when no workspace hydrates', async () => {
+    const checkout = await setup()
+    mockInitialize.mockRejectedValueOnce(new Error('list failed'))
+    mockActiveWorkspace.value = null
+    mockWorkspaceError.value = new Error('list failed')
+
+    await checkout.subscribeToPersonal(PERSONAL)
+
+    expect(mockShowLayoutDialog).not.toHaveBeenCalled()
+    expect(mockToastAdd).toHaveBeenCalledWith({
+      severity: 'error',
+      summary: 'g.error',
+      detail: 'list failed'
     })
+    expect(checkout.isSubscribing.value).toBe(false)
+  })
 
-    it('allows checkout on the free tier, which is not a paid subscription', async () => {
-      // The free tier is active but unpaid, so the checkout-rail signal is
-      // false and the CTA stays open.
-      mockHasPaidCheckoutPlan.value = false
+  it('falls back to the generic failure copy when hydration leaves no error', async () => {
+    const checkout = await setup()
+    mockActiveWorkspace.value = null
 
-      const checkout = await setup()
+    await checkout.subscribeToPersonal(PERSONAL)
 
-      expect(checkout.canStartCheckout.value).toBe(true)
-    })
-
-    it('allows checkout for a user with no subscription at all', async () => {
-      const checkout = await setup()
-
-      expect(checkout.canStartCheckout.value).toBe(true)
+    expect(mockToastAdd).toHaveBeenCalledWith({
+      severity: 'error',
+      summary: 'g.error',
+      detail: 'subscription.subscribeFailed'
     })
   })
 
-  it('refuses to subscribe for a member who cannot manage the subscription', async () => {
-    mockCanManageSubscription.value = false
+  it('shows the owner-only error for a member of the workspace', async () => {
     const checkout = await setup()
+    mockCanManageSubscription.value = false
 
-    await checkout.subscribeToPersonal('standard-yearly', 'yearly')
+    await checkout.subscribeToPersonal(PERSONAL)
 
-    expect(mockSubscribe).not.toHaveBeenCalled()
+    expect(mockShowLayoutDialog).not.toHaveBeenCalled()
     expect(mockToastAdd).toHaveBeenCalledWith({
       severity: 'error',
       summary: 'g.error',
@@ -422,49 +382,104 @@ describe('useSettingsPlansCheckout', () => {
     })
   })
 
-  it('waits for the wallet to hydrate before subscribing', async () => {
-    mockActiveWorkspace.value = null
-    mockInitialize.mockImplementation(async () => {
-      mockActiveWorkspace.value = { id: 'ws-1' }
-    })
-    mockSubscribe.mockResolvedValueOnce({
-      status: 'subscribed',
-      billing_op_id: 'op-1'
-    })
-
+  it('stays locked while the dialog is open and opens nothing for a second click', async () => {
     const checkout = await setup()
-    await checkout.subscribeToPersonal('standard-yearly', 'yearly')
 
-    expect(mockInitialize).toHaveBeenCalled()
-    expect(mockSubscribe).toHaveBeenCalled()
+    const first = checkout.subscribeToPersonal(PERSONAL)
+    await vi.waitFor(() =>
+      expect(mockShowLayoutDialog).toHaveBeenCalledTimes(1)
+    )
+    expect(checkout.isSubscribing.value).toBe(true)
+
+    await checkout.subscribeToPersonal(PERSONAL)
+    expect(mockShowLayoutDialog).toHaveBeenCalledTimes(1)
+
+    mockSetDialogOpen.impl(false)
+    lastDialogProps().props.onClose()
+    await first
+    expect(checkout.isSubscribing.value).toBe(false)
   })
 
-  it('reports the bootstrap failure instead of subscribing without a workspace', async () => {
-    mockActiveWorkspace.value = null
-    mockWorkspaceError.value = new Error('workspaces unavailable')
-
+  it('stays locked while sign-in is pending', async () => {
     const checkout = await setup()
-    await checkout.subscribeToPersonal('standard-yearly', 'yearly')
+    mockFirebaseUser.value = null
+    let decide!: (value: boolean) => void
+    mockShowSignInDialog.mockReturnValueOnce(
+      new Promise<boolean>((resolve) => {
+        decide = resolve
+      })
+    )
 
-    expect(mockSubscribe).not.toHaveBeenCalled()
-    expect(mockToastAdd).toHaveBeenCalledWith({
-      severity: 'error',
-      summary: 'g.error',
-      detail: 'workspaces unavailable'
-    })
+    const pending = checkout.subscribeToPersonal(PERSONAL)
+    await vi.waitFor(() => expect(mockShowSignInDialog).toHaveBeenCalled())
+    expect(checkout.isSubscribing.value).toBe(true)
+
+    decide(false)
+    await pending
+    expect(checkout.isSubscribing.value).toBe(false)
   })
 
-  it('falls back to the generic failure when the bootstrap left no error', async () => {
-    mockActiveWorkspace.value = null
-
+  it('stays locked while a subscription op is still pending after the dialog closed', async () => {
     const checkout = await setup()
-    await checkout.subscribeToPersonal('standard-yearly', 'yearly')
+    mockIsSettingUp.value = true
 
-    expect(mockSubscribe).not.toHaveBeenCalled()
-    expect(mockToastAdd).toHaveBeenCalledWith({
-      severity: 'error',
-      summary: 'g.error',
-      detail: 'subscription.subscribeFailed'
+    expect(checkout.isSubscribing.value).toBe(true)
+    await checkout.subscribeToPersonal(PERSONAL)
+
+    expect(mockShowLayoutDialog).not.toHaveBeenCalled()
+  })
+
+  it('is unlocked at rest before any checkout begins', async () => {
+    const checkout = await setup()
+
+    expect(checkout.isSubscribing.value).toBe(false)
+  })
+
+  it('keeps the launcher promise pending until the dialog actually closes', async () => {
+    const checkout = await setup()
+    let settled = false
+    const pending = checkout.subscribeToPersonal(PERSONAL).then(() => {
+      settled = true
     })
+    await vi.waitFor(() => expect(mockShowLayoutDialog).toHaveBeenCalled())
+
+    await Promise.resolve()
+    expect(settled, 'promise pending while the dialog is open').toBe(false)
+    expect(
+      checkout.isSubscribing.value,
+      'section locked while the dialog is open'
+    ).toBe(true)
+
+    mockSetDialogOpen.impl(false)
+    lastDialogProps().props.onClose()
+    await pending
+    expect(settled).toBe(true)
+    expect(checkout.isSubscribing.value).toBe(false)
+  })
+
+  it('resolves each checkout once across repeated open/close cycles', async () => {
+    const checkout = await setup()
+    let resolutions = 0
+
+    for (let cycle = 0; cycle < 2; cycle++) {
+      const pending = checkout.subscribeToPersonal(PERSONAL).then(() => {
+        resolutions++
+      })
+      await vi.waitFor(() =>
+        expect(mockShowLayoutDialog).toHaveBeenCalledTimes(cycle + 1)
+      )
+      mockSetDialogOpen.impl(false)
+      lastDialogProps().props.onClose()
+      await pending
+    }
+
+    expect(
+      resolutions,
+      'each cycle resolves once; a leaked watcher would over-resolve'
+    ).toBe(2)
+    expect(
+      mockShowLayoutDialog,
+      'no re-entrancy leak opening a third dialog'
+    ).toHaveBeenCalledTimes(2)
   })
 })

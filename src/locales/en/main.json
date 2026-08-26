@@ -2673,7 +2673,8 @@
     "comingSharedWorkflows": "Shared workflows & assets",
     "comingProjects": "Projects",
     "enterpriseCopy": "Need more members? Looking for more flexibility or custom features?",
-    "ownerOnly": "Only the workspace owner can change the plan."
+    "ownerOnly": "Only the workspace owner can change the plan.",
+    "checkoutUnavailable": "Checkout could not be opened. Please reload and try again."
   },
   "credits": {
     "activity": "Activity",
