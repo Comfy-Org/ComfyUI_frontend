@@ -68,12 +68,16 @@ describe('SettingsPlansSection personal cards from the API catalog', () => {
 
     expect(screen.getByText('$240 Billed yearly')).toBeTruthy()
     expect(screen.getByText('$420 Billed yearly')).toBeTruthy()
-    expect(screen.getByText('$1200 Billed yearly')).toBeTruthy()
+    expect(screen.getByText('$1,200 Billed yearly')).toBeTruthy()
 
     // credits_cents is the annual total, rendered as-is (no ×12).
     expect(screen.getByText('50,400')).toBeTruthy()
     expect(screen.getByText('88,800')).toBeTruthy()
     expect(screen.getByText('253,200')).toBeTruthy()
+
+    // Per dollar = annual credits / annual list price (50400/240, 88800/420, 253200/1200).
+    expect(screen.getByText('210 per dollar')).toBeTruthy()
+    expect(screen.getAllByText('211 per dollar')).toHaveLength(2)
 
     // Video estimate = monthly credits × the fixed ratio (derived from the API
     // grant, not a per-tier constant).
@@ -95,6 +99,14 @@ describe('SettingsPlansSection personal cards from the API catalog', () => {
     expect(screen.getByText('4,200')).toBeTruthy()
     expect(screen.getByText('7,400')).toBeTruthy()
     expect(screen.getByText('21,100')).toBeTruthy()
+    expect(screen.getAllByText(/^21[01] per dollar$/)).toHaveLength(3)
+  })
+
+  it('keeps the cents of a yearly price that does not divide evenly', () => {
+    renderSection([makePlan('STANDARD', 'ANNUAL', 19999, 50400)])
+
+    expect(screen.getByText('$16.67')).toBeTruthy()
+    expect(screen.getByText('$199.99 Billed yearly')).toBeTruthy()
   })
 
   it('moves the rendered numbers when the catalog values change', () => {
@@ -113,13 +125,12 @@ describe('SettingsPlansSection personal cards from the API catalog', () => {
     expect(screen.queryByText('$240 Billed yearly')).toBeNull()
   })
 
-  it('renders no cards when the catalog is empty', () => {
+  it('renders nothing at all when the catalog is empty', () => {
     renderSection([])
 
-    expect(screen.queryByText('Standard')).toBeNull()
-    expect(screen.queryByText('Creator')).toBeNull()
-    expect(screen.queryByText('Pro')).toBeNull()
-    expect(screen.queryByText(/\$\d+ Billed yearly/)).toBeNull()
+    expect(screen.queryByRole('heading', { name: 'Plans' })).toBeNull()
+    expect(screen.queryByRole('switch')).toBeNull()
+    expect(screen.queryByRole('button')).toBeNull()
   })
 
   it('only renders tiers that have a matching catalog row', () => {

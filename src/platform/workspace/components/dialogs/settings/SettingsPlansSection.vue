@@ -1,5 +1,6 @@
 <template>
-  <section class="flex shrink-0 flex-col gap-4">
+  <!-- No catalog rows means no offer to show: the fetch lands in a later slice. -->
+  <section v-if="personalCards.length" class="flex shrink-0 flex-col gap-4">
     <div class="flex flex-col gap-1">
       <h3 class="m-0 text-base font-semibold text-base-foreground">
         {{ t('settingsPlans.title') }}
@@ -36,7 +37,7 @@
             <span
               class="text-[28px] leading-normal font-semibold text-base-foreground tabular-nums"
             >
-              ${{ plan.pricePerMonth }}
+              ${{ n(plan.pricePerMonth, { maximumFractionDigits: 2 }) }}
             </span>
             <span class="text-base text-muted-foreground">
               {{ t('subscription.usdPerMonth') }}
@@ -46,7 +47,7 @@
             {{
               billedYearly
                 ? t('subscription.billedYearly', {
-                    total: `$${plan.billedYearlyTotal}`
+                    total: `$${n(plan.billedYearlyTotal)}`
                   })
                 : t('subscription.billedMonthly')
             }}
@@ -197,9 +198,7 @@ const personalCards = computed<PersonalCard[]>(() =>
     if (!plan) return []
     // Annual price_cents is the full-year total; per-month is /12.
     const periodPrice = plan.price_cents / 100
-    const pricePerMonth = billedYearly.value
-      ? Math.round(periodPrice / 12)
-      : periodPrice
+    const pricePerMonth = billedYearly.value ? periodPrice / 12 : periodPrice
     // The video estimate is a per-month figure; annual credits_cents is the
     // yearly grant, so scale it down to a month before applying the ratio.
     const monthlyCredits = billedYearly.value
