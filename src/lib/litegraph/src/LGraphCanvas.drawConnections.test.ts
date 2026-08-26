@@ -202,13 +202,11 @@ describe('drawConnections', () => {
 
   it('looks up each input and preserves rendered link identity', () => {
     const source = new LGraphNode('Source')
-    source.pos = [0, 100]
     source.addOutput('out', 'INT')
     graph.add(source)
 
     const targets = Array.from({ length: 2 }, (_, index) => {
       const target = new LGraphNode(`Target ${index}`)
-      target.pos = [300, 100 + index * 100]
       target.addInput('connected', 'INT')
       target.addInput('unconnected', 'INT')
       graph.add(target)
@@ -226,7 +224,11 @@ describe('drawConnections', () => {
 
     expect(inputLookup).toHaveBeenCalledTimes(4)
     expect(resolveLink).toHaveBeenCalledTimes(2)
-    expect([...canvas.renderedPaths]).toEqual(expectedLinks)
+    const renderedLinks = [...canvas.renderedPaths]
+    expect(renderedLinks).toHaveLength(expectedLinks.length)
+    for (const [index, expectedLink] of expectedLinks.entries()) {
+      expect(renderedLinks[index]).toBe(expectedLink)
+    }
 
     const scopes = inputLookup.mock.calls.map(([scope]) => scope)
     expect(new Set(scopes).size).toBe(4)
