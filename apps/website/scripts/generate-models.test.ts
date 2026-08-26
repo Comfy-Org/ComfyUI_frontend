@@ -45,6 +45,23 @@ describe('extractApiModels', () => {
     expect(nano2?.templateCount).toBe(1)
   })
 
+  it('maps current Meshy 7 and Wan 3.0 templates at provider boundaries', () => {
+    const files = [
+      'api_meshy7_image_to_model.json',
+      'api_meshy7_text_to_model.json',
+      'api_wan3_0_i2v.json',
+      'api_wan3_0_r2v.json',
+      'api_wan3_0_t2v.json'
+    ]
+
+    expect(extractApiModels(files)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ slug: 'meshy-7', templateCount: 2 }),
+        expect.objectContaining({ slug: 'wan-3-0', templateCount: 3 })
+      ])
+    )
+  })
+
   it('removes .json extensions regardless of casing', () => {
     const files = ['api_KLING.JSON']
 

@@ -4,7 +4,7 @@
     "name": "Seedance (ByteDance)",
     "huggingFaceUrl": "",
     "directory": "partner_nodes",
-    "workflowCount": 16,
+    "workflowCount": 17,
     "displayName": "Seedance (ByteDance)"
   },
   {
@@ -48,6 +48,22 @@
     "displayName": "Kling AI"
   },
   {
+    "slug": "flux-api",
+    "name": "Flux (API)",
+    "huggingFaceUrl": "",
+    "directory": "partner_nodes",
+    "workflowCount": 9,
+    "displayName": "Flux (API)"
+  },
+  {
+    "slug": "bria-ai",
+    "name": "Bria AI",
+    "huggingFaceUrl": "",
+    "directory": "partner_nodes",
+    "workflowCount": 9,
+    "displayName": "Bria AI"
+  },
+  {
     "slug": "luma-dream-machine",
     "name": "Luma Dream Machine",
     "huggingFaceUrl": "",
@@ -56,12 +72,12 @@
     "displayName": "Luma Dream Machine"
   },
   {
-    "slug": "flux-api",
-    "name": "Flux (API)",
+    "slug": "gemini-image",
+    "name": "Gemini Image",
     "huggingFaceUrl": "",
     "directory": "partner_nodes",
     "workflowCount": 8,
-    "displayName": "Flux (API)"
+    "displayName": "Gemini Image"
   },
   {
     "slug": "recraft",
@@ -80,14 +96,6 @@
     "displayName": "Seedance 2.0"
   },
   {
-    "slug": "gemini-image",
-    "name": "Gemini Image",
-    "huggingFaceUrl": "",
-    "directory": "partner_nodes",
-    "workflowCount": 7,
-    "displayName": "Gemini Image"
-  },
-  {
     "slug": "happyhorse1",
     "name": "Happyhorse1",
     "huggingFaceUrl": "",
@@ -102,14 +110,6 @@
     "directory": "partner_nodes",
     "workflowCount": 7,
     "displayName": "Seedance 2"
-  },
-  {
-    "slug": "bria-ai",
-    "name": "Bria AI",
-    "huggingFaceUrl": "",
-    "directory": "partner_nodes",
-    "workflowCount": 6,
-    "displayName": "Bria AI"
   },
   {
     "slug": "elevenlabs",
@@ -240,6 +240,14 @@
     "displayName": "Pixverse"
   },
   {
+    "slug": "wan-3-0",
+    "name": "Wan 3.0",
+    "huggingFaceUrl": "",
+    "directory": "partner_nodes",
+    "workflowCount": 3,
+    "displayName": "Wan 3.0"
+  },
+  {
     "slug": "wavespeed",
     "name": "Wavespeed",
     "huggingFaceUrl": "",
@@ -286,6 +294,14 @@
     "directory": "partner_nodes",
     "workflowCount": 2,
     "displayName": "Krea 2"
+  },
+  {
+    "slug": "meshy-7",
+    "name": "Meshy 7",
+    "huggingFaceUrl": "",
+    "directory": "partner_nodes",
+    "workflowCount": 2,
+    "displayName": "Meshy 7"
   },
   {
     "slug": "nano-banana-2",
@@ -623,6 +639,26 @@
     "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/template_image_speech_to_video-1.webp"
   },
   {
+    "slug": "sam3-1-multiplex-fp16",
+    "name": "sam3.1_multiplex_fp16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/sam3.1/resolve/main/checkpoints/sam3.1_multiplex_fp16.safetensors",
+    "directory": "checkpoints",
+    "workflowCount": 7,
+    "displayName": "Sam3.1 Multiplex FP16",
+    "docsUrl": "https://docs.comfy.org/tutorials/video/wan/vace",
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/utility_image_segment_sam3-1.webp"
+  },
+  {
+    "slug": "moge-2-vitl-normal-fp16",
+    "name": "moge_2_vitl_normal_fp16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/MoGe/resolve/main/geometry_estimation/moge_2_vitl_normal_fp16.safetensors",
+    "directory": "geometry_estimation",
+    "workflowCount": 6,
+    "displayName": "Moge 2 Vitl Normal FP16",
+    "docsUrl": "https://docs.comfy.org/tutorials/utility/moge",
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/3d_moge_panorama_to_mesh-1.webp"
+  },
+  {
     "slug": "byt5-small-glyphxl-fp16",
     "name": "byt5_small_glyphxl_fp16.safetensors",
     "huggingFaceUrl": "https://huggingface.co/Comfy-Org/HunyuanVideo_1.5_repackaged/resolve/main/split_files/text_encoders/byt5_small_glyphxl_fp16.safetensors",
@@ -737,16 +773,6 @@
     "displayName": "Wan21 CausVid 14B T2V Lora Rank32",
     "docsUrl": "https://docs.comfy.org/tutorials/video/wan/vace",
     "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/templates_shane_video_restyle-1.webp"
-  },
-  {
-    "slug": "sam3-1-multiplex-fp16",
-    "name": "sam3.1_multiplex_fp16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/sam3.1/resolve/main/checkpoints/sam3.1_multiplex_fp16.safetensors",
-    "directory": "checkpoints",
-    "workflowCount": 6,
-    "displayName": "Sam3.1 Multiplex FP16",
-    "docsUrl": "https://docs.comfy.org/tutorials/video/wan/vace",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/utility_image_segment_sam3-1.webp"
   },
   {
     "slug": "ltx-2-19b-distilled-lora-384",
@@ -876,6 +902,16 @@
     "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_qwen_Image_2512_controlnet-1.webp"
   },
   {
+    "slug": "sd-xl-base-1-0",
+    "name": "sd_xl_base_1.0.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/resolve/main/sd_xl_base_1.0.safetensors?download=true",
+    "directory": "checkpoints",
+    "workflowCount": 5,
+    "displayName": "Sd Xl Base 1.0",
+    "docsUrl": "https://comfyanonymous.github.io/ComfyUI_examples/video/#image-to-video",
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_sdxl_simple-1.webp"
+  },
+  {
     "slug": "ltx-2-19b-dev-fp8",
     "name": "ltx-2-19b-dev-fp8.safetensors",
     "huggingFaceUrl": "https://huggingface.co/Lightricks/LTX-2/resolve/main/ltx-2-19b-dev-fp8.safetensors",
@@ -892,16 +928,6 @@
     "workflowCount": 5,
     "displayName": "Ltx 2 19b Distilled",
     "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_ltx2_canny_to_video-1.webp"
-  },
-  {
-    "slug": "moge-2-vitl-normal-fp16",
-    "name": "moge_2_vitl_normal_fp16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/MoGe/resolve/main/geometry_estimation/moge_2_vitl_normal_fp16.safetensors",
-    "directory": "geometry_estimation",
-    "workflowCount": 4,
-    "displayName": "Moge 2 Vitl Normal FP16",
-    "docsUrl": "https://docs.comfy.org/tutorials/utility/moge",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/3d_moge_panorama_to_mesh-1.webp"
   },
   {
     "slug": "capybara-v0-1",
@@ -991,16 +1017,6 @@
     "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/sd3.5_large_blur-1.webp"
   },
   {
-    "slug": "sd-xl-base-1-0",
-    "name": "sd_xl_base_1.0.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/resolve/main/sd_xl_base_1.0.safetensors?download=true",
-    "directory": "checkpoints",
-    "workflowCount": 4,
-    "displayName": "Sd Xl Base 1.0",
-    "docsUrl": "https://comfyanonymous.github.io/ComfyUI_examples/video/#image-to-video",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/sdxl_refiner_prompt_example-1.webp"
-  },
-  {
     "slug": "ltx-2-3-22b-distilled-fp8",
     "name": "ltx-2.3-22b-distilled-fp8.safetensors",
     "huggingFaceUrl": "https://huggingface.co/Lightricks/LTX-2.3-fp8/resolve/main/ltx-2.3-22b-distilled-fp8.safetensors",
@@ -1056,6 +1072,33 @@
     "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_ltx2_i2v-1.webp"
   },
   {
+    "slug": "minimax-h3-video-vae-fp16",
+    "name": "minimax_h3_video_vae_fp16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_video_vae_fp16.safetensors",
+    "directory": "vae",
+    "workflowCount": 4,
+    "displayName": "Minimax H3 Video Vae FP16",
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_minimax_h3_i2v-1.webp"
+  },
+  {
+    "slug": "minimax-h3-audio-vae-fp32",
+    "name": "minimax_h3_audio_vae_fp32.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_audio_vae_fp32.safetensors",
+    "directory": "vae",
+    "workflowCount": 4,
+    "displayName": "Minimax H3 Audio Vae FP32",
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_minimax_h3_i2v-1.webp"
+  },
+  {
+    "slug": "qwen3vl-32b-minimax-h3-nvfp4-awq",
+    "name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+    "directory": "text_encoders",
+    "workflowCount": 4,
+    "displayName": "Qwen3vl 32b Minimax H3 Nvfp4 Awq",
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_minimax_h3_i2v-1.webp"
+  },
+  {
     "slug": "wan2-1-vace-1-3b-fp16",
     "name": "wan2.1_vace_1.3B_fp16.safetensors",
     "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/diffusion_models/wan2.1_vace_1.3B_fp16.safetensors",
@@ -1074,6 +1117,16 @@
     "displayName": "Wan21 CausVid Bidirect2 T2V 1 3B Lora Rank32",
     "docsUrl": "https://docs.comfy.org/tutorials/video/wan/vace",
     "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_wan_vace_14B_ref2v-1.webp"
+  },
+  {
+    "slug": "birefnet",
+    "name": "birefnet.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/BiRefNet/resolve/main/background_removal/birefnet.safetensors",
+    "directory": "background_removal",
+    "workflowCount": 3,
+    "displayName": "Birefnet",
+    "docsUrl": "https://docs.comfy.org/tutorials/utility/remove-background-birefnet",
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/3d_pixal3d_trellis2_image_to_model-1.webp"
   },
   {
     "slug": "acestep-v1-5-turbo",
@@ -1262,39 +1315,30 @@
     "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_ltx2_5_flf2v-1.webp"
   },
   {
-    "slug": "gemma4-e2b-it-bf16",
-    "name": "gemma4_e2b_it_bf16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/gemma-4/resolve/main/text_encoders/gemma4_e2b_it_bf16.safetensors",
+    "slug": "gemma4-e2b-it-int8-convrot",
+    "name": "gemma4_e2b_it_int8_convrot.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/gemma-4/resolve/main/text_encoders/gemma4_e2b_it_int8_convrot.safetensors",
     "directory": "text_encoders",
     "workflowCount": 3,
-    "displayName": "Gemma4 E2b It BF16",
+    "displayName": "Gemma4 E2b It INT8 Convrot",
     "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_ltx2_5_flf2v-1.webp"
   },
   {
-    "slug": "minimax-h3-video-vae-fp16",
-    "name": "minimax_h3_video_vae_fp16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_video_vae_fp16.safetensors",
-    "directory": "vae",
+    "slug": "minimax-h3-fl2va-pruned-int8-convrot",
+    "name": "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+    "directory": "diffusion_models",
     "workflowCount": 3,
-    "displayName": "Minimax H3 Video Vae FP16",
+    "displayName": "Minimax H3 Fl2va Pruned INT8 Convrot",
     "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_minimax_h3_i2v-1.webp"
   },
   {
-    "slug": "minimax-h3-audio-vae-fp32",
-    "name": "minimax_h3_audio_vae_fp32.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_audio_vae_fp32.safetensors",
-    "directory": "vae",
+    "slug": "minimax-h3-fl2v-turbo-8step-v1-0-comfyui-bf16",
+    "name": "minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/lightx2v/Minimax-h3-Turbo/resolve/main/minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors",
+    "directory": "loras",
     "workflowCount": 3,
-    "displayName": "Minimax H3 Audio Vae FP32",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_minimax_h3_i2v-1.webp"
-  },
-  {
-    "slug": "qwen3vl-32b-minimax-h3-nvfp4-awq",
-    "name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
-    "directory": "text_encoders",
-    "workflowCount": 3,
-    "displayName": "Qwen3vl 32b Minimax H3 Nvfp4 Awq",
+    "displayName": "Minimax H3 Fl2v Turbo 8step V1.0 Comfyui BF16",
     "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_minimax_h3_i2v-1.webp"
   },
   {
@@ -1305,16 +1349,6 @@
     "workflowCount": 3,
     "displayName": "Wan2.2 Vae",
     "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_wan2_2_5B_fun_control-1.webp"
-  },
-  {
-    "slug": "birefnet",
-    "name": "birefnet.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/BiRefNet/resolve/main/background_removal/birefnet.safetensors",
-    "directory": "background_removal",
-    "workflowCount": 2,
-    "displayName": "Birefnet",
-    "docsUrl": "https://docs.comfy.org/tutorials/utility/remove-background-birefnet",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/3d_triposplat_image_to_gaussian_splat-1.webp"
   },
   {
     "slug": "qwen3-5-2b-bf16",
@@ -1636,24 +1670,6 @@
     "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_ltx2_5_i2v-1.webp"
   },
   {
-    "slug": "minimax-h3-fl2va-pruned-int8-convrot",
-    "name": "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors",
-    "directory": "diffusion_models",
-    "workflowCount": 2,
-    "displayName": "Minimax H3 Fl2va Pruned INT8 Convrot",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_minimax_h3_i2v-1.webp"
-  },
-  {
-    "slug": "minimax-h3-fl2v-turbo-8step-v1-0-comfyui-bf16",
-    "name": "minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors",
-    "huggingFaceUrl": "https://huggingface.co/lightx2v/Minimax-h3-Turbo/resolve/main/minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors",
-    "directory": "loras",
-    "workflowCount": 2,
-    "displayName": "Minimax H3 Fl2v Turbo 8step V1.0 Comfyui BF16",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_minimax_h3_i2v-1.webp"
-  },
-  {
     "slug": "wan2-1-scail-2-dpo-lora-bf16",
     "name": "wan2.1_SCAIL_2_DPO_lora_bf16.safetensors",
     "huggingFaceUrl": "https://huggingface.co/Comfy-Org/SCAIL-2/resolve/main/loras/wan2.1_SCAIL_2_DPO_lora_bf16.safetensors",
@@ -1707,6 +1723,51 @@
     "workflowCount": 1,
     "displayName": "Hunyuan3d Dit V2 Mv Turbo FP16",
     "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/3d_hunyuan3d_multiview_to_model_turbo-1.webp"
+  },
+  {
+    "slug": "trellis-2-texture-vae-bf16",
+    "name": "trellis_2_texture_vae_bf16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Pixal3D/resolve/main/vae/trellis_2_texture_vae_bf16.safetensors",
+    "directory": "vae",
+    "workflowCount": 1,
+    "displayName": "Trellis 2 Texture Vae BF16",
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/3d_pixal3d_trellis2_image_to_model-1.webp"
+  },
+  {
+    "slug": "dino-v3-l-naf-fp32",
+    "name": "dino_v3_L_naf_fp32.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Pixal3D/resolve/main/clip_vision/dino_v3_L_naf_fp32.safetensors",
+    "directory": "clip_vision",
+    "workflowCount": 1,
+    "displayName": "Dino V3 L Naf FP32",
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/3d_pixal3d_trellis2_image_to_model-1.webp"
+  },
+  {
+    "slug": "trellis-2-shape-vae-bf16",
+    "name": "trellis_2_shape_vae_bf16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Pixal3D/resolve/main/vae/trellis_2_shape_vae_bf16.safetensors",
+    "directory": "vae",
+    "workflowCount": 1,
+    "displayName": "Trellis 2 Shape Vae BF16",
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/3d_pixal3d_trellis2_image_to_model-1.webp"
+  },
+  {
+    "slug": "trellis-2-int8-convrot",
+    "name": "trellis_2_int8_convrot.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/TRELLIS.2/resolve/main/diffusion_models/trellis_2_int8_convrot.safetensors",
+    "directory": "diffusion_models",
+    "workflowCount": 1,
+    "displayName": "Trellis 2 INT8 Convrot",
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/3d_pixal3d_trellis2_image_to_model-1.webp"
+  },
+  {
+    "slug": "pixal3d-int8-convrot",
+    "name": "pixal3d_int8_convrot.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/Pixal3D/resolve/main/diffusion_models/pixal3d_int8_convrot.safetensors",
+    "directory": "diffusion_models",
+    "workflowCount": 1,
+    "displayName": "Pixal3d INT8 Convrot",
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/3d_pixal3d_trellis2_image_to_model-1.webp"
   },
   {
     "slug": "dino-v3-vit-h",
@@ -3048,6 +3109,24 @@
     "workflowCount": 1,
     "displayName": "Pid Flux1 1024 To 4096 4step BF16",
     "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/utility_pid_latent_upscale_dit-1.webp"
+  },
+  {
+    "slug": "sam-3d-body-dinov3-bf16",
+    "name": "sam_3d_body_dinov3_bf16.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/sam-3d-body/resolve/main/detection/sam_3d_body_dinov3_bf16.safetensors",
+    "directory": "detection",
+    "workflowCount": 1,
+    "displayName": "Sam 3d Body Dinov3 BF16",
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/utility_sam3d_body-1.webp"
+  },
+  {
+    "slug": "rt-detr-v4-x-hgnet-fp32",
+    "name": "rt_detr_v4-x-hgnet_fp32.safetensors",
+    "huggingFaceUrl": "https://huggingface.co/Comfy-Org/SDPose/resolve/main/diffusion_models/rt_detr_v4-x-hgnet_fp32.safetensors",
+    "directory": "diffusion_models",
+    "workflowCount": 1,
+    "displayName": "Rt Detr V4 X Hgnet FP32",
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/utility_sam3d_body-1.webp"
   },
   {
     "slug": "seedvr2-7b-int8-convrot",
