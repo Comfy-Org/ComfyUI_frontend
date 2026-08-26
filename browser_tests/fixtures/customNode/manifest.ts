@@ -735,17 +735,21 @@ function canonicalCoreEntry(value: unknown, index: number): CoreManifestEntry {
 }
 
 export function loadAllManifestPackNames(): string[] {
-  return [
-    ...readCoreManifest().map((entry) => entry.pack),
-    ...readCloudManifest().packs.map((entry) => entry.pack)
-  ]
+  return loadAllManifestTargets().map(({ pack }) => pack)
 }
 
 export function loadAllManifestIdentities(): string[] {
-  return [
-    ...readCoreManifest().map(packIdentity),
-    ...readCloudManifest().packs.map(packIdentity)
-  ]
+  return loadAllManifestTargets().map(({ identity }) => identity)
+}
+
+export function loadAllManifestTargets(): Array<{
+  identity: string
+  pack: string
+}> {
+  return [...readCoreManifest(), ...readCloudManifest().packs].map((entry) => ({
+    identity: packIdentity(entry),
+    pack: entry.pack
+  }))
 }
 
 export function loadUnjoinedYamlPacks(): string[] {

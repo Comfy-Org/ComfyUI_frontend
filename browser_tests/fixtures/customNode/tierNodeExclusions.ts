@@ -1,3 +1,5 @@
+import { groupBy } from 'es-toolkit'
+
 export type CustomNodeNodeExclusionTier =
   | 'S1'
   | 'S2'
@@ -25,6 +27,30 @@ export interface TierNodeExclusion {
 
 export const CUSTOM_NODE_TIER_NODE_EXCLUSIONS: readonly TierNodeExclusion[] = [
   {
+    identity: '4ee72c065db22c9d96c2427954dc69e7b908444b',
+    nodeType: 'VHS_BatchManager',
+    pack: 'ComfyUI-VideoHelperSuite',
+    reason:
+      'the pinned VHSINT displayValue returns a number and fitText calls slice when Nodes 2.0 truncates it, so the node throws before its two widgets mount',
+    restore:
+      'merge Kosinkadink/ComfyUI-VideoHelperSuite#709, pin that commit, and remove this entry',
+    ticket:
+      'https://linear.app/comfyorg/issue/FE-1869/e2e-nodes-tests-restore-vhs-nodes-20-widget-mounting',
+    tiers: ['S2']
+  },
+  {
+    identity: '4ee72c065db22c9d96c2427954dc69e7b908444b',
+    nodeType: 'VHS_LoadVideo',
+    pack: 'ComfyUI-VideoHelperSuite',
+    reason:
+      'the pinned VHSINT displayValue returns a number and fitText calls slice when Nodes 2.0 truncates it, so the node throws before its ten widgets mount',
+    restore:
+      'merge Kosinkadink/ComfyUI-VideoHelperSuite#709, pin that commit, and remove this entry',
+    ticket:
+      'https://linear.app/comfyorg/issue/FE-1869/e2e-nodes-tests-restore-vhs-nodes-20-widget-mounting',
+    tiers: ['S2']
+  },
+  {
     identity: 'comfyui-itools@0.6.8',
     nodeType: 'iToolsCropImage',
     pack: 'comfyui-itools',
@@ -39,12 +65,14 @@ export const CUSTOM_NODE_TIER_NODE_EXCLUSIONS: readonly TierNodeExclusion[] = [
 ]
 
 function exclusionsForPack(
-  pack: string,
+  target: TierNodeExclusionTarget,
   exclusions: readonly TierNodeExclusion[]
 ): readonly TierNodeExclusion[] {
-  const folded = pack.toLowerCase()
+  const folded = target.pack.toLowerCase()
   return exclusions.filter(
-    (exclusion) => exclusion.pack.toLowerCase() === folded
+    (exclusion) =>
+      exclusion.pack.toLowerCase() === folded &&
+      exclusion.identity === target.identity
   )
 }
 
@@ -54,12 +82,8 @@ export function eligibleNodeTypesForTier(
   nodeTypes: readonly string[],
   exclusions: readonly TierNodeExclusion[] = CUSTOM_NODE_TIER_NODE_EXCLUSIONS
 ): string[] {
-  const packExclusions = exclusionsForPack(target.pack, exclusions)
+  const packExclusions = exclusionsForPack(target, exclusions)
   for (const exclusion of packExclusions) {
-    if (exclusion.identity !== target.identity)
-      throw new Error(
-        `${target.pack}/${exclusion.nodeType} ${exclusion.tiers.join('/')} exclusion is pinned to ${exclusion.identity}, but the manifest now uses ${target.identity}; remove or recalibrate the stale exclusion`
-      )
     if (!nodeTypes.includes(exclusion.nodeType))
       throw new Error(
         `${target.pack}/${exclusion.nodeType} ${exclusion.tiers.join('/')} exclusion names a node that no longer registers; remove the stale exclusion`
@@ -78,26 +102,24 @@ export function tierNodeExclusionProblems(
   targets: readonly TierNodeExclusionTarget[],
   exclusions: readonly TierNodeExclusion[] = CUSTOM_NODE_TIER_NODE_EXCLUSIONS
 ): string[] {
-  const targetsByPack = new Map(
-    targets.map((target) => [target.pack.toLowerCase(), target])
-  )
+  const targetsByPack = groupBy(targets, (target) => target.pack.toLowerCase())
   const seen = new Set<string>()
   const problems: string[] = []
 
   for (const exclusion of exclusions) {
-    const target = targetsByPack.get(exclusion.pack.toLowerCase())
-    if (!target) {
+    const packTargets = targetsByPack[exclusion.pack.toLowerCase()]
+    if (!packTargets) {
       problems.push(
         `${exclusion.pack}/${exclusion.nodeType} is not in the manifest`
       )
       continue
     }
-    if (target.identity !== exclusion.identity)
+    if (!packTargets.some(({ identity }) => identity === exclusion.identity))
       problems.push(
-        `${exclusion.pack}/${exclusion.nodeType} is pinned to ${exclusion.identity}, but the manifest now uses ${target.identity}`
+        `${exclusion.pack}/${exclusion.nodeType} is pinned to ${exclusion.identity}, but the manifest uses ${packTargets.map(({ identity }) => identity).join(', ')}`
       )
     for (const tier of exclusion.tiers) {
-      const key = `${exclusion.pack.toLowerCase()}/${exclusion.nodeType}/${tier}`
+      const key = `${exclusion.pack.toLowerCase()}/${exclusion.identity}/${exclusion.nodeType}/${tier}`
       if (seen.has(key)) problems.push(`${key} is duplicated`)
       seen.add(key)
     }

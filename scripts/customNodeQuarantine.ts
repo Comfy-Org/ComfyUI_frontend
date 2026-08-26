@@ -19,6 +19,7 @@ import type { QuarantinedPack } from '../browser_tests/fixtures/customNode/manif
 import { connectivityExpectations } from '../browser_tests/fixtures/customNode/connectivityExpectations'
 import {
   FRONTEND_ASSET_EXCLUSIONS,
+  loadAllManifestTargets,
   loadFullManifest,
   loadPackQuarantine,
   loadUnjoinedYamlPacks,
@@ -269,26 +270,33 @@ for (const [pack, entry] of entries) {
   if (entry.class !== 'requires-gpu-runner' && !broken) stale.push(pack)
 }
 
-const tierNodeProblems = tierNodeExclusionProblems(
-  [...manifest.values()].map((entry) => ({
-    identity: packIdentity(entry),
-    pack: entry.pack
-  }))
+const tierNodeProblems = tierNodeExclusionProblems(loadAllManifestTargets())
+const currentManifestTargets = [...manifest.values()].map((entry) => ({
+  identity: packIdentity(entry),
+  pack: entry.pack
+}))
+const applicableTierNodeExclusions = CUSTOM_NODE_TIER_NODE_EXCLUSIONS.filter(
+  (exclusion) =>
+    currentManifestTargets.some(
+      (target) =>
+        target.pack.toLowerCase() === exclusion.pack.toLowerCase() &&
+        target.identity === exclusion.identity
+    )
 )
-const excludedTierSurfaces = CUSTOM_NODE_TIER_NODE_EXCLUSIONS.reduce(
+const excludedTierSurfaces = applicableTierNodeExclusions.reduce(
   (total, exclusion) => total + exclusion.tiers.length,
   0
 )
 note('')
 note(
-  `## Tier-scoped node coverage exclusions - **${CUSTOM_NODE_TIER_NODE_EXCLUSIONS.length} node, ${excludedTierSurfaces} S-tier surfaces**`
+  `## Tier-scoped node coverage exclusions - **${applicableTierNodeExclusions.length} node, ${excludedTierSurfaces} S-tier surfaces**`
 )
 note('')
 note(
   'The pack still has an exact registration-count sentinel and its other nodes run. Only the named node is excluded from the named tiers.'
 )
 note('')
-for (const exclusion of CUSTOM_NODE_TIER_NODE_EXCLUSIONS) {
+for (const exclusion of applicableTierNodeExclusions) {
   note(
     `- **${exclusion.tiers.join('/')} - SKIP - NODE NOT EXERCISED - ${exclusion.pack} / ${exclusion.nodeType}**`
   )
