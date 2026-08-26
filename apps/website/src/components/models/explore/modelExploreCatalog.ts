@@ -21,6 +21,8 @@ export interface ModelExploreCatalogItem {
   searchText: string
 }
 
+export type ModelAccessFilter = 'all' | 'open' | 'partner'
+
 const categoryTones: Readonly<Partial<Record<ModelCategory, ModelMediaTone>>> =
   {
     image: 'ember',
@@ -65,13 +67,16 @@ export function createModelExploreCatalog(
 export function filterModelExploreCatalog(
   catalog: readonly ModelExploreCatalogItem[],
   query: string,
-  category: 'all' | ModelCategory
+  category: 'all' | ModelCategory,
+  access: ModelAccessFilter = 'all'
 ): ModelExploreCatalogItem[] {
   const queryTerms = query.trim().toLowerCase().split(/\s+/).filter(Boolean)
 
   return catalog.filter(
     (model) =>
       (category === 'all' || model.categories.includes(category)) &&
+      (access === 'all' ||
+        (access === 'partner') === (model.directory === 'partner_nodes')) &&
       queryTerms.every((term) => model.searchText.includes(term))
   )
 }

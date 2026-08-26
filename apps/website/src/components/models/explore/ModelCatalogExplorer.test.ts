@@ -98,4 +98,36 @@ describe('ModelCatalogExplorer', () => {
     expect(screen.getByRole('link', { name: 'Wan Video' })).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Partner Image' })).toBeTruthy()
   })
+
+  it.for([
+    {
+      access: 'open',
+      includedModel: 'Wan Video',
+      excludedModel: 'Partner Image'
+    },
+    {
+      access: 'partner',
+      includedModel: 'Partner Image',
+      excludedModel: 'Wan Video'
+    }
+  ])(
+    'filters the dedicated catalog to $access models from the URL',
+    async ({ access, includedModel, excludedModel }) => {
+      window.history.replaceState(
+        {},
+        '',
+        `/p/supported-models/all?access=${access}`
+      )
+
+      render(ModelCatalogExplorer, {
+        props: { ...props, showCatalogByDefault: true }
+      })
+
+      await waitFor(() => {
+        expect(screen.getByRole('status').textContent).toBe('1 matching models')
+        expect(screen.getByRole('link', { name: includedModel })).toBeTruthy()
+        expect(screen.queryByRole('link', { name: excludedModel })).toBeNull()
+      })
+    }
+  )
 })

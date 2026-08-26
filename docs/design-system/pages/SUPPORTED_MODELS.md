@@ -51,6 +51,9 @@ as implementation constraints.
    that card; the full card is the link.
 9. Access cards reuse `ProductCard`. Open Weights uses deep plum; Partner APIs
    uses the same cool-gray semantic surface as Comfy Enterprise, not green.
+   Their full surfaces link to the dedicated catalog with `access=open` and
+   `access=partner`, respectively. That URL filter composes with search and
+   modality selection.
 10. The conversion banner is the exact `/cloud/pricing`
     `PricingFreeBanner`, followed by the existing product-card family.
 11. Wan family rows use the established small solid `IconButton` with the

@@ -79,4 +79,17 @@ describe('model explore catalog presentation', () => {
     ).toEqual(['wan-video'])
     expect(filterModelExploreCatalog(catalog, '', 'image')).toHaveLength(1)
   })
+
+  it('filters local components and partner integrations by access type', () => {
+    expect(
+      filterModelExploreCatalog(catalog, '', 'all', 'open').map(
+        ({ slug }) => slug
+      )
+    ).toEqual(['wan-video'])
+    expect(
+      filterModelExploreCatalog(catalog, '', 'all', 'partner').map(
+        ({ slug }) => slug
+      )
+    ).toEqual(['partner-image'])
+  })
 })

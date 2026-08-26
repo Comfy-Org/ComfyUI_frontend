@@ -9,8 +9,11 @@ import type { ModelCategory } from '../../../config/modelCategories'
 import ModelCategoryFilter from './ModelCategoryFilter.vue'
 import type { ModelCategoryOption } from './ModelCategoryFilter.vue'
 import ModelMediaPlaceholder from './ModelMediaPlaceholder.vue'
-import { filterModelExploreCatalog } from './modelExploreCatalog';
-import type { ModelExploreCatalogItem } from './modelExploreCatalog';
+import { filterModelExploreCatalog } from './modelExploreCatalog'
+import type {
+  ModelAccessFilter,
+  ModelExploreCatalogItem
+} from './modelExploreCatalog'
 
 const {
   catalog,
@@ -40,13 +43,17 @@ const {
 
 const query = ref('')
 const category = ref<'all' | ModelCategory>('all')
+const access = ref<ModelAccessFilter>('all')
 const showAll = ref(showCatalogByDefault)
 const isActive = computed(
   () =>
-    showAll.value || query.value.trim().length > 0 || category.value !== 'all'
+    showAll.value ||
+    query.value.trim().length > 0 ||
+    category.value !== 'all' ||
+    access.value !== 'all'
 )
 const filteredCatalog = computed(() =>
-  filterModelExploreCatalog(catalog, query.value, category.value)
+  filterModelExploreCatalog(catalog, query.value, category.value, access.value)
 )
 const resultStatus = computed(() =>
   isActive.value
@@ -61,9 +68,12 @@ const categoryLabels = computed(
 )
 
 onMounted(() => {
-  showAll.value =
-    showCatalogByDefault ||
-    new URLSearchParams(window.location.search).get('catalog') === 'all'
+  const searchParams = new URLSearchParams(window.location.search)
+  const accessParam = searchParams.get('access')
+
+  access.value =
+    accessParam === 'open' || accessParam === 'partner' ? accessParam : 'all'
+  showAll.value = showCatalogByDefault || searchParams.get('catalog') === 'all'
 })
 
 function workflowDescription(workflowCount: number): string {

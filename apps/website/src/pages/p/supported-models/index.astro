@@ -70,14 +70,14 @@ const accessCards = [
     title: t('models.explore.access.open.title', locale),
     description: t('models.explore.access.open.description', locale),
     cta: t('models.explore.access.open.cta', locale),
-    href: externalLinks.workflows,
+    href: `${routes.modelsAll}?access=open`,
     bg: 'bg-secondary-deep-plum',
   },
   {
     title: t('models.explore.access.partner.title', locale),
     description: t('models.explore.access.partner.description', locale),
     cta: t('models.explore.access.partner.cta', locale),
-    href: externalLinks.workflows,
+    href: `${routes.modelsAll}?access=partner`,
     bg: 'bg-secondary-cool-gray',
   },
 ]
