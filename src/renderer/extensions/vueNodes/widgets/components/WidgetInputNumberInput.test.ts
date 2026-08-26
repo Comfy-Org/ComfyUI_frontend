@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import type { DirectiveBinding } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { render, screen } from '@testing-library/vue'
@@ -29,13 +30,23 @@ function createNumberInputWidget(
 }
 
 function renderComponent(widget: SimplifiedWidget<number>, modelValue: number) {
-  return render(WidgetInputNumberInput, {
-    global: { plugins: [i18n] },
-    props: {
-      widget,
-      modelValue
-    }
-  })
+  const tooltipDirective = {
+    mounted: vi.fn((_element: Element, _binding: DirectiveBinding) => {})
+  }
+
+  return {
+    ...render(WidgetInputNumberInput, {
+      global: {
+        plugins: [i18n],
+        directives: { tooltip: tooltipDirective }
+      },
+      props: {
+        widget,
+        modelValue
+      }
+    }),
+    tooltipDirective
+  }
 }
 
 function getNumberInput(container: Element) {
@@ -165,23 +176,26 @@ describe('WidgetInputNumberInput Large Integer Precision Handling', () => {
     expect(screen.queryAllByRole('button')).toHaveLength(0)
   })
 
-  it('shows tooltip for disabled buttons due to precision limits', (context) => {
-    context.skip('needs diagnosis')
-    renderComponent(
+  it('shows tooltip for disabled buttons due to precision limits', () => {
+    const { tooltipDirective } = renderComponent(
       createNumberInputWidget(UNSAFE_LARGE_INTEGER, 'int'),
       UNSAFE_LARGE_INTEGER
+    )
+
+    expect(tooltipDirective.mounted).toHaveBeenCalledTimes(1)
+    expect(tooltipDirective.mounted.mock.calls[0]?.[1].value).toEqual(
+      expect.stringContaining('precision limit')
     )
   })
 
   it('does not show tooltip for safe integer values', () => {
-    const { container } = renderComponent(
+    const { tooltipDirective } = renderComponent(
       createNumberInputWidget(1000, 'int'),
       1000
     )
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- checking absence of v-tooltip attribute on wrapper div
-    const tooltipDiv = container.querySelector('div')
-    expect(tooltipDiv).not.toHaveAttribute('v-tooltip')
+    expect(tooltipDirective.mounted).toHaveBeenCalledTimes(1)
+    expect(tooltipDirective.mounted.mock.calls[0]?.[1].value).toBeNull()
   })
 
   it('handles floating point values correctly', () => {
@@ -212,8 +226,7 @@ describe('WidgetInputNumberInput Edge Cases for Precision Handling', () => {
     expect(screen.getAllByRole('button')).toHaveLength(2)
   })
 
-  it('handles NaN values gracefully', (context) => {
-    context.skip('needs diagnosis')
+  it('handles NaN values gracefully', () => {
     renderComponent(createNumberInputWidget(NaN, 'int'), NaN)
 
     expect(screen.queryAllByRole('button')).toHaveLength(0)
