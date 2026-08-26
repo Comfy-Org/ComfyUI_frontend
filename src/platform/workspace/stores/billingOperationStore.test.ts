@@ -756,15 +756,36 @@ describe('billingOperationStore', () => {
         cycle: undefined,
         checkout_type: undefined,
         payment_intent_source: undefined,
-        failure_category: 'provider_decline',
+        failure_category: 'unknown',
         duration_ms: expect.any(Number)
       })
     })
 
-    it('categorizes a topup poll failure as a provider decline too', async () => {
+    it('categorizes an unclassified topup poll failure as unknown', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-1',
         status: 'failed',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'topup')
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          operation_type: 'topup',
+          failure_category: 'unknown'
+        })
+      )
+    })
+
+    it('uses a structured decline reason for provider declines', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'failed',
+        decline_reason: 'card_declined',
         started_at: new Date().toISOString()
       })
 
