@@ -63,9 +63,11 @@ jobs:
             exit 1
           fi
         env:
-          # Same token the PR-creation step uses; GITHUB_TOKEN was not able to
-          # read the PR here even with pull-requests: write.
-          GH_TOKEN: ${{ secrets.PR_GH_TOKEN || secrets.GITHUB_TOKEN }}
+          # PR_GH_TOKEN is what the PR-creation step below already uses, and
+          # GH_TOKEN is the repo's other configured PAT. The auto-provided
+          # GITHUB_TOKEN could not read the PR here even with
+          # pull-requests: write, so it is not used as a fallback.
+          GH_TOKEN: ${{ secrets.PR_GH_TOKEN || secrets.GH_TOKEN }}
           GH_REPO: ${{ github.repository }}
 
       - name: Checkout repository
