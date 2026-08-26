@@ -113,6 +113,21 @@ Each result records at least:
 - expected, emitted, received, and applied workload counts; and
 - accepted/rejected status with a machine-readable reason.
 
+This is the target contract for a future identity-complete schema epoch, not
+the acceptance contract of the current performance lane. The report on `main`
+records only timestamp, commit, branch, and measurements; the versioned schema
+being introduced in [#15997](https://github.com/Comfy-Org/ComfyUI_frontend/pull/15997)
+adds `schemaVersion` but not the rest of the identity above. Those reports may
+continue to populate the advisory `perf-data` history during rollout, but they
+must not be described as identity-complete, compared as a policy-compliant
+epoch, or promoted to a merge or release timing gate.
+
+The rollout is complete only when the report schema and writer record the
+required identity, reject incomplete identity before upload or baseline
+persistence, and the comparison path refuses incompatible epochs. Until all
+three boundaries are enforced, the existing workflow and `perf-data` branch are
+explicitly the legacy advisory lane.
+
 Raw intervals, counters, and metadata are the evidence of record. PR comments
 contain bounded summaries and links to artifacts. Schema changes, browser or
 runner changes, renderer-default changes, and fixture hash changes start a new
