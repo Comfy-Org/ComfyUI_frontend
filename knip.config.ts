@@ -20,7 +20,14 @@ const config: KnipConfig = {
         '*.{js,ts,mts}',
         '!.claude/**',
         '!worktrees/**',
-        '!src/__ecs_matrix__/**'
+        '!src/__ecs_matrix__/**',
+        // Mount point for the separately-licensed secure-nodes overlay: a
+        // tracked symlink a developer points at their overlay checkout. Its
+        // files load by runtime URL from secureNodesBootstrap, never through
+        // the build. A project negation rather than `ignore` because the link
+        // dangles on checkouts without the overlay, and an unmatched ignore
+        // entry is a config-hint failure while an unmatched negation is inert.
+        '!public/secure-nodes/**'
       ],
       ignore: ['scripts/registry-census/detection-proof/**']
     },
@@ -59,11 +66,6 @@ const config: KnipConfig = {
     '@iconify/json'
   ],
   ignore: [
-    // Mount point for the separately-licensed secure-nodes overlay: a tracked
-    // symlink a developer points at their overlay checkout. Its files are
-    // loaded by runtime URL from secureNodesBootstrap, never imported by the
-    // build, and the link dangles on checkouts without the overlay.
-    'public/secure-nodes/**',
     // Auto generated API types
     'src/workbench/extensions/manager/types/generatedManagerTypes.ts',
     'packages/ingest-types/src/zod.gen.ts',
