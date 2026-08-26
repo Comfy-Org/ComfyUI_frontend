@@ -269,7 +269,6 @@ import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeB
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
-import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -282,10 +281,8 @@ const {
   workspaceName,
   isInPersonalWorkspace: isPersonalWorkspace
 } = storeToRefs(workspaceStore)
-const { permissions } = useWorkspaceUI()
-const { shouldUseWorkspaceBilling } = useBillingRouting()
-const { canTopUp, canSubscribeSelfServe, canReactivate } =
-  useBillingCapabilities()
+const { permissions, canReactivatePlan } = useWorkspaceUI()
+const { canTopUp, canSubscribeSelfServe } = useBillingCapabilities()
 const isWorkspaceSwitcherOpen = ref(false)
 const workspaceSwitcherTrigger = useTemplateRef('workspaceSwitcherTrigger')
 const workspaceSwitcherPanel = useTemplateRef('workspaceSwitcherPanel')
@@ -367,13 +364,6 @@ const showManagePlan = computed(
   () =>
     permissions.value.canManageSubscription &&
     (canAccessSubscriptionFeatures.value || hasDelinquentSubscription.value)
-)
-// The legacy rail keeps lifecycle authorization on the client, matching
-// SubscriptionPanelContentWorkspace and BillingStatusBanner.
-const canReactivatePlan = computed(() =>
-  isCloud && shouldUseWorkspaceBilling.value
-    ? canReactivate.value
-    : permissions.value.canManageSubscriptionLifecycle
 )
 
 const showSubscribeAction = computed(

@@ -223,6 +223,11 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
       canManageSubscriptionLifecycle: mockCanManageSubscriptionLifecycle.value,
       canLeaveWorkspace: mockCanLeaveWorkspace.value
     })),
+    canReactivatePlan: computed(() =>
+      mockDistributionState.isCloud && mockShouldUseWorkspaceBilling.value
+        ? mockCanReactivate.value
+        : mockCanManageSubscriptionLifecycle.value
+    ),
     uiConfig: computed(() => mockUiConfig.value),
     isInPersonalWorkspace: mockIsInPersonalWorkspace,
     isActiveSubscription: computed(() => mockIsActiveSubscription.value),

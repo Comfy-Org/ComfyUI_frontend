@@ -77,7 +77,12 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
     permissions: computed(() => ({
       canManageSubscription: state.canManageSubscription,
       canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
-    }))
+    })),
+    canReactivatePlan: computed(() =>
+      state.isCloud && state.shouldUseWorkspaceBilling
+        ? state.canReactivate
+        : state.canManageSubscriptionLifecycle
+    )
   })
 }))
 

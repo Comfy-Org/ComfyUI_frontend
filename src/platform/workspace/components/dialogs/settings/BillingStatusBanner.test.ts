@@ -80,7 +80,12 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
       canManageSubscription: state.canManageSubscription,
       canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
     })),
-    workspaceType: computed(() => state.workspaceType as WorkspaceType)
+    workspaceType: computed(() => state.workspaceType as WorkspaceType),
+    canReactivatePlan: computed(() =>
+      state.shouldUseWorkspaceBilling
+        ? state.canReactivate
+        : state.canManageSubscriptionLifecycle
+    )
   })
 }))
 
