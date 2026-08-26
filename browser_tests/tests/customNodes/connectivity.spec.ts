@@ -550,16 +550,36 @@ async function evaluatePairs(
   const batch = evaluatePairsInPage(page, pairs, options)
   const outcome = await Promise.race([batch, timer])
   if (outcome !== stall) return outcome
-  const cursor = await page
-    .evaluate(
-      () => (window as unknown as { __cnPairCursor?: string }).__cnPairCursor,
-      { timeout: 10_000 }
+  // Sampled twice: a live graph whose slot counts keep climbing between reads
+  // is a pack growing its own dynamic inputs without converging, which is not
+  // distinguishable from a hang by the cursor alone.
+  const probe = async () =>
+    page
+      .evaluate(
+        () => ({
+          cursor: (window as unknown as { __cnPairCursor?: string })
+            .__cnPairCursor,
+          nodes: window.app?.graph.nodes.length ?? -1,
+          slots: (window.app?.graph.nodes ?? []).map(
+            (node) =>
+              `${node.type}:${node.inputs?.length ?? 0}/${node.widgets?.length ?? 0}`
+          )
+        }),
+        { timeout: 10_000 }
+      )
+      .catch(() => null)
+  const first = await probe()
+  await new Promise((resolve) => setTimeout(resolve, 2_000))
+  const second = await probe()
+  if (first === null || second === null)
+    throw new Error(
+      `connectivity batch wedged the renderer after ${BATCH_STALL_MS}ms; the page stopped answering, so a pack ran a synchronous loop. Batch started at ${pairs[0] ? `${pairs[0].producer.nodeType}.${pairs[0].producer.slotName}` : 'unknown'}`
     )
-    .catch(() => null)
+  const growing =
+    JSON.stringify(first.slots) !== JSON.stringify(second.slots) ||
+    first.nodes !== second.nodes
   throw new Error(
-    cursor === null
-      ? `connectivity batch wedged the renderer after ${BATCH_STALL_MS}ms; the page stopped answering, so a pack ran a synchronous loop. Batch started at ${pairs[0] ? `${pairs[0].producer.nodeType}.${pairs[0].producer.slotName}` : 'unknown'}`
-      : `connectivity batch stalled after ${BATCH_STALL_MS}ms on pair '${cursor ?? 'none recorded'}' - the page still answers, so that pair is awaiting something that never settles`
+    `connectivity batch stalled after ${BATCH_STALL_MS}ms on pair '${second.cursor ?? 'none recorded'}' - the page still answers. Graph ${growing ? 'IS STILL CHANGING' : 'is static'} across a 2s sample: nodes ${first.nodes} -> ${second.nodes}, slots ${JSON.stringify(first.slots)} -> ${JSON.stringify(second.slots)}`
   )
 }
 

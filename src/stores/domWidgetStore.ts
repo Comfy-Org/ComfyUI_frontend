@@ -66,15 +66,17 @@ export const useDomWidgetStore = defineStore('domWidget', () => {
   }
 
   // Widgets are keyed by widget id alone, so a graph teardown has to resolve
-  // each one's owning root before deciding. Subgraph widgets resolve to the
-  // same root as their parent, so clearing a root releases those too, while
-  // any other live root keeps its widgets.
-  function clearGraph(rootGraphId: string) {
+  // each one's owner before deciding. Matched by identity rather than graph
+  // id: a scratch graph built for an insert deliberately carries the live
+  // graph's id, so an id match would strip the widgets of the very workflow
+  // it is being inserted into. Subgraph widgets resolve through rootGraph, so
+  // clearing a root still releases them.
+  function clearGraph(graph: object) {
     for (const [widgetId, state] of widgetStates.value) {
-      const graph = state.widget.node?.graph
-      if (!graph) continue
-      if ((graph.rootGraph?.id ?? graph.id) === rootGraphId)
-        widgetStates.value.delete(widgetId)
+      const owner: unknown = state.widget.node?.graph
+      if (!owner) continue
+      const root: unknown = (owner as { rootGraph?: unknown }).rootGraph
+      if (owner === graph || root === graph) widgetStates.value.delete(widgetId)
     }
   }
 

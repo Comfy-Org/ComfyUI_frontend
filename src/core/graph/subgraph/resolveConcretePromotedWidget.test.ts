@@ -14,7 +14,7 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({})
 }))
 vi.mock('@/stores/domWidgetStore', () => ({
-  useDomWidgetStore: () => ({ widgetStates: new Map() })
+  useDomWidgetStore: () => ({ widgetStates: new Map(), clearGraph: vi.fn() })
 }))
 vi.mock('@/services/litegraphService', () => ({
   useLitegraphService: () => ({ updatePreviews: () => ({}) })
