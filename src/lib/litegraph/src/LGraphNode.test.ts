@@ -696,7 +696,7 @@ describe('LGraphNode', () => {
       })
     })
 
-    test('should leave a hole for a non-trailing widget.serialize === false', () => {
+    test('should compact a non-trailing widget.serialize === false', () => {
       const node = new LGraphNode('TestNode')
       node.serialize_widgets = true
 
@@ -708,11 +708,7 @@ describe('LGraphNode', () => {
       const serialized = node.serialize()
 
       expect(serialized.widgets_values_named).not.toHaveProperty('action')
-      // The on-disk format is full-index: the skipped slot is preserved as a
-      // hole (JSON `null`) rather than compacted away. See #15669 / #15688.
-      expect(
-        JSON.parse(JSON.stringify(serialized.widgets_values))
-      ).toStrictEqual([20, null, 12345])
+      expect(serialized.widgets_values).toStrictEqual([20, 12345])
     })
   })
 
