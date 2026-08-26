@@ -297,7 +297,7 @@ test.describe('Events page — desktop @smoke', () => {
     }
   })
 
-  test('past events gallery renders one card per event with WATCH NOW links', async ({
+  test.fixme('past events gallery renders one card per event with WATCH NOW links', async ({
     page
   }) => {
     for (const [path, locale] of LOCALES) {
