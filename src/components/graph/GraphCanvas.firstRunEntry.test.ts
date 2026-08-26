@@ -237,7 +237,7 @@ describe('GraphCanvas execution progress fanout complexity', () => {
     { totalNodes: 1_000, activeEntries: 100 },
     { totalNodes: 1_000, activeEntries: 500 }
   ])(
-    'scans all $totalNodes visible nodes with $activeEntries active entries for equal, changed, removed, and unmatched events',
+    'indexes $totalNodes visible nodes once with $activeEntries active entries',
     async ({ totalNodes, activeEntries }) => {
       await mountGraphCanvas()
 
@@ -260,13 +260,17 @@ describe('GraphCanvas execution progress fanout complexity', () => {
       mocks.graphNodes.push(...nodes)
 
       const canvas = app.canvas!
-      canvas.graph = { nodes } as typeof canvas.graph
+      canvas.graph = { nodes, events: new EventTarget() } as typeof canvas.graph
       useCanvasStore().canvas = canvas
 
       const workflowStore = useWorkflowStore()
       vi.mocked(workflowStore.nodeIdToNodeLocatorId).mockImplementation((id) =>
         createNodeLocatorId(null, id)
       )
+      vi.mocked(workflowStore.nodeToNodeLocatorId).mockImplementation((node) =>
+        createNodeLocatorId(null, node.id)
+      )
+      vi.mocked(workflowStore.nodeToNodeLocatorId).mockClear()
 
       const executionStore = useExecutionStore()
       const equalState = Object.fromEntries(
@@ -293,26 +297,27 @@ describe('GraphCanvas execution progress fanout complexity', () => {
       if (activeEntries < totalNodes) {
         expect(progressValues[activeEntries]).toBeUndefined()
       }
+      expect(workflowStore.nodeToNodeLocatorId).toHaveBeenCalledTimes(
+        totalNodes
+      )
 
       progressWrites = 0
       mocks.setDirty.mockClear()
-      vi.mocked(workflowStore.nodeIdToNodeLocatorId).mockClear()
+      vi.mocked(workflowStore.nodeToNodeLocatorId).mockClear()
 
-      // A structurally equal WebSocket payload still scans, but does no work.
+      // A structurally equal WebSocket payload neither scans nor mutates nodes.
       executionStore.nodeProgressStates = { ...equalState }
       await nextTick()
 
-      expect(workflowStore.nodeIdToNodeLocatorId).toHaveBeenCalledTimes(
-        totalNodes
-      )
+      expect(workflowStore.nodeToNodeLocatorId).not.toHaveBeenCalled()
       expect(progressWrites).toBe(0)
       expect(mocks.setDirty).not.toHaveBeenCalled()
 
       progressWrites = 0
       mocks.setDirty.mockClear()
-      vi.mocked(workflowStore.nodeIdToNodeLocatorId).mockClear()
+      vi.mocked(workflowStore.nodeToNodeLocatorId).mockClear()
 
-      // A real one-node change scans all nodes but mutates only that node.
+      // A real one-node change uses the index and mutates only that node.
       executionStore.nodeProgressStates = {
         ...equalState,
         '1': {
@@ -325,9 +330,7 @@ describe('GraphCanvas execution progress fanout complexity', () => {
       }
       await nextTick()
 
-      expect(workflowStore.nodeIdToNodeLocatorId).toHaveBeenCalledTimes(
-        totalNodes
-      )
+      expect(workflowStore.nodeToNodeLocatorId).not.toHaveBeenCalled()
       expect(progressWrites).toBe(1)
       expect(progressValues[0]).toBe(0.5)
       expect(mocks.setDirty).toHaveBeenCalledTimes(1)
@@ -335,7 +338,7 @@ describe('GraphCanvas execution progress fanout complexity', () => {
 
       progressWrites = 0
       mocks.setDirty.mockClear()
-      vi.mocked(workflowStore.nodeIdToNodeLocatorId).mockClear()
+      vi.mocked(workflowStore.nodeToNodeLocatorId).mockClear()
 
       const changedState: typeof equalState = {
         ...equalState,
@@ -351,16 +354,14 @@ describe('GraphCanvas execution progress fanout complexity', () => {
       executionStore.nodeProgressStates = changedState
       await nextTick()
 
-      expect(workflowStore.nodeIdToNodeLocatorId).toHaveBeenCalledTimes(
-        totalNodes
-      )
+      expect(workflowStore.nodeToNodeLocatorId).not.toHaveBeenCalled()
       expect(progressWrites).toBe(1)
       expect(progressValues[activeEntries - 1]).toBeUndefined()
       expect(mocks.setDirty).toHaveBeenCalledTimes(1)
 
       progressWrites = 0
       mocks.setDirty.mockClear()
-      vi.mocked(workflowStore.nodeIdToNodeLocatorId).mockClear()
+      vi.mocked(workflowStore.nodeToNodeLocatorId).mockClear()
 
       executionStore.nodeProgressStates = {
         ...changedState,
@@ -375,9 +376,7 @@ describe('GraphCanvas execution progress fanout complexity', () => {
       }
       await nextTick()
 
-      expect(workflowStore.nodeIdToNodeLocatorId).toHaveBeenCalledTimes(
-        totalNodes
-      )
+      expect(workflowStore.nodeToNodeLocatorId).not.toHaveBeenCalled()
       expect(progressWrites).toBe(0)
       expect(mocks.setDirty).not.toHaveBeenCalled()
     }
