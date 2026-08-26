@@ -44,16 +44,29 @@ const resizeObserverState = vi.hoisted(() => {
 const ROOT_GRAPH_ID = vi.hoisted<UUID>(() => 'root-graph')
 const SECOND_GRAPH_ID = vi.hoisted<UUID>(() => 'second-graph')
 
-const testState = vi.hoisted(() => ({
-  linearMode: false,
-  rootGraphId: ROOT_GRAPH_ID,
-  visibility: null as { value: 'visible' | 'hidden' } | null,
-  nodeLayouts: new Map<NodeId, NodeLayout>(),
-  reportContentSize: vi.fn(),
-  syncNodeSlotLayoutsFromDOM: vi.fn(),
-  scheduleSlotLayoutSync: vi.fn(),
-  setDirty: vi.fn()
-}))
+const testState = vi.hoisted(() => {
+  const contentSizes = new Map<string, { width: number; height: number }>()
+
+  return {
+    linearMode: false,
+    rootGraphId: ROOT_GRAPH_ID,
+    visibility: null as { value: 'visible' | 'hidden' } | null,
+    nodeLayouts: new Map<NodeId, NodeLayout>(),
+    contentSizes,
+    reportContentSize: vi.fn(
+      (
+        rootGraphId: UUID,
+        nodeId: NodeId,
+        size: { width: number; height: number }
+      ) => {
+        contentSizes.set(`${rootGraphId}:${nodeId}`, size)
+      }
+    ),
+    syncNodeSlotLayoutsFromDOM: vi.fn(),
+    scheduleSlotLayoutSync: vi.fn(),
+    setDirty: vi.fn()
+  }
+})
 
 vi.mock('@vueuse/core', () => ({
   useDocumentVisibility: () => {
@@ -81,6 +94,8 @@ vi.mock('@/composables/element/useCanvasPositionConversion', () => ({
 vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   layoutStore: {
     reportContentSize: testState.reportContentSize,
+    contentSizeOf: (rootGraphId: UUID, nodeId: NodeId) =>
+      testState.contentSizes.get(`${rootGraphId}:${nodeId}`),
     getNodeLayout: (_rootGraphId: UUID, rawNodeId: NodeId): NodeLayout | null =>
       testState.nodeLayouts.get(rawNodeId) ?? null
   }
@@ -173,6 +188,7 @@ describe('useVueNodeResizeTracking', () => {
     testState.rootGraphId = ROOT_GRAPH_ID
     if (testState.visibility) testState.visibility.value = 'visible'
     testState.nodeLayouts.clear()
+    testState.contentSizes.clear()
   })
 
   describe('deterministic resize workload baseline', () => {
@@ -220,7 +236,7 @@ describe('useVueNodeResizeTracking', () => {
     )
 
     it.for(scales)(
-      'repeats store and slot work for stable changed-size entries at %i nodes',
+      'suppresses repeated store and slot work for stable changed-size entries at %i nodes',
       (count) => {
         const entries = createSeededEntries(count)
         resizeObserverState.callback?.(entries, createObserverMock())
@@ -242,14 +258,8 @@ describe('useVueNodeResizeTracking', () => {
         vi.clearAllMocks()
         resizeObserverState.callback?.(changedEntries, createObserverMock())
 
-        // reportContentSize stores collapsed content dimensions; it does not
-        // advance node geometry. Consequently the cache never reaches its
-        // nodeLayout-matching condition and identical follow-up entries repeat
-        // all downstream work.
-        expect(testState.reportContentSize).toHaveBeenCalledTimes(count)
-        expect(testState.syncNodeSlotLayoutsFromDOM).toHaveBeenCalledTimes(
-          count
-        )
+        expect(testState.reportContentSize).not.toHaveBeenCalled()
+        expect(testState.syncNodeSlotLayoutsFromDOM).not.toHaveBeenCalled()
       }
     )
 
@@ -338,7 +348,7 @@ describe('useVueNodeResizeTracking', () => {
     )
   })
 
-  it('currently carries a cached measurement across root graph/subgraph replacement', () => {
+  it('reports a fresh measurement after root graph/subgraph replacement', () => {
     const nodeId = toNodeId('same-local-node-id')
     const { entry } = createResizeEntry({ nodeId })
     seedNodeLayout({ nodeId, left: 100, top: 200, width: 240, height: 180 })
@@ -349,11 +359,37 @@ describe('useVueNodeResizeTracking', () => {
 
     resizeObserverState.callback?.([entry], createObserverMock())
 
-    // The current cache is scoped to element + local node ID, not root graph.
-    // Identical geometry therefore suppresses the new graph's initial content
-    // report when a DOM element survives graph replacement.
-    expect(testState.reportContentSize).not.toHaveBeenCalled()
-    expect(testState.syncNodeSlotLayoutsFromDOM).not.toHaveBeenCalled()
+    expect(testState.reportContentSize).toHaveBeenCalledWith(
+      SECOND_GRAPH_ID,
+      nodeId,
+      {
+        width: 240,
+        height: 180 - LiteGraph.NODE_TITLE_HEIGHT
+      }
+    )
+    expect(testState.syncNodeSlotLayoutsFromDOM).toHaveBeenCalledWith(nodeId)
+  })
+
+  it('reports a fresh measurement after same-root graph reconfiguration', () => {
+    const nodeId = toNodeId('undo-redo-node')
+    const { entry } = createResizeEntry({ nodeId })
+    seedNodeLayout({ nodeId, left: 100, top: 200, width: 240, height: 180 })
+
+    resizeObserverState.callback?.([entry], createObserverMock())
+    vi.clearAllMocks()
+    testState.contentSizes.clear()
+
+    resizeObserverState.callback?.([entry], createObserverMock())
+
+    expect(testState.reportContentSize).toHaveBeenCalledWith(
+      ROOT_GRAPH_ID,
+      nodeId,
+      {
+        width: 240,
+        height: 180 - LiteGraph.NODE_TITLE_HEIGHT
+      }
+    )
+    expect(testState.syncNodeSlotLayoutsFromDOM).toHaveBeenCalledWith(nodeId)
   })
 
   it('defers hidden entries and re-observes connected elements when visible', async () => {
@@ -362,6 +398,10 @@ describe('useVueNodeResizeTracking', () => {
     document.body.append(entry.target)
     seedNodeLayout({ nodeId, left: 100, top: 200, width: 240, height: 180 })
     if (!testState.visibility) throw new Error('visibility ref not initialized')
+
+    resizeObserverState.callback?.([entry], createObserverMock())
+    expect(testState.reportContentSize).toHaveBeenCalledTimes(1)
+    vi.clearAllMocks()
 
     testState.visibility.value = 'hidden'
     await nextTick()
@@ -376,6 +416,18 @@ describe('useVueNodeResizeTracking', () => {
     await nextTick()
 
     expect(resizeObserverState.observe).toHaveBeenCalledWith(entry.target)
+
+    vi.clearAllMocks()
+    resizeObserverState.callback?.([entry], createObserverMock())
+    expect(testState.reportContentSize).toHaveBeenCalledWith(
+      ROOT_GRAPH_ID,
+      nodeId,
+      {
+        width: 240,
+        height: 180 - LiteGraph.NODE_TITLE_HEIGHT
+      }
+    )
+    expect(testState.syncNodeSlotLayoutsFromDOM).toHaveBeenCalledWith(nodeId)
     entry.target.remove()
   })
 
