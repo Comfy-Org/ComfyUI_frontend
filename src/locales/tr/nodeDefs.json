@@ -16596,6 +16596,238 @@
       }
     }
   },
+  "PixverseV6ExtendVideoNode": {
+    "description": "PixVerse ile mevcut bir videoyu isteğe bağlı yerel sesle sürdürür. Kaynak 40 saniyenin altında olmalı ve her iki kenarda en fazla 1920px olmalıdır. Çıktı, kaynağın çözünürlüğünü korur; bu nedenle kalite, kare boyutundan ziyade devamın ne kadar iyi işleneceğini belirler.",
+    "display_name": "PixVerse V6 Videoyu Uzat",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturmadan sonra kontrol"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model ve üretim ayarları."
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_quality": {
+        "name": "kalite"
+      },
+      "model_seed": {
+        "name": "tohum"
+      },
+      "model_style": {
+        "name": "stil"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Devam ettirilecek video."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6FirstLastFrameNode": {
+    "description": "PixVerse ile ilk kareden son kareye geçiş yapan, isteğe bağlı yerel sesli bir video üretir. Çıktı, ilk karenin en-boy oranını korur.",
+    "display_name": "PixVerse V6 İlk ve Son Kareden Videoya",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturmadan sonra kontrol"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model ve üretim ayarları."
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_quality": {
+        "name": "kalite"
+      },
+      "model_seed": {
+        "name": "tohum"
+      },
+      "model_style": {
+        "name": "stil"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6FusionVideoNode": {
+    "description": "PixVerse ile referans özneler, arka planlar ve videolardan bir video oluşturur. Bir referansı, istem içinde adlandırarak sahneye yerleştirin; örneğin, '{'@'}Subject1 {'@'}Background1 içinde yürür'. Bir referans video bağlamak, modeli çıktı uzunluğunun en uzun referans videoyla eşleştiği Omni moduna geçirir.",
+    "display_name": "PixVerse V6 Füzyon (Referanstan Videoya)",
+    "inputs": {
+      "backgrounds": {
+        "name": "arka planlar",
+        "tooltip": "Öznelerin yerleştirildiği sahnenin referans görüntüleri."
+      },
+      "control_after_generate": {
+        "name": "oluşturmadan sonra kontrol"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model ve üretim ayarları."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_style": {
+        "name": "style"
+      },
+      "subjects": {
+        "name": "özneler",
+        "tooltip": "Sahneye yerleştirilecek öznelerin referans görüntüleri."
+      },
+      "videos": {
+        "name": "videolar",
+        "tooltip": "Özneleri, hareketi, kadrajı veya stili almak için referans videolar. En fazla iki adet, toplamda en fazla 15 saniye."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6ImageToVideoNode": {
+    "description": "Bir görüntüyü PixVerse ile, isteğe bağlı olarak yerel sesle canlandırır. Çıktı, giriş görüntüsünün en-boy oranını korur.",
+    "display_name": "PixVerse V6 Görüntüden Videoya",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturmadan sonra kontrol"
+      },
+      "image": {
+        "name": "görüntü"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model ve oluşturma ayarları."
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_multi_clip": {
+        "name": "multi_clip"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_style": {
+        "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PixverseV6TextToVideoNode": {
+    "description": "PixVerse ile bir metin isteminden, isteğe bağlı olarak yerel sesle video oluşturur.",
+    "display_name": "PixVerse V6 Metinden Videoya",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturmadan sonra kontrol"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model ve oluşturma ayarları."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration_seconds": {
+        "name": "duration_seconds"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_multi_clip": {
+        "name": "multi_clip"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "quality"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_style": {
+        "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PolyexponentialScheduler": {
     "display_name": "ÇokÜstelZamanlayıcı",
     "inputs": {
@@ -23435,30 +23667,6 @@
       "prompt": {
         "name": "istem",
         "tooltip": "En fazla 1024 karakter."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "model_dosyası",
-        "tooltip": null
-      },
-      "1": {
-        "name": "model_görev_id",
-        "tooltip": null
-      },
-      "2": {
-        "name": "GLB",
-        "tooltip": null
-      }
-    }
-  },
-  "TripoRefineNode": {
-    "description": "Sadece v1.4 Tripo modelleri tarafından oluşturulan taslak bir modeli iyileştirir.",
-    "display_name": "Tripo: Taslak Modeli İyileştir",
-    "inputs": {
-      "model_task_id": {
-        "name": "model_görev_id",
-        "tooltip": "Bir v1.4 Tripo modeli olmalı"
       }
     },
     "outputs": {

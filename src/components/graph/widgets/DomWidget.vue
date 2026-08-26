@@ -40,13 +40,6 @@ const emit = defineEmits<{
 }>()
 
 const widgetElement = ref<HTMLElement | undefined>()
-
-/**
- * @note Do NOT convert style to a computed value, as it will cause lag when
- * updating the style on different animation frames. Vue's computed value is
- * evaluated asynchronously.
- */
-const style = ref<CSSProperties>({})
 const { style: positionStyle, updatePosition } = useAbsolutePosition({
   useTransform: true
 })
@@ -57,6 +50,20 @@ const settingStore = useSettingStore()
 const enableDomClipping = computed(() =>
   settingStore.get('Comfy.DOMClippingEnabled')
 )
+const style = computed<CSSProperties>(() => {
+  const isDisabled = widget.computedDisabled
+
+  return {
+    ...positionStyle.value,
+    ...(enableDomClipping.value ? clippingStyle.value : {}),
+    zIndex: widgetState.zIndex,
+    pointerEvents:
+      !widgetState.visible || widgetState.readonly || isDisabled
+        ? 'none'
+        : 'auto',
+    opacity: isDisabled ? 0.5 : 1
+  }
+})
 
 const updateDomClipping = () => {
   const lgCanvas = canvasStore.canvas
@@ -99,21 +106,6 @@ const updateDomClipping = () => {
  */
 const { left, top } = useElementBounding(canvasStore.getCanvas().canvas)
 
-function composeStyle() {
-  const isDisabled = widget.computedDisabled
-
-  style.value = {
-    ...positionStyle.value,
-    ...(enableDomClipping.value ? clippingStyle.value : {}),
-    zIndex: widgetState.zIndex,
-    pointerEvents:
-      !widgetState.visible || widgetState.readonly || isDisabled
-        ? 'none'
-        : 'auto',
-    opacity: isDisabled ? 0.5 : 1
-  }
-}
-
 watch(
   [
     () => widgetState.pos,
@@ -124,33 +116,17 @@ watch(
     // re-run against the current viewport when the widget reappears.
     () => widgetState.visible,
     left,
-    top
+    top,
+    enableDomClipping
   ],
   () => {
     updatePosition(widgetState)
     if (enableDomClipping.value) {
       updateDomClipping()
     }
-    composeStyle()
   },
   { immediate: true }
 )
-
-watch(
-  [() => widgetState.zIndex, () => widgetState.readonly, enableDomClipping],
-  () => {
-    if (enableDomClipping.value) {
-      updateDomClipping()
-    }
-    composeStyle()
-  }
-)
-
-// Recompose style when clippingStyle updates asynchronously via RAF.
-// updateClipPath() schedules clip-path calculation in a requestAnimationFrame,
-// so clippingStyle.value updates after the main watcher has already composed
-// style. This watcher ensures the new clip-path is applied to the DOM.
-watch(clippingStyle, composeStyle, { deep: true })
 
 watch(
   () => widgetState.visible,
