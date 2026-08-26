@@ -146,15 +146,16 @@ router.beforeEach((to, _from, next) => {
 })
 
 router.afterEach((to) => {
-  trackPageView()
+  const isBrowser =
+    typeof window !== 'undefined' && typeof document !== 'undefined'
+
+  if (isBrowser) {
+    trackPageView()
+  }
 
   // Update canonical URL to resolve duplicate parameter SEO issues (P1-4)
   // Ensures Googlebot indexes the clean path without query strings (e.g. ?template=)
-  if (
-    typeof window !== 'undefined' &&
-    typeof document !== 'undefined' &&
-    !isFileProtocol
-  ) {
+  if (isBrowser && !isFileProtocol) {
     let canonicalLink: HTMLLinkElement | null = document.querySelector(
       'link[rel="canonical"]'
     )
