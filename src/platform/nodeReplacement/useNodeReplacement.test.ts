@@ -11,7 +11,10 @@ import {
 import type { Point } from '@/lib/litegraph/src/interfaces'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { NodeSlotType, RenderShape } from '@/lib/litegraph/src/types/globalEnums'
+import {
+  NodeSlotType,
+  RenderShape
+} from '@/lib/litegraph/src/types/globalEnums'
 import type { PendingWarnings } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useLinkStore } from '@/stores/linkStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
