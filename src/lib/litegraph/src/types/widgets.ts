@@ -5,6 +5,7 @@ import type { BoundingBox } from '@/types/boundingBoxes'
 import type { NodeId } from '@/types/nodeId'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import type { WidgetId } from '@/types/widgetId'
+import type { WidgetControlConfig } from '@/types/widgetState'
 
 import type {
   CanvasColour,
@@ -455,6 +456,8 @@ export interface IBaseWidget<
   [symbol: symbol]: boolean
 
   linkedWidgets?: IBaseWidget[]
+
+  controlConfig?: WidgetControlConfig
 
   readonly widgetId?: WidgetId
 

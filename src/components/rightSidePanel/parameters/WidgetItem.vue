@@ -3,6 +3,7 @@ import { computed, customRef, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import EditableText from '@/components/common/EditableText.vue'
+import { getWidgetControlView } from '@/core/graph/widgets/control/widgetControl'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -20,7 +21,6 @@ import {
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
-import { getControlWidget } from '@/types/simplifiedWidget'
 import type {
   SimplifiedWidget,
   WidgetValue as SimplifiedWidgetValue
@@ -101,7 +101,7 @@ const simplifiedWidget = computed((): SimplifiedWidget => {
     label: widgetState?.label ?? widget.label,
     options: { ...baseOptions, disabled },
     spec: nodeDefStore.getInputSpecForWidget(node, widgetName),
-    controlWidget: getControlWidget(widget)
+    controlWidget: getWidgetControlView(widget)
   }
 })
 

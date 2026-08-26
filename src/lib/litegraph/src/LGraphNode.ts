@@ -4,6 +4,11 @@ import {
   createNodeShellState,
   setTrackedNodeState
 } from '@/core/graph/nodeShell/nodeShellState'
+import { getControlProjections } from '@/core/graph/widgets/control/controlProjection'
+import {
+  appendControlValues,
+  applyControlValues
+} from '@/core/graph/widgets/control/widgetControl'
 import {
   calculateInputSlotPosFromSlot,
   getSlotPosition
@@ -163,6 +168,12 @@ interface IMouseOverData {
   overWidget?: IBaseWidget
 }
 
+function renderWidgets(node: LGraphNode): IBaseWidget[] {
+  const widgets = node.widgets ?? []
+  if (LiteGraph.vueNodesMode) return [...widgets]
+  return widgets.flatMap((widget) => [widget, ...getControlProjections(widget)])
+}
+
 function serialiseWidgetValues(widgets: IBaseWidget[]) {
   const positional: TWidgetValue[] = []
   const named: Record<string, TWidgetValue> = {}
@@ -174,6 +185,7 @@ function serialiseWidgetValues(widgets: IBaseWidget[]) {
         ? JSON.parse(JSON.stringify(value))
         : (value ?? null)
     positional.push(serialisedValue)
+    appendControlValues(widget.widgetId, positional)
     named[widget.name] = serialisedValue
   }
   return { widgets_values: positional, widgets_values_named: named }
@@ -1171,9 +1183,14 @@ export class LGraphNode
           graphId,
           this.id,
           widget.name,
-          positionalIndex++
+          positionalIndex
         )
         if (restored) widget.value = restored.value
+        positionalIndex = applyControlValues(
+          widget.widgetId,
+          positionalValues,
+          positionalIndex + 1
+        )
       }
     }
 
@@ -1994,7 +2011,8 @@ export class LGraphNode
     const ctorSize = this.constructor.size
     if (ctorSize) return [ctorSize[0], ctorSize[1]]
 
-    const { inputs, outputs, widgets } = this
+    const { inputs, outputs } = this
+    const widgets = renderWidgets(this)
     let rows = Math.max(
       inputs ? inputs.filter((input) => !isWidgetInputSlot(input)).length : 1,
       outputs ? outputs.length : 1
@@ -2259,9 +2277,14 @@ export class LGraphNode
 
     if (widget.serialize === false) return widget
 
-    const positionalIndex =
-      this.widgets.filter((candidate) => candidate.serialize !== false).length -
-      1
+    const precedingValues: unknown[] = []
+    for (const candidate of this.widgets) {
+      if (candidate === widget) break
+      if (candidate.serialize === false) continue
+      precedingValues.push(null)
+      appendControlValues(candidate.widgetId, precedingValues)
+    }
+    const positionalIndex = precedingValues.length
     const restored = useWidgetValueStore().getRestoredWidgetValue(
       this.graph?.rootGraph.id ?? zeroUuid,
       this.id,
@@ -2507,8 +2530,9 @@ export class LGraphNode
     canvasY: number,
     includeDisabled = false
   ): IBaseWidget | undefined {
-    const { widgets, pos, size } = this
-    if (!widgets?.length) return
+    const { pos, size } = this
+    const widgets = renderWidgets(this)
+    if (!widgets.length) return
 
     const x = canvasX - pos[0]
     const y = canvasY - pos[1]
@@ -4111,7 +4135,7 @@ export class LGraphNode
    * Filters out hidden widgets only (not collapsed/advanced).
    */
   getLayoutWidgets(): IBaseWidget[] {
-    return this.widgets?.filter((w) => !w.hidden) ?? []
+    return renderWidgets(this).filter((w) => !w.hidden)
   }
 
   /**
@@ -4138,7 +4162,7 @@ export class LGraphNode
     if (!this.widgets) return
 
     const nodeWidth = this.renderingSize[0]
-    const { widgets } = this
+    const widgets = renderWidgets(this)
     const H = LiteGraph.NODE_WIDGET_HEIGHT
     const showText = !lowQuality
     ctx.save()
