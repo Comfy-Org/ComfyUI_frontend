@@ -69,6 +69,7 @@ test.describe(
       test('should not show Run Branch for non-output nodes', async ({
         comfyPage
       }) => {
+        await comfyPage.workflow.loadWorkflow('default')
         const menu = await openContextMenu(comfyPage, 'Load Checkpoint')
         await expect(menu).toBeVisible()
         await expect(
@@ -77,6 +78,19 @@ test.describe(
             exact: true
           })
         ).toBeHidden()
+      })
+      test('should show Run Branch for output nodes', async ({ comfyPage }) => {
+        await comfyPage.workflow.loadWorkflow('default')
+        const nodeRef = await getNodeRef(comfyPage, 'Save Image')
+        await comfyPage.nodeOps.panToNode(nodeRef)
+
+        await openContextMenu(comfyPage, 'Save Image')
+        await expect(
+          comfyPage.contextMenu.primeVueMenu.getByRole('menuitem', {
+            name: 'Run Branch',
+            exact: true
+          })
+        ).toBeVisible()
       })
     })
 

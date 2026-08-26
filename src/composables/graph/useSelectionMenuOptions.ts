@@ -125,10 +125,11 @@ export function useSelectionMenuOptions() {
     }
   ]
 
-  const getDeleteOption = (): MenuOption => ({
+  const getDeleteOption = (disabled: boolean): MenuOption => ({
     label: t('contextMenu.Delete'),
     icon: 'icon-[lucide--trash-2]',
     shortcut: 'Delete',
+    disabled,
     action: deleteSelection
   })
 

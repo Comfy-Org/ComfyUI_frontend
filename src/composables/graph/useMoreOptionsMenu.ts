@@ -302,14 +302,13 @@ export function useMoreOptionsMenu() {
       }
     }
 
-    const deleteOption = getDeleteOption()
-    const litegraphDeleteOption = litegraphOptions.find(
-      (option) => option.label === 'Delete' || option.label === 'Remove'
+    options.push(
+      getDeleteOption(
+        selectedNodes.value.some(
+          (node) => node.removable === false || node.block_delete
+        )
+      )
     )
-    if (litegraphDeleteOption) {
-      deleteOption.disabled = litegraphDeleteOption.disabled
-    }
-    options.push(deleteOption)
 
     // Section 6 & 7: Extensions and Delete are handled by buildStructuredMenu
 
