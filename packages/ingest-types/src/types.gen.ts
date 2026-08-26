@@ -33,6 +33,7 @@ export type SubscriptionTier =
   | 'PRO'
   | 'FOUNDERS_EDITION'
   | 'TEAM'
+  | 'ENTERPRISE'
 
 /**
  * Abbreviated workspace metadata used in list responses.
@@ -3859,6 +3860,59 @@ export type BillingCompanyDetailsResponse = {
   tax_id?: BillingTaxId
 }
 
+export type BillingCapabilityScope = {
+  user_id: string
+  workspace_id: string
+}
+
+/**
+ * Identifies capability values currently using safe rollout defaults
+ * instead of deterministic policy results. A true value is UI guidance,
+ * not evidence that the corresponding write will succeed.
+ *
+ */
+export type BillingCapabilityRolloutDefaults = {
+  can_downgrade_to_personal: boolean
+  can_subscribe_self_serve: boolean
+  can_top_up: boolean
+}
+
+/**
+ * Effective billing UI guidance for one authenticated user and workspace.
+ */
+export type BillingCapabilitiesResponse = {
+  capabilities: BillingCapabilities
+  /**
+   * Time after which the client must refetch this snapshot.
+   */
+  expires_at: string
+  resolved_for: BillingCapabilityScope
+  /**
+   * JavaScript-safe, time-sortable revision for this snapshot. It
+   * increases monotonically within a serving process. Clients should
+   * invalidate on a different X-Capability-Revision value and use
+   * expires_at as the cross-instance freshness bound.
+   *
+   */
+  revision: number
+  rollout_defaults_applied: BillingCapabilityRolloutDefaults
+}
+
+/**
+ * Conservative UI guidance. These values do not authorize billing writes;
+ * each write endpoint independently enforces its permission policy.
+ *
+ */
+export type BillingCapabilities = {
+  can_cancel: boolean
+  can_change_seats: boolean
+  can_downgrade_to_personal: boolean
+  can_invite_members: boolean
+  can_reactivate: boolean
+  can_subscribe_self_serve: boolean
+  can_top_up: boolean
+}
+
 /**
  * Current credit balance and usage details for a workspace.
  */
@@ -6415,6 +6469,45 @@ export type GetBillingBalanceResponses = {
 
 export type GetBillingBalanceResponse =
   GetBillingBalanceResponses[keyof GetBillingBalanceResponses]
+
+export type GetBillingCapabilitiesData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/billing/capabilities'
+}
+
+export type GetBillingCapabilitiesErrors = {
+  /**
+   * Workspace or user context required
+   */
+  401: ErrorResponse
+  /**
+   * Actor is not a member of the authenticated workspace
+   */
+  403: ErrorResponse
+  /**
+   * Workspace not found
+   */
+  404: ErrorResponse
+  /**
+   * Billing service unavailable or returned an invalid response
+   */
+  502: ErrorResponse
+}
+
+export type GetBillingCapabilitiesError =
+  GetBillingCapabilitiesErrors[keyof GetBillingCapabilitiesErrors]
+
+export type GetBillingCapabilitiesResponses = {
+  /**
+   * Effective billing capabilities
+   */
+  200: BillingCapabilitiesResponse
+}
+
+export type GetBillingCapabilitiesResponse =
+  GetBillingCapabilitiesResponses[keyof GetBillingCapabilitiesResponses]
 
 export type GetChurnkeyAuthData = {
   body?: never

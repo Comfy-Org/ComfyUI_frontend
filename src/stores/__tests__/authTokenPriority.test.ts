@@ -108,12 +108,15 @@ vi.mock('@/services/dialogService')
 vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
 
 const mockApiKeyGetAuthHeader = vi.fn().mockReturnValue(null)
+const mockApiKeyState = { isAuthenticated: false }
 vi.mock('@/stores/apiKeyAuthStore', () => ({
   useApiKeyAuthStore: () => ({
     getAuthHeader: mockApiKeyGetAuthHeader,
     getApiKey: vi.fn(),
     currentUser: null,
-    isAuthenticated: false,
+    get isAuthenticated() {
+      return mockApiKeyState.isAuthenticated
+    },
     storeApiKey: vi.fn(),
     clearStoredApiKey: vi.fn()
   })
@@ -146,6 +149,7 @@ describe('auth token priority chain', () => {
     mockMintAtLogin.mockResolvedValue(false)
     mockInitializeWorkspaces.mockResolvedValue(undefined)
     mockApiKeyGetAuthHeader.mockReturnValue(null)
+    mockApiKeyState.isAuthenticated = false
     mockUser.getIdToken.mockResolvedValue('firebase-token')
 
     vi.mocked(vuefire.useFirebaseAuth).mockReturnValue(
@@ -260,6 +264,36 @@ describe('auth token priority chain', () => {
   })
 
   describe('explicit workspace authentication', () => {
+    it('sends the stored API key for workspace calls in an API-key session', async () => {
+      mockDistributionTypes.isCloud = false
+      authStateCallback(null)
+      mockApiKeyState.isAuthenticated = true
+      mockApiKeyGetAuthHeader.mockReturnValue({ 'X-API-KEY': 'comfyui-test' })
+      mockActiveWorkspaceId = 'workspace-123'
+
+      await expect(store.getWorkspaceAuthHeader()).resolves.toEqual({
+        'X-API-KEY': 'comfyui-test'
+      })
+      expect(mockEnsureWorkspaceAuthHeader).not.toHaveBeenCalled()
+
+      await expect(store.getWorkspaceAuthToken()).resolves.toBeUndefined()
+      expect(mockEnsureWorkspaceToken).not.toHaveBeenCalled()
+    })
+
+    it('prefers the Firebase session over a stored API key for workspace calls', async () => {
+      mockDistributionTypes.isCloud = false
+      mockApiKeyState.isAuthenticated = true
+      mockApiKeyGetAuthHeader.mockReturnValue({ 'X-API-KEY': 'comfyui-test' })
+      mockActiveWorkspaceId = 'workspace-123'
+      mockEnsureWorkspaceAuthHeader.mockResolvedValue({
+        Authorization: 'Bearer workspace-token'
+      })
+
+      await expect(store.getWorkspaceAuthHeader()).resolves.toEqual({
+        Authorization: 'Bearer workspace-token'
+      })
+    })
+
     it('uses selected workspace authentication outside Cloud', async () => {
       mockDistributionTypes.isCloud = false
       mockActiveWorkspaceId = 'workspace-123'
