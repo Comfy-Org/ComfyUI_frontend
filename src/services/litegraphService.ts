@@ -39,6 +39,7 @@ import type {
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -67,6 +68,7 @@ import { useWidgetStore } from '@/stores/widgetStore'
 import { parseNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
 import { isBlueprintType } from '@/utils/blueprintUtils'
+import { markCoreMediaMenuCallback } from '@/utils/coreMediaMenuActionUtils'
 import type { WidgetId } from '@/types/widgetId'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import {
@@ -297,16 +299,20 @@ export const useLitegraphService = () => {
     const widgetConstructor = widgetStore.widgets.get(widgetInputSpec.type)
     if (!widgetConstructor || inputSpec.forceInput) return
 
-    const {
-      widget,
-      minWidth = 1,
-      minHeight = 1
-    } = widgetConstructor(
-      node,
-      inputName,
-      transformInputSpecV2ToV1(widgetInputSpec),
-      app
-    ) ?? {}
+    const result =
+      widgetConstructor(
+        node,
+        inputName,
+        transformInputSpecV2ToV1(widgetInputSpec),
+        app
+      ) ?? {}
+    const { minWidth = 1, minHeight = 1 } = result
+    const widget = result.widget && toConcreteWidget(result.widget, node)
+
+    if (result.widget && widget !== result.widget) {
+      const index = node.widgets?.indexOf(result.widget) ?? -1
+      if (index !== -1) node.widgets![index] = widget
+    }
 
     if (widget) {
       widget.label = resolveLabel(
@@ -648,7 +654,7 @@ export const useLitegraphService = () => {
       return [
         {
           content: 'Copy Image',
-          callback: async () => {
+          callback: markCoreMediaMenuCallback(async () => {
             const url = new URL(img.src)
             url.searchParams.delete('preview')
 
@@ -682,7 +688,7 @@ export const useLitegraphService = () => {
                 })
               )
             }
-          }
+          }, 'preview')
         }
       ]
     }
@@ -702,21 +708,21 @@ export const useLitegraphService = () => {
           options.unshift(
             {
               content: 'Open Image',
-              callback: () => {
+              callback: markCoreMediaMenuCallback(() => {
                 const url = new URL(img.src)
                 url.searchParams.delete('preview')
                 void openFileInNewTab(url.toString())
-              }
+              }, 'preview')
             },
             ...getCopyImageOption(img),
             {
               content: 'Save Image',
-              callback: () => {
+              callback: markCoreMediaMenuCallback(() => {
                 const url = new URL(img.src)
                 url.searchParams.delete('preview')
                 const filename = new URLSearchParams(url.search).get('filename')
                 downloadFile(url.toString(), filename ?? undefined)
-              }
+              }, 'preview')
             }
           )
         }
@@ -742,18 +748,18 @@ export const useLitegraphService = () => {
         if (ComfyApp.clipspace != null) {
           options.push({
             content: 'Paste (Clipspace)',
-            callback: () => {
+            callback: markCoreMediaMenuCallback(() => {
               ComfyApp.pasteFromClipspace(this)
-            }
+            }, 'input')
           })
         }
 
         if (isImageNode(this)) {
           options.push({
             content: 'Open in MaskEditor | Image Canvas',
-            callback: () => {
+            callback: markCoreMediaMenuCallback(() => {
               useMaskEditor().openMaskEditor(this)
-            }
+            }, 'preview')
           })
         }
       }
