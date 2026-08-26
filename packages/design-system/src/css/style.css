@@ -422,22 +422,22 @@
 :root.dark-theme[data-color-palette]:not([data-color-palette='dark']) {
   /* Capped so a light comfy-menu-bg cannot flatten the ladder into white. */
   --palette-l: min(l, 0.35);
-  --palette-base: oklch(from var(--comfy-menu-bg) var(--palette-l) c h);
+  --palette-base: oklch(from var(--comfy-menu-bg) var(--palette-l) c h / 1);
 
   --palette-surface-700: oklch(
-    from var(--comfy-menu-bg) calc(var(--palette-l) + 0.0417) c h
+    from var(--comfy-menu-bg) calc(var(--palette-l) + 0.0417) c h / 1
   );
   --palette-surface-600: oklch(
-    from var(--comfy-menu-bg) calc(var(--palette-l) + 0.0675) c h
+    from var(--comfy-menu-bg) calc(var(--palette-l) + 0.0675) c h / 1
   );
   --palette-surface-400: oklch(
-    from var(--comfy-menu-bg) calc(var(--palette-l) + 0.1123) c h
+    from var(--comfy-menu-bg) calc(var(--palette-l) + 0.1123) c h / 1
   );
   --palette-surface-300: oklch(
-    from var(--comfy-menu-bg) calc(var(--palette-l) + 0.1559) c h
+    from var(--comfy-menu-bg) calc(var(--palette-l) + 0.1559) c h / 1
   );
   --palette-surface-200: oklch(
-    from var(--comfy-menu-bg) calc(var(--palette-l) + 0.2054) c h
+    from var(--comfy-menu-bg) calc(var(--palette-l) + 0.2054) c h / 1
   );
 
   --base-background: var(--palette-base);
