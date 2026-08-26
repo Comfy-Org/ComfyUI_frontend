@@ -8,8 +8,11 @@ import type {
   RenderShape,
   TitleMode
 } from '@/lib/litegraph/src/types/globalEnums'
+import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import type { NodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
+
+export type NodeProperty = string | number | boolean | object | null
 
 /**
  * The fields the renderer draws. Selection, execution, errors, geometry, widget
@@ -20,14 +23,15 @@ export interface NodeState {
   /** Owning (sub)graph id — partitioning + locator ids. */
   graphId: UUID
   readonly id: NodeId
-  /** The node's own `shallowReactive` array; slots are still class instances. */
   inputs: INodeInputSlot[]
+  lastSerialization?: ISerialisedNode
   mode: LGraphEventMode
-  /** @see {@link inputs} */
   outputs: INodeOutputSlot[]
+  properties: Record<string, NodeProperty | undefined>
   title: string
   type: string
   bgcolor?: string
+  boxcolor?: string
   color?: string
   resizable?: boolean
   shape?: RenderShape

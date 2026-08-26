@@ -127,14 +127,18 @@ Derived first-party rows are recomputed on read; extension entries remain on
 ### Persistence hooks
 
 `node.onSerialize`, `node.onConfigure`, `graph.onSerialize`, and
-`graph.onConfigure` remain compatibility surfaces, but currently expose full
-node/workflow DTOs or live objects. Extensions can therefore mutate canonical
-store-backed persistence fields outside store actions.
-The migration must measure this usage before replacing it with a controlled
-adapter for validated, namespaced plain-data payloads. This phase requires the
-adapter to define serialization and configuration behavior without allowing
-extension payload hooks to rewrite canonical fields. Replay and command-based
-undo contracts are later architecture work.
+`graph.onConfigure` remain compatibility surfaces. Serialize hooks receive a
+mutable DTO view: changes to canonical fields are applied to that serialization,
+while JSON-compatible noncanonical fields are persisted under `extensions`.
+Configure hooks receive an isolated clone containing canonical data plus the
+owner's extension payload; mutating that clone does not reconfigure the graph.
+
+Extensions should persist JSON-compatible data under a unique key in
+`data.extensions` and read it from the same key in `onConfigure`. Legacy flat
+fields are still projected into configure views, but migrate them to a
+namespaced key. Do not use `onConfigure` to rewrite nodes, links, or other
+canonical workflow fields; perform graph mutations through supported graph APIs
+after configuration instead.
 
 ### Custom-widget constructors
 

@@ -29,7 +29,7 @@ import { parseNodeLocatorId } from '@/types/nodeIdentification'
 import type { SerializedNodeId } from '@/types/nodeId'
 import { UNASSIGNED_NODE_ID, parseNodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
-import { widgetId } from '@/types/widgetId'
+import { ensureUniqueWidgetNames, widgetId } from '@/types/widgetId'
 
 type ImageNode = LGraphNode & { imgs: HTMLImageElement[] | undefined }
 type VideoNode = LGraphNode & {
@@ -317,33 +317,37 @@ export function resolveNodeWidget(
 
 export function getWidgetIdForNode(
   node: LGraphNode,
-  widget: Pick<IBaseWidget, 'name' | 'widgetId'>,
-  duplicateIndex = 0
+  widget: Pick<IBaseWidget, 'name' | 'widgetId'>
 ): WidgetId | undefined {
   if (widget.widgetId) return widget.widgetId
   const graphId = node.graph?.rootGraph.id
   const nodeId = parseNodeId(node.id)
   if (!graphId || !nodeId || nodeId === UNASSIGNED_NODE_ID) return undefined
-  const name =
-    duplicateIndex > 0 ? `${widget.name}#${duplicateIndex}` : widget.name
-  return widgetId(graphId, nodeId, name)
+  const liveEntry = [...mapLiveWidgetsById(node)].find(
+    ([, candidate]) => candidate === widget
+  )
+  if (liveEntry) return liveEntry[0]
+  return widgetId(graphId, nodeId, widget.name)
 }
 
 /**
- * Maps a node's live widgets to their {@link WidgetId}, replicating the
- * duplicate-name disambiguation used when the ids were minted. Building the map
- * once lets callers resolve widgets by id in O(1) instead of rescanning.
+ * Maps a node's live widgets to their {@link WidgetId}. Building the map once
+ * lets callers resolve widgets by id in O(1) instead of rescanning.
  */
 export function mapLiveWidgetsById(
   node: LGraphNode
 ): Map<WidgetId, IBaseWidget> {
   const byId = new Map<WidgetId, IBaseWidget>()
-  const duplicateIndexByKey = new Map<string, number>()
-  for (const widget of node.widgets ?? []) {
-    const duplicateKey = `${widget.name}:${widget.type}`
-    const duplicateIndex = duplicateIndexByKey.get(duplicateKey) ?? 0
-    duplicateIndexByKey.set(duplicateKey, duplicateIndex + 1)
-    const id = getWidgetIdForNode(node, widget, duplicateIndex)
+  const widgets = node.widgets ?? []
+  if (!ensureUniqueWidgetNames(widgets)) return byId
+  const graphId = node.graph?.rootGraph.id
+  const nodeId = parseNodeId(node.id)
+  for (const widget of widgets) {
+    const id =
+      widget.widgetId ??
+      (graphId && nodeId && nodeId !== UNASSIGNED_NODE_ID
+        ? widgetId(graphId, nodeId, widget.name)
+        : undefined)
     if (id) byId.set(id, widget)
   }
   return byId

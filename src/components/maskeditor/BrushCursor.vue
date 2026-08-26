@@ -26,6 +26,7 @@
 </template>
 
 <script setup lang="ts">
+import { useElementBounding } from '@vueuse/core'
 import { computed } from 'vue'
 
 import {
@@ -40,6 +41,8 @@ const { containerRef } = defineProps<{
 }>()
 
 const store = useMaskEditorStore()
+const { left: containerOffsetLeft, top: containerOffsetTop } =
+  useElementBounding(() => containerRef)
 
 const brushOpacity = computed(() => {
   return store.brushVisible ? 1 : 0
@@ -56,36 +59,23 @@ const brushSize = computed(() => {
   return brushRadius.value * 2
 })
 
-/**
- * One rect read per move, not one per axis. `cursorPoint` changes on every
- * mousemove and `getBoundingClientRect` forces layout, so reading it separately
- * in `brushLeft` and `brushTop` cost two synchronous layouts per event for a
- * single rect.
- *
- * The read is deliberately still inside a computed over `cursorPoint`: the rect
- * is not reactive, and re-reading it as the cursor moves is what keeps the
- * offset correct while the dialog is dragged or resized. This halves the reads
- * without changing when they happen.
- */
-const brushPosition = computed(() => {
-  const dialogRect = containerRef?.getBoundingClientRect()
-  return {
-    left:
-      store.cursorPoint.x +
-      store.panOffset.x -
-      brushRadius.value -
-      (dialogRect?.left || 0),
-    top:
-      store.cursorPoint.y +
-      store.panOffset.y -
-      brushRadius.value -
-      (dialogRect?.top || 0)
-  }
+const brushLeft = computed(() => {
+  return (
+    store.cursorPoint.x +
+    store.panOffset.x -
+    brushRadius.value -
+    containerOffsetLeft.value
+  )
 })
 
-const brushLeft = computed(() => brushPosition.value.left)
-
-const brushTop = computed(() => brushPosition.value.top)
+const brushTop = computed(() => {
+  return (
+    store.cursorPoint.y +
+    store.panOffset.y -
+    brushRadius.value -
+    containerOffsetTop.value
+  )
+})
 
 const borderRadius = computed(() => {
   return store.brushSettings.type === BrushShape.Rect ? '0%' : '50%'
