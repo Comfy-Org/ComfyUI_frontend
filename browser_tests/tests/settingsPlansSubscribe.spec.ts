@@ -290,6 +290,108 @@ test.describe('Local plans section subscribe (FE-1600 S2)', () => {
     expect(legacyCheckoutRequests).toEqual([])
   })
 
+  // A personal workspace whose account still bills on legacy Stripe runs the
+  // documented mixed state: status, balance and top-up stay on `/customers/*`,
+  // but checkout has to reach the workspace rail. Off Cloud the migration flag
+  // is unreadable, so routing checkout on it left these users with every CTA
+  // disabled and no way to subscribe at all.
+  test('subscribes via the workspace rail on a legacy Stripe account', async ({
+    page,
+    request
+  }) => {
+    test.setTimeout(90_000)
+
+    const subscribeRequests: { url: string; body: unknown }[] = []
+    const previewRequests: string[] = []
+    const legacyCheckoutRequests: string[] = []
+
+    page.on('request', (request) => {
+      if (request.url().includes('/customers/cloud-subscription-checkout')) {
+        legacyCheckoutRequests.push(request.url())
+      }
+    })
+
+    await page.route('**/customers/**', (r) =>
+      fulfillJson(
+        r,
+        r.request().url().includes('balance')
+          ? { amount_micros: 0, currency: 'usd' }
+          : { is_active: false }
+      )
+    )
+    await page.route('**/api/billing/plans', (r) =>
+      fulfillJson(r, plansResponse)
+    )
+    // The rail the *account* bills on. Checkout must ignore it and still sell.
+    await page.route('**/api/billing/status', (r) =>
+      fulfillJson(r, { ...billingStatus(), billing_rail: 'legacy_stripe' })
+    )
+    await page.route('**/api/billing/balance', (r) =>
+      fulfillJson(r, { amount_micros: 0, currency: 'usd' })
+    )
+    await page.route('**/api/billing/preview-subscribe', (r) => {
+      if (r.request().method() === 'POST') {
+        previewRequests.push(r.request().url())
+      }
+      return fulfillJson(r, { allowed: true })
+    })
+    await page.route('**/api/billing/subscribe', async (r) => {
+      if (r.request().method() === 'POST') {
+        subscribeRequests.push({
+          url: r.request().url(),
+          body: r.request().postDataJSON()
+        })
+      }
+      const response: SubscribeResponse = {
+        status: 'needs_payment_method',
+        payment_method_url: 'https://checkout.stripe.com/c/pay/legacy-rail',
+        billing_op_id: 'op-legacy-rail'
+      }
+      await fulfillJson(r, response)
+    })
+    const opStatus: BillingOpStatusResponse = {
+      id: 'op-legacy-rail',
+      status: 'succeeded',
+      started_at: '2026-01-01T00:00:00Z',
+      completed_at: '2026-01-01T00:00:05Z'
+    }
+    await page.route('**/api/billing/ops/**', (r) => fulfillJson(r, opStatus))
+
+    const userId = await seedComfyUser(request)
+    await mockWorkspaceBootstrap(page)
+    await new CloudAuthHelper(page).mockAuth()
+
+    const dialog = await openPlanCredits(page, userId)
+
+    // The gate that used to close here: `canStartCheckout` read the account
+    // rail, which off Cloud reports every user as already entitled.
+    const chooseStandard = dialog.getByRole('button', {
+      name: 'Choose Standard'
+    })
+    await expect(chooseStandard).toBeEnabled()
+    await chooseStandard.click()
+
+    await expect.poll(() => subscribeRequests.length).toBe(1)
+    expect(subscribeRequests[0].body).toMatchObject({
+      plan_slug: 'standard-yearly',
+      billing_cycle: 'yearly'
+    })
+    expect(new URL(subscribeRequests[0].url).origin).not.toBe(
+      new URL(APP_URL).origin
+    )
+
+    await expect
+      .poll(() =>
+        page.evaluate(() => document.documentElement.dataset.openedUrl)
+      )
+      .toBe('https://checkout.stripe.com/c/pay/legacy-rail')
+
+    // This branch sells only a first subscription, so it subscribes without a
+    // preview; the preview/consent step arrives with #15898.
+    expect(previewRequests).toEqual([])
+    expect(legacyCheckoutRequests).toEqual([])
+  })
+
   test('requests the plan catalog when the Plan & Credits tab opens', async ({
     page,
     request
