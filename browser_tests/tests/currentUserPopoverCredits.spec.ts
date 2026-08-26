@@ -53,6 +53,7 @@ const mockBillingStatus: BillingStatusResponse = {
   is_active: true,
   max_seats: 1,
   occupied_seats: 1,
+  team_credit_stop: null,
   subscription_status: 'canceled',
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY',
@@ -184,6 +185,12 @@ test.describe('Current user popover credits row', { tag: '@cloud' }, () => {
       await expect(page.getByTestId('dialog-overlay')).toBeHidden()
 
       await page.getByRole('button', { name: 'Current user' }).click()
+
+      const workspaceSelector = page.getByTestId('workspace-switcher-trigger')
+      await expect(workspaceSelector).toBeVisible()
+      await expect(workspaceSelector).toHaveScreenshot(
+        'workspace-selector-menu-item.png'
+      )
 
       const managePlan = page.getByRole('button', { name: 'Manage plan' })
       await expect(managePlan).toBeVisible()

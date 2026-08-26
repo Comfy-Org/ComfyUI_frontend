@@ -36,6 +36,7 @@ export enum ServerFeatureFlag {
   UNIFIED_CLOUD_AUTH = 'unified_cloud_auth',
   BILLING_CONTROL_ENABLED = 'billing_control_enabled',
   LEGACY_BILLING_MIGRATION_ENABLED = 'legacy_billing_migration_enabled',
+  EMBEDDED_CHECKOUT_ENABLED = 'embedded_checked_enabled',
   V1_PAYMENT_RECOVERY = 'v1_payment_recovery',
   FREE_TIER_JOB_ALLOWANCE_ENABLED = 'free_tier_job_allowance_enabled',
   CHURNKEY_APP_ID = 'churnkey_app_id',
@@ -84,6 +85,14 @@ function resolveAuthGatedFlag(
   return remoteConfigValue ?? api.getServerFeature(flagKey, false)
 }
 
+function resolveFailClosedBooleanFlag(flagKey: string): boolean {
+  try {
+    return api.getServerFeature<unknown>(flagKey, false) === true
+  } catch {
+    return false
+  }
+}
+
 /**
  * Composable for reactive access to server-side feature flags
  */
@@ -127,12 +136,10 @@ export function useFeatureFlags() {
       )
     },
     get linearToggleEnabled() {
-      if (isNightly) return true
-
       return resolveFlag(
         ServerFeatureFlag.LINEAR_TOGGLE_ENABLED,
         remoteConfig.value.linear_toggle_enabled,
-        false
+        isNightly
       )
     },
     get partnerNodeGovernanceEnabled() {
@@ -189,6 +196,8 @@ export function useFeatureFlags() {
       )
     },
     get unifiedCloudAuthEnabled() {
+      if (!isCloud) return false
+
       return resolveFlag(
         ServerFeatureFlag.UNIFIED_CLOUD_AUTH,
         remoteConfig.value.unified_cloud_auth,
@@ -207,6 +216,11 @@ export function useFeatureFlags() {
         ServerFeatureFlag.LEGACY_BILLING_MIGRATION_ENABLED,
         remoteConfig.value.legacy_billing_migration_enabled,
         cachedLegacyBillingMigrationEnabled
+      )
+    },
+    get embeddedCheckoutEnabled() {
+      return resolveFailClosedBooleanFlag(
+        ServerFeatureFlag.EMBEDDED_CHECKOUT_ENABLED
       )
     },
     get v1PaymentRecovery() {

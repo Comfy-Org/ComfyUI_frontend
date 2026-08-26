@@ -42,7 +42,6 @@ export function scheduleSlotLayoutSync(nodeId: NodeId) {
 }
 
 function shouldWaitForSlotLayouts(): boolean {
-  const graph = app.canvas?.graph
   if (expectedRenderedNodeIds) {
     const registry = useNodeSlotRegistryStore()
     for (const nodeId of expectedRenderedNodeIds) {
@@ -57,6 +56,7 @@ function shouldWaitForSlotLayouts(): boolean {
     return false
   }
 
+  const graph = app.canvas?.graph
   const hasNodes = Boolean(graph && graph._nodes && graph._nodes.length > 0)
   return hasNodes && !layoutStore.hasSlotLayouts
 }
@@ -92,6 +92,12 @@ export function setExpectedRenderedNodeIds(
 ): void {
   expectedRenderedNodeIds = nodeIds ? new Set(nodeIds) : undefined
   if (layoutStore.pendingSlotSync) flushScheduledSlotLayoutSync()
+}
+
+function viewedNodeLayout(nodeId: NodeId) {
+  const { rootGraphId } = useCanvasStore()
+  if (!rootGraphId) return null
+  return layoutStore.getNodeLayoutRef(rootGraphId, nodeId).value
 }
 
 function createSlotLayout(options: {
@@ -147,7 +153,7 @@ export function syncNodeSlotLayoutsFromDOM(nodeId: NodeId) {
   const nodeSlotRegistryStore = useNodeSlotRegistryStore()
   const node = nodeSlotRegistryStore.getNode(nodeId)
   if (!node?.active) return
-  const nodeLayout = layoutStore.getNodeLayoutRef(nodeId).value
+  const nodeLayout = viewedNodeLayout(nodeId)
   if (!nodeLayout) return
 
   // Find the node's DOM element for relative offset measurement.
@@ -165,12 +171,12 @@ export function syncNodeSlotLayoutsFromDOM(nodeId: NodeId) {
   const nodeEl = closestNode instanceof HTMLElement ? closestNode : null
   const nodeRect = nodeEl?.getBoundingClientRect()
 
-  // Collapsed nodes preserve expanded size in layoutStore, so DOM-relative
-  // scale derivation breaks. Fall back to clientPosToCanvasPos instead.
+  // Collapsed offsets cannot be reused after expansion, so measure them in
+  // absolute canvas space instead of caching them relative to the node.
   const isCollapsed = nodeEl?.dataset.collapsed != null
   const effectiveScale =
-    !isCollapsed && nodeRect && nodeLayout.size.width > 0
-      ? nodeRect.width / nodeLayout.size.width
+    !isCollapsed && nodeEl && nodeRect && nodeEl.offsetWidth > 0
+      ? nodeRect.width / nodeEl.offsetWidth
       : 0
 
   const canvasStore = useCanvasStore()
@@ -253,7 +259,7 @@ function updateNodeSlotsFromCache(nodeId: NodeId) {
   const nodeSlotRegistryStore = useNodeSlotRegistryStore()
   const node = nodeSlotRegistryStore.getNode(nodeId)
   if (!node?.active) return
-  const nodeLayout = layoutStore.getNodeLayoutRef(nodeId).value
+  const nodeLayout = viewedNodeLayout(nodeId)
   if (!nodeLayout) return
 
   const batch: Array<{ key: SlotId; layout: SlotLayout }> = []
@@ -303,11 +309,8 @@ export function useSlotElementTracking(options: {
         const node = nodeSlotRegistryStore.ensureNode(nodeId)
 
         if (!node.stopWatch) {
-          const { layout: layoutRef, release } =
-            layoutStore.retainNodeLayoutRef(nodeId)
-
           const stopPositionWatch = watch(
-            () => layoutRef.value?.position,
+            () => viewedNodeLayout(nodeId)?.position,
             (newPosition, oldPosition) => {
               if (!newPosition) return
               if (!oldPosition || !isPointEqual(newPosition, oldPosition)) {
@@ -317,7 +320,7 @@ export function useSlotElementTracking(options: {
           )
 
           const stopSizeWatch = watch(
-            () => layoutRef.value?.size,
+            () => viewedNodeLayout(nodeId)?.size,
             (newSize, oldSize) => {
               if (!newSize) return
               if (!oldSize || !isSizeEqual(newSize, oldSize)) {
@@ -329,7 +332,6 @@ export function useSlotElementTracking(options: {
           node.stopWatch = () => {
             stopPositionWatch()
             stopSizeWatch()
-            release()
           }
         }
 

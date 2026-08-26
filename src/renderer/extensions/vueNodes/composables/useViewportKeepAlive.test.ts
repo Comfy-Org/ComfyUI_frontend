@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, effectScope, reactive, ref } from 'vue'
 
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import type { Bounds, NodeId } from '@/renderer/core/layout/types'
 import {
   getKeepAliveBounds,
@@ -18,14 +17,10 @@ vi.mock('@/renderer/core/layout/transform/useTransformState', () => ({
 
 const activeScopes: ReturnType<typeof effectScope>[] = []
 
-function nodeData(id: string, type = 'test'): VueNodeData {
+function nodeData(id: string, type = 'test') {
   return {
     id: toNodeId(id),
-    title: id,
-    type,
-    mode: 0,
-    selected: false,
-    executing: false
+    type
   }
 }
 
@@ -45,7 +40,7 @@ function setup(bounds: Record<string, Bounds | null>) {
         pinnedNodeIds: computed(() => pinned.value),
         getNodeBounds: (nodeId) => bounds[nodeId],
         getViewportSize: () => ({ width: 1000, height: 1000 }),
-        getNodeGeometryVersion: () => geometryVersion.value
+        getGeometryVersion: () => geometryVersion.value
       }).activeNodeIds
   )!
 
@@ -59,7 +54,6 @@ beforeEach(() => {
 
 afterEach(() => {
   for (const scope of activeScopes.splice(0)) scope.stop()
-  vi.useRealTimers()
 })
 
 describe('getKeepAliveBounds', () => {
@@ -208,7 +202,7 @@ describe('useViewportKeepAlive', () => {
           pinnedNodeIds: computed(() => pinned.value),
           getNodeBounds: (nodeId) => bounds[nodeId],
           getViewportSize: () => ({ width: 1000, height: 1000 }),
-          getNodeGeometryVersion: () => 0
+          getGeometryVersion: () => 0
         }).activeNodeIds
     )!
 
@@ -252,7 +246,7 @@ describe('useViewportKeepAlive', () => {
           isEnabled: () => enabled.value,
           getNodeBounds: (nodeId) => bounds[nodeId],
           getViewportSize: () => ({ width: 1000, height: 1000 }),
-          getNodeGeometryVersion: () => 0
+          getGeometryVersion: () => 0
         }).activeNodeIds
     )!
     await vi.advanceTimersByTimeAsync(150)
