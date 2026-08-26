@@ -3,10 +3,12 @@ import { describe, expect, it } from 'vitest'
 import type { ComfyEvent } from './events'
 import {
   deriveFeaturedEvents,
+  eventCardMedia,
   derivePastEvents,
   deriveUpcomingEvents,
   eventJsonLdNode,
   eventStatus,
+  pastEventCards,
   pastEvents,
   toCalendarEvent,
   upcomingEvents
@@ -141,6 +143,42 @@ describe('event list derivation', () => {
       'done',
       'older'
     ])
+  })
+})
+
+describe('eventCardMedia', () => {
+  const media = {
+    type: 'image',
+    src: '/card.png',
+    alt: { en: 'Card art', 'zh-CN': '卡片图' }
+  } as ComfyEvent['media']
+
+  it('prefers the event media', () => {
+    const event = eventAt('with-media', { media })
+    expect(eventCardMedia(event)).toBe(media)
+  })
+
+  it('falls back to the carousel art', () => {
+    const event = eventAt('featured-only', {
+      featured: { order: 1, media }
+    } as Partial<ComfyEvent>)
+    expect(eventCardMedia(event)).toBe(media)
+  })
+
+  it('is undefined when the event has neither', () => {
+    expect(eventCardMedia(eventAt('bare', {}))).toBeUndefined()
+  })
+})
+
+describe('pastEventCards', () => {
+  it('excludes past events the gallery cannot render', () => {
+    // The gallery skips events without media, so counting every past event
+    // breaks as soon as one without it ages into the section.
+    const unrenderable = pastEvents.filter((event) => !eventCardMedia(event))
+    expect(pastEventCards).toHaveLength(pastEvents.length - unrenderable.length)
+    for (const event of pastEventCards) {
+      expect(eventCardMedia(event)).toBeDefined()
+    }
   })
 })
 
