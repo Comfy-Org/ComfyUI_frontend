@@ -96,18 +96,26 @@ describe('renderer geometry boundary complexity', () => {
     })
   })
 
-  test('does not subscribe implicit effects to global layout revisions', () => {
+  test('subscribes implicit effects only to the observed node layout', () => {
     const { nodes } = createRenderer(2)
     const [node, other] = nodes
     let runs = 0
+    let observed = [0, 0, 0, 0]
     const runner = effect(() => {
       runs++
-      void node.pos[0]
-      void node.renderingSize[0]
+      observed = [node.pos[0], node.pos[1], node.size[0], node.size[1]]
     })
 
     other.pos = [500, 600]
     expect(runs).toBe(1)
+
+    node.pos = [150, 160]
+    expect(runs).toBe(2)
+    expect(observed).toEqual([150, 160, 200, 100])
+
+    node.size = [240, 120]
+    expect(runs).toBe(3)
+    expect(observed).toEqual([150, 160, 240, 120])
     stop(runner)
   })
 
