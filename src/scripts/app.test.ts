@@ -70,10 +70,12 @@ const {
   mockWorkflowService
 } = vi.hoisted(() => ({
   mockApiKeyAuthStore: {
-    getApiKey: vi.fn()
+    getApiKey: vi.fn(),
+    isAuthenticated: false
   },
   mockAuthStore: {
-    getWorkspaceAuthToken: vi.fn()
+    getWorkspaceAuthToken: vi.fn(),
+    currentUser: null as { uid: string } | null
   },
   mockSettingStore: {
     get: vi.fn()
@@ -89,6 +91,7 @@ const {
   },
   mockNodeOutputStore: {
     refreshNodeOutputs: vi.fn(),
+    replaceOutputsFromLegacy: vi.fn(),
     resetAllOutputsAndPreviews: vi.fn(),
     stashPreviewsForWorkflow: vi.fn(),
     restorePreviewsForWorkflow: vi.fn(),
@@ -295,6 +298,8 @@ describe('ComfyApp', () => {
       return workflow
     })
     mockApiKeyAuthStore.getApiKey.mockReturnValue(undefined)
+    mockApiKeyAuthStore.isAuthenticated = false
+    mockAuthStore.currentUser = null
     mockAuthStore.getWorkspaceAuthToken.mockResolvedValue('workspace-token')
     mockTeamWorkspaceStore.activeWorkspaceId = 'workspace-a'
     mockTeamWorkspaceStore.workspaceTransitionGeneration = 0
@@ -307,6 +312,63 @@ describe('ComfyApp', () => {
     mockSettingStore.get.mockImplementation((key: string) =>
       key === 'Comfy.RightSidePanel.ShowErrorsTab' ? true : undefined
     )
+  })
+
+  describe('nodeOutputs', () => {
+    it('commits legacy property mutations to the output store', () => {
+      app.vueAppReady = true
+      const output = { images: [{ filename: 'legacy.png' }] }
+
+      app.nodeOutputs['1'] = output
+      expect(
+        mockNodeOutputStore.replaceOutputsFromLegacy
+      ).toHaveBeenNthCalledWith(1, { '1': output })
+
+      delete app.nodeOutputs['1']
+      expect(
+        mockNodeOutputStore.replaceOutputsFromLegacy
+      ).toHaveBeenNthCalledWith(2, {})
+    })
+
+    it('commits nested legacy output mutations to the output store', () => {
+      app.vueAppReady = true
+      app.nodeOutputs['1'] = { images: [{ filename: 'first.png' }] }
+      mockNodeOutputStore.replaceOutputsFromLegacy.mockClear()
+
+      const output = app.nodeOutputs['1']
+      output.images = [{ filename: 'second.png' }]
+      expect(mockNodeOutputStore.replaceOutputsFromLegacy).toHaveBeenCalledWith(
+        {
+          '1': { images: [{ filename: 'second.png' }] }
+        }
+      )
+
+      mockNodeOutputStore.replaceOutputsFromLegacy.mockClear()
+      const images = output.images
+      images?.push({ filename: 'third.png' })
+      expect(mockNodeOutputStore.replaceOutputsFromLegacy).toHaveBeenCalledWith(
+        {
+          '1': {
+            images: [{ filename: 'second.png' }, { filename: 'third.png' }]
+          }
+        }
+      )
+      expect(app.nodeOutputs['1']).toBe(output)
+      expect(output.images).toBe(images)
+
+      mockNodeOutputStore.replaceOutputsFromLegacy.mockClear()
+      const image = images?.[0]
+      if (!image) throw new Error('Expected a legacy output image')
+      image.filename = 'mutated.png'
+      expect(mockNodeOutputStore.replaceOutputsFromLegacy).toHaveBeenCalledWith(
+        {
+          '1': {
+            images: [{ filename: 'mutated.png' }, { filename: 'third.png' }]
+          }
+        }
+      )
+      expect(images?.[0]).toBe(image)
+    })
   })
 
   describe('queuePrompt', () => {
@@ -501,6 +563,36 @@ describe('ComfyApp', () => {
       await expect(app.queuePrompt(0)).resolves.toBe(false)
       expect(queuePrompt).not.toHaveBeenCalled()
       expect(showDialog).toHaveBeenCalledOnce()
+    })
+
+    it('does not accept the API key when a Firebase session lost its workspace token', async () => {
+      prepareEmptyPromptQueue()
+      mockAuthStore.currentUser = { uid: 'firebase-user' }
+      mockApiKeyAuthStore.isAuthenticated = true
+      mockApiKeyAuthStore.getApiKey.mockReturnValue('api-key')
+      mockAuthStore.getWorkspaceAuthToken.mockResolvedValueOnce(undefined)
+      const queuePrompt = vi.spyOn(api, 'queuePrompt')
+      const showDialog = vi.spyOn(useDialogStore(), 'showDialog')
+
+      await expect(app.queuePrompt(0)).resolves.toBe(false)
+      expect(queuePrompt).not.toHaveBeenCalled()
+      expect(showDialog).toHaveBeenCalledOnce()
+    })
+
+    it('submits with the validated API key when the key session has a workspace', async () => {
+      prepareEmptyPromptQueue()
+      mockApiKeyAuthStore.isAuthenticated = true
+      mockApiKeyAuthStore.getApiKey.mockReturnValue('comfyui-valid-key')
+      mockAuthStore.getWorkspaceAuthToken.mockResolvedValueOnce(undefined)
+      const queuePrompt = vi
+        .spyOn(api, 'queuePrompt')
+        .mockImplementation(() => {
+          expect(api.apiKey).toBe('comfyui-valid-key')
+          return Promise.resolve({ prompt_id: 'job-1', error: '' })
+        })
+
+      await expect(app.queuePrompt(0)).resolves.toBe(true)
+      expect(queuePrompt).toHaveBeenCalledOnce()
     })
 
     it('does not submit after switching away and back to the same workspace', async () => {
@@ -1387,7 +1479,10 @@ describe('ComfyApp', () => {
         })
 
         const roundTripGraph = new LGraph()
-        roundTripGraph.configure(serializedGraph)
+        roundTripGraph.configure({
+          ...serializedGraph,
+          id: roundTripGraph.id
+        })
         const roundTripPlaceholder = roundTripGraph.getNodeById(toNodeId(3))
         expect(roundTripPlaceholder?.inputs[0]).toMatchObject({
           name: 'images',
@@ -1405,7 +1500,10 @@ describe('ComfyApp', () => {
         LiteGraph.registerNodeType(missingNodeType, InstalledInputNode)
         installedTypeRegistered = true
         const installedGraph = new LGraph()
-        installedGraph.configure(serializedGraph)
+        installedGraph.configure({
+          ...serializedGraph,
+          id: installedGraph.id
+        })
         expect(
           installedGraph
             .getNodeById(toNodeId(3))
