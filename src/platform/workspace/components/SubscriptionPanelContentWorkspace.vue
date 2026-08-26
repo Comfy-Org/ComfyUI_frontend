@@ -504,9 +504,6 @@ const showSubscribePrompt = computed(() => {
   return !isWorkspaceSubscribed.value
 })
 
-// The legacy rail keeps lifecycle authorization on the client, and
-// handleResubscribe() skips its capability guard there, so the affordance has
-// to follow the same three-way condition or it hides a working action.
 const canChangePlan = computed(() =>
   isCloud ? canChangeSeats.value : permissions.value.canManageSubscription
 )

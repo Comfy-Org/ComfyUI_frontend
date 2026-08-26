@@ -185,6 +185,11 @@ function useWorkspaceUIInternal() {
   // legacy_stripe workspaces have no capability projection row, so the
   // server-resolved can_reactivate is false for them and cannot gate the
   // action; that rail stays on the membership check.
+  //
+  // Every reactivation surface reads this — the affordances and the handlers
+  // that execute them. They must not diverge: an affordance shown on a
+  // condition the handler does not share offers an action that silently fails,
+  // and the reverse hides a working one.
   const canReactivatePlan = computed(() =>
     isCloud && shouldUseWorkspaceBilling.value
       ? canReactivate.value
