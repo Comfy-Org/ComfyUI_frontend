@@ -59,6 +59,11 @@ const config: KnipConfig = {
     '@iconify/json'
   ],
   ignore: [
+    // Mount point for the separately-licensed secure-nodes overlay: a tracked
+    // symlink a developer points at their overlay checkout. Its files are
+    // loaded by runtime URL from secureNodesBootstrap, never imported by the
+    // build, and the link dangles on checkouts without the overlay.
+    'public/secure-nodes/**',
     // Auto generated API types
     'src/workbench/extensions/manager/types/generatedManagerTypes.ts',
     'packages/ingest-types/src/zod.gen.ts',
