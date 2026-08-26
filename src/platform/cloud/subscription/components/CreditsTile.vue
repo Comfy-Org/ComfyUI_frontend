@@ -236,7 +236,7 @@ import {
 import { computeMonthlyUsage } from '@/platform/cloud/subscription/utils/creditsProgress'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
-import { pendingTopupNeedsRefresh } from '@/platform/telemetry/topupTracker'
+import { usePendingTopup } from '@/composables/billing/usePendingTopup'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useCustomerEventsService } from '@/services/customerEventsService'
 import { useDialogService } from '@/services/dialogService'
@@ -271,6 +271,7 @@ const { showPricingTable } = useSubscriptionDialog()
 const customerEventsService = useCustomerEventsService()
 const dialogService = useDialogService()
 const telemetry = useTelemetry()
+const { pendingTopupNeedsRefresh, isPendingTopupCompleted } = usePendingTopup()
 
 const tierKey = computed(() => {
   const tier = subscription.value?.tier
@@ -425,7 +426,9 @@ async function refreshCredits() {
       customerEventsService.error.value ?? 'Fetching customer events failed'
     )
   }
-  telemetry?.checkForCompletedTopup(response.events)
+  if (isPendingTopupCompleted(response.events)) {
+    telemetry?.trackApiCreditTopupSucceeded()
+  }
 }
 
 let refreshRequested = false
