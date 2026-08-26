@@ -1,6 +1,9 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
-import { planInteractionProbes } from '@e2e/fixtures/customNode/interactionProbe'
+import {
+  planInteractionProbes,
+  runInteractionProbeChunk
+} from '@e2e/fixtures/customNode/interactionProbe'
 
 describe('planInteractionProbes', () => {
   it('plans the first and last model-free inputs for one pack', () => {
@@ -47,5 +50,24 @@ describe('planInteractionProbes', () => {
         'ExamplePack'
       )
     ).toEqual([{ type: 'ModelNode', first: { inputName: 'model' } }])
+  })
+
+  it('records a planned node type that cannot instantiate', () => {
+    vi.stubGlobal('window', {
+      __cnIdBase: 0,
+      app: { graph: { last_node_id: 0 } },
+      LiteGraph: { createNode: () => null }
+    })
+
+    expect(
+      runInteractionProbeChunk({
+        probePlans: [{ type: 'MissingNode' }],
+        producers: {}
+      })
+    ).toEqual({
+      created: [],
+      results: {},
+      threw: { MissingNode: 'MissingNode did not instantiate' }
+    })
   })
 })

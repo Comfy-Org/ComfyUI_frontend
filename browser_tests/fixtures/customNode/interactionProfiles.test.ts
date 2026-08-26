@@ -30,6 +30,12 @@ function committedWith(
   }
 }
 
+function compareWithPin(
+  input: Parameters<typeof comparePackProfiles>[0] & { expectedPin: string }
+) {
+  return comparePackProfiles(input)
+}
+
 describe('S13 interaction profiles', () => {
   // The sort is load-bearing: probesEqual compares deltas element by element.
   it('diffShapes is a sorted, facet-tagged symmetric difference blind to slot order', () => {
@@ -64,20 +70,32 @@ describe('S13 interaction profiles', () => {
       }
     })
     expect(
-      comparePackProfiles({ pack: 'p', observed: {}, committed: null })[0]
+      compareWithPin({
+        pack: 'p',
+        expectedPin: 'def456',
+        observed: {},
+        committed: null
+      })[0]
     ).toContain('no committed interaction profiles')
     expect(
-      comparePackProfiles({ pack: 'p', observed: {}, committed })[0]
+      compareWithPin({
+        pack: 'p',
+        expectedPin: 'def456',
+        observed: {},
+        committed
+      })[0]
     ).toContain('interaction corpus changed')
     expect(
-      comparePackProfiles({
+      compareWithPin({
         pack: 'p',
+        expectedPin: 'def456',
         observed: { NodeA: GROWS, NodeB: GROWS },
         committed
       })[0]
     ).toContain('interaction corpus changed')
-    const drifted = comparePackProfiles({
+    const drifted = compareWithPin({
       pack: 'p',
+      expectedPin: 'def456',
       observed: { NodeA: { ...GROWS, disconnect: [] } },
       committed
     })
@@ -85,8 +103,26 @@ describe('S13 interaction profiles', () => {
     expect(drifted[0]).toContain('disconnect')
     expect(drifted[0]).toContain('recorded at core abc123')
     expect(
-      comparePackProfiles({ pack: 'p', observed: { NodeA: GROWS }, committed })
+      compareWithPin({
+        pack: 'p',
+        expectedPin: 'def456',
+        observed: { NodeA: GROWS },
+        committed
+      })
     ).toEqual([])
+  })
+
+  it('fails a baseline recorded at a different pack pin', () => {
+    expect(
+      compareWithPin({
+        pack: 'p',
+        expectedPin: 'new-pin',
+        observed: { NodeA: GROWS },
+        committed: committedWith(['NodeA'], { NodeA: {} })
+      })
+    ).toEqual([
+      "S13: p profile pin is 'def456', expected 'new-pin' - re-record it"
+    ])
   })
 
   it('a marker replacing a recorded delta is drift', () => {
@@ -94,8 +130,9 @@ describe('S13 interaction profiles', () => {
       NodeA: { connectFirst: CONNECT_FIRST }
     })
     expect(
-      comparePackProfiles({
+      compareWithPin({
         pack: 'p',
+        expectedPin: 'def456',
         observed: { NodeA: { ...GROWS, connectFirst: 'NO_PRODUCER' } },
         committed
       })[0]

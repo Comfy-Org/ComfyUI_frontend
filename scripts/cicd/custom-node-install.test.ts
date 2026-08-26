@@ -1,11 +1,29 @@
-import { describe, expect, it } from 'vitest'
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync
+} from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { afterEach, describe, expect, it } from 'vitest'
 
+import * as customNodeInstaller from './custom-node-install'
 import {
   parseDeployRef,
   parseShardRows,
   registryArtifactUrl,
   torchConstraints
 } from './custom-node-install'
+
+const tempDirectories: string[] = []
+
+afterEach(() => {
+  for (const directory of tempDirectories)
+    rmSync(directory, { recursive: true, force: true })
+  tempDirectories.length = 0
+})
 
 describe('custom-node installer input policy', () => {
   it('parses the shard contract', () => {
@@ -58,5 +76,28 @@ describe('custom-node installer input policy', () => {
         'numpy==2.0.0\ntorch==2.8.0\ntorchvision==0.23.0\nTorchaudio==2.8.0\n'
       )
     ).toBe('torch==2.8.0\ntorchvision==0.23.0\nTorchaudio==2.8.0')
+  })
+
+  it('rebuilds the reusable cache from untouched source staging', () => {
+    const root = mkdtempSync(join(tmpdir(), 'custom-node-cache-test-'))
+    tempDirectories.push(root)
+    const staging = join(root, 'staging')
+    const cache = join(root, 'cache', 'pack')
+    mkdirSync(staging, { recursive: true })
+    mkdirSync(cache, { recursive: true })
+    writeFileSync(join(staging, 'node.py'), 'pinned source')
+    writeFileSync(join(cache, 'node.py'), 'mutated during requirements install')
+    writeFileSync(`${cache}.ref`, 'wrong-ref')
+
+    const refreshSourceCache = Reflect.get(
+      customNodeInstaller,
+      'refreshSourceCache'
+    )
+    expect(refreshSourceCache).toBeTypeOf('function')
+    if (typeof refreshSourceCache !== 'function') return
+    refreshSourceCache(staging, cache, 'pack@1.2.3')
+
+    expect(readFileSync(join(cache, 'node.py'), 'utf8')).toBe('pinned source')
+    expect(readFileSync(`${cache}.ref`, 'utf8')).toBe('pack@1.2.3')
   })
 })
