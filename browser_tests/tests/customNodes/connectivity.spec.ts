@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test'
 
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
@@ -58,6 +59,7 @@ const SWEEP_MS_PER_PAIR = 40
 const ISOLATED_MS_PER_PAIR = PLAN_SETUP_MS
 const DYNAMIC_CLEANUP_SETTLE_MS = 50
 const PAIRS_PER_BATCH = 100
+const PAIRS_PER_PAGE = 1_000
 // Same discipline for the drag pass, whose edge list grows with every
 // connectivity pack: one drag per edge per renderer. This test carried a flat
 // 120s cap over today's 6 packs (16 drags) until the since-removed cloud
@@ -320,7 +322,7 @@ test('connectivity: representative edges cover every enrolled pairable slot thro
   )
   const sweepStart = Date.now()
   const sharedStart = Date.now()
-  const sharedResults = await runPairsInPage(comfyPage.page, sharedPairs)
+  const sharedResults = await runPairsAcrossPages(comfyPage, sharedPairs)
   console.log(
     `connectivity shared sweep: ${sharedPairs.length} pairs in ${Date.now() - sharedStart}ms`
   )
@@ -493,6 +495,25 @@ async function runPairsInPage(
       `connectivity shared batch: ${start + 1}-${start + batch.length}/${pairs.length} starting at ${firstKey}`
     )
     results.push(...(await evaluatePairs(page, batch)))
+  }
+  return results
+}
+
+async function runPairsAcrossPages(
+  comfyPage: ComfyPage,
+  pairs: PlannedPair[]
+): Promise<PairResult[]> {
+  const results: PairResult[] = []
+  for (let start = 0; start < pairs.length; start += PAIRS_PER_PAGE) {
+    if (start > 0) {
+      await comfyPage.page.reload({ waitUntil: 'domcontentloaded' })
+      await comfyPage.waitForAppReady()
+    }
+    const pagePairs = pairs.slice(start, start + PAIRS_PER_PAGE)
+    console.log(
+      `connectivity shared page: ${start + 1}-${start + pagePairs.length}/${pairs.length}`
+    )
+    results.push(...(await runPairsInPage(comfyPage.page, pagePairs)))
   }
   return results
 }
