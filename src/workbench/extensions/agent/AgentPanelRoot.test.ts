@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import { render, screen, within } from '@testing-library/vue'
@@ -279,6 +280,9 @@ import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTab
 import AgentPanelRoot from './AgentPanelRoot.vue'
 
 beforeEach(() => {
+  Element.prototype.scrollIntoView = vi.fn()
+  URL.createObjectURL = vi.fn(() => 'blob:mock-url')
+  URL.revokeObjectURL = vi.fn()
   localStorage.clear()
   getServerFeature.mockReset()
   getServerFeature.mockImplementation(
@@ -855,7 +859,9 @@ describe('AgentPanelRoot attach flow', () => {
         vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
           const url = String(input)
           if (url.includes('/api/view'))
-            return new Response(new Blob(['asset'], { type: mime }))
+            return new Response(new Blob(['asset']), {
+              headers: { 'Content-Type': mime }
+            })
           if (url.endsWith('/api/upload/image'))
             return new Response(
               JSON.stringify({
