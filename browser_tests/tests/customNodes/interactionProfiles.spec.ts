@@ -7,7 +7,6 @@ import { SYNTH_PRODUCERS } from '@e2e/fixtures/customNode/autoRun'
 import {
   INTERACTION_UNSTABLE_NODES,
   comparePackProfiles,
-  hasCommittedProfile,
   loadPackProfiles,
   recordPackProfiles
 } from '@e2e/fixtures/customNode/interactionProfiles'
@@ -35,11 +34,7 @@ test.beforeEach(({ comfyPage }) => {
 })
 
 const interactionProfileEntries =
-  customNodesManifest() === 'core'
-    ? loadManifest().filter((row) =>
-        hasCommittedProfile(row.pack, packIdentity(row))
-      )
-    : []
+  customNodesManifest() === 'core' ? loadManifest() : []
 
 for (const entry of interactionProfileEntries) {
   test(`interaction profiles: ${entry.pack} @custom-nodes`, async ({
@@ -56,6 +51,7 @@ for (const entry of interactionProfileEntries) {
     ).toBeGreaterThan(0)
 
     const observed: Record<string, NodeInteractionProfile> = {}
+    const created = new Set<string>()
     const probeThrows: Record<string, string> = {}
     for (
       let start = 0;
@@ -66,9 +62,14 @@ for (const entry of interactionProfileEntries) {
         probePlans: plans.slice(start, start + INTERACTION_PROBE_CHUNK),
         producers: SYNTH_PRODUCERS
       })
+      for (const type of probed.created) created.add(type)
       Object.assign(observed, probed.results)
       Object.assign(probeThrows, probed.threw)
     }
+    expect(
+      plans.map(({ type }) => type).filter((type) => !created.has(type)),
+      'planned S13 node types that did not instantiate'
+    ).toEqual([])
     expect(
       await drainBackendToIdle(comfyPage.page, 10_000),
       'interaction probe left test-owned backend work running'
@@ -106,6 +107,7 @@ for (const entry of interactionProfileEntries) {
       expect(
         comparePackProfiles({
           pack: entry.pack,
+          expectedPin: packIdentity(entry),
           observed,
           committed: loadPackProfiles(entry.pack)
         }),

@@ -179,7 +179,11 @@ function restoreCache(target: string, cache: string, ref: string): boolean {
   return true
 }
 
-function updateCache(target: string, cache: string, ref: string): void {
+export function refreshSourceCache(
+  target: string,
+  cache: string,
+  ref: string
+): void {
   rmSync(cache, { recursive: true, force: true })
   rmSync(`${cache}.ref`, { force: true })
   mkdirSync(dirname(cache), { recursive: true })
@@ -188,20 +192,27 @@ function updateCache(target: string, cache: string, ref: string): void {
   writeFileSync(`${cache}.ref`, ref)
 }
 
-async function installPack(
-  entry: ShardPack,
-  constraints: string
-): Promise<void> {
+async function preparePack(entry: ShardPack): Promise<void> {
   const target = join('ComfyUI', 'custom_nodes', entry.pack)
   const cache = join(homedir(), '.cache', 'cn-packs', entry.pack)
-  process.stdout.write(`::group::install ${entry.pack} (${entry.ref})\n`)
+  process.stdout.write(`::group::prepare ${entry.pack} (${entry.ref})\n`)
   try {
     if (!restoreCache(target, cache, entry.ref)) {
       const ref = parseDeployRef(entry.ref)
       if (ref.kind === 'git') await installGitPack(target, ref)
       else await installRegistryPack(target, ref)
-      updateCache(target, cache, entry.ref)
+      refreshSourceCache(target, cache, entry.ref)
     }
+  } finally {
+    process.stdout.write('::endgroup::\n')
+  }
+}
+
+function installRequirements(entry: ShardPack, constraints: string): void {
+  const target = join('ComfyUI', 'custom_nodes', entry.pack)
+  process.stdout.write(`::group::requirements ${entry.pack} (${entry.ref})\n`)
+  try {
+    if (!existsSync(target)) throw new Error('prepared source is missing')
     const requirements = join(target, 'requirements.txt')
     if (
       existsSync(requirements) &&
@@ -211,6 +222,14 @@ async function installPack(
   } finally {
     process.stdout.write('::endgroup::\n')
   }
+}
+
+function installPhase(value: string | undefined): 'prepare' | 'requirements' {
+  if (value === '--prepare') return 'prepare'
+  if (value === '--requirements') return 'requirements'
+  throw new Error(
+    'expected exactly one install phase: --prepare or --requirements'
+  )
 }
 
 function pruneCache(entries: ShardPack[]): void {
@@ -226,15 +245,18 @@ function pruneCache(entries: ShardPack[]): void {
 
 export async function main(): Promise<void> {
   const rows = parseShardRows(output('pnpm', ['--silent', 'custom-node-shard']))
+  const phase = installPhase(process.argv[2])
   const constraints = join(tmpdir(), 'torch-constraints.txt')
-  writeFileSync(constraints, torchConstraints(output('pip', ['freeze'])))
+  if (phase === 'requirements')
+    writeFileSync(constraints, torchConstraints(output('pip', ['freeze'])))
   process.stdout.write(
     `shard ${process.env.CUSTOM_NODES_SHARD ?? '?'} owns ${rows.length} pack(s)\n`
   )
   const failed: string[] = []
   for (const row of rows) {
     try {
-      await installPack(row, constraints)
+      if (phase === 'prepare') await preparePack(row)
+      else installRequirements(row, constraints)
     } catch (error) {
       rmSync(join('ComfyUI', 'custom_nodes', row.pack), {
         recursive: true,
@@ -246,7 +268,7 @@ export async function main(): Promise<void> {
       failed.push(row.pack)
     }
   }
-  pruneCache(rows)
+  if (phase === 'prepare') pruneCache(rows)
   if (failed.length > 0)
     throw new Error(
       `${failed.length} pack(s) failed to install: ${failed.join(', ')}`

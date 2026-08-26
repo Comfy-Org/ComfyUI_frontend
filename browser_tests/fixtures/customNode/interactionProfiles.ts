@@ -1,10 +1,4 @@
-import {
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  readdirSync,
-  writeFileSync
-} from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import { join } from 'node:path'
 
@@ -86,17 +80,6 @@ export function diffShapes(
 
 function profilePath(pack: string): string {
   return join(PROFILE_DIR, `${pack}.json`)
-}
-
-export function hasCommittedProfile(pack: string, ref: string): boolean {
-  const match = readdirSync(PROFILE_DIR).find(
-    (name) => name.toLowerCase() === `${pack.toLowerCase()}.json`
-  )
-  if (!match) return false
-  const path = join(PROFILE_DIR, match)
-  const parsed: unknown = JSON.parse(readFileSync(path, 'utf-8'))
-  assertProfileFile(parsed, path)
-  return parsed.recordedAt.pin === ref
 }
 
 const PROBES = ['connectFirst', 'connectLast', 'disconnect'] as const
@@ -246,14 +229,19 @@ function probesEqual(
 // gone from the live corpus (stale baseline), or any probe delta drifting.
 export function comparePackProfiles(input: {
   pack: string
+  expectedPin: string
   observed: Record<string, NodeInteractionProfile>
   committed: PackInteractionProfileFile | null
 }): string[] {
-  const { pack, observed, committed } = input
+  const { pack, expectedPin, observed, committed } = input
   if (committed === null)
     return [
       `S13: no committed interaction profiles for '${pack}' - record them ` +
         `(CN_INTERACTION=record run, commit the fixture; docs/custom-node-regression-suite.md Step 5d)`
+    ]
+  if (committed.recordedAt.pin !== expectedPin)
+    return [
+      `S13: ${pack} profile pin is '${committed.recordedAt.pin}', expected '${expectedPin}' - re-record it`
     ]
   const provenance = `(baseline recorded at core ${committed.recordedAt.core}, pin ${committed.recordedAt.pin})`
   const unstable = INTERACTION_UNSTABLE_NODES[pack] ?? {}

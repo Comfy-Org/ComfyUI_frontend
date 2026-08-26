@@ -21,6 +21,7 @@ export interface InteractionProbePlan {
 }
 
 export interface InteractionProbeChunkResult {
+  created: string[]
   results: Record<string, NodeInteractionProfile>
   threw: Record<string, string>
 }
@@ -73,11 +74,16 @@ export function runInteractionProbeChunk(input: {
   }
   const graph = window.app!.graph
   window.__cnIdBase = Math.max(window.__cnIdBase ?? 0, graph.last_node_id)
+  const created: string[] = []
   const results: Record<string, NodeInteractionProfile> = {}
   const threw: Record<string, string> = {}
   for (const plan of probePlans) {
     const node = window.LiteGraph!.createNode(plan.type)
-    if (!node) continue
+    if (!node) {
+      threw[plan.type] = `${plan.type} did not instantiate`
+      continue
+    }
+    created.push(plan.type)
     try {
       graph.last_node_id = ++window.__cnIdBase!
       graph.add(node)
@@ -168,5 +174,5 @@ export function runInteractionProbeChunk(input: {
       if (node.graph) graph.remove(node)
     }
   }
-  return { results, threw }
+  return { created, results, threw }
 }
