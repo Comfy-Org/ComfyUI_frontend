@@ -134,19 +134,6 @@ function cloudTemplate(
   safeName: string,
   safeOutputPath: string
 ): string {
-  const hasFlags =
-    options.featureFlags && Object.keys(options.featureFlags).length > 0
-  // The app reads feature-flag overrides from localStorage 'ff:<key>' keys —
-  // the same mechanism FeatureFlagHelper.seedFlags uses in cloud specs.
-  const flagSeedBlock = hasFlags
-    ? `  await page.addInitScript((flags) => {
-    for (const [key, value] of Object.entries(flags)) {
-      localStorage.setItem('ff:' + key, JSON.stringify(value))
-    }
-  }, ${JSON.stringify(options.featureFlags)})
-`
-    : ''
-
   const stateFile = options.storageStateFile
   const safeStateFile = stateFile ? JSON.stringify(stateFile) : undefined
   const reuseLoginBlock =
@@ -173,7 +160,7 @@ function cloudTemplate(
 import { test } from '@playwright/test'
 
 ${reuseLoginBlock}test(${safeName}, async ({ page }) => {
-${flagSeedBlock}  await page.goto(process.env.PLAYWRIGHT_TEST_URL ?? 'http://localhost:5173')
+  await page.goto(process.env.PLAYWRIGHT_TEST_URL ?? 'http://localhost:5173')
 ${persistLoginBlock}  // The cloud app may show a sign-in screen first — sign in manually, then
   // record. Nothing is captured until the Record button is clicked, so the
   // recorder opens immediately rather than gating on app boot.

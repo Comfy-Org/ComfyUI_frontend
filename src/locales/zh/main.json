@@ -41,10 +41,10 @@
     "browseAssets": "浏览资产",
     "byType": "按类型",
     "checkpoints": "模型",
-    "civitaiLinkExample": "<strong>案例：</strong> <a href=\"https://civitai.com/api/download/models/833921?type=Model&format=SafeTensor\" target=\"_blank\" class=\"text-muted-foreground\">https://civitai.com/api/download/models/833921?type=Model&format=SafeTensor</a>",
+    "civitaiLinkExample": "{example} {link}",
     "civitaiLinkExampleStrong": "案例:",
     "civitaiLinkExampleUrl": "https://civitai.com/models/10706/luisap-z-image-and-qwen-pixel-art-refiner?modelVersionId=2225295",
-    "civitaiLinkLabel": "Civitai 模型 <span class=\"font-bold italic\">download</span> link",
+    "civitaiLinkLabel": "Civitai 模型 {download} 链接",
     "civitaiLinkLabelDownload": "下载",
     "civitaiLinkPlaceholder": "粘贴链接到此",
     "confirmModelDetails": "确认模型信息",
@@ -199,10 +199,10 @@
     "uploadModel": "导入模型",
     "uploadModelDescription1": "粘贴 Civitai 模型下载链接，将其添加到库中。",
     "uploadModelDescription1Generic": "粘贴模型下载链接，将其添加到模型库中。",
-    "uploadModelDescription2": "目前仅支持 <a href=\"https://civitai.com\" target=\"_blank\" class=\"text-muted-foreground\">https://civitai.com</a> 链接。",
+    "uploadModelDescription2": "目前仅支持来自 {link} 的链接",
     "uploadModelDescription2Generic": "仅支持来自以下提供服务的 URL ：",
     "uploadModelDescription2Link": "https://civitai.com/models",
-    "uploadModelDescription3": "最大文件大小：<strong>1 GB</strong>",
+    "uploadModelDescription3": "最大文件大小：{size}",
     "uploadModelFailedToRetrieveMetadata": "检索元数据失败。请检查连接并重试。",
     "uploadModelFromCivitai": "从 Civitai 导入模型",
     "uploadModelGeneric": "导入模型",
@@ -235,13 +235,15 @@
       "contactSupport": "如需删除您的账户，请联系 {email}"
     },
     "errors": {
-      "auth/cancelled-popup-request": "登录已取消。请重试。",
+      "auth/account-exists-with-different-credential": "已存在使用此电子邮件地址的账户，但其使用了其他登录方式。请使用您最初的登录方式登录。",
+      "auth/cancelled-popup-request": "另一个登录窗口已打开，因此此窗口已取消。请重试。",
       "auth/email-already-in-use": "已存在使用此电子邮件的账户。请尝试登录。",
       "auth/invalid-credential": "登录凭据无效。请检查您的邮箱和密码。",
       "auth/invalid-email": "请输入有效的电子邮件地址。",
       "auth/network-request-failed": "网络错误。请检查您的连接并重试。",
       "auth/operation-not-allowed": "此登录方法目前不受支持。",
-      "auth/popup-closed-by-user": "登录已取消。请重试。",
+      "auth/popup-blocked": "您的浏览器阻止了登录窗口。请允许此网站的弹出窗口后重试。",
+      "auth/popup-closed-by-user": "登录完成前登录窗口已关闭。请重试。",
       "auth/too-many-requests": "登录尝试次数过多。请稍等片刻再试。",
       "auth/user-disabled": "此账户已被禁用。请联系客服。",
       "auth/user-not-found": "未找到使用此电子邮件的账户。您想要创建一个新账户吗？",
@@ -845,6 +847,7 @@
       "message": "积分已合并",
       "tooltip": "我们统一了 Comfy 的支付方式。现在全部使用 Comfy 积分 :\n- 合作节点（API节点）\n- Cloud 工作流\n\n您现有的合作伙伴节点积分将自动转换为 Comfy 积分。"
     },
+    "workspaceCredits": "工作区积分",
     "yourCreditBalance": "您的积分余额"
   },
   "curveWidget": {
@@ -894,6 +897,7 @@
     "FILE_3D_SPZ": "FILE_3D_SPZ",
     "FILE_3D_STL": "FILE_3D_STL",
     "FILE_3D_USDZ": "FILE_3D_USDZ",
+    "FISHAUDIO_VOICE": "FISHAUDIO_VOICE",
     "FLOAT": "浮点",
     "FLOATS": "浮点组",
     "GEMINI_INPUT_FILES": "GEMINI 输入文件",
@@ -907,6 +911,7 @@
     "IMAGECOMPARE": "图像对比",
     "INT": "整数",
     "INTERP_MODEL": "插值模型",
+    "KIMODO_POSE_DATA": "KIMODO_POSE_DATA",
     "KREA_STYLE_REF": "KREA_STYLE_REF",
     "LATENT": "Latent",
     "LATENT_OPERATION": "Latent操作",
@@ -924,6 +929,7 @@
     "MESH": "网格",
     "MESHY_RIGGED_TASK_ID": "MESHY_RIGGED_TASK_ID",
     "MESHY_TASK_ID": "MESHY_TASK_ID",
+    "MHR_POSE_DATA": "MHR_POSE_DATA",
     "MODEL": "模型",
     "MODEL_PATCH": "模型补丁",
     "MODEL_TASK_ID": "模型任务ID",
@@ -943,8 +949,10 @@
     "RIG_TASK_ID": "RIG_TASK_ID",
     "RUNWAY_ALEPH2_KEYFRAME": "RUNWAY_ALEPH2_KEYFRAME",
     "RUNWAY_ALEPH2_PROMPT_IMAGE": "RUNWAY_ALEPH2_PROMPT_IMAGE",
+    "SAM3D_BODY_MODEL": "SAM3D_BODY_MODEL",
     "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "采样器",
+    "SHAPE_SUBDIVIDES": "SHAPE_SUBDIVIDES",
     "SIGMAS": "Sigmas",
     "SPLAT": "SPLAT",
     "STRING": "字符串",
@@ -960,12 +968,20 @@
     "WEBCAM": "摄像头"
   },
   "desktopDialogs": {
-    "": {
+    "invalidDialog": {
       "buttons": {
         "Close": "关闭"
       },
-      "message": "提供的对话 ID 无效。",
+      "message": "提供的对话框 ID 无效。",
       "title": "无效对话框"
+    },
+    "reinstallVenv": {
+      "buttons": {
+        "Learn More": "了解更多",
+        "Reinstall": "重新安装"
+      },
+      "message": "抱歉，由于某些已安装的软件包不兼容，我们无法启动 ComfyUI。\n\n点击“重新安装”以恢复 ComfyUI 并重新正常运行。\n\n请注意：如果您添加了自定义节点，需要在此过程完成后重新安装它们。",
+      "title": "重新安装 ComfyUI（全新开始）？"
     }
   },
   "desktopLogin": {
@@ -1409,7 +1425,8 @@
     "loadWorkflowTitle": "由于重新加载工作流数据出错，加载被中止",
     "noStackTrace": "无可用堆栈跟踪",
     "promptExecutionError": "提示执行失败",
-    "queueOpenWorkflowFailedTitle": "打开工作流失败"
+    "queueOpenWorkflowFailedTitle": "打开工作流失败",
+    "workspaceChangedDuringExecution": "准备此次执行时，您的活动工作区已更改。请再次运行工作流以使用当前工作区。"
   },
   "errorOverlay": {
     "missingMedia": "部分节点缺少所需输入",
@@ -1564,7 +1581,7 @@
     "disableAll": "禁用全部",
     "disableSelected": "禁用选中项",
     "disableThirdParty": "禁用第三方",
-    "disabling": "禁用中",
+    "disabling": "正在禁用 {id}",
     "disconnectedFromBackend": "已与后端断开连接。请检查服务器是否正在运行。",
     "dismiss": "关闭",
     "download": "下载",
@@ -1584,7 +1601,7 @@
     "enableOrDisablePack": "启用或禁用包",
     "enableSelected": "启用选中项",
     "enabled": "已启用",
-    "enabling": "启用中",
+    "enabling": "正在启用 {id}",
     "enter": "进入",
     "enterBaseName": "输入基础名称",
     "enterNewName": "输入新名称",
@@ -1638,13 +1655,14 @@
     "increment": "增加",
     "info": "节点信息",
     "input": "输入",
+    "inputTooltip": "输入：{name}",
     "insert": "插入",
     "install": "安装",
     "installed": "已安装",
     "installing": "正在安装",
     "interrupted": "已中断",
     "itemsCopiedToClipboard": "已复制到剪贴板",
-    "itemsSelected": "已选择 {selectedCount} 项",
+    "itemsSelected": "未选择项目 | 已选择 {count} 个项目 | 已选择 {count} 个项目",
     "job": "任务",
     "jobIdCopied": "队列 ID 已复制到剪贴板",
     "keybinding": "按键绑定",
@@ -1807,7 +1825,7 @@
     "searchKeybindings": "搜索快捷键",
     "searchModels": "搜索模型",
     "searchNodes": "搜索节点",
-    "searchPlaceholder": "搜索占位符",
+    "searchPlaceholder": "搜索 {subject}...",
     "searchSettings": "搜索设置",
     "searchWorkflows": "搜索工作流",
     "seeTutorial": "查看教程",
@@ -1859,7 +1877,7 @@
     "updateAvailable": "有更新可用",
     "updateFrontend": "更新前端",
     "updated": "已更新",
-    "updating": "更新中",
+    "updating": "正在更新 {id}",
     "upload": "上传",
     "uploadAlreadyInProgress": "上传已在进行中",
     "uploadTimedOut": "上传超时。请重试。",
@@ -2226,7 +2244,7 @@
     },
     "cancelThisRun": "取消本次运行",
     "deleteAllAssets": "删除本次运行的所有资源",
-    "downloadAll": "全部下载",
+    "downloadAll": "下载此次运行中的 {count} 个资产",
     "dragAndDropImage": "拖拽图片到此处",
     "emptyWorkflowExplanation": "你的工作流为空。你需要先添加一些节点，才能开始构建应用。",
     "enterNodeGraph": "进入节点图",
@@ -2283,6 +2301,7 @@
     "clearRecording": "清除录制",
     "dropToLoad": "拖放 3D 模型以加载",
     "edgeThreshold": "边缘阈值",
+    "exitLookThrough": "退出相机视图",
     "export": "导出",
     "exportModel": "导出模型",
     "exportRecording": "导出录制",
@@ -2305,11 +2324,13 @@
       "showAsBackground": "作为背景显示",
       "uploadFile": "上传HDRI（.hdr, .exr）"
     },
+    "hideGizmos": "隐藏操控器",
     "light": "灯光",
     "lightIntensity": "光照强度",
     "loadingBackgroundImage": "正在加载背景图像",
     "loadingHDRI": "正在加载HDRI...",
     "loadingModel": "正在加载3D模型...",
+    "lookThrough": "相机视图",
     "materialMode": "材质模式",
     "materialModes": {
       "clay": "陶土",
@@ -2350,6 +2371,7 @@
     "removeBackgroundImage": "移除背景图片",
     "resizeNodeMatchOutput": "调整节点以匹配输出",
     "scene": "场景",
+    "showGizmos": "显示操控器",
     "showGrid": "显示网格",
     "showSkeleton": "显示骨架",
     "startRecording": "开始录制",
@@ -2357,6 +2379,13 @@
     "switchCamera": "切换摄影机类型",
     "switchingMaterialMode": "切换材质模式中...",
     "tiledMode": "分快",
+    "transformGizmo": {
+      "cameraRotate": "相机旋转",
+      "cameraTranslate": "相机位置",
+      "label": "编辑",
+      "none": "无",
+      "target": "目标"
+    },
     "unsupportedFileType": "不支持的文件类型（支持 .gltf、.glb、.obj、.fbx、.stl）",
     "upDirection": "上方向",
     "upDirections": {
@@ -2365,6 +2394,8 @@
     "uploadBackgroundImage": "上传背景图片",
     "uploadTexture": "上传纹理",
     "uploadingModel": "正在上传3D模型...",
+    "useCustomUp": "从输入恢复相机向上方向",
+    "useNaturalUp": "将相机向上方向重置为 Y",
     "viewer": {
       "apply": "应用",
       "cameraSettings": "相机设置",
@@ -2480,7 +2511,7 @@
     "enablePackToChangeVersion": "启用此包以更改版本",
     "errorConnecting": "连接到Comfy节点注册表时出错。",
     "extensionsSuccessfullyInstalled": "扩展已成功安装并可使用！",
-    "failed": "失败 ({count})",
+    "failed": "失败",
     "failedToInstall": "安装失败",
     "filter": {
       "disabled": "已禁用",
@@ -2569,7 +2600,7 @@
     "tryUpdateTooltip": "从库中拉取更新。测试版本可能有无法自动检测到更新。",
     "uninstall": "卸载",
     "uninstallSelected": "卸载所选",
-    "uninstalling": "正在卸载",
+    "uninstalling": "正在卸载 {id}",
     "unresolvedNodes": {
       "message": "以下节点未安装，且在注册表中未找到。",
       "title": "未解析的缺失节点"
@@ -2898,6 +2929,9 @@
     "notNow": "暂不",
     "title": "帮助我们改进"
   },
+  "nodeBadge": {
+    "partnerNodesCount": "合作伙伴节点 × {count}"
+  },
   "nodeCategories": {
     "": "",
     "3d": "3d",
@@ -2907,6 +2941,7 @@
     "Bria": "Bria",
     "ByteDance": "字节跳动",
     "ElevenLabs": "ElevenLabs",
+    "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
     "Grok": "Grok",
     "HeyGen": "HeyGen",
@@ -2996,7 +3031,9 @@
     "mage": "mage",
     "mask": "遮罩",
     "merging": "合并",
+    "mesh": "网格",
     "minimax": "minimax",
+    "minimax music": "minimax 音乐",
     "mochi": "mochi",
     "model": "模型",
     "model specific": "模型专用",
@@ -3035,8 +3072,11 @@
     "supir": "supir",
     "sync_so": "sync.so",
     "text": "文本",
+    "texturing": "纹理",
     "training": "训练",
     "transform": "变换",
+    "trellis": "trellis",
+    "trellis2": "trellis2",
     "triposplat": "triposplat",
     "unet": "U-Net",
     "upscaling": "放大",
@@ -3427,7 +3467,7 @@
       "expandNodes": "显示引用节点",
       "gatedModelDownloadTooltip": "下载前可能需要先登录 Hugging Face。",
       "gatedModelTooltip": "该模型为受限模型，需要您登录 Hugging Face 并同意其许可协议。",
-      "gatedModelsHint": "部分模型为受限模型。要下载这些模型，请登录 Hugging Face 并同意模型许可协议。",
+      "gatedModelsHint": "{count} 个模型受访问限制。要下载它，请登录 Hugging Face 并接受其许可协议。|{count} 个模型受访问限制。要下载它们，请登录 Hugging Face 并接受其许可协议。",
       "gatedModelsHintLabel": "注意：",
       "import": "导入",
       "importNotSupported": "不支持导入",
@@ -4089,8 +4129,8 @@
     "contactUs": "联系我们",
     "creditSliderSave": "节省 {percent}%（{amount}）",
     "creditsLeftOfTotal": "剩余 {remaining}，共 {total}",
-    "creditsRemainingThisMonth": "本月剩余积分",
-    "creditsRemainingThisYear": "今年剩余积分",
+    "creditsRemainingThisMonth": "已包含（于 {date} 补充）",
+    "creditsRemainingThisYear": "已包含（于 {date} 补充）",
     "creditsUsed": "已用 {used}",
     "creditsYouveAdded": "你获得的积分",
     "currentPlan": "当前订阅计划",
@@ -4128,6 +4168,7 @@
       "freeRuns": "{count} 次免费运行",
       "maxRuntime": "最长运行时长 {duration}"
     },
+    "fullUsageActivity": "完整使用记录",
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
     "haveQuestions": "对企业级有疑问？",
     "inactive": {
@@ -4201,6 +4242,7 @@
       "personal": "个人使用",
       "team": "团队使用"
     },
+    "plansAndCredits": "套餐和积分",
     "plansAndPricing": "订阅和定价",
     "plansForWorkspace": "{workspace} 的套餐",
     "prepaidCreditsInfo": "单独购买且不会过期的积分",
@@ -4499,6 +4541,7 @@
     "failedToFetchBalance": "获取余额失败：{error}",
     "failedToFetchLogs": "无法获取服务器日志",
     "failedToFetchSubscription": "获取订阅状态失败：{error}",
+    "failedToInitializeCameraInfoViewer": "初始化相机信息查看器失败。请尝试重新加载页面。",
     "failedToInitializeLoad3dViewer": "初始化3D查看器失败",
     "failedToInitiateCreditPurchase": "发起积分购买失败：{error}",
     "failedToInitiateSubscription": "订阅启动失败：{error}",
@@ -4706,7 +4749,7 @@
     "savedAsWorkflow": "已转换为节点图工作流"
   },
   "workspace": {
-    "addedToWorkspace": "您已被加入 {workspaceName}",
+    "addedToWorkspace": "您已被添加到：",
     "inviteAccepted": "邀请已接受",
     "inviteFailed": "接受邀请失败",
     "switchFailed": "切换工作区失败。请重试。",
@@ -4801,7 +4844,7 @@
       "title": "编辑工作区详情"
     },
     "invite": "邀请",
-    "inviteLimitReached": "您已达到最多 50 名成员的上限",
+    "inviteLimitReached": "您已达到 {count} 名成员的上限",
     "inviteMember": "邀请成员",
     "inviteMemberDialog": {
       "failedCount": "无法发送 {count} 个邀请，请重试。",
@@ -4854,7 +4897,7 @@
         "warning": "该用户已消耗 {credits} 积分。将上限设置为当前用量或更低将导致本月无法继续运行。"
       },
       "header": "成员",
-      "membersCount": "{count}/50 名成员",
+      "membersCount": "{count} / {maxSeats} 名成员",
       "needMoreMembers": "需要更多成员？",
       "noInvites": "暂无待处理邀请",
       "noMembers": "暂无成员",
@@ -4978,6 +5021,8 @@
     "personal": "个人",
     "roleMember": "成员",
     "roleOwner": "所有者",
+    "scopeCaption": "工作区仅影响您使用哪些积分。",
+    "scopeTooltip": "使用合作伙伴节点的运行会消耗此工作区的积分。与 Cloud 不同，每个工作区都会保存到您常用的输出文件夹。",
     "subscribe": "订阅",
     "switchWorkspace": "切换工作区"
   },

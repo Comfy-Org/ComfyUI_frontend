@@ -235,13 +235,15 @@
       "contactSupport": "Чтобы удалить свою учетную запись, пожалуйста, свяжитесь с {email}"
     },
     "errors": {
-      "auth/cancelled-popup-request": "Вход был отменен. Пожалуйста, попробуйте еще раз.",
+      "auth/account-exists-with-different-credential": "Учётная запись с этим адресом электронной почты уже существует, но использует другой способ входа. Войдите тем же способом, которым входили изначально.",
+      "auth/cancelled-popup-request": "Другое окно входа уже было открыто, поэтому это было отменено. Повторите попытку.",
       "auth/email-already-in-use": "Учетная запись с этим email уже существует. Попробуйте войти вместо этого.",
       "auth/invalid-credential": "Неверные учетные данные для входа. Пожалуйста, проверьте свой email и пароль.",
       "auth/invalid-email": "Пожалуйста, введите действительный адрес электронной почты.",
       "auth/network-request-failed": "Ошибка сети. Пожалуйста, проверьте подключение и попробуйте еще раз.",
       "auth/operation-not-allowed": "Этот метод входа в настоящее время не поддерживается.",
-      "auth/popup-closed-by-user": "Вход был отменен. Пожалуйста, попробуйте еще раз.",
+      "auth/popup-blocked": "Браузер заблокировал окно входа. Разрешите всплывающие окна для этого сайта и повторите попытку.",
+      "auth/popup-closed-by-user": "Окно входа закрылось до завершения входа. Повторите попытку.",
       "auth/too-many-requests": "Слишком много попыток входа. Пожалуйста, подождите немного и попробуйте еще раз.",
       "auth/user-disabled": "Эта учетная запись отключена. Пожалуйста, обратитесь в службу поддержки.",
       "auth/user-not-found": "Учетная запись с этим email не найдена. Хотите создать новую учетную запись?",
@@ -845,6 +847,7 @@
       "message": "Кредиты были объединены",
       "tooltip": "Мы объединили платежи в Comfy. Теперь всё работает на Comfy Credits:\n- Партнерские узлы (ранее API-узлы)\n- Облачные рабочие процессы\n\nВаш существующий баланс партнерских узлов был преобразован в кредиты."
     },
+    "workspaceCredits": "Кредиты рабочего пространства",
     "yourCreditBalance": "Ваш баланс кредитов"
   },
   "curveWidget": {
@@ -894,6 +897,7 @@
     "FILE_3D_SPZ": "FILE_3D_SPZ",
     "FILE_3D_STL": "FILE_3D_STL",
     "FILE_3D_USDZ": "FILE_3D_USDZ",
+    "FISHAUDIO_VOICE": "FISHAUDIO_VOICE",
     "FLOAT": "ПЛАВАЮЩИЙ",
     "FLOATS": "ПЛАВАЮЩИЕ",
     "GEMINI_INPUT_FILES": "ВХОДНЫЕ_ФАЙЛЫ_GEMINI",
@@ -907,6 +911,7 @@
     "IMAGECOMPARE": "СРАВНЕНИЕ_ИЗОБРАЖЕНИЙ",
     "INT": "ЦЕЛОЕ",
     "INTERP_MODEL": "ИНТЕРП_МОДЕЛЬ",
+    "KIMODO_POSE_DATA": "KIMODO_POSE_DATA",
     "KREA_STYLE_REF": "KREA_STYLE_REF",
     "LATENT": "ЛАТЕНТНЫЙ",
     "LATENT_OPERATION": "ЛАТЕНТНАЯ_ОПЕРАЦИЯ",
@@ -924,6 +929,7 @@
     "MESH": "СЕТКА",
     "MESHY_RIGGED_TASK_ID": "MESHY_RIGGED_TASK_ID",
     "MESHY_TASK_ID": "MESHY_TASK_ID",
+    "MHR_POSE_DATA": "MHR_POSE_DATA",
     "MODEL": "МОДЕЛЬ",
     "MODEL_PATCH": "ПАТЧ_МОДЕЛИ",
     "MODEL_TASK_ID": "ID_ЗАДАЧИ_МОДЕЛИ",
@@ -943,8 +949,10 @@
     "RIG_TASK_ID": "RIG_TASK_ID",
     "RUNWAY_ALEPH2_KEYFRAME": "RUNWAY_ALEPH2_KEYFRAME",
     "RUNWAY_ALEPH2_PROMPT_IMAGE": "RUNWAY_ALEPH2_PROMPT_IMAGE",
+    "SAM3D_BODY_MODEL": "SAM3D_BODY_MODEL",
     "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "СЭМПЛЕР",
+    "SHAPE_SUBDIVIDES": "SHAPE_SUBDIVIDES",
     "SIGMAS": "СИГМЫ",
     "SPLAT": "SPLAT",
     "STRING": "СТРОКА",
@@ -960,12 +968,20 @@
     "WEBCAM": "ВЕБ-КАМЕРА"
   },
   "desktopDialogs": {
-    "": {
+    "invalidDialog": {
       "buttons": {
         "Close": "Закрыть"
       },
-      "message": "Был предоставлен неверный ID диалога.",
-      "title": "Неверный диалог"
+      "message": "Указан недопустимый идентификатор диалогового окна.",
+      "title": "Недопустимое диалоговое окно"
+    },
+    "reinstallVenv": {
+      "buttons": {
+        "Learn More": "Подробнее",
+        "Reinstall": "Переустановить"
+      },
+      "message": "К сожалению, мы не можем запустить ComfyUI, потому что некоторые установленные пакеты несовместимы.\n\nНажмите «Переустановить», чтобы восстановить ComfyUI и продолжить работу.\n\nОбратите внимание: если вы добавили пользовательские узлы, после этого процесса их потребуется переустановить.",
+      "title": "Переустановить ComfyUI (с чистого листа)?"
     }
   },
   "desktopLogin": {
@@ -1409,7 +1425,8 @@
     "loadWorkflowTitle": "Загрузка прервана из-за ошибки при перезагрузке данных рабочего процесса",
     "noStackTrace": "Стек вызовов недоступен",
     "promptExecutionError": "Ошибка выполнения запроса",
-    "queueOpenWorkflowFailedTitle": "Не удалось открыть рабочий процесс"
+    "queueOpenWorkflowFailedTitle": "Не удалось открыть рабочий процесс",
+    "workspaceChangedDuringExecution": "Активное рабочее пространство изменилось во время подготовки этого запуска. Запустите рабочий процесс снова, чтобы использовать текущее рабочее пространство."
   },
   "errorOverlay": {
     "missingMedia": "Некоторым узлам не хватает необходимых входных данных",
@@ -1564,7 +1581,7 @@
     "disableAll": "Отключить все",
     "disableSelected": "Отключить выбранное",
     "disableThirdParty": "Отключить сторонние",
-    "disabling": "Отключение",
+    "disabling": "Отключение {id}",
     "disconnectedFromBackend": "Отключено от сервера. Проверьте, запущен ли сервер.",
     "dismiss": "Закрыть",
     "download": "Скачать",
@@ -1584,7 +1601,7 @@
     "enableOrDisablePack": "Включить или отключить пакет",
     "enableSelected": "Включить выбранное",
     "enabled": "Включено",
-    "enabling": "Включение",
+    "enabling": "Включение {id}",
     "enter": "Ввод",
     "enterBaseName": "Введите базовое имя",
     "enterNewName": "Введите новое имя",
@@ -1638,13 +1655,14 @@
     "increment": "Увеличить",
     "info": "Информация о ноде",
     "input": "Вход",
+    "inputTooltip": "Вход: {name}",
     "insert": "Вставить",
     "install": "Установить",
     "installed": "Установлено",
     "installing": "Установка",
     "interrupted": "Прервано",
     "itemsCopiedToClipboard": "Элементы скопированы в буфер обмена",
-    "itemsSelected": "Выбрано {selectedCount} элементов",
+    "itemsSelected": "Нет выбранных элементов | Выбран {count} элемент | Выбрано {count} элементов",
     "job": "Задача",
     "jobIdCopied": "ID задания скопирован в буфер обмена",
     "keybinding": "Привязка клавиш",
@@ -1807,7 +1825,7 @@
     "searchKeybindings": "Поиск сочетаний клавиш",
     "searchModels": "Поиск моделей",
     "searchNodes": "Поиск нод",
-    "searchPlaceholder": "Поиск...",
+    "searchPlaceholder": "Поиск {subject}...",
     "searchSettings": "Поиск настроек",
     "searchWorkflows": "Поиск рабочих процессов",
     "seeTutorial": "Посмотреть руководство",
@@ -1859,7 +1877,7 @@
     "updateAvailable": "Доступно обновление",
     "updateFrontend": "Обновить интерфейс",
     "updated": "Обновлено",
-    "updating": "Обновление",
+    "updating": "Обновление {id}",
     "upload": "Загрузить",
     "uploadAlreadyInProgress": "Загрузка уже выполняется",
     "uploadTimedOut": "Время загрузки истекло. Пожалуйста, попробуйте еще раз.",
@@ -2226,7 +2244,7 @@
     },
     "cancelThisRun": "Отменить этот запуск",
     "deleteAllAssets": "Удалить все ресурсы из этого запуска",
-    "downloadAll": "Скачать всё",
+    "downloadAll": "Скачать {count} ресурсов из этого запуска",
     "dragAndDropImage": "Перетащите изображение",
     "emptyWorkflowExplanation": "Ваш рабочий процесс пуст. Сначала добавьте несколько узлов, чтобы начать создавать приложение.",
     "enterNodeGraph": "Войти в граф узлов",
@@ -2283,6 +2301,7 @@
     "clearRecording": "Очистить запись",
     "dropToLoad": "Перетащите 3D-модель для загрузки",
     "edgeThreshold": "Порог края",
+    "exitLookThrough": "Выйти из вида камеры",
     "export": "Экспорт",
     "exportModel": "Экспорт модели",
     "exportRecording": "Экспортировать запись",
@@ -2305,11 +2324,13 @@
       "showAsBackground": "Показать как фон",
       "uploadFile": "Загрузить HDRI (.hdr, .exr)"
     },
+    "hideGizmos": "Скрыть манипуляторы",
     "light": "Свет",
     "lightIntensity": "Интенсивность света",
     "loadingBackgroundImage": "Загрузка фонового изображения",
     "loadingHDRI": "Загрузка HDRI...",
     "loadingModel": "Загрузка 3D модели...",
+    "lookThrough": "Вид из камеры",
     "materialMode": "Режим Материала",
     "materialModes": {
       "clay": "Глина",
@@ -2350,6 +2371,7 @@
     "removeBackgroundImage": "Удалить фоновое изображение",
     "resizeNodeMatchOutput": "Изменить размер узла под вывод",
     "scene": "Сцена",
+    "showGizmos": "Показать манипуляторы",
     "showGrid": "Показать сетку",
     "showSkeleton": "Показать скелет",
     "startRecording": "Начать запись",
@@ -2357,6 +2379,13 @@
     "switchCamera": "Переключить камеру",
     "switchingMaterialMode": "Переключение режима материала...",
     "tiledMode": "Плиточный",
+    "transformGizmo": {
+      "cameraRotate": "Поворот камеры",
+      "cameraTranslate": "Поз. камеры",
+      "label": "Изменить",
+      "none": "Нет",
+      "target": "Цель"
+    },
     "unsupportedFileType": "Неподдерживаемый тип файла (поддерживаются .gltf, .glb, .obj, .fbx, .stl)",
     "upDirection": "Направление Вверх",
     "upDirections": {
@@ -2365,6 +2394,8 @@
     "uploadBackgroundImage": "Загрузить фоновое изображение",
     "uploadTexture": "Загрузить текстуру",
     "uploadingModel": "Загрузка 3D-модели...",
+    "useCustomUp": "Восстановить направление вверх камеры из входных данных",
+    "useNaturalUp": "Сбросить направление вверх камеры на Y",
     "viewer": {
       "apply": "Применить",
       "cameraSettings": "Настройки камеры",
@@ -2480,7 +2511,7 @@
     "enablePackToChangeVersion": "Включите этот пакет для изменения версий",
     "errorConnecting": "Ошибка подключения к реестру Comfy Node.",
     "extensionsSuccessfullyInstalled": "Расширение(я) успешно установлено и готово к использованию!",
-    "failed": "Не удалось ({count})",
+    "failed": "Не удалось",
     "failedToInstall": "Не удалось установить",
     "filter": {
       "disabled": "Отключено",
@@ -2569,7 +2600,7 @@
     "tryUpdateTooltip": "Получить последние изменения из репозитория. В ночных версиях могут быть обновления, которые не определяются автоматически.",
     "uninstall": "Удалить",
     "uninstallSelected": "Удалить выбранное",
-    "uninstalling": "Удаление",
+    "uninstalling": "Удаление {id}",
     "unresolvedNodes": {
       "message": "Следующие узлы не установлены и не найдены в реестре.",
       "title": "Неразрешённые отсутствующие узлы"
@@ -2898,6 +2929,9 @@
     "notNow": "Не сейчас",
     "title": "Помогите нам стать лучше"
   },
+  "nodeBadge": {
+    "partnerNodesCount": "Партнёрские узлы × {count}"
+  },
   "nodeCategories": {
     "": "",
     "3d": "3d",
@@ -2907,6 +2941,7 @@
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "ElevenLabs": "ElevenLabs",
+    "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
     "Grok": "Grok",
     "HeyGen": "HeyGen",
@@ -2996,7 +3031,9 @@
     "mage": "mage",
     "mask": "маска",
     "merging": "слияние",
+    "mesh": "сетка",
     "minimax": "minimax",
+    "minimax music": "музыка minimax",
     "mochi": "mochi",
     "model": "модель",
     "model specific": "модель-специфичный",
@@ -3035,8 +3072,11 @@
     "supir": "supir",
     "sync_so": "sync.so",
     "text": "текст",
+    "texturing": "текстурирование",
     "training": "обучение",
     "transform": "преобразование",
+    "trellis": "trellis",
+    "trellis2": "trellis2",
     "triposplat": "triposplat",
     "unet": "unet",
     "upscaling": "апскейл",
@@ -3427,7 +3467,7 @@
       "expandNodes": "Показать ссылающиеся узлы",
       "gatedModelDownloadTooltip": "Для загрузки может потребоваться вход в Hugging Face.",
       "gatedModelTooltip": "Эта модель имеет ограничения и требует входа в Hugging Face и принятия лицензионного соглашения.",
-      "gatedModelsHint": "Некоторые модели имеют ограничения. Чтобы скачать их, войдите в Hugging Face и примите лицензионное соглашение модели.",
+      "gatedModelsHint": "Доступ к {count} модели ограничен. Чтобы скачать её, войдите в Hugging Face и примите лицензионное соглашение. | Доступ к {count} моделям ограничен. Чтобы скачать их, войдите в Hugging Face и примите их лицензионные соглашения.",
       "gatedModelsHintLabel": "Примечание:",
       "import": "Импортировать",
       "importNotSupported": "Импорт не поддерживается",
@@ -4089,8 +4129,8 @@
     "contactUs": "Связаться с нами",
     "creditSliderSave": "Сохранить {percent}% ({amount})",
     "creditsLeftOfTotal": "Осталось {remaining} из {total}",
-    "creditsRemainingThisMonth": "Кредитов осталось в этом месяце",
-    "creditsRemainingThisYear": "Кредитов осталось в этом году",
+    "creditsRemainingThisMonth": "Включено (пополнение {date})",
+    "creditsRemainingThisYear": "Включено (пополнение {date})",
     "creditsUsed": "Использовано: {used}",
     "creditsYouveAdded": "Добавленные вами кредиты",
     "currentPlan": "Текущий план",
@@ -4128,6 +4168,7 @@
       "freeRuns": "{count} бесплатный запуск | {count} бесплатных запуска | {count} бесплатных запусков",
       "maxRuntime": "Максимальное время выполнения: {duration}"
     },
+    "fullUsageActivity": "Полная история использования",
     "gpuLabel": "RTX 6000 Pro (96ГБ VRAM)",
     "haveQuestions": "Есть вопросы или интересует корпоративное решение?",
     "inactive": {
@@ -4201,6 +4242,7 @@
       "personal": "Для личного использования",
       "team": "Для команд"
     },
+    "plansAndCredits": "Тарифы и кредиты",
     "plansAndPricing": "Планы и цены",
     "plansForWorkspace": "Тарифы для {workspace}",
     "prepaidCreditsInfo": "Кредиты, приобретённые отдельно и не имеющие срока действия",
@@ -4499,6 +4541,7 @@
     "failedToFetchBalance": "Не удалось получить баланс: {error}",
     "failedToFetchLogs": "Не удалось получить серверные логи",
     "failedToFetchSubscription": "Не удалось получить статус подписки: {error}",
+    "failedToInitializeCameraInfoViewer": "Не удалось инициализировать просмотрщик сведений о камере. Попробуйте перезагрузить страницу.",
     "failedToInitializeLoad3dViewer": "Не удалось инициализировать 3D просмотрщик",
     "failedToInitiateCreditPurchase": "Не удалось начать покупку кредитов: {error}",
     "failedToInitiateSubscription": "Не удалось инициировать подписку: {error}",
@@ -4706,7 +4749,7 @@
     "savedAsWorkflow": "Преобразовано только в рабочий процесс графа узлов"
   },
   "workspace": {
-    "addedToWorkspace": "Вы были добавлены в {workspaceName}",
+    "addedToWorkspace": "Вас добавили в:",
     "inviteAccepted": "Приглашение принято",
     "inviteFailed": "Не удалось принять приглашение",
     "switchFailed": "Не удалось переключить рабочее пространство. Пожалуйста, попробуйте еще раз.",
@@ -4801,7 +4844,7 @@
       "title": "Редактировать детали рабочего пространства"
     },
     "invite": "Пригласить",
-    "inviteLimitReached": "Достигнут лимит в 50 участников",
+    "inviteLimitReached": "Достигнуто максимальное количество участников: {count}",
     "inviteMember": "Пригласить участника",
     "inviteMemberDialog": {
       "failedCount": "Не удалось отправить {count} приглашение. Попробуйте еще раз. | Не удалось отправить {count} приглашения. Попробуйте еще раз. | Не удалось отправить {count} приглашений. Попробуйте еще раз.",
@@ -4854,7 +4897,7 @@
         "warning": "Этот пользователь уже потратил {credits} кредитов. Установка лимита на уровне или ниже текущего использования заблокирует дальнейшие запуски до следующего месяца."
       },
       "header": "Участники",
-      "membersCount": "{count}/50 участников",
+      "membersCount": "Участники: {count} из {maxSeats}",
       "needMoreMembers": "Нужно больше участников?",
       "noInvites": "Нет ожидающих приглашений",
       "noMembers": "Нет участников",
@@ -4978,6 +5021,8 @@
     "personal": "Личное",
     "roleMember": "Участник",
     "roleOwner": "Владелец",
+    "scopeCaption": "Рабочие пространства влияют только на то, какие кредиты вы используете.",
+    "scopeTooltip": "Запуски с использованием партнёрских узлов расходуют кредиты этого рабочего пространства. В отличие от Cloud, каждое рабочее пространство сохраняет результаты в вашу обычную папку вывода.",
     "subscribe": "Оформить подписку",
     "switchWorkspace": "Сменить рабочее пространство"
   },
