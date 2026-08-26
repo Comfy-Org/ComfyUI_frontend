@@ -1,4 +1,6 @@
-import { describe, expect, it, vi } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
@@ -13,8 +15,11 @@ import {
   createNode,
   getWidgetIdForNode,
   isVideoOutput,
+  mapLiveWidgetsById,
   resolveNode
 } from './litegraphUtil'
+
+beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
 
 const mockBringNodeToFront = vi.fn()
 
@@ -176,11 +181,41 @@ describe('getWidgetIdForNode', () => {
     )
   })
 
-  it('can distinguish duplicate widget names on one node without changing the displayed name', () => {
+  it('distinguishes duplicate names across widget types', () => {
     const node = fakeNode(42)
-    expect(getWidgetIdForNode(node, { name: 'UNKNOWN' }, 1)).toBe(
-      widgetId(graphId, toNodeId(42), 'UNKNOWN#1')
+    node.widgets = [
+      { name: 'shared', type: 'number', value: 1, options: {}, y: 0 },
+      { name: 'shared', type: 'text', value: 'two', options: {}, y: 0 }
+    ]
+
+    expect([...mapLiveWidgetsById(node).keys()]).toEqual([
+      widgetId(graphId, toNodeId(42), 'shared'),
+      widgetId(graphId, toNodeId(42), 'shared#1')
+    ])
+    expect(node.widgets.map(({ name }) => name)).toEqual(['shared', 'shared#1'])
+  })
+
+  it('avoids collisions with literal duplicate suffixes', () => {
+    const node = fakeNode(42)
+    node.widgets = [
+      { name: 'shared', type: 'number', value: 1, options: {}, y: 0 },
+      { name: 'shared', type: 'number', value: 2, options: {}, y: 0 },
+      { name: 'shared#1', type: 'number', value: 3, options: {}, y: 0 }
+    ]
+
+    expect([...mapLiveWidgetsById(node).keys()]).toEqual([
+      widgetId(graphId, toNodeId(42), 'shared'),
+      widgetId(graphId, toNodeId(42), 'shared#2'),
+      widgetId(graphId, toNodeId(42), 'shared#1')
+    ])
+    expect(getWidgetIdForNode(node, node.widgets[1])).toBe(
+      widgetId(graphId, toNodeId(42), 'shared#2')
     )
+    expect(node.widgets.map(({ name }) => name)).toEqual([
+      'shared',
+      'shared#2',
+      'shared#1'
+    ])
   })
 
   it('returns undefined when the node has no graph', () => {

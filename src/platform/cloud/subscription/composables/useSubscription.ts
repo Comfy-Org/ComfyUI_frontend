@@ -57,7 +57,7 @@ function useSubscriptionInternal() {
 
   const authStore = useAuthStore()
   const workspaceStore = useTeamWorkspaceStore()
-  const { getAuthHeader, fetchWithCustomerRecovery } = authStore
+  const { getFirebaseAuthHeader, fetchWithCustomerRecovery } = authStore
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
   const { isLoggedIn } = useCurrentUser()
@@ -211,7 +211,7 @@ function useSubscriptionInternal() {
   }
 
   const buildAuthHeaders = async (): Promise<Record<string, string>> => {
-    const authHeader = await getAuthHeader()
+    const authHeader = await getFirebaseAuthHeader()
     if (!authHeader) {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
