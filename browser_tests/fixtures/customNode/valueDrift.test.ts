@@ -121,7 +121,7 @@ it('roundtrip initialization waits for pack-owned ready values', () => {
     pendingRoundtripInitializations(signals, unavailableValues, false)
   ).toEqual([
     'LoadAudioUI (litegraph: expected false, observed undefined)',
-    'SAM3VideoSegmentation (litegraph: expected defined, observed undefined)',
+    'SAM3VideoSegmentation (litegraph: expected inputs absent [positive_points,negative_points,positive_boxes,negative_boxes], observed undefined)',
     'iToolsPaintNode (litegraph: expected 33 widgets, observed undefined)',
     'ImageTransformKJ (litegraph: expected bboxes = "{\\"fillColor\\":\\"#000000\\"}", observed undefined)'
   ])
