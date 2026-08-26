@@ -1200,6 +1200,9 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
     mediaStore.setMissingMedia([createPromotedMissingMediaCandidate(host)])
     const errorStore = useExecutionErrorStore()
     const sourceExecutionId = createNodeExecutionId([host.id, sourceNode.id])
+    if (!sourceExecutionId) {
+      throw new Error('Expected a promoted source execution ID')
+    }
     errorStore.recordNodeErrors({
       [sourceExecutionId]: nodeError([
         validationError('value_not_in_list', 'image', {
