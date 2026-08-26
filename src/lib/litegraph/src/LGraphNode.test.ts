@@ -192,6 +192,39 @@ describe('LGraphNode', () => {
       expect(serialized.size).toEqual([140, 60])
       expect(serialized.flags).toEqual({ collapsed: false })
     })
+
+    test('records the size it was collapsed from, so a resize survives collapsing', () => {
+      const placeholder = createPlaceholder({ flags: { collapsed: false } })
+      new LGraph().add(placeholder)
+      placeholder.setSize([777, 666])
+      placeholder.collapse()
+
+      expect(placeholder.serialize().size).toEqual([777, 666])
+    })
+
+    test('restores the recorded size when expanding, rather than serializing a stale measurement', () => {
+      const placeholder = createPlaceholder({ flags: { collapsed: false } })
+      new LGraph().add(placeholder)
+      placeholder.setSize([777, 666])
+      placeholder.collapse()
+      // Simulate the Vue nodes mode race: `size` still measures the
+      // collapsed card immediately after expanding, before the next
+      // ResizeObserver tick lands the real measurement.
+      placeholder.setSize([80, 30])
+      placeholder.collapse()
+
+      expect(placeholder.serialize().size).toEqual([777, 666])
+    })
+
+    test('does not invent a recorded size on collapse when the file recorded none', () => {
+      const placeholder = createPlaceholder({ flags: { collapsed: false } })
+      delete (placeholder.last_serialization as Partial<ISerialisedNode>).size
+      new LGraph().add(placeholder)
+      placeholder.setSize([777, 666])
+      placeholder.collapse()
+
+      expect(placeholder.serialize()).not.toHaveProperty('size')
+    })
   })
 
   test('should configure inputs correctly', () => {

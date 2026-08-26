@@ -3743,6 +3743,27 @@ export class LGraphNode
     if (!this.collapsible && !force) return
     if (!this.graph) throw new NullGraphError()
     this.graph.incrementVersion()
+
+    // A missing-node placeholder's live size is the only record of it, so it
+    // has to track both directions before the flag flips: Vue nodes mode
+    // measures whichever card is currently rendered, and the other card's
+    // measurement only lands a frame later, so reading `this.size` after the
+    // flip risks the card being left.
+    const recordedSerialization = this.last_serialization
+    if (
+      this.constructor === LGraphNode &&
+      recordedSerialization?.size != null
+    ) {
+      if (this.flags.collapsed) {
+        this.size = recordedSerialization.size
+      } else {
+        this.last_serialization = {
+          ...recordedSerialization,
+          size: [this.size[0], this.size[1]]
+        }
+      }
+    }
+
     this.flags.collapsed = !this.flags.collapsed
     this.setDirtyCanvas(true, true)
   }
