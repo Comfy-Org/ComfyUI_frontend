@@ -4952,6 +4952,10 @@ const translations = {
     en: 'Category pages that match how people actually search.',
     'zh-CN': '符合人们实际搜索方式的分类页面。'
   },
+  'models.explore.tasks.viewAll': {
+    en: 'VIEW ALL USE CASES',
+    'zh-CN': '查看所有用例'
+  },
   'models.explore.access.heading': {
     en: 'Choose how you access models',
     'zh-CN': '选择模型访问方式'

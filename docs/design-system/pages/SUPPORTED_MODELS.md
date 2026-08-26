@@ -191,6 +191,8 @@ and then restore the page element.
 - Search and category selection query the build-generated catalog in-browser.
 - Task-tile media is decorative and hidden from assistive technology because
   the adjacent linked title supplies its accessible name.
+- The task section's governed outline action links to the canonical Comfy
+  workflows use-case index and remains visible at narrow viewport widths.
 - Access, conversion, and FAQ actions use destinations and behavior already
   owned by existing website components.
 - Family-row icon links use reviewed canonical Comfy destinations. They are the
