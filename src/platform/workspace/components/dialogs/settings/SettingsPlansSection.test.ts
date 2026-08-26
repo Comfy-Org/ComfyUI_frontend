@@ -203,6 +203,22 @@ describe('SettingsPlansSection — API is the source of truth', () => {
     expect(emitted().retry).toBeTruthy()
   })
 
+  it('surfaces a retryable failure over cached cards on a refetch error', async () => {
+    const { emitted } = renderSection({ error: 'network down' })
+
+    // The cached catalog stays on screen rather than flashing to empty...
+    expect(screen.getByText('$20')).toBeTruthy()
+    // ...but the failure is stated and retryable, not silent.
+    expect(
+      screen.getByText(
+        "We couldn't refresh your plan details. These prices may be out of date."
+      )
+    ).toBeTruthy()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
+    expect(emitted().retry).toBeTruthy()
+  })
+
   it('shows a spinner and no prices while loading', () => {
     renderSection({ isLoading: true, catalogPlans: [], teamCreditStops: null })
 

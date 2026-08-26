@@ -2672,9 +2672,7 @@
     "creditsPerMonth": "{credits} credits per month",
     "comingSharedWorkflows": "Shared workflows & assets",
     "comingProjects": "Projects",
-    "enterpriseCopy": "Need more members? Looking for more flexibility or custom features?",
-    "contactUs": "Contact us",
-    "checkoutCaption": "Checkout happens right here: payment details handled securely by Stripe. Prefer no plan? Keep topping up, anytime."
+    "enterpriseCopy": "Need more members? Looking for more flexibility or custom features?"
   },
   "credits": {
     "activity": "Activity",
@@ -2891,6 +2889,7 @@
     "whatsIncluded": "What's included:",
     "planLoadError": "We couldn't load your plan details.",
     "planLoadErrorRetry": "Try again",
+    "planLoadErrorStale": "We couldn't refresh your plan details. These prices may be out of date.",
     "teamPlanName": "Team",
     "teamPlanIncludes": "Your plan includes everything in {plan}, plus:",
     "inactiveTeamTitle": "Inactive team subscription",

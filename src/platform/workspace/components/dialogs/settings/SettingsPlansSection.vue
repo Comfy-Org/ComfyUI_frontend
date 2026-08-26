@@ -30,6 +30,28 @@
       </div>
     </div>
 
+    <!-- A refetch that failed leaves the previous catalog on screen; keep it
+         (re-rendering into an empty section would be worse) but say so and
+         offer the retry, or the failure is invisible. -->
+    <div
+      v-if="hasStaleError"
+      class="flex flex-wrap items-center gap-3 rounded-2xl border border-interface-stroke px-4 py-3"
+      role="alert"
+    >
+      <div class="flex min-w-0 items-center gap-2 text-text-secondary">
+        <i class="pi pi-exclamation-circle text-danger" aria-hidden="true" />
+        <span class="text-sm">{{ t('subscription.planLoadErrorStale') }}</span>
+      </div>
+      <Button
+        variant="secondary"
+        size="sm"
+        class="ml-auto rounded-lg px-4 text-sm font-normal"
+        @click="emit('retry')"
+      >
+        {{ t('subscription.planLoadErrorRetry') }}
+      </Button>
+    </div>
+
     <!-- Loading: never render a frontend-authored price while the catalog is in
          flight; a spinner stands in for the offer. -->
     <div
@@ -256,7 +278,7 @@
           </span>
         </div>
         <Button variant="secondary" size="lg" disabled>
-          {{ t('settingsPlans.contactUs') }}
+          {{ t('subscription.contactUs') }}
         </Button>
       </div>
     </template>
@@ -384,6 +406,13 @@ const personalCards = computed<PersonalCard[]>(() =>
       }
     ]
   })
+)
+
+// An error alongside a non-empty catalog means a refetch failed over cached
+// rows; the unavailable block never renders then, so the banner is the only
+// place that failure can surface.
+const hasStaleError = computed(
+  () => Boolean(error) && personalCards.value.length > 0
 )
 
 // Team stops come from the API only — no TEAM_PLAN_CREDIT_STOPS fallback (D3).
