@@ -32,6 +32,8 @@ export interface PerfMeasurement {
   frameDurationMs: number
   p95FrameDurationMs: number
   allFrameDurationsMs: number[]
+  canvasForegroundDraws?: number
+  canvasBackgroundDraws?: number
 }
 
 export class PerformanceHelper {

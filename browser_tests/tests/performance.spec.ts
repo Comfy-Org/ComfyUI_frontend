@@ -1,10 +1,14 @@
-import { expect } from '@playwright/test'
+import { expect, mergeTests } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import {
   logMeasurement,
   recordMeasurement
 } from '@e2e/fixtures/utils/perfReporter'
+import { webSocketFixture } from '@e2e/fixtures/ws'
+
+const executionPerfTest = mergeTests(test, webSocketFixture)
 
 test.describe('Performance', { tag: ['@perf'] }, () => {
   test('canvas idle style recalculations', async ({ comfyPage }) => {
@@ -462,4 +466,118 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
       `Workflow execution: ${m.durationMs.toFixed(0)}ms total, ${m.layouts} layouts, TBT=${m.totalBlockingTimeMs.toFixed(0)}ms`
     )
   })
+})
+
+executionPerfTest.describe('Execution performance', { tag: ['@perf'] }, () => {
+  executionPerfTest(
+    'progress canvas redraws',
+    async ({ comfyPage, getWebSocket }) => {
+      await comfyPage.workflow.loadWorkflow('large-graph-workflow')
+      const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+      const jobId = await execution.run()
+      const nodeId = String(
+        await comfyPage.page.evaluate(() => window.app?.graph.nodes[0]?.id)
+      )
+
+      await comfyPage.page.evaluate(() => {
+        const win = window as unknown as Record<string, unknown>
+        const canvas = window.app?.canvas
+        if (!canvas) throw new Error('Canvas is not available')
+        const api = window.app?.api
+        if (!api) throw new Error('API event target is not available')
+        const state = {
+          foreground: 0,
+          background: 0,
+          progressEvents: 0,
+          reset() {
+            state.foreground = 0
+            state.background = 0
+            state.progressEvents = 0
+          },
+          cleanup() {
+            canvas.drawFrontCanvas = drawFrontCanvas
+            canvas.drawBackCanvas = drawBackCanvas
+            api.removeEventListener('progress', onProgress)
+          }
+        }
+        const drawFrontCanvas = canvas.drawFrontCanvas.bind(canvas)
+        const drawBackCanvas = canvas.drawBackCanvas.bind(canvas)
+        const onProgress = () => state.progressEvents++
+        canvas.drawFrontCanvas = () => {
+          state.foreground++
+          drawFrontCanvas()
+        }
+        canvas.drawBackCanvas = () => {
+          state.background++
+          drawBackCanvas()
+        }
+        api.addEventListener('progress', onProgress)
+        win.__progressCanvasDraws = state
+      })
+
+      execution.executionStart(jobId)
+      execution.executing(jobId, nodeId)
+      await comfyPage.nextFrame()
+      await comfyPage.page.evaluate(() => {
+        const state = (window as unknown as Record<string, unknown>)
+          .__progressCanvasDraws as { reset?: () => void } | undefined
+        if (!state?.reset)
+          throw new Error('Canvas draw counters are unavailable')
+        state.reset()
+      })
+      await comfyPage.perf.startMeasuring()
+
+      for (let value = 1; value <= 60; value++) {
+        execution.progress(jobId, nodeId, value, 60)
+        await comfyPage.nextFrame()
+      }
+
+      const measurement = await comfyPage.perf.stopMeasuring(
+        'progress-canvas-redraws'
+      )
+      const draws = await comfyPage.page.evaluate(() => {
+        const state = (window as unknown as Record<string, unknown>)
+          .__progressCanvasDraws
+        if (
+          !state ||
+          typeof state !== 'object' ||
+          !('foreground' in state) ||
+          !('background' in state) ||
+          !('progressEvents' in state) ||
+          !('cleanup' in state)
+        ) {
+          throw new Error('Canvas draw counters are unavailable')
+        }
+        const counters = state as {
+          foreground: number
+          background: number
+          progressEvents: number
+          cleanup: () => void
+        }
+        counters.cleanup()
+        delete (window as unknown as Record<string, unknown>)
+          .__progressCanvasDraws
+        return {
+          foreground: counters.foreground,
+          background: counters.background,
+          progressEvents: counters.progressEvents
+        }
+      })
+
+      expect(draws.progressEvents).toBe(60)
+      expect(draws.background).toBe(0)
+      expect(draws.foreground).toBe(60)
+
+      const result = {
+        ...measurement,
+        canvasForegroundDraws: draws.foreground,
+        canvasBackgroundDraws: draws.background
+      }
+      recordMeasurement(result)
+      logMeasurement('Progress canvas redraws', result, [
+        'taskDurationMs',
+        'scriptDurationMs'
+      ])
+    }
+  )
 })

@@ -31,6 +31,8 @@ interface PerfMeasurement {
   frameDurationMs: number
   p95FrameDurationMs: number
   allFrameDurationsMs?: number[]
+  canvasForegroundDraws?: number
+  canvasBackgroundDraws?: number
 }
 
 interface PerfReport {
@@ -57,6 +59,8 @@ type MetricKey =
   | 'frameDurationMs'
   | 'p95FrameDurationMs'
   | 'heapUsedBytes'
+  | 'canvasForegroundDraws'
+  | 'canvasBackgroundDraws'
 
 interface MetricDef {
   key: MetricKey
@@ -83,6 +87,18 @@ const REPORTED_METRICS: MetricDef[] = [
     minAbsDelta: 5
   },
   { key: 'taskDurationMs', label: 'task duration', unit: 'ms' },
+  {
+    key: 'canvasForegroundDraws',
+    label: 'canvas foreground draws',
+    unit: '',
+    minAbsDelta: 5
+  },
+  {
+    key: 'canvasBackgroundDraws',
+    label: 'canvas background draws',
+    unit: '',
+    minAbsDelta: 5
+  },
   { key: 'scriptDurationMs', label: 'script duration', unit: 'ms' },
   { key: 'totalBlockingTimeMs', label: 'TBT', unit: 'ms' },
   { key: 'heapUsedBytes', label: 'heap used', unit: 'bytes' },
@@ -153,9 +169,8 @@ function getHistoricalTimeSeries(
     const group = groupByName(r.measurements)
     const samples = group.get(testName)
     if (samples) {
-      values.push(
-        samples.reduce((sum, s) => sum + s[metric], 0) / samples.length
-      )
+      const mean = meanMetric(samples, metric)
+      if (mean !== null) values.push(mean)
     }
   }
   return values
@@ -182,7 +197,7 @@ function getMetricValue(
   key: MetricKey
 ): number | null {
   const value = sample[key]
-  return Number.isFinite(value) ? value : null
+  return typeof value === 'number' && Number.isFinite(value) ? value : null
 }
 
 function meanMetric(samples: PerfMeasurement[], key: MetricKey): number | null {
