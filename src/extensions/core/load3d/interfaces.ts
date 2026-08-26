@@ -38,6 +38,7 @@ export interface CameraState {
   cameraType: CameraType
   quaternion?: CameraQuaternion
   useCustomUp?: boolean
+  customUp?: { x: number; y: number; z: number }
   fov?: number
   aspect?: number
   near?: number

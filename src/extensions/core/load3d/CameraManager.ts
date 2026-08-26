@@ -162,7 +162,14 @@ export class CameraManager implements CameraManagerInterface {
           : (this.activeCamera as THREE.PerspectiveCamera).zoom,
       cameraType: this.getCurrentCameraType(),
       quaternion: { x, y, z, w },
-      ...(this.customUp !== null && { useCustomUp: this.usingCustomUp }),
+      ...(this.customUp !== null && {
+        useCustomUp: this.usingCustomUp,
+        customUp: {
+          x: this.customUp.x,
+          y: this.customUp.y,
+          z: this.customUp.z
+        }
+      }),
       fov: this.perspectiveCamera.fov,
       aspect: this.perspectiveCamera.aspect,
       near: activeCamera.near,
@@ -208,7 +215,17 @@ export class CameraManager implements CameraManagerInterface {
         state.quaternion.w
       )
       if (q.lengthSq() === 0) q.identity()
-      const appliedUp = new THREE.Vector3(0, 1, 0).applyQuaternion(q)
+      const storedUp = state.customUp
+        ? new THREE.Vector3(
+            state.customUp.x,
+            state.customUp.y,
+            state.customUp.z
+          )
+        : null
+      const appliedUp =
+        storedUp && storedUp.lengthSq() > 0
+          ? storedUp
+          : new THREE.Vector3(0, 1, 0).applyQuaternion(q)
       this.customUp = appliedUp.clone()
       this.usingCustomUp = state.useCustomUp
       this.activeCamera.up.copy(

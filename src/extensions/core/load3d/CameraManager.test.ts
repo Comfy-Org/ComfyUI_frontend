@@ -360,6 +360,33 @@ describe('CameraManager', () => {
       expect(manager.activeCamera.up.toArray()).toEqual([0, 1, 0])
     })
 
+    it('clears a captured custom up when a later state omits the flag', () => {
+      manager.setCameraState(rolledState())
+      events.emitEvent.mockClear()
+
+      const { useCustomUp: _useCustomUp, ...plainState } = rolledState()
+      manager.setCameraState(plainState)
+
+      expect(manager.activeCamera.up.toArray()).toEqual([0, 1, 0])
+      expect(events.emitEvent).toHaveBeenCalledWith('cameraUpStateChange', {
+        hasCustomUp: false,
+        usingCustomUp: false
+      })
+    })
+
+    it('round-trips the captured up through persistence after toggling custom up off', () => {
+      manager.setCameraState(rolledState())
+      manager.setUseCustomUp(false)
+
+      const saved = manager.getCameraState()
+      manager.setCameraState(saved)
+      manager.setUseCustomUp(true)
+
+      expect(saved.customUp?.x).toBeCloseTo(-1)
+      expect(manager.activeCamera.up.x).toBeCloseTo(-1)
+      expect(manager.activeCamera.up.y).toBeCloseTo(0)
+    })
+
     it('restores a state saved after toggling custom up off with it still off', () => {
       manager.setCameraState(rolledState())
       manager.setUseCustomUp(false)
