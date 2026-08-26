@@ -154,7 +154,7 @@ describe('DomWidgets positioning', () => {
     expect(firstState.visible).toBe(true)
     expect(firstState.zIndex).toBe(0)
     expect(secondState.visible).toBe(false)
-    expect(firstOrderBuild).toHaveBeenCalledOnce()
+    expect(firstOrderBuild).not.toHaveBeenCalled()
     expect(secondOrderBuild).not.toHaveBeenCalled()
 
     canvas.graph = secondGraph
@@ -163,8 +163,8 @@ describe('DomWidgets positioning', () => {
     expect(firstState.visible).toBe(false)
     expect(secondState.visible).toBe(true)
     expect(secondState.zIndex).toBe(1)
-    expect(firstOrderBuild).toHaveBeenCalledOnce()
-    expect(secondOrderBuild).toHaveBeenCalledOnce()
+    expect(firstOrderBuild).not.toHaveBeenCalled()
+    expect(secondOrderBuild).not.toHaveBeenCalled()
   })
 
   it('hides an inactive widget', () => {
@@ -290,10 +290,12 @@ describe('DomWidgets deterministic update matrix', () => {
 
   async function measureUpdate({
     count,
+    graphNodeCount = count,
     update,
     widgetsVisible
   }: {
     count: number
+    graphNodeCount?: number
     update: 'node-geometry' | 'node-layout' | 'steady' | 'zoom'
     widgetsVisible: boolean
   }): Promise<WidgetUpdateCounters> {
@@ -302,8 +304,11 @@ describe('DomWidgets deterministic update matrix', () => {
     const graph = new LGraph()
     const isVisible = vi.fn(() => widgetsVisible)
 
+    const nodes = Array.from({ length: graphNodeCount }, (_, index) =>
+      createNode(graph, index + 1, `node-${index}`, [index, index])
+    )
     for (let index = 0; index < count; index++) {
-      const node = createNode(graph, index + 1, `node-${index}`, [index, index])
+      const node = nodes[index]
       const widget = createWidget(`widget-${index}`, node)
       widget.isVisible = isVisible
       domWidgetStore.registerWidget(widget)
@@ -400,8 +405,8 @@ describe('DomWidgets deterministic update matrix', () => {
         sizeChanges: 0,
         visibleChanges: 0,
         zIndexChanges: 0,
-        zIndexOrderBuilds: count === 0 ? 0 : 1,
-        zIndexLookups: 0
+        zIndexOrderBuilds: count > 3 ? 1 : 0,
+        zIndexLookups: Math.min(count, 3)
       })
     }
   )
@@ -453,8 +458,8 @@ describe('DomWidgets deterministic update matrix', () => {
 
       expect(result.positionChanges).toBe(count)
       expect(result.sizeChanges).toBe(0)
-      expect(result.zIndexOrderBuilds).toBe(count === 0 ? 0 : 1)
-      expect(result.zIndexLookups).toBe(0)
+      expect(result.zIndexOrderBuilds).toBe(count > 3 ? 1 : 0)
+      expect(result.zIndexLookups).toBe(Math.min(count, 3))
     }
   )
 
@@ -471,4 +476,16 @@ describe('DomWidgets deterministic update matrix', () => {
       expect(result.sizeChanges).toBe(0)
     }
   )
+
+  it('retains sparse lookup for one visible widget in a large graph', async () => {
+    const result = await measureUpdate({
+      count: 1,
+      graphNodeCount: 1_000,
+      update: 'steady',
+      widgetsVisible: true
+    })
+
+    expect(result.zIndexOrderBuilds).toBe(0)
+    expect(result.zIndexLookups).toBe(1)
+  })
 })

@@ -24,6 +24,8 @@ import { findFirstNode } from '@/lib/litegraph/src/utils/collections'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 
+const SPARSE_WIDGET_LOOKUP_LIMIT = 3
+
 const domWidgetStore = useDomWidgetStore()
 
 const widgetStates = computed(() => [...domWidgetStore.widgetStates.values()])
@@ -79,6 +81,7 @@ const updateWidgets = () => {
   lastSelected.height = selectedArea?.[3] ?? 0
 
   let nodeOrder: ReturnType<typeof createDomWidgetNodeOrder> | undefined
+  let visibleWidgetCount = 0
   for (const widgetState of widgetStates.value) {
     const widget = widgetState.widget
 
@@ -119,7 +122,8 @@ const updateWidgets = () => {
         widgetState.size = [newWidth, newHeight]
       }
 
-      if (currentGraph) {
+      visibleWidgetCount++
+      if (currentGraph && visibleWidgetCount > SPARSE_WIDGET_LOOKUP_LIMIT) {
         nodeOrder ??= createDomWidgetNodeOrder(currentGraph.nodes)
       }
       widgetState.zIndex = getDomWidgetZIndex(posNode, currentGraph, nodeOrder)
