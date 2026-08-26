@@ -3,7 +3,7 @@ export interface CdpPerformanceMetric {
   value: number
 }
 
-export const TASK_COMPONENT_METRICS = [
+const TASK_COMPONENT_METRICS = [
   'ScriptDuration',
   'V8CompileDuration',
   'RecalcStyleDuration',
@@ -11,8 +11,6 @@ export const TASK_COMPONENT_METRICS = [
   'DevToolsCommandDuration',
   'TaskOtherDuration'
 ] as const
-
-export type TaskComponentMetric = (typeof TASK_COMPONENT_METRICS)[number]
 
 export interface CdpTaskAccounting {
   taskOtherDurationMs: number | null
