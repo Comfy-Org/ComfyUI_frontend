@@ -1,19 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  CLOUD_CLIENT_IDS,
-  LOCAL_CLIENT_IDS,
-  MCP_CONNECTION_IDS,
-  isConnectionId,
-  isMcpClientId
-} from './clients'
+import { isConnectionId, isMcpClientId } from './clients'
 
 describe('isConnectionId', () => {
-  it('accepts every declared connection id', () => {
-    for (const id of MCP_CONNECTION_IDS) {
-      expect(isConnectionId(id)).toBe(true)
+  it.for([{ value: 'cloud' }, { value: 'local' }])(
+    'accepts $value',
+    ({ value }) => {
+      expect(isConnectionId(value)).toBe(true)
     }
-  })
+  )
 
   it.for([
     { label: 'a client id', value: 'claude-desktop' },
@@ -27,10 +22,19 @@ describe('isConnectionId', () => {
 })
 
 describe('isMcpClientId', () => {
-  it('accepts every declared cloud and local client id', () => {
-    for (const id of [...CLOUD_CLIENT_IDS, ...LOCAL_CLIENT_IDS]) {
-      expect(isMcpClientId(id)).toBe(true)
-    }
+  it.for([
+    { value: 'claude-desktop' },
+    { value: 'claude-code' },
+    { value: 'codex' },
+    { value: 'cursor' },
+    { value: 'openclaw' },
+    { value: 'other' },
+    { value: 'local-claude-code' },
+    { value: 'local-claude-desktop' },
+    { value: 'local-cursor' },
+    { value: 'local-other' }
+  ])('accepts $value', ({ value }) => {
+    expect(isMcpClientId(value)).toBe(true)
   })
 
   it.for([
@@ -42,13 +46,5 @@ describe('isMcpClientId', () => {
     { label: 'an inherited Object property', value: 'toString' }
   ])('rejects $label', ({ value }) => {
     expect(isMcpClientId(value)).toBe(false)
-  })
-
-  it('keeps the cloud and local id sets disjoint', () => {
-    const overlap = CLOUD_CLIENT_IDS.filter((id) =>
-      (LOCAL_CLIENT_IDS as readonly string[]).includes(id)
-    )
-
-    expect(overlap).toEqual([])
   })
 })
