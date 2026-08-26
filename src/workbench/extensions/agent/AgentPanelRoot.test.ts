@@ -312,6 +312,55 @@ vi.mock(
   })
 )
 
+const paywallPermissions = vi.hoisted(() => ({
+  canTopUp: true,
+  canManageSubscription: true
+}))
+const paywallBilling = vi.hoisted(() => ({
+  tier: 'STANDARD' as string | null,
+  plans: [
+    {
+      tier: 'CREATOR',
+      duration: 'MONTHLY',
+      slug: 'creator-monthly',
+      price_cents: 3500,
+      credits_cents: 7400,
+      max_seats: 5,
+      availability: { available: true },
+      seat_summary: {
+        seat_count: 1,
+        total_cost_cents: 3500,
+        total_credits_cents: 7400
+      }
+    }
+  ],
+  teamCreditStops: null,
+  currentTeamCreditStop: null
+}))
+
+vi.mock('@/platform/workspace/composables/useWorkspaceUI', async () => {
+  const { computed } = await import('vue')
+  return {
+    useWorkspaceUI: () => ({
+      permissions: computed(() => paywallPermissions)
+    })
+  }
+})
+
+vi.mock('@/composables/billing/useBillingContext', async () => {
+  const { computed } = await import('vue')
+  return {
+    useBillingContext: () => ({
+      tier: computed(() => paywallBilling.tier),
+      plans: computed(() => paywallBilling.plans),
+      teamCreditStops: computed(() => paywallBilling.teamCreditStops),
+      currentTeamCreditStop: computed(
+        () => paywallBilling.currentTeamCreditStop
+      )
+    })
+  }
+})
+
 import type { TurnId } from './schemas/agentApiSchema'
 import { zAgentWsEvent } from './schemas/agentApiSchema'
 import { MAX_ATTACHMENT_BYTES } from './composables/agent/useAttachment'
@@ -347,6 +396,13 @@ beforeEach(() => {
   workflowService.openWorkflow.mockClear()
   focusNodeInstance.mockReset()
   socketSend.mockReset()
+  paywallPermissions.canTopUp = true
+  paywallPermissions.canManageSubscription = true
+  paywallBilling.tier = 'STANDARD'
+  paywallBilling.plans[0]!.tier = 'CREATOR'
+  paywallBilling.plans[0]!.availability.available = true
+  paywallBilling.teamCreditStops = null
+  paywallBilling.currentTeamCreditStop = null
 })
 
 afterEach(() => {
@@ -425,6 +481,46 @@ describe('AgentPanelRoot paywall actions', () => {
       ['credits'],
       ['subscription']
     ])
+  })
+
+  it('hides purchase actions from a Team member without billing permissions', async () => {
+    paywallPermissions.canTopUp = false
+    paywallPermissions.canManageSubscription = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentConversationStore().messages.push({
+      id: 'msg-paywall' as TurnId,
+      role: 'assistant',
+      parts: [{ type: 'paywall' }],
+      streaming: false,
+      thinking: false
+    })
+
+    await screen.findByText('Usage limit reached')
+    expect(
+      screen.queryByRole('button', { name: 'Add credits' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Upgrade subscription' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('keeps Add credits but hides Upgrade at the highest personal tier', async () => {
+    paywallBilling.tier = 'PRO'
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentConversationStore().messages.push({
+      id: 'msg-paywall' as TurnId,
+      role: 'assistant',
+      parts: [{ type: 'paywall' }],
+      streaming: false,
+      thinking: false
+    })
+
+    expect(
+      await screen.findByRole('button', { name: 'Add credits' })
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Upgrade subscription' })
+    ).not.toBeInTheDocument()
   })
 })
 
