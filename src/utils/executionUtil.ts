@@ -4,8 +4,8 @@ import {
 } from '@/platform/nodeApi/defsRegistry'
 import { whileEmbeddingWorkflow } from '@/platform/nodeApi/serializeContext'
 import {
-  resolveFrontendNodes,
-  resolveSuppliedInputs
+  resolveFrontendNodesAsync,
+  resolveSuppliedInputsAsync
 } from '@/platform/nodeApi/resolution'
 import type { ResolvedSource } from '@/platform/nodeApi/resolution'
 
@@ -176,8 +176,16 @@ export const graphToPrompt = async (
   const resolutions = new Map<string, ResolvedSource>()
   const supplied = new Map<string, ResolvedSource>()
   for (const [prefix, scope] of executionScopes(graph)) {
-    const scopeResolutions = resolveFrontendNodes(scope, frontendResolverMap())
-    const scopeSupplied = resolveSuppliedInputs(
+    // The async entries: a sandboxed pack's resolver or supplier answers from
+    // a worker, and the prompt is the one place that answer MUST be awaited —
+    // an unawaited relay would serialize a node the backend has never heard
+    // of. This path is already async; the synchronous readers degrade to
+    // omitted, loudly, in resolution.ts.
+    const scopeResolutions = await resolveFrontendNodesAsync(
+      scope,
+      frontendResolverMap()
+    )
+    const scopeSupplied = await resolveSuppliedInputsAsync(
       scope,
       frontendSupplierMap(),
       scopeResolutions
