@@ -1,0 +1,101 @@
+---
+import { codeToTokens } from 'shiki'
+import type { BundledLanguage } from 'shiki'
+
+import HeroCode01 from '../../components/blocks/HeroCode01.vue'
+import CodePanel from '../../components/common/CodePanel.vue'
+import type { CodeEnv } from '../../components/common/CodePanel.vue'
+import {
+  developersCtas,
+  heroSnippetLanguages,
+  heroSnippets
+} from '../../data/developers'
+import type { HeroSnippetEnv, HeroSnippetLang } from '../../data/developers'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
+
+interface Props {
+  locale: Locale
+}
+
+const { locale } = Astro.props
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+}
+
+/**
+ * Highlight at build time and emit only the inner markup — CodePanel owns the
+ * surrounding `<pre>`. Running here (Astro frontmatter) keeps Shiki on the
+ * server; no highlighter reaches the client bundle.
+ *
+ * `one-dark-pro` is the palette the Figma panel was drawn against.
+ */
+async function highlight(
+  code: string,
+  lang: BundledLanguage
+): Promise<string> {
+  const { tokens } = await codeToTokens(code, {
+    lang,
+    theme: 'one-dark-pro'
+  })
+  return tokens
+    .map((line) =>
+      line
+        .map(
+          (token) =>
+            `<span style="color:${token.color}">${escapeHtml(token.content)}</span>`
+        )
+        .join('')
+    )
+    .join('\n')
+}
+
+const envIds: HeroSnippetEnv[] = ['cloud', 'local', 'serverless']
+const langIds = Object.keys(heroSnippetLanguages) as HeroSnippetLang[]
+
+const envs: CodeEnv[] = await Promise.all(
+  envIds.map(async (envId) => ({
+    id: envId,
+    label: t(`developers.hero.panel.env.${envId}`, locale),
+    languages: await Promise.all(
+      langIds.map(async (langId) => {
+        const code = heroSnippets[envId][langId]
+        return {
+          id: langId,
+          label: heroSnippetLanguages[langId].label,
+          code,
+          html: await highlight(code, heroSnippetLanguages[langId].shikiLang)
+        }
+      })
+    )
+  }))
+)
+---
+
+<HeroCode01
+  title={t('developers.hero.title', locale)}
+  lead={t('developers.hero.lead', locale)}
+  primaryCta={{
+    label: t('developers.hero.ctaPrimary', locale),
+    href: developersCtas.platform
+  }}
+  secondaryCta={{
+    label: t('developers.hero.ctaSecondary', locale),
+    href: developersCtas.docs
+  }}
+  footnote={t('developers.hero.footnote', locale)}
+>
+  <CodePanel
+    slot="panel"
+    client:load
+    title={t('developers.hero.panel.title', locale)}
+    subtitle={t('developers.hero.panel.subtitle', locale)}
+    envs={envs}
+    copyLabel={t('ui.copy', locale)}
+    copiedLabel={t('ui.copied', locale)}
+  />
+</HeroCode01>

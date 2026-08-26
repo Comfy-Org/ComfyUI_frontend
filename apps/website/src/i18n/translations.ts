@@ -2120,6 +2120,49 @@ const translations = {
     'zh-CN': '开发者平台'
   },
 
+  // Developers page – Hero
+  'developers.hero.title': {
+    en: 'Developer platform',
+    'zh-CN': '开发者平台'
+  },
+  'developers.hero.lead': {
+    en: 'Take the ComfyUI workflow that already works on your machine and run it as an API that scales. Same build, anywhere. Run it on Comfy Cloud or your own serverless deployment, call it from the SDK, and let us manage the build if your team needs it governed.',
+    'zh-CN':
+      '把在你机器上已经跑通的 ComfyUI 工作流，作为可扩展的 API 运行。同一套构建，随处可用。在 Comfy Cloud 或你自己的无服务器部署上运行，通过 SDK 调用；如果团队需要受控管理，也可以交由我们托管构建。'
+  },
+  'developers.hero.ctaPrimary': {
+    en: 'Try developer platform',
+    'zh-CN': '试用开发者平台'
+  },
+  'developers.hero.ctaSecondary': {
+    en: 'Read the doc',
+    'zh-CN': '阅读文档'
+  },
+  'developers.hero.footnote': {
+    en: 'Beta access is going to teams already running real workloads.',
+    'zh-CN': '内测名额优先提供给已经在运行真实工作负载的团队。'
+  },
+  'developers.hero.panel.title': {
+    en: 'Make your first call',
+    'zh-CN': '发起你的第一次调用'
+  },
+  'developers.hero.panel.subtitle': {
+    en: 'Uses the Comfy SDK. The cURL tab is the same call over raw HTTP.',
+    'zh-CN': '使用 Comfy SDK。cURL 标签页是同一次调用的原始 HTTP 形式。'
+  },
+  'developers.hero.panel.env.cloud': {
+    en: 'Comfy Cloud',
+    'zh-CN': 'Comfy Cloud'
+  },
+  'developers.hero.panel.env.local': {
+    en: 'Local',
+    'zh-CN': '本地'
+  },
+  'developers.hero.panel.env.serverless': {
+    en: 'Serverless',
+    'zh-CN': '无服务器'
+  },
+
   // Developers page – PricingSection
   'developers.pricing.title': {
     en: 'Pricing Plan',

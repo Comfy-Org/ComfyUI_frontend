@@ -69,9 +69,6 @@ const config: KnipConfig = {
     // Marketing media tooling — adopted by pages in a follow-up PR
     'apps/website/src/components/common/SiteVideo.vue',
     'apps/website/src/utils/marketingImage.ts',
-    // Pending integration: /developers CTA targets, consumed as the section
-    // tickets replace the walking-skeleton placeholders
-    'apps/website/src/data/developers.ts',
     // Animated pill button — retained for reuse after the learning directory
     // switched to ButtonPill; no current consumer
     'apps/website/src/components/ui/button-mask/**',

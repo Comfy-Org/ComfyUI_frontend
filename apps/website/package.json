@@ -36,6 +36,7 @@
     "lenis": "catalog:",
     "posthog-js": "catalog:",
     "reka-ui": "catalog:",
+    "shiki": "catalog:",
     "three": "catalog:",
     "vue": "catalog:",
     "zod": "catalog:"

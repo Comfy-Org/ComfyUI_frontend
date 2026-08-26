@@ -98,6 +98,17 @@
   --color-nav-cta: #f2ff59;
   --color-page-bg: #211927;
   --color-page-fg: #ffffff;
+  /* Code-surface tokens. A code panel is a neutral editor surface, so these
+     are deliberately not the site's plum-tinted ink — they stay put whatever
+     [data-page-theme] is in force. Source: Figma node 12335:54559. */
+  --color-code-bg: #1d1d1d;
+  --color-code-surface: #151515;
+  --color-code-border: #2a2a2a;
+  --color-code-divider: #2e2e2e;
+  --color-code-fg: #f2f2f2;
+  --color-code-body: #cfcfcf;
+  --color-code-muted: #9b9b9b;
+  --color-code-subtle: #6b6b6b;
   --font-formula: 'PP Formula', sans-serif;
   --font-formula-narrow: 'PP Formula Narrow', sans-serif;
   --text-2xs: 0.6875rem;
