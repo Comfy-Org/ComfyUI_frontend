@@ -109,7 +109,7 @@
     "invalidAssetDetail": "دارایی انتخاب‌شده قابل اعتبارسنجی نیست. لطفاً دوباره تلاش کنید.",
     "invalidFilename": "نام فایل نامعتبر",
     "invalidFilenameDetail": "نام فایل دارایی قابل شناسایی نیست. لطفاً دوباره تلاش کنید.",
-    "jobId": "شناسه کار: {jobId}",
+    "jobId": "شناسه کار",
     "listView": "نمای فهرست",
     "loadingModels": "در حال بارگذاری {type}...",
     "maxFileSize": "حداکثر اندازه فایل: {size}",
@@ -235,13 +235,15 @@
       "contactSupport": "برای حذف حساب کاربری خود، لطفاً با {email} تماس بگیرید."
     },
     "errors": {
-      "auth/cancelled-popup-request": "ورود لغو شد. لطفاً دوباره تلاش کنید.",
+      "auth/account-exists-with-different-credential": "حسابی با این نشانی ایمیل از قبل وجود دارد، اما از روش ورود دیگری استفاده می‌کند. لطفاً به همان روشی که ابتدا استفاده کردید وارد شوید.",
+      "auth/cancelled-popup-request": "پنجره ورود دیگری از قبل باز بود، بنابراین این پنجره لغو شد. لطفاً دوباره تلاش کنید.",
       "auth/email-already-in-use": "حسابی با این ایمیل قبلاً وجود دارد. لطفاً وارد شوید.",
       "auth/invalid-credential": "اطلاعات ورود نامعتبر است. لطفاً ایمیل و رمز عبور خود را بررسی کنید.",
       "auth/invalid-email": "لطفاً یک آدرس ایمیل معتبر وارد کنید.",
       "auth/network-request-failed": "خطای شبکه. لطفاً اتصال خود را بررسی کرده و دوباره تلاش کنید.",
       "auth/operation-not-allowed": "این روش ورود در حال حاضر پشتیبانی نمی‌شود.",
-      "auth/popup-closed-by-user": "ورود لغو شد. لطفاً دوباره تلاش کنید.",
+      "auth/popup-blocked": "مرورگر شما پنجره ورود را مسدود کرد. لطفاً پنجره‌های بازشو را برای این سایت مجاز کنید و دوباره تلاش کنید.",
+      "auth/popup-closed-by-user": "پنجره ورود پیش از تکمیل ورود بسته شد. لطفاً دوباره تلاش کنید.",
       "auth/too-many-requests": "تعداد دفعات تلاش برای ورود بیش از حد مجاز است. لطفاً کمی صبر کنید و دوباره تلاش کنید.",
       "auth/user-disabled": "این حساب غیرفعال شده است. لطفاً با پشتیبانی تماس بگیرید.",
       "auth/user-not-found": "حسابی با این ایمیل یافت نشد. مایل به ایجاد حساب جدید هستید؟",
@@ -845,6 +847,7 @@
       "message": "اعتبارها یکپارچه شدند",
       "tooltip": "پرداخت‌ها در Comfy یکپارچه شده‌اند. اکنون همه چیز با اعتبار Comfy انجام می‌شود:\n- nodeهای شریک (قبلاً nodeهای API)\n- workflowهای ابری\n\nموجودی nodeهای شریک شما به اعتبار تبدیل شده است."
     },
+    "workspaceCredits": "اعتبارهای فضای کاری",
     "yourCreditBalance": "موجودی اعتبار شما"
   },
   "curveWidget": {
@@ -894,6 +897,7 @@
     "FILE_3D_SPZ": "FILE_3D_SPZ",
     "FILE_3D_STL": "FILE_3D_STL",
     "FILE_3D_USDZ": "FILE_3D_USDZ",
+    "FISHAUDIO_VOICE": "FISHAUDIO_VOICE",
     "FLOAT": "عدد اعشاری",
     "FLOATS": "اعداد اعشاری",
     "GEMINI_INPUT_FILES": "فایل‌های ورودی Gemini",
@@ -907,6 +911,7 @@
     "IMAGECOMPARE": "مقایسه تصویر",
     "INT": "عدد صحیح",
     "INTERP_MODEL": "مدل INTERP",
+    "KIMODO_POSE_DATA": "KIMODO_POSE_DATA",
     "KREA_STYLE_REF": "KREA_STYLE_REF",
     "LATENT": "latent",
     "LATENT_OPERATION": "عملیات latent",
@@ -924,6 +929,7 @@
     "MESH": "مش",
     "MESHY_RIGGED_TASK_ID": "MESHY_RIGGED_TASK_ID",
     "MESHY_TASK_ID": "MESHY_TASK_ID",
+    "MHR_POSE_DATA": "MHR_POSE_DATA",
     "MODEL": "مدل",
     "MODEL_PATCH": "وصله مدل",
     "MODEL_TASK_ID": "شناسه وظیفه مدل",
@@ -943,8 +949,10 @@
     "RIG_TASK_ID": "شناسه وظیفه Rig",
     "RUNWAY_ALEPH2_KEYFRAME": "RUNWAY_ALEPH2_KEYFRAME",
     "RUNWAY_ALEPH2_PROMPT_IMAGE": "RUNWAY_ALEPH2_PROMPT_IMAGE",
+    "SAM3D_BODY_MODEL": "SAM3D_BODY_MODEL",
     "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "نمونه‌گیر",
+    "SHAPE_SUBDIVIDES": "SHAPE_SUBDIVIDES",
     "SIGMAS": "سیگماها",
     "SPLAT": "SPLAT",
     "STRING": "رشته",
@@ -960,12 +968,20 @@
     "WEBCAM": "وب‌کم"
   },
   "desktopDialogs": {
-    "": {
+    "invalidDialog": {
       "buttons": {
         "Close": "بستن"
       },
-      "message": "شناسه گفت‌وگوی نامعتبری ارائه شده است.",
+      "message": "شناسهٔ گفت‌وگوی نامعتبر ارائه شده است.",
       "title": "گفت‌وگوی نامعتبر"
+    },
+    "reinstallVenv": {
+      "buttons": {
+        "Learn More": "اطلاعات بیشتر",
+        "Reinstall": "نصب مجدد"
+      },
+      "message": "متأسفیم، نمی‌توانیم ComfyUI را اجرا کنیم، زیرا برخی از بسته‌های نصب‌شده سازگار نیستند.\n\nبرای بازیابی ComfyUI و راه‌اندازی دوباره آن، روی «نصب مجدد» کلیک کنید.\n\nلطفاً توجه کنید: اگر nodeهای سفارشی اضافه کرده‌اید، پس از این فرایند باید آن‌ها را دوباره نصب کنید.",
+      "title": "نصب مجدد ComfyUI (شروع تازه)؟"
     }
   },
   "desktopLogin": {
@@ -1409,7 +1425,8 @@
     "loadWorkflowTitle": "بارگذاری به دلیل خطا در بارگذاری مجدد داده‌های workflow متوقف شد",
     "noStackTrace": "هیچ stacktraceی موجود نیست",
     "promptExecutionError": "اجرای prompt با شکست مواجه شد",
-    "queueOpenWorkflowFailedTitle": "باز کردن workflow با خطا مواجه شد"
+    "queueOpenWorkflowFailedTitle": "باز کردن workflow با خطا مواجه شد",
+    "workspaceChangedDuringExecution": "فضای کاری فعال شما هنگام آماده‌سازی این اجرا تغییر کرد. برای استفاده از فضای کاری فعلی، workflow را دوباره اجرا کنید."
   },
   "errorOverlay": {
     "missingMedia": "برخی از نودها ورودی‌های مورد نیاز را ندارند",
@@ -1638,13 +1655,14 @@
     "increment": "افزایش",
     "info": "اطلاعات node",
     "input": "ورودی",
+    "inputTooltip": "ورودی: {name}",
     "insert": "درج",
     "install": "نصب",
     "installed": "نصب شده",
     "installing": "در حال نصب",
     "interrupted": "متوقف شده",
     "itemsCopiedToClipboard": "موارد در کلیپ‌بورد کپی شدند",
-    "itemsSelected": "{selectedCount} مورد انتخاب شدند",
+    "itemsSelected": "هیچ موردی انتخاب نشده است | {count} مورد انتخاب شده است | {count} مورد انتخاب شده‌اند",
     "job": "وظیفه",
     "jobIdCopied": "شناسه وظیفه در کلیپ‌بورد کپی شد",
     "keybinding": "کلید میانبر",
@@ -1807,7 +1825,7 @@
     "searchKeybindings": "جستجوی کلیدهای میانبر",
     "searchModels": "جستجوی مدل‌ها",
     "searchNodes": "جستجوی nodeها",
-    "searchPlaceholder": "جستجو...",
+    "searchPlaceholder": "جست‌وجوی {subject}...",
     "searchSettings": "جستجوی تنظیمات",
     "searchWorkflows": "جستجوی workflowها",
     "seeTutorial": "مشاهده آموزش",
@@ -2226,7 +2244,7 @@
     },
     "cancelThisRun": "لغو این اجرا",
     "deleteAllAssets": "حذف همه دارایی‌ها از این اجرا",
-    "downloadAll": "دانلود همه",
+    "downloadAll": "دانلود {count} دارایی از این اجرا",
     "dragAndDropImage": "تصویر را بکشید و رها کنید",
     "emptyWorkflowExplanation": "جریان کاری شما خالی است. ابتدا باید چند node اضافه کنید تا بتوانید یک برنامه بسازید.",
     "enterNodeGraph": "ورود به گراف node",
@@ -2283,6 +2301,7 @@
     "clearRecording": "پاک کردن ضبط",
     "dropToLoad": "مدل سه‌بعدی را برای بارگذاری رها کنید",
     "edgeThreshold": "آستانه لبه",
+    "exitLookThrough": "خروج از نمای دوربین",
     "export": "خروجی گرفتن",
     "exportModel": "خروجی گرفتن مدل",
     "exportRecording": "خروجی گرفتن ضبط",
@@ -2305,11 +2324,13 @@
       "showAsBackground": "نمایش به عنوان پس‌زمینه",
       "uploadFile": "بارگذاری HDRI (‏.hdr، ‏.exr)"
     },
+    "hideGizmos": "پنهان کردن گیزموها",
     "light": "نور",
     "lightIntensity": "شدت نور",
     "loadingBackgroundImage": "در حال بارگذاری تصویر پس‌زمینه",
     "loadingHDRI": "در حال بارگذاری HDRI...",
     "loadingModel": "در حال بارگذاری مدل سه‌بعدی...",
+    "lookThrough": "نمای دوربین",
     "materialMode": "حالت متریال",
     "materialModes": {
       "clay": "خاک رس",
@@ -2350,6 +2371,7 @@
     "removeBackgroundImage": "حذف تصویر پس‌زمینه",
     "resizeNodeMatchOutput": "تغییر اندازه node مطابق خروجی",
     "scene": "صحنه",
+    "showGizmos": "نمایش گیزموها",
     "showGrid": "نمایش شبکه",
     "showSkeleton": "نمایش اسکلت",
     "startRecording": "شروع ضبط",
@@ -2357,6 +2379,13 @@
     "switchCamera": "تغییر دوربین",
     "switchingMaterialMode": "در حال تغییر حالت متریال...",
     "tiledMode": "حالت کاشی‌کاری",
+    "transformGizmo": {
+      "cameraRotate": "چرخش دوربین",
+      "cameraTranslate": "موقعیت دوربین",
+      "label": "ویرایش",
+      "none": "هیچ‌کدام",
+      "target": "هدف"
+    },
     "unsupportedFileType": "نوع فایل پشتیبانی نمی‌شود (فقط .gltf، .glb، .obj، .fbx، .stl پشتیبانی می‌شود)",
     "upDirection": "جهت بالا",
     "upDirections": {
@@ -2365,6 +2394,8 @@
     "uploadBackgroundImage": "بارگذاری تصویر پس‌زمینه",
     "uploadTexture": "بارگذاری تکسچر",
     "uploadingModel": "در حال بارگذاری مدل سه‌بعدی...",
+    "useCustomUp": "بازیابی بردار بالای دوربین از ورودی",
+    "useNaturalUp": "بازنشانی بردار بالای دوربین به Y",
     "viewer": {
       "apply": "اعمال",
       "cameraSettings": "تنظیمات دوربین",
@@ -2898,6 +2929,9 @@
     "notNow": "فعلاً نه",
     "title": "به ما در بهبود کمک کنید"
   },
+  "nodeBadge": {
+    "partnerNodesCount": "نودهای همکار × {count}"
+  },
   "nodeCategories": {
     "": "",
     "3d": "سه‌بعدی",
@@ -2907,6 +2941,7 @@
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "ElevenLabs": "ElevenLabs",
+    "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
     "Grok": "Grok",
     "HeyGen": "HeyGen",
@@ -2996,7 +3031,9 @@
     "mage": "mage",
     "mask": "ماسک",
     "merging": "ادغام",
+    "mesh": "mesh",
     "minimax": "minimax",
+    "minimax music": "minimax music",
     "mochi": "mochi",
     "model": "مدل",
     "model specific": "مدل خاص",
@@ -3035,8 +3072,11 @@
     "supir": "supir",
     "sync_so": "sync.so",
     "text": "متن",
+    "texturing": "بافت‌دهی",
     "training": "آموزش",
     "transform": "تبدیل",
+    "trellis": "trellis",
+    "trellis2": "trellis2",
     "triposplat": "triposplat",
     "unet": "unet",
     "upscaling": "افزایش وضوح",
@@ -3427,7 +3467,7 @@
       "expandNodes": "نمایش nodeهای مرتبط",
       "gatedModelDownloadTooltip": "دانلود ممکن است ابتدا نیاز به ورود به Hugging Face داشته باشد.",
       "gatedModelTooltip": "این مدل محدود است و نیاز به ورود به Hugging Face و پذیرش توافق‌نامه مجوز دارد.",
-      "gatedModelsHint": "برخی مدل‌ها محدود هستند. برای دانلود آن‌ها، وارد حساب Hugging Face شوید و با توافق‌نامه مجوز مدل موافقت کنید.",
+      "gatedModelsHint": "{count} مدل دارای دسترسی محدود است. برای دانلود آن، به Hugging Face وارد شوید و توافق‌نامه مجوز آن را بپذیرید. | {count} مدل دارای دسترسی محدود هستند. برای دانلود آن‌ها، به Hugging Face وارد شوید و توافق‌نامه‌های مجوزشان را بپذیرید.",
       "gatedModelsHintLabel": "توجه:",
       "import": "وارد کردن",
       "importNotSupported": "وارد کردن پشتیبانی نمی‌شود",
@@ -4128,6 +4168,7 @@
       "freeRuns": "{count} اجرای رایگان | {count} اجرای رایگان",
       "maxRuntime": "حداکثر زمان اجرا {duration}"
     },
+    "fullUsageActivity": "همه فعالیت‌های مصرف",
     "gpuLabel": "RTX 6000 Pro (۹۶ گیگابایت VRAM)",
     "haveQuestions": "سوالی دارید یا به دنبال راهکار سازمانی هستید؟",
     "inactive": {
@@ -4201,6 +4242,7 @@
       "personal": "برای استفاده شخصی",
       "team": "برای تیم‌ها"
     },
+    "plansAndCredits": "طرح‌ها و اعتبارها",
     "plansAndPricing": "طرح‌ها و قیمت‌ها",
     "plansForWorkspace": "طرح‌ها برای {workspace}",
     "prepaidCreditsInfo": "اعتبارهای پیش‌پرداخت تا یک سال پس از تاریخ خرید منقضی می‌شوند.",
@@ -4499,6 +4541,7 @@
     "failedToFetchBalance": "دریافت موجودی انجام نشد: {error}",
     "failedToFetchLogs": "دریافت گزارش‌های سرور انجام نشد",
     "failedToFetchSubscription": "دریافت وضعیت اشتراک انجام نشد: {error}",
+    "failedToInitializeCameraInfoViewer": "راه‌اندازی نمایشگر اطلاعات دوربین ناموفق بود. صفحه را دوباره بارگذاری کنید.",
     "failedToInitializeLoad3dViewer": "راه‌اندازی نمایشگر سه‌بعدی انجام نشد",
     "failedToInitiateCreditPurchase": "آغاز خرید اعتبار انجام نشد: {error}",
     "failedToInitiateSubscription": "آغاز اشتراک انجام نشد: {error}",
@@ -4706,7 +4749,7 @@
     "savedAsWorkflow": "به گردش‌کار فقط گراف node تبدیل شد"
   },
   "workspace": {
-    "addedToWorkspace": "شما به {workspaceName} اضافه شدید",
+    "addedToWorkspace": "شما به این مورد افزوده شده‌اید:",
     "inviteAccepted": "دعوت پذیرفته شد",
     "inviteFailed": "پذیرش دعوت ناموفق بود",
     "switchFailed": "تغییر ورک‌اسپیس ناموفق بود. لطفاً دوباره تلاش کنید.",
@@ -4801,7 +4844,7 @@
       "title": "ویرایش جزئیات محیط کاری"
     },
     "invite": "دعوت",
-    "inviteLimitReached": "شما به حداکثر تعداد ۵۰ عضو رسیده‌اید",
+    "inviteLimitReached": "به حداکثر تعداد {count} عضو رسیده‌اید",
     "inviteMember": "دعوت عضو",
     "inviteMemberDialog": {
       "failedCount": "ارسال {count} دعوت‌نامه ناموفق بود. دوباره تلاش کنید. | ارسال {count} دعوت‌نامه ناموفق بود. دوباره تلاش کنید.",
@@ -4854,7 +4897,7 @@
         "warning": "این کاربر تاکنون {credits} اعتبار مصرف کرده است. تعیین سقف برابر یا کمتر از مصرف فعلی، اجرای بیشتر را تا ماه آینده غیرممکن می‌کند."
       },
       "header": "اعضا",
-      "membersCount": "{count}/۵۰ عضو",
+      "membersCount": "{count} از {maxSeats} عضو",
       "needMoreMembers": "به اعضای بیشتری نیاز دارید؟",
       "noInvites": "هیچ دعوت‌نامه‌ای در انتظار نیست",
       "noMembers": "هیچ عضوی وجود ندارد",
@@ -4978,6 +5021,8 @@
     "personal": "شخصی",
     "roleMember": "عضو",
     "roleOwner": "مالک",
+    "scopeCaption": "فضاهای کاری فقط بر اعتبارهایی که استفاده می‌کنید تأثیر می‌گذارند.",
+    "scopeTooltip": "اجراهایی که از نودهای همکار استفاده می‌کنند، اعتبارهای این فضای کاری را مصرف می‌کنند. برخلاف Cloud، هر فضای کاری در پوشه خروجی معمول شما ذخیره می‌شود.",
     "subscribe": "اشتراک",
     "switchWorkspace": "تغییر محیط کاری"
   },

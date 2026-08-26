@@ -367,8 +367,8 @@
     "tooltip": "The maximum number of tasks added to the queue at one button click"
   },
   "Comfy_RightSidePanel_ShowErrorsTab": {
-    "name": "Show errors tab in side panel",
-    "tooltip": "When enabled, an errors tab is displayed in the right side panel to show workflow execution errors at a glance."
+    "name": "Show issues tab in side panel",
+    "tooltip": "When enabled, the Issues tab is displayed in the right side panel to show blocking errors and missing resources that need setup."
   },
   "Comfy_Sidebar_Location": {
     "name": "Sidebar location",

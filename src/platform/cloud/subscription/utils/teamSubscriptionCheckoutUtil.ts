@@ -7,6 +7,7 @@ import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFai
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { trackWorkspaceCheckoutStarted } from '@/platform/workspace/utils/workspaceCheckoutTelemetry'
 
+import { paymentReturnUrl } from './paymentReturnUrl'
 import type { BillingCycle } from './subscriptionTierRank'
 
 interface PerformTeamSubscriptionCheckoutOptions {
@@ -63,7 +64,7 @@ async function initiateTeamSubscriptionCheckout(
 ): Promise<void> {
   const planSlug = getTeamPlanSlug(billingCycle)
   const response = await workspaceApi.subscribe(planSlug, {
-    returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
+    returnUrl: paymentReturnUrl(),
     cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`,
     teamCreditStopId
   })

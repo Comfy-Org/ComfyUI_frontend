@@ -98,7 +98,6 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     // TODO: Object instantiation pattern requires too much boilerplate and null checking.  ID should be passed in via constructor.
     this.id = toGroupId(id ?? -1)
     this.title = title || 'Group'
-
     const { pale_blue } = LGraphCanvas.node_colors
     this.color = pale_blue ? pale_blue.groupcolor : '#AAA'
   }
@@ -106,7 +105,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   /** @inheritdoc {@link IColorable.setColorOption} */
   setColorOption(colorOption: ColorOption | null): void {
     if (colorOption == null) {
-      delete this.color
+      this.color = undefined
     } else {
       this.color = colorOption.groupcolor
     }

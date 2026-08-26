@@ -89,10 +89,11 @@ function createNode(
 function createGraphWithNode(
   widgets: IBaseWidget[],
   id: NodeId = toNodeId(1),
-  type = 'TestNode'
+  type = 'TestNode',
+  graphId = GRAPH_ID
 ): { graph: LGraph; node: LGraphNode } {
   const graph = new LGraph()
-  graph.id = GRAPH_ID
+  graph.id = graphId
   const node = createNode(widgets, id, type)
   graph.add(node)
   return { graph, node }
@@ -142,19 +143,21 @@ function processWidgets({
   rootGraph?: LGraph | null
   ui?: typeof noopUi
 }) {
+  const graphId = rootGraph?.id ?? GRAPH_ID
   return computeProcessedWidgets({
     nodeData: {
       id: nodeId,
-      graphId: subgraphId ?? GRAPH_ID,
+      graphId: subgraphId ?? graphId,
       type: nodeType,
       title: 'Test',
       mode: 0,
       flags: {},
       inputs: [],
-      outputs: []
+      outputs: [],
+      properties: {}
     },
     widgetIds,
-    graphId: GRAPH_ID,
+    graphId,
     showAdvanced,
     isGraphReady: rootGraph !== null,
     rootGraph,
@@ -170,7 +173,8 @@ function createLinkedWidgetFixture({
   options = {},
   renderState = {},
   linkId = toLinkId(1),
-  nodeId = NODE_ID
+  nodeId = NODE_ID,
+  graphId = GRAPH_ID
 }: {
   name?: string
   type?: string
@@ -180,10 +184,16 @@ function createLinkedWidgetFixture({
   renderState?: WidgetRenderState
   linkId?: LinkId
   nodeId?: NodeId
+  graphId?: string
 } = {}) {
-  const id = widgetId(GRAPH_ID, nodeId, name)
+  const id = widgetId(graphId, nodeId, name)
   const widget = createMockWidget({ name, type, widgetId: id })
-  const { graph, node } = createGraphWithNode([widget], nodeId, nodeType)
+  const { graph, node } = createGraphWithNode(
+    [widget],
+    nodeId,
+    nodeType,
+    graphId
+  )
   const originNode = createNode([], toNodeId(2), 'OriginNode')
   originNode.outputs = [
     {
@@ -206,8 +216,8 @@ function createLinkedWidgetFixture({
   registerWidgetState(id, { type, value, options }, renderState)
 
   const scope = {
-    rootGraphId: toRootGraphId(GRAPH_ID),
-    owningGraphId: toOwningGraphId(GRAPH_ID)
+    rootGraphId: toRootGraphId(graphId),
+    owningGraphId: toOwningGraphId(graphId)
   }
   const topology = {
     id: linkId,
@@ -509,6 +519,17 @@ describe('computeProcessedWidgets', () => {
     expect(result[0].simplified.value).toBeNull()
   })
 
+  it('uses the live widget type after runtime changes', () => {
+    const id = widgetId(GRAPH_ID, toNodeId(1), 'text')
+    registerWidgetState(id, { type: 'combo' })
+    const widget = createMockWidget({ widgetId: id, name: 'text', type: '' })
+    const { graph } = createGraphWithNode([widget])
+
+    const result = processWidgets({ widgetIds: [id], rootGraph: graph })
+
+    expect(result).toEqual([])
+  })
+
   it('uses widget state nodeId for simplified widget locator', () => {
     const subgraphId = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
     const id = widgetId(GRAPH_ID, toNodeId('inner-node'), 'text')
@@ -665,7 +686,8 @@ describe('computeProcessedWidgets linked presentation', () => {
       value: false,
       options: { off: 'Disabled', on: 'Enabled' },
       linkId: toLinkId(2),
-      nodeId: toNodeId(3)
+      nodeId: toNodeId(3),
+      graphId: 'graph-toggle'
     })
     const [linkedToggle] = processWidgets({
       widgetIds: [toggleFixture.id],
