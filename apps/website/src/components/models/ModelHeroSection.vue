@@ -1,17 +1,27 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import CardWorkflow01 from '../blocks/CardWorkflow01.vue'
+import type { CardWorkflowItem } from '../blocks/CardWorkflow01.vue'
 import BrandButton from '../common/BrandButton.vue'
 import { t } from '../../i18n/translations'
 
-const { displayName, docsUrl, blogUrl, hubSlug, workflowCount, directory } =
-  defineProps<{
-    displayName: string
-    docsUrl?: string
-    blogUrl?: string
-    hubSlug?: string
-    workflowCount: number
-    directory: string
-  }>()
+const {
+  displayName,
+  docsUrl,
+  blogUrl,
+  hubSlug,
+  workflowCount,
+  directory,
+  featuredWorkflow
+} = defineProps<{
+  displayName: string
+  docsUrl?: string
+  blogUrl?: string
+  hubSlug?: string
+  workflowCount: number
+  directory: string
+  featuredWorkflow?: CardWorkflowItem
+}>()
 
 const workflowsUrl = hubSlug
   ? `https://www.comfy.org/workflows/model/${hubSlug}`
@@ -111,6 +121,10 @@ const eyebrow = dirDisplayMap[directory] ?? directory
           {{ t('models.hero.blogLink') }}
         </a>
       </div>
+    </div>
+
+    <div v-if="featuredWorkflow" class="w-full flex-1 lg:max-w-2xl">
+      <CardWorkflow01 :item="featuredWorkflow" variant="feature" />
     </div>
   </section>
 </template>

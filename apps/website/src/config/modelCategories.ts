@@ -1,4 +1,4 @@
-export const MODEL_CATEGORIES = [
+const MODEL_CATEGORIES = [
   'image',
   'video',
   'audio',
@@ -10,6 +10,10 @@ export const MODEL_CATEGORIES = [
 ] as const
 
 export type ModelCategory = (typeof MODEL_CATEGORIES)[number]
+
+export const MODEL_FILTER_CATEGORIES = MODEL_CATEGORIES.filter(
+  (category) => category !== 'train'
+)
 
 const sectionCategories: Readonly<Record<string, ModelCategory>> = {
   Image: 'image',

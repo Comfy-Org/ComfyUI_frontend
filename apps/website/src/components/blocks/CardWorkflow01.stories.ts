@@ -67,6 +67,24 @@ export const Compact: Story = {
   }
 }
 
+export const Showcase: Story = {
+  args: {
+    variant: 'showcase',
+    item: {
+      id: 'wan-reference-to-video',
+      title: 'Wan3.0: Reference to Video',
+      href: 'https://comfy.org/workflows/',
+      sourceLabel: 'ComfyUI',
+      media: {
+        type: 'image',
+        src: 'https://media.comfy.org/website/fdct/headphones.png',
+        alt: 'Wan3.0: Reference to Video'
+      },
+      tags: ['Partner Nodes', 'Image to Video']
+    }
+  }
+}
+
 export const TitleOnly: Story = {
   args: {
     item: {

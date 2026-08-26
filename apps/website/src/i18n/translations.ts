@@ -4940,6 +4940,14 @@ const translations = {
     en: 'ALL|Image|Video|Audio|3D|Edit|Upscale|LLM|Train',
     'zh-CN': '全部|图像|视频|音频|3D|编辑|放大|LLM|训练'
   },
+  'models.explore.filters.openSource': {
+    en: 'Open Source',
+    'zh-CN': '开源'
+  },
+  'models.explore.filters.partnerNodes': {
+    en: 'Partner Nodes',
+    'zh-CN': '合作伙伴节点'
+  },
   'models.explore.catalog.workflowCountOne': {
     en: 'Used by {count} supported workflow.',
     'zh-CN': '由 {count} 个受支持的工作流使用。'
@@ -5037,9 +5045,9 @@ const translations = {
     'zh-CN': 'Wan 模型家族'
   },
   'models.explore.family.description': {
-    en: 'Nine open-weights video models, one lineage. Every generation and variant stays accessible from the same graph.',
+    en: 'One video model lineage, from open weights to the latest partner release. Every generation and variant stays accessible from the same graph.',
     'zh-CN':
-      '九个开放权重视频模型，同属一个谱系。每一代和每个变体都可从同一工作流访问。'
+      '一个视频模型谱系，从开放权重到最新的合作伙伴版本。每一代和每个变体都可从同一工作流访问。'
   },
   'models.explore.family.viewModel': {
     en: 'View {name} model page',

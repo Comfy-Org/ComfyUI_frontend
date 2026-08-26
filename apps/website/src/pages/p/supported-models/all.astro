@@ -4,7 +4,7 @@ import ModelCatalogExplorer from '../../../components/models/explore/ModelCatalo
 import { createModelExploreCatalog } from '../../../components/models/explore/modelExploreCatalog'
 import SectionHeader from '../../../components/common/SectionHeader.vue'
 import { models } from '../../../config/models'
-import { MODEL_CATEGORIES } from '../../../config/modelCategories'
+import { MODEL_FILTER_CATEGORIES } from '../../../config/modelCategories'
 import { t } from '../../../i18n/translations'
 import BaseLayout from '../../../layouts/BaseLayout.astro'
 import {
@@ -24,10 +24,18 @@ const { url, locale } = pageContext(
 const categories = t('models.explore.categories', locale).split('|')
 const categoryOptions: ModelCategoryOption[] = [
   { value: 'all', label: categories[0] ?? 'ALL' },
-  ...MODEL_CATEGORIES.map((value, index) => ({
+  ...MODEL_FILTER_CATEGORIES.map((value, index) => ({
     value,
     label: categories[index + 1] ?? value,
   })),
+  {
+    value: 'open',
+    label: t('models.explore.filters.openSource', locale),
+  },
+  {
+    value: 'partner',
+    label: t('models.explore.filters.partnerNodes', locale),
+  },
 ]
 const catalog = createModelExploreCatalog(models)
 const modelList = itemListNode(

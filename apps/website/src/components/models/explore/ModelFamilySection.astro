@@ -2,18 +2,22 @@
 import SectionLabel from '../../common/SectionLabel.vue'
 import IconButton from '../../ui/icon-button/IconButton.vue'
 
-import ModelMediaPlaceholder from './ModelMediaPlaceholder.vue'
-import type { ExploreFamilyVariant } from './modelExploreFixtures'
+import type {
+  ExploreFamilyVariant,
+  ExploreFeaturedRelease,
+} from './modelExploreFixtures'
 
 interface Props {
   eyebrow: string
   title: string
   description: string
+  featured: ExploreFeaturedRelease
   variants: ExploreFamilyVariant[]
   viewModelLabel: string
 }
 
-const { eyebrow, title, description, variants, viewModelLabel } = Astro.props
+const { eyebrow, title, description, featured, variants, viewModelLabel } =
+  Astro.props
 ---
 
 <section
@@ -61,10 +65,18 @@ const { eyebrow, title, description, variants, viewModelLabel } = Astro.props
         }
       </div>
     </div>
-    <div
-      class="bg-transparency-white-t4 min-h-80 overflow-hidden rounded-5xl p-2 lg:min-h-full"
+    <a
+      href={featured.href}
+      aria-label={viewModelLabel.replace('{name}', featured.name)}
+      class="min-h-80 overflow-hidden rounded-5xl bg-transparency-white-t4 p-2 lg:min-h-full"
     >
-      <ModelMediaPlaceholder tone="plum" />
-    </div>
+      <img
+        src={featured.mediaSrc}
+        alt={`${featured.name} model preview`}
+        class="size-full rounded-4.5xl object-cover"
+        loading="lazy"
+        decoding="async"
+      />
+    </a>
   </div>
 </section>

@@ -4,6 +4,7 @@ import { minimaxPage } from '../../../data/minimax'
 import { minimaxMusic3Page } from '../../../data/minimaxMusic3'
 import { seedancePage } from '../../../data/seedance'
 import { wanAnimate2Page } from '../../../data/wanAnimate2'
+import { wan3Page } from '../../../data/wan3'
 
 export type ModelMediaTone = 'forest' | 'plum' | 'ember' | 'canvas'
 export type ExploreModelStatus = 'open-weights'
@@ -35,6 +36,16 @@ export interface ExploreFamilyVariant {
   description: string
   meta: string
   href: string
+}
+
+export interface ExploreFeaturedRelease {
+  name: string
+  description: string
+  href: string
+  mediaSrc: string
+  publisher: string
+  brandIconSrc: string
+  tags: readonly string[]
 }
 
 function requiredMediaSource(owner: string, src: string | undefined): string {
@@ -160,78 +171,95 @@ export const dayZeroModelFixtures: ExploreModelCardFixture[] = [
 
 export const taskFixtures: ExploreTaskFixture[] = [
   {
-    title: 'AI video generator',
+    title: 'AI interior design',
     description:
-      'Every video model, one canvas. Kling, Wan, Veo, and Seedance.',
-    meta: '14 models',
-    href: 'https://comfy.org/workflows/use-cases/ai-image-to-video/',
+      'Redesign rooms from a photo while preserving their real layout.',
+    meta: 'Browse workflows',
+    href: 'https://comfy.org/workflows/use-cases/ai-interior-design/',
     mediaSrc:
-      'https://comfy-hub-assets.comfy.org/templates/4c49ebf0-53fb-488e-a224-a26a32affb15.webp'
+      'https://comfy-hub-assets.comfy.org/templates/a4700cc0-72ea-409e-9693-34a6d26a8c96.webp'
   },
   {
-    title: 'AI image generator',
-    description: 'Flux, Qwen Image, SDXL, and Z-Image directed from one graph.',
-    meta: '22 models',
-    href: 'https://comfy.org/workflows/tag/text-to-image/',
-    mediaSrc:
-      'https://comfy-hub-assets.comfy.org/uploads/2f4618ff-314a-4a08-b60f-589d93ffb487.png'
-  },
-  {
-    title: 'Image to video',
-    description: 'Animate any still with motion you control, frame by frame.',
-    meta: '12 models',
-    href: 'https://comfy.org/workflows/use-cases/ai-image-to-video/',
-    mediaSrc:
-      'https://comfy-hub-assets.comfy.org/templates/0959c97d-aef3-405e-9369-3d1b73d71c52.webp'
-  },
-  {
-    title: 'AI upscaler',
-    description: 'Detail without artifacts. 4K and beyond, batch-ready.',
-    meta: '8 models',
+    title: 'AI image & video upscaler',
+    description:
+      'Increase resolution while preserving natural detail and texture.',
+    meta: 'Browse workflows',
     href: 'https://comfy.org/workflows/use-cases/ai-image-upscaler/',
     mediaSrc:
       'https://comfy-hub-assets.comfy.org/uploads/24a6cdaf-2f22-47a0-b61c-bbeda152fbf8.png'
   },
   {
-    title: 'AI face swap',
-    description: 'Identity held across shots, edits, and angles.',
-    meta: '6 workflows',
-    href: 'https://comfy.org/workflows/use-cases/ai-character-replacement/',
+    title: 'AI image to video',
+    description:
+      'Animate still images with controllable motion using leading video models.',
+    meta: 'Browse workflows',
+    href: 'https://comfy.org/workflows/use-cases/ai-image-to-video/',
     mediaSrc:
-      'https://comfy-hub-assets.comfy.org/templates/4776f83f-5307-4539-8196-ff5a585ef8f8.webp'
+      'https://comfy-hub-assets.comfy.org/templates/4c49ebf0-53fb-488e-a224-a26a32affb15.webp'
   },
   {
-    title: 'Speech + music',
-    description: 'Voices, tracks, and sound design with structure you direct.',
-    meta: '9 models',
+    title: 'Restore old photos',
+    description:
+      'Repair damage, recover faces, colorize prints, and upscale scans.',
+    meta: 'Browse workflows',
+    href: 'https://comfy.org/workflows/use-cases/restore-old-photos/',
+    mediaSrc:
+      'https://comfy-hub-assets.comfy.org/uploads/afaf876d-ffe1-4f6d-94a9-3bd4c581a921.png'
+  },
+  {
+    title: 'AI anime generator',
+    description:
+      'Create anime characters and scenes from text with open models.',
+    meta: 'Browse workflows',
+    href: 'https://comfy.org/workflows/use-cases/ai-anime-generator/',
+    mediaSrc:
+      'https://comfy-hub-assets.comfy.org/uploads/19f8bb4b-9547-4d33-aeab-70b4f72a1c39.png'
+  },
+  {
+    title: 'AI song generator',
+    description:
+      'Generate complete songs with vocals from prompts or your own lyrics.',
+    meta: 'Browse workflows',
+    href: 'https://comfy.org/workflows/use-cases/ai-song-generator/',
+    mediaSrc:
+      'https://comfy-hub-assets.comfy.org/uploads/470ff978-7fed-4d05-bf06-0de76d7396c6.png'
+  },
+  {
+    title: 'AI music generator',
+    description:
+      'Generate instrumental music, loops, and sound effects from text.',
+    meta: 'Browse workflows',
     href: 'https://comfy.org/workflows/use-cases/ai-music-generator/',
     mediaSrc:
-      'https://comfy-hub-assets.comfy.org/templates/717725cf-d086-4ed3-91b6-9d57933bd58c.webp'
+      'https://comfy-hub-assets.comfy.org/uploads/597d9b7b-cf55-417d-b1ea-cb3710b0a840.png'
   },
   {
-    title: '3D generation',
-    description: 'Image to textured mesh, ready for your pipeline.',
-    meta: '5 models',
-    href: 'https://comfy.org/workflows/use-cases/image-to-3d/',
+    title: 'AI hairstyle changer',
+    description:
+      'Preview new hairstyles from a portrait while preserving identity.',
+    meta: 'Browse workflows',
+    href: 'https://comfy.org/workflows/use-cases/ai-hairstyle-changer/',
     mediaSrc:
-      'https://comfy-hub-assets.comfy.org/templates/405635b3-6e57-44f5-bbbe-7440381c021d.png'
-  },
-  {
-    title: 'Train a LoRA',
-    description: 'Your style, your dataset, your checkpoint. Full control.',
-    meta: 'Training guide',
-    href: 'https://comfy.org/workflows/tag/lora/',
-    mediaSrc:
-      'https://comfy-hub-assets.comfy.org/templates/d0ad5bf1-699f-4578-9c32-9e9ef6f99d14.png'
+      'https://comfy-hub-assets.comfy.org/uploads/9c8e4eb5-e3d1-438a-bcdf-c32d9e66642f.png'
   }
 ]
 
+export const latestModelReleaseFixture: ExploreFeaturedRelease = {
+  name: 'Wan 3.0',
+  description: 'Up to 30-second video with native audio and references.',
+  href: '/wan-3.0',
+  mediaSrc: requiredMediaSource('Wan 3.0', wan3Page.hero.posterSrc),
+  publisher: 'Alibaba',
+  brandIconSrc: '/icons/ai-models/wan.svg',
+  tags: ['Partner Nodes', 'Text to video', 'Image to video']
+}
+
 export const familyVariantFixtures: ExploreFamilyVariant[] = [
   {
-    name: 'Wan 2.6',
-    description: 'Text and image to video with native audio.',
-    meta: '1.8M runs',
-    href: '/p/supported-models/wan-2-6'
+    name: latestModelReleaseFixture.name,
+    description: latestModelReleaseFixture.description,
+    meta: 'Latest release',
+    href: latestModelReleaseFixture.href
   },
   {
     name: 'Wan 2.5',

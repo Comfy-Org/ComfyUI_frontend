@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { ChevronRight } from '@lucide/vue'
 
 import type { AnchorHTMLAttributes, HTMLAttributes } from 'vue'
 
@@ -31,6 +32,8 @@ export type CardWorkflowItem = {
   target?: AnchorHTMLAttributes['target']
   media: CardWorkflowMedia
   description?: string
+  sourceLabel?: string
+  brandIconSrc?: string
   statusBadges?: readonly CardWorkflowStatusBadge[]
   tags?: readonly string[]
 }
@@ -55,7 +58,7 @@ const {
   item: CardWorkflowItem
   // 'compact' is the featured-projects grid card: tighter paddings, a
   // single-line 14px title, and sentence-case tag badges.
-  variant?: 'default' | 'compact'
+  variant?: 'default' | 'compact' | 'showcase' | 'feature'
   statusBadgePlacement?: 'content' | 'featured-media'
   class?: HTMLAttributes['class']
 }>()
@@ -69,10 +72,10 @@ function linkTarget(item: CardWorkflowItem): AnchorHTMLAttributes['target'] {
   <div
     :class="
       cn(
-        'bg-transparency-white-t4 relative flex flex-col',
-        variant === 'compact'
-          ? 'rounded-5xl gap-4 p-2'
-          : 'rounded-4.5xl px-2 pt-2 pb-8',
+        'bg-transparency-white-t4 group relative flex flex-col',
+        variant === 'default'
+          ? 'rounded-4.5xl px-2 pt-2 pb-8'
+          : 'rounded-5xl gap-4 p-2',
         item.href &&
           'transition-colors duration-200 hover:bg-transparency-white-t8',
         className
@@ -86,11 +89,18 @@ function linkTarget(item: CardWorkflowItem): AnchorHTMLAttributes['target'] {
       :rel="resolveRel({ target: linkTarget(item) })"
       :aria-label="item.title"
       class="focus-visible:ring-primary-comfy-yellow absolute inset-0 z-10 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
-      :class="variant === 'compact' ? 'rounded-5xl' : 'rounded-4.5xl'"
+      :class="variant === 'default' ? 'rounded-4.5xl' : 'rounded-5xl'"
     />
 
     <div
-      class="bg-transparency-white-t4 relative aspect-4/3 overflow-hidden rounded-[2.25rem]"
+      :class="
+        cn(
+          'bg-transparency-white-t4 relative overflow-hidden',
+          variant === 'feature'
+            ? 'aspect-video rounded-4xl'
+            : 'aspect-4/3 rounded-[2.25rem]'
+        )
+      "
     >
       <img
         v-if="item.media.type === 'image'"
@@ -119,6 +129,35 @@ function linkTarget(item: CardWorkflowItem): AnchorHTMLAttributes['target'] {
         class="pointer-events-none absolute inset-0 bg-linear-to-b from-black/24 to-transparent"
       />
       <div
+        v-else-if="variant === 'showcase'"
+        aria-hidden="true"
+        class="pointer-events-none absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent"
+      />
+      <div
+        v-else-if="variant === 'feature'"
+        aria-hidden="true"
+        class="pointer-events-none absolute inset-0 bg-linear-to-b from-black/35 via-black/5 to-transparent"
+      />
+      <h3
+        v-if="variant === 'showcase'"
+        class="absolute inset-x-5 bottom-5 line-clamp-2 text-2xl leading-[1.15] font-normal text-white"
+      >
+        {{ item.title }}
+      </h3>
+      <h3
+        v-else-if="variant === 'feature'"
+        class="absolute top-6 right-24 left-6 line-clamp-2 text-2xl leading-[1.2] font-normal text-white lg:text-3xl"
+      >
+        {{ item.title }}
+      </h3>
+      <div
+        v-if="variant === 'feature' && item.brandIconSrc"
+        data-slot="workflow-brand"
+        class="absolute top-6 right-6 flex size-16 items-center justify-center rounded-full bg-transparency-white-t20 p-4 backdrop-blur-sm"
+      >
+        <img :src="item.brandIconSrc" alt="" class="size-full" />
+      </div>
+      <div
         v-if="
           statusBadgePlacement === 'featured-media' && item.statusBadges?.length
         "
@@ -139,9 +178,10 @@ function linkTarget(item: CardWorkflowItem): AnchorHTMLAttributes['target'] {
 
     <div
       class="flex grow flex-col"
-      :class="variant === 'compact' ? 'gap-5 px-4 pb-2' : 'px-6 pt-6'"
+      :class="variant === 'default' ? 'px-6 pt-6' : 'gap-5 px-4 pb-2'"
     >
       <h3
+        v-if="variant !== 'showcase' && variant !== 'feature'"
         :class="
           variant === 'compact'
             ? 'w-full truncate text-sm leading-[1.2] font-semibold text-primary-comfy-canvas/95'
@@ -150,6 +190,37 @@ function linkTarget(item: CardWorkflowItem): AnchorHTMLAttributes['target'] {
       >
         {{ item.title }}
       </h3>
+      <div
+        v-if="
+          (variant === 'showcase' || variant === 'feature') && item.sourceLabel
+        "
+        data-slot="workflow-source"
+        class="flex items-center justify-between gap-4"
+      >
+        <span class="flex min-w-0 items-center gap-2.5">
+          <img
+            src="/icons/comfyicon.svg"
+            alt=""
+            class="size-7 shrink-0 rounded-full"
+          />
+          <span class="truncate text-lg text-primary-comfy-canvas/75">
+            {{ item.sourceLabel }}
+          </span>
+        </span>
+        <span
+          aria-hidden="true"
+          :class="
+            cn(
+              'flex shrink-0 items-center justify-center rounded-full transition-colors duration-200',
+              variant === 'feature'
+                ? 'bg-primary-comfy-yellow size-8 text-primary-comfy-ink group-hover:bg-primary-comfy-canvas'
+                : 'group-hover:bg-primary-comfy-yellow size-11 bg-transparency-white-t20 text-primary-comfy-canvas group-hover:text-primary-comfy-ink'
+            )
+          "
+        >
+          <ChevronRight class="size-5" />
+        </span>
+      </div>
       <p
         v-if="item.description"
         class="text-sm leading-[1.6] font-light text-primary-comfy-canvas"
@@ -163,7 +234,7 @@ function linkTarget(item: CardWorkflowItem): AnchorHTMLAttributes['target'] {
           item.tags?.length
         "
         class="flex min-w-0 flex-wrap items-center"
-        :class="variant === 'compact' ? 'gap-2' : 'mt-auto gap-1.5 pt-6'"
+        :class="variant === 'default' ? 'mt-auto gap-1.5 pt-6' : 'gap-2'"
       >
         <Badge
           v-for="status in statusBadgePlacement === 'content'
@@ -180,7 +251,7 @@ function linkTarget(item: CardWorkflowItem): AnchorHTMLAttributes['target'] {
           :key="tag"
           variant="subtle"
           size="card"
-          :class="variant === 'compact' ? 'font-normal' : 'uppercase'"
+          :class="variant === 'default' ? 'uppercase' : 'font-normal'"
         >
           {{ tag }}
         </Badge>

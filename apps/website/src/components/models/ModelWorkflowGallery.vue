@@ -29,12 +29,12 @@ function loadMore(): void {
 </script>
 
 <template>
-  <div class="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+  <div class="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
     <CardWorkflow01
       v-for="item in visibleItems"
       :key="item.id"
       :item
-      variant="compact"
+      variant="showcase"
     />
   </div>
   <div class="mt-10 flex flex-col items-center gap-4">

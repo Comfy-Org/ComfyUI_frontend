@@ -4,7 +4,7 @@ import SectionHeader from '../../common/SectionHeader.vue'
 import CardWorkflow01 from '../../blocks/CardWorkflow01.vue'
 import type { CardWorkflowItem } from '../../blocks/CardWorkflow01.vue'
 
-import ModelMediaPlaceholder from './ModelMediaPlaceholder.vue'
+import type { ExploreFeaturedRelease } from './modelExploreFixtures'
 
 interface Props {
   eyebrow: string
@@ -14,8 +14,7 @@ interface Props {
   primaryCta: string
   secondaryCta: string
   stats: string
-  featuredTitle: string
-  featuredHref: string
+  featured: ExploreFeaturedRelease
   primaryHref: string
   secondaryHref: string
 }
@@ -28,18 +27,24 @@ const {
   primaryCta,
   secondaryCta,
   stats,
-  featuredTitle,
-  featuredHref,
+  featured,
   primaryHref,
   secondaryHref
 } = Astro.props
 
 const featuredItem: CardWorkflowItem = {
-  id: 'featured-model',
-  title: featuredTitle,
-  href: featuredHref,
+  id: 'latest-model-release',
+  title: featured.name,
+  href: featured.href,
   target: '_self',
-  media: { type: 'placeholder', alt: '' },
+  media: {
+    type: 'image',
+    src: featured.mediaSrc,
+    alt: `${featured.name} model preview`,
+  },
+  sourceLabel: featured.publisher,
+  brandIconSrc: featured.brandIconSrc,
+  tags: featured.tags,
 }
 ---
 
@@ -84,10 +89,8 @@ const featuredItem: CardWorkflowItem = {
     <div class="min-w-0">
       <CardWorkflow01
         item={featuredItem}
-        variant="compact"
-      >
-        <ModelMediaPlaceholder slot="media" tone="forest" />
-      </CardWorkflow01>
+        variant="feature"
+      />
     </div>
   </div>
 </section>

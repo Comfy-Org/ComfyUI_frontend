@@ -7,7 +7,10 @@ import SearchField from '../../ui/search-field/SearchField.vue'
 import type { ModelCategory } from '../../../config/modelCategories'
 
 import ModelCategoryFilter from './ModelCategoryFilter.vue'
-import type { ModelCategoryOption } from './ModelCategoryFilter.vue'
+import type {
+  ModelCatalogFilterValue,
+  ModelCategoryOption
+} from './ModelCategoryFilter.vue'
 import ModelMediaPlaceholder from './ModelMediaPlaceholder.vue'
 import { filterModelExploreCatalog } from './modelExploreCatalog'
 import type {
@@ -44,6 +47,19 @@ const {
 const query = ref('')
 const category = ref<'all' | ModelCategory>('all')
 const access = ref<ModelAccessFilter>('all')
+const filterSelection = computed<ModelCatalogFilterValue>({
+  get: () => (access.value === 'all' ? category.value : access.value),
+  set: (selection) => {
+    if (selection === 'open' || selection === 'partner') {
+      access.value = selection
+      category.value = 'all'
+      return
+    }
+
+    category.value = selection
+    access.value = 'all'
+  }
+})
 const showAll = ref(showCatalogByDefault)
 const isActive = computed(
   () =>
@@ -117,7 +133,7 @@ function toWorkflowItem(model: ModelExploreCatalogItem): CardWorkflowItem {
   </section>
   <div class="max-w-10xl mx-auto overflow-x-auto px-6 py-3 md:px-10 xl:px-30">
     <ModelCategoryFilter
-      v-model="category"
+      v-model="filterSelection"
       :label="categoryLabel"
       :categories="categoryOptions"
     />

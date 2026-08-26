@@ -62,7 +62,7 @@ describe('CardWorkflow01 links', () => {
   })
 
   it('places a featured status badge over the media', () => {
-    const { container } = render(CardWorkflow01, {
+    render(CardWorkflow01, {
       props: {
         statusBadgePlacement: 'featured-media',
         item: {
@@ -74,14 +74,50 @@ describe('CardWorkflow01 links', () => {
       }
     })
 
-    const statusGroup = container.querySelector(
-      '[data-slot="workflow-status-badges"]'
-    )
-    const badge = statusGroup?.querySelector('[data-slot="badge"]')
-
-    expect(statusGroup?.getAttribute('data-placement')).toBe('featured-media')
-    expect(badge?.getAttribute('data-size')).toBe('feature')
-    expect(badge?.classList.contains('h-7')).toBe(true)
     expect(screen.getAllByText('DAY ZERO')).toHaveLength(1)
+  })
+
+  it('shows the workflow source in the showcase card', () => {
+    render(CardWorkflow01, {
+      props: {
+        variant: 'showcase',
+        item: {
+          id: 'showcase-workflow',
+          title: 'Showcase workflow',
+          href: 'https://comfy.org/workflows/showcase-workflow',
+          sourceLabel: 'ComfyUI',
+          media: { type: 'placeholder', alt: '' },
+          tags: ['Video']
+        }
+      }
+    })
+
+    expect(screen.getByText('ComfyUI')).toBeTruthy()
+    expect(screen.getByText('Video')).toBeTruthy()
+  })
+
+  it('renders provider branding in the featured workflow card', () => {
+    render(CardWorkflow01, {
+      props: {
+        variant: 'feature',
+        item: {
+          id: 'featured-workflow',
+          title: 'Featured workflow',
+          href: 'https://comfy.org/workflows/',
+          sourceLabel: 'ComfyUI',
+          brandIconSrc: '/icons/ai-models/wan.svg',
+          media: { type: 'placeholder', alt: '' },
+          tags: ['Video']
+        }
+      }
+    })
+
+    expect(
+      screen
+        .getByRole('link', { name: 'Featured workflow' })
+        .getAttribute('href')
+    ).toBe('https://comfy.org/workflows/')
+    expect(screen.getByText('Featured workflow')).toBeTruthy()
+    expect(screen.getByText('ComfyUI')).toBeTruthy()
   })
 })

@@ -33,11 +33,25 @@ if (model.canonicalSlug) {
 
 const { displayName } = model
 const workflowsUrl = 'https://comfy.org/workflows/'
+const providerIcons: readonly [RegExp, string][] = [
+  [/wan/i, '/icons/ai-models/wan.svg'],
+  [/qwen/i, '/icons/ai-models/qwen.svg'],
+  [/minimax/i, '/icons/ai-models/minimax.svg'],
+  [/seedance/i, '/icons/ai-models/bytedance.svg'],
+  [/(gpt|openai)/i, '/icons/ai-models/openai.svg'],
+  [/gemini/i, '/icons/ai-models/gemini.svg'],
+  [/grok/i, '/icons/ai-models/grok.svg'],
+]
+const brandIconSrc = providerIcons.find(([pattern]) =>
+  pattern.test(displayName),
+)?.[1]
 const workflowPreviews: CardWorkflowItem[] = model.workflowPreviews.map(
   (workflow) => ({
     id: workflow.id,
     title: workflow.title,
     href: workflowsUrl,
+    sourceLabel: 'ComfyUI',
+    brandIconSrc,
     media: {
       type: 'image',
       src: workflow.thumbnailUrl,
@@ -92,6 +106,7 @@ const faqPage = modelFaqJsonLd(faqs, jsonLdId(url, 'faq'))
     hubSlug={model.hubSlug}
     workflowCount={model.workflowCount}
     directory={model.directory}
+    featuredWorkflow={workflowPreviews[0]}
   />
 
   {workflowPreviews.length > 0 && (

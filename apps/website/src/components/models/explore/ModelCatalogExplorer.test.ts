@@ -31,7 +31,9 @@ const props = {
   categoryOptions: [
     { value: 'all' as const, label: 'ALL' },
     { value: 'image' as const, label: 'Image' },
-    { value: 'video' as const, label: 'Video' }
+    { value: 'video' as const, label: 'Video' },
+    { value: 'open' as const, label: 'Open Source' },
+    { value: 'partner' as const, label: 'Partner Nodes' }
   ],
   categoryLabel: 'Model categories',
   searchLabel: 'Search supported models',
@@ -73,6 +75,43 @@ describe('ModelCatalogExplorer', () => {
     expect(screen.getByRole('link', { name: 'Partner Image' })).toBeTruthy()
     expect(screen.queryByRole('link', { name: 'Wan Video' })).toBeNull()
     expect(screen.getByText('Partner API')).toBeTruthy()
+  })
+
+  it.for([
+    {
+      filter: 'Open Source',
+      includedModel: 'Wan Video',
+      excludedModel: 'Partner Image'
+    },
+    {
+      filter: 'Partner Nodes',
+      includedModel: 'Partner Image',
+      excludedModel: 'Wan Video'
+    }
+  ])(
+    'filters the catalog with the $filter access tab',
+    async ({ filter, includedModel, excludedModel }) => {
+      render(ModelCatalogExplorer, {
+        props: { ...props, showCatalogByDefault: true }
+      })
+
+      await userEvent.click(screen.getByRole('radio', { name: filter }))
+
+      expect(screen.getByRole('link', { name: includedModel })).toBeTruthy()
+      expect(screen.queryByRole('link', { name: excludedModel })).toBeNull()
+    }
+  )
+
+  it('clears the access filter when a media category is selected', async () => {
+    render(ModelCatalogExplorer, {
+      props: { ...props, showCatalogByDefault: true }
+    })
+
+    await userEvent.click(screen.getByRole('radio', { name: 'Partner Nodes' }))
+    await userEvent.click(screen.getByRole('radio', { name: 'Video' }))
+
+    expect(screen.getByRole('link', { name: 'Wan Video' })).toBeTruthy()
+    expect(screen.queryByRole('link', { name: 'Partner Image' })).toBeNull()
   })
 
   it('reveals the complete catalog from the collection action URL', async () => {
@@ -124,6 +163,13 @@ describe('ModelCatalogExplorer', () => {
       })
 
       await waitFor(() => {
+        expect(
+          screen
+            .getByRole('radio', {
+              name: access === 'open' ? 'Open Source' : 'Partner Nodes'
+            })
+            .getAttribute('data-state')
+        ).toBe('checked')
         expect(screen.getByRole('status').textContent).toBe('1 matching models')
         expect(screen.getByRole('link', { name: includedModel })).toBeTruthy()
         expect(screen.queryByRole('link', { name: excludedModel })).toBeNull()

@@ -12,6 +12,7 @@ import type { ModelCategoryOption } from '../../../components/models/explore/Mod
 import {
   dayZeroModelFixtures,
   familyVariantFixtures,
+  latestModelReleaseFixture,
   taskFixtures,
   trendingModelFixtures,
 } from '../../../components/models/explore/modelExploreFixtures'
@@ -20,7 +21,7 @@ import {
   summarizeModelExploreCatalog,
 } from '../../../components/models/explore/modelExploreCatalog'
 import { models } from '../../../config/models'
-import { MODEL_CATEGORIES } from '../../../config/modelCategories'
+import { MODEL_FILTER_CATEGORIES } from '../../../config/modelCategories'
 import { externalLinks, getRoutes } from '../../../config/routes'
 import { t } from '../../../i18n/translations'
 import {
@@ -58,10 +59,18 @@ const modelList = itemListNode(
 const categories = t('models.explore.categories', locale).split('|')
 const categoryOptions: ModelCategoryOption[] = [
   { value: 'all', label: categories[0] ?? 'ALL' },
-  ...MODEL_CATEGORIES.map((value, index) => ({
+  ...MODEL_FILTER_CATEGORIES.map((value, index) => ({
     value,
     label: categories[index + 1] ?? value,
   })),
+  {
+    value: 'open',
+    label: t('models.explore.filters.openSource', locale),
+  },
+  {
+    value: 'partner',
+    label: t('models.explore.filters.partnerNodes', locale),
+  },
 ]
 const catalog = createModelExploreCatalog(models)
 const routes = getRoutes(locale)
@@ -132,8 +141,7 @@ const conversionCards = [
     primaryCta={t('models.explore.primaryCta', locale)}
     secondaryCta={t('models.explore.secondaryCta', locale)}
     {stats}
-    featuredTitle={t('models.explore.featuredTitle', locale)}
-    featuredHref="/p/supported-models/wan-2-6"
+    featured={latestModelReleaseFixture}
     primaryHref={externalLinks.cloud}
     secondaryHref={externalLinks.workflows}
   />
@@ -183,6 +191,7 @@ const conversionCards = [
     eyebrow={t('models.explore.family.eyebrow', locale)}
     title={t('models.explore.family.title', locale)}
     description={t('models.explore.family.description', locale)}
+    featured={latestModelReleaseFixture}
     variants={familyVariantFixtures}
     viewModelLabel={t('models.explore.family.viewModel', locale)}
   />
