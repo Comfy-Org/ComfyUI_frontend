@@ -8,9 +8,10 @@
  * `disconnect` exist only for render fidelity.
  *
  * A follower NEVER writes the shared doc (KA-#6). Every batch is tagged
- * `source: 'agent-remote'`; the mutator applies it inside a remote scope
- * (mapped to `LayoutSource.External` at the composition root) which the future
- * human-op sender uses to suppress echoes.
+ * `source: 'agent-remote'`; the mutator can apply it inside an injected remote
+ * scope which the future human-op sender uses to suppress echoes (post-ECS
+ * this must be built on per-mutation command sources — the global
+ * `LayoutSource.External` scope no longer exists).
  */
 import type { NodeId } from '@/types/nodeId'
 

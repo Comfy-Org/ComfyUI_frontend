@@ -5,7 +5,7 @@ import userEvent from '@testing-library/user-event'
 import { createPinia, setActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import Tooltip from 'primevue/tooltip'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
@@ -609,10 +609,6 @@ describe('Composer', () => {
   describe('insert', () => {
     beforeEach(() => {
       vi.useFakeTimers()
-    })
-
-    afterEach(() => {
-      vi.useRealTimers()
     })
 
     function mountWithInsert() {

@@ -1,9 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, shallowRef } from 'vue'
+import { computed } from 'vue'
 
-import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
-import type { GraphNodeManager } from '@/composables/graph/useGraphNodeManager'
-import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import type {
   LGraph,
   LGraphCanvas,
@@ -11,26 +8,35 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import { LayoutSource } from '@/renderer/core/layout/types'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { toNodeId } from '@/types/nodeId'
+import type { UUID } from '@/utils/uuid'
 
+const ROOT_GRAPH_ID = vi.hoisted<UUID>(() => 'root-graph')
 const canvasSelectedItems = vi.hoisted(() => [] as Array<{ id?: string }>)
-const getCurrentGraphNode = vi.hoisted(() => vi.fn())
+const graphNode = vi.hoisted(() => ({
+  id: 'node-1',
+  selected: false,
+  flags: { pinned: false }
+}))
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => {
   const canvas: Partial<LGraphCanvas> = {
-    graph: {
-      getNodeById: getCurrentGraphNode
-    } as unknown as LGraph,
     select: vi.fn(),
     deselect: vi.fn(),
     deselectAll: vi.fn()
   }
   const updateSelectedItems = vi.fn()
+  const currentGraph: Partial<LGraph> = {
+    getNodeById: vi.fn(() => graphNode as Partial<LGraphNode> as LGraphNode)
+  }
   const canvasStoreInstance = {
     canvas: canvas as LGraphCanvas,
+    currentGraph: currentGraph as LGraph,
     updateSelectedItems,
-    selectedItems: canvasSelectedItems
+    selectedItems: canvasSelectedItems,
+    rootGraphId: ROOT_GRAPH_ID
   }
   return {
     useCanvasStore: vi.fn(() => canvasStoreInstance)
@@ -44,44 +50,17 @@ vi.mock('@/renderer/core/canvas/useCanvasInteractions', () => ({
 }))
 
 vi.mock('@/renderer/core/layout/operations/layoutMutations', () => {
-  const setSource = vi.fn()
-  const bringNodeToFront = vi.fn()
+  const setNodeOrder = vi.fn()
   return {
     useLayoutMutations: vi.fn(() => ({
-      setSource,
-      bringNodeToFront
-    }))
-  }
-})
-
-vi.mock('@/composables/graph/useGraphNodeManager', () => {
-  const mockNode = {
-    id: 'node-1',
-    selected: false,
-    flags: { pinned: false }
-  }
-  const nodeManager = shallowRef({
-    getNode: vi.fn(() => mockNode as Partial<LGraphNode> as LGraphNode)
-  } as Partial<GraphNodeManager> as GraphNodeManager)
-  return {
-    useGraphNodeManager: vi.fn(() => nodeManager)
-  }
-})
-
-vi.mock('@/composables/graph/useVueNodeLifecycle', () => {
-  const nodeManager = useGraphNodeManager(null!)
-  return {
-    useVueNodeLifecycle: vi.fn(() => ({
-      nodeManager
+      setNodeOrder
     }))
   }
 })
 
 describe('useNodeEventHandlers', () => {
-  const { nodeManager: mockNodeManager } = useVueNodeLifecycle()
-
-  const mockNode = mockNodeManager.value!.getNode(toNodeId('fake_id'))
-  const mockLayoutMutations = useLayoutMutations()
+  const mockNode = graphNode as Partial<LGraphNode> as LGraphNode
+  const mockLayoutMutations = useLayoutMutations(LayoutSource.Vue)
 
   const testNodeId = toNodeId('node-1')
 
@@ -122,8 +101,10 @@ describe('useNodeEventHandlers', () => {
       handleNodeSelect(ctrlClickEvent, testNodeId)
 
       // On pointer down with multi-select: bring to front
-      expect(mockLayoutMutations.bringNodeToFront).toHaveBeenCalledWith(
-        'node-1'
+      expect(mockLayoutMutations.setNodeOrder).toHaveBeenCalledWith(
+        useCanvasStore().currentGraph,
+        'node-1',
+        'front'
       )
 
       // Selection happens immediately so dragging includes this node
@@ -148,8 +129,10 @@ describe('useNodeEventHandlers', () => {
       handleNodeSelect(ctrlClickEvent, testNodeId)
 
       // On pointer down: bring to front
-      expect(mockLayoutMutations.bringNodeToFront).toHaveBeenCalledWith(
-        'node-1'
+      expect(mockLayoutMutations.setNodeOrder).toHaveBeenCalledWith(
+        useCanvasStore().currentGraph,
+        'node-1',
+        'front'
       )
 
       // But don't deselect yet (deferred to pointer up)
@@ -173,8 +156,10 @@ describe('useNodeEventHandlers', () => {
       handleNodeSelect(metaClickEvent, testNodeId)
 
       // On pointer down with meta key: bring to front
-      expect(mockLayoutMutations.bringNodeToFront).toHaveBeenCalledWith(
-        'node-1'
+      expect(mockLayoutMutations.setNodeOrder).toHaveBeenCalledWith(
+        useCanvasStore().currentGraph,
+        'node-1',
+        'front'
       )
 
       // Selection happens immediately
@@ -198,8 +183,10 @@ describe('useNodeEventHandlers', () => {
       handleNodeSelect(shiftClickEvent, testNodeId)
 
       // On pointer down with shift: bring to front
-      expect(mockLayoutMutations.bringNodeToFront).toHaveBeenCalledWith(
-        'node-1'
+      expect(mockLayoutMutations.setNodeOrder).toHaveBeenCalledWith(
+        useCanvasStore().currentGraph,
+        'node-1',
+        'front'
       )
 
       // Selection happens immediately for shift-click as well
@@ -235,8 +222,10 @@ describe('useNodeEventHandlers', () => {
       const event = new PointerEvent('pointerdown')
       handleNodeSelect(event, testNodeId)
 
-      expect(mockLayoutMutations.bringNodeToFront).toHaveBeenCalledWith(
-        'node-1'
+      expect(mockLayoutMutations.setNodeOrder).toHaveBeenCalledWith(
+        useCanvasStore().currentGraph,
+        'node-1',
+        'front'
       )
     })
 
@@ -248,24 +237,11 @@ describe('useNodeEventHandlers', () => {
       const event = new PointerEvent('pointerdown')
       handleNodeSelect(event, testNodeId)
 
-      expect(mockLayoutMutations.bringNodeToFront).not.toHaveBeenCalled()
+      expect(mockLayoutMutations.setNodeOrder).not.toHaveBeenCalled()
     })
   })
 
   describe('toggleNodeSelectionAfterPointerUp', () => {
-    it('uses the current graph when the lifecycle manager is stale', () => {
-      const { toggleNodeSelectionAfterPointerUp } = useNodeEventHandlers()
-      const { canvas, updateSelectedItems } = useCanvasStore()
-      vi.mocked(mockNodeManager.value!.getNode).mockReturnValueOnce(undefined)
-      getCurrentGraphNode.mockReturnValueOnce(mockNode)
-      mockNode!.selected = false
-
-      toggleNodeSelectionAfterPointerUp(testNodeId, true)
-
-      expect(canvas?.select).toHaveBeenCalledWith(mockNode)
-      expect(updateSelectedItems).toHaveBeenCalledOnce()
-    })
-
     it('on pointer up with multi-select: deselects node that was selected at pointer down', () => {
       const { toggleNodeSelectionAfterPointerUp } = useNodeEventHandlers()
       const { canvas, updateSelectedItems } = useCanvasStore()

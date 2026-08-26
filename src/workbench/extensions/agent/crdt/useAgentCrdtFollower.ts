@@ -1,14 +1,6 @@
 import { computed, onBeforeUnmount, readonly, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
-// The follower composable is the composition root that wires renderer-layer
-// concretes (layout store, litegraph) into the layer-agnostic CRDT seam. This
-// is the single, documented workbench→renderer boundary crossing (ADR-009);
-// the mutator/projector/diff themselves stay free of renderer imports.
-// eslint-disable-next-line import-x/no-restricted-paths
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-// eslint-disable-next-line import-x/no-restricted-paths
-import { LayoutSource } from '@/renderer/core/layout/types'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -86,18 +78,14 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
   const client = new DocFrameClient(apiTransport)
   const bridge = new LayoutFollowerBridge(client)
   const tabId = crypto.randomUUID()
+  // Post-ECS main removed the global layout source scope
+  // (`LayoutSource.External` / `layoutStore.setSource`), so remote batches
+  // apply directly. Echo suppression becomes load-bearing only when the
+  // human-op sender lands (KA-6: the follower itself never writes); it must
+  // then be rebuilt against per-mutation ECS command sources.
   const mutator = new LitegraphMutator({
     getGraph: () => app.graph ?? null,
-    createNode: (type) => LiteGraph.createNode(type),
-    runRemoteScope: (apply) => {
-      const previousSource = layoutStore.getCurrentSource()
-      layoutStore.setSource(LayoutSource.External)
-      try {
-        apply()
-      } finally {
-        layoutStore.setSource(previousSource)
-      }
-    }
+    createNode: (type) => LiteGraph.createNode(type)
   })
   const projector = new SemanticProjector(mutator, { actor: tabId })
 

@@ -18,10 +18,11 @@ describe('searchRankBoost', () => {
   })
 
   it('stays neutral inside the dead zone and engages just outside it', () => {
-    const inert =
-      "retired 1-10 ranks like the starter templates' 3 must stay inert"
     for (const insideDeadZone of [1, 2, 3, 4, 5, -1, -5]) {
-      expect(searchRankBoost(insideDeadZone), inert).toBe(0)
+      expect(
+        searchRankBoost(insideDeadZone),
+        `rank ${insideDeadZone} is a retired 1-10 rank like the starter templates' 3 and must stay inert`
+      ).toBe(0)
     }
     expect(searchRankBoost(6)).toBeGreaterThan(0)
     expect(searchRankBoost(-6)).toBeLessThan(0)

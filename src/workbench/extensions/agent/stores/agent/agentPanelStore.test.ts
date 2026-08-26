@@ -18,13 +18,11 @@ describe('agentPanelStore engagement telemetry', () => {
   beforeEach(() => {
     localStorage.clear()
     setActivePinia(createPinia())
-    vi.clearAllMocks()
     vi.useFakeTimers()
   })
 
   afterEach(() => {
     useAgentPanelStore().$dispose()
-    vi.useRealTimers()
   })
 
   it('emits a restored open only once the rehydrated panel actually docks', async () => {
@@ -125,7 +123,6 @@ describe('agentPanelStore open-state persistence', () => {
   beforeEach(() => {
     localStorage.clear()
     setActivePinia(createPinia())
-    vi.clearAllMocks()
   })
 
   afterEach(() => {

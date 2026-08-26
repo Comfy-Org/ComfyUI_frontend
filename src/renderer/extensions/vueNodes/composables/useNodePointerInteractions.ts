@@ -7,17 +7,17 @@ import {
   isMiddlePointerInput
 } from '@/base/pointerUtils'
 import { useClickDragGuard } from '@/composables/useClickDragGuard'
-import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import type { NodeId } from '@/types/nodeId'
+import type { NodeState } from '@/types/nodeState'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { isMultiSelectKey } from '@/renderer/extensions/vueNodes/utils/selectionUtils'
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
 
 export function useNodePointerInteractions(
-  nodeIdRef: MaybeRefOrGetter<NodeId>
+  nodeStateRef: MaybeRefOrGetter<NodeState>
 ) {
   const { startDrag, endDrag, handleDrag } = useNodeDrag()
   // Use canvas interactions for proper wheel event handling and pointer event capture control
@@ -25,12 +25,8 @@ export function useNodePointerInteractions(
     useCanvasInteractions()
   const { handleNodeSelect, toggleNodeSelectionAfterPointerUp } =
     useNodeEventHandlers()
-  const { nodeManager } = useVueNodeLifecycle()
   const agentNodeSelectionStore = useAgentNodeSelectionStore()
-
-  function isPinnedNode(nodeId: NodeId): boolean {
-    return nodeManager.value?.getNode(nodeId)?.flags?.pinned ?? false
-  }
+  const isPinned = () => !!toValue(nodeStateRef).flags.pinned
 
   const forwardMiddlePointerIfNeeded = (
     event: PointerEvent,
@@ -57,18 +53,11 @@ export function useNodePointerInteractions(
       return
     }
 
-    const nodeId = toValue(nodeIdRef)
-    if (!nodeId) {
-      console.warn(
-        'LGraphNode: nodeData is null/undefined in handlePointerDown'
-      )
-      return
-    }
+    if (isPinned()) return
 
-    // IMPORTANT: Read from actual LGraphNode to get correct state
-    if (isPinnedNode(nodeId) || agentNodeSelectionStore.isActive) {
-      return
-    }
+    if (agentNodeSelectionStore.isActive) return
+
+    const nodeId = toValue(nodeStateRef).id
 
     dragGuard.recordStart(event)
 
@@ -81,11 +70,11 @@ export function useNodePointerInteractions(
     // Don't activate drag while resizing
     if (layoutStore.isResizingVueNodes.value) return
 
-    const nodeId = toValue(nodeIdRef)
+    if (isPinned()) return
 
-    if (isPinnedNode(nodeId) || agentNodeSelectionStore.isActive) {
-      return
-    }
+    if (agentNodeSelectionStore.isActive) return
+
+    const nodeId = toValue(nodeStateRef).id
 
     const multiSelect = isMultiSelectKey(event)
 
@@ -128,8 +117,7 @@ export function useNodePointerInteractions(
 
   function safeDragEnd(event: PointerEvent) {
     try {
-      const nodeId = toValue(nodeIdRef)
-      endDrag(event, nodeId)
+      endDrag(event, toValue(nodeStateRef).id)
     } catch (error) {
       console.error('Error during endDrag:', error)
     } finally {
@@ -165,10 +153,7 @@ export function useNodePointerInteractions(
     const multiSelect =
       isMultiSelectKey(event) || agentNodeSelectionStore.isActive
 
-    const nodeId = toValue(nodeIdRef)
-    if (nodeId) {
-      toggleNodeSelectionAfterPointerUp(nodeId, multiSelect)
-    }
+    toggleNodeSelectionAfterPointerUp(toValue(nodeStateRef).id, multiSelect)
   }
 
   function onPointercancel(event: PointerEvent) {

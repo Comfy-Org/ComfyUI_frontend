@@ -1,5 +1,5 @@
 import { createPinia, setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
@@ -16,10 +16,6 @@ describe('agentNodeSelectionStore', () => {
     vi.useFakeTimers()
     dialogStack.length = 0
     setActivePinia(createPinia())
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
   })
 
   it('sequences selection chrome and restores the open sidebar', async () => {
