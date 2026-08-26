@@ -267,6 +267,91 @@ describe('drawConnections', () => {
     }
   )
 
+  it.for([
+    { connectedRatio: 0, fanOut: 1, hiddenEvery: 0 },
+    { connectedRatio: 0.25, fanOut: 1, hiddenEvery: 2 },
+    { connectedRatio: 1, fanOut: 8, hiddenEvery: 3 }
+  ])(
+    'scans inputs once and preserves rendered link identity at $connectedRatio occupancy and $fanOut fan-out',
+    ({ connectedRatio, fanOut, hiddenEvery }) => {
+      const nodeCount = 8
+      const inputsPerNode = 4
+      const targets = Array.from({ length: nodeCount }, (_, nodeIndex) => {
+        const target = new LGraphNode(`Target ${nodeIndex}`)
+        target.pos = [300, nodeIndex * 80]
+        for (let slot = 0; slot < inputsPerNode; slot++) {
+          target.addInput(`in ${slot}`, 'INT')
+        }
+        graph.add(target)
+        return target
+      })
+      const allInputs = targets.flatMap((target) =>
+        target.inputs.map((_, slot) => ({ target, slot }))
+      )
+      const connectedCount = Math.floor(allInputs.length * connectedRatio)
+      const sources = Array.from(
+        { length: Math.ceil(connectedCount / fanOut) },
+        (_, sourceIndex) => {
+          const source = new LGraphNode(`Source ${sourceIndex}`)
+          source.pos = [0, sourceIndex * 80]
+          source.addOutput('out', 'INT')
+          graph.add(source)
+          return source
+        }
+      )
+      const expectedLinks = allInputs
+        .slice(0, connectedCount)
+        .map(({ target, slot }, index) =>
+          createTestLink(
+            graph,
+            sources[Math.floor(index / fanOut)],
+            0,
+            target,
+            slot
+          )
+        )
+
+      vi.mocked(layoutStore.getNodeLayout).mockImplementation(
+        (_graphId, nodeId) => {
+          const nodeIndex = targets.findIndex((node) => node.id === nodeId)
+          return {
+            id: nodeId,
+            position: { x: 0, y: 0 },
+            size: { width: 100, height: 100 },
+            zIndex: nodeIndex,
+            visible:
+              !hiddenEvery || nodeIndex < 0 || nodeIndex % hiddenEvery !== 0,
+            bounds: { x: 0, y: 0, width: 100, height: 100 }
+          }
+        }
+      )
+      const linkStore = useLinkStore()
+      const inputLookup = vi.spyOn(linkStore, 'getInputSlotLink')
+      const resolveLink = vi.spyOn(graph, 'getLink')
+      canvas.visible_area.set([0, 0, 800, 3_000])
+      vi.spyOn(canvas, 'renderLink').mockImplementation(() => {})
+
+      canvas.drawConnections(createMockCtx())
+
+      const scannedInputs = allInputs.length
+      const scopes = new Set(inputLookup.mock.calls.map(([scope]) => scope))
+      expect(inputLookup).toHaveBeenCalledTimes(scannedInputs)
+      expect(resolveLink).toHaveBeenCalledTimes(connectedCount)
+      expect([...canvas.renderedPaths]).toEqual(expectedLinks)
+      expect(scopes.size).toBe(scannedInputs)
+      expect(new Set(expectedLinks.map((link) => link.origin_id)).size).toBe(
+        connectedCount ? Math.ceil(connectedCount / fanOut) : 0
+      )
+
+      const compatibilityIds = allInputs.map(
+        ({ target, slot }) => target.inputs[slot].link
+      )
+      expect(compatibilityIds.filter((id) => id != null)).toEqual(
+        expectedLinks.map((link) => link.id)
+      )
+    }
+  )
+
   it('connects, draws, and serializes without deprecation warnings', () => {
     const sourceNode = new LGraphNode('Source')
     sourceNode.pos = [100, 100]
