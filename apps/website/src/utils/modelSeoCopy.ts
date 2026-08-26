@@ -1,7 +1,7 @@
 import type { Model } from '../config/models'
 
 function isCloudOnly(model: Model): boolean {
-  return model.directory === 'partner_nodes' && !model.huggingFaceUrl
+  return !model.huggingFaceUrl
 }
 
 export function getWhatIsDescription(model: Model, dirDesc: string): string {

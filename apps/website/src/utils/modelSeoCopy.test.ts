@@ -103,13 +103,10 @@ describe('modelSeoCopy', () => {
       expect(ans).not.toContain('local inference')
     })
 
-    it('returns cloud API and local inference copy for standard models without HF URLs', () => {
+    it('returns cloud-only copy for standard models without HF URLs', () => {
       const ans = getFaqPricingAnswer(standardCloudApi)
-      expect(ans).toContain('ComfyUI is free and open source')
-      expect(ans).toContain('is available as a cloud API through Comfy Cloud')
-      expect(ans).toContain(
-        'local inference on your own hardware is always free'
-      )
+      expect(ans).toContain('exclusively on Comfy Cloud')
+      expect(ans).not.toContain('local inference')
     })
   })
 })
