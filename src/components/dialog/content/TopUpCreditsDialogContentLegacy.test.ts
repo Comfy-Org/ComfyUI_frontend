@@ -53,8 +53,9 @@ vi.mock('@/platform/telemetry', () => ({
   })
 }))
 
+const mockClearPendingTopup = vi.hoisted(() => vi.fn())
 vi.mock('@/platform/workspace/composables/usePendingTopup', () => ({
-  usePendingTopup: () => ({ clearPendingTopup: vi.fn() })
+  usePendingTopup: () => ({ clearPendingTopup: mockClearPendingTopup })
 }))
 
 vi.mock('@/composables/useExternalLink', () => ({
@@ -138,6 +139,16 @@ describe('TopUpCreditsDialogContentLegacy', () => {
     expect(mockPurchaseCreditsDirect).toHaveBeenCalledWith(50)
     expect(mockCloseDialog).toHaveBeenCalled()
     expect(mockShowSettings).toHaveBeenCalledWith('workspace')
+    expect(mockClearPendingTopup).not.toHaveBeenCalled()
+  })
+
+  it('clears the pending top-up marker when the user closes the dialog', async () => {
+    renderDialog()
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'Close' }))
+
+    expect(mockClearPendingTopup).toHaveBeenCalled()
+    expect(mockCloseDialog).toHaveBeenCalled()
   })
 
   it('shows the credits settings panel when subscriptions are disabled', async () => {

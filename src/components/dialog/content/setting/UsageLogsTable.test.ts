@@ -474,6 +474,17 @@ describe('UsageLogsTable', () => {
         expect(mockTelemetry.trackApiCreditTopupSucceeded).toHaveBeenCalled()
       })
     })
+
+    it('skips top-up telemetry when no completion is pending', async () => {
+      mockPendingTopup.isPendingTopupCompleted.mockReturnValue(false)
+
+      await renderLoaded()
+
+      expect(mockPendingTopup.isPendingTopupCompleted).toHaveBeenCalledWith(
+        mockEventsResponse.events
+      )
+      expect(mockTelemetry.trackApiCreditTopupSucceeded).not.toHaveBeenCalled()
+    })
   })
 
   describe('EventType integration', () => {

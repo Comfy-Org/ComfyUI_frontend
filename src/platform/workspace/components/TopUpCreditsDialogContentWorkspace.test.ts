@@ -90,8 +90,9 @@ vi.mock('@/platform/telemetry', () => ({
   })
 }))
 
+const mockClearPendingTopup = vi.hoisted(() => vi.fn())
 vi.mock('@/platform/workspace/composables/usePendingTopup', () => ({
-  usePendingTopup: () => ({ clearPendingTopup: vi.fn() })
+  usePendingTopup: () => ({ clearPendingTopup: mockClearPendingTopup })
 }))
 
 vi.mock('@/composables/useExternalLink', () => ({
@@ -418,6 +419,15 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       billing_op_id: 'op-1',
       duration_ms: expect.any(Number)
     })
+    expect(mockClearPendingTopup).not.toHaveBeenCalled()
+  })
+
+  it('clears the pending top-up marker when the user closes the dialog', async () => {
+    renderDialog()
+    await userEvent.click(screen.getByRole('button', { name: 'Close' }))
+
+    expect(mockClearPendingTopup).toHaveBeenCalled()
+    expect(mockCloseDialog).toHaveBeenCalled()
   })
 
   it('keeps completed top-up telemetry successful when refresh fails', async () => {
