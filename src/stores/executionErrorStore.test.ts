@@ -910,6 +910,9 @@ describe('absorbed-error retirement on candidate resolution', () => {
   })
 
   const execId = createNodeExecutionId([1])
+  if (!execId) {
+    throw new Error('Expected a node execution ID')
+  }
 
   function absorbedModelCandidate() {
     return {

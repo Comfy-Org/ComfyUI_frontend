@@ -26,6 +26,9 @@ import { classifyValidationErrorAbsorption } from './missingResourceAbsorption'
 const nodeId = createNodeExecutionId([12, 4])
 const liftedHostNodeId = createNodeExecutionId([12])
 const liftedSourceNodeId = createNodeExecutionId([12, 5])
+if (!nodeId || !liftedHostNodeId || !liftedSourceNodeId) {
+  throw new Error('Expected non-empty node execution IDs')
+}
 
 beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
