@@ -5604,27 +5604,48 @@ const translations = {
   'footer.wanAnimate2': { en: 'Wan Animate 2', 'zh-CN': 'Wan Animate 2' },
   'footer.ltx': { en: 'LTX 2.5', 'zh-CN': 'LTX 2.5' },
   'modelLaunch.copyPrompt': { en: 'Copy prompt', 'zh-CN': '复制提示词' },
-  // Wan 3.0 model page (/wan-3.0) — announcement until the model ships
+  // Wan 3.0 model page (/wan-3.0)
   'wan3.meta.title': {
-    en: 'Wan 3.0 on Comfy — Coming Soon',
-    'zh-CN': 'Comfy 上的 Wan 3.0 — 即将推出'
+    en: 'Wan 3.0 on Comfy — Text, Image and Reference to Video',
+    'zh-CN': 'Comfy 上的 Wan 3.0 — 文生、图生与参考生视频'
   },
   'wan3.meta.description': {
-    en: 'Wan 3.0 is coming to Comfy. Run it on Comfy Cloud the day it lands, or start building workflows for free now with every other model Comfy supports.',
+    en: 'Run Wan 3.0 on Comfy Cloud. Generate up to 30 seconds of video from a text prompt, an image, or video, image and audio references, with sound produced alongside the picture.',
     'zh-CN':
-      'Wan 3.0 即将登陆 Comfy。上线当天即可在 Comfy Cloud 上运行；现在就可以用 Comfy 支持的其他模型免费开始搭建工作流。'
+      '在 Comfy Cloud 上运行 Wan 3.0。可从文字提示词、图像，或视频、图像与音频参考生成最长 30 秒的视频，并同时生成画面与声音。'
   },
   'wan3.breadcrumb.model': { en: 'Wan 3.0', 'zh-CN': 'Wan 3.0' },
   'wan3.breadcrumb.updated': {
     en: 'Updated August 2026',
     'zh-CN': '更新于 2026 年 8 月'
   },
-  'wan3.hero.eyebrow': { en: 'Coming soon', 'zh-CN': '即将推出' },
-  'wan3.hero.title': { en: 'Wan 3.0', 'zh-CN': 'Wan 3.0' },
-  'wan3.hero.primaryCta': {
-    en: 'RUN COMFY FOR FREE',
-    'zh-CN': '免费使用 Comfy'
+  'wan3.hero.title': { en: 'Wan 3.0 is here', 'zh-CN': 'Wan 3.0 已上线' },
+  'wan3.hero.description': {
+    en: "Wan 3.0 is a step change from previous Wan models. It generates what earlier versions couldn't: a full 30-second scene in one take, as low as 480p for speed and iteration, and up to 1080p for production quality. Available on Comfy Cloud and via Partner Nodes today.",
+    'zh-CN':
+      'Wan 3.0 相比以往的 Wan 模型是一次跨越式提升。它能做到早期版本做不到的事：一镜到底生成完整的 30 秒场景，低至 480p 以便快速迭代，最高 1080p 达到成片质量。现已在 Comfy Cloud 及合作伙伴节点上提供。'
   },
+  'wan3.hero.tagTextToVideo': { en: 'Text to Video', 'zh-CN': '文生视频' },
+  'wan3.hero.tagImageToVideo': { en: 'Image to Video', 'zh-CN': '图生视频' },
+  'wan3.hero.tagReferenceToVideo': {
+    en: 'Reference to Video',
+    'zh-CN': '参考生视频'
+  },
+  'wan3.hero.primaryCta': { en: 'RUN WAN 3.0', 'zh-CN': '运行 Wan 3.0' },
+  'wan3.hero.secondaryCta': {
+    en: 'BROWSE WORKFLOWS',
+    'zh-CN': '浏览工作流'
+  },
+  'wan3.pricing.banner.title': {
+    en: "Start Comfy Cloud for free. Upgrade when you're ready.",
+    'zh-CN': '免费开始使用 Comfy Cloud，准备好了再升级。'
+  },
+  'wan3.pricing.banner.subtitle': {
+    en: '5 free runs on real GPUs — no credit card required.',
+    'zh-CN': '在真实 GPU 上免费运行 5 次 — 无需信用卡。'
+  },
+  'wan3.pricing.banner.cta': { en: 'TRY FREE', 'zh-CN': '免费试用' },
+  'wan3.faq.heading': { en: 'Q&A', 'zh-CN': '问答' },
   'wan3.runOptions.heading': {
     en: 'One engine, every way to run it',
     'zh-CN': '同一引擎，多种运行方式'

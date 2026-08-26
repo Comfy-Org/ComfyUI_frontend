@@ -31,10 +31,19 @@ const state = vi.hoisted(() => ({
   workspaceType: 'team' as string,
   canManageSubscription: true,
   canManageSubscriptionLifecycle: true,
+  canReactivate: true,
+  shouldUseWorkspaceBilling: true,
   canTopUp: true,
+  canSubscribeSelfServe: false,
   showTopUpCreditsDialog: vi.fn(),
   manageSubscription: vi.fn(),
   handleResubscribe: vi.fn()
+}))
+
+vi.mock('@/composables/billing/useBillingRouting', () => ({
+  useBillingRouting: () => ({
+    shouldUseWorkspaceBilling: computed(() => state.shouldUseWorkspaceBilling)
+  })
 }))
 
 vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
@@ -69,10 +78,17 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   useWorkspaceUI: () => ({
     permissions: computed(() => ({
       canManageSubscription: state.canManageSubscription,
-      canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle,
-      canTopUp: state.canTopUp
+      canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
     })),
     workspaceType: computed(() => state.workspaceType as WorkspaceType)
+  })
+}))
+
+vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
+  useBillingCapabilities: () => ({
+    canTopUp: computed(() => state.canTopUp),
+    canSubscribeSelfServe: computed(() => state.canSubscribeSelfServe),
+    canReactivate: computed(() => state.canReactivate)
   })
 }))
 
@@ -112,6 +128,8 @@ const i18n = createI18n({
             body: 'Your team has used all its credits. Add more credits to continue generating or wait until credits refill on {date}.',
             bodyNoDate:
               'Your team has used all its credits. Add more credits to continue generating.',
+            upgradeBody:
+              'Upgrade your plan to add credits and continue generating.',
             memberBody:
               'Your team has used all its credits. Your workspace admins need to add more credits to continue generating.',
             addCredits: 'Add credits',
@@ -124,6 +142,9 @@ const i18n = createI18n({
           },
           updatePayment: 'Update payment'
         }
+      },
+      subscription: {
+        upgradeToAddCredits: 'Upgrade to add credits'
       }
     }
   }
@@ -173,7 +194,10 @@ describe('BillingStatusBanner', () => {
     state.workspaceType = 'team'
     state.canManageSubscription = true
     state.canManageSubscriptionLifecycle = true
+    state.canReactivate = true
+    state.shouldUseWorkspaceBilling = true
     state.canTopUp = true
+    state.canSubscribeSelfServe = false
   })
 
   it('renders nothing for a healthy funded team', () => {
@@ -195,6 +219,24 @@ describe('BillingStatusBanner', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Out of credits')
     await userEvent.click(screen.getByRole('button', { name: 'Add credits' }))
     expect(state.showTopUpCreditsDialog).toHaveBeenCalledTimes(1)
+  })
+
+  it('offers an upgrade when self-serve subscription is available', () => {
+    exhausted()
+    state.canTopUp = false
+    state.canSubscribeSelfServe = true
+
+    renderBanner()
+
+    expect(
+      screen.getByRole('button', { name: 'Upgrade to add credits' })
+    ).toBeVisible()
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Upgrade your plan to add credits and continue generating.'
+    )
+    expect(screen.getByRole('status')).not.toHaveTextContent(
+      'Your workspace admins need to add more credits'
+    )
   })
 
   it('shows out-of-credits contact-admin copy without an Add credits action for members', () => {
@@ -319,6 +361,25 @@ describe('BillingStatusBanner', () => {
     expect(state.handleResubscribe).toHaveBeenCalledTimes(1)
   })
 
+  it('keeps reactivation on the legacy rail where the capability does not apply', async () => {
+    // Cloud personal on legacy_stripe: handleResubscribe skips its capability
+    // guard, so the affordance must follow the client permission instead.
+    state.shouldUseWorkspaceBilling = false
+    state.canReactivate = false
+    state.canManageSubscriptionLifecycle = true
+    state.subscription = {
+      hasFunds: true,
+      isCancelled: true,
+      endDate: '2026-08-01T00:00:00Z'
+    }
+    renderBanner()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Reactivate plan' })
+    )
+    expect(state.handleResubscribe).toHaveBeenCalledTimes(1)
+  })
+
   it('does not expose reactivation controls to a member', () => {
     state.subscription = {
       hasFunds: true,
@@ -327,9 +388,29 @@ describe('BillingStatusBanner', () => {
     }
     state.canManageSubscription = false
     state.canManageSubscriptionLifecycle = false
+    state.canReactivate = false
     renderBanner()
 
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Reactivate plan' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('hides reactivation when the server denies it to a client-side owner', () => {
+    state.subscription = {
+      hasFunds: true,
+      isCancelled: true,
+      endDate: '2026-08-01T00:00:00Z'
+    }
+    state.canManageSubscription = true
+    state.canManageSubscriptionLifecycle = true
+    state.canReactivate = false
+    renderBanner()
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Your team plan ends on'
+    )
     expect(
       screen.queryByRole('button', { name: 'Reactivate plan' })
     ).not.toBeInTheDocument()

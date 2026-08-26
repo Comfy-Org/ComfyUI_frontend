@@ -147,6 +147,7 @@
     }
   },
   "AddTextPrefix": {
+    "description": "یک پیشوند به همهٔ متن‌ها اضافه می‌کند.",
     "display_name": "افزودن پیشوند به متن",
     "inputs": {
       "prefix": {
@@ -166,6 +167,7 @@
     }
   },
   "AddTextSuffix": {
+    "description": "یک پسوند به همهٔ متن‌ها اضافه می‌کند.",
     "display_name": "افزودن پسوند به متن",
     "inputs": {
       "suffix": {
@@ -266,6 +268,36 @@
       },
       "strength": {
         "name": "شدت"
+      }
+    }
+  },
+  "ApplyTextureToMesh": {
+    "description": "IMAGEهای بافتِ بیک‌شده را برای SaveGLB به چیدمان UV مش متصل می‌کند. همان مشی را که بیک کرده‌اید وارد کنید",
+    "display_name": "اعمال بافت بر مش",
+    "inputs": {
+      "base_color": {
+        "name": "base_color"
+      },
+      "mesh": {
+        "name": "mesh"
+      },
+      "metallic": {
+        "name": "metallic"
+      },
+      "normal_map": {
+        "name": "normal_map"
+      },
+      "occlusion": {
+        "name": "occlusion"
+      },
+      "roughness": {
+        "name": "roughness"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
+        "tooltip": null
       }
     }
   },
@@ -395,6 +427,106 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BakeAmbientOcclusion": {
+    "description": "یک نقشهٔ انسداد محیطی را از مش پرپلی به چیدمان UV مش کم‌پلی بیک می‌کند (سفید = باز، تیره = شکاف‌ها). low_poly دارای UV بازشده و high_polyی را که از آن کاهش داده شده است وارد کنید. یک تصویر خاکستری برای ورودی occlusion در Apply Texture To Mesh خروجی می‌دهد (در نقشهٔ ORM / ‏occlusionTexture بسته‌بندی می‌شود).",
+    "display_name": "بیک‌کردن انسداد محیطی",
+    "inputs": {
+      "bias": {
+        "name": "bias",
+        "tooltip": "فاصلهٔ مبدأ پرتو از سطح، به‌صورت کسری از قطر جعبهٔ محدودکننده. اگر حتی سطوح صاف لکه‌ها/حفره‌های تیره دارند، افزایش دهید."
+      },
+      "high_poly": {
+        "name": "high_poly"
+      },
+      "low_poly": {
+        "name": "low_poly"
+      },
+      "max_distance": {
+        "name": "max_distance",
+        "tooltip": "طول پرتو، به‌صورت کسری از قطر جعبهٔ محدودکننده. کمتر = انسداد فشرده‌تر و محلی‌تر."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "samples": {
+        "name": "samples",
+        "tooltip": "پرتوها به‌ازای هر تکسل. بیشتر = هموارتر، کندتر. اگر دانه‌دار است، افزایش دهید."
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "انسداد را مقیاس می‌کند. >1 تیره‌تر و <1 روشن‌تر می‌کند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "occlusion",
+        "tooltip": null
+      }
+    }
+  },
+  "BakeNormalMapFromMesh": {
+    "description": "یک نقشهٔ نرمال فضای مماسی (glTF/OpenGL +Y) را از مش پرپلی به چیدمان UV مش کم‌پلی بیک می‌کند و جزئیات ازدست‌رفته هنگام کاهش را ثبت می‌کند. low_poly دارای UV بازشده و high_polyی را که از آن کاهش داده شده است وارد کنید. یک تصویر برای ورودی normal_map در Apply Texture To Mesh خروجی می‌دهد.",
+    "display_name": "بیک‌کردن نقشهٔ نرمال از مش",
+    "inputs": {
+      "cage_distance": {
+        "name": "cage_distance",
+        "tooltip": "بازهٔ جست‌وجوی سطح، به‌صورت کسری از قطر جعبهٔ محدودکننده. برای بخش‌های نادرست/ازدست‌رفته در کاهش شدید افزایش دهید؛ اگر از میان شکاف‌ها سطح را می‌گیرد، کاهش دهید."
+      },
+      "high_poly": {
+        "name": "high_poly"
+      },
+      "ignore_backfaces": {
+        "name": "ignore_backfaces",
+        "tooltip": "سطوح پرپلیِ رو به پشتِ تکسل را رد می‌کند تا شکاف‌ها/فضاهای محصور دیوار مقابل را نگیرند. فقط در صورت ناسازگاری winding مش پرپلی غیرفعال کنید."
+      },
+      "low_poly": {
+        "name": "low_poly"
+      },
+      "resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "normal_map",
+        "tooltip": null
+      }
+    }
+  },
+  "BakeTextureFromVoxel": {
+    "description": "بافت‌های PBR را روی چیدمان UV موجود مش بیک می‌کند (نمونه‌برداری سه‌خطی از حجم وکسل تنک). UV باز نمی‌کند — یک node بازکردن UV را در بالادست متصل کنید. IMAGEهای خاکستری base_color + metallic/roughness را خروجی می‌دهد (اگر PBR وجود نداشته باشد، سیاه)؛ برای SaveGLB آن‌ها را به ApplyTextureToMesh (همان مش) وصل کنید.",
+    "display_name": "بیک‌کردن بافت از وکسل",
+    "inputs": {
+      "mesh": {
+        "name": "mesh"
+      },
+      "reference_mesh": {
+        "name": "reference_mesh",
+        "tooltip": "مش متراکم اختیاری پیش از کاهش چندضلعی؛ هر تکسل را پیش از نمونه‌برداری روی سطح واقعی آن پس‌افکنی می‌کند و بیکینگ وجه‌دار روی مش‌های درشت را حذف می‌کند."
+      },
+      "texture_size": {
+        "name": "texture_size",
+        "tooltip": "وضوح اطلس UV مربعی."
+      },
+      "voxel_colors": {
+        "name": "voxel_colors"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_color",
+        "tooltip": null
+      },
+      "1": {
+        "name": "metallic",
+        "tooltip": null
+      },
+      "2": {
+        "name": "roughness",
         "tooltip": null
       }
     }
@@ -638,6 +770,110 @@
       }
     }
   },
+  "BriaEraser": {
+    "description": "اشیا یا نواحی مشخص‌شده با mask را با استفاده از Bria از تصویر حذف می‌کند.",
+    "display_name": "پاک‌کن Bria",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "نواحی سفید حذف و نواحی سیاه حفظ می‌شوند. mask پیش از ارسال دودویی می‌شود، بنابراین نواحی نیمه‌رنگ‌شده سفید محسوب می‌شوند. باید نسبت ابعاد یکسانی با تصویر داشته باشد."
+      },
+      "mask_type": {
+        "name": "mask_type",
+        "tooltip": "manual برای maskهای دستی یا قلم‌مو و automatic برای maskهای تولیدشده توسط مدل‌های بخش‌بندی مانند SAM."
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "تنظیمات نظارت بر محتوا"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaExpandImage": {
+    "description": "تصویر را با محتوای تولیدشده توسط Bria فراتر از حاشیه‌هایش گسترش می‌دهد.",
+    "display_name": "گسترش تصویر Bria",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "expand_mode": {
+        "name": "expand_mode",
+        "tooltip": "شکل هدف تصویر گسترش‌یافته: یک نسبت ابعاد ازپیش‌تنظیم‌شده، یک نسبت سفارشی، یا جای‌گذاری دستی تصویر اصلی روی بوم. حالت Manual تنها حالتی است که می‌تواند به بومی بلندتر از 1:2 برسد."
+      },
+      "image": {
+        "name": "image"
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "تنظیمات نظارت بر محتوا"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "توضیح اختیاری صحنه گسترش‌یافته؛ اگر خالی باشد، Bria آن را از روی تصویر تولید می‌کند."
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "prompt",
+        "tooltip": "prompt استفاده‌شده برای گسترش؛ هنگامی که ورودی prompt خالی باشد، Bria آن را به‌طور خودکار تولید می‌کند."
+      }
+    }
+  },
+  "BriaGenFill": {
+    "description": "با استفاده از Bria، اشیا یا مناظر را درون ناحیه mask‌شده تصویر تولید می‌کند.",
+    "display_name": "پرکردن مولد Bria",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "image": {
+        "name": "image"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "نواحی سفید با محتوای تولیدشده پر و نواحی سیاه حفظ می‌شوند. mask پیش از ارسال دودویی می‌شود، بنابراین نواحی نیمه‌رنگ‌شده سفید محسوب می‌شوند. باید نسبت ابعاد یکسانی با تصویر داشته باشد."
+      },
+      "moderation": {
+        "name": "تعدیل محتوا",
+        "tooltip": "تنظیمات تعدیل محتوا"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "توضیح آنچه باید درون ناحیه mask‌شده تولید شود."
+      },
+      "refine_prompt": {
+        "name": "refine_prompt",
+        "tooltip": "prompt را برای نتایج بهتر به‌طور خودکار تنظیم می‌کند؛ برای استفاده دقیق از prompt همان‌گونه که نوشته شده است، غیرفعال کنید."
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaImageEditNode": {
     "description": "ویرایش تصاویر با استفاده از جدیدترین مدل Bria",
     "display_name": "ویرایش تصویر Bria",
@@ -687,6 +923,32 @@
       },
       "1": {
         "name": "پرامپت ساختاریافته",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaIncreaseResolution": {
+    "description": "ارتقای مقیاس تصویر به اندازه ۲× یا ۴× با استفاده از Bria، همراه با حفظ محتوای اصلی.",
+    "display_name": "افزایش وضوح Bria",
+    "inputs": {
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "اگر خروجی از حد مجاز فراتر رود، ضریب را به‌طور خودکار کاهش می‌دهد و در صورت کافی نبودن، مقیاس تصویر ورودی را نیز کاهش می‌دهد."
+      },
+      "desired_increase": {
+        "name": "desired_increase",
+        "tooltip": "ضریب وضوح. خروجی باید در هر ضلع حداکثر ۸۱۹۲ پیکسل باشد."
+      },
+      "image": {
+        "name": "تصویر"
+      },
+      "moderation": {
+        "name": "تعدیل محتوا",
+        "tooltip": "تنظیمات تعدیل محتوا"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -865,6 +1127,53 @@
       }
     }
   },
+  "BuildPoseFile": {
+    "description": "یک GLB متحرک از داده‌های ژست بسازید یا یک فایل موشن‌کپچر BVH ذخیره کنید.",
+    "display_name": "ایجاد فایل انیمیشن سه‌بعدی",
+    "inputs": {
+      "camera_translation": {
+        "name": "camera_translation",
+        "tooltip": "pred_cam_t را در جابه‌جایی ریشه اعمال کنید: «off» = موقعیت اتصال، «centered» = اختلاف نسبت به فریم ۰، «absolute» = خام (Z عمق دوربین است — معمولاً فاصله بر حسب متر)."
+      },
+      "format": {
+        "name": "قالب",
+        "tooltip": "قالب خروجی؛ هر دو به «ذخیره مدل سه‌بعدی» ارسال می‌شوند تا روی دیسک نوشته شوند. «glb» = GLB متحرک (mesh / bones / openpose / scail). «bvh» = کلیپ موشن‌کپچر BVH (یک اسکلت؛ به مدل نیاز دارد)."
+      },
+      "format_bone_smooth_window": {
+        "name": "bone_smooth_window"
+      },
+      "format_mesh_style": {
+        "name": "mesh_style"
+      },
+      "format_mesh_style_bone_vis": {
+        "name": "bone_vis"
+      },
+      "format_mesh_style_shader": {
+        "name": "shader"
+      },
+      "fps": {
+        "name": "fps",
+        "tooltip": "نرخ فریم انیمیشن."
+      },
+      "pose_data": {
+        "name": "pose_data",
+        "tooltip": "داده‌های ژست سه‌بعدی."
+      },
+      "sam3d_body_model": {
+        "name": "sam3d_body_model"
+      },
+      "track_index": {
+        "name": "track_index",
+        "tooltip": "-1 = همه ترک‌ها؛ ≥0 = یک ترک."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "تولید ویدیو با استفاده از Seedance 2.0 از تصویر اولین فریم و در صورت نیاز تصویر آخرین فریم.",
     "display_name": "ByteDance Seedance 2.0 تبدیل اولین-آخرین فریم به ویدیو",
@@ -890,7 +1199,7 @@
       },
       "model": {
         "name": "مدل",
-        "tooltip": "Seedance 2.5 برای جدیدترین مدل، ویدیوهای تا ۳۰ ثانیه و خروجی mp4/mov؛ Seedance 2.0 برای حداکثر کیفیت و 1080p/4k؛ Fast برای بهینه‌سازی سرعت؛ Mini برای سریع‌ترین تولید با کمترین هزینه."
+        "tooltip": "Seedance 2.5 برای جدیدترین مدل، ویدیوهای تا ۳۰ ثانیه و خروجی mp4/mov؛ Seedance 2.0 برای بیشترین کیفیت و ۴k؛ Fast برای بهینه‌سازی سرعت؛ Mini برای سریع‌ترین تولید با کمترین هزینه."
       },
       "model_duration": {
         "name": "مدت زمان"
@@ -924,14 +1233,14 @@
   },
   "ByteDance2ReferenceNode": {
     "description": "تولید، ویرایش یا گسترش ویدیو با استفاده از Seedance 2.0 و تصاویر مرجع، ویدیوها و صدا. پشتیبانی از مرجع چندرسانه‌ای، ویرایش ویدیو و گسترش ویدیو.",
-    "display_name": "ByteDance Seedance 2.0 مرجع به ویدیو",
+    "display_name": "مرجع ByteDance Seedance 2.5 به ویدیو (قدیمی)",
     "inputs": {
       "control_after_generate": {
         "name": "کنترل پس از تولید"
       },
       "model": {
         "name": "مدل",
-        "tooltip": "Seedance 2.5 برای جدیدترین مدل، ویدیوهای تا ۳۰ ثانیه و خروجی mp4/mov؛ Seedance 2.0 برای حداکثر کیفیت و 1080p/4k؛ Fast برای بهینه‌سازی سرعت؛ Mini برای سریع‌ترین تولید با کمترین هزینه."
+        "tooltip": "Seedance 2.5 برای جدیدترین مدل، ویدیوهای تا ۳۰ ثانیه و خروجی mp4/mov؛ Seedance 2.0 برای بیشترین کیفیت و ۴k؛ Fast برای بهینه‌سازی سرعت؛ Mini برای سریع‌ترین تولید با کمترین هزینه."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -975,6 +1284,59 @@
       }
     }
   },
+  "ByteDance2ReferenceNodeV2": {
+    "description": "با استفاده از Seedance 2.5 یا 2.0 و تصاویر، ویدیوها و صوت‌های مرجع، ویدیو تولید، ویرایش یا گسترش دهید. از مرجع چندوجهی، ویرایش ویدیو و گسترش ویدیو پشتیبانی می‌کند.",
+    "display_name": "مرجع ByteDance Seedance 2.5 به ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "Seedance 2.5 برای جدیدترین مدل، ویدیوهای تا ۳۰ ثانیه و خروجی mp4/mov؛ Seedance 2.0 برای بیشترین کیفیت و ۴k؛ Fast برای بهینه‌سازی سرعت؛ Mini برای سریع‌ترین تولید با کمترین هزینه."
+      },
+      "model_auto_downscale": {
+        "name": "auto_downscale"
+      },
+      "model_auto_upscale": {
+        "name": "auto_upscale"
+      },
+      "model_duration": {
+        "name": "مدت"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_output_format": {
+        "name": "output_format"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_ratio": {
+        "name": "نسبت"
+      },
+      "model_resolution": {
+        "name": "وضوح"
+      },
+      "model_task_type": {
+        "name": "task_type"
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر تعیین می‌کند که آیا node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از بذر غیرقطعی هستند."
+      },
+      "watermark": {
+        "name": "واترمارک",
+        "tooltip": "آیا واترمارک به ویدئو افزوده شود یا خیر."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2TextToVideoNode": {
     "description": "تولید ویدیو با استفاده از مدل‌های Seedance 2.0 بر اساس پرامپت متنی.",
     "display_name": "ByteDance Seedance 2.0 متن به ویدیو",
@@ -984,7 +1346,7 @@
       },
       "model": {
         "name": "مدل",
-        "tooltip": "Seedance 2.5 برای جدیدترین مدل، ویدیوهای تا ۳۰ ثانیه و خروجی mp4/mov؛ Seedance 2.0 برای حداکثر کیفیت و 1080p/4k؛ Fast برای بهینه‌سازی سرعت؛ Mini برای سریع‌ترین تولید با کمترین هزینه."
+        "tooltip": "Seedance 2.5 برای جدیدترین مدل، ویدئوهای تا ۳۰ ثانیه و خروجی mp4/mov؛ Seedance 2.0 برای بیشترین کیفیت و 4k؛ Fast برای بهینه‌سازی سرعت؛ Mini برای سریع‌ترین و کم‌هزینه‌ترین تولید."
       },
       "model_duration": {
         "name": "مدت زمان"
@@ -1268,7 +1630,7 @@
     }
   },
   "ByteDanceSeedAudio": {
-    "description": "تولید گفتار، موسیقی، افکت‌های صوتی و گفت‌وگوی چند گوینده با یک پرامپت واحد توسط ByteDance Seed Audio ۱.۰. صدای(ها)، احساسات، فضای محیطی، موسیقی پس‌زمینه و افکت‌های صوتی را در پرامپت توصیف کنید و جملات مورد نظر برای گفتن را وارد نمایید. به صورت اختیاری می‌توانید یک صدای پیش‌فرض داخلی انتخاب کنید، تا ۳ صدا را از کلیپ‌های مرجع (با برچسب @Audio1-3 در پرامپت) شبیه‌سازی کنید یا صدایی را از تصویر یک شخصیت استخراج نمایید. حداکثر ۲ دقیقه صوت در هر اجرا.",
+    "description": "با ByteDance Seed Audio 1.0 از یک پرامپت، گفتار، موسیقی، افکت‌های صوتی و گفت‌وگوی چندگوینده تولید کنید. صدا(ها)، احساس، فضای صوتی، موسیقی پس‌زمینه و افکت‌های صوتی را در پرامپت توصیف کنید و جملاتی را که باید گفته شوند وارد کنید. به‌صورت اختیاری، یک صدای ازپیش‌تنظیم‌شده داخلی انتخاب کنید، صداها را از حداکثر ۳ کلیپ مرجع (با برچسب {'@'}Audio1-3 در پرامپت) شبیه‌سازی کنید، یا صدایی را از تصویر یک شخصیت استخراج کنید. در هر اجرا تا ۲ دقیقه صدا تولید می‌شود. مدل چندزبانه از ۲۰ زبان و کنترل زمان‌بندی مبتنی بر برچسب زمانی پشتیبانی می‌کند.",
     "display_name": "ByteDance Seed Audio 1.0",
     "inputs": {
       "control_after_generate": {
@@ -1468,7 +1830,7 @@
   },
   "ByteDanceSeedreamNodeV2": {
     "description": "تولید تصویر از متن و ویرایش دقیق جمله‌ای با وضوح تا ۴K به صورت یکپارچه.",
-    "display_name": "ByteDance Seedream ۴.۵ و ۵.۰",
+    "display_name": "ByteDance Seedream 4.5 & 5.0 (قدیمی)",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -1500,6 +1862,48 @@
       "watermark": {
         "name": "watermark",
         "tooltip": "آیا واترمارک «تولید شده توسط هوش مصنوعی» به تصویر اضافه شود یا خیر."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceSeedreamNodeV3": {
+    "description": "تولید یکپارچه متن‌به‌تصویر و ویرایش دقیق با یک جمله، تا وضوح 4K.",
+    "display_name": "ByteDance Seedream 4.5 & 5.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_height": {
+        "name": "ارتفاع"
+      },
+      "model_prompt_optimization": {
+        "name": "prompt_optimization"
+      },
+      "model_seed": {
+        "name": "بذر"
+      },
+      "model_size_preset": {
+        "name": "size_preset"
+      },
+      "model_thinking": {
+        "name": "تفکر"
+      },
+      "model_watermark": {
+        "name": "واترمارک"
+      },
+      "model_width": {
+        "name": "عرض"
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "پرامپت متنی برای ایجاد یا ویرایش تصویر."
       }
     },
     "outputs": {
@@ -1549,6 +1953,43 @@
       "watermark": {
         "name": "واترمارک",
         "tooltip": "آیا واترمارک «تولید شده توسط هوش مصنوعی» به ویدیو اضافه شود یا خیر."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceVideoEnhanceNode": {
+    "description": "ویدئو را با ByteDance vCube ارتقا می‌دهد و بازسازی می‌کند: فوق‌وضوح تا 8K، حذف آرتیفکت‌های فشرده‌سازی و نویز، بهبود رنگ و وضوح، و درون‌یابی اختیاری فریم.",
+    "display_name": "ByteDance vCube Video Enhance",
+    "inputs": {
+      "bitrate_level": {
+        "name": "bitrate_level",
+        "tooltip": "بیت‌ریت هدف فایل تحویلی که متناسب با وضوح خروجی و نرخ فریم مقیاس می‌شود."
+      },
+      "fps": {
+        "name": "fps",
+        "tooltip": "نرخ فریم خروجی. نرخ بالاتر از منبع، درون‌یابی فریم با AI را فعال می‌کند؛ نرخ پایین‌تر فریم‌ها را حذف می‌کند. «source» نرخ منبع را تا حداکثر ۱۲۰ fps حفظ می‌کند. نرخ‌های بالاتر از ۳۰ fps، 2x و بالاتر از ۶۰ fps، 4x هزینه دارند."
+      },
+      "resolution": {
+        "name": "وضوح",
+        "tooltip": "وضوح خروجی. ضلع کوتاه روی سطح انتخاب‌شده تنظیم می‌شود و ضلع بلند از نسبت ابعاد منبع پیروی می‌کند. «source» اندازه منبع را حفظ می‌کند و «custom» ضلع کوتاه را برحسب پیکسل تنظیم می‌کند. برای منابعی که عرض یا ارتفاعشان نسبت به ضلع دیگر بیش از حدود 2.2:1 باشد، یک رده وضوح بالاتر محاسبه می‌شود."
+      },
+      "tool_version": {
+        "name": "tool_version",
+        "tooltip": "«standard» با بیش از ۱۰ الگوریتم بهبود، میان سرعت و کیفیت تعادل برقرار می‌کند. «professional» از بیش از ۳۰ الگوریتم برای بازسازی در سطح سینمایی استفاده می‌کند، حدود 3x بیشتر زمان می‌برد و 10x هزینه بیشتری دارد."
+      },
+      "tool_version_enhance_style": {
+        "name": "enhance_style"
+      },
+      "tool_version_scene": {
+        "name": "scene"
+      },
+      "video": {
+        "name": "ویدئو",
+        "tooltip": "ویدئویی که باید بهبود یابد. وضوح منبع باید حداکثر ۲۵۶۰×۱۴۴۰ (۲K) باشد؛ اندازه خروجی با ورودی وضوح تنظیم می‌شود."
       }
     },
     "outputs": {
@@ -1663,7 +2104,7 @@
     }
   },
   "CLIPLoader": {
-    "description": "[دستورالعمل‌ها]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 xxl/ clip-g / clip-l\nstable_audio: t5 base\nmochi: t5 xxl\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\n hidream: llama-3.1 (توصیه می‌شود) یا t5\nomnigen2: qwen vl 2.5 3B",
+    "description": "ترکیب‌ها:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (پدینگ ۲۲۶-token)\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (توصیه‌شده) یا t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL یا Music3 Qwen/RVQ",
     "display_name": "بارگذاری CLIP",
     "inputs": {
       "clip_name": {
@@ -3251,7 +3692,11 @@
       },
       "bit_depth": {
         "name": "bit_depth",
-        "tooltip": "عمق بیت ویدئوی ایجادشده. ۱۰-بیت گرادیان‌های نرم‌تری با بندینگ کمتر ایجاد می‌کند، اما ممکن است برخی پخش‌کننده‌ها و nodeهای بعدی از آن پشتیبانی نکنند."
+        "tooltip": "خودکار برای sRGB از ۸-bit و برای HDR از ۱۰-bit استفاده می‌کند. انتخاب‌های صریح ۸-bit و ۱۰-bit مستقل از فضای رنگ هستند."
+      },
+      "color_space": {
+        "name": "color_space",
+        "tooltip": "فضای رنگ تصاویر ورودی. HDR، ‏BT.2020/HLG را انتخاب می‌کند و HDR PQ، ‏BT.2020/PQ را انتخاب می‌کند."
       },
       "fps": {
         "name": "فریم بر ثانیه"
@@ -3449,6 +3894,29 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DecimateMesh": {
+    "description": "یک مش را با استفاده از QEM و روی دستگاه محاسباتی فعال، به تعداد هدف وجه‌ها ساده می‌کند. «midpoint» پیش‌تنظیم وفادار به cumesh است (بهترین کیفیت، با حفظ ویژگی‌های نازک / مو)؛ «qem» رأس‌ها را با کنترل‌های خط/لبهٔ ویژگی در نقطهٔ بهینهٔ QEM قرار می‌دهد. خروجی جوش‌خورده باقی می‌ماند.",
+    "display_name": "کاهش مش",
+    "inputs": {
+      "mesh": {
+        "name": "mesh"
+      },
+      "placement_mode": {
+        "name": "placement_mode",
+        "tooltip": "midpoint: وفادار به cumesh (توصیه‌شده). qem: جای‌گذاری بهینهٔ QEM."
+      },
+      "target_face_count": {
+        "name": "target_face_count",
+        "tooltip": "حداکثر تعداد وجه هدف. ۰ غیرفعال می‌کند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
         "tooltip": null
       }
     }
@@ -4257,6 +4725,23 @@
       }
     }
   },
+  "EmptyMiniMaxMusic3LatentAudio": {
+    "description": "یک latent صدای خالی MiniMax Music3 برای مدت‌زمان درخواستی ایجاد می‌کند.",
+    "display_name": "صدای latent خالی MiniMax Music3",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "seconds": {
+        "name": "seconds"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyMochiLatentVideo": {
     "display_name": "ویدیوی نهفته خالی Mochi",
     "inputs": {
@@ -4312,6 +4797,20 @@
       },
       "width": {
         "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyTrellis2LatentStructure": {
+    "display_name": "EmptyTrellis2LatentStructure",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "تعداد تصاویر latent در batch."
       }
     },
     "outputs": {
@@ -4417,6 +4916,146 @@
     "outputs": {
       "0": {
         "name": "splat",
+        "tooltip": null
+      }
+    }
+  },
+  "FillHoles": {
+    "description": "حفره‌ها را تا حداکثر محیط مشخص پر می‌کند و هندسه/UVهای موجود را حفظ می‌کند. با GPU برداری‌سازی شده و جهت‌گیری خودکار اصلاح‌شده و رنگ‌های مرکز هندسی با میانگین‌گیری حلقه‌ای انجام می‌شود.",
+    "display_name": "پر کردن حفره‌ها",
+    "inputs": {
+      "fill_chains": {
+        "name": "fill_chains",
+        "tooltip": "زنجیره‌های باز را نیز پر می‌کند (نه فقط چرخه‌ها). نویزی است؛ OFF با cumesh مطابقت دارد."
+      },
+      "max_perimeter": {
+        "name": "max_perimeter",
+        "tooltip": "حداکثر محیط حفره برای پر کردن. ۰ غیرفعال می‌کند."
+      },
+      "max_vertices": {
+        "name": "max_vertices",
+        "tooltip": "تعداد رأس‌های مرزی را در هر چرخه محدود می‌کند؛ centroid-fan فقط برای حفره‌های کوچک و تقریباً مسطح کار می‌کند. مقدار را ≤۱۶ نگه دارید."
+      },
+      "mesh": {
+        "name": "mesh"
+      },
+      "weld_epsilon_rel": {
+        "name": "weld_epsilon_rel",
+        "tooltip": "تلرانس پیش‌جوش (کسری از قطر جعبهٔ محدودکننده)؛ تشخیص مرز به رأس‌های جوش‌خورده نیاز دارد. ۰ رد می‌کند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
+        "tooltip": null
+      }
+    }
+  },
+  "FishAudioInstantVoiceClone": {
+    "description": "یک صدای شبیه‌سازی‌شدهٔ خصوصی از نمونه‌های صوتی ایجاد می‌کند که فوراً برای تبدیل متن به گفتار قابل استفاده است. ۱-۲۰ ضبط‌صدا ارائه کنید؛ برای هرکدام ۱۰-۳۰ ثانیه توصیه می‌شود و مجموع مدت باید کمتر از ۲۷۰ ثانیه باشد.",
+    "display_name": "شبیه‌سازی فوری صدای Fish Audio",
+    "inputs": {
+      "enhance_audio_quality": {
+        "name": "enhance_audio_quality",
+        "tooltip": "پیش از آموزش، کیفیت صدای مرجع را بهبود دهید."
+      },
+      "files": {
+        "name": "files",
+        "tooltip": "ضبط‌صداها برای شبیه‌سازی صدا."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "voice",
+        "tooltip": null
+      }
+    }
+  },
+  "FishAudioSpeechToText": {
+    "description": "تبدیل صوت به متن با تشخیص خودکار زبان.",
+    "display_name": "تبدیل گفتار به متن Fish Audio",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "صوت برای تبدیل به متن."
+      },
+      "language": {
+        "name": "language",
+        "tooltip": "راهنمای زبان ISO 639-1 (برای نمونه، 'en'، 'zh'). زبان در هر صورت به‌طور خودکار تشخیص داده می‌شود."
+      },
+      "precise_timestamps": {
+        "name": "precise_timestamps",
+        "tooltip": "بازگرداندن بخش‌های دارای زمان‌نگار در سطح واژه."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "text",
+        "tooltip": null
+      },
+      "1": {
+        "name": "language_code",
+        "tooltip": null
+      },
+      "2": {
+        "name": "segments_json",
+        "tooltip": null
+      }
+    }
+  },
+  "FishAudioTextToSpeech": {
+    "description": "تبدیل متن به گفتار. از نشانه‌های احساسی در متن ([happy]، [whispering] در s2.1-pro؛ (happy) در s1) و گفت‌وگوی چندگوینده از طریق برچسب‌های {'@'}Voice1/{'@'}Voice2 با چند صدای متصل پشتیبانی می‌کند.",
+    "display_name": "تبدیل متن به گفتار Fish Audio",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "مدلی که برای تبدیل متن به گفتار استفاده می‌شود."
+      },
+      "model_normalize": {
+        "name": "normalize"
+      },
+      "model_speed": {
+        "name": "speed"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_volume": {
+        "name": "volume"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که آیا node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      },
+      "text": {
+        "name": "text",
+        "tooltip": "متنی که باید به گفتار تبدیل شود. هنگامی که دو یا چند صدا متصل هستند، تغییر گوینده را با @Voice1، @Voice2 و غیره مشخص کنید."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FishAudioVoiceSelector": {
+    "description": "انتخاب یک صدا از کتابخانهٔ Fish Audio برای تولید متن به گفتار.",
+    "display_name": "انتخاب‌گر صدای Fish Audio",
+    "inputs": {
+      "voice": {
+        "name": "voice",
+        "tooltip": "یک صدا یا گزینهٔ 'custom' را برای وارد کردن هر شناسهٔ مدل صدای fish.audio انتخاب کنید."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "voice",
         "tooltip": null
       }
     }
@@ -5036,6 +5675,48 @@
       "seed": {
         "name": "seed",
         "tooltip": "بذر تصادفی مورد استفاده برای ایجاد نویز."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FluxVideoUpscaleNode": {
+    "description": "ویدئو را با وضوح فوق‌العادهٔ FLUX به اندازهٔ ۱٫۵ تا ۳ برابر افزایش می‌دهد؛ یا مبدأ را دقیقاً حفظ می‌کند یا جزئیات آن را به‌صورت خلاقانه بهبود می‌دهد.",
+    "display_name": "افزایش وضوح ویدئوی Flux",
+    "inputs": {
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "منابعی را که مساحتشان از ۳۸۴۰×۲۱۶۰ پیکسل بیشتر است، به‌طور خودکار کوچک می‌کند تا در محدودیت ورودی بگنجند. نسبت تصویر حفظ می‌شود؛ ویدیوهای کوچک‌تر تغییری نمی‌کنند."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "گزینهٔ 'creative' جزئیات ظریف را بازیابی و خلق می‌کند و برای ویدئوهای تولیدشده، بافت‌ها و مناظر مناسب‌تر است. گزینهٔ 'precise' مبدأ را بدون تغییر شارپ می‌کند و برای چهره‌ها، محصولات و ویدئوهای واقعی مناسب است."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "توضیح اختیاری کلیپ که جزئیات بهبودیافته را هدایت می‌کند. برای افزایش وضوح خنثی، آن را خالی بگذارید."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "میزان تحمل تعدیل محتوا؛ ۰ سخت‌گیرانه‌ترین حالت است."
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر برای تعیین اینکه node باید دوباره اجرا شود یا نه؛ FLUX بذر خودش را انتخاب می‌کند، بنابراین نتایج واقعی صرف‌نظر از این مقدار غیرقطعی هستند."
+      },
+      "upscale_factor": {
+        "name": "upscale_factor",
+        "tooltip": "اندازهٔ خروجی نسبت به مبدأ. به‌دلیل سقف هر فریم، مبدأهای بسیار بزرگ با ضریبی کمتر از مقدار درخواستی افزایش وضوح می‌یابند."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "کلیپ مبدأ با مدت ۱ تا ۲۰ ثانیه و نسبت تصویر بین ۱:۴ و ۴:۱. خروجی با ۲۴ fps رندر می‌شود و برای هر فریم به حدود ۱۴٫۴ مگاپیکسل محدود است."
       }
     },
     "outputs": {
@@ -5722,6 +6403,24 @@
       }
     }
   },
+  "GetMeshInfo": {
+    "display_name": "دریافت اطلاعات مش",
+    "inputs": {
+      "mesh": {
+        "name": "مش"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مش",
+        "tooltip": null
+      },
+      "1": {
+        "name": "اطلاعات",
+        "tooltip": null
+      }
+    }
+  },
   "GetSplatCount": {
     "description": "تعداد splatهای جمع‌شده در کل دسته را بازمی‌گرداند.",
     "display_name": "دریافت تعداد Splat",
@@ -5742,7 +6441,7 @@
     }
   },
   "GetVideoComponents": {
-    "description": "تمام اجزای ویدیو را استخراج می‌کند: فریم‌ها، صدا و نرخ فریم.",
+    "description": "فریم‌های ویدیو، صدا، نرخ فریم، عمق بیت و فضای رنگ را استخراج می‌کند.",
     "display_name": "استخراج اجزای ویدیو",
     "inputs": {
       "video": {
@@ -5765,6 +6464,10 @@
       },
       "3": {
         "name": "bit_depth",
+        "tooltip": null
+      },
+      "4": {
+        "name": "color_space",
         "tooltip": null
       }
     }
@@ -6815,7 +7518,7 @@
   },
   "IdeogramPImage": {
     "description": "تولید تصویر با استفاده از P-Image، مدل سریع تبدیل متن به تصویر ایدوگرام. دارای تایپوگرافی قوی و فوتورئالیسم؛ پشتیبانی از کپشن ساختاریافته JSON نسخه ۴.۰ ایدوگرام برای متن، رنگ و چیدمان دقیق.",
-    "display_name": "ایدوگرام P-Image",
+    "display_name": "Ideogram & Pruna P-Image",
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio",
@@ -7115,6 +7818,43 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageCropToMask": {
+    "display_name": "برش تصویر بر اساس ماسک",
+    "inputs": {
+      "background": {
+        "name": "پس‌زمینه",
+        "tooltip": "رنگ پس‌زمینه در پشت سوژهٔ ماسک‌شده."
+      },
+      "grow_mask": {
+        "name": "grow_mask",
+        "tooltip": "پیش از برش، ماسک را به این تعداد پیکسل گسترش یا کوچک می‌کند."
+      },
+      "height": {
+        "name": "ارتفاع",
+        "tooltip": "ارتفاع خروجی بر حسب پیکسل."
+      },
+      "images": {
+        "name": "تصاویر"
+      },
+      "masks": {
+        "name": "ماسک‌ها"
+      },
+      "pad_factor": {
+        "name": "pad_factor",
+        "tooltip": "حاشیهٔ اضافی پیرامون کادر محدودکنندهٔ ماسک، به‌صورت ضریب."
+      },
+      "width": {
+        "name": "عرض",
+        "tooltip": "عرض خروجی بر حسب پیکسل."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "تصاویر",
         "tooltip": null
       }
     }
@@ -8962,7 +9702,7 @@
     }
   },
   "LTXVDurationPredictor": {
-    "description": "مدت زمان طبیعی شات را برای یک پرامپت با استفاده از duration head نسخه LTX ۲.۴ (بارگذاری‌شده با ModelPatchLoader) پیش‌بینی می‌کند و آن را به شبکه فریم ۸k+۱ VAE تطبیق می‌دهد.",
+    "description": "مدت طبیعی نما را برای یک پرامپت با استفاده از سرِ مدت‌زمان LTX 2.4 (بارگذاری‌شده با ModelPatchLoader) پیش‌بینی می‌کند و آن را با شبکهٔ فریم 8k+1 مربوط به VAE هم‌تراز می‌کند.",
     "display_name": "پیش‌بینی‌کننده مدت زمان LTXV",
     "inputs": {
       "duration_head": {
@@ -11410,6 +12150,21 @@
       }
     }
   },
+  "MergeMeshes": {
+    "description": "N مش را با جابه‌جا کردن اندیس‌های face و انباشتن verts، faces، uvs و colors در یک مش به‌هم می‌پیوندد.",
+    "display_name": "ادغام مش‌ها",
+    "inputs": {
+      "meshes": {
+        "name": "مش‌ها"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مش",
+        "tooltip": null
+      }
+    }
+  },
   "MergeSplat": {
     "description": "هر تعداد splat گوسی را به یک مورد ادغام می‌کند. ترکیب چند decode از یک latent با seedهای مختلف باعث افزایش تراکم سطح می‌شود و این می‌تواند کیفیت سطح را هنگام مش‌بندی بهبود بخشد.",
     "display_name": "ادغام Splats",
@@ -11426,6 +12181,7 @@
     }
   },
   "MergeTextLists": {
+    "description": "چندین فهرست متنی را در یک فهرست به‌هم می‌پیوندد.",
     "display_name": "ادغام فهرست متون",
     "inputs": {
       "texts": {
@@ -11437,6 +12193,71 @@
       "0": {
         "name": "متون",
         "tooltip": "متون پردازش‌شده"
+      }
+    }
+  },
+  "MeshSmoothNormals": {
+    "description": "نرمال‌های هموار هر رأس را محاسبه کرده و به مش متصل می‌کند. مش‌های بدون نرمال در نمایشگرهای glTF به‌صورت تخت (برای هر face) سایه‌زنی می‌شوند؛ این کار باعث سایه‌زنی هموار آن‌ها می‌شود. با crease_angle کمتر از ۱۸۰، لبه‌های تیزتر از آستانه با تقسیم رأس‌ها در امتدادشان، سخت نگه داشته می‌شوند.",
+    "display_name": "نرمال‌های هموار مش",
+    "inputs": {
+      "crease_angle": {
+        "name": "crease_angle",
+        "tooltip": "لبه‌هایی که زاویهٔ دوسطحی آن‌ها از این مقدار (درجه) بیشتر باشد، سخت باقی می‌مانند (رأس‌ها تقسیم می‌شوند). ۱۸۰ = کاملاً هموار؛ مقادیر کمتر لبه‌های تیز را حفظ می‌کنند (برای نمونه ~۳۰-۶۰ برای سطوح سخت)."
+      },
+      "mesh": {
+        "name": "مش"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مش",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshTextureToImage": {
+    "description": "بافت‌های bake‌شدهٔ یک mesh را به‌صورت IMAGEهای مجزا استخراج می‌کند: base_color، metallic، roughness، occlusion و normal_map. کانال‌هایی که چیزی در آن‌ها bake نشده است، به‌صورت خنثی بازمی‌گردند (occlusion سفید، normal تخت).",
+    "display_name": "بافت مش به تصویر",
+    "inputs": {
+      "mesh": {
+        "name": "mesh"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_color",
+        "tooltip": null
+      },
+      "1": {
+        "name": "metallic",
+        "tooltip": null
+      },
+      "2": {
+        "name": "roughness",
+        "tooltip": null
+      },
+      "3": {
+        "name": "occlusion",
+        "tooltip": null
+      },
+      "4": {
+        "name": "normal_map",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshToFile3D": {
+    "description": "یک mesh را به یک شیء File3D از نوع GLB برای nodeهای ذخیره / پیش‌نمایش ۳بعدی سریال‌سازی می‌کند و UVها، رنگ‌ها، نرمال‌ها، بافت، نگاشت‌های normal/occlusion/emissive و متریال آن را همراه دارد. فقط از یک مورد در هر batch پشتیبانی می‌کند.",
+    "display_name": "ایجاد فایل ۳بعدی (از Mesh)",
+    "inputs": {
+      "mesh": {
+        "name": "mesh"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
       }
     }
   },
@@ -11507,8 +12328,15 @@
       "should_texture_texture_prompt": {
         "name": "texture_prompt"
       },
+      "should_texture_texture_resolution": {
+        "name": "texture_resolution"
+      },
       "symmetry_mode": {
         "name": "symmetry_mode"
+      },
+      "ultra_mode": {
+        "name": "ultra_mode",
+        "tooltip": "برای هندسه با وفاداری بیشتر و جزئیات سطحی دقیق‌تر، یک مرحله پالایش اضافی اجرا کنید."
       }
     },
     "outputs": {
@@ -11570,6 +12398,9 @@
       "should_texture_texture_prompt": {
         "name": "texture_prompt"
       },
+      "should_texture_texture_resolution": {
+        "name": "texture_resolution"
+      },
       "symmetry_mode": {
         "name": "symmetry_mode"
       }
@@ -11599,7 +12430,7 @@
     "inputs": {
       "enable_pbr": {
         "name": "enable_pbr",
-        "tooltip": "تولید نقشه‌های PBR (فلزی، زبری، نرمال) علاوه بر رنگ پایه. توجه: هنگام استفاده از سبک Sculpture، این گزینه باید غیرفعال باشد، زیرا سبک Sculpture نقشه‌های PBR مخصوص خود را تولید می‌کند."
+        "tooltip": "علاوه بر رنگ پایه، نگاشت‌های PBR (metallic، roughness، normal) را تولید می‌کند."
       },
       "meshy_task_id": {
         "name": "meshy_task_id"
@@ -11614,6 +12445,10 @@
       "texture_prompt": {
         "name": "texture_prompt",
         "tooltip": "یک متن راهنما برای هدایت فرایند بافت‌دهی وارد کنید. حداکثر ۶۰۰ کاراکتر. نمی‌توان همزمان با 'texture_image' استفاده کرد."
+      },
+      "texture_resolution": {
+        "name": "texture_resolution",
+        "tooltip": "وضوح بافت رنگ پایه. وضوح‌های بالاتر جزئیات سطحی بیشتری ثبت می‌کنند."
       }
     },
     "outputs": {
@@ -11705,6 +12540,10 @@
       },
       "symmetry_mode": {
         "name": "symmetry_mode"
+      },
+      "ultra_mode": {
+        "name": "ultra_mode",
+        "tooltip": "برای هندسه با وفاداری بیشتر و جزئیات سطحی دقیق‌تر، یک مرحله پالایش اضافی اجرا کنید."
       }
     },
     "outputs": {
@@ -11714,6 +12553,51 @@
       },
       "1": {
         "name": "شناسه وظیفه meshy",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextureMultiViewNode": {
+    "description": "با استفاده از ۱ تا ۴ نمای مرجع از یک شیء، به مدلی که پیش‌تر ایجاد شده است بافت می‌دهد.",
+    "display_name": "Meshy: بافت‌دهی مدل (چندنما)",
+    "inputs": {
+      "enable_original_uv": {
+        "name": "enable_original_uv",
+        "tooltip": "به‌جای تولید UVهای جدید، از UV اصلی مدل استفاده می‌کند. هنگام فعال‌بودن، Meshy بافت‌های موجود مدل بارگذاری‌شده را حفظ می‌کند. اگر مدل UV اصلی نداشته باشد، ممکن است کیفیت خروجی به‌خوبی نباشد."
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "model": {
+        "name": "model"
+      },
+      "multiview_images": {
+        "name": "multiview_images",
+        "tooltip": "نماهای مرجع از همان شیء. نخستین تصویر نمای اصلی (روبرو) است؛ ترتیب نماهای باقی‌مانده اهمیتی ندارد."
+      },
+      "pbr": {
+        "name": "pbr"
+      },
+      "texture_resolution": {
+        "name": "texture_resolution",
+        "tooltip": "وضوح بافت رنگ پایه. وضوح‌های بالاتر جزئیات سطحی بیشتری ثبت می‌کنند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
         "tooltip": null
       },
       "2": {
@@ -11749,6 +12633,10 @@
       "text_style_prompt": {
         "name": "توضیح سبک بافت متنی",
         "tooltip": "سبک بافت مورد نظر شیء را با استفاده از متن توصیف کنید. حداکثر ۶۰۰ کاراکتر. نمی‌توان همزمان با 'image_style' استفاده کرد."
+      },
+      "texture_resolution": {
+        "name": "texture_resolution",
+        "tooltip": "وضوح بافت رنگ پایه. وضوح‌های بالاتر جزئیات سطحی بیشتری ثبت می‌کنند."
       }
     },
     "outputs": {
@@ -11766,6 +12654,44 @@
       },
       "3": {
         "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3AddGuide": {
+    "description": "یک تصویر، یک clip کوتاه، audio یا یک clip همراه با موسیقی متن آن را در هر فریم از یک ویدیوی MiniMax H3 لنگرگذاری کنید. برای لنگرگذاری چندین فریم، چند node را زنجیره کنید.",
+    "display_name": "افزودن راهنما برای MiniMax H3",
+    "inputs": {
+      "audio": {
+        "name": "صدا",
+        "tooltip": "موسیقی متن برای لنگرکردن از همان اندیس فریم، که به مدتزمان باقی‌ماندهٔ ویدئو برش می‌خورد."
+      },
+      "audio_vae": {
+        "name": "audio_vae",
+        "tooltip": "vae صوتی؛ هنگام اتصال صدا لازم است."
+      },
+      "frame_idx": {
+        "name": "frame_idx",
+        "tooltip": "اندیس فریم برای لنگرکردن تصویر یا فریم اول clip در آن. مقادیر منفی از انتهای ویدئو شمارش می‌شوند."
+      },
+      "image": {
+        "name": "تصویر",
+        "tooltip": "تصویر یا فریم‌های ویدئو برای لنگرکردن. دسته‌های چندفریمی به‌صورت یک clip لنگر می‌شوند و به طول‌های معتبر clip مدل برش می‌خورند: ۵، ۲۲، ۳۹... فریم (17k + 5). برای دسته‌های کوتاه‌تر از ۵ فریم، فقط تصویر اول استفاده می‌شود."
+      },
+      "latent": {
+        "name": "latent"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "vae ویدئو؛ هنگام اتصال تصویر لازم است."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مثبت",
         "tooltip": null
       }
     }
@@ -11882,6 +12808,78 @@
       }
     }
   },
+  "MiniMaxMusic3TextEncode": {
+    "description": "از یک مدل clip مربوط به MiniMax Music3 برای تولید توالی شرطی‌سازی آکوستیک استفاده می‌کند.",
+    "display_name": "کدگذاری متن MiniMax Music3",
+    "inputs": {
+      "caption": {
+        "name": "شرح"
+      },
+      "cfg_scale": {
+        "name": "cfg_scale"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "lyrics": {
+        "name": "متن ترانه"
+      },
+      "max_duration": {
+        "name": "max_duration",
+        "tooltip": "حداکثر مدت‌زمان بر حسب ثانیه؛ مدل ممکن است ترانه را زودتر پایان دهد."
+      },
+      "seed": {
+        "name": "سید"
+      },
+      "top_k": {
+        "name": "top_k"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "ثانیه",
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03ContextIRNode": {
+    "description": "زمینهٔ متن و رسانه را با MiniMax H3 Context IR تحلیل می‌کند و یک پرامپت ویدئوی بهبودیافته و ساختاریافته تولید می‌کند. خروجی را به پرامپت یک node ویدئویی MiniMax H3 بدهید و همان رسانه‌ها را با همان ترتیب به آن متصل کنید، زیرا پرامپت بهبودیافته بر اساس موقعیت به رسانه‌های متصل‌شده ارجاع می‌دهد.",
+    "display_name": "MiniMax H3 Context IR (بهبوددهندهٔ پرامپت)",
+    "inputs": {
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "فریم اول ویدئویی که قصد تولید آن را دارید. با رسانهٔ مرجع قابل ترکیب نیست."
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "فریم آخر ویدئویی که قصد تولید آن را دارید. با رسانهٔ مرجع قابل ترکیب نیست."
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدل مورد استفاده برای بهبود پرامپت."
+      },
+      "model_duration": {
+        "name": "مدت"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_ratio": {
+        "name": "نسبت"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MinimaxHailuo03FirstLastFrameNode": {
     "description": "تولید ویدیو از تصویر اولین فریم و در صورت نیاز تصویر آخرین فریم با استفاده از مدل MiniMax H3. نسبت تصویر ویدیو مطابق تصاویر ارائه‌شده خواهد بود.",
     "display_name": "تبدیل اولین و آخرین فریم MiniMax H3 به ویدیو",
@@ -11955,6 +12953,43 @@
       "watermark": {
         "name": "واترمارک",
         "tooltip": "آیا واترمارک AIGC به ویدیو اضافه شود یا خیر."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03RegenerateNode": {
+    "description": "یک خروجی 768P از MiniMax H3 را با وضوح 2K دوباره رندر می‌کند. ویدئوی 768P بدون تغییر و پرامپت دقیقی را که برای تولید آن استفاده شده متصل کنید؛ اگر تولید اصلی از فریم‌های اول/آخر یا رسانهٔ مرجع استفاده کرده است، همان ورودی‌ها را متصل کنید.",
+    "display_name": "رندر مجدد MiniMax H3 تا 2K",
+    "inputs": {
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "تصویر فریم اول از تولید اصلی، در صورت استفاده."
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "تصویر فریم آخر از تولید اصلی، در صورت استفاده."
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدل مورد استفاده برای تولید مجدد ویدئو."
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_resolution": {
+        "name": "وضوح"
+      },
+      "video": {
+        "name": "ویدئو",
+        "tooltip": "ویدئوی خروجی 768P از MiniMax H3 برای رندر مجدد. خروجی بدون تغییر یک node ویدئویی MiniMax H3 را متصل کنید (۲۴ FPS، ۴–۱۵ ثانیه). نمی‌توان از خروجی‌های 2K استفاده کرد."
+      },
+      "watermark": {
+        "name": "واترمارک",
+        "tooltip": "این‌که آیا واترمارک AIGC به ویدئو افزوده شود یا خیر."
       }
     },
     "outputs": {
@@ -12091,6 +13126,33 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MoGeGeometryToFOV": {
+    "description": "میدان دید و فاصلهٔ کانونی را از پارامترهای درونی MoGe استخراج می‌کند.",
+    "display_name": "دریافت میدان دید از هندسهٔ MoGe",
+    "inputs": {
+      "axis": {
+        "name": "محور",
+        "tooltip": "«'vertical' (fov_y)، «'horizontal' (fov_x)»، یا «'diagonal'»."
+      },
+      "moge_geometry": {
+        "name": "moge_geometry"
+      },
+      "unit": {
+        "name": "واحد",
+        "tooltip": "واحد خروجی برای FOV."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "fov",
+        "tooltip": null
+      },
+      "1": {
+        "name": "focal_pixels",
         "tooltip": null
       }
     }
@@ -15036,6 +16098,24 @@
       }
     }
   },
+  "PaintMesh": {
+    "description": "هر رأس مش را با رنگ نزدیک‌ترین وکسل آن از میدان وکسل ورودی رنگ‌آمیزی می‌کند.",
+    "display_name": "رنگ‌آمیزی مش",
+    "inputs": {
+      "mesh": {
+        "name": "مش"
+      },
+      "voxel_colors": {
+        "name": "رنگ‌های وکسل"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مش",
+        "tooltip": null
+      }
+    }
+  },
   "Painter": {
     "display_name": "نقاش",
     "inputs": {
@@ -15346,6 +16426,33 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Pixal3DConditioning": {
+    "display_name": "Pixal3DConditioning",
+    "inputs": {
+      "camera_angle_x": {
+        "name": "camera_angle_x",
+        "tooltip": "FOV افقی بر حسب درجه. برای FoV به‌ازای هر تصویر، یک MoGeGeometryToFOV را متصل کنید (axis='horizontal', unit='degrees') (با پیش‌فرض بالادستی مطابقت دارد)."
+      },
+      "clip_vision_model": {
+        "name": "clip_vision_model",
+        "tooltip": "DINOv3 ViT-L/16 ClipVision."
+      },
+      "image": {
+        "name": "تصویر",
+        "tooltip": "تصویر پیش‌پردازش‌شده از ImageCropToMask (pad_factor=1.1 برای Pixal3D)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مثبت",
+        "tooltip": null
+      },
+      "1": {
+        "name": "منفی",
         "tooltip": null
       }
     }
@@ -16765,6 +17872,62 @@
       }
     }
   },
+  "RemeshMesh": {
+    "description": "یک مش با مثلث‌بندی یکنواخت را از طریق میدان فاصلهٔ باند باریک + کانتورینگ دوگانه، روی دستگاه محاسباتی فعال دوباره استخراج می‌کند. توپولوژی نامرتب / غیرمنیفلد / خودمتقاطع را نرمال‌سازی می‌کند؛ برای رسیدن به تعداد دقیق وجه، پیش از Decimate Mesh اجرا کنید. خروجی جوش‌خورده باقی می‌ماند.",
+    "display_name": "مش‌بندی مجدد مش (DC باند باریک)",
+    "inputs": {
+      "band": {
+        "name": "باند",
+        "tooltip": "پهنای باند باریک بر حسب واحدهای voxel. در حالت UDF، سطح را نیز جابه‌جا می‌کند."
+      },
+      "drop_small_components": {
+        "name": "drop_small_components",
+        "tooltip": "اجزای کوچک‌تر از این کسر از تعداد وجهِ بزرگ‌ترین جزء را حذف می‌کند. ۰ غیرفعال می‌کند."
+      },
+      "fix_poles": {
+        "name": "fix_poles",
+        "tooltip": "جفت‌راس‌های با ظرفیت ۳ را ادغام می‌کند (آرتیفکت اتصال T در DC)."
+      },
+      "mesh": {
+        "name": "مش"
+      },
+      "precluster_max_verts": {
+        "name": "precluster_max_verts",
+        "tooltip": "تعداد راس‌های ورودی را پیش از پرس‌وجوهای میدان محدود می‌کند؛ ورودی‌های بالاتر از این مقدار ابتدا با خوشه‌بندی کاهش می‌یابند. از OOM در مش‌های بسیار بزرگ جلوگیری می‌کند."
+      },
+      "project_back": {
+        "name": "project_back",
+        "tooltip": "راس‌ها را به‌صورت خطی به سمت سطح اصلی درون‌یابی می‌کند (۰ = DC خالص، ۱ = چسبیده)."
+      },
+      "resolution": {
+        "name": "تفکیک‌پذیری",
+        "tooltip": "تفکیک‌پذیری شبکهٔ وکسل (چگالی خروجی). ۲۵۶ ~ ۱۰۰ هزار وجه، ۵۱۲ ~ ۱ میلیون. برای تعداد دقیق وجه، سپس Decimate Mesh را اجرا کنید."
+      },
+      "sign_mode": {
+        "name": "sign_mode",
+        "tooltip": "udf: در برابر ورودی نامرتب/غیرمنیفلد مقاوم است. sdf: سطح تکی تمیز با بازیابی ویژگی‌های تیز QEF (Quadratic Error Function)، اما به جهت‌گیری سازگار نیاز دارد."
+      },
+      "sign_mode_drop_enclosed_components": {
+        "name": "drop_enclosed_components"
+      },
+      "sign_mode_drop_inverted_components": {
+        "name": "drop_inverted_components"
+      },
+      "sign_mode_qef": {
+        "name": "qef"
+      },
+      "smooth_iters": {
+        "name": "smooth_iters",
+        "tooltip": "تکرارهای هموارسازی Taubin (۰ = خاموش). ۲-۳ آرتیفکت‌های پلکانی‌مانند DC را پاک می‌کند؛ مقادیر بالاتر لبه‌های QEF را بیش‌ازحد هموار می‌کنند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مش",
+        "tooltip": null
+      }
+    }
+  },
   "RemoveBackground": {
     "description": "یک ماسک پیش‌زمینه ایجاد می‌کند تا پس‌زمینه را با استفاده از مدل حذف پس‌زمینه از تصویر حذف کند.",
     "display_name": "حذف پس‌زمینه",
@@ -16782,6 +17945,46 @@
       "0": {
         "name": "ماسک",
         "tooltip": "ماسک پیش‌زمینه تولید شده"
+      }
+    }
+  },
+  "RenderMesh": {
+    "description": "یک نمای تکی از یک مش را با پرتاب پرتو رندر می‌کند. دوربین و تبدیل اختیاری مدل می‌توانند از نمایشگر Load3D / Preview3D دریافت شوند.",
+    "display_name": "رندر مش",
+    "inputs": {
+      "background": {
+        "name": "پس‌زمینه"
+      },
+      "camera_info": {
+        "name": "camera_info",
+        "tooltip": "دوربین از نمایشگر Load3D / Preview3D یا یک node از نوع Create Camera Info. اگر چیزی متصل نباشد، نمای پیش‌فرض روبه‌رو به‌طور خودکار کادربندی می‌شود."
+      },
+      "height": {
+        "name": "ارتفاع"
+      },
+      "mesh": {
+        "name": "مش"
+      },
+      "mode": {
+        "name": "حالت",
+        "tooltip": "مورد رندر را تعیین می‌کند. خودکار: در صورت وجود بافت، در غیر این صورت رنگ‌های راس‌ها، وگرنه خاک رس سایه‌دار."
+      },
+      "model_3d_info": {
+        "name": "model_3d_info",
+        "tooltip": "تبدیل مدل از همان نمایشگر Load3D / Preview3D. برای تطبیق کادربندی نمایشگر، آن را همراه با camera_info متصل کنید."
+      },
+      "width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "تصویر",
+        "tooltip": null
+      },
+      "1": {
+        "name": "ماسک",
+        "tooltip": null
       }
     }
   },
@@ -16845,6 +18048,24 @@
       }
     }
   },
+  "RenderUVAtlas": {
+    "description": "چیدمان UV یک مش را به‌صورت تصویر رندر می‌کند.",
+    "display_name": "رندر اطلس UV",
+    "inputs": {
+      "mesh": {
+        "name": "مش"
+      },
+      "resolution": {
+        "name": "تفکیک‌پذیری"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "تصویر",
+        "tooltip": null
+      }
+    }
+  },
   "RenormCFG": {
     "display_name": "RenormCFG",
     "inputs": {
@@ -16892,6 +18113,7 @@
     }
   },
   "ReplaceText": {
+    "description": "متن را در همهٔ متن‌ها جایگزین می‌کند.",
     "display_name": "جایگزینی متن",
     "inputs": {
       "find": {
@@ -17518,6 +18740,33 @@
       }
     }
   },
+  "RotateMesh": {
+    "description": "یک مش را می‌چرخاند. Euler XYZ ابتدا X، سپس Y و سپس Z را حول محورهای جهانی اعمال می‌کند (درجه). Quaternion به شکل (w, x, y, z) است و به‌طور خودکار نرمال‌سازی می‌شود.",
+    "display_name": "چرخش مش",
+    "inputs": {
+      "mesh": {
+        "name": "مش"
+      },
+      "mode": {
+        "name": "حالت"
+      },
+      "mode_angle_x": {
+        "name": "angle_x"
+      },
+      "mode_angle_y": {
+        "name": "angle_y"
+      },
+      "mode_angle_z": {
+        "name": "angle_z"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
+        "tooltip": null
+      }
+    }
+  },
   "RunwayAleph2KeyframeNode": {
     "description": "یک تصویر راهنما را به یک لحظه از ویدیوی ورودی (منبع) متصل کنید تا Aleph2 ویرایش را در آن نقطه از ویدیوی شما هدایت کند. این node را به ورودی 'keyframes' در Runway Aleph2 Video to Video متصل کنید؛ چندین مورد را (تا ۵ عدد) از طریق ورودی اختیاری 'keyframes' زیر به هم زنجیر کنید.",
     "display_name": "Runway Aleph2 Keyframe",
@@ -17728,6 +18977,180 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3DBody_FaceExpression": {
+    "description": "کنترل blendshapeهای چهرهٔ MHR با استفاده از Face Landmarker اصلی MediaPipe.",
+    "display_name": "تبدیل حالت چهره به بدن SAM3D",
+    "inputs": {
+      "blendshape_smooth_window": {
+        "name": "blendshape_smooth_window",
+        "tooltip": "پنجرهٔ گاوسی روی سیگنال هر فریم MediaPipe پیش از نگاشت MHR. خروجی خام MediaPipe در چهره‌های ثابت، بین فریم‌ها ۳۰ تا ۷۰٪ نوسان دارد. ۱ = غیرفعال. از مقادیر فرد استفاده کنید."
+      },
+      "brow_strength": {
+        "name": "brow_strength",
+        "tooltip": "ضریب شکل‌های ابرو/گونه/پوزخند. MediaPipe حدود ۰.۱ تا ۰.۳ خروجی می‌دهد؛ ۲ تا ۳ برابر."
+      },
+      "eye_strength": {
+        "name": "eye_strength",
+        "tooltip": "ضریب شکل‌های چشم. MediaPipe به‌ندرت از ۰.۵ فراتر می‌رود؛ اغلب ۲ تا ۳ برابر لازم است."
+      },
+      "image": {
+        "name": "image"
+      },
+      "input_threshold": {
+        "name": "input_threshold",
+        "tooltip": "ناحیهٔ مرده برای خروجی خام MediaPipe (پایین‌تر = صفر، بالاتر = بازنگاشت خطی). "
+      },
+      "mhr_pose_data": {
+        "name": "mhr_pose_data"
+      },
+      "mouth_strength": {
+        "name": "mouth_strength",
+        "tooltip": "ضریب شکل‌های دهان/فک. jawOpen در MediaPipe نزدیک ۱.۰ اشباع می‌شود."
+      },
+      "sam3d_body_model": {
+        "name": "sam3d_body_model"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "ضریب سراسری برای همهٔ blendshapeها. مقادیر بالاتر از ۱ اغراق‌آمیز می‌شوند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mhr_pose_data",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3DBody_Loader": {
+    "display_name": "بارگذاری مدل بدن SAM3D",
+    "inputs": {
+      "model_file": {
+        "name": "model_file"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "sam3d_body_model",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3DBody_Predict": {
+    "display_name": "اجرای پیش‌بینی بدن SAM3D",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "حداکثر برش‌های شخص برای پردازش به‌صورت batch. مقادیر بزرگ‌تر برای استنتاج سریع‌تر از VRAM بیشتری استفاده می‌کنند."
+      },
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "کادرهای محدودکنندهٔ هر فریم که برای تشخیص بهتر استفاده می‌شوند. می‌توان از آن‌ها به‌عنوان جایگزین دادهٔ ردیابی استفاده کرد. "
+      },
+      "fov": {
+        "name": "fov",
+        "tooltip": "FoV عمودی بر حسب درجه. بر عمق پیش‌بینی‌شده و مقیاس مطلق اثر می‌گذارد. ۰ = بازگشت به حدود ۵۳° (۱۶:۹)."
+      },
+      "image": {
+        "name": "image"
+      },
+      "run_hand_refinement": {
+        "name": "run_hand_refinement",
+        "tooltip": "حالت دست را با هزینهٔ زمان استنتاج و مصرف حافظهٔ بیشتر بهبود می‌دهد"
+      },
+      "sam3d_body_model": {
+        "name": "sam3d_body_model"
+      },
+      "track_data": {
+        "name": "track_data",
+        "tooltip": "دادهٔ ردیابی از SAM3 Video Track، لازم برای تشخیص چندشخصی"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mhr_pose_data",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3DBody_Render": {
+    "display_name": "رندر حالت بدن سه‌بعدی",
+    "inputs": {
+      "background": {
+        "name": "پس‌زمینه",
+        "tooltip": "پس‌زمینه برای هر فریم. در صورت حذف = بوم سیاه."
+      },
+      "camera_info": {
+        "name": "camera_info",
+        "tooltip": "جایگزینی آزاد دوربین 6DOF. هنگام اتصال، پوز به‌جای دوربین پیش‌بینی‌شده، از طریق این دوربین (موقعیت/هدف/بزرگ‌نمایی/چرخش/FoV) بازپروژکت می‌شود. "
+      },
+      "height": {
+        "name": "ارتفاع",
+        "tooltip": "ارتفاع خروجی بر حسب پیکسل. ۰ = استفاده از image_size بومی دادهٔ پوز. اگر فقط یکی از عرض/ارتفاع تنظیم شود، دیگری با حفظ نسبت ابعاد اصلی محاسبه می‌شود."
+      },
+      "pose_data": {
+        "name": "pose_data",
+        "tooltip": "دادهٔ پوز MHR یا دادهٔ پوز ریگ خارجی با محور Y رو به بالا (KimodoSample). همهٔ سبک‌های رندر برای ریگ‌های خارجی که نگاشت مفصل‌های OpenPose را در _skeleton_override خود دارند کار می‌کنند (KimodoSample این نگاشت را دارد)."
+      },
+      "render_style": {
+        "name": "render_style",
+        "tooltip": "'mesh' = مش سه‌بعدی MHR که از طریق دوربین رستری شده است. 'silhouette' = mask دودویی مش. 'openpose_2d' = اسکلت دوبعدی تخت. 'openpose_3d' = اسکلت openpose به‌صورت مدل سه‌بعدی با سایه‌پردازی تخت. 'scail' = کپسول‌های سه‌بعدی SCAIL "
+      },
+      "render_style_opacity": {
+        "name": "کدری"
+      },
+      "render_style_person_palette_falloff": {
+        "name": "person_palette_falloff"
+      },
+      "render_style_region": {
+        "name": "ناحیه"
+      },
+      "render_style_shader": {
+        "name": "سایه‌زن"
+      },
+      "width": {
+        "name": "عرض",
+        "tooltip": "عرض خروجی بر حسب پیکسل. ۰ = استفاده از image_size بومی دادهٔ پوز. اگر فقط یکی از عرض/ارتفاع تنظیم شود، دیگری با حفظ نسبت ابعاد اصلی محاسبه می‌شود."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "تصویر",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3DBody_Smooth": {
+    "description": "لرزش بین فریم‌ها را با هموارسازی زمانی کاهش می‌دهد.",
+    "display_name": "هموارسازی دادهٔ پوز بدن SAM3D",
+    "inputs": {
+      "method": {
+        "name": "روش",
+        "tooltip": "gaussian: میانگین وزنی متقارن، بهترین هموارساز چندمنظوره.\nsavgol: برازش چندجمله‌ای لغزان، اوج‌های تیز را حفظ می‌کند."
+      },
+      "mhr_pose_data": {
+        "name": "mhr_pose_data"
+      },
+      "rotation_threshold_degrees": {
+        "name": "rotation_threshold_degrees",
+        "tooltip": "برای حفظ چرخش‌های سریع، هموارسازی را در این نرخ چرخش ریشه (درجه/فریم) غیرفعال می‌کند. ۳۰° برای بیشتر محتواها مناسب است؛ مقادیر پایین ممکن است هموارسازی را در لرزش عادی غیرفعال کند و به‌طور نامحسوس بر کیفیت تأثیر بگذارد. ۰ = غیرفعال."
+      },
+      "strength": {
+        "name": "شدت",
+        "tooltip": "شدت هموارسازی. ۰ = خام، ۱ = هموارشده."
+      },
+      "window": {
+        "name": "پنجره",
+        "tooltip": "پنجرهٔ زمانی بر حسب فریم (مقادیر فرد)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mhr_pose_data",
         "tooltip": null
       }
     }
@@ -19079,7 +20502,7 @@
     "inputs": {
       "codec": {
         "name": "کدک",
-        "tooltip": "کدک مورد استفاده برای ویدیو."
+        "tooltip": "کدک ویدیوی خروجی. Auto یک جریان منبع سازگار را حفظ می‌کند. بازکدگذاری H.264 و AV1 از SDR، HDR (HLG) و HDR PQ پشتیبانی می‌کند."
       },
       "filename_prefix": {
         "name": "پیشوند نام فایل",
@@ -19087,7 +20510,10 @@
       },
       "format": {
         "name": "فرمت",
-        "tooltip": "فرمت ذخیره‌سازی ویدیو."
+        "tooltip": "محفظهٔ خروجی. Auto برای Auto/H.264 از MP4 و برای AV1 از WebM استفاده می‌کند. MP4، MKV و WebM یک محفظهٔ مشخص را انتخاب می‌کنند."
+      },
+      "format_codec": {
+        "name": "کدک"
       },
       "video": {
         "name": "ویدیو",
@@ -19097,7 +20523,7 @@
     "outputs": {
       "0": {
         "name": "ویدیو",
-        "tooltip": null
+        "tooltip": "ویدیوی ورودی، بدون تغییر."
       }
     }
   },
@@ -20186,6 +21612,7 @@
     }
   },
   "StripWhitespace": {
+    "description": "فاصله‌های خالی ابتدایی و انتهایی را از همهٔ متن‌ها حذف کنید.",
     "display_name": "حذف فاصله‌های اضافی",
     "inputs": {
       "texts": {
@@ -21059,6 +22486,7 @@
     }
   },
   "TextToLowercase": {
+    "description": "متن را به حروف کوچک تبدیل کنید.",
     "display_name": "تبدیل متن به حروف کوچک",
     "inputs": {
       "texts": {
@@ -21074,6 +22502,7 @@
     }
   },
   "TextToUppercase": {
+    "description": "متن را به حروف بزرگ تبدیل کنید.",
     "display_name": "تبدیل متن به حروف بزرگ",
     "inputs": {
       "texts": {
@@ -21483,6 +22912,118 @@
     "outputs": {
       "0": {
         "name": "splat",
+        "tooltip": null
+      }
+    }
+  },
+  "Trellis2Conditioning": {
+    "display_name": "Trellis2Conditioning",
+    "inputs": {
+      "clip_vision_model": {
+        "name": "clip_vision_model"
+      },
+      "image": {
+        "name": "تصویر",
+        "tooltip": "تصویر پیش‌پردازش‌شده از ImageCropToMask (pad_factor=1.0 برای TRELLIS.2)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مثبت",
+        "tooltip": null
+      },
+      "1": {
+        "name": "منفی",
+        "tooltip": null
+      }
+    }
+  },
+  "Trellis2ShapeStage": {
+    "display_name": "Trellis2ShapeStage",
+    "inputs": {
+      "negative": {
+        "name": "منفی"
+      },
+      "positive": {
+        "name": "مثبت"
+      },
+      "voxel": {
+        "name": "وکسل",
+        "tooltip": "وکسل ساختاری متراکم از VaeDecodeStructureTrellis2."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مثبت",
+        "tooltip": null
+      },
+      "1": {
+        "name": "منفی",
+        "tooltip": null
+      },
+      "2": {
+        "tooltip": null
+      }
+    }
+  },
+  "Trellis2TextureStage": {
+    "display_name": "Trellis2TextureStage",
+    "inputs": {
+      "negative": {
+        "name": "منفی"
+      },
+      "positive": {
+        "name": "مثبت"
+      },
+      "shape_latent": {
+        "name": "shape_latent"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مثبت",
+        "tooltip": null
+      },
+      "1": {
+        "name": "منفی",
+        "tooltip": null
+      },
+      "2": {
+        "tooltip": null
+      }
+    }
+  },
+  "Trellis2UpsampleStage": {
+    "display_name": "مرحلهٔ Upsample ‏Trellis2",
+    "inputs": {
+      "negative": {
+        "name": "منفی"
+      },
+      "positive": {
+        "name": "مثبت"
+      },
+      "shape_latent": {
+        "name": "shape_latent",
+        "tooltip": "خروجی latent شکل با وضوح ۵۱۲ از نخستین KSampler مرحلهٔ شکل."
+      },
+      "target_resolution": {
+        "name": "target_resolution",
+        "tooltip": "وضوح وکسل شکل Upsample‌شده. بیشتر = جزئیات و VRAM بیشتر."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مثبت",
+        "tooltip": null
+      },
+      "1": {
+        "name": "منفی",
+        "tooltip": null
+      },
+      "2": {
         "tooltip": null
       }
     }
@@ -22177,6 +23718,7 @@
     }
   },
   "TruncateText": {
+    "description": "کوتاه‌کردن متن تا حداکثر طول.",
     "display_name": "کوتاه‌سازی متن",
     "inputs": {
       "max_length": {
@@ -22292,6 +23834,37 @@
       },
       "model_patch": {
         "name": "patch مدل"
+      }
+    }
+  },
+  "UnwrapMesh": {
+    "description": "یک اطلس UV ایجاد می‌کند: سطح را به چارت‌ها بخش‌بندی می‌کند، هرکدام را پارامتری‌سازی کرده و در یک اطلس [۰،۱] جای می‌دهد. رأس‌های روی درزهای چارت تکرار می‌شوند (یک نسخه برای هر چارت، با موقعیت یکسان و UV اختصاصی)، بنابراین مش خروجی نسبت به ورودی رأس‌های بیشتری دارد. پس از Remesh/Decimate و پیش از پخت بافت اجرا کنید.",
+    "display_name": "بازکردن UVهای مش",
+    "inputs": {
+      "mesh": {
+        "name": "مش"
+      },
+      "padding": {
+        "name": "فاصله‌گذاری",
+        "tooltip": "فاصله‌گذاری تکسل بین چارت‌ها."
+      },
+      "resolution": {
+        "name": "وضوح",
+        "tooltip": "وضوح اطلس هدف برای مقیاس‌دهی خودکار تراکم تکسل (۰ = متناسب با محتوا)."
+      },
+      "segmenter": {
+        "name": "بخش‌بند",
+        "tooltip": "pec: چارت‌بندی سریع با ادغام لبه‌های موازی روی GPU. adaptive: CPU، کندتر."
+      },
+      "weld_distance": {
+        "name": "weld_distance",
+        "tooltip": "شعاع ادغام رأس‌های منطبق، به‌صورت کسری از گسترهٔ مش (۰ = خودکار). اگر برای هر مثلث چارت جداگانه دریافت می‌کنید (ورودی بدون weld)، آن را به حدود ۰٫۰۰۱ افزایش دهید."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مش",
+        "tooltip": null
       }
     }
   },
@@ -22669,6 +24242,68 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VaeDecodeShapeTrellis": {
+    "display_name": "VaeDecodeShapeTrellis",
+    "inputs": {
+      "samples": {
+        "name": "نمونه‌ها"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مش",
+        "tooltip": null
+      },
+      "1": {
+        "name": "تقسیم‌بندی‌های شکل",
+        "tooltip": null
+      }
+    }
+  },
+  "VaeDecodeStructureTrellis2": {
+    "display_name": "VaeDecodeStructureTrellis2",
+    "inputs": {
+      "resolution": {
+        "name": "وضوح"
+      },
+      "samples": {
+        "name": "نمونه‌ها"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "وکسل",
+        "tooltip": null
+      }
+    }
+  },
+  "VaeDecodeTextureTrellis": {
+    "display_name": "VaeDecodeTextureTrellis",
+    "inputs": {
+      "samples": {
+        "name": "نمونه‌ها"
+      },
+      "shape_subdivides": {
+        "name": "تقسیم‌بندی‌های شکل",
+        "tooltip": "اطلاعات شکل که برای هدایت بازسازی با جزئیات بیشتر هنگام رمزگشایی استفاده می‌شود. به حفظ سازگاری ساختار در وضوح‌های بالاتر کمک می‌کند."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "رنگ‌های وکسل",
         "tooltip": null
       }
     }
@@ -23832,6 +25467,100 @@
       "watermark": {
         "name": "واترمارک",
         "tooltip": "آیا واترمارک تولیدشده توسط هوش مصنوعی به نتیجه اضافه شود."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan3ImageToVideoApi": {
+    "description": "با استفاده از مدل Wan 3.0، از یک تصویر فریم اول و با امکان کنترل اختیاری فریم آخر، ویدئو تولید می‌کند.",
+    "display_name": "Wan 3.0 تبدیل تصویر به ویدئو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "first_frame": {
+        "name": "فریم اول",
+        "tooltip": "تصویر فریم اول."
+      },
+      "last_frame": {
+        "name": "فریم آخر",
+        "tooltip": "تصویر فریم آخر. مدل ویدئویی با گذار از فریم اول به فریم آخر تولید می‌کند."
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_audio": {
+        "name": "صدا"
+      },
+      "model_duration": {
+        "name": "مدت‌زمان"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_prompt_extend": {
+        "name": "گسترش پرامپت"
+      },
+      "model_ratio": {
+        "name": "نسبت"
+      },
+      "model_resolution": {
+        "name": "وضوح"
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر مورد استفاده برای تولید."
+      },
+      "watermark": {
+        "name": "واترمارک",
+        "tooltip": "این‌که آیا واترمارک تولیدشده با هوش مصنوعی به نتیجه افزوده شود یا خیر."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan3ReferenceToVideoApi": {
+    "description": "با استفاده از مدل Wan 3.0، از یک پرامپت متنی و تصاویر، ویدئوها و صدای مرجع اختیاری، ویدئو تولید می‌کند. رسانه‌های مرجع را می‌توان آزادانه ترکیب کرد و در پرامپت با {'@'}Image1، {'@'}Video1، {'@'}Audio1 به آن‌ها اشاره کرد.",
+    "display_name": "Wan 3.0 تبدیل مرجع به ویدئو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_audio": {
+        "name": "صدا"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_prompt_extend": {
+        "name": "prompt_extend"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر مورد استفاده برای تولید."
+      },
+      "watermark": {
+        "name": "واترمارک",
+        "tooltip": "این‌که آیا واترمارک تولیدشده با هوش مصنوعی به نتیجه افزوده شود یا خیر."
       }
     },
     "outputs": {
@@ -25443,6 +27172,29 @@
       "waiting for camera___": {},
       "width": {
         "name": "عرض"
+      }
+    }
+  },
+  "WeldVertices": {
+    "description": "رأس‌های منطبق را با کوانتیزه‌سازی شبکه‌ای L_inf ادغام می‌کند. زمانی استفاده کنید که یک مش بدون جوش‌دادن وارد می‌شود (رأس‌های جداگانه برای هر وجه، بدون لبه‌های مشترک) — پیش‌پردازش پیش از FillHoles، DecimateMesh یا هر عملیات آگاه از توپولوژی. رنگ‌ها برای هر خوشه میانگین‌گیری می‌شوند.",
+    "display_name": "جوش‌دادن رأس‌ها",
+    "inputs": {
+      "epsilon_abs": {
+        "name": "epsilon_abs",
+        "tooltip": "تلرانس مطلق جوش‌دادن (هنگام > 0، epsilon_rel را لغو می‌کند)."
+      },
+      "epsilon_rel": {
+        "name": "epsilon_rel",
+        "tooltip": "تلرانس جوش‌دادن (بخشی از قطر bbox). 1e-5 برای حذف موارد تکراری float؛ 1e-3 برای رأس‌های ظاهراً نزدیک اما متمایز."
+      },
+      "mesh": {
+        "name": "mesh"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
+        "tooltip": null
       }
     }
   },

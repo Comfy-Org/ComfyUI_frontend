@@ -89,6 +89,7 @@
   },
   "AddTextPrefix": {
     "display_name": "Add Text Prefix (DEPRECATED)",
+    "description": "Add a prefix to all texts.",
     "inputs": {
       "texts": {
         "name": "texts",
@@ -108,6 +109,7 @@
   },
   "AddTextSuffix": {
     "display_name": "Add Text Suffix (DEPRECATED)",
+    "description": "Add a suffix to all texts.",
     "inputs": {
       "texts": {
         "name": "texts",
@@ -231,6 +233,36 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ApplyTextureToMesh": {
+    "display_name": "Apply Texture to Mesh",
+    "description": "Attaches baked texture IMAGEs to a mesh's UV layout for SaveGLB. Feed the SAME mesh you baked",
+    "inputs": {
+      "mesh": {
+        "name": "mesh"
+      },
+      "base_color": {
+        "name": "base_color"
+      },
+      "metallic": {
+        "name": "metallic"
+      },
+      "roughness": {
+        "name": "roughness"
+      },
+      "occlusion": {
+        "name": "occlusion"
+      },
+      "normal_map": {
+        "name": "normal_map"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
         "tooltip": null
       }
     }
@@ -395,6 +427,106 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BakeAmbientOcclusion": {
+    "display_name": "Bake Ambient Occlusion",
+    "description": "Bakes an ambient-occlusion map from a high-poly mesh into a low-poly's UV layout (white = open, dark = crevices). Feed the UV-unwrapped low_poly and the high_poly it was decimated from. Outputs a grayscale image for Apply Texture To Mesh's occlusion input (packed into the ORM map / occlusionTexture).",
+    "inputs": {
+      "low_poly": {
+        "name": "low_poly"
+      },
+      "high_poly": {
+        "name": "high_poly"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "samples": {
+        "name": "samples",
+        "tooltip": "Rays per texel. More = smoother, slower. Raise if grainy."
+      },
+      "max_distance": {
+        "name": "max_distance",
+        "tooltip": "Ray length, as a fraction of the bounding box diagonal. Smaller = tighter, more local occlusion."
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "Scales the occlusion. >1 darkens, <1 lightens."
+      },
+      "bias": {
+        "name": "bias",
+        "tooltip": "Ray origin lift off the surface, as a fraction of the bounding box diagonal. Raise if even surfaces show dark blotches/holes."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "occlusion",
+        "tooltip": null
+      }
+    }
+  },
+  "BakeNormalMapFromMesh": {
+    "display_name": "Bake Normal Map from Mesh",
+    "description": "Bakes a tangent-space normal map (glTF/OpenGL +Y) from a high-poly mesh into a low-poly's UV layout, capturing detail lost during decimation. Feed the UV-unwrapped low_poly and the high_poly it was decimated from. Outputs an image for Apply Texture To Mesh's normal_map input.",
+    "inputs": {
+      "low_poly": {
+        "name": "low_poly"
+      },
+      "high_poly": {
+        "name": "high_poly"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "cage_distance": {
+        "name": "cage_distance",
+        "tooltip": "Surface search band, as a fraction of the bounding box diagonal. Raise for wrong/missing patches under heavy decimation; lower if it grabs across gaps."
+      },
+      "ignore_backfaces": {
+        "name": "ignore_backfaces",
+        "tooltip": "Skip high-poly surfaces facing away from the texel, so crevices/enclosed spaces don't grab the opposite wall. Disable only if the high-poly winding is inconsistent."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "normal_map",
+        "tooltip": null
+      }
+    }
+  },
+  "BakeTextureFromVoxel": {
+    "display_name": "Bake Texture From Voxel",
+    "description": "Bakes PBR textures onto the mesh's existing UV layout (trilinear-sample the sparse voxel volume). Does NOT unwrap — connect a UV unwrap node upstream. Outputs base_color + metallic/roughness grayscale IMAGEs (black if no PBR); feed them to ApplyTextureToMesh (SAME mesh) for SaveGLB.",
+    "inputs": {
+      "mesh": {
+        "name": "mesh"
+      },
+      "voxel_colors": {
+        "name": "voxel_colors"
+      },
+      "texture_size": {
+        "name": "texture_size",
+        "tooltip": "Square UV atlas resolution."
+      },
+      "reference_mesh": {
+        "name": "reference_mesh",
+        "tooltip": "Optional dense pre-decimation mesh; back-projects each texel onto its true surface before sampling, removing faceted baking on coarse meshes."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_color",
+        "tooltip": null
+      },
+      "1": {
+        "name": "metallic",
+        "tooltip": null
+      },
+      "2": {
+        "name": "roughness",
         "tooltip": null
       }
     }
@@ -638,6 +770,110 @@
       }
     }
   },
+  "BriaEraser": {
+    "display_name": "Bria Eraser",
+    "description": "Remove objects or areas outlined by a mask from an image using Bria.",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "White areas are erased, black areas are preserved. The mask is binarized before sending, so partially painted areas count as white. Must have the same aspect ratio as the image."
+      },
+      "mask_type": {
+        "name": "mask_type",
+        "tooltip": "manual for hand-drawn or brush masks, automatic for masks produced by segmentation models such as SAM."
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "Moderation settings"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaExpandImage": {
+    "display_name": "Bria Expand Image",
+    "description": "Expand an image beyond its borders with generated content using Bria.",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "expand_mode": {
+        "name": "expand_mode",
+        "tooltip": "Target shape of the expanded image: a preset aspect ratio, a custom ratio, or manual placement of the original image on a canvas. Manual is the only mode that can reach a canvas taller than 1:2."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Optional description of the expanded scene; when empty, Bria generates one from the image."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "Moderation settings"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "prompt",
+        "tooltip": "The prompt used for the expansion; auto-generated by Bria when the prompt input is empty."
+      }
+    }
+  },
+  "BriaGenFill": {
+    "display_name": "Bria Generative Fill",
+    "description": "Generate objects or scenery inside a masked region of an image using Bria.",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "White areas are filled with generated content, black areas are preserved. The mask is binarized before sending, so partially painted areas count as white. Must have the same aspect ratio as the image."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Description of what to generate inside the masked region."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "refine_prompt": {
+        "name": "refine_prompt",
+        "tooltip": "Automatically adjust the prompt for better results; disable to use the prompt exactly as written."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "Moderation settings"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaImageEditNode": {
     "display_name": "Bria FIBO Image Edit",
     "description": "Edit images using Bria latest model",
@@ -687,6 +923,32 @@
       },
       "1": {
         "name": "structured_prompt",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaIncreaseResolution": {
+    "display_name": "Bria Increase Resolution",
+    "description": "Upscale an image by 2x or 4x using Bria, preserving the original content.",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "desired_increase": {
+        "name": "desired_increase",
+        "tooltip": "Resolution multiplier. The output must fit within 8192 pixels on each side."
+      },
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "Automatically lower the multiplier, and downscale the input image if that is still not enough, when the output would exceed the limit."
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "Moderation settings"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -865,13 +1127,60 @@
       }
     }
   },
+  "BuildPoseFile": {
+    "display_name": "Create 3D Animation File",
+    "description": "Build an animated GLB from pose data, or save a BVH mocap file.",
+    "inputs": {
+      "pose_data": {
+        "name": "pose_data",
+        "tooltip": "3D pose data."
+      },
+      "format": {
+        "name": "format",
+        "tooltip": "Output format, both fed to Save 3D Model to write to disk. 'glb' = animated GLB (mesh / bones / openpose / scail). 'bvh' = BVH mocap clip (one skeleton; needs the model)."
+      },
+      "fps": {
+        "name": "fps",
+        "tooltip": "Animation frame rate."
+      },
+      "camera_translation": {
+        "name": "camera_translation",
+        "tooltip": "Bake pred_cam_t into the root's translation 'off' = bind position 'centered' = delta from frame 0 'absolute' = raw (Z is camera depth — usually meters away)."
+      },
+      "track_index": {
+        "name": "track_index",
+        "tooltip": "-1 = all tracks; ≥0 = single track."
+      },
+      "sam3d_body_model": {
+        "name": "sam3d_body_model"
+      },
+      "format_bone_smooth_window": {
+        "name": "bone_smooth_window"
+      },
+      "format_mesh_style": {
+        "name": "mesh_style"
+      },
+      "format_mesh_style_bone_vis": {
+        "name": "bone_vis"
+      },
+      "format_mesh_style_shader": {
+        "name": "shader"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "display_name": "ByteDance Seedance 2.5 First-Last-Frame to Video",
     "description": "Generate video using Seedance 2.5 or 2.0 from a first frame image and optional last frame image.",
     "inputs": {
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.5 for the newest model, videos up to 30 seconds and mp4/mov output; Seedance 2.0 for maximum quality and 1080p/4k; Fast for speed optimization; Mini for the fastest, lowest-cost generation."
+        "tooltip": "Seedance 2.5 for the newest model, videos up to 30 seconds and mp4/mov output; Seedance 2.0 for maximum quality and 4k; Fast for speed optimization; Mini for the fastest, lowest-cost generation."
       },
       "seed": {
         "name": "seed",
@@ -923,12 +1232,12 @@
     }
   },
   "ByteDance2ReferenceNode": {
-    "display_name": "ByteDance Seedance 2.5 Reference to Video",
+    "display_name": "ByteDance Seedance 2.5 Reference to Video (Legacy)",
     "description": "Generate, edit, or extend video using Seedance 2.5 or 2.0 with reference images, videos, and audio. Supports multimodal reference, video editing, and video extension.",
     "inputs": {
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.5 for the newest model, videos up to 30 seconds and mp4/mov output; Seedance 2.0 for maximum quality and 1080p/4k; Fast for speed optimization; Mini for the fastest, lowest-cost generation."
+        "tooltip": "Seedance 2.5 for the newest model, videos up to 30 seconds and mp4/mov output; Seedance 2.0 for maximum quality and 4k; Fast for speed optimization; Mini for the fastest, lowest-cost generation."
       },
       "seed": {
         "name": "seed",
@@ -975,13 +1284,66 @@
       }
     }
   },
+  "ByteDance2ReferenceNodeV2": {
+    "display_name": "ByteDance Seedance 2.5 Reference to Video",
+    "description": "Generate, edit, or extend video using Seedance 2.5 or 2.0 with reference images, videos, and audio. Supports multimodal reference, video editing, and video extension.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Seedance 2.5 for the newest model, videos up to 30 seconds and mp4/mov output; Seedance 2.0 for maximum quality and 4k; Fast for speed optimization; Mini for the fastest, lowest-cost generation."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add a watermark to the video."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_auto_downscale": {
+        "name": "auto_downscale"
+      },
+      "model_auto_upscale": {
+        "name": "auto_upscale"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_output_format": {
+        "name": "output_format"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_task_type": {
+        "name": "task_type"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2TextToVideoNode": {
     "display_name": "ByteDance Seedance 2.5 Text to Video",
     "description": "Generate video using Seedance 2.5 or 2.0 models based on a text prompt.",
     "inputs": {
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.5 for the newest model, videos up to 30 seconds and mp4/mov output; Seedance 2.0 for maximum quality and 1080p/4k; Fast for speed optimization; Mini for the fastest, lowest-cost generation."
+        "tooltip": "Seedance 2.5 for the newest model, videos up to 30 seconds and mp4/mov output; Seedance 2.0 for maximum quality and 4k; Fast for speed optimization; Mini for the fastest, lowest-cost generation."
       },
       "seed": {
         "name": "seed",
@@ -1467,7 +1829,7 @@
     }
   },
   "ByteDanceSeedreamNodeV2": {
-    "display_name": "ByteDance Seedream 4.5 & 5.0",
+    "display_name": "ByteDance Seedream 4.5 & 5.0 (Legacy)",
     "description": "Unified text-to-image generation and precise single-sentence editing at up to 4K resolution.",
     "inputs": {
       "prompt": {
@@ -1497,6 +1859,48 @@
       },
       "model_size_preset": {
         "name": "size_preset"
+      },
+      "model_width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceSeedreamNodeV3": {
+    "display_name": "ByteDance Seedream 4.5 & 5.0",
+    "description": "Unified text-to-image generation and precise single-sentence editing at up to 4K resolution.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text prompt for creating or editing an image."
+      },
+      "model": {
+        "name": "model"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_height": {
+        "name": "height"
+      },
+      "model_prompt_optimization": {
+        "name": "prompt_optimization"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_size_preset": {
+        "name": "size_preset"
+      },
+      "model_thinking": {
+        "name": "thinking"
+      },
+      "model_watermark": {
+        "name": "watermark"
       },
       "model_width": {
         "name": "width"
@@ -1549,6 +1953,43 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ByteDanceVideoEnhanceNode": {
+    "display_name": "ByteDance vCube Video Enhance",
+    "description": "Upscales and restores a video with ByteDance vCube: super-resolution up to 8K, compression artifact and noise removal, colour and sharpness enhancement, optional frame interpolation.",
+    "inputs": {
+      "video": {
+        "name": "video",
+        "tooltip": "Video to enhance. The source resolution must be at most 2560x1440 (2K); the output size is set by the resolution input."
+      },
+      "tool_version": {
+        "name": "tool_version",
+        "tooltip": "'standard' balances speed and quality with 10+ enhancement algorithms. 'professional' uses 30+ algorithms for cinema-grade restoration, takes about 3x longer and costs 10x more."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Output resolution. The short side is set to the chosen level and the long side follows the source aspect ratio. 'source' keeps the source size, 'custom' sets the short side in pixels. Sources wider or taller than about 2.2:1 are billed one resolution tier higher."
+      },
+      "fps": {
+        "name": "fps",
+        "tooltip": "Output frame rate. A higher rate than the source enables AI frame interpolation; a lower one drops frames. 'source' keeps the source rate, up to 120 fps. Rates above 30 fps cost 2x, above 60 fps 4x."
+      },
+      "bitrate_level": {
+        "name": "bitrate_level",
+        "tooltip": "Target bitrate of the delivered file, scaled to the output resolution and frame rate."
+      },
+      "tool_version_enhance_style": {
+        "name": "enhance_style"
+      },
+      "tool_version_scene": {
+        "name": "scene"
       }
     },
     "outputs": {
@@ -1846,7 +2287,7 @@
   },
   "CLIPLoader": {
     "display_name": "Load CLIP",
-    "description": "Recipes:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (226-token padding)\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (Recommend) or t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm",
+    "description": "Recipes:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (226-token padding)\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (Recommend) or t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL or Music3 Qwen/RVQ",
     "inputs": {
       "clip_name": {
         "name": "clip_name"
@@ -3258,7 +3699,11 @@
       },
       "bit_depth": {
         "name": "bit_depth",
-        "tooltip": "Bit depth of the created video. 10-bit keeps smoother gradients with less banding, but some players and downstream nodes may not support it."
+        "tooltip": "Auto uses 8-bit for sRGB and 10-bit for HDR. Explicit 8-bit and 10-bit choices are independent of colorspace."
+      },
+      "color_space": {
+        "name": "color_space",
+        "tooltip": "Colorspace of the input images. HDR selects BT.2020/HLG and HDR PQ selects BT.2020/PQ."
       }
     },
     "outputs": {
@@ -3449,6 +3894,29 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DecimateMesh": {
+    "display_name": "Decimate Mesh",
+    "description": "Simplifies a mesh to a target face count using QEM, on the active compute device. 'midpoint' is the cumesh-faithful preset (best quality, preserves thin features / hair); 'qem' places vertices at the QEM optimum with line/feature-edge controls. Output stays welded.",
+    "inputs": {
+      "mesh": {
+        "name": "mesh"
+      },
+      "target_face_count": {
+        "name": "target_face_count",
+        "tooltip": "Target max faces. 0 disables."
+      },
+      "placement_mode": {
+        "name": "placement_mode",
+        "tooltip": "midpoint: cumesh-faithful (recommended). qem: QEM-optimal placement."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
         "tooltip": null
       }
     }
@@ -4257,6 +4725,23 @@
       }
     }
   },
+  "EmptyMiniMaxMusic3LatentAudio": {
+    "display_name": "Empty MiniMax Music3 Latent Audio",
+    "description": "Creates an empty MiniMax Music3 audio latent for the requested duration.",
+    "inputs": {
+      "seconds": {
+        "name": "seconds"
+      },
+      "batch_size": {
+        "name": "batch_size"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyMochiLatentVideo": {
     "display_name": "EmptyMochiLatentVideo",
     "inputs": {
@@ -4312,6 +4797,20 @@
       },
       "batch_size": {
         "name": "batch_size"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyTrellis2LatentStructure": {
+    "display_name": "EmptyTrellis2LatentStructure",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "The number of latent images in the batch."
       }
     },
     "outputs": {
@@ -4417,6 +4916,146 @@
     "outputs": {
       "0": {
         "name": "splat",
+        "tooltip": null
+      }
+    }
+  },
+  "FillHoles": {
+    "display_name": "Fill Holes",
+    "description": "Fills holes up to a max perimeter, preserving existing geometry/UVs. GPU-vectorised with auto-corrected winding and loop-averaged centroid colors",
+    "inputs": {
+      "mesh": {
+        "name": "mesh"
+      },
+      "max_perimeter": {
+        "name": "max_perimeter",
+        "tooltip": "Max hole perimeter to fill. 0 disables."
+      },
+      "weld_epsilon_rel": {
+        "name": "weld_epsilon_rel",
+        "tooltip": "Pre-weld tolerance (fraction of bounding box diagonal); boundary detection needs welded vertices. 0 skips."
+      },
+      "max_vertices": {
+        "name": "max_vertices",
+        "tooltip": "Cap boundary vertices per cycle; centroid-fan only works for small near-planar holes. Keep ≤16."
+      },
+      "fill_chains": {
+        "name": "fill_chains",
+        "tooltip": "Also fill open chains (not just cycles). Noisy; OFF matches cumesh."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
+        "tooltip": null
+      }
+    }
+  },
+  "FishAudioInstantVoiceClone": {
+    "display_name": "Fish Audio Instant Voice Clone",
+    "description": "Create a private cloned voice from audio samples, instantly usable for text-to-speech. Provide 1-20 recordings, 10-30 seconds each recommended, under 270 seconds in total.",
+    "inputs": {
+      "files": {
+        "name": "files",
+        "tooltip": "Audio recordings for voice cloning."
+      },
+      "enhance_audio_quality": {
+        "name": "enhance_audio_quality",
+        "tooltip": "Enhance reference audio quality before training."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "voice",
+        "tooltip": null
+      }
+    }
+  },
+  "FishAudioSpeechToText": {
+    "display_name": "Fish Audio Speech to Text",
+    "description": "Transcribe audio to text with automatic language detection.",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Audio to transcribe."
+      },
+      "language": {
+        "name": "language",
+        "tooltip": "ISO 639-1 language hint (e.g. 'en', 'zh'). The language is auto-detected regardless."
+      },
+      "precise_timestamps": {
+        "name": "precise_timestamps",
+        "tooltip": "Return word-level timestamped segments."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "text",
+        "tooltip": null
+      },
+      "1": {
+        "name": "language_code",
+        "tooltip": null
+      },
+      "2": {
+        "name": "segments_json",
+        "tooltip": null
+      }
+    }
+  },
+  "FishAudioTextToSpeech": {
+    "display_name": "Fish Audio Text to Speech",
+    "description": "Convert text to speech. Supports emotion cues in the text ([happy], [whispering] on s2.1-pro; (happy) on s1) and multi-speaker dialogue via {'@'}Voice1/{'@'}Voice2 tags with multiple connected voices.",
+    "inputs": {
+      "text": {
+        "name": "text",
+        "tooltip": "The text to convert to speech. With two or more voices connected, mark speaker changes with @Voice1, @Voice2, etc."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for text-to-speech."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_normalize": {
+        "name": "normalize"
+      },
+      "model_speed": {
+        "name": "speed"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_volume": {
+        "name": "volume"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FishAudioVoiceSelector": {
+    "display_name": "Fish Audio Voice Selector",
+    "description": "Select a voice from the Fish Audio library for text-to-speech generation.",
+    "inputs": {
+      "voice": {
+        "name": "voice",
+        "tooltip": "Choose a voice, or 'custom' to enter any fish.audio voice model ID."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "voice",
         "tooltip": null
       }
     }
@@ -5003,6 +5642,48 @@
       "image_prompt_strength": {
         "name": "image_prompt_strength",
         "tooltip": "Blend between the prompt and the image prompt."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FluxVideoUpscaleNode": {
+    "display_name": "Flux Video Upscale",
+    "description": "Upscales a video 1.5 to 3 times with FLUX super-resolution, either preserving the source precisely or creatively enhancing its detail.",
+    "inputs": {
+      "video": {
+        "name": "video",
+        "tooltip": "Source clip of 1 to 20 seconds with an aspect ratio between 1:4 and 4:1. The output is rendered at 24 fps and capped at about 14.4 megapixels per frame."
+      },
+      "upscale_factor": {
+        "name": "upscale_factor",
+        "tooltip": "Output size relative to the source. Very large sources are upscaled by less than the requested factor because of the per-frame cap."
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "'creative' restores and invents fine detail, best for generated footage, textures and scenery. 'precise' sharpens the source without changing it, for faces, products and real footage."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Optional description of the clip that steers the enhanced detail. Leave empty for a neutral upscale."
+      },
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "Automatically downscale sources larger than 3840x2160 pixels in area to fit the input limit. Aspect ratio is preserved; smaller videos are untouched."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "Moderation tolerance, 0 is the strictest."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to determine if node should re-run; FLUX picks its own seed, so actual results are nondeterministic regardless of this value."
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -5614,6 +6295,24 @@
       }
     }
   },
+  "GetMeshInfo": {
+    "display_name": "Get Mesh Info",
+    "inputs": {
+      "mesh": {
+        "name": "mesh"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
+        "tooltip": null
+      },
+      "1": {
+        "name": "info",
+        "tooltip": null
+      }
+    }
+  },
   "GetSplatCount": {
     "display_name": "Get Splat Count",
     "description": "Returns the number of splats summed across the batch.",
@@ -5635,7 +6334,7 @@
   },
   "GetVideoComponents": {
     "display_name": "Get Video Components",
-    "description": "Extracts all components from a video: frames, audio, framerate, and bit depth.",
+    "description": "Extracts video frames, audio, frame rate, bit depth, and color space.",
     "inputs": {
       "video": {
         "name": "video",
@@ -5657,6 +6356,10 @@
       },
       "3": {
         "name": "bit_depth",
+        "tooltip": null
+      },
+      "4": {
+        "name": "color_space",
         "tooltip": null
       }
     }
@@ -6814,7 +7517,7 @@
     }
   },
   "IdeogramPImage": {
-    "display_name": "Ideogram P-Image",
+    "display_name": "Ideogram & Pruna P-Image",
     "description": "Generates images using P-Image, Ideogram's fast text-to-image model. Strong typography and photorealism; supports Ideogram 4.0 structured JSON captions for exact text, colors and layout.",
     "inputs": {
       "prompt": {
@@ -7115,6 +7818,43 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageCropToMask": {
+    "display_name": "Crop Image to Mask",
+    "inputs": {
+      "images": {
+        "name": "images"
+      },
+      "masks": {
+        "name": "masks"
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "Output width in pixels."
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "Output height in pixels."
+      },
+      "pad_factor": {
+        "name": "pad_factor",
+        "tooltip": "Extra margin around the mask bounding box as a multiplier."
+      },
+      "grow_mask": {
+        "name": "grow_mask",
+        "tooltip": "Grow or shrink the mask by this many pixels before cropping."
+      },
+      "background": {
+        "name": "background",
+        "tooltip": "Background color behind the masked subject."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
         "tooltip": null
       }
     }
@@ -11410,6 +12150,21 @@
       }
     }
   },
+  "MergeMeshes": {
+    "display_name": "Merge Meshes",
+    "description": "Concatenate N meshes into one by offsetting face indices and stacking verts, faces, uvs, and colors.",
+    "inputs": {
+      "meshes": {
+        "name": "meshes"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
+        "tooltip": null
+      }
+    }
+  },
   "MergeSplat": {
     "display_name": "Merge Splats",
     "description": "Concatenate any number of gaussian splats into one. Unioning several decodes of the same latent at different seeds densifies the surface, this can improve surface quality when meshing.",
@@ -11427,6 +12182,7 @@
   },
   "MergeTextLists": {
     "display_name": "Merge Text Lists (DEPRECATED)",
+    "description": "Concatenate multiple text lists into one.",
     "inputs": {
       "texts": {
         "name": "texts",
@@ -11437,6 +12193,71 @@
       "0": {
         "name": "texts",
         "tooltip": "Processed texts"
+      }
+    }
+  },
+  "MeshSmoothNormals": {
+    "display_name": "Smooth Mesh Normals",
+    "description": "Compute smooth per-vertex normals and attach them to the mesh. Meshes without normals are shaded flat (per-face) by glTF viewers; this makes them shade smoothly. With crease_angle below 180, edges sharper than the threshold are kept hard by splitting vertices along them.",
+    "inputs": {
+      "mesh": {
+        "name": "mesh"
+      },
+      "crease_angle": {
+        "name": "crease_angle",
+        "tooltip": "Edges whose dihedral angle exceeds this value (degrees) stay hard (vertices are split). 180 = fully smooth; lower preserves sharp edges (e.g. ~30-60 for hard-surface)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshTextureToImage": {
+    "display_name": "Mesh Texture to Image",
+    "description": "Extracts a mesh's baked textures as individual IMAGEs: base_color, metallic, roughness, occlusion and normal_map. Channels with nothing baked come back neutral (occlusion white, normal flat).",
+    "inputs": {
+      "mesh": {
+        "name": "mesh"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_color",
+        "tooltip": null
+      },
+      "1": {
+        "name": "metallic",
+        "tooltip": null
+      },
+      "2": {
+        "name": "roughness",
+        "tooltip": null
+      },
+      "3": {
+        "name": "occlusion",
+        "tooltip": null
+      },
+      "4": {
+        "name": "normal_map",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshToFile3D": {
+    "display_name": "Create 3D File (from Mesh)",
+    "description": "Serialize a mesh to a GLB File3D object for Save / Preview 3D nodes, carrying its UVs, colors, normals, texture, normal/occlusion/emissive maps and material. Supports one item per batch only.",
+    "inputs": {
+      "mesh": {
+        "name": "mesh"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
       }
     }
   },
@@ -11495,6 +12316,10 @@
         "name": "seed",
         "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
       },
+      "ultra_mode": {
+        "name": "ultra_mode",
+        "tooltip": "Run an extra refinement pass for higher-fidelity geometry with finer surface detail."
+      },
       "control_after_generate": {
         "name": "control after generate"
       },
@@ -11509,6 +12334,9 @@
       },
       "should_texture_texture_prompt": {
         "name": "texture_prompt"
+      },
+      "should_texture_texture_resolution": {
+        "name": "texture_resolution"
       }
     },
     "outputs": {
@@ -11572,6 +12400,9 @@
       },
       "should_texture_texture_prompt": {
         "name": "texture_prompt"
+      },
+      "should_texture_texture_resolution": {
+        "name": "texture_resolution"
       }
     },
     "outputs": {
@@ -11605,11 +12436,15 @@
       },
       "enable_pbr": {
         "name": "enable_pbr",
-        "tooltip": "Generate PBR Maps (metallic, roughness, normal) in addition to the base color. Note: this should be set to false when using Sculpture style, as Sculpture style generates its own set of PBR maps."
+        "tooltip": "Generate PBR Maps (metallic, roughness, normal) in addition to the base color."
       },
       "texture_prompt": {
         "name": "texture_prompt",
         "tooltip": "Provide a text prompt to guide the texturing process. Maximum 600 characters. Cannot be used at the same time as 'texture_image'."
+      },
+      "texture_resolution": {
+        "name": "texture_resolution",
+        "tooltip": "Base color texture resolution. Higher resolutions capture more surface detail."
       },
       "texture_image": {
         "name": "texture_image",
@@ -11697,6 +12532,10 @@
         "name": "seed",
         "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
       },
+      "ultra_mode": {
+        "name": "ultra_mode",
+        "tooltip": "Run an extra refinement pass for higher-fidelity geometry with finer surface detail."
+      },
       "control_after_generate": {
         "name": "control after generate"
       },
@@ -11705,6 +12544,51 @@
       },
       "should_remesh_topology": {
         "name": "topology"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextureMultiViewNode": {
+    "display_name": "Meshy: Texture Model (Multi-View)",
+    "description": "Texture a previously created model using 1 to 4 reference views of the same object.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "multiview_images": {
+        "name": "multiview_images",
+        "tooltip": "Reference views of the same object. The first image is the primary (front) view; the order of the remaining views does not matter."
+      },
+      "enable_original_uv": {
+        "name": "enable_original_uv",
+        "tooltip": "Use the original UV of the model instead of generating new UVs. When enabled, Meshy preserves existing textures from the uploaded model. If the model has no original UV, the quality of the output might not be as good."
+      },
+      "pbr": {
+        "name": "pbr"
+      },
+      "texture_resolution": {
+        "name": "texture_resolution",
+        "tooltip": "Base color texture resolution. Higher resolutions capture more surface detail."
       }
     },
     "outputs": {
@@ -11746,6 +12630,10 @@
         "name": "text_style_prompt",
         "tooltip": "Describe your desired texture style of the object using text. Maximum 600 characters.Maximum 600 characters. Cannot be used at the same time as 'image_style'."
       },
+      "texture_resolution": {
+        "name": "texture_resolution",
+        "tooltip": "Base color texture resolution. Higher resolutions capture more surface detail."
+      },
       "image_style": {
         "name": "image_style",
         "tooltip": "A 2d image to guide the texturing process. Can not be used at the same time with 'text_style_prompt'."
@@ -11766,6 +12654,44 @@
       },
       "3": {
         "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3AddGuide": {
+    "display_name": "Add Guide for MiniMax H3",
+    "description": "Anchor an image, a short clip, audio, or a clip with its soundtrack at any frame of a MiniMax H3 video. Chain several nodes to anchor several frames.",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "latent": {
+        "name": "latent"
+      },
+      "frame_idx": {
+        "name": "frame_idx",
+        "tooltip": "Frame index to anchor the image or the clip's first frame at. Negative values are counted from the end of the video."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Video VAE, needed when an image is connected."
+      },
+      "audio_vae": {
+        "name": "audio_vae",
+        "tooltip": "Audio VAE, needed when an audio is connected."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Image or video frames to anchor. Multi-frame batches are anchored as a clip and cropped down to the model's valid clip lengths: 5, 22, 39... (17k + 5) frames. Batches shorter than 5 frames use only the first image."
+      },
+      "audio": {
+        "name": "audio",
+        "tooltip": "Soundtrack to anchor starting at the same frame index, cropped to the video's remaining duration."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
         "tooltip": null
       }
     }
@@ -11882,6 +12808,38 @@
       }
     }
   },
+  "MinimaxHailuo03ContextIRNode": {
+    "display_name": "MiniMax H3 Context IR (Prompt Enhancer)",
+    "description": "Analyze text and media context with MiniMax H3 Context IR and produce an enhanced, structured video prompt. Feed the output into the prompt of a MiniMax H3 video node and attach the same media there in the same order, because the enhanced prompt refers to the attached media by position.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for prompt enhancement."
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "First frame of the video you intend to generate. Cannot be combined with reference media."
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "Last frame of the video you intend to generate. Cannot be combined with reference media."
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MinimaxHailuo03FirstLastFrameNode": {
     "display_name": "MiniMax H3 First-Last-Frame to Video",
     "description": "Generate video from a first frame image and an optional last frame image using the MiniMax H3 model. The aspect ratio of the video follows the supplied images.",
@@ -11952,6 +12910,43 @@
       },
       "model_ratio": {
         "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03RegenerateNode": {
+    "display_name": "MiniMax H3 Regenerate to 2K",
+    "description": "Re-render a MiniMax H3 768P output at 2K resolution. Connect the unmodified 768P video and the exact prompt used to generate it; if the original generation used first/last frames or reference media, attach the same inputs.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for video regeneration."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "The MiniMax H3 768P output video to re-render. Connect the unmodified output of a MiniMax H3 video node (24 FPS, 4-15 seconds). 2K outputs cannot be used."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add an AIGC watermark to the video."
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "First frame image from the original generation, if one was used."
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "Last frame image from the original generation, if one was used."
+      },
+      "model_prompt": {
+        "name": "prompt"
       },
       "model_resolution": {
         "name": "resolution"
@@ -12065,6 +13060,46 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxMusic3TextEncode": {
+    "display_name": "MiniMax Music3 Text Encode",
+    "description": "Uses a MiniMax Music3 CLIP model to generate the acoustic conditioning sequence.",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "caption": {
+        "name": "caption"
+      },
+      "lyrics": {
+        "name": "lyrics"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "max_duration": {
+        "name": "max_duration",
+        "tooltip": "Maximum duration in seconds; the model can end the song earlier."
+      },
+      "cfg_scale": {
+        "name": "cfg_scale"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "seconds",
         "tooltip": null
       }
     }
@@ -14457,6 +15492,33 @@
       }
     }
   },
+  "MoGeGeometryToFOV": {
+    "display_name": "Get FoV from MoGe Geometry",
+    "description": "Derive the field of view and focal length from MoGe intrinsics.",
+    "inputs": {
+      "moge_geometry": {
+        "name": "moge_geometry"
+      },
+      "axis": {
+        "name": "axis",
+        "tooltip": "'vertical' (fov_y), 'horizontal' (fov_x), or 'diagonal'."
+      },
+      "unit": {
+        "name": "unit",
+        "tooltip": "Output unit for the FOV."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "fov",
+        "tooltip": null
+      },
+      "1": {
+        "name": "focal_pixels",
+        "tooltip": null
+      }
+    }
+  },
   "MoGeInference": {
     "display_name": "Run MoGe Inference",
     "description": "Run MoGe on a single image to estimate depth and geometry.",
@@ -15065,6 +16127,24 @@
       }
     }
   },
+  "PaintMesh": {
+    "display_name": "Paint Mesh",
+    "description": "Paints each mesh vertex with its nearest voxel color from the input voxel field.",
+    "inputs": {
+      "mesh": {
+        "name": "mesh"
+      },
+      "voxel_colors": {
+        "name": "voxel_colors"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
+        "tooltip": null
+      }
+    }
+  },
   "PairConditioningCombine": {
     "display_name": "Cond Pair Combine",
     "inputs": {
@@ -15346,6 +16426,33 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Pixal3DConditioning": {
+    "display_name": "Pixal3DConditioning",
+    "inputs": {
+      "clip_vision_model": {
+        "name": "clip_vision_model",
+        "tooltip": "DINOv3 ViT-L/16 ClipVision."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Preprocessed image from ImageCropToMask (pad_factor=1.1 for Pixal3D)."
+      },
+      "camera_angle_x": {
+        "name": "camera_angle_x",
+        "tooltip": "Horizontal FOV in degrees. Wire a MoGeGeometryToFOV (axis='horizontal', unit='degrees') for a per-image FoV (matches upstream default)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
         "tooltip": null
       }
     }
@@ -16737,6 +17844,62 @@
       }
     }
   },
+  "RemeshMesh": {
+    "display_name": "Remesh Mesh (Narrow-Band DC)",
+    "description": "Re-extracts a uniformly tessellated mesh via a narrow-band distance field + Dual Contouring, on the active compute device. Normalizes messy / non-manifold / self-intersecting topology; run before Decimate Mesh to hit an exact face count. Output stays welded.",
+    "inputs": {
+      "mesh": {
+        "name": "mesh"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Voxel grid resolution (output density). 256 ~ 100k faces, 512 ~ 1M. For an exact face count, follow with Decimate Mesh."
+      },
+      "sign_mode": {
+        "name": "sign_mode",
+        "tooltip": "udf: robust to messy/non-manifold input. sdf: clean single surface with QEF (Quadratic Error Function) sharp-feature recovery, but needs consistent winding."
+      },
+      "band": {
+        "name": "band",
+        "tooltip": "Narrow-band width in voxel units. In UDF mode also offsets the surface."
+      },
+      "project_back": {
+        "name": "project_back",
+        "tooltip": "Linearly interpolate vertices toward the original surface (0 = pure DC, 1 = snapped)."
+      },
+      "fix_poles": {
+        "name": "fix_poles",
+        "tooltip": "Collapse valence-3 vertex pairs (DC T-junction artifact)."
+      },
+      "smooth_iters": {
+        "name": "smooth_iters",
+        "tooltip": "Taubin smoothing iterations (0 = off). 2-3 cleans DC staircase-like artifacts; higher over-smooth QEF edges."
+      },
+      "drop_small_components": {
+        "name": "drop_small_components",
+        "tooltip": "Drop components below this fraction of the largest's face count. 0 disables."
+      },
+      "precluster_max_verts": {
+        "name": "precluster_max_verts",
+        "tooltip": "Cap input vertex count before the field queries, inputs above this are cluster-decimated to it first. Prevents OOM on huge meshes."
+      },
+      "sign_mode_drop_enclosed_components": {
+        "name": "drop_enclosed_components"
+      },
+      "sign_mode_drop_inverted_components": {
+        "name": "drop_inverted_components"
+      },
+      "sign_mode_qef": {
+        "name": "qef"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
+        "tooltip": null
+      }
+    }
+  },
   "RemoveBackground": {
     "display_name": "Remove Background",
     "description": "Generates a foreground mask to remove the background from an image using a background removal model.",
@@ -16754,6 +17917,46 @@
       "0": {
         "name": "mask",
         "tooltip": "Generated foreground mask"
+      }
+    }
+  },
+  "RenderMesh": {
+    "display_name": "Render Mesh",
+    "description": "Ray-casts a single view of a mesh. The camera and optional model transform can come from a Load3D / Preview3D viewer.",
+    "inputs": {
+      "mesh": {
+        "name": "mesh"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "What to render. auto: texture if present, else vertex colours, else shaded clay."
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "background": {
+        "name": "background"
+      },
+      "model_3d_info": {
+        "name": "model_3d_info",
+        "tooltip": "Model transform from the same Load3D / Preview3D viewer. Connect it with camera_info to match the viewer framing."
+      },
+      "camera_info": {
+        "name": "camera_info",
+        "tooltip": "Camera from a Load3D / Preview3D viewer or a Create Camera Info node. If none is connected, a default front view is auto-framed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "image",
+        "tooltip": null
+      },
+      "1": {
+        "name": "mask",
+        "tooltip": null
       }
     }
   },
@@ -16817,6 +18020,24 @@
       }
     }
   },
+  "RenderUVAtlas": {
+    "display_name": "Render UV Atlas",
+    "description": "Renders a mesh's UV layout as an image.",
+    "inputs": {
+      "mesh": {
+        "name": "mesh"
+      },
+      "resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "image",
+        "tooltip": null
+      }
+    }
+  },
   "RenormCFG": {
     "display_name": "RenormCFG",
     "inputs": {
@@ -16865,6 +18086,7 @@
   },
   "ReplaceText": {
     "display_name": "Replace Text (DEPRECATED)",
+    "description": "Replace text in all texts.",
     "inputs": {
       "texts": {
         "name": "texts",
@@ -17490,6 +18712,33 @@
       }
     }
   },
+  "RotateMesh": {
+    "display_name": "Rotate Mesh",
+    "description": "Rotate a mesh. Euler XYZ applies X then Y then Z about the world axes (degrees). Quaternion is (w, x, y, z), auto-normalized.",
+    "inputs": {
+      "mesh": {
+        "name": "mesh"
+      },
+      "mode": {
+        "name": "mode"
+      },
+      "mode_angle_x": {
+        "name": "angle_x"
+      },
+      "mode_angle_y": {
+        "name": "angle_y"
+      },
+      "mode_angle_z": {
+        "name": "angle_z"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
+        "tooltip": null
+      }
+    }
+  },
   "RTDETR_detect": {
     "display_name": "Run Real-Time Detection (RT-DETR)",
     "inputs": {
@@ -17849,6 +19098,180 @@
     "outputs": {
       "0": {
         "name": "track_data",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3DBody_FaceExpression": {
+    "display_name": "Face Expression to SAM3D Body",
+    "description": "Drive MHR face blendshapes from the core MediaPipe Face Landmarker.",
+    "inputs": {
+      "sam3d_body_model": {
+        "name": "sam3d_body_model"
+      },
+      "mhr_pose_data": {
+        "name": "mhr_pose_data"
+      },
+      "image": {
+        "name": "image"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "Global multiplier on all blendshapes. >1 exaggerates."
+      },
+      "mouth_strength": {
+        "name": "mouth_strength",
+        "tooltip": "Multiplier on mouth/jaw shapes. MediaPipe's jawOpen saturates near 1.0."
+      },
+      "eye_strength": {
+        "name": "eye_strength",
+        "tooltip": "Multiplier on eye shapes. MediaPipe rarely exceeds 0.5; 2-3x often needed."
+      },
+      "brow_strength": {
+        "name": "brow_strength",
+        "tooltip": "Multiplier on brow/cheek/sneer shapes. MediaPipe outputs ~0.1-0.3; 2-3x."
+      },
+      "input_threshold": {
+        "name": "input_threshold",
+        "tooltip": "Deadzone on MediaPipe's raw output (below = zero, above = linear remap). "
+      },
+      "blendshape_smooth_window": {
+        "name": "blendshape_smooth_window",
+        "tooltip": "Gaussian window on MediaPipe's per-frame signal before MHR mapping. MediaPipe's raw output swings 30-70% frame-to-frame on static faces. 1 = disabled. Use odd values."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mhr_pose_data",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3DBody_Loader": {
+    "display_name": "Load SAM3D Body Model",
+    "inputs": {
+      "model_file": {
+        "name": "model_file"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "sam3d_body_model",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3DBody_Predict": {
+    "display_name": "Run SAM3D Body Prediction",
+    "inputs": {
+      "sam3d_body_model": {
+        "name": "sam3d_body_model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "run_hand_refinement": {
+        "name": "run_hand_refinement",
+        "tooltip": "Improves hand pose at the cost of extra inference time and memory use"
+      },
+      "fov": {
+        "name": "fov",
+        "tooltip": "Vertical FoV in degrees. Affects predicted depth and absolute scale. 0 = fall back to ~53° (16:9)."
+      },
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "Max person crops to process as a batch. Larger values use more VRAM for faster inference."
+      },
+      "track_data": {
+        "name": "track_data",
+        "tooltip": "Tracking data from SAM3 Video Track, required for multi-person detection"
+      },
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "Per-frame bounding boxes used for better detection. Can be used as an alternative to tracking data. "
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mhr_pose_data",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3DBody_Render": {
+    "display_name": "Render 3D Body Pose",
+    "inputs": {
+      "pose_data": {
+        "name": "pose_data",
+        "tooltip": "MHR pose data, or external Y-up rig pose data (KimodoSample). All render styles work for external rigs that carry OpenPose joint maps in their _skeleton_override (KimodoSample does)."
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "Output width in pixels. 0 = use pose data's native image_size. If only one of width/height is set, the other is derived preserving the original aspect."
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "Output height in pixels. 0 = use pose data's native image_size. If only one of width/height is set, the other is derived preserving the original aspect."
+      },
+      "render_style": {
+        "name": "render_style",
+        "tooltip": "'mesh' = 3D MHR mesh rasterized through the camera. 'silhouette' = binary mask of the mesh. 'openpose_2d' = flat 2D skeleton 'openpose_3d' = openpose skeleton as flat-shaded 3D model 'scail' = SCAIL 3D capsules "
+      },
+      "background": {
+        "name": "background",
+        "tooltip": "Per-frame background. Omitted = black canvas."
+      },
+      "camera_info": {
+        "name": "camera_info",
+        "tooltip": "Free 6DOF camera override. When wired, the pose is re-projected through this camera (position/target/zoom/rotation/FoV) instead of the predicted one. "
+      },
+      "render_style_opacity": {
+        "name": "opacity"
+      },
+      "render_style_person_palette_falloff": {
+        "name": "person_palette_falloff"
+      },
+      "render_style_region": {
+        "name": "region"
+      },
+      "render_style_shader": {
+        "name": "shader"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "image",
+        "tooltip": null
+      }
+    }
+  },
+  "SAM3DBody_Smooth": {
+    "display_name": "Smooth SAM3D Body Pose Data",
+    "description": "Reduce frame-to-frame jitter via temporal smoothing.",
+    "inputs": {
+      "mhr_pose_data": {
+        "name": "mhr_pose_data"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "Smoothing strength. 0 = raw, 1 = smoothed."
+      },
+      "method": {
+        "name": "method",
+        "tooltip": "gaussian: symmetric weighted average, best general-purpose smoother.\nsavgol: sliding polynomial fit, preserves sharp peaks."
+      },
+      "window": {
+        "name": "window",
+        "tooltip": "Temporal window in frames (odd values)."
+      },
+      "rotation_threshold_degrees": {
+        "name": "rotation_threshold_degrees",
+        "tooltip": "Disables smoothing for this root rotation rate (degree/frame) to preserve fast spins. 30° suits most content, low values might disable smoothing on ordinary jitter and silently impacts quality. 0 = disable."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mhr_pose_data",
         "tooltip": null
       }
     }
@@ -18791,17 +20214,20 @@
       },
       "format": {
         "name": "format",
-        "tooltip": "The format to save the video as."
+        "tooltip": "The output container. Auto uses MP4 for Auto/H.264 and WebM for AV1. MP4, MKV, and WebM select a specific container."
       },
       "codec": {
         "name": "codec",
-        "tooltip": "The codec to use for the video."
+        "tooltip": "The output video codec. Auto preserves a compatible source stream. H.264 and AV1 re-encoding support SDR, HDR (HLG), and HDR PQ."
+      },
+      "format_codec": {
+        "name": "codec"
       }
     },
     "outputs": {
       "0": {
         "name": "video",
-        "tooltip": null
+        "tooltip": "The input video, unchanged."
       }
     }
   },
@@ -20066,6 +21492,7 @@
   },
   "StripWhitespace": {
     "display_name": "Strip Whitespace (DEPRECATED)",
+    "description": "Strip leading and trailing whitespace from all texts.",
     "inputs": {
       "texts": {
         "name": "texts",
@@ -21060,6 +22487,7 @@
   },
   "TextToLowercase": {
     "display_name": "Convert Text to Lowercase (DEPRECATED)",
+    "description": "Convert text to lowercase.",
     "inputs": {
       "texts": {
         "name": "texts",
@@ -21075,6 +22503,7 @@
   },
   "TextToUppercase": {
     "display_name": "Convert Text to Uppercase (DEPRECATED)",
+    "description": "Convert text to uppercase.",
     "inputs": {
       "texts": {
         "name": "texts",
@@ -21483,6 +22912,118 @@
     "outputs": {
       "0": {
         "name": "splat",
+        "tooltip": null
+      }
+    }
+  },
+  "Trellis2Conditioning": {
+    "display_name": "Trellis2Conditioning",
+    "inputs": {
+      "clip_vision_model": {
+        "name": "clip_vision_model"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Preprocessed image from ImageCropToMask (pad_factor=1.0 for TRELLIS.2)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      }
+    }
+  },
+  "Trellis2ShapeStage": {
+    "display_name": "Trellis2ShapeStage",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "voxel": {
+        "name": "voxel",
+        "tooltip": "Dense structure voxel from VaeDecodeStructureTrellis2."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "tooltip": null
+      }
+    }
+  },
+  "Trellis2TextureStage": {
+    "display_name": "Trellis2TextureStage",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "shape_latent": {
+        "name": "shape_latent"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "tooltip": null
+      }
+    }
+  },
+  "Trellis2UpsampleStage": {
+    "display_name": "Trellis2 Upsample Stage",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "shape_latent": {
+        "name": "shape_latent",
+        "tooltip": "The 512-resolution shape latent output from the first shape-stage KSampler."
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "target_resolution": {
+        "name": "target_resolution",
+        "tooltip": "Voxel resolution of the upsampled shape. Higher = more detail, more VRAM."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
         "tooltip": null
       }
     }
@@ -22178,6 +23719,7 @@
   },
   "TruncateText": {
     "display_name": "Truncate Text",
+    "description": "Truncate text to a maximum length.",
     "inputs": {
       "texts": {
         "name": "texts",
@@ -22306,6 +23848,37 @@
       }
     }
   },
+  "UnwrapMesh": {
+    "display_name": "Unwrap Mesh UVs",
+    "description": "Generates a UV atlas: segments the surface into charts, parameterizes each, packs into a [0,1] atlas. Vertices on chart seams are duplicated (one copy per chart, same position, own UV), so the output mesh has more vertices than the input. Run after Remesh/Decimate, before texture baking.",
+    "inputs": {
+      "mesh": {
+        "name": "mesh"
+      },
+      "segmenter": {
+        "name": "segmenter",
+        "tooltip": "pec: fast parallel-edge-collapse charting on GPU. adaptive: CPU, slower."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Target atlas resolution for texel-density auto-scale (0 = fit-to-content)."
+      },
+      "padding": {
+        "name": "padding",
+        "tooltip": "Texel padding between charts."
+      },
+      "weld_distance": {
+        "name": "weld_distance",
+        "tooltip": "Coincident-vert merge radius as a fraction of mesh extent (0 = auto). Raise to ~0.001 if you get per-triangle charts (unwelded input)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
+        "tooltip": null
+      }
+    }
+  },
   "UpscaleModelLoader": {
     "display_name": "Load Upscale Model",
     "inputs": {
@@ -22408,6 +23981,68 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VaeDecodeShapeTrellis": {
+    "display_name": "VaeDecodeShapeTrellis",
+    "inputs": {
+      "samples": {
+        "name": "samples"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
+        "tooltip": null
+      },
+      "1": {
+        "name": "shape_subdivides",
+        "tooltip": null
+      }
+    }
+  },
+  "VaeDecodeStructureTrellis2": {
+    "display_name": "VaeDecodeStructureTrellis2",
+    "inputs": {
+      "samples": {
+        "name": "samples"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "voxel",
+        "tooltip": null
+      }
+    }
+  },
+  "VaeDecodeTextureTrellis": {
+    "display_name": "VaeDecodeTextureTrellis",
+    "inputs": {
+      "samples": {
+        "name": "samples"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "shape_subdivides": {
+        "name": "shape_subdivides",
+        "tooltip": "Shape information used to guide higher-detail reconstruction during decoding. Helps preserve structure consistency at higher resolutions."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "voxel_colors",
         "tooltip": null
       }
     }
@@ -23851,6 +25486,100 @@
       },
       "model_prompt": {
         "name": "prompt"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan3ImageToVideoApi": {
+    "display_name": "Wan 3.0 Image to Video",
+    "description": "Generates a video from a first-frame image, with optional last-frame control, using the Wan 3.0 model.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "first_frame": {
+        "name": "first_frame",
+        "tooltip": "First frame image."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to use for generation."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add an AI-generated watermark to the result."
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "Last frame image. The model generates a video transitioning from first to last frame."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_prompt_extend": {
+        "name": "prompt_extend"
+      },
+      "model_ratio": {
+        "name": "ratio"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Wan3ReferenceToVideoApi": {
+    "display_name": "Wan 3.0 Reference to Video",
+    "description": "Generates a video from a text prompt and optional reference images, videos, and audio using the Wan 3.0 model. Reference media can be combined freely and mentioned in the prompt as {'@'}Image1, {'@'}Video1, {'@'}Audio1.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed to use for generation."
+      },
+      "watermark": {
+        "name": "watermark",
+        "tooltip": "Whether to add an AI-generated watermark to the result."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_prompt_extend": {
+        "name": "prompt_extend"
       },
       "model_ratio": {
         "name": "ratio"
@@ -25483,6 +27212,29 @@
         "name": "capture_on_queue"
       },
       "waiting for camera___": {}
+    }
+  },
+  "WeldVertices": {
+    "display_name": "Weld Vertices",
+    "description": "Merge coincident vertices via L_inf grid quantization. Use when a mesh comes in unwelded (per-face verts, no shared edges) — pre-pass before FillHoles, DecimateMesh, or any topology-aware op. Colors averaged per cluster.",
+    "inputs": {
+      "mesh": {
+        "name": "mesh"
+      },
+      "epsilon_rel": {
+        "name": "epsilon_rel",
+        "tooltip": "Weld tolerance (fraction of bbox diagonal). 1e-5 for float dedup; 1e-3 for visibly-close-but-distinct verts."
+      },
+      "epsilon_abs": {
+        "name": "epsilon_abs",
+        "tooltip": "Absolute weld tolerance (overrides epsilon_rel when > 0)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
+        "tooltip": null
+      }
     }
   },
   "ZImageFunControlnet": {

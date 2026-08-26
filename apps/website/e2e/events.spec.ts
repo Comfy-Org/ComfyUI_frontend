@@ -124,10 +124,10 @@ test.describe('Events page — desktop @smoke', () => {
   test('a video slide that ends while hovered advances once the pointer leaves', async ({
     page
   }) => {
-    const firstVideoIndex = featuredEvents.findIndex(
-      (event) => event.media.type === 'video'
-    )
-    test.skip(firstVideoIndex < 0, 'needs a featured video slide')
+    const videoSlideTitles = featuredEvents
+      .filter((event) => event.media.type === 'video')
+      .map((event) => event.title.en)
+    test.skip(videoSlideTitles.length === 0, 'needs a featured video slide')
 
     await page.goto(PATH_EN)
     const hero = heroSection(page, 'en')
@@ -141,19 +141,27 @@ test.describe('Events page — desktop @smoke', () => {
 
     const activeSlide = hero.locator('[aria-hidden="false"]')
 
-    // The first featured slide is an image; advance to the first video slide.
-    // Retry to wait out island hydration, but click only while the active slide
-    // is not yet the video slide so a slow render never overshoots past it.
-    const videoSlideTitle = featuredEvents[firstVideoIndex].title.en
-    await expect(async () => {
-      const activeLabel = await activeSlide
-        .locator('a')
-        .getAttribute('aria-label')
-      if (activeLabel !== videoSlideTitle) await nextSlide.click()
-      await expect(activeSlide.locator('a')).toHaveAccessibleName(
-        videoSlideTitle
-      )
-    }).toPass({ timeout: 15_000 })
+    // Advance to whichever video slide comes next. A click before the island
+    // hydrates is a no-op, so each advance retries until the slide changes.
+    await expect(activeSlide.locator('a')).toHaveCount(1)
+    const activeLabel = async () => {
+      const label = await activeSlide.locator('a').getAttribute('aria-label')
+      if (label === null) throw new Error('active slide link has no aria-label')
+      return label
+    }
+
+    for (let step = 0; step < featuredEvents.length; step++) {
+      const label = await activeLabel()
+      if (videoSlideTitles.includes(label)) break
+      await expect(async () => {
+        await nextSlide.click()
+        await expect(activeSlide.locator('a')).not.toHaveAttribute(
+          'aria-label',
+          label
+        )
+      }).toPass()
+    }
+    expect(videoSlideTitles).toContain(await activeLabel())
     // Clicking left the button focused; drop that focus so only the hover holds
     // the slide, letting the pointer leaving be what releases the advance.
     await nextSlide.blur()
@@ -168,14 +176,13 @@ test.describe('Events page — desktop @smoke', () => {
           .catch(() => false)
       )
       .toBe(true)
-    const heldLabel = await activeSlide.locator('a').getAttribute('aria-label')
-    expect(heldLabel).toBeTruthy()
+    const heldLabel = await activeLabel()
 
     // Leaving the carousel releases the held advance.
     await page.mouse.move(0, 0)
     await expect(activeSlide.locator('a')).not.toHaveAttribute(
       'aria-label',
-      heldLabel!
+      heldLabel
     )
   })
 
