@@ -298,22 +298,21 @@ describe('GraphCanvas execution progress fanout complexity', () => {
       mocks.setDirty.mockClear()
       vi.mocked(workflowStore.nodeIdToNodeLocatorId).mockClear()
 
-      // A structurally equal WebSocket payload still fans out to every node.
+      // A structurally equal WebSocket payload still scans, but does no work.
       executionStore.nodeProgressStates = { ...equalState }
       await nextTick()
 
       expect(workflowStore.nodeIdToNodeLocatorId).toHaveBeenCalledTimes(
         totalNodes
       )
-      expect(progressWrites).toBe(totalNodes)
-      expect(mocks.setDirty).toHaveBeenCalledTimes(1)
-      expect(mocks.setDirty).toHaveBeenCalledWith(true, false)
+      expect(progressWrites).toBe(0)
+      expect(mocks.setDirty).not.toHaveBeenCalled()
 
       progressWrites = 0
       mocks.setDirty.mockClear()
       vi.mocked(workflowStore.nodeIdToNodeLocatorId).mockClear()
 
-      // A real one-node change has the same total-node operation count.
+      // A real one-node change scans all nodes but mutates only that node.
       executionStore.nodeProgressStates = {
         ...equalState,
         '1': {
@@ -329,7 +328,7 @@ describe('GraphCanvas execution progress fanout complexity', () => {
       expect(workflowStore.nodeIdToNodeLocatorId).toHaveBeenCalledTimes(
         totalNodes
       )
-      expect(progressWrites).toBe(totalNodes)
+      expect(progressWrites).toBe(1)
       expect(progressValues[0]).toBe(0.5)
       expect(mocks.setDirty).toHaveBeenCalledTimes(1)
       expect(mocks.setDirty).toHaveBeenCalledWith(true, false)

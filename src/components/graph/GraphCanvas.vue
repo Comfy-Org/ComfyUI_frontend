@@ -438,18 +438,22 @@ watch(
     ] as const,
   ([nodeLocationProgressStates, canvas]) => {
     if (!canvas?.graph) return
+    let progressChanged = false
     for (const node of canvas.graph.nodes) {
       const nodeLocatorId = useWorkflowStore().nodeIdToNodeLocatorId(node.id)
       const progressState = nodeLocationProgressStates[nodeLocatorId]
-      if (progressState && progressState.state === 'running') {
-        node.progress = progressState.value / progressState.max
-      } else {
-        node.progress = undefined
+      const nextProgress =
+        progressState && progressState.state === 'running'
+          ? progressState.value / progressState.max
+          : undefined
+      if (!Object.is(node.progress, nextProgress)) {
+        node.progress = nextProgress
+        progressChanged = true
       }
     }
 
-    // Force canvas redraw to ensure progress updates are visible
-    canvas.setDirty(true, false)
+    // Repaint only when the progress visuals actually changed.
+    if (progressChanged) canvas.setDirty(true, false)
   }
 )
 
