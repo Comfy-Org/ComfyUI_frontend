@@ -392,6 +392,72 @@ describe('useBillingContext', () => {
     expect(workspaceApi.createTopup).not.toHaveBeenCalled()
   })
 
+  describe('hasPaidCheckoutPlan', () => {
+    // The checkout gate cannot use canAccessSubscriptionFeatures: off Cloud the
+    // legacy adapter reports every user entitled, so the gate would close every
+    // CTA for exactly the legacy Stripe workspaces that need to subscribe.
+    it('is false off Cloud for an unsubscribed legacy Stripe workspace', async () => {
+      mockIsCloud.value = false
+      mockBillingRail.value = 'legacy_stripe'
+      mockBillingStatus.value = {
+        ...DEFAULT_BILLING_STATUS,
+        is_active: false,
+        subscription_tier: undefined
+      }
+
+      const context = useBillingContext()
+      await context.reconcileSubscriptionSuccess()
+
+      expect(context.hasPaidCheckoutPlan.value).toBe(false)
+      // The account rail says "entitled" for the very same user, which is why
+      // the checkout gate must not read it.
+      expect(context.isActiveSubscription.value).toBe(true)
+    })
+
+    it('is true off Cloud once the checkout rail reports a paid plan', async () => {
+      mockIsCloud.value = false
+      mockBillingRail.value = 'legacy_stripe'
+      mockBillingStatus.value = {
+        ...DEFAULT_BILLING_STATUS,
+        is_active: true,
+        subscription_tier: 'STANDARD'
+      }
+
+      const context = useBillingContext()
+      await context.reconcileSubscriptionSuccess()
+
+      expect(context.hasPaidCheckoutPlan.value).toBe(true)
+    })
+
+    it('is false for an active FREE tier, which is not a paid plan', async () => {
+      mockIsCloud.value = false
+      mockBillingRail.value = 'legacy_stripe'
+      mockBillingStatus.value = {
+        ...DEFAULT_BILLING_STATUS,
+        is_active: true,
+        subscription_tier: 'FREE'
+      }
+
+      const context = useBillingContext()
+      await context.reconcileSubscriptionSuccess()
+
+      expect(context.hasPaidCheckoutPlan.value).toBe(false)
+    })
+
+    it('reads the workspace rail on Cloud', async () => {
+      mockBillingStatus.value = {
+        ...DEFAULT_BILLING_STATUS,
+        is_active: true,
+        subscription_tier: 'PRO'
+      }
+
+      const context = useBillingContext()
+      await context.reconcileSubscriptionSuccess()
+
+      expect(context.hasPaidCheckoutPlan.value).toBe(true)
+    })
+  })
+
   it('routes migrated legacy Stripe topups through workspace billing', async () => {
     remoteConfig.value = { legacy_billing_migration_enabled: true }
     remoteConfigState.value = 'authenticated'

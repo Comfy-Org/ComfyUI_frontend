@@ -3,7 +3,8 @@ import { createSharedComposable } from '@vueuse/core'
 
 import {
   KEY_TO_TIER,
-  getTierFeatures
+  getTierFeatures,
+  hasActivePaidPlan
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
@@ -145,6 +146,22 @@ function useBillingContextInternal(): BillingContext {
 
   const canAccessSubscriptionFeatures = computed(() =>
     toValue(activeContext.value.canAccessSubscriptionFeatures)
+  )
+
+  // The checkout rail's own view of the subscription. `subscription` above
+  // reads the account rail, which off Cloud reports every user as entitled
+  // (useSubscription's canAccessSubscriptionFeatures short-circuits on
+  // !isCloud), so it cannot answer "would checking out be a plan change?".
+  const checkoutSubscription = computed<SubscriptionInfo | null>(() =>
+    toValue(checkoutContext.value.subscription)
+  )
+
+  // The one signal a checkout gate may use: does this account already hold a
+  // paid plan on the rail the checkout would bill?
+  const hasPaidCheckoutPlan = computed(
+    () =>
+      Boolean(checkoutSubscription.value?.isActive) &&
+      hasActivePaidPlan(checkoutSubscription.value?.tier)
   )
 
   // Alias kept for backward compatibility; equals canAccessSubscriptionFeatures.
@@ -357,6 +374,7 @@ function useBillingContextInternal(): BillingContext {
     isLoading,
     error,
     isActiveSubscription,
+    hasPaidCheckoutPlan,
     canRunWorkflows,
     showsSubscribeToRunPrompt,
     canAccessSubscriptionFeatures,
