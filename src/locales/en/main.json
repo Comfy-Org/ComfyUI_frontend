@@ -2661,11 +2661,18 @@
   "settingsPlans": {
     "title": "Plans",
     "subtitle": "Plans run on Comfy Cloud and their credits work on this install too.",
+    "personal": "Personal",
+    "teams": "Teams",
     "billedYearlyToggle": "Billed yearly",
     "creditsAYear": "{credits} credits a year",
     "creditsAMonth": "{credits} credits a month",
     "perDollar": "{credits} per dollar",
-    "choosePlan": "Choose {tier}"
+    "choosePlan": "Choose {tier}",
+    "noPlansAvailable": "No plans are available right now. Check back soon.",
+    "creditsPerMonth": "{credits} credits per month",
+    "comingSharedWorkflows": "Shared workflows & assets",
+    "comingProjects": "Projects",
+    "enterpriseCopy": "Need more members? Looking for more flexibility or custom features?"
   },
   "credits": {
     "activity": "Activity",
@@ -2882,6 +2889,7 @@
     "whatsIncluded": "What's included:",
     "planLoadError": "We couldn't load your plan details.",
     "planLoadErrorRetry": "Try again",
+    "planLoadErrorStale": "We couldn't refresh your plan details. These prices may be out of date.",
     "teamPlanName": "Team",
     "teamPlanIncludes": "Your plan includes everything in {plan}, plus:",
     "inactiveTeamTitle": "Inactive team subscription",

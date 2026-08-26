@@ -20,7 +20,13 @@
       <SubscriptionPanelContentWorkspace v-if="isCloud" />
       <div v-else class="flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto">
         <CreditsPanel embedded />
-        <SettingsPlansSection />
+        <SettingsPlansSection
+          :catalog-plans="catalogPlans"
+          :team-credit-stops="teamCreditStops"
+          :is-loading="isCatalogLoading"
+          :error="catalogError"
+          @retry="retry"
+        />
         <SubscriptionFooterLinks
           class="mt-auto shrink-0"
           :show-invoice-history="false"
@@ -53,9 +59,11 @@ import UsageLogsTable from '@/components/dialog/content/setting/UsageLogsTable.v
 import Button from '@/components/ui/button/Button.vue'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import SubscriptionFooterLinks from '@/platform/cloud/subscription/components/SubscriptionFooterLinks.vue'
+import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
 import { isCloud } from '@/platform/distribution/types'
 import SubscriptionPanelContentWorkspace from '@/platform/workspace/components/SubscriptionPanelContentWorkspace.vue'
 import SettingsPlansSection from '@/platform/workspace/components/dialogs/settings/SettingsPlansSection.vue'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 type View = 'overview' | 'activity'
 
@@ -67,6 +75,59 @@ const tabs = computed<{ key: View; label: string }[]>(() => [
 ])
 
 const activeView = ref<View>('overview')
+
+// Read from the singleton, so fetch through it: the rail-routed context lands
+// on useLegacyBilling's no-op off-cloud.
+const {
+  plans: catalogPlans,
+  teamCreditStops,
+  isLoading: isLoadingPlans,
+  error: plansError,
+  fetchPlans
+} = useBillingPlans()
+
+// The catalog is workspace-scoped, so the wallet bootstrap is its precondition.
+const workspaceStore = useTeamWorkspaceStore()
+const hasWorkspace = computed(
+  () => workspaceStore.activeWorkspace?.type !== undefined
+)
+// 'uninitialized' is the pre-boot window before WorkspaceAuthGate calls
+// initialize(), not a failure; 'ready' with no workspace would hang otherwise.
+const workspaceFailed = computed(
+  () =>
+    workspaceStore.initState === 'error' ||
+    (workspaceStore.initState === 'ready' && !hasWorkspace.value)
+)
+
+const isCatalogLoading = computed(() =>
+  isCloud
+    ? isLoadingPlans.value
+    : isLoadingPlans.value || (!hasWorkspace.value && !workspaceFailed.value)
+)
+const catalogError = computed(() => {
+  if (!isCloud && workspaceFailed.value) {
+    return workspaceStore.error?.message ?? t('subscription.planLoadError')
+  }
+  return plansError.value
+})
+
+function retry() {
+  if (!isCloud && !hasWorkspace.value) {
+    // No workspace yet: re-run the bootstrap; the watch fetches once it lands.
+    void workspaceStore.initialize().catch(() => undefined)
+    return
+  }
+  void fetchPlans()
+}
+
+// Off-cloud only; on cloud this section never mounts.
+watch(
+  hasWorkspace,
+  (ready) => {
+    if (!isCloud && ready) void fetchPlans()
+  },
+  { immediate: true }
+)
 
 function openFullActivity() {
   window.open(

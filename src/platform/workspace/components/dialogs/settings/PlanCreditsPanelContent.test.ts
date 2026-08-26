@@ -2,6 +2,8 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { ref } from 'vue'
+
 import { render, screen, waitFor } from '@testing-library/vue'
 
 import enMessages from '@/locales/en/main.json'
@@ -16,6 +18,27 @@ vi.mock('@/platform/distribution/types', () => ({
 }))
 
 const refreshSpy = vi.hoisted(() => vi.fn(() => Promise.resolve()))
+
+const billing = vi.hoisted(() => ({
+  fetchPlans: vi.fn()
+}))
+
+// Refs the fetch writes and the panel reads; created after imports so `ref` is
+// available (vi.hoisted runs before imports, so it can't call ref itself).
+const billingState = {
+  plans: ref<unknown[]>([]),
+  teamCreditStops: ref<unknown>(null),
+  isLoading: ref(false),
+  error: ref<string | null>(null)
+}
+
+vi.mock('@/composables/billing/useBillingContext', () => ({
+  useBillingContext: () => ({ fetchPlans: billing.fetchPlans })
+}))
+
+vi.mock('@/platform/cloud/subscription/composables/useBillingPlans', () => ({
+  useBillingPlans: () => billingState
+}))
 
 const stubs = {
   SubscriptionPanelContentWorkspace: {
