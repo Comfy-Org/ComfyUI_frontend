@@ -31,11 +31,19 @@ const state = vi.hoisted(() => ({
   workspaceType: 'team' as string,
   canManageSubscription: true,
   canManageSubscriptionLifecycle: true,
+  canReactivate: true,
+  shouldUseWorkspaceBilling: true,
   canTopUp: true,
   canSubscribeSelfServe: false,
   showTopUpCreditsDialog: vi.fn(),
   manageSubscription: vi.fn(),
   handleResubscribe: vi.fn()
+}))
+
+vi.mock('@/composables/billing/useBillingRouting', () => ({
+  useBillingRouting: () => ({
+    shouldUseWorkspaceBilling: computed(() => state.shouldUseWorkspaceBilling)
+  })
 }))
 
 vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
@@ -79,7 +87,8 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
 vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
   useBillingCapabilities: () => ({
     canTopUp: computed(() => state.canTopUp),
-    canSubscribeSelfServe: computed(() => state.canSubscribeSelfServe)
+    canSubscribeSelfServe: computed(() => state.canSubscribeSelfServe),
+    canReactivate: computed(() => state.canReactivate)
   })
 }))
 
@@ -185,6 +194,8 @@ describe('BillingStatusBanner', () => {
     state.workspaceType = 'team'
     state.canManageSubscription = true
     state.canManageSubscriptionLifecycle = true
+    state.canReactivate = true
+    state.shouldUseWorkspaceBilling = true
     state.canTopUp = true
     state.canSubscribeSelfServe = false
   })
@@ -350,6 +361,25 @@ describe('BillingStatusBanner', () => {
     expect(state.handleResubscribe).toHaveBeenCalledTimes(1)
   })
 
+  it('keeps reactivation on the legacy rail where the capability does not apply', async () => {
+    // Cloud personal on legacy_stripe: handleResubscribe skips its capability
+    // guard, so the affordance must follow the client permission instead.
+    state.shouldUseWorkspaceBilling = false
+    state.canReactivate = false
+    state.canManageSubscriptionLifecycle = true
+    state.subscription = {
+      hasFunds: true,
+      isCancelled: true,
+      endDate: '2026-08-01T00:00:00Z'
+    }
+    renderBanner()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Reactivate plan' })
+    )
+    expect(state.handleResubscribe).toHaveBeenCalledTimes(1)
+  })
+
   it('does not expose reactivation controls to a member', () => {
     state.subscription = {
       hasFunds: true,
@@ -358,9 +388,29 @@ describe('BillingStatusBanner', () => {
     }
     state.canManageSubscription = false
     state.canManageSubscriptionLifecycle = false
+    state.canReactivate = false
     renderBanner()
 
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Reactivate plan' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('hides reactivation when the server denies it to a client-side owner', () => {
+    state.subscription = {
+      hasFunds: true,
+      isCancelled: true,
+      endDate: '2026-08-01T00:00:00Z'
+    }
+    state.canManageSubscription = true
+    state.canManageSubscriptionLifecycle = true
+    state.canReactivate = false
+    renderBanner()
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Your team plan ends on'
+    )
     expect(
       screen.queryByRole('button', { name: 'Reactivate plan' })
     ).not.toBeInTheDocument()
