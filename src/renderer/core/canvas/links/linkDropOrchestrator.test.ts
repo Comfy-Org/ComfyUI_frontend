@@ -5,7 +5,6 @@ import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LinkConnectorAdapter } from '@/renderer/core/canvas/links/linkConnectorAdapter'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { SlotLayout } from '@/renderer/core/layout/types'
 import { createSlotLinkDragContext } from '@/renderer/extensions/vueNodes/composables/slotLinkDragContext'
 import { toNodeId } from '@/types/nodeId'
@@ -14,6 +13,11 @@ import type { SlotId } from '@/types/slotId'
 import { resolveSlotTargetCandidate } from './linkDropOrchestrator'
 
 const NODE_ID = toNodeId('node-1')
+const getGraphSlotLayout = vi.hoisted(() => vi.fn())
+
+vi.mock('@/renderer/core/canvas/litegraph/slotCalculations', () => ({
+  getGraphSlotLayout
+}))
 
 function createSlotLayout(): SlotLayout {
   return {
@@ -53,14 +57,14 @@ function createAdapter() {
 describe('resolveSlotTargetCandidate', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
-    layoutStore.resetForTests()
+    getGraphSlotLayout.mockReset()
     useSlotLinkDragUIState().clearCompatible()
   })
 
-  it('resolves a DOM slot key through the layout store and caches compatibility', () => {
+  it('resolves a DOM slot key and caches compatibility', () => {
     const slotKey = getSlotKey(NODE_ID, 1, true)
     const layout = createSlotLayout()
-    layoutStore.updateSlotLayout(slotKey, layout)
+    getGraphSlotLayout.mockReturnValue(layout)
     const target = createDropTarget(slotKey)
     const { adapter, isInputValidDrop } = createAdapter()
     const context = {

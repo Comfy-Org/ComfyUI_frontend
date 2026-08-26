@@ -2,13 +2,13 @@ import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LinkConnectorAdapter } from '@/renderer/core/canvas/links/linkConnectorAdapter'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import type { SlotDropCandidate } from '@/renderer/core/canvas/links/slotLinkDragUIState'
+import { getGraphSlotLayout } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { SlotLayout } from '@/renderer/core/layout/types'
 import type { SlotLinkDragContext } from '@/renderer/extensions/vueNodes/composables/slotLinkDragContext'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
-import { toSlotId } from '@/types/slotId'
+import { parseSlotId } from '@/types/slotId'
 import type { SlotId } from '@/types/slotId'
 
 interface DropResolutionContext {
@@ -18,12 +18,19 @@ interface DropResolutionContext {
 }
 
 function getCandidateSlotLayout(
+  graph: LGraph,
   rawKey: string
 ): { key: SlotId; layout: SlotLayout } | null {
-  const key = toSlotId(rawKey)
-  const layout = layoutStore.getSlotLayout(key)
+  const identifier = parseSlotId(rawKey)
+  if (!identifier) return null
+  const layout = getGraphSlotLayout(
+    graph,
+    identifier.nodeId,
+    identifier.index,
+    identifier.direction === 'input'
+  )
 
-  return layout ? { key, layout } : null
+  return layout ? { key: identifier.key, layout } : null
 }
 
 export const resolveSlotTargetCandidate = (
@@ -39,13 +46,14 @@ export const resolveSlotTargetCandidate = (
   const rawKey = elWithKey?.dataset['slotKey']
   if (!rawKey) return null
 
-  const candidateLayout = getCandidateSlotLayout(rawKey)
+  if (!graph) return null
+  const candidateLayout = getCandidateSlotLayout(graph, rawKey)
   if (!candidateLayout) return null
   const { key, layout } = candidateLayout
 
   const candidate: SlotDropCandidate = { layout, compatible: false }
 
-  if (adapter && graph) {
+  if (adapter) {
     const cached = dragState.compatible.get(key)
     if (cached != null) {
       candidate.compatible = cached
@@ -109,7 +117,7 @@ export const resolveNodeSurfaceSlotCandidate = (
   }
 
   const key = getSlotKey(nodeId, index, isInput)
-  const layout = layoutStore.getSlotLayout(key)
+  const layout = getGraphSlotLayout(graph, nodeId, index, isInput)
   if (!layout) {
     session.preferredSlotForNode.set(nodeId, null)
     return null

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, useTemplateRef } from 'vue'
+import { computed } from 'vue'
 
 import { getSlotColor, MAX_MULTITYPE_SLICES } from '@/constants/slotColors'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
@@ -25,8 +25,6 @@ const clipPath = computed(() => {
   }
 })
 
-const slotElRef = useTemplateRef('slot-el')
-
 const types = computed(() => {
   if (props.hasError) return ['var(--color-error)']
   //TODO Support connected/disconnected colors?
@@ -36,10 +34,6 @@ const types = computed(() => {
     .split(',')
     .map(getSlotColor)
     .slice(0, MAX_MULTITYPE_SLICES)
-})
-
-defineExpose({
-  slotElRef
 })
 
 const isListShape = computed(() => props.slotData?.shape === RenderShape.GRID)
@@ -62,21 +56,19 @@ const slotClass = computed(() =>
     data-testid="slot-connection-dot"
     :class="
       cn(
-        'group/slot relative flex size-6 items-center justify-center after:absolute after:inset-y-0 after:w-5/2',
+        'group/slot relative flex h-5 w-6 items-center justify-center after:absolute after:inset-y-0 after:w-5/2',
         props.class
       )
     "
   >
     <div
       v-if="types.length === 1 && (slotData?.shape == undefined || isListShape)"
-      ref="slot-el"
       :style="{ backgroundColor: types.length === 1 ? types[0] : undefined }"
       :class="slotClass"
       data-testid="slot-dot"
     />
     <svg
       v-else
-      ref="slot-el"
       :class="slotClass"
       data-testid="slot-dot"
       viewBox="0 0 100 100"

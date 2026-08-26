@@ -12,14 +12,12 @@ import { createUuidv4 } from '@/utils/uuid'
 import type { UUID } from '@/utils/uuid'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type {
   LayoutChange,
   LayoutOperation,
-  NodeLayout,
-  SlotLayout
+  NodeLayout
 } from '@/renderer/core/layout/types'
 
 const GRAPH = createUuidv4()
@@ -551,50 +549,6 @@ describe('layoutStore CRDT operations', () => {
       }
     }
   })
-
-  it.for([
-    { type: 'input' as const, isInput: true },
-    { type: 'output' as const, isInput: false }
-  ])(
-    'should preserve $type slot layouts when deleting a node',
-    ({ type, isInput }) => {
-      const nodeId = toNodeId('slot-persist-node')
-      const layout = createTestNode(nodeId)
-
-      layoutStore.applyOperation({
-        type: 'createNode',
-        graphId: GRAPH,
-        nodeId,
-        layout,
-        timestamp: Date.now(),
-        source: LayoutSource.Canvas,
-        actor: 'test'
-      })
-
-      const slotKey = getSlotKey(nodeId, 0, isInput)
-      const slotLayout: SlotLayout = {
-        nodeId,
-        index: 0,
-        type,
-        position: { x: 110, y: 120 },
-        bounds: { x: 105, y: 115, width: 10, height: 10 }
-      }
-      layoutStore.batchUpdateSlotLayouts([{ key: slotKey, layout: slotLayout }])
-      expect(layoutStore.getSlotLayout(slotKey)).toEqual(slotLayout)
-
-      layoutStore.applyOperation({
-        type: 'deleteNode',
-        graphId: GRAPH,
-        nodeId,
-        timestamp: Date.now(),
-        source: LayoutSource.Canvas,
-        actor: 'test'
-      })
-
-      // Slot layout must survive so Vue-patched components can still drag links
-      expect(layoutStore.getSlotLayout(slotKey)).toEqual(slotLayout)
-    }
-  )
 })
 
 describe('reroute layouts outlive an active-graph reseed', () => {
