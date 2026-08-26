@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, provide } from 'vue'
+import { computed, provide, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import WidgetDescription from '@/components/builder/WidgetDescription.vue'
@@ -87,15 +87,22 @@ function isWidgetInputLinked(node: LGraphNode, widgetName: string): boolean {
   return linkStore.isInputSlotConnected(graphScopeOf(graph), node.id, slot)
 }
 
+watchEffect(() => {
+  for (const entry of resolvedInputs.value) {
+    if (entry.status !== 'resolved') continue
+    if (entry.node.mode !== LGraphEventMode.ALWAYS) continue
+    ensureSelectedWidgetState(entry.widgetId, entry.widget)
+  }
+})
+
 const mappedSelections = computed((): WidgetEntry[] => {
   return resolvedInputs.value.flatMap((entry) => {
     if (entry.status !== 'resolved') return []
     const { widgetId, node, widget, config } = entry
     if (node.mode !== LGraphEventMode.ALWAYS) return []
 
-    ensureSelectedWidgetState(widgetId, widget)
-    const fullNodeData = nodeToNodeData(node, widgetId)
     if (isWidgetInputLinked(node, widget.name)) return []
+    const fullNodeData = nodeToNodeData(node, widgetId)
 
     return [
       {

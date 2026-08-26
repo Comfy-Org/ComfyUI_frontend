@@ -14,13 +14,14 @@ import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuth
 
 import type {
   BillingRail,
+  CurrentWorkspaceResponse,
   ListMembersParams,
   Member,
   PendingInvite as ApiPendingInvite,
   SubscriptionTier,
   WorkspaceWithRole
 } from '../api/workspaceApi'
-import { workspaceApi } from '../api/workspaceApi'
+import { WorkspaceApiError, workspaceApi } from '../api/workspaceApi'
 
 export interface WorkspaceMember {
   id: string
@@ -87,6 +88,26 @@ function createWorkspaceState(workspace: WorkspaceWithRole): WorkspaceState {
     members: [],
     pendingInvites: []
   }
+}
+
+/**
+ * Builds workspace state from GET /api/workspaces/current — the single
+ * workspace bound to an API-key credential. The response carries no
+ * membership timestamps (only sortWorkspaces reads them, and a one-entry list
+ * never sorts) and may omit role, which fails closed to member so owner-only
+ * billing actions stay hidden rather than 403 on click.
+ */
+function createWorkspaceStateFromCredential(
+  current: CurrentWorkspaceResponse
+): WorkspaceState {
+  return createWorkspaceState({
+    id: current.id,
+    name: current.name,
+    type: current.type,
+    role: current.role ?? 'member',
+    created_at: '',
+    joined_at: ''
+  })
 }
 
 export function sortWorkspaces<T extends WorkspaceWithRole>(list: T[]): T[] {
@@ -277,9 +298,24 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     error.value = null
 
     const workspaceAuthStore = useWorkspaceAuthStore()
+    const isApiKeySession = useCurrentUser().isApiKeyLogin.value
 
     for (let attempt = 0; attempt <= MAX_INIT_RETRIES; attempt++) {
       try {
+        // An API-key credential is bound to exactly one workspace on the
+        // server. There is no discovery, switching, or token exchange for it:
+        // the server echoes the binding back and the key itself authenticates
+        // workspace-scoped calls.
+        if (isApiKeySession) {
+          const current = await workspaceApi.getCurrentWorkspace()
+          if (isStaleIdentity(generation)) return
+          workspaces.value = [createWorkspaceStateFromCredential(current)]
+          mutableActiveWorkspaceId.value = current.id
+          initState.value = 'ready'
+          isFetchingWorkspaces.value = false
+          return
+        }
+
         const { useSessionCookie } =
           await import('@/platform/auth/session/useSessionCookie')
         await useSessionCookie().ensureSessionCookie()
@@ -371,9 +407,24 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
         if (isStaleIdentity(generation)) return
         const isNoWorkspacesError =
           e instanceof Error && e.message === 'No workspaces available'
+        // A definitive 4xx on the credential lookup cannot be repaired by
+        // resending the same key; retries stay reserved for transient
+        // failures (network, 408/429, 5xx).
+        const isPermanentCredentialError =
+          isApiKeySession &&
+          e instanceof WorkspaceApiError &&
+          e.status !== undefined &&
+          e.status >= 400 &&
+          e.status < 500 &&
+          e.status !== 408 &&
+          e.status !== 429
 
         // Don't retry on permanent errors (no workspaces available)
-        if (isNoWorkspacesError || attempt >= MAX_INIT_RETRIES) {
+        if (
+          isNoWorkspacesError ||
+          isPermanentCredentialError ||
+          attempt >= MAX_INIT_RETRIES
+        ) {
           error.value = e instanceof Error ? e : new Error('Unknown error')
           initState.value = 'error'
           isFetchingWorkspaces.value = false

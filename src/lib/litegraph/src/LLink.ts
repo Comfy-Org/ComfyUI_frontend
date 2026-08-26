@@ -50,6 +50,19 @@ export function resolveLinkTopology(topology: LinkTopology): LLink | undefined {
   return linkByTopology.get(toRaw(topology))
 }
 
+function defineEnumerableTopologyFacade(link: LLink): void {
+  const descriptors = Object.getOwnPropertyDescriptors(LLink.prototype)
+  Object.defineProperties(link, {
+    id: { ...descriptors.id, enumerable: true },
+    type: { ...descriptors.type, enumerable: true },
+    origin_id: { ...descriptors.origin_id, enumerable: true },
+    origin_slot: { ...descriptors.origin_slot, enumerable: true },
+    target_id: { ...descriptors.target_id, enumerable: true },
+    target_slot: { ...descriptors.target_slot, enumerable: true },
+    parentId: { ...descriptors.parentId, enumerable: true }
+  })
+}
+
 // Resolved connection union; eliminates subgraph in/out as a possibility
 export type ResolvedConnection = BaseResolvedConnection &
   (
@@ -265,10 +278,9 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
       targetSlot: target_slot,
       parentId
     }
-
     this._data = null
-    // center
     this._pos = [0, 0]
+    defineEnumerableTopologyFacade(this)
   }
 
   /** @deprecated Use {@link LLink.create} */

@@ -1,6 +1,7 @@
 import type {
   AcceptInviteResponse,
   BillingBalanceResponse,
+  BillingCapabilitiesResponse,
   BillingEventsResponse,
   BillingOpStatusResponse,
   BillingPlansResponse,
@@ -13,6 +14,7 @@ import type {
   CreateTopupRequest,
   CreateTopupResponse,
   CreateWorkspaceRequest,
+  CurrentWorkspaceResponse,
   ListInvitesResponse,
   ListMembersResponse,
   ListWorkspacesResponse,
@@ -43,6 +45,7 @@ import {
   UNKNOWN_ERROR_CODE,
   errorResponseFromBody
 } from '@/platform/remote/comfyui/errors'
+import { attachCapabilityRevisionInterceptor } from '@/platform/workspace/api/capabilityRevision'
 import type {
   WorkspaceId,
   WorkspaceInviteId
@@ -74,6 +77,7 @@ export type { SubscriptionTier }
 export type { SubscriptionDuration }
 export type { WorkspaceWithRole }
 export type { ListWorkspacesResponse }
+export type { CurrentWorkspaceResponse }
 export type { Plan }
 export type { BillingPlansResponse }
 export type { TeamCreditStops }
@@ -112,6 +116,7 @@ export type { BillingStatus }
 export type { BillingStatusResponse }
 
 export type { BillingBalanceResponse }
+export type { BillingCapabilitiesResponse }
 export type { CreateTopupResponse }
 export type { BillingOpStatusResponse }
 export type { SavedPaymentMethod }
@@ -146,6 +151,7 @@ const workspaceApiClient = axios.create({
 
 // acceptInvite opts out via __skipUnifiedRemint (it is deliberately Firebase-authed).
 attachUnifiedRemintInterceptor(workspaceApiClient)
+attachCapabilityRevisionInterceptor(workspaceApiClient)
 
 async function getAuthHeaderOrThrow() {
   return useAuthStore().getWorkspaceAuthHeaderOrThrow()
@@ -179,6 +185,23 @@ export const workspaceApi = {
     try {
       const response = await workspaceApiClient.get<ListWorkspacesResponse>(
         workspaceApiUrl('/workspaces'),
+        { headers }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  /**
+   * Get the workspace bound to the current credential
+   * GET /api/workspaces/current
+   */
+  async getCurrentWorkspace(): Promise<CurrentWorkspaceResponse> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.get<CurrentWorkspaceResponse>(
+        workspaceApiUrl('/workspaces/current'),
         { headers }
       )
       return response.data
@@ -431,6 +454,26 @@ export const workspaceApi = {
   },
 
   /**
+   * Get billing capabilities for the current workspace
+   * GET /api/billing/capabilities
+   */
+  async getBillingCapabilities(
+    signal?: AbortSignal
+  ): Promise<BillingCapabilitiesResponse> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response =
+        await workspaceApiClient.get<BillingCapabilitiesResponse>(
+          workspaceApiUrl('/billing/capabilities'),
+          { headers, timeout: 10_000, signal }
+        )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  /**
    * Get available subscription plans
    * GET /api/billing/plans
    */
@@ -493,22 +536,29 @@ export const workspaceApi = {
     planSlug: string,
     options: SubscribeOptions = {}
   ): Promise<SubscribeResponse> {
-    if (options.confirmationToken && options.savedPaymentMethodId) {
+    if (
+      options.confirmationToken !== undefined &&
+      options.savedPaymentMethodId !== undefined
+    ) {
       throw new TypeError(
         'confirmationToken and savedPaymentMethodId are mutually exclusive'
       )
     }
+    // JSON drops `undefined` but keeps `''`, so an empty credential would reach
+    // the API as a present-but-meaningless value.
+    const confirmationToken = options.confirmationToken || undefined
+    const savedPaymentMethodId = options.savedPaymentMethodId || undefined
     const headers = await getAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.post<SubscribeResponse>(
         workspaceApiUrl('/billing/subscribe'),
         {
           plan_slug: planSlug,
-          confirmation_token: options.confirmationToken,
+          confirmation_token: confirmationToken,
           promotion_code: options.promotionCode,
           quote_id: options.quoteId,
           quote_version: options.quoteVersion,
-          saved_payment_method_id: options.savedPaymentMethodId,
+          saved_payment_method_id: savedPaymentMethodId,
           return_url: options.returnUrl,
           cancel_url: options.cancelUrl,
           team_credit_stop_id: options.teamCreditStopId,

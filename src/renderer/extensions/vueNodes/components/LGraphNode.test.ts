@@ -179,7 +179,8 @@ const mockNodeData: NodeState = {
   mode: 0,
   flags: {},
   inputs: [],
-  outputs: []
+  outputs: [],
+  properties: {}
 }
 
 const mockRerouteNodeData: NodeState = {
@@ -198,6 +199,7 @@ describe('LGraphNode', () => {
     setActivePinia(pinia)
     const canvasStore = useCanvasStore()
     canvasStore.selectedNodeIds.clear()
+    canvasStore.currentGraph = null
     const settingStore = useSettingStore(pinia)
     useNodeOutputStore().nodeOutputs = {}
     useWidgetValueStore().clearGraph('graph-test')
@@ -328,6 +330,16 @@ describe('LGraphNode', () => {
       isInputConnected: vi.fn(() => isAudioLinked.value),
       isSubgraphNode: () => false
     }
+    // widgetIds/nodeLocatorId derive from canvasStore.rootGraphId
+    // (currentGraph.rootGraph.id), so this test needs a minimal root graph.
+    // Scoped to this test only; beforeEach resets currentGraph to null.
+    const fakeRootGraph: Record<string, unknown> = {
+      id: 'graph-test',
+      getNodeById: () => mockData.mockLgraphNode,
+      subgraphs: new Map()
+    }
+    fakeRootGraph.rootGraph = fakeRootGraph
+    useCanvasStore().currentGraph = fromAny(fakeRootGraph)
     const widgetValueStore = useWidgetValueStore()
     widgetValueStore.registerWidget(
       widgetId('graph-test', mockNodeData.id, 'audio'),
@@ -341,6 +353,9 @@ describe('LGraphNode', () => {
     renderLGraphNode({
       nodeData: {
         ...mockNodeData,
+        // graphId must match the root graph id, or locatorIdFromState treats
+        // it as a (non-UUID) subgraph id and resolves no lgraphNode.
+        graphId: 'graph-test',
         type: 'LoadAudio'
       }
     })

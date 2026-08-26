@@ -1,4 +1,5 @@
 import { useLinkStore } from '@/stores/linkStore'
+import type { EndpointUpdateError } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import type { LinkId } from '@/types/linkId'
 import type { NodeId } from '@/types/nodeId'
@@ -93,6 +94,10 @@ interface InputReplacement {
   slot: number
 }
 
+export type InputReplacementResult =
+  | { ok: true; replacements: InputReplacement[] }
+  | { ok: false; error: EndpointUpdateError }
+
 export function finalizeInputLinkRemoval(
   node: LGraphNode,
   input: INodeInputSlot,
@@ -150,7 +155,7 @@ export function replaceNodeInputs(
   finalInputs: readonly INodeInputSlot[],
   assignments: ReadonlyMap<INodeInputSlot, LLink> = previous.links,
   keepReroutes = false
-): InputReplacement[] {
+): InputReplacementResult {
   if (
     node.inputs.length !== previous.inputs.length ||
     node.inputs.some((input, slot) => input !== previous.inputs[slot])
@@ -191,7 +196,7 @@ export function replaceNodeInputs(
     )
     if (!result.ok) {
       console.error('Failed to replace node inputs', result.error)
-      return []
+      return result
     }
     node.inputs.splice(0, node.inputs.length, ...finalInputs)
     for (const { link, slot } of removals.toReversed()) {
@@ -210,5 +215,8 @@ export function replaceNodeInputs(
   }
 
   const oldInputs = new Set(previous.inputs)
-  return finalAssignments.filter(({ input }) => !oldInputs.has(input))
+  return {
+    ok: true,
+    replacements: finalAssignments.filter(({ input }) => !oldInputs.has(input))
+  }
 }

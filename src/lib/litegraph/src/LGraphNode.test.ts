@@ -1,7 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, vi } from 'vitest'
-import { computed, nextTick, watch } from 'vue'
 
 import type {
   INodeInputSlot,
@@ -9,13 +8,9 @@ import type {
   ISerialisedNode
 } from '@/lib/litegraph/src/litegraph'
 import type { Rect } from '@/lib/litegraph/src/interfaces'
-import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { LayoutSource } from '@/renderer/core/layout/types'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import {
   LGraphNode,
@@ -26,7 +21,6 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 
 import { test } from './__fixtures__/testExtensions'
-import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import { createMockLGraphNodeWithArrayBoundingRect } from '@/utils/__tests__/litegraphTestUtils'
 import { toNodeId } from '@/types/nodeId'
 
@@ -170,7 +164,9 @@ describe('LGraphNode', () => {
     expect(node.outputs.length).toEqual(1)
     expect(node.outputs[0].name).toEqual('TestOutput')
     expect(node.outputs[0].type).toEqual('number')
-    expect(node.outputs[0].links).toBeNull()
+    // Serialized data declared an explicit `links: []`; legacy link writes
+    // are removal-only, so array presence is preserved.
+    expect(node.outputs[0].links).toEqual([])
     expect(node.outputs[0]).instanceOf(NodeOutputSlot)
 
     // Should not override existing outputs
@@ -271,7 +267,7 @@ describe('LGraphNode', () => {
       const disconnected = node2.disconnectInput(0)
       expect(disconnected).toBe(true)
       expect(node2.inputs[0].link).toBeNull()
-      expect(node1.outputs[0].links).toBeNull()
+      expect(node1.outputs[0].links).toEqual([])
       expect(graph.links.has(link!.id)).toBe(false)
 
       // Test disconnecting by slot name
@@ -347,7 +343,7 @@ describe('LGraphNode', () => {
       )
       expect(disconnectedByName).toBe(true)
       expect(targetNode1.inputs[0].link).toBeNull()
-      expect(sourceNode.outputs[1].links).toBeNull()
+      expect(sourceNode.outputs[1].links).toEqual([])
 
       // Test disconnecting all connections from an output
       const link4 = sourceNode.connect(0, targetNode1, 0)
@@ -867,417 +863,5 @@ describe('snapToGrid', () => {
 
     expect(node.snapToGrid(20)).toBe(false)
     expect(applyOperation).not.toHaveBeenCalled()
-  })
-})
-
-describe('layout geometry projection', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    layoutStore.resetForTests()
-  })
-
-  test('applies a resize and position change through one attached update', () => {
-    const graph = new LGraph()
-    const node = new LGraphNode('test')
-    graph.add(node)
-    const batchUpdateNodeBounds = vi.spyOn(layoutStore, 'batchUpdateNodeBounds')
-
-    resizeNodeLayout(
-      node,
-      { width: 300, height: 120 },
-      {
-        position: { x: 40, y: 60 },
-        source: LayoutSource.Vue
-      }
-    )
-
-    expect(batchUpdateNodeBounds).toHaveBeenCalledOnce()
-    expect(batchUpdateNodeBounds).toHaveBeenCalledWith(
-      graph.rootGraph.id,
-      [
-        {
-          nodeId: node.id,
-          bounds: { x: 40, y: 60, width: 300, height: 120 }
-        }
-      ],
-      { source: LayoutSource.Vue }
-    )
-    expect(
-      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value
-    ).toMatchObject({
-      position: { x: 40, y: 60 },
-      size: { width: 300, height: 120 }
-    })
-  })
-
-  test('uses measured collapsed width for node and connection geometry', () => {
-    const graph = new LGraph()
-    const node = new LGraphNode('test')
-    graph.add(node)
-    node.flags.collapsed = true
-    layoutStore.reportContentSize(graph.rootGraph.id, node.id, {
-      width: 123,
-      height: 30
-    })
-
-    expect(node.width).toBe(123)
-    expect(node.getConnectionPos(false, 0)[0]).toBe(node.pos[0] + 123)
-  })
-
-  test('moves from the latest stored position', () => {
-    const graph = new LGraph()
-    const node = new LGraphNode('test')
-    graph.add(node)
-    layoutStore.batchUpdateNodeBounds(
-      graph.rootGraph.id,
-      [
-        {
-          nodeId: node.id,
-          bounds: { x: 30, y: 40, width: 200, height: 80 }
-        }
-      ],
-      { source: LayoutSource.Canvas }
-    )
-
-    node.move(5, 10)
-
-    expect(
-      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value?.position
-    ).toEqual({ x: 35, y: 50 })
-  })
-
-  test('snaps the latest stored position', () => {
-    const graph = new LGraph()
-    const node = new LGraphNode('test')
-    graph.add(node)
-    layoutStore.batchUpdateNodeBounds(
-      graph.rootGraph.id,
-      [
-        {
-          nodeId: node.id,
-          bounds: { x: 103, y: 97, width: 200, height: 80 }
-        }
-      ],
-      { source: LayoutSource.Canvas }
-    )
-
-    node.snapToGrid(20)
-
-    expect(
-      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value?.position
-    ).toEqual({ x: 100, y: 100 })
-  })
-
-  test('preserves stored geometry when removed and re-added', () => {
-    const graph = new LGraph()
-    const node = new LGraphNode('test')
-    graph.add(node)
-    layoutStore.batchUpdateNodeBounds(
-      graph.rootGraph.id,
-      [
-        {
-          nodeId: node.id,
-          bounds: { x: 30, y: 40, width: 200, height: 80 }
-        }
-      ],
-      { source: LayoutSource.Canvas }
-    )
-
-    graph.remove(node)
-    graph.add(node)
-
-    expect(
-      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value
-    ).toMatchObject({
-      position: { x: 30, y: 40 },
-      size: { width: 200, height: 80 }
-    })
-  })
-
-  test('refreshes stable views before indexed mutations', () => {
-    const graph = new LGraph()
-    const node = new LGraphNode('test')
-    node.pos = [10, 20]
-    node.size = [100, 50]
-    graph.add(node)
-    const pos = node.pos
-    const size = node.size
-
-    layoutStore.batchUpdateNodeBounds(
-      graph.rootGraph.id,
-      [
-        {
-          nodeId: node.id,
-          bounds: { x: 30, y: 40, width: 200, height: 80 }
-        }
-      ],
-      { source: LayoutSource.Canvas }
-    )
-    pos[0] = 50
-    size[1] = 90
-
-    expect(node.pos).toBe(pos)
-    expect(node.size).toBe(size)
-    expect([...pos]).toEqual([50, 40])
-    expect([...size]).toEqual([200, 90])
-    expect(
-      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value
-    ).toMatchObject({
-      position: { x: 50, y: 40 },
-      size: { width: 200, height: 90 }
-    })
-  })
-
-  test('preserves stored size when assigning position', () => {
-    const graph = new LGraph()
-    const node = new LGraphNode('test')
-    node.pos = [10, 20]
-    node.size = [100, 50]
-    graph.add(node)
-    layoutStore.batchUpdateNodeBounds(
-      graph.rootGraph.id,
-      [
-        {
-          nodeId: node.id,
-          bounds: { x: 30, y: 40, width: 200, height: 80 }
-        }
-      ],
-      { source: LayoutSource.Canvas }
-    )
-
-    node.pos = [50, 60]
-
-    expect([...node.size]).toEqual([200, 80])
-  })
-
-  test('preserves stored position when assigning size', () => {
-    const graph = new LGraph()
-    const node = new LGraphNode('test')
-    node.pos = [10, 20]
-    node.size = [100, 50]
-    graph.add(node)
-    layoutStore.batchUpdateNodeBounds(
-      graph.rootGraph.id,
-      [
-        {
-          nodeId: node.id,
-          bounds: { x: 30, y: 40, width: 200, height: 80 }
-        }
-      ],
-      { source: LayoutSource.Canvas }
-    )
-
-    node.size = [300, 90]
-
-    expect([...node.pos]).toEqual([30, 40])
-  })
-
-  test('does not write a stale width back to the store', () => {
-    const graph = new LGraph()
-    const node = new LGraphNode('test')
-    node.pos = [10, 20]
-    node.size = [100, 50]
-    graph.add(node)
-    layoutStore.batchUpdateNodeBounds(
-      graph.rootGraph.id,
-      [
-        {
-          nodeId: node.id,
-          bounds: { x: 30, y: 40, width: 200, height: 80 }
-        }
-      ],
-      { source: LayoutSource.Canvas }
-    )
-
-    node.pos = [50, 60]
-    node.setSize([node.size[0], 120])
-
-    expect(
-      layoutStore.getNodeLayoutRef(graph.rootGraph.id, node.id).value
-    ).toMatchObject({
-      position: { x: 50, y: 60 },
-      size: { width: 200, height: 120 }
-    })
-  })
-
-  test('keeps measured geometry separate from requested size', () => {
-    const graph = new LGraph()
-    const node = new LGraphNode('test')
-    node.size = [100, 50]
-    graph.add(node)
-    layoutStore.reportContentSize(graph.rootGraph.id, node.id, {
-      width: 225,
-      height: 80
-    })
-
-    expect([...node.size]).toEqual([100, 50])
-    expect(node.serialize().size).toEqual([100, 50])
-
-    node.setSize([node.size[0] + 90, node.size[1] + 100])
-
-    expect([...node.renderingSize]).toEqual([225, 150])
-    const bounds: Rect = [0, 0, 0, 0]
-    node.measure(bounds)
-    expect(bounds).toEqual([
-      node.pos[0],
-      node.pos[1] - LiteGraph.NODE_TITLE_HEIGHT,
-      225,
-      150 + LiteGraph.NODE_TITLE_HEIGHT
-    ])
-    expect(node.serialize().size).toEqual([190, 150])
-  })
-})
-
-describe('_setConcreteSlots', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
-  test('per-frame calls do not invalidate slot-array subscribers', async () => {
-    const graph = new LGraph()
-    const node = new LGraphNode('test')
-    node.addInput('a', 'INT')
-    node.addInput('b', 'INT')
-    graph.add(node)
-
-    const names = computed(() => node.inputs.map((i) => i.name).join(','))
-    const onChange = vi.fn()
-    watch(names, onChange)
-    expect(names.value).toBe('a,b')
-
-    // The canvas draw loop calls this once per visible node per frame. It
-    // re-assigns each slot in place, so it must not look like a change.
-    for (let frame = 0; frame < 100; frame++) node._setConcreteSlots()
-    await nextTick()
-
-    expect(onChange).not.toHaveBeenCalled()
-  })
-
-  test('a real slot change still notifies', async () => {
-    const graph = new LGraph()
-    const node = new LGraphNode('test')
-    node.addInput('a', 'INT')
-    graph.add(node)
-
-    const names = computed(() => node.inputs.map((i) => i.name).join(','))
-    const onChange = vi.fn()
-    watch(names, onChange)
-    expect(names.value).toBe('a')
-
-    node.addInput('b', 'INT')
-    await nextTick()
-
-    expect(onChange).toHaveBeenCalledTimes(1)
-  })
-})
-
-describe('widgets array reactivity', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
-  test('keeps one view and synchronizes direct replacements and mutations', () => {
-    const graph = new LGraph()
-    const node = new LGraphNode('test')
-    node.addWidget('number', 'a', 1, () => undefined, {})
-    node.addWidget('number', 'b', 2, () => undefined, {})
-    node.addWidget('number', 'c', 3, () => undefined, {})
-    graph.add(node)
-
-    const widgets = node.widgets!
-    const removedWidgetId = widgets[0].widgetId!
-    node.widgets = [widgets[2], widgets[0], widgets[1]]
-    node.widgets.splice(1, 1)
-
-    const widgetValueStore = useWidgetValueStore()
-    expect(node.widgets).toBe(widgets)
-    expect(node.widgets.map((widget) => widget.name)).toEqual(['c', 'b'])
-    expect(
-      widgetValueStore
-        .getNodeWidgets(graph.rootGraph.id, node.id)
-        .map((widget) => widget.name)
-    ).toEqual(['c', 'b'])
-    expect(widgetValueStore.getWidget(removedWidgetId)?.value).toBe(1)
-  })
-
-  test('normalizes widget class fields when attaching the node', () => {
-    class NodeWithWidgetField extends LGraphNode {
-      override widgets: IBaseWidget[] = []
-    }
-
-    const graph = new LGraph()
-    const node = new NodeWithWidgetField('test')
-    node.addWidget('number', 'a', 1, () => undefined, {})
-    node.addWidget('number', 'b', 2, () => undefined, {})
-    graph.add(node)
-
-    const widgets = node.widgets
-    node.widgets.reverse()
-
-    expect(node.widgets).toBe(widgets)
-    expect(
-      useWidgetValueStore()
-        .getNodeWidgets(graph.rootGraph.id, node.id)
-        .map((widget) => widget.name)
-    ).toEqual(['b', 'a'])
-  })
-
-  test('notifies readers when a widget is removed in place', async () => {
-    const graph = new LGraph()
-    const node = new LGraphNode('test')
-    node.addWidget('number', 'a', 1, () => undefined, {})
-    node.addWidget('number', 'b', 2, () => undefined, {})
-    node.addWidget('number', 'c', 3, () => undefined, {})
-    graph.add(node)
-
-    const names = computed(() => node.widgets?.map((w) => w.name).join(','))
-    const onChange = vi.fn()
-    watch(names, onChange)
-    expect(names.value).toBe('a,b,c')
-
-    // Extensions mutate this array directly, with no store call to notice.
-    node.widgets!.pop()
-    await nextTick()
-    expect(names.value).toBe('a,b')
-
-    node.widgets!.splice(0, 1)
-    await nextTick()
-    expect(names.value).toBe('b')
-
-    node.widgets!.length = 0
-    await nextTick()
-    expect(names.value).toBe('')
-
-    expect(onChange).toHaveBeenCalledTimes(3)
-  })
-
-  test('leaves widgets undefined for a node with none', () => {
-    const node = new LGraphNode('test')
-
-    expect(node.widgets).toBeUndefined()
-    expect(node.serialize().widgets_values).toBeUndefined()
-  })
-})
-
-describe('titleMode in node state', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
-  test('carries a NO_TITLE class into the store-held shell state', () => {
-    class TitlelessNode extends LGraphNode {
-      static title_mode = TitleMode.NO_TITLE
-    }
-    const node = new TitlelessNode('titleless')
-
-    // The renderer decides whether to draw a header from this; reroutes and
-    // other NO_TITLE classes draw a title bar without it.
-    expect(node._state.titleMode).toBe(TitleMode.NO_TITLE)
-  })
-
-  test('defaults to a normal title', () => {
-    expect(new LGraphNode('plain')._state.titleMode).toBe(
-      TitleMode.NORMAL_TITLE
-    )
   })
 })

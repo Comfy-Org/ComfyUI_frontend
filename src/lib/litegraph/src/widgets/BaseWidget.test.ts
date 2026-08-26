@@ -215,6 +215,58 @@ describe('BaseWidget store integration', () => {
       ).toBe('number-custom')
     })
 
+    it('registers duplicate widget names under distinct ids', () => {
+      const first = createTestWidget(node, { name: 'duplicate' })
+      const second = createTestWidget(node, { name: 'duplicate' })
+      node.widgets = [first, second]
+
+      first.setNodeId(toNodeId(1))
+      second.setNodeId(toNodeId(1))
+
+      expect(first.widgetId).toBe(widgetId(graph.id, toNodeId(1), 'duplicate'))
+      expect(second.widgetId).toBe(
+        widgetId(graph.id, toNodeId(1), 'duplicate#1')
+      )
+      expect(node.widgets.map(({ name }) => name)).toEqual([
+        'duplicate',
+        'duplicate#1'
+      ])
+      expect(store.getNodeWidgetIds(graph.id, toNodeId(1))).toEqual([
+        first.widgetId,
+        second.widgetId
+      ])
+    })
+
+    it('keeps ids stable and avoids literal suffix collisions', () => {
+      const first = createTestWidget(node, { name: 'duplicate' })
+      const second = createTestWidget(node, { name: 'duplicate' })
+      const literal = createTestWidget(node, { name: 'duplicate#1' })
+      node.widgets = [first, second, literal]
+
+      for (const widget of [first, second, literal]) {
+        widget.setNodeId(toNodeId(1))
+      }
+      const ids = node.widgets.map((widget) => widget.widgetId)
+      node.widgets.reverse()
+
+      expect(ids).toEqual([
+        widgetId(graph.id, toNodeId(1), 'duplicate'),
+        widgetId(graph.id, toNodeId(1), 'duplicate#2'),
+        widgetId(graph.id, toNodeId(1), 'duplicate#1')
+      ])
+      expect(node.widgets.map((widget) => widget.widgetId).reverse()).toEqual(
+        ids
+      )
+      expect(
+        ids.map((id) => (id ? store.getWidget(id)?.name : undefined))
+      ).toEqual(['duplicate', 'duplicate#2', 'duplicate#1'])
+      expect(node.widgets.map(({ name }) => name).reverse()).toEqual([
+        'duplicate',
+        'duplicate#2',
+        'duplicate#1'
+      ])
+    })
+
     it('stores explicit isDOMWidget false over component presence', () => {
       const widget = createTestWidget(node, { name: 'flaggedDomWidget' })
       Object.assign(widget, { component: {}, isDOMWidget: false })

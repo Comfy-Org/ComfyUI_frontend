@@ -1117,9 +1117,9 @@ export class LinkConnector {
     if (!force && state.connectingTo === undefined) return
     state.connectingTo = undefined
 
-    for (const link of outputLinks) delete link._dragging
-    for (const link of inputLinks) delete link._dragging
-    for (const link of floatingLinks) delete link._dragging
+    for (const link of outputLinks) link._dragging = undefined
+    for (const link of inputLinks) link._dragging = undefined
+    for (const link of floatingLinks) link._dragging = undefined
     for (const reroute of hiddenReroutes) delete reroute._dragging
 
     renderLinks.length = 0

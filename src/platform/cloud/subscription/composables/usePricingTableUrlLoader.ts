@@ -51,7 +51,7 @@ function getTeamCheckoutRequest(
   return { stop, billingCycle: cycle }
 }
 
-function getCheckoutSelection(
+export function getPricingCheckoutSelection(
   pricing: string,
   stop: unknown,
   cycle: unknown,
@@ -164,7 +164,7 @@ export function usePricingTableUrlLoader() {
       }
     }
 
-    const initialCheckout = getCheckoutSelection(
+    const initialCheckout = getPricingCheckoutSelection(
       param,
       query.stop,
       query.cycle,

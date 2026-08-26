@@ -236,6 +236,20 @@ describe('missingNodesErrorStore', () => {
       expect(store.missingNodesError?.nodeTypes[0]).toBe('StringNode')
     })
 
+    it('matches numeric node IDs against string execution IDs', () => {
+      const store = useMissingNodesErrorStore()
+      store.setMissingNodeTypes([
+        { type: 'NodeA', nodeId: 1, isReplaceable: false },
+        { type: 'NodeB', nodeId: 2, isReplaceable: false }
+      ])
+
+      store.removeMissingNodesByNodeId('1')
+
+      expect(store.missingNodesError?.nodeTypes).toStrictEqual([
+        { type: 'NodeB', nodeId: 2, isReplaceable: false }
+      ])
+    })
+
     it('keeps entries with different nodeIds', () => {
       const store = useMissingNodesErrorStore()
       store.setMissingNodeTypes([

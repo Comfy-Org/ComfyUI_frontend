@@ -96,7 +96,7 @@ describe('usePartitionedBadges', () => {
 
     expect(partitioned.value).toEqual({
       hasComfyBadge: false,
-      core: [{ text: 'BETA' }, { text: '#5' }, { text: 'testpack' }],
+      core: [{ text: '#5' }, { text: 'BETA' }, { text: 'testpack' }],
       extension: [],
       pricing: [{ required: '$0.05', rest: 'x 3 Runs' }]
     })
@@ -157,8 +157,8 @@ describe('usePartitionedBadges', () => {
     addNodeDef('CustomNode', 'custom_nodes.testpack')
 
     expect(partitioned.value.core).toEqual([
-      { text: 'BETA' },
       { text: '#5' },
+      { text: 'BETA' },
       { text: 'testpack' }
     ])
   })

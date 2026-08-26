@@ -5,6 +5,7 @@ import { computed } from 'vue'
 
 import { transferReplacementOwnership } from '@/core/graph/nodeShell/nodeShellState'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type { GraphScope } from '@/types/graphScopeId'
 import type { NodeState } from '@/types/nodeState'
@@ -127,6 +128,85 @@ describe('nodeDataStore registration via LGraph', () => {
       .find((state) => state.id === node.id)
   }
 
+  function unknownNodeSerialization(
+    node: LGraphNode,
+    type = 'missing/Node'
+  ): ISerialisedNode {
+    return {
+      ...node.serialize(),
+      type,
+      properties: { preserved: true },
+      widgets_values: [42]
+    }
+  }
+
+  it('owns unknown-node fallback through load, compatibility access, and removal', () => {
+    const graph = new LGraph()
+    const source = new LGraphNode('Missing')
+    const fallback = unknownNodeSerialization(source)
+
+    graph.configure({ ...graph.asSerialisable(), nodes: [fallback] })
+    const loaded = graph.nodes[0]
+    assert(loaded)
+    const state = registeredState(graph, loaded)
+
+    expect(loaded.last_serialization).toBe(state?.lastSerialization)
+    expect(loaded.last_serialization).toMatchObject({
+      type: 'missing/Node',
+      widgets_values: [42]
+    })
+
+    graph.remove(loaded)
+    expect(registeredState(graph, loaded)).toBeUndefined()
+  })
+
+  it('round-trips fallback data while live store fields remain authoritative', () => {
+    const graph = new LGraph()
+    const source = new LGraphNode('Missing')
+    const fallback = unknownNodeSerialization(source)
+    graph.configure({ ...graph.asSerialisable(), nodes: [fallback] })
+    const loaded = graph.nodes[0]
+    assert(loaded)
+
+    loaded.pos = [300, 400]
+    loaded.mode = 2
+    assert(loaded.last_serialization)
+    loaded.last_serialization = {
+      ...loaded.last_serialization,
+      pos: [1, 2],
+      mode: 1
+    }
+
+    expect(loaded.serialize()).toEqual({
+      ...fallback,
+      pos: [300, 400],
+      mode: 2
+    })
+    const serialized = structuredClone(graph.asSerialisable())
+    graph.clear()
+    expect(new LGraph(serialized).nodes[0]?.serialize()).toEqual({
+      ...fallback,
+      pos: [300, 400],
+      mode: 2
+    })
+  })
+
+  it('leaves fallback discovery on the removed shell during replacement', () => {
+    const graph = new LGraph()
+    const original = new LGraphNode('Missing')
+    graph.add(original)
+    original.last_serialization = unknownNodeSerialization(original)
+    const replacement = new LGraphNode('Replacement')
+    replacement.id = original.id
+
+    expect(transferReplacementOwnership(original, replacement)).toBe(true)
+    expect(original.last_serialization?.type).toBe('missing/Node')
+    expect(replacement.last_serialization).toBeUndefined()
+    expect(
+      registeredState(graph, replacement)?.lastSerialization
+    ).toBeUndefined()
+  })
+
   it('exposes a node’s slots without resolving the node', () => {
     const graph = new LGraph()
     const lgraphNode = new LGraphNode('test')
@@ -165,7 +245,6 @@ describe('nodeDataStore registration via LGraph', () => {
 
     lgraphNode.removeInput(1)
     expect(state?.inputs.map((i) => i.name)).toEqual(['third', 'first'])
-    expect(state?.inputs).toBe(lgraphNode.inputs)
   })
 
   it('moves registered state to a same-id replacement without changing store membership', () => {

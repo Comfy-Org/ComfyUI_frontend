@@ -21,7 +21,10 @@ import {
 import { reorderSubgraphInputsByName } from '@/core/graph/subgraph/promotionUtils'
 import type { SerializedProxyWidgetTuple } from '@/core/schemas/promotionSchema'
 import { IS_CONTROL_WIDGET } from '@/scripts/controlWidgetMarker'
-import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import {
+  getPreviewExposureHostLocator,
+  usePreviewExposureStore
+} from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
@@ -1302,6 +1305,33 @@ describe('SubgraphWidgetPromotion', () => {
             String(hostNode.id)
           )
         ).toEqual([{ name: 'preview', ...exposure12 }])
+      })
+
+      it('moves a nested host raw-ID entry to its owner-scoped locator', () => {
+        const outer = createTestSubgraph()
+        const hostNode = createTestSubgraphNode(createTestSubgraph(), {
+          id: 21
+        })
+        outer.add(hostNode)
+        const rootGraphId = hostNode.rootGraph.id
+        const rawLocator = createNodeLocatorId(null, hostNode.id)
+        const scopedLocator = getPreviewExposureHostLocator(hostNode)
+        expect(scopedLocator).not.toBeNull()
+        if (!scopedLocator) return
+        const store = usePreviewExposureStore()
+        store.setExposures(rootGraphId, rawLocator, [
+          { name: 'preview', ...exposure12 }
+        ])
+
+        hostNode._internalConfigureAfterSlots()
+
+        expect(store.getExposures(rootGraphId, scopedLocator)).toEqual([
+          { name: 'preview', ...exposure12 }
+        ])
+        expect(store.getExposures(rootGraphId, rawLocator)).toEqual([])
+        expect(hostNode.serialize().properties?.previewExposures).toEqual([
+          { name: 'preview', ...serializedExposure12 }
+        ])
       })
 
       type SerializeCase = {

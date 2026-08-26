@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import type {
   ExportedSubgraphInstance,
@@ -12,7 +12,10 @@ import {
   LGraphNode as LGraphNodeClass,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
+import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
 
 import {
   createTestRootGraph,
@@ -30,6 +33,7 @@ vi.mock('@/services/litegraphService', () => ({
 
 const PROMOTED_INPUT = 'value'
 const EXTERNAL_INPUT = 'signal'
+const CONVERTIBLE_NODE_TYPE = 'test/convertible-promoted-widget'
 
 function addInteriorNodes(definition: Subgraph) {
   const withWidget = new LGraphNodeClass('Interior')
@@ -91,14 +95,30 @@ function promotedId(node: SubgraphNode) {
 }
 
 function convertPromotedWidgetNode(rootGraph: LGraph): SubgraphNode {
-  const producer = new LGraphNodeClass('Producer')
-  producer.addOutput('out', 'number')
-  rootGraph.add(producer)
+  const producer = createTestNode(rootGraph, [], ['number'])
 
-  const node = new LGraphNodeClass('Convertible')
-  const input = node.addInput(PROMOTED_INPUT, 'number')
-  input.widget = { name: PROMOTED_INPUT }
-  node.addWidget('number', PROMOTED_INPUT, 0, () => {})
+  if (!LiteGraph.registered_node_types[CONVERTIBLE_NODE_TYPE]) {
+    class ConvertibleNode extends LGraphNodeClass {
+      constructor() {
+        super('Convertible')
+        const input = this.addInput(PROMOTED_INPUT, 'number')
+        input.widget = { name: PROMOTED_INPUT }
+        this.addWidget('number', PROMOTED_INPUT, 0, () => {})
+      }
+    }
+    LiteGraph.registered_node_types[CONVERTIBLE_NODE_TYPE] = ConvertibleNode
+    onTestFinished(() => {
+      if (
+        LiteGraph.registered_node_types[CONVERTIBLE_NODE_TYPE] ===
+        ConvertibleNode
+      ) {
+        delete LiteGraph.registered_node_types[CONVERTIBLE_NODE_TYPE]
+      }
+    })
+  }
+
+  const node = LiteGraph.createNode(CONVERTIBLE_NODE_TYPE)
+  if (!node) throw new Error('expected a convertible node')
   rootGraph.add(node)
 
   if (!producer.connect(0, node, 0)) throw new Error('expected an input link')
@@ -199,7 +219,7 @@ describe('duplicated subgraph deleted in both orders (I4)', () => {
     expectSurvivorUndamaged(buildScenario(), 1)
   })
 
-  it.fails('releases promoted widget state when an instance is removed', () => {
+  it('releases promoted widget state when an instance is removed', () => {
     const scenario = buildScenario()
     const removed = scenario.instances[0]
     const removedWidgetId = promotedId(removed)
@@ -211,7 +231,7 @@ describe('duplicated subgraph deleted in both orders (I4)', () => {
     ).toBeUndefined()
   })
 
-  it.fails('gives converted subgraphs independent promoted widgets (#15565)', () => {
+  it('gives converted subgraphs independent promoted widgets (#15565)', () => {
     const rootGraph = createTestRootGraph()
     registerTestSubgraphNodeTypes(rootGraph)
     const first = convertPromotedWidgetNode(rootGraph)
@@ -219,6 +239,11 @@ describe('duplicated subgraph deleted in both orders (I4)', () => {
 
     expect(first.id).not.toBe(second.id)
     expect(promotedId(first)).not.toBe(promotedId(second))
+    expect(
+      useWidgetValueStore().getWidget(
+        widgetId(rootGraph.id, UNASSIGNED_NODE_ID, PROMOTED_INPUT)
+      )
+    ).toBeUndefined()
 
     const id = promotedId(first)
     if (!id) throw new Error('expected a promoted widget id')

@@ -2,6 +2,8 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { NodeId } from '@/types/nodeId'
@@ -187,4 +189,68 @@ describe('bringNodeToFront', () => {
     const z2 = layoutStore.getNodeLayoutRef(GRAPH, NODE_2).value?.zIndex ?? 0
     expect(z1).toBeGreaterThan(z2)
   })
+})
+
+describe('setNodeOrder', () => {
+  it('does not update a node owned by a sibling graph', () => {
+    const root = new LGraph()
+    root.add(new LGraphNode('root'))
+    const sibling = createTestSubgraph({ rootGraph: root })
+    const siblingNode = sibling.add(new LGraphNode('sibling'))!
+    const before = layoutStore.getNodeLayout(root.id, siblingNode.id)?.zIndex
+    expect(before).toBeTypeOf('number')
+
+    useLayoutMutations(LayoutSource.Canvas).setNodeOrder(
+      root,
+      siblingNode.id,
+      'front'
+    )
+
+    expect(layoutStore.getNodeLayout(root.id, siblingNode.id)?.zIndex).toBe(
+      before
+    )
+  })
+
+  it('does not reorder legacy nodes when the target layout is missing', () => {
+    const graph = new LGraph()
+    const first = graph.add(new LGraphNode('first'))!
+    const second = graph.add(new LGraphNode('second'))!
+    layoutStore.applyOperation({
+      type: 'deleteNode',
+      graphId: graph.id,
+      nodeId: first.id,
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas
+    })
+
+    useLayoutMutations(LayoutSource.Canvas).setNodeOrder(
+      graph,
+      first.id,
+      'front'
+    )
+
+    expect(graph._nodes).toEqual([first, second])
+  })
+
+  it.for([['front'], ['back']] as const)(
+    'writes %s order only to the authoritative layout',
+    ([order]) => {
+      const graph = new LGraph()
+      const first = graph.add(new LGraphNode('first'))!
+      const second = graph.add(new LGraphNode('second'))!
+
+      useLayoutMutations(LayoutSource.Canvas).setNodeOrder(
+        graph,
+        first.id,
+        order
+      )
+
+      expect(graph._nodes).toEqual([first, second])
+      const firstZ = layoutStore.getNodeLayout(graph.id, first.id)?.zIndex ?? 0
+      const secondZ =
+        layoutStore.getNodeLayout(graph.id, second.id)?.zIndex ?? 0
+      if (order === 'front') expect(firstZ).toBeGreaterThan(secondZ)
+      else expect(firstZ).toBeLessThan(secondZ)
+    }
+  )
 })

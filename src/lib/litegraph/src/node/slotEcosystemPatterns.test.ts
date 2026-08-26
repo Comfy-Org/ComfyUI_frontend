@@ -63,6 +63,23 @@ describe('ecosystem slot patterns', () => {
     })
   })
 
+  it('preserves native callback array mutation semantics', () => {
+    const node = new LGraphNode('n')
+    node.addInput('first', 'INT')
+    node.addInput('second', 'INT')
+    const inputs = node.inputs
+    const visited: string[] = []
+
+    inputs.forEach((input, index, callbackInputs) => {
+      expect(callbackInputs).toBe(inputs)
+      if (index === 0) callbackInputs[1] = duckInputSlot()
+      visited.push(input.name)
+    })
+
+    expect(visited).toEqual(['first', 'in'])
+    expect(node.inputs[1]).toBe(inputs[1])
+  })
+
   describe("input literals without a 'link' key", () => {
     it('does not report a free input as occupied because the same-index output is connected', () => {
       const { source, target } = createSourceAndTarget()

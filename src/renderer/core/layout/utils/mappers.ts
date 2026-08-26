@@ -1,8 +1,9 @@
 import * as Y from 'yjs'
 
+import { toGroupId } from '@/types/groupId'
 import type { GroupId } from '@/types/groupId'
 import type { GroupLayout, NodeLayout } from '@/renderer/core/layout/types'
-import { toNodeId } from '@/types/nodeId'
+import { parseNodeId, toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 
 /**
@@ -44,7 +45,7 @@ function yNodeRect(ynode: NodeLayoutMap): Readonly<StoredRect> {
 export function yNodeToLayout(ynode: NodeLayoutMap): NodeLayout {
   const [x, y, width, height] = yNodeRect(ynode)
   return {
-    id: (ynode.get('id') ?? toNodeId('unknown-node')) as NodeId,
+    id: parseNodeId(ynode.get('id')) ?? toNodeId('unknown-node'),
     position: { x, y },
     size: { width, height },
     bounds: { x, y, width, height },
@@ -88,8 +89,9 @@ export function yGroupToLayout(
 ): GroupLayout {
   const [x, y, width, height] =
     (ygroup.get('rect') as StoredRect | undefined) ?? DEFAULT_GROUP_RECT
+  const storedId = ygroup.get('id')
   return {
-    id: (ygroup.get('id') ?? groupId) as GroupId,
+    id: typeof storedId === 'number' ? toGroupId(storedId) : groupId,
     position: { x, y },
     size: { width, height }
   }

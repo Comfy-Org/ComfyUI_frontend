@@ -287,8 +287,6 @@ watch(
 )
 
 watchEffect((onCleanup) => {
-  if (!shouldRenderVueNodes.value) return
-
   const canvas = canvasStore.canvas
   if (canvas) onCleanup(notifyLayoutChanges(canvas))
 })

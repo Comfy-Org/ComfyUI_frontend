@@ -18,7 +18,9 @@ const BASIC_SUBGRAPH_NODE_ID = '2'
 const OUTER_SUBGRAPH_NODE_ID_IN_NESTED = '10'
 
 const MISSING_NODES_WORKFLOW = 'missing/missing_nodes_in_subgraph'
-const MISSING_NODES_SUBGRAPH_ID = 'subgraph-with-missing-node'
+// Must be UUID-shaped: normalizeSubgraphDefinitionIds replaces legacy
+// (non-UUID) subgraph definition ids with fresh UUIDs on load.
+const MISSING_NODES_SUBGRAPH_ID = '7d3a3e5e-2f5e-4cf6-9d0e-a1b2c3d4e5f6'
 const MISSING_NODES_SUBGRAPH_NODE_ID = '2'
 
 /**
