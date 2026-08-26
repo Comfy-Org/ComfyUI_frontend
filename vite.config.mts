@@ -13,6 +13,7 @@ import Icons from 'unplugin-icons/vite'
 import Components from 'unplugin-vue-components/vite'
 import typegpuPlugin from 'unplugin-typegpu/vite'
 import { defineConfig } from 'vitest/config'
+import { defaultAllowedOrigins } from 'vite'
 import type { ProxyOptions } from 'vite'
 import { createHtmlPlugin } from 'vite-plugin-html'
 import vueDevTools from 'vite-plugin-vue-devtools'
@@ -248,6 +249,16 @@ export default defineConfig({
   server: {
     host: VITE_REMOTE_DEV ? '0.0.0.0' : undefined,
     allowedHosts: process.env.AMP_ORB ? true : undefined,
+    // An extension host may run extension modules from a sandboxed
+    // (opaque-origin) realm, which sends `Origin: null` — and Vite's
+    // post-CVE origin allowlist answers that with an empty 403 before any
+    // proxy or middleware runs. Admit the null origin alongside Vite's own
+    // defaults, only in the mode that loads extensions at all. Dev server
+    // only; `null` here can read dev assets, which any local page already can.
+    cors:
+      process.env.DEV_SERVER_LOAD_EXTENSIONS === '1'
+        ? { origin: [defaultAllowedOrigins, 'null'] }
+        : undefined,
     watch: {
       ignored: [
         './browser_tests/**',
@@ -333,7 +344,28 @@ export default defineConfig({
       '/extensions': {
         target: DEV_SERVER_COMFYUI_URL,
         changeOrigin: true,
-        ...cloudProxyConfig
+        ...cloudProxyConfig,
+        // Extension scripts are static assets, and an extension host may run
+        // them from a sandboxed (opaque-origin) realm whose module fetches are
+        // all cross-origin. Two dev-only adjustments let a multi-file
+        // extension resolve its relative imports from there; without them only
+        // single-file fallback loading works. Assets only — /api stays
+        // same-origin.
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq) => {
+            // An opaque origin sends `Origin: null` and the browser stamps
+            // `Sec-Fetch-Site: cross-site`; the backend's CSRF middleware
+            // (server.py, create_origin_only_middleware) rejects both with
+            // 403. These are public static assets, so present the fetch as
+            // same-origin to the backend…
+            proxyReq.removeHeader('origin')
+            proxyReq.removeHeader('sec-fetch-site')
+          })
+          proxy.on('proxyRes', (proxyRes) => {
+            // …and answer CORS to the sandbox on the way back.
+            proxyRes.headers['access-control-allow-origin'] = '*'
+          })
+        }
       },
 
       '/docs': {
