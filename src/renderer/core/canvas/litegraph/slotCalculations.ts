@@ -15,6 +15,7 @@ import type {
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { isWidgetInputSlot } from '@/lib/litegraph/src/node/slotUtils'
 import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
+import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type {
   Point as LayoutPoint,
@@ -312,8 +313,9 @@ export function getSlotLayoutAtPoint(
   node?: LGraphNode
 ): SlotLayout | null {
   if (node) return getNodeSlotLayoutAtPoint(node, point)
-  for (let index = graph.nodes.length - 1; index >= 0; index--) {
-    const layout = getNodeSlotLayoutAtPoint(graph.nodes[index], point)
+  const nodes = nodesInRenderOrder(graph)
+  for (let index = nodes.length - 1; index >= 0; index--) {
+    const layout = getNodeSlotLayoutAtPoint(nodes[index], point)
     if (layout) return layout
   }
   return null

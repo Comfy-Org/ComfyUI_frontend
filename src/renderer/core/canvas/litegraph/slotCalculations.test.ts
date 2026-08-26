@@ -20,6 +20,7 @@ import type {
 } from '@/lib/litegraph/src/interfaces'
 import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { LayoutSource } from '@/renderer/core/layout/types'
 import { toNodeId } from '@/types/nodeId'
 
 import {
@@ -63,6 +64,7 @@ function makeNode(
     collapsed: boolean
     titleMode: TitleMode
     type: string
+    id: number
     position: [number, number]
     size: [number, number]
   }> = {}
@@ -70,7 +72,7 @@ function makeNode(
   const position = overrides.position ?? [100, 200]
   const size = overrides.size ?? [180, 120]
   return fromPartial<LGraphNode>({
-    id: toNodeId(1),
+    id: toNodeId(overrides.id ?? 1),
     pos: position,
     size,
     renderingSize: size,
@@ -238,7 +240,10 @@ describe('Vue slot geometry', () => {
     ])
 
     expect(getSlotPosition(node, 0, true)).toEqual([300, 473])
-    const graph = fromPartial<LGraph>({ nodes: [node] })
+    const graph = fromPartial<LGraph>({
+      _nodes: [node],
+      rootGraph: { id: 'root-graph' }
+    })
     expect(getSlotLayoutAtPoint(graph, { x: 300, y: 473 }, node)).toEqual(
       getSlotLayout(node, 0, true)
     )
@@ -273,7 +278,10 @@ describe('Vue slot geometry', () => {
     layoutStore.updateNodeSlotOffsets(node.graph.rootGraph.id, node.id, [
       { index: 0, type: 'input', position: { x: -6, y: 14 } }
     ])
-    const graph = fromPartial<LGraph>({ nodes: [node] })
+    const graph = fromPartial<LGraph>({
+      _nodes: [node],
+      rootGraph: { id: 'root-graph' }
+    })
 
     expect(getSlotLayoutAtPoint(graph, { x: 284, y: 414 })).toEqual(
       getSlotLayout(node, 0, true)
@@ -287,10 +295,46 @@ describe('Vue slot geometry', () => {
       { index: 0, type: 'input', position: { x: -6, y: 14 } }
     ])
     const overlappingNode = makeNode({ position: [280, 390] })
-    const graph = fromPartial<LGraph>({ nodes: [node, overlappingNode] })
+    const graph = fromPartial<LGraph>({
+      _nodes: [node, overlappingNode],
+      rootGraph: { id: 'root-graph' }
+    })
 
     expect(getSlotLayoutAtPoint(graph, { x: 284, y: 414 })).toEqual(
       getSlotLayout(node, 0, true)
+    )
+  })
+
+  it('prefers the top rendered slot when nodes overlap', () => {
+    const topNode = makeNode({ id: 1, inputs: [makeInput()] })
+    const laterNode = makeNode({ id: 2, inputs: [makeInput()] })
+    const graph = fromPartial<LGraph>({
+      _nodes: [topNode, laterNode],
+      rootGraph: { id: 'root-graph' }
+    })
+    for (const [node, zIndex] of [
+      [topNode, 2],
+      [laterNode, 1]
+    ] as const) {
+      layoutStore.applyOperation({
+        type: 'createNode',
+        graphId: 'root-graph',
+        nodeId: node.id,
+        layout: {
+          id: node.id,
+          position: { x: 100, y: 200 },
+          size: { width: 180, height: 120 },
+          zIndex,
+          visible: true,
+          bounds: { x: 100, y: 200, width: 180, height: 120 }
+        },
+        timestamp: 0,
+        source: LayoutSource.Canvas
+      })
+    }
+
+    expect(getSlotLayoutAtPoint(graph, { x: 100, y: 214 })?.nodeId).toBe(
+      topNode.id
     )
   })
 
