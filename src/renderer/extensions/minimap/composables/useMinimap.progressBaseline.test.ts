@@ -173,6 +173,10 @@ interface MatrixResult extends HarnessCounters {
   graphSize: number
   edgeCount: number
   operation: Operation
+  initializationCanvasRedraws: number
+  initializationDataNodeReads: number
+  initializationTopologyReads: number
+  initializationBoundsReads: number
 }
 
 function resetCounters() {
@@ -317,7 +321,11 @@ async function runCell(
     pollRegistrations: counters.pollRegistrations,
     listenersAdded: counters.listenersAdded,
     pollPauses: counters.pollPauses,
-    pollResumes: counters.pollResumes
+    pollResumes: counters.pollResumes,
+    canvasRedraws: counters.canvasRedraws,
+    dataNodeReads: getNodes.mock.calls.length,
+    topologyReads: getLinks.mock.calls.length,
+    boundsReads: getBounds.mock.calls.length
   }
   resetCounters()
   getNodes.mockClear()
@@ -362,6 +370,10 @@ async function runCell(
     graphSize,
     edgeCount,
     operation,
+    initializationCanvasRedraws: lifecycleAtInit.canvasRedraws,
+    initializationDataNodeReads: lifecycleAtInit.dataNodeReads,
+    initializationTopologyReads: lifecycleAtInit.topologyReads,
+    initializationBoundsReads: lifecycleAtInit.boundsReads,
     ...counters
   }
   minimap.destroy()
@@ -401,6 +413,10 @@ describe('minimap progress performance baseline', () => {
     }
 
     for (const cell of results.filter((cell) => !cell.visible)) {
+      expect(cell.initializationCanvasRedraws).toBe(1)
+      expect(cell.initializationDataNodeReads).toBeGreaterThan(0)
+      expect(cell.initializationTopologyReads).toBe(0)
+      expect(cell.initializationBoundsReads).toBe(1)
       expect(cell.digestNodeReads).toBe(0)
       expect(cell.linkDigestReads).toBe(0)
       expect(cell.linkDigestEntries).toBe(0)
