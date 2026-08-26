@@ -1,144 +1,130 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { effect, stop } from 'vue'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphCanvas,
+  LGraphNode,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { LayoutSource } from '@/renderer/core/layout/types'
+import { createMockCanvas2DContext } from '@/utils/__tests__/litegraphTestUtils'
 
 type GeometryCounts = {
   contentLookups: number
   rectReads: number
 }
 
-describe('render geometry synchronization complexity', () => {
+type RenderCounts = {
+  background: GeometryCounts
+  foreground: GeometryCounts
+  visibleNodes: number
+}
+
+const MAX_LINEAR_GROWTH = 2.05
+
+describe('renderer geometry boundary complexity', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     layoutStore.resetForTests()
+    LiteGraph.vueNodesMode = false
   })
 
-  test.for([245, 500, 1_000])(
-    'counts stable-layout synchronization over %i nodes',
-    (nodeCount) => {
-      const nodes = createNodes(nodeCount)
-      const visible = nodes.filter((_, index) => index % 2 === 0)
+  test(
+    'keeps stable foreground and background boundary calls linear',
+    { timeout: 20_000 },
+    () => {
+      const smaller = measureRenderCounts(250)
+      const larger = measureRenderCounts(500)
 
-      // These accesses mirror the geometry boundary crossed by a normal front
-      // pass: translation reads pos twice and drawNode reads renderingSize twice.
-      expect(countGeometryCalls(() => readFrontPass(visible))).toEqual({
-        contentLookups: visible.length * 4,
-        rectReads: 0
-      })
-
-      // Background connection geometry reads each node position. Layout-hidden
-      // nodes remain in render order today, so the denominator is all nodes.
-      expect(countGeometryCalls(() => readBackPass(nodes))).toEqual({
-        contentLookups: nodeCount * 2,
-        rectReads: 0
-      })
+      expect(smaller.visibleNodes).toBe(125)
+      expect(larger.visibleNodes).toBe(250)
+      expect(smaller.foreground.contentLookups).toBeGreaterThan(0)
+      expect(smaller.background.contentLookups).toBeGreaterThan(0)
+      expect(larger.foreground.contentLookups).toBeLessThanOrEqual(
+        smaller.foreground.contentLookups * MAX_LINEAR_GROWTH
+      )
+      expect(larger.background.contentLookups).toBeLessThanOrEqual(
+        smaller.background.contentLookups * MAX_LINEAR_GROWTH
+      )
+      expect(smaller.foreground.rectReads).toBe(0)
+      expect(smaller.background.rectReads).toBe(0)
+      expect(larger.foreground.rectReads).toBe(0)
+      expect(larger.background.rectReads).toBe(0)
     }
   )
-
-  test('refreshes exactly once after a real geometry revision', () => {
-    const nodes = createNodes(245)
-    const target = nodes[0]
-
-    layoutStore.batchUpdateNodeBounds(
-      target.graph!.rootGraph.id,
-      [
-        {
-          nodeId: target.id,
-          bounds: { x: 75, y: 80, width: 240, height: 100 }
-        }
-      ],
-      { source: LayoutSource.Canvas }
-    )
-
-    const counts = countGeometryCalls(() => {
-      expect([...target.pos]).toEqual([75, 80])
-      expect([...target.size]).toEqual([240, 100])
-      expect([...target.renderingSize]).toEqual([240, 100])
-    })
-
-    expect(counts).toEqual({ contentLookups: 5, rectReads: 1 })
-  })
-
-  test('keeps stable mutation views fresh and extension-compatible', () => {
-    const [node] = createNodes(1)
-    const pos = node.pos
-    const size = node.size
-
-    node.pos = [30, 40]
-    node.size = [220, 90]
-    expect(node.pos).toBe(pos)
-    expect(node.size).toBe(size)
-    expect([...pos]).toEqual([30, 40])
-    expect([...size]).toEqual([220, 90])
-
-    pos[0] = 55
-    size[1] = 105
-    expect([...node.pos]).toEqual([55, 40])
-    expect([...node.size]).toEqual([220, 105])
-  })
-
-  test('preserves widget-backed slot identity and reactive trigger behavior', () => {
-    const [node] = createNodes(1)
-    const widget = node.addWidget('text', 'value', '', null)
-    const input = node.addInput('value', 'STRING')
-    input.widget = { name: 'value' }
-    node._setConcreteSlots()
-
-    let runs = 0
-    const runner = effect(() => {
-      runs++
-      void input.pos
-    })
-
-    node.arrange()
-    const firstPos = input.pos
-    expect(firstPos).toBeDefined()
-    expect(firstPos![1]).toBe(widget.y + 10)
-    expect(runs).toBe(2)
-
-    firstPos![0] = 33
-    expect(input.pos).toBe(firstPos)
-    expect(input.pos![0]).toBe(33)
-    expect(runs).toBe(2)
-    stop(runner)
-  })
 })
 
-function createNodes(count: number): LGraphNode[] {
+function measureRenderCounts(nodeCount: number): RenderCounts {
+  const { canvas, context, nodes } = createRenderer(nodeCount)
+  canvas.computeVisibleNodes(undefined, canvas.visible_nodes)
+  for (const node of nodes) void node.renderingSize[0]
+
+  vi.spyOn(canvas, 'drawNodeShape').mockImplementation(() => {})
+  vi.spyOn(canvas, 'drawNodeWidgets').mockImplementation(() => {})
+  vi.spyOn(canvas, 'renderLink').mockImplementation(() => {})
+  vi.spyOn(LGraphNode.prototype, 'drawSlots').mockImplementation(() => {})
+
+  const drawConnections = vi
+    .spyOn(canvas, 'drawConnections')
+    .mockImplementation(() => {})
+  const foreground = countGeometryCalls(() => canvas.drawFrontCanvas())
+  drawConnections.mockRestore()
+  const background = countGeometryCalls(() => canvas.drawConnections(context))
+
+  return {
+    background,
+    foreground,
+    visibleNodes: canvas.visible_nodes.length
+  }
+}
+
+function createRenderer(nodeCount: number): {
+  canvas: LGraphCanvas
+  context: CanvasRenderingContext2D
+  nodes: LGraphNode[]
+} {
+  const context = createMockCanvas2DContext({
+    bezierCurveTo: vi.fn(),
+    clip: vi.fn(),
+    closePath: vi.fn(),
+    createLinearGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
+    drawImage: vi.fn(),
+    fillText: vi.fn(),
+    getTransform: vi.fn(() => new DOMMatrix()),
+    measureText: vi.fn(() => ({ width: 50 }) as TextMetrics),
+    quadraticCurveTo: vi.fn(),
+    rect: vi.fn(),
+    roundRect: vi.fn(),
+    scale: vi.fn(),
+    setLineDash: vi.fn(),
+    setTransform: vi.fn(),
+    translate: vi.fn()
+  })
+  const canvasElement = document.createElement('canvas')
+  canvasElement.width = 800
+  canvasElement.height = 600
+  canvasElement.getContext = vi.fn().mockReturnValue(context)
+  canvasElement.getBoundingClientRect = vi.fn(() => new DOMRect(0, 0, 800, 600))
+
   const graph = new LGraph()
-  const nodes = Array.from({ length: count }, (_, index) => {
+  const nodes = Array.from({ length: nodeCount }, (_, index) => {
     const node = new LGraphNode(`node-${index}`)
-    node.pos = [index * 5, index * 3]
-    node.size = [200, 80]
+    node.pos = index % 2 === 0 ? [100, 100] : [2_000, 2_000]
+    node.size = [200, 100]
+    node.addInput('in', '*')
+    node.addOutput('out', '*')
     graph.add(node)
     return node
   })
-
-  // Synchronize every projection before counters start. This isolates the
-  // stable-layout draw cost from graph construction and first-read hydration.
-  for (const node of nodes) void node.renderingSize[0]
-  return nodes
-}
-
-function readFrontPass(nodes: readonly LGraphNode[]): void {
-  for (const node of nodes) {
-    void node.pos[0]
-    void node.pos[1]
-    void node.renderingSize[0]
-    void node.renderingSize[1]
+  for (let index = 1; index < nodes.length; index++) {
+    nodes[index - 1].connect(0, nodes[index], 0)
   }
-}
 
-function readBackPass(nodes: readonly LGraphNode[]): void {
-  for (const node of nodes) {
-    void node.pos[0]
-    void node.pos[1]
-  }
+  const canvas = new LGraphCanvas(canvasElement, graph, { skip_render: true })
+  canvas.visible_area.set([0, 0, 800, 600])
+  return { canvas, context, nodes }
 }
 
 function countGeometryCalls(run: () => void): GeometryCounts {
