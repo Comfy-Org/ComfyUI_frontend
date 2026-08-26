@@ -54,6 +54,7 @@ export function runWidgetControl(
   for (const [targetId, control] of store.getWidgetControls(
     graph.rootGraph.id
   )) {
+    if (!live.has(targetId)) continue
     const target = store.getWidget(targetId)
     if (!target || linkFed.has(targetId)) continue
 

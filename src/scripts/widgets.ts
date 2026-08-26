@@ -1,9 +1,14 @@
+import { getControlProjections } from '@/core/graph/widgets/control/controlProjection'
 import { registerWidgetControlFromConfig } from '@/core/graph/widgets/control/widgetControl'
 import { isValueControlMode } from '@/core/graph/widgets/control/valueControl'
 import type { ValueControlMode } from '@/core/graph/widgets/control/valueControl'
 import { t } from '@/i18n'
 import { type LGraphNode, isComboWidget } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type {
+  IBaseWidget,
+  IComboWidget,
+  IStringWidget
+} from '@/lib/litegraph/src/types/widgets'
 import { registerWidgetControlLabelProvider } from '@/lib/litegraph/src/widgetControlLabel'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { dynamicWidgets } from '@/core/graph/widgets/dynamicWidgets'
@@ -79,27 +84,153 @@ function toControlMode(value: string | undefined): ValueControlMode {
   return isValueControlMode(value) ? value : 'randomize'
 }
 
-export function addValueControlWidget(
-  targetWidget: IBaseWidget,
-  defaultValue?: string
-): void {
-  targetWidget.controlConfig = {
-    mode: toControlMode(defaultValue),
-    hasFilter: false
-  }
-  registerWidgetControlFromConfig(targetWidget)
+interface ValueControlOptions extends Record<string, unknown> {
+  addFilterList?: boolean
+  controlAfterGenerateName?: string
+  controlFilterListName?: string
 }
 
-export function addValueControlWidgets(
+function configureValueControl(
   targetWidget: IBaseWidget,
-  defaultValue?: string,
-  { addFilterList = true }: { addFilterList?: boolean } = {}
+  defaultValue: string | undefined,
+  addFilterList: boolean
 ): void {
   targetWidget.controlConfig = {
     mode: toControlMode(defaultValue),
     hasFilter: isComboWidget(targetWidget) && addFilterList
   }
   registerWidgetControlFromConfig(targetWidget)
+}
+
+function resolveControlTarget(
+  nodeOrTarget: LGraphNode | IBaseWidget,
+  legacyTarget: IBaseWidget | undefined
+): IBaseWidget {
+  if (legacyTarget) return legacyTarget
+  if ('options' in nodeOrTarget) return nodeOrTarget
+  throw new TypeError('Value control target widget is required')
+}
+
+function configuredControlProjections(
+  targetWidget: IBaseWidget
+): [IComboWidget, ...IStringWidget[]] {
+  const [mode, ...filters] = getControlProjections(targetWidget)
+  if (!mode) throw new Error('Value control was not configured')
+  return [mode, ...filters]
+}
+
+function legacyControlName(
+  defaultName: string,
+  optionName: keyof ValueControlOptions,
+  options: ValueControlOptions,
+  inputData: InputSpec | undefined
+): string {
+  const optionNameValue = options[optionName]
+  if (typeof optionNameValue === 'string') return optionNameValue
+  const inputName = inputData?.[1]?.[defaultName]
+  if (typeof inputName === 'string') return inputName
+  const prefix = inputData?.[1]?.control_prefix
+  return prefix ? `${prefix} ${defaultName}` : defaultName
+}
+
+export function addValueControlWidget(
+  targetWidget: IBaseWidget,
+  defaultValue?: string
+): void
+export function addValueControlWidget(
+  node: LGraphNode,
+  targetWidget: IBaseWidget,
+  defaultValue?: string,
+  values?: unknown,
+  widgetName?: string,
+  inputData?: InputSpec
+): IComboWidget
+export function addValueControlWidget(
+  nodeOrTarget: LGraphNode | IBaseWidget,
+  targetOrDefault?: IBaseWidget | string,
+  legacyDefault?: string,
+  _legacyValues?: unknown,
+  legacyWidgetName?: string,
+  legacyInputData?: InputSpec
+): void | IComboWidget {
+  const legacyTarget =
+    typeof targetOrDefault === 'object' ? targetOrDefault : undefined
+  const targetWidget = resolveControlTarget(nodeOrTarget, legacyTarget)
+  const defaultValue = legacyTarget
+    ? legacyDefault
+    : typeof targetOrDefault === 'string'
+      ? targetOrDefault
+      : undefined
+  configureValueControl(targetWidget, defaultValue, false)
+  if (!legacyTarget) return
+
+  const [mode] = configuredControlProjections(targetWidget)
+  mode.name = legacyControlName(
+    'control_after_generate',
+    'controlAfterGenerateName',
+    { controlAfterGenerateName: legacyWidgetName },
+    legacyInputData
+  )
+  return mode
+}
+
+export function addValueControlWidgets(
+  targetWidget: IBaseWidget,
+  defaultValue?: string,
+  options?: ValueControlOptions
+): void
+export function addValueControlWidgets(
+  node: LGraphNode,
+  targetWidget: IBaseWidget,
+  defaultValue?: string,
+  options?: ValueControlOptions,
+  inputData?: InputSpec
+): [IComboWidget, ...IStringWidget[]]
+export function addValueControlWidgets(
+  nodeOrTarget: LGraphNode | IBaseWidget,
+  targetOrDefault?: IBaseWidget | string,
+  defaultOrOptions?: string | ValueControlOptions,
+  legacyOptions: ValueControlOptions = {},
+  legacyInputData?: InputSpec
+): void | [IComboWidget, ...IStringWidget[]] {
+  const legacyTarget =
+    typeof targetOrDefault === 'object' ? targetOrDefault : undefined
+  const targetWidget = resolveControlTarget(nodeOrTarget, legacyTarget)
+  const defaultValue = legacyTarget
+    ? typeof defaultOrOptions === 'string'
+      ? defaultOrOptions
+      : undefined
+    : typeof targetOrDefault === 'string'
+      ? targetOrDefault
+      : undefined
+  const options = legacyTarget
+    ? legacyOptions
+    : typeof defaultOrOptions === 'object'
+      ? defaultOrOptions
+      : {}
+  configureValueControl(
+    targetWidget,
+    defaultValue,
+    options.addFilterList !== false
+  )
+  if (!legacyTarget) return
+
+  const projections = configuredControlProjections(targetWidget)
+  projections[0].name = legacyControlName(
+    'control_after_generate',
+    'controlAfterGenerateName',
+    options,
+    legacyInputData
+  )
+  if (projections[1]) {
+    projections[1].name = legacyControlName(
+      'control_filter_list',
+      'controlFilterListName',
+      options,
+      legacyInputData
+    )
+  }
+  return projections
 }
 
 export const ComfyWidgets = {

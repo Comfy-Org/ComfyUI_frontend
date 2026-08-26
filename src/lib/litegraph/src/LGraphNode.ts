@@ -7,7 +7,8 @@ import {
 import { getControlProjections } from '@/core/graph/widgets/control/controlProjection'
 import {
   appendControlValues,
-  applyControlValues
+  applyControlValues,
+  decodeWidgetValueLayout
 } from '@/core/graph/widgets/control/widgetControl'
 import {
   calculateInputSlotPosFromSlot,
@@ -1176,20 +1177,27 @@ export class LGraphNode
         )
       }
 
-      let positionalIndex = 0
-      for (const widget of this.widgets) {
-        if (widget.serialize === false) continue
+      const serializableWidgets = this.widgets.filter(
+        (widget) => widget.serialize !== false
+      )
+      const valueLayout = decodeWidgetValueLayout(
+        serializableWidgets,
+        positionalValues
+      )
+      for (const [index, widget] of serializableWidgets.entries()) {
+        const { valueIndex, controlValueCount } = valueLayout[index]
         const restored = useWidgetValueStore().getRestoredWidgetValue(
           graphId,
           this.id,
           widget.name,
-          positionalIndex
+          valueIndex
         )
         if (restored) widget.value = restored.value
-        positionalIndex = applyControlValues(
+        applyControlValues(
           widget.widgetId,
           positionalValues,
-          positionalIndex + 1
+          valueIndex + 1,
+          controlValueCount
         )
       }
     }

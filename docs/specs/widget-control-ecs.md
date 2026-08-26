@@ -98,6 +98,8 @@ execution time to mutate a promoted value.
   control slots.
 - Preserve target widget callbacks required by custom widgets when a system
   changes a value.
+- Preserve the exported `addValueControlWidget(s)` call signatures and return
+  component-backed projections for legacy callers.
 - Do not add state or behavior to `LGraphNode`, `LGraphCanvas`, `LGraph`, or
   `Subgraph` beyond narrow projection and lifecycle integration.
 

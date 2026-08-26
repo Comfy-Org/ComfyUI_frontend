@@ -38,4 +38,5 @@ export interface WidgetControlState {
 export interface WidgetControlConfig {
   mode: ValueControlMode
   hasFilter: boolean
+  filter?: string
 }

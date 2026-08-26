@@ -68,4 +68,13 @@ describe('runWidgetControl', () => {
     runWidgetControl(graph, 'before')
     expect(seed.value).toBe(2)
   })
+
+  it('does not advance retained state after its node leaves the graph', () => {
+    const { graph, node, seed } = createControlledSeed()
+    graph.remove(node)
+
+    runWidgetControl(graph, 'after')
+
+    expect(seed.value).toBe(1)
+  })
 })

@@ -5,6 +5,11 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
+import {
+  getWidgetControlView,
+  registerWidgetControlFromConfig
+} from './widgetControl'
+
 function createControlledNode(): { graph: LGraph; node: LGraphNode } {
   const graph = new LGraph()
   const node = new LGraphNode('TestNode')
@@ -49,10 +54,47 @@ describe('widget control persistence', () => {
 
     node.configure({
       ...node.serialize(),
-      widgets_values: [12345, 'a prompt']
+      widgets_values: [12345, 'increment']
     })
 
-    expect(node.widgets?.map(({ value }) => value)).toEqual([12345, 'a prompt'])
+    expect(node.widgets?.map(({ value }) => value)).toEqual([
+      12345,
+      'increment'
+    ])
+  })
+
+  it('aligns omitted controls when a later widget has control values', () => {
+    const { node } = createControlledNode()
+    const steps = node.addWidget('number', 'steps', 1, () => {}, {})
+    steps.controlConfig = { mode: 'randomize', hasFilter: false }
+    registerWidgetControlFromConfig(steps)
+
+    node.configure({
+      ...node.serialize(),
+      widgets_values: [12345, 'increment', 7, 'decrement']
+    })
+
+    expect(node.widgets?.map(({ value }) => value)).toEqual([
+      12345,
+      'increment',
+      7
+    ])
+    expect(
+      steps.widgetId
+        ? useWidgetValueStore().getWidgetControl(steps.widgetId)?.mode
+        : undefined
+    ).toBe('decrement')
+  })
+
+  it('exposes combo wrap mode through the Vue control view', () => {
+    const { node } = createControlledNode()
+    const target = node.widgets?.[0]
+    if (!target?.widgetId) throw new Error('Target widget was not registered')
+    useWidgetValueStore().updateWidgetControl(target.widgetId, {
+      mode: 'increment-wrap'
+    })
+
+    expect(getWidgetControlView(target)?.value).toBe('increment-wrap')
   })
 
   it('moves and removes the component with its target widget', () => {

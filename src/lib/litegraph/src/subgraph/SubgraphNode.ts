@@ -1,8 +1,13 @@
 import cloneDeep from 'es-toolkit/compat/cloneDeep'
 import {
   appendControlValues,
-  applyControlValues
+  applyControlValues,
+  decodeWidgetValueLayout
 } from '@/core/graph/widgets/control/widgetControl'
+import {
+  clearPromotedWidgetControl,
+  copyPromotedWidgetControl
+} from '@/core/graph/subgraph/promotedWidgetControl'
 import type { BaseLGraph, LGraph, SubgraphId } from '@/lib/litegraph/src/LGraph'
 import type { LGraphButton } from '@/lib/litegraph/src/LGraphButton'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
@@ -412,7 +417,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   override configure(info: ExportedSubgraphInstance): void {
     for (const input of this.inputs) {
-      this._clearPromotedWidget(input)
+      clearPromotedWidgetControl(input)
       if (
         input._listenerController &&
         typeof input._listenerController.abort === 'function'
@@ -474,19 +479,25 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   ): void {
     const quarantineValuesByInputName = this._readQuarantineHostValuesByName()
 
-    let valueIndex = 0
-    for (const input of this.inputs) {
-      if (!input.widgetId) continue
+    const promotedInputs = this.inputs.filter(
+      (input): input is INodeInputSlot & { widgetId: WidgetId } =>
+        Boolean(input.widgetId)
+    )
+    const values = widgetValues ?? []
+    const valueLayout = decodeWidgetValueLayout(promotedInputs, values)
+    for (const [index, input] of promotedInputs.entries()) {
+      const { valueIndex, controlValueCount } = valueLayout[index]
       const value = quarantineValuesByInputName.has(input.name)
         ? quarantineValuesByInputName.get(input.name)
-        : widgetValues?.[valueIndex]
+        : values[valueIndex]
       if (restoreTargetValues && value !== undefined) {
         useWidgetValueStore().setValue(input.widgetId, value)
       }
-      valueIndex = applyControlValues(
+      applyControlValues(
         input.widgetId,
-        widgetValues ?? [],
-        valueIndex + 1
+        values,
+        valueIndex + 1,
+        controlValueCount
       )
     }
   }
@@ -568,7 +579,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       delete input.widget
       delete input.pos
       delete input.widgetId
-      this._clearPromotedWidget(input)
+      clearPromotedWidgetControl(input)
       const subgraphInput = input._subgraphSlot
       if (!subgraphInput) continue
       this._resolveInputWidget(subgraphInput, input)
@@ -653,7 +664,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   ) {
     this.invalidatePromotedViews()
 
-    this._clearPromotedWidget(input)
+    clearPromotedWidgetControl(input)
 
     input.widget ??= { name: subgraphInput.name }
     input.widget.name = subgraphInput.name
@@ -682,15 +693,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     }
 
     input.widgetId = id
-    const sourceControl = interiorWidget.widgetId
-      ? store.getWidgetControl(interiorWidget.widgetId)
-      : undefined
-    if (sourceControl) {
-      store.registerWidgetControl(id, {
-        mode: sourceControl.mode,
-        filter: sourceControl.filter
-      })
-    }
+    copyPromotedWidgetControl(interiorWidget, id)
     input._widget =
       this.createPromotedHostWidget(input, id, interiorWidget) ??
       this._projectPromotedWidget(input)
@@ -712,19 +715,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     _sourceWidget: Readonly<IBaseWidget>
   ): IBaseWidget | undefined {
     return undefined
-  }
-
-  /**
-   * Runs the host widget's `onRemove` (unregistering DOM widgets) and clears it.
-   * Unlike {@link ensureWidgetRemoved}, dispatches no demotion event, so it is
-   * safe on re-resolution.
-   */
-  private _clearPromotedWidget(input: INodeInputSlot): void {
-    input._widget?.onRemove?.()
-    input._widget = undefined
-    if (input.widgetId) {
-      useWidgetValueStore().deleteWidgetControl(input.widgetId)
-    }
   }
 
   override onAdded(_graph: LGraph): void {
@@ -907,7 +897,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       ) {
         input._listenerController.abort()
       }
-      this._clearPromotedWidget(input)
+      clearPromotedWidgetControl(input)
     }
     for (const widget of this._extraWidgets) widget.onRemove?.()
   }

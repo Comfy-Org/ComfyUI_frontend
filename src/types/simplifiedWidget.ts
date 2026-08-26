@@ -3,6 +3,8 @@
  * Removes all DOM manipulation and positioning concerns
  */
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { COMBO_CONTROL_MODES } from '@/core/graph/widgets/control/valueControl'
+import type { ValueControlMode } from '@/core/graph/widgets/control/valueControl'
 import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import type { NodeId } from '@/types/nodeId'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
@@ -10,13 +12,8 @@ import type { NodeLocatorId } from '@/types/nodeIdentification'
 /** Valid types for widget values */
 export type WidgetValue = string | number | boolean | object | undefined | null
 
-export const CONTROL_OPTIONS = [
-  'fixed',
-  'increment',
-  'decrement',
-  'randomize'
-] as const
-export type ControlOptions = (typeof CONTROL_OPTIONS)[number]
+export const CONTROL_OPTIONS = COMBO_CONTROL_MODES
+export type ControlOptions = ValueControlMode
 
 function isControlOption(val: WidgetValue): val is ControlOptions {
   return CONTROL_OPTIONS.includes(val as ControlOptions)

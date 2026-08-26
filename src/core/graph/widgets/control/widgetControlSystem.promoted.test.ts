@@ -43,6 +43,7 @@ function createPromotedSeedHost(controlMode: string): SubgraphNode {
   const seedWidget = seedNode.widgets!.find((w) => w.name === 'seed')!
   const result = promoteValueWidgetViaSubgraphInput(host, seedNode, seedWidget)
   if (!result.ok) throw new Error(`promotion failed: ${result.reason}`)
+  subgraph.rootGraph.add(host)
   return host
 }
 
