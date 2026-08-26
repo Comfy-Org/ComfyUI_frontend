@@ -6,7 +6,8 @@
     "directory": "partner_nodes",
     "workflowCount": 17,
     "displayName": "Seedance (ByteDance)",
-    "categories": ["video", "image", "llm", "audio", "edit", "upscale"]
+    "categories": ["video", "image", "llm", "audio", "edit", "upscale"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_bytedance_vcube_video_enhance-1.webp"
   },
   {
     "slug": "kling-ai",
@@ -15,7 +16,8 @@
     "directory": "partner_nodes",
     "workflowCount": 16,
     "displayName": "Kling AI",
-    "categories": ["image", "video", "audio", "edit"]
+    "categories": ["image", "video", "audio", "edit"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_kling_motion_control3-1.webp"
   },
   {
     "slug": "grok-imagine",
@@ -24,7 +26,8 @@
     "directory": "partner_nodes",
     "workflowCount": 11,
     "displayName": "Grok Imagine",
-    "categories": ["image", "edit", "video"]
+    "categories": ["image", "edit", "video"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_grok_imagine_image_2_t2i-1.webp"
   },
   {
     "slug": "openai-dall-e",
@@ -33,7 +36,8 @@
     "directory": "partner_nodes",
     "workflowCount": 11,
     "displayName": "OpenAI DALL-E",
-    "categories": ["llm", "image", "edit"]
+    "categories": ["llm", "image", "edit"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_openai_gpt_image_2_t2i-1.webp"
   },
   {
     "slug": "tripo-3d",
@@ -42,7 +46,8 @@
     "directory": "partner_nodes",
     "workflowCount": 11,
     "displayName": "Tripo 3D",
-    "categories": ["image", "3d"]
+    "categories": ["image", "3d"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_tripo_p1_image_to_model-1.webp"
   },
   {
     "slug": "vidu",
@@ -51,7 +56,8 @@
     "directory": "partner_nodes",
     "workflowCount": 11,
     "displayName": "Vidu",
-    "categories": ["image", "video"]
+    "categories": ["image", "video"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_vidu_q3_text_to_video-1.webp"
   },
   {
     "slug": "wan-api",
@@ -60,7 +66,8 @@
     "directory": "partner_nodes",
     "workflowCount": 10,
     "displayName": "Wan (API)",
-    "categories": ["image", "video", "edit"]
+    "categories": ["image", "video", "edit"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_wan2_7_i2v-1.webp"
   },
   {
     "slug": "flux-api",
@@ -69,7 +76,8 @@
     "directory": "partner_nodes",
     "workflowCount": 9,
     "displayName": "Flux (API)",
-    "categories": ["edit", "image", "video", "upscale"]
+    "categories": ["edit", "image", "video", "upscale"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_bfl_flux_video_upscale-1.webp"
   },
   {
     "slug": "bria-ai",
@@ -78,7 +86,8 @@
     "directory": "partner_nodes",
     "workflowCount": 9,
     "displayName": "Bria AI",
-    "categories": ["edit", "image", "video"]
+    "categories": ["edit", "image", "video"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_bria_eraser-1.webp"
   },
   {
     "slug": "luma-dream-machine",
@@ -87,7 +96,8 @@
     "directory": "partner_nodes",
     "workflowCount": 9,
     "displayName": "Luma Dream Machine",
-    "categories": ["image", "video", "edit"]
+    "categories": ["image", "video", "edit"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_luma_ray3_2_video_edit-1.webp"
   },
   {
     "slug": "gemini-image",
@@ -96,7 +106,8 @@
     "directory": "partner_nodes",
     "workflowCount": 8,
     "displayName": "Gemini Image",
-    "categories": ["llm", "image", "edit", "video"]
+    "categories": ["llm", "image", "edit", "video"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_google_nano_banana2_image_edit_continuation-1.webp"
   },
   {
     "slug": "recraft",
@@ -105,7 +116,8 @@
     "directory": "partner_nodes",
     "workflowCount": 8,
     "displayName": "Recraft",
-    "categories": ["image"]
+    "categories": ["image"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_recraft_v4_1_t2i-1.webp"
   },
   {
     "slug": "hunyuan-3d",
@@ -114,7 +126,8 @@
     "directory": "partner_nodes",
     "workflowCount": 6,
     "displayName": "Hunyuan 3D",
-    "categories": ["image", "3d"]
+    "categories": ["image", "3d"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_hunyuan3d_image_to_model-1.webp"
   },
   {
     "slug": "topaz-labs",
@@ -123,7 +136,8 @@
     "directory": "partner_nodes",
     "workflowCount": 6,
     "displayName": "Topaz Labs",
-    "categories": ["video", "upscale", "image"]
+    "categories": ["video", "upscale", "image"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_topaz_image_enhance_wonder3_5-1.webp"
   },
   {
     "slug": "magnific-ai",
@@ -132,7 +146,8 @@
     "directory": "partner_nodes",
     "workflowCount": 5,
     "displayName": "Magnific AI",
-    "categories": ["image", "upscale"]
+    "categories": ["image", "upscale"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_magnific_image_upscale_creative-1.webp"
   },
   {
     "slug": "runway",
@@ -141,7 +156,8 @@
     "directory": "partner_nodes",
     "workflowCount": 4,
     "displayName": "Runway",
-    "categories": ["video", "edit", "image"]
+    "categories": ["video", "edit", "image"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_runway_aleph2_video_edit-1.webp"
   },
   {
     "slug": "meshy-ai",
@@ -150,7 +166,8 @@
     "directory": "partner_nodes",
     "workflowCount": 3,
     "displayName": "Meshy AI",
-    "categories": ["image", "3d"]
+    "categories": ["image", "3d"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_meshy_image_to_model-1.webp"
   },
   {
     "slug": "nano-banana",
@@ -159,7 +176,8 @@
     "directory": "partner_nodes",
     "workflowCount": 3,
     "displayName": "Nano Banana",
-    "categories": ["image", "edit"]
+    "categories": ["image", "edit"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_nano_banana_2_lite_image_edit-1.webp"
   },
   {
     "slug": "pixverse",
@@ -168,7 +186,8 @@
     "directory": "partner_nodes",
     "workflowCount": 3,
     "displayName": "Pixverse",
-    "categories": ["image", "video"]
+    "categories": ["image", "video"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_pixverse_t2v-1.webp"
   },
   {
     "slug": "rodin-3d",
@@ -177,7 +196,8 @@
     "directory": "partner_nodes",
     "workflowCount": 3,
     "displayName": "Rodin 3D",
-    "categories": ["image", "3d"]
+    "categories": ["image", "3d"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_rodin_gen2-1.webp"
   },
   {
     "slug": "wavespeed",
@@ -186,7 +206,8 @@
     "directory": "partner_nodes",
     "workflowCount": 3,
     "displayName": "Wavespeed",
-    "categories": ["video", "upscale", "image"]
+    "categories": ["video", "upscale", "image"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_wavespeed_seedvr2_ai_image_fix-1.webp"
   },
   {
     "slug": "ideogram",
@@ -195,7 +216,8 @@
     "directory": "partner_nodes",
     "workflowCount": 2,
     "displayName": "Ideogram",
-    "categories": ["image"]
+    "categories": ["image"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_ideogram_p_image_t2i-1.webp"
   },
   {
     "slug": "veo-2",
@@ -204,7 +226,8 @@
     "directory": "partner_nodes",
     "workflowCount": 1,
     "displayName": "Veo 2",
-    "categories": ["image", "video"]
+    "categories": ["image", "video"],
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_veo2_i2v-1.webp"
   },
   {
     "slug": "umt5-xxl-fp8-e4m3fn-scaled",
@@ -215,7 +238,7 @@
     "displayName": "Umt5 Xxl FP8 e4m3fn scaled",
     "categories": ["image", "edit", "video", "audio"],
     "docsUrl": "https://docs.comfy.org/tutorials/video/wan/wan2_2",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_chrono_edit_14B-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_wan_animate2-1.webp"
   },
   {
     "slug": "ae",
@@ -226,7 +249,7 @@
     "displayName": "Ae",
     "categories": ["image", "edit", "upscale", "video"],
     "docsUrl": "https://docs.comfy.org/tutorials/image/z-image/z-image-turbo",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/basic_switch_node-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_boogu_image_0_1_edit_int8-1.webp"
   },
   {
     "slug": "qwen-image-vae",
@@ -237,7 +260,7 @@
     "displayName": "Qwen Image Vae",
     "categories": ["image", "edit", "video", "3d"],
     "docsUrl": "https://docs.comfy.org/tutorials/image/qwen/qwen-image-edit-2511",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image-qwen_image_edit_2511_lora_inflation-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_anima_lllite_image_inpainting-1.webp"
   },
   {
     "slug": "qwen-2-5-vl-7b-fp8-scaled",
@@ -248,7 +271,7 @@
     "displayName": "Qwen 2.5 Vl 7b FP8 scaled",
     "categories": ["image", "edit", "video", "3d"],
     "docsUrl": "https://docs.comfy.org/tutorials/image/qwen/qwen-image-edit-2511",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image-qwen_image_edit_2511_lora_inflation-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_qwen_image_edit_2511_int8-1.webp"
   },
   {
     "slug": "wan-2-1-vae",
@@ -259,7 +282,7 @@
     "displayName": "Wan 2.1 Vae",
     "categories": ["image", "edit", "video", "audio"],
     "docsUrl": "https://docs.comfy.org/tutorials/video/wan/wan2_2",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_chrono_edit_14B-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_joyai_image_edit-1.webp"
   },
   {
     "slug": "clip-vision-h",
@@ -270,7 +293,7 @@
     "displayName": "Clip Vision H",
     "categories": ["image", "edit", "video", "audio"],
     "docsUrl": "https://docs.comfy.org/tutorials/video/wan/wan2-2-animate",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_chrono_edit_14B-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_wan_animate2-1.webp"
   },
   {
     "slug": "qwen-3-4b",
@@ -281,7 +304,7 @@
     "displayName": "Qwen 3 4b",
     "categories": ["image", "edit", "llm", "upscale", "video"],
     "docsUrl": "https://docs.comfy.org/tutorials/image/z-image/z-image-turbo",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/basic_switch_node-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_z_image_int8-1.webp"
   },
   {
     "slug": "gemma-3-12b-it-fp4-mixed",
@@ -291,7 +314,7 @@
     "workflowCount": 17,
     "displayName": "Gemma 3 12B It FP4 mixed",
     "categories": ["video", "edit", "image", "audio"],
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/template_image_speech_to_video-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/template_ltx2_3_ic_lora_ingredients-1.webp"
   },
   {
     "slug": "clip-l",
@@ -302,7 +325,7 @@
     "displayName": "Clip L",
     "categories": ["image", "edit", "video"],
     "docsUrl": "https://comfyanonymous.github.io/ComfyUI_examples/hunyuan_video/",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/flux1_krea_dev-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_kandinsky5_t2i-1.webp"
   },
   {
     "slug": "flux2-vae",
@@ -313,7 +336,7 @@
     "displayName": "Flux2 Vae",
     "categories": ["image", "3d", "edit"],
     "docsUrl": "https://docs.comfy.org/tutorials/image/ernie-image/ernie-image",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/3d_triposplat_image_to_gaussian_splat-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_ideogram4_t2i_int8-1.webp"
   },
   {
     "slug": "z-image-turbo-bf16",
@@ -324,7 +347,7 @@
     "displayName": "Z Image Turbo BF16",
     "categories": ["image", "upscale", "video"],
     "docsUrl": "https://docs.comfy.org/tutorials/image/z-image/z-image-turbo",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/basic_switch_node-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/utility_pid_latent_upscale_dit-1.webp"
   },
   {
     "slug": "t5xxl-fp16",
@@ -335,7 +358,7 @@
     "displayName": "T5xxl FP16",
     "categories": ["image", "edit", "video"],
     "docsUrl": "https://docs.comfy.org/tutorials/video/ltxv",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/flux1_krea_dev-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/utility_void_video_inpainting-1.webp"
   },
   {
     "slug": "lightx2v-i2v-14b-480p-cfg-step-distill-rank64-bf16",
@@ -346,7 +369,7 @@
     "displayName": "Lightx2v I2V 14B 480p Cfg Step Distill Rank64 BF16",
     "categories": ["video", "edit", "image", "audio"],
     "docsUrl": "https://docs.comfy.org/tutorials/video/wan/wan2-2-animate",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/template_purz_wan22_animate_auto_character_replace-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_wan_animate2-1.webp"
   },
   {
     "slug": "wan2-1-vae-bf16",
@@ -356,7 +379,7 @@
     "workflowCount": 11,
     "displayName": "Wan2 1 VAE BF16",
     "categories": ["image", "video", "edit", "audio"],
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/template-Animation_Trajectory_Control_Wan_ATI-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_wan_animate2-1.webp"
   },
   {
     "slug": "wan2-1-vace-14b-fp16",
@@ -377,7 +400,7 @@
     "workflowCount": 9,
     "displayName": "Qwen Image Edit 2511 BF16",
     "categories": ["image", "edit", "video", "3d"],
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image-qwen_image_edit_2511_lora_inflation-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/template_qwen_image_edit_2511_systms_action-1.webp"
   },
   {
     "slug": "t5xxl-fp8-e4m3fn-scaled",
@@ -388,7 +411,7 @@
     "displayName": "T5xxl FP8 e4m3fn scaled",
     "categories": ["image", "edit"],
     "docsUrl": "https://docs.comfy.org/tutorials/flux/flux-1-kontext-dev",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/flux_kontext_dev_basic-1.webp",
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_chroma1_radiance_text_to_image-1.webp",
     "canonicalSlug": "t5xxl-fp16"
   },
   {
@@ -400,7 +423,7 @@
     "displayName": "Qwen Image Edit 2509 FP8 e4m3fn",
     "categories": ["image", "edit"],
     "docsUrl": "https://docs.comfy.org/tutorials/image/qwen/qwen-image-edit",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_qwen_image_edit_2509-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/templates_rob_image_to_real.app-1.webp"
   },
   {
     "slug": "ltx-2-3-spatial-upscaler-x2-1-1",
@@ -410,7 +433,7 @@
     "workflowCount": 8,
     "displayName": "Ltx 2.3 Spatial Upscaler X2 1.1",
     "categories": ["video", "edit", "image", "audio"],
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/template_image_speech_to_video-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/template_ltx2_3_lora_remove_subtitles_from_video-1.webp"
   },
   {
     "slug": "wan2-2-i2v-lightx2v-4steps-lora-v1-low-noise",
@@ -442,7 +465,7 @@
     "workflowCount": 8,
     "displayName": "Ltx 2 Spatial Upscaler X2 1.0",
     "categories": ["video", "image"],
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_ltx2_canny_to_video-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_ltx2_i2v_lora-1.webp"
   },
   {
     "slug": "qwen-image-fp8-e4m3fn",
@@ -453,7 +476,7 @@
     "displayName": "Qwen Image FP8 e4m3fn",
     "categories": ["image", "edit"],
     "docsUrl": "https://docs.comfy.org/tutorials/image/qwen/qwen-image",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_qwen_image-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/template_qwen_image_illustration_lora-1.webp"
   },
   {
     "slug": "qwen-image-edit-2509-lightning-4steps-v1-0-bf16",
@@ -464,7 +487,7 @@
     "displayName": "Qwen Image Edit 2509 Lightning 4steps V1.0 BF16",
     "categories": ["image", "edit"],
     "docsUrl": "https://docs.comfy.org/tutorials/image/qwen/qwen-image-edit",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_qwen_image_edit_2509-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/templates_rob_image_to_real.app-1.webp"
   },
   {
     "slug": "qwen-image-edit-2511-lightning-4steps-v1-0-bf16",
@@ -475,7 +498,7 @@
     "displayName": "Qwen Image Edit 2511 Lightning 4steps V1.0 BF16",
     "categories": ["image", "edit", "video", "3d"],
     "docsUrl": "https://docs.comfy.org/tutorials/image/qwen/qwen-image-edit-2511",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_qwen_image_edit_2511-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_qwen_image_edit_2511_int8-1.webp"
   },
   {
     "slug": "ltx-2-3-22b-dev-fp8",
@@ -485,7 +508,7 @@
     "workflowCount": 7,
     "displayName": "Ltx 2.3 22b Dev FP8",
     "categories": ["video", "edit", "image", "audio"],
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/template_image_speech_to_video-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/template_ltx2_3_lora_video_outpainting-1.webp"
   },
   {
     "slug": "sam3-1-multiplex-fp16",
@@ -496,7 +519,7 @@
     "displayName": "Sam3.1 Multiplex FP16",
     "categories": ["3d", "video", "edit"],
     "docsUrl": "https://docs.comfy.org/tutorials/video/wan/vace",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/utility_image_segment_sam3-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/utility_sam3d_body-1.webp"
   },
   {
     "slug": "moge-2-vitl-normal-fp16",
@@ -507,7 +530,7 @@
     "displayName": "Moge 2 Vitl Normal FP16",
     "categories": ["image", "3d", "video"],
     "docsUrl": "https://docs.comfy.org/tutorials/utility/moge",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/3d_moge_panorama_to_mesh-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/3d_pixal3d_trellis2_image_to_model-1.webp"
   },
   {
     "slug": "byt5-small-glyphxl-fp16",
@@ -517,7 +540,7 @@
     "workflowCount": 6,
     "displayName": "Byt5 Small Glyphxl FP16",
     "categories": ["image", "edit", "video"],
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/Image_capybara_v0_1_image_edit-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_capybara_v0_1_image_to_video-1.webp"
   },
   {
     "slug": "hunyuanvideo15-vae-fp16",
@@ -527,7 +550,7 @@
     "workflowCount": 6,
     "displayName": "Hunyuanvideo15 Vae FP16",
     "categories": ["image", "edit", "video"],
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/Image_capybara_v0_1_image_edit-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_capybara_v0_1_image_to_video-1.webp"
   },
   {
     "slug": "sigclip-vision-patch14-384",
@@ -538,7 +561,7 @@
     "displayName": "Sigclip Vision Patch14 384",
     "categories": ["image", "edit", "video"],
     "docsUrl": "https://docs.comfy.org/tutorials/flux/flux-1-uso",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/Image_capybara_v0_1_image_edit-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_capybara_v0_1_image_to_video-1.webp"
   },
   {
     "slug": "ace-1-5-vae",
@@ -569,7 +592,7 @@
     "displayName": "Full Encoder Small Decoder",
     "categories": ["image", "edit"],
     "docsUrl": "https://docs.comfy.org/tutorials/flux/flux-2-dev",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_flux2-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_flux2_text_to_image_9b-1.webp"
   },
   {
     "slug": "gemma-3-12b-it-abliterated-lora-rank64-bf16",
@@ -579,7 +602,7 @@
     "workflowCount": 6,
     "displayName": "Gemma 3 12b It Abliterated Lora Rank64 BF16",
     "categories": ["video", "image"],
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/template_image_speech_to_video-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/template_ltx2_3_ic_lora_ingredients-1.webp"
   },
   {
     "slug": "gemma-3-12b-it",
@@ -589,7 +612,7 @@
     "workflowCount": 6,
     "displayName": "Gemma 3 12B It",
     "categories": ["video", "edit", "image"],
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/template_ltx2_3_lora_googly_eyes-1.webp",
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/template_ltx2_3_lora_video_outpainting-1.webp",
     "canonicalSlug": "gemma-3-12b-it-fp4-mixed"
   },
   {
@@ -623,7 +646,7 @@
     "displayName": "Umt5 Xxl FP16",
     "categories": ["video", "audio", "image", "edit"],
     "docsUrl": "https://docs.comfy.org/tutorials/video/wan/vace",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/templates_product_scene_transformation-1.webp",
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_wan_dancer-1.webp",
     "canonicalSlug": "umt5-xxl-fp8-e4m3fn-scaled"
   },
   {
@@ -645,7 +668,7 @@
     "workflowCount": 6,
     "displayName": "Ltx 2 19b Distilled Lora 384",
     "categories": ["video", "image"],
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_ltx2_canny_to_video-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_ltx2_i2v_lora-1.webp"
   },
   {
     "slug": "qwen-2-5-vl-7b",
@@ -655,7 +678,7 @@
     "workflowCount": 5,
     "displayName": "Qwen 2.5 Vl 7b",
     "categories": ["image", "edit", "3d", "video"],
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/Image_capybara_v0_1_image_edit-1.webp",
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/templates_shane_single_image_to_3d_model-1.webp",
     "canonicalSlug": "qwen-2-5-vl-7b-fp8-scaled"
   },
   {
@@ -677,7 +700,7 @@
     "displayName": "Vae Ft Mse 840000 Ema Pruned",
     "categories": ["image", "video"],
     "docsUrl": "https://docs.comfy.org/tutorials/image/qwen/qwen-image",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/flux_depth_lora_example-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_ltx2_depth_to_video-1.webp"
   },
   {
     "slug": "lotus-depth-d-v1-1",
@@ -688,7 +711,7 @@
     "displayName": "Lotus Depth D V1 1",
     "categories": ["image", "video"],
     "docsUrl": "https://docs.comfy.org/tutorials/image/qwen/qwen-image",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/flux_depth_lora_example-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_ltx2_depth_to_video-1.webp"
   },
   {
     "slug": "clip-g-hidream",
@@ -732,7 +755,7 @@
     "displayName": "Qwen 3 06b Base",
     "categories": ["image", "edit"],
     "docsUrl": "https://docs.comfy.org/tutorials/image/anima/anima",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_anima_base_v1-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_anima_lllite_image_inpainting-1.webp"
   },
   {
     "slug": "qwen3vl-8b-fp8-scaled",
@@ -742,7 +765,7 @@
     "workflowCount": 5,
     "displayName": "Qwen3vl 8b FP8 scaled",
     "categories": ["image", "edit"],
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_boogu_image_0_1_edit-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_ideogram4_t2i_int8-1.webp"
   },
   {
     "slug": "flux2-dev-fp8mixed",
@@ -753,7 +776,7 @@
     "displayName": "Flux2 Dev fp8mixed",
     "categories": ["image", "edit"],
     "docsUrl": "https://docs.comfy.org/tutorials/flux/flux-2-dev",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_flux2-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/templates_all_in_one_image_edit_models.app-1.webp"
   },
   {
     "slug": "qwen-3-8b-fp8mixed",
@@ -786,7 +809,7 @@
     "displayName": "Sd Xl Base 1.0",
     "categories": ["image", "video"],
     "docsUrl": "https://comfyanonymous.github.io/ComfyUI_examples/video/#image-to-video",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_sdxl_simple-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/txt_to_image_to_video-1.webp"
   },
   {
     "slug": "ltx-2-19b-dev-fp8",
@@ -796,7 +819,7 @@
     "workflowCount": 5,
     "displayName": "Ltx 2 19b Dev FP8",
     "categories": ["video", "image"],
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_ltx2_canny_to_video-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_ltx2_i2v-1.webp"
   },
   {
     "slug": "ltx-2-19b-distilled",
@@ -806,7 +829,7 @@
     "workflowCount": 5,
     "displayName": "Ltx 2 19b Distilled",
     "categories": ["video", "image"],
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_ltx2_canny_to_video-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_ltx2_i2v_distilled-1.webp"
   },
   {
     "slug": "capybara-v0-1",
@@ -816,7 +839,7 @@
     "workflowCount": 4,
     "displayName": "Capybara V0.1",
     "categories": ["image", "edit", "video"],
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/Image_capybara_v0_1_image_edit-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_capybara_v0_1_image_to_video-1.webp"
   },
   {
     "slug": "anima-base-v1-0",
@@ -827,7 +850,7 @@
     "displayName": "Anima Base V1.0",
     "categories": ["image", "edit"],
     "docsUrl": "https://docs.comfy.org/tutorials/image/anima/anima",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_anima_base_v1-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_anima_lllite_image_inpainting-1.webp"
   },
   {
     "slug": "anima-turbo-lora-v0-2",
@@ -838,7 +861,7 @@
     "displayName": "Anima Turbo Lora V0.2",
     "categories": ["image", "edit"],
     "docsUrl": "https://docs.comfy.org/tutorials/image/anima/anima",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_anima_base_v1-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_anima_lllite_image_inpainting-1.webp"
   },
   {
     "slug": "mistral-3-small-flux2-bf16",
@@ -849,7 +872,7 @@
     "displayName": "Mistral 3 Small Flux2 BF16",
     "categories": ["image", "edit"],
     "docsUrl": "https://docs.comfy.org/tutorials/flux/flux-2-dev",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_flux2-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/templates_all_in_one_image_edit_models.app-1.webp"
   },
   {
     "slug": "qwen3vl-4b-fp8-scaled",
@@ -869,7 +892,7 @@
     "workflowCount": 4,
     "displayName": "Qwen3vl 4b BF16",
     "categories": ["image", "edit"],
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_mage_flow_edit_int8-1.webp",
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_mage_flow_turbo_t2i_int8-1.webp",
     "canonicalSlug": "qwen3vl-4b-fp8-scaled"
   },
   {
@@ -880,7 +903,7 @@
     "workflowCount": 4,
     "displayName": "Mage Flow Vae BF16",
     "categories": ["image", "edit"],
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_mage_flow_edit_int8-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_mage_flow_turbo_t2i_int8-1.webp"
   },
   {
     "slug": "qwen-image-2512-fp8-e4m3fn",
@@ -891,7 +914,7 @@
     "displayName": "Qwen Image 2512 FP8 e4m3fn",
     "categories": ["image"],
     "docsUrl": "https://docs.comfy.org/tutorials/image/qwen/qwen-image-2512",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_qwen_Image_2512-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/template_qwen_Image_2512_360_lora-1.webp"
   },
   {
     "slug": "sd3-5-large-fp8-scaled",
@@ -902,7 +925,7 @@
     "displayName": "Sd3.5 Large FP8 scaled",
     "categories": ["image", "edit"],
     "docsUrl": "https://comfyanonymous.github.io/ComfyUI_examples/sd3/#sd35-controlnets",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/sd3.5_large_blur-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/sd3.5_large_canny_controlnet_example-1.webp"
   },
   {
     "slug": "ltx-2-3-22b-distilled-fp8",
@@ -923,7 +946,7 @@
     "displayName": "RealESRGAN X4plus",
     "categories": ["image", "upscale", "video"],
     "docsUrl": "https://docs.comfy.org/tutorials/utility/image-upscale",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/template_rob_realistic_2k_images_quick_variations-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/templates_rob_realistic_2k_images_quick_variations.app-1.webp"
   },
   {
     "slug": "qwen-image-edit-2511-multiple-angles-lora",
@@ -943,7 +966,7 @@
     "workflowCount": 4,
     "displayName": "Sdpose Wholebody FP16",
     "categories": [],
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/utility_sdpose_multi_person-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/utility_sdpose_multi_person_video-1.webp"
   },
   {
     "slug": "ltx-2-3-22b-distilled-1-1-lora-dynamic-fro09-avg-rank-111-bf16",
@@ -953,7 +976,7 @@
     "workflowCount": 4,
     "displayName": "Ltx 2.3 22b Distilled 1.1 Lora Dynamic Fro09 Avg Rank 111 BF16",
     "categories": ["image", "video", "audio"],
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_ltx2_3_i2v-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_ltx2_3_id_lora-1.webp"
   },
   {
     "slug": "ltx-2-19b-lora-camera-control-dolly-left",
@@ -973,7 +996,7 @@
     "workflowCount": 4,
     "displayName": "Minimax H3 Video Vae FP16",
     "categories": ["image", "video"],
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_minimax_h3_i2v-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_minimax_h3_i2v_continuation-1.webp"
   },
   {
     "slug": "minimax-h3-audio-vae-fp32",
@@ -983,7 +1006,7 @@
     "workflowCount": 4,
     "displayName": "Minimax H3 Audio Vae FP32",
     "categories": ["image", "video"],
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_minimax_h3_i2v-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_minimax_h3_i2v_continuation-1.webp"
   },
   {
     "slug": "qwen3vl-32b-minimax-h3-nvfp4-awq",
@@ -993,7 +1016,7 @@
     "workflowCount": 4,
     "displayName": "Qwen3vl 32b Minimax H3 Nvfp4 Awq",
     "categories": ["image", "video"],
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_minimax_h3_i2v-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_minimax_h3_i2v_continuation-1.webp"
   },
   {
     "slug": "wan2-1-vace-1-3b-fp16",
@@ -1004,7 +1027,7 @@
     "displayName": "Wan2.1 Vace 1.3B FP16",
     "categories": ["image", "video", "edit"],
     "docsUrl": "https://docs.comfy.org/tutorials/video/wan/vace",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_wan_vace_14B_ref2v-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_wan_vace_14B_v2v-1.webp"
   },
   {
     "slug": "wan21-causvid-bidirect2-t2v-1-3b-lora-rank32",
@@ -1015,7 +1038,7 @@
     "displayName": "Wan21 CausVid Bidirect2 T2V 1 3B Lora Rank32",
     "categories": ["image", "video", "edit"],
     "docsUrl": "https://docs.comfy.org/tutorials/video/wan/vace",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_wan_vace_14B_ref2v-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_wan_vace_14B_v2v-1.webp"
   },
   {
     "slug": "birefnet",
@@ -1067,7 +1090,7 @@
     "displayName": "Hunyuan Video Vae BF16",
     "categories": ["video", "image"],
     "docsUrl": "https://comfyanonymous.github.io/ComfyUI_examples/hunyuan_video/",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/hunyuan_video_text_to_video-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_kandinsky5_i2v-1.webp"
   },
   {
     "slug": "depth-anything-3-mono-large",
@@ -1088,7 +1111,7 @@
     "displayName": "Flux 2 Klein Base 4b FP8",
     "categories": ["image", "edit"],
     "docsUrl": "https://docs.comfy.org/tutorials/flux/flux-2-klein",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_flux2_klein_image_edit_4b_base-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/templates_all_in_one_image_edit_models.app-1.webp"
   },
   {
     "slug": "flux-2-klein-base-9b-fp8",
@@ -1099,7 +1122,7 @@
     "displayName": "Flux 2 Klein Base 9b FP8",
     "categories": ["image", "edit"],
     "docsUrl": "https://docs.comfy.org/tutorials/flux/flux-2-klein",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_flux2_klein_image_edit_9b_base-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/templates_all_in_one_image_edit_models.app-1.webp"
   },
   {
     "slug": "gemma4-e4b-it-fp8-scaled",
@@ -1110,7 +1133,7 @@
     "displayName": "Gemma4 E4b It FP8 scaled",
     "categories": ["image", "edit", "llm"],
     "docsUrl": "https://docs.comfy.org/tutorials/image/hidream/hidream-o1",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_hidream_o1-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_hidream_o1_dev-1.webp"
   },
   {
     "slug": "umt5-xxl-enc-bf16",
@@ -1120,7 +1143,7 @@
     "workflowCount": 3,
     "displayName": "Umt5 Xxl Enc BF16",
     "categories": ["image", "video", "edit"],
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/template-Animation_Trajectory_Control_Wan_ATI-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/templates_shane_change_any_objects-1.webp"
   },
   {
     "slug": "ltx-2-3-22b-distilled-lora-384",
@@ -1130,7 +1153,7 @@
     "workflowCount": 3,
     "displayName": "Ltx 2.3 22b Distilled Lora 384",
     "categories": ["video", "edit"],
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/template_image_speech_to_video-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/template_ltx2_3_lora_video_outpainting-1.webp"
   },
   {
     "slug": "ltx-2-3-22b-dev",
@@ -1151,7 +1174,7 @@
     "displayName": "WanAnimate Relight Lora FP16",
     "categories": ["video", "edit", "image"],
     "docsUrl": "https://docs.comfy.org/tutorials/video/wan/wan2-2-animate",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/template_purz_wan22_animate_auto_character_replace-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/templates_purz_wan22_animate_auto_full_scene-1.webp"
   },
   {
     "slug": "wan2-2-animate-14b-fp8-e4m3fn-scaled-kj",
@@ -1162,7 +1185,7 @@
     "displayName": "Wan2 2 Animate 14B FP8 e4m3fn scaled KJ",
     "categories": ["video", "edit", "image"],
     "docsUrl": "https://docs.comfy.org/tutorials/video/wan/wan2-2-animate",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/template_purz_wan22_animate_auto_character_replace-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/templates_purz_wan22_animate_auto_full_scene-1.webp"
   },
   {
     "slug": "wan21-wanmove-fp8-scaled-e4m3fn-kj",
@@ -1182,7 +1205,7 @@
     "workflowCount": 3,
     "displayName": "Seedvr2 Ema Vae FP16",
     "categories": ["image", "upscale", "video"],
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/utility_seedvr2_3b_int8_upscale_image-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/utility_seedvr2_3b_int8_upscale_video-1.webp"
   },
   {
     "slug": "lightx2v-t2v-14b-cfg-step-distill-v2-lora-rank64-bf16",
@@ -1192,7 +1215,7 @@
     "workflowCount": 3,
     "displayName": "Lightx2v T2V 14B Cfg Step Distill V2 Lora Rank64 BF16",
     "categories": ["image", "edit", "video"],
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_bernini_r_image_editing-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_bernini_r_video_editing-1.webp"
   },
   {
     "slug": "ltx-2-5-22b-distilled-transformer-comfy-int8-convrot",
@@ -1202,7 +1225,7 @@
     "workflowCount": 3,
     "displayName": "Ltx 2.5 22b Distilled Transformer Comfy INT8 Convrot",
     "categories": ["video", "image"],
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_ltx2_5_flf2v-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_ltx2_5_i2v-1.webp"
   },
   {
     "slug": "ltx-2-5-video-vae-bf16",
@@ -1212,7 +1235,7 @@
     "workflowCount": 3,
     "displayName": "Ltx 2.5 Video Vae BF16",
     "categories": ["video", "image"],
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_ltx2_5_flf2v-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_ltx2_5_i2v-1.webp"
   },
   {
     "slug": "ltx-2-5-audio-vae-bf16",
@@ -1222,7 +1245,7 @@
     "workflowCount": 3,
     "displayName": "Ltx 2.5 Audio Vae BF16",
     "categories": ["video", "image"],
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_ltx2_5_flf2v-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_ltx2_5_i2v-1.webp"
   },
   {
     "slug": "gemma4-12b-with-proj-ltx-2-5-comfy-int8-convrot",
@@ -1232,7 +1255,7 @@
     "workflowCount": 3,
     "displayName": "Gemma4 12b With Proj Ltx 2.5 Comfy INT8 Convrot",
     "categories": ["video", "image"],
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_ltx2_5_flf2v-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_ltx2_5_i2v-1.webp"
   },
   {
     "slug": "gemma4-e2b-it-int8-convrot",
@@ -1242,7 +1265,7 @@
     "workflowCount": 3,
     "displayName": "Gemma4 E2b It INT8 Convrot",
     "categories": ["video", "image"],
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_ltx2_5_flf2v-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_ltx2_5_i2v-1.webp"
   },
   {
     "slug": "minimax-h3-fl2va-pruned-int8-convrot",
@@ -1252,7 +1275,7 @@
     "workflowCount": 3,
     "displayName": "Minimax H3 Fl2va Pruned INT8 Convrot",
     "categories": ["image", "video"],
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_minimax_h3_i2v-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_minimax_h3_i2v_continuation-1.webp"
   },
   {
     "slug": "minimax-h3-fl2v-turbo-8step-v1-0-comfyui-bf16",
@@ -1262,7 +1285,7 @@
     "workflowCount": 3,
     "displayName": "Minimax H3 Fl2v Turbo 8step V1.0 Comfyui BF16",
     "categories": ["image", "video"],
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_minimax_h3_i2v-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_minimax_h3_i2v_continuation-1.webp"
   },
   {
     "slug": "wan2-2-vae",
@@ -1272,7 +1295,7 @@
     "workflowCount": 3,
     "displayName": "Wan2.2 Vae",
     "categories": ["video"],
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_wan2_2_5B_fun_control-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_wan2_2_5B_ti2v-1.webp"
   },
   {
     "slug": "qwen3-5-2b-bf16",
@@ -1282,7 +1305,7 @@
     "workflowCount": 2,
     "displayName": "Qwen3.5 2b BF16",
     "categories": ["audio"],
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/audio_stable_audio_3_medium-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/audio_stable_audio_3_medium_base-1.webp"
   },
   {
     "slug": "t5gemma-b-b-ul2",
@@ -1292,7 +1315,7 @@
     "workflowCount": 2,
     "displayName": "T5gemma B B Ul2",
     "categories": ["audio"],
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/audio_stable_audio_3_medium-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/audio_stable_audio_3_medium_base-1.webp"
   },
   {
     "slug": "flux1-dev-fp8",
@@ -1324,7 +1347,7 @@
     "workflowCount": 2,
     "displayName": "Qwen Image Edit 2511 SYSTMS INFL8",
     "categories": ["image", "edit", "video"],
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image-qwen_image_edit_2511_lora_inflation-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/templates_ingi_infl8-1.webp"
   },
   {
     "slug": "ministral-3-3b",
@@ -1335,7 +1358,7 @@
     "displayName": "Ministral 3 3b",
     "categories": ["image"],
     "docsUrl": "https://docs.comfy.org/tutorials/image/ernie-image/ernie-image",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_ernie_image-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_ernie_image_turbo-1.webp"
   },
   {
     "slug": "ernie-image-prompt-enhancer",
@@ -1346,7 +1369,7 @@
     "displayName": "Ernie Image Prompt Enhancer",
     "categories": ["image"],
     "docsUrl": "https://docs.comfy.org/tutorials/image/ernie-image/ernie-image",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_ernie_image-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_ernie_image_turbo-1.webp"
   },
   {
     "slug": "flux-2-turbo-lora-comfyui",
@@ -1377,7 +1400,7 @@
     "workflowCount": 2,
     "displayName": "Krea2 Darkbrush",
     "categories": ["image"],
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_krea2_turbo_t2i-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_krea2_turbo_t2i_int8-1.webp"
   },
   {
     "slug": "gpt-oss-20b-nvfp4",
@@ -1398,7 +1421,7 @@
     "workflowCount": 2,
     "displayName": "Mage Flow INT8 Convrot",
     "categories": ["image"],
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_mage_flow_t2i_int8-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_mage_flow_turbo_t2i_int8-1.webp"
   },
   {
     "slug": "qwen-2-5-vl-fp16",
@@ -1431,7 +1454,7 @@
     "displayName": "Qwen Image 2512 Lightning 4steps V1.0 FP32",
     "categories": ["image"],
     "docsUrl": "https://docs.comfy.org/tutorials/image/qwen/qwen-image-2512",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_qwen_Image_2512-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/template_qwen_Image_2512_360_lora-1.webp"
   },
   {
     "slug": "qwen-image-layered-vae",
@@ -1442,7 +1465,7 @@
     "displayName": "Qwen Image Layered Vae",
     "categories": [],
     "docsUrl": "https://docs.comfy.org/tutorials/image/qwen/qwen-image-layered",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_qwen_image_layered-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/image_qwen_image_layered_control-1.webp"
   },
   {
     "slug": "qwen3-5-4b-bf16",
@@ -1453,7 +1476,7 @@
     "displayName": "Qwen3.5 4b BF16",
     "categories": ["llm", "image", "upscale"],
     "docsUrl": "https://docs.comfy.org/tutorials/llm/qwen/qwen3_5",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/llm_qwen3_5_text_gen-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/utility_image_upscale_supir-1.webp"
   },
   {
     "slug": "sd-xl-refiner-1-0",
@@ -1464,7 +1487,7 @@
     "displayName": "Sd Xl Refiner 1.0",
     "categories": ["image"],
     "docsUrl": "https://comfyanonymous.github.io/ComfyUI_examples/sdxl/",
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/sdxl_refiner_prompt_example-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/sdxl_simple_example-1.webp"
   },
   {
     "slug": "wan21-t2v-14b-lightx2v-cfg-step-distill-lora-rank32",
@@ -1474,7 +1497,7 @@
     "workflowCount": 2,
     "displayName": "Wan21 T2V 14B Lightx2v Cfg Step Distill Lora Rank32",
     "categories": ["image", "video", "edit"],
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/template-Animation_Trajectory_Control_Wan_ATI-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/template_sirolim_seamless_loop-1.webp"
   },
   {
     "slug": "clip-vit-h-14-laion2b-s32b-b79k",
@@ -1484,7 +1507,7 @@
     "workflowCount": 2,
     "displayName": "CLIP ViT H 14 Laion2B S32B B79K",
     "categories": ["image", "video"],
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/template-Animation_Trajectory_Control_Wan_ATI-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/template_animate_diff_loops-1.webp"
   },
   {
     "slug": "wan2-1-i2v-ati-14b-fp8-e4m3fn",
@@ -1535,7 +1558,7 @@
     "workflowCount": 2,
     "displayName": "Qwen Image Edit 2509 Anything2RealAlpha",
     "categories": ["image", "edit"],
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/templates-image_to_real-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/templates_rob_image_to_real.app-1.webp"
   },
   {
     "slug": "qwen-image-edit-2509-light-migration",
@@ -1545,7 +1568,7 @@
     "workflowCount": 2,
     "displayName": "Qwen Image Edit 2509 Light Migration",
     "categories": ["image", "edit"],
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/templates-portrait_light_migration-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/templates_rob_portrait_light_migration.app-1.webp"
   },
   {
     "slug": "4x-ultrasharp",
@@ -1565,7 +1588,7 @@
     "workflowCount": 2,
     "displayName": "Rt Detr V4 X Hgnet FP16",
     "categories": [],
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/utility_sdpose_multi_person-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/utility_sdpose_multi_person_video-1.webp"
   },
   {
     "slug": "seedvr2-3b-int8-convrot",
@@ -1575,7 +1598,7 @@
     "workflowCount": 2,
     "displayName": "Seedvr2 3b INT8 Convrot",
     "categories": ["image", "upscale", "video"],
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/utility_seedvr2_3b_int8_upscale_image-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/utility_seedvr2_3b_int8_upscale_video-1.webp"
   },
   {
     "slug": "wan2-2-bernini-r-high-noise-fp8-scaled",
@@ -1585,7 +1608,7 @@
     "workflowCount": 2,
     "displayName": "Wan2.2 Bernini R High Noise FP8 scaled",
     "categories": ["image", "edit", "video"],
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_bernini_r_image_editing-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_bernini_r_video_editing-1.webp"
   },
   {
     "slug": "wan2-2-bernini-r-low-noise-fp8-scaled",
@@ -1595,7 +1618,7 @@
     "workflowCount": 2,
     "displayName": "Wan2.2 Bernini R Low Noise FP8 scaled",
     "categories": ["image", "edit", "video"],
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_bernini_r_image_editing-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_bernini_r_video_editing-1.webp"
   },
   {
     "slug": "hunyuanvideo15-latent-upsampler-1080p",
@@ -1635,7 +1658,7 @@
     "workflowCount": 2,
     "displayName": "Wan2.1 SCAIL 2 DPO Lora BF16",
     "categories": ["video"],
-    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_wan21_scail2_character_replacement-1.webp"
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/video_wan21_scail2_character_replacement_int8-1.webp"
   },
   {
     "slug": "wan2-2-t2v-lightx2v-4steps-lora-v1-1-high-noise",

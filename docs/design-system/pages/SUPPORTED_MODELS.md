@@ -161,8 +161,9 @@ and then restore the page element.
   governed shared placeholder. Result links always use the catalog slug and
   never a display-name guess.
 - The dedicated catalog shows every generated entry immediately, retains the
-  governed search and category filters, and uses each model's owned thumbnail
-  when one exists. The entire card links to its dedicated model route.
+  governed search and category filters, and uses the owned card preview from
+  the newest dated workflow associated with each model in the workflow index.
+  The entire card links to its dedicated model route.
 - `workflowCount` values are references per catalog entry. Their sum is not a
   verified unique-workflow count and must not be presented as one.
 - Editorial cards remain fixtures until a reviewed mapping exists between each

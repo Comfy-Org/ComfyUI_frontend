@@ -2,10 +2,11 @@ import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import {
-  deriveModelCategories,
-  type ModelCategory
-} from '../src/config/modelCategories'
+import { deriveModelCategories } from '../src/config/modelCategories'
+import type { ModelCategory } from '../src/config/modelCategories'
+
+import { setNewestPreview } from '../src/utils/modelPreviewSelection'
+import type { TemplateRecency } from '../src/utils/modelPreviewSelection'
 
 const WORKFLOW_TEMPLATES_BASE =
   'https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates'
@@ -34,7 +35,8 @@ interface ModelData {
   directory: string
   templates: Set<string>
   categories: Set<ModelCategory>
-  firstTemplate?: string
+  previewTemplate?: string
+  previewRecency?: TemplateRecency
 }
 
 interface OutputModel {
@@ -140,6 +142,7 @@ function makeDisplayName(name: string): string {
 function extractModels(
   obj: unknown,
   templateName: string,
+  templateRecency: TemplateRecency | undefined,
   categories: readonly ModelCategory[],
   models: Map<string, ModelData>
 ): void {
@@ -147,7 +150,7 @@ function extractModels(
 
   if (Array.isArray(obj)) {
     for (const item of obj) {
-      extractModels(item, templateName, categories, models)
+      extractModels(item, templateName, templateRecency, categories, models)
     }
     return
   }
@@ -170,18 +173,20 @@ function extractModels(
           url,
           directory,
           templates: new Set(),
-          categories: new Set(),
-          firstTemplate: templateName
+          categories: new Set()
         })
       }
       const modelData = models.get(name)!
       modelData.templates.add(templateName)
       for (const category of categories) modelData.categories.add(category)
+      if (templateRecency) {
+        setNewestPreview(modelData, templateName, templateRecency)
+      }
     }
   }
 
   for (const value of Object.values(record)) {
-    extractModels(value, templateName, categories, models)
+    extractModels(value, templateName, templateRecency, categories, models)
   }
 }
 
@@ -191,18 +196,27 @@ interface ApiModelData {
   directory: 'partner_nodes'
   templateCount: number
   categories: ModelCategory[]
+  previewTemplate?: string
 }
 
 function extractApiModels(
   files: string[],
-  templateCategories: ReadonlyMap<string, readonly ModelCategory[]>
+  templateCategories: ReadonlyMap<string, readonly ModelCategory[]>,
+  templateRecencies: ReadonlyMap<string, TemplateRecency>,
+  templatesDir: string
 ): ApiModelData[] {
   const providers = new Map<
     string,
-    { count: number; categories: Set<ModelCategory> }
+    {
+      count: number
+      categories: Set<ModelCategory>
+      previewTemplate?: string
+      previewRecency?: TemplateRecency
+    }
   >()
   for (const file of files) {
     if (!file.startsWith('api_')) continue
+    const templateName = stripJsonExtension(file)
     const prefix = file.slice(4).split('_')[0]
     const entry = API_PROVIDER_MAP[prefix]
     if (!entry) continue
@@ -211,9 +225,16 @@ function extractApiModels(
       categories: new Set<ModelCategory>()
     }
     provider.count += 1
-    for (const category of templateCategories.get(stripJsonExtension(file)) ??
-      []) {
+    for (const category of templateCategories.get(templateName) ?? []) {
       provider.categories.add(category)
+    }
+    const templateRecency = previewRecency(
+      templateName,
+      templateRecencies,
+      templatesDir
+    )
+    if (templateRecency) {
+      setNewestPreview(provider, templateName, templateRecency)
     }
     providers.set(entry.slug, provider)
   }
@@ -224,7 +245,10 @@ function extractApiModels(
       name: found.name,
       directory: 'partner_nodes' as const,
       templateCount: provider.count,
-      categories: [...provider.categories]
+      categories: [...provider.categories],
+      ...(provider.previewTemplate
+        ? { previewTemplate: provider.previewTemplate }
+        : {})
     }
   })
 }
@@ -261,6 +285,51 @@ function buildTemplateCategoryMap(
           )
         : []
       map.set(name, deriveModelCategories(section, tags))
+    }
+  }
+
+  return map
+}
+
+function fallbackRecency(): TemplateRecency {
+  return {
+    timestamp: Number.NEGATIVE_INFINITY,
+    index: 0
+  }
+}
+
+function buildTemplateRecencyMap(
+  templatesDir: string
+): Map<string, TemplateRecency> {
+  const map = new Map<string, TemplateRecency>()
+  const data: unknown = JSON.parse(
+    readFileSync(join(templatesDir, 'index.json'), 'utf8')
+  )
+  if (!Array.isArray(data)) return map
+
+  let index = 0
+  for (const category of data) {
+    if (typeof category !== 'object' || category === null) continue
+    const templates = (category as Record<string, unknown>)['templates']
+    if (!Array.isArray(templates)) continue
+
+    for (const template of templates) {
+      if (typeof template !== 'object' || template === null) continue
+      const record = template as Record<string, unknown>
+      const name = record['name']
+      if (typeof name !== 'string') continue
+      const date = record['date']
+      const timestamp =
+        typeof date === 'string' ? Date.parse(date) : Number.NEGATIVE_INFINITY
+      if (!map.has(name)) {
+        map.set(name, {
+          timestamp: Number.isNaN(timestamp)
+            ? Number.NEGATIVE_INFINITY
+            : timestamp,
+          index
+        })
+      }
+      index += 1
     }
   }
 
@@ -363,11 +432,24 @@ function templateThumbnailUrl(
   return `${WORKFLOW_TEMPLATES_BASE}/${encodeURIComponent(base)}-1.webp`
 }
 
+function previewRecency(
+  templateName: string,
+  templateRecencies: ReadonlyMap<string, TemplateRecency>,
+  templatesDir: string
+): TemplateRecency | undefined {
+  return existsSync(join(templatesDir, `${templateName}-1.webp`))
+    ? (templateRecencies.get(templateName) ?? fallbackRecency())
+    : undefined
+}
+
 function run(): void {
   const models = new Map<string, ModelData>()
 
-  const files = readdirSync(TEMPLATES_DIR).filter((f) => f.endsWith('.json'))
+  const files = readdirSync(TEMPLATES_DIR)
+    .filter((f) => f.endsWith('.json'))
+    .sort()
   const templateCategories = buildTemplateCategoryMap(TEMPLATES_DIR)
+  const templateRecencies = buildTemplateRecencyMap(TEMPLATES_DIR)
 
   for (const file of files) {
     const filePath = join(TEMPLATES_DIR, file)
@@ -378,6 +460,7 @@ function run(): void {
       extractModels(
         data,
         templateName,
+        previewRecency(templateName, templateRecencies, TEMPLATES_DIR),
         templateCategories.get(templateName) ?? [],
         models
       )
@@ -391,7 +474,12 @@ function run(): void {
     }
   }
 
-  const apiModels = extractApiModels(files, templateCategories)
+  const apiModels = extractApiModels(
+    files,
+    templateCategories,
+    templateRecencies,
+    TEMPLATES_DIR
+  )
   const tutorialUrlMap = buildTutorialUrlMap(TEMPLATES_DIR)
 
   const sorted = [...models.entries()].sort(
@@ -436,7 +524,7 @@ function run(): void {
     }
     const docsUrl = tutorialUrlMap.get(name)
     if (docsUrl) result.docsUrl = docsUrl
-    const thumb = templateThumbnailUrl(data.firstTemplate, TEMPLATES_DIR)
+    const thumb = templateThumbnailUrl(data.previewTemplate, TEMPLATES_DIR)
     if (thumb) result.thumbnailUrl = thumb
     if (canonicalRaw !== null) {
       result.canonicalSlug = makeSlug(canonicalRaw)
@@ -446,15 +534,20 @@ function run(): void {
 
   const apiOutput: OutputModel[] = apiModels
     .sort((a, b) => b.templateCount - a.templateCount)
-    .map((m) => ({
-      slug: m.slug,
-      name: m.name,
-      huggingFaceUrl: '',
-      directory: m.directory,
-      workflowCount: m.templateCount,
-      displayName: m.name,
-      categories: m.categories
-    }))
+    .map((m) => {
+      const result: OutputModel = {
+        slug: m.slug,
+        name: m.name,
+        huggingFaceUrl: '',
+        directory: m.directory,
+        workflowCount: m.templateCount,
+        displayName: m.name,
+        categories: m.categories
+      }
+      const thumb = templateThumbnailUrl(m.previewTemplate, TEMPLATES_DIR)
+      if (thumb) result.thumbnailUrl = thumb
+      return result
+    })
 
   const combined = [...apiOutput, ...output, ...LEGACY_SLUG_REDIRECTS]
 
