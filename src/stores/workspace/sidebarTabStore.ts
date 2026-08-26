@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useAssetsSidebarTab } from '@/composables/sidebarTabs/useAssetsSidebarTab'
 import { useJobHistorySidebarTab } from '@/composables/sidebarTabs/useJobHistorySidebarTab'
 import { useModelLibrarySidebarTab } from '@/composables/sidebarTabs/useModelLibrarySidebarTab'
@@ -83,7 +84,7 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
         if (
           tab.id === 'model-library' &&
           settingStore.get('Comfy.ModelLibrary.UseAssetBrowser') &&
-          settingStore.get('Comfy.Assets.UseAssetAPI')
+          useFeatureFlags().flags.assetsEnabled
         ) {
           await commandStore.commands
             .find((cmd) => cmd.id === 'Comfy.BrowseModelAssets')

@@ -21,6 +21,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import type { Point } from '@/lib/litegraph/src/litegraph'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
 import { isCloud } from '@/platform/distribution/types'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
@@ -85,6 +86,7 @@ export function useCoreCommands(): ComfyCommand[] {
   const toastStore = useToastStore()
   const canvasStore = useCanvasStore()
   const executionStore = useExecutionStore()
+  const { flags } = useFeatureFlags()
   const modelStore = useModelStore()
   const missingModelStore = useMissingModelStore()
   const telemetry = useTelemetry()
@@ -1297,19 +1299,9 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Experimental: Browse Model Assets',
       versionAdded: '1.28.3',
       function: async () => {
-        if (!useSettingStore().get('Comfy.Assets.UseAssetAPI')) {
-          const confirmed = await dialogService.confirm({
-            title: 'Enable Asset API',
-            message:
-              'The Asset API is currently disabled. Would you like to enable it?',
-            type: 'default'
-          })
-
-          if (!confirmed) return
-
-          const settingStore = useSettingStore()
-          await settingStore.set('Comfy.Assets.UseAssetAPI', true)
-          await workflowService.reloadCurrentWorkflow()
+        if (!flags.assetsEnabled) {
+          console.error('Assets is not enabled')
+          return
         }
         const assetBrowserDialog = useAssetBrowserDialog()
         await assetBrowserDialog.browse({
@@ -1327,22 +1319,6 @@ export function useCoreCommands(): ComfyCommand[] {
             }
           }
         })
-      }
-    },
-    {
-      id: 'Comfy.ToggleAssetAPI',
-      icon: 'pi pi-database',
-      label: () =>
-        `Experimental: ${
-          useSettingStore().get('Comfy.Assets.UseAssetAPI')
-            ? 'Disable'
-            : 'Enable'
-        } AssetAPI`,
-      function: async () => {
-        const settingStore = useSettingStore()
-        const current = settingStore.get('Comfy.Assets.UseAssetAPI') ?? false
-        await settingStore.set('Comfy.Assets.UseAssetAPI', !current)
-        await useWorkflowService().reloadCurrentWorkflow() // ensure changes take effect immediately
       }
     },
     {

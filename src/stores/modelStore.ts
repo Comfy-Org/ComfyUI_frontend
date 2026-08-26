@@ -6,7 +6,6 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { ModelFile } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 
 /** (Internal helper) finds a value in a metadata object from any of a list of keys. */
@@ -279,7 +278,7 @@ export class ModelFolder {
 
 /** Model store handler, wraps individual per-folder model stores */
 export const useModelStore = defineStore('models', () => {
-  const settingStore = useSettingStore()
+  const { flags } = useFeatureFlags()
   const modelFolderNames = ref<string[]>([])
   const modelFolderByName = ref<Record<string, ModelFolder>>({})
   const modelFolders = computed<ModelFolder[]>(() =>
@@ -313,7 +312,7 @@ export const useModelStore = defineStore('models', () => {
    * the asset browser surfaces, not this store's data source.
    */
   function usesAssetApi(): boolean {
-    return !!settingStore.get('Comfy.Assets.UseAssetAPI')
+    return flags.assetsEnabled
   }
 
   function createGetModelsFunc(): (folder: string) => Promise<ModelFile[]> {
@@ -532,8 +531,6 @@ export const useModelStore = defineStore('models', () => {
     reloadAfterScan.cancel()
     unsubscribeModelsScanned()
   })
-
-  const { flags } = useFeatureFlags()
 
   watch(
     () => flags.supportsModelTypeTags,

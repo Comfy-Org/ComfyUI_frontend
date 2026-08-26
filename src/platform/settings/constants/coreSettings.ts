@@ -1213,14 +1213,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: false
   },
   {
-    id: 'Comfy.Assets.UseAssetAPI',
-    name: 'Use Asset API for model library',
-    type: 'hidden',
-    tooltip: 'Use new Asset API for model browsing',
-    defaultValue: isCloud ? true : false,
-    experimental: true
-  },
-  {
     id: 'Comfy.ModelLibrary.UseAssetBrowser',
     name: 'Use the asset browser for the model library',
     type: 'hidden',

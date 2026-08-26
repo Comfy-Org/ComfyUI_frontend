@@ -65,7 +65,7 @@ describe('WidgetSelect asset mode', () => {
     })
   }
 
-  it('uses dropdown when isCloud && UseAssetAPI && isEligible', async () => {
+  it('uses dropdown when isCloud && isEligible', async () => {
     renderWidget()
     await flushPromises()
 

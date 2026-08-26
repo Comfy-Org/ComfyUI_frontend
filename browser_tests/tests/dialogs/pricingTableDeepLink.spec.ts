@@ -48,7 +48,6 @@ const BOOT_FEATURES = {
 // asset endpoints 403 and workflow restore throws uncaught, aborting the
 // GraphCanvas onMounted chain before the deep-link loader.
 const BOOT_SETTINGS = {
-  'Comfy.Assets.UseAssetAPI': false,
   'Comfy.TutorialCompleted': true
 }
 

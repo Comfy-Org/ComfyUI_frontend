@@ -26,8 +26,6 @@ import {
   getAssetCategories,
   getAssetFilename
 } from '@/platform/assets/utils/assetMetadataUtils'
-import { isCloud } from '@/platform/distribution/types'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
@@ -275,6 +273,7 @@ function validateUploadedAssetResponse(
  * Not exposed globally - used internally by ComfyApi
  */
 function createAssetService() {
+  const { flags } = useFeatureFlags()
   /**
    * Model assets bucketed by folder category, built from a single walk of the
    * `models` tag rather than a fetch per category. Shared by the folder list
@@ -419,7 +418,7 @@ function createAssetService() {
 
   /** Returns the memoized model buckets, walking the models tag on first read. */
   async function loadModelBuckets(): Promise<Map<string, AssetItem[]>> {
-    const modelTypeMode = useFeatureFlags().flags.supportsModelTypeTags
+    const modelTypeMode = flags.supportsModelTypeTags
     // Discard a cache (or in-flight walk) built under a different flag value:
     // the buckets would key tags by the wrong scheme otherwise.
     if (modelBucketsMode !== modelTypeMode) invalidateModelBuckets()
@@ -529,8 +528,7 @@ function createAssetService() {
    * Checks if the asset API is enabled (cloud environment + user setting).
    */
   function isAssetAPIEnabled(): boolean {
-    if (!isCloud) return false
-    return !!useSettingStore().get('Comfy.Assets.UseAssetAPI')
+    return flags.assetsEnabled
   }
 
   /**
