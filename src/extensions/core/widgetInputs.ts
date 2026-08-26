@@ -20,7 +20,9 @@ import {
 } from '@/schemas/nodeDefSchema'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'
+import { zeroUuid } from '@/utils/uuid'
 import {
   ComfyWidgets,
   addValueControlWidgets,
@@ -129,16 +131,6 @@ export class PrimitiveNode extends LGraphNode {
       !this.widgets?.length
     ) {
       this._onFirstConnection()
-
-      // Populate widget values from config data
-      if (this.widgets && this.widgets_values) {
-        for (let i = 0; i < this.widgets_values.length; i++) {
-          const w = this.widgets[i]
-          if (w) {
-            w.value = this.widgets_values[i]
-          }
-        }
-      }
 
       // Merge values if required
       this._mergeWidgetConfig()
@@ -289,7 +281,13 @@ export class PrimitiveNode extends LGraphNode {
       !inputData?.[1]?.control_after_generate &&
       (widget.type === 'number' || widget.type === 'combo')
     ) {
-      let control_value = this.widgets_values?.[1]
+      const graphId = this.graph?.rootGraph.id ?? zeroUuid
+      let control_value =
+        useWidgetValueStore().getPositionalRestoredWidgetValue(
+          graphId,
+          this.id,
+          1
+        )
       if (!control_value) {
         control_value = 'fixed'
       }
@@ -302,7 +300,11 @@ export class PrimitiveNode extends LGraphNode {
       )
       if (this.widgets?.[1]) widget.linkedWidgets = [this.widgets[1]]
 
-      const filter = this.widgets_values?.[2]
+      const filter = useWidgetValueStore().getPositionalRestoredWidgetValue(
+        graphId,
+        this.id,
+        2
+      )
       if (filter && this.widgets && this.widgets.length === 3) {
         this.widgets[2].value = filter
       }

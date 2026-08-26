@@ -367,8 +367,8 @@
     "tooltip": "Kayan iş kuyruğu panelini, Varlıklar yan paneline gömülü eşdeğer bir iş kuyruğu ile değiştirir. Kayan panel düzenine dönmek için bunu devre dışı bırakabilirsiniz."
   },
   "Comfy_RightSidePanel_ShowErrorsTab": {
-    "name": "Hatalar sekmesini yan panelde göster",
-    "tooltip": "Etkinleştirildiğinde, iş akışı yürütme hatalarını hızlıca görmek için sağ yan panelde bir hatalar sekmesi görüntülenir."
+    "name": "Yan panelde sorunlar sekmesini göster",
+    "tooltip": "Etkinleştirildiğinde, ayarlanması gereken engelleyici hataları ve eksik kaynakları göstermek için Sorunlar sekmesi sağ yan panelde görüntülenir."
   },
   "Comfy_Sidebar_Location": {
     "name": "Kenar çubuğu konumu",

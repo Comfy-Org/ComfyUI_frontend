@@ -11,6 +11,7 @@ import { getTeamPlanSlug } from '@/platform/cloud/subscription/constants/teamPla
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
+import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type {
   PaymentIntentSource,
@@ -27,6 +28,7 @@ import type {
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -141,6 +143,12 @@ export function useSubscriptionCheckout(
     subscription
   } = useBillingContext()
   const { shouldUseWorkspaceBilling } = useBillingRouting()
+  const {
+    canSubscribeSelfServe,
+    canReactivate,
+    canChangeSeats,
+    canDowngradeToPersonal
+  } = useBillingCapabilities()
   const { permissions } = useWorkspaceUI()
   const telemetry = useTelemetry()
   const billingOperationStore = useBillingOperationStore()
@@ -592,8 +600,17 @@ export function useSubscriptionCheckout(
     return (
       tierPlanType === 'team' ||
       !isTeamPlan.value ||
-      permissions.value.canDowngradeToPersonal
+      (isCloud
+        ? canDowngradeToPersonal.value
+        : permissions.value.canDowngradeToPersonal)
     )
+  }
+
+  function canPerformCheckout(checkoutType: SubscriptionCheckoutType): boolean {
+    if (!isCloud) return permissions.value.canManageSubscription
+    return checkoutType === 'change'
+      ? canChangeSeats.value
+      : canSubscribeSelfServe.value
   }
 
   async function showTeamToPersonalDowngrade(
@@ -659,8 +676,12 @@ export function useSubscriptionCheckout(
   }) {
     if (
       isSubscribing.value ||
-      !permissions.value.canManageSubscription ||
-      !canSelectTierPlan()
+      !canSelectTierPlan() ||
+      (isTeamPlan.value && tierPlanType !== 'team'
+        ? !(isCloud
+            ? canDowngradeToPersonal.value
+            : permissions.value.canDowngradeToPersonal)
+        : isCloud && !canSubscribeSelfServe.value && !canChangeSeats.value)
     ) {
       return
     }
@@ -708,6 +729,9 @@ export function useSubscriptionCheckout(
         })
         return
       }
+      const checkoutType =
+        response.transition_type === 'new_subscription' ? 'new' : 'change'
+      if (!canPerformCheckout(checkoutType)) return
 
       installPreview(response)
       checkoutStep.value = 'preview'
@@ -741,7 +765,8 @@ export function useSubscriptionCheckout(
     planSlug?: string
     isChange?: boolean
   }) {
-    if (isSubscribing.value || !permissions.value.canManageSubscription) return
+    const checkoutType = payload.isChange ? 'change' : 'new'
+    if (isSubscribing.value || !canPerformCheckout(checkoutType)) return
 
     const previewRequestId = ++teamPreviewRequestId
     const planSlug = payload.planSlug || getTeamPlanSlug(payload.billingCycle)
@@ -750,7 +775,7 @@ export function useSubscriptionCheckout(
     selectedTeamCheckout.value = {
       stop: payload.stop,
       planSlug,
-      checkoutType: payload.isChange ? 'change' : 'new'
+      checkoutType
     }
     selectedBillingCycle.value = payload.billingCycle
     selectedTierKey.value = null
@@ -891,7 +916,7 @@ export function useSubscriptionCheckout(
     confirmationToken?: string,
     promotionCode?: string
   ) {
-    if (!permissions.value.canManageSubscription || !canSelectTierPlan()) return
+    if (!canSelectTierPlan()) return
     if (!beginCheckoutMutation()) return
 
     const tierKey = selectedTierKey.value
@@ -912,6 +937,10 @@ export function useSubscriptionCheckout(
       previewData.value.transition_type !== 'new_subscription'
         ? 'change'
         : 'new'
+    if (!canPerformCheckout(checkoutType)) {
+      finishCheckoutMutation()
+      return
+    }
 
     isSubscribing.value = true
     try {
@@ -1335,7 +1364,8 @@ export function useSubscriptionCheckout(
     if (
       isLoadingPreview.value ||
       isSubscribing.value ||
-      !permissions.value.canManageSubscription
+      !selectedTeamCheckout.value ||
+      !canPerformCheckout(selectedTeamCheckout.value.checkoutType)
     ) {
       return
     }
@@ -1442,7 +1472,12 @@ export function useSubscriptionCheckout(
   }
 
   async function handleResubscribe() {
-    if (!permissions.value.canManageSubscriptionLifecycle) return
+    if (
+      !(isCloud
+        ? canReactivate.value
+        : permissions.value.canManageSubscriptionLifecycle)
+    )
+      return
 
     const source = 'pricing_dialog' as const
 

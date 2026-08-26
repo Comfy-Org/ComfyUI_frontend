@@ -635,7 +635,7 @@ const { hideExecutedOutput } = useGLSLPreview(lgraphNode)
 
 const widgetValueStore = useWidgetValueStore()
 const widgetIds = computed(() => {
-  const graphId = app.rootGraph?.id
+  const graphId = canvasStore.rootGraphId
   const bareNodeId = stripGraphPrefix(nodeData.id)
   if (!graphId || !bareNodeId) return []
 

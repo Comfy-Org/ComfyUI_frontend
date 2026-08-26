@@ -382,6 +382,33 @@ describe('workspaceApi', () => {
       expect(result).toEqual(data)
     })
 
+    it('getBillingCapabilities() sends GET /billing/capabilities', async () => {
+      const controller = new AbortController()
+      const data = {
+        resolved_for: { user_id: 'user-1', workspace_id: 'workspace-1' },
+        capabilities: {
+          can_subscribe_self_serve: true,
+          can_top_up: false,
+          can_cancel: true,
+          can_reactivate: true,
+          can_change_seats: true,
+          can_invite_members: true,
+          can_downgrade_to_personal: false
+        }
+      }
+      mockAxiosInstance.get.mockResolvedValue({ data })
+
+      const result = await workspaceApi.getBillingCapabilities(
+        controller.signal
+      )
+
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith(
+        '/api/billing/capabilities',
+        { headers: AUTH_HEADER, timeout: 10_000, signal: controller.signal }
+      )
+      expect(result).toEqual(data)
+    })
+
     it('getBillingPlans() sends GET /billing/plans', async () => {
       const data = { plans: [] }
       mockAxiosInstance.get.mockResolvedValue({ data })
@@ -521,6 +548,36 @@ describe('workspaceApi', () => {
       await expect(
         workspaceApi.subscribe('pro-monthly', {
           confirmationToken: 'ctoken_1',
+          savedPaymentMethodId: 'pm_saved'
+        })
+      ).rejects.toThrow(
+        'confirmationToken and savedPaymentMethodId are mutually exclusive'
+      )
+
+      expect(mockAxiosInstance.post).not.toHaveBeenCalled()
+    })
+
+    it('subscribe() omits an empty credential from the request', async () => {
+      mockAxiosInstance.post.mockResolvedValueOnce({ data: {} })
+
+      await workspaceApi.subscribe('pro-monthly', { confirmationToken: '' })
+
+      const body = mockAxiosInstance.post.mock.calls[0][1]
+      expect(body).not.toHaveProperty('confirmation_token', '')
+      expect(body.confirmation_token).toBeUndefined()
+
+      mockAxiosInstance.post.mockResolvedValueOnce({ data: {} })
+      await workspaceApi.subscribe('pro-monthly', { savedPaymentMethodId: '' })
+
+      const savedBody = mockAxiosInstance.post.mock.calls[1][1]
+      expect(savedBody).not.toHaveProperty('saved_payment_method_id', '')
+      expect(savedBody.saved_payment_method_id).toBeUndefined()
+    })
+
+    it('subscribe() rejects an empty credential alongside a saved one', async () => {
+      await expect(
+        workspaceApi.subscribe('pro-monthly', {
+          confirmationToken: '',
           savedPaymentMethodId: 'pm_saved'
         })
       ).rejects.toThrow(

@@ -33,6 +33,26 @@
       </div>
     </div>
 
+    <!-- Cached cards stay on a failed refetch, so the failure needs its own say. -->
+    <div
+      v-if="hasStaleError"
+      class="flex flex-wrap items-center gap-3 rounded-2xl border border-interface-stroke px-4 py-3"
+      role="alert"
+    >
+      <div class="flex min-w-0 items-center gap-2 text-text-secondary">
+        <i class="pi pi-exclamation-circle text-danger" aria-hidden="true" />
+        <span class="text-sm">{{ t('subscription.planLoadErrorStale') }}</span>
+      </div>
+      <Button
+        variant="secondary"
+        size="sm"
+        class="ml-auto rounded-lg px-4 text-sm font-normal"
+        @click="emit('retry')"
+      >
+        {{ t('subscription.planLoadErrorRetry') }}
+      </Button>
+    </div>
+
     <!-- Loading: never render a frontend-authored price while the catalog is in
          flight; a spinner stands in for the offer. -->
     <div
@@ -62,7 +82,7 @@
             <span
               class="text-[28px] leading-normal font-semibold text-base-foreground tabular-nums"
             >
-              ${{ plan.pricePerMonth }}
+              ${{ n(plan.pricePerMonth, { maximumFractionDigits: 2 }) }}
             </span>
             <span class="text-base text-muted-foreground">
               {{ t('subscription.usdPerMonth') }}
@@ -72,7 +92,7 @@
             {{
               billedYearly
                 ? t('subscription.billedYearly', {
-                    total: `$${plan.billedYearlyTotal}`
+                    total: `$${n(plan.billedYearlyTotal)}`
                   })
                 : t('subscription.billedMonthly')
             }}
@@ -213,7 +233,12 @@
             variant="secondary"
             size="lg"
             class="mt-auto w-full"
-            :disabled="isTeamStopCurrent || !teamPlanSlug || isSubscribing"
+            :disabled="
+              isTeamStopCurrent ||
+              !teamPlanSlug ||
+              !isTeamPlanAvailable ||
+              isSubscribing
+            "
             @click="onSubscribeTeam"
           >
             {{
@@ -285,7 +310,7 @@
           </span>
         </div>
         <Button variant="secondary" size="lg" disabled>
-          {{ t('settingsPlans.contactUs') }}
+          {{ t('subscription.contactUs') }}
         </Button>
       </div>
     </template>
@@ -416,9 +441,7 @@ const personalCards = computed<PersonalCard[]>(() =>
     if (!plan) return []
     // Annual price_cents is the full-year total; per-month is /12.
     const periodPrice = plan.price_cents / 100
-    const pricePerMonth = billedYearly.value
-      ? Math.round(periodPrice / 12)
-      : periodPrice
+    const pricePerMonth = billedYearly.value ? periodPrice / 12 : periodPrice
     return [
       {
         ...tier,
@@ -440,6 +463,11 @@ const personalCards = computed<PersonalCard[]>(() =>
 function isCurrentSlug(slug: string): boolean {
   return currentPlanSlug !== null && slug === currentPlanSlug
 }
+
+// The unavailable block only renders with zero cards, so this is the other half.
+const hasStaleError = computed(
+  () => Boolean(error) && personalCards.value.length > 0
+)
 
 // Team stops come from the API only — no TEAM_PLAN_CREDIT_STOPS fallback (D3).
 const teamStops = computed(() => {
@@ -477,6 +505,10 @@ const teamVideoEstimate = computed(() =>
 // The team plan slug is the API TEAM row for the selected cycle — never
 // synthesized. Absent from the catalog => no offer, CTA disabled (D3).
 const teamPlanSlug = computed(() => findApiPlan('TEAM')?.slug ?? null)
+
+const isTeamPlanAvailable = computed(
+  () => findApiPlan('TEAM')?.availability.available ?? false
+)
 
 // "Current" is the exact subscribed stop (status.team_credit_stop.id), not the
 // cycle: other stops stay actionable so a subscriber can change commitment.

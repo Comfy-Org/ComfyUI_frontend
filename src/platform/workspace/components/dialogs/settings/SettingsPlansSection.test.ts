@@ -1,6 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { render, screen } from '@testing-library/vue'
@@ -121,10 +121,41 @@ describe('SettingsPlansSection — API is the source of truth', () => {
     expect(screen.getByText('$20')).toBeTruthy()
     expect(screen.getByText('$35')).toBeTruthy()
     expect(screen.getByText('$100')).toBeTruthy()
-    expect(screen.getByText('$240 Billed yearly')).toBeTruthy()
-    expect(screen.getByText('$1200 Billed yearly')).toBeTruthy()
+    expect(screen.getByText('$420 Billed yearly')).toBeTruthy()
+    expect(screen.getByText('$1,200 Billed yearly')).toBeTruthy()
+
+    // credits_cents is the annual total, rendered as-is (no ×12).
     expect(screen.getByText('50,400')).toBeTruthy()
     expect(screen.getByText('253,200')).toBeTruthy()
+
+    // Per dollar = annual credits / annual list price (50400/240, 88800/420, 253200/1200).
+    expect(screen.getByText('210 per dollar')).toBeTruthy()
+    expect(screen.getAllByText('211 per dollar')).toHaveLength(2)
+  })
+
+  it('renders the API price and credits for the monthly cycle', async () => {
+    renderSection()
+    await userEvent.click(screen.getByRole('switch'))
+    await nextTick()
+
+    expect(screen.getByText('$20')).toBeTruthy()
+    expect(screen.getByText('$35')).toBeTruthy()
+    expect(screen.getByText('$100')).toBeTruthy()
+    expect(screen.getAllByText('Billed monthly')).toHaveLength(3)
+
+    expect(screen.getByText('4,200')).toBeTruthy()
+    expect(screen.getByText('7,400')).toBeTruthy()
+    expect(screen.getByText('21,100')).toBeTruthy()
+    expect(screen.getAllByText(/^21[01] per dollar$/)).toHaveLength(3)
+  })
+
+  it('keeps the cents of a yearly price that does not divide evenly', () => {
+    renderSection({
+      catalogPlans: [makePlan('STANDARD', 'ANNUAL', 19999, 50400)]
+    })
+
+    expect(screen.getByText('$16.67')).toBeTruthy()
+    expect(screen.getByText('$199.99 Billed yearly')).toBeTruthy()
   })
 
   it('moves the personal numbers when the catalog values change', () => {
@@ -195,6 +226,22 @@ describe('SettingsPlansSection — API is the source of truth', () => {
       teamCreditStops: null,
       error: 'network down'
     })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
+    expect(emitted().retry).toBeTruthy()
+  })
+
+  it('surfaces a retryable failure over cached cards on a refetch error', async () => {
+    const { emitted } = renderSection({ error: 'network down' })
+
+    // The cached catalog stays on screen rather than flashing to empty...
+    expect(screen.getByText('$20')).toBeTruthy()
+    // ...but the failure is stated and retryable, not silent.
+    expect(
+      screen.getByText(
+        "We couldn't refresh your plan details. These prices may be out of date."
+      )
+    ).toBeTruthy()
 
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
     expect(emitted().retry).toBeTruthy()
@@ -438,5 +485,56 @@ describe('SettingsPlansSection — checkout uses API plan identity', () => {
     expect(cta).toBeDisabled()
     await userEvent.click(cta)
     expect(mockSubscribeToTeam).not.toHaveBeenCalled()
+  })
+
+  it('disables the team CTA when the API TEAM row is unavailable', async () => {
+    const catalog = CATALOG.map((p) =>
+      p.tier === 'TEAM' && p.duration === 'ANNUAL'
+        ? { ...p, availability: { available: false } }
+        : p
+    )
+    renderSection({ catalogPlans: catalog })
+    await userEvent.click(screen.getByRole('button', { name: 'Teams' }))
+
+    const cta = screen.getByRole('button', { name: 'Subscribe to Team Yearly' })
+    expect(cta).toBeDisabled()
+    await userEvent.click(cta)
+    expect(mockSubscribeToTeam).not.toHaveBeenCalled()
+  })
+
+  // The preview/consent dialog is what makes a plan change safe to offer, so a
+  // subscriber's other plans are actionable and route through the same launcher.
+  describe('for an existing subscriber', () => {
+    it('offers every non-current personal plan and dispatches its checkout', async () => {
+      renderSection({ currentPlanSlug: 'standard-annual' })
+
+      const cta = screen.getByRole('button', { name: 'Choose Creator' })
+      expect(cta).toBeEnabled()
+      await userEvent.click(cta)
+
+      expect(mockSubscribeToPersonal).toHaveBeenCalledWith(
+        expect.objectContaining({ slug: 'creator-annual' })
+      )
+    })
+
+    it('still labels the subscribed card as the current plan', () => {
+      renderSection({ currentPlanSlug: 'standard-annual' })
+
+      expect(
+        screen.getByRole('button', { name: 'Current Plan' })
+      ).toBeInTheDocument()
+    })
+
+    it('offers the team plan and dispatches its checkout', async () => {
+      renderSection({ currentPlanSlug: 'standard-annual' })
+      await userEvent.click(screen.getByRole('button', { name: 'Teams' }))
+
+      const cta = screen.getByRole('button', {
+        name: 'Subscribe to Team Yearly'
+      })
+      expect(cta).toBeEnabled()
+      await userEvent.click(cta)
+      expect(mockSubscribeToTeam).toHaveBeenCalled()
+    })
   })
 })
