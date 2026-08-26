@@ -297,6 +297,10 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
   pocGlobal.__agentCrdtPoc = {
     addNode: pocAddNode,
     deleteNode: pocDeleteNode,
+    // Bind a fresh tab to an existing doc without waiting for a turn ack
+    // (gap #2: doc id is otherwise in-memory only, set on turn ack). Drives
+    // the same watch → bridge.subscribe path as the real binding.
+    bindDoc: (id: string) => bridge.subscribe(id),
     sendOps: (ops: DocOp[]) => bridge.sendHumanOps(tabId, ops),
     resubscribe: () => bridge.resubscribe(),
     reconcile: () => bridge.reconcile(),
