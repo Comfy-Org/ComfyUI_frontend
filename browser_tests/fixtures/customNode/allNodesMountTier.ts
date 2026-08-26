@@ -43,47 +43,7 @@ interface DuplicateWidgetExpectation {
 const MOUNT_WIDGET_DUPLICATE_EXPECTATIONS: Record<
   string,
   Record<string, DuplicateWidgetExpectation>
-> = {
-  'ComfyUI_Fill-Nodes': {
-    FL_TimeLine: {
-      counts: {
-        frames_per_second: 2,
-        interpolation_mode: 2,
-        ipadapter_preset: 2,
-        number_animation_frames: 2,
-        video_height: 2,
-        video_width: 2
-      },
-      reason:
-        'the pinned pack JS adds six widgets already supplied by the Python node definition; Vue renders one row per unique widget identity',
-      restore:
-        'remove this expectation when the pack stops creating the duplicate widgets'
-    }
-  },
-  comfyui_layerstyle: {
-    'LayerMask: MaskByColor': {
-      counts: { color: 2 },
-      reason:
-        "the pinned pack's COLOR compatibility hook compares the native lowercase color type to uppercase COLOR and adds a second widget with the same name; Vue renders one row per unique widget identity",
-      restore:
-        'fix FE-1865, pin the corrected pack, and remove this expectation'
-    },
-    'LayerUtility: ColorPicker': {
-      counts: { color: 2 },
-      reason:
-        "the pinned pack's COLOR compatibility hook compares the native lowercase color type to uppercase COLOR and adds a second widget with the same name; Vue renders one row per unique widget identity",
-      restore:
-        'fix FE-1865, pin the corrected pack, and remove this expectation'
-    },
-    'LayerUtility: ExtendCanvas': {
-      counts: { color: 2 },
-      reason:
-        "the pinned pack's COLOR compatibility hook compares the native lowercase color type to uppercase COLOR and adds a second widget with the same name; Vue renders one row per unique widget identity",
-      restore:
-        'fix FE-1865, pin the corrected pack, and remove this expectation'
-    }
-  }
-}
+> = {}
 
 const manifestPackNames = loadAllManifestPackNames()
 assertPackLedgerKeys(

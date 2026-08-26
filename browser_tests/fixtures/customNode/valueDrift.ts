@@ -25,7 +25,6 @@ export const ROUNDTRIP_VALUE_ALLOWED_INDICES_VUE: Record<
     LTXVSparseTrackEditor: '1'
   },
   'WhatDreamsCost-ComfyUI': {
-    LoadAudioUI: '5',
     LTXDirector: '3,4,5,7'
   },
   'comfyui-sam3': {
@@ -44,10 +43,6 @@ export const ROUNDTRIP_VALUE_ALLOWED_KEYS_LITEGRAPH = {
 
 export const ROUNDTRIP_VALUE_ALLOWED_KEYS_VUE = {
   'ComfyUI-VideoHelperSuite': {
-    VHS_LoadAudioUpload: 'choose audio to upload',
-    VHS_LoadImages: 'choose folder to upload',
-    VHS_LoadVideo: 'choose video to upload',
-    VHS_LoadVideoFFmpeg: 'choose video to upload',
     VHS_VAEDecodeBatched: 'per_batch',
     VHS_VAEEncodeBatched: 'per_batch'
   }
@@ -177,13 +172,6 @@ export interface RoundtripNodeLossExpectation {
   restore: string
 }
 
-const FL_TIMELINE_NODE_LOSS: RoundtripNodeLossExpectation = {
-  reason:
-    'the pack replaces node.serialize with a timeline-data serializer, so graph reload drops the node',
-  restore:
-    'fix FL_TimeLine to preserve LiteGraph node serialization, then remove this entry when both renderer passes retain it'
-}
-
 export const ROUNDTRIP_NODE_LOSS_EXPECTATIONS_LITEGRAPH: Record<
   string,
   Record<string, RoundtripNodeLossExpectation>
@@ -192,9 +180,7 @@ export const ROUNDTRIP_NODE_LOSS_EXPECTATIONS_LITEGRAPH: Record<
 export const ROUNDTRIP_NODE_LOSS_EXPECTATIONS_VUE: Record<
   string,
   Record<string, RoundtripNodeLossExpectation>
-> = {
-  'ComfyUI_Fill-Nodes': { FL_TimeLine: FL_TIMELINE_NODE_LOSS }
-}
+> = {}
 
 export interface TopologyExpectation {
   before: number
