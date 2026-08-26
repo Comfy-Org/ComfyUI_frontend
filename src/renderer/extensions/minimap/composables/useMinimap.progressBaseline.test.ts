@@ -11,8 +11,10 @@ import { createMockCanvas2DContext } from '@/utils/__tests__/litegraphTestUtils'
 interface HarnessCounters {
   digestNodeReads: number
   linkDigestReads: number
+  linkDigestEntries: number
   dataNodeReads: number
   topologyReads: number
+  topologyEntries: number
   boundsReads: number
   executionColorUpdates: number
   canvasRedraws: number
@@ -32,14 +34,17 @@ const {
   defaultSettingStore,
   mockCanvasStore,
   progressStates,
+  linkTopologies,
   apiListeners,
   pollControl
 } = vi.hoisted(() => {
   const counters: HarnessCounters = {
     digestNodeReads: 0,
     linkDigestReads: 0,
+    linkDigestEntries: 0,
     dataNodeReads: 0,
     topologyReads: 0,
+    topologyEntries: 0,
     boundsReads: 0,
     executionColorUpdates: 0,
     canvasRedraws: 0,
@@ -62,6 +67,12 @@ const {
     },
     mockCanvasStore: { canvas: null as unknown },
     progressStates: {} as Record<string, NodeProgressState>,
+    linkTopologies: [] as Array<{
+      originNodeId: string
+      targetNodeId: string
+      originSlot: number
+      targetSlot: number
+    }>,
     apiListeners: new Map<string, EventListener>(),
     pollControl: { current: undefined as (() => void) | undefined }
   }
@@ -119,7 +130,12 @@ vi.mock('@/stores/linkStore', () => ({
   useLinkStore: () => ({
     graphTopologies: () => {
       counters.topologyReads++
-      return []
+      return (function* () {
+        for (const topology of linkTopologies) {
+          counters.topologyEntries++
+          yield topology
+        }
+      })()
     }
   })
 }))
@@ -155,6 +171,7 @@ type Operation = 'equal-progress' | 'changed-progress' | 'geometry' | 'topology'
 interface MatrixResult extends HarnessCounters {
   visible: boolean
   graphSize: number
+  edgeCount: number
   operation: Operation
 }
 
@@ -186,16 +203,39 @@ function instrumentedNode(index: number): LGraphNode {
   } as unknown as LGraphNode
 }
 
-function createGraph(graphSize: number) {
+function createGraph(graphSize: number, edgeCount: number) {
   const nodes = Array.from({ length: graphSize }, (_, index) =>
     instrumentedNode(index + 1)
   )
-  const links = new Map()
+  const links = new Map(
+    Array.from({ length: edgeCount }, (_, index) => [
+      String(index),
+      {
+        get origin_id() {
+          counters.linkDigestEntries++
+          return '1'
+        },
+        target_id: String((index % graphSize) + 1),
+        origin_slot: index,
+        target_slot: index
+      }
+    ])
+  )
   const originalValues = links.values.bind(links)
   links.values = () => {
     counters.linkDigestReads++
     return originalValues()
   }
+  linkTopologies.splice(
+    0,
+    linkTopologies.length,
+    ...Array.from({ length: edgeCount }, (_, index) => ({
+      originNodeId: '1',
+      targetNodeId: String((index % graphSize) + 1),
+      originSlot: index,
+      targetSlot: index
+    }))
+  )
 
   return {
     graph: {
@@ -217,6 +257,7 @@ function createGraph(graphSize: number) {
 async function runCell(
   visible: boolean,
   graphSize: number,
+  edgeCount: number,
   operation: Operation
 ): Promise<MatrixResult> {
   resetCounters()
@@ -230,7 +271,7 @@ async function runCell(
     prompt_id: 'prompt-1'
   }
 
-  const { graph, nodes } = createGraph(graphSize)
+  const { graph, nodes } = createGraph(graphSize, edgeCount)
   const context = createMockCanvas2DContext()
   vi.mocked(context.clearRect).mockImplementation(() => {
     counters.canvasRedraws++
@@ -295,10 +336,19 @@ async function runCell(
   } else {
     const mutableLinks = graph.links as unknown as Map<string, unknown>
     mutableLinks.set('new-link', {
-      origin_id: '1',
+      get origin_id() {
+        counters.linkDigestEntries++
+        return '1'
+      },
       target_id: String(Math.min(2, graphSize)),
       origin_slot: 0,
       target_slot: 0
+    })
+    linkTopologies.push({
+      originNodeId: '1',
+      targetNodeId: String(Math.min(2, graphSize)),
+      originSlot: 0,
+      targetSlot: 0
     })
   }
 
@@ -310,6 +360,7 @@ async function runCell(
   const result = {
     visible,
     graphSize,
+    edgeCount,
     operation,
     ...counters
   }
@@ -334,13 +385,17 @@ describe('minimap progress performance baseline', () => {
     const results: MatrixResult[] = []
     for (const visible of [false, true]) {
       for (const graphSize of [1, 245, 1000]) {
-        for (const operation of [
-          'equal-progress',
-          'changed-progress',
-          'geometry',
-          'topology'
-        ] as const) {
-          results.push(await runCell(visible, graphSize, operation))
+        for (const edgeCount of [0, 10, 100]) {
+          for (const operation of [
+            'equal-progress',
+            'changed-progress',
+            'geometry',
+            'topology'
+          ] as const) {
+            results.push(
+              await runCell(visible, graphSize, edgeCount, operation)
+            )
+          }
         }
       }
     }
@@ -348,6 +403,7 @@ describe('minimap progress performance baseline', () => {
     for (const cell of results.filter((cell) => !cell.visible)) {
       expect(cell.digestNodeReads).toBe(0)
       expect(cell.linkDigestReads).toBe(0)
+      expect(cell.linkDigestEntries).toBe(0)
       expect(cell.canvasRedraws).toBe(0)
       expect(cell.boundsReads).toBe(0)
       expect(cell.topologyReads).toBe(0)
@@ -362,6 +418,9 @@ describe('minimap progress performance baseline', () => {
             : cell.graphSize * 3
       expect(cell.digestNodeReads).toBe(expectedNodeGeometryReads)
       expect(cell.linkDigestReads).toBe(1)
+      expect(cell.linkDigestEntries).toBe(
+        cell.edgeCount + (cell.operation === 'topology' ? 1 : 0)
+      )
       expect(cell.dirtyRequests).toBe(0)
 
       if (cell.operation === 'equal-progress') {
@@ -377,18 +436,20 @@ describe('minimap progress performance baseline', () => {
       if (cell.operation === 'changed-progress') {
         expect(cell.boundsReads).toBe(0)
         expect(cell.topologyReads).toBe(1)
+        expect(cell.topologyEntries).toBe(cell.edgeCount)
         expect(cell.executionColorUpdates).toBe(1)
       } else if (cell.operation === 'geometry') {
         expect(cell.boundsReads).toBe(1)
       } else if (cell.operation === 'topology') {
         expect(cell.boundsReads).toBe(0)
         expect(cell.topologyReads).toBe(1)
+        expect(cell.topologyEntries).toBe(cell.edgeCount + 1)
       }
     }
   })
 
   it('separates WS-style event fanout from polling and throttle cadence', async () => {
-    const cell = await runCell(true, 245, 'equal-progress')
+    const cell = await runCell(true, 245, 100, 'equal-progress')
     // A progress store write has no minimap event subscription. The only work
     // is the independently scheduled digest poll.
     expect(cell.pollCallbacks).toBe(1)
@@ -398,7 +459,7 @@ describe('minimap progress performance baseline', () => {
   })
 
   it('registers one poll and releases its listener and cadence on cleanup', async () => {
-    const cell = await runCell(true, 245, 'equal-progress')
+    const cell = await runCell(true, 245, 100, 'equal-progress')
     expect(cell.pollRegistrations).toBe(1)
     expect(cell.listenersAdded).toBe(1)
     expect(cell.listenersRemoved).toBe(1)
