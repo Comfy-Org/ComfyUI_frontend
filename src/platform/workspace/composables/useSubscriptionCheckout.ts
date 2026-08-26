@@ -1267,12 +1267,14 @@ export function useSubscriptionCheckout(
       return
     }
 
-    savePendingCheckout(response.billing_op_id, context)
-
     let initialActionUrl: string | undefined
     if (response.status === 'needs_payment_method') {
       if (!response.payment_method_url) {
-        throw new Error(t('subscription.preview.stripeUnavailable'))
+        const error = new Error(t('subscription.preview.stripeUnavailable'))
+        console.error(error)
+        trackSubscriptionFailure(context, error)
+        showSubscribeError(error)
+        return
       }
       initialActionUrl = response.payment_method_url
       // The open runs after `await subscribe(...)`, so it's not a direct user
@@ -1286,6 +1288,7 @@ export function useSubscriptionCheckout(
         })
       }
     }
+    savePendingCheckout(response.billing_op_id, context)
     await advanceToSuccessOnOperation(
       response.billing_op_id,
       context,
