@@ -1,4 +1,9 @@
-import type { DocOp, DocUpdate, DocFrameClient } from './docFrameClient'
+import type {
+  DocFrameClient,
+  DocOp,
+  DocReset,
+  DocUpdate
+} from './docFrameClient'
 import { FollowerDoc } from './followerDoc'
 import { FollowerSchemaError, assertReadableSchema } from './schemaGuard'
 
@@ -30,7 +35,12 @@ function trySend(send: () => boolean): boolean {
  * teardown is failure-tolerant; see the two id fields and {@link destroy}.
  */
 export class LayoutFollowerBridge extends EventTarget {
-  readonly follower = new FollowerDoc()
+  /**
+   * Reassigned only by {@link onDocReset}: a lineage break replaces the doc
+   * wholesale, because folding a re-minted document into the old one merges
+   * two unrelated histories and duplicates every node on the canvas.
+   */
+  private followerDoc = new FollowerDoc()
   /**
    * Subscription INTENT — the workflow the app wants followed. Set
    * synchronously by the caller; independent of whether any frame has left the
@@ -55,8 +65,14 @@ export class LayoutFollowerBridge extends EventTarget {
   constructor(private readonly client: DocFrameClient) {
     super()
     client.addEventListener('doc_update', this.onDocUpdate)
+    client.addEventListener('doc_reset', this.onDocReset)
     client.addEventListener('doc_subscribed', this.forwardFrame)
     client.addEventListener('doc_ops_result', this.forwardFrame)
+  }
+
+  /** The semantic doc this bridge currently follows. */
+  get follower(): FollowerDoc {
+    return this.followerDoc
   }
 
   /** The workflow a subscribe frame actually went out for, if any. */
@@ -132,11 +148,12 @@ export class LayoutFollowerBridge extends EventTarget {
       this.unsubscribe()
     } finally {
       this.client.removeEventListener('doc_update', this.onDocUpdate)
+      this.client.removeEventListener('doc_reset', this.onDocReset)
       this.client.removeEventListener('doc_subscribed', this.forwardFrame)
       this.client.removeEventListener('doc_ops_result', this.forwardFrame)
       this.desiredWorkflowId = null
       this.sentWorkflowId = null
-      this.follower.destroy()
+      this.followerDoc.destroy()
     }
   }
 
@@ -165,6 +182,26 @@ export class LayoutFollowerBridge extends EventTarget {
     }
 
     this.dispatchEvent(new CustomEvent('doc_update', { detail: update }))
+  }
+
+  /**
+   * Lineage break (`doc_reset`): the host re-minted the document, so nothing
+   * already held composes with what comes next. Resync is a FOLD — folding a
+   * re-minted lineage into the old doc duplicates the canvas — so the doc is
+   * dropped wholesale and the fresh state is pulled through the ordinary
+   * subscribe catch-up path: the recreated doc's state vector is empty, so the
+   * resubscribe asks for the full folded state. The follower still never
+   * writes (KA-6); a reset emits nothing but the resubscribe.
+   */
+  private readonly onDocReset: EventListener = (event) => {
+    if (!(event instanceof CustomEvent)) return
+    const reset = event.detail as DocReset
+    if (reset.workflowId !== this.sentWorkflowId) return
+    this.followerDoc.destroy()
+    this.followerDoc = new FollowerDoc()
+    this.schemaError = null
+    this.resubscribe()
+    this.dispatchEvent(new CustomEvent('doc_reset', { detail: reset }))
   }
 
   private readonly forwardFrame: EventListener = (event) => {
