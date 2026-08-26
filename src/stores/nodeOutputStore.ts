@@ -299,7 +299,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
       for (const url of existing) releaseSharedObjectUrl(url)
     }
     for (const url of previewImages) retainSharedObjectUrl(url)
-    nodePreviewImagesByExecutionId.value[executionId] = previewImages
+    nodePreviewImagesByExecutionId.value[executionId] = [...previewImages]
   }
 
   function revokeInstancePreviewImages(executionId: NodeExecutionId) {
