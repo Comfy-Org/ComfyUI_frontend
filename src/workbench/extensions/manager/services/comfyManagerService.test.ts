@@ -37,7 +37,6 @@ describe('useComfyManagerService', () => {
   let service: ReturnType<typeof useComfyManagerService>
 
   beforeEach(() => {
-    vi.clearAllMocks()
     managerState.isNewManagerUI = true
     mockAxiosInstance.get.mockResolvedValue({ data: {} })
     mockAxiosInstance.post.mockResolvedValue({ data: null })
@@ -202,6 +201,28 @@ describe('useComfyManagerService', () => {
         expect.any(Object)
       )
     })
+
+    it('returns null when the task queues but the queue fails to start', async () => {
+      mockAxiosInstance.post.mockImplementation((url: string) =>
+        url === 'manager/queue/start'
+          ? Promise.reject({ response: { status: 500, data: {} } })
+          : Promise.resolve({ data: { queued: true } })
+      )
+      vi.mocked(axios.isAxiosError).mockReturnValue(true)
+
+      const result = await service.installPack({
+        id: 'pack',
+        version: '1.0.0',
+        selected_version: '1.0.0',
+        mode: 'remote',
+        channel: 'default'
+      })
+
+      expect(result).toBeNull()
+      expect(service.error.value).toContain(
+        'Starting ComfyUI-Manager job queue failed with status 500'
+      )
+    })
   })
 
   describe('error mapping', () => {
@@ -247,6 +268,20 @@ describe('useComfyManagerService', () => {
       await service.listInstalledPacks()
 
       expect(service.error.value).toBe('Fetching installed packs failed: boom')
+    })
+
+    it('reports a dedicated message when a network error has no response', async () => {
+      mockAxiosInstance.get.mockRejectedValue({
+        message: 'Network Error',
+        response: undefined
+      })
+      vi.mocked(axios.isAxiosError).mockReturnValue(true)
+
+      await service.listInstalledPacks()
+
+      expect(service.error.value).toBe(
+        'Fetching installed packs failed: Network Error'
+      )
     })
   })
 })

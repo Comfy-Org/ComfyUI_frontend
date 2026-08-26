@@ -19,7 +19,6 @@ describe('useComfyRegistryService', () => {
   let service: ReturnType<typeof useComfyRegistryService>
 
   beforeEach(() => {
-    vi.clearAllMocks()
     mockAxiosInstance.get.mockResolvedValue({ data: {} })
     mockAxiosInstance.post.mockResolvedValue({ data: {} })
     service = useComfyRegistryService()

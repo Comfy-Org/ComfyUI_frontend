@@ -266,6 +266,21 @@ describe('useCustomerEventsService', () => {
         'Fetching customer events failed: Network Error'
       )
     })
+
+    it('should handle axios errors with no response (timeout/CORS)', async () => {
+      mockAxiosInstance.get.mockRejectedValue({
+        message: 'timeout of 5000ms exceeded',
+        response: undefined
+      })
+      vi.mocked(axios.isAxiosError).mockReturnValue(true)
+
+      const result = await service.getMyEvents()
+
+      expect(result).toBeNull()
+      expect(service.error.value).toBe(
+        'Fetching customer events failed: timeout of 5000ms exceeded'
+      )
+    })
   })
 
   describe('formatEventType', () => {

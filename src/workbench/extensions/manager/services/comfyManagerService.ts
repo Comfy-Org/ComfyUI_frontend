@@ -66,8 +66,12 @@ export const useComfyManagerService = () => {
     }
 
     const axiosError = err as AxiosError<{ message: string }>
-    const status = axiosError.response?.status
-    if (status && routeSpecificErrors?.[status]) {
+    if (!axiosError.response) {
+      return `${context} failed: ${axiosError.message}`
+    }
+
+    const status = axiosError.response.status
+    if (routeSpecificErrors?.[status]) {
       return routeSpecificErrors[status]
     }
     if (status === 404) {
@@ -75,7 +79,7 @@ export const useComfyManagerService = () => {
     }
 
     return (
-      axiosError.response?.data?.message ??
+      axiosError.response.data?.message ??
       `${context} failed with status ${status}`
     )
   }
@@ -106,7 +110,14 @@ export const useComfyManagerService = () => {
     const { isQueueOperation, ...requestOptions } = options
     return sendRequest(apiCall, {
       ...requestOptions,
-      onSuccess: isQueueOperation ? startQueue : undefined
+      onSuccess: isQueueOperation
+        ? async () => {
+            await startQueue()
+            if (error.value) {
+              throw new Error(error.value)
+            }
+          }
+        : undefined
     })
   }
 
