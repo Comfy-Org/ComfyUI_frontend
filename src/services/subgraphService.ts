@@ -3,6 +3,7 @@ import type {
   ExportedSubgraphInstance,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
+import { normalizeSubgraphDefinitionIds } from '@/lib/litegraph/src/subgraph/subgraphDeduplication'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { app as comfyApp } from '@/scripts/app'
@@ -64,8 +65,14 @@ export const useSubgraphService = () => {
     const subgraphs = graphData.definitions?.subgraphs
     if (!subgraphs) return
 
+    const normalized = normalizeSubgraphDefinitionIds(
+      subgraphs,
+      graphData.nodes
+    )
+    graphData.definitions!.subgraphs = normalized.subgraphs
+    if (normalized.rootNodes) graphData.nodes = normalized.rootNodes
     // Assertion: overriding Zod schema
-    const exportedSubgraphs = subgraphs as ExportedSubgraph[]
+    const exportedSubgraphs = normalized.subgraphs as ExportedSubgraph[]
     const missingSubgraphs = exportedSubgraphs.filter(
       ({ id }) => !comfyApp.rootGraph.subgraphs.has(id)
     )

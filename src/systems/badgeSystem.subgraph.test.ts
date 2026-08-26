@@ -24,8 +24,8 @@ vi.mock('@/composables/node/useNodePricing', () => ({
   useNodePricing: () => ({
     getNodeDisplayPrice,
     getNodeRevisionRef: () => ({ value: 0 }),
-    hasDynamicPricing: () => false,
-    getRelevantWidgetNames: () => [],
+    hasDynamicPricing: () => true,
+    getRelevantWidgetNames: () => ['prompt'],
     getInputNames: () => [],
     getInputGroupPrefixes: () => []
   })
@@ -128,6 +128,29 @@ describe('badge derivation subgraph credits aggregation', () => {
     useWidgetValueStore().setValue(inputWidgetId, 'outer value')
 
     expect(wrapperCredits()).toEqual(['outer value'])
+  })
+
+  it('reacts to an unpromoted inner pricing widget', () => {
+    const { addInner, wrapperCredits } = setup()
+    const apiNode = new ApiNode('api')
+    const widget = apiNode.addWidget(
+      'string',
+      'prompt',
+      'first',
+      () => undefined,
+      {}
+    )
+    addInner(apiNode, 11)
+    const id = widget.widgetId
+    if (!id) throw new Error('Missing inner widget id')
+    getNodeDisplayPrice.mockImplementation(() =>
+      String(useWidgetValueStore().getWidget(id)?.value)
+    )
+    expect(wrapperCredits()).toEqual(['first'])
+
+    useWidgetValueStore().setValue(id, 'second')
+
+    expect(wrapperCredits()).toEqual(['second'])
   })
 
   describe('graphCreditsBadges', () => {

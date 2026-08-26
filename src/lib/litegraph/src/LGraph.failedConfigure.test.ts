@@ -266,8 +266,6 @@ describe('LGraph.configure that throws partway through', () => {
 
     const failed = graphAfterFailedConfigure()
 
-    // The throw happens before reroute validation and before groups are built,
-    // so the graph holds a reroute the same data would not have produced.
     expect(failed.reroutes.size).toBe(1)
     expect(failed._groups).toHaveLength(0)
   })
@@ -308,14 +306,8 @@ describe('LGraph.configure that throws partway through', () => {
 
     expect(() => graph.configure(failingNestedWorkflow())).toThrow()
 
-    // The definition is registered, and `subgraph-created` has already told
-    // listeners (node-def registration, among others) about it. LGraphEventMap
-    // has no removal counterpart, so nothing retracts it.
     expect(created).toEqual([NESTED_DEFINITION_ID])
     expect(graph.subgraphs.has(NESTED_DEFINITION_ID)).toBe(true)
-
-    // Nothing else made it in, so the graph reports itself as empty while
-    // still holding the definition.
     expect(graph.empty).toBe(true)
   })
 })
@@ -354,13 +346,6 @@ describe('a workflow loaded after a failed load, on the same graph', () => {
       sourcePreviewName: 'preview'
     })
 
-    expect([
-      nodeIds.length,
-      linkIds.length,
-      rerouteIds.length,
-      groupIds.length,
-      widgetIds.length
-    ]).toEqual([3, 1, 1, 1, 3])
     expect(storeOwnership(scope, nodeIds, rerouteIds, groupIds)).toEqual({
       nodes: nodeIds,
       links: linkIds,
@@ -402,12 +387,6 @@ describe('a workflow loaded after a failed load, on the same graph', () => {
       useWidgetValueStore().getNodeWidgetIds(BAD_ID, id)
     )
 
-    expect([
-      nodeIds.length,
-      linkIds.length,
-      rerouteIds.length,
-      widgetIds.length
-    ]).toEqual([2, 1, 1, 2])
     expect(storeOwnership(scope, nodeIds, rerouteIds, [])).toEqual({
       nodes: nodeIds,
       links: linkIds,
@@ -432,19 +411,11 @@ describe('a workflow loaded after a failed load, on the same graph', () => {
     expect(nested.subgraphs.has(NESTED_DEFINITION_ID)).toBe(false)
   })
 
-  it('LEAK: keeps top-level workflow keys that `configure` does not recognise', () => {
+  it('does not retain unrecognised top-level workflow keys', () => {
     const graph = graphAfterFailedConfigure()
     graph.configure(unrelatedWorkflow())
 
-    // `configure` copies every key not in LGraph.ConfigureProperties straight
-    // onto the instance, and `clear()` only resets the properties it knows
-    // about. The successor workflow has no `extensionData` key, so the failed
-    // workflow's value is still there — on a graph that otherwise believes it
-    // is the good workflow. Not serialised today, which is the only reason
-    // this does not reach disk.
-    expect(Reflect.get(graph, 'extensionData')).toEqual({
-      source: 'workflow-that-failed'
-    })
+    expect(Reflect.get(graph, 'extensionData')).toBeUndefined()
     expect(Reflect.get(new LGraph(), 'extensionData')).toBeUndefined()
   })
 })

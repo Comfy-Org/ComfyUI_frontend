@@ -38,15 +38,17 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
     currentUser.value = createCustomerResponse
   }
 
+  // The stored key and its validated user form one session value: replacing
+  // the key ends the previous user's session immediately instead of exposing
+  // the old user while the new key validates.
   watch(
     apiKey,
     async (watchedApiKey) => {
+      currentUser.value = null
       if (watchedApiKey) {
         await nextTick()
         if (apiKey.value !== watchedApiKey) return
         void initializeUserFromApiKey(watchedApiKey)
-      } else {
-        currentUser.value = null
       }
     },
     { immediate: true }

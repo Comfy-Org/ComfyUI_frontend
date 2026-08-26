@@ -1,5 +1,5 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { LinkId } from '@/lib/litegraph/src/LLink'
+import type { LLink, LinkId } from '@/lib/litegraph/src/LLink'
 import { LabelPosition } from '@/lib/litegraph/src/draw'
 import type {
   INodeInputSlot,
@@ -9,7 +9,7 @@ import type {
 } from '@/lib/litegraph/src/interfaces'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
-import { inputHasLink, inputLinkId } from '@/lib/litegraph/src/node/slotLinks'
+import { inputHasLink, inputLink } from '@/lib/litegraph/src/node/slotLinks'
 import { warnDeprecated } from '@/lib/litegraph/src/utils/feedback'
 import type { IDrawOptions } from '@/lib/litegraph/src/node/NodeSlot'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
@@ -22,8 +22,7 @@ export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
 
   /**
    * @deprecated Reads return the store-derived link id. Assigning null
-   * disconnects through the store; assigning an id is ignored. First-party
-   * code uses the slotLinks helpers and node topology methods.
+   * disconnects through the store; other assignments are ignored.
    */
   get link(): LinkId | null {
     warnDeprecated(
@@ -37,7 +36,10 @@ export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
       'Assignment to input.link is deprecated; null disconnects through the link store. Mutate via node.connect() / node.disconnectInput().'
     )
     const slot = indexOf(this)
-    if (value === null && slot !== -1) this._node.disconnectInput(slot)
+    if (slot === -1) return
+    if (value === null) {
+      this._node.disconnectInput(slot)
+    }
   }
 
   get isWidgetInputSlot(): boolean {
@@ -124,7 +126,10 @@ function indexOf(slot: NodeInputSlot): number {
 }
 
 function linkIdOf(slot: NodeInputSlot): LinkId | null {
+  return linkOf(slot)?.id ?? null
+}
+
+function linkOf(slot: NodeInputSlot): LLink | undefined {
   const { graph } = slot.node
-  if (!graph) return null
-  return inputLinkId(graph, slot.node.id, indexOf(slot)) ?? null
+  return graph ? inputLink(graph, slot.node.id, indexOf(slot)) : undefined
 }
