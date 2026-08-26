@@ -114,21 +114,22 @@ function expectedInitializationValue(
 
 export function pendingRoundtripInitializations(
   signals: Record<string, RoundtripInitializationSignal>,
-  values: Record<string, unknown>,
+  values: Record<string, unknown> | undefined,
   vueNodesEnabled: boolean
 ): string[] {
   return Object.entries(signals)
     .filter(([node, signal]) => {
-      if (signal.predicate === 'defined') return values[node] === undefined
+      const observed = values?.[node]
+      if (signal.predicate === 'defined') return observed === undefined
       if (signal.predicate === 'minimum-widget-count')
-        return typeof values[node] !== 'number' || values[node] < signal.value
+        return typeof observed !== 'number' || observed < signal.value
       if (signal.predicate === 'widget-count')
-        return !Object.is(values[node], signal.value)
-      return !Object.is(values[node], signal.value)
+        return !Object.is(observed, signal.value)
+      return !Object.is(observed, signal.value)
     })
     .map(
       ([node, signal]) =>
-        `${node} (${vueNodesEnabled ? 'vue' : 'litegraph'}: expected ${expectedInitializationValue(signal)}, observed ${JSON.stringify(values[node])})`
+        `${node} (${vueNodesEnabled ? 'vue' : 'litegraph'}: expected ${expectedInitializationValue(signal)}, observed ${JSON.stringify(values?.[node])})`
     )
 }
 
