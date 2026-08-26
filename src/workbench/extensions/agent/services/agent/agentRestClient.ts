@@ -30,12 +30,19 @@ const CLOUD_WORKFLOW_MAX_PAGES = 5
 export class AgentApiError extends Error {
   readonly status: number
   readonly body: unknown
+  readonly retryAfterSeconds?: number
 
-  constructor(message: string, status: number, body: unknown) {
+  constructor(
+    message: string,
+    status: number,
+    body: unknown,
+    retryAfterSeconds?: number
+  ) {
     super(message)
     this.name = 'AgentApiError'
     this.status = status
     this.body = body
+    this.retryAfterSeconds = retryAfterSeconds
   }
 }
 
@@ -89,11 +96,18 @@ export function createAgentRestClient() {
     }
     const plain = zAgentError.safeParse(body)
     const message = plain.success
-      ? plain.data.error
+      ? typeof plain.data.error === 'string'
+        ? plain.data.error
+        : plain.data.error.message
       : isIngestErrorBody(body)
         ? body.error.message
         : response.statusText
-    return new AgentApiError(message, response.status, body)
+    const retryAfterHeader = response.headers.get('Retry-After')
+    const retryAfterSeconds =
+      retryAfterHeader !== null && /^\d+$/.test(retryAfterHeader)
+        ? Number(retryAfterHeader)
+        : undefined
+    return new AgentApiError(message, response.status, body, retryAfterSeconds)
   }
 
   async function request<T>(
