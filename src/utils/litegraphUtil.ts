@@ -29,7 +29,7 @@ import { parseNodeLocatorId } from '@/types/nodeIdentification'
 import type { SerializedNodeId } from '@/types/nodeId'
 import { UNASSIGNED_NODE_ID, parseNodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
-import { widgetId } from '@/types/widgetId'
+import { ensureUniqueWidgetNames, widgetId } from '@/types/widgetId'
 
 type ImageNode = LGraphNode & { imgs: HTMLImageElement[] | undefined }
 type VideoNode = LGraphNode & {
@@ -207,54 +207,6 @@ export function migrateWidgetsValues<TWidgetValue>(
 }
 
 /**
- * Fix link input slots after loading a graph. Because the node inputs follows
- * the node definition after 1.16, the node inputs array from previous versions,
- * might get added items in the middle, which can cause shift to link's slot index.
- * For example, the node inputs definition is:
- * "required": {
- *   "input1": ["INT", { forceInput: true }],
- *   "input2": ["MODEL", { forceInput: false }],
- *   "input3": ["MODEL", { forceInput: false }]
- * }
- *
- * previously node inputs array was:
- * [{name: 'input2'}, {name: 'input3'}, {name: 'input1'}]
- * because input1 is created as widget first, then convert to input socket after
- * input 2 and 3.
- *
- * Now, the node inputs array just follows the definition order:
- * [{name: 'input1'}, {name: 'input2'}, {name: 'input3'}]
- *
- * We need to update the slot index of corresponding links to match the new
- * node inputs array order.
- *
- * Ref: https://github.com/Comfy-Org/ComfyUI_frontend/issues/3348
- *
- * @param graph - The graph to fix links for.
- */
-export function fixLinkInputSlots(graph: LGraph) {
-  // Note: We can't use forEachNode here because we need access to the graph's
-  // links map at each level. Links are stored in their respective graph/subgraph.
-  for (const node of graph.nodes) {
-    // Fix links for the current node
-    for (const [inputIndex, input] of node.inputs.entries()) {
-      const linkId = input.link
-      if (!linkId) continue
-
-      const link = graph.links.get(linkId)
-      if (!link) continue
-
-      link.target_slot = inputIndex
-    }
-
-    // Recursively fix links in subgraphs
-    if (node.isSubgraphNode?.() && node.subgraph) {
-      fixLinkInputSlots(node.subgraph)
-    }
-  }
-}
-
-/**
  * Compress widget input slots by removing all unconnected widget input slots.
  * This should match the serialization format of legacy widget conversion.
  *
@@ -365,16 +317,40 @@ export function resolveNodeWidget(
 
 export function getWidgetIdForNode(
   node: LGraphNode,
-  widget: Pick<IBaseWidget, 'name' | 'widgetId'>,
-  duplicateIndex = 0
+  widget: Pick<IBaseWidget, 'name' | 'widgetId'>
 ): WidgetId | undefined {
   if (widget.widgetId) return widget.widgetId
   const graphId = node.graph?.rootGraph.id
   const nodeId = parseNodeId(node.id)
   if (!graphId || !nodeId || nodeId === UNASSIGNED_NODE_ID) return undefined
-  const name =
-    duplicateIndex > 0 ? `${widget.name}#${duplicateIndex}` : widget.name
-  return widgetId(graphId, nodeId, name)
+  const liveEntry = [...mapLiveWidgetsById(node)].find(
+    ([, candidate]) => candidate === widget
+  )
+  if (liveEntry) return liveEntry[0]
+  return widgetId(graphId, nodeId, widget.name)
+}
+
+/**
+ * Maps a node's live widgets to their {@link WidgetId}. Building the map once
+ * lets callers resolve widgets by id in O(1) instead of rescanning.
+ */
+export function mapLiveWidgetsById(
+  node: LGraphNode
+): Map<WidgetId, IBaseWidget> {
+  const byId = new Map<WidgetId, IBaseWidget>()
+  const widgets = node.widgets ?? []
+  if (!ensureUniqueWidgetNames(widgets)) return byId
+  const graphId = node.graph?.rootGraph.id
+  const nodeId = parseNodeId(node.id)
+  for (const widget of widgets) {
+    const id =
+      widget.widgetId ??
+      (graphId && nodeId && nodeId !== UNASSIGNED_NODE_ID
+        ? widgetId(graphId, nodeId, widget.name)
+        : undefined)
+    if (id) byId.set(id, widget)
+  }
+  return byId
 }
 
 export function isLoad3dNode(node: LGraphNode) {

@@ -28,6 +28,16 @@ describe('getRoutes models', () => {
   })
 })
 
+describe('getRoutes modelsShowcase', () => {
+  it('serves the models showcase page at its canonical path for en', () => {
+    expect(getRoutes('en').modelsShowcase).toBe('/models')
+  })
+
+  it('serves a localized models showcase path for zh-CN', () => {
+    expect(getRoutes('zh-CN').modelsShowcase).toBe('/zh-CN/models')
+  })
+})
+
 describe('getRoutes seedance', () => {
   it('serves the seedance page at its canonical path for en', () => {
     expect(getRoutes('en').seedance).toBe('/seedance-2.5')
@@ -45,6 +55,16 @@ describe('getRoutes ltx', () => {
 
   it('serves a localized ltx path for zh-CN', () => {
     expect(getRoutes('zh-CN').ltx).toBe('/zh-CN/ltx-2.5')
+  })
+})
+
+describe('getRoutes minimaxMusic3', () => {
+  it('serves the minimax music 3 page at its canonical path for en', () => {
+    expect(getRoutes('en').minimaxMusic3).toBe('/minimax-music-3')
+  })
+
+  it('serves a localized minimax music 3 path for zh-CN', () => {
+    expect(getRoutes('zh-CN').minimaxMusic3).toBe('/zh-CN/minimax-music-3')
   })
 })
 

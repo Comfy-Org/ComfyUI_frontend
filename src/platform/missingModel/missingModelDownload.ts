@@ -7,8 +7,7 @@ import type { ComfyDesktop2Bridge } from '@/types'
 const ALLOWED_SOURCES = [
   'https://civitai.com/',
   'https://civitai.red/',
-  'https://huggingface.co/',
-  'http://localhost:'
+  'https://huggingface.co/'
 ] as const
 
 // Intentionally restrictive subset of model extensions permitted for download.
@@ -25,8 +24,16 @@ const ALLOWED_SUFFIXES = [
 const WHITE_LISTED_URLS: ReadonlySet<string> = new Set([
   'https://huggingface.co/stabilityai/stable-zero123/resolve/main/stable_zero123.ckpt',
   'https://huggingface.co/TencentARC/T2I-Adapter/resolve/main/models/t2iadapter_depth_sd14v1.pth?download=true',
-  'https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth'
+  'https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth',
+  'http://localhost:8188/api/devtools/fake_model.safetensors'
 ])
+
+function isModelUrlAllowlisted(url: string): boolean {
+  return (
+    WHITE_LISTED_URLS.has(url) ||
+    ALLOWED_SOURCES.some((source) => url.startsWith(source))
+  )
+}
 
 const MODEL_LIBRARY_TAB_ID = 'model-library'
 
@@ -104,9 +111,8 @@ export function toBrowsableUrl(url: string): string {
 }
 
 export function isModelDownloadable(model: ModelWithUrl): boolean {
+  if (!isModelUrlAllowlisted(model.url)) return false
   if (WHITE_LISTED_URLS.has(model.url)) return true
-  if (!ALLOWED_SOURCES.some((source) => model.url.startsWith(source)))
-    return false
   if (!ALLOWED_SUFFIXES.some((suffix) => model.name.endsWith(suffix)))
     return false
   return true
@@ -116,6 +122,8 @@ export function downloadModel(
   model: ModelWithUrl,
   paths: Record<string, string[]>
 ): void {
+  if (!isModelDownloadable(model)) return
+
   const desktop2Bridge = window.__comfyDesktop2
   if (desktop2Bridge?.downloadModel && !desktop2Bridge.isRemote()) {
     void startDesktop2ModelDownload(desktop2Bridge, model)
@@ -256,6 +264,10 @@ async function fetchHeadMetadata(url: string): Promise<MetadataFetchResult> {
 }
 
 export async function fetchModelMetadata(url: string): Promise<ModelMetadata> {
+  if (!isModelUrlAllowlisted(url)) {
+    return { fileSize: null, gatedRepoUrl: null }
+  }
+
   const cached = metadataCache.get(url)
   if (cached !== undefined) return cached
 

@@ -7,7 +7,10 @@ import type {
 } from '@/platform/workspace/api/workspaceApi'
 import type { WorkspaceTokenResponse } from '@/platform/workspace/stores/workspaceAuthStore'
 import type { operations } from '@/types/comfyRegistryTypes'
+import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
+import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
 type CustomerBalanceResponse = NonNullable<
   operations['GetCustomerBalance']['responses']['200']['content']['application/json']
@@ -51,6 +54,7 @@ const mockBillingStatus: BillingStatusResponse = {
   is_active: true,
   max_seats: 1,
   occupied_seats: 1,
+  team_credit_stop: null,
   subscription_status: 'canceled',
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY',
@@ -110,6 +114,19 @@ const test = comfyPageFixture.extend({
     )
 
     // The popover sources its data from the workspace billing endpoints.
+    await page.route('**/api/billing/capabilities', (route) => {
+      if (route.request().method() !== 'GET') return route.fallback()
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(
+          createWorkspaceBillingCapabilities(
+            mockListWorkspacesResponse.workspaces[0]
+          )
+        )
+      })
+    })
+
     await page.route('**/api/billing/status', (route) =>
       route.fulfill({
         status: 200,
@@ -164,4 +181,42 @@ test.describe('Current user popover credits row', { tag: '@cloud' }, () => {
     const resubscribeRight = resubscribeBox!.x + resubscribeBox!.width
     expect(resubscribeRight).toBeLessThanOrEqual(popoverRight)
   })
+
+  test(
+    'renders Manage plan as a plain full-width menu row',
+    { tag: '@screenshot' },
+    async ({ page }) => {
+      test.setTimeout(60_000)
+      await setupCloudApp(page, {
+        workspace: workspace('personal', 'owner'),
+        features: { subscription_required: false }
+      })
+      await page.goto(APP_URL)
+      await page.waitForFunction(() => !!window.app?.extensionManager, null, {
+        timeout: 45_000
+      })
+      await page.getByRole('button', { name: 'Close dialog' }).click()
+      await expect(page.getByTestId('dialog-overlay')).toBeHidden()
+
+      await page.getByRole('button', { name: 'Current user' }).click()
+
+      const workspaceSelector = page.getByTestId('workspace-switcher-trigger')
+      await expect(workspaceSelector).toBeVisible()
+      await expect(workspaceSelector).toHaveScreenshot(
+        'workspace-selector-menu-item.png'
+      )
+
+      const managePlan = page.getByRole('button', { name: 'Manage plan' })
+      await expect(managePlan).toBeVisible()
+      await expect(managePlan).toHaveScreenshot('manage-plan-menu-item.png')
+
+      await managePlan.focus()
+      await page.keyboard.press('Shift+Tab')
+      await page.keyboard.press('Tab')
+      await expect(managePlan).toBeFocused()
+      await expect(managePlan).toHaveScreenshot(
+        'manage-plan-menu-item-focused.png'
+      )
+    }
+  )
 })

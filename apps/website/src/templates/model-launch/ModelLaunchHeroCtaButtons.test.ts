@@ -5,6 +5,14 @@ import { describe, expect, it } from 'vitest'
 import ModelLaunchHeroCtaButtons from './ModelLaunchHeroCtaButtons.vue'
 
 describe('ModelLaunchHeroCtaButtons', () => {
+  it('renders no links when neither CTA is given', () => {
+    render(ModelLaunchHeroCtaButtons, {
+      props: { primaryVariant: 'solid' }
+    })
+
+    expect(screen.queryAllByRole('link')).toHaveLength(0)
+  })
+
   it('renders only the primary CTA when no secondary CTA is given', () => {
     render(ModelLaunchHeroCtaButtons, {
       props: {

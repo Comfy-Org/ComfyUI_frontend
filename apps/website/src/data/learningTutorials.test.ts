@@ -5,7 +5,8 @@ import {
   filterByCategory,
   learningCategories,
   learningTutorials,
-  recommendedFor
+  recommendedFor,
+  youtubeEmbedUrl
 } from './learningTutorials'
 
 const firstVfx = filterByCategory('vfx')[0]
@@ -39,6 +40,36 @@ describe('categoryChapters', () => {
     const episodes = categoryChapters(firstVfx).map((item) => item.episode)
     expect(episodes).toEqual([...episodes].sort((a, b) => a - b))
     expect(categoryChapters(firstVfx)[0]).toEqual(secondVfx)
+  })
+})
+
+describe('video source', () => {
+  it('plays via exactly one of videoSrc or youtubeId', () => {
+    for (const tutorial of learningTutorials) {
+      expect(Boolean(tutorial.videoSrc) !== Boolean(tutorial.youtubeId)).toBe(
+        true
+      )
+    }
+  })
+
+  it('builds a privacy-friendly nocookie embed URL from an id', () => {
+    expect(youtubeEmbedUrl('abc123')).toBe(
+      'https://www.youtube-nocookie.com/embed/abc123?autoplay=1&mute=1&rel=0'
+    )
+  })
+})
+
+describe('basics CTA', () => {
+  it('sends basics tutorials to cloud signup with a Try for Free label', () => {
+    const basics = filterByCategory('basics')
+    expect(basics.length).toBeGreaterThan(0)
+    for (const tutorial of basics) {
+      expect(tutorial.href).toMatch(
+        /^https:\/\/cloud\.comfy\.org\/\?.*utm_campaign=free_tier.*utm_content=learning_basics_/
+      )
+      expect(tutorial.newTab).toBe(true)
+      expect(tutorial.ctaLabelKey).toBe('cta.tryForFree')
+    }
   })
 })
 

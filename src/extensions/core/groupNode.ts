@@ -2,6 +2,7 @@ import { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
 import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
 import type { LGraphNodeConstructor } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import { parseNodeId } from '@/types/nodeId'
 import type {
   ComfyNode,
@@ -902,8 +903,10 @@ export class GroupNodeHandler {
 
       // Shift each node so the unpacked group appears at the group node position
       for (const newNode of newNodes) {
-        newNode.pos[0] -= (left ?? 0) - x
-        newNode.pos[1] -= (top ?? 0) - y
+        newNode.pos = [
+          newNode.pos[0] - ((left ?? 0) - x),
+          newNode.pos[1] - ((top ?? 0) - y)
+        ]
       }
 
       return { newNodes, selectedIds }
@@ -920,9 +923,7 @@ export class GroupNodeHandler {
         for (const innerInputName in map) {
           const groupSlotId = map[innerInputName]
           if (groupSlotId == null) continue
-          const slotLink = node.inputs?.[groupSlotId]?.link
-          if (slotLink == null) continue
-          const link = app.rootGraph.links[slotLink]
+          const link = node.getInputLink(groupSlotId)
           if (!link) continue
           const originNode = app.rootGraph.getNodeById(link.origin_id)
           const innerInputId = newNode.findInputSlot(innerInputName)
@@ -939,14 +940,10 @@ export class GroupNodeHandler {
         groupOutputId < node.outputs?.length;
         groupOutputId++
       ) {
-        const output = node.outputs[groupOutputId]
-        if (!output.links) continue
-        const links = [...output.links]
-        for (const l of links) {
+        const links = outputLinks(app.rootGraph, node.id, groupOutputId)
+        for (const link of links) {
           const slot = newToOldOutputMap[groupOutputId]
           if (!slot) continue
-          const link = app.rootGraph.links[l]
-          if (!link) continue
           const targetNode = app.rootGraph.getNodeById(link.target_id)
           const selectedId = parseNodeId(selectedIds[slot.node.index ?? 0])
           const newNode = selectedId
@@ -1010,7 +1007,12 @@ function convertLoadedGroupNodes(): number {
     if (!node) return converted
     try {
       const handler = GroupNodeHandler.getHandler(node)
-      if (!handler) throw new Error('Missing handler for group node')
+      if (!handler) {
+        console.error('Missing handler for group node')
+        failed.add(node)
+        app.rootGraph.remove(node)
+        continue
+      }
       const innerNodes = handler.convertToNodes()
       for (const inner of innerNodes) inner.updateArea()
       app.rootGraph.convertToSubgraph(new Set(innerNodes))
