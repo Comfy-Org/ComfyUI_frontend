@@ -1,6 +1,13 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 
+import type {
+  PerfMeasurement,
+  PerfReport,
+  PerfReportV2
+} from '../browser_tests/fixtures/utils/perfReportSchema'
+import { perfReportSchema } from '../browser_tests/fixtures/utils/perfReportSchema'
 import type { MetricStats } from './perf-stats'
 import {
   classifyChange,
@@ -12,47 +19,6 @@ import {
   trendDirection,
   zScore
 } from './perf-stats'
-
-interface PerfMeasurement {
-  name: string
-  durationMs: number
-  styleRecalcs: number
-  styleRecalcDurationMs: number
-  layouts: number
-  layoutDurationMs: number
-  taskDurationMs: number
-  heapDeltaBytes: number
-  heapUsedBytes: number
-  domNodes: number
-  jsHeapTotalBytes: number
-  scriptDurationMs: number
-  eventListeners: number
-  totalBlockingTimeMs: number
-  /** Schema v1: sampled after the workload; display-only legacy data. */
-  frameDurationMs?: number
-  /** Schema v1: sampled after the workload; display-only legacy data. */
-  p95FrameDurationMs?: number
-  allFrameDurationsMs?: number[]
-  rafIntervalsMs?: number[]
-  rafIntervalCount?: number
-  rafIntervalP50Ms?: number
-  rafIntervalP95Ms?: number
-  rafIntervalP99Ms?: number
-  rafIntervalMaxMs?: number
-  rafIntervalsOver8_33Ms?: number
-  rafIntervalsOver16_67Ms?: number
-  rafIntervalsOver33_3Ms?: number
-  rafIntervalsOver50Ms?: number
-  rejectedRunReason?: string | null
-}
-
-interface PerfReport {
-  schemaVersion?: number
-  timestamp: string
-  gitSha: string
-  branch: string
-  measurements: PerfMeasurement[]
-}
 
 const CURRENT_PATH = 'test-results/perf-metrics.json'
 const BASELINE_PATH = 'temp/perf-baseline/perf-metrics.json'
@@ -140,6 +106,17 @@ function groupByName(
   return map
 }
 
+function acceptedMeasurements(report: PerfReportV2): PerfMeasurement[] {
+  return report.measurements.flatMap((result) =>
+    result.kind === 'accepted' ? [result.measurement] : []
+  )
+}
+
+function readPerfReport(path: string): PerfReport {
+  const value: unknown = JSON.parse(readFileSync(path, 'utf-8'))
+  return perfReportSchema.parse(value)
+}
+
 function loadHistoricalReports(): PerfReport[] {
   if (!existsSync(HISTORY_DIR)) return []
   const reports: PerfReport[] = []
@@ -150,7 +127,7 @@ function loadHistoricalReports(): PerfReport[] {
       : join(entryPath, 'perf-metrics.json')
     if (!existsSync(filePath)) continue
     try {
-      reports.push(JSON.parse(readFileSync(filePath, 'utf-8')) as PerfReport)
+      reports.push(readPerfReport(filePath))
     } catch {
       console.warn(`Skipping malformed perf history: ${filePath}`)
     }
@@ -159,13 +136,13 @@ function loadHistoricalReports(): PerfReport[] {
 }
 
 function getHistoricalStats(
-  reports: PerfReport[],
+  reports: PerfReportV2[],
   testName: string,
   metric: MetricKey
 ): MetricStats {
   const values: number[] = []
   for (const r of reports) {
-    const group = groupByName(r.measurements)
+    const group = groupByName(acceptedMeasurements(r))
     const samples = group.get(testName)
     if (samples) {
       const mean = meanMetric(samples, metric)
@@ -176,7 +153,7 @@ function getHistoricalStats(
 }
 
 function getHistoricalTimeSeries(
-  reports: PerfReport[],
+  reports: PerfReportV2[],
   testName: string,
   metric: MetricKey
 ): number[] {
@@ -185,7 +162,7 @@ function getHistoricalTimeSeries(
   )
   const values: number[] = []
   for (const r of sorted) {
-    const group = groupByName(r.measurements)
+    const group = groupByName(acceptedMeasurements(r))
     const samples = group.get(testName)
     if (samples) {
       const mean = meanMetric(samples, metric)
@@ -255,13 +232,6 @@ function renderHeadlineSummary(
   const summaries: string[] = []
 
   for (const [testName, prSamples] of prGroups) {
-    const rejectedReasons = [
-      ...new Set(
-        prSamples
-          .map((sample) => sample.rejectedRunReason)
-          .filter((reason): reason is string => Boolean(reason))
-      )
-    ]
     const p95Interval = medianMetric(prSamples, 'rafIntervalP95Ms')
     const maxInterval = medianMetric(prSamples, 'rafIntervalMaxMs')
     const over16 = medianMetric(prSamples, 'rafIntervalsOver16_67Ms')
@@ -269,9 +239,6 @@ function renderHeadlineSummary(
     const heap = medianMetric(prSamples, 'heapUsedBytes')
 
     const parts: string[] = [`**${testName}**:`]
-    if (rejectedReasons.length > 0) {
-      parts.push(`rejected (${rejectedReasons.join('; ')})`)
-    }
     if (p95Interval !== null) parts.push(`${p95Interval.toFixed(1)}ms rAF p95`)
     if (maxInterval !== null) parts.push(`${maxInterval.toFixed(1)}ms rAF max`)
     if (over16 !== null) parts.push(`${over16.toFixed(0)} intervals >16.67ms`)
@@ -292,11 +259,11 @@ function renderHeadlineSummary(
 
 function renderFullReport(
   prGroups: Map<string, PerfMeasurement[]>,
-  baseline: PerfReport,
-  historical: PerfReport[]
+  baseline: PerfReportV2,
+  historical: PerfReportV2[]
 ): string[] {
   const lines: string[] = []
-  const baselineGroups = groupByName(baseline.measurements)
+  const baselineGroups = groupByName(acceptedMeasurements(baseline))
   const tableHeader = [
     '| Metric | Baseline | PR (median) | Δ | Sig |',
     '|--------|----------|----------|---|-----|'
@@ -424,11 +391,11 @@ function renderFullReport(
 
 function renderColdStartReport(
   prGroups: Map<string, PerfMeasurement[]>,
-  baseline: PerfReport,
+  baseline: PerfReportV2,
   historicalCount: number
 ): string[] {
   const lines: string[] = []
-  const baselineGroups = groupByName(baseline.measurements)
+  const baselineGroups = groupByName(acceptedMeasurements(baseline))
   lines.push(
     `> ℹ️ Collecting baseline variance data (${historicalCount}/15 runs). Significance will appear after 2 main branch runs.`,
     '',
@@ -498,38 +465,53 @@ function renderNoBaselineReport(
   return lines
 }
 
-function main() {
-  if (!existsSync(CURRENT_PATH)) {
-    process.stdout.write(
-      '## ⚡ Performance Report\n\nNo perf metrics found. Perf tests may not have run.\n'
-    )
-    process.exit(0)
-  }
-
-  const current: PerfReport = JSON.parse(readFileSync(CURRENT_PATH, 'utf-8'))
-
-  const baseline: PerfReport | null = existsSync(BASELINE_PATH)
-    ? JSON.parse(readFileSync(BASELINE_PATH, 'utf-8'))
-    : null
-
-  const historical = loadHistoricalReports()
-  const compatibleHistory = historical.filter(
-    (report) => report.schemaVersion === current.schemaVersion
+function renderRejectedMeasurements(report: PerfReportV2): string[] {
+  const rejected = report.measurements.filter(
+    (result) => result.kind === 'rejected'
   )
-  const prGroups = groupByName(current.measurements)
+  if (rejected.length === 0) return []
 
-  const lines: string[] = []
-  lines.push('## ⚡ Performance Report\n')
+  return [
+    `> ⚠️ ${rejected.length} measurement${rejected.length === 1 ? '' : 's'} rejected and excluded from all statistics.`,
+    '',
+    '<details><summary>Rejected measurements</summary>',
+    '',
+    '| Test | Reason |',
+    '|------|--------|',
+    ...rejected.map(
+      (result) => `| ${result.measurement.name} | ${result.reason} |`
+    ),
+    '',
+    '</details>',
+    ''
+  ]
+}
+
+export function renderPerfReport(
+  current: PerfReportV2,
+  baseline: PerfReport | null,
+  historical: PerfReport[]
+): string {
+  const compatibleHistory = historical.filter(
+    (report): report is PerfReportV2 => report.schemaVersion === 2
+  )
+  const prGroups = groupByName(acceptedMeasurements(current))
+
+  const lines: string[] = ['## ⚡ Performance Report\n']
+  lines.push(...renderRejectedMeasurements(current))
   lines.push(...renderHeadlineSummary(prGroups))
 
   const compatibleBaseline =
-    baseline && baseline.schemaVersion === current.schemaVersion
-      ? baseline
-      : null
+    baseline?.schemaVersion === current.schemaVersion ? baseline : null
 
-  if (baseline && !compatibleBaseline) {
+  if (prGroups.size === 0) {
     lines.push(
-      `> ℹ️ Baseline schema v${baseline.schemaVersion ?? 1} is not comparable with current schema v${current.schemaVersion ?? 1}. Starting a new measurement epoch.`,
+      '> ⚠️ No accepted measurements were available. No regression verdict was calculated.',
+      ''
+    )
+  } else if (baseline && !compatibleBaseline) {
+    lines.push(
+      `> ℹ️ Baseline schema v${baseline.schemaVersion ?? 1} is not comparable with current schema v${current.schemaVersion}. Starting a new measurement epoch.`,
       ''
     )
     lines.push(...renderNoBaselineReport(prGroups))
@@ -549,14 +531,12 @@ function main() {
     lines.push(...renderNoBaselineReport(prGroups))
   }
 
-  // Raw intervals remain in the perf-metrics.json artifact. Keep the PR comment
-  // bounded while showing every derived value and rejection reason.
   const commentData = {
     ...current,
-    measurements: current.measurements.map(
-      ({ rafIntervalsMs: _, allFrameDurationsMs: __, ...measurement }) =>
-        measurement
-    )
+    measurements: current.measurements.map((result) => {
+      const { rafIntervalsMs: _, ...measurement } = result.measurement
+      return { ...result, measurement }
+    })
   }
   lines.push('\n<details><summary>Summary data</summary>\n')
   lines.push('```json')
@@ -564,7 +544,33 @@ function main() {
   lines.push('```')
   lines.push('\n</details>')
 
-  process.stdout.write(lines.join('\n') + '\n')
+  return lines.join('\n') + '\n'
 }
 
-main()
+function main() {
+  if (!existsSync(CURRENT_PATH)) {
+    process.stdout.write(
+      '## ⚡ Performance Report\n\nNo perf metrics found. Perf tests may not have run.\n'
+    )
+    process.exit(0)
+  }
+
+  const current = readPerfReport(CURRENT_PATH)
+  if (current.schemaVersion !== 2) {
+    throw new Error('Current performance report must use schema v2')
+  }
+
+  const baseline: PerfReport | null = existsSync(BASELINE_PATH)
+    ? readPerfReport(BASELINE_PATH)
+    : null
+
+  const historical = loadHistoricalReports()
+  process.stdout.write(renderPerfReport(current, baseline, historical))
+}
+
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+) {
+  main()
+}

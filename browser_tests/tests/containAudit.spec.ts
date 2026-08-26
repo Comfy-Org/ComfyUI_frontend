@@ -1,8 +1,8 @@
 import { expect } from '@playwright/test'
 
-import type { PerfMeasurement } from '@e2e/fixtures/helpers/PerformanceHelper'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import type { PerfMeasurement } from '@e2e/fixtures/utils/perfReportSchema'
+import { requireAcceptedMeasurement } from '@e2e/fixtures/utils/perfReportSchema'
 
 interface ContainCandidate {
   selector: string
@@ -179,7 +179,9 @@ test.describe('CSS Containment Audit', { tag: ['@audit'] }, () => {
     for (let i = 0; i < STABILIZATION_FRAMES; i++) {
       await comfyPage.nextFrame()
     }
-    const baseline = await comfyPage.perf.stopMeasuring('baseline-idle')
+    const baseline = requireAcceptedMeasurement(
+      await comfyPage.perf.stopMeasuring('baseline-idle')
+    )
 
     // Take a baseline screenshot for visual comparison
     const baselineScreenshot = await comfyPage.page.screenshot()
@@ -215,8 +217,8 @@ test.describe('CSS Containment Audit', { tag: ['@audit'] }, () => {
       for (let i = 0; i < STABILIZATION_FRAMES; i++) {
         await comfyPage.nextFrame()
       }
-      const withContain = await comfyPage.perf.stopMeasuring(
-        `contain-${candidate.selector}`
+      const withContain = requireAcceptedMeasurement(
+        await comfyPage.perf.stopMeasuring(`contain-${candidate.selector}`)
       )
 
       // Take screenshot with containment applied to detect visual breakage.

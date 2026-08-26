@@ -1,15 +1,12 @@
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
 
-import type { PerfMeasurement } from '@e2e/fixtures/helpers/PerformanceHelper'
-
-interface PerfReport {
-  schemaVersion: 2
-  timestamp: string
-  gitSha: string
-  branch: string
-  measurements: PerfMeasurement[]
-}
+import type {
+  PerfMeasurement,
+  PerfMeasurementResult,
+  PerfReportV2
+} from '@e2e/fixtures/utils/perfReportSchema'
+import { perfMeasurementResultSchema } from '@e2e/fixtures/utils/perfReportSchema'
 
 const TEMP_DIR = join('test-results', 'perf-temp')
 
@@ -47,10 +44,13 @@ export function logMeasurement(
   console.log(`${label}: ${parts.join(', ')}`)
 }
 
-export function recordMeasurement(m: PerfMeasurement) {
+export function recordMeasurement(
+  result: PerfMeasurementResult
+): PerfMeasurement {
   mkdirSync(TEMP_DIR, { recursive: true })
-  const filename = `${m.name}-${Date.now()}.json`
-  writeFileSync(join(TEMP_DIR, filename), JSON.stringify(m))
+  const filename = `${result.measurement.name}-${Date.now()}.json`
+  writeFileSync(join(TEMP_DIR, filename), JSON.stringify(result))
+  return result.measurement
 }
 
 export function writePerfReport(
@@ -73,11 +73,14 @@ export function writePerfReport(
   }
   if (tempFiles.length === 0) return
 
-  const measurements: PerfMeasurement[] = tempFiles.map((f) =>
-    JSON.parse(readFileSync(join(TEMP_DIR, f), 'utf-8'))
-  )
+  const measurements = tempFiles.map((file) => {
+    const value: unknown = JSON.parse(
+      readFileSync(join(TEMP_DIR, file), 'utf-8')
+    )
+    return perfMeasurementResultSchema.parse(value)
+  })
 
-  const report: PerfReport = {
+  const report: PerfReportV2 = {
     schemaVersion: 2,
     timestamp: new Date().toISOString(),
     gitSha,

@@ -1,5 +1,18 @@
 import type { CDPSession, Page } from '@playwright/test'
 
+import type {
+  RafCollection,
+  RafCollectorState
+} from '@e2e/fixtures/helpers/rafMetrics'
+import {
+  getRafRejectionReason,
+  summarizeRafIntervals
+} from '@e2e/fixtures/helpers/rafMetrics'
+import type {
+  PerfMeasurement,
+  PerfMeasurementResult
+} from '@e2e/fixtures/utils/perfReportSchema'
+
 interface PerfSnapshot {
   RecalcStyleCount: number
   RecalcStyleDuration: number
@@ -14,79 +27,15 @@ interface PerfSnapshot {
   JSEventListeners: number
 }
 
-interface RafCollectorState {
-  intervalsMs: number[]
-  lastTimestamp: number | null
-  requestId: number | null
-  running: boolean
-  startVisibility: DocumentVisibilityState
-}
-
-interface RafCollection {
-  intervalsMs: number[]
-  startVisibility: DocumentVisibilityState
-  endVisibility: DocumentVisibilityState
-}
-
-export interface RafIntervalMetrics {
-  rafIntervalCount: number
-  rafIntervalP50Ms: number
-  rafIntervalP95Ms: number
-  rafIntervalP99Ms: number
-  rafIntervalMaxMs: number
-  rafIntervalsOver8_33Ms: number
-  rafIntervalsOver16_67Ms: number
-  rafIntervalsOver33_3Ms: number
-  rafIntervalsOver50Ms: number
-}
-
-export interface PerfMeasurement extends RafIntervalMetrics {
-  name: string
-  durationMs: number
-  styleRecalcs: number
-  styleRecalcDurationMs: number
-  layouts: number
-  layoutDurationMs: number
-  taskDurationMs: number
-  heapDeltaBytes: number
-  heapUsedBytes: number
-  domNodes: number
-  jsHeapTotalBytes: number
-  scriptDurationMs: number
-  eventListeners: number
-  totalBlockingTimeMs: number
-  rafIntervalsMs: number[]
-  rejectedRunReason: string | null
-}
-
 const RAF_STATE_KEY = '__perfRafCollectorState'
 
-function percentile(sortedValues: number[], quantile: number): number {
-  if (sortedValues.length === 0) return 0
-  return sortedValues[Math.ceil(sortedValues.length * quantile) - 1]
-}
-
-export function summarizeRafIntervals(
-  intervalsMs: number[]
-): RafIntervalMetrics {
-  const sorted = [...intervalsMs].sort((a, b) => a - b)
-  return {
-    rafIntervalCount: intervalsMs.length,
-    rafIntervalP50Ms: percentile(sorted, 0.5),
-    rafIntervalP95Ms: percentile(sorted, 0.95),
-    rafIntervalP99Ms: percentile(sorted, 0.99),
-    rafIntervalMaxMs: sorted.at(-1) ?? 0,
-    rafIntervalsOver8_33Ms: intervalsMs.filter((value) => value > 8.33).length,
-    rafIntervalsOver16_67Ms: intervalsMs.filter((value) => value > 16.67)
-      .length,
-    rafIntervalsOver33_3Ms: intervalsMs.filter((value) => value > 33.3).length,
-    rafIntervalsOver50Ms: intervalsMs.filter((value) => value > 50).length
-  }
-}
+type MeasurementState =
+  | { kind: 'idle' }
+  | { kind: 'measuring'; snapshot: PerfSnapshot }
 
 export class PerformanceHelper {
   private cdp: CDPSession | null = null
-  private snapshot: PerfSnapshot | null = null
+  private measurementState: MeasurementState = { kind: 'idle' }
 
   constructor(private readonly page: Page) {}
 
@@ -96,14 +45,18 @@ export class PerformanceHelper {
   }
 
   async dispose(): Promise<void> {
-    this.snapshot = null
-    await this.stopRafCollectorIfRunning()
-    if (this.cdp) {
-      try {
-        await this.cdp.send('Performance.disable')
-      } finally {
-        await this.cdp.detach()
+    this.measurementState = { kind: 'idle' }
+    try {
+      await this.stopRafCollectorIfRunning()
+    } finally {
+      if (this.cdp) {
+        const cdp = this.cdp
         this.cdp = null
+        try {
+          await cdp.send('Performance.disable')
+        } finally {
+          await cdp.detach()
+        }
       }
     }
   }
@@ -159,9 +112,20 @@ export class PerformanceHelper {
           lastTimestamp: null,
           requestId: null,
           running: true,
-          startVisibility: document.visibilityState
+          startVisibility: document.visibilityState,
+          visibilityChanged: false,
+          onVisibilityChange: () => {
+            state.visibilityChanged = true
+            resolve()
+          }
         }
         win[stateKey] = state
+        document.addEventListener('visibilitychange', state.onVisibilityChange)
+
+        if (document.visibilityState !== 'visible') {
+          resolve()
+          return
+        }
 
         const tick = (timestamp: number) => {
           if (!state.running) return
@@ -183,10 +147,24 @@ export class PerformanceHelper {
       const state = win[stateKey] as RafCollectorState | undefined
       if (!state) return null
 
+      if (state.requestId !== null) cancelAnimationFrame(state.requestId)
+
       return new Promise<RafCollection>((resolve) => {
-        if (state.requestId !== null) cancelAnimationFrame(state.requestId)
-        const finish = (timestamp: number) => {
-          if (state.lastTimestamp !== null) {
+        let finished = false
+        let finalRequestId: number | null = null
+        let timeoutId: ReturnType<typeof setTimeout> | null = null
+
+        const finish = (timestamp?: number, boundaryTimedOut = false) => {
+          if (finished) return
+          finished = true
+          if (finalRequestId !== null) cancelAnimationFrame(finalRequestId)
+          if (timeoutId !== null) clearTimeout(timeoutId)
+          document.removeEventListener(
+            'visibilitychange',
+            state.onVisibilityChange
+          )
+          document.removeEventListener('visibilitychange', finishWhenHidden)
+          if (timestamp !== undefined && state.lastTimestamp !== null) {
             state.intervalsMs.push(timestamp - state.lastTimestamp)
           }
           state.running = false
@@ -194,16 +172,31 @@ export class PerformanceHelper {
           resolve({
             intervalsMs: state.intervalsMs,
             startVisibility: state.startVisibility,
-            endVisibility: document.visibilityState
+            endVisibility: document.visibilityState,
+            visibilityChanged: state.visibilityChanged,
+            boundaryTimedOut
           })
         }
-        requestAnimationFrame(finish)
+
+        const finishWhenHidden = () => {
+          state.visibilityChanged = true
+          if (document.visibilityState !== 'visible') finish()
+        }
+        document.addEventListener('visibilitychange', finishWhenHidden)
+
+        if (state.visibilityChanged || document.visibilityState !== 'visible') {
+          finish()
+          return
+        }
+
+        finalRequestId = requestAnimationFrame((timestamp) => finish(timestamp))
+        timeoutId = setTimeout(() => finish(undefined, true), 1_000)
       })
     }, RAF_STATE_KEY)
   }
 
   async startMeasuring(): Promise<void> {
-    if (this.snapshot) {
+    if (this.measurementState.kind === 'measuring') {
       throw new Error(
         'Measurement already in progress — call stopMeasuring() first'
       )
@@ -235,16 +228,24 @@ export class PerformanceHelper {
       state.observer.takeRecords()
     })
     await this.startRafCollector()
-    this.snapshot = await this.getSnapshot()
+    try {
+      const snapshot = await this.getSnapshot()
+      this.measurementState = { kind: 'measuring', snapshot }
+    } catch (error) {
+      await this.stopRafCollectorIfRunning()
+      throw error
+    }
   }
 
-  async stopMeasuring(name: string): Promise<PerfMeasurement> {
-    if (!this.snapshot) throw new Error('Call startMeasuring() first')
+  async stopMeasuring(name: string): Promise<PerfMeasurementResult> {
+    if (this.measurementState.kind === 'idle') {
+      throw new Error('Call startMeasuring() first')
+    }
 
+    const before = this.measurementState.snapshot
+    this.measurementState = { kind: 'idle' }
     const rafCollection = await this.stopRafCollectorIfRunning()
     const after = await this.getSnapshot()
-    const before = this.snapshot
-    this.snapshot = null
 
     function delta(key: keyof PerfSnapshot): number {
       return after[key] - before[key]
@@ -252,23 +253,7 @@ export class PerformanceHelper {
 
     const totalBlockingTimeMs = await this.collectTBT()
     const rafIntervalsMs = rafCollection?.intervalsMs ?? []
-    const nonMonotonicInterval = rafIntervalsMs.some(
-      (duration) => !Number.isFinite(duration) || duration <= 0
-    )
-    let rejectedRunReason: string | null = null
-    if (!rafCollection) rejectedRunReason = 'rAF collector missing at stop'
-    else if (
-      rafCollection.startVisibility !== 'visible' ||
-      rafCollection.endVisibility !== 'visible'
-    ) {
-      rejectedRunReason = `document visibility changed (${rafCollection.startVisibility} to ${rafCollection.endVisibility})`
-    } else if (nonMonotonicInterval) {
-      rejectedRunReason = 'rAF timestamps were non-monotonic'
-    } else if (rafIntervalsMs.length === 0) {
-      rejectedRunReason = 'measurement window contained no rAF intervals'
-    }
-
-    return {
+    const measurement: PerfMeasurement = {
       name,
       durationMs: delta('Timestamp') * 1000,
       styleRecalcs: delta('RecalcStyleCount'),
@@ -284,8 +269,11 @@ export class PerformanceHelper {
       eventListeners: delta('JSEventListeners'),
       totalBlockingTimeMs,
       rafIntervalsMs,
-      rejectedRunReason,
       ...summarizeRafIntervals(rafIntervalsMs)
     }
+    const rejectionReason = getRafRejectionReason(rafCollection)
+    return rejectionReason
+      ? { kind: 'rejected', reason: rejectionReason, measurement }
+      : { kind: 'accepted', measurement }
   }
 }
