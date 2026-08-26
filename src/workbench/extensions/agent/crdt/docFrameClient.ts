@@ -91,6 +91,7 @@ interface WireData {
   message?: unknown
   applied?: unknown
   skipped?: unknown
+  failed?: unknown
   state?: unknown
   expires_at?: unknown
 }
