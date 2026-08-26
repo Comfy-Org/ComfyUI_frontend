@@ -2,7 +2,8 @@
   <div
     :class="
       cn(
-        'group relative rounded-lg transition-all focus-within:ring focus-within:ring-component-node-widget-background-highlighted hover:bg-component-node-widget-background-hovered',
+        'group relative rounded-lg transition-all focus-within:ring focus-within:ring-component-node-widget-background-highlighted',
+        !isReadOnly && 'hover:bg-component-node-widget-background-hovered',
         widget.borderStyle
       )
     "
@@ -22,7 +23,7 @@
       :class="
         cn(
           WidgetInputBaseClass,
-          'comfy-multiline-input size-full resize-none text-xs',
+          'comfy-multiline-input size-full resize-none text-(length:--comfy-textarea-font-size) leading-normal',
           !hideLayoutField && 'pt-5',
           // Avoid overflow-auto when idle to prevent per-textarea compositing layers.
           'overflow-hidden hover:overflow-auto focus:overflow-auto'
@@ -98,6 +99,10 @@ const id = useId()
 const isReadOnly = computed(() =>
   Boolean(widget.options?.read_only || widget.options?.disabled)
 )
+const settingStore = useSettingStore()
+const spellcheck = computed(() =>
+  settingStore.get('Comfy.TextareaWidget.Spellcheck')
+)
 
 function handleContextMenu(e: MouseEvent) {
   if (isNodeOptionsOpen() || isFocused.value) {
@@ -106,11 +111,6 @@ function handleContextMenu(e: MouseEvent) {
   }
   e.preventDefault()
 }
-
-const settingStore = useSettingStore()
-const spellcheck = computed(() =>
-  settingStore.get('Comfy.TextareaWidget.Spellcheck')
-)
 
 function handleCopy() {
   copyToClipboard(modelValue.value)

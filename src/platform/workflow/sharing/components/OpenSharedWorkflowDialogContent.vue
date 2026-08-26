@@ -69,7 +69,9 @@
     <template v-else-if="sharedWorkflow">
       <main :class="cn('flex gap-8 px-8 pt-4 pb-6', !hasAssets && 'flex-col')">
         <div class="flex min-w-0 flex-1 flex-col gap-12 py-4">
-          <h2 class="m-0 text-2xl font-semibold text-base-foreground">
+          <h2
+            class="m-0 text-2xl font-semibold wrap-anywhere text-base-foreground"
+          >
             {{ workflowName }}
           </h2>
           <p

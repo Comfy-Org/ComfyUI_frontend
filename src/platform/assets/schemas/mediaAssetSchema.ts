@@ -1,6 +1,8 @@
 import type { InjectionKey, Ref } from 'vue'
 import { z } from 'zod'
 
+import { zResultItem } from '@/schemas/apiSchema'
+
 import { assetItemSchema } from './assetSchema'
 
 const zMediaKindSchema = z.enum([
@@ -51,3 +53,12 @@ export const MediaAssetKey: InjectionKey<MediaAssetProviderValue> =
   Symbol('mediaAsset')
 
 export const MIME_ASSET_INFO = 'application/x-comfy-asset-info'
+
+export function parseAssetInfo(dataTransfer: DataTransfer) {
+  const assetString = dataTransfer?.getData(MIME_ASSET_INFO)
+  try {
+    return zResultItem.safeParse(JSON.parse(assetString ?? '')).data
+  } catch {
+    // output was not parsable, allow fallthrough and return undefined
+  }
+}

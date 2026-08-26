@@ -45,6 +45,9 @@ export interface RenderLink {
 
   readonly isIoNodeLink?: boolean
 
+  disconnectOnDrop?: boolean
+  readonly disconnectOrigin?: Point
+
   /**
    * Capability checks used for hit-testing and validation during drag.
    * Implementations should return `false` when a connection is not possible

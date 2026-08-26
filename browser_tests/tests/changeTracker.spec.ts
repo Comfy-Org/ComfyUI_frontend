@@ -4,6 +4,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 type ChangeTrackerDebugState = {
   changeCount: number
@@ -310,4 +311,98 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
         ]
       })
   })
+
+  test(
+    'Tracks convert to subgraph as undo step',
+    { tag: ['@vue-nodes', '@subgraph'] },
+    async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
+
+      const node = await comfyPage.vueNodes.getFixtureByTitle('Empty Latent')
+      const width = comfyPage.vueNodes.getWidgetByName('Empty Latent', 'width')
+      const { input } = comfyPage.vueNodes.getInputNumberControls(width)
+
+      await input.fill('40')
+      await node.title.click()
+      await comfyPage.page
+        .getByTestId(TestIds.selectionToolbox.convertSubgraph)
+        .click()
+      await expect(input).toBeHidden()
+
+      await comfyPage.keyboard.undo()
+      await expect(input).toHaveValue('40')
+      await comfyPage.keyboard.undo()
+      await expect(input).toHaveValue('512')
+    }
+  )
+
+  test(
+    'Does not restore invalid navigation stack',
+    { tag: ['@vue-nodes', '@subgraph'] },
+    async ({ comfyPage }) => {
+      const convertToSubgraph = async (nodeTitle: string) => {
+        const { undoQueueSize } = await getChangeTrackerDebugState(comfyPage)
+
+        await comfyPage.contextMenu
+          .openFor(comfyPage.vueNodes.getNodeByTitle(nodeTitle))
+          .then((menu) => menu.clickMenuItem('Convert to Subgraph'))
+
+        await expect
+          .poll(async () => {
+            const state = await getChangeTrackerDebugState(comfyPage)
+            return {
+              graphMatchesActiveState: state.graphMatchesActiveState,
+              undoQueueAdvanced: state.undoQueueSize > undoQueueSize
+            }
+          })
+          .toEqual({
+            graphMatchesActiveState: true,
+            undoQueueAdvanced: true
+          })
+      }
+
+      const undoAndWait = () =>
+        comfyPage.page.evaluate(async () => {
+          const workspaceStore = window.app!.extensionManager as WorkspaceStore
+          const tracker = workspaceStore.workflow.activeWorkflow?.changeTracker
+          if (!tracker) {
+            throw new Error('Active workflow change tracker is not available')
+          }
+
+          await tracker.undo()
+        })
+
+      await test.step('setup nested subgraph', async () => {
+        await convertToSubgraph('Load Checkpoint')
+        await convertToSubgraph('New Subgraph')
+        await comfyPage.vueNodes.enterSubgraph()
+      })
+
+      await test.step('deeply nested subgraphs', async () => {
+        await convertToSubgraph('New Subgraph')
+        const intermediateGraphId = await comfyPage.subgraph.getActiveGraphId()
+        await comfyPage.vueNodes.enterSubgraph()
+        await expect
+          .poll(() => comfyPage.subgraph.getActiveGraphId())
+          .not.toBe(intermediateGraphId)
+
+        await undoAndWait()
+        await expect
+          .poll(
+            () => comfyPage.subgraph.getActiveGraphId(),
+            'undo from deeply nested subgraph resolves immediate valid parent'
+          )
+          .toBe(intermediateGraphId)
+      })
+
+      await undoAndWait()
+      await undoAndWait()
+      await expect
+        .poll(
+          () => comfyPage.subgraph.isInSubgraph(),
+          'Currently bugged: click after subgraph requires additional undo'
+        )
+        .toBe(false)
+    }
+  )
 })

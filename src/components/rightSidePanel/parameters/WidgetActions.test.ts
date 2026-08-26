@@ -1,5 +1,5 @@
-import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
+import { createTestingPinia } from '@pinia/testing'
 import userEvent from '@testing-library/user-event'
 import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
@@ -8,18 +8,28 @@ import { h } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { promoteWidget } from '@/core/graph/subgraph/promotionUtils'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { widgetId } from '@/types/widgetId'
 import WidgetActions from './WidgetActions.vue'
 
-const { mockGetInputSpecForWidget } = vi.hoisted(() => ({
-  mockGetInputSpecForWidget: vi.fn()
+const {
+  mockGetInputSpecForWidget,
+  mockIsFavorited,
+  mockToggleFavorite,
+  mockTrackWidgetFavoriteToggled
+} = vi.hoisted(() => ({
+  mockGetInputSpecForWidget: vi.fn(),
+  mockIsFavorited: vi.fn().mockReturnValue(false),
+  mockToggleFavorite: vi.fn(),
+  mockTrackWidgetFavoriteToggled: vi.fn()
 }))
 
 vi.mock('@/core/graph/subgraph/promotionUtils', () => ({
-  demoteWidget: vi.fn(),
-  promoteWidget: vi.fn(),
-  isLinkedPromotion: vi.fn(() => false)
+  promoteWidget: vi.fn()
 }))
 
 vi.mock('@/stores/nodeDefStore', () => ({
@@ -36,8 +46,14 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
 
 vi.mock('@/stores/workspace/favoritedWidgetsStore', () => ({
   useFavoritedWidgetsStore: () => ({
-    isFavorited: vi.fn().mockReturnValue(false),
-    toggleFavorite: vi.fn()
+    isFavorited: mockIsFavorited,
+    toggleFavorite: mockToggleFavorite
+  })
+}))
+
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () => ({
+    trackWidgetFavoriteToggled: mockTrackWidgetFavoriteToggled
   })
 }))
 
@@ -62,7 +78,6 @@ const i18n = createI18n({
         enterNewName: 'Enter new name'
       },
       rightSidePanel: {
-        hideInput: 'Hide input',
         showInput: 'Show input',
         addFavorite: 'Favorite',
         removeFavorite: 'Unfavorite',
@@ -75,7 +90,7 @@ const i18n = createI18n({
 describe('WidgetActions', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.resetAllMocks()
+    mockIsFavorited.mockReturnValue(false)
     mockGetInputSpecForWidget.mockReturnValue({
       type: 'INT',
       default: 42
@@ -160,6 +175,21 @@ describe('WidgetActions', () => {
     expect(screen.getByRole('button', { name: /Reset/ })).toBeDisabled()
   })
 
+  it('keeps reset enabled when the store value is null and differs from the default', () => {
+    const node = createMockNode()
+    const id = widgetId('graph-test', node.id, 'test_widget')
+    useWidgetValueStore().registerWidget(id, {
+      type: 'number',
+      value: null,
+      options: {}
+    })
+    const widget = { ...createMockWidget(42), widgetId: id } as IBaseWidget
+
+    renderWidgetActions(widget, node)
+
+    expect(screen.getByRole('button', { name: /Reset/ })).toBeEnabled()
+  })
+
   it('does not show reset button when no default value exists', () => {
     mockGetInputSpecForWidget.mockReturnValue({
       type: 'CUSTOM'
@@ -204,5 +234,100 @@ describe('WidgetActions', () => {
     await user.click(screen.getByRole('button', { name: /Reset/ }))
 
     expect(onResetToDefault).toHaveBeenCalledWith('option1')
+  })
+
+  it('tracks widget favorite toggled with is_favorited true when favoriting', async () => {
+    mockIsFavorited.mockReturnValue(false)
+
+    const widget = createMockWidget()
+    const node = createMockNode()
+
+    const { user } = renderWidgetActions(widget, node)
+
+    await user.click(screen.getByRole('button', { name: /Favorite/ }))
+
+    expect(mockTrackWidgetFavoriteToggled).toHaveBeenCalledExactlyOnceWith({
+      node_type: 'TestNode',
+      widget_name: 'test_widget',
+      widget_type: 'number',
+      is_favorited: true,
+      source: 'right_side_panel'
+    })
+    expect(mockToggleFavorite).toHaveBeenCalledExactlyOnceWith(
+      node,
+      'test_widget'
+    )
+  })
+
+  it('tracks widget favorite toggled with is_favorited false when unfavoriting', async () => {
+    mockIsFavorited.mockReturnValue(true)
+
+    const widget = createMockWidget()
+    const node = createMockNode()
+
+    const { user } = renderWidgetActions(widget, node)
+
+    await user.click(screen.getByRole('button', { name: /Unfavorite/ }))
+
+    expect(mockTrackWidgetFavoriteToggled).toHaveBeenCalledExactlyOnceWith({
+      node_type: 'TestNode',
+      widget_name: 'test_widget',
+      widget_type: 'number',
+      is_favorited: false,
+      source: 'right_side_panel'
+    })
+  })
+
+  it('promotes the widget into the host when "Show input" is clicked', async () => {
+    const widget = createMockWidget()
+    const node = createMockNode()
+    const host = fromAny<SubgraphNode, unknown>({ id: 2 })
+
+    const { user } = renderWidgetActions(widget, node, { host })
+
+    await user.click(screen.getByRole('button', { name: /Show input/ }))
+
+    expect(promoteWidget).toHaveBeenCalledWith(node, widget, [host])
+  })
+
+  it('does not offer "Show input" without a host', () => {
+    renderWidgetActions(createMockWidget(), createMockNode())
+
+    expect(
+      screen.queryByRole('button', { name: /Show input/ })
+    ).not.toBeInTheDocument()
+  })
+
+  it('does not offer "Show input" when the host input is already linked', () => {
+    const widget = createMockWidget()
+    const node = fromAny<LGraphNode, unknown>({
+      id: 1,
+      type: 'TestNode',
+      rootGraph: { id: 'graph-test' },
+      isSubgraphNode: () => true,
+      getSlotFromWidget: (candidate: IBaseWidget) =>
+        candidate.name === 'test_widget'
+          ? { widgetId: 'graph-test:1:test_widget' }
+          : undefined
+    })
+    const host = fromAny<SubgraphNode, unknown>({ id: 2 })
+
+    renderWidgetActions(widget, node, { host })
+
+    expect(
+      screen.queryByRole('button', { name: /Show input/ })
+    ).not.toBeInTheDocument()
+  })
+
+  it("toggles the favorite for the row's node", async () => {
+    const widget = createMockWidget()
+    const node = createMockNode()
+    const host = fromAny<SubgraphNode, unknown>({ id: 2 })
+
+    const { user } = renderWidgetActions(widget, node, { host })
+
+    await user.click(screen.getByRole('button', { name: /Favorite/ }))
+
+    expect(mockToggleFavorite).toHaveBeenCalledWith(node, 'test_widget')
   })
 })

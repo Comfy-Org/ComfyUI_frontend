@@ -39,6 +39,7 @@ export interface FormDropdownInputProps {
   uploadable: boolean
   disabled: boolean
   accept?: string
+  isUploading?: boolean
 }
 
 export interface FormDropdownMenuItemProps {

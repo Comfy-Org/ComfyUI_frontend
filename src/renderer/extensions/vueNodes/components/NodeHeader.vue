@@ -6,17 +6,17 @@
     v-else
     :class="
       cn(
-        'lg-node-header w-full min-w-0 py-2 pr-3 pl-2 text-sm',
-        'text-node-component-header',
+        'lg-node-header w-full min-w-0 p-1 text-xs',
+        'text-node-component-slot-text',
         headerShapeClass
       )
     "
     :data-testid="`node-header-${nodeData?.id || ''}`"
     @dblclick="handleDoubleClick"
   >
-    <div class="flex min-w-0 items-center justify-between gap-2.5">
+    <div class="flex min-w-0 items-center justify-between gap-1">
       <!-- Collapse/Expand Button -->
-      <div class="relative mr-auto flex min-w-0 shrink items-center gap-2.5">
+      <div class="relative mr-auto flex min-w-0 shrink items-center gap-1">
         <div class="flex shrink-0 items-center px-0.5">
           <Button
             size="icon-sm"
@@ -29,7 +29,7 @@
             <i
               :class="
                 cn(
-                  'icon-[lucide--chevron-down] size-5 transition-transform',
+                  'icon-[lucide--chevron-down] size-4 transition-transform',
                   collapsed && '-rotate-90'
                 )
               "
@@ -64,7 +64,7 @@
       <NodeBadge v-if="statusBadge" v-bind="statusBadge" />
       <i
         v-if="isPinned"
-        class="icon-[comfy--pin] size-5"
+        class="icon-[comfy--pin] size-4"
         data-testid="node-pin-indicator"
       />
     </div>
@@ -72,12 +72,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onErrorCaptured, ref, watch } from 'vue'
+import { computed, onErrorCaptured, ref } from 'vue'
 
 import EditableText from '@/components/common/EditableText.vue'
 import CreditBadge from '@/components/node/CreditBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
-import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import type { NodeState } from '@/types/nodeState'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
 import { LGraphEventMode, RenderShape } from '@/lib/litegraph/src/litegraph'
@@ -89,7 +89,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type { NodeBadgeProps } from './NodeBadge.vue'
 
 interface NodeHeaderProps {
-  nodeData?: VueNodeData
+  nodeData?: NodeState
   collapsed?: boolean
   priceBadges?: { required: string; rest?: string }[]
 }
@@ -126,17 +126,15 @@ const tooltipConfig = computed(() => {
   return createTooltipConfig(description)
 })
 
-const resolveTitle = (info: VueNodeData | undefined) => {
+const resolveTitle = (info: NodeState | undefined) => {
   const untitledLabel = st('g.untitled', 'Untitled')
   return resolveNodeDisplayName(info ?? null, {
     emptyLabel: untitledLabel,
-    untitledLabel,
-    st
+    untitledLabel
   })
 }
 
-// Local state for title to provide immediate feedback
-const displayTitle = ref(resolveTitle(nodeData))
+const displayTitle = computed(() => resolveTitle(nodeData))
 
 const bypassed = computed(
   (): boolean => nodeData?.mode === LGraphEventMode.BYPASS
@@ -159,31 +157,20 @@ const headerShapeClass = computed(() => {
       case RenderShape.BOX:
         return 'rounded-none'
       case RenderShape.CARD:
-        return 'rounded-tl-2xl rounded-br-2xl rounded-tr-none rounded-bl-none'
+        return 'rounded-tl-xl rounded-br-xl rounded-tr-none rounded-bl-none'
       default:
-        return 'rounded-2xl'
+        return 'rounded-xl'
     }
   }
   switch (nodeData?.shape) {
     case RenderShape.BOX:
       return 'rounded-t-none'
     case RenderShape.CARD:
-      return 'rounded-tl-2xl rounded-tr-none'
+      return 'rounded-tl-xl rounded-tr-none'
     default:
-      return 'rounded-t-2xl'
+      return 'rounded-t-xl'
   }
 })
-
-// Watch for external changes to the node title or type
-watch(
-  () => [nodeData?.title, nodeData?.type] as const,
-  () => {
-    const next = resolveTitle(nodeData)
-    if (next !== displayTitle.value) {
-      displayTitle.value = next
-    }
-  }
-)
 
 // Event handlers
 const handleCollapse = () => {

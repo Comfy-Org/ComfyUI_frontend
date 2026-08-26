@@ -22,12 +22,6 @@ const QUANT_SUFFIXES = [
   '_int8'
 ]
 
-interface RawModel {
-  name: string
-  url: string
-  directory: string
-}
-
 interface ModelData {
   url: string
   directory: string
@@ -49,42 +43,123 @@ interface OutputModel {
 
 // Maps api_*.json filename prefix to a canonical display name and slug.
 // Add entries here as new partner integrations land in workflow_templates.
-const API_PROVIDER_MAP: Record<string, { name: string; slug: string }> = {
-  nano: { name: 'Nano Banana', slug: 'nano-banana' },
-  kling: { name: 'Kling AI', slug: 'kling-ai' },
-  kling2: { name: 'Kling AI', slug: 'kling-ai' },
-  meshy: { name: 'Meshy AI', slug: 'meshy-ai' },
-  luma: { name: 'Luma Dream Machine', slug: 'luma-dream-machine' },
-  runway: { name: 'Runway', slug: 'runway' },
-  vidu: { name: 'Vidu', slug: 'vidu' },
-  bfl: { name: 'Flux (API)', slug: 'flux-api' },
-  grok: { name: 'Grok Image', slug: 'grok-image' },
-  stability: { name: 'Stability AI', slug: 'stability-ai' },
-  bytedance: { name: 'Seedance (ByteDance)', slug: 'seedance-bytedance' },
-  bytedace: { name: 'Seedance (ByteDance)', slug: 'seedance-bytedance' },
-  google: { name: 'Gemini Image', slug: 'gemini-image' },
-  hailuo: { name: 'Hailuo MiniMax', slug: 'hailuo-minimax' },
-  ideogram: { name: 'Ideogram', slug: 'ideogram' },
-  pixverse: { name: 'Pixverse', slug: 'pixverse' },
-  rodin: { name: 'Rodin 3D', slug: 'rodin-3d' },
-  magnific: { name: 'Magnific AI', slug: 'magnific-ai' },
-  bria: { name: 'Bria AI', slug: 'bria-ai' },
-  tripo: { name: 'Tripo 3D', slug: 'tripo-3d' },
-  tripo3: { name: 'Tripo 3D', slug: 'tripo-3d' },
-  hunyuan3d: { name: 'Hunyuan 3D', slug: 'hunyuan-3d' },
-  recraft: { name: 'Recraft', slug: 'recraft' },
-  topaz: { name: 'Topaz Labs', slug: 'topaz-labs' },
-  moonvalley: { name: 'Moonvalley', slug: 'moonvalley' },
-  ltxv: { name: 'LTX Video (API)', slug: 'ltxv-api' },
-  openai: { name: 'OpenAI DALL-E', slug: 'openai-dall-e' },
-  wan: { name: 'Wan (API)', slug: 'wan-api' },
-  wan2: { name: 'Wan (API)', slug: 'wan-api' },
-  veo2: { name: 'Veo 2', slug: 'veo-2' },
-  veo3: { name: 'Veo 3', slug: 'veo-3' },
-  flux2: { name: 'Flux 2 (API)', slug: 'flux-2-api' },
-  wavespeed: { name: 'Wavespeed', slug: 'wavespeed' },
-  wavespped: { name: 'Wavespeed', slug: 'wavespeed' }
-}
+export const API_PROVIDER_MAP: Record<string, { name: string; slug: string }> =
+  {
+    nano: { name: 'Nano Banana', slug: 'nano-banana' },
+    kling: { name: 'Kling AI', slug: 'kling-ai' },
+    kling2: { name: 'Kling AI', slug: 'kling-ai' },
+    meshy: { name: 'Meshy AI', slug: 'meshy-ai' },
+    meshy7: { name: 'Meshy 7', slug: 'meshy-7' },
+    luma: { name: 'Luma Dream Machine', slug: 'luma-dream-machine' },
+    runway: { name: 'Runway', slug: 'runway' },
+    vidu: { name: 'Vidu', slug: 'vidu' },
+    bfl: { name: 'Flux (API)', slug: 'flux-api' },
+    grok: { name: 'Grok Imagine', slug: 'grok-imagine' },
+    stability: { name: 'Stability AI', slug: 'stability-ai' },
+    bytedance: { name: 'Seedance (ByteDance)', slug: 'seedance-bytedance' },
+    bytedace: { name: 'Seedance (ByteDance)', slug: 'seedance-bytedance' },
+    google: { name: 'Gemini Image', slug: 'gemini-image' },
+    hailuo: { name: 'Hailuo MiniMax', slug: 'hailuo-minimax' },
+    ideogram: { name: 'Ideogram', slug: 'ideogram' },
+    pixverse: { name: 'Pixverse', slug: 'pixverse' },
+    rodin: { name: 'Rodin 3D', slug: 'rodin-3d' },
+    magnific: { name: 'Magnific AI', slug: 'magnific-ai' },
+    bria: { name: 'Bria AI', slug: 'bria-ai' },
+    tripo: { name: 'Tripo 3D', slug: 'tripo-3d' },
+    tripo3: { name: 'Tripo 3D', slug: 'tripo-3d' },
+    hunyuan3d: { name: 'Hunyuan 3D', slug: 'hunyuan-3d' },
+    recraft: { name: 'Recraft', slug: 'recraft' },
+    topaz: { name: 'Topaz Labs', slug: 'topaz-labs' },
+    moonvalley: { name: 'Moonvalley', slug: 'moonvalley' },
+    ltxv: { name: 'LTX Video (API)', slug: 'ltxv-api' },
+    openai: { name: 'OpenAI DALL-E', slug: 'openai-dall-e' },
+    wan: { name: 'Wan (API)', slug: 'wan-api' },
+    wan2: { name: 'Wan (API)', slug: 'wan-api' },
+    veo2: { name: 'Veo 2', slug: 'veo-2' },
+    veo3: { name: 'Veo 3', slug: 'veo-3' },
+    flux2: { name: 'Flux 2 (API)', slug: 'flux-2-api' },
+    wavespeed: { name: 'Wavespeed', slug: 'wavespeed' },
+    wavespped: { name: 'Wavespeed', slug: 'wavespeed' },
+    wan2_1: { name: 'Wan 2.1', slug: 'wan2-1' },
+    z_image_turbo: { name: 'Z Image Turbo', slug: 'z-image-turbo' },
+    wan2_2: { name: 'Wan 2.2', slug: 'wan2-2' },
+    gemini3_pro_image_preview: {
+      name: 'Gemini 3 Pro Image Preview',
+      slug: 'gemini3-pro-image-preview'
+    },
+    ltx2_3: { name: 'LTX 2.3', slug: 'ltx-2-3' },
+    flux_1: { name: 'Flux 1', slug: 'flux-1' },
+    nano_banana_2: { name: 'Nano Banana 2', slug: 'nano-banana-2' },
+    kling_3_0: { name: 'Kling 3.0', slug: 'kling-3-0' },
+    seedance2_0: { name: 'Seedance 2.0', slug: 'seedance-2-0' },
+    flux2_klein: { name: 'Flux 2 Klein', slug: 'flux-2-klein' },
+    kling_o3: { name: 'Kling O3', slug: 'kling-o3' },
+    sdxl: { name: 'SDXL', slug: 'sdxl' },
+    flux_1_kontext: { name: 'Flux 1 Kontext', slug: 'flux-1-kontext' },
+    wan2_2_animate: { name: 'Wan 2.2 Animate', slug: 'wan2-2-animate' },
+    kling_o1: { name: 'Kling O1', slug: 'kling-o1' },
+    flux2_dev: { name: 'Flux 2 Dev', slug: 'flux-2-dev' },
+    sd1_5: { name: 'SD 1.5', slug: 'sd1-5' },
+    sd3_5: { name: 'SD 3.5', slug: 'sd3-5' },
+    kling2_6: { name: 'Kling 2.6', slug: 'kling-2-6' },
+    gpt_image_1: { name: 'GPT Image 1', slug: 'gpt-image-1' },
+    wan2_7: { name: 'Wan 2.7', slug: 'wan2-7' },
+    wan3_0: { name: 'Wan 3.0', slug: 'wan-3-0' },
+    seedance1_0_pro: { name: 'Seedance 1.0 Pro', slug: 'seedance1-0-pro' },
+    kling1_6: { name: 'Kling 1.6', slug: 'kling-1-6' },
+    wan2_1_vace: { name: 'Wan 2.1 Vace', slug: 'wan2-1-vace' },
+    wan2_6: { name: 'Wan 2.6', slug: 'wan2-6' },
+    wan2_5: { name: 'Wan 2.5', slug: 'wan2-5' },
+    qwen_image_layered: {
+      name: 'Qwen Image Layered',
+      slug: 'qwen-image-layered'
+    },
+    wan_ati: { name: 'Wan ATI', slug: 'wan-ati' },
+    ltx_0_9_5: { name: 'LTX 0.9.5', slug: 'ltx-0-9-5' },
+    qwen_image_2512: { name: 'Qwen Image 2512', slug: 'qwen-image-2512' },
+    wan2_1_infinitetalk: {
+      name: 'Wan 2.1 InfiniteTalk',
+      slug: 'wan2-1-infinitetalk'
+    },
+    gpt_image_1_5: { name: 'GPT Image 1.5', slug: 'gpt-image-1-5' },
+    seedream_5_0_lite: { name: 'Seedream 5.0 Lite', slug: 'seedream-5-0-lite' },
+    wan2_1_scail: { name: 'Wan 2.1 Scail', slug: 'wan2-1-scail' },
+    seedream_4_0: { name: 'Seedream 4.0', slug: 'seedream-4-0' },
+    seedance1_5_pro: { name: 'Seedance 1.5 Pro', slug: 'seedance-1-5-pro' },
+    kling2_0: { name: 'Kling 2.0', slug: 'kling-2-0' },
+    flux1_krea_dev: { name: 'Flux 1 Krea Dev', slug: 'flux-1-krea-dev' },
+    seedream_4_5: { name: 'Seedream 4.5', slug: 'seedream-4-5' },
+    anthropic: { name: 'Anthropic Claude', slug: 'anthropic-claude' },
+    beeble: { name: 'Beeble', slug: 'beeble' },
+    elevenlabs: { name: 'ElevenLabs', slug: 'elevenlabs' },
+    flux: { name: 'Flux', slug: 'flux' },
+    happyhorse1: { name: 'Happyhorse1', slug: 'happyhorse1' },
+    heygen: { name: 'HeyGen', slug: 'heygen' },
+    krea2: { name: 'Krea 2', slug: 'krea-2' },
+    ltx2: { name: 'LTX 2', slug: 'ltx-2' },
+    minimax: { name: 'MiniMax', slug: 'minimax' },
+    openrouter: { name: 'OpenRouter', slug: 'openrouter' },
+    quiver: { name: 'Quiver', slug: 'quiver' },
+    qwen3: { name: 'Qwen 3', slug: 'qwen-3' },
+    rodin3d: { name: 'Rodin 3D', slug: 'rodin-3d' },
+    seedance2: { name: 'Seedance 2', slug: 'seedance-2' },
+    sonilo: { name: 'Sonilo', slug: 'sonilo' },
+    sync: { name: 'Sync', slug: 'sync' }
+  }
+
+// Stub entries that exist only to issue 301 redirects from old slugs to
+// their new canonical slugs. Keeps renames reproducible across regenerations.
+const LEGACY_SLUG_REDIRECTS: OutputModel[] = [
+  {
+    slug: 'grok-image',
+    canonicalSlug: 'grok-imagine',
+    name: 'Grok Image',
+    displayName: 'Grok Image',
+    directory: 'partner_nodes',
+    huggingFaceUrl: '',
+    workflowCount: 0
+  }
+]
 
 function stripExt(name: string): string {
   return name.replace(/\.(safetensors|ckpt|pt|bin)$/, '')
@@ -168,14 +243,53 @@ interface ApiModelData {
   templateCount: number
 }
 
-function extractApiModels(files: string[]): ApiModelData[] {
+export function extractApiModels(files: string[]): ApiModelData[] {
   const counts = new Map<string, number>()
+  const unmapped = new Set<string>()
+  const sortedKeys = Object.keys(API_PROVIDER_MAP).sort(
+    (a, b) => b.length - a.length
+  )
+
   for (const file of files) {
     if (!file.startsWith('api_')) continue
-    const prefix = file.slice(4).split('_')[0]
-    const entry = API_PROVIDER_MAP[prefix]
-    if (!entry) continue
+    const baseName = file
+      .slice(4)
+      .toLowerCase()
+      .replace(/\.json$/, '')
+
+    // Ignore known non-providers or upstream typos until fixed
+    if (
+      baseName === 'king' ||
+      baseName.startsWith('king_') ||
+      baseName === 'from' ||
+      baseName.startsWith('from_')
+    ) {
+      continue
+    }
+
+    let matchedKey: string | undefined
+    for (const key of sortedKeys) {
+      if (baseName === key || baseName.startsWith(key + '_')) {
+        matchedKey = key
+        break
+      }
+    }
+
+    if (!matchedKey) {
+      unmapped.add(`- ${baseName} (from ${file})`)
+      continue
+    }
+
+    const entry = API_PROVIDER_MAP[matchedKey]
     counts.set(entry.slug, (counts.get(entry.slug) ?? 0) + 1)
+  }
+
+  if (unmapped.size > 0) {
+    throw new Error(
+      `Unmapped API provider prefixes found in template files:\n` +
+        Array.from(unmapped).join('\n') +
+        `\nYou MUST add them to API_PROVIDER_MAP in generate-models.ts.`
+    )
   }
   return [...counts.entries()].map(([slug, count]) => {
     const found = Object.values(API_PROVIDER_MAP).find((e) => e.slug === slug)!
@@ -299,7 +413,8 @@ function run(): void {
       throw new Error(
         `Failed to parse ${file}: ${
           error instanceof Error ? error.message : String(error)
-        }`
+        }`,
+        { cause: error }
       )
     }
   }
@@ -367,7 +482,7 @@ function run(): void {
       displayName: m.name
     }))
 
-  const combined = [...apiOutput, ...output]
+  const combined = [...apiOutput, ...output, ...LEGACY_SLUG_REDIRECTS]
 
   const withThumbs = combined.filter((m) => m.thumbnailUrl).length
   process.stdout.write(
@@ -388,9 +503,13 @@ function run(): void {
   )
 }
 
-try {
-  run()
-} catch (err) {
-  process.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`)
-  process.exit(1)
+if (import.meta.url === `file://${process.argv[1]}`) {
+  try {
+    run()
+  } catch (err) {
+    process.stderr.write(
+      `${err instanceof Error ? err.message : String(err)}\n`
+    )
+    process.exit(1)
+  }
 }

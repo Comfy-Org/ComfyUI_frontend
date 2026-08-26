@@ -17,7 +17,7 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Bounds, NodeId } from '@/renderer/core/layout/types'
-import { LayoutSource } from '@/renderer/core/layout/types'
+import { toNodeId } from '@/types/nodeId'
 import {
   isBoundsEqual,
   isSizeEqual
@@ -33,8 +33,7 @@ import {
  * Generic update item for element bounds tracking
  */
 interface ElementBoundsUpdate {
-  /** Element identifier (could be nodeId, widgetId, slotId, etc.) */
-  id: string
+  id: NodeId
   /** Updated bounds */
   bounds: Bounds
 }
@@ -63,11 +62,15 @@ const trackingConfigs = new Map<string, ElementTrackingConfig>([
     {
       dataAttribute: 'nodeId',
       updateHandler: (updates) => {
-        const nodeUpdates = updates.map(({ id, bounds }) => ({
-          nodeId: id as NodeId,
-          bounds
-        }))
-        layoutStore.batchUpdateNodeBounds(nodeUpdates)
+        const { rootGraphId } = useCanvasStore()
+        if (!rootGraphId) return
+
+        for (const { id, bounds } of updates) {
+          layoutStore.reportContentSize(rootGraphId, id, {
+            width: bounds.width,
+            height: removeNodeTitleHeight(bounds.height)
+          })
+        }
       }
     }
   ],
@@ -102,7 +105,8 @@ watch(visibility, (state) => {
 
 // Single ResizeObserver instance for all Vue elements
 const resizeObserver = new ResizeObserver((entries) => {
-  if (useCanvasStore().linearMode) return
+  const { linearMode, rootGraphId } = useCanvasStore()
+  if (linearMode) return
 
   // Skip measurements when tab is hidden — bounding rects are unreliable
   if (visibility.value === 'hidden') {
@@ -131,7 +135,7 @@ const resizeObserver = new ResizeObserver((entries) => {
     // slot-layout pipeline and skip bounds processing entirely.
     const widgetsGridParentNodeId = element.dataset.widgetsGridNodeId
     if (widgetsGridParentNodeId) {
-      scheduleSlotLayoutSync(widgetsGridParentNodeId as NodeId)
+      scheduleSlotLayoutSync(toNodeId(widgetsGridParentNodeId))
       continue
     }
 
@@ -150,7 +154,7 @@ const resizeObserver = new ResizeObserver((entries) => {
 
     if (!elementType || !elementId) continue
     const nodeId: NodeId | undefined =
-      elementType === 'node' ? elementId : undefined
+      elementType === 'node' ? toNodeId(elementId) : undefined
 
     // Use borderBoxSize when available; fall back to contentRect for older engines/tests
     // Border box is the border included FULL wxh DOM value.
@@ -163,9 +167,10 @@ const resizeObserver = new ResizeObserver((entries) => {
     const width = Math.max(0, borderBox.inlineSize)
     const height = Math.max(0, borderBox.blockSize)
 
-    const nodeLayout = nodeId
-      ? layoutStore.getNodeLayoutRef(nodeId).value
-      : null
+    const nodeLayout =
+      nodeId && rootGraphId
+        ? layoutStore.getNodeLayout(rootGraphId, nodeId)
+        : null
     const normalizedHeight = removeNodeTitleHeight(height)
     const previousMeasurement = cachedNodeMeasurements.get(element)
     const hasFreshMeasurementPending =
@@ -227,33 +232,23 @@ const resizeObserver = new ResizeObserver((entries) => {
       })
     }
 
-    if (nodeLayout && isBoundsEqual(nodeLayout.bounds, normalizedBounds)) {
-      continue
-    }
-
     let updates = updatesByType.get(elementType)
     if (!updates) {
       updates = []
       updatesByType.set(elementType, updates)
     }
-    updates.push({ id: elementId, bounds })
+    if (!nodeId) continue
+    updates.push({ id: nodeId, bounds })
 
     // If this entry is a node, mark it for slot layout resync
-    if (nodeId) {
-      nodesNeedingSlotResync.add(nodeId)
-    }
+    nodesNeedingSlotResync.add(nodeId)
   }
 
   if (updatesByType.size === 0 && nodesNeedingSlotResync.size === 0) return
 
-  if (updatesByType.size > 0) {
-    layoutStore.setSource(LayoutSource.DOM)
-
-    // Flush per-type
-    for (const [type, updates] of updatesByType) {
-      const config = trackingConfigs.get(type)
-      if (config?.updateHandler && updates.length) config.updateHandler(updates)
-    }
+  for (const [type, updates] of updatesByType) {
+    const config = trackingConfigs.get(type)
+    if (config?.updateHandler && updates.length) config.updateHandler(updates)
   }
 
   // After node bounds are updated, refresh slot cached offsets and layouts

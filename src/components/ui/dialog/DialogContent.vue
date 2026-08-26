@@ -28,7 +28,15 @@ const forwarded = useForwardPropsEmits(restProps, emits)
 <template>
   <DialogContent
     v-bind="forwarded"
-    :class="cn(dialogContentVariants({ size, maximized }), customClass)"
+    :class="
+      cn(
+        dialogContentVariants({ size, maximized }),
+        customClass,
+        // Custom dimension classes must yield to maximize, mirroring the
+        // PrimeVue `.p-dialog-maximized` !important behavior.
+        maximized && 'size-auto max-h-none max-w-none sm:max-w-none'
+      )
+    "
   >
     <slot />
   </DialogContent>

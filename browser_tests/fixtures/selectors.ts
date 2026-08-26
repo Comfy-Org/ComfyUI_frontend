@@ -11,7 +11,8 @@ export const TestIds = {
     nodePreviewCard: 'node-preview-card',
     workflows: 'workflows-sidebar',
     workflowsRefreshButton: 'workflows-refresh-button',
-    modeToggle: 'mode-toggle'
+    modeToggle: 'mode-toggle',
+    tabButton: (tabId: string) => `${tabId}-tab-button`
   },
   tree: {
     folder: 'tree-folder',
@@ -38,13 +39,14 @@ export const TestIds = {
     settings: 'settings-dialog',
     settingsContainer: 'settings-container',
     settingsTabAbout: 'settings-tab-about',
-    confirm: 'confirm-dialog',
     errorOverlay: 'error-overlay',
     errorOverlaySeeErrors: 'error-overlay-see-errors',
     errorOverlayDismiss: 'error-overlay-dismiss',
     errorOverlayMessages: 'error-overlay-messages',
     runtimeErrorPanel: 'runtime-error-panel',
     missingNodeCard: 'missing-node-card',
+    missingNodePackExpand: 'missing-node-pack-expand',
+    missingNodePackCount: 'missing-node-pack-count',
     errorCardFindOnGithub: 'error-card-find-on-github',
     errorCardCopy: 'error-card-copy',
     errorDialog: 'error-dialog',
@@ -54,25 +56,26 @@ export const TestIds = {
     errorDialogFindIssues: 'error-dialog-find-issues',
     about: 'about-panel',
     whatsNewSection: 'whats-new-section',
+    errorGroupDisplayMessage: 'error-group-display-message',
     missingNodePacksGroup: 'error-group-missing-node',
     missingModelsGroup: 'error-group-missing-model',
     missingModelExpand: 'missing-model-expand',
+    missingModelImport: 'missing-model-import',
+    missingModelImportableRows: 'missing-model-importable-rows',
     missingModelLocate: 'missing-model-locate',
-    missingModelCopyName: 'missing-model-copy-name',
-    missingModelCopyUrl: 'missing-model-copy-url',
+    missingModelReferenceCount: 'missing-model-reference-count',
+    missingModelUnsupportedSection:
+      'missing-model-import-not-supported-section',
+    missingModelGatedAccess: 'missing-model-gated-access',
+    missingModelGatedHint: 'missing-model-gated-hint',
     missingModelDownload: 'missing-model-download',
     missingModelActions: 'missing-model-actions',
     missingModelDownloadAll: 'missing-model-download-all',
-    missingModelRefresh: 'missing-model-refresh',
-    missingModelImportUnsupported: 'missing-model-import-unsupported',
+    missingModelRefresh: 'missing-model-header-refresh',
     missingMediaGroup: 'error-group-missing-media',
     swapNodesGroup: 'error-group-swap-nodes',
+    swapNodeGroupCount: 'swap-node-group-count',
     missingMediaRow: 'missing-media-row',
-    missingMediaUploadDropzone: 'missing-media-upload-dropzone',
-    missingMediaLibrarySelect: 'missing-media-library-select',
-    missingMediaStatusCard: 'missing-media-status-card',
-    missingMediaConfirmButton: 'missing-media-confirm-button',
-    missingMediaCancelButton: 'missing-media-cancel-button',
     missingMediaLocateButton: 'missing-media-locate-button',
     publishTabPanel: 'publish-tab-panel',
     apiSignin: 'api-signin-dialog',
@@ -95,22 +98,33 @@ export const TestIds = {
   },
   topbar: {
     queueButton: 'queue-button',
+    queueButtonIcon: 'queue-button-icon',
     queueModeMenuTrigger: 'queue-mode-menu-trigger',
     saveButton: 'save-workflow-button',
     subscribeButton: 'topbar-subscribe-button',
+    subscribeToRunButton: 'subscribe-to-run-button',
     loginButton: 'login-button',
     loginButtonPopover: 'login-button-popover',
     loginButtonPopoverLearnMore: 'login-button-popover-learn-more',
     workflowTabs: 'topbar-workflow-tabs',
     integratedTabBarActions: 'integrated-tab-bar-actions',
-    actionBarButtons: 'action-bar-buttons'
+    actionBarButtons: 'action-bar-buttons',
+    actionBarCard: 'action-bar-card',
+    freeTierQuota: 'free-tier-quota',
+    queueInlineProgress: 'queue-inline-progress',
+    queueInlineProgressNodeFill: 'queue-inline-progress-node-fill'
   },
   nodeLibrary: {
     bookmarksSection: 'node-library-bookmarks-section'
   },
   propertiesPanel: {
     root: 'properties-panel',
-    errorsTab: 'panel-tab-errors'
+    errorsTab: 'panel-tab-errors',
+    selectionContextStrip: 'selection-context-strip'
+  },
+  assets: {
+    browserModal: 'asset-browser-modal',
+    card: 'asset-card'
   },
   subgraphEditor: {
     hiddenSection: 'subgraph-editor-hidden-section',
@@ -137,7 +151,9 @@ export const TestIds = {
     colorPickerButton: 'color-picker-button',
     colorPickerCurrentColor: 'color-picker-current-color',
     colorBlue: 'blue',
-    colorRed: 'red'
+    colorRed: 'red',
+    convertSubgraph: 'convert-to-subgraph-button',
+    bypass: 'bypass-button'
   },
   menu: {
     moreMenuContent: 'more-menu-content'
@@ -152,6 +168,8 @@ export const TestIds = {
   widgets: {
     container: 'node-widgets',
     widget: 'node-widget',
+    layoutFieldLabel: 'widget-layout-field-label',
+    formDropdownMenu: 'form-dropdown-menu',
     decrement: 'decrement',
     increment: 'increment',
     valueControl: 'value-control',
@@ -166,6 +184,9 @@ export const TestIds = {
     mobileNavigation: 'linear-mobile-navigation',
     mobileWorkflows: 'linear-mobile-workflows',
     outputInfo: 'linear-output-info',
+    runButton: 'linear-run-button',
+    validationWarning: 'linear-validation-warning',
+    viewErrorsInGraph: 'linear-view-errors',
     widgetContainer: 'linear-widgets'
   },
   builder: {
@@ -208,6 +229,7 @@ export const TestIds = {
   },
   appMode: {
     widgetItem: 'app-mode-widget-item',
+    widgetDescription: 'app-mode-widget-description',
     welcome: 'linear-welcome',
     emptyWorkflow: 'linear-welcome-empty-workflow',
     buildApp: 'linear-welcome-build-app',
@@ -229,12 +251,17 @@ export const TestIds = {
     renameInput: 'subgraph-breadcrumb-rename-input',
     menu: (key: string) => `subgraph-breadcrumb-menu-${key}`
   },
+  workflowActions: {
+    viewModeToggle: 'view-mode-toggle'
+  },
   templates: {
     content: 'template-workflows-content',
     workflowCard: (id: string) => `template-workflow-${id}`
   },
   user: {
-    currentUserIndicator: 'current-user-indicator'
+    currentUserButton: 'current-user-button',
+    currentUserIndicator: 'current-user-indicator',
+    currentUserPopover: 'current-user-popover'
   },
   queue: {
     jobHistorySidebar: 'job-history-sidebar',
@@ -266,6 +293,8 @@ export const TestIds = {
     overlay: 'loading-overlay'
   },
   load3d: {
+    categoryMenu: 'load3d-category-menu',
+    gizmoModeMenu: 'gizmo-mode-menu',
     recordingDuration: 'load3d-recording-duration'
   },
   load3dViewer: {
@@ -303,12 +332,3 @@ export const TestIds = {
     typeFilter: (key: 'input' | 'output') => `search-filter-${key}`
   }
 } as const
-
-export type TestId<K extends keyof typeof TestIds> = Exclude<
-  (typeof TestIds)[K][keyof (typeof TestIds)[K]],
-  (...args: never[]) => string
->
-
-export type TestIdValue = {
-  [K in keyof typeof TestIds]: TestId<K>
-}[keyof typeof TestIds]

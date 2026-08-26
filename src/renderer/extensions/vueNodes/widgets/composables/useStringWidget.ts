@@ -1,48 +1,32 @@
-import { resolveNodeRootGraphId } from '@/lib/litegraph/src/litegraph'
+import { defineAsyncComponent } from 'vue'
+
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import WidgetTextarea from '@/renderer/extensions/vueNodes/widgets/components/WidgetTextarea.vue'
 import { isStringInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { app } from '@/scripts/app'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+
+const WidgetTextarea = defineAsyncComponent(
+  () => import('../components/WidgetTextarea.vue')
+)
 
 function addMultilineWidget(
   node: LGraphNode,
-  name: string,
   inputSpec: InputSpec,
   opts: { defaultVal: string; placeholder?: string }
 ) {
-  const widget = new ComponentWidgetImpl({
+  const widget = new ComponentWidgetImpl<string>({
     node,
-    name,
+    name: inputSpec.name,
     component: WidgetTextarea,
     inputSpec,
     type: 'customtext',
-    props: { placeholder: opts.placeholder ?? name },
-    options: {
-      minNodeSize: [400, 200],
-      getValue: () =>
-        (useWidgetValueStore().getWidget(
-          resolveNodeRootGraphId(node, app.rootGraph.id),
-          node.id,
-          name
-        )?.value as string) ?? opts.defaultVal,
-      setValue: (v: string) => {
-        const state = useWidgetValueStore().getWidget(
-          resolveNodeRootGraphId(node, app.rootGraph.id),
-          node.id,
-          name
-        )
-        if (state) state.value = v
-      }
-    }
+    props: { placeholder: opts.placeholder ?? inputSpec.name },
+    options: { minNodeSize: [400, 200] },
+    value: opts.defaultVal
   })
 
   addWidget(node, widget)
-  widget.value = opts.defaultVal
-
   return widget
 }
 
@@ -59,7 +43,7 @@ export const useStringWidget = () => {
     const multiline = inputSpec.multiline
 
     const widget = multiline
-      ? addMultilineWidget(node, inputSpec.name, inputSpec, {
+      ? addMultilineWidget(node, inputSpec, {
           defaultVal,
           placeholder: inputSpec.placeholder
         })

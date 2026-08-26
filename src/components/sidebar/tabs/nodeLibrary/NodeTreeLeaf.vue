@@ -92,6 +92,7 @@ import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
+import { BLUEPRINT_TYPE_PREFIX, isBlueprintType } from '@/utils/blueprintUtils'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
@@ -118,7 +119,8 @@ const toggleBookmark = async () => {
 
 const onHelpClick = () => {
   useTelemetry()?.trackUiButtonClicked({
-    button_id: 'node_library_help_button'
+    button_id: 'node_library_help_button',
+    element_group: 'node_library'
   })
   props.openNodeHelp(nodeDef.value)
 }
@@ -133,9 +135,9 @@ const menu = ref<InstanceType<typeof ContextMenu> | null>(null)
 const subgraphStore = useSubgraphStore()
 const isUserBlueprint = computed(() => {
   const name = nodeDef.value.name
-  if (!name.startsWith(subgraphStore.typePrefix)) return false
+  if (!isBlueprintType(name)) return false
   return !subgraphStore.isGlobalBlueprint(
-    name.slice(subgraphStore.typePrefix.length)
+    name.slice(BLUEPRINT_TYPE_PREFIX.length)
   )
 })
 const menuItems = computed<MenuItem[]>(() => {

@@ -344,6 +344,51 @@ class NodeWithPriceBadge(IO.ComfyNode):
         return IO.NodeOutput()
 
 
+class NodeWithNumericCombo(IO.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return IO.Schema(
+            node_id="DevToolsNodeWithNumericCombo",
+            display_name="Node With Numeric Combo",
+            description="An API node whose combo options are numbers",
+            inputs=[IO.Combo.Input("duration", options=[5, 10], default=5)],
+            is_api_node=True,
+            price_badge=IO.PriceBadge(
+                depends_on=IO.PriceBadgeDepends(widgets=["duration"]),
+                expr='{"type":"usd","usd": widgets.duration / 5}',
+            ),
+        )
+
+    @classmethod
+    async def execute(cls, duration):
+        return IO.NodeOutput()
+
+
+class NodeWithDynamicCombo(IO.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return IO.Schema(
+            node_id="DevToolsNodeWithDynamicCombo",
+            display_name="Node With Dynamic Combo",
+            description="A node with a Dynamic combo",
+            inputs=[IO.DynamicCombo.Input("combo", options=[
+                IO.DynamicCombo.Option("option1", [IO.Combo.Input("suboption", options=["1x"])]),
+                IO.DynamicCombo.Option("option2", [IO.Combo.Input("suboption", options=["2x"])]),
+                IO.DynamicCombo.Option("option3", [IO.Image.Input("image")]),
+                IO.DynamicCombo.Option("option4", [
+                    IO.DynamicCombo.Input("subcombo", options=[
+                        IO.DynamicCombo.Option("opt1", [IO.Float.Input("float_x"), IO.Float.Input("float_y")]),
+                        IO.DynamicCombo.Option("opt2", [IO.Mask.Input("mask1", optional=True)]),
+                    ])
+                ])]
+            )],
+        )
+
+    @classmethod
+    async def execute(cls):
+        return IO.NodeOutput()
+
+
 NODE_CLASS_MAPPINGS = {
     "DevToolsLongComboDropdown": LongComboDropdown,
     "DevToolsNodeWithOptionalInput": NodeWithOptionalInput,
@@ -361,6 +406,8 @@ NODE_CLASS_MAPPINGS = {
     "DevToolsNodeWithV2ComboInput": NodeWithV2ComboInput,
     "DevToolsNodeWithLegacyWidget": NodeWithLegacyWidget,
     "DevToolsNodeWithPriceBadge": NodeWithPriceBadge,
+    "DevToolsNodeWithNumericCombo": NodeWithNumericCombo,
+    "DevToolsNodeWithDynamicCombo": NodeWithDynamicCombo,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -380,6 +427,8 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DevToolsNodeWithV2ComboInput": "Node With V2 Combo Input",
     "DevToolsNodeWithLegacyWidget": "Node With Legacy Widget",
     "DevToolsNodeWithPriceBadge": "Node With Price Badge",
+    "DevToolsNodeWithNumericCombo": "Node With Numeric Combo",
+    "DevToolsNodeWithDynamicCombo": "Node With Dynamic Combo",
 }
 
 __all__ = [
@@ -397,6 +446,7 @@ __all__ = [
     "NodeWithSeedInput",
     "NodeWithValidation",
     "NodeWithV2ComboInput",
+    "NodeWithNumericCombo",
     "NODE_CLASS_MAPPINGS",
     "NODE_DISPLAY_NAME_MAPPINGS",
 ]

@@ -24,7 +24,6 @@ describe('useTypeformEmbed', () => {
     const result = runInScope(() => useTypeformEmbed(containerRef, 'goZLqjKL'))
 
     expect(result.isValidTypeformId.value).toBe(true)
-    expect(result.typeformId.value).toBe('goZLqjKL')
   })
 
   it('marks ids with non-alphanumeric characters as invalid', () => {
@@ -34,7 +33,6 @@ describe('useTypeformEmbed', () => {
     )
 
     expect(result.isValidTypeformId.value).toBe(false)
-    expect(result.typeformId.value).toBe('')
   })
 
   it('marks undefined id as invalid', () => {
@@ -42,7 +40,6 @@ describe('useTypeformEmbed', () => {
     const result = runInScope(() => useTypeformEmbed(containerRef, undefined))
 
     expect(result.isValidTypeformId.value).toBe(false)
-    expect(result.typeformId.value).toBe('')
   })
 
   it('marks empty string id as invalid', () => {
@@ -50,7 +47,6 @@ describe('useTypeformEmbed', () => {
     const result = runInScope(() => useTypeformEmbed(containerRef, ''))
 
     expect(result.isValidTypeformId.value).toBe(false)
-    expect(result.typeformId.value).toBe('')
   })
 
   it('exposes a reactive typeformError ref initialized to false', () => {

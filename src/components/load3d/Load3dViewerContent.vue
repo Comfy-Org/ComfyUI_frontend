@@ -82,7 +82,10 @@
           </div>
 
           <div v-if="viewer.canExport.value" class="space-y-4 p-2">
-            <ExportControls @export-model="viewer.exportModel" />
+            <ExportControls
+              :source-format="viewer.sourceFormat.value"
+              @export-model="viewer.exportModel"
+            />
           </div>
         </div>
       </div>

@@ -2,6 +2,8 @@ import { SparkRenderer } from '@sparkjsdev/spark'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
+import type { RendererView } from '@/renderer/three/RendererView'
+
 import Load3dUtils from './Load3dUtils'
 import {
   type BackgroundRenderModeType,
@@ -13,6 +15,17 @@ export class SceneManager implements SceneManagerInterface {
   scene!: THREE.Scene
   gridHelper: THREE.GridHelper
   private sparkRenderer: SparkRenderer
+
+  private nextSparkDirtyPromise: Promise<void> | null = null
+  private nextSparkDirtyResolve: (() => void) | null = null
+
+  awaitNextSparkDirty(): Promise<void> {
+    if (this.nextSparkDirtyPromise) return this.nextSparkDirtyPromise
+    this.nextSparkDirtyPromise = new Promise<void>((resolve) => {
+      this.nextSparkDirtyResolve = resolve
+    })
+    return this.nextSparkDirtyPromise
+  }
 
   backgroundScene!: THREE.Scene
   backgroundCamera: THREE.OrthographicCamera
@@ -27,16 +40,18 @@ export class SceneManager implements SceneManagerInterface {
 
   private eventManager: EventManagerInterface
   private renderer: THREE.WebGLRenderer
+  private view: RendererView
 
   private getActiveCamera: () => THREE.Camera
 
   constructor(
-    renderer: THREE.WebGLRenderer,
+    view: RendererView,
     getActiveCamera: () => THREE.Camera,
     _getControls: () => OrbitControls,
     eventManager: EventManagerInterface
   ) {
-    this.renderer = renderer
+    this.view = view
+    this.renderer = view.renderer
     this.eventManager = eventManager
     this.scene = new THREE.Scene()
 
@@ -45,9 +60,23 @@ export class SceneManager implements SceneManagerInterface {
     this.getActiveCamera = getActiveCamera
 
     // Spark 2.x requires a SparkRenderer in the scene tree to render SplatMesh
-    // (Gaussian splat) instances; without it splats are silent no-ops. Kept
-    // alive across model reloads by SceneModelManager.clearModel.
-    this.sparkRenderer = new SparkRenderer({ renderer })
+    // instances; without it splats are silent no-ops.
+    //
+    // onDirty fires twice per splat first-paint cycle: once from updateInternal
+    // (data uploaded) and again from driveSort (sort completed; line 1105 in
+    // SparkRenderer.ts). We expose it as a passive promise — awaiters get
+    // notified, but the callback itself does NOT trigger a render. Wiring
+    // forceRender directly into onDirty caused a per-frame render-setDirty
+    // cascade that made splats visibly "balloon" during camera interaction.
+    this.sparkRenderer = new SparkRenderer({
+      renderer: view.renderer,
+      onDirty: () => {
+        const resolve = this.nextSparkDirtyResolve
+        this.nextSparkDirtyResolve = null
+        this.nextSparkDirtyPromise = null
+        resolve?.()
+      }
+    })
     this.scene.add(this.sparkRenderer)
 
     this.gridHelper = new THREE.GridHelper(20, 20)
@@ -79,7 +108,8 @@ export class SceneManager implements SceneManagerInterface {
     this.backgroundMesh.position.set(0, 0, 0)
     this.backgroundScene.add(this.backgroundMesh)
 
-    this.renderer.setClearColor(0x000000, 0)
+    this.view.state.clearColor.set(0x000000)
+    this.view.state.clearAlpha = 0
   }
 
   init(): void {}
@@ -225,8 +255,8 @@ export class SceneManager implements SceneManagerInterface {
         this.updateBackgroundSize(
           this.backgroundTexture,
           this.backgroundMesh,
-          this.renderer.domElement.clientWidth,
-          this.renderer.domElement.clientHeight
+          this.view.canvas.clientWidth,
+          this.view.canvas.clientHeight
         )
       }
 
@@ -344,6 +374,8 @@ export class SceneManager implements SceneManagerInterface {
     width: number,
     height: number
   ): Promise<{ scene: string; mask: string; normal: string }> {
+    this.view.beginRender()
+
     const originalSize = new THREE.Vector2()
     this.renderer.getSize(originalSize)
     const originalPixelRatio = this.renderer.getPixelRatio()
@@ -470,7 +502,10 @@ export class SceneManager implements SceneManagerInterface {
       this.renderer.setPixelRatio(originalPixelRatio)
       this.renderer.setSize(originalSize.x, originalSize.y)
       this.renderer.outputColorSpace = originalOutputColorSpace
-      this.handleResize(originalSize.x, originalSize.y)
+      this.handleResize(
+        this.view.canvas.clientWidth,
+        this.view.canvas.clientHeight
+      )
     }
   }
 

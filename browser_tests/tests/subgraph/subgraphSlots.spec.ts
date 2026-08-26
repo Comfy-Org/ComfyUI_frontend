@@ -1,12 +1,12 @@
+import { expect } from '@playwright/test'
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
-
-import { expect } from '@playwright/test'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { SubgraphHelper } from '@e2e/fixtures/helpers/SubgraphHelper'
+import { toNodeId } from '@/types/nodeId'
 import {
   expectSlotsWithinBounds,
   measureNodeSlotOffsets
@@ -461,16 +461,17 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
       const subgraphNodeAfter = comfyPage.vueNodes.getNodeLocator('19')
       await expect(subgraphNodeAfter).toBeVisible()
 
+      const subgraphNodeId = toNodeId(19)
       await expect
         .poll(() =>
-          comfyPage.page.evaluate(() => {
-            const node = window.app!.canvas.graph!.getNodeById('19')
+          comfyPage.page.evaluate((nodeId) => {
+            const node = window.app!.canvas.graph!.getNodeById(nodeId)
             if (!node) return null
             const widget = node.widgets?.find((entry: { name: string }) =>
               entry.name.includes('seed')
             )
             return widget?.label || widget?.name || null
-          })
+          }, subgraphNodeId)
         )
         .toBe(RENAMED_LABEL)
 
@@ -651,6 +652,12 @@ test(
       await expect.poll(isConnected).toBe(true)
     })
 
+    const rawClip = await comfyPage.subgraph.getInputBounds()
+    const absolutePos = await comfyPage.canvasOps.toAbsolute(rawClip)
+    const clip = { ...rawClip, ...absolutePos }
+    await comfyPage.canvas.hover({ position: await seedIOSlot.getPosition() })
+    const twoLinkScreenshot = await comfyPage.page.screenshot({ clip })
+
     const stepsSlot = ksampler.getSlot('steps')
 
     await test.step('Node -> I/O hover effect', async () => {
@@ -659,9 +666,6 @@ test(
       await comfyPage.page.mouse.down()
       await comfyPage.canvas.hover({ position: await seedIOSlot.getPosition() })
 
-      const rawClip = await comfyPage.subgraph.getInputBounds()
-      const absolutePos = await comfyPage.canvasOps.toAbsolute(rawClip)
-      const clip = { ...rawClip, ...absolutePos }
       await expect(comfyPage.page).toHaveScreenshot('vue-io-highlight.png', {
         clip
       })
@@ -687,7 +691,8 @@ test(
       const emptySlotPos = await seedIOSlot.getOpenSlotPosition()
       await comfyPage.canvas.hover({ position: emptySlotPos })
       await comfyPage.page.mouse.down()
-      await stepsSlot.hover()
+      const { width, height } = (await stepsSlot.boundingBox())!
+      await stepsSlot.hover({ position: { x: (width * 3) / 4, y: height / 2 } })
       await expect.poll(hasSnap).toBe(true)
       await comfyPage.page.mouse.up()
 
@@ -699,5 +704,18 @@ test(
       'opacity',
       '0'
     )
+
+    await test.step('Can disconnect link by right click', async () => {
+      const stepsIOSlot = await comfyPage.subgraph.getInputSlot('steps')
+      const { x, y } = await stepsIOSlot.getPosition()
+      await comfyPage.page.mouse.click(x, y, { button: 'right' })
+      await comfyPage.contextMenu.clickLitegraphMenuItem('Remove Slot')
+
+      await expect(slotParent).toHaveCSS('opacity', '0')
+
+      await comfyPage.canvas.hover({ position: await seedIOSlot.getPosition() })
+      const postScreenshot = await comfyPage.page.screenshot({ clip })
+      expect(postScreenshot).toStrictEqual(twoLinkScreenshot)
+    })
   }
 )

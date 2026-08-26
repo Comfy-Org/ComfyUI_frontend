@@ -3,21 +3,19 @@ import { storeToRefs } from 'pinia'
 import { computed, nextTick, ref, shallowRef, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import { promotedInputWidgets } from '@/core/graph/subgraph/promotedInputWidget'
 import {
-  getWidgetName,
   isWidgetPromotedOnSubgraphNode,
   reorderSubgraphInputsByWidgetOrder
 } from '@/core/graph/subgraph/promotionUtils'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 
 import { searchWidgets } from '../shared'
 import type { NodeWidgetsList } from '../shared'
+import PanelSearchHeader from './PanelSearchHeader.vue'
 import SectionWidgets from './SectionWidgets.vue'
 
 const { node } = defineProps<{
@@ -45,32 +43,6 @@ const isAllCollapsed = computed({
 })
 const advancedInputsSectionRef = useTemplateRef('advancedInputsSectionRef')
 
-function isSamePromotedWidget(a: IBaseWidget, b: IBaseWidget): boolean {
-  return (
-    isPromotedWidgetView(a) &&
-    isPromotedWidgetView(b) &&
-    a.sourceNodeId === b.sourceNodeId &&
-    a.sourceWidgetName === b.sourceWidgetName
-  )
-}
-
-function getPromotedWidgets(): IBaseWidget[] {
-  const inputWidgets = node.inputs
-    .map((input) => input._widget)
-    .filter((widget): widget is IBaseWidget =>
-      Boolean(widget && isPromotedWidgetView(widget))
-    )
-  const extraWidgets = (node.widgets ?? []).filter(
-    (widget) =>
-      isPromotedWidgetView(widget) &&
-      !inputWidgets.some((inputWidget) =>
-        isSamePromotedWidget(inputWidget, widget)
-      )
-  )
-
-  return [...inputWidgets, ...extraWidgets]
-}
-
 watch(
   focusedSection,
   async (section) => {
@@ -93,7 +65,7 @@ watch(
 )
 
 const widgetsList = computed((): NodeWidgetsList => {
-  return getPromotedWidgets().map((widget) => ({ node, widget }))
+  return promotedInputWidgets(node).map((widget) => ({ node, widget }))
 })
 
 const advancedInputsWidgets = computed((): NodeWidgetsList => {
@@ -102,20 +74,18 @@ const advancedInputsWidgets = computed((): NodeWidgetsList => {
   const allInteriorWidgets = interiorNodes.flatMap((interiorNode) => {
     const { widgets = [] } = interiorNode
     return widgets
-      .filter((w) => !w.computedDisabled)
+      .filter((w) => !w.computedDisabled && !w.options.canvasOnly)
       .map((widget) => ({ node: interiorNode, widget }))
   })
 
   return allInteriorWidgets.filter(
     ({ node: interiorNode, widget }) =>
       !isWidgetPromotedOnSubgraphNode(node, {
-        sourceNodeId: String(interiorNode.id),
-        sourceWidgetName: getWidgetName(widget)
+        sourceNodeId: interiorNode.id,
+        sourceWidgetName: widget.name
       })
   )
 })
-
-const parents = computed<SubgraphNode[]>(() => [node])
 
 const searchedWidgetsList = shallowRef<NodeWidgetsList>(widgetsList.value)
 const isSearching = ref(false)
@@ -149,25 +119,17 @@ const label = computed(() => {
 </script>
 
 <template>
-  <div
-    class="flex items-center border-b border-interface-stroke px-4 pt-1 pb-4"
-  >
-    <AsyncSearchInput
-      v-model="searchQuery"
-      :searcher
-      :update-key="widgetsList"
-      class="flex-1"
-    />
+  <PanelSearchHeader v-model="searchQuery" :searcher :update-key="widgetsList">
     <CollapseToggleButton
       v-model="isAllCollapsed"
       :show="!isSearching && advancedInputsWidgets.length > 0"
     />
-  </div>
+  </PanelSearchHeader>
   <SectionWidgets
     :collapse="firstSectionCollapsed && !isSearching"
     :node
     :label
-    :parents
+    :host="node"
     :widgets="searchedWidgetsList"
     :is-draggable="!isSearching"
     :enable-empty-state="isSearching"
@@ -191,7 +153,7 @@ const label = computed(() => {
     ref="advancedInputsSectionRef"
     v-model:collapse="advancedInputsCollapsed"
     :label="t('rightSidePanel.advancedInputs')"
-    :parents="parents"
+    :host="node"
     :widgets="advancedInputsWidgets"
     show-node-name
     class="border-b border-interface-stroke"

@@ -27,7 +27,6 @@
         <div v-if="useSearchBoxV2" role="search" class="relative">
           <NodeSearchContent
             :filters="nodeFilters"
-            :default-root-filter="defaultRootFilter"
             @add-filter="addFilter"
             @remove-filter="removeFilter"
             @add-node="addNode"
@@ -67,6 +66,7 @@ import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
+import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -77,8 +77,6 @@ import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 import type { FuseFilterWithValue } from '@/utils/fuseUtil'
 
 import NodePreviewCard from '@/components/node/NodePreviewCard.vue'
-import { RootCategory } from '@/components/searchbox/v2/rootCategories'
-import type { RootCategoryId } from '@/components/searchbox/v2/rootCategories'
 
 import NodeSearchContent from './v2/NodeSearchContent.vue'
 import NodeSearchBox from './NodeSearchBox.vue'
@@ -90,7 +88,6 @@ let disconnectOnReset = false
 const settingStore = useSettingStore()
 const searchBoxStore = useSearchBoxStore()
 const litegraphService = useLitegraphService()
-const canvasStore = useCanvasStore()
 const { trackFeatureUsed } = useSurveyFeatureTracking('node-search')
 
 const { visible, newSearchBoxEnabled, useSearchBoxV2 } =
@@ -106,13 +103,6 @@ const enableNodePreview = computed(
     settingStore.get('Comfy.NodeSearchBoxImpl.NodePreview') &&
     windowWidth.value >= MIN_WIDTH_FOR_PREVIEW
 )
-const defaultRootFilter = ref<RootCategoryId | null>(null)
-watch(visible, (isVisible) => {
-  if (!isVisible) return
-  defaultRootFilter.value = !canvasStore.canvas?.graph?.nodes?.length
-    ? RootCategory.Essentials
-    : null
-})
 function getNewNodeLocation(): Point {
   return triggerEvent
     ? [triggerEvent.canvasX, triggerEvent.canvasY]
@@ -137,13 +127,16 @@ function clearFilters() {
 function closeDialog() {
   visible.value = false
 }
+const canvasStore = useCanvasStore()
 
 function addNode(nodeDef: ComfyNodeDefImpl, dragEvent?: MouseEvent) {
   const followCursor = settingStore.get('Comfy.NodeSearchBoxImpl.FollowCursor')
-  const node = litegraphService.addNodeOnGraph(
-    nodeDef,
-    { pos: getNewNodeLocation() },
-    { ghost: useSearchBoxV2.value && followCursor, dragEvent }
+  const node = withNodeAddSource('search_modal', () =>
+    litegraphService.addNodeOnGraph(
+      nodeDef,
+      { pos: getNewNodeLocation() },
+      { ghost: useSearchBoxV2.value && followCursor, dragEvent }
+    )
   )
   if (!node) return
 

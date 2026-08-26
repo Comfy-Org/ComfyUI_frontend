@@ -15,7 +15,7 @@ import { collectAllNodes } from '@/utils/graphTraversalUtil'
  *
  * Comparison is full-string against the widget value as stored — callers must
  * provide the canonical widget-value variants for each deleted asset (e.g.
- * `foo.png`, `foo.png [output]`, `sub/foo.png [output]`, `<asset_hash>`). This
+ * `foo.png`, `foo.png [output]`, `sub/foo.png [output]`, `<hash>`). This
  * avoids false matches when two distinct assets share a basename across
  * input/output sources.
  *
@@ -42,8 +42,8 @@ export function clearNodePreviewCacheForValues(
 
 /**
  * Walk the graph hierarchy and yield each leaf node whose widget value matches
- * one of `deletedValues`. Used by both the preview-clearing path and the
- * missing-media-marking path so the two stay in lockstep.
+ * one of `deletedValues`. Shared by the preview-clearing and value-clearing
+ * paths.
  *
  * Skips subgraph wrapper nodes — only their interior nodes are inspected.
  */

@@ -10,10 +10,11 @@ import IoItem from '@/components/builder/IoItem.vue'
 import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
 import { useResolvedSelectedInputs } from '@/components/builder/useResolvedSelectedInputs'
 import type { ResolvedSelection } from '@/components/builder/useResolvedSelectedInputs'
-import type { WidgetEntityId } from '@/world/entityIds'
+import type { WidgetId } from '@/types/widgetId'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+import type { NodeId } from '@/types/nodeId'
 import {
   LGraphEventMode,
   TitleMode
@@ -110,8 +111,8 @@ function getWidgetBounding(entry: ResolvedSelection): BoundStyle | undefined {
   }
 }
 
-function removeSelectedEntityId(entityId: WidgetEntityId): void {
-  const index = appModeStore.selectedInputs.findIndex(([id]) => id === entityId)
+function removeSelectedWidgetId(widgetId: WidgetId): void {
+  const index = appModeStore.selectedInputs.findIndex(([id]) => id === widgetId)
   if (index !== -1) appModeStore.selectedInputs.splice(index, 1)
 }
 
@@ -132,18 +133,18 @@ function handleClick(e: MouseEvent) {
     if (!isSelectOutputsMode.value) return
     if (!node.constructor.nodeData?.output_node)
       return canvasInteractions.forwardEventToCanvas(e)
-    const index = appModeStore.selectedOutputs.findIndex((id) => id == node.id)
+    const index = appModeStore.selectedOutputs.findIndex((id) => id === node.id)
     if (index === -1) appModeStore.selectedOutputs.push(node.id)
     else appModeStore.selectedOutputs.splice(index, 1)
     return
   }
   if (!isSelectInputsMode.value || widget.options.canvasOnly) return
 
-  const entityId = widget.entityId
-  if (!entityId) return
-  const index = appModeStore.selectedInputs.findIndex(([id]) => id === entityId)
+  const widgetId = widget.widgetId
+  if (!widgetId) return
+  const index = appModeStore.selectedInputs.findIndex(([id]) => id === widgetId)
   if (index === -1)
-    appModeStore.selectedInputs.push([entityId, widget.name, undefined])
+    appModeStore.selectedInputs.push([widgetId, widget.name, undefined])
   else appModeStore.selectedInputs.splice(index, 1)
 }
 
@@ -172,7 +173,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
   () =>
     resolvedInputs.value.map(
       (entry) =>
-        [entry.entityId, getWidgetBounding(entry)] as [
+        [entry.widgetId, getWidgetBounding(entry)] as [
           string,
           MaybeRef<BoundStyle> | undefined
         ]
@@ -220,7 +221,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
           v-slot="{ dragClass }"
           v-model="appModeStore.selectedInputs"
         >
-          <template v-for="entry in resolvedInputs" :key="entry.entityId">
+          <template v-for="entry in resolvedInputs" :key="entry.widgetId">
             <IoItem
               v-if="entry.status === 'resolved'"
               :class="
@@ -239,7 +240,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
               "
               :title="entry.displayName"
               :sub-title="t('linearMode.builder.unknownWidget')"
-              :remove="() => removeSelectedEntityId(entry.entityId)"
+              :remove="() => removeSelectedWidgetId(entry.widgetId)"
             />
           </template>
         </DraggableList>
@@ -287,7 +288,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
             :title
             :sub-title="String(key)"
             :remove="
-              () => remove(appModeStore.selectedOutputs, (k) => k == key)
+              () => remove(appModeStore.selectedOutputs, (k) => k === key)
             "
           />
         </DraggableList>
@@ -347,7 +348,7 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
                 v-if="isSelected"
                 class="pointer-events-auto absolute -top-1/2 -right-1/2 size-full cursor-pointer rounded-lg bg-warning-background p-2"
                 @click.stop="
-                  remove(appModeStore.selectedOutputs, (k) => k == key)
+                  remove(appModeStore.selectedOutputs, (k) => k === key)
                 "
                 @pointerdown.stop
               >

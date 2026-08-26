@@ -1,8 +1,8 @@
 <script setup lang="ts">
+import { useDebounceFn } from '@vueuse/core'
 import { computed, provide, ref, toRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
 import { SUPPORTED_EXTENSIONS_ACCEPT } from '@/extensions/core/load3d/constants'
 import { useAssetsApi } from '@/platform/assets/composables/media/useAssetsApi'
 import { useFlatOutputAssets } from '@/platform/assets/composables/media/useFlatOutputAssets'
@@ -15,7 +15,7 @@ import { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/compo
 import { useWidgetSelectActions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions'
 import { useWidgetSelectItems } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
 import type { ResultItemType } from '@/schemas/apiSchema'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 import type { AssetKind } from '@/types/widgetTypes'
 import {
   PANEL_EXCLUDED_PROPS,
@@ -40,10 +40,20 @@ provide(
   computed(() => props.assetKind)
 )
 
-const modelValue = defineModel<string | undefined>({
-  default(props: Props) {
-    const values = props.widget.options?.values
+const modelValue = defineModel<WidgetValue>({
+  default(modelProps: Record<string, unknown>) {
+    const modelWidget = modelProps.widget as Props['widget'] | undefined
+    const values = modelWidget?.options?.values
     return (Array.isArray(values) ? values[0] : undefined) ?? ''
+  }
+})
+const stringModelValue = computed({
+  get: () => {
+    const value = modelValue.value
+    return value == null ? undefined : String(value)
+  },
+  set: (value: string | undefined) => {
+    modelValue.value = value
   }
 })
 
@@ -53,12 +63,9 @@ const outputMediaAssets = isCloud
   ? useFlatOutputAssets()
   : useAssetsApi('output')
 
-const transformCompatProps = useTransformCompatOverlayProps()
-
-const combinedProps = computed(() => ({
-  ...filterWidgetProps(props.widget.options, PANEL_EXCLUDED_PROPS),
-  ...transformCompatProps.value
-}))
+const combinedProps = computed(() =>
+  filterWidgetProps(props.widget.options, PANEL_EXCLUDED_PROPS)
+)
 
 const getAssetData = () => {
   const nodeType: string | undefined =
@@ -85,7 +92,7 @@ const {
 } = useWidgetSelectItems({
   values: () => props.widget.options?.values as unknown[] | undefined,
   getOptionLabel: () => props.widget.options?.getOptionLabel,
-  modelValue,
+  modelValue: stringModelValue,
   assetKind: () => props.assetKind,
   outputMediaAssets,
   assetData,
@@ -93,7 +100,7 @@ const {
 })
 
 const { updateSelectedItems, handleFilesUpdate } = useWidgetSelectActions({
-  modelValue,
+  modelValue: stringModelValue,
   dropdownItems,
   widget: () => props.widget,
   uploadFolder: () => props.uploadFolder,
@@ -154,6 +161,23 @@ function handleIsOpenUpdate(isOpen: boolean) {
     void outputMediaAssets.refresh()
   }
 }
+
+const handleApproachEnd = useDebounceFn(async () => {
+  if (
+    outputMediaAssets.hasMore.value &&
+    !outputMediaAssets.loading.value &&
+    !outputMediaAssets.isLoadingMore.value
+  ) {
+    await outputMediaAssets.loadMore()
+  }
+}, 300)
+
+const isUploading = ref(false)
+async function updateFiles(files: File[]) {
+  isUploading.value = true
+  await handleFilesUpdate(files)
+  isUploading.value = false
+}
 </script>
 
 <template>
@@ -175,11 +199,14 @@ function handleIsOpenUpdate(isOpen: boolean) {
       :ownership-options
       :show-base-model-filter
       :base-model-options
+      :is-uploading
       v-bind="combinedProps"
+      :loading-more="outputMediaAssets.isLoadingMore.value"
       class="w-full"
       @update:selected="updateSelectedItems"
-      @update:files="handleFilesUpdate"
+      @update:files="updateFiles"
       @update:is-open="handleIsOpenUpdate"
+      @approach-end="handleApproachEnd"
     />
   </WidgetLayoutField>
 </template>

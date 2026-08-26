@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
@@ -30,7 +30,11 @@ vi.mock('@/platform/distribution/types', () => ({
 
 vi.mock('@/composables/useExternalLink', () => ({
   useExternalLink: () => ({
-    staticUrls: { discord: '', github: '' },
+    staticUrls: {
+      discord: '',
+      github: '',
+      status: 'https://status.comfy.org/'
+    },
     buildDocsUrl: () => 'https://docs.comfy.org'
   })
 }))
@@ -116,13 +120,11 @@ describe('HelpCenterMenuContent feedback item', () => {
     distribution.isCloud = false
     distribution.isDesktop = false
     distribution.isNightly = false
-    commandStoreExecute.mockReset()
     openSpy = vi.spyOn(window, 'open').mockReturnValue(null)
   })
 
   afterEach(() => {
     openSpy.mockRestore()
-    cleanup()
   })
 
   it('opens the Typeform survey tagged with help-center source on Cloud', async () => {
@@ -160,5 +162,39 @@ describe('HelpCenterMenuContent feedback item', () => {
 
     expect(openSpy).not.toHaveBeenCalled()
     expect(commandStoreExecute).toHaveBeenCalledWith('Comfy.ContactSupport')
+  })
+})
+
+describe('HelpCenterMenuContent system status item', () => {
+  let openSpy: ReturnType<typeof vi.spyOn>
+
+  beforeEach(() => {
+    distribution.isCloud = false
+    distribution.isDesktop = false
+    distribution.isNightly = false
+    openSpy = vi.spyOn(window, 'open').mockReturnValue(null)
+  })
+
+  afterEach(() => {
+    openSpy.mockRestore()
+  })
+
+  it('opens the status page on Cloud', async () => {
+    distribution.isCloud = true
+    const { user } = renderComponent()
+
+    await user.click(screen.getByRole('menuitem', { name: 'System Status' }))
+
+    expect(openSpy).toHaveBeenCalledWith(
+      'https://status.comfy.org/',
+      '_blank',
+      'noopener,noreferrer'
+    )
+  })
+
+  it('is hidden outside Cloud', () => {
+    renderComponent()
+
+    expect(screen.queryByRole('menuitem', { name: 'System Status' })).toBeNull()
   })
 })

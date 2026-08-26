@@ -16,18 +16,14 @@ vi.mock('@/renderer/core/layout/slots/slotIdentifier', () => ({
   getSlotKey: vi.fn()
 }))
 
-vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
-  layoutStore: {
-    getSlotLayout: vi.fn().mockReturnValue(null),
-    getNodeLayoutRef: vi.fn().mockReturnValue({ value: null })
-  }
-}))
+vi.mock('@/renderer/core/layout/store/layoutStore')
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@/lib/litegraph/src/interfaces'
+import { toNodeId } from '@/types/nodeId'
 
 import {
   calculateInputSlotPosFromSlot,
@@ -69,7 +65,7 @@ function makeNode(
   }> = {}
 ): LGraphNode {
   return fromPartial<LGraphNode>({
-    id: 1,
+    id: toNodeId(1),
     pos: [100, 200],
     size: [180, 120],
     flags: { collapsed: overrides.collapsed ?? false },
@@ -138,6 +134,27 @@ describe('calculateInputSlotPosFromSlot', () => {
       })
       const [, yRegular] = calculateInputSlotPosFromSlot(ctx, regular)
       expect(yRegular).toBeCloseTo(200 + 0.7 * SLOT_HEIGHT)
+    })
+
+    it('uses the legacy fallback position for a widget input itself', () => {
+      const widget = makeInput({ name: 'widget', widget: { name: 'widget' } })
+      const ctx = makeContext({
+        inputs: [makeInput(), widget],
+        widgets: [{ name: 'widget' }]
+      })
+
+      const [, y] = calculateInputSlotPosFromSlot(ctx, widget)
+
+      expect(y).toBeCloseTo(200 - 0.3 * SLOT_HEIGHT)
+    })
+
+    it('uses the legacy fallback position for a detached input', () => {
+      const detached = makeInput()
+      const ctx = makeContext({ inputs: [makeInput(), makeInput()] })
+
+      const [, y] = calculateInputSlotPosFromSlot(ctx, detached)
+
+      expect(y).toBeCloseTo(200 - 0.3 * SLOT_HEIGHT)
     })
 
     it('excludes slots with hard-coded positions from vertical ordering', () => {

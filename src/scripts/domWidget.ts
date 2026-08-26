@@ -1,18 +1,17 @@
 import _ from 'es-toolkit/compat'
-import type { Component } from 'vue'
-import { effectScope, toRaw, watch } from 'vue'
+import { type Component, toRaw } from 'vue'
 
-import { useDomValueBridge } from '@/composables/element/useDomValueBridge'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import {
-  LGraphNode,
-  LegacyWidget,
-  LiteGraph
-} from '@/lib/litegraph/src/litegraph'
+// LegacyWidget is imported from its own module, not the barrel: the barrel
+// exports it after SubgraphNode, so a litegraph-internal importer of this file
+// would hit its TDZ. LGraphNode/LiteGraph must stay barrel-sourced — a direct
+// LGraphNode import re-triggers the LGraph<->Subgraph cycle.
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   IBaseWidget,
   IWidgetOptions
 } from '@/lib/litegraph/src/types/widgets'
+import { LegacyWidget } from '@/lib/litegraph/src/widgets/LegacyWidget'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { generateUUID } from '@/utils/formatUtil'
@@ -123,7 +122,6 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
   implements BaseDOMWidget<V>
 {
   static readonly DEFAULT_MARGIN = 10
-  declare readonly name: string
   declare readonly options: DOMWidgetOptions<V>
   declare callback?: (value: V) => void
 
@@ -134,19 +132,21 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
     name: string
     type: string
     options: DOMWidgetOptions<V>
+    value?: V
   }) {
-    const { node, name, type, options } = obj
-    super({ y: 0, name, type, options }, node)
+    const { node, name, type, options, value = '' as V } = obj
+    super({ y: 0, name, type, options, value }, node)
 
     this.id = generateUUID()
   }
 
   override get value(): V {
-    return this.options.getValue?.() ?? ('' as V)
+    return this.options.getValue?.() ?? super.value ?? ('' as V)
   }
 
   override set value(v: V) {
-    this.options.setValue?.(v)
+    if (this.options.setValue) this.options.setValue(v)
+    else super.value = v
     this.callback?.(this.value)
   }
 
@@ -307,6 +307,7 @@ export class ComponentWidgetImpl<
     props?: P
     options: DOMWidgetOptions<V>
     type?: string
+    value?: V
   }) {
     super({
       type: 'custom',
@@ -388,38 +389,6 @@ LGraphNode.prototype.addDOMWidget = function <
       this.callback?.(this.value)
     }
   })
-
-  if (
-    element instanceof HTMLInputElement ||
-    element instanceof HTMLTextAreaElement
-  ) {
-    let bridgeScope: ReturnType<typeof effectScope> | null = null
-
-    const valueElement = element as HTMLInputElement | HTMLTextAreaElement
-
-    function startBridge() {
-      if (bridgeScope?.active) return
-      bridgeScope = effectScope()
-      bridgeScope.run(() => {
-        const bridgedValue = useDomValueBridge(valueElement)
-        watch(bridgedValue, (newVal) => {
-          if (widget.value !== newVal) {
-            widget.value = newVal as V
-          }
-        })
-      })
-    }
-
-    function stopBridge() {
-      bridgeScope?.stop()
-      bridgeScope = null
-    }
-
-    startBridge()
-
-    this.onAdded = useChainCallback(this.onAdded, startBridge)
-    widget.onRemove = useChainCallback(widget.onRemove, stopBridge)
-  }
 
   return widget
 }

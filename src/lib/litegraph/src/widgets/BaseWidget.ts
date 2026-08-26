@@ -3,24 +3,25 @@ import { drawTextInArea } from '@/lib/litegraph/src/draw'
 import { cachedMeasureText } from '@/lib/litegraph/src/utils/textMeasureCache'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type { Point } from '@/lib/litegraph/src/interfaces'
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { NodeId } from '@/types/nodeId'
 import type {
   CanvasPointer,
   LGraphCanvas,
   LGraphNode,
   Size
 } from '@/lib/litegraph/src/litegraph'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type {
   IBaseWidget,
   NodeBindable,
   TWidgetType
 } from '@/lib/litegraph/src/types/widgets'
-import type { WidgetState } from '@/stores/widgetValueStore'
+import { deriveWidgetRenderState } from '@/lib/litegraph/src/utils/widget'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { WidgetEntityId } from '@/world/entityIds'
-import { widgetEntityId } from '@/world/entityIds'
+import type { WidgetId } from '@/types/widgetId'
+import { ensureUniqueWidgetNames, widgetId } from '@/types/widgetId'
+import type { WidgetState } from '@/types/widgetState'
 
 export interface DrawWidgetOptions {
   /** The width of the node where this widget will be displayed. */
@@ -76,7 +77,35 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   }
 
   linkedWidgets?: IBaseWidget[]
-  name: string
+  private _name!: string
+  get name(): string {
+    return this._name
+  }
+
+  set name(value: string) {
+    const previous = this._name
+    if (previous === undefined || previous === value) {
+      this._name = value
+      return
+    }
+
+    const graphId = this.node.graph?.rootGraph.id
+    const nodeId = this._state.nodeId
+    if (!graphId || nodeId === undefined) {
+      this._name = value
+      return
+    }
+
+    const moved = useWidgetValueStore().renameWidget(
+      widgetId(graphId, nodeId, previous),
+      widgetId(graphId, nodeId, value)
+    )
+    if (!moved) return
+
+    this._name = value
+    this._state = moved
+  }
+
   options: TWidget['options']
   type: TWidget['type']
   y: number = 0
@@ -132,11 +161,12 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     this._state.value = value
   }
 
-  get entityId(): WidgetEntityId | undefined {
+  get widgetId(): WidgetId | undefined {
     const graphId = this.node.graph?.rootGraph.id
     const nodeId = this._state.nodeId
     if (!graphId || nodeId === undefined) return undefined
-    return widgetEntityId(graphId, nodeId, this.name)
+    if (!ensureUniqueWidgetNames(this.node.widgets ?? [this])) return undefined
+    return widgetId(graphId, nodeId, this.name)
   }
 
   /**
@@ -146,15 +176,23 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   setNodeId(nodeId: NodeId): void {
     const graphId = this.node.graph?.rootGraph.id
     if (!graphId) return
+    if (!ensureUniqueWidgetNames(this.node.widgets ?? [this])) return
 
-    this._state = useWidgetValueStore().registerWidget(graphId, {
-      ...this._state,
-      // BaseWidget: this.value getter returns this._state.value. So value: this.value === value: this._state.value.
-      // BaseDOMWidgetImpl: this.value getter returns options.getValue?.() ?? ''. Resolves the correct initial value instead of undefined.
-      // I.e., calls overriden getter -> options.getValue() -> correct value (https://github.com/Comfy-Org/ComfyUI_frontend/issues/9194).
-      value: this.value,
-      nodeId
-    })
+    const registered = useWidgetValueStore().registerWidget(
+      widgetId(graphId, nodeId, this.name),
+      {
+        disabled: this.disabled,
+        label: this.label,
+        name: this.name,
+        options: this.options,
+        serialize: this.serialize,
+        type: this.type,
+        value: this.value,
+        y: this.y
+      },
+      deriveWidgetRenderState(this)
+    )
+    if (registered) this._state = registered
   }
 
   constructor(widget: TWidget & { node: LGraphNode })
@@ -208,14 +246,15 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
       label,
       disabled: disabled ?? false,
       serialize: this.serialize,
-      options: this.options
+      options: this.options,
+      y: this.y
     }
   }
 
   getOutlineColor() {
     return this.advanced
-      ? LiteGraph.WIDGET_ADVANCED_OUTLINE_COLOR
-      : LiteGraph.WIDGET_OUTLINE_COLOR
+      ? litegraph().WIDGET_ADVANCED_OUTLINE_COLOR
+      : litegraph().WIDGET_OUTLINE_COLOR
   }
 
   get outline_color() {
@@ -223,23 +262,23 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   }
 
   get background_color() {
-    return LiteGraph.WIDGET_BGCOLOR
+    return litegraph().WIDGET_BGCOLOR
   }
 
   get height() {
-    return LiteGraph.NODE_WIDGET_HEIGHT
+    return litegraph().NODE_WIDGET_HEIGHT
   }
 
   get text_color() {
-    return LiteGraph.WIDGET_TEXT_COLOR
+    return litegraph().WIDGET_TEXT_COLOR
   }
 
   get secondary_text_color() {
-    return LiteGraph.WIDGET_SECONDARY_TEXT_COLOR
+    return litegraph().WIDGET_SECONDARY_TEXT_COLOR
   }
 
   get disabledTextColor() {
-    return LiteGraph.WIDGET_DISABLED_TEXT_COLOR
+    return litegraph().WIDGET_DISABLED_TEXT_COLOR
   }
 
   get displayName() {
@@ -361,7 +400,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     if (requiredWidth <= totalWidth) {
       // Draw label & value normally
       drawTextInArea({ ctx, text: displayName, area, align: 'left' })
-    } else if (LiteGraph.truncateWidgetTextEvenly) {
+    } else if (litegraph().truncateWidgetTextEvenly) {
       // Label + value will not fit - scale evenly to fit
       const scale = (totalWidth - gap) / (requiredWidth - gap)
       area.width = labelWidth * scale
@@ -371,7 +410,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
       // Move the area to the right to render the value
       area.right = x + totalWidth
       area.setWidthRightAnchored(valueWidth * scale)
-    } else if (LiteGraph.truncateWidgetValuesFirst) {
+    } else if (litegraph().truncateWidgetValuesFirst) {
       // Label + value will not fit - use legacy scaling of value first
       const cappedLabelWidth = Math.min(labelWidth, totalWidth)
 

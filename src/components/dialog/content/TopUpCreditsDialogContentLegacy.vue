@@ -86,7 +86,7 @@
           @max-reached="showCeilingWarning = true"
         >
           <template #prefix>
-            <i class="icon-[lucide--component] size-4 shrink-0 text-gold-500" />
+            <i class="icon-[lucide--coins] size-4 shrink-0 text-gold-500" />
           </template>
         </FormattedNumberStepper>
       </div>
@@ -98,7 +98,7 @@
       v-if="isBelowMin"
       class="m-0 flex items-center justify-center gap-1 px-8 pt-4 text-center text-sm text-red-500"
     >
-      <i class="icon-[lucide--component] size-4" />
+      <i class="icon-[lucide--coins] size-4" />
       {{
         $t('credits.topUp.minRequired', {
           credits: formatNumber(usdToCredits(MIN_AMOUNT))
@@ -109,7 +109,7 @@
       v-if="showCeilingWarning"
       class="m-0 flex items-center justify-center gap-1 px-8 pt-4 text-center text-sm text-gold-500"
     >
-      <i class="icon-[lucide--component] size-4" />
+      <i class="icon-[lucide--coins] size-4" />
       {{
         $t('credits.topUp.maxAllowed', {
           credits: formatNumber(usdToCredits(MAX_AMOUNT))
@@ -117,7 +117,7 @@
       }}
       <span>{{ $t('credits.topUp.needMore') }}</span>
       <a
-        href="https://www.comfy.org/cloud/enterprise"
+        href="https://comfy.org/cloud/enterprise/"
         target="_blank"
         class="ml-1 text-inherit"
         >{{ $t('credits.topUp.contactUs') }}</a
@@ -158,11 +158,12 @@ import { creditsToUsd, usdToCredits } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
 import FormattedNumberStepper from '@/components/ui/stepper/FormattedNumberStepper.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useTelemetry } from '@/platform/telemetry'
-import { clearTopupTracking } from '@/platform/telemetry/topupTracker'
+import { usePendingTopup } from '@/composables/billing/usePendingTopup'
+import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -178,7 +179,7 @@ const settingsDialog = useSettingsDialog()
 const telemetry = useTelemetry()
 const toast = useToast()
 const { buildDocsUrl, docsPaths } = useExternalLink()
-const { flags } = useFeatureFlags()
+const { shouldUseWorkspaceBilling } = useBillingRouting()
 
 const { isSubscriptionEnabled } = useSubscription()
 // Constants
@@ -243,7 +244,7 @@ function handlePresetClick(amount: number) {
 
 function handleClose(clearTracking = true) {
   if (clearTracking) {
-    clearTopupTracking()
+    usePendingTopup().clearPendingTopup()
   }
   dialogStore.closeDialog({ key: 'top-up-credits' })
 }
@@ -255,17 +256,14 @@ async function handleBuy() {
   loading.value = true
   try {
     telemetry?.trackApiCreditTopupButtonPurchaseClicked(payAmount.value)
-    await authActions.purchaseCredits(payAmount.value)
+    await authActions.purchaseCreditsDirect(payAmount.value)
 
     // Close top-up dialog (keep tracking) and open credits panel to show updated balance
     handleClose(false)
 
-    // In workspace mode (personal workspace), show workspace settings panel
-    // Otherwise, show legacy subscription/credits panel
-    const settingsPanel = flags.teamWorkspacesEnabled
-      ? 'workspace'
-      : isSubscriptionEnabled()
-        ? 'subscription'
+    const settingsPanel =
+      shouldUseWorkspaceBilling.value || isSubscriptionEnabled()
+        ? 'workspace'
         : 'credits'
     settingsDialog.show(settingsPanel)
   } catch (error) {
@@ -273,6 +271,12 @@ async function handleBuy() {
 
     const errorMessage =
       error instanceof Error ? error.message : t('credits.topUp.unknownError')
+    telemetry?.trackBillingEvent({
+      operation: 'topup',
+      stage: 'failed',
+      outcome: 'failure',
+      failure_category: categorizeBillingApiError(error)
+    })
     toast.add({
       severity: 'error',
       summary: t('credits.topUp.purchaseError'),
