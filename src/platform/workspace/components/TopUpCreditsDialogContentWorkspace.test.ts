@@ -91,7 +91,7 @@ vi.mock('@/platform/telemetry', () => ({
 }))
 
 const mockClearPendingTopup = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/workspace/composables/usePendingTopup', () => ({
+vi.mock('@/composables/billing/usePendingTopup', () => ({
   usePendingTopup: () => ({ clearPendingTopup: mockClearPendingTopup })
 }))
 

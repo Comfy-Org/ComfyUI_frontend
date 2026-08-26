@@ -71,7 +71,7 @@ vi.mock('@/platform/telemetry', () => ({
   }))
 }))
 
-vi.mock('@/platform/workspace/composables/usePendingTopup', () => ({
+vi.mock('@/composables/billing/usePendingTopup', () => ({
   usePendingTopup: () => ({ startPendingTopup: mockStartPendingTopup })
 }))
 

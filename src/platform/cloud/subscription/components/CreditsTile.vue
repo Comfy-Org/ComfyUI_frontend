@@ -236,7 +236,7 @@ import {
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import { computeMonthlyUsage } from '@/platform/cloud/subscription/utils/creditsProgress'
 import { useTelemetry } from '@/platform/telemetry'
-import { usePendingTopup } from '@/platform/workspace/composables/usePendingTopup'
+import { usePendingTopup } from '@/composables/billing/usePendingTopup'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useCustomerEventsService } from '@/services/customerEventsService'
 import { useDialogService } from '@/services/dialogService'

@@ -103,7 +103,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useTelemetry } from '@/platform/telemetry'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
-import { usePendingTopup } from '@/platform/workspace/composables/usePendingTopup'
+import { usePendingTopup } from '@/composables/billing/usePendingTopup'
 import type { AuditLog } from '@/services/customerEventsService'
 import {
   EventType,
