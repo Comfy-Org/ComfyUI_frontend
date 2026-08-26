@@ -485,27 +485,52 @@ executionPerfTest.describe('Execution performance', { tag: ['@perf'] }, () => {
         if (!canvas) throw new Error('Canvas is not available')
         const api = window.app?.api
         if (!api) throw new Error('API event target is not available')
+        const node = canvas.visible_nodes.find((node) => node.widgets?.length)
+        const widget = node?.widgets?.[0]
+        if (!node || !widget)
+          throw new Error('No visible widget-backed node is available')
+        const widgetSlot = node.addInput('__perf_widget_input', '*', {
+          widget: { name: widget.name }
+        })
         const state = {
           foreground: 0,
           background: 0,
           progressEvents: 0,
+          widgetSlotPosAssignments: 0,
+          activationProof() {
+            const concreteInputs = (
+              node as unknown as { _concreteInputs?: unknown[] }
+            )._concreteInputs
+            return {
+              visible: canvas.visible_nodes.includes(node),
+              concrete: concreteInputs?.includes(widgetSlot) === true,
+              reactive:
+                (widgetSlot as unknown as { __v_isReactive?: boolean })
+                  .__v_isReactive === true,
+              widgetBacked: !!widgetSlot.widget
+            }
+          },
           reset() {
             state.foreground = 0
             state.background = 0
             state.progressEvents = 0
+            state.widgetSlotPosAssignments = 0
           },
           cleanup() {
             canvas.drawFrontCanvas = drawFrontCanvas
             canvas.drawBackCanvas = drawBackCanvas
             api.removeEventListener('progress', onProgress)
+            node.removeInput(node.inputs.indexOf(widgetSlot))
           }
         }
         const drawFrontCanvas = canvas.drawFrontCanvas.bind(canvas)
         const drawBackCanvas = canvas.drawBackCanvas.bind(canvas)
         const onProgress = () => state.progressEvents++
         canvas.drawFrontCanvas = () => {
+          const previousPos = widgetSlot.pos
           state.foreground++
           drawFrontCanvas()
+          if (widgetSlot.pos !== previousPos) state.widgetSlotPosAssignments++
         }
         canvas.drawBackCanvas = () => {
           state.background++
@@ -513,6 +538,7 @@ executionPerfTest.describe('Execution performance', { tag: ['@perf'] }, () => {
         }
         api.addEventListener('progress', onProgress)
         win.__progressCanvasDraws = state
+        canvas.draw(true, false)
       })
 
       execution.executionStart(jobId)
@@ -520,9 +546,26 @@ executionPerfTest.describe('Execution performance', { tag: ['@perf'] }, () => {
       await comfyPage.nextFrame()
       await comfyPage.page.evaluate(() => {
         const state = (window as unknown as Record<string, unknown>)
-          .__progressCanvasDraws as { reset?: () => void } | undefined
+          .__progressCanvasDraws as
+          | {
+              reset?: () => void
+              activationProof?: () => Record<string, boolean>
+              widgetSlotPosAssignments?: number
+            }
+          | undefined
         if (!state?.reset)
           throw new Error('Canvas draw counters are unavailable')
+        const proof = state.activationProof?.()
+        if (!proof || Object.values(proof).some((value) => !value)) {
+          throw new Error(
+            `Widget slot activation preconditions failed: ${JSON.stringify(proof)}`
+          )
+        }
+        if (!state.widgetSlotPosAssignments) {
+          throw new Error(
+            'The visible reactive widget slot was not arranged during activation'
+          )
+        }
         state.reset()
       })
       await comfyPage.perf.startMeasuring()
@@ -544,6 +587,7 @@ executionPerfTest.describe('Execution performance', { tag: ['@perf'] }, () => {
           !('foreground' in state) ||
           !('background' in state) ||
           !('progressEvents' in state) ||
+          !('widgetSlotPosAssignments' in state) ||
           !('cleanup' in state)
         ) {
           throw new Error('Canvas draw counters are unavailable')
@@ -552,6 +596,7 @@ executionPerfTest.describe('Execution performance', { tag: ['@perf'] }, () => {
           foreground: number
           background: number
           progressEvents: number
+          widgetSlotPosAssignments: number
           cleanup: () => void
         }
         counters.cleanup()
@@ -560,13 +605,15 @@ executionPerfTest.describe('Execution performance', { tag: ['@perf'] }, () => {
         return {
           foreground: counters.foreground,
           background: counters.background,
-          progressEvents: counters.progressEvents
+          progressEvents: counters.progressEvents,
+          widgetSlotPosAssignments: counters.widgetSlotPosAssignments
         }
       })
 
       expect(draws.progressEvents).toBe(60)
       expect(draws.background).toBe(0)
       expect(draws.foreground).toBe(60)
+      expect(draws.widgetSlotPosAssignments).toBe(60)
 
       const result = {
         ...measurement,
