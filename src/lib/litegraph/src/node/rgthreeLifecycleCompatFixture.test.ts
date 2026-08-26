@@ -207,4 +207,30 @@ describe('rgthree clean-room lifecycle compatibility fixture', () => {
 
     expect(setup.canvas.coreDraws).toHaveBeenCalledTimes(4)
   })
+
+  it('preserves wrappers installed later by another extension', () => {
+    const setup = createScaleSetup(1)
+    const installation = installRgthreeLifecycleFixture(
+      TestCanvas.prototype,
+      setup.host,
+      setup.scheduler
+    )
+    const rgthreeWrapper = TestCanvas.prototype.drawNode
+    const competingCalls = vi.fn()
+    TestCanvas.prototype.drawNode = function competingWrapper(node, context) {
+      competingCalls(node)
+      return rgthreeWrapper.call(this, node, context)
+    }
+    const competingWrapper = TestCanvas.prototype.drawNode
+
+    installation.dispose()
+    const result = setup.canvas.drawNode(setup.nodes[1], setup.context)
+
+    expect(TestCanvas.prototype.drawNode).toBe(competingWrapper)
+    expect(competingCalls).toHaveBeenCalledExactlyOnceWith(setup.nodes[1])
+    expect(result).toBe(`${setup.nodes[1].id}:${setup.nodes[1].title}`)
+    expect(installation.counters.wrapperCalls).toBe(0)
+    expect(setup.canvas.coreDraws).toHaveBeenCalledOnce()
+    TestCanvas.prototype.drawNode = rgthreeWrapper
+  })
 })

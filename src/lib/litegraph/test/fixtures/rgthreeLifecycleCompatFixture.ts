@@ -110,6 +110,8 @@ export function createRgthreeLifecycleInstaller() {
       context
     ) {
       const result = originalDrawNode.call(this, node, context)
+      if (installation.disposed) return result
+
       counters.wrapperCalls++
       counters.forwardedCoreDraws++
       if (node.type === 'fixture/label') {
@@ -144,7 +146,9 @@ export function createRgthreeLifecycleInstaller() {
       dispose() {
         if (installation.disposed) return
         installation.disposed = true
-        prototype.drawNode = originalDrawNode
+        if (prototype.drawNode === wrapper) {
+          prototype.drawNode = originalDrawNode
+        }
         registry.wrapperDepths.set(prototype, depth - 1)
         host.events.removeEventListener('fixture:refresh', onRefresh)
         counters.listenerRemovals++
