@@ -14,9 +14,11 @@ const WidgetStub = markRaw(
 
 const InputSlotStub = defineComponent({
   props: {
-    index: { type: Number, required: true }
+    index: { type: Number, required: true },
+    slotData: { type: Object, required: true }
   },
-  template: '<div data-testid="input-slot" :data-index="index" />'
+  template:
+    '<div data-testid="input-slot" :data-index="index" :data-name="slotData.name" />'
 })
 
 const AppInputStub = defineComponent({
@@ -46,8 +48,12 @@ describe('WidgetGrid', () => {
         nodeType: 'TestNode',
         processedWidgets: [
           widget('seed', 'converted-widget', 0),
-          widget('control_after_generate', 'converted-widget:seed', 1),
-          widget('replacement', 'number', 2)
+          {
+            ...widget('control_after_generate', 'converted-widget:seed', 1),
+            slotMetadata: undefined
+          },
+          widget('replacement', 'number', 2),
+          widget('converted-widget-picker', 'converted-widget-picker', 3)
         ]
       },
       global: {
@@ -59,8 +65,10 @@ describe('WidgetGrid', () => {
       }
     })
 
-    expect(screen.getAllByTestId('input-slot')).toHaveLength(3)
-    expect(screen.getAllByTestId('node-widget')).toHaveLength(1)
-    expect(screen.getAllByTestId('widget-control')).toHaveLength(1)
+    expect(
+      screen.getAllByTestId('input-slot').map((element) => element.dataset.name)
+    ).toEqual(['seed', 'replacement', 'converted-widget-picker'])
+    expect(screen.getAllByTestId('node-widget')).toHaveLength(2)
+    expect(screen.getAllByTestId('widget-control')).toHaveLength(2)
   })
 })
