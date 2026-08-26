@@ -780,9 +780,12 @@ describe('root-scoped node layouts', () => {
       height: 30
     })
     for (const graphId of [FIRST_GRAPH, SECOND_GRAPH]) {
-      layoutStore.updateNodeSlotOffsets(graphId, nodeId, [
-        { index: 0, type: 'input', position: { x: 0, y: 10 } }
-      ])
+      layoutStore.updateNodeSlotOffsets(
+        graphId,
+        nodeId,
+        [{ index: 0, type: 'input', position: { x: 0, y: 10 } }],
+        'expanded'
+      )
     }
 
     for (const graphId of [FIRST_GRAPH, SECOND_GRAPH]) {
@@ -815,7 +818,7 @@ describe('root-scoped node layouts', () => {
     expect(layoutStore.getNodeLayoutRef(FIRST_GRAPH, nodeId).value).toBeNull()
     expect(layoutStore.contentSizeOf(FIRST_GRAPH, nodeId)).toBeUndefined()
     expect(
-      layoutStore.getSlotOffset(FIRST_GRAPH, nodeId, 0, 'input')
+      layoutStore.getSlotOffset(FIRST_GRAPH, nodeId, 0, 'input', 'expanded')
     ).toBeNull()
     expect(layoutStore.getGroupLayout(FIRST_GRAPH, GROUP_ID)).toBeNull()
     expect(layoutStore.getRerouteLayout(FIRST_GRAPH, REROUTE_ID)).toBeNull()
@@ -824,12 +827,12 @@ describe('root-scoped node layouts', () => {
       layoutStore.getNodeLayoutRef(SECOND_GRAPH, nodeId).value
     ).not.toBeNull()
     expect(layoutStore.contentSizeOf(SECOND_GRAPH, nodeId)?.width).toBe(30)
-    expect(layoutStore.getSlotOffset(SECOND_GRAPH, nodeId, 0, 'input')).toEqual(
-      {
-        x: 0,
-        y: 10
-      }
-    )
+    expect(
+      layoutStore.getSlotOffset(SECOND_GRAPH, nodeId, 0, 'input', 'expanded')
+    ).toEqual({
+      x: 0,
+      y: 10
+    })
     expect(layoutStore.getGroupLayout(SECOND_GRAPH, GROUP_ID)).not.toBeNull()
     expect(
       layoutStore.getRerouteLayout(SECOND_GRAPH, REROUTE_ID)

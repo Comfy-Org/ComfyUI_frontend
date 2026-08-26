@@ -36,7 +36,8 @@ import type {
   SetGroupBoundsOperation,
   SetNodeZIndexOperation,
   Size,
-  SlotOffset
+  SlotOffset,
+  SlotOffsetMode
 } from '@/renderer/core/layout/types'
 import type { SlotDirection, SlotIndex } from '@/types/slotId'
 import {
@@ -137,6 +138,29 @@ interface BatchUpdateBoundsOptions {
   source: LayoutSource
 }
 
+interface SlotOffsetSnapshot {
+  mode: SlotOffsetMode
+  byDirection: Record<SlotDirection, Map<SlotIndex, Point>>
+}
+
+function isSlotOffsetSnapshotEqual(
+  current: SlotOffsetSnapshot,
+  next: SlotOffsetSnapshot
+): boolean {
+  if (current.mode !== next.mode) return false
+
+  for (const direction of ['input', 'output'] as const) {
+    const currentOffsets = current.byDirection[direction]
+    const nextOffsets = next.byDirection[direction]
+    if (currentOffsets.size !== nextOffsets.size) return false
+    for (const [index, point] of nextOffsets) {
+      const currentPoint = currentOffsets.get(index)
+      if (!currentPoint || !isPointEqual(currentPoint, point)) return false
+    }
+  }
+  return true
+}
+
 class LayoutStoreImpl {
   private static readonly REROUTE_DEFAULTS: RerouteData = {
     id: toRerouteId(0),
@@ -174,10 +198,7 @@ class LayoutStoreImpl {
   // New data structures for hit testing
   private linkLayouts = new Map<LinkId, LinkLayout>()
   private linkSegmentLayouts = new Map<string, LinkSegmentLayout>() // Internal string key: ${linkId}:${rerouteId ?? 'final'}
-  private slotOffsets = new Map<
-    ScopedLayoutKey,
-    Record<SlotDirection, Map<SlotIndex, Point>>
-  >()
+  private slotOffsets = new Map<ScopedLayoutKey, SlotOffsetSnapshot>()
   private contentSizes = new Map<ScopedLayoutKey, Size>()
   private rerouteLayouts = new Map<ScopedLayoutKey, RerouteLayout>()
 
@@ -450,14 +471,10 @@ class LayoutStoreImpl {
   updateNodeSlotOffsets(
     graphId: UUID,
     nodeId: NodeId,
-    offsets: readonly SlotOffset[]
+    offsets: readonly SlotOffset[],
+    mode: SlotOffsetMode
   ): void {
     const key = makeScopedLayoutKey(graphId, nodeId)
-    if (offsets.length === 0) {
-      this.slotOffsets.delete(key)
-      return
-    }
-
     const byDirection: Record<SlotDirection, Map<SlotIndex, Point>> = {
       input: new Map(),
       output: new Map()
@@ -465,20 +482,27 @@ class LayoutStoreImpl {
     for (const offset of offsets) {
       byDirection[offset.type].set(offset.index, offset.position)
     }
-    this.slotOffsets.set(key, byDirection)
+    const next = { mode, byDirection }
+    const current = this.slotOffsets.get(key)
+    if (current && isSlotOffsetSnapshotEqual(current, next)) return
+
+    this.slotOffsets.set(key, next)
+    if (current?.mode === mode || offsets.length > 0) {
+      this.queueGeometryChange(new Set([graphId]))
+    }
   }
 
   getSlotOffset(
     graphId: UUID,
     nodeId: NodeId,
     index: SlotIndex,
-    type: SlotDirection
+    type: SlotDirection,
+    mode: SlotOffsetMode
   ): Point | null {
-    return (
-      this.slotOffsets
-        .get(makeScopedLayoutKey(graphId, nodeId))
-        ?.[type].get(index) ?? null
-    )
+    const offsets = this.slotOffsets.get(makeScopedLayoutKey(graphId, nodeId))
+    return offsets?.mode === mode
+      ? (offsets.byDirection[type].get(index) ?? null)
+      : null
   }
   /**
    * Get reroute layout data

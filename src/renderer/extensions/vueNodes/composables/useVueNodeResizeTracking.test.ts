@@ -320,7 +320,8 @@ describe('useVueNodeResizeTracking', () => {
     expect(testState.updateNodeSlotOffsets).toHaveBeenCalledWith(
       ROOT_GRAPH_ID,
       nodeId,
-      []
+      [],
+      'expanded'
     )
     expect(testState.reportContentSize).not.toHaveBeenCalled()
   })

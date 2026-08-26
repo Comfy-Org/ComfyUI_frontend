@@ -235,9 +235,12 @@ describe('Vue slot geometry', () => {
       position: [300, 400]
     })
     if (!node.graph) throw new Error('Expected node graph')
-    layoutStore.updateNodeSlotOffsets(node.graph.rootGraph.id, node.id, [
-      { index: 0, type: 'input', position: { x: 0, y: 73 } }
-    ])
+    layoutStore.updateNodeSlotOffsets(
+      node.graph.rootGraph.id,
+      node.id,
+      [{ index: 0, type: 'input', position: { x: 0, y: 73 } }],
+      'expanded'
+    )
 
     expect(getSlotPosition(node, 0, true)).toEqual([300, 473])
     const graph = fromPartial<LGraph>({
@@ -275,9 +278,12 @@ describe('Vue slot geometry', () => {
   it('finds a measured slot immediately outside node bounds', () => {
     const node = makeNode({ inputs: [makeInput()], position: [300, 400] })
     if (!node.graph) throw new Error('Expected node graph')
-    layoutStore.updateNodeSlotOffsets(node.graph.rootGraph.id, node.id, [
-      { index: 0, type: 'input', position: { x: -6, y: 14 } }
-    ])
+    layoutStore.updateNodeSlotOffsets(
+      node.graph.rootGraph.id,
+      node.id,
+      [{ index: 0, type: 'input', position: { x: -6, y: 14 } }],
+      'expanded'
+    )
     const graph = fromPartial<LGraph>({
       _nodes: [node],
       rootGraph: { id: 'root-graph' }
@@ -291,9 +297,12 @@ describe('Vue slot geometry', () => {
   it('finds protruding slots without relying on nearby node bounds', () => {
     const node = makeNode({ inputs: [makeInput()], position: [300, 400] })
     if (!node.graph) throw new Error('Expected node graph')
-    layoutStore.updateNodeSlotOffsets(node.graph.rootGraph.id, node.id, [
-      { index: 0, type: 'input', position: { x: -6, y: 14 } }
-    ])
+    layoutStore.updateNodeSlotOffsets(
+      node.graph.rootGraph.id,
+      node.id,
+      [{ index: 0, type: 'input', position: { x: -6, y: 14 } }],
+      'expanded'
+    )
     const overlappingNode = makeNode({ position: [280, 390] })
     const graph = fromPartial<LGraph>({
       _nodes: [node, overlappingNode],
@@ -376,13 +385,40 @@ describe('Vue slot geometry', () => {
       position: [300, 400]
     })
     if (!node.graph) throw new Error('Expected node graph')
-    layoutStore.updateNodeSlotOffsets(node.graph.rootGraph.id, node.id, [
-      { index: 0, type: 'input', position: { x: 0, y: 73 } },
-      { index: 0, type: 'output', position: { x: 180, y: 73 } }
-    ])
+    layoutStore.updateNodeSlotOffsets(
+      node.graph.rootGraph.id,
+      node.id,
+      [
+        { index: 0, type: 'input', position: { x: 0, y: 73 } },
+        { index: 0, type: 'output', position: { x: 180, y: 73 } }
+      ],
+      'expanded'
+    )
 
     expect(getSlotPosition(node, 0, true)).toEqual([300, 385])
     expect(getSlotPosition(node, 0, false)).toEqual([380, 385])
+  })
+
+  it('uses collapsed slot offsets from the rendered node width', () => {
+    const node = makeNode({
+      inputs: [makeInput()],
+      outputs: [makeOutput()],
+      collapsed: true,
+      position: [300, 400]
+    })
+    if (!node.graph) throw new Error('Expected node graph')
+    layoutStore.updateNodeSlotOffsets(
+      node.graph.rootGraph.id,
+      node.id,
+      [
+        { index: 0, type: 'input', position: { x: 0, y: -15 } },
+        { index: 0, type: 'output', position: { x: 280, y: -15 } }
+      ],
+      'collapsed'
+    )
+
+    expect(getSlotPosition(node, 0, true)).toEqual([300, 385])
+    expect(getSlotPosition(node, 0, false)).toEqual([580, 385])
   })
 
   it('accounts for headerless and reroute node structure', () => {

@@ -69,6 +69,8 @@ export interface SlotOffset {
   position: Point
 }
 
+export type SlotOffsetMode = 'expanded' | 'collapsed'
+
 export interface LinkLayout {
   id: LinkId
   path: Path2D

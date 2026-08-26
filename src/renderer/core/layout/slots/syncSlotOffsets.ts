@@ -11,10 +11,12 @@ export function syncSlotOffsets(
   nodeId: NodeId
 ): void {
   const nodeElement = element.closest<HTMLElement>('[data-node-id]') ?? element
+  const mode =
+    nodeElement.dataset.collapsed !== undefined ? 'collapsed' : 'expanded'
   const slotElements =
     nodeElement.querySelectorAll<HTMLElement>('[data-slot-key]')
   if (slotElements.length === 0) {
-    layoutStore.updateNodeSlotOffsets(graphId, nodeId, [])
+    layoutStore.updateNodeSlotOffsets(graphId, nodeId, [], mode)
     return
   }
 
@@ -35,12 +37,17 @@ export function syncSlotOffsets(
       index: slotId.index,
       type: slotId.direction,
       position: {
-        x: slotId.direction === 'input' ? 0 : nodeElement.offsetWidth,
+        x:
+          mode === 'collapsed'
+            ? (slotRect.left + slotRect.width / 2 - nodeRect.left) / scale
+            : slotId.direction === 'input'
+              ? 0
+              : nodeElement.offsetWidth,
         y:
           (slotRect.top + slotRect.height / 2 - nodeRect.top) / scale -
           LiteGraph.NODE_TITLE_HEIGHT
       }
     })
   }
-  layoutStore.updateNodeSlotOffsets(graphId, nodeId, offsets)
+  layoutStore.updateNodeSlotOffsets(graphId, nodeId, offsets, mode)
 }

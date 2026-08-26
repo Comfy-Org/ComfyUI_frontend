@@ -159,15 +159,15 @@ export function getSlotPosition(
 ): Point {
   if (LiteGraph.vueNodesMode) {
     const [nodeX, nodeY] = node.pos
-    const offset =
-      !node.flags.collapsed && node.graph
-        ? layoutStore.getSlotOffset(
-            node.graph.rootGraph.id,
-            node.id,
-            slotIndex,
-            isInput ? 'input' : 'output'
-          )
-        : null
+    const offset = node.graph
+      ? layoutStore.getSlotOffset(
+          node.graph.rootGraph.id,
+          node.id,
+          slotIndex,
+          isInput ? 'input' : 'output',
+          node.flags.collapsed ? 'collapsed' : 'expanded'
+        )
+      : null
     if (offset) return [nodeX + offset.x, nodeY + offset.y]
 
     const nodeWidth = node.flags.collapsed
