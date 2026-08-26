@@ -265,6 +265,7 @@ describe('GroupNodeConfig.registerFromWorkflow', () => {
       const previousGroupNode = LiteGraph.createNode(groupType)
       if (!previousGroupNode) throw new Error('group type not registered')
       expect(GroupNodeHandler.isGroupNode(previousGroupNode)).toBe(true)
+      expect(LiteGraph.Nodes.PreviousGroupNode).toBeDefined()
       expect(useNodeDefStore().nodeDefsByName[groupType]).toBeDefined()
 
       await GroupNodeConfig.registerFromWorkflow(
@@ -274,6 +275,7 @@ describe('GroupNodeConfig.registerFromWorkflow', () => {
       )
 
       expect(LiteGraph.registered_node_types[groupType]).toBeUndefined()
+      expect(LiteGraph.Nodes.PreviousGroupNode).toBeUndefined()
       expect(useNodeDefStore().nodeDefsByName[groupType]).toBeUndefined()
       expect(missing).toStrictEqual([
         expect.objectContaining({ type: groupType, nodeId: '7' })

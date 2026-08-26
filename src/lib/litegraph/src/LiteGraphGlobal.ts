@@ -457,8 +457,8 @@ export class LiteGraphGlobal {
 
     delete this.registered_node_types[String(base_class.type)]
 
-    const name = base_class.constructor.name
-    if (name) delete this.Nodes[name]
+    const name = base_class.name
+    if (name && this.Nodes[name] === base_class) delete this.Nodes[name]
   }
 
   /**
