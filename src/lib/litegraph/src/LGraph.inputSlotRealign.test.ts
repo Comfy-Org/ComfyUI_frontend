@@ -2,6 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { registerNodeState } from '@/core/graph/nodeShell/nodeShellState'
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
@@ -382,17 +383,14 @@ describe('LGraph.configure input slot realignment (#3348)', () => {
   })
 
   it('realigns links against a reminted node id', () => {
-    const graph = new LGraph()
-    const incumbent = savedWorkflow()
-    const incumbentTarget = incumbent.nodes?.[1]
-    if (!incumbentTarget) throw new Error('incumbent target not found')
-    incumbent.nodes = [incumbentTarget]
-    incumbent.links = []
-    incumbent.state.lastLinkId = 0
-    for (const input of incumbent.nodes[0].inputs ?? []) input.link = null
-    graph.configure(incumbent)
-
     const payload = savedWorkflow()
+    const graph = new LGraph()
+    graph.id = payload.id
+    const incumbent = new ReorderTargetNode()
+    incumbent.id = toNodeId(2)
+    if (!registerNodeState(graph, incumbent)) {
+      throw new Error('failed to register incumbent target')
+    }
     const contents = shiftedNodesAndLinks(10, 2, 10)
     payload.state = {
       lastNodeId: 10,
@@ -750,7 +748,7 @@ describe('realignInputLinkSlots', () => {
       { ...nodeData.inputs![3], link: movable.id }
     ]
 
-    realignInputLinkSlots(graph, [nodeData])
+    realignInputLinkSlots(graph, [[target.id, nodeData]])
 
     expect(blocked.target_slot).toBe(0)
     expect(movable.target_slot).toBe(2)

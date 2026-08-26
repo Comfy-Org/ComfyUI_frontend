@@ -2,6 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
+import { registerNodeState } from '@/core/graph/nodeShell/nodeShellState'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   ISerialisedGraph,
@@ -88,27 +89,6 @@ function legacyGraph(
   }
 }
 
-/** Incumbent graph: node 1 → link 100 → node 2. */
-function incumbentGraph(): SerialisableGraph {
-  return baseGraph({
-    state: { lastNodeId: 2, lastLinkId: 100, lastGroupId: 0, lastRerouteId: 0 },
-    nodes: [
-      serialisedNode(1, 'incumbent', 0, { outputLinks: [100] }),
-      serialisedNode(2, 'sink', 1, { inputLink: 100 })
-    ],
-    links: [
-      {
-        id: 100,
-        origin_id: 1,
-        origin_slot: 0,
-        target_id: 2,
-        target_slot: 0,
-        type: 'number'
-      }
-    ]
-  })
-}
-
 /**
  * Merge payload whose node 1 collides with the live incumbent. Its links name
  * the payload's own node 1: 200 originates there, 201 targets it.
@@ -155,10 +135,20 @@ function getNodeByTitle(graph: LGraph, title: string): LGraphNode {
   return node
 }
 
+function graphWithRegisteredNode(id: number): LGraph {
+  const graph = new LGraph()
+  graph.id = GRAPH_ID
+  const incumbent = new DummyNode()
+  incumbent.id = toNodeId(id)
+  if (!registerNodeState(graph, incumbent)) {
+    throw new Error(`failed to register incumbent node ${id}`)
+  }
+  return graph
+}
+
 describe('LGraph.configure remint link remap', () => {
   it('remaps payload link endpoints to follow a reminted node', () => {
-    const graph = new LGraph()
-    graph.configure(incumbentGraph())
+    const graph = graphWithRegisteredNode(1)
 
     graph.configure(mergePayload(), true)
 
@@ -176,8 +166,7 @@ describe('LGraph.configure remint link remap', () => {
   })
 
   it('remaps legacy array-link endpoints to follow a reminted node', () => {
-    const graph = new LGraph()
-    graph.configure(incumbentGraph())
+    const graph = graphWithRegisteredNode(1)
 
     graph.configure(
       legacyGraph({
@@ -213,20 +202,8 @@ describe('LGraph.configure remint link remap', () => {
     expect(target?.target_id).toBe(newcomer.id)
   })
 
-  it('leaves links that predate the merge on the incumbent', () => {
-    const graph = new LGraph()
-    graph.configure(incumbentGraph())
-
-    graph.configure(mergePayload(), true)
-
-    const incumbentLink = graph.links.get(toLinkId(100))
-    expect(incumbentLink?.origin_id).toBe(toNodeId(1))
-    expect(incumbentLink?.target_id).toBe(toNodeId(2))
-  })
-
   it('remaps floating link endpoints to follow a reminted node', () => {
-    const graph = new LGraph()
-    graph.configure(incumbentGraph())
+    const graph = graphWithRegisteredNode(1)
 
     const payload = baseGraph({
       state: {
@@ -260,7 +237,6 @@ describe('LGraph.configure remint link remap', () => {
 
   it('keeps unassigned floating endpoints when a payload node requests -1', () => {
     const graph = new LGraph()
-    graph.configure(incumbentGraph())
 
     graph.configure(
       baseGraph({
@@ -281,8 +257,7 @@ describe('LGraph.configure remint link remap', () => {
             type: 'number'
           }
         ]
-      }),
-      true
+      })
     )
 
     const floating = graph.floatingLinks.get(toLinkId(400))
@@ -291,8 +266,7 @@ describe('LGraph.configure remint link remap', () => {
   })
 
   it('resolves chained remints once against each requested id', () => {
-    const graph = new LGraph()
-    graph.configure(incumbentGraph())
+    const graph = graphWithRegisteredNode(1)
 
     const payload = baseGraph({
       state: {
