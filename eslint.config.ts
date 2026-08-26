@@ -72,6 +72,21 @@ const useVirtualListRestriction = {
     'useVirtualList requires uniform item heights. Use TanStack Virtual (via Reka UI virtualizer or @tanstack/vue-virtual) instead.'
 } as const
 
+const reportErrorRestrictions = [
+  {
+    name: '@sentry/vue',
+    importNames: ['captureException'],
+    message:
+      "Use reportError() from '@/platform/telemetry/reportError'. A raw captureException reaches Sentry only, so the failure stays invisible to every Datadog dashboard and alert."
+  },
+  {
+    name: '@datadog/browser-rum',
+    importNames: ['datadogRum'],
+    message:
+      "Use reportError() from '@/platform/telemetry/reportError'. A raw datadogRum.addError reaches Datadog only, and skips the pre-init buffer that keeps early-boot failures from being dropped."
+  }
+] as const
+
 const errorAssertionRestrictions = [
   {
     // Bans `value as Error` and `value as Error & { ... }`.
@@ -110,6 +125,8 @@ export default defineConfig([
       'dist/*',
       'packages/registry-types/src/comfyRegistryTypes.ts',
       'playwright-report/*',
+      'scripts/registry-census/detection-proof/**',
+      'src/__ecs_matrix__/**',
       'src/extensions/core/*',
       'src/scripts/*',
       'src/types/generatedManagerTypes.ts',
@@ -131,6 +148,7 @@ export default defineConfig([
             'packages/object-info-parser/vitest.config.ts',
             'vite.electron.config.mts',
             'vite.types.config.mts',
+            'vitest.matrix.config.mts',
             'vitest.timer.setup.ts'
           ]
         }
@@ -545,7 +563,8 @@ export default defineConfig([
               message:
                 "In Vue components, use `const { t } = useI18n()` instead of importing from '@/i18n'."
             },
-            useVirtualListRestriction
+            useVirtualListRestriction,
+            ...reportErrorRestrictions
           ]
         }
       ]
@@ -566,7 +585,8 @@ export default defineConfig([
               message:
                 "useI18n() requires Vue setup context. Use `import { t } from '@/i18n'` instead."
             },
-            useVirtualListRestriction
+            useVirtualListRestriction,
+            ...reportErrorRestrictions
           ]
         }
       ]
@@ -579,7 +599,7 @@ export default defineConfig([
       'no-restricted-imports': [
         'error',
         {
-          paths: [useVirtualListRestriction]
+          paths: [useVirtualListRestriction, ...reportErrorRestrictions]
         }
       ]
     }
@@ -656,6 +676,57 @@ export default defineConfig([
                 'browser_tests/helpers/ was removed. Use @e2e/fixtures/utils/, @e2e/fixtures/components/, or @e2e/fixtures/helpers/ instead.'
             }
           ]
+        }
+      ]
+    }
+  },
+
+  // Deprecate @/schemas/apiSchema — use generated types from
+  // @comfyorg/ingest-types instead. Uses no-restricted-syntax so it
+  // composes with other file-scoped no-restricted-imports blocks above
+  // (flat-config rules of the same key override rather than merge).
+  // Warn severity: ~80 files still import apiSchema during migration;
+  // elevate to error once the count is near zero. Scoped to src/ to
+  // avoid overriding the stricter no-restricted-syntax rules on
+  // browser_tests/fixtures/data and .spec/.test files.
+  {
+    files: ['src/**/*.{ts,vue}'],
+    ignores: ['src/**/*.test.ts', 'src/**/*.spec.ts', 'src/**/*.stories.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'warn',
+        {
+          selector:
+            "ImportDeclaration[source.value='@/schemas/apiSchema'], ExportNamedDeclaration[source.value='@/schemas/apiSchema'], ExportAllDeclaration[source.value='@/schemas/apiSchema']",
+          message:
+            'apiSchema is deprecated. Use generated types from @comfyorg/ingest-types instead. Only keep a hand-written schema if the ComfyUI webserver clearly diverges from the cloud ingest spec.'
+        }
+      ]
+    }
+  },
+
+  // Deprecate new hand-written zod server-response schemas under
+  // src/schemas/. Local-state / form / UI-config schemas
+  // (colorPaletteSchema, signInSchema) are not server responses and
+  // are explicitly exempted. Server response shapes should come from
+  // @comfyorg/ingest-types generated types. Warn severity so existing
+  // response schemas don't break CI; new additions get nudged at PR
+  // review.
+  {
+    files: ['src/schemas/**/*.ts'],
+    ignores: [
+      'src/schemas/**/*.test.ts',
+      'src/schemas/colorPaletteSchema.ts',
+      'src/schemas/signInSchema.ts'
+    ],
+    rules: {
+      'no-restricted-syntax': [
+        'warn',
+        {
+          selector:
+            "ImportDeclaration[source.value='zod'], ExportNamedDeclaration[source.value='zod'], ExportAllDeclaration[source.value='zod']",
+          message:
+            'Avoid introducing new hand-written zod schemas under src/schemas/ for server responses. Use generated types from @comfyorg/ingest-types instead. Only keep a hand-written schema if the ComfyUI webserver clearly diverges from the cloud ingest spec.'
         }
       ]
     }

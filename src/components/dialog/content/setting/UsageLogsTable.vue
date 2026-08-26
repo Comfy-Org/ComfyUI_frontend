@@ -215,11 +215,15 @@ const refresh = async () => {
   await loadEvents()
 }
 
-watch(shouldUseWorkspaceBilling, () => {
-  refresh().catch((error) => {
-    console.error('Error loading events:', error)
-  })
-})
+watch(
+  shouldUseWorkspaceBilling,
+  () => {
+    refresh().catch((error) => {
+      console.error('Error loading events:', error)
+    })
+  },
+  { immediate: true }
+)
 
 defineExpose({
   refresh

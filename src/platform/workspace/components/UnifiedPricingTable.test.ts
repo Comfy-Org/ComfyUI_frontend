@@ -1,3 +1,4 @@
+import type { SubscriptionTier } from '@comfyorg/ingest-types'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -10,7 +11,7 @@ import type { BillingSubscriptionStatus } from '@/platform/workspace/api/workspa
 import UnifiedPricingTable from '@/platform/workspace/components/UnifiedPricingTable.vue'
 
 interface MockSubscription {
-  tier: string
+  tier: SubscriptionTier | null
   isCancelled?: boolean
   duration?: string
 }
@@ -28,6 +29,12 @@ const mockCurrentTeamCreditStop = ref<MockTeamStop | null>(null)
 const mockIsTeamPlan = ref(false)
 const mockCanManageSubscription = ref(true)
 const mockCanDowngradeToPersonal = ref(true)
+const mockPermissions = ref({
+  canManageSubscription: true,
+  canManageSubscriptionLifecycle: true,
+  canDowngradeToPersonal: true
+})
+const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
@@ -41,12 +48,20 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
+vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
+
+vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
+  useBillingCapabilities: () => ({
+    canSubscribeSelfServe: computed(() => mockCanManageSubscription.value),
+    canReactivate: computed(() => mockCanManageSubscription.value),
+    canChangeSeats: computed(() => mockCanManageSubscription.value),
+    canDowngradeToPersonal: computed(() => mockCanDowngradeToPersonal.value)
+  })
+}))
+
 vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   useWorkspaceUI: () => ({
-    permissions: computed(() => ({
-      canManageSubscription: mockCanManageSubscription.value,
-      canDowngradeToPersonal: mockCanDowngradeToPersonal.value
-    }))
+    permissions: computed(() => mockPermissions.value)
   })
 }))
 
@@ -85,6 +100,12 @@ describe('UnifiedPricingTable plan CTA labels', () => {
     mockIsTeamPlan.value = false
     mockCanManageSubscription.value = true
     mockCanDowngradeToPersonal.value = true
+    mockPermissions.value = {
+      canManageSubscription: true,
+      canManageSubscriptionLifecycle: true,
+      canDowngradeToPersonal: true
+    }
+    mockDistributionTypes.isCloud = true
   })
 
   it('prompts free-tier users to subscribe, never to "change"', () => {
@@ -100,6 +121,17 @@ describe('UnifiedPricingTable plan CTA labels', () => {
     ).toBeTruthy()
     expect(
       screen.getByRole('button', { name: 'Subscribe to Pro Yearly' })
+    ).toBeTruthy()
+    expect(screen.queryByRole('button', { name: /^Change to/ })).toBeNull()
+  })
+
+  it('prompts users with an unresolved tier to subscribe', () => {
+    mockSubscription.value = { tier: null, duration: 'ANNUAL' }
+
+    renderComponent()
+
+    expect(
+      screen.getByRole('button', { name: 'Subscribe to Standard Yearly' })
     ).toBeTruthy()
     expect(screen.queryByRole('button', { name: /^Change to/ })).toBeNull()
   })
@@ -197,6 +229,12 @@ describe('UnifiedPricingTable team plan CTA', () => {
     mockIsTeamPlan.value = false
     mockCanManageSubscription.value = true
     mockCanDowngradeToPersonal.value = true
+    mockPermissions.value = {
+      canManageSubscription: true,
+      canManageSubscriptionLifecycle: true,
+      canDowngradeToPersonal: true
+    }
+    mockDistributionTypes.isCloud = true
   })
 
   it('disables the CTA while sitting on the active current plan', () => {
@@ -317,5 +355,164 @@ describe('UnifiedPricingTable team plan CTA', () => {
     expect(
       screen.getByRole('button', { name: 'Subscribe to Team Yearly' })
     ).toBeTruthy()
+  })
+})
+
+// Server billing capabilities only resolve on Cloud, so Local/Desktop keeps
+// authorizing from the client-side workspace permissions.
+describe('UnifiedPricingTable outside Cloud', () => {
+  const TEAM_STOP = {
+    id: 'team_2500',
+    credits_monthly: 527_500,
+    stop_usd: 2_500
+  }
+
+  beforeEach(() => {
+    mockSubscription.value = null
+    mockSubscriptionStatus.value = null
+    mockCurrentPlanSlug.value = null
+    mockCurrentTeamCreditStop.value = null
+    mockIsTeamPlan.value = false
+    mockCanManageSubscription.value = false
+    mockCanDowngradeToPersonal.value = false
+    mockPermissions.value = {
+      canManageSubscription: true,
+      canManageSubscriptionLifecycle: true,
+      canDowngradeToPersonal: true
+    }
+    mockDistributionTypes.isCloud = false
+  })
+
+  it('keeps the personal subscribe CTA usable', async () => {
+    const user = userEvent.setup()
+
+    const { emitted } = renderComponent()
+
+    const cta = screen.getByRole('button', {
+      name: 'Subscribe to Standard Yearly'
+    })
+    expect(cta).toBeEnabled()
+    await user.click(cta)
+    expect(emitted().subscribe).toBeTruthy()
+  })
+
+  it('keeps the personal change-plan CTA usable', async () => {
+    const user = userEvent.setup()
+    mockSubscription.value = { tier: 'STANDARD', duration: 'ANNUAL' }
+
+    const { emitted } = renderComponent()
+
+    const cta = screen.getByRole('button', { name: 'Change to Creator Yearly' })
+    expect(cta).toBeEnabled()
+    await user.click(cta)
+    expect(emitted().subscribe).toBeTruthy()
+  })
+
+  it('keeps the personal reactivate CTA usable', async () => {
+    const user = userEvent.setup()
+    mockSubscription.value = {
+      tier: 'CREATOR',
+      duration: 'ANNUAL',
+      isCancelled: true
+    }
+
+    const { emitted } = renderComponent()
+
+    const cta = screen.getByRole('button', {
+      name: 'Resubscribe to Creator Yearly'
+    })
+    expect(cta).toBeEnabled()
+    await user.click(cta)
+    expect(emitted().resubscribe).toBeTruthy()
+  })
+
+  it('keeps team-to-personal selection available to the original owner', () => {
+    mockSubscription.value = { tier: 'TEAM', duration: 'ANNUAL' }
+    mockCurrentTeamCreditStop.value = TEAM_STOP
+    mockIsTeamPlan.value = true
+
+    renderComponent()
+
+    expect(
+      screen.getByRole('button', { name: 'Change to Standard Yearly' })
+    ).toBeEnabled()
+  })
+
+  it('keeps the team subscribe CTA usable', async () => {
+    const user = userEvent.setup()
+
+    const { emitted } = renderComponent({ initialPlanMode: 'team' })
+
+    const cta = screen.getByRole('button', { name: 'Subscribe to Team Yearly' })
+    expect(cta).toBeEnabled()
+    await user.click(cta)
+    expect(emitted().subscribeTeam).toBeTruthy()
+  })
+
+  it('keeps the team change-plan CTA usable', async () => {
+    const user = userEvent.setup()
+    mockSubscription.value = {
+      tier: 'TEAM',
+      duration: 'ANNUAL',
+      isCancelled: false
+    }
+    mockCurrentTeamCreditStop.value = TEAM_STOP
+
+    const { emitted } = renderComponent({ initialPlanMode: 'team' })
+
+    await user.click(screen.getByTestId('team-slider'))
+
+    const cta = screen.getByRole('button', { name: 'Change plan' })
+    expect(cta).toBeEnabled()
+    await user.click(cta)
+    expect(emitted().subscribeTeam).toBeTruthy()
+  })
+
+  it('keeps the team reactivate CTA usable', async () => {
+    const user = userEvent.setup()
+    mockSubscription.value = {
+      tier: 'TEAM',
+      duration: 'ANNUAL',
+      isCancelled: true
+    }
+    mockCurrentTeamCreditStop.value = TEAM_STOP
+
+    const { emitted } = renderComponent({ initialPlanMode: 'team' })
+
+    const cta = screen.getByRole('button', { name: 'Resubscribe' })
+    expect(cta).toBeEnabled()
+    await user.click(cta)
+    expect(emitted().resubscribe).toBeTruthy()
+  })
+
+  it('still blocks the CTAs when the workspace permission is missing', () => {
+    mockPermissions.value = {
+      canManageSubscription: false,
+      canManageSubscriptionLifecycle: false,
+      canDowngradeToPersonal: false
+    }
+
+    renderComponent()
+
+    expect(
+      screen.getByRole('button', { name: 'Subscribe to Standard Yearly' })
+    ).toBeDisabled()
+  })
+
+  it('normalizes a member without the downgrade permission away from personal plans', () => {
+    mockSubscription.value = { tier: 'TEAM', duration: 'ANNUAL' }
+    mockCurrentTeamCreditStop.value = TEAM_STOP
+    mockIsTeamPlan.value = true
+    mockPermissions.value = {
+      canManageSubscription: true,
+      canManageSubscriptionLifecycle: true,
+      canDowngradeToPersonal: false
+    }
+
+    renderComponent({ initialPlanMode: 'personal' })
+
+    expect(
+      screen.queryByRole('button', { name: 'Change to Standard Yearly' })
+    ).toBeNull()
   })
 })

@@ -1,14 +1,10 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { flattenInputSpecs } from '@/schemas/nodeDef/inputSpecUtil'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 describe('flattenInputSpecs', () => {
-  afterEach(() => {
-    vi.unstubAllEnvs()
-  })
-
   it('includes a dynamic combo input alongside its nested per-option inputs', () => {
     const nodeDef: ComfyNodeDefV1 = {
       name: 'SyncLipSyncNode',

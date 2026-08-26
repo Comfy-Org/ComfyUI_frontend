@@ -4,7 +4,7 @@ name: 'CI: Binary Size Validation'
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, labeled, unlabeled]
+    types: [opened, synchronize, reopened]
   merge_group:
     types: [checks_requested]
 

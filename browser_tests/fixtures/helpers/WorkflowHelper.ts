@@ -1,6 +1,6 @@
 import { readFileSync } from 'fs'
 
-import { test } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 import type { AppMode } from '@/utils/appMode'
 import type {
@@ -118,7 +118,7 @@ export class WorkflowHelper {
     await this.comfyPage.workflowUploadInput.setInputFiles(
       assetPath(`${workflowName}.json`)
     )
-    await this.waitForWorkflowIdle()
+    await expect(this.comfyPage.workflowUploadInput).toHaveValue('')
     await this.comfyPage.nextFrame()
     if (test.info().tags.includes('@vue-nodes')) {
       await this.comfyPage.vueNodes.waitForNodes()

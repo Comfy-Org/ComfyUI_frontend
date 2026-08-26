@@ -19,6 +19,7 @@ const DEFAULT_BILLING_STATUS: BillingStatusResponse = {
   max_seats: 73,
   occupied_seats: 72,
   has_funds: true,
+  team_credit_stop: null,
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY'
 }
@@ -190,6 +191,9 @@ describe('useBillingContext', () => {
     mockLegacyStatus.value = {
       is_active: true,
       has_funds: true,
+      max_seats: 0,
+      occupied_seats: 0,
+      team_credit_stop: null,
       renewal_date: '2025-01-01T00:00:00Z'
     }
     mockBillingStatus.value = { ...DEFAULT_BILLING_STATUS }
