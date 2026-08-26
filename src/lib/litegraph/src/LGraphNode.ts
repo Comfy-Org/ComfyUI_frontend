@@ -1177,15 +1177,17 @@ export class LGraphNode
         )
       }
 
-      const serializableWidgets = this.widgets.filter(
-        (widget) => widget.serialize !== false
-      )
-      const valueLayout = decodeWidgetValueLayout(
-        serializableWidgets,
-        positionalValues
-      )
-      for (const [index, widget] of serializableWidgets.entries()) {
-        const { valueIndex, controlValueCount } = valueLayout[index]
+      let index = 0
+      while (true) {
+        const serializableWidgets = this.widgets.filter(
+          (widget) => widget.serialize !== false
+        )
+        const widget = serializableWidgets[index]
+        if (!widget) break
+        const { valueIndex, controlValueCount } = decodeWidgetValueLayout(
+          serializableWidgets,
+          positionalValues
+        )[index]
         const restored = useWidgetValueStore().getRestoredWidgetValue(
           graphId,
           this.id,
@@ -1194,11 +1196,12 @@ export class LGraphNode
         )
         if (restored) widget.value = restored.value
         applyControlValues(
-          widget.widgetId,
+          widget,
           positionalValues,
           valueIndex + 1,
           controlValueCount
         )
+        index++
       }
     }
 

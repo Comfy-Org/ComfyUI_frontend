@@ -28,6 +28,14 @@ export function isValueControlMode(value: unknown): value is ValueControlMode {
   return typeof value === 'string' && VALUE_CONTROL_MODES.has(value)
 }
 
+export function parseValueControlMode(
+  value: unknown
+): ValueControlMode | undefined {
+  if (value === true) return 'randomize'
+  if (value === false) return 'fixed'
+  return isValueControlMode(value) ? value : undefined
+}
+
 interface ValueControlTarget {
   type: IBaseWidget['type']
   value?: unknown

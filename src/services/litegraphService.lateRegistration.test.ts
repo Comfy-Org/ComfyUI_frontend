@@ -243,7 +243,8 @@ describe('registering a node definition while a graph is already loaded', () => 
     const link = graph.nodes[0].connect(0, added!, 0)
     expect(link).toBeTruthy()
 
-    expect(added!.widgets?.map((widget) => widget.name)).toEqual([
+    expect(added!.widgets?.map((widget) => widget.name)).toEqual(['seed'])
+    expect(added!.getLayoutWidgets().map((widget) => widget.name)).toEqual([
       'seed',
       'control_after_generate'
     ])
@@ -295,6 +296,9 @@ describe('a node whose type was unknown when the graph loaded', () => {
     expect(reloaded!.has_errors).toBeFalsy()
     expect(
       reloaded!.widgets?.map((widget) => [widget.name, widget.value])
+    ).toEqual([['seed', 3]])
+    expect(
+      reloaded!.getLayoutWidgets().map((widget) => [widget.name, widget.value])
     ).toEqual([
       ['seed', 3],
       ['control_after_generate', 'randomize']

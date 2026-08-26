@@ -298,13 +298,13 @@ export class PrimitiveNode extends LGraphNode {
         2
       )
       addValueControlWidgets(widget, String(control_value))
-      applyControlValues(widget.widgetId, [control_value, filter], 0)
+      applyControlValues(widget, [control_value, filter], 0)
     }
 
     // Restore any saved control values
     const controlValues = this.controlValues
     if (this.lastType === this.widgets?.[0]?.type && controlValues?.length) {
-      applyControlValues(widget.widgetId, controlValues, 0)
+      applyControlValues(widget, controlValues, 0)
     }
 
     this._finalizeWidget(widget, oldWidth, oldHeight, recreating)

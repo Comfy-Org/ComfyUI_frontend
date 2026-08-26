@@ -4,7 +4,7 @@ import { normalizeControlOption } from '@/types/simplifiedWidget'
 import type { SafeControlWidget } from '@/types/simplifiedWidget'
 import type { WidgetId } from '@/types/widgetId'
 
-import { isValueControlMode } from './valueControl'
+import { parseValueControlMode } from './valueControl'
 
 export function registerWidgetControlFromConfig(widget: IBaseWidget): void {
   const config = widget.controlConfig
@@ -47,27 +47,36 @@ export function appendControlValues(
 }
 
 export function applyControlValues(
-  targetId: WidgetId | undefined,
+  target:
+    | WidgetId
+    | Pick<IBaseWidget, 'widgetId' | 'controlConfig'>
+    | undefined,
   values: readonly unknown[],
   index: number,
   valueCount?: 0 | 1 | 2
 ): number {
   if (valueCount === 0) return index
-  if (!targetId) return index
+  const targetId = typeof target === 'string' ? target : target?.widgetId
+  const config = typeof target === 'string' ? undefined : target?.controlConfig
   const store = useWidgetValueStore()
-  const control = store.getWidgetControl(targetId)
-  if (!control) return index
+  const control = targetId ? store.getWidgetControl(targetId) : undefined
+  if (!control && !config) return index
 
   let next = index
-  const mode = values[next]
-  if (!isValueControlMode(mode)) return next
+  const mode = parseValueControlMode(values[next])
+  if (!mode) return next
 
-  store.updateWidgetControl(targetId, { mode })
+  if (config) config.mode = mode
+  if (targetId) store.updateWidgetControl(targetId, { mode })
   next++
   if (valueCount === 1) return next
   const filter = values[next]
-  if (control.filter !== undefined && typeof filter === 'string') {
-    store.updateWidgetControl(targetId, { filter })
+  if (
+    (control?.filter !== undefined || config?.hasFilter) &&
+    typeof filter === 'string'
+  ) {
+    if (config) config.filter = filter
+    if (targetId) store.updateWidgetControl(targetId, { filter })
     next++
   }
   return next
@@ -107,7 +116,7 @@ function betterLayout(
 }
 
 export function decodeWidgetValueLayout(
-  widgets: readonly { widgetId?: WidgetId }[],
+  widgets: readonly Pick<IBaseWidget, 'widgetId' | 'controlConfig'>[],
   values: readonly unknown[]
 ): WidgetValueLayoutEntry[] {
   const store = useWidgetValueStore()
@@ -149,9 +158,13 @@ export function decodeWidgetValueLayout(
     }
 
     const widget = widgets[widgetIndex]
-    const control = widget.widgetId
-      ? store.getWidgetControl(widget.widgetId)
-      : undefined
+    const control =
+      (widget.widgetId ? store.getWidgetControl(widget.widgetId) : undefined) ??
+      widget.controlConfig
+    const hasFilter =
+      control && 'hasFilter' in control
+        ? control.hasFilter
+        : control?.filter !== undefined
     const target = widget.widgetId
       ? store.getWidget(widget.widgetId)
       : undefined
@@ -178,12 +191,9 @@ export function decodeWidgetValueLayout(
     }
 
     addCandidate(0)
-    if (control && isValueControlMode(values[nextValueIndex])) {
+    if (control && parseValueControlMode(values[nextValueIndex])) {
       addCandidate(1)
-      if (
-        control.filter !== undefined &&
-        typeof values[nextValueIndex + 1] === 'string'
-      ) {
+      if (hasFilter && typeof values[nextValueIndex + 1] === 'string') {
         addCandidate(2)
       }
     }

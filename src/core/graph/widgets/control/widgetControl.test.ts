@@ -49,6 +49,57 @@ describe('widget control persistence', () => {
     ])
   })
 
+  it.for([
+    { value: true, mode: 'randomize' },
+    { value: false, mode: 'fixed' }
+  ] as const)(
+    'restores legacy boolean control value $value',
+    ({ value, mode }) => {
+      const { node } = createControlledNode()
+
+      node.configure({
+        ...node.serialize(),
+        widgets_values: [12345, value, 'a prompt']
+      })
+
+      const target = node.widgets?.[0]
+      expect(node.widgets?.map((widget) => widget.value)).toEqual([
+        12345,
+        'a prompt'
+      ])
+      expect(
+        target?.widgetId
+          ? useWidgetValueStore().getWidgetControl(target.widgetId)?.mode
+          : undefined
+      ).toBe(mode)
+    }
+  )
+
+  it('restores a control before its node is attached to a graph', () => {
+    const node = new LGraphNode('TestNode')
+    node.serialize_widgets = true
+    const seed = node.addWidget('number', 'seed', 0, () => {}, {})
+    seed.controlConfig = { mode: 'randomize', hasFilter: false }
+    node.addWidget('text', 'prompt', '', () => {}, {})
+
+    node.configure({
+      ...node.serialize(),
+      widgets_values: [12345, true, 'a prompt']
+    })
+    const graph = new LGraph()
+    graph.add(node)
+
+    expect(node.widgets?.map((widget) => widget.value)).toEqual([
+      12345,
+      'a prompt'
+    ])
+    expect(
+      seed.widgetId
+        ? useWidgetValueStore().getWidgetControl(seed.widgetId)?.mode
+        : undefined
+    ).toBe('randomize')
+  })
+
   it('does not consume the next widget when the control slot is absent', () => {
     const { node } = createControlledNode()
 
