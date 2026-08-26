@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import type { reportError } from '@/platform/telemetry/reportError'
 import type { SavedPaymentMethod } from '@/platform/workspace/api/workspaceApi'
 
 import { useHasSavedPaymentMethod } from './useHasSavedPaymentMethod'
@@ -8,7 +9,7 @@ import { useHasSavedPaymentMethod } from './useHasSavedPaymentMethod'
 const mockListSavedPaymentMethods = vi.hoisted(() =>
   vi.fn<() => Promise<SavedPaymentMethod[]>>()
 )
-const mockReportError = vi.hoisted(() => vi.fn())
+const mockReportError = vi.hoisted(() => vi.fn<typeof reportError>())
 
 vi.mock('@/platform/workspace/api/workspaceApi', () => ({
   workspaceApi: {

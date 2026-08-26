@@ -11,7 +11,12 @@ import TopUpCreditsDialogContentWorkspace from './TopUpCreditsDialogContentWorks
 
 const mockFetchBalance = vi.fn()
 const mockFetchStatus = vi.fn()
-const mockManageSubscription = vi.fn()
+const mockManageSubscription = vi.fn<() => Promise<void>>()
+const mockReportError = vi.hoisted(() => vi.fn())
+
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: mockReportError
+}))
 const mockTopup =
   vi.fn<(amountCents: number) => Promise<CreateTopupResponse | void>>()
 const mockStartOperation = vi.fn()
@@ -169,6 +174,8 @@ const i18n = createI18n({
             "You'll be asked to add a payment method to complete this purchase.",
           noPaymentMethodError:
             'No payment method is saved for this workspace. Add one via Settings → Plan & Credits → Manage billing, then retry the top-up.',
+          manageBillingError:
+            'Failed to open the billing portal. Please try again.',
           confirmSubtitle:
             'Credits are added to this workspace as soon as payment completes.',
           confirmTitle: 'Confirm',
@@ -353,6 +360,30 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     )
 
     expect(mockManageSubscription).toHaveBeenCalledTimes(1)
+  })
+
+  it('reports and surfaces a billing-portal opening failure', async () => {
+    setHasSavedPaymentMethod(false)
+    const failure = new Error('portal down')
+    mockManageSubscription.mockRejectedValue(failure)
+
+    renderDialog()
+    await clickAddCredits()
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Manage billing' })
+    )
+
+    await waitFor(() =>
+      expect(mockReportError).toHaveBeenCalledWith(failure, {
+        errorType: 'billing_portal_open_failure'
+      })
+    )
+    expect(mockToastAdd).toHaveBeenCalledWith(
+      expect.objectContaining({
+        summary: 'Failed to open the billing portal. Please try again.'
+      })
+    )
   })
 
   it('explains how to add a payment method when the purchase is refused', async () => {

@@ -77,7 +77,7 @@ test.describe('Top-up without a saved payment method', () => {
       page.context().waitForEvent('page'),
       topUpDialog.root.getByRole('button', { name: 'Manage billing' }).click()
     ])
-    expect(portalPage.url()).toBe('https://billing.example/portal')
+    await expect(portalPage).toHaveURL('https://billing.example/portal')
     await portalPage.close()
 
     await topUpDialog.root.getByRole('button', { name: 'Pay $50.00' }).click()
