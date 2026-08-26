@@ -1,5 +1,6 @@
 import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { ensureNodesAddressable } from '@e2e/fixtures/utils/lodZoom'
 
 interface FitToViewOptions {
   selectionOnly?: boolean
@@ -95,10 +96,14 @@ export async function fitToViewInstant(
 
       const canvas = app.canvas
       canvas.ds.fitToBounds(bounds, { zoom })
+
       canvas.setDirty(true, true)
     },
     { bounds, zoom }
   )
 
-  await comfyPage.nextFrame()
+  // Fitting a large graph can land below the level-of-detail threshold, where
+  // Vue nodes are drawn as canvas boxes and no `[data-node-id]` exists. Specs
+  // that want the simplified mode set the zoom themselves.
+  await ensureNodesAddressable(comfyPage)
 }

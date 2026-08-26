@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { useResizeObserver, whenever } from '@vueuse/core'
-import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import {
+  onActivated,
+  onBeforeUnmount,
+  onDeactivated,
+  onMounted,
+  ref,
+  watch
+} from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
@@ -27,6 +34,7 @@ const canvas: LGraphCanvas = canvasStore.canvas as LGraphCanvas
 let node: LGraphNode | undefined
 let widgetInstance: IBaseWidget | undefined
 let pointer: CanvasPointer | undefined
+let redrawOnActivation = false
 const scaleFactor = 2
 
 function findLegacyWidget():
@@ -72,15 +80,26 @@ onMounted(() => {
 onBeforeUnmount(() => {
   if (widgetInstance) widgetInstance.triggerDraw = () => {}
 })
+onDeactivated(() => {
+  redrawOnActivation = true
+})
+onActivated(() => {
+  if (!redrawOnActivation) return
+  redrawOnActivation = false
+  draw()
+})
 
 whenever(() => !canvasStore.linearMode, bindWidget)
 watch(() => canvasStore.currentGraph, bindWidget)
 
 function draw() {
-  if (!widgetInstance || !node) return
+  const element = canvasEl.value
+  if (!widgetInstance || !node || !element?.isConnected) return
   const width =
-    canvasEl.value.getBoundingClientRect().width ||
-    canvasEl.value.parentElement.clientWidth
+    element.getBoundingClientRect().width ||
+    element.parentElement?.clientWidth ||
+    0
+  if (!width) return
   // Priority: computedHeight (from litegraph) > computeLayoutSize > computeSize
   let height = 20
   if (widgetInstance.computedHeight) {
@@ -96,12 +115,12 @@ function draw() {
   node.canvasHeight = height
   widgetInstance.y = 0
   widgetInstance.width = width
-  canvasEl.value.height = (height + 2) * scaleFactor
-  canvasEl.value.width = width * scaleFactor
-  const ctx = canvasEl.value?.getContext('2d')
+  element.height = (height + 2) * scaleFactor
+  element.width = width * scaleFactor
+  const ctx = element.getContext('2d')
   if (!ctx) return
   ctx.scale(scaleFactor, scaleFactor)
-  widgetInstance.draw?.(ctx, node, width, 1, height)
+  widgetInstance.draw?.(ctx, node, width, 1, height, canvas.low_quality)
 }
 //See LGraphCanvas.processWidgetClick
 function handleDown(e: PointerEvent) {

@@ -419,51 +419,53 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
         })
     })
 
-    test('zoom out idle', async ({ comfyPage }) => {
-      // This test previously claimed to measure size-based culling
-      // (isNodeTooSmall / isNodeInViewport) and asserted scale < 0.02.
-      // No such culling exists in production source: GraphCanvas.vue mounts
-      // every Vue node from allNodes at any zoom, and the only
-      // isNodeTooSmall / isNodeInViewport matches in the repo are stale
-      // comments in this file. The helper sent wheel events over an overlay,
-      // leaving the workflow's 0.5 scale unchanged; the old <0.02 assertion
-      // was also below the real ds.min_scale clamp (0.1). This kept the perf
-      // job red and the baseline pipeline dead (issue #15545).
-      //
-      // Until renderer-owned LOD lands (PR #15031 replaces Vue widget DOM
-      // below the readable-font threshold, reachable at production zoom),
-      // this measures the honest current behavior: frame cost at maximum
-      // supported zoom-out with all Vue node DOM still mounted.
-      // Zoom out to the ds.min_scale clamp (0.1) before measuring so the
-      // metric captures only idle frames at minimum scale, not zoom
-      // input/render cost.
-      const box = await comfyPage.canvas.boundingBox()
-      if (!box) throw new Error('Canvas bounding box not available')
-      await comfyPage.page.mouse.move(
-        box.x + box.width / 2,
-        box.y + box.height / 2
-      )
+    test('zoom out culling', async ({ comfyPage }) => {
+      // Replaces the former 'zoom out idle' placeholder, which measured frame
+      // cost with every Vue node still mounted at minimum scale because no
+      // renderer-owned LOD existed. It does now: below the readable-font
+      // threshold the node layer is replaced by canvas boxes, so this
+      // measures the cost of crossing that threshold and returning.
+      const canvasBox = await comfyPage.canvas.boundingBox()
+      if (!canvasBox) throw new Error('Canvas bounding box not available')
+
+      const centerX = canvasBox.x + canvasBox.width / 2
+      const centerY = canvasBox.y + canvasBox.height / 2
+      const lodThreshold = await comfyPage.page.evaluate(() => {
+        const canvas = window.app!.canvas
+        const textSize = window.LiteGraph!.NODE_TEXT_SIZE
+        const dprAdjustment = Math.sqrt(window.devicePixelRatio || 1)
+        return canvas.min_font_size_for_lod / (textSize * dprAdjustment)
+      })
+
+      await comfyPage.perf.startMeasuring()
+
+      await comfyPage.page.mouse.move(centerX, centerY)
       for (let i = 0; i < 20; i++) {
         await comfyPage.page.mouse.wheel(0, 100)
         await comfyPage.nextFrame()
       }
+
       await expect
         .poll(() => comfyPage.canvasOps.getScale())
-        .toBeCloseTo(0.1, 5)
+        .toBeLessThan(lodThreshold)
 
-      await comfyPage.perf.startMeasuring()
-
-      // Idle at maximum zoom-out with everything mounted.
       for (let i = 0; i < 60; i++) {
         await comfyPage.nextFrame()
       }
 
-      const m = await comfyPage.perf.stopMeasuring('vue-zoom-out-idle')
+      for (let i = 0; i < 20; i++) {
+        await comfyPage.page.mouse.wheel(0, -100)
+        await comfyPage.nextFrame()
+      }
+
+      const m = await comfyPage.perf.stopMeasuring('vue-zoom-culling')
       recordMeasurement(m)
       console.log(
-        `Vue zoom out idle: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, ${m.frameDurationMs.toFixed(1)}ms/frame`
+        `Vue zoom culling: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, ${m.frameDurationMs.toFixed(1)}ms/frame`
       )
     })
+  })
+
   })
 
   test(
