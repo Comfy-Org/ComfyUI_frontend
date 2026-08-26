@@ -57,6 +57,9 @@ concurrency:
   group: ${{ github.event_name == 'workflow_dispatch' && format('{0}-dispatch-{1}', github.workflow, github.run_id) || format('{0}-{1}', github.workflow, github.ref) }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 env:
   COMFYUI_PIN: b08e6cf35fac50d3ca8470dffb3f9a1fbb7187d2
 
@@ -128,9 +131,7 @@ jobs:
           - shard: '5/5'
             proof_row: '15'
     runs-on: ubuntu-latest
-    # Recent green runs complete in 10-19 minutes per shard. 35 leaves room for a
-    # slow dependency resolve without letting a wedged backend run indefinitely.
-    timeout-minutes: 35
+    timeout-minutes: 20
     permissions:
       contents: read
     # Job-level so every step that installs packs, runs the suite, or gates its

@@ -82,7 +82,7 @@ jobs:
   corpus:
     if: github.repository == 'Comfy-Org/ComfyUI_frontend'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
     # contents: read only. The fetch step below holds a token (for the
     # codeload rate limit) while extracting untrusted archives, so this job
     # must not also carry actions: write - cache pruning runs as its own job.
@@ -226,7 +226,7 @@ jobs:
     needs: corpus
     if: github.repository == 'Comfy-Org/ComfyUI_frontend'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
