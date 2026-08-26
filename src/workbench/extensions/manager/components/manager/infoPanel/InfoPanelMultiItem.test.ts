@@ -90,7 +90,6 @@ describe('InfoPanelMultiItem', () => {
     })
 
   beforeEach(() => {
-    vi.clearAllMocks()
     getNodeDefs.call.mockImplementation(() => new Promise(() => {}))
   })
 

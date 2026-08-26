@@ -60,7 +60,6 @@ describe('NodesTabPanel', () => {
     })
 
   beforeEach(() => {
-    vi.clearAllMocks()
     getNodeDefs.call.mockResolvedValue({ comfy_nodes: [] })
   })
 
