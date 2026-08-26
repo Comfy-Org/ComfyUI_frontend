@@ -72,7 +72,7 @@ as implementation constraints.
 | Featured carousel pagination | intentionally absent | Design and document controls, states, motion, and reduced-motion behavior |
 | Featured carousel rotation   | intentionally absent | Approve content ownership and carousel behavior before adding state       |
 | Search suggestion chips      | blocked gap          | Approve a reusable suggestion-chip component and keyboard behavior        |
-| Inline collection actions    | integrated           | Approved `BrandButton` links reveal the complete generated catalog        |
+| Inline collection actions    | integrated           | Approved `BrandButton` links open the dedicated generated catalog page    |
 | Task-card actions            | integrated           | Full-card links use reviewed Comfy use-case or category destinations      |
 | Production model media       | preview-integrated   | Six exact owned stills plus two governed source-gap fallbacks             |
 | Production catalog data      | build-integrated     | Generated routes, summary, categories, ItemList, and search records       |
@@ -92,7 +92,7 @@ as implementation constraints.
 | Trending label            | `SectionLabel.vue`                  | Default label treatment                                       |
 | Day-zero model cards      | `CardWorkflow01.vue`                | Reuses the approved compact collection anatomy                |
 | Collection actions        | `BrandButton.vue`                   | Existing outline CTA links reveal the complete model catalog  |
-| Task discovery tiles      | `TaskTile.vue`                      | Governed full-card link with destination-owned 16:9 media      |
+| Task discovery tiles      | `TaskTile.vue`                      | Governed full-card link with destination-owned 16:9 media     |
 | Access and run-path cards | `ProductCard.vue`                   | Existing website destination-card anatomy                     |
 | Free-runs banner          | `PricingFreeBanner.vue`             | Exact shipped `/cloud/pricing` banner anatomy                 |
 | Family variant actions    | `IconButton.vue`                    | Solid small arrow links to canonical model information pages  |
@@ -104,26 +104,26 @@ the appearance or states of the approved components above.
 
 ## Feature-local composition registry
 
-| Composition                    | Status             | Responsibility                                                 |
-| ------------------------------ | ------------------ | -------------------------------------------------------------- |
-| `ModelsExploreHero.astro`      | catalog-integrated | Approved anatomy with generated-catalog summary copy           |
-| `ModelCatalogExplorer.vue`     | catalog-integrated | Owns query/category state and renders matching approved cards  |
-| `ModelCategoryFilter.vue`      | catalog-integrated | Controlled wrapper around the approved website tabs            |
-| `ModelCollectionSection.astro` | media-integrated   | Approved cards with governed owned stills or explicit fallback |
-| `ModelMediaPlaceholder.vue`    | approved-fallback  | Shared decorative fallback for catalog entries without a still |
+| Composition                    | Status             | Responsibility                                                  |
+| ------------------------------ | ------------------ | --------------------------------------------------------------- |
+| `ModelsExploreHero.astro`      | catalog-integrated | Approved anatomy with generated-catalog summary copy            |
+| `ModelCatalogExplorer.vue`     | catalog-integrated | Owns query/category state and renders matching approved cards   |
+| `ModelCategoryFilter.vue`      | catalog-integrated | Controlled wrapper around the approved website tabs             |
+| `ModelCollectionSection.astro` | media-integrated   | Approved cards with governed owned stills or explicit fallback  |
+| `ModelMediaPlaceholder.vue`    | approved-fallback  | Shared decorative fallback for catalog entries without a still  |
 | `ModelTaskSection.astro`       | media-integrated   | Reviewed routes, destination-owned media, and collection action |
-| `ModelAccessSection.astro`     | design-only        | Two-column layout around approved destination cards            |
-| `ModelFamilySection.astro`     | design-only        | Linked family hierarchy with approved placeholder media        |
-| `ModelConversionSection.astro` | design-only        | Approved banner action and product-card layout                 |
+| `ModelAccessSection.astro`     | design-only        | Two-column layout around approved destination cards             |
+| `ModelFamilySection.astro`     | design-only        | Linked family hierarchy with approved placeholder media         |
+| `ModelConversionSection.astro` | design-only        | Approved banner action and product-card layout                  |
 
 ## Remaining component gaps for lint enforcement
 
-| Needed pattern          | Status              | Current implementation                                           |
-| ----------------------- | ------------------- | ---------------------------------------------------------------- |
-| Search suggestion chip  | `blocked-gap`       | Omitted; not substituted with a raw button                       |
-| Task tile action        | `integrated`        | The complete tile links to its reviewed Comfy destination       |
-| Featured-model carousel | `blocked-gap`       | Static card only; invented pagination indicators removed         |
-| Model media             | `approved-fallback` | `ModelMediaPlaceholder.vue` where no exact owned still exists    |
+| Needed pattern          | Status              | Current implementation                                        |
+| ----------------------- | ------------------- | ------------------------------------------------------------- |
+| Search suggestion chip  | `blocked-gap`       | Omitted; not substituted with a raw button                    |
+| Task tile action        | `integrated`        | The complete tile links to its reviewed Comfy destination     |
+| Featured-model carousel | `blocked-gap`       | Static card only; invented pagination indicators removed      |
+| Model media             | `approved-fallback` | `ModelMediaPlaceholder.vue` where no exact owned still exists |
 
 A blocked gap must not be filled by copying the mockup CSS. Design the missing
 component, document its variants and states, add it to the website registry,
@@ -154,11 +154,15 @@ and then restore the page element.
   empty query with the All category preserves the approved editorial page;
   entering a query or selecting a category reveals matching catalog cards.
 - Trending and Day Zero collection headers use the shipped `BrandButton`
-  outline CTA. Both “View all” links set `catalog=all` and reveal the complete
-  generated catalog. They do not claim separate ranking or release datasets.
+  outline CTA. Both “View all models” links open the dedicated
+  `/p/supported-models/all` catalog page. They do not claim separate ranking or
+  release datasets.
 - Catalog result cards reuse `CardWorkflow01`; missing exact thumbnails use the
   governed shared placeholder. Result links always use the catalog slug and
   never a display-name guess.
+- The dedicated catalog shows every generated entry immediately, retains the
+  governed search and category filters, and uses each model's owned thumbnail
+  when one exists. The entire card links to its dedicated model route.
 - `workflowCount` values are references per catalog entry. Their sum is not a
   verified unique-workflow count and must not be presented as one.
 - Editorial cards remain fixtures until a reviewed mapping exists between each

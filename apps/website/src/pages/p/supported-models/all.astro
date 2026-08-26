@@ -1,0 +1,88 @@
+---
+import type { ModelCategoryOption } from '../../../components/models/explore/ModelCategoryFilter.vue'
+import ModelCatalogExplorer from '../../../components/models/explore/ModelCatalogExplorer.vue'
+import { createModelExploreCatalog } from '../../../components/models/explore/modelExploreCatalog'
+import SectionHeader from '../../../components/common/SectionHeader.vue'
+import { models } from '../../../config/models'
+import { MODEL_CATEGORIES } from '../../../config/modelCategories'
+import { t } from '../../../i18n/translations'
+import BaseLayout from '../../../layouts/BaseLayout.astro'
+import {
+  absoluteUrl,
+  itemListNode,
+  jsonLdId,
+  pageContext,
+} from '../../../utils/jsonLd'
+
+const title = t('models.index.title')
+const subtitle = t('models.index.subtitle')
+const { url, locale } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale,
+)
+const categories = t('models.explore.categories', locale).split('|')
+const categoryOptions: ModelCategoryOption[] = [
+  { value: 'all', label: categories[0] ?? 'ALL' },
+  ...MODEL_CATEGORIES.map((value, index) => ({
+    value,
+    label: categories[index + 1] ?? value,
+  })),
+]
+const catalog = createModelExploreCatalog(models)
+const modelList = itemListNode(
+  url,
+  title,
+  models.map((model) => ({
+    name: model.displayName,
+    url: absoluteUrl(Astro.site, `/p/supported-models/${model.slug}`),
+  })),
+)
+---
+
+<BaseLayout
+  title={`${title} - Comfy`}
+  description={subtitle}
+  pageType="CollectionPage"
+  mainEntityId={jsonLdId(url, 'itemlist')}
+  breadcrumbs={[
+    { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
+    {
+      name: title,
+      url: absoluteUrl(Astro.site, '/p/supported-models'),
+    },
+    { name: t('models.explore.collections.viewAllModels', locale) },
+  ]}
+  extraJsonLd={[modelList]}
+>
+  <section class="mx-auto max-w-10xl px-6 pt-20 pb-10 md:px-10 xl:px-30">
+    <SectionHeader
+      headingTag="h1"
+      headingSize="hero"
+      align="start"
+      label={t('models.all.eyebrow', locale)}
+    >
+      {title}
+      <p
+        slot="subtitle"
+        class="mt-5 max-w-2xl text-lg/relaxed font-light text-primary-warm-gray"
+      >
+        {subtitle}
+      </p>
+    </SectionHeader>
+  </section>
+  <ModelCatalogExplorer
+    client:load
+    showCatalogByDefault
+    {catalog}
+    {categoryOptions}
+    categoryLabel={t('models.explore.categories.label', locale)}
+    searchLabel={t('models.explore.search.label', locale)}
+    searchPlaceholder={t('models.explore.search.placeholder', locale)}
+    workflowCountOne={t('models.explore.catalog.workflowCountOne', locale)}
+    workflowCountMany={t('models.explore.catalog.workflowCountMany', locale)}
+    partnerLabel={t('models.explore.catalog.partner', locale)}
+    resultCountLabel={t('models.explore.catalog.resultCount', locale)}
+    emptyLabel={t('models.explore.catalog.empty', locale)}
+  />
+</BaseLayout>

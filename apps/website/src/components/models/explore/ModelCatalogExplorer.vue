@@ -9,10 +9,8 @@ import type { ModelCategory } from '../../../config/modelCategories'
 import ModelCategoryFilter from './ModelCategoryFilter.vue'
 import type { ModelCategoryOption } from './ModelCategoryFilter.vue'
 import ModelMediaPlaceholder from './ModelMediaPlaceholder.vue'
-import {
-  filterModelExploreCatalog,
-  type ModelExploreCatalogItem
-} from './modelExploreCatalog'
+import { filterModelExploreCatalog } from './modelExploreCatalog';
+import type { ModelExploreCatalogItem } from './modelExploreCatalog';
 
 const {
   catalog,
@@ -24,7 +22,8 @@ const {
   workflowCountMany,
   partnerLabel,
   resultCountLabel,
-  emptyLabel
+  emptyLabel,
+  showCatalogByDefault = false
 } = defineProps<{
   catalog: ModelExploreCatalogItem[]
   categoryOptions: ModelCategoryOption[]
@@ -36,11 +35,12 @@ const {
   partnerLabel: string
   resultCountLabel: string
   emptyLabel: string
+  showCatalogByDefault?: boolean
 }>()
 
 const query = ref('')
 const category = ref<'all' | ModelCategory>('all')
-const showAll = ref(false)
+const showAll = ref(showCatalogByDefault)
 const isActive = computed(
   () =>
     showAll.value || query.value.trim().length > 0 || category.value !== 'all'
@@ -62,6 +62,7 @@ const categoryLabels = computed(
 
 onMounted(() => {
   showAll.value =
+    showCatalogByDefault ||
     new URLSearchParams(window.location.search).get('catalog') === 'all'
 })
 
@@ -96,7 +97,7 @@ function toWorkflowItem(model: ModelExploreCatalogItem): CardWorkflowItem {
 </script>
 
 <template>
-  <section class="mx-auto max-w-10xl px-6 py-8 md:px-10 xl:px-30">
+  <section class="max-w-10xl mx-auto px-6 py-8 md:px-10 xl:px-30">
     <SearchField
       v-model="query"
       :label="searchLabel"
@@ -104,7 +105,7 @@ function toWorkflowItem(model: ModelExploreCatalogItem): CardWorkflowItem {
       :status="resultStatus"
     />
   </section>
-  <div class="mx-auto max-w-10xl overflow-x-auto px-6 py-3 md:px-10 xl:px-30">
+  <div class="max-w-10xl mx-auto overflow-x-auto px-6 py-3 md:px-10 xl:px-30">
     <ModelCategoryFilter
       v-model="category"
       :label="categoryLabel"
@@ -114,7 +115,7 @@ function toWorkflowItem(model: ModelExploreCatalogItem): CardWorkflowItem {
   <section
     v-if="isActive"
     id="model-catalog-results"
-    class="mx-auto max-w-10xl px-6 pt-8 pb-4 md:px-10 xl:px-30"
+    class="max-w-10xl mx-auto px-6 pt-8 pb-4 md:px-10 xl:px-30"
   >
     <p
       v-if="filteredCatalog.length === 0"

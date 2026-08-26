@@ -68,7 +68,7 @@ describe('ModelCatalogExplorer', () => {
   it('filters the generated catalog from the governed category tabs', async () => {
     render(ModelCatalogExplorer, { props })
 
-    await userEvent.click(screen.getByRole('tab', { name: 'Image' }))
+    await userEvent.click(screen.getByRole('radio', { name: 'Image' }))
 
     expect(screen.getByRole('link', { name: 'Partner Image' })).toBeTruthy()
     expect(screen.queryByRole('link', { name: 'Wan Video' })).toBeNull()
@@ -88,5 +88,14 @@ describe('ModelCatalogExplorer', () => {
       expect(screen.getByRole('link', { name: 'Wan Video' })).toBeTruthy()
       expect(screen.getByRole('link', { name: 'Partner Image' })).toBeTruthy()
     })
+  })
+
+  it('shows the complete catalog by default on the dedicated page', () => {
+    render(ModelCatalogExplorer, {
+      props: { ...props, showCatalogByDefault: true }
+    })
+
+    expect(screen.getByRole('link', { name: 'Wan Video' })).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Partner Image' })).toBeTruthy()
   })
 })

@@ -64,7 +64,6 @@ const categoryOptions: ModelCategoryOption[] = [
   })),
 ]
 const catalog = createModelExploreCatalog(models)
-const catalogAllHref = '/p/supported-models?catalog=all#model-catalog-results'
 const routes = getRoutes(locale)
 const accessCards = [
   {
@@ -157,8 +156,8 @@ const conversionCards = [
     description={t('models.explore.trending.description', locale)}
     models={trendingModelFixtures}
     openWeightsBadgeLabel={t('models.explore.openWeightsBadge', locale)}
-    actionLabel={t('models.explore.collections.viewAll', locale)}
-    actionHref={catalogAllHref}
+    actionLabel={t('models.explore.collections.viewAllModels', locale)}
+    actionHref={routes.modelsAll}
   />
   <ModelCollectionSection
     headingId="day-zero-models-heading"
@@ -166,8 +165,8 @@ const conversionCards = [
     description={t('models.explore.dayZero.description', locale)}
     models={dayZeroModelFixtures}
     openWeightsBadgeLabel={t('models.explore.openWeightsBadge', locale)}
-    actionLabel={t('models.explore.collections.viewAll', locale)}
-    actionHref={catalogAllHref}
+    actionLabel={t('models.explore.collections.viewAllModels', locale)}
+    actionHref={routes.modelsAll}
   />
   <ModelTaskSection
     label={t('models.explore.tasks.label', locale)}

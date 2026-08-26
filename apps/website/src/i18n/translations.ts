@@ -4920,6 +4920,14 @@ const translations = {
     en: 'VIEW ALL',
     'zh-CN': '查看全部'
   },
+  'models.explore.collections.viewAllModels': {
+    en: 'VIEW ALL MODELS',
+    'zh-CN': '查看所有模型'
+  },
+  'models.all.eyebrow': {
+    en: 'AI MODEL',
+    'zh-CN': 'AI 模型'
+  },
   'models.explore.trending.label': {
     en: 'TRENDING',
     'zh-CN': '热门'
