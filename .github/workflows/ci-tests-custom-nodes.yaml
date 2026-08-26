@@ -4,14 +4,10 @@
 # skipped, the job goes red - a suite that let a broken pack through as a
 # "skip" would be pointless.
 #
-# NOT a PR gate yet: nightly schedule and manual dispatch only. PRs neither
-# trigger this workflow nor wait on any of its checks, and none of its checks
-# may be marked required in branch protection. Before ever adding a
-# pull_request trigger, resolve the untrusted-source surface: the install loop
-# fetches and pip-installs whatever the manifest's deployRefs point at
-# (setup.py executes at install time), so a fork PR editing the manifest could
-# aim it at attacker-controlled source. To test a branch, dispatch with the
-# `branch` input.
+# Required gate: every pull request and merge-queue candidate runs its exact
+# declared pack population. Jobs have read-only permissions and neither
+# checkout persists a repository credential while third-party setup and
+# runtime code executes.
 #
 # The matrix keeps the six-pack Core depth suite intact and adds the pinned
 # Cloud snapshot as five breadth shards. The Cloud snapshot produces 87
@@ -27,6 +23,8 @@
 name: 'CI: Tests Custom Nodes'
 
 on:
+  pull_request:
+  merge_group:
   schedule:
     - cron: '15 9 * * *'
   workflow_dispatch:
@@ -77,7 +75,7 @@ jobs:
         # run 1..285 with a median of 6, and a matrix costs its slowest shard.
         shard: ['core', '1/5', '2/5', '3/5', '4/5', '5/5']
         proof_row: >-
-          ${{ fromJSON(github.event_name == 'workflow_dispatch' && inputs.detection_proof_row == 'all' && '["1","2","3","9","15"]' || format('["{0}"]', inputs.detection_proof_row || '0')) }}
+          ${{ fromJSON(github.event_name == 'schedule' && '["0","1","2","3","9","15"]' || github.event_name == 'workflow_dispatch' && inputs.detection_proof_row == 'all' && '["1","2","3","9","15"]' || format('["{0}"]', inputs.detection_proof_row || '0')) }}
         exclude:
           - shard: 'core'
             proof_row: '1'
@@ -158,11 +156,11 @@ jobs:
           # workflow_dispatch may aim the suite at any frontend branch; every
           # other event tests its own ref exactly as before.
           ref: ${{ inputs.branch || github.ref }}
+          persist-credentials: false
 
       - name: Apply Detection Proof source break
         id: source-mutation
         if: >-
-          github.event_name == 'workflow_dispatch' &&
           matrix.proof_row != '0' &&
           matrix.proof_row != '9'
         shell: bash
@@ -191,9 +189,7 @@ jobs:
           node_cache: 'false'
 
       - name: Verify Detection Proof witness shard
-        if: >-
-          github.event_name == 'workflow_dispatch' &&
-          matrix.proof_row != '0'
+        if: matrix.proof_row != '0'
         shell: bash
         env:
           PROOF_ROW: ${{ matrix.proof_row }}
@@ -419,7 +415,11 @@ jobs:
       # while a failed or cancelled install can never freeze a partial tree
       # under the immutable key.
       - name: Save manifest pack cache
-        if: always() && steps.install.outcome == 'success' && steps.pack-cache.outputs.cache-hit != 'true'
+        if: >-
+          always() &&
+          (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') &&
+          steps.install.outcome == 'success' &&
+          steps.pack-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v5
         with:
           path: ~/.cache/cn-packs
@@ -427,9 +427,7 @@ jobs:
 
       - name: Apply Detection Proof execution break
         id: execution-mutation
-        if: >-
-          github.event_name == 'workflow_dispatch' &&
-          matrix.proof_row == '9'
+        if: matrix.proof_row == '9'
         shell: bash
         run: |
           set -euo pipefail
@@ -441,9 +439,7 @@ jobs:
           echo "digest=$(shasum -a 256 "$f" | awk '{print $1}')" >> "$GITHUB_OUTPUT"
 
       - name: Bind Detection Proof identity
-        if: >-
-          github.event_name == 'workflow_dispatch' &&
-          matrix.proof_row != '0'
+        if: matrix.proof_row != '0'
         shell: bash
         env:
           MUTATION_DIGEST: ${{ steps.source-mutation.outputs.digest || steps.execution-mutation.outputs.digest }}
@@ -513,8 +509,7 @@ jobs:
 
       - name: Run custom-node suite
         id: suite
-        continue-on-error: >-
-          ${{ github.event_name == 'workflow_dispatch' && matrix.proof_row != '0' }}
+        continue-on-error: ${{ matrix.proof_row != '0' }}
         env:
           CN_ENABLE_S15: ${{ env.CUSTOM_NODES_MANIFEST == 'core' && '1' || '0' }}
           CN_OUTPUT_HASHES_CORE: ${{ env.COMFYUI_PIN }}
@@ -549,9 +544,7 @@ jobs:
       # A skip here means a pack or devtools did not load: on this backend every
       # tier is meant to run, so a skip is a gate failure, not an honest pass.
       - name: Forbid failed, skipped, or flaky tests
-        if: >-
-          always() &&
-          !(github.event_name == 'workflow_dispatch' && matrix.proof_row != '0')
+        if: always() && matrix.proof_row == '0'
         shell: bash
         env:
           SUITE_OUTCOME: ${{ steps.suite.outcome }}
@@ -612,10 +605,7 @@ jobs:
           fi
 
       - name: Assert deliberate failure independence
-        if: >-
-          always() &&
-          github.event_name == 'workflow_dispatch' &&
-          matrix.proof_row != '0'
+        if: always() && matrix.proof_row != '0'
         shell: bash
         env:
           PROOF_ROW: ${{ matrix.proof_row }}
@@ -726,7 +716,7 @@ jobs:
         with:
           # Shard-scoped: artifact names are unique per run, so matrix jobs
           # sharing one name cannot overwrite each other's reports.
-          name: ${{ github.event_name == 'workflow_dispatch' && matrix.proof_row != '0' && format('playwright-report-custom-nodes-{0}-row{1}', env.SHARD_SLUG, matrix.proof_row) || format('playwright-report-custom-nodes-{0}', env.SHARD_SLUG) }}
+          name: ${{ matrix.proof_row != '0' && format('playwright-report-custom-nodes-{0}-row{1}', env.SHARD_SLUG, matrix.proof_row) || format('playwright-report-custom-nodes-{0}', env.SHARD_SLUG) }}
           path: |
             playwright-report/
             custom-nodes-results.json
