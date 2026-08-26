@@ -14,7 +14,33 @@ interface PerfSnapshot {
   JSEventListeners: number
 }
 
-export interface PerfMeasurement {
+interface RafCollectorState {
+  intervalsMs: number[]
+  lastTimestamp: number | null
+  requestId: number | null
+  running: boolean
+  startVisibility: DocumentVisibilityState
+}
+
+interface RafCollection {
+  intervalsMs: number[]
+  startVisibility: DocumentVisibilityState
+  endVisibility: DocumentVisibilityState
+}
+
+export interface RafIntervalMetrics {
+  rafIntervalCount: number
+  rafIntervalP50Ms: number
+  rafIntervalP95Ms: number
+  rafIntervalP99Ms: number
+  rafIntervalMaxMs: number
+  rafIntervalsOver8_33Ms: number
+  rafIntervalsOver16_67Ms: number
+  rafIntervalsOver33_3Ms: number
+  rafIntervalsOver50Ms: number
+}
+
+export interface PerfMeasurement extends RafIntervalMetrics {
   name: string
   durationMs: number
   styleRecalcs: number
@@ -29,9 +55,33 @@ export interface PerfMeasurement {
   scriptDurationMs: number
   eventListeners: number
   totalBlockingTimeMs: number
-  frameDurationMs: number
-  p95FrameDurationMs: number
-  allFrameDurationsMs: number[]
+  rafIntervalsMs: number[]
+  rejectedRunReason: string | null
+}
+
+const RAF_STATE_KEY = '__perfRafCollectorState'
+
+function percentile(sortedValues: number[], quantile: number): number {
+  if (sortedValues.length === 0) return 0
+  return sortedValues[Math.ceil(sortedValues.length * quantile) - 1]
+}
+
+export function summarizeRafIntervals(
+  intervalsMs: number[]
+): RafIntervalMetrics {
+  const sorted = [...intervalsMs].sort((a, b) => a - b)
+  return {
+    rafIntervalCount: intervalsMs.length,
+    rafIntervalP50Ms: percentile(sorted, 0.5),
+    rafIntervalP95Ms: percentile(sorted, 0.95),
+    rafIntervalP99Ms: percentile(sorted, 0.99),
+    rafIntervalMaxMs: sorted.at(-1) ?? 0,
+    rafIntervalsOver8_33Ms: intervalsMs.filter((value) => value > 8.33).length,
+    rafIntervalsOver16_67Ms: intervalsMs.filter((value) => value > 16.67)
+      .length,
+    rafIntervalsOver33_3Ms: intervalsMs.filter((value) => value > 33.3).length,
+    rafIntervalsOver50Ms: intervalsMs.filter((value) => value > 50).length
+  }
 }
 
 export class PerformanceHelper {
@@ -47,6 +97,7 @@ export class PerformanceHelper {
 
   async dispose(): Promise<void> {
     this.snapshot = null
+    await this.stopRafCollectorIfRunning()
     if (this.cdp) {
       try {
         await this.cdp.send('Performance.disable')
@@ -80,10 +131,6 @@ export class PerformanceHelper {
     }
   }
 
-  /**
-   * Collect longtask entries from PerformanceObserver and compute TBT.
-   * TBT = sum of (duration - 50ms) for every task longer than 50ms.
-   */
   private async collectTBT(): Promise<number> {
     return this.page.evaluate(() => {
       const state = (window as unknown as Record<string, unknown>)
@@ -92,7 +139,6 @@ export class PerformanceHelper {
         | undefined
       if (!state) return 0
 
-      // Flush any queued-but-undelivered entries into our accumulator
       for (const entry of state.observer.takeRecords()) {
         if (entry.duration > 50) state.tbtMs += entry.duration - 50
       }
@@ -102,37 +148,58 @@ export class PerformanceHelper {
     })
   }
 
-  /**
-   * Measure individual frame durations via rAF timing over a sample window.
-   * Returns all per-frame durations so callers can compute avg, p95, etc.
-   */
-  private async measureFrameDurations(sampleFrames = 30): Promise<number[]> {
-    return this.page.evaluate((frames) => {
-      return new Promise<number[]>((resolve) => {
-        const timeout = setTimeout(() => resolve([]), 5000)
-        const timestamps: number[] = []
-        let count = 0
-        function tick(ts: number) {
-          timestamps.push(ts)
-          count++
-          if (count <= frames) {
-            requestAnimationFrame(tick)
-          } else {
-            clearTimeout(timeout)
-            if (timestamps.length < 2) {
-              resolve([])
-              return
-            }
-            const durations: number[] = []
-            for (let i = 1; i < timestamps.length; i++) {
-              durations.push(timestamps[i] - timestamps[i - 1])
-            }
-            resolve(durations)
-          }
+  private async startRafCollector(): Promise<void> {
+    await this.page.evaluate((stateKey) => {
+      const win = window as unknown as Record<string, unknown>
+      if (win[stateKey]) throw new Error('rAF measurement already in progress')
+
+      return new Promise<void>((resolve) => {
+        const state: RafCollectorState = {
+          intervalsMs: [],
+          lastTimestamp: null,
+          requestId: null,
+          running: true,
+          startVisibility: document.visibilityState
         }
-        requestAnimationFrame(tick)
+        win[stateKey] = state
+
+        const tick = (timestamp: number) => {
+          if (!state.running) return
+          if (state.lastTimestamp !== null) {
+            state.intervalsMs.push(timestamp - state.lastTimestamp)
+          }
+          state.lastTimestamp = timestamp
+          state.requestId = requestAnimationFrame(tick)
+          resolve()
+        }
+        state.requestId = requestAnimationFrame(tick)
       })
-    }, sampleFrames)
+    }, RAF_STATE_KEY)
+  }
+
+  private async stopRafCollectorIfRunning(): Promise<RafCollection | null> {
+    return this.page.evaluate((stateKey) => {
+      const win = window as unknown as Record<string, unknown>
+      const state = win[stateKey] as RafCollectorState | undefined
+      if (!state) return null
+
+      return new Promise<RafCollection>((resolve) => {
+        if (state.requestId !== null) cancelAnimationFrame(state.requestId)
+        const finish = (timestamp: number) => {
+          if (state.lastTimestamp !== null) {
+            state.intervalsMs.push(timestamp - state.lastTimestamp)
+          }
+          state.running = false
+          delete win[stateKey]
+          resolve({
+            intervalsMs: state.intervalsMs,
+            startVisibility: state.startVisibility,
+            endVisibility: document.visibilityState
+          })
+        }
+        requestAnimationFrame(finish)
+      })
+    }, RAF_STATE_KEY)
   }
 
   async startMeasuring(): Promise<void> {
@@ -141,8 +208,6 @@ export class PerformanceHelper {
         'Measurement already in progress — call stopMeasuring() first'
       )
     }
-    // Install longtask observer if not already present, then reset the
-    // accumulator so old longtasks don't bleed into the new measurement window.
     await this.page.evaluate(() => {
       const win = window as unknown as Record<string, unknown>
       if (!win.__perfLongtaskState) {
@@ -169,11 +234,14 @@ export class PerformanceHelper {
       state.tbtMs = 0
       state.observer.takeRecords()
     })
+    await this.startRafCollector()
     this.snapshot = await this.getSnapshot()
   }
 
   async stopMeasuring(name: string): Promise<PerfMeasurement> {
     if (!this.snapshot) throw new Error('Call startMeasuring() first')
+
+    const rafCollection = await this.stopRafCollectorIfRunning()
     const after = await this.getSnapshot()
     const before = this.snapshot
     this.snapshot = null
@@ -182,20 +250,23 @@ export class PerformanceHelper {
       return after[key] - before[key]
     }
 
-    const [totalBlockingTimeMs, allFrameDurationsMs] = await Promise.all([
-      this.collectTBT(),
-      this.measureFrameDurations()
-    ])
-
-    const frameDurationMs =
-      allFrameDurationsMs.length > 0
-        ? allFrameDurationsMs.reduce((a, b) => a + b, 0) /
-          allFrameDurationsMs.length
-        : 0
-
-    const sorted = [...allFrameDurationsMs].sort((a, b) => a - b)
-    const p95FrameDurationMs =
-      sorted.length > 0 ? sorted[Math.ceil(sorted.length * 0.95) - 1] : 0
+    const totalBlockingTimeMs = await this.collectTBT()
+    const rafIntervalsMs = rafCollection?.intervalsMs ?? []
+    const nonMonotonicInterval = rafIntervalsMs.some(
+      (duration) => !Number.isFinite(duration) || duration <= 0
+    )
+    let rejectedRunReason: string | null = null
+    if (!rafCollection) rejectedRunReason = 'rAF collector missing at stop'
+    else if (
+      rafCollection.startVisibility !== 'visible' ||
+      rafCollection.endVisibility !== 'visible'
+    ) {
+      rejectedRunReason = `document visibility changed (${rafCollection.startVisibility} to ${rafCollection.endVisibility})`
+    } else if (nonMonotonicInterval) {
+      rejectedRunReason = 'rAF timestamps were non-monotonic'
+    } else if (rafIntervalsMs.length === 0) {
+      rejectedRunReason = 'measurement window contained no rAF intervals'
+    }
 
     return {
       name,
@@ -212,9 +283,9 @@ export class PerformanceHelper {
       scriptDurationMs: delta('ScriptDuration') * 1000,
       eventListeners: delta('JSEventListeners'),
       totalBlockingTimeMs,
-      frameDurationMs,
-      p95FrameDurationMs,
-      allFrameDurationsMs
+      rafIntervalsMs,
+      rejectedRunReason,
+      ...summarizeRafIntervals(rafIntervalsMs)
     }
   }
 }

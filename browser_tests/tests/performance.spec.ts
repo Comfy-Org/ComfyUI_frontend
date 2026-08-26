@@ -235,7 +235,7 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
     const m = await comfyPage.perf.stopMeasuring('large-graph-zoom')
     recordMeasurement(m)
     console.log(
-      `Large graph zoom: ${m.layouts} layouts, ${m.layoutDurationMs.toFixed(1)}ms layout, ${m.frameDurationMs.toFixed(1)}ms/frame, TBT=${m.totalBlockingTimeMs.toFixed(0)}ms`
+      `Large graph zoom: ${m.layouts} layouts, ${m.layoutDurationMs.toFixed(1)}ms layout, ${m.rafIntervalP95Ms.toFixed(1)}ms rAF p95, TBT=${m.totalBlockingTimeMs.toFixed(0)}ms`
     )
   })
 
@@ -296,7 +296,7 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
     const m = await comfyPage.perf.stopMeasuring('canvas-zoom-sweep')
     recordMeasurement(m)
     console.log(
-      `Zoom sweep: ${m.layouts} layouts, ${m.frameDurationMs.toFixed(1)}ms/frame, TBT=${m.totalBlockingTimeMs.toFixed(0)}ms`
+      `Zoom sweep: ${m.layouts} layouts, ${m.rafIntervalP95Ms.toFixed(1)}ms rAF p95, TBT=${m.totalBlockingTimeMs.toFixed(0)}ms`
     )
   })
 
@@ -365,7 +365,7 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
       const m = await comfyPage.perf.stopMeasuring('vue-large-graph-pan')
       recordMeasurement(m)
       console.log(
-        `Vue large graph pan: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, ${m.frameDurationMs.toFixed(1)}ms/frame, TBT=${m.totalBlockingTimeMs.toFixed(0)}ms`
+        `Vue large graph pan: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, ${m.rafIntervalP95Ms.toFixed(1)}ms rAF p95, TBT=${m.totalBlockingTimeMs.toFixed(0)}ms`
       )
     })
 
@@ -396,7 +396,7 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
       const m = await comfyPage.perf.stopMeasuring('vue-zoom-culling')
       recordMeasurement(m)
       console.log(
-        `Vue zoom culling: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, ${m.frameDurationMs.toFixed(1)}ms/frame`
+        `Vue zoom culling: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, ${m.rafIntervalP95Ms.toFixed(1)}ms rAF p95`
       )
     })
   })
