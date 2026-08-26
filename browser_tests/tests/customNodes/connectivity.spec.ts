@@ -64,7 +64,13 @@ const PLAN_SETUP_MS = 120_000
 const SWEEP_MS_PER_PAIR = 70
 const ISOLATED_MS_PER_PAIR = PLAN_SETUP_MS
 const DYNAMIC_CLEANUP_SETTLE_MS = 50
-const PAIRS_PER_BATCH = 100
+// Per-pair cost is not uniform: a batch landing on a cluster of nodes that
+// rebuild their whole dynamic widget set per connection measured 42.5s while
+// the median batch was 2.4s. At 100 pairs that outlier sat 2.5s under the
+// stall deadline, so ordinary variance decided pass or fail. Smaller batches
+// divide the worst cluster across several evaluates, which restores a wide
+// margin without widening the deadline or changing what is swept.
+const PAIRS_PER_BATCH = 25
 // Healthy batches finish in ~3s and the slowest observed legitimate batch was
 // 30s, so 45s is past any real batch. It must also fire before the test
 // budget runs out: the stall begins ~178s into a 244s sweep, so a longer
