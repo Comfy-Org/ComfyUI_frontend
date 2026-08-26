@@ -90,21 +90,31 @@ function vueMountProblems(
           problems.push(`${type}: no Vue mount`)
           continue
         }
-        const widgets = (
-          (node.widgets ?? []) as Array<{
+        const allWidgets = (node.widgets ?? []) as Array<{
+          advanced?: boolean
+          name?: string
+          type?: string
+          options?: {
             advanced?: boolean
-            name?: string
-            type?: string
-            options?: {
-              advanced?: boolean
-              canvasOnly?: boolean
-              hidden?: boolean
-            }
-          }>
-        ).filter(
+            canvasOnly?: boolean
+            hidden?: boolean
+          }
+        }>
+        const convertedWidgetNames = new Set(
+          allWidgets
+            .filter(
+              ({ type }) =>
+                type === 'converted-widget' ||
+                type?.startsWith('converted-widget:')
+            )
+            .map(({ name }) => name)
+            .filter((name): name is string => !!name)
+        )
+        const widgets = allWidgets.filter(
           (widget) =>
             !!widget.type &&
             widget.type !== 'converted-widget' &&
+            !widget.type.startsWith('converted-widget:') &&
             !widget.options?.canvasOnly &&
             !(widget.options?.advanced ?? widget.advanced) &&
             !widget.options?.hidden &&
@@ -156,7 +166,9 @@ function vueMountProblems(
               (input as { widget?: { name?: string } }).widget ?? {}
             return widgetName &&
               !visibleWidgetNames.has(widgetName) &&
-              !visibleWidgetNames.has(input.name)
+              !visibleWidgetNames.has(input.name) &&
+              !convertedWidgetNames.has(widgetName) &&
+              !convertedWidgetNames.has(input.name)
               ? []
               : [`${id}-in-${index}`]
           }),
