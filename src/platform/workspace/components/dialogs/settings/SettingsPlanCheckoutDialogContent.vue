@@ -26,8 +26,12 @@
     </Button>
 
     <div
-      v-if="checkoutStep === 'pricing'"
+      v-if="
+        checkoutStep === 'pricing' ||
+        (checkoutStep === 'preview' && !previewVariant)
+      "
       class="flex items-center justify-center gap-2 py-12 text-muted-foreground"
+      data-testid="settings-plan-checkout-loading"
     >
       <i class="pi pi-spin pi-spinner" />
       <span class="text-sm">{{ t('g.loading') }}</span>
@@ -35,9 +39,11 @@
 
     <template v-else-if="checkoutStep === 'preview'">
       <SubscriptionTransitionPreviewWorkspace
-        v-if="previewVariant === 'team-change'"
-        :preview-data="previewData!"
-        :team-plan="selectedTeamStop!"
+        v-if="
+          previewVariant === 'team-change' && previewData && selectedTeamStop
+        "
+        :preview-data="previewData"
+        :team-plan="selectedTeamStop"
         :is-loading="isLoadingPreview || isSubscribing || isPolling"
         :action-url="activeCheckoutActionUrl"
         :force-reactivation="reactivationRequired"
@@ -46,8 +52,8 @@
       />
 
       <SubscriptionAddPaymentPreviewWorkspace
-        v-else-if="previewVariant === 'team-new'"
-        :team-plan="selectedTeamStop!"
+        v-else-if="previewVariant === 'team-new' && selectedTeamStop"
+        :team-plan="selectedTeamStop"
         :billing-cycle="selectedBillingCycle"
         :is-loading="isLoadingPreview || isSubscribing || isPolling"
         :action-url="activeCheckoutActionUrl"
@@ -56,9 +62,9 @@
       />
 
       <SubscriptionAddPaymentPreviewWorkspace
-        v-else-if="previewVariant === 'personal-new'"
+        v-else-if="previewVariant === 'personal-new' && selectedTierKey"
         :preview-data="previewData"
-        :tier-key="selectedTierKey!"
+        :tier-key="selectedTierKey"
         :billing-cycle="selectedBillingCycle"
         :is-loading="isSubscribing || isPolling"
         :action-url="activeCheckoutActionUrl"
@@ -67,8 +73,8 @@
       />
 
       <SubscriptionTransitionPreviewWorkspace
-        v-else-if="previewVariant === 'personal-change'"
-        :preview-data="previewData!"
+        v-else-if="previewVariant === 'personal-change' && previewData"
+        :preview-data="previewData"
         :is-loading="isSubscribing || isPolling"
         :action-url="activeCheckoutActionUrl"
         :force-reactivation="reactivationRequired"

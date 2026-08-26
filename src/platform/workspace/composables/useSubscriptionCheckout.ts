@@ -648,9 +648,15 @@ export function useSubscriptionCheckout(
 
   const previewVariant = computed<PreviewVariant>(() => {
     if (selectedTeamCheckout.value) {
+      // The transition screen dereferences the preview during setup, so a
+      // change may only claim its variant once that preview has installed.
+      if (!previewData.value) {
+        return selectedTeamCheckout.value.checkoutType === 'change'
+          ? null
+          : 'team-new'
+      }
       return selectedTeamCheckout.value.checkoutType === 'change' ||
-        (previewData.value &&
-          previewData.value.transition_type !== 'new_subscription')
+        previewData.value.transition_type !== 'new_subscription'
         ? 'team-change'
         : 'team-new'
     }
@@ -792,12 +798,9 @@ export function useSubscriptionCheckout(
       let response: PreviewSubscribeResponse | null = null
       let previewError: unknown
       try {
-        response = await previewSubscribe(
-          getTeamPlanSlug(payload.billingCycle),
-          {
-            teamCreditStopId: payload.stop.id
-          }
-        )
+        response = await previewSubscribe(planSlug, {
+          teamCreditStopId: payload.stop.id
+        })
       } catch (error) {
         previewError = error
         const recovery = await recoverOutstandingPayment(
@@ -823,7 +826,6 @@ export function useSubscriptionCheckout(
         if (response) installPreview(response)
         return
       }
-      if (!isSubscriptionCancelled()) return
       toast.add({
         severity: 'error',
         summary: t('subscription.teamPlan.name'),
@@ -898,6 +900,8 @@ export function useSubscriptionCheckout(
     previewData.value = null
     quoteIsCurrent.value = false
     selectedTeamCheckout.value = null
+    selectedPlanSlug.value = null
+    selectedTierKey.value = null
     activeCheckoutOperationId.value = null
     activeCheckoutAttemptStartedAt = undefined
   }
@@ -1065,16 +1069,17 @@ export function useSubscriptionCheckout(
     let planSlug: string | null
     let options: PreviewSubscribeOptions
     if (selectedTeamCheckout.value?.stop.id) {
-      planSlug = getTeamPlanSlug(selectedBillingCycle.value)
+      // Re-quote the plan the eventual subscribe will charge, never a
+      // synthesized one, or the promo price and the charge diverge.
+      planSlug = selectedTeamCheckout.value.planSlug
       options = {
         teamCreditStopId: selectedTeamCheckout.value.stop.id,
         ...(normalizedInput && { promotionCode: normalizedInput })
       }
     } else if (selectedTierKey.value) {
-      planSlug = getApiPlanSlug(
-        selectedTierKey.value,
-        selectedBillingCycle.value
-      )
+      planSlug =
+        selectedPlanSlug.value ??
+        getApiPlanSlug(selectedTierKey.value, selectedBillingCycle.value)
       options = normalizedInput ? { promotionCode: normalizedInput } : {}
     } else {
       if (lockMutation) finishCheckoutMutation()

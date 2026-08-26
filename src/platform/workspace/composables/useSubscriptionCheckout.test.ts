@@ -1,7 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, effectScope, reactive } from 'vue'
+import { computed, effectScope, nextTick, reactive } from 'vue'
 
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
@@ -1428,6 +1428,94 @@ describe('useSubscriptionCheckout', () => {
       expect(checkout.previewVariant.value).toBe('team-change')
     })
 
+    // The local Settings flow always runs the non-embedded branch, where the
+    // preview step used to be committed before the change preview settled.
+    describe('non-embedded team change', () => {
+      const changeStop = {
+        id: 'team_700',
+        usd: 700,
+        credits: 147_700,
+        discountedUsd: 665
+      }
+
+      it('withholds the team-change variant until the preview installs', async () => {
+        mockPreviewSubscribe.mockImplementationOnce(() => new Promise(() => {}))
+        const checkout = await setup(undefined, 'team', false)
+
+        void checkout.handleSubscribeTeamClick({
+          stop: changeStop,
+          billingCycle: 'yearly',
+          isChange: true
+        })
+        await nextTick()
+
+        expect(checkout.previewData.value).toBeNull()
+        expect(checkout.previewVariant.value).not.toBe('team-change')
+      })
+
+      it('previews the caller slug it will subscribe with', async () => {
+        const checkout = await setup(undefined, 'team', false)
+        mockPreviewSubscribe.mockResolvedValueOnce({
+          allowed: true,
+          transition_type: 'upgrade',
+          is_immediate: true,
+          cost_today_cents: 105_000
+        })
+
+        await checkout.handleSubscribeTeamClick({
+          stop: changeStop,
+          billingCycle: 'yearly',
+          planSlug: 'team_per_credit_annual_v2',
+          isChange: true
+        })
+        await checkout.handleTeamSubscribe()
+
+        expect(mockPreviewSubscribe).toHaveBeenCalledWith(
+          'team_per_credit_annual_v2',
+          { teamCreditStopId: 'team_700' }
+        )
+        expect(mockSubscribe).toHaveBeenCalledWith(
+          'team_per_credit_annual_v2',
+          expect.anything()
+        )
+      })
+
+      it('toasts and returns an active subscriber to pricing when the preview is refused', async () => {
+        const checkout = await setup(undefined, 'team', false)
+        mockPreviewSubscribe.mockResolvedValueOnce({
+          allowed: false,
+          reason: 'nope'
+        })
+
+        await checkout.handleSubscribeTeamClick({
+          stop: changeStop,
+          billingCycle: 'yearly',
+          isChange: true
+        })
+
+        expect(mockToastAdd).toHaveBeenCalledWith(
+          expect.objectContaining({ severity: 'error', detail: 'nope' })
+        )
+        expect(checkout.checkoutStep.value).toBe('pricing')
+      })
+
+      it('toasts and returns an active subscriber to pricing when the preview errors', async () => {
+        const checkout = await setup(undefined, 'team', false)
+        mockPreviewSubscribe.mockRejectedValueOnce(new Error('boom'))
+
+        await checkout.handleSubscribeTeamClick({
+          stop: changeStop,
+          billingCycle: 'yearly',
+          isChange: true
+        })
+
+        expect(mockToastAdd).toHaveBeenCalledWith(
+          expect.objectContaining({ severity: 'error', detail: 'boom' })
+        )
+        expect(checkout.checkoutStep.value).toBe('pricing')
+      })
+    })
+
     it('does not expose payment collection while a new Team preview loads', async () => {
       mockPreviewSubscribe.mockImplementationOnce(() => new Promise(() => {}))
       const checkout = await setup()
@@ -2671,6 +2759,44 @@ describe('useSubscriptionCheckout', () => {
   })
 
   describe('handleBackToPricing', () => {
+    // handleSubscription prefers the stored slug over the tier/cycle lookup, so
+    // a slug left behind by an abandoned selection would be what gets charged.
+    it('drops the selected plan slug so a later subscribe cannot reuse it', async () => {
+      const checkout = await setup()
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'new_subscription'
+      })
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly',
+        planSlug: 'standard-annual-PROMO'
+      })
+
+      checkout.handleBackToPricing()
+
+      // Re-entering with a different tier and no explicit slug must resolve the
+      // slug from the catalog, never from the abandoned selection.
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'new_subscription'
+      })
+      await checkout.handleSubscribeClick({
+        tierKey: 'creator',
+        billingCycle: 'monthly'
+      })
+      await checkout.handleAddCreditCard()
+
+      expect(mockSubscribe).toHaveBeenCalledWith(
+        'creator-monthly',
+        expect.anything()
+      )
+      expect(mockSubscribe).not.toHaveBeenCalledWith(
+        'standard-annual-PROMO',
+        expect.anything()
+      )
+    })
+
     it('surfaces a subscription operation recovered from billing status', async () => {
       mockSubscriptionActionOperation.value = {
         opId: 'op-recovered-3ds',

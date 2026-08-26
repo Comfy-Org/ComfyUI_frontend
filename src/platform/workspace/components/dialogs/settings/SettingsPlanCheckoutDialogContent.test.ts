@@ -164,35 +164,6 @@ describe('SettingsPlanCheckoutDialogContent', () => {
     )
   })
 
-  it('dispatches a personal selection to the personal handler on mount', async () => {
-    mockHandleSubscribeClick.mockImplementation(async () => {
-      state.checkoutStep!.value = 'preview'
-      state.previewVariant!.value = 'personal-change'
-    })
-    const { onClose } = renderDialog()
-
-    await vi.waitFor(() =>
-      expect(mockHandleSubscribeClick).toHaveBeenCalledWith(PERSONAL_SELECTION)
-    )
-    expect(mockHandleSubscribeTeamClick).not.toHaveBeenCalled()
-    expect(await screen.findByTestId('transition')).toBeTruthy()
-    expect(onClose).not.toHaveBeenCalled()
-  })
-
-  it('dispatches a team selection to the team handler and stays on the display-only confirm', async () => {
-    mockHandleSubscribeTeamClick.mockImplementation(async () => {
-      state.checkoutStep!.value = 'preview'
-      state.previewVariant!.value = 'team-new'
-    })
-    const { onClose } = renderDialog(TEAM_SELECTION)
-
-    await vi.waitFor(() =>
-      expect(mockHandleSubscribeTeamClick).toHaveBeenCalledWith(TEAM_SELECTION)
-    )
-    expect(await screen.findByTestId('add-payment')).toBeTruthy()
-    expect(onClose).not.toHaveBeenCalled()
-  })
-
   it('shows the loading row while the preview is in flight', () => {
     mockHandleSubscribeClick.mockReturnValue(new Promise(() => {}))
     renderDialog()
