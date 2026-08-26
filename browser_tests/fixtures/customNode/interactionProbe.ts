@@ -56,9 +56,9 @@ export async function runInteractionProbeChunk(input: {
     outputs: (node.outputs ?? []).map(
       (slot) => `output:${slot.name}:${String(slot.type)}`
     ),
-    widgets: (node.widgets ?? []).map(
-      (widget) => `widget:${widget.name ?? '?'}:${widget.type ?? '?'}`
-    )
+    widgets: (node.widgets ?? [])
+      .filter((widget) => widget.name !== '$$canvas-image-preview')
+      .map((widget) => `widget:${widget.name ?? '?'}:${widget.type ?? '?'}`)
   })
   const diff = (before: LogicalShape, after: LogicalShape): string[] => {
     const delta: string[] = []
