@@ -1,7 +1,7 @@
 # ECS migration plan
 
-Status: Partial
-Verified: 2026-08-20 against `13a302eadda871b939b148ecb87e3d845ceefff2`
+Status: Scoped data centralization implemented; structural follow-up remains
+Verified: 2026-08-21 against `73c3c633f`
 
 This plan records completed ECS migration work and the work that remains.
 Detailed evidence and unresolved risks are in the focused audits under
@@ -38,22 +38,22 @@ this phase.
 
 ## Work completed
 
-| Concern              | Current result                                                                                                                                                                                                                                                                                                                                                           |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Node shell           | `nodeDataStore` owns `NodeState`. `LGraphNode` adopts the registered reactive proxy; renderer-only node mirrors and `useGraphNodeManager` were removed.                                                                                                                                                                                                                  |
-| Link topology        | `linkStore` owns `LinkTopology` by root-wide `LinkId`, with owner, target, and origin indexes. `LLink` endpoint properties are compatibility accessors over the registered state.                                                                                                                                                                                        |
-| Slot connectivity    | Input and output connectivity is derived from `linkStore`. `input.link` and `output.links` are deprecated read-only compatibility accessors; writes are ignored.                                                                                                                                                                                                         |
-| Reroute chains       | `rerouteStore` owns parent/floating chain state. Link membership is derived from link parent chains rather than stored on reroutes.                                                                                                                                                                                                                                      |
-| Widget state         | `widgetValueStore` owns widget values, render metadata, and root-scoped per-node order. `BaseWidget` adopts registered state.                                                                                                                                                                                                                                            |
-| Layout               | Yjs-backed `layoutStore` owns persistent node, group, and reroute geometry. Entity lifecycle attaches geometry independently of renderer lifecycle, and layout writes use `LayoutOperation`.                                                                                                                                                                             |
-| Renderer integration | Vue and legacy renderers read the same persistent geometry. Vue slot endpoints reactively derive from store-owned node layout plus measured offsets. Renderer switches clear transient view geometry rather than reseeding entity layout.                                                                                                                                |
-| Renderer consumers   | `GraphCanvas` reads node shells from `nodeDataStore`; minimap topology reads `linkStore`; selection, arrangement, traversal, pricing, and widget consumers use store-backed topology or geometry where migrated. Live classes remain adapters for schema, callbacks, and legacy rendering.                                                                               |
-| Badges               | Badge rows are derived by `badgeSystem`; the temporary badge store was removed. Badge data is transient and is not serialized or independently mutated.                                                                                                                                                                                                                  |
-| Error presentation   | Error stores are authoritative inputs for Vue error rendering. `node.has_errors` remains a legacy-canvas projection, including promoted-widget and container error resolution, rather than an independent persisted authority.                                                                                                                                           |
-| Identity             | Root graph allocation and import normalization enforce unique node, link, group, and reroute IDs across nested definitions. Owner indexes retain graph-local queries and teardown.                                                                                                                                                                                       |
-| Lifecycle            | Graph add, configure, replace, remove, subgraph release, and clear register, transfer, or release migrated state. Typed graph lifecycle events let internal observers avoid replacing extension callback slots. Clear handles reentrant and failing removal callbacks; normal node removal can retain widget entries, and `configure(keep_old)` provides weaker cleanup. |
-| Persistence          | Serialization, subgraph conversion, copy/paste, and workflow insertion preserve the existing workflow format while normalizing conflicting identities.                                                                                                                                                                                                                   |
-| Compatibility        | Legacy graph, node, link, slot, widget, geometry, and callback surfaces remain available where practical. Changed behavior is documented in the extension migration references.                                                                                                                                                                                          |
+| Concern              | Current result                                                                                                                                                                                                                                                                                                                                      |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Node shell           | `nodeDataStore` owns `NodeState`. `LGraphNode` adopts the registered reactive proxy; renderer-only node mirrors and `useGraphNodeManager` were removed.                                                                                                                                                                                             |
+| Link topology        | `linkStore` owns `LinkTopology` by root-wide `LinkId`, with owner, target, and origin indexes. `LLink` endpoint properties are compatibility accessors over the registered state.                                                                                                                                                                   |
+| Slot connectivity    | Input and output connectivity is derived from `linkStore`. `input.link` and `output.links` are deprecated read-only compatibility accessors; writes are ignored.                                                                                                                                                                                    |
+| Reroute chains       | `rerouteStore` owns parent/floating chain state. Link membership is derived from link parent chains rather than stored on reroutes.                                                                                                                                                                                                                 |
+| Widget state         | `widgetValueStore` owns widget values, render metadata, and root-scoped per-node order. `BaseWidget` adopts registered state.                                                                                                                                                                                                                       |
+| Layout               | Yjs-backed `layoutStore` owns persistent node, group, and reroute geometry. Entity lifecycle attaches geometry independently of renderer lifecycle, and layout writes use `LayoutOperation`.                                                                                                                                                        |
+| Renderer integration | Vue and legacy renderers read the same persistent geometry. Vue slot endpoints reactively derive from store-owned node layout plus measured offsets. Renderer switches clear transient view geometry rather than reseeding entity layout.                                                                                                           |
+| Renderer consumers   | `GraphCanvas` reads node shells from `nodeDataStore`; minimap topology reads `linkStore`; selection, arrangement, traversal, pricing, and widget consumers use store-backed topology or geometry where migrated. Live classes remain adapters for schema, callbacks, and legacy rendering.                                                          |
+| Badges               | Badge rows are derived by `badgeSystem`; the temporary badge store was removed. Badge data is transient and is not serialized or independently mutated.                                                                                                                                                                                             |
+| Error presentation   | Error stores are authoritative inputs for Vue error rendering. `node.has_errors` remains a legacy-canvas projection, including promoted-widget and container error resolution, rather than an independent persisted authority.                                                                                                                      |
+| Identity             | Root graph allocation and import normalization enforce unique node, link, group, and reroute IDs across nested definitions. Owner indexes retain graph-local queries and teardown.                                                                                                                                                                  |
+| Lifecycle            | Graph add, configure, replace, remove, subgraph release, and clear register, transfer, or release migrated state. Typed graph lifecycle events let internal observers avoid replacing extension callback slots. Clear handles reentrant and failing removal callbacks; failed and additive configure still have the cleanup limits described below. |
+| Persistence          | Serialization, subgraph conversion, copy/paste, and workflow insertion preserve the existing workflow format while normalizing conflicting identities.                                                                                                                                                                                              |
+| Compatibility        | Legacy graph, node, link, slot, widget, geometry, and callback surfaces remain available where practical. Changed behavior is documented in the extension migration references.                                                                                                                                                                     |
 
 ## PR 14246 change traceability
 
@@ -86,58 +86,23 @@ not separate architecture changes.
 
 ## Current boundaries
 
-The following authority boundaries remain in this phase:
+The scoped authority migration is complete. These structural boundaries remain:
 
-- `NodeState.inputs` and `outputs` contain slot class instances. Slot data is
-  not yet a plain component model.
-- Widget order exists in both the store and `LGraphNode.widgets` during the
-  compatibility period. Vue filters store order through live widget objects and
-  still invokes their callbacks.
-- Live graph object registries and store records coexist and must be attached
-  and detached together.
-- Graph membership, graph metadata, groups, subgraph definitions and ordered
-  interfaces, node properties, group presentation, and extension-owned data
-  remain authoritative on live `LGraph`, `Subgraph`, node, and group objects.
-- `LGraphNode.boxcolor` remains class-owned durable render state outside
-  `NodeState`, despite other shell visual fields being store-backed.
-- Unknown nodes retain `last_serialization`, an opaque full-node record that
-  overrides normal serialization and can shadow migrated node, slot, widget,
-  and render state.
-- Execution `order` is recomputed from topology but also restored and persisted
-  on `LGraphNode`; its derived-versus-wire-compatibility contract is not yet
-  enforced.
-- Serialized `LGraph.state` allocation counters are directly mutable and
-  influence future durable IDs outside a command/store boundary.
-- `node.widgets_values` and `widgets_values_named` form another widget-value
-  representation used for delayed dynamic-widget restoration and direct
-  production writes; property-bound widgets can also mirror values in
-  `node.properties`.
-- `nodeOutputStore` mirrors `app.nodeOutputs` and `app.nodePreviewImages`, and
-  legacy render output also projects into live node image fields. It is not yet
-  the sole output authority.
-- `LGraph._version` is manually incremented across graph, node, canvas, widget,
-  slot, and subgraph mutation callers rather than derived at one committed
-  transaction boundary.
-- Durable graph `config`, `extra`, and `revision` metadata remains class-owned
-  and directly mutable; graph metadata is not yet included in the explicit
-  command schema.
-- Node and graph `onSerialize` hooks can mutate complete persistence DTOs, while
-  generic configure assignment and `onConfigure` expose equivalent load-time
-  mutation channels. These extension hooks can override store-backed fields
-  without schema, ownership, replay, transaction, or undo boundaries.
-- Prompt construction awaits arbitrary widget `serializeValue` hooks. Current
-  hooks can mutate widget/workflow shadows, choose random values, capture media,
-  upload files, and update UI state, so execution input assembly is neither a
-  pure store read nor isolated from unrelated effects.
-- Node z-order exists in layout state and legacy `_nodes` ordering.
-  `sendToBack` currently updates only the legacy ordering path.
-- Node and input-slot error flags are mutable legacy drawing projections of
-  error-store state and require synchronization by app hooks.
-- Widget and preview stores lack the owner-scoped cleanup available in node,
-  link, and reroute stores. Subgraph release and failed operations can retain
-  records until root cleanup.
-- Link paths, slot bounds, and hit-test geometry are transient renderer caches,
-  not persistent layout components.
+- Slot descriptors sit behind a virtual extension-visible slot-class array.
+  Native callback semantics are preserved, but complete reflection compatibility
+  requires restoring real arrays at that boundary.
+- `graphDefinitionStore` still contains live adapter instances, and persisted
+  graph UUIDs remain runtime store keys. Populated graph IDs are immutable until
+  an instance-scoped registry replaces that keying model.
+- Store-driven persistence joins and extension adaptation still live in and
+  around `LGraph`.
+- Replacement configure is destructive on failure; additive configure provides
+  only best-effort rollback rather than an atomic staged transaction.
+- `SubgraphNode` still combines promoted-widget projection, preview hydration,
+  and host persistence responsibilities.
+- Prompt construction still awaits effectful widget `serializeValue` hooks.
+- Link paths, slot bounds, and hit-test geometry remain transient renderer
+  caches rather than persistent components.
 
 The current implementation also has no system-wide command protocol, workflow
 transaction, command replay, or command-based undo. These are factual limits,
@@ -178,48 +143,17 @@ unless they cover a new invariant.
 
 ### 2. Centralize remaining Component and Entity data
 
-- Add plain store-owned graph and subgraph definition records for membership,
-  metadata, ordered entity IDs, and subgraph interfaces. Keep live object
-  registries as runtime adapters rather than serialization authorities.
-- Move remaining durable node visuals, including `boxcolor`, into the
-  store-owned shell or a focused visual component.
-- Make `nodeOutputStore` authoritative for output and preview maps; expose
-  legacy `app` and node-image fields as compatibility projections.
-- Make one layout ordering action update both Vue z-index and the legacy draw
-  projection; remove the asymmetric `sendToBack` mutation.
-- Extract serialization only after stores contain sufficient authoritative
-  data and parity can be checked against the existing wire format.
-- Move legacy geometry projection ownership out of `LGraphNode` without
-  changing `pos` and `size` extension behavior.
-- Separate remaining link visual/runtime state when a renderer or interaction
-  system can consume plain records directly.
-- Extract plain slot state only when it removes a real class dependency; retain
-  array order semantics and keep connectivity in `linkStore`.
-- Move node properties, group presentation, preview-exposure persistence, and
-  extension-owned durable fields behind scoped store actions while retaining
-  compatibility property facades.
-- Preserve serialization compatibility through a controlled adapter: isolate
-  namespaced extension payloads as validated plain data and prevent persistence
-  hooks from mutating canonical workflow and store-backed fields.
-- Move graph `config`, `extra`, and `revision` into a focused store-owned plain
-  data record while preserving serialization compatibility.
-- Derive graph invalidation from authoritative store revisions or one
-  centralized compatibility projection; remove scattered caller-owned
-  `_version` increments.
-- Store opaque unknown-node fallback records by scoped node identity, define
-  their remapping and replacement lifecycle, and retain `last_serialization`
-  only as a compatibility facade.
-- Treat execution order as a derived topology projection. Define whether
-  serialized `order` is ignored and recomputed or retained only as explicit
-  wire compatibility, not as an independent mutation channel.
-- Move allocation counters behind the workflow identity owner. Creation/import
-  must no longer derive IDs from mutable state distributed across class and
-  import paths.
-- Route delayed widget restoration through scoped store state and isolate
-  serialized widget arrays/maps as wire compatibility projections rather than
-  production mutation channels.
-- Add owner/node cleanup for widget and preview records before treating failed
-  configure, replacement, and subgraph release as contained operations.
+All 19 scoped concerns are implemented. The authoritative commit-by-commit
+record is in the Component and Entity data audit's
+[progress record](ecs-component-entity-data-audit.md#progress-record), with
+current boundaries under [verified current limitations](ecs-component-entity-data-audit.md#verified-current-limitations).
+
+Remaining work is the audit's five-part
+[structural follow-up plan](ecs-component-entity-data-audit.md#structural-follow-up-plan):
+restore real slot arrays, introduce an instance-scoped plain graph record,
+extract persistence from `LGraph`, make configure transactional, and decompose
+subgraph hosting. These improvements do not reopen the completed 19-concern
+authority migration.
 
 ### 3. Retire duplicate state and synchronization bridges
 
@@ -289,6 +223,7 @@ CRDT compatibility are explicitly not completion criteria for this phase.
 - [Executive summary](ecs-migration-summary.md)
 - [Decision traceability](ecs-decision-traceability.md)
 - [State authority audit](ecs-state-authority-audit.md)
+- [Component and Entity data audit](ecs-component-entity-data-audit.md)
 - [Lifecycle audit](ecs-lifecycle-audit.md)
 - [Mutation audit](ecs-mutation-audit.md)
 - [Identity and scope audit](ecs-identity-scope-audit.md)

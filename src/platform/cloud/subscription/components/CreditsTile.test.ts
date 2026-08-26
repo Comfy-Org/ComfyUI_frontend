@@ -28,6 +28,7 @@ const state = vi.hoisted(() => ({
   currentTeamCreditStop: null as TeamStop | null,
   isLoading: false,
   canTopUp: true,
+  canSubscribeSelfServe: false,
   type: 'workspace' as 'workspace' | 'legacy',
   fetchBalance: vi.fn(),
   fetchStatus: vi.fn(),
@@ -76,9 +77,10 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
-  useWorkspaceUI: () => ({
-    permissions: computed(() => ({ canTopUp: state.canTopUp }))
+vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
+  useBillingCapabilities: () => ({
+    canTopUp: computed(() => state.canTopUp),
+    canSubscribeSelfServe: computed(() => state.canSubscribeSelfServe)
   })
 }))
 
@@ -206,6 +208,7 @@ describe('CreditsTile', () => {
     state.currentTeamCreditStop = null
     state.isLoading = false
     state.canTopUp = true
+    state.canSubscribeSelfServe = false
     state.type = 'workspace'
     state.customerEventsError = null
     mockIsCloud.value = true
@@ -357,14 +360,14 @@ describe('CreditsTile', () => {
     expect(screen.queryByText('Add credits')).toBeNull()
   })
 
-  it('shows only the balance with no breakdown when there is no active subscription', () => {
+  it('keeps top-up available without an active subscription', () => {
     state.canAccessSubscriptionFeatures = false
     state.balance = { amountMicros: 500 }
     const { container } = renderTile()
     expect(container.textContent).toContain('1,055')
     expect(container.textContent).not.toContain('left of')
     expect(container.textContent).not.toContain('Additional credits')
-    expect(screen.queryByText('Add credits')).toBeNull()
+    expect(screen.getByText('Add credits')).toBeInTheDocument()
   })
 
   it('keeps add-credits available on local without an active subscription', async () => {
@@ -449,9 +452,11 @@ describe('CreditsTile', () => {
     expect(state.showTopUpCreditsDialog).toHaveBeenCalledOnce()
   })
 
-  it('offers the upgrade path instead of add-credits on the free tier', async () => {
+  it('offers the upgrade path when top-up is denied but self-serve subscribe is allowed', async () => {
     activeProSubscription()
     state.tier = 'FREE'
+    state.canTopUp = false
+    state.canSubscribeSelfServe = true
     renderTile()
     expect(screen.queryByText('Add credits')).toBeNull()
     await userEvent.click(screen.getByText('Upgrade to add credits'))
@@ -467,18 +472,10 @@ describe('CreditsTile', () => {
     expect(screen.getByText('Add credits')).toBeInTheDocument()
   })
 
-  it('hides the action button when a team workspace member lacks the top-up permission', () => {
-    activeProSubscription()
-    state.canTopUp = false
-    renderTile()
-    expect(screen.queryByText('Add credits')).toBeNull()
-    expect(screen.queryByText('Upgrade to add credits')).toBeNull()
-  })
-
-  it('ignores the workspace top-up permission on legacy (personal) billing', () => {
+  it('uses the fail-open capability fallback on legacy billing', () => {
     activeProSubscription()
     state.type = 'legacy'
-    state.canTopUp = false
+    state.canTopUp = true
     renderTile()
     expect(screen.getByText('Add credits')).toBeInTheDocument()
   })

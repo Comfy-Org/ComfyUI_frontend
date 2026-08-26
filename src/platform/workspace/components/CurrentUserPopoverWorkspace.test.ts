@@ -15,12 +15,10 @@ const state = vi.hoisted(() => ({
   isCloud: true,
   billingStatus: 'paid',
   canAccessSubscriptionFeatures: true,
-  isFreeTier: false,
-  isTeamPlan: false,
-  tier: 'PRO' as 'PRO' | 'FREE' | null,
   isCancelled: false,
   planSlug: 'pro-monthly' as string | null,
   canTopUp: false,
+  canSubscribeSelfServe: false,
   canManageSubscription: false,
   canManageSubscriptionLifecycle: false,
   showCreateWorkspaceDialog: vi.fn(),
@@ -62,9 +60,6 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     canAccessSubscriptionFeatures: computed(
       () => state.canAccessSubscriptionFeatures
     ),
-    isFreeTier: computed(() => state.isFreeTier),
-    isTeamPlan: computed(() => state.isTeamPlan),
-    tier: computed(() => state.tier),
     subscription: computed(() => ({
       isCancelled: state.isCancelled,
       planSlug: state.planSlug
@@ -78,10 +73,16 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
 vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   useWorkspaceUI: () => ({
     permissions: computed(() => ({
-      canTopUp: state.canTopUp,
       canManageSubscription: state.canManageSubscription,
       canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
     }))
+  })
+}))
+
+vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
+  useBillingCapabilities: () => ({
+    canTopUp: computed(() => state.canTopUp),
+    canSubscribeSelfServe: computed(() => state.canSubscribeSelfServe)
   })
 }))
 
@@ -180,12 +181,10 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.isCloud = true
     state.billingStatus = 'paid'
     state.canAccessSubscriptionFeatures = true
-    state.isFreeTier = false
-    state.isTeamPlan = false
-    state.tier = 'PRO'
     state.isCancelled = false
     state.planSlug = 'pro-monthly'
     state.canTopUp = false
+    state.canSubscribeSelfServe = false
     state.canManageSubscription = false
     state.canManageSubscriptionLifecycle = false
   })
@@ -294,6 +293,18 @@ describe('CurrentUserPopoverWorkspace', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('offers subscription when top-up is denied but self-serve is allowed', async () => {
+    const user = userEvent.setup()
+    state.canSubscribeSelfServe = true
+    renderComponent('team')
+
+    await user.click(screen.getByTestId('upgrade-to-add-credits-button'))
+
+    expect(state.showPricingTable).toHaveBeenCalledWith({
+      reason: 'upgrade_to_add_credits'
+    })
+  })
+
   it.for(['payment_failed', 'paused'])(
     'keeps Manage plan available for an existing %s subscription',
     (billingStatus) => {
@@ -353,7 +364,6 @@ describe('CurrentUserPopoverWorkspace', () => {
     const user = userEvent.setup()
     state.isCloud = false
     state.canAccessSubscriptionFeatures = false
-    state.tier = null
     state.canTopUp = true
 
     renderComponent('personal')
@@ -366,15 +376,15 @@ describe('CurrentUserPopoverWorkspace', () => {
     expect(state.showTopUpCreditsDialog).toHaveBeenCalledOnce()
   })
 
-  it('keeps add-credits hidden for an unsubscribed Cloud owner', () => {
+  it('offers add-credits alongside Subscribe for an unsubscribed Cloud owner', () => {
     state.canAccessSubscriptionFeatures = false
-    state.tier = null
     state.canTopUp = true
+    state.canSubscribeSelfServe = true
     state.canManageSubscription = true
 
     renderComponent('personal')
 
-    expect(screen.queryByTestId('add-credits-button')).not.toBeInTheDocument()
+    expect(screen.getByTestId('add-credits-button')).toBeInTheDocument()
     expect(
       screen.queryByTestId('upgrade-to-add-credits-button')
     ).not.toBeInTheDocument()
@@ -385,8 +395,6 @@ describe('CurrentUserPopoverWorkspace', () => {
 
   it('offers add-credits instead of the upgrade upsell on the Local free tier', () => {
     state.isCloud = false
-    state.isFreeTier = true
-    state.tier = 'FREE'
     state.canTopUp = true
 
     renderComponent('personal')
@@ -398,9 +406,8 @@ describe('CurrentUserPopoverWorkspace', () => {
   })
 
   it('keeps the upgrade upsell for the Cloud free tier', () => {
-    state.isFreeTier = true
-    state.tier = 'FREE'
-    state.canTopUp = true
+    state.canTopUp = false
+    state.canSubscribeSelfServe = true
 
     renderComponent('personal')
 
@@ -547,6 +554,31 @@ describe('CurrentUserPopoverWorkspace', () => {
 
   it('hides local Plan and Credits without subscription management permission', () => {
     state.isCloud = false
+
+    renderComponent()
+
+    expect(
+      screen.queryByTestId('plans-credits-menu-item')
+    ).not.toBeInTheDocument()
+  })
+
+  // Paired with the negative case above: on its own, "hidden without
+  // permission" can pass vacuously if the item is missing for an unrelated
+  // reason (e.g. a renamed/merged testid), so this asserts the item actually
+  // renders once the only gating permission is granted.
+  it('shows local Plan and Credits with subscription management permission', () => {
+    state.isCloud = false
+    state.canManageSubscription = true
+
+    renderComponent()
+
+    expect(screen.getByTestId('plans-credits-menu-item')).toBeInTheDocument()
+  })
+
+  // The pair above only varies the permission, so both cases would still pass
+  // if the Local-only guard were dropped. This varies the distribution instead.
+  it('hides local Plan and Credits on Cloud', () => {
+    state.canManageSubscription = true
 
     renderComponent()
 

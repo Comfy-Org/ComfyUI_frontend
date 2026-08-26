@@ -14,6 +14,7 @@ import {
   EMPTY_BILLING_PLANS,
   LEGACY_PERSONAL_BILLING_STATUS
 } from '@e2e/fixtures/data/cloudWorkspace'
+import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import {
   UNSUBSCRIBED,
   ZERO_BALANCE
@@ -653,6 +654,9 @@ export const comfyPageFixture = base.extend<{
         )
         await context.route('**/api/billing/status', (route) =>
           route.fulfill({ json: LEGACY_PERSONAL_BILLING_STATUS })
+        )
+        await context.route('**/api/billing/capabilities', (route) =>
+          route.fulfill({ json: createBillingCapabilities('ws-personal') })
         )
         await context.route('**/api/billing/balance', (route) =>
           route.fulfill({ json: EMPTY_BILLING_BALANCE })

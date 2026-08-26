@@ -111,6 +111,20 @@ describe('workflowToClipboardItems', () => {
     expect(items.subgraphs?.map(({ id }) => id)).toEqual([parent.id, child.id])
     expect(items.subgraphs?.every(({ definitions }) => !definitions)).toBe(true)
   })
+
+  it('flattens cyclic subgraph definitions once', () => {
+    const child = subgraph()
+    const parent = subgraph([child])
+    child.definitions = { subgraphs: [parent] }
+    const workflow = {
+      ...workflowV1(),
+      definitions: { subgraphs: [parent] }
+    }
+
+    const items = workflowToClipboardItems(workflow)
+
+    expect(items.subgraphs?.map(({ id }) => id)).toEqual([parent.id, child.id])
+  })
 })
 
 function subgraph(definitions?: ExportedSubgraph[]): ExportedSubgraph {
