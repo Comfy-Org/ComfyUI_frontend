@@ -243,6 +243,23 @@ describe('api.fetchApi', () => {
       })
     })
 
+    it('normalizes the video metadata endpoint', async () => {
+      mockPendingFetch()
+
+      const request = api.fetchApi('/video_metadata?filename=private.mp4')
+      const rejection = expect(request).rejects.toMatchObject({
+        name: 'TimeoutError'
+      })
+      await vi.advanceTimersByTimeAsync(60_000)
+
+      await rejection
+      expect(trackFetchTimeout).toHaveBeenCalledExactlyOnceWith({
+        route: '/video_metadata',
+        method: 'GET',
+        timeout_ms: 60_000
+      })
+    })
+
     it('uses a caller-owned 120 second timeout', async () => {
       mockPendingFetch()
 

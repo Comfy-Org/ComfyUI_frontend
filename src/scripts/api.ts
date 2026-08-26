@@ -168,6 +168,7 @@ const FETCH_ROUTE_GROUPS = new Set([
   'user',
   'userdata',
   'users',
+  'video_metadata',
   'view',
   'view_metadata',
   'workflow_templates',
