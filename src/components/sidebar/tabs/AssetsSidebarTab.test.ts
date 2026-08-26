@@ -1,26 +1,22 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { createPinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-
 import AssetsSidebarTab from './AssetsSidebarTab.vue'
 
-const folderAsset = vi.hoisted(
-  () =>
-    ({
-      id: 'multi-output',
-      name: 'multi-output.png',
-      tags: ['output'],
-      user_metadata: {
-        jobId: 'multi-output-job',
-        nodeId: '1',
-        subfolder: '',
-        outputCount: 2
-      }
-    }) satisfies AssetItem
-)
+const folderAsset = vi.hoisted(() => ({
+  id: 'multi-output',
+  name: 'multi-output.png',
+  tags: ['output'],
+  user_metadata: {
+    jobId: 'multi-output-job',
+    nodeId: '1',
+    subfolder: '',
+    outputCount: 2
+  }
+}))
 
 vi.mock('@/platform/assets/composables/media/useAssetsApi', async () => {
   const { ref } = await import('vue')
@@ -30,7 +26,7 @@ vi.mock('@/platform/assets/composables/media/useAssetsApi', async () => {
       media: ref([folderAsset]),
       loading: ref(false),
       error: ref(null),
-      fetchMediaList: vi.fn().mockResolvedValue([folderAsset]),
+      fetchMediaList: vi.fn(async () => [folderAsset]),
       loadMore: vi.fn(),
       hasMore: ref(false),
       isLoadingMore: ref(false)
@@ -50,17 +46,17 @@ vi.mock('@/platform/assets/composables/useAssetSelection', async () => {
 
   return {
     useAssetSelection: () => ({
-      isSelected: vi.fn().mockReturnValue(false),
+      isSelected: vi.fn(() => false),
       selectedIds: ref(new Set<string>()),
       handleAssetClick: vi.fn(),
       selectAll: vi.fn(),
       setSelectedIds: vi.fn(),
       hasSelection: ref(false),
       clearSelection: vi.fn(),
-      getSelectedAssets: vi.fn().mockReturnValue([]),
+      getSelectedAssets: vi.fn(() => []),
       reconcileSelection: vi.fn(),
-      getOutputCount: vi.fn().mockReturnValue(2),
-      getTotalOutputCount: vi.fn().mockReturnValue(0),
+      getOutputCount: vi.fn(() => 2),
+      getTotalOutputCount: vi.fn(() => 0),
       activate: vi.fn(),
       deactivate: vi.fn()
     })
@@ -79,7 +75,7 @@ vi.mock('@/platform/assets/composables/useMediaAssetActions', () => ({
 
 vi.mock('@/platform/assets/utils/outputAssetUtil', async (importOriginal) => ({
   ...(await importOriginal()),
-  resolveOutputAssetItems: vi.fn().mockResolvedValue([folderAsset])
+  resolveOutputAssetItems: vi.fn(async () => [folderAsset])
 }))
 
 vi.mock('primevue/usetoast', () => ({
@@ -132,7 +128,7 @@ const buttonStub = {
 function renderTab() {
   return render(AssetsSidebarTab, {
     global: {
-      plugins: [i18n],
+      plugins: [createPinia(), i18n],
       directives: {
         tooltip: {}
       },

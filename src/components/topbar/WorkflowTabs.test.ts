@@ -141,7 +141,6 @@ describe('WorkflowTabs feedback button', () => {
     distribution.isDesktop = false
     distribution.isNightly = false
     tabBarLayout.value = 'Default'
-    openFeedbackDialog.mockReset()
   })
 
   it('opens the feedback dialog tagged with topbar source when clicked', async () => {

@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -73,9 +71,6 @@ describe('TaskItemImpl.loadWorkflow - workflow fetching', () => {
   let mockFetchApi: ReturnType<typeof vi.fn>
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
-
     mockFetchApi = vi.fn()
     mockApp = fromPartial<ComfyApp>({
       loadGraphData: vi.fn(),

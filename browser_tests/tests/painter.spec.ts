@@ -721,7 +721,7 @@ test.describe('Painter', { tag: ['@widget', '@vue-nodes'] }, () => {
       const graph = window.graph as TestGraphAccess | undefined
       const node = graph?._nodes_by_id?.['1']
       if (node) {
-        node.size = [200, 400]
+        node.setSize([200, 400])
         window.app!.canvas.setDirty(true, true)
       }
     })

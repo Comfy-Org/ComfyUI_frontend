@@ -1,13 +1,8 @@
 <template>
   <Dialog v-model:open="visible">
     <DialogPortal>
-      <DialogOverlay v-reka-z-index />
-      <DialogContent
-        v-reka-z-index
-        size="md"
-        :aria-labelledby="titleId"
-        @pointer-down-outside.prevent
-      >
+      <DialogOverlay v-reka-z-index data-reka-nested-dialog-overlay />
+      <DialogContent v-reka-z-index size="md" :aria-labelledby="titleId">
         <DialogHeader>
           <DialogTitle :id="titleId">
             {{

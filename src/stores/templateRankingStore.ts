@@ -8,11 +8,14 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
+import { searchRankBoost } from '@/platform/workflow/templates/utils/templateRanking'
+
 export const useTemplateRankingStore = defineStore('templateRanking', () => {
   const largestUsageScore = ref<number>()
 
   const normalizeUsageScore = (usage: number): number => {
-    return usage / (largestUsageScore.value ?? usage)
+    const largest = largestUsageScore.value
+    return largest ? usage / largest : 0
   }
 
   /**
@@ -30,18 +33,19 @@ export const useTemplateRankingStore = defineStore('templateRanking', () => {
   }
 
   /**
-   * Compute composite score for "default" sort.
-   * Formula: usage × 0.5 + internal × 0.3 + freshness × 0.2
+   * Compute composite score for "recommended" sort.
+   * Formula: usage × 0.5 + curation × 0.3 + freshness × 0.2
    */
   const computeDefaultScore = (
     dateStr: string | undefined,
     searchRank: number | undefined,
     usage: number = 0
   ): number => {
-    const internal = (searchRank ?? 5) / 10 // Normalize 1-10 to 0-1
+    // searchRankBoost is [-1, 1]; shift to [0, 1] so neutral stays the midpoint.
+    const curation = (searchRankBoost(searchRank) + 1) / 2
     const freshness = computeFreshness(dateStr)
 
-    return normalizeUsageScore(usage) * 0.5 + internal * 0.3 + freshness * 0.2
+    return normalizeUsageScore(usage) * 0.5 + curation * 0.3 + freshness * 0.2
   }
 
   return {

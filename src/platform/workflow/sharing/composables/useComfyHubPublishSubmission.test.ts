@@ -72,7 +72,6 @@ function createFormData(
 
 describe('useComfyHubPublishSubmission', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockProfile.value = {
       username: 'builder',
       name: 'Builder'

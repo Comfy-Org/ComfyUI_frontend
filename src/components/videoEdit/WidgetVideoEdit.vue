@@ -4,11 +4,9 @@
       v-model:start-frame="startFrame"
       v-model:end-frame="endFrame"
       v-model:crop-bounds="cropBounds"
-      v-model:trim-enabled="trimEnabled"
-      v-model:crop-enabled="cropEnabled"
       :features="features"
       :video-url="videoUrl"
-      :thumbnails="thumbnails"
+      :thumbnail="thumbnail"
       :total-frames="totalFrames"
       :duration="duration"
       :fps="fps"
@@ -16,6 +14,8 @@
       :width="width"
       :height="height"
       :loading="loading"
+      :error="error"
+      @retry="retry"
     />
   </div>
 </template>
@@ -59,22 +59,23 @@ const node = computed(() => {
 const { videoUrl } = useVideoSourceUrl(node)
 
 const {
-  thumbnails,
+  thumbnail,
   duration,
   totalFrames,
   width,
   height,
   fps,
   fileSize,
-  loading
+  loading,
+  error,
+  retry
 } = useVideoFilmstrip(videoUrl)
 
-const { startFrame, endFrame, cropBounds, trimEnabled, cropEnabled } =
-  useVideoEditModel(modelValue, {
-    duration,
-    totalFrames,
-    fps,
-    width,
-    height
-  })
+const { startFrame, endFrame, cropBounds } = useVideoEditModel(modelValue, {
+  duration,
+  totalFrames,
+  fps,
+  width,
+  height
+})
 </script>

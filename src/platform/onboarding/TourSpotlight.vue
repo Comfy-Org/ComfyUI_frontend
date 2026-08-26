@@ -1,35 +1,100 @@
 <template>
   <div ref="overlayRef" class="pointer-events-none fixed inset-0">
+    <svg
+      v-if="useMaskScrim"
+      aria-hidden="true"
+      class="pointer-events-none absolute inset-0 size-full"
+    >
+      <mask :id="maskId">
+        <rect width="100%" height="100%" fill="white" />
+        <rect
+          v-if="scrimHole"
+          data-testid="coach-mask-hole"
+          v-bind="scrimHole"
+          rx="12"
+          fill="black"
+          :class="
+            !targetMoves &&
+            'motion-safe:transition-[x,y,width,height] motion-safe:duration-300'
+          "
+        />
+      </mask>
+      <rect
+        width="100%"
+        height="100%"
+        class="fill-coach-scrim"
+        :mask="`url(#${maskId})`"
+      />
+      <path
+        v-if="step.interactive"
+        data-testid="coach-hit-region"
+        :d="hitRegion"
+        fill="transparent"
+        fill-rule="evenodd"
+        class="pointer-events-auto"
+      />
+    </svg>
     <div
+      v-if="!step.interactive"
+      data-testid="coach-blocker"
       :class="
         cn(
           'pointer-events-auto absolute inset-0',
-          !targetRect && 'bg-coach-scrim'
+          !useMaskScrim && !targetRect && 'bg-coach-scrim'
         )
       "
     />
     <div
       aria-hidden="true"
       data-testid="coach-spotlight"
-      class="pointer-events-none absolute rounded-xl shadow-[0_0_0_9999px_var(--color-coach-scrim)] outline-2 outline-coach-ring motion-safe:transition-[left,top,width,height,opacity] motion-safe:duration-300"
+      :class="
+        cn(
+          'pointer-events-none absolute rounded-xl outline-2 outline-coach-ring',
+          !targetMoves &&
+            'motion-safe:transition-[left,top,width,height,opacity] motion-safe:duration-300',
+          !useMaskScrim && 'shadow-[0_0_0_9999px_var(--color-coach-scrim)]'
+        )
+      "
       :style="spotlightStyle"
     />
     <FocusScope
       as-child
-      :trapped="!waitingForTarget"
+      :trapped="!waitingForTarget && !step.interactive"
       loop
       @mount-auto-focus.prevent
     >
       <div
         ref="cardRef"
+        data-testid="coach-card"
         role="dialog"
-        aria-modal="true"
+        :aria-modal="!step.interactive"
         :aria-labelledby="titleId"
         :aria-describedby="`${subtitleId} ${bodyId}`"
-        class="pointer-events-auto absolute max-h-[calc(100vh-var(--comfy-topbar-height)-2rem)] overflow-y-auto motion-safe:transition-[left,top] motion-safe:duration-300"
+        tabindex="-1"
+        :class="
+          cn(
+            'absolute motion-safe:duration-300',
+            glides
+              ? 'motion-safe:transition-[left,top,opacity]'
+              : 'motion-safe:transition-opacity',
+            cardVisible ? 'pointer-events-auto' : 'pointer-events-none'
+          )
+        "
         :style="cardStyle"
       >
+        <i
+          v-if="cursorEdgeClass"
+          data-testid="coach-cursor"
+          :class="
+            cn(
+              'absolute icon-[lucide--mouse-pointer-2] size-4 text-base-foreground drop-shadow-md',
+              cursorEdgeClass
+            )
+          "
+          aria-hidden="true"
+        />
         <CoachmarkCard
+          class="max-h-[calc(100vh-var(--comfy-topbar-height)-2rem)] overflow-y-auto"
           :subtitle="
             t('onboardingCoachmarks.stepLabel', {
               current: countedStepIdx + 1,
@@ -41,11 +106,11 @@
           :title-id="titleId"
           :message="body"
           :message-id="bodyId"
-          :image="step.image"
         >
           <template #actions>
             <Button
               v-if="showSkip"
+              ref="skipButton"
               variant="textonly"
               size="md"
               @click="emit('skip')"
@@ -64,6 +129,7 @@
                 {{ backLabel }}
               </Button>
               <Button
+                v-if="!step.selfAdvancing"
                 ref="primaryButton"
                 variant="inverted"
                 size="md"
@@ -105,10 +171,12 @@ import {
   CARD_WIDTH,
   SPOTLIGHT_PAD,
   VIEWPORT_MARGIN,
-  clampSpotlight,
+  CARD_GLIDE_MS,
+  clampSpotlightRect,
+  hitRegionPath,
   noTargetCardLeft
 } from './coachmarkLayout'
-import type { CoachStep } from './onboardingTours'
+import type { SpotlightStep } from './onboardingTours'
 import { useCoachmarkTarget } from './useCoachmarkTarget'
 
 const {
@@ -124,7 +192,7 @@ const {
   countedStepsTotal,
   waitingForTarget
 } = defineProps<{
-  step: CoachStep
+  step: SpotlightStep
   title: string
   body: string
   isLast: boolean
@@ -152,18 +220,27 @@ const overlayRef = ref<HTMLElement | null>(null)
 const cardRef = ref<HTMLElement | null>(null)
 const { width: windowWidth, height: windowHeight } = useWindowSize()
 
-const { targetRect, targetEl, floatingStyles, isPositioned } =
-  useCoachmarkTarget(() => step, cardRef)
+const {
+  targetRect,
+  hasTarget,
+  targetMoves,
+  floatingStyles,
+  isPositioned,
+  placement
+} = useCoachmarkTarget(() => step, cardRef)
 
 // Last step's "Done" already dismisses, so hide Skip there.
 const showSkip = computed(() => !isLast)
 
 const primaryButton =
   useTemplateRef<InstanceType<typeof Button>>('primaryButton')
+const skipButton = useTemplateRef<InstanceType<typeof Button>>('skipButton')
 
 async function focusPrimary() {
   await nextTick()
-  const el = primaryButton.value?.$el as HTMLElement | undefined
+  const el = (primaryButton.value?.$el ??
+    skipButton.value?.$el ??
+    cardRef.value) as HTMLElement | undefined
   el?.focus()
 }
 
@@ -211,29 +288,79 @@ function viewport() {
   return { width: windowWidth.value, height: windowHeight.value }
 }
 
+const maskId = useId()
+
+const useMaskScrim = computed(() => !!step.interactive)
+
+const scrimHole = computed(() =>
+  targetRect.value
+    ? clampSpotlightRect(targetRect.value, SPOTLIGHT_PAD, viewport())
+    : null
+)
+
 const spotlightStyle = computed(() => {
-  const r = targetRect.value
-  if (!r) return { opacity: '0' }
-  return { ...clampSpotlight(r, SPOTLIGHT_PAD, viewport()), opacity: '1' }
+  const hole = scrimHole.value
+  if (!hole?.width || !hole.height) return { opacity: '0' }
+  return {
+    left: `${hole.x}px`,
+    top: `${hole.y}px`,
+    width: `${hole.width}px`,
+    height: `${hole.height}px`,
+    opacity: '1'
+  }
 })
+
+const hitRegion = computed(() => hitRegionPath(viewport(), scrimHole.value))
+
+/**
+ * The card travels to a new target, then rides it — a transition lags a target
+ * that moves every frame. Only a change arms travel; the first card makes none.
+ */
+const glides = ref(false)
+watch([() => step, targetMoves], ([, moves], _previous, onCleanup) => {
+  glides.value = true
+  if (!moves) return
+  const timer = setTimeout(() => (glides.value = false), CARD_GLIDE_MS)
+  onCleanup(() => clearTimeout(timer))
+})
+
+/** Hidden until Floating UI has placed it, so it fades in already sited. */
+const cardVisible = computed(() => !hasTarget.value || isPositioned.value)
 
 const cardStyle = computed(() => {
   const width = `${CARD_WIDTH}px`
   const maxWidth = `calc(100vw - ${VIEWPORT_MARGIN * 2}px)`
-  if (!targetEl.value) {
+  const opacity = cardVisible.value ? '1' : '0'
+  if (!hasTarget.value) {
     return {
       width,
       maxWidth,
       left: `${noTargetCardLeft(windowWidth.value)}px`,
-      top: '30%'
+      top: '30%',
+      opacity
     }
   }
-  // Hidden until Floating UI positions it, avoiding a first-frame jump.
-  return {
-    ...floatingStyles.value,
-    width,
-    maxWidth,
-    opacity: isPositioned.value ? '1' : '0'
-  }
+  return { ...floatingStyles.value, width, maxWidth, opacity }
+})
+
+/** Floats the cursor in the gap on the card edge facing the target. */
+const CURSOR_EDGE_CLASS = {
+  top: '-top-7 left-1/2 -translate-x-1/2 rotate-45',
+  bottom: '-bottom-7 left-1/2 -translate-x-1/2 -rotate-[135deg]',
+  left: '-left-7 top-1/2 -translate-y-1/2 -rotate-45',
+  right: '-right-7 top-1/2 -translate-y-1/2 rotate-[135deg]'
+} as const
+
+const TARGET_FACING_EDGE = {
+  top: 'bottom',
+  bottom: 'top',
+  left: 'right',
+  right: 'left'
+} as const
+
+const cursorEdgeClass = computed(() => {
+  if (!step.cursor || !hasTarget.value) return ''
+  const side = placement.value.split('-')[0] as keyof typeof TARGET_FACING_EDGE
+  return CURSOR_EDGE_CLASS[TARGET_FACING_EDGE[side]]
 })
 </script>

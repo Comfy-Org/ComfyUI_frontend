@@ -176,6 +176,9 @@
   "Comfy_Interrupt": {
     "label": "中断"
   },
+  "Comfy_LayerEditor_OpenLayerEditor": {
+    "label": "選択したノードのレイヤーエディタを開く"
+  },
   "Comfy_LoadDefaultWorkflow": {
     "label": "デフォルトのワークフローを読み込む"
   },

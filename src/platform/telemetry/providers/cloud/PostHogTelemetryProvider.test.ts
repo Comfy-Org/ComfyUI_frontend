@@ -100,7 +100,6 @@ function createProvider(
 
 describe('PostHogTelemetryProvider', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     hoisted.refs.remoteConfig.value = null
     // Fresh tier ref per test: each provider registers an undisposed tier
     // watch, so a shared ref would leak watchers across tests.
@@ -560,7 +559,8 @@ describe('PostHogTelemetryProvider', () => {
           stage: 'succeeded',
           outcome: 'success',
           billing_op_id: 'op-cancel',
-          operation_type: 'cancel'
+          operation_type: 'cancel',
+          duration_ms: 4200
         },
         TelemetryEvents.BILLING_OPERATION_SUCCEEDED
       ],

@@ -17,7 +17,7 @@ jobs:
   verify-pack-contents:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
@@ -36,6 +36,7 @@ jobs:
                 | select(
                     . != "package.json"
                     and . != "LICENSE"
+                    and . != "README.md"
                     and (startswith("src/css/") | not)
                     and (startswith("src/icons/") | not)
                   )

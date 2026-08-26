@@ -12,8 +12,8 @@ const { playing = false, size = 'md' } = defineProps<{
     type="button"
     :class="
       cn(
-        'bg-primary-comfy-yellow flex shrink-0 cursor-pointer items-center justify-center rounded-xl',
-        size === 'sm' ? 'size-8 lg:size-10' : 'size-12'
+        'bg-primary-comfy-yellow flex shrink-0 cursor-pointer items-center justify-center',
+        size === 'sm' ? 'size-8 rounded-lg lg:size-10' : 'size-12 rounded-xl'
       )
     "
   >
@@ -36,7 +36,7 @@ const { playing = false, size = 'md' } = defineProps<{
       v-else
       :class="
         cn(
-          'text-primary-comfy-ink ml-0.5',
+          'ml-0.5 text-primary-comfy-ink',
           size === 'sm' ? 'size-3 lg:size-4' : 'size-4'
         )
       "

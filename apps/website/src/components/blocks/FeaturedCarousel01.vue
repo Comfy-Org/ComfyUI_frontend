@@ -110,6 +110,14 @@ const onVideoEnded = (index: number) => {
   goTo(activeIndex.value + 1)
 }
 
+// A video that finished while the carousel was paused advances as soon as the
+// hover/focus pause lifts; `ended` has already fired and won't again.
+watch(autoplayPaused, (paused) => {
+  if (!paused && isVisible.value && activeVideo.value?.ended) {
+    goTo(activeIndex.value + 1)
+  }
+})
+
 // A broken video is skipped even while paused; retrying it would loop the error.
 const onVideoError = (index: number) => {
   if (index === activeIndex.value) goTo(activeIndex.value + 1)
@@ -133,7 +141,7 @@ useCarouselAutoplay({
   <div class="w-full px-6 lg:px-14">
     <div
       ref="rootEl"
-      class="border-primary-warm-gray relative mx-auto max-w-[1446px] rounded-[38px] border p-1.5 lg:p-5"
+      class="relative mx-auto max-w-[1446px] rounded-[38px] border border-primary-warm-gray p-1.5 lg:p-5"
     >
       <div class="relative overflow-clip rounded-4xl lg:rounded-[38px]">
         <div
@@ -148,7 +156,7 @@ useCarouselAutoplay({
           <div
             v-for="(slide, index) in slides"
             :key="slide.id"
-            class="relative aspect-video w-full shrink-0 md:aspect-1406/622"
+            class="relative aspect-video w-full shrink-0"
             :aria-hidden="index !== activeIndex"
           >
             <img
@@ -222,7 +230,7 @@ useCarouselAutoplay({
           <IconButton
             variant="ghost"
             size="lg"
-            class="text-primary-warm-white rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30"
+            class="rounded-full bg-white/20 text-primary-warm-white backdrop-blur-sm hover:bg-white/30"
             :aria-label="prevLabel"
             @click="goTo(activeIndex - 1)"
           >
@@ -231,7 +239,7 @@ useCarouselAutoplay({
           <IconButton
             variant="ghost"
             size="lg"
-            class="text-primary-warm-white rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30"
+            class="rounded-full bg-white/20 text-primary-warm-white backdrop-blur-sm hover:bg-white/30"
             :aria-label="nextLabel"
             @click="goTo(activeIndex + 1)"
           >

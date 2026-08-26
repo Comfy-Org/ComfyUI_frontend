@@ -17,7 +17,7 @@ import type { ProxyOptions } from 'vite'
 import { createHtmlPlugin } from 'vite-plugin-html'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
-import { comfyAPIPlugin } from './build/plugins'
+import { comfyAPIPlugin } from './build/plugins/comfyAPIPlugin.ts'
 
 dotenvConfig()
 
@@ -28,7 +28,9 @@ const ANALYZE_BUNDLE = process.env.ANALYZE_BUNDLE === 'true'
 const VITE_REMOTE_DEV = process.env.VITE_REMOTE_DEV === 'true'
 const DISABLE_TEMPLATES_PROXY = process.env.DISABLE_TEMPLATES_PROXY === 'true'
 const GENERATE_SOURCEMAP = process.env.GENERATE_SOURCEMAP !== 'false'
+const COLLECT_COVERAGE = process.env.COLLECT_COVERAGE === 'true'
 const IS_STORYBOOK = process.env.npm_lifecycle_event === 'storybook'
+const TEST_SYSTEM_TIME = Date.parse('2024-06-15T12:00:00Z')
 
 const CRITICAL_COVERAGE_DIRS = [
   'src/base',
@@ -80,6 +82,12 @@ const CRITICAL_COVERAGE_THRESHOLDS = {
   functions: 67,
   lines: 70
 }
+
+// WebGL2 / pixel-processing passes that need a real rendering context,
+// which happy-dom does not provide. TODO: cover via browser tests.
+const LAYER_EDITOR_GPU_COVERAGE_EXCLUDE = [
+  'src/renderer/extensions/layerEditor/engine/compositor/webglCompositor.ts'
+]
 
 const NON_CRITICAL_LITEGRAPH_COVERAGE_EXCLUDE = [
   'src/lib/litegraph/imgs/**',
@@ -156,7 +164,7 @@ const cloudProxyConfig =
 
 function handleGcsRedirect(
   proxyRes: IncomingMessage,
-  _req: IncomingMessage,
+  req: IncomingMessage,
   res: ServerResponse
 ) {
   const location = proxyRes.headers.location
@@ -178,8 +186,11 @@ function handleGcsRedirect(
     return
   }
 
-  // GCS redirect detected - fetch server-side to avoid CORS
-  fetch(location)
+  // GCS redirect detected - fetch server-side to avoid CORS. Range headers
+  // are forwarded and the partial-content response relayed so ranged reads
+  // behave like production, where the browser talks to GCS directly.
+  const rangeHeader = req.headers.range
+  fetch(location, rangeHeader ? { headers: { range: rangeHeader } } : undefined)
     .then(async (gcsResponse) => {
       if (!gcsResponse.body) {
         res.statusCode = 500
@@ -188,15 +199,21 @@ function handleGcsRedirect(
       }
 
       // Set response headers from GCS
-      res.statusCode = 200
+      res.statusCode = gcsResponse.status
       res.setHeader(
         'Content-Type',
         gcsResponse.headers.get('content-type') || 'application/octet-stream'
       )
 
-      const contentLength = gcsResponse.headers.get('content-length')
-      if (contentLength) {
-        res.setHeader('Content-Length', contentLength)
+      for (const header of [
+        'content-length',
+        'content-range',
+        'accept-ranges'
+      ]) {
+        const value = gcsResponse.headers.get(header)
+        if (value) {
+          res.setHeader(header, value)
+        }
       }
 
       // Convert Web ReadableStream to Node.js stream and pipe to client
@@ -230,6 +247,7 @@ export default defineConfig({
   base: DISTRIBUTION === 'cloud' ? '/' : '',
   server: {
     host: VITE_REMOTE_DEV ? '0.0.0.0' : undefined,
+    allowedHosts: process.env.AMP_ORB ? true : undefined,
     watch: {
       ignored: [
         './browser_tests/**',
@@ -341,14 +359,13 @@ export default defineConfig({
     tailwindcss(),
     typegpuPlugin({}),
     comfyAPIPlugin(IS_DEV),
-    // Exclude proprietary ABCROM fonts from non-cloud builds
+    // Exclude proprietary fonts from non-cloud builds
     {
       name: 'exclude-proprietary-fonts',
       generateBundle(_options, bundle) {
         if (DISTRIBUTION !== 'cloud') {
-          // Remove ABCROM font files from bundle
           for (const [fileName] of Object.entries(bundle)) {
-            if (/ABCROM.*\.(woff2?|ttf|otf)$/i.test(fileName)) {
+            if (/(ABCROM|PPFormula).*\.(woff2?|ttf|otf)$/i.test(fileName)) {
               delete bundle[fileName]
             }
           }
@@ -518,22 +535,14 @@ export default defineConfig({
           sentryVitePlugin({
             org: process.env.SENTRY_ORG,
             project: process.env.SENTRY_PROJECT,
-            authToken: process.env.SENTRY_AUTH_TOKEN,
-            sourcemaps: {
-              filesToDeleteAfterUpload: process.env.SENTRY_PROJECT_PROD
-                ? []
-                : ['**/*.map']
-            }
+            authToken: process.env.SENTRY_AUTH_TOKEN
           }),
           ...(process.env.SENTRY_PROJECT_PROD
             ? [
                 sentryVitePlugin({
                   org: process.env.SENTRY_ORG,
                   project: process.env.SENTRY_PROJECT_PROD,
-                  authToken: process.env.SENTRY_AUTH_TOKEN,
-                  sourcemaps: {
-                    filesToDeleteAfterUpload: ['**/*.map']
-                  }
+                  authToken: process.env.SENTRY_AUTH_TOKEN
                 })
               ]
             : [])
@@ -548,7 +557,9 @@ export default defineConfig({
     // browser-facing `//# sourceMappingURL=` comment is NOT injected into the JS
     // bundles. This kills the ~57k/3d `/assets/*.js.map` 404 noise in prod
     // (the .map files aren't served) without losing Sentry symbolication. See FE-1405.
-    sourcemap: GENERATE_SOURCEMAP ? 'hidden' : false,
+    // A coverage build serves its own .map files and needs the comment back:
+    // monocart maps V8 coverage to src/** only by following it.
+    sourcemap: GENERATE_SOURCEMAP && (COLLECT_COVERAGE || 'hidden'),
     // Exclude heavy optional vendor chunks from initial module preload
     // These chunks are only needed when their features are used (3D, terminal, etc.)
     modulePreload: {
@@ -662,6 +673,11 @@ export default defineConfig({
               test: /[\\/]node_modules[\\/](yjs|lib0)[\\/]/,
               priority: 15
             },
+            {
+              name: 'vendor-ag-psd',
+              test: /[\\/]node_modules[\\/]ag-psd[\\/]/,
+              priority: 15
+            },
 
             // Utilities and validation
             {
@@ -708,9 +724,6 @@ export default defineConfig({
       process.env.npm_package_version
     ),
     __COMFYUI_FRONTEND_COMMIT__: JSON.stringify(GIT_COMMIT),
-    __SENTRY_ENABLED__: JSON.stringify(
-      !(process.env.NODE_ENV === 'development' || !process.env.SENTRY_DSN)
-    ),
     __SENTRY_DSN__: JSON.stringify(process.env.SENTRY_DSN || ''),
     __ALGOLIA_APP_ID__: JSON.stringify(process.env.ALGOLIA_APP_ID || ''),
     __ALGOLIA_API_KEY__: JSON.stringify(process.env.ALGOLIA_API_KEY || ''),
@@ -735,14 +748,37 @@ export default defineConfig({
   },
 
   test: {
+    mockReset: true,
+    restoreMocks: true,
+    unstubEnvs: true,
+    unstubGlobals: true,
+    fakeTimers: { now: TEST_SYSTEM_TIME, shouldAdvanceTime: true },
     globals: true,
     environment: 'happy-dom',
-    setupFiles: ['./vitest.setup.ts'],
+    environmentOptions: {
+      happyDOM: {
+        settings: {
+          // Stop happy-dom fetching real subresources. An <iframe src> or
+          // <link rel=stylesheet> pointing at a remote host issues a request
+          // that outlives the test; happy-dom aborts it during teardown and
+          // the resulting error is reported against whichever file is running
+          // then. Unit tests should never depend on the network.
+          disableIframePageLoading: true,
+          disableCSSFileLoading: true,
+          disableJavaScriptFileLoading: true
+        }
+      }
+    },
+    // Pin the timezone so date-formatting assertions are deterministic
+    // regardless of the contributor's local timezone (CI runs in UTC).
+    env: { TZ: 'UTC' },
+    setupFiles: ['./vitest.timer.setup.ts', './vitest.setup.ts'],
     retry: process.env.CI ? 2 : 0,
     include: [
       'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
       'packages/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
-      'scripts/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
+      'scripts/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+      'tools/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
     ],
     coverage: {
       provider: 'v8',
@@ -755,6 +791,7 @@ export default defineConfig({
         'src/**/*.d.ts',
         'src/locales/**',
         'src/assets/**',
+        ...LAYER_EDITOR_GPU_COVERAGE_EXCLUDE,
         ...NON_CRITICAL_LITEGRAPH_COVERAGE_EXCLUDE
       ],
       thresholds: {
@@ -762,6 +799,7 @@ export default defineConfig({
       }
     },
     exclude: [
+      'src/__ecs_matrix__/**',
       '**/node_modules/**',
       '**/dist/**',
       '**/cypress/**',

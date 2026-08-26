@@ -30,7 +30,7 @@
           :label="tab.label || tab.title"
           :is-small="isSmall"
           :selected="tab.id === selectedTab?.id"
-          :class="tab.id + '-tab-button'"
+          :data-testid="`${tab.id}-tab-button`"
           @click="onTabClick(tab)"
         />
         <SidebarTemplatesButton />
