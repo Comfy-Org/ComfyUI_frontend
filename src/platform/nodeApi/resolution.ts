@@ -31,7 +31,6 @@ export interface InputRef {
   readonly input: number
 }
 
-/** @knipIgnoreUnusedButUsedByCustomNodes */
 export type OutputResolution =
   | { readonly omit: true }
   | { readonly forwardTo: InputRef }
@@ -449,8 +448,6 @@ export interface UnconnectedInput {
  * `from` is the supplier's own output index, or a literal. It is deliberately
  * not an arbitrary node reference: a node may only offer what it itself has,
  * so one pack cannot rewire two other nodes to each other.
- *
- * @knipIgnoreUnusedButUsedByCustomNodes
  */
 export interface SuppliedEdge {
   readonly to: InputRef
