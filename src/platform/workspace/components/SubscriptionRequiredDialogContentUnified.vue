@@ -28,7 +28,8 @@
         (isEmbeddedPaymentStep ||
           isEmbeddedSuccessStep ||
           isEmbeddedConfirmStep ||
-          isVerifyingStep) &&
+          isVerifyingStep ||
+          isDeclinedStep) &&
           'max-xl:w-[min(430px,92vw)]',
         isEmbeddedPaymentStep && 'max-xl:h-[85vh]'
       )
