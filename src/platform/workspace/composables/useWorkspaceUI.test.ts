@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { WorkspaceWithRole } from '@/platform/workspace/api/workspaceApi'
@@ -9,6 +9,9 @@ const mockStore = vi.hoisted(() => ({
   originalOwnerId: null as string | null,
   ensureMembersLoaded: vi.fn()
 }))
+const mockIsCloud = ref(true)
+const mockShouldUseWorkspaceBilling = ref(true)
+const mockCanReactivate = ref(false)
 const mockIsActiveSubscription = vi.hoisted(() => ({ value: false }))
 const mockIsCancelled = vi.hoisted(() => ({ value: false }))
 const mockIsTeamPlan = vi.hoisted(() => ({ value: false }))
@@ -32,6 +35,26 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
       return mockStore.originalOwnerId
     },
     ensureMembersLoaded: mockStore.ensureMembersLoaded
+  })
+}))
+
+vi.mock('@/platform/distribution/types', () => ({
+  get isCloud() {
+    return mockIsCloud.value
+  }
+}))
+
+vi.mock('@/composables/billing/useBillingRouting', () => ({
+  useBillingRouting: () => ({
+    shouldUseWorkspaceBilling: computed(
+      () => mockShouldUseWorkspaceBilling.value
+    )
+  })
+}))
+
+vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
+  useBillingCapabilities: () => ({
+    canReactivate: computed(() => mockCanReactivate.value)
   })
 }))
 
@@ -100,6 +123,9 @@ function resetStore() {
   mockIsCancelled.value = false
   mockIsTeamPlan.value = false
   mockBillingControlEnabled.value = false
+  mockIsCloud.value = true
+  mockShouldUseWorkspaceBilling.value = true
+  mockCanReactivate.value = false
 }
 
 describe('useWorkspaceUI', () => {
@@ -448,6 +474,42 @@ describe('useWorkspaceUI', () => {
 
       expect(second.permissions).toBe(first.permissions)
       expect(second.uiConfig).toBe(first.uiConfig)
+    })
+  })
+  describe('canReactivatePlan', () => {
+    beforeEach(() => {
+      mockStore.activeWorkspace = personalWorkspace
+    })
+
+    it('uses the server capability on the consolidated rail', async () => {
+      mockShouldUseWorkspaceBilling.value = true
+      mockCanReactivate.value = false
+
+      const denied = await loadComposable()
+      expect(denied.canReactivatePlan.value).toBe(false)
+
+      vi.resetModules()
+      mockCanReactivate.value = true
+      const allowed = await loadComposable()
+      expect(allowed.canReactivatePlan.value).toBe(true)
+    })
+
+    it('falls back to membership on the legacy rail, where no capability row exists', async () => {
+      mockShouldUseWorkspaceBilling.value = false
+      mockCanReactivate.value = false
+
+      const ui = await loadComposable()
+      expect(ui.permissions.value.canManageSubscriptionLifecycle).toBe(true)
+      expect(ui.canReactivatePlan.value).toBe(true)
+    })
+
+    it('falls back to membership off Cloud, where the endpoint is never called', async () => {
+      mockIsCloud.value = false
+      mockShouldUseWorkspaceBilling.value = true
+      mockCanReactivate.value = false
+
+      const ui = await loadComposable()
+      expect(ui.canReactivatePlan.value).toBe(true)
     })
   })
 })
