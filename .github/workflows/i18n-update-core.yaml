@@ -66,9 +66,15 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       - name: Commit updated locales
-        run: ./scripts/cicd/push-generated-locales.sh "$TARGET_BRANCH"
         env:
           TARGET_BRANCH: ${{ github.head_ref || github.ref_name }}
+        run: |
+          git add src/locales/
+          if git diff --cached --quiet; then exit 0; fi
+          ./scripts/cicd/check-json.sh
+          git -c user.name=github-actions -c user.email=github-actions@github.com \
+            commit -m 'Update locales'
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH"
       - name: Fail if translation did not complete
         if: steps.translate.outcome == 'failure'
         run: |
