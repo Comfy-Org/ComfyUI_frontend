@@ -111,7 +111,7 @@ describe('useLinkStore', () => {
     expect(store.getInputSlotLink(graphA, toNodeId(9), 2)).toBe(registered)
   })
 
-  it('re-registers a link after deleting its owner bucket', () => {
+  it('reuses a deleted link id for a replacement link', () => {
     const store = useLinkStore()
     const topology = link(1, 5, 0, 9, 2)
     const current = computed(() => [...store.graphTopologies(graphA)][0])
