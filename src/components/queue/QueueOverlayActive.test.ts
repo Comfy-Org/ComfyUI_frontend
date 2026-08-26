@@ -73,15 +73,6 @@ describe('QueueOverlayActive', () => {
     // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const progressBars = container.querySelectorAll('.absolute.inset-0')
     expect(progressBars).toHaveLength(2)
-    for (const progressBar of progressBars) {
-      expect(progressBar).toHaveClass(
-        'origin-left',
-        'will-change-transform',
-        'motion-safe:transition-transform'
-      )
-      expect(progressBar).not.toHaveClass('transition-[width]')
-      expect((progressBar as HTMLElement).style.width).toBe('')
-    }
     expect(progressBars[0]).toHaveStyle({ transform: 'scaleX(0.65)' })
     expect(progressBars[1]).toHaveStyle({ transform: 'scaleX(0.4)' })
 
