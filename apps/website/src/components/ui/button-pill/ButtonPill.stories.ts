@@ -78,6 +78,50 @@ export const DefaultSolid: Story = {
   })
 }
 
+export const WorkflowsPageReference: Story = {
+  tags: ['experimental'],
+  parameters: {
+    controls: { disable: true },
+    docs: {
+      description: {
+        story:
+          'Reference captured from the live Comfy Workflows page. The reveal mode is not implemented by this website component yet and is not approved for production use.'
+      }
+    }
+  },
+  render: () => ({
+    template: `
+      <a
+        href="#"
+        aria-label="Example workflow"
+        class="group/button-pill relative isolate inline-flex h-10 w-fit cursor-pointer items-center overflow-hidden rounded-2xl bg-transparent py-2.5 ps-9 pe-0 text-sm font-bold uppercase tracking-wider text-content text-nowrap transition-all duration-500 hover:bg-primary-comfy-yellow hover:pe-5 hover:text-primary-comfy-ink"
+      >
+        <span class="grid grid-cols-[0fr] transition-[grid-template-columns] duration-500 group-hover/button-pill:grid-cols-[1fr]">
+          <span class="overflow-hidden">
+            <span class="ppformula-text-center relative leading-none">Try now</span>
+          </span>
+        </span>
+        <span
+          aria-hidden="true"
+          class="absolute left-1 top-1/2 z-10 flex size-8 -translate-y-1/2 items-center justify-center rounded-xl bg-white/20 text-white transition-all duration-500 group-hover/button-pill:bg-primary-comfy-yellow group-hover/button-pill:text-primary-comfy-ink"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="size-4"
+          >
+            <path d="m9 18 6-6-6-6" />
+          </svg>
+        </span>
+      </a>
+    `
+  })
+}
+
 export const LargeSolid: Story = {
   args: { as: 'a', href: '#', size: 'lg' },
   render: (args) => ({

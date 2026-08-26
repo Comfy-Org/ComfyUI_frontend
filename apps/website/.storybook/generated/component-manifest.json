@@ -12,7 +12,7 @@
     "unknownPattern": "Treat as a gap; do not invent a local substitute."
   },
   "componentCount": 63,
-  "storyCount": 206,
+  "storyCount": 207,
   "components": [
     {
       "component": "AddToCalendarButton",
@@ -2161,6 +2161,7 @@
           "AsButton",
           "Ghost",
           "DefaultSolid",
+          "WorkflowsPageReference",
           "LargeSolid",
           "WithCustomIcon",
           "IconLeft",
@@ -2187,6 +2188,10 @@
         {
           "exportName": "DefaultSolid",
           "storyId": "website-ui-buttonpill--default-solid"
+        },
+        {
+          "exportName": "WorkflowsPageReference",
+          "storyId": "website-ui-buttonpill--workflows-page-reference"
         },
         {
           "exportName": "LargeSolid",
