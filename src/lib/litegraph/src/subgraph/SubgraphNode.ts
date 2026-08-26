@@ -869,6 +869,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   override onRemoved(): void {
     this._eventAbortController.abort()
 
+    const store = useWidgetValueStore()
     for (const input of this.inputs) {
       if (
         input._listenerController &&
@@ -876,6 +877,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       ) {
         input._listenerController.abort()
       }
+      if (input.widgetId) store.deleteWidget(input.widgetId)
       this._clearPromotedWidget(input)
     }
     for (const widget of this._extraWidgets) widget.onRemove?.()

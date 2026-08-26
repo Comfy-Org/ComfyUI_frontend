@@ -342,29 +342,36 @@ describe('SubgraphWidgetPromotion', () => {
       )
     })
 
-    it('should fire widget-demoted events when node is removed', () => {
+    it('cleans up promoted widget state without demotion on removal', () => {
       const subgraph = createTestSubgraph({
         inputs: [{ name: 'input', type: 'number' }]
       })
 
       const { node } = createNodeWithWidget('Test Node')
       const subgraphNode = setupPromotedWidget(subgraph, node)
+      const promotedInput = promotedInputs(subgraphNode)[0]
+      if (!promotedInput) throw new Error('Missing promoted input')
 
       expect(subgraphNode.widgets).toHaveLength(
         promotedInputs(subgraphNode).length
       )
       expect(promotedInputs(subgraphNode)).toHaveLength(1)
+      expect(
+        useWidgetValueStore().getWidget(promotedInput.widgetId)
+      ).toBeDefined()
 
       const eventCapture = createEventCapture(subgraph.events, [
         'widget-demoted'
       ])
 
-      // Remove the subgraph node
       subgraphNode.onRemoved()
 
       const demotedEvents = eventCapture.getEventsByType('widget-demoted')
       expect(demotedEvents).toHaveLength(0)
       expect(promotedInputs(subgraphNode)).toHaveLength(1)
+      expect(
+        useWidgetValueStore().getWidget(promotedInput.widgetId)
+      ).toBeUndefined()
 
       eventCapture.cleanup()
     })
