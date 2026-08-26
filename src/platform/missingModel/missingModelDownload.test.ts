@@ -598,11 +598,21 @@ describe('downloadModel', () => {
   })
 
   it.for([
-    { isRemote: false, expectedDesktopCalls: 1, expectedBrowserCalls: 0 },
-    { isRemote: true, expectedDesktopCalls: 0, expectedBrowserCalls: 1 }
+    {
+      install: 'local',
+      remoteFlag: undefined,
+      expectedDesktopCalls: 1,
+      expectedBrowserCalls: 0
+    },
+    {
+      install: 'remote',
+      remoteFlag: true,
+      expectedDesktopCalls: 0,
+      expectedBrowserCalls: 1
+    }
   ])(
-    'uses the legacy remote flag when isRemote is unavailable ($isRemote)',
-    ({ isRemote, expectedDesktopCalls, expectedBrowserCalls }) => {
+    'routes a $install install on Desktop builds without isRemote',
+    ({ remoteFlag, expectedDesktopCalls, expectedBrowserCalls }) => {
       const anchorClick = vi
         .spyOn(HTMLAnchorElement.prototype, 'click')
         .mockImplementation(() => {})
@@ -611,7 +621,7 @@ describe('downloadModel', () => {
           (url: string, filename: string, directory: string) => Promise<boolean>
         >()
         .mockResolvedValue(true)
-      window.__comfyDesktop2Remote = isRemote
+      if (remoteFlag !== undefined) window.__comfyDesktop2Remote = remoteFlag
       window.__comfyDesktop2 = { downloadModel: desktopDownloadModel }
 
       downloadModel(
