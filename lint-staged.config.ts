@@ -46,11 +46,12 @@ function cmsCommands(cmsPaths: string[]) {
     return []
   }
 
-  const commands = ['pnpm --filter @comfyorg/cms exec prettier --check .']
-  if (cmsPaths.some((fileName) => /\.(ts|tsx|mjs|js)$/.test(fileName))) {
-    commands.push('pnpm lint:cms', 'pnpm typecheck:cms')
-  }
-  return commands
+  return [
+    'pnpm --filter @comfyorg/cms exec prettier --check .',
+    ...(cmsPaths.some((fileName) => /\.(ts|tsx|mjs|js)$/.test(fileName))
+      ? ['pnpm lint:cms', 'pnpm typecheck:cms']
+      : [])
+  ]
 }
 
 function lintCommands(codeFiles: string[], styleFiles: string[]) {
