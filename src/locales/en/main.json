@@ -5139,6 +5139,7 @@
     "captionExpanded": "The AI agent can make mistakes. Double check your response.",
     "runNotice": "The agent can modify the graph. Check Run permissions before allowing it to execute the workflow.",
     "runNoticeExpanded": "The agent can modify your workflow. Check Run permissions before allowing it to execute.",
+    "workflowEditNotice": "The agent can now edit {workflow}. It works on 1 workflow at a time, and you can switch workflows during chat.",
     "runApproval": {
       "lead": "This tool wants to run the workflow:",
       "question": "Do you approve?",
@@ -5197,6 +5198,7 @@
     "changeWorkflowForChat": "Change the workflow for this chat",
     "chatOptions": "Chat options",
     "chooseWorkflow": "Choose a workflow",
+    "selectWorkflowForAgent": "Select a workflow for agent to work in",
     "chooseWorkflowForChat": "Choose a workflow for this chat",
     "dontWorkInWorkflow": "Don't work in a workflow",
     "searchWorkflows": "Search workflows",
