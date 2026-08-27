@@ -44,11 +44,13 @@ class InvalidationProbe {
     })
 
     const drawBackground = canvas.drawBackCanvas.bind(canvas)
-    vi.spyOn(canvas, 'drawBackCanvas').mockImplementation(() => {
-      this.backgroundDraw()
-      this.drawSequence.push('background')
-      drawBackground()
-    })
+    vi.spyOn(canvas, 'drawBackCanvas').mockImplementation(
+      (redrawFrontCanvas) => {
+        this.backgroundDraw()
+        this.drawSequence.push('background')
+        drawBackground(redrawFrontCanvas)
+      }
+    )
   }
 
   reset(): void {
@@ -190,24 +192,87 @@ describe('LGraphCanvas invalidation scheduling baseline', () => {
     expect(canvas.dirty_bgcanvas).toBe(false)
   })
 
-  it('amplifies background work when both layers use the same canvas', () => {
+  it('draws a shared-canvas background request once without re-arming', () => {
     canvas.bgcanvas = canvas.canvas
     canvas.setDirty(false, true)
 
     canvas.draw()
-    canvas.draw()
 
     expect(probe.requests).toHaveLength(1)
-    expect(probe.foregroundDraw).toHaveBeenCalledTimes(2)
-    expect(probe.backgroundDraw).toHaveBeenCalledTimes(3)
-    expect(probe.drawSequence).toEqual([
-      'background',
-      'foreground',
-      'background',
-      'foreground',
-      'background'
-    ])
+    expect(probe.foregroundDraw).toHaveBeenCalledTimes(1)
+    expect(probe.backgroundDraw).toHaveBeenCalledTimes(1)
+    expect(probe.drawSequence).toEqual(['foreground', 'background'])
+    expect(canvas.dirty_canvas).toBe(false)
+    expect(canvas.dirty_bgcanvas).toBe(false)
+  })
+
+  it('preserves foreground invalidation requested during a shared draw', () => {
+    canvas.bgcanvas = canvas.canvas
+    let invalidateDuringDraw = true
+    canvas.onDrawBackground = () => {
+      if (!invalidateDuringDraw) return
+      invalidateDuringDraw = false
+      canvas.setDirty(true, false)
+    }
+    canvas.setDirty(false, true)
+
+    canvas.draw()
+
     expect(canvas.dirty_canvas).toBe(true)
+    expect(canvas.dirty_bgcanvas).toBe(false)
+
+    canvas.draw()
+
+    expect(probe.foregroundDraw).toHaveBeenCalledTimes(2)
+    expect(probe.backgroundDraw).toHaveBeenCalledTimes(2)
+    expect(canvas.dirty_canvas).toBe(false)
+    expect(canvas.dirty_bgcanvas).toBe(false)
+  })
+
+  it('preserves background invalidation requested during a shared draw', () => {
+    canvas.bgcanvas = canvas.canvas
+    let invalidateDuringDraw = true
+    canvas.onDrawBackground = () => {
+      if (!invalidateDuringDraw) return
+      invalidateDuringDraw = false
+      canvas.setDirty(false, true)
+    }
+    canvas.setDirty(false, true)
+
+    canvas.draw()
+
+    expect(canvas.dirty_canvas).toBe(false)
+    expect(canvas.dirty_bgcanvas).toBe(true)
+
+    canvas.draw()
+
+    expect(probe.foregroundDraw).toHaveBeenCalledTimes(2)
+    expect(probe.backgroundDraw).toHaveBeenCalledTimes(2)
+    expect(canvas.dirty_canvas).toBe(false)
+    expect(canvas.dirty_bgcanvas).toBe(false)
+  })
+
+  it('forces both layers once when both layers use the same canvas', () => {
+    canvas.bgcanvas = canvas.canvas
+
+    canvas.draw(true, true)
+
+    expect(probe.drawSequence).toEqual(['foreground', 'background'])
+    expect(canvas.dirty_canvas).toBe(false)
+    expect(canvas.dirty_bgcanvas).toBe(false)
+  })
+
+  it('keeps both shared-canvas connection passes when links are on top', () => {
+    const drawConnections = vi.spyOn(canvas, 'drawConnections')
+    canvas.bgcanvas = canvas.canvas
+    graph.config.links_ontop = true
+    canvas.setDirty(true, true)
+
+    canvas.draw()
+
+    expect(drawConnections).toHaveBeenCalledTimes(2)
+    expect(canvas.dirty_canvas).toBe(false)
+    expect(canvas.dirty_bgcanvas).toBe(false)
   })
 
   it('adds one connection pass per foreground draw when links are on top', () => {
@@ -254,5 +319,18 @@ describe('LGraphCanvas invalidation scheduling baseline', () => {
     expect(probe.requests).toHaveLength(0)
     expect(probe.foregroundDraw).toHaveBeenCalledTimes(2)
     expect(probe.backgroundDraw).toHaveBeenCalledTimes(2)
+  })
+
+  it('redraws a shared canvas once per animation tick', () => {
+    canvas.bgcanvas = canvas.canvas
+    canvas.always_render_background = true
+
+    canvas.draw()
+    canvas.draw()
+
+    expect(probe.foregroundDraw).toHaveBeenCalledTimes(2)
+    expect(probe.backgroundDraw).toHaveBeenCalledTimes(2)
+    expect(canvas.dirty_canvas).toBe(false)
+    expect(canvas.dirty_bgcanvas).toBe(false)
   })
 })
