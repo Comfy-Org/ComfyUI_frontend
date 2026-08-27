@@ -1,14 +1,12 @@
 import type { PromptResponse } from '@comfyorg/ingest-types'
 
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { FIRST_RUN_SUGGESTIONS } from '@/renderer/extensions/firstRunTour/nudge/firstRunNudgeSuggestions'
 import type { SupportedTemplateId } from '@/renderer/extensions/firstRunTour/roles/tourRolePins'
 
 import type { TemplateMediaInfo } from '@/platform/workflow/templates/types/template'
 import type { ResultItem } from '@/schemas/apiSchema'
 
 import { makeTemplate } from '@e2e/fixtures/data/templateFixtures'
-
-const { nudge } = enMessages.onboardingCoachmarks.firstRun
 
 /**
  * The template both first-run suites tour. Typed against the pin table so
@@ -30,30 +28,6 @@ export function queuedPrompt(jobId: string) {
 }
 
 /**
- * The continuations the discovery card offers. Titles come from the locale the
- * card renders from, so a copy change moves both together.
- */
-export const FIRST_RUN_NUDGE_ACTIONS = [
-  {
-    id: 'animate',
-    title: nudge.animate.title,
-    templateId: 'video_minimax_h3_i2v_continuation'
-  },
-  {
-    id: 'upscale',
-    title: nudge.upscale.title,
-    templateId: 'utility_seedvr2_7b_int8_upscale_image'
-  },
-  {
-    id: 'restyle',
-    title: nudge.restyle.title,
-    templateId: 'api_google_nano_banana2_image_edit_continuation'
-  }
-] as const
-
-export type FirstRunNudgeAction = (typeof FIRST_RUN_NUDGE_ACTIONS)[number]['id']
-
-/**
  * The image input each continuation declares, pointing at the node the
  * `widgets/load_image_widget` asset carries so the seeded value is readable
  * off the loaded graph.
@@ -65,15 +39,19 @@ export const CONTINUATION_INPUT = {
   mediaType: 'image'
 } satisfies TemplateMediaInfo
 
+/**
+ * Every continuation carries the `io` metadata the card's dead-end filter
+ * demands, so an action missing from the card means the handoff broke rather
+ * than the fixture being thin.
+ */
 export const FIRST_RUN_TEMPLATES = [
   makeTemplate({
     name: FIRST_RUN_START_TEMPLATE_ID,
     title: 'Z-Image Turbo'
   }),
-  ...FIRST_RUN_NUDGE_ACTIONS.map(({ templateId, title }) =>
+  ...FIRST_RUN_SUGGESTIONS.map(({ templateId }) =>
     makeTemplate({
       name: templateId,
-      title,
       io: { inputs: [CONTINUATION_INPUT] }
     })
   )

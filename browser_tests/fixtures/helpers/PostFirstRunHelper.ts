@@ -6,7 +6,6 @@ import { TOUR_ROLE_PINS } from '@/renderer/extensions/firstRunTour/roles/tourRol
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { OnboardingCoachmarks } from '@e2e/fixtures/components/Tour'
-import { tourStepCount } from '@e2e/fixtures/components/Tour'
 import {
   CONTINUATION_INPUT,
   FIRST_RUN_JOB_ID,
@@ -57,7 +56,7 @@ export class PostFirstRunHelper {
       `the tour has to start, which needs the synthetic graph to carry ${FIRST_RUN_START_TEMPLATE_ID}'s pinned roles: ${JSON.stringify(START_PINS)}`
     ).toBeVisible()
 
-    await this.walkToRunStep()
+    await this.onboarding.walkToStep(firstRun.run.title)
 
     await this.comfyPage.runButton.click()
     await expect(
@@ -79,24 +78,6 @@ export class PostFirstRunHelper {
     await expect(this.onboarding.card).toBeHidden()
   }
 
-  /** Steps forward until the tour parks on Run, whatever its sequence is. */
-  private async walkToRunStep(): Promise<void> {
-    const { card, cardNextButton } = this.onboarding
-    const runTitle = card.getByText(firstRun.run.title)
-    const totalSteps = await tourStepCount(card)
-
-    for (let step = 1; step < totalSteps; step++) {
-      await expect(card).toContainText(`Step ${step} of ${totalSteps}`)
-      if (await runTitle.isVisible()) break
-      await cardNextButton.click()
-    }
-
-    await expect(
-      runTitle,
-      'the tour ran out of steps before reaching the one that runs the workflow'
-    ).toBeVisible()
-  }
-
   /**
    * The value the continuation's declared image input is carrying, or null
    * while the graph swap has yet to settle on exactly one such node.
@@ -106,7 +87,7 @@ export class PostFirstRunHelper {
       CONTINUATION_INPUT.nodeType
     )
     if (inputs.length !== 1) return null
-    const value = await (await inputs[0].getWidget(0)).getValue()
+    const value = await (await inputs[0].getWidgetByName('image')).getValue()
     return typeof value === 'string' ? value : null
   }
 }

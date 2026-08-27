@@ -10,13 +10,6 @@ const TOUR_REPLAY_BUTTONS: Record<CoachTour, string> = {
   appMode: 'Take a tour of App Mode'
 }
 
-/** How many steps the card says the tour has, once it says anything. */
-export async function tourStepCount(card: Locator): Promise<number> {
-  await expect(card).toContainText(/Step \d+ of \d+/)
-  const label = await card.textContent()
-  return Number(/Step \d+ of (\d+)/.exec(label ?? '')?.[1])
-}
-
 /** Coach-mark overlay (src/platform/onboarding/TourOverlay.vue). */
 export class OnboardingCoachmarks {
   public readonly landing: Locator
@@ -51,6 +44,34 @@ export class OnboardingCoachmarks {
   /** The spotlight card while it is showing the given step number. */
   cardForStep(step: number): Locator {
     return this.card.filter({ hasText: new RegExp(`Step ${step} of `) })
+  }
+
+  /** How many steps the card says the tour has, once it says anything. */
+  async stepCount(): Promise<number> {
+    await expect(this.card).toContainText(/Step \d+ of \d+/)
+    const label = await this.card.textContent()
+    return Number(/Step \d+ of (\d+)/.exec(label ?? '')?.[1])
+  }
+
+  /**
+   * Steps forward until the card parks on the step carrying `title`, whatever
+   * the sequence is, and reports how many steps the tour said it had.
+   */
+  async walkToStep(title: string): Promise<number> {
+    const target = this.card.getByText(title)
+    const totalSteps = await this.stepCount()
+
+    for (let step = 1; step < totalSteps; step++) {
+      await expect(this.card).toContainText(`Step ${step} of ${totalSteps}`)
+      if (await target.isVisible()) break
+      await this.cardNextButton.click()
+    }
+
+    await expect(
+      target,
+      `the tour ran out of steps before reaching "${title}"`
+    ).toBeVisible()
+    return totalSteps
   }
 
   /**

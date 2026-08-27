@@ -1,10 +1,10 @@
 import type { Locator, Page } from '@playwright/test'
 
-import { FIRST_RUN_NUDGE_ACTIONS } from '@e2e/fixtures/data/firstRunTour'
-import type { FirstRunNudgeAction } from '@e2e/fixtures/data/firstRunTour'
+import { FIRST_RUN_SUGGESTIONS } from '@/renderer/extensions/firstRunTour/nudge/firstRunNudgeSuggestions'
+import type { FirstRunSuggestionId } from '@/renderer/extensions/firstRunTour/nudge/firstRunNudgeSuggestions'
 
 const ACTION_TEST_IDS = new RegExp(
-  `^first-run-nudge-(${FIRST_RUN_NUDGE_ACTIONS.map(({ id }) => id).join('|')})$`
+  `^first-run-nudge-(${FIRST_RUN_SUGGESTIONS.map(({ id }) => id).join('|')})$`
 )
 
 /** Post-first-run discovery card (FirstRunTourNudge.vue). */
@@ -18,7 +18,7 @@ export class FirstRunNudge {
     this.actions = this.root.getByTestId(ACTION_TEST_IDS)
   }
 
-  action(id: FirstRunNudgeAction): Locator {
+  action(id: FirstRunSuggestionId): Locator {
     return this.root.getByTestId(`first-run-nudge-${id}`)
   }
 }

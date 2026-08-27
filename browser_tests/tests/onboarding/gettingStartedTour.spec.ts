@@ -9,7 +9,7 @@ import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceAp
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { FirstRunNudge } from '@e2e/fixtures/components/FirstRunNudge'
-import { tourStepCount } from '@e2e/fixtures/components/Tour'
+import type { OnboardingCoachmarks } from '@e2e/fixtures/components/Tour'
 import { EMPTY_ASSET_RESPONSE } from '@e2e/fixtures/data/assetFixtures'
 import {
   ACTIVE_PERSONAL_BILLING_STATUS,
@@ -201,10 +201,11 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
    * paywalled branches part. The run is queued under a known id, so whoever
    * goes on to click Run can address it over the websocket.
    */
-  async function tourToRunStep(page: Page) {
+  async function tourToRunStep(
+    page: Page,
+    onboarding: OnboardingCoachmarks
+  ): Promise<number> {
     const screen = page.getByRole('dialog', { name: GETTING_STARTED_TITLE })
-    const spotlight = page.getByTestId('coach-spotlight')
-    const card = page.getByTestId('coach-card')
 
     await page.route('**/api/prompt', (route) =>
       route.fulfill(jsonRoute(queuedPrompt(TOUR_JOB_ID)))
@@ -217,63 +218,54 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
 
     await expect(screen).toBeHidden()
     await expect(
-      spotlight,
+      onboarding.spotlight,
       'picking a template must spotlight the graph it loaded'
     ).toBeVisible()
 
-    const next = card.getByRole('button', { name: 'Next' })
-    const runTitle = card.getByText(RUN_STEP_TITLE)
-    const totalSteps = await tourStepCount(card)
+    const totalSteps = await onboarding.walkToStep(RUN_STEP_TITLE)
 
-    for (let step = 1; step < totalSteps; step++) {
-      await expect(card).toContainText(`Step ${step} of ${totalSteps}`)
-      if (await runTitle.isVisible()) break
-      await next.click()
-    }
-
-    await expect(runTitle).toBeVisible()
     await expect(
-      next,
+      onboarding.cardNextButton,
       'the Run step must offer no way forward except running'
     ).toBeHidden()
 
-    return { spotlight, card, totalSteps }
+    return totalSteps
   }
 
   /** Clicks Run and waits for the Result step to admit the run is in flight. */
   async function runFromTourStep(
     page: Page,
-    card: Locator,
+    onboarding: OnboardingCoachmarks,
     totalSteps: number
   ) {
     await page.getByTestId('queue-button').click()
 
     await expect(
-      card.getByText(GENERATING_TITLE),
+      onboarding.card.getByText(GENERATING_TITLE),
       'the run outlives its step, so the click moves the tour on and Result reports it'
     ).toBeVisible({ timeout: 15_000 })
     await expect(
-      card,
+      onboarding.card,
       'Run hands over to the last step, the one spotlighting where output lands'
     ).toContainText(`Step ${totalSteps} of ${totalSteps}`)
   }
 
   wstest(
     'guides a first-run user from a template to a finished result',
-    async ({ comfyPage, getWebSocket }) => {
+    async ({ comfyPage, getWebSocket, onboarding }) => {
       // A template load, three camera flights and a queued run do not fit the default budget.
       test.slow()
       const { page } = comfyPage
       const execution = new ExecutionHelper(comfyPage, await getWebSocket())
 
-      const { card, totalSteps } = await tourToRunStep(page)
-      await runFromTourStep(page, card, totalSteps)
+      const totalSteps = await tourToRunStep(page, onboarding)
+      await runFromTourStep(page, onboarding, totalSteps)
 
       execution.executionStart(TOUR_JOB_ID)
       execution.executionSuccess(TOUR_JOB_ID)
 
       await expect(
-        card.getByText(RESULT_IMAGE_TITLE),
+        onboarding.card.getByText(RESULT_IMAGE_TITLE),
         'the run finished, so the Result step has to stop saying it is still coming'
       ).toBeVisible({ timeout: 15_000 })
     }
@@ -281,19 +273,19 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
 
   wstest(
     'tells a first-run user when the run produced nothing',
-    async ({ comfyPage, getWebSocket }) => {
+    async ({ comfyPage, getWebSocket, onboarding }) => {
       test.slow()
       const { page } = comfyPage
       const execution = new ExecutionHelper(comfyPage, await getWebSocket())
 
-      const { card, totalSteps } = await tourToRunStep(page)
-      await runFromTourStep(page, card, totalSteps)
+      const totalSteps = await tourToRunStep(page, onboarding)
+      await runFromTourStep(page, onboarding, totalSteps)
 
       execution.executionStart(TOUR_JOB_ID)
       execution.executionError(TOUR_JOB_ID, '1', 'the run blew up')
 
       await expect(
-        card.getByText(RESULT_FAILED_TITLE),
+        onboarding.card.getByText(RESULT_FAILED_TITLE),
         'announcing a result that does not exist is the bug D2 filed'
       ).toBeVisible({ timeout: 15_000 })
     }
@@ -308,11 +300,13 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
     })
 
     test('leaves the nudge until the upgrade dialog closes', async ({
-      comfyPage
+      comfyPage,
+      onboarding
     }) => {
       test.slow()
       const { page } = comfyPage
-      const { spotlight } = await tourToRunStep(page)
+      await tourToRunStep(page, onboarding)
+      const { spotlight } = onboarding
       const nudge = new FirstRunNudge(page).root
       const upgradeDialog = page.getByTestId('dialog-overlay')
 

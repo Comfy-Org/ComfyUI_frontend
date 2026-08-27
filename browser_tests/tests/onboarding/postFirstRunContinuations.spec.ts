@@ -1,5 +1,7 @@
 import { expect } from '@playwright/test'
 
+import { FIRST_RUN_SUGGESTIONS } from '@/renderer/extensions/firstRunTour/nudge/firstRunNudgeSuggestions'
+
 import { EMPTY_ASSET_RESPONSE } from '@e2e/fixtures/data/assetFixtures'
 import {
   ACTIVE_PERSONAL_BILLING_STATUS,
@@ -7,7 +9,6 @@ import {
 } from '@e2e/fixtures/data/cloudWorkspace'
 import {
   CONTINUATION_INPUT,
-  FIRST_RUN_NUDGE_ACTIONS,
   FIRST_RUN_OUTPUT,
   FIRST_RUN_OUTPUT_WIDGET_VALUE,
   FIRST_RUN_START_TEMPLATE_ID,
@@ -18,6 +19,14 @@ import { postFirstRunFixture as test } from '@e2e/fixtures/postFirstRunFixture'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
+
+/**
+ * Which continuation the walk clicks does not matter here: the id-to-template
+ * mapping is covered per action in `FirstRunTourNudge.test.ts`, and what this
+ * suite adds is the wiring underneath it — a fetched graph replacing the tour
+ * workflow with the first output seeded into its declared input.
+ */
+const CONTINUATION = FIRST_RUN_SUGGESTIONS[0]
 
 /**
  * Covers the frontend handoff contract with a synthetic LoadImage workflow.
@@ -52,9 +61,6 @@ test.describe(
       await page.route('**/api/assets**', (route) =>
         route.fulfill(jsonRoute(EMPTY_ASSET_RESPONSE))
       )
-      await page.route('**/internal/files/output**', (route) =>
-        route.fulfill(jsonRoute([FIRST_RUN_OUTPUT_WIDGET_VALUE]))
-      )
       await page.route(
         `**/templates/${FIRST_RUN_START_TEMPLATE_ID}.json`,
         (route) =>
@@ -64,7 +70,7 @@ test.describe(
             path: assetPath('onboarding/first_run_tour_contract.json')
           })
       )
-      for (const { templateId } of FIRST_RUN_NUDGE_ACTIONS) {
+      for (const { templateId } of FIRST_RUN_SUGGESTIONS) {
         await page.route(`**/templates/${templateId}.json`, (route) =>
           route.fulfill({
             contentType: 'application/json',
@@ -84,55 +90,50 @@ test.describe(
       })
     })
 
-    for (const action of FIRST_RUN_NUDGE_ACTIONS) {
-      test(`passes the first output to the ${action.title} template contract`, async ({
-        comfyPage,
-        firstRunNudge,
-        page,
-        postFirstRun
-      }) => {
-        await postFirstRun.completeTourWithImage()
+    test('passes the first output to the continuation it loads', async ({
+      comfyPage,
+      firstRunNudge,
+      page,
+      postFirstRun
+    }) => {
+      await postFirstRun.completeTourWithImage()
 
-        await expect(
-          firstRunNudge.root,
-          'every tour ending has to leave the user somewhere to go next'
-        ).toBeVisible({ timeout: 10_000 })
-        await expect(
-          firstRunNudge.actions,
-          'the served catalog carries every continuation, so none are filtered out'
-        ).toHaveCount(FIRST_RUN_NUDGE_ACTIONS.length)
-        await expect(firstRunNudge.action(action.id)).toContainText(
-          action.title
-        )
+      await expect(
+        firstRunNudge.root,
+        'every tour ending has to leave the user somewhere to go next'
+      ).toBeVisible({ timeout: 10_000 })
+      await expect(
+        firstRunNudge.actions,
+        'the served catalog carries every continuation, so none are filtered out'
+      ).toHaveCount(FIRST_RUN_SUGGESTIONS.length)
 
-        const requestedTemplate = page.waitForRequest(
-          `**/templates/${action.templateId}.json`
-        )
-        await firstRunNudge.action(action.id).click()
-        await requestedTemplate
+      const requestedTemplate = page.waitForRequest(
+        `**/templates/${CONTINUATION.templateId}.json`
+      )
+      await firstRunNudge.action(CONTINUATION.id).click()
+      await requestedTemplate
 
-        await expect(
-          firstRunNudge.root,
-          'the card only closes once the continuation actually loaded'
-        ).toBeHidden()
-        await expect
-          .poll(() => comfyPage.nodeOps.getNodeCount(), {
-            message: 'the continuation never replaced the tour workflow'
-          })
-          .toBe(1)
-        await expect
-          .poll(() => postFirstRun.loadedContinuationInput(), {
-            message:
-              'the first output never reached the metadata-declared image input'
-          })
-          .toBe(FIRST_RUN_OUTPUT_WIDGET_VALUE)
-        await expect(
-          comfyPage.vueNodes
-            .getNodeLocator(String(CONTINUATION_INPUT.nodeId))
-            .locator('img'),
-          'the seeded value has to resolve to an image the node can show'
-        ).toBeVisible()
-      })
-    }
+      await expect(
+        firstRunNudge.root,
+        'the card only closes once the continuation actually loaded'
+      ).toBeHidden()
+      await expect
+        .poll(() => comfyPage.nodeOps.getNodeCount(), {
+          message: 'the continuation never replaced the tour workflow'
+        })
+        .toBe(1)
+      await expect
+        .poll(() => postFirstRun.loadedContinuationInput(), {
+          message:
+            'the first output never reached the metadata-declared image input'
+        })
+        .toBe(FIRST_RUN_OUTPUT_WIDGET_VALUE)
+      await expect(
+        comfyPage.vueNodes
+          .getNodeLocator(String(CONTINUATION_INPUT.nodeId))
+          .locator('img'),
+        'the seeded value has to resolve to an image the node can show'
+      ).toBeVisible()
+    })
   }
 )
