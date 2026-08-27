@@ -31,6 +31,7 @@ const baseRoutes = {
   seedance: '/seedance-2.5',
   fdct: '/forward-deployed-creatives',
   ltx: '/ltx-2.5',
+  geminiOmni: '/gemini-omni',
   wanAnimate2: '/wan-animate-2',
   wan3: '/wan-3.0',
   brand: '/brand'
