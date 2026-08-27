@@ -13,11 +13,7 @@ const KNOWN_PROMPT_ERROR_TYPES = new Set([
   'no_prompt',
   'server_error',
   'missing_node_type',
-  'prompt_outputs_failed_validation',
-  'op_rejected',
-  'prefix_abort',
-  'guard_trip',
-  'apply_failed'
+  'prompt_outputs_failed_validation'
 ])
 
 function getPromptExceptionMessage(
