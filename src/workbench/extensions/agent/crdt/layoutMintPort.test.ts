@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { WorkflowNode } from '@comfyorg/comfy-multi-player'
 
@@ -123,11 +123,16 @@ describe('attachLayoutMintPort', () => {
     expect(minted).toHaveLength(1)
   })
 
-  it('never mints a node whose snapshot is unavailable', () => {
+  it('drops a snapshot-less mint observably, never silently', () => {
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined)
     graphNodes.clear()
     deliver(createNodeChange('1'))
 
     expect(minted).toEqual([])
+    expect(consoleError).toHaveBeenCalledOnce()
+    consoleError.mockRestore()
   })
 
   it('treats a bare clearGraph as teardown (a tab switch mints no clear storm)', () => {
