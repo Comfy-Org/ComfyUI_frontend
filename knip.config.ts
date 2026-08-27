@@ -6,12 +6,6 @@ const config: KnipConfig = {
   workspaces: {
     '.': {
       entry: [
-        // TRANSITIONAL (agent-v1 chain): the CRDT foundation lands ahead of
-        // its consumers; slices 07+ import this tree and this entry then
-        // becomes removable. See docs/adr/0024.
-        'src/workbench/extensions/agent/crdt/useAgentCrdtFollower.ts',
-        'src/workbench/extensions/agent/crdt/CrdtDevPanel.vue',
-        'src/workbench/extensions/agent/crdt/opSender.ts',
         '{build,scripts}/**/*.{js,ts}',
         'vitest.matrix.config.mts',
         'src/assets/css/style.css',
@@ -65,6 +59,9 @@ const config: KnipConfig = {
     '@iconify/json'
   ],
   ignore: [
+    // TRANSITIONAL (agent-v1 chain): dev-only debug panel with no mount site
+    // until slices 07+ import the crdt tree; removable then. See docs/adr/0024.
+    'src/workbench/extensions/agent/crdt/CrdtDevPanel.vue',
     // Auto generated API types
     'src/workbench/extensions/manager/types/generatedManagerTypes.ts',
     'packages/ingest-types/src/zod.gen.ts',
