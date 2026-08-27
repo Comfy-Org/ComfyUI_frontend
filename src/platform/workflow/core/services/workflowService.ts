@@ -427,7 +427,6 @@ export const useWorkflowService = () => {
       (closingWorkflowCounts.get(closing) ?? 0) + 1
     )
     try {
-      workflowDraftStore.removeDraft(closingPath)
       const wasActive = workflowStore.isActive(workflow)
       const pendingWorkflowLoad = pendingWorkflowLoadsByPath.get(closingPath)
       if (!wasActive && pendingWorkflowLoad) await pendingWorkflowLoad
@@ -481,6 +480,9 @@ export const useWorkflowService = () => {
       }
 
       await workflowStore.closeWorkflow(workflow)
+      // Only after the close is real: a failed replacement load above
+      // rethrows with the tab still open, and its draft must survive with it.
+      workflowDraftStore.removeDraft(closingPath)
       useNodeOutputStore().discardPreviewsForWorkflow(closingPath)
       return true
     } finally {

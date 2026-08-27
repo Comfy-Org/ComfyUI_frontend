@@ -526,6 +526,40 @@ describe('useWorkflowService', () => {
       expect(vi.mocked(app.loadGraphData).mock.calls[0][3]).toBeUndefined()
     })
 
+    it('keeps the tab open and its draft intact when the replacement load fails', async () => {
+      const workflowStore = useWorkflowStore()
+      const closing = createWorkflow(null, {
+        loadable: true,
+        path: 'workflows/closing.json'
+      })
+      const replacement = createWorkflow(null, {
+        loadable: true,
+        path: 'workflows/replacement.json'
+      })
+      workflowStore.attachWorkflow(closing, 0)
+      workflowStore.attachWorkflow(replacement, 1)
+      workflowStore.activeWorkflow = closing as LoadedComfyWorkflow
+      vi.spyOn(workflowStore, 'getMostRecentWorkflow').mockReturnValue(
+        replacement as LoadedComfyWorkflow
+      )
+      const storeClose = vi.spyOn(workflowStore, 'closeWorkflow')
+      const error = new Error('replacement load failed')
+      vi.mocked(app.loadGraphData).mockRejectedValueOnce(error)
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => undefined)
+
+      await expect(
+        useWorkflowService().closeWorkflow(closing, { warnIfUnsaved: false })
+      ).rejects.toBe(error)
+
+      // The Aug-12 review's baked-in gap, un-baked: a tab that failed to
+      // close must keep its draft.
+      expect(storeClose).not.toHaveBeenCalled()
+      expect(draftStoreMocks.removeDraft).not.toHaveBeenCalled()
+      consoleError.mockRestore()
+    })
+
     it('serializes rapid workflow opens so the final selection stays active', async () => {
       const workflowStore = useWorkflowStore()
       const first = createWorkflow(null, {
