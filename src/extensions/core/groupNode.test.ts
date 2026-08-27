@@ -185,8 +185,6 @@ describe('GroupNodeHandler.getGroupData', () => {
   it('returns the registered GroupNodeConfig for legacy custom-node callers (#12931)', async () => {
     const ext = extensionState.ext
     if (!ext) throw new Error('Comfy.GroupNode extension was not registered')
-    const previousPinia = getActivePinia()
-    setActivePinia(createTestingPinia({ stubActions: false }))
 
     try {
       ext.addCustomNodeDefs?.({ KSampler: ksamplerDef }, fromPartial({}))
@@ -205,16 +203,11 @@ describe('GroupNodeHandler.getGroupData', () => {
       const ctor = LiteGraph.registered_node_types['workflow>MyGroup']
       const node = { constructor: ctor } as unknown as LGraphNode
 
-      const { getGroupData } = GroupNodeHandler as unknown as {
-        getGroupData: (
-          node: LGraphNode | LGraphNodeConstructor
-        ) => GroupNodeConfig | undefined
-      }
-
-      expect(getGroupData(node)).toBe(config)
-      expect(getGroupData(ctor as LGraphNodeConstructor)).toBe(config)
+      expect(GroupNodeHandler.getGroupData(node)).toBe(config)
+      expect(GroupNodeHandler.getGroupData(ctor as LGraphNodeConstructor)).toBe(
+        config
+      )
     } finally {
-      setActivePinia(previousPinia)
       delete LiteGraph.registered_node_types['workflow>MyGroup']
     }
   })
@@ -222,8 +215,6 @@ describe('GroupNodeHandler.getGroupData', () => {
   it('checks the instance before falling back to the constructor', async () => {
     const ext = extensionState.ext
     if (!ext) throw new Error('Comfy.GroupNode extension was not registered')
-    const previousPinia = getActivePinia()
-    setActivePinia(createTestingPinia({ stubActions: false }))
 
     try {
       ext.addCustomNodeDefs?.({ KSampler: ksamplerDef }, fromPartial({}))
@@ -249,15 +240,8 @@ describe('GroupNodeHandler.getGroupData', () => {
         nodeData: MarkedGroupCtor.nodeData
       } as unknown as LGraphNode
 
-      const { getGroupData } = GroupNodeHandler as unknown as {
-        getGroupData: (
-          node: LGraphNode | LGraphNodeConstructor
-        ) => GroupNodeConfig | undefined
-      }
-
-      expect(getGroupData(node)).toBe(config)
+      expect(GroupNodeHandler.getGroupData(node)).toBe(config)
     } finally {
-      setActivePinia(previousPinia)
       delete LiteGraph.registered_node_types['workflow>MyInstanceOwnedGroup']
     }
   })

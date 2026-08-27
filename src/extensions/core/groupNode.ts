@@ -1024,10 +1024,8 @@ export class GroupNodeHandler {
     // Check the instance before falling back to the constructor: some legacy
     // callers stamp the marker directly on the node instance rather than on
     // its constructor's `nodeData`.
-    const instanceData = (
-      node as LGraphNode & { nodeData?: LGraphNodeConstructor['nodeData'] }
-    ).nodeData
-    if (instanceData?.[GROUP]) return instanceData[GROUP] as GroupNodeConfig
+    const instanceMarker = node.nodeData?.[GROUP]
+    if (instanceMarker) return instanceMarker as GroupNodeConfig
     return node.constructor?.nodeData?.[GROUP] as GroupNodeConfig | undefined
   }
 
