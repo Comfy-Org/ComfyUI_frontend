@@ -148,6 +148,16 @@ const conversionCards = [
   <ModelCatalogExplorer
     client:load
     resultLimit={4}
+    defaultModels={trendingModelFixtures}
+    collectionHeadingId="trending-models-heading"
+    collectionLabel={t('models.explore.trending.label', locale)}
+    collectionDescription={t('models.explore.trending.description', locale)}
+    collectionActionLabel={t(
+      'models.explore.collections.viewAllModels',
+      locale,
+    )}
+    collectionActionHref={routes.modelsAll}
+    openWeightsBadgeLabel={t('models.explore.openWeightsBadge', locale)}
     {catalog}
     {categoryOptions}
     categoryLabel={t('models.explore.categories.label', locale)}
@@ -158,15 +168,6 @@ const conversionCards = [
     partnerLabel={t('models.explore.catalog.partner', locale)}
     resultCountLabel={t('models.explore.catalog.resultCount', locale)}
     emptyLabel={t('models.explore.catalog.empty', locale)}
-  />
-  <ModelCollectionSection
-    headingId="trending-models-heading"
-    label={t('models.explore.trending.label', locale)}
-    description={t('models.explore.trending.description', locale)}
-    models={trendingModelFixtures}
-    openWeightsBadgeLabel={t('models.explore.openWeightsBadge', locale)}
-    actionLabel={t('models.explore.collections.viewAllModels', locale)}
-    actionHref={routes.modelsAll}
   />
   <ModelCollectionSection
     headingId="day-zero-models-heading"

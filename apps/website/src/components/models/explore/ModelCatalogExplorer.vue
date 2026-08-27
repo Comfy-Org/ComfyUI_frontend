@@ -3,6 +3,8 @@ import { computed, onMounted, ref, watch } from 'vue'
 
 import CardWorkflow01 from '../../blocks/CardWorkflow01.vue'
 import type { CardWorkflowItem } from '../../blocks/CardWorkflow01.vue'
+import BrandButton from '../../common/BrandButton.vue'
+import SectionLabel from '../../common/SectionLabel.vue'
 import SearchField from '../../ui/search-field/SearchField.vue'
 import HubFilterTabs from '../../ui/hub-filter-tabs/HubFilterTabs.vue'
 import type { ModelCategory } from '../../../config/modelCategories'
@@ -13,6 +15,10 @@ import type {
   ModelCategoryOption
 } from './ModelCategoryFilter.vue'
 import ModelMediaPlaceholder from './ModelMediaPlaceholder.vue'
+import type {
+  ExploreModelCardFixture,
+  ExploreModelStatus
+} from './modelExploreFixtures'
 import { filterModelExploreCatalog } from './modelExploreCatalog'
 import type {
   ModelAccessFilter,
@@ -38,7 +44,14 @@ const {
   resultCountLabel,
   emptyLabel,
   showCatalogByDefault = false,
-  resultLimit
+  resultLimit,
+  defaultModels,
+  collectionHeadingId,
+  collectionLabel,
+  collectionDescription,
+  collectionActionLabel,
+  collectionActionHref,
+  openWeightsBadgeLabel
 } = defineProps<{
   catalog: ModelExploreCatalogItem[]
   releaseCatalog?: ModelExploreCatalogItem[]
@@ -59,6 +72,13 @@ const {
   emptyLabel: string
   showCatalogByDefault?: boolean
   resultLimit?: number
+  defaultModels?: ExploreModelCardFixture[]
+  collectionHeadingId?: string
+  collectionLabel?: string
+  collectionDescription?: string
+  collectionActionLabel?: string
+  collectionActionHref?: string
+  openWeightsBadgeLabel?: string
 }>()
 
 const query = ref('')
@@ -180,6 +200,34 @@ function toWorkflowItem(model: ModelExploreCatalogItem): CardWorkflowItem {
       : { type: 'placeholder', alt: '' }
   }
 }
+
+const statusLabels = computed<Partial<Record<ExploreModelStatus, string>>>(
+  () => (openWeightsBadgeLabel ? { 'open-weights': openWeightsBadgeLabel } : {})
+)
+
+function toDefaultWorkflowItem(
+  model: ExploreModelCardFixture
+): CardWorkflowItem {
+  return {
+    id: model.name,
+    title: model.name,
+    href: model.href,
+    target: model.target,
+    description: model.description,
+    statusBadges: model.statuses?.flatMap((type) => {
+      const label = statusLabels.value[type]
+      return label ? [{ type, label }] : []
+    }),
+    tags: [
+      model.modality,
+      ...(model.statuses?.includes('open-weights') ? [] : [model.tag])
+    ],
+    media:
+      model.media.type === 'image'
+        ? { type: 'image', src: model.media.src, alt: '' }
+        : { type: 'placeholder', alt: '' }
+  }
+}
 </script>
 
 <template>
@@ -212,7 +260,66 @@ function toWorkflowItem(model: ModelExploreCatalogItem): CardWorkflowItem {
     />
   </div>
   <section
-    v-if="isActive"
+    v-if="defaultModels"
+    id="model-catalog-results"
+    :aria-labelledby="collectionHeadingId"
+    class="max-w-10xl mx-auto px-6 pt-14 pb-8 md:px-10 xl:px-30"
+  >
+    <div
+      class="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between"
+    >
+      <div class="flex flex-col gap-2">
+        <h2 :id="collectionHeadingId">
+          <SectionLabel>{{ collectionLabel }}</SectionLabel>
+        </h2>
+        <p class="text-base font-light text-primary-warm-gray">
+          {{ collectionDescription }}
+        </p>
+      </div>
+      <div
+        v-if="collectionActionHref && collectionActionLabel"
+        class="shrink-0"
+      >
+        <BrandButton :href="collectionActionHref" variant="outline" size="xs">
+          {{ collectionActionLabel }}
+        </BrandButton>
+      </div>
+    </div>
+    <p
+      v-if="isActive && filteredCatalog.length === 0"
+      class="text-content-secondary py-10 text-center text-base font-light"
+    >
+      {{ emptyLabel }}
+    </p>
+    <div v-else class="mt-7 grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
+      <template v-if="isActive">
+        <CardWorkflow01
+          v-for="model in displayedCatalog"
+          :key="model.slug"
+          :item="toWorkflowItem(model)"
+          variant="compact"
+        >
+          <template v-if="!model.thumbnailUrl" #media>
+            <ModelMediaPlaceholder :tone="model.mediaTone" />
+          </template>
+        </CardWorkflow01>
+      </template>
+      <template v-else>
+        <CardWorkflow01
+          v-for="model in defaultModels"
+          :key="model.name"
+          :item="toDefaultWorkflowItem(model)"
+          variant="compact"
+        >
+          <template v-if="model.media.type === 'placeholder'" #media>
+            <ModelMediaPlaceholder :tone="model.media.tone" />
+          </template>
+        </CardWorkflow01>
+      </template>
+    </div>
+  </section>
+  <section
+    v-else-if="isActive"
     id="model-catalog-results"
     class="max-w-10xl mx-auto px-6 pt-8 pb-4 md:px-10 xl:px-30"
   >

@@ -170,6 +170,39 @@ describe('ModelCatalogExplorer', () => {
     expect(screen.queryByRole('link', { name: 'Model 4' })).toBeNull()
   })
 
+  it('keeps the collection heading in place while filters replace its cards', async () => {
+    render(ModelCatalogExplorer, {
+      props: {
+        ...props,
+        defaultModels: [
+          {
+            name: 'Trending Model',
+            description: 'Trending description',
+            href: '/trending-model',
+            target: '_self',
+            modality: 'Video',
+            tag: 'Featured',
+            media: { type: 'placeholder', tone: 'plum' }
+          }
+        ],
+        collectionHeadingId: 'trending-models-heading',
+        collectionLabel: 'TRENDING',
+        collectionDescription: 'What the graph is running this week.',
+        collectionActionLabel: 'VIEW ALL MODELS',
+        collectionActionHref: '/p/supported-models/all'
+      }
+    })
+
+    expect(screen.getByRole('heading', { name: 'TRENDING' })).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Trending Model' })).toBeTruthy()
+
+    await userEvent.click(screen.getByRole('radio', { name: 'Image' }))
+
+    expect(screen.getByRole('heading', { name: 'TRENDING' })).toBeTruthy()
+    expect(screen.queryByRole('link', { name: 'Trending Model' })).toBeNull()
+    expect(screen.getByRole('link', { name: 'Partner Image' })).toBeTruthy()
+  })
+
   it('defaults to releases and allows switching to technical components', async () => {
     render(ModelCatalogExplorer, {
       props: {
