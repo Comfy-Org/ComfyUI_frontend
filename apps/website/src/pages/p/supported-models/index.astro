@@ -1,6 +1,28 @@
 ---
 import BaseLayout from '../../../layouts/BaseLayout.astro'
+import FAQSection from '../../../components/common/FAQSection.vue'
+import ModelAccessSection from '../../../components/models/explore/ModelAccessSection.astro'
+import ModelCatalogExplorer from '../../../components/models/explore/ModelCatalogExplorer.vue'
+import ModelCollectionSection from '../../../components/models/explore/ModelCollectionSection.astro'
+import ModelConversionSection from '../../../components/models/explore/ModelConversionSection.astro'
+import ModelFamilySection from '../../../components/models/explore/ModelFamilySection.astro'
+import ModelTaskSection from '../../../components/models/explore/ModelTaskSection.astro'
+import ModelsExploreHero from '../../../components/models/explore/ModelsExploreHero.astro'
+import type { ModelCategoryOption } from '../../../components/models/explore/ModelCategoryFilter.vue'
+import {
+  dayZeroModelFixtures,
+  latestModelReleaseFixture,
+  modelFamilyFixtures,
+  taskFixtures,
+  trendingModelFixtures,
+} from '../../../components/models/explore/modelExploreFixtures'
+import {
+  createModelExploreCatalog,
+  summarizeModelExploreCatalog,
+} from '../../../components/models/explore/modelExploreCatalog'
 import { models } from '../../../config/models'
+import { MODEL_FILTER_CATEGORIES } from '../../../config/modelCategories'
+import { externalLinks, getRoutes } from '../../../config/routes'
 import { t } from '../../../i18n/translations'
 import {
   absoluteUrl,
@@ -17,29 +39,87 @@ const { url, locale } = pageContext(
   Astro.url.pathname,
   Astro.currentLocale,
 )
+const catalogSummary = summarizeModelExploreCatalog(models)
+const description = t('models.explore.description', locale).replace(
+  '{count}',
+  String(catalogSummary.catalogCount),
+)
+const stats = t('models.explore.stats', locale)
+  .replace('{count}', String(catalogSummary.catalogCount))
+  .replace('{localCount}', String(catalogSummary.localComponentCount))
+  .replace('{partnerCount}', String(catalogSummary.partnerIntegrationCount))
 const modelList = itemListNode(
   url,
   title,
   models.map((model) => ({
+    name: model.displayName,
     url: absoluteUrl(Astro.site, `/p/supported-models/${model.slug}`),
   })),
 )
-
-const dirLabel: Record<string, string> = {
-  diffusion_models: 'Diffusion',
-  checkpoints: 'Checkpoint',
-  loras: 'LoRA',
-  controlnet: 'ControlNet',
-  clip_vision: 'CLIP Vision',
-  model_patches: 'Patch',
-  vae: 'VAE',
-  text_encoders: 'Text Encoder',
-  audio_encoders: 'Audio Encoder',
-  latent_upscale_models: 'Latent Upscale',
-  upscale_models: 'Upscale',
-  style_models: 'Style',
-  partner_nodes: 'Partner Node'
-}
+const categories = t('models.explore.categories', locale).split('|')
+const categoryOptions: ModelCategoryOption[] = [
+  { value: 'all', label: categories[0] ?? 'ALL' },
+  ...MODEL_FILTER_CATEGORIES.map((value, index) => ({
+    value,
+    label: categories[index + 1] ?? value,
+  })),
+  {
+    value: 'open',
+    label: t('models.explore.filters.openSource', locale),
+  },
+  {
+    value: 'partner',
+    label: t('models.explore.filters.partnerNodes', locale),
+  },
+]
+const catalog = createModelExploreCatalog(models)
+const routes = getRoutes(locale)
+const accessCards = [
+  {
+    title: t('models.explore.access.open.title', locale),
+    description: t('models.explore.access.open.description', locale),
+    cta: t('models.explore.access.open.cta', locale),
+    href: `${routes.modelsAll}?access=open`,
+    bg: 'bg-secondary-deep-plum',
+  },
+  {
+    title: t('models.explore.access.partner.title', locale),
+    description: t('models.explore.access.partner.description', locale),
+    cta: t('models.explore.access.partner.cta', locale),
+    href: `${routes.modelsAll}?access=partner`,
+    bg: 'bg-secondary-cool-gray',
+  },
+]
+const conversionCards = [
+  {
+    title: t('products.local.title', locale),
+    description: t('products.local.description', locale),
+    cta: t('products.local.cta', locale),
+    href: routes.download,
+    bg: 'bg-primary-warm-gray',
+  },
+  {
+    title: t('products.cloud.title', locale),
+    description: t('products.cloud.description', locale),
+    cta: t('products.cloud.cta', locale),
+    href: routes.cloud,
+    bg: 'bg-secondary-mauve',
+  },
+  {
+    title: t('products.api.title', locale),
+    description: t('products.api.description', locale),
+    cta: t('products.api.cta', locale),
+    href: routes.api,
+    bg: 'bg-primary-comfy-plum',
+  },
+  {
+    title: t('products.enterprise.title', locale),
+    description: t('products.enterprise.description', locale),
+    cta: t('products.enterprise.cta', locale),
+    href: routes.cloudEnterprise,
+    bg: 'bg-secondary-cool-gray',
+  },
+]
 ---
 
 <BaseLayout
@@ -53,42 +133,82 @@ const dirLabel: Record<string, string> = {
   ]}
   extraJsonLd={[modelList]}
 >
-  <div class="mx-auto max-w-7xl px-6 py-16 lg:px-8 lg:py-24">
-    <header class="mb-12">
-      <p
-        class="mb-2 text-sm font-medium uppercase tracking-widest text-primary-comfy-yellow"
-      >
-        {t('models.hero.eyebrow')}
-      </p>
-      <h1 class="text-4xl font-bold text-primary-comfy-canvas lg:text-6xl">
-        {title}
-      </h1>
-      <p class="mt-4 max-w-2xl text-lg text-primary-comfy-canvas/70">
-        {subtitle}
-      </p>
-    </header>
-
-    <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {models.map((model) => (
-        <li>
-          <a
-            href={`/p/supported-models/${model.slug}/`}
-            class="flex h-full flex-col gap-3 rounded-xl border border-white/10 p-5 transition-colors hover:border-white/25 hover:bg-white/5"
-          >
-            <div class="flex items-start justify-between gap-2">
-              <span class="text-base font-semibold leading-tight text-primary-comfy-canvas">
-                {model.displayName}
-              </span>
-              <span class="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-xs font-medium text-primary-comfy-canvas/70">
-                {dirLabel[model.directory] ?? model.directory}
-              </span>
-            </div>
-            <p class="mt-auto text-xs text-primary-comfy-canvas/50">
-              {model.workflowCount} workflows
-            </p>
-          </a>
-        </li>
-      ))}
-    </ul>
-  </div>
+  <ModelsExploreHero
+    eyebrow={t('models.explore.eyebrow', locale)}
+    titleFirstLine={t('models.explore.title.first', locale)}
+    titleSecondLine={t('models.explore.title.second', locale)}
+    {description}
+    primaryCta={t('models.explore.primaryCta', locale)}
+    secondaryCta={t('models.explore.secondaryCta', locale)}
+    {stats}
+    featured={latestModelReleaseFixture}
+    primaryHref={externalLinks.cloud}
+    secondaryHref={externalLinks.workflows}
+  />
+  <ModelCatalogExplorer
+    client:load
+    resultLimit={4}
+    defaultModels={trendingModelFixtures}
+    collectionHeadingId="trending-models-heading"
+    collectionLabel={t('models.explore.trending.label', locale)}
+    collectionDescription={t('models.explore.trending.description', locale)}
+    collectionActionLabel={t(
+      'models.explore.collections.viewAllModels',
+      locale,
+    )}
+    collectionActionHref={routes.modelsAll}
+    openWeightsBadgeLabel={t('models.explore.openWeightsBadge', locale)}
+    {catalog}
+    {categoryOptions}
+    categoryLabel={t('models.explore.categories.label', locale)}
+    searchLabel={t('models.explore.search.label', locale)}
+    searchPlaceholder={t('models.explore.search.placeholder', locale)}
+    workflowCountOne={t('models.explore.catalog.workflowCountOne', locale)}
+    workflowCountMany={t('models.explore.catalog.workflowCountMany', locale)}
+    partnerLabel={t('models.explore.catalog.partner', locale)}
+    resultCountLabel={t('models.explore.catalog.resultCount', locale)}
+    emptyLabel={t('models.explore.catalog.empty', locale)}
+  />
+  <ModelCollectionSection
+    headingId="day-zero-models-heading"
+    label={t('models.explore.dayZero.label', locale)}
+    description={t('models.explore.dayZero.description', locale)}
+    models={dayZeroModelFixtures}
+    openWeightsBadgeLabel={t('models.explore.openWeightsBadge', locale)}
+    actionLabel={t('models.explore.collections.viewAllModels', locale)}
+    actionHref={routes.modelsAll}
+  />
+  <ModelTaskSection
+    label={t('models.explore.tasks.label', locale)}
+    description={t('models.explore.tasks.description', locale)}
+    tasks={taskFixtures}
+    actionLabel={t('models.explore.tasks.viewAll', locale)}
+    actionHref="https://comfy.org/workflows/use-cases/"
+  />
+  <ModelAccessSection
+    heading={t('models.explore.access.heading', locale)}
+    cards={accessCards}
+  />
+  <ModelFamilySection
+    eyebrow={t('models.explore.family.eyebrow', locale)}
+    title={t('models.explore.family.title', locale)}
+    description={t('models.explore.family.description', locale)}
+    families={modelFamilyFixtures}
+    exploreFamilyLabel={t('models.explore.family.explore', locale)}
+    {locale}
+  />
+  <ModelConversionSection
+    heading={t('pricing.banner.title', locale)}
+    {locale}
+    bannerHref={externalLinks.cloud}
+    cards={conversionCards}
+  />
+  <FAQSection
+    client:visible
+    {locale}
+    labelKey="models.explore.faq.label"
+    headingKey="models.explore.faq.heading"
+    faqPrefix="models.explore.faq"
+    faqCount={6}
+  />
 </BaseLayout>

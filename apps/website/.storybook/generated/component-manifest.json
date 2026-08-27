@@ -1,0 +1,2684 @@
+{
+  "schemaVersion": 2,
+  "generatedFrom": "apps/website/src/**/*.stories.ts",
+  "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+  "usagePolicy": {
+    "evidenceOrder": [
+      "shipped website implementation",
+      "component story and interaction contract",
+      "Figma provenance",
+      "page recipe"
+    ],
+    "unknownPattern": "Treat as a gap; do not invent a local substitute."
+  },
+  "componentCount": 63,
+  "storyCount": 208,
+  "components": [
+    {
+      "component": "AddToCalendarButton",
+      "source": "src/components/blocks/AddToCalendarButton.vue",
+      "storyFile": "src/components/blocks/AddToCalendarButton.stories.ts",
+      "title": "Website/Blocks/AddToCalendarButton",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": ["activation", "keyboard-focus"],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/blocks/AddToCalendarButton.vue"
+      },
+      "agent": {
+        "importPath": "@/components/blocks/AddToCalendarButton",
+        "storybookPath": "/?path=/story/website-blocks-addtocalendarbutton--default",
+        "docsPath": "/?path=/docs/website-blocks-addtocalendarbutton--docs",
+        "states": ["Default"],
+        "hasInteractionTest": true,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-addtocalendarbutton--default"
+        }
+      ]
+    },
+    {
+      "component": "BenefitsGrid01",
+      "source": "src/components/blocks/BenefitsGrid01.vue",
+      "storyFile": "src/components/blocks/BenefitsGrid01.stories.ts",
+      "title": "Website/Blocks/BenefitsGrid01",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": ["responsive-layout"],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/blocks/BenefitsGrid01.vue"
+      },
+      "agent": {
+        "importPath": "@/components/blocks/BenefitsGrid01",
+        "storybookPath": "/?path=/story/website-blocks-benefitsgrid01--default",
+        "docsPath": "/?path=/docs/website-blocks-benefitsgrid01--docs",
+        "states": ["Default", "WithTitlesAndFootnote", "Mobile"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": true,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-benefitsgrid01--default"
+        },
+        {
+          "exportName": "WithTitlesAndFootnote",
+          "storyId": "website-blocks-benefitsgrid01--with-titles-and-footnote"
+        },
+        {
+          "exportName": "Mobile",
+          "storyId": "website-blocks-benefitsgrid01--mobile"
+        }
+      ]
+    },
+    {
+      "component": "BrandAssetsGrid01",
+      "source": "src/components/blocks/BrandAssetsGrid01.vue",
+      "storyFile": "src/components/blocks/BrandAssetsGrid01.stories.ts",
+      "title": "Website/Blocks/BrandAssetsGrid01",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": ["responsive-layout"],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/blocks/BrandAssetsGrid01.vue"
+      },
+      "agent": {
+        "importPath": "@/components/blocks/BrandAssetsGrid01",
+        "storybookPath": "/?path=/story/website-blocks-brandassetsgrid01--default",
+        "docsPath": "/?path=/docs/website-blocks-brandassetsgrid01--docs",
+        "states": ["Default", "TwoAssets", "Mobile"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": true,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-brandassetsgrid01--default"
+        },
+        {
+          "exportName": "TwoAssets",
+          "storyId": "website-blocks-brandassetsgrid01--two-assets"
+        },
+        {
+          "exportName": "Mobile",
+          "storyId": "website-blocks-brandassetsgrid01--mobile"
+        }
+      ]
+    },
+    {
+      "component": "CardArticle01",
+      "source": "src/components/blocks/CardArticle01.vue",
+      "storyFile": "src/components/blocks/CardArticle01.stories.ts",
+      "title": "Website/Blocks/CardArticle01",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": ["linked-content"],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/blocks/CardArticle01.vue"
+      },
+      "agent": {
+        "importPath": "@/components/blocks/CardArticle01",
+        "storybookPath": "/?path=/story/website-blocks-cardarticle01--default",
+        "docsPath": "/?path=/docs/website-blocks-cardarticle01--docs",
+        "states": ["Default", "WithAuthor", "Minimal", "LongTitleClamped"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-cardarticle01--default"
+        },
+        {
+          "exportName": "WithAuthor",
+          "storyId": "website-blocks-cardarticle01--with-author"
+        },
+        {
+          "exportName": "Minimal",
+          "storyId": "website-blocks-cardarticle01--minimal"
+        },
+        {
+          "exportName": "LongTitleClamped",
+          "storyId": "website-blocks-cardarticle01--long-title-clamped"
+        }
+      ]
+    },
+    {
+      "component": "CardArticleGallery01",
+      "source": "src/components/blocks/CardArticleGallery01.vue",
+      "storyFile": "src/components/blocks/CardArticleGallery01.stories.ts",
+      "title": "Website/Blocks/CardArticleGallery01",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": [
+        "collection-layout",
+        "filtering",
+        "linked-content",
+        "pagination",
+        "responsive-layout"
+      ],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/blocks/CardArticleGallery01.vue"
+      },
+      "agent": {
+        "importPath": "@/components/blocks/CardArticleGallery01",
+        "storybookPath": "/?path=/story/website-blocks-cardarticlegallery01--default",
+        "docsPath": "/?path=/docs/website-blocks-cardarticlegallery01--docs",
+        "states": [
+          "Default",
+          "WithTabsAndLoadMore",
+          "ThreeColumnWithAuthors",
+          "MixedLayout",
+          "Mobile"
+        ],
+        "hasInteractionTest": true,
+        "hasResponsiveStories": true,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-cardarticlegallery01--default"
+        },
+        {
+          "exportName": "WithTabsAndLoadMore",
+          "storyId": "website-blocks-cardarticlegallery01--with-tabs-and-load-more"
+        },
+        {
+          "exportName": "ThreeColumnWithAuthors",
+          "storyId": "website-blocks-cardarticlegallery01--three-column-with-authors"
+        },
+        {
+          "exportName": "MixedLayout",
+          "storyId": "website-blocks-cardarticlegallery01--mixed-layout"
+        },
+        {
+          "exportName": "Mobile",
+          "storyId": "website-blocks-cardarticlegallery01--mobile"
+        }
+      ]
+    },
+    {
+      "component": "CardSplitContent01",
+      "source": "src/components/blocks/CardSplitContent01.vue",
+      "storyFile": "src/components/blocks/CardSplitContent01.stories.ts",
+      "title": "Website/Blocks/CardSplitContent01",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": ["linked-content", "responsive-layout"],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/blocks/CardSplitContent01.vue"
+      },
+      "agent": {
+        "importPath": "@/components/blocks/CardSplitContent01",
+        "storybookPath": "/?path=/story/website-blocks-cardsplitcontent01--default",
+        "docsPath": "/?path=/docs/website-blocks-cardsplitcontent01--docs",
+        "states": ["Default", "WithoutTags", "SingleCta", "Mobile"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": true,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-cardsplitcontent01--default"
+        },
+        {
+          "exportName": "WithoutTags",
+          "storyId": "website-blocks-cardsplitcontent01--without-tags"
+        },
+        {
+          "exportName": "SingleCta",
+          "storyId": "website-blocks-cardsplitcontent01--single-cta"
+        },
+        {
+          "exportName": "Mobile",
+          "storyId": "website-blocks-cardsplitcontent01--mobile"
+        }
+      ]
+    },
+    {
+      "component": "CardWorkflow01",
+      "source": "src/components/blocks/CardWorkflow01.vue",
+      "storyFile": "src/components/blocks/CardWorkflow01.stories.ts",
+      "title": "Website/Blocks/CardWorkflow01",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": ["linked-content"],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/blocks/CardWorkflow01.vue"
+      },
+      "agent": {
+        "importPath": "@/components/blocks/CardWorkflow01",
+        "storybookPath": "/?path=/story/website-blocks-cardworkflow01--default",
+        "docsPath": "/?path=/docs/website-blocks-cardworkflow01--docs",
+        "states": ["Default", "ImageMedia", "Compact", "Showcase", "TitleOnly"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-cardworkflow01--default"
+        },
+        {
+          "exportName": "ImageMedia",
+          "storyId": "website-blocks-cardworkflow01--image-media"
+        },
+        {
+          "exportName": "Compact",
+          "storyId": "website-blocks-cardworkflow01--compact"
+        },
+        {
+          "exportName": "Showcase",
+          "storyId": "website-blocks-cardworkflow01--showcase"
+        },
+        {
+          "exportName": "TitleOnly",
+          "storyId": "website-blocks-cardworkflow01--title-only"
+        }
+      ]
+    },
+    {
+      "component": "CardWorkflowGallery01",
+      "source": "src/components/blocks/CardWorkflowGallery01.vue",
+      "storyFile": "src/components/blocks/CardWorkflowGallery01.stories.ts",
+      "title": "Website/Blocks/CardWorkflowGallery01",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": [
+        "collection-layout",
+        "linked-content",
+        "responsive-layout"
+      ],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/blocks/CardWorkflowGallery01.vue"
+      },
+      "agent": {
+        "importPath": "@/components/blocks/CardWorkflowGallery01",
+        "storybookPath": "/?path=/story/website-blocks-cardworkflowgallery01--default",
+        "docsPath": "/?path=/docs/website-blocks-cardworkflowgallery01--docs",
+        "states": ["Default", "NoTitle", "LinkedCards"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-cardworkflowgallery01--default"
+        },
+        {
+          "exportName": "NoTitle",
+          "storyId": "website-blocks-cardworkflowgallery01--no-title"
+        },
+        {
+          "exportName": "LinkedCards",
+          "storyId": "website-blocks-cardworkflowgallery01--linked-cards"
+        }
+      ]
+    },
+    {
+      "component": "ChecklistSplit01",
+      "source": "src/components/blocks/ChecklistSplit01.vue",
+      "storyFile": "src/components/blocks/ChecklistSplit01.stories.ts",
+      "title": "Website/Blocks/ChecklistSplit01",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": ["responsive-layout"],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/blocks/ChecklistSplit01.vue"
+      },
+      "agent": {
+        "importPath": "@/components/blocks/ChecklistSplit01",
+        "storybookPath": "/?path=/story/website-blocks-checklistsplit01--default",
+        "docsPath": "/?path=/docs/website-blocks-checklistsplit01--docs",
+        "states": ["Default", "WithoutHeading", "Mobile"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": true,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-checklistsplit01--default"
+        },
+        {
+          "exportName": "WithoutHeading",
+          "storyId": "website-blocks-checklistsplit01--without-heading"
+        },
+        {
+          "exportName": "Mobile",
+          "storyId": "website-blocks-checklistsplit01--mobile"
+        }
+      ]
+    },
+    {
+      "component": "CtaBands01",
+      "source": "src/components/blocks/CtaBands01.vue",
+      "storyFile": "src/components/blocks/CtaBands01.stories.ts",
+      "title": "Website/Blocks/CtaBands01",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": ["responsive-layout"],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/blocks/CtaBands01.vue"
+      },
+      "agent": {
+        "importPath": "@/components/blocks/CtaBands01",
+        "storybookPath": "/?path=/story/website-blocks-ctabands01--default",
+        "docsPath": "/?path=/docs/website-blocks-ctabands01--docs",
+        "states": ["Default", "SingleBand", "ExternalCta", "Mobile"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": true,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-ctabands01--default"
+        },
+        {
+          "exportName": "SingleBand",
+          "storyId": "website-blocks-ctabands01--single-band"
+        },
+        {
+          "exportName": "ExternalCta",
+          "storyId": "website-blocks-ctabands01--external-cta"
+        },
+        {
+          "exportName": "Mobile",
+          "storyId": "website-blocks-ctabands01--mobile"
+        }
+      ]
+    },
+    {
+      "component": "CtaCenter01",
+      "source": "src/components/blocks/CtaCenter01.vue",
+      "storyFile": "src/components/blocks/CtaCenter01.stories.ts",
+      "title": "Website/Blocks/CtaCenter01",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": [],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/blocks/CtaCenter01.vue"
+      },
+      "agent": {
+        "importPath": "@/components/blocks/CtaCenter01",
+        "storybookPath": "/?path=/story/website-blocks-ctacenter01--default",
+        "docsPath": "/?path=/docs/website-blocks-ctacenter01--docs",
+        "states": ["Default", "PrimaryOnly", "HeadingAndAction", "Mobile"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": true,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-ctacenter01--default"
+        },
+        {
+          "exportName": "PrimaryOnly",
+          "storyId": "website-blocks-ctacenter01--primary-only"
+        },
+        {
+          "exportName": "HeadingAndAction",
+          "storyId": "website-blocks-ctacenter01--heading-and-action"
+        },
+        {
+          "exportName": "Mobile",
+          "storyId": "website-blocks-ctacenter01--mobile"
+        }
+      ]
+    },
+    {
+      "component": "FAQSplit01",
+      "source": "src/components/blocks/FAQSplit01.vue",
+      "storyFile": "src/components/blocks/FAQSplit01.stories.ts",
+      "title": "Website/Blocks/FAQSplit01",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": [
+        "disclosure",
+        "keyboard-activation",
+        "responsive-layout"
+      ],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/blocks/FAQSplit01.vue"
+      },
+      "agent": {
+        "importPath": "@/components/blocks/FAQSplit01",
+        "storybookPath": "/?path=/story/website-blocks-faqsplit01--default",
+        "docsPath": "/?path=/docs/website-blocks-faqsplit01--docs",
+        "states": ["Default", "Mobile"],
+        "hasInteractionTest": true,
+        "hasResponsiveStories": true,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-faqsplit01--default"
+        },
+        {
+          "exportName": "Mobile",
+          "storyId": "website-blocks-faqsplit01--mobile"
+        }
+      ]
+    },
+    {
+      "component": "FeatureGrid02",
+      "source": "src/components/blocks/FeatureGrid02.vue",
+      "storyFile": "src/components/blocks/FeatureGrid02.stories.ts",
+      "title": "Website/Blocks/FeatureGrid02",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": ["responsive-layout"],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/blocks/FeatureGrid02.vue"
+      },
+      "agent": {
+        "importPath": "@/components/blocks/FeatureGrid02",
+        "storybookPath": "/?path=/story/website-blocks-featuregrid02--default",
+        "docsPath": "/?path=/docs/website-blocks-featuregrid02--docs",
+        "states": ["Default", "WithoutActions", "TwoSteps", "Mobile"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": true,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-featuregrid02--default"
+        },
+        {
+          "exportName": "WithoutActions",
+          "storyId": "website-blocks-featuregrid02--without-actions"
+        },
+        {
+          "exportName": "TwoSteps",
+          "storyId": "website-blocks-featuregrid02--two-steps"
+        },
+        {
+          "exportName": "Mobile",
+          "storyId": "website-blocks-featuregrid02--mobile"
+        }
+      ]
+    },
+    {
+      "component": "FeatureRows01",
+      "source": "src/components/blocks/FeatureRows01.vue",
+      "storyFile": "src/components/blocks/FeatureRows01.stories.ts",
+      "title": "Website/Blocks/FeatureRows01",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": [],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/blocks/FeatureRows01.vue"
+      },
+      "agent": {
+        "importPath": "@/components/blocks/FeatureRows01",
+        "storybookPath": "/?path=/story/website-blocks-featurerows01--default",
+        "docsPath": "/?path=/docs/website-blocks-featurerows01--docs",
+        "states": ["Default", "Mobile"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": true,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-featurerows01--default"
+        },
+        {
+          "exportName": "Mobile",
+          "storyId": "website-blocks-featurerows01--mobile"
+        }
+      ]
+    },
+    {
+      "component": "FeaturedCarousel01",
+      "source": "src/components/blocks/FeaturedCarousel01.vue",
+      "storyFile": "src/components/blocks/FeaturedCarousel01.stories.ts",
+      "title": "Website/Blocks/FeaturedCarousel01",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": ["carousel-navigation", "responsive-layout"],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/blocks/FeaturedCarousel01.vue"
+      },
+      "agent": {
+        "importPath": "@/components/blocks/FeaturedCarousel01",
+        "storybookPath": "/?path=/story/website-blocks-featuredcarousel01--default",
+        "docsPath": "/?path=/docs/website-blocks-featuredcarousel01--docs",
+        "states": ["Default", "SingleSlide", "TitleHidden", "Mobile"],
+        "hasInteractionTest": true,
+        "hasResponsiveStories": true,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-featuredcarousel01--default"
+        },
+        {
+          "exportName": "SingleSlide",
+          "storyId": "website-blocks-featuredcarousel01--single-slide"
+        },
+        {
+          "exportName": "TitleHidden",
+          "storyId": "website-blocks-featuredcarousel01--title-hidden"
+        },
+        {
+          "exportName": "Mobile",
+          "storyId": "website-blocks-featuredcarousel01--mobile"
+        }
+      ]
+    },
+    {
+      "component": "FeaturedCarousel02",
+      "source": "src/components/blocks/FeaturedCarousel02.vue",
+      "storyFile": "src/components/blocks/FeaturedCarousel02.stories.ts",
+      "title": "Website/Blocks/FeaturedCarousel02",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": ["carousel-navigation", "responsive-layout"],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/blocks/FeaturedCarousel02.vue"
+      },
+      "agent": {
+        "importPath": "@/components/blocks/FeaturedCarousel02",
+        "storybookPath": "/?path=/story/website-blocks-featuredcarousel02--default",
+        "docsPath": "/?path=/docs/website-blocks-featuredcarousel02--docs",
+        "states": ["Default", "SingleSlide", "ImageSlides"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-featuredcarousel02--default"
+        },
+        {
+          "exportName": "SingleSlide",
+          "storyId": "website-blocks-featuredcarousel02--single-slide"
+        },
+        {
+          "exportName": "ImageSlides",
+          "storyId": "website-blocks-featuredcarousel02--image-slides"
+        }
+      ]
+    },
+    {
+      "component": "HeroBackdrop01",
+      "source": "src/components/blocks/HeroBackdrop01.vue",
+      "storyFile": "src/components/blocks/HeroBackdrop01.stories.ts",
+      "title": "Website/Blocks/HeroBackdrop01",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": ["responsive-layout"],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/blocks/HeroBackdrop01.vue"
+      },
+      "agent": {
+        "importPath": "@/components/blocks/HeroBackdrop01",
+        "storybookPath": "/?path=/story/website-blocks-herobackdrop01--default",
+        "docsPath": "/?path=/docs/website-blocks-herobackdrop01--docs",
+        "states": [
+          "Default",
+          "WithBadge",
+          "WithFootnote",
+          "NoBackdrop",
+          "Mobile"
+        ],
+        "hasInteractionTest": true,
+        "hasResponsiveStories": true,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-herobackdrop01--default"
+        },
+        {
+          "exportName": "WithBadge",
+          "storyId": "website-blocks-herobackdrop01--with-badge"
+        },
+        {
+          "exportName": "WithFootnote",
+          "storyId": "website-blocks-herobackdrop01--with-footnote"
+        },
+        {
+          "exportName": "NoBackdrop",
+          "storyId": "website-blocks-herobackdrop01--no-backdrop"
+        },
+        {
+          "exportName": "Mobile",
+          "storyId": "website-blocks-herobackdrop01--mobile"
+        }
+      ]
+    },
+    {
+      "component": "HeroCentered01",
+      "source": "src/components/blocks/HeroCentered01.vue",
+      "storyFile": "src/components/blocks/HeroCentered01.stories.ts",
+      "title": "Website/Blocks/HeroCentered01",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": ["responsive-layout"],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/blocks/HeroCentered01.vue"
+      },
+      "agent": {
+        "importPath": "@/components/blocks/HeroCentered01",
+        "storybookPath": "/?path=/story/website-blocks-herocentered01--default",
+        "docsPath": "/?path=/docs/website-blocks-herocentered01--docs",
+        "states": ["Default", "WithoutEyebrow", "TitleOnly"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-herocentered01--default"
+        },
+        {
+          "exportName": "WithoutEyebrow",
+          "storyId": "website-blocks-herocentered01--without-eyebrow"
+        },
+        {
+          "exportName": "TitleOnly",
+          "storyId": "website-blocks-herocentered01--title-only"
+        }
+      ]
+    },
+    {
+      "component": "HeroSplit01",
+      "source": "src/components/blocks/HeroSplit01.vue",
+      "storyFile": "src/components/blocks/HeroSplit01.stories.ts",
+      "title": "Website/Blocks/HeroSplit01",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": ["responsive-layout"],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/blocks/HeroSplit01.vue"
+      },
+      "agent": {
+        "importPath": "@/components/blocks/HeroSplit01",
+        "storybookPath": "/?path=/story/website-blocks-herosplit01--default",
+        "docsPath": "/?path=/docs/website-blocks-herosplit01--docs",
+        "states": ["Default", "ImageLeft", "Mobile"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": true,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-herosplit01--default"
+        },
+        {
+          "exportName": "ImageLeft",
+          "storyId": "website-blocks-herosplit01--image-left"
+        },
+        {
+          "exportName": "Mobile",
+          "storyId": "website-blocks-herosplit01--mobile"
+        }
+      ]
+    },
+    {
+      "component": "ReasonsSplit01",
+      "source": "src/components/blocks/ReasonsSplit01.vue",
+      "storyFile": "src/components/blocks/ReasonsSplit01.stories.ts",
+      "title": "Website/Blocks/ReasonsSplit01",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": ["responsive-layout"],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/blocks/ReasonsSplit01.vue"
+      },
+      "agent": {
+        "importPath": "@/components/blocks/ReasonsSplit01",
+        "storybookPath": "/?path=/story/website-blocks-reasonssplit01--default",
+        "docsPath": "/?path=/docs/website-blocks-reasonssplit01--docs",
+        "states": ["Default", "WithoutHighlight"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-reasonssplit01--default"
+        },
+        {
+          "exportName": "WithoutHighlight",
+          "storyId": "website-blocks-reasonssplit01--without-highlight"
+        }
+      ]
+    },
+    {
+      "component": "StepsGrid01",
+      "source": "src/components/blocks/StepsGrid01.vue",
+      "storyFile": "src/components/blocks/StepsGrid01.stories.ts",
+      "title": "Website/Blocks/StepsGrid01",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": ["responsive-layout"],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/blocks/StepsGrid01.vue"
+      },
+      "agent": {
+        "importPath": "@/components/blocks/StepsGrid01",
+        "storybookPath": "/?path=/story/website-blocks-stepsgrid01--even-step-count",
+        "docsPath": "/?path=/docs/website-blocks-stepsgrid01--docs",
+        "states": ["EvenStepCount", "OddStepCount"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "EvenStepCount",
+          "storyId": "website-blocks-stepsgrid01--even-step-count"
+        },
+        {
+          "exportName": "OddStepCount",
+          "storyId": "website-blocks-stepsgrid01--odd-step-count"
+        }
+      ]
+    },
+    {
+      "component": "TeamGrid01",
+      "source": "src/components/blocks/TeamGrid01.vue",
+      "storyFile": "src/components/blocks/TeamGrid01.stories.ts",
+      "title": "Website/Blocks/TeamGrid01",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": [
+        "dialog",
+        "focus-management",
+        "keyboard-dismissal",
+        "responsive-layout"
+      ],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/blocks/TeamGrid01.vue"
+      },
+      "agent": {
+        "importPath": "@/components/blocks/TeamGrid01",
+        "storybookPath": "/?path=/story/website-blocks-teamgrid01--default",
+        "docsPath": "/?path=/docs/website-blocks-teamgrid01--docs",
+        "states": ["Default", "CardsOnly", "WithoutWorkflows", "Mobile"],
+        "hasInteractionTest": true,
+        "hasResponsiveStories": true,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-teamgrid01--default"
+        },
+        {
+          "exportName": "CardsOnly",
+          "storyId": "website-blocks-teamgrid01--cards-only"
+        },
+        {
+          "exportName": "WithoutWorkflows",
+          "storyId": "website-blocks-teamgrid01--without-workflows"
+        },
+        {
+          "exportName": "Mobile",
+          "storyId": "website-blocks-teamgrid01--mobile"
+        }
+      ]
+    },
+    {
+      "component": "TeamMemberDialog01",
+      "source": "src/components/blocks/TeamMemberDialog01.vue",
+      "storyFile": "src/components/blocks/TeamMemberDialog01.stories.ts",
+      "title": "Website/Blocks/TeamMemberDialog01",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": ["dialog", "focus-management", "keyboard-dismissal"],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/blocks/TeamMemberDialog01.vue"
+      },
+      "agent": {
+        "importPath": "@/components/blocks/TeamMemberDialog01",
+        "storybookPath": "/?path=/story/website-blocks-teammemberdialog01--default",
+        "docsPath": "/?path=/docs/website-blocks-teammemberdialog01--docs",
+        "states": ["Default", "WithoutTags", "WithoutWorkflows"],
+        "hasInteractionTest": true,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-teammemberdialog01--default"
+        },
+        {
+          "exportName": "WithoutTags",
+          "storyId": "website-blocks-teammemberdialog01--without-tags"
+        },
+        {
+          "exportName": "WithoutWorkflows",
+          "storyId": "website-blocks-teammemberdialog01--without-workflows"
+        }
+      ]
+    },
+    {
+      "component": "WatchAuthorCard",
+      "source": "src/components/blocks/WatchAuthorCard.vue",
+      "storyFile": "src/components/blocks/WatchAuthorCard.stories.ts",
+      "title": "Website/Blocks/WatchAuthorCard",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": ["linked-content"],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/blocks/WatchAuthorCard.vue"
+      },
+      "agent": {
+        "importPath": "@/components/blocks/WatchAuthorCard",
+        "storybookPath": "/?path=/story/website-blocks-watchauthorcard--default",
+        "docsPath": "/?path=/docs/website-blocks-watchauthorcard--docs",
+        "states": ["Default", "WithoutAvatar", "NameOnly"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-watchauthorcard--default"
+        },
+        {
+          "exportName": "WithoutAvatar",
+          "storyId": "website-blocks-watchauthorcard--without-avatar"
+        },
+        {
+          "exportName": "NameOnly",
+          "storyId": "website-blocks-watchauthorcard--name-only"
+        }
+      ]
+    },
+    {
+      "component": "WatchAuthorCard",
+      "source": "src/components/blocks/WatchAuthorCard.vue",
+      "storyFile": "src/components/blocks/WatchPageLayout.stories.ts",
+      "title": "Website/Blocks/WatchPageLayout",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": ["linked-content"],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/blocks/WatchAuthorCard.vue"
+      },
+      "agent": {
+        "importPath": "@/components/blocks/WatchAuthorCard",
+        "storybookPath": "/?path=/story/website-blocks-watchpagelayout--default",
+        "docsPath": "/?path=/docs/website-blocks-watchpagelayout--docs",
+        "states": ["Default", "TitleOnly"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-watchpagelayout--default"
+        },
+        {
+          "exportName": "TitleOnly",
+          "storyId": "website-blocks-watchpagelayout--title-only"
+        }
+      ]
+    },
+    {
+      "component": "WatchRecommendedCard",
+      "source": "src/components/blocks/WatchRecommendedCard.vue",
+      "storyFile": "src/components/blocks/WatchRecommendedCard.stories.ts",
+      "title": "Website/Blocks/WatchRecommendedCard",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": ["linked-content"],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/blocks/WatchRecommendedCard.vue"
+      },
+      "agent": {
+        "importPath": "@/components/blocks/WatchRecommendedCard",
+        "storybookPath": "/?path=/story/website-blocks-watchrecommendedcard--default",
+        "docsPath": "/?path=/docs/website-blocks-watchrecommendedcard--docs",
+        "states": ["Default", "WithoutTag"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-watchrecommendedcard--default"
+        },
+        {
+          "exportName": "WithoutTag",
+          "storyId": "website-blocks-watchrecommendedcard--without-tag"
+        }
+      ]
+    },
+    {
+      "component": "WatchRelatedCard",
+      "source": "src/components/blocks/WatchRelatedCard.vue",
+      "storyFile": "src/components/blocks/WatchRelatedCard.stories.ts",
+      "title": "Website/Blocks/WatchRelatedCard",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": ["linked-content"],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/blocks/WatchRelatedCard.vue"
+      },
+      "agent": {
+        "importPath": "@/components/blocks/WatchRelatedCard",
+        "storybookPath": "/?path=/story/website-blocks-watchrelatedcard--default",
+        "docsPath": "/?path=/docs/website-blocks-watchrelatedcard--docs",
+        "states": ["Default", "WithTitle"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-watchrelatedcard--default"
+        },
+        {
+          "exportName": "WithTitle",
+          "storyId": "website-blocks-watchrelatedcard--with-title"
+        }
+      ]
+    },
+    {
+      "component": "WatchRelatedStrip",
+      "source": "src/components/blocks/WatchRelatedStrip.vue",
+      "storyFile": "src/components/blocks/WatchRelatedStrip.stories.ts",
+      "title": "Website/Blocks/WatchRelatedStrip",
+      "status": "stable",
+      "category": "blocks",
+      "capabilities": [],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/blocks/WatchRelatedStrip.vue"
+      },
+      "agent": {
+        "importPath": "@/components/blocks/WatchRelatedStrip",
+        "storybookPath": "/?path=/story/website-blocks-watchrelatedstrip--default",
+        "docsPath": "/?path=/docs/website-blocks-watchrelatedstrip--docs",
+        "states": ["Default", "Empty"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-watchrelatedstrip--default"
+        },
+        {
+          "exportName": "Empty",
+          "storyId": "website-blocks-watchrelatedstrip--empty"
+        }
+      ]
+    },
+    {
+      "component": "AudioPlayer",
+      "source": "src/components/common/AudioPlayer.vue",
+      "storyFile": "src/components/common/AudioPlayer.stories.ts",
+      "title": "Website/Common/AudioPlayer",
+      "status": "stable",
+      "category": "common",
+      "capabilities": [],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/common/AudioPlayer.vue"
+      },
+      "agent": {
+        "importPath": "@/components/common/AudioPlayer",
+        "storybookPath": "/?path=/story/website-common-audioplayer--default",
+        "docsPath": "/?path=/docs/website-common-audioplayer--docs",
+        "states": ["Default", "KeyboardSeek", "Mobile"],
+        "hasInteractionTest": true,
+        "hasResponsiveStories": true,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-common-audioplayer--default"
+        },
+        {
+          "exportName": "KeyboardSeek",
+          "storyId": "website-common-audioplayer--keyboard-seek"
+        },
+        {
+          "exportName": "Mobile",
+          "storyId": "website-common-audioplayer--mobile"
+        }
+      ]
+    },
+    {
+      "component": "BrandButton",
+      "source": "src/components/common/BrandButton.vue",
+      "storyFile": "src/components/common/BrandButton.stories.ts",
+      "title": "Website/Common/BrandButton",
+      "status": "stable",
+      "category": "common",
+      "capabilities": ["activation", "keyboard-focus"],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/common/BrandButton.vue"
+      },
+      "agent": {
+        "importPath": "@/components/common/BrandButton",
+        "storybookPath": "/?path=/story/website-common-brandbutton--solid",
+        "docsPath": "/?path=/docs/website-common-brandbutton--docs",
+        "states": [
+          "Solid",
+          "Outline",
+          "OutlineDark",
+          "LargeSolid",
+          "LargeOutline",
+          "AsButton",
+          "AllVariants"
+        ],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Solid",
+          "storyId": "website-common-brandbutton--solid"
+        },
+        {
+          "exportName": "Outline",
+          "storyId": "website-common-brandbutton--outline"
+        },
+        {
+          "exportName": "OutlineDark",
+          "storyId": "website-common-brandbutton--outline-dark"
+        },
+        {
+          "exportName": "LargeSolid",
+          "storyId": "website-common-brandbutton--large-solid"
+        },
+        {
+          "exportName": "LargeOutline",
+          "storyId": "website-common-brandbutton--large-outline"
+        },
+        {
+          "exportName": "AsButton",
+          "storyId": "website-common-brandbutton--as-button"
+        },
+        {
+          "exportName": "AllVariants",
+          "storyId": "website-common-brandbutton--all-variants"
+        }
+      ]
+    },
+    {
+      "component": "BreadcrumbBar",
+      "source": "src/components/common/BreadcrumbBar.vue",
+      "storyFile": "src/components/common/BreadcrumbBar.stories.ts",
+      "title": "Website/Common/BreadcrumbBar",
+      "status": "stable",
+      "category": "common",
+      "capabilities": [],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/common/BreadcrumbBar.vue"
+      },
+      "agent": {
+        "importPath": "@/components/common/BreadcrumbBar",
+        "storybookPath": "/?path=/story/website-common-breadcrumbbar--default",
+        "docsPath": "/?path=/docs/website-common-breadcrumbbar--docs",
+        "states": ["Default", "WithoutUpdatedDate", "LongTrail", "Mobile"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": true,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-common-breadcrumbbar--default"
+        },
+        {
+          "exportName": "WithoutUpdatedDate",
+          "storyId": "website-common-breadcrumbbar--without-updated-date"
+        },
+        {
+          "exportName": "LongTrail",
+          "storyId": "website-common-breadcrumbbar--long-trail"
+        },
+        {
+          "exportName": "Mobile",
+          "storyId": "website-common-breadcrumbbar--mobile"
+        }
+      ]
+    },
+    {
+      "component": "CallToActionSection",
+      "source": "src/components/common/CallToActionSection.vue",
+      "storyFile": "src/components/common/CallToActionSection.stories.ts",
+      "title": "Website/Common/CallToActionSection",
+      "status": "stable",
+      "category": "common",
+      "capabilities": ["responsive-layout"],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/common/CallToActionSection.vue"
+      },
+      "agent": {
+        "importPath": "@/components/common/CallToActionSection",
+        "storybookPath": "/?path=/story/website-common-calltoactionsection--default",
+        "docsPath": "/?path=/docs/website-common-calltoactionsection--docs",
+        "states": ["Default", "PrimaryOnly", "Chinese", "Mobile"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": true,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-common-calltoactionsection--default"
+        },
+        {
+          "exportName": "PrimaryOnly",
+          "storyId": "website-common-calltoactionsection--primary-only"
+        },
+        {
+          "exportName": "Chinese",
+          "storyId": "website-common-calltoactionsection--chinese"
+        },
+        {
+          "exportName": "Mobile",
+          "storyId": "website-common-calltoactionsection--mobile"
+        }
+      ]
+    },
+    {
+      "component": "CardArrow",
+      "source": "src/components/common/CardArrow.vue",
+      "storyFile": "src/components/common/CardArrow.stories.ts",
+      "title": "Website/Common/CardArrow",
+      "status": "stable",
+      "category": "common",
+      "capabilities": ["linked-content"],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/common/CardArrow.vue"
+      },
+      "agent": {
+        "importPath": "@/components/common/CardArrow",
+        "storybookPath": "/?path=/story/website-common-cardarrow--default",
+        "docsPath": "/?path=/docs/website-common-cardarrow--docs",
+        "states": ["Default", "GroupHover", "Compact"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-common-cardarrow--default"
+        },
+        {
+          "exportName": "GroupHover",
+          "storyId": "website-common-cardarrow--group-hover"
+        },
+        {
+          "exportName": "Compact",
+          "storyId": "website-common-cardarrow--compact"
+        }
+      ]
+    },
+    {
+      "component": "CategoryNav",
+      "source": "src/components/common/CategoryNav.vue",
+      "storyFile": "src/components/common/CategoryNav.stories.ts",
+      "title": "Website/Common/CategoryNav",
+      "status": "stable",
+      "category": "common",
+      "capabilities": [],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/common/CategoryNav.vue"
+      },
+      "agent": {
+        "importPath": "@/components/common/CategoryNav",
+        "storybookPath": "/?path=/story/website-common-categorynav--default",
+        "docsPath": "/?path=/docs/website-common-categorynav--docs",
+        "states": ["Default", "SelectedVideo"],
+        "hasInteractionTest": true,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-common-categorynav--default"
+        },
+        {
+          "exportName": "SelectedVideo",
+          "storyId": "website-common-categorynav--selected-video"
+        }
+      ]
+    },
+    {
+      "component": "FAQSection",
+      "source": "src/components/common/FAQSection.vue",
+      "storyFile": "src/components/common/FAQSection.stories.ts",
+      "title": "Website/Common/FAQSection",
+      "status": "stable",
+      "category": "common",
+      "capabilities": [
+        "disclosure",
+        "keyboard-activation",
+        "responsive-layout"
+      ],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/common/FAQSection.vue"
+      },
+      "agent": {
+        "importPath": "@/components/common/FAQSection",
+        "storybookPath": "/?path=/story/website-common-faqsection--default",
+        "docsPath": "/?path=/docs/website-common-faqsection--docs",
+        "states": ["Default", "ManyItems", "Mobile"],
+        "hasInteractionTest": true,
+        "hasResponsiveStories": true,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-common-faqsection--default"
+        },
+        {
+          "exportName": "ManyItems",
+          "storyId": "website-common-faqsection--many-items"
+        },
+        {
+          "exportName": "Mobile",
+          "storyId": "website-common-faqsection--mobile"
+        }
+      ]
+    },
+    {
+      "component": "FooterLinkColumn",
+      "source": "src/components/common/FooterLinkColumn.vue",
+      "storyFile": "src/components/common/FooterLinkColumn.stories.ts",
+      "title": "Website/Common/FooterLinkColumn",
+      "status": "stable",
+      "category": "common",
+      "capabilities": [],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/common/FooterLinkColumn.vue"
+      },
+      "agent": {
+        "importPath": "@/components/common/FooterLinkColumn",
+        "storybookPath": "/?path=/story/website-common-footerlinkcolumn--default",
+        "docsPath": "/?path=/docs/website-common-footerlinkcolumn--docs",
+        "states": ["Default", "WithExternalLinks"],
+        "hasInteractionTest": true,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-common-footerlinkcolumn--default"
+        },
+        {
+          "exportName": "WithExternalLinks",
+          "storyId": "website-common-footerlinkcolumn--with-external-links"
+        }
+      ]
+    },
+    {
+      "component": "HeaderMain",
+      "source": "src/components/common/HeaderMain/HeaderMain.vue",
+      "storyFile": "src/components/common/HeaderMain/HeaderMain.stories.ts",
+      "title": "Website/Common/HeaderMain",
+      "status": "stable",
+      "category": "common",
+      "capabilities": [],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/common/HeaderMain/HeaderMain.vue"
+      },
+      "agent": {
+        "importPath": "@/components/common/HeaderMain/HeaderMain",
+        "storybookPath": "/?path=/story/website-common-headermain--default",
+        "docsPath": "/?path=/docs/website-common-headermain--docs",
+        "states": ["Default", "WithoutGitHubStars", "Mobile"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": true,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-common-headermain--default"
+        },
+        {
+          "exportName": "WithoutGitHubStars",
+          "storyId": "website-common-headermain--without-git-hub-stars"
+        },
+        {
+          "exportName": "Mobile",
+          "storyId": "website-common-headermain--mobile"
+        }
+      ]
+    },
+    {
+      "component": "NodeBadge",
+      "source": "src/components/common/NodeBadge.vue",
+      "storyFile": "src/components/common/NodeBadge.stories.ts",
+      "title": "Website/Common/NodeBadge",
+      "status": "stable",
+      "category": "common",
+      "capabilities": [],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/common/NodeBadge.vue"
+      },
+      "agent": {
+        "importPath": "@/components/common/NodeBadge",
+        "storybookPath": "/?path=/story/website-common-nodebadge--text-only",
+        "docsPath": "/?path=/docs/website-common-nodebadge--docs",
+        "states": ["TextOnly", "MultipleSegments", "WithLogo"],
+        "hasInteractionTest": true,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "TextOnly",
+          "storyId": "website-common-nodebadge--text-only"
+        },
+        {
+          "exportName": "MultipleSegments",
+          "storyId": "website-common-nodebadge--multiple-segments"
+        },
+        {
+          "exportName": "WithLogo",
+          "storyId": "website-common-nodebadge--with-logo"
+        }
+      ]
+    },
+    {
+      "component": "PlayPauseButton",
+      "source": "src/components/common/PlayPauseButton.vue",
+      "storyFile": "src/components/common/PlayPauseButton.stories.ts",
+      "title": "Website/Common/PlayPauseButton",
+      "status": "stable",
+      "category": "common",
+      "capabilities": ["activation", "keyboard-focus"],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/common/PlayPauseButton.vue"
+      },
+      "agent": {
+        "importPath": "@/components/common/PlayPauseButton",
+        "storybookPath": "/?path=/story/website-common-playpausebutton--play",
+        "docsPath": "/?path=/docs/website-common-playpausebutton--docs",
+        "states": ["Play", "Pause", "Small"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Play",
+          "storyId": "website-common-playpausebutton--play"
+        },
+        {
+          "exportName": "Pause",
+          "storyId": "website-common-playpausebutton--pause"
+        },
+        {
+          "exportName": "Small",
+          "storyId": "website-common-playpausebutton--small"
+        }
+      ]
+    },
+    {
+      "component": "ProductCard",
+      "source": "src/components/common/ProductCard.vue",
+      "storyFile": "src/components/common/ProductCard.stories.ts",
+      "title": "Website/Common/ProductCard",
+      "status": "stable",
+      "category": "common",
+      "capabilities": ["linked-content"],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/common/ProductCard.vue"
+      },
+      "agent": {
+        "importPath": "@/components/common/ProductCard",
+        "storybookPath": "/?path=/story/website-common-productcard--default",
+        "docsPath": "/?path=/docs/website-common-productcard--docs",
+        "states": ["Default", "AllCards"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-common-productcard--default"
+        },
+        {
+          "exportName": "AllCards",
+          "storyId": "website-common-productcard--all-cards"
+        }
+      ]
+    },
+    {
+      "component": "ProductHeroBadge",
+      "source": "src/components/common/ProductHeroBadge.vue",
+      "storyFile": "src/components/common/ProductHeroBadge.stories.ts",
+      "title": "Website/Common/ProductHeroBadge",
+      "status": "stable",
+      "category": "common",
+      "capabilities": ["responsive-layout"],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/common/ProductHeroBadge.vue"
+      },
+      "agent": {
+        "importPath": "@/components/common/ProductHeroBadge",
+        "storybookPath": "/?path=/story/website-common-productherobadge--default",
+        "docsPath": "/?path=/docs/website-common-productherobadge--docs",
+        "states": ["Default", "Cloud", "CustomProduct"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-common-productherobadge--default"
+        },
+        {
+          "exportName": "Cloud",
+          "storyId": "website-common-productherobadge--cloud"
+        },
+        {
+          "exportName": "CustomProduct",
+          "storyId": "website-common-productherobadge--custom-product"
+        }
+      ]
+    },
+    {
+      "component": "SectionHeader",
+      "source": "src/components/common/SectionHeader.vue",
+      "storyFile": "src/components/common/SectionHeader.stories.ts",
+      "title": "Website/Common/SectionHeader",
+      "status": "stable",
+      "category": "common",
+      "capabilities": ["responsive-layout"],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/common/SectionHeader.vue"
+      },
+      "agent": {
+        "importPath": "@/components/common/SectionHeader",
+        "storybookPath": "/?path=/story/website-common-sectionheader--default",
+        "docsPath": "/?path=/docs/website-common-sectionheader--docs",
+        "states": [
+          "Default",
+          "StartAligned",
+          "HeroScale",
+          "WithoutLabel",
+          "Mobile"
+        ],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": true,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-common-sectionheader--default"
+        },
+        {
+          "exportName": "StartAligned",
+          "storyId": "website-common-sectionheader--start-aligned"
+        },
+        {
+          "exportName": "HeroScale",
+          "storyId": "website-common-sectionheader--hero-scale"
+        },
+        {
+          "exportName": "WithoutLabel",
+          "storyId": "website-common-sectionheader--without-label"
+        },
+        {
+          "exportName": "Mobile",
+          "storyId": "website-common-sectionheader--mobile"
+        }
+      ]
+    },
+    {
+      "component": "SectionLabel",
+      "source": "src/components/common/SectionLabel.vue",
+      "storyFile": "src/components/common/SectionLabel.stories.ts",
+      "title": "Website/Common/SectionLabel",
+      "status": "stable",
+      "category": "common",
+      "capabilities": ["responsive-layout"],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/common/SectionLabel.vue"
+      },
+      "agent": {
+        "importPath": "@/components/common/SectionLabel",
+        "storybookPath": "/?path=/story/website-common-sectionlabel--default",
+        "docsPath": "/?path=/docs/website-common-sectionlabel--docs",
+        "states": ["Default", "LongLabel"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-common-sectionlabel--default"
+        },
+        {
+          "exportName": "LongLabel",
+          "storyId": "website-common-sectionlabel--long-label"
+        }
+      ]
+    },
+    {
+      "component": "SiteFooter",
+      "source": "src/components/common/SiteFooter.vue",
+      "storyFile": "src/components/common/SiteFooter.stories.ts",
+      "title": "Website/Common/SiteFooter",
+      "status": "stable",
+      "category": "common",
+      "capabilities": [],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/common/SiteFooter.vue"
+      },
+      "agent": {
+        "importPath": "@/components/common/SiteFooter",
+        "storybookPath": "/?path=/story/website-common-sitefooter--default",
+        "docsPath": "/?path=/docs/website-common-sitefooter--docs",
+        "states": ["Default", "Mobile"],
+        "hasInteractionTest": true,
+        "hasResponsiveStories": true,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-common-sitefooter--default"
+        },
+        {
+          "exportName": "Mobile",
+          "storyId": "website-common-sitefooter--mobile"
+        }
+      ]
+    },
+    {
+      "component": "SiteVideo",
+      "source": "src/components/common/SiteVideo.vue",
+      "storyFile": "src/components/common/SiteVideo.stories.ts",
+      "title": "Website/Common/SiteVideo",
+      "status": "stable",
+      "category": "common",
+      "capabilities": [],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/common/SiteVideo.vue"
+      },
+      "agent": {
+        "importPath": "@/components/common/SiteVideo",
+        "storybookPath": "/?path=/story/website-common-sitevideo--with-controls",
+        "docsPath": "/?path=/docs/website-common-sitevideo--docs",
+        "states": ["WithControls", "DecorativeAutoplay", "Mp4Only"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "WithControls",
+          "storyId": "website-common-sitevideo--with-controls"
+        },
+        {
+          "exportName": "DecorativeAutoplay",
+          "storyId": "website-common-sitevideo--decorative-autoplay"
+        },
+        {
+          "exportName": "Mp4Only",
+          "storyId": "website-common-sitevideo--mp4-only"
+        }
+      ]
+    },
+    {
+      "component": "SocialProofBarSection",
+      "source": "src/components/common/SocialProofBarSection.vue",
+      "storyFile": "src/components/common/SocialProofBarSection.stories.ts",
+      "title": "Website/Common/SocialProofBarSection",
+      "status": "stable",
+      "category": "common",
+      "capabilities": ["responsive-layout"],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/common/SocialProofBarSection.vue"
+      },
+      "agent": {
+        "importPath": "@/components/common/SocialProofBarSection",
+        "storybookPath": "/?path=/story/website-common-socialproofbarsection--desktop",
+        "docsPath": "/?path=/docs/website-common-socialproofbarsection--docs",
+        "states": ["Desktop", "Mobile"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": true,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Desktop",
+          "storyId": "website-common-socialproofbarsection--desktop"
+        },
+        {
+          "exportName": "Mobile",
+          "storyId": "website-common-socialproofbarsection--mobile"
+        }
+      ]
+    },
+    {
+      "component": "VideoPlayer",
+      "source": "src/components/common/VideoPlayer.vue",
+      "storyFile": "src/components/common/VideoPlayer.stories.ts",
+      "title": "Website/Common/VideoPlayer",
+      "status": "stable",
+      "category": "common",
+      "capabilities": [],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/common/VideoPlayer.vue"
+      },
+      "agent": {
+        "importPath": "@/components/common/VideoPlayer",
+        "storybookPath": "/?path=/story/website-common-videoplayer--default",
+        "docsPath": "/?path=/docs/website-common-videoplayer--docs",
+        "states": [
+          "Default",
+          "WithCaptions",
+          "KeyboardSeek",
+          "Minimal",
+          "MuteOnly",
+          "Contained",
+          "ReducedMotionPreview"
+        ],
+        "hasInteractionTest": true,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-common-videoplayer--default"
+        },
+        {
+          "exportName": "WithCaptions",
+          "storyId": "website-common-videoplayer--with-captions"
+        },
+        {
+          "exportName": "KeyboardSeek",
+          "storyId": "website-common-videoplayer--keyboard-seek"
+        },
+        {
+          "exportName": "Minimal",
+          "storyId": "website-common-videoplayer--minimal"
+        },
+        {
+          "exportName": "MuteOnly",
+          "storyId": "website-common-videoplayer--mute-only"
+        },
+        {
+          "exportName": "Contained",
+          "storyId": "website-common-videoplayer--contained"
+        },
+        {
+          "exportName": "ReducedMotionPreview",
+          "storyId": "website-common-videoplayer--reduced-motion-preview"
+        }
+      ]
+    },
+    {
+      "component": "ReasonSection",
+      "source": "src/components/product/shared/ReasonSection.vue",
+      "storyFile": "src/components/product/shared/ReasonSection.stories.ts",
+      "title": "Website/Product/ReasonSection",
+      "status": "stable",
+      "category": "product",
+      "capabilities": ["responsive-layout"],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/product/shared/ReasonSection.vue"
+      },
+      "agent": {
+        "importPath": "@/components/product/shared/ReasonSection",
+        "storybookPath": "/?path=/story/website-product-reasonsection--default",
+        "docsPath": "/?path=/docs/website-product-reasonsection--docs",
+        "states": ["Default", "FewReasons"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-product-reasonsection--default"
+        },
+        {
+          "exportName": "FewReasons",
+          "storyId": "website-product-reasonsection--few-reasons"
+        }
+      ]
+    },
+    {
+      "component": "Accordion",
+      "source": "src/components/ui/accordion/Accordion.vue",
+      "storyFile": "src/components/ui/accordion/Accordion.stories.ts",
+      "title": "Website/UI/Accordion",
+      "status": "stable",
+      "category": "ui",
+      "capabilities": [],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/ui/accordion/Accordion.vue"
+      },
+      "agent": {
+        "importPath": "@/components/ui/accordion/Accordion",
+        "storybookPath": "/?path=/story/website-ui-accordion--single",
+        "docsPath": "/?path=/docs/website-ui-accordion--docs",
+        "states": ["Single", "Multiple"],
+        "hasInteractionTest": true,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Single",
+          "storyId": "website-ui-accordion--single"
+        },
+        {
+          "exportName": "Multiple",
+          "storyId": "website-ui-accordion--multiple"
+        }
+      ]
+    },
+    {
+      "component": "Badge",
+      "source": "src/components/ui/badge/Badge.vue",
+      "storyFile": "src/components/ui/badge/Badge.stories.ts",
+      "title": "Website/UI/Badge",
+      "status": "stable",
+      "category": "ui",
+      "capabilities": [],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/ui/badge/Badge.vue"
+      },
+      "agent": {
+        "importPath": "@/components/ui/badge/Badge",
+        "storybookPath": "/?path=/story/website-ui-badge--default",
+        "docsPath": "/?path=/docs/website-ui-badge--docs",
+        "states": [
+          "Default",
+          "Subtle",
+          "Category",
+          "Accent",
+          "Callout",
+          "ExtraSmall"
+        ],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-ui-badge--default"
+        },
+        {
+          "exportName": "Subtle",
+          "storyId": "website-ui-badge--subtle"
+        },
+        {
+          "exportName": "Category",
+          "storyId": "website-ui-badge--category"
+        },
+        {
+          "exportName": "Accent",
+          "storyId": "website-ui-badge--accent"
+        },
+        {
+          "exportName": "Callout",
+          "storyId": "website-ui-badge--callout"
+        },
+        {
+          "exportName": "ExtraSmall",
+          "storyId": "website-ui-badge--extra-small"
+        }
+      ]
+    },
+    {
+      "component": "ButtonMask",
+      "source": "src/components/ui/button-mask/ButtonMask.vue",
+      "storyFile": "src/components/ui/button-mask/ButtonMask.stories.ts",
+      "title": "Website/UI/ButtonMask",
+      "status": "stable",
+      "category": "ui",
+      "capabilities": ["activation", "keyboard-focus"],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/ui/button-mask/ButtonMask.vue"
+      },
+      "agent": {
+        "importPath": "@/components/ui/button-mask/ButtonMask",
+        "storybookPath": "/?path=/story/website-ui-buttonmask--default",
+        "docsPath": "/?path=/docs/website-ui-buttonmask--docs",
+        "states": [
+          "Default",
+          "Ghost",
+          "IconLeft",
+          "DefaultSolid",
+          "LargeSolid",
+          "WithCustomIcon",
+          "LabelVisible",
+          "Disabled",
+          "AllVariants"
+        ],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-ui-buttonmask--default"
+        },
+        {
+          "exportName": "Ghost",
+          "storyId": "website-ui-buttonmask--ghost"
+        },
+        {
+          "exportName": "IconLeft",
+          "storyId": "website-ui-buttonmask--icon-left"
+        },
+        {
+          "exportName": "DefaultSolid",
+          "storyId": "website-ui-buttonmask--default-solid"
+        },
+        {
+          "exportName": "LargeSolid",
+          "storyId": "website-ui-buttonmask--large-solid"
+        },
+        {
+          "exportName": "WithCustomIcon",
+          "storyId": "website-ui-buttonmask--with-custom-icon"
+        },
+        {
+          "exportName": "LabelVisible",
+          "storyId": "website-ui-buttonmask--label-visible"
+        },
+        {
+          "exportName": "Disabled",
+          "storyId": "website-ui-buttonmask--disabled"
+        },
+        {
+          "exportName": "AllVariants",
+          "storyId": "website-ui-buttonmask--all-variants"
+        }
+      ]
+    },
+    {
+      "component": "ButtonPill",
+      "source": "src/components/ui/button-pill/ButtonPill.vue",
+      "storyFile": "src/components/ui/button-pill/ButtonPill.stories.ts",
+      "title": "Website/UI/ButtonPill",
+      "status": "stable",
+      "category": "ui",
+      "capabilities": ["activation", "keyboard-focus"],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/ui/button-pill/ButtonPill.vue"
+      },
+      "agent": {
+        "importPath": "@/components/ui/button-pill/ButtonPill",
+        "storybookPath": "/?path=/story/website-ui-buttonpill--as-anchor",
+        "docsPath": "/?path=/docs/website-ui-buttonpill--docs",
+        "states": [
+          "AsAnchor",
+          "AsButton",
+          "Ghost",
+          "DefaultSolid",
+          "WorkflowsPageReference",
+          "LargeSolid",
+          "WithCustomIcon",
+          "IconLeft",
+          "Disabled",
+          "AllVariants"
+        ],
+        "hasInteractionTest": true,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "AsAnchor",
+          "storyId": "website-ui-buttonpill--as-anchor"
+        },
+        {
+          "exportName": "AsButton",
+          "storyId": "website-ui-buttonpill--as-button"
+        },
+        {
+          "exportName": "Ghost",
+          "storyId": "website-ui-buttonpill--ghost"
+        },
+        {
+          "exportName": "DefaultSolid",
+          "storyId": "website-ui-buttonpill--default-solid"
+        },
+        {
+          "exportName": "WorkflowsPageReference",
+          "storyId": "website-ui-buttonpill--workflows-page-reference"
+        },
+        {
+          "exportName": "LargeSolid",
+          "storyId": "website-ui-buttonpill--large-solid"
+        },
+        {
+          "exportName": "WithCustomIcon",
+          "storyId": "website-ui-buttonpill--with-custom-icon"
+        },
+        {
+          "exportName": "IconLeft",
+          "storyId": "website-ui-buttonpill--icon-left"
+        },
+        {
+          "exportName": "Disabled",
+          "storyId": "website-ui-buttonpill--disabled"
+        },
+        {
+          "exportName": "AllVariants",
+          "storyId": "website-ui-buttonpill--all-variants"
+        }
+      ]
+    },
+    {
+      "component": "Button",
+      "source": "src/components/ui/button/Button.vue",
+      "storyFile": "src/components/ui/button/Button.stories.ts",
+      "title": "Website/UI/Button",
+      "status": "stable",
+      "category": "ui",
+      "capabilities": ["activation", "keyboard-focus"],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/ui/button/Button.vue"
+      },
+      "agent": {
+        "importPath": "@/components/ui/button/Button",
+        "storybookPath": "/?path=/story/website-ui-button--default",
+        "docsPath": "/?path=/docs/website-ui-button--docs",
+        "states": [
+          "Default",
+          "Outline",
+          "Link",
+          "WithIcon",
+          "Disabled",
+          "Large"
+        ],
+        "hasInteractionTest": true,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-ui-button--default"
+        },
+        {
+          "exportName": "Outline",
+          "storyId": "website-ui-button--outline"
+        },
+        {
+          "exportName": "Link",
+          "storyId": "website-ui-button--link"
+        },
+        {
+          "exportName": "WithIcon",
+          "storyId": "website-ui-button--with-icon"
+        },
+        {
+          "exportName": "Disabled",
+          "storyId": "website-ui-button--disabled"
+        },
+        {
+          "exportName": "Large",
+          "storyId": "website-ui-button--large"
+        }
+      ]
+    },
+    {
+      "component": "Card",
+      "source": "src/components/ui/card/Card.vue",
+      "storyFile": "src/components/ui/card/Card.stories.ts",
+      "title": "Website/UI/Card",
+      "status": "stable",
+      "category": "ui",
+      "capabilities": ["linked-content"],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/ui/card/Card.vue"
+      },
+      "agent": {
+        "importPath": "@/components/ui/card/Card",
+        "storybookPath": "/?path=/story/website-ui-card--default",
+        "docsPath": "/?path=/docs/website-ui-card--docs",
+        "states": ["Default", "Compact"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-ui-card--default"
+        },
+        {
+          "exportName": "Compact",
+          "storyId": "website-ui-card--compact"
+        }
+      ]
+    },
+    {
+      "component": "CopyTextButton",
+      "source": "src/components/ui/copy-text-button/CopyTextButton.vue",
+      "storyFile": "src/components/ui/copy-text-button/CopyTextButton.stories.ts",
+      "title": "Website/UI/CopyTextButton",
+      "status": "stable",
+      "category": "ui",
+      "capabilities": ["activation", "keyboard-focus"],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/ui/copy-text-button/CopyTextButton.vue"
+      },
+      "agent": {
+        "importPath": "@/components/ui/copy-text-button/CopyTextButton",
+        "storybookPath": "/?path=/story/website-ui-copytextbutton--default",
+        "docsPath": "/?path=/docs/website-ui-copytextbutton--docs",
+        "states": ["Default"],
+        "hasInteractionTest": true,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-ui-copytextbutton--default"
+        }
+      ]
+    },
+    {
+      "component": "CopyableField",
+      "source": "src/components/ui/copyable-field/CopyableField.vue",
+      "storyFile": "src/components/ui/copyable-field/CopyableField.stories.ts",
+      "title": "Website/UI/CopyableField",
+      "status": "stable",
+      "category": "ui",
+      "capabilities": [],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/ui/copyable-field/CopyableField.vue"
+      },
+      "agent": {
+        "importPath": "@/components/ui/copyable-field/CopyableField",
+        "storybookPath": "/?path=/story/website-ui-copyablefield--single-line",
+        "docsPath": "/?path=/docs/website-ui-copyablefield--docs",
+        "states": ["SingleLine", "Multiline"],
+        "hasInteractionTest": true,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "SingleLine",
+          "storyId": "website-ui-copyablefield--single-line"
+        },
+        {
+          "exportName": "Multiline",
+          "storyId": "website-ui-copyablefield--multiline"
+        }
+      ]
+    },
+    {
+      "component": "Dialog",
+      "source": "src/components/ui/dialog/Dialog.vue",
+      "storyFile": "src/components/ui/dialog/Dialog.stories.ts",
+      "title": "Website/UI/Dialog",
+      "status": "stable",
+      "category": "ui",
+      "capabilities": ["dialog", "focus-management", "keyboard-dismissal"],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/ui/dialog/Dialog.vue"
+      },
+      "agent": {
+        "importPath": "@/components/ui/dialog/Dialog",
+        "storybookPath": "/?path=/story/website-ui-dialog--default",
+        "docsPath": "/?path=/docs/website-ui-dialog--docs",
+        "states": ["Default"],
+        "hasInteractionTest": true,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-ui-dialog--default"
+        }
+      ]
+    },
+    {
+      "component": "HubFilterTabs",
+      "source": "src/components/ui/hub-filter-tabs/HubFilterTabs.vue",
+      "storyFile": "src/components/ui/hub-filter-tabs/HubFilterTabs.stories.ts",
+      "title": "Website/UI/HubFilterTabs",
+      "status": "stable",
+      "category": "ui",
+      "capabilities": [],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/ui/hub-filter-tabs/HubFilterTabs.vue"
+      },
+      "agent": {
+        "importPath": "@/components/ui/hub-filter-tabs/HubFilterTabs",
+        "storybookPath": "/?path=/story/website-ui-hubfiltertabs--default",
+        "docsPath": "/?path=/docs/website-ui-hubfiltertabs--docs",
+        "states": ["Default"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-ui-hubfiltertabs--default"
+        }
+      ]
+    },
+    {
+      "component": "IconButton",
+      "source": "src/components/ui/icon-button/IconButton.vue",
+      "storyFile": "src/components/ui/icon-button/IconButton.stories.ts",
+      "title": "Website/UI/IconButton",
+      "status": "stable",
+      "category": "ui",
+      "capabilities": ["activation", "keyboard-focus"],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/ui/icon-button/IconButton.vue"
+      },
+      "agent": {
+        "importPath": "@/components/ui/icon-button/IconButton",
+        "storybookPath": "/?path=/story/website-ui-iconbutton--ghost",
+        "docsPath": "/?path=/docs/website-ui-iconbutton--docs",
+        "states": ["Ghost", "Outline", "Solid", "LargeClose", "Disabled"],
+        "hasInteractionTest": true,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Ghost",
+          "storyId": "website-ui-iconbutton--ghost"
+        },
+        {
+          "exportName": "Outline",
+          "storyId": "website-ui-iconbutton--outline"
+        },
+        {
+          "exportName": "Solid",
+          "storyId": "website-ui-iconbutton--solid"
+        },
+        {
+          "exportName": "LargeClose",
+          "storyId": "website-ui-iconbutton--large-close"
+        },
+        {
+          "exportName": "Disabled",
+          "storyId": "website-ui-iconbutton--disabled"
+        }
+      ]
+    },
+    {
+      "component": "NavigationMenu",
+      "source": "src/components/ui/navigation-menu/NavigationMenu.vue",
+      "storyFile": "src/components/ui/navigation-menu/NavigationMenu.stories.ts",
+      "title": "Website/UI/NavigationMenu",
+      "status": "stable",
+      "category": "ui",
+      "capabilities": [],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/ui/navigation-menu/NavigationMenu.vue"
+      },
+      "agent": {
+        "importPath": "@/components/ui/navigation-menu/NavigationMenu",
+        "storybookPath": "/?path=/story/website-ui-navigationmenu--default",
+        "docsPath": "/?path=/docs/website-ui-navigationmenu--docs",
+        "states": ["Default", "WithoutViewport"],
+        "hasInteractionTest": true,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-ui-navigationmenu--default"
+        },
+        {
+          "exportName": "WithoutViewport",
+          "storyId": "website-ui-navigationmenu--without-viewport"
+        }
+      ]
+    },
+    {
+      "component": "SearchField",
+      "source": "src/components/ui/search-field/SearchField.vue",
+      "storyFile": "src/components/ui/search-field/SearchField.stories.ts",
+      "title": "Website/UI/SearchField",
+      "status": "stable",
+      "category": "ui",
+      "capabilities": [],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/ui/search-field/SearchField.vue"
+      },
+      "agent": {
+        "importPath": "@/components/ui/search-field/SearchField",
+        "storybookPath": "/?path=/story/website-ui-searchfield--default",
+        "docsPath": "/?path=/docs/website-ui-searchfield--docs",
+        "states": ["Default", "WithStatus"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-ui-searchfield--default"
+        },
+        {
+          "exportName": "WithStatus",
+          "storyId": "website-ui-searchfield--with-status"
+        }
+      ]
+    },
+    {
+      "component": "Slider",
+      "source": "src/components/ui/slider/Slider.vue",
+      "storyFile": "src/components/ui/slider/Slider.stories.ts",
+      "title": "Website/UI/Slider",
+      "status": "stable",
+      "category": "ui",
+      "capabilities": [],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/ui/slider/Slider.vue"
+      },
+      "agent": {
+        "importPath": "@/components/ui/slider/Slider",
+        "storybookPath": "/?path=/story/website-ui-slider--default",
+        "docsPath": "/?path=/docs/website-ui-slider--docs",
+        "states": ["Default", "WithTicks", "Range", "Disabled"],
+        "hasInteractionTest": true,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-ui-slider--default"
+        },
+        {
+          "exportName": "WithTicks",
+          "storyId": "website-ui-slider--with-ticks"
+        },
+        {
+          "exportName": "Range",
+          "storyId": "website-ui-slider--range"
+        },
+        {
+          "exportName": "Disabled",
+          "storyId": "website-ui-slider--disabled"
+        }
+      ]
+    },
+    {
+      "component": "ToggleGroup",
+      "source": "src/components/ui/toggle-group/ToggleGroup.vue",
+      "storyFile": "src/components/ui/toggle-group/ToggleGroup.stories.ts",
+      "title": "Website/UI/ToggleGroup",
+      "status": "stable",
+      "category": "ui",
+      "capabilities": [],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/ui/toggle-group/ToggleGroup.vue"
+      },
+      "agent": {
+        "importPath": "@/components/ui/toggle-group/ToggleGroup",
+        "storybookPath": "/?path=/story/website-ui-togglegroup--single",
+        "docsPath": "/?path=/docs/website-ui-togglegroup--docs",
+        "states": ["Single", "Separated", "Multiple"],
+        "hasInteractionTest": true,
+        "hasResponsiveStories": false,
+        "compositionSafe": true
+      },
+      "stories": [
+        {
+          "exportName": "Single",
+          "storyId": "website-ui-togglegroup--single"
+        },
+        {
+          "exportName": "Separated",
+          "storyId": "website-ui-togglegroup--separated"
+        },
+        {
+          "exportName": "Multiple",
+          "storyId": "website-ui-togglegroup--multiple"
+        }
+      ]
+    }
+  ],
+  "recipes": [
+    {
+      "name": "Product landing",
+      "storyId": "website-recipes-page-patterns--product-landing",
+      "requiredBlocks": [
+        "HeroSplit01",
+        "FeatureRows01",
+        "StepsGrid01",
+        "CtaCenter01"
+      ]
+    },
+    {
+      "name": "Article gallery",
+      "storyId": "website-recipes-page-patterns--article-gallery",
+      "requiredBlocks": [
+        "HeroCentered01",
+        "CardArticleGallery01",
+        "CtaCenter01"
+      ]
+    },
+    {
+      "name": "Pricing",
+      "storyId": "website-recipes-page-patterns--pricing",
+      "requiredBlocks": ["PricingSection", "CtaCenter01"]
+    },
+    {
+      "name": "Event",
+      "storyId": "website-recipes-page-patterns--event",
+      "requiredBlocks": ["HeroCentered01", "CardArticleGallery01"]
+    },
+    {
+      "name": "Model launch",
+      "storyId": "website-recipes-page-patterns--model-launch",
+      "requiredBlocks": [
+        "HeroSplit01",
+        "StepsGrid01",
+        "FAQSplit01",
+        "CtaCenter01"
+      ]
+    }
+  ]
+}

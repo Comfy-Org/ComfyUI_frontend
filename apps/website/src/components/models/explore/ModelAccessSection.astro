@@ -1,0 +1,40 @@
+---
+import ProductCard from '../../common/ProductCard.vue'
+
+interface AccessCard {
+  title: string
+  description: string
+  cta: string
+  href: string
+  bg: string
+}
+
+interface Props {
+  heading: string
+  cards: AccessCard[]
+}
+
+const { heading, cards } = Astro.props
+---
+
+<section
+  aria-labelledby="model-access-heading"
+  class="mx-auto max-w-10xl px-6 py-8 md:px-10 xl:px-30"
+>
+  <h2 id="model-access-heading" class="sr-only">{heading}</h2>
+  <div
+    class="bg-transparency-white-t4 rounded-5xl grid gap-4 p-4 md:grid-cols-2 md:p-2"
+  >
+    {
+      cards.map((card) => (
+        <ProductCard
+          title={card.title}
+          description={card.description}
+          cta={card.cta}
+          href={card.href}
+          bg={card.bg}
+        />
+      ))
+    }
+  </div>
+</section>

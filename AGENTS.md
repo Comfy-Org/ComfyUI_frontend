@@ -203,6 +203,8 @@ Before implementing any user-facing feature, consult the [Comfy Design Standards
 
 See `docs/guidance/design-standards.md` for Figma file keys, section node IDs, and component references.
 
+For mockup-derived pages and components, follow `docs/design-system/README.md` and `docs/design-system/MOCKUP_WORKFLOW.md`. For `apps/website`, use the shipped website and `docs/design-system/website/README.md` as the primary component authority; Figma is secondary composition evidence. Search the generated token and component inventories before creating a primitive. Run `pnpm design-system:docs` after changing reusable design-system or website components, and run `pnpm lint:design-system` before handing off UI changes.
+
 ## Testing
 
 - Frameworks: Vitest (unit/component, happy-dom) and Playwright (E2E).

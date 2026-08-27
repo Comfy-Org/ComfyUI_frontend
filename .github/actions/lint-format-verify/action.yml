@@ -17,6 +17,12 @@ runs:
         pnpm format:check
         pnpm knip
 
+    - name: Verify design system governance
+      shell: bash
+      run: |
+        pnpm design-system:docs:check
+        pnpm lint:design-system --base "${GITHUB_BASE_REF:-main}"
+
     - name: Verify locale integrity
       shell: bash
       run: pnpm locale:check

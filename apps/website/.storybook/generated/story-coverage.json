@@ -1,0 +1,1242 @@
+{
+  "schemaVersion": 2,
+  "componentCount": 266,
+  "documentedComponentCount": 62,
+  "missingStoryCount": 204,
+  "dispositionCounts": {
+    "compound-part": 28,
+    "icon": 5,
+    "integration": 3,
+    "page-local": 103,
+    "reusable-candidate": 14,
+    "template-local": 51
+  },
+  "classifications": [
+    {
+      "source": "src/components/about/CareersSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/about/HeroSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/about/OurValuesSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/about/StorySection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/about/ValuesSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/blocks/HeroLivestream01.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/blocks/PlayOverlay.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/blocks/WatchPageLayout.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/booking-confirmation/ResourceList.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/careers/HeroSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/careers/RolesSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/careers/TeamPhotosSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/careers/WhyJoinSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/cloud-nodes/HeroSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/cloud-nodes/NodeList.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/cloud-nodes/PackBanner.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/cloud-nodes/PackCard.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/cloud-nodes/PackDetail.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/cloud-nodes/PackGridSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/common/ContentSection.vue",
+      "disposition": "reusable-candidate",
+      "reason": "Shared location indicates reuse potential; requires an explicit contract before promotion."
+    },
+    {
+      "source": "src/components/common/GitHubStarBadge.vue",
+      "disposition": "reusable-candidate",
+      "reason": "Shared location indicates reuse potential; requires an explicit contract before promotion."
+    },
+    {
+      "source": "src/components/common/GlassCard.vue",
+      "disposition": "reusable-candidate",
+      "reason": "Shared location indicates reuse potential; requires an explicit contract before promotion."
+    },
+    {
+      "source": "src/components/common/HeaderMain/HeaderMainDesktop.vue",
+      "disposition": "reusable-candidate",
+      "reason": "Shared location indicates reuse potential; requires an explicit contract before promotion."
+    },
+    {
+      "source": "src/components/common/HeaderMain/HeaderMainMobile.vue",
+      "disposition": "reusable-candidate",
+      "reason": "Shared location indicates reuse potential; requires an explicit contract before promotion."
+    },
+    {
+      "source": "src/components/common/HeaderMain/NavColumn.vue",
+      "disposition": "reusable-candidate",
+      "reason": "Shared location indicates reuse potential; requires an explicit contract before promotion."
+    },
+    {
+      "source": "src/components/common/HeaderMain/NavFeaturedCard.vue",
+      "disposition": "reusable-candidate",
+      "reason": "Shared location indicates reuse potential; requires an explicit contract before promotion."
+    },
+    {
+      "source": "src/components/common/HeaderMain/NavLinkContent.vue",
+      "disposition": "reusable-candidate",
+      "reason": "Shared location indicates reuse potential; requires an explicit contract before promotion."
+    },
+    {
+      "source": "src/components/common/HeaderMain/NewBadge.vue",
+      "disposition": "reusable-candidate",
+      "reason": "Shared location indicates reuse potential; requires an explicit contract before promotion."
+    },
+    {
+      "source": "src/components/common/ProductCardsSection.vue",
+      "disposition": "reusable-candidate",
+      "reason": "Shared location indicates reuse potential; requires an explicit contract before promotion."
+    },
+    {
+      "source": "src/components/common/WireNodeLayout.vue",
+      "disposition": "reusable-candidate",
+      "reason": "Shared location indicates reuse potential; requires an explicit contract before promotion."
+    },
+    {
+      "source": "src/components/contact/FormSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/contact/HubspotFormEmbed.vue",
+      "disposition": "integration",
+      "reason": "External integration boundary; verify in its owning page or integration test."
+    },
+    {
+      "source": "src/components/customers/ArticleNav.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/customers/ContactSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/customers/DetailHeroSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/customers/FeedbackSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/customers/HeroSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/customers/StoryCard.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/customers/StorySection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/customers/VideoSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/customers/WhatsNextSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/customers/content/ReadMore.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/demos/ArcadeEmbed.vue",
+      "disposition": "integration",
+      "reason": "External integration boundary; verify in its owning page or integration test."
+    },
+    {
+      "source": "src/components/demos/DemoHeroSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/demos/DemoNavSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/demos/DemoTranscript.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/gallery/ContactSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/gallery/GalleryCard.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/gallery/GalleryDetailModal.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/gallery/GalleryItemAttribution.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/gallery/GallerySection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/gallery/HeroSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/home/BlobMedia.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/home/BlobRail.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/home/BuildWhatSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/home/CaseStudySpotlightSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/home/GetStartedSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/home/HeroSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/home/ModelReleaseSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/home/ProductCardsSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/home/ProductShowcaseSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/home/UseCaseSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/icons/BreadthumbIcon.vue",
+      "disposition": "icon",
+      "reason": "Decorative implementation asset; catalog through its owning control."
+    },
+    {
+      "source": "src/components/icons/CheckIcon.vue",
+      "disposition": "icon",
+      "reason": "Decorative implementation asset; catalog through its owning control."
+    },
+    {
+      "source": "src/components/icons/NodeUnionIcon.vue",
+      "disposition": "icon",
+      "reason": "Decorative implementation asset; catalog through its owning control."
+    },
+    {
+      "source": "src/components/icons/VolumeMutedIcon.vue",
+      "disposition": "icon",
+      "reason": "Decorative implementation asset; catalog through its owning control."
+    },
+    {
+      "source": "src/components/icons/VolumeUnmutedIcon.vue",
+      "disposition": "icon",
+      "reason": "Decorative implementation asset; catalog through its owning control."
+    },
+    {
+      "source": "src/components/individual-submission/PlansPricingCta.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/learning/FeaturedTutorialCard.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/learning/LearningCategoryNav.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/learning/LearningDirectorySection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/learning/LearningVideoEmbed.vue",
+      "disposition": "integration",
+      "reason": "External integration boundary; verify in its owning page or integration test."
+    },
+    {
+      "source": "src/components/learning/LearningWatchPage.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/learning/TutorialRow.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/legal/HeroSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/legal/LegalContentSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/models/ModelCreationsSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/models/ModelHeroSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/models/ModelWorkflowGallery.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/models/ModelsHeroSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/models/explore/ModelCatalogExplorer.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/models/explore/ModelCategoryFilter.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/models/explore/ModelMediaPlaceholder.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/payment/PaymentStatusSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/pricing/CloudPricingSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/pricing/PricingCard.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/pricing/PricingContactBand.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/pricing/PricingCredits.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/pricing/PricingFreeBanner.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/pricing/PricingPlanFeatureList.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/pricing/PricingPlanLabel.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/pricing/PricingPrice.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/pricing/PricingSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/pricing/PricingTeamCard.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/pricing/WhatsIncludedSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/product/api/AutomationSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/product/api/HeroSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/product/api/ReasonSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/product/api/StepsSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/product/cloud/AudienceSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/product/cloud/FAQSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/product/cloud/HeroSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/product/cloud/PricingSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/product/cloud/ProductCardsSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/product/cloud/ReasonSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/product/enterprise/BYOKeySection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/product/enterprise/DataOwnershipSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/product/enterprise/HeroSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/product/enterprise/OrchestrationSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/product/enterprise/ReasonSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/product/enterprise/TeamSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/product/local/DownloadLocalButton.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/product/local/EcoSystemSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/product/local/FAQSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/product/local/HeroSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/product/local/MobileDownloadEmailForm.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/product/local/ProductCardsSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/product/local/ReasonSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/product/shared/AIModelsSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/product/shared/CardGridSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/product/shared/CloudBannerSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/product/shared/FeatureShowcaseSection.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/ui/accordion/AccordionContent.vue",
+      "disposition": "compound-part",
+      "reason": "Compound component part documented through its cataloged root composition."
+    },
+    {
+      "source": "src/components/ui/accordion/AccordionItem.vue",
+      "disposition": "compound-part",
+      "reason": "Compound component part documented through its cataloged root composition."
+    },
+    {
+      "source": "src/components/ui/accordion/AccordionTrigger.vue",
+      "disposition": "compound-part",
+      "reason": "Compound component part documented through its cataloged root composition."
+    },
+    {
+      "source": "src/components/ui/card/CardContent.vue",
+      "disposition": "compound-part",
+      "reason": "Compound component part documented through its cataloged root composition."
+    },
+    {
+      "source": "src/components/ui/card/CardDescription.vue",
+      "disposition": "compound-part",
+      "reason": "Compound component part documented through its cataloged root composition."
+    },
+    {
+      "source": "src/components/ui/card/CardFooter.vue",
+      "disposition": "compound-part",
+      "reason": "Compound component part documented through its cataloged root composition."
+    },
+    {
+      "source": "src/components/ui/card/CardHeader.vue",
+      "disposition": "compound-part",
+      "reason": "Compound component part documented through its cataloged root composition."
+    },
+    {
+      "source": "src/components/ui/card/CardTitle.vue",
+      "disposition": "compound-part",
+      "reason": "Compound component part documented through its cataloged root composition."
+    },
+    {
+      "source": "src/components/ui/dialog/DialogClose.vue",
+      "disposition": "compound-part",
+      "reason": "Compound component part documented through its cataloged root composition."
+    },
+    {
+      "source": "src/components/ui/dialog/DialogContent.vue",
+      "disposition": "compound-part",
+      "reason": "Compound component part documented through its cataloged root composition."
+    },
+    {
+      "source": "src/components/ui/dialog/DialogDescription.vue",
+      "disposition": "compound-part",
+      "reason": "Compound component part documented through its cataloged root composition."
+    },
+    {
+      "source": "src/components/ui/dialog/DialogOverlay.vue",
+      "disposition": "compound-part",
+      "reason": "Compound component part documented through its cataloged root composition."
+    },
+    {
+      "source": "src/components/ui/dialog/DialogTitle.vue",
+      "disposition": "compound-part",
+      "reason": "Compound component part documented through its cataloged root composition."
+    },
+    {
+      "source": "src/components/ui/dialog/DialogTrigger.vue",
+      "disposition": "compound-part",
+      "reason": "Compound component part documented through its cataloged root composition."
+    },
+    {
+      "source": "src/components/ui/navigation-menu/NavigationMenuContent.vue",
+      "disposition": "compound-part",
+      "reason": "Compound component part documented through its cataloged root composition."
+    },
+    {
+      "source": "src/components/ui/navigation-menu/NavigationMenuItem.vue",
+      "disposition": "compound-part",
+      "reason": "Compound component part documented through its cataloged root composition."
+    },
+    {
+      "source": "src/components/ui/navigation-menu/NavigationMenuLink.vue",
+      "disposition": "compound-part",
+      "reason": "Compound component part documented through its cataloged root composition."
+    },
+    {
+      "source": "src/components/ui/navigation-menu/NavigationMenuList.vue",
+      "disposition": "compound-part",
+      "reason": "Compound component part documented through its cataloged root composition."
+    },
+    {
+      "source": "src/components/ui/navigation-menu/NavigationMenuTrigger.vue",
+      "disposition": "compound-part",
+      "reason": "Compound component part documented through its cataloged root composition."
+    },
+    {
+      "source": "src/components/ui/navigation-menu/NavigationMenuViewport.vue",
+      "disposition": "compound-part",
+      "reason": "Compound component part documented through its cataloged root composition."
+    },
+    {
+      "source": "src/components/ui/scroll-carousel/ScrollCarousel.vue",
+      "disposition": "reusable-candidate",
+      "reason": "Shared location indicates reuse potential; requires an explicit contract before promotion."
+    },
+    {
+      "source": "src/components/ui/sheet/Sheet.vue",
+      "disposition": "reusable-candidate",
+      "reason": "Shared location indicates reuse potential; requires an explicit contract before promotion."
+    },
+    {
+      "source": "src/components/ui/sheet/SheetClose.vue",
+      "disposition": "compound-part",
+      "reason": "Compound component part documented through its cataloged root composition."
+    },
+    {
+      "source": "src/components/ui/sheet/SheetContent.vue",
+      "disposition": "compound-part",
+      "reason": "Compound component part documented through its cataloged root composition."
+    },
+    {
+      "source": "src/components/ui/sheet/SheetDescription.vue",
+      "disposition": "compound-part",
+      "reason": "Compound component part documented through its cataloged root composition."
+    },
+    {
+      "source": "src/components/ui/sheet/SheetHeader.vue",
+      "disposition": "compound-part",
+      "reason": "Compound component part documented through its cataloged root composition."
+    },
+    {
+      "source": "src/components/ui/sheet/SheetOverlay.vue",
+      "disposition": "compound-part",
+      "reason": "Compound component part documented through its cataloged root composition."
+    },
+    {
+      "source": "src/components/ui/sheet/SheetTitle.vue",
+      "disposition": "compound-part",
+      "reason": "Compound component part documented through its cataloged root composition."
+    },
+    {
+      "source": "src/components/ui/sheet/SheetTrigger.vue",
+      "disposition": "compound-part",
+      "reason": "Compound component part documented through its cataloged root composition."
+    },
+    {
+      "source": "src/components/ui/task-tile/TaskTile.vue",
+      "disposition": "reusable-candidate",
+      "reason": "Shared location indicates reuse potential; requires an explicit contract before promotion."
+    },
+    {
+      "source": "src/components/ui/toggle-group/ToggleGroupItem.vue",
+      "disposition": "compound-part",
+      "reason": "Compound component part documented through its cataloged root composition."
+    },
+    {
+      "source": "src/templates/affiliate/AudienceSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/affiliate/BenefitsSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/affiliate/BrandAssetsSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/affiliate/CtaSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/affiliate/FAQSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/affiliate/HeroSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/affiliate/HowItWorksSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/brand/BrandBackground.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/brand/BrandColorSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/brand/BrandHeroSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/brand/BrandLogosSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/brand/BrandQuestionsSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/brand/BrandTrademarkSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/brand/BrandVoiceSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/drops/AnnouncementBanner.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/drops/CtaSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/drops/DropsSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/drops/HeroSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/drops/LaunchesHeroLogo.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/events/EventVideoDialog.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/events/EventsHeroSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/events/PastEventsSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/events/UpcomingEventsSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/fdct/BuildersSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/fdct/ClosingCtaSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/fdct/CtaBandsSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/fdct/FAQSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/fdct/HeroSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/fdct/HowItWorksSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/fdct/PastProjectsSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/fdct/TechnologistsSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/fdct/WhatYouGetSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/mcp/ComfyMcpDemo.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/mcp/FAQSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/mcp/HeroSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/mcp/HowItWorksSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/mcp/SetupSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/mcp/ToolsSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/mcp/UseCasesSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/mcp/WhySection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/model-launch/ModelLaunchAudioGallerySection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/model-launch/ModelLaunchAudioSampleCard.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/model-launch/ModelLaunchCtaSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/model-launch/ModelLaunchFaqSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/model-launch/ModelLaunchGallerySection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/model-launch/ModelLaunchHeroCtaButtons.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/model-launch/ModelLaunchHeroSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/model-launch/ModelLaunchPricingSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/model-launch/ModelLaunchReviewsSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/model-launch/ModelLaunchRunOptionsSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/model-launch/ModelLaunchStepsSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    }
+  ],
+  "missingStories": [
+    "src/components/about/CareersSection.vue",
+    "src/components/about/HeroSection.vue",
+    "src/components/about/OurValuesSection.vue",
+    "src/components/about/StorySection.vue",
+    "src/components/about/ValuesSection.vue",
+    "src/components/blocks/HeroLivestream01.vue",
+    "src/components/blocks/PlayOverlay.vue",
+    "src/components/blocks/WatchPageLayout.vue",
+    "src/components/booking-confirmation/ResourceList.vue",
+    "src/components/careers/HeroSection.vue",
+    "src/components/careers/RolesSection.vue",
+    "src/components/careers/TeamPhotosSection.vue",
+    "src/components/careers/WhyJoinSection.vue",
+    "src/components/cloud-nodes/HeroSection.vue",
+    "src/components/cloud-nodes/NodeList.vue",
+    "src/components/cloud-nodes/PackBanner.vue",
+    "src/components/cloud-nodes/PackCard.vue",
+    "src/components/cloud-nodes/PackDetail.vue",
+    "src/components/cloud-nodes/PackGridSection.vue",
+    "src/components/common/ContentSection.vue",
+    "src/components/common/GitHubStarBadge.vue",
+    "src/components/common/GlassCard.vue",
+    "src/components/common/HeaderMain/HeaderMainDesktop.vue",
+    "src/components/common/HeaderMain/HeaderMainMobile.vue",
+    "src/components/common/HeaderMain/NavColumn.vue",
+    "src/components/common/HeaderMain/NavFeaturedCard.vue",
+    "src/components/common/HeaderMain/NavLinkContent.vue",
+    "src/components/common/HeaderMain/NewBadge.vue",
+    "src/components/common/ProductCardsSection.vue",
+    "src/components/common/WireNodeLayout.vue",
+    "src/components/contact/FormSection.vue",
+    "src/components/contact/HubspotFormEmbed.vue",
+    "src/components/customers/ArticleNav.vue",
+    "src/components/customers/ContactSection.vue",
+    "src/components/customers/DetailHeroSection.vue",
+    "src/components/customers/FeedbackSection.vue",
+    "src/components/customers/HeroSection.vue",
+    "src/components/customers/StoryCard.vue",
+    "src/components/customers/StorySection.vue",
+    "src/components/customers/VideoSection.vue",
+    "src/components/customers/WhatsNextSection.vue",
+    "src/components/customers/content/ReadMore.vue",
+    "src/components/demos/ArcadeEmbed.vue",
+    "src/components/demos/DemoHeroSection.vue",
+    "src/components/demos/DemoNavSection.vue",
+    "src/components/demos/DemoTranscript.vue",
+    "src/components/gallery/ContactSection.vue",
+    "src/components/gallery/GalleryCard.vue",
+    "src/components/gallery/GalleryDetailModal.vue",
+    "src/components/gallery/GalleryItemAttribution.vue",
+    "src/components/gallery/GallerySection.vue",
+    "src/components/gallery/HeroSection.vue",
+    "src/components/home/BlobMedia.vue",
+    "src/components/home/BlobRail.vue",
+    "src/components/home/BuildWhatSection.vue",
+    "src/components/home/CaseStudySpotlightSection.vue",
+    "src/components/home/GetStartedSection.vue",
+    "src/components/home/HeroSection.vue",
+    "src/components/home/ModelReleaseSection.vue",
+    "src/components/home/ProductCardsSection.vue",
+    "src/components/home/ProductShowcaseSection.vue",
+    "src/components/home/UseCaseSection.vue",
+    "src/components/icons/BreadthumbIcon.vue",
+    "src/components/icons/CheckIcon.vue",
+    "src/components/icons/NodeUnionIcon.vue",
+    "src/components/icons/VolumeMutedIcon.vue",
+    "src/components/icons/VolumeUnmutedIcon.vue",
+    "src/components/individual-submission/PlansPricingCta.vue",
+    "src/components/learning/FeaturedTutorialCard.vue",
+    "src/components/learning/LearningCategoryNav.vue",
+    "src/components/learning/LearningDirectorySection.vue",
+    "src/components/learning/LearningVideoEmbed.vue",
+    "src/components/learning/LearningWatchPage.vue",
+    "src/components/learning/TutorialRow.vue",
+    "src/components/legal/HeroSection.vue",
+    "src/components/legal/LegalContentSection.vue",
+    "src/components/models/ModelCreationsSection.vue",
+    "src/components/models/ModelHeroSection.vue",
+    "src/components/models/ModelWorkflowGallery.vue",
+    "src/components/models/ModelsHeroSection.vue",
+    "src/components/models/explore/ModelCatalogExplorer.vue",
+    "src/components/models/explore/ModelCategoryFilter.vue",
+    "src/components/models/explore/ModelMediaPlaceholder.vue",
+    "src/components/payment/PaymentStatusSection.vue",
+    "src/components/pricing/CloudPricingSection.vue",
+    "src/components/pricing/PricingCard.vue",
+    "src/components/pricing/PricingContactBand.vue",
+    "src/components/pricing/PricingCredits.vue",
+    "src/components/pricing/PricingFreeBanner.vue",
+    "src/components/pricing/PricingPlanFeatureList.vue",
+    "src/components/pricing/PricingPlanLabel.vue",
+    "src/components/pricing/PricingPrice.vue",
+    "src/components/pricing/PricingSection.vue",
+    "src/components/pricing/PricingTeamCard.vue",
+    "src/components/pricing/WhatsIncludedSection.vue",
+    "src/components/product/api/AutomationSection.vue",
+    "src/components/product/api/HeroSection.vue",
+    "src/components/product/api/ReasonSection.vue",
+    "src/components/product/api/StepsSection.vue",
+    "src/components/product/cloud/AudienceSection.vue",
+    "src/components/product/cloud/FAQSection.vue",
+    "src/components/product/cloud/HeroSection.vue",
+    "src/components/product/cloud/PricingSection.vue",
+    "src/components/product/cloud/ProductCardsSection.vue",
+    "src/components/product/cloud/ReasonSection.vue",
+    "src/components/product/enterprise/BYOKeySection.vue",
+    "src/components/product/enterprise/DataOwnershipSection.vue",
+    "src/components/product/enterprise/HeroSection.vue",
+    "src/components/product/enterprise/OrchestrationSection.vue",
+    "src/components/product/enterprise/ReasonSection.vue",
+    "src/components/product/enterprise/TeamSection.vue",
+    "src/components/product/local/DownloadLocalButton.vue",
+    "src/components/product/local/EcoSystemSection.vue",
+    "src/components/product/local/FAQSection.vue",
+    "src/components/product/local/HeroSection.vue",
+    "src/components/product/local/MobileDownloadEmailForm.vue",
+    "src/components/product/local/ProductCardsSection.vue",
+    "src/components/product/local/ReasonSection.vue",
+    "src/components/product/shared/AIModelsSection.vue",
+    "src/components/product/shared/CardGridSection.vue",
+    "src/components/product/shared/CloudBannerSection.vue",
+    "src/components/product/shared/FeatureShowcaseSection.vue",
+    "src/components/ui/accordion/AccordionContent.vue",
+    "src/components/ui/accordion/AccordionItem.vue",
+    "src/components/ui/accordion/AccordionTrigger.vue",
+    "src/components/ui/card/CardContent.vue",
+    "src/components/ui/card/CardDescription.vue",
+    "src/components/ui/card/CardFooter.vue",
+    "src/components/ui/card/CardHeader.vue",
+    "src/components/ui/card/CardTitle.vue",
+    "src/components/ui/dialog/DialogClose.vue",
+    "src/components/ui/dialog/DialogContent.vue",
+    "src/components/ui/dialog/DialogDescription.vue",
+    "src/components/ui/dialog/DialogOverlay.vue",
+    "src/components/ui/dialog/DialogTitle.vue",
+    "src/components/ui/dialog/DialogTrigger.vue",
+    "src/components/ui/navigation-menu/NavigationMenuContent.vue",
+    "src/components/ui/navigation-menu/NavigationMenuItem.vue",
+    "src/components/ui/navigation-menu/NavigationMenuLink.vue",
+    "src/components/ui/navigation-menu/NavigationMenuList.vue",
+    "src/components/ui/navigation-menu/NavigationMenuTrigger.vue",
+    "src/components/ui/navigation-menu/NavigationMenuViewport.vue",
+    "src/components/ui/scroll-carousel/ScrollCarousel.vue",
+    "src/components/ui/sheet/Sheet.vue",
+    "src/components/ui/sheet/SheetClose.vue",
+    "src/components/ui/sheet/SheetContent.vue",
+    "src/components/ui/sheet/SheetDescription.vue",
+    "src/components/ui/sheet/SheetHeader.vue",
+    "src/components/ui/sheet/SheetOverlay.vue",
+    "src/components/ui/sheet/SheetTitle.vue",
+    "src/components/ui/sheet/SheetTrigger.vue",
+    "src/components/ui/task-tile/TaskTile.vue",
+    "src/components/ui/toggle-group/ToggleGroupItem.vue",
+    "src/templates/affiliate/AudienceSection.vue",
+    "src/templates/affiliate/BenefitsSection.vue",
+    "src/templates/affiliate/BrandAssetsSection.vue",
+    "src/templates/affiliate/CtaSection.vue",
+    "src/templates/affiliate/FAQSection.vue",
+    "src/templates/affiliate/HeroSection.vue",
+    "src/templates/affiliate/HowItWorksSection.vue",
+    "src/templates/brand/BrandBackground.vue",
+    "src/templates/brand/BrandColorSection.vue",
+    "src/templates/brand/BrandHeroSection.vue",
+    "src/templates/brand/BrandLogosSection.vue",
+    "src/templates/brand/BrandQuestionsSection.vue",
+    "src/templates/brand/BrandTrademarkSection.vue",
+    "src/templates/brand/BrandVoiceSection.vue",
+    "src/templates/drops/AnnouncementBanner.vue",
+    "src/templates/drops/CtaSection.vue",
+    "src/templates/drops/DropsSection.vue",
+    "src/templates/drops/HeroSection.vue",
+    "src/templates/drops/LaunchesHeroLogo.vue",
+    "src/templates/events/EventVideoDialog.vue",
+    "src/templates/events/EventsHeroSection.vue",
+    "src/templates/events/PastEventsSection.vue",
+    "src/templates/events/UpcomingEventsSection.vue",
+    "src/templates/fdct/BuildersSection.vue",
+    "src/templates/fdct/ClosingCtaSection.vue",
+    "src/templates/fdct/CtaBandsSection.vue",
+    "src/templates/fdct/FAQSection.vue",
+    "src/templates/fdct/HeroSection.vue",
+    "src/templates/fdct/HowItWorksSection.vue",
+    "src/templates/fdct/PastProjectsSection.vue",
+    "src/templates/fdct/TechnologistsSection.vue",
+    "src/templates/fdct/WhatYouGetSection.vue",
+    "src/templates/mcp/ComfyMcpDemo.vue",
+    "src/templates/mcp/FAQSection.vue",
+    "src/templates/mcp/HeroSection.vue",
+    "src/templates/mcp/HowItWorksSection.vue",
+    "src/templates/mcp/SetupSection.vue",
+    "src/templates/mcp/ToolsSection.vue",
+    "src/templates/mcp/UseCasesSection.vue",
+    "src/templates/mcp/WhySection.vue",
+    "src/templates/model-launch/ModelLaunchAudioGallerySection.vue",
+    "src/templates/model-launch/ModelLaunchAudioSampleCard.vue",
+    "src/templates/model-launch/ModelLaunchCtaSection.vue",
+    "src/templates/model-launch/ModelLaunchFaqSection.vue",
+    "src/templates/model-launch/ModelLaunchGallerySection.vue",
+    "src/templates/model-launch/ModelLaunchHeroCtaButtons.vue",
+    "src/templates/model-launch/ModelLaunchHeroSection.vue",
+    "src/templates/model-launch/ModelLaunchPricingSection.vue",
+    "src/templates/model-launch/ModelLaunchReviewsSection.vue",
+    "src/templates/model-launch/ModelLaunchRunOptionsSection.vue",
+    "src/templates/model-launch/ModelLaunchStepsSection.vue"
+  ]
+}

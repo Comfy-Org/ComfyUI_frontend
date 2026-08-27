@@ -1,11 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import { expect, waitFor, within } from 'storybook/test'
 
 import NodeBadge from './NodeBadge.vue'
 
 const meta: Meta<typeof NodeBadge> = {
   title: 'Website/Common/NodeBadge',
   component: NodeBadge,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'stable'],
   decorators: [
     () => ({
       template: '<div class="bg-primary-comfy-ink p-8"><story /></div>'
@@ -31,8 +32,19 @@ export const MultipleSegments: Story = {
 export const WithLogo: Story = {
   args: {
     segments: [
-      { logoSrc: '/logos/comfy-logo.svg', logoAlt: 'Comfy Logo' },
-      { text: 'NODES' }
-    ]
+      { text: 'HOW' },
+      { logoSrc: '/icons/logo.svg', logoAlt: 'Comfy' },
+      { text: 'WORKS' }
+    ],
+    segmentClass: ''
+  },
+  play: async ({ canvasElement }) => {
+    const logo = within(canvasElement).getByRole('img', { name: 'Comfy' })
+
+    if (!(logo instanceof HTMLImageElement)) {
+      throw new Error('Comfy logo did not render as an image')
+    }
+    await expect(logo).toHaveAttribute('src', '/icons/logo.svg')
+    await waitFor(() => expect(logo.naturalWidth).toBeGreaterThan(0))
   }
 }

@@ -1,8 +1,17 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import { cn } from '@comfyorg/tailwind-utils'
+import { userEvent, within } from 'storybook/test'
+import type { ComponentProps } from 'vue-component-type-helpers'
 
 import ButtonPill from './ButtonPill.vue'
 
-const meta: Meta<typeof ButtonPill> = {
+type ButtonPillStoryArgs = ComponentProps<typeof ButtonPill> & {
+  href?: string
+  previewState?: 'interactive' | 'collapsed' | 'revealed'
+  type?: 'button' | 'reset' | 'submit'
+}
+
+const meta = {
   title: 'Website/UI/ButtonPill',
   component: ButtonPill,
   tags: ['autodocs'],
@@ -24,18 +33,17 @@ const meta: Meta<typeof ButtonPill> = {
     },
     size: {
       control: { type: 'select' },
-      options: ['default', 'lg', 'icon']
+      options: ['default', 'lg']
     },
     iconPosition: {
       control: { type: 'select' },
       options: ['right', 'left']
-    },
-    hideLabel: { control: 'boolean' }
+    }
   }
-}
+} satisfies Meta<ButtonPillStoryArgs>
 
 export default meta
-type Story = StoryObj<typeof meta>
+type Story = StoryObj<ButtonPillStoryArgs>
 
 export const AsAnchor: Story = {
   args: { as: 'a', href: '#' },
@@ -71,6 +79,81 @@ export const DefaultSolid: Story = {
     setup: () => ({ args }),
     template: '<ButtonPill v-bind="args">Try Workflow</ButtonPill>'
   })
+}
+
+export const WorkflowsPageReference: Story = {
+  args: { previewState: 'interactive' },
+  argTypes: {
+    previewState: {
+      control: { type: 'inline-radio' },
+      options: ['interactive', 'collapsed', 'revealed']
+    }
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Reference captured from the live Comfy Workflows page. The reveal mode is not implemented by this website component yet and is not approved for production use.'
+      }
+    }
+  },
+  render: (args) => ({
+    setup: () => ({ args, cn }),
+    template: `
+      <a
+        href="#"
+        aria-label="Example workflow"
+        :class="cn(
+          'group/button-pill relative isolate inline-flex h-10 w-fit cursor-pointer items-center overflow-hidden rounded-2xl bg-transparent py-2.5 ps-9 pe-0 text-sm font-bold uppercase tracking-wider text-content text-nowrap transition-all duration-500',
+          args.previewState === 'interactive' && 'hover:bg-primary-comfy-yellow hover:pe-5 hover:text-primary-comfy-ink',
+          args.previewState === 'revealed' && 'bg-primary-comfy-yellow pe-5 text-primary-comfy-ink'
+        )"
+      >
+        <span
+          :class="cn(
+            'grid grid-cols-[0fr] transition-[grid-template-columns] duration-500',
+            args.previewState === 'interactive' && 'group-hover/button-pill:grid-cols-[1fr]',
+            args.previewState === 'revealed' && 'grid-cols-[1fr]'
+          )"
+        >
+          <span class="overflow-hidden">
+            <span class="ppformula-text-center relative leading-none">Try now</span>
+          </span>
+        </span>
+        <span
+          aria-hidden="true"
+          :class="cn(
+            'absolute left-1 top-1/2 z-10 flex size-8 -translate-y-1/2 items-center justify-center rounded-xl bg-white/20 text-white transition-all duration-500',
+            args.previewState === 'interactive' && 'group-hover/button-pill:bg-primary-comfy-yellow group-hover/button-pill:text-primary-comfy-ink',
+            args.previewState === 'revealed' && 'bg-primary-comfy-yellow text-primary-comfy-ink'
+          )"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="size-4"
+          >
+            <path d="m9 18 6-6-6-6" />
+          </svg>
+        </span>
+      </a>
+    `
+  }),
+  play: async ({ canvasElement, step }) => {
+    const canvas = within(canvasElement)
+    const button = canvas.getByRole('link', { name: 'Example workflow' })
+
+    await step('Reveal label', async () => {
+      await userEvent.hover(button)
+    })
+    await step('Reset button', async () => {
+      await userEvent.unhover(button)
+    })
+  }
 }
 
 export const LargeSolid: Story = {
@@ -114,15 +197,6 @@ export const IconLeft: Story = {
     components: { ButtonPill },
     setup: () => ({ args }),
     template: '<ButtonPill v-bind="args">Go Back</ButtonPill>'
-  })
-}
-
-export const RevealLabelOnHover: Story = {
-  args: { as: 'a', href: '#', hideLabel: true },
-  render: (args) => ({
-    components: { ButtonPill },
-    setup: () => ({ args }),
-    template: '<ButtonPill v-bind="args">Try Workflow</ButtonPill>'
   })
 }
 

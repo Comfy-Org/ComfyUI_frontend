@@ -81,8 +81,16 @@
   --color-illustration-forest: #20464c;
   --color-transparency-white-t4: rgb(255 255 255 / 0.04);
   --color-transparency-white-t8: rgb(255 255 255 / 0.08);
+  --color-transparency-white-t15: rgb(255 255 255 / 0.15);
   --color-transparency-white-t20: rgb(255 255 255 / 0.2);
   --color-transparency-ink-t80: rgb(33 25 39 / 0.8);
+  --color-brand: var(--color-primary-comfy-yellow);
+  --color-content: var(--color-primary-warm-white);
+  --color-content-secondary: var(--color-primary-warm-gray);
+  --color-hub-muted: var(--color-primary-warm-gray);
+  --color-hub-surface: var(--color-transparency-white-t4);
+  --color-hub-surface-hover: var(--color-transparency-white-t8);
+  --color-page: var(--color-primary-comfy-ink);
   --font-formula: 'PP Formula', sans-serif;
   --font-formula-narrow: 'PP Formula Narrow', sans-serif;
   --text-2xs: 0.6875rem;
@@ -91,6 +99,8 @@
   --radius-4xl: 2rem;
   --radius-4\.5xl: 2.25rem;
   --radius-5xl: 2.5rem;
+  --radius-hub-filter: 0.875rem;
+  --radius-hub-filter-item: 0.625rem;
   --container-8xl: 88rem;
   --container-9xl: 96rem;
   --container-10xl: 100rem;

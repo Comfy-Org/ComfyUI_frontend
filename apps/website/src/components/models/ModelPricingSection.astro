@@ -1,0 +1,62 @@
+---
+import { Coins as CreditsIcon } from '@lucide/vue'
+
+import { t } from '../../i18n/translations'
+
+interface Props {
+  isPartnerNode: boolean
+  locale?: 'en' | 'zh-CN'
+}
+
+const { isPartnerNode, locale = 'en' } = Astro.props
+const openRows = [
+  ['models.pricing.cloud', 'models.pricing.usageBased', true],
+  ['models.pricing.localGpu', 'models.pricing.yourHardware', false],
+  ['models.pricing.weights', 'models.pricing.openDownload', false],
+] as const
+const partnerRows = [
+  ['models.pricing.cloud', 'models.pricing.usageBased', true],
+  ['models.pricing.localGpu', 'models.pricing.partnerOnly', false],
+  ['models.pricing.access', 'models.pricing.includedInWorkflow', false],
+] as const
+const rows = isPartnerNode ? partnerRows : openRows
+---
+
+<section class="pb-12 lg:pb-16">
+  <div class="mx-auto max-w-9xl px-5 sm:px-6 lg:px-20">
+    <div class="bg-transparency-white-t4 rounded-5xl p-2">
+      <div class="grid gap-2 lg:grid-cols-2">
+        <div class="rounded-4xl bg-primary-comfy-ink p-6 sm:p-7">
+          <h2
+            class="text-sm font-bold tracking-widest text-primary-comfy-yellow uppercase"
+          >
+            {t('models.pricing.heading', locale)}
+          </h2>
+          <p class="mt-2 text-sm font-light text-primary-warm-gray">
+            {t('models.pricing.subtitle', locale)}
+          </p>
+          <dl class="mt-4 divide-y divide-white/10 border-t border-white/10">
+            {
+              rows.map(([labelKey, valueKey, showCreditsIcon]) => (
+                <div class="flex items-center justify-between gap-4 py-3">
+                  <dt class="text-sm text-primary-warm-white">
+                    {t(labelKey, locale)}
+                  </dt>
+                  <dd class="flex items-center gap-1.5 text-right text-xs font-semibold text-primary-comfy-canvas">
+                    {showCreditsIcon && (
+                      <CreditsIcon
+                        class="size-3.5 shrink-0 text-primary-comfy-orange"
+                        aria-hidden="true"
+                      />
+                    )}
+                    {t(valueKey, locale)}
+                  </dd>
+                </div>
+              ))
+            }
+          </dl>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

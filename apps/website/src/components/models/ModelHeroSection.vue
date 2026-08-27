@@ -1,24 +1,26 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import CardWorkflow01 from '../blocks/CardWorkflow01.vue'
+import type { CardWorkflowItem } from '../blocks/CardWorkflow01.vue'
 import BrandButton from '../common/BrandButton.vue'
 import { t } from '../../i18n/translations'
 
 const {
   displayName,
-  huggingFaceUrl,
   docsUrl,
   blogUrl,
   hubSlug,
   workflowCount,
-  directory
+  directory,
+  featuredWorkflow
 } = defineProps<{
   displayName: string
-  huggingFaceUrl: string
   docsUrl?: string
   blogUrl?: string
   hubSlug?: string
   workflowCount: number
   directory: string
+  featuredWorkflow?: CardWorkflowItem
 }>()
 
 const workflowsUrl = hubSlug
@@ -42,7 +44,6 @@ const dirDisplayMap: Record<string, string> = {
 }
 
 const eyebrow = dirDisplayMap[directory] ?? directory
-const isPartnerNode = directory === 'partner_nodes'
 </script>
 
 <template>
@@ -56,7 +57,7 @@ const isPartnerNode = directory === 'partner_nodes'
   >
     <div class="flex max-w-2xl flex-1 flex-col gap-6">
       <p
-        class="text-sm font-medium uppercase tracking-widest text-primary-comfy-yellow"
+        class="text-primary-comfy-yellow text-sm font-medium tracking-widest uppercase"
       >
         {{ eyebrow }}
       </p>
@@ -86,23 +87,11 @@ const isPartnerNode = directory === 'partner_nodes'
         </BrandButton>
 
         <BrandButton
-          v-if="!isPartnerNode && huggingFaceUrl"
-          :href="huggingFaceUrl"
-          target="_blank"
-          rel="noopener noreferrer"
-          :variant="workflowsUrl ? 'outline' : 'solid'"
-          size="lg"
-          class="w-full uppercase sm:w-auto sm:min-w-48"
-        >
-          {{ t('models.hero.secondaryCta') }}
-        </BrandButton>
-
-        <BrandButton
           v-if="!workflowsUrl"
           href="https://www.comfy.org/cloud"
           target="_blank"
           rel="noopener noreferrer"
-          :variant="huggingFaceUrl && !isPartnerNode ? 'outline' : 'solid'"
+          variant="solid"
           size="lg"
           class="w-full uppercase sm:w-auto sm:min-w-48"
         >
@@ -127,11 +116,15 @@ const isPartnerNode = directory === 'partner_nodes'
           :href="blogUrl"
           target="_blank"
           rel="noopener noreferrer"
-          class="hover:text-primary-comfy-canvas underline"
+          class="underline hover:text-primary-comfy-canvas"
         >
           {{ t('models.hero.blogLink') }}
         </a>
       </div>
+    </div>
+
+    <div v-if="featuredWorkflow" class="w-full flex-1 lg:max-w-2xl">
+      <CardWorkflow01 :item="featuredWorkflow" variant="feature" />
     </div>
   </section>
 </template>

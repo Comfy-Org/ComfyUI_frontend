@@ -1,4 +1,7 @@
-# Storybook Configuration for ComfyUI Frontend
+# App frontend Storybook
+
+The marketing website Storybook is the repository default. Run this app
+frontend Storybook explicitly when working on components under `src/`.
 
 ## What is Storybook?
 
@@ -41,11 +44,11 @@ Storybook is a frontend workshop for building UI components and pages in isolati
 ### Development Commands
 
 ```bash
-# Start Storybook development server
-pnpm storybook
+# Start the app frontend Storybook development server
+pnpm storybook:frontend
 
-# Build static Storybook for deployment
-pnpm build-storybook
+# Build the app frontend Storybook
+pnpm build-storybook:frontend
 ```
 
 ### Creating Stories

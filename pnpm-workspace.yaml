@@ -38,10 +38,12 @@ catalog:
   '@sentry/vite-plugin': ^4.6.0
   '@sentry/vue': ^10.32.1
   '@sparkjsdev/spark': ^2.1.0
-  '@storybook/addon-docs': ^10.5.6
+  '@storybook/addon-docs': ^10.5.10
+  '@storybook/addon-designs': ^11.1.4
   '@storybook/addon-mcp': 0.7.0
-  '@storybook/vue3': ^10.5.6
-  '@storybook/vue3-vite': ^10.5.6
+  '@storybook/mcp': 0.8.0
+  '@storybook/vue3': ^10.5.10
+  '@storybook/vue3-vite': ^10.5.10
   '@stripe/stripe-js': ^9.12.0
   '@tailwindcss/vite': ^4.3.2
   '@tanstack/vue-virtual': ^3.13.12
@@ -86,7 +88,7 @@ catalog:
   eslint-plugin-import-x: ^4.17.1
   eslint-plugin-oxlint: 1.78.0
   eslint-plugin-playwright: ^2.11.0
-  eslint-plugin-storybook: ^10.5.7
+  eslint-plugin-storybook: ^10.5.10
   eslint-plugin-testing-library: ^7.16.2
   eslint-plugin-unused-imports: ^4.4.1
   eslint-plugin-vue: ^10.10.0
@@ -99,6 +101,7 @@ catalog:
   happy-dom: 20.9.0
   husky: ^9.1.7
   jsdom: ^29.1.1
+  jose: ^6.2.10
   jsonata: ^2.1.0
   jsonc-parser: 3.3.1
   knip: ^6.27.0
@@ -124,7 +127,7 @@ catalog:
   reka-ui: 2.6.2
   rollup-plugin-visualizer: ^6.0.4
   start-server-and-test: ^3.0.11
-  storybook: ^10.5.6
+  storybook: ^10.5.10
   stylelint: ^17.14.0
   tailwindcss: ^4.3.2
   tailwindcss-primeui: ^0.6.1
@@ -156,6 +159,13 @@ catalog:
   zod: ^3.23.8
   zod-to-json-schema: ^3.24.1
   zod-validation-error: ^3.3.0
+  storybook-addon-tag-badges: ^3.1.0
+  '@storybook/addon-vitest': 10.5.10
+  '@vitest/browser-playwright': 4.1.10
+  playwright: 1.61.1
+  '@storybook/addon-a11y': ^10.5.10
+  '@auth/core': 0.41.3
+  '@vercel/functions': 3.9.5
 
 cleanupUnusedCatalogs: true
 
@@ -191,3 +201,13 @@ overrides:
   brace-expansion@^4.0.0: ^5.0.9
   brace-expansion@^5.0.0: ^5.0.9
   sharp@^0.34.0: ^0.35.0
+
+minimumReleaseAgeExclude:
+  - '@storybook/addon-docs@10.5.10'
+  - '@storybook/builder-vite@10.5.10'
+  - '@storybook/csf-plugin@10.5.10'
+  - '@storybook/react-dom-shim@10.5.10'
+  - '@storybook/vue3-vite@10.5.10'
+  - '@storybook/vue3@10.5.10'
+  - storybook@10.5.10
+  - eslint-plugin-storybook@10.5.10

@@ -2,12 +2,20 @@ import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { deriveModelCategories } from '../src/config/modelCategories'
+import type { ModelCategory } from '../src/config/modelCategories'
+
+import { setNewestPreview } from '../src/utils/modelPreviewSelection'
+import type { TemplateRecency } from '../src/utils/modelPreviewSelection'
+
 const WORKFLOW_TEMPLATES_BASE =
   'https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates'
 
-const TEMPLATES_DIR = fileURLToPath(
-  new URL('../../../../workflow_templates/templates', import.meta.url)
-)
+const TEMPLATES_DIR =
+  process.env['WORKFLOW_TEMPLATES_DIR'] ??
+  fileURLToPath(
+    new URL('../../../../workflow_templates/templates', import.meta.url)
+  )
 
 const QUANT_SUFFIXES = [
   '_fp8_e4m3fn_scaled',
@@ -26,7 +34,9 @@ interface ModelData {
   url: string
   directory: string
   templates: Set<string>
-  firstTemplate?: string
+  categories: Set<ModelCategory>
+  previewTemplate?: string
+  previewRecency?: TemplateRecency
 }
 
 interface OutputModel {
@@ -36,116 +46,58 @@ interface OutputModel {
   directory: string
   workflowCount: number
   displayName: string
+  categories: ModelCategory[]
+  workflowPreviews: WorkflowPreview[]
   docsUrl?: string
   thumbnailUrl?: string
   canonicalSlug?: string
 }
 
+interface WorkflowPreview {
+  id: string
+  title: string
+  thumbnailUrl: string
+  publishedAt?: string
+}
+
 // Maps api_*.json filename prefix to a canonical display name and slug.
 // Add entries here as new partner integrations land in workflow_templates.
-export const API_PROVIDER_MAP: Record<string, { name: string; slug: string }> =
-  {
-    nano: { name: 'Nano Banana', slug: 'nano-banana' },
-    kling: { name: 'Kling AI', slug: 'kling-ai' },
-    kling2: { name: 'Kling AI', slug: 'kling-ai' },
-    meshy: { name: 'Meshy AI', slug: 'meshy-ai' },
-    meshy7: { name: 'Meshy 7', slug: 'meshy-7' },
-    luma: { name: 'Luma Dream Machine', slug: 'luma-dream-machine' },
-    runway: { name: 'Runway', slug: 'runway' },
-    vidu: { name: 'Vidu', slug: 'vidu' },
-    bfl: { name: 'Flux (API)', slug: 'flux-api' },
-    grok: { name: 'Grok Imagine', slug: 'grok-imagine' },
-    stability: { name: 'Stability AI', slug: 'stability-ai' },
-    bytedance: { name: 'Seedance (ByteDance)', slug: 'seedance-bytedance' },
-    bytedace: { name: 'Seedance (ByteDance)', slug: 'seedance-bytedance' },
-    google: { name: 'Gemini Image', slug: 'gemini-image' },
-    hailuo: { name: 'Hailuo MiniMax', slug: 'hailuo-minimax' },
-    ideogram: { name: 'Ideogram', slug: 'ideogram' },
-    pixverse: { name: 'Pixverse', slug: 'pixverse' },
-    rodin: { name: 'Rodin 3D', slug: 'rodin-3d' },
-    magnific: { name: 'Magnific AI', slug: 'magnific-ai' },
-    bria: { name: 'Bria AI', slug: 'bria-ai' },
-    tripo: { name: 'Tripo 3D', slug: 'tripo-3d' },
-    tripo3: { name: 'Tripo 3D', slug: 'tripo-3d' },
-    hunyuan3d: { name: 'Hunyuan 3D', slug: 'hunyuan-3d' },
-    recraft: { name: 'Recraft', slug: 'recraft' },
-    topaz: { name: 'Topaz Labs', slug: 'topaz-labs' },
-    moonvalley: { name: 'Moonvalley', slug: 'moonvalley' },
-    ltxv: { name: 'LTX Video (API)', slug: 'ltxv-api' },
-    openai: { name: 'OpenAI DALL-E', slug: 'openai-dall-e' },
-    wan: { name: 'Wan (API)', slug: 'wan-api' },
-    wan2: { name: 'Wan (API)', slug: 'wan-api' },
-    veo2: { name: 'Veo 2', slug: 'veo-2' },
-    veo3: { name: 'Veo 3', slug: 'veo-3' },
-    flux2: { name: 'Flux 2 (API)', slug: 'flux-2-api' },
-    wavespeed: { name: 'Wavespeed', slug: 'wavespeed' },
-    wavespped: { name: 'Wavespeed', slug: 'wavespeed' },
-    wan2_1: { name: 'Wan 2.1', slug: 'wan2-1' },
-    z_image_turbo: { name: 'Z Image Turbo', slug: 'z-image-turbo' },
-    wan2_2: { name: 'Wan 2.2', slug: 'wan2-2' },
-    gemini3_pro_image_preview: {
-      name: 'Gemini 3 Pro Image Preview',
-      slug: 'gemini3-pro-image-preview'
-    },
-    ltx2_3: { name: 'LTX 2.3', slug: 'ltx-2-3' },
-    flux_1: { name: 'Flux 1', slug: 'flux-1' },
-    nano_banana_2: { name: 'Nano Banana 2', slug: 'nano-banana-2' },
-    kling_3_0: { name: 'Kling 3.0', slug: 'kling-3-0' },
-    seedance2_0: { name: 'Seedance 2.0', slug: 'seedance-2-0' },
-    flux2_klein: { name: 'Flux 2 Klein', slug: 'flux-2-klein' },
-    kling_o3: { name: 'Kling O3', slug: 'kling-o3' },
-    sdxl: { name: 'SDXL', slug: 'sdxl' },
-    flux_1_kontext: { name: 'Flux 1 Kontext', slug: 'flux-1-kontext' },
-    wan2_2_animate: { name: 'Wan 2.2 Animate', slug: 'wan2-2-animate' },
-    kling_o1: { name: 'Kling O1', slug: 'kling-o1' },
-    flux2_dev: { name: 'Flux 2 Dev', slug: 'flux-2-dev' },
-    sd1_5: { name: 'SD 1.5', slug: 'sd1-5' },
-    sd3_5: { name: 'SD 3.5', slug: 'sd3-5' },
-    kling2_6: { name: 'Kling 2.6', slug: 'kling-2-6' },
-    gpt_image_1: { name: 'GPT Image 1', slug: 'gpt-image-1' },
-    wan2_7: { name: 'Wan 2.7', slug: 'wan2-7' },
-    wan3_0: { name: 'Wan 3.0', slug: 'wan-3-0' },
-    seedance1_0_pro: { name: 'Seedance 1.0 Pro', slug: 'seedance1-0-pro' },
-    kling1_6: { name: 'Kling 1.6', slug: 'kling-1-6' },
-    wan2_1_vace: { name: 'Wan 2.1 Vace', slug: 'wan2-1-vace' },
-    wan2_6: { name: 'Wan 2.6', slug: 'wan2-6' },
-    wan2_5: { name: 'Wan 2.5', slug: 'wan2-5' },
-    qwen_image_layered: {
-      name: 'Qwen Image Layered',
-      slug: 'qwen-image-layered'
-    },
-    wan_ati: { name: 'Wan ATI', slug: 'wan-ati' },
-    ltx_0_9_5: { name: 'LTX 0.9.5', slug: 'ltx-0-9-5' },
-    qwen_image_2512: { name: 'Qwen Image 2512', slug: 'qwen-image-2512' },
-    wan2_1_infinitetalk: {
-      name: 'Wan 2.1 InfiniteTalk',
-      slug: 'wan2-1-infinitetalk'
-    },
-    gpt_image_1_5: { name: 'GPT Image 1.5', slug: 'gpt-image-1-5' },
-    seedream_5_0_lite: { name: 'Seedream 5.0 Lite', slug: 'seedream-5-0-lite' },
-    wan2_1_scail: { name: 'Wan 2.1 Scail', slug: 'wan2-1-scail' },
-    seedream_4_0: { name: 'Seedream 4.0', slug: 'seedream-4-0' },
-    seedance1_5_pro: { name: 'Seedance 1.5 Pro', slug: 'seedance-1-5-pro' },
-    kling2_0: { name: 'Kling 2.0', slug: 'kling-2-0' },
-    flux1_krea_dev: { name: 'Flux 1 Krea Dev', slug: 'flux-1-krea-dev' },
-    seedream_4_5: { name: 'Seedream 4.5', slug: 'seedream-4-5' },
-    anthropic: { name: 'Anthropic Claude', slug: 'anthropic-claude' },
-    beeble: { name: 'Beeble', slug: 'beeble' },
-    elevenlabs: { name: 'ElevenLabs', slug: 'elevenlabs' },
-    flux: { name: 'Flux', slug: 'flux' },
-    happyhorse1: { name: 'Happyhorse1', slug: 'happyhorse1' },
-    heygen: { name: 'HeyGen', slug: 'heygen' },
-    krea2: { name: 'Krea 2', slug: 'krea-2' },
-    ltx2: { name: 'LTX 2', slug: 'ltx-2' },
-    minimax: { name: 'MiniMax', slug: 'minimax' },
-    openrouter: { name: 'OpenRouter', slug: 'openrouter' },
-    quiver: { name: 'Quiver', slug: 'quiver' },
-    qwen3: { name: 'Qwen 3', slug: 'qwen-3' },
-    rodin3d: { name: 'Rodin 3D', slug: 'rodin-3d' },
-    seedance2: { name: 'Seedance 2', slug: 'seedance-2' },
-    sonilo: { name: 'Sonilo', slug: 'sonilo' },
-    sync: { name: 'Sync', slug: 'sync' }
-  }
+const API_PROVIDER_MAP: Record<string, { name: string; slug: string }> = {
+  nano: { name: 'Nano Banana', slug: 'nano-banana' },
+  kling: { name: 'Kling AI', slug: 'kling-ai' },
+  kling2: { name: 'Kling AI', slug: 'kling-ai' },
+  meshy: { name: 'Meshy AI', slug: 'meshy-ai' },
+  luma: { name: 'Luma Dream Machine', slug: 'luma-dream-machine' },
+  runway: { name: 'Runway', slug: 'runway' },
+  vidu: { name: 'Vidu', slug: 'vidu' },
+  bfl: { name: 'Flux (API)', slug: 'flux-api' },
+  grok: { name: 'Grok Imagine', slug: 'grok-imagine' },
+  stability: { name: 'Stability AI', slug: 'stability-ai' },
+  bytedance: { name: 'Seedance (ByteDance)', slug: 'seedance-bytedance' },
+  bytedace: { name: 'Seedance (ByteDance)', slug: 'seedance-bytedance' },
+  google: { name: 'Gemini Image', slug: 'gemini-image' },
+  hailuo: { name: 'Hailuo MiniMax', slug: 'hailuo-minimax' },
+  ideogram: { name: 'Ideogram', slug: 'ideogram' },
+  pixverse: { name: 'Pixverse', slug: 'pixverse' },
+  rodin: { name: 'Rodin 3D', slug: 'rodin-3d' },
+  magnific: { name: 'Magnific AI', slug: 'magnific-ai' },
+  bria: { name: 'Bria AI', slug: 'bria-ai' },
+  tripo: { name: 'Tripo 3D', slug: 'tripo-3d' },
+  tripo3: { name: 'Tripo 3D', slug: 'tripo-3d' },
+  hunyuan3d: { name: 'Hunyuan 3D', slug: 'hunyuan-3d' },
+  recraft: { name: 'Recraft', slug: 'recraft' },
+  topaz: { name: 'Topaz Labs', slug: 'topaz-labs' },
+  moonvalley: { name: 'Moonvalley', slug: 'moonvalley' },
+  ltxv: { name: 'LTX Video (API)', slug: 'ltxv-api' },
+  openai: { name: 'OpenAI DALL-E', slug: 'openai-dall-e' },
+  wan: { name: 'Wan (API)', slug: 'wan-api' },
+  wan2: { name: 'Wan (API)', slug: 'wan-api' },
+  veo2: { name: 'Veo 2', slug: 'veo-2' },
+  veo3: { name: 'Veo 3', slug: 'veo-3' },
+  flux2: { name: 'Flux 2 (API)', slug: 'flux-2-api' },
+  wavespeed: { name: 'Wavespeed', slug: 'wavespeed' },
+  wavespped: { name: 'Wavespeed', slug: 'wavespeed' }
+}
 
 // Stub entries that exist only to issue 301 redirects from old slugs to
 // their new canonical slugs. Keeps renames reproducible across regenerations.
@@ -157,7 +109,9 @@ const LEGACY_SLUG_REDIRECTS: OutputModel[] = [
     displayName: 'Grok Image',
     directory: 'partner_nodes',
     huggingFaceUrl: '',
-    workflowCount: 0
+    workflowCount: 0,
+    categories: [],
+    workflowPreviews: []
   }
 ]
 
@@ -197,12 +151,16 @@ function makeDisplayName(name: string): string {
 function extractModels(
   obj: unknown,
   templateName: string,
+  templateRecency: TemplateRecency | undefined,
+  categories: readonly ModelCategory[],
   models: Map<string, ModelData>
 ): void {
   if (obj === null || typeof obj !== 'object') return
 
   if (Array.isArray(obj)) {
-    for (const item of obj) extractModels(item, templateName, models)
+    for (const item of obj) {
+      extractModels(item, templateName, templateRecency, categories, models)
+    }
     return
   }
 
@@ -224,15 +182,20 @@ function extractModels(
           url,
           directory,
           templates: new Set(),
-          firstTemplate: templateName
+          categories: new Set()
         })
       }
-      models.get(name)!.templates.add(templateName)
+      const modelData = models.get(name)!
+      modelData.templates.add(templateName)
+      for (const category of categories) modelData.categories.add(category)
+      if (templateRecency) {
+        setNewestPreview(modelData, templateName, templateRecency)
+      }
     }
   }
 
   for (const value of Object.values(record)) {
-    extractModels(value, templateName, models)
+    extractModels(value, templateName, templateRecency, categories, models)
   }
 }
 
@@ -241,10 +204,27 @@ interface ApiModelData {
   name: string
   directory: 'partner_nodes'
   templateCount: number
+  categories: ModelCategory[]
+  templates: string[]
+  previewTemplate?: string
 }
 
-export function extractApiModels(files: string[]): ApiModelData[] {
-  const counts = new Map<string, number>()
+export function extractApiModels(
+  files: string[],
+  templateCategories: ReadonlyMap<string, readonly ModelCategory[]> = new Map(),
+  templateRecencies: ReadonlyMap<string, TemplateRecency> = new Map(),
+  templatesDir = ''
+): ApiModelData[] {
+  const providers = new Map<
+    string,
+    {
+      count: number
+      categories: Set<ModelCategory>
+      templates: Set<string>
+      previewTemplate?: string
+      previewRecency?: TemplateRecency
+    }
+  >()
   const unmapped = new Set<string>()
   const sortedKeys = Object.keys(API_PROVIDER_MAP).sort(
     (a, b) => b.length - a.length
@@ -252,12 +232,8 @@ export function extractApiModels(files: string[]): ApiModelData[] {
 
   for (const file of files) {
     if (!file.startsWith('api_')) continue
-    const baseName = file
-      .slice(4)
-      .toLowerCase()
-      .replace(/\.json$/, '')
-
-    // Ignore known non-providers or upstream typos until fixed
+    const templateName = stripJsonExtension(file)
+    const baseName = stripJsonExtension(file.slice(4)).toLowerCase()
     if (
       baseName === 'king' ||
       baseName.startsWith('king_') ||
@@ -266,40 +242,160 @@ export function extractApiModels(files: string[]): ApiModelData[] {
     ) {
       continue
     }
-
-    let matchedKey: string | undefined
-    for (const key of sortedKeys) {
-      if (baseName === key || baseName.startsWith(key + '_')) {
-        matchedKey = key
-        break
-      }
-    }
-
+    const matchedKey = sortedKeys.find(
+      (key) => baseName === key || baseName.startsWith(`${key}_`)
+    )
     if (!matchedKey) {
       unmapped.add(`- ${baseName} (from ${file})`)
       continue
     }
-
     const entry = API_PROVIDER_MAP[matchedKey]
-    counts.set(entry.slug, (counts.get(entry.slug) ?? 0) + 1)
+    const provider = providers.get(entry.slug) ?? {
+      count: 0,
+      categories: new Set<ModelCategory>(),
+      templates: new Set<string>()
+    }
+    provider.count += 1
+    provider.templates.add(templateName)
+    for (const category of templateCategories.get(templateName) ?? []) {
+      provider.categories.add(category)
+    }
+    const templateRecency = templatesDir
+      ? previewRecency(templateName, templateRecencies, templatesDir)
+      : undefined
+    if (templateRecency) {
+      setNewestPreview(provider, templateName, templateRecency)
+    }
+    providers.set(entry.slug, provider)
   }
-
   if (unmapped.size > 0) {
     throw new Error(
-      `Unmapped API provider prefixes found in template files:\n` +
-        Array.from(unmapped).join('\n') +
-        `\nYou MUST add them to API_PROVIDER_MAP in generate-models.ts.`
+      `Unmapped API provider prefixes found in template files:\n${[...unmapped].join('\n')}\nYou MUST add them to API_PROVIDER_MAP in generate-models.ts.`
     )
   }
-  return [...counts.entries()].map(([slug, count]) => {
+  return [...providers.entries()].map(([slug, provider]) => {
     const found = Object.values(API_PROVIDER_MAP).find((e) => e.slug === slug)!
     return {
       slug,
       name: found.name,
       directory: 'partner_nodes' as const,
-      templateCount: count
+      templateCount: provider.count,
+      categories: [...provider.categories],
+      templates: [...provider.templates],
+      ...(provider.previewTemplate
+        ? { previewTemplate: provider.previewTemplate }
+        : {})
     }
   })
+}
+
+function stripJsonExtension(file: string): string {
+  return file.replace(/\.json$/i, '')
+}
+
+function buildTemplateCategoryMap(
+  templatesDir: string
+): Map<string, ModelCategory[]> {
+  const map = new Map<string, ModelCategory[]>()
+  const data: unknown = JSON.parse(
+    readFileSync(join(templatesDir, 'index.json'), 'utf8')
+  )
+  if (!Array.isArray(data)) return map
+
+  for (const category of data) {
+    if (typeof category !== 'object' || category === null) continue
+    const categoryRecord = category as Record<string, unknown>
+    const section =
+      typeof categoryRecord['title'] === 'string' ? categoryRecord['title'] : ''
+    const templates = categoryRecord['templates']
+    if (!Array.isArray(templates)) continue
+
+    for (const template of templates) {
+      if (typeof template !== 'object' || template === null) continue
+      const templateRecord = template as Record<string, unknown>
+      const name = templateRecord['name']
+      if (typeof name !== 'string') continue
+      const tags = Array.isArray(templateRecord['tags'])
+        ? templateRecord['tags'].filter(
+            (tag): tag is string => typeof tag === 'string'
+          )
+        : []
+      map.set(name, deriveModelCategories(section, tags))
+    }
+  }
+
+  return map
+}
+
+function fallbackRecency(): TemplateRecency {
+  return {
+    timestamp: Number.NEGATIVE_INFINITY,
+    index: 0
+  }
+}
+
+function buildTemplateRecencyMap(
+  templatesDir: string
+): Map<string, TemplateRecency> {
+  const map = new Map<string, TemplateRecency>()
+  const data: unknown = JSON.parse(
+    readFileSync(join(templatesDir, 'index.json'), 'utf8')
+  )
+  if (!Array.isArray(data)) return map
+
+  let index = 0
+  for (const category of data) {
+    if (typeof category !== 'object' || category === null) continue
+    const templates = (category as Record<string, unknown>)['templates']
+    if (!Array.isArray(templates)) continue
+
+    for (const template of templates) {
+      if (typeof template !== 'object' || template === null) continue
+      const record = template as Record<string, unknown>
+      const name = record['name']
+      if (typeof name !== 'string') continue
+      const date = record['date']
+      const timestamp =
+        typeof date === 'string' ? Date.parse(date) : Number.NEGATIVE_INFINITY
+      if (!map.has(name)) {
+        map.set(name, {
+          timestamp: Number.isNaN(timestamp)
+            ? Number.NEGATIVE_INFINITY
+            : timestamp,
+          index
+        })
+      }
+      index += 1
+    }
+  }
+
+  return map
+}
+
+function buildTemplateTitleMap(templatesDir: string): Map<string, string> {
+  const map = new Map<string, string>()
+  const data: unknown = JSON.parse(
+    readFileSync(join(templatesDir, 'index.json'), 'utf8')
+  )
+  if (!Array.isArray(data)) return map
+
+  for (const category of data) {
+    if (typeof category !== 'object' || category === null) continue
+    const templates = (category as Record<string, unknown>)['templates']
+    if (!Array.isArray(templates)) continue
+
+    for (const template of templates) {
+      if (typeof template !== 'object' || template === null) continue
+      const record = template as Record<string, unknown>
+      const name = record['name']
+      const title = record['title']
+      if (typeof name === 'string' && typeof title === 'string') {
+        map.set(name, title)
+      }
+    }
+  }
+
+  return map
 }
 
 // Reads all locale index.json files to build a map of
@@ -398,17 +494,71 @@ function templateThumbnailUrl(
   return `${WORKFLOW_TEMPLATES_BASE}/${encodeURIComponent(base)}-1.webp`
 }
 
+function buildWorkflowPreviews(
+  templateNames: Iterable<string>,
+  templateTitles: ReadonlyMap<string, string>,
+  templateRecencies: ReadonlyMap<string, TemplateRecency>,
+  templatesDir: string
+): WorkflowPreview[] {
+  return [...templateNames]
+    .filter((templateName) =>
+      existsSync(join(templatesDir, `${templateName}-1.webp`))
+    )
+    .sort((a, b) => {
+      const aRecency = templateRecencies.get(a) ?? fallbackRecency()
+      const bRecency = templateRecencies.get(b) ?? fallbackRecency()
+      return (
+        bRecency.timestamp - aRecency.timestamp ||
+        aRecency.index - bRecency.index
+      )
+    })
+    .map((templateName) => {
+      const timestamp = templateRecencies.get(templateName)?.timestamp
+      return {
+        id: templateName,
+        title:
+          templateTitles.get(templateName) ?? makeDisplayName(templateName),
+        thumbnailUrl: `${WORKFLOW_TEMPLATES_BASE}/${encodeURIComponent(templateName)}-1.webp`,
+        ...(timestamp !== undefined && Number.isFinite(timestamp)
+          ? { publishedAt: new Date(timestamp).toISOString() }
+          : {})
+      }
+    })
+}
+
+function previewRecency(
+  templateName: string,
+  templateRecencies: ReadonlyMap<string, TemplateRecency>,
+  templatesDir: string
+): TemplateRecency | undefined {
+  return existsSync(join(templatesDir, `${templateName}-1.webp`))
+    ? (templateRecencies.get(templateName) ?? fallbackRecency())
+    : undefined
+}
+
 function run(): void {
   const models = new Map<string, ModelData>()
 
-  const files = readdirSync(TEMPLATES_DIR).filter((f) => f.endsWith('.json'))
+  const files = readdirSync(TEMPLATES_DIR)
+    .filter((f) => f.endsWith('.json'))
+    .sort()
+  const templateCategories = buildTemplateCategoryMap(TEMPLATES_DIR)
+  const templateRecencies = buildTemplateRecencyMap(TEMPLATES_DIR)
+  const templateTitles = buildTemplateTitleMap(TEMPLATES_DIR)
 
   for (const file of files) {
     const filePath = join(TEMPLATES_DIR, file)
     try {
       const raw = readFileSync(filePath, 'utf8')
       const data: unknown = JSON.parse(raw)
-      extractModels(data, file, models)
+      const templateName = stripJsonExtension(file)
+      extractModels(
+        data,
+        templateName,
+        previewRecency(templateName, templateRecencies, TEMPLATES_DIR),
+        templateCategories.get(templateName) ?? [],
+        models
+      )
     } catch (error) {
       throw new Error(
         `Failed to parse ${file}: ${
@@ -419,7 +569,12 @@ function run(): void {
     }
   }
 
-  const apiModels = extractApiModels(files)
+  const apiModels = extractApiModels(
+    files,
+    templateCategories,
+    templateRecencies,
+    TEMPLATES_DIR
+  )
   const tutorialUrlMap = buildTutorialUrlMap(TEMPLATES_DIR)
 
   const sorted = [...models.entries()].sort(
@@ -459,11 +614,18 @@ function run(): void {
       huggingFaceUrl: data.url,
       directory: data.directory,
       workflowCount: data.templates.size,
-      displayName: makeDisplayName(name)
+      displayName: makeDisplayName(name),
+      categories: [...data.categories],
+      workflowPreviews: buildWorkflowPreviews(
+        data.templates,
+        templateTitles,
+        templateRecencies,
+        TEMPLATES_DIR
+      )
     }
     const docsUrl = tutorialUrlMap.get(name)
     if (docsUrl) result.docsUrl = docsUrl
-    const thumb = templateThumbnailUrl(data.firstTemplate, TEMPLATES_DIR)
+    const thumb = templateThumbnailUrl(data.previewTemplate, TEMPLATES_DIR)
     if (thumb) result.thumbnailUrl = thumb
     if (canonicalRaw !== null) {
       result.canonicalSlug = makeSlug(canonicalRaw)
@@ -473,14 +635,26 @@ function run(): void {
 
   const apiOutput: OutputModel[] = apiModels
     .sort((a, b) => b.templateCount - a.templateCount)
-    .map((m) => ({
-      slug: m.slug,
-      name: m.name,
-      huggingFaceUrl: '',
-      directory: m.directory,
-      workflowCount: m.templateCount,
-      displayName: m.name
-    }))
+    .map((m) => {
+      const result: OutputModel = {
+        slug: m.slug,
+        name: m.name,
+        huggingFaceUrl: '',
+        directory: m.directory,
+        workflowCount: m.templateCount,
+        displayName: m.name,
+        categories: m.categories,
+        workflowPreviews: buildWorkflowPreviews(
+          m.templates,
+          templateTitles,
+          templateRecencies,
+          TEMPLATES_DIR
+        )
+      }
+      const thumb = templateThumbnailUrl(m.previewTemplate, TEMPLATES_DIR)
+      if (thumb) result.thumbnailUrl = thumb
+      return result
+    })
 
   const combined = [...apiOutput, ...output, ...LEGACY_SLUG_REDIRECTS]
 
@@ -503,13 +677,9 @@ function run(): void {
   )
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
-  try {
-    run()
-  } catch (err) {
-    process.stderr.write(
-      `${err instanceof Error ? err.message : String(err)}\n`
-    )
-    process.exit(1)
-  }
+try {
+  run()
+} catch (err) {
+  process.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`)
+  process.exit(1)
 }

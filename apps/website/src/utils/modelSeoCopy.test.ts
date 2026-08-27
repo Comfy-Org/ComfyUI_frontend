@@ -15,7 +15,9 @@ describe('modelSeoCopy', () => {
     directory: 'diffusion_models',
     huggingFaceUrl: 'https://huggingface.co/local',
     featured: false,
-    workflowCount: 10
+    workflowCount: 10,
+    categories: [],
+    workflowPreviews: []
   }
 
   const partnerWithHF: Model = {
@@ -25,7 +27,9 @@ describe('modelSeoCopy', () => {
     directory: 'partner_nodes',
     huggingFaceUrl: 'https://huggingface.co/partner',
     featured: false,
-    workflowCount: 5
+    workflowCount: 5,
+    categories: [],
+    workflowPreviews: []
   }
 
   const partnerCloudOnly: Model = {
@@ -35,7 +39,9 @@ describe('modelSeoCopy', () => {
     directory: 'partner_nodes',
     huggingFaceUrl: '',
     featured: false,
-    workflowCount: 42
+    workflowCount: 42,
+    categories: [],
+    workflowPreviews: []
   }
 
   const standardCloudApi: Model = {
@@ -45,7 +51,9 @@ describe('modelSeoCopy', () => {
     directory: 'diffusion_models',
     huggingFaceUrl: '',
     featured: false,
-    workflowCount: 15
+    workflowCount: 15,
+    categories: [],
+    workflowPreviews: []
   }
 
   describe('getWhatIsDescription', () => {
