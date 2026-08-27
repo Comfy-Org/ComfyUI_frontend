@@ -1,7 +1,6 @@
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 
-import { CLEAN_EXTENSION_FIXTURE_IDENTITY } from './cleanExtensionCompatFixture'
 import type {
   CleanExtensionDrawContext,
   CleanExtensionScheduler
@@ -13,10 +12,12 @@ import type {
  */
 export const RGTHREE_LIFECYCLE_FIXTURE_IDENTITY = Object.freeze({
   fixture: 'comfy.rgthree-lifecycle-compat.v1',
-  labelPatternSource: CLEAN_EXTENSION_FIXTURE_IDENTITY.labelPatternSource,
-  labelPatternSha256: CLEAN_EXTENSION_FIXTURE_IDENTITY.labelPatternSha256,
-  reroutePatternSource: CLEAN_EXTENSION_FIXTURE_IDENTITY.reroutePatternSource,
-  reroutePatternSha256: CLEAN_EXTENSION_FIXTURE_IDENTITY.reroutePatternSha256
+  labelPatternSource: 'rgthree-comfy@13b4399c00b5ef5a97b1b6800fc1185874740f5d',
+  labelPatternSha256:
+    '5a0f8d72d0be3c6573477943a18295310f82dd4b1d99a506517bb6956af1790d',
+  reroutePatternSource: 'rgthree-comfy@629c514a',
+  reroutePatternSha256:
+    'fea80b78a4e055446ad69628c2ea436f06eda52a31382e005a5476f1a6e65b24'
 })
 
 interface RgthreeLifecycleCounters {
