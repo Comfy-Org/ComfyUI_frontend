@@ -32,6 +32,7 @@
  * fails between the hooks leaves it open (fail-closed - mints stay suppressed,
  * which can never storm the doc), and the next load's paired hooks reclose it.
  */
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { NodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
@@ -41,6 +42,7 @@ import { useLinkStore } from '@/stores/linkStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { isFloatingTopology } from '@/types/linkTopology'
 import { parseWidgetId } from '@/types/widgetId'
+import { findSubgraphNodePathById } from '@/utils/graphTraversalUtil'
 
 import type { GraphOperation } from './graphOperations'
 import { AGENT_REMOTE_ACTOR, attachLayoutMintPort } from './layoutMintPort'
@@ -183,6 +185,11 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
       const graph = deps.getGraph()
       if (!graph) return null
       return String(graph.rootGraph?.id ?? graph.id)
+    },
+    resolveInteriorPath(owningGraphId) {
+      const graph = deps.getGraph()
+      if (!graph) return null
+      return findSubgraphNodePathById(graph as unknown as LGraph, owningGraphId)
     },
     enqueue: deps.enqueue
   })

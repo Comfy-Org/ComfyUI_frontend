@@ -13,10 +13,13 @@
  * session's synchronous remote-apply scope; load-driven restoration and
  * migration writes fall inside the teardown brackets.
  *
- * Top-level nodes only for now: a subgraph-interior write needs the resolved
- * node PATH (`InteriorSetWidgetOp.path`), which this block does not derive.
- * An interior write while the gate is open is surfaced observably, never
- * dropped silent.
+ * A subgraph-interior write mints the vocabulary's interior form: `path` is
+ * the RESOLVED node-id chain from the root down to the interior node (the
+ * subgraph-node ids, then the node itself), and `inner_widget` carries the
+ * widget name (the corpus norm keeps `widget === inner_widget`). When the
+ * owning graph cannot be resolved to a path - no open root, or a definition
+ * not reachable from it - the write is surfaced observably, never dropped
+ * silent.
  */
 import type { GraphOperation } from './graphOperations'
 import { shouldMint } from './mintGate'
@@ -48,6 +51,12 @@ export interface WidgetMintPortDeps {
   isDocBound(): boolean
   /** The active root graph id, or null when no workflow is open. */
   rootGraphId(): string | null
+  /**
+   * Subgraph-node id chain from the root to the definition owning
+   * `owningGraphId`, or null when unreachable (wiring resolves it over the
+   * live graph).
+   */
+  resolveInteriorPath(owningGraphId: string): string[] | null
   /** Receives minted semantic operations (the sender's inbox). */
   enqueue(operations: GraphOperation[]): void
 }
@@ -67,23 +76,41 @@ export function attachWidgetMintPort(deps: WidgetMintPortDeps): WidgetMintPort {
     if (!mintable) return
 
     const root = deps.rootGraphId()
-    if (root === null || set.graphId !== root) {
+    if (root !== null && set.graphId === root) {
+      deps.enqueue([
+        {
+          op: 'set_widget',
+          node_id: set.nodeId,
+          widget: set.name,
+          value: set.value,
+          old: set.old
+        }
+      ])
+      return
+    }
+
+    const subgraphNodePath =
+      root === null ? null : deps.resolveInteriorPath(set.graphId)
+    if (subgraphNodePath === null || subgraphNodePath.length === 0) {
       // The doc no longer matches the local graph; observable, never silent
       // (the surfacing-honesty principle).
       console.error(
-        '[agent-crdt] subgraph-interior set_widget not minted; the bound doc diverges from the local graph',
+        '[agent-crdt] set_widget with an unresolvable owner not minted; the bound doc diverges from the local graph',
         `${set.graphId}:${String(set.nodeId)}:${set.name}`
       )
       return
     }
 
+    const [head, ...rest] = subgraphNodePath
     deps.enqueue([
       {
         op: 'set_widget',
         node_id: set.nodeId,
         widget: set.name,
         value: set.value,
-        old: set.old
+        old: set.old,
+        path: [head, ...rest, String(set.nodeId)],
+        inner_widget: set.name
       }
     ])
   }
