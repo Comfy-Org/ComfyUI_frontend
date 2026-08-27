@@ -35,13 +35,18 @@ vi.mock(
   }
 )
 
-function renderPanel() {
+function renderPanel(options: { onAppError?: (error: unknown) => void } = {}) {
   const i18n = createI18n({
     legacy: false,
     locale: 'en',
     messages: { en: enMessages }
   })
-  return render(DockedAgentPanel, { global: { plugins: [i18n] } })
+  return render(DockedAgentPanel, {
+    global: {
+      plugins: [i18n],
+      config: options.onAppError ? { errorHandler: options.onAppError } : {}
+    }
+  })
 }
 
 describe('DockedAgentPanel', () => {
@@ -104,18 +109,20 @@ describe('DockedAgentPanel', () => {
     await screen.findByTestId('agent-panel-root-stub')
   })
 
-  it('reports the failure and shows the error state when the panel body fails to load', async () => {
+  it('lets a runtime error inside the resolved panel propagate instead of calling it a load failure', async () => {
     loaderState.reject = true
+    const appErrors: unknown[] = []
     const store = useAgentPanelStore()
     store.enabled = true
     store.isOpen = true
-    renderPanel()
+    renderPanel({ onAppError: (error) => appErrors.push(error) })
 
-    await screen.findByText('The agent panel failed to load.')
-    screen.getByRole('complementary', { name: 'Comfy Agent' })
-    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
-      errorType: 'agent_panel_load_failure'
-    })
+    // The chunk resolved; the failure came from the panel's own setup. It
+    // must reach the app-level handler untouched, and must NOT be reported
+    // or rendered as a load failure.
+    await vi.waitFor(() => expect(appErrors).toHaveLength(1))
+    expect(screen.queryByText('The agent panel failed to load.')).toBeNull()
+    expect(reportError).not.toHaveBeenCalled()
   })
 
   it('undocks when the flag turns off while open', async () => {

@@ -37,26 +37,27 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, defineAsyncComponent, onErrorCaptured, ref } from 'vue'
+import { computed, defineAsyncComponent, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { reportError } from '@/platform/telemetry/reportError'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agentPanelStore'
 
-const AgentPanelRoot = defineAsyncComponent(
-  () =>
-    import('@/workbench/extensions/agent/components/agent/AgentPanelRoot.vue')
+const loadFailed = ref(false)
+// Only a failed chunk load is a load failure; runtime errors inside the
+// resolved panel keep their normal propagation.
+const AgentPanelRoot = defineAsyncComponent(() =>
+  import('@/workbench/extensions/agent/components/agent/AgentPanelRoot.vue').catch(
+    (error: unknown) => {
+      reportError(error, { errorType: 'agent_panel_load_failure' })
+      loadFailed.value = true
+      throw error
+    }
+  )
 )
 
 const { t } = useI18n()
 const agentPanelStore = useAgentPanelStore()
 const { isOpen, enabled } = storeToRefs(agentPanelStore)
 const docked = computed(() => enabled.value && isOpen.value)
-
-const loadFailed = ref(false)
-onErrorCaptured((error) => {
-  reportError(error, { errorType: 'agent_panel_load_failure' })
-  loadFailed.value = true
-  return false
-})
 </script>
