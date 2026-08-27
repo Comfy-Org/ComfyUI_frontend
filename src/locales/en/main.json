@@ -2879,6 +2879,8 @@
     "planLoadErrorRetry": "Try again",
     "teamPlanName": "Team",
     "unknownTierName": "Current plan",
+    "salesManagedRunBlockedTitle": "Plan inactive",
+    "salesManagedRunBlockedDetail": "This workspace's plan is no longer active. Contact your Comfy account manager to restore access.",
     "teamPlanIncludes": "Your plan includes everything in {plan}, plus:",
     "inactiveTeamTitle": "Inactive team subscription",
     "inactiveTeamDescription": "Reactivate your team plan to add more members and run workflows",
