@@ -349,6 +349,16 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
     expect(transport.framesOfType('doc_subscribe')).toHaveLength(2)
     expect(bridge.subscribedWorkflowId).toBe(WORKFLOW_ID)
 
+    // The dropped frame may have BEEN a doc_reset, so the doc is discarded
+    // and the resubscribe carries the EMPTY vector - a state-vector catch-up
+    // against a re-minted doc would fold the new lineage into the old one.
+    const gapSubscribes = transport.framesOfType('doc_subscribe') as {
+      data: { state_vector_b64: string }
+    }[]
+    expect(gapSubscribes[1].data.state_vector_b64).toBe(
+      encodeBase64(Y.encodeStateVector(new Y.Doc()))
+    )
+
     // The resubscribe re-baselined: the catch-up frame lands whatever its seq.
     transport.deliver(
       'doc_update',

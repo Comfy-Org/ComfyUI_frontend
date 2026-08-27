@@ -18,6 +18,7 @@ export type DevEventKind =
   | 'subscribe_retry'
   | 'doc_nodes_changed'
   | 'rebind'
+  | 'stale_probe'
 
 export interface DevEvent {
   seq: number

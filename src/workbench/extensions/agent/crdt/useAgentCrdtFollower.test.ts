@@ -89,7 +89,7 @@ vi.mock('@/stores/authStore', () => ({
   useAuthStore: () => ({ userId: 'user-1' })
 }))
 
-import { useAgentCrdtFollower } from './useAgentCrdtFollower'
+import { STALE_AFTER_MS, useAgentCrdtFollower } from './useAgentCrdtFollower'
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 
 function mountFollower(initial: string | null = null): {
@@ -172,7 +172,8 @@ describe('useAgentCrdtFollower', () => {
 
     dispatchFrame('doc_subscribed', { ok: false })
     dispatchFrame('doc_subscribed', { ok: true })
-    vi.advanceTimersByTime(60_000)
+    // Below the staleness budget: anything firing here would be the retry.
+    vi.advanceTimersByTime(STALE_AFTER_MS - 1)
 
     expect(bridge().resubscribe).not.toHaveBeenCalled()
     expect(status().connected).toBe(true)
@@ -286,6 +287,63 @@ describe('useAgentCrdtFollower', () => {
     send([])
 
     expect(bridge().sendHumanOps).toHaveBeenCalledWith(expect.any(String), [])
+    unmount()
+  })
+
+  it('probes a quiet bound channel once per budget and re-arms (BE-9740)', () => {
+    vi.useFakeTimers()
+    const { unmount } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+
+    vi.advanceTimersByTime(STALE_AFTER_MS - 1)
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(1)
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
+
+    vi.advanceTimersByTime(STALE_AFTER_MS)
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(2)
+    unmount()
+  })
+
+  it('any doc-scoped frame slides the staleness window forward', () => {
+    vi.useFakeTimers()
+    const { unmount } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+
+    vi.advanceTimersByTime(STALE_AFTER_MS - 1000)
+    dispatchFrame('doc_update', { seq: 2 })
+    vi.advanceTimersByTime(STALE_AFTER_MS - 1000)
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
+
+    vi.advanceTimersByTime(1000)
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
+    unmount()
+  })
+
+  it('never probes an unconfirmed binding (refused subscribe, switch, reconnect)', async () => {
+    vi.useFakeTimers()
+    const { unmount, workflowId } = mountFollower('wf-1')
+
+    // Never confirmed: no probe however long the silence.
+    vi.advanceTimersByTime(STALE_AFTER_MS * 3)
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
+
+    // Confirmed then switched: the switch cancels the armed probe.
+    dispatchFrame('doc_subscribed', { ok: true })
+    workflowId.value = 'wf-2'
+    await Promise.resolve()
+    await Promise.resolve()
+    vi.advanceTimersByTime(STALE_AFTER_MS * 2)
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
+
+    // Confirmed then reconnected: the reconnect's own resubscribe path owns
+    // recovery; the heartbeat stays disarmed until the next confirm.
+    dispatchFrame('doc_subscribed', { ok: true })
+    bridge().resubscribe.mockClear()
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    const reconnectResubscribes = bridge().resubscribe.mock.calls.length
+    vi.advanceTimersByTime(STALE_AFTER_MS * 2)
+    expect(bridge().resubscribe.mock.calls.length).toBe(reconnectResubscribes)
     unmount()
   })
 
