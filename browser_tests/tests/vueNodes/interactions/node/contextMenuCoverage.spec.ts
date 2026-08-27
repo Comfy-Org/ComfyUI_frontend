@@ -42,11 +42,12 @@ test.describe(
 
         await openContextMenu(comfyPage, 'KSampler')
         const menu = comfyPage.contextMenu.primeVueMenu
-        await menu.getByRole('menuitem', { name: 'Shape', exact: true }).hover()
+        await menu.getByRole('menuitem', { name: 'Shape', exact: true }).click()
 
-        const boxItem = menu
-          .getByRole('menuitem', { name: 'Box', exact: true })
-          .last()
+        const shapePopover = comfyPage.page
+          .locator('.p-popover')
+          .filter({ hasText: 'Default' })
+        const boxItem = shapePopover.getByText('Box', { exact: true })
         await expect(boxItem).toBeVisible()
         await boxItem.click()
 
@@ -107,6 +108,7 @@ test.describe(
         const [loadImageNode] =
           await comfyPage.nodeOps.getNodeRefsByTitle('Load Image')
         if (!loadImageNode) throw new Error('Load Image node not found')
+        await comfyPage.nodeOps.panToNode(loadImageNode)
 
         await expect
           .poll(() =>
