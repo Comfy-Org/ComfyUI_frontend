@@ -9,8 +9,9 @@
 # Jobs have read-only permissions, and neither checkout persists credentials
 # while third-party setup and runtime code executes.
 #
-# The matrix keeps the six-pack Core depth suite intact and adds the pinned
-# Cloud snapshot as five breadth shards. The Cloud snapshot produces 87
+# The matrix splits the six-pack Core depth suite into two balanced shards and
+# adds the pinned Cloud snapshot as five breadth shards. The Cloud snapshot
+# produces 87
 # manifest rows and one unjoined YAML pack; the unjoined pack and four reviewed
 # quarantine entries are reported as excluded coverage. Every entry owns an
 # isolated LOCAL ComfyUI backend and installs only its manifest slice.
@@ -100,11 +101,13 @@ jobs:
         # cannot drift out of step with a separate total. Slices are balanced
         # by expectedNodeCount (see shardOf), not by pack count: node counts
         # run 1..285 with a median of 6, and a matrix costs its slowest shard.
-        shard: ${{ fromJSON(inputs.record_interactions && '["core"]' || '["core","1/5","2/5","3/5","4/5","5/5"]') }}
+        shard: ${{ fromJSON(inputs.record_interactions && '["core:1/1"]' || '["core:1/2","core:2/2","1/5","2/5","3/5","4/5","5/5"]') }}
         proof_row: >-
           ${{ fromJSON(github.event_name == 'schedule' && '["0","1","2","3","9","15"]' || github.event_name == 'workflow_dispatch' && inputs.detection_proof_row == 'all' && '["1","2","3","9","15"]' || format('["{0}"]', inputs.detection_proof_row || '0')) }}
         exclude:
-          - shard: 'core'
+          - shard: 'core:1/2'
+            proof_row: '1'
+          - shard: 'core:2/2'
             proof_row: '1'
           - shard: '1/5'
             proof_row: '1'
@@ -114,7 +117,9 @@ jobs:
             proof_row: '1'
           - shard: '5/5'
             proof_row: '1'
-          - shard: 'core'
+          - shard: 'core:1/2'
+            proof_row: '2'
+          - shard: 'core:2/2'
             proof_row: '2'
           - shard: '1/5'
             proof_row: '2'
@@ -124,7 +129,9 @@ jobs:
             proof_row: '2'
           - shard: '5/5'
             proof_row: '2'
-          - shard: 'core'
+          - shard: 'core:1/2'
+            proof_row: '3'
+          - shard: 'core:2/2'
             proof_row: '3'
           - shard: '1/5'
             proof_row: '3'
@@ -134,7 +141,9 @@ jobs:
             proof_row: '3'
           - shard: '5/5'
             proof_row: '3'
-          - shard: 'core'
+          - shard: 'core:1/2'
+            proof_row: '9'
+          - shard: 'core:2/2'
             proof_row: '9'
           - shard: '1/5'
             proof_row: '9'
@@ -144,6 +153,8 @@ jobs:
             proof_row: '9'
           - shard: '5/5'
             proof_row: '9'
+          - shard: 'core:1/2'
+            proof_row: '15'
           - shard: '1/5'
             proof_row: '15'
           - shard: '2/5'
@@ -162,18 +173,21 @@ jobs:
     # results reads the same slice. The specs and the install loop both derive
     # their pack list from these three (see scripts/customNodeShard.ts).
     env:
-      CUSTOM_NODES_MANIFEST: ${{ matrix.shard == 'core' && 'core' || 'cloud' }}
-      CUSTOM_NODES_SHARD: ${{ matrix.shard == 'core' && '1/1' || matrix.shard }}
+      CUSTOM_NODES_MANIFEST: ${{ startsWith(matrix.shard, 'core:') && 'core' || 'cloud' }}
     steps:
       # Artifact and cache names cannot contain `/`, which the shard id does.
       - name: Resolve shard identity
         shell: bash
+        env:
+          MATRIX_SHARD: ${{ matrix.shard }}
         run: |
           set -euo pipefail
-          if ! [[ "$CUSTOM_NODES_SHARD" =~ ^[0-9]+/[0-9]+$ ]]; then
-            echo "::error::matrix shard '$CUSTOM_NODES_SHARD' is not index/total"; exit 1
+          custom_nodes_shard="${MATRIX_SHARD#core:}"
+          if ! [[ "$custom_nodes_shard" =~ ^[0-9]+/[0-9]+$ ]]; then
+            echo "::error::matrix shard '$MATRIX_SHARD' is not [core:]index/total"; exit 1
           fi
-          echo "SHARD_SLUG=${CUSTOM_NODES_MANIFEST}-${CUSTOM_NODES_SHARD/\//-of-}" >> "$GITHUB_ENV"
+          echo "CUSTOM_NODES_SHARD=$custom_nodes_shard" >> "$GITHUB_ENV"
+          echo "SHARD_SLUG=${CUSTOM_NODES_MANIFEST}-${custom_nodes_shard/\//-of-}" >> "$GITHUB_ENV"
 
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -268,7 +282,7 @@ jobs:
           restore-keys: cn-packs-v3-${{ env.SHARD_SLUG }}-
 
       - name: Report excluded packs
-        if: always() && (matrix.shard == 'core' || (env.CUSTOM_NODES_MANIFEST == 'cloud' && matrix.shard == '1/5'))
+        if: always() && (matrix.shard == 'core:1/1' || matrix.shard == 'core:1/2' || (env.CUSTOM_NODES_MANIFEST == 'cloud' && matrix.shard == '1/5'))
         run: pnpm custom-node-quarantine
 
       - name: Prepare manifest custom node sources
