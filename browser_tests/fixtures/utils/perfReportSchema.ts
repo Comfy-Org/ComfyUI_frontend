@@ -1,7 +1,9 @@
 import { z } from 'zod'
 
+import { PERF_IDENTITY_SCHEMA_VERSION } from '@e2e/fixtures/helpers/perfWorkloadIdentity'
+
 const perfWorkloadIdentitySchema = z.object({
-  schemaVersion: z.literal(1),
+  schemaVersion: z.literal(PERF_IDENTITY_SCHEMA_VERSION),
   topology: z.object({
     hash: z.string(),
     nodes: z.number(),

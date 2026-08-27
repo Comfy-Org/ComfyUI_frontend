@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 
-const PERF_IDENTITY_SCHEMA_VERSION = 1 as const
+export const PERF_IDENTITY_SCHEMA_VERSION = 1 as const
 
 export interface PerfTopologyNode {
   id: string
