@@ -66,14 +66,16 @@ After changing a collection:
 ```bash
 # 1. Generate against an EMPTY database — diffing against your dev database
 #    (already dev-pushed) would emit an empty migration.
-docker exec cms-postgres-1 psql -U payload -d postgres -c 'CREATE DATABASE payload_migrate;'
+docker compose -f apps/cms/docker-compose.yml exec -T postgres \
+  psql -U payload -d postgres -c 'CREATE DATABASE payload_migrate;'
 DATABASE_URL=postgres://payload:payload@localhost:5433/payload_migrate \
   pnpm --filter @comfyorg/cms migrate:create <name>
 
 # 2. Verify it applies cleanly, then drop the scratch database
 DATABASE_URL=postgres://payload:payload@localhost:5433/payload_migrate \
   pnpm --filter @comfyorg/cms migrate
-docker exec cms-postgres-1 psql -U payload -d postgres -c 'DROP DATABASE payload_migrate;'
+docker compose -f apps/cms/docker-compose.yml exec -T postgres \
+  psql -U payload -d postgres -c 'DROP DATABASE payload_migrate;'
 ```
 
 Keep `GCS_BUCKET` set while generating — the storage plugin adds a `prefix` field
