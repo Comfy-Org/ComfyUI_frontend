@@ -59,10 +59,7 @@ export function useNodePointerInteractions(
 
     if (isPinned()) return
 
-    // IMPORTANT: Read from actual LGraphNode to get correct state
-    if (isPinnedNode(nodeId) || agentNodeSelectionStore.isActive) {
-      return
-    }
+    const nodeId = toValue(nodeStateRef).id
 
     dragGuard.recordStart(event)
 
@@ -77,9 +74,7 @@ export function useNodePointerInteractions(
 
     if (isPinned()) return
 
-    if (isPinnedNode(nodeId) || agentNodeSelectionStore.isActive) {
-      return
-    }
+    const nodeId = toValue(nodeStateRef).id
 
     const multiSelect = isMultiSelectKey(event)
 
