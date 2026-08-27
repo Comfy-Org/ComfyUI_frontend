@@ -1,10 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import {
-  AGENT_PANEL_FLAG,
-  createPostHogFlagSource
-} from './useAgentFeatureGate'
-import type { PostHogLike } from './useAgentFeatureGate'
+import { AGENT_PANEL_FLAG, createPostHogFlagSource } from './postHogFlagSource'
+import type { PostHogLike } from './postHogFlagSource'
 
 function fakePostHog(initial: boolean | undefined): {
   posthog: PostHogLike

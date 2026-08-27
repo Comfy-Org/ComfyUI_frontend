@@ -45,16 +45,10 @@ describe('agentPanelStore open-state persistence', () => {
     expect(localStorage.getItem(OPEN_STORAGE_KEY)).toBe('false')
   })
 
-  it('keeps the stored open state across a real enable/disable transition', async () => {
-    localStorage.setItem(OPEN_STORAGE_KEY, 'true')
+  it('starts unsettled and does not plant a storage key for flag-off users', () => {
     const store = useAgentPanelStore()
 
-    store.enabled = true
-    await nextTick()
-    store.enabled = false
-    await nextTick()
-
-    expect(store.isOpen).toBe(true)
-    expect(localStorage.getItem(OPEN_STORAGE_KEY)).toBe('true')
+    expect(store.gateSettled).toBe(false)
+    expect(localStorage.getItem(OPEN_STORAGE_KEY)).toBeNull()
   })
 })

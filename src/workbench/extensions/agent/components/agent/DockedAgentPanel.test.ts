@@ -5,22 +5,25 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agentPanelStore'
 
 import DockedAgentPanel from './DockedAgentPanel.vue'
 
-vi.mock('@/workbench/extensions/agent/AgentPanelRoot.vue', async () => {
-  const { defineComponent, h } = await import('vue')
-  return {
-    __esModule: true,
-    default: defineComponent({
-      name: 'AgentPanelRoot',
-      setup() {
-        return () => h('div', { 'data-testid': 'agent-panel-root-stub' })
-      }
-    })
+vi.mock(
+  '@/workbench/extensions/agent/components/agent/AgentPanelRoot.vue',
+  async () => {
+    const { defineComponent, h } = await import('vue')
+    return {
+      __esModule: true,
+      default: defineComponent({
+        name: 'AgentPanelRoot',
+        setup() {
+          return () => h('div', { 'data-testid': 'agent-panel-root-stub' })
+        }
+      })
+    }
   }
-})
+)
 
 function renderPanel() {
   const i18n = createI18n({

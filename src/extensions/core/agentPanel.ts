@@ -1,16 +1,11 @@
-import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agentPanelStore'
 import {
   AGENT_PANEL_FLAG,
+  FLAG_SETTLE_TIMEOUT_MS,
   createPostHogFlagSource
-} from '@/workbench/extensions/agent/composables/agent/useAgentFeatureGate'
+} from '@/workbench/extensions/agent/utils/postHogFlagSource'
 import { useExtensionService } from '@/services/extensionService'
-
-export const FLAG_RETRY_INTERVAL_MS = 500
-export const FLAG_RETRY_LIMIT = 10
-
-function markGateSettled(): void {
-  document.body.dataset.agentGateSettled = 'true'
-}
+import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 
 useExtensionService().registerExtension({
   name: 'Comfy.AgentPanel',
@@ -18,65 +13,50 @@ useExtensionService().registerExtension({
     const agentPanelStore = useAgentPanelStore()
 
     // Dev builds force-enable BEFORE any posthog work so a blocked SDK load
-    // cannot take local development down with it.
+    // cannot take local development down with it; the ff: localStorage
+    // override wins in both directions so the flag-off path stays
+    // reproducible locally.
     if (import.meta.env.MODE === 'development') {
-      agentPanelStore.enabled = true
+      agentPanelStore.enabled =
+        getDevOverride<boolean>(AGENT_PANEL_FLAG) ?? true
     }
 
     async function setupFlagGate(): Promise<void> {
+      const settle = (): void => {
+        agentPanelStore.gateSettled = true
+      }
       // posthog-js is a lazy chunk and is commonly blocked by ad blockers; a failed
       // load must leave the panel gated off rather than surface as an unhandled rejection.
       try {
         const posthog = (await import('posthog-js')).default
         const source = createPostHogFlagSource(posthog)
         const sync = (): void => {
+          const devOverride =
+            import.meta.env.MODE === 'development'
+              ? getDevOverride<boolean>(AGENT_PANEL_FLAG)
+              : undefined
           const forceInDev = import.meta.env.MODE === 'development'
-          agentPanelStore.enabled = forceInDev || source.isEnabled()
+          agentPanelStore.enabled =
+            devOverride ?? (forceInDev || source.isEnabled())
         }
-        let flagsDelivered = false
-        const deliver = (): void => {
-          flagsDelivered = true
+        // The full posthog bundle constructs its featureFlags extension in
+        // the PostHog constructor ("so they're available before init()"), so
+        // this subscription registers and survives init() even when setup
+        // wins the race against telemetry's posthog bootstrap. The settle
+        // timeout covers the one path with no delivery at all: a config
+        // without a posthog project token, where init never runs.
+        source.onChange?.(() => {
           sync()
-        }
-        let unsubscribe = source.onChange?.(deliver)
+          settle()
+        })
         sync()
-
-        // Telemetry inits posthog from its own non-awaited import; if this
-        // setup wins that race, the subscription above landed on an
-        // uninitialized singleton whose unsubscribe is dead and which never
-        // delivers flags. Readiness cannot be inferred from the flag's own
-        // value (posthog drops false-valued bootstrap flags and returns
-        // undefined for an absent key), so: settle as soon as a flags
-        // delivery is observed or the flag reads a definite value; otherwise
-        // poll briefly - the budget only covers telemetry's init window -
-        // and on exhaustion RE-TAKE the subscription against the by-now
-        // likely live instance, so a flag arriving later in the session
-        // still propagates, then settle fail-closed.
-        const retakeSubscription = (): void => {
-          unsubscribe?.()
-          unsubscribe = source.onChange?.(deliver)
-        }
-        let retries = 0
-        const retry = (): void => {
-          const resolved =
-            flagsDelivered ||
-            posthog.isFeatureEnabled(AGENT_PANEL_FLAG) !== undefined
-          if (resolved || retries >= FLAG_RETRY_LIMIT) {
-            if (!flagsDelivered) retakeSubscription()
-            sync()
-            markGateSettled()
-            return
-          }
-          retries++
-          setTimeout(retry, FLAG_RETRY_INTERVAL_MS)
-        }
-        retry()
+        setTimeout(settle, FLAG_SETTLE_TIMEOUT_MS)
       } catch (error) {
         console.error(
           '[Comfy.AgentPanel] feature-flag gate failed to load',
           error
         )
-        markGateSettled()
+        settle()
       }
     }
 

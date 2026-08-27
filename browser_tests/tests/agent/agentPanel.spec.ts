@@ -2,7 +2,10 @@ import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
-import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
+import {
+  agentTest as test,
+  bootAgentApp
+} from '@e2e/fixtures/agentPanelFixture'
 
 const OPEN_AGENT_LABEL = enMessages.agent.askComfyAgent
 
@@ -10,22 +13,25 @@ test.describe('In-App Agent panel shell', { tag: '@cloud' }, () => {
   test.describe('flag off', () => {
     test.use({ agentFlagEnabled: false })
 
-    test('exposes no agent surface at all', async ({ comfyPage }) => {
-      const page = comfyPage.page
+    test('exposes no agent surface at all', async ({
+      page,
+      agentFlagEnabled
+    }) => {
+      await bootAgentApp(page, agentFlagEnabled)
 
       // Positive anchor: the button's own container rendered, so absence
       // below means gated off, not a missing tab bar.
       await expect(page.getByTestId('integrated-tab-bar-actions')).toBeVisible()
       // The gate settles asynchronously; assert only after it has run, so a
       // late enable cannot slip past auto-retrying negative assertions.
-      // Worst case: the gate settles by retry exhaustion (~5s) when the
-      // flag is off (posthog drops false-valued bootstrap flags); 8s fits
-      // inside the cloud project 15s test timeout with real headroom.
-      await expect(page.locator('body')).toHaveAttribute(
-        'data-agent-gate-settled',
-        'true',
-        { timeout: 8_000 }
-      )
+      // Flag-off settles on the flags delivery (posthog fires its callback
+      // even when every bootstrap flag is false); the timeout only covers
+      // the no-token path.
+      await expect(
+        page.getByTestId('integrated-tab-bar-actions')
+      ).toHaveAttribute('data-agent-gate-settled', 'true', {
+        timeout: 8_000
+      })
 
       await expect(
         page.getByRole('button', { name: OPEN_AGENT_LABEL })
@@ -35,9 +41,10 @@ test.describe('In-App Agent panel shell', { tag: '@cloud' }, () => {
   })
 
   test('the entry button docks the shell and its close button undocks it', async ({
-    comfyPage
+    page,
+    agentFlagEnabled
   }) => {
-    const page = comfyPage.page
+    await bootAgentApp(page, agentFlagEnabled)
 
     const openButton = page.getByRole('button', { name: OPEN_AGENT_LABEL })
     await expect(openButton).toBeVisible()

@@ -36,7 +36,10 @@ import './webcamCapture'
 import './widgetInputs'
 
 // Cloud-only extensions - tree-shaken in OSS builds
-if (isCloud) {
+// The literal __DISTRIBUTION__ comparison (not the isCloud const) is what
+// dead-code-eliminates this block - and its posthog-js import - from
+// non-cloud bundles.
+if (__DISTRIBUTION__ === 'cloud') {
   await import('./cloudRemoteConfig')
   await import('./agentPanel')
   await import('./cloudBadges')

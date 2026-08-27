@@ -7,7 +7,7 @@ import { createI18n } from 'vue-i18n'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import AgentPanelRoot from './AgentPanelRoot.vue'
-import { useAgentPanelStore } from './stores/agent/agentPanelStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agentPanelStore'
 
 function renderRoot() {
   const i18n = createI18n({
@@ -24,9 +24,17 @@ describe('AgentPanelRoot', () => {
     setActivePinia(createPinia())
   })
 
+  it('titles the panel with a heading the dock landmark can reference', () => {
+    renderRoot()
+
+    const heading = screen.getByRole('heading', {
+      name: enMessages.agent.title
+    })
+    expect(heading.id).toBe('agent-panel-title')
+  })
+
   it('closes the panel from its close button', async () => {
     const store = useAgentPanelStore()
-    store.enabled = true
     store.isOpen = true
     const user = userEvent.setup()
     renderRoot()

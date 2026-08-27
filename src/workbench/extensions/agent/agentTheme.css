@@ -1,6 +1,0 @@
-@theme inline {
-  --color-agent-surface: var(--color-base-background);
-  --color-agent-fg: var(--color-base-foreground);
-  --color-agent-border: var(--color-component-node-border);
-  --color-agent-accent: var(--color-primary-background);
-}

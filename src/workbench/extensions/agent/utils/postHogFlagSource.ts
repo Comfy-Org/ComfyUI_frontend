@@ -1,5 +1,8 @@
 export const AGENT_PANEL_FLAG = 'agent-in-app-experience'
 
+/** Settle budget for the no-delivery path (a config with no posthog project token, where init never runs). */
+export const FLAG_SETTLE_TIMEOUT_MS = 5000
+
 export interface AgentFlagSource {
   isEnabled(): boolean
   onChange?(listener: () => void): () => void

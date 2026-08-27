@@ -82,6 +82,7 @@
     <div
       v-if="isIntegratedTabBar"
       data-testid="integrated-tab-bar-actions"
+      :data-agent-gate-settled="agentGateSettled || undefined"
       class="ml-auto flex shrink-0 items-center gap-2 px-2"
     >
       <Button
@@ -141,7 +142,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agentPanelStore'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useWorkflowStatusDismissal } from '@/composables/useWorkflowStatusDismissal'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
@@ -173,8 +174,11 @@ const workflowService = useWorkflowService()
 const commandStore = useCommandStore()
 const { isLoggedIn } = useCurrentUser()
 const agentPanelStore = useAgentPanelStore()
-const { isOpen: isAgentPanelOpen, enabled: agentPanelEnabled } =
-  storeToRefs(agentPanelStore)
+const {
+  isOpen: isAgentPanelOpen,
+  enabled: agentPanelEnabled,
+  gateSettled: agentGateSettled
+} = storeToRefs(agentPanelStore)
 
 // Dismiss a tab's terminal status badge once it has been viewed
 useWorkflowStatusDismissal()
