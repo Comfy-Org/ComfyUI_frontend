@@ -37,18 +37,20 @@ class InvalidationProbe {
     )
 
     const drawForeground = canvas.drawFrontCanvas.bind(canvas)
-    vi.spyOn(canvas, 'drawFrontCanvas').mockImplementation(() => {
-      this.foregroundDraw()
-      this.drawSequence.push('foreground')
-      drawForeground()
-    })
+    vi.spyOn(canvas, 'drawFrontCanvas').mockImplementation(
+      (nodesInFrameOrder, nodesGraph) => {
+        this.foregroundDraw()
+        this.drawSequence.push('foreground')
+        drawForeground(nodesInFrameOrder, nodesGraph)
+      }
+    )
 
     const drawBackground = canvas.drawBackCanvas.bind(canvas)
     vi.spyOn(canvas, 'drawBackCanvas').mockImplementation(
-      (redrawFrontCanvas) => {
+      (nodesInFrameOrder, nodesGraph, redrawFrontCanvas) => {
         this.backgroundDraw()
         this.drawSequence.push('background')
-        drawBackground(redrawFrontCanvas)
+        drawBackground(nodesInFrameOrder, nodesGraph, redrawFrontCanvas)
       }
     )
   }
