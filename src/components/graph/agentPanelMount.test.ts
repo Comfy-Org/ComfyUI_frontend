@@ -109,8 +109,7 @@ describe('the graph-side agent panel mount', () => {
     // behavior under test, which Testing Library queries cannot express.
     // eslint-disable-next-line testing-library/no-node-access
     const column = dock.previousElementSibling
-    expect(column).not.toBeNull()
-    expect(column!.contains(workspace)).toBe(true)
+    expect(column?.contains(workspace)).toBe(true)
   })
 
   it('guards the docked panel against linear mode (GraphCanvas stays mounted there)', () => {

@@ -5,9 +5,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { reportError } from '@/platform/telemetry/reportError'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agentPanelStore'
 
 import DockedAgentPanel from './DockedAgentPanel.vue'
+
+const loaderState = vi.hoisted(() => ({ reject: false }))
+
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: vi.fn()
+}))
 
 vi.mock(
   '@/workbench/extensions/agent/components/agent/AgentPanelRoot.vue',
@@ -18,6 +25,9 @@ vi.mock(
       default: defineComponent({
         name: 'AgentPanelRoot',
         setup() {
+          if (loaderState.reject) {
+            throw new Error('agent panel body failed')
+          }
           return () => h('div', { 'data-testid': 'agent-panel-root-stub' })
         }
       })
@@ -38,6 +48,8 @@ describe('DockedAgentPanel', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
+    loaderState.reject = false
+    vi.mocked(reportError).mockClear()
   })
 
   it('renders nothing while the feature flag is off, even with a stored open state', () => {
@@ -90,6 +102,20 @@ describe('DockedAgentPanel', () => {
 
     screen.getByTestId('docked-agent-panel')
     await screen.findByTestId('agent-panel-root-stub')
+  })
+
+  it('reports the failure and shows the error state when the panel body fails to load', async () => {
+    loaderState.reject = true
+    const store = useAgentPanelStore()
+    store.enabled = true
+    store.isOpen = true
+    renderPanel()
+
+    await screen.findByText('The agent panel failed to load.')
+    screen.getByRole('complementary', { name: 'Comfy Agent' })
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'agent_panel_load_failure'
+    })
   })
 
   it('undocks when the flag turns off while open', async () => {

@@ -12,7 +12,15 @@
       <div
         class="size-full overflow-hidden rounded-lg border border-interface-stroke"
       >
-        <Suspense>
+        <div v-if="loadFailed" class="size-full bg-base-background p-3">
+          <h2 id="agent-panel-title" class="sr-only">
+            {{ t('agent.title') }}
+          </h2>
+          <p class="text-sm text-base-foreground">
+            {{ t('agent.loadFailed') }}
+          </p>
+        </div>
+        <Suspense v-else>
           <AgentPanelRoot />
           <template #fallback>
             <div class="size-full bg-base-background">
@@ -29,9 +37,10 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, defineAsyncComponent } from 'vue'
+import { computed, defineAsyncComponent, onErrorCaptured, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { reportError } from '@/platform/telemetry/reportError'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agentPanelStore'
 
 const AgentPanelRoot = defineAsyncComponent(
@@ -43,4 +52,11 @@ const { t } = useI18n()
 const agentPanelStore = useAgentPanelStore()
 const { isOpen, enabled } = storeToRefs(agentPanelStore)
 const docked = computed(() => enabled.value && isOpen.value)
+
+const loadFailed = ref(false)
+onErrorCaptured((error) => {
+  reportError(error, { errorType: 'agent_panel_load_failure' })
+  loadFailed.value = true
+  return false
+})
 </script>
