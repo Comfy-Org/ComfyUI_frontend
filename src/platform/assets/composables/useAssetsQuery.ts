@@ -32,7 +32,12 @@ function assetsQueryInternal(
   const { enqueue, preempt, running: isLoading } = usePreemptableQueue()
   async function doLoadMore(signal?: AbortSignal) {
     if (!hasMore.value || seenCursors.has(nextCursor)) return
+    if (seenCursors.has(nextCursor)) {
+      hasMore.value = false
+      return
+    }
     seenCursors.add(nextCursor)
+
     const assetResponse = await doQuery(
       {
         after: nextCursor ?? params.after
