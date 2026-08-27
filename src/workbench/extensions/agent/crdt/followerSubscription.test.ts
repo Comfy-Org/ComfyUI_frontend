@@ -19,7 +19,7 @@
  *   FE-KA11-1       nothing read `meta.schema_version`, so a doc written at a
  *                   schema this build does not understand was projected anyway.
  */
-import { initDoc, metaMap, nodesMap } from '@comfyorg/comfy-multi-player'
+import { mint, nodesMap } from '@comfyorg/comfy-multi-player'
 import { describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
@@ -76,7 +76,7 @@ class SocketTransport extends EventTarget implements DocFrameTransport {
 
 /** A real host doc: seeded by the shared package, so it carries schema v1 meta. */
 function hostDocUpdate(mutate?: (doc: Y.Doc) => void): Uint8Array {
-  const doc = initDoc(new Y.Doc())
+  const doc = mint({ nodes: [], links: [] }, { types: {} })
   const node = new Y.Map<unknown>()
   node.set('type', 'LoadImage')
   node.set('pos', [10, 20])
@@ -418,7 +418,9 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
     transport.open = true
     bridge.subscribe(WORKFLOW_ID)
 
-    const v2 = hostDocUpdate((doc) => metaMap(doc).set('schema_version', 2))
+    const v2 = hostDocUpdate((doc) =>
+      doc.getMap('meta').set('schema_version', 2)
+    )
     transport.deliver('doc_update', docUpdateFrame(v2))
 
     // Fail CLOSED: the frame is never re-dispatched, so nothing renders.
@@ -453,12 +455,12 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
 
   it('reads the version through the package public API, not a local copy', () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
-    const doc = initDoc(new Y.Doc())
+    const doc = mint({ nodes: [], links: [] }, { types: {} })
     expect(() => {
       assertReadableSchema(doc)
     }).not.toThrow()
 
-    metaMap(doc).set('schema_version', 99)
+    doc.getMap('meta').set('schema_version', 99)
     expect(() => {
       assertReadableSchema(doc)
     }).toThrow(FollowerSchemaError)

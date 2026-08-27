@@ -4,7 +4,7 @@
  *
  * This wires the WHOLE follower path with NO mocked applier and NO mocked doc:
  *
- *   real @comfyorg/comfy-multi-player applier (initDoc + applyOps add_node)
+ *   real @comfyorg/comfy-multi-player applier (mint + applyOps add_node)
  *     → Y.encodeStateAsUpdate → base64 update_b64
  *     → a doc_update {type,data} frame delivered on a transport that dispatches
  *       CustomEvents byte-for-byte the way src/scripts/api.ts does for an
@@ -25,7 +25,7 @@
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import * as Y from 'yjs'
-import { applyOps, initDoc, nodesMap } from '@comfyorg/comfy-multi-player'
+import { applyOps, mint, nodesMap } from '@comfyorg/comfy-multi-player'
 
 import { LGraph } from '@/lib/litegraph/src/LGraph'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -81,7 +81,7 @@ function hex32(): string {
  * applier, then the full-state update encoded for the follower.
  */
 function realApplierAddNodeUpdate(): Uint8Array {
-  const doc = initDoc(new Y.Doc())
+  const doc = mint({ nodes: [], links: [] }, { types: {} })
   const op = {
     op: 'add_node' as const,
     op_id: hex32(),
@@ -97,7 +97,10 @@ function realApplierAddNodeUpdate(): Uint8Array {
   }
   const result = applyOps(doc, [op])
   // Sanity: the real applier actually consumed the op into the real doc.
-  expect(result.applied).toContain(op.op_id)
+  expect(result.outcomes).toContainEqual({
+    op_id: op.op_id,
+    outcome: 'applied'
+  })
   expect(nodesMap(doc).has('1')).toBe(true)
   return Y.encodeStateAsUpdate(doc)
 }
