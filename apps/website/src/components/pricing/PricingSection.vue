@@ -64,7 +64,7 @@ function displayCreditsKey(plan: PricingPlan): TranslationKey | undefined {
 }
 
 function displayEstimateKey(plan: PricingPlan): TranslationKey | undefined {
-  return billingPeriod.value === 'yearly' && plan.yearlyEstimateKey
+  return showsYearlyCredits(plan) && plan.yearlyEstimateKey
     ? plan.yearlyEstimateKey
     : plan.estimateKey
 }

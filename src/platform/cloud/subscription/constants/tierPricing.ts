@@ -45,11 +45,11 @@ const MONTHS_PER_YEAR = 12
 
 // Annual plans grant the whole year up front (catalog `*-annual` credit_grant
 // is 12x the monthly grant), so a yearly cycle shows the year's total.
-export function creditsForBillingCycle(
-  monthlyCredits: number,
+export function amountForBillingCycle(
+  monthlyAmount: number,
   isYearly: boolean
 ): number {
-  return isYearly ? monthlyCredits * MONTHS_PER_YEAR : monthlyCredits
+  return isYearly ? monthlyAmount * MONTHS_PER_YEAR : monthlyAmount
 }
 
 interface TierFeatures {

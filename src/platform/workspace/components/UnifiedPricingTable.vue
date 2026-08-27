@@ -171,7 +171,7 @@
                 <span
                   class="font-inter text-sm/normal font-bold text-base-foreground tabular-nums"
                 >
-                  {{ n(creditsForCurrentCycle(tier.pricing.credits)) }}
+                  {{ n(amountForCurrentCycle(tier.pricing.credits)) }}
                 </span>
                 <span class="text-sm text-muted-foreground">
                   {{ t(creditsLabelKey) }}
@@ -180,7 +180,7 @@
               <span class="text-sm text-muted-foreground">
                 {{
                   t('subscription.videoEstimate', {
-                    count: n(creditsForCurrentCycle(tier.pricing.videoEstimate))
+                    count: n(amountForCurrentCycle(tier.pricing.videoEstimate))
                   })
                 }}
               </span>
@@ -417,7 +417,7 @@ import CreditSlider from '@/components/ui/credit-slider/CreditSlider.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import {
   TIER_PRICING,
-  creditsForBillingCycle,
+  amountForBillingCycle,
   hasActivePaidPlan,
   toTierKey
 } from '@/platform/cloud/subscription/constants/tierPricing'
@@ -663,8 +663,8 @@ const currentBillingCycle = ref<BillingCycle>('yearly')
 
 const isYearly = computed(() => currentBillingCycle.value === 'yearly')
 
-const creditsForCurrentCycle = (monthlyAmount: number) =>
-  creditsForBillingCycle(monthlyAmount, isYearly.value)
+const amountForCurrentCycle = (monthlyAmount: number) =>
+  amountForBillingCycle(monthlyAmount, isYearly.value)
 
 const creditsLabelKey = computed(() =>
   isYearly.value ? 'subscription.yearlyCredits' : 'subscription.monthlyCredits'
@@ -698,7 +698,7 @@ const selectedTeamStop = computed(
     defaultTeamStop.value
 )
 const teamCreditsForCurrentCycle = computed(() =>
-  creditsForCurrentCycle(selectedTeamStop.value.credits)
+  amountForCurrentCycle(selectedTeamStop.value.credits)
 )
 const teamVideoEstimate = computed(() =>
   Math.round(teamCreditsForCurrentCycle.value * VIDEO_PER_CREDIT)

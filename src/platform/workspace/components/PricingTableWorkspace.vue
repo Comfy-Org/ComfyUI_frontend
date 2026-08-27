@@ -307,7 +307,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import {
   TIER_PRICING,
-  creditsForBillingCycle,
+  amountForBillingCycle,
   hasActivePaidPlan,
   toTierKey
 } from '@/platform/cloud/subscription/constants/tierPricing'
@@ -526,10 +526,10 @@ const maxMembersByTier = computed(
 )
 
 const getCreditsPerMember = (tier: PricingTierConfig): number =>
-  creditsForBillingCycle(tier.pricing.credits, isYearly.value)
+  amountForBillingCycle(tier.pricing.credits, isYearly.value)
 
 const getVideoEstimateDisplay = (tier: PricingTierConfig): number =>
-  creditsForBillingCycle(tier.pricing.videoEstimate, isYearly.value)
+  amountForBillingCycle(tier.pricing.videoEstimate, isYearly.value)
 
 function handleSubscribe(tierKey: CheckoutTierKey) {
   if (isLoading) return

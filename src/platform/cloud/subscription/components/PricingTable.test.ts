@@ -164,7 +164,7 @@ const i18n = createI18n({
         subscribeTo: 'Subscribe to {plan}',
         changeTo: 'Change to {plan}',
         tierNameYearly: '{name} Yearly',
-        yearlyCreditsLabel: 'Yearly credits',
+        yearlyCreditsLabel: 'Total yearly credits',
         monthlyCreditsLabel: 'Monthly credits',
         maxDurationLabel: 'Max duration',
         gpuLabel: 'GPU',
@@ -528,7 +528,7 @@ describe('PricingTable', () => {
       renderComponent()
       await flushPromises()
 
-      expect(screen.getAllByText('Yearly credits')).toHaveLength(3)
+      expect(screen.getAllByText('Total yearly credits')).toHaveLength(3)
       expect(screen.getByText('50,400')).toBeTruthy()
       expect(screen.getByText('~4,560')).toBeTruthy()
       expect(screen.getByText('253,200')).toBeTruthy()
