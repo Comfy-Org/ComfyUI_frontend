@@ -645,6 +645,18 @@ const translations = {
       'Comfy 企业版计划附带引擎开发团队的支持：直接访问我们的工程团队和白手套式入职服务。'
   },
 
+  // Enterprise – MiniMax commercial license band
+  'enterprise.minimaxBand.label': {
+    en: 'MINIMAX LICENSING',
+    'zh-CN': 'MiniMax 商业许可'
+  },
+  'enterprise.minimaxBand.text': {
+    en: 'Comfy is the only official reseller of MiniMax commercial-use licenses. Add full local commercial rights, LoRA training included, to your Enterprise plan.',
+    'zh-CN':
+      'Comfy 是 MiniMax 商业使用许可的唯一官方经销商。在你的企业版计划之上增加完整的本地商业使用权利，并包含 LoRA 训练。'
+  },
+  'enterprise.minimaxBand.cta': { en: 'Get your license', 'zh-CN': '获取许可' },
+
   // Enterprise – FAQ
   'enterprise.faq.heading': {
     en: 'FAQs',
@@ -2821,6 +2833,10 @@ const translations = {
     en: 'MiniMax Music 3',
     'zh-CN': 'MiniMax Music 3'
   },
+  'footer.minimaxLicense': {
+    en: 'MiniMax Commercial License',
+    'zh-CN': 'MiniMax 商业许可'
+  },
   'footer.seedance': { en: 'Seedance 2.5', 'zh-CN': 'Seedance 2.5' },
   'footer.about': { en: 'About', 'zh-CN': '关于' },
   'footer.termsOfService': { en: 'Terms of Service', 'zh-CN': '服务条款' },
@@ -4539,6 +4555,46 @@ const translations = {
     'zh-CN': '我们会为您处理请求。'
   },
 
+  // Contact – Q&A (rendered on /contact and emitted as FAQPage json-ld via
+  // src/data/contactFaq.ts)
+  'contact.faq.heading': { en: 'Common questions', 'zh-CN': '常见问题' },
+  'contact.faq.q1': {
+    en: 'How do I get a MiniMax commercial license?',
+    'zh-CN': '如何获取 MiniMax 商业许可？'
+  },
+  'contact.faq.a1': {
+    en: 'Comfy is the only official reseller of MiniMax commercial-use licenses, covering MiniMax H3 plus MiniMax Audio & Music for running the models locally on your own hardware. Licenses come in two tiers, Professional and Enterprise. Request a license through this form, or read more on the [MiniMax Commercial License page](https://comfy.org/minimax/license).',
+    'zh-CN':
+      'Comfy 是 MiniMax 商业使用许可的唯一官方经销商，涵盖 MiniMax H3 以及 MiniMax 音频与音乐模型，面向在自有硬件上本地运行模型的场景。许可分为专业版和企业版两个级别。通过此表单申请许可，或在 [MiniMax 商业许可页面](https://comfy.org/zh-CN/minimax/license)了解更多。'
+  },
+  'contact.faq.q2': {
+    en: 'What are Forward Deployed Creatives?',
+    'zh-CN': '什么是前沿驻场创意人才？'
+  },
+  'contact.faq.a2': {
+    en: 'Comfy experts who embed with your team, build production workflows in your environment, train LoRAs on your style, and teach your team to run and extend everything they build. Tell us what you are making through this form, or [meet the Forward Deployed Creatives](https://comfy.org/forward-deployed-creatives).',
+    'zh-CN':
+      'Comfy 专家驻场加入你的团队，在你的环境中构建生产级工作流，用你的风格训练 LoRA，并教会你的团队运行和扩展他们构建的一切。通过此表单告诉我们你在做什么，或[认识前沿驻场创意人才](https://comfy.org/zh-CN/forward-deployed-creatives)。'
+  },
+  'contact.faq.q3': {
+    en: 'What does Comfy Enterprise include?',
+    'zh-CN': 'Comfy 企业版包含什么？'
+  },
+  'contact.faq.a3': {
+    en: 'Cloud or in-house deployment with data ownership, bring-your-own-key support, orchestration, support from the team that builds the engine, and add-ons like MiniMax commercial licensing. [See Comfy Enterprise](https://comfy.org/cloud/enterprise), or request a demo through this form.',
+    'zh-CN':
+      '云端或自有环境部署，数据归属权、自带密钥支持、编排能力、来自引擎开发团队的支持，以及 MiniMax 商业许可等附加项。[了解 Comfy 企业版](https://comfy.org/zh-CN/cloud/enterprise)，或通过此表单预约演示。'
+  },
+  'contact.faq.q4': {
+    en: 'Is Comfy SOC 2 compliant?',
+    'zh-CN': 'Comfy 符合 SOC 2 标准吗？'
+  },
+  'contact.faq.a4': {
+    en: 'A SOC 2 Type II audit is in progress. Security documentation and real-time control status are available in our [Trust Center](https://app.vanta.com/comfy.org/trust/o6nu46b16iu3e7fhc41hnz), and our team can walk through security requirements as part of an Enterprise conversation.',
+    'zh-CN':
+      'SOC 2 Type II 审计正在进行中。安全文档和实时控制状态可在我们的 [Trust Center](https://app.vanta.com/comfy.org/trust/o6nu46b16iu3e7fhc41hnz) 查看，我们的团队也可以在企业版沟通中详细说明安全要求。'
+  },
+
   'demos.category.templates': { en: 'TEMPLATES', 'zh-CN': '模板' },
   'demos.category.gettingStarted': { en: 'GETTING STARTED', 'zh-CN': '入门' },
 
@@ -5654,7 +5710,6 @@ const translations = {
   },
   'flux3.reviews.highlightCta': { en: 'GET STARTED', 'zh-CN': '开始使用' },
   'footer.flux3': { en: 'Flux 3', 'zh-CN': 'Flux 3' },
-  'footer.modelsShowcase': { en: 'Models', 'zh-CN': '模型' },
   // Wan Animate 2 model page (/wan-animate-2)
   'wanAnimate2.meta.title': {
     en: 'Wan Animate 2 on Comfy — Open-Source Character Animation',
@@ -5844,9 +5899,9 @@ const translations = {
   },
   'minimaxMusic3.hero.titleRest': { en: ' is here', 'zh-CN': ' 已上线' },
   'minimaxMusic3.hero.description': {
-    en: 'Full songs up to five minutes in one generation. Feed lyrics and a music description, and get coherent structure, expressive vocals, and evolving arrangements. Quality holds steady across the whole track, and the open weights are free to use commercially under Apache 2.0.',
+    en: 'Full songs up to five minutes in one generation. Feed lyrics and a music description, and get coherent structure, expressive vocals, and evolving arrangements. Quality holds steady across the whole track, and the open weights are free for most commercial use under the MiniMax Community License.',
     'zh-CN':
-      '一次生成最长五分钟的完整歌曲。输入歌词和音乐描述，即可获得连贯的结构、富有表现力的人声和层层递进的编曲。整首曲目质量稳定如一，且开源权重依据 Apache 2.0 许可可免费商用。'
+      '一次生成最长五分钟的完整歌曲。输入歌词和音乐描述，即可获得连贯的结构、富有表现力的人声和层层递进的编曲。整首曲目质量稳定如一，且开源权重依据 MiniMax 社区许可，对多数商业用途免费。'
   },
   'minimaxMusic3.hero.tagOpenWeights': {
     en: 'Open Weight',
@@ -5905,17 +5960,17 @@ const translations = {
     'zh-CN': '400 万+ Comfy 创作者这样说'
   },
   'minimaxMusic3.reviews.highlightTitle': {
-    en: 'Comfy MCP: now turn your agent into a creative technologist.',
-    'zh-CN': 'Comfy MCP：让你的智能体成为创意技术专家。'
+    en: 'License MiniMax H3 for commercial work.',
+    'zh-CN': '为商业创作获取 H3 许可。'
   },
   'minimaxMusic3.reviews.highlightDescription': {
-    en: 'Your AI assistant can access the ecosystem, build workflows, and generate images, video, audio, or 3D.',
+    en: 'Comfy is the only official reseller of MiniMax commercial-use licenses. Music 3 stays free for most commercial use under its Community License.',
     'zh-CN':
-      '你的 AI 助手可以接入整个生态、构建工作流，并生成图像、视频、音频或 3D 内容。'
+      'Comfy 是 MiniMax 商业使用许可的唯一官方经销商。Music 3 在其社区许可下对多数商业用途依旧免费。'
   },
   'minimaxMusic3.reviews.highlightCta': {
-    en: 'GET STARTED',
-    'zh-CN': '开始使用'
+    en: 'GET YOUR LICENSE',
+    'zh-CN': '获取许可'
   },
   'minimax.breadcrumb.updated': {
     en: 'Updated August 2026',
@@ -5985,15 +6040,18 @@ const translations = {
     'zh-CN': '400 万+ Comfy 创作者这样说'
   },
   'minimax.reviews.highlightTitle': {
-    en: 'Comfy MCP: now turn your agent into a creative technologist.',
-    'zh-CN': 'Comfy MCP：让你的智能体成为创意技术专家。'
+    en: 'License H3 for commercial work.',
+    'zh-CN': '为商业创作获取 H3 许可。'
   },
   'minimax.reviews.highlightDescription': {
-    en: 'Your AI assistant can access the ecosystem, build workflows, and generate images, video, audio, or 3D.',
+    en: 'Comfy is the only official reseller of MiniMax commercial-use licenses. Full commercial rights to your outputs, LoRA training included.',
     'zh-CN':
-      '你的 AI 助手可以接入整个生态、构建工作流，并生成图像、视频、音频或 3D 内容。'
+      'Comfy 是 MiniMax 商业使用许可的唯一官方经销商。产出的完整商业权利归你，包含 LoRA 训练。'
   },
-  'minimax.reviews.highlightCta': { en: 'GET STARTED', 'zh-CN': '开始使用' },
+  'minimax.reviews.highlightCta': {
+    en: 'GET YOUR LICENSE',
+    'zh-CN': '获取许可'
+  },
   'minimax.pricing.banner.title': {
     en: "Start free. Upgrade when you're ready.",
     'zh-CN': '免费开始，准备好了再升级。'
@@ -6003,6 +6061,101 @@ const translations = {
     'zh-CN': '在真实 GPU 上免费运行 5 次 — 无需信用卡。'
   },
   'minimax.pricing.banner.cta': { en: 'TRY FREE', 'zh-CN': '免费试用' },
+  'minimaxLicense.meta.title': {
+    en: 'MiniMax Commercial License on Comfy',
+    'zh-CN': 'Comfy 上的 MiniMax 商业许可'
+  },
+  'minimaxLicense.meta.description': {
+    en: 'Get a MiniMax commercial license through Comfy, the only official reseller of MiniMax commercial-use licenses, covering MiniMax H3 plus Audio & Music. Full commercial rights to your outputs, LoRA training included.',
+    'zh-CN':
+      '通过 Comfy 获取 MiniMax 商业许可。Comfy 是 MiniMax 商业使用许可的唯一官方经销商，涵盖 MiniMax H3 及音频与音乐模型。产出的完整商业权利归你，包含 LoRA 训练。'
+  },
+  'minimaxLicense.breadcrumb.model': {
+    en: 'MiniMax Commercial License',
+    'zh-CN': 'MiniMax 商业许可'
+  },
+  'minimaxLicense.breadcrumb.updated': {
+    en: 'Updated August 2026',
+    'zh-CN': '更新于 2026 年 8 月'
+  },
+  'minimaxLicense.hero.title': {
+    en: 'MiniMax\nCommercial License',
+    'zh-CN': 'MiniMax 商业许可'
+  },
+  'minimaxLicense.hero.description': {
+    en: 'Comfy is the only official reseller of MiniMax commercial-use licenses, for running MiniMax models locally on your own hardware. Full commercial rights to your outputs, fine-tuning and LoRA training, and client and downstream work included.',
+    'zh-CN':
+      'Comfy 是 MiniMax 商业使用许可的唯一官方经销商，面向在自有硬件上本地运行 MiniMax 模型的场景。产出的完整商业权利、微调与 LoRA 训练，以及客户与下游项目均包含在内。'
+  },
+  'minimaxLicense.hero.primaryCta': {
+    en: 'REQUEST LICENSE',
+    'zh-CN': '申请许可'
+  },
+  'minimaxLicense.hero.secondaryCta': {
+    en: 'TRY H3 ON COMFY CLOUD',
+    'zh-CN': '在 Comfy Cloud 上试用 H3'
+  },
+  'minimaxLicense.hero.tagOfficialReseller': {
+    en: 'Only official reseller',
+    'zh-CN': '唯一官方经销商'
+  },
+  'minimaxLicense.hero.tagAudioMusic': {
+    en: 'Audio and music included',
+    'zh-CN': '含音频与音乐模型'
+  },
+  'minimaxLicense.hero.tagGlobal': {
+    en: 'Available globally',
+    'zh-CN': '全球可用'
+  },
+  'minimaxLicense.steps.heading': {
+    en: 'Two license tiers',
+    'zh-CN': '两种许可级别'
+  },
+  'minimaxLicense.steps.step': { en: 'Tier', 'zh-CN': '级别' },
+  'minimaxLicense.steps.primaryCta': {
+    en: 'REQUEST LICENSE',
+    'zh-CN': '申请许可'
+  },
+  'minimaxLicense.steps.secondaryCta': {
+    en: 'SEE MINIMAX H3',
+    'zh-CN': '了解 MiniMax H3'
+  },
+  'minimaxLicense.faq.heading': { en: 'Q&A', 'zh-CN': '问答' },
+  'minimaxLicense.cta.heading': {
+    en: 'One model, every use case. Licensed for yours.',
+    'zh-CN': '一个模型，覆盖每种用例。为你的用例获取许可。'
+  },
+  'minimaxLicense.cta.primaryCta': {
+    en: 'REQUEST LICENSE',
+    'zh-CN': '申请许可'
+  },
+  'minimaxLicense.runOptions.heading': {
+    en: 'One engine, every way to run it',
+    'zh-CN': '同一引擎，多种运行方式'
+  },
+  'minimaxLicense.runOptions.subtitle': {
+    en: 'Run H3 on Comfy Cloud with commercial rights included, batch with the API, or bring it in-house with a commercial license.',
+    'zh-CN':
+      '在 Comfy Cloud 上运行 H3，商业权利已包含；用 API 批量生成，或凭商业许可部署到自有环境。'
+  },
+  'minimaxLicense.runOptions.cta': { en: 'LEARN MORE', 'zh-CN': '了解更多' },
+  'minimaxLicense.reviews.heading': {
+    en: '4+ million Comfy creators say',
+    'zh-CN': '400 万+ Comfy 创作者这样说'
+  },
+  'minimaxLicense.reviews.highlightTitle': {
+    en: "Forward Deployed Creatives: we'll build it with you.",
+    'zh-CN': '前沿驻场创意人才：与你一起构建。'
+  },
+  'minimaxLicense.reviews.highlightDescription': {
+    en: 'Comfy experts who embed with your team, train LoRAs on your style, and build production workflows your team keeps.',
+    'zh-CN':
+      'Comfy 专家驻场加入你的团队，用你的风格训练 LoRA，并构建归你团队所有的生产级工作流。'
+  },
+  'minimaxLicense.reviews.highlightCta': {
+    en: 'MEET THE TEAM',
+    'zh-CN': '认识团队'
+  },
   // FDCT page (/forward-deployed-creatives) — Forward Deployed Creatives
   'fdct.meta.title': {
     en: 'Forward Deployed Creatives | Comfy',
@@ -6343,6 +6496,16 @@ const translations = {
       '告诉我们你想做什么。前沿驻场创意人才可以验证它，并帮助你从此开始构建。'
   },
   'fdct.bands.enterprise.cta': { en: 'Contact us', 'zh-CN': '联系我们' },
+  'fdct.bands.minimax.label': {
+    en: 'MINIMAX LICENSING',
+    'zh-CN': 'MiniMax 商业许可'
+  },
+  'fdct.bands.minimax.text': {
+    en: 'A license gets you the model; Forward Deployed Creatives get you to production. Comfy is the only official reseller of MiniMax commercial-use licenses.',
+    'zh-CN':
+      '许可给你模型，前沿驻场创意人才带你走向生产。Comfy 是 MiniMax 商业使用许可的唯一官方经销商。'
+  },
+  'fdct.bands.minimax.cta': { en: 'Get your license', 'zh-CN': '获取许可' },
   'fdct.closing.title': {
     en: 'Build your custom workflows with Comfy experts.',
     'zh-CN': '与 Comfy 专家一起构建你的定制工作流。'

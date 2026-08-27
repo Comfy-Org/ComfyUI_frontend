@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { flux3Page } from '../../data/flux3'
 import { ltxPage } from '../../data/ltx'
 import { minimaxPage } from '../../data/minimax'
+import { minimaxLicensePage } from '../../data/minimaxLicense'
 import { minimaxMusic3Page } from '../../data/minimaxMusic3'
 import { seedancePage } from '../../data/seedance'
 import { wanAnimate2Page } from '../../data/wanAnimate2'
@@ -16,6 +17,7 @@ import type { ModelLaunchPage } from './types'
 const pages: { name: string; page: ModelLaunchPage }[] = [
   { name: 'minimax', page: minimaxPage },
   { name: 'minimaxMusic3', page: minimaxMusic3Page },
+  { name: 'minimaxLicense', page: minimaxLicensePage },
   { name: 'flux3', page: flux3Page },
   { name: 'seedance', page: seedancePage },
   { name: 'ltx', page: ltxPage },
@@ -26,6 +28,10 @@ const pages: { name: string; page: ModelLaunchPage }[] = [
 const VIDEO_URL = /^https:\/\/media\.comfy\.org\/.+\.(webm|mp4)$/
 const IMAGE_URL = /^https:\/\/media\.comfy\.org\/.+\.(webp|png|jpe?g)$/
 const AUDIO_URL = /^https:\/\/media\.comfy\.org\/.+\.(mp3|flac|m4a|ogg)$/
+// Hero stills may ship from public/ as a root-relative path; the hero video
+// must be on the CDN.
+const HERO_STILL_URL =
+  /^(https:\/\/media\.comfy\.org\/|\/)[\w./-]+\.(webp|png|jpe?g)$/
 
 describe.for(pages)('$name launch page config', ({ page }) => {
   it('gives every gallery card a unique id', () => {
@@ -122,7 +128,13 @@ describe.for(pages)('$name launch page config', ({ page }) => {
       expect(page.hero.videoSrc).toMatch(VIDEO_URL)
     }
     if (page.hero.posterSrc !== undefined) {
-      expect(page.hero.posterSrc).toMatch(IMAGE_URL)
+      expect(page.hero.posterSrc).toMatch(HERO_STILL_URL)
+    }
+    if (page.hero.placeholderImageSrc !== undefined) {
+      expect(page.hero.placeholderImageSrc).toMatch(HERO_STILL_URL)
+    }
+    if (page.hero.mobileFallbackImageSrc !== undefined) {
+      expect(page.hero.mobileFallbackImageSrc).toMatch(HERO_STILL_URL)
     }
 
     // Collected rather than asserted per card so a failure names the offenders.
