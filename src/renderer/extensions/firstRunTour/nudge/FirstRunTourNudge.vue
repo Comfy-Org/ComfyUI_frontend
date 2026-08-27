@@ -90,7 +90,10 @@ const { start: scheduleAppearance, stop: cancelAppearance } = useTimeoutFn(
     onScreen.value = true
     if (reported) return
     reported = true
-    telemetry?.trackOnboardingTour('nudge_shown', { tour: 'firstRun' })
+    telemetry?.trackOnboardingTour('nudge_shown', {
+      tour: 'firstRun',
+      tour_completed: tourWasCompleted.value
+    })
   },
   APPEAR_DELAY_MS,
   { immediate: false }
@@ -117,7 +120,8 @@ watch(
 function onExplore() {
   useWorkflowTemplateSelectorDialog().show('first_run_nudge')
   telemetry?.trackOnboardingTour('explore_templates_clicked', {
-    tour: 'firstRun'
+    tour: 'firstRun',
+    tour_completed: tourWasCompleted.value
   })
   dismissNudge()
 }

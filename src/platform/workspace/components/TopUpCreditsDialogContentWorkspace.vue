@@ -50,7 +50,7 @@
         <span
           class="flex items-center gap-2 py-2 text-2xl font-semibold text-base-foreground tabular-nums"
         >
-          <i class="icon-[lucide--component] size-5 text-gold-500" />
+          <i class="icon-[lucide--coins] size-5 text-gold-500" />
           {{ formatNumber(creditsModel) }}
         </span>
         <div
@@ -82,8 +82,18 @@
           {{ $t('credits.topUp.verifyTitle') }}
         </h2>
         <p class="m-0 text-sm text-balance text-muted-foreground">
-          {{ $t('credits.topUp.verifyBody') }}
+          {{
+            topupReconciliationOperationId
+              ? $t('billingOperation.reconciliationDetail')
+              : topupAuthenticationError || $t('credits.topUp.verifyBody')
+          }}
         </p>
+        <span
+          v-if="topupReconciliationOperationId"
+          class="font-mono text-sm text-base-foreground"
+        >
+          {{ topupReconciliationOperationId }}
+        </span>
       </div>
     </template>
 
@@ -147,7 +157,7 @@
           @max-reached="showCeilingWarning = true"
         >
           <template #prefix>
-            <i class="icon-[lucide--component] size-4 shrink-0 text-gold-500" />
+            <i class="icon-[lucide--coins] size-4 shrink-0 text-gold-500" />
           </template>
         </FormattedNumberStepper>
       </div>
@@ -159,7 +169,7 @@
       v-if="isBelowMin && step === 'amount'"
       class="m-0 flex items-center justify-center gap-1 px-8 pt-4 text-center text-sm text-red-500"
     >
-      <i class="icon-[lucide--component] size-4" />
+      <i class="icon-[lucide--coins] size-4" />
       {{
         $t('credits.topUp.minRequired', {
           credits: formatNumber(usdToCredits(MIN_AMOUNT))
@@ -170,7 +180,7 @@
       v-if="showCeilingWarning && step === 'amount'"
       class="m-0 flex items-center justify-center gap-1 px-8 pt-4 text-center text-sm text-gold-500"
     >
-      <i class="icon-[lucide--component] size-4" />
+      <i class="icon-[lucide--coins] size-4" />
       {{
         $t('credits.topUp.maxAllowed', {
           credits: formatNumber(usdToCredits(MAX_AMOUNT))
@@ -178,7 +188,7 @@
       }}
       <span>{{ $t('credits.topUp.needMore') }}</span>
       <a
-        href="https://www.comfy.org/cloud/enterprise"
+        href="https://comfy.org/cloud/enterprise/"
         target="_blank"
         class="ml-1 text-inherit"
         >{{ $t('credits.topUp.contactUs') }}</a
@@ -188,10 +198,22 @@
     <div class="mt-auto flex flex-col gap-8 p-8">
       <div v-if="step === 'verifying'">
         <Button
+          v-if="topupCanRetryAuthentication"
           variant="primary"
           size="lg"
           class="h-10 w-full justify-center"
-          :disabled="!topupActionUrl || !permissions.canTopUp"
+          :loading="topupIsAuthenticating"
+          :disabled="!canTopUp"
+          @click="retryTopupAuthentication"
+        >
+          {{ $t('billingOperation.retryVerification') }}
+        </Button>
+        <Button
+          v-else-if="!topupReconciliationOperationId"
+          variant="primary"
+          size="lg"
+          class="h-10 w-full justify-center"
+          :disabled="!topupActionUrl || !canTopUp"
           :loading="!topupActionUrl"
           :aria-label="$t('subscription.preview.completeVerification')"
           @click="openTopupVerification"
@@ -201,7 +223,7 @@
       </div>
       <div v-else class="flex flex-col gap-2">
         <Button
-          v-if="step === 'confirm' && topupActionUrl && permissions.canTopUp"
+          v-if="step === 'confirm' && topupActionUrl && canTopUp"
           variant="primary"
           size="lg"
           class="h-10 justify-center"
@@ -210,11 +232,7 @@
           {{ $t('subscription.preview.completeVerification') }}
         </Button>
         <Button
-          :disabled="
-            !isValidAmount ||
-            paymentLocked ||
-            (shouldUseWorkspaceBilling && !permissions.canTopUp)
-          "
+          :disabled="!isValidAmount || paymentLocked || !canTopUp"
           :loading="paymentLocked"
           :variant="
             step === 'confirm' && topupActionUrl ? 'tertiary' : 'primary'
@@ -256,13 +274,13 @@ import { creditsToUsd, usdToCredits } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
 import FormattedNumberStepper from '@/components/ui/stepper/FormattedNumberStepper.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'
-import { clearTopupTracking } from '@/platform/telemetry/topupTracker'
+import { usePendingTopup } from '@/composables/billing/usePendingTopup'
+import { isCloud } from '@/platform/distribution/types'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -278,13 +296,27 @@ const telemetry = useTelemetry()
 const toast = useToast()
 const { buildDocsUrl, docsPaths } = useExternalLink()
 const { fetchBalance, fetchStatus, topup } = useBillingContext()
-const { shouldUseWorkspaceBilling } = useBillingRouting()
-const { permissions } = useWorkspaceUI()
+const { canTopUp } = useBillingCapabilities()
 
 const billingOperationStore = useBillingOperationStore()
 const isPolling = computed(() => billingOperationStore.isAddingCredits)
-const topupActionUrl = computed(
-  () => billingOperationStore.topupActionOperation?.actionUrl ?? null
+const topupOperation = computed(
+  () => billingOperationStore.topupActionOperation
+)
+const topupActionUrl = computed(() => topupOperation.value?.actionUrl ?? null)
+const topupAuthenticationError = computed(
+  () => topupOperation.value?.errorMessage ?? null
+)
+const topupCanRetryAuthentication = computed(
+  () => topupOperation.value?.canRetryAuthentication ?? false
+)
+const topupIsAuthenticating = computed(
+  () => topupOperation.value?.isAuthenticating ?? false
+)
+const topupReconciliationOperationId = computed(() =>
+  topupOperation.value?.status === 'reconciliation_needed'
+    ? topupOperation.value.opId
+    : null
 )
 
 // Constants
@@ -299,10 +331,7 @@ const showCeilingWarning = ref(false)
 const loading = ref(false)
 const paymentSubmitted = ref(false)
 const step = ref<'amount' | 'confirm' | 'verifying'>(
-  (billingOperationStore.topupActionOperation?.actionUrl || isPolling.value) &&
-    permissions.value.canTopUp
-    ? 'verifying'
-    : 'amount'
+  topupOperation.value && canTopUp.value ? 'verifying' : 'amount'
 )
 
 // Computed
@@ -338,12 +367,22 @@ const paymentLocked = computed(
     loading.value ||
     paymentSubmitted.value ||
     isPolling.value ||
-    !!topupActionUrl.value
+    !!topupOperation.value
 )
 
-watch([isPolling, topupActionUrl], ([polling, actionUrl]) => {
-  if (step.value === 'verifying' && !polling && !actionUrl) {
+watch([isPolling, topupOperation], ([polling, operation]) => {
+  if (step.value === 'verifying' && !polling && !operation) {
     step.value = 'amount'
+    return
+  }
+  if (
+    operation &&
+    canTopUp.value &&
+    (operation.actionUrl ||
+      operation.canRetryAuthentication ||
+      operation.status === 'reconciliation_needed')
+  ) {
+    step.value = 'verifying'
   }
 })
 
@@ -390,19 +429,21 @@ function openTopupVerification() {
   window.open(topupActionUrl.value, '_blank', 'noopener,noreferrer')
 }
 
+function retryTopupAuthentication() {
+  const operation = topupOperation.value
+  if (!operation || !canTopUp.value) return
+  void billingOperationStore.retryPaymentAuthentication(operation.opId)
+}
+
 function handleClose(clearTracking = true) {
   if (clearTracking) {
-    clearTopupTracking()
+    usePendingTopup().clearPendingTopup()
   }
   dialogStore.closeDialog({ key: 'top-up-credits' })
 }
 
 async function handleBuy() {
-  if (
-    paymentLocked.value ||
-    !isValidAmount.value ||
-    (shouldUseWorkspaceBilling.value && !permissions.value.canTopUp)
-  ) {
+  if (paymentLocked.value || !isValidAmount.value || !canTopUp.value) {
     return
   }
 
@@ -468,10 +509,13 @@ async function handleBuy() {
       })
       await Promise.allSettled([fetchBalance(), fetchStatus()])
       handleClose(false)
-      settingsDialog.show('workspace')
+      settingsDialog.show(isCloud ? 'workspace' : 'credits')
     } else if (response.status === 'pending') {
       void billingOperationStore
-        .startOperation(response.billing_op_id, 'topup', { attemptStartedAt })
+        .startOperation(response.billing_op_id, 'topup', {
+          attemptStartedAt,
+          autoHandleRequiresAction: true
+        })
         .then(() => {
           paymentSubmitted.value = false
         })

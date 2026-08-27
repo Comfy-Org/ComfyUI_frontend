@@ -73,6 +73,9 @@ All Vitest configurations enable `mockReset`, `restoreMocks`, `unstubEnvs`,
 and `unstubGlobals`. Do not call the corresponding cleanup APIs in
 `beforeEach` or `afterEach`.
 
+Cleanup calls inside a test remain valid when the test intentionally separates
+multiple action and assertion phases.
+
 Because cleanup runs before every test, module-scope `vi.stubGlobal()` and
 `vi.spyOn()` calls are removed before the first test executes. Install them in
 `beforeEach` or in the test that needs them:

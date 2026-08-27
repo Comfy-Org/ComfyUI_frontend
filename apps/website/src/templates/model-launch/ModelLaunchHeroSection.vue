@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { ChevronRight } from '@lucide/vue'
+import { useMediaQuery, useMounted } from '@vueuse/core'
+import { computed } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
 import type { ModelLaunchHero } from './types'
@@ -14,6 +16,24 @@ const { locale = 'en', hero } = defineProps<{
   hero: ModelLaunchHero
   locale?: Locale
 }>()
+
+// SSR (and the first client tick, before onMounted) has no reliable viewport
+// to check, so it renders as if mobile: no <video> tag reaches the page at
+// all, meaning phones never start fetching hero.videoSrc. Only once mounted
+// on a >=768px viewport does the full video swap in; below that, phones play
+// hero.mobileVideoSrc when the page ships one, or keep the still when not.
+const isMounted = useMounted()
+const isDesktopViewport = useMediaQuery('(min-width: 768px)')
+const hasMobileMedia = Boolean(
+  hero.mobileVideoSrc || hero.mobileFallbackImageSrc
+)
+const showVideo = computed(
+  () => !hasMobileMedia || (isMounted.value && isDesktopViewport.value)
+)
+const showMobileVideo = computed(
+  () =>
+    Boolean(hero.mobileVideoSrc) && isMounted.value && !isDesktopViewport.value
+)
 
 // 'overlay' is the announcement treatment: media, scrim and content stacked in
 // one grid cell. The launch layouts instead reorder the same three blocks.
@@ -39,7 +59,29 @@ const isContentFirst = hero.layout === 'content-first'
       />
 
       <div v-if="hero.videoSrc" :class="cn('relative', OVERLAY_CELL)">
-        <VideoPlayer :locale :src="hero.videoSrc" autoplay loop />
+        <VideoPlayer
+          v-if="showVideo"
+          :locale
+          :src="hero.videoSrc"
+          autoplay
+          loop
+        />
+        <VideoPlayer
+          v-else-if="showMobileVideo"
+          :locale
+          :src="hero.mobileVideoSrc"
+          autoplay
+          loop
+        />
+        <img
+          v-else-if="hero.mobileFallbackImageSrc"
+          :src="hero.mobileFallbackImageSrc"
+          alt=""
+          aria-hidden="true"
+          width="1280"
+          height="720"
+          class="aspect-video w-full rounded-4xl border border-white/10 object-cover"
+        />
       </div>
 
       <div
@@ -93,6 +135,7 @@ const isContentFirst = hero.layout === 'content-first'
           <Badge
             v-for="badgeKey in hero.badgeKeys"
             :key="badgeKey"
+            data-testid="model-launch-hero-badge"
             variant="subtle"
           >
             {{ t(badgeKey, locale) }}
@@ -111,11 +154,29 @@ const isContentFirst = hero.layout === 'content-first'
       :class="cn('relative', isContentFirst ? 'order-3' : 'order-1')"
     >
       <VideoPlayer
+        v-if="showVideo"
         :locale
         :src="hero.videoSrc"
         :poster="hero.posterSrc"
         autoplay
         loop
+      />
+      <VideoPlayer
+        v-else-if="showMobileVideo"
+        :locale
+        :src="hero.mobileVideoSrc"
+        :poster="hero.posterSrc"
+        autoplay
+        loop
+      />
+      <img
+        v-else-if="hero.mobileFallbackImageSrc"
+        :src="hero.mobileFallbackImageSrc"
+        alt=""
+        aria-hidden="true"
+        width="1280"
+        height="720"
+        class="aspect-video w-full rounded-4xl border border-white/10 object-cover"
       />
       <div
         v-if="hero.logoSrc"
@@ -172,6 +233,7 @@ const isContentFirst = hero.layout === 'content-first'
         <Badge
           v-for="badgeKey in hero.badgeKeys"
           :key="badgeKey"
+          data-testid="model-launch-hero-badge"
           variant="subtle"
         >
           {{ t(badgeKey, locale) }}

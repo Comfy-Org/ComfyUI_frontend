@@ -28,6 +28,16 @@ describe('getRoutes models', () => {
   })
 })
 
+describe('getRoutes modelsShowcase', () => {
+  it('serves the models showcase page at its canonical path for en', () => {
+    expect(getRoutes('en').modelsShowcase).toBe('/models')
+  })
+
+  it('serves a localized models showcase path for zh-CN', () => {
+    expect(getRoutes('zh-CN').modelsShowcase).toBe('/zh-CN/models')
+  })
+})
+
 describe('getRoutes seedance', () => {
   it('serves the seedance page at its canonical path for en', () => {
     expect(getRoutes('en').seedance).toBe('/seedance-2.5')
@@ -48,6 +58,16 @@ describe('getRoutes ltx', () => {
   })
 })
 
+describe('getRoutes minimaxMusic3', () => {
+  it('serves the minimax music 3 page at its canonical path for en', () => {
+    expect(getRoutes('en').minimaxMusic3).toBe('/minimax-music-3')
+  })
+
+  it('serves a localized minimax music 3 path for zh-CN', () => {
+    expect(getRoutes('zh-CN').minimaxMusic3).toBe('/zh-CN/minimax-music-3')
+  })
+})
+
 describe('getRoutes minimax', () => {
   it('serves the minimax page at its canonical path for en', () => {
     expect(getRoutes('en').minimax).toBe('/minimax-h3')
@@ -65,5 +85,15 @@ describe('getRoutes flux3', () => {
 
   it('serves a localized flux 3 path for zh-CN', () => {
     expect(getRoutes('zh-CN').flux3).toBe('/zh-CN/flux-3')
+  })
+})
+
+describe('getRoutes fdct', () => {
+  it('serves the fdct page at its canonical path for en', () => {
+    expect(getRoutes('en').fdct).toBe('/forward-deployed-creatives')
+  })
+
+  it('serves a localized fdct path for zh-CN', () => {
+    expect(getRoutes('zh-CN').fdct).toBe('/zh-CN/forward-deployed-creatives')
   })
 })
