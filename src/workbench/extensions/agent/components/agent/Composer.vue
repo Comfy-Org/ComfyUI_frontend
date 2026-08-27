@@ -527,7 +527,7 @@ defineExpose({
           v-for="workflow in workflowReferences"
           :key="workflow.id"
           data-testid="workflow-reference-chip"
-          class="group inline-flex max-w-full items-center rounded-sm bg-primary-background/30 px-1 py-0.5 text-xs/[15px] font-normal text-primary-background-hover ring-1 ring-primary-background/30 ring-inset"
+          class="group relative inline-flex max-w-full items-center rounded-sm bg-primary-background/30 px-1 py-0.5 text-xs/[15px] font-normal text-primary-background-hover ring-1 ring-primary-background/30 ring-inset"
         >
           <span class="mr-1 icon-[comfy--workflow] size-3.5 shrink-0" />
           <span class="max-w-40 truncate">{{ workflow.name }}</span>
@@ -539,7 +539,7 @@ defineExpose({
                 workflow: workflow.name
               })
             "
-            class="hover:text-agent-fg ml-0 flex h-3.5 w-0 min-w-0 cursor-pointer items-center justify-center overflow-hidden p-0 opacity-0 transition-[color,width,margin,opacity] group-hover:ml-1 group-hover:w-3.5 group-hover:opacity-100 focus-visible:ml-1 focus-visible:w-3.5 focus-visible:opacity-100"
+            class="hover:text-agent-fg pointer-events-none absolute top-1/2 right-1 flex size-3.5 -translate-y-1/2 cursor-pointer items-center justify-center bg-[color-mix(in_srgb,var(--color-primary-background)_30%,var(--color-agent-surface-raised))] p-0 opacity-0 transition-[color,opacity] group-hover:pointer-events-auto group-hover:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100"
             @click="emit('removeWorkflowReference', workflow.id)"
           >
             <span class="icon-[lucide--x] size-3.5 shrink-0" />

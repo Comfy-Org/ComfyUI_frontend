@@ -689,12 +689,17 @@ describe('Composer', () => {
       name: 'Remove Water world reference'
     })
     expect(removeButton).toHaveClass(
-      'w-0',
+      'absolute',
+      'size-3.5',
       'opacity-0',
-      'group-hover:w-3.5',
       'group-hover:opacity-100',
-      'focus-visible:w-3.5',
       'focus-visible:opacity-100'
+    )
+    expect(removeButton).not.toHaveClass(
+      'group-hover:w-3.5',
+      'group-hover:ml-1',
+      'focus-visible:w-3.5',
+      'focus-visible:ml-1'
     )
     await userEvent.click(removeButton)
 
