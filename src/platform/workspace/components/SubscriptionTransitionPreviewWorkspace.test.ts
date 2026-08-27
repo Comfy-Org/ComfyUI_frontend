@@ -144,6 +144,7 @@ describe('SubscriptionTransitionPreviewWorkspace', () => {
     })
 
     expect(screen.getByText('Some Future Tier')).toBeTruthy()
+    expect(screen.getByText('0', { exact: true })).toBeTruthy()
   })
 
   it('opens verification only from its button without exposing the URL', async () => {
