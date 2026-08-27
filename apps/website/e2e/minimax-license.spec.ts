@@ -7,8 +7,8 @@ import { test } from './fixtures/blockExternalMedia'
 const PATH = '/minimax/license'
 const ZH_PATH = '/zh-CN/minimax/license'
 const CONTACT_HREF = 'https://comfy.org/contact'
+const META_TITLE = t('minimaxLicense.meta.title')
 const HERO_TITLE = t('minimaxLicense.hero.title')
-const HERO_EYEBROW = t('minimaxLicense.hero.eyebrow')
 const HERO_CTA = t('minimaxLicense.hero.primaryCta')
 const HERO_VIDEO_PATTERN = /minimax-license\/hero\.mp4/
 const STEPS_HEADING = t('minimaxLicense.steps.heading')
@@ -20,13 +20,12 @@ test.describe('MiniMax license page @smoke', () => {
     await page.goto(PATH)
   })
 
-  test('renders the hero over the video loop and is indexable', async ({
+  test('renders the launched hero over the video loop and is indexable', async ({
     page
   }) => {
     const hero = page.locator('section').filter({
       has: page.getByRole('heading', { level: 1, name: HERO_TITLE })
     })
-    await expect(hero.getByText(HERO_EYEBROW)).toBeVisible()
     await expect(
       page.getByRole('heading', { level: 1, name: HERO_TITLE })
     ).toBeVisible()
@@ -34,6 +33,7 @@ test.describe('MiniMax license page @smoke', () => {
       'src',
       HERO_VIDEO_PATTERN
     )
+    await expect(page).toHaveTitle(META_TITLE)
     await expect(page.locator('meta[name="robots"]')).toHaveCount(0)
   })
 
@@ -80,14 +80,11 @@ test.describe('MiniMax license page — zh-CN', () => {
   test('renders the localized hero and steps', async ({ page }) => {
     await page.goto(ZH_PATH)
 
-    const hero = page.locator('section').filter({
-      has: page.getByRole('heading', {
+    await expect(
+      page.getByRole('heading', {
         level: 1,
         name: t('minimaxLicense.hero.title', 'zh-CN')
       })
-    })
-    await expect(
-      hero.getByText(t('minimaxLicense.hero.eyebrow', 'zh-CN'))
     ).toBeVisible()
 
     const steps = page.getByRole('heading', {
