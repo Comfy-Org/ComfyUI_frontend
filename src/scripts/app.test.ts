@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { CurveData } from '@/components/curve/types'
+import { t } from '@/i18n'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import type {
@@ -68,10 +70,12 @@ const {
   mockWorkflowService
 } = vi.hoisted(() => ({
   mockApiKeyAuthStore: {
-    getApiKey: vi.fn()
+    getApiKey: vi.fn(),
+    isAuthenticated: false
   },
   mockAuthStore: {
-    getWorkspaceAuthToken: vi.fn()
+    getWorkspaceAuthToken: vi.fn(),
+    currentUser: null as { uid: string } | null
   },
   mockSettingStore: {
     get: vi.fn()
@@ -87,6 +91,7 @@ const {
   },
   mockNodeOutputStore: {
     refreshNodeOutputs: vi.fn(),
+    replaceOutputsFromLegacy: vi.fn(),
     resetAllOutputsAndPreviews: vi.fn(),
     stashPreviewsForWorkflow: vi.fn(),
     restorePreviewsForWorkflow: vi.fn(),
@@ -293,6 +298,8 @@ describe('ComfyApp', () => {
       return workflow
     })
     mockApiKeyAuthStore.getApiKey.mockReturnValue(undefined)
+    mockApiKeyAuthStore.isAuthenticated = false
+    mockAuthStore.currentUser = null
     mockAuthStore.getWorkspaceAuthToken.mockResolvedValue('workspace-token')
     mockTeamWorkspaceStore.activeWorkspaceId = 'workspace-a'
     mockTeamWorkspaceStore.workspaceTransitionGeneration = 0
@@ -305,6 +312,63 @@ describe('ComfyApp', () => {
     mockSettingStore.get.mockImplementation((key: string) =>
       key === 'Comfy.RightSidePanel.ShowErrorsTab' ? true : undefined
     )
+  })
+
+  describe('nodeOutputs', () => {
+    it('commits legacy property mutations to the output store', () => {
+      app.vueAppReady = true
+      const output = { images: [{ filename: 'legacy.png' }] }
+
+      app.nodeOutputs['1'] = output
+      expect(
+        mockNodeOutputStore.replaceOutputsFromLegacy
+      ).toHaveBeenNthCalledWith(1, { '1': output })
+
+      delete app.nodeOutputs['1']
+      expect(
+        mockNodeOutputStore.replaceOutputsFromLegacy
+      ).toHaveBeenNthCalledWith(2, {})
+    })
+
+    it('commits nested legacy output mutations to the output store', () => {
+      app.vueAppReady = true
+      app.nodeOutputs['1'] = { images: [{ filename: 'first.png' }] }
+      mockNodeOutputStore.replaceOutputsFromLegacy.mockClear()
+
+      const output = app.nodeOutputs['1']
+      output.images = [{ filename: 'second.png' }]
+      expect(mockNodeOutputStore.replaceOutputsFromLegacy).toHaveBeenCalledWith(
+        {
+          '1': { images: [{ filename: 'second.png' }] }
+        }
+      )
+
+      mockNodeOutputStore.replaceOutputsFromLegacy.mockClear()
+      const images = output.images
+      images?.push({ filename: 'third.png' })
+      expect(mockNodeOutputStore.replaceOutputsFromLegacy).toHaveBeenCalledWith(
+        {
+          '1': {
+            images: [{ filename: 'second.png' }, { filename: 'third.png' }]
+          }
+        }
+      )
+      expect(app.nodeOutputs['1']).toBe(output)
+      expect(output.images).toBe(images)
+
+      mockNodeOutputStore.replaceOutputsFromLegacy.mockClear()
+      const image = images?.[0]
+      if (!image) throw new Error('Expected a legacy output image')
+      image.filename = 'mutated.png'
+      expect(mockNodeOutputStore.replaceOutputsFromLegacy).toHaveBeenCalledWith(
+        {
+          '1': {
+            images: [{ filename: 'mutated.png' }, { filename: 'third.png' }]
+          }
+        }
+      )
+      expect(images?.[0]).toBe(image)
+    })
   })
 
   describe('queuePrompt', () => {
@@ -499,6 +563,36 @@ describe('ComfyApp', () => {
       await expect(app.queuePrompt(0)).resolves.toBe(false)
       expect(queuePrompt).not.toHaveBeenCalled()
       expect(showDialog).toHaveBeenCalledOnce()
+    })
+
+    it('does not accept the API key when a Firebase session lost its workspace token', async () => {
+      prepareEmptyPromptQueue()
+      mockAuthStore.currentUser = { uid: 'firebase-user' }
+      mockApiKeyAuthStore.isAuthenticated = true
+      mockApiKeyAuthStore.getApiKey.mockReturnValue('api-key')
+      mockAuthStore.getWorkspaceAuthToken.mockResolvedValueOnce(undefined)
+      const queuePrompt = vi.spyOn(api, 'queuePrompt')
+      const showDialog = vi.spyOn(useDialogStore(), 'showDialog')
+
+      await expect(app.queuePrompt(0)).resolves.toBe(false)
+      expect(queuePrompt).not.toHaveBeenCalled()
+      expect(showDialog).toHaveBeenCalledOnce()
+    })
+
+    it('submits with the validated API key when the key session has a workspace', async () => {
+      prepareEmptyPromptQueue()
+      mockApiKeyAuthStore.isAuthenticated = true
+      mockApiKeyAuthStore.getApiKey.mockReturnValue('comfyui-valid-key')
+      mockAuthStore.getWorkspaceAuthToken.mockResolvedValueOnce(undefined)
+      const queuePrompt = vi
+        .spyOn(api, 'queuePrompt')
+        .mockImplementation(() => {
+          expect(api.apiKey).toBe('comfyui-valid-key')
+          return Promise.resolve({ prompt_id: 'job-1', error: '' })
+        })
+
+      await expect(app.queuePrompt(0)).resolves.toBe(true)
+      expect(queuePrompt).toHaveBeenCalledOnce()
     })
 
     it('does not submit after switching away and back to the same workspace', async () => {
@@ -1076,6 +1170,176 @@ describe('ComfyApp', () => {
       }
     })
 
+    it('remaps flattened subgraph ids to colon-free local ids', async () => {
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      const cleanupErrorHooks = installErrorClearingHooks(graph)
+      const missingNodesStore = useMissingNodesErrorStore()
+      const nodeReplacementStore = useNodeReplacementStore()
+      vi.spyOn(nodeReplacementStore, 'load').mockResolvedValue()
+      const sourceType = 'test/FlattenedSourceNode'
+      const targetType = 'test/FlattenedTargetNode'
+      class FlattenedSourceNode extends LGraphNode {
+        constructor(title = 'FlattenedSourceNode') {
+          super(title)
+          this.addOutput('out', 'LATENT')
+        }
+      }
+      class FlattenedTargetNode extends LGraphNode {
+        constructor(title = 'FlattenedTargetNode') {
+          super(title)
+          this.addInput('samples', 'LATENT')
+        }
+      }
+      LiteGraph.registerNodeType(sourceType, FlattenedSourceNode)
+      LiteGraph.registerNodeType(targetType, FlattenedTargetNode)
+
+      try {
+        await app.loadApiJson(
+          {
+            '194:45': {
+              class_type: sourceType,
+              inputs: {},
+              _meta: { title: 'Inner source' }
+            },
+            '7': {
+              class_type: targetType,
+              inputs: { samples: ['194:45', 0] },
+              _meta: { title: 'Root target' }
+            },
+            '194:46': {
+              class_type: 'UninstalledInnerNode',
+              inputs: {},
+              _meta: { title: 'Missing inner' }
+            },
+            '194_45': {
+              class_type: targetType,
+              inputs: { samples: ['194:45', 0] },
+              _meta: { title: 'Occupies the remap target' }
+            }
+          },
+          ''
+        )
+
+        expect(graph.nodes.every((n) => !String(n.id).includes(':'))).toBe(true)
+        // "194_45" was already taken by a literal id, so the remap suffixes.
+        expect(graph.getNodeById(toNodeId('194_45'))?.type).toBe(targetType)
+        expect(graph.getNodeById(toNodeId('194_45_'))?.type).toBe(sourceType)
+        expect(graph.links.size).toBe(2)
+        expect(missingNodesStore.missingNodesError?.nodeTypes).toEqual([
+          expect.objectContaining({
+            type: 'UninstalledInnerNode',
+            nodeId: '194_46'
+          })
+        ])
+      } finally {
+        cleanupErrorHooks()
+        LiteGraph.unregisterNodeType(sourceType)
+        LiteGraph.unregisterNodeType(targetType)
+      }
+    })
+
+    it('unwraps exported widget values on API JSON import', async () => {
+      const graph = new LGraph()
+      const previousAppGraph = app.rootGraph
+      const previousSingletonGraph = singletonApp.rootGraph
+      const missingNodesStore = useMissingNodesErrorStore()
+      const previousMissingNodeTypes =
+        missingNodesStore.missingNodesError?.nodeTypes ?? []
+      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      const widgetNodeType = 'test/ApiCurveNode'
+      const curveCallback = vi.fn()
+      class ApiCurveNode extends LGraphNode {
+        constructor(title = 'ApiCurveNode') {
+          super(title)
+          this.addWidget(
+            'curve',
+            'curve',
+            { points: [], interpolation: 'linear' },
+            curveCallback
+          )
+          this.addWidget('text', 'points', '', null)
+        }
+      }
+      LiteGraph.registerNodeType(widgetNodeType, ApiCurveNode)
+      const curve: CurveData = {
+        points: [
+          [0, 0],
+          [0.5, 1]
+        ],
+        interpolation: 'linear'
+      }
+      const points = [
+        [0, 0],
+        [0.5, 1]
+      ]
+
+      try {
+        await app.loadApiJson(
+          {
+            '1': {
+              class_type: widgetNodeType,
+              inputs: {
+                curve: { __type__: 'CURVE', __value__: curve },
+                points: { __value__: points }
+              },
+              _meta: { title: 'Curve' }
+            },
+            '2': {
+              class_type: 'Uninstalled/CurveNode',
+              inputs: {
+                curve: { __type__: 'CURVE', __value__: curve },
+                points: { __value__: points }
+              },
+              _meta: { title: 'Missing Curve' }
+            }
+          },
+          ''
+        )
+
+        const [widgetNode] = graph.nodes.filter(
+          (n) => n.type === widgetNodeType
+        )
+        expect(widgetNode?.widgets?.[0].value).toEqual(curve)
+        expect(widgetNode?.widgets?.[1].value).toEqual(points)
+        expect(curveCallback).toHaveBeenCalledWith(curve)
+
+        const [placeholder] = graph.nodes.filter(
+          (n) => n.type === 'Uninstalled/CurveNode'
+        )
+        expect(placeholder?.last_serialization?.widgets_values).toEqual([
+          curve,
+          points
+        ])
+        expect(
+          placeholder?.last_serialization?.widgets_values_named
+        ).toMatchObject({ curve, points })
+
+        const passthrough = { __value__: 'not-the-wrapper', other: 1 }
+        await app.loadApiJson(
+          {
+            '1': {
+              class_type: widgetNodeType,
+              inputs: { points: passthrough },
+              _meta: { title: 'Curve' }
+            }
+          },
+          ''
+        )
+        const passthroughNode = graph.nodes
+          .filter((n) => n.type === widgetNodeType)
+          .at(-1)
+        expect(passthroughNode?.widgets?.[1].value).toEqual(passthrough)
+      } finally {
+        missingNodesStore.setMissingNodeTypes(previousMissingNodeTypes)
+        Reflect.set(app, 'rootGraphInternal', previousAppGraph)
+        Reflect.set(singletonApp, 'rootGraphInternal', previousSingletonGraph)
+        LiteGraph.unregisterNodeType(widgetNodeType)
+      }
+    })
+
     it('creates a removable placeholder for an API JSON missing node', async () => {
       const graph = new LGraph()
       Reflect.set(app, 'rootGraphInternal', graph)
@@ -1215,7 +1479,10 @@ describe('ComfyApp', () => {
         })
 
         const roundTripGraph = new LGraph()
-        roundTripGraph.configure(serializedGraph)
+        roundTripGraph.configure({
+          ...serializedGraph,
+          id: roundTripGraph.id
+        })
         const roundTripPlaceholder = roundTripGraph.getNodeById(toNodeId(3))
         expect(roundTripPlaceholder?.inputs[0]).toMatchObject({
           name: 'images',
@@ -1233,7 +1500,10 @@ describe('ComfyApp', () => {
         LiteGraph.registerNodeType(missingNodeType, InstalledInputNode)
         installedTypeRegistered = true
         const installedGraph = new LGraph()
-        installedGraph.configure(serializedGraph)
+        installedGraph.configure({
+          ...serializedGraph,
+          id: installedGraph.id
+        })
         expect(
           installedGraph
             .getNodeById(toNodeId(3))
@@ -1878,44 +2148,54 @@ describe('ComfyApp', () => {
       consoleError.mockRestore()
     })
 
-    it('preserves the current graph when A1111 core nodes are unavailable', async () => {
+    it.for([
+      {
+        outcome: 'core-nodes-unavailable' as const,
+        fileName: 'a1111.png',
+        toastMethod: 'addAlert' as const,
+        expectedToast: t('toastMessages.a1111CoreNodesUnavailable')
+      },
+      {
+        outcome: 'not-a1111' as const,
+        fileName: 'parameters.png',
+        toastMethod: 'addAlert' as const,
+        expectedToast: t('toastMessages.fileLoadError', {
+          fileName: 'parameters.png'
+        })
+      },
+      {
+        outcome: 'imported-without-embeddings' as const,
+        fileName: 'a1111.png',
+        toastMethod: 'add' as const,
+        expectedToast: {
+          severity: 'warn',
+          summary: t('g.warning'),
+          detail: t('toastMessages.a1111EmbeddingsUnavailable')
+        }
+      }
+    ])('maps $outcome to its message', async (testCase) => {
       const graph = new LGraph()
       const parameters = 'positive\nNegative prompt: negative\nSteps: 20'
       Reflect.set(app, 'rootGraphInternal', graph)
       vi.mocked(getWorkflowDataFromFile).mockResolvedValue({ parameters })
-      mockImportA1111.mockResolvedValue('core-nodes-unavailable')
+      mockImportA1111.mockResolvedValue(testCase.outcome)
 
-      await app.handleFile(createTestFile('a1111.png', 'image/png'))
+      await app.handleFile(createTestFile(testCase.fileName, 'image/png'))
 
       expect(mockImportA1111).toHaveBeenCalledWith(
         graph,
         parameters,
         expect.any(Function)
       )
-      expect(mockCanvas.setGraph).not.toHaveBeenCalled()
-      expect(mockWorkflowService.beforeLoadNewGraph).not.toHaveBeenCalled()
-      expect(mockWorkflowService.afterLoadNewGraph).not.toHaveBeenCalled()
-      expect(mockToastStore.addAlert).toHaveBeenCalledOnce()
-      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
-        'Could not load the workflow because this ComfyUI installation is missing core nodes. Check that the backend started correctly.'
+      expect(mockToastStore[testCase.toastMethod]).toHaveBeenCalledOnce()
+      expect(mockToastStore[testCase.toastMethod]).toHaveBeenCalledWith(
+        testCase.expectedToast
       )
-    })
-
-    it('shows one file-load error when parameters are not A1111-shaped', async () => {
-      const graph = new LGraph()
-      const parameters = 'positive\nSteps: 20'
-      Reflect.set(app, 'rootGraphInternal', graph)
-      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({ parameters })
-      mockImportA1111.mockResolvedValue('not-a1111')
-
-      await app.handleFile(createTestFile('parameters.png', 'image/png'))
-
-      expect(mockToastStore.addAlert).toHaveBeenCalledOnce()
-      expect(mockToastStore.addAlert).toHaveBeenCalledWith(
-        'Unable to find workflow in parameters.png'
-      )
-      expect(mockWorkflowService.beforeLoadNewGraph).not.toHaveBeenCalled()
-      expect(mockWorkflowService.afterLoadNewGraph).not.toHaveBeenCalled()
+      if (testCase.outcome === 'imported-without-embeddings') {
+        expect(mockWorkflowService.afterLoadNewGraph).toHaveBeenCalledOnce()
+      } else {
+        expect(mockWorkflowService.afterLoadNewGraph).not.toHaveBeenCalled()
+      }
     })
 
     it('awaits persistence and orders its clear callback before setGraph', async () => {

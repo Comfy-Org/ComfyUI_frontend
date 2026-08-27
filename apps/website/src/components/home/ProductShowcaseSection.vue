@@ -1,31 +1,45 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { useIntersectionObserver, useTemplateRefsList } from '@vueuse/core'
-import { ref, useTemplateRef, watch } from 'vue'
+import { useIntersectionObserver } from '@vueuse/core'
+import { ref, useTemplateRef } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import NodeBadge from '../common/NodeBadge.vue'
+import LottieScene from './LottieScene.vue'
+import VideoMaskScene from './VideoMaskScene.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-const features = [
+interface Feature {
+  title: string
+  description: string
+  lottie?: string
+  maskScene?: string
+}
+
+const features: Feature[] = [
   {
     title: t('showcase.feature1.title', locale),
     description: t('showcase.feature1.description', locale),
-    video:
-      'https://media.comfy.org/website/homepage/showcase/node-workflow.webm'
+    // Vector scene from Comfy-Org/comfy-website-animations, replacing the
+    // node-workflow.webm capture this slide used to play.
+    lottie: '/animations/scene-1/scene-01.json'
   },
   {
     title: t('showcase.feature2.title', locale),
     description: t('showcase.feature2.description', locale),
-    video: 'https://media.comfy.org/website/homepage/showcase/ui-overview.webm'
+    // Replaces ui-overview.webm. Source ships 22MB of PNGs embedded as base64;
+    // extracted to external WebP, which is why this is 804KB rather than 29MB.
+    lottie: '/animations/scene-2/scene-02.json'
   },
   {
     title: t('showcase.feature3.title', locale),
     description: t('showcase.feature3.description', locale),
-    video:
-      'https://media.comfy.org/website/homepage/showcase/video-showcase.webm'
+    // Replaces video-showcase.webm. Not Lottie: the source is a bespoke player
+    // driving real <video> layers behind animated rounded-rect masks, ported
+    // into VideoMaskScene.
+    maskScene: '/animations/scene-3/scene-03.json'
   }
 ]
 
@@ -36,21 +50,11 @@ const badgeSegments = [
 ]
 
 const activeIndex = ref(0)
-const videoRefs = useTemplateRefsList<HTMLVideoElement>()
 const sectionRef = useTemplateRef<HTMLElement>('sectionRef')
 const isVisible = ref(false)
 
 useIntersectionObserver(sectionRef, ([entry]) => {
   isVisible.value = entry?.isIntersecting ?? false
-})
-
-watch(activeIndex, (current, previous) => {
-  videoRefs.value[previous]?.pause()
-  const active = videoRefs.value[current]
-  if (active) {
-    active.currentTime = 0
-    active.play().catch(() => {})
-  }
 })
 </script>
 
@@ -62,10 +66,10 @@ watch(activeIndex, (current, previous) => {
     <!-- Section header -->
     <div class="flex flex-col items-center text-center">
       <NodeBadge :segments="badgeSegments" segment-class="" />
-      <p class="text-primary-comfy-canvas mt-12 max-w-xl text-sm/relaxed">
+      <p class="mt-12 max-w-xl text-sm/relaxed text-primary-comfy-canvas">
         {{ t('showcase.subtitle1', locale) }}
       </p>
-      <p class="text-primary-comfy-canvas mt-4 max-w-xl text-sm/relaxed">
+      <p class="mt-4 max-w-xl text-sm/relaxed text-primary-comfy-canvas">
         {{ t('showcase.subtitle2', locale) }}
       </p>
     </div>
@@ -83,25 +87,32 @@ watch(activeIndex, (current, previous) => {
           "
         >
           <div
-            class="bg-primary-comfy-ink relative size-full overflow-hidden rounded-[calc(2.5rem-2px)]"
+            class="relative size-full overflow-hidden rounded-[calc(2.5rem-2px)] bg-primary-comfy-ink"
           >
-            <video
-              v-for="(feature, i) in features"
-              :ref="videoRefs.set"
-              :key="feature.title"
-              :src="feature.video"
-              :autoplay="i === 0"
-              :preload="i === 0 ? 'metadata' : 'none'"
-              loop
-              muted
-              playsinline
-              :class="
-                cn(
-                  'absolute inset-0 size-full object-cover transition-opacity duration-300 will-change-[opacity]',
-                  activeIndex === i ? 'opacity-100' : 'opacity-0'
-                )
-              "
-            />
+            <template v-for="(feature, i) in features" :key="feature.title">
+              <LottieScene
+                v-if="feature.lottie"
+                :src="feature.lottie"
+                :active="activeIndex === i"
+                :class="
+                  cn(
+                    'absolute inset-0 size-full transition-opacity duration-300 will-change-[opacity]',
+                    activeIndex === i ? 'opacity-100' : 'opacity-0'
+                  )
+                "
+              />
+              <VideoMaskScene
+                v-else-if="feature.maskScene"
+                :src="feature.maskScene"
+                :active="activeIndex === i"
+                :class="
+                  cn(
+                    'absolute inset-0 size-full transition-opacity duration-300 will-change-[opacity]',
+                    activeIndex === i ? 'opacity-100' : 'opacity-0'
+                  )
+                "
+              />
+            </template>
           </div>
         </div>
       </div>
@@ -118,15 +129,17 @@ watch(activeIndex, (current, previous) => {
               class="animate-border-spin size-full overflow-hidden rounded-4xl p-0.5"
             >
               <div
-                class="bg-primary-comfy-ink size-full overflow-hidden rounded-[calc(2rem-2px)]"
+                class="size-full overflow-hidden rounded-[calc(2rem-2px)] bg-primary-comfy-ink"
               >
-                <video
-                  :src="feature.video"
-                  autoplay
-                  loop
-                  muted
-                  playsinline
-                  class="size-full object-cover"
+                <LottieScene
+                  v-if="feature.lottie"
+                  :src="feature.lottie"
+                  class="size-full"
+                />
+                <VideoMaskScene
+                  v-else-if="feature.maskScene"
+                  :src="feature.maskScene"
+                  class="size-full"
                 />
               </div>
             </div>
