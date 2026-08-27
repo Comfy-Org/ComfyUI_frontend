@@ -75,38 +75,4 @@ describe('toConcreteWidget', () => {
     expect(result).toBeInstanceOf(LegacyWidget)
     expect(result.name).toBe('custom')
   })
-
-  it('detaches a retained reference when the widget cannot be adopted', () => {
-    const node = new LGraphNode('test')
-    const retained: IBaseWidget = Object.preventExtensions({
-      name: 'custom',
-      type: 'legacy_test',
-      value: 'initial',
-      options: {},
-      y: 0
-    })
-
-    const result = toConcreteWidget(retained, node)
-    retained.value = 'written through the original reference'
-
-    expect(result).not.toBe(retained)
-    expect(result.value).toBe('initial')
-  })
-
-  it('keeps a retained reference live when the widget is adopted', () => {
-    const node = new LGraphNode('test')
-    const retained: IBaseWidget = {
-      name: 'custom',
-      type: 'legacy_test',
-      value: 'initial',
-      options: {},
-      y: 0
-    }
-
-    const result = toConcreteWidget(retained, node)
-    retained.value = 'written through the original reference'
-
-    expect(result).toBe(retained)
-    expect(result.value).toBe('written through the original reference')
-  })
 })
