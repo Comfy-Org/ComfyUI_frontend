@@ -11,7 +11,6 @@ import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { buildAgentTooltipConfig } from '@/composables/useTooltipConfig'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
 import type { ActiveTab } from '../../types/activeTab'
 import type { WorkflowReference } from '../../types/workflowReference'
@@ -45,7 +44,6 @@ const {
   workflowTabs = [],
   workflowDetached = false,
   getMentionNodes = () => [],
-  getMentionAssets = async () => [],
   sessionId = null,
   customTitle,
   historyGroups,
@@ -67,7 +65,6 @@ const {
   workflowTabs?: ActiveTab[]
   workflowDetached?: boolean
   getMentionNodes?: () => SelectedNode[]
-  getMentionAssets?: () => AssetItem[] | Promise<AssetItem[]>
   sessionId?: string | null
   customTitle?: string
   historyGroups: HistoryGroups
@@ -345,7 +342,6 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             :available-workflows="availableWorkflows"
             :editable-workflow-id="editableWorkflowId"
             :get-mention-nodes="getMentionNodes"
-            :get-mention-assets="getMentionAssets"
             @send="onComposerSend"
             @stop="emit('stop')"
             @attach="emit('attach')"

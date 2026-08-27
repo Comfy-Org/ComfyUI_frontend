@@ -118,7 +118,8 @@ const splitAttachments = computed(() => {
       <span
         v-for="workflow in workflowReferences"
         :key="workflow.id"
-        class="bg-agent-pill text-agent-fg-muted mr-1 inline-flex max-w-40 items-center gap-1 rounded-lg px-1.5 py-0.5 align-middle text-xs"
+        data-testid="workflow-reference-chip"
+        class="mr-1 inline-flex max-w-40 items-center gap-1 rounded-sm border border-primary-background/30 bg-primary-background/30 px-1 py-0.5 align-middle text-xs font-medium text-primary-background-hover"
       >
         <span class="icon-[comfy--workflow] size-3 shrink-0" />
         <span class="truncate">{{ workflow.name }}</span>

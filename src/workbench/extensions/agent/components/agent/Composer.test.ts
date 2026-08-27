@@ -405,7 +405,7 @@ describe('Composer', () => {
         .getAllByRole('menuitem')
         .map((item) => item.textContent?.trim())
       expect(labels).not.toContain(NODES[0].title)
-      expect(labels).toEqual(['Back', 'KSampler#7', 'VAE Decode'])
+      expect(labels).toEqual(['Back', 'KSampler #7', 'VAE Decode'])
     })
 
     // The staged node is only hidden from the picker, not from the duplicate
@@ -478,6 +478,7 @@ describe('Composer', () => {
     })
 
     it('returns from a reference submenu to the root menu', async () => {
+      mount({ getMentionNodes: () => NODES })
       const menu = await openReferenceSection('Nodes')
 
       await userEvent.click(

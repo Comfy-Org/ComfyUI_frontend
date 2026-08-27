@@ -15,11 +15,6 @@ import type { Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { buildAgentTooltipConfig } from '@/composables/useTooltipConfig'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import {
-  getAssetDisplayName,
-  getAssetUrlFilename
-} from '@/platform/assets/utils/assetMetadataUtils'
 
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 import type { ComposerAttachment } from '../../composables/agent/useComposer'
@@ -42,8 +37,7 @@ const {
   workflowReferences = [],
   availableWorkflows = [],
   editableWorkflowId,
-  getMentionNodes = () => [],
-  getMentionAssets = async () => []
+  getMentionNodes = () => []
 } = defineProps<{
   streaming?: boolean
   submitting?: boolean
@@ -54,7 +48,6 @@ const {
   availableWorkflows?: WorkflowReference[]
   editableWorkflowId?: string
   getMentionNodes?: () => SelectedNode[]
-  getMentionAssets?: () => AssetItem[] | Promise<AssetItem[]>
 }>()
 const emit = defineEmits<{
   send: [
@@ -72,6 +65,7 @@ const emit = defineEmits<{
   workflowReferencePick: [workflow: WorkflowReference]
   removeWorkflowReference: [id: string]
 }>()
+const { t } = useI18n()
 
 const assetDragActive = inject<Readonly<Ref<boolean>>>(
   'agentAssetDragActive',
@@ -88,7 +82,6 @@ const mentionNodes = computed(() => {
     (node) => !referenced.has(selectedNodeKey(node))
   )
 })
-const mentionAssets = ref<AssetItem[]>([])
 const eligibleWorkflows = computed(() => {
   const selectedIds = new Set(workflowReferences.map(({ id }) => id))
   return availableWorkflows
@@ -101,25 +94,17 @@ function loadMentionNodes(): void {
   )
 }
 
-async function loadMentionAssets(): Promise<void> {
-  try {
-    mentionAssets.value = (await getMentionAssets()).toSorted((a, b) =>
-      getAssetDisplayName(a).localeCompare(getAssetDisplayName(b))
-    )
-  } catch {
-    mentionAssets.value = []
-  }
-}
-
 const mentionOpen = ref(false)
+const mentionSection = ref<'root' | 'nodes' | 'workflows'>('root')
 const workflowSubmenuOpen = ref(false)
 const mentionQuery = ref('')
 const mentionStart = ref(-1)
 const mentionActive = ref(0)
 
 type MentionMatch =
+  | { kind: 'section'; id: 'nodes' | 'workflows'; label: string }
+  | { kind: 'back'; id: 'back'; label: string }
   | { kind: 'node'; id: string; label: string; node: SelectedNode }
-  | { kind: 'asset'; id: string; label: string; asset: AssetItem }
   | {
       kind: 'workflow'
       id: string
@@ -142,35 +127,38 @@ const stagedKeys = computed(
 
 const mentionMatches = computed<MentionMatch[]>(() => {
   if (!mentionOpen.value) return []
+  if (mentionSection.value === 'root') {
+    return [
+      { kind: 'section', id: 'nodes', label: t('agent.nodes') },
+      { kind: 'section', id: 'workflows', label: t('agent.workflows') }
+    ]
+  }
+
   const query = mentionQuery.value.toLowerCase()
+  const back: MentionMatch = { kind: 'back', id: 'back', label: t('g.back') }
+  if (mentionSection.value === 'nodes') {
+    return [
+      back,
+      ...mentionNodes.value
+        .filter(
+          (node) =>
+            !stagedKeys.value.has(selectedNodeKey(node)) &&
+            (node.title.toLowerCase().includes(query) ||
+              node.id.includes(query))
+        )
+        .map(
+          (node): MentionMatch => ({
+            kind: 'node',
+            id: selectedNodeKey(node),
+            label: node.title,
+            node
+          })
+        )
+    ]
+  }
+
   return [
-    ...mentionNodes.value
-      .filter(
-        (node) =>
-          !stagedKeys.value.has(selectedNodeKey(node)) &&
-          (node.title.toLowerCase().includes(query) || node.id.includes(query))
-      )
-      .map(
-        (node): MentionMatch => ({
-          kind: 'node',
-          id: selectedNodeKey(node),
-          label: node.title,
-          node
-        })
-      ),
-    ...mentionAssets.value
-      .filter((asset) => {
-        const label = getAssetDisplayName(asset).toLowerCase()
-        return label.includes(query) || asset.name.toLowerCase().includes(query)
-      })
-      .map(
-        (asset): MentionMatch => ({
-          kind: 'asset',
-          id: asset.id,
-          label: getAssetDisplayName(asset),
-          asset
-        })
-      ),
+    back,
     ...eligibleWorkflows.value
       .filter(({ name }) => name.toLowerCase().includes(query))
       .map(
@@ -181,10 +169,13 @@ const mentionMatches = computed<MentionMatch[]>(() => {
           workflow
         })
       )
-  ].toSorted((a, b) => a.label.localeCompare(b.label))
+  ]
 })
 
-const mentionVisible = computed(() => mentionMatches.value.length > 0)
+const mentionVisible = computed(() => mentionOpen.value)
+const mentionHasResults = computed(
+  () => mentionSection.value === 'root' || mentionMatches.value.length > 1
+)
 
 function duplicatedTitles(nodes: SelectedNode[]): Set<string> {
   const seen = new Set<string>()
@@ -209,6 +200,7 @@ watch(
 
 function closeMention(): void {
   mentionOpen.value = false
+  mentionSection.value = 'root'
   mentionQuery.value = ''
   mentionStart.value = -1
   mentionActive.value = 0
@@ -232,7 +224,7 @@ function syncMention(event: Event): void {
   }
   if (!mentionOpen.value) {
     loadMentionNodes()
-    void loadMentionAssets()
+    mentionSection.value = 'root'
   }
   mentionOpen.value = true
   mentionStart.value = at
@@ -241,18 +233,18 @@ function syncMention(event: Event): void {
 }
 
 function pickMention(match: MentionMatch): void {
+  if (match.kind === 'section') {
+    mentionSection.value = match.id
+    mentionActive.value = 0
+    return
+  }
+  if (match.kind === 'back') {
+    mentionSection.value = 'root'
+    mentionActive.value = 0
+    return
+  }
   if (match.kind === 'node') emit('mentionPick', match.node)
-  else if (match.kind === 'asset') {
-    const attachmentId = `asset:${match.asset.id}`
-    if (!composer.attachments.value.some((item) => item.id === attachmentId)) {
-      composer.addAttachment({
-        id: attachmentId,
-        name: match.label,
-        ref: getAssetUrlFilename(match.asset),
-        previewUrl: match.asset.thumbnail_url ?? match.asset.preview_url
-      })
-    }
-  } else emit('workflowReferencePick', match.workflow)
+  else emit('workflowReferencePick', match.workflow)
   const draft = composer.draft.value
   const before = draft.slice(0, mentionStart.value)
   const end = mentionStart.value + 1 + mentionQuery.value.length
@@ -302,11 +294,9 @@ const mentionListRef = useTemplateRef<HTMLDivElement>('mentionListRef')
 watch(mentionActive, async () => {
   await nextTick()
   mentionListRef.value
-    ?.querySelector('[aria-selected="true"]')
+    ?.querySelector('[data-active="true"]')
     ?.scrollIntoView?.({ block: 'nearest' })
 })
-
-const { t } = useI18n()
 
 const placeholderHint = computed(() => {
   const [firstLine = '', secondLine = ''] = t('agent.placeholder').split('\n')
@@ -373,53 +363,69 @@ defineExpose({
   >
     <div
       v-if="mentionVisible"
-      id="agent-mention-listbox"
+      id="agent-reference-menu"
       ref="mentionListRef"
-      role="listbox"
+      data-testid="agent-reference-menu"
+      role="menu"
       :aria-label="t('agent.addToPrompt')"
-      class="bg-agent-surface-raised absolute inset-x-0 bottom-full z-1100 mb-[-35px] max-h-64 overflow-y-auto rounded-[10px] border border-[rgba(10,10,10,0.1)] p-1 shadow-md"
+      class="bg-agent-surface-raised absolute inset-x-0 bottom-full z-1100 mb-[-35px] max-h-64 overflow-y-auto rounded-[10px] border border-white/10 p-1 font-inter shadow-md"
       @mousedown.prevent
     >
       <div
+        v-if="mentionSection === 'root'"
+        class="text-agent-fg-muted flex h-6 items-center px-1.5 py-1 text-xs/4"
+      >
+        {{ t('agent.reference') }}
+      </div>
+      <div
         v-for="(match, index) in mentionMatches"
-        :id="`agent-mention-opt-${index}`"
+        :id="`agent-reference-item-${index}`"
         :key="`${match.kind}:${match.id}`"
-        role="option"
-        :aria-selected="index === mentionActive"
+        role="menuitem"
+        :data-active="index === mentionActive"
         :class="
           cn(
-            'text-agent-fg flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-sm/5',
-            index === mentionActive && 'bg-charcoal-500/50'
+            'text-agent-fg flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-xs font-normal outline-none',
+            index === mentionActive && 'bg-agent-surface-hover'
           )
         "
         @mouseenter="mentionActive = index"
         @click="pickMention(match)"
       >
-        <img
-          v-if="
-            match.kind === 'asset' &&
-            (match.asset.thumbnail_url || match.asset.preview_url)
-          "
-          :src="match.asset.thumbnail_url ?? match.asset.preview_url"
-          alt=""
-          class="size-3.5 shrink-0 rounded-sm object-cover"
+        <span
+          v-if="match.kind === 'section' && match.id === 'nodes'"
+          class="icon-[comfy--node] size-3.5 shrink-0"
         />
         <span
-          v-else-if="match.kind === 'asset'"
-          class="icon-[lucide--image] size-3.5 shrink-0"
-        />
-        <span
-          v-else-if="match.kind === 'workflow'"
+          v-else-if="match.kind === 'section' && match.id === 'workflows'"
           class="icon-[comfy--workflow] size-3.5 shrink-0"
         />
-        <span v-else class="icon-[comfy--node] size-3.5 shrink-0" />
-        <span class="truncate">{{ match.label }}</span>
+        <span
+          v-else-if="match.kind === 'back'"
+          class="icon-[lucide--chevron-left] size-4 shrink-0"
+        />
+        <span class="min-w-0 flex-1 truncate">{{ match.label }}</span>
         <span
           v-if="match.kind === 'node' && graphDupes.has(match.node.title)"
           :class="cn(duplicateIdClass, 'ml-auto')"
         >
           #{{ match.node.id }}
         </span>
+        <span
+          v-if="match.kind === 'section'"
+          class="icon-[lucide--chevron-right] size-4 shrink-0"
+        />
+      </div>
+      <div
+        v-if="!mentionHasResults"
+        role="status"
+        class="text-agent-fg-muted px-2 py-1 text-xs"
+      >
+        {{
+          mentionSection === 'workflows'
+            ? t('agent.noWorkflowsToReference')
+            : t('agent.noNodesToReference')
+        }}
       </div>
     </div>
 
@@ -452,8 +458,22 @@ defineExpose({
         <span>{{ t('agent.dragAndDropAssets') }}</span>
       </div>
       <div
-        v-if="selectionTags.length || workflowReferences.length"
-        class="flex flex-wrap gap-2 p-3"
+        v-if="composer.attachments.value.length"
+        class="flex flex-wrap gap-2 px-3 pt-3"
+      >
+        <AttachmentChip
+          v-for="item in composer.attachments.value"
+          :key="item.id"
+          :name="item.name"
+          :preview-url="item.previewUrl"
+          :uploading="item.uploading"
+          @remove="composer.removeAttachment(item.id)"
+        />
+      </div>
+
+      <div
+        data-testid="composer-inline-input"
+        class="flex min-h-16 flex-wrap items-start gap-2 px-3 py-2"
       >
         <span
           v-for="tag in selectionTags"
@@ -492,9 +512,10 @@ defineExpose({
         <span
           v-for="workflow in workflowReferences"
           :key="workflow.id"
-          class="bg-agent-surface-hover text-agent-fg inline-flex h-7 items-center gap-1 rounded-lg border border-border-default px-2.5 text-xs/4 font-medium transition-colors hover:bg-tertiary-background-hover"
+          data-testid="workflow-reference-chip"
+          class="inline-flex h-7 max-w-full items-center gap-1 rounded-sm border border-primary-background/30 bg-primary-background/30 px-1 py-0.5 text-xs/4 font-medium text-primary-background-hover"
         >
-          <span class="text-agent-fg-muted icon-[comfy--workflow] size-3.5" />
+          <span class="icon-[comfy--workflow] size-3.5 shrink-0" />
           <span class="max-w-40 truncate">{{ workflow.name }}</span>
           <button
             v-tooltip.top="buildAgentTooltipConfig(t('agent.remove'))"
@@ -504,65 +525,57 @@ defineExpose({
                 workflow: workflow.name
               })
             "
-            class="text-agent-fg-muted hover:text-agent-fg flex size-3.5 cursor-pointer items-center justify-center transition-colors"
+            class="hover:text-agent-fg flex size-3.5 cursor-pointer items-center justify-center transition-colors"
             @click="emit('removeWorkflowReference', workflow.id)"
           >
             <span class="icon-[lucide--x] size-3.5 shrink-0" />
           </button>
         </span>
-      </div>
 
-      <div
-        v-if="composer.attachments.value.length"
-        class="flex flex-wrap gap-2 px-3 pt-3"
-      >
-        <AttachmentChip
-          v-for="item in composer.attachments.value"
-          :key="item.id"
-          :name="item.name"
-          :preview-url="item.previewUrl"
-          :uploading="item.uploading"
-          @remove="composer.removeAttachment(item.id)"
-        />
-      </div>
+        <div class="relative min-h-7 min-w-32 flex-1">
+          <Textarea
+            ref="textareaRef"
+            v-model="composer.draft.value"
+            :aria-label="t('agent.placeholder')"
+            rows="1"
+            class="text-agent-fg field-sizing-content max-h-100 min-h-7 w-full min-w-0 resize-none overflow-x-hidden overflow-y-auto rounded-none bg-transparent p-0 font-inter text-[14px]/5 font-normal wrap-break-word whitespace-pre-wrap focus-visible:ring-0"
+            :aria-expanded="mentionVisible"
+            aria-controls="agent-reference-menu"
+            :aria-activedescendant="
+              mentionVisible
+                ? `agent-reference-item-${mentionActive}`
+                : undefined
+            "
+            @keydown="onComposerKeydown"
+            @keyup="onComposerKeyup"
+            @input="syncMention"
+            @click="syncMention"
+            @blur="closeMention"
+          />
 
-      <div class="relative min-h-16">
-        <Textarea
-          ref="textareaRef"
-          v-model="composer.draft.value"
-          :aria-label="t('agent.placeholder')"
-          rows="1"
-          class="text-agent-fg field-sizing-content max-h-100 min-h-16 w-full min-w-0 resize-none overflow-x-hidden overflow-y-auto rounded-none bg-transparent px-3 py-2 font-inter text-[14px]/5 font-normal wrap-break-word whitespace-pre-wrap focus-visible:ring-0"
-          :aria-expanded="mentionVisible"
-          aria-controls="agent-mention-listbox"
-          :aria-activedescendant="
-            mentionVisible ? `agent-mention-opt-${mentionActive}` : undefined
-          "
-          @keydown="onComposerKeydown"
-          @keyup="onComposerKeyup"
-          @input="syncMention"
-          @click="syncMention"
-          @blur="closeMention"
-        />
-
-        <div
-          v-if="!composer.draft.value"
-          class="text-agent-fg-muted pointer-events-none absolute inset-x-[12px] top-[8px] z-10 font-inter text-[14px]/[20px] font-normal"
-        >
-          <span>{{ placeholderHint.firstLine }}</span>
-          <button
-            type="button"
-            class="text-agent-fg-muted hover:text-agent-fg focus-visible:text-agent-fg focus-visible:outline-agent-fg pointer-events-auto mr-[4px] ml-[-5px] inline-flex h-[20px] shrink-0 cursor-pointer items-center gap-[4px] rounded-[8px] px-[4px] align-top text-[14px]/[20px] transition-colors focus-visible:outline-1"
-            @click="emit('selectNodes')"
+          <div
+            v-if="
+              !composer.draft.value &&
+              !selectionTags.length &&
+              !workflowReferences.length
+            "
+            class="text-agent-fg-muted pointer-events-none absolute inset-x-0 top-0 z-10 font-inter text-[14px]/[20px] font-normal"
           >
-            <span
-              class="icon-[lucide--mouse-pointer-click] size-[14px] shrink-0"
-            />
-            <span class="underline decoration-dashed underline-offset-2"
-              >{{ placeholderHint.addNodes }},</span
+            <span>{{ placeholderHint.firstLine }}</span>
+            <button
+              type="button"
+              class="text-agent-fg-muted hover:text-agent-fg focus-visible:text-agent-fg focus-visible:outline-agent-fg pointer-events-auto mr-[4px] ml-[-5px] inline-flex h-[20px] shrink-0 cursor-pointer items-center gap-[4px] rounded-[8px] px-[4px] align-top text-[14px]/[20px] transition-colors focus-visible:outline-1"
+              @click="emit('selectNodes')"
             >
-          </button>
-          <span>{{ placeholderHint.dragAssets }}</span>
+              <span
+                class="icon-[lucide--mouse-pointer-click] size-[14px] shrink-0"
+              />
+              <span class="underline decoration-dashed underline-offset-2"
+                >{{ placeholderHint.addNodes }},</span
+              >
+            </button>
+            <span>{{ placeholderHint.dragAssets }}</span>
+          </div>
         </div>
       </div>
 
