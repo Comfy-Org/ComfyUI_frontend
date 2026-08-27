@@ -121,6 +121,10 @@ describe('performance report', () => {
       '| sample: rAF interval p95 | 10ms | 20ms | +100% |'
     )
     expect(output).toContain(
+      '| sample: rAF interval p95 | 10ms | 0ms | 0.0% |'
+    )
+    expect(output).not.toContain('3500ms')
+    expect(output).toContain(
       '1 measurement rejected and excluded from all statistics'
     )
   })
