@@ -55,6 +55,32 @@ describe('DockedAgentPanel', () => {
     expect(screen.queryByTestId('docked-agent-panel')).toBeNull()
   })
 
+  it('keeps the landmark named while the panel body is still loading', () => {
+    const store = useAgentPanelStore()
+    store.enabled = true
+    store.isOpen = true
+    renderPanel()
+
+    // No awaits: the async panel body has not resolved yet, so the Suspense
+    // fallback is what names the complementary landmark.
+    expect(screen.queryByTestId('agent-panel-root-stub')).toBeNull()
+    screen.getByRole('complementary', { name: 'Comfy Agent' })
+    screen.getByRole('heading', { name: 'Comfy Agent' })
+  })
+
+  it('retires the fallback title once the panel body resolves', async () => {
+    const store = useAgentPanelStore()
+    store.enabled = true
+    store.isOpen = true
+    renderPanel()
+
+    await screen.findByTestId('agent-panel-root-stub')
+    // The resolved body owns agent-panel-title (pinned in
+    // AgentPanelRoot.test.ts); the fallback title must leave with the fallback
+    // so the id never appears twice.
+    expect(screen.queryByRole('heading')).toBeNull()
+  })
+
   it('docks the panel when enabled and open', async () => {
     const store = useAgentPanelStore()
     store.enabled = true
