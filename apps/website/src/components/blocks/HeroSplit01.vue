@@ -45,6 +45,7 @@ const {
   videoLoop = false,
   videoMinimal = false,
   videoHideControls = false,
+  videoPlayButtonVariant = 'solid',
   class: className
 } = defineProps<{
   locale?: Locale
@@ -70,6 +71,7 @@ const {
   videoLoop?: boolean
   videoMinimal?: boolean
   videoHideControls?: boolean
+  videoPlayButtonVariant?: 'solid' | 'overlay'
 }>()
 </script>
 
@@ -152,6 +154,7 @@ const {
           :loop="videoLoop"
           :minimal="videoMinimal"
           :hide-controls="videoHideControls"
+          :play-button-variant="videoPlayButtonVariant"
         />
         <img
           v-else-if="imageSrc"
