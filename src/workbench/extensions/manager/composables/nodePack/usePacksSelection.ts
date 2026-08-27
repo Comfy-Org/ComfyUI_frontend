@@ -1,9 +1,9 @@
-import { valid } from 'semver'
 import { computed } from 'vue'
 import type { Ref } from 'vue'
 
 import type { components } from '@/types/comfyRegistryTypes'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
+import { isNightlyVersion } from '@/workbench/extensions/manager/utils/packUpdateStatus'
 
 type NodePack = components['schemas']['Node']
 
@@ -50,9 +50,8 @@ export function usePacksSelection(nodePacks: Ref<NodePack[]>) {
     installedPacks.value.filter((pack) => {
       if (!pack.id) return false
       const version = managerStore.getInstalledPackVersion(pack.id)
-      const isNightly = !!version && !valid(version)
       const isEnabled = managerStore.isPackEnabled(pack.id)
-      return isNightly && isEnabled
+      return isNightlyVersion(version) && isEnabled
     })
   )
 

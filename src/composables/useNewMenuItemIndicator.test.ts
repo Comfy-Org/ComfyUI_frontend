@@ -1,4 +1,3 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useNewMenuItemIndicator } from '@/composables/useNewMenuItemIndicator'
@@ -26,8 +25,6 @@ function createItems(...ids: string[]): WorkflowMenuItem[] {
 
 describe('useNewMenuItemIndicator', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
-    vi.clearAllMocks()
     mockSettingStore.get.mockReturnValue([])
   })
 

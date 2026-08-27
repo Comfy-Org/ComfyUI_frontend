@@ -61,6 +61,12 @@ export class ContextMenu {
     return this
   }
 
+  async openForDisabledElement(locator: Locator): Promise<this> {
+    await locator.dispatchEvent('contextmenu', { button: 2 })
+    await expect(this.anyMenu).toBeVisible()
+    return this
+  }
+
   /**
    * Select a Vue node by clicking its header, then right-click to open
    * the context menu. Vue nodes require a selection click before the

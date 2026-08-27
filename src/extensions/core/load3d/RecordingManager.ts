@@ -11,7 +11,7 @@ export class RecordingManager {
   private recordingStream: MediaStream | null = null
   private recordingIndicator: THREE.Sprite | null = null
   private scene: THREE.Scene
-  private renderer: THREE.WebGLRenderer
+  private sourceCanvas: HTMLCanvasElement
   private eventManager: EventManagerInterface
   private recordingStartTime: number = 0
   private recordingDuration: number = 0
@@ -21,11 +21,11 @@ export class RecordingManager {
 
   constructor(
     scene: THREE.Scene,
-    renderer: THREE.WebGLRenderer,
+    sourceCanvas: HTMLCanvasElement,
     eventManager: EventManagerInterface
   ) {
     this.scene = scene
-    this.renderer = renderer
+    this.sourceCanvas = sourceCanvas
     this.eventManager = eventManager
     this.setupRecordingIndicator()
   }
@@ -61,7 +61,7 @@ export class RecordingManager {
     }
 
     try {
-      const sourceCanvas = this.renderer.domElement
+      const sourceCanvas = this.sourceCanvas
       const sourceWidth = sourceCanvas.width
       const sourceHeight = sourceCanvas.height
 

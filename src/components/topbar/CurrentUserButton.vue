@@ -6,6 +6,7 @@
       class="p-1 hover:bg-transparent"
       variant="muted-textonly"
       :aria-label="$t('g.currentUser')"
+      data-testid="current-user-button"
       @click="popover?.toggle($event)"
     >
       <div
@@ -47,17 +48,13 @@
       }"
       @show="onPopoverShow"
     >
-      <!-- Workspace mode: workspace-aware popover (only when ready) -->
       <CurrentUserPopoverWorkspace
-        v-if="teamWorkspacesEnabled && initState === 'ready'"
+        v-if="showWorkspacePopover"
         ref="workspacePopoverContent"
+        :account-actions-only="initState !== 'ready'"
         @close="closePopover"
       />
-      <!-- Legacy mode: original popover -->
-      <CurrentUserPopoverLegacy
-        v-else-if="!teamWorkspacesEnabled"
-        @close="closePopover"
-      />
+      <CurrentUserPopoverLegacy v-else @close="closePopover" />
     </Popover>
   </div>
 </template>
@@ -72,7 +69,6 @@ import UserAvatar from '@/components/common/UserAvatar.vue'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -89,9 +85,6 @@ const { showArrow = true, compact = false } = defineProps<{
   compact?: boolean
 }>()
 
-const { flags } = useFeatureFlags()
-const teamWorkspacesEnabled = computed(() => flags.teamWorkspacesEnabled)
-
 const { isLoggedIn, userPhotoUrl } = useCurrentUser()
 
 const photoURL = computed<string | undefined>(
@@ -105,14 +98,13 @@ const {
 } = storeToRefs(useTeamWorkspaceStore())
 
 const showWorkspaceSkeleton = computed(
-  () => isCloud && teamWorkspacesEnabled.value && initState.value === 'loading'
+  () => isCloud && initState.value === 'loading'
 )
 const showWorkspaceIcon = computed(
-  () =>
-    isCloud &&
-    teamWorkspacesEnabled.value &&
-    initState.value === 'ready' &&
-    !isInPersonalWorkspace.value
+  () => initState.value === 'ready' && !isInPersonalWorkspace.value
+)
+const showWorkspacePopover = computed(
+  () => isCloud || initState.value === 'ready'
 )
 
 const workspaceName = computed(() => {

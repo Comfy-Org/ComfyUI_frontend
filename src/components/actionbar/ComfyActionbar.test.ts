@@ -21,8 +21,8 @@ const configureSettings = (
 }
 
 const renderActionbar = (showRunProgressBar: boolean) => {
-  const topMenuContainer = document.createElement('div')
-  document.body.appendChild(topMenuContainer)
+  const dockedProgressContainer = document.createElement('div')
+  document.body.appendChild(dockedProgressContainer)
 
   const pinia = createTestingPinia({ createSpy: vi.fn })
   configureSettings(pinia, showRunProgressBar)
@@ -30,7 +30,7 @@ const renderActionbar = (showRunProgressBar: boolean) => {
   const utils = render(ComfyActionbar, {
     container: document.body.appendChild(document.createElement('div')),
     props: {
-      topMenuContainer,
+      dockedProgressContainer,
       queueOverlayExpanded: false
     },
     global: {
@@ -49,6 +49,7 @@ const renderActionbar = (showRunProgressBar: boolean) => {
           name: 'ComfyRunButton',
           template: '<button type="button">Run</button>'
         },
+        FreeTierQuota: true,
         QueueInlineProgress: true
       },
       directives: {
@@ -57,49 +58,52 @@ const renderActionbar = (showRunProgressBar: boolean) => {
     }
   })
 
-  return { topMenuContainer, ...utils }
+  return { dockedProgressContainer, ...utils }
 }
 
 describe('ComfyActionbar', () => {
   beforeEach(() => {
     i18n.global.locale.value = 'en'
-    localStorage.clear()
   })
 
   it('teleports inline progress when run progress bar is enabled', async () => {
-    const { topMenuContainer } = renderActionbar(true)
+    const { dockedProgressContainer } = renderActionbar(true)
 
     try {
       await nextTick()
 
       /* eslint-disable testing-library/no-node-access -- Teleport target verification requires scoping to the container element */
       expect(
-        topMenuContainer.querySelector('[data-testid="queue-inline-progress"]')
+        dockedProgressContainer.querySelector(
+          '[data-testid="queue-inline-progress"]'
+        )
       ).not.toBeNull()
       /* eslint-enable testing-library/no-node-access */
     } finally {
-      topMenuContainer.remove()
+      dockedProgressContainer.remove()
     }
   })
 
   it('does not teleport inline progress when run progress bar is disabled', async () => {
-    const { topMenuContainer } = renderActionbar(false)
+    const { dockedProgressContainer } = renderActionbar(false)
 
     try {
       await nextTick()
 
       /* eslint-disable testing-library/no-node-access -- Teleport target verification requires scoping to the container element */
       expect(
-        topMenuContainer.querySelector('[data-testid="queue-inline-progress"]')
+        dockedProgressContainer.querySelector(
+          '[data-testid="queue-inline-progress"]'
+        )
       ).toBeNull()
       /* eslint-enable testing-library/no-node-access */
     } finally {
-      topMenuContainer.remove()
+      dockedProgressContainer.remove()
     }
   })
 
   it('prevents position jumping when starting a drag from docked state', async () => {
-    const { topMenuContainer, container } = renderActionbar(true)
+    const { dockedProgressContainer, container } = renderActionbar(true)
 
     try {
       await nextTick()
@@ -136,7 +140,7 @@ describe('ComfyActionbar', () => {
       expect(panel.style.left).toBe('100px')
       expect(panel.style.top).toBe('200px')
     } finally {
-      topMenuContainer.remove()
+      dockedProgressContainer.remove()
       // eslint-disable-next-line testing-library/no-container -- Cleanup requires direct container manipulation
       container.remove()
       vi.restoreAllMocks()

@@ -1,4 +1,6 @@
 import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import { createI18n } from 'vue-i18n'
 import { describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -9,15 +11,22 @@ import type {
 
 import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPreviewWorkspace.vue'
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string) => key,
-    n: (value: number) => value.toLocaleString('en-US')
+// Not cancelled: keeps the reactivation banner out of these baseline scenarios.
+vi.mock('@/composables/billing/useBillingContext', () => ({
+  useBillingContext: () => ({
+    subscription: { value: { isCancelled: false, endDate: null } },
+    isInitialized: { value: true }
   })
 }))
 
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: {} }
+})
+
 const globalOptions = {
-  mocks: { $t: (key: string) => key },
+  plugins: [i18n],
   stubs: {
     SubscriptionTermsNote: { template: '<div />' },
     Button: { template: '<button @click="$emit(\'click\')"><slot /></button>' }
@@ -47,6 +56,7 @@ function plan(
 function preview(
   overrides: Partial<PreviewSubscribeResponse>
 ): PreviewSubscribeResponse {
+  const newPlan = overrides.new_plan ?? plan('CREATOR', 'MONTHLY', 3500)
   return {
     allowed: true,
     transition_type: 'upgrade',
@@ -56,7 +66,13 @@ function preview(
     cost_next_period_cents: 0,
     credits_today_cents: 0,
     credits_next_period_cents: 0,
-    new_plan: plan('CREATOR', 'MONTHLY', 3500),
+    new_plan: newPlan,
+    quote_id: 'quote_123',
+    quote_version: 1,
+    amount_due_cents: overrides.cost_today_cents ?? 0,
+    currency: 'usd',
+    renewal_amount_cents: newPlan.price_cents,
+    renewal_at: '2027-06-28T00:00:00Z',
     ...overrides
   }
 }
@@ -81,11 +97,6 @@ describe('SubscriptionTransitionPreviewWorkspace', () => {
     expect(screen.getByText('$28')).toBeTruthy()
     expect(screen.getByText('subscription.billedYearly')).toBeTruthy()
     expect(screen.getByText('subscription.preview.switchesToday')).toBeTruthy()
-    expect(
-      screen.getByText('subscription.preview.yearlySubscription')
-    ).toBeTruthy()
-    expect(screen.getByText('$336.00')).toBeTruthy()
-    expect(screen.getByText('− $17.50')).toBeTruthy()
     expect(
       screen.getByText('subscription.preview.creditsYoullGetToday')
     ).toBeTruthy()
@@ -113,13 +124,35 @@ describe('SubscriptionTransitionPreviewWorkspace', () => {
     expect(screen.getByText('$100')).toBeTruthy()
     expect(screen.getByText('subscription.billedMonthly')).toBeTruthy()
     expect(
-      screen.getByText('subscription.preview.newMonthlySubscription')
-    ).toBeTruthy()
-    expect(
       screen.getByText('subscription.preview.eachMonthCreditsRefill')
     ).toBeTruthy()
     expect(screen.getByText('21,100')).toBeTruthy()
     expect(screen.getByText('$82.50')).toBeTruthy()
+  })
+
+  it('opens verification only from its button without exposing the URL', async () => {
+    const actionUrl = 'https://verify.example/sensitive-token'
+    const open = vi.spyOn(window, 'open').mockReturnValue({} as Window)
+    const { container } = render(SubscriptionTransitionPreviewWorkspace, {
+      props: {
+        previewData: preview({}),
+        actionUrl
+      },
+      global: globalOptions
+    })
+
+    expect(open).not.toHaveBeenCalled()
+    expect(container.innerHTML).not.toContain(actionUrl)
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: 'subscription.preview.completeVerification'
+      })
+    )
+    expect(open).toHaveBeenCalledWith(
+      actionUrl,
+      '_blank',
+      'noopener,noreferrer'
+    )
   })
 
   it('renders a scheduled downgrade with the after-that block and no charge', () => {
@@ -147,10 +180,38 @@ describe('SubscriptionTransitionPreviewWorkspace', () => {
       screen.getByText('subscription.preview.creditsRefillMonthlyTo')
     ).toBeTruthy()
     expect(screen.getByText('7,400')).toBeTruthy()
-    expect(screen.getByText('subscription.preview.stayOnUntil')).toBeTruthy()
     expect(screen.queryByText('subscription.preview.switchesToday')).toBeNull()
     expect(
       screen.queryByText('subscription.preview.yearlySubscription')
+    ).toBeNull()
+  })
+
+  it('renders a scheduled annual downgrade with yearly refill and billing', () => {
+    render(SubscriptionTransitionPreviewWorkspace, {
+      props: {
+        previewData: preview({
+          transition_type: 'downgrade',
+          is_immediate: false,
+          cost_today_cents: 0,
+          effective_at: '2026-08-30T00:00:00Z',
+          current_plan: plan('CREATOR', 'MONTHLY', 3500),
+          new_plan: plan('STANDARD', 'ANNUAL', 19_200)
+        })
+      },
+      global: globalOptions
+    })
+
+    expect(screen.getByText('$16')).toBeTruthy()
+    expect(
+      screen.getByText('subscription.preview.eachYearCreditsRefill')
+    ).toBeTruthy()
+    expect(screen.getByText('50,400')).toBeTruthy()
+    expect(screen.getByText('subscription.billedYearly')).toBeTruthy()
+    expect(
+      screen.queryByText('subscription.preview.creditsRefillMonthlyTo')
+    ).toBeNull()
+    expect(
+      screen.queryByText('subscription.preview.billedEachMonth')
     ).toBeNull()
   })
 
@@ -177,12 +238,6 @@ describe('SubscriptionTransitionPreviewWorkspace', () => {
     // tier table (which would yield 0 credits for a team plan).
     expect(screen.getByText('subscription.teamPlan.name')).toBeTruthy()
     expect(screen.getByText('295,400')).toBeTruthy()
-    // Proration money stays driven by previewData.
-    expect(
-      screen.getByText('subscription.preview.newMonthlySubscription')
-    ).toBeTruthy()
-    expect(screen.getByText('$1,400.00')).toBeTruthy()
-    expect(screen.getByText('− $350.00')).toBeTruthy()
     expect(screen.getByText('$1,050.00')).toBeTruthy()
     expect(
       screen.getByText('subscription.preview.confirmUpgradeCta')
@@ -217,12 +272,42 @@ describe('SubscriptionTransitionPreviewWorkspace', () => {
     expect(
       screen.getByText('subscription.preview.refillReplacesNote')
     ).toBeTruthy()
-    // Yearly line label; proration money stays driven by previewData.
-    expect(
-      screen.getByText('subscription.preview.yearlySubscription')
-    ).toBeTruthy()
-    expect(screen.getByText('$16,800.00')).toBeTruthy()
-    expect(screen.getByText('− $4,200.00')).toBeTruthy()
     expect(screen.getByText('$12,600.00')).toBeTruthy()
+  })
+
+  it('renders a Founders Edition refill without borrowing a catalog lookup', () => {
+    render(SubscriptionTransitionPreviewWorkspace, {
+      props: {
+        previewData: preview({
+          transition_type: 'upgrade',
+          is_immediate: true,
+          cost_today_cents: 1000,
+          current_plan: plan('STANDARD', 'MONTHLY', 2000),
+          new_plan: plan('FOUNDERS_EDITION', 'MONTHLY', 10_000)
+        })
+      },
+      global: globalOptions
+    })
+    expect(screen.getByText(/Founders Edition/)).toBeTruthy()
+  })
+
+  it('renders a tier the catalog does not know as readable words', () => {
+    render(SubscriptionTransitionPreviewWorkspace, {
+      props: {
+        previewData: preview({
+          transition_type: 'upgrade',
+          is_immediate: true,
+          cost_today_cents: 1000,
+          current_plan: plan('PRO', 'MONTHLY', 10_000),
+          new_plan: plan(
+            'SOME_FUTURE_TIER' as SubscriptionTier,
+            'MONTHLY',
+            20_000
+          )
+        })
+      },
+      global: globalOptions
+    })
+    expect(screen.getByText(/Some Future Tier/)).toBeTruthy()
   })
 })

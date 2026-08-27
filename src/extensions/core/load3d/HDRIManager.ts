@@ -2,12 +2,14 @@ import * as THREE from 'three'
 import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader'
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader'
 
+import type { RendererViewState } from '@/renderer/three/sharedWebGLRenderer'
+
 import Load3dUtils from './Load3dUtils'
 import type { EventManagerInterface } from './interfaces'
 
 export class HDRIManager {
   private scene: THREE.Scene
-  private renderer: THREE.WebGLRenderer
+  private viewState: RendererViewState
   private pmremGenerator: THREE.PMREMGenerator
   private eventManager: EventManagerInterface
 
@@ -33,10 +35,11 @@ export class HDRIManager {
   constructor(
     scene: THREE.Scene,
     renderer: THREE.WebGLRenderer,
+    viewState: RendererViewState,
     eventManager: EventManagerInterface
   ) {
     this.scene = scene
-    this.renderer = renderer
+    this.viewState = viewState
     this.pmremGenerator = new THREE.PMREMGenerator(renderer)
     this.pmremGenerator.compileEquirectangularShader()
     this.eventManager = eventManager
@@ -101,8 +104,8 @@ export class HDRIManager {
     this.scene.environment = envMap
     this.scene.environmentIntensity = this._intensity
     this.scene.background = this._showAsBackground ? this.hdriTexture : null
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping
-    this.renderer.toneMappingExposure = 1.0
+    this.viewState.toneMapping = THREE.ACESFilmicToneMapping
+    this.viewState.toneMappingExposure = 1.0
     this.eventManager.emitEvent('hdriChange', {
       enabled: this._isEnabled,
       showAsBackground: this._showAsBackground
@@ -114,8 +117,8 @@ export class HDRIManager {
     if (this.scene.background === this.hdriTexture) {
       this.scene.background = null
     }
-    this.renderer.toneMapping = THREE.NoToneMapping
-    this.renderer.toneMappingExposure = 1.0
+    this.viewState.toneMapping = THREE.NoToneMapping
+    this.viewState.toneMappingExposure = 1.0
     this.eventManager.emitEvent('hdriChange', {
       enabled: false,
       showAsBackground: this._showAsBackground

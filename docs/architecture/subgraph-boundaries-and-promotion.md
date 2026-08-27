@@ -8,7 +8,7 @@ single deeper insight.
 For the structural problems motivating this work, see
 [Entity Problems](entity-problems.md). For the target architecture, see
 [ECS Target Architecture](ecs-target-architecture.md). For the phased migration
-roadmap, see [ECS Migration Plan](ecs-migration-plan.md).
+roadmap, see [ECS Migration Plan](ecs/ecs-migration-plan.md).
 
 ---
 
@@ -567,7 +567,7 @@ documents in a follow-up pass after team review of this document:
 
 - [ECS Target Architecture](ecs-target-architecture.md) — World Overview
   diagram, Entity IDs diagram, component tables
-- [ECS Migration Plan](ecs-migration-plan.md) — Phase 1c World type definition,
+- [ECS Migration Plan](ecs/ecs-migration-plan.md) — Phase 1c World type definition,
   dependency graph
 - [ECS Lifecycle Scenarios](ecs-lifecycle-scenarios.md) — unpack flow uses
   `subgraphEntityId`

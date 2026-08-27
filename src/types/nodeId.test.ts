@@ -1,11 +1,24 @@
 import { describe, expect, it } from 'vitest'
 
-import { parseNodeId, serializeNodeId, toNodeId } from '@/types/nodeId'
+import {
+  compareNodeIds,
+  parseNodeId,
+  serializeNodeId,
+  toNodeId
+} from '@/types/nodeId'
 
 describe('nodeId', () => {
   it('normalizes serialized node ids to strings', () => {
     expect(toNodeId(42)).toBe('42')
     expect(toNodeId('node-42')).toBe('node-42')
+  })
+
+  it('provides a total order for numeric and named ids', () => {
+    const ids = ['node-z', '10', '2', 'node-a', '01', '1'].map(toNodeId)
+
+    expect(ids.sort(compareNodeIds)).toEqual(
+      ['01', '1', '2', '10', 'node-a', 'node-z'].map(toNodeId)
+    )
   })
 })
 

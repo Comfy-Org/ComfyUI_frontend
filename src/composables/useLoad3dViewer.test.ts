@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useLoad3dViewer } from '@/composables/useLoad3dViewer'
@@ -74,8 +74,6 @@ describe('useLoad3dViewer', () => {
   let mockNode: LGraphNode
 
   beforeEach(() => {
-    vi.clearAllMocks()
-
     mockNode = createMockLGraphNode({
       properties: {
         'Scene Config': {
@@ -194,10 +192,6 @@ describe('useLoad3dViewer', () => {
       typeof useToastStore
     >
     vi.mocked(useToastStore).mockReturnValue(mockToastStore)
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   describe('initialization', () => {
@@ -558,6 +552,44 @@ describe('useLoad3dViewer', () => {
 
       expect(viewer.backgroundImage.value).toBe('')
       expect(viewer.hasBackgroundImage.value).toBe(false)
+    })
+
+    it('should reset render mode to tiled when uploading a new image', async () => {
+      vi.mocked(Load3dUtils.uploadFile).mockResolvedValueOnce(
+        'uploaded-image.jpg'
+      )
+
+      const viewer = useLoad3dViewer(mockNode)
+      const containerRef = document.createElement('div')
+
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
+
+      viewer.backgroundRenderMode.value = 'panorama'
+      await nextTick()
+
+      const file = new File([''], 'test.jpg', { type: 'image/jpeg' })
+      await viewer.handleBackgroundImageUpdate(file)
+
+      expect(viewer.backgroundRenderMode.value).toBe('tiled')
+    })
+
+    it('should not clear the background or touch render mode when the upload fails', async () => {
+      vi.mocked(Load3dUtils.uploadFile).mockResolvedValueOnce(undefined)
+
+      const viewer = useLoad3dViewer(mockNode)
+      const containerRef = document.createElement('div')
+
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
+
+      viewer.backgroundImage.value = 'existing.jpg'
+      viewer.backgroundRenderMode.value = 'panorama'
+      await nextTick()
+
+      const file = new File([''], 'test.jpg', { type: 'image/jpeg' })
+      await viewer.handleBackgroundImageUpdate(file)
+
+      expect(viewer.backgroundImage.value).toBe('existing.jpg')
+      expect(viewer.backgroundRenderMode.value).toBe('panorama')
     })
 
     it('should handle upload errors', async () => {

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { useSelectionMenuOptions } from '@/composables/graph/useSelectionMenuOptions'
 
@@ -56,10 +56,6 @@ vi.mock('@/composables/graph/useFrameNodes', () => ({
 }))
 
 describe('useSelectionMenuOptions - multiple nodes options', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('returns Frame Nodes option that invokes frameNodes when called', () => {
     const { getMultipleNodesOptions } = useSelectionMenuOptions()
     const options = getMultipleNodesOptions()
@@ -84,10 +80,6 @@ describe('useSelectionMenuOptions - multiple nodes options', () => {
 })
 
 describe('useSelectionMenuOptions - subgraph options', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('returns only convert option when no subgraphs are selected', () => {
     const { getSubgraphOptions } = useSelectionMenuOptions()
     const options = getSubgraphOptions({

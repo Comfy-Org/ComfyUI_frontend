@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Locale, TranslationKey } from '../../i18n/translations'
 
+import { localizeHref } from '../../config/routes'
 import { t } from '../../i18n/translations'
 
 const {
@@ -15,8 +16,7 @@ const {
   locale?: Locale
 }>()
 
-const localePrefix = locale === 'en' ? '' : `/${locale}`
-const nextHref = `${localePrefix}/demos/${nextSlug}`
+const nextHref = localizeHref(`/demos/${nextSlug}`, locale)
 </script>
 
 <template>
@@ -32,7 +32,9 @@ const nextHref = `${localePrefix}/demos/${nextSlug}`
         <img
           :src="nextThumbnail"
           :alt="nextTitle"
-          class="w-full rounded-4xl object-cover"
+          loading="lazy"
+          decoding="async"
+          class="aspect-video w-full rounded-4xl object-cover"
         />
       </a>
 
