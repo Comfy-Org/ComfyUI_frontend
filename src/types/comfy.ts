@@ -226,8 +226,20 @@ export interface ComfyExtension {
    */
   nodeCreated?(node: LGraphNode, app: ComfyApp): void
 
+  /**
+   * Runs when a graph load begins, before the load mutates workflow state.
+   * A rejection is caught and logged per extension; it never aborts the load.
+   * @param app The app instance
+   */
   beforeLoadGraph?(app: ComfyApp): Promise<void> | void
 
+  /**
+   * Runs when a graph load completes. Fires only after a successful load:
+   * the pair is not guaranteed to balance on configure failure, so a
+   * fail-closed bracket must close on `afterConfigureGraph` instead.
+   * A rejection is caught and logged per extension.
+   * @param app The app instance
+   */
   afterLoadGraph?(app: ComfyApp): Promise<void> | void
 
   /**

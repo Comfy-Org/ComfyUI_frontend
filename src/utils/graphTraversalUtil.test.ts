@@ -133,6 +133,19 @@ describe('graphTraversalUtil', () => {
 
       expect(findSubgraphNodePathById(root, 'nowhere-uuid')).toBeNull()
     })
+
+    it('skips a subgraph without a node array instead of throwing', () => {
+      const malformed = {
+        id: 'broken-uuid'
+      } satisfies Partial<Subgraph> as Subgraph
+      const brokenNode = createMockNode('9', {
+        isSubgraph: true,
+        subgraph: malformed
+      })
+      const root = createMockGraph([brokenNode])
+
+      expect(findSubgraphNodePathById(root, 'unreachable-uuid')).toBeNull()
+    })
   })
 
   describe('Pure utility functions', () => {
