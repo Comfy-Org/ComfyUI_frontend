@@ -667,6 +667,54 @@ describe('Composer', () => {
     expect(emitted().removeWorkflowReference).toEqual([['wf-1']])
   })
 
+  it('keeps selected nodes in a dedicated section above the inline prompt', () => {
+    mount({
+      selectionTags: [{ id: '5', title: 'KSampler' }],
+      workflowReferences: [{ id: 'wf-1', name: 'Water world' }]
+    })
+
+    const nodeSection = screen.getByTestId('composer-node-section')
+    const inlineInput = screen.getByTestId('composer-inline-input')
+
+    expect(nodeSection).toHaveClass('border-b', 'p-3')
+    expect(nodeSection).toHaveTextContent('KSampler')
+    expect(nodeSection).not.toContainElement(screen.getByRole('textbox'))
+    expect(inlineInput).not.toHaveTextContent('KSampler')
+    expect(inlineInput).toHaveTextContent('Water world')
+  })
+
+  it('keeps added assets in a separate padded section above the prompt', async () => {
+    const composer = ref<InstanceType<typeof Composer> | null>(null)
+    const Host = defineComponent({
+      setup: () => () => h(Composer, { ref: composer })
+    })
+    render(Host, { global: { plugins: [i18n] } })
+    composer.value?.addAttachment({
+      id: 'attachment-1',
+      name: 'cat.png',
+      ref: 'uploaded_cat.png',
+      previewUrl: 'https://example.com/cat.png'
+    })
+    await nextTick()
+
+    const assetSection = screen.getByTestId('composer-asset-section')
+    const inlineInput = screen.getByTestId('composer-inline-input')
+
+    expect(assetSection).toHaveClass('p-3')
+    expect(assetSection).toContainElement(
+      screen.getByRole('img', { name: 'cat.png' })
+    )
+    expect(inlineInput).not.toContainElement(
+      screen.getByRole('img', { name: 'cat.png' })
+    )
+  })
+
+  it('keeps the empty prompt hint visible when only nodes are selected', () => {
+    mount({ selectionTags: [{ id: '5', title: 'KSampler' }] })
+
+    expect(screen.getByText('Describe ideas, @ to reference,')).toBeVisible()
+  })
+
   it('hides the conditional entries from the add menu by default', async () => {
     mount()
 
