@@ -65,16 +65,40 @@ describe('the agent panel flag gate', () => {
     expect(useAgentPanelStore().enabled).toBe(true)
   })
 
-  it('stays disabled when the flag resolves off', async () => {
-    posthogState.flag = false
-    await bootGate()
+  it('stays disabled when the flag is off (the SDK reports undefined)', async () => {
+    // posthog drops false-valued bootstrap flags and reports an absent key
+    // as undefined - the off state IS undefined, never false.
+    posthogState.flag = undefined
+    vi.resetModules()
+    await import('./agentPanel')
+    registered.setup?.()
+    await vi.advanceTimersByTimeAsync(600 * 11)
 
     expect(useAgentPanelStore().enabled).toBe(false)
+    expect(document.body.dataset.agentGateSettled).toBe('true')
   })
 
   it('propagates a post-boot flag flip into the store', async () => {
-    posthogState.flag = false
+    posthogState.flag = true
     await bootGate()
+    expect(useAgentPanelStore().enabled).toBe(true)
+
+    posthogState.flag = undefined
+    for (const listener of posthogState.listeners) listener()
+
+    expect(useAgentPanelStore().enabled).toBe(false)
+
+    flipFlag(true)
+    expect(useAgentPanelStore().enabled).toBe(true)
+  })
+
+  it('still hears a flag that arrives after the retry budget is exhausted', async () => {
+    posthogState.flag = undefined
+    vi.resetModules()
+    await import('./agentPanel')
+    registered.setup?.()
+    await vi.advanceTimersByTimeAsync(600 * 11)
+    expect(document.body.dataset.agentGateSettled).toBe('true')
     expect(useAgentPanelStore().enabled).toBe(false)
 
     flipFlag(true)

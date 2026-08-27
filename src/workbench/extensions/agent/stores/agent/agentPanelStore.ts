@@ -8,10 +8,6 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   const enabled = ref(false)
   const isOpen = useLocalStorage(OPEN_STORAGE_KEY, false)
 
-  function open(): void {
-    isOpen.value = true
-  }
-
   function close(): void {
     isOpen.value = false
   }
@@ -23,7 +19,6 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   return {
     enabled,
     isOpen,
-    open,
     close,
     toggle
   }

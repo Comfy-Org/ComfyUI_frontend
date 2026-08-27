@@ -11,7 +11,7 @@
         variant="muted-textonly"
         size="icon"
         class="hover:text-agent-fg focus-visible:ring-agent-accent rounded-xl focus-visible:ring-2"
-        :aria-label="t('agent.close')"
+        :aria-label="t('g.close')"
         @click="agentPanelStore.close()"
       >
         <span class="icon-[lucide--x] size-4" />

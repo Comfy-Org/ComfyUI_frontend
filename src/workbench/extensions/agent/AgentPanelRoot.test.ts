@@ -31,9 +31,7 @@ describe('AgentPanelRoot', () => {
     const user = userEvent.setup()
     renderRoot()
 
-    await user.click(
-      screen.getByRole('button', { name: enMessages.agent.close })
-    )
+    await user.click(screen.getByRole('button', { name: enMessages.g.close }))
 
     expect(store.isOpen).toBe(false)
   })

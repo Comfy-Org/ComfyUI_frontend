@@ -33,31 +33,42 @@ useExtensionService().registerExtension({
           const forceInDev = import.meta.env.MODE === 'development'
           agentPanelStore.enabled = forceInDev || source.isEnabled()
         }
-        source.onChange?.(sync)
+        let flagsDelivered = false
+        const deliver = (): void => {
+          flagsDelivered = true
+          sync()
+        }
+        let unsubscribe = source.onChange?.(deliver)
         sync()
 
         // Telemetry inits posthog from its own non-awaited import; if this
         // setup wins that race, the subscription above landed on an
         // uninitialized singleton whose unsubscribe is dead and which never
-        // delivers flags. `isFeatureEnabled` stays undefined until flags
-        // actually resolve, so poll boundedly and re-take the subscription
-        // once they have. A flag that is OFF can legitimately stay undefined
-        // forever (posthog drops false-valued bootstrap flags), so the
-        // budget is short: it only needs to cover telemetry's init window,
-        // and exhaustion IS the settled fail-closed state.
+        // delivers flags. Readiness cannot be inferred from the flag's own
+        // value (posthog drops false-valued bootstrap flags and returns
+        // undefined for an absent key), so: settle as soon as a flags
+        // delivery is observed or the flag reads a definite value; otherwise
+        // poll briefly - the budget only covers telemetry's init window -
+        // and on exhaustion RE-TAKE the subscription against the by-now
+        // likely live instance, so a flag arriving later in the session
+        // still propagates, then settle fail-closed.
+        const retakeSubscription = (): void => {
+          unsubscribe?.()
+          unsubscribe = source.onChange?.(deliver)
+        }
         let retries = 0
         const retry = (): void => {
-          if (posthog.isFeatureEnabled(AGENT_PANEL_FLAG) !== undefined) {
-            source.onChange?.(sync)
+          const resolved =
+            flagsDelivered ||
+            posthog.isFeatureEnabled(AGENT_PANEL_FLAG) !== undefined
+          if (resolved || retries >= FLAG_RETRY_LIMIT) {
+            if (!flagsDelivered) retakeSubscription()
             sync()
             markGateSettled()
             return
           }
-          if (retries++ < FLAG_RETRY_LIMIT) {
-            setTimeout(retry, FLAG_RETRY_INTERVAL_MS)
-          } else {
-            markGateSettled()
-          }
+          retries++
+          setTimeout(retry, FLAG_RETRY_INTERVAL_MS)
         }
         retry()
       } catch (error) {

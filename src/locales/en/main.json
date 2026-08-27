@@ -5089,7 +5089,6 @@
   },
   "agent": {
     "askComfyAgent": "Ask Comfy Agent",
-    "close": "Close",
     "title": "Comfy Agent"
   }
 }
