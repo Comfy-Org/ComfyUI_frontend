@@ -13,6 +13,14 @@ import {
 
 const MINT = { actor: 'human:test-user:tab-1', baseVersion: 7 }
 
+// The mint seam's vocabulary is the five implemented kinds only: the deferred
+// reset_doc stays outside GraphOperation (plan §2), pinned at compile time -
+// if the derivation ever admits it, this @ts-expect-error goes unused and
+// typecheck fails.
+// @ts-expect-error reset_doc is DeferredOp, not a mintable GraphOperation
+const REJECTED_RESET_DOC: GraphOperation = { op: 'reset_doc' }
+void REJECTED_RESET_DOC
+
 function addNode(id: number): GraphOperation {
   return {
     op: 'add_node',
