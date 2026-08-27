@@ -2,9 +2,10 @@ import type { ModelLaunchPage } from '../templates/model-launch/types'
 
 import { minimaxLinks } from './minimax'
 
-// The frosted backdrop every announcement page shares — keeps the hero text
-// readable and matches the blog hero treatment.
-const COMING_SOON_HERO = 'https://media.comfy.org/website/coming-soon/hero.webp'
+// The license-page key art (dark H3 neon-city render), served from public/ so
+// it ships with the page; a matching hero.mp4 is staged in the same folder on
+// the team deployment for the later short-video swap.
+const HERO_POSTER_SRC = '/videos/minimax-license/hero-poster.jpg'
 
 // CTA hrefs in this config must be absolute (modelLaunchPages.test.ts), so the
 // contact and H3 routes are spelled out rather than taken from baseRoutes.
@@ -23,7 +24,7 @@ export const minimaxLicensePage: ModelLaunchPage = {
   breadcrumbUpdatedKey: 'minimaxLicense.breadcrumb.updated',
   hero: {
     layout: 'overlay',
-    placeholderImageSrc: COMING_SOON_HERO,
+    placeholderImageSrc: HERO_POSTER_SRC,
     eyebrowKey: 'minimaxLicense.hero.eyebrow',
     titleKey: 'minimaxLicense.hero.title',
     descriptionKey: 'minimaxLicense.hero.description',

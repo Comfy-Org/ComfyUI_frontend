@@ -28,6 +28,9 @@ const pages: { name: string; page: ModelLaunchPage }[] = [
 const VIDEO_URL = /^https:\/\/media\.comfy\.org\/.+\.(webm|mp4)$/
 const IMAGE_URL = /^https:\/\/media\.comfy\.org\/.+\.(webp|png|jpe?g)$/
 const AUDIO_URL = /^https:\/\/media\.comfy\.org\/.+\.(mp3|flac|m4a|ogg)$/
+// Hero stills may also ship from public/ as a root-relative path.
+const HERO_STILL_URL =
+  /^(https:\/\/media\.comfy\.org\/|\/)[\w./-]+\.(webp|png|jpe?g)$/
 
 describe.for(pages)('$name launch page config', ({ page }) => {
   it('gives every gallery card a unique id', () => {
@@ -127,10 +130,10 @@ describe.for(pages)('$name launch page config', ({ page }) => {
       expect(page.hero.posterSrc).toMatch(IMAGE_URL)
     }
     if (page.hero.placeholderImageSrc !== undefined) {
-      expect(page.hero.placeholderImageSrc).toMatch(IMAGE_URL)
+      expect(page.hero.placeholderImageSrc).toMatch(HERO_STILL_URL)
     }
     if (page.hero.mobileFallbackImageSrc !== undefined) {
-      expect(page.hero.mobileFallbackImageSrc).toMatch(IMAGE_URL)
+      expect(page.hero.mobileFallbackImageSrc).toMatch(HERO_STILL_URL)
     }
 
     // Collected rather than asserted per card so a failure names the offenders.
