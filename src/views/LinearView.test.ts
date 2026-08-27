@@ -57,6 +57,22 @@ vi.mock('@/stores/appModeStore', async () => {
   }
 })
 
+vi.mock(
+  '@/workbench/extensions/agent/composables/useAgentDockMount',
+  async () => {
+    const { computed, defineComponent, h } = await import('vue')
+    return {
+      useAgentDockMount: () => ({
+        docked: computed(() => true),
+        DockedAgentPanel: defineComponent({
+          name: 'DockedAgentPanel',
+          setup: () => () => h('div', { 'data-testid': 'docked-agent-panel' })
+        })
+      })
+    }
+  }
+)
+
 vi.mock('@/composables/useStablePrimeVueSplitterSizer', () => ({
   useStablePrimeVueSplitterSizer: () => ({ onResizeEnd: vi.fn() })
 }))

@@ -92,7 +92,7 @@ const agentPanelHolder = vi.hoisted(() => ({
   }
 }))
 vi.mock('@/workbench/extensions/agent/stores/agentPanelStore', async () => {
-  const { ref } = await import('vue')
+  const { reactive, ref } = await import('vue')
   agentPanelHolder.store = {
     isOpen: ref(false),
     enabled: ref(false),
@@ -101,7 +101,9 @@ vi.mock('@/workbench/extensions/agent/stores/agentPanelStore', async () => {
       agentPanelHolder.store.isOpen.value = !agentPanelHolder.store.isOpen.value
     })
   }
-  return { useAgentPanelStore: () => agentPanelHolder.store }
+  // reactive() unwraps the holder refs on read, matching a real pinia
+  // store proxy now that the component reads properties directly.
+  return { useAgentPanelStore: () => reactive(agentPanelHolder.store) }
 })
 
 vi.mock('@/utils/mouseDownUtil', () => ({
@@ -199,6 +201,8 @@ describe('WorkflowTabs feedback button', () => {
 
 describe('WorkflowTabs agent entry button', () => {
   beforeEach(() => {
+    // The component's literal guard reads the runtime global in tests.
+    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
     tabBarLayout.value = 'Default'
     agentPanelHolder.store.enabled.value = true
     agentPanelHolder.store.isOpen.value = false

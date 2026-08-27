@@ -82,18 +82,18 @@
     <div
       v-if="isIntegratedTabBar"
       data-testid="integrated-tab-bar-actions"
-      :data-agent-gate-settled="agentGateSettled || undefined"
+      :data-agent-gate-settled="agentPanelStore?.gateSettled || undefined"
       class="ml-auto flex shrink-0 items-center gap-2 px-2"
     >
       <Button
-        v-if="agentPanelEnabled"
+        v-if="agentPanelStore?.enabled"
         variant="link"
         size="sm"
-        :aria-pressed="isAgentPanelOpen"
+        :aria-pressed="agentPanelStore.isOpen"
         :class="
           cn(
             'no-drag shrink-0 border border-solid text-base-foreground',
-            isAgentPanelOpen
+            agentPanelStore.isOpen
               ? 'border-plum-500 bg-plum-600/20'
               : 'border-plum-600 bg-secondary-background hover:border-plum-500'
           )
@@ -139,7 +139,6 @@ import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
 import { cn } from '@comfyorg/tailwind-utils'
-import { storeToRefs } from 'pinia'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agentPanelStore'
@@ -173,12 +172,9 @@ const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const commandStore = useCommandStore()
 const { isLoggedIn } = useCurrentUser()
-const agentPanelStore = useAgentPanelStore()
-const {
-  isOpen: isAgentPanelOpen,
-  enabled: agentPanelEnabled,
-  gateSettled: agentGateSettled
-} = storeToRefs(agentPanelStore)
+// The literal keeps the agent store out of OSS builds entirely.
+const agentPanelStore =
+  __DISTRIBUTION__ === 'cloud' ? useAgentPanelStore() : null
 
 // Dismiss a tab's terminal status badge once it has been viewed
 useWorkflowStatusDismissal()

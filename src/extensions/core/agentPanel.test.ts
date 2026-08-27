@@ -56,8 +56,10 @@ vi.mock('@/services/extensionService', () => ({
 }))
 
 async function bootGate(): Promise<void> {
+  vi.stubGlobal('__DISTRIBUTION__', 'cloud')
   vi.resetModules()
-  await import('./agentPanel')
+  const { registerAgentPanelExtension } = await import('./agentPanel')
+  registerAgentPanelExtension()
   registered.setup?.()
   // The mocked dynamic import outlives a bare microtask - wait for the subscription.
   await vi.waitFor(() => {
@@ -68,8 +70,10 @@ async function bootGate(): Promise<void> {
 }
 
 async function bootGateExpectingImportFailure(): Promise<void> {
+  vi.stubGlobal('__DISTRIBUTION__', 'cloud')
   vi.resetModules()
-  await import('./agentPanel')
+  const { registerAgentPanelExtension } = await import('./agentPanel')
+  registerAgentPanelExtension()
   registered.setup?.()
   await vi.waitFor(() => {
     if (!useAgentPanelStore().gateSettled) {
@@ -118,8 +122,10 @@ describe('the agent panel flag gate', () => {
   it('settles fail-closed by timeout when no delivery ever arrives', async () => {
     // Fake timers go in BEFORE boot so the settle timeout is fake-scheduled.
     vi.useFakeTimers({ shouldAdvanceTime: true })
+    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
     vi.resetModules()
-    await import('./agentPanel')
+    const { registerAgentPanelExtension } = await import('./agentPanel')
+    registerAgentPanelExtension()
     registered.setup?.()
     for (let i = 0; i < 200 && posthogState.listeners.length === 0; i++) {
       await vi.advanceTimersByTimeAsync(1)

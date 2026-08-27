@@ -4,28 +4,31 @@ import { ref } from 'vue'
 
 const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
 
-export const useAgentPanelStore = defineStore('agentPanel', () => {
-  const enabled = ref(false)
-  // writeDefaults false: no storage key planted for flag-off users.
-  const isOpen = useLocalStorage(OPEN_STORAGE_KEY, false, {
-    writeDefaults: false
-  })
-  /** True once the flag gate reached a terminal state (delivered, timed out, or failed closed). */
-  const gateSettled = ref(false)
+export const useAgentPanelStore = /* @__PURE__ */ defineStore(
+  'agentPanel',
+  () => {
+    const enabled = ref(false)
+    // writeDefaults false: no storage key planted for flag-off users.
+    const isOpen = useLocalStorage(OPEN_STORAGE_KEY, false, {
+      writeDefaults: false
+    })
+    /** True once the flag gate reached a terminal state (delivered, timed out, or failed closed). */
+    const gateSettled = ref(false)
 
-  function close(): void {
-    isOpen.value = false
-  }
+    function close(): void {
+      isOpen.value = false
+    }
 
-  function toggle(): void {
-    isOpen.value = !isOpen.value
-  }
+    function toggle(): void {
+      isOpen.value = !isOpen.value
+    }
 
-  return {
-    enabled,
-    isOpen,
-    gateSettled,
-    close,
-    toggle
+    return {
+      enabled,
+      isOpen,
+      gateSettled,
+      close,
+      toggle
+    }
   }
-})
+)
