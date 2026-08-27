@@ -21,6 +21,10 @@ async function expectImportPrecedesInputAssetScan(
     const importIndex = events.indexOf('import')
     const afterImportIndex = events.indexOf('input-assets-after-import')
 
+    expect(
+      events,
+      'input assets must not be scanned before import'
+    ).not.toContain('input-assets-before-import')
     expect(importIndex, `events: ${events.join(',')}`).toBeGreaterThanOrEqual(0)
     expect(afterImportIndex, `events: ${events.join(',')}`).toBeGreaterThan(
       importIndex

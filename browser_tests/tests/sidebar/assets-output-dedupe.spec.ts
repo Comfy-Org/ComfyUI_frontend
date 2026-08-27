@@ -2,7 +2,10 @@ import { expect } from '@playwright/test'
 
 import type { Asset } from '@comfyorg/ingest-types'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import { createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
+import {
+  createMockCloudAsset,
+  createMockJob
+} from '@e2e/fixtures/helpers/AssetsHelper'
 import type { JobDetail } from '@/platform/remote/comfyui/jobs/jobTypes'
 
 /**
@@ -36,16 +39,15 @@ const CLOUD_ASSETS: Asset[] = [
   ...DISTINCT_FILENAMES,
   DUPLICATE_FILENAME,
   DUPLICATE_FILENAME
-].map((filename, i) => ({
-  id: `asset-dedupe-${i}`,
-  name: filename,
-  job_id: STACK_JOB_ID,
-  mime_type: 'image/png',
-  tags: ['output'],
-  preview_url: `/api/view?filename=${filename}&type=output`,
-  created_at: new Date(5000 + i).toISOString(),
-  updated_at: new Date(5000 + i).toISOString()
-}))
+].map((filename, i) =>
+  createMockCloudAsset({
+    id: `asset-dedupe-${i}`,
+    name: filename,
+    job_id: STACK_JOB_ID,
+    created_at: new Date(5000 + i).toISOString(),
+    updated_at: new Date(5000 + i).toISOString()
+  })
+)
 
 const STACK_JOB = createMockJob({
   id: STACK_JOB_ID,
@@ -109,6 +111,7 @@ test.describe(
           .map((el) => el.getAttribute('aria-label'))
           .filter((v): v is string => v !== null)
       )
+      expect(labels).toHaveLength(EXPECTED_TOTAL_TILES)
       expect(new Set(labels).size).toBe(labels.length)
 
       await testInfo.attach('expanded-folder-view.png', {
