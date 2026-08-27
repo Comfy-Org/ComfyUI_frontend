@@ -265,8 +265,8 @@
   | >>> A. Centralize into graph.incrementVersion()  [GOOD] <<<        |
   |     Debt -15, Quality +15, ECS +1                                  |
   |     This SHIPPED. Exactly one _version++ remains - inside the      |
-  |     method itself. The badge system's derive-on-read invalidation  |
-  |     now hangs off this chokepoint.                                 |
+  |     method itself. (Badges never needed it: badgeSystem.ts         |
+  |     derives from reactive store state via Vue computeds.)          |
   |                                                                    |
   |   B. Add a JavaScript Proxy  [OK]                                  |
   |     Debt +5, Quality +5, Morale -5                                 |
@@ -477,12 +477,12 @@
   | still touches it?                                                  |
   |------------------------------------------------------------------  |
   |                                                                    |
-  | >>> A. Warning facades: reads warn, writes ignored  [GOOD] <<<     |
+  | >>> A. Store-derived facades: removals disconnect  [GOOD] <<<      |
   |     Debt -10, Quality +15, Morale +5, ECS +1                      |
-  |     The reviewed design: store-derived getter + warnDeprecated,    |
-  |     frozen returned arrays so push() fails loudly, writes warn     |
-  |     and degrade gracefully. A zero-warning first-party test keeps  |
-  |     the telemetry honest.                                          |
+  |     The reviewed design: deprecated getters derive the view from   |
+  |     the store. Splicing an id out disconnects it for real; adds    |
+  |     warn and are discarded; input.link = null disconnects. A       |
+  |     zero-warning first-party test keeps the telemetry honest.      |
   |                                                                    |
   |   B. Fail fast: throw on any write  [OK]                           |
   |     Debt +5, Quality +5, Morale -5                                |

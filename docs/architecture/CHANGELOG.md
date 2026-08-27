@@ -18,9 +18,10 @@ PR #14246's constituent PRs get the most game depth.
   chain registrations. Artifacts: GraphScope, Ownership Attachment.
 - **The Hall of Mirrors** (room 12, Compatibility). The two mirror-deletion PRs
   (#13479, #13498) were the most heavily reviewed work of the migration. Its
-  challenge, _The Mirror Deletion_, walks the throw vs warn-and-ignore shim
-  decision that review actually settled. Artifacts: Deprecation Telemetry,
-  Serialization Goldens.
+  challenge, _The Mirror Deletion_, walks the throw vs tolerant-facade shim
+  decision that review actually settled: removals and `input.link = null`
+  execute through the store, additions warn and are discarded. Artifacts:
+  Deprecation Telemetry, Serialization Goldens.
 - A measurement ledger in the Renderer Overlook: the deleted 197µs/op layout
   operation log and the WeakMap cache that lost a benchmark to `indexOf`.
 - This changelog.
@@ -44,6 +45,13 @@ PR #14246's constituent PRs get the most game depth.
   negative parallelisms rewritten.
 - Walkthrough rewritten for the new map, route (24 key presses), artifact
   checklist (22), and Spaghetti Singularity path.
+
+### Fixed
+
+- Saves from v1 are normalized on load: a finished v1 save carried
+  `endingShown: true`, which would have blocked the two new challenges and all
+  keyboard navigation. The flag now resets whenever a loaded save has fewer
+  than the current challenge count.
 
 ## 1.1 (2026-08-25)
 

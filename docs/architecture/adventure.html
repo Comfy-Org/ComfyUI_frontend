@@ -1582,6 +1582,11 @@
           const s = JSON.parse(raw)
           s.visited = new Set(s.visited)
           s.challengesCompleted = new Set(s.challengesCompleted)
+          // A save from an older version can carry endingShown: true with
+          // fewer challenges than the current count; left set, it would lock
+          // out the new challenges and all keyboard navigation.
+          if (s.challengesCompleted.size < TOTAL_CHALLENGES)
+            s.endingShown = false
           return s
         } catch {
           return null
@@ -1607,9 +1612,10 @@
         }
       }
 
+      const TOTAL_CHALLENGES = 11
+
       let state = loadState() || createInitialState()
 
-      const TOTAL_CHALLENGES = 11
       const GH = 'https://github.com/Comfy-Org/ComfyUI_frontend/blob/main'
 
       // --- Image prompts per room ---
@@ -1832,7 +1838,7 @@
                 effects: { techDebt: -15, quality: 15, migrationProgress: 1 },
                 rating: 'good',
                 feedback:
-                  'This shipped. Exactly one _version++ remains in the codebase, inside incrementVersion() itself; every other site calls the method. The chokepoint became load-bearing, since the badge system’s derive-on-read invalidation hangs off it. Next on the plan: derive invalidation from store revisions so callers stop bumping versions by hand at all.'
+                  'This shipped. Exactly one _version++ remains in the codebase, inside incrementVersion() itself; every other site calls the method. The badge system never needed the counter at all: badgeSystem.ts memoizes a Vue computed per node that re-runs when the setting, node-definition, palette, widget-value, or link stores change. That is the end state for the version counter too — derive invalidation from store reactivity so callers stop bumping versions by hand.'
               },
               {
                 key: 'B',
@@ -1890,10 +1896,13 @@
           here bridges the presentation layer above with the stores below.<br><br>
           Extension authors face their own migration path. Legacy surfaces survive as
           deprecated facades that log telemetry instead of breaking:
-          <code>output.links[]</code> and <code>input.link</code> are read-only warning getters
-          (writes warn and are ignored &mdash; a throw inside an extension callback proved too dangerous);
-          connectivity reads go through <code>node.isOutputConnected()</code> and the
-          <code>linkStore</code> queries. Node shell fields moved to store-backed prototype
+          <code>output.links[]</code> and <code>input.link</code> derive from the
+          <code>linkStore</code> on every read, and writes translate where they have one
+          clear meaning &mdash; <code>input.link = null</code> disconnects, removing an id
+          from <code>output.links</code> disconnects that link through the store &mdash;
+          while additions warn and are discarded (a throw inside an extension callback
+          proved too dangerous). First-party connectivity reads go through
+          <code>node.isOutputConnected()</code> and the <code>linkStore</code> queries. Node shell fields moved to store-backed prototype
           accessors, so <code>{ ...node }</code> no longer carries them &mdash; read
           <code>node._state</code> instead. A regression test proves first-party code fires
           zero deprecation warnings, so the telemetry measures extensions only.
@@ -2456,13 +2465,15 @@
           But look closer: <strong>the anvils are cold</strong>.<br><br>
           The shipped migration deliberately deferred the command layer. Undo remains
           snapshot-based &mdash; <a href="${GH}/docs/architecture/change-tracker.md" target="_blank">ChangeTracker</a>
-          diffs serialized graph snapshots &mdash; and mutations flow through store actions.
+          diffs serialized graph snapshots &mdash; and writes are still a mix: some flow
+          through validated store actions, others are direct reactive-proxy writes,
+          legacy orchestration, or layout operations.
           PR #14246 was a <em>data-architecture</em> phase: centralize each concern into one
           store authority first, so that when a concrete consumer (replay, collaboration,
           command-based undo) finally demands commands, they have honest state to mutate.
           The <a href="${GH}/docs/architecture/ecs/ecs-mutation-audit.md" target="_blank">mutation
-          audit</a> maps which writes are store actions, which are legacy direct mutations,
-          and what a future command boundary would wrap.
+          audit</a> maps which writes are which, and what a future command boundary
+          would wrap.
         `,
           artifacts: [
             {
@@ -2710,9 +2721,9 @@
             choices: [
               {
                 key: 'A',
-                label: 'Warning facades: reads warn once, writes are ignored',
+                label: 'Store-derived facades: removals disconnect, additions drop',
                 icon: 'mirrors-a',
-                hint: 'A read-only getter derives from the store and logs deprecation telemetry. Returned arrays are frozen so a stray push fails loudly. Writes degrade gracefully.',
+                hint: 'A deprecated getter derives the view from the store and logs telemetry. Splicing a link out of the view disconnects it for real; pushing one in warns and is discarded.',
                 effects: {
                   techDebt: -10,
                   quality: 15,
@@ -2721,7 +2732,7 @@
                 },
                 rating: 'good',
                 feedback:
-                  'The design that survived review. Reads go through a prototype getter that derives fresh data from the store and fires warnDeprecated; returned arrays are frozen so output.links.push() fails loudly instead of silently vanishing; writes warn and are ignored, so a legacy extension degrades instead of crashing. The zero-warning regression test means the telemetry measures extensions alone, and that data decides when each facade can finally come down.'
+                  'The design that survived review. Reads go through a deprecated getter that derives a stable view from the link store and fires warnDeprecated. The view is a mutation proxy, not a frozen copy: splice an id out and the store disconnects that link; push one in and the addition warns and is discarded on the next sync. input.link works the same way, so assigning null disconnects while assigning an id is ignored. The zero-warning regression test means the telemetry measures extensions alone, and that data decides when each facade can finally come down.'
               },
               {
                 key: 'B',
@@ -2731,7 +2742,7 @@
                 effects: { techDebt: 5, quality: 5, morale: -5 },
                 rating: 'ok',
                 feedback:
-                  'The first version of #13479 did throw, and review caught the consequences: a strict-mode TypeError erupting inside onConnectionsChange, where no error boundary exists, could abort connect() halfway and leave the graph half-wired. Meanwhile output.links?.push(id) never threw at all; it silently discarded the write. #13498 shipped warn-and-ignore instead, with frozen arrays to make the silent case loud.'
+                  'The first version of #13479 did throw, and review caught the consequences: a strict-mode TypeError erupting inside onConnectionsChange, where no error boundary exists, could abort connect() halfway and leave the graph half-wired. #13498 shipped tolerant facades instead: writes with one clear meaning, like removals and input.link = null, execute through the store, and everything else warns and is discarded.'
               },
               {
                 key: 'C',
