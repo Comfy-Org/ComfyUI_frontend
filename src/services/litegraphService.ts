@@ -39,6 +39,7 @@ import type {
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -59,7 +60,10 @@ import { $el } from '@/scripts/ui'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import {
+  getPreviewExposureHostLocator,
+  usePreviewExposureStore
+} from '@/stores/previewExposureStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
@@ -195,7 +199,8 @@ export const useLitegraphService = () => {
   }
 
   function getPseudoWidgetPreviewTargets(node: SubgraphNode): LGraphNode[] {
-    const hostLocator = String(node.id)
+    const hostLocator = getPreviewExposureHostLocator(node)
+    if (!hostLocator) return []
     const promotions = usePreviewExposureStore().getExposuresAsPromotionShape(
       node.rootGraph.id,
       hostLocator
@@ -298,16 +303,25 @@ export const useLitegraphService = () => {
     const widgetConstructor = widgetStore.widgets.get(widgetInputSpec.type)
     if (!widgetConstructor || inputSpec.forceInput) return
 
-    const {
-      widget,
-      minWidth = 1,
-      minHeight = 1
-    } = widgetConstructor(
-      node,
-      inputName,
-      transformInputSpecV2ToV1(widgetInputSpec),
-      app
-    ) ?? {}
+    const widgetsBefore = new Set(node.widgets ?? [])
+    const result =
+      widgetConstructor(
+        node,
+        inputName,
+        transformInputSpecV2ToV1(widgetInputSpec),
+        app
+      ) ?? {}
+    const { minWidth = 1, minHeight = 1 } = result
+    const returnedWidget = result.widget
+    const widget =
+      returnedWidget &&
+      (node.widgets?.find(
+        (candidate) =>
+          candidate === returnedWidget ||
+          (!widgetsBefore.has(candidate) &&
+            candidate.name === returnedWidget.name)
+      ) ??
+        toConcreteWidget(returnedWidget, node))
 
     if (widget) {
       widget.label = resolveLabel(

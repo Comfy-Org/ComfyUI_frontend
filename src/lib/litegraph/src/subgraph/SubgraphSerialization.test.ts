@@ -22,6 +22,7 @@ import {
 
 import { toLinkId } from '@/types/linkId'
 import { toNodeId, UNASSIGNED_NODE_ID } from '@/types/nodeId'
+import { createUuidv4 } from '@/utils/uuid'
 import {
   createTestSubgraph,
   createTestSubgraphNode,
@@ -45,6 +46,28 @@ afterEach(() => {
 })
 
 describe('SubgraphSerialization - Basic Serialization', () => {
+  it('rekeys a registered subgraph and preserves its interface', () => {
+    const root = new LGraph()
+    const subgraph = createTestSubgraph({ rootGraph: root, name: 'Stored' })
+    root.subgraphs.set(subgraph.id, subgraph)
+
+    expect(root.subgraphs.get(subgraph.id)).toBe(subgraph)
+
+    const previousId = subgraph.id
+    subgraph.id = createUuidv4()
+    const input = subgraph.addInput('input', 'number')
+    const output = subgraph.addOutput('output', 'number')
+    expect(subgraph.name).toBe('Stored')
+    expect(subgraph.inputs).toEqual([input])
+    expect(subgraph.outputs).toEqual([output])
+
+    expect(() => {
+      subgraph.id = createUuidv4()
+    }).not.toThrow()
+    expect(root.subgraphs.get(subgraph.id)).toBe(subgraph)
+    expect(root.subgraphs.has(previousId)).toBe(false)
+  })
+
   it('should save and load simple subgraphs', () => {
     const original = createTestSubgraph({
       name: 'Simple Test',
@@ -551,6 +574,8 @@ describe('SubgraphSerialization - Data Integrity', () => {
     data.links!.push({ ...data.links![0], id: rejectedId })
     data.outputs![0].linkIds = [rejectedId]
     const original = structuredClone(data)
+    const expectedLinkId = link.id
+    subgraph.clear()
 
     const restored = createTestSubgraph({
       rootGraph: subgraph.rootGraph,
@@ -558,7 +583,7 @@ describe('SubgraphSerialization - Data Integrity', () => {
     })
     restored.configure(data)
 
-    expect(restored.outputs[0].linkIds).toEqual([link.id])
+    expect(restored.outputs[0].linkIds).toEqual([expectedLinkId])
     expect(data).toEqual(original)
   })
 

@@ -142,6 +142,24 @@ const translations = {
     en: 'Run your first workflow',
     'zh-CN': '运行你的第一个工作流'
   },
+  'hero.getStartedFree': {
+    en: 'Get started for free',
+    'zh-CN': '免费开始使用'
+  },
+
+  // FeaturedWorkflowsSection
+  'featuredWorkflows.label': {
+    en: 'FEATURED · STAFF PICK',
+    'zh-CN': '精选 · 官方推荐'
+  },
+  'featuredWorkflows.prev': {
+    en: 'Previous featured workflow',
+    'zh-CN': '上一个精选工作流'
+  },
+  'featuredWorkflows.next': {
+    en: 'Next featured workflow',
+    'zh-CN': '下一个精选工作流'
+  },
 
   // Model release carousel (home page)
   'modelRelease.eyebrow': {
@@ -257,40 +275,36 @@ const translations = {
   'showcase.badgeHow': { en: 'HOW', 'zh-CN': '了解' },
   'showcase.badgeWorks': { en: 'WORKS', 'zh-CN': '运行方式' },
 
-  // UseCaseSection
-  'useCase.label': {
-    en: 'Industries that create with ComfyUI',
-    'zh-CN': '使用 ComfyUI 创作的行业'
+  // IndustriesSection
+  'industries.label': {
+    en: 'Industries',
+    'zh-CN': '行业'
   },
-  'useCase.navLabel': {
+  'industries.navLabel': {
     en: 'Industry categories',
     'zh-CN': '行业分类'
   },
-  'useCase.vfx': {
-    en: 'VFX &\nAnimation',
-    'zh-CN': '视觉特效 &\n动画'
+  'industries.vfx': {
+    en: 'VFX & Animation',
+    'zh-CN': '视觉特效 & 动画'
   },
-  'useCase.advertising': {
-    en: 'Advertising &\nCreative Studios',
-    'zh-CN': '广告 &\n创意工作室'
+  'industries.advertising': {
+    en: 'Advertising & Creative Studios',
+    'zh-CN': '广告 & 创意工作室'
   },
-  'useCase.gaming': {
+  'industries.gaming': {
     en: 'Gaming',
     'zh-CN': '电子游戏'
   },
-  'useCase.ecommerce': {
-    en: 'eCommerce &\nFashion',
-    'zh-CN': '电商 &\n时尚'
+  'industries.ecommerce': {
+    en: 'eCommerce & Fashion',
+    'zh-CN': '电商 & 时尚'
   },
-  'useCase.more': {
-    en: '& More',
-    'zh-CN': '& 更多'
+  'industries.body': {
+    en: 'Powered by 60,000+ nodes, thousands of workflows, and a community that builds faster than any one company could.',
+    'zh-CN': '60,000+ 节点，数千条工作流，一个比任何公司速度都更快的社区。'
   },
-  'useCase.body': {
-    en: 'Powered by 60,000+ nodes, thousands of workflows,\nand a community that builds faster than any one company could.',
-    'zh-CN': '60,000+ 节点，数千条工作流，\n一个比任何公司速度都更快的社区。'
-  },
-  'useCase.cta': {
+  'industries.cta': {
     en: 'EXPLORE WORKFLOWS',
     'zh-CN': '探索工作流'
   },
@@ -4705,6 +4719,131 @@ const translations = {
     en: 'Read the full tutorial →',
     'zh-CN': '阅读完整教程 →'
   },
+  'models.faq.heading': {
+    en: 'Frequently Asked Questions',
+    'zh-CN': '常见问题'
+  },
+  'models.faq.whatIs.question': {
+    en: 'What is {name}?',
+    'zh-CN': '什么是 {name}？'
+  },
+  'models.faq.whatIs.localAnswer': {
+    en: "{name} is {description}. You can run it locally in ComfyUI with full control over every parameter, or access it through Comfy Cloud. ComfyUI's node-based workflow editor lets you connect {name} with ControlNets, LoRAs, upscalers, and custom nodes to build any pipeline you need. There are {count} community workflow templates using {name} on Comfy Workflows, ready to load and customize.",
+    'zh-CN':
+      '{name} 是{description}。您可以在 ComfyUI 中本地运行它，完全掌控每一个参数，也可以通过 Comfy Cloud 访问它。ComfyUI 基于节点的工作流编辑器可以让您将 {name} 与 ControlNet、LoRA、放大模型和自定义节点连接起来，构建您需要的任何工作流程。Comfy Workflows 上有 {count} 个使用 {name} 的社区工作流模板，可随时加载和自定义。'
+  },
+  'models.faq.whatIs.cloudAnswer': {
+    en: "{name} is {description}. You can access it through Comfy Cloud. ComfyUI's node-based workflow editor lets you connect {name} with ControlNets, LoRAs, upscalers, and custom nodes to build any pipeline you need. There are {count} community workflow templates using {name} on Comfy Workflows, ready to load and customize.",
+    'zh-CN':
+      '{name} 是{description}。您可以通过 Comfy Cloud 访问它。ComfyUI 基于节点的工作流编辑器可以让您将 {name} 与 ControlNet、LoRA、放大模型和自定义节点连接起来，构建您需要的任何工作流程。Comfy Workflows 上有 {count} 个使用 {name} 的社区工作流模板，可随时加载和自定义。'
+  },
+  'models.faq.howToUse.question': {
+    en: 'How do I use {name} in ComfyUI?',
+    'zh-CN': '如何在 ComfyUI 中使用 {name}？'
+  },
+  'models.faq.howToUse.withDocs': {
+    en: 'Follow the step-by-step tutorial at {url}. You can also load {templates} directly in ComfyUI.',
+    'zh-CN':
+      '按照 {url} 上的分步教程操作。您也可以直接在 ComfyUI 中加载{templates}。'
+  },
+  'models.faq.howToUse.withoutDocs': {
+    en: 'Open ComfyUI and browse {templates}. Load one as a starting point, then customize the nodes and parameters to fit your use case.',
+    'zh-CN':
+      '打开 ComfyUI，浏览{templates}。加载其中一个作为起点，然后自定义节点和参数以满足您的需求。'
+  },
+  'models.faq.templates.singular': {
+    en: 'the community workflow template that uses {name}',
+    'zh-CN': '使用 {name} 的社区工作流模板'
+  },
+  'models.faq.templates.plural': {
+    en: 'any of the {count} community workflow templates that use {name}',
+    'zh-CN': '{count} 个使用 {name} 的社区工作流模板'
+  },
+  'models.faq.workflowCount.question': {
+    en: 'How many ComfyUI workflows use {name}?',
+    'zh-CN': '有多少个 ComfyUI 工作流使用 {name}？'
+  },
+  'models.faq.workflowCount.singular': {
+    en: 'There is {count} community workflow template that uses {name} on Comfy Workflows. It is ready to run in ComfyUI and can be customized to suit your project.',
+    'zh-CN':
+      'Comfy Workflows 上有 {count} 个使用 {name} 的社区工作流模板。该模板可以在 ComfyUI 中直接运行，并可根据您的项目进行自定义。'
+  },
+  'models.faq.workflowCount.plural': {
+    en: 'There are {count} community workflow templates that use {name} on Comfy Workflows. Each template is ready to run in ComfyUI and can be customized to suit your project.',
+    'zh-CN':
+      'Comfy Workflows 上有 {count} 个使用 {name} 的社区工作流模板。每个模板都可以在 ComfyUI 中直接运行，并可根据您的项目进行自定义。'
+  },
+  'models.faq.isFree.question': {
+    en: 'Is {name} free to use in ComfyUI?',
+    'zh-CN': '在 ComfyUI 中使用 {name} 是免费的吗？'
+  },
+  'models.faq.isFree.localAnswer': {
+    en: 'ComfyUI is free and open source. {name} weights are available to download from Hugging Face. You only pay for compute when running on Comfy Cloud; local inference on your own hardware is always free.',
+    'zh-CN':
+      'ComfyUI 是免费且开源的。{name} 的权重文件可从 Hugging Face 下载。仅在 Comfy Cloud 上运行时才需要为算力付费；在您自己的硬件上进行本地推理始终是免费的。'
+  },
+  'models.faq.isFree.cloudAnswer': {
+    en: 'This model runs exclusively on Comfy Cloud. Pay-per-compute pricing applies - see comfy.org/cloud/pricing',
+    'zh-CN':
+      '此模型仅在 Comfy Cloud 上运行。按算力用量付费，详情请参阅 comfy.org/cloud/pricing。'
+  },
+  'models.dirDescription.diffusion_models': {
+    en: 'a diffusion model that generates images or video from text and image prompts',
+    'zh-CN': '一个根据文本和图像提示生成图像或视频的扩散模型'
+  },
+  'models.dirDescription.checkpoints': {
+    en: 'an all-in-one checkpoint model that bundles a diffusion model, text encoder, and VAE',
+    'zh-CN': '一个集扩散模型、文本编码器和 VAE 于一体的全能 checkpoint 模型'
+  },
+  'models.dirDescription.loras': {
+    en: 'a LoRA (Low-Rank Adaptation) that fine-tunes an existing model for a specific style or subject',
+    'zh-CN': '一个用于针对特定风格或主题微调现有模型的 LoRA（低秩适应）'
+  },
+  'models.dirDescription.controlnet': {
+    en: 'a ControlNet that steers image generation using structural guides like depth maps, edges, or poses',
+    'zh-CN': '一个通过深度图、边缘或姿态等结构化引导来控制图像生成的 ControlNet'
+  },
+  'models.dirDescription.clip_vision': {
+    en: 'a CLIP Vision encoder that converts images into embeddings for conditioning or style transfer',
+    'zh-CN':
+      '一个将图像转换为嵌入向量、用于条件控制或风格迁移的 CLIP Vision 编码器'
+  },
+  'models.dirDescription.vae': {
+    en: 'a VAE (Variational Autoencoder) that encodes and decodes latent representations',
+    'zh-CN': '一个用于编码和解码潜在表示的 VAE（变分自编码器）'
+  },
+  'models.dirDescription.text_encoders': {
+    en: 'a text encoder that converts prompts into embeddings used to guide generation',
+    'zh-CN': '一个将提示词转换为嵌入向量、用于指导生成的文本编码器'
+  },
+  'models.dirDescription.audio_encoders': {
+    en: 'an audio encoder that converts audio into embeddings for audio-conditioned generation',
+    'zh-CN': '一个将音频转换为嵌入向量、用于音频条件生成的音频编码器'
+  },
+  'models.dirDescription.upscale_models': {
+    en: 'an upscale model that increases image resolution while preserving or enhancing detail',
+    'zh-CN': '一个在提升图像分辨率的同时保留或增强细节的放大模型'
+  },
+  'models.dirDescription.latent_upscale_models': {
+    en: 'a latent upscale model that refines latents at higher resolution before decoding',
+    'zh-CN': '一个在解码前以更高分辨率优化潜在特征的潜空间放大模型'
+  },
+  'models.dirDescription.style_models': {
+    en: 'a style model that transfers artistic style onto generated images',
+    'zh-CN': '一个将艺术风格迁移到生成图像上的风格模型'
+  },
+  'models.dirDescription.model_patches': {
+    en: 'a model patch that modifies or extends the behavior of an existing base model',
+    'zh-CN': '一个修改或扩展现有基础模型行为的模型补丁'
+  },
+  'models.dirDescription.partner_nodes': {
+    en: 'a cloud API model accessible through ComfyUI partner nodes without local hardware requirements',
+    'zh-CN': '一个无需本地硬件、可通过 ComfyUI 合作伙伴节点访问的云端 API 模型'
+  },
+  'models.dirDescription.default': {
+    en: 'an AI model',
+    'zh-CN': '一个 AI 模型'
+  },
   'models.index.title': {
     en: 'Supported Models',
     'zh-CN': '支持的模型'
@@ -5515,6 +5654,7 @@ const translations = {
   },
   'flux3.reviews.highlightCta': { en: 'GET STARTED', 'zh-CN': '开始使用' },
   'footer.flux3': { en: 'Flux 3', 'zh-CN': 'Flux 3' },
+  'footer.modelsShowcase': { en: 'Models', 'zh-CN': '模型' },
   // Wan Animate 2 model page (/wan-animate-2)
   'wanAnimate2.meta.title': {
     en: 'Wan Animate 2 on Comfy — Open-Source Character Animation',
