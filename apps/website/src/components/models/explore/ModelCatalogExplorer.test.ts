@@ -148,6 +148,28 @@ describe('ModelCatalogExplorer', () => {
     expect(screen.getByRole('link', { name: 'Partner Image' })).toBeTruthy()
   })
 
+  it('limits displayed matches without changing the result count', () => {
+    const catalog = Array.from({ length: 5 }, (_, index) => ({
+      ...props.catalog[0],
+      slug: `model-${index}`,
+      title: `Model ${index}`,
+      href: `/p/supported-models/model-${index}`
+    }))
+
+    render(ModelCatalogExplorer, {
+      props: {
+        ...props,
+        catalog,
+        resultLimit: 4,
+        showCatalogByDefault: true
+      }
+    })
+
+    expect(screen.getAllByRole('link')).toHaveLength(4)
+    expect(screen.getByRole('status').textContent).toBe('5 matching models')
+    expect(screen.queryByRole('link', { name: 'Model 4' })).toBeNull()
+  })
+
   it('defaults to releases and allows switching to technical components', async () => {
     render(ModelCatalogExplorer, {
       props: {

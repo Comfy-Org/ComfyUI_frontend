@@ -37,7 +37,8 @@ const {
   componentCountMany,
   resultCountLabel,
   emptyLabel,
-  showCatalogByDefault = false
+  showCatalogByDefault = false,
+  resultLimit
 } = defineProps<{
   catalog: ModelExploreCatalogItem[]
   releaseCatalog?: ModelExploreCatalogItem[]
@@ -57,6 +58,7 @@ const {
   resultCountLabel: string
   emptyLabel: string
   showCatalogByDefault?: boolean
+  resultLimit?: number
 }>()
 
 const query = ref('')
@@ -96,6 +98,11 @@ const filteredCatalog = computed(() =>
     category.value,
     access.value
   )
+)
+const displayedCatalog = computed(() =>
+  resultLimit === undefined
+    ? filteredCatalog.value
+    : filteredCatalog.value.slice(0, resultLimit)
 )
 const resultStatus = computed(() =>
   isActive.value
@@ -217,7 +224,7 @@ function toWorkflowItem(model: ModelExploreCatalogItem): CardWorkflowItem {
     </p>
     <div v-else class="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
       <CardWorkflow01
-        v-for="model in filteredCatalog"
+        v-for="model in displayedCatalog"
         :key="model.slug"
         :item="toWorkflowItem(model)"
         variant="compact"
