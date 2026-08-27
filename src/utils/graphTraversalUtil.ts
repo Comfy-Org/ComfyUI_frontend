@@ -329,6 +329,16 @@ export function findSubgraphPathById(
   rootGraph: LGraph,
   targetId: string
 ): string[] | null {
+  return findSubgraphPathBy(rootGraph, targetId, (_node, subgraph) =>
+    String(subgraph.id)
+  )
+}
+
+function findSubgraphPathBy(
+  rootGraph: LGraph,
+  targetId: string,
+  segment: (node: LGraphNode, subgraph: Subgraph) => string
+): string[] | null {
   const stack: { graph: LGraph | Subgraph; path: string[] }[] = [
     { graph: rootGraph, path: [] }
   ]
@@ -336,14 +346,13 @@ export function findSubgraphPathById(
   while (stack.length > 0) {
     const { graph, path } = stack.pop()!
 
-    // Check if graph exists and has _nodes property
     if (!graph || !graph._nodes || !Array.isArray(graph._nodes)) {
       continue
     }
 
     for (const node of graph._nodes) {
       if (node.isSubgraphNode?.() && node.subgraph) {
-        const newPath = [...path, String(node.subgraph.id)]
+        const newPath = [...path, segment(node, node.subgraph)]
         if (node.subgraph.id === targetId) {
           return newPath
         }
@@ -369,28 +378,7 @@ export function findSubgraphNodePathById(
   rootGraph: LGraph,
   targetUuid: string
 ): string[] | null {
-  const stack: { graph: LGraph | Subgraph; path: string[] }[] = [
-    { graph: rootGraph, path: [] }
-  ]
-
-  while (stack.length > 0) {
-    const { graph, path } = stack.pop()!
-    if (!graph || !graph._nodes || !Array.isArray(graph._nodes)) {
-      continue
-    }
-
-    for (const node of graph._nodes) {
-      if (node.isSubgraphNode?.() && node.subgraph) {
-        const newPath = [...path, String(node.id)]
-        if (node.subgraph.id === targetUuid) {
-          return newPath
-        }
-        stack.push({ graph: node.subgraph, path: newPath })
-      }
-    }
-  }
-
-  return null
+  return findSubgraphPathBy(rootGraph, targetUuid, (node) => String(node.id))
 }
 
 /**

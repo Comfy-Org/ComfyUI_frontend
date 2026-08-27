@@ -385,6 +385,41 @@ describe('ComfyApp', () => {
 
       expect(mockWorkflowService.beforeLoadNewGraph).toHaveBeenCalledWith(false)
     })
+
+    it('notifies extensions once on each side of a graph load, in order', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+
+      await app.loadGraphData(createWorkflowGraphData(), false)
+
+      const loadHookCalls =
+        mockExtensionService.invokeExtensionsAsync.mock.calls
+          .map(([hook]) => hook)
+          .filter(
+            (hook) => hook === 'beforeLoadGraph' || hook === 'afterLoadGraph'
+          )
+      expect(loadHookCalls).toEqual(['beforeLoadGraph', 'afterLoadGraph'])
+    })
+
+    it('skips afterLoadGraph when graph configure fails', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      vi.spyOn(graph, 'configure').mockImplementation(() => {
+        throw new Error('bad workflow json')
+      })
+
+      await expect(
+        app.loadGraphData(createWorkflowGraphData(), false)
+      ).resolves.toBe(false)
+
+      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+        'beforeLoadGraph'
+      )
+      expect(
+        mockExtensionService.invokeExtensionsAsync
+      ).not.toHaveBeenCalledWith('afterLoadGraph')
+    })
   })
 
   describe('nodeOutputs', () => {
