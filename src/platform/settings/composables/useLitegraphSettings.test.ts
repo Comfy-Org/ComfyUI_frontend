@@ -7,9 +7,11 @@ import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
-const testState = vi.hoisted(() => ({
-  canvasStore: null as { canvas: LGraphCanvas | null } | null
-}))
+const testState = vi.hoisted(
+  (): { canvasStore: { canvas: LGraphCanvas | null } | null } => ({
+    canvasStore: null
+  })
+)
 
 vi.mock('@/renderer/core/canvas/canvasStore', async () => {
   const { reactive } = await import('vue')

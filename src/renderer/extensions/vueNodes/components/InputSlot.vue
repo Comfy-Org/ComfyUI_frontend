@@ -119,7 +119,8 @@ const slotKey = computed(() =>
 )
 const shouldDim = computed(() => {
   if (!dragState.active) return false
-  return !slotKey.value || !dragState.compatible.get(slotKey.value)
+  if (!slotKey.value) return false
+  return !dragState.compatible.get(slotKey.value)
 })
 
 const { onClick, onDoubleClick, onPointerDown } = useSlotLinkInteraction({

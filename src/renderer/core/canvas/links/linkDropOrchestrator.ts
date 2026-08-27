@@ -4,6 +4,7 @@ import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDra
 import type { SlotDropCandidate } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { getGraphSlotLayout } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { SlotLayout } from '@/renderer/core/layout/types'
 import type { SlotLinkDragContext } from '@/renderer/extensions/vueNodes/composables/slotLinkDragContext'
 import { toNodeId } from '@/types/nodeId'
@@ -117,6 +118,18 @@ export const resolveNodeSurfaceSlotCandidate = (
   }
 
   const key = getSlotKey(nodeId, index, isInput)
+  const offset = layoutStore.getSlotOffset(
+    graph.rootGraph.id,
+    nodeId,
+    index,
+    isInput ? 'input' : 'output',
+    node.flags.collapsed ? 'collapsed' : 'expanded'
+  )
+  if (!offset) {
+    session.preferredSlotForNode.set(nodeId, null)
+    return null
+  }
+
   const layout = getGraphSlotLayout(graph, nodeId, index, isInput)
   if (!layout) {
     session.preferredSlotForNode.set(nodeId, null)
