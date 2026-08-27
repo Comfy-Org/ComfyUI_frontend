@@ -14,6 +14,7 @@ import { Creators } from './collections/Creators'
 import { Teams } from './collections/Teams'
 import { Tools } from './collections/Tools'
 import { rebuildWebsiteEndpoint } from './endpoints/rebuildWebsite'
+import { gcsMediaPrefix, gcsPublicBase } from './mediaUrl'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -23,11 +24,6 @@ const dirname = path.dirname(filename)
 // origin. Gated on GCS_BUCKET: unset (local dev without creds) leaves media on
 // local disk at /api/media/file/<filename>, exactly as before.
 const gcsBucket = process.env.GCS_BUCKET
-const gcsMediaPrefix = process.env.GCS_MEDIA_PREFIX || 'website/cms'
-const gcsPublicBase = (process.env.GCS_PUBLIC_BASE_URL || 'https://media.comfy.org').replace(
-  /\/+$/,
-  '',
-)
 // Parsed defensively rather than with a bare `JSON.parse`: a malformed value
 // would otherwise throw a raw SyntaxError during module init — whose message
 // echoes a slice of the credential — and `JSON.parse` returns `any`, letting an
