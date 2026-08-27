@@ -566,8 +566,10 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
 
   async function switchWorkspace(workspaceId: string): Promise<void> {
     if (workspaceId === activeWorkspaceId.value) return
-    if (!isCloud && isSwitching.value)
-      throw new Error('Workspace switch already in progress')
+    if (!isCloud && isSwitching.value) {
+      console.error('Workspace switch already in progress')
+      return
+    }
 
     const workspaceSwitch = executeWorkspaceSwitch(workspaceId)
     pendingWorkspaceSwitch = workspaceSwitch
@@ -908,11 +910,15 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   ): Promise<WorkspacePendingInvite> {
     const generation = identityGeneration
     const resendKey = `${generation}:${inviteId}`
-    if (resendingInviteIds.has(resendKey)) {
-      throw new Error('Invite resend already in progress')
-    }
     const workspace = activeWorkspace.value
-    if (!workspace?.pendingInvites.some((invite) => invite.id === inviteId)) {
+    const invite = workspace?.pendingInvites.find(
+      (invite) => invite.id === inviteId
+    )
+    if (resendingInviteIds.has(resendKey)) {
+      console.error('Invite resend already in progress')
+      if (invite) return invite
+    }
+    if (!workspace || !invite) {
       throw new Error('Invite not found')
     }
     resendingInviteIds.add(resendKey)
