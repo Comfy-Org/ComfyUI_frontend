@@ -4,8 +4,8 @@ import { getRoutes } from '../src/config/routes'
 import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 
-const PATH = '/minimax-license'
-const ZH_PATH = '/zh-CN/minimax-license'
+const PATH = '/minimax-h3/license'
+const ZH_PATH = '/zh-CN/minimax-h3/license'
 const CONTACT_HREF = 'https://comfy.org/contact'
 const HERO_TITLE = t('minimaxLicense.hero.title')
 const HERO_EYEBROW = t('minimaxLicense.hero.eyebrow')

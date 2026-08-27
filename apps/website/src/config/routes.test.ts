@@ -100,10 +100,10 @@ describe('getRoutes fdct', () => {
 
 describe('getRoutes minimaxLicense', () => {
   it('serves the MiniMax license page at its canonical path for en', () => {
-    expect(getRoutes('en').minimaxLicense).toBe('/minimax-license')
+    expect(getRoutes('en').minimaxLicense).toBe('/minimax-h3/license')
   })
 
   it('serves a localized MiniMax license path for zh-CN', () => {
-    expect(getRoutes('zh-CN').minimaxLicense).toBe('/zh-CN/minimax-license')
+    expect(getRoutes('zh-CN').minimaxLicense).toBe('/zh-CN/minimax-h3/license')
   })
 })
