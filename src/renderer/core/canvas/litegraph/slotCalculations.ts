@@ -157,33 +157,9 @@ export function getSlotPosition(
   slotIndex: number,
   isInput: boolean
 ): Point {
-  if (LiteGraph.vueNodesMode) {
-    const [nodeX, nodeY] = node.pos
-    const offset = node.graph
-      ? layoutStore.getSlotOffset(
-          node.graph.rootGraph.id,
-          node.id,
-          slotIndex,
-          isInput ? 'input' : 'output',
-          node.flags.collapsed ? 'collapsed' : 'expanded'
-        )
-      : null
-    if (offset) return [nodeX + offset.x, nodeY + offset.y]
+  if (LiteGraph.vueNodesMode)
+    return getVueSlotPosition(node, slotIndex, isInput)
 
-    const nodeWidth = node.flags.collapsed
-      ? (node._collapsed_width ?? LiteGraph.NODE_COLLAPSED_WIDTH)
-      : node.renderingSize[0]
-    return calculateVueSlotPosition(
-      node,
-      slotIndex,
-      isInput,
-      nodeX,
-      nodeY,
-      nodeWidth
-    )
-  }
-
-  // Fallback: calculate directly from node properties (legacy litegraph behavior)
   const context: SlotPositionContext = {
     nodeX: node.pos[0],
     nodeY: node.pos[1],
@@ -202,6 +178,43 @@ export function getSlotPosition(
     : calculateOutputSlotPos(context, slotIndex)
 }
 
+function getVueSlotPosition(
+  node: LGraphNode,
+  slotIndex: number,
+  isInput: boolean
+): Point {
+  const [nodeX, nodeY] = node.pos
+  const offset = getRenderedSlotOffset(node, slotIndex, isInput)
+  if (offset) return [nodeX + offset.x, nodeY + offset.y]
+
+  const nodeWidth = node.flags.collapsed
+    ? (node._collapsed_width ?? LiteGraph.NODE_COLLAPSED_WIDTH)
+    : node.renderingSize[0]
+  return calculateVueSlotPosition(
+    node,
+    slotIndex,
+    isInput,
+    nodeX,
+    nodeY,
+    nodeWidth
+  )
+}
+
+function getRenderedSlotOffset(
+  node: LGraphNode,
+  slotIndex: number,
+  isInput: boolean
+): LayoutPoint | null {
+  if (!node.graph) return null
+  return layoutStore.getSlotOffset(
+    node.graph.rootGraph.id,
+    node.id,
+    slotIndex,
+    isInput ? 'input' : 'output',
+    node.flags.collapsed ? 'collapsed' : 'expanded'
+  )
+}
+
 function calculateVueSlotPosition(
   node: LGraphNode,
   slotIndex: number,
@@ -217,45 +230,69 @@ function calculateVueSlotPosition(
     ]
   }
 
-  if (isInput) {
-    const input = node.inputs[slotIndex]
-    if (!input) return [nodeX, nodeY]
+  return isInput
+    ? calculateVueInputSlotPosition(node, slotIndex, nodeX, nodeY)
+    : calculateVueOutputSlotPosition(node, slotIndex, nodeX, nodeY, nodeWidth)
+}
 
-    if (isWidgetInputSlot(input)) {
-      const widget =
-        input._widget ??
-        node.widgets?.find((candidate) => candidate.name === input.widget.name)
-      const widgetSlotY =
-        input.pos?.[1] ??
-        (widget ? widget.y + LiteGraph.NODE_SLOT_HEIGHT * 0.5 : undefined)
-      if (widgetSlotY !== undefined) {
-        return [nodeX, getVueNodeContentY(node, nodeY) + widgetSlotY]
-      }
-    }
+function calculateVueInputSlotPosition(
+  node: LGraphNode,
+  slotIndex: number,
+  nodeX: number,
+  nodeY: number
+): Point {
+  const input = node.inputs[slotIndex]
+  if (!input) return [nodeX, nodeY]
 
-    let renderedIndex = 0
-    for (let index = 0; index < slotIndex; index++) {
-      if (!isWidgetInputSlot(node.inputs[index])) renderedIndex++
-    }
-
-    return [
-      nodeX,
-      getVueNodeContentY(node, nodeY) +
-        (renderedIndex + (node.type === 'Reroute' ? 0.5 : 0.7)) *
-          LiteGraph.NODE_SLOT_HEIGHT
-    ]
+  const widgetSlotY = getWidgetSlotY(node, input)
+  if (widgetSlotY !== undefined) {
+    return [nodeX, getVueNodeContentY(node, nodeY) + widgetSlotY]
   }
 
+  const renderedIndex = node.inputs
+    .slice(0, slotIndex)
+    .filter((candidate) => !isWidgetInputSlot(candidate)).length
+  return [
+    nodeX,
+    getVueNodeContentY(node, nodeY) + getVueSlotY(node, renderedIndex)
+  ]
+}
+
+function getWidgetSlotY(
+  node: LGraphNode,
+  input: INodeInputSlot
+): number | undefined {
+  if (!isWidgetInputSlot(input)) return undefined
+  if (input.pos) return input.pos[1]
+
+  const widget =
+    input._widget ??
+    node.widgets?.find((candidate) => candidate.name === input.widget.name)
+  return widget && widget.y + LiteGraph.NODE_SLOT_HEIGHT * 0.5
+}
+
+function calculateVueOutputSlotPosition(
+  node: LGraphNode,
+  slotIndex: number,
+  nodeX: number,
+  nodeY: number,
+  nodeWidth: number
+): Point {
   if (!node.outputs[slotIndex]) {
     return [nodeX + nodeWidth, nodeY]
   }
 
   return [
     nodeX + nodeWidth,
-    getVueNodeContentY(node, nodeY) +
-      (slotIndex + (node.type === 'Reroute' ? 0.5 : 0.7)) *
-        LiteGraph.NODE_SLOT_HEIGHT
+    getVueNodeContentY(node, nodeY) + getVueSlotY(node, slotIndex)
   ]
+}
+
+function getVueSlotY(node: LGraphNode, slotIndex: number): number {
+  return (
+    (slotIndex + (node.type === 'Reroute' ? 0.5 : 0.7)) *
+    LiteGraph.NODE_SLOT_HEIGHT
+  )
 }
 
 function getVueNodeContentY(node: LGraphNode, nodeY: number): number {

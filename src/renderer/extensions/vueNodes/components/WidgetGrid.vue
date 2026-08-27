@@ -87,15 +87,17 @@ const {
   processedWidgets,
   nodeType,
   canSelectInputs = false,
-  nodeId
+  nodeId,
+  syncLayout = true
 } = defineProps<{
   processedWidgets: WidgetGridItem[]
   nodeType: string
   canSelectInputs?: boolean
   nodeId?: NodeId
+  syncLayout?: boolean
 }>()
 
-useVueElementTracking(String(nodeId ?? ''), 'widgets-grid')
+useVueElementTracking(syncLayout ? String(nodeId ?? '') : '', 'widgets-grid')
 const canvasStore = useCanvasStore()
 
 const gridTemplateRows = computed(() =>
@@ -120,7 +122,7 @@ watch(
   layoutKey,
   () => {
     const rootGraphId = canvasStore.rootGraphId
-    if (grid.value && rootGraphId && nodeId) {
+    if (syncLayout && grid.value && rootGraphId && nodeId) {
       syncSlotOffsets(grid.value, rootGraphId, nodeId)
     }
   },

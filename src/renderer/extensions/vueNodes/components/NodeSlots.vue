@@ -63,9 +63,14 @@ import { cn } from '@comfyorg/tailwind-utils'
 import InputSlot from './InputSlot.vue'
 import OutputSlot from './OutputSlot.vue'
 
-const { nodeData, unified = false } = defineProps<{
+const {
+  nodeData,
+  unified = false,
+  syncLayout = true
+} = defineProps<{
   nodeData: NodeState
   unified?: boolean
+  syncLayout?: boolean
 }>()
 const canvasStore = useCanvasStore()
 const slots = useTemplateRef<HTMLElement>('slots')
@@ -122,7 +127,7 @@ watch(
   [layoutKey, slots, () => canvasStore.rootGraphId],
   () => {
     const rootGraphId = canvasStore.rootGraphId
-    if (slots.value && rootGraphId) {
+    if (syncLayout && slots.value && rootGraphId) {
       syncSlotOffsets(slots.value, rootGraphId, nodeData.id)
     }
   },

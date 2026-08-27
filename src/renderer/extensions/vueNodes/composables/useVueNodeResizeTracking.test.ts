@@ -155,7 +155,6 @@ describe('useVueNodeResizeTracking', () => {
   beforeEach(() => {
     testState.linearMode = false
     testState.nodeLayouts.clear()
-    testState.updateNodeSlotOffsets.mockReset()
   })
 
   it('reports the first measurement and skips repeated entries', () => {
