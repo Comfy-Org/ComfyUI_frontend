@@ -16,11 +16,15 @@ import type {
   HitMode,
   Region
 } from '@/composables/boundingBoxes/boundingBoxesUtil'
+import { setNodeWidgetValue } from '@/core/graph/widgets/nodeWidgetValues'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { BoundingBox } from '@/types/boundingBoxes'
 import type { NodeId } from '@/types/nodeId'
+import type { WidgetId } from '@/types/widgetId'
+import { widgetId } from '@/types/widgetId'
 import { readableTextColor, textOnColor } from '@/utils/colorUtil'
 
 const HANDLE_PX = 8
@@ -73,8 +77,27 @@ export function useBoundingBoxes(
   const { selectedNodeIds } = storeToRefs(useCanvasStore())
   const isNodeSelected = computed(() => selectedNodeIds.value.has(nodeId))
 
+  const widgetValueStore = useWidgetValueStore()
+
+  function bboxWidgetId(name: string): WidgetId | null {
+    const node = litegraphNode.value
+    if (!node) return null
+    const graphId = node.graph?.rootGraph?.id
+    return graphId ? widgetId(graphId, node.id, name) : null
+  }
+
+  function widgetValue(name: string): unknown {
+    const id = bboxWidgetId(name)
+    return id ? widgetValueStore.getWidget(id)?.value : undefined
+  }
+
+  function setWidgetValue(name: string, value: number | BoundingBox[]): void {
+    const node = litegraphNode.value
+    if (node) setNodeWidgetValue(node, name, value)
+  }
+
   function dimWidget(name: 'width' | 'height'): number | undefined {
-    const v = litegraphNode.value?.widgets?.find((w) => w.name === name)?.value
+    const v = widgetValue(name)
     return typeof v === 'number' && v > 0 ? v : undefined
   }
   const widthValue = computed(() => dimWidget('width') ?? 1024)
@@ -642,22 +665,12 @@ export function useBoundingBoxes(
 
   const nodeOutputStore = useNodeOutputStore()
   function applyImageDimensions(naturalWidth: number, naturalHeight: number) {
-    const node = litegraphNode.value
-    if (!node) return
     const snap = (v: number) =>
       Math.max(DIMENSION_STEP, Math.round(v / DIMENSION_STEP) * DIMENSION_STEP)
     const targetW = snap(naturalWidth)
     const targetH = snap(naturalHeight)
-    const widthWidget = node.widgets?.find((w) => w.name === 'width')
-    const heightWidget = node.widgets?.find((w) => w.name === 'height')
-    if (widthWidget && widthWidget.value !== targetW) {
-      widthWidget.value = targetW
-      widthWidget.callback?.(targetW)
-    }
-    if (heightWidget && heightWidget.value !== targetH) {
-      heightWidget.value = targetH
-      heightWidget.callback?.(targetH)
-    }
+    if (widgetValue('width') !== targetW) setWidgetValue('width', targetW)
+    if (widgetValue('height') !== targetH) setWidgetValue('height', targetH)
   }
 
   let lastBgUrl = ''
@@ -690,21 +703,13 @@ export function useBoundingBoxes(
     }
     img.src = url
   }
-  function lastIncomingWidget() {
-    return litegraphNode.value?.widgets?.find((w) => w.name === 'last_incoming')
-  }
-
   function lastIncomingValue(): BoundingBox[] {
-    const value = lastIncomingWidget()?.value
+    const value = widgetValue('last_incoming')
     return Array.isArray(value) ? (value as BoundingBox[]) : []
   }
 
   function setLastIncoming(boxes: BoundingBox[]) {
-    const widget = lastIncomingWidget()
-    if (!widget) return
-    const next = cloneDeep(boxes)
-    widget.value = next
-    widget.callback?.(next)
+    setWidgetValue('last_incoming', cloneDeep(boxes))
   }
 
   function applyIncomingBoxes(apply = true) {
