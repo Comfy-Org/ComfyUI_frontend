@@ -8,6 +8,7 @@ import CloudRunButtonWrapper from './CloudRunButtonWrapper.vue'
 const mockCanRunWorkflows = ref(true)
 const mockIsInitialized = ref(true)
 const mockBillingStatus = ref<string | null>('paid')
+const mockSubscriptionTier = ref<string | null>(null)
 const state = vi.hoisted(() => ({
   v1PaymentRecovery: true,
   canManageSubscription: true,
@@ -29,6 +30,9 @@ vi.mock('@/composables/billing/useBillingContext', async () => {
         () => mockIsInitialized.value && !mockCanRunWorkflows.value
       ),
       billingStatus: mockBillingStatus,
+      subscription: computed(() =>
+        mockSubscriptionTier.value ? { tier: mockSubscriptionTier.value } : null
+      ),
       manageSubscription: state.manageSubscription,
       fetchStatus: state.fetchStatus,
       fetchBalance: state.fetchBalance
@@ -98,6 +102,7 @@ describe('CloudRunButtonWrapper', () => {
     mockCanRunWorkflows.value = true
     mockIsInitialized.value = true
     mockBillingStatus.value = 'paid'
+    mockSubscriptionTier.value = null
     state.v1PaymentRecovery = true
     state.canManageSubscription = true
   })
@@ -129,6 +134,28 @@ describe('CloudRunButtonWrapper', () => {
 
     expect(screen.getByTestId('subscribe-to-run-button')).toBeInTheDocument()
     expect(screen.queryByTestId('queue-button')).not.toBeInTheDocument()
+  })
+
+  it('keeps the run button without a subscribe upsell on a sales-managed plan', () => {
+    mockCanRunWorkflows.value = false
+    mockSubscriptionTier.value = 'ENTERPRISE'
+    renderWrapper()
+
+    expect(screen.getByTestId('queue-button')).toBeInTheDocument()
+    expect(
+      screen.queryByTestId('subscribe-to-run-button')
+    ).not.toBeInTheDocument()
+  })
+
+  it('keeps the run button without a subscribe upsell on an unrecognized tier', () => {
+    mockCanRunWorkflows.value = false
+    mockSubscriptionTier.value = 'GALACTIC'
+    renderWrapper()
+
+    expect(screen.getByTestId('queue-button')).toBeInTheDocument()
+    expect(
+      screen.queryByTestId('subscribe-to-run-button')
+    ).not.toBeInTheDocument()
   })
 
   it('refreshes stale billing state on focus and restores Run', async () => {

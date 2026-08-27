@@ -17772,7 +17772,7 @@
     }
   },
   "RecraftStyleV3LogoRaster": {
-    "description": "選擇 realistic_image 風格及可選的子風格。",
+    "description": "選擇 logo_raster 風格與子風格。",
     "display_name": "Recraft Style - 標誌點陣圖",
     "inputs": {
       "substyle": {
@@ -17883,6 +17883,26 @@
       }
     }
   },
+  "RecraftV4CreateStyleNode": {
+    "description": "從 1 至 10 張參考圖片建立可重複使用的 Recraft V4 風格。傳回的 style_id 可用於相同輸出類型的所有 Recraft V4 與 V4.1 模型。所有圖片的總大小上限為 10 MB。",
+    "display_name": "Recraft V4 建立風格",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "定義風格的參考圖片。相似的參考圖片可提高匹配精確度，多樣化的參考圖片則可擴大風格範圍。"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "建立風格所適用的輸出類型：recraftv4_styles 用於點陣圖片，recraftv4_styles_vector 用於 SVG。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "style_id",
+        "tooltip": null
+      }
+    }
+  },
   "RecraftV4TextToImageNode": {
     "description": "使用 Recraft V4 或 V4 Pro 模型產生圖像。",
     "display_name": "Recraft V4 文字轉圖像",
@@ -17892,7 +17912,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "用於生成的模型。"
+        "tooltip": "用於生成的模型。recraftv4_styles 模型專為風格一致的生成而設計，且一律需要 style_id 或 style_references。"
       },
       "model_size": {
         "name": "size"
@@ -17916,10 +17936,26 @@
       "seed": {
         "name": "seed",
         "tooltip": "決定節點是否重新執行的種子值；實際結果無論種子如何都不保證可重現。"
+      },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "要套用的 Recraft V4 風格 UUID，例如來自 Recraft V4 建立風格節點或先前執行的 style_id 輸出。無法與 style_references 合併使用。"
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "遵循風格的程度：precise 會精確重現細節，flexible 會匹配整體外觀。僅在提供風格時使用。"
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "用於即時建立風格的參考圖片，會在生成費用之外另行計費。建立的風格會以 style_id 傳回供重複使用。無法與 style_id 合併使用。"
       }
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -17933,7 +17969,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "用於生成的模型。"
+        "tooltip": "用於生成的模型。recraftv4_styles 模型專為風格一致的生成而設計，且一律需要 style_id 或 style_references。"
       },
       "model_size": {
         "name": "size"
@@ -17957,10 +17993,26 @@
       "seed": {
         "name": "seed",
         "tooltip": "決定節點是否重新執行的種子值；實際結果無論種子如何都不保證可重現。"
+      },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "要套用的 Recraft V4 向量風格 UUID，例如來自 Recraft V4 建立風格節點或先前執行的 style_id 輸出。無法與 style_references 合併使用。"
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "遵循風格的程度：precise 會精確重現細節，flexible 會匹配整體外觀。僅在提供風格時使用。"
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "用於即時建立向量風格的參考圖片，會在生成費用之外另行計費。建立的風格會以 style_id 傳回供重複使用。無法與 style_id 合併使用。"
       }
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -24613,61 +24665,11 @@
       },
       "resolution": {
         "name": "解析度",
-        "tooltip": "輸出影片解析度。veo-3.1-lite 與 veo-3.0 模型不支援 4K。"
+        "tooltip": "輸出影片解析度。veo-3.1-lite 模型不支援 4K。"
       },
       "seed": {
         "name": "種子值",
         "tooltip": "影片生成的種子值（0表示隨機）"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "VeoVideoGenerationNode": {
-    "description": "使用 Google 的 Veo API 根據文字提示生成影片",
-    "display_name": "Google Veo2 影片生成",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "長寬比",
-        "tooltip": "輸出影片的長寬比"
-      },
-      "control_after_generate": {
-        "name": "生成後控制"
-      },
-      "duration_seconds": {
-        "name": "持續秒數",
-        "tooltip": "輸出影片的秒數"
-      },
-      "enhance_prompt": {
-        "name": "增強提示詞",
-        "tooltip": "是否使用 AI 協助增強提示詞"
-      },
-      "image": {
-        "name": "影像",
-        "tooltip": "可選的參考圖片，用於引導影片生成"
-      },
-      "model": {
-        "name": "model",
-        "tooltip": "用於影片生成的 Veo 2 模型"
-      },
-      "negative_prompt": {
-        "name": "負向提示詞",
-        "tooltip": "用於引導影片中應避免內容的負面文字提示"
-      },
-      "person_generation": {
-        "name": "生成人物",
-        "tooltip": "是否允許在影片中生成人物"
-      },
-      "prompt": {
-        "name": "提示詞",
-        "tooltip": "影片的文字描述"
-      },
-      "seed": {
-        "name": "種子",
-        "tooltip": "影片生成的種子（0 為隨機）"
       }
     },
     "outputs": {
