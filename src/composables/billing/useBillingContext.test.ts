@@ -323,6 +323,29 @@ describe('useBillingContext', () => {
       errorType: 'billing_context_initialization_failure',
       tags: { billing_backend: 'legacy' }
     })
+
+    mockLegacyFetchStatus.mockResolvedValue(undefined)
+    await expect(initialize()).resolves.toBeUndefined()
+    expect(mockLegacyFetchStatus).toHaveBeenCalledTimes(4)
+    expect(isInitialized.value).toBe(true)
+  })
+
+  it('stops retrying when the billing adapter changes during backoff', async () => {
+    vi.useFakeTimers()
+    mockBillingRail.value = 'legacy_stripe'
+    mockLegacyFetchStatus
+      .mockRejectedValueOnce(new TypeError('Failed to fetch'))
+      .mockResolvedValue(undefined)
+
+    useBillingContext()
+    await vi.advanceTimersByTimeAsync(0)
+
+    mockBillingRail.value = undefined
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(500)
+
+    expect(mockLegacyFetchStatus).toHaveBeenCalledOnce()
+    expect(mockReportError).not.toHaveBeenCalled()
   })
 
   it('does not retry a non-network initialization failure', async () => {

@@ -275,6 +275,7 @@ function useBillingContextInternal(): BillingContext {
             throw err
           }
           await new Promise((resolve) => setTimeout(resolve, retryDelay))
+          if (activeContext.value !== adapter) return
         }
       }
       if (activeContext.value !== adapter) return
