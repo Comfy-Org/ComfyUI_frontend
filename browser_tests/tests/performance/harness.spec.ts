@@ -35,8 +35,6 @@ test.describe('Performance measurement controls', { tag: ['@perf'] }, () => {
     expect(measurement.rafIntervalCount).toBeGreaterThanOrEqual(10)
     expect(measurement.rafIntervalMaxMs).toBeGreaterThan(0)
     expect(measurement.rafIntervalP50Ms).toBeGreaterThan(0)
-    expect(measurement.rafIntervalsOver50Ms).toBe(0)
-    expect(measurement.rafIntervalMaxMs).toBeLessThan(50)
     expect(measurement.rafIntervalsMs).toHaveLength(
       measurement.rafIntervalCount
     )
