@@ -157,6 +157,24 @@ actions, are workspace-segmentable.
 
 ## Notes
 
+**Implemented as `checkout_attempt_id`, not `billing_attempt_id`.** The
+subscription-checkout rail ships this decision under the name
+`checkout_attempt_id`, for two reasons. The field already exists in this
+codebase under that name on the legacy GA4 path
+(`subscriptionCheckoutTracker.ts`, `BeginCheckoutMetadata`,
+`SubscriptionSuccessMetadata`), so a second name for the same concept would
+have been the only ambiguity in the schema. It is also the name in the
+cross-service billing-telemetry schema that the backend and the rollout
+dashboard are being built against, and a correlation key is worth nothing if
+the two sides spell it differently. Rails other than subscription checkout
+are not yet retrofitted.
+
+The same work also takes the step this ADR deferred: `checkout_attempt_id`
+is now sent to the backend on `preview-subscribe` and `subscribe` so it can
+be stamped on the billing-op row, which is what lets a pre-op-ID failure
+join backend records rather than only its own outcome. The deferral
+reasoning above stands for the rails that still lack it.
+
 Open follow-ups: what fraction of billing failures are pre- vs.
 post-response (determines whether the backend-coordinated attempt-ID is
 worth pursuing); whether it should reuse an existing correlation-ID

@@ -519,6 +519,105 @@ describe('useSubscriptionCheckout', () => {
     for (const scope of scopes.splice(0)) scope.stop()
   })
 
+  describe('attempt correlation', () => {
+    it('reports the minted quote with its identity', async () => {
+      mockPreviewSubscribe.mockResolvedValue({
+        allowed: true,
+        transition_type: 'new_subscription',
+        requires_reactivation_confirmation: false,
+        quote_id: 'quote-9',
+        quote_version: 2
+      })
+      const checkout = await setup()
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        operation: 'subscription_checkout',
+        stage: 'quote_minted',
+        outcome: 'pending',
+        payment_intent_source: undefined,
+        checkout_attempt_id: expect.any(String),
+        flag_state: 'embedded_checkout_on',
+        workspace_id: 'workspace-1',
+        quote_id: 'quote-9'
+      })
+    })
+
+    // The join the funnel is missing today: `started` fires before subscribe
+    // returns, so it can never carry a billing_op_id. One client-minted key on
+    // every event of the attempt is what makes an abandoned attempt countable.
+    it('carries one attempt id from the quote through to the terminal event', async () => {
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'subscribed',
+        billing_op_id: 'op-join'
+      })
+      const checkout = await setup()
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+      await checkout.handleConfirmTransition()
+
+      const stages = ['quote_minted', 'started', 'succeeded']
+      const attemptIds = stages.map(
+        (stage) =>
+          mockTrackBillingEvent.mock.calls
+            .map(([event]) => event)
+            .find(
+              (event) =>
+                event.operation === 'subscription_checkout' &&
+                event.stage === stage
+            )?.checkout_attempt_id
+      )
+
+      expect(attemptIds[0]).toEqual(expect.any(String))
+      expect(new Set(attemptIds).size).toBe(1)
+    })
+
+    it('sends the attempt id to the backend on both checkout calls', async () => {
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'subscribed',
+        billing_op_id: 'op-wire'
+      })
+      const checkout = await setup()
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+      await checkout.handleConfirmTransition()
+
+      const previewAttemptId =
+        mockPreviewSubscribe.mock.calls[0][1].checkoutAttemptId
+      expect(previewAttemptId).toEqual(expect.any(String))
+      expect(mockSubscribe).toHaveBeenCalledWith(
+        'standard-yearly',
+        expect.objectContaining({ checkoutAttemptId: previewAttemptId })
+      )
+    })
+
+    it('reports the ungated arm as unknown when no flag map has arrived', async () => {
+      const checkout = await setup(undefined, 'personal', false)
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          stage: 'quote_minted',
+          flag_state: 'embedded_checkout_unknown'
+        })
+      )
+    })
+  })
+
   describe('handleSubscribeClick', () => {
     it('keeps embedded endpoints and request fields unreachable while disabled', async () => {
       const checkout = await setup(undefined, 'personal', false)
@@ -538,7 +637,9 @@ describe('useSubscriptionCheckout', () => {
 
       expect(mockListSavedPaymentMethods).not.toHaveBeenCalled()
       expect(mockPreviewSubscribe).toHaveBeenCalledOnce()
-      expect(mockPreviewSubscribe).toHaveBeenCalledWith('standard-yearly')
+      expect(mockPreviewSubscribe).toHaveBeenCalledWith('standard-yearly', {
+        checkoutAttemptId: expect.any(String)
+      })
       expect(mockSubscribe).toHaveBeenCalledWith(
         'standard-yearly',
         expect.not.objectContaining({
@@ -638,6 +739,7 @@ describe('useSubscriptionCheckout', () => {
 
       await checkout.applyPromotionCode(' SAVE20 ')
       expect(mockPreviewSubscribe).toHaveBeenLastCalledWith('standard-yearly', {
+        checkoutAttemptId: expect.any(String),
         promotionCode: 'SAVE20'
       })
 
@@ -1063,7 +1165,9 @@ describe('useSubscriptionCheckout', () => {
       await checkoutPromise
 
       expect(mockFetchPlans).toHaveBeenCalledOnce()
-      expect(mockPreviewSubscribe).toHaveBeenCalledWith('creator-monthly')
+      expect(mockPreviewSubscribe).toHaveBeenCalledWith('creator-monthly', {
+        checkoutAttemptId: expect.any(String)
+      })
       expect(checkout.checkoutStep.value).toBe('preview')
       expect(mockSubscribe).not.toHaveBeenCalled()
     })
@@ -1097,7 +1201,9 @@ describe('useSubscriptionCheckout', () => {
         billingCycle: 'monthly'
       })
 
-      expect(mockPreviewSubscribe).toHaveBeenCalledWith('creator-monthly')
+      expect(mockPreviewSubscribe).toHaveBeenCalledWith('creator-monthly', {
+        checkoutAttemptId: expect.any(String)
+      })
     })
 
     it('does not preview a plan for a member', async () => {
@@ -1183,7 +1289,9 @@ describe('useSubscriptionCheckout', () => {
         billingCycle: 'yearly'
       })
 
-      expect(mockPreviewSubscribe).toHaveBeenCalledWith('standard-yearly')
+      expect(mockPreviewSubscribe).toHaveBeenCalledWith('standard-yearly', {
+        checkoutAttemptId: expect.any(String)
+      })
       expect(checkout.checkoutStep.value).toBe('preview')
     })
 
@@ -1420,7 +1528,10 @@ describe('useSubscriptionCheckout', () => {
 
       expect(mockPreviewSubscribe).toHaveBeenCalledWith(
         'team_per_credit_monthly',
-        { teamCreditStopId: 'team_1400' }
+        {
+          checkoutAttemptId: expect.any(String),
+          teamCreditStopId: 'team_1400'
+        }
       )
       expect(checkout.previewData.value).toStrictEqual(transition)
     })
@@ -1635,6 +1746,7 @@ describe('useSubscriptionCheckout', () => {
       expect(mockPreviewSubscribe).toHaveBeenCalledWith(
         'team_per_credit_monthly',
         {
+          checkoutAttemptId: expect.any(String),
           teamCreditStopId: 'team_700'
         }
       )
@@ -1673,6 +1785,7 @@ describe('useSubscriptionCheckout', () => {
       expect(mockPreviewSubscribe).toHaveBeenCalledWith(
         'team_per_credit_monthly',
         {
+          checkoutAttemptId: expect.any(String),
           teamCreditStopId: 'team_700'
         }
       )
@@ -1950,6 +2063,9 @@ describe('useSubscriptionCheckout', () => {
       await checkout.handleTeamSubscribe()
 
       expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        checkout_attempt_id: expect.any(String),
+        flag_state: 'embedded_checkout_on',
+        workspace_id: 'workspace-1',
         operation: 'subscription_checkout',
         stage: 'started',
         outcome: 'pending',
@@ -1959,6 +2075,9 @@ describe('useSubscriptionCheckout', () => {
         payment_intent_source: undefined
       })
       expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        checkout_attempt_id: expect.any(String),
+        flag_state: 'embedded_checkout_on',
+        workspace_id: 'workspace-1',
         operation: 'operation',
         stage: 'started',
         outcome: 'pending',
@@ -1991,6 +2110,7 @@ describe('useSubscriptionCheckout', () => {
       await checkout.handleTeamSubscribe()
 
       expect(mockSubscribe).toHaveBeenCalledWith('team_per_credit_monthly', {
+        checkoutAttemptId: expect.any(String),
         teamCreditStopId: 'team_700',
         billingCycle: 'monthly',
         returnUrl: 'https://app.test/subscribe',
@@ -2247,8 +2367,10 @@ describe('useSubscriptionCheckout', () => {
       )
       // Regression guard: this reactivation-consent guard is not a checkout
       // attempt, so it must not open a funnel entry no terminal event will
-      // ever close.
-      expect(mockTrackBillingEvent).not.toHaveBeenCalled()
+      // ever close. The preview it already resolved still reports its quote.
+      expect(mockTrackBillingEvent).not.toHaveBeenCalledWith(
+        expect.objectContaining({ stage: 'started' })
+      )
     })
 
     it('refuses to bill a team reactivation when a fresh preview no longer matches the confirmed charge', async () => {
@@ -2346,7 +2468,11 @@ describe('useSubscriptionCheckout', () => {
           detail: 'status unavailable'
         })
       )
-      expect(mockTrackBillingEvent).not.toHaveBeenCalled()
+      // The attempt never reached subscribe, so no lifecycle opened; the
+      // preview that already resolved still reports its quote.
+      expect(mockTrackBillingEvent).not.toHaveBeenCalledWith(
+        expect.objectContaining({ stage: 'started' })
+      )
     })
 
     it('bounces to pricing when a required reactivation refresh cannot collect consent', async () => {
@@ -2574,6 +2700,9 @@ describe('useSubscriptionCheckout', () => {
       )
       expect(mockTrackBeginCheckout).not.toHaveBeenCalled()
       expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        checkout_attempt_id: expect.any(String),
+        flag_state: 'embedded_checkout_on',
+        workspace_id: 'workspace-1',
         operation: 'subscription_checkout',
         stage: 'failed',
         outcome: 'failure',
@@ -2909,6 +3038,9 @@ describe('useSubscriptionCheckout', () => {
       await checkout.handleAddCreditCard()
 
       expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        checkout_attempt_id: expect.any(String),
+        flag_state: 'embedded_checkout_on',
+        workspace_id: 'workspace-1',
         operation: 'subscription_checkout',
         stage: 'started',
         outcome: 'pending',
@@ -2918,6 +3050,9 @@ describe('useSubscriptionCheckout', () => {
         payment_intent_source: undefined
       })
       expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        checkout_attempt_id: expect.any(String),
+        flag_state: 'embedded_checkout_on',
+        workspace_id: 'workspace-1',
         operation: 'operation',
         stage: 'started',
         outcome: 'pending',
@@ -2943,12 +3078,16 @@ describe('useSubscriptionCheckout', () => {
       await checkout.handleAddCreditCard()
 
       expect(mockSubscribe).toHaveBeenCalledWith('standard-yearly', {
+        checkoutAttemptId: expect.any(String),
         returnUrl: 'https://app.test/subscribe',
         cancelUrl: 'https://platform.comfy.org/payment/failed',
         confirmReactivation: false
       })
       expect(checkout.checkoutStep.value).toBe('success')
       expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        checkout_attempt_id: expect.any(String),
+        flag_state: 'embedded_checkout_on',
+        workspace_id: 'workspace-1',
         operation: 'subscription_checkout',
         stage: 'succeeded',
         outcome: 'success',
@@ -3100,6 +3239,9 @@ describe('useSubscriptionCheckout', () => {
         'op-async-1',
         'subscription',
         {
+          checkoutAttemptId: expect.any(String),
+          flagState: 'embedded_checkout_on',
+          quoteId: undefined,
           tier: 'standard',
           cycle: 'yearly',
           checkoutType: 'new',
@@ -3131,6 +3273,9 @@ describe('useSubscriptionCheckout', () => {
         'op-async-2',
         'subscription',
         {
+          checkoutAttemptId: expect.any(String),
+          flagState: 'embedded_checkout_on',
+          quoteId: undefined,
           tier: 'standard',
           cycle: 'yearly',
           checkoutType: 'new',
@@ -3253,6 +3398,9 @@ describe('useSubscriptionCheckout', () => {
       )
       expect(mockTrackBeginCheckout).not.toHaveBeenCalled()
       expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        checkout_attempt_id: expect.any(String),
+        flag_state: 'embedded_checkout_on',
+        workspace_id: 'workspace-1',
         operation: 'subscription_checkout',
         stage: 'failed',
         outcome: 'failure',
@@ -3274,6 +3422,9 @@ describe('useSubscriptionCheckout', () => {
       await checkout.handleAddCreditCard()
 
       expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        checkout_attempt_id: expect.any(String),
+        flag_state: 'embedded_checkout_on',
+        workspace_id: 'workspace-1',
         operation: 'subscription_checkout',
         stage: 'failed',
         outcome: 'failure',
@@ -3669,8 +3820,10 @@ describe('useSubscriptionCheckout', () => {
       )
       // Regression guard: this reactivation-consent guard is not a checkout
       // attempt, so it must not open a funnel entry no terminal event will
-      // ever close.
-      expect(mockTrackBillingEvent).not.toHaveBeenCalled()
+      // ever close. The preview it already resolved still reports its quote.
+      expect(mockTrackBillingEvent).not.toHaveBeenCalledWith(
+        expect.objectContaining({ stage: 'started' })
+      )
     })
 
     it('refuses to bill when a fresh preview no longer matches the confirmed charge', async () => {
@@ -3855,6 +4008,9 @@ describe('useSubscriptionCheckout', () => {
       await checkout.handleResubscribe()
 
       expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        checkout_attempt_id: expect.any(String),
+        flag_state: 'embedded_checkout_on',
+        workspace_id: 'workspace-1',
         operation: 'resubscribe',
         stage: 'started',
         outcome: 'pending',
@@ -3881,6 +4037,9 @@ describe('useSubscriptionCheckout', () => {
         payment_intent_source: 'subscribe_to_run'
       })
       expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        checkout_attempt_id: expect.any(String),
+        flag_state: 'embedded_checkout_on',
+        workspace_id: 'workspace-1',
         operation: 'resubscribe',
         stage: 'succeeded',
         outcome: 'success',
@@ -3904,6 +4063,9 @@ describe('useSubscriptionCheckout', () => {
         })
       )
       expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        checkout_attempt_id: expect.any(String),
+        flag_state: 'embedded_checkout_on',
+        workspace_id: 'workspace-1',
         operation: 'resubscribe',
         stage: 'failed',
         outcome: 'failure',
@@ -3926,6 +4088,9 @@ describe('useSubscriptionCheckout', () => {
         expect.objectContaining({ stage: 'succeeded' })
       )
       expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        checkout_attempt_id: expect.any(String),
+        flag_state: 'embedded_checkout_on',
+        workspace_id: 'workspace-1',
         operation: 'resubscribe',
         stage: 'started',
         outcome: 'pending',
@@ -3946,6 +4111,9 @@ describe('useSubscriptionCheckout', () => {
       await checkout.handleResubscribe()
 
       expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+        checkout_attempt_id: expect.any(String),
+        flag_state: 'embedded_checkout_on',
+        workspace_id: 'workspace-1',
         operation: 'resubscribe',
         stage: 'failed',
         outcome: 'failure',

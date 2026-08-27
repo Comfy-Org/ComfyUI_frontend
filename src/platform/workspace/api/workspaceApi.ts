@@ -97,12 +97,21 @@ export interface SubscribeOptions {
   billingCycle?: SubscribeBillingCycle
   confirmReactivation?: boolean
   prorationAt?: string
+  checkoutAttemptId?: string
 }
 
 export interface PreviewSubscribeOptions {
   teamCreditStopId?: string
   promotionCode?: string
+  checkoutAttemptId?: string
 }
+
+/**
+ * `checkout_attempt_id` is the client-minted key that joins an abandoned
+ * attempt's frontend events to its billing op. It is not yet in the generated
+ * request schemas; drop these once `@comfyorg/ingest-types` ships it.
+ */
+type WithCheckoutAttemptId<T> = T & { checkout_attempt_id?: string }
 
 export type { SubscribeResponse }
 
@@ -518,8 +527,9 @@ export const workspaceApi = {
         {
           plan_slug: planSlug,
           team_credit_stop_id: options.teamCreditStopId,
-          promotion_code: options.promotionCode
-        } satisfies PreviewSubscribeRequest,
+          promotion_code: options.promotionCode,
+          checkout_attempt_id: options.checkoutAttemptId
+        } satisfies WithCheckoutAttemptId<PreviewSubscribeRequest>,
         { headers }
       )
       return response.data
@@ -564,8 +574,9 @@ export const workspaceApi = {
           team_credit_stop_id: options.teamCreditStopId,
           billing_cycle: options.billingCycle,
           confirm_reactivation: options.confirmReactivation,
-          proration_at: options.prorationAt
-        } satisfies SubscribeRequest,
+          proration_at: options.prorationAt,
+          checkout_attempt_id: options.checkoutAttemptId
+        } satisfies WithCheckoutAttemptId<SubscribeRequest>,
         { headers }
       )
       return response.data

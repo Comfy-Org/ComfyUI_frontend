@@ -70,7 +70,7 @@ const dispatchPendingCheckoutChangeEvent = () => {
   window.dispatchEvent(new Event(PENDING_SUBSCRIPTION_CHECKOUT_EVENT))
 }
 
-const createAttemptId = (): string => {
+export const createAttemptId = (): string => {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
     return crypto.randomUUID()
   }
