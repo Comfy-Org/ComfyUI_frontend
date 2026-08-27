@@ -12,37 +12,39 @@ export function registerAgentPanelExtension(): void {
   useExtensionService().registerExtension({
     name: 'Comfy.AgentPanel',
     setup() {
-      void setupFlagGate()
+      // The service's per-extension catch owns a rejection here, so a
+      // failed gate can never surface as an unhandled rejection.
+      return setupFlagGate()
     }
   })
 }
 
 async function setupFlagGate(): Promise<void> {
-  const [
-    { useAgentPanelStore },
-    { AGENT_PANEL_FLAG, FLAG_SETTLE_TIMEOUT_MS, createPostHogFlagSource },
-    { getDevOverride },
-    { reportError }
-  ] = await Promise.all([
-    import('@/workbench/extensions/agent/stores/agentPanelStore'),
-    import('@/workbench/extensions/agent/utils/postHogFlagSource'),
-    import('@/utils/devFeatureFlagOverride'),
-    import('@/platform/telemetry/reportError')
-  ])
-
+  const { useAgentPanelStore } =
+    await import('@/workbench/extensions/agent/stores/agentPanelStore')
   const agentPanelStore = useAgentPanelStore()
-
-  // Force-enable BEFORE any posthog work (a blocked SDK load must not
-  // take local dev down); the ff: override wins in both directions.
-  if (import.meta.env.MODE === 'development') {
-    agentPanelStore.enabled = getDevOverride<boolean>(AGENT_PANEL_FLAG) ?? true
-  }
-
   const settle = (): void => {
     agentPanelStore.gateSettled = true
   }
-  // Ad blockers eat this chunk: a failed load gates off, never rejects unhandled.
+
+  // Every remaining chunk loads inside the guard (ad blockers eat these):
+  // any failure settles fail-closed instead of leaving the gate hanging.
   try {
+    const [
+      { AGENT_PANEL_FLAG, FLAG_SETTLE_TIMEOUT_MS, createPostHogFlagSource },
+      { getDevOverride }
+    ] = await Promise.all([
+      import('@/workbench/extensions/agent/utils/postHogFlagSource'),
+      import('@/utils/devFeatureFlagOverride')
+    ])
+
+    // Force-enable BEFORE any posthog work (a blocked SDK load must not
+    // take local dev down); the ff: override wins in both directions.
+    if (import.meta.env.MODE === 'development') {
+      agentPanelStore.enabled =
+        getDevOverride<boolean>(AGENT_PANEL_FLAG) ?? true
+    }
+
     const posthog = (await import('posthog-js')).default
     const source = createPostHogFlagSource(posthog)
     const sync = (): void => {
@@ -54,18 +56,24 @@ async function setupFlagGate(): Promise<void> {
       agentPanelStore.enabled =
         devOverride ?? (forceInDev || source.isEnabled())
     }
-    // featureFlags exists from the PostHog constructor, so this survives
-    // init() even when setup wins the race against telemetry's bootstrap;
-    // the settle timeout covers a token-less config where init never runs.
+    // Production waits for the first non-error delivery (the source drops
+    // errorsLoading callbacks): posthog persists flags in localStorage, so
+    // reading before delivery would let a stale true mount the panel and
+    // fetch agent chunks across a flag-off boundary. Dev stays immediate.
     source.onChange?.(() => {
       sync()
       settle()
     })
-    sync()
+    if (import.meta.env.MODE === 'development') sync()
     setTimeout(settle, FLAG_SETTLE_TIMEOUT_MS)
   } catch (error) {
     console.error('[Comfy.AgentPanel] feature-flag gate failed to load', error)
-    reportError(error, { errorType: 'agent_flag_gate_load_failure' })
     settle()
+    try {
+      const { reportError } = await import('@/platform/telemetry/reportError')
+      reportError(error, { errorType: 'agent_flag_gate_load_failure' })
+    } catch {
+      // Telemetry chunk unavailable; the console line above already records it.
+    }
   }
 }

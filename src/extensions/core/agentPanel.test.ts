@@ -139,6 +139,22 @@ describe('the agent panel flag gate', () => {
     expect(useAgentPanelStore().gateSettled).toBe(true)
   })
 
+  it('ignores a stale persisted flag until the first delivery', async () => {
+    // posthog persists flags in localStorage: isFeatureEnabled() answers
+    // true from the cache before any fresh delivery. The gate must not
+    // mount (or fetch chunks) on that stale answer.
+    posthogState.flag = true
+    await bootGate()
+
+    const store = useAgentPanelStore()
+    expect(store.enabled).toBe(false)
+    expect(store.gateSettled).toBe(false)
+
+    deliverFlags(true)
+    expect(store.enabled).toBe(true)
+    expect(store.gateSettled).toBe(true)
+  })
+
   it('propagates a post-boot flag flip into the store', async () => {
     await bootGate()
     deliverFlags(true)
