@@ -46,6 +46,7 @@ const {
   videoMinimal = false,
   videoHideControls = false,
   videoPlayButtonVariant = 'solid',
+  videoAriaLabel,
   class: className
 } = defineProps<{
   locale?: Locale
@@ -72,6 +73,7 @@ const {
   videoMinimal?: boolean
   videoHideControls?: boolean
   videoPlayButtonVariant?: 'solid' | 'overlay'
+  videoAriaLabel?: string
 }>()
 </script>
 
@@ -155,6 +157,7 @@ const {
           :minimal="videoMinimal"
           :hide-controls="videoHideControls"
           :play-button-variant="videoPlayButtonVariant"
+          :aria-label="videoAriaLabel"
         />
         <img
           v-else-if="imageSrc"

@@ -21,6 +21,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
     }"
     video-minimal
     video-play-button-variant="overlay"
+    :video-aria-label="t('fdct.hero.title', locale)"
     video-src="https://media.comfy.org/website/fdct/FDCT_V4.mp4"
     video-poster="https://media.comfy.org/website/fdct/FDCT_V4_thumb.jpeg"
   />
