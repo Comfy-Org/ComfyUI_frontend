@@ -331,6 +331,29 @@ describe('useAgentConversationStore', () => {
     expect(store.threadId).toBeNull()
   })
 
+  it('snapshots local workflow references on the submitted turn', () => {
+    const store = useAgentConversationStore()
+    store.startTurn(T1)
+    Reflect.apply(store.recordUser, store, [
+      T1,
+      'compare these',
+      undefined,
+      undefined,
+      [
+        { id: 'wf-1', name: 'Workflow 1' },
+        { id: 'wf-2', name: 'Workflow 2' }
+      ]
+    ])
+
+    expect(store.entries[0]).toMatchObject({
+      role: 'user',
+      workflowReferences: [
+        { id: 'wf-1', name: 'Workflow 1' },
+        { id: 'wf-2', name: 'Workflow 2' }
+      ]
+    })
+  })
+
   it('revokes transcript blob previews on reset and on hydrate', () => {
     const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
     const store = useAgentConversationStore()
