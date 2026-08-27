@@ -241,6 +241,23 @@ describe('attachMintPortWiring', () => {
     ])
   })
 
+  it('positive control: an unbound workflow runs normally, zero mint and zero blockage', () => {
+    bound = false
+    const widgetStore = useWidgetValueStore()
+    const id = widgetId(ROOT_ID, toNodeId(7), 'seed')
+    widgetStore.registerWidget(id, { type: 'number', value: 3 } as Parameters<
+      typeof widgetStore.registerWidget
+    >[1])
+
+    const placed = useLinkStore().registerLink(ROOT_SCOPE, topology(41))
+    const applied = widgetStore.setValue(id, 42)
+
+    expect(minted).toEqual([])
+    expect(placed).toBeDefined()
+    expect(applied).toBe(true)
+    expect(widgetStore.getWidget(id)?.value).toBe(42)
+  })
+
   it('stops observing both stores after detach', () => {
     wiring.detach()
     useLinkStore().registerLink(ROOT_SCOPE, topology(41))
