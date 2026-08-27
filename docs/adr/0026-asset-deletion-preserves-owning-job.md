@@ -35,6 +35,16 @@ Concretely, the questions that kept recurring:
   actually deleted?
 - What must deletion UI disclose?
 
+## Current Implementation
+
+When a user confirms deletion from an output asset card, context menu, or
+selection action, `useMediaAssetActions.deleteAssets` handles the request. For
+each generated output, it reads `user_metadata.jobId` through
+`getOutputAssetMetadata` and calls `api.deleteItem('history', jobId)`. That API
+helper posts `{ "delete": [jobId] }` to `/history`. The current path therefore
+deletes the owning history job by job ID; it does not delete the selected
+output by `AssetItem.id`. This is the behavior the decision below replaces.
+
 ## Decision
 
 The lifecycle split is directional: jobs fan out to their generated output
