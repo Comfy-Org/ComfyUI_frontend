@@ -17,6 +17,15 @@ function measurement(name: string, rafIntervalP95Ms: number): PerfMeasurement {
     layouts: 0,
     layoutDurationMs: 0,
     taskDurationMs: 0,
+    taskOtherDurationMs: 0,
+    v8CompileDurationMs: 0,
+    devToolsCommandDurationMs: 0,
+    threadTimeMs: 0,
+    processTimeMs: 0,
+    accountedTaskDurationMs: 0,
+    taskAccountingResidualMs: 0,
+    missingCdpMetrics: [],
+    nonMonotonicCdpMetrics: [],
     heapDeltaBytes: 0,
     heapUsedBytes: 0,
     domNodes: 0,
@@ -33,7 +42,42 @@ function measurement(name: string, rafIntervalP95Ms: number): PerfMeasurement {
     rafIntervalsOver8_33Ms: 0,
     rafIntervalsOver16_67Ms: 0,
     rafIntervalsOver33_3Ms: 0,
-    rafIntervalsOver50Ms: 0
+    rafIntervalsOver50Ms: 0,
+    workloadIdentity: {
+      schemaVersion: 1,
+      topology: {
+        hash: 'sha256:test',
+        nodes: 1,
+        visibleNodes: 1,
+        inputs: 0,
+        outputs: 0,
+        links: 0,
+        maxFanOut: 0,
+        widgets: 0
+      },
+      activity: {
+        activeProgressEntries: null,
+        progressEventsEmitted: null,
+        progressEventsReceived: null,
+        progressEventsApplied: null,
+        dirtyReasons: null,
+        foregroundDraws: null,
+        backgroundDraws: null
+      },
+      environment: {
+        renderer: 'legacy',
+        canvasInfoEnabled: null,
+        viewportWidth: 1280,
+        viewportHeight: 720,
+        devicePixelRatio: 1,
+        frontendVersion: 'test',
+        frontendCommit: 'test',
+        buildMode: 'test',
+        browserVersion: 'test',
+        gpuClass: 'unknown'
+      },
+      missingOptionalFields: []
+    }
   }
 }
 
@@ -109,5 +153,12 @@ describe('performance report', () => {
         measurements: [{ kind: 'accepted', measurement: { name: 'sample' } }]
       }).success
     ).toBe(false)
+  })
+
+  it('preserves accounting and identity on rejected results', () => {
+    const input = report([rejected(20)])
+    const parsed = perfReportSchema.parse(input)
+
+    expect(parsed).toEqual(input)
   })
 })
