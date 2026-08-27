@@ -16,17 +16,12 @@ vi.mock('@/platform/distribution/types', () => ({
   isCloud: false
 }))
 
-const { outputAssetsMock } = vi.hoisted(() => ({
-  outputAssetsMock: {
-    hasMore: false,
-    items: [] as Array<{ id: string }>,
-    loadMore: vi.fn<() => Promise<void>>(),
-    loadMoreWithProgress: vi.fn<() => Promise<boolean>>()
-  }
+const { loadOutputAssetMock } = vi.hoisted(() => ({
+  loadOutputAssetMock: vi.fn<(assetId: string) => Promise<boolean>>()
 }))
 
 vi.mock('@/stores/assetsStore', () => ({
-  useAssetsStore: () => ({ outputAssets: outputAssetsMock })
+  useAssetsStore: () => ({ loadOutputAsset: loadOutputAssetMock })
 }))
 
 let itemToView: JobListViewItem | undefined
@@ -84,7 +79,7 @@ function createCompletedJobView(id: string): JobListViewItem {
     state: 'completed',
     taskRef: task,
     title: id
-  } as JobListViewItem
+  }
 }
 
 function renderComponent(
@@ -127,10 +122,6 @@ describe('QueueProgressOverlay', () => {
   beforeEach(() => {
     i18n.global.locale.value = 'en'
     itemToView = undefined
-    outputAssetsMock.hasMore = false
-    outputAssetsMock.items = []
-    outputAssetsMock.loadMore.mockReset()
-    outputAssetsMock.loadMoreWithProgress.mockReset()
   })
 
   it('shows expanded header with running and queued labels', () => {
@@ -173,35 +164,7 @@ describe('QueueProgressOverlay', () => {
 
   it('loads older pages before selecting a job asset', async () => {
     itemToView = createCompletedJobView('target-job')
-    outputAssetsMock.hasMore = true
-    outputAssetsMock.loadMoreWithProgress
-      .mockImplementationOnce(async () => {
-        outputAssetsMock.items.push({ id: 'other-job' })
-        return true
-      })
-      .mockImplementationOnce(async () => {
-        outputAssetsMock.items.push({ id: 'target-job' })
-        outputAssetsMock.hasMore = false
-        return true
-      })
-    const { assetSelectionStore, sidebarTabStore, user } = renderComponent(
-      [],
-      []
-    )
-
-    await user.click(screen.getByTestId('view-item-button'))
-
-    await waitFor(() => {
-      expect(outputAssetsMock.loadMoreWithProgress).toHaveBeenCalledTimes(2)
-      expect(assetSelectionStore.selectedIdsArray).toEqual(['target-job'])
-    })
-    expect(sidebarTabStore.activeSidebarTabId).toBe('assets')
-  })
-
-  it('does not select a missing job asset when pagination cannot advance', async () => {
-    itemToView = createCompletedJobView('missing-job')
-    outputAssetsMock.hasMore = true
-    outputAssetsMock.loadMoreWithProgress.mockResolvedValue(false)
+    loadOutputAssetMock.mockResolvedValue(true)
     const { assetSelectionStore, sidebarTabStore, user } = renderComponent(
       [],
       []
@@ -210,9 +173,55 @@ describe('QueueProgressOverlay', () => {
     await user.click(screen.getByTestId('view-item-button'))
 
     await waitFor(() =>
-      expect(outputAssetsMock.loadMoreWithProgress).toHaveBeenCalledTimes(1)
+      expect(assetSelectionStore.selectedIdsArray).toEqual(['target-job'])
+    )
+    expect(loadOutputAssetMock).toHaveBeenCalledWith('target-job')
+    expect(sidebarTabStore.activeSidebarTabId).toBe('assets')
+  })
+
+  it('does not select a missing job asset when pagination cannot advance', async () => {
+    itemToView = createCompletedJobView('missing-job')
+    loadOutputAssetMock.mockResolvedValue(false)
+    const { assetSelectionStore, sidebarTabStore, user } = renderComponent(
+      [],
+      []
+    )
+
+    await user.click(screen.getByTestId('view-item-button'))
+
+    await waitFor(() =>
+      expect(loadOutputAssetMock).toHaveBeenCalledWith('missing-job')
     )
     expect(assetSelectionStore.selectedIdsArray).toEqual([])
     expect(sidebarTabStore.activeSidebarTabId).toBe('assets')
+  })
+
+  it('keeps the latest asset selection when an older request finishes last', async () => {
+    let resolveFirst!: (found: boolean) => void
+    const firstLoad = new Promise<boolean>((resolve) => {
+      resolveFirst = resolve
+    })
+    loadOutputAssetMock
+      .mockImplementationOnce(() => firstLoad)
+      .mockResolvedValueOnce(true)
+    itemToView = createCompletedJobView('older-request')
+    const { assetSelectionStore, user } = renderComponent([], [])
+
+    await user.click(screen.getByTestId('view-item-button'))
+    await waitFor(() =>
+      expect(loadOutputAssetMock).toHaveBeenCalledWith('older-request')
+    )
+
+    itemToView = createCompletedJobView('latest-request')
+    await user.click(screen.getByTestId('view-item-button'))
+    await waitFor(() =>
+      expect(assetSelectionStore.selectedIdsArray).toEqual(['latest-request'])
+    )
+
+    resolveFirst(true)
+    await firstLoad
+    await Promise.resolve()
+
+    expect(assetSelectionStore.selectedIdsArray).toEqual(['latest-request'])
   })
 })

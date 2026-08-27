@@ -129,7 +129,7 @@ export const useAssetsStore = defineStore('assets', () => {
     },
     isLoading: inputLoading,
     items: rawInputAssets,
-    loadMore: async () => undefined,
+    loadMore: async () => false,
     loadNew: async () => undefined
   }
 
@@ -213,6 +213,7 @@ export const useAssetsStore = defineStore('assets', () => {
     const historyAssets = ref<AssetItem[]>([])
     const historyLoading = ref(false)
     const historyError = ref<unknown>(null)
+    let loadMorePromise: Promise<boolean> | undefined
 
     /**
      * Initial load of history assets
@@ -238,16 +239,14 @@ export const useAssetsStore = defineStore('assets', () => {
     /**
      * Load more history items (infinite scroll)
      */
-    const loadMoreHistory = async () => {
-      // Guard: prevent concurrent loads and check if more items available
-      if (!hasMoreHistory.value || isLoadingMore.value) return
-
+    const doLoadMoreHistory = async () => {
       isLoadingMore.value = true
       historyError.value = null
 
       try {
         await fetchHistoryAssets(true)
         historyAssets.value = allHistoryItems.value
+        return true
       } catch (err) {
         console.error('Error loading more history:', err)
         historyError.value = err
@@ -255,9 +254,20 @@ export const useAssetsStore = defineStore('assets', () => {
         if (!historyAssets.value.length) {
           historyAssets.value = []
         }
+        return false
       } finally {
         isLoadingMore.value = false
       }
+    }
+
+    const loadMoreHistory = () => {
+      if (!hasMoreHistory.value) return Promise.resolve(false)
+      if (!loadMorePromise) {
+        loadMorePromise = doLoadMoreHistory().finally(() => {
+          loadMorePromise = undefined
+        })
+      }
+      return loadMorePromise
     }
 
     return {
@@ -282,6 +292,17 @@ export const useAssetsStore = defineStore('assets', () => {
     const flatAssets = useAssetsQuery({ tags_any: outputDirs.value })
     return wrapPagedList(flatAssets, unflattenOutputAssets)
   })
+
+  async function loadOutputAsset(assetId: string): Promise<boolean> {
+    const assets = outputAssets.value
+    const hasAsset = () =>
+      toValue(assets.items).some(({ id }) => id === assetId)
+
+    while (!hasAsset() && toValue(assets.hasMore)) {
+      if (!(await assets.loadMore())) break
+    }
+    return hasAsset()
+  }
 
   /**
    * Map of asset hash filename to asset item for O(1) lookup
@@ -889,6 +910,7 @@ export const useAssetsStore = defineStore('assets', () => {
     // States
     inputAssets,
     outputAssets,
+    loadOutputAsset,
 
     // Deletion tracking
     deletingAssetIds,

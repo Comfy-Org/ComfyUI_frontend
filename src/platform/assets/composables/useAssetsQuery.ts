@@ -61,16 +61,12 @@ function assetsQueryInternal(
     loadGeneration++
   }
 
-  async function loadMoreWithProgress() {
+  async function loadMore() {
     const startingGeneration = loadGeneration
     await enqueue('loadMore', async (signal) => {
       await doLoadMore(signal)
     })
     return loadGeneration > startingGeneration
-  }
-
-  async function loadMore() {
-    await loadMoreWithProgress()
   }
 
   function loadNew() {
@@ -164,7 +160,6 @@ function assetsQueryInternal(
     isLoading,
     items,
     loadMore,
-    loadMoreWithProgress,
     loadNew
   }
 }

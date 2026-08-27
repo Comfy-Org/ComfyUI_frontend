@@ -19,7 +19,7 @@ import OutputHistory from './OutputHistory.vue'
 
 const mediaRef = ref<AssetItem[]>([])
 const hasMoreRef = ref(false)
-const loadMoreFn = vi.fn()
+const loadMoreFn = vi.fn<() => Promise<boolean>>()
 
 const selectedIdRef = ref<string | null>(null)
 const activeWorkflowInProgressItemsRef = ref<InProgressItem[]>([])

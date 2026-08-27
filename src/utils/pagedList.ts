@@ -6,9 +6,7 @@ export interface PagedList<T> {
   invalidate: (items?: string[]) => Promise<void>
   isLoading: Readonly<MaybeRef<boolean>>
   items: Readonly<MaybeRef<T[]>>
-  loadMore: () => Promise<void>
-  /** False when the source could not advance. */
-  loadMoreWithProgress?: () => Promise<boolean>
+  loadMore: () => Promise<boolean>
   loadNew: () => Promise<void>
 }
 
