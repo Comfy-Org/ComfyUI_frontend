@@ -301,7 +301,12 @@ describe('GraphCanvas execution progress updates', () => {
   it.fails('does no node work for structurally equal progress', async () => {
     const harness = await mountProgressHarness()
 
-    harness.executionStore.nodeProgressStates = { ...harness.progressState }
+    harness.executionStore.nodeProgressStates = Object.fromEntries(
+      Object.entries(harness.progressState).map(([nodeId, progress]) => [
+        nodeId,
+        { ...progress }
+      ])
+    )
     await nextTick()
 
     expect(harness.workflowStore.nodeIdToNodeLocatorId).not.toHaveBeenCalled()
@@ -312,9 +317,15 @@ describe('GraphCanvas execution progress updates', () => {
   it.fails('updates only the node whose progress changed', async () => {
     const harness = await mountProgressHarness()
 
+    const clonedProgressState = Object.fromEntries(
+      Object.entries(harness.progressState).map(([nodeId, progress]) => [
+        nodeId,
+        { ...progress }
+      ])
+    )
     harness.executionStore.nodeProgressStates = {
-      ...harness.progressState,
-      '1': { ...harness.progressState['1'], value: 50 }
+      ...clonedProgressState,
+      '1': { ...clonedProgressState['1'], value: 50 }
     }
     await nextTick()
 
