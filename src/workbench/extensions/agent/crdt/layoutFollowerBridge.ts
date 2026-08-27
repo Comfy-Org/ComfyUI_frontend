@@ -174,10 +174,13 @@ export class LayoutFollowerBridge extends EventTarget {
 
     // Seq is the contract's gap detector (crdt.go): the pub/sub relay is
     // best-effort, so a jump means a frame was dropped — possibly a
-    // `doc_reset`, in which case these bytes belong to a NEW lineage and
-    // folding them in duplicates the canvas. The frame is therefore NOT
-    // applied; the resubscribe's ordinary catch-up delivers everything missed.
+    // `doc_reset`, in which case these bytes belong to a NEW lineage. The
+    // frame is NOT applied, and because lineage certainty is gone the doc is
+    // dropped wholesale before resubscribing (missed-reset recovery = discard
+    // and resubscribe empty): a state-vector catch-up against a re-minted doc
+    // would FOLD the new lineage into the old one and duplicate the canvas.
     if (this.lastSeq !== null && update.seq > this.lastSeq + 1) {
+      this.dropDocForNewLineage()
       this.resubscribe()
       return
     }
@@ -219,11 +222,20 @@ export class LayoutFollowerBridge extends EventTarget {
     if (!(event instanceof CustomEvent)) return
     const reset = event.detail as DocReset
     if (reset.workflowId !== this.sentWorkflowId) return
+    this.dropDocForNewLineage()
+    this.resubscribe()
+    this.dispatchEvent(new CustomEvent('doc_reset', { detail: reset }))
+  }
+
+  /**
+   * Drop the doc wholesale so the next subscribe carries an EMPTY state
+   * vector and pulls the full folded state. Shared by the explicit
+   * `doc_reset` and the seq-gap path, whose dropped frame may have BEEN one.
+   */
+  private dropDocForNewLineage(): void {
     this.followerDoc.destroy()
     this.followerDoc = new FollowerDoc()
     this.schemaError = null
-    this.resubscribe()
-    this.dispatchEvent(new CustomEvent('doc_reset', { detail: reset }))
   }
 
   /**

@@ -76,6 +76,15 @@ function clearPersistedDocId(): void {
   }
 }
 
+/**
+ * Recency heartbeat budget (BE-9740's FE half): a bound, healthy channel that
+ * delivers NO doc-scoped frame for this long gets ONE active probe - a
+ * resubscribe whose state-vector catch-up is a no-op on a healthy channel and
+ * exactly the observed recovery on a stale one. A stale channel and an idle
+ * workflow look identical passively, so expiry probes instead of alarming.
+ */
+export const STALE_AFTER_MS = 30_000
+
 export interface AgentCrdtStatus {
   enabled: boolean
   connected: boolean
@@ -197,6 +206,32 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
   let subscribeRetryTimer: ReturnType<typeof setTimeout> | null = null
   let subscribeRetryAttempt = 0
 
+  // The recency heartbeat: armed only while a subscribe is CONFIRMED (bound +
+  // healthy by definition), slid forward by every doc-scoped frame, cancelled
+  // by the same lifecycle exits as the subscribe retry. The probe is
+  // `resubscribe()` (not `reconcile()`, which no-ops while intent equals
+  // reality - and a stale channel's intent DOES equal reality).
+  let staleProbeTimer: ReturnType<typeof setTimeout> | null = null
+
+  const clearStaleProbe = (): void => {
+    if (staleProbeTimer !== null) {
+      clearTimeout(staleProbeTimer)
+      staleProbeTimer = null
+    }
+  }
+
+  const armStaleProbe = (): void => {
+    clearStaleProbe()
+    staleProbeTimer = setTimeout(() => {
+      staleProbeTimer = null
+      recordDevEvent('stale_probe', {
+        workflowId: subscribedWorkflowId.value
+      })
+      bridge.resubscribe()
+      armStaleProbe()
+    }, STALE_AFTER_MS)
+  }
+
   const clearSubscribeRetry = (): void => {
     if (subscribeRetryTimer !== null) {
       clearTimeout(subscribeRetryTimer)
@@ -232,15 +267,18 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     recordDevEvent('doc_subscribed', event.detail ?? null)
     if (ok) {
       clearSubscribeRetry()
+      armStaleProbe()
       // FE-1902 (poc-3): only a CONFIRMED binding is worth rebinding to after
       // a remount — persist on ok, not on intent.
       if (subscribedWorkflowId.value !== null)
         persistDocId(subscribedWorkflowId.value)
     } else {
+      clearStaleProbe()
       scheduleSubscribeRetry()
     }
   }
   const onUpdate: EventListener = (event) => {
+    if (staleProbeTimer !== null) armStaleProbe()
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
     if (event instanceof CustomEvent && typeof event.detail?.seq === 'number')
@@ -269,6 +307,7 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     knownDocNodeIds = ids
   }
   const onOpsResult: EventListener = (event) => {
+    if (staleProbeTimer !== null) armStaleProbe()
     lastFrameType.value = event.type
     if (event instanceof CustomEvent) {
       lastOpsResult = event.detail ?? null
@@ -283,6 +322,7 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     connected.value = false
     updatesApplied.value = 0
     lastFrameType.value = event.type
+    clearStaleProbe()
     projector.reset()
     knownDocNodeIds = new Set()
     recordDevEvent(
@@ -296,6 +336,7 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     // generic "disconnected", which is indistinguishable from "never connected".
     connected.value = false
     lastFrameType.value = event.type
+    clearStaleProbe()
     recordDevEvent(
       'schema_error',
       event instanceof CustomEvent ? (event.detail ?? null) : null
@@ -303,6 +344,7 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
   }
   const onReconnected: EventListener = () => {
     connected.value = false
+    clearStaleProbe()
     projector.reset()
     recordDevEvent('reconnected', null)
     bridge.resubscribe()
@@ -340,6 +382,7 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     workflowId,
     (next) => {
       clearSubscribeRetry()
+      clearStaleProbe()
       connected.value = false
       projector.reset()
       knownDocNodeIds = new Set()
@@ -372,6 +415,7 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     // "client.destroy() always runs" guarantee local and readable.
     try {
       clearSubscribeRetry()
+      clearStaleProbe()
       delete (window as unknown as Record<string, unknown>).__agentCrdtPoc
       api.removeEventListener('reconnected', onReconnected)
       api.removeEventListener('status', onSocketActivity)
