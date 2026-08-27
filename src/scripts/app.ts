@@ -1588,8 +1588,7 @@ export class ComfyApp {
         this.canvas.setDirty(true, true)
       })
     } finally {
-      // Republish from the finally so a load that throws after the interim
-      // root reset still repairs the URL instead of stranding the old hash.
+      // Finally: a throwing load still repairs the URL.
       void useSubgraphNavigationStore().updateHash(
         'workflow-load',
         workflowNavigationId
@@ -2094,8 +2093,7 @@ export class ComfyApp {
     if (parameters && typeof parameters === 'string') {
       const outcome = await importA1111(this.rootGraph, parameters, () => {
         try {
-          // false: this reset is the final destination - no workflow load
-          // follows to republish the hash, so suppression must not arm.
+          // false: final destination; no later load republishes the hash.
           useWorkflowService().beforeLoadNewGraph(false)
         } finally {
           useMissingNodesErrorStore().setMissingNodeTypes([])

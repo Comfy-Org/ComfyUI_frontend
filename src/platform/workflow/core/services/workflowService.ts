@@ -50,16 +50,12 @@ function linearModeToAppMode(linearMode: unknown): AppMode | null {
   return linearMode ? 'app' : 'graph'
 }
 
-// TRANSITIONAL (decision log D14): this coordination machinery (load queue,
-// per-path pending map, closing registry) exists because loading mutates one
-// shared graph; it becomes deletable when the ECS migration scopes workflow
-// loading per document. The contract tests transfer to the replacement.
+// TRANSITIONAL (decision log D14): deletable when ECS scopes workflow
+// loading per document; the contract tests transfer.
 let workflowLoadTail: Promise<void> = Promise.resolve()
 let pendingWorkflowLoads = 0
 const pendingWorkflowLoadsByPath = new Map<string, Promise<void>>()
-// Keyed by the workflow OBJECT, not its path: a rename mid-close mutates
-// workflow.path in place, and a path key would strand the old entry forever
-// (making that path silently un-openable for the session).
+// Object identity, not path: a mid-close rename would strand a path key.
 const closingWorkflowCounts = new Map<ComfyWorkflow, number>()
 
 /** The registry key: raw instance, so reactive proxies and raw references agree. */
@@ -93,8 +89,7 @@ function queueWorkflowLoad(
   const result = workflowLoadTail.then(load)
   const settledResult = result
     .catch((error) => {
-      // The internal chain marks `result` handled; keep failures observable
-      // for fire-and-forget callers.
+      // Keep fire-and-forget load failures observable.
       console.error('[workflowService] queued workflow load failed', error)
       reportError(error, { errorType: 'workflow_load_failure' })
       return undefined
@@ -384,8 +379,7 @@ export const useWorkflowService = () => {
           silent: !loadFromRemote && !options.force
         })
       } catch (error) {
-        // A failed load must not leave its navigation intent as the newest:
-        // that would suppress the previous survivor's hash forever.
+        // A failed load's intent must not stay newest (suppresses the survivor's hash).
         useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
         throw error
       }
@@ -421,9 +415,7 @@ export const useWorkflowService = () => {
       }
     }
 
-    // Captured once for the path-keyed consumers below: a rename mid-close
-    // mutates workflow.path in place (the closing REGISTRY is object-keyed
-    // and rename-proof).
+    // Captured once: a mid-close rename mutates workflow.path in place.
     const closingPath = workflow.path
     const closing = closingKey(workflow)
     closingWorkflowCounts.set(
@@ -438,9 +430,8 @@ export const useWorkflowService = () => {
         wasActive ||
         (pendingWorkflowLoad && workflowStore.isActive(workflow))
       ) {
-        // Bounded drain: re-observe the tail so the replacement decision
-        // sees quiesced state, but never let a hot enqueue stream starve
-        // the close - past the cap we proceed on the last observed state.
+        // Bounded drain: quiesce for the replacement decision without letting
+        // a hot enqueue stream starve the close.
         for (let spins = 0; spins < 16; spins++) {
           const observedOpenTail = workflowLoadTail
           await observedOpenTail
@@ -472,9 +463,7 @@ export const useWorkflowService = () => {
           await loadDefaultWorkflow()
         }
       } else if (
-        // Read LIVE, post-drain: a workflow opened or closed during the
-        // awaits above changes the answer, and a stale snapshot either
-        // yanks the user off a just-opened tab or strands an empty canvas.
+        // Read live, post-drain: the awaits above can change the answer.
         workflowStore.openWorkflows.length > 0 &&
         workflowStore.openWorkflows.every((open) =>
           closingWorkflowCounts.has(closingKey(open))
@@ -484,8 +473,7 @@ export const useWorkflowService = () => {
       }
 
       await workflowStore.closeWorkflow(workflow)
-      // Only after the close is real: a failed replacement load above
-      // rethrows with the tab still open, and its draft must survive with it.
+      // Only after the close is real: a still-open tab keeps its draft.
       workflowDraftStore.removeDraft(closingPath)
       useNodeOutputStore().discardPreviewsForWorkflow(closingPath)
       return true

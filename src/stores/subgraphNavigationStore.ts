@@ -223,10 +223,8 @@ export const useSubgraphNavigationStore = defineStore(
       | { id: number; source: 'workflow' }
     const routeWriteStateKey = 'comfySubgraphNavigationWrite'
     const pendingRouteWrites = new Map<number, string>()
-    // TRANSITIONAL in part (decision log D14): the reset-suppression flag is
-    // tied to shared-graph loading and dies with it at ECS per-document
-    // scoping; the intent ids themselves guard the router seam and likely
-    // survive that migration.
+    // D14: the reset-suppression flag dies with shared-graph loading at
+    // ECS per-document scoping; the intent ids guard the router and survive.
     let deferredNavigationIntent: GraphNavigationIntent | undefined
     let latestNavigationIntent: NavigationIntent | undefined
     let navigationIntentId = 0
