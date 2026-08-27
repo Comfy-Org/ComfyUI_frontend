@@ -60,7 +60,6 @@ const emit = defineEmits<{
   openAssets: []
   selectNodes: []
   removeTag: [id: string]
-  focusTag: [id: string]
   mentionPick: [node: SelectedNode]
   workflowReferencePick: [workflow: WorkflowReference]
   removeWorkflowReference: [id: string]
@@ -206,6 +205,15 @@ function closeMention(): void {
   mentionActive.value = 0
 }
 
+function resetMentionActive(): void {
+  mentionActive.value =
+    mentionSection.value !== 'root' &&
+    mentionQuery.value.length > 0 &&
+    mentionMatches.value.length > 1
+      ? 1
+      : 0
+}
+
 function syncMention(event: Event): void {
   const el = event.target as HTMLTextAreaElement
   const caret = el.selectionStart ?? 0
@@ -229,13 +237,13 @@ function syncMention(event: Event): void {
   mentionOpen.value = true
   mentionStart.value = at
   mentionQuery.value = query
-  mentionActive.value = 0
+  resetMentionActive()
 }
 
 function pickMention(match: MentionMatch): void {
   if (match.kind === 'section') {
     mentionSection.value = match.id
-    mentionActive.value = 0
+    resetMentionActive()
     return
   }
   if (match.kind === 'back') {
@@ -467,15 +475,7 @@ defineExpose({
           :key="selectedNodeKey(tag)"
           class="bg-agent-surface-hover text-agent-fg inline-flex h-7 items-center gap-1 rounded-lg border border-border-default px-2.5 text-xs/4 font-medium transition-colors hover:bg-tertiary-background-hover"
         >
-          <button
-            v-tooltip.top="buildAgentTooltipConfig(t('agent.focusNode'))"
-            type="button"
-            :aria-label="
-              t('agent.focusNodeLabel', { node: `${tag.title} #${tag.id}` })
-            "
-            class="flex cursor-pointer items-center gap-1 p-0 transition-colors"
-            @click="emit('focusTag', selectedNodeKey(tag))"
-          >
+          <span class="flex items-center gap-1">
             <span class="text-agent-fg-muted icon-[comfy--node] size-3.5" />
             <span class="max-w-40 truncate">{{ tag.title }}</span>
             <span
@@ -483,7 +483,7 @@ defineExpose({
               :class="duplicateIdClass"
               >#{{ tag.id }}</span
             >
-          </button>
+          </span>
           <button
             v-tooltip.top="buildAgentTooltipConfig(t('agent.remove'))"
             type="button"
