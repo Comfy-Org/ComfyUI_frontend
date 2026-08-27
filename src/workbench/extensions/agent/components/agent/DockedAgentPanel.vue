@@ -12,7 +12,12 @@
       <div
         class="size-full overflow-hidden rounded-lg border border-interface-stroke"
       >
-        <AgentPanelRoot />
+        <Suspense>
+          <AgentPanelRoot />
+          <template #fallback>
+            <div class="size-full bg-base-background" />
+          </template>
+        </Suspense>
       </div>
     </div>
   </div>

@@ -1,4 +1,5 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -9,7 +10,7 @@ const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
 describe('agentPanelStore open-state persistence', () => {
   beforeEach(() => {
     localStorage.clear()
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
   afterEach(() => {
@@ -43,6 +44,22 @@ describe('agentPanelStore open-state persistence', () => {
 
     expect(store.isOpen).toBe(false)
     expect(localStorage.getItem(OPEN_STORAGE_KEY)).toBe('false')
+  })
+
+  it('keeps the stored open preference when the flag turns off mid-session', async () => {
+    const store = useAgentPanelStore()
+    store.enabled = true
+    store.toggle()
+    await nextTick()
+
+    // Disabling gates the dock (the component derives docked from
+    // enabled && isOpen); it must never wipe the user's open preference,
+    // which has to survive for the next enabled session.
+    store.enabled = false
+    await nextTick()
+
+    expect(store.isOpen).toBe(true)
+    expect(localStorage.getItem(OPEN_STORAGE_KEY)).toBe('true')
   })
 
   it('starts unsettled and does not plant a storage key for flag-off users', () => {
