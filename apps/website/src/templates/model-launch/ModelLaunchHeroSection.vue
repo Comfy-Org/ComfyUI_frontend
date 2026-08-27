@@ -67,6 +67,7 @@ const isContentFirst = hero.layout === 'content-first'
         <VideoPlayer
           v-if="showVideo"
           :locale
+          :aria-label="t(hero.titleKey, locale)"
           :src="hero.videoSrc"
           :poster="hero.posterSrc"
           autoplay
@@ -77,6 +78,7 @@ const isContentFirst = hero.layout === 'content-first'
         <VideoPlayer
           v-else-if="showMobileVideo"
           :locale
+          :aria-label="t(hero.titleKey, locale)"
           :src="hero.mobileVideoSrc"
           :poster="hero.posterSrc"
           autoplay
@@ -168,6 +170,7 @@ const isContentFirst = hero.layout === 'content-first'
       <VideoPlayer
         v-if="showVideo"
         :locale
+        :aria-label="t(hero.titleKey, locale)"
         :src="hero.videoSrc"
         :poster="hero.posterSrc"
         autoplay
@@ -176,6 +179,7 @@ const isContentFirst = hero.layout === 'content-first'
       <VideoPlayer
         v-else-if="showMobileVideo"
         :locale
+        :aria-label="t(hero.titleKey, locale)"
         :src="hero.mobileVideoSrc"
         :poster="hero.posterSrc"
         autoplay
