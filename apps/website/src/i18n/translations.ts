@@ -2915,6 +2915,22 @@ const translations = {
     'zh-CN': '终端原生。脚本、批量与 CI。'
   },
 
+  // CLI – SessionSection
+  'cli.session.heading': {
+    en: 'A real session, start to finish.',
+    'zh-CN': '一次真实会话，从头到尾。'
+  },
+  'cli.session.subtitle': {
+    en: 'Recorded in one take against Comfy Cloud: a partner generate, a workflow run on cloud GPUs, and the bundled skills. Idle seconds trimmed, output untouched.',
+    'zh-CN':
+      '面向 Comfy Cloud 一镜到底：一次合作伙伴模型生成、一次云端 GPU 工作流运行，以及自带技能。只剪掉了等待的秒数，输出原样保留。'
+  },
+  'cli.session.alt': {
+    en: 'Recorded terminal session: comfy generate saving cat.png, a workflow run on Comfy Cloud, and the bundled skills list',
+    'zh-CN':
+      '终端录屏：comfy generate 保存 cat.png、一次 Comfy Cloud 工作流运行，以及自带技能列表'
+  },
+
   // CLI – SkillsSection
   'cli.skills.label': {
     en: 'AGENT SKILLS',
