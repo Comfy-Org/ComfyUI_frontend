@@ -1,6 +1,42 @@
 import { z } from 'zod'
 
-const perfMeasurementSchema = z.object({
+const perfWorkloadIdentitySchema = z.object({
+  schemaVersion: z.literal(1),
+  topology: z.object({
+    hash: z.string(),
+    nodes: z.number(),
+    visibleNodes: z.number(),
+    inputs: z.number(),
+    outputs: z.number(),
+    links: z.number(),
+    maxFanOut: z.number(),
+    widgets: z.number()
+  }),
+  activity: z.object({
+    activeProgressEntries: z.number().nullable(),
+    progressEventsEmitted: z.number().nullable(),
+    progressEventsReceived: z.number().nullable(),
+    progressEventsApplied: z.number().nullable(),
+    dirtyReasons: z.record(z.string(), z.number()).nullable(),
+    foregroundDraws: z.number().nullable(),
+    backgroundDraws: z.number().nullable()
+  }),
+  environment: z.object({
+    renderer: z.enum(['legacy', 'vue']),
+    canvasInfoEnabled: z.boolean().nullable(),
+    viewportWidth: z.number(),
+    viewportHeight: z.number(),
+    devicePixelRatio: z.number(),
+    frontendVersion: z.string(),
+    frontendCommit: z.string(),
+    buildMode: z.enum(['development', 'production', 'test']),
+    browserVersion: z.string(),
+    gpuClass: z.enum(['hardware', 'software', 'swiftshader', 'unknown'])
+  }),
+  missingOptionalFields: z.array(z.string())
+})
+
+const perfMeasurementV2Schema = z.object({
   name: z.string(),
   durationMs: z.number(),
   styleRecalcs: z.number(),
@@ -25,6 +61,19 @@ const perfMeasurementSchema = z.object({
   rafIntervalsOver16_67Ms: z.number(),
   rafIntervalsOver33_3Ms: z.number(),
   rafIntervalsOver50Ms: z.number()
+})
+
+const perfMeasurementSchema = perfMeasurementV2Schema.extend({
+  taskOtherDurationMs: z.number().nullable(),
+  v8CompileDurationMs: z.number().nullable(),
+  devToolsCommandDurationMs: z.number().nullable(),
+  threadTimeMs: z.number().nullable(),
+  processTimeMs: z.number().nullable(),
+  accountedTaskDurationMs: z.number().nullable(),
+  taskAccountingResidualMs: z.number().nullable(),
+  missingCdpMetrics: z.array(z.string()),
+  nonMonotonicCdpMetrics: z.array(z.string()),
+  workloadIdentity: perfWorkloadIdentitySchema
 })
 
 export type PerfMeasurement = z.infer<typeof perfMeasurementSchema>
@@ -54,15 +103,35 @@ export function requireAcceptedMeasurement(
   return result.measurement
 }
 
-const perfReportV2Schema = z.object({
-  schemaVersion: z.literal(2),
+const perfReportV3Schema = z.object({
+  schemaVersion: z.literal(3),
   timestamp: z.string(),
   gitSha: z.string(),
   branch: z.string(),
   measurements: z.array(perfMeasurementResultSchema)
 })
 
-export type PerfReportV2 = z.infer<typeof perfReportV2Schema>
+export type PerfReportV3 = z.infer<typeof perfReportV3Schema>
+
+const perfMeasurementResultV2Schema = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('accepted'),
+    measurement: perfMeasurementV2Schema
+  }),
+  z.object({
+    kind: z.literal('rejected'),
+    reason: z.string().min(1),
+    measurement: perfMeasurementV2Schema
+  })
+])
+
+const perfReportV2Schema = z.object({
+  schemaVersion: z.literal(2),
+  timestamp: z.string(),
+  gitSha: z.string(),
+  branch: z.string(),
+  measurements: z.array(perfMeasurementResultV2Schema)
+})
 
 const perfReportV1Schema = z.object({
   schemaVersion: z.literal(1).optional(),
@@ -73,6 +142,7 @@ const perfReportV1Schema = z.object({
 })
 
 export const perfReportSchema = z.union([
+  perfReportV3Schema,
   perfReportV2Schema,
   perfReportV1Schema
 ])

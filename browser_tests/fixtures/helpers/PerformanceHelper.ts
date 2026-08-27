@@ -1,5 +1,17 @@
 import type { CDPSession, Page } from '@playwright/test'
 
+import type { CdpMetricSnapshot } from '@/utils/cdpPerformanceMetrics'
+import {
+  computeCdpTaskAccounting,
+  parseCdpMetrics,
+  requireCdpMetric
+} from '@/utils/cdpPerformanceMetrics'
+import type {
+  PerfActivityIdentity,
+  PerfIdentitySource,
+  PerfWorkloadIdentity
+} from '@e2e/fixtures/helpers/perfWorkloadIdentity'
+import { buildPerfWorkloadIdentity } from '@e2e/fixtures/helpers/perfWorkloadIdentity'
 import type {
   RafCollection,
   RafCollectorState
@@ -25,6 +37,7 @@ interface PerfSnapshot {
   JSHeapTotalSize: number
   ScriptDuration: number
   JSEventListeners: number
+  cdpMetrics: CdpMetricSnapshot
 }
 
 const RAF_STATE_KEY = '__perfRafCollectorState'
@@ -41,7 +54,7 @@ export class PerformanceHelper {
 
   async init(): Promise<void> {
     this.cdp = await this.page.context().newCDPSession(this.page)
-    await this.cdp.send('Performance.enable')
+    await this.cdp.send('Performance.enable', { timeDomain: 'timeTicks' })
   }
 
   async dispose(): Promise<void> {
@@ -68,9 +81,8 @@ export class PerformanceHelper {
     const { metrics } = (await this.cdp.send('Performance.getMetrics')) as {
       metrics: { name: string; value: number }[]
     }
-    function get(name: string): number {
-      return metrics.find((m) => m.name === name)?.value ?? 0
-    }
+    const cdpMetrics = parseCdpMetrics(metrics)
+    const get = (name: string) => requireCdpMetric(cdpMetrics, name)
     return {
       RecalcStyleCount: get('RecalcStyleCount'),
       RecalcStyleDuration: get('RecalcStyleDuration'),
@@ -82,7 +94,8 @@ export class PerformanceHelper {
       Nodes: get('Nodes'),
       JSHeapTotalSize: get('JSHeapTotalSize'),
       ScriptDuration: get('ScriptDuration'),
-      JSEventListeners: get('JSEventListeners')
+      JSEventListeners: get('JSEventListeners'),
+      cdpMetrics
     }
   }
 
@@ -253,11 +266,16 @@ export class PerformanceHelper {
     const rafCollection = await this.stopRafCollectorIfRunning()
     const after = await this.getSnapshot()
 
-    function delta(key: keyof PerfSnapshot): number {
+    function delta(key: Exclude<keyof PerfSnapshot, 'cdpMetrics'>): number {
       return after[key] - before[key]
     }
 
     const totalBlockingTimeMs = await this.collectTBT()
+    const workloadIdentity = await this.collectWorkloadIdentity()
+    const taskAccounting = computeCdpTaskAccounting(
+      before.cdpMetrics,
+      after.cdpMetrics
+    )
     const rafIntervalsMs = rafCollection?.intervalsMs ?? []
     const measurement: PerfMeasurement = {
       name,
@@ -267,6 +285,7 @@ export class PerformanceHelper {
       layouts: delta('LayoutCount'),
       layoutDurationMs: delta('LayoutDuration') * 1000,
       taskDurationMs: delta('TaskDuration') * 1000,
+      ...taskAccounting,
       heapDeltaBytes: delta('JSHeapUsedSize'),
       heapUsedBytes: after.JSHeapUsedSize,
       domNodes: delta('Nodes'),
@@ -275,11 +294,78 @@ export class PerformanceHelper {
       eventListeners: delta('JSEventListeners'),
       totalBlockingTimeMs,
       rafIntervalsMs,
+      workloadIdentity,
       ...summarizeRafIntervals(rafIntervalsMs)
     }
     const rejectionReason = getRafRejectionReason(rafCollection)
     return rejectionReason
       ? { kind: 'rejected', reason: rejectionReason, measurement }
       : { kind: 'accepted', measurement }
+  }
+
+  private async collectWorkloadIdentity(): Promise<PerfWorkloadIdentity> {
+    const browserVersion =
+      this.page.context().browser()?.version() ?? 'unavailable'
+    const source = await this.page.evaluate(() => {
+      const app = window.app
+      if (!app) throw new Error('window.app is unavailable for perf identity')
+      const graph = app.canvas.graph ?? app.graph
+      const nodes = graph.nodes.map((node) => ({
+        id: String(node.id),
+        inputCount: node.inputs?.length ?? 0,
+        outputCount: node.outputs?.length ?? 0,
+        widgetCount: node.widgets?.length ?? 0
+      }))
+      const links = [...graph.links.values()].map((link) => ({
+        originId: String(link.origin_id),
+        originSlot: link.origin_slot,
+        targetId: String(link.target_id),
+        targetSlot: link.target_slot
+      }))
+      const setting = app.extensionManager?.setting
+      const vueNodesEnabled =
+        setting?.get<boolean>('Comfy.VueNodes.Enabled') ?? false
+      const canvasInfoSetting = setting?.get<boolean>('Comfy.Graph.CanvasInfo')
+      const canvasInfoEnabled =
+        typeof canvasInfoSetting === 'boolean' ? canvasInfoSetting : null
+      const renderer: PerfIdentitySource['renderer'] = vueNodesEnabled
+        ? 'vue'
+        : 'legacy'
+
+      let gpuClass: PerfIdentitySource['gpuClass'] = 'unknown'
+      const canvas = document.createElement('canvas')
+      const gl = canvas.getContext('webgl')
+      if (gl) {
+        const extension = gl.getExtension('WEBGL_debug_renderer_info')
+        const renderer = extension
+          ? String(gl.getParameter(extension.UNMASKED_RENDERER_WEBGL))
+          : ''
+        if (/swiftshader/i.test(renderer)) gpuClass = 'swiftshader'
+        else if (/software|llvmpipe/i.test(renderer)) gpuClass = 'software'
+        else if (renderer) gpuClass = 'hardware'
+        gl.getExtension('WEBGL_lose_context')?.loseContext()
+      }
+
+      return {
+        nodes,
+        links,
+        visibleNodes: app.canvas.visible_nodes.length,
+        renderer,
+        canvasInfoEnabled,
+        viewportWidth: window.innerWidth,
+        viewportHeight: window.innerHeight,
+        devicePixelRatio: window.devicePixelRatio,
+        frontendVersion: window.__COMFYUI_FRONTEND_VERSION__,
+        frontendCommit: window.__COMFYUI_FRONTEND_COMMIT__,
+        buildMode: window.__COMFYUI_BUILD_MODE__,
+        gpuClass
+      }
+    })
+    const activity = await this.page.evaluate(() => {
+      const value = (window as unknown as Record<string, unknown>)
+        .__perfActivityIdentity
+      return (value ?? {}) as Partial<PerfActivityIdentity>
+    })
+    return buildPerfWorkloadIdentity({ ...source, browserVersion }, activity)
   }
 }

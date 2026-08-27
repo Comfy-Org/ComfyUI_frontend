@@ -1,9 +1,12 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+
 import { describe, expect, it } from 'vitest'
 
 import type {
   PerfMeasurement,
   PerfMeasurementResult,
-  PerfReportV2
+  PerfReportV3
 } from '../browser_tests/fixtures/utils/perfReportSchema'
 import { perfReportSchema } from '../browser_tests/fixtures/utils/perfReportSchema'
 import { renderPerfReport } from './perf-report'
@@ -17,6 +20,15 @@ function measurement(name: string, rafIntervalP95Ms: number): PerfMeasurement {
     layouts: 0,
     layoutDurationMs: 0,
     taskDurationMs: 0,
+    taskOtherDurationMs: 0,
+    v8CompileDurationMs: 0,
+    devToolsCommandDurationMs: 0,
+    threadTimeMs: 0,
+    processTimeMs: 0,
+    accountedTaskDurationMs: 0,
+    taskAccountingResidualMs: 0,
+    missingCdpMetrics: [],
+    nonMonotonicCdpMetrics: [],
     heapDeltaBytes: 0,
     heapUsedBytes: 0,
     domNodes: 0,
@@ -33,7 +45,42 @@ function measurement(name: string, rafIntervalP95Ms: number): PerfMeasurement {
     rafIntervalsOver8_33Ms: 0,
     rafIntervalsOver16_67Ms: 0,
     rafIntervalsOver33_3Ms: 0,
-    rafIntervalsOver50Ms: 0
+    rafIntervalsOver50Ms: 0,
+    workloadIdentity: {
+      schemaVersion: 1,
+      topology: {
+        hash: 'sha256:test',
+        nodes: 1,
+        visibleNodes: 1,
+        inputs: 0,
+        outputs: 0,
+        links: 0,
+        maxFanOut: 0,
+        widgets: 0
+      },
+      activity: {
+        activeProgressEntries: null,
+        progressEventsEmitted: null,
+        progressEventsReceived: null,
+        progressEventsApplied: null,
+        dirtyReasons: null,
+        foregroundDraws: null,
+        backgroundDraws: null
+      },
+      environment: {
+        renderer: 'legacy',
+        canvasInfoEnabled: null,
+        viewportWidth: 1280,
+        viewportHeight: 720,
+        devicePixelRatio: 1,
+        frontendVersion: 'test',
+        frontendCommit: 'test',
+        buildMode: 'test',
+        browserVersion: 'test',
+        gpuClass: 'unknown'
+      },
+      missingOptionalFields: []
+    }
   }
 }
 
@@ -49,9 +96,9 @@ function rejected(value: number): PerfMeasurementResult {
   }
 }
 
-function report(measurements: PerfMeasurementResult[]): PerfReportV2 {
+function report(measurements: PerfMeasurementResult[]): PerfReportV3 {
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     timestamp: '2026-08-26T00:00:00.000Z',
     gitSha: 'abc123',
     branch: 'test',
@@ -85,6 +132,22 @@ describe('performance report', () => {
     expect(output).not.toContain('No regressions detected')
   })
 
+  it('reports CDP task accounting metrics', () => {
+    const output = renderPerfReport(report([accepted(20)]), null, [])
+
+    for (const label of [
+      'task other duration',
+      'V8 compile duration',
+      'DevTools command duration',
+      'thread time',
+      'process time',
+      'accounted task duration',
+      'task accounting residual'
+    ]) {
+      expect(output).toContain(`| sample: ${label} |`)
+    }
+  })
+
   it('starts a new epoch for a v1 baseline', () => {
     const output = renderPerfReport(
       report([accepted(20)]),
@@ -98,16 +161,40 @@ describe('performance report', () => {
     )
 
     expect(output).toContain(
-      'Baseline schema v1 is not comparable with current schema v2'
+      'Baseline schema v1 is not comparable with current schema v3'
     )
   })
 
-  it('rejects malformed v2 reports at the boundary', () => {
+  it('parses a pre-change v2 report as a new measurement epoch', () => {
+    const fixture: unknown = JSON.parse(
+      readFileSync(resolve('scripts/fixtures/perf-report-v2.json'), 'utf-8')
+    )
+    const parsed = perfReportSchema.parse(fixture)
+
+    expect(parsed.schemaVersion).toBe(2)
+    if (parsed.schemaVersion !== 2)
+      throw new Error('Expected schema v2 fixture')
+    expect(renderPerfReport(report([accepted(20)]), parsed, [])).toContain(
+      'Baseline schema v2 is not comparable with current schema v3'
+    )
+    expect(
+      perfReportSchema.safeParse({ ...parsed, schemaVersion: 3 }).success
+    ).toBe(false)
+  })
+
+  it('rejects malformed v3 reports at the boundary', () => {
     expect(
       perfReportSchema.safeParse({
         ...report([accepted(20)]),
         measurements: [{ kind: 'accepted', measurement: { name: 'sample' } }]
       }).success
     ).toBe(false)
+  })
+
+  it('preserves accounting and identity on rejected results', () => {
+    const input = report([rejected(20)])
+    const parsed = perfReportSchema.parse(input)
+
+    expect(parsed).toEqual(input)
   })
 })
