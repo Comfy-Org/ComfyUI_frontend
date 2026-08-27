@@ -14,6 +14,7 @@ import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 
 const mockGetIdToken = vi.fn()
 const mockNotifyTokenRefreshed = vi.fn()
+const mockTrackUnifiedAuthRefresh = vi.fn()
 const mockToastAdd = vi.fn()
 const mockEnsureSessionCookie = vi.fn()
 const mockCurrentUser = vi.hoisted((): { value: { uid: string } | null } => ({
@@ -55,6 +56,12 @@ vi.mock('@/platform/workflow/persistence/base/storageIO', () => ({
 vi.mock('@/platform/auth/session/useSessionCookie', () => ({
   useSessionCookie: () => ({
     ensureSessionCookie: mockEnsureSessionCookie
+  })
+}))
+
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () => ({
+    trackUnifiedAuthRefresh: mockTrackUnifiedAuthRefresh
   })
 }))
 
@@ -2627,6 +2634,10 @@ describe('useWorkspaceAuthStore', () => {
         expect(mockToastAdd).toHaveBeenCalledWith(
           expect.objectContaining({ severity: 'error', detail: detailKey })
         )
+        expect(mockTrackUnifiedAuthRefresh).toHaveBeenLastCalledWith({
+          outcome: 'permanent_failure',
+          retry_count: 0
+        })
         expect(unifiedToken.value).toBeNull()
       }
     )
@@ -2756,11 +2767,18 @@ describe('useWorkspaceAuthStore', () => {
       await vi.advanceTimersByTimeAsync(refreshDelay)
       expect(mockFetch).toHaveBeenCalledTimes(2)
       expect(mockNotifyTokenRefreshed).not.toHaveBeenCalled()
+      expect(mockTrackUnifiedAuthRefresh).toHaveBeenLastCalledWith({
+        outcome: 'retry_scheduled',
+        retry_count: 1
+      })
 
       await vi.advanceTimersByTimeAsync(5000)
 
       expect(mockFetch).toHaveBeenCalledTimes(3)
       expect(mockNotifyTokenRefreshed).toHaveBeenCalledTimes(1)
+      expect(mockTrackUnifiedAuthRefresh).toHaveBeenLastCalledWith({
+        outcome: 'succeeded'
+      })
       expect(unifiedToken.value).toBe('unified-token-1')
 
       // The successful retry re-arms the normal proactive schedule.
@@ -2805,6 +2823,10 @@ describe('useWorkspaceAuthStore', () => {
 
       expect(mockFetch).toHaveBeenCalledTimes(5)
       expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(mockTrackUnifiedAuthRefresh).toHaveBeenLastCalledWith({
+        outcome: 'retries_exhausted',
+        retry_count: 3
+      })
       expect(unifiedToken.value).toBe('unified-token-1')
     })
 
