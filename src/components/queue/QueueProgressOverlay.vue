@@ -53,7 +53,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref, toValue } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import QueueOverlayActive from '@/components/queue/QueueOverlayActive.vue'
@@ -236,36 +236,19 @@ const openAssetsSidebar = () => {
   sidebarTabStore.activeSidebarTabId = 'assets'
 }
 
-const focusAssetInSidebar = async (item: JobListItem) => {
+let assetFocusRequest = 0
+
+const focusAssetInSidebar = async (item: JobListItem, request: number) => {
   const task = item.taskRef
   const jobId = task?.jobId
   const preview = task?.previewOutput
-  if (!jobId || !preview) return
+  if (!jobId || !preview || request !== assetFocusRequest) return
 
   const assetId = String(jobId)
   openAssetsSidebar()
   await nextTick()
-
-  const outputAssets = toValue(assetsStore.outputAssets)
-  const hasTarget = () =>
-    toValue(outputAssets.items).some(({ id }) => id === assetId)
-  while (!hasTarget() && toValue(outputAssets.hasMore)) {
-    const previousSize = toValue(outputAssets.items).length
-    let advanced: boolean | undefined
-    if (outputAssets.loadMoreWithProgress) {
-      advanced = await outputAssets.loadMoreWithProgress()
-    } else {
-      await outputAssets.loadMore()
-    }
-    if (
-      advanced === false ||
-      (advanced === undefined &&
-        toValue(outputAssets.items).length === previousSize)
-    ) {
-      break
-    }
-  }
-  if (!hasTarget()) return
+  const found = await assetsStore.loadOutputAsset(assetId)
+  if (!found || request !== assetFocusRequest) return
 
   assetSelectionStore.setSelection([assetId])
   assetSelectionStore.setLastSelectedAssetId(assetId)
@@ -273,9 +256,10 @@ const focusAssetInSidebar = async (item: JobListItem) => {
 
 const inspectJobAsset = wrapWithErrorHandlingAsync(
   async (item: JobListItem) => {
+    const request = ++assetFocusRequest
     trackFeatureUsed()
     await openResultGallery(item)
-    await focusAssetInSidebar(item)
+    await focusAssetInSidebar(item, request)
   }
 )
 

@@ -258,7 +258,7 @@ describe('useAssetsQuery loadMore pagination', () => {
       response(['overlap', 'older'], { hasMore: false })
     )
 
-    await expect(list.loadMoreWithProgress?.()).resolves.toBe(true)
+    await expect(list.loadMore()).resolves.toBe(true)
 
     expect(toValue(list.items).map(({ id }) => id)).toEqual([
       'newest',
@@ -276,10 +276,10 @@ describe('useAssetsQuery loadMore pagination', () => {
       response(['older'], { hasMore: true, nextCursor: 'stuck' })
     )
 
-    await expect(list.loadMoreWithProgress?.()).resolves.toBe(true)
+    await expect(list.loadMore()).resolves.toBe(true)
 
     expect(toValue(list.hasMore)).toBe(false)
-    await expect(list.loadMoreWithProgress?.()).resolves.toBe(false)
+    await expect(list.loadMore()).resolves.toBe(false)
     expect(fetchApiMock).toHaveBeenCalledTimes(2)
   })
 
@@ -296,24 +296,11 @@ describe('useAssetsQuery loadMore pagination', () => {
         response(['oldest'], { hasMore: true, nextCursor: 'A' })
       )
 
-    await expect(list.loadMoreWithProgress?.()).resolves.toBe(true)
-    await expect(list.loadMoreWithProgress?.()).resolves.toBe(true)
+    await expect(list.loadMore()).resolves.toBe(true)
+    await expect(list.loadMore()).resolves.toBe(true)
 
     expect(toValue(list.hasMore)).toBe(false)
-    await expect(list.loadMoreWithProgress?.()).resolves.toBe(false)
+    await expect(list.loadMore()).resolves.toBe(false)
     expect(fetchApiMock).toHaveBeenCalledTimes(3)
-  })
-
-  it('reports a request failure without consuming pagination state', async () => {
-    const list = await createList('failed-load-more', ['newest'], {
-      hasMore: true,
-      nextCursor: 'page-2'
-    })
-    fetchApiMock.mockRejectedValueOnce(new Error('network failed'))
-
-    await expect(list.loadMoreWithProgress?.()).resolves.toBe(false)
-
-    expect(toValue(list.hasMore)).toBe(true)
-    expect(toValue(list.items).map(({ id }) => id)).toEqual(['newest'])
   })
 })

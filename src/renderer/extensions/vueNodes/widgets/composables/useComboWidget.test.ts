@@ -132,6 +132,7 @@ beforeEach(() => {
   vi.spyOn(useAssetsStore().inputAssets, 'loadMore').mockImplementation(
     async () => {
       useAssetsStore().inputAssets.hasMore = false
+      return true
     }
   )
 })
@@ -817,6 +818,7 @@ describe('useComboWidget', () => {
             })
           ]
           useAssetsStore().inputAssets.hasMore = false
+          return true
         }
       )
 
