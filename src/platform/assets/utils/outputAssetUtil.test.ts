@@ -1,10 +1,16 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { ResultItemImpl } from '@/stores/queueStore'
 import type { SerializedNodeId } from '@/types/nodeId'
 
-import { resolveOutputAssetItems } from './outputAssetUtil'
+import {
+  getTotalAssetOutputCount,
+  resolveOutputAssetItems
+} from './outputAssetUtil'
 
 const mocks = vi.hoisted(() => ({
   getJobDetail: vi.fn(),
@@ -47,6 +53,119 @@ function createOutput(overrides: OutputOverrides = {}): ResultItemImpl {
     display_name: merged.display_name
   } as ResultItemImpl
 }
+
+function createAsset(
+  overrides: Pick<AssetItem, 'id' | 'name'> & Partial<AssetItem>
+): AssetItem {
+  return fromPartial({ tags: ['output'], ...overrides })
+}
+
+describe('getTotalAssetOutputCount', () => {
+  it('counts a selected job once when its parent and expanded children overlap', () => {
+    const parent = createAsset({
+      id: 'job-1-parent',
+      name: 'parent.png',
+      user_metadata: {
+        jobId: 'job-1',
+        nodeId: '1',
+        subfolder: 'outputs',
+        outputCount: 4,
+        allOutputs: [
+          createOutput({ filename: 'parent.png', subfolder: 'outputs' })
+        ]
+      }
+    })
+    const children = ['2', '3', '4'].map((nodeId) =>
+      createAsset({
+        id: `job-1-child-${nodeId}`,
+        name: `child-${nodeId}.png`,
+        user_metadata: {
+          jobId: 'job-1',
+          nodeId,
+          subfolder: 'outputs'
+        }
+      })
+    )
+
+    expect(getTotalAssetOutputCount([parent, ...children])).toBe(4)
+  })
+
+  it('deduplicates a child already present in the parent output list', () => {
+    const outputs = [
+      createOutput({ filename: 'parent.png', nodeId: '1' }),
+      createOutput({ filename: 'child.png', nodeId: '2' })
+    ]
+    const parent = createAsset({
+      id: 'job-1-parent',
+      name: 'parent.png',
+      user_metadata: {
+        jobId: 'job-1',
+        nodeId: '1',
+        subfolder: 'sub',
+        allOutputs: outputs
+      }
+    })
+    const child = createAsset({
+      id: 'job-1-child',
+      name: 'child.png',
+      user_metadata: {
+        jobId: 'job-1',
+        nodeId: '2',
+        subfolder: 'sub'
+      }
+    })
+
+    expect(getTotalAssetOutputCount([parent, child])).toBe(2)
+  })
+
+  it('counts distinct selected children from each job', () => {
+    const assets = [
+      createAsset({
+        id: 'job-1-a',
+        name: 'a.png',
+        user_metadata: { jobId: 'job-1', nodeId: '1', subfolder: '' }
+      }),
+      createAsset({
+        id: 'job-1-b',
+        name: 'b.png',
+        user_metadata: { jobId: 'job-1', nodeId: '2', subfolder: '' }
+      }),
+      createAsset({
+        id: 'job-2-a',
+        name: 'a.png',
+        user_metadata: { jobId: 'job-2', nodeId: '1', subfolder: '' }
+      })
+    ]
+
+    expect(getTotalAssetOutputCount(assets)).toBe(3)
+  })
+
+  it('falls back to the grouped output count when output identities are incomplete', () => {
+    const asset = createAsset({
+      id: 'job-1',
+      name: 'preview.png',
+      user_metadata: { outputCount: 4 }
+    })
+
+    expect(getTotalAssetOutputCount([asset])).toBe(4)
+  })
+
+  it('counts input assets once even when they carry output-shaped metadata', () => {
+    const asset = createAsset({
+      id: 'input-1',
+      name: 'reference.png',
+      tags: ['input'],
+      user_metadata: {
+        jobId: 'unrelated-job',
+        nodeId: '1',
+        subfolder: '',
+        outputCount: 4
+      }
+    })
+
+    expect(getTotalAssetOutputCount([asset])).toBe(1)
+  })
+})
 
 describe('resolveOutputAssetItems', () => {
   beforeEach(() => {

@@ -1,5 +1,7 @@
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
+import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { getAssetType } from '@/platform/assets/utils/assetTypeUtil'
 import { isCloud } from '@/platform/distribution/types'
 import type { JobOutputAsset } from '@/platform/remote/comfyui/jobs/jobTypes'
 import {
@@ -30,6 +32,11 @@ type OutputKeyParts = {
   filename?: string | null
 }
 
+type SelectedJobOutputs = {
+  expectedCount: number
+  outputKeys: Set<string>
+}
+
 function shouldLoadFullOutputs(
   outputCount: OutputAssetMetadata['outputCount'],
   outputsLength: number
@@ -48,10 +55,59 @@ export function getAssetOutputCount(
   return typeof count === 'number' && count > 0 ? count : 1
 }
 
-export function getTotalAssetOutputCount(
-  assets: Pick<AssetItem, 'user_metadata'>[]
-): number {
-  return assets.reduce((sum, asset) => sum + getAssetOutputCount(asset), 0)
+export function getTotalAssetOutputCount(assets: readonly AssetItem[]): number {
+  const individualCounts = new Map<string, number>()
+  const outputsByJobId = new Map<string, SelectedJobOutputs>()
+
+  for (const asset of assets) {
+    const metadata = getOutputAssetMetadata(asset.user_metadata)
+    const assetType = getAssetType(asset, metadata ? 'output' : 'input')
+
+    if ((assetType !== 'output' && assetType !== 'temp') || !metadata) {
+      const count =
+        assetType === 'output' || assetType === 'temp'
+          ? getAssetOutputCount(asset)
+          : 1
+      individualCounts.set(
+        asset.id,
+        Math.max(individualCounts.get(asset.id) ?? 0, count)
+      )
+      continue
+    }
+
+    let selectedOutputs = outputsByJobId.get(metadata.jobId)
+    if (!selectedOutputs) {
+      selectedOutputs = { expectedCount: 0, outputKeys: new Set<string>() }
+      outputsByJobId.set(metadata.jobId, selectedOutputs)
+    }
+
+    selectedOutputs.expectedCount = Math.max(
+      selectedOutputs.expectedCount,
+      getAssetOutputCount(asset)
+    )
+
+    for (const output of metadata.allOutputs ?? []) {
+      const outputKey = getOutputKey(output)
+      if (outputKey) selectedOutputs.outputKeys.add(outputKey)
+    }
+
+    const assetOutputKey = getOutputKey({
+      nodeId: metadata.nodeId,
+      subfolder: metadata.subfolder,
+      filename: asset.name
+    })
+    selectedOutputs.outputKeys.add(assetOutputKey ?? `asset:${asset.id}`)
+  }
+
+  let total = 0
+  for (const count of individualCounts.values()) total += count
+  for (const selectedOutputs of outputsByJobId.values()) {
+    total += Math.max(
+      selectedOutputs.expectedCount,
+      selectedOutputs.outputKeys.size
+    )
+  }
+  return total
 }
 
 export function getOutputKey({

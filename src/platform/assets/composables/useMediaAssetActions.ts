@@ -28,7 +28,7 @@ import { clearDeletedAssetWidgetValues } from '../utils/clearDeletedAssetWidgetV
 import { clearNodePreviewCacheForValues } from '../utils/clearNodePreviewCacheForValues'
 import { markDeletedAssetsAsMissingMedia } from '../utils/markDeletedAssetsAsMissingMedia'
 import {
-  getAssetOutputCount,
+  getTotalAssetOutputCount,
   resolveOutputAssetItems
 } from '../utils/outputAssetUtil'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
@@ -234,8 +234,8 @@ export function useMediaAssetActions() {
       const jobIds: string[] = []
       const assetIds: string[] = []
       const jobAssetNameFilters: Record<string, string[]> = {}
-      const countedOutputJobIds = new Set<string>()
-      let fileCount = 0
+      const wholeJobIds = new Set<string>()
+      const fileCount = getTotalAssetOutputCount(assets)
 
       for (const asset of assets) {
         const assetType = getAssetType(asset)
@@ -249,12 +249,7 @@ export function useMediaAssetActions() {
           // When outputCount is set, the asset is a job-level selection
           // from the gallery and the user wants all outputs for that job.
           if (metadata?.outputCount != null) {
-            if (!countedOutputJobIds.has(jobId)) {
-              countedOutputJobIds.add(jobId)
-              fileCount += getAssetOutputCount(asset)
-            }
-          } else {
-            fileCount += 1
+            wholeJobIds.add(jobId)
           }
 
           if (metadata?.jobId && asset.name && metadata.outputCount == null) {
@@ -267,8 +262,11 @@ export function useMediaAssetActions() {
           }
         } else {
           assetIds.push(asset.id)
-          fileCount += 1
         }
+      }
+
+      for (const jobId of wholeJobIds) {
+        delete jobAssetNameFilters[jobId]
       }
 
       const spansMultipleJobs = jobIds.length > 1
