@@ -38,10 +38,10 @@ function response(
     has_more: hasMore,
     ...(nextCursor === undefined ? {} : { next_cursor: nextCursor })
   }
-  return {
-    ok: true,
-    json: vi.fn().mockResolvedValue(body)
-  } as unknown as Response
+  return new Response(JSON.stringify(body), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' }
+  })
 }
 
 async function createList(
