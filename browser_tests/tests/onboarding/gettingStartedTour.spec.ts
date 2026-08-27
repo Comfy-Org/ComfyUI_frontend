@@ -5,13 +5,20 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { TOUR_ROLE_PINS } from '@/renderer/extensions/firstRunTour/roles/tourRolePins'
 import type { SupportedTemplateId } from '@/renderer/extensions/firstRunTour/roles/tourRolePins'
 
-import type { PromptResponse } from '@comfyorg/ingest-types'
-
-import type { AssetResponse } from '@/platform/assets/schemas/assetSchema'
-import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import { FirstRunNudge } from '@e2e/fixtures/components/FirstRunNudge'
+import { tourStepCount } from '@e2e/fixtures/components/Tour'
+import { EMPTY_ASSET_RESPONSE } from '@e2e/fixtures/data/assetFixtures'
+import {
+  ACTIVE_PERSONAL_BILLING_STATUS,
+  ONBOARDING_TOUR_REMOTE_CONFIG
+} from '@e2e/fixtures/data/cloudWorkspace'
+import {
+  FIRST_RUN_START_TEMPLATE_ID,
+  queuedPrompt
+} from '@e2e/fixtures/data/firstRunTour'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { onboardingFixture } from '@e2e/fixtures/tourFixture'
 import type { Position } from '@e2e/fixtures/types'
@@ -33,30 +40,6 @@ const CARD_TESTID_PREFIX = 'getting-started-card-'
 
 /** The prompt id the tour's run is queued under, so WS events can address it. */
 const TOUR_JOB_ID = 'first-run-tour-prompt'
-const LINKED_TEMPLATE_ID: SupportedTemplateId = 'image_z_image_turbo'
-
-/** A prompt the queue accepts, so the walk does not depend on the backend's models. */
-const QUEUED_PROMPT: PromptResponse = {
-  prompt_id: TOUR_JOB_ID,
-  number: 1,
-  node_errors: {}
-}
-
-const TOUR_FEATURE_FLAGS: RemoteConfig = {
-  onboarding_tour_enabled: true,
-  subscription_required: true
-}
-
-const ACTIVE_SUBSCRIPTION: BillingStatusResponse = {
-  is_active: true,
-  max_seats: 1,
-  occupied_seats: 1,
-  team_credit_stop: null,
-  subscription_tier: 'PRO',
-  subscription_duration: 'MONTHLY',
-  renewal_date: '2099-01-01',
-  has_funds: true
-}
 
 const INACTIVE_SUBSCRIPTION: BillingStatusResponse = {
   is_active: false,
@@ -68,21 +51,8 @@ const INACTIVE_SUBSCRIPTION: BillingStatusResponse = {
   has_funds: false
 }
 
-const NO_ASSETS: AssetResponse = {
-  assets: [],
-  total: 0,
-  has_more: false
-}
-
 function isPinned(id: string): id is SupportedTemplateId {
   return Object.hasOwn(TOUR_ROLE_PINS, id)
-}
-
-/** How many steps the card says the tour has, once it says anything. */
-async function tourLength(card: Locator): Promise<number> {
-  await expect(card).toContainText(/Step \d+ of \d+/)
-  const label = await card.textContent()
-  return Number(/Step \d+ of (\d+)/.exec(label ?? '')?.[1])
 }
 
 async function clearWorkflowHistory(page: Page) {
@@ -215,13 +185,13 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
 
   test.beforeEach(async ({ page }) => {
     await page.route('**/api/features', (route) =>
-      route.fulfill(jsonRoute(TOUR_FEATURE_FLAGS))
+      route.fulfill(jsonRoute(ONBOARDING_TOUR_REMOTE_CONFIG))
     )
     await page.route('**/api/billing/status', (route) =>
-      route.fulfill(jsonRoute(ACTIVE_SUBSCRIPTION))
+      route.fulfill(jsonRoute(ACTIVE_PERSONAL_BILLING_STATUS))
     )
     await page.route('**/api/assets**', (route) =>
-      route.fulfill(jsonRoute(NO_ASSETS))
+      route.fulfill(jsonRoute(EMPTY_ASSET_RESPONSE))
     )
   })
 
@@ -237,7 +207,7 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
     const card = page.getByTestId('coach-card')
 
     await page.route('**/api/prompt', (route) =>
-      route.fulfill(jsonRoute(QUEUED_PROMPT))
+      route.fulfill(jsonRoute(queuedPrompt(TOUR_JOB_ID)))
     )
 
     await expect(screen).toBeVisible()
@@ -253,7 +223,7 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
 
     const next = card.getByRole('button', { name: 'Next' })
     const runTitle = card.getByText(RUN_STEP_TITLE)
-    const totalSteps = await tourLength(card)
+    const totalSteps = await tourStepCount(card)
 
     for (let step = 1; step < totalSteps; step++) {
       await expect(card).toContainText(`Step ${step} of ${totalSteps}`)
@@ -343,7 +313,7 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
       test.slow()
       const { page } = comfyPage
       const { spotlight } = await tourToRunStep(page)
-      const nudge = page.getByTestId('first-run-nudge')
+      const nudge = new FirstRunNudge(page).root
       const upgradeDialog = page.getByTestId('dialog-overlay')
 
       await page.getByTestId('subscribe-to-run-button').click()
@@ -383,7 +353,7 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
       await clearWorkflowHistory(comfyPage.page)
       await comfyPage.setup({
         clearStorage: false,
-        url: `/?template=${LINKED_TEMPLATE_ID}`
+        url: `/?template=${FIRST_RUN_START_TEMPLATE_ID}`
       })
     })
 

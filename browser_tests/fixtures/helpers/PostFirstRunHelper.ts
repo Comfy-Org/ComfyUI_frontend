@@ -2,18 +2,29 @@ import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
+import { TOUR_ROLE_PINS } from '@/renderer/extensions/firstRunTour/roles/tourRolePins'
+
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { OnboardingCoachmarks } from '@e2e/fixtures/components/Tour'
+import { tourStepCount } from '@e2e/fixtures/components/Tour'
 import {
+  CONTINUATION_INPUT,
   FIRST_RUN_JOB_ID,
   FIRST_RUN_OUTPUT,
   FIRST_RUN_START_TEMPLATE_ID,
-  QUEUED_FIRST_RUN_PROMPT
-} from '@e2e/fixtures/data/postFirstRun'
+  queuedPrompt
+} from '@e2e/fixtures/data/firstRunTour'
 import type { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 const { firstRun } = enMessages.onboardingCoachmarks
+
+/**
+ * The roles the tour reads off the synthetic graph. The graph asset carries
+ * these ids by hand, so the run addresses the sink through the pin rather than
+ * a literal — a renumbered pin then moves both together.
+ */
+const START_PINS = TOUR_ROLE_PINS[FIRST_RUN_START_TEMPLATE_ID]
 
 /** Drives the complete first-success path that precedes a continuation. */
 export class PostFirstRunHelper {
@@ -31,7 +42,7 @@ export class PostFirstRunHelper {
 
     await page.route(
       '**/api/prompt',
-      (route) => route.fulfill(jsonRoute(QUEUED_FIRST_RUN_PROMPT)),
+      (route) => route.fulfill(jsonRoute(queuedPrompt(FIRST_RUN_JOB_ID))),
       { times: 1 }
     )
 
@@ -41,36 +52,61 @@ export class PostFirstRunHelper {
       .click()
 
     await expect(gettingStarted).toBeHidden()
-    await expect(this.onboarding.spotlight).toBeVisible()
-    await expect(this.onboarding.card).toContainText('Step 1 of 3')
-
-    await this.onboarding.cardNextButton.click()
     await expect(
-      this.onboarding.card.getByText(firstRun.run.title)
+      this.onboarding.spotlight,
+      `the tour has to start, which needs the synthetic graph to carry ${FIRST_RUN_START_TEMPLATE_ID}'s pinned roles: ${JSON.stringify(START_PINS)}`
     ).toBeVisible()
+
+    await this.walkToRunStep()
 
     await this.comfyPage.runButton.click()
     await expect(
-      this.onboarding.card.getByText(firstRun.result.generating.title)
+      this.onboarding.card.getByText(firstRun.result.generating.title),
+      'the run outlives its step, so the click moves the tour on and Result reports it'
     ).toBeVisible({ timeout: 15_000 })
 
     this.execution.executionStart(FIRST_RUN_JOB_ID)
-    this.execution.executed(FIRST_RUN_JOB_ID, '9', {
+    this.execution.executed(FIRST_RUN_JOB_ID, String(START_PINS.sink.id), {
       images: [FIRST_RUN_OUTPUT]
     })
     this.execution.executionSuccess(FIRST_RUN_JOB_ID)
 
     await expect(
-      this.onboarding.card.getByText(firstRun.result.image.title)
+      this.onboarding.card.getByText(firstRun.result.image.title),
+      'the run produced an image, so Result has to stop saying it is still coming'
     ).toBeVisible({ timeout: 15_000 })
     await this.onboarding.cardDoneButton.click()
     await expect(this.onboarding.card).toBeHidden()
   }
 
-  async loadedContinuationInput(): Promise<unknown> {
-    const loadImages =
-      await this.comfyPage.nodeOps.getNodeRefsByType('LoadImage')
-    if (loadImages.length !== 1) return null
-    return (await loadImages[0].getWidget(0)).getValue()
+  /** Steps forward until the tour parks on Run, whatever its sequence is. */
+  private async walkToRunStep(): Promise<void> {
+    const { card, cardNextButton } = this.onboarding
+    const runTitle = card.getByText(firstRun.run.title)
+    const totalSteps = await tourStepCount(card)
+
+    for (let step = 1; step < totalSteps; step++) {
+      await expect(card).toContainText(`Step ${step} of ${totalSteps}`)
+      if (await runTitle.isVisible()) break
+      await cardNextButton.click()
+    }
+
+    await expect(
+      runTitle,
+      'the tour ran out of steps before reaching the one that runs the workflow'
+    ).toBeVisible()
+  }
+
+  /**
+   * The value the continuation's declared image input is carrying, or null
+   * while the graph swap has yet to settle on exactly one such node.
+   */
+  async loadedContinuationInput(): Promise<string | null> {
+    const inputs = await this.comfyPage.nodeOps.getNodeRefsByType(
+      CONTINUATION_INPUT.nodeType
+    )
+    if (inputs.length !== 1) return null
+    const value = await (await inputs[0].getWidget(0)).getValue()
+    return typeof value === 'string' ? value : null
   }
 }

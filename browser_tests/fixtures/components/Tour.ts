@@ -1,3 +1,4 @@
+import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
 import { TOUR_SEEN_SETTING } from '@/platform/onboarding/onboardingTours'
@@ -7,6 +8,13 @@ export type CoachTour = 'appMode'
 /** Accessible name of each tour's in-app replay (help) button. */
 const TOUR_REPLAY_BUTTONS: Record<CoachTour, string> = {
   appMode: 'Take a tour of App Mode'
+}
+
+/** How many steps the card says the tour has, once it says anything. */
+export async function tourStepCount(card: Locator): Promise<number> {
+  await expect(card).toContainText(/Step \d+ of \d+/)
+  const label = await card.textContent()
+  return Number(/Step \d+ of (\d+)/.exec(label ?? '')?.[1])
 }
 
 /** Coach-mark overlay (src/platform/onboarding/TourOverlay.vue). */

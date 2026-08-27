@@ -1,19 +1,22 @@
 import { expect } from '@playwright/test'
 
+import { EMPTY_ASSET_RESPONSE } from '@e2e/fixtures/data/assetFixtures'
 import {
-  ACTIVE_FIRST_RUN_SUBSCRIPTION,
-  FIRST_RUN_ASSETS,
-  FIRST_RUN_FEATURE_FLAGS,
+  ACTIVE_PERSONAL_BILLING_STATUS,
+  ONBOARDING_TOUR_REMOTE_CONFIG
+} from '@e2e/fixtures/data/cloudWorkspace'
+import {
+  CONTINUATION_INPUT,
   FIRST_RUN_NUDGE_ACTIONS,
   FIRST_RUN_OUTPUT,
   FIRST_RUN_OUTPUT_WIDGET_VALUE,
   FIRST_RUN_START_TEMPLATE_ID,
   FIRST_RUN_TEMPLATES
-} from '@e2e/fixtures/data/postFirstRun'
+} from '@e2e/fixtures/data/firstRunTour'
 import { withTemplates } from '@e2e/fixtures/helpers/TemplateHelper'
 import { postFirstRunFixture as test } from '@e2e/fixtures/postFirstRunFixture'
-import { assetPath } from '@e2e/fixtures/utils/paths'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { assetPath } from '@e2e/fixtures/utils/paths'
 import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
 
 /**
@@ -24,11 +27,11 @@ test.describe(
   'Post-first-run continuations',
   { tag: ['@cloud', '@ui'] },
   () => {
-    test.describe.configure({ timeout: 60_000 })
+    // A template load, camera flights, a queued run and a graph swap do not fit the default budget.
+    test.describe.configure({ timeout: 120_000 })
 
     test.use({
       initialSettings: {
-        'Comfy.Assets.UseAssetAPI': true,
         'Comfy.TutorialCompleted': false,
         'Comfy.OnboardingCoachmarks.Seen': ['appMode'],
         'Comfy.VueNodes.Enabled': true
@@ -41,13 +44,13 @@ test.describe(
       await templateApi.mock()
 
       await page.route('**/api/features', (route) =>
-        route.fulfill(jsonRoute(FIRST_RUN_FEATURE_FLAGS))
+        route.fulfill(jsonRoute(ONBOARDING_TOUR_REMOTE_CONFIG))
       )
       await page.route('**/api/billing/status', (route) =>
-        route.fulfill(jsonRoute(ACTIVE_FIRST_RUN_SUBSCRIPTION))
+        route.fulfill(jsonRoute(ACTIVE_PERSONAL_BILLING_STATUS))
       )
       await page.route('**/api/assets**', (route) =>
-        route.fulfill(jsonRoute(FIRST_RUN_ASSETS))
+        route.fulfill(jsonRoute(EMPTY_ASSET_RESPONSE))
       )
       await page.route('**/internal/files/output**', (route) =>
         route.fulfill(jsonRoute([FIRST_RUN_OUTPUT_WIDGET_VALUE]))
@@ -84,17 +87,20 @@ test.describe(
     for (const action of FIRST_RUN_NUDGE_ACTIONS) {
       test(`passes the first output to the ${action.title} template contract`, async ({
         comfyPage,
-        firstRunContinuation,
         firstRunNudge,
         page,
         postFirstRun
       }) => {
-        test.slow()
-
         await postFirstRun.completeTourWithImage()
 
-        await expect(firstRunNudge.root).toBeVisible({ timeout: 10_000 })
-        await expect(firstRunNudge.actions).toHaveCount(3)
+        await expect(
+          firstRunNudge.root,
+          'every tour ending has to leave the user somewhere to go next'
+        ).toBeVisible({ timeout: 10_000 })
+        await expect(
+          firstRunNudge.actions,
+          'the served catalog carries every continuation, so none are filtered out'
+        ).toHaveCount(FIRST_RUN_NUDGE_ACTIONS.length)
         await expect(firstRunNudge.action(action.id)).toContainText(
           action.title
         )
@@ -105,12 +111,27 @@ test.describe(
         await firstRunNudge.action(action.id).click()
         await requestedTemplate
 
-        await expect(firstRunNudge.root).toBeHidden()
-        await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(1)
+        await expect(
+          firstRunNudge.root,
+          'the card only closes once the continuation actually loaded'
+        ).toBeHidden()
         await expect
-          .poll(() => postFirstRun.loadedContinuationInput())
+          .poll(() => comfyPage.nodeOps.getNodeCount(), {
+            message: 'the continuation never replaced the tour workflow'
+          })
+          .toBe(1)
+        await expect
+          .poll(() => postFirstRun.loadedContinuationInput(), {
+            message:
+              'the first output never reached the metadata-declared image input'
+          })
           .toBe(FIRST_RUN_OUTPUT_WIDGET_VALUE)
-        await expect(firstRunContinuation.outputImage).toBeVisible()
+        await expect(
+          comfyPage.vueNodes
+            .getNodeLocator(String(CONTINUATION_INPUT.nodeId))
+            .locator('img'),
+          'the seeded value has to resolve to an image the node can show'
+        ).toBeVisible()
       })
     }
   }

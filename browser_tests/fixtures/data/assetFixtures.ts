@@ -1,6 +1,9 @@
 import type { Asset } from '@comfyorg/ingest-types'
 
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type {
+  AssetItem,
+  AssetResponse
+} from '@/platform/assets/schemas/assetSchema'
 
 /**
  * Core-native asset shape: the ingest Asset plus the `loader_path` contract
@@ -59,6 +62,14 @@ function createOutputAsset(
     ...overrides
   }
 }
+
+/** A backend serving nothing, for specs that only need the call not to escape. */
+export const EMPTY_ASSET_RESPONSE: AssetResponse = {
+  assets: [],
+  total: 0,
+  has_more: false
+}
+
 export const STABLE_CHECKPOINT: Asset = createModelAsset({
   id: 'test-checkpoint-001',
   name: 'sd_xl_base_1.0.safetensors',

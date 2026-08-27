@@ -25,6 +25,24 @@ export const LEGACY_PERSONAL_BILLING_STATUS = {
   team_credit_stop: null
 } satisfies IngestBillingStatusResponse
 
+/** A funded, subscribed personal workspace, so `canRunWorkflows` holds. */
+export const ACTIVE_PERSONAL_BILLING_STATUS = {
+  is_active: true,
+  max_seats: 1,
+  occupied_seats: 1,
+  team_credit_stop: null,
+  subscription_tier: 'PRO',
+  subscription_duration: 'MONTHLY',
+  renewal_date: '2099-01-01',
+  has_funds: true
+} satisfies IngestBillingStatusResponse
+
+/** Remote config for a subscription-gated install with the first-run tour on. */
+export const ONBOARDING_TOUR_REMOTE_CONFIG = {
+  onboarding_tour_enabled: true,
+  subscription_required: true
+} satisfies RemoteConfig
+
 export const EMPTY_BILLING_BALANCE = {
   amount_micros: 0,
   currency: 'usd',
