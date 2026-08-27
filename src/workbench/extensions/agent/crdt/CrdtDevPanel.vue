@@ -8,12 +8,13 @@ import type { DevEvent, DevEventKind } from './devPanelLog'
 import { clearDevEvents, devEvents, stringifyDevEvents } from './devPanelLog'
 
 /**
- * PoC (branch poc/fe-crdt-follower-e2e): CRDT debugging overlay. Surfaces the
- * follower's live state, the dev event ring buffer, the mutation catalog and
- * known-good agent prompts so QA never has to reverse-engineer the console
- * helpers. Reads `window.__agentCrdtPoc` (installed by useAgentCrdtFollower)
- * on a 1s poll — zero extra API surface on the composable. Not shipped
- * beyond the PoC branch.
+ * Dev instrumentation: CRDT debugging overlay. Surfaces the follower's live
+ * state, the dev event ring buffer, the mutation catalog and known-good agent
+ * prompts so QA never has to reverse-engineer the console helpers. Reads
+ * `window.__agentCrdtPoc` (installed by useAgentCrdtFollower under
+ * import.meta.env.DEV) on a 1s poll, zero extra API surface on the
+ * composable. Has no mount site until the agent-panel slice lands; removable
+ * once real status UI ships.
  */
 
 const props = defineProps<{ status: AgentCrdtStatus }>()

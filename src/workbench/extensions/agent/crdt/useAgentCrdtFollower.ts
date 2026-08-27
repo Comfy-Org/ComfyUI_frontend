@@ -380,7 +380,7 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     }
   })
 
-  // ── PoC-only console helper (branch poc/fe-crdt-follower-e2e) ────────────
+  // ── Dev-only console helper (installed only under import.meta.env.DEV) ───
   // Lets the e2e proof mint a REAL human add_node op from the devtools console
   // / Playwright without waiting for the canvas-command adapter. Mints the
   // exact envelope the doc-host validates: op_id 32-hex, actor
@@ -485,8 +485,7 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
     bridge.sendHumanOps(tabId, [op])
     return op
   }
-  const pocGlobal = window as unknown as Record<string, unknown>
-  pocGlobal.__agentCrdtPoc = {
+  const pocHelpers = {
     addNode: pocAddNode,
     deleteNode: pocDeleteNode,
     // Bind a fresh tab to an existing doc without waiting for a turn ack
@@ -529,6 +528,9 @@ export function useAgentCrdtFollower(workflowId: Ref<string | null>) {
         lastFrameType: lastFrameType.value
       }
     }
+  }
+  if (import.meta.env.DEV) {
+    ;(window as unknown as Record<string, unknown>).__agentCrdtPoc = pocHelpers
   }
   // ──────────────────────────────────────────────────────────────────────────
 

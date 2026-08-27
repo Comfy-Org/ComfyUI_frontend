@@ -8,7 +8,7 @@ const config: KnipConfig = {
       entry: [
         // TRANSITIONAL (agent-v1 chain): the CRDT foundation lands ahead of
         // its consumers; slices 07+ import this tree and this entry then
-        // becomes removable. See docs/adr/0020.
+        // becomes removable. See docs/adr/0024.
         'src/workbench/extensions/agent/crdt/useAgentCrdtFollower.ts',
         'src/workbench/extensions/agent/crdt/CrdtDevPanel.vue',
         'src/workbench/extensions/agent/crdt/opSender.ts',
