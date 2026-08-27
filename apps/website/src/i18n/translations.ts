@@ -2699,9 +2699,9 @@ const translations = {
     'zh-CN': 'Comfy CLI - 在终端和任何编程智能体中驱动 ComfyUI'
   },
   'cli.meta.description': {
-    en: 'The command line for the full ComfyUI engine. Generate images, video, audio, and 3D from Claude Code, Codex, Cursor, or any shell — on Comfy Cloud or your own GPU.',
+    en: 'The command line for the full ComfyUI engine. Generate images, video, audio, and 3D from Claude Code, Codex, Cursor, or any shell, on Comfy Cloud or your own GPU.',
     'zh-CN':
-      '完整 ComfyUI 引擎的命令行。在 Claude Code、Codex、Cursor 或任意 shell 中生成图像、视频、音频和 3D——在 Comfy Cloud 上，或就在你自己的 GPU 上。'
+      '完整 ComfyUI 引擎的命令行。在 Claude Code、Codex、Cursor 或任意 shell 中生成图像、视频、音频和 3D，在 Comfy Cloud 上运行，或就在你自己的 GPU 上。'
   },
 
   // CLI – HeroSection
@@ -2710,9 +2710,9 @@ const translations = {
     'zh-CN': '在你的终端\n驱动 ComfyUI。\n也交给你的智能体。'
   },
   'cli.hero.subtitle': {
-    en: 'One CLI for the whole engine: generate images, video, audio, and 3D, run real workflow graphs, and pipe every output where you need it. Built for coding agents, humans at a shell, and CI.',
+    en: 'One CLI for the whole engine: generate images, video, audio, and 3D, run real workflow graphs, and pipe every output where you need it. Built for coding agents, CI jobs, and anyone with a terminal.',
     'zh-CN':
-      '一个 CLI 驱动完整引擎：生成图像、视频、音频和 3D，运行真实的工作流图，把每个输出接进你需要的地方。为编程智能体、终端用户和 CI 而造。'
+      '一个 CLI 驱动完整引擎：生成图像、视频、音频和 3D，运行真实的工作流图，把每个输出接进你需要的地方。为编程智能体、CI 任务和每个用终端的人而造。'
   },
   'cli.hero.installCli': {
     en: 'INSTALL CLI',
@@ -2770,8 +2770,8 @@ const translations = {
     'zh-CN': '开源。在你自己的机器上免费运行。'
   },
   'cli.setup.requirementPrefix': {
-    en: 'Cloud runs spend Comfy credits — from a top-up or an existing ',
-    'zh-CN': '云端运行消耗 Comfy 积分——来自充值或现有的'
+    en: 'Cloud runs spend Comfy credits. Add credits, or use an existing ',
+    'zh-CN': '云端运行消耗 Comfy 积分。添加积分，或使用现有的'
   },
   'cli.setup.requirementLinkLabel': {
     en: 'Comfy Cloud subscription',
@@ -2806,9 +2806,9 @@ const translations = {
     'zh-CN': '安装 CLI'
   },
   'cli.setup.install.cloudDescription': {
-    en: 'Install from PyPI (Homebrew works too), then set up the cloud connection — it opens a browser sign-in.',
+    en: 'Install from PyPI (Homebrew works too), then set up the cloud connection. It opens a browser sign-in.',
     'zh-CN':
-      '从 PyPI 安装（也支持 Homebrew），然后配置云端连接——会打开浏览器完成登录。'
+      '从 PyPI 安装（也支持 Homebrew），然后配置云端连接。它会打开浏览器完成登录。'
   },
   'cli.setup.install.localDescription': {
     en: 'Install from PyPI (Homebrew works too). Setup configures the local connection, and comfy launch starts ComfyUI when you need it.',
@@ -2859,9 +2859,9 @@ const translations = {
     'zh-CN': '无需浏览器'
   },
   'cli.setup.shell.ci.stepCloud': {
-    en: 'Authenticate with an API key — set COMFY_API_KEY or pass --api-key. Then submit, wait, and download pipe into one line:',
+    en: 'Authenticate with an API key: set COMFY_API_KEY or pass --api-key. The whole submit-wait-download loop fits on one line:',
     'zh-CN':
-      '使用 API 密钥认证——设置 COMFY_API_KEY 或传入 --api-key。提交、等待、下载可以串成一行：'
+      '使用 API 密钥认证：设置 COMFY_API_KEY 或传入 --api-key。提交、等待、下载整个流程一行搞定：'
   },
   'cli.setup.shell.ci.stepLocal': {
     en: 'Non-interactive setup for runners and devcontainers:',
@@ -2925,9 +2925,9 @@ const translations = {
     'zh-CN': '你的智能体已经掌握的技能。'
   },
   'cli.skills.subtitle': {
-    en: 'One command installs five bundled skills that teach Claude Code, Cursor, and any AGENTS.md-aware tool the whole CLI. Below, six production briefs — every prompt is ready to paste.',
+    en: 'One command installs five bundled skills that teach Claude Code, Cursor, and any AGENTS.md-aware tool the whole CLI. Below are six production briefs. Every prompt is ready to paste.',
     'zh-CN':
-      '一条命令安装五个自带技能，让 Claude Code、Cursor 和任何支持 AGENTS.md 的工具掌握整个 CLI。下面是六个生产简报——每条提示都可以直接粘贴。'
+      '一条命令安装五个自带技能，让 Claude Code、Cursor 和任何支持 AGENTS.md 的工具掌握整个 CLI。下面是六个生产简报，每条提示都可以直接粘贴。'
   },
   'cli.skills.moreSkillsPrefix': {
     en: 'More agent skills live in the ',
@@ -2950,8 +2950,8 @@ const translations = {
     'zh-CN': '在终端中使用工作流、模型与生成'
   },
   'cli.skills.bundled.comfyFragments': {
-    en: 'typed fragments and YAML recipes for big pipelines',
-    'zh-CN': '用类型化片段和 YAML 配方组装大型管线'
+    en: 'typed fragments and YAML recipes for big workflows',
+    'zh-CN': '用类型化片段和 YAML 配方组装大型工作流'
   },
   'cli.skills.bundled.comfyDebug': {
     en: 'from failed run to fixed, fast',
@@ -3037,9 +3037,9 @@ const translations = {
     'zh-CN': '结构化输出'
   },
   'cli.agents.1.description': {
-    en: 'Every command accepts --json and returns one envelope shape — ok, data, error, and a hint your agent can act on. Pipe it, parse it, branch on it.',
+    en: 'Every command accepts --json and returns one envelope shape: ok, data, error, and a hint your agent can act on. Pipe it into anything that reads JSON.',
     'zh-CN':
-      '每条命令都接受 --json，并返回统一的信封结构——ok、data、error，以及智能体可以直接执行的 hint。可以管道、可以解析、可以分支。'
+      '每条命令都接受 --json，并返回统一的信封结构：ok、data、error，以及智能体可以直接执行的 hint。任何能读 JSON 的工具都能接上。'
   },
   'cli.agents.2.title': {
     en: 'Self-describing',
@@ -3055,9 +3055,9 @@ const translations = {
     'zh-CN': '真实工作流图'
   },
   'cli.agents.3.description': {
-    en: 'Not one-shot endpoints. A run is a workflow JSON your agent can edit, validate, rerun, and hand to a teammate — the same graph that opens on the ComfyUI canvas.',
+    en: "Not one-shot endpoints. A run is a workflow JSON your agent can edit, validate, rerun, and hand to a teammate. It's the same graph that opens on the ComfyUI canvas.",
     'zh-CN':
-      '不是一次性端点。一次运行就是一份工作流 JSON，智能体可以编辑、校验、重跑、交给队友——同一张图也能在 ComfyUI 画布上打开。'
+      '不是一次性端点。一次运行就是一份工作流 JSON，智能体可以编辑、校验、重跑、交给队友。同一张图也能在 ComfyUI 画布上打开。'
   },
 
   // CLI – WhySection
@@ -3078,9 +3078,9 @@ const translations = {
     'zh-CN': '端到端\n开源。'
   },
   'cli.why.1.description': {
-    en: 'comfy-cli is open source, and so is the engine it drives. Install from PyPI, read the source when you need to, and never build a pipeline on a black box.',
+    en: 'comfy-cli is open source, and so is the engine it drives. Install from PyPI, read the source when you need to, and never build on a black box.',
     'zh-CN':
-      'comfy-cli 是开源的，它驱动的引擎也是。从 PyPI 安装，需要时直接读源码，永远不必把管线建在黑盒上。'
+      'comfy-cli 是开源的，它驱动的引擎也是。从 PyPI 安装，需要时直接读源码，永远不必建在黑盒上。'
   },
   'cli.why.2.title': {
     en: 'The full engine,\nnot a sandbox.',
@@ -3150,8 +3150,8 @@ const translations = {
     'zh-CN': '创作'
   },
   'cli.howItWorks.step3.description': {
-    en: 'Queue a run, wait on the job, download the outputs — or pipe all three into a single line.',
-    'zh-CN': '提交运行、等待任务、下载输出——或者把三步串成一行。'
+    en: 'Queue a run, wait on the job, download the outputs. Or pipe all three into a single line.',
+    'zh-CN': '提交运行、等待任务、下载输出。或者把三步串成一行。'
   },
 
   // CLI – FAQSection
@@ -3169,8 +3169,8 @@ const translations = {
       '任何能运行 shell 命令的编程智能体。comfy skills install 为 Claude Code、Cursor 及任何支持 AGENTS.md 的工具添加自带技能，粘贴提示的配置方式同样适用于 Codex、Gemini CLI、OpenClaw 等。人类用户：任何终端都可以，comfy --install-completion 提供补全。'
   },
   'cli.faq.2.q': {
-    en: 'CLI or MCP — which one should I use?',
-    'zh-CN': 'CLI 还是 MCP——该用哪个？'
+    en: 'CLI or MCP: which should I use?',
+    'zh-CN': 'CLI 还是 MCP：该用哪个？'
   },
   'cli.faq.2.a': {
     en: 'Both drive the same engine with the same account. Comfy MCP is for interactive agent work in chat: results come back in the session. The CLI is for automation: batch runs, CI, shell pipelines, and outputs saved to disk with --download or emitted as --json. Many teams run both and let the agent pick per task. Comfy MCP lives at https://comfy.org/mcp.',
@@ -3182,9 +3182,9 @@ const translations = {
     'zh-CN': '需要付费吗？'
   },
   'cli.faq.3.a': {
-    en: 'The CLI is free and open source, and browsing templates, models, and nodes is free with a Comfy account. Runs on your own hardware are free; partner models are the exception — they run on partner infrastructure and spend Comfy credits. Cloud runs spend Comfy credits too, from a top-up or an existing [Comfy Cloud subscription](https://comfy.org/cloud/pricing).',
+    en: 'The CLI is free and open source. With a Comfy account you can browse templates, models, and nodes at no cost, and runs on your own hardware are free. Partner models are the exception: they run on partner infrastructure and spend Comfy credits. Cloud runs spend credits too, either added directly or through an existing [Comfy Cloud subscription](https://comfy.org/cloud/pricing).',
     'zh-CN':
-      'CLI 免费且开源，浏览模板、模型和节点只需一个 Comfy 账户，完全免费。在你自己硬件上的运行是免费的；合作伙伴模型是例外——它们在合作伙伴的基础设施上运行，消耗 Comfy 积分。云端运行同样消耗 Comfy 积分，来自充值或现有的 [Comfy Cloud 订阅](https://comfy.org/cloud/pricing)。'
+      'CLI 免费且开源。有 Comfy 账户即可免费浏览模板、模型和节点，在你自己硬件上的运行也是免费的。合作伙伴模型是例外：它们在合作伙伴的基础设施上运行，消耗 Comfy 积分。云端运行同样消耗积分，可以直接添加，也可以使用现有的 [Comfy Cloud 订阅](https://comfy.org/cloud/pricing)。'
   },
   'cli.faq.4.q': {
     en: 'How does cloud vs local routing work?',
@@ -3209,9 +3209,9 @@ const translations = {
     'zh-CN': '我的输出会保存到哪里？'
   },
   'cli.faq.6.a': {
-    en: "--download saves generate results to the path you name. comfy download pulls a run's outputs into ./outputs/, and it reads prompt IDs straight from piped stdin — comfy run --workflow flux.json --wait | comfy download is the idiomatic loop. On cloud, outputs also land in your Comfy Cloud asset library.",
+    en: "--download saves generate results to the path you name. comfy download pulls a run's outputs into ./outputs/, and it reads prompt IDs straight from piped stdin, so comfy run --workflow flux.json --wait | comfy download is the whole loop. On cloud, outputs also land in your Comfy Cloud asset library.",
     'zh-CN':
-      '--download 把 generate 的结果存到你指定的路径。comfy download 把一次运行的输出拉到 ./outputs/，还能直接从管道 stdin 读取 prompt ID——comfy run --workflow flux.json --wait | comfy download 就是惯用写法。云端运行的输出同时进入你的 Comfy Cloud 资产库。'
+      '--download 把 generate 的结果存到你指定的路径。comfy download 把一次运行的输出拉到 ./outputs/，还能直接从管道 stdin 读取 prompt ID，所以 comfy run --workflow flux.json --wait | comfy download 一行就是完整流程。云端运行的输出同时进入你的 Comfy Cloud 资产库。'
   },
   'cli.faq.7.q': {
     en: 'Is Comfy CLI open source?',
@@ -3236,18 +3236,18 @@ const translations = {
     'zh-CN': '可以在 CI 中运行吗？'
   },
   'cli.faq.9.a': {
-    en: "Yes — that's what it's for. comfy setup --where cloud --api-key comfyui-... --non-interactive configures a runner without a browser, every command emits --json, and comfy validate --workflow catches unknown nodes and missing models before you spend compute.",
+    en: "Yes, that's what it's for. comfy setup --where cloud --api-key comfyui-... --non-interactive configures a runner without a browser, every command takes --json, and comfy validate --workflow catches unknown nodes and missing models before you spend compute.",
     'zh-CN':
-      '可以——它就是为此而生。comfy setup --where cloud --api-key comfyui-... --non-interactive 无需浏览器即可配置 runner，每条命令都支持 --json 输出，comfy validate --workflow 能在消耗算力之前发现未知节点和缺失模型。'
+      '可以，它就是为此而生。comfy setup --where cloud --api-key comfyui-... --non-interactive 无需浏览器即可配置 runner，每条命令都支持 --json 输出，comfy validate --workflow 能在消耗算力之前发现未知节点和缺失模型。'
   },
   'cli.faq.10.q': {
     en: 'What can my agent do once the CLI is installed?',
     'zh-CN': '安装 CLI 后我的智能体能做什么？'
   },
   'cli.faq.10.a': {
-    en: '• Generate images, video, audio, and 3D through partner models like Flux, Seedance, Kling, and Ideogram\n• Build, edit, validate, and run workflow graphs; save and rerun them\n• Queue batches, wait on jobs, and download every output\n• Search templates, models, and nodes with full schemas\n• Compose multi-stage pipelines from typed fragments\n\nRun comfy skills install once, and the bundled skills teach your agent all of it.',
+    en: '• Generate images, video, audio, and 3D through partner models like Flux, Seedance, Kling, and Ideogram\n• Build, edit, validate, and run workflow graphs; save and rerun them\n• Queue batches, wait on jobs, and download every output\n• Search templates, models, and nodes with full schemas\n• Compose multi-stage workflows from typed fragments\n\nRun comfy skills install once, and the bundled skills teach your agent all of it.',
     'zh-CN':
-      '• 通过 Flux、Seedance、Kling、Ideogram 等合作伙伴模型生成图像、视频、音频和 3D\n• 构建、编辑、校验并运行工作流图；保存并重跑\n• 批量排队、等待任务并下载全部输出\n• 搜索模板、模型和节点，附带完整模式\n• 用类型化片段组合多阶段管线\n\n运行一次 comfy skills install，自带技能会把这一切教给你的智能体。'
+      '• 通过 Flux、Seedance、Kling、Ideogram 等合作伙伴模型生成图像、视频、音频和 3D\n• 构建、编辑、校验并运行工作流图；保存并重跑\n• 批量排队、等待任务并下载全部输出\n• 搜索模板、模型和节点，附带完整模式\n• 用类型化片段组合多阶段工作流\n\n运行一次 comfy skills install，自带技能会把这一切教给你的智能体。'
   },
 
   // CLI – nav + breadcrumb
