@@ -17772,7 +17772,7 @@
     }
   },
   "RecraftStyleV3LogoRaster": {
-    "description": "realistic_imageスタイルとオプションのサブスタイルを選択します。",
+    "description": "logo_raster スタイルとサブスタイルを選択します。",
     "display_name": "Recraft Style - ロゴラスタ",
     "inputs": {
       "substyle": {
@@ -17883,6 +17883,26 @@
       }
     }
   },
+  "RecraftV4CreateStyleNode": {
+    "description": "1～10枚の参照画像から再利用可能な Recraft V4 スタイルを作成します。返される style_id は、同じ出力タイプのすべての Recraft V4 および V4.1 モデルで使用できます。すべての画像の合計サイズは10 MBまでです。",
+    "display_name": "Recraft V4 Create Style",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "スタイルを定義する参照画像。類似した参照画像では一致度が高まり、多様な参照画像では適用範囲が広がります。"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "スタイルを作成する出力タイプ: ラスター画像には recraftv4_styles、SVG には recraftv4_styles_vector。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "style_id",
+        "tooltip": null
+      }
+    }
+  },
   "RecraftV4TextToImageNode": {
     "description": "Recraft V4またはV4 Proモデルを使用して画像を生成します。",
     "display_name": "Recraft V4 テキストから画像生成",
@@ -17892,7 +17912,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "生成に使用するモデル。"
+        "tooltip": "生成に使用するモデル。recraftv4_styles モデルはスタイル一貫性のある生成向けに構築されており、常に style_id または style_references が必要です。"
       },
       "model_size": {
         "name": "サイズ"
@@ -17916,10 +17936,26 @@
       "seed": {
         "name": "seed",
         "tooltip": "ノードを再実行するかどうかを決定するシード値。実際の結果はシードに関係なく非決定的です。"
+      },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "適用する Recraft V4 スタイルの UUID。例: Recraft V4 Create Style ノード、または前回の実行の style_id 出力から取得します。style_references とは併用できません。"
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "スタイルへの追従度: precise は細部まで再現し、flexible は全体的な見た目に合わせます。スタイルが指定されている場合にのみ使用されます。"
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "その場でスタイルを作成するための参照画像。生成料金に加えて課金されます。作成されたスタイルは再利用用の style_id として返されます。style_id とは併用できません。"
       }
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -17933,7 +17969,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "生成に使用するモデル。"
+        "tooltip": "生成に使用するモデル。recraftv4_styles モデルはスタイル一貫性のある生成向けに構築されており、常に style_id または style_references が必要です。"
       },
       "model_size": {
         "name": "サイズ"
@@ -17957,10 +17993,26 @@
       "seed": {
         "name": "seed",
         "tooltip": "ノードを再実行するかどうかを決定するシード値。実際の結果はシードに関係なく非決定的です。"
+      },
+      "style_id": {
+        "name": "style_id",
+        "tooltip": "適用する Recraft V4 ベクタースタイルの UUID。例: Recraft V4 Create Style ノード、または前回の実行の style_id 出力から取得します。style_references とは併用できません。"
+      },
+      "style_match": {
+        "name": "style_match",
+        "tooltip": "スタイルへの追従度: precise は細部まで再現し、flexible は全体的な見た目に合わせます。スタイルが指定されている場合にのみ使用されます。"
+      },
+      "style_references": {
+        "name": "style_references",
+        "tooltip": "その場でベクタースタイルを作成するための参照画像。生成料金に加えて課金されます。作成されたスタイルは再利用用の style_id として返されます。style_id とは併用できません。"
       }
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -24613,61 +24665,11 @@
       },
       "resolution": {
         "name": "解像度",
-        "tooltip": "出力動画の解像度。4Kはveo-3.1-liteおよびveo-3.0モデルでは利用できません。"
+        "tooltip": "出力動画の解像度。veo-3.1-lite モデルでは 4K は利用できません。"
       },
       "seed": {
         "name": "シード",
         "tooltip": "ビデオ生成のシード値（0でランダム）"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "VeoVideoGenerationNode": {
-    "description": "Google の Veo API を使用してテキストプロンプトからビデオを生成します",
-    "display_name": "Google Veo2 ビデオ生成",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio",
-        "tooltip": "出力ビデオのアスペクト比"
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "duration_seconds": {
-        "name": "duration_seconds",
-        "tooltip": "出力ビデオの長さ（秒）"
-      },
-      "enhance_prompt": {
-        "name": "enhance_prompt",
-        "tooltip": "AIアシストでプロンプトを強化するかどうか"
-      },
-      "image": {
-        "name": "image",
-        "tooltip": "ビデオ生成の参考となる画像（オプション）"
-      },
-      "model": {
-        "name": "モデル",
-        "tooltip": "ビデオ生成に使用するVeo 2モデル"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "ビデオで避けたい内容を指定するネガティブプロンプト"
-      },
-      "person_generation": {
-        "name": "person_generation",
-        "tooltip": "ビデオ内で人物生成を許可するかどうか"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "ビデオのテキスト説明"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "ビデオ生成用のシード値（0でランダム）"
       }
     },
     "outputs": {

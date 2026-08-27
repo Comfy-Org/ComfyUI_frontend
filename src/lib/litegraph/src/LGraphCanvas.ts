@@ -9,7 +9,10 @@ import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
 import { LitegraphLinkAdapter } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import type { LinkRenderContext } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
-import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculations'
+import {
+  getSlotLayoutAtPoint,
+  getSlotPosition
+} from '@/renderer/core/canvas/litegraph/slotCalculations'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
@@ -2317,7 +2320,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // In Vue nodes mode, slots extend beyond node bounds due to CSS transforms.
     // If no node was found, check if the click is on a slot and use its owning node.
     if (!node && LiteGraph.vueNodesMode) {
-      const slotLayout = layoutStore.querySlotAtPoint({
+      const slotLayout = getSlotLayoutAtPoint(graph, {
         x: e.canvasX,
         y: e.canvasY
       })
@@ -3367,23 +3370,23 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         // to store the output of isOverNodeInput
         const pos: Point = [0, 0]
 
-        // Try to use layout store for hit testing first, fallback to old method
         let inputId: number = -1
         let outputId: number = -1
 
-        const slotLayout = layoutStore.querySlotAtPoint({ x, y })
-        if (slotLayout && slotLayout.nodeId === String(node.id)) {
-          if (slotLayout.type === 'input') {
-            inputId = slotLayout.index
-            pos[0] = slotLayout.position.x
-            pos[1] = slotLayout.position.y
-          } else {
-            outputId = slotLayout.index
-            pos[0] = slotLayout.position.x
-            pos[1] = slotLayout.position.y
+        if (LiteGraph.vueNodesMode) {
+          const slotLayout = getSlotLayoutAtPoint(graph, { x, y }, node)
+          if (slotLayout) {
+            if (slotLayout.type === 'input') {
+              inputId = slotLayout.index
+              pos[0] = slotLayout.position.x
+              pos[1] = slotLayout.position.y
+            } else {
+              outputId = slotLayout.index
+              pos[0] = slotLayout.position.x
+              pos[1] = slotLayout.position.y
+            }
           }
         } else {
-          // Fallback to old method
           inputId = isOverNodeInput(node, x, y, pos)
           outputId = isOverNodeOutput(node, x, y, pos)
         }
@@ -5057,6 +5060,16 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     if (this.graph) this.ds.computeVisibleArea(this.viewport)
 
+    const shouldDrawBackground = Boolean(
+      this.dirty_bgcanvas ||
+      force_bgcanvas ||
+      this.always_render_background ||
+      (this.graph?._last_trigger_time &&
+        now - this.graph._last_trigger_time < 1000)
+    )
+    const sharesCanvas = this.bgcanvas === this.canvas
+    if (sharesCanvas && shouldDrawBackground) this.dirty_canvas = true
+
     // Compute node size before drawing links.
     if (this.dirty_canvas || force_canvas) {
       this.computeVisibleNodes(undefined, this.visible_nodes)
@@ -5073,13 +5086,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
     }
 
-    if (
-      this.dirty_bgcanvas ||
-      force_bgcanvas ||
-      this.always_render_background ||
-      (this.graph?._last_trigger_time &&
-        now - this.graph._last_trigger_time < 1000)
-    ) {
+    if (shouldDrawBackground && !sharesCanvas) {
       this.drawBackCanvas()
     }
 
@@ -5130,7 +5137,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     // draw bg canvas
     if (this.bgcanvas == this.canvas) {
-      this.drawBackCanvas()
+      this.drawBackCanvas(false)
     } else {
       const scale = window.devicePixelRatio
       ctx.drawImage(
@@ -5500,7 +5507,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   /**
    * draws the back canvas (the one containing the background and the connections)
    */
-  drawBackCanvas(): void {
+  drawBackCanvas(redrawFrontCanvas = true): void {
     const canvas = this.bgcanvas
     if (
       canvas.width != this.canvas.width ||
@@ -5515,6 +5522,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
     const ctx = this.bgctx
     if (!ctx) throw new TypeError('Background canvas context was null.')
+
+    this.dirty_bgcanvas = false
 
     const viewport = this.viewport || [
       0,
@@ -5643,9 +5652,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       ctx.restore()
     }
 
-    this.dirty_bgcanvas = false
-    // Forces repaint of the front canvas.
-    this.dirty_canvas = true
+    if (redrawFrontCanvas) this.dirty_canvas = true
   }
 
   /**
@@ -6027,12 +6034,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   drawConnections(ctx: CanvasRenderingContext2D): void {
     this.renderedPaths.clear()
     if (this.links_render_mode === LinkRenderType.HIDDEN_LINK) return
-
-    // Skip link rendering while waiting for slot positions to sync after reconfigure
-    if (LiteGraph.vueNodesMode && layoutStore.pendingSlotSync) {
-      this._visibleReroutes.clear()
-      return
-    }
 
     const { graph, subgraph } = this
     if (!graph) throw new NullGraphError()
