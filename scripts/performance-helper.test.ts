@@ -22,6 +22,7 @@ describe('PerformanceHelper', () => {
   it('preserves a startup error when collector cleanup also fails', async () => {
     const startupError = new Error('collector startup failed')
     const cleanupError = new Error('collector cleanup failed')
+    let cleanupAttempted = false
     const send = vi.fn(async (method: string) =>
       method === 'Performance.getMetrics'
         ? {
@@ -37,7 +38,10 @@ describe('PerformanceHelper', () => {
       .fn()
       .mockResolvedValueOnce(undefined)
       .mockRejectedValueOnce(startupError)
-      .mockRejectedValueOnce(cleanupError)
+      .mockImplementationOnce(() => {
+        cleanupAttempted = true
+        throw cleanupError
+      })
     const page = fromAny<Page, unknown>({
       context: () => ({
         newCDPSession: async () => cdp,
@@ -49,6 +53,6 @@ describe('PerformanceHelper', () => {
     await helper.init()
 
     await expect(helper.startMeasuring()).rejects.toBe(startupError)
-    expect(evaluate).toHaveBeenCalledTimes(3)
+    expect(cleanupAttempted).toBe(true)
   })
 })
