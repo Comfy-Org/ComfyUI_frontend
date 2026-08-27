@@ -13,6 +13,8 @@ import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculatio
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import { useLinkStore } from '@/stores/linkStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toRerouteId } from '@/types/rerouteId'
 import { forEachNode } from '@/utils/graphTraversalUtil'
@@ -33,7 +35,6 @@ import type { SerializedNodeId } from '@/types/nodeId'
 import { LLink, slotFloatingLinks } from './LLink'
 import {
   inputHasLink,
-  inputLink,
   inputLinkId,
   outputLinkIds,
   outputLinks
@@ -6100,6 +6101,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       graph === nodesGraph && nodesInFrameOrder
         ? nodesInFrameOrder
         : nodesInRenderOrder(graph)
+    const linkStore = useLinkStore()
+    const graphScope = graphScopeOf(graph)
 
     // Ensure widget-input slot positions are computed before rendering links.
     // arrange() sets input.pos for widget-backed slots, but is normally called
@@ -6115,7 +6118,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     for (const node of nodes) {
       for (const [inputSlot, input] of node.inputs.entries()) {
-        const link = inputLink(graph, node.id, inputSlot)
+        const topology = linkStore.getInputSlotLink(
+          graphScope,
+          node.id,
+          inputSlot
+        )
+        const link = topology ? graph.getLink(topology.id) : undefined
         if (!link) continue
 
         const endPos: Point = LiteGraph.vueNodesMode // TODO: still use LG get pos if vue nodes is off until stable
@@ -8582,8 +8590,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           {
             content: 'Convert to Subgraph',
             callback: () => {
-              if (!this.selectedItems.size)
-                throw new Error('Convert to Subgraph: Nothing selected.')
+              if (!this.selectedItems.size) {
+                console.error('Convert to Subgraph: Nothing selected.')
+                return
+              }
               this._graph.convertToSubgraph(this.selectedItems)
             }
           },
