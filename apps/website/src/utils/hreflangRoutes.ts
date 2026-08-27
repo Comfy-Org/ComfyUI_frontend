@@ -6,6 +6,7 @@
  * "this page has a twin", two consumers, so the sitemap and the markup cannot
  * disagree about which pages are in the cluster.
  */
+import { isNoindexPathname } from '../config/indexing'
 
 /** The value both properties use for Simplified Chinese. The hub emits it for
  *  its /zh/ URLs, so the two clusters describe one language, not two. URLs are
@@ -14,27 +15,23 @@ export const ZH_HREFLANG = 'zh-Hans'
 export const ZH_PREFIX = '/zh-CN'
 
 /**
- * Routes kept out of the cluster even when both locales have them.
+ * Routes kept out of the cluster on top of whatever `isNoindexPathname` covers.
  *
  * Telling a search engine that two pages are translations of each other, while
- * telling it elsewhere not to index either, is a contradiction.
+ * telling it elsewhere not to index either, is a contradiction. The noindex half
+ * of that is asked of `config/indexing.ts` rather than restated here: it is what
+ * `BaseLayout` renders the robots tag from, so a page added to that list leaves
+ * the cluster automatically instead of waiting for someone to notice a second
+ * list. Restating it had already drifted, missing `/terms-of-service/`.
  *
- * The list was first derived from the pages the sitemap excludes, which turned
- * out to be the wrong proxy: `noindex` is set per page and is a separate signal
- * from sitemap membership. `/privacy-policy/` is noindex in both locales without
- * being sitemap-excluded, so it was clustered anyway, and neither this rule nor
- * `check:hreflang` could see it because the markup and the sitemap agreed with
- * each other. The membership test in hreflang.test.ts now reads `noindex` off the
- * real page tree, so a new both-noindex pair fails rather than leaking.
+ * Only 404 is genuinely hreflang-specific: it is not noindexed, it is simply not
+ * a page anyone should be sent to in either language.
  */
-const NON_CLUSTERED_ROUTES: ReadonlySet<string> = new Set([
-  '/404/',
-  '/payment/success/',
-  '/payment/failed/',
-  '/individual-submission/',
-  '/booking-confirmation/',
-  '/privacy-policy/'
-])
+const NEVER_CLUSTERED_ROUTES: ReadonlySet<string> = new Set(['/404/'])
+
+function isClusterable(route: string): boolean {
+  return !NEVER_CLUSTERED_ROUTES.has(route) && !isNoindexPathname(route)
+}
 
 /**
  * `/src/pages/cloud/pricing.astro` -> `/cloud/pricing/`, index files -> their directory.
@@ -72,9 +69,7 @@ export function mirroredRoutes(files: string[]): Set<string> {
   }
 
   return new Set(
-    [...english].filter(
-      (route) => chinese.has(route) && !NON_CLUSTERED_ROUTES.has(route)
-    )
+    [...english].filter((route) => chinese.has(route) && isClusterable(route))
   )
 }
 
