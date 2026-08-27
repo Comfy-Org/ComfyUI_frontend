@@ -423,15 +423,13 @@ describe('ComfyApp', () => {
         app.loadGraphData(createWorkflowGraphData(), false)
       ).resolves.toBe(false)
 
-      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
-        'beforeLoadGraph'
-      )
-      expect(
-        mockExtensionService.invokeExtensionsAsync
-      ).not.toHaveBeenCalledWith('afterLoadGraph')
-      expect(
-        mockExtensionService.invokeExtensionsAsync
-      ).not.toHaveBeenCalledWith('afterConfigureGraph')
+      const invokedHooks =
+        mockExtensionService.invokeExtensionsAsync.mock.calls.map(
+          ([hook]) => hook
+        )
+      expect(invokedHooks).toContain('beforeLoadGraph')
+      expect(invokedHooks).not.toContain('afterConfigureGraph')
+      expect(invokedHooks).not.toContain('afterLoadGraph')
     })
   })
 
