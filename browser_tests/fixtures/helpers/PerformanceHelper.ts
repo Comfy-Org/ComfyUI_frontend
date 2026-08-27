@@ -230,6 +230,7 @@ export class PerformanceHelper {
         'Measurement already in progress — call stopMeasuring() first'
       )
     }
+    const snapshot = await this.getSnapshot()
     await this.page.evaluate(() => {
       const win = window as unknown as Record<string, unknown>
       if (!win.__perfLongtaskState) {
@@ -256,9 +257,8 @@ export class PerformanceHelper {
       state.tbtMs = 0
       state.observer.takeRecords()
     })
-    await this.startRafCollector()
     try {
-      const snapshot = await this.getSnapshot()
+      await this.startRafCollector()
       this.measurementState = { kind: 'measuring', snapshot }
     } catch (error) {
       await this.stopRafCollectorIfRunning()
