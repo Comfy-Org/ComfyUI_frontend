@@ -169,12 +169,8 @@ function useWorkspaceUIInternal() {
   )
 
   const { shouldUseWorkspaceBilling } = useBillingRouting()
-  const {
-    canReactivate,
-    canSubscribeSelfServe,
-    isReady: capabilitiesReady,
-    readUnavailable: capabilityReadUnavailable
-  } = useBillingCapabilities()
+  const { canReactivate, canSubscribeSelfServe, snapshotAuthoritative } =
+    useBillingCapabilities()
 
   const permissions = computed<WorkspacePermissions>(() =>
     getPermissions(
@@ -201,13 +197,6 @@ function useWorkspaceUIInternal() {
       : permissions.value.canManageSubscriptionLifecycle
   )
 
-  // A snapshot still loading, or one the client could not read, carries no
-  // answer about this workspace. `denied` does: the server answered about this
-  // actor, so it is usable and closes the surface.
-  const capabilitySnapshotUsable = computed(
-    () => capabilitiesReady.value && !capabilityReadUnavailable.value
-  )
-
   // Whether the self-serve pricing catalog applies to this workspace at all.
   // The server resolves can_subscribe_self_serve false for sales-managed tiers
   // (Enterprise, unrecognized), so every pricing-table entry point — menu
@@ -222,7 +211,7 @@ function useWorkspaceUIInternal() {
   const canOpenPricingSurface = computed(() => {
     if (!isCloud || !shouldUseWorkspaceBilling.value)
       return permissions.value.canManageSubscription
-    return capabilitySnapshotUsable.value
+    return snapshotAuthoritative.value
       ? canSubscribeSelfServe.value
       : permissions.value.canManageSubscription
   })

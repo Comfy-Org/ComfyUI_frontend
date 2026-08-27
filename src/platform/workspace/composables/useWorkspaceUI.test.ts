@@ -13,8 +13,7 @@ const mockIsCloud = ref(true)
 const mockShouldUseWorkspaceBilling = ref(true)
 const mockCanReactivate = ref(false)
 const mockCanSubscribeSelfServe = ref(true)
-const mockCapabilitiesReady = ref(true)
-const mockCapabilityReadUnavailable = ref(false)
+const mockSnapshotAuthoritative = ref(true)
 const mockIsActiveSubscription = vi.hoisted(() => ({ value: false }))
 const mockIsCancelled = vi.hoisted(() => ({ value: false }))
 const mockIsTeamPlan = vi.hoisted(() => ({ value: false }))
@@ -59,8 +58,7 @@ vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
   useBillingCapabilities: () => ({
     canReactivate: computed(() => mockCanReactivate.value),
     canSubscribeSelfServe: computed(() => mockCanSubscribeSelfServe.value),
-    isReady: computed(() => mockCapabilitiesReady.value),
-    readUnavailable: computed(() => mockCapabilityReadUnavailable.value)
+    snapshotAuthoritative: computed(() => mockSnapshotAuthoritative.value)
   })
 }))
 
@@ -133,8 +131,7 @@ function resetStore() {
   mockShouldUseWorkspaceBilling.value = true
   mockCanReactivate.value = false
   mockCanSubscribeSelfServe.value = true
-  mockCapabilitiesReady.value = true
-  mockCapabilityReadUnavailable.value = false
+  mockSnapshotAuthoritative.value = true
 }
 
 describe('useWorkspaceUI', () => {
@@ -561,16 +558,8 @@ describe('useWorkspaceUI', () => {
       expect(ui.canOpenPricingSurface.value).toBe(true)
     })
 
-    it('falls back to membership while the snapshot is still loading', async () => {
-      mockCapabilitiesReady.value = false
-      mockCanSubscribeSelfServe.value = false
-
-      const ui = await loadComposable()
-      expect(ui.canOpenPricingSurface.value).toBe(true)
-    })
-
-    it('falls back to membership when the capability read is unavailable', async () => {
-      mockCapabilityReadUnavailable.value = true
+    it('falls back to membership when the snapshot is not authoritative', async () => {
+      mockSnapshotAuthoritative.value = false
       mockCanSubscribeSelfServe.value = false
 
       const ui = await loadComposable()
@@ -579,7 +568,7 @@ describe('useWorkspaceUI', () => {
 
     it('keeps the catalog closed for a non-owner with no readable snapshot', async () => {
       mockStore.activeWorkspace = teamMemberWorkspace
-      mockCapabilityReadUnavailable.value = true
+      mockSnapshotAuthoritative.value = false
       mockCanSubscribeSelfServe.value = false
 
       const ui = await loadComposable()
