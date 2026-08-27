@@ -5,23 +5,15 @@ import { describe, expect, it } from 'vitest'
 import SiteFooter from './SiteFooter.vue'
 
 describe('SiteFooter', () => {
-  it('links the Models showcase page at its canonical English path', () => {
+  it('does not promote the Models showcase page', () => {
     render(SiteFooter, { props: { locale: 'en' } })
 
-    const links = screen.getAllByRole('link', { name: 'Models' })
-    expect(links.length).toBeGreaterThan(0)
-    for (const link of links) {
-      expect(link.getAttribute('href')).toBe('/models')
-    }
+    expect(screen.queryByRole('link', { name: 'Models' })).toBeNull()
   })
 
-  it('links the localized Models showcase page for zh-CN', () => {
+  it('does not promote the localized Models showcase page', () => {
     render(SiteFooter, { props: { locale: 'zh-CN' } })
 
-    const links = screen.getAllByRole('link', { name: '模型' })
-    expect(links.length).toBeGreaterThan(0)
-    for (const link of links) {
-      expect(link.getAttribute('href')).toBe('/zh-CN/models')
-    }
+    expect(screen.queryByRole('link', { name: '模型' })).toBeNull()
   })
 })

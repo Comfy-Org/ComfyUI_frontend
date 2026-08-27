@@ -5654,7 +5654,6 @@ const translations = {
   },
   'flux3.reviews.highlightCta': { en: 'GET STARTED', 'zh-CN': '开始使用' },
   'footer.flux3': { en: 'Flux 3', 'zh-CN': 'Flux 3' },
-  'footer.modelsShowcase': { en: 'Models', 'zh-CN': '模型' },
   // Wan Animate 2 model page (/wan-animate-2)
   'wanAnimate2.meta.title': {
     en: 'Wan Animate 2 on Comfy — Open-Source Character Animation',
@@ -6003,6 +6002,35 @@ const translations = {
     'zh-CN': '在真实 GPU 上免费运行 5 次 — 无需信用卡。'
   },
   'minimax.pricing.banner.cta': { en: 'TRY FREE', 'zh-CN': '免费试用' },
+  'minimaxLicense.hero.title': {
+    en: 'MiniMax\nCommercial License',
+    'zh-CN': 'MiniMax 商业许可'
+  },
+  'minimaxLicense.hero.description': {
+    en: 'Comfy is the only official reseller of MiniMax commercial-use licenses, for running MiniMax models locally on your own hardware. Full commercial rights to your outputs, fine-tuning and LoRA training, and client and downstream work included.',
+    'zh-CN':
+      'Comfy 是 MiniMax 商业使用许可的唯一官方经销商，面向在自有硬件上本地运行 MiniMax 模型的场景。产出的完整商业权利、微调与 LoRA 训练，以及客户与下游项目均包含在内。'
+  },
+  'minimaxLicense.hero.primaryCta': {
+    en: 'REQUEST LICENSE',
+    'zh-CN': '申请许可'
+  },
+  'minimaxLicense.hero.secondaryCta': {
+    en: 'TRY H3 ON COMFY CLOUD',
+    'zh-CN': '在 Comfy Cloud 上试用 H3'
+  },
+  'minimaxLicense.hero.tagOfficialReseller': {
+    en: 'Only official reseller',
+    'zh-CN': '唯一官方经销商'
+  },
+  'minimaxLicense.hero.tagAudioMusic': {
+    en: 'Audio and music included',
+    'zh-CN': '含音频与音乐模型'
+  },
+  'minimaxLicense.hero.tagGlobal': {
+    en: 'Available globally',
+    'zh-CN': '全球可用'
+  },
   // FDCT page (/forward-deployed-creatives) — Forward Deployed Creatives
   'fdct.meta.title': {
     en: 'Forward Deployed Creatives | Comfy',
