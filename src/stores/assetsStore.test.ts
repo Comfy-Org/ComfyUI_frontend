@@ -1,6 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, watch } from 'vue'
+import { nextTick, toValue, watch } from 'vue'
 
 import { useAssetsStore } from '@/stores/assetsStore'
 import type {
@@ -1331,6 +1331,24 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
 describe('assetsStore - Model Assets Cache (non-cloud)', () => {
   beforeEach(() => {
     mockIsCloud.value = false
+  })
+
+  it('loads imported assets when the input list is opened', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(JSON.stringify(['imported.png']), { status: 200 })
+        )
+    )
+    const store = useAssetsStore()
+
+    await store.inputAssets.loadMore()
+
+    expect(toValue(store.inputAssets.items)).toEqual([
+      expect.objectContaining({ name: 'imported.png' })
+    ])
   })
 
   it('caches model assets fetched by tag on non-cloud builds', async () => {

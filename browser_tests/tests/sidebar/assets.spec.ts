@@ -1236,7 +1236,7 @@ test('Insert as node', { tag: '@vue-nodes' }, async ({ comfyPage }) => {
       }
     }),
     createMockJob({
-      id: 'job2',
+      id: 'job3',
       preview_output: {
         filename: `3.png`,
         type: 'input',

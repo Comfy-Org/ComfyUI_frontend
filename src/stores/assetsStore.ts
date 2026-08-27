@@ -122,15 +122,16 @@ export const useAssetsStore = defineStore('assets', () => {
     }
   })
 
+  const updateInputs = async () => {
+    await executeUpdateInputs()
+  }
   const historyInputs: PagedList<AssetItem> = {
     hasMore: false,
-    invalidate: async () => {
-      await executeUpdateInputs()
-    },
+    invalidate: updateInputs,
     isLoading: inputLoading,
     items: rawInputAssets,
-    loadMore: async () => undefined,
-    loadNew: async () => undefined
+    loadMore: updateInputs,
+    loadNew: updateInputs
   }
 
   function useHistoryAssets(): PagedList<AssetItem> {
