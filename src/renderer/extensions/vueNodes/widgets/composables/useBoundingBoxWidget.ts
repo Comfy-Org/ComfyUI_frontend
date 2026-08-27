@@ -5,6 +5,7 @@ import type {
   IImageCropWidget,
   INumericWidget
 } from '@/lib/litegraph/src/types/widgets'
+import { NumberWidget } from '@/lib/litegraph/src/widgets/NumberWidget'
 import type { Bounds } from '@/renderer/core/layout/types'
 import type {
   BoundingBoxInputSpec,
@@ -18,8 +19,16 @@ function isBoundingBoxLikeWidget(
   return widget.type === 'boundingbox' || widget.type === 'imagecrop'
 }
 
-function isNumericWidget(widget: IBaseWidget): widget is INumericWidget {
-  return widget.type === 'number'
+const FIELDS: (keyof Bounds)[] = ['x', 'y', 'width', 'height']
+
+function isBounds(value: unknown): value is Bounds {
+  return (
+    !!value &&
+    typeof value === 'object' &&
+    FIELDS.every(
+      (field) => typeof (value as Record<string, unknown>)[field] === 'number'
+    )
+  )
 }
 
 export const useBoundingBoxWidget = (): ComfyWidgetConstructorV2 => {
@@ -38,22 +47,11 @@ export const useBoundingBoxWidget = (): ComfyWidgetConstructorV2 => {
 
     const widgetType = component === 'ImageCrop' ? 'imagecrop' : 'boundingbox'
 
-    const fields: (keyof Bounds)[] = ['x', 'y', 'width', 'height']
-    const subWidgets: INumericWidget[] = []
-
     const rawWidget = node.addWidget(
       widgetType,
       name,
       { ...defaultValue },
-      () => {
-        for (let i = 0; i < fields.length; i++) {
-          const field = fields[i]
-          const subWidget = subWidgets[i]
-          if (subWidget) {
-            subWidget.value = widget.value[field]
-          }
-        }
-      },
+      () => {},
       {
         serialize: true,
         canvasOnly: false
@@ -66,33 +64,45 @@ export const useBoundingBoxWidget = (): ComfyWidgetConstructorV2 => {
 
     const widget = rawWidget
 
-    for (const field of fields) {
-      const subWidget = node.addWidget(
-        'number',
-        field,
-        defaultValue[field],
-        function (this: INumericWidget, v: number) {
-          this.value = Math.round(v)
-          widget.value[field] = this.value
-          widget.callback?.(widget.value)
-        },
+    const currentBounds = (): Bounds =>
+      isBounds(widget.value) ? widget.value : defaultValue
+
+    const createFieldProjection = (field: keyof Bounds): NumberWidget => {
+      const subWidget = new NumberWidget(
         {
-          min: field === 'width' || field === 'height' ? 1 : 0,
-          max: 8192,
-          step: 10,
-          step2: 1,
-          precision: 0,
-          serialize: false,
-          canvasOnly: true
-        }
+          type: 'number',
+          name: field,
+          value: defaultValue[field],
+          options: {
+            min: field === 'width' || field === 'height' ? 1 : 0,
+            max: 8192,
+            step: 10,
+            step2: 1,
+            precision: 0,
+            serialize: false,
+            canvasOnly: true
+          },
+          y: 0
+        },
+        node
       )
+      Object.defineProperty(subWidget, 'value', {
+        get: () => currentBounds()[field],
+        set: (v: number) => {
+          widget.value = { ...currentBounds(), [field]: Math.round(v) }
+        }
+      })
+      subWidget.setNodeId = () => {}
+      return subWidget
+    }
 
-      if (!isNumericWidget(subWidget)) {
-        throw new Error(`Unexpected widget type: ${subWidget.type}`)
-      }
-
+    const subWidgets: INumericWidget[] = []
+    for (const field of FIELDS) {
+      const subWidget = createFieldProjection(field)
+      node.addCustomWidget(subWidget)
       subWidgets.push(subWidget)
     }
+    node.expandToFitContent()
 
     widget.linkedWidgets = subWidgets
 
