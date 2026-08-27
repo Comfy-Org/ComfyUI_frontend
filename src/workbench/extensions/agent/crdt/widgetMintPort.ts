@@ -1,25 +1,8 @@
 /**
- * The widgetValueStore mint port (plan 3.3): `set_widget` is minted from the
- * store's `setValue` seam, which every human widget edit reaches (Vue node
- * widgets, the multiline textarea, the right-side parameters panel). Widget
- * identity is `graphId:nodeId:name`, so the wire op is NAME-KEYED by
- * construction - the FE-1904 requirement (the dochost sidecar projection
- * expects catalog widget names; index-keyed values throw server-side).
- *
- * A listener over an injected event feed, like the other ports: the wiring
- * site adapts the store's public `setValue` action (Pinia `$onAction`,
- * reading the old value in the before phase and the applied result in the
- * after phase). Store actions run synchronously, so provenance is the
- * session's synchronous remote-apply scope; load-driven restoration and
- * migration writes fall inside the teardown brackets.
- *
- * A subgraph-interior write mints the vocabulary's interior form: `path` is
- * the RESOLVED node-id chain from the root down to the interior node (the
- * subgraph-node ids, then the node itself), and `inner_widget` carries the
- * widget name (the corpus norm keeps `widget === inner_widget`). When the
- * owning graph cannot be resolved to a path - no open root, or a definition
- * not reachable from it - the write is surfaced observably, never dropped
- * silent.
+ * set_widget from the widgetValueStore setValue seam - NAME-KEYED by
+ * construction (WidgetId is graphId:nodeId:name; FE-1904). Subgraph-owned
+ * writes mint the interior form (path = resolved node-id chain,
+ * inner_widget = the name); an unresolvable owner surfaces, never drops.
  */
 import type { GraphOperation } from './graphOperations'
 import { shouldMint } from './mintGate'

@@ -1,20 +1,7 @@
 /**
- * Shared mint-scope state for every mint port (plan 3.3). Two scopes:
- *
- * - Teardown brackets: workflow load/switch/close drives mass store writes
- *   (clears, link registration storms, widget restoration) with no
- *   call-carried provenance. The load path holds `beginGraphTeardown`/
- *   `endGraphTeardown` around every graph load, and every port treats the
- *   open bracket as non-mintable. One shared depth, not one per port: a port
- *   missing a bracket call is a mint storm, so the bracket is held once here.
- *
- * - Remote-apply scope: the follower's mutator drives litegraph synchronously,
- *   and litegraph writes `linkStore`/`widgetValueStore` synchronously in the
- *   same call graph. Those stores carry no actor, so echo suppression for
- *   their ports is this synchronous scope flag. (`layoutStore` is different:
- *   it stamps `operation.actor` at apply time and delivers changes on a
- *   microtask, so its port reads the actor instead - the composition root
- *   wraps the mutator in BOTH this scope and `layoutStore.withActor`.)
+ * Shared mint scopes: ONE teardown bracket for all ports (a port missing a
+ * bracket call is a mint storm), and a synchronous remote-apply flag for the
+ * actor-less link/widget stores (layout keeps actor stamping instead).
  */
 export interface MintSession {
   beginGraphTeardown(): void
