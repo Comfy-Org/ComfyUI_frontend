@@ -67,7 +67,7 @@ describe('layoutStore.withActor', () => {
     expect(changes[0].operation.actor).toMatch(/^user-/)
   })
 
-  it('rejects an async callback whose work would outlive the scope', () => {
+  it('rejects an async callback whose work would outlive the scope', async () => {
     expect(
       () => void layoutStore.withActor('agent-remote', async () => {})
     ).toThrow('synchronous callback')
@@ -75,6 +75,18 @@ describe('layoutStore.withActor', () => {
     expect(
       () => void layoutStore.withActor('agent-remote', () => Promise.resolve(1))
     ).toThrow('synchronous callback')
+
+    expect(
+      () =>
+        void layoutStore.withActor('agent-remote', () => ({ then: () => {} }))
+    ).toThrow('synchronous callback')
+
+    const changes = await deliveredChanges(() => {
+      layoutStore.applyOperation(createNodeOp('9'))
+    })
+
+    expect(changes).toHaveLength(1)
+    expect(changes[0].operation.actor).toMatch(/^user-/)
   })
 
   it('honours an actor already carried by the operation', async () => {

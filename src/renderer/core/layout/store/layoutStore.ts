@@ -3,6 +3,7 @@ import { computed, ref, shallowReactive } from 'vue'
 import type { ComputedRef } from 'vue'
 import * as Y from 'yjs'
 
+import { assert } from '@/base/assert'
 import { toGroupId } from '@/types/groupId'
 import { toNodeId } from '@/types/nodeId'
 import type { GroupId } from '@/types/groupId'
@@ -821,11 +822,14 @@ class LayoutStoreImpl {
     this.currentActor = actor
     try {
       const result = fn()
-      if (result instanceof Promise) {
-        throw new TypeError(
-          'withActor requires a synchronous callback: work after an await would be stamped with the session actor'
-        )
-      }
+      const thenable =
+        typeof (result as { then?: unknown } | null | undefined)?.then ===
+        'function'
+      if (result instanceof Promise) void result.catch(() => {})
+      assert(
+        !thenable,
+        'withActor requires a synchronous callback: work after an await would be stamped with the session actor'
+      )
       return result
     } finally {
       this.currentActor = previous
