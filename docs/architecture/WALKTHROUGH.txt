@@ -9,10 +9,18 @@
 ===============================================================================
 
   Platform:     Web Browser (any modern browser)
-  Version:      1.0
+  Version:      2.0 (post-merge edition)
   Author:       An Architect Who Has Seen Things
-  Last Updated: 2026-03-24
+  Last Updated: 2026-08-25
   Spoilers:     YES. This guide contains ALL solutions and ALL endings.
+
+  v2.0: Updated after the ECS migration actually MERGED (PR #14246,
+  2026-08-24, 22 reviewed slices). The game no longer describes a plan -
+  it describes what shipped, what got reversed, and what got deferred.
+  Two new rooms cover the areas that drew the heaviest review: the
+  Registry Office (identity and ownership) and the Hall of Mirrors
+  (mirror deletion and compatibility shims). All art regenerated in the
+  V2 blueprint theme. See CHANGELOG.md for the full history.
 
 ===============================================================================
                          TABLE OF CONTENTS
@@ -34,13 +42,15 @@
 
   Codebase Caverns is an interactive choose-your-own-adventure game that
   teaches you the architecture of the ComfyUI frontend codebase. You explore
-  10 rooms representing different architectural layers, face 9 real engineering
-  challenges, collect artifacts, and reach one of 4 endings based on your
-  decisions.
+  12 rooms representing different architectural layers, face 11 real
+  engineering challenges, collect artifacts, and reach one of 4 endings
+  based on your decisions.
 
   Every challenge in this game is based on REAL architectural problems
-  documented in the ComfyUI frontend repo. The "correct" answers match the
-  actual migration strategy being used in production.
+  documented in the ComfyUI frontend repo. The "correct" answers match
+  what actually shipped in the ECS migration (PR #14246) - including one
+  decision the team shipped and then reversed (the badge store), and one
+  layer they deliberately did NOT build yet (the command bus).
 
   CONTROLS:
   =========
@@ -76,7 +86,7 @@
 
   CHALLENGES
   ==========
-  9 of the 10 rooms contain a one-time challenge - an architectural dilemma
+  11 of the 12 rooms contain a one-time challenge - an architectural dilemma
   with 2-3 options. Each option has a rating:
 
     [GOOD]   Best practice. Matches the real migration strategy.
@@ -99,7 +109,7 @@
 
   ENDINGS
   =======
-  After resolving all 8 challenges, you get one of 4 endings based on
+  After resolving all 11 challenges, you get one of 4 endings based on
   your accumulated stats. See Section VI for details.
 
   ACHIEVEMENTS
@@ -123,25 +133,29 @@
   |  COMPONENT   |  |    STORE     |  |    SERVICE     |
   |   GALLERY    |  |    VAULTS    |  |   CORRIDORS    |
   | [Challenge]  |  | [Challenge]  |  |  [Challenge]   |
-  +--+------+----+  +--+------+----+  +--------+-------+
-     |      |          |      |               |
-     |      |     +----v---+  |        +------v-------+
-     |      |     |  ECS   |  |        | COMPOSABLES  |
-     |      |     | CHAMB. |  |        |  WORKSHOP    |
-     |      |     | [Chal] |  |        | [Challenge]  |
-     |      |     +---+----+  |        +--------------+
-     |      |         |  +----v------+
-     |      |    +----v--+--+        |
-     |      |    |SUBGRAPH| RENDERER |
-     |      |    | DEPTHS | OVERLOOK |
-     |      |    | [Chal] |  [Chal]  |
-     |      |    +--------+----------+
-     |      |
-  +--v------v----+
-  |  LITEGRAPH   |
-  |   ENGINE     |
-  | [Challenge]  |
-  +------+-------+
+  +--+------+----+  +--+------+----+  +---+--------+---+
+     |      |          |      |           |        |
+     |      |     +----v---+  |    +------v-----+  |
+     |      |     |  ECS   |  |    | COMPOSABLES|  |
+     |      |     | CHAMB. |  |    |  WORKSHOP  |  |
+     |      |     | [Chal] |  |    | [Challenge]|  |
+     |      |     +-+---+--+  |    +------------+  |
+     |      |       |   |  +--v--------+           |
+     |      |       |   |  | RENDERER  |           |
+     |      |       |   |  | OVERLOOK  |           |
+     |      |       |   |  |  [Chal]   |           |
+     |      |       |   |  +-----------+           |
+     |      |  +----v-+ +----v-------+             |
+     |      |  |SUBGR.| | REGISTRY   |             |
+     |      |  |DEPTHS|-| OFFICE     |             |
+     |      |  |[Chal]| | [Challenge]|             |
+     |      |  +------+ +------------+             |
+     |      |                                      |
+  +--v------v----+       +--------------+         |
+  |  LITEGRAPH   |-------|   HALL OF    |---------+
+  |   ENGINE     |       |   MIRRORS    |
+  | [Challenge]  |       | [Challenge]  |
+  +------+-------+       +--------------+
          |
   +------v-------+
   | COMMAND      |
@@ -163,28 +177,29 @@
 
   3. THE STORE VAULTS [State]
      Challenge: The Scattered Mutations
-     Artifacts: widgetValueStore.ts, layoutStore.ts
+     Artifacts: widgetValueStore.ts, layoutStore.ts, linkStore.ts,
+                nodeDataStore.ts
      Exits: ECS (1), Renderer (2), Entry (3)
 
   4. THE SERVICE CORRIDORS [Services]
      Challenge: The Migration Question
      Artifacts: litegraphService.ts, Extension Migration Guide
-     Exits: Composables (1), Entry (2)
+     Exits: Composables (1), Hall of Mirrors (2), Entry (3)
 
   5. THE LITEGRAPH ENGINE ROOM [Graph Engine]
      Challenge: The God Object Dilemma
      Artifacts: LGraphCanvas.ts, LGraphNode.ts
-     Exits: ECS (1), Components (2), Entry (3)
+     Exits: ECS (1), Hall of Mirrors (2), Entry (3)
 
   6. THE ECS ARCHITECT'S CHAMBER [ECS]
      Challenge: The ID Crossroads
-     Artifacts: World Registry, Branded Entity IDs
-     Exits: Subgraph Depths (1), Renderer (2), Entry (3)
+     Artifacts: The Unbuilt World, Branded IDs (WidgetId, LinkId)
+     Exits: Subgraph Depths (1), Registry Office (2), Entry (3)
 
   7. THE SUBGRAPH DEPTHS [Graph Boundaries]
      Challenge: The Widget Promotion Decision
-     Artifacts: SubgraphStructure, Typed Interface Contracts
-     Exits: ECS (1), Litegraph (2), Entry (3)
+     Artifacts: Linked Subgraph Inputs, Typed Interface Contracts
+     Exits: ECS (1), Registry Office (2), Entry (3)
 
   8. THE RENDERER OVERLOOK [Renderer]
      Challenge: The Render-Time Mutation
@@ -198,8 +213,18 @@
 
  10. THE COMMAND FORGE [Commands & Intent]
      Challenge: The Mutation Gateway
-     Artifacts: CommandExecutor, Command Interface
+     Artifacts: ChangeTracker (Snapshot Undo), Command Layer (Deferred)
      Exits: Components (1), Stores (2), Entry (3)
+
+ 11. THE REGISTRY OFFICE [Identity & Ownership]
+     Challenge: The Clipboard Hijack
+     Artifacts: GraphScope (root + owner), Ownership Attachment
+     Exits: ECS (1), Subgraph Depths (2), Entry (3)
+
+ 12. THE HALL OF MIRRORS [Compatibility]
+     Challenge: The Mirror Deletion
+     Artifacts: Deprecation Telemetry, Serialization Goldens
+     Exits: Litegraph (1), Services (2), Entry (3)
 
 ===============================================================================
  IV.  CHALLENGE SOLUTIONS (SPOILERS)
@@ -217,8 +242,9 @@
   |                                                                    |
   | >>> A. Composition over inheritance  [GOOD] <<<                    |
   |     Debt -10, Quality +15, Morale +5, ECS +1                       |
-  |     A subgraph IS a graph - just a node with SubgraphStructure.    |
-  |     Under graph unification, no class inheritance at all.          |
+  |     What shipped: subgraph STATE flattened into root-scoped store  |
+  |     buckets with owner indexes; the class hierarchy is a facade.   |
+  |     Full graph unification remains the blueprint.                  |
   |                                                                    |
   |   B. Barrel file reordering  [BAD]                                 |
   |     Debt +10, Quality -5, Morale -5                                |
@@ -238,8 +264,9 @@
   |                                                                    |
   | >>> A. Centralize into graph.incrementVersion()  [GOOD] <<<        |
   |     Debt -15, Quality +15, ECS +1                                  |
-  |     This is Phase 0a of the real migration plan.                   |
-  |     19 sites -> 1 method. Auditable change tracking.               |
+  |     This SHIPPED. Exactly one _version++ remains - inside the      |
+  |     method itself. (Badges never needed it: badgeSystem.ts         |
+  |     derives from reactive store state via Vue computeds.)          |
   |                                                                    |
   |   B. Add a JavaScript Proxy  [OK]                                  |
   |     Debt +5, Quality +5, Morale -5                                 |
@@ -257,10 +284,14 @@
   | production for thousands of users?                                 |
   |------------------------------------------------------------------  |
   |                                                                    |
-  | >>> A. 5-phase incremental plan  [GOOD] <<<                        |
+  | >>> A. A feature branch of small reviewed slices  [GOOD] <<<       |
   |     Quality +15, Morale +10, ECS +1                                |
-  |     Foundation -> Types -> Bridge -> Systems -> Legacy Removal.    |
-  |     Each phase independently shippable. This is the real plan.     |
+  |     How it really went: 22 reviewed PRs merged into                |
+  |     feature/ecs-migration, landed as PR #14246. Per-entity recipe: |
+  |     store -> accessors -> chokepoints -> migrate readers -> delete |
+  |     the mirror. Serialization goldens kept the wire format         |
+  |     byte-identical. A dedicated audit PR (#13528) caught the       |
+  |     cross-slice interaction bugs.                                  |
   |                                                                    |
   |   B. Big bang rewrite  [BAD]                                       |
   |     Debt -10, Quality +5, Morale -20                               |
@@ -284,8 +315,9 @@
   |                                                                    |
   | >>> B. Extract incrementally  [GOOD] <<<                           |
   |     Debt -10, Quality +15, Morale +5, ECS +1                       |
-  |     Position -> Connectivity -> Rendering. Small testable PRs.     |
-  |     This matches the actual migration strategy.                    |
+  |     What shipped: widget values -> link topology -> reroute chains |
+  |     -> node shell -> geometry. Deleting each mirror EXPOSED bugs   |
+  |     it had been masking. useGraphNodeManager: deleted outright.    |
   |                                                                    |
   |   C. Add a facade layer  [OK]                                      |
   |     Debt +5, Quality +5, Morale +10                                |
@@ -301,10 +333,12 @@
   | where a NodeId is expected. Six entity kinds share one ID space.   |
   |------------------------------------------------------------------  |
   |                                                                    |
-  | >>> A. Branded types with cast helpers  [GOOD] <<<                 |
+  | >>> A. Branded types with scoped identity  [GOOD] <<<              |
   |     Debt -15, Quality +20, ECS +1                                  |
-  |     type NodeEntityId = number & { __brand: 'NodeEntityId' }       |
-  |     Compile-time safety, zero runtime cost. Phase 1a.              |
+  |     What shipped: per-concern branded keys (WidgetId strings,      |
+  |     LinkId/RerouteId numbers), root-wide identity + GraphScope     |
+  |     owner addressing, load-time collision repair. Slots stayed     |
+  |     deliberately unbranded - index belongs to the array.           |
   |                                                                    |
   |   B. String prefixes at runtime  [OK]                              |
   |     Debt +5, Quality +5, Morale -5                                 |
@@ -325,9 +359,9 @@
   |                                                                    |
   | >>> A. Connections-only: promotion = typed input  [GOOD] <<<       |
   |     Debt -15, Quality +15, Morale +5, ECS +1                      |
-  |     Promotion = adding an interface input. Type->widget mapping    |
-  |     creates the widget automatically. Eliminates PromotionStore,   |
-  |     ViewManager, and PromotedWidgetView entirely.                  |
+  |     SHIPPED as ADR 0009. PromotionStore, ViewManager, and          |
+  |     PromotedWidgetView are gone (PR #12617). A promoted widget is  |
+  |     ordinary WidgetState keyed by the SubgraphInput's WidgetId.    |
   |                                                                    |
   |   B. Simplified component promotion  [OK]                          |
   |     Debt -5, Quality +10, Morale +5                                |
@@ -351,7 +385,9 @@
   | >>> A. Separate update and render phases  [GOOD] <<<               |
   |     Debt -15, Quality +15, ECS +1                                  |
   |     Input -> Update (layout) -> Render (read-only).                |
-  |     Matches the ECS system pipeline design.                        |
+  |     Shipped so far: geometry registers at LGraph.add (#14128),     |
+  |     reads via cached projection (6ns vs 63.5ns, #14133), and DOM   |
+  |     measurements stay out of saved sizes (#14758).                 |
   |                                                                    |
   |   B. Dirty flags and deferred render  [OK]                         |
   |     Debt -5, Quality +5, Morale +5                                 |
@@ -369,8 +405,9 @@
   |                                                                    |
   | >>> A. Y.js CRDTs  [GOOD] <<<                                      |
   |     Debt -10, Quality +15, Morale +10                              |
-  |     Conflict-free replicated data types. Already proven.           |
-  |     This is what the real layoutStore uses.                        |
+  |     This is what the real layoutStore uses - for layout ONLY.      |
+  |     "Make every store Yjs-backed" is an explicit non-goal; the     |
+  |     other stores are plain reactive Pinia.                         |
   |                                                                    |
   |   B. Polling-based sync  [BAD]                                     |
   |     Debt +10, Quality -5, Morale -5                                |
@@ -384,31 +421,86 @@
   .--------------------------------------------------------------------.
   | CHALLENGE 9: The Mutation Gateway        | Room: Command Forge     |
   |------------------------------------------------------------------  |
-  | The World's imperative API (world.setComponent()) vs. the command  |
-  | pattern requirement from ADR 0003. How should external callers     |
-  | mutate the World?                                                  |
+  | Build the full command bus now, centralize the data first, or      |
+  | keep mutating classes directly forever? What ships first?          |
   |------------------------------------------------------------------  |
   |                                                                    |
-  | >>> A. Commands as intent; systems as handlers; World as store <<< |
-  |     Debt -10, Quality +15, Morale +5, ECS +1               [GOOD] |
-  |     Caller -> Command -> System -> World -> Y.js. Commands are     |
-  |     serializable. ADR 0003 and ADR 0008 are complementary.        |
+  | >>> A. Data first - commands when a consumer exists  [GOOD] <<<    |
+  |     Debt -10, Quality +15, Morale +5, ECS +1                      |
+  |     What PR #14246 did: one store authority per concern; the       |
+  |     command pattern, replay, and transactions declared out of      |
+  |     scope until a concrete consumer exists. Undo stays             |
+  |     snapshot-based (ChangeTracker).                                |
   |                                                                    |
-  |   B. Make World.setComponent() itself serializable  [OK]           |
+  |   B. Build the full command bus now  [OK]                          |
   |     Debt +5, Quality +5, Morale -5                                |
-  |     Conflates store with command layer. Batch ops become noisy.   |
+  |     Speculative generality over state that lives in five places.  |
+  |     Half the command schemas end up wrong.                        |
   |                                                                    |
-  |   C. Skip commands - let callers mutate directly  [BAD]            |
+  |   C. Skip it all - keep mutating classes directly  [BAD]           |
   |     Debt +15, Quality -10                                         |
-  |     No undo/redo, no replay, no CRDT sync, no audit trail.       |
+  |     No single authority ever emerges. Mirror drift forever.       |
+  '--------------------------------------------------------------------'
+
+  .--------------------------------------------------------------------.
+  | CHALLENGE 10: The Clipboard Hijack       | Room: Registry Office   |
+  |------------------------------------------------------------------  |
+  | Ctrl+C on a subgraph node produces a clone with reroute IDs        |
+  | identical to the originals'. What is the registration policy       |
+  | when two entities claim one ID?                                    |
+  |------------------------------------------------------------------  |
+  |                                                                    |
+  | >>> A. Refuse foreign overwrites; instance ownership  [GOOD] <<<   |
+  |     Debt -10, Quality +15, Morale +5, ECS +1                      |
+  |     What shipped: stores refuse and log collisions, load-time      |
+  |     dedup remaps IDs together, #15017 ties write access to an      |
+  |     instance-bound attachment, #15019 transfers state during       |
+  |     replacement. Registration policy was the migration's biggest   |
+  |     bug class (#13528).                                            |
+  |                                                                    |
+  |   B. First-wins, everywhere  [OK]                                  |
+  |     Debt +5, Quality +5                                           |
+  |     Right at load time (dedup depends on it), wrong as a           |
+  |     universal rule: scratch graphs absorb live state.              |
+  |                                                                    |
+  |   C. Last-wins: newest registration takes the slot  [BAD]          |
+  |     Debt +10, Quality -5, Morale -5                               |
+  |     The actual #13528 bug: clipboard clones hijacked live          |
+  |     reroute chains.                                                |
+  '--------------------------------------------------------------------'
+
+  .--------------------------------------------------------------------.
+  | CHALLENGE 11: The Mirror Deletion        | Room: Hall of Mirrors   |
+  |------------------------------------------------------------------  |
+  | output.links[] must go: ~200 read sites, 12 write sites, unknown   |
+  | extension usage. How does the deleted field behave for code that   |
+  | still touches it?                                                  |
+  |------------------------------------------------------------------  |
+  |                                                                    |
+  | >>> A. Store-derived facades: removals disconnect  [GOOD] <<<      |
+  |     Debt -10, Quality +15, Morale +5, ECS +1                      |
+  |     The reviewed design: deprecated getters derive the view from   |
+  |     the store. Splicing an id out disconnects it for real; adds    |
+  |     warn and are discarded; input.link = null disconnects. A       |
+  |     zero-warning first-party test keeps the telemetry honest.      |
+  |                                                                    |
+  |   B. Fail fast: throw on any write  [OK]                           |
+  |     Debt +5, Quality +5, Morale -5                                |
+  |     #13479's first version threw; review found strict-mode         |
+  |     TypeErrors inside callbacks could leave the graph half-wired.  |
+  |                                                                    |
+  |   C. Keep writing the mirror alongside the store  [BAD]            |
+  |     Debt +10, Quality -5                                          |
+  |     Two copies of the truth. The mirrors masked three real bugs    |
+  |     that only surfaced when they died.                             |
   '--------------------------------------------------------------------'
 
 ===============================================================================
  V.  OPTIMAL ROUTE - "THE ECS ENLIGHTENMENT" SPEEDRUN
 ===============================================================================
 
-  This route hits all 8 challenges picking the GOOD answer, collecting
-  all 13 artifacts, visiting all 10 rooms. Order matters for efficiency
+  This route hits all 11 challenges picking the GOOD answer, collecting
+  all 22 artifacts, visiting all 12 rooms. Order matters for efficiency
   (fewest key presses).
 
   Starting stats: Debt 50, Quality 30, Morale 60, ECS 0/5
@@ -419,63 +511,69 @@
     COMPONENT GALLERY
       Challenge: The Circular Dependency -> Press A (Composition)
       [Debt 40, Quality 45, Morale 65, ECS 1/5]
-      Press 2 -> Command Forge
-
-    THE COMMAND FORGE
-      Challenge: The Mutation Gateway -> Press A (Commands as intent)
-      [Debt 30, Quality 60, Morale 70, ECS 2/5]
-      Press 2 -> Store Vaults
-
-    STORE VAULTS
-      Challenge: The Scattered Mutations -> Press A (Centralize)
-      [Debt 15, Quality 75, Morale 70, ECS 3/5]
-      Press 1 -> ECS Chamber
-
-    ECS ARCHITECT'S CHAMBER
-      Challenge: The ID Crossroads -> Press A (Branded types)
-      [Debt 0, Quality 95, Morale 70, ECS 4/5]
-      Press 1 -> Subgraph Depths
-
-    SUBGRAPH DEPTHS
-      Challenge: The Widget Promotion Decision -> Press A (Connections-only)
-      [Debt 0, Quality 100, Morale 75, ECS 5/5]
-      Press 1 -> ECS Chamber
-      Press 2 -> Renderer
-
-    RENDERER OVERLOOK
-      Challenge: The Render-Time Mutation -> Press A (Separate phases)
-      [Debt 0, Quality 100, Morale 75, ECS 5/5]
-      Press 2 -> Entry Point
-
-    ENTRY POINT
-      Press 3 -> Services
-
-    SERVICE CORRIDORS
-      Challenge: The Migration Question -> Press A (5-phase plan)
-      [Debt 0, Quality 100, Morale 85, ECS 5/5]
-      Press 1 -> Composables
-
-    COMPOSABLES WORKSHOP
-      Challenge: The Collaboration Protocol -> Press A (Y.js CRDTs)
-      [Debt 0, Quality 100, Morale 95, ECS 5/5]
-      Press 2 -> Entry Point
-
-    ENTRY POINT
-      Press 1 -> Components
       Press 1 -> Litegraph
 
     LITEGRAPH ENGINE ROOM
       Challenge: The God Object Dilemma -> Press B (Extract incrementally)
+      [Debt 30, Quality 60, Morale 70, ECS 2/5]
+      Press 2 -> Hall of Mirrors
+
+    HALL OF MIRRORS
+      Challenge: The Mirror Deletion -> Press A (Warning facades)
+      [Debt 20, Quality 75, Morale 75, ECS 3/5]
+      Press 2 -> Services
+
+    SERVICE CORRIDORS
+      Challenge: The Migration Question -> Press A (Reviewed slices)
+      [Debt 20, Quality 90, Morale 85, ECS 4/5]
+      Press 1 -> Composables
+
+    COMPOSABLES WORKSHOP
+      Challenge: The Collaboration Protocol -> Press A (Y.js CRDTs)
+      [Debt 10, Quality 100, Morale 95, ECS 4/5]
+      Press 1 -> Store Vaults
+
+    STORE VAULTS
+      Challenge: The Scattered Mutations -> Press A (Centralize)
+      [Debt 0, Quality 100, Morale 95, ECS 5/5]
+      Press 2 -> Renderer
+
+    RENDERER OVERLOOK
+      Challenge: The Render-Time Mutation -> Press A (Separate phases)
+      [Debt 0, Quality 100, Morale 95, ECS 5/5]
+      Press 1 -> ECS Chamber
+
+    ECS ARCHITECT'S CHAMBER
+      Challenge: The ID Crossroads -> Press A (Branded types)
+      [Debt 0, Quality 100, Morale 95, ECS 5/5]
+      Press 2 -> Registry Office
+
+    REGISTRY OFFICE
+      Challenge: The Clipboard Hijack -> Press A (Refuse overwrites)
+      [Debt 0, Quality 100, Morale 100, ECS 5/5]
+      Press 2 -> Subgraph Depths
+
+    SUBGRAPH DEPTHS
+      Challenge: The Widget Promotion Decision -> Press A (Connections-only)
+      [Debt 0, Quality 100, Morale 100, ECS 5/5]
+      Press 3 -> Entry Point
+
+    ENTRY POINT
+      Press 1 -> Components
+      Press 2 -> Command Forge
+
+    THE COMMAND FORGE
+      Challenge: The Mutation Gateway -> Press A (Data first)
       [Debt 0, Quality 100, Morale 100, ECS 5/5]
 
   FINAL STATS: Debt 0 | Quality 100 | Morale 100 | ECS 5/5
 
   *** ENDING: THE ECS ENLIGHTENMENT ***
 
-  Total key presses: 28 (including challenge answers)
-  Rooms visited: 10/10
-  Artifacts: 16/16
-  Challenges: 9/9 correct
+  Total key presses: 24 (including challenge answers)
+  Rooms visited: 12/12
+  Artifacts: 22/22
+  Challenges: 11/11 correct
 
 ===============================================================================
  VI.  ALL FOUR ENDINGS
@@ -489,11 +587,12 @@
   |                                                                    |
   |   Requirements: Debt < 25 AND Quality >= 75 AND Morale >= 60       |
   |                                                                    |
-  |   "The World registry hums with clean data. Node removal:          |
-  |    30 lines instead of 107. Serialization: one system instead      |
-  |    of six scattered methods. Branded IDs catch bugs at compile     |
-  |    time. Y.js CRDTs enable real-time collaboration. The team       |
-  |    ships features faster than ever."                               |
+  |   "The mirrors are gone. output.links[], input.link, VueNodeData,  |
+  |    and all 439 lines of useGraphNodeManager were deleted rather    |
+  |    than deprecated forever. Five dedicated stores own node shell,  |
+  |    link topology, reroute chains, widget values, and geometry.     |
+  |    The wire format never changed; the serialization goldens are    |
+  |    byte-identical."                                                |
   |                                                                    |
   |   HOW TO GET IT: Pick ALL good answers. Hard to miss if you        |
   |   read the hints carefully.                                        |
@@ -505,9 +604,9 @@
   |                                                                    |
   |   Requirements: Debt < 40 AND Quality >= 50                        |
   |                                                                    |
-  |   "The migration completes on schedule. Systems hum along,         |
-  |    the ECS World holds most entity state, and the worst god        |
-  |    objects have been tamed."                                       |
+  |   "The migration lands on schedule. The dedicated stores hold      |
+  |    most entity state, and the worst god objects have been tamed    |
+  |    into facades."                                                  |
   |                                                                    |
   |   HOW TO GET IT: Pick mostly good answers, 1-2 OK answers.         |
   '--------------------------------------------------------------------'
@@ -561,7 +660,7 @@
   alone. Here's the proven path (starting at Debt 50):
 
     Components:    B (Barrel file reordering)    Debt +10 -> 60
-    Command Forge: C (Skip commands)             Debt +15 -> 75
+    Command Forge: C (Keep mutating directly)    Debt +15 -> 75
     Stores:        C (Leave it as-is)            Debt +10 -> 85
     Services:      C (Strangler fig)             Debt  +0 -> 85
     Litegraph:     C (Add a facade)              Debt  +5 -> 90
@@ -569,8 +668,10 @@
     Subgraph:      C (Keep three-layer system)   Debt +10 -> 100
     Renderer:      B (Dirty flags)               Debt  -5 -> 95
     Composables:   B (Polling-based sync)        Debt +10 -> 100
+    Registry:      C (Last-wins)                 Debt +10 -> 100
+    Mirrors:       C (Keep writing the mirror)   Debt +10 -> 100
 
-  Final: Debt 100 / Quality 10 / Morale 50 -> SPAGHETTI SINGULARITY
+  Final: Debt 100 / Quality 10 / Morale 65 -> SPAGHETTI SINGULARITY
 
   WARNING: Picking "all bad-rated answers" does NOT work! The bad
   answers for Litegraph (A: Rewrite, Debt -20) and Services (B: Big
@@ -581,26 +682,32 @@
  VIII.  ARTIFACTS CHECKLIST
 ===============================================================================
 
-  Room              | Artifact                   | Type
-  ==================|============================|==================
-  Component Gallery | GraphView.vue              | Component
-  Store Vaults      | widgetValueStore.ts        | Proto-ECS Store
-  Store Vaults      | layoutStore.ts             | Proto-ECS Store
-  Service Corridors | litegraphService.ts        | Service
-  Service Corridors | Extension Migration Guide  | Design Pattern
-  Litegraph Engine  | LGraphCanvas.ts            | God Object
-  Litegraph Engine  | LGraphNode.ts              | God Object
-  ECS Chamber       | World Registry             | ECS Core
-  ECS Chamber       | Branded Entity IDs         | Type Safety
-  Subgraph Depths   | SubgraphStructure          | ECS Component
-  Subgraph Depths   | Typed Interface Contracts  | Design Pattern
-  Renderer Overlook | QuadTree Spatial Index     | Data Structure
-  Renderer Overlook | Y.js CRDT Layout           | Collaboration
-  Composables       | useCoreCommands.ts         | Composable
-  Command Forge     | CommandExecutor            | ECS Core
-  Command Forge     | Command Interface          | Design Pattern
+  Room              | Artifact                     | Type
+  ==================|==============================|==================
+  Component Gallery | GraphView.vue                | Component
+  Store Vaults      | widgetValueStore.ts          | Proto-ECS Store
+  Store Vaults      | layoutStore.ts               | Proto-ECS Store
+  Store Vaults      | linkStore.ts                 | Store Authority
+  Store Vaults      | nodeDataStore.ts             | Store Authority
+  Service Corridors | litegraphService.ts          | Service
+  Service Corridors | Extension Migration Guide    | Design Pattern
+  Litegraph Engine  | LGraphCanvas.ts              | God Object
+  Litegraph Engine  | LGraphNode.ts                | God Object
+  ECS Chamber       | The Unbuilt World            | Historical Blueprint
+  ECS Chamber       | Branded IDs (WidgetId, ...)  | Type Safety
+  Subgraph Depths   | Linked Subgraph Inputs       | ADR 0009
+  Subgraph Depths   | Typed Interface Contracts    | Design Pattern
+  Renderer Overlook | QuadTree Spatial Index       | Data Structure
+  Renderer Overlook | Y.js CRDT Layout             | Collaboration
+  Composables       | useCoreCommands.ts           | Composable
+  Command Forge     | ChangeTracker (Snapshot Undo)| Undo/Redo
+  Command Forge     | Command Layer (Deferred)     | Design Pattern
+  Registry Office   | GraphScope (root + owner)    | Identity
+  Registry Office   | Ownership Attachment         | Identity
+  Hall of Mirrors   | Deprecation Telemetry        | Compatibility
+  Hall of Mirrors   | Serialization Goldens        | Testing
 
-  Total: 16 artifacts across 9 rooms.
+  Total: 22 artifacts across 11 rooms.
   Entry Point has no artifacts.
 
 ===============================================================================
@@ -628,18 +735,22 @@
   * Room navigation preloads images for adjacent rooms, so transitions
     should be instant after the first visit.
 
-  * The Command Forge (formerly the Side Panel) teaches the Command
-    Pattern - how commands relate to systems and the World. Its challenge
-    covers the architectural layering from ADR 0003 and ADR 0008.
+  * The Command Forge (formerly the Side Panel) now teaches the most
+    counterintuitive lesson of the merged migration: the command layer
+    was deliberately NOT built. Data centralization shipped first;
+    commands wait for a concrete consumer. The anvils are cold on
+    purpose.
 
-  * The ECS Migration Progress stat maxes at 5, matching the 5 phases
-    of the real migration plan. But 9 challenges can give +1 each
-    (8 of the 9 GOOD answers grant +1 ECS). The Services challenge
-    ("5-phase plan") gives +1 ECS but no debt reduction - it's pure
-    planning, not implementation.
+  * The ECS Migration Progress stat maxes at 5, matching the five
+    store authorities that shipped: node shell, link topology, reroute
+    chains, widget values, and layout. 10 of the 11 GOOD answers grant
+    +1 ECS (Composables is the exception), so the bar fills well
+    before the last challenge. The Services challenge gives +1 ECS but
+    no debt reduction - process enables progress, it isn't progress
+    itself.
 
   * There are between 2-3 choices per challenge, giving
-    3*3*3*3*3*3*2*3*3 = 13,122 possible playthroughs. But only 4
+    3^10 * 2 = 118,098 possible playthroughs. But only 4
     distinct endings. Most paths lead to "The Clean Architecture"
     or "The Eternal Refactor."
 
@@ -647,17 +758,18 @@
     the recommended reading order matches the optimal speedrun route:
     1. src/main.ts (entry point)
     2. src/views/GraphView.vue (main canvas)
-    3. src/stores/ (state management)
-    4. src/ecs/ (the future)
-    5. docs/architecture/ecs-world-command-api.md (command layer)
+    3. src/stores/linkStore.ts + nodeDataStore.ts (the shipped stores)
+    4. src/systems/badgeSystem.ts (derive-on-read, no store)
+    5. docs/architecture/ecs/ecs-migration-summary.md (what shipped)
     6. src/renderer/core/ (canvas pipeline)
-    7. docs/architecture/ecs-migration-plan.md (the plan)
+    7. docs/architecture/ecs/ecs-migration-plan.md (what remains)
     8. src/composables/ (Vue logic hooks)
-    9. src/lib/litegraph/src/ (the legacy engine)
+    9. src/lib/litegraph/src/ (the legacy engine, now a facade)
 
-  * The pixel art images were generated using the Z-Image Turbo
-    pipeline on the same ComfyUI that this frontend controls.
-    Meta, isn't it?
+  * The V2 art was generated with Krea 2 Turbo on Comfy Cloud, driven
+    by the same ComfyUI stack this frontend controls. The v1 pixel art
+    came from a local Z-Image Turbo pipeline. Either way: the game
+    about the graph engine was drawn by the graph engine.
 
 ===============================================================================
 
