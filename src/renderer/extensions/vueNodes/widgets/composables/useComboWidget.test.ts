@@ -40,6 +40,15 @@ const mockAssetsStoreState = vi.hoisted(() => ({
     loadMore: mockLoadMore
   }
 }))
+const mockUseAssetsStore = vi.hoisted(() =>
+  vi.fn(() => ({
+    get inputAssets() {
+      return mockAssetsStoreState.inputAssets
+    },
+    getInputName: mockGetInputName,
+    getAssets: mockGetAssets
+  }))
+)
 
 vi.mock('@/scripts/widgets', () => ({
   addValueControlWidgets: vi.fn()
@@ -52,13 +61,7 @@ vi.mock('@/platform/distribution/types', () => ({
 }))
 
 vi.mock('@/stores/assetsStore', () => ({
-  useAssetsStore: vi.fn(() => ({
-    get inputAssets() {
-      return mockAssetsStoreState.inputAssets
-    },
-    getInputName: mockGetInputName,
-    getAssets: mockGetAssets
-  }))
+  useAssetsStore: mockUseAssetsStore
 }))
 
 const mockSettingStoreGet = vi.fn(() => false)
@@ -149,6 +152,16 @@ describe('useComboWidget', () => {
     mockAssetsStoreState.inputAssets.items = []
     mockAssetsStoreState.inputAssets.isLoading = false
     mockAssetsStoreState.inputAssets.hasMore = false
+    mockUseAssetsStore.mockClear()
+  })
+
+  it('reuses one assets store instance while creating a cloud combo', () => {
+    mockDistributionState.isCloud = true
+    const constructor = useComboWidget()
+
+    constructor(createMockNode('LoadImage'), createMockInputSpec())
+
+    expect(mockUseAssetsStore).toHaveBeenCalledOnce()
   })
 
   it('should handle undefined spec', () => {

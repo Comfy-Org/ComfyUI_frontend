@@ -1,5 +1,4 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -30,14 +29,8 @@ import {
 } from './missingMediaGrouping'
 import type { MissingMediaCandidate } from './types'
 
-const mockInputItems = ref<AssetItem[]>([])
-const mockInputHasMore = ref(false)
-
-const { mockUseAssetsQuery } = vi.hoisted(() => ({
-  mockUseAssetsQuery: vi.fn()
-}))
-
-const { mockGetAssetsPageByTag } = vi.hoisted(() => ({
+const { mockGetAllAssetsByTag, mockGetAssetsPageByTag } = vi.hoisted(() => ({
+  mockGetAllAssetsByTag: vi.fn(),
   mockGetAssetsPageByTag: vi.fn()
 }))
 
@@ -81,11 +74,6 @@ vi.mock('@/utils/graphTraversalUtil', async (importActual) => {
   }
 })
 
-vi.mock('@/platform/assets/composables/useAssetsQuery', () => ({
-  useAssetsQuery: mockUseAssetsQuery,
-  invalidateAll: vi.fn()
-}))
-
 vi.mock('@/composables/useFeatureFlags', () => ({
   useFeatureFlags: () => ({ flags: { assetsEnabled: true } })
 }))
@@ -99,6 +87,7 @@ vi.mock('@/platform/assets/services/assetService', async () => {
     ...actual,
     assetService: {
       ...actual.assetService,
+      getAllAssetsByTag: mockGetAllAssetsByTag,
       getAssetsPageByTag: mockGetAssetsPageByTag
     }
   }
@@ -672,16 +661,7 @@ describe('verifyMediaCandidates', () => {
     'blake3:2222222222222222222222222222222222222222222222222222222222222222'
 
   beforeEach(() => {
-    mockInputItems.value = []
-    mockInputHasMore.value = false
-    mockUseAssetsQuery.mockReturnValue({
-      items: mockInputItems,
-      hasMore: mockInputHasMore,
-      loadMore: vi.fn(() => {
-        mockInputHasMore.value = false
-        return Promise.resolve()
-      })
-    })
+    mockGetAllAssetsByTag.mockResolvedValue([])
     mockGetAssetsPageByTag.mockResolvedValue(makeAssetPage([]))
     mockFetchHistoryPage.mockResolvedValue({
       jobs: [],
@@ -994,7 +974,9 @@ describe('verifyMediaCandidates', () => {
     const candidates = [
       makeCandidate('1', existingHash, { isMissing: undefined })
     ]
-    mockInputItems.value = [makeAsset('stored-photo.png', existingHash)]
+    mockGetAllAssetsByTag.mockResolvedValue([
+      makeAsset('stored-photo.png', existingHash)
+    ])
 
     await verifyMediaCandidates(candidates, { isCloud: true })
 
@@ -1158,7 +1140,7 @@ describe('verifyMediaCandidates', () => {
       makeAsset(`asset-${index}.png`)
     )
     inputAssets[42] = makeAsset('public-asset-record', 'public-photo.png')
-    mockInputItems.value = inputAssets
+    mockGetAllAssetsByTag.mockResolvedValue(inputAssets)
 
     await verifyMediaCandidates(candidates, { isCloud: true })
 

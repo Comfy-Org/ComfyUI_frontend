@@ -12,6 +12,7 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
 import { api } from '@/scripts/api'
 import type * as outputAssetUtilModule from '../utils/outputAssetUtil'
+import type { OutputAssetGroupView } from './media/assetMappers'
 import { useMediaAssetActions } from './useMediaAssetActions'
 
 // Use vi.hoisted to create a mutable reference for isCloud
@@ -54,14 +55,14 @@ vi.mock('@/stores/dialogStore', () => ({
 
 const mockInvalidateModelsForCategory = vi.hoisted(() => vi.fn())
 const mockSetAssetDeleting = vi.hoisted(() => vi.fn())
-const mockOutputLoadNew = vi.hoisted(() => vi.fn())
-const mockInputLoadNew = vi.hoisted(() => vi.fn())
+const mockOutputInvalidate = vi.hoisted(() => vi.fn())
+const mockInputInvalidate = vi.hoisted(() => vi.fn())
 const mockHasCategory = vi.hoisted(() => vi.fn())
 vi.mock('@/stores/assetsStore', () => ({
   useAssetsStore: () => ({
     setAssetDeleting: mockSetAssetDeleting,
-    outputAssets: { loadNew: mockOutputLoadNew },
-    inputAssets: { loadNew: mockInputLoadNew },
+    outputAssets: { invalidate: mockOutputInvalidate },
+    inputAssets: { invalidate: mockInputInvalidate },
     invalidateModelsForCategory: mockInvalidateModelsForCategory,
     hasCategory: mockHasCategory
   })
@@ -992,6 +993,36 @@ describe('useMediaAssetActions', () => {
       expect(payload.naming_strategy).toBe('group_by_job_time')
     })
 
+    it('should use the API job ID for expanded output assets', async () => {
+      const assets = [
+        createMockAsset({
+          id: 'asset-1',
+          job_id: 'job1',
+          name: 'img1.png',
+          tags: ['output'],
+          user_metadata: { jobId: 'stale-job', subfolder: '' }
+        }),
+        createMockAsset({
+          id: 'asset-2',
+          job_id: 'job1',
+          name: 'img2.png',
+          tags: ['output']
+        })
+      ]
+
+      useMediaAssetActions().downloadAssets(assets)
+
+      await vi.waitFor(() => {
+        expect(mockCreateAssetExport).toHaveBeenCalledTimes(1)
+      })
+      expect(mockCreateAssetExport).toHaveBeenCalledWith({
+        job_ids: ['job1'],
+        job_asset_name_filters: { job1: ['img1.png', 'img2.png'] },
+        naming_strategy: 'preserve',
+        include_previews: true
+      })
+    })
+
     it('should mix: omit filters for known outputCount, keep for unknown', async () => {
       const j1a = createOutputAsset('a1', 'img1a.png', 'job1', 2)
       const j1b = createOutputAsset('a2', 'img1b.png', 'job1', 2)
@@ -1116,6 +1147,115 @@ describe('useMediaAssetActions', () => {
       actions.downloadAssets([j1, j1Duplicate])
 
       await expectExportToastFileCount(3)
+    })
+  })
+
+  describe('deleteAssets - transport selection', () => {
+    beforeEach(() => {
+      mockShowDialog.mockImplementation(
+        ({ props }: { props: { onConfirm: () => Promise<void> } }) => {
+          void props.onConfirm()
+        }
+      )
+      mockDeleteAsset.mockResolvedValue(undefined)
+      vi.mocked(api.deleteItem).mockResolvedValue(undefined)
+    })
+
+    it('returns before showing a dialog when the assets API cannot delete', async () => {
+      mockIsCloud.value = true
+      vi.mocked(api.getServerFeature).mockReturnValue(false)
+
+      const result =
+        await useMediaAssetActions().deleteAssets(createMockAsset())
+
+      expect(result).toBe(false)
+      expect(mockShowDialog).not.toHaveBeenCalled()
+      expect(mockDeleteAsset).not.toHaveBeenCalled()
+      expect(api.deleteItem).not.toHaveBeenCalled()
+    })
+
+    it('deletes local outputs directly through history and refreshes outputs', async () => {
+      mockGetAssetType.mockReturnValue('output')
+      mockGetOutputAssetMetadata.mockReturnValue({ jobId: 'local-job' })
+      const asset = createMockAsset({
+        id: 'local-output',
+        name: 'output.png',
+        tags: ['output'],
+        user_metadata: { jobId: 'local-job' }
+      })
+
+      const result = await useMediaAssetActions().deleteAssets(asset)
+
+      expect(result).toBe(true)
+      expect(api.deleteItem).toHaveBeenCalledOnce()
+      expect(api.deleteItem).toHaveBeenCalledWith('history', 'local-job')
+      expect(mockDeleteAsset).not.toHaveBeenCalled()
+      expect(mockOutputInvalidate).toHaveBeenCalledOnce()
+      expect(useToast().add).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'success' })
+      )
+    })
+
+    it('expands allOutputs metadata into one deletion per child', async () => {
+      mockIsCloud.value = true
+      vi.mocked(api.getServerFeature).mockReturnValue(true)
+      mockGetAssetType.mockReturnValue('output')
+      mockGetOutputAssetMetadata.mockReturnValue({
+        jobId: 'cloud-job',
+        allOutputs: [
+          { assetId: 'child-1', filename: 'one.png', type: 'output' },
+          { assetId: 'child-2', filename: 'two.png', type: 'output' }
+        ]
+      })
+
+      await useMediaAssetActions().deleteAssets(createMockAsset())
+
+      expect(mockDeleteAsset).toHaveBeenCalledTimes(2)
+      expect(mockDeleteAsset).toHaveBeenCalledWith('child-1')
+      expect(mockDeleteAsset).toHaveBeenCalledWith('child-2')
+    })
+
+    it('deletes every real asset in an output group', async () => {
+      mockIsCloud.value = true
+      vi.mocked(api.getServerFeature).mockReturnValue(true)
+      mockGetAssetType.mockReturnValue('output')
+      mockGetOutputAssetMetadata.mockReturnValue({ jobId: 'cloud-job' })
+      const first = createMockAsset({ id: 'asset-1', name: 'one.png' })
+      const second = createMockAsset({ id: 'asset-2', name: 'two.png' })
+      const group: OutputAssetGroupView = {
+        ...createMockAsset({ id: 'asset-2' }),
+        outputGroup: { id: 'cloud-job', assets: [first, second] }
+      }
+
+      await useMediaAssetActions().deleteAssets(group)
+
+      expect(mockDeleteAsset).toHaveBeenCalledTimes(2)
+      expect(mockDeleteAsset).toHaveBeenCalledWith('asset-1')
+      expect(mockDeleteAsset).toHaveBeenCalledWith('asset-2')
+      expect(api.deleteItem).toHaveBeenCalledWith('history', 'cloud-job')
+      expect(mockInputInvalidate).toHaveBeenCalledWith(['asset-1', 'asset-2'])
+      expect(mockOutputInvalidate).toHaveBeenCalledWith(['asset-1', 'asset-2'])
+    })
+
+    it('keeps job history when a child asset deletion fails', async () => {
+      mockIsCloud.value = true
+      vi.mocked(api.getServerFeature).mockReturnValue(true)
+      mockGetAssetType.mockReturnValue('output')
+      mockGetOutputAssetMetadata.mockReturnValue({ jobId: 'cloud-job' })
+      mockDeleteAsset
+        .mockResolvedValueOnce(undefined)
+        .mockRejectedValueOnce(new Error('delete failed'))
+      const first = createMockAsset({ id: 'asset-1', name: 'one.png' })
+      const second = createMockAsset({ id: 'asset-2', name: 'two.png' })
+
+      const group: OutputAssetGroupView = {
+        ...createMockAsset({ id: 'asset-2' }),
+        outputGroup: { id: 'cloud-job', assets: [first, second] }
+      }
+
+      await useMediaAssetActions().deleteAssets(group)
+
+      expect(api.deleteItem).not.toHaveBeenCalled()
     })
   })
 

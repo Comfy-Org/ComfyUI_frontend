@@ -1,8 +1,12 @@
 import { expect } from '@playwright/test'
 import type { Locator } from '@playwright/test'
 
-import type { Asset, ListAssetsResponse } from '@comfyorg/ingest-types'
+import type { Asset } from '@comfyorg/ingest-types'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import {
+  createMockAssetListResponse,
+  createMockCloudAsset
+} from '@e2e/fixtures/helpers/AssetsHelper'
 
 // The assets sidebar's sort options live inside the settings popover and are
 // only rendered in cloud mode (`MediaAssetFilterBar.vue`:
@@ -27,17 +31,15 @@ const JOB_UUIDS: Record<string, string> = {
   'job-003': '00000000-0000-4000-a000-000000000003'
 }
 
-interface JobSpec {
-  id: string
-  filename: string
+type JobSpec = Pick<Asset, 'id' | 'name'> & {
   createTime: number
   durationSec: number
 }
 
 const SPECS: JobSpec[] = [
-  { id: 'job-001', filename: 'apple.png', createTime: 1000, durationSec: 5 },
-  { id: 'job-002', filename: 'Zebra.png', createTime: 2000, durationSec: 10 },
-  { id: 'job-003', filename: 'Banana.png', createTime: 3000, durationSec: 3 }
+  { id: 'job-001', name: 'apple.png', createTime: 1000, durationSec: 5 },
+  { id: 'job-002', name: 'Zebra.png', createTime: 2000, durationSec: 10 },
+  { id: 'job-003', name: 'Banana.png', createTime: 3000, durationSec: 3 }
 ]
 
 // 2 assets per job so outputCount > 1 and "See more outputs" renders.
@@ -47,28 +49,22 @@ const SPECS: JobSpec[] = [
 const CLOUD_ASSETS: Asset[] = SPECS.flatMap((spec) => {
   const jobId = JOB_UUIDS[spec.id]
   return [
-    {
+    createMockCloudAsset({
       id: `${spec.id}-asset-1`,
       name: `${spec.id}_extra.png`,
       job_id: jobId,
-      mime_type: 'image/png',
-      tags: ['output'],
-      preview_url: `/api/view?filename=${spec.id}_extra.png&type=output`,
       created_at: new Date(spec.createTime).toISOString(),
       updated_at: new Date(spec.createTime).toISOString(),
       user_metadata: { executionTimeInSeconds: spec.durationSec }
-    },
-    {
+    }),
+    createMockCloudAsset({
       id: `${spec.id}-asset-0`,
-      name: spec.filename,
+      name: spec.name,
       job_id: jobId,
-      mime_type: 'image/png',
-      tags: ['output'],
-      preview_url: `/api/view?filename=${spec.filename}&type=output`,
       created_at: new Date(spec.createTime + 1).toISOString(),
       updated_at: new Date(spec.createTime + 1).toISOString(),
       user_metadata: { executionTimeInSeconds: spec.durationSec }
-    }
+    })
   ]
 })
 
@@ -86,10 +82,6 @@ async function expectAssetOrder(items: Locator, jobIds: string[]) {
   }
 }
 
-function makeAssetsResponse(assets: Asset[]): ListAssetsResponse {
-  return { assets, total: assets.length, has_more: false }
-}
-
 const test = comfyPageFixture.extend<{
   stubCloudAssets: void
   stubInputFiles: void
@@ -101,7 +93,7 @@ const test = comfyPageFixture.extend<{
         route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify(makeAssetsResponse(CLOUD_ASSETS))
+          body: JSON.stringify(createMockAssetListResponse(CLOUD_ASSETS))
         })
       )
       await use()

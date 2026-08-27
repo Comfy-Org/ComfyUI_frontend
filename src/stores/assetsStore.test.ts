@@ -1,6 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, watch } from 'vue'
+import { nextTick, toValue, watch } from 'vue'
 
 import { useAssetsStore } from '@/stores/assetsStore'
 import type {
@@ -18,6 +18,7 @@ vi.mock('@/scripts/api', () => ({
     apiURL: vi.fn((path) => `http://localhost:3000/api${path}`),
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
+    getServerFeature: vi.fn(() => false),
     user: 'test-user'
   }
 }))
@@ -33,9 +34,7 @@ vi.mock('@/platform/assets/services/assetService', () => ({
     updateAsset: vi.fn(),
     addAssetTags: vi.fn(),
     removeAssetTags: vi.fn()
-  },
-  INPUT_TAG: 'input',
-  OUTPUT_TAG: 'output'
+  }
 }))
 
 // Mock distribution type - hoisted so it can be changed per test
@@ -1332,6 +1331,24 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
 describe('assetsStore - Model Assets Cache (non-cloud)', () => {
   beforeEach(() => {
     mockIsCloud.value = false
+  })
+
+  it('loads imported assets when the input list is opened', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(JSON.stringify(['imported.png']), { status: 200 })
+        )
+    )
+    const store = useAssetsStore()
+
+    await store.inputAssets.loadMore()
+
+    expect(toValue(store.inputAssets.items)).toEqual([
+      expect.objectContaining({ name: 'imported.png' })
+    ])
   })
 
   it('caches model assets fetched by tag on non-cloud builds', async () => {

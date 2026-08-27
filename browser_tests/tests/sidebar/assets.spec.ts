@@ -3,6 +3,7 @@ import { expect } from '@playwright/test'
 import type { Asset } from '@comfyorg/ingest-types'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import {
+  createMockCloudAsset,
   createMockJob,
   createMockJobs
 } from '@e2e/fixtures/helpers/AssetsHelper'
@@ -78,16 +79,13 @@ function makeCloudAsset(
   createTime: number
 ): Asset {
   const createdAt = new Date(createTime).toISOString()
-  return {
+  return createMockCloudAsset({
     id,
     name,
     job_id: jobId,
-    mime_type: 'image/png',
-    tags: ['output'],
-    preview_url: `/api/view?filename=${name}&type=output`,
     created_at: createdAt,
     updated_at: createdAt
-  }
+  })
 }
 
 // Cloud assets matching SAMPLE_JOBS. job-gamma has 2 outputs so
@@ -872,9 +870,11 @@ cloudTest.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
 
       const payload = exportRequests[0]
       expect(payload.job_ids).toEqual([JOB_IDS.gamma])
-      expect(
-        payload.job_asset_name_filters?.[JOB_IDS.gamma]?.toSorted()
-      ).toEqual(['abstract_art.png', 'abstract_art_alt.png'])
+      const names = payload.job_asset_name_filters?.[JOB_IDS.gamma]
+      expect(names).toHaveLength(2)
+      expect(names).toEqual(
+        expect.arrayContaining(['abstract_art.png', 'abstract_art_alt.png'])
+      )
       expect(payload.naming_strategy).toBe('preserve')
     }
   )
@@ -899,8 +899,9 @@ cloudTest.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
       await expect.poll(() => exportRequests).toHaveLength(1)
 
       const payload = exportRequests[0]
-      expect(payload.job_ids?.toSorted()).toEqual(
-        [JOB_IDS.alpha, JOB_IDS.beta].toSorted()
+      expect(payload.job_ids).toHaveLength(2)
+      expect(payload.job_ids).toEqual(
+        expect.arrayContaining([JOB_IDS.alpha, JOB_IDS.beta])
       )
       expect(payload.job_asset_name_filters).toBeUndefined()
       expect(payload.naming_strategy).toBe('group_by_job_time')
@@ -1016,10 +1017,9 @@ test.describe('Assets sidebar - delete confirmation', () => {
     await expect(dialog).toBeHidden()
     await expect(tab.assetCards).toHaveCount(initialCount - 1)
 
-    const successToast = comfyPage.page.locator('.p-toast-message-success')
-    await expect(async () => {
-      await expect(successToast).toBeVisible({ timeout: 1000 })
-    }, 'Deletion is not supported on local').rejects.toThrow()
+    await expect(
+      comfyPage.page.locator('.p-toast-message-success')
+    ).toBeVisible()
   })
 
   test('Cancelling delete preserves asset', async ({ comfyPage }) => {
@@ -1236,7 +1236,7 @@ test('Insert as node', { tag: '@vue-nodes' }, async ({ comfyPage }) => {
       }
     }),
     createMockJob({
-      id: 'job2',
+      id: 'job3',
       preview_output: {
         filename: `3.png`,
         type: 'input',

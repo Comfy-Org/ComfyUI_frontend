@@ -181,7 +181,10 @@ import {
   isPreviewableMediaType
 } from '@/utils/formatUtil'
 
-import { getAssetType } from '../composables/media/assetMappers'
+import {
+  getAssetType,
+  getOutputGroupAssets
+} from '../composables/media/assetMappers'
 import { getAssetUrl } from '../utils/assetUrlUtil'
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 import type { AssetItem } from '../schemas/assetSchema'
@@ -383,14 +386,18 @@ function dragStart(e: DragEvent) {
   const { dataTransfer } = e
   if (!dataTransfer) return
 
-  const { filename, subfolder, type, display_name } =
-    getOutputAssetMetadata(asset.user_metadata)?.allOutputs?.[0] ?? {}
+  const groupedAsset = getOutputGroupAssets(asset)?.[0]
+  const legacyOutput = getOutputAssetMetadata(asset.user_metadata)
+    ?.allOutputs?.[0]
+  const filename = groupedAsset?.name ?? legacyOutput?.filename
   if (filename) {
     const outputString = JSON.stringify({
       filename,
-      subfolder,
-      type,
-      display_name
+      subfolder:
+        getOutputAssetMetadata(groupedAsset?.user_metadata)?.subfolder ??
+        legacyOutput?.subfolder,
+      type: groupedAsset ? getAssetType(groupedAsset.tags) : legacyOutput?.type,
+      display_name: groupedAsset?.display_name ?? legacyOutput?.display_name
     })
     dataTransfer.items.add(outputString, MIME_ASSET_INFO)
   }

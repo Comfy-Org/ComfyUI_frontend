@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
+import { getOutputKey } from '@/platform/assets/utils/outputKeyUtil'
 import type { ResultItemImpl } from '@/stores/queueStore'
 import type { SerializedNodeId } from '@/types/nodeId'
 
@@ -75,7 +76,9 @@ describe('resolveOutputAssetItems', () => {
 
     const results = await resolveOutputAssetItems(metadata, {
       createdAt: '2025-01-01T00:00:00.000Z',
-      excludeOutputKey: '2-sub-b.png'
+      excludeOutputKey:
+        getOutputKey({ nodeId: '2', subfolder: 'sub', filename: 'b.png' }) ??
+        undefined
     })
 
     expect(mocks.getJobDetail).not.toHaveBeenCalled()
@@ -163,7 +166,9 @@ describe('resolveOutputAssetItems', () => {
     }
 
     const results = await resolveOutputAssetItems(metadata, {
-      excludeOutputKey: '2-sub-b.png'
+      excludeOutputKey:
+        getOutputKey({ nodeId: '2', subfolder: 'sub', filename: 'b.png' }) ??
+        undefined
     })
 
     // outputB excluded, remaining reversed: [C, A]
@@ -185,7 +190,12 @@ describe('resolveOutputAssetItems', () => {
     }
 
     const results = await resolveOutputAssetItems(metadata, {
-      excludeOutputKey: '1-sub-only.png'
+      excludeOutputKey:
+        getOutputKey({
+          nodeId: '1',
+          subfolder: 'sub',
+          filename: 'only.png'
+        }) ?? undefined
     })
 
     expect(results).toHaveLength(0)

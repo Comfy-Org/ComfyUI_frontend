@@ -14,15 +14,12 @@ import type {
   AssetResponse,
   TagsOperationResult
 } from '@/platform/assets/schemas/assetSchema'
-import {
-  useAssetsQuery,
-  invalidateAll
-} from '@/platform/assets/composables/useAssetsQuery'
+import { createAssetList } from '@/platform/assets/composables/createAssetList'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { AssetPaginationOptions } from '@/platform/assets/services/assetService'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { api } from '@/scripts/api'
-import { wrapPagedList } from '@/utils/pagedList'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { PagedList } from '@/utils/pagedList'
 
 import { TaskItemImpl } from './queueStore'
@@ -125,15 +122,16 @@ export const useAssetsStore = defineStore('assets', () => {
     }
   })
 
+  const updateInputs = async () => {
+    await executeUpdateInputs()
+  }
   const historyInputs: PagedList<AssetItem> = {
     hasMore: false,
-    invalidate: async () => {
-      await executeUpdateInputs()
-    },
+    invalidate: updateInputs,
     isLoading: inputLoading,
     items: rawInputAssets,
-    loadMore: async () => undefined,
-    loadNew: async () => undefined
+    loadMore: updateInputs,
+    loadNew: updateInputs
   }
 
   function useHistoryAssets(): PagedList<AssetItem> {
@@ -273,18 +271,42 @@ export const useAssetsStore = defineStore('assets', () => {
     }
   }
 
-  const inputAssets = computed(() =>
-    flags.assetsEnabled
-      ? useAssetsQuery({ include_tags: ['input'] })
-      : historyInputs
+  const queryOptions = {
+    onError: (reason: string, error?: unknown) =>
+      reportError(error ?? new Error(reason), {
+        errorType: 'asset_query_failure'
+      })
+  }
+  const cloudInputAssets = createAssetList(
+    { include_tags: ['input'] },
+    queryOptions
   )
-  const outputDirs = ref(['output', 'temp'])
-  const outputAssets = computed(() => {
-    if (!flags.assetsEnabled) return useHistoryAssets()
+  const cloudOutputAssets = createAssetList(
+    { tags_any: ['output', 'temp'] },
+    queryOptions
+  )
+  const historyOutputAssets = useHistoryAssets()
+  const groupedCloudOutputAssets: PagedList<AssetItem> = {
+    ...cloudOutputAssets,
+    items: computed(() =>
+      unflattenOutputAssets(toValue(cloudOutputAssets.items))
+    )
+  }
+  const inputAssets = computed(() =>
+    flags.assetsEnabled ? cloudInputAssets : historyInputs
+  )
+  const outputAssets = computed(() =>
+    flags.assetsEnabled ? groupedCloudOutputAssets : historyOutputAssets
+  )
 
-    const flatAssets = useAssetsQuery({ tags_any: outputDirs.value })
-    return wrapPagedList(flatAssets, unflattenOutputAssets)
-  })
+  async function invalidateAll() {
+    await Promise.all([
+      cloudInputAssets.invalidate(),
+      cloudOutputAssets.invalidate(),
+      historyInputs.invalidate(),
+      historyOutputAssets.invalidate()
+    ])
+  }
 
   /**
    * Map of asset hash filename to asset item for O(1) lookup
@@ -892,6 +914,7 @@ export const useAssetsStore = defineStore('assets', () => {
     // States
     inputAssets,
     outputAssets,
+    flatOutputAssets: cloudOutputAssets,
     invalidateAll,
 
     // Deletion tracking

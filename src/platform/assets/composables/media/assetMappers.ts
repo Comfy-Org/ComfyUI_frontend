@@ -1,39 +1,39 @@
-import { toValue } from 'vue'
-import type { MaybeRef } from 'vue'
+import { groupBy, partition } from 'es-toolkit'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
-import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetContext } from '@/platform/assets/schemas/mediaAssetSchema'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { api } from '@/scripts/api'
-import type { TaskItemImpl } from '@/stores/queueStore'
-import { ResultItemImpl } from '@/stores/queueStore'
+import type { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
 import {
   getMediaTypeFromFilename,
   isPreviewableMediaType
 } from '@/utils/formatUtil'
 
-class AssetResultItem extends ResultItemImpl {
-  private readonly _url: string
-  private readonly _previewUrl: string
-
-  constructor(
-    asset: AssetItem,
-    init: ConstructorParameters<typeof ResultItemImpl>[0]
-  ) {
-    super(init)
-    this._url = asset.preview_url ?? ''
-    this._previewUrl = asset.thumbnail_url ?? this._url
+export type OutputAssetGroupView = AssetItem & {
+  outputGroup: {
+    id: string
+    assets: readonly AssetItem[]
   }
+}
 
-  override get url(): string {
-    return this._url
-  }
+type JobOutputAsset = AssetItem & { job_id: string }
 
-  override get previewUrl(): string {
-    return this._previewUrl
-  }
+function hasJobId(asset: AssetItem): asset is JobOutputAsset {
+  return Boolean(asset.job_id)
+}
+
+export function getOutputGroupAssets(
+  asset: AssetItem
+): readonly AssetItem[] | null {
+  return 'outputGroup' in asset &&
+    typeof asset.outputGroup === 'object' &&
+    asset.outputGroup !== null &&
+    'assets' in asset.outputGroup &&
+    Array.isArray(asset.outputGroup.assets)
+    ? asset.outputGroup.assets
+    : null
 }
 
 /**
@@ -41,7 +41,7 @@ class AssetResultItem extends ResultItemImpl {
  * @param tags The tags array from AssetItem
  * @returns The asset type ('input' or 'output')
  */
-export function getAssetType(tags?: string[]): AssetContext['type'] {
+export function getAssetType(tags?: AssetItem['tags']): AssetContext['type'] {
   const tag = tags?.[0]
   if (tag === 'output') return 'output'
   return 'input'
@@ -92,62 +92,41 @@ const byCreatedAtAsc = (a: AssetItem, b: AssetItem): number =>
 const byCreatedAtDesc = (a: AssetItem, b: AssetItem): number =>
   new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
 
-function flatAssetToResultItem(asset: AssetItem): ResultItemImpl {
-  const metadata = getOutputAssetMetadata(asset.user_metadata)
-  return new AssetResultItem(asset, {
-    assetId: asset.id,
-    display_name: asset.display_name ?? undefined,
-    filename: asset.name,
-    format: metadata?.format,
-    mediaType: getMediaTypeFromFilename(asset.name),
-    nodeId: metadata?.nodeId ?? '',
-    subfolder: metadata?.subfolder ?? '',
-    type: 'output'
-  })
+function toOutputGroup([jobId, assets]: [
+  string,
+  JobOutputAsset[]
+]): OutputAssetGroupView {
+  const ordered = [...assets].sort(byCreatedAtAsc)
+  const newest = ordered.at(-1)!
+  const representative =
+    ordered.findLast((asset) =>
+      isPreviewableMediaType(getMediaTypeFromFilename(asset.name))
+    ) ?? newest
+
+  return {
+    ...representative,
+    created_at: newest.created_at,
+    user_metadata: {
+      subfolder: '',
+      ...representative.user_metadata,
+      jobId,
+      outputCount: ordered.length
+    },
+    outputGroup: { id: jobId, assets: ordered }
+  }
 }
 
 /**
- * Group flat per-file output assets into one asset per job, mirroring the
- * grouped shape produced from the history API: the group id is the job id and
- * user_metadata carries outputCount/allOutputs. Assets without output job
- * metadata pass through ungrouped.
+ * Group flat per-file output assets into job views. The representative keeps
+ * its real asset id; group identity and children live in plain view data.
  */
 export function unflattenOutputAssets(
-  flatAssets: MaybeRef<readonly AssetItem[]>
-): AssetItem[] {
-  const assetsByJob = new Map<string, AssetItem[]>()
-  const ungrouped: AssetItem[] = []
-
-  for (const asset of toValue(flatAssets)) {
-    const { job_id } = asset
-    if (!job_id) {
-      ungrouped.push(asset)
-      continue
-    }
-    const group = assetsByJob.get(job_id)
-    if (group) group.push(asset)
-    else assetsByJob.set(job_id, [asset])
-  }
-
-  const grouped = [...assetsByJob.entries()].map(([job_id, assets]) => {
-    const ordered = [...assets].sort(byCreatedAtAsc)
-    const representative =
-      ordered.findLast((asset) =>
-        isPreviewableMediaType(getMediaTypeFromFilename(asset.name))
-      ) ?? ordered.at(-1)!
-    return {
-      ...representative,
-      id: job_id,
-      created_at: ordered.at(-1)!.created_at,
-      user_metadata: {
-        jobId: job_id,
-        subfolder: '',
-        ...representative.user_metadata,
-        outputCount: ordered.length,
-        allOutputs: ordered.map(flatAssetToResultItem)
-      }
-    }
-  })
+  flatAssets: readonly AssetItem[]
+): (AssetItem | OutputAssetGroupView)[] {
+  const [jobAssets, ungrouped] = partition(flatAssets, hasJobId)
+  const grouped = Object.entries(
+    groupBy(jobAssets, ({ job_id }) => job_id)
+  ).map(toOutputGroup)
 
   return [...grouped, ...ungrouped].sort(byCreatedAtDesc)
 }

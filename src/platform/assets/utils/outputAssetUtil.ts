@@ -3,6 +3,7 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { isCloud } from '@/platform/distribution/types'
 import type { JobOutputAsset } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { getOutputKey } from '@/platform/assets/utils/outputKeyUtil'
+import type { OutputKey } from '@/platform/assets/utils/outputKeyUtil'
 import {
   getJobAssets,
   getJobDetail,
@@ -16,12 +17,12 @@ type OutputAssetMapOptions = {
   createdAt?: string
   executionTimeInSeconds?: number
   workflow?: OutputAssetMetadata['workflow']
-  excludeOutputKey?: string
+  excludeOutputKey?: OutputKey
 }
 
 type ResolveOutputAssetItemsOptions = {
   createdAt?: string
-  excludeOutputKey?: string
+  excludeOutputKey?: OutputKey
 }
 
 function shouldLoadFullOutputs(

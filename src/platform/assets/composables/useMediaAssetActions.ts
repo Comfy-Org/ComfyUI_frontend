@@ -16,6 +16,7 @@ import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { getOutputAssetMetadata } from '../schemas/assetMetadataSchema'
+import { getOutputGroupAssets } from './media/assetMappers'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -43,6 +44,29 @@ import { MediaAssetKey } from '../schemas/mediaAssetSchema'
 import { assetService } from '../services/assetService'
 
 const EXCLUDED_TAGS = new Set(['models', 'input', 'output'])
+
+type DeletionItem = {
+  name: string
+  id: AssetId
+  variants: string[]
+}
+
+type ResolvedDeletionAsset = {
+  asset: AssetItem
+  items: DeletionItem[]
+  jobId?: string
+  type: string
+}
+
+type DeletionRequest =
+  | { kind: 'asset'; item: DeletionItem }
+  | { kind: 'history'; items: DeletionItem[]; jobId: string }
+
+type DeletionOutcome =
+  | { kind: 'succeeded'; items: DeletionItem[] }
+  | { kind: 'failed'; items: DeletionItem[]; reason: unknown }
+
+type ExtractedWorkflow = Awaited<ReturnType<typeof extractWorkflowFromAsset>>
 
 function createAssetWidgetPath(asset: AssetItem): string {
   const metadata = getOutputAssetMetadata(asset.user_metadata)
@@ -86,6 +110,57 @@ function widgetValueVariants(
   return variants
 }
 
+function createAssetExportPlan(assets: AssetItem[]): {
+  request: Parameters<typeof assetService.createAssetExport>[0]
+  fileCount: number
+} {
+  const jobIds = new Set<string>()
+  const assetIds: AssetId[] = []
+  const jobAssetNameFilters: Record<string, string[]> = {}
+  const countedOutputJobIds = new Set<string>()
+  let fileCount = 0
+
+  for (const asset of assets) {
+    const assetType = getAssetType(asset)
+    const metadata = getOutputAssetMetadata(asset.user_metadata)
+    if (assetType !== 'output' && (assetType !== 'temp' || !metadata)) {
+      assetIds.push(asset.id)
+      fileCount++
+      continue
+    }
+
+    const jobId = asset.job_id || metadata?.jobId || asset.id
+    jobIds.add(jobId)
+    if (metadata?.outputCount != null) {
+      if (!countedOutputJobIds.has(jobId)) {
+        countedOutputJobIds.add(jobId)
+        fileCount += getAssetOutputCount(asset)
+      }
+      continue
+    }
+
+    fileCount++
+    const filterJobId = asset.job_id || metadata?.jobId
+    if (filterJobId && asset.name) {
+      const names = (jobAssetNameFilters[filterJobId] ??= [])
+      if (!names.includes(asset.name)) names.push(asset.name)
+    }
+  }
+
+  return {
+    request: {
+      ...(jobIds.size ? { job_ids: [...jobIds] } : {}),
+      ...(assetIds.length ? { asset_ids: assetIds } : {}),
+      ...(Object.keys(jobAssetNameFilters).length
+        ? { job_asset_name_filters: jobAssetNameFilters }
+        : {}),
+      naming_strategy: jobIds.size > 1 ? 'group_by_job_time' : 'preserve',
+      include_previews: true
+    },
+    fileCount
+  }
+}
+
 export function useMediaAssetActions() {
   const { t } = useI18n()
   const toast = useToast()
@@ -97,29 +172,123 @@ export function useMediaAssetActions() {
   const litegraphService = useLitegraphService()
   const nodeDefStore = useNodeDefStore()
 
-  function resolveChildItems(
+  function configureAssetNode(
+    node: NonNullable<ReturnType<typeof litegraphService.addNodeOnGraph>>,
+    widgetName: string,
     asset: AssetItem
-  ): { name: string; id: AssetId; variants: string[] }[] {
-    const { allOutputs } = getOutputAssetMetadata(asset.user_metadata) ?? {}
-    const allItems = (allOutputs ?? [])?.flatMap((output) => {
-      if (!output.assetId) return []
-      const name = output.display_name || output.filename
-      const variants = widgetValueVariants(
-        output.filename,
-        output.type,
-        output.subfolder
-      )
-      return { name, id: output.assetId, variants }
-    })
-    if (allItems.length > 0) return allItems
+  ) {
+    const value = createAssetWidgetPath(asset)
+    const widget = node.widgets?.find((widget) => widget.name === widgetName)
+    if (widget) {
+      widget.value = value
+      widget.callback?.(value)
+    }
+    node.graph?.setDirtyCanvas(true, true)
+  }
 
-    const variants = widgetValueVariants(
-      asset.name,
-      getAssetType(asset, 'input'),
-      getOutputAssetMetadata(asset.user_metadata)?.subfolder,
-      asset.hash
-    )
-    return [{ name: getAssetDisplayName(asset), id: asset.id, variants }]
+  async function runWorkflowBatch(
+    assets: AssetItem[],
+    action: (
+      workflow: ExtractedWorkflow['workflow'],
+      filename: string
+    ) => Promise<{ success: boolean; cancelled?: boolean }>
+  ): Promise<{ succeeded: number; failed: number }> {
+    let succeeded = 0
+    let failed = 0
+
+    for (const asset of assets) {
+      try {
+        const { workflow, filename } = await extractWorkflowFromAsset(asset)
+        const result = await action(workflow, filename)
+        if (result.success) succeeded++
+        else if (!result.cancelled) failed++
+      } catch {
+        failed++
+      }
+    }
+
+    return { succeeded, failed }
+  }
+
+  function resolveDeletionAsset(asset: AssetItem): ResolvedDeletionAsset {
+    const metadata = getOutputAssetMetadata(asset.user_metadata)
+    const groupedAssets = getOutputGroupAssets(asset)
+    const allItems = groupedAssets
+      ? groupedAssets.map((child) => ({
+          name: getAssetDisplayName(child),
+          id: child.id,
+          variants: widgetValueVariants(
+            child.name,
+            getAssetType(child, 'output'),
+            getOutputAssetMetadata(child.user_metadata)?.subfolder,
+            child.hash
+          )
+        }))
+      : (metadata?.allOutputs ?? []).flatMap((output) => {
+          if (!output.assetId) return []
+          const name = output.display_name || output.filename
+          const variants = widgetValueVariants(
+            output.filename,
+            output.type,
+            output.subfolder
+          )
+          return { name, id: output.assetId, variants }
+        })
+    const type = getAssetType(asset, 'input')
+    const items =
+      allItems.length > 0
+        ? allItems
+        : [
+            {
+              name: getAssetDisplayName(asset),
+              id: asset.id,
+              variants: widgetValueVariants(
+                asset.name,
+                type,
+                metadata?.subfolder,
+                asset.hash
+              )
+            }
+          ]
+
+    return { asset, items, jobId: metadata?.jobId, type }
+  }
+
+  function planDeletion(
+    assets: ResolvedDeletionAsset[],
+    assetsEnabled: boolean
+  ): DeletionRequest[] {
+    return assets.flatMap<DeletionRequest>((asset) => {
+      if (
+        !assetsEnabled &&
+        (asset.type === 'output' || asset.type === 'temp')
+      ) {
+        return [
+          {
+            kind: 'history',
+            items: asset.items,
+            jobId: asset.jobId || asset.asset.id
+          }
+        ]
+      }
+      return asset.items.map((item) => ({ kind: 'asset', item }))
+    })
+  }
+
+  async function executeDeletion(
+    request: DeletionRequest
+  ): Promise<DeletionOutcome> {
+    const items = request.kind === 'asset' ? [request.item] : request.items
+    try {
+      if (request.kind === 'asset') {
+        await assetService.deleteAsset(request.item.id)
+      } else {
+        await api.deleteItem('history', request.jobId)
+      }
+      return { kind: 'succeeded', items }
+    } catch (reason) {
+      return { kind: 'failed', items, reason }
+    }
   }
 
   /**
@@ -177,6 +346,9 @@ export function useMediaAssetActions() {
   async function expandAssetForDownload(
     asset: AssetItem
   ): Promise<AssetItem[]> {
+    const groupedAssets = getOutputGroupAssets(asset)
+    if (groupedAssets) return [...groupedAssets]
+
     const metadata = getOutputAssetMetadata(asset.user_metadata)
     if (
       !metadata ||
@@ -232,60 +404,8 @@ export function useMediaAssetActions() {
     const assetExportStore = useAssetExportStore()
 
     try {
-      const jobIds: string[] = []
-      const assetIds: string[] = []
-      const jobAssetNameFilters: Record<string, string[]> = {}
-      const countedOutputJobIds = new Set<string>()
-      let fileCount = 0
-
-      for (const asset of assets) {
-        const assetType = getAssetType(asset)
-        const metadata = getOutputAssetMetadata(asset.user_metadata)
-        if (assetType === 'output' || (assetType === 'temp' && metadata)) {
-          const jobId = metadata?.jobId || asset.id
-          if (!jobIds.includes(jobId)) {
-            jobIds.push(jobId)
-          }
-          // Only add name filters when outputCount is unknown.
-          // When outputCount is set, the asset is a job-level selection
-          // from the gallery and the user wants all outputs for that job.
-          if (metadata?.outputCount != null) {
-            if (!countedOutputJobIds.has(jobId)) {
-              countedOutputJobIds.add(jobId)
-              fileCount += getAssetOutputCount(asset)
-            }
-          } else {
-            fileCount += 1
-          }
-
-          if (metadata?.jobId && asset.name && metadata.outputCount == null) {
-            if (!jobAssetNameFilters[metadata.jobId]) {
-              jobAssetNameFilters[metadata.jobId] = []
-            }
-            if (!jobAssetNameFilters[metadata.jobId].includes(asset.name)) {
-              jobAssetNameFilters[metadata.jobId].push(asset.name)
-            }
-          }
-        } else {
-          assetIds.push(asset.id)
-          fileCount += 1
-        }
-      }
-
-      const spansMultipleJobs = jobIds.length > 1
-      const namingStrategy = spansMultipleJobs
-        ? 'group_by_job_time'
-        : 'preserve'
-
-      const result = await assetService.createAssetExport({
-        ...(jobIds.length > 0 ? { job_ids: jobIds } : {}),
-        ...(assetIds.length > 0 ? { asset_ids: assetIds } : {}),
-        ...(Object.keys(jobAssetNameFilters).length > 0
-          ? { job_asset_name_filters: jobAssetNameFilters }
-          : {}),
-        naming_strategy: namingStrategy,
-        include_previews: true
-      })
+      const { request, fileCount } = createAssetExportPlan(assets)
+      const result = await assetService.createAssetExport(request)
 
       assetExportStore.trackExport(result.task_id)
 
@@ -379,14 +499,7 @@ export function useMediaAssetActions() {
       return
     }
 
-    const annotated = createAssetWidgetPath(targetAsset)
-
-    const widget = node.widgets?.find((w) => w.name === widgetName)
-    if (widget) {
-      widget.value = annotated
-      widget.callback?.(annotated)
-    }
-    node.graph?.setDirtyCanvas(true, true)
+    configureAssetNode(node, widgetName, targetAsset)
 
     toast.add({
       severity: 'success',
@@ -505,14 +618,7 @@ export function useMediaAssetActions() {
         continue
       }
 
-      const annotated = createAssetWidgetPath(asset)
-
-      const widget = node.widgets?.find((w) => w.name === widgetName)
-      if (widget) {
-        widget.value = annotated
-        widget.callback?.(annotated)
-      }
-      node.graph?.setDirtyCanvas(true, true)
+      configureAssetNode(node, widgetName, asset)
       succeeded++
       nodeIndex++
     }
@@ -551,26 +657,10 @@ export function useMediaAssetActions() {
   const openMultipleWorkflows = async (assets: AssetItem[]) => {
     if (!assets || assets.length === 0) return
 
-    let succeeded = 0
-    let failed = 0
-
-    for (const asset of assets) {
-      try {
-        const { workflow, filename } = await extractWorkflowFromAsset(asset)
-        const result = await workflowActions.openWorkflowAction(
-          workflow,
-          filename
-        )
-
-        if (result.success) {
-          succeeded++
-        } else {
-          failed++
-        }
-      } catch {
-        failed++
-      }
-    }
+    const { succeeded, failed } = await runWorkflowBatch(
+      assets,
+      workflowActions.openWorkflowAction
+    )
 
     if (failed === 0) {
       toast.add({
@@ -605,26 +695,10 @@ export function useMediaAssetActions() {
   const exportMultipleWorkflows = async (assets: AssetItem[]) => {
     if (!assets || assets.length === 0) return
 
-    let succeeded = 0
-    let failed = 0
-
-    for (const asset of assets) {
-      try {
-        const { workflow, filename } = await extractWorkflowFromAsset(asset)
-        const result = await workflowActions.exportWorkflowAction(
-          workflow,
-          filename
-        )
-
-        if (result.success) {
-          succeeded++
-        } else if (!result.cancelled) {
-          failed++
-        }
-      } catch {
-        failed++
-      }
-    }
+    const { succeeded, failed } = await runWorkflowBatch(
+      assets,
+      workflowActions.exportWorkflowAction
+    )
 
     // All cancelled
     if (succeeded === 0 && failed === 0) return
@@ -668,7 +742,6 @@ export function useMediaAssetActions() {
   ): Promise<boolean> => {
     const assetArray = Array.isArray(assets) ? assets : [assets]
     if (assetArray.length === 0) return false
-    const flatAssets = assetArray.flatMap(resolveChildItems)
 
     if (flags.assetsEnabled && !flags.assetDeletionEnabled) {
       toast.add({
@@ -676,8 +749,12 @@ export function useMediaAssetActions() {
         summary: t('g.error'),
         detail: t('mediaAsset.deletionUnsupported')
       })
+      return false
     }
 
+    const resolvedAssets = assetArray.map(resolveDeletionAsset)
+    const flatAssets = resolvedAssets.flatMap(({ items }) => items)
+    const deletionPlan = planDeletion(resolvedAssets, flags.assetsEnabled)
     const assetsStore = useAssetsStore()
     const isSingle = flatAssets.length === 1
 
@@ -702,50 +779,63 @@ export function useMediaAssetActions() {
             )
 
             try {
-              const results = await Promise.allSettled(
-                flatAssets.map((r) => assetService.deleteAsset(r.id))
+              const outcomes = await Promise.all(
+                deletionPlan.map(executeDeletion)
               )
               const succeededIds = new Set(
-                flatAssets.flatMap(({ id }, idx) =>
-                  results[idx].status === 'fulfilled' ? [id] : []
+                outcomes.flatMap((outcome) =>
+                  outcome.kind === 'succeeded'
+                    ? outcome.items.map(({ id }) => id)
+                    : []
                 )
               )
 
-              await Promise.allSettled(
-                assetArray.flatMap((asset) => {
-                  const { jobId } =
-                    getOutputAssetMetadata(asset.user_metadata) ?? {}
-                  if (!jobId) return []
+              if (flags.assetsEnabled) {
+                await Promise.allSettled(
+                  resolvedAssets.flatMap(({ items, jobId }) =>
+                    jobId && items.every(({ id }) => succeededIds.has(id))
+                      ? [api.deleteItem('history', jobId)]
+                      : []
+                  )
+                )
+              }
 
-                  if (flags.assetsEnabled && flags.assetDeletionEnabled) {
-                    for (const item of resolveChildItems(asset)) {
-                      if (!succeededIds.has(item.id)) return []
-                    }
-                  }
-                  return api.deleteItem('history', jobId)
-                })
+              const succeeded = outcomes.reduce(
+                (count, outcome) =>
+                  outcome.kind === 'succeeded'
+                    ? count + outcome.items.length
+                    : count,
+                0
+              )
+              const failed = outcomes.filter(
+                (
+                  outcome
+                ): outcome is Extract<DeletionOutcome, { kind: 'failed' }> =>
+                  outcome.kind === 'failed'
+              )
+              const failedCount = failed.reduce(
+                (count, outcome) => count + outcome.items.length,
+                0
               )
 
-              const succeeded = results.filter(
-                (r) => r.status === 'fulfilled'
-              ).length
-              const failed = results.filter((r) => r.status === 'rejected')
-
-              results.forEach((result, index) => {
-                if (result.status !== 'rejected') return
+              failed.forEach((outcome) => {
                 console.warn(
-                  `Failed to delete asset ${flatAssets[index].name}:`,
-                  result.reason
+                  `Failed to delete assets ${outcome.items
+                    .map(({ name }) => name)
+                    .join(', ')}:`,
+                  outcome.reason
                 )
               })
 
               const rootGraph = app.rootGraph
               if (rootGraph) {
                 const deletedValues = new Set<string>()
-                flatAssets.forEach((item, index) => {
-                  if (results[index].status !== 'fulfilled') return
-                  for (const value of item.variants) {
-                    deletedValues.add(value)
+                outcomes.forEach((outcome) => {
+                  if (outcome.kind !== 'succeeded') return
+                  for (const item of outcome.items) {
+                    for (const value of item.variants) {
+                      deletedValues.add(value)
+                    }
                   }
                 })
                 if (deletedValues.size > 0) {
@@ -780,8 +870,12 @@ export function useMediaAssetActions() {
                 assetsStore.invalidateModelsForCategory(category)
               }
 
-              if (succeededIds.size > 0) {
-                void assetsStore.inputAssets.invalidate([...succeededIds])
+              if (flags.assetsEnabled && succeededIds.size > 0) {
+                const ids = [...succeededIds]
+                void Promise.all([
+                  assetsStore.inputAssets.invalidate(ids),
+                  assetsStore.outputAssets.invalidate(ids)
+                ])
               } else if (!flags.assetsEnabled) {
                 const hasOutputAssets = assetArray.some((a) => {
                   const type = getAssetType(a)
@@ -800,7 +894,7 @@ export function useMediaAssetActions() {
               }
 
               // Show appropriate feedback based on results
-              if (failed.length === 0) {
+              if (failedCount === 0) {
                 toast.add({
                   severity: 'success',
                   summary: t('g.success'),
@@ -827,7 +921,7 @@ export function useMediaAssetActions() {
                   summary: t('g.warning'),
                   detail: t('mediaAsset.selection.partialDeleteSuccess', {
                     succeeded,
-                    failed: failed.length
+                    failed: failedCount
                   }),
                   life: 3000
                 })
