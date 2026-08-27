@@ -346,8 +346,19 @@
     "index": "{current} / {total}"
   },
   "billingOperation": {
+    "authenticationFailedDetail": "我们无法完成付款验证。请重试。",
+    "authenticationManagerRequired": "付款验证需要工作区账单管理员处理。",
+    "authenticationUnavailable": "安全付款验证不可用。请刷新后重试。",
     "cancelFailed": "取消订阅失败",
     "cancelTimeout": "订阅取消超时",
+    "expiredCardDetail": "此卡已过期。请使用其他支付方式。",
+    "incorrectCvcDetail": "银行卡安全码不正确。请检查后重试。",
+    "insufficientFundsDetail": "此支付方式余额不足。请尝试其他支付方式或联系您的银行。",
+    "paymentDeclinedDetail": "您的银行拒绝了此次付款。请尝试其他支付方式或联系您的银行。",
+    "processingErrorDetail": "您的付款无法处理。请重试或使用其他支付方式。",
+    "reconciliationDetail": "已收到您的付款，但我们无法完成工作区更新。请联系支持团队并提供此操作 ID：",
+    "reconciliationTitle": "已收到付款 — 等待确认",
+    "retryVerification": "重试验证",
     "subscriptionActionRequired": "请验证您的付款以完成工作区设置",
     "subscriptionFailed": "订阅更新失败",
     "subscriptionFailedDetail": "我们无法更新您的订阅。请重试。",
@@ -808,7 +819,7 @@
       "buy": "购买",
       "buyCredits": "继续付款",
       "buyNow": "立即购买",
-      "chargedImmediatelyNote": "您的已保存银行卡将立即扣款。",
+      "chargedImmediatelyNote": "您保存的支付方式将立即扣款。",
       "confirmSubtitle": "付款完成后，积分将立即添加到此工作区。",
       "confirmTitle": "确认",
       "contactUs": "联系我们",
@@ -4247,9 +4258,15 @@
     "prepaidDescription": "预付款额度",
     "preview": {
       "addCreditCard": "添加信用卡",
+      "addNewPaymentMethod": "添加新的支付方式",
       "afterThat": "之后",
+      "alipay": "支付宝",
+      "alipayRenewalNote": "支付宝授权也将用于自动续订和未来购买。",
+      "applyPromoCode": "应用",
+      "applyQuoteBeforeContinuing": "继续前，请应用优惠码以刷新报价。",
       "backToAllPlans": "返回所有方案",
       "billedEachMonth": "每月收取 {amount}。随时可取消。",
+      "changePaymentMethod": "更改",
       "commitment": "承诺",
       "completeVerification": "完成验证",
       "confirm": "确认",
@@ -4264,6 +4281,11 @@
       "creditsRefillTo": "积分补充至",
       "creditsYoullGetToday": "您今天将获得的点数",
       "currentMonthly": "月度套餐",
+      "discount": {
+        "plan": "套餐折扣",
+        "promotion": "优惠码"
+      },
+      "discountComposition": "折扣",
       "eachMonthCreditsRefill": "每月积分补充至",
       "eachYearCreditsRefill": "每年点数补充为",
       "ends": "{date} 结束",
@@ -4271,11 +4293,17 @@
       "hideFeatures": "隐藏功能",
       "newMonthlySubscription": "新月度订阅",
       "nextPaymentDue": "下次付款截止日期 {date}。可随时取消。",
+      "payAndSubscribe": "付款并订阅",
+      "paymentMethod": "支付方式",
       "paymentPopupBlocked": "无法打开支付页面 — 请允许弹窗后重试。",
       "perMember": "/ 每成员",
       "privacyPolicy": "隐私政策",
+      "promoCodePlaceholder": "优惠码",
       "proratedCharge": "{plan} 按比例收费",
       "proratedRefund": "{plan} 按比例退款",
+      "quoteRefreshFailed": "您的报价已过期且无法刷新。请重新选择套餐。",
+      "quoteStale": "您的报价已变更。请查看更新后的金额并重试。",
+      "quoteUnavailable": "不可用",
       "reactivation": {
         "amountChanged": "自您确认后，费用金额已发生变化 — 请检查并重试",
         "checkboxLabel": "我已知晓今天将收取 {amount}",
@@ -4291,16 +4319,20 @@
         "upgradeBody": "您的 {plan} 原定于 {date} 结束。现在升级将重新激活订阅 — 今天将收取 {amount}，并将在 {nextDate} 自动续订，而不是结束。"
       },
       "refillReplacesNote": "替换您的月度补充。现有余额保留。",
+      "renewsAt": "将于 {date} 以 {amount} 续订。可随时取消。",
+      "savedPaymentMethod": "支付方式",
       "showMoreFeatures": "显示更多功能",
       "starting": "{date} 开始",
       "startingToday": "今日开始",
       "startsOn": "开始于 {date}",
       "stayOnUntil": "您将在 {plan} 保持至 {date}。",
+      "stripeMethodChoice": "您的付款信息由 Stripe 安全处理。",
+      "stripeUnavailable": "支付选项不可用。请刷新后重试。",
       "subscribeToPlan": "订阅 {plan}",
       "switchToPlan": "切换到 {plan}",
       "switchesToday": "今日切换次数",
       "terms": "条款",
-      "termsAgreement": "继续操作即表示您同意 Comfy Org 的{terms}和{privacy}。",
+      "termsAgreement": "继续即表示您同意 Comfy Org 的 {terms} 和 {privacy}，并授权 Comfy Org 在每个计费周期向您的支付方式扣款，直至您取消订阅。",
       "totalDueToday": "今日应付总额",
       "yearlySubscription": "年度订阅",
       "youllBeCharged": "您将被收取"
@@ -4348,6 +4380,8 @@
       "inviteSubtext": "您也可以稍后在设置中邀请成员",
       "inviteTitle": "邀请您的团队",
       "planUpdated": "您的方案已成功更新。",
+      "promoApplied": "已应用 {code}。",
+      "promoRenews": "将于 {date} 以 {amount} 续订",
       "receiptEmailed": "收据已发送至您的邮箱。",
       "sendInvites": "发送邀请"
     },
@@ -4383,6 +4417,9 @@
       "creator": {
         "feature1": "导入您自己的模型",
         "name": "Creator"
+      },
+      "enterprise": {
+        "name": "企业版"
       },
       "founder": {
         "name": "Founder's Edition"

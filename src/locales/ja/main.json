@@ -346,8 +346,19 @@
     "index": "{current} / {total}"
   },
   "billingOperation": {
+    "authenticationFailedDetail": "支払い確認を完了できませんでした。もう一度お試しください。",
+    "authenticationManagerRequired": "支払い確認には、ワークスペースの請求管理者による対応が必要です。",
+    "authenticationUnavailable": "安全な支払い認証を利用できません。更新してもう一度お試しください。",
     "cancelFailed": "サブスクリプションのキャンセルに失敗しました",
     "cancelTimeout": "サブスクリプションのキャンセルがタイムアウトしました",
+    "expiredCardDetail": "このカードの有効期限が切れています。別のお支払い方法をご利用ください。",
+    "incorrectCvcDetail": "カードのセキュリティコードが正しくありません。確認してもう一度お試しください。",
+    "insufficientFundsDetail": "このお支払い方法は残高不足です。別のお支払い方法を試すか、銀行にお問い合わせください。",
+    "paymentDeclinedDetail": "銀行によりこの支払いが拒否されました。別のお支払い方法を試すか、銀行にお問い合わせください。",
+    "processingErrorDetail": "お支払いを処理できませんでした。もう一度試すか、別のお支払い方法をご利用ください。",
+    "reconciliationDetail": "お支払いを受領しましたが、ワークスペースの更新を完了できませんでした。サポートにお問い合わせの際は、次の操作 ID をお知らせください:",
+    "reconciliationTitle": "支払いを受領しました — 確認待ち",
+    "retryVerification": "確認を再試行",
     "subscriptionActionRequired": "ワークスペースの設定を完了するにはお支払いを確認してください",
     "subscriptionFailed": "サブスクリプションの更新に失敗しました",
     "subscriptionFailedDetail": "サブスクリプションの更新に失敗しました。もう一度お試しください。",
@@ -808,7 +819,7 @@
       "buy": "購入",
       "buyCredits": "支払いに進む",
       "buyNow": "今すぐ購入",
-      "chargedImmediatelyNote": "ご登録のカードには即時に請求されます。",
+      "chargedImmediatelyNote": "保存済みのお支払い方法にすぐに請求されます。",
       "confirmSubtitle": "お支払いが完了すると、クレジットがこのワークスペースに追加されます。",
       "confirmTitle": "確認",
       "contactUs": "お問い合わせ",
@@ -4247,9 +4258,15 @@
     "prepaidDescription": "プリペイドクレジット",
     "preview": {
       "addCreditCard": "クレジットカードを追加",
+      "addNewPaymentMethod": "新しいお支払い方法を追加",
       "afterThat": "その後",
+      "alipay": "Alipay",
+      "alipayRenewalNote": "Alipay の承認は、自動更新および今後の購入にも使用されます。",
+      "applyPromoCode": "適用",
+      "applyQuoteBeforeContinuing": "続行する前にプロモコードを適用して見積もりを更新してください。",
       "backToAllPlans": "すべてのプランに戻る",
       "billedEachMonth": "毎月{amount}請求されます。いつでもキャンセル可能です。",
+      "changePaymentMethod": "変更",
       "commitment": "契約期間",
       "completeVerification": "認証を完了する",
       "confirm": "確認",
@@ -4264,6 +4281,11 @@
       "creditsRefillTo": "クレジットが補充されます：",
       "creditsYoullGetToday": "本日付与されるクレジット",
       "currentMonthly": "月間プラン",
+      "discount": {
+        "plan": "プラン割引",
+        "promotion": "プロモコード"
+      },
+      "discountComposition": "割引",
       "eachMonthCreditsRefill": "毎月クレジットが補充されます",
       "eachYearCreditsRefill": "毎年クレジットが補充されます",
       "ends": "{date}に終了",
@@ -4271,11 +4293,17 @@
       "hideFeatures": "機能を隠す",
       "newMonthlySubscription": "新しい月間サブスクリプション",
       "nextPaymentDue": "次回のお支払いは{date}です。いつでもキャンセルできます。",
+      "payAndSubscribe": "支払って登録",
+      "paymentMethod": "お支払い方法",
       "paymentPopupBlocked": "支払いページを開けませんでした。ポップアップを許可して再試行してください。",
       "perMember": "/ メンバー",
       "privacyPolicy": "プライバシーポリシー",
+      "promoCodePlaceholder": "プロモコード",
       "proratedCharge": "{plan}の按分請求",
       "proratedRefund": "{plan}の按分返金",
+      "quoteRefreshFailed": "見積もりの有効期限が切れ、更新できませんでした。プランをもう一度選択してください。",
+      "quoteStale": "見積もりが変更されました。更新後の金額を確認して、もう一度お試しください。",
+      "quoteUnavailable": "利用不可",
       "reactivation": {
         "amountChanged": "確認後に請求額が変更されました — 内容を確認して再度お試しください",
         "checkboxLabel": "本日 {amount} が請求されることを理解しました",
@@ -4291,16 +4319,20 @@
         "upgradeBody": "あなたの {plan} は {date} に終了予定でした。今アップグレードすると再有効化されます — 本日 {amount} が請求され、{nextDate} から自動更新されます（終了しません）。"
       },
       "refillReplacesNote": "月間補充を置き換えます。既存の残高は保持されます。",
+      "renewsAt": "{date}に{amount}で更新されます。いつでもキャンセルできます。",
+      "savedPaymentMethod": "お支払い方法",
       "showMoreFeatures": "さらに機能を表示",
       "starting": "{date}から開始",
       "startingToday": "本日から開始",
       "startsOn": "{date}に開始",
       "stayOnUntil": "{date}まで{plan}が継続されます。",
+      "stripeMethodChoice": "お支払い情報は Stripe により安全に処理されます。",
+      "stripeUnavailable": "お支払いオプションを利用できません。更新してもう一度お試しください。",
       "subscribeToPlan": "{plan}に加入",
       "switchToPlan": "{plan}に切り替え",
       "switchesToday": "本日の切り替え",
       "terms": "利用規約",
-      "termsAgreement": "続行することで、Comfy Orgの{terms}および{privacy}に同意したものとみなされます。",
+      "termsAgreement": "続行すると、Comfy Org の{terms}および{privacy}に同意し、キャンセルするまで各請求期間にComfy Org がお支払い方法へ請求することを承認したものとみなされます。",
       "totalDueToday": "本日のお支払い合計",
       "yearlySubscription": "年間サブスクリプション",
       "youllBeCharged": "ご請求額："
@@ -4348,6 +4380,8 @@
       "inviteSubtext": "設定から後で招待することもできます",
       "inviteTitle": "チームを招待",
       "planUpdated": "プランが正常に更新されました。",
+      "promoApplied": "{code}を適用しました。",
+      "promoRenews": "{date}に{amount}で更新されます",
       "receiptEmailed": "領収書をメールで送信しました。",
       "sendInvites": "招待を送信"
     },
@@ -4383,6 +4417,9 @@
       "creator": {
         "feature1": "独自モデルのインポート",
         "name": "クリエイター"
+      },
+      "enterprise": {
+        "name": "Enterprise"
       },
       "founder": {
         "name": "ファウンダーエディション"
