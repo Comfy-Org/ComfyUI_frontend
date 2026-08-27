@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro'
+import AIModelsSection from '../components/product/shared/AIModelsSection.vue'
 import ProductCardsSection from '../components/common/ProductCardsSection.vue'
 import HeroSection from '../templates/cli/HeroSection.vue'
 import SetupSection from '../templates/cli/SetupSection.vue'
@@ -58,6 +59,7 @@ const softwareId = jsonLdId(url, 'software')
   <SetupSection locale="en" client:visible />
   <SessionSection locale="en" client:visible />
   <SkillsSection locale="en" client:visible />
+  <AIModelsSection locale="en" client:visible />
   <AgentsSection locale="en" />
   <WhySection locale="en" />
   <HowItWorksSection locale="en" />

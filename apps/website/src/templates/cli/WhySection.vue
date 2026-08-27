@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import ReasonsSplit01 from '../../components/blocks/ReasonsSplit01.vue'
 import type { Reason } from '../../components/blocks/ReasonsSplit01.vue'
+import { getRoutes } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
@@ -13,6 +14,8 @@ const reasons: Reason[] = reasonNumbers.map((n) => ({
   title: t(`cli.why.${n}.title`, locale),
   description: t(`cli.why.${n}.description`, locale)
 }))
+
+const MCP_REASON_ID = '5'
 </script>
 
 <template>
@@ -22,5 +25,15 @@ const reasons: Reason[] = reasonNumbers.map((n) => ({
     highlight-class="text-primary-comfy-yellow"
     :subtitle="t('cli.why.subtitle', locale)"
     :reasons="reasons"
-  />
+  >
+    <template #reason-extra="{ reason }">
+      <a
+        v-if="reason.id === MCP_REASON_ID"
+        :href="getRoutes(locale).mcp"
+        class="text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 mt-4 inline-block rounded-sm text-xs font-bold tracking-wider uppercase underline underline-offset-4 transition-opacity hover:opacity-70 focus-visible:ring-2 focus-visible:outline-none"
+      >
+        {{ t('cli.why.mcpLinkLabel', locale) }}
+      </a>
+    </template>
+  </ReasonsSplit01>
 </template>

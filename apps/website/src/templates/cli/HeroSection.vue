@@ -17,6 +17,7 @@ const clients = [
   'Cursor',
   'Gemini CLI',
   'OpenClaw',
+  'Hermes',
   t('cli.hero.clientAnyShell', locale)
 ]
 </script>

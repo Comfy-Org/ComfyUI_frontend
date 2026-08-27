@@ -40,6 +40,7 @@ const clients: Record<string, CliClient> = {
   cursor: { name: 'Cursor', kind: 'agent' },
   'gemini-cli': { name: 'Gemini CLI', kind: 'agent' },
   openclaw: { name: 'OpenClaw', kind: 'agent' },
+  hermes: { name: 'Hermes', kind: 'agent' },
   terminal: {
     name: t('cli.setup.clients.terminal.name', locale),
     kind: 'shell',

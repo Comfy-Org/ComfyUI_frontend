@@ -3129,6 +3129,10 @@ const translations = {
     en: 'Works alongside\nMCP.',
     'zh-CN': '与 MCP\n并肩工作。'
   },
+  'cli.why.mcpLinkLabel': {
+    en: 'Set up Comfy MCP',
+    'zh-CN': '配置 Comfy MCP'
+  },
   'cli.why.5.description': {
     en: 'One account, two surfaces. Chat through Comfy MCP, script through the CLI, and let your agent pick the right one per task. Cloud outputs land in the same asset library either way.',
     'zh-CN':
@@ -3180,9 +3184,9 @@ const translations = {
     'zh-CN': '支持哪些智能体和终端？'
   },
   'cli.faq.1.a': {
-    en: 'Any coding agent that can run shell commands. comfy skills install adds bundled skills for Claude Code, Cursor, and any AGENTS.md-aware tool, and the paste-prompt setup works in Codex, Gemini CLI, OpenClaw, and the rest. For humans: any terminal, with tab completion via comfy --install-completion.',
+    en: 'Any coding agent that can run shell commands. comfy skills install adds bundled skills for Claude Code, Cursor, and any AGENTS.md-aware tool, and the paste-prompt setup works in Codex, Gemini CLI, OpenClaw, Hermes, and the rest. For humans: any terminal, with tab completion via comfy --install-completion.',
     'zh-CN':
-      '任何能运行 shell 命令的编程智能体。comfy skills install 为 Claude Code、Cursor 及任何支持 AGENTS.md 的工具添加自带技能，粘贴提示的配置方式同样适用于 Codex、Gemini CLI、OpenClaw 等。人类用户：任何终端都可以，comfy --install-completion 提供补全。'
+      '任何能运行 shell 命令的编程智能体。comfy skills install 为 Claude Code、Cursor 及任何支持 AGENTS.md 的工具添加自带技能，粘贴提示的配置方式同样适用于 Codex、Gemini CLI、OpenClaw、Hermes 等。人类用户：任何终端都可以，comfy --install-completion 提供补全。'
   },
   'cli.faq.2.q': {
     en: 'CLI or MCP: which should I use?',
