@@ -345,20 +345,6 @@ export class PerformanceHelper {
         ? 'vue'
         : 'legacy'
 
-      let gpuClass: PerfIdentitySource['gpuClass'] = 'unknown'
-      const canvas = document.createElement('canvas')
-      const gl = canvas.getContext('webgl')
-      if (gl) {
-        const extension = gl.getExtension('WEBGL_debug_renderer_info')
-        const renderer = extension
-          ? String(gl.getParameter(extension.UNMASKED_RENDERER_WEBGL))
-          : ''
-        if (/swiftshader/i.test(renderer)) gpuClass = 'swiftshader'
-        else if (/software|llvmpipe/i.test(renderer)) gpuClass = 'software'
-        else if (renderer) gpuClass = 'hardware'
-        gl.getExtension('WEBGL_lose_context')?.loseContext()
-      }
-
       return {
         nodes,
         links,
@@ -370,10 +356,22 @@ export class PerformanceHelper {
         devicePixelRatio: window.devicePixelRatio,
         frontendVersion: window.__COMFYUI_FRONTEND_VERSION__,
         frontendCommit: window.__COMFYUI_FRONTEND_COMMIT__,
-        buildMode: window.__COMFYUI_BUILD_MODE__,
-        gpuClass
+        buildMode: window.__COMFYUI_BUILD_MODE__
       }
     })
-    return buildPerfWorkloadIdentity({ ...source, browserVersion })
+    const gpuClass = await this.page.evaluate(() => {
+      const canvas = document.createElement('canvas')
+      const gl = canvas.getContext('webgl')
+      if (!gl) return 'unknown' as const
+      const extension = gl.getExtension('WEBGL_debug_renderer_info')
+      const renderer = extension
+        ? String(gl.getParameter(extension.UNMASKED_RENDERER_WEBGL))
+        : ''
+      gl.getExtension('WEBGL_lose_context')?.loseContext()
+      if (/swiftshader/i.test(renderer)) return 'swiftshader' as const
+      if (/software|llvmpipe/i.test(renderer)) return 'software' as const
+      return renderer ? ('hardware' as const) : ('unknown' as const)
+    })
+    return buildPerfWorkloadIdentity({ ...source, browserVersion, gpuClass })
   }
 }
