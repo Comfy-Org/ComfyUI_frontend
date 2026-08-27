@@ -458,7 +458,7 @@ export function computeProcessedWidgets({
   showAdvanced,
   isGraphReady,
   rootGraph,
-  ui
+  ui,
 }: ComputeProcessedWidgetsOptions): ProcessedWidget[] {
   if (!nodeData) return []
 
@@ -510,7 +510,7 @@ export function computeProcessedWidgets({
     missingModelStore,
     missingMediaStore,
     nodeDefStore,
-    ui
+    ui,
   }
 
   return Array.from(new Set(ids))
