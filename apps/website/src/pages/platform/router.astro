@@ -1,0 +1,22 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import ProductCardsSection from '../../components/common/ProductCardsSection.vue'
+import ClosingCtaSection from '../../templates/platform/ClosingCtaSection.vue'
+import ExamplesSection from '../../templates/platform/ExamplesSection.vue'
+import RouterCallsSection from '../../templates/platform/RouterCallsSection.vue'
+import RouterFeaturesSection from '../../templates/platform/RouterFeaturesSection.vue'
+import RouterHero from '../../templates/platform/RouterHero.vue'
+import { t } from '../../i18n/translations'
+---
+
+<BaseLayout
+  title={`${t('platform.products.router.title', 'en')} · ${t('platform.meta.title', 'en')}`}
+  description={t('platform.products.router.description', 'en')}
+>
+  <RouterHero locale="en" client:load />
+  <RouterCallsSection locale="en" client:visible />
+  <RouterFeaturesSection locale="en" />
+  <ExamplesSection locale="en" />
+  <ClosingCtaSection locale="en" />
+  <ProductCardsSection locale="en" label-key="products.labelProducts" />
+</BaseLayout>

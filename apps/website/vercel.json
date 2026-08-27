@@ -11,9 +11,17 @@
     {
       "source": "/(.*)",
       "has": [
-        { "type": "host", "value": "website-frontend-comfyui.vercel.app" }
+        {
+          "type": "host",
+          "value": "website-frontend-comfyui.vercel.app"
+        }
       ],
-      "headers": [{ "key": "X-Robots-Tag", "value": "index, follow" }]
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "index, follow"
+        }
+      ]
     },
     {
       "source": "/payment/(.*)",
@@ -71,11 +79,6 @@
       "permanent": false
     },
     {
-      "source": "/enterprise",
-      "destination": "/cloud/enterprise",
-      "permanent": true
-    },
-    {
       "source": "/blog",
       "destination": "https://blog.comfy.org/",
       "permanent": true
@@ -99,6 +102,26 @@
       "source": "/login",
       "destination": "https://cloud.comfy.org/cloud/login",
       "permanent": false
+    },
+    {
+      "source": "/api",
+      "destination": "/platform",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/api",
+      "destination": "/zh-CN/platform",
+      "permanent": true
+    },
+    {
+      "source": "/cloud/enterprise",
+      "destination": "/enterprise",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/cloud/enterprise",
+      "destination": "/zh-CN/enterprise",
+      "permanent": true
     }
   ]
 }

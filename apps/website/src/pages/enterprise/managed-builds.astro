@@ -1,0 +1,18 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import ProductCardsSection from '../../components/common/ProductCardsSection.vue'
+import ManagedBuildsClosingSection from '../../templates/platform/ManagedBuildsClosingSection.vue'
+import ManagedBuildsFeaturesSection from '../../templates/platform/ManagedBuildsFeaturesSection.vue'
+import ManagedBuildsHero from '../../templates/platform/ManagedBuildsHero.vue'
+import { t } from '../../i18n/translations'
+---
+
+<BaseLayout
+  title={`${t('enterprise.managedBuilds.heading', 'en')} · Comfy Enterprise`}
+  description={t('enterprise.managedBuilds.hero.subtitle', 'en')}
+>
+  <ManagedBuildsHero locale="en" client:load />
+  <ManagedBuildsFeaturesSection locale="en" />
+  <ManagedBuildsClosingSection locale="en" />
+  <ProductCardsSection locale="en" label-key="products.labelProducts" />
+</BaseLayout>

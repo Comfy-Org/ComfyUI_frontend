@@ -1,5 +1,5 @@
 /** @knipIgnoreUsedByStackedPR */
-export type VideoFormat = 'webm' | 'mp4'
+type VideoFormat = 'webm' | 'mp4'
 
 type VideoSource = {
   src: string

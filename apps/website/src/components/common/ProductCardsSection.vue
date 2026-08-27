@@ -8,7 +8,7 @@ import { t } from '../../i18n/translations'
 import ProductCard from './ProductCard.vue'
 import SectionLabel from './SectionLabel.vue'
 
-type Product = 'local' | 'cloud' | 'api' | 'enterprise'
+type Product = 'local' | 'cloud' | 'platform' | 'enterprise'
 
 const {
   locale = 'en',
@@ -36,8 +36,8 @@ function cardDef(product: Product, href: string, bg: string) {
 const allCards: (ReturnType<typeof cardDef> & { product: Product })[] = [
   cardDef('local', routes.download, 'bg-primary-warm-gray'),
   cardDef('cloud', routes.cloud, 'bg-secondary-mauve'),
-  cardDef('api', routes.api, 'bg-primary-comfy-plum'),
-  cardDef('enterprise', routes.cloudEnterprise, 'bg-secondary-cool-gray')
+  cardDef('platform', routes.platform, 'bg-primary-comfy-plum'),
+  cardDef('enterprise', routes.enterprise, 'bg-secondary-cool-gray')
 ]
 
 const cards = excludeProduct

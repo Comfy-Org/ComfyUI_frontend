@@ -1,0 +1,22 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro'
+import ProductCardsSection from '../../../components/common/ProductCardsSection.vue'
+import ClosingCtaSection from '../../../templates/platform/ClosingCtaSection.vue'
+import ExamplesSection from '../../../templates/platform/ExamplesSection.vue'
+import RouterCallsSection from '../../../templates/platform/RouterCallsSection.vue'
+import RouterFeaturesSection from '../../../templates/platform/RouterFeaturesSection.vue'
+import RouterHero from '../../../templates/platform/RouterHero.vue'
+import { t } from '../../../i18n/translations'
+---
+
+<BaseLayout
+  title={`${t('platform.products.router.title', 'zh-CN')} · ${t('platform.meta.title', 'zh-CN')}`}
+  description={t('platform.products.router.description', 'zh-CN')}
+>
+  <RouterHero locale="zh-CN" client:load />
+  <RouterCallsSection locale="zh-CN" client:visible />
+  <RouterFeaturesSection locale="zh-CN" />
+  <ExamplesSection locale="zh-CN" />
+  <ClosingCtaSection locale="zh-CN" />
+  <ProductCardsSection locale="zh-CN" label-key="products.labelProducts" />
+</BaseLayout>

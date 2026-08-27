@@ -64,13 +64,13 @@ export function getMainNavigation(locale: Locale): NavItem[] {
             { label: t('nav.comfyLocal', locale), href: routes.download },
             { label: t('nav.comfyCloud', locale), href: routes.cloud },
             {
-              label: t('nav.comfyApi', locale),
-              href: routes.api,
+              label: t('nav.platform', locale),
+              href: routes.platform,
               badge: 'new'
             },
             {
               label: t('nav.comfyEnterprise', locale),
-              href: routes.cloudEnterprise
+              href: routes.enterprise
             }
           ]
         },

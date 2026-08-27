@@ -47,6 +47,7 @@ const {
   videoHideControls = false,
   videoPlayButtonVariant = 'solid',
   videoAriaLabel,
+  compact = false,
   class: className
 } = defineProps<{
   locale?: Locale
@@ -74,6 +75,7 @@ const {
   videoHideControls?: boolean
   videoPlayButtonVariant?: 'solid' | 'overlay'
   videoAriaLabel?: string
+  compact?: boolean
 }>()
 </script>
 
@@ -95,7 +97,14 @@ const {
       />
 
       <h1
-        class="mt-8 text-2xl leading-[125%] font-light tracking-[-1.44px] whitespace-pre-line text-primary-comfy-canvas md:text-4xl lg:text-5xl"
+        :class="
+          cn(
+            'mt-8 leading-[125%] font-light whitespace-pre-line text-primary-comfy-canvas',
+            compact
+              ? 'text-xl tracking-tight md:text-2xl lg:text-3xl'
+              : 'text-2xl tracking-[-1.44px] md:text-4xl lg:text-5xl'
+          )
+        "
       >
         <template v-if="titleHighlight">
           <span class="text-primary-warm-white">{{ titleHighlight }}</span>
@@ -106,7 +115,12 @@ const {
 
       <p
         v-if="subtitle"
-        class="mt-6 max-w-xl text-base text-primary-comfy-canvas/80"
+        :class="
+          cn(
+            'mt-6 max-w-xl text-primary-comfy-canvas/80',
+            compact ? 'text-sm' : 'text-base'
+          )
+        "
       >
         {{ subtitle }}
       </p>
@@ -126,8 +140,8 @@ const {
         <BrandButton
           :href="primaryCta.href"
           :target="primaryCta.target"
-          size="lg"
-          class="px-8 py-4 text-base uppercase"
+          :size="compact ? 'sm' : 'lg'"
+          :class="cn('uppercase', !compact && 'px-8 py-4 text-base')"
         >
           {{ primaryCta.label }}
         </BrandButton>
@@ -136,8 +150,8 @@ const {
           :href="secondaryCta.href"
           :target="secondaryCta.target"
           variant="outline"
-          size="lg"
-          class="px-8 py-4 text-base uppercase"
+          :size="compact ? 'sm' : 'lg'"
+          :class="cn('uppercase', !compact && 'px-8 py-4 text-base')"
         >
           {{ secondaryCta.label }}
         </BrandButton>

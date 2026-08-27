@@ -1,0 +1,22 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro'
+import ProductCardsSection from '../../../components/common/ProductCardsSection.vue'
+import BuilderFaqSection from '../../../templates/platform/BuilderFaqSection.vue'
+import BuilderHero from '../../../templates/platform/BuilderHero.vue'
+import BuilderPillarsSection from '../../../templates/platform/BuilderPillarsSection.vue'
+import BuilderProblemSection from '../../../templates/platform/BuilderProblemSection.vue'
+import ClosingCtaSection from '../../../templates/platform/ClosingCtaSection.vue'
+import { t } from '../../../i18n/translations'
+---
+
+<BaseLayout
+  title={`${t('platform.products.builder.title', 'zh-CN')} · ${t('platform.meta.title', 'zh-CN')}`}
+  description={t('platform.products.builder.description', 'zh-CN')}
+>
+  <BuilderHero locale="zh-CN" client:load />
+  <BuilderProblemSection locale="zh-CN" />
+  <BuilderPillarsSection locale="zh-CN" />
+  <BuilderFaqSection client:visible locale="zh-CN" />
+  <ClosingCtaSection locale="zh-CN" />
+  <ProductCardsSection locale="zh-CN" label-key="products.labelProducts" />
+</BaseLayout>
