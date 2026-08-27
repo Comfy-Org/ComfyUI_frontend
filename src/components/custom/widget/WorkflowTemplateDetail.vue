@@ -59,6 +59,8 @@ defineExpose({
   focus: () => detailRoot.value?.focus()
 })
 
+const showFullDescription = ref(false)
+
 type DownloadingState = Extract<
   TemplateModelDownloadState,
   { status: 'downloading' }
@@ -141,7 +143,6 @@ function getFailedDownloadLabel(
       : 'templateWorkflows.detail.downloadFailed'
   )
 }
-
 </script>
 
 <template>
@@ -149,7 +150,7 @@ function getFailedDownloadLabel(
     ref="detailRoot"
     :aria-label="title"
     tabindex="-1"
-    class="@container/template-detail flex size-full min-h-0 flex-1 flex-col overflow-hidden bg-base-background text-base-foreground"
+    class="template-detail-enter @container/template-detail flex size-full min-h-0 flex-1 flex-col overflow-hidden bg-base-background text-base-foreground"
   >
     <div
       class="grid min-h-0 flex-1 grid-cols-1 overflow-hidden border-t border-border-subtle @[48rem]/template-detail:grid-cols-[minmax(20rem,5fr)_minmax(0,6fr)] @[48rem]/template-detail:grid-rows-[auto_minmax(0,1fr)]"
@@ -207,10 +208,30 @@ function getFailedDownloadLabel(
           {{ title }}
         </h2>
         <p
-          class="m-0 max-w-2xl text-sm/relaxed wrap-break-word text-muted-foreground"
+          :class="
+            cn(
+              'm-0 max-w-2xl text-sm/relaxed wrap-break-word text-muted-foreground',
+              !showFullDescription && 'line-clamp-3'
+            )
+          "
         >
           {{ description }}
         </p>
+        <button
+          v-if="description.length > 220"
+          type="button"
+          class="m-0 w-fit cursor-pointer border-0 bg-transparent p-0 text-sm text-base-foreground hover:underline"
+          :aria-expanded="showFullDescription"
+          @click="showFullDescription = !showFullDescription"
+        >
+          {{
+            t(
+              showFullDescription
+                ? 'templateWorkflows.detail.descriptionLess'
+                : 'templateWorkflows.detail.descriptionMore'
+            )
+          }}
+        </button>
       </div>
 
       <div
@@ -218,7 +239,7 @@ function getFailedDownloadLabel(
         role="region"
         :aria-label="t('templateWorkflows.detail.requirements')"
         tabindex="0"
-        class="min-h-0 overflow-y-auto border-t border-border-subtle px-4 py-2"
+        class="min-h-0 overflow-y-auto border-t border-border-subtle px-4 py-2 @[48rem]/template-detail:px-6"
       >
         <section
           v-for="group in groups"
@@ -234,7 +255,7 @@ function getFailedDownloadLabel(
               :label="group.rows.length"
               severity="secondary"
               variant="circle"
-              class="size-4"
+              class="size-5 text-xs"
             />
             <span
               v-if="group.total"
@@ -284,7 +305,7 @@ function getFailedDownloadLabel(
                   :class="
                     row.kind === 'input'
                       ? 'icon-[lucide--file-input] size-4'
-                      : 'icon-[lucide--box] size-4'
+                      : 'icon-[comfy--ai-model] size-4'
                   "
                 />
               </span>
@@ -318,11 +339,14 @@ function getFailedDownloadLabel(
                   (!row.status.downloadState ||
                     row.status.downloadState.status === 'idle')
                 "
+                v-tooltip.top="{
+                  value: row.status.label,
+                  class: 'template-detail-tooltip'
+                }"
                 :aria-label="getDownloadAriaLabel(row)"
-                :title="row.status.label"
                 variant="textonly"
                 size="unset"
-                class="size-6 shrink-0 rounded-sm p-1"
+                class="size-8 shrink-0 rounded-md p-1.5"
                 @click="emit('download-model', row.id)"
               >
                 <i aria-hidden="true" class="icon-[tabler--download] size-4" />
@@ -388,8 +412,8 @@ function getFailedDownloadLabel(
                   row.status.downloadState?.status === 'done'
                 "
                 role="status"
-                :aria-label="t('templateWorkflows.detail.downloaded')"
-                :label="t('templateWorkflows.detail.downloaded')"
+                :aria-label="t('templateWorkflows.detail.installed')"
+                :label="t('templateWorkflows.detail.installed')"
                 variant="label"
                 class="h-5 bg-success-background/20 px-2 py-0.5 text-xs font-medium text-success-background normal-case"
               />
@@ -402,6 +426,13 @@ function getFailedDownloadLabel(
                 class="flex shrink-0 items-center gap-2"
               >
                 <Badge
+                  v-tooltip.top="{
+                    value:
+                      row.status.downloadState.reason === 'error'
+                        ? t('templateWorkflows.detail.downloadFailedHint')
+                        : undefined,
+                    class: 'template-detail-tooltip'
+                  }"
                   role="status"
                   :aria-label="getFailedDownloadLabel(row.status.downloadState)"
                   :label="getFailedDownloadLabel(row.status.downloadState)"
@@ -453,34 +484,61 @@ function getFailedDownloadLabel(
     <footer
       class="flex min-h-15 shrink-0 flex-wrap items-center justify-end gap-3 border-t border-border-subtle px-6 py-4"
     >
-      <Button
-        v-if="offerDownloadAndOpen"
-        variant="outline"
-        size="sm"
-        :disabled="openPending"
-        @click="emit('open-template')"
-      >
-        {{ t('templateWorkflows.detail.openNow') }}
-      </Button>
-      <Button
-        variant="inverted"
-        size="sm"
-        :loading="openPending"
-        :disabled="offerDownloadAndOpen && setupPending"
-        @click="
-          offerDownloadAndOpen
-            ? emit('download-models-and-open')
-            : emit('open-template')
-        "
-      >
-        {{
-          t(
+      <div class="ml-auto flex flex-wrap items-center justify-end gap-3">
+        <Button
+          v-if="offerDownloadAndOpen"
+          variant="outline"
+          size="lg"
+          :disabled="openPending"
+          @click="emit('open-template')"
+        >
+          {{ t('templateWorkflows.detail.openNow') }}
+        </Button>
+        <Button
+          variant="inverted"
+          size="lg"
+          :loading="openPending"
+          :disabled="offerDownloadAndOpen && setupPending"
+          @click="
             offerDownloadAndOpen
-              ? 'templateWorkflows.detail.downloadModelsAndOpen'
-              : 'templateWorkflows.detail.openNow'
-          )
-        }}
-      </Button>
+              ? emit('download-models-and-open')
+              : emit('open-template')
+          "
+        >
+          {{
+            t(
+              offerDownloadAndOpen
+                ? 'templateWorkflows.detail.downloadModelsAndOpen'
+                : 'templateWorkflows.detail.openNow'
+            )
+          }}
+        </Button>
+      </div>
     </footer>
   </article>
 </template>
+
+<style>
+.template-detail-enter {
+  animation: template-detail-enter 180ms cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+
+@keyframes template-detail-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .template-detail-enter {
+    animation: none;
+  }
+}
+
+.template-detail-tooltip .p-tooltip-text {
+  padding: 4px 8px;
+  font-size: 12px;
+  line-height: 16px;
+}
+</style>

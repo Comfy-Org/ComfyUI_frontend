@@ -990,9 +990,14 @@ function getModelTypeLabel(row: TemplateModelSetupRow): string {
     : formatCategoryLabel(row.modelType.raw)
 }
 
-function getModelDetailDescription(row: TemplateModelSetupRow): string {
+function getModelDetailTitle(row: TemplateModelSetupRow): string {
   const parts = [getModelTypeLabel(row)]
   if (row.fileSize !== null) parts.push(formatSize(row.fileSize))
+  return parts.filter(Boolean).join(' · ')
+}
+
+function getModelDetailDescription(row: TemplateModelSetupRow): string {
+  const parts = [row.model.name]
   if (row.usedBy.length > 0) {
     parts.push(
       t(
@@ -1012,7 +1017,7 @@ function toModelDetailRow(
   const detailRow: TemplateDetailRow = {
     id: `model:${getModelFileKey(row.model)}`,
     kind: 'model',
-    name: row.model.name,
+    name: getModelDetailTitle(row),
     description: getModelDetailDescription(row)
   }
 
