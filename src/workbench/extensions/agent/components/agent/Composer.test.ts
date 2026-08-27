@@ -673,15 +673,25 @@ describe('Composer', () => {
       'workflow-reference-chip'
     )
     expect(workflowChip).toHaveClass(
+      'group',
       'bg-primary-background/30',
       'border-primary-background/30',
       'text-primary-background-hover',
       'rounded-sm'
     )
     expect(inlineInput).toContainElement(screen.getByRole('textbox'))
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Remove Water world reference' })
+    const removeButton = screen.getByRole('button', {
+      name: 'Remove Water world reference'
+    })
+    expect(removeButton).toHaveClass(
+      'w-0',
+      'opacity-0',
+      'group-hover:w-3.5',
+      'group-hover:opacity-100',
+      'focus-visible:w-3.5',
+      'focus-visible:opacity-100'
     )
+    await userEvent.click(removeButton)
 
     expect(emitted().removeWorkflowReference).toEqual([['wf-1']])
   })
