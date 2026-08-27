@@ -143,6 +143,17 @@ export const showcaseSlides: ShowcaseSlide[] = [
   }
 ]
 
+/**
+ * "Observe and manage" dashboard shot, cropped to the design's framing
+ * (956×469, Figma 12335:54591).
+ *
+ * MISSING ASSET: this URL 404s today. The cropped file is ready to upload at
+ * `.scratch/developers-page/assets/observe-dashboard.webp`; until it lands the
+ * section renders its tinted placeholder box (developers-page issue 10).
+ */
+export const observeImage =
+  'https://media.comfy.org/website/developers/observe-dashboard.webp'
+
 const FAQ_NUMBERS = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const
 
 /**

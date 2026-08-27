@@ -2353,6 +2353,24 @@ const translations = {
     'zh-CN': '阅读文档'
   },
 
+  // Developers page – ObserveSection
+  // The newlines are the design's own breaks (Figma 12065:46564). Keep them
+  // between sentences only — a mid-sentence break would stop the column
+  // wrapping to its own width.
+  'developers.observe.title': {
+    en: 'Observe\nand manage',
+    'zh-CN': '观测\n与管理'
+  },
+  'developers.observe.body': {
+    en: 'Logs, spend, and API keys across the team workspace.\nControl which models, nodes, and ComfyUI versions your team runs.',
+    'zh-CN':
+      '在团队工作区中统一查看日志、支出和 API 密钥。\n掌控团队可以使用哪些模型、节点和 ComfyUI 版本。'
+  },
+  'developers.observe.imageAlt': {
+    en: 'The Comfy Cloud dashboard showing credit spend per day, broken down by product.',
+    'zh-CN': 'Comfy Cloud 控制台，按产品细分展示每日积分消耗。'
+  },
+
   // Developers page – FAQ
   // q1–q9 and a1 are transcribed from the Figma frame (12340:60437). a2–a9 do
   // not exist in the design and ship as the placeholder below in both locales;

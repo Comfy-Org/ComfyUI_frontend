@@ -5,7 +5,7 @@ import BuildAnywhereSection from './BuildAnywhereSection.astro'
 import FAQSection from './FAQSection.astro'
 import HeroSection from './HeroSection.astro'
 import HowItWorksSection from './HowItWorksSection.astro'
-import PlaceholderSection from './PlaceholderSection.vue'
+import ObserveSection from './ObserveSection.astro'
 import PricingSection from './PricingSection.vue'
 import ProblemSection from './ProblemSection.astro'
 import ProductCardsSection from './ProductCardsSection.astro'
@@ -52,9 +52,7 @@ const faqPage = faqPageNode(
   <HowItWorksSection locale={locale} />
   <ShowcaseSection locale={locale} />
   <BuildAnywhereSection locale={locale} />
-  {/* Walking skeleton: the placeholder is replaced by its section ticket
-      (developers-page issue 09). */}
-  <PlaceholderSection name="Observe and manage" block="FeatureSplit01" />
+  <ObserveSection locale={locale} />
   <FAQSection locale={locale} />
   <PricingSection locale={locale} client:load />
 </BaseLayout>
