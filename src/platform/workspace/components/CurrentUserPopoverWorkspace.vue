@@ -26,43 +26,62 @@
 
     <!-- Workspace Selector -->
     <div v-if="!accountActionsOnly" class="relative">
-      <button
-        ref="workspaceSwitcherTrigger"
-        v-tooltip="{ value: workspaceName, showDelay: 300 }"
-        type="button"
-        class="flex w-full cursor-pointer items-center justify-between rounded-lg px-4 py-2 hover:bg-secondary-background-hover"
-        :aria-expanded="isWorkspaceSwitcherOpen"
-        aria-haspopup="menu"
-        aria-controls="workspace-switcher-panel"
-        data-testid="workspace-switcher-trigger"
-        @click="toggleWorkspaceSwitcher"
-        @keydown.escape.stop="isWorkspaceSwitcherOpen = false"
-      >
-        <div class="flex w-0 flex-1 items-center gap-2">
-          <WorkspaceProfilePic
-            class="size-6 shrink-0 text-xs"
-            :workspace-name="workspaceName"
-          />
-          <span class="truncate text-sm text-base-foreground">
-            {{ workspaceName }}
-          </span>
-        </div>
-        <i class="pi pi-chevron-down shrink-0 text-sm text-muted-foreground" />
-      </button>
-
+      <!-- An API-key session is bound to one server-resolved workspace and
+           exposes no discovery or switching -->
       <div
-        v-if="isWorkspaceSwitcherOpen"
-        id="workspace-switcher-panel"
-        ref="workspaceSwitcherPanel"
-        role="menu"
-        class="absolute top-0 right-full z-10 mr-4 rounded-lg border border-border-default bg-base-background shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
-        data-testid="workspace-switcher-panel"
+        v-if="isApiKeyLogin"
+        class="flex w-full items-center gap-2 rounded-lg px-4 py-2"
+        data-testid="workspace-context-row"
       >
-        <WorkspaceSwitcherPopover
-          @select="isWorkspaceSwitcherOpen = false"
-          @create="handleCreateWorkspace"
+        <WorkspaceProfilePic
+          class="size-6 shrink-0 text-xs"
+          :workspace-name="workspaceName"
         />
+        <span class="truncate text-sm text-base-foreground">
+          {{ workspaceName }}
+        </span>
       </div>
+      <template v-else>
+        <button
+          ref="workspaceSwitcherTrigger"
+          v-tooltip="{ value: workspaceName, showDelay: 300 }"
+          type="button"
+          class="flex w-full cursor-pointer appearance-none items-center justify-between rounded-lg border-0 bg-transparent px-4 py-2 text-left hover:bg-secondary-background-hover"
+          :aria-expanded="isWorkspaceSwitcherOpen"
+          aria-haspopup="menu"
+          aria-controls="workspace-switcher-panel"
+          data-testid="workspace-switcher-trigger"
+          @click="toggleWorkspaceSwitcher"
+          @keydown.escape.stop="isWorkspaceSwitcherOpen = false"
+        >
+          <div class="flex w-0 flex-1 items-center gap-2">
+            <WorkspaceProfilePic
+              class="size-6 shrink-0 text-xs"
+              :workspace-name="workspaceName"
+            />
+            <span class="truncate text-sm text-base-foreground">
+              {{ workspaceName }}
+            </span>
+          </div>
+          <i
+            class="pi pi-chevron-down shrink-0 text-sm text-muted-foreground"
+          />
+        </button>
+
+        <div
+          v-if="isWorkspaceSwitcherOpen"
+          id="workspace-switcher-panel"
+          ref="workspaceSwitcherPanel"
+          role="menu"
+          class="absolute top-0 right-full z-10 mr-4 rounded-lg border border-border-default bg-base-background shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
+          data-testid="workspace-switcher-panel"
+        >
+          <WorkspaceSwitcherPopover
+            @select="isWorkspaceSwitcherOpen = false"
+            @create="handleCreateWorkspace"
+          />
+        </div>
+      </template>
     </div>
 
     <!-- Credits Section -->
@@ -88,20 +107,8 @@
       >
         <i class="icon-[lucide--circle-help]" />
       </Button>
-      <!-- Upgrade to add credits (free tier) -->
       <Button
-        v-if="
-          canAccessSubscriptionFeatures && permissions.canTopUp && isFreeTier
-        "
-        variant="subscribe"
-        size="sm"
-        data-testid="upgrade-to-add-credits-button"
-        @click="handleUpgradeToAddCredits"
-      >
-        {{ $t('subscription.upgradeToAddCredits') }}
-      </Button>
-      <Button
-        v-else-if="canAccessSubscriptionFeatures && permissions.canTopUp"
+        v-if="canTopUp"
         variant="secondary"
         size="sm"
         class="text-base-foreground"
@@ -109,6 +116,15 @@
         @click="handleTopUp"
       >
         {{ $t('subscription.addCredits') }}
+      </Button>
+      <Button
+        v-else-if="canSubscribeSelfServe"
+        variant="subscribe"
+        size="sm"
+        data-testid="upgrade-to-add-credits-button"
+        @click="handleUpgradeToAddCredits"
+      >
+        {{ $t('subscription.upgradeToAddCredits') }}
       </Button>
       <!-- Subscribe/Resubscribe (only when not subscribed or cancelled) -->
       <SubscribeButton
@@ -139,7 +155,7 @@
     <Divider v-if="!accountActionsOnly" class="mx-0 my-2" />
 
     <div
-      v-if="!accountActionsOnly && showPlansAndPricing"
+      v-if="!accountActionsOnly && isCloud && showPlansAndPricing"
       class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="plans-pricing-menu-item"
       @click="handleOpenPlansAndPricing"
@@ -151,15 +167,28 @@
     </div>
 
     <button
-      v-if="!accountActionsOnly && showManagePlan"
+      v-if="!accountActionsOnly && isCloud && showManagePlan"
       type="button"
       class="flex w-full cursor-pointer appearance-none items-center gap-2 border-0 bg-transparent px-4 py-2 text-left hover:bg-secondary-background-hover focus-visible:bg-secondary-background-hover focus-visible:outline-none"
       data-testid="manage-plan-menu-item"
-      @click="handleOpenPlanAndCreditsSettings"
+      @click="handleOpenManagePlanSettings"
     >
       <i class="icon-[lucide--credit-card] size-4 text-muted-foreground" />
       <span class="flex-1 text-sm text-base-foreground">{{
         $t('subscription.managePlan')
+      }}</span>
+    </button>
+
+    <button
+      v-if="!accountActionsOnly && showLocalPlansAndCredits"
+      type="button"
+      class="flex w-full cursor-pointer appearance-none items-center gap-2 border-0 bg-transparent px-4 py-2 text-left hover:bg-secondary-background-hover focus-visible:bg-secondary-background-hover focus-visible:outline-none"
+      data-testid="plans-credits-menu-item"
+      @click="handleOpenPlanCreditsSettings"
+    >
+      <i class="icon-[lucide--coins] size-4 text-muted-foreground" />
+      <span class="flex-1 text-sm text-base-foreground">{{
+        $t('subscription.plansAndCredits')
       }}</span>
     </button>
 
@@ -240,6 +269,7 @@ import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeB
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
@@ -251,7 +281,9 @@ const {
   workspaceName,
   isInPersonalWorkspace: isPersonalWorkspace
 } = storeToRefs(workspaceStore)
-const { permissions } = useWorkspaceUI()
+const { permissions, canReactivatePlan, canOpenPricingSurface } =
+  useWorkspaceUI()
+const { canTopUp, canSubscribeSelfServe } = useBillingCapabilities()
 const isWorkspaceSwitcherOpen = ref(false)
 const workspaceSwitcherTrigger = useTemplateRef('workspaceSwitcherTrigger')
 const workspaceSwitcherPanel = useTemplateRef('workspaceSwitcherPanel')
@@ -274,14 +306,18 @@ const { accountActionsOnly = false } = defineProps<{
 
 const { buildDocsUrl, docsPaths } = useExternalLink()
 
-const { userDisplayName, userEmail, userPhotoUrl, handleSignOut } =
-  useCurrentUser()
+const {
+  userDisplayName,
+  userEmail,
+  userPhotoUrl,
+  handleSignOut,
+  isApiKeyLogin
+} = useCurrentUser()
 const settingsDialog = useSettingsDialog()
 const dialogService = useDialogService()
 const {
   billingStatus,
   canAccessSubscriptionFeatures,
-  isFreeTier,
   subscription,
   balance,
   isLoading,
@@ -310,8 +346,12 @@ const displayedCredits = computed(() => {
   })
 })
 
-const showPlansAndPricing = computed(
-  () => permissions.value.canManageSubscription
+const showPlansAndPricing = canOpenPricingSurface
+// Subscribing is a Cloud-only concept: Local users manage plan/credits
+// through settings instead (see showLocalPlansAndCredits below), regardless
+// of subscription status.
+const showLocalPlansAndCredits = computed(
+  () => !isCloud && permissions.value.canManageSubscription
 )
 const hasDelinquentSubscription = computed(
   () =>
@@ -324,12 +364,16 @@ const showManagePlan = computed(
     permissions.value.canManageSubscription &&
     (canAccessSubscriptionFeatures.value || hasDelinquentSubscription.value)
 )
+
 const showSubscribeAction = computed(
   () =>
-    (isCancelled.value && permissions.value.canManageSubscriptionLifecycle) ||
-    (!canAccessSubscriptionFeatures.value &&
-      !hasDelinquentSubscription.value &&
-      permissions.value.canManageSubscription)
+    // Subscribing is Cloud-only, so the whole action stays gated on isCloud.
+    // Self-serve subscribe is server-authoritative; reactivation is not.
+    isCloud &&
+    ((isCancelled.value && canReactivatePlan.value) ||
+      (!canAccessSubscriptionFeatures.value &&
+        !hasDelinquentSubscription.value &&
+        canSubscribeSelfServe.value))
 )
 
 const handleOpenUserSettings = () => {
@@ -347,13 +391,13 @@ const handleOpenPlansAndPricing = () => {
   emit('close')
 }
 
-const handleOpenPlanAndCreditsSettings = () => {
-  if (isCloud) {
-    settingsDialog.show('workspace')
-  } else {
-    settingsDialog.show('credits')
-  }
+const handleOpenManagePlanSettings = () => {
+  settingsDialog.show('workspace')
+  emit('close')
+}
 
+const handleOpenPlanCreditsSettings = () => {
+  settingsDialog.show('workspace')
   emit('close')
 }
 

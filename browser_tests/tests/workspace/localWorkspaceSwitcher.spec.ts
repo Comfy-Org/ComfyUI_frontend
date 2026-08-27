@@ -47,7 +47,9 @@ test.describe('Local workspace switcher', { tag: '@auth' }, () => {
       document.body.dataset.workspaceSwitchDocument = 'original'
     })
 
+    await comfyPage.toast.closeToasts()
     await page.getByRole('button', { name: 'Current user' }).click()
+    await expect(page.getByRole('button', { name: 'Subscribe' })).toHaveCount(0)
     await expect(page.getByTestId('workspace-switcher-trigger')).toContainText(
       PERSONAL_WORKSPACE_NAME
     )
@@ -72,6 +74,7 @@ test.describe('Local workspace switcher', { tag: '@auth' }, () => {
     await expect(page.getByTestId('workspace-switcher-trigger')).toContainText(
       TEAM_WORKSPACE_NAME
     )
+    await expect(page.getByRole('button', { name: 'Subscribe' })).toHaveCount(0)
     await expect.poll(() => billingRequestUrls.length).toBeGreaterThan(0)
     expect(tokenRequestBody).toEqual({ workspace_id: 'ws-team' })
     expect(billingRequestUrls).toEqual(
@@ -91,5 +94,60 @@ test.describe('Local workspace switcher', { tag: '@auth' }, () => {
     expect(
       await page.evaluate(() => document.body.dataset.workspaceSwitchDocument)
     ).toBe('original')
+  })
+
+  test('Run button queues while the workspace has no active subscription', async ({
+    comfyPage
+  }) => {
+    const page = comfyPage.page
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.workflow.loadWorkflow('default')
+    await comfyPage.toast.closeToasts()
+
+    const promptRequest = page.waitForRequest(
+      (request) =>
+        request.method() === 'POST' &&
+        new URL(request.url()).pathname.endsWith('/api/prompt')
+    )
+    await comfyPage.runButton.click()
+
+    expect((await promptRequest).postDataJSON()).toEqual(
+      expect.objectContaining({ prompt: expect.anything() })
+    )
+  })
+
+  test('queues with the target workspace after a delayed switch', async ({
+    comfyPage,
+    workspaceSwitchTokenGate
+  }) => {
+    const page = comfyPage.page
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.workflow.loadWorkflow('default')
+    await comfyPage.toast.closeToasts()
+    await page.getByRole('button', { name: 'Current user' }).click()
+    await page.getByTestId('workspace-switcher-trigger').click()
+    const promptRequest = page.waitForRequest(
+      (request) =>
+        request.method() === 'POST' &&
+        new URL(request.url()).pathname.endsWith('/api/prompt')
+    )
+
+    await page
+      .getByTestId('workspace-switcher-panel')
+      .getByText(TEAM_WORKSPACE_NAME, { exact: true })
+      .click()
+    await workspaceSwitchTokenGate.requestReceived
+    await page.evaluate(() => {
+      void window.app!.queuePrompt(0)
+    })
+    workspaceSwitchTokenGate.release()
+
+    expect((await promptRequest).postDataJSON()).toEqual(
+      expect.objectContaining({
+        extra_data: expect.objectContaining({
+          auth_token_comfy_org: 'mock-workspace-token-ws-team'
+        })
+      })
+    )
   })
 })
