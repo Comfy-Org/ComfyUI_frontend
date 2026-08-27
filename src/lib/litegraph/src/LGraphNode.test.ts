@@ -195,6 +195,63 @@ describe('LGraphNode', () => {
       expect(serialized.flags).toEqual({ collapsed: true })
     })
 
+    test('records the size it was collapsed from, so a resize survives collapsing', () => {
+      const placeholder = createPlaceholder({ flags: { collapsed: false } })
+      new LGraph().add(placeholder)
+      placeholder.setSize([777, 666])
+      placeholder.collapse()
+
+      const serialized = placeholder.serialize()
+
+      expect(serialized.size).toEqual([777, 666])
+      expect(serialized.flags).toEqual({ collapsed: true })
+    })
+
+    test('does not invent a recorded size on collapse when the file recorded none', () => {
+      const placeholder = createPlaceholder()
+      delete (placeholder.last_serialization as Partial<ISerialisedNode>).size
+      new LGraph().add(placeholder)
+      placeholder.setSize([777, 666])
+      placeholder.collapse()
+
+      expect(placeholder.serialize()).not.toHaveProperty('size')
+    })
+
+    test('restores the recorded size when expanding, rather than serializing the collapsed card measurement', () => {
+      const placeholder = createPlaceholder({ flags: { collapsed: false } })
+      new LGraph().add(placeholder)
+      placeholder.setSize([777, 666])
+      placeholder.collapse()
+      placeholder.setSize([80, 30])
+      placeholder.collapse()
+
+      expect(placeholder.last_serialization?.size).toEqual([777, 666])
+      expect(placeholder.serialize().size).toEqual([777, 666])
+    })
+
+    test('keeps the recorded size through an expand/collapse pair made before the card is re-measured', () => {
+      const placeholder = createPlaceholder({ flags: { collapsed: false } })
+      new LGraph().add(placeholder)
+      placeholder.setSize([777, 666])
+      placeholder.collapse()
+      placeholder.setSize([80, 30])
+      placeholder.collapse()
+      placeholder.collapse()
+
+      expect(placeholder.serialize().size).toEqual([777, 666])
+    })
+
+    test('replaces the recorded serialization rather than mutating the object it was configured from', () => {
+      const placeholder = createPlaceholder({ flags: { collapsed: false } })
+      const configuredFrom = placeholder.last_serialization!
+      new LGraph().add(placeholder)
+      placeholder.setSize([777, 666])
+      placeholder.collapse()
+
+      expect(configuredFrom.size).toEqual([140, 60])
+      expect(placeholder.last_serialization?.size).toEqual([777, 666])
+    })
+
     test('carries a live pin through', () => {
       const placeholder = createPlaceholder()
       new LGraph().add(placeholder)
