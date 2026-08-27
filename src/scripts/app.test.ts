@@ -397,10 +397,20 @@ describe('ComfyApp', () => {
       const loadHookCalls =
         mockExtensionService.invokeExtensionsAsync.mock.calls
           .map(([hook]) => hook)
-          .filter(
-            (hook) => hook === 'beforeLoadGraph' || hook === 'afterLoadGraph'
+          .filter((hook) =>
+            [
+              'beforeLoadGraph',
+              'beforeConfigureGraph',
+              'afterConfigureGraph',
+              'afterLoadGraph'
+            ].includes(hook)
           )
-      expect(loadHookCalls).toEqual(['beforeLoadGraph', 'afterLoadGraph'])
+      expect(loadHookCalls).toEqual([
+        'beforeLoadGraph',
+        'beforeConfigureGraph',
+        'afterConfigureGraph',
+        'afterLoadGraph'
+      ])
     })
 
     it('skips afterLoadGraph when graph configure fails', async () => {

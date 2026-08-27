@@ -234,9 +234,12 @@ export interface ComfyExtension {
   beforeLoadGraph?(app: ComfyApp): Promise<void> | void
 
   /**
-   * Runs when a graph load completes. Fires only after a successful load:
-   * the pair is not guaranteed to balance on configure failure, so a
-   * fail-closed bracket must close on `afterConfigureGraph` instead.
+   * Runs when a graph load completes. Fires only after a successful load.
+   * Neither this hook nor `afterConfigureGraph` fires when `configure`
+   * throws, so no hook balances a failed load: design brackets
+   * fail-closed, reset at the next load's `beforeLoadGraph` and closed at
+   * its `afterConfigureGraph` (which also survives post-configure
+   * failures this hook does not).
    * A rejection is caught and logged per extension.
    * @param app The app instance
    */
