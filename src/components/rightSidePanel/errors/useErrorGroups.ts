@@ -47,7 +47,10 @@ const PROMPT_CARD_ID = '__prompt__'
 
 const AGENT_PROMPT_ERROR_TYPES = new Set([
   'agent_api_failed',
-  'agent_draft_apply_failed'
+  'op_rejected',
+  'prefix_abort',
+  'guard_trip',
+  'apply_failed'
 ])
 
 /** Sentinel: distinguishes "fetch in-flight" from "fetch done, pack not found (null)". */

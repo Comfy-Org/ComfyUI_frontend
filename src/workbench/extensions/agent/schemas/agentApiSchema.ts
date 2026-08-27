@@ -64,7 +64,6 @@ export const zAgentDraftSnapshot = z.object({
   content: z.record(z.string(), z.unknown()),
   version: z.number().int()
 })
-export type AgentDraftSnapshot = z.infer<typeof zAgentDraftSnapshot>
 
 export const zAgentError = z.object({
   error: z.string()
@@ -106,7 +105,6 @@ const zDraftPatchData = z
     workflow_id: z.string()
   })
   .passthrough()
-export type DraftPatchData = z.infer<typeof zDraftPatchData>
 
 const zAgentMessageDeltaData = z
   .object({
@@ -140,7 +138,6 @@ const zDraftVersionData = z
     workflow_id: z.string()
   })
   .passthrough()
-export type DraftVersionData = z.infer<typeof zDraftVersionData>
 
 const zAgentActiveTabData = z
   .object({
