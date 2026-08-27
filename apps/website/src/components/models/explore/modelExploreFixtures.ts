@@ -70,15 +70,16 @@ export const trendingModelFixtures: ExploreModelCardFixture[] = [
     media: { type: 'placeholder', tone: 'forest' }
   },
   {
-    name: 'Wan 2.6',
-    href: '/p/supported-models/wan-2-6',
+    name: 'Wan 3.0',
+    href: '/wan-3.0',
     target: '_self',
-    description:
-      'Open-weights video with native audio. Full graph control, LoRA-ready.',
+    description: 'Up to 30-second video with native audio and references.',
     modality: 'Text to video',
-    tag: 'Open weights',
-    statuses: ['open-weights'],
-    media: { type: 'placeholder', tone: 'plum' }
+    tag: 'Partner Nodes',
+    media: {
+      type: 'image',
+      src: requiredMediaSource('Wan 3.0', wan3Page.hero.posterSrc)
+    }
   },
   {
     name: 'Qwen Image Edit',
