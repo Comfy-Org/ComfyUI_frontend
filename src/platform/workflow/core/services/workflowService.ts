@@ -513,8 +513,7 @@ export const useWorkflowService = () => {
       }
 
       await workflowStore.closeWorkflow(workflow)
-      // Only after the close is real: a failed replacement load above
-      // rethrows with the tab still open, and its draft must survive with it.
+      // Only after the close is real: a still-open tab keeps its draft.
       workflowDraftStore.removeDraft(closingPath)
       useNodeOutputStore().discardPreviewsForWorkflow(closingPath)
       return true
