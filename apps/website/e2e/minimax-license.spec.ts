@@ -1,7 +1,6 @@
 import { expect } from '@playwright/test'
 
 import { getRoutes } from '../src/config/routes'
-import { minimaxLicensePage } from '../src/data/minimaxLicense'
 import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 
@@ -11,6 +10,7 @@ const CONTACT_HREF = 'https://comfy.org/contact'
 const HERO_TITLE = t('minimaxLicense.hero.title')
 const HERO_EYEBROW = t('minimaxLicense.hero.eyebrow')
 const HERO_CTA = t('minimaxLicense.hero.primaryCta')
+const HERO_VIDEO_PATTERN = /hero-sizzle\.mp4/
 const STEPS_HEADING = t('minimaxLicense.steps.heading')
 const FAQ_HEADING = t('minimaxLicense.faq.heading')
 const CLOSING_HEADING = t('minimaxLicense.cta.heading')
@@ -20,7 +20,7 @@ test.describe('MiniMax license page @smoke', () => {
     await page.goto(PATH)
   })
 
-  test('renders the hero over its backdrop and is indexable', async ({
+  test('renders the hero over the sizzle reel and is indexable', async ({
     page
   }) => {
     const hero = page.locator('section').filter({
@@ -30,9 +30,9 @@ test.describe('MiniMax license page @smoke', () => {
     await expect(
       page.getByRole('heading', { level: 1, name: HERO_TITLE })
     ).toBeVisible()
-    await expect(hero.locator('img')).toHaveAttribute(
+    await expect(hero.locator('video')).toHaveAttribute(
       'src',
-      minimaxLicensePage.hero.placeholderImageSrc ?? ''
+      HERO_VIDEO_PATTERN
     )
     await expect(page.locator('meta[name="robots"]')).toHaveCount(0)
   })

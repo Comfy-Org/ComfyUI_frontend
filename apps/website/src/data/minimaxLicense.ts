@@ -2,8 +2,12 @@ import type { ModelLaunchPage } from '../templates/model-launch/types'
 
 import { minimaxLinks } from './minimax'
 
-// The frosted backdrop every announcement page shares.
-const COMING_SOON_HERO = 'https://media.comfy.org/website/coming-soon/hero.webp'
+// The H3 launch sizzle reel and its phone still, shared with /minimax-h3 — the
+// campaign art the announcement frames are cut from.
+const HERO_SIZZLE_SRC =
+  'https://media.comfy.org/website/minimax/hero-sizzle.mp4'
+const HERO_FALLBACK_SRC =
+  'https://media.comfy.org/website/minimax/hero-fallback.jpg'
 
 // CTA hrefs in this config must be absolute (modelLaunchPages.test.ts), so the
 // contact and H3 routes are spelled out rather than taken from baseRoutes.
@@ -11,9 +15,8 @@ const CONTACT_HREF = 'https://comfy.org/contact'
 const MINIMAX_H3_HREF = 'https://comfy.org/minimax-h3'
 
 // Staged ahead of the MiniMax reseller agreement being signed. On announcement
-// day: swap the hero to the approved sizzle video the way /minimax-h3 does
-// (videoSrc + posterSrc in place of layout/placeholderImageSrc), and retire the
-// `minimaxLicense.hero.eyebrow` "Coming soon" label or reword it.
+// day: point the two hero media URLs at the approved license sizzle, and
+// retire the `minimaxLicense.hero.eyebrow` "Coming soon" label or reword it.
 export const minimaxLicensePage: ModelLaunchPage = {
   metaTitleKey: 'minimaxLicense.meta.title',
   metaDescriptionKey: 'minimaxLicense.meta.description',
@@ -21,7 +24,8 @@ export const minimaxLicensePage: ModelLaunchPage = {
   breadcrumbUpdatedKey: 'minimaxLicense.breadcrumb.updated',
   hero: {
     layout: 'overlay',
-    placeholderImageSrc: COMING_SOON_HERO,
+    videoSrc: HERO_SIZZLE_SRC,
+    mobileFallbackImageSrc: HERO_FALLBACK_SRC,
     eyebrowKey: 'minimaxLicense.hero.eyebrow',
     titleKey: 'minimaxLicense.hero.title',
     descriptionKey: 'minimaxLicense.hero.description',

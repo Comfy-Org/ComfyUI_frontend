@@ -6048,9 +6048,9 @@ const translations = {
     'zh-CN': '获取 MiniMax H3 商业许可'
   },
   'minimaxLicense.hero.description': {
-    en: 'Comfy is the only official reseller of MiniMax H3 commercial-use licenses. Full commercial rights to your outputs, fine-tuning and LoRA training included.',
+    en: 'Comfy is the only official reseller of MiniMax H3 commercial-use licenses. Full commercial rights to your outputs, fine-tuning and LoRA training included. One model across ads, VFX, and character work.',
     'zh-CN':
-      'Comfy 是 MiniMax H3 商业使用许可的唯一官方经销商。产出的完整商业权利归你，包含微调与 LoRA 训练。'
+      'Comfy 是 MiniMax H3 商业使用许可的唯一官方经销商。产出的完整商业权利归你，包含微调与 LoRA 训练。一个模型，覆盖广告、视觉特效与角色创作。'
   },
   'minimaxLicense.hero.primaryCta': {
     en: 'REQUEST LICENSE',
@@ -6083,8 +6083,8 @@ const translations = {
   },
   'minimaxLicense.faq.heading': { en: 'Q&A', 'zh-CN': '问答' },
   'minimaxLicense.cta.heading': {
-    en: 'Open H3 weights to experiment. An H3 license to ship.',
-    'zh-CN': '开放的 H3 权重用于实验，H3 许可用于交付。'
+    en: 'One model, every use case. Licensed for yours.',
+    'zh-CN': '一个模型，覆盖每种用例。为你的用例获取许可。'
   },
   'minimaxLicense.cta.primaryCta': {
     en: 'REQUEST LICENSE',
