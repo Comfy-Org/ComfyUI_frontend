@@ -4,7 +4,7 @@ import { expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
-// eslint-disable-next-line import-x/no-restricted-paths
+// eslint-disable-next-line import-x/no-restricted-paths -- Settings adapter verifies legacy canvas synchronization.
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import { useLitegraphSettings } from './useLitegraphSettings'
