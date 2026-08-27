@@ -63,6 +63,17 @@ describe('perf workload identity', () => {
     )
   })
 
+  it('distinguishes per-node widget distributions', () => {
+    const swappedWidgetCounts = source.nodes.map((node, index, nodes) => ({
+      ...node,
+      widgetCount: nodes[nodes.length - index - 1].widgetCount
+    }))
+
+    expect(hashTopology(source.nodes, source.links)).not.toBe(
+      hashTopology(swappedWidgetCounts, source.links)
+    )
+  })
+
   it('exports counts without workflow content or source node ids', () => {
     const identity = buildPerfWorkloadIdentity(source)
     const serialized = JSON.stringify(identity)

@@ -72,7 +72,8 @@ export function hashTopology(
         id: aliases.get(node.id),
         type: node.type,
         inputs: node.inputCount,
-        outputs: node.outputCount
+        outputs: node.outputCount,
+        widgets: node.widgetCount
       }))
       .sort((a, b) => (a.id ?? 0) - (b.id ?? 0)),
     links: [...links]
