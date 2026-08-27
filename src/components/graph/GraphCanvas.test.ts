@@ -227,10 +227,13 @@ describe('GraphCanvas first-run tour wiring', () => {
 })
 
 describe('GraphCanvas execution progress updates', () => {
-  const totalNodes = 1_000
-  const activeEntries = 500
-
-  async function mountProgressHarness() {
+  async function mountProgressHarness({
+    totalNodes = 1_000,
+    activeEntries = 500
+  }: {
+    totalNodes?: number
+    activeEntries?: number
+  } = {}) {
     await mountGraphCanvas()
 
     let progressWrites = 0
@@ -297,6 +300,60 @@ describe('GraphCanvas execution progress updates', () => {
       }
     }
   }
+
+  it.each([
+    { totalNodes: 1, activeEntries: 0 },
+    { totalNodes: 1, activeEntries: 1 },
+    { totalNodes: 8, activeEntries: 8 }
+  ])(
+    'pins equal-state fanout for $totalNodes nodes and $activeEntries active entries',
+    async ({ totalNodes, activeEntries }) => {
+      const harness = await mountProgressHarness({ totalNodes, activeEntries })
+
+      harness.executionStore.nodeProgressStates = Object.fromEntries(
+        Object.entries(harness.progressState).map(([nodeId, progress]) => [
+          nodeId,
+          { ...progress }
+        ])
+      )
+      await nextTick()
+
+      expect(harness.workflowStore.nodeIdToNodeLocatorId).toHaveBeenCalledTimes(
+        totalNodes
+      )
+      expect(harness.progressWrites).toBe(totalNodes)
+      expect(mocks.setDirty).toHaveBeenCalledOnce()
+    }
+  )
+
+  it.each([
+    { totalNodes: 1, activeEntries: 1 },
+    { totalNodes: 8, activeEntries: 8 }
+  ])(
+    'pins single-change fanout for $totalNodes nodes and $activeEntries active entries',
+    async ({ totalNodes, activeEntries }) => {
+      const harness = await mountProgressHarness({ totalNodes, activeEntries })
+      const clonedProgressState = Object.fromEntries(
+        Object.entries(harness.progressState).map(([nodeId, progress]) => [
+          nodeId,
+          { ...progress }
+        ])
+      )
+
+      harness.executionStore.nodeProgressStates = {
+        ...clonedProgressState,
+        '1': { ...clonedProgressState['1'], value: 50 }
+      }
+      await nextTick()
+
+      expect(harness.workflowStore.nodeIdToNodeLocatorId).toHaveBeenCalledTimes(
+        totalNodes
+      )
+      expect(harness.progressWrites).toBe(totalNodes)
+      expect(harness.progressValues[0]).toBe(0.5)
+      expect(mocks.setDirty).toHaveBeenCalledOnce()
+    }
+  )
 
   it.fails('does no node work for structurally equal progress', async () => {
     const harness = await mountProgressHarness()
