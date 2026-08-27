@@ -29,7 +29,8 @@ describe('comfy API root', () => {
   it('reports a version independent of the app version', () => {
     expect(api().version).toBe(NODE_API_VERSION)
     expect(api().version).toMatch(/^\d+\.\d+$/)
-    expect(api().major).toBe(1)
+    expect(api().major).toBe(LATEST_MAJOR)
+    expect(String(api().major)).toBe(NODE_API_VERSION.split('.')[0])
   })
 
   describe('capability probing', () => {
@@ -84,7 +85,9 @@ describe('comfy API root', () => {
     })
 
     it('says which version a planned capability needs', () => {
-      expect(() => api().require('slots.named')).toThrow(/requires 1\.1/)
+      expect(() => api().require('slots.named')).toThrow(
+        /'slots\.named' requires \d+\.\d+/
+      )
     })
 
     it('points at supports() so packs can degrade instead of crashing', () => {
@@ -341,16 +344,17 @@ describe('comfy API root', () => {
     })
 
     it('pins to a requested major', () => {
-      expect(api().forMajor(1).major).toBe(1)
+      expect(api().forMajor(LATEST_MAJOR).major).toBe(LATEST_MAJOR)
     })
 
     it('returns a stable instance per major', () => {
       const comfy = api()
-      expect(comfy.forMajor(1)).toBe(comfy.forMajor(1))
+      expect(comfy.forMajor(LATEST_MAJOR)).toBe(comfy.forMajor(LATEST_MAJOR))
     })
 
     it('reports every supported major', () => {
-      expect(SUPPORTED_MAJORS).toContain(1)
+      expect(SUPPORTED_MAJORS).toContain(LATEST_MAJOR)
+      expect(SUPPORTED_MAJORS.length).toBeGreaterThan(0)
     })
 
     it('fails clearly for a major this host does not know', () => {
@@ -366,12 +370,14 @@ describe('comfy API root', () => {
       const comfy = createComfyApi(() => graph)
 
       const fromLatest = comfy.graph.node(String(node.id))!
-      const fromV1 = comfy.forMajor(1).graph.node(String(node.id))!
+      const fromPinned = comfy
+        .forMajor(LATEST_MAJOR)
+        .graph.node(String(node.id))!
 
       // Same major here, so the same instance is reused.
-      expect(fromV1).toBe(fromLatest)
+      expect(fromPinned).toBe(fromLatest)
       // ...and identity holds regardless.
-      expect(comfy.sameEntity(fromV1, fromLatest)).toBe(true)
+      expect(comfy.sameEntity(fromPinned, fromLatest)).toBe(true)
     })
 
     it('keeps slot identity agreeing across instances', () => {

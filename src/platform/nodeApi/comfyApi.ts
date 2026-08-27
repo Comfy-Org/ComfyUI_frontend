@@ -71,22 +71,27 @@ type ComfyApiHost = {
  * addition is discoverable through `supports()`. That is the promise that makes
  * this surface worth migrating onto.
  */
-export const NODE_API_VERSION = '1.0'
+export const NODE_API_VERSION = '2.0'
 
 /**
- * Every major this host serves. **All majors stay supported — none is ever
- * withdrawn.**
+ * Every major this host currently serves.
  *
- * This is affordable only because a major is a *spec*, not a fork: each one is
- * a declarative mapping from public names onto whatever the internals currently
- * are, sharing one engine (`closedProxy`, `slotRef`, the collections). Adding a
- * major adds a mapping; it does not freeze internals or duplicate logic.
+ * A major is a *spec*, not a fork: each is a declarative mapping from public
+ * names onto whatever the internals currently are, sharing one engine
+ * (`closedProxy`, `slotRef`, the collections). Adding a major adds a mapping;
+ * it does not freeze internals or duplicate logic. That is what makes serving
+ * more than one affordable.
  *
- * The real cost is not maintenance — it is the day an old major's semantics
- * become genuinely inexpressible against current internals. That is the case to
- * watch for, and the reason majors should be rare and batched.
+ * **Support is not perpetual.** An earlier draft of this file promised that no
+ * major would ever be withdrawn. The API review declined to make that
+ * commitment, and it was the right call: the cost of a major is not maintenance
+ * but the day its semantics become genuinely inexpressible against current
+ * internals, and a promise of forever converts that day into an unbounded
+ * liability. A major follows ComfyUI's ordinary phased deprecation instead —
+ * announced, warned about in development builds, then removed in a later
+ * release. Majors should still be rare and batched, for the same reason.
  */
-export const SUPPORTED_MAJORS: readonly number[] = Object.freeze([1])
+export const SUPPORTED_MAJORS: readonly number[] = Object.freeze([2])
 export const LATEST_MAJOR = SUPPORTED_MAJORS[SUPPORTED_MAJORS.length - 1]
 
 /**
@@ -100,58 +105,58 @@ export const LATEST_MAJOR = SUPPORTED_MAJORS[SUPPORTED_MAJORS.length - 1]
  * Removing an entry is a breaking change and requires a major bump.
  */
 const CAPABILITIES: ReadonlyMap<string, string> = new Map([
-  ['graph.nodes', '1.0'],
-  ['node.geometry', '1.0'],
-  ['slots.connect', '1.0'],
-  ['slots.identity', '1.0'],
-  ['slots.resolvedSource', '1.0'],
-  ['widgets.reorder', '1.0'],
-  ['widgets.hidden', '1.0'],
-  ['widgets.height', '1.0'],
-  ['widgets.linked', '1.0'],
-  ['widgets.textInteraction', '1.0'],
-  ['slots.retype', '1.0'],
-  ['slots.moveLinks', '1.0'],
-  ['defs.extend', '1.0'],
-  ['widgets.create', '1.0'],
-  ['serialization.control', '1.0'],
-  ['widgets.mount', '1.0'],
-  ['widgets.typeContext', '1.0'],
-  ['widgets.canvas', '1.0'],
-  ['node.onPreview', '1.0'],
-  ['node.sizeConstraints', '1.0'],
-  ['node.onSerialize', '1.0'],
-  ['defs.define', '1.0'],
-  ['node.resolve', '1.0'],
-  ['slots.dynamic', '1.0'],
-  ['slots.widgetConfig', '1.0'],
-  ['slots.layout', '1.0'],
-  ['slots.localizedName', '1.0'],
-  ['slots.connectedType', '1.0'],
-  ['graph.selection', '1.0'],
-  ['node.connectVeto', '1.0'],
-  ['node.menu', '1.0'],
-  ['settings', '1.0'],
-  ['commands', '1.0'],
-  ['backend', '1.0'],
-  ['storage', '1.0'],
-  ['ui.sidebarTab', '1.0'],
-  ['viewport.changed', '1.0'],
-  ['interaction.state', '1.0'],
-  ['interaction.nodeMoved', '1.0'],
-  ['interaction.nodeDragEnd', '1.0'],
-  ['node.changeScope', '1.0'],
-  ['node.fileDrop', '1.0'],
-  ['workflow.open', '1.0'],
-  ['workflow.textReplacements', '1.0'],
-  ['execution.node', '1.0'],
-  ['defs.typeCompatibility', '1.0'],
-  ['defs.inputValues', '1.0'],
-  ['defs.localizedInputNames', '1.0'],
-  ['supply.outputs', '1.0'],
-  ['supply.resolved', '1.0'],
-  ['queue.disableAutoQueue', '1.0'],
-  ['queue.settings', '1.0']
+  ['graph.nodes', '2.0'],
+  ['node.geometry', '2.0'],
+  ['slots.connect', '2.0'],
+  ['slots.identity', '2.0'],
+  ['slots.resolvedSource', '2.0'],
+  ['widgets.reorder', '2.0'],
+  ['widgets.hidden', '2.0'],
+  ['widgets.height', '2.0'],
+  ['widgets.linked', '2.0'],
+  ['widgets.textInteraction', '2.0'],
+  ['slots.retype', '2.0'],
+  ['slots.moveLinks', '2.0'],
+  ['defs.extend', '2.0'],
+  ['widgets.create', '2.0'],
+  ['serialization.control', '2.0'],
+  ['widgets.mount', '2.0'],
+  ['widgets.typeContext', '2.0'],
+  ['widgets.canvas', '2.0'],
+  ['node.onPreview', '2.0'],
+  ['node.sizeConstraints', '2.0'],
+  ['node.onSerialize', '2.0'],
+  ['defs.define', '2.0'],
+  ['node.resolve', '2.0'],
+  ['slots.dynamic', '2.0'],
+  ['slots.widgetConfig', '2.0'],
+  ['slots.layout', '2.0'],
+  ['slots.localizedName', '2.0'],
+  ['slots.connectedType', '2.0'],
+  ['graph.selection', '2.0'],
+  ['node.connectVeto', '2.0'],
+  ['node.menu', '2.0'],
+  ['settings', '2.0'],
+  ['commands', '2.0'],
+  ['backend', '2.0'],
+  ['storage', '2.0'],
+  ['ui.sidebarTab', '2.0'],
+  ['viewport.changed', '2.0'],
+  ['interaction.state', '2.0'],
+  ['interaction.nodeMoved', '2.0'],
+  ['interaction.nodeDragEnd', '2.0'],
+  ['node.changeScope', '2.0'],
+  ['node.fileDrop', '2.0'],
+  ['workflow.open', '2.0'],
+  ['workflow.textReplacements', '2.0'],
+  ['execution.node', '2.0'],
+  ['defs.typeCompatibility', '2.0'],
+  ['defs.inputValues', '2.0'],
+  ['defs.localizedInputNames', '2.0'],
+  ['supply.outputs', '2.0'],
+  ['supply.resolved', '2.0'],
+  ['queue.disableAutoQueue', '2.0'],
+  ['queue.settings', '2.0']
 ])
 
 /**
@@ -163,9 +168,9 @@ const CAPABILITIES: ReadonlyMap<string, string> = new Map([
  * sites need no rewrite once the backend supplies names.
  */
 const PLANNED: ReadonlyMap<string, string> = new Map([
-  ['slots.named', '1.1'],
-  ['node.decorations', '1.2'],
-  ['node.chrome', '1.2']
+  ['slots.named', '2.1'],
+  ['node.decorations', '2.2'],
+  ['node.chrome', '2.2']
 ])
 
 export interface Comfy {
@@ -184,8 +189,13 @@ export interface Comfy {
   /** Every capability this host provides. */
   capabilities(): readonly string[]
   /**
-   * Pins to a specific major. Every major this host knows stays available, so a
-   * pack written against an older one keeps working indefinitely.
+   * Pins to a specific major, so a pack written against one is not moved onto
+   * the next by a host upgrade.
+   *
+   * A pinned major stays available for as long as it is supported — see
+   * {@link SUPPORTED_MAJORS} — not indefinitely. Withdrawal follows ComfyUI's
+   * phased deprecation, so a pin buys a stable contract across releases rather
+   * than a permanent one.
    */
   forMajor(major: number): Comfy
 
