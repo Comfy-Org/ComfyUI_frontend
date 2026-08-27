@@ -23,7 +23,6 @@ const i18n = createI18n({
         chooseWorkflow: enMessages.agent.chooseWorkflow,
         selectWorkflowForAgent: 'Select a workflow for agent to work in',
         chooseWorkflowForChat: enMessages.agent.chooseWorkflowForChat,
-        dontWorkInWorkflow: enMessages.agent.dontWorkInWorkflow,
         searchWorkflows: enMessages.agent.searchWorkflows
       },
       g: {
@@ -67,6 +66,7 @@ describe('WorkflowSelectorChip', () => {
     expect(trigger()).toHaveClass('flex-1', 'font-normal')
     expect(trigger()).not.toHaveClass('font-medium')
     expect(workflowName).not.toHaveClass('underline', 'decoration-solid')
+    expect(screen.getAllByRole('button')).toHaveLength(1)
 
     await user.hover(trigger())
     expect(
@@ -123,12 +123,6 @@ describe('WorkflowSelectorChip', () => {
       'font-normal'
     )
     expect(emptyTrigger).not.toHaveClass('flex-1', 'font-medium')
-    expect(
-      screen.queryByRole('button', {
-        name: enMessages.agent.dontWorkInWorkflow
-      })
-    ).toBeNull()
-
     await user.hover(trigger())
     expect(
       await screen.findByRole('tooltip', { hidden: true })
@@ -143,47 +137,8 @@ describe('WorkflowSelectorChip', () => {
       'Select a workflow for agent to work in'
     )
     expect(trigger()).not.toHaveTextContent('portrait')
-    expect(
-      screen.queryByRole('button', {
-        name: enMessages.agent.dontWorkInWorkflow
-      })
-    ).toBeNull()
-
     await user.click(trigger())
     expect(screen.queryByRole('menuitemradio', { checked: true })).toBeNull()
-  })
-
-  it('emits clear from the X button', async () => {
-    const { user, emitted } = renderChip()
-    const clear = screen.getByRole('button', {
-      name: enMessages.agent.dontWorkInWorkflow
-    })
-
-    await user.hover(clear)
-    expect(
-      await screen.findByRole('tooltip', { hidden: true })
-    ).toHaveTextContent(enMessages.agent.dontWorkInWorkflow)
-    await user.click(clear)
-
-    expect(emitted('clear')).toHaveLength(1)
-  })
-
-  it('delays each tooltip when moving between selector controls', async () => {
-    const { user } = renderChip()
-    const selector = trigger()
-    const clear = screen.getByRole('button', {
-      name: enMessages.agent.dontWorkInWorkflow
-    })
-
-    await user.hover(selector)
-    await screen.findByRole('tooltip', { hidden: true })
-    await user.unhover(selector)
-    await user.hover(clear)
-
-    expect(screen.queryByRole('tooltip')).toBeNull()
-    expect(
-      await screen.findByRole('tooltip', { hidden: true })
-    ).toHaveTextContent(enMessages.agent.dontWorkInWorkflow)
   })
 
   it('shows unsaved dots on a modified active workflow trigger and row', async () => {

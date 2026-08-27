@@ -398,10 +398,6 @@ async function onSelectTab(path: string): Promise<void> {
   if (tab) await workflowService.openWorkflow(tab)
 }
 
-function onClearWorkflow(): void {
-  workflowDetached.value = true
-}
-
 function openTabsSnapshot(origin?: TurnOrigin): OpenTabsSnapshot | undefined {
   const openTabs = workflowStore.openWorkflows.flatMap((tab) => {
     const workflowId = cloudIdFor(tab)
@@ -757,9 +753,7 @@ function onSend(
     attachment_count: attachments.length,
     node_tag_count: nodeTags.length
   })
-  void sendMessage(text, attachments, nodeTags, references).then((ok) => {
-    if (!ok) resetSnapshotGuard()
-  })
+  void sendMessage(text, attachments, nodeTags, references)
 }
 
 function onStop(): void {
@@ -1093,7 +1087,6 @@ function onPanelDrop(event: DragEvent): void {
       :workflow-detached="workflowDetached"
       :get-mention-nodes="mentionableNodes"
       @select-tab="onSelectTab"
-      @clear-workflow="onClearWorkflow"
       @send="onSend"
       @stop="onStop"
       @attach="onAttach"

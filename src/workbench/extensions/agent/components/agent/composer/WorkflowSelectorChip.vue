@@ -36,7 +36,6 @@ const {
 }>()
 const emit = defineEmits<{
   selectTab: [path: string]
-  clear: []
 }>()
 
 const { t } = useI18n()
@@ -209,30 +208,5 @@ function onSearchKeydown(event: KeyboardEvent): void {
         </DropdownMenuContent>
       </DropdownMenuPortal>
     </DropdownMenuRoot>
-    <TooltipProvider v-if="current" v-bind="AGENT_REKA_TOOLTIP_PROVIDER_PROPS">
-      <TooltipRoot disable-closing-trigger>
-        <TooltipTrigger as-child>
-          <button
-            type="button"
-            :aria-label="t('agent.dontWorkInWorkflow')"
-            class="text-agent-fg-subtle hover:bg-agent-surface-hover hover:text-agent-fg flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-lg transition-colors"
-            @click="emit('clear')"
-          >
-            <span class="icon-[lucide--x] size-4" />
-          </button>
-        </TooltipTrigger>
-        <TooltipPortal>
-          <TooltipContent
-            side="top"
-            align="end"
-            :side-offset="6"
-            :collision-padding="8"
-            :class="AGENT_REKA_TOOLTIP_CONTENT_CLASS"
-          >
-            {{ t('agent.dontWorkInWorkflow') }}
-          </TooltipContent>
-        </TooltipPortal>
-      </TooltipRoot>
-    </TooltipProvider>
   </div>
 </template>

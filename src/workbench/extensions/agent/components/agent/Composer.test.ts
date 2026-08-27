@@ -660,44 +660,61 @@ describe('Composer', () => {
     ])
   })
 
-  it.for(['{Delete}', '{Backspace}'])(
-    'selects and removes an inline workflow reference with %s',
-    async (key) => {
-      const { emitted } = mount(
-        {},
-        {
-          workflowReferences: [{ id: 'wf-1', name: 'Water world' }]
-        }
-      )
+  it('removes the workflow reference before the text caret with Backspace', async () => {
+    const { emitted } = mount(
+      {},
+      {
+        workflowReferences: [
+          { id: 'wf-1', name: 'Water world' },
+          { id: 'wf-2', name: 'Portrait lighting' }
+        ]
+      }
+    )
 
-      const inlineInput = screen.getByTestId('composer-inline-input')
-      const workflowChip = within(inlineInput).getByRole('button', {
-        name: 'Water world workflow reference'
-      })
-      expect(workflowChip).toHaveClass(
-        'bg-primary-background/30',
-        'ring-1',
-        'ring-inset',
-        'ring-primary-background/30',
-        'text-primary-background-hover',
-        'rounded-sm',
-        'text-xs/[15px]',
-        'font-normal'
-      )
-      expect(workflowChip).not.toHaveClass('h-5', 'h-7', 'font-medium')
-      expect(inlineInput).toContainElement(screen.getByRole('textbox'))
-      expect(
-        screen.queryByRole('button', { name: 'Remove Water world reference' })
-      ).toBeNull()
+    const inlineInput = screen.getByTestId('composer-inline-input')
+    const workflowChips = within(inlineInput).getAllByTestId(
+      'workflow-reference-chip'
+    )
+    expect(workflowChips[0]).toHaveClass(
+      'bg-primary-background/30',
+      'ring-1',
+      'ring-inset',
+      'ring-primary-background/30',
+      'text-primary-background-hover',
+      'rounded-sm',
+      'text-xs/[15px]',
+      'font-normal'
+    )
+    expect(workflowChips[0]).not.toHaveClass('h-5', 'h-7', 'font-medium')
+    expect(inlineInput).toContainElement(screen.getByRole('textbox'))
+    expect(
+      within(inlineInput).queryByRole('button', { name: /workflow reference/ })
+    ).toBeNull()
 
-      await userEvent.click(workflowChip)
-      expect(workflowChip).toHaveAttribute('aria-pressed', 'true')
-      await userEvent.keyboard(key)
+    const textarea = screen.getByRole('textbox') as HTMLTextAreaElement
+    await userEvent.type(textarea, 'keep me')
+    textarea.setSelectionRange(0, 0)
+    await userEvent.keyboard('{Backspace}')
 
-      expect(emitted().removeWorkflowReference).toEqual([['wf-1']])
-      expect(screen.getByRole('textbox')).toHaveFocus()
-    }
-  )
+    expect(emitted().removeWorkflowReference).toEqual([['wf-2']])
+    expect(textarea).toHaveValue('keep me')
+  })
+
+  it('keeps normal text deletion when the caret is not at the start', async () => {
+    const { emitted } = mount(
+      {},
+      {
+        workflowReferences: [{ id: 'wf-1', name: 'Water world' }]
+      }
+    )
+
+    const textarea = screen.getByRole('textbox') as HTMLTextAreaElement
+    await userEvent.type(textarea, 'text')
+    await userEvent.keyboard('{Backspace}')
+
+    expect(emitted().removeWorkflowReference).toBeUndefined()
+    expect(textarea).toHaveValue('tex')
+  })
 
   it('keeps selected nodes in a dedicated section above the inline prompt', () => {
     mount({

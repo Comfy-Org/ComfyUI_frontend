@@ -2303,38 +2303,13 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(bodies[1]).not.toHaveProperty('draft')
   })
 
-  it('chip X detaches the chat so the next send carries no workflow context', async () => {
-    makeTab('wf-42')
-    const bodies = mockMessagesEndpoint('wf-42')
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
-
-    await userEvent.click(
-      screen.getByRole('button', {
-        name: i18n.global.t('agent.dontWorkInWorkflow')
-      })
-    )
-    expect(
-      await screen.findAllByText(i18n.global.t('agent.selectWorkflowForAgent'))
-    ).not.toHaveLength(0)
-
-    await sendFromComposer('work without a canvas')
-
-    expect(bodies[0]).not.toHaveProperty('workflow_id')
-    expect(bodies[0]).not.toHaveProperty('current_tab')
-    expect(bodies[0]).toMatchObject({
-      open_tabs: [{ workflow_id: 'wf-42', name: 'current' }]
-    })
-  })
-
   it('re-attaches by picking a row so the next send carries the workflow again', async () => {
     makeTab('wf-42')
     const bodies = mockMessagesEndpoint('wf-42')
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
     await userEvent.click(
-      screen.getByRole('button', {
-        name: i18n.global.t('agent.dontWorkInWorkflow')
-      })
+      screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
     )
     await userEvent.click(
       screen.getByRole('button', {
@@ -2386,9 +2361,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await vi.waitFor(() => expect(activity.editingTabPath).toBeNull())
 
     await userEvent.click(
-      screen.getByRole('button', {
-        name: i18n.global.t('agent.dontWorkInWorkflow')
-      })
+      screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
     )
     await sendFromComposer('detached turn')
 

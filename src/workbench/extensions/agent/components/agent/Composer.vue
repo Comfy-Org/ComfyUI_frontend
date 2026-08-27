@@ -295,6 +295,21 @@ function onComposerKeydown(event: KeyboardEvent): void {
       return
     }
   }
+  if (
+    event.key === 'Backspace' &&
+    !event.isComposing &&
+    workflowReferences.length > 0
+  ) {
+    const textarea = event.target as HTMLTextAreaElement
+    if (textarea.selectionStart === 0 && textarea.selectionEnd === 0) {
+      event.preventDefault()
+      emit(
+        'removeWorkflowReference',
+        workflowReferences[workflowReferences.length - 1].id
+      )
+      return
+    }
+  }
   if (event.key === 'Enter') onEnter(event)
 }
 
@@ -351,28 +366,6 @@ function onPrimaryAction(): void {
 }
 
 const textareaRef = useTemplateRef<InstanceType<typeof Textarea>>('textareaRef')
-const selectedWorkflowReferenceId = ref<string | null>(null)
-
-function selectWorkflowReference(id: string): void {
-  selectedWorkflowReferenceId.value = id
-}
-
-function deselectWorkflowReference(id: string): void {
-  if (selectedWorkflowReferenceId.value === id)
-    selectedWorkflowReferenceId.value = null
-}
-
-async function onWorkflowReferenceKeydown(
-  event: KeyboardEvent,
-  id: string
-): Promise<void> {
-  if (event.key !== 'Delete' && event.key !== 'Backspace') return
-  event.preventDefault()
-  selectedWorkflowReferenceId.value = null
-  emit('removeWorkflowReference', id)
-  await nextTick()
-  textareaRef.value?.focus()
-}
 
 function insert(text: string): void {
   composer.insert(text)
@@ -545,24 +538,15 @@ defineExpose({
         data-testid="composer-inline-input"
         class="flex min-h-16 flex-wrap items-start gap-1 p-3"
       >
-        <button
+        <span
           v-for="workflow in workflowReferences"
           :key="workflow.id"
-          type="button"
-          :aria-label="
-            t('agent.workflowReferenceLabel', { workflow: workflow.name })
-          "
-          :aria-pressed="selectedWorkflowReferenceId === workflow.id"
           data-testid="workflow-reference-chip"
-          class="inline-flex max-w-full cursor-pointer items-center rounded-sm bg-primary-background/30 px-1 py-0.5 text-xs/[15px] font-normal text-primary-background-hover ring-1 ring-primary-background/30 transition-shadow outline-none ring-inset aria-pressed:ring-2 aria-pressed:ring-primary-background"
-          @click="selectWorkflowReference(workflow.id)"
-          @focus="selectWorkflowReference(workflow.id)"
-          @blur="deselectWorkflowReference(workflow.id)"
-          @keydown="onWorkflowReferenceKeydown($event, workflow.id)"
+          class="inline-flex max-w-full items-center rounded-sm bg-primary-background/30 px-1 py-0.5 text-xs/[15px] font-normal text-primary-background-hover ring-1 ring-primary-background/30 ring-inset"
         >
           <span class="mr-1 icon-[comfy--workflow] size-3.5 shrink-0" />
           <span class="max-w-40 truncate">{{ workflow.name }}</span>
-        </button>
+        </span>
 
         <div class="relative min-h-7 min-w-32 flex-1">
           <Textarea
